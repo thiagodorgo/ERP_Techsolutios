@@ -1,5 +1,50 @@
 # ERP Techsolutions
 
+ERP Techsolutions e um SaaS ERP operacional de campo, multi-tenant e orientado por modulos para empresas que executam servicos externos, controlam equipes, viaturas, estoque, financeiro operacional e indicadores em tempo real.
+
+## Estado atual do repositorio
+
+- Base documental oficial v1 incorporada em `docs/`
+- Estrutura operacional do agente incorporada em `agent-orchestration/`
+- Arquivos-base de governanca adicionados na raiz
+- Fundacao tecnica minima do backend organizada em Node.js + TypeScript
+
+## Nota importante de alinhamento
+
+Ha um conflito arquitetural entre fontes:
+
+- a base persistente do agente ainda registra backend em C
+- o repositorio oficial no GitHub e a documentacao enviada nesta entrega usam Node.js + TypeScript como backend atual
+
+Neste repositorio, a organizacao foi feita respeitando o estado atual do GitHub e dos documentos enviados. A validacao final dessa decisao de stack continua pendente.
+
+## Estrutura principal
+
+```text
+.
+├── PRODUCT_CONTEXT.md
+├── RBAC_MATRIX.md
+├── APPROVAL_LIMITS.md
+├── DESIGN_SYSTEM.md
+├── COMPONENT_LIBRARY.md
+├── AGENTS.md
+├── docs/
+│   ├── 00-visao-executiva.md
+│   ├── 00-analise-comparativa-benchmark.md
+│   ├── 01-visao-produto.md
+│   ├── 02-mapa-modulos.md
+│   ├── 03-atores-papeis.md
+│   ├── 04-regras-negocio.md
+│   ├── 05-requisitos-funcionais.md
+│   ├── 06-requisitos-nao-funcionais.md
+│   ├── 07-backlog-priorizado.md
+│   └── 08-estrutura-repositorio.md
+├── agent-orchestration/
+│   ├── docs/
+│   ├── codex/
+│   └── controle/
+├── assets/
+│   └── prints-benchmark/
 ERP Techsolutions é uma plataforma SaaS ERP operacional de campo, multi-tenant, orientada a operação externa, ordens de serviço, estoque, financeiro operacional, logística, mobile, analytics, IA e ESG.
 
 Este repositório nasce com **Node.js + TypeScript** como backend principal, mantendo arquitetura modular e mensageria assíncrona como fundação arquitetural planejada desde o início.
@@ -86,56 +131,42 @@ npm run check
     ├── app.ts
     ├── server.ts
     ├── config/
-    │   └── env.ts
     └── routes/
-        └── health.routes.ts
 ```
 
-## Módulos oficiais do ERP Techsolutions
+## Ordem de leitura recomendada
 
-1. Core SaaS: tenants, usuários, RBAC, planos, auditoria e configurações.
-2. CRM operacional: clientes, contatos, locais, contratos e ativos.
-3. Operação de campo: ordens de serviço, agenda, despacho, execução, SLA e status.
-4. Mobile técnico: tarefas, check-in/check-out, checklist, fotos, assinatura e offline-first.
-5. Estoque: produtos, depósitos, estoque em veículo, movimentações, consumo por OS e reposição.
-6. Logística: rotas, rastreamento, ETA, mapa, otimização e eventos de deslocamento.
-7. Financeiro operacional: orçamento, faturamento, contas a receber, despesas, comissões e margem.
-8. Documentos e evidências: anexos, fotos, comprovantes, PDFs, OCR e assinatura.
-9. Analytics: KPIs operacionais, financeiros, produtividade, retrabalho, SLA e capacidade.
-10. IA e automação: recomendações, alertas, previsão, resumo, classificação e suporte.
-11. ESG/carbono: km evitado, CO2 estimado, eficiência de rota e impacto ambiental.
+1. `docs/00-visao-executiva.md`
+2. `docs/01-visao-produto.md`
+3. `docs/02-mapa-modulos.md`
+4. `docs/04-regras-negocio.md`
+5. `docs/05-requisitos-funcionais.md`
+6. `docs/06-requisitos-nao-funcionais.md`
+7. `docs/07-backlog-priorizado.md`
+8. `PRODUCT_CONTEXT.md`
+9. `agent-orchestration/docs/status-geral.md`
 
-## Fluxo operacional central
+## Fundacao tecnica atual
 
-```text
-Cliente
-→ Local de atendimento
-→ Ordem de serviço
-→ Despacho
-→ Técnico/equipe
-→ Rota
-→ Execução mobile
-→ Checklist/evidências
-→ Consumo de estoque
-→ Assinatura
-→ Conclusão
-→ Custo/margem/faturamento
-→ Analytics/IA/ESG
+| Camada | Estado atual |
+|---|---|
+| Frontend web | React |
+| Mobile | Flutter |
+| Backend atual do repositorio | Node.js + TypeScript |
+| Banco transacional planejado | PostgreSQL |
+| Cache/coordenacao planejada | Redis |
+| Integracao entre modulos | Assincrona por padrao |
+
+## Comandos previstos
+
+```bash
+npm install
+npm run dev
+npm run build
+npm run check
 ```
 
-A entidade central do produto é a **ordem de serviço**. Todos os módulos devem reforçar esse ciclo operacional.
+## Proximo marco recomendado
 
-## Documentação canônica
+Implementar o core SaaS multi-tenant do MVP competitivo, iniciando por tenant, filial, usuarios, RBAC, auditoria e ordem de servico.
 
-Leia nesta ordem:
-
-1. `README.md`
-2. `AGENTS.md`
-3. `docs/00-visao-executiva.md`
-4. `docs/01-arquitetura-nodejs.md`
-5. `docs/02-mensageria-assincrona.md`
-6. `docs/03-roadmap.md`
-
-## Status atual
-
-Fundação documental e técnica inicial criada para rodar em Node.js + TypeScript. A próxima etapa é implementar o core SaaS multi-tenant e o primeiro ciclo operacional de ordem de serviço.
