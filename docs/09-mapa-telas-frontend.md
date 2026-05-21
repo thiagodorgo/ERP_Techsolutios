@@ -406,3 +406,195 @@ Princípios adotados:
 
 - Conflito aberto mantido: memória histórica de backend em C vs estado oficial do repositório em Node.js + TypeScript.
 - Para execução deste mapa de telas, foi adotado o estado oficial vigente no repositório (Node.js + TypeScript), sem ocultar a divergência documental pendente de validação final.
+
+## Pacote Figma MVP (Estrutura de Páginas e Handoff)
+
+> **Objetivo desta seção:** detalhar a organização operacional no Figma para execução imediata de UX/UI e handoff React/Flutter, sem alterar estratégia de produto.
+
+### Páginas Figma (nomenclatura proposta)
+
+1. `00_COVER_README`
+2. `01_FOUNDATIONS_TOKENS`
+3. `02_COMPONENTS_WEB_MOBILE`
+4. `03_NAVIGATION_MAP_WEB`
+5. `04_NAVIGATION_MAP_MOBILE`
+6. `05_FLOWS_CRITICAL_MVP`
+7. `10_WEB_MVP_SCREENS`
+8. `20_MOBILE_MVP_SCREENS`
+9. `90_APPENDIX_RBAC_STATES_AUDIT`
+
+### Estrutura de tokens (01_FOUNDATIONS_TOKENS)
+- **Cor:** `color/core/*`, `color/neutral/*`, `color/status/*`.
+- **Tipografia:** `type/title/*`, `type/body/*`, `type/label/*`, `type/mono/*`.
+- **Espaçamento:** `space/2,4,8,12,16,24,32`.
+- **Semântica crítica:** `status/pending-approval`, `status/blocked`, `status/exception`, `status/audit-visible`.
+- **Elevação/contorno:** `elevation/surface/*`, `border/subtle|strong|critical`.
+
+### Biblioteca base de componentes (02_COMPONENTS_WEB_MOBILE)
+- `button`, `icon-button`, `input`, `select`, `date-picker`
+- `table-data-grid`, `filter-bar`, `kpi-card`, `status-chip`
+- `drawer`, `modal`, `timeline-row`, `approval-panel`, `audit-row`
+- `tenant-switcher`, `evidence-attachment-block`, `blocked-state-banner`
+
+## Especificação de Telas MVP para Figma
+
+### Telas Web prioritárias (MVP)
+
+#### W01 — Login e seleção de contexto
+- **Papel principal:** todos os usuários Web.
+- **Permissões:** autenticação válida + papel ativo.
+- **Dados exibidos:** usuário, tenants disponíveis, filiais por tenant.
+- **Ações primárias:** entrar, selecionar tenant/filial, recuperar acesso.
+- **Estados:** default/loading/empty(error sem tenant)/error/blocked/read-only/audit-visible.
+- **Alertas e bloqueios:** conta inativa, tenant suspenso, contexto inválido.
+- **Integrações:** auth, auditoria de acesso.
+- **Responsividade:** painel central único em breakpoints menores.
+
+#### W02 — Dashboard Operacional
+- **Papel principal:** Gestor Operacional.
+- **Permissões:** leitura/escrita operacional por escopo filial/equipe.
+- **Dados exibidos:** KPIs OS, SLA, fila crítica, eventos recentes, mapa resumido.
+- **Ações primárias:** abrir OS crítica, redistribuir, aplicar filtros, exportar.
+- **Estados:** default/loading/empty/error/blocked/pending approval/exception/read-only/audit-visible.
+- **Alertas e bloqueios:** SLA vencido, OS sem equipe, OS bloqueada por aprovação.
+- **Integrações:** mapa, notificações, feed de eventos.
+- **Responsividade:** KPI em cards reflow; tabela vira lista densa.
+
+#### W05 — Gestão de Tenant, Planos e Módulos
+- **Papel principal:** Admin Tenant.
+- **Permissões:** gestão core SaaS e feature flags.
+- **Dados exibidos:** dados do tenant, módulos ativos, plano, limites.
+- **Ações primárias:** ativar/desativar módulo, editar parâmetros, salvar versão.
+- **Estados:** default/loading/empty/error/blocked/pending approval/read-only/audit-visible.
+- **Alertas e bloqueios:** limite de plano, ação crítica com aprovação.
+- **Integrações:** billing/plano, logs de auditoria.
+- **Responsividade:** tabela de módulos com colapso por accordion.
+
+#### W07/W08 — Gestão de Usuários e RBAC
+- **Papel principal:** Admin Tenant.
+- **Permissões:** C/E/X em usuários e papéis.
+- **Dados exibidos:** usuários, status, vínculos, matriz de permissões por recurso.
+- **Ações primárias:** criar usuário, associar papel, restringir por filial/equipe.
+- **Estados:** default/loading/empty/error/blocked/pending approval/read-only/audit-visible.
+- **Alertas e bloqueios:** conflito de permissão, papel sem escopo, ação fora de limite.
+- **Integrações:** auth/identidade, trilha de alteração.
+- **Responsividade:** edição em drawer para preservar contexto.
+
+#### W09 — Auditoria e Logs
+- **Papel principal:** Auditor.
+- **Permissões:** leitura auditável e exportação controlada.
+- **Dados exibidos:** ação, ator, timestamp, recurso, antes/depois, motivo.
+- **Ações primárias:** filtrar, comparar versões, exportar trilha.
+- **Estados:** default/loading/empty/error/blocked/read-only/audit-visible.
+- **Alertas e bloqueios:** dado sensível mascarado sem permissão.
+- **Integrações:** log de domínio, integração, autenticação.
+- **Responsividade:** grid técnico com colunas fixas prioritárias.
+
+#### W17/W18/W19 — OS (Lista, Criação, Detalhe)
+- **Papel principal:** Operador Logístico.
+- **Permissões:** C/E OS por escopo + aprovações por papel.
+- **Dados exibidos:** identificação OS, cliente, SLA, equipe, viatura, timeline, evidências.
+- **Ações primárias:** criar, editar, despachar, atualizar status, cancelar com motivo.
+- **Estados:** default/loading/empty/error/blocked/pending approval/exception/read-only/audit-visible.
+- **Alertas e bloqueios:** SLA crítico, checklist pendente, evidência obrigatória ausente.
+- **Integrações:** mapa, estoque, financeiro, mobile sync.
+- **Responsividade:** DeviceDetail em seções verticais + drawers de ação.
+
+#### W21/W22 — Estoque (Itens, Saldos, Movimentações, Consumo OS)
+- **Papel principal:** Estoquista.
+- **Permissões:** C/E movimentações e itens por filial.
+- **Dados exibidos:** item, saldo, custo médio, mínimo, movimentos, vínculo OS.
+- **Ações primárias:** entrada/saída/ajuste/transferência e baixa por OS.
+- **Estados:** default/loading/empty/error/blocked/pending approval/exception/read-only/audit-visible.
+- **Alertas e bloqueios:** saldo insuficiente, item inativo, divergência de custo.
+- **Integrações:** OS, compras/suprimentos, financeiro (custo).
+- **Responsividade:** linhas técnicas com expansão inline.
+
+#### W24/W25/W26 — Financeiro (Orçamento, Caixa/Contas, Faturamento/Fechamento)
+- **Papel principal:** Financeiro.
+- **Permissões:** C/E/A conforme limites e approvals.
+- **Dados exibidos:** orçamento por OS, contas, extrato, lote de faturamento, pendências fechamento.
+- **Ações primárias:** aprovar orçamento, registrar movimento, faturar, fechar período.
+- **Estados:** default/loading/empty/error/blocked/pending approval/exception/read-only/audit-visible.
+- **Alertas e bloqueios:** OS sem evidência para faturar, divergência de valor, fechamento travado.
+- **Integrações:** OS, contratos/tabelas, auditoria.
+- **Responsividade:** visão principal por período + drawer de conciliação.
+
+#### W29 — Relatórios exportáveis
+- **Papel principal:** Gestor/Financeiro/Auditor.
+- **Permissões:** exportar sob política RBAC.
+- **Dados exibidos:** catálogo de relatórios, parâmetros, histórico de exportação.
+- **Ações primárias:** configurar filtro, gerar, exportar, agendar (fase posterior).
+- **Estados:** default/loading/empty/error/blocked/read-only/audit-visible.
+- **Alertas e bloqueios:** exportação negada por papel/escopo.
+- **Integrações:** módulo analytics, auditoria de export.
+- **Responsividade:** filtros em drawer para preservar grade.
+
+### Telas Mobile prioritárias (MVP)
+
+#### M01 — Login e contexto
+- **Papel principal:** Executor de Campo.
+- **Permissões:** acesso mobile por usuário/equipe.
+- **Dados exibidos:** usuário, tenant, filial, equipe ativa.
+- **Ações primárias:** autenticar, confirmar contexto, entrar offline com sessão válida.
+- **Estados:** default/loading/error/blocked/read-only/audit-visible.
+- **Alertas/bloqueios:** sessão expirada, tenant suspenso.
+- **Integrações:** auth + sync inicial.
+- **Offline:** somente com sessão/contexto previamente sincronizados.
+
+#### M02/M03/M04 — Agenda, Detalhe OS e Atualização de Status
+- **Papel principal:** Executor de Campo.
+- **Permissões:** leitura/escrita em OS atribuída.
+- **Dados exibidos:** agenda, SLA, instruções, status atual, timeline curta.
+- **Ações primárias:** iniciar deslocamento, chegar local, executar, concluir, reportar exceção.
+- **Estados:** default/loading/empty/error/blocked/pending approval/exception/read-only/audit-visible.
+- **Alertas/bloqueios:** pré-condição não cumprida para mudança de status.
+- **Integrações:** mapa, notificações, sync.
+- **Offline:** fila local de eventos com reconciliação.
+
+#### M05/M06 — Checklist e Evidências
+- **Papel principal:** Executor/Supervisor.
+- **Permissões:** preenchimento e anexo conforme tipo OS.
+- **Dados exibidos:** itens checklist, evidências obrigatórias, histórico anexos.
+- **Ações primárias:** marcar item, anexar foto/arquivo, comentar.
+- **Estados:** default/loading/empty/error/blocked/pending approval/exception/read-only/audit-visible.
+- **Alertas/bloqueios:** não permite concluir OS sem obrigatórios.
+- **Integrações:** câmera/galeria, storage, auditoria.
+- **Offline:** captura local com envio posterior.
+
+#### M08 — Consumo de estoque em campo
+- **Papel principal:** Executor de Campo.
+- **Permissões:** baixa permitida por OS/viatura.
+- **Dados exibidos:** item, quantidade disponível, consumo já lançado.
+- **Ações primárias:** adicionar item, ajustar quantidade, confirmar baixa.
+- **Estados:** default/loading/empty/error/blocked/exception/read-only/audit-visible.
+- **Alertas/bloqueios:** saldo insuficiente, item não autorizado.
+- **Integrações:** estoque central + OS.
+- **Offline:** registro local com validação final na sincronização.
+
+#### M10/M11 — Sincronização e Pendências/Exceções
+- **Papel principal:** Executor/Supervisor.
+- **Permissões:** leitura da fila + resolução de conflito permitido.
+- **Dados exibidos:** itens pendentes, falhas, conflitos, bloqueios de envio.
+- **Ações primárias:** sincronizar agora, reenviar item, abrir detalhe de conflito.
+- **Estados:** default/loading/empty/error/blocked/exception/read-only/audit-visible.
+- **Alertas/bloqueios:** conflito de versão, erro de permissão, dependência faltante.
+- **Integrações:** motor de sync, API OS/estoque/evidência.
+- **Offline:** tela funcional para gestão de fila local.
+
+## Fluxos Críticos no Protótipo Navegável (05_FLOWS_CRITICAL_MVP)
+
+1. **F01 Auth e contexto:** W01 → seleção tenant/filial → W02.
+2. **F02 Ciclo OS Web:** W18 criar → W17 listar/filtrar → W19 detalhe → despacho/acompanhar.
+3. **F03 Execução Mobile:** M02 → M03 → M04 → M05 → M06 → M10.
+4. **F04 Estoque por OS:** W22 e/ou M08 vinculando consumo à OS.
+5. **F05 Governança de exceção:** bloqueio/aprovação na W19/W26 com registro em W09.
+6. **F06 Trilha de auditoria:** ação crítica em usuário/permissão/financeiro com verificação em W09.
+7. **F07 Financeiro operacional:** W24 orçamento → W26 faturamento → fechamento inicial.
+
+## Registro de mudança desta versão do documento
+
+- **O que mudou:** inclusão de seção específica para pacote Figma MVP (estrutura de páginas, tokens, componentes, detalhamento de telas prioritárias e fluxos prototipáveis).
+- **Por que mudou:** versão anterior não detalhava com profundidade suficiente os entregáveis de Figma e o nível de especificação esperado por tela.
+- **Leitura vigente:** este documento passa a ser base de design operacional para montagem de arquivo Figma e handoff.
+- **Histórico preservado:** as seções anteriores (mapa geral de telas e matrizes) foram mantidas para rastreabilidade.
