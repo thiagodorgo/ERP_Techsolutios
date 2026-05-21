@@ -6,9 +6,26 @@ import test from "node:test";
 import {
   CoreSaasRegistry,
   DEFAULT_ROLES,
+  PERMISSION_CATALOG,
+  ROLE_PERMISSIONS,
+  STANDARD_ROLES,
   type Tenant,
   type User,
 } from "../src/core-saas.js";
+
+const expectedPermissionCatalog = [
+  "tenant.manage",
+  "users.manage",
+  "users.read",
+  "roles.manage",
+  "audit.read",
+  "os.manage",
+  "os.read",
+  "inventory.manage",
+  "inventory.read",
+  "finance.manage",
+  "finance.read",
+] as const;
 
 test("cria usuario vinculado a tenant ativo com papel validado", () => {
   const core = new CoreSaasRegistry();
@@ -46,6 +63,36 @@ test("valida papeis oficiais e rejeita papel inexistente", () => {
   assert.equal(core.isValidRole("TENANT_ADMIN"), true);
   assert.equal(core.validateRole("Finance"), "finance");
   assert.throws(() => core.validateRole("owner"), /Invalid role: owner/);
+});
+
+test("mantem catalogo de permissoes integro", () => {
+  assert.deepEqual(PERMISSION_CATALOG, expectedPermissionCatalog);
+  assert.equal(new Set(PERMISSION_CATALOG).size, PERMISSION_CATALOG.length);
+});
+
+test("mantem roles padrao coerentes com o catalogo RBAC", () => {
+  assert.deepEqual(STANDARD_ROLES, [
+    "super_admin",
+    "tenant_admin",
+    "manager",
+    "technician",
+    "viewer",
+  ]);
+
+  const permissionCatalog = new Set(PERMISSION_CATALOG);
+
+  for (const role of DEFAULT_ROLES) {
+    assert.ok(ROLE_PERMISSIONS[role].length > 0);
+
+    for (const permission of ROLE_PERMISSIONS[role]) {
+      assert.ok(permissionCatalog.has(permission));
+    }
+  }
+
+  assert.deepEqual(ROLE_PERMISSIONS.super_admin, PERMISSION_CATALOG);
+  assert.deepEqual(ROLE_PERMISSIONS.tenant_admin, PERMISSION_CATALOG);
+  assert.equal(ROLE_PERMISSIONS.viewer.includes("users.manage"), false);
+  assert.equal(ROLE_PERMISSIONS.technician.includes("finance.manage"), false);
 });
 
 test("bloqueia criacao de usuario com papel invalido", () => {

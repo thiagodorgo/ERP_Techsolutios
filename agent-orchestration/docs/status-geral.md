@@ -15,7 +15,7 @@ Repositorio organizado com base no GitHub oficial e na documentacao v1 enviada n
 ## Riscos e pendencias
 
 - validacao final da stack de backend
-- ainda nao ha dependencia instalada no ambiente local
+- dependencias Node instaladas localmente, incluindo Prisma ORM
 - ainda nao ha push remoto desta organizacao pelo bloqueio de rede do container
 
 ## Proximo passo objetivo
@@ -50,3 +50,33 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - criar repositorios PostgreSQL para tenants, users, roles e audit events
 - evoluir auditoria com request_id, ip/origem, payload resumido e politica de retencao
 - aplicar o mesmo padrao RBAC aos proximos modulos operacionais
+
+## Atualizacao 2026-05-21 - Bloco 03 PostgreSQL + Prisma
+
+### Implementado
+
+- instalado Prisma ORM e Prisma Client para PostgreSQL
+- criada configuracao `prisma.config.ts` compativel com Prisma 7
+- criado `prisma/schema.prisma` com modelos iniciais `Tenant`, `Branch`, `User`, `Role`, `Permission`, `RolePermission` e `AuditLog`
+- criada migration versionada `prisma/migrations/20260521000000_init_core_saas/migration.sql`
+- criado seed inicial com tenant demo, filial principal, permissoes, roles padrao, usuario admin demo sem senha e evento de auditoria
+- criado singleton `src/database/prisma.ts` usando adapter PostgreSQL
+- adicionados repositories Prisma iniciais para tenant, user, role e audit log
+- criado `docs/database.md` com decisao tecnica, modelo shared-schema e plano de transicao
+- atualizado `.env.example` com `DATABASE_URL` placeholder local
+- adicionados scripts `db:generate`, `db:migrate`, `db:seed` e `db:studio`
+
+### Limitacoes atuais
+
+- as rotas continuam usando store em memoria para manter transicao segura e nao quebrar o backend atual
+- migrations nao foram aplicadas contra banco real nesta etapa
+- `DATABASE_URL` real nao foi criado nem versionado
+- o usuario admin demo nao possui senha; autenticacao real sera bloco futuro
+- ainda nao ha tabela de atribuicao persistente entre usuarios e roles
+
+### Proximos passos
+
+- aplicar migration em PostgreSQL local ou ambiente de desenvolvimento controlado
+- criar atribuicao persistente de roles para usuarios
+- trocar gradualmente services/rotas para repositories Prisma
+- ampliar testes de repositories com banco isolado de teste
