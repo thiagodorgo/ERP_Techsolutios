@@ -10,3 +10,9 @@
 - criado esqueleto tecnico minimo do backend atual do repositorio
 - criado commit local com a organizacao desta fase
 
+## 2026-05-21
+
+- reavaliado checkout local do projeto em `/workspace/ERP_Techsolutios`
+- confirmado estado tecnico local com backend Node.js + TypeScript via `package.json` e `tsconfig.json`
+- ajustados documentos e trilha operacional para consolidar Node.js + TypeScript como baseline vigente
+- mantido registro historico da divergencia com backend em C apenas para rastreabilidade

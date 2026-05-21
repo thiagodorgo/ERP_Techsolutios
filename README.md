@@ -11,12 +11,15 @@ ERP Techsolutions e um SaaS ERP operacional de campo, multi-tenant e orientado p
 
 ## Nota importante de alinhamento
 
-Ha um conflito arquitetural entre fontes:
+Historico registrado:
 
-- a base persistente do agente ainda registra backend em C
-- o repositorio oficial no GitHub e a documentacao enviada nesta entrega usam Node.js + TypeScript como backend atual
+- a base persistente do agente registrava backend em C
+- o repositorio oficial e a documentacao desta fase registram backend em Node.js + TypeScript
 
-Neste repositorio, a organizacao foi feita respeitando o estado atual do GitHub e dos documentos enviados. A validacao final dessa decisao de stack continua pendente.
+Leitura vigente deste repositorio:
+
+- para execucao tecnica e documental, a baseline oficial passa a ser **Node.js + TypeScript** no backend
+- o contexto historico em C permanece apenas como registro de origem de divergencia, sem efeito na baseline operacional atual
 
 ## Estrutura principal
 
@@ -169,4 +172,3 @@ npm run check
 ## Proximo marco recomendado
 
 Implementar o core SaaS multi-tenant do MVP competitivo, iniciando por tenant, filial, usuarios, RBAC, auditoria e ordem de servico.
-

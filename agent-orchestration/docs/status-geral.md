@@ -10,15 +10,13 @@ Repositorio organizado com base no GitHub oficial e na documentacao v1 enviada n
 - adicionados arquivos-base de governanca
 - adicionada estrutura `agent-orchestration/`
 - adicionada fundacao tecnica minima em Node.js + TypeScript
-- registrada divergencia arquitetural entre memoria historica e repositorio atual
+- registrada e consolidada divergencia arquitetural entre memoria historica e repositorio atual (baseline vigente: Node.js + TypeScript)
 
 ## Riscos e pendencias
 
-- validacao final da stack de backend
 - ainda nao ha dependencia instalada no ambiente local
-- ainda nao ha push remoto desta organizacao pelo bloqueio de rede do container
+- checkout local sem remoto `origin` configurado; push nao executado neste ambiente
 
 ## Proximo passo objetivo
 
 Iniciar implementacao do core SaaS do MVP competitivo.
-
