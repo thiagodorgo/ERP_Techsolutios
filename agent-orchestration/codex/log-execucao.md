@@ -40,3 +40,17 @@
 - adicionados testes de integridade do catalogo de permissoes e coerencia das roles RBAC
 - validado `npx prisma validate`, `npx prisma generate`, `npm run check` e `npm test`
 - migration nao foi executada contra banco real por nao haver `DATABASE_URL` real configurada
+
+## 2026-05-21 - Hardening de dependencias
+
+- executado `npm audit`
+- identificadas 3 vulnerabilidades moderadas na cadeia `prisma` -> `@prisma/dev` -> `@hono/node-server`
+- vulnerabilidade: `@hono/node-server < 1.19.13`, advisory `GHSA-92pp-h63x-v22m`
+- executado `npm audit fix` sem `--force`; comando nao corrigiu e manteve sugestao de downgrade/breaking para `prisma@6.19.3`
+- nao executado `npm audit fix --force` para evitar downgrade/breaking do Prisma 7
+- aplicado override para `@hono/node-server@1.19.13`
+- movido `prisma` de `dependencies` para `devDependencies`
+- removido `pg` de `dependencies` diretas por ja ser dependencia transitiva de `@prisma/adapter-pg`
+- executado `npm install` para atualizar `package-lock.json`
+- confirmado `npm audit` com 0 vulnerabilidades
+- aviso residual: `@prisma/streams-local@0.1.2` declara Node `>=22.0.0`, mas e dependencia transitiva de `@prisma/dev`; mantido por compatibilidade atual com Prisma 7 e Node 20 validada pelos comandos do projeto

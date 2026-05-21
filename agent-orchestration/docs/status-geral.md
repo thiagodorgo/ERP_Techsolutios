@@ -80,3 +80,27 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - criar atribuicao persistente de roles para usuarios
 - trocar gradualmente services/rotas para repositories Prisma
 - ampliar testes de repositories com banco isolado de teste
+
+## Atualizacao 2026-05-21 - Hardening de dependencias
+
+### Vulnerabilidades analisadas
+
+- `@hono/node-server < 1.19.13`, severidade moderada, advisory `GHSA-92pp-h63x-v22m`
+- cadeia afetada: `prisma` -> `@prisma/dev` -> `@hono/node-server`
+- dependencia direta afetada: `prisma`
+- dependencia vulneravel direta no grafo: `@hono/node-server`, transitiva
+- `npm audit fix` sem `--force` nao corrigiu; o audit sugeria `npm audit fix --force` com downgrade/breaking para `prisma@6.19.3`
+
+### Correcoes aplicadas
+
+- adicionado override seguro de patch para `@hono/node-server@1.19.13`
+- movido `prisma` para `devDependencies`, pois e ferramenta de CLI/migrations e nao dependencia runtime do servidor
+- mantidos `@prisma/client`, `@prisma/adapter-pg` e `dotenv` em dependencies por uso em runtime/repositories/Prisma Client
+- removido `pg` como dependencia direta; ele permanece no lock como dependencia transitiva de `@prisma/adapter-pg`
+- `npm audit` passou sem vulnerabilidades
+
+### Avisos restantes
+
+- `npm install` ainda emite `EBADENGINE` para `@prisma/streams-local@0.1.2`, dependencia transitiva de `@prisma/dev`, que declara Node `>=22.0.0`
+- nao foi feito downgrade do Prisma nem elevacao do engine do projeto porque o backend atual esta em Node 20 e os comandos `prisma validate`, `prisma generate`, `npm run check` e `npm test` passam nesse ambiente
+- remover totalmente esse aviso exige aguardar ajuste upstream do Prisma 7, migrar o projeto para Node 22, ou avaliar downgrade planejado do Prisma com mudancas de schema/config
