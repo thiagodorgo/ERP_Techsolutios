@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-Este documento consolida o mapa de telas Web e Mobile do ERP Techsolutions com base em `README.md`, módulos (`docs/02`), papéis (`docs/03`), regras de negócio (`docs/04`), requisitos funcionais (`docs/05`), backlog (`docs/07`), estrutura (`docs/08`) e diretrizes de design (`DESIGN_SYSTEM.md`).
+Este documento consolida o mapa de telas Web e Mobile do ERP Techsolutions com base em [`README.md`](../README.md), módulos ([`docs/02-mapa-modulos.md`](./02-mapa-modulos.md)), papéis ([`docs/03-atores-papeis.md`](./03-atores-papeis.md)), regras de negócio ([`docs/04-regras-negocio.md`](./04-regras-negocio.md)), requisitos funcionais ([`docs/05-requisitos-funcionais.md`](./05-requisitos-funcionais.md)), backlog ([`docs/07-backlog.md`](./07-backlog.md)), estrutura ([`docs/08-estrutura.md`](./08-estrutura.md)) e diretrizes de design ([`DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md)).
 
 Princípios adotados:
 - plataforma SaaS multi-tenant com isolamento por `tenant_id` e escopo por filial/equipe;
@@ -404,8 +404,9 @@ Princípios adotados:
 
 ## Registro de alinhamento e conflito arquitetural
 
-- Conflito aberto mantido: memória histórica de backend em C vs estado oficial do repositório em Node.js + TypeScript.
-- Para execução deste mapa de telas, foi adotado o estado oficial vigente no repositório (Node.js + TypeScript), sem ocultar a divergência documental pendente de validação final.
+- Histórico preservado: havia divergência entre memória histórica (backend em C) e estado oficial do repositório (Node.js + TypeScript).
+- Leitura vigente deste documento: backend oficial do ERP Techsolutions neste repositório é Node.js + TypeScript para execução Web/Mobile/API.
+- A referência histórica em C permanece somente para rastreabilidade e não representa stack atual.
 
 ## Pacote Figma MVP (Estrutura de Páginas e Handoff)
 
