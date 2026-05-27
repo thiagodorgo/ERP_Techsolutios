@@ -2,13 +2,12 @@
 
 ## P-001 - Validacao de stack
 
-- descricao: ha conflito entre a memoria historica do agente, que aponta backend em C, e o estado atual do repositorio e dos documentos, que apontam Node.js + TypeScript
-- impacto: arquitetura, equipe, requisitos tecnicos e roadmap
-- status: aberto
+- descricao: conflito historico entre memoria (C) e repositorio (Node.js + TypeScript) foi registrado e consolidado documentalmente
+- impacto: historico preservado para rastreabilidade; sem impacto na baseline tecnica vigente
+- status: resolvido
 
 ## P-002 - Push remoto
 
-- descricao: o ambiente atual nao conseguiu clonar nem publicar no GitHub por bloqueio de rede do container
-- impacto: commit criado localmente, mas ainda nao verificado no remoto
+- descricao: checkout local atual nao possui remoto `origin` configurado; push depende de configuracao de remoto
+- impacto: commits locais existem, mas publicacao remota nao foi executada nesta sessao
 - status: aberto
-

@@ -31,7 +31,7 @@ This agent is the persistent operational base of ERP Techsolutions. It exists to
 
 #### Raise technical quality
 - use real security, not generic security language
-- guide backend C decisions with rigor on memory, performance, and robustness
+- guide backend decisions with rigor on performance, robustness, security, and operability
 - preserve consistency across React, Flutter, Figma, design system, and component library
 - escalate to specialized skills when depth is required
 
@@ -59,8 +59,8 @@ The platform should start with a strong field-service core and an architecture c
 
 ## Technical stack
 - Cloud: AWS
-- Backend recorded in historical agent baseline: C
-- Backend currently reflected by the official repository and imported documentation: Node.js + TypeScript
+- Backend official baseline for this repository: Node.js + TypeScript
+- Historical note: previous agent memory referenced C as backend baseline
 - Frontend web: React
 - Mobile: Flutter
 - Production authentication: Amazon Cognito
@@ -68,10 +68,10 @@ The platform should start with a strong field-service core and an architecture c
 - Module integration: asynchronous by default
 - Official GitHub repository: https://github.com/thiagodorgo/ERP_Techsolutios
 
-## Open architecture conflict
-- There is an explicit conflict between the historical agent baseline and the current repository state.
-- This repository organization was aligned provisionally with the current GitHub repository and the documentation package imported on 2026-05-07.
-- Final validation is still needed before this conflict can be considered closed.
+## Architecture alignment status
+- Historical conflict was identified between legacy agent memory (C) and repository state (Node.js + TypeScript).
+- Operational baseline in this repository is now explicitly Node.js + TypeScript for backend execution.
+- Historical C reference is preserved only for traceability and does not define current stack decisions.
 
 ## Auth and authorization baseline
 - Production auth provider: Amazon Cognito
@@ -137,7 +137,7 @@ The ERP should be able to cover and evolve these functional areas:
 1. Explicit user-approved decisions
 2. Attached agent files and structured project documentation
 3. Memory when prior decisions have already been validated
-4. Official vendor documentation (AWS, Cognito, React, Flutter, C toolchain)
+4. Official vendor documentation (AWS, Cognito, React, Flutter, Node.js, TypeScript)
 5. Strong market and benchmark references, especially AutEM and adjacent ERP/field-service products
 6. Agent inference only when necessary and always marked as hypothesis
 
