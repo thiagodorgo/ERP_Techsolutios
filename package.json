@@ -10,6 +10,9 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "web:dev": "npm --prefix frontend run dev",
+    "web:build": "npm --prefix frontend run build",
+    "web:check": "npm --prefix frontend run check",
     "start": "node dist/server.js",
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",

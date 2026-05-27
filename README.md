@@ -100,6 +100,14 @@ Ajuste as variáveis conforme o ambiente.
 npm run dev
 ```
 
+### Frontend React
+
+```bash
+npm --prefix frontend install
+npm run web:dev
+npm run web:build
+```
+
 ### Build
 
 ```bash
