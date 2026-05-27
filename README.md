@@ -48,6 +48,8 @@ Leitura vigente deste repositorio:
 │   └── controle/
 ├── assets/
 │   └── prints-benchmark/
+```
+
 ERP Techsolutions é uma plataforma SaaS ERP operacional de campo, multi-tenant, orientada a operação externa, ordens de serviço, estoque, financeiro operacional, logística, mobile, analytics, IA e ESG.
 
 Este repositório nasce com **Node.js + TypeScript** como backend principal, mantendo arquitetura modular e mensageria assíncrona como fundação arquitetural planejada desde o início.
@@ -97,6 +99,34 @@ cp .env.example .env
 
 Ajuste as variáveis conforme o ambiente.
 
+Depois de configurar `.env`, gere o Prisma Client:
+
+```bash
+npm run db:generate
+```
+
+### Infraestrutura local
+
+Para desenvolvimento local, PostgreSQL 16 e Redis 7 podem ser iniciados com Docker Compose:
+
+```bash
+docker compose up -d
+```
+
+Para parar os containers mantendo os dados locais:
+
+```bash
+docker compose down
+```
+
+Para resetar os volumes locais:
+
+```bash
+docker compose down -v
+```
+
+Use `docker compose down -v` com cuidado, pois o comando apaga os dados locais do PostgreSQL e Redis.
+
 ### Desenvolvimento
 
 ```bash
@@ -104,6 +134,8 @@ npm run dev
 ```
 
 ### Frontend React
+
+O repositório possui a pasta `frontend/`. Quando precisar executar o frontend web existente:
 
 ```bash
 npm --prefix frontend install
@@ -123,6 +155,23 @@ npm start
 ```bash
 npm run check
 ```
+
+### Testes
+
+```bash
+npm test
+```
+
+### Banco local
+
+Com o PostgreSQL local ativo e `.env` configurado:
+
+```bash
+npm run db:migrate
+npm run db:seed
+```
+
+As credenciais em `.env.example` sao apenas exemplos locais. Nunca versione `.env` real, senhas, tokens ou secrets de producao.
 
 ## Estrutura inicial
 
@@ -172,9 +221,13 @@ npm run check
 
 ```bash
 npm install
+npm run db:generate
 npm run dev
-npm run build
 npm run check
+npm test
+npm run build
+npm run db:migrate
+npm run db:seed
 ```
 
 ## Proximo marco recomendado

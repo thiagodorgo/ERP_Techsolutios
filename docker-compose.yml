@@ -1,0 +1,42 @@
+services:
+  erp-postgres:
+    image: postgres:16
+    container_name: erp-postgres
+    environment:
+      POSTGRES_DB: erp_techsolutions
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - erp_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d erp_techsolutions"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - erp_techsolutions_local
+
+  erp-redis:
+    image: redis:7
+    container_name: erp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - erp_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - erp_techsolutions_local
+
+volumes:
+  erp_postgres_data:
+  erp_redis_data:
+
+networks:
+  erp_techsolutions_local:
+    name: erp_techsolutions_local
