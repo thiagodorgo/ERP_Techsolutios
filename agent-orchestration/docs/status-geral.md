@@ -104,3 +104,29 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - `npm install` ainda emite `EBADENGINE` para `@prisma/streams-local@0.1.2`, dependencia transitiva de `@prisma/dev`, que declara Node `>=22.0.0`
 - nao foi feito downgrade do Prisma nem elevacao do engine do projeto porque o backend atual esta em Node 20 e os comandos `prisma validate`, `prisma generate`, `npm run check` e `npm test` passam nesse ambiente
 - remover totalmente esse aviso exige aguardar ajuste upstream do Prisma 7, migrar o projeto para Node 22, ou avaliar downgrade planejado do Prisma com mudancas de schema/config
+
+## Atualizacao 2026-05-26 - Bloco 04A Infra local minima
+
+### Implementado
+
+- docker-compose local adicionado com PostgreSQL 16 e Redis 7
+- volumes nomeados, healthchecks e network propria configurados para desenvolvimento local
+- `.env.example` ampliado com `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, expiracao JWT e CORS local
+- CI inicial criado em `.github/workflows/ci.yml` com geracao do Prisma Client, `check`, `test` e `build`
+- criado `docs/deployment.md` com fluxo local de infraestrutura, migrations, seed e validacao
+- criado `docs/github-workflow.md` com padrao de branches, commits, PR e checklists
+- README atualizado com instrucoes locais de Docker Compose, backend, banco e frontend existente
+
+### Limitacoes
+
+- auth real ainda nao implementada
+- rotas ainda podem usar store em memoria
+- Redis ainda pode nao estar integrado ao runtime
+- deploy produtivo ainda nao configurado
+
+### Proximos passos
+
+- criar UserRole persistente
+- aplicar migrations em banco local
+- trocar gradualmente Core SaaS para repositories Prisma
+- iniciar auth local tenant-scoped
