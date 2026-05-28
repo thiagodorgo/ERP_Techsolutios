@@ -50,6 +50,10 @@ export class RoleRepository {
   }
 
   findByIdForTenant(roleId: string, tenantId: string) {
+    return this.findByIdForTenantOrGlobal(roleId, tenantId);
+  }
+
+  findByIdForTenantOrGlobal(roleId: string, tenantId: string) {
     return this.client.role.findFirst({
       where: {
         id: roleId,

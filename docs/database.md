@@ -95,8 +95,43 @@ node --test --import tsx tests/core-saas-prisma.test.ts
 
 Esse teste depende de `DATABASE_URL` apontando para um PostgreSQL local migrado.
 
+## Camada Prisma do Core SaaS
+
+O Core SaaS passa a ter uma base persistente assíncrona em paralelo ao store em memória:
+
+- `AsyncCoreSaasStore`: contrato assíncrono para operações persistentes do Core SaaS.
+- `PrismaCoreSaasStore`: implementação Prisma baseada nos repositories existentes.
+- `PrismaCoreSaasService`: service assíncrono para uso futuro pelas rotas ou por uma alternância controlada de runtime.
+
+Essa camada existe porque o `CoreSaasRegistry` e o `CoreSaasStore` originais são síncronos, enquanto Prisma é assíncrono. Para evitar gambiarras ou bloqueios artificiais, o store em memória segue preservado para os testes unitários e para o runtime atual.
+
+Responsabilidades cobertas pela base Prisma:
+
+- criar e consultar tenants persistidos;
+- listar tenants por escopo;
+- criar usuarios persistidos;
+- atribuir roles persistidas a usuarios;
+- listar usuarios sempre por `tenant_id`;
+- buscar usuario sempre por `tenant_id`;
+- registrar auditoria persistente;
+- listar auditoria sempre por `tenant_id`;
+- permitir roles globais (`roles.tenant_id IS NULL`) e roles especificas do tenant atual.
+
+Estado atual:
+
+- as rotas ainda podem usar `CoreSaasRegistry` com `InMemoryCoreSaasStore`;
+- `PrismaCoreSaasService` esta pronto para testes e integracao gradual;
+- o teste Prisma separado valida o caminho persistente com PostgreSQL local;
+- ainda nao ha alternancia por variavel de ambiente.
+
+Teste manual da camada Prisma:
+
+```bash
+node --test --import tsx tests/core-saas-prisma.test.ts
+```
+
 ## Transicao
 
 Os stores em memoria do Core SaaS continuam ativos para preservar os endpoints e testes atuais. Os repositories Prisma foram criados como base de migracao incremental, mas as rotas ainda nao foram trocadas para persistencia real.
 
-Proximo passo recomendado: integrar o `CoreSaasRegistry` a um `PrismaCoreSaasStore`, substituindo gradualmente tenants, users, roles, user role assignments e audit logs por repositories persistentes, mantendo os mesmos testes de RBAC e isolamento multi-tenant.
+Proximo passo recomendado: criar alternancia controlada por variavel de ambiente ou migrar rotas especificas para `PrismaCoreSaasService`, mantendo os mesmos testes de RBAC e isolamento multi-tenant.

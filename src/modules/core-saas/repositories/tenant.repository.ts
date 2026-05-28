@@ -27,6 +27,25 @@ export class TenantRepository {
     });
   }
 
+  listAll() {
+    return this.client.tenant.findMany({
+      orderBy: {
+        created_at: "asc",
+      },
+    });
+  }
+
+  listByStatus(status: string) {
+    return this.client.tenant.findMany({
+      where: {
+        status,
+      },
+      orderBy: {
+        created_at: "asc",
+      },
+    });
+  }
+
   async listForTenant(tenantId: string) {
     const tenant = await this.findById(tenantId);
 
