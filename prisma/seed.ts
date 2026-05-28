@@ -90,6 +90,7 @@ async function main(): Promise<void> {
   });
 
   const permissions = new Map<Permission, { id: string }>();
+  const roles = new Map<Role, { id: string }>();
 
   for (const permission of PERMISSION_CATALOG) {
     const permissionRecord = await prisma.permission.upsert({
@@ -113,6 +114,7 @@ async function main(): Promise<void> {
 
   for (const role of STANDARD_ROLES) {
     const roleRecord = await upsertSystemRole(role);
+    roles.set(role, roleRecord);
 
     for (const permission of ROLE_PERMISSIONS[role]) {
       const permissionRecord = permissions.get(permission);
@@ -135,6 +137,35 @@ async function main(): Promise<void> {
         },
       });
     }
+  }
+
+  const tenantAdminRole = roles.get("tenant_admin");
+
+  if (!tenantAdminRole) {
+    throw new Error("tenant_admin role was not seeded.");
+  }
+
+  const existingAdminAssignment = await prisma.userRoleAssignment.findFirst({
+    where: {
+      tenant_id: tenant.id,
+      user_id: admin.id,
+      role_id: tenantAdminRole.id,
+      branch_id: null,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!existingAdminAssignment) {
+    await prisma.userRoleAssignment.create({
+      data: {
+        tenant_id: tenant.id,
+        user_id: admin.id,
+        role_id: tenantAdminRole.id,
+        branch_id: null,
+      },
+    });
   }
 
   await prisma.auditLog.create({

@@ -49,6 +49,38 @@ export class RoleRepository {
     });
   }
 
+  findByIdForTenant(roleId: string, tenantId: string) {
+    return this.client.role.findFirst({
+      where: {
+        id: roleId,
+        OR: [
+          {
+            tenant_id: null,
+          },
+          {
+            tenant_id: tenantId,
+          },
+        ],
+      },
+    });
+  }
+
+  listByUserForTenant(userId: string, tenantId: string) {
+    return this.client.role.findMany({
+      where: {
+        user_assignments: {
+          some: {
+            tenant_id: tenantId,
+            user_id: userId,
+          },
+        },
+      },
+      orderBy: {
+        key: "asc",
+      },
+    });
+  }
+
   create(data: CreateRoleData) {
     return this.client.role.create({
       data: {

@@ -33,6 +33,26 @@ export class UserRepository {
     });
   }
 
+  findByIdWithRoleAssignmentsForTenant(userId: string, tenantId: string) {
+    return this.client.user.findFirst({
+      where: {
+        id: userId,
+        tenant_id: tenantId,
+      },
+      include: {
+        role_assignments: {
+          include: {
+            branch: true,
+            role: true,
+          },
+          orderBy: {
+            created_at: "asc",
+          },
+        },
+      },
+    });
+  }
+
   create(data: CreateUserData) {
     return this.client.user.create({
       data: {
