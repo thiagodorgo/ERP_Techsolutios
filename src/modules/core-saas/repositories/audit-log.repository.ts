@@ -2,6 +2,8 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "../../../database/prisma.js";
 
+type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
+
 type CreateAuditLogData = {
   readonly tenant_id: string;
   readonly actor_user_id?: string | null;
@@ -12,7 +14,7 @@ type CreateAuditLogData = {
 };
 
 export class AuditLogRepository {
-  constructor(private readonly client: PrismaClient = prisma) {}
+  constructor(private readonly client: PrismaExecutor = prisma) {}
 
   listByTenant(tenantId: string) {
     return this.client.auditLog.findMany({

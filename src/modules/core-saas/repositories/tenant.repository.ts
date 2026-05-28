@@ -1,6 +1,8 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "../../../database/prisma.js";
+
+type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
 type CreateTenantData = {
   readonly name: string;
@@ -9,7 +11,7 @@ type CreateTenantData = {
 };
 
 export class TenantRepository {
-  constructor(private readonly client: PrismaClient = prisma) {}
+  constructor(private readonly client: PrismaExecutor = prisma) {}
 
   findById(id: string) {
     return this.client.tenant.findUnique({

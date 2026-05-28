@@ -45,6 +45,7 @@ export type CreateTenantInput = {
   readonly document?: string;
   readonly status?: TenantStatus;
   readonly modules?: readonly string[];
+  readonly actorUserId?: string;
 };
 
 export type CreateUserInput = {
@@ -54,6 +55,7 @@ export type CreateUserInput = {
   readonly roles: readonly string[];
   readonly branchIds?: readonly string[];
   readonly status?: UserStatus;
+  readonly actorUserId?: string;
 };
 
 export type ListTenantOptions = {

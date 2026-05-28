@@ -1,5 +1,6 @@
-import type { Prisma } from "@prisma/client";
+﻿import type { Prisma, PrismaClient } from "@prisma/client";
 
+import { prisma } from "../../../database/prisma.js";
 import {
   AuditLogRepository,
   RoleRepository,
@@ -26,6 +27,7 @@ type PrismaAuditLog = Awaited<ReturnType<AuditLogRepository["create"]>>;
 
 export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
   constructor(
+    private readonly prismaClient: PrismaClient = prisma,
     private readonly tenants = new TenantRepository(),
     private readonly users = new UserRepository(),
     private readonly roles = new RoleRepository(),
@@ -34,13 +36,28 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
   ) {}
 
   async createTenant(input: CreateTenantInput): Promise<Tenant> {
-    const tenant = await this.tenants.create({
-      name: input.name,
-      slug: createTenantSlug(input.name),
-      status: input.status ?? "active",
-    });
+    return this.prismaClient.$transaction(async (tx) => {
+      const txTenants = new TenantRepository(tx);
+      const txAudit = new AuditLogRepository(tx);
 
-    return mapTenantFromPrisma(tenant);
+      const tenant = await txTenants.create({
+        name: input.name,
+        slug: createTenantSlug(input.name),
+        status: input.status ?? "active",
+      });
+
+      // Audit recorded inside the same transaction — if audit fails, tenant creation rolls back.
+      // actor_user_id is null because tenant creation precedes any user-based auth.
+      await txAudit.create({
+        tenant_id: tenant.id,
+        actor_user_id: null,
+        action: "tenant.created",
+        entity: "tenant",
+        entity_id: tenant.id,
+      });
+
+      return mapTenantFromPrisma(tenant);
+    });
   }
 
   async findTenantById(tenantId: string): Promise<Tenant | undefined> {
@@ -69,26 +86,60 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
   }
 
   async createUser(input: CreateUserInput): Promise<User> {
-    const user = await this.users.createWithRoleAssignments({
-      tenant_id: input.tenantId,
-      branch_id: input.branchIds?.[0] ?? null,
-      name: input.name,
-      email: input.email,
-      status: input.status ?? "active",
-    });
+    return this.prismaClient.$transaction(async (tx) => {
+      const txUsers = new UserRepository(tx);
+      const txRoles = new RoleRepository(tx);
+      const txUserRoles = new UserRoleRepository(tx);
+      const txAudit = new AuditLogRepository(tx);
 
-    for (const role of input.roles.map((value) => validateRole(value))) {
-      await this.assignRoleToUser({
-        tenantId: input.tenantId,
-        userId: user.id,
-        role,
-        branchId: input.branchIds?.[0] ?? null,
+      // Step 1: create user record
+      const user = await txUsers.createWithRoleAssignments({
+        tenant_id: input.tenantId,
+        branch_id: input.branchIds?.[0] ?? null,
+        name: input.name,
+        email: input.email,
+        status: input.status ?? "active",
       });
-    }
 
-    const savedUser = await this.users.findByIdForTenant(user.id, input.tenantId);
+      // Step 2: assign roles — if any fail, the whole transaction rolls back (no orphaned user)
+      for (const role of input.roles.map((value) => validateRole(value))) {
+        const roleRecord = await txRoles.findByKeyForTenant(role, input.tenantId);
 
-    return mapUserFromPrisma(savedUser ?? user);
+        if (!roleRecord) {
+          throw new Error(`Role is not assignable to tenant: ${role}`);
+        }
+
+        await txUserRoles.assignRole({
+          tenant_id: input.tenantId,
+          user_id: user.id,
+          role_id: roleRecord.id,
+          branch_id: input.branchIds?.[0] ?? null,
+        });
+      }
+
+      // Step 3: resolve actor within the same transaction (sees the user created above)
+      const actorId = isUuid(input.actorUserId ?? "")
+        ? (
+            await tx.user.findFirst({
+              where: { id: input.actorUserId!, tenant_id: input.tenantId },
+              select: { id: true },
+            })
+          )?.id ?? null
+        : null;
+
+      // Step 4: audit inside the transaction — if audit fails, user and roles roll back
+      await txAudit.create({
+        tenant_id: input.tenantId,
+        actor_user_id: actorId,
+        action: "user.created",
+        entity: "user",
+        entity_id: user.id,
+      });
+
+      const savedUser = await txUsers.findByIdForTenant(user.id, input.tenantId);
+
+      return mapUserFromPrisma(savedUser ?? user);
+    });
   }
 
   async findUserByIdForTenant(

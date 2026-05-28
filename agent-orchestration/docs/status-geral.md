@@ -184,3 +184,41 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - migrar rotas core para Prisma gradualmente
 - iniciar auth local tenant-scoped depois da persistencia do core
 - planejar RLS como safety net posterior
+
+## Atualizacao 2026-05-27 - Bloco 04B.2A Transacoes Core SaaS Prisma
+
+### Implementado
+
+- operacoes compostas do `PrismaCoreSaasStore` endurecidas com `prisma.$transaction`
+- `createUser` + role assignments + audit log agora sao atomicos: se qualquer etapa falhar, nada persiste
+- `createTenant` + audit log agora sao atomicos: tenant e auditoria criados na mesma transacao
+- todos os repositories atualizados para aceitar `PrismaClient | Prisma.TransactionClient` (`PrismaExecutor`)
+- `PrismaCoreSaasStore` recebe `prismaClient: PrismaClient` como primeiro parametro para suporte a `$transaction`
+- dentro das transacoes, repositories sao instanciados com o `tx` client — sem criar novo `PrismaClient`
+- `saveAuditEvent` isolado continua funcionando fora de transacao (sem alteracao de comportamento)
+- `PrismaCoreSaasService` passa `actorUserId` para as operacoes compostas e nao chama mais `recordAudit` standalone apos creates
+- testes Prisma atualizados: instanciacao do store corrigida, novos testes de rollback e atomicidade adicionados
+- `docs/database.md` atualizado com decisao tecnica de transacoes, operacoes atomicas e limitacoes
+
+### Testes adicionados
+
+- `createUser rolls back when branch belongs to another tenant` — verifica que nenhum usuario persiste se branch assignment falhar
+- `createUser rolls back when role belongs to another tenant` — verifica rollback quando role nao e acessivel ao tenant
+- `createTenant creates tenant and audit atomically` — verifica que audit log existe apos criacao de tenant
+- `createUser creates user.created audit with actor when actor is valid` — verifica rastreabilidade de ator e role global
+
+### Limitacoes
+
+- rotas REST ainda podem usar store em memoria
+- alternancia por variavel de ambiente (`CORE_SAAS_PERSISTENCE`) ainda nao implementada
+- `actor_user_id` em `createTenant` e sempre `null` ate que auth real seja implementada
+- auth real ainda nao implementada
+- RLS ainda nao implementado
+- teste Prisma ainda roda separado do `npm test`
+
+### Proximos passos
+
+- criar alternancia controlada por `CORE_SAAS_PERSISTENCE`
+- migrar rotas core gradualmente para Prisma
+- planejar auth local tenant-scoped
+- planejar RLS como safety net posterior
