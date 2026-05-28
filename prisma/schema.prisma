@@ -7,30 +7,32 @@ datasource db {
 }
 
 model Tenant {
-  id         String     @id @default(uuid()) @db.Uuid
-  name       String
-  slug       String     @unique
-  status     String     @default("active")
-  created_at DateTime   @default(now()) @db.Timestamptz(6)
-  updated_at DateTime   @updatedAt @db.Timestamptz(6)
-  audit_logs AuditLog[]
-  branches   Branch[]
-  roles      Role[]
-  users      User[]
+  id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                  String
+  slug                  String               @unique
+  status                String               @default("active")
+  created_at            DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime             @default(now()) @updatedAt @db.Timestamptz(6)
+  audit_logs            AuditLog[]
+  branches              Branch[]
+  roles                 Role[]
+  user_role_assignments UserRoleAssignment[]
+  users                 User[]
 
   @@map("tenants")
 }
 
 model Branch {
-  id         String   @id @default(uuid()) @db.Uuid
-  tenant_id  String   @db.Uuid
-  name       String
-  code       String
-  status     String   @default("active")
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @updatedAt @db.Timestamptz(6)
-  tenant     Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
-  users      User[]
+  id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String               @db.Uuid
+  name                  String
+  code                  String
+  status                String               @default("active")
+  created_at            DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime             @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant                Tenant               @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  user_role_assignments UserRoleAssignment[]
+  users                 User[]
 
   @@unique([tenant_id, code])
   @@index([tenant_id])
@@ -38,17 +40,18 @@ model Branch {
 }
 
 model User {
-  id         String     @id @default(uuid()) @db.Uuid
-  tenant_id  String     @db.Uuid
-  branch_id  String?    @db.Uuid
-  name       String
-  email      String
-  status     String     @default("active")
-  created_at DateTime   @default(now()) @db.Timestamptz(6)
-  updated_at DateTime   @updatedAt @db.Timestamptz(6)
-  audit_logs AuditLog[]
-  branch     Branch?    @relation(fields: [branch_id], references: [id], onDelete: SetNull)
-  tenant     Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  id               String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String               @db.Uuid
+  branch_id        String?              @db.Uuid
+  name             String
+  email            String
+  status           String               @default("active")
+  created_at       DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime             @default(now()) @updatedAt @db.Timestamptz(6)
+  audit_logs       AuditLog[]
+  branch           Branch?              @relation(fields: [branch_id], references: [id], onDelete: SetNull)
+  role_assignments UserRoleAssignment[]
+  tenant           Tenant               @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
   @@unique([tenant_id, email])
   @@index([tenant_id])
@@ -56,15 +59,16 @@ model User {
 }
 
 model Role {
-  id               String           @id @default(uuid()) @db.Uuid
-  tenant_id        String?          @db.Uuid
+  id               String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String?              @db.Uuid
   key              String
   name             String
   scope            String
-  created_at       DateTime         @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime         @updatedAt @db.Timestamptz(6)
-  tenant           Tenant?          @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  created_at       DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime             @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant           Tenant?              @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   role_permissions RolePermission[]
+  user_assignments UserRoleAssignment[]
 
   @@unique([key, tenant_id])
   @@index([tenant_id])
@@ -72,7 +76,7 @@ model Role {
 }
 
 model Permission {
-  id               String           @id @default(uuid()) @db.Uuid
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   key              String           @unique
   description      String
   created_at       DateTime         @default(now()) @db.Timestamptz(6)
@@ -82,7 +86,7 @@ model Permission {
 }
 
 model RolePermission {
-  id            String     @id @default(uuid()) @db.Uuid
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   role_id       String     @db.Uuid
   permission_id String     @db.Uuid
   permission    Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
@@ -93,8 +97,28 @@ model RolePermission {
   @@map("role_permissions")
 }
 
+model UserRoleAssignment {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String   @db.Uuid
+  user_id    String   @db.Uuid
+  role_id    String   @db.Uuid
+  branch_id  String?  @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  branch     Branch?  @relation(fields: [branch_id], references: [id], onDelete: SetNull)
+  role       Role     @relation(fields: [role_id], references: [id], onDelete: Restrict)
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([tenant_id, user_id, role_id, branch_id])
+  @@index([tenant_id])
+  @@index([tenant_id, user_id])
+  @@index([tenant_id, role_id])
+  @@index([branch_id])
+  @@map("user_role_assignments")
+}
+
 model AuditLog {
-  id            String   @id @default(uuid()) @db.Uuid
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id     String   @db.Uuid
   actor_user_id String?  @db.Uuid
   action        String

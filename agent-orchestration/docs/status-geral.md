@@ -130,3 +130,29 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - aplicar migrations em banco local
 - trocar gradualmente Core SaaS para repositories Prisma
 - iniciar auth local tenant-scoped
+
+## Atualizacao 2026-05-27 - Bloco 04B.1 UserRole persistente
+
+### Implementado
+
+- criado vinculo persistente entre usuarios e papeis via `user_role_assignments`
+- adicionada migration `user_role_assignments` com FKs, indices tenant-scoped e indice unico parcial para atribuicoes globais
+- seed atualizado para atribuir o papel `tenant_admin` ao admin demo sem criar senha ou auth real
+- criado repository de atribuicao de papeis com filtros obrigatorios por `tenant_id`
+- atualizados repositories de usuario e papel com consultas auxiliares de assignments persistidos
+- documentacao do banco atualizada com regras de RBAC persistente e escopo opcional por filial
+- criado teste manual de repository Prisma dependente de `DATABASE_URL` local migrado
+
+### Limitacoes
+
+- rotas ainda podem usar store em memoria
+- auth real ainda nao implementada
+- `PrismaCoreSaasStore` completo ainda nao implementado
+- RLS ainda nao implementado
+
+### Proximos passos
+
+- criar `PrismaCoreSaasStore`
+- trocar `CoreSaasRegistry` gradualmente para Prisma
+- manter isolamento multi-tenant em todas as queries
+- iniciar auth local tenant-scoped depois da persistencia do core
