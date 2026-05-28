@@ -1,6 +1,8 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "../../../database/prisma.js";
+
+type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
 type CreateUserData = {
   readonly tenant_id: string;
@@ -11,7 +13,7 @@ type CreateUserData = {
 };
 
 export class UserRepository {
-  constructor(private readonly client: PrismaClient = prisma) {}
+  constructor(private readonly client: PrismaExecutor = prisma) {}
 
   listByTenant(tenantId: string) {
     return this.client.user.findMany({

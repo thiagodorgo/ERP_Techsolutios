@@ -1,6 +1,8 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "../../../database/prisma.js";
+
+type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
 type CreateRoleData = {
   readonly tenant_id?: string | null;
@@ -10,7 +12,7 @@ type CreateRoleData = {
 };
 
 export class RoleRepository {
-  constructor(private readonly client: PrismaClient = prisma) {}
+  constructor(private readonly client: PrismaExecutor = prisma) {}
 
   listForTenant(tenantId: string) {
     return this.client.role.findMany({

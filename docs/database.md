@@ -130,8 +130,43 @@ Teste manual da camada Prisma:
 node --test --import tsx tests/core-saas-prisma.test.ts
 ```
 
+## Transacoes nas operacoes compostas do Core SaaS Prisma
+
+A partir do Bloco 04B.2A, as operacoes compostas do `PrismaCoreSaasStore` sao executadas com `prisma.$transaction`, garantindo atomicidade real no PostgreSQL.
+
+### Operacoes atomicas
+
+**createUser**: usuario + atribuicoes de roles + audit log sao criados na mesma transacao.
+
+- Se qualquer atribuicao de role falhar, o usuario nao fica persistido (nao ha usuario sem papel no banco).
+- Se o audit log falhar, usuario e roles tambem sao revertidos.
+- A validacao de isolamento multi-tenant (role de outro tenant, branch de outro tenant) e feita dentro da transacao; qualquer violacao reverte tudo.
+
+**createTenant**: tenant + audit log sao criados na mesma transacao.
+
+- Se o audit log falhar, o tenant nao fica criado.
+- O campo `actor_user_id` do audit e `null` porque a criacao de tenant ainda nao possui autenticacao real (documentado como limitacao conhecida; ver bloco de auth futuro).
+
+### Estrategia tecnica
+
+- Todos os repositories aceitam `PrismaClient | Prisma.TransactionClient` no construtor (`PrismaExecutor`).
+- `PrismaCoreSaasStore` recebe um `PrismaClient` como primeiro parametro de construtor, usado exclusivamente para chamar `$transaction`.
+- Dentro da transacao, novos repositories sao instanciados com o `tx` client — sem criar novo `PrismaClient`.
+- `saveAuditEvent` (usado por `recordAudit` isolado) continua funcionando fora de transacao, sem alteracao de comportamento.
+
+### Decisao sobre audit fora de transacao
+
+O `recordAudit` standalone continua funcionando fora de transacao para casos de uso externos (ex: auditar acoes que nao envolvem criacao de entidade). Apenas as operacoes compostas (`createUser`, `createTenant`) encapsulam o audit dentro da transacao.
+
+### Limitacoes
+
+- As rotas REST ainda podem usar o `InMemoryCoreSaasStore`; o Prisma nao e o runtime ativo.
+- Alternancia por variavel de ambiente (`CORE_SAAS_PERSISTENCE`) ainda nao implementada.
+- `actor_user_id` em `createTenant` e sempre `null` ate que auth real seja implementada.
+- Teste Prisma ainda roda separado do `npm test` (requer `DATABASE_URL` local).
+
 ## Transicao
 
 Os stores em memoria do Core SaaS continuam ativos para preservar os endpoints e testes atuais. Os repositories Prisma foram criados como base de migracao incremental, mas as rotas ainda nao foram trocadas para persistencia real.
 
-Proximo passo recomendado: criar alternancia controlada por variavel de ambiente ou migrar rotas especificas para `PrismaCoreSaasService`, mantendo os mesmos testes de RBAC e isolamento multi-tenant.
+Proximo passo recomendado: criar alternancia controlada por variavel de ambiente (`CORE_SAAS_PERSISTENCE`) para migrar rotas especificas para `PrismaCoreSaasService`, mantendo os mesmos testes de RBAC e isolamento multi-tenant.

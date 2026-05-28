@@ -42,17 +42,7 @@ export class PrismaCoreSaasService {
       ...input,
       name,
       modules: uniqueStrings(input.modules ?? []),
-    });
-
-    await this.recordAudit({
-      action: "tenant.created",
-      actor_user_id: actor?.userId ?? "system",
-      tenant_id: tenant.id,
-      metadata: {
-        entity: "tenant",
-        entity_id: tenant.id,
-        tenantId: tenant.id,
-      },
+      actorUserId: actor?.userId,
     });
 
     return tenant;
@@ -152,17 +142,7 @@ export class PrismaCoreSaasService {
       roles,
       branchIds: uniqueStrings(input.branchIds ?? []),
       status: input.status ?? "active",
-    });
-
-    await this.recordAudit({
-      action: "user.created",
-      actor_user_id: actor?.userId ?? "system",
-      tenant_id: user.tenantId,
-      metadata: {
-        entity: "user",
-        entity_id: user.id,
-        userId: user.id,
-      },
+      actorUserId: actor?.userId,
     });
 
     return user;
