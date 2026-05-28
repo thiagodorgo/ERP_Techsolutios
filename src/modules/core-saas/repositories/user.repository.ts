@@ -18,6 +18,17 @@ export class UserRepository {
       where: {
         tenant_id: tenantId,
       },
+      include: {
+        role_assignments: {
+          include: {
+            branch: true,
+            role: true,
+          },
+          orderBy: {
+            created_at: "asc",
+          },
+        },
+      },
       orderBy: {
         created_at: "asc",
       },
@@ -29,6 +40,17 @@ export class UserRepository {
       where: {
         id: userId,
         tenant_id: tenantId,
+      },
+      include: {
+        role_assignments: {
+          include: {
+            branch: true,
+            role: true,
+          },
+          orderBy: {
+            created_at: "asc",
+          },
+        },
       },
     });
   }
@@ -61,6 +83,29 @@ export class UserRepository {
         name: data.name,
         email: data.email.toLowerCase(),
         status: data.status ?? "active",
+      },
+    });
+  }
+
+  createWithRoleAssignments(data: CreateUserData) {
+    return this.client.user.create({
+      data: {
+        tenant_id: data.tenant_id,
+        branch_id: data.branch_id ?? null,
+        name: data.name,
+        email: data.email.toLowerCase(),
+        status: data.status ?? "active",
+      },
+      include: {
+        role_assignments: {
+          include: {
+            branch: true,
+            role: true,
+          },
+          orderBy: {
+            created_at: "asc",
+          },
+        },
       },
     });
   }

@@ -156,3 +156,31 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - trocar `CoreSaasRegistry` gradualmente para Prisma
 - manter isolamento multi-tenant em todas as queries
 - iniciar auth local tenant-scoped depois da persistencia do core
+
+## Atualizacao 2026-05-27 - Bloco 04B.2 Prisma Core SaaS Store
+
+### Implementado
+
+- criada base Prisma assíncrona para Core SaaS
+- criada interface `AsyncCoreSaasStore`
+- criado `PrismaCoreSaasStore` baseado nos repositories Prisma existentes
+- criado `PrismaCoreSaasService` paralelo ao `CoreSaasRegistry`
+- mantido `InMemoryCoreSaasStore` para compatibilidade dos testes unitarios e runtime atual
+- reforçado isolamento por tenant em listagens de usuarios, auditoria e atribuicoes de papeis
+- ampliado teste Prisma separado com PostgreSQL local para cobrir service persistente
+- documentacao do banco atualizada com a diferenca entre store em memoria e camada Prisma async
+
+### Limitacoes
+
+- rotas ainda podem usar store em memoria
+- auth real ainda nao implementada
+- RLS ainda nao implementado
+- teste Prisma ainda depende de PostgreSQL local fora do `npm test`
+- alternancia por variavel de ambiente ainda nao implementada
+
+### Proximos passos
+
+- criar alternancia controlada por variavel de ambiente
+- migrar rotas core para Prisma gradualmente
+- iniciar auth local tenant-scoped depois da persistencia do core
+- planejar RLS como safety net posterior

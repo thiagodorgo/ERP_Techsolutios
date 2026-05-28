@@ -6,6 +6,7 @@ export * from "./middleware/tenant-context.middleware.js";
 export * from "./permissions/catalog.js";
 export * from "./routes/index.js";
 export * from "./services/core-saas.service.js";
+export * from "./store/async-core-saas.store.js";
 export * from "./store/core-saas.store.js";
 export * from "./types/core-saas.types.js";
 

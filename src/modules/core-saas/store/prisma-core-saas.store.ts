@@ -1,0 +1,275 @@
+import type { Prisma } from "@prisma/client";
+
+import {
+  AuditLogRepository,
+  RoleRepository,
+  TenantRepository,
+  UserRepository,
+  UserRoleRepository,
+} from "../repositories/index.js";
+import { isValidRole, validateRole, type Role } from "../permissions/catalog.js";
+import type {
+  AuditEvent,
+  CreateTenantInput,
+  CreateUserInput,
+  ListTenantOptions,
+  Tenant,
+  TenantStatus,
+  User,
+  UserStatus,
+} from "../types/core-saas.types.js";
+import type { AsyncCoreSaasStore, CreatePersistentAuditEventInput } from "./async-core-saas.store.js";
+
+type PrismaTenant = Awaited<ReturnType<TenantRepository["create"]>>;
+type PrismaUser = NonNullable<Awaited<ReturnType<UserRepository["findByIdForTenant"]>>>;
+type PrismaAuditLog = Awaited<ReturnType<AuditLogRepository["create"]>>;
+
+export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
+  constructor(
+    private readonly tenants = new TenantRepository(),
+    private readonly users = new UserRepository(),
+    private readonly roles = new RoleRepository(),
+    private readonly userRoles = new UserRoleRepository(),
+    private readonly auditLogs = new AuditLogRepository(),
+  ) {}
+
+  async createTenant(input: CreateTenantInput): Promise<Tenant> {
+    const tenant = await this.tenants.create({
+      name: input.name,
+      slug: createTenantSlug(input.name),
+      status: input.status ?? "active",
+    });
+
+    return mapTenantFromPrisma(tenant);
+  }
+
+  async findTenantById(tenantId: string): Promise<Tenant | undefined> {
+    const tenant = await this.tenants.findById(tenantId);
+
+    return tenant ? mapTenantFromPrisma(tenant) : undefined;
+  }
+
+  async listTenants(options: ListTenantOptions = {}): Promise<Tenant[]> {
+    const tenants = options.status
+      ? await this.tenants.listByStatus(options.status)
+      : await this.tenants.listAll();
+
+    return tenants.map(mapTenantFromPrisma);
+  }
+
+  async listTenantsForTenant(
+    tenantId: string,
+    options: ListTenantOptions = {},
+  ): Promise<Tenant[]> {
+    const tenants = await this.tenants.listForTenant(tenantId);
+
+    return tenants
+      .filter((tenant) => !options.status || tenant.status === options.status)
+      .map(mapTenantFromPrisma);
+  }
+
+  async createUser(input: CreateUserInput): Promise<User> {
+    const user = await this.users.createWithRoleAssignments({
+      tenant_id: input.tenantId,
+      branch_id: input.branchIds?.[0] ?? null,
+      name: input.name,
+      email: input.email,
+      status: input.status ?? "active",
+    });
+
+    for (const role of input.roles.map((value) => validateRole(value))) {
+      await this.assignRoleToUser({
+        tenantId: input.tenantId,
+        userId: user.id,
+        role,
+        branchId: input.branchIds?.[0] ?? null,
+      });
+    }
+
+    const savedUser = await this.users.findByIdForTenant(user.id, input.tenantId);
+
+    return mapUserFromPrisma(savedUser ?? user);
+  }
+
+  async findUserByIdForTenant(
+    userId: string,
+    tenantId: string,
+  ): Promise<User | undefined> {
+    const user = await this.users.findByIdForTenant(userId, tenantId);
+
+    return user ? mapUserFromPrisma(user) : undefined;
+  }
+
+  async listUsersByTenant(tenantId: string): Promise<User[]> {
+    const users = await this.users.listByTenant(tenantId);
+
+    return users.map(mapUserFromPrisma);
+  }
+
+  async listRolesByUserForTenant(userId: string, tenantId: string): Promise<Role[]> {
+    const assignments = await this.userRoles.listByUserForTenant(userId, tenantId);
+
+    return mapRoleAssignmentsFromPrisma(assignments);
+  }
+
+  async assignRoleToUser(input: {
+    readonly tenantId: string;
+    readonly userId: string;
+    readonly role: Role;
+    readonly branchId?: string | null;
+  }): Promise<void> {
+    const role = await this.roles.findByKeyForTenant(input.role, input.tenantId);
+
+    if (!role) {
+      throw new Error(`Role is not assignable to tenant: ${input.role}`);
+    }
+
+    await this.userRoles.assignRole({
+      tenant_id: input.tenantId,
+      user_id: input.userId,
+      role_id: role.id,
+      branch_id: input.branchId ?? null,
+    });
+  }
+
+  async saveAuditEvent(input: CreatePersistentAuditEventInput): Promise<AuditEvent> {
+    const actorUserId = await this.resolveActorUserId(
+      input.actor_user_id,
+      input.tenant_id,
+    );
+    const event = await this.auditLogs.create({
+      tenant_id: input.tenant_id,
+      actor_user_id: actorUserId,
+      action: input.action,
+      entity: String(input.metadata?.entity ?? "core_saas"),
+      entity_id: readOptionalString(input.metadata?.entity_id),
+      metadata: toJsonObject(input.metadata),
+    });
+
+    return mapAuditLogFromPrisma(event, input.actor_user_id);
+  }
+
+  async listAuditEventsByTenant(tenantId: string): Promise<AuditEvent[]> {
+    const events = await this.auditLogs.listByTenant(tenantId);
+
+    return events.map((event) => mapAuditLogFromPrisma(event));
+  }
+
+  private async resolveActorUserId(
+    actorUserId: string,
+    tenantId: string,
+  ): Promise<string | null> {
+    if (!isUuid(actorUserId)) {
+      return null;
+    }
+
+    const actor = await this.users.findByIdForTenant(actorUserId, tenantId);
+
+    return actor ? actor.id : null;
+  }
+}
+
+export function mapTenantFromPrisma(tenant: PrismaTenant): Tenant {
+  return {
+    id: tenant.id,
+    name: tenant.name,
+    status: mapTenantStatus(tenant.status),
+    modules: [],
+    createdAt: tenant.created_at,
+  };
+}
+
+export function mapUserFromPrisma(user: PrismaUser): User {
+  return {
+    id: user.id,
+    tenantId: user.tenant_id,
+    name: user.name,
+    email: user.email,
+    roles: mapRoleAssignmentsFromPrisma(user.role_assignments ?? []),
+    branchIds: uniqueStrings([
+      user.branch_id,
+      ...(user.role_assignments ?? []).map((assignment) => assignment.branch_id),
+    ]),
+    status: mapUserStatus(user.status),
+    createdAt: user.created_at,
+  };
+}
+
+export function mapAuditLogFromPrisma(
+  event: PrismaAuditLog,
+  actorUserId = event.actor_user_id ?? "system",
+): AuditEvent {
+  return {
+    id: event.id,
+    action: event.action,
+    actor_user_id: actorUserId,
+    tenant_id: event.tenant_id,
+    timestamp: event.created_at,
+    metadata: isRecord(event.metadata) ? event.metadata : undefined,
+  };
+}
+
+export function mapRoleAssignmentsFromPrisma(
+  assignments: ReadonlyArray<{ readonly role: { readonly key: string } }>,
+): Role[] {
+  return uniqueRoles(
+    assignments
+      .map((assignment) => assignment.role.key)
+      .filter(isValidRole)
+      .map((role) => validateRole(role)),
+  );
+}
+
+function createTenantSlug(name: string): string {
+  const baseSlug = name
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+  return `${baseSlug || "tenant"}-${Date.now().toString(36)}`;
+}
+
+function mapTenantStatus(status: string): TenantStatus {
+  return status === "inactive" ? "inactive" : "active";
+}
+
+function mapUserStatus(status: string): UserStatus {
+  return status === "inactive" ? "inactive" : "active";
+}
+
+function uniqueStrings(values: ReadonlyArray<string | null | undefined>): string[] {
+  return [...new Set(values.filter((value): value is string => Boolean(value)))];
+}
+
+function uniqueRoles(values: readonly Role[]): Role[] {
+  return [...new Set(values)];
+}
+
+function readOptionalString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+function toJsonObject(
+  value: Readonly<Record<string, unknown>> | undefined,
+): Prisma.InputJsonObject | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined),
+  ) as Prisma.InputJsonObject;
+}
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
