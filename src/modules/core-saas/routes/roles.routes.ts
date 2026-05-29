@@ -1,18 +1,18 @@
 import { Router } from "express";
 
 import { requirePermission } from "../middleware/rbac.middleware.js";
-import type { CoreSaasRegistry } from "../services/core-saas.service.js";
-import { handleRoute, readRouteParam } from "./http.js";
+import type { ICoreSaasService } from "../services/core-saas-service.interface.js";
+import { handleAsyncRoute, readRouteParam } from "./http.js";
 
-export function createRolesRouter(service: CoreSaasRegistry): Router {
+export function createRolesRouter(service: ICoreSaasService): Router {
   const router = Router();
 
   router.get(
     "/",
     requirePermission("roles.manage"),
-    handleRoute((_request, response) => {
+    handleAsyncRoute(async (_request, response) => {
       response.status(200).json({
-        data: service.listRoles(),
+        data: await service.listRoles(),
       });
     }),
   );
@@ -20,9 +20,9 @@ export function createRolesRouter(service: CoreSaasRegistry): Router {
   router.get(
     "/:role",
     requirePermission("roles.manage"),
-    handleRoute((request, response) => {
+    handleAsyncRoute(async (request, response) => {
       response.status(200).json({
-        data: service.getRoleDefinition(readRouteParam(request.params.role)),
+        data: await service.getRoleDefinition(readRouteParam(request.params.role)),
       });
     }),
   );

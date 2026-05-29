@@ -119,10 +119,11 @@ Responsabilidades cobertas pela base Prisma:
 
 Estado atual:
 
-- as rotas ainda podem usar `CoreSaasRegistry` com `InMemoryCoreSaasStore`;
-- `PrismaCoreSaasService` esta pronto para testes e integracao gradual;
+- as rotas usam `ICoreSaasService` (interface async unificada);
+- `MemoryCoreSaasAdapter` encapsula `CoreSaasRegistry` retornando Promises para compatibilidade;
+- `PrismaCoreSaasService` implementa `ICoreSaasService` e esta pronto para uso via `CORE_SAAS_PERSISTENCE=prisma`;
 - o teste Prisma separado valida o caminho persistente com PostgreSQL local;
-- ainda nao ha alternancia por variavel de ambiente.
+- a alternancia por variavel de ambiente esta implementada (ver secao abaixo).
 
 Teste manual da camada Prisma:
 
@@ -160,13 +161,54 @@ O `recordAudit` standalone continua funcionando fora de transacao para casos de 
 
 ### Limitacoes
 
-- As rotas REST ainda podem usar o `InMemoryCoreSaasStore`; o Prisma nao e o runtime ativo.
-- Alternancia por variavel de ambiente (`CORE_SAAS_PERSISTENCE`) ainda nao implementada.
 - `actor_user_id` em `createTenant` e sempre `null` ate que auth real seja implementada.
 - Teste Prisma ainda roda separado do `npm test` (requer `DATABASE_URL` local).
+- Modo `prisma` deve ser validado em ambiente controlado antes de producao.
+
+## Alternancia de persistencia (CORE_SAAS_PERSISTENCE)
+
+A partir do Bloco 04B.2B, a camada de persistencia do Core SaaS e controlada pela variavel de ambiente `CORE_SAAS_PERSISTENCE`.
+
+### Valores suportados
+
+| Valor | Comportamento |
+|---|---|
+| `memory` (padrao) | Usa `InMemoryCoreSaasStore` via `MemoryCoreSaasAdapter`. Nao requer `DATABASE_URL`. |
+| `prisma` | Usa `PrismaCoreSaasService` com PostgreSQL. Requer `DATABASE_URL` valido e migrations aplicadas. |
+
+### Arquitetura
+
+- `ICoreSaasService`: interface async unificada implementada por ambos os modos. Expoe apenas os metodos usados pelas rotas.
+- `MemoryCoreSaasAdapter`: adapter que encapsula `CoreSaasRegistry` (sincrono) retornando `Promise.resolve()` para compatibilidade com a interface async.
+- `createCoreSaasService()`: factory async em `src/modules/core-saas/index.ts`. No modo `prisma`, usa `import()` dinamico para nao carregar `src/database/prisma.ts` quando `CORE_SAAS_PERSISTENCE=memory`.
+- `export const app`: preservado em `src/app.ts` usando o singleton memory para compatibilidade com testes existentes.
+- `server.ts`: usa `createCoreSaasService()` para inicializar o service antes de criar o app, permitindo alternancia controlada no startup.
+
+### Protecao contra carregamento indevido do Prisma
+
+`src/database/prisma.ts` lanca excecao em tempo de import se `DATABASE_URL` nao estiver definido. Por isso, `PrismaCoreSaasService` e carregado exclusivamente via `import()` dinamico dentro da branch `prisma` da factory. O caminho `memory` nunca importa modulos Prisma.
+
+### Inicializacao
+
+No startup (`npm run dev` ou `npm start`), `server.ts` executa:
+
+```ts
+const coreSaasRuntime = await createCoreSaasService();
+const app = createApp(coreSaasRuntime);
+```
+
+O modo ativo e registrado no log inicial com o campo `coreSaasPersistence`.
+
+### Teste da factory
+
+```bash
+node --test --import tsx tests/core-saas-runtime.test.ts
+```
+
+Esse teste e unitario e nao requer PostgreSQL nem `DATABASE_URL`.
 
 ## Transicao
 
-Os stores em memoria do Core SaaS continuam ativos para preservar os endpoints e testes atuais. Os repositories Prisma foram criados como base de migracao incremental, mas as rotas ainda nao foram trocadas para persistencia real.
+`InMemoryCoreSaasStore` e `CoreSaasRegistry` permanecem no codebase e sao o padrao de runtime. O modo `prisma` esta disponivel para validacao em ambiente controlado. A migracao definitiva ocorrera quando auth real e RLS estiverem implementados.
 
-Proximo passo recomendado: criar alternancia controlada por variavel de ambiente (`CORE_SAAS_PERSISTENCE`) para migrar rotas especificas para `PrismaCoreSaasService`, mantendo os mesmos testes de RBAC e isolamento multi-tenant.
+Proximo passo recomendado: testar servidor real com `CORE_SAAS_PERSISTENCE=prisma` em ambiente com PostgreSQL migrado, corrigir eventuais diferencas de comportamento entre os modos e iniciar auth local tenant-scoped.

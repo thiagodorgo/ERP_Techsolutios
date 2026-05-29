@@ -166,11 +166,11 @@ export class PrismaCoreSaasService {
     return user;
   }
 
-  listRoles(): RoleDefinition[] {
+  async listRoles(): Promise<RoleDefinition[]> {
     return listRoleDefinitions();
   }
 
-  getRoleDefinition(role: string): RoleDefinition {
+  async getRoleDefinition(role: string): Promise<RoleDefinition> {
     const normalizedRole = this.validateRole(role);
 
     return {
