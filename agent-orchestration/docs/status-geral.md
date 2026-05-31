@@ -218,7 +218,42 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 
 ### Proximos passos
 
-- criar alternancia controlada por `CORE_SAAS_PERSISTENCE`
+- criar alternancia controlada por `CORE_SAAS_PERSISTENCE` [CONCLUIDO no Bloco 04B.2B]
 - migrar rotas core gradualmente para Prisma
 - planejar auth local tenant-scoped
+- planejar RLS como safety net posterior
+
+## Atualizacao 2026-05-27 - Bloco 04B.2B Alternancia de persistencia Core SaaS
+
+### Implementado
+
+- adicionada variavel `CORE_SAAS_PERSISTENCE` ao schema Zod de env (memory | prisma, padrao: memory)
+- documentado `CORE_SAAS_PERSISTENCE=memory` no `.env.example`
+- criada interface async unificada `ICoreSaasService` em `src/modules/core-saas/services/core-saas-service.interface.ts`
+- criado `MemoryCoreSaasAdapter` em `src/modules/core-saas/services/memory-core-saas.adapter.ts` encapsulando `CoreSaasRegistry` com assinaturas async
+- criada factory `createCoreSaasService()` em `src/modules/core-saas/index.ts` controlada por `CORE_SAAS_PERSISTENCE`
+- `PrismaCoreSaasService` carregado via `import()` dinamico apenas no modo `prisma` — nunca carregado no caminho memory
+- rotas Core SaaS (`tenants`, `users`, `audit`, `roles`) convertidas para async usando `handleAsyncRoute` e tipadas com `ICoreSaasService`
+- adicionado `handleAsyncRoute` em `routes/http.ts` sem remover `handleRoute` sincrono existente
+- `src/app.ts` refatorado: `createApp(service: ICoreSaasService)` criado; `export const app` preservado em modo memory usando o mesmo singleton `coreSaasService` dos testes
+- `src/server.ts` atualizado: `async function main()` inicializa o service via factory antes de criar o app; `coreSaasPersistence` registrado no log de startup
+- `PrismaCoreSaasService.listRoles` e `getRoleDefinition` convertidos para `async` para implementar `ICoreSaasService`
+- criado `tests/core-saas-runtime.test.ts` unitario sem dependencia de PostgreSQL
+- `docs/database.md` atualizado com secao de alternancia, arquitetura e decisoes tecnicas
+- frontend intocado
+
+### Limitacoes
+
+- Prisma ainda nao e default
+- auth real ainda nao implementada
+- RLS ainda nao implementado
+- Redis runtime ainda nao implementado
+- teste Prisma segue separado do `npm test`
+- modo `prisma` deve ser validado em ambiente controlado antes de producao
+
+### Proximos passos
+
+- testar servidor real com `CORE_SAAS_PERSISTENCE=prisma` em ambiente com PostgreSQL migrado
+- corrigir eventuais diferencas de comportamento entre os modos
+- iniciar auth local tenant-scoped
 - planejar RLS como safety net posterior

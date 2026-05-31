@@ -3,11 +3,22 @@ import type { Request, RequestHandler, Response } from "express";
 import { CoreSaasError } from "../types/core-saas.types.js";
 
 type RouteHandler = (request: Request, response: Response) => void;
+type AsyncRouteHandler = (request: Request, response: Response) => Promise<void>;
 
 export function handleRoute(handler: RouteHandler): RequestHandler {
   return (request, response) => {
     try {
       handler(request, response);
+    } catch (error) {
+      sendRouteError(response, error);
+    }
+  };
+}
+
+export function handleAsyncRoute(handler: AsyncRouteHandler): RequestHandler {
+  return async (request, response) => {
+    try {
+      await handler(request, response);
     } catch (error) {
       sendRouteError(response, error);
     }

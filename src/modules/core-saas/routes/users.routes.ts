@@ -1,23 +1,23 @@
 import { Router } from "express";
 
 import { requirePermission, requireTenantContext } from "../middleware/rbac.middleware.js";
-import type { CoreSaasRegistry } from "../services/core-saas.service.js";
+import type { ICoreSaasService } from "../services/core-saas-service.interface.js";
 import {
-  handleRoute,
+  handleAsyncRoute,
   readRouteParam,
   readString,
   readStringArray,
 } from "./http.js";
 
-export function createUsersRouter(service: CoreSaasRegistry): Router {
+export function createUsersRouter(service: ICoreSaasService): Router {
   const router = Router();
 
   router.get(
     "/",
     requirePermission("users.read"),
-    handleRoute((request, response) => {
+    handleAsyncRoute(async (request, response) => {
       const actor = requireTenantContext(request);
-      const users = service.listUsersForTenant(actor.tenantId);
+      const users = await service.listUsersForTenant(actor.tenantId);
 
       response.status(200).json({
         data: users,
@@ -28,10 +28,10 @@ export function createUsersRouter(service: CoreSaasRegistry): Router {
   router.post(
     "/",
     requirePermission("users.manage"),
-    handleRoute((request, response) => {
+    handleAsyncRoute(async (request, response) => {
       const actor = requireTenantContext(request);
       const body = request.body as Record<string, unknown>;
-      const user = service.createUser(
+      const user = await service.createUser(
         {
           tenantId: readString(body.tenantId) || actor.tenantId,
           name: readString(body.name),
@@ -52,9 +52,9 @@ export function createUsersRouter(service: CoreSaasRegistry): Router {
   router.get(
     "/:userId",
     requirePermission("users.read"),
-    handleRoute((request, response) => {
+    handleAsyncRoute(async (request, response) => {
       const actor = requireTenantContext(request);
-      const user = service.getUserForTenant(
+      const user = await service.getUserForTenant(
         readRouteParam(request.params.userId),
         actor.tenantId,
       );

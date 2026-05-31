@@ -1,18 +1,18 @@
 import { Router } from "express";
 
 import { requirePermission, requireTenantContext } from "../middleware/rbac.middleware.js";
-import type { CoreSaasRegistry } from "../services/core-saas.service.js";
-import { handleRoute, readRouteParam } from "./http.js";
+import type { ICoreSaasService } from "../services/core-saas-service.interface.js";
+import { handleAsyncRoute, readRouteParam } from "./http.js";
 
-export function createTenantsRouter(service: CoreSaasRegistry): Router {
+export function createTenantsRouter(service: ICoreSaasService): Router {
   const router = Router();
 
   router.get(
     "/",
     requirePermission("tenant.manage"),
-    handleRoute((request, response) => {
+    handleAsyncRoute(async (request, response) => {
       const actor = requireTenantContext(request);
-      const tenants = service.listTenantsForTenant(actor.tenantId);
+      const tenants = await service.listTenantsForTenant(actor.tenantId);
 
       response.status(200).json({
         data: tenants,
@@ -23,9 +23,9 @@ export function createTenantsRouter(service: CoreSaasRegistry): Router {
   router.get(
     "/:tenantId",
     requirePermission("tenant.manage"),
-    handleRoute((request, response) => {
+    handleAsyncRoute(async (request, response) => {
       const actor = requireTenantContext(request);
-      const tenant = service.getTenantForActor(
+      const tenant = await service.getTenantForActor(
         readRouteParam(request.params.tenantId),
         actor.tenantId,
       );

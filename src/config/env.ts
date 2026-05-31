@@ -7,6 +7,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
   LOG_LEVEL: z.string().default("info"),
+  CORE_SAAS_PERSISTENCE: z.enum(["memory", "prisma"]).default("memory"),
 });
 
 export const env = envSchema.parse(process.env);
