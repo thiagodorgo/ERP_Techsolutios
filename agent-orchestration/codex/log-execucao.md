@@ -182,3 +182,43 @@
 - `git diff --check`: passou, com avisos LF/CRLF do Windows e sem erro de whitespace
 - frontend, schema Prisma, migrations, `package.json` e `package-lock.json` permaneceram intocados nesta rodada
 - nenhum commit, push ou PR foi criado
+
+## 2026-06-01 - Bloco 04C.3 JWT access token
+
+- branch usada: `feat/jwt-access-token`
+- adicionado `jose` como dependencia runtime para assinatura/verificacao JWT em ESM/TypeScript, sem implementacao manual com `crypto`
+- `src/config/env.ts` atualizado com `JWT_SECRET` e `JWT_EXPIRES_IN`
+- `JWT_SECRET` passa a falhar claramente em `NODE_ENV=production` quando ausente ou com segredo local/dev conhecido
+- `.env.example` atualizado com `JWT_SECRET="dev-only-change-me"` e `JWT_EXPIRES_IN="15m"` apenas para local/dev
+- criado `src/modules/auth/services/jwt.service.ts`
+- `src/modules/auth/types/auth.types.ts` atualizado com `SignAccessTokenInput` e `AuthenticatedTokenPayload`
+- `POST /api/v1/auth/login` atualizado para retornar `access_token`, `token_type: Bearer` e `expires_in`
+- payload JWT minimo: `sub`, `tenant_id`, `email`, `roles`, `type=access`, `iat`, `exp`, `iss` e `aud`
+- resposta de login nao retorna `password_hash`, `refresh_token`, cookie ou sessao
+- falha de login continua sem token e com erro generico `INVALID_CREDENTIALS`
+- auditoria de login mantida sem registrar token, segredo, senha ou hash
+- headers simulados `x-tenant-id`, `x-user-id`, `x-role` e `x-permissions` continuam ativos
+- middleware JWT obrigatorio nao foi criado nem plugado nesta rodada
+- criado `tests/auth-jwt.test.ts`
+- `tests/auth-login.test.ts` atualizado para validar token emitido e payload
+- `docs/auth.md` atualizado com secao `JWT access token`
+- `agent-orchestration/docs/status-geral.md` atualizado com o Bloco 04C.3
+- `docs/api.md` nao existe neste repositorio, portanto nao foi atualizado
+- `docker compose up -d`: passou; containers `erp-postgres` e `erp-redis` em execucao
+- `npm ci`: passou com 0 vulnerabilidades; manteve aviso conhecido `EBADENGINE` de `@prisma/streams-local@0.1.2` em Node 20
+- `npm run db:generate`: passou
+- `npm run db:migrate`: passou; banco ja estava sincronizado, sem migration pendente
+- `npm run db:seed`: passou
+- `npm run check`: passou
+- `npm test`: passou com 13 testes
+- `npm run build`: passou
+- `node --test --import tsx tests/core-saas-runtime.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/core-saas-prisma.test.ts`: passou com 6 testes
+- `node --test --import tsx tests/core-saas-contract.test.ts`: passou com 3 testes
+- `node --test --import tsx tests/auth-credentials.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/auth-prisma.test.ts`: passou com 1 teste
+- `node --test --import tsx tests/auth-login.test.ts`: passou com 1 teste
+- `node --test --import tsx tests/auth-jwt.test.ts`: passou com 5 testes
+- `git diff --check`: passou, com avisos LF/CRLF do Windows e sem erro de whitespace
+- frontend, schema Prisma e migrations permaneceram intocados
+- nenhum commit, push ou PR foi criado

@@ -400,3 +400,36 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - criar middleware authenticated actor
 - substituir headers simulados gradualmente
 - usar roles persistidas para RBAC
+
+## Atualizacao 2026-06-01 - Bloco 04C.3 JWT access token
+
+### Implementado
+
+- login local tenant-scoped passa a emitir `access_token` JWT assinado
+- resposta de sucesso inclui `token_type: Bearer` e `expires_in` em segundos
+- criado service utilitario para assinar e verificar access tokens
+- adicionadas variaveis `JWT_SECRET` e `JWT_EXPIRES_IN` ao schema de env
+- `JWT_SECRET` e obrigatorio em `NODE_ENV=production` e nao usa segredo real versionado
+- payload minimo contem `sub`, `tenant_id`, `email`, `roles`, `type`, `iat`, `exp`, `iss` e `aud`
+- resposta e payload continuam sem `password_hash`, senha ou `refresh_token`
+- headers simulados continuam ativos e nao foram substituidos
+- middleware JWT obrigatorio ainda nao foi plugado nas rotas protegidas
+- frontend intocado
+
+### Limitacoes
+
+- refresh token ainda nao implementado
+- sessao/cookie ainda nao implementados
+- logout ainda nao implementado
+- rotacao/revogacao de token ainda nao implementadas
+- Redis runtime ainda nao implementado
+- RLS ainda nao implementado
+- headers simulados ainda existem
+
+### Proximos passos
+
+- criar middleware authenticated actor
+- validar `Authorization: Bearer`
+- substituir headers simulados gradualmente
+- implementar refresh token em bloco separado
+- usar roles persistidas para RBAC real
