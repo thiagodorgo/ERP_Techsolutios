@@ -4,7 +4,10 @@ import helmet from "helmet";
 import { pinoHttp } from "pino-http";
 
 import { env } from "./config/env.js";
-import { createAuthRouter } from "./modules/auth/index.js";
+import {
+  attachAuthenticatedActor,
+  createAuthRouter,
+} from "./modules/auth/index.js";
 import {
   coreSaasService,
   createCoreSaasRouter,
@@ -22,12 +25,13 @@ export function createApp(service: ICoreSaasService): Express {
 
   const logger = pinoHttp({
     level: env.LOG_LEVEL,
+    redact: ["req.headers.authorization"],
   });
 
   app.use(logger);
   app.use("/api/v1", healthRouter);
   app.use("/api/v1/auth", createAuthRouter());
-  app.use("/api/v1", createCoreSaasRouter(service));
+  app.use("/api/v1", attachAuthenticatedActor(), createCoreSaasRouter(service));
 
   return app;
 }

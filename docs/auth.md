@@ -2,7 +2,7 @@
 
 ## Visao geral
 
-Os Blocos 04C.1 a 04C.4 adicionam credenciais locais persistentes, login tenant-scoped, emissao de JWT access token e a fundacao do actor autenticado. Refresh token, sessao persistente, cookie e middleware obrigatorio de JWT ainda ficam fora do escopo atual.
+Os Blocos 04C.1 a 04C.5 adicionam credenciais locais persistentes, login tenant-scoped, emissao de JWT access token, fundacao do actor autenticado e suporte inicial a rotas protegidas actor-aware. Refresh token, sessao persistente, cookie e middleware obrigatorio sem fallback ainda ficam fora do escopo atual.
 
 Nesta fase, a autorizacao atual por headers internos continua preservada:
 
@@ -137,7 +137,7 @@ O endpoint registra auditoria simples quando existe tenant valido:
 
 Auditoria nunca registra senha nem `password_hash`.
 
-O login ainda nao substitui os headers simulados. A autorizacao atual por `x-tenant-id`, `x-user-id`, `x-role` e `x-permissions` continua ate a migracao gradual das rotas protegidas.
+O login ainda nao remove os headers simulados. A autorizacao atual por `x-tenant-id`, `x-user-id`, `x-role` e `x-permissions` continua como fallback temporario durante a migracao gradual das rotas protegidas.
 
 Teste separado:
 
@@ -197,7 +197,7 @@ node --test --import tsx tests/auth-jwt.test.ts
 
 O Bloco 04C.4 cria a fundacao para resolver `Authorization: Bearer` em `request.actor`.
 
-Nesta rodada o middleware foi apenas exportado pelo modulo `auth`. Ele ainda nao foi montado globalmente no app e ainda nao substitui as rotas Core SaaS que usam headers simulados.
+No Bloco 04C.4 o middleware foi apenas exportado pelo modulo `auth`. No Bloco 04C.5 ele passou a ser montado antes das rotas protegidas Core SaaS, ainda de forma opcional e com fallback para headers simulados.
 
 Tipo interno escolhido para `request.actor` usa camelCase, consistente com os objetos internos de request/contexto ja usados no backend:
 
@@ -237,12 +237,36 @@ Tambem foi criado helper preparatorio para resolver actor da request:
 - se nao existir, pode montar um actor legado a partir de `x-tenant-id`, `x-user-id`, `x-role`/`x-roles` e `x-permissions`;
 - se nao houver nenhum sinal de autenticacao/contexto, retorna `null`.
 
-Esse helper ainda nao foi aplicado massivamente nas rotas Core SaaS.
+Esse helper e usado pelo `tenantContextMiddleware`, sem refatorar rota por rota.
 
 Teste separado:
 
 ```bash
 node --test --import tsx tests/auth-actor-middleware.test.ts
+```
+
+## Rotas protegidas actor-aware
+
+O Bloco 04C.5 monta `attachAuthenticatedActor()` antes de `createCoreSaasRouter(service)`.
+
+Fluxo atual das rotas protegidas:
+
+1. `Authorization: Bearer` valido popula `request.actor`.
+2. `tenantContextMiddleware` usa `request.actor` como fonte principal de tenant, usuario e roles.
+3. Se nao houver JWT, o middleware continua aceitando headers simulados.
+4. Se JWT e headers simulados forem enviados juntos, o JWT tem prioridade.
+5. Se o JWT for invalido, malformado ou expirado, a resposta e `401 INVALID_TOKEN`.
+
+Essa prioridade evita que headers simulados sobrescrevam um actor autenticado por token.
+
+As permissoes ainda usam o catalogo atual de roles do backend. O bloco nao consulta roles/permissoes no banco, nao implementa RBAC real persistido e nao remove `x-permissions`.
+
+O logger HTTP redige `req.headers.authorization` para evitar token em log.
+
+Teste separado:
+
+```bash
+node --test --import tsx tests/actor-aware-routes.test.ts
 ```
 
 ## Fora do escopo atual
@@ -251,13 +275,13 @@ node --test --import tsx tests/auth-actor-middleware.test.ts
 - logout;
 - rotacao/revogacao de token;
 - substituicao dos headers simulados;
-- middleware JWT obrigatorio global;
+- remocao do fallback por headers simulados;
+- RBAC real persistido;
 - Redis runtime;
 - RLS.
 
 ## Proximos passos
 
-- plugar o middleware nas rotas protegidas;
 - substituir headers simulados gradualmente;
 - RBAC real usando roles persistidas;
 - auditoria com actor real;

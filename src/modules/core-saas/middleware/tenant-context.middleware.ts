@@ -1,5 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
+import { resolveRequestActor } from "../../auth/middleware/authenticated-actor.middleware.js";
+import type { RequestActor } from "../../auth/types/auth.types.js";
 import {
   isValidPermission,
   isValidRole,
@@ -8,11 +10,11 @@ import {
   type Permission,
   type Role,
 } from "../permissions/catalog.js";
-import type { AuthenticatedActor } from "../types/core-saas.types.js";
+import type { AuthenticatedActor as CoreAuthenticatedActor } from "../types/core-saas.types.js";
 
 declare module "express-serve-static-core" {
   interface Request {
-    tenantContext?: AuthenticatedActor;
+    tenantContext?: CoreAuthenticatedActor;
   }
 }
 
@@ -21,31 +23,34 @@ export function tenantContextMiddleware(
   _response: Response,
   next: NextFunction,
 ): void {
-  const tenantId = readHeader(request, "x-tenant-id");
-  const userId =
-    readHeader(request, "x-user-id") ??
-    readHeader(request, "x-actor-user-id") ??
-    "anonymous";
-  const roles = parseRoles(
-    readHeader(request, "x-role") ?? readHeader(request, "x-roles"),
-  );
-  const explicitPermissionsHeader = readHeader(request, "x-permissions");
-  const explicitPermissions = explicitPermissionsHeader !== undefined;
-  const permissions = resolveEffectivePermissions(
-    roles,
-    parsePermissions(explicitPermissionsHeader),
-    explicitPermissions,
-  );
+  const actor = resolveRequestActor(request);
+  const explicitPermissions =
+    actor?.authType === "legacy_headers" &&
+    readHeader(request, "x-permissions") !== undefined;
 
-  request.tenantContext = {
-    tenantId: tenantId ?? "",
-    userId,
-    roles,
-    permissions,
-    explicitPermissions,
-  };
+  request.tenantContext = createTenantContextFromRequestActor(actor, explicitPermissions);
 
   next();
+}
+
+export function createTenantContextFromRequestActor(
+  actor: RequestActor | null,
+  explicitPermissions = false,
+): CoreAuthenticatedActor {
+  const roles = parseRoles(actor?.roles ?? []);
+  const permissions = resolveEffectivePermissions(
+    roles,
+    parsePermissions(actor?.authType === "legacy_headers" ? actor.permissions : []),
+    actor?.authType === "legacy_headers" && explicitPermissions,
+  );
+
+  return {
+    tenantId: actor?.tenantId ?? "",
+    userId: actor?.userId ?? "anonymous",
+    roles,
+    permissions,
+    explicitPermissions: actor?.authType === "legacy_headers" && explicitPermissions,
+  };
 }
 
 function resolveEffectivePermissions(
@@ -66,23 +71,16 @@ function resolveEffectivePermissions(
   );
 }
 
-function parseRoles(value: string | undefined): Role[] {
-  return parseHeaderList(value)
+function parseRoles(values: readonly string[]): Role[] {
+  return values
     .filter(isValidRole)
     .map((role) => role.toLowerCase() as Role);
 }
 
-function parsePermissions(value: string | undefined): Permission[] {
-  return parseHeaderList(value)
+function parsePermissions(values: readonly string[]): Permission[] {
+  return values
     .filter(isValidPermission)
     .map((permission) => permission.toLowerCase() as Permission);
-}
-
-function parseHeaderList(value: string | undefined): string[] {
-  return (value ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
 }
 
 function readHeader(request: Request, headerName: string): string | undefined {
