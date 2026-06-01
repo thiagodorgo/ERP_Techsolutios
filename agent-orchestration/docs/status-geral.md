@@ -367,3 +367,36 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - emitir access token
 - criar middleware authenticated actor
 - usar roles persistidas para RBAC
+
+## Atualizacao 2026-05-28 - Bloco 04C.2 Login local tenant-scoped
+
+### Implementado
+
+- criado endpoint `POST /api/v1/auth/login`
+- endpoint valida `tenantId`, `email` e `password`
+- login usa credenciais locais persistidas por tenant
+- senha e verificada pelo `PasswordService` existente (`scrypt-v1`)
+- resposta de sucesso nao inclui `password_hash`
+- resposta de sucesso nao inclui `access_token` nem `refresh_token`
+- credenciais invalidas retornam erro publico generico `INVALID_CREDENTIALS`
+- body invalido retorna `400 Bad Request`
+- roles persistidas do usuario sao retornadas na resposta
+- auditoria simples de login implementada com `auth.login.success` e `auth.login.failed`
+- headers simulados continuam ativos e nao foram substituidos
+
+### Limitacoes
+
+- JWT ainda nao implementado
+- refresh token ainda nao implementado
+- sessao persistente ainda nao implementada
+- headers simulados continuam
+- RBAC real ainda nao substitui `x-role`/`x-permissions`
+- Redis runtime ainda nao implementado
+- RLS ainda nao implementado
+
+### Proximos passos
+
+- emitir JWT access token
+- criar middleware authenticated actor
+- substituir headers simulados gradualmente
+- usar roles persistidas para RBAC

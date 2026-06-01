@@ -47,3 +47,40 @@ export class AuthCredentialError extends Error {
     this.name = "AuthCredentialError";
   }
 }
+
+export type LocalAuthLoginInput = {
+  readonly tenant_id: string;
+  readonly email: string;
+  readonly password: string;
+};
+
+export type LocalAuthLoginUser = {
+  readonly id: string;
+  readonly tenant_id: string;
+  readonly email: string;
+  readonly name: string;
+  readonly status: string;
+};
+
+export type LocalAuthLoginTenant = {
+  readonly id: string;
+  readonly name: string;
+};
+
+export type LocalAuthLoginRole = {
+  readonly id: string;
+  readonly key: string;
+  readonly name: string;
+};
+
+export type LocalAuthLoginResult =
+  | {
+      readonly ok: true;
+      readonly user: LocalAuthLoginUser;
+      readonly tenant: LocalAuthLoginTenant;
+      readonly roles: readonly LocalAuthLoginRole[];
+    }
+  | {
+      readonly ok: false;
+      readonly reason: "invalid_credentials" | "locked" | "inactive";
+    };
