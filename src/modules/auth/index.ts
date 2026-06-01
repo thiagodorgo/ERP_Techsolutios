@@ -1,4 +1,5 @@
 export * from "./auth-runtime.js";
+export * from "./middleware/authenticated-actor.middleware.js";
 export * from "./repositories/local-auth-credential.repository.js";
 export * from "./routes/auth.routes.js";
 export * from "./services/local-auth-credential.service.js";

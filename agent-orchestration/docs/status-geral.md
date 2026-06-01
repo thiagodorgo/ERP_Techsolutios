@@ -433,3 +433,36 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - substituir headers simulados gradualmente
 - implementar refresh token em bloco separado
 - usar roles persistidas para RBAC real
+
+## Atualizacao 2026-06-01 - Bloco 04C.4 Middleware authenticated actor
+
+### Implementado
+
+- criado middleware opcional para resolver `Authorization: Bearer`
+- `request.actor` preparado para actor autenticado por JWT
+- actor JWT contem `userId`, `tenantId`, `email`, `roles` e `authType: jwt`
+- token valido popula `request.actor`
+- token invalido, malformado ou expirado retorna `401 INVALID_TOKEN` quando o middleware e usado
+- ausencia de `Authorization` nao bloqueia o fluxo opcional
+- criado helper preparatorio para resolver actor JWT ou fallback de headers simulados
+- headers simulados foram preservados
+- JWT ainda nao e obrigatorio globalmente
+- rotas Core SaaS nao foram migradas massivamente nesta rodada
+- frontend intocado
+
+### Limitacoes
+
+- middleware ainda e preparatorio e apenas exportado pelo modulo auth
+- rotas Core SaaS ainda podem usar headers simulados
+- RBAC real ainda nao substituiu `x-role`/`x-permissions`
+- refresh token, logout e revogacao ainda fora do escopo
+- sessao/cookie ainda nao implementados
+- Redis runtime ainda nao implementado
+- RLS ainda nao implementado
+
+### Proximos passos
+
+- plugar actor middleware em rotas protegidas
+- migrar autorizacao para actor JWT
+- implementar RBAC real persistido
+- planejar refresh token/logout em blocos separados
