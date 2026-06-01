@@ -180,7 +180,7 @@ A partir do Bloco 04B.2B, a camada de persistencia do Core SaaS e controlada pel
 
 - `ICoreSaasService`: interface async unificada implementada por ambos os modos. Expoe apenas os metodos usados pelas rotas.
 - `MemoryCoreSaasAdapter`: adapter que encapsula `CoreSaasRegistry` (sincrono) retornando `Promise.resolve()` para compatibilidade com a interface async.
-- `createCoreSaasService()`: factory async em `src/modules/core-saas/index.ts`. No modo `prisma`, usa `import()` dinamico para nao carregar `src/database/prisma.ts` quando `CORE_SAAS_PERSISTENCE=memory`.
+- `createCoreSaasService()`: factory async em `src/modules/core-saas/core-saas-runtime.ts`, reexportada por `src/modules/core-saas/index.ts`. No modo `prisma`, usa `import()` dinamico para nao carregar `src/database/prisma.ts` quando `CORE_SAAS_PERSISTENCE=memory`.
 - `export const app`: preservado em `src/app.ts` usando o singleton memory para compatibilidade com testes existentes.
 - `server.ts`: usa `createCoreSaasService()` para inicializar o service antes de criar o app, permitindo alternancia controlada no startup.
 

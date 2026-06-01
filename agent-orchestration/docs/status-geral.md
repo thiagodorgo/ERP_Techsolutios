@@ -231,7 +231,7 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - documentado `CORE_SAAS_PERSISTENCE=memory` no `.env.example`
 - criada interface async unificada `ICoreSaasService` em `src/modules/core-saas/services/core-saas-service.interface.ts`
 - criado `MemoryCoreSaasAdapter` em `src/modules/core-saas/services/memory-core-saas.adapter.ts` encapsulando `CoreSaasRegistry` com assinaturas async
-- criada factory `createCoreSaasService()` em `src/modules/core-saas/index.ts` controlada por `CORE_SAAS_PERSISTENCE`
+- criada factory `createCoreSaasService()` em `src/modules/core-saas/core-saas-runtime.ts`, reexportada pelo barrel `src/modules/core-saas/index.ts`, controlada por `CORE_SAAS_PERSISTENCE`
 - `PrismaCoreSaasService` carregado via `import()` dinamico apenas no modo `prisma` — nunca carregado no caminho memory
 - rotas Core SaaS (`tenants`, `users`, `audit`, `roles`) convertidas para async usando `handleAsyncRoute` e tipadas com `ICoreSaasService`
 - adicionado `handleAsyncRoute` em `routes/http.ts` sem remover `handleRoute` sincrono existente

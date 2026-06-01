@@ -54,3 +54,14 @@
 - executado `npm install` para atualizar `package-lock.json`
 - confirmado `npm audit` com 0 vulnerabilidades
 - aviso residual: `@prisma/streams-local@0.1.2` declara Node `>=22.0.0`, mas e dependencia transitiva de `@prisma/dev`; mantido por compatibilidade atual com Prisma 7 e Node 20 validada pelos comandos do projeto
+
+## 2026-05-31 - Bloco 04B.2B
+
+- revisada a alternancia controlada de persistencia do Core SaaS por `CORE_SAAS_PERSISTENCE`
+- mantido `memory` como padrao e preservado `export const app` em memoria para compatibilidade dos testes
+- preservado o singleton `coreSaasService` usado pelos testes e pelo adapter de memoria
+- extraida a factory configuravel para `src/modules/core-saas/core-saas-runtime.ts`
+- extraido o singleton memory para `src/modules/core-saas/core-saas-singleton.ts`
+- mantido `PrismaCoreSaasService` fora do barrel principal e carregado apenas via `import()` dinamico no modo `prisma`
+- mantidas as rotas Core SaaS usando `ICoreSaasService` async e `handleAsyncRoute`
+- frontend, schema Prisma, migrations e dependencias permaneceram intocados
