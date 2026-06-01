@@ -44,7 +44,7 @@ npm run db:migrate
 npm run db:seed
 ```
 
-O seed cria o tenant demo, filial principal, roles, permissoes, usuario `admin.demo@example.com` sem senha e evento inicial de auditoria.
+O seed cria o tenant demo, filial principal, roles, permissoes, usuario `admin.demo@example.com` sem senha e evento inicial de auditoria quando ele ainda nao existir para o tenant demo.
 
 ## Validar testes e build
 
@@ -110,11 +110,55 @@ curl.exe -H "x-tenant-id: <tenant_id>" -H "x-user-id: <admin_user_id>" -H "x-rol
 - `memory` nao persiste dados entre reinicios do processo.
 - `memory` nao executa seed automatico no startup do servidor.
 - `prisma` lista dados persistidos pelo seed e por operacoes anteriores do banco local.
-- `prisma` pode listar multiplos eventos `seed.initialized` quando `npm run db:seed` e executado mais de uma vez, porque o seed registra auditoria a cada execucao.
+- `prisma` pode listar eventos `seed.initialized` antigos se o banco local ja acumulou seeds anteriores ao ajuste idempotente.
 - IDs de tenant e usuario em `prisma` sao UUIDs gerados pelo banco; nao devem ser hardcoded na documentacao.
 - `prisma` exige `DATABASE_URL` valido, Prisma Client gerado e migrations aplicadas.
 
 Essas diferencas sao esperadas nesta fase e nao representam mudanca de contrato HTTP.
+
+## Alinhamento memory vs prisma
+
+O Bloco 04B.4 reduziu diferencas desnecessarias entre os runtimes sem tornar Prisma default e sem popular `memory` automaticamente.
+
+Decisoes:
+
+- `memory` permanece volatil e inicia sem dados persistidos.
+- `memory` nao recebe seed demo automatico no startup do app.
+- `prisma` continua usando dados persistidos e o seed demo de banco.
+- os dados retornados por `memory` e `prisma` nao precisam ser iguais.
+- o contrato HTTP deve permanecer compativel: status code, envelope JSON, nomes de campos e formato de erro.
+- `seed.initialized` passou a ser idempotente no seed: se ja existir evento para o tenant demo, o seed nao cria outro.
+
+Contrato validado/documentado:
+
+- `GET /api/v1/health` retorna objeto com `status`, `service` e `timestamp`.
+- `GET /api/v1/roles` retorna `{ data: [...] }` com `role` e `permissions`.
+- `GET /api/v1/users` retorna `{ data: [...] }`; a lista pode estar vazia em `memory` recem-iniciado.
+- `GET /api/v1/audit-events` retorna `{ data: [...] }` quando o caller possui `audit.read`.
+- rotas protegidas sem tenant retornam envelope `{ error: { code, reason, message } }` com `reason: "tenant_required"`.
+- rotas protegidas com role sem permissao retornam `reason: "permission_required"`.
+
+Validacao automatizada DB-free:
+
+```powershell
+node --test --import tsx tests/core-saas-contract.test.ts
+```
+
+Validacao manual entre runtimes:
+
+1. iniciar servidor em `memory`;
+2. testar `health`, `roles`, `users` e `audit-events` com headers internos validos;
+3. iniciar servidor em `prisma` com `DATABASE_URL` local;
+4. repetir os mesmos endpoints;
+5. comparar envelopes, status e nomes de campos, sem exigir igualdade dos dados.
+
+Resultado local do Bloco 04B.4:
+
+- `memory` em `PORT=3201`: `health`, `users`, `roles` e `audit-events` responderam 200 com envelopes compativeis.
+- `prisma` em `PORT=3202`: `health`, `users`, `roles` e `audit-events` responderam 200 com envelopes compativeis.
+- sem tenant: ambos retornaram 403 com `reason: "tenant_required"`.
+- role sem permissao: ambos retornaram 403 com `reason: "permission_required"`.
+- `seed.initialized`: contagem historica local permaneceu 7 antes e depois de `npm run db:seed`, confirmando que novas execucoes nao criaram duplicidade para o tenant demo.
 
 ## Resultado da validacao local
 
@@ -128,7 +172,7 @@ Validacao executada em 2026-06-01 na branch `feat/validate-prisma-runtime`.
 - Endpoints validados em `memory`: `GET /api/v1/health`, `GET /api/v1/users`, `GET /api/v1/roles`.
 - Endpoints validados em `prisma`: `GET /api/v1/health`, `GET /api/v1/users`, `GET /api/v1/roles`, `GET /api/v1/audit-events`.
 - Diferenca observada: `/users` em `memory` retornou `data: []` em servidor recem-iniciado; `/users` em `prisma` retornou o admin demo persistido. Isso e esperado nesta fase.
-- Diferenca observada: `/audit-events` em `prisma` retornou eventos persistidos de seeds anteriores; isso e esperado enquanto o seed registrar auditoria a cada execucao.
+- Diferenca observada: `/audit-events` em `prisma` retornou eventos persistidos de seeds anteriores; depois do Bloco 04B.4, novas execucoes do seed nao devem criar novo `seed.initialized` se o evento ja existir para o tenant demo.
 
 ## Limitacoes atuais
 

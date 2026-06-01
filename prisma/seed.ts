@@ -168,19 +168,33 @@ async function main(): Promise<void> {
     });
   }
 
-  await prisma.auditLog.create({
-    data: {
+  const existingSeedAudit = await prisma.auditLog.findFirst({
+    where: {
       tenant_id: tenant.id,
-      actor_user_id: admin.id,
       action: "seed.initialized",
       entity: "database",
       entity_id: tenant.id,
-      metadata: {
-        source: "prisma/seed.ts",
-        auth_note: "Admin demo criado sem senha; autenticacao real sera implementada em bloco futuro.",
-      },
+    },
+    select: {
+      id: true,
     },
   });
+
+  if (!existingSeedAudit) {
+    await prisma.auditLog.create({
+      data: {
+        tenant_id: tenant.id,
+        actor_user_id: admin.id,
+        action: "seed.initialized",
+        entity: "database",
+        entity_id: tenant.id,
+        metadata: {
+          source: "prisma/seed.ts",
+          auth_note: "Admin demo criado sem senha; autenticacao real sera implementada em bloco futuro.",
+        },
+      },
+    });
+  }
 }
 
 async function upsertSystemRole(role: Role): Promise<{ id: string }> {
