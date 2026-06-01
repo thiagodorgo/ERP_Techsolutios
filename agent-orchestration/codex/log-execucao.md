@@ -147,3 +147,38 @@
 - `node --test --import tsx tests/core-saas-contract.test.ts`: passou com 3 testes
 - `node --test --import tsx tests/auth-credentials.test.ts`: passou com 7 testes
 - `node --test --import tsx tests/auth-prisma.test.ts`: passou com 1 teste
+
+## 2026-06-01 - Bloco 04C.2 Login local tenant-scoped
+
+- branch usada: `feat/local-auth-login`
+- criado endpoint `POST /api/v1/auth/login`
+- criado `src/modules/auth/services/local-auth-login.service.ts`
+- criado `src/modules/auth/routes/auth.routes.ts`
+- criado `src/modules/auth/auth-runtime.ts` com carregamento preguiçoso de Prisma para nao quebrar import do app em modo memory/teste
+- `src/app.ts` atualizado para montar `/api/v1/auth`
+- formato escolhido para request body: `tenantId`, `email`, `password`
+- decisoes de seguranca: erro generico para credenciais invalidas; nenhuma emissao de JWT/refresh token; nenhuma sessao/cookie; `password_hash` nunca retornado
+- roles persistidas retornadas via `UserRoleRepository.listByUserForTenant`
+- auditoria de login implementada com `auth.login.success` e `auth.login.failed`, sem senha/hash em metadata
+- `src/modules/auth/types/auth.types.ts` atualizado com os tipos do contrato de login local
+- criado `tests/auth-login.test.ts`
+- primeiro teste de login detectou excesso de campos no objeto `tenant`; response shape foi corrigido para retornar apenas `id` e `name`
+- `docs/auth.md` atualizado com a secao de login local tenant-scoped
+- `agent-orchestration/docs/status-geral.md` atualizado com o Bloco 04C.2
+- `docker compose up -d`: passou; containers `erp-postgres` e `erp-redis` em execucao
+- `npm ci`: passou com 0 vulnerabilidades; manteve aviso conhecido `EBADENGINE` de `@prisma/streams-local@0.1.2` em Node 20
+- `npm run db:generate`: passou
+- `npm run db:migrate`: passou; banco ja estava sincronizado, sem migration pendente
+- `npm run db:seed`: passou
+- `npm run check`: passou
+- `npm test`: passou com 13 testes
+- `npm run build`: passou
+- `node --test --import tsx tests/core-saas-runtime.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/core-saas-prisma.test.ts`: passou com 6 testes
+- `node --test --import tsx tests/core-saas-contract.test.ts`: passou com 3 testes
+- `node --test --import tsx tests/auth-credentials.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/auth-prisma.test.ts`: passou com 1 teste
+- `node --test --import tsx tests/auth-login.test.ts`: passou com 1 teste
+- `git diff --check`: passou, com avisos LF/CRLF do Windows e sem erro de whitespace
+- frontend, schema Prisma, migrations, `package.json` e `package-lock.json` permaneceram intocados nesta rodada
+- nenhum commit, push ou PR foi criado

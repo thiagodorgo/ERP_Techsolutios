@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { pinoHttp } from "pino-http";
 
 import { env } from "./config/env.js";
+import { createAuthRouter } from "./modules/auth/index.js";
 import {
   coreSaasService,
   createCoreSaasRouter,
@@ -25,6 +26,7 @@ export function createApp(service: ICoreSaasService): Express {
 
   app.use(logger);
   app.use("/api/v1", healthRouter);
+  app.use("/api/v1/auth", createAuthRouter());
   app.use("/api/v1", createCoreSaasRouter(service));
 
   return app;
