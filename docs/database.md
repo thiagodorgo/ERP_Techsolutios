@@ -95,6 +95,45 @@ node --test --import tsx tests/core-saas-prisma.test.ts
 
 Esse teste depende de `DATABASE_URL` apontando para um PostgreSQL local migrado.
 
+## Credenciais locais de autenticacao
+
+O Bloco 04C.1 adiciona `local_auth_credentials` como base persistente para login local futuro, sem implementar endpoint de login ou JWT nesta etapa.
+
+Campos principais:
+
+- `tenant_id`: obrigatorio, referencia `tenants.id`.
+- `user_id`: obrigatorio, vinculado ao usuario do mesmo tenant.
+- `email`: obrigatorio e normalizado em lowercase antes da persistencia.
+- `password_hash`: obrigatorio; armazena apenas hash versionado, nunca senha pura.
+- `password_algorithm`: obrigatorio; atualmente `scrypt-v1`.
+- `failed_attempts`, `locked_until`, `last_login_at`: preparados para fluxo de login futuro.
+- `password_updated_at`, `created_at`, `updated_at`: rastreabilidade operacional.
+
+Integridade e isolamento:
+
+- `@@unique([tenant_id, user_id])` impede mais de uma credencial local por usuario no mesmo tenant.
+- `@@unique([tenant_id, email])` impede duplicidade logica de email dentro do tenant.
+- emails iguais podem existir em tenants diferentes.
+- a FK composta `tenant_id + user_id` referencia `users(tenant_id, id)`, garantindo que a credencial nao aponte para usuario de outro tenant.
+- `onDelete` de tenant segue o padrao restritivo do projeto.
+- `onDelete` de usuario remove a credencial por cascade.
+
+Indices:
+
+- `tenant_id`
+- `tenant_id, user_id`
+- `tenant_id, email`
+
+O seed cria ou atualiza credencial local para o admin demo usando `DEMO_ADMIN_PASSWORD` quando definido. Sem essa variavel, usa fallback local apenas fora de `NODE_ENV=production`.
+
+Teste Prisma separado:
+
+```bash
+node --test --import tsx tests/auth-prisma.test.ts
+```
+
+Esse teste depende de `DATABASE_URL` apontando para um PostgreSQL local migrado.
+
 ## Camada Prisma do Core SaaS
 
 O Core SaaS passa a ter uma base persistente assíncrona em paralelo ao store em memória:
