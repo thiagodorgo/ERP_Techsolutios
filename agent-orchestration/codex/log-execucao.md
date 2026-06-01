@@ -261,3 +261,41 @@
 - `git diff --check`: passou, com avisos LF/CRLF do Windows e sem erro de whitespace
 - frontend, schema Prisma, migrations, `package.json` e `package-lock.json` permaneceram intocados nesta rodada
 - nenhum commit, push ou PR foi criado
+
+## 2026-06-01 - Bloco 04C.5 Rotas protegidas actor-aware
+
+- branch usada: `feat/actor-aware-protected-routes`
+- `attachAuthenticatedActor()` montado em `src/app.ts` antes de `createCoreSaasRouter(service)`
+- montagem escolhida: somente para rotas Core SaaS sob `/api/v1`, preservando health e auth sem middleware JWT
+- `src/modules/core-saas/middleware/tenant-context.middleware.ts` atualizado para resolver actor via `resolveRequestActor`
+- `request.actor` JWT tem prioridade sobre headers simulados
+- fallback legado preservado para `x-tenant-id`, `x-user-id`, `x-actor-user-id`, `x-role`, `x-roles` e `x-permissions`
+- token invalido, malformado ou expirado retorna `401 INVALID_TOKEN`
+- sem JWT, as rotas protegidas continuam funcionando com headers simulados
+- sem JWT e sem headers, envelope de erro atual `403 tenant_required` foi preservado
+- response shape de sucesso das rotas protegidas foi preservado
+- logger HTTP passou a redigir `req.headers.authorization`
+- criado `tests/actor-aware-routes.test.ts`
+- `docs/auth.md` atualizado com secao de rotas protegidas actor-aware
+- `agent-orchestration/docs/status-geral.md` atualizado com o Bloco 04C.5
+- nao foram feitas consultas de roles no banco, RBAC real persistido, refresh token, logout, sessao/cookie, Redis runtime ou RLS
+- `docker compose up -d`: passou; containers `erp-postgres` e `erp-redis` em execucao
+- `npm ci`: passou com 0 vulnerabilidades; manteve aviso conhecido `EBADENGINE` de `@prisma/streams-local@0.1.2` em Node 20
+- `npm run db:generate`: passou
+- `npm run db:migrate`: passou; banco ja estava sincronizado, sem migration pendente
+- `npm run db:seed`: passou
+- `npm run check`: passou
+- `npm test`: passou com 13 testes
+- `npm run build`: passou
+- `node --test --import tsx tests/core-saas-runtime.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/core-saas-prisma.test.ts`: passou com 6 testes
+- `node --test --import tsx tests/core-saas-contract.test.ts`: passou com 3 testes
+- `node --test --import tsx tests/auth-credentials.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/auth-prisma.test.ts`: passou com 1 teste
+- `node --test --import tsx tests/auth-login.test.ts`: passou com 1 teste
+- `node --test --import tsx tests/auth-jwt.test.ts`: passou com 5 testes
+- `node --test --import tsx tests/auth-actor-middleware.test.ts`: passou com 6 testes
+- `node --test --import tsx tests/actor-aware-routes.test.ts`: passou com 6 testes
+- `git diff --check`: passou, com avisos LF/CRLF do Windows e sem erro de whitespace
+- frontend, schema Prisma, migrations, `package.json` e `package-lock.json` permaneceram intocados nesta rodada
+- nenhum commit, push ou PR foi criado
