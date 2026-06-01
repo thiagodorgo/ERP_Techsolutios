@@ -2,7 +2,7 @@
 
 ## Visao geral
 
-Os Blocos 04C.1 a 04C.3 adicionam credenciais locais persistentes, login tenant-scoped e emissao de JWT access token. Refresh token, sessao persistente, cookie e middleware obrigatorio de JWT ainda ficam fora do escopo atual.
+Os Blocos 04C.1 a 04C.4 adicionam credenciais locais persistentes, login tenant-scoped, emissao de JWT access token e a fundacao do actor autenticado. Refresh token, sessao persistente, cookie e middleware obrigatorio de JWT ainda ficam fora do escopo atual.
 
 Nesta fase, a autorizacao atual por headers internos continua preservada:
 
@@ -137,7 +137,7 @@ O endpoint registra auditoria simples quando existe tenant valido:
 
 Auditoria nunca registra senha nem `password_hash`.
 
-O login ainda nao substitui os headers simulados. A autorizacao atual por `x-tenant-id`, `x-user-id`, `x-role` e `x-permissions` continua ate o bloco de middleware autenticado.
+O login ainda nao substitui os headers simulados. A autorizacao atual por `x-tenant-id`, `x-user-id`, `x-role` e `x-permissions` continua ate a migracao gradual das rotas protegidas.
 
 Teste separado:
 
@@ -193,18 +193,72 @@ Teste separado:
 node --test --import tsx tests/auth-jwt.test.ts
 ```
 
+## Authenticated actor middleware
+
+O Bloco 04C.4 cria a fundacao para resolver `Authorization: Bearer` em `request.actor`.
+
+Nesta rodada o middleware foi apenas exportado pelo modulo `auth`. Ele ainda nao foi montado globalmente no app e ainda nao substitui as rotas Core SaaS que usam headers simulados.
+
+Tipo interno escolhido para `request.actor` usa camelCase, consistente com os objetos internos de request/contexto ja usados no backend:
+
+```ts
+{
+  userId: string;
+  tenantId: string;
+  email: string;
+  roles: readonly string[];
+  authType: "jwt";
+}
+```
+
+Comportamento do middleware opcional:
+
+- sem `Authorization`: chama `next()` e deixa `request.actor` ausente;
+- `Authorization` ausente ou rotas antigas: headers simulados continuam podendo ser usados;
+- `Authorization` malformado, sem `Bearer`, invalido ou expirado: responde `401 Unauthorized`;
+- `Bearer` valido: verifica o access token e popula `request.actor`.
+
+Erro publico para token invalido:
+
+```json
+{
+  "error": {
+    "code": "INVALID_TOKEN",
+    "message": "Invalid or expired access token."
+  }
+}
+```
+
+O erro nao inclui detalhes internos de `jose`, o token recebido ou qualquer segredo.
+
+Tambem foi criado helper preparatorio para resolver actor da request:
+
+- se `request.actor` existir, retorna o actor JWT;
+- se nao existir, pode montar um actor legado a partir de `x-tenant-id`, `x-user-id`, `x-role`/`x-roles` e `x-permissions`;
+- se nao houver nenhum sinal de autenticacao/contexto, retorna `null`.
+
+Esse helper ainda nao foi aplicado massivamente nas rotas Core SaaS.
+
+Teste separado:
+
+```bash
+node --test --import tsx tests/auth-actor-middleware.test.ts
+```
+
 ## Fora do escopo atual
 
 - refresh token;
 - logout;
 - rotacao/revogacao de token;
-- middleware de ator autenticado;
 - substituicao dos headers simulados;
+- middleware JWT obrigatorio global;
 - Redis runtime;
 - RLS.
 
 ## Proximos passos
 
-- 04C.4: middleware authenticated actor;
-- 04C.5: RBAC real usando roles persistidas.
+- plugar o middleware nas rotas protegidas;
+- substituir headers simulados gradualmente;
+- RBAC real usando roles persistidas;
+- auditoria com actor real;
 - bloco separado: refresh token.

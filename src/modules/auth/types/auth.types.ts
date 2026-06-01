@@ -103,3 +103,21 @@ export type AuthenticatedTokenPayload = {
   readonly iss?: string;
   readonly aud?: string;
 };
+
+export type AuthenticatedActor = {
+  readonly userId: string;
+  readonly tenantId: string;
+  readonly email: string;
+  readonly roles: readonly string[];
+  readonly authType: "jwt";
+};
+
+export type LegacyHeaderActor = {
+  readonly userId?: string;
+  readonly tenantId?: string;
+  readonly roles: readonly string[];
+  readonly permissions: readonly string[];
+  readonly authType: "legacy_headers";
+};
+
+export type RequestActor = AuthenticatedActor | LegacyHeaderActor;
