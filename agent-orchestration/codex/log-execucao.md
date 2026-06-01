@@ -89,3 +89,30 @@
 - diferenca observada: `/audit-events` em `prisma` lista eventos de seeds anteriores porque o seed registra auditoria a cada execucao
 - nenhuma correcao de codigo foi necessaria
 - frontend, schema Prisma, migrations e dependencias permaneceram intocados
+
+## 2026-06-01 - Bloco 04B.4 Alinhamento memory/prisma
+
+- branch usada: `feat/align-memory-prisma-runtime`
+- revisadas diferencas confirmadas entre runtime `memory` e `prisma`
+- `memory` mantido volatil e sem seed automatico no startup
+- `prisma/seed.ts` ajustado para criar `seed.initialized` apenas se ainda nao existir evento para o tenant demo
+- criado `tests/core-saas-contract.test.ts` para validar contrato HTTP DB-free em runtime memory
+- `docs/core-saas-runtime.md` atualizado com secao de alinhamento memory vs prisma
+- `agent-orchestration/docs/status-geral.md` atualizado com o Bloco 04B.4
+- `docker compose up -d`: passou; containers `erp-postgres` e `erp-redis` em execucao
+- `npm run db:generate`: passou
+- `npm run db:migrate`: passou; banco ja estava sincronizado, sem migration pendente
+- contagem de `seed.initialized` antes de `npm run db:seed`: 7
+- `npm run db:seed`: passou
+- contagem de `seed.initialized` depois de `npm run db:seed`: 7
+- `npm run check`: passou
+- `npm test`: passou com 13 testes
+- `npm run build`: passou
+- `node --test --import tsx tests/core-saas-runtime.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/core-saas-prisma.test.ts`: passou com 6 testes
+- `node --test --import tsx tests/core-saas-contract.test.ts`: passou com 3 testes
+- servidor real em `memory` subiu em `PORT=3201`; endpoints `health`, `users`, `roles`, `audit-events`, sem tenant e role sem permissao responderam com envelopes esperados
+- servidor real em `prisma` subiu em `PORT=3202`; endpoints `health`, `users`, `roles`, `audit-events`, sem tenant e role sem permissao responderam com envelopes esperados
+- diferenca confirmada: `memory` sem seed automatico retorna listas vazias em dados volateis; `prisma` retorna dados persistidos do seed demo
+- diferenca confirmada: banco local ainda possui 7 eventos historicos `seed.initialized`, mas novas execucoes do seed nao aumentaram a contagem
+- pendencias mantidas: auth real, substituicao de headers internos, RBAC real persistido e RLS

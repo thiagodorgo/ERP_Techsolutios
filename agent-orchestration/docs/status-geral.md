@@ -295,3 +295,42 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - iniciar auth local tenant-scoped
 - planejar RBAC real usando roles persistidas
 - planejar RLS como safety net
+
+## Atualizacao 2026-05-28 - Bloco 04B.4 Alinhamento memory/prisma
+
+### Implementado
+
+- diferencas entre `memory` e `prisma` revisadas
+- contrato HTTP documentado em `docs/core-saas-runtime.md`
+- criado teste DB-free `tests/core-saas-contract.test.ts` para validar envelopes HTTP em runtime memory
+- `seed.initialized` avaliado em `prisma/seed.ts`
+- seed ajustado para nao criar novo `seed.initialized` quando ja existir evento para o tenant demo
+- `memory` mantido volatil por padrao, sem seed automatico no startup
+- Prisma continua modo controlado por `CORE_SAAS_PERSISTENCE=prisma`
+- `memory` continua default
+- validacao manual com servidor real confirmou envelopes compativeis em `memory` e `prisma`
+- contagem local de `seed.initialized` permaneceu 7 antes/depois de `npm run db:seed`, confirmando idempotencia para novas execucoes
+- frontend intocado
+
+### Diferencas confirmadas
+
+- `memory` recem-iniciado pode retornar `data: []` em `/users`
+- `prisma` retorna usuarios persistidos pelo seed demo
+- bancos locais que ja tiveram seeds anteriores podem conter multiplos `seed.initialized` historicos
+- apos o ajuste, novas execucoes do seed nao devem criar duplicidade de `seed.initialized` para o tenant demo
+- os dados nao precisam ser iguais entre runtimes; o contrato HTTP deve ser compativel
+
+### Limitacoes
+
+- auth real ainda nao implementada
+- headers internos ainda simulam autenticacao
+- Redis runtime ainda nao implementado
+- RLS ainda nao implementado
+- Prisma ainda nao e default
+
+### Proximos passos
+
+- iniciar auth local tenant-scoped
+- substituir headers internos por sessao/token
+- aplicar RBAC real usando roles persistidas
+- planejar RLS como safety net
