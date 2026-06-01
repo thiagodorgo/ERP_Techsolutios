@@ -2,7 +2,7 @@
 
 ## Visao geral
 
-O Bloco 04C.1 adiciona a base persistente para credenciais locais de usuario, preparando o login tenant-scoped futuro sem implementar endpoint de login, JWT, refresh token ou sessao.
+Os Blocos 04C.1 a 04C.3 adicionam credenciais locais persistentes, login tenant-scoped e emissao de JWT access token. Refresh token, sessao persistente, cookie e middleware obrigatorio de JWT ainda ficam fora do escopo atual.
 
 Nesta fase, a autorizacao atual por headers internos continua preservada:
 
@@ -88,6 +88,9 @@ Resposta de sucesso (`200 OK`):
 {
   "data": {
     "authenticated": true,
+    "access_token": "jwt-assinado",
+    "token_type": "Bearer",
+    "expires_in": 900,
     "user": {
       "id": "uuid-do-usuario",
       "tenant_id": "uuid-do-tenant",
@@ -105,16 +108,12 @@ Resposta de sucesso (`200 OK`):
         "key": "tenant_admin",
         "name": "Tenant Admin"
       }
-    ],
-    "next": {
-      "token_required": true,
-      "message": "JWT access token will be issued in a later auth block."
-    }
+    ]
   }
 }
 ```
 
-A resposta nao inclui `password_hash`, `access_token`, `refresh_token`, cookie ou sessao persistente.
+A resposta nao inclui `password_hash`, `refresh_token`, cookie ou sessao persistente.
 
 Credenciais invalidas retornam erro publico generico (`401 Unauthorized`):
 
@@ -148,10 +147,57 @@ node --test --import tsx tests/auth-login.test.ts
 
 Esse teste depende de `DATABASE_URL` apontando para PostgreSQL local migrado.
 
+## JWT access token
+
+O Bloco 04C.3 adiciona emissao de access token JWT no login local tenant-scoped.
+
+Configuracao:
+
+```env
+JWT_SECRET="dev-only-change-me"
+JWT_EXPIRES_IN="15m"
+```
+
+`JWT_SECRET` usa default apenas em desenvolvimento/teste. Em `NODE_ENV=production`, a variavel deve ser definida com segredo proprio fora do repositorio. Nunca commite segredo real.
+
+`JWT_EXPIRES_IN` aceita duracoes simples em segundos, minutos, horas ou dias, como `900s`, `15m`, `1h` ou `1d`. O login retorna `expires_in` em segundos.
+
+Claims do access token:
+
+```json
+{
+  "sub": "uuid-do-usuario",
+  "tenant_id": "uuid-do-tenant",
+  "email": "admin.demo@example.com",
+  "roles": ["tenant_admin"],
+  "type": "access",
+  "iat": 1760000000,
+  "exp": 1760000900,
+  "iss": "erp-techsolutions",
+  "aud": "erp-techsolutions-api"
+}
+```
+
+O token nao inclui senha, `password_hash`, refresh token, permissoes extensas nem dados sensiveis. O endpoint tambem nao cria cookie nem sessao.
+
+Cuidados de seguranca:
+
+- nao registrar `access_token` em log ou auditoria;
+- nao commitar `JWT_SECRET` real;
+- trocar o segredo fora de qualquer ambiente local/dev;
+- no frontend futuro, nao armazenar token em local inseguro sem avaliacao de risco.
+
+Teste separado:
+
+```bash
+node --test --import tsx tests/auth-jwt.test.ts
+```
+
 ## Fora do escopo atual
 
-- emissao de JWT;
 - refresh token;
+- logout;
+- rotacao/revogacao de token;
 - middleware de ator autenticado;
 - substituicao dos headers simulados;
 - Redis runtime;
@@ -159,6 +205,6 @@ Esse teste depende de `DATABASE_URL` apontando para PostgreSQL local migrado.
 
 ## Proximos passos
 
-- 04C.3: JWT access token;
 - 04C.4: middleware authenticated actor;
 - 04C.5: RBAC real usando roles persistidas.
+- bloco separado: refresh token.

@@ -10,15 +10,17 @@ if (!connectionString) {
     skip: "Set DATABASE_URL and run migrations to execute auth login tests.",
   });
 } else {
-  test("POST /api/v1/auth/login authenticates local credentials without issuing tokens", async () => {
+  test("POST /api/v1/auth/login authenticates local credentials and issues an access token", async () => {
     process.env.LOG_LEVEL = "silent";
+    process.env.JWT_SECRET = "dev-only-change-me";
+    process.env.JWT_EXPIRES_IN = "15m";
 
     const [
       { PrismaPg },
       { PrismaClient },
       { createApp },
       { CoreSaasRegistry, InMemoryCoreSaasStore, MemoryCoreSaasAdapter },
-      { LocalAuthCredentialRepository, LocalAuthCredentialService },
+      { LocalAuthCredentialRepository, LocalAuthCredentialService, verifyAccessToken },
     ] = await Promise.all([
       import("@prisma/adapter-pg"),
       import("@prisma/client"),
@@ -117,6 +119,7 @@ if (!connectionString) {
           message: "Invalid credentials.",
         },
       });
+      assert.equal(JSON.stringify(wrongPassword.body).includes("access_token"), false);
 
       const afterFailure = await client.localAuthCredential.findUnique({
         where: {
@@ -166,6 +169,9 @@ if (!connectionString) {
       });
       assert.equal(success.status, 200);
       assert.equal(success.body.data.authenticated, true);
+      assert.equal(typeof success.body.data.access_token, "string");
+      assert.equal(success.body.data.token_type, "Bearer");
+      assert.equal(success.body.data.expires_in, 900);
       assert.deepEqual(success.body.data.user, {
         id: user.id,
         tenant_id: tenant.id,
@@ -184,16 +190,19 @@ if (!connectionString) {
           name: role.name,
         },
       ]);
-      assert.equal(success.body.data.next.token_required, true);
-      assert.equal(
-        success.body.data.next.message,
-        "JWT access token will be issued in a later auth block.",
-      );
+
+      const tokenPayload = await verifyAccessToken(success.body.data.access_token);
+      assert.equal(tokenPayload.sub, user.id);
+      assert.equal(tokenPayload.tenant_id, tenant.id);
+      assert.equal(tokenPayload.email, email);
+      assert.deepEqual(tokenPayload.roles, [role.key]);
+      assert.equal(tokenPayload.type, "access");
+      assert.equal(tokenPayload.exp - tokenPayload.iat, 900);
 
       const successJson = JSON.stringify(success.body);
       assert.equal(successJson.includes("password_hash"), false);
-      assert.equal(successJson.includes("access_token"), false);
       assert.equal(successJson.includes("refresh_token"), false);
+      assert.equal(successJson.includes("session"), false);
 
       const afterSuccess = await client.localAuthCredential.findUnique({
         where: {

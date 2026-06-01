@@ -1,10 +1,16 @@
 import { Router } from "express";
 
 import { getLocalAuthLoginService } from "../auth-runtime.js";
+import {
+  getAccessTokenExpiresInSeconds,
+  signAccessToken,
+} from "../services/jwt.service.js";
 import type { LocalAuthLoginService } from "../services/local-auth-login.service.js";
 
 type AuthRouterOptions = {
   readonly getLoginService?: () => Promise<LocalAuthLoginService>;
+  readonly signAccessToken?: typeof signAccessToken;
+  readonly getAccessTokenExpiresInSeconds?: typeof getAccessTokenExpiresInSeconds;
 };
 
 type LoginRequestBody = {
@@ -19,6 +25,9 @@ const uuidPattern =
 export function createAuthRouter(options: AuthRouterOptions = {}): Router {
   const router = Router();
   const resolveLoginService = options.getLoginService ?? getLocalAuthLoginService;
+  const issueAccessToken = options.signAccessToken ?? signAccessToken;
+  const resolveTokenExpiration =
+    options.getAccessTokenExpiresInSeconds ?? getAccessTokenExpiresInSeconds;
 
   router.post("/login", async (request, response) => {
     try {
@@ -61,16 +70,22 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         return;
       }
 
+      const accessToken = await issueAccessToken({
+        user_id: loginResult.user.id,
+        tenant_id: loginResult.user.tenant_id,
+        email: loginResult.user.email,
+        roles: loginResult.roles.map((role) => role.key),
+      });
+
       response.status(200).json({
         data: {
           authenticated: true,
+          access_token: accessToken,
+          token_type: "Bearer",
+          expires_in: resolveTokenExpiration(),
           user: loginResult.user,
           tenant: loginResult.tenant,
           roles: loginResult.roles,
-          next: {
-            token_required: true,
-            message: "JWT access token will be issued in a later auth block.",
-          },
         },
       });
     } catch {

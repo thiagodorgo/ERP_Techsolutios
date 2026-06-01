@@ -84,3 +84,22 @@ export type LocalAuthLoginResult =
       readonly ok: false;
       readonly reason: "invalid_credentials" | "locked" | "inactive";
     };
+
+export type SignAccessTokenInput = {
+  readonly user_id: string;
+  readonly tenant_id: string;
+  readonly email: string;
+  readonly roles: readonly string[];
+};
+
+export type AuthenticatedTokenPayload = {
+  readonly sub: string;
+  readonly tenant_id: string;
+  readonly email: string;
+  readonly roles: readonly string[];
+  readonly type: "access";
+  readonly iat: number;
+  readonly exp: number;
+  readonly iss?: string;
+  readonly aud?: string;
+};
