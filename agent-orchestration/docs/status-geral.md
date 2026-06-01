@@ -334,3 +334,36 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - substituir headers internos por sessao/token
 - aplicar RBAC real usando roles persistidas
 - planejar RLS como safety net
+
+## Atualizacao 2026-05-28 - Bloco 04C.1 Auth credentials foundation
+
+### Implementado
+
+- criada base persistente `local_auth_credentials`
+- adicionada migration versionada para credenciais locais
+- senha armazenada apenas como hash versionado `scrypt-v1`
+- credenciais vinculadas a `tenant_id` e `user_id`
+- FK composta `tenant_id + user_id` garante que a credencial pertence a usuario do mesmo tenant
+- criado modulo `src/modules/auth/` com repository, service, tipos e password service
+- seed admin demo atualizado para criar/atualizar credencial local
+- `.env.example` documenta `DEMO_ADMIN_PASSWORD` apenas para desenvolvimento local
+- criados testes unitarios de hash, verificacao, validacao minima e normalizacao de email
+- criado teste Prisma separado para isolamento tenant-scoped, duplicidade e verificacao de senha
+- login/JWT ainda nao implementados
+- headers internos ainda temporarios
+
+### Limitacoes
+
+- ainda nao existe endpoint de login
+- ainda nao existe JWT
+- headers simulados continuam
+- RBAC real ainda nao substituiu `x-role`/`x-permissions`
+- Redis runtime ainda nao implementado
+- RLS ainda nao implementado
+
+### Proximos passos
+
+- implementar login local tenant-scoped
+- emitir access token
+- criar middleware authenticated actor
+- usar roles persistidas para RBAC

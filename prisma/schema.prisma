@@ -15,6 +15,7 @@ model Tenant {
   updated_at            DateTime             @default(now()) @updatedAt @db.Timestamptz(6)
   audit_logs            AuditLog[]
   branches              Branch[]
+  local_auth_credentials LocalAuthCredential[]
   roles                 Role[]
   user_role_assignments UserRoleAssignment[]
   users                 User[]
@@ -50,12 +51,38 @@ model User {
   updated_at       DateTime             @default(now()) @updatedAt @db.Timestamptz(6)
   audit_logs       AuditLog[]
   branch           Branch?              @relation(fields: [branch_id], references: [id], onDelete: SetNull)
+  local_auth_credentials LocalAuthCredential[]
   role_assignments UserRoleAssignment[]
   tenant           Tenant               @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
+  @@unique([tenant_id, id])
   @@unique([tenant_id, email])
   @@index([tenant_id])
   @@map("users")
+}
+
+model LocalAuthCredential {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id           String    @db.Uuid
+  user_id             String    @db.Uuid
+  email               String
+  password_hash       String
+  password_algorithm  String
+  password_updated_at DateTime  @default(now()) @db.Timestamptz(6)
+  failed_attempts     Int       @default(0)
+  locked_until        DateTime? @db.Timestamptz(6)
+  last_login_at       DateTime? @db.Timestamptz(6)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant              Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  user                User      @relation(fields: [tenant_id, user_id], references: [tenant_id, id], onDelete: Cascade)
+
+  @@unique([tenant_id, user_id])
+  @@unique([tenant_id, email])
+  @@index([tenant_id])
+  @@index([tenant_id, user_id])
+  @@index([tenant_id, email])
+  @@map("local_auth_credentials")
 }
 
 model Role {

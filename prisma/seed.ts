@@ -9,6 +9,10 @@ import {
   type Permission,
   type Role,
 } from "../src/modules/core-saas/permissions/catalog.js";
+import {
+  LocalAuthCredentialRepository,
+  LocalAuthCredentialService,
+} from "../src/modules/auth/index.js";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -18,6 +22,23 @@ if (!connectionString) {
 
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
+const localAuthCredentials = new LocalAuthCredentialService(
+  new LocalAuthCredentialRepository(prisma),
+  {
+    findByIdForTenant: (userId, tenantId) =>
+      prisma.user.findFirst({
+        where: {
+          id: userId,
+          tenant_id: tenantId,
+        },
+        select: {
+          id: true,
+          tenant_id: true,
+          email: true,
+        },
+      }),
+  },
+);
 
 const permissionDescriptions = {
   "tenant.manage": "Gerenciar configuracoes, filiais e dados administrativos do tenant.",
@@ -168,6 +189,13 @@ async function main(): Promise<void> {
     });
   }
 
+  await localAuthCredentials.upsertCredentialForUser({
+    tenant_id: tenant.id,
+    user_id: admin.id,
+    email: admin.email,
+    password: readDemoAdminPassword(),
+  });
+
   const existingSeedAudit = await prisma.auditLog.findFirst({
     where: {
       tenant_id: tenant.id,
@@ -240,6 +268,20 @@ function formatRoleName(role: string): string {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function readDemoAdminPassword(): string {
+  const configuredPassword = process.env.DEMO_ADMIN_PASSWORD?.trim();
+
+  if (configuredPassword) {
+    return configuredPassword;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("DEMO_ADMIN_PASSWORD is required when running seed in production.");
+  }
+
+  return "ChangeMe123!";
 }
 
 main()

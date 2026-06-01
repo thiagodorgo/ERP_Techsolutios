@@ -116,3 +116,34 @@
 - diferenca confirmada: `memory` sem seed automatico retorna listas vazias em dados volateis; `prisma` retorna dados persistidos do seed demo
 - diferenca confirmada: banco local ainda possui 7 eventos historicos `seed.initialized`, mas novas execucoes do seed nao aumentaram a contagem
 - pendencias mantidas: auth real, substituicao de headers internos, RBAC real persistido e RLS
+
+## 2026-06-01 - Bloco 04C.1 Auth credentials foundation
+
+- branch usada: `feat/local-auth-credentials`
+- criado model Prisma `LocalAuthCredential` e tabela `local_auth_credentials`
+- criada migration `20260528000000_add_local_auth_credentials`
+- adicionada FK composta `tenant_id + user_id` para garantir que credencial pertence ao usuario do mesmo tenant
+- criado modulo `src/modules/auth/`
+- decisao de hash: usar `node:crypto` com `scrypt` em formato versionado `scrypt-v1`, sem adicionar dependencia nova
+- criado `LocalAuthCredentialRepository` com queries sempre tenant-scoped
+- criado `LocalAuthCredentialService` para normalizar email, validar senha minima, criar/upsert credencial e verificar senha sem emitir token
+- `prisma/seed.ts` atualizado para criar/atualizar credencial local do admin demo
+- `.env.example` atualizado com `DEMO_ADMIN_PASSWORD` local/dev e aviso de nao uso em producao
+- criados `tests/auth-credentials.test.ts` e `tests/auth-prisma.test.ts`
+- criado `docs/auth.md`
+- `docs/database.md` atualizado com `local_auth_credentials`
+- login, JWT, refresh token, middleware authenticated actor, Redis runtime e RLS permaneceram fora do escopo
+- `docker compose up -d`: passou; containers `erp-postgres` e `erp-redis` em execucao
+- `npm ci`: passou com 0 vulnerabilidades; manteve aviso conhecido `EBADENGINE` de `@prisma/streams-local@0.1.2` em Node 20
+- `npm run db:generate`: passou
+- `npm run db:migrate`: passou e aplicou `20260528000000_add_local_auth_credentials`
+- `npm run db:seed`: passou e criou/atualizou credencial local do admin demo
+- verificacao SQL confirmou `password_algorithm=scrypt-v1` e que o hash armazenado nao e a senha pura
+- `npm run check`: passou
+- `npm test`: passou com 13 testes
+- `npm run build`: passou
+- `node --test --import tsx tests/core-saas-runtime.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/core-saas-prisma.test.ts`: passou com 6 testes
+- `node --test --import tsx tests/core-saas-contract.test.ts`: passou com 3 testes
+- `node --test --import tsx tests/auth-credentials.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/auth-prisma.test.ts`: passou com 1 teste
