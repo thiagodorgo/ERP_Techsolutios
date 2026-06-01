@@ -257,3 +257,41 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - corrigir eventuais diferencas de comportamento entre os modos
 - iniciar auth local tenant-scoped
 - planejar RLS como safety net posterior
+
+## Atualizacao 2026-05-28 - Bloco 04B.3 Validacao runtime Prisma
+
+### Implementado
+
+- criada documentacao operacional em `docs/core-saas-runtime.md`
+- documentados comandos para preparar PostgreSQL local, gerar Prisma Client, aplicar migrations e executar seed
+- documentados comandos para iniciar servidor real em `memory` e `prisma`
+- documentados headers minimos para testar rotas protegidas
+- runtime `memory` validado localmente em 2026-06-01 com `CORE_SAAS_PERSISTENCE=memory`, `DATABASE_URL` vazio e `PORT=3101`
+- runtime `prisma` validado localmente em 2026-06-01 com `CORE_SAAS_PERSISTENCE=prisma`, `DATABASE_URL` local e `PORT=3102`
+- endpoints validados em `memory`: `GET /api/v1/health`, `GET /api/v1/users`, `GET /api/v1/roles`
+- endpoints validados em `prisma`: `GET /api/v1/health`, `GET /api/v1/users`, `GET /api/v1/roles`, `GET /api/v1/audit-events`
+- Prisma continua modo controlado
+- `memory` continua default
+- frontend intocado
+
+### Diferencas observadas
+
+- `/users` em `memory` retornou lista vazia em servidor recem-iniciado, pois nao ha seed automatico em memoria
+- `/users` em `prisma` retornou o admin demo persistido pelo seed
+- `/audit-events` em `prisma` retornou eventos persistidos de execucoes anteriores do seed
+- nenhuma diferenca observada exigiu correcao de codigo nesta etapa
+
+### Limitacoes
+
+- auth real ainda nao implementada
+- Redis runtime ainda nao implementado
+- RLS ainda nao implementado
+- Prisma ainda nao e default
+- RBAC real ainda usa headers internos para simular contexto autenticado
+
+### Proximos passos
+
+- corrigir diferencas entre memory e prisma que forem classificadas como bugs
+- iniciar auth local tenant-scoped
+- planejar RBAC real usando roles persistidas
+- planejar RLS como safety net

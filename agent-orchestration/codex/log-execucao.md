@@ -65,3 +65,27 @@
 - mantido `PrismaCoreSaasService` fora do barrel principal e carregado apenas via `import()` dinamico no modo `prisma`
 - mantidas as rotas Core SaaS usando `ICoreSaasService` async e `handleAsyncRoute`
 - frontend, schema Prisma, migrations e dependencias permaneceram intocados
+
+## 2026-06-01 - Bloco 04B.3 Validacao runtime Prisma
+
+- branch usada: `feat/validate-prisma-runtime`
+- criado `docs/core-saas-runtime.md` com procedimento operacional para runtime `memory` e `prisma`
+- `docker compose up -d`: passou; containers `erp-postgres` e `erp-redis` estavam em execucao
+- tentativa inicial de `npm run db:generate` via `cmd` nao repassou `DATABASE_URL` corretamente e falhou com `Cannot resolve environment variable: DATABASE_URL`
+- `npm run db:generate` repetido via PowerShell com `DATABASE_URL` local: passou
+- `npm run db:migrate` com `DATABASE_URL` local: passou; banco ja estava sincronizado, sem migration pendente
+- `npm run db:seed` com `DATABASE_URL` local: passou
+- `npm run check`: passou
+- `npm test`: passou com 13 testes
+- `npm run build`: passou
+- `node --test --import tsx tests/core-saas-runtime.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/core-saas-prisma.test.ts`: passou com 6 testes
+- consultados IDs reais do tenant demo e do admin demo via `docker exec erp-postgres psql`
+- servidor em `memory` subiu com `CORE_SAAS_PERSISTENCE=memory`, `DATABASE_URL` vazio e `PORT=3101`
+- endpoints testados em `memory`: `GET /api/v1/health` -> 200; `GET /api/v1/users` -> 200 com `data: []`; `GET /api/v1/roles` -> 200
+- servidor em `prisma` subiu com `CORE_SAAS_PERSISTENCE=prisma`, `DATABASE_URL` local e `PORT=3102`
+- endpoints testados em `prisma`: `GET /api/v1/health` -> 200; `GET /api/v1/users` -> 200 com admin demo; `GET /api/v1/roles` -> 200; `GET /api/v1/audit-events` -> 200
+- diferenca observada: `memory` recem-iniciado nao tem seed automatico e retorna lista vazia em `/users`; `prisma` retorna dados persistidos do seed
+- diferenca observada: `/audit-events` em `prisma` lista eventos de seeds anteriores porque o seed registra auditoria a cada execucao
+- nenhuma correcao de codigo foi necessaria
+- frontend, schema Prisma, migrations e dependencias permaneceram intocados
