@@ -103,6 +103,35 @@ test("JWT actor has priority over conflicting legacy headers", async () => {
   });
 });
 
+test("legacy x-permissions do not elevate permissions when JWT is present", async () => {
+  await withActorAwareApi(async ({ baseUrl, seed }) => {
+    const token = await signAccessToken({
+      user_id: seed.adminA.id,
+      tenant_id: seed.tenantA.id,
+      email: seed.adminA.email,
+      roles: ["viewer"],
+    });
+    const response = await requestJson(baseUrl, "/api/v1/users", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        ...legacyHeaders(seed.tenantA, seed.adminA, "tenant_admin", [
+          "users.manage",
+        ]),
+      },
+      body: {
+        name: "Must Not Create",
+        email: "must-not-create@example.com",
+        roles: ["viewer"],
+      },
+    });
+
+    assert.equal(response.status, 403);
+    assert.equal(response.body.error.code, "FORBIDDEN");
+    assert.equal(response.body.error.reason, "permission_required");
+  });
+});
+
 test("missing JWT and missing legacy headers keep the existing forbidden envelope", async () => {
   await withActorAwareApi(async ({ baseUrl }) => {
     const response = await requestJson(baseUrl, "/api/v1/users");
@@ -193,11 +222,13 @@ function legacyHeaders(
   tenant: Tenant,
   user: User,
   role: string,
+  permissions?: readonly string[],
 ): Record<string, string> {
   return {
     "x-tenant-id": tenant.id,
     "x-user-id": user.id,
     "x-role": role,
+    ...(permissions ? { "x-permissions": permissions.join(",") } : {}),
   };
 }
 
@@ -205,14 +236,18 @@ async function requestJson(
   baseUrl: string,
   path: string,
   options: {
+    readonly method?: string;
     readonly headers?: Record<string, string>;
+    readonly body?: unknown;
   } = {},
 ) {
   const response = await fetch(`${baseUrl}${path}`, {
+    method: options.method ?? "GET",
     headers: {
       "content-type": "application/json",
       ...options.headers,
     },
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
   });
 
   return {

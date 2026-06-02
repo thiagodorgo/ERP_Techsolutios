@@ -497,3 +497,34 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - migrar autorizacao para RBAC real persistido
 - registrar auditoria com actor real
 - planejar refresh token/logout em blocos separados
+
+## Atualizacao 2026-06-01 - Bloco 04C.6 RBAC persistido
+
+### Implementado
+
+- iniciada a autorizacao por roles/permissions persistidas
+- criado resolver persistido isolado para `user_role_assignments`, `roles`, `role_permissions` e `permissions`
+- resolver recebe `tenantId` e `userId` e retorna roles, permissions e source `persistent_rbac`
+- usuario sem roles persistidas resolve roles e permissions vazias
+- JWT actor segue priorizado sobre headers simulados
+- `x-permissions` permanece apenas como fallback legacy
+- teste actor-aware reforcado para garantir que `x-permissions` nao eleva permissao quando ha JWT
+- runtime `memory` preservado sem import estatico de Prisma
+- headers simulados ainda existem
+- frontend intocado
+
+### Limitacoes
+
+- resolver persistido ainda nao esta plugado no `tenantContextMiddleware`
+- integracao com rotas protegidas exige middleware async seguro em bloco seguinte
+- headers simulados ainda existem como fallback temporario
+- refresh token, logout, sessao/cookie e revogacao continuam fora do escopo
+- Redis runtime ainda nao implementado
+- RLS ainda nao implementado
+
+### Proximos passos
+
+- plugar resolver persistido em middleware async seguro quando houver JWT actor
+- substituir headers simulados gradualmente
+- usar roles/permissoes persistidas como fonte principal de autorizacao
+- registrar auditoria com actor real
