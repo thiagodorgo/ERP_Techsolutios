@@ -560,3 +560,32 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - ampliar auditoria com actor real
 - planejar refresh/logout em blocos separados
 - planejar Redis/RLS em blocos especificos
+
+## Atualizacao 2026-06-02 - Bloco 04C.8 RBAC hardening e headers legados
+
+### Implementado
+
+- documentado plano de deprecacao dos headers legados em `docs/auth.md`
+- `docs/auth.md` agora lista explicitamente `x-tenant-id`, `x-user-id`, `x-actor-user-id`, `x-role`, `x-roles` e `x-permissions`
+- reforcado que `Authorization: Bearer` e a fonte preferencial para novas chamadas
+- documentado que headers legados nao podem alterar tenant, usuario, roles ou permissoes quando JWT valido existe
+- documentado que `x-permissions` vale apenas no fluxo legacy
+- `docs/rbac.md` atualizado com estado atual JWT + `request.actor` + `tenantContext` + RBAC persistido
+- `docs/rbac.md` atualizado com riscos temporarios de manter headers simulados
+- documentado plano futuro para feature flag ou modo strict antes da reducao/remocao dos headers legados
+- nao houve mudanca de comportamento em middleware, rotas, schema, migrations ou dependencias
+
+### Limitacoes
+
+- headers simulados continuam aceitos temporariamente
+- modo strict ainda nao foi implementado
+- refresh token, logout, sessao/cookie e revogacao continuam fora do escopo
+- Redis runtime ainda nao implementado
+- RLS ainda nao implementado
+
+### Proximos passos
+
+- planejar feature flag ou modo strict para reduzir headers simulados
+- migrar chamadas internas para `Authorization: Bearer`
+- registrar auditoria com actor real
+- tratar refresh/logout, Redis e RLS em blocos separados
