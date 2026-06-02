@@ -9,7 +9,7 @@ Hoje existem dois caminhos:
 - JWT actor: identifica `userId`, `tenantId`, `email` e roles do token.
 - legacy headers: usa `x-tenant-id`, `x-user-id`, `x-role`, `x-roles` e `x-permissions`.
 
-O Bloco 04C.6 adiciona a fundacao para resolver roles e permissions persistidas sem remover o fallback legado.
+O Bloco 04C.6 adicionou a fundacao para resolver roles e permissions persistidas sem remover o fallback legado. O Bloco 04C.7 plugou essa fundacao no fluxo real das rotas protegidas por meio de um middleware async pequeno e seguro.
 
 ## Modelo persistido
 
@@ -60,17 +60,30 @@ Retorno:
 
 O service nao importa Prisma estaticamente. As dependencias sao injetadas, preservando o runtime `memory` e os testes DB-free.
 
+## Middleware async de RBAC persistido
+
+`createPersistentRbacContextMiddleware()` roda depois do `tenantContextMiddleware`.
+
+Responsabilidade:
+
+- se nao houver `request.actor`, preserva o fluxo legacy e chama `next()`;
+- se houver `request.actor` e `CORE_SAAS_PERSISTENCE=memory`, nao abre Prisma e preserva o contexto de catalogo ja criado;
+- se houver `request.actor` e `CORE_SAAS_PERSISTENCE=prisma`, carrega repositories Prisma via `import()` dinamico, usa `PersistentAuthorizationService` e substitui `tenantContext.roles` e `tenantContext.permissions` pelos valores persistidos;
+- se o RBAC persistido retornar permissoes vazias, a rota protegida retorna 403 pelo middleware `requirePermission`;
+- erros internos de resolucao persistida nao sao retornados com detalhes de Prisma ao cliente.
+
+Esse desenho mantem o `tenantContextMiddleware` sincronico como fallback/base e evita import estatico de Prisma em caminhos usados pelo runtime `memory`.
+
 ## Riscos atuais
 
-- O resolver persistido ainda nao esta plugado no `tenantContextMiddleware`.
-- Rotas Core SaaS ainda podem usar roles do JWT ou headers simulados.
+- O fallback por headers simulados ainda existe e precisa ser removido gradualmente.
+- No runtime `memory`, JWT ainda usa roles do token contra o catalogo local.
 - `x-permissions` ainda existe para chamadas legacy.
 - Ainda nao ha refresh token, logout, revogacao, Redis runtime ou RLS.
 
 ## Proximos passos
 
-- criar middleware async seguro para aplicar o resolver persistido quando houver JWT actor e banco disponivel;
 - manter fallback legacy temporario ate a migracao das chamadas internas;
 - substituir `x-role`, `x-roles` e `x-permissions` gradualmente;
 - registrar auditoria com actor real;
-- aplicar RBAC persistido antes de remover os headers simulados.
+- ampliar cobertura de RBAC persistido antes de remover os headers simulados.

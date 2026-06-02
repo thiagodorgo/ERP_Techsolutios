@@ -340,3 +340,43 @@
 - `git diff --check`: passou, com avisos LF/CRLF do Windows e sem erro de whitespace
 - frontend, schema Prisma, migrations, `package.json` e `package-lock.json` permaneceram intocados nesta rodada
 - nenhum commit, push ou PR foi criado
+
+## 2026-06-01 - Bloco 04C.7 Middleware RBAC persistido para JWT
+
+- branch usada: `feat/persistent-rbac-middleware`
+- worktree inicial estava limpo e a branch esperada ja estava ativa
+- criado `src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts`
+- novo middleware roda depois do `tenantContextMiddleware`
+- `tenantContextMiddleware` permaneceu sincronico como fallback/base
+- com actor JWT e `CORE_SAAS_PERSISTENCE=prisma`, o middleware usa `PersistentAuthorizationService` para substituir roles/permissoes por RBAC persistido
+- repositories Prisma sao carregados por `import()` dinamico apenas no modo Prisma
+- com runtime `memory`, o middleware chama `next()` sem abrir Prisma nem exigir `DATABASE_URL`
+- `src/modules/core-saas/routes/index.ts` atualizado para montar o middleware persistido antes das rotas protegidas
+- `src/modules/core-saas/index.ts` exporta o middleware sem expor repositories Prisma no barrel principal
+- criado `tests/persistent-rbac-middleware.test.ts`
+- teste novo cobre legacy sem JWT, JWT com role persistida, JWT sem permissao persistida, `x-permissions` sem elevacao, headers conflitantes ignorados, token invalido 401, memory DB-free e response shape preservado
+- `docs/auth.md` atualizado com o middleware async de RBAC persistido
+- `docs/rbac.md` atualizado com fluxo JWT/Prisma, fallback legacy e preservacao do runtime memory
+- `agent-orchestration/docs/status-geral.md` atualizado com o Bloco 04C.7
+- `docker compose up -d`: passou; containers `erp-postgres` e `erp-redis` ja estavam em execucao
+- `npm ci`: passou com 0 vulnerabilidades; manteve aviso conhecido `EBADENGINE` de `@prisma/streams-local@0.1.2` em Node 20
+- `npm run db:generate`: passou
+- `npm run db:migrate`: passou; banco ja estava sincronizado, sem migration pendente
+- `npm run db:seed`: passou
+- `npm run check`: passou
+- `npm test`: passou com 13 testes
+- `npm run build`: passou
+- `node --test --import tsx tests/core-saas-runtime.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/core-saas-prisma.test.ts`: passou com 6 testes
+- `node --test --import tsx tests/core-saas-contract.test.ts`: passou com 3 testes
+- `node --test --import tsx tests/auth-credentials.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/auth-prisma.test.ts`: passou com 1 teste
+- `node --test --import tsx tests/auth-login.test.ts`: passou com 1 teste
+- `node --test --import tsx tests/auth-jwt.test.ts`: passou com 5 testes
+- `node --test --import tsx tests/auth-actor-middleware.test.ts`: passou com 6 testes
+- `node --test --import tsx tests/actor-aware-routes.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/persistent-rbac-authorization.test.ts`: passou com 1 teste
+- `node --test --import tsx tests/persistent-rbac-middleware.test.ts`: passou com 2 testes
+- frontend, schema Prisma, migrations, `package.json` e `package-lock.json` permaneceram intocados nesta rodada
+- refresh token, logout, sessao/cookie, Redis runtime e RLS permaneceram fora do escopo
+- nenhum commit, push, PR ou merge foi criado

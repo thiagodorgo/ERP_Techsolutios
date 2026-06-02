@@ -1,6 +1,7 @@
 export * from "./core-saas-runtime.js";
 export * from "./core-saas-singleton.js";
 export * from "./middleware/rbac.middleware.js";
+export * from "./middleware/persistent-rbac-context.middleware.js";
 export * from "./middleware/tenant-context.middleware.js";
 export * from "./permissions/catalog.js";
 export * from "./routes/index.js";
