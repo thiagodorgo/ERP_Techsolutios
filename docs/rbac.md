@@ -11,6 +11,13 @@ Hoje existem dois caminhos:
 
 O Bloco 04C.6 adicionou a fundacao para resolver roles e permissions persistidas sem remover o fallback legado. O Bloco 04C.7 plugou essa fundacao no fluxo real das rotas protegidas por meio de um middleware async pequeno e seguro.
 
+Estado atual:
+
+- `attachAuthenticatedActor()` valida `Authorization: Bearer` e popula `request.actor`.
+- `tenantContextMiddleware` cria o contexto base a partir do actor JWT ou dos headers legacy.
+- `createPersistentRbacContextMiddleware()` substitui roles/permissoes por RBAC persistido quando existe actor JWT e o runtime Prisma esta ativo.
+- o fallback legacy continua disponivel para transicao.
+
 ## Modelo persistido
 
 As roles persistidas ficam em `roles`.
@@ -77,13 +84,28 @@ Esse desenho mantem o `tenantContextMiddleware` sincronico como fallback/base e 
 ## Riscos atuais
 
 - O fallback por headers simulados ainda existe e precisa ser removido gradualmente.
+- Enquanto os headers legacy existirem, chamadas internas antigas ainda podem simular tenant, user e roles sem JWT.
 - No runtime `memory`, JWT ainda usa roles do token contra o catalogo local.
 - `x-permissions` ainda existe para chamadas legacy.
 - Ainda nao ha refresh token, logout, revogacao, Redis runtime ou RLS.
+
+## Plano para modo strict
+
+A reducao dos headers legacy deve ser feita em bloco futuro, sem remocao direta nesta fase.
+
+Plano recomendado:
+
+1. criar feature flag ou modo strict para rejeitar headers legacy em rotas protegidas selecionadas;
+2. validar logs, testes e integracoes internas com `Authorization: Bearer` como fonte principal;
+3. manter janela de compatibilidade para ambientes que ainda dependem de `x-tenant-id`, `x-user-id`, `x-actor-user-id`, `x-role`, `x-roles` ou `x-permissions`;
+4. remover fallback legacy somente depois de aprovacao explicita e cobertura de migracao.
+
+O modo strict nao deve implementar refresh/logout, Redis runtime ou RLS. Esses itens continuam em blocos proprios.
 
 ## Proximos passos
 
 - manter fallback legacy temporario ate a migracao das chamadas internas;
 - substituir `x-role`, `x-roles` e `x-permissions` gradualmente;
+- planejar feature flag ou modo strict para reduzir headers simulados;
 - registrar auditoria com actor real;
 - ampliar cobertura de RBAC persistido antes de remover os headers simulados.

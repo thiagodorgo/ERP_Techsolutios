@@ -380,3 +380,21 @@
 - frontend, schema Prisma, migrations, `package.json` e `package-lock.json` permaneceram intocados nesta rodada
 - refresh token, logout, sessao/cookie, Redis runtime e RLS permaneceram fora do escopo
 - nenhum commit, push, PR ou merge foi criado
+
+## 2026-06-02 - Bloco 04C.8 RBAC hardening e headers legados
+
+- branch usada: `chore/rbac-hardening-legacy-headers`
+- worktree inicial estava limpo e a branch esperada estava ativa
+- leitura rapida confirmou `attachAuthenticatedActor()`, `tenantContextMiddleware`, `persistent-rbac-context.middleware.ts`, rotas Core SaaS e testes atuais
+- cobertura existente ja validava JWT vencendo headers conflitantes, `x-permissions` sem elevacao de JWT, token invalido com headers retornando 401, legacy sem JWT, ausencia de contexto retornando 403, response shape preservado e runtime memory DB-free
+- nenhum teste novo foi criado para evitar duplicacao de cobertura
+- `docs/auth.md` atualizado com `Legacy headers deprecation plan`
+- `docs/auth.md` passou a listar explicitamente `x-actor-user-id` e `x-roles` junto dos demais headers legados
+- `docs/auth.md` documenta `Authorization: Bearer` como fonte preferencial e `x-permissions` apenas como fluxo legacy
+- `docs/rbac.md` atualizado com estado atual JWT + `request.actor` + `tenantContext` + RBAC persistido
+- `docs/rbac.md` documenta riscos temporarios dos headers simulados e plano futuro para feature flag ou modo strict
+- `agent-orchestration/docs/status-geral.md` atualizado com o Bloco 04C.8
+- nao houve alteracao de middleware, rotas, schema Prisma, migrations, package files ou contratos HTTP
+- headers legados foram preservados
+- refresh token, logout, sessao/cookie, Redis runtime e RLS permaneceram fora do escopo
+- nenhum commit, push, PR ou merge foi criado

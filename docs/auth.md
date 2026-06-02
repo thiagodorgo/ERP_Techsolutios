@@ -8,7 +8,9 @@ Nesta fase, a autorizacao atual por headers internos continua preservada:
 
 - `x-tenant-id`
 - `x-user-id`
+- `x-actor-user-id`
 - `x-role`
+- `x-roles`
 - `x-permissions`
 
 Esses headers ainda sao temporarios e serao substituidos em blocos futuros por ator autenticado.
@@ -313,6 +315,31 @@ Testes separados:
 node --test --import tsx tests/persistent-rbac-authorization.test.ts
 node --test --import tsx tests/persistent-rbac-middleware.test.ts
 ```
+
+## Legacy headers deprecation plan
+
+Os headers legados ainda sao aceitos temporariamente para transicao e testes internos:
+
+- `x-tenant-id`
+- `x-user-id`
+- `x-actor-user-id`
+- `x-role`
+- `x-roles`
+- `x-permissions`
+
+`Authorization: Bearer` deve ser a fonte preferencial para novas chamadas. Quando um JWT valido existe, os headers legados nao podem alterar tenant, usuario, roles ou permissoes efetivas do actor. Nesse fluxo, `x-permissions` nao eleva permissao.
+
+`x-permissions` vale apenas no fluxo legacy, quando nao ha JWT. Mesmo nesse modo, ele restringe as permissoes derivadas da role enviada e nao deve ser tratado como fonte definitiva de autorizacao futura.
+
+A remocao futura deve acontecer em bloco separado, preferencialmente por feature flag ou modo strict. Esse modo podera bloquear headers legados em ambientes controlados antes de qualquer remocao definitiva.
+
+Continuam fora deste bloco:
+
+- refresh token;
+- logout;
+- sessao/cookie;
+- Redis runtime;
+- RLS.
 
 ## Fora do escopo atual
 
