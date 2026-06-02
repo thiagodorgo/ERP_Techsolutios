@@ -183,6 +183,47 @@
 - frontend, schema Prisma, migrations, `package.json` e `package-lock.json` permaneceram intocados nesta rodada
 - nenhum commit, push ou PR foi criado
 
+## 2026-06-01 - Bloco 04C.6 RBAC persistido
+
+- branch usada: `feat/persistent-rbac-authorization`
+- worktree inicial estava limpo e a branch esperada ja estava ativa
+- abordagem escolhida: A, resolver persistido separado e testado com PostgreSQL, sem plugar no `tenantContextMiddleware`
+- justificativa: `tenantContextMiddleware` atual e sincrono e o runtime `memory` deve continuar DB-free sem import estatico de Prisma
+- criado `src/modules/core-saas/services/persistent-authorization.service.ts`
+- `PersistentAuthorizationService` recebe repositories por injecao, sem importar Prisma estaticamente
+- resolver usa `user_role_assignments` por `tenantId/userId`, roles atribuidas e `role_permissions` para retornar roles/permissoes persistidas
+- usuario sem role persistida retorna roles e permissions vazias
+- `src/modules/core-saas/index.ts` exporta o service persistido sem carregar Prisma
+- `tests/actor-aware-routes.test.ts` reforcado para validar que `x-permissions` nao eleva permissao quando ha JWT
+- criado `tests/persistent-rbac-authorization.test.ts`
+- `docs/auth.md` atualizado com `Persistent RBAC authorization`
+- criado `docs/rbac.md`
+- `agent-orchestration/docs/status-geral.md` atualizado com o Bloco 04C.6
+- JWT continua tendo prioridade sobre headers simulados
+- `x-permissions` permanece fallback apenas para legacy headers
+- nao foram alterados frontend, schema Prisma, migrations, `package.json` ou `package-lock.json`
+- refresh token, logout, sessao/cookie, Redis runtime e RLS permaneceram fora do escopo
+- `docker compose up -d`: passou; containers `erp-postgres` e `erp-redis` em execucao
+- `npm ci`: passou com 0 vulnerabilidades; manteve aviso conhecido `EBADENGINE` de `@prisma/streams-local@0.1.2` em Node 20
+- `npm run db:generate`: passou
+- `npm run db:migrate`: passou; banco ja estava sincronizado, sem migration pendente
+- `npm run db:seed`: passou
+- `npm run check`: passou
+- `npm test`: passou com 13 testes
+- `npm run build`: passou
+- `node --test --import tsx tests/core-saas-runtime.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/core-saas-prisma.test.ts`: passou com 6 testes
+- `node --test --import tsx tests/core-saas-contract.test.ts`: passou com 3 testes
+- `node --test --import tsx tests/auth-credentials.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/auth-prisma.test.ts`: passou com 1 teste
+- `node --test --import tsx tests/auth-login.test.ts`: passou com 1 teste
+- `node --test --import tsx tests/auth-jwt.test.ts`: passou com 5 testes
+- `node --test --import tsx tests/auth-actor-middleware.test.ts`: passou com 6 testes
+- `node --test --import tsx tests/actor-aware-routes.test.ts`: passou com 7 testes
+- `node --test --import tsx tests/persistent-rbac-authorization.test.ts`: passou com 1 teste
+- `git diff --check`: passou, com avisos LF/CRLF do Windows e sem erro de whitespace
+- nenhum commit, push, PR ou merge foi criado
+
 ## 2026-06-01 - Bloco 04C.3 JWT access token
 
 - branch usada: `feat/jwt-access-token`

@@ -7,6 +7,7 @@ export * from "./routes/index.js";
 export * from "./services/core-saas.service.js";
 export * from "./services/core-saas-service.interface.js";
 export * from "./services/memory-core-saas.adapter.js";
+export * from "./services/persistent-authorization.service.js";
 export * from "./store/async-core-saas.store.js";
 export * from "./store/core-saas.store.js";
 export * from "./types/core-saas.types.js";

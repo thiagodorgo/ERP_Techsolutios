@@ -269,6 +269,43 @@ Teste separado:
 node --test --import tsx tests/actor-aware-routes.test.ts
 ```
 
+## Persistent RBAC authorization
+
+O Bloco 04C.6 inicia a transicao para autorizacao por roles e permissions persistidas.
+
+O access token identifica o actor com `sub`/`tenant_id`. A autorizacao persistida deve resolver permissoes a partir de:
+
+- `user_role_assignments`
+- `roles`
+- `role_permissions`
+- `permissions`
+
+Nesta rodada foi criado um resolver persistido isolado e testado contra PostgreSQL. Ele recebe `tenantId` e `userId`, lista roles atribuidas ao usuario no tenant e resolve permissoes persistidas dessas roles.
+
+A ligacao direta desse resolver ao `tenantContextMiddleware` ainda nao foi feita porque o middleware atual e sincrono e o runtime `memory` deve continuar funcionando sem carregar Prisma nem exigir `DATABASE_URL`. O bloco preserva a seguranca evitando import estatico de Prisma em caminhos DB-free.
+
+Regras mantidas:
+
+- JWT continua tendo prioridade sobre headers simulados.
+- `x-role`, `x-roles` e `x-permissions` nao sobrescrevem JWT.
+- `x-permissions` continua apenas como fallback legacy quando nao ha JWT.
+- usuario sem role persistida resolve roles e permissions vazias.
+- headers simulados ainda nao foram removidos.
+
+Fora do escopo deste bloco:
+
+- plugar o resolver persistido em todas as rotas;
+- remover headers simulados;
+- implementar refresh token, logout ou revogacao;
+- Redis runtime;
+- RLS.
+
+Teste separado:
+
+```bash
+node --test --import tsx tests/persistent-rbac-authorization.test.ts
+```
+
 ## Fora do escopo atual
 
 - refresh token;
@@ -284,5 +321,6 @@ node --test --import tsx tests/actor-aware-routes.test.ts
 
 - substituir headers simulados gradualmente;
 - RBAC real usando roles persistidas;
+- plugar o resolver persistido em middleware async seguro;
 - auditoria com actor real;
 - bloco separado: refresh token.
