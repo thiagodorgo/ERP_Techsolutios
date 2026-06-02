@@ -528,3 +528,35 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - substituir headers simulados gradualmente
 - usar roles/permissoes persistidas como fonte principal de autorizacao
 - registrar auditoria com actor real
+
+## Atualizacao 2026-06-01 - Bloco 04C.7 Middleware RBAC persistido para JWT
+
+### Implementado
+
+- criado middleware async `persistent-rbac-context.middleware.ts`
+- middleware montado depois do `tenantContextMiddleware` nas rotas Core SaaS
+- quando existe actor JWT e `CORE_SAAS_PERSISTENCE=prisma`, roles/permissoes efetivas passam a vir do RBAC persistido
+- repositories Prisma sao carregados por `import()` dinamico apenas no modo Prisma
+- runtime `memory` continua DB-free e nao exige `DATABASE_URL`
+- `tenantContextMiddleware` permanece sincronico como fallback/base
+- fallback legacy por headers simulados foi preservado
+- `x-permissions` continua valido apenas sem JWT e nao eleva actor JWT
+- usuario JWT sem permissao persistida recebe 403 em rota protegida
+- response shape de sucesso foi preservado
+- criado `tests/persistent-rbac-middleware.test.ts`
+- frontend, schema Prisma, migrations, `package.json` e `package-lock.json` permaneceram intocados
+
+### Limitacoes
+
+- headers simulados ainda existem como fallback temporario
+- refresh token, logout, sessao/cookie e revogacao continuam fora do escopo
+- Redis runtime ainda nao implementado
+- RLS ainda nao implementado
+- Prisma segue controlado por `CORE_SAAS_PERSISTENCE=prisma` e nao virou default
+
+### Proximos passos
+
+- substituir headers simulados gradualmente
+- ampliar auditoria com actor real
+- planejar refresh/logout em blocos separados
+- planejar Redis/RLS em blocos especificos

@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { createPersistentRbacContextMiddleware } from "../middleware/persistent-rbac-context.middleware.js";
 import { tenantContextMiddleware } from "../middleware/tenant-context.middleware.js";
 import type { ICoreSaasService } from "../services/core-saas-service.interface.js";
 import { createAuditRouter } from "./audit.routes.js";
@@ -11,6 +12,7 @@ export function createCoreSaasRouter(service: ICoreSaasService): Router {
   const router = Router();
 
   router.use(tenantContextMiddleware);
+  router.use(createPersistentRbacContextMiddleware());
   router.use("/tenants", createTenantsRouter(service));
   router.use("/users", createUsersRouter(service));
   router.use("/roles", createRolesRouter(service));
