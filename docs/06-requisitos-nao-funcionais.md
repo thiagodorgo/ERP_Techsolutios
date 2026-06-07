@@ -15,6 +15,8 @@ Os requisitos não funcionais definem a qualidade mínima necessária para que o
 | RNF-ARQ-005 | O sistema deve permitir evolução para filas/eventos sem reescrita completa. | Média | Scale |
 | RNF-ARQ-006 | O sistema deve permitir isolamento premium futuro por schema ou banco dedicado. | Média | Enterprise |
 | RNF-ARQ-007 | O sistema deve suportar feature flags para ativação controlada de recursos. | Média | Scale |
+| RNF-ARQ-008 | Modulos configuraveis por tenant, como `checklists`, devem manter `tenant_id` obrigatorio em entidades principais e validar `tenant_id` junto com qualquer `id` em consultas e comandos. | Alta | Scale |
+| RNF-ARQ-009 | Componentes configuraveis por cliente devem ser selecionados de um catalogo permitido pela plataforma, sem permitir extensao de tipos em codigo pelo tenant. | Alta | Scale |
 
 ## 3. Stack técnica recomendada
 
@@ -65,6 +67,8 @@ Os requisitos não funcionais definem a qualidade mínima necessária para que o
 | RNF-SEG-008 | Exportações devem respeitar permissão e gerar log quando sensíveis. | Média | MVP/Scale |
 | RNF-SEG-009 | O sistema deve preparar evolução para MFA. | Média | Scale |
 | RNF-SEG-010 | O sistema deve preparar evolução para SSO/federação em tenants enterprise. | Média | Enterprise |
+| RNF-SEG-011 | Checklists configuraveis devem validar permissoes RBAC para criar, ler, editar, publicar, desativar, executar, responder, concluir e cancelar. | Alta | Scale |
+| RNF-SEG-012 | Evidencias de checklist, como foto, arquivo, assinatura, QR Code, codigo de barras e localizacao, devem ser tratadas sem versionar credenciais ou valores sensiveis no repositorio. | Alta | Scale |
 
 ## 7. LGPD, privacidade e retenção
 
@@ -86,6 +90,8 @@ Os requisitos não funcionais definem a qualidade mínima necessária para que o
 | RNF-AUD-004 | Logs técnicos devem ser separados de logs de negócio. | Média | Scale |
 | RNF-AUD-005 | Logs de auditoria não devem ser editáveis por usuários comuns. | Alta | MVP |
 | RNF-AUD-006 | Suporte interno deve operar com trilha de auditoria separada. | Média | Enterprise |
+| RNF-AUD-007 | Criacao, edicao, publicacao, desativacao, execucao, resposta, conclusao e cancelamento de checklists devem gerar auditoria com tenant, ator, entidade, acao e data/hora. | Alta | Scale |
+| RNF-AUD-008 | Alterar um template de checklist nao pode alterar retroativamente execucoes antigas; execucoes devem preservar a versao usada no momento do preenchimento. | Alta | Scale |
 
 ## 9. Observabilidade
 
@@ -120,6 +126,7 @@ Os requisitos não funcionais definem a qualidade mínima necessária para que o
 | RNF-MOB-004 | O app deve tratar conflito de dados de forma segura. | Alta | MVP/Scale |
 | RNF-MOB-005 | Fotos e anexos devem ser sincronizados com controle de falha/retry. | Alta | MVP/Scale |
 | RNF-MOB-006 | O app deve registrar origem do dado: web, mobile online ou mobile offline. | Média | Scale |
+| RNF-MOB-007 | Execucoes de checklist devem ser preparadas para captura mobile offline-first, reconciliacao de respostas e sincronizacao posterior de evidencias. | Alta | Scale |
 
 ## 12. Integrações
 
@@ -141,6 +148,7 @@ Os requisitos não funcionais definem a qualidade mínima necessária para que o
 | RNF-MAN-004 | APIs devem seguir padrão consistente de erros e validações. | Alta | MVP |
 | RNF-MAN-005 | Documentação de endpoints críticos deve ser mantida. | Média | Scale |
 | RNF-MAN-006 | Feature flags devem reduzir risco de deploy de recursos novos. | Média | Scale |
+| RNF-MAN-007 | Templates de checklist devem preservar historico/versionamento para permitir evolucao sem quebra de execucoes antigas. | Alta | Scale |
 
 ## 14. Qualidade e testes
 

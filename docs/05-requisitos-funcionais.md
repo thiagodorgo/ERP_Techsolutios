@@ -115,18 +115,58 @@ Cada requisito possui:
 **Fase:** MVP  
 **Descrição:** O sistema deve permitir cadastrar viaturas com status, identificação, filial, km e disponibilidade.
 
-### RF-CAD-006 — Configurar checklists
+### RF-CAD-006 — Checklists configuraveis por tenant
 
 **Prioridade:** Alta  
 **Fase:** Scale  
-**Descrição:** O sistema deve permitir criar checklists por tipo de serviço, etapa, cliente ou risco.
+**Tipo:** Cadastros / Operacao / Mobile
+**Modulo:** `checklists`
+**Descricao:** O sistema deve permitir que usuarios autorizados de cada tenant criem, editem, publiquem, desativem e versionem modelos de checklist personalizados, usando apenas componentes/campos previamente disponibilizados pela plataforma ERP Techsolutions.
+
+Cada modelo de checklist deve pertencer a um tenant especifico e pode ser associado a processos operacionais, administrativos ou comerciais, como ordens de servico, recebimento de mercadoria, entrega, manutencao, auditoria, vistoria, estoque, compras, vendas ou modulos futuros.
+
+O cliente nao cria novos tipos de componentes em codigo. O cliente apenas escolhe, ordena e configura tipos permitidos pela plataforma.
+
+**Componentes/campos iniciais permitidos pela plataforma:**
+
+- `text`
+- `textarea`
+- `number`
+- `currency`
+- `date`
+- `datetime`
+- `select`
+- `multi_select`
+- `checkbox`
+- `radio`
+- `boolean`
+- `photo`
+- `file`
+- `signature`
+- `barcode`
+- `qr_code`
+- `location`
+- `rating`
 
 **Critérios de aceite:**
 
-- Deve permitir campos obrigatórios.
-- Deve possuir versionamento.
-- Deve bloquear finalização quando obrigatório.
-- Deve ser executável no mobile.
+- Deve permitir criar modelos de checklist por tenant.
+- Deve permitir definir nome, descricao, status, modulo relacionado e versao.
+- Deve permitir adicionar campos configuraveis ao checklist.
+- Deve permitir usar apenas tipos de componentes autorizados pela plataforma.
+- Deve permitir marcar campos como obrigatorios.
+- Deve permitir definir ordem dos campos.
+- Deve permitir configuracoes especificas por tipo de campo.
+- Deve permitir publicar uma versao do checklist.
+- Deve preservar historico/versionamento dos modelos.
+- Deve permitir executar/preencher checklists publicados.
+- Deve registrar respostas dos campos.
+- Deve permitir associar uma execucao de checklist a uma entidade do ERP.
+- Deve garantir isolamento por `tenant_id` em modelos, campos, execucoes e respostas.
+- Deve registrar auditoria em criacao, edicao, publicacao, desativacao, execucao e conclusao.
+- Deve controlar acesso por permissoes/RBAC.
+- Deve bloquear conclusao quando campos obrigatorios ou evidencias exigidas nao forem preenchidos.
+- Deve ser preparado para execucao no mobile Flutter, inclusive em fluxo offline-first futuro.
 
 ### RF-CAD-007 — Configurar tabela de valores
 

@@ -58,6 +58,39 @@ Princípios adotados:
 5. Sincronização e pendências
 6. Notificações
 
+### Console da Plataforma — macro navegação
+1. Tenants
+2. Detalhe do tenant
+3. Módulos do tenant
+4. Auditoria global
+5. Health do sistema
+6. Configurações globais
+
+## Telas Console da Plataforma
+
+> Estas telas usam escopo `platform`, layout separado do tenant e permissões `platform:*`. Não fazem parte da administração interna do tenant.
+
+### P01 — Tenants
+- **Objetivo:** listar tenants/clientes da plataforma, status, plano, módulos habilitados e resumo de uso.
+- **Usuários:** Super Admin / dono do SaaS.
+- **Permissões:** `platform:tenants:read`, `platform:tenants:create`, `platform:tenants:update`, `platform:tenants:suspend`.
+- **Rota:** `/platform/tenants`.
+- **Prioridade:** MVP da Console da Plataforma.
+
+### P02 — Detalhe do Tenant
+- **Objetivo:** consultar dados gerais do tenant, administrador principal, atividade recente e ações críticas.
+- **Usuários:** Super Admin / dono do SaaS.
+- **Permissões:** `platform:tenants:read`, `platform:tenants:update`, `platform:users:create_admin`.
+- **Rota:** `/platform/tenants/:tenantId`.
+- **Prioridade:** MVP da Console da Plataforma.
+
+### P03 — Módulos do Tenant
+- **Objetivo:** habilitar, bloquear e auditar módulos contratados por tenant e plano.
+- **Usuários:** Super Admin / dono do SaaS.
+- **Permissões:** `platform:tenants:read`, `platform:modules:manage`.
+- **Rota:** `/platform/tenants/:tenantId/modules`.
+- **Prioridade:** MVP da Console da Plataforma.
+
 ## Telas Web
 
 > Padrão de descrição aplicado a cada tela: objetivo, papéis, permissões, dados/componentes/ações/estados, regras, integrações, UX (responsividade/mobile), offline, indicadores e artefatos (filtros/tabelas/cards/modais/alertas/timeline/logs), navegação e prioridade.
@@ -110,9 +143,9 @@ Princípios adotados:
 - **Permissões:** leitura consolidada + exportação.
 - **Prioridade:** MVP (mínimo) / Enterprise (BI expandido).
 
-### W05 — Gestão de Tenant, Planos e Módulos
+### W05 — Administrador
 - **Objetivo:** administrar dados do tenant, módulos ativos e feature flags.
-- **Usuários:** Admin Tenant, Suporte interno (com autorização).
+- **Usuários:** Administrador, Suporte interno (com autorização).
 - **Permissões:** administração do core SaaS.
 - **Prioridade:** MVP.
 
@@ -171,9 +204,18 @@ Princípios adotados:
 - **Usuários:** Admin, Financeiro.
 - **Prioridade:** Scale.
 
-### W16 — Cadastros: Checklists dinâmicos
-- **Objetivo:** definir checklists por tipo de serviço/risco/etapa.
+### W16 — Cadastros: Checklists configuraveis
+- **Objetivo:** criar, editar, publicar, desativar e versionar modelos de checklist por tenant usando componentes permitidos pela plataforma.
 - **Usuários:** Admin, Gestor, Supervisor.
+- **Permissões:** `checklists.template.create`, `checklists.template.read`, `checklists.template.update`, `checklists.template.delete`, `checklists.template.publish`.
+- **Dados:** nome, descricao, modulo relacionado, status, versao, campos, ordem, obrigatoriedade, configuracao, regras de validacao e visibilidade.
+- **Componentes:** lista de templates, builder/editor, paleta de componentes, painel de configuracao de campo, preview de execucao.
+- **Ações:** criar template, adicionar campo, reordenar, salvar rascunho, publicar versao, arquivar/inativar.
+- **Estados:** draft, published, archived, inactive, blocked por permissao, erro de validacao, auditoria visivel.
+- **Regras:** componentes sao definidos pela plataforma; tenant apenas configura templates/campos; toda acao valida `tenant_id`; publicacao preserva versao.
+- **Integrações:** RBAC, auditoria, OS, estoque, compras, vendas, manutencao e mobile sync futuro.
+- **Responsividade/mobile:** builder Web primeiro; execucao mobile prevista em M05/M06.
+- **Offline:** nao para configuracao; execucao offline futura no mobile.
 - **Prioridade:** Scale.
 
 ### W17 — Ordem de Serviço: Listagem e busca global
@@ -302,9 +344,13 @@ Princípios adotados:
 - prioridade: MVP.
 
 ### M05 — Checklist de execução
-- objetivo: garantir conformidade operacional em campo.
+- objetivo: garantir conformidade operacional em campo executando checklist publicado e versionado.
 - usuários: executor/supervisor.
-- offline: obrigatório com sincronização posterior.
+- permissões: `checklists.run.create`, `checklists.run.read`, `checklists.run.answer`, `checklists.run.complete`, `checklists.run.cancel`.
+- dados: template publicado, versao usada, campos obrigatorios, respostas, evidencias, entidade relacionada e estado de sync.
+- componentes: renderer de campos, captura de foto/arquivo, assinatura, QR Code, codigo de barras, localizacao, validacao de obrigatorios.
+- regras: execucao pertence ao `tenant_id`; alteracao posterior do template nao altera execucao antiga; conclusao bloqueia obrigatorios pendentes.
+- offline: obrigatorio com fila local e sincronização posterior.
 - prioridade: MVP (básico) / Scale (dinâmico).
 
 ### M06 — Evidências: fotos, anexos e observações
@@ -462,7 +508,7 @@ Princípios adotados:
 - **Responsividade:** KPI em cards reflow; tabela vira lista densa.
 
 #### W05 — Gestão de Tenant, Planos e Módulos
-- **Papel principal:** Admin Tenant.
+- **Papel principal:** Administrador.
 - **Permissões:** gestão core SaaS e feature flags.
 - **Dados exibidos:** dados do tenant, módulos ativos, plano, limites.
 - **Ações primárias:** ativar/desativar módulo, editar parâmetros, salvar versão.
@@ -471,8 +517,8 @@ Princípios adotados:
 - **Integrações:** billing/plano, logs de auditoria.
 - **Responsividade:** tabela de módulos com colapso por accordion.
 
-#### W07/W08 — Gestão de Usuários e RBAC
-- **Papel principal:** Admin Tenant.
+#### W07/W08 — Usuários
+- **Papel principal:** Administrador.
 - **Permissões:** C/E/X em usuários e papéis.
 - **Dados exibidos:** usuários, status, vínculos, matriz de permissões por recurso.
 - **Ações primárias:** criar usuário, associar papel, restringir por filial/equipe.
@@ -592,6 +638,7 @@ Princípios adotados:
 5. **F05 Governança de exceção:** bloqueio/aprovação na W19/W26 com registro em W09.
 6. **F06 Trilha de auditoria:** ação crítica em usuário/permissão/financeiro com verificação em W09.
 7. **F07 Financeiro operacional:** W24 orçamento → W26 faturamento → fechamento inicial.
+8. **F08 Plataforma:** P01 tenants → P02 detalhe → P03 módulos do tenant.
 
 ## Registro de mudança desta versão do documento
 

@@ -33,6 +33,8 @@ Baseline authorization matrix for the ERP Techsolutions multi-tenant SaaS ERP. T
 | User and role assignment | full | full | limited | none | none | none | none | read | limited-support |
 | Dashboard and operational overview | full | full | full | full | scoped | scoped | scoped | read | scoped |
 | Master data | full | full | approve/edit | edit-scoped | read | read/edit-scoped | read | read | read-support |
+| Configurable checklist templates | support-audited | create/read/update/delete/publish | read | none | read | read | read | read | support-view |
+| Checklist executions and answers | support-audited | full-tenant | read/complete-by-scope | create/answer/complete-by-scope | read | read/answer-by-scope | answer-assigned | full-read | support-view |
 | Work orders / service orders | full | full | full | create/edit | read | material-view | execute/update-assigned | read | support-view |
 | Workflow / approvals | full | full | full | request | approval-by-policy | approval-by-policy | request/ack | read | support-view |
 | Inventory movements | full | full | read | request/use | read | full-operational | consume/confirm | read | support-view |
@@ -69,6 +71,8 @@ Operational rules:
 - React and Flutter may shape the interface from claims, but claims do not replace backend enforcement
 - permissions may narrow or extend role behavior only within backend-authorized limits
 - active tenant resolution must be explicit when a user belongs to more than one tenant
+- configurable checklist permissions are tenant-scoped and must include `checklists.template.*` and `checklists.run.*` checks in backend routes/services
+- checklist reads and writes must validate `tenant_id` together with template, field, run and answer identifiers
 
 ## Notes
 - "limited-support" means support actions must be constrained, logged, and never silently exceed tenant-scoped support permissions.

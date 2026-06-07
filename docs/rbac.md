@@ -17,6 +17,85 @@ Estado atual:
 - `tenantContextMiddleware` cria o contexto base a partir do actor JWT ou dos headers legacy.
 - `createPersistentRbacContextMiddleware()` substitui roles/permissoes por RBAC persistido quando existe actor JWT e o runtime Prisma esta ativo.
 - o fallback legacy continua disponivel para transicao.
+- nas rotas `/api/v1/platform/*`, o fallback legacy por headers e aceito apenas em desenvolvimento/teste/local e rejeitado em `NODE_ENV=production`.
+
+## Escopos de permissao
+
+As permissoes agora devem ser lidas em dois escopos diferentes.
+
+Permissoes de plataforma:
+
+- `platform:tenants:read`
+- `platform:tenants:create`
+- `platform:tenants:update`
+- `platform:modules:manage`
+
+Permissoes de tenant:
+
+- `users:read`
+- `users:create`
+- `users:update`
+- `roles:manage`
+- `tenant:manage`
+- `checklists.template.create`
+- `checklists.template.read`
+- `checklists.template.update`
+- `checklists.template.delete`
+- `checklists.template.publish`
+- `checklists.run.create`
+- `checklists.run.read`
+- `checklists.run.answer`
+- `checklists.run.complete`
+- `checklists.run.cancel`
+- `inventory:read`
+- `approvals:read`
+- `finance:read`
+
+Permissoes `platform:*` pertencem ao Console da Plataforma. Permissoes de tenant pertencem ao Administrador e aos usuarios dentro do tenant atual.
+
+## Checklists configuraveis
+
+O modulo `checklists` usa permissoes tenant-scoped. Mesmo quando um usuario possui permissao, o backend deve validar que o template, campo, execucao ou resposta pertence ao `tenant_id` do contexto autenticado.
+
+Permissoes obrigatorias:
+
+- `checklists.template.create`: criar modelos de checklist do tenant.
+- `checklists.template.read`: listar, consultar e usar templates publicados do tenant.
+- `checklists.template.update`: editar templates em rascunho ou gerar nova versao.
+- `checklists.template.delete`: remover/desativar template conforme politica do tenant.
+- `checklists.template.publish`: publicar versao do template.
+- `checklists.run.create`: iniciar execucao de checklist publicado.
+- `checklists.run.read`: consultar execucoes, historico, respostas e evidencias permitidas.
+- `checklists.run.answer`: registrar ou atualizar respostas enquanto a execucao estiver em andamento.
+- `checklists.run.complete`: concluir execucao apos validacao de obrigatorios.
+- `checklists.run.cancel`: cancelar execucao com rastreabilidade.
+
+Mapeamento conceitual:
+
+- `platform_admin`: pode acessar recursos conforme escopo de plataforma e suporte auditado, sem quebrar isolamento tenant-scoped.
+- `tenant_admin`: pode criar, editar, publicar, desativar templates e consultar execucoes do proprio tenant.
+- `manager`: pode visualizar templates e execucoes do proprio tenant.
+- `operator`: pode iniciar, responder, concluir ou cancelar checklists permitidos pelo seu escopo operacional.
+- `auditor`: pode visualizar historico, respostas e evidencias, sem alterar templates ou execucoes.
+
+## Sidebar dinamica
+
+A sidebar nao deve mostrar todos os modulos para todos os usuarios. A sidebar completa exibida no Figma representa Admin/Tenant Owner, nao usuario comum.
+
+A visibilidade deve ser filtrada por:
+
+- tenant ativo;
+- plano contratado;
+- modulos habilitados;
+- papel do usuario;
+- permissoes RBAC.
+
+Regra esperada:
+
+- itens `scope: "platform"` aparecem apenas para usuarios com permissao `platform:*`;
+- itens `scope: "tenant"` aparecem conforme modulos habilitados e permissoes do tenant;
+- usuario comum nao ve Console da Plataforma;
+- Super Admin ve Console da Plataforma.
 
 ## Modelo persistido
 
@@ -50,6 +129,8 @@ Quando nao existe JWT:
 2. `x-user-id` e `x-actor-user-id` continuam sendo aceitos.
 3. `x-role` e `x-roles` continuam sendo aceitos.
 4. `x-permissions` continua funcionando apenas como fallback legacy.
+
+Excecao de plataforma: no boundary `/api/v1/platform/*`, esse fallback por headers e transitorio para desenvolvimento/teste/local. Em producao, headers simulados nao podem conceder acesso a Console da Plataforma.
 
 ## Resolver persistido
 
@@ -87,6 +168,7 @@ Esse desenho mantem o `tenantContextMiddleware` sincronico como fallback/base e 
 - Enquanto os headers legacy existirem, chamadas internas antigas ainda podem simular tenant, user e roles sem JWT.
 - No runtime `memory`, JWT ainda usa roles do token contra o catalogo local.
 - `x-permissions` ainda existe para chamadas legacy.
+- Rotas de plataforma ja bloqueiam legacy headers em producao, mas rotas tenant ainda seguem o plano gradual de modo strict.
 - Ainda nao ha refresh token, logout, revogacao, Redis runtime ou RLS.
 
 ## Plano para modo strict

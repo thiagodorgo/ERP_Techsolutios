@@ -1,5 +1,6 @@
 export type UserRole =
-  | "Admin Tenant"
+  | "Super Admin"
+  | "Administrador"
   | "Gestor Operacional"
   | "Operador Logistico"
   | "Supervisor"
@@ -12,6 +13,7 @@ export type AuthUser = {
   email: string;
   cognitoSubject: string;
   roles: UserRole[];
+  permissions: string[];
   status: "active" | "inactive";
 };
 

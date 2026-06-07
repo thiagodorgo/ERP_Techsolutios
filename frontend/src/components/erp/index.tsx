@@ -26,6 +26,9 @@ import type { DomainEvent } from "../../modules/events/types";
 import type { LogisticsAsset } from "../../modules/logistics/types";
 import type { WorkOrder, WorkOrderEvidence, WorkOrderTimelineItem } from "../../modules/work-orders/types";
 import type { TenantContext } from "../../modules/context/types";
+import { tenantNavigation } from "../../navigation/tenantNavigation";
+import { canShowNavigationItem } from "../../navigation/types";
+import { usePermissions } from "../../providers/PermissionProvider";
 
 export function TenantBadge({ context }: { context: TenantContext }) {
   return <Badge tone={context.tenantStatus === "blocked" ? "danger" : "info"}>{context.tenantName}</Badge>;
@@ -58,13 +61,24 @@ export function SecurityNotice() {
   );
 }
 
-const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/work-orders", label: "Ordens de Servico", icon: ClipboardList },
-  { to: "/logistics", label: "Painel Logistico", icon: Truck },
-];
+const iconByModule = {
+  dashboard: LayoutDashboard,
+  "work-orders": ClipboardList,
+  logistics: Truck,
+  users: UserRoundCog,
+  "tenant-admin": ShieldCheck,
+};
 
-export function Sidebar() {
+export function Sidebar({ context }: { context?: TenantContext | null }) {
+  const { permissions } = usePermissions();
+  const visibleItems = tenantNavigation.filter((item) =>
+    canShowNavigationItem(item, {
+      permissions,
+      enabledModules: ["dashboard", "work-orders", "logistics", "users", "tenant-admin"],
+      tenantStatus: context?.tenantStatus,
+    }),
+  );
+
   return (
     <aside className="erp-sidebar">
       <div className="erp-sidebar__brand">
@@ -75,10 +89,15 @@ export function Sidebar() {
         </div>
       </div>
       <nav>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink key={item.to} to={item.to}>
+        {visibleItems.map((item) => {
+          const Icon = iconByModule[item.module as keyof typeof iconByModule] ?? LayoutDashboard;
+          return item.disabled ? (
+            <span key={item.path} className="erp-nav-disabled">
+              <Icon size={18} />
+              <span>{item.label}</span>
+            </span>
+          ) : (
+            <NavLink key={item.path} to={item.path}>
               <Icon size={18} />
               <span>{item.label}</span>
             </NavLink>
@@ -402,7 +421,7 @@ export function DomainRail() {
     <div className="erp-domain-rail">
       <span><Activity size={14} /> Eventos</span>
       <span><CalendarClock size={14} /> SLA</span>
-      <span><UserRoundCog size={14} /> RBAC</span>
+      <span><UserRoundCog size={14} /> Usuarios</span>
       <span><Map size={14} /> Logistica</span>
     </div>
   );

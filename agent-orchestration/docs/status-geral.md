@@ -589,3 +589,75 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - migrar chamadas internas para `Authorization: Bearer`
 - registrar auditoria com actor real
 - tratar refresh/logout, Redis e RLS em blocos separados
+
+## Atualizacao 2026-06-02 - Console da Plataforma Foundation
+
+### Implementado
+
+- criado `docs/platform-console.md`
+- criado `docs/modules.md`
+- criado `docs/frontend-screens.md`
+- criado `docs/api.md`
+- criado `docs/architecture.md`
+- `docs/rbac.md` atualizado com sidebar dinamica, escopo platform e escopo tenant
+- `docs/09-mapa-telas-frontend.md` atualizado com labels `Usuarios`, `Administrador` e telas P01/P02/P03 da Console da Plataforma
+- criado modulo frontend `frontend/src/modules/platform`
+- criado layout separado `PlatformLayout`
+- criadas telas frontend P01 Tenants, P02 Detalhe do Tenant e P03 Modulos do Tenant
+- criada navegacao dinamica preparada para `scope: platform` e `scope: tenant`
+- criados guards `PlatformGuard` e `PermissionGuard`
+- mock de sessao atualizado com permissoes de plataforma para desenvolvimento
+- criado modulo backend `src/modules/platform`
+- criados endpoints iniciais `/api/v1/platform/tenants`
+- endpoints backend usam service/repository em memoria, sem schema ou migration nesta fundacao
+- criado teste `tests/platform-routes.test.ts`
+- revisao final limitou fallback legacy de `/api/v1/platform/*` a desenvolvimento/teste/local e bloqueou headers simulados em `NODE_ENV=production`
+- `frontend/links_Figma.txt` permaneceu intocado como arquivo nao rastreado existente
+
+### Limitacoes
+
+- persistencia real de `tenant_modules` ainda pendente
+- auditoria global de plataforma ainda pendente
+- endpoints de plataforma estao preparados com service em memoria para MVP inicial
+- rotas frontend de Visao Geral, Planos e Modulos, Auditoria Global, Health e Configuracoes aparecem como itens desabilitados
+
+### Proximos passos
+
+- versionar persistencia de modulos por tenant quando o modelo for aprovado
+- conectar o frontend ao backend real com `VITE_USE_MOCKS=false`
+- expandir auditoria global para operacoes criticas
+- definir plano de suporte auditado para acesso operacional a dados de tenant
+
+## Atualizacao 2026-06-06 - Checklists Configuraveis por Tenant
+
+### Implementado
+
+- branch criada/usada: `feature/configurable-checklists-backend`
+- formalizada a Fase 1 documental do modulo `checklists`
+- `RF-CAD-006` atualizado para checklists configuraveis por tenant
+- documentado que a plataforma define os componentes permitidos e o tenant apenas configura templates/campos
+- documentados componentes iniciais: `text`, `textarea`, `number`, `currency`, `date`, `datetime`, `select`, `multi_select`, `checkbox`, `radio`, `boolean`, `photo`, `file`, `signature`, `barcode`, `qr_code`, `location`, `rating`
+- documentado modelo conceitual com `checklist_templates`, `checklist_template_fields`, `checklist_runs` e `checklist_run_answers`
+- documentados endpoints planejados para componentes, templates, campos, execucoes e respostas
+- documentadas permissoes RBAC `checklists.template.*` e `checklists.run.*`
+- documentados impactos futuros em frontend Web, mobile Flutter/offline, banco, auditoria e versionamento
+
+### Decisoes
+
+- nenhuma migration Prisma foi criada nesta fase
+- nenhum modulo backend foi implementado nesta fase
+- nenhuma tela frontend foi criada nesta fase
+- a implementacao sera dividida em fases para evitar backend incompleto e preservar a arquitetura atual
+
+### Limitacoes
+
+- modulo `checklists` ainda esta documentado, nao executavel
+- storage de evidencias, assinatura, QR Code, codigo de barras, localizacao e sincronizacao offline ainda dependem de desenho tecnico especifico
+- auditoria real do modulo dependera da implementacao backend futura
+
+### Proximos passos
+
+- criar migration versionada quando o modelo for aprovado
+- implementar modulo backend `src/modules/checklists` seguindo controller/service/repository/schemas/types/permissions
+- adicionar testes tenant-scoped para templates, campos, execucoes e respostas
+- planejar telas Web e fluxo mobile/offline apos contratos backend estabilizados
