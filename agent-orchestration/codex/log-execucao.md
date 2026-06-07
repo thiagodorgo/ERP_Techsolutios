@@ -533,3 +533,16 @@
 - `frontend/src/services/api/client.ts` passou a aceitar headers `X-Role` e `X-Permissions`, preservando o padrao atual de tenant via headers enquanto JWT real nao e obrigatorio
 - mocks ficam como fallback explicito de desenvolvimento quando `VITE_USE_MOCKS=true`
 - mobile Flutter, Figma e backend nao foram alterados nesta rodada
+
+## 2026-06-07 - Padronizacao de navegacao RBAC
+
+- branch usada: `feature/navigation-rbac-sidebar-standardization`
+- objetivo: padronizar sidebar/navegacao por RBAC sem alterar backend, Prisma, migrations, API contracts, Figma ou mobile
+- criado modelo unificado de navegacao com escopo, modo, permissoes, roles, status, icone, modulo/feature e filhos
+- implementado filtro `canAccessNavigationItem`/`filterNavigationItems`
+- sidebar tenant e Platform Console passaram a usar a mesma lista filtrada nos modos expandido e recolhido
+- removida renderizacao de links planejados/desabilitados; usuario sem permissao nao ve item nem grupo vazio
+- `PermissionProvider`, `PermissionGuard` e `PlatformGuard` alinhados ao contexto de roles/permissoes
+- rotas Web operacionais receberam guards para impedir renderizacao por acesso direto sem permissao
+- W02A mantida como rota administrativa dependente de `tenant_checklists:read`; operador nao ve W02A
+- documentacao atualizada em `docs/rbac.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/modules.md`, `agent-orchestration/docs/status-geral.md` e este log

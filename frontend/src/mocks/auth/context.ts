@@ -52,6 +52,7 @@ export const mockTenantContexts: TenantContext[] = [
       "checklist_runs:complete",
       "checklist_runs:acknowledge",
     ],
+    enabledModules: ["dashboard", "work-orders", "logistics", "users", "tenant-admin", "tenant_checklist"],
     scope: "branch",
   },
   {
@@ -62,6 +63,7 @@ export const mockTenantContexts: TenantContext[] = [
     branchName: "Contagem - Planta",
     role: "Auditor",
     permissions: ["dashboard:view", "work-orders:view", "audit:view"],
+    enabledModules: ["dashboard", "work-orders"],
     scope: "tenant",
   },
 ];

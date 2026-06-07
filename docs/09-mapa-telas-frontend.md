@@ -66,6 +66,17 @@ Princípios adotados:
 5. Health do sistema
 6. Configurações globais
 
+### Regra RBAC da navegação
+
+- A sidebar deve ser uma projecao filtrada por escopo, modo, modulo/feature habilitada, papel, permissao e status do item.
+- Usuario sem permissao nao ve o item; nao ha link desabilitado, grupo vazio, placeholder ou icone recolhido para item sem acesso.
+- Sidebar expandida e recolhida devem usar a mesma lista filtrada.
+- Platform Admin ve a Console da Plataforma e pode operar contextos tenant/admin/operacao autorizados.
+- Tenant Admin ve somente o proprio tenant/empresa cliente, incluindo W02A quando tiver `tenant_checklists:read`.
+- Supervisor ve somente operacao do proprio tenant conforme escopo e permissoes.
+- Operador ve somente sua operacao, tarefas, OS/atendimentos, checklists operacionais permitidos e notificacoes.
+- W02A e administrativa; operador nao deve ver `/administrator/checklists`.
+
 ## Telas Console da Plataforma
 
 > Estas telas usam escopo `platform`, layout separado do tenant e permissões `platform:*`. Não fazem parte da administração interna do tenant.
