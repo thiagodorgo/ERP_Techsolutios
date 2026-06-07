@@ -569,3 +569,21 @@
 - testes ampliados em `tests/core-saas.test.ts` e `tests/checklist-routes.test.ts`
 - testes especificos executados durante a implementacao: `npm test`, `node --test --import tsx tests/checklist-routes.test.ts` e `node --test --import tsx tests/platform-routes.test.ts`
 - documentacao atualizada em `docs/rbac.md`, `docs/api.md`, `docs/modules.md`, `agent-orchestration/docs/status-geral.md` e este log
+
+## 2026-06-07 - PostgreSQL RLS tenant isolation
+
+- branch usada: `feature/postgres-rls-tenant-isolation`
+- objetivo: adicionar Row Level Security PostgreSQL como camada de defesa contra vazamento cross-tenant
+- migration criada: `prisma/migrations/20260608000000_enable_tenant_rls/migration.sql`
+- tabelas protegidas por RLS: `branches`, `users`, `local_auth_credentials`, `roles`, `user_role_assignments`, `audit_logs`, `checklist_templates`, `checklist_template_components`, `checklist_runs`, `checklist_run_answers`, `checklist_attachments`, `checklist_markers` e `checklist_acknowledgements`
+- policies usam `current_setting('app.current_tenant_id', true)`
+- policy de `roles` permite roles globais com `tenant_id IS NULL` e roles do tenant atual
+- `FORCE ROW LEVEL SECURITY` aplicado para que os testes com usuario da aplicacao/owner provem isolamento real
+- criado helper `src/database/rls.ts` com `setTenantRlsContext` e `withTenantRls`
+- integrados contextos RLS em Core SaaS Prisma, auth local, RBAC persistido, repository Prisma de checklists e seed
+- criado teste especifico `tests/rls-tenant-isolation.test.ts`
+- documentacao atualizada em `docs/database.md`, `docs/architecture.md`, `docs/rbac.md`, `agent-orchestration/docs/status-geral.md` e este log
+- fora de escopo mantido: frontend, Figma, contratos API desnecessarios, upload/storage, mobile e refatoracao ampla
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `node --test --import tsx tests/rls-tenant-isolation.test.ts` e `git diff --check`
+- observacao de validacao: o primeiro `npx prisma migrate status` antes do deploy apontou a nova migration pendente, como esperado; apos `npx prisma migrate deploy`, o status ficou atualizado
+- observacao de teste: `DATABASE_URL` local usa `postgres`, que e superuser e bypassa RLS; por isso o teste especifico cria um papel temporario nao-superuser, concede acesso minimo, valida isolamento e remove o papel ao final

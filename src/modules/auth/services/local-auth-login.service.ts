@@ -73,6 +73,8 @@ type AuditLogRepositoryLike = {
   }): Promise<unknown>;
 };
 
+type TenantContextRunner = <T>(tenantId: string, work: () => Promise<T>) => Promise<T>;
+
 export class LocalAuthLoginService {
   constructor(
     private readonly credentials: LocalAuthCredentialRepositoryLike,
@@ -80,6 +82,7 @@ export class LocalAuthLoginService {
     private readonly users: UserRepositoryLike,
     private readonly userRoles: UserRoleRepositoryLike,
     private readonly auditLogs: AuditLogRepositoryLike,
+    private readonly runWithTenantContext: TenantContextRunner = async (_tenantId, work) => work(),
   ) {}
 
   async authenticateLocalCredential(
@@ -88,6 +91,16 @@ export class LocalAuthLoginService {
     const tenantId = input.tenant_id.trim();
     const email = normalizeCredentialEmail(input.email);
 
+    return this.runWithTenantContext(tenantId, () =>
+      this.authenticateLocalCredentialWithContext(tenantId, email, input.password),
+    );
+  }
+
+  private async authenticateLocalCredentialWithContext(
+    tenantId: string,
+    email: string,
+    password: string,
+  ): Promise<LocalAuthLoginResult> {
     const tenant = await this.tenants.findById(tenantId);
 
     if (!tenant) {
@@ -117,7 +130,7 @@ export class LocalAuthLoginService {
       };
     }
 
-    const passwordMatches = await verifyPassword(input.password, credential.password_hash);
+    const passwordMatches = await verifyPassword(password, credential.password_hash);
 
     if (!passwordMatches) {
       await this.credentials.incrementFailedAttempts(credential.id, tenantId);

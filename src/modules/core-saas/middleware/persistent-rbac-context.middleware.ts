@@ -77,15 +77,21 @@ async function getDefaultPersistentAuthorizationResolver(): Promise<PersistentAu
 }
 
 async function createDefaultPersistentAuthorizationResolver(): Promise<PersistentAuthorizationResolver> {
-  const [{ RoleRepository, UserRoleRepository }, { PersistentAuthorizationService }] =
+  const [{ prisma }, { withTenantRls }, { RoleRepository, UserRoleRepository }, { PersistentAuthorizationService }] =
     await Promise.all([
+      import("../../../database/prisma.js"),
+      import("../../../database/rls.js"),
       import("../repositories/index.js"),
       import("../services/persistent-authorization.service.js"),
     ]);
-  const service = new PersistentAuthorizationService(
-    new UserRoleRepository(),
-    new RoleRepository(),
-  );
 
-  return (input) => service.resolveForActor(input);
+  return (input) =>
+    withTenantRls(prisma, input.tenantId, async (tx) => {
+      const service = new PersistentAuthorizationService(
+        new UserRoleRepository(tx),
+        new RoleRepository(tx),
+      );
+
+      return service.resolveForActor(input);
+    });
 }
