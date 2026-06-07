@@ -230,7 +230,7 @@
 - adicionado `jose` como dependencia runtime para assinatura/verificacao JWT em ESM/TypeScript, sem implementacao manual com `crypto`
 - `src/config/env.ts` atualizado com `JWT_SECRET` e `JWT_EXPIRES_IN`
 - `JWT_SECRET` passa a falhar claramente em `NODE_ENV=production` quando ausente ou com segredo local/dev conhecido
-- `.env.example` atualizado com `JWT_SECRET="dev-only-change-me"` e `JWT_EXPIRES_IN="15m"` apenas para local/dev
+- `.env.example` recebeu variaveis JWT locais/dev naquele bloco; valores finais atuais foram realinhados depois para `JWT_SECRET="change-me-in-local-development"` e `JWT_EXPIRES_IN="1h"`
 - criado `src/modules/auth/services/jwt.service.ts`
 - `src/modules/auth/types/auth.types.ts` atualizado com `SignAccessTokenInput` e `AuthenticatedTokenPayload`
 - `POST /api/v1/auth/login` atualizado para retornar `access_token`, `token_type: Bearer` e `expires_in`
@@ -638,3 +638,17 @@
 - Dashboard/Resumo Financeiro nao usa W03; a entrada financeira foi renomeada no mapa para evitar conflito de numeracao
 - documentos/logs revisados: `docs/09-mapa-telas-frontend.md`, `docs/frontend-screens.md`, `docs/modules.md`, `docs/rbac.md`, `agent-orchestration/docs/status-geral.md` e este log
 - fora de escopo mantido: backend, Prisma/migrations, API, Figma, mobile e rota `/administrator/settings`
+
+## 2026-06-07 - hardening JWT/session auth context
+
+- objetivo: reduzir dependencia de headers legacy e consolidar JWT/Bearer como fonte principal do contexto autenticado
+- branch usada: `feature/auth-jwt-session-hardening`
+- mapeamento inicial confirmou login local tenant-scoped com JWT via `jose`, `JWT_SECRET`/`JWT_EXPIRES_IN`, middleware `attachAuthenticatedActor()` e fallback legacy via `resolveRequestActor()`
+- `tenantContextMiddleware` passou a rejeitar actor `legacy_headers` em `NODE_ENV=production` com `403 FORBIDDEN` e reason `legacy_headers_disabled`
+- regra preservada: Bearer token invalido, malformado ou expirado retorna `401 INVALID_TOKEN` antes de qualquer fallback
+- fallback legacy segue ativo em desenvolvimento/teste para chamadas internas e testes existentes
+- `tests/platform-routes.test.ts` cobre JWT com role de plataforma real e rejeicao de JWT tenant comum no boundary platform
+- `tests/checklist-routes.test.ts` cobre bloqueio de headers legacy em producao para rota sensivel tenant-scoped
+- `.env.example` atualizado para `JWT_SECRET="change-me-in-local-development"` e `JWT_EXPIRES_IN="1h"` sem segredo real
+- documentacao atualizada em `docs/auth.md`, `docs/api.md`, `docs/rbac.md`, `docs/architecture.md`, `docs/modules.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: frontend amplo, Figma, mobile, OAuth/social login, refresh token complexo, Prisma/migrations e contratos API destrutivos

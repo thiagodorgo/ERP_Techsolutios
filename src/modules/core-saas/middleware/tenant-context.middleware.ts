@@ -20,10 +20,20 @@ declare module "express-serve-static-core" {
 
 export function tenantContextMiddleware(
   request: Request,
-  _response: Response,
+  response: Response,
   next: NextFunction,
 ): void {
   const actor = resolveRequestActor(request);
+
+  if (actor?.authType === "legacy_headers" && !allowsLegacyTenantHeaders()) {
+    sendForbidden(
+      response,
+      "legacy_headers_disabled",
+      "Legacy authentication headers are disabled outside development and test.",
+    );
+    return;
+  }
+
   const explicitPermissions =
     actor?.authType === "legacy_headers" &&
     readHeader(request, "x-permissions") !== undefined;
@@ -87,4 +97,24 @@ function readHeader(request: Request, headerName: string): string | undefined {
   const value = request.header(headerName);
 
   return value?.trim() || undefined;
+}
+
+function allowsLegacyTenantHeaders(): boolean {
+  const nodeEnv = process.env.NODE_ENV?.trim().toLowerCase();
+
+  return !nodeEnv || nodeEnv === "development" || nodeEnv === "test";
+}
+
+function sendForbidden(
+  response: Response,
+  reason: string,
+  message: string,
+): void {
+  response.status(403).json({
+    error: {
+      code: "FORBIDDEN",
+      reason,
+      message,
+    },
+  });
 }

@@ -91,12 +91,12 @@ O backend MVP deve atender o frontend com contratos claros, versionados e separa
 - nao crie dados sensiveis;
 - registre pendencias de persistencia e auditoria.
 
-Para o boundary `/api/v1/platform/*`, qualquer fallback por headers legados fica restrito a desenvolvimento/teste/local. Em producao, a Console da Plataforma deve depender de actor autenticado e permissao de plataforma.
+Para os boundaries sensiveis `/api/v1/platform/*`, Core SaaS e Checklists, qualquer fallback por headers legados fica restrito a desenvolvimento/teste/local. Em producao, esses boundaries devem depender de actor autenticado via `Authorization: Bearer`; token invalido bloqueia antes de qualquer fallback. No runtime Prisma, o actor JWT alimenta RBAC persistido e os repositories tenant-scoped executam com `app.current_tenant_id` via `withTenantRls`.
 
 ## Evolucao planejada
 
 - Persistir modulos habilitados por tenant.
 - Criar auditoria global para acoes de plataforma.
 - Implementar modo suporte auditado.
-- Reduzir headers legados por feature flag ou modo strict.
+- Remover codigo de headers legados por feature flag ou modo strict depois da migracao para Bearer.
 - Evoluir operacoes platform multi-tenant com contexto RLS explicito e auditoria.

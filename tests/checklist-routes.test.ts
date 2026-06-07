@@ -297,6 +297,24 @@ test("checklist routes enforce tenant context and permission boundaries", async 
   });
 });
 
+test("checklist routes reject legacy headers in production", async () => {
+  await withChecklistApi(async ({ baseUrl, seed }) => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+
+    try {
+      const response = await requestJson(baseUrl, "/api/v1/tenant/checklists", {
+        headers: authHeaders(seed.tenantA, seed.adminA),
+      });
+
+      assert.equal(response.status, 403);
+      assert.equal(response.body.error.reason, "legacy_headers_disabled");
+    } finally {
+      restoreOptionalEnv("NODE_ENV", previousNodeEnv);
+    }
+  });
+});
+
 async function createAndPublishChecklist(
   baseUrl: string,
   tenant: Tenant,
@@ -494,4 +512,13 @@ async function closeServer(server: Server): Promise<void> {
       resolve();
     });
   });
+}
+
+function restoreOptionalEnv(key: string, value: string | undefined): void {
+  if (value === undefined) {
+    delete process.env[key];
+    return;
+  }
+
+  process.env[key] = value;
 }

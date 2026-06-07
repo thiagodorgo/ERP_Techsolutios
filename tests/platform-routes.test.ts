@@ -3,6 +3,7 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 
+import { signAccessToken } from "../src/modules/auth/index.js";
 import { CoreSaasRegistry } from "../src/modules/core-saas/services/core-saas.service.js";
 import { MemoryCoreSaasAdapter } from "../src/modules/core-saas/services/memory-core-saas.adapter.js";
 import { InMemoryCoreSaasStore } from "../src/modules/core-saas/store/core-saas.store.js";
@@ -31,6 +32,39 @@ test("platform routes require platform scope", async () => {
     });
     assert.equal(platformActor.status, 200);
     assert.equal(Array.isArray(platformActor.body.data), true);
+  });
+});
+
+test("platform routes accept JWT platform scope and reject tenant JWT scope", async () => {
+  await withPlatformApi(async (baseUrl) => {
+    const platformToken = await signAccessToken({
+      user_id: "usr_platform_jwt",
+      tenant_id: "platform",
+      email: "platform@example.com",
+      roles: ["platform_admin"],
+    });
+    const tenantToken = await signAccessToken({
+      user_id: "usr_tenant_jwt",
+      tenant_id: "ten_demo",
+      email: "tenant@example.com",
+      roles: ["tenant_admin"],
+    });
+
+    const platformActor = await requestJson(baseUrl, "/api/v1/platform/tenants", {
+      headers: {
+        authorization: `Bearer ${platformToken}`,
+      },
+    });
+    const tenantActor = await requestJson(baseUrl, "/api/v1/platform/tenants", {
+      headers: {
+        authorization: `Bearer ${tenantToken}`,
+      },
+    });
+
+    assert.equal(platformActor.status, 200);
+    assert.equal(Array.isArray(platformActor.body.data), true);
+    assert.equal(tenantActor.status, 403);
+    assert.equal(tenantActor.body.error.reason, "platform_permission_required");
   });
 });
 
