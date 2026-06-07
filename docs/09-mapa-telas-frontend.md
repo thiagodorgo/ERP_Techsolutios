@@ -58,6 +58,39 @@ Princípios adotados:
 5. Sincronização e pendências
 6. Notificações
 
+### Console da Plataforma — macro navegação
+1. Tenants
+2. Detalhe do tenant
+3. Módulos do tenant
+4. Auditoria global
+5. Health do sistema
+6. Configurações globais
+
+## Telas Console da Plataforma
+
+> Estas telas usam escopo `platform`, layout separado do tenant e permissões `platform:*`. Não fazem parte da administração interna do tenant.
+
+### P01 — Tenants
+- **Objetivo:** listar tenants/clientes da plataforma, status, plano, módulos habilitados e resumo de uso.
+- **Usuários:** Super Admin / dono do SaaS.
+- **Permissões:** `platform:tenants:read`, `platform:tenants:create`, `platform:tenants:update`, `platform:tenants:suspend`.
+- **Rota:** `/platform/tenants`.
+- **Prioridade:** MVP da Console da Plataforma.
+
+### P02 — Detalhe do Tenant
+- **Objetivo:** consultar dados gerais do tenant, administrador principal, atividade recente e ações críticas.
+- **Usuários:** Super Admin / dono do SaaS.
+- **Permissões:** `platform:tenants:read`, `platform:tenants:update`, `platform:users:create_admin`.
+- **Rota:** `/platform/tenants/:tenantId`.
+- **Prioridade:** MVP da Console da Plataforma.
+
+### P03 — Módulos do Tenant
+- **Objetivo:** habilitar, bloquear e auditar módulos contratados por tenant e plano.
+- **Usuários:** Super Admin / dono do SaaS.
+- **Permissões:** `platform:tenants:read`, `platform:modules:manage`.
+- **Rota:** `/platform/tenants/:tenantId/modules`.
+- **Prioridade:** MVP da Console da Plataforma.
+
 ## Telas Web
 
 > Padrão de descrição aplicado a cada tela: objetivo, papéis, permissões, dados/componentes/ações/estados, regras, integrações, UX (responsividade/mobile), offline, indicadores e artefatos (filtros/tabelas/cards/modais/alertas/timeline/logs), navegação e prioridade.
@@ -110,11 +143,24 @@ Princípios adotados:
 - **Permissões:** leitura consolidada + exportação.
 - **Prioridade:** MVP (mínimo) / Enterprise (BI expandido).
 
-### W05 — Gestão de Tenant, Planos e Módulos
+### W05 — Administrador
 - **Objetivo:** administrar dados do tenant, módulos ativos e feature flags.
-- **Usuários:** Admin Tenant, Suporte interno (com autorização).
+- **Usuários:** Administrador, Suporte interno (com autorização).
 - **Permissões:** administração do core SaaS.
 - **Prioridade:** MVP.
+
+### W02A — Administrador: Checklists
+- **Objetivo:** configurar a feature `tenant_checklist` por tenant.
+- **Usuários:** Administrador, Gestor autorizado.
+- **Permissões:** `tenant_checklists:read`, `tenant_checklists:create`, `tenant_checklists:update`, `tenant_checklists:publish`.
+- **Rota:** `/administrator/checklists`.
+- **Dados:** checklists do tenant, tipo, status, versao, componentes, obrigatoriedade de fotos, observacoes, marcadores e ciencia.
+- **Tipos:** `towing_collection`, `towing_delivery`, `technical_evidence`, `custom`.
+- **Componentes:** `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement`, `before_after`.
+- **Ações:** listar, criar, editar, ativar/inativar, selecionar componentes, configurar obrigatoriedades e publicar checklist.
+- **Estados:** checklist rascunho, checklist publicado, checklist inativo.
+- **Regras:** componentes sao fornecidos pela plataforma; tenant configura apenas schemas e regras; publicacao versiona o schema consumido por Web/Mobile.
+- **Prioridade:** Scale.
 
 ### W06 — Gestão de Filiais
 - **Objetivo:** cadastro e escopo operacional por filial.
@@ -171,9 +217,18 @@ Princípios adotados:
 - **Usuários:** Admin, Financeiro.
 - **Prioridade:** Scale.
 
-### W16 — Cadastros: Checklists dinâmicos
-- **Objetivo:** definir checklists por tipo de serviço/risco/etapa.
+### W16 — Cadastros: Checklists configuraveis
+- **Objetivo:** criar, editar, publicar, desativar e versionar modelos de checklist por tenant usando componentes permitidos pela plataforma.
 - **Usuários:** Admin, Gestor, Supervisor.
+- **Permissões:** `tenant_checklists:read`, `tenant_checklists:create`, `tenant_checklists:update`, `tenant_checklists:publish`.
+- **Dados:** nome, descricao, modulo relacionado, status, versao, campos, ordem, obrigatoriedade, configuracao, regras de validacao e visibilidade.
+- **Componentes:** lista de templates, builder/editor, paleta de componentes, painel de configuracao de campo, preview de execucao.
+- **Ações:** criar template, adicionar campo, reordenar, salvar rascunho, publicar versao, arquivar/inativar.
+- **Estados:** draft, published, archived, inactive, blocked por permissao, erro de validacao, auditoria visivel.
+- **Regras:** componentes sao definidos pela plataforma; tenant apenas configura templates/campos; toda acao valida `tenant_id`; publicacao preserva versao.
+- **Integrações:** RBAC, auditoria, OS, estoque, compras, vendas, manutencao e mobile sync futuro.
+- **Responsividade/mobile:** builder Web primeiro; execucao mobile prevista em M05/M06.
+- **Offline:** nao para configuracao; execucao offline futura no mobile.
 - **Prioridade:** Scale.
 
 ### W17 — Ordem de Serviço: Listagem e busca global
@@ -302,9 +357,13 @@ Princípios adotados:
 - prioridade: MVP.
 
 ### M05 — Checklist de execução
-- objetivo: garantir conformidade operacional em campo.
+- objetivo: garantir conformidade operacional em campo executando checklist publicado e versionado.
 - usuários: executor/supervisor.
-- offline: obrigatório com sincronização posterior.
+- permissões: `checklist_runs:read`, `checklist_runs:create`, `checklist_runs:update`, `checklist_runs:complete`.
+- dados: template publicado, versao usada, campos obrigatorios, respostas, evidencias, entidade relacionada e estado de sync.
+- componentes: renderer de campos, captura de foto/arquivo, assinatura, QR Code, codigo de barras, localizacao, validacao de obrigatorios.
+- regras: execucao pertence ao `tenant_id`; alteracao posterior do template nao altera execucao antiga; conclusao bloqueia obrigatorios pendentes; campos devem vir do schema da API quando possivel.
+- offline: obrigatorio com fila local e sincronização posterior.
 - prioridade: MVP (básico) / Scale (dinâmico).
 
 ### M06 — Evidências: fotos, anexos e observações
@@ -325,17 +384,28 @@ Princípios adotados:
 - objetivo: apoiar deslocamento e registro operacional.
 - prioridade: Scale.
 
-### M10 — Sincronização offline e conflitos
-- objetivo: visualizar fila local, status de envio e conflitos.
-- ações: sincronizar agora, reenviar, abrir conflito.
+### M10 — Checklist de coleta guincho/reboque
+- objetivo: executar checklist `towing_collection` na coleta.
+- dados: schema publicado, tipo de veiculo, imagem dinamica por tipo de veiculo, marcadores de avaria, fotos obrigatorias conforme template, observacoes e entidade relacionada.
+- ações: selecionar tipo de veiculo, marcar avarias, anexar fotos, salvar execucao.
+- estados: execucao em andamento, execucao concluida.
+- regras: consumir schema da API; evitar hardcode de campos; execucao deve preservar versao do checklist.
 - prioridade: MVP.
 
-### M11 — Pendências e exceções
-- objetivo: exibir bloqueios que impedem finalização/sync.
+### M11 — Checklist de entrega guincho/reboque
+- objetivo: executar checklist `towing_delivery` na entrega.
+- dados: schema publicado, nova vistoria, comparacao com M10, divergencias, foto obrigatoria de divergencia, observacao obrigatoria e ciencia de responsabilidade.
+- ações: registrar nova vistoria, comparar com coleta, registrar divergencia, coletar ciencia, concluir entrega.
+- estados: execucao em andamento, execucao concluida, execucao com divergencia, execucao pendente de ciencia.
+- regras: se houver divergencia em relacao a M10, exigir foto, observacao obrigatoria e ciencia de responsabilidade; consumir schema da API; evitar hardcode de campos.
 - prioridade: MVP.
 
-### M12 — Notificações operacionais
-- objetivo: alertar novas OS, reatribuições, SLA crítico.
+### M12 — Evidencia tecnica antes/depois
+- objetivo: executar checklist `technical_evidence` para reparo, construcao, manutencao ou servicos internos/externos.
+- dados: schema publicado, foto antes, foto depois, anexos, observacoes tecnicas e entidade relacionada.
+- ações: capturar evidencia antes, registrar intervencao, capturar evidencia depois, concluir execucao.
+- estados: execucao em andamento, execucao concluida.
+- regras: M12 nao pertence ao escopo de guincho/reboque e nao deve reutilizar semantica de coleta/entrega; consumir schema da API; evitar hardcode de campos.
 - prioridade: Scale.
 
 ### M13 — Visão Supervisor Mobile
@@ -362,7 +432,7 @@ Princípios adotados:
 | Prioridade | Telas |
 |---|---|
 | MVP | W01, W02, W05, W06, W07, W08, W09, W10, W11, W12, W13, W17, W18, W19, W20 (básico), W21, W22, W24, W25, W26 (inicial), W29, M01, M02, M03, M04, M05 (básico), M06, M08 (básico), M10, M11 |
-| Scale | W03 (expandido), W14, W15, W16, W23, W26 (avançado), W27, W28, W30, W31, M05 (dinâmico), M07, M09, M12, M13 |
+| Scale | W02A, W03 (expandido), W14, W15, W16, W23, W26 (avançado), W27, W28, W30, W31, M05 (dinâmico), M07, M09, M12, M13 |
 | Enterprise | W04 (BI/governança ampliada), extensões IA/despacho inteligente em W20 e analytics avançado |
 
 ## Fluxos Críticos
@@ -462,7 +532,7 @@ Princípios adotados:
 - **Responsividade:** KPI em cards reflow; tabela vira lista densa.
 
 #### W05 — Gestão de Tenant, Planos e Módulos
-- **Papel principal:** Admin Tenant.
+- **Papel principal:** Administrador.
 - **Permissões:** gestão core SaaS e feature flags.
 - **Dados exibidos:** dados do tenant, módulos ativos, plano, limites.
 - **Ações primárias:** ativar/desativar módulo, editar parâmetros, salvar versão.
@@ -471,8 +541,8 @@ Princípios adotados:
 - **Integrações:** billing/plano, logs de auditoria.
 - **Responsividade:** tabela de módulos com colapso por accordion.
 
-#### W07/W08 — Gestão de Usuários e RBAC
-- **Papel principal:** Admin Tenant.
+#### W07/W08 — Usuários
+- **Papel principal:** Administrador.
 - **Permissões:** C/E/X em usuários e papéis.
 - **Dados exibidos:** usuários, status, vínculos, matriz de permissões por recurso.
 - **Ações primárias:** criar usuário, associar papel, restringir por filial/equipe.
@@ -573,25 +643,26 @@ Princípios adotados:
 - **Integrações:** estoque central + OS.
 - **Offline:** registro local com validação final na sincronização.
 
-#### M10/M11 — Sincronização e Pendências/Exceções
+#### M10/M11/M12 — Checklists schema-driven
 - **Papel principal:** Executor/Supervisor.
-- **Permissões:** leitura da fila + resolução de conflito permitido.
-- **Dados exibidos:** itens pendentes, falhas, conflitos, bloqueios de envio.
-- **Ações primárias:** sincronizar agora, reenviar item, abrir detalhe de conflito.
-- **Estados:** default/loading/empty/error/blocked/exception/read-only/audit-visible.
-- **Alertas/bloqueios:** conflito de versão, erro de permissão, dependência faltante.
-- **Integrações:** motor de sync, API OS/estoque/evidência.
-- **Offline:** tela funcional para gestão de fila local.
+- **Permissões:** `checklist_runs:read`, `checklist_runs:create`, `checklist_runs:update`, `checklist_runs:complete`.
+- **Dados exibidos:** schema publicado, componentes do checklist, anexos, marcadores, comparacao, divergencias e ciencia quando aplicavel.
+- **Ações primárias:** renderizar schema, preencher campos, anexar foto, marcar avaria, comparar coleta/entrega, registrar ciencia, concluir.
+- **Estados:** execucao em andamento, execucao concluida, execucao com divergencia, execucao pendente de ciencia.
+- **Alertas/bloqueios:** foto obrigatoria ausente, observacao de divergencia ausente, ciencia pendente, schema inativo.
+- **Integrações:** API `tenant_checklist`, storage/evidencias, auditoria e sync mobile.
+- **Offline:** captura local com sincronizacao posterior; campos devem vir do schema quando possivel.
 
 ## Fluxos Críticos no Protótipo Navegável (05_FLOWS_CRITICAL_MVP)
 
 1. **F01 Auth e contexto:** W01 → seleção tenant/filial → W02.
 2. **F02 Ciclo OS Web:** W18 criar → W17 listar/filtrar → W19 detalhe → despacho/acompanhar.
-3. **F03 Execução Mobile:** M02 → M03 → M04 → M05 → M06 → M10.
+3. **F03 Execução Mobile:** M02 → M03 → M04 → M05/M10/M11/M12 → M06.
 4. **F04 Estoque por OS:** W22 e/ou M08 vinculando consumo à OS.
 5. **F05 Governança de exceção:** bloqueio/aprovação na W19/W26 com registro em W09.
 6. **F06 Trilha de auditoria:** ação crítica em usuário/permissão/financeiro com verificação em W09.
 7. **F07 Financeiro operacional:** W24 orçamento → W26 faturamento → fechamento inicial.
+8. **F08 Plataforma:** P01 tenants → P02 detalhe → P03 módulos do tenant.
 
 ## Registro de mudança desta versão do documento
 

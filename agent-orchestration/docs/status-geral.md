@@ -589,3 +589,126 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - migrar chamadas internas para `Authorization: Bearer`
 - registrar auditoria com actor real
 - tratar refresh/logout, Redis e RLS em blocos separados
+
+## Atualizacao 2026-06-02 - Console da Plataforma Foundation
+
+### Implementado
+
+- criado `docs/platform-console.md`
+- criado `docs/modules.md`
+- criado `docs/frontend-screens.md`
+- criado `docs/api.md`
+- criado `docs/architecture.md`
+- `docs/rbac.md` atualizado com sidebar dinamica, escopo platform e escopo tenant
+- `docs/09-mapa-telas-frontend.md` atualizado com labels `Usuarios`, `Administrador` e telas P01/P02/P03 da Console da Plataforma
+- criado modulo frontend `frontend/src/modules/platform`
+- criado layout separado `PlatformLayout`
+- criadas telas frontend P01 Tenants, P02 Detalhe do Tenant e P03 Modulos do Tenant
+- criada navegacao dinamica preparada para `scope: platform` e `scope: tenant`
+- criados guards `PlatformGuard` e `PermissionGuard`
+- mock de sessao atualizado com permissoes de plataforma para desenvolvimento
+- criado modulo backend `src/modules/platform`
+- criados endpoints iniciais `/api/v1/platform/tenants`
+- endpoints backend usam service/repository em memoria, sem schema ou migration nesta fundacao
+- criado teste `tests/platform-routes.test.ts`
+- revisao final limitou fallback legacy de `/api/v1/platform/*` a desenvolvimento/teste/local e bloqueou headers simulados em `NODE_ENV=production`
+- `frontend/links_Figma.txt` permaneceu intocado como arquivo nao rastreado existente
+
+### Limitacoes
+
+- persistencia real de `tenant_modules` ainda pendente
+- auditoria global de plataforma ainda pendente
+- endpoints de plataforma estao preparados com service em memoria para MVP inicial
+- rotas frontend de Visao Geral, Planos e Modulos, Auditoria Global, Health e Configuracoes aparecem como itens desabilitados
+
+### Proximos passos
+
+- versionar persistencia de modulos por tenant quando o modelo for aprovado
+- conectar o frontend ao backend real com `VITE_USE_MOCKS=false`
+- expandir auditoria global para operacoes criticas
+- definir plano de suporte auditado para acesso operacional a dados de tenant
+
+## Atualizacao 2026-06-06 - Checklists Configuraveis por Tenant
+
+### Implementado
+
+- branch criada/usada: `feature/configurable-checklists-backend`
+- formalizada a Fase 1 documental do modulo `checklists`
+- `RF-CAD-006` atualizado para checklists configuraveis por tenant
+- documentado que a plataforma define os componentes permitidos e o tenant apenas configura templates/campos
+- documentados componentes iniciais: `text`, `textarea`, `number`, `currency`, `date`, `datetime`, `select`, `multi_select`, `checkbox`, `radio`, `boolean`, `photo`, `file`, `signature`, `barcode`, `qr_code`, `location`, `rating`
+- documentado modelo conceitual com `checklist_templates`, `checklist_template_fields`, `checklist_runs` e `checklist_run_answers`
+- documentados endpoints planejados para componentes, templates, campos, execucoes e respostas
+- documentadas permissoes RBAC `checklists.template.*` e `checklists.run.*`
+- documentados impactos futuros em frontend Web, mobile Flutter/offline, banco, auditoria e versionamento
+
+### Decisoes
+
+- nenhuma migration Prisma foi criada nesta fase
+- nenhum modulo backend foi implementado nesta fase
+- nenhuma tela frontend foi criada nesta fase
+- a implementacao sera dividida em fases para evitar backend incompleto e preservar a arquitetura atual
+
+### Limitacoes
+
+- modulo `checklists` ainda esta documentado, nao executavel
+- storage de evidencias, assinatura, QR Code, codigo de barras, localizacao e sincronizacao offline ainda dependem de desenho tecnico especifico
+- auditoria real do modulo dependera da implementacao backend futura
+
+### Proximos passos
+
+- criar migration versionada quando o modelo for aprovado
+- implementar modulo backend `src/modules/checklists` seguindo controller/service/repository/schemas/types/permissions
+- adicionar testes tenant-scoped para templates, campos, execucoes e respostas
+- planejar telas Web e fluxo mobile/offline apos contratos backend estabilizados
+
+## Atualizacao 2026-06-06 - tenant_checklist W02A e Mobile schema-driven
+
+### Implementado
+
+- feature documentada como `tenant_checklist`
+- adicionada tela frontend prevista `W02A · Administrador — Checklists` em `/administrator/checklists`
+- criados tipos frontend `TenantChecklist`, `TenantChecklistComponent`, `ChecklistRun`, `ChecklistMarker`, `ChecklistAttachment` e `ChecklistAcknowledgement`
+- catalogo de modulos da plataforma atualizado para expor `tenant_checklist` como Fase 2
+- documentado que M10/M11 sao checklists de guincho/reboque e devem consumir schema da API
+- documentado que M10 e coleta (`towing_collection`), com selecao de tipo de veiculo e marcacao de avarias
+- documentado que M11 e entrega (`towing_delivery`), com nova vistoria e comparacao com coleta
+- documentado que divergencia em M11 exige observacao obrigatoria e ciencia de responsabilidade
+- documentado que M12 e evidencia tecnica (`technical_evidence`) antes/depois para reparo, construcao, manutencao ou servicos internos/externos
+- criado `docs/api-screen-endpoints.md` com endpoints esperados para Web tenant e Mobile
+- RBAC atualizado com `tenant_checklists:*` e `checklist_runs:*`
+
+### Limitacoes
+
+- endpoints `tenant_checklist` ainda nao foram implementados no backend
+- tela W02A usa dados mockados locais para prever o fluxo e tipos
+- storage/anexos/assinatura/localizacao ainda dependem de desenho tecnico e backend futuro
+
+### Proximos passos
+
+- implementar backend tenant-scoped para `/tenant/checklists` e `/mobile/checklist-runs`
+- criar migration versionada para modelos, componentes, execucoes, marcadores, anexos e ciencia
+- substituir mocks da W02A por service/API real quando os contratos existirem
+
+## Atualizacao 2026-06-07 - FIGMA-CHECKLIST-HANDOFF.1
+
+### Implementado
+
+- documentacao sincronizada com a rodada `FIGMA-CHECKLIST-HANDOFF.1`
+- W02A reafirmada como tela oficial de configuracao de `tenant_checklist`
+- componentes oficiais registrados: `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement` e `before_after`
+- M10 documentado como coleta/reboque com selecao de tipo de veiculo, imagem dinamica por tipo, marcacao de avarias, fotos obrigatorias conforme template e schema vindo da API
+- M11 documentado como entrega/reboque com comparacao com coleta; divergencia exige foto, observacao obrigatoria e ciencia de responsabilidade
+- M12 documentado fora do escopo de guincho/reboque como evidencia tecnica antes/depois para reparo, manutencao, construcao ou servico tecnico
+- estados oficiais registrados: checklist rascunho, checklist publicado, checklist inativo, execucao em andamento, execucao concluida, execucao com divergencia e execucao pendente de ciencia
+
+### Decisoes
+
+- M10/M11/M12 continuam schema-driven e nao devem ser implementados como telas hardcoded
+- `tenant_checklist` continua feature configuravel por tenant
+- backend, migrations e arquitetura fora do escopo nao foram alterados nesta rodada
+
+### Proximos passos
+
+- implementar backend apenas em rodada propria
+- conectar W02A e mobile aos schemas reais quando os endpoints estiverem prontos

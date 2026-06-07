@@ -16,10 +16,10 @@ export function AppShell() {
 
   return (
     <div className="app-shell">
-      <Sidebar />
+      <Sidebar context={activeContext} />
       <MobileHeader onMenu={() => setMobileNavOpen(true)} />
       <Drawer title="Navegacao" open={mobileNavOpen} onClose={() => setMobileNavOpen(false)}>
-        <Sidebar />
+        <Sidebar context={activeContext} />
       </Drawer>
       <main className="app-main">
         <Topbar context={activeContext} />

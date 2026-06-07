@@ -398,3 +398,114 @@
 - headers legados foram preservados
 - refresh token, logout, sessao/cookie, Redis runtime e RLS permaneceram fora do escopo
 - nenhum commit, push, PR ou merge foi criado
+
+## 2026-06-02 - Console da Plataforma Foundation
+
+- branch criada: `feature/platform-console-foundation`
+- status inicial tinha apenas `frontend/links_Figma.txt` nao rastreado; arquivo preservado e nao alterado
+- auditoria confirmou frontend em `frontend/src` com `layouts`, `providers`, `components`, `modules`, `mocks`, `services` e `pages`
+- auditoria confirmou backend em `src/modules` com `auth`, `core-saas`, routes, services, repositories, middleware e Prisma separado
+- criados `docs/platform-console.md`, `docs/modules.md`, `docs/frontend-screens.md`, `docs/api.md` e `docs/architecture.md`
+- `docs/rbac.md` atualizado com escopos platform/tenant e sidebar dinamica
+- `docs/09-mapa-telas-frontend.md` atualizado para labels `Usuarios` e `Administrador` e telas P01/P02/P03 da Console da Plataforma
+- criado `frontend/src/navigation` com `NavigationItem`, `canShowNavigationItem`, `platformNavigation` e `tenantNavigation`
+- criados `frontend/src/guards/PlatformGuard.tsx` e `frontend/src/guards/PermissionGuard.tsx`
+- criado `frontend/src/layouts/PlatformLayout.tsx`
+- criado modulo `frontend/src/modules/platform` com types, mock, adapter, service e paginas P01/P02/P03
+- `frontend/src/App.tsx` atualizado com rotas `/platform/tenants`, `/platform/tenants/:tenantId` e `/platform/tenants/:tenantId/modules`
+- `frontend/src/components/erp/index.tsx` passou a usar navegacao dinamica de tenant
+- `frontend/src/modules/auth/types.ts` e mock de auth atualizados com permissao de plataforma e label `Administrador`
+- criado modulo backend `src/modules/platform` com permissoes, DTOs, validator, service, repository em memoria e routes
+- `src/app.ts` monta `/api/v1/platform` antes das rotas Core SaaS
+- endpoints iniciais criados: listar/criar/detalhar/atualizar tenants, status, modulos e admin inicial
+- criado `tests/platform-routes.test.ts`
+- revisao final limitou fallback legacy de `/api/v1/platform/*` a desenvolvimento/teste/local e bloqueou headers simulados em `NODE_ENV=production`
+- nenhuma migration ou alteracao de schema Prisma foi feita
+- nenhum package file foi alterado
+
+## 2026-06-06 - Plano Checklists Configuraveis por Tenant
+
+- branch criada/usada: `feature/configurable-checklists-backend`
+- objetivo: formalizar a Fase 1 documental do modulo `checklists`, cobrindo RF, RNF, arquitetura, API planejada, banco, RBAC, frontend futuro, mobile/offline, riscos e proximos passos.
+- arquivos lidos: `docs/05-requisitos-funcionais.md`, `docs/06-requisitos-nao-funcionais.md`, `docs/modules.md`, `docs/api.md`, `docs/database.md`, `docs/rbac.md`, `docs/architecture.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `agent-orchestration/docs/status-geral.md`, `agent-orchestration/codex/log-execucao.md`, `package.json` e `frontend/package.json`.
+- arquivos previstos para alteracao: documentos acima quando aplicavel, alem deste log e do status geral.
+- arquivos previstos para criacao: nenhum, salvo se a revisao mostrar ausencia real de documento necessario; os documentos alvo ja existem no estado atual do repositorio.
+- objetivo de cada alteracao: registrar requisito funcional, requisitos nao funcionais, modelo de dominio, entidades, endpoints planejados, permissoes RBAC, impactos Web/Mobile, decisoes arquiteturais e criterios de aceite do modulo.
+- riscos conhecidos: worktree ja continha alteracoes nao commitadas anteriores da Console da Plataforma; por isso o commit desta tarefa deve separar apenas arquivos relevantes de documentacao/log e nao incluir alteracoes frontend/backend nao relacionadas.
+- estrategia de testes: executar os scripts existentes `npm run check`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npx prisma validate`, `npx prisma generate`, `docker compose config` e `git diff --check` conforme disponibilidade local.
+- criterios de aceite: RF registrado, multi-tenancy explicito, componentes definidos pela plataforma, cliente configurando apenas templates/campos, versionamento, auditoria, RBAC, mobile/offline, endpoints planejados e entidades principais documentados.
+- comandos que nao serao inventados: nao executar `npm run typecheck`, `npm run test:api`, `npm --prefix frontend run lint` ou `npm --prefix frontend run test` se nao existirem nos `package.json`.
+- fora de escopo nesta fase: migration Prisma, rotas backend, service/repository/controller, telas frontend, layout global, auth, Redis, storage de evidencias e qualquer refatoracao ampla.
+
+## 2026-06-06 - Execucao Checklists Configuraveis por Tenant
+
+- branch usada: `feature/configurable-checklists-backend`
+- implementada Fase 1 documental do modulo `checklists`
+- arquivos alterados nesta tarefa: `docs/05-requisitos-funcionais.md`, `docs/06-requisitos-nao-funcionais.md`, `docs/modules.md`, `docs/02-mapa-modulos.md`, `docs/api.md`, `docs/database.md`, `docs/rbac.md`, `RBAC_MATRIX.md`, `docs/architecture.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `agent-orchestration/docs/requisitos.md`, `agent-orchestration/docs/status-geral.md` e `agent-orchestration/codex/log-execucao.md`
+- nenhum arquivo novo foi criado por esta tarefa; alguns documentos editados ja estavam nao rastreados antes da execucao por trabalho anterior da Console da Plataforma
+- documentados RF, RNF, entidades, endpoints planejados, permissoes RBAC, impacto frontend, impacto backend, impacto banco, impacto mobile/offline, decisoes, riscos e proximos passos
+- nenhuma migration Prisma foi criada
+- nenhum backend `src/modules/checklists` foi criado
+- nenhuma tela frontend foi criada
+- `npm run check`: passou
+- `npm run lint`: passou, executando `npm run check`
+- `npm test`: passou com 13 testes
+- `npm run build`: passou
+- `npm --prefix frontend run check`: passou
+- `npm --prefix frontend run build`: passou
+- `npx prisma validate`: falhou inicialmente sem `DATABASE_URL`, depois passou com a URL local placeholder do `.env.example`
+- `npx prisma generate`: passou com a URL local placeholder do `.env.example`
+- `docker compose config`: passou
+- `docker compose up -d`: falhou porque o Docker daemon/Desktop nao estava ativo (`dockerDesktopLinuxEngine` indisponivel)
+- `npx prisma migrate status`: falhou porque o PostgreSQL local nao estava acessivel, coerente com Docker indisponivel
+- `git diff --check`: falhou inicialmente por dois trailing spaces em `docs/05-requisitos-funcionais.md`; corrigido e passou na repeticao
+- commit nao realizado: o worktree ja continha alteracoes e arquivos nao rastreados anteriores da Console da Plataforma, incluindo frontend/backend, e um commit desta tarefa arrastaria escopo nao relacionado
+- push nao realizado porque nao houve commit seguro
+- mensagem de commit sugerida quando o escopo for separado: `feat: document configurable checklists module`
+
+## 2026-06-06 - Validacao e publicacao solicitada
+
+- usuario solicitou validar o que foi feito e subir para o GitHub todas as mudancas
+- escopo confirmado pelo pedido: worktree completo da branch `feature/configurable-checklists-backend`
+- `frontend/links_Figma.md` classificado como mapa de links Figma do projeto, nao como temporario local
+- `gh --version`: disponivel
+- `gh auth status`: autenticado em `github.com` como `thiagodorgo`
+- `npm run check`: passou
+- `npm run lint`: passou
+- `npm test`: passou com 13 testes
+- `node --test --import tsx tests/platform-routes.test.ts`: passou com 3 testes
+- `npm run build`: passou
+- `npm --prefix frontend run check`: passou
+- `npm --prefix frontend run build`: passou
+- `npx prisma validate`: passou com `DATABASE_URL` local placeholder do `.env.example`
+- `npx prisma generate`: passou com `DATABASE_URL` local placeholder do `.env.example`
+- `docker compose config`: passou
+- `git diff --check`: passou
+- `docker compose up -d`: falhou porque o Docker daemon/Desktop nao esta ativo (`dockerDesktopLinuxEngine` indisponivel)
+- `npx prisma migrate status`: falhou porque o PostgreSQL local nao esta acessivel, coerente com Docker indisponivel
+- varredura simples de segredos confirmou que a nova alteracao em `.env.example` e apenas `VITE_USE_MOCKS="true"`; os demais valores encontrados sao placeholders locais ja documentados
+
+## 2026-06-06 - tenant_checklist W02A e Mobile schema-driven
+
+- objetivo: atualizar documentacao e frontend para prever a feature `tenant_checklist`
+- arquivos alterados: `docs/modules.md`, `docs/rbac.md`, `docs/api-screen-endpoints.md`, `docs/frontend-screens.md`, `docs/platform-console.md`, `docs/api.md`, `docs/05-requisitos-funcionais.md`, `docs/09-mapa-telas-frontend.md`, `docs/02-mapa-modulos.md`, `RBAC_MATRIX.md`, `frontend/src/App.tsx`, `frontend/src/navigation/tenantNavigation.ts`, `frontend/src/components/erp/index.tsx`, `frontend/src/mocks/auth/context.ts`, `frontend/src/styles/app.css`, `frontend/src/modules/checklists/*`, `frontend/src/modules/platform/platform.mock.ts`, `src/modules/platform/platform-modules.service.ts`, `agent-orchestration/docs/status-geral.md` e este log
+- criado `docs/api-screen-endpoints.md` para mapear W02A/M10/M11/M12 aos endpoints esperados
+- criada tela frontend `TenantChecklistsPage` para W02A em `/administrator/checklists`
+- criados tipos frontend `TenantChecklist`, `TenantChecklistComponent`, `ChecklistRun`, `ChecklistMarker`, `ChecklistAttachment` e `ChecklistAcknowledgement`
+- atualizado catalogo de modulos para incluir `tenant_checklist`
+- atualizado RBAC com `tenant_checklists:read`, `tenant_checklists:create`, `tenant_checklists:update`, `tenant_checklists:publish`, `checklist_runs:read`, `checklist_runs:create`, `checklist_runs:update` e `checklist_runs:complete`
+- decisao registrada: M10 e `towing_collection`, M11 e `towing_delivery`, M12 e `technical_evidence`
+- decisao registrada: M10/M11/M12 devem consumir schema da API e evitar hardcode de campos quando possivel
+- backend real de `tenant_checklist` nao implementado nesta rodada
+
+## 2026-06-07 - FIGMA-CHECKLIST-HANDOFF.1
+
+- objetivo: sincronizar documentacao do repositorio com as decisoes finais Figma sobre `tenant_checklist`, W02A, M10, M11 e M12
+- arquivos alvo atualizados: `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/platform-console.md`, `docs/modules.md`, `docs/api-screen-endpoints.md`, `docs/rbac.md`, `agent-orchestration/docs/status-geral.md` e este log
+- W02A registrada como tela oficial de configuracao de `tenant_checklist`
+- componentes oficiais registrados: `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement` e `before_after`
+- M10 registrado como coleta/reboque com selecao de tipo de veiculo, imagem dinamica por tipo, marcacao de avarias, fotos obrigatorias conforme template e schema vindo da API
+- M11 registrado como entrega/reboque com comparacao com coleta; divergencia exige foto, observacao obrigatoria e ciencia de responsabilidade
+- M12 registrado como evidencia tecnica antes/depois fora do escopo de guincho/reboque
+- estados registrados: checklist rascunho, checklist publicado, checklist inativo, execucao em andamento, execucao concluida, execucao com divergencia e execucao pendente de ciencia
+- backend, migrations e arquitetura fora do escopo nao foram alterados

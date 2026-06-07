@@ -251,3 +251,120 @@ Esse teste e unitario e nao requer PostgreSQL nem `DATABASE_URL`.
 `InMemoryCoreSaasStore` e `CoreSaasRegistry` permanecem no codebase e sao o padrao de runtime. O modo `prisma` esta disponivel para validacao em ambiente controlado. A migracao definitiva ocorrera quando auth real e RLS estiverem implementados.
 
 Proximo passo recomendado: testar servidor real com `CORE_SAAS_PERSISTENCE=prisma` em ambiente com PostgreSQL migrado, corrigir eventuais diferencas de comportamento entre os modos e iniciar auth local tenant-scoped.
+
+## Checklists configuraveis por tenant
+
+Status atual: modelo conceitual documentado. Nenhuma migration Prisma foi criada nesta fase.
+
+O modulo `checklists` deve seguir o modelo shared-schema multi-tenant do projeto. Todas as tabelas principais devem carregar `tenant_id`, e nenhuma consulta operacional deve buscar dados apenas por `id`.
+
+### Entidades planejadas
+
+#### `checklist_templates`
+
+Representa um modelo de checklist configuravel por tenant.
+
+Campos conceituais:
+
+- `id`
+- `tenant_id`
+- `name`
+- `description`
+- `module_key`
+- `status`
+- `version`
+- `created_by`
+- `updated_by`
+- `published_at`
+- `created_at`
+- `updated_at`
+- `deleted_at`, se o padrao de soft delete for adotado no projeto
+
+Status planejados: `draft`, `published`, `archived`, `inactive`.
+
+#### `checklist_template_fields`
+
+Representa os campos configuraveis de um template.
+
+Campos conceituais:
+
+- `id`
+- `tenant_id`
+- `template_id`
+- `field_key`
+- `label`
+- `type`
+- `required`
+- `order_index`
+- `config`
+- `validation_rules`
+- `visibility_rules`
+- `created_at`
+- `updated_at`
+
+`config`, `validation_rules` e `visibility_rules` devem usar JSON/JSONB conforme o padrao Prisma/PostgreSQL escolhido na implementacao.
+
+#### `checklist_runs`
+
+Representa uma execucao/preenchimento de checklist.
+
+Campos conceituais:
+
+- `id`
+- `tenant_id`
+- `template_id`
+- `template_version`
+- `related_entity_type`
+- `related_entity_id`
+- `status`
+- `started_by`
+- `completed_by`
+- `started_at`
+- `completed_at`
+- `created_at`
+- `updated_at`
+
+Status planejados: `in_progress`, `completed`, `cancelled`.
+
+#### `checklist_run_answers`
+
+Representa as respostas de cada campo preenchido.
+
+Campos conceituais:
+
+- `id`
+- `tenant_id`
+- `run_id`
+- `field_id`
+- `value`
+- `metadata`
+- `created_at`
+- `updated_at`
+
+`value` e `metadata` devem suportar respostas simples e evidencias futuras, como foto, arquivo, assinatura, QR Code, codigo de barras e localizacao, sem versionar arquivos binarios ou segredos diretamente no repositorio.
+
+### Indices recomendados
+
+- `tenant_id`
+- `tenant_id, id`
+- `tenant_id, template_id`
+- `tenant_id, status`
+- `tenant_id, related_entity_type, related_entity_id`
+- `run_id`
+- `field_id`
+
+### Integridade e versionamento
+
+- `checklist_template_fields.tenant_id` deve coincidir com o `tenant_id` de `checklist_templates`.
+- `checklist_runs.tenant_id` deve coincidir com o `tenant_id` do template publicado.
+- `checklist_run_answers.tenant_id` deve coincidir com o `tenant_id` da execucao.
+- `template_version` em `checklist_runs` deve preservar a versao publicada usada no preenchimento.
+- Alteracoes em templates devem criar nova versao ou permanecer em `draft`; nao podem alterar retroativamente execucoes antigas.
+- Acoes criticas devem gerar registros de auditoria tenant-scoped.
+
+### Permissoes e dados sensiveis
+
+- O backend deve obter `tenant_id` do contexto autenticado.
+- O body da requisicao nao deve ser fonte confiavel de `tenant_id`.
+- Dados sensiveis e credenciais nao devem ser criados no schema, seeds ou documentacao.
+- Qualquer configuracao sensivel futura deve usar `.env.example` apenas como placeholder.

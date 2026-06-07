@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 
+import { useAuth } from "./AuthProvider";
 import { useTenantContext } from "./TenantProvider";
 
 type PermissionContextValue = {
@@ -10,16 +11,17 @@ type PermissionContextValue = {
 const PermissionContext = createContext<PermissionContextValue | null>(null);
 
 export function PermissionProvider({ children }: { children: ReactNode }) {
+  const { session } = useAuth();
   const { activeContext } = useTenantContext();
 
   const value = useMemo<PermissionContextValue>(
     () => ({
-      permissions: activeContext?.permissions ?? [],
+      permissions: [...new Set([...(session?.user.permissions ?? []), ...(activeContext?.permissions ?? [])])],
       can(permission) {
-        return activeContext?.permissions.includes(permission) ?? false;
+        return (session?.user.permissions.includes(permission) || activeContext?.permissions.includes(permission)) ?? false;
       },
     }),
-    [activeContext],
+    [activeContext, session],
   );
 
   return <PermissionContext.Provider value={value}>{children}</PermissionContext.Provider>;

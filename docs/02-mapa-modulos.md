@@ -119,7 +119,7 @@ ERP Techsolutions
 | Módulo | Evolução |
 |---|---|
 | Motor de preço e tarifas | Tabelas versionadas, simulação e aprovação. |
-| Checklist dinâmico | Por tipo de serviço, cliente, risco e etapa. |
+| tenant_checklist | Modelos versionados por tenant, campos configuráveis a partir de componentes permitidos pela plataforma e execução Web/Mobile. |
 | Estoque por viatura | Controle móvel e reposição automática. |
 | Frota avançada | Abastecimento, manutenção, danos, multas e seguros. |
 | Pré-faturamento | Validação antes do fechamento. |
@@ -175,9 +175,33 @@ ERP Techsolutions
 - tag;
 - tabela de valor;
 - tarifa;
-- checklist.
+- checklist configuravel por tenant.
 
 **Diferencial:** deduplicação, validações, histórico e assistentes de implantação.
+
+### 4.2.1 tenant_checklist
+
+**Objetivo:** permitir que cada tenant configure modelos de checklist para processos operacionais, administrativos ou comerciais sem criar novos tipos de componente em codigo.
+
+**Entidades principais:**
+
+- `checklist_templates`;
+- `checklist_template_fields`;
+- `checklist_runs`;
+- `checklist_run_answers`.
+
+**Regras principais:**
+
+- todo registro principal deve possuir `tenant_id`;
+- consultas e comandos devem validar `tenant_id` junto com `id`;
+- a plataforma define o catalogo de componentes permitidos;
+- o tenant configura nome, descricao, modulo relacionado, campos, ordem, obrigatoriedade, regras e status;
+- publicacao gera versao imutavel para execucoes futuras;
+- execucoes antigas preservam `template_version`;
+- acoes criticas geram auditoria;
+- preenchimento mobile/offline deve ser suportado em fase futura.
+
+**Componentes iniciais previstos:** `text`, `textarea`, `number`, `currency`, `date`, `datetime`, `select`, `multi_select`, `checkbox`, `radio`, `boolean`, `photo`, `file`, `signature`, `barcode`, `qr_code`, `location` e `rating`.
 
 ### 4.3 Operação e Serviços
 

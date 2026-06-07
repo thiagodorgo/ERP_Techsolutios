@@ -14,6 +14,7 @@ import {
 } from "./modules/core-saas/index.js";
 import { MemoryCoreSaasAdapter } from "./modules/core-saas/services/memory-core-saas.adapter.js";
 import type { ICoreSaasService } from "./modules/core-saas/services/core-saas-service.interface.js";
+import { createPlatformRouter } from "./modules/platform/index.js";
 import { healthRouter } from "./routes/health.routes.js";
 
 export function createApp(service: ICoreSaasService): Express {
@@ -31,6 +32,7 @@ export function createApp(service: ICoreSaasService): Express {
   app.use(logger);
   app.use("/api/v1", healthRouter);
   app.use("/api/v1/auth", createAuthRouter());
+  app.use("/api/v1/platform", attachAuthenticatedActor(), createPlatformRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createCoreSaasRouter(service));
 
   return app;
