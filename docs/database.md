@@ -12,9 +12,17 @@ Nesta fase, os modelos multi-tenant com `tenant_id` sao:
 
 - `Branch`
 - `User`
+- `LocalAuthCredential`
 - `Role`, quando o papel for customizado por tenant
 - `UserRoleAssignment`
 - `AuditLog`
+- `ChecklistTemplate`
+- `ChecklistTemplateComponent`
+- `ChecklistRun`
+- `ChecklistRunAnswer`
+- `ChecklistAttachment`
+- `ChecklistMarker`
+- `ChecklistAcknowledgement`
 
 `Tenant` e a raiz administrativa. `Permission` e catalogo global. `RolePermission` associa roles a permissoes. `UserRoleAssignment` associa usuarios a papeis de forma persistente por tenant.
 
@@ -419,3 +427,89 @@ Campos principais:
 - O body da requisicao nao deve ser fonte confiavel de `tenant_id`.
 - Dados sensiveis e credenciais nao devem ser criados no schema, seeds ou documentacao.
 - Qualquer configuracao sensivel futura deve usar `.env.example` apenas como placeholder.
+
+## Row Level Security PostgreSQL
+
+Status: implementado na migration `20260608000000_enable_tenant_rls`.
+
+RLS e uma camada adicional de defesa no banco. O backend continua obrigado a filtrar por `tenant_id` e a validar RBAC em middleware/service/repository, mas o PostgreSQL passa a bloquear leitura e escrita tenant-scoped quando uma query futura esquecer o filtro de tenant.
+
+### Tabelas protegidas
+
+RLS foi habilitado nas tabelas tenant-scoped principais:
+
+- `branches`
+- `users`
+- `local_auth_credentials`
+- `roles`
+- `user_role_assignments`
+- `audit_logs`
+- `checklist_templates`
+- `checklist_template_components`
+- `checklist_runs`
+- `checklist_run_answers`
+- `checklist_attachments`
+- `checklist_markers`
+- `checklist_acknowledgements`
+
+Tabelas globais que nao recebem RLS nesta rodada:
+
+- `tenants`: raiz administrativa global, usada pelo boundary de plataforma.
+- `permissions`: catalogo global de permissoes.
+- `role_permissions`: associacao entre roles e permissoes; o acesso operacional continua controlado pelas roles visiveis no contexto.
+
+### Politicas
+
+As policies usam o parametro de transacao `app.current_tenant_id`:
+
+```sql
+"tenant_id"::text = current_setting('app.current_tenant_id', true)
+```
+
+Para `roles`, a policy tambem permite roles globais:
+
+```sql
+"tenant_id" IS NULL
+OR "tenant_id"::text = current_setting('app.current_tenant_id', true)
+```
+
+Foi usado `FORCE ROW LEVEL SECURITY` nas tabelas protegidas. A decisao garante que os testes com o mesmo usuario de aplicacao/owner do banco provem isolamento real, em vez de passar por bypass implicito do owner. Se for criado um papel de banco separado para migracao/admin no futuro, esse papel deve ser documentado e limitado fora do fluxo HTTP normal.
+
+### Contexto de tenant
+
+O helper `src/database/rls.ts` define o tenant atual dentro de uma transacao Prisma:
+
+```ts
+await client.$executeRaw`SELECT set_config('app.current_tenant_id', ${tenantId}, true)`;
+```
+
+O helper principal e `withTenantRls(prisma, tenantId, work)`. Ele abre `prisma.$transaction`, configura `app.current_tenant_id` com escopo local da transacao e executa o trabalho com o `tx` recebido.
+
+Regras:
+
+- `tenant_id` nao deve vir do body da requisicao.
+- rotas tenant-scoped devem usar o tenant resolvido do actor autenticado ou do fallback legado enquanto ele existir.
+- repositories Prisma tenant-scoped devem executar consultas dentro de `withTenantRls` ou receber um `tx` que ja tenha contexto configurado.
+- sem `app.current_tenant_id`, tabelas protegidas nao retornam linhas tenant-scoped e inserts/updates tenant-scoped nao passam no `WITH CHECK`.
+
+### Platform Admin
+
+Platform Admin pode consultar entidades globais como `tenants` sem selecionar tenant. Para dados tenant-scoped, o caminho aprovado e executar consultas com tenant selecionado e contexto RLS definido. Nao foi implementado bypass amplo de RLS nesta rodada.
+
+Rotas de plataforma que precisarem consolidar dados de multiplos tenants devem iterar por tenant com contexto explicito ou criar repositories especificos e auditados. Qualquer bypass futuro deve ficar restrito ao modulo `platform`, com permissao `platform:*`, auditoria e documentacao propria.
+
+### Validacao especifica
+
+Teste criado:
+
+```bash
+node --test --import tsx tests/rls-tenant-isolation.test.ts
+```
+
+Esse teste requer `DATABASE_URL`, PostgreSQL ativo e migrations aplicadas. Ele valida:
+
+- tenant A nao le dados do tenant B;
+- tenant A nao atualiza usuario do tenant B;
+- sem `app.current_tenant_id`, `users` nao retorna dados;
+- `checklist_templates` e `checklist_runs` respeitam RLS;
+- `tenants` continua global para o boundary de plataforma.

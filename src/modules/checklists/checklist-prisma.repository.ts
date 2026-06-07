@@ -1,3 +1,6 @@
+import type { PrismaClient } from "@prisma/client";
+
+import { withTenantRls } from "../../database/rls.js";
 import type { ChecklistAuditEvent } from "./checklist.audit.js";
 import type {
   ChecklistAcknowledgement,
@@ -521,10 +524,106 @@ export class PrismaChecklistRepository implements ChecklistRepository {
   }
 }
 
-export async function createPrismaChecklistRepository(): Promise<PrismaChecklistRepository> {
+class RlsPrismaChecklistRepository implements ChecklistRepository {
+  constructor(private readonly prismaClient: PrismaClient) {}
+
+  listTemplates(tenantId: string): Promise<readonly ChecklistTemplate[]> {
+    return this.withTenant(tenantId, (repository) => repository.listTemplates(tenantId));
+  }
+
+  listPublishedTemplates(tenantId: string): Promise<readonly ChecklistTemplate[]> {
+    return this.withTenant(tenantId, (repository) => repository.listPublishedTemplates(tenantId));
+  }
+
+  createTemplate(data: CreateTemplateData): Promise<ChecklistTemplate> {
+    return this.withTenant(data.tenantId, (repository) => repository.createTemplate(data));
+  }
+
+  getTemplate(tenantId: string, checklistId: string): Promise<ChecklistTemplate | null> {
+    return this.withTenant(tenantId, (repository) => repository.getTemplate(tenantId, checklistId));
+  }
+
+  updateTemplate(data: UpdateTemplateData): Promise<ChecklistTemplate | null> {
+    return this.withTenant(data.tenantId, (repository) => repository.updateTemplate(data));
+  }
+
+  archiveTemplate(tenantId: string, checklistId: string, actorUserId: string): Promise<ChecklistTemplate | null> {
+    return this.withTenant(tenantId, (repository) => repository.archiveTemplate(tenantId, checklistId, actorUserId));
+  }
+
+  publishTemplate(tenantId: string, checklistId: string, actorUserId: string): Promise<ChecklistTemplate | null> {
+    return this.withTenant(tenantId, (repository) => repository.publishTemplate(tenantId, checklistId, actorUserId));
+  }
+
+  listTemplatesByType(tenantId: string): Promise<readonly ChecklistTemplate[]> {
+    return this.withTenant(tenantId, (repository) => repository.listTemplatesByType(tenantId));
+  }
+
+  createRun(data: CreateRunData, template: ChecklistTemplate): Promise<ChecklistRun> {
+    return this.withTenant(data.tenantId, (repository) => repository.createRun(data, template));
+  }
+
+  listRuns(tenantId: string): Promise<readonly ChecklistRun[]> {
+    return this.withTenant(tenantId, (repository) => repository.listRuns(tenantId));
+  }
+
+  getRun(tenantId: string, runId: string): Promise<RepositoryRunDetails | null> {
+    return this.withTenant(tenantId, (repository) => repository.getRun(tenantId, runId));
+  }
+
+  updateRun(data: UpdateRunData): Promise<RepositoryRunDetails | null> {
+    return this.withTenant(data.tenantId, (repository) => repository.updateRun(data));
+  }
+
+  completeRun(tenantId: string, runId: string, actorUserId: string, status: ChecklistRunStatus): Promise<RepositoryRunDetails | null> {
+    return this.withTenant(tenantId, (repository) => repository.completeRun(tenantId, runId, actorUserId, status));
+  }
+
+  createAttachment(
+    tenantId: string,
+    runId: string,
+    actorUserId: string,
+    data: CreateChecklistAttachmentInput,
+  ): Promise<ChecklistAttachment | null> {
+    return this.withTenant(tenantId, (repository) => repository.createAttachment(tenantId, runId, actorUserId, data));
+  }
+
+  createMarker(
+    tenantId: string,
+    runId: string,
+    actorUserId: string,
+    data: CreateChecklistMarkerInput,
+  ): Promise<ChecklistMarker | null> {
+    return this.withTenant(tenantId, (repository) => repository.createMarker(tenantId, runId, actorUserId, data));
+  }
+
+  createAcknowledgement(
+    tenantId: string,
+    runId: string,
+    actorUserId: string,
+    data: CreateChecklistAcknowledgementInput,
+  ): Promise<ChecklistAcknowledgement | null> {
+    return this.withTenant(tenantId, (repository) => repository.createAcknowledgement(tenantId, runId, actorUserId, data));
+  }
+
+  createAuditEvent(event: ChecklistAuditEvent): Promise<void> {
+    return this.withTenant(event.tenantId, (repository) => repository.createAuditEvent(event));
+  }
+
+  private withTenant<T>(
+    tenantId: string,
+    work: (repository: PrismaChecklistRepository) => Promise<T>,
+  ): Promise<T> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      work(new PrismaChecklistRepository(tx as unknown as PrismaChecklistClient)),
+    );
+  }
+}
+
+export async function createPrismaChecklistRepository(): Promise<ChecklistRepository> {
   const { prisma } = await import("../../database/prisma.js");
 
-  return new PrismaChecklistRepository(prisma as unknown as PrismaChecklistClient);
+  return new RlsPrismaChecklistRepository(prisma);
 }
 
 function mapTemplateRecord(record: unknown): ChecklistTemplate {

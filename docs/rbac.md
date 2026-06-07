@@ -38,7 +38,7 @@ Regras por ator:
 - Supervisor usa permissoes operacionais do proprio tenant e nao acessa RBAC avancado nem create/update/publish administrativo sem permissao explicita.
 - Operador acessa rotas operacionais permitidas, como execucao de checklist, mas nao acessa administracao de templates/W02A.
 
-Para rotas tenant-scoped, consultas e mutacoes devem sempre combinar o id do recurso com `tenant_id` do contexto. Acesso cross-tenant deve retornar 403 ou 404 seguro conforme o padrao da rota. RLS permanece como proxima fase; nesta etapa o isolamento fica aplicado em middleware, service e repository.
+Para rotas tenant-scoped, consultas e mutacoes devem sempre combinar o id do recurso com `tenant_id` do contexto. Acesso cross-tenant deve retornar 403 ou 404 seguro conforme o padrao da rota. RLS PostgreSQL foi adicionada como camada complementar nas tabelas tenant-scoped principais, usando `app.current_tenant_id` por transacao. Essa barreira de banco nao substitui RBAC nem validação de tenant no codigo.
 
 ## Escopos de permissao
 
@@ -203,6 +203,20 @@ Toda resolucao operacional deve ser tenant-scoped:
 - role global (`roles.tenant_id IS NULL`) continua aceita quando atribuida ao usuario no tenant.
 - role especifica de outro tenant nao deve ser considerada.
 
+## RLS e RBAC
+
+RBAC responde "quem pode executar a acao". RLS responde "quais linhas tenant-scoped sao visiveis para o tenant atual".
+
+O backend deve aplicar as duas camadas:
+
+- middleware de RBAC exige permissao antes da rota sensivel;
+- service/repository usa `tenantId` do contexto autenticado, nunca do body;
+- repositories Prisma tenant-scoped executam consultas com contexto RLS definido por `withTenantRls`;
+- `roles` permite roles globais (`tenant_id IS NULL`) e roles do tenant atual, mas bloqueia roles de outro tenant;
+- `tenants` e `permissions` continuam globais para o boundary de plataforma.
+
+Platform Admin nao recebe bypass amplo de RLS. Para consultar dados de tenant, deve selecionar tenant e rodar o acesso com `app.current_tenant_id` definido. Consultas globais continuam em repositories/boundaries de plataforma.
+
 ## Prioridade
 
 Quando existe JWT valido:
@@ -258,7 +272,8 @@ Esse desenho mantem o `tenantContextMiddleware` sincronico como fallback/base e 
 - No runtime `memory`, JWT ainda usa roles do token contra o catalogo local.
 - `x-permissions` ainda existe para chamadas legacy.
 - Rotas de plataforma ja bloqueiam legacy headers em producao, mas rotas tenant ainda seguem o plano gradual de modo strict.
-- Ainda nao ha refresh token, logout, revogacao, Redis runtime ou RLS.
+- Ainda nao ha refresh token, logout, revogacao ou Redis runtime.
+- RLS existe para as tabelas tenant-scoped principais, mas depende de todo caminho Prisma tenant-scoped configurar `app.current_tenant_id` corretamente.
 
 ## Plano para modo strict
 

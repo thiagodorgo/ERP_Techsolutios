@@ -807,3 +807,32 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - `tenant_id` do body nao e fonte de verdade para rotas tenant-scoped
 - Platform Admin permanece no boundary `/api/v1/platform/*`; tenant comum continua bloqueado
 - RLS, upload/storage, Figma, frontend e mobile ficaram fora desta rodada
+
+## Atualizacao 2026-06-07 - PostgreSQL RLS tenant isolation
+
+### Implementado
+
+- branch usada: `feature/postgres-rls-tenant-isolation`
+- criada migration `20260608000000_enable_tenant_rls`
+- habilitado Row Level Security nas tabelas tenant-scoped principais do Core SaaS, auth local, RBAC e `tenant_checklist`
+- policies usam `current_setting('app.current_tenant_id', true)` como fonte de tenant da transacao
+- `roles` recebeu policy especifica para permitir roles globais (`tenant_id IS NULL`) e roles do tenant atual
+- `FORCE ROW LEVEL SECURITY` aplicado para que o usuario da aplicacao/owner tambem seja validado pelas policies
+- criado helper `src/database/rls.ts` com `setTenantRlsContext` e `withTenantRls`
+- paths Prisma tenant-scoped ajustados para executar com contexto RLS no Core SaaS, auth local, RBAC persistido e checklists
+- `prisma/seed.ts` ajustado para executar dados tenant-scoped dentro de `withTenantRls`
+- criado teste especifico `tests/rls-tenant-isolation.test.ts`
+- documentacao atualizada em `docs/database.md`, `docs/architecture.md` e `docs/rbac.md`
+
+### Decisoes
+
+- `tenants` permanece global para o boundary de plataforma
+- `permissions` permanece catalogo global
+- Platform Admin nao recebe bypass amplo de RLS; dados tenant-scoped devem ser acessados com tenant selecionado e contexto RLS explicito
+- RLS e defesa adicional e nao substitui filtros por `tenant_id`, RBAC ou auditoria no backend
+
+### Limitacoes
+
+- rotas que ainda usam runtime `memory` seguem DB-free e nao exercitam RLS
+- testes RLS exigem `DATABASE_URL`, PostgreSQL ativo e migrations aplicadas
+- qualquer consulta platform futura que consolide multiplos tenants deve iterar por tenant ou ganhar repository auditado proprio

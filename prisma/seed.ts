@@ -13,6 +13,7 @@ import {
   LocalAuthCredentialRepository,
   LocalAuthCredentialService,
 } from "../src/modules/auth/index.js";
+import { withTenantRls } from "../src/database/rls.js";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -22,23 +23,6 @@ if (!connectionString) {
 
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
-const localAuthCredentials = new LocalAuthCredentialService(
-  new LocalAuthCredentialRepository(prisma),
-  {
-    findByIdForTenant: (userId, tenantId) =>
-      prisma.user.findFirst({
-        where: {
-          id: userId,
-          tenant_id: tenantId,
-        },
-        select: {
-          id: true,
-          tenant_id: true,
-          email: true,
-        },
-      }),
-  },
-);
 
 const permissionDescriptions = {
   "tenant.manage": "Gerenciar configuracoes, filiais e dados administrativos do tenant.",
@@ -75,46 +59,6 @@ async function main(): Promise<void> {
     create: {
       name: "Tenant Demo",
       slug: "demo",
-      status: "active",
-    },
-  });
-
-  const branch = await prisma.branch.upsert({
-    where: {
-      tenant_id_code: {
-        tenant_id: tenant.id,
-        code: "MAIN",
-      },
-    },
-    update: {
-      name: "Filial Principal",
-      status: "active",
-    },
-    create: {
-      tenant_id: tenant.id,
-      name: "Filial Principal",
-      code: "MAIN",
-      status: "active",
-    },
-  });
-
-  const admin = await prisma.user.upsert({
-    where: {
-      tenant_id_email: {
-        tenant_id: tenant.id,
-        email: "admin.demo@example.com",
-      },
-    },
-    update: {
-      branch_id: branch.id,
-      name: "Admin Demo",
-      status: "active",
-    },
-    create: {
-      tenant_id: tenant.id,
-      branch_id: branch.id,
-      name: "Admin Demo",
-      email: "admin.demo@example.com",
       status: "active",
     },
   });
@@ -175,63 +119,123 @@ async function main(): Promise<void> {
     throw new Error("tenant_admin role was not seeded.");
   }
 
-  const existingAdminAssignment = await prisma.userRoleAssignment.findFirst({
-    where: {
-      tenant_id: tenant.id,
-      user_id: admin.id,
-      role_id: tenantAdminRole.id,
-      branch_id: null,
-    },
-    select: {
-      id: true,
-    },
-  });
+  await withTenantRls(prisma, tenant.id, async (tx) => {
+    const branch = await tx.branch.upsert({
+      where: {
+        tenant_id_code: {
+          tenant_id: tenant.id,
+          code: "MAIN",
+        },
+      },
+      update: {
+        name: "Filial Principal",
+        status: "active",
+      },
+      create: {
+        tenant_id: tenant.id,
+        name: "Filial Principal",
+        code: "MAIN",
+        status: "active",
+      },
+    });
 
-  if (!existingAdminAssignment) {
-    await prisma.userRoleAssignment.create({
-      data: {
+    const admin = await tx.user.upsert({
+      where: {
+        tenant_id_email: {
+          tenant_id: tenant.id,
+          email: "admin.demo@example.com",
+        },
+      },
+      update: {
+        name: "Admin Demo",
+        status: "active",
+        branch_id: branch.id,
+      },
+      create: {
+        tenant_id: tenant.id,
+        branch_id: branch.id,
+        name: "Admin Demo",
+        email: "admin.demo@example.com",
+        status: "active",
+      },
+    });
+
+    const existingAdminAssignment = await tx.userRoleAssignment.findFirst({
+      where: {
         tenant_id: tenant.id,
         user_id: admin.id,
         role_id: tenantAdminRole.id,
         branch_id: null,
       },
+      select: {
+        id: true,
+      },
     });
-  }
 
-  await localAuthCredentials.upsertCredentialForUser({
-    tenant_id: tenant.id,
-    user_id: admin.id,
-    email: admin.email,
-    password: readDemoAdminPassword(),
-  });
+    if (!existingAdminAssignment) {
+      await tx.userRoleAssignment.create({
+        data: {
+          tenant_id: tenant.id,
+          user_id: admin.id,
+          role_id: tenantAdminRole.id,
+          branch_id: null,
+        },
+      });
+    }
 
-  const existingSeedAudit = await prisma.auditLog.findFirst({
-    where: {
+    const localAuthCredentials = new LocalAuthCredentialService(
+      new LocalAuthCredentialRepository(tx),
+      {
+        findByIdForTenant: (userId, tenantId) =>
+          tx.user.findFirst({
+            where: {
+              id: userId,
+              tenant_id: tenantId,
+            },
+            select: {
+              id: true,
+              tenant_id: true,
+              email: true,
+            },
+          }),
+      },
+    );
+
+    await localAuthCredentials.upsertCredentialForUser({
       tenant_id: tenant.id,
-      action: "seed.initialized",
-      entity: "database",
-      entity_id: tenant.id,
-    },
-    select: {
-      id: true,
-    },
-  });
+      user_id: admin.id,
+      email: admin.email,
+      password: readDemoAdminPassword(),
+    });
 
-  if (!existingSeedAudit) {
-    await prisma.auditLog.create({
-      data: {
+    const existingSeedAudit = await tx.auditLog.findFirst({
+      where: {
         tenant_id: tenant.id,
-        actor_user_id: admin.id,
         action: "seed.initialized",
         entity: "database",
         entity_id: tenant.id,
-        metadata: {
-          source: "prisma/seed.ts",
-          auth_note: "Admin demo criado sem senha; autenticacao real sera implementada em bloco futuro.",
-        },
+      },
+      select: {
+        id: true,
       },
     });
-  }
+
+    if (!existingSeedAudit) {
+      await tx.auditLog.create({
+        data: {
+          tenant_id: tenant.id,
+          actor_user_id: admin.id,
+          action: "seed.initialized",
+          entity: "database",
+          entity_id: tenant.id,
+          metadata: {
+            source: "prisma/seed.ts",
+            auth_note: "Admin demo criado com senha local configuravel por DEMO_ADMIN_PASSWORD.",
+          },
+        },
+      });
+    }
+  });
 }
 
 async function upsertSystemRole(role: Role): Promise<{ id: string }> {

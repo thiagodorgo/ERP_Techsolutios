@@ -1,6 +1,7 @@
 ﻿import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "../../../database/prisma.js";
+import { setTenantRlsContext, withTenantRls } from "../../../database/rls.js";
 import {
   AuditLogRepository,
   RoleRepository,
@@ -46,6 +47,8 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
         status: input.status ?? "active",
       });
 
+      await setTenantRlsContext(tx, tenant.id);
+
       // Audit recorded inside the same transaction — if audit fails, tenant creation rolls back.
       // actor_user_id is null because tenant creation precedes any user-based auth.
       await txAudit.create({
@@ -86,7 +89,7 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
   }
 
   async createUser(input: CreateUserInput): Promise<User> {
-    return this.prismaClient.$transaction(async (tx) => {
+    return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
       const txUsers = new UserRepository(tx);
       const txRoles = new RoleRepository(tx);
       const txUserRoles = new UserRoleRepository(tx);
@@ -146,19 +149,31 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
     userId: string,
     tenantId: string,
   ): Promise<User | undefined> {
-    const user = await this.users.findByIdForTenant(userId, tenantId);
+    const user = await withTenantRls(this.prismaClient, tenantId, async (tx) => {
+      const txUsers = new UserRepository(tx);
+
+      return txUsers.findByIdForTenant(userId, tenantId);
+    });
 
     return user ? mapUserFromPrisma(user) : undefined;
   }
 
   async listUsersByTenant(tenantId: string): Promise<User[]> {
-    const users = await this.users.listByTenant(tenantId);
+    const users = await withTenantRls(this.prismaClient, tenantId, async (tx) => {
+      const txUsers = new UserRepository(tx);
+
+      return txUsers.listByTenant(tenantId);
+    });
 
     return users.map(mapUserFromPrisma);
   }
 
   async listRolesByUserForTenant(userId: string, tenantId: string): Promise<Role[]> {
-    const assignments = await this.userRoles.listByUserForTenant(userId, tenantId);
+    const assignments = await withTenantRls(this.prismaClient, tenantId, async (tx) => {
+      const txUserRoles = new UserRoleRepository(tx);
+
+      return txUserRoles.listByUserForTenant(userId, tenantId);
+    });
 
     return mapRoleAssignmentsFromPrisma(assignments);
   }
@@ -169,44 +184,59 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
     readonly role: Role;
     readonly branchId?: string | null;
   }): Promise<void> {
-    const role = await this.roles.findByKeyForTenant(input.role, input.tenantId);
+    await withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
+      const txRoles = new RoleRepository(tx);
+      const txUserRoles = new UserRoleRepository(tx);
+      const role = await txRoles.findByKeyForTenant(input.role, input.tenantId);
 
-    if (!role) {
-      throw new Error(`Role is not assignable to tenant: ${input.role}`);
-    }
+      if (!role) {
+        throw new Error(`Role is not assignable to tenant: ${input.role}`);
+      }
 
-    await this.userRoles.assignRole({
-      tenant_id: input.tenantId,
-      user_id: input.userId,
-      role_id: role.id,
-      branch_id: input.branchId ?? null,
+      await txUserRoles.assignRole({
+        tenant_id: input.tenantId,
+        user_id: input.userId,
+        role_id: role.id,
+        branch_id: input.branchId ?? null,
+      });
     });
   }
 
   async saveAuditEvent(input: CreatePersistentAuditEventInput): Promise<AuditEvent> {
-    const actorUserId = await this.resolveActorUserId(
-      input.actor_user_id,
-      input.tenant_id,
-    );
-    const event = await this.auditLogs.create({
-      tenant_id: input.tenant_id,
-      actor_user_id: actorUserId,
-      action: input.action,
-      entity: String(input.metadata?.entity ?? "core_saas"),
-      entity_id: readOptionalString(input.metadata?.entity_id),
-      metadata: toJsonObject(input.metadata),
+    const event = await withTenantRls(this.prismaClient, input.tenant_id, async (tx) => {
+      const txUsers = new UserRepository(tx);
+      const txAuditLogs = new AuditLogRepository(tx);
+      const actorUserId = await this.resolveActorUserId(
+        txUsers,
+        input.actor_user_id,
+        input.tenant_id,
+      );
+
+      return txAuditLogs.create({
+        tenant_id: input.tenant_id,
+        actor_user_id: actorUserId,
+        action: input.action,
+        entity: String(input.metadata?.entity ?? "core_saas"),
+        entity_id: readOptionalString(input.metadata?.entity_id),
+        metadata: toJsonObject(input.metadata),
+      });
     });
 
     return mapAuditLogFromPrisma(event, input.actor_user_id);
   }
 
   async listAuditEventsByTenant(tenantId: string): Promise<AuditEvent[]> {
-    const events = await this.auditLogs.listByTenant(tenantId);
+    const events = await withTenantRls(this.prismaClient, tenantId, async (tx) => {
+      const txAuditLogs = new AuditLogRepository(tx);
+
+      return txAuditLogs.listByTenant(tenantId);
+    });
 
     return events.map((event) => mapAuditLogFromPrisma(event));
   }
 
   private async resolveActorUserId(
+    users: UserRepository,
     actorUserId: string,
     tenantId: string,
   ): Promise<string | null> {
@@ -214,7 +244,7 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
       return null;
     }
 
-    const actor = await this.users.findByIdForTenant(actorUserId, tenantId);
+    const actor = await users.findByIdForTenant(actorUserId, tenantId);
 
     return actor ? actor.id : null;
   }

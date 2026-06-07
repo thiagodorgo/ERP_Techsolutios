@@ -45,6 +45,10 @@ Entidades tenant-scoped devem carregar `tenant_id` e sempre filtrar por tenant. 
 
 No modulo `checklists`, templates, campos, execucoes e respostas sao entidades tenant-scoped. Nenhum repository ou endpoint deve consultar essas entidades apenas por `id`; toda leitura, escrita, publicacao, exclusao logica ou execucao deve validar tambem o `tenant_id` resolvido do contexto autenticado.
 
+A partir da migration `20260608000000_enable_tenant_rls`, o PostgreSQL tambem aplica Row Level Security nas tabelas tenant-scoped principais. O runtime Prisma deve configurar `app.current_tenant_id` por transacao antes de acessar dados de tenant. Essa camada nao substitui RBAC nem filtros de repository; ela reduz o risco de vazamento cross-tenant se uma query futura esquecer `tenant_id`.
+
+Tabelas globais como `tenants` e `permissions` continuam fora de RLS. Platform Admin consulta dados globais pelo boundary `/api/v1/platform/*`; para dados tenant-scoped, deve selecionar tenant e executar as consultas com contexto RLS explicito. Nao ha bypass amplo de RLS no fluxo HTTP normal.
+
 ## Checklists configuraveis
 
 O modulo `checklists` deve ser implementado de forma modular quando sair da fase documental:
@@ -91,4 +95,4 @@ Para o boundary `/api/v1/platform/*`, qualquer fallback por headers legados fica
 - Criar auditoria global para acoes de plataforma.
 - Implementar modo suporte auditado.
 - Reduzir headers legados por feature flag ou modo strict.
-- Planejar RLS como safety net posterior.
+- Evoluir operacoes platform multi-tenant com contexto RLS explicito e auditoria.
