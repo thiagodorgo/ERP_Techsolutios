@@ -732,3 +732,21 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - upload real de arquivos ainda nao foi implementado; anexos usam `fileUrl` logico
 - runtime padrao continua em memoria quando `CORE_SAAS_PERSISTENCE=memory`; adapter Prisma e carregado dinamicamente quando o runtime esta em modo Prisma
 - RLS e Redis continuam fora desta rodada
+
+## Atualizacao 2026-06-07 - W02A integrada a API tenant_checklist
+
+### Implementado
+
+- branch usada: `feature/tenant-checklists-frontend-api`
+- W02A passou a usar API real de `tenant_checklist` como fonte principal
+- criados adapter, service, mock explicito e barrel frontend para `frontend/src/modules/checklists`
+- integrados endpoints de listar checklists, carregar componentes, criar checklist, editar checklist e publicar checklist
+- acao de ativar/inativar preparada via `PATCH /api/v1/tenant/checklists/:checklistId`
+- pagina passou a tratar loading, erro e estado vazio
+- tipos frontend alinhados ao contrato real do backend e aos componentes oficiais do handoff Figma
+- fallback mock mantido apenas quando `VITE_USE_MOCKS=true`
+
+### Limitacoes
+
+- upload/storage real continua fora desta rodada
+- mobile Flutter nao foi alterado

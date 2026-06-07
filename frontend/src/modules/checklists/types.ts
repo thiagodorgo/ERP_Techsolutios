@@ -1,58 +1,95 @@
 export type TenantChecklistType = "towing_collection" | "towing_delivery" | "technical_evidence" | "custom";
 
-export type TenantChecklistStatus = "draft" | "published" | "inactive";
+export type TenantChecklistStatus = "draft" | "published" | "inactive" | "archived";
 
 export type TenantChecklistComponentType =
-  | "text"
-  | "textarea"
-  | "number"
-  | "currency"
-  | "date"
-  | "datetime"
-  | "select"
-  | "multi_select"
-  | "checkbox"
-  | "radio"
-  | "boolean"
-  | "photo"
-  | "file"
-  | "signature"
-  | "barcode"
-  | "qr_code"
-  | "location"
-  | "rating"
-  | "vehicle_type"
-  | "damage_marker"
-  | "before_after_photo"
+  | "vehicle_selector"
+  | "damage_map"
+  | "photo_upload"
+  | "observation"
+  | "comparison"
+  | "before_after"
   | "acknowledgement";
+
+export type ChecklistRunStatus =
+  | "in_progress"
+  | "completed"
+  | "completed_with_divergence"
+  | "pending_acknowledgement"
+  | "cancelled";
+
+export type ChecklistJsonRecord = Record<string, string | number | boolean | null | string[] | number[] | boolean[]>;
 
 export type TenantChecklistComponent = {
   id: string;
-  key: string;
+  tenantId?: string;
+  templateId?: string;
+  componentKey: string;
   label: string;
   type: TenantChecklistComponentType;
   required: boolean;
   orderIndex: number;
-  config?: {
-    requirePhoto?: boolean;
-    requireObservation?: boolean;
-    requireMarker?: boolean;
-    requireAcknowledgement?: boolean;
-    options?: string[];
-  };
+  config: ChecklistJsonRecord;
+  validationRules: ChecklistJsonRecord;
+  visibilityRules: ChecklistJsonRecord;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type TenantChecklistComponentCatalogItem = {
+  type: TenantChecklistComponentType;
+  label: string;
+  description: string;
+  defaultConfig: ChecklistJsonRecord;
 };
 
 export type TenantChecklist = {
   id: string;
   tenantId: string;
   name: string;
-  description: string;
+  description?: string;
   type: TenantChecklistType;
   status: TenantChecklistStatus;
   version: number;
+  schema: Record<string, unknown>;
   components: TenantChecklistComponent[];
+  createdBy?: string;
+  updatedBy?: string;
   publishedAt?: string;
+  createdAt?: string;
   updatedAt: string;
+  deletedAt?: string;
+};
+
+export type ChecklistApiContext = {
+  token?: string;
+  tenantId: string;
+  branchId?: string;
+  role: string;
+  permissions: string[];
+};
+
+export type TenantChecklistComponentInput = {
+  componentKey: string;
+  type: TenantChecklistComponentType;
+  label: string;
+  required: boolean;
+  orderIndex: number;
+  config: ChecklistJsonRecord;
+  validationRules: ChecklistJsonRecord;
+  visibilityRules: ChecklistJsonRecord;
+};
+
+export type CreateTenantChecklistInput = {
+  name: string;
+  description?: string;
+  type: TenantChecklistType;
+  schema: Record<string, unknown>;
+  components: TenantChecklistComponentInput[];
+};
+
+export type UpdateTenantChecklistInput = Partial<CreateTenantChecklistInput> & {
+  status?: TenantChecklistStatus;
 };
 
 export type ChecklistMarker = {
@@ -88,7 +125,7 @@ export type ChecklistRun = {
   type: TenantChecklistType;
   relatedEntityType: string;
   relatedEntityId: string;
-  status: "in_progress" | "completed" | "cancelled";
+  status: ChecklistRunStatus;
   markers: ChecklistMarker[];
   attachments: ChecklistAttachment[];
   acknowledgements: ChecklistAcknowledgement[];

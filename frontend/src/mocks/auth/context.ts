@@ -50,6 +50,7 @@ export const mockTenantContexts: TenantContext[] = [
       "checklist_runs:create",
       "checklist_runs:update",
       "checklist_runs:complete",
+      "checklist_runs:acknowledge",
     ],
     scope: "branch",
   },

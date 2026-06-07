@@ -522,3 +522,14 @@
 - testes criados em `tests/checklist-routes.test.ts`
 - decisao tecnica: manter repository em memoria para runtime/testes sem `DATABASE_URL` e adapter Prisma carregado dinamicamente quando `CORE_SAAS_PERSISTENCE=prisma`
 - limite conhecido: anexos usam `fileUrl` logico; upload/storage real fica para rodada futura
+
+## 2026-06-07 - W02A integrada a API tenant_checklist
+
+- branch usada: `feature/tenant-checklists-frontend-api`
+- objetivo: substituir mocks principais da W02A por chamadas reais aos endpoints backend de `tenant_checklist`
+- criados `frontend/src/modules/checklists/checklist.adapter.ts`, `checklist.service.ts`, `checklist.mock.ts` e `index.ts`
+- `TenantChecklistsPage.tsx` passou a carregar checklists e componentes via service, com loading, erro e estado vazio
+- implementado fluxo basico de criar, editar, publicar e ativar/inativar checklist
+- `frontend/src/services/api/client.ts` passou a aceitar headers `X-Role` e `X-Permissions`, preservando o padrao atual de tenant via headers enquanto JWT real nao e obrigatorio
+- mocks ficam como fallback explicito de desenvolvimento quando `VITE_USE_MOCKS=true`
+- mobile Flutter, Figma e backend nao foram alterados nesta rodada

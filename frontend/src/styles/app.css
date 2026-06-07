@@ -756,14 +756,17 @@
 
 .tenant-checklist-components,
 .tenant-checklist-card,
-.tenant-checklist-card > div {
+.tenant-checklist-card > div,
+.tenant-checklist-form,
+.tenant-checklist-selection {
   display: grid;
   gap: var(--space-10);
 }
 
 .tenant-checklist-components article,
 .tenant-checklist-card > div span,
-.tenant-checklist-mobile {
+.tenant-checklist-mobile,
+.tenant-checklist-selection article {
   display: flex;
   align-items: center;
   gap: var(--space-10);
@@ -774,9 +777,25 @@
 }
 
 .tenant-checklist-card p,
-.tenant-checklist-mobile p {
+.tenant-checklist-mobile p,
+.tenant-checklist-selection p {
   margin: 0;
   color: var(--text-secondary);
+}
+
+.tenant-checklist-selection {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tenant-checklist-selection article {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.tenant-checklist-summary {
+  display: flex;
+  gap: var(--space-8);
+  flex-wrap: wrap;
 }
 
 .tenant-checklist-card > div span {
@@ -1097,7 +1116,8 @@
     .platform-usage-grid,
     .platform-module-grid,
     .tenant-checklist-grid,
-    .tenant-checklist-grid--three {
+    .tenant-checklist-grid--three,
+    .tenant-checklist-selection {
     grid-template-columns: 1fr;
   }
 
