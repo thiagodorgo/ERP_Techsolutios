@@ -8,5 +8,6 @@ export type TenantContext = {
   branchName: string;
   role: UserRole;
   permissions: string[];
+  enabledModules?: string[];
   scope: "tenant" | "branch" | "team";
 };

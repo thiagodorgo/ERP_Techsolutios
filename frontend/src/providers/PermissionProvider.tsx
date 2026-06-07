@@ -1,11 +1,17 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 
+import type { UserRole } from "../modules/auth/types";
+import type { TenantContext } from "../modules/context/types";
+import { isPlatformAdmin } from "../navigation/types";
 import { useAuth } from "./AuthProvider";
 import { useTenantContext } from "./TenantProvider";
 
 type PermissionContextValue = {
   can: (permission: string) => boolean;
+  hasAny: (permissions: readonly string[]) => boolean;
   permissions: string[];
+  roles: UserRole[];
+  activeContext: TenantContext | null;
 };
 
 const PermissionContext = createContext<PermissionContextValue | null>(null);
@@ -15,12 +21,22 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
   const { activeContext } = useTenantContext();
 
   const value = useMemo<PermissionContextValue>(
-    () => ({
-      permissions: [...new Set([...(session?.user.permissions ?? []), ...(activeContext?.permissions ?? [])])],
-      can(permission) {
-        return (session?.user.permissions.includes(permission) || activeContext?.permissions.includes(permission)) ?? false;
-      },
-    }),
+    () => {
+      const permissions = [...new Set([...(session?.user.permissions ?? []), ...(activeContext?.permissions ?? [])])];
+      const roles = [...new Set([...(session?.user.roles ?? []), ...(activeContext ? [activeContext.role] : [])])];
+
+      return {
+        permissions,
+        roles,
+        activeContext,
+        can(permission) {
+          return permissions.includes(permission) || isPlatformAdmin({ roles, permissions });
+        },
+        hasAny(requiredPermissions) {
+          return requiredPermissions.some((permission) => permissions.includes(permission)) || isPlatformAdmin({ roles, permissions });
+        },
+      };
+    },
     [activeContext, session],
   );
 

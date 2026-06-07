@@ -49,7 +49,14 @@ export function App() {
           />
         </Route>
         <Route element={<AppShell />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <PermissionGuard permissions={["dashboard:view"]}>
+                <DashboardPage />
+              </PermissionGuard>
+            }
+          />
           <Route
             path="/administrator/checklists"
             element={
@@ -58,10 +65,38 @@ export function App() {
               </PermissionGuard>
             }
           />
-          <Route path="/work-orders" element={<WorkOrdersListPage />} />
-          <Route path="/work-orders/new" element={<WorkOrderFormPage />} />
-          <Route path="/work-orders/:workOrderId" element={<WorkOrderDetailPage />} />
-          <Route path="/logistics" element={<LogisticsPage />} />
+          <Route
+            path="/work-orders"
+            element={
+              <PermissionGuard permissions={["work-orders:view"]}>
+                <WorkOrdersListPage />
+              </PermissionGuard>
+            }
+          />
+          <Route
+            path="/work-orders/new"
+            element={
+              <PermissionGuard permissions={["work-orders:create"]}>
+                <WorkOrderFormPage />
+              </PermissionGuard>
+            }
+          />
+          <Route
+            path="/work-orders/:workOrderId"
+            element={
+              <PermissionGuard permissions={["work-orders:view"]}>
+                <WorkOrderDetailPage />
+              </PermissionGuard>
+            }
+          />
+          <Route
+            path="/logistics"
+            element={
+              <PermissionGuard permissions={["logistics:dispatch"]}>
+                <LogisticsPage />
+              </PermissionGuard>
+            }
+          />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

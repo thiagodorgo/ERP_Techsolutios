@@ -112,6 +112,8 @@ Regras especificas:
 
 A sidebar nao deve mostrar todos os modulos para todos os usuarios. A sidebar completa exibida no Figma representa Admin/Tenant Owner, nao usuario comum.
 
+A regra maxima da navegacao e: usuario sem permissao nao ve o link. Nao deve haver link cinza, desabilitado, grupo vazio, placeholder visual ou icone recolhido para item sem acesso. A sidebar recolhida deve usar a mesma lista filtrada da sidebar expandida.
+
 A visibilidade deve ser filtrada por:
 
 - tenant ativo;
@@ -120,12 +122,27 @@ A visibilidade deve ser filtrada por:
 - papel do usuario;
 - permissoes RBAC.
 
-Regra esperada:
+Modelo minimo do item de navegacao:
+
+- `id`, `label`, `path`, `scope`, `mode`, `requiredPermissions`, `allowedRoles`, `children`, `status`, `icon`, `moduleKey` e `featureKey`.
+
+Regras esperadas:
 
 - itens `scope: "platform"` aparecem apenas para usuarios com permissao `platform:*`;
 - itens `scope: "tenant"` aparecem conforme modulos habilitados e permissoes do tenant;
-- usuario comum nao ve Console da Plataforma;
-- Super Admin ve Console da Plataforma.
+- itens `status: "planned"` nao aparecem como link desabilitado;
+- grupos sem filhos permitidos sao removidos;
+- a ordem dos itens permitidos e preservada;
+- esconder o link nao substitui guard de rota: acesso direto por URL deve retornar bloqueio antes de renderizar dados.
+
+Mapeamento por ator:
+
+- Platform Admin: ve Console da Plataforma, tenants, planos/modulos quando publicados, auditoria/logs globais, health global e configuracoes globais; pode operar modos tenant/admin/operacao quando estiver em contexto autorizado.
+- Tenant Admin: ve dashboard do proprio tenant, usuarios/acessos quando publicados, modulos habilitados, W02A Checklists e configuracoes do tenant; nao ve Console da Plataforma, tenants globais, health global, logs globais ou configuracoes globais.
+- Supervisor: ve operacao do proprio tenant no seu nivel e abaixo, equipe quando permitido, tarefas, checklists operacionais, aprovacoes, relatorios operacionais permitidos e notificacoes; nao ve plataforma, configuracao administrativa ou RBAC acima do seu privilegio.
+- Operador: ve apenas Minha Operacao, Minhas Tarefas, checklists operacionais permitidos, OS/atendimentos permitidos e notificacoes operacionais; nao ve administracao, configuracao, usuarios, RBAC, plataforma, modulos administrativos, logs administrativos ou relatorios executivos.
+
+W02A e administrativa: deve aparecer apenas com `tenant_checklists:read` ou permissao equivalente. Operador nao deve ver W02A; checklists de operador devem aparecer somente em rota operacional propria quando existir.
 
 ## Modelo persistido
 
