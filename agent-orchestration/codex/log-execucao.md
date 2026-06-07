@@ -544,3 +544,28 @@
 - ordenacao de componentes implementada por botoes subir/descer, sem drag-and-drop
 - `pending_changes` e apenas estado visual derivado de checklist publicado alterado apos `publishedAt`; nao altera contrato backend
 - backend, Prisma/migrations, Figma e mobile Flutter nao foram alterados
+## 2026-06-07 - Padronizacao de navegacao RBAC
+
+- branch usada: `feature/navigation-rbac-sidebar-standardization`
+- objetivo: padronizar sidebar/navegacao por RBAC sem alterar backend, Prisma, migrations, API contracts, Figma ou mobile
+- criado modelo unificado de navegacao com escopo, modo, permissoes, roles, status, icone, modulo/feature e filhos
+- implementado filtro `canAccessNavigationItem`/`filterNavigationItems`
+- sidebar tenant e Platform Console passaram a usar a mesma lista filtrada nos modos expandido e recolhido
+- removida renderizacao de links planejados/desabilitados; usuario sem permissao nao ve item nem grupo vazio
+- `PermissionProvider`, `PermissionGuard` e `PlatformGuard` alinhados ao contexto de roles/permissoes
+- rotas Web operacionais receberam guards para impedir renderizacao por acesso direto sem permissao
+- W02A mantida como rota administrativa dependente de `tenant_checklists:read`; operador nao ve W02A
+- documentacao atualizada em `docs/rbac.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/modules.md`, `agent-orchestration/docs/status-geral.md` e este log
+
+## 2026-06-07 - Hardening backend RBAC
+
+- branch usada: `feature/backend-rbac-hardening`
+- objetivo: reforcar autorizacao backend para Core SaaS, Platform Console e `tenant_checklist`, sem alterar frontend, Figma, Prisma/migrations, contratos API desnecessariamente, RLS, upload/storage ou mobile
+- mapeamento inicial: Core SaaS ja usava `requirePermission` em tenants/users/roles/audit; Platform ja usava `requirePlatformPermission`; checklists ja exigiam permissoes por rota
+- adicionado `requireAnyPermission([...])` no middleware RBAC existente, reaproveitando a resposta 403 padronizada
+- adicionado `requirePlatformAdmin()` como helper semantico sobre `requirePlatformPermission("platform:tenants:read")`
+- rotas `GET /api/v1/mobile/checklists/available` e `GET /api/v1/mobile/checklists/:checklistId/render` passaram a aceitar `checklist_runs:read` ou `checklist_runs:create`
+- `POST /api/v1/users` deixou de aceitar `tenantId` do body como fonte de escopo e usa sempre o `tenantId` do contexto autenticado
+- testes ampliados em `tests/core-saas.test.ts` e `tests/checklist-routes.test.ts`
+- testes especificos executados durante a implementacao: `npm test`, `node --test --import tsx tests/checklist-routes.test.ts` e `node --test --import tsx tests/platform-routes.test.ts`
+- documentacao atualizada em `docs/rbac.md`, `docs/api.md`, `docs/modules.md`, `agent-orchestration/docs/status-geral.md` e este log

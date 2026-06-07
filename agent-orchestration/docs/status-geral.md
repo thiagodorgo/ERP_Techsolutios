@@ -768,3 +768,42 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 
 - backend, Prisma/migrations, Figma e mobile Flutter nao foram alterados
 - drag-and-drop fica fora desta versao MVP
+## Atualizacao 2026-06-07 - Padronizacao de navegacao RBAC
+
+### Implementado
+
+- branch usada: `feature/navigation-rbac-sidebar-standardization`
+- criado modelo unificado de item de navegacao com `id`, `label`, `path`, `scope`, `mode`, `requiredPermissions`, `allowedRoles`, `children`, `status`, `icon`, `moduleKey` e `featureKey`
+- sidebar tenant e Platform Console passaram a filtrar itens por escopo, modo, tenant ativo, modulos/features habilitados, role, permissoes e status
+- removida exibicao de links desabilitados/planejados na navegacao
+- sidebar recolhida usa a mesma lista filtrada da sidebar expandida
+- guards de rota foram preservados e rotas operacionais Web receberam `PermissionGuard` para acesso direto por URL
+- W02A permanece visivel apenas para perfil com `tenant_checklists:read` ou Platform Admin em contexto autorizado
+
+### Decisoes
+
+- esconder link nao substitui autorizacao de rota
+- Platform Admin ve Console da Plataforma; Tenant Admin, Supervisor e Operador nao veem itens fora do seu escopo/permissao
+- Operador nao ve W02A administrativa; checklists de operador pertencem a rotas operacionais quando existirem
+- backend, Prisma, migrations, API contracts, Figma e mobile nao foram alterados nesta rodada
+
+## Atualizacao 2026-06-07 - Hardening backend RBAC
+
+### Implementado
+
+- branch usada: `feature/backend-rbac-hardening`
+- mapeadas rotas atuais de Core SaaS, Platform Console e `tenant_checklist`
+- `requirePermission(permission)` preservado como helper padrao
+- adicionado `requireAnyPermission([...])` para rotas que aceitam mais de uma permissao operacional
+- adicionado helper semantico `requirePlatformAdmin()`
+- rotas mobile de render/listagem de checklists aceitam `checklist_runs:read` ou `checklist_runs:create`
+- criacao de usuario Core SaaS passou a usar sempre `tenantId` do contexto autenticado, ignorando `tenantId` recebido no body
+- testes de Core SaaS ampliados para tenant isolation no create user, Supervisor/manager bloqueado em RBAC avancado e operador bloqueado em administracao
+- testes de checklist ampliados para tenant ausente, permissao ausente, operador sem acesso administrativo, supervisor sem create/publish, operador executando run, cross-tenant e acknowledgement sem permissao
+
+### Decisoes
+
+- frontend filtra sidebar e rotas visuais, mas backend continua sendo a autorizacao final
+- `tenant_id` do body nao e fonte de verdade para rotas tenant-scoped
+- Platform Admin permanece no boundary `/api/v1/platform/*`; tenant comum continua bloqueado
+- RLS, upload/storage, Figma, frontend e mobile ficaram fora desta rodada

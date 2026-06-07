@@ -10,9 +10,9 @@ export function PermissionGuard({
   children: ReactNode;
   permissions: string[];
 }) {
-  const { can } = usePermissions();
+  const { hasAny } = usePermissions();
 
-  if (!permissions.some(can)) {
+  if (!hasAny(permissions)) {
     return (
       <ErrorState
         title="Acesso nao autorizado"

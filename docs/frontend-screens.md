@@ -108,3 +108,14 @@ A sidebar completa representada no Figma e referencia para Admin/Tenant Owner, n
 - modulos habilitados;
 - papel do usuario;
 - permissoes RBAC.
+
+Padrao oficial:
+
+- usuario sem permissao nao ve o link;
+- nao renderizar links desabilitados, grupos vazios, placeholders ou icones recolhidos sem permissao;
+- sidebar recolhida e expandida usam a mesma lista filtrada;
+- Platform Admin ve Console da Plataforma e pode alternar para contexto tenant/admin/operacao autorizado;
+- Tenant Admin ve apenas administracao do proprio tenant/empresa cliente, incluindo W02A quando possuir `tenant_checklists:read`;
+- Supervisor ve operacao, equipe, tarefas, checklists operacionais, aprovacoes e relatorios permitidos no proprio tenant;
+- Operador ve apenas operacao propria, tarefas, OS/atendimentos, checklists operacionais permitidos e notificacoes;
+- W02A nao e checklist operacional: operador nao deve ver `/administrator/checklists`.

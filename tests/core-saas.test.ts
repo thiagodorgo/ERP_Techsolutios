@@ -284,6 +284,51 @@ test("registra auditoria minima em operacoes protegidas", async () => {
   });
 });
 
+test("ignora tenantId do body ao criar usuario tenant-scoped", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const response = await requestJson(baseUrl, "/api/v1/users", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
+      body: {
+        tenantId: seed.tenantB.id,
+        name: "Usuario Tenant Seguro",
+        email: "tenant-seguro@example.com",
+        roles: ["viewer"],
+      },
+    });
+
+    assert.equal(response.status, 201);
+    assert.equal(response.body.data.tenantId, seed.tenantA.id);
+  });
+});
+
+test("bloqueia supervisor e operador em RBAC avancado", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const supervisorRoles = await requestJson(baseUrl, "/api/v1/roles", {
+      headers: authHeaders(seed.tenantA, seed.viewerA, "manager"),
+    });
+    const operatorRoles = await requestJson(baseUrl, "/api/v1/roles", {
+      headers: authHeaders(seed.tenantA, seed.viewerA, "operator"),
+    });
+    const operatorCreateUser = await requestJson(baseUrl, "/api/v1/users", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.viewerA, "operator"),
+      body: {
+        name: "Usuario Indevido",
+        email: "indevido@example.com",
+        roles: ["viewer"],
+      },
+    });
+
+    assert.equal(supervisorRoles.status, 403);
+    assert.equal(supervisorRoles.body.error.reason, "permission_required");
+    assert.equal(operatorRoles.status, 403);
+    assert.equal(operatorRoles.body.error.reason, "permission_required");
+    assert.equal(operatorCreateUser.status, 403);
+    assert.equal(operatorCreateUser.body.error.reason, "permission_required");
+  });
+});
+
 type SeedData = {
   readonly tenantA: Tenant;
   readonly tenantB: Tenant;

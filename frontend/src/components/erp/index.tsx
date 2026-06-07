@@ -12,6 +12,8 @@ import {
   LockKeyhole,
   Map,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   Radio,
   Route,
   ShieldCheck,
@@ -27,7 +29,7 @@ import type { LogisticsAsset } from "../../modules/logistics/types";
 import type { WorkOrder, WorkOrderEvidence, WorkOrderTimelineItem } from "../../modules/work-orders/types";
 import type { TenantContext } from "../../modules/context/types";
 import { tenantNavigation } from "../../navigation/tenantNavigation";
-import { canShowNavigationItem } from "../../navigation/types";
+import { filterNavigationItems, type NavigationMode } from "../../navigation/types";
 import { usePermissions } from "../../providers/PermissionProvider";
 
 export function TenantBadge({ context }: { context: TenantContext }) {
@@ -70,38 +72,75 @@ const iconByModule = {
   tenant_checklist: ClipboardList,
 };
 
-export function Sidebar({ context }: { context?: TenantContext | null }) {
-  const { permissions } = usePermissions();
-  const visibleItems = tenantNavigation.filter((item) =>
-    canShowNavigationItem(item, {
+function getTenantNavigationMode(context: TenantContext | null | undefined, roles: readonly string[], permissions: readonly string[]): NavigationMode {
+  const tenantAdminRoles = ["Super Admin", "Administrador", "Gestor Operacional"];
+  const tenantAdminPermissions = ["tenant:manage", "roles:manage", "users:read", "tenant_checklists:read"];
+
+  if (
+    tenantAdminRoles.some((role) => roles.includes(role)) ||
+    tenantAdminPermissions.some((permission) => permissions.includes(permission)) ||
+    (context && tenantAdminRoles.includes(context.role))
+  ) {
+    return "tenant_admin";
+  }
+
+  return "operation";
+}
+
+export function Sidebar({
+  context,
+  collapsed = false,
+  onToggleCollapsed,
+}: {
+  context?: TenantContext | null;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
+}) {
+  const { permissions, roles } = usePermissions();
+  const visibleItems = filterNavigationItems(
+    {
       permissions,
-      enabledModules: ["dashboard", "work-orders", "logistics", "users", "tenant-admin", "tenant_checklist"],
+      roles,
+      scope: "tenant",
+      mode: getTenantNavigationMode(context, roles, permissions),
+      enabledModules: context?.enabledModules,
       tenantStatus: context?.tenantStatus,
-    }),
+    },
+    tenantNavigation,
   );
 
   return (
-    <aside className="erp-sidebar">
+    <aside className={`erp-sidebar ${collapsed ? "is-collapsed" : ""}`}>
       <div className="erp-sidebar__brand">
         <Building2 size={22} />
         <div>
           <strong>ERP Techsolutions</strong>
           <span>Operacao multi-tenant</span>
         </div>
+        {onToggleCollapsed ? (
+          <Tooltip label={collapsed ? "Expandir navegacao" : "Recolher navegacao"}>
+            <button type="button" className="erp-sidebar__toggle" onClick={onToggleCollapsed} aria-label={collapsed ? "Expandir navegacao" : "Recolher navegacao"}>
+              {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+            </button>
+          </Tooltip>
+        ) : null}
       </div>
       <nav>
         {visibleItems.map((item) => {
-          const Icon = iconByModule[item.module as keyof typeof iconByModule] ?? LayoutDashboard;
-          return item.disabled ? (
-            <span key={item.path} className="erp-nav-disabled">
-              <Icon size={18} />
-              <span>{item.label}</span>
-            </span>
-          ) : (
-            <NavLink key={item.path} to={item.path}>
+          const Icon = iconByModule[(item.icon ?? item.moduleKey) as keyof typeof iconByModule] ?? LayoutDashboard;
+          const link = (
+            <NavLink key={item.path} to={item.path} aria-label={collapsed ? item.label : undefined}>
               <Icon size={18} />
               <span>{item.label}</span>
             </NavLink>
+          );
+
+          return collapsed ? (
+            <Tooltip key={item.path} label={item.label}>
+              {link}
+            </Tooltip>
+          ) : (
+            link
           );
         })}
       </nav>
