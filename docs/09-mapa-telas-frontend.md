@@ -76,6 +76,9 @@ Princípios adotados:
 - Supervisor ve somente operacao do proprio tenant conforme escopo e permissoes.
 - Operador ve somente sua operacao, tarefas, OS/atendimentos, checklists operacionais permitidos e notificacoes.
 - W02A e administrativa; operador nao deve ver `/administrator/checklists`.
+- W03 Configuracoes e administrativa; operador e supervisor sem permissao administrativa nao devem ver `/administrator/settings`.
+
+> Nota de divergencia aberta: este documento historicamente usava `W03` para Dashboard Financeiro. A branch `feature/tenant-settings-menu-ui` implementa `W03 · Administrador — Configurações` conforme decisao operacional mais recente. A renumeracao definitiva do Dashboard Financeiro deve ser consolidada em bloco documental proprio.
 
 ## Telas Console da Plataforma
 
@@ -142,7 +145,18 @@ Princípios adotados:
 - **Navegação:** OS listagem/detalhe.
 - **Prioridade:** MVP.
 
-### W03 — Dashboard Financeiro
+### W03 — Administrador: Configurações
+- **Objetivo:** centralizar configurações do tenant/empresa sem duplicar telas especializadas.
+- **Usuários:** Administrador; Platform Admin quando em contexto tenant/admin autorizado.
+- **Permissões:** `tenant:manage` nesta rodada; pendente permissão dedicada `tenant_settings:read` no backend.
+- **Rota:** `/administrator/settings`.
+- **Dados:** categorias Geral, Aparência, Usuários e Acesso, Módulos, Checklists, Notificações, Integrações e Segurança/Auditoria.
+- **Ações:** navegar para áreas especializadas, incluindo W02A em `/administrator/checklists`.
+- **Temas planejados:** `enterprise_blue`, `tech_dark`, `green_operations`; sem persistência real nesta rodada.
+- **Regras:** W03 não duplica o builder de checklists; Checklists aponta para W02A.
+- **Prioridade:** MVP de estrutura visual/navegação.
+
+### W03 legado — Dashboard Financeiro
 - **Objetivo:** acompanhar caixa, contas, faturamento, margem e inconsistências.
 - **Usuários:** Financeiro, Gestor Executivo, Admin.
 - **Permissões:** FIN + relatórios.

@@ -859,4 +859,17 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - W02A continua administrativa; o preview de schema apenas indica suporte a evidencias para `photo_upload`, `before_after` e `damage_map`
 - `VITE_USE_MOCKS=true` preservado com upload/download simulados
 - M10/M11/M12 permanecem pendentes e deverao consumir os services/componentes em telas operacionais futuras
+
+## Atualizacao 2026-06-07 - W03 tenant settings menu UI
+
+- branch usada: `feature/tenant-settings-menu-ui`
+- criada tela `W03 · Administrador — Configurações` na rota `/administrator/settings`
+- criado modulo frontend `frontend/src/modules/settings`
+- sidebar do tenant recebeu item `Configuracoes` filtrado por `tenant:manage`, role administrativa e modulo `tenant-admin`
+- pendencia documentada: criar permissao backend dedicada `tenant_settings:read` em bloco futuro
+- W03 organiza Geral, Aparência, Usuários e Acesso, Módulos e Checklists
+- Notificações, Integrações e Segurança/Auditoria aparecem como planejados
+- Checklists aponta para W02A em `/administrator/checklists`, sem duplicar builder
+- temas exibidos apenas como opções visuais planejadas: `enterprise_blue`, `tech_dark` e `green_operations`
+- fora de escopo mantido: backend, Prisma/migrations, contratos API, Figma, mobile Flutter e persistência real de tema
 - qualquer consulta platform futura que consolide multiplos tenants deve iterar por tenant ou ganhar repository auditado proprio
