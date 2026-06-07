@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
+import { Navigate } from "react-router-dom";
 
 import { ErrorState } from "../components/ui";
+import { useAuth } from "../providers/AuthProvider";
 import { usePermissions } from "../providers/PermissionProvider";
 
 export function PermissionGuard({
@@ -10,7 +12,16 @@ export function PermissionGuard({
   children: ReactNode;
   permissions: string[];
 }) {
+  const { isAuthenticated, isLoading } = useAuth();
   const { hasAny } = usePermissions();
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (!hasAny(permissions)) {
     return (

@@ -1,0 +1,189 @@
+import type { AuthSession, AuthTenant, AuthUser, LoginCredentials, UserRole } from "./types";
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
+
+type LoginApiResponse = {
+  readonly data: {
+    readonly authenticated: boolean;
+    readonly access_token: string;
+    readonly token_type: "Bearer";
+    readonly expires_in: number;
+    readonly user: {
+      readonly id: string;
+      readonly tenant_id: string;
+      readonly email: string;
+      readonly name: string;
+      readonly status: string;
+    };
+    readonly tenant: {
+      readonly id: string;
+      readonly name: string;
+    };
+    readonly roles: readonly {
+      readonly id: string;
+      readonly key: string;
+      readonly name: string;
+    }[];
+  };
+};
+
+export async function loginWithJwt(credentials: LoginCredentials): Promise<AuthSession> {
+  const response = await fetch(`${apiBaseUrl}/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      tenantId: credentials.tenantId,
+      email: credentials.email,
+      password: credentials.password,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(readLoginErrorMessage(response.status));
+  }
+
+  const payload = (await response.json()) as LoginApiResponse;
+
+  if (!payload.data.authenticated || payload.data.token_type !== "Bearer") {
+    throw new Error("Nao foi possivel autenticar com a API.");
+  }
+
+  return mapLoginResponse(payload);
+}
+
+function mapLoginResponse(payload: LoginApiResponse): AuthSession {
+  const backendRoles = payload.data.roles.map((role) => role.key);
+  const permissions = resolveFrontendPermissions(backendRoles);
+  const roles = resolveFrontendRoles(backendRoles);
+  const tenant: AuthTenant = {
+    id: payload.data.tenant.id,
+    name: payload.data.tenant.name,
+  };
+  const user: AuthUser = {
+    id: payload.data.user.id,
+    name: payload.data.user.name,
+    email: payload.data.user.email,
+    cognitoSubject: `local:${payload.data.user.id}`,
+    roles,
+    backendRoles,
+    permissions,
+    status: payload.data.user.status === "inactive" ? "inactive" : "active",
+  };
+
+  return {
+    provider: "local-jwt",
+    accessToken: payload.data.access_token,
+    tokenType: "Bearer",
+    expiresAt: new Date(Date.now() + payload.data.expires_in * 1000).toISOString(),
+    tenant,
+    user,
+  };
+}
+
+function readLoginErrorMessage(status: number): string {
+  if (status === 400) {
+    return "Revise tenant, e-mail e senha.";
+  }
+
+  if (status === 401) {
+    return "Tenant, e-mail ou senha invalidos.";
+  }
+
+  if (status === 423) {
+    return "Conta bloqueada. Solicite suporte ao administrador.";
+  }
+
+  return "Nao foi possivel autenticar agora.";
+}
+
+function resolveFrontendRoles(backendRoles: readonly string[]): UserRole[] {
+  const roles = backendRoles.map(mapBackendRole).filter((role): role is UserRole => Boolean(role));
+
+  return [...new Set(roles)];
+}
+
+function mapBackendRole(role: string): UserRole | null {
+  const normalized = role.trim().toLowerCase();
+
+  if (normalized === "super_admin" || normalized === "platform_admin") return "Super Admin";
+  if (normalized === "tenant_admin") return "Administrador";
+  if (normalized === "manager") return "Gestor Operacional";
+  if (normalized === "technician" || normalized === "operator" || normalized === "field_technician") return "Operador Logistico";
+  if (normalized === "finance") return "Financeiro";
+  if (normalized === "auditor" || normalized === "viewer") return "Auditor";
+  if (normalized === "support") return "Supervisor";
+
+  return null;
+}
+
+function resolveFrontendPermissions(backendRoles: readonly string[]): string[] {
+  const backendPermissions = backendRoles.flatMap((role) => rolePermissions[role.trim().toLowerCase()] ?? []);
+
+  return [...new Set(["dashboard:view", ...backendPermissions.flatMap(mapBackendPermission)])];
+}
+
+function mapBackendPermission(permission: string): string[] {
+  const mapped = frontendPermissionAliases[permission] ?? [];
+
+  return [permission, ...mapped];
+}
+
+const rolePermissions: Record<string, string[]> = {
+  super_admin: ["platform:tenants:read", "platform:tenants:create", "platform:tenants:update", "platform:modules:manage"],
+  platform_admin: ["platform:tenants:read", "platform:tenants:create", "platform:tenants:update", "platform:modules:manage"],
+  tenant_admin: [
+    "tenant.manage",
+    "users.manage",
+    "users.read",
+    "roles.manage",
+    "audit.read",
+    "os.manage",
+    "os.read",
+    "inventory.manage",
+    "inventory.read",
+    "finance.manage",
+    "finance.read",
+    "tenant_checklists:read",
+    "tenant_checklists:create",
+    "tenant_checklists:update",
+    "tenant_checklists:publish",
+    "checklist_runs:read",
+    "checklist_runs:create",
+    "checklist_runs:update",
+    "checklist_runs:complete",
+    "checklist_runs:acknowledge",
+  ],
+  manager: [
+    "users.read",
+    "audit.read",
+    "os.manage",
+    "os.read",
+    "inventory.read",
+    "finance.read",
+    "tenant_checklists:read",
+    "checklist_runs:read",
+    "checklist_runs:create",
+    "checklist_runs:update",
+    "checklist_runs:complete",
+    "checklist_runs:acknowledge",
+  ],
+  technician: ["os.read", "inventory.read", "checklist_runs:read", "checklist_runs:create", "checklist_runs:update", "checklist_runs:complete"],
+  operator: ["os.manage", "os.read", "inventory.read", "checklist_runs:read", "checklist_runs:create", "checklist_runs:update", "checklist_runs:complete"],
+  viewer: ["users.read", "os.read", "inventory.read", "finance.read", "tenant_checklists:read", "checklist_runs:read"],
+  finance: ["finance.manage", "finance.read", "os.read"],
+  inventory: ["inventory.manage", "inventory.read", "os.read"],
+  field_technician: ["os.read", "inventory.read"],
+  auditor: ["users.read", "audit.read", "os.read", "inventory.read", "finance.read", "tenant_checklists:read", "checklist_runs:read"],
+  support: ["users.read", "audit.read", "os.read", "tenant_checklists:read", "checklist_runs:read"],
+};
+
+const frontendPermissionAliases: Record<string, string[]> = {
+  "tenant.manage": ["tenant:manage"],
+  "users.manage": ["users:read"],
+  "users.read": ["users:read"],
+  "audit.read": ["audit:view"],
+  "os.manage": ["work-orders:view", "work-orders:create", "work-orders:update", "logistics:dispatch"],
+  "os.read": ["work-orders:view"],
+};

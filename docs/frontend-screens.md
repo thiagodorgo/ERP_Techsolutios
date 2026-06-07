@@ -24,6 +24,22 @@ Rotas MVP:
 - `/platform/tenants/:tenantId`
 - `/platform/tenants/:tenantId/modules`
 
+## Autenticacao
+
+Tela implementada:
+
+- `W01 · Login`, rota `/login`.
+
+Comportamento:
+
+- em modo real (`VITE_USE_MOCKS=false`), envia `tenantId`, e-mail e senha para `POST /api/v1/auth/login`;
+- armazena a sessao JWT em `localStorage` e o API client passa a enviar `Authorization: Bearer` automaticamente;
+- em `401`, a sessao local e limpa e o usuario volta ao fluxo de login;
+- logout simples limpa token, sessao local e contexto ativo;
+- em modo mock (`VITE_USE_MOCKS=true`), preserva login/contextos simulados para desenvolvimento.
+
+Refresh token, revogacao de sessao e logout avancado ficam fora desta rodada.
+
 ## Administrador
 
 Area do administrador do tenant/empresa cliente. Gerencia usuarios, permissoes e configuracoes apenas da propria empresa.

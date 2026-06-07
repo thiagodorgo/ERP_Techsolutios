@@ -1,3 +1,5 @@
+import { clearStoredAuthSession, getStoredToken } from "../../modules/auth/auth.storage";
+
 type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
@@ -9,6 +11,7 @@ type RequestOptions = {
 };
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
+const useMocks = import.meta.env.VITE_USE_MOCKS === "true";
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = {
@@ -22,9 +25,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
-  }
+  handleUnauthorized(response);
+  if (!response.ok) throw new Error(`API request failed: ${response.status}`);
 
   return response.json() as Promise<T>;
 }
@@ -36,9 +38,8 @@ export async function apiFormDataRequest<T>(path: string, options: Omit<RequestO
     body: options.body,
   });
 
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
-  }
+  handleUnauthorized(response);
+  if (!response.ok) throw new Error(`API request failed: ${response.status}`);
 
   return response.json() as Promise<T>;
 }
@@ -49,9 +50,8 @@ export async function apiBlobRequest(path: string, options: RequestOptions = {})
     headers: buildAuthHeaders(options),
   });
 
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
-  }
+  handleUnauthorized(response);
+  if (!response.ok) throw new Error(`API request failed: ${response.status}`);
 
   return {
     blob: await response.blob(),
@@ -62,14 +62,24 @@ export async function apiBlobRequest(path: string, options: RequestOptions = {})
 
 function buildAuthHeaders(options: RequestOptions): Record<string, string> {
   const headers: Record<string, string> = {};
+  const token = options.token ?? getStoredToken();
 
-  if (options.token) headers.Authorization = `Bearer ${options.token}`;
-  if (options.tenantId) headers["X-Tenant-Id"] = options.tenantId;
-  if (options.branchId) headers["X-Branch-Id"] = options.branchId;
-  if (options.role) headers["X-Role"] = options.role;
-  if (options.permissions?.length) headers["X-Permissions"] = options.permissions.join(",");
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  if (useMocks) {
+    if (options.tenantId) headers["X-Tenant-Id"] = options.tenantId;
+    if (options.branchId) headers["X-Branch-Id"] = options.branchId;
+    if (options.role) headers["X-Role"] = options.role;
+    if (options.permissions?.length) headers["X-Permissions"] = options.permissions.join(",");
+  }
 
   return headers;
+}
+
+function handleUnauthorized(response: Response): void {
+  if (response.status === 401) {
+    clearStoredAuthSession();
+  }
 }
 
 function readContentDispositionFileName(value: string | null): string | undefined {

@@ -10,6 +10,7 @@ import {
   Gauge,
   LayoutDashboard,
   LockKeyhole,
+  LogOut,
   Map,
   Menu,
   PanelLeftClose,
@@ -22,7 +23,7 @@ import {
   UserRoundCog,
 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import { Accordion, Alert, Badge, Button, Card, Chip, SearchBar, Select, Table, Tooltip } from "../ui";
 import type { DomainEvent } from "../../modules/events/types";
@@ -31,7 +32,9 @@ import type { WorkOrder, WorkOrderEvidence, WorkOrderTimelineItem } from "../../
 import type { TenantContext } from "../../modules/context/types";
 import { tenantNavigation } from "../../navigation/tenantNavigation";
 import { filterNavigationItems, type NavigationMode } from "../../navigation/types";
+import { useAuth } from "../../providers/AuthProvider";
 import { usePermissions } from "../../providers/PermissionProvider";
+import { useTenantContext } from "../../providers/TenantProvider";
 
 export function TenantBadge({ context }: { context: TenantContext }) {
   return <Badge tone={context.tenantStatus === "blocked" ? "danger" : "info"}>{context.tenantName}</Badge>;
@@ -151,6 +154,10 @@ export function Sidebar({
 }
 
 export function Topbar({ context }: { context: TenantContext }) {
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+  const { clearContext } = useTenantContext();
+
   return (
     <header className="erp-topbar">
       <ActiveContextBar context={context} />
@@ -159,6 +166,20 @@ export function Topbar({ context }: { context: TenantContext }) {
         <Tooltip label="Notificacoes operacionais">
           <button type="button" className="erp-icon-button" aria-label="Notificacoes">
             <Bell size={18} />
+          </button>
+        </Tooltip>
+        <Tooltip label="Sair">
+          <button
+            type="button"
+            className="erp-icon-button"
+            aria-label="Sair"
+            onClick={() => {
+              clearContext();
+              signOut();
+              navigate("/login", { replace: true });
+            }}
+          >
+            <LogOut size={18} />
           </button>
         </Tooltip>
       </div>

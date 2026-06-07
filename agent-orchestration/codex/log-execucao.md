@@ -652,3 +652,21 @@
 - `.env.example` atualizado para `JWT_SECRET="change-me-in-local-development"` e `JWT_EXPIRES_IN="1h"` sem segredo real
 - documentacao atualizada em `docs/auth.md`, `docs/api.md`, `docs/rbac.md`, `docs/architecture.md`, `docs/modules.md` e `agent-orchestration/docs/status-geral.md`
 - fora de escopo mantido: frontend amplo, Figma, mobile, OAuth/social login, refresh token complexo, Prisma/migrations e contratos API destrutivos
+
+## 2026-06-07 - frontend login JWT
+
+- branch usada: `feature/auth-frontend-login-integration`
+- objetivo: integrar o frontend ao fluxo real `login -> Bearer token -> RBAC backend -> RLS PostgreSQL`, preservando mocks de desenvolvimento
+- endpoint usado: `POST /api/v1/auth/login`
+- criados `frontend/src/modules/auth/auth.adapter.ts`, `auth.service.ts` e `auth.storage.ts`
+- `AuthProvider` passou a usar sessao armazenada, estado de autenticacao e logout simples
+- `LoginPage` passa a enviar `tenantId`, e-mail e senha em modo real; em mock preserva dados demo
+- `apiRequest`, `apiFormDataRequest` e `apiBlobRequest` enviam `Authorization: Bearer` automaticamente a partir do token armazenado
+- headers legados sao enviados pelo API client apenas quando `VITE_USE_MOCKS=true`
+- resposta `401` limpa a sessao local
+- `ContextSelectionPage` e repository de contexto usam tenant/roles/permissoes derivados da sessao real quando mocks estao desativados
+- `PermissionGuard`, `PlatformGuard`, `AppShell`, `Topbar` e `PlatformLayout` ajustados para auth state e logout simples
+- `.env.example` recebeu `VITE_DEFAULT_TENANT_ID=""` como placeholder opcional, sem segredo
+- documentacao atualizada em `docs/auth.md`, `docs/api.md`, `docs/frontend-screens.md`, `docs/rbac.md`, `agent-orchestration/docs/status-geral.md` e este log
+- fora de escopo mantido: backend, Prisma/migrations, Figma, mobile Flutter, refresh token, revogacao remota e remocao brusca de mocks
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npx prisma validate`, `npx prisma generate` e `git diff --check`

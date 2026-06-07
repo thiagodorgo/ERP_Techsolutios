@@ -894,3 +894,20 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - documentacao atualizada em `docs/auth.md`, `docs/api.md`, `docs/rbac.md`, `docs/architecture.md` e `docs/modules.md`
 - testes ajustados em `tests/platform-routes.test.ts` e `tests/checklist-routes.test.ts`
 - fora de escopo mantido: frontend amplo, Figma, mobile, OAuth/social login, refresh token complexo, Prisma/migrations e contratos API destrutivos
+
+## Atualizacao 2026-06-07 - frontend login JWT
+
+- branch usada: `feature/auth-frontend-login-integration`
+- tela `W01 Login` integrada ao endpoint real `POST /api/v1/auth/login`
+- login real envia `tenantId`, e-mail e senha
+- criada camada frontend de auth com adapter, service e storage controlado
+- sessao JWT armazenada em `localStorage` como MVP
+- API client envia `Authorization: Bearer` automaticamente em chamadas JSON, FormData e blob/download
+- headers legados deixam de ser enviados pelo API client quando `VITE_USE_MOCKS=false`
+- fluxo mock permanece quando `VITE_USE_MOCKS=true`
+- guards e layouts protegidos respeitam estado autenticado antes de renderizar telas
+- logout simples limpa sessao/token/contexto local e redireciona para `/login`
+- selecao de contexto em modo real usa tenant/roles/permissoes derivados da sessao de login
+- backend continua autoridade final de RBAC e RLS; permissoes derivadas no frontend servem apenas para UX/sidebar/guards visuais
+- refresh token, revogacao remota, cookie/sessao avancada e logout backend ficaram fora do escopo
+- backend, Prisma, migrations, Figma e mobile Flutter nao foram alterados

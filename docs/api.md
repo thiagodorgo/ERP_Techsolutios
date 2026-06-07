@@ -8,6 +8,55 @@ Rotas protegidas devem usar `Authorization: Bearer <access_token>` como caminho 
 
 Headers legados (`x-tenant-id`, `x-user-id`, `x-actor-user-id`, `x-role`, `x-roles`, `x-permissions`) continuam aceitos apenas em desenvolvimento/teste para transicao. Em `NODE_ENV=production`, rotas sensiveis de plataforma, Core SaaS e Checklists rejeitam esse fallback. Bearer token invalido, malformado ou expirado retorna `401 INVALID_TOKEN` antes de qualquer fallback.
 
+## Login
+
+```http
+POST /api/v1/auth/login
+```
+
+Body:
+
+```json
+{
+  "tenantId": "uuid-do-tenant",
+  "email": "admin.demo@example.com",
+  "password": "ChangeMe123!"
+}
+```
+
+Resposta de sucesso:
+
+```json
+{
+  "data": {
+    "authenticated": true,
+    "access_token": "jwt-assinado",
+    "token_type": "Bearer",
+    "expires_in": 3600,
+    "user": {
+      "id": "uuid-do-usuario",
+      "tenant_id": "uuid-do-tenant",
+      "email": "admin.demo@example.com",
+      "name": "Admin Demo",
+      "status": "active"
+    },
+    "tenant": {
+      "id": "uuid-do-tenant",
+      "name": "Tenant Demo"
+    },
+    "roles": [
+      {
+        "id": "uuid-da-role",
+        "key": "tenant_admin",
+        "name": "Tenant Admin"
+      }
+    ]
+  }
+}
+```
+
+O frontend em modo real usa esse endpoint e envia `Authorization: Bearer` automaticamente nas chamadas seguintes. Headers legados ficam restritos a `VITE_USE_MOCKS=true`.
+
 ## Console da Plataforma
 
 Todas as rotas de plataforma devem exigir permissao `platform:*` correspondente e nao devem ser acessiveis por usuario comum de tenant.
