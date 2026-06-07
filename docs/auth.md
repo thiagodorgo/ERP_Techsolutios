@@ -4,7 +4,7 @@
 
 Os Blocos 04C.1 a 04C.7 adicionam credenciais locais persistentes, login tenant-scoped, emissao de JWT access token, fundacao do actor autenticado, rotas protegidas actor-aware e uso de RBAC persistido para actors JWT quando o runtime Prisma esta ativo. Refresh token, logout, sessao persistente, cookie e middleware obrigatorio sem fallback ainda ficam fora do escopo atual.
 
-Nesta fase, a autorizacao atual por headers internos continua preservada:
+Nesta fase, `Authorization: Bearer` e o caminho principal para rotas protegidas. A autorizacao por headers internos continua preservada apenas para desenvolvimento, testes e transicao controlada:
 
 - `x-tenant-id`
 - `x-user-id`
@@ -13,7 +13,7 @@ Nesta fase, a autorizacao atual por headers internos continua preservada:
 - `x-roles`
 - `x-permissions`
 
-Esses headers ainda sao temporarios e serao substituidos em blocos futuros por ator autenticado.
+Esses headers ainda sao temporarios e serao substituidos em blocos futuros por ator autenticado. Em `NODE_ENV=production`, rotas sensiveis de plataforma e tenant rejeitam esse fallback.
 
 ## Credenciais locais
 
@@ -92,7 +92,7 @@ Resposta de sucesso (`200 OK`):
     "authenticated": true,
     "access_token": "jwt-assinado",
     "token_type": "Bearer",
-    "expires_in": 900,
+    "expires_in": 3600,
     "user": {
       "id": "uuid-do-usuario",
       "tenant_id": "uuid-do-tenant",
@@ -139,7 +139,7 @@ O endpoint registra auditoria simples quando existe tenant valido:
 
 Auditoria nunca registra senha nem `password_hash`.
 
-O login ainda nao remove os headers simulados. A autorizacao atual por `x-tenant-id`, `x-user-id`, `x-role` e `x-permissions` continua como fallback temporario durante a migracao gradual das rotas protegidas.
+O login ainda nao remove os headers simulados em desenvolvimento/teste. A autorizacao por `x-tenant-id`, `x-user-id`, `x-role` e `x-permissions` continua como fallback temporario durante a migracao gradual das rotas protegidas, mas nao autentica rotas sensiveis em producao.
 
 Teste separado:
 
@@ -156,11 +156,11 @@ O Bloco 04C.3 adiciona emissao de access token JWT no login local tenant-scoped.
 Configuracao:
 
 ```env
-JWT_SECRET="dev-only-change-me"
-JWT_EXPIRES_IN="15m"
+JWT_SECRET="change-me-in-local-development"
+JWT_EXPIRES_IN="1h"
 ```
 
-`JWT_SECRET` usa default apenas em desenvolvimento/teste. Em `NODE_ENV=production`, a variavel deve ser definida com segredo proprio fora do repositorio. Nunca commite segredo real.
+`JWT_SECRET` usa default apenas em desenvolvimento/teste. Em `NODE_ENV=production`, a variavel deve ser definida com segredo proprio fora do repositorio. Valores locais conhecidos como `dev-only-change-me` e `change-me-in-local-development` sao recusados em producao. Nunca commite segredo real.
 
 `JWT_EXPIRES_IN` aceita duracoes simples em segundos, minutos, horas ou dias, como `900s`, `15m`, `1h` ou `1d`. O login retorna `expires_in` em segundos.
 
@@ -174,7 +174,7 @@ Claims do access token:
   "roles": ["tenant_admin"],
   "type": "access",
   "iat": 1760000000,
-  "exp": 1760000900,
+  "exp": 1760003600,
   "iss": "erp-techsolutions",
   "aud": "erp-techsolutions-api"
 }
@@ -199,7 +199,7 @@ node --test --import tsx tests/auth-jwt.test.ts
 
 O Bloco 04C.4 cria a fundacao para resolver `Authorization: Bearer` em `request.actor`.
 
-No Bloco 04C.4 o middleware foi apenas exportado pelo modulo `auth`. No Bloco 04C.5 ele passou a ser montado antes das rotas protegidas Core SaaS, ainda de forma opcional e com fallback para headers simulados.
+No Bloco 04C.4 o middleware foi apenas exportado pelo modulo `auth`. No Bloco 04C.5 ele passou a ser montado antes das rotas protegidas Core SaaS, Checklists e Platform, ainda de forma opcional e com fallback para headers simulados fora de producao.
 
 Tipo interno escolhido para `request.actor` usa camelCase, consistente com os objetos internos de request/contexto ja usados no backend:
 
@@ -216,7 +216,7 @@ Tipo interno escolhido para `request.actor` usa camelCase, consistente com os ob
 Comportamento do middleware opcional:
 
 - sem `Authorization`: chama `next()` e deixa `request.actor` ausente;
-- `Authorization` ausente ou rotas antigas: headers simulados continuam podendo ser usados;
+- `Authorization` ausente ou rotas antigas: headers simulados continuam podendo ser usados apenas fora de `NODE_ENV=production`;
 - `Authorization` malformado, sem `Bearer`, invalido ou expirado: responde `401 Unauthorized`;
 - `Bearer` valido: verifica o access token e popula `request.actor`.
 
@@ -255,13 +255,14 @@ Fluxo atual das rotas protegidas:
 
 1. `Authorization: Bearer` valido popula `request.actor`.
 2. `tenantContextMiddleware` usa `request.actor` como fonte principal de tenant, usuario e roles.
-3. Se nao houver JWT, o middleware continua aceitando headers simulados.
+3. Se nao houver JWT, o middleware continua aceitando headers simulados em desenvolvimento/teste.
 4. Se JWT e headers simulados forem enviados juntos, o JWT tem prioridade.
 5. Se o JWT for invalido, malformado ou expirado, a resposta e `401 INVALID_TOKEN`.
+6. Em `NODE_ENV=production`, headers simulados sem JWT retornam `403 FORBIDDEN` nas rotas sensiveis.
 
 Essa prioridade evita que headers simulados sobrescrevam um actor autenticado por token.
 
-No runtime `memory`, as permissoes continuam usando o catalogo atual de roles do backend. No runtime `prisma`, o Bloco 04C.7 adiciona middleware async que substitui roles/permissoes do contexto por RBAC persistido quando houver actor JWT.
+No runtime `memory`, as permissoes continuam usando o catalogo atual de roles do backend. No runtime `prisma`, o middleware async substitui roles/permissoes do contexto por RBAC persistido quando houver actor JWT e executa a resolucao dentro de `withTenantRls`, alimentando `app.current_tenant_id` por transacao.
 
 O logger HTTP redige `req.headers.authorization` para evitar token em log.
 
@@ -298,7 +299,7 @@ Regras mantidas:
 - `x-role`, `x-roles` e `x-permissions` nao sobrescrevem JWT.
 - `x-permissions` continua apenas como fallback legacy quando nao ha JWT.
 - usuario JWT sem permissao persistida fica sem permissao efetiva e recebe 403 nas rotas protegidas.
-- headers simulados ainda nao foram removidos.
+- headers simulados ainda nao foram removidos, mas ficam restritos a desenvolvimento/teste nas rotas sensiveis.
 - erros internos de Prisma nao sao expostos na resposta publica.
 
 Fora do escopo deste bloco:
@@ -307,7 +308,7 @@ Fora do escopo deste bloco:
 - implementar refresh token, logout ou revogacao;
 - implementar sessao/cookie;
 - Redis runtime;
-- RLS.
+- remover ou revogar sessoes JWT ja emitidas.
 
 Testes separados:
 
@@ -331,7 +332,7 @@ Os headers legados ainda sao aceitos temporariamente para transicao e testes int
 
 `x-permissions` vale apenas no fluxo legacy, quando nao ha JWT. Mesmo nesse modo, ele restringe as permissoes derivadas da role enviada e nao deve ser tratado como fonte definitiva de autorizacao futura.
 
-A remocao futura deve acontecer em bloco separado, preferencialmente por feature flag ou modo strict. Esse modo podera bloquear headers legados em ambientes controlados antes de qualquer remocao definitiva.
+Em `NODE_ENV=production`, o fallback legado ja e bloqueado nas rotas sensiveis de plataforma, Core SaaS e Checklists. A remocao definitiva do codigo legado deve acontecer em bloco separado, preferencialmente por feature flag ou modo strict, depois que chamadas internas e testes forem migrados para Bearer.
 
 Continuam fora deste bloco:
 
@@ -339,22 +340,20 @@ Continuam fora deste bloco:
 - logout;
 - sessao/cookie;
 - Redis runtime;
-- RLS.
+- remover suporte legacy do codigo.
 
 ## Fora do escopo atual
 
 - refresh token;
 - logout;
 - rotacao/revogacao de token;
-- substituicao dos headers simulados;
-- remocao do fallback por headers simulados;
+- remocao definitiva do fallback por headers simulados;
 - tornar JWT obrigatorio globalmente;
 - Redis runtime;
-- RLS.
 
 ## Proximos passos
 
-- substituir headers simulados gradualmente;
+- substituir headers simulados gradualmente nas chamadas internas e testes;
 - ampliar o uso de RBAC persistido conforme as rotas migrarem para JWT;
 - auditoria com actor real;
 - bloco separado: refresh token.

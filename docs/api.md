@@ -2,6 +2,12 @@
 
 O backend atual usa o prefixo `/api/v1`. Os contratos abaixo documentam o boundary inicial do Console da Plataforma.
 
+## Autenticacao de rotas protegidas
+
+Rotas protegidas devem usar `Authorization: Bearer <access_token>` como caminho principal de contexto autenticado. Um Bearer token valido alimenta `userId`, `tenantId`, roles e permissoes efetivas via RBAC do backend.
+
+Headers legados (`x-tenant-id`, `x-user-id`, `x-actor-user-id`, `x-role`, `x-roles`, `x-permissions`) continuam aceitos apenas em desenvolvimento/teste para transicao. Em `NODE_ENV=production`, rotas sensiveis de plataforma, Core SaaS e Checklists rejeitam esse fallback. Bearer token invalido, malformado ou expirado retorna `401 INVALID_TOKEN` antes de qualquer fallback.
+
 ## Console da Plataforma
 
 Todas as rotas de plataforma devem exigir permissao `platform:*` correspondente e nao devem ser acessiveis por usuario comum de tenant.
@@ -142,6 +148,8 @@ Status atual: backend real com migration, models Prisma, modulo `src/modules/che
 
 Regras obrigatorias para todos os endpoints:
 
+- usar `Authorization: Bearer` como fonte principal de contexto autenticado;
+- aceitar headers legados apenas em desenvolvimento/teste;
 - obter `tenant_id` do contexto autenticado/middleware, nunca confiar em `tenant_id` vindo do body;
 - validar `tenant_id` junto com qualquer `id`, `templateId`, `fieldId` ou `runId`;
 - exigir RBAC por acao;

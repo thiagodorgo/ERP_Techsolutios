@@ -75,6 +75,7 @@ Sao os modulos efetivamente ativos para um tenant especifico. A visibilidade no 
 - A navegacao deve combinar modulo/feature habilitada com RBAC: sem permissao, o item nao aparece, inclusive no modo de sidebar recolhida.
 - Itens planejados ou indisponiveis nao devem aparecer como links desabilitados; devem ficar fora da lista ate serem publicados.
 - A filtragem visual do frontend nao substitui autorizacao backend; cada endpoint sensivel deve validar permissao, papel, tenant context e isolamento por `tenant_id`.
+- Endpoints sensiveis devem usar `Authorization: Bearer` como caminho principal; headers legados ficam restritos a desenvolvimento/teste e nao autenticam em producao.
 - Modelos publicados de checklist devem ser versionados para que execucoes antigas continuem vinculadas a versao original.
 - `tenant_checklist` deve suportar os tipos `towing_collection`, `towing_delivery`, `technical_evidence` e `custom`.
 - Componentes oficiais do handoff Figma: `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement` e `before_after`.

@@ -7,17 +7,17 @@ O RBAC do Core SaaS esta em transicao entre headers simulados e autorizacao pers
 Hoje existem dois caminhos:
 
 - JWT actor: identifica `userId`, `tenantId`, `email` e roles do token.
-- legacy headers: usa `x-tenant-id`, `x-user-id`, `x-role`, `x-roles` e `x-permissions`.
+- legacy headers: usa `x-tenant-id`, `x-user-id`, `x-role`, `x-roles` e `x-permissions` apenas em desenvolvimento/teste/transicao.
 
 O Bloco 04C.6 adicionou a fundacao para resolver roles e permissions persistidas sem remover o fallback legado. O Bloco 04C.7 plugou essa fundacao no fluxo real das rotas protegidas por meio de um middleware async pequeno e seguro.
 
 Estado atual:
 
 - `attachAuthenticatedActor()` valida `Authorization: Bearer` e popula `request.actor`.
-- `tenantContextMiddleware` cria o contexto base a partir do actor JWT ou dos headers legacy.
+- `tenantContextMiddleware` cria o contexto base a partir do actor JWT ou dos headers legacy fora de producao.
 - `createPersistentRbacContextMiddleware()` substitui roles/permissoes por RBAC persistido quando existe actor JWT e o runtime Prisma esta ativo.
-- o fallback legacy continua disponivel para transicao.
-- nas rotas `/api/v1/platform/*`, o fallback legacy por headers e aceito apenas em desenvolvimento/teste/local e rejeitado em `NODE_ENV=production`.
+- o fallback legacy continua disponivel para transicao em development/test.
+- nas rotas sensiveis de plataforma, Core SaaS e Checklists, o fallback legacy por headers e rejeitado em `NODE_ENV=production`.
 - frontend pode filtrar sidebar e rotas visuais, mas a autorizacao final deve ocorrer no backend em cada endpoint sensivel.
 
 ## Autorizacao backend
@@ -229,14 +229,14 @@ Quando existe JWT valido:
 3. headers simulados nao sobrescrevem o actor.
 4. `x-permissions` nao aumenta permissao do JWT.
 
-Quando nao existe JWT:
+Quando nao existe JWT e o ambiente nao e `production`:
 
 1. `x-tenant-id` continua sendo aceito.
 2. `x-user-id` e `x-actor-user-id` continuam sendo aceitos.
 3. `x-role` e `x-roles` continuam sendo aceitos.
 4. `x-permissions` continua funcionando apenas como fallback legacy.
 
-Excecao de plataforma: no boundary `/api/v1/platform/*`, esse fallback por headers e transitorio para desenvolvimento/teste/local. Em producao, headers simulados nao podem conceder acesso a Console da Plataforma.
+Em `NODE_ENV=production`, headers simulados sem JWT nao autenticam rotas sensiveis de plataforma, Core SaaS ou Checklists. Bearer token invalido continua retornando `401 INVALID_TOKEN` antes de qualquer fallback.
 
 ## Resolver persistido
 
@@ -260,9 +260,9 @@ O service nao importa Prisma estaticamente. As dependencias sao injetadas, prese
 
 Responsabilidade:
 
-- se nao houver `request.actor`, preserva o fluxo legacy e chama `next()`;
+- se nao houver `request.actor`, preserva o fluxo legacy apenas nos ambientes em que `tenantContextMiddleware` permite headers legados;
 - se houver `request.actor` e `CORE_SAAS_PERSISTENCE=memory`, nao abre Prisma e preserva o contexto de catalogo ja criado;
-- se houver `request.actor` e `CORE_SAAS_PERSISTENCE=prisma`, carrega repositories Prisma via `import()` dinamico, usa `PersistentAuthorizationService` e substitui `tenantContext.roles` e `tenantContext.permissions` pelos valores persistidos;
+- se houver `request.actor` e `CORE_SAAS_PERSISTENCE=prisma`, carrega repositories Prisma via `import()` dinamico, usa `PersistentAuthorizationService` dentro de `withTenantRls` e substitui `tenantContext.roles` e `tenantContext.permissions` pelos valores persistidos;
 - se o RBAC persistido retornar permissoes vazias, a rota protegida retorna 403 pelo middleware `requirePermission`;
 - erros internos de resolucao persistida nao sao retornados com detalhes de Prisma ao cliente.
 
@@ -270,21 +270,21 @@ Esse desenho mantem o `tenantContextMiddleware` sincronico como fallback/base e 
 
 ## Riscos atuais
 
-- O fallback por headers simulados ainda existe e precisa ser removido gradualmente.
-- Enquanto os headers legacy existirem, chamadas internas antigas ainda podem simular tenant, user e roles sem JWT.
+- O fallback por headers simulados ainda existe fora de producao e precisa ser removido gradualmente.
+- Enquanto os headers legacy existirem em development/test, chamadas internas antigas ainda podem simular tenant, user e roles sem JWT.
 - No runtime `memory`, JWT ainda usa roles do token contra o catalogo local.
 - `x-permissions` ainda existe para chamadas legacy.
-- Rotas de plataforma ja bloqueiam legacy headers em producao, mas rotas tenant ainda seguem o plano gradual de modo strict.
+- Rotas de plataforma, Core SaaS e Checklists ja bloqueiam legacy headers em producao; a remocao definitiva do codigo legacy ainda depende de migracao controlada.
 - Ainda nao ha refresh token, logout, revogacao ou Redis runtime.
 - RLS existe para as tabelas tenant-scoped principais, mas depende de todo caminho Prisma tenant-scoped configurar `app.current_tenant_id` corretamente.
 
 ## Plano para modo strict
 
-A reducao dos headers legacy deve ser feita em bloco futuro, sem remocao direta nesta fase.
+A remocao definitiva dos headers legacy deve ser feita em bloco futuro, sem remocao direta nesta fase.
 
 Plano recomendado:
 
-1. criar feature flag ou modo strict para rejeitar headers legacy em rotas protegidas selecionadas;
+1. migrar chamadas internas e testes restantes para `Authorization: Bearer`;
 2. validar logs, testes e integracoes internas com `Authorization: Bearer` como fonte principal;
 3. manter janela de compatibilidade para ambientes que ainda dependem de `x-tenant-id`, `x-user-id`, `x-actor-user-id`, `x-role`, `x-roles` ou `x-permissions`;
 4. remover fallback legacy somente depois de aprovacao explicita e cobertura de migracao.
@@ -293,8 +293,8 @@ O modo strict nao deve implementar refresh/logout, Redis runtime ou RLS. Esses i
 
 ## Proximos passos
 
-- manter fallback legacy temporario ate a migracao das chamadas internas;
+- manter fallback legacy temporario em development/test ate a migracao das chamadas internas;
 - substituir `x-role`, `x-roles` e `x-permissions` gradualmente;
-- planejar feature flag ou modo strict para reduzir headers simulados;
+- planejar feature flag ou modo strict para remover o codigo de headers simulados;
 - registrar auditoria com actor real;
 - ampliar cobertura de RBAC persistido antes de remover os headers simulados.

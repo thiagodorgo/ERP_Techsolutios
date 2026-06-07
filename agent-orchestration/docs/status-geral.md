@@ -577,8 +577,8 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 
 ### Limitacoes
 
-- headers simulados continuam aceitos temporariamente
-- modo strict ainda nao foi implementado
+- registro historico: headers simulados continuavam aceitos temporariamente naquele bloco; na branch `feature/auth-jwt-session-hardening`, producao passou a bloquear fallback legacy em rotas sensiveis
+- registro historico: modo strict ainda nao havia sido implementado naquele bloco; a restricao atual por ambiente foi aplicada sem remover o codigo legacy
 - refresh token, logout, sessao/cookie e revogacao continuam fora do escopo
 - Redis runtime ainda nao implementado
 - RLS ainda nao implementado
@@ -881,3 +881,16 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - Dashboard/Resumo Financeiro deixou de usar W03 na documentacao e permanece sem numeracao conflitante ate consolidacao propria
 - nao houve alteracao de backend, Prisma/migrations, API, Figma ou mobile
 - qualquer consulta platform futura que consolide multiplos tenants deve iterar por tenant ou ganhar repository auditado proprio
+
+## Atualizacao 2026-06-07 - hardening JWT/session auth context
+
+- branch usada: `feature/auth-jwt-session-hardening`
+- `Authorization: Bearer` permanece fonte principal para `userId`, `tenantId`, roles e permissoes efetivas
+- Bearer token invalido, malformado ou expirado continua retornando `401 INVALID_TOKEN` antes de qualquer fallback legacy
+- rotas sensiveis tenant-scoped via `tenantContextMiddleware` agora rejeitam actor por headers legacy em `NODE_ENV=production`
+- fallback por `x-tenant-id`, `x-user-id`, `x-actor-user-id`, `x-role`, `x-roles` e `x-permissions` permanece apenas para desenvolvimento/teste/transicao
+- Platform routes ja bloqueavam legacy headers em producao e ganharam cobertura com JWT de plataforma real
+- `.env.example` alinhado para `JWT_SECRET="change-me-in-local-development"` e `JWT_EXPIRES_IN="1h"`, sem segredo real versionado
+- documentacao atualizada em `docs/auth.md`, `docs/api.md`, `docs/rbac.md`, `docs/architecture.md` e `docs/modules.md`
+- testes ajustados em `tests/platform-routes.test.ts` e `tests/checklist-routes.test.ts`
+- fora de escopo mantido: frontend amplo, Figma, mobile, OAuth/social login, refresh token complexo, Prisma/migrations e contratos API destrutivos
