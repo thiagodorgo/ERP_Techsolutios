@@ -758,7 +758,11 @@
 .tenant-checklist-card,
 .tenant-checklist-card > div,
 .tenant-checklist-form,
-.tenant-checklist-selection {
+.tenant-checklist-selection,
+.checklist-builder-palette,
+.checklist-builder-canvas,
+.checklist-builder-inspector,
+.checklist-schema-preview {
   display: grid;
   gap: var(--space-10);
 }
@@ -796,6 +800,104 @@
   display: flex;
   gap: var(--space-8);
   flex-wrap: wrap;
+}
+
+.tenant-checklist-builder-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr);
+  gap: var(--space-16);
+}
+
+.checklist-builder-heading,
+.checklist-builder-footer,
+.checklist-builder-canvas article,
+.checklist-builder-palette article > div,
+.checklist-builder-draft-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-10);
+}
+
+.checklist-builder-heading {
+  margin-bottom: var(--space-12);
+  padding: var(--space-12);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-8);
+  background: var(--surface-panel-muted);
+}
+
+.checklist-builder-heading span,
+.checklist-builder-footer p,
+.checklist-builder-palette p,
+.checklist-builder-inspector p,
+.checklist-schema-preview p,
+.checklist-builder-draft-summary span {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.checklist-builder-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(260px, 1.1fr) minmax(220px, 0.9fr);
+  gap: var(--space-16);
+  align-items: start;
+}
+
+.checklist-builder-layout h3 {
+  margin: 0 0 var(--space-10);
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.checklist-builder-palette article,
+.checklist-builder-canvas article,
+.checklist-builder-inspector,
+.checklist-builder-draft-summary {
+  padding: var(--space-10);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-6);
+  background: var(--surface-panel-muted);
+}
+
+.checklist-builder-canvas article.is-selected {
+  border-color: var(--color-core-accent);
+  background: #eef8fc;
+}
+
+.checklist-builder-canvas article > button {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.checklist-builder-canvas article > button span {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.checklist-builder-footer {
+  margin-top: var(--space-16);
+  align-items: flex-start;
+  padding-top: var(--space-12);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.checklist-schema-preview pre {
+  max-height: 360px;
+  overflow: auto;
+  margin: 0;
+  padding: var(--space-12);
+  border-radius: var(--radius-6);
+  background: var(--color-neutral-900);
+  color: var(--text-inverse);
+  font-size: var(--text-xs);
 }
 
 .tenant-checklist-card > div span {
@@ -1040,7 +1142,9 @@
   .context-grid,
   .metric-grid,
   .tenant-checklist-grid,
-  .tenant-checklist-grid--three {
+  .tenant-checklist-grid--three,
+  .tenant-checklist-builder-shell,
+  .checklist-builder-layout {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1117,7 +1221,9 @@
     .platform-module-grid,
     .tenant-checklist-grid,
     .tenant-checklist-grid--three,
-    .tenant-checklist-selection {
+    .tenant-checklist-selection,
+    .tenant-checklist-builder-shell,
+    .checklist-builder-layout {
     grid-template-columns: 1fr;
   }
 

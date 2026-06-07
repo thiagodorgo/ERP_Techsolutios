@@ -750,3 +750,21 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 
 - upload/storage real continua fora desta rodada
 - mobile Flutter nao foi alterado
+
+## Atualizacao 2026-06-07 - W02A builder UI
+
+### Implementado
+
+- branch usada: `feature/tenant-checklists-builder-ui`
+- W02A refinada conforme `FIGMA-CHECKLIST-BUILDER-UX.1`
+- tela reorganizada como builder visual MVP com lista filtravel, busca por nome, palette, canvas, inspector e preview de schema
+- componentes do builder extraidos para `frontend/src/modules/checklists/components`
+- ordenacao de componentes implementada por botoes subir/descer, sem drag-and-drop obrigatorio
+- `pending_changes` implementado apenas como estado visual derivado da UI, sem alterar contrato ou status backend
+- publicacao continua usando o endpoint real ja integrado
+- M10/M11/M12 continuam schema-driven e nao foram hardcoded
+
+### Limitacoes
+
+- backend, Prisma/migrations, Figma e mobile Flutter nao foram alterados
+- drag-and-drop fica fora desta versao MVP
