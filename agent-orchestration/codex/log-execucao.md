@@ -587,3 +587,19 @@
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `node --test --import tsx tests/rls-tenant-isolation.test.ts` e `git diff --check`
 - observacao de validacao: o primeiro `npx prisma migrate status` antes do deploy apontou a nova migration pendente, como esperado; apos `npx prisma migrate deploy`, o status ficou atualizado
 - observacao de teste: `DATABASE_URL` local usa `postgres`, que e superuser e bypassa RLS; por isso o teste especifico cria um papel temporario nao-superuser, concede acesso minimo, valida isolamento e remove o papel ao final
+
+## 2026-06-07 - checklist attachments storage local
+
+- branch usada: `feature/checklist-attachments-storage`
+- objetivo: substituir anexos apenas logicos por upload/storage local real para evidencias de checklist, preservando tenant, RBAC, RLS e auditoria
+- dependencia adicionada: `busboy` para parsing de `multipart/form-data`; dependencia dev adicionada: `@types/busboy`
+- criado `src/modules/checklists/checklist-attachment.storage.ts`
+- criado `storage/checklist-attachments/.gitkeep` e atualizado `.gitignore` para nao versionar arquivos enviados
+- `.env.example` atualizado com `CHECKLIST_ATTACHMENT_STORAGE_DRIVER`, `CHECKLIST_ATTACHMENT_STORAGE_PATH`, `CHECKLIST_ATTACHMENT_MAX_SIZE_MB` e `CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES`
+- `POST /api/v1/mobile/checklist-runs/:runId/attachments` agora aceita multipart com campo `file`, `componentId` e `metadata` opcional, mantendo o JSON legado com `fileUrl`
+- criada rota `GET /api/v1/mobile/checklist-runs/:runId/attachments/:attachmentId/download`
+- arquivos locais recebem nome sanitizado, isolamento fisico por tenant/run, checksum SHA-256 e storage key logico; path absoluto nao e retornado na API
+- auditoria adicionada: `checklist_run.attachment_uploaded`
+- testes criados/alterados: `tests/checklist-attachments.test.ts` e `tests/rls-tenant-isolation.test.ts`
+- documentacao atualizada em `docs/api.md`, `docs/database.md`, `docs/architecture.md`, `docs/modules.md`, `docs/rbac.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: frontend, Figma, mobile Flutter e S3-compatible real

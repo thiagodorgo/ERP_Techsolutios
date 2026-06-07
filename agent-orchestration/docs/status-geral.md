@@ -835,4 +835,16 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 
 - rotas que ainda usam runtime `memory` seguem DB-free e nao exercitam RLS
 - testes RLS exigem `DATABASE_URL`, PostgreSQL ativo e migrations aplicadas
+
+## Atualizacao 2026-06-07 - checklist attachments storage local
+
+- branch usada: `feature/checklist-attachments-storage`
+- implementado upload real local para `POST /api/v1/mobile/checklist-runs/:runId/attachments` via `multipart/form-data`
+- preservado contrato JSON legado com `fileUrl`
+- criada camada `src/modules/checklists/checklist-attachment.storage.ts` para driver local, validacao de MIME/tamanho, nome sanitizado, checksum, storage key e download seguro
+- criada rota `GET /api/v1/mobile/checklist-runs/:runId/attachments/:attachmentId/download` com permissao `checklist_runs:read`
+- storage local configurado por `.env.example` e ignorado no Git em `storage/checklist-attachments/**`, mantendo apenas `.gitkeep`
+- metadados persistidos em `checklist_attachments.metadata`: `storageDriver`, `storageKey` e `checksumSha256`
+- RLS continua protegendo `checklist_attachments`; teste RLS foi ampliado para anexos
+- fora de escopo mantido: frontend, Figma, mobile Flutter e storage S3-compatible real
 - qualquer consulta platform futura que consolide multiplos tenants deve iterar por tenant ou ganhar repository auditado proprio

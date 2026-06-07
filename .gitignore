@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .env
+storage/checklist-attachments/**
+!storage/checklist-attachments/.gitkeep
 .DS_Store
 npm-debug.log*
 *.tsbuildinfo

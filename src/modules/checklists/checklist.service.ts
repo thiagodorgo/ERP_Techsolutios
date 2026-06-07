@@ -1,4 +1,11 @@
 import { env } from "../../config/env.js";
+import {
+  deleteStoredChecklistAttachmentFile,
+  resolveChecklistAttachmentDownload,
+  saveChecklistAttachmentFile,
+  type ChecklistAttachmentDownload,
+  type ChecklistAttachmentUpload,
+} from "./checklist-attachment.storage.js";
 import { CHECKLIST_AUDIT_ACTIONS } from "./checklist.audit.js";
 import { CHECKLIST_COMPONENT_CATALOG } from "./checklist.components.js";
 import type {
@@ -218,6 +225,8 @@ export class ChecklistService {
   }
 
   async createAttachment(actor: ActorContext, runId: string, input: CreateChecklistAttachmentInput): Promise<ChecklistAttachment> {
+    await this.assertRunComponent(actor, runId, input.componentId);
+
     const attachment = await this.repository.createAttachment(actor.tenantId, runId, actor.userId, input);
 
     if (!attachment) {
@@ -230,6 +239,71 @@ export class ChecklistService {
     });
 
     return attachment;
+  }
+
+  async createUploadedAttachment(
+    actor: ActorContext,
+    runId: string,
+    upload: ChecklistAttachmentUpload,
+  ): Promise<ChecklistAttachment> {
+    await this.assertRunComponent(actor, runId, upload.componentId);
+
+    const stored = await saveChecklistAttachmentFile({
+      tenantId: actor.tenantId,
+      runId,
+      upload: upload.file,
+    });
+
+    try {
+      const attachment = await this.repository.createAttachment(actor.tenantId, runId, actor.userId, {
+        componentId: upload.componentId,
+        fileUrl: stored.fileUrl,
+        fileName: stored.fileName,
+        mimeType: stored.mimeType,
+        sizeBytes: stored.sizeBytes,
+        metadata: {
+          ...upload.metadata,
+          storageDriver: stored.storageDriver,
+          storageKey: stored.storageKey,
+          checksumSha256: stored.checksum,
+        },
+      });
+
+      if (!attachment) {
+        throw new ChecklistError(404, "CHECKLIST_RUN_NOT_FOUND", "checklist_run_not_found", "Checklist run not found.");
+      }
+
+      await this.audit(actor, CHECKLIST_AUDIT_ACTIONS.attachmentUploaded, "checklist_run", runId, {
+        runId,
+        componentId: attachment.componentId,
+        attachmentId: attachment.id,
+        fileName: attachment.fileName,
+        mimeType: attachment.mimeType,
+        sizeBytes: attachment.sizeBytes,
+        tenantId: actor.tenantId,
+        actorId: actor.userId,
+      });
+
+      return attachment;
+    } catch (error) {
+      await deleteStoredChecklistAttachmentFile(stored.storageKey);
+      throw error;
+    }
+  }
+
+  async getAttachmentDownload(
+    actor: ActorContext,
+    runId: string,
+    attachmentId: string,
+  ): Promise<ChecklistAttachmentDownload> {
+    const details = await this.getRun(actor, runId);
+    const attachment = details.attachments.find((item) => item.id === attachmentId);
+
+    if (!attachment) {
+      throw new ChecklistError(404, "CHECKLIST_ATTACHMENT_NOT_FOUND", "checklist_attachment_not_found", "Checklist attachment not found.");
+    }
+
+    return resolveChecklistAttachmentDownload(attachment);
   }
 
   async createMarker(actor: ActorContext, runId: string, input: CreateChecklistMarkerInput): Promise<ChecklistMarker> {
@@ -373,6 +447,16 @@ export class ChecklistService {
       entityId,
       metadata,
     });
+  }
+
+  private async assertRunComponent(actor: ActorContext, runId: string, componentId: string): Promise<void> {
+    const details = await this.getRun(actor, runId);
+    const template = await this.repository.getTemplate(actor.tenantId, details.run.templateId);
+    const componentBelongsToRun = template?.components.some((component) => component.id === componentId) ?? false;
+
+    if (!componentBelongsToRun) {
+      throw new ChecklistError(404, "CHECKLIST_COMPONENT_NOT_FOUND", "checklist_component_not_found", "Checklist component not found.");
+    }
   }
 }
 

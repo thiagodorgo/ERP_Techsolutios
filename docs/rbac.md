@@ -114,6 +114,7 @@ Matriz backend aplicada:
 - `POST /api/v1/mobile/checklist-runs`: `checklist_runs:create`
 - `PATCH /api/v1/mobile/checklist-runs/:runId`: `checklist_runs:update`
 - `POST /api/v1/mobile/checklist-runs/:runId/attachments`: `checklist_runs:update`
+- `GET /api/v1/mobile/checklist-runs/:runId/attachments/:attachmentId/download`: `checklist_runs:read`
 - `POST /api/v1/mobile/checklist-runs/:runId/markers`: `checklist_runs:update`
 - `POST /api/v1/mobile/checklist-runs/:runId/complete`: `checklist_runs:complete`
 - `GET /api/v1/mobile/checklist-runs/:runId/comparison`: `checklist_runs:read`

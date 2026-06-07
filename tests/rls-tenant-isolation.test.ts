@@ -124,12 +124,38 @@ if (!connectionString) {
             '{}'::jsonb
           )
         `;
+        const [attachment] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO checklist_attachments (
+            tenant_id,
+            run_id,
+            component_id,
+            file_url,
+            file_name,
+            mime_type,
+            size_bytes,
+            metadata,
+            created_by
+          )
+          VALUES (
+            ${tenantA.id}::uuid,
+            ${run.id}::uuid,
+            ${component.id}::uuid,
+            'local://checklist-attachments/tenant-a/evidence-a.pdf',
+            'evidence-a.pdf',
+            'application/pdf',
+            128,
+            '{"storageDriver":"local","storageKey":"tenant-a/evidence-a.pdf"}'::jsonb,
+            ${user.id}::uuid
+          )
+          RETURNING id
+        `;
 
         return {
           branchId: branch.id,
           userId: user.id,
           templateId: template.id,
           runId: run.id,
+          attachmentId: attachment.id,
         };
       });
 
@@ -196,12 +222,38 @@ if (!connectionString) {
             '{}'::jsonb
           )
         `;
+        const [attachment] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO checklist_attachments (
+            tenant_id,
+            run_id,
+            component_id,
+            file_url,
+            file_name,
+            mime_type,
+            size_bytes,
+            metadata,
+            created_by
+          )
+          VALUES (
+            ${tenantB.id}::uuid,
+            ${run.id}::uuid,
+            ${component.id}::uuid,
+            'local://checklist-attachments/tenant-b/evidence-b.pdf',
+            'evidence-b.pdf',
+            'application/pdf',
+            128,
+            '{"storageDriver":"local","storageKey":"tenant-b/evidence-b.pdf"}'::jsonb,
+            ${user.id}::uuid
+          )
+          RETURNING id
+        `;
 
         return {
           branchId: branch.id,
           userId: user.id,
           templateId: template.id,
           runId: run.id,
+          attachmentId: attachment.id,
         };
       });
 
@@ -249,6 +301,13 @@ if (!connectionString) {
             },
           },
         });
+        const attachments = await tx.checklistAttachment.findMany({
+          where: {
+            id: {
+              in: [tenantAData.attachmentId, tenantBData.attachmentId],
+            },
+          },
+        });
         const crossTenantUpdate = await tx.user.updateMany({
           where: {
             id: tenantBData.userId,
@@ -259,6 +318,7 @@ if (!connectionString) {
         });
 
         return {
+          attachmentIds: attachments.map((attachment) => attachment.id),
           runIds: runs.map((run) => run.id),
           templateIds: templates.map((template) => template.id),
           updatedRows: crossTenantUpdate.count,
@@ -269,6 +329,7 @@ if (!connectionString) {
       assert.deepEqual(tenantAView.userIds, [tenantAData.userId]);
       assert.deepEqual(tenantAView.templateIds, [tenantAData.templateId]);
       assert.deepEqual(tenantAView.runIds, [tenantAData.runId]);
+      assert.deepEqual(tenantAView.attachmentIds, [tenantAData.attachmentId]);
       assert.equal(tenantAView.updatedRows, 0, "tenant A must not update tenant B rows");
 
       const tenantBUser = await withTenantRls(client, tenantB.id, (tx) =>

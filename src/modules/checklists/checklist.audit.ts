@@ -5,6 +5,7 @@ export const CHECKLIST_AUDIT_ACTIONS = {
   templateDeleted: "tenant_checklist.deleted",
   runCreated: "checklist_run.created",
   runUpdated: "checklist_run.updated",
+  attachmentUploaded: "checklist_run.attachment_uploaded",
   runCompleted: "checklist_run.completed",
   runDivergenceRegistered: "checklist_run.divergence_registered",
   runAcknowledged: "checklist_run.acknowledged",

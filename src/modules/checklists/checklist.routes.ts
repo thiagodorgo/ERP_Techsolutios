@@ -11,6 +11,12 @@ type ControllerResult = {
   readonly status?: number;
   readonly body?: unknown;
   readonly data?: unknown;
+  readonly file?: {
+    readonly filePath: string;
+    readonly fileName: string;
+    readonly mimeType: string;
+    readonly sizeBytes: number;
+  };
 };
 
 export function createChecklistRouter(
@@ -126,6 +132,14 @@ export function createChecklistRouter(
     }),
   );
 
+  router.get(
+    "/mobile/checklist-runs/:runId/attachments/:attachmentId/download",
+    requireChecklistPermission(CHECKLIST_PERMISSIONS.readRuns),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.downloadChecklistAttachment(request));
+    }),
+  );
+
   router.post(
     "/mobile/checklist-runs/:runId/markers",
     requireChecklistPermission(CHECKLIST_PERMISSIONS.updateRuns),
@@ -170,10 +184,23 @@ export function createChecklistRouter(
 }
 
 function sendResult(response: Response, result: ControllerResult): void {
+  if (result.file) {
+    response.status(result.status ?? 200);
+    response.setHeader("Content-Type", result.file.mimeType);
+    response.setHeader("Content-Length", result.file.sizeBytes.toString());
+    response.setHeader("Content-Disposition", `inline; filename="${escapeHeaderFileName(result.file.fileName)}"`);
+    response.sendFile(result.file.filePath);
+    return;
+  }
+
   if (result.status === 204) {
     response.status(204).send();
     return;
   }
 
   response.status(result.status ?? 200).json(result.body ?? { data: result.data });
+}
+
+function escapeHeaderFileName(fileName: string): string {
+  return fileName.replace(/["\\\r\n]/g, "_");
 }
