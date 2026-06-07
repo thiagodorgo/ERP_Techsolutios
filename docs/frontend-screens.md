@@ -39,6 +39,7 @@ Area tenant-scoped para configurar e executar checklists publicados pela feature
 Telas planejadas:
 
 - `W02A · Administrador — Checklists`, rota `/administrator/checklists`.
+- Integracao atual: W02A usa a API real de `tenant_checklist` como fonte principal para listar templates, carregar componentes, criar, editar, publicar e ativar/inativar checklists. Mock local fica apenas como fallback explicito de desenvolvimento via `VITE_USE_MOCKS=true`.
 - Lista de templates de checklist.
 - Builder/editor de checklist.
 - Painel de componentes disponiveis.
