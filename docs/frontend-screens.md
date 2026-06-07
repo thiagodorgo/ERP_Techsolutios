@@ -41,6 +41,7 @@ Telas planejadas:
 - `W02A · Administrador — Checklists`, rota `/administrator/checklists`.
 - Integracao atual: W02A usa a API real de `tenant_checklist` como fonte principal para listar templates, carregar componentes, criar, editar, publicar e ativar/inativar checklists. Mock local fica apenas como fallback explicito de desenvolvimento via `VITE_USE_MOCKS=true`.
 - Evolucao `FIGMA-CHECKLIST-BUILDER-UX.1`: W02A funciona como builder visual MVP, com lista filtravel, busca por nome, palette de componentes, canvas com ordenacao por botoes, inspector de componente, preview de schema e `pending_changes` apenas como estado visual de UI.
+- Integracao de anexos: frontend possui service/adapter/mock para upload multipart e download protegido de evidencias de checklist. W02A nao vira tela operacional; o preview de schema apenas indica que `photo_upload`, `before_after` e `damage_map` suportam evidencias via upload seguro.
 - Lista de templates de checklist.
 - Builder/editor de checklist.
 - Painel de componentes disponiveis.
@@ -58,6 +59,9 @@ Componentes planejados:
 - `ChecklistFieldRenderer.tsx`
 - `ChecklistComponentPalette.tsx`
 - `ChecklistFieldConfigPanel.tsx`
+- `ChecklistAttachmentUploader.tsx`
+- `ChecklistAttachmentList.tsx`
+- `ChecklistEvidencePreview.tsx`
 
 Regras de UX:
 
@@ -69,6 +73,7 @@ Regras de UX:
 - builder deve preservar ordem dos campos e status da versao;
 - `pending_changes` nao e status backend; ele apenas sinaliza na UI quando um checklist publicado recebeu alteracoes depois da publicacao;
 - execucao mobile futura deve priorizar preenchimento rapido, captura de evidencia e sincronizacao offline;
+- upload/download de evidencias deve usar os endpoints seguros de `checklist_runs` e preservar `VITE_USE_MOCKS=true` como fallback local;
 - telas devem respeitar modulos habilitados e permissoes `tenant_checklists:*` e `checklist_runs:*`.
 
 Estados oficiais:

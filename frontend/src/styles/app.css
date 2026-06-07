@@ -815,6 +815,10 @@
 .checklist-builder-palette,
 .checklist-builder-canvas,
 .checklist-builder-inspector,
+.checklist-attachment-uploader,
+.checklist-attachment-list,
+.checklist-evidence-preview,
+.checklist-evidence-capabilities,
 .checklist-schema-preview {
   display: grid;
   gap: var(--space-10);
@@ -908,6 +912,10 @@
 .checklist-builder-palette article,
 .checklist-builder-canvas article,
 .checklist-builder-inspector,
+.checklist-attachment-list article,
+.checklist-attachment-selection,
+.checklist-evidence-preview,
+.checklist-evidence-capabilities,
 .checklist-builder-draft-summary {
   padding: var(--space-10);
   border: 1px solid var(--border-subtle);
@@ -951,6 +959,82 @@
   background: var(--color-neutral-900);
   color: var(--text-inverse);
   font-size: var(--text-xs);
+}
+
+.checklist-attachment-list article,
+.checklist-attachment-selection,
+.checklist-evidence-preview header,
+.checklist-evidence-capabilities div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-10);
+}
+
+.checklist-attachment-list article > div:first-child,
+.checklist-evidence-preview header > div {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.checklist-evidence-preview header > div {
+  display: flex;
+  align-items: center;
+}
+
+.checklist-attachment-list span,
+.checklist-attachment-selection span,
+.checklist-evidence-preview p,
+.checklist-evidence-capabilities li,
+.checklist-evidence-capabilities span {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.checklist-attachment-message {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 800;
+}
+
+.checklist-attachment-message--error {
+  color: var(--color-status-danger);
+}
+
+.checklist-attachment-message--success {
+  color: var(--color-status-success);
+}
+
+.checklist-evidence-preview img {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-6);
+  background: var(--surface-page);
+}
+
+.checklist-evidence-preview a {
+  color: var(--color-core-accent);
+  font-weight: 800;
+}
+
+.checklist-evidence-capabilities div {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.checklist-evidence-capabilities span {
+  padding: var(--space-6) var(--space-8);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-6);
+  background: var(--surface-page);
+}
+
+.checklist-evidence-capabilities ul {
+  margin: 0;
+  padding-left: var(--space-16);
 }
 
 .tenant-checklist-card > div span {

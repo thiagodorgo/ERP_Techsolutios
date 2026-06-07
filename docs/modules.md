@@ -80,3 +80,4 @@ Sao os modulos efetivamente ativos para um tenant especifico. A visibilidade no 
 - M10/M11 consomem schemas de guincho/reboque configurados pelo tenant; M12 consome schema de evidencia tecnica e nao pertence ao escopo de guincho/reboque.
 - Estados oficiais: checklist rascunho, checklist publicado, checklist inativo, execucao em andamento, execucao concluida, execucao com divergencia e execucao pendente de ciencia.
 - Anexos de checklist usam upload local real em desenvolvimento, com `fileUrl` logico, metadados persistidos em `checklist_attachments`, RBAC/RLS por tenant e caminho preparado para S3-compatible futuro.
+- O frontend possui service, adapter, mock fallback e componentes reutilizaveis para upload/lista/preview de evidencias; W02A mostra suporte no preview sem assumir papel de tela operacional.

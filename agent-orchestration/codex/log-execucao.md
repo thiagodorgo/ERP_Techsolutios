@@ -603,3 +603,15 @@
 - testes criados/alterados: `tests/checklist-attachments.test.ts` e `tests/rls-tenant-isolation.test.ts`
 - documentacao atualizada em `docs/api.md`, `docs/database.md`, `docs/architecture.md`, `docs/modules.md`, `docs/rbac.md` e `agent-orchestration/docs/status-geral.md`
 - fora de escopo mantido: frontend, Figma, mobile Flutter e S3-compatible real
+
+## 2026-06-07 - checklist attachments frontend integration
+
+- branch usada: `feature/checklist-attachments-frontend-integration`
+- objetivo: integrar o frontend ao upload/download real de anexos de checklist, preservando mocks e sem alterar backend
+- arquivos criados: `frontend/src/modules/checklists/checklist-attachments.adapter.ts`, `checklist-attachments.service.ts`, `checklist-attachments.mock.ts`, `components/ChecklistAttachmentUploader.tsx`, `components/ChecklistAttachmentList.tsx` e `components/ChecklistEvidencePreview.tsx`
+- `frontend/src/services/api/client.ts` atualizado para `FormData` multipart e download protegido via `Blob`
+- `frontend/src/modules/checklists/types.ts` atualizado com tipos reais de `ChecklistAttachment`, upload, download e metadata
+- `ChecklistSchemaPreview` agora sinaliza evidencias para componentes `photo_upload`, `before_after` e `damage_map`, sem transformar W02A em tela operacional
+- `frontend/src/styles/app.css` atualizado para os novos componentes
+- documentacao atualizada em `docs/api.md`, `docs/frontend-screens.md`, `docs/modules.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: backend, Prisma/migrations, Figma, mobile Flutter, S3-compatible real e fluxo operacional completo M10/M11/M12

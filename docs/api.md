@@ -253,6 +253,13 @@ Resposta: cria registro em `checklist_attachments` com `fileUrl` logico `local:/
 
 Storage S3-compatible permanece pendente. A arquitetura atual isola driver, storage key e metadados para permitir futura troca sem remover `fileUrl` nem quebrar clientes existentes.
 
+Frontend:
+
+- `frontend/src/modules/checklists/checklist-attachments.service.ts` expõe upload multipart e download protegido.
+- `VITE_USE_MOCKS=true` mantém upload/download simulados para desenvolvimento local.
+- A W02A administrativa não executa checklist operacional; ela apenas sinaliza no preview que componentes `photo_upload`, `before_after` e `damage_map` produzem evidências com upload seguro.
+- M10, M11 e M12 devem consumir os mesmos services/componentes quando as telas operacionais forem implementadas.
+
 Regras especificas:
 
 - M10 usa `towing_collection` para coleta de guincho/reboque, selecao de tipo de veiculo, imagem dinamica por tipo de veiculo, marcacao de avarias e fotos obrigatorias conforme template.
