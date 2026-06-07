@@ -509,3 +509,16 @@
 - M12 registrado como evidencia tecnica antes/depois fora do escopo de guincho/reboque
 - estados registrados: checklist rascunho, checklist publicado, checklist inativo, execucao em andamento, execucao concluida, execucao com divergencia e execucao pendente de ciencia
 - backend, migrations e arquitetura fora do escopo nao foram alterados
+
+## 2026-06-07 - Backend real tenant_checklist
+
+- branch usada: `feature/tenant-checklists-backend`
+- objetivo: implementar backend real de `tenant_checklist` com migrations, models Prisma, rotas, service, repository, validators, RBAC, auditoria e testes
+- migration criada: `prisma/migrations/20260607000000_add_tenant_checklists/migration.sql`
+- schema Prisma atualizado com `ChecklistTemplate`, `ChecklistTemplateComponent`, `ChecklistRun`, `ChecklistRunAnswer`, `ChecklistAttachment`, `ChecklistMarker` e `ChecklistAcknowledgement`
+- modulo criado: `src/modules/checklists`
+- rotas registradas em `src/app.ts` sob `/api/v1`
+- RBAC atualizado com `tenant_checklists:read`, `tenant_checklists:create`, `tenant_checklists:update`, `tenant_checklists:publish`, `checklist_runs:read`, `checklist_runs:create`, `checklist_runs:update`, `checklist_runs:complete` e `checklist_runs:acknowledge`
+- testes criados em `tests/checklist-routes.test.ts`
+- decisao tecnica: manter repository em memoria para runtime/testes sem `DATABASE_URL` e adapter Prisma carregado dinamicamente quando `CORE_SAAS_PERSISTENCE=prisma`
+- limite conhecido: anexos usam `fileUrl` logico; upload/storage real fica para rodada futura

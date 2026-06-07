@@ -136,9 +136,9 @@ Body:
 
 ## tenant_checklist
 
-Modulo planejado: `tenant_checklist`.
+Modulo implementado: `tenant_checklist`.
 
-Status atual: documentado para Fase 1. Endpoints abaixo ainda nao foram implementados nesta etapa. O mapeamento tela x endpoint tambem esta em `docs/api-screen-endpoints.md`.
+Status atual: backend real iniciado na branch `feature/tenant-checklists-backend`, com migration, models Prisma, modulo `src/modules/checklists`, rotas Express, RBAC, auditoria e testes de rota. O mapeamento tela x endpoint tambem esta em `docs/api-screen-endpoints.md`.
 
 Regras obrigatorias para todos os endpoints:
 
@@ -156,28 +156,10 @@ GET /tenant/checklist-components
 
 Permissao: `tenant_checklists:read`
 
-Retorna o catalogo de tipos permitidos pela plataforma. O tenant pode escolher e configurar estes tipos, mas nao cria novos tipos em codigo.
+Retorna o catalogo de componentes permitidos pela plataforma. O tenant pode escolher e configurar estes componentes, mas nao cria novos tipos em codigo.
 
-Tipos iniciais planejados:
+Componentes oficiais implementados:
 
-- `text`
-- `textarea`
-- `number`
-- `currency`
-- `date`
-- `datetime`
-- `select`
-- `multi_select`
-- `checkbox`
-- `radio`
-- `boolean`
-- `photo`
-- `file`
-- `signature`
-- `barcode`
-- `qr_code`
-- `location`
-- `rating`
 - `vehicle_selector`
 - `damage_map`
 - `photo_upload`
@@ -205,7 +187,7 @@ Permissoes:
 - `tenant_checklists:update`
 - `tenant_checklists:publish`
 
-Status planejados de template: `draft`, `published`, `archived`, `inactive`.
+Status de template: `draft`, `published`, `archived`, `inactive`.
 
 Estados oficiais de checklist no handoff Figma: checklist rascunho, checklist publicado e checklist inativo.
 
@@ -230,8 +212,9 @@ Permissoes:
 - `checklist_runs:create`
 - `checklist_runs:update`
 - `checklist_runs:complete`
+- `checklist_runs:acknowledge`
 
-Status planejados de execucao: `in_progress`, `completed`, `cancelled`.
+Status de execucao: `in_progress`, `completed`, `completed_with_divergence`, `pending_acknowledgement`, `cancelled`.
 
 Estados oficiais de execucao no handoff Figma: execucao em andamento, execucao concluida, execucao com divergencia e execucao pendente de ciencia.
 

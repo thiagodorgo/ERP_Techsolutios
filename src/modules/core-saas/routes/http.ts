@@ -37,6 +37,17 @@ export function sendRouteError(response: Response, error: unknown): void {
     return;
   }
 
+  if (isRouteError(error)) {
+    response.status(error.statusCode).json({
+      error: {
+        code: error.code,
+        reason: error.reason,
+        message: error.message,
+      },
+    });
+    return;
+  }
+
   if (error instanceof Error) {
     response.status(400).json({
       error: {
@@ -69,4 +80,24 @@ export function readStringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string")
     : [];
+}
+
+function isRouteError(error: unknown): error is {
+  readonly statusCode: number;
+  readonly code: string;
+  readonly reason: string;
+  readonly message: string;
+} {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "statusCode" in error &&
+    "code" in error &&
+    "reason" in error &&
+    "message" in error &&
+    typeof error.statusCode === "number" &&
+    typeof error.code === "string" &&
+    typeof error.reason === "string" &&
+    typeof error.message === "string"
+  );
 }

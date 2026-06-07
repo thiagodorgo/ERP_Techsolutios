@@ -52,6 +52,15 @@ const permissionDescriptions = {
   "inventory.read": "Consultar estoque.",
   "finance.manage": "Gerenciar informacoes financeiras.",
   "finance.read": "Consultar informacoes financeiras.",
+  "tenant_checklists:read": "Consultar checklists configuraveis do tenant.",
+  "tenant_checklists:create": "Criar checklists configuraveis do tenant.",
+  "tenant_checklists:update": "Editar, ativar e inativar checklists configuraveis do tenant.",
+  "tenant_checklists:publish": "Publicar versoes de checklist configuravel.",
+  "checklist_runs:read": "Consultar execucoes, comparacoes, respostas e evidencias de checklist.",
+  "checklist_runs:create": "Iniciar execucoes de checklist publicado.",
+  "checklist_runs:update": "Registrar respostas, anexos, marcadores e divergencias de checklist.",
+  "checklist_runs:complete": "Concluir execucoes de checklist.",
+  "checklist_runs:acknowledge": "Registrar ciencia de responsabilidade em execucoes de checklist.",
 } satisfies Record<Permission, string>;
 
 async function main(): Promise<void> {
