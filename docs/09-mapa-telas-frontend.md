@@ -149,6 +149,17 @@ Princípios adotados:
 - **Permissões:** administração do core SaaS.
 - **Prioridade:** MVP.
 
+### W02A — Administrador: Checklists
+- **Objetivo:** configurar a feature `tenant_checklist` por tenant.
+- **Usuários:** Administrador, Gestor autorizado.
+- **Permissões:** `tenant_checklists:read`, `tenant_checklists:create`, `tenant_checklists:update`, `tenant_checklists:publish`.
+- **Rota:** `/administrator/checklists`.
+- **Dados:** checklists do tenant, tipo, status, versao, componentes, obrigatoriedade de fotos, observacoes, marcadores e ciencia.
+- **Tipos:** `towing_collection`, `towing_delivery`, `technical_evidence`, `custom`.
+- **Ações:** listar, criar, editar, ativar/inativar, selecionar componentes, configurar obrigatoriedades e publicar checklist.
+- **Regras:** componentes sao fornecidos pela plataforma; tenant configura apenas schemas e regras; publicacao versiona o schema consumido por Web/Mobile.
+- **Prioridade:** Scale.
+
 ### W06 — Gestão de Filiais
 - **Objetivo:** cadastro e escopo operacional por filial.
 - **Usuários:** Admin, Gestor.
@@ -207,7 +218,7 @@ Princípios adotados:
 ### W16 — Cadastros: Checklists configuraveis
 - **Objetivo:** criar, editar, publicar, desativar e versionar modelos de checklist por tenant usando componentes permitidos pela plataforma.
 - **Usuários:** Admin, Gestor, Supervisor.
-- **Permissões:** `checklists.template.create`, `checklists.template.read`, `checklists.template.update`, `checklists.template.delete`, `checklists.template.publish`.
+- **Permissões:** `tenant_checklists:read`, `tenant_checklists:create`, `tenant_checklists:update`, `tenant_checklists:publish`.
 - **Dados:** nome, descricao, modulo relacionado, status, versao, campos, ordem, obrigatoriedade, configuracao, regras de validacao e visibilidade.
 - **Componentes:** lista de templates, builder/editor, paleta de componentes, painel de configuracao de campo, preview de execucao.
 - **Ações:** criar template, adicionar campo, reordenar, salvar rascunho, publicar versao, arquivar/inativar.
@@ -346,10 +357,10 @@ Princípios adotados:
 ### M05 — Checklist de execução
 - objetivo: garantir conformidade operacional em campo executando checklist publicado e versionado.
 - usuários: executor/supervisor.
-- permissões: `checklists.run.create`, `checklists.run.read`, `checklists.run.answer`, `checklists.run.complete`, `checklists.run.cancel`.
+- permissões: `checklist_runs:read`, `checklist_runs:create`, `checklist_runs:update`, `checklist_runs:complete`.
 - dados: template publicado, versao usada, campos obrigatorios, respostas, evidencias, entidade relacionada e estado de sync.
 - componentes: renderer de campos, captura de foto/arquivo, assinatura, QR Code, codigo de barras, localizacao, validacao de obrigatorios.
-- regras: execucao pertence ao `tenant_id`; alteracao posterior do template nao altera execucao antiga; conclusao bloqueia obrigatorios pendentes.
+- regras: execucao pertence ao `tenant_id`; alteracao posterior do template nao altera execucao antiga; conclusao bloqueia obrigatorios pendentes; campos devem vir do schema da API quando possivel.
 - offline: obrigatorio com fila local e sincronização posterior.
 - prioridade: MVP (básico) / Scale (dinâmico).
 
@@ -371,17 +382,25 @@ Princípios adotados:
 - objetivo: apoiar deslocamento e registro operacional.
 - prioridade: Scale.
 
-### M10 — Sincronização offline e conflitos
-- objetivo: visualizar fila local, status de envio e conflitos.
-- ações: sincronizar agora, reenviar, abrir conflito.
+### M10 — Checklist de coleta guincho/reboque
+- objetivo: executar checklist `towing_collection` na coleta.
+- dados: schema publicado, tipo de veiculo, marcadores de avaria, fotos, observacoes e entidade relacionada.
+- ações: selecionar tipo de veiculo, marcar avarias, anexar fotos, salvar execucao.
+- regras: consumir schema da API; evitar hardcode de campos; execucao deve preservar versao do checklist.
 - prioridade: MVP.
 
-### M11 — Pendências e exceções
-- objetivo: exibir bloqueios que impedem finalização/sync.
+### M11 — Checklist de entrega guincho/reboque
+- objetivo: executar checklist `towing_delivery` na entrega.
+- dados: schema publicado, nova vistoria, comparacao com M10, divergencias, observacao obrigatoria e ciencia de responsabilidade.
+- ações: registrar nova vistoria, comparar com coleta, registrar divergencia, coletar ciencia, concluir entrega.
+- regras: se houver divergencia em relacao a M10, exigir observacao obrigatoria e ciencia de responsabilidade; consumir schema da API; evitar hardcode de campos.
 - prioridade: MVP.
 
-### M12 — Notificações operacionais
-- objetivo: alertar novas OS, reatribuições, SLA crítico.
+### M12 — Evidencia tecnica antes/depois
+- objetivo: executar checklist `technical_evidence` para reparo, construcao, manutencao ou servicos internos/externos.
+- dados: schema publicado, fotos antes/depois, anexos, observacoes tecnicas e entidade relacionada.
+- ações: capturar evidencia antes, registrar intervencao, capturar evidencia depois, concluir execucao.
+- regras: M12 nao pertence ao escopo de guincho/reboque e nao deve reutilizar semantica de coleta/entrega; consumir schema da API; evitar hardcode de campos.
 - prioridade: Scale.
 
 ### M13 — Visão Supervisor Mobile
@@ -408,7 +427,7 @@ Princípios adotados:
 | Prioridade | Telas |
 |---|---|
 | MVP | W01, W02, W05, W06, W07, W08, W09, W10, W11, W12, W13, W17, W18, W19, W20 (básico), W21, W22, W24, W25, W26 (inicial), W29, M01, M02, M03, M04, M05 (básico), M06, M08 (básico), M10, M11 |
-| Scale | W03 (expandido), W14, W15, W16, W23, W26 (avançado), W27, W28, W30, W31, M05 (dinâmico), M07, M09, M12, M13 |
+| Scale | W02A, W03 (expandido), W14, W15, W16, W23, W26 (avançado), W27, W28, W30, W31, M05 (dinâmico), M07, M09, M12, M13 |
 | Enterprise | W04 (BI/governança ampliada), extensões IA/despacho inteligente em W20 e analytics avançado |
 
 ## Fluxos Críticos

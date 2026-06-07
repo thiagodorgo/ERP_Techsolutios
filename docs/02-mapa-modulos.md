@@ -119,7 +119,7 @@ ERP Techsolutions
 | Módulo | Evolução |
 |---|---|
 | Motor de preço e tarifas | Tabelas versionadas, simulação e aprovação. |
-| Checklists configuráveis por tenant | Modelos versionados por tenant, campos configuráveis a partir de componentes permitidos pela plataforma e execução Web/Mobile. |
+| tenant_checklist | Modelos versionados por tenant, campos configuráveis a partir de componentes permitidos pela plataforma e execução Web/Mobile. |
 | Estoque por viatura | Controle móvel e reposição automática. |
 | Frota avançada | Abastecimento, manutenção, danos, multas e seguros. |
 | Pré-faturamento | Validação antes do fechamento. |
@@ -179,7 +179,7 @@ ERP Techsolutions
 
 **Diferencial:** deduplicação, validações, histórico e assistentes de implantação.
 
-### 4.2.1 Checklists configuraveis por tenant
+### 4.2.1 tenant_checklist
 
 **Objetivo:** permitir que cada tenant configure modelos de checklist para processos operacionais, administrativos ou comerciais sem criar novos tipos de componente em codigo.
 

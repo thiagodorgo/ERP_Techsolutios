@@ -11,6 +11,7 @@ Permitir que o dono da plataforma crie e acompanhe tenants/clientes, defina plan
 - Console da Plataforma: administra a plataforma global, tenants, planos, modulos, saude e auditoria global.
 - Administrador: administra configuracoes, usuarios e permissoes da propria empresa cliente.
 - Usuarios: lista, convida, edita e gerencia usuarios e permissoes dentro do tenant atual.
+- tenant_checklist: configuracao feita pelo Administrador dentro do tenant; o Console da Plataforma apenas habilita/bloqueia o modulo para o tenant e mantem o catalogo global de componentes governado pela plataforma.
 
 ## Telas MVP
 
@@ -25,6 +26,7 @@ Permitir que o dono da plataforma crie e acompanhe tenants/clientes, defina plan
 - Suspender tenant.
 - Reativar tenant.
 - Habilitar e desabilitar modulos por tenant.
+- Habilitar e desabilitar a feature `tenant_checklist` por tenant/plano.
 - Definir plano.
 - Criar administrador inicial do tenant.
 - Ver resumo de uso.
@@ -71,6 +73,7 @@ As rotas de API usam o prefixo atual do backend (`/api/v1`) e reservam o boundar
 ## Pendencias planejadas
 
 - Persistencia real de `tenant_modules`.
+- Governanca do catalogo global de componentes de checklist exposto aos tenants.
 - Auditoria global completa.
 - Planos comerciais configuraveis.
 - Modo suporte auditado para acesso operacional a tenant.

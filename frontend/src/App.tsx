@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { PermissionGuard } from "./guards/PermissionGuard";
 import { AppProviders } from "./providers/AppProviders";
 import { AppShell } from "./layouts/AppShell";
+import { TenantChecklistsPage } from "./modules/checklists/pages/TenantChecklistsPage";
 import { PlatformLayout } from "./layouts/PlatformLayout";
 import { PlatformTenantDetailPage } from "./modules/platform/pages/PlatformTenantDetailPage";
 import { PlatformTenantModulesPage } from "./modules/platform/pages/PlatformTenantModulesPage";
@@ -49,6 +50,14 @@ export function App() {
         </Route>
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route
+            path="/administrator/checklists"
+            element={
+              <PermissionGuard permissions={["tenant_checklists:read"]}>
+                <TenantChecklistsPage />
+              </PermissionGuard>
+            }
+          />
           <Route path="/work-orders" element={<WorkOrdersListPage />} />
           <Route path="/work-orders/new" element={<WorkOrderFormPage />} />
           <Route path="/work-orders/:workOrderId" element={<WorkOrderDetailPage />} />

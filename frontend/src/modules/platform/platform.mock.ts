@@ -8,7 +8,7 @@ export const mockPlatformTenants: PlatformTenant[] = [
     plan: "professional",
     status: "active",
     activeUsers: 84,
-    enabledModules: ["dashboard", "users", "tenant-admin", "inventory", "approvals", "finance", "mobile"],
+    enabledModules: ["dashboard", "users", "tenant-admin", "inventory", "approvals", "finance", "mobile", "tenant_checklist"],
     createdAt: "2026-01-10T12:00:00.000Z",
     lastActivityAt: "2026-06-02T09:40:00.000Z",
     adminUser: {
@@ -50,7 +50,19 @@ export const mockPlatformTenants: PlatformTenant[] = [
     plan: "enterprise",
     status: "pending",
     activeUsers: 0,
-    enabledModules: ["dashboard", "users", "tenant-admin", "inventory", "approvals", "finance", "reports", "audit", "integrations", "analytics"],
+    enabledModules: [
+      "dashboard",
+      "users",
+      "tenant-admin",
+      "inventory",
+      "approvals",
+      "finance",
+      "tenant_checklist",
+      "reports",
+      "audit",
+      "integrations",
+      "analytics",
+    ],
     createdAt: "2026-06-01T14:30:00.000Z",
     usageSummary: {
       workOrders: 0,
@@ -69,6 +81,7 @@ export const platformModuleCatalog: Array<Omit<PlatformModule, "status" | "avail
   { key: "finance", name: "Financeiro", description: "Visao financeira inicial e conciliacoes.", category: "MVP" },
   { key: "notifications", name: "Notificacoes", description: "Alertas e comunicacao operacional.", category: "MVP" },
   { key: "mobile", name: "Mobile", description: "Experiencia Flutter para campo.", category: "MVP" },
+  { key: "tenant_checklist", name: "Checklists", description: "Checklists configuraveis por tenant.", category: "Fase 2" },
   { key: "purchasing", name: "Compras", description: "Solicitacoes e pedidos de compra.", category: "Fase 2" },
   { key: "suppliers", name: "Fornecedores", description: "Cadastro e desempenho de fornecedores.", category: "Fase 2" },
   { key: "customers", name: "Clientes", description: "Gestao de clientes e contratos.", category: "Fase 2" },
@@ -82,7 +95,19 @@ export const platformModuleCatalog: Array<Omit<PlatformModule, "status" | "avail
 
 const modulesByPlan = {
   starter: new Set(["dashboard", "users", "tenant-admin", "inventory"]),
-  professional: new Set(["dashboard", "users", "tenant-admin", "inventory", "approvals", "finance", "notifications", "mobile", "reports", "audit"]),
+  professional: new Set([
+    "dashboard",
+    "users",
+    "tenant-admin",
+    "inventory",
+    "approvals",
+    "finance",
+    "notifications",
+    "mobile",
+    "tenant_checklist",
+    "reports",
+    "audit",
+  ]),
   enterprise: new Set(platformModuleCatalog.map((module) => module.key)),
 };
 

@@ -484,3 +484,16 @@
 - `docker compose up -d`: falhou porque o Docker daemon/Desktop nao esta ativo (`dockerDesktopLinuxEngine` indisponivel)
 - `npx prisma migrate status`: falhou porque o PostgreSQL local nao esta acessivel, coerente com Docker indisponivel
 - varredura simples de segredos confirmou que a nova alteracao em `.env.example` e apenas `VITE_USE_MOCKS="true"`; os demais valores encontrados sao placeholders locais ja documentados
+
+## 2026-06-06 - tenant_checklist W02A e Mobile schema-driven
+
+- objetivo: atualizar documentacao e frontend para prever a feature `tenant_checklist`
+- arquivos alterados: `docs/modules.md`, `docs/rbac.md`, `docs/api-screen-endpoints.md`, `docs/frontend-screens.md`, `docs/platform-console.md`, `docs/api.md`, `docs/05-requisitos-funcionais.md`, `docs/09-mapa-telas-frontend.md`, `docs/02-mapa-modulos.md`, `RBAC_MATRIX.md`, `frontend/src/App.tsx`, `frontend/src/navigation/tenantNavigation.ts`, `frontend/src/components/erp/index.tsx`, `frontend/src/mocks/auth/context.ts`, `frontend/src/styles/app.css`, `frontend/src/modules/checklists/*`, `frontend/src/modules/platform/platform.mock.ts`, `src/modules/platform/platform-modules.service.ts`, `agent-orchestration/docs/status-geral.md` e este log
+- criado `docs/api-screen-endpoints.md` para mapear W02A/M10/M11/M12 aos endpoints esperados
+- criada tela frontend `TenantChecklistsPage` para W02A em `/administrator/checklists`
+- criados tipos frontend `TenantChecklist`, `TenantChecklistComponent`, `ChecklistRun`, `ChecklistMarker`, `ChecklistAttachment` e `ChecklistAcknowledgement`
+- atualizado catalogo de modulos para incluir `tenant_checklist`
+- atualizado RBAC com `tenant_checklists:read`, `tenant_checklists:create`, `tenant_checklists:update`, `tenant_checklists:publish`, `checklist_runs:read`, `checklist_runs:create`, `checklist_runs:update` e `checklist_runs:complete`
+- decisao registrada: M10 e `towing_collection`, M11 e `towing_delivery`, M12 e `technical_evidence`
+- decisao registrada: M10/M11/M12 devem consumir schema da API e evitar hardcode de campos quando possivel
+- backend real de `tenant_checklist` nao implementado nesta rodada

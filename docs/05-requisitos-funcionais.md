@@ -120,12 +120,19 @@ Cada requisito possui:
 **Prioridade:** Alta  
 **Fase:** Scale  
 **Tipo:** Cadastros / Operacao / Mobile
-**Modulo:** `checklists`
+**Modulo/feature:** `tenant_checklist`
 **Descricao:** O sistema deve permitir que usuarios autorizados de cada tenant criem, editem, publiquem, desativem e versionem modelos de checklist personalizados, usando apenas componentes/campos previamente disponibilizados pela plataforma ERP Techsolutions.
 
 Cada modelo de checklist deve pertencer a um tenant especifico e pode ser associado a processos operacionais, administrativos ou comerciais, como ordens de servico, recebimento de mercadoria, entrega, manutencao, auditoria, vistoria, estoque, compras, vendas ou modulos futuros.
 
 O cliente nao cria novos tipos de componentes em codigo. O cliente apenas escolhe, ordena e configura tipos permitidos pela plataforma.
+
+Tipos de checklist inicialmente previstos:
+
+- `towing_collection`: coleta de guincho/reboque, selecao de tipo de veiculo e marcacao de avarias.
+- `towing_delivery`: entrega de guincho/reboque, nova vistoria e comparacao com coleta.
+- `technical_evidence`: evidencia tecnica antes/depois para reparo, construcao, manutencao ou servicos internos/externos.
+- `custom`: checklist configuravel para outros processos do tenant.
 
 **Componentes/campos iniciais permitidos pela plataforma:**
 
@@ -157,6 +164,7 @@ O cliente nao cria novos tipos de componentes em codigo. O cliente apenas escolh
 - Deve permitir marcar campos como obrigatorios.
 - Deve permitir definir ordem dos campos.
 - Deve permitir configuracoes especificas por tipo de campo.
+- Deve permitir escolher o tipo do checklist entre `towing_collection`, `towing_delivery`, `technical_evidence` e `custom`.
 - Deve permitir publicar uma versao do checklist.
 - Deve preservar historico/versionamento dos modelos.
 - Deve permitir executar/preencher checklists publicados.
@@ -167,6 +175,8 @@ O cliente nao cria novos tipos de componentes em codigo. O cliente apenas escolh
 - Deve controlar acesso por permissoes/RBAC.
 - Deve bloquear conclusao quando campos obrigatorios ou evidencias exigidas nao forem preenchidos.
 - Deve ser preparado para execucao no mobile Flutter, inclusive em fluxo offline-first futuro.
+- Deve permitir que M10/M11/M12 consumam schema da API, evitando hardcode de campos quando possivel.
+- Deve exigir observacao obrigatoria e ciencia de responsabilidade quando M11 detectar divergencia em relacao a M10.
 
 ### RF-CAD-007 — Configurar tabela de valores
 

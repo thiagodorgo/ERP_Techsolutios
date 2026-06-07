@@ -134,11 +134,11 @@ Body:
 - Contratos devem permanecer versionados e separados do boundary de tenant.
 - Operacoes criticas devem gerar auditoria quando a camada persistente estiver pronta.
 
-## Checklists configuraveis por tenant
+## tenant_checklist
 
-Modulo planejado: `checklists`.
+Modulo planejado: `tenant_checklist`.
 
-Status atual: documentado para Fase 1. Endpoints abaixo ainda nao foram implementados nesta etapa e devem seguir o prefixo atual `/api/v1` quando forem criados.
+Status atual: documentado para Fase 1. Endpoints abaixo ainda nao foram implementados nesta etapa. O mapeamento tela x endpoint tambem esta em `docs/api-screen-endpoints.md`.
 
 Regras obrigatorias para todos os endpoints:
 
@@ -151,10 +151,10 @@ Regras obrigatorias para todos os endpoints:
 ### Componentes disponiveis
 
 ```http
-GET /api/v1/checklists/components
+GET /tenant/checklist-components
 ```
 
-Permissao: `checklists.template.read`
+Permissao: `tenant_checklists:read`
 
 Retorna o catalogo de tipos permitidos pela plataforma. O tenant pode escolher e configurar estes tipos, mas nao cria novos tipos em codigo.
 
@@ -182,59 +182,54 @@ Tipos iniciais planejados:
 ### Templates
 
 ```http
-POST /api/v1/checklist-templates
-GET /api/v1/checklist-templates
-GET /api/v1/checklist-templates/:id
-PUT /api/v1/checklist-templates/:id
-PATCH /api/v1/checklist-templates/:id/status
-DELETE /api/v1/checklist-templates/:id
+GET    /tenant/checklists
+POST   /tenant/checklists
+GET    /tenant/checklists/:checklistId
+PATCH  /tenant/checklists/:checklistId
+DELETE /tenant/checklists/:checklistId
+GET    /tenant/checklists/templates
+POST   /tenant/checklists/:checklistId/publish
 ```
 
 Permissoes:
 
-- `checklists.template.create`
-- `checklists.template.read`
-- `checklists.template.update`
-- `checklists.template.delete`
-- `checklists.template.publish`
+- `tenant_checklists:read`
+- `tenant_checklists:create`
+- `tenant_checklists:update`
+- `tenant_checklists:publish`
 
 Status planejados de template: `draft`, `published`, `archived`, `inactive`.
 
-### Campos do template
+### Mobile
 
 ```http
-POST /api/v1/checklist-templates/:id/fields
-PUT /api/v1/checklist-templates/:id/fields/:fieldId
-DELETE /api/v1/checklist-templates/:id/fields/:fieldId
-PATCH /api/v1/checklist-templates/:id/fields/reorder
+GET    /mobile/checklists/available
+GET    /mobile/checklists/:checklistId/render
+POST   /mobile/checklist-runs
+PATCH  /mobile/checklist-runs/:runId
+POST   /mobile/checklist-runs/:runId/attachments
+POST   /mobile/checklist-runs/:runId/markers
+POST   /mobile/checklist-runs/:runId/complete
+GET    /mobile/checklist-runs/:runId/comparison
+POST   /mobile/checklist-runs/:runId/divergence
+POST   /mobile/checklist-runs/:runId/acknowledgement
 ```
 
 Permissoes:
 
-- `checklists.template.update`
-- `checklists.template.publish` quando a alteracao implicar nova versao publicada
-
-Campos planejados devem validar tipo permitido, `field_key`, `label`, `required`, `order_index`, `config`, `validation_rules` e `visibility_rules`.
-
-### Execucoes
-
-```http
-POST /api/v1/checklist-runs
-GET /api/v1/checklist-runs
-GET /api/v1/checklist-runs/:id
-POST /api/v1/checklist-runs/:id/answers
-PATCH /api/v1/checklist-runs/:id/complete
-PATCH /api/v1/checklist-runs/:id/cancel
-```
-
-Permissoes:
-
-- `checklists.run.create`
-- `checklists.run.read`
-- `checklists.run.answer`
-- `checklists.run.complete`
-- `checklists.run.cancel`
+- `checklist_runs:read`
+- `checklist_runs:create`
+- `checklist_runs:update`
+- `checklist_runs:complete`
 
 Status planejados de execucao: `in_progress`, `completed`, `cancelled`.
 
 Execucoes devem poder ser associadas a entidades do ERP por `related_entity_type` e `related_entity_id`, como OS, recebimento, entrega, manutencao, auditoria, vistoria, estoque, compras ou vendas.
+
+Regras especificas:
+
+- M10 usa `towing_collection` para coleta de guincho/reboque, selecao de tipo de veiculo e marcacao de avarias.
+- M11 usa `towing_delivery` para entrega, nova vistoria e comparacao com M10.
+- Se M11 detectar divergencia, exigir observacao obrigatoria e ciencia de responsabilidade.
+- M12 usa `technical_evidence` para evidencia antes/depois e nao pertence ao escopo de guincho/reboque.
+- M10, M11 e M12 devem consumir schema de checklist vindo da API.

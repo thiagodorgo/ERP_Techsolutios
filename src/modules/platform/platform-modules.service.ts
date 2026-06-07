@@ -9,6 +9,7 @@ const moduleCatalog: Array<Omit<PlatformModule, "status" | "availableInPlan">> =
   { key: "finance", name: "Financeiro", description: "Visao financeira inicial.", category: "MVP" },
   { key: "notifications", name: "Notificacoes", description: "Alertas e comunicacao operacional.", category: "MVP" },
   { key: "mobile", name: "Mobile", description: "Experiencia Flutter para campo.", category: "MVP" },
+  { key: "tenant_checklist", name: "Checklists", description: "Checklists configuraveis por tenant.", category: "Fase 2" },
   { key: "purchasing", name: "Compras", description: "Solicitacoes e pedidos de compra.", category: "Fase 2" },
   { key: "suppliers", name: "Fornecedores", description: "Cadastro de fornecedores.", category: "Fase 2" },
   { key: "customers", name: "Clientes", description: "Gestao de clientes e contratos.", category: "Fase 2" },
@@ -22,7 +23,19 @@ const moduleCatalog: Array<Omit<PlatformModule, "status" | "availableInPlan">> =
 
 const modulesByPlan: Record<PlatformPlan, Set<string>> = {
   starter: new Set(["dashboard", "users", "tenant-admin", "inventory"]),
-  professional: new Set(["dashboard", "users", "tenant-admin", "inventory", "approvals", "finance", "notifications", "mobile", "reports", "audit"]),
+  professional: new Set([
+    "dashboard",
+    "users",
+    "tenant-admin",
+    "inventory",
+    "approvals",
+    "finance",
+    "notifications",
+    "mobile",
+    "tenant_checklist",
+    "reports",
+    "audit",
+  ]),
   enterprise: new Set(moduleCatalog.map((item) => item.key)),
 };
 

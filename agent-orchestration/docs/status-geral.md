@@ -661,3 +661,31 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - implementar modulo backend `src/modules/checklists` seguindo controller/service/repository/schemas/types/permissions
 - adicionar testes tenant-scoped para templates, campos, execucoes e respostas
 - planejar telas Web e fluxo mobile/offline apos contratos backend estabilizados
+
+## Atualizacao 2026-06-06 - tenant_checklist W02A e Mobile schema-driven
+
+### Implementado
+
+- feature documentada como `tenant_checklist`
+- adicionada tela frontend prevista `W02A · Administrador — Checklists` em `/administrator/checklists`
+- criados tipos frontend `TenantChecklist`, `TenantChecklistComponent`, `ChecklistRun`, `ChecklistMarker`, `ChecklistAttachment` e `ChecklistAcknowledgement`
+- catalogo de modulos da plataforma atualizado para expor `tenant_checklist` como Fase 2
+- documentado que M10/M11 sao checklists de guincho/reboque e devem consumir schema da API
+- documentado que M10 e coleta (`towing_collection`), com selecao de tipo de veiculo e marcacao de avarias
+- documentado que M11 e entrega (`towing_delivery`), com nova vistoria e comparacao com coleta
+- documentado que divergencia em M11 exige observacao obrigatoria e ciencia de responsabilidade
+- documentado que M12 e evidencia tecnica (`technical_evidence`) antes/depois para reparo, construcao, manutencao ou servicos internos/externos
+- criado `docs/api-screen-endpoints.md` com endpoints esperados para Web tenant e Mobile
+- RBAC atualizado com `tenant_checklists:*` e `checklist_runs:*`
+
+### Limitacoes
+
+- endpoints `tenant_checklist` ainda nao foram implementados no backend
+- tela W02A usa dados mockados locais para prever o fluxo e tipos
+- storage/anexos/assinatura/localizacao ainda dependem de desenho tecnico e backend futuro
+
+### Proximos passos
+
+- implementar backend tenant-scoped para `/tenant/checklists` e `/mobile/checklist-runs`
+- criar migration versionada para modelos, componentes, execucoes, marcadores, anexos e ciencia
+- substituir mocks da W02A por service/API real quando os contratos existirem

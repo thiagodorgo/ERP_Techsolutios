@@ -71,8 +71,9 @@ Operational rules:
 - React and Flutter may shape the interface from claims, but claims do not replace backend enforcement
 - permissions may narrow or extend role behavior only within backend-authorized limits
 - active tenant resolution must be explicit when a user belongs to more than one tenant
-- configurable checklist permissions are tenant-scoped and must include `checklists.template.*` and `checklists.run.*` checks in backend routes/services
+- configurable checklist permissions are tenant-scoped and must include `tenant_checklists:*` and `checklist_runs:*` checks in backend routes/services
 - checklist reads and writes must validate `tenant_id` together with template, field, run and answer identifiers
+- M10/M11/M12 must render checklist schemas from API data rather than hardcoded mobile field definitions
 
 ## Notes
 - "limited-support" means support actions must be constrained, logged, and never silently exceed tenant-scoped support permissions.

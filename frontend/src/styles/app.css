@@ -744,6 +744,48 @@
   gap: var(--space-10);
 }
 
+.tenant-checklist-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--space-16);
+}
+
+.tenant-checklist-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tenant-checklist-components,
+.tenant-checklist-card,
+.tenant-checklist-card > div {
+  display: grid;
+  gap: var(--space-10);
+}
+
+.tenant-checklist-components article,
+.tenant-checklist-card > div span,
+.tenant-checklist-mobile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  padding: var(--space-10);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-6);
+  background: var(--surface-panel-muted);
+}
+
+.tenant-checklist-card p,
+.tenant-checklist-mobile p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.tenant-checklist-card > div span {
+  align-items: flex-start;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 800;
+}
+
 .erp-kpi-card {
   display: grid;
   gap: var(--space-8);
@@ -977,7 +1019,9 @@
 
   .kpi-grid,
   .context-grid,
-  .metric-grid {
+  .metric-grid,
+  .tenant-checklist-grid,
+  .tenant-checklist-grid--three {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1050,8 +1094,10 @@
   .kpi-grid,
   .erp-logistics-strip,
   .metric-grid,
-  .platform-usage-grid,
-  .platform-module-grid {
+    .platform-usage-grid,
+    .platform-module-grid,
+    .tenant-checklist-grid,
+    .tenant-checklist-grid--three {
     grid-template-columns: 1fr;
   }
 

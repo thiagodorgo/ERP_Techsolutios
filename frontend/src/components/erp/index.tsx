@@ -67,6 +67,7 @@ const iconByModule = {
   logistics: Truck,
   users: UserRoundCog,
   "tenant-admin": ShieldCheck,
+  tenant_checklist: ClipboardList,
 };
 
 export function Sidebar({ context }: { context?: TenantContext | null }) {
@@ -74,7 +75,7 @@ export function Sidebar({ context }: { context?: TenantContext | null }) {
   const visibleItems = tenantNavigation.filter((item) =>
     canShowNavigationItem(item, {
       permissions,
-      enabledModules: ["dashboard", "work-orders", "logistics", "users", "tenant-admin"],
+      enabledModules: ["dashboard", "work-orders", "logistics", "users", "tenant-admin", "tenant_checklist"],
       tenantStatus: context?.tenantStatus,
     }),
   );

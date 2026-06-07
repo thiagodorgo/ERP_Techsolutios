@@ -38,4 +38,11 @@ export const tenantNavigation: NavigationItem[] = [
     scope: "tenant",
     disabled: true,
   },
+  {
+    label: "Checklists",
+    path: "/administrator/checklists",
+    module: "tenant_checklist",
+    permissions: ["tenant_checklists:read"],
+    scope: "tenant",
+  },
 ];

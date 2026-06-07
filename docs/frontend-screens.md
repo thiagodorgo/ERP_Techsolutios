@@ -34,10 +34,11 @@ Area para listar, convidar, editar e gerenciar usuarios e permissoes do tenant a
 
 ## Checklists
 
-Area futura tenant-scoped para configurar e executar checklists publicados.
+Area tenant-scoped para configurar e executar checklists publicados pela feature `tenant_checklist`.
 
 Telas planejadas:
 
+- `W02A · Administrador — Checklists`, rota `/administrator/checklists`.
 - Lista de templates de checklist.
 - Builder/editor de checklist.
 - Painel de componentes disponiveis.
@@ -59,10 +60,30 @@ Componentes planejados:
 Regras de UX:
 
 - o tenant escolhe componentes permitidos pela plataforma, sem criar novos tipos;
+- o tenant escolhe o tipo `towing_collection`, `towing_delivery`, `technical_evidence` ou `custom`;
+- W02A deve listar checklists do tenant, criar checklist, editar checklist, ativar/inativar, selecionar componentes disponiveis, configurar obrigatoriedade de fotos, observacoes, marcadores e ciencia, e publicar checklist;
 - campos obrigatorios devem ficar visiveis antes de publicar e antes de concluir execucao;
 - builder deve preservar ordem dos campos e status da versao;
 - execucao mobile futura deve priorizar preenchimento rapido, captura de evidencia e sincronizacao offline;
-- telas devem respeitar modulos habilitados e permissoes `checklists.*`.
+- telas devem respeitar modulos habilitados e permissoes `tenant_checklists:*` e `checklist_runs:*`.
+
+## Checklists Mobile
+
+M10, M11 e M12 nao devem ser tratados como telas hardcoded. Eles devem renderizar componentes a partir do schema retornado pela API.
+
+- M10: checklist de guincho/reboque para coleta (`towing_collection`), selecao de tipo de veiculo e marcacao de avarias.
+- M11: checklist de guincho/reboque para entrega (`towing_delivery`), nova vistoria e comparacao com coleta.
+- Divergencia em M11: exigir observacao obrigatoria e ciencia de responsabilidade.
+- M12: evidencia tecnica antes/depois (`technical_evidence`) para reparo, construcao, manutencao ou servicos internos/externos; nao pertence ao escopo de guincho/reboque.
+
+Tipos frontend previstos:
+
+- `TenantChecklist`
+- `TenantChecklistComponent`
+- `ChecklistRun`
+- `ChecklistMarker`
+- `ChecklistAttachment`
+- `ChecklistAcknowledgement`
 
 ## Sidebar dinamica
 

@@ -37,6 +37,14 @@ Permissoes de tenant:
 - `users:update`
 - `roles:manage`
 - `tenant:manage`
+- `tenant_checklists:read`
+- `tenant_checklists:create`
+- `tenant_checklists:update`
+- `tenant_checklists:publish`
+- `checklist_runs:read`
+- `checklist_runs:create`
+- `checklist_runs:update`
+- `checklist_runs:complete`
 - `checklists.template.create`
 - `checklists.template.read`
 - `checklists.template.update`
@@ -53,11 +61,22 @@ Permissoes de tenant:
 
 Permissoes `platform:*` pertencem ao Console da Plataforma. Permissoes de tenant pertencem ao Administrador e aos usuarios dentro do tenant atual.
 
-## Checklists configuraveis
+## tenant_checklist
 
-O modulo `checklists` usa permissoes tenant-scoped. Mesmo quando um usuario possui permissao, o backend deve validar que o template, campo, execucao ou resposta pertence ao `tenant_id` do contexto autenticado.
+A feature `tenant_checklist` usa permissoes tenant-scoped. Mesmo quando um usuario possui permissao, o backend deve validar que o checklist, componente, execucao, marcador, anexo ou ciencia pertence ao `tenant_id` do contexto autenticado.
 
 Permissoes obrigatorias:
+
+- `tenant_checklists:read`: listar e consultar checklists configurados do tenant.
+- `tenant_checklists:create`: criar checklists do tenant.
+- `tenant_checklists:update`: editar, ativar e inativar checklists do tenant.
+- `tenant_checklists:publish`: publicar versoes de checklist.
+- `checklist_runs:read`: consultar execucoes, historico, comparacoes, respostas e evidencias.
+- `checklist_runs:create`: iniciar execucoes de checklist publicado.
+- `checklist_runs:update`: registrar respostas, anexos, marcadores, divergencias e ciencia enquanto a execucao estiver aberta.
+- `checklist_runs:complete`: concluir execucao apos validacao de obrigatorios.
+
+Aliases documentais anteriores, a serem reconciliados quando o backend final for implementado:
 
 - `checklists.template.create`: criar modelos de checklist do tenant.
 - `checklists.template.read`: listar, consultar e usar templates publicados do tenant.
@@ -77,6 +96,14 @@ Mapeamento conceitual:
 - `manager`: pode visualizar templates e execucoes do proprio tenant.
 - `operator`: pode iniciar, responder, concluir ou cancelar checklists permitidos pelo seu escopo operacional.
 - `auditor`: pode visualizar historico, respostas e evidencias, sem alterar templates ou execucoes.
+
+Regras especificas:
+
+- M10 usa checklist `towing_collection`: coleta, selecao de tipo de veiculo e marcacao de avarias.
+- M11 usa checklist `towing_delivery`: entrega, nova vistoria e comparacao com coleta.
+- Se M11 detectar divergencia em relacao a M10, o backend deve exigir observacao obrigatoria e ciencia de responsabilidade.
+- M12 usa checklist `technical_evidence`: evidencia tecnica antes/depois para reparo, construcao, manutencao ou servicos internos/externos; nao pertence ao fluxo de guincho/reboque.
+- M10, M11 e M12 devem consumir schema de checklist da API e nao depender de campos hardcoded no cliente.
 
 ## Sidebar dinamica
 
