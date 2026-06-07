@@ -226,6 +226,77 @@ test("checklist run can be completed without divergence", async () => {
   });
 });
 
+test("checklist routes enforce tenant context and permission boundaries", async () => {
+  await withChecklistApi(async ({ baseUrl, seed }) => {
+    const checklist = await createAndPublishChecklist(baseUrl, seed.tenantA, seed.adminA);
+
+    const withoutTenant = await requestJson(baseUrl, "/api/v1/tenant/checklists", {
+      headers: {
+        "x-user-id": seed.adminA.id,
+        "x-role": "tenant_admin",
+      },
+    });
+    const withoutChecklistPermission = await requestJson(baseUrl, "/api/v1/tenant/checklists", {
+      headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin", ["os.read"]),
+    });
+    const operatorAdminRead = await requestJson(baseUrl, "/api/v1/tenant/checklists", {
+      headers: authHeaders(seed.tenantA, seed.operatorA, "operator"),
+    });
+    const supervisorCreate = await requestJson(baseUrl, "/api/v1/tenant/checklists", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.supervisorA, "manager"),
+      body: {
+        name: "Checklist indevido",
+        type: "custom",
+      },
+    });
+    const supervisorPublish = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklist.id}/publish`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.supervisorA, "manager"),
+    });
+    const operatorRender = await requestJson(baseUrl, `/api/v1/mobile/checklists/${checklist.id}/render`, {
+      headers: authHeaders(seed.tenantA, seed.operatorA, "operator"),
+    });
+    const operatorRun = await requestJson(baseUrl, "/api/v1/mobile/checklist-runs", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.operatorA, "operator"),
+      body: {
+        checklistId: checklist.id,
+      },
+    });
+    const tenantBRender = await requestJson(baseUrl, `/api/v1/mobile/checklists/${checklist.id}/render`, {
+      headers: authHeaders(seed.tenantB, seed.adminB, "tenant_admin"),
+    });
+    const acknowledgementWithoutPermission = await requestJson(
+      baseUrl,
+      `/api/v1/mobile/checklist-runs/${operatorRun.body.data.id}/acknowledgement`,
+      {
+        method: "POST",
+        headers: authHeaders(seed.tenantA, seed.operatorA, "operator"),
+        body: {
+          message: "Ciente.",
+        },
+      },
+    );
+
+    assert.equal(withoutTenant.status, 403);
+    assert.equal(withoutTenant.body.error.reason, "tenant_required");
+    assert.equal(withoutChecklistPermission.status, 403);
+    assert.equal(withoutChecklistPermission.body.error.reason, "permission_required");
+    assert.equal(operatorAdminRead.status, 403);
+    assert.equal(operatorAdminRead.body.error.reason, "permission_required");
+    assert.equal(supervisorCreate.status, 403);
+    assert.equal(supervisorCreate.body.error.reason, "permission_required");
+    assert.equal(supervisorPublish.status, 403);
+    assert.equal(supervisorPublish.body.error.reason, "permission_required");
+    assert.equal(operatorRender.status, 200);
+    assert.equal(operatorRun.status, 201);
+    assert.equal(tenantBRender.status, 404);
+    assert.equal(acknowledgementWithoutPermission.status, 403);
+    assert.equal(acknowledgementWithoutPermission.body.error.reason, "permission_required");
+  });
+});
+
 async function createAndPublishChecklist(
   baseUrl: string,
   tenant: Tenant,
@@ -264,6 +335,8 @@ type SeedData = {
   readonly tenantB: Tenant;
   readonly adminA: User;
   readonly adminB: User;
+  readonly operatorA: User;
+  readonly supervisorA: User;
 };
 
 type ChecklistApiContext = {
@@ -327,20 +400,40 @@ function seedCoreSaas(service: CoreSaasRegistry): SeedData {
     email: "checklist-admin-b@example.com",
     roles: ["tenant_admin"],
   });
+  const operatorA = service.createUser({
+    tenantId: tenantA.id,
+    name: "Operator A",
+    email: "checklist-operator-a@example.com",
+    roles: ["operator"],
+  });
+  const supervisorA = service.createUser({
+    tenantId: tenantA.id,
+    name: "Supervisor A",
+    email: "checklist-supervisor-a@example.com",
+    roles: ["manager"],
+  });
 
   return {
     tenantA,
     tenantB,
     adminA,
     adminB,
+    operatorA,
+    supervisorA,
   };
 }
 
-function authHeaders(tenant: Tenant, user: User): Record<string, string> {
+function authHeaders(
+  tenant: Tenant,
+  user: User,
+  role = "tenant_admin",
+  permissions?: readonly string[],
+): Record<string, string> {
   return {
     "x-tenant-id": tenant.id,
     "x-user-id": user.id,
-    "x-role": "tenant_admin",
+    "x-role": role,
+    ...(permissions ? { "x-permissions": permissions.join(",") } : {}),
   };
 }
 

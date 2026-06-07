@@ -546,3 +546,16 @@
 - rotas Web operacionais receberam guards para impedir renderizacao por acesso direto sem permissao
 - W02A mantida como rota administrativa dependente de `tenant_checklists:read`; operador nao ve W02A
 - documentacao atualizada em `docs/rbac.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/modules.md`, `agent-orchestration/docs/status-geral.md` e este log
+
+## 2026-06-07 - Hardening backend RBAC
+
+- branch usada: `feature/backend-rbac-hardening`
+- objetivo: reforcar autorizacao backend para Core SaaS, Platform Console e `tenant_checklist`, sem alterar frontend, Figma, Prisma/migrations, contratos API desnecessariamente, RLS, upload/storage ou mobile
+- mapeamento inicial: Core SaaS ja usava `requirePermission` em tenants/users/roles/audit; Platform ja usava `requirePlatformPermission`; checklists ja exigiam permissoes por rota
+- adicionado `requireAnyPermission([...])` no middleware RBAC existente, reaproveitando a resposta 403 padronizada
+- adicionado `requirePlatformAdmin()` como helper semantico sobre `requirePlatformPermission("platform:tenants:read")`
+- rotas `GET /api/v1/mobile/checklists/available` e `GET /api/v1/mobile/checklists/:checklistId/render` passaram a aceitar `checklist_runs:read` ou `checklist_runs:create`
+- `POST /api/v1/users` deixou de aceitar `tenantId` do body como fonte de escopo e usa sempre o `tenantId` do contexto autenticado
+- testes ampliados em `tests/core-saas.test.ts` e `tests/checklist-routes.test.ts`
+- testes especificos executados durante a implementacao: `npm test`, `node --test --import tsx tests/checklist-routes.test.ts` e `node --test --import tsx tests/platform-routes.test.ts`
+- documentacao atualizada em `docs/rbac.md`, `docs/api.md`, `docs/modules.md`, `agent-orchestration/docs/status-geral.md` e este log

@@ -33,7 +33,7 @@ export function createUsersRouter(service: ICoreSaasService): Router {
       const body = request.body as Record<string, unknown>;
       const user = await service.createUser(
         {
-          tenantId: readString(body.tenantId) || actor.tenantId,
+          tenantId: actor.tenantId,
           name: readString(body.name),
           email: readString(body.email),
           roles: readStringArray(body.roles),

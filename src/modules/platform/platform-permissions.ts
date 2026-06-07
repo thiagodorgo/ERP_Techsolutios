@@ -50,6 +50,10 @@ export function requirePlatformPermission(permission: PlatformPermission) {
   };
 }
 
+export function requirePlatformAdmin() {
+  return requirePlatformPermission("platform:tenants:read");
+}
+
 export function isPlatformPermission(value: string): value is PlatformPermission {
   return platformPermissionSet.has(value);
 }

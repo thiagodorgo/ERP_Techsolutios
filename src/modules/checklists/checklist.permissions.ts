@@ -1,4 +1,4 @@
-import { requirePermission } from "../core-saas/middleware/rbac.middleware.js";
+import { requireAnyPermission, requirePermission } from "../core-saas/middleware/rbac.middleware.js";
 
 export const CHECKLIST_PERMISSIONS = {
   readTemplates: "tenant_checklists:read",
@@ -13,3 +13,4 @@ export const CHECKLIST_PERMISSIONS = {
 } as const;
 
 export const requireChecklistPermission = requirePermission;
+export const requireAnyChecklistPermission = requireAnyPermission;
