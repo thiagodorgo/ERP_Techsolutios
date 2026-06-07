@@ -353,7 +353,7 @@ Campos conceituais:
 
 #### `checklist_attachments`
 
-Representa fotos/arquivos/evidencias com `file_url` logico, sem upload real nesta rodada.
+Representa fotos/arquivos/evidencias. O backend ja suporta upload local real em desenvolvimento e persiste um `file_url` logico, sem expor path absoluto do servidor.
 
 Campos principais:
 
@@ -368,6 +368,14 @@ Campos principais:
 - `metadata`
 - `created_by`
 - `created_at`
+
+No storage local atual, `metadata` armazena:
+
+- `storageDriver`: `local`
+- `storageKey`: caminho logico relativo ao storage base, por tenant e run
+- `checksumSha256`: checksum do arquivo salvo
+
+Campos como `storage_driver`, `storage_key` e `checksum` podem virar colunas dedicadas em migration futura se houver necessidade de consulta/indexacao. Nesta rodada, o schema existente foi preservado para evitar migration desnecessaria.
 
 #### `checklist_markers`
 
@@ -417,6 +425,7 @@ Campos principais:
 - `checklist_template_components.tenant_id` deve coincidir com o `tenant_id` de `checklist_templates`.
 - `checklist_runs.tenant_id` deve coincidir com o `tenant_id` do template publicado.
 - `checklist_run_answers.tenant_id` deve coincidir com o `tenant_id` da execucao.
+- `checklist_attachments.tenant_id` deve coincidir com o `tenant_id` da execucao e do componente.
 - `template_version` em `checklist_runs` deve preservar a versao publicada usada no preenchimento.
 - Alteracoes em templates devem criar nova versao ou permanecer em `draft`; nao podem alterar retroativamente execucoes antigas.
 - Acoes criticas devem gerar registros de auditoria tenant-scoped.
@@ -512,4 +521,5 @@ Esse teste requer `DATABASE_URL`, PostgreSQL ativo e migrations aplicadas. Ele v
 - tenant A nao atualiza usuario do tenant B;
 - sem `app.current_tenant_id`, `users` nao retorna dados;
 - `checklist_templates` e `checklist_runs` respeitam RLS;
+- `checklist_attachments` respeita RLS;
 - `tenants` continua global para o boundary de plataforma.

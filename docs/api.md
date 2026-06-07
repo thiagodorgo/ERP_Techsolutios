@@ -138,7 +138,7 @@ Body:
 
 Modulo implementado: `tenant_checklist`.
 
-Status atual: backend real iniciado na branch `feature/tenant-checklists-backend`, com migration, models Prisma, modulo `src/modules/checklists`, rotas Express, RBAC, auditoria e testes de rota. O mapeamento tela x endpoint tambem esta em `docs/api-screen-endpoints.md`.
+Status atual: backend real com migration, models Prisma, modulo `src/modules/checklists`, rotas Express, RBAC, RLS, auditoria, testes de rota e upload local real para anexos de checklist. O mapeamento tela x endpoint tambem esta em `docs/api-screen-endpoints.md`.
 
 Regras obrigatorias para todos os endpoints:
 
@@ -202,6 +202,7 @@ GET    /mobile/checklists/:checklistId/render
 POST   /mobile/checklist-runs
 PATCH  /mobile/checklist-runs/:runId
 POST   /mobile/checklist-runs/:runId/attachments
+GET    /mobile/checklist-runs/:runId/attachments/:attachmentId/download
 POST   /mobile/checklist-runs/:runId/markers
 POST   /mobile/checklist-runs/:runId/complete
 GET    /mobile/checklist-runs/:runId/comparison
@@ -216,6 +217,7 @@ Permissoes:
 - `POST /mobile/checklist-runs`: `checklist_runs:create`
 - `PATCH /mobile/checklist-runs/:runId`: `checklist_runs:update`
 - `POST /mobile/checklist-runs/:runId/attachments`: `checklist_runs:update`
+- `GET /mobile/checklist-runs/:runId/attachments/:attachmentId/download`: `checklist_runs:read`
 - `POST /mobile/checklist-runs/:runId/markers`: `checklist_runs:update`
 - `POST /mobile/checklist-runs/:runId/complete`: `checklist_runs:complete`
 - `GET /mobile/checklist-runs/:runId/comparison`: `checklist_runs:read`
@@ -227,6 +229,29 @@ Status de execucao: `in_progress`, `completed`, `completed_with_divergence`, `pe
 Estados oficiais de execucao no handoff Figma: execucao em andamento, execucao concluida, execucao com divergencia e execucao pendente de ciencia.
 
 Execucoes devem poder ser associadas a entidades do ERP por `related_entity_type` e `related_entity_id`, como OS, recebimento, entrega, manutencao, auditoria, vistoria, estoque, compras ou vendas.
+
+### Anexos de checklist
+
+`POST /mobile/checklist-runs/:runId/attachments` preserva o contrato JSON legado com `fileUrl`, mas tambem aceita upload real via `multipart/form-data`.
+
+Formato multipart:
+
+- campo `file`: arquivo obrigatorio;
+- campo `componentId`: componente do template da execucao;
+- campo `metadata`: JSON object opcional em string.
+
+Limites locais configuraveis em `.env`:
+
+- `CHECKLIST_ATTACHMENT_STORAGE_DRIVER=local`
+- `CHECKLIST_ATTACHMENT_STORAGE_PATH=storage/checklist-attachments`
+- `CHECKLIST_ATTACHMENT_MAX_SIZE_MB=10`
+- `CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES=image/jpeg,image/png,image/webp,application/pdf`
+
+Resposta: cria registro em `checklist_attachments` com `fileUrl` logico `local://checklist-attachments/<tenantId>/<runId>/<filename>`, nome sanitizado, MIME type, tamanho e `metadata.storageDriver`, `metadata.storageKey` e `metadata.checksumSha256`. O backend nao expõe path absoluto do servidor.
+
+`GET /mobile/checklist-runs/:runId/attachments/:attachmentId/download` retorna o arquivo somente quando `runId`, `attachmentId`, tenant, RBAC e RLS forem validos. Acesso cross-tenant deve retornar 404 seguro ou 403 quando faltar permissao.
+
+Storage S3-compatible permanece pendente. A arquitetura atual isola driver, storage key e metadados para permitir futura troca sem remover `fileUrl` nem quebrar clientes existentes.
 
 Regras especificas:
 

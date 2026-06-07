@@ -1,4 +1,5 @@
 export * from "./checklist.audit.js";
+export * from "./checklist-attachment.storage.js";
 export * from "./checklist.components.js";
 export * from "./checklist.controller.js";
 export * from "./checklist.dto.js";

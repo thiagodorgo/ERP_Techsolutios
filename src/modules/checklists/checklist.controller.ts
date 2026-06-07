@@ -13,6 +13,10 @@ import {
 } from "./checklist.dto.js";
 import type { ChecklistService } from "./checklist.service.js";
 import {
+  isMultipartChecklistAttachmentRequest,
+  parseMultipartChecklistAttachmentRequest,
+} from "./checklist-attachment.storage.js";
+import {
   parseCompleteChecklistRunDto,
   parseCreateChecklistAcknowledgementDto,
   parseCreateChecklistAttachmentDto,
@@ -157,6 +161,22 @@ export class ChecklistController {
 
   async createChecklistAttachment(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
+
+    if (isMultipartChecklistAttachmentRequest(request)) {
+      const attachment = await service.createUploadedAttachment(
+        actor,
+        readRouteParam(request.params.runId),
+        await parseMultipartChecklistAttachmentRequest(request),
+      );
+
+      return {
+        status: 201,
+        body: {
+          data: toChecklistAttachmentDto(attachment),
+        },
+      };
+    }
+
     const attachment = await service.createAttachment(
       actor,
       readRouteParam(request.params.runId),
@@ -168,6 +188,19 @@ export class ChecklistController {
       body: {
         data: toChecklistAttachmentDto(attachment),
       },
+    };
+  }
+
+  async downloadChecklistAttachment(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const file = await service.getAttachmentDownload(
+      actor,
+      readRouteParam(request.params.runId),
+      readRouteParam(request.params.attachmentId),
+    );
+
+    return {
+      file,
     };
   }
 

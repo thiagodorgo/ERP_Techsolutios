@@ -43,7 +43,7 @@ Responsabilidade do tenant: configurar templates, campos, ordem, obrigatoriedade
 
 Entidades tenant-scoped devem carregar `tenant_id` e sempre filtrar por tenant. Entidades globais da plataforma podem existir sem `tenant_id`, mas qualquer acao sobre dados de tenant deve ser auditavel.
 
-No modulo `checklists`, templates, campos, execucoes e respostas sao entidades tenant-scoped. Nenhum repository ou endpoint deve consultar essas entidades apenas por `id`; toda leitura, escrita, publicacao, exclusao logica ou execucao deve validar tambem o `tenant_id` resolvido do contexto autenticado.
+No modulo `checklists`, templates, campos, execucoes, respostas, anexos, marcadores e ciencias sao entidades tenant-scoped. Nenhum repository ou endpoint deve consultar essas entidades apenas por `id`; toda leitura, escrita, publicacao, exclusao logica, execucao, upload ou download deve validar tambem o `tenant_id` resolvido do contexto autenticado.
 
 A partir da migration `20260608000000_enable_tenant_rls`, o PostgreSQL tambem aplica Row Level Security nas tabelas tenant-scoped principais. O runtime Prisma deve configurar `app.current_tenant_id` por transacao antes de acessar dados de tenant. Essa camada nao substitui RBAC nem filtros de repository; ela reduz o risco de vazamento cross-tenant se uma query futura esquecer `tenant_id`.
 
@@ -51,10 +51,11 @@ Tabelas globais como `tenants` e `permissions` continuam fora de RLS. Platform A
 
 ## Checklists configuraveis
 
-O modulo `checklists` deve ser implementado de forma modular quando sair da fase documental:
+O modulo `checklists` esta implementado de forma modular:
 
 ```txt
 src/modules/checklists/
+  checklist-attachment.storage.ts
   checklist.routes.ts
   checklist.controller.ts
   checklist.service.ts
@@ -75,8 +76,11 @@ Regras arquiteturais:
 - preservar historico de templates por versao;
 - manter execucoes antigas vinculadas a `template_version`;
 - preparar respostas/evidencias para mobile Flutter e sincronizacao offline futura.
+- salvar anexos locais fora do Git em desenvolvimento, com nome sanitizado, allowlist de MIME types, limite de tamanho, checksum e storage key logico;
+- nao expor path absoluto de arquivo em API;
+- manter a estrategia preparada para driver S3-compatible futuro sem implementar cloud real nesta rodada.
 
-Decisao desta fase: a implementacao backend, migration Prisma e frontend ficam fora do escopo. A entrega atual formaliza contratos, entidades e permissoes para reduzir risco antes de codigo.
+Decisao desta fase: storage local real foi implementado para anexos de checklist. Storage cloud/S3-compatible, mobile Flutter e frontend de upload permanecem fora do escopo desta rodada.
 
 ## Backend MVP necessario
 
