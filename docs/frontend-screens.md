@@ -40,6 +40,7 @@ Telas planejadas:
 
 - `W02A · Administrador — Checklists`, rota `/administrator/checklists`.
 - Integracao atual: W02A usa a API real de `tenant_checklist` como fonte principal para listar templates, carregar componentes, criar, editar, publicar e ativar/inativar checklists. Mock local fica apenas como fallback explicito de desenvolvimento via `VITE_USE_MOCKS=true`.
+- Evolucao `FIGMA-CHECKLIST-BUILDER-UX.1`: W02A funciona como builder visual MVP, com lista filtravel, busca por nome, palette de componentes, canvas com ordenacao por botoes, inspector de componente, preview de schema e `pending_changes` apenas como estado visual de UI.
 - Lista de templates de checklist.
 - Builder/editor de checklist.
 - Painel de componentes disponiveis.
@@ -66,6 +67,7 @@ Regras de UX:
 - componentes oficiais do handoff Figma: `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement` e `before_after`;
 - campos obrigatorios devem ficar visiveis antes de publicar e antes de concluir execucao;
 - builder deve preservar ordem dos campos e status da versao;
+- `pending_changes` nao e status backend; ele apenas sinaliza na UI quando um checklist publicado recebeu alteracoes depois da publicacao;
 - execucao mobile futura deve priorizar preenchimento rapido, captura de evidencia e sincronizacao offline;
 - telas devem respeitar modulos habilitados e permissoes `tenant_checklists:*` e `checklist_runs:*`.
 

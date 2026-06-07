@@ -2,6 +2,8 @@ export type TenantChecklistType = "towing_collection" | "towing_delivery" | "tec
 
 export type TenantChecklistStatus = "draft" | "published" | "inactive" | "archived";
 
+export type TenantChecklistUiState = "pending_changes";
+
 export type TenantChecklistComponentType =
   | "vehicle_selector"
   | "damage_map"
@@ -78,6 +80,17 @@ export type TenantChecklistComponentInput = {
   config: ChecklistJsonRecord;
   validationRules: ChecklistJsonRecord;
   visibilityRules: ChecklistJsonRecord;
+};
+
+export type TenantChecklistBuilderComponent = TenantChecklistComponentInput & {
+  id: string;
+};
+
+export type TenantChecklistBuilderDraft = {
+  name: string;
+  description: string;
+  type: TenantChecklistType;
+  components: TenantChecklistBuilderComponent[];
 };
 
 export type CreateTenantChecklistInput = {

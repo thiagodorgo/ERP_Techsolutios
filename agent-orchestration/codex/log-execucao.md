@@ -534,6 +534,16 @@
 - mocks ficam como fallback explicito de desenvolvimento quando `VITE_USE_MOCKS=true`
 - mobile Flutter, Figma e backend nao foram alterados nesta rodada
 
+## 2026-06-07 - W02A builder UI
+
+- branch usada: `feature/tenant-checklists-builder-ui`
+- objetivo: evoluir W02A para builder visual MVP conforme `FIGMA-CHECKLIST-BUILDER-UX.1`
+- arquivos criados em `frontend/src/modules/checklists/components`: `ChecklistComponentPalette.tsx`, `ChecklistCanvas.tsx`, `ChecklistInspector.tsx`, `ChecklistSchemaPreview.tsx`, `ChecklistStatusBadge.tsx` e `NewChecklistForm.tsx`
+- criados helpers `checklist.builder.ts` e `checklist.constants.ts`
+- `TenantChecklistsPage.tsx` reorganizada para lista administrativa com busca/filtro, builder visual, preview de schema e publicacao
+- ordenacao de componentes implementada por botoes subir/descer, sem drag-and-drop
+- `pending_changes` e apenas estado visual derivado de checklist publicado alterado apos `publishedAt`; nao altera contrato backend
+- backend, Prisma/migrations, Figma e mobile Flutter nao foram alterados
 ## 2026-06-07 - Padronizacao de navegacao RBAC
 
 - branch usada: `feature/navigation-rbac-sidebar-standardization`
