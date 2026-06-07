@@ -70,6 +70,7 @@ Sao os modulos efetivamente ativos para um tenant especifico. A visibilidade no 
 - Um modulo pode estar bloqueado por plano mesmo quando aparece no Console da Plataforma.
 - A sidebar do tenant nao deve mostrar todos os modulos para todos os usuarios.
 - O Console da Plataforma gerencia habilitacao por tenant; o Administrador gerencia configuracoes internas do tenant.
+- W03 `Administrador — Configurações` centraliza categorias de configuracao do tenant sem criar persistencia nova nesta rodada; Dashboard/Resumo Financeiro nao usa W03.
 - A feature `tenant_checklist` e tenant-scoped: a plataforma define o catalogo de componentes permitidos, e cada tenant configura apenas modelos, campos, ordem, obrigatoriedade, regras e publicacao.
 - A navegacao deve combinar modulo/feature habilitada com RBAC: sem permissao, o item nao aparece, inclusive no modo de sidebar recolhida.
 - Itens planejados ou indisponiveis nao devem aparecer como links desabilitados; devem ficar fora da lista ate serem publicados.

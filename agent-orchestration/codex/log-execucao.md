@@ -615,3 +615,26 @@
 - `frontend/src/styles/app.css` atualizado para os novos componentes
 - documentacao atualizada em `docs/api.md`, `docs/frontend-screens.md`, `docs/modules.md` e `agent-orchestration/docs/status-geral.md`
 - fora de escopo mantido: backend, Prisma/migrations, Figma, mobile Flutter, S3-compatible real e fluxo operacional completo M10/M11/M12
+
+## 2026-06-07 - W03 tenant settings menu UI
+
+- branch usada: `feature/tenant-settings-menu-ui`
+- objetivo: criar central visual de configurações do tenant em W03 sem alterar backend ou contratos
+- criado modulo `frontend/src/modules/settings` com page, types, mock de categorias e barrel
+- rota criada: `/administrator/settings`
+- sidebar recebeu item `Configuracoes` com permissao frontend `tenant:manage`, modulo `tenant-admin` e roles administrativas
+- pendencia documentada: `tenant_settings:read` ainda nao existe no catalogo backend
+- categorias MVP: Geral, Aparência, Usuários e Acesso, Módulos e Checklists
+- categorias planejadas: Notificações, Integrações e Segurança/Auditoria
+- card Checklists aponta para W02A `/administrator/checklists`; W03 nao duplica builder
+- temas exibidos como opções visuais planejadas: `enterprise_blue`, `tech_dark` e `green_operations`
+- fora de escopo mantido: backend, Prisma/migrations, contratos API, Figma, mobile Flutter, tenant_checklist backend e persistência real de tema
+
+## 2026-06-07 - alinhamento numeracao W03
+
+- objetivo: corrigir referencias documentais conflitantes antes de PR/merge da branch `feature/tenant-settings-menu-ui`
+- decisao oficial registrada: W03 e `Administrador — Configurações` em `/administrator/settings`
+- W02A permanece `Administrador — Checklists`
+- Dashboard/Resumo Financeiro nao usa W03; a entrada financeira foi renomeada no mapa para evitar conflito de numeracao
+- documentos/logs revisados: `docs/09-mapa-telas-frontend.md`, `docs/frontend-screens.md`, `docs/modules.md`, `docs/rbac.md`, `agent-orchestration/docs/status-geral.md` e este log
+- fora de escopo mantido: backend, Prisma/migrations, API, Figma, mobile e rota `/administrator/settings`

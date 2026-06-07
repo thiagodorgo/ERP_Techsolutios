@@ -28,6 +28,17 @@ Rotas MVP:
 
 Area do administrador do tenant/empresa cliente. Gerencia usuarios, permissoes e configuracoes apenas da propria empresa.
 
+Tela implementada:
+
+- `W03 · Administrador — Configurações`, rota `/administrator/settings`.
+- Objetivo: centralizar preferências, acessos, módulos e padrões operacionais da empresa sem duplicar telas especializadas.
+- Seções MVP: Geral, Aparência, Usuários e Acesso, Módulos e Checklists.
+- Seções planejadas: Notificações, Integrações e Segurança/Auditoria.
+- Checklists aponta para W02A em `/administrator/checklists`; W03 não duplica o builder.
+- Aparência exibe os temas planejados `enterprise_blue`, `tech_dark` e `green_operations`, sem persistência real nesta rodada.
+- RBAC frontend: usa `tenant:manage` enquanto a permissão dedicada `tenant_settings:read` não existir no catálogo backend.
+- Decisão oficial: Dashboard/Resumo Financeiro não usa W03.
+
 ## Usuarios
 
 Area para listar, convidar, editar e gerenciar usuarios e permissoes do tenant atual.
@@ -121,6 +132,8 @@ Padrao oficial:
 - sidebar recolhida e expandida usam a mesma lista filtrada;
 - Platform Admin ve Console da Plataforma e pode alternar para contexto tenant/admin/operacao autorizado;
 - Tenant Admin ve apenas administracao do proprio tenant/empresa cliente, incluindo W02A quando possuir `tenant_checklists:read`;
+- Tenant Admin ve W03 Configurações quando possuir permissao administrativa compatível, atualmente `tenant:manage`;
 - Supervisor ve operacao, equipe, tarefas, checklists operacionais, aprovacoes e relatorios permitidos no proprio tenant;
 - Operador ve apenas operacao propria, tarefas, OS/atendimentos, checklists operacionais permitidos e notificacoes;
 - W02A nao e checklist operacional: operador nao deve ver `/administrator/checklists`.
+- W03 nao e tela operacional: operador e supervisor sem permissao administrativa nao devem ver `/administrator/settings`.

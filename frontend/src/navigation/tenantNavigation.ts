@@ -58,6 +58,18 @@ export const tenantNavigation: NavigationItem[] = [
     moduleKey: "tenant-admin",
   },
   {
+    id: "tenant-settings",
+    label: "Configuracoes",
+    path: "/administrator/settings",
+    scope: "tenant",
+    mode: "tenant_admin",
+    requiredPermissions: ["tenant:manage"],
+    allowedRoles: ["Super Admin", "Administrador"],
+    icon: "settings",
+    moduleKey: "tenant-admin",
+    featureKey: "tenant_settings",
+  },
+  {
     id: "tenant-checklists",
     label: "Checklists",
     path: "/administrator/checklists",

@@ -187,6 +187,8 @@ Mapeamento por ator:
 
 W02A e administrativa: deve aparecer apenas com `tenant_checklists:read` ou permissao equivalente. Operador nao deve ver W02A; checklists de operador devem aparecer somente em rota operacional propria quando existir.
 
+W03 Configuracoes e administrativa: nesta rodada usa `tenant:manage` no frontend porque `tenant_settings:read` ainda nao existe no catalogo backend. Tenant Admin e Platform Admin em contexto tenant/admin autorizado podem ver; Operador e Supervisor sem permissao administrativa nao devem ver. Dashboard/Resumo Financeiro nao usa W03.
+
 ## Modelo persistido
 
 As roles persistidas ficam em `roles`.

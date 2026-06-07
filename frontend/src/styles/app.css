@@ -797,6 +797,99 @@
   gap: var(--space-10);
 }
 
+.tenant-settings-overview,
+.tenant-settings-grid,
+.tenant-settings-theme-grid {
+  display: grid;
+  gap: var(--space-16);
+}
+
+.tenant-settings-overview {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tenant-settings-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.tenant-settings-theme-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tenant-settings-callout,
+.tenant-settings-card,
+.tenant-settings-theme-card {
+  display: grid;
+  gap: var(--space-10);
+}
+
+.tenant-settings-callout {
+  grid-template-columns: auto 1fr;
+  align-items: start;
+}
+
+.tenant-settings-card,
+.tenant-settings-theme-card {
+  min-width: 0;
+  padding: var(--space-12);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-8);
+  background: var(--surface-panel-muted);
+}
+
+.tenant-settings-card header,
+.tenant-settings-card header > div,
+.tenant-settings-theme-card header,
+.tenant-settings-link,
+.tenant-settings-swatches {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.tenant-settings-card header,
+.tenant-settings-theme-card header {
+  justify-content: space-between;
+}
+
+.tenant-settings-card p,
+.tenant-settings-card li,
+.tenant-settings-callout p,
+.tenant-settings-theme-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.tenant-settings-card ul {
+  display: grid;
+  gap: var(--space-6);
+  margin: 0;
+  padding-left: var(--space-16);
+}
+
+.tenant-settings-link {
+  width: max-content;
+  max-width: 100%;
+  margin-top: var(--space-6);
+  padding: var(--space-8) var(--space-10);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-6);
+  color: var(--color-core-primary);
+  background: var(--surface-page);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.tenant-settings-swatches span {
+  width: 36px;
+  height: 24px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-6);
+}
+
 .tenant-checklist-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
@@ -1281,7 +1374,9 @@
   .tenant-checklist-grid,
   .tenant-checklist-grid--three,
   .tenant-checklist-builder-shell,
-  .checklist-builder-layout {
+  .checklist-builder-layout,
+  .tenant-settings-grid,
+  .tenant-settings-theme-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1354,13 +1449,16 @@
   .kpi-grid,
   .erp-logistics-strip,
   .metric-grid,
-    .platform-usage-grid,
-    .platform-module-grid,
-    .tenant-checklist-grid,
-    .tenant-checklist-grid--three,
-    .tenant-checklist-selection,
-    .tenant-checklist-builder-shell,
-    .checklist-builder-layout {
+  .platform-usage-grid,
+  .platform-module-grid,
+  .tenant-checklist-grid,
+  .tenant-checklist-grid--three,
+  .tenant-checklist-selection,
+  .tenant-checklist-builder-shell,
+  .checklist-builder-layout,
+  .tenant-settings-overview,
+  .tenant-settings-grid,
+  .tenant-settings-theme-grid {
     grid-template-columns: 1fr;
   }
 

@@ -16,6 +16,7 @@ import {
   PanelLeftOpen,
   Radio,
   Route,
+  Settings,
   ShieldCheck,
   Truck,
   UserRoundCog,
@@ -69,6 +70,7 @@ const iconByModule = {
   logistics: Truck,
   users: UserRoundCog,
   "tenant-admin": ShieldCheck,
+  settings: Settings,
   tenant_checklist: ClipboardList,
 };
 
