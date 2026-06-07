@@ -712,3 +712,23 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 
 - implementar backend apenas em rodada propria
 - conectar W02A e mobile aos schemas reais quando os endpoints estiverem prontos
+
+## Atualizacao 2026-06-07 - tenant_checklist backend
+
+### Implementado
+
+- branch usada: `feature/tenant-checklists-backend`
+- criada migration `20260607000000_add_tenant_checklists`
+- `prisma/schema.prisma` atualizado com templates, componentes, execucoes, respostas, anexos, marcadores e ciencia
+- modulo `src/modules/checklists` criado com routes, controller, service, repository, adapter Prisma, validators, DTOs, permissoes, catalogo de componentes e auditoria
+- endpoints `/api/v1/tenant/checklists`, `/api/v1/tenant/checklist-components`, `/api/v1/tenant/checklists/templates` e `/api/v1/mobile/checklists/*` registrados no backend
+- queries e repositories filtram por `tenantId`; `tenant_id` do body nao e aceito como fonte de contexto
+- RBAC de `tenant_checklists:*` e `checklist_runs:*` adicionado ao catalogo de permissoes
+- auditoria tenant-scoped considerada nas operacoes criticas do modulo
+- testes de rota adicionados em `tests/checklist-routes.test.ts`
+
+### Limitacoes
+
+- upload real de arquivos ainda nao foi implementado; anexos usam `fileUrl` logico
+- runtime padrao continua em memoria quando `CORE_SAAS_PERSISTENCE=memory`; adapter Prisma e carregado dinamicamente quando o runtime esta em modo Prisma
+- RLS e Redis continuam fora desta rodada

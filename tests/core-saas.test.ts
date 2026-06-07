@@ -25,6 +25,15 @@ const expectedPermissionCatalog = [
   "inventory.read",
   "finance.manage",
   "finance.read",
+  "tenant_checklists:read",
+  "tenant_checklists:create",
+  "tenant_checklists:update",
+  "tenant_checklists:publish",
+  "checklist_runs:read",
+  "checklist_runs:create",
+  "checklist_runs:update",
+  "checklist_runs:complete",
+  "checklist_runs:acknowledge",
 ] as const;
 
 test("cria usuario vinculado a tenant ativo com papel validado", () => {

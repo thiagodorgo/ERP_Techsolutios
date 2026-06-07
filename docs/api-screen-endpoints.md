@@ -1,6 +1,6 @@
 # API x Telas
 
-Este documento mapeia telas Web/Mobile para endpoints planejados. O prefixo final deve seguir o versionamento do backend vigente quando a implementacao for criada.
+Este documento mapeia telas Web/Mobile para endpoints do backend. O prefixo implementado nesta rodada e `/api/v1`.
 
 ## tenant_checklist
 
@@ -17,7 +17,7 @@ Permissoes:
 - `tenant_checklists:update`
 - `tenant_checklists:publish`
 
-Endpoints esperados:
+Endpoints implementados:
 
 ```http
 GET    /tenant/checklists
@@ -50,8 +50,9 @@ Permissoes:
 - `checklist_runs:create`
 - `checklist_runs:update`
 - `checklist_runs:complete`
+- `checklist_runs:acknowledge`
 
-Endpoints esperados:
+Endpoints implementados:
 
 ```http
 GET    /mobile/checklists/available

@@ -254,7 +254,7 @@ Proximo passo recomendado: testar servidor real com `CORE_SAAS_PERSISTENCE=prism
 
 ## Checklists configuraveis por tenant
 
-Status atual: modelo conceitual documentado. Nenhuma migration Prisma foi criada nesta fase.
+Status atual: backend real iniciado na branch `feature/tenant-checklists-backend`. A migration `20260607000000_add_tenant_checklists` cria as tabelas Prisma/PostgreSQL de templates, componentes, execucoes, respostas, anexos, marcadores e ciencia.
 
 O modulo `checklists` deve seguir o modelo shared-schema multi-tenant do projeto. Todas as tabelas principais devem carregar `tenant_id`, e nenhuma consulta operacional deve buscar dados apenas por `id`.
 
@@ -282,18 +282,18 @@ Campos conceituais:
 
 Status planejados: `draft`, `published`, `archived`, `inactive`.
 
-#### `checklist_template_fields`
+#### `checklist_template_components`
 
-Representa os campos configuraveis de um template.
+Representa os componentes configuraveis de um template.
 
 Campos conceituais:
 
 - `id`
 - `tenant_id`
 - `template_id`
-- `field_key`
-- `label`
+- `component_key`
 - `type`
+- `label`
 - `required`
 - `order_index`
 - `config`
@@ -324,7 +324,7 @@ Campos conceituais:
 - `created_at`
 - `updated_at`
 
-Status planejados: `in_progress`, `completed`, `cancelled`.
+Status planejados: `in_progress`, `completed`, `completed_with_divergence`, `pending_acknowledgement`, `cancelled`.
 
 #### `checklist_run_answers`
 
@@ -335,13 +335,64 @@ Campos conceituais:
 - `id`
 - `tenant_id`
 - `run_id`
-- `field_id`
+- `component_id`
 - `value`
 - `metadata`
 - `created_at`
 - `updated_at`
 
-`value` e `metadata` devem suportar respostas simples e evidencias futuras, como foto, arquivo, assinatura, QR Code, codigo de barras e localizacao, sem versionar arquivos binarios ou segredos diretamente no repositorio.
+`value` e `metadata` suportam respostas simples e evidencias futuras sem versionar arquivos binarios ou segredos diretamente no repositorio.
+
+#### `checklist_attachments`
+
+Representa fotos/arquivos/evidencias com `file_url` logico, sem upload real nesta rodada.
+
+Campos principais:
+
+- `id`
+- `tenant_id`
+- `run_id`
+- `component_id`
+- `file_url`
+- `file_name`
+- `mime_type`
+- `size_bytes`
+- `metadata`
+- `created_by`
+- `created_at`
+
+#### `checklist_markers`
+
+Representa marcacoes de avaria ou pontos sobre imagem dinamica.
+
+Campos principais:
+
+- `id`
+- `tenant_id`
+- `run_id`
+- `component_id`
+- `x`
+- `y`
+- `marker_type`
+- `description`
+- `metadata`
+- `created_by`
+- `created_at`
+
+#### `checklist_acknowledgements`
+
+Representa ciencia de responsabilidade, especialmente quando M11 registra divergencia.
+
+Campos principais:
+
+- `id`
+- `tenant_id`
+- `run_id`
+- `acknowledged_by`
+- `message`
+- `observation`
+- `acknowledged_at`
+- `metadata`
 
 ### Indices recomendados
 
@@ -351,11 +402,11 @@ Campos conceituais:
 - `tenant_id, status`
 - `tenant_id, related_entity_type, related_entity_id`
 - `run_id`
-- `field_id`
+- `component_id`
 
 ### Integridade e versionamento
 
-- `checklist_template_fields.tenant_id` deve coincidir com o `tenant_id` de `checklist_templates`.
+- `checklist_template_components.tenant_id` deve coincidir com o `tenant_id` de `checklist_templates`.
 - `checklist_runs.tenant_id` deve coincidir com o `tenant_id` do template publicado.
 - `checklist_run_answers.tenant_id` deve coincidir com o `tenant_id` da execucao.
 - `template_version` em `checklist_runs` deve preservar a versao publicada usada no preenchimento.

@@ -45,6 +45,7 @@ Permissoes de tenant:
 - `checklist_runs:create`
 - `checklist_runs:update`
 - `checklist_runs:complete`
+- `checklist_runs:acknowledge`
 - `checklists.template.create`
 - `checklists.template.read`
 - `checklists.template.update`
@@ -75,6 +76,7 @@ Permissoes obrigatorias:
 - `checklist_runs:create`: iniciar execucoes de checklist publicado.
 - `checklist_runs:update`: registrar respostas, anexos, marcadores, divergencias e ciencia enquanto a execucao estiver aberta.
 - `checklist_runs:complete`: concluir execucao apos validacao de obrigatorios.
+- `checklist_runs:acknowledge`: registrar ciencia de responsabilidade quando a execucao estiver pendente de ciencia.
 
 Aliases documentais anteriores, a serem reconciliados quando o backend final for implementado:
 
