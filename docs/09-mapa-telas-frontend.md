@@ -156,7 +156,9 @@ Princípios adotados:
 - **Rota:** `/administrator/checklists`.
 - **Dados:** checklists do tenant, tipo, status, versao, componentes, obrigatoriedade de fotos, observacoes, marcadores e ciencia.
 - **Tipos:** `towing_collection`, `towing_delivery`, `technical_evidence`, `custom`.
+- **Componentes:** `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement`, `before_after`.
 - **Ações:** listar, criar, editar, ativar/inativar, selecionar componentes, configurar obrigatoriedades e publicar checklist.
+- **Estados:** checklist rascunho, checklist publicado, checklist inativo.
 - **Regras:** componentes sao fornecidos pela plataforma; tenant configura apenas schemas e regras; publicacao versiona o schema consumido por Web/Mobile.
 - **Prioridade:** Scale.
 
@@ -384,22 +386,25 @@ Princípios adotados:
 
 ### M10 — Checklist de coleta guincho/reboque
 - objetivo: executar checklist `towing_collection` na coleta.
-- dados: schema publicado, tipo de veiculo, marcadores de avaria, fotos, observacoes e entidade relacionada.
+- dados: schema publicado, tipo de veiculo, imagem dinamica por tipo de veiculo, marcadores de avaria, fotos obrigatorias conforme template, observacoes e entidade relacionada.
 - ações: selecionar tipo de veiculo, marcar avarias, anexar fotos, salvar execucao.
+- estados: execucao em andamento, execucao concluida.
 - regras: consumir schema da API; evitar hardcode de campos; execucao deve preservar versao do checklist.
 - prioridade: MVP.
 
 ### M11 — Checklist de entrega guincho/reboque
 - objetivo: executar checklist `towing_delivery` na entrega.
-- dados: schema publicado, nova vistoria, comparacao com M10, divergencias, observacao obrigatoria e ciencia de responsabilidade.
+- dados: schema publicado, nova vistoria, comparacao com M10, divergencias, foto obrigatoria de divergencia, observacao obrigatoria e ciencia de responsabilidade.
 - ações: registrar nova vistoria, comparar com coleta, registrar divergencia, coletar ciencia, concluir entrega.
-- regras: se houver divergencia em relacao a M10, exigir observacao obrigatoria e ciencia de responsabilidade; consumir schema da API; evitar hardcode de campos.
+- estados: execucao em andamento, execucao concluida, execucao com divergencia, execucao pendente de ciencia.
+- regras: se houver divergencia em relacao a M10, exigir foto, observacao obrigatoria e ciencia de responsabilidade; consumir schema da API; evitar hardcode de campos.
 - prioridade: MVP.
 
 ### M12 — Evidencia tecnica antes/depois
 - objetivo: executar checklist `technical_evidence` para reparo, construcao, manutencao ou servicos internos/externos.
-- dados: schema publicado, fotos antes/depois, anexos, observacoes tecnicas e entidade relacionada.
+- dados: schema publicado, foto antes, foto depois, anexos, observacoes tecnicas e entidade relacionada.
 - ações: capturar evidencia antes, registrar intervencao, capturar evidencia depois, concluir execucao.
+- estados: execucao em andamento, execucao concluida.
 - regras: M12 nao pertence ao escopo de guincho/reboque e nao deve reutilizar semantica de coleta/entrega; consumir schema da API; evitar hardcode de campos.
 - prioridade: Scale.
 
@@ -638,21 +643,21 @@ Princípios adotados:
 - **Integrações:** estoque central + OS.
 - **Offline:** registro local com validação final na sincronização.
 
-#### M10/M11 — Sincronização e Pendências/Exceções
+#### M10/M11/M12 — Checklists schema-driven
 - **Papel principal:** Executor/Supervisor.
-- **Permissões:** leitura da fila + resolução de conflito permitido.
-- **Dados exibidos:** itens pendentes, falhas, conflitos, bloqueios de envio.
-- **Ações primárias:** sincronizar agora, reenviar item, abrir detalhe de conflito.
-- **Estados:** default/loading/empty/error/blocked/exception/read-only/audit-visible.
-- **Alertas/bloqueios:** conflito de versão, erro de permissão, dependência faltante.
-- **Integrações:** motor de sync, API OS/estoque/evidência.
-- **Offline:** tela funcional para gestão de fila local.
+- **Permissões:** `checklist_runs:read`, `checklist_runs:create`, `checklist_runs:update`, `checklist_runs:complete`.
+- **Dados exibidos:** schema publicado, componentes do checklist, anexos, marcadores, comparacao, divergencias e ciencia quando aplicavel.
+- **Ações primárias:** renderizar schema, preencher campos, anexar foto, marcar avaria, comparar coleta/entrega, registrar ciencia, concluir.
+- **Estados:** execucao em andamento, execucao concluida, execucao com divergencia, execucao pendente de ciencia.
+- **Alertas/bloqueios:** foto obrigatoria ausente, observacao de divergencia ausente, ciencia pendente, schema inativo.
+- **Integrações:** API `tenant_checklist`, storage/evidencias, auditoria e sync mobile.
+- **Offline:** captura local com sincronizacao posterior; campos devem vir do schema quando possivel.
 
 ## Fluxos Críticos no Protótipo Navegável (05_FLOWS_CRITICAL_MVP)
 
 1. **F01 Auth e contexto:** W01 → seleção tenant/filial → W02.
 2. **F02 Ciclo OS Web:** W18 criar → W17 listar/filtrar → W19 detalhe → despacho/acompanhar.
-3. **F03 Execução Mobile:** M02 → M03 → M04 → M05 → M06 → M10.
+3. **F03 Execução Mobile:** M02 → M03 → M04 → M05/M10/M11/M12 → M06.
 4. **F04 Estoque por OS:** W22 e/ou M08 vinculando consumo à OS.
 5. **F05 Governança de exceção:** bloqueio/aprovação na W19/W26 com registro em W09.
 6. **F06 Trilha de auditoria:** ação crítica em usuário/permissão/financeiro com verificação em W09.

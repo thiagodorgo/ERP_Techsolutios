@@ -497,3 +497,15 @@
 - decisao registrada: M10 e `towing_collection`, M11 e `towing_delivery`, M12 e `technical_evidence`
 - decisao registrada: M10/M11/M12 devem consumir schema da API e evitar hardcode de campos quando possivel
 - backend real de `tenant_checklist` nao implementado nesta rodada
+
+## 2026-06-07 - FIGMA-CHECKLIST-HANDOFF.1
+
+- objetivo: sincronizar documentacao do repositorio com as decisoes finais Figma sobre `tenant_checklist`, W02A, M10, M11 e M12
+- arquivos alvo atualizados: `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/platform-console.md`, `docs/modules.md`, `docs/api-screen-endpoints.md`, `docs/rbac.md`, `agent-orchestration/docs/status-geral.md` e este log
+- W02A registrada como tela oficial de configuracao de `tenant_checklist`
+- componentes oficiais registrados: `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement` e `before_after`
+- M10 registrado como coleta/reboque com selecao de tipo de veiculo, imagem dinamica por tipo, marcacao de avarias, fotos obrigatorias conforme template e schema vindo da API
+- M11 registrado como entrega/reboque com comparacao com coleta; divergencia exige foto, observacao obrigatoria e ciencia de responsabilidade
+- M12 registrado como evidencia tecnica antes/depois fora do escopo de guincho/reboque
+- estados registrados: checklist rascunho, checklist publicado, checklist inativo, execucao em andamento, execucao concluida, execucao com divergencia e execucao pendente de ciencia
+- backend, migrations e arquitetura fora do escopo nao foram alterados

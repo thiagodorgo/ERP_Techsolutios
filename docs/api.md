@@ -178,6 +178,13 @@ Tipos iniciais planejados:
 - `qr_code`
 - `location`
 - `rating`
+- `vehicle_selector`
+- `damage_map`
+- `photo_upload`
+- `observation`
+- `comparison`
+- `acknowledgement`
+- `before_after`
 
 ### Templates
 
@@ -199,6 +206,8 @@ Permissoes:
 - `tenant_checklists:publish`
 
 Status planejados de template: `draft`, `published`, `archived`, `inactive`.
+
+Estados oficiais de checklist no handoff Figma: checklist rascunho, checklist publicado e checklist inativo.
 
 ### Mobile
 
@@ -224,12 +233,14 @@ Permissoes:
 
 Status planejados de execucao: `in_progress`, `completed`, `cancelled`.
 
+Estados oficiais de execucao no handoff Figma: execucao em andamento, execucao concluida, execucao com divergencia e execucao pendente de ciencia.
+
 Execucoes devem poder ser associadas a entidades do ERP por `related_entity_type` e `related_entity_id`, como OS, recebimento, entrega, manutencao, auditoria, vistoria, estoque, compras ou vendas.
 
 Regras especificas:
 
-- M10 usa `towing_collection` para coleta de guincho/reboque, selecao de tipo de veiculo e marcacao de avarias.
+- M10 usa `towing_collection` para coleta de guincho/reboque, selecao de tipo de veiculo, imagem dinamica por tipo de veiculo, marcacao de avarias e fotos obrigatorias conforme template.
 - M11 usa `towing_delivery` para entrega, nova vistoria e comparacao com M10.
-- Se M11 detectar divergencia, exigir observacao obrigatoria e ciencia de responsabilidade.
-- M12 usa `technical_evidence` para evidencia antes/depois e nao pertence ao escopo de guincho/reboque.
+- Se M11 detectar divergencia, exigir foto, observacao obrigatoria e ciencia de responsabilidade.
+- M12 usa `technical_evidence` para foto antes, foto depois e observacoes em reparo, manutencao, construcao ou servico tecnico; nao pertence ao escopo de guincho/reboque.
 - M10, M11 e M12 devem consumir schema de checklist vindo da API.

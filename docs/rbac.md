@@ -101,9 +101,10 @@ Regras especificas:
 
 - M10 usa checklist `towing_collection`: coleta, selecao de tipo de veiculo e marcacao de avarias.
 - M11 usa checklist `towing_delivery`: entrega, nova vistoria e comparacao com coleta.
-- Se M11 detectar divergencia em relacao a M10, o backend deve exigir observacao obrigatoria e ciencia de responsabilidade.
-- M12 usa checklist `technical_evidence`: evidencia tecnica antes/depois para reparo, construcao, manutencao ou servicos internos/externos; nao pertence ao fluxo de guincho/reboque.
+- Se M11 detectar divergencia em relacao a M10, o backend deve exigir foto, observacao obrigatoria e ciencia de responsabilidade.
+- M12 usa checklist `technical_evidence`: evidencia tecnica antes/depois para reparo, manutencao, construcao ou servico tecnico; nao pertence ao fluxo de guincho/reboque.
 - M10, M11 e M12 devem consumir schema de checklist da API e nao depender de campos hardcoded no cliente.
+- Estados auditaveis: checklist rascunho, checklist publicado, checklist inativo, execucao em andamento, execucao concluida, execucao com divergencia e execucao pendente de ciencia.
 
 ## Sidebar dinamica
 

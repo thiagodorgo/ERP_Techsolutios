@@ -35,8 +35,10 @@ Regras:
 - `tenant_id` deve vir do contexto autenticado.
 - O body nao deve ser fonte confiavel de `tenant_id`.
 - Checklist deve ter tipo `towing_collection`, `towing_delivery`, `technical_evidence` ou `custom`.
+- Componentes oficiais do handoff Figma: `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement` e `before_after`.
 - O tenant configura obrigatoriedade de fotos, observacoes, marcadores e ciencia.
 - Publicacao deve versionar o schema consumido por Web/Mobile.
+- Estados de checklist: rascunho, publicado e inativo.
 
 ## Mobile Checklists
 
@@ -68,7 +70,7 @@ POST   /mobile/checklist-runs/:runId/acknowledgement
 
 Tipo: `towing_collection`.
 
-Uso: guincho/reboque, coleta, selecao de tipo de veiculo e marcacao de avarias.
+Uso: guincho/reboque, coleta, selecao de tipo de veiculo, imagem dinamica por tipo de veiculo, marcacao de avarias e fotos obrigatorias conforme template.
 
 ### M11 · Checklist de entrega
 
@@ -78,13 +80,14 @@ Uso: guincho/reboque, entrega, nova vistoria e comparacao com a coleta.
 
 Regra de divergencia:
 
-- se a comparacao com M10 detectar divergencia, exigir observacao obrigatoria;
+- se a comparacao com M10 detectar divergencia, exigir foto e observacao obrigatoria;
 - exigir ciencia de responsabilidade antes da conclusao quando configurado.
+- estados possiveis: execucao em andamento, execucao concluida, execucao com divergencia e execucao pendente de ciencia.
 
 ### M12 · Evidencia tecnica antes/depois
 
 Tipo: `technical_evidence`.
 
-Uso: reparo, construcao, manutencao ou servicos internos/externos.
+Uso: reparo, manutencao, construcao ou servico tecnico, com foto antes, foto depois e observacoes conforme template.
 
 M12 nao pertence ao escopo de guincho/reboque e nao deve reutilizar a semantica de coleta/entrega.

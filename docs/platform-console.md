@@ -12,6 +12,7 @@ Permitir que o dono da plataforma crie e acompanhe tenants/clientes, defina plan
 - Administrador: administra configuracoes, usuarios e permissoes da propria empresa cliente.
 - Usuarios: lista, convida, edita e gerencia usuarios e permissoes dentro do tenant atual.
 - tenant_checklist: configuracao feita pelo Administrador dentro do tenant; o Console da Plataforma apenas habilita/bloqueia o modulo para o tenant e mantem o catalogo global de componentes governado pela plataforma.
+- W02A pertence ao escopo Administrador/tenant, nao ao Console da Plataforma.
 
 ## Telas MVP
 
@@ -27,6 +28,7 @@ Permitir que o dono da plataforma crie e acompanhe tenants/clientes, defina plan
 - Reativar tenant.
 - Habilitar e desabilitar modulos por tenant.
 - Habilitar e desabilitar a feature `tenant_checklist` por tenant/plano.
+- Expor `tenant_checklist` como modulo habilitavel; a configuracao de checklists, estados e publicacao ocorre dentro do tenant.
 - Definir plano.
 - Criar administrador inicial do tenant.
 - Ver resumo de uso.
@@ -74,6 +76,7 @@ As rotas de API usam o prefixo atual do backend (`/api/v1`) e reservam o boundar
 
 - Persistencia real de `tenant_modules`.
 - Governanca do catalogo global de componentes de checklist exposto aos tenants.
+- Componentes do handoff Figma a considerar no catalogo global: `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement` e `before_after`.
 - Auditoria global completa.
 - Planos comerciais configuraveis.
 - Modo suporte auditado para acesso operacional a tenant.

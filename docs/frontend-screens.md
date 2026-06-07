@@ -62,19 +62,30 @@ Regras de UX:
 - o tenant escolhe componentes permitidos pela plataforma, sem criar novos tipos;
 - o tenant escolhe o tipo `towing_collection`, `towing_delivery`, `technical_evidence` ou `custom`;
 - W02A deve listar checklists do tenant, criar checklist, editar checklist, ativar/inativar, selecionar componentes disponiveis, configurar obrigatoriedade de fotos, observacoes, marcadores e ciencia, e publicar checklist;
+- componentes oficiais do handoff Figma: `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement` e `before_after`;
 - campos obrigatorios devem ficar visiveis antes de publicar e antes de concluir execucao;
 - builder deve preservar ordem dos campos e status da versao;
 - execucao mobile futura deve priorizar preenchimento rapido, captura de evidencia e sincronizacao offline;
 - telas devem respeitar modulos habilitados e permissoes `tenant_checklists:*` e `checklist_runs:*`.
 
+Estados oficiais:
+
+- checklist rascunho;
+- checklist publicado;
+- checklist inativo;
+- execucao em andamento;
+- execucao concluida;
+- execucao com divergencia;
+- execucao pendente de ciencia.
+
 ## Checklists Mobile
 
 M10, M11 e M12 nao devem ser tratados como telas hardcoded. Eles devem renderizar componentes a partir do schema retornado pela API.
 
-- M10: checklist de guincho/reboque para coleta (`towing_collection`), selecao de tipo de veiculo e marcacao de avarias.
+- M10: checklist de guincho/reboque para coleta (`towing_collection`), selecao de tipo de veiculo, imagem dinamica por tipo de veiculo, marcacao de avarias e fotos obrigatorias conforme template.
 - M11: checklist de guincho/reboque para entrega (`towing_delivery`), nova vistoria e comparacao com coleta.
-- Divergencia em M11: exigir observacao obrigatoria e ciencia de responsabilidade.
-- M12: evidencia tecnica antes/depois (`technical_evidence`) para reparo, construcao, manutencao ou servicos internos/externos; nao pertence ao escopo de guincho/reboque.
+- Divergencia em M11: exigir foto, observacao obrigatoria e ciencia de responsabilidade.
+- M12: evidencia tecnica antes/depois (`technical_evidence`) para reparo, manutencao, construcao ou servico tecnico; exige foto antes, foto depois e observacoes conforme template; nao pertence ao escopo de guincho/reboque.
 
 Tipos frontend previstos:
 

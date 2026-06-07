@@ -689,3 +689,26 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - implementar backend tenant-scoped para `/tenant/checklists` e `/mobile/checklist-runs`
 - criar migration versionada para modelos, componentes, execucoes, marcadores, anexos e ciencia
 - substituir mocks da W02A por service/API real quando os contratos existirem
+
+## Atualizacao 2026-06-07 - FIGMA-CHECKLIST-HANDOFF.1
+
+### Implementado
+
+- documentacao sincronizada com a rodada `FIGMA-CHECKLIST-HANDOFF.1`
+- W02A reafirmada como tela oficial de configuracao de `tenant_checklist`
+- componentes oficiais registrados: `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement` e `before_after`
+- M10 documentado como coleta/reboque com selecao de tipo de veiculo, imagem dinamica por tipo, marcacao de avarias, fotos obrigatorias conforme template e schema vindo da API
+- M11 documentado como entrega/reboque com comparacao com coleta; divergencia exige foto, observacao obrigatoria e ciencia de responsabilidade
+- M12 documentado fora do escopo de guincho/reboque como evidencia tecnica antes/depois para reparo, manutencao, construcao ou servico tecnico
+- estados oficiais registrados: checklist rascunho, checklist publicado, checklist inativo, execucao em andamento, execucao concluida, execucao com divergencia e execucao pendente de ciencia
+
+### Decisoes
+
+- M10/M11/M12 continuam schema-driven e nao devem ser implementados como telas hardcoded
+- `tenant_checklist` continua feature configuravel por tenant
+- backend, migrations e arquitetura fora do escopo nao foram alterados nesta rodada
+
+### Proximos passos
+
+- implementar backend apenas em rodada propria
+- conectar W02A e mobile aos schemas reais quando os endpoints estiverem prontos
