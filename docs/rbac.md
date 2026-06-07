@@ -18,6 +18,27 @@ Estado atual:
 - `createPersistentRbacContextMiddleware()` substitui roles/permissoes por RBAC persistido quando existe actor JWT e o runtime Prisma esta ativo.
 - o fallback legacy continua disponivel para transicao.
 - nas rotas `/api/v1/platform/*`, o fallback legacy por headers e aceito apenas em desenvolvimento/teste/local e rejeitado em `NODE_ENV=production`.
+- frontend pode filtrar sidebar e rotas visuais, mas a autorizacao final deve ocorrer no backend em cada endpoint sensivel.
+
+## Autorizacao backend
+
+Esconder link no frontend nao e controle de seguranca. Rotas sensiveis devem aplicar middleware backend antes de chamar controllers/services.
+
+Helpers padronizados:
+
+- `requirePermission(permission)`: exige tenant context e uma permissao especifica.
+- `requireAnyPermission([...])`: exige tenant context e ao menos uma permissao do conjunto.
+- `requirePlatformPermission(permission)`: exige ator de plataforma ou permissao platform compativel.
+- `requirePlatformAdmin()`: helper semantico para endpoints globais de plataforma.
+
+Regras por ator:
+
+- Platform Admin pode acessar APIs `/api/v1/platform/*` e recursos globais conforme permissao `platform:*`.
+- Tenant Admin fica restrito ao `tenant_id` do contexto autenticado; `tenantId` ou `tenant_id` no body nao e fonte de verdade.
+- Supervisor usa permissoes operacionais do proprio tenant e nao acessa RBAC avancado nem create/update/publish administrativo sem permissao explicita.
+- Operador acessa rotas operacionais permitidas, como execucao de checklist, mas nao acessa administracao de templates/W02A.
+
+Para rotas tenant-scoped, consultas e mutacoes devem sempre combinar o id do recurso com `tenant_id` do contexto. Acesso cross-tenant deve retornar 403 ou 404 seguro conforme o padrao da rota. RLS permanece como proxima fase; nesta etapa o isolamento fica aplicado em middleware, service e repository.
 
 ## Escopos de permissao
 
@@ -77,6 +98,27 @@ Permissoes obrigatorias:
 - `checklist_runs:update`: registrar respostas, anexos, marcadores, divergencias e ciencia enquanto a execucao estiver aberta.
 - `checklist_runs:complete`: concluir execucao apos validacao de obrigatorios.
 - `checklist_runs:acknowledge`: registrar ciencia de responsabilidade quando a execucao estiver pendente de ciencia.
+
+Matriz backend aplicada:
+
+- `GET /api/v1/tenant/checklist-components`: `tenant_checklists:read`
+- `GET /api/v1/tenant/checklists`: `tenant_checklists:read`
+- `POST /api/v1/tenant/checklists`: `tenant_checklists:create`
+- `GET /api/v1/tenant/checklists/templates`: `tenant_checklists:read`
+- `GET /api/v1/tenant/checklists/:checklistId`: `tenant_checklists:read`
+- `PATCH /api/v1/tenant/checklists/:checklistId`: `tenant_checklists:update`
+- `DELETE /api/v1/tenant/checklists/:checklistId`: `tenant_checklists:update`
+- `POST /api/v1/tenant/checklists/:checklistId/publish`: `tenant_checklists:publish`
+- `GET /api/v1/mobile/checklists/available`: `checklist_runs:read` ou `checklist_runs:create`
+- `GET /api/v1/mobile/checklists/:checklistId/render`: `checklist_runs:read` ou `checklist_runs:create`
+- `POST /api/v1/mobile/checklist-runs`: `checklist_runs:create`
+- `PATCH /api/v1/mobile/checklist-runs/:runId`: `checklist_runs:update`
+- `POST /api/v1/mobile/checklist-runs/:runId/attachments`: `checklist_runs:update`
+- `POST /api/v1/mobile/checklist-runs/:runId/markers`: `checklist_runs:update`
+- `POST /api/v1/mobile/checklist-runs/:runId/complete`: `checklist_runs:complete`
+- `GET /api/v1/mobile/checklist-runs/:runId/comparison`: `checklist_runs:read`
+- `POST /api/v1/mobile/checklist-runs/:runId/divergence`: `checklist_runs:update`
+- `POST /api/v1/mobile/checklist-runs/:runId/acknowledgement`: `checklist_runs:acknowledge`
 
 Aliases documentais anteriores, a serem reconciliados quando o backend final for implementado:
 

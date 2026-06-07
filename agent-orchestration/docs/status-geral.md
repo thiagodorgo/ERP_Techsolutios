@@ -769,3 +769,24 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - Platform Admin ve Console da Plataforma; Tenant Admin, Supervisor e Operador nao veem itens fora do seu escopo/permissao
 - Operador nao ve W02A administrativa; checklists de operador pertencem a rotas operacionais quando existirem
 - backend, Prisma, migrations, API contracts, Figma e mobile nao foram alterados nesta rodada
+
+## Atualizacao 2026-06-07 - Hardening backend RBAC
+
+### Implementado
+
+- branch usada: `feature/backend-rbac-hardening`
+- mapeadas rotas atuais de Core SaaS, Platform Console e `tenant_checklist`
+- `requirePermission(permission)` preservado como helper padrao
+- adicionado `requireAnyPermission([...])` para rotas que aceitam mais de uma permissao operacional
+- adicionado helper semantico `requirePlatformAdmin()`
+- rotas mobile de render/listagem de checklists aceitam `checklist_runs:read` ou `checklist_runs:create`
+- criacao de usuario Core SaaS passou a usar sempre `tenantId` do contexto autenticado, ignorando `tenantId` recebido no body
+- testes de Core SaaS ampliados para tenant isolation no create user, Supervisor/manager bloqueado em RBAC avancado e operador bloqueado em administracao
+- testes de checklist ampliados para tenant ausente, permissao ausente, operador sem acesso administrativo, supervisor sem create/publish, operador executando run, cross-tenant e acknowledgement sem permissao
+
+### Decisoes
+
+- frontend filtra sidebar e rotas visuais, mas backend continua sendo a autorizacao final
+- `tenant_id` do body nao e fonte de verdade para rotas tenant-scoped
+- Platform Admin permanece no boundary `/api/v1/platform/*`; tenant comum continua bloqueado
+- RLS, upload/storage, Figma, frontend e mobile ficaram fora desta rodada

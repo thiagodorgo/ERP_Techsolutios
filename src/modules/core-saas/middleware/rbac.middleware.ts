@@ -3,6 +3,10 @@ import type { NextFunction, Request, Response } from "express";
 import type { Permission } from "../permissions/catalog.js";
 
 export function requirePermission(permission: Permission) {
+  return requireAnyPermission([permission]);
+}
+
+export function requireAnyPermission(permissions: readonly Permission[]) {
   return (request: Request, response: Response, next: NextFunction): void => {
     const tenantContext = request.tenantContext;
 
@@ -20,11 +24,13 @@ export function requirePermission(permission: Permission) {
       return;
     }
 
-    if (!tenantContext.permissions.includes(permission)) {
+    const hasPermission = permissions.some((permission) => tenantContext.permissions.includes(permission));
+
+    if (!hasPermission) {
       sendForbidden(
         response,
         "permission_required",
-        `Permission ${permission} is required.`,
+        `One of these permissions is required: ${permissions.join(", ")}.`,
       );
       return;
     }

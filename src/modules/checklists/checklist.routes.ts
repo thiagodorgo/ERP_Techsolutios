@@ -4,7 +4,7 @@ import { createPersistentRbacContextMiddleware } from "../core-saas/middleware/p
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
 import { ChecklistController, type ChecklistServiceResolver } from "./checklist.controller.js";
-import { CHECKLIST_PERMISSIONS, requireChecklistPermission } from "./checklist.permissions.js";
+import { CHECKLIST_PERMISSIONS, requireAnyChecklistPermission, requireChecklistPermission } from "./checklist.permissions.js";
 import { createDefaultChecklistService } from "./checklist.service.js";
 
 type ControllerResult = {
@@ -88,7 +88,7 @@ export function createChecklistRouter(
 
   router.get(
     "/mobile/checklists/available",
-    requireChecklistPermission(CHECKLIST_PERMISSIONS.readRuns),
+    requireAnyChecklistPermission([CHECKLIST_PERMISSIONS.readRuns, CHECKLIST_PERMISSIONS.createRuns]),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.listAvailableMobileChecklists(request));
     }),
@@ -96,7 +96,7 @@ export function createChecklistRouter(
 
   router.get(
     "/mobile/checklists/:checklistId/render",
-    requireChecklistPermission(CHECKLIST_PERMISSIONS.readRuns),
+    requireAnyChecklistPermission([CHECKLIST_PERMISSIONS.readRuns, CHECKLIST_PERMISSIONS.createRuns]),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.renderMobileChecklist(request));
     }),

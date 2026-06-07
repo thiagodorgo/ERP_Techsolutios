@@ -182,10 +182,13 @@ POST   /tenant/checklists/:checklistId/publish
 
 Permissoes:
 
-- `tenant_checklists:read`
-- `tenant_checklists:create`
-- `tenant_checklists:update`
-- `tenant_checklists:publish`
+- `GET /tenant/checklists`: `tenant_checklists:read`
+- `POST /tenant/checklists`: `tenant_checklists:create`
+- `GET /tenant/checklists/:checklistId`: `tenant_checklists:read`
+- `PATCH /tenant/checklists/:checklistId`: `tenant_checklists:update`
+- `DELETE /tenant/checklists/:checklistId`: `tenant_checklists:update`
+- `GET /tenant/checklists/templates`: `tenant_checklists:read`
+- `POST /tenant/checklists/:checklistId/publish`: `tenant_checklists:publish`
 
 Status de template: `draft`, `published`, `archived`, `inactive`.
 
@@ -208,11 +211,16 @@ POST   /mobile/checklist-runs/:runId/acknowledgement
 
 Permissoes:
 
-- `checklist_runs:read`
-- `checklist_runs:create`
-- `checklist_runs:update`
-- `checklist_runs:complete`
-- `checklist_runs:acknowledge`
+- `GET /mobile/checklists/available`: `checklist_runs:read` ou `checklist_runs:create`
+- `GET /mobile/checklists/:checklistId/render`: `checklist_runs:read` ou `checklist_runs:create`
+- `POST /mobile/checklist-runs`: `checklist_runs:create`
+- `PATCH /mobile/checklist-runs/:runId`: `checklist_runs:update`
+- `POST /mobile/checklist-runs/:runId/attachments`: `checklist_runs:update`
+- `POST /mobile/checklist-runs/:runId/markers`: `checklist_runs:update`
+- `POST /mobile/checklist-runs/:runId/complete`: `checklist_runs:complete`
+- `GET /mobile/checklist-runs/:runId/comparison`: `checklist_runs:read`
+- `POST /mobile/checklist-runs/:runId/divergence`: `checklist_runs:update`
+- `POST /mobile/checklist-runs/:runId/acknowledgement`: `checklist_runs:acknowledge`
 
 Status de execucao: `in_progress`, `completed`, `completed_with_divergence`, `pending_acknowledgement`, `cancelled`.
 
