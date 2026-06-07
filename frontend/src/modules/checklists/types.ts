@@ -22,6 +22,12 @@ export type ChecklistRunStatus =
 
 export type ChecklistJsonRecord = Record<string, string | number | boolean | null | string[] | number[] | boolean[]>;
 
+export type ChecklistAttachmentMetadata = Record<string, unknown> & {
+  storageDriver?: string;
+  storageKey?: string;
+  checksumSha256?: string;
+};
+
 export type TenantChecklistComponent = {
   id: string;
   tenantId?: string;
@@ -116,11 +122,38 @@ export type ChecklistMarker = {
 
 export type ChecklistAttachment = {
   id: string;
+  tenantId?: string;
+  runId: string;
   componentId: string;
-  kind: "photo" | "file" | "signature";
-  url: string;
-  capturedAt: string;
-  metadata?: Record<string, string | number | boolean>;
+  fileUrl: string;
+  fileName?: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  metadata: ChecklistAttachmentMetadata;
+  createdBy?: string;
+  createdAt: string;
+  checksum?: string;
+  storageDriver?: string;
+  storageKey?: string;
+};
+
+export type ChecklistAttachmentUploadInput = {
+  context: ChecklistApiContext;
+  runId: string;
+  componentId: string;
+  file: File;
+  metadata?: ChecklistAttachmentMetadata;
+};
+
+export type ChecklistAttachmentUploadResult = {
+  attachment: ChecklistAttachment;
+};
+
+export type ChecklistAttachmentDownloadResult = {
+  blob: Blob;
+  objectUrl: string;
+  fileName: string;
+  mimeType: string;
 };
 
 export type ChecklistAcknowledgement = {

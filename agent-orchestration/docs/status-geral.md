@@ -847,4 +847,16 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - metadados persistidos em `checklist_attachments.metadata`: `storageDriver`, `storageKey` e `checksumSha256`
 - RLS continua protegendo `checklist_attachments`; teste RLS foi ampliado para anexos
 - fora de escopo mantido: frontend, Figma, mobile Flutter e storage S3-compatible real
+
+## Atualizacao 2026-06-07 - checklist attachments frontend integration
+
+- branch usada: `feature/checklist-attachments-frontend-integration`
+- implementada integracao frontend para anexos de checklist sem alterar backend, Prisma ou migrations
+- criados service, adapter e mock fallback em `frontend/src/modules/checklists/checklist-attachments.*`
+- `frontend/src/services/api/client.ts` passou a suportar requests multipart sem setar `Content-Type` manualmente e download protegido como `Blob`
+- tipos frontend de `ChecklistAttachment`, upload, download e metadata foram alinhados ao contrato real
+- componentes criados: `ChecklistAttachmentUploader`, `ChecklistAttachmentList` e `ChecklistEvidencePreview`
+- W02A continua administrativa; o preview de schema apenas indica suporte a evidencias para `photo_upload`, `before_after` e `damage_map`
+- `VITE_USE_MOCKS=true` preservado com upload/download simulados
+- M10/M11/M12 permanecem pendentes e deverao consumir os services/componentes em telas operacionais futuras
 - qualquer consulta platform futura que consolide multiplos tenants deve iterar por tenant ou ganhar repository auditado proprio
