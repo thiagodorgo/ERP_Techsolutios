@@ -872,4 +872,12 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - Checklists aponta para W02A em `/administrator/checklists`, sem duplicar builder
 - temas exibidos apenas como opções visuais planejadas: `enterprise_blue`, `tech_dark` e `green_operations`
 - fora de escopo mantido: backend, Prisma/migrations, contratos API, Figma, mobile Flutter e persistência real de tema
+
+## Atualizacao 2026-06-07 - alinhamento numeracao W03
+
+- decisao oficial consolidada: W03 e `Administrador — Configurações`
+- rota oficial mantida: `/administrator/settings`
+- W02A permanece `Administrador — Checklists`
+- Dashboard/Resumo Financeiro deixou de usar W03 na documentacao e permanece sem numeracao conflitante ate consolidacao propria
+- nao houve alteracao de backend, Prisma/migrations, API, Figma ou mobile
 - qualquer consulta platform futura que consolide multiplos tenants deve iterar por tenant ou ganhar repository auditado proprio

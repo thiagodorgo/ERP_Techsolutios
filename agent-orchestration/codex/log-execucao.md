@@ -628,5 +628,13 @@
 - categorias planejadas: Notificações, Integrações e Segurança/Auditoria
 - card Checklists aponta para W02A `/administrator/checklists`; W03 nao duplica builder
 - temas exibidos como opções visuais planejadas: `enterprise_blue`, `tech_dark` e `green_operations`
-- registrada divergencia documental: `docs/09-mapa-telas-frontend.md` usava W03 para Dashboard Financeiro; a branch implementa W03 Configurações conforme pedido atual
 - fora de escopo mantido: backend, Prisma/migrations, contratos API, Figma, mobile Flutter, tenant_checklist backend e persistência real de tema
+
+## 2026-06-07 - alinhamento numeracao W03
+
+- objetivo: corrigir referencias documentais conflitantes antes de PR/merge da branch `feature/tenant-settings-menu-ui`
+- decisao oficial registrada: W03 e `Administrador — Configurações` em `/administrator/settings`
+- W02A permanece `Administrador — Checklists`
+- Dashboard/Resumo Financeiro nao usa W03; a entrada financeira foi renomeada no mapa para evitar conflito de numeracao
+- documentos/logs revisados: `docs/09-mapa-telas-frontend.md`, `docs/frontend-screens.md`, `docs/modules.md`, `docs/rbac.md`, `agent-orchestration/docs/status-geral.md` e este log
+- fora de escopo mantido: backend, Prisma/migrations, API, Figma, mobile e rota `/administrator/settings`

@@ -76,9 +76,8 @@ Princípios adotados:
 - Supervisor ve somente operacao do proprio tenant conforme escopo e permissoes.
 - Operador ve somente sua operacao, tarefas, OS/atendimentos, checklists operacionais permitidos e notificacoes.
 - W02A e administrativa; operador nao deve ver `/administrator/checklists`.
-- W03 Configuracoes e administrativa; operador e supervisor sem permissao administrativa nao devem ver `/administrator/settings`.
-
-> Nota de divergencia aberta: este documento historicamente usava `W03` para Dashboard Financeiro. A branch `feature/tenant-settings-menu-ui` implementa `W03 · Administrador — Configurações` conforme decisao operacional mais recente. A renumeracao definitiva do Dashboard Financeiro deve ser consolidada em bloco documental proprio.
+- W03 e oficialmente `Administrador — Configurações`; operador e supervisor sem permissao administrativa nao devem ver `/administrator/settings`.
+- Dashboard/Resumo Financeiro nao usa W03. Quando a tela financeira for implementada, deve ser registrada sem conflito com W03.
 
 ## Telas Console da Plataforma
 
@@ -156,10 +155,12 @@ Princípios adotados:
 - **Regras:** W03 não duplica o builder de checklists; Checklists aponta para W02A.
 - **Prioridade:** MVP de estrutura visual/navegação.
 
-### W03 legado — Dashboard Financeiro
+### Financeiro — Resumo
 - **Objetivo:** acompanhar caixa, contas, faturamento, margem e inconsistências.
 - **Usuários:** Financeiro, Gestor Executivo, Admin.
 - **Permissões:** FIN + relatórios.
+- **Rota:** a definir.
+- **Nota:** esta tela nao usa W03; W03 pertence oficialmente a Administrador — Configurações.
 - **Prioridade:** MVP (base) / Scale (margem e incongruências).
 
 ### W04 — Dashboard Executivo/Analytics
@@ -442,7 +443,7 @@ Princípios adotados:
 | Tela | Admin | Gestor Exec | Gestor Op | Operador | Supervisor | Executor | Estoque | Financeiro | Auditor | Suporte |
 |---|---|---|---|---|---|---|---|---|---|---|
 | W02 Dashboard Operacional | V | V | V/E | V/E | V | - | V | V | V | V |
-| W03 Dashboard Financeiro | V | V | V | - | - | - | V | V/E | V | V |
+| Financeiro — Resumo | V | V | V | - | - | - | V | V/E | V | V |
 | W05 Tenant/Módulos | C/E | - | - | - | - | - | - | - | V | C/E |
 | W07 Usuários | C/E | - | - | - | - | - | - | - | V | V |
 | W08 RBAC | C/E | - | - | - | - | - | - | - | V | V |
@@ -457,7 +458,7 @@ Princípios adotados:
 | Prioridade | Telas |
 |---|---|
 | MVP | W01, W02, W05, W06, W07, W08, W09, W10, W11, W12, W13, W17, W18, W19, W20 (básico), W21, W22, W24, W25, W26 (inicial), W29, M01, M02, M03, M04, M05 (básico), M06, M08 (básico), M10, M11 |
-| Scale | W02A, W03 (expandido), W14, W15, W16, W23, W26 (avançado), W27, W28, W30, W31, M05 (dinâmico), M07, M09, M12, M13 |
+| Scale | W02A, W03 Configurações (expandido), W14, W15, W16, W23, W26 (avançado), W27, W28, W30, W31, M05 (dinâmico), M07, M09, M12, M13 |
 | Enterprise | W04 (BI/governança ampliada), extensões IA/despacho inteligente em W20 e analytics avançado |
 
 ## Fluxos Críticos

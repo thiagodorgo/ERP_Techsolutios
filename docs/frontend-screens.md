@@ -37,6 +37,7 @@ Tela implementada:
 - Checklists aponta para W02A em `/administrator/checklists`; W03 não duplica o builder.
 - Aparência exibe os temas planejados `enterprise_blue`, `tech_dark` e `green_operations`, sem persistência real nesta rodada.
 - RBAC frontend: usa `tenant:manage` enquanto a permissão dedicada `tenant_settings:read` não existir no catálogo backend.
+- Decisão oficial: Dashboard/Resumo Financeiro não usa W03.
 
 ## Usuarios
 
