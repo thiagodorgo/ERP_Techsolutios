@@ -1,5 +1,6 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
+import { tenantContextClearedEvent } from "../modules/auth/auth.storage";
 import type { TenantContext } from "../modules/context/types";
 
 const tenantStorageKey = "erp-techsolutions.active-context";
@@ -17,6 +18,16 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     const stored = window.localStorage.getItem(tenantStorageKey);
     return stored ? (JSON.parse(stored) as TenantContext) : null;
   });
+
+  useEffect(() => {
+    const clearStoredContext = () => setStoredActiveContext(null);
+
+    window.addEventListener(tenantContextClearedEvent, clearStoredContext);
+
+    return () => {
+      window.removeEventListener(tenantContextClearedEvent, clearStoredContext);
+    };
+  }, []);
 
   const value = useMemo<TenantContextValue>(
     () => ({

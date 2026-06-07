@@ -155,6 +155,8 @@ Regras especificas:
 
 A sidebar nao deve mostrar todos os modulos para todos os usuarios. A sidebar completa exibida no Figma representa Admin/Tenant Owner, nao usuario comum.
 
+No frontend em modo real (`VITE_USE_MOCKS=false`), o estado autenticado vem do login JWT e o API client envia `Authorization: Bearer` automaticamente. Headers legados deixam de ser enviados pelo frontend nesse modo. A sidebar e os guards usam roles/permissoes do estado autenticado apenas para UX; a autorizacao definitiva continua no backend por RBAC persistido e RLS.
+
 A regra maxima da navegacao e: usuario sem permissao nao ve o link. Nao deve haver link cinza, desabilitado, grupo vazio, placeholder visual ou icone recolhido para item sem acesso. A sidebar recolhida deve usar a mesma lista filtrada da sidebar expandida.
 
 A visibilidade deve ser filtrada por:

@@ -7,11 +7,12 @@ import { useAuth } from "../providers/AuthProvider";
 import { useTenantContext } from "../providers/TenantProvider";
 
 export function AppShell() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const { activeContext } = useTenantContext();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (!activeContext) return <Navigate to="/select-context" replace />;
 

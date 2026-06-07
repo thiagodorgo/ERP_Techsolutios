@@ -2,9 +2,14 @@ import type { AuthSession } from "../../modules/auth/types";
 import type { TenantContext } from "../../modules/context/types";
 
 export const mockSession: AuthSession = {
-  provider: "cognito-compatible",
+  provider: "mock",
   accessToken: "mock-cognito-compatible-access-token",
+  tokenType: "Bearer",
   expiresAt: new Date(Date.now() + 1000 * 60 * 45).toISOString(),
+  tenant: {
+    id: "ten-industrial-01",
+    name: "Techsolutions Industrial",
+  },
   user: {
     id: "usr-ops-01",
     name: "Marina Costa",

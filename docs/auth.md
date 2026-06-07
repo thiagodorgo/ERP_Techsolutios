@@ -195,6 +195,35 @@ Teste separado:
 node --test --import tsx tests/auth-jwt.test.ts
 ```
 
+## Frontend com JWT
+
+A rodada `feature/auth-frontend-login-integration` conecta o frontend ao endpoint real `POST /api/v1/auth/login`.
+
+Fluxo em modo real (`VITE_USE_MOCKS=false`):
+
+1. `W01 Login` envia `tenantId`, `email` e `password` para `/api/v1/auth/login`.
+2. O frontend armazena a sessao retornada em `localStorage`, na chave `erp-techsolutions.auth-session`.
+3. O API client anexa `Authorization: Bearer <access_token>` automaticamente em chamadas `apiRequest`, `apiFormDataRequest` e `apiBlobRequest`.
+4. Headers legados (`X-Tenant-Id`, `X-Role`, `X-Permissions`) nao sao enviados pelo client em modo real.
+5. Resposta `401` limpa a sessao local para forcar novo login.
+6. Logout simples limpa sessao e contexto local e redireciona para `/login`.
+
+Fluxo em modo mock (`VITE_USE_MOCKS=true`):
+
+- a tela preserva login mockado para desenvolvimento;
+- contextos mockados seguem disponiveis;
+- headers legados continuam sendo enviados apenas para rotas/mock/dev que dependem deles.
+
+Persistencia escolhida para MVP: `localStorage`. Nao ha refresh token, cookie, revogacao remota ou logout avancado nesta rodada. O frontend nao armazena senha, segredo JWT, token em URL nem registra token no console.
+
+Variavel auxiliar opcional:
+
+```env
+VITE_DEFAULT_TENANT_ID=""
+```
+
+Essa variavel apenas preenche o campo de tenant no login local. Nao deve conter segredo.
+
 ## Authenticated actor middleware
 
 O Bloco 04C.4 cria a fundacao para resolver `Authorization: Bearer` em `request.actor`.

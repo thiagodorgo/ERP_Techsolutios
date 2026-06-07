@@ -3,6 +3,7 @@ import {
   Building2,
   HeartPulse,
   LayoutDashboard,
+  LogOut,
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
@@ -10,13 +11,15 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import { Tooltip } from "../components/ui";
 import { PlatformGuard } from "../guards/PlatformGuard";
 import { platformNavigation } from "../navigation/platformNavigation";
 import { filterNavigationItems } from "../navigation/types";
+import { useAuth } from "../providers/AuthProvider";
 import { usePermissions } from "../providers/PermissionProvider";
+import { useTenantContext } from "../providers/TenantProvider";
 
 const iconByModule = {
   "platform-overview": LayoutDashboard,
@@ -29,6 +32,9 @@ const iconByModule = {
 
 export function PlatformLayout() {
   const { permissions, roles } = usePermissions();
+  const { signOut } = useAuth();
+  const { clearContext } = useTenantContext();
+  const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const visibleItems = filterNavigationItems(
     {
@@ -85,6 +91,20 @@ export function PlatformLayout() {
           <header className="platform-topbar">
             <strong>ERP Techsolutions</strong>
             <span>Operacoes globais da plataforma</span>
+            <Tooltip label="Sair">
+              <button
+                type="button"
+                className="erp-icon-button"
+                aria-label="Sair"
+                onClick={() => {
+                  clearContext();
+                  signOut();
+                  navigate("/login", { replace: true });
+                }}
+              >
+                <LogOut size={18} />
+              </button>
+            </Tooltip>
           </header>
           <div className="app-content">
             <Outlet />

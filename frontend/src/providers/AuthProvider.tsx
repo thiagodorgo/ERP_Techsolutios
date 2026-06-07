@@ -1,40 +1,58 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { signInWithCognitoCompatibleProvider } from "../modules/auth/repository";
-import type { AuthSession } from "../modules/auth/types";
-
-const authStorageKey = "erp-techsolutions.auth-session";
+import { authSessionChangedEvent, getStoredAuthSession } from "../modules/auth/auth.storage";
+import { login, logout } from "../modules/auth/auth.service";
+import type { AuthSession, LoginCredentials } from "../modules/auth/types";
 
 type AuthContextValue = {
   session: AuthSession | null;
   isAuthenticated: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  isLoading: boolean;
+  isAuthenticating: boolean;
+  signIn: (credentials: LoginCredentials) => Promise<AuthSession>;
   signOut: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<AuthSession | null>(() => {
-    const stored = window.localStorage.getItem(authStorageKey);
-    return stored ? (JSON.parse(stored) as AuthSession) : null;
-  });
+  const [session, setSession] = useState<AuthSession | null>(() => getStoredAuthSession());
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+  useEffect(() => {
+    const syncSession = () => setSession(getStoredAuthSession());
+
+    window.addEventListener(authSessionChangedEvent, syncSession);
+    window.addEventListener("storage", syncSession);
+
+    return () => {
+      window.removeEventListener(authSessionChangedEvent, syncSession);
+      window.removeEventListener("storage", syncSession);
+    };
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
       isAuthenticated: Boolean(session),
-      async signIn(email, password) {
-        const nextSession = await signInWithCognitoCompatibleProvider(email, password);
-        window.localStorage.setItem(authStorageKey, JSON.stringify(nextSession));
-        setSession(nextSession);
+      isLoading: false,
+      isAuthenticating,
+      async signIn(credentials) {
+        setIsAuthenticating(true);
+        try {
+          const nextSession = await login(credentials);
+          setSession(nextSession);
+          return nextSession;
+        } finally {
+          setIsAuthenticating(false);
+        }
       },
       signOut() {
-        window.localStorage.removeItem(authStorageKey);
+        logout();
         setSession(null);
       },
     }),
-    [session],
+    [isAuthenticating, session],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

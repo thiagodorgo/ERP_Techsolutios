@@ -10,7 +10,7 @@ import { useTenantContext } from "../providers/TenantProvider";
 
 export function ContextSelectionPage() {
   const navigate = useNavigate();
-  const { isAuthenticated, session } = useAuth();
+  const { isAuthenticated, isLoading, session } = useAuth();
   const { setActiveContext } = useTenantContext();
   const [contexts, setContexts] = useState<TenantContext[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,8 +20,9 @@ export function ContextSelectionPage() {
       setContexts(items);
       setLoading(false);
     });
-  }, []);
+  }, [session]);
 
+  if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
   return (

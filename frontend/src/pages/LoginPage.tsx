@@ -4,13 +4,18 @@ import { useNavigate } from "react-router-dom";
 
 import { DomainRail, SecurityNotice } from "../components/erp";
 import { Button, Card, Input, PasswordInput } from "../components/ui";
+import { isPlatformAdmin } from "../navigation/types";
 import { useAuth } from "../providers/AuthProvider";
+
+const useMocks = import.meta.env.VITE_USE_MOCKS === "true";
+const defaultTenantId = import.meta.env.VITE_DEFAULT_TENANT_ID ?? (useMocks ? "ten-industrial-01" : "");
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { signIn } = useAuth();
-  const [email, setEmail] = useState("marina.costa@techsolutions.example");
-  const [password, setPassword] = useState("operacao-demo");
+  const [tenantId, setTenantId] = useState(defaultTenantId);
+  const [email, setEmail] = useState(useMocks ? "marina.costa@techsolutions.example" : "");
+  const [password, setPassword] = useState(useMocks ? "operacao-demo" : "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -19,10 +24,15 @@ export function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      await signIn(email, password);
-      navigate("/select-context");
+      const session = await signIn({
+        tenantId,
+        email,
+        password,
+      });
+
+      navigate(isPlatformAdmin(session.user) ? "/platform/tenants" : "/select-context");
     } catch (currentError) {
-      setError(currentError instanceof Error ? currentError.message : "Falha de autenticacao");
+      setError(currentError instanceof Error ? currentError.message : "Falha de autenticacao.");
     } finally {
       setLoading(false);
     }
@@ -41,6 +51,9 @@ export function LoginPage() {
       <Card title="W01 Login">
         <form className="auth-form" onSubmit={handleSubmit}>
           <SecurityNotice />
+          {!useMocks ? (
+            <Input label="Tenant ID" value={tenantId} onChange={(event) => setTenantId(event.target.value)} autoComplete="organization" />
+          ) : null}
           <Input label="E-mail corporativo" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
           <PasswordInput label="Senha" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" />
           {error ? <p className="form-error">{error}</p> : null}
