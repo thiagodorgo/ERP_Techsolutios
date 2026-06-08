@@ -105,6 +105,8 @@ Redis e usado para jobs internos simples, eventos de dominio e dead-letter local
 
 Integracao inicial: `checklist_run.attachment_uploaded` publica evento depois do upload real de anexo e enfileira `checklist-attachment-postprocess`. O worker nao inicia automaticamente no servidor.
 
+Notificacoes internas usam a mesma fundacao: eventos operacionais de checklist enfileiram `notification-dispatch`, que resolve destinatarios do tenant e cria linhas em `notifications`. A operacao principal continua sincronica e nao depende do sucesso do job de notificacao.
+
 ## Auditoria enterprise
 
 A auditoria enterprise esta documentada em `docs/audit.md`. A gravacao principal usa `audit_logs` de forma sincronica, tenant-scoped e protegida por RLS. O contrato padronizado inclui actor, action, resource, outcome, severity, correlationId, requestId, IP, user-agent e metadata sanitizado. Como a tabela atual ja possui `metadata Json`, os campos complementares ficam em metadata e nenhuma migration foi criada nesta rodada.

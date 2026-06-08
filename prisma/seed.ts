@@ -36,6 +36,8 @@ const permissionDescriptions = {
   "inventory.read": "Consultar estoque.",
   "finance.manage": "Gerenciar informacoes financeiras.",
   "finance.read": "Consultar informacoes financeiras.",
+  "notifications:read": "Consultar a propria caixa de notificacoes internas.",
+  "notifications:update": "Marcar notificacoes proprias como lidas ou arquivadas.",
   "tenant_checklists:read": "Consultar checklists configuraveis do tenant.",
   "tenant_checklists:create": "Criar checklists configuraveis do tenant.",
   "tenant_checklists:update": "Editar, ativar e inativar checklists configuraveis do tenant.",

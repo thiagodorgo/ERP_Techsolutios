@@ -44,6 +44,38 @@ test("domain event publishes mapped checklist attachment job", async () => {
   assert.equal((job?.payload.event as { name?: string }).name, "checklist_run.attachment_uploaded");
 });
 
+test("domain event publishes mapped notification job for checklist completion", async () => {
+  await assertRedisAvailable();
+  const queue = new JobQueue({
+    redis,
+    prefix: `test:events:${randomUUID()}`,
+  });
+
+  const result = await publishDomainEvent(
+    "checklist_run.completed",
+    {
+      runId: "run-1",
+      status: "completed",
+    },
+    {
+      tenantId: "tenant-a",
+      actorId: "user-a",
+      correlationId: "corr-a",
+    },
+    {
+      queue,
+    },
+  );
+
+  assert.equal(result.published, true);
+  assert.equal(typeof result.enqueuedJobId, "string");
+
+  const job = await queue.dequeue();
+  assert.equal(job?.name, "notification-dispatch");
+  assert.equal(job?.tenantId, "tenant-a");
+  assert.equal((job?.payload.event as { name?: string }).name, "checklist_run.completed");
+});
+
 test("domain event without job mapping succeeds without enqueue", async () => {
   const result = await publishDomainEvent("auth.session.created", {
     sessionId: "session-1",

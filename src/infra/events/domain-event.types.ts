@@ -5,6 +5,7 @@ export const DOMAIN_EVENT_NAMES = [
   "checklist_run.completed",
   "checklist_run.attachment_uploaded",
   "checklist_run.divergence_reported",
+  "checklist_run.acknowledgement_created",
   "notification.requested",
   "audit_log.created",
 ] as const;

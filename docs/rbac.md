@@ -80,6 +80,8 @@ Permissoes de tenant:
 - `inventory:read`
 - `approvals:read`
 - `finance:read`
+- `notifications:read`
+- `notifications:update`
 
 Permissoes `platform:*` pertencem ao Console da Plataforma. Permissoes de tenant pertencem ao Administrador e aos usuarios dentro do tenant atual.
 
@@ -120,6 +122,23 @@ Matriz backend aplicada:
 - `GET /api/v1/mobile/checklist-runs/:runId/comparison`: `checklist_runs:read`
 - `POST /api/v1/mobile/checklist-runs/:runId/divergence`: `checklist_runs:update`
 - `POST /api/v1/mobile/checklist-runs/:runId/acknowledgement`: `checklist_runs:acknowledge`
+
+## notifications
+
+Permissoes tenant-scoped:
+
+- `notifications:read`: consultar a propria inbox de notificacoes internas.
+- `notifications:update`: marcar notificacoes proprias como lidas ou arquivadas.
+
+Matriz backend aplicada:
+
+- `GET /api/v1/notifications`: `notifications:read`
+- `GET /api/v1/notifications/unread-count`: `notifications:read`
+- `POST /api/v1/notifications/:notificationId/read`: `notifications:update`
+- `POST /api/v1/notifications/read-all`: `notifications:update`
+- `POST /api/v1/notifications/:notificationId/archive`: `notifications:update`
+
+Mesmo tenant admin nao consulta inbox de todos nesta fase. O service sempre filtra por `tenant_id` e `recipient_user_id` do ator autenticado.
 
 Aliases documentais anteriores, a serem reconciliados quando o backend final for implementado:
 

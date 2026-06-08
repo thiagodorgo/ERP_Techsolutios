@@ -82,6 +82,8 @@ O runtime web operacional chama os mesmos endpoints de execucao que o runtime mo
 
 Uploads de anexos continuam auditados como `checklist_run.attachment_uploaded` independentemente do provider de storage (`local` ou S3-compatible). A auditoria deve registrar o recurso e o resultado da acao, mas nao deve expor bucket, storage key, path privado, segredo ou URL interna do objeto.
 
+Notificacoes internas sao derivadas de eventos/auditoria operacional, mas a criacao da notificacao em si nao gera novo evento de auditoria nesta rodada para evitar fanout recursivo e volume artificial. Futuramente, acoes explicitas de usuario sobre notificacoes podem ser auditadas se houver requisito de produto.
+
 Hardening runtime web:
 - validacao client-side por schema nao gera auditoria por si so;
 - eventos auditaveis continuam saindo dos endpoints backend de update, complete, attachment upload, divergence e acknowledgement;

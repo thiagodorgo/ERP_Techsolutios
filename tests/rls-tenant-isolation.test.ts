@@ -149,6 +149,33 @@ if (!connectionString) {
           )
           RETURNING id
         `;
+        const [notification] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO notifications (
+            tenant_id,
+            recipient_user_id,
+            type,
+            title,
+            message,
+            severity,
+            status,
+            source_type,
+            source_id,
+            metadata
+          )
+          VALUES (
+            ${tenantA.id}::uuid,
+            ${user.id}::uuid,
+            'checklist_run.completed',
+            'RLS Notification A',
+            'Tenant A notification',
+            'success',
+            'unread',
+            'checklist_run',
+            ${run.id},
+            '{}'::jsonb
+          )
+          RETURNING id
+        `;
 
         return {
           branchId: branch.id,
@@ -156,6 +183,7 @@ if (!connectionString) {
           templateId: template.id,
           runId: run.id,
           attachmentId: attachment.id,
+          notificationId: notification.id,
         };
       });
 
@@ -247,6 +275,33 @@ if (!connectionString) {
           )
           RETURNING id
         `;
+        const [notification] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO notifications (
+            tenant_id,
+            recipient_user_id,
+            type,
+            title,
+            message,
+            severity,
+            status,
+            source_type,
+            source_id,
+            metadata
+          )
+          VALUES (
+            ${tenantB.id}::uuid,
+            ${user.id}::uuid,
+            'checklist_run.completed',
+            'RLS Notification B',
+            'Tenant B notification',
+            'success',
+            'unread',
+            'checklist_run',
+            ${run.id},
+            '{}'::jsonb
+          )
+          RETURNING id
+        `;
 
         return {
           branchId: branch.id,
@@ -254,6 +309,7 @@ if (!connectionString) {
           templateId: template.id,
           runId: run.id,
           attachmentId: attachment.id,
+          notificationId: notification.id,
         };
       });
 
@@ -277,6 +333,18 @@ if (!connectionString) {
         usersWithoutContext.map((user) => user.id),
         [],
         "tenant-scoped users must not be visible without app.current_tenant_id",
+      );
+      const notificationsWithoutContext = await client.notification.findMany({
+        where: {
+          id: {
+            in: [tenantAData.notificationId, tenantBData.notificationId],
+          },
+        },
+      });
+      assert.deepEqual(
+        notificationsWithoutContext.map((notification) => notification.id),
+        [],
+        "tenant-scoped notifications must not be visible without app.current_tenant_id",
       );
 
       const tenantAView = await withTenantRls(client, tenantA.id, async (tx) => {
@@ -308,6 +376,13 @@ if (!connectionString) {
             },
           },
         });
+        const notifications = await tx.notification.findMany({
+          where: {
+            id: {
+              in: [tenantAData.notificationId, tenantBData.notificationId],
+            },
+          },
+        });
         const crossTenantUpdate = await tx.user.updateMany({
           where: {
             id: tenantBData.userId,
@@ -319,6 +394,7 @@ if (!connectionString) {
 
         return {
           attachmentIds: attachments.map((attachment) => attachment.id),
+          notificationIds: notifications.map((notification) => notification.id),
           runIds: runs.map((run) => run.id),
           templateIds: templates.map((template) => template.id),
           updatedRows: crossTenantUpdate.count,
@@ -330,6 +406,7 @@ if (!connectionString) {
       assert.deepEqual(tenantAView.templateIds, [tenantAData.templateId]);
       assert.deepEqual(tenantAView.runIds, [tenantAData.runId]);
       assert.deepEqual(tenantAView.attachmentIds, [tenantAData.attachmentId]);
+      assert.deepEqual(tenantAView.notificationIds, [tenantAData.notificationId]);
       assert.equal(tenantAView.updatedRows, 0, "tenant A must not update tenant B rows");
 
       const tenantBUser = await withTenantRls(client, tenantB.id, (tx) =>

@@ -72,6 +72,7 @@ Operational rules:
 - permissions may narrow or extend role behavior only within backend-authorized limits
 - active tenant resolution must be explicit when a user belongs to more than one tenant
 - configurable checklist permissions are tenant-scoped and must include `tenant_checklists:*` and `checklist_runs:*` checks in backend routes/services
+- internal notifications are tenant-scoped and must keep `notifications:read`/`notifications:update` limited to the authenticated user's own inbox unless a future admin endpoint is explicitly designed
 - checklist reads and writes must validate `tenant_id` together with template, field, run and answer identifiers
 - M10/M11/M12 must render checklist schemas from API data rather than hardcoded mobile field definitions
 
