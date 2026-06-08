@@ -8,5 +8,6 @@ export * from "./checklist.mock";
 export * from "./checklist-runtime.adapter";
 export * from "./checklist-runtime.mock";
 export * from "./checklist-runtime.service";
+export * from "./checklist-runtime.validation";
 export * from "./checklist.service";
 export * from "./types";

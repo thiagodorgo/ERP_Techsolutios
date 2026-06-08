@@ -376,6 +376,11 @@ Runtime web:
 - `PATCH /mobile/checklist-runs/:runId`: salva rascunho/respostas.
 - `POST /mobile/checklist-runs/:runId/complete`: conclui execucao sem divergencia no MVP web.
 - componentes de evidencia reutilizam upload/download de anexos.
+- hardening frontend atual: validacao client-side por schema bloqueia conclusao quando obrigatorios basicos estao incompletos, mas o backend continua autoridade final.
+- `GET /mobile/checklist-runs/:runId/comparison` alimenta o componente `comparison` quando presente no schema.
+- `POST /mobile/checklist-runs/:runId/divergence` e chamado com observacao obrigatoria e evidencia ja anexada.
+- `POST /mobile/checklist-runs/:runId/acknowledgement` e chamado apenas quando a execucao esta `pending_acknowledgement`.
+- `POST /mobile/checklist-runs/:runId/markers` recebe markers estruturados de `damage_map` com tipo e descricao.
 
 ### Anexos de checklist
 

@@ -85,6 +85,8 @@ Sao os modulos efetivamente ativos para um tenant especifico. A visibilidade no 
 - Anexos de checklist usam upload local real em desenvolvimento, com `fileUrl` logico, metadados persistidos em `checklist_attachments`, RBAC/RLS por tenant e caminho preparado para S3-compatible futuro.
 - O frontend possui service, adapter, mock fallback e componentes reutilizaveis para upload/lista/preview de evidencias; W02A mostra suporte no preview sem assumir papel de tela operacional.
 - O runtime web operacional usa `/operations/checklists` e `/operations/checklists/:checklistId/run`, consome schemas publicados via endpoints compartilhados `/mobile/*`, renderiza componentes oficiais e mantem W02A como builder administrativo.
+- Hardening do runtime web: validacao client-side por schema, progresso de obrigatorios, resumo/status do run, comparacao/divergencia/ciencia e separacao `before_after` por metadata, sem hardcode de M10/M11/M12.
+- Limites mantidos: canvas visual avancado para avarias, drag-and-drop, offline e exclusao persistente de markers dependem de proximas fases.
 - `messaging_jobs` e uma fundacao transversal backend: Redis enfileira jobs/eventos internos, mas nao aparece como modulo de tenant nem como item de sidebar.
 - O fluxo inicial de mensageria publica `checklist_run.attachment_uploaded` apos upload de anexo e enfileira `checklist-attachment-postprocess` sem tornar o upload critico dependente do Redis.
 - `audit` e uma capacidade transversal tenant-scoped: acoes criticas gravam `audit_logs` de forma sincronica, com contrato enterprise em `docs/audit.md`, RLS por tenant, RBAC `audit.read` para consulta e fanout complementar `audit_log.created` via Redis.

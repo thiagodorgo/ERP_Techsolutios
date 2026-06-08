@@ -80,6 +80,11 @@ Eventos cobertos nesta rodada:
 
 O runtime web operacional chama os mesmos endpoints de execucao que o runtime mobile compartilhado. Portanto, criar, atualizar, concluir, anexar evidencia, registrar divergencia e registrar ciencia geram a mesma auditoria backend; W02A permanece limitada a auditoria de template/builder.
 
+Hardening runtime web:
+- validacao client-side por schema nao gera auditoria por si so;
+- eventos auditaveis continuam saindo dos endpoints backend de update, complete, attachment upload, divergence e acknowledgement;
+- remocao local de marker no MVP web nao possui evento persistente enquanto nao existir endpoint backend de delete marker.
+
 Nem todo evento gera tela ou endpoint novo nesta rodada. A consulta existente continua em `GET /api/v1/audit-events` com permissao `audit.read`.
 
 ## RLS e RBAC

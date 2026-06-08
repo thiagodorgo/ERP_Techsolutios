@@ -1025,3 +1025,17 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - documentacao atualizada em `docs/frontend-screens.md`, `docs/api.md`, `docs/modules.md`, `docs/audit.md`, `docs/messaging.md`, `docs/rbac.md` e este status
 - fora de escopo mantido: mobile Flutter, Figma, offline, drag-and-drop, redesign amplo, backend novo, migrations e contratos API destrutivos
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`
+
+## Atualizacao 2026-06-08 - checklist runtime web hardening
+
+- branch usada: `feature/checklist-runtime-web-hardening`
+- objetivo: polir o runtime web operacional de checklists sem transformar W02A em runtime e sem alterar contratos backend
+- criada validacao frontend por schema para obrigatorios basicos, anexos, `before_after`, `acknowledgement`, `vehicle_selector` e `damage_map`
+- runtime passou a mostrar progresso, status, resumo lateral e mensagens amigaveis
+- `comparison` usa endpoint de comparacao quando disponivel e registra divergencia com observacao e evidencia
+- `acknowledgement` usa texto configuravel e chama endpoint de ciencia apenas para run `pending_acknowledgement`
+- `damage_map` exige tipo/descricao, envia marker ao backend e suporta remocao local da lista; delete persistente de marker segue como proxima fase
+- E2E cobre tela de run e bloqueio de conclusao com obrigatorios incompletos
+- documentacao atualizada em `docs/frontend-screens.md`, `docs/api.md`, `docs/modules.md`, `docs/audit.md`, `docs/messaging.md`, `docs/rbac.md` e este status
+- fora de escopo mantido: mobile Flutter, Figma, offline, drag-and-drop, redesign amplo, backend novo, migrations e contratos API destrutivos
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`

@@ -295,6 +295,7 @@ Separacao oficial:
 - W02A `/administrator/checklists`: builder administrativo de templates, visivel com `tenant_checklists:read` e demais permissoes `tenant_checklists:*`.
 - Runtime web `/operations/checklists`: execucao operacional, visivel com `checklist_runs:read` ou `checklist_runs:create`.
 - Runtime web `/operations/checklists/:checklistId/run`: execucao de schema publicado, exige `checklist_runs:create`; salvar respostas exige `checklist_runs:update`; concluir exige `checklist_runs:complete`.
+- Hardening do runtime web preserva a separacao: salvar respostas/anexos/markers/divergencias depende de `checklist_runs:update`, concluir depende de `checklist_runs:complete` e ciencia formal depende de `checklist_runs:acknowledge`. Validacao client-side nao amplia permissao nem substitui RBAC/backend/RLS.
 
 Operador ou supervisor com `checklist_runs:*` pode ver o runtime operacional sem ver W02A. Tenant Admin pode ver W02A e tambem o runtime quando possuir permissao operacional. A filtragem visual da sidebar nao substitui o RBAC backend dos endpoints compartilhados `/mobile/*`.
 

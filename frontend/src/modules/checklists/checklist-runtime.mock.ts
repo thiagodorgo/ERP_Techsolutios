@@ -136,6 +136,20 @@ export async function addMockChecklistMarker(runId: string, input: CreateCheckli
 export async function reportMockChecklistDivergence(runId: string, input: ChecklistDivergence): Promise<ChecklistRunDetails> {
   await wait();
   const details = findRun(runId);
+  const attachment = {
+    id: `att_divergence_${Date.now()}`,
+    tenantId: details.run.tenantId,
+    runId,
+    componentId: input.componentId,
+    fileUrl: input.fileUrl,
+    fileName: input.fileName,
+    mimeType: input.mimeType,
+    metadata: {
+      ...input.metadata,
+      divergence: true,
+    },
+    createdAt: new Date().toISOString(),
+  };
   const next = {
     ...details,
     run: {
@@ -143,6 +157,7 @@ export async function reportMockChecklistDivergence(runId: string, input: Checkl
       status: "pending_acknowledgement" as const,
       updatedAt: new Date().toISOString(),
     },
+    attachments: [...details.attachments, attachment],
     answers: [
       ...details.answers,
       {

@@ -1,12 +1,19 @@
-import { MapPin, Plus } from "lucide-react";
+import { AlertTriangle, CheckCircle2, MapPin, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Alert, Button, Checkbox, Select } from "../../../components/ui";
 import { downloadChecklistAttachment } from "../checklist-attachments.service";
+import {
+  readAcknowledgementValue,
+  readConfiguredMessage,
+  requiresAcknowledgementObservation,
+} from "../checklist-runtime.validation";
 import type {
   ChecklistApiContext,
   ChecklistAttachment,
   ChecklistMarker,
+  ChecklistRunComparison,
+  ChecklistRunStatus,
   ChecklistRuntimeComponent,
   CreateChecklistMarkerInput,
 } from "../types";
@@ -19,22 +26,38 @@ export function ChecklistRuntimeField({
   component,
   value,
   attachments,
+  allAttachments,
   markers,
+  runStatus,
+  comparison,
+  comparisonLoading,
+  validationError,
   disabled,
   onChange,
   onAttachmentUploaded,
   onAddMarker,
+  onRemoveMarker,
+  onReportDivergence,
+  onAcknowledgeRun,
 }: {
   readonly context: ChecklistApiContext;
   readonly runId?: string;
   readonly component: ChecklistRuntimeComponent;
   readonly value: unknown;
   readonly attachments: readonly ChecklistAttachment[];
+  readonly allAttachments: readonly ChecklistAttachment[];
   readonly markers: readonly ChecklistMarker[];
+  readonly runStatus?: ChecklistRunStatus;
+  readonly comparison?: ChecklistRunComparison | null;
+  readonly comparisonLoading?: boolean;
+  readonly validationError?: string;
   readonly disabled?: boolean;
   readonly onChange: (value: unknown) => void;
   readonly onAttachmentUploaded: (attachment: ChecklistAttachment) => void;
   readonly onAddMarker: (input: CreateChecklistMarkerInput) => Promise<void>;
+  readonly onRemoveMarker: (markerId: string) => void;
+  readonly onReportDivergence: (componentId: string, observation: string, attachment: ChecklistAttachment) => Promise<void>;
+  readonly onAcknowledgeRun: (message: string, observation?: string) => Promise<void>;
 }) {
   const title = `${component.label}${component.required ? " *" : ""}`;
 
@@ -46,6 +69,7 @@ export function ChecklistRuntimeField({
           <span>{component.type}</span>
         </div>
       </header>
+      {validationError ? <p className="checklist-runtime-field-error">{validationError}</p> : null}
       {renderField()}
     </section>
   );
@@ -81,13 +105,39 @@ export function ChecklistRuntimeField({
     }
 
     if (component.type === "acknowledgement") {
+      const acknowledgement = readAcknowledgementValue(value);
+      const requireObservation = requiresAcknowledgementObservation(component);
+      const message = readConfiguredMessage(component, "Declaro ciencia das informacoes registradas nesta execucao.");
+
       return (
-        <Checkbox
-          label={readString(component.config.message) ?? "Declaro ciencia das informacoes registradas nesta execucao."}
-          checked={value === true}
-          disabled={disabled}
-          onChange={(event) => onChange(event.currentTarget.checked)}
-        />
+        <div className="checklist-runtime-acknowledgement">
+          <Checkbox
+            label={message}
+            checked={acknowledgement.accepted}
+            disabled={disabled}
+            onChange={(event) => onChange({ ...acknowledgement, accepted: event.currentTarget.checked })}
+          />
+          {requireObservation ? (
+            <label className="ui-field">
+              <span>Observacao da ciencia</span>
+              <textarea
+                className="ui-input checklist-runtime-textarea"
+                value={acknowledgement.observation}
+                disabled={disabled}
+                onChange={(event) => onChange({ ...acknowledgement, observation: event.target.value })}
+              />
+            </label>
+          ) : null}
+          {runStatus === "pending_acknowledgement" && !disabled ? (
+            <AcknowledgeRunAction
+              message={message}
+              observation={acknowledgement.observation}
+              accepted={acknowledgement.accepted}
+              requireObservation={requireObservation}
+              onAcknowledgeRun={onAcknowledgeRun}
+            />
+          ) : null}
+        </div>
       );
     }
 
@@ -138,15 +188,21 @@ export function ChecklistRuntimeField({
           markers={markers}
           disabled={disabled}
           onAddMarker={onAddMarker}
+          onRemoveMarker={onRemoveMarker}
         />
       );
     }
 
     if (component.type === "comparison") {
       return (
-        <Alert title="Comparacao operacional" tone="info">
-          Este componente esta configurado no schema. A comparacao avancada usa o endpoint de comparacao quando houver execucao relacionada estavel.
-        </Alert>
+        <ComparisonField
+          componentId={component.id}
+          comparison={comparison}
+          loading={comparisonLoading}
+          allAttachments={allAttachments}
+          disabled={disabled}
+          onReportDivergence={onReportDivergence}
+        />
       );
     }
 
@@ -208,11 +264,13 @@ function DamageMapField({
   markers,
   disabled,
   onAddMarker,
+  onRemoveMarker,
 }: {
   readonly componentId: string;
   readonly markers: readonly ChecklistMarker[];
   readonly disabled?: boolean;
   readonly onAddMarker: (input: CreateChecklistMarkerInput) => Promise<void>;
+  readonly onRemoveMarker: (markerId: string) => void;
 }) {
   const [description, setDescription] = useState("");
   const [markerType, setMarkerType] = useState("damage");
@@ -221,6 +279,11 @@ function DamageMapField({
   const markerCount = useMemo(() => markers.length, [markers.length]);
 
   async function handleAddMarker() {
+    if (!description.trim()) {
+      setError("Informe uma descricao para o marcador.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
@@ -270,12 +333,166 @@ function DamageMapField({
         <ul className="checklist-runtime-marker-list">
           {markers.map((marker) => (
             <li key={marker.id}>
-              <strong>{marker.markerType}</strong>
-              <span>{marker.description ?? "Sem descricao"}</span>
+              <div>
+                <strong>{marker.markerType}</strong>
+                <span>{marker.description ?? "Sem descricao"}</span>
+              </div>
+              {!disabled ? (
+                <Button type="button" size="sm" variant="ghost" onClick={() => onRemoveMarker(marker.id)}>
+                  <Trash2 size={14} />
+                  Remover
+                </Button>
+              ) : null}
             </li>
           ))}
         </ul>
       ) : null}
+    </div>
+  );
+}
+
+function ComparisonField({
+  componentId,
+  comparison,
+  loading,
+  allAttachments,
+  disabled,
+  onReportDivergence,
+}: {
+  readonly componentId: string;
+  readonly comparison?: ChecklistRunComparison | null;
+  readonly loading?: boolean;
+  readonly allAttachments: readonly ChecklistAttachment[];
+  readonly disabled?: boolean;
+  readonly onReportDivergence: (componentId: string, observation: string, attachment: ChecklistAttachment) => Promise<void>;
+}) {
+  const [observation, setObservation] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const evidence = allAttachments[0];
+
+  async function handleReportDivergence() {
+    if (!observation.trim()) {
+      setError("Informe uma observacao para registrar divergencia.");
+      return;
+    }
+
+    if (!evidence) {
+      setError("Anexe ao menos uma foto ou evidencia antes de registrar divergencia.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      await onReportDivergence(componentId, observation.trim(), evidence);
+      setObservation("");
+    } catch {
+      setError("Nao foi possivel registrar a divergencia.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="checklist-runtime-comparison">
+      <Alert title="Comparacao operacional" tone="info">
+        {loading
+          ? "Carregando comparacao da execucao."
+          : "O resumo abaixo vem do endpoint de comparacao quando houver dados para esta execucao."}
+      </Alert>
+
+      {comparison ? (
+        <div className="checklist-runtime-comparison-grid">
+          <article>
+            <strong>Status comparado</strong>
+            <span>{comparison.comparison.status}</span>
+          </article>
+          <article>
+            <strong>Divergencia</strong>
+            <span>{comparison.comparison.divergence ? "Sim" : "Nao registrada"}</span>
+          </article>
+          <article>
+            <strong>Dados avaliados</strong>
+            <span>
+              {comparison.answers.length} respostas · {comparison.attachments.length} evidencias · {comparison.markers.length} marcadores
+            </span>
+          </article>
+        </div>
+      ) : (
+        <Alert title="Comparacao ainda indisponivel" tone="warning">
+          O runtime permanece ativo, mas a API/mock nao retornou dados comparativos para esta execucao.
+        </Alert>
+      )}
+
+      {!disabled ? (
+        <div className="checklist-runtime-divergence">
+          <label className="ui-field">
+            <span>Observacao da divergencia</span>
+            <textarea
+              className="ui-input checklist-runtime-textarea"
+              value={observation}
+              onChange={(event) => setObservation(event.target.value)}
+            />
+            <small>Use evidencia ja anexada ao run; o backend registra a divergencia e exige ciencia quando aplicavel.</small>
+          </label>
+          {error ? <p className="checklist-attachment-message checklist-attachment-message--error">{error}</p> : null}
+          <Button type="button" variant="secondary" onClick={handleReportDivergence} disabled={submitting}>
+            <AlertTriangle size={16} />
+            {submitting ? "Registrando..." : "Registrar divergencia"}
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function AcknowledgeRunAction({
+  message,
+  observation,
+  accepted,
+  requireObservation,
+  onAcknowledgeRun,
+}: {
+  readonly message: string;
+  readonly observation: string;
+  readonly accepted: boolean;
+  readonly requireObservation: boolean;
+  readonly onAcknowledgeRun: (message: string, observation?: string) => Promise<void>;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleAcknowledge() {
+    if (!accepted) {
+      setError("Confirme a ciencia antes de registrar.");
+      return;
+    }
+    if (requireObservation && !observation.trim()) {
+      setError("Informe a observacao obrigatoria da ciencia.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      await onAcknowledgeRun(message, observation.trim() || undefined);
+    } catch {
+      setError("Nao foi possivel registrar a ciencia.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="checklist-runtime-acknowledgement-action">
+      {error ? <p className="checklist-attachment-message checklist-attachment-message--error">{error}</p> : null}
+      <Button type="button" variant="secondary" onClick={handleAcknowledge} disabled={submitting}>
+        <CheckCircle2 size={16} />
+        {submitting ? "Registrando..." : "Registrar ciencia"}
+      </Button>
     </div>
   );
 }
