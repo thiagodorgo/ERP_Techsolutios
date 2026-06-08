@@ -101,6 +101,16 @@ npm run test:e2e
 
 O E2E usa Playwright, sobe backend local em modo Prisma e frontend Vite em modo real. O comando executa o seed demo idempotente antes da suite e cobre login tenant, bloqueio de Platform Console para Tenant Admin, login Platform Admin e acesso positivo a `/platform/tenants`. Artifacts pesados ficam ignorados por Git em `playwright-report/` e `test-results/`.
 
+Validacao de mensageria/jobs Redis:
+
+```bash
+docker compose up -d
+node --test --import tsx tests/job-queue.test.ts
+node --test --import tsx tests/domain-events.test.ts
+```
+
+Esses testes usam o Redis local do Docker Compose e prefixes isolados por teste.
+
 ## Seguranca
 
 - Nunca commitar `.env`.

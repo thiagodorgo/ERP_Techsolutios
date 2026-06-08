@@ -970,3 +970,22 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - documentacao atualizada em `docs/auth.md`, `docs/deployment.md`, `docs/frontend-screens.md`, `docs/rbac.md`, `docs/github-workflow.md` e este status
 - fora de escopo mantido: Figma, mobile Flutter, contratos API, migrations, refatoracao de auth e features novas de produto
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run db:seed`, `npm run test:e2e` e `git diff --check`
+
+## Atualizacao 2026-06-08 - Redis job queue foundation
+
+- branch usada: `feature/redis-job-queue-foundation`
+- objetivo: criar fundacao inicial de Redis para jobs, eventos internos, retry/backoff e dead-letter sem trocar arquitetura do backend
+- verificado: nao havia cliente Redis nem dependencia de fila no projeto; `docker-compose.yml` ja subia `erp-redis` e `.env.example` ja documentava `REDIS_URL`
+- decisao tecnica: criado cliente Redis minimo em Node (`node:net`) para evitar dependencia externa nesta rodada
+- criado `src/infra/redis/redis.client.ts`
+- criados `src/infra/jobs/job.types.ts`, `job.queue.ts`, `job.registry.ts` e `job.worker.ts`
+- criados `src/infra/events/domain-event.types.ts` e `domain-event.publisher.ts`
+- eventos iniciais documentados: `auth.session.created`, `auth.session.revoked`, `checklist_run.created`, `checklist_run.completed`, `checklist_run.attachment_uploaded`, `checklist_run.divergence_reported`, `notification.requested` e `audit_log.created`
+- jobs iniciais: `checklist-attachment-postprocess`, `notification-dispatch` e `audit-log-fanout`
+- integracao real: upload de anexo de checklist publica `checklist_run.attachment_uploaded` depois de salvar arquivo, registro e auditoria
+- falha de Redis no publish nao quebra o upload critico no MVP; o publisher registra warning e retorna falha controlada
+- worker nao inicia automaticamente no servidor
+- documentacao criada em `docs/messaging.md`
+- testes criados: `tests/job-queue.test.ts` e `tests/domain-events.test.ts`
+- fora de escopo mantido: Kafka, RabbitMQ, cloud queue, notificacoes reais, webhooks reais, frontend, Figma, mobile Flutter, migrations e mudancas destrutivas de contrato API
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `npm run test:e2e` e `git diff --check`

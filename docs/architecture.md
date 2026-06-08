@@ -1,6 +1,6 @@
 # Arquitetura
 
-O ERP Techsolutions usa frontend React + TypeScript + Vite, backend Node.js + TypeScript, PostgreSQL planejado como persistencia principal, Redis para cache/coordenacao futura e Docker para ambiente local.
+O ERP Techsolutions usa frontend React + TypeScript + Vite, backend Node.js + TypeScript, PostgreSQL planejado como persistencia principal, Redis para cache, filas/jobs/eventos internos e coordenacao futura, e Docker para ambiente local.
 
 ## Boundaries principais
 
@@ -97,6 +97,14 @@ Para os boundaries sensiveis `/api/v1/platform/*`, Core SaaS e Checklists, qualq
 
 Refresh/logout ficam no boundary `/api/v1/auth/*`. O refresh token usa sessao persistida em `auth_sessions`, hash HMAC-SHA256, expiracao mais longa que o access token e rotacao a cada refresh bem-sucedido. Logout marca `revoked_at` de forma idempotente. Access tokens ja emitidos continuam validos ate `exp`; revogacao imediata de access token exigiria outro mecanismo futuro, como blacklist/Redis ou introspeccao.
 
+## Mensageria interna
+
+A fundacao inicial de mensageria esta documentada em `docs/messaging.md`.
+
+Redis e usado para jobs internos simples, eventos de dominio e dead-letter local. A regra arquitetural e manter o dado critico sincronico: banco, storage e auditoria devem ser concluídos antes de publicar evento assíncrono. Falha de Redis nao deve corromper nem reverter upload/anexo no MVP.
+
+Integracao inicial: `checklist_run.attachment_uploaded` publica evento depois do upload real de anexo e enfileira `checklist-attachment-postprocess`. O worker nao inicia automaticamente no servidor.
+
 ## Evolucao planejada
 
 - Persistir modulos habilitados por tenant.
@@ -105,3 +113,4 @@ Refresh/logout ficam no boundary `/api/v1/auth/*`. O refresh token usa sessao pe
 - Remover codigo de headers legados por feature flag ou modo strict depois da migracao para Bearer.
 - Evoluir operacoes platform multi-tenant com contexto RLS explicito e auditoria.
 - Avaliar cookie httpOnly/secure e Redis para sessoes distribuidas quando o produto sair do MVP localStorage.
+- Evoluir jobs Redis para notificacoes, webhooks, relatorios, processamento de anexos e fanout de auditoria.
