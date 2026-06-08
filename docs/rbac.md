@@ -288,6 +288,16 @@ Metadata registrada:
 
 Os registros usam `audit_logs`, respeitam RLS por tenant e passam pela sanitizacao enterprise descrita em `docs/audit.md`.
 
+## Checklists Web Runtime
+
+Separacao oficial:
+
+- W02A `/administrator/checklists`: builder administrativo de templates, visivel com `tenant_checklists:read` e demais permissoes `tenant_checklists:*`.
+- Runtime web `/operations/checklists`: execucao operacional, visivel com `checklist_runs:read` ou `checklist_runs:create`.
+- Runtime web `/operations/checklists/:checklistId/run`: execucao de schema publicado, exige `checklist_runs:create`; salvar respostas exige `checklist_runs:update`; concluir exige `checklist_runs:complete`.
+
+Operador ou supervisor com `checklist_runs:*` pode ver o runtime operacional sem ver W02A. Tenant Admin pode ver W02A e tambem o runtime quando possuir permissao operacional. A filtragem visual da sidebar nao substitui o RBAC backend dos endpoints compartilhados `/mobile/*`.
+
 ## Riscos atuais
 
 - O fallback por headers simulados ainda existe fora de producao e precisa ser removido gradualmente.

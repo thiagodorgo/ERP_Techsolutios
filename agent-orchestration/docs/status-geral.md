@@ -1006,3 +1006,22 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - testes criados: `tests/audit-log.test.ts` e `tests/audit-security.test.ts`
 - fora de escopo mantido: frontend amplo, Figma, mobile Flutter, SIEM externo, exportacao de logs, painel visual completo de auditoria, migrations e contratos API destrutivos
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/audit-log.test.ts`, `node --test --import tsx tests/audit-security.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts` e `git diff --check`
+
+## Atualizacao 2026-06-08 - checklist runtime web
+
+- branch usada: `feature/checklist-runtime-web`
+- objetivo: criar runtime web operacional para executar checklists publicados sem transformar W02A em tela operacional
+- W02A permanece builder/admin em `/administrator/checklists`
+- rotas web criadas: `/operations/checklists` e `/operations/checklists/:checklistId/run`
+- runtime web consome endpoints `/mobile/*` como runtime operacional compartilhado web/mobile, com possibilidade de alias/rename futuro sem quebra
+- criados `checklist-runtime.adapter.ts`, `checklist-runtime.service.ts` e `checklist-runtime.mock.ts`
+- criadas paginas `ChecklistRunsPage.tsx` e `ChecklistRuntimePage.tsx`
+- criados componentes `ChecklistRuntimeRenderer`, `ChecklistRuntimeField`, `ChecklistRunStatusBadge` e `ChecklistRunSummary`
+- componentes MVP renderizados por schema: `observation`, `vehicle_selector`, `acknowledgement`, `photo_upload`, `before_after`, `damage_map` e fallback informativo para `comparison`
+- anexos/evidencias reutilizam `ChecklistAttachmentUploader` e `ChecklistAttachmentList`
+- navegacao adiciona `Checklists Operacionais` apenas para usuarios com `checklist_runs:read` ou `checklist_runs:create`
+- smoke test cobre service runtime, renderizacao inicial e separacao RBAC operador/W02A
+- E2E cobre renderizacao da lista operacional sem completar fluxo inteiro
+- documentacao atualizada em `docs/frontend-screens.md`, `docs/api.md`, `docs/modules.md`, `docs/audit.md`, `docs/messaging.md`, `docs/rbac.md` e este status
+- fora de escopo mantido: mobile Flutter, Figma, offline, drag-and-drop, redesign amplo, backend novo, migrations e contratos API destrutivos
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`

@@ -3,6 +3,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { PermissionGuard } from "./guards/PermissionGuard";
 import { AppProviders } from "./providers/AppProviders";
 import { AppShell } from "./layouts/AppShell";
+import { ChecklistRuntimePage } from "./modules/checklists/pages/ChecklistRuntimePage";
+import { ChecklistRunsPage } from "./modules/checklists/pages/ChecklistRunsPage";
 import { TenantChecklistsPage } from "./modules/checklists/pages/TenantChecklistsPage";
 import { TenantSettingsPage } from "./modules/settings/pages/TenantSettingsPage";
 import { PlatformLayout } from "./layouts/PlatformLayout";
@@ -55,6 +57,22 @@ export function App() {
             element={
               <PermissionGuard permissions={["dashboard:view"]}>
                 <DashboardPage />
+              </PermissionGuard>
+            }
+          />
+          <Route
+            path="/operations/checklists"
+            element={
+              <PermissionGuard permissions={["checklist_runs:read", "checklist_runs:create"]}>
+                <ChecklistRunsPage />
+              </PermissionGuard>
+            }
+          />
+          <Route
+            path="/operations/checklists/:checklistId/run"
+            element={
+              <PermissionGuard permissions={["checklist_runs:create"]}>
+                <ChecklistRuntimePage />
               </PermissionGuard>
             }
           />

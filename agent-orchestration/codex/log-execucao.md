@@ -768,3 +768,21 @@
 - testes criados: `tests/audit-log.test.ts` e `tests/audit-security.test.ts`
 - fora de escopo mantido: SIEM externo, exportacao, painel visual completo de auditoria, migrations, frontend amplo, Figma, mobile Flutter e contratos API destrutivos
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/audit-log.test.ts`, `node --test --import tsx tests/audit-security.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts` e `git diff --check`
+
+## 2026-06-08 - checklist runtime web
+
+- branch usada: `feature/checklist-runtime-web`
+- objetivo: implementar runtime web operacional de execucao de checklists publicados usando schema vindo da API
+- decisao de rota: `/operations/checklists` para lista operacional e `/operations/checklists/:checklistId/run` para execucao
+- W02A `/administrator/checklists` preservada como builder/admin de templates
+- endpoints `/mobile/*` reutilizados no web como runtime compartilhado web/mobile
+- criados `frontend/src/modules/checklists/checklist-runtime.adapter.ts`, `checklist-runtime.service.ts` e `checklist-runtime.mock.ts`
+- criadas paginas `ChecklistRunsPage.tsx` e `ChecklistRuntimePage.tsx`
+- criados componentes `ChecklistRuntimeRenderer.tsx`, `ChecklistRuntimeField.tsx`, `ChecklistRunStatusBadge.tsx` e `ChecklistRunSummary.tsx`
+- renderer MVP cobre `observation`, `vehicle_selector`, `acknowledgement`, `photo_upload`, `before_after`, `damage_map` e fallback para `comparison`
+- anexos/evidencias reutilizam services/componentes existentes de upload/lista/download
+- navegacao tenant adiciona `Checklists Operacionais` com `checklist_runs:read` ou `checklist_runs:create`; operador nao ve W02A sem `tenant_checklists:read`
+- testes atualizados em `frontend/tests/smoke-flow.test.tsx` e `tests/e2e/critical-flows.spec.ts`
+- documentacao atualizada em `docs/frontend-screens.md`, `docs/api.md`, `docs/modules.md`, `docs/audit.md`, `docs/messaging.md`, `docs/rbac.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: backend novo, migrations, Figma, mobile Flutter, offline, drag-and-drop, redesign amplo e contratos API destrutivos
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`

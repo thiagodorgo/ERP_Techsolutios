@@ -330,7 +330,9 @@ Status de template: `draft`, `published`, `archived`, `inactive`.
 
 Estados oficiais de checklist no handoff Figma: checklist rascunho, checklist publicado e checklist inativo.
 
-### Mobile
+### Runtime operacional compartilhado web/mobile
+
+Os endpoints abaixo nasceram com prefixo `/mobile`, mas nesta fase tambem sao consumidos pelo runtime web operacional em `/operations/checklists`. Eles devem ser tratados como runtime schema-driven compartilhado. O prefixo pode ser renomeado futuramente sem quebra, mantendo compatibilidade ou alias.
 
 ```http
 GET    /mobile/checklists/available
@@ -365,6 +367,15 @@ Status de execucao: `in_progress`, `completed`, `completed_with_divergence`, `pe
 Estados oficiais de execucao no handoff Figma: execucao em andamento, execucao concluida, execucao com divergencia e execucao pendente de ciencia.
 
 Execucoes devem poder ser associadas a entidades do ERP por `related_entity_type` e `related_entity_id`, como OS, recebimento, entrega, manutencao, auditoria, vistoria, estoque, compras ou vendas.
+
+Runtime web:
+
+- `GET /mobile/checklists/available`: lista checklists publicados para iniciar execucao em `/operations/checklists`.
+- `GET /mobile/checklists/:checklistId/render`: carrega schema publicado para `/operations/checklists/:checklistId/run`.
+- `POST /mobile/checklist-runs`: cria a execucao ao iniciar o runtime.
+- `PATCH /mobile/checklist-runs/:runId`: salva rascunho/respostas.
+- `POST /mobile/checklist-runs/:runId/complete`: conclui execucao sem divergencia no MVP web.
+- componentes de evidencia reutilizam upload/download de anexos.
 
 ### Anexos de checklist
 
@@ -406,9 +417,10 @@ Eventos principais cobertos: auth login/refresh/logout/sessao, `user.created`, `
 Frontend:
 
 - `frontend/src/modules/checklists/checklist-attachments.service.ts` expõe upload multipart e download protegido.
+- `frontend/src/modules/checklists/checklist-runtime.service.ts` expõe listagem, render, create/update/complete, marcadores, divergencia, acknowledgement e comparacao.
 - `VITE_USE_MOCKS=true` mantém upload/download simulados para desenvolvimento local.
 - A W02A administrativa não executa checklist operacional; ela apenas sinaliza no preview que componentes `photo_upload`, `before_after` e `damage_map` produzem evidências com upload seguro.
-- M10, M11 e M12 devem consumir os mesmos services/componentes quando as telas operacionais forem implementadas.
+- M10, M11 e M12 devem consumir os mesmos services/componentes e o runtime schema-driven, sem telas hardcoded.
 
 Regras especificas:
 

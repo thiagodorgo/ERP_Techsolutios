@@ -3,7 +3,7 @@ import test from "node:test";
 
 import React from "react";
 import { renderToString } from "react-dom/server";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import { mockSession } from "../src/mocks/auth/context";
 
@@ -341,6 +341,7 @@ test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () =
 
   const operatorPaths = flattenPaths(operatorTenantItems);
   const adminPaths = flattenPaths(adminTenantItems);
+  assert.equal(operatorPaths.includes("/operations/checklists"), true);
   assert.equal(operatorPaths.includes("/administrator/checklists"), false);
   assert.equal(operatorPaths.includes("/administrator/settings"), false);
   assert.equal(adminPaths.includes("/administrator/checklists"), true);
@@ -350,16 +351,142 @@ test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () =
   assert.deepEqual(flattenPaths(adminTenantItems), flattenPaths(adminTenantItems));
 });
 
-test("smoke renderiza /login, W02A, W03 e Platform Console", async () => {
+test("checklist runtime service chama endpoints operacionais compartilhados", async () => {
+  process.env.VITE_USE_MOCKS = "false";
+  process.env.VITE_API_BASE_URL = "/api/v1";
+  browser.clear();
+  const calls = installFetchSequence([
+    {
+      payload: {
+        data: [
+          {
+            id: "chk-1",
+            tenantId: "tenant-a",
+            name: "Checklist publicado",
+            type: "custom",
+            status: "published",
+            version: 1,
+            schema: {},
+            components: [],
+            updatedAt: "2026-06-08T00:00:00.000Z",
+          },
+        ],
+      },
+    },
+    {
+      payload: {
+        data: {
+          id: "chk-1",
+          name: "Checklist publicado",
+          type: "custom",
+          version: 1,
+          schema: {},
+          components: [],
+        },
+      },
+    },
+    {
+      payload: {
+        data: {
+          id: "run-1",
+          tenantId: "tenant-a",
+          templateId: "chk-1",
+          templateVersion: 1,
+          status: "in_progress",
+          startedAt: "2026-06-08T00:00:00.000Z",
+        },
+      },
+    },
+    {
+      payload: {
+        data: {
+          run: {
+            id: "run-1",
+            templateId: "chk-1",
+            templateVersion: 1,
+            status: "in_progress",
+            startedAt: "2026-06-08T00:00:00.000Z",
+          },
+          answers: [],
+          attachments: [],
+          markers: [],
+          acknowledgements: [],
+        },
+      },
+    },
+    {
+      payload: {
+        data: {
+          run: {
+            id: "run-1",
+            templateId: "chk-1",
+            templateVersion: 1,
+            status: "completed",
+            startedAt: "2026-06-08T00:00:00.000Z",
+          },
+          answers: [],
+          attachments: [],
+          markers: [],
+          acknowledgements: [],
+        },
+      },
+    },
+  ]);
+  const {
+    completeChecklistRun,
+    createChecklistRun,
+    listAvailableChecklists,
+    renderChecklist,
+    updateChecklistRun,
+  } = await import("../src/modules/checklists/checklist-runtime.service");
+  const context = {
+    tenantId: "tenant-a",
+    role: "operator",
+    permissions: ["checklist_runs:read", "checklist_runs:create", "checklist_runs:update", "checklist_runs:complete"],
+  };
+
+  await listAvailableChecklists(context);
+  await renderChecklist(context, "chk-1");
+  await createChecklistRun(context, { checklistId: "chk-1", answers: [] });
+  await updateChecklistRun(context, "run-1", { answers: [] });
+  await completeChecklistRun(context, "run-1");
+
+  assert.equal(calls[0].url, "/api/v1/mobile/checklists/available");
+  assert.equal(calls[1].url, "/api/v1/mobile/checklists/chk-1/render");
+  assert.equal(calls[2].url, "/api/v1/mobile/checklist-runs");
+  assert.equal(JSON.parse(String(calls[2].init.body)).checklistId, "chk-1");
+  assert.equal(calls[3].url, "/api/v1/mobile/checklist-runs/run-1");
+  assert.equal(calls[4].url, "/api/v1/mobile/checklist-runs/run-1/complete");
+});
+
+test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () => {
   process.env.VITE_USE_MOCKS = "true";
   browser.clear();
   const { AuthProvider } = await import("../src/providers/AuthProvider");
   const { TenantProvider } = await import("../src/providers/TenantProvider");
   const { PermissionProvider } = await import("../src/providers/PermissionProvider");
+  const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
   const { LoginPage } = await import("../src/pages/LoginPage");
+  const { ChecklistRuntimePage } = await import("../src/modules/checklists/pages/ChecklistRuntimePage");
+  const { ChecklistRunsPage } = await import("../src/modules/checklists/pages/ChecklistRunsPage");
   const { TenantChecklistsPage } = await import("../src/modules/checklists/pages/TenantChecklistsPage");
   const { TenantSettingsPage } = await import("../src/modules/settings/pages/TenantSettingsPage");
   const { PlatformTenantsPage } = await import("../src/modules/platform/pages/PlatformTenantsPage");
+  setStoredAuthSession(mockSession);
+  browser.localStorage.setItem(
+    "erp-techsolutions.active-context",
+    JSON.stringify({
+      tenantId: "ten-industrial-01",
+      tenantName: "Techsolutions Industrial",
+      tenantStatus: "active",
+      branchId: "fil-sp-01",
+      branchName: "Sao Paulo - Campo",
+      role: "Gestor Operacional",
+      permissions: ["checklist_runs:read", "checklist_runs:create", "tenant_checklists:read", "tenant:manage"],
+      enabledModules: ["dashboard", "tenant_checklist", "tenant-admin"],
+      scope: "branch",
+    }),
+  );
 
   const loginHtml = renderToString(
     <MemoryRouter initialEntries={["/login"]}>
@@ -373,6 +500,7 @@ test("smoke renderiza /login, W02A, W03 e Platform Console", async () => {
       <AuthProvider>
         <TenantProvider>
           <PermissionProvider>
+            <ChecklistRunsPage />
             <TenantChecklistsPage />
             <TenantSettingsPage />
             <PlatformTenantsPage />
@@ -381,8 +509,23 @@ test("smoke renderiza /login, W02A, W03 e Platform Console", async () => {
       </AuthProvider>
     </MemoryRouter>,
   );
+  const runtimeHtml = renderToString(
+    <MemoryRouter initialEntries={["/operations/checklists/chk_towing_collection/run"]}>
+      <AuthProvider>
+        <TenantProvider>
+          <PermissionProvider>
+            <Routes>
+              <Route path="/operations/checklists/:checklistId/run" element={<ChecklistRuntimePage />} />
+            </Routes>
+          </PermissionProvider>
+        </TenantProvider>
+      </AuthProvider>
+    </MemoryRouter>,
+  );
 
   assert.match(loginHtml, /W01 Login/);
+  assert.match(protectedHtml, /Checklists Operacionais/);
+  assert.match(runtimeHtml, /Executar checklist|Runtime operacional/);
   assert.match(protectedHtml, /Checklists|Selecione um contexto/);
   assert.match(protectedHtml, /Configurações/);
   assert.match(protectedHtml, /Tenants|tenant/i);

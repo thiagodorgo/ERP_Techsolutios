@@ -1099,6 +1099,133 @@
   color: var(--color-status-success);
 }
 
+.checklist-runtime-list,
+.checklist-runtime-renderer,
+.checklist-runtime-summary,
+.checklist-runtime-card,
+.checklist-runtime-field,
+.checklist-runtime-evidence-block,
+.checklist-runtime-damage,
+.checklist-runtime-marker-list {
+  display: grid;
+  gap: var(--space-10);
+}
+
+.checklist-runtime-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.checklist-runtime-card > div,
+.checklist-runtime-field header,
+.checklist-runtime-summary article,
+.checklist-runtime-marker-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+}
+
+.checklist-runtime-card {
+  align-items: start;
+}
+
+.checklist-runtime-card > div {
+  align-items: flex-start;
+}
+
+.checklist-runtime-card p,
+.checklist-runtime-card span,
+.checklist-runtime-field header span,
+.checklist-runtime-summary span,
+.checklist-runtime-marker-list span {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.checklist-runtime-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--space-16);
+  align-items: start;
+}
+
+.checklist-runtime-field,
+.checklist-runtime-summary article,
+.checklist-runtime-evidence-block,
+.checklist-runtime-damage {
+  padding: var(--space-12);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-8);
+  background: var(--surface-panel);
+}
+
+.checklist-runtime-field header {
+  justify-content: space-between;
+}
+
+.checklist-runtime-field header > div,
+.checklist-runtime-summary article > div {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.checklist-runtime-textarea {
+  min-height: 96px;
+  padding-top: var(--space-10);
+  resize: vertical;
+}
+
+.checklist-runtime-evidence-grid,
+.checklist-runtime-marker-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-12);
+}
+
+.checklist-runtime-marker-form {
+  grid-template-columns: 180px minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.checklist-runtime-damage__surface {
+  min-height: 160px;
+  display: grid;
+  place-items: center;
+  gap: var(--space-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-8);
+  background:
+    linear-gradient(90deg, rgb(18 56 92 / 8%) 1px, transparent 1px),
+    linear-gradient(0deg, rgb(18 56 92 / 8%) 1px, transparent 1px),
+    var(--surface-panel-muted);
+  background-size: 32px 32px;
+  color: var(--color-core-primary);
+}
+
+.checklist-runtime-damage__surface strong {
+  font-size: var(--text-title);
+}
+
+.checklist-runtime-marker-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checklist-runtime-marker-list li {
+  justify-content: space-between;
+  padding: var(--space-8);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-6);
+  background: var(--surface-panel-muted);
+}
+
+.checklist-runtime-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .checklist-evidence-preview img {
   width: 100%;
   max-height: 320px;
@@ -1371,12 +1498,15 @@
   .kpi-grid,
   .context-grid,
   .metric-grid,
-  .tenant-checklist-grid,
-  .tenant-checklist-grid--three,
-  .tenant-checklist-builder-shell,
-  .checklist-builder-layout,
-  .tenant-settings-grid,
-  .tenant-settings-theme-grid {
+    .tenant-checklist-grid,
+    .tenant-checklist-grid--three,
+    .tenant-checklist-builder-shell,
+    .checklist-builder-layout,
+    .checklist-runtime-list,
+    .checklist-runtime-layout,
+    .checklist-runtime-evidence-grid,
+    .tenant-settings-grid,
+    .tenant-settings-theme-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1451,14 +1581,18 @@
   .metric-grid,
   .platform-usage-grid,
   .platform-module-grid,
-  .tenant-checklist-grid,
-  .tenant-checklist-grid--three,
-  .tenant-checklist-selection,
-  .tenant-checklist-builder-shell,
-  .checklist-builder-layout,
-  .tenant-settings-overview,
-  .tenant-settings-grid,
-  .tenant-settings-theme-grid {
+    .tenant-checklist-grid,
+    .tenant-checklist-grid--three,
+    .tenant-checklist-selection,
+    .tenant-checklist-builder-shell,
+    .checklist-builder-layout,
+    .checklist-runtime-list,
+    .checklist-runtime-layout,
+    .checklist-runtime-evidence-grid,
+    .checklist-runtime-marker-form,
+    .tenant-settings-overview,
+    .tenant-settings-grid,
+    .tenant-settings-theme-grid {
     grid-template-columns: 1fr;
   }
 
