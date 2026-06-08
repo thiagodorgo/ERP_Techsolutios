@@ -717,3 +717,17 @@
 - decisoes: refresh token nunca e persistido em texto puro; refresh rotaciona token; logout e idempotente; frontend tenta refresh unico fora dos endpoints de auth; access tokens ja emitidos continuam validos ate expirarem
 - fora de escopo mantido: cookie httpOnly, MFA, OAuth/social login, recuperacao de senha, Redis runtime, remocao definitiva dos headers legacy e revogacao imediata de access token ja emitido
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `node --test --import tsx tests/platform-routes.test.ts`, `node --test --import tsx tests/checklist-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/auth-jwt.test.ts`, `node --test --import tsx tests/auth-session.test.ts` com `DATABASE_URL` local, `npm run test:e2e` e `git diff --check`
+
+## 2026-06-08 - platform admin seed E2E
+
+- branch usada: `feature/platform-admin-seed-e2e`
+- objetivo: criar seed local/dev estavel de Platform Admin e cobrir acesso positivo ao Console da Plataforma no Playwright
+- mapeamento inicial: seed criava tenant demo, branch MAIN, admin demo, roles globais e credencial local apenas para `admin.demo@example.com`; nao havia usuario platform estavel
+- `prisma/seed.ts` atualizado para criar/atualizar `platform.admin@erp.local` no tenant demo com role global `super_admin`
+- senha local/dev do Platform Admin configurada por `E2E_PLATFORM_PASSWORD`, com fallback `platform-admin-dev-password`
+- decisao: sem migration; o modelo atual exige `tenantId` no login local, entao o Platform Admin local pertence ao tenant demo apenas para autenticacao e usa role global `super_admin` para escopo platform
+- `tests/e2e/critical-flows.spec.ts` passou a validar login Platform Admin, sessao com refresh token, shell `Console da Plataforma`, link `Tenants` e pagina P01 `/platform/tenants`
+- teste existente de Tenant Admin bloqueado na Platform Console foi preservado
+- documentacao atualizada em `.env.example`, `docs/auth.md`, `docs/deployment.md`, `docs/frontend-screens.md`, `docs/rbac.md`, `docs/github-workflow.md`, `agent-orchestration/docs/status-geral.md` e este log
+- fora de escopo mantido: Figma, mobile Flutter, API contracts, Prisma migrations, refatoracao de auth e features novas de produto
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run db:seed`, `npm run test:e2e` e `git diff --check`

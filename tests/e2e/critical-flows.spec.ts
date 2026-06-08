@@ -7,6 +7,8 @@ const databaseUrl =
   "postgresql://postgres:postgres@localhost:5432/erp_techsolutions?schema=public";
 const demoEmail = process.env.E2E_DEMO_ADMIN_EMAIL ?? "admin.demo@example.com";
 const demoPassword = process.env.DEMO_ADMIN_PASSWORD ?? "ChangeMe123!";
+const platformEmail = process.env.E2E_PLATFORM_EMAIL ?? "platform.admin@erp.local";
+const platformPassword = process.env.E2E_PLATFORM_PASSWORD ?? "platform-admin-dev-password";
 
 let demoTenantId = "";
 
@@ -70,6 +72,21 @@ test("tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Co
   await expect(page.getByText("Console da Plataforma")).toHaveCount(0);
 });
 
+test("platform admin acessa Platform Console", async ({ page }) => {
+  await loginAsPlatformAdmin(page);
+
+  await expect(page).toHaveURL(/\/platform\/tenants$/);
+  const session = await page.evaluate(() => window.localStorage.getItem("erp-techsolutions.auth-session"));
+  expect(session).toContain(platformEmail);
+  expect(session).toContain("accessToken");
+  expect(session).toContain("refreshToken");
+
+  await expect(page.getByText("Console da Plataforma", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Tenants/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tenants", exact: true })).toBeVisible();
+  await expect(page.getByText("Tenants cadastrados")).toBeVisible();
+});
+
 test("W02A Checklists renderiza builder, lista e preview sem quebrar", async ({ page }) => {
   await loginAndActivateContext(page);
 
@@ -129,6 +146,15 @@ async function loginAsTenantAdmin(page: Page): Promise<void> {
   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/select-context$/);
+}
+
+async function loginAsPlatformAdmin(page: Page): Promise<void> {
+  await page.goto("/login");
+  await page.getByLabel("Tenant ID").fill(demoTenantId);
+  await page.getByLabel("E-mail corporativo").fill(platformEmail);
+  await page.getByRole("textbox", { name: /Senha/i }).fill(platformPassword);
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page).toHaveURL(/\/platform\/tenants$/);
 }
 
 async function activateFirstContext(page: Page): Promise<void> {

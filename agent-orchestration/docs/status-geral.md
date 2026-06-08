@@ -955,3 +955,18 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - documentacao atualizada em `docs/auth.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/architecture.md`, `docs/database.md`, `docs/rbac.md` e este status
 - fora de escopo mantido: cookie httpOnly, MFA, OAuth/social login, recuperacao de senha, Redis runtime, remocao definitiva dos headers legacy e revogacao imediata de access token ja emitido
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `node --test --import tsx tests/platform-routes.test.ts`, `node --test --import tsx tests/checklist-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/auth-jwt.test.ts`, `node --test --import tsx tests/auth-session.test.ts` com `DATABASE_URL` local, `npm run test:e2e` e `git diff --check`
+
+## Atualizacao 2026-06-08 - platform admin seed E2E
+
+- branch usada: `feature/platform-admin-seed-e2e`
+- objetivo: remover a pendencia do acesso positivo ao Console da Plataforma no E2E
+- `prisma/seed.ts` passou a garantir usuario local/dev `platform.admin@erp.local` com role global `super_admin`
+- estrategia documentada: o usuario Platform Admin pertence ao tenant demo apenas porque o login local atual exige `tenantId`; o escopo de plataforma vem da role global `super_admin`
+- senha local/dev configuravel por `E2E_PLATFORM_PASSWORD`, com fallback `platform-admin-dev-password`; nao e segredo real
+- seed continua idempotente e preserva `admin.demo@example.com`
+- `.env.example` documenta `E2E_PLATFORM_EMAIL` e `E2E_PLATFORM_PASSWORD`
+- E2E passou a cobrir login Platform Admin, sessao com refresh token e acesso positivo a `/platform/tenants`
+- E2E manteve o bloqueio do Console da Plataforma para Tenant Admin
+- documentacao atualizada em `docs/auth.md`, `docs/deployment.md`, `docs/frontend-screens.md`, `docs/rbac.md`, `docs/github-workflow.md` e este status
+- fora de escopo mantido: Figma, mobile Flutter, contratos API, migrations, refatoracao de auth e features novas de produto
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run db:seed`, `npm run test:e2e` e `git diff --check`

@@ -50,15 +50,22 @@ Politicas como bloqueio progressivo, recuperacao de senha, rotacao obrigatoria e
 
 ## Admin demo local
 
-O seed cria ou atualiza credencial local para `admin.demo@example.com`.
+O seed cria ou atualiza credenciais locais de desenvolvimento para:
+
+- Tenant Admin: `admin.demo@example.com`
+- Platform Admin local: `platform.admin@erp.local`
 
 Para desenvolvimento local, use:
 
 ```env
 DEMO_ADMIN_PASSWORD="ChangeMe123!"
+E2E_PLATFORM_EMAIL="platform.admin@erp.local"
+E2E_PLATFORM_PASSWORD="platform-admin-dev-password"
 ```
 
-Esse valor e apenas exemplo local/dev. Nunca use esse valor em producao. Em producao, se o seed for executado, `DEMO_ADMIN_PASSWORD` deve ser definido fora do repositorio com um segredo proprio.
+Esses valores sao apenas exemplos local/dev. Nunca use esses valores em producao. Em producao, se o seed for executado, `DEMO_ADMIN_PASSWORD` e a senha do Platform Admin devem ser definidos fora do repositorio com segredos proprios.
+
+Estrategia atual do Platform Admin local: como o modelo de login local exige `tenantId`, o usuario `platform.admin@erp.local` pertence ao tenant demo para autenticacao e recebe role global `super_admin`. O boundary `/api/v1/platform/*` reconhece `super_admin` como escopo de plataforma. Isso nao cria bypass de RLS para dados tenant-scoped; quando um dado de tenant for acessado, o backend continua dependendo de contexto tenant explicito.
 
 ## Login local tenant-scoped
 
@@ -357,8 +364,10 @@ Pre-requisitos locais:
 - navegador Playwright instalado com `npx playwright install chromium`;
 - `DATABASE_URL` apontando para o PostgreSQL local ou usando o default de desenvolvimento;
 - `DEMO_ADMIN_PASSWORD` opcional, com fallback local `ChangeMe123!`.
+- `E2E_PLATFORM_EMAIL` opcional, com fallback local `platform.admin@erp.local`;
+- `E2E_PLATFORM_PASSWORD` opcional, com fallback local `platform-admin-dev-password`.
 
-O comando roda o seed demo idempotente e valida login real com JWT, erro de credenciais invalidas, criacao de sessao em `localStorage` com refresh token, guard de rota protegida, logout local/backend e bloqueio do Console da Plataforma para usuario tenant.
+O comando roda o seed demo idempotente e valida login real com JWT, erro de credenciais invalidas, criacao de sessao em `localStorage` com refresh token, acesso positivo do Platform Admin ao Console da Plataforma, guard de rota protegida, logout local/backend e bloqueio do Console da Plataforma para usuario tenant.
 
 ## Authenticated actor middleware
 
