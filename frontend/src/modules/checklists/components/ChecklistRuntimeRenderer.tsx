@@ -8,12 +8,13 @@ import type {
   ChecklistMarker,
   ChecklistRenderSchema,
   ChecklistRun,
-  ChecklistRunAnswer,
+  ChecklistRunComparison,
   CreateChecklistMarkerInput,
 } from "../types";
+import type { ChecklistRuntimeAnswers, ChecklistRuntimeValidationError } from "../checklist-runtime.validation";
 import { ChecklistRuntimeField } from "./ChecklistRuntimeField";
 
-export type ChecklistRuntimeAnswers = Record<string, unknown>;
+export type { ChecklistRuntimeAnswers } from "../checklist-runtime.validation";
 
 export function ChecklistRuntimeRenderer({
   context,
@@ -22,12 +23,18 @@ export function ChecklistRuntimeRenderer({
   answers,
   attachments,
   markers,
+  comparison,
+  comparisonLoading,
+  validationErrors,
   saving,
   completed,
   onAnswerChange,
   onSave,
   onAttachmentUploaded,
   onAddMarker,
+  onRemoveMarker,
+  onReportDivergence,
+  onAcknowledgeRun,
 }: {
   readonly context: ChecklistApiContext;
   readonly schema: ChecklistRenderSchema;
@@ -35,16 +42,27 @@ export function ChecklistRuntimeRenderer({
   readonly answers: ChecklistRuntimeAnswers;
   readonly attachments: readonly ChecklistAttachment[];
   readonly markers: readonly ChecklistMarker[];
+  readonly comparison?: ChecklistRunComparison | null;
+  readonly comparisonLoading?: boolean;
+  readonly validationErrors?: readonly ChecklistRuntimeValidationError[];
   readonly saving?: boolean;
   readonly completed?: boolean;
   readonly onAnswerChange: (componentId: string, value: unknown) => void;
   readonly onSave: () => Promise<unknown>;
   readonly onAttachmentUploaded: (attachment: ChecklistAttachment) => void;
   readonly onAddMarker: (input: CreateChecklistMarkerInput) => Promise<void>;
+  readonly onRemoveMarker: (markerId: string) => void;
+  readonly onReportDivergence: (componentId: string, observation: string, attachment: ChecklistAttachment) => Promise<void>;
+  readonly onAcknowledgeRun: (message: string, observation?: string) => Promise<void>;
 }) {
   const orderedComponents = useMemo(
     () => [...schema.components].sort((left, right) => left.orderIndex - right.orderIndex),
     [schema.components],
+  );
+  const validationErrorByComponent = useMemo(
+    () =>
+      new Map((validationErrors ?? []).map((validationError) => [validationError.componentId, validationError.message])),
+    [validationErrors],
   );
 
   if (orderedComponents.length === 0) {
@@ -64,11 +82,19 @@ export function ChecklistRuntimeRenderer({
           component={component}
           value={answers[component.id]}
           attachments={attachments.filter((attachment) => attachment.componentId === component.id)}
+          allAttachments={attachments}
           markers={markers.filter((marker) => marker.componentId === component.id)}
+          runStatus={run?.status}
+          comparison={comparison}
+          comparisonLoading={comparisonLoading}
+          validationError={validationErrorByComponent.get(component.id)}
           disabled={completed}
           onChange={(value) => onAnswerChange(component.id, value)}
           onAttachmentUploaded={onAttachmentUploaded}
           onAddMarker={onAddMarker}
+          onRemoveMarker={onRemoveMarker}
+          onReportDivergence={onReportDivergence}
+          onAcknowledgeRun={onAcknowledgeRun}
         />
       ))}
       <div className="checklist-runtime-actions">
@@ -79,14 +105,4 @@ export function ChecklistRuntimeRenderer({
       </div>
     </section>
   );
-}
-
-export function toRunAnswers(answers: ChecklistRuntimeAnswers): ChecklistRunAnswer[] {
-  return Object.entries(answers)
-    .filter(([, value]) => value !== undefined && value !== null && value !== "")
-    .map(([componentId, value]) => ({
-      componentId,
-      value,
-      metadata: {},
-    }));
 }

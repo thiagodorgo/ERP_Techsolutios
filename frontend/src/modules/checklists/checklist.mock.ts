@@ -91,16 +91,23 @@ let checklists: TenantChecklist[] = [
     name: "Entrega de veiculo rebocado",
     description: "Nova vistoria, comparacao com coleta e ciencia quando houver divergencia.",
     type: "towing_delivery",
-    status: "draft",
+    status: "published",
     version: 2,
     schema: { source: "mock" },
+    publishedAt: "2026-06-06T18:00:00.000Z",
     createdAt: "2026-06-06T17:30:00.000Z",
     updatedAt: "2026-06-06T17:30:00.000Z",
     components: [
       component("damage_map", "Nova vistoria", true, 0),
       component("comparison", "Comparacao com coleta", true, 1),
       component("observation", "Observacao de divergencia", true, 2),
-      component("acknowledgement", "Ciencia de responsabilidade", true, 3),
+      {
+        ...component("acknowledgement", "Ciencia de responsabilidade", true, 3),
+        config: {
+          message: "Declaro ciencia da divergencia registrada na entrega e da responsabilidade indicada pelo tenant.",
+          requireObservation: true,
+        },
+      },
     ],
   },
   {
@@ -116,7 +123,12 @@ let checklists: TenantChecklist[] = [
     createdAt: "2026-06-03T10:00:00.000Z",
     updatedAt: "2026-06-04T10:00:00.000Z",
     components: [
-      component("before_after", "Foto antes/depois", true, 0),
+      {
+        ...component("before_after", "Foto antes/depois", true, 0),
+        config: {
+          requireBothStages: true,
+        },
+      },
       component("observation", "Laudo tecnico", false, 1),
     ],
   },

@@ -786,3 +786,20 @@
 - documentacao atualizada em `docs/frontend-screens.md`, `docs/api.md`, `docs/modules.md`, `docs/audit.md`, `docs/messaging.md`, `docs/rbac.md` e `agent-orchestration/docs/status-geral.md`
 - fora de escopo mantido: backend novo, migrations, Figma, mobile Flutter, offline, drag-and-drop, redesign amplo e contratos API destrutivos
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`
+
+## 2026-06-08 - checklist runtime web hardening
+
+- branch usada: `feature/checklist-runtime-web-hardening`
+- objetivo: endurecer o runtime web operacional sem redesign, sem backend novo e sem alterar contratos `/mobile/*`
+- criada validacao client-side por schema em `frontend/src/modules/checklists/checklist-runtime.validation.ts`
+- validacao bloqueia conclusao quando faltam campos obrigatorios, observacao, fotos, antes/depois, ciencia, seletor de veiculo ou markers exigidos
+- UX aprimorada com progresso de obrigatorios, status do run, resumo lateral e mensagens de sucesso/falha
+- `comparison` consulta endpoint de comparacao quando presente no schema e permite registrar divergencia com observacao obrigatoria e evidencia anexada
+- `acknowledgement` usa texto configuravel do schema e chama endpoint de ciencia apenas quando o run esta `pending_acknowledgement`
+- `before_after` separa evidencias por metadata `stage=before` e `stage=after`
+- `damage_map` exige marker com tipo/descricao, envia marker ao endpoint real e permite remocao local da lista; exclusao persistente fica pendente de endpoint futuro
+- mocks foram ajustados para publicar M11 de entrega/reboque e exercitar ciencia configuravel
+- smoke e E2E ampliados para validar endpoints runtime, validacao por schema, tela de run e bloqueio de obrigatorios incompletos
+- documentacao atualizada em `docs/frontend-screens.md`, `docs/api.md`, `docs/modules.md`, `docs/audit.md`, `docs/messaging.md`, `docs/rbac.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: mobile Flutter, Figma, offline, drag-and-drop, redesign amplo, backend novo, migrations e contratos API destrutivos
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`

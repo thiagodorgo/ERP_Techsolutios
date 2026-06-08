@@ -90,6 +90,14 @@ Telas implementadas:
 - `Runtime operacional de checklist`, rota `/operations/checklists/:checklistId/run`.
 - O runtime web lista checklists publicados, carrega schema via API, cria execucao, salva respostas, renderiza componentes oficiais, integra upload/lista/download de evidencias, registra marcadores MVP e conclui execucao.
 - Os endpoints `/mobile/*` sao usados pelo web como runtime operacional compartilhado web/mobile; o nome pode ser renomeado futuramente com compatibilidade.
+- Hardening atual do runtime web:
+  - validacao client-side basica por schema bloqueia conclusao quando obrigatorios basicos estao incompletos;
+  - progresso, status do run, resumo de preenchimento e mensagens de sucesso/falha ficam visiveis na execucao;
+  - `comparison` consulta o endpoint de comparacao quando o schema traz o componente e permite registrar divergencia com observacao e evidencia ja anexada;
+  - `acknowledgement` usa texto configuravel do schema e chama o endpoint de ciencia somente quando o backend deixa o run `pending_acknowledgement`;
+  - `before_after` separa evidencias por metadata `stage=before` e `stage=after`;
+  - `damage_map` envia markers estruturados com tipo/descricao e permite remocao local da lista; exclusao persistente depende de endpoint futuro.
+- Limite E2E atual: cobre lista operacional, tela de run e bloqueio de obrigatorios incompletos. Completar fluxo real com upload/ciência depende de seed estavel de evidencias.
 
 Telas planejadas:
 

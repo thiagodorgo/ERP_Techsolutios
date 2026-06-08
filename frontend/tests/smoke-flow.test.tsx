@@ -400,6 +400,84 @@ test("checklist runtime service chama endpoints operacionais compartilhados", as
     {
       payload: {
         data: {
+          id: "marker-1",
+          tenantId: "tenant-a",
+          runId: "run-1",
+          componentId: "cmp-damage",
+          markerType: "damage",
+          description: "Risco lateral",
+          x: 0.5,
+          y: 0.5,
+          metadata: {},
+          createdAt: "2026-06-08T00:00:00.000Z",
+        },
+      },
+    },
+    {
+      payload: {
+        data: {
+          run: {
+            id: "run-1",
+            templateId: "chk-1",
+            templateVersion: 1,
+            status: "in_progress",
+            startedAt: "2026-06-08T00:00:00.000Z",
+          },
+          answers: [],
+          attachments: [],
+          markers: [],
+          comparison: {
+            status: "in_progress",
+            divergence: false,
+          },
+        },
+      },
+    },
+    {
+      payload: {
+        data: {
+          run: {
+            id: "run-1",
+            templateId: "chk-1",
+            templateVersion: 1,
+            status: "pending_acknowledgement",
+            startedAt: "2026-06-08T00:00:00.000Z",
+          },
+          answers: [],
+          attachments: [],
+          markers: [],
+          acknowledgements: [],
+        },
+      },
+    },
+    {
+      payload: {
+        data: {
+          acknowledgement: {
+            id: "ack-1",
+            runId: "run-1",
+            message: "Ciencia configurada",
+            acknowledgedAt: "2026-06-08T00:00:00.000Z",
+          },
+          run: {
+            run: {
+              id: "run-1",
+              templateId: "chk-1",
+              templateVersion: 1,
+              status: "completed_with_divergence",
+              startedAt: "2026-06-08T00:00:00.000Z",
+            },
+            answers: [],
+            attachments: [],
+            markers: [],
+            acknowledgements: [],
+          },
+        },
+      },
+    },
+    {
+      payload: {
+        data: {
           run: {
             id: "run-1",
             templateId: "chk-1",
@@ -433,22 +511,44 @@ test("checklist runtime service chama endpoints operacionais compartilhados", as
     },
   ]);
   const {
+    acknowledgeRun,
+    addMarker,
     completeChecklistRun,
     createChecklistRun,
+    getRunComparison,
     listAvailableChecklists,
+    reportDivergence,
     renderChecklist,
     updateChecklistRun,
   } = await import("../src/modules/checklists/checklist-runtime.service");
   const context = {
     tenantId: "tenant-a",
     role: "operator",
-    permissions: ["checklist_runs:read", "checklist_runs:create", "checklist_runs:update", "checklist_runs:complete"],
+    permissions: ["checklist_runs:read", "checklist_runs:create", "checklist_runs:update", "checklist_runs:complete", "checklist_runs:acknowledge"],
   };
 
   await listAvailableChecklists(context);
   await renderChecklist(context, "chk-1");
   await createChecklistRun(context, { checklistId: "chk-1", answers: [] });
   await updateChecklistRun(context, "run-1", { answers: [] });
+  await addMarker(context, "run-1", {
+    componentId: "cmp-damage",
+    markerType: "damage",
+    description: "Risco lateral",
+    x: 0.5,
+    y: 0.5,
+  });
+  await getRunComparison(context, "run-1");
+  await reportDivergence(context, "run-1", {
+    componentId: "cmp-comparison",
+    fileUrl: "/evidence.jpg",
+    fileName: "evidence.jpg",
+    mimeType: "image/jpeg",
+    observation: "Divergencia encontrada",
+  });
+  await acknowledgeRun(context, "run-1", {
+    message: "Ciencia configurada",
+  });
   await completeChecklistRun(context, "run-1");
 
   assert.equal(calls[0].url, "/api/v1/mobile/checklists/available");
@@ -456,7 +556,66 @@ test("checklist runtime service chama endpoints operacionais compartilhados", as
   assert.equal(calls[2].url, "/api/v1/mobile/checklist-runs");
   assert.equal(JSON.parse(String(calls[2].init.body)).checklistId, "chk-1");
   assert.equal(calls[3].url, "/api/v1/mobile/checklist-runs/run-1");
-  assert.equal(calls[4].url, "/api/v1/mobile/checklist-runs/run-1/complete");
+  assert.equal(calls[4].url, "/api/v1/mobile/checklist-runs/run-1/markers");
+  assert.equal(calls[5].url, "/api/v1/mobile/checklist-runs/run-1/comparison");
+  assert.equal(calls[6].url, "/api/v1/mobile/checklist-runs/run-1/divergence");
+  assert.equal(JSON.parse(String(calls[6].init.body)).observation, "Divergencia encontrada");
+  assert.equal(calls[7].url, "/api/v1/mobile/checklist-runs/run-1/acknowledgement");
+  assert.equal(calls[8].url, "/api/v1/mobile/checklist-runs/run-1/complete");
+});
+
+test("checklist runtime valida obrigatorios por schema", async () => {
+  const { calculateChecklistRuntimeProgress, validateChecklistRuntime } = await import(
+    "../src/modules/checklists/checklist-runtime.validation"
+  );
+  const schema = {
+    id: "chk-validation",
+    name: "Checklist de validacao",
+    type: "technical_evidence" as const,
+    version: 1,
+    schema: {},
+    components: [
+      {
+        id: "cmp-before-after",
+        componentKey: "before_after",
+        label: "Antes e depois",
+        type: "before_after" as const,
+        required: true,
+        orderIndex: 0,
+        config: { requireBothStages: true },
+        validationRules: {},
+        visibilityRules: {},
+      },
+      {
+        id: "cmp-ack",
+        componentKey: "acknowledgement",
+        label: "Ciencia",
+        type: "acknowledgement" as const,
+        required: true,
+        orderIndex: 1,
+        config: { requireObservation: true },
+        validationRules: {},
+        visibilityRules: {},
+      },
+    ],
+  };
+  const beforeAttachment = {
+    id: "att-before",
+    runId: "run-1",
+    componentId: "cmp-before-after",
+    fileUrl: "/before.jpg",
+    metadata: { stage: "before" },
+    createdAt: "2026-06-08T00:00:00.000Z",
+  };
+
+  const missing = validateChecklistRuntime(schema, { "cmp-ack": { accepted: true } }, [beforeAttachment], []);
+  assert.equal(missing.length, 2);
+  assert.match(missing[0].message, /antes e depois/i);
+  assert.match(missing[1].message, /observacao obrigatoria/i);
+
+  const progress = calculateChecklistRuntimeProgress(schema, { "cmp-ack": { accepted: true } }, [beforeAttachment], []);
+  assert.equal(progress.requiredTotal, 2);
+  assert.equal(progress.requiredCompleted, 0);
 });
 
 test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () => {

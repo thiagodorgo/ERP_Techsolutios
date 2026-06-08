@@ -9,6 +9,9 @@ const demoEmail = process.env.E2E_DEMO_ADMIN_EMAIL ?? "admin.demo@example.com";
 const demoPassword = process.env.DEMO_ADMIN_PASSWORD ?? "ChangeMe123!";
 const platformEmail = process.env.E2E_PLATFORM_EMAIL ?? "platform.admin@erp.local";
 const platformPassword = process.env.E2E_PLATFORM_PASSWORD ?? "platform-admin-dev-password";
+const e2eChecklistId = "11111111-2222-4333-8444-555555555555";
+const e2eVehicleComponentId = "11111111-2222-4333-8444-555555555556";
+const e2ePhotoComponentId = "11111111-2222-4333-8444-555555555557";
 
 let demoTenantId = "";
 
@@ -28,6 +31,53 @@ test.beforeAll(async () => {
     }
 
     demoTenantId = tenant.id;
+    await prisma.checklistTemplate.upsert({
+      where: {
+        tenant_id_id: {
+          tenant_id: tenant.id,
+          id: e2eChecklistId,
+        },
+      },
+      create: {
+        id: e2eChecklistId,
+        tenant_id: tenant.id,
+        name: "E2E Coleta obrigatoria",
+        description: "Template publicado para validar runtime web no E2E.",
+        type: "towing_collection",
+        status: "published",
+        version: 1,
+        schema: { source: "e2e" },
+        published_at: new Date(),
+      },
+      update: {
+        name: "E2E Coleta obrigatoria",
+        description: "Template publicado para validar runtime web no E2E.",
+        type: "towing_collection",
+        status: "published",
+        version: 1,
+        schema: { source: "e2e" },
+        published_at: new Date(),
+        deleted_at: null,
+      },
+    });
+    await upsertChecklistComponent(prisma, tenant.id, {
+      id: e2eVehicleComponentId,
+      component_key: "vehicle_selector",
+      type: "vehicle_selector",
+      label: "Tipo de veiculo",
+      required: true,
+      order_index: 0,
+      config: { options: [{ value: "car", label: "Carro" }] },
+    });
+    await upsertChecklistComponent(prisma, tenant.id, {
+      id: e2ePhotoComponentId,
+      component_key: "photo_upload",
+      type: "photo_upload",
+      label: "Foto obrigatoria",
+      required: true,
+      order_index: 1,
+      config: { minPhotos: 1 },
+    });
   } finally {
     await prisma.$disconnect();
   }
@@ -49,6 +99,7 @@ test("login real cria sessao, credenciais invalidas exibem erro e rota protegida
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.getByText("Tenant, e-mail ou senha invalidos.")).toBeVisible();
 
+  await resetDemoAuthState();
   await loginAsTenantAdmin(page);
   await expect(page).toHaveURL(/\/select-context$/);
 
@@ -99,13 +150,19 @@ test("W02A Checklists renderiza builder, lista e preview sem quebrar", async ({ 
   await expect(page.getByRole("button", { name: /Novo checklist/i })).toBeVisible();
 });
 
-test("runtime web de checklists renderiza lista operacional", async ({ page }) => {
+test("runtime web de checklists renderiza lista operacional e bloqueia obrigatorios incompletos", async ({ page }) => {
   await loginAndActivateContext(page);
 
   await page.getByRole("link", { name: /Checklists Operacionais/i }).click();
   await expect(page).toHaveURL(/\/operations\/checklists$/);
   await expect(page.getByRole("heading", { name: "Checklists Operacionais" })).toBeVisible();
   await expect(page.getByText("Execucao web de checklists publicados")).toBeVisible();
+  await page.getByRole("button", { name: /Iniciar execucao/i }).first().click();
+  await expect(page).toHaveURL(/\/operations\/checklists\/.+\/run$/);
+  await expect(page.getByLabel("Progresso de preenchimento")).toBeVisible();
+  await expect(page.getByText(/Execucao orientada por schema/i)).toBeVisible();
+  await page.getByRole("button", { name: /Concluir checklist/i }).click();
+  await expect(page.getByText(/Preencha o campo obrigatorio|Envie ao menos|Registre ao menos/i).first()).toBeVisible();
 });
 
 test("W03 Configuracoes renderiza categorias e temas planejados", async ({ page }) => {
@@ -169,4 +226,65 @@ async function loginAsPlatformAdmin(page: Page): Promise<void> {
 async function activateFirstContext(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { name: "Definir tenant, filial e papel ativo" })).toBeVisible();
   await page.getByRole("button", { name: "Ativar contexto" }).first().click();
+}
+
+async function resetDemoAuthState(): Promise<void> {
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: databaseUrl }),
+  });
+
+  try {
+    await prisma.localAuthCredential.updateMany({
+      where: {
+        tenant_id: demoTenantId,
+        email: demoEmail,
+      },
+      data: {
+        failed_attempts: 0,
+        locked_until: null,
+      },
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function upsertChecklistComponent(
+  prisma: PrismaClient,
+  tenantId: string,
+  input: {
+    id: string;
+    component_key: string;
+    type: string;
+    label: string;
+    required: boolean;
+    order_index: number;
+    config: Record<string, unknown>;
+  },
+): Promise<void> {
+  await prisma.checklistTemplateComponent.upsert({
+    where: {
+      tenant_id_id: {
+        tenant_id: tenantId,
+        id: input.id,
+      },
+    },
+    create: {
+      ...input,
+      tenant_id: tenantId,
+      template_id: e2eChecklistId,
+      validation_rules: {},
+      visibility_rules: {},
+    },
+    update: {
+      component_key: input.component_key,
+      type: input.type,
+      label: input.label,
+      required: input.required,
+      order_index: input.order_index,
+      config: input.config,
+      validation_rules: {},
+      visibility_rules: {},
+    },
+  });
 }
