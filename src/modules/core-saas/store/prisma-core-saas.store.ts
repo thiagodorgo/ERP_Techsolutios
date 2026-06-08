@@ -2,6 +2,7 @@
 
 import { prisma } from "../../../database/prisma.js";
 import { setTenantRlsContext, withTenantRls } from "../../../database/rls.js";
+import { EnterpriseAuditLogService } from "../audit/audit-log.service.js";
 import {
   AuditLogRepository,
   RoleRepository,
@@ -51,12 +52,15 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
 
       // Audit recorded inside the same transaction — if audit fails, tenant creation rolls back.
       // actor_user_id is null because tenant creation precedes any user-based auth.
-      await txAudit.create({
-        tenant_id: tenant.id,
-        actor_user_id: null,
+      await new EnterpriseAuditLogService(txAudit).record({
+        tenantId: tenant.id,
+        actorId: null,
+        actorType: "system",
         action: "tenant.created",
-        entity: "tenant",
-        entity_id: tenant.id,
+        resourceType: "tenant",
+        resourceId: tenant.id,
+        outcome: "success",
+        severity: "info",
       });
 
       return mapTenantFromPrisma(tenant);
@@ -131,12 +135,20 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
         : null;
 
       // Step 4: audit inside the transaction — if audit fails, user and roles roll back
-      await txAudit.create({
-        tenant_id: input.tenantId,
-        actor_user_id: actorId,
+      await new EnterpriseAuditLogService(txAudit).record({
+        tenantId: input.tenantId,
+        actorId,
+        actorType: actorId ? "user" : "system",
         action: "user.created",
-        entity: "user",
-        entity_id: user.id,
+        resourceType: "user",
+        resourceId: user.id,
+        outcome: "success",
+        severity: "info",
+        metadata: {
+          email: user.email,
+          roleCount: input.roles.length,
+          branchCount: input.branchIds?.length ?? 0,
+        },
       });
 
       const savedUser = await txUsers.findByIdForTenant(user.id, input.tenantId);
@@ -212,17 +224,26 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
         input.tenant_id,
       );
 
-      return txAuditLogs.create({
-        tenant_id: input.tenant_id,
-        actor_user_id: actorUserId,
+      return new EnterpriseAuditLogService(txAuditLogs).record({
+        tenantId: input.tenant_id,
+        actorId: actorUserId,
         action: input.action,
-        entity: String(input.metadata?.entity ?? "core_saas"),
-        entity_id: readOptionalString(input.metadata?.entity_id),
+        resourceType: String(input.metadata?.entity ?? "core_saas"),
+        resourceId: readOptionalString(input.metadata?.entity_id),
+        outcome: readAuditOutcome(input.metadata?.outcome),
+        severity: readAuditSeverity(input.metadata?.severity),
         metadata: toJsonObject(input.metadata),
       });
     });
 
-    return mapAuditLogFromPrisma(event, input.actor_user_id);
+    return {
+      id: event.id,
+      action: event.action,
+      actor_user_id: event.actorId ?? input.actor_user_id,
+      tenant_id: event.tenantId,
+      timestamp: event.createdAt,
+      metadata: input.metadata,
+    };
   }
 
   async listAuditEventsByTenant(tenantId: string): Promise<AuditEvent[]> {
@@ -331,6 +352,22 @@ function uniqueRoles(values: readonly Role[]): Role[] {
 
 function readOptionalString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value : null;
+}
+
+function readAuditOutcome(value: unknown): "success" | "failure" | "denied" | undefined {
+  if (value === "success" || value === "failure" || value === "denied") {
+    return value;
+  }
+
+  return undefined;
+}
+
+function readAuditSeverity(value: unknown): "info" | "warning" | "critical" | undefined {
+  if (value === "info" || value === "warning" || value === "critical") {
+    return value;
+  }
+
+  return undefined;
 }
 
 function toJsonObject(

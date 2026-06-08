@@ -105,6 +105,12 @@ Redis e usado para jobs internos simples, eventos de dominio e dead-letter local
 
 Integracao inicial: `checklist_run.attachment_uploaded` publica evento depois do upload real de anexo e enfileira `checklist-attachment-postprocess`. O worker nao inicia automaticamente no servidor.
 
+## Auditoria enterprise
+
+A auditoria enterprise esta documentada em `docs/audit.md`. A gravacao principal usa `audit_logs` de forma sincronica, tenant-scoped e protegida por RLS. O contrato padronizado inclui actor, action, resource, outcome, severity, correlationId, requestId, IP, user-agent e metadata sanitizado. Como a tabela atual ja possui `metadata Json`, os campos complementares ficam em metadata e nenhuma migration foi criada nesta rodada.
+
+Depois da persistencia, `audit_log.created` e publicado como domain event para fanout futuro via Redis. Falha de Redis nao desfaz a operacao principal nem remove o audit log persistido.
+
 ## Evolucao planejada
 
 - Persistir modulos habilitados por tenant.

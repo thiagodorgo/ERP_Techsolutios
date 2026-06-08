@@ -52,6 +52,10 @@ export type LocalAuthLoginInput = {
   readonly tenant_id: string;
   readonly email: string;
   readonly password: string;
+  readonly request_id?: string;
+  readonly correlation_id?: string;
+  readonly ip_address?: string;
+  readonly user_agent?: string;
 };
 
 export type LocalAuthLoginUser = {

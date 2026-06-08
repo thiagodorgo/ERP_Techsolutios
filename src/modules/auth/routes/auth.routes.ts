@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 
 import { getAuthSessionService, getLocalAuthLoginService } from "../auth-runtime.js";
 import {
@@ -56,6 +56,10 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         tenant_id: parsedBody.tenantId,
         email: parsedBody.email,
         password: parsedBody.password,
+        request_id: readRequestId(request),
+        correlation_id: readHeader(request.headers["x-correlation-id"]) ?? readRequestId(request),
+        ip_address: request.ip,
+        user_agent: readHeader(request.headers["user-agent"]),
       });
 
       if (!loginResult.ok) {
@@ -269,6 +273,12 @@ function readHeader(value: string | string[] | undefined): string | undefined {
   }
 
   return value;
+}
+
+function readRequestId(request: Request): string | undefined {
+  const candidate = (request as typeof request & { id?: unknown }).id;
+
+  return typeof candidate === "string" ? candidate : readHeader(request.headers["x-request-id"]);
 }
 
 function parseRefreshTokenRequestBody(body: unknown): string {

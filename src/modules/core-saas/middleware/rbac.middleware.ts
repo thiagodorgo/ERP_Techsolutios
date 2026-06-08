@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
+import { recordRequestAuditBestEffort } from "../audit/audit-request-context.js";
 import type { Permission } from "../permissions/catalog.js";
 
 export function requirePermission(permission: Permission) {
@@ -7,10 +8,11 @@ export function requirePermission(permission: Permission) {
 }
 
 export function requireAnyPermission(permissions: readonly Permission[]) {
-  return (request: Request, response: Response, next: NextFunction): void => {
+  return async (request: Request, response: Response, next: NextFunction): Promise<void> => {
     const tenantContext = request.tenantContext;
 
     if (!tenantContext?.tenantId) {
+      await recordPermissionDenied(request, permissions, "tenant_required");
       sendForbidden(
         response,
         "tenant_required",
@@ -20,6 +22,7 @@ export function requireAnyPermission(permissions: readonly Permission[]) {
     }
 
     if (tenantContext.roles.length === 0) {
+      await recordPermissionDenied(request, permissions, "role_required");
       sendForbidden(response, "role_required", "Role is required.");
       return;
     }
@@ -27,6 +30,7 @@ export function requireAnyPermission(permissions: readonly Permission[]) {
     const hasPermission = permissions.some((permission) => tenantContext.permissions.includes(permission));
 
     if (!hasPermission) {
+      await recordPermissionDenied(request, permissions, "permission_required");
       sendForbidden(
         response,
         "permission_required",
@@ -47,6 +51,26 @@ export function requireTenantContext(request: Request) {
   }
 
   return tenantContext;
+}
+
+function recordPermissionDenied(
+  request: Request,
+  permissions: readonly Permission[],
+  reason: string,
+): Promise<void> {
+  return recordRequestAuditBestEffort(request, {
+    action: "permission.denied",
+    resourceType: "http_route",
+    resourceId: `${request.method} ${request.path}`,
+    outcome: "denied",
+    severity: "warning",
+    metadata: {
+      reason,
+      requiredPermissions: permissions,
+      roles: request.tenantContext?.roles ?? [],
+      permissions: request.tenantContext?.permissions ?? [],
+    },
+  });
 }
 
 function sendForbidden(

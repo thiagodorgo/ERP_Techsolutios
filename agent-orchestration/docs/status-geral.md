@@ -989,3 +989,20 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - testes criados: `tests/job-queue.test.ts` e `tests/domain-events.test.ts`
 - fora de escopo mantido: Kafka, RabbitMQ, cloud queue, notificacoes reais, webhooks reais, frontend, Figma, mobile Flutter, migrations e mudancas destrutivas de contrato API
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `npm run test:e2e` e `git diff --check`
+
+## Atualizacao 2026-06-08 - audit log enhancements
+
+- branch usada: `feature/audit-log-enhancements`
+- objetivo: fortalecer auditoria enterprise com contrato padronizado, metadata sanitizado, RLS/RBAC e fanout seguro via Redis
+- migration criada: nenhuma; `audit_logs.metadata` suporta os campos complementares do contrato
+- criado `src/modules/core-saas/audit/` com tipos, `EnterpriseAuditLogService`, sanitizacao recursiva e helper de contexto HTTP
+- auditoria critica continua sincronica no PostgreSQL; `audit_log.created` e publicado como evento complementar para `audit-log-fanout`
+- dados sensiveis como access token, refresh token, senha, hashes, secrets e Authorization sao redigidos antes da persistencia
+- fluxos cobertos: `tenant.created`, `user.created`, `permission.denied`, login, refresh, logout, sessao revogada/criada e eventos de checklists/templates/execucoes/anexos/divergencia/ciencia
+- `requirePermission` registra `permission.denied` em modo Prisma de forma best-effort sem alterar a resposta 403
+- checklists passaram a usar nomes canonicos `checklist_template.*`, `checklist_run.divergence_reported` e `checklist_run.acknowledgement_created`
+- documentacao criada em `docs/audit.md`
+- documentacao atualizada em `docs/architecture.md`, `docs/database.md`, `docs/rbac.md`, `docs/modules.md`, `docs/messaging.md`, `docs/api.md` e este status
+- testes criados: `tests/audit-log.test.ts` e `tests/audit-security.test.ts`
+- fora de escopo mantido: frontend amplo, Figma, mobile Flutter, SIEM externo, exportacao de logs, painel visual completo de auditoria, migrations e contratos API destrutivos
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/audit-log.test.ts`, `node --test --import tsx tests/audit-security.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts` e `git diff --check`

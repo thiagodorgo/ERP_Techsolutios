@@ -1,5 +1,6 @@
-import type { Prisma } from "@prisma/client";
-
+import { EnterpriseAuditLogService } from "../../core-saas/audit/audit-log.service.js";
+import type { AuditLogWriter } from "../../core-saas/audit/audit-log.service.js";
+import type { EnterpriseAuditLogInput } from "../../core-saas/audit/audit-log.types.js";
 import { normalizeCredentialEmail } from "../repositories/local-auth-credential.repository.js";
 import {
   type LocalAuthLoginInput,
@@ -62,18 +63,11 @@ type UserRoleRepositoryLike = {
   ): Promise<readonly RoleAssignmentRecord[]>;
 };
 
-type AuditLogRepositoryLike = {
-  create(data: {
-    readonly tenant_id: string;
-    readonly actor_user_id?: string | null;
-    readonly action: string;
-    readonly entity: string;
-    readonly entity_id?: string | null;
-    readonly metadata?: Prisma.InputJsonValue;
-  }): Promise<unknown>;
-};
-
 type TenantContextRunner = <T>(tenantId: string, work: () => Promise<T>) => Promise<T>;
+type LocalAuthAuditContext = Pick<
+  EnterpriseAuditLogInput,
+  "requestId" | "correlationId" | "ipAddress" | "userAgent"
+>;
 
 export class LocalAuthLoginService {
   constructor(
@@ -81,7 +75,7 @@ export class LocalAuthLoginService {
     private readonly tenants: TenantRepositoryLike,
     private readonly users: UserRepositoryLike,
     private readonly userRoles: UserRoleRepositoryLike,
-    private readonly auditLogs: AuditLogRepositoryLike,
+    private readonly auditLogs: AuditLogWriter,
     private readonly runWithTenantContext: TenantContextRunner = async (_tenantId, work) => work(),
   ) {}
 
@@ -92,7 +86,12 @@ export class LocalAuthLoginService {
     const email = normalizeCredentialEmail(input.email);
 
     return this.runWithTenantContext(tenantId, () =>
-      this.authenticateLocalCredentialWithContext(tenantId, email, input.password),
+      this.authenticateLocalCredentialWithContext(tenantId, email, input.password, {
+        requestId: input.request_id,
+        correlationId: input.correlation_id,
+        ipAddress: input.ip_address,
+        userAgent: input.user_agent,
+      }),
     );
   }
 
@@ -100,6 +99,7 @@ export class LocalAuthLoginService {
     tenantId: string,
     email: string,
     password: string,
+    auditContext: LocalAuthAuditContext,
   ): Promise<LocalAuthLoginResult> {
     const tenant = await this.tenants.findById(tenantId);
 
@@ -113,7 +113,7 @@ export class LocalAuthLoginService {
     const credential = await this.credentials.findByEmailForTenant(email, tenantId);
 
     if (!credential) {
-      await this.recordLoginFailure(tenantId, email, "invalid_credentials");
+      await this.recordLoginFailure(tenantId, email, "invalid_credentials", auditContext);
 
       return {
         ok: false,
@@ -122,7 +122,7 @@ export class LocalAuthLoginService {
     }
 
     if (credential.locked_until && credential.locked_until > new Date()) {
-      await this.recordLoginFailure(tenantId, email, "locked");
+      await this.recordLoginFailure(tenantId, email, "locked", auditContext);
 
       return {
         ok: false,
@@ -134,7 +134,7 @@ export class LocalAuthLoginService {
 
     if (!passwordMatches) {
       await this.credentials.incrementFailedAttempts(credential.id, tenantId);
-      await this.recordLoginFailure(tenantId, email, "invalid_credentials");
+      await this.recordLoginFailure(tenantId, email, "invalid_credentials", auditContext);
 
       return {
         ok: false,
@@ -145,7 +145,7 @@ export class LocalAuthLoginService {
     const user = await this.users.findByIdForTenant(credential.user_id, tenantId);
 
     if (!user || user.status !== "active") {
-      await this.recordLoginFailure(tenantId, email, "inactive");
+      await this.recordLoginFailure(tenantId, email, "inactive", auditContext);
 
       return {
         ok: false,
@@ -156,14 +156,20 @@ export class LocalAuthLoginService {
     const roles = await this.userRoles.listByUserForTenant(user.id, tenantId);
 
     await this.credentials.markSuccessfulLogin(credential.id, tenantId);
-    await this.auditLogs.create({
-      tenant_id: tenantId,
-      actor_user_id: user.id,
+    await new EnterpriseAuditLogService(this.auditLogs).record({
+      tenantId,
+      actorId: user.id,
+      actorType: "user",
+      actorEmail: user.email,
       action: "auth.login.success",
-      entity: "auth",
-      entity_id: user.id,
+      resourceType: "auth_session",
+      resourceId: user.id,
+      outcome: "success",
+      severity: "info",
+      ...auditContext,
       metadata: {
         email,
+        roleCount: roles.length,
       },
     });
 
@@ -188,13 +194,18 @@ export class LocalAuthLoginService {
     tenantId: string,
     email: string,
     reason: "invalid_credentials" | "locked" | "inactive",
+    auditContext: LocalAuthAuditContext,
   ): Promise<void> {
-    await this.auditLogs.create({
-      tenant_id: tenantId,
-      actor_user_id: null,
+    await new EnterpriseAuditLogService(this.auditLogs).record({
+      tenantId,
+      actorId: null,
+      actorType: "anonymous",
       action: "auth.login.failed",
-      entity: "auth",
-      entity_id: null,
+      resourceType: "auth_session",
+      resourceId: null,
+      outcome: "failure",
+      severity: "warning",
+      ...auditContext,
       metadata: {
         email,
         reason,
