@@ -63,7 +63,7 @@ test("tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Co
   await activateFirstContext(page);
 
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole("link", { name: /Checklists/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Checklists", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /Configuracoes|Configurações/i })).toBeVisible();
   await expect(page.getByText("Console da Plataforma")).toHaveCount(0);
 
@@ -90,13 +90,22 @@ test("platform admin acessa Platform Console", async ({ page }) => {
 test("W02A Checklists renderiza builder, lista e preview sem quebrar", async ({ page }) => {
   await loginAndActivateContext(page);
 
-  await page.getByRole("link", { name: /Checklists/i }).click();
+  await page.getByRole("link", { name: /^Checklists$/ }).click();
   await expect(page).toHaveURL(/\/administrator\/checklists$/);
   await expect(page.getByRole("heading", { name: "Checklists", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Checklists do tenant" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Builder visual" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Preview de schema" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Novo checklist/i })).toBeVisible();
+});
+
+test("runtime web de checklists renderiza lista operacional", async ({ page }) => {
+  await loginAndActivateContext(page);
+
+  await page.getByRole("link", { name: /Checklists Operacionais/i }).click();
+  await expect(page).toHaveURL(/\/operations\/checklists$/);
+  await expect(page.getByRole("heading", { name: "Checklists Operacionais" })).toBeVisible();
+  await expect(page.getByText("Execucao web de checklists publicados")).toBeVisible();
 });
 
 test("W03 Configuracoes renderiza categorias e temas planejados", async ({ page }) => {

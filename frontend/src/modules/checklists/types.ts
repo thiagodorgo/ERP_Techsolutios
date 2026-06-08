@@ -20,13 +20,20 @@ export type ChecklistRunStatus =
   | "pending_acknowledgement"
   | "cancelled";
 
-export type ChecklistJsonRecord = Record<string, string | number | boolean | null | string[] | number[] | boolean[]>;
+export type ChecklistJsonPrimitive = string | number | boolean | null;
+export type ChecklistJsonValue =
+  | ChecklistJsonPrimitive
+  | ChecklistJsonValue[]
+  | { readonly [key: string]: ChecklistJsonValue };
+export type ChecklistJsonRecord = Record<string, ChecklistJsonValue>;
 
 export type ChecklistAttachmentMetadata = Record<string, unknown> & {
   storageDriver?: string;
   storageKey?: string;
   checksumSha256?: string;
 };
+
+export type ChecklistRuntimeComponentType = TenantChecklistComponentType;
 
 export type TenantChecklistComponent = {
   id: string;
@@ -42,6 +49,20 @@ export type TenantChecklistComponent = {
   visibilityRules: ChecklistJsonRecord;
   createdAt?: string;
   updatedAt?: string;
+};
+
+export type ChecklistAvailableItem = TenantChecklist;
+
+export type ChecklistRuntimeComponent = TenantChecklistComponent;
+
+export type ChecklistRenderSchema = {
+  id: string;
+  name: string;
+  description?: string;
+  type: TenantChecklistType;
+  version: number;
+  schema: Record<string, unknown>;
+  components: ChecklistRuntimeComponent[];
 };
 
 export type TenantChecklistComponentCatalogItem = {
@@ -113,11 +134,18 @@ export type UpdateTenantChecklistInput = Partial<CreateTenantChecklistInput> & {
 
 export type ChecklistMarker = {
   id: string;
+  tenantId?: string;
+  runId?: string;
   componentId: string;
   x: number;
   y: number;
-  label: string;
-  severity: "low" | "medium" | "high";
+  markerType: string;
+  description?: string;
+  metadata?: ChecklistJsonRecord;
+  createdBy?: string;
+  createdAt?: string;
+  label?: string;
+  severity?: "low" | "medium" | "high";
 };
 
 export type ChecklistAttachment = {
@@ -158,23 +186,105 @@ export type ChecklistAttachmentDownloadResult = {
 
 export type ChecklistAcknowledgement = {
   id: string;
-  label: string;
-  accepted: boolean;
+  tenantId?: string;
+  runId?: string;
+  acknowledgedBy?: string;
+  message: string;
+  observation?: string;
+  acknowledgedAt?: string;
+  metadata?: ChecklistJsonRecord;
+  label?: string;
+  accepted?: boolean;
   acceptedBy?: string;
   acceptedAt?: string;
 };
 
+export type ChecklistRunAnswer = {
+  id?: string;
+  tenantId?: string;
+  runId?: string;
+  componentId: string;
+  value: unknown;
+  metadata?: ChecklistJsonRecord;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type ChecklistRun = {
   id: string;
-  checklistId: string;
-  checklistVersion: number;
-  type: TenantChecklistType;
-  relatedEntityType: string;
-  relatedEntityId: string;
+  tenantId?: string;
+  templateId: string;
+  templateVersion: number;
+  checklistId?: string;
+  checklistVersion?: number;
+  type?: TenantChecklistType;
+  relatedEntityType?: string | null;
+  relatedEntityId?: string | null;
   status: ChecklistRunStatus;
-  markers: ChecklistMarker[];
-  attachments: ChecklistAttachment[];
-  acknowledgements: ChecklistAcknowledgement[];
+  startedBy?: string | null;
+  completedBy?: string | null;
   startedAt: string;
-  completedAt?: string;
+  completedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  markers?: ChecklistMarker[];
+  attachments?: ChecklistAttachment[];
+  acknowledgements?: ChecklistAcknowledgement[];
+  answers?: ChecklistRunAnswer[];
+};
+
+export type ChecklistRunDetails = {
+  run: ChecklistRun;
+  answers: ChecklistRunAnswer[];
+  attachments: ChecklistAttachment[];
+  markers: ChecklistMarker[];
+  acknowledgements: ChecklistAcknowledgement[];
+};
+
+export type CreateChecklistRunInput = {
+  checklistId: string;
+  relatedEntityType?: string;
+  relatedEntityId?: string;
+  answers?: ChecklistRunAnswer[];
+};
+
+export type UpdateChecklistRunInput = {
+  status?: ChecklistRunStatus;
+  answers: ChecklistRunAnswer[];
+};
+
+export type CreateChecklistMarkerInput = {
+  componentId: string;
+  x: number;
+  y: number;
+  markerType: string;
+  description?: string;
+  metadata?: ChecklistJsonRecord;
+};
+
+export type ChecklistDivergence = {
+  componentId: string;
+  fileUrl: string;
+  fileName?: string;
+  mimeType?: string;
+  observation: string;
+  metadata?: ChecklistJsonRecord;
+};
+
+export type CreateChecklistAcknowledgementInput = {
+  message: string;
+  observation?: string;
+  metadata?: ChecklistJsonRecord;
+};
+
+export type ChecklistRunComparison = {
+  run: ChecklistRun;
+  template?: TenantChecklist | null;
+  answers: ChecklistRunAnswer[];
+  attachments: ChecklistAttachment[];
+  markers: ChecklistMarker[];
+  comparison: {
+    status: ChecklistRunStatus;
+    divergence: boolean;
+  };
 };

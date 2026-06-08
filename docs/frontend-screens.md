@@ -54,7 +54,7 @@ E2E real em navegador:
 - stack: Playwright com Chromium, backend Prisma em `CORE_SAAS_PERSISTENCE=prisma` e frontend Vite em modo real (`VITE_USE_MOCKS=false`);
 - pre-requisitos: Docker/PostgreSQL/Redis ativos, migrations aplicadas e Chromium instalado com `npx playwright install chromium`;
 - o comando executa o seed demo idempotente antes dos testes, usando `admin.demo@example.com` e `DEMO_ADMIN_PASSWORD` local;
-- cobertura inicial: login real, erro de login, guard de rota protegida, sessao com refresh token, logout, sidebar RBAC de tenant admin, W02A, W03, bloqueio do Console da Plataforma para usuario tenant e acesso positivo do Platform Admin a `/platform/tenants`;
+- cobertura inicial: login real, erro de login, guard de rota protegida, sessao com refresh token, logout, sidebar RBAC de tenant admin, W02A, runtime web de checklists, W03, bloqueio do Console da Plataforma para usuario tenant e acesso positivo do Platform Admin a `/platform/tenants`;
 - seed E2E: `platform.admin@erp.local` usa role global `super_admin` e senha local/dev `E2E_PLATFORM_PASSWORD` ou fallback `platform-admin-dev-password`.
 
 ## Administrador
@@ -80,17 +80,23 @@ Area para listar, convidar, editar e gerenciar usuarios e permissoes do tenant a
 
 Area tenant-scoped para configurar e executar checklists publicados pela feature `tenant_checklist`.
 
-Telas planejadas:
+Telas implementadas:
 
 - `W02A · Administrador — Checklists`, rota `/administrator/checklists`.
 - Integracao atual: W02A usa a API real de `tenant_checklist` como fonte principal para listar templates, carregar componentes, criar, editar, publicar e ativar/inativar checklists. Mock local fica apenas como fallback explicito de desenvolvimento via `VITE_USE_MOCKS=true`.
 - Evolucao `FIGMA-CHECKLIST-BUILDER-UX.1`: W02A funciona como builder visual MVP, com lista filtravel, busca por nome, palette de componentes, canvas com ordenacao por botoes, inspector de componente, preview de schema e `pending_changes` apenas como estado visual de UI.
 - Integracao de anexos: frontend possui service/adapter/mock para upload multipart e download protegido de evidencias de checklist. W02A nao vira tela operacional; o preview de schema apenas indica que `photo_upload`, `before_after` e `damage_map` suportam evidencias via upload seguro.
+- `Checklists Operacionais`, rota `/operations/checklists`.
+- `Runtime operacional de checklist`, rota `/operations/checklists/:checklistId/run`.
+- O runtime web lista checklists publicados, carrega schema via API, cria execucao, salva respostas, renderiza componentes oficiais, integra upload/lista/download de evidencias, registra marcadores MVP e conclui execucao.
+- Os endpoints `/mobile/*` sao usados pelo web como runtime operacional compartilhado web/mobile; o nome pode ser renomeado futuramente com compatibilidade.
+
+Telas planejadas:
+
 - Lista de templates de checklist.
 - Builder/editor de checklist.
 - Painel de componentes disponiveis.
 - Configuracao de campo.
-- Execucao/preenchimento de checklist.
 - Historico de execucoes.
 - Detalhe de execucao com respostas/evidencias.
 
@@ -106,6 +112,12 @@ Componentes planejados:
 - `ChecklistAttachmentUploader.tsx`
 - `ChecklistAttachmentList.tsx`
 - `ChecklistEvidencePreview.tsx`
+- `ChecklistRunsPage.tsx`
+- `ChecklistRuntimePage.tsx`
+- `ChecklistRuntimeRenderer.tsx`
+- `ChecklistRuntimeField.tsx`
+- `ChecklistRunStatusBadge.tsx`
+- `ChecklistRunSummary.tsx`
 
 Regras de UX:
 
@@ -117,6 +129,7 @@ Regras de UX:
 - builder deve preservar ordem dos campos e status da versao;
 - `pending_changes` nao e status backend; ele apenas sinaliza na UI quando um checklist publicado recebeu alteracoes depois da publicacao;
 - execucao mobile futura deve priorizar preenchimento rapido, captura de evidencia e sincronizacao offline;
+- execucao web operacional deve consumir schema publicado, sem hardcode de M10/M11/M12;
 - upload/download de evidencias deve usar os endpoints seguros de `checklist_runs` e preservar `VITE_USE_MOCKS=true` como fallback local;
 - telas devem respeitar modulos habilitados e permissoes `tenant_checklists:*` e `checklist_runs:*`.
 

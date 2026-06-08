@@ -34,6 +34,18 @@ export const tenantNavigation: NavigationItem[] = [
     moduleKey: "logistics",
   },
   {
+    id: "tenant-checklist-runtime",
+    label: "Checklists Operacionais",
+    path: "/operations/checklists",
+    scope: "tenant",
+    mode: "operation",
+    requiredPermissions: ["checklist_runs:read", "checklist_runs:create"],
+    allowedRoles: ["Super Admin", "Administrador", "Gestor Operacional", "Supervisor", "Operador Logistico"],
+    icon: "tenant_checklist",
+    moduleKey: "tenant_checklist",
+    featureKey: "checklist_runtime_web",
+  },
+  {
     id: "tenant-users",
     label: "Usuarios",
     path: "/users",

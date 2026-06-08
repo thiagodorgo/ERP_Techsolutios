@@ -78,6 +78,8 @@ Eventos cobertos nesta rodada:
 - `checklist_run.divergence_reported`
 - `checklist_run.acknowledgement_created`
 
+O runtime web operacional chama os mesmos endpoints de execucao que o runtime mobile compartilhado. Portanto, criar, atualizar, concluir, anexar evidencia, registrar divergencia e registrar ciencia geram a mesma auditoria backend; W02A permanece limitada a auditoria de template/builder.
+
 Nem todo evento gera tela ou endpoint novo nesta rodada. A consulta existente continua em `GET /api/v1/audit-events` com permissao `audit.read`.
 
 ## RLS e RBAC
