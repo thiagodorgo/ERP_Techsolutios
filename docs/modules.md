@@ -26,6 +26,7 @@ Exemplos:
 - audit
 - integrations
 - analytics
+- messaging_jobs
 
 ## Modulos habilitados por tenant
 
@@ -83,3 +84,5 @@ Sao os modulos efetivamente ativos para um tenant especifico. A visibilidade no 
 - Estados oficiais: checklist rascunho, checklist publicado, checklist inativo, execucao em andamento, execucao concluida, execucao com divergencia e execucao pendente de ciencia.
 - Anexos de checklist usam upload local real em desenvolvimento, com `fileUrl` logico, metadados persistidos em `checklist_attachments`, RBAC/RLS por tenant e caminho preparado para S3-compatible futuro.
 - O frontend possui service, adapter, mock fallback e componentes reutilizaveis para upload/lista/preview de evidencias; W02A mostra suporte no preview sem assumir papel de tela operacional.
+- `messaging_jobs` e uma fundacao transversal backend: Redis enfileira jobs/eventos internos, mas nao aparece como modulo de tenant nem como item de sidebar.
+- O fluxo inicial de mensageria publica `checklist_run.attachment_uploaded` apos upload de anexo e enfileira `checklist-attachment-postprocess` sem tornar o upload critico dependente do Redis.

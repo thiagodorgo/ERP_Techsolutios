@@ -731,3 +731,21 @@
 - documentacao atualizada em `.env.example`, `docs/auth.md`, `docs/deployment.md`, `docs/frontend-screens.md`, `docs/rbac.md`, `docs/github-workflow.md`, `agent-orchestration/docs/status-geral.md` e este log
 - fora de escopo mantido: Figma, mobile Flutter, API contracts, Prisma migrations, refatoracao de auth e features novas de produto
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run db:seed`, `npm run test:e2e` e `git diff --check`
+
+## 2026-06-08 - Redis job queue foundation
+
+- branch usada: `feature/redis-job-queue-foundation`
+- objetivo: criar fundacao inicial de mensageria interna com Redis para jobs, eventos, retry/backoff e dead-letter
+- verificacao inicial: nao havia cliente Redis nem dependencia de filas; `docker-compose.yml` ja possuia `erp-redis` e `.env.example` ja possuia `REDIS_URL`
+- dependencia nova: nenhuma; criado cliente Redis minimo sobre `node:net`
+- criados `src/infra/redis/redis.client.ts`, `src/infra/jobs/job.types.ts`, `src/infra/jobs/job.queue.ts`, `src/infra/jobs/job.registry.ts`, `src/infra/jobs/job.worker.ts`, `src/infra/events/domain-event.types.ts` e `src/infra/events/domain-event.publisher.ts`
+- jobs iniciais: `checklist-attachment-postprocess`, `notification-dispatch` e `audit-log-fanout`
+- eventos iniciais: `auth.session.created`, `auth.session.revoked`, `checklist_run.created`, `checklist_run.completed`, `checklist_run.attachment_uploaded`, `checklist_run.divergence_reported`, `notification.requested` e `audit_log.created`
+- integracao real escolhida: upload de anexo de checklist publica `checklist_run.attachment_uploaded` apos storage, banco e auditoria sincronicos
+- falha de Redis no publish nao quebra upload critico no MVP; warning e registrado
+- worker exposto por `JobWorker`/`startWorker`, sem inicializacao automatica no servidor
+- documentacao criada: `docs/messaging.md`
+- documentacao atualizada em `docs/architecture.md`, `docs/modules.md`, `docs/deployment.md`, `docs/github-workflow.md` e `agent-orchestration/docs/status-geral.md`
+- testes criados: `tests/job-queue.test.ts` e `tests/domain-events.test.ts`
+- fora de escopo mantido: Kafka, RabbitMQ, cloud queue, notificacoes reais, webhooks reais, frontend, Figma, mobile Flutter, migrations e contratos API destrutivos
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `npm run test:e2e` e `git diff --check`

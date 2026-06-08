@@ -1,4 +1,5 @@
 import { env } from "../../config/env.js";
+import { publishDomainEvent } from "../../infra/events/domain-event.publisher.js";
 import {
   deleteStoredChecklistAttachmentFile,
   resolveChecklistAttachmentDownload,
@@ -283,6 +284,22 @@ export class ChecklistService {
         tenantId: actor.tenantId,
         actorId: actor.userId,
       });
+
+      await publishDomainEvent(
+        "checklist_run.attachment_uploaded",
+        {
+          runId,
+          componentId: attachment.componentId,
+          attachmentId: attachment.id,
+          fileName: attachment.fileName,
+          mimeType: attachment.mimeType,
+          sizeBytes: attachment.sizeBytes,
+        },
+        {
+          tenantId: actor.tenantId,
+          actorId: actor.userId,
+        },
+      );
 
       return attachment;
     } catch (error) {

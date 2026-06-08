@@ -8,6 +8,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   LOG_LEVEL: z.string().default("info"),
   CORE_SAAS_PERSISTENCE: z.enum(["memory", "prisma"]).default("memory"),
+  REDIS_URL: z.string().trim().url().default("redis://localhost:6379"),
   JWT_SECRET: z.string().trim().min(1).optional(),
   JWT_EXPIRES_IN: z
     .string()
