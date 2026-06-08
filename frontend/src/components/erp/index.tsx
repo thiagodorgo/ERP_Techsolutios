@@ -35,6 +35,7 @@ import { filterNavigationItems, type NavigationMode } from "../../navigation/typ
 import { useAuth } from "../../providers/AuthProvider";
 import { usePermissions } from "../../providers/PermissionProvider";
 import { useTenantContext } from "../../providers/TenantProvider";
+import { NotificationUnreadBadge } from "../../modules/notifications/components/NotificationUnreadBadge";
 
 export function TenantBadge({ context }: { context: TenantContext }) {
   return <Badge tone={context.tenantStatus === "blocked" ? "danger" : "info"}>{context.tenantName}</Badge>;
@@ -75,6 +76,7 @@ const iconByModule = {
   "tenant-admin": ShieldCheck,
   settings: Settings,
   tenant_checklist: ClipboardList,
+  notifications: Bell,
 };
 
 function getTenantNavigationMode(context: TenantContext | null | undefined, roles: readonly string[], permissions: readonly string[]): NavigationMode {
@@ -95,10 +97,12 @@ function getTenantNavigationMode(context: TenantContext | null | undefined, role
 export function Sidebar({
   context,
   collapsed = false,
+  notificationUnreadCount = 0,
   onToggleCollapsed,
 }: {
   context?: TenantContext | null;
   collapsed?: boolean;
+  notificationUnreadCount?: number;
   onToggleCollapsed?: () => void;
 }) {
   const { permissions, roles } = usePermissions();
@@ -137,6 +141,7 @@ export function Sidebar({
             <NavLink key={item.path} to={item.path} aria-label={collapsed ? item.label : undefined}>
               <Icon size={18} />
               <span>{item.label}</span>
+              {item.id === "tenant-notifications" ? <NotificationUnreadBadge count={notificationUnreadCount} /> : null}
             </NavLink>
           );
 
@@ -153,7 +158,7 @@ export function Sidebar({
   );
 }
 
-export function Topbar({ context }: { context: TenantContext }) {
+export function Topbar({ context, notificationUnreadCount = 0 }: { context: TenantContext; notificationUnreadCount?: number }) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { clearContext } = useTenantContext();
@@ -164,8 +169,14 @@ export function Topbar({ context }: { context: TenantContext }) {
       <div className="erp-topbar__actions">
         <ProcessingChip state="processing" label="Polling ativo" />
         <Tooltip label="Notificacoes operacionais">
-          <button type="button" className="erp-icon-button" aria-label="Notificacoes">
+          <button
+            type="button"
+            className="erp-icon-button erp-icon-button--badge"
+            aria-label={`Notificacoes${notificationUnreadCount > 0 ? ` (${notificationUnreadCount} nao lidas)` : ""}`}
+            onClick={() => navigate("/notifications")}
+          >
             <Bell size={18} />
+            <NotificationUnreadBadge count={notificationUnreadCount} />
           </button>
         </Tooltip>
         <Tooltip label="Sair">

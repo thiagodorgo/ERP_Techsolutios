@@ -440,6 +440,15 @@ Permissoes:
 
 Eventos iniciais que alimentam notificacoes via Redis/job: `checklist_run.completed`, `checklist_run.divergence_reported` e `checklist_run.acknowledgement_created`. Nao ha e-mail, SMS, WhatsApp, push externo ou chat nesta rodada.
 
+Frontend web:
+
+- rota `/notifications`;
+- service/adapter/mock em `frontend/src/modules/notifications`;
+- contador de nao lidas no AppShell e na sidebar tenant;
+- acoes: listar, marcar como lida, marcar todas como lidas, arquivar e abrir `actionUrl` interna;
+- `actionUrl` externa nao deve ser navegada pelo cliente;
+- metadata completa, storage keys, tokens e ids internos de destinatario nao devem ser exibidos.
+
 ## Auditoria
 
 Endpoint existente:

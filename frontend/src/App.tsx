@@ -6,6 +6,7 @@ import { AppShell } from "./layouts/AppShell";
 import { ChecklistRuntimePage } from "./modules/checklists/pages/ChecklistRuntimePage";
 import { ChecklistRunsPage } from "./modules/checklists/pages/ChecklistRunsPage";
 import { TenantChecklistsPage } from "./modules/checklists/pages/TenantChecklistsPage";
+import { NotificationsPage } from "./modules/notifications/pages/NotificationsPage";
 import { TenantSettingsPage } from "./modules/settings/pages/TenantSettingsPage";
 import { PlatformLayout } from "./layouts/PlatformLayout";
 import { PlatformTenantDetailPage } from "./modules/platform/pages/PlatformTenantDetailPage";
@@ -121,6 +122,14 @@ export function App() {
             element={
               <PermissionGuard permissions={["logistics:dispatch"]}>
                 <LogisticsPage />
+              </PermissionGuard>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <PermissionGuard permissions={["notifications:read"]}>
+                <NotificationsPage />
               </PermissionGuard>
             }
           />

@@ -46,6 +46,17 @@ export const tenantNavigation: NavigationItem[] = [
     featureKey: "checklist_runtime_web",
   },
   {
+    id: "tenant-notifications",
+    label: "Notificacoes",
+    path: "/notifications",
+    scope: "tenant",
+    mode: "operation",
+    requiredPermissions: ["notifications:read"],
+    allowedRoles: ["Super Admin", "Administrador", "Gestor Operacional", "Supervisor", "Operador Logistico", "Auditor"],
+    icon: "notifications",
+    moduleKey: "notifications",
+  },
+  {
     id: "tenant-users",
     label: "Usuarios",
     path: "/users",

@@ -140,6 +140,14 @@ Matriz backend aplicada:
 
 Mesmo tenant admin nao consulta inbox de todos nesta fase. O service sempre filtra por `tenant_id` e `recipient_user_id` do ator autenticado.
 
+Frontend:
+
+- `/notifications` exige `notifications:read`;
+- o item `Notificacoes` aparece apenas quando o contexto tenant possui modulo `notifications` habilitado e permissao `notifications:read`;
+- o badge de nao lidas consulta `/api/v1/notifications/unread-count` e nao substitui autorizacao backend;
+- marcar como lida, marcar todas como lidas e arquivar dependem de `notifications:update`;
+- `actionUrl` e tratado como rota interna apenas quando comeca com `/` e nao com `//`.
+
 Aliases documentais anteriores, a serem reconciliados quando o backend final for implementado:
 
 - `checklists.template.create`: criar modelos de checklist do tenant.

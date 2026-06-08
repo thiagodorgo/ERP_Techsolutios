@@ -62,6 +62,30 @@ Filtros de listagem:
 
 As respostas nao expõem inbox de outros usuarios. `recipient_user_id` fica interno ao backend.
 
+## Frontend web
+
+Tela implementada: `/notifications`.
+
+Funcionalidades entregues:
+
+- item `Notificacoes` no menu tenant quando o usuario possui `notifications:read` e o modulo `notifications` esta habilitado;
+- badge de nao lidas na sidebar e no topo do AppShell;
+- lista da inbox do usuario autenticado;
+- filtros simples por todas, nao lidas, lidas e arquivadas;
+- destaque visual para notificacoes nao lidas;
+- acoes para marcar uma notificacao como lida, marcar todas como lidas e arquivar;
+- botao `Abrir` apenas quando `actionUrl` e rota interna segura iniciada por `/`;
+- service, adapter e mock frontend em `frontend/src/modules/notifications`;
+- smoke/E2E cobrindo renderizacao, RBAC visual, adapter, mocks e rota real.
+
+Seguranca de UI:
+
+- a tela nao exibe `recipient_user_id`;
+- metadata completa nao e renderizada;
+- ids internos nao aparecem como destaque operacional;
+- URLs externas em `actionUrl` sao bloqueadas no cliente;
+- erros de API sao exibidos como mensagem amigavel, sem stack trace.
+
 ## Recipients
 
 Resolver inicial:
@@ -81,8 +105,8 @@ O ator que causou o evento nao recebe notificacao propria. Se nao houver destina
 
 ## Proximos passos
 
-- UI completa em branch propria.
 - Preferencias por usuario/perfil.
 - Digest/agrupamento.
 - Deduplicacao avancada por source/event window.
+- Polling leve, websocket ou SSE, se a operacao exigir atualizacao em tempo quase real.
 - E-mail, push ou integrações externas, sempre por provider configuravel e sem segredo no repositorio.
