@@ -1,0 +1,428 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import React from "react";
+import { renderToString } from "react-dom/server";
+import { MemoryRouter } from "react-router-dom";
+
+import { mockSession } from "../src/mocks/auth/context";
+
+type FetchCall = {
+  readonly url: string;
+  readonly init: RequestInit;
+};
+
+function installBrowserTestGlobals() {
+  const storage = new Map<string, string>();
+  const listeners = new Map<string, Set<EventListener>>();
+
+  const localStorage = {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => storage.set(key, value),
+    removeItem: (key: string) => storage.delete(key),
+    clear: () => storage.clear(),
+  };
+  const windowStub = {
+    localStorage,
+    addEventListener: (event: string, listener: EventListener) => {
+      const eventListeners = listeners.get(event) ?? new Set<EventListener>();
+      eventListeners.add(listener);
+      listeners.set(event, eventListeners);
+    },
+    removeEventListener: (event: string, listener: EventListener) => {
+      listeners.get(event)?.delete(listener);
+    },
+    dispatchEvent: (event: Event) => {
+      listeners.get(event.type)?.forEach((listener) => listener(event));
+      return true;
+    },
+    setTimeout: globalThis.setTimeout.bind(globalThis),
+  };
+
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: windowStub,
+  });
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: {
+      createElement: () => ({
+        click() {},
+        set href(_value: string) {},
+        set download(_value: string) {},
+        set rel(_value: string) {},
+      }),
+    },
+  });
+
+  return {
+    clear: () => storage.clear(),
+    localStorage,
+  };
+}
+
+function installFetchJson(payload: unknown, status = 200) {
+  const calls: FetchCall[] = [];
+
+  Object.defineProperty(globalThis, "fetch", {
+    configurable: true,
+    value: async (url: string, init: RequestInit = {}) => {
+      calls.push({ url, init });
+      return new Response(JSON.stringify(payload), {
+        status,
+        headers: {
+          "content-type": "application/json",
+        },
+      });
+    },
+  });
+
+  return calls;
+}
+
+function sessionPayload() {
+  return {
+    data: {
+      authenticated: true,
+      access_token: "jwt-test-token",
+      token_type: "Bearer",
+      expires_in: 3600,
+      user: {
+        id: "usr-test",
+        tenant_id: "11111111-1111-4111-8111-111111111111",
+        email: "admin@example.com",
+        name: "Admin Test",
+        status: "active",
+      },
+      tenant: {
+        id: "11111111-1111-4111-8111-111111111111",
+        name: "Tenant Test",
+      },
+      roles: [
+        {
+          id: "role-admin",
+          key: "tenant_admin",
+          name: "Tenant Admin",
+        },
+      ],
+    },
+  };
+}
+
+const browser = installBrowserTestGlobals();
+
+test("auth.storage salva, le e limpa sessao e token", async () => {
+  process.env.VITE_USE_MOCKS = "false";
+  browser.clear();
+  const {
+    clearStoredAuthSession,
+    getStoredAuthSession,
+    getStoredToken,
+    setStoredAuthSession,
+  } = await import("../src/modules/auth/auth.storage");
+
+  setStoredAuthSession(mockSession);
+  assert.equal(getStoredToken(), mockSession.accessToken);
+  assert.equal(getStoredAuthSession()?.user.email, mockSession.user.email);
+
+  clearStoredAuthSession();
+  assert.equal(getStoredToken(), null);
+  assert.equal(getStoredAuthSession(), null);
+});
+
+test("auth.service usa mock quando VITE_USE_MOCKS=true", async () => {
+  process.env.VITE_USE_MOCKS = "true";
+  browser.clear();
+  const { login, getCurrentAuthState } = await import("../src/modules/auth/auth.service");
+
+  const session = await login({
+    tenantId: "ten-industrial-01",
+    email: "marina.costa@techsolutions.example",
+    password: "operacao-demo",
+  });
+
+  assert.equal(session.provider, "mock");
+  assert.equal(getCurrentAuthState()?.accessToken, mockSession.accessToken);
+});
+
+test("auth.service chama login real quando VITE_USE_MOCKS=false", async () => {
+  process.env.VITE_USE_MOCKS = "false";
+  process.env.VITE_API_BASE_URL = "/api/v1";
+  browser.clear();
+  const calls = installFetchJson(sessionPayload());
+  const { login } = await import("../src/modules/auth/auth.service");
+
+  const session = await login({
+    tenantId: "11111111-1111-4111-8111-111111111111",
+    email: "admin@example.com",
+    password: "ChangeMe123!",
+  });
+
+  assert.equal(calls[0].url, "/api/v1/auth/login");
+  assert.equal(JSON.parse(String(calls[0].init.body)).tenantId, "11111111-1111-4111-8111-111111111111");
+  assert.equal(session.provider, "local-jwt");
+  assert.equal(session.accessToken, "jwt-test-token");
+  assert.equal(session.user.permissions.includes("tenant_checklists:read"), true);
+});
+
+test("api client envia Bearer e bloqueia headers legados no modo real", async () => {
+  process.env.VITE_USE_MOCKS = "false";
+  browser.clear();
+  const calls = installFetchJson({ data: { ok: true } });
+  const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
+  const { apiRequest } = await import("../src/services/api/client");
+
+  setStoredAuthSession({
+    ...mockSession,
+    accessToken: "jwt-real",
+    provider: "local-jwt",
+  });
+  await apiRequest("/tenant/checklists", {
+    tenantId: "tenant-a",
+    role: "tenant_admin",
+    permissions: ["tenant_checklists:read"],
+  });
+
+  const headers = new Headers(calls[0].init.headers as HeadersInit);
+  assert.equal(headers.get("Authorization"), "Bearer jwt-real");
+  assert.equal(headers.get("X-Tenant-Id"), null);
+  assert.equal(headers.get("X-Role"), null);
+  assert.equal(headers.get("X-Permissions"), null);
+});
+
+test("api client preserva headers mock e FormData para anexos", async () => {
+  process.env.VITE_USE_MOCKS = "true";
+  browser.clear();
+  const calls = installFetchJson({ data: { ok: true } });
+  const { apiFormDataRequest } = await import("../src/services/api/client");
+  const body = new FormData();
+  body.set("componentId", "component-1");
+  body.set("file", new File(["evidence"], "evidence.jpg", { type: "image/jpeg" }));
+
+  await apiFormDataRequest("/mobile/checklist-runs/run-1/attachments", {
+    method: "POST",
+    body,
+    tenantId: "tenant-a",
+    role: "tenant_admin",
+    permissions: ["checklist_runs:update"],
+  });
+
+  const headers = new Headers(calls[0].init.headers as HeadersInit);
+  assert.equal(calls[0].init.body, body);
+  assert.equal(headers.get("Content-Type"), null);
+  assert.equal(headers.get("X-Tenant-Id"), "tenant-a");
+  assert.equal(headers.get("X-Role"), "tenant_admin");
+});
+
+test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () => {
+  const { filterNavigationItems } = await import("../src/navigation/types");
+  const { tenantNavigation } = await import("../src/navigation/tenantNavigation");
+  const { platformNavigation } = await import("../src/navigation/platformNavigation");
+
+  const operatorTenantItems = filterNavigationItems(
+    {
+      roles: ["Operador Logistico"],
+      permissions: ["dashboard:view", "work-orders:view", "checklist_runs:create"],
+      mode: "operation",
+      scope: "tenant",
+      tenantStatus: "active",
+      enabledModules: ["dashboard", "work-orders", "tenant_checklist", "tenant-admin"],
+    },
+    tenantNavigation,
+  );
+  const adminTenantItems = filterNavigationItems(
+    {
+      roles: ["Administrador"],
+      permissions: ["dashboard:view", "tenant_checklists:read", "tenant:manage"],
+      mode: "tenant_admin",
+      scope: "tenant",
+      tenantStatus: "active",
+      enabledModules: ["dashboard", "tenant_checklist", "tenant-admin"],
+    },
+    tenantNavigation,
+  );
+  const tenantAdminPlatformItems = filterNavigationItems(
+    {
+      roles: ["Administrador"],
+      permissions: ["dashboard:view"],
+      mode: "platform",
+      scope: "platform",
+    },
+    platformNavigation,
+  );
+  const platformAdminItems = filterNavigationItems(
+    {
+      roles: ["Super Admin"],
+      permissions: ["platform:tenants:read", "platform:modules:manage"],
+      mode: "platform",
+      scope: "platform",
+    },
+    platformNavigation,
+  );
+
+  const operatorPaths = flattenPaths(operatorTenantItems);
+  const adminPaths = flattenPaths(adminTenantItems);
+  assert.equal(operatorPaths.includes("/administrator/checklists"), false);
+  assert.equal(operatorPaths.includes("/administrator/settings"), false);
+  assert.equal(adminPaths.includes("/administrator/checklists"), true);
+  assert.equal(adminPaths.includes("/administrator/settings"), true);
+  assert.equal(tenantAdminPlatformItems.length, 0);
+  assert.equal(platformAdminItems.some((item) => item.path === "/platform/tenants"), true);
+  assert.deepEqual(flattenPaths(adminTenantItems), flattenPaths(adminTenantItems));
+});
+
+test("smoke renderiza /login, W02A, W03 e Platform Console", async () => {
+  process.env.VITE_USE_MOCKS = "true";
+  browser.clear();
+  const { AuthProvider } = await import("../src/providers/AuthProvider");
+  const { TenantProvider } = await import("../src/providers/TenantProvider");
+  const { PermissionProvider } = await import("../src/providers/PermissionProvider");
+  const { LoginPage } = await import("../src/pages/LoginPage");
+  const { TenantChecklistsPage } = await import("../src/modules/checklists/pages/TenantChecklistsPage");
+  const { TenantSettingsPage } = await import("../src/modules/settings/pages/TenantSettingsPage");
+  const { PlatformTenantsPage } = await import("../src/modules/platform/pages/PlatformTenantsPage");
+
+  const loginHtml = renderToString(
+    <MemoryRouter initialEntries={["/login"]}>
+      <AuthProvider>
+        <LoginPage />
+      </AuthProvider>
+    </MemoryRouter>,
+  );
+  const protectedHtml = renderToString(
+    <MemoryRouter>
+      <AuthProvider>
+        <TenantProvider>
+          <PermissionProvider>
+            <TenantChecklistsPage />
+            <TenantSettingsPage />
+            <PlatformTenantsPage />
+          </PermissionProvider>
+        </TenantProvider>
+      </AuthProvider>
+    </MemoryRouter>,
+  );
+
+  assert.match(loginHtml, /W01 Login/);
+  assert.match(protectedHtml, /Checklists|Selecione um contexto/);
+  assert.match(protectedHtml, /Configurações/);
+  assert.match(protectedHtml, /Tenants|tenant/i);
+});
+
+test("anexos frontend validam ausente, renderizam lista e preview", async () => {
+  const { uploadChecklistAttachmentToApi, downloadChecklistAttachmentFromApi } = await import(
+    "../src/modules/checklists/checklist-attachments.adapter"
+  );
+  const { ChecklistAttachmentUploader } = await import("../src/modules/checklists/components/ChecklistAttachmentUploader");
+  const { ChecklistAttachmentList } = await import("../src/modules/checklists/components/ChecklistAttachmentList");
+  const { ChecklistEvidencePreview } = await import("../src/modules/checklists/components/ChecklistEvidencePreview");
+  const attachment = {
+    id: "att-1",
+    tenantId: "tenant-a",
+    runId: "run-1",
+    componentId: "component-1",
+    fileUrl: "/api/v1/mobile/checklist-runs/run-1/attachments/att-1/download",
+    fileName: "evidence.jpg",
+    mimeType: "image/jpeg",
+    sizeBytes: 1024,
+    metadata: {},
+    createdAt: "2026-06-07T00:00:00.000Z",
+  };
+  const context = {
+    tenantId: "tenant-a",
+    role: "tenant_admin",
+    permissions: ["checklist_runs:update", "checklist_runs:read"],
+  };
+
+  await assert.rejects(
+    () =>
+      uploadChecklistAttachmentToApi({
+        context,
+        runId: "run-1",
+        componentId: "component-1",
+        file: null as unknown as File,
+      }),
+    /Arquivo obrigatorio/,
+  );
+
+  const listEmptyHtml = renderToString(<ChecklistAttachmentList attachments={[]} onDownload={async () => downloadResult()} />);
+  const listItemHtml = renderToString(<ChecklistAttachmentList attachments={[attachment]} onDownload={async () => downloadResult()} />);
+  const imagePreviewHtml = renderToString(<ChecklistEvidencePreview attachment={attachment} onDownload={async () => downloadResult()} />);
+  const pdfPreviewHtml = renderToString(
+    <ChecklistEvidencePreview attachment={{ ...attachment, id: "att-2", fileName: "evidence.pdf", mimeType: "application/pdf" }} onDownload={async () => downloadResult()} />,
+  );
+  const genericPreviewHtml = renderToString(
+    <ChecklistEvidencePreview attachment={{ ...attachment, id: "att-3", fileName: "evidence.bin", mimeType: "application/octet-stream" }} onDownload={async () => downloadResult()} />,
+  );
+  const uploaderHtml = renderToString(<ChecklistAttachmentUploader context={context} runId="run-1" componentId="component-1" />);
+
+  assert.match(listEmptyHtml, /Nenhuma evidencia anexada/);
+  assert.match(listItemHtml, /evidence\.jpg/);
+  assert.match(imagePreviewHtml, /evidence\.jpg/);
+  assert.match(pdfPreviewHtml, /evidence\.pdf/);
+  assert.match(genericPreviewHtml, /Arquivo disponivel para download protegido/);
+  assert.match(uploaderHtml, /Enviar evidencia/);
+
+  const calls = installFetchJson({
+    data: {
+      ...attachment,
+      metadata: {
+        checksumSha256: "abc",
+      },
+    },
+  });
+  await uploadChecklistAttachmentToApi({
+    context,
+    runId: "run-1",
+    componentId: "component-1",
+    file: new File(["image"], "evidence.jpg", { type: "image/jpeg" }),
+    metadata: {
+      source: "smoke-test",
+    },
+  });
+
+  assert.equal(calls[0].url, "/api/v1/mobile/checklist-runs/run-1/attachments");
+  assert.equal(calls[0].init.body instanceof FormData, true);
+
+  const downloadCalls = installFetchBlob(new Blob(["pdf"], { type: "application/pdf" }));
+  const download = await downloadChecklistAttachmentFromApi(context, "run-1", "att-1");
+  assert.equal(downloadCalls[0].url, "/api/v1/mobile/checklist-runs/run-1/attachments/att-1/download");
+  assert.equal(download.fileName, "evidence.pdf");
+});
+
+function flattenPaths(items: readonly { path: string; children?: readonly { path: string }[] }[]): string[] {
+  return items.flatMap((item) => [item.path, ...(item.children?.map((child) => child.path) ?? [])]);
+}
+
+function downloadResult() {
+  return {
+    blob: new Blob(["evidence"]),
+    objectUrl: "blob:smoke",
+    fileName: "evidence.jpg",
+    mimeType: "image/jpeg",
+  };
+}
+
+function installFetchBlob(blob: Blob) {
+  const calls: FetchCall[] = [];
+
+  Object.defineProperty(globalThis, "fetch", {
+    configurable: true,
+    value: async (url: string, init: RequestInit = {}) => {
+      calls.push({ url, init });
+      return new Response(blob, {
+        status: 200,
+        headers: {
+          "content-disposition": "attachment; filename=\"evidence.pdf\"",
+          "content-type": blob.type,
+        },
+      });
+    },
+  });
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    value: () => "blob:download",
+  });
+
+  return calls;
+}

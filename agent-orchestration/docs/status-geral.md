@@ -911,3 +911,15 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - backend continua autoridade final de RBAC e RLS; permissoes derivadas no frontend servem apenas para UX/sidebar/guards visuais
 - refresh token, revogacao remota, cookie/sessao avancada e logout backend ficaram fora do escopo
 - backend, Prisma, migrations, Figma e mobile Flutter nao foram alterados
+
+## Atualizacao 2026-06-07 - frontend smoke flow tests
+
+- branch usada: `feature/frontend-smoke-flow-tests`
+- estrategia escolhida: smoke tests leves com `node:test`, `tsx` e `react-dom/server`, sem instalar Vitest, Testing Library, Playwright ou Cypress nesta rodada
+- script criado: `npm --prefix frontend run test:smoke`
+- criado helper `frontend/src/config/env.ts` para permitir testes Node e runtime Vite lerem as mesmas variaveis `VITE_*`
+- testes criados em `frontend/tests/smoke-flow.test.tsx`
+- cobertura inicial: auth storage/service, login real vs mock, API client com Bearer, bloqueio de headers legados no modo real, preservacao de FormData, filtro RBAC de W02A/W03/Platform, smoke render de `/login`, W02A, W03 e Platform Console, e componentes/adapter de anexos
+- documentacao atualizada em `docs/auth.md`, `docs/frontend-screens.md` e `docs/rbac.md`
+- backend, Prisma/migrations, contratos API, Figma e mobile Flutter nao foram alterados
+- proximo passo recomendado: E2E real em navegador com Playwright/Cypress quando ambientes e dados de teste estiverem estabilizados

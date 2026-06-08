@@ -1,3 +1,4 @@
+import { isMockMode } from "../../config/env";
 import { mockSession } from "../../mocks/auth/context";
 import { loginWithJwt } from "./auth.adapter";
 import {
@@ -8,10 +9,8 @@ import {
 } from "./auth.storage";
 import type { AuthSession, LoginCredentials } from "./types";
 
-const useMocks = import.meta.env.VITE_USE_MOCKS === "true";
-
 export async function login(credentials: LoginCredentials): Promise<AuthSession> {
-  if (useMocks) {
+  if (isMockMode()) {
     await new Promise((resolve) => window.setTimeout(resolve, 450));
 
     if (!credentials.email || !credentials.password) {

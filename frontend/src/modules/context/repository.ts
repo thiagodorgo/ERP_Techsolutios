@@ -1,13 +1,12 @@
+import { isMockMode } from "../../config/env";
 import { mockTenantContexts } from "../../mocks/auth/context";
 import { getStoredAuthSession } from "../auth/auth.storage";
 import type { TenantContext } from "./types";
 
-const useMocks = import.meta.env.VITE_USE_MOCKS === "true";
-
 export async function listAvailableContexts(): Promise<TenantContext[]> {
   await new Promise((resolve) => window.setTimeout(resolve, 250));
 
-  if (useMocks) {
+  if (isMockMode()) {
     return mockTenantContexts;
   }
 

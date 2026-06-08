@@ -670,3 +670,16 @@
 - documentacao atualizada em `docs/auth.md`, `docs/api.md`, `docs/frontend-screens.md`, `docs/rbac.md`, `agent-orchestration/docs/status-geral.md` e este log
 - fora de escopo mantido: backend, Prisma/migrations, Figma, mobile Flutter, refresh token, revogacao remota e remocao brusca de mocks
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npx prisma validate`, `npx prisma generate` e `git diff --check`
+
+## 2026-06-07 - frontend smoke flow tests
+
+- branch usada: `feature/frontend-smoke-flow-tests`
+- objetivo: adicionar cobertura smoke inicial para fluxo principal do frontend sem criar features novas
+- estrategia verificada: frontend nao tinha Vitest, Testing Library, Playwright ou Cypress; escolhido `node:test` + `tsx` + `react-dom/server` para evitar dependencia pesada nesta rodada
+- dependencia nova: nenhuma
+- script criado em `frontend/package.json`: `test:smoke`
+- helper criado: `frontend/src/config/env.ts` para leitura testavel de `VITE_API_BASE_URL`, `VITE_DEFAULT_TENANT_ID` e `VITE_USE_MOCKS`
+- teste criado: `frontend/tests/smoke-flow.test.tsx`
+- cobertura: auth.storage, auth.service real/mock, API client Bearer, ausencia de headers legacy em modo real, preservacao de FormData, sidebar/guards RBAC para W02A/W03/Platform, smoke render de `/login`, W02A, W03 e Platform Console, e anexos frontend
+- documentacao atualizada em `docs/auth.md`, `docs/frontend-screens.md`, `docs/rbac.md`, `agent-orchestration/docs/status-geral.md` e este log
+- fora de escopo mantido: backend, Prisma/migrations, contratos API, Figma, mobile Flutter e redesign

@@ -1,3 +1,4 @@
+import { readFrontendEnv } from "../../config/env";
 import { buildTenantModules, mockPlatformTenants } from "./platform.mock";
 import {
   createPlatformTenantFromApi,
@@ -17,23 +18,22 @@ import type {
   UpdateTenantInput,
 } from "./platform.types";
 
-const useMocks = import.meta.env.VITE_USE_MOCKS !== "false";
 let tenants = [...mockPlatformTenants];
 
 export async function listPlatformTenants(): Promise<PlatformTenant[]> {
-  if (!useMocks) return listPlatformTenantsFromApi();
+  if (!shouldUseMocks()) return listPlatformTenantsFromApi();
   await wait();
   return tenants;
 }
 
 export async function getPlatformTenantById(tenantId: string): Promise<PlatformTenant> {
-  if (!useMocks) return getPlatformTenantByIdFromApi(tenantId);
+  if (!shouldUseMocks()) return getPlatformTenantByIdFromApi(tenantId);
   await wait();
   return findTenant(tenantId);
 }
 
 export async function createPlatformTenant(input: CreateTenantInput): Promise<PlatformTenant> {
-  if (!useMocks) return createPlatformTenantFromApi(input);
+  if (!shouldUseMocks()) return createPlatformTenantFromApi(input);
   await wait();
   const tenant: PlatformTenant = {
     id: `pten-${input.slug}`,
@@ -62,32 +62,32 @@ export async function createPlatformTenant(input: CreateTenantInput): Promise<Pl
 }
 
 export async function updatePlatformTenant(tenantId: string, input: UpdateTenantInput): Promise<PlatformTenant> {
-  if (!useMocks) return updatePlatformTenantFromApi(tenantId, input);
+  if (!shouldUseMocks()) return updatePlatformTenantFromApi(tenantId, input);
   await wait();
   tenants = tenants.map((tenant) => (tenant.id === tenantId ? { ...tenant, ...input } : tenant));
   return findTenant(tenantId);
 }
 
 export async function updatePlatformTenantStatus(tenantId: string, status: PlatformTenantStatus): Promise<PlatformTenant> {
-  if (!useMocks) return updatePlatformTenantStatusFromApi(tenantId, status);
+  if (!shouldUseMocks()) return updatePlatformTenantStatusFromApi(tenantId, status);
   return updatePlatformTenant(tenantId, { status });
 }
 
 export async function listPlatformTenantModules(tenantId: string) {
-  if (!useMocks) return listPlatformTenantModulesFromApi(tenantId);
+  if (!shouldUseMocks()) return listPlatformTenantModulesFromApi(tenantId);
   await wait();
   return buildTenantModules(findTenant(tenantId));
 }
 
 export async function updatePlatformTenantModules(tenantId: string, enabledModules: string[]) {
-  if (!useMocks) return updatePlatformTenantModulesFromApi(tenantId, enabledModules);
+  if (!shouldUseMocks()) return updatePlatformTenantModulesFromApi(tenantId, enabledModules);
   await wait();
   tenants = tenants.map((tenant) => (tenant.id === tenantId ? { ...tenant, enabledModules } : tenant));
   return buildTenantModules(findTenant(tenantId));
 }
 
 export async function createTenantAdminUser(tenantId: string, input: CreateTenantAdminInput): Promise<PlatformTenant> {
-  if (!useMocks) return createTenantAdminUserFromApi(tenantId, input);
+  if (!shouldUseMocks()) return createTenantAdminUserFromApi(tenantId, input);
   await wait();
   tenants = tenants.map((tenant) =>
     tenant.id === tenantId
@@ -117,4 +117,8 @@ function findTenant(tenantId: string): PlatformTenant {
 
 async function wait() {
   await new Promise((resolve) => window.setTimeout(resolve, 250));
+}
+
+function shouldUseMocks(): boolean {
+  return readFrontendEnv("VITE_USE_MOCKS", "true") !== "false";
 }
