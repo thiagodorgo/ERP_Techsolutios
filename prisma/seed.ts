@@ -114,9 +114,14 @@ async function main(): Promise<void> {
   }
 
   const tenantAdminRole = roles.get("tenant_admin");
+  const superAdminRole = roles.get("super_admin");
 
   if (!tenantAdminRole) {
     throw new Error("tenant_admin role was not seeded.");
+  }
+
+  if (!superAdminRole) {
+    throw new Error("super_admin role was not seeded.");
   }
 
   await withTenantRls(prisma, tenant.id, async (tx) => {
@@ -208,6 +213,57 @@ async function main(): Promise<void> {
       password: readDemoAdminPassword(),
     });
 
+    const platformAdmin = await tx.user.upsert({
+      where: {
+        tenant_id_email: {
+          tenant_id: tenant.id,
+          email: readPlatformAdminEmail(),
+        },
+      },
+      update: {
+        name: "Platform Admin Local",
+        status: "active",
+        branch_id: branch.id,
+      },
+      create: {
+        tenant_id: tenant.id,
+        branch_id: branch.id,
+        name: "Platform Admin Local",
+        email: readPlatformAdminEmail(),
+        status: "active",
+      },
+    });
+
+    const existingPlatformAdminAssignment = await tx.userRoleAssignment.findFirst({
+      where: {
+        tenant_id: tenant.id,
+        user_id: platformAdmin.id,
+        role_id: superAdminRole.id,
+        branch_id: null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!existingPlatformAdminAssignment) {
+      await tx.userRoleAssignment.create({
+        data: {
+          tenant_id: tenant.id,
+          user_id: platformAdmin.id,
+          role_id: superAdminRole.id,
+          branch_id: null,
+        },
+      });
+    }
+
+    await localAuthCredentials.upsertCredentialForUser({
+      tenant_id: tenant.id,
+      user_id: platformAdmin.id,
+      email: platformAdmin.email,
+      password: readPlatformAdminPassword(),
+    });
+
     const existingSeedAudit = await tx.auditLog.findFirst({
       where: {
         tenant_id: tenant.id,
@@ -230,7 +286,7 @@ async function main(): Promise<void> {
           entity_id: tenant.id,
           metadata: {
             source: "prisma/seed.ts",
-            auth_note: "Admin demo criado com senha local configuravel por DEMO_ADMIN_PASSWORD.",
+            auth_note: "Admins locais criados com senhas configuraveis por DEMO_ADMIN_PASSWORD e E2E_PLATFORM_PASSWORD.",
           },
         },
       });
@@ -295,6 +351,24 @@ function readDemoAdminPassword(): string {
   }
 
   return "ChangeMe123!";
+}
+
+function readPlatformAdminEmail(): string {
+  return process.env.E2E_PLATFORM_EMAIL?.trim().toLowerCase() || "platform.admin@erp.local";
+}
+
+function readPlatformAdminPassword(): string {
+  const configuredPassword = process.env.E2E_PLATFORM_PASSWORD?.trim() || process.env.PLATFORM_ADMIN_PASSWORD?.trim();
+
+  if (configuredPassword) {
+    return configuredPassword;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("E2E_PLATFORM_PASSWORD or PLATFORM_ADMIN_PASSWORD is required when running seed in production.");
+  }
+
+  return "platform-admin-dev-password";
 }
 
 main()

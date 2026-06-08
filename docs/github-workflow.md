@@ -44,6 +44,7 @@ git push origin chore/local-dev-infra
 - `npm run build`
 - `npm --prefix frontend run test:smoke`
 - `npm run test:e2e` quando a mudanca tocar login, RBAC, navegacao, W02A, W03 ou fluxo autenticado.
+- O E2E local depende do seed idempotente (`npm run db:seed`) para `admin.demo@example.com` e `platform.admin@erp.local`; as senhas documentadas em `.env.example` sao apenas valores de desenvolvimento.
 - Documentacao atualizada.
 - Sem `.env` real.
 - Sem secrets.

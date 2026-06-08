@@ -68,6 +68,14 @@ Rodar seed:
 npm run db:seed
 ```
 
+O seed local/dev e idempotente e garante:
+
+- tenant demo `demo`;
+- Tenant Admin local `admin.demo@example.com`, senha local `DEMO_ADMIN_PASSWORD` ou fallback `ChangeMe123!`;
+- Platform Admin local `platform.admin@erp.local`, senha local `E2E_PLATFORM_PASSWORD` ou fallback `platform-admin-dev-password`.
+
+Essas credenciais sao apenas exemplos de desenvolvimento e E2E. Nunca use esses valores em producao.
+
 Rodar backend:
 
 ```bash
@@ -91,7 +99,7 @@ npm run db:migrate
 npm run test:e2e
 ```
 
-O E2E usa Playwright, sobe backend local em modo Prisma e frontend Vite em modo real. O comando executa o seed demo idempotente antes da suite. Artifacts pesados ficam ignorados por Git em `playwright-report/` e `test-results/`.
+O E2E usa Playwright, sobe backend local em modo Prisma e frontend Vite em modo real. O comando executa o seed demo idempotente antes da suite e cobre login tenant, bloqueio de Platform Console para Tenant Admin, login Platform Admin e acesso positivo a `/platform/tenants`. Artifacts pesados ficam ignorados por Git em `playwright-report/` e `test-results/`.
 
 ## Seguranca
 
