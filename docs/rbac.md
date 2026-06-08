@@ -155,7 +155,7 @@ Regras especificas:
 
 A sidebar nao deve mostrar todos os modulos para todos os usuarios. A sidebar completa exibida no Figma representa Admin/Tenant Owner, nao usuario comum.
 
-No frontend em modo real (`VITE_USE_MOCKS=false`), o estado autenticado vem do login JWT e o API client envia `Authorization: Bearer` automaticamente. Headers legados deixam de ser enviados pelo frontend nesse modo. A sidebar e os guards usam roles/permissoes do estado autenticado apenas para UX; a autorizacao definitiva continua no backend por RBAC persistido e RLS.
+No frontend em modo real (`VITE_USE_MOCKS=false`), o estado autenticado vem do login JWT e o API client envia `Authorization: Bearer` automaticamente. Headers legados deixam de ser enviados pelo frontend nesse modo. Em `401` de rota protegida, o client tenta uma renovacao unica via refresh token antes de limpar a sessao local. A sidebar e os guards usam roles/permissoes do estado autenticado apenas para UX; a autorizacao definitiva continua no backend por RBAC persistido e RLS.
 
 Cobertura smoke inicial: `npm --prefix frontend run test:smoke` valida que operador nao ve W02A/W03 administrativas, tenant admin ve W02A/W03, tenant admin nao ve Console da Plataforma e platform admin ve Console da Plataforma.
 
@@ -279,7 +279,7 @@ Esse desenho mantem o `tenantContextMiddleware` sincronico como fallback/base e 
 - No runtime `memory`, JWT ainda usa roles do token contra o catalogo local.
 - `x-permissions` ainda existe para chamadas legacy.
 - Rotas de plataforma, Core SaaS e Checklists ja bloqueiam legacy headers em producao; a remocao definitiva do codigo legacy ainda depende de migracao controlada.
-- Ainda nao ha refresh token, logout, revogacao ou Redis runtime.
+- Refresh token e logout backend existem via `auth_sessions`, mas access tokens ja emitidos seguem validos ate expirarem; revogacao imediata de access token e Redis runtime continuam fora do escopo atual.
 - RLS existe para as tabelas tenant-scoped principais, mas depende de todo caminho Prisma tenant-scoped configurar `app.current_tenant_id` corretamente.
 
 ## Plano para modo strict
@@ -293,7 +293,7 @@ Plano recomendado:
 3. manter janela de compatibilidade para ambientes que ainda dependem de `x-tenant-id`, `x-user-id`, `x-actor-user-id`, `x-role`, `x-roles` ou `x-permissions`;
 4. remover fallback legacy somente depois de aprovacao explicita e cobertura de migracao.
 
-O modo strict nao deve implementar refresh/logout, Redis runtime ou RLS. Esses itens continuam em blocos proprios.
+O modo strict nao deve implementar Redis runtime, cookie httpOnly ou revogacao imediata de access token. Esses itens continuam em blocos proprios.
 
 ## Proximos passos
 

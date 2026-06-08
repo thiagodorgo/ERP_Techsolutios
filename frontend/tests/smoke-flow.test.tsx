@@ -80,13 +80,45 @@ function installFetchJson(payload: unknown, status = 200) {
   return calls;
 }
 
+function installFetchSequence(responses: readonly { payload: unknown; status?: number }[]) {
+  const calls: FetchCall[] = [];
+  let index = 0;
+
+  Object.defineProperty(globalThis, "fetch", {
+    configurable: true,
+    value: async (url: string, init: RequestInit = {}) => {
+      calls.push({ url, init });
+      const response = responses[Math.min(index, responses.length - 1)];
+      index += 1;
+
+      return new Response(JSON.stringify(response.payload), {
+        status: response.status ?? 200,
+        headers: {
+          "content-type": "application/json",
+        },
+      });
+    },
+  });
+
+  return calls;
+}
+
 function sessionPayload() {
   return {
     data: {
       authenticated: true,
       access_token: "jwt-test-token",
+      accessToken: "jwt-test-token",
       token_type: "Bearer",
+      tokenType: "Bearer",
       expires_in: 3600,
+      expiresIn: 3600,
+      refresh_token: "refresh-test-token",
+      refreshToken: "refresh-test-token",
+      refresh_expires_at: "2026-06-14T00:00:00.000Z",
+      refreshExpiresAt: "2026-06-14T00:00:00.000Z",
+      session_id: "session-test-id",
+      sessionId: "session-test-id",
       user: {
         id: "usr-test",
         tenant_id: "11111111-1111-4111-8111-111111111111",
@@ -117,16 +149,19 @@ test("auth.storage salva, le e limpa sessao e token", async () => {
   const {
     clearStoredAuthSession,
     getStoredAuthSession,
+    getStoredRefreshToken,
     getStoredToken,
     setStoredAuthSession,
   } = await import("../src/modules/auth/auth.storage");
 
   setStoredAuthSession(mockSession);
   assert.equal(getStoredToken(), mockSession.accessToken);
+  assert.equal(getStoredRefreshToken(), mockSession.refreshToken);
   assert.equal(getStoredAuthSession()?.user.email, mockSession.user.email);
 
   clearStoredAuthSession();
   assert.equal(getStoredToken(), null);
+  assert.equal(getStoredRefreshToken(), null);
   assert.equal(getStoredAuthSession(), null);
 });
 
@@ -162,6 +197,8 @@ test("auth.service chama login real quando VITE_USE_MOCKS=false", async () => {
   assert.equal(JSON.parse(String(calls[0].init.body)).tenantId, "11111111-1111-4111-8111-111111111111");
   assert.equal(session.provider, "local-jwt");
   assert.equal(session.accessToken, "jwt-test-token");
+  assert.equal(session.refreshToken, "refresh-test-token");
+  assert.equal(session.sessionId, "session-test-id");
   assert.equal(session.user.permissions.includes("tenant_checklists:read"), true);
 });
 
@@ -188,6 +225,48 @@ test("api client envia Bearer e bloqueia headers legados no modo real", async ()
   assert.equal(headers.get("X-Tenant-Id"), null);
   assert.equal(headers.get("X-Role"), null);
   assert.equal(headers.get("X-Permissions"), null);
+});
+
+test("api client renova access token uma vez em 401 e repete a chamada", async () => {
+  process.env.VITE_USE_MOCKS = "false";
+  process.env.VITE_API_BASE_URL = "/api/v1";
+  browser.clear();
+  const calls = installFetchSequence([
+    { status: 401, payload: { error: { code: "INVALID_TOKEN" } } },
+    {
+      payload: {
+        data: {
+          access_token: "jwt-refreshed",
+          token_type: "Bearer",
+          expires_in: 3600,
+          refresh_token: "refresh-rotated",
+          refresh_expires_at: "2026-06-14T00:00:00.000Z",
+          session_id: "session-test-id",
+        },
+      },
+    },
+    { payload: { data: { ok: true } } },
+  ]);
+  const { getStoredAuthSession, setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
+  const { apiRequest } = await import("../src/services/api/client");
+
+  setStoredAuthSession({
+    ...mockSession,
+    accessToken: "jwt-expired",
+    refreshToken: "refresh-current",
+    provider: "local-jwt",
+  });
+
+  const result = await apiRequest<{ data: { ok: boolean } }>("/tenant/checklists");
+
+  assert.equal(result.data.ok, true);
+  assert.equal(calls[0].url, "/api/v1/tenant/checklists");
+  assert.equal(calls[1].url, "/api/v1/auth/refresh");
+  assert.equal(JSON.parse(String(calls[1].init.body)).refreshToken, "refresh-current");
+  assert.equal(calls[2].url, "/api/v1/tenant/checklists");
+  assert.equal(new Headers(calls[0].init.headers as HeadersInit).get("Authorization"), "Bearer jwt-expired");
+  assert.equal(new Headers(calls[2].init.headers as HeadersInit).get("Authorization"), "Bearer jwt-refreshed");
+  assert.equal(getStoredAuthSession()?.refreshToken, "refresh-rotated");
 });
 
 test("api client preserva headers mock e FormData para anexos", async () => {

@@ -2,7 +2,7 @@
 
 ## Visao geral
 
-Os Blocos 04C.1 a 04C.7 adicionam credenciais locais persistentes, login tenant-scoped, emissao de JWT access token, fundacao do actor autenticado, rotas protegidas actor-aware e uso de RBAC persistido para actors JWT quando o runtime Prisma esta ativo. Refresh token, logout, sessao persistente, cookie e middleware obrigatorio sem fallback ainda ficam fora do escopo atual.
+Os Blocos 04C.1 a 04C.8 adicionam credenciais locais persistentes, login tenant-scoped, emissao de JWT access token, refresh token persistido com hash, logout/revogacao, fundacao do actor autenticado, rotas protegidas actor-aware e uso de RBAC persistido para actors JWT quando o runtime Prisma esta ativo. Cookie, MFA, OAuth/social login, recuperacao de senha, Redis runtime e remocao definitiva do fallback legado ainda ficam fora do escopo atual.
 
 Nesta fase, `Authorization: Bearer` e o caminho principal para rotas protegidas. A autorizacao por headers internos continua preservada apenas para desenvolvimento, testes e transicao controlada:
 
@@ -91,8 +91,17 @@ Resposta de sucesso (`200 OK`):
   "data": {
     "authenticated": true,
     "access_token": "jwt-assinado",
+    "accessToken": "jwt-assinado",
     "token_type": "Bearer",
+    "tokenType": "Bearer",
     "expires_in": 3600,
+    "expiresIn": 3600,
+    "refresh_token": "refresh-jwt-assinado",
+    "refreshToken": "refresh-jwt-assinado",
+    "refresh_expires_at": "2026-06-14T00:00:00.000Z",
+    "refreshExpiresAt": "2026-06-14T00:00:00.000Z",
+    "session_id": "uuid-da-sessao",
+    "sessionId": "uuid-da-sessao",
     "user": {
       "id": "uuid-do-usuario",
       "tenant_id": "uuid-do-tenant",
@@ -115,7 +124,7 @@ Resposta de sucesso (`200 OK`):
 }
 ```
 
-A resposta nao inclui `password_hash`, `refresh_token`, cookie ou sessao persistente.
+A resposta nao inclui `password_hash`, senha pura, segredo JWT ou cookie. O refresh token e retornado ao cliente apenas no login/refresh; no banco fica armazenado somente como hash.
 
 Credenciais invalidas retornam erro publico generico (`401 Unauthorized`):
 
@@ -180,7 +189,7 @@ Claims do access token:
 }
 ```
 
-O token nao inclui senha, `password_hash`, refresh token, permissoes extensas nem dados sensiveis. O endpoint tambem nao cria cookie nem sessao.
+O token nao inclui senha, `password_hash`, refresh token, permissoes extensas nem dados sensiveis. O endpoint tambem nao cria cookie.
 
 Cuidados de seguranca:
 
@@ -195,6 +204,103 @@ Teste separado:
 node --test --import tsx tests/auth-jwt.test.ts
 ```
 
+## Refresh token e logout
+
+A rodada `feature/auth-session-refresh-logout` adiciona sessao persistente de autenticacao em `auth_sessions`.
+
+Configuracao:
+
+```env
+JWT_REFRESH_SECRET="change-me-refresh-in-local-development"
+JWT_REFRESH_EXPIRES_IN="7d"
+```
+
+`JWT_REFRESH_SECRET` usa default apenas em desenvolvimento/teste. Em `NODE_ENV=production`, a variavel deve ser definida com segredo proprio fora do repositorio. Valores locais conhecidos sao recusados em producao. Nunca commite segredo real.
+
+Tabela `auth_sessions`:
+
+- `tenant_id` e `user_id`: vinculam a sessao ao usuario do tenant.
+- `refresh_token_hash`: hash HMAC-SHA256 do refresh token completo; o token puro nunca e persistido.
+- `expires_at`: expiracao da sessao/refresh token.
+- `revoked_at`: marca logout ou revogacao.
+- RLS: habilitada com `app.current_tenant_id`, como nas demais tabelas tenant-scoped.
+
+Endpoint de refresh:
+
+```http
+POST /api/v1/auth/refresh
+```
+
+Body:
+
+```json
+{
+  "refreshToken": "refresh-jwt-assinado"
+}
+```
+
+Resposta de sucesso (`200 OK`):
+
+```json
+{
+  "data": {
+    "access_token": "novo-jwt-assinado",
+    "accessToken": "novo-jwt-assinado",
+    "token_type": "Bearer",
+    "tokenType": "Bearer",
+    "expires_in": 3600,
+    "expiresIn": 3600,
+    "refresh_token": "refresh-jwt-rotacionado",
+    "refreshToken": "refresh-jwt-rotacionado",
+    "refresh_expires_at": "2026-06-14T00:00:00.000Z",
+    "refreshExpiresAt": "2026-06-14T00:00:00.000Z",
+    "session_id": "uuid-da-sessao",
+    "sessionId": "uuid-da-sessao"
+  }
+}
+```
+
+Regras:
+
+- refresh token deve ter claim `type: "refresh"`, audience `erp-techsolutions-auth` e `session_id`;
+- refresh invalido, expirado, revogado ou reutilizado apos rotacao retorna `401 INVALID_REFRESH_TOKEN`;
+- o refresh bem-sucedido rotaciona o refresh token e atualiza apenas o hash no banco;
+- roles/permissoes efetivas do novo access token sao resolvidas a partir do usuario ativo e das atribuicoes persistidas no tenant.
+
+Endpoint de logout:
+
+```http
+POST /api/v1/auth/logout
+```
+
+Body:
+
+```json
+{
+  "refreshToken": "refresh-jwt-assinado"
+}
+```
+
+Resposta:
+
+```json
+{
+  "data": {
+    "revoked": true
+  }
+}
+```
+
+O logout e idempotente. Token ausente, invalido ou sessao ja revogada nao expõe detalhes e nao impede a limpeza local do frontend.
+
+Teste separado:
+
+```bash
+node --test --import tsx tests/auth-session.test.ts
+```
+
+Esse teste depende de `DATABASE_URL` apontando para PostgreSQL local migrado.
+
 ## Frontend com JWT
 
 A rodada `feature/auth-frontend-login-integration` conecta o frontend ao endpoint real `POST /api/v1/auth/login`.
@@ -202,11 +308,12 @@ A rodada `feature/auth-frontend-login-integration` conecta o frontend ao endpoin
 Fluxo em modo real (`VITE_USE_MOCKS=false`):
 
 1. `W01 Login` envia `tenantId`, `email` e `password` para `/api/v1/auth/login`.
-2. O frontend armazena a sessao retornada em `localStorage`, na chave `erp-techsolutions.auth-session`.
+2. O frontend armazena access token, refresh token, expiracoes e metadados da sessao em `localStorage`, na chave `erp-techsolutions.auth-session`.
 3. O API client anexa `Authorization: Bearer <access_token>` automaticamente em chamadas `apiRequest`, `apiFormDataRequest` e `apiBlobRequest`.
 4. Headers legados (`X-Tenant-Id`, `X-Role`, `X-Permissions`) nao sao enviados pelo client em modo real.
-5. Resposta `401` limpa a sessao local para forcar novo login.
-6. Logout simples limpa sessao e contexto local e redireciona para `/login`.
+5. Resposta `401` em rota protegida tenta uma renovacao unica via `/api/v1/auth/refresh`, exceto nos endpoints de auth.
+6. Se o refresh falhar, a sessao local e limpa para forcar novo login.
+7. Logout limpa sessao e contexto local, chama `/api/v1/auth/logout` em best effort e redireciona para `/login`.
 
 Fluxo em modo mock (`VITE_USE_MOCKS=true`):
 
@@ -214,7 +321,7 @@ Fluxo em modo mock (`VITE_USE_MOCKS=true`):
 - contextos mockados seguem disponiveis;
 - headers legados continuam sendo enviados apenas para rotas/mock/dev que dependem deles.
 
-Persistencia escolhida para MVP: `localStorage`. Nao ha refresh token, cookie, revogacao remota ou logout avancado nesta rodada. O frontend nao armazena senha, segredo JWT, token em URL nem registra token no console.
+Persistencia escolhida para MVP: `localStorage`. O frontend nao armazena senha, segredo JWT, token em URL nem registra token no console. Cookie httpOnly e storage alternativo ficam fora desta rodada.
 
 Variavel auxiliar opcional:
 
@@ -233,8 +340,8 @@ npm --prefix frontend run test:smoke
 Cobertura inicial:
 
 - `auth.storage` salva, le e limpa sessao/token;
-- `auth.service` alterna entre login real e mock por `VITE_USE_MOCKS`;
-- API client envia `Authorization: Bearer`, bloqueia headers legados em modo real e preserva `FormData`;
+- `auth.service` alterna entre login real e mock por `VITE_USE_MOCKS`, renova sessao e executa logout backend best effort;
+- API client envia `Authorization: Bearer`, bloqueia headers legados em modo real, preserva `FormData` e tenta refresh unico em `401`;
 - renderizacao basica de `/login` e rotas protegidas relacionadas ao fluxo autenticado.
 
 E2E real em navegador:
@@ -251,7 +358,7 @@ Pre-requisitos locais:
 - `DATABASE_URL` apontando para o PostgreSQL local ou usando o default de desenvolvimento;
 - `DEMO_ADMIN_PASSWORD` opcional, com fallback local `ChangeMe123!`.
 
-O comando roda o seed demo idempotente e valida login real com JWT, erro de credenciais invalidas, criacao de sessao em `localStorage`, guard de rota protegida e bloqueio do Console da Plataforma para usuario tenant.
+O comando roda o seed demo idempotente e valida login real com JWT, erro de credenciais invalidas, criacao de sessao em `localStorage` com refresh token, guard de rota protegida, logout local/backend e bloqueio do Console da Plataforma para usuario tenant.
 
 ## Authenticated actor middleware
 
@@ -363,10 +470,9 @@ Regras mantidas:
 Fora do escopo deste bloco:
 
 - remover headers simulados;
-- implementar refresh token, logout ou revogacao;
-- implementar sessao/cookie;
+- implementar cookie httpOnly ou sessao server-side alem de `auth_sessions`;
 - Redis runtime;
-- remover ou revogar sessoes JWT ja emitidas.
+- revogar access tokens ja emitidos antes da expiracao; a revogacao atua sobre refresh/session.
 
 Testes separados:
 
@@ -394,24 +500,23 @@ Em `NODE_ENV=production`, o fallback legado ja e bloqueado nas rotas sensiveis d
 
 Continuam fora deste bloco:
 
-- refresh token;
-- logout;
-- sessao/cookie;
+- cookie httpOnly;
 - Redis runtime;
-- remover suporte legacy do codigo.
+- remover suporte legacy do codigo;
+- revogar access tokens ja emitidos antes da expiracao.
 
 ## Fora do escopo atual
 
-- refresh token;
-- logout;
-- rotacao/revogacao de token;
 - remocao definitiva do fallback por headers simulados;
 - tornar JWT obrigatorio globalmente;
 - Redis runtime;
+- cookie httpOnly;
+- MFA, OAuth/social login e recuperacao de senha;
+- revogacao imediata de access token ja emitido antes da expiracao;
 
 ## Proximos passos
 
 - substituir headers simulados gradualmente nas chamadas internas e testes;
 - ampliar o uso de RBAC persistido conforme as rotas migrarem para JWT;
 - auditoria com actor real;
-- bloco separado: refresh token.
+- avaliar cookie httpOnly/secure e Redis para sessoes distribuidas.

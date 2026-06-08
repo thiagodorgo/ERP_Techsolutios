@@ -1,5 +1,6 @@
 import { isMockMode, readFrontendEnv } from "../../config/env";
 import { clearStoredAuthSession, getStoredToken } from "../../modules/auth/auth.storage";
+import { refreshSession } from "../../modules/auth/auth.service";
 
 type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -12,43 +13,38 @@ type RequestOptions = {
 };
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...buildAuthHeaders(options),
-  };
-
-  const response = await fetch(`${apiBaseUrl()}${path}`, {
+  const response = await fetchWithAuthRetry(path, options, (forceStoredToken) => ({
     method: options.method ?? "GET",
-    headers,
+    headers: {
+      "Content-Type": "application/json",
+      ...buildAuthHeaders(options, forceStoredToken),
+    },
     body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  }));
 
-  handleUnauthorized(response);
   if (!response.ok) throw new Error(`API request failed: ${response.status}`);
 
   return response.json() as Promise<T>;
 }
 
 export async function apiFormDataRequest<T>(path: string, options: Omit<RequestOptions, "body"> & { body: FormData }): Promise<T> {
-  const response = await fetch(`${apiBaseUrl()}${path}`, {
+  const response = await fetchWithAuthRetry(path, options, (forceStoredToken) => ({
     method: options.method ?? "POST",
-    headers: buildAuthHeaders(options),
+    headers: buildAuthHeaders(options, forceStoredToken),
     body: options.body,
-  });
+  }));
 
-  handleUnauthorized(response);
   if (!response.ok) throw new Error(`API request failed: ${response.status}`);
 
   return response.json() as Promise<T>;
 }
 
 export async function apiBlobRequest(path: string, options: RequestOptions = {}): Promise<{ blob: Blob; fileName?: string; contentType?: string }> {
-  const response = await fetch(`${apiBaseUrl()}${path}`, {
+  const response = await fetchWithAuthRetry(path, options, (forceStoredToken) => ({
     method: options.method ?? "GET",
-    headers: buildAuthHeaders(options),
-  });
+    headers: buildAuthHeaders(options, forceStoredToken),
+  }));
 
-  handleUnauthorized(response);
   if (!response.ok) throw new Error(`API request failed: ${response.status}`);
 
   return {
@@ -58,9 +54,34 @@ export async function apiBlobRequest(path: string, options: RequestOptions = {})
   };
 }
 
-function buildAuthHeaders(options: RequestOptions): Record<string, string> {
+async function fetchWithAuthRetry(
+  path: string,
+  options: RequestOptions,
+  buildInit: (forceStoredToken: boolean) => RequestInit,
+): Promise<Response> {
+  const response = await fetch(`${apiBaseUrl()}${path}`, buildInit(false));
+
+  if (response.status !== 401 || !shouldAttemptRefresh(path, options)) {
+    handleUnauthorized(response, path);
+    return response;
+  }
+
+  try {
+    await refreshSession();
+  } catch {
+    clearStoredAuthSession();
+    return response;
+  }
+
+  const retryResponse = await fetch(`${apiBaseUrl()}${path}`, buildInit(true));
+  handleUnauthorized(retryResponse, path);
+
+  return retryResponse;
+}
+
+function buildAuthHeaders(options: RequestOptions, forceStoredToken = false): Record<string, string> {
   const headers: Record<string, string> = {};
-  const token = options.token ?? getStoredToken();
+  const token = forceStoredToken ? getStoredToken() : options.token ?? getStoredToken();
 
   if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -78,8 +99,15 @@ function apiBaseUrl(): string {
   return readFrontendEnv("VITE_API_BASE_URL", "/api/v1");
 }
 
-function handleUnauthorized(response: Response): void {
-  if (response.status === 401) {
+function shouldAttemptRefresh(path: string, options: RequestOptions): boolean {
+  if (isMockMode()) return false;
+  if (options.method === "DELETE") return false;
+
+  return !path.startsWith("/auth/login") && !path.startsWith("/auth/refresh") && !path.startsWith("/auth/logout");
+}
+
+function handleUnauthorized(response: Response, path: string): void {
+  if (response.status === 401 && !path.startsWith("/auth/")) {
     clearStoredAuthSession();
   }
 }

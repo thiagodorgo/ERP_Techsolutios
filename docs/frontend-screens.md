@@ -33,17 +33,19 @@ Tela implementada:
 Comportamento:
 
 - em modo real (`VITE_USE_MOCKS=false`), envia `tenantId`, e-mail e senha para `POST /api/v1/auth/login`;
-- armazena a sessao JWT em `localStorage` e o API client passa a enviar `Authorization: Bearer` automaticamente;
-- em `401`, a sessao local e limpa e o usuario volta ao fluxo de login;
-- logout simples limpa token, sessao local e contexto ativo;
+- armazena access token, refresh token, expiracoes e metadados da sessao em `localStorage`;
+- o API client passa a enviar `Authorization: Bearer` automaticamente;
+- em `401` de rota protegida, tenta refresh unico via `POST /api/v1/auth/refresh` e repete a chamada com o novo access token;
+- se o refresh falhar, a sessao local e limpa e o usuario volta ao fluxo de login;
+- logout limpa token, sessao local e contexto ativo e chama `POST /api/v1/auth/logout` em best effort;
 - em modo mock (`VITE_USE_MOCKS=true`), preserva login/contextos simulados para desenvolvimento.
 
-Refresh token, revogacao de sessao e logout avancado ficam fora desta rodada.
+Cookie httpOnly, storage alternativo, MFA e OAuth/social login ficam fora desta rodada.
 
 Smoke tests frontend:
 
 - comando: `npm --prefix frontend run test:smoke`;
-- cobertura inicial: login, auth storage/service, API client Bearer, guards/sidebar RBAC, `/login`, W02A Checklists, W03 Configurações, Platform Console e anexos de checklist;
+- cobertura inicial: login, auth storage/service, refresh-on-401, logout, API client Bearer, guards/sidebar RBAC, `/login`, W02A Checklists, W03 Configurações, Platform Console e anexos de checklist;
 - estrategia: testes leves com `node:test`, `tsx` e renderizacao server-side React, sem Playwright/Cypress nesta rodada.
 
 E2E real em navegador:
@@ -52,7 +54,7 @@ E2E real em navegador:
 - stack: Playwright com Chromium, backend Prisma em `CORE_SAAS_PERSISTENCE=prisma` e frontend Vite em modo real (`VITE_USE_MOCKS=false`);
 - pre-requisitos: Docker/PostgreSQL/Redis ativos, migrations aplicadas e Chromium instalado com `npx playwright install chromium`;
 - o comando executa o seed demo idempotente antes dos testes, usando `admin.demo@example.com` e `DEMO_ADMIN_PASSWORD` local;
-- cobertura inicial: login real, erro de login, guard de rota protegida, sidebar RBAC de tenant admin, W02A, W03 e bloqueio do Console da Plataforma para usuario tenant;
+- cobertura inicial: login real, erro de login, guard de rota protegida, sessao com refresh token, logout, sidebar RBAC de tenant admin, W02A, W03 e bloqueio do Console da Plataforma para usuario tenant;
 - pendencia: acesso positivo ao Console da Plataforma depende de seed estavel para usuario platform, ainda nao existente.
 
 ## Administrador

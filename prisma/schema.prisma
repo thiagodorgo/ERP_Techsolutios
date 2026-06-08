@@ -22,6 +22,7 @@ model Tenant {
   checklist_runs                ChecklistRun[]
   checklist_template_components ChecklistTemplateComponent[]
   checklist_templates           ChecklistTemplate[]
+  auth_sessions                 AuthSession[]
   local_auth_credentials        LocalAuthCredential[]
   roles                         Role[]
   user_role_assignments         UserRoleAssignment[]
@@ -57,6 +58,7 @@ model User {
   created_at             DateTime              @default(now()) @db.Timestamptz(6)
   updated_at             DateTime              @default(now()) @updatedAt @db.Timestamptz(6)
   audit_logs             AuditLog[]
+  auth_sessions          AuthSession[]
   branch                 Branch?               @relation(fields: [branch_id], references: [id], onDelete: SetNull)
   local_auth_credentials LocalAuthCredential[]
   role_assignments       UserRoleAssignment[]
@@ -90,6 +92,28 @@ model LocalAuthCredential {
   @@index([tenant_id, user_id])
   @@index([tenant_id, email])
   @@map("local_auth_credentials")
+}
+
+model AuthSession {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String    @db.Uuid
+  user_id            String    @db.Uuid
+  refresh_token_hash String    @unique
+  user_agent         String?
+  ip_address         String?
+  expires_at         DateTime  @db.Timestamptz(6)
+  revoked_at         DateTime? @db.Timestamptz(6)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant             Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  user               User      @relation(fields: [tenant_id, user_id], references: [tenant_id, id], onDelete: Cascade)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id])
+  @@index([tenant_id, user_id])
+  @@index([tenant_id, revoked_at])
+  @@index([expires_at])
+  @@map("auth_sessions")
 }
 
 model Role {

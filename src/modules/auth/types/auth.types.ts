@@ -92,12 +92,31 @@ export type SignAccessTokenInput = {
   readonly roles: readonly string[];
 };
 
+export type SignRefreshTokenInput = {
+  readonly session_id: string;
+  readonly tenant_id: string;
+  readonly user_id: string;
+};
+
 export type AuthenticatedTokenPayload = {
   readonly sub: string;
   readonly tenant_id: string;
   readonly email: string;
   readonly roles: readonly string[];
   readonly type: "access";
+  readonly iat: number;
+  readonly exp: number;
+  readonly iss?: string;
+  readonly aud?: string;
+};
+
+export type RefreshTokenPayload = {
+  readonly sub: string;
+  readonly jti: string;
+  readonly session_id: string;
+  readonly tenant_id: string;
+  readonly user_id: string;
+  readonly type: "refresh";
   readonly iat: number;
   readonly exp: number;
   readonly iss?: string;

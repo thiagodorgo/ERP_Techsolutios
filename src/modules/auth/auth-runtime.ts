@@ -1,11 +1,19 @@
 import type { LocalAuthLoginService } from "./services/local-auth-login.service.js";
+import type { AuthSessionService } from "./services/auth-session.service.js";
 
 let localAuthLoginServicePromise: Promise<LocalAuthLoginService> | undefined;
+let authSessionServicePromise: Promise<AuthSessionService> | undefined;
 
 export function getLocalAuthLoginService(): Promise<LocalAuthLoginService> {
   localAuthLoginServicePromise ??= createLocalAuthLoginService();
 
   return localAuthLoginServicePromise;
+}
+
+export function getAuthSessionService(): Promise<AuthSessionService> {
+  authSessionServicePromise ??= createAuthSessionService();
+
+  return authSessionServicePromise;
 }
 
 async function createLocalAuthLoginService(): Promise<LocalAuthLoginService> {
@@ -38,4 +46,14 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService> {
       });
     },
   } as LocalAuthLoginService;
+}
+
+async function createAuthSessionService(): Promise<AuthSessionService> {
+  const [{ prisma }, { withTenantRls }, { AuthSessionService }] = await Promise.all([
+    import("../../database/prisma.js"),
+    import("../../database/rls.js"),
+    import("./services/auth-session.service.js"),
+  ]);
+
+  return new AuthSessionService((tenantId, work) => withTenantRls(prisma, tenantId, work));
 }
