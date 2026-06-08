@@ -224,6 +224,19 @@ VITE_DEFAULT_TENANT_ID=""
 
 Essa variavel apenas preenche o campo de tenant no login local. Nao deve conter segredo.
 
+Smoke tests do fluxo frontend:
+
+```bash
+npm --prefix frontend run test:smoke
+```
+
+Cobertura inicial:
+
+- `auth.storage` salva, le e limpa sessao/token;
+- `auth.service` alterna entre login real e mock por `VITE_USE_MOCKS`;
+- API client envia `Authorization: Bearer`, bloqueia headers legados em modo real e preserva `FormData`;
+- renderizacao basica de `/login` e rotas protegidas relacionadas ao fluxo autenticado.
+
 ## Authenticated actor middleware
 
 O Bloco 04C.4 cria a fundacao para resolver `Authorization: Bearer` em `request.actor`.

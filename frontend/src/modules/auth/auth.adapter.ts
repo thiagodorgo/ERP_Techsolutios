@@ -1,6 +1,5 @@
+import { readFrontendEnv } from "../../config/env";
 import type { AuthSession, AuthTenant, AuthUser, LoginCredentials, UserRole } from "./types";
-
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
 type LoginApiResponse = {
   readonly data: {
@@ -28,7 +27,7 @@ type LoginApiResponse = {
 };
 
 export async function loginWithJwt(credentials: LoginCredentials): Promise<AuthSession> {
-  const response = await fetch(`${apiBaseUrl}/auth/login`, {
+  const response = await fetch(`${apiBaseUrl()}/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -51,6 +50,10 @@ export async function loginWithJwt(credentials: LoginCredentials): Promise<AuthS
   }
 
   return mapLoginResponse(payload);
+}
+
+function apiBaseUrl(): string {
+  return readFrontendEnv("VITE_API_BASE_URL", "/api/v1");
 }
 
 function mapLoginResponse(payload: LoginApiResponse): AuthSession {

@@ -40,6 +40,14 @@ Comportamento:
 
 Refresh token, revogacao de sessao e logout avancado ficam fora desta rodada.
 
+Smoke tests frontend:
+
+- comando: `npm --prefix frontend run test:smoke`;
+- cobertura inicial: login, auth storage/service, API client Bearer, guards/sidebar RBAC, `/login`, W02A Checklists, W03 Configurações, Platform Console e anexos de checklist;
+- estrategia: testes leves com `node:test`, `tsx` e renderizacao server-side React, sem Playwright/Cypress nesta rodada.
+
+E2E real em navegador fica como proximo passo, preferencialmente com Playwright ou Cypress quando o fluxo de ambientes e dados de teste estiver estabilizado.
+
 ## Administrador
 
 Area do administrador do tenant/empresa cliente. Gerencia usuarios, permissoes e configuracoes apenas da propria empresa.

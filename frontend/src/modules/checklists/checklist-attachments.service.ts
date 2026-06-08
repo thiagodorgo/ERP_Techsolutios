@@ -1,3 +1,4 @@
+import { isMockMode } from "../../config/env";
 import {
   downloadChecklistAttachmentFromApi,
   uploadChecklistAttachmentToApi,
@@ -13,10 +14,8 @@ import type {
   ChecklistAttachmentUploadResult,
 } from "./types";
 
-const useMocks = import.meta.env.VITE_USE_MOCKS === "true";
-
 export function uploadChecklistAttachment(input: ChecklistAttachmentUploadInput): Promise<ChecklistAttachmentUploadResult> {
-  if (useMocks) return uploadMockChecklistAttachment(input);
+  if (isMockMode()) return uploadMockChecklistAttachment(input);
   return uploadChecklistAttachmentToApi(input);
 }
 
@@ -25,7 +24,7 @@ export function downloadChecklistAttachment(
   runId: string,
   attachmentId: string,
 ): Promise<ChecklistAttachmentDownloadResult> {
-  if (useMocks) return downloadMockChecklistAttachment(context, runId, attachmentId);
+  if (isMockMode()) return downloadMockChecklistAttachment(context, runId, attachmentId);
   return downloadChecklistAttachmentFromApi(context, runId, attachmentId);
 }
 

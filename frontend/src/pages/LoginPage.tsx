@@ -4,15 +4,15 @@ import { useNavigate } from "react-router-dom";
 
 import { DomainRail, SecurityNotice } from "../components/erp";
 import { Button, Card, Input, PasswordInput } from "../components/ui";
+import { isMockMode, readFrontendEnv } from "../config/env";
 import { isPlatformAdmin } from "../navigation/types";
 import { useAuth } from "../providers/AuthProvider";
-
-const useMocks = import.meta.env.VITE_USE_MOCKS === "true";
-const defaultTenantId = import.meta.env.VITE_DEFAULT_TENANT_ID ?? (useMocks ? "ten-industrial-01" : "");
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { signIn } = useAuth();
+  const useMocks = isMockMode();
+  const defaultTenantId = readFrontendEnv("VITE_DEFAULT_TENANT_ID", useMocks ? "ten-industrial-01" : "");
   const [tenantId, setTenantId] = useState(defaultTenantId);
   const [email, setEmail] = useState(useMocks ? "marina.costa@techsolutions.example" : "");
   const [password, setPassword] = useState(useMocks ? "operacao-demo" : "");

@@ -157,6 +157,8 @@ A sidebar nao deve mostrar todos os modulos para todos os usuarios. A sidebar co
 
 No frontend em modo real (`VITE_USE_MOCKS=false`), o estado autenticado vem do login JWT e o API client envia `Authorization: Bearer` automaticamente. Headers legados deixam de ser enviados pelo frontend nesse modo. A sidebar e os guards usam roles/permissoes do estado autenticado apenas para UX; a autorizacao definitiva continua no backend por RBAC persistido e RLS.
 
+Cobertura smoke inicial: `npm --prefix frontend run test:smoke` valida que operador nao ve W02A/W03 administrativas, tenant admin ve W02A/W03, tenant admin nao ve Console da Plataforma e platform admin ve Console da Plataforma.
+
 A regra maxima da navegacao e: usuario sem permissao nao ve o link. Nao deve haver link cinza, desabilitado, grupo vazio, placeholder visual ou icone recolhido para item sem acesso. A sidebar recolhida deve usar a mesma lista filtrada da sidebar expandida.
 
 A visibilidade deve ser filtrada por:

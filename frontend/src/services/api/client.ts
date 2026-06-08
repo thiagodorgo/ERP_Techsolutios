@@ -1,3 +1,4 @@
+import { isMockMode, readFrontendEnv } from "../../config/env";
 import { clearStoredAuthSession, getStoredToken } from "../../modules/auth/auth.storage";
 
 type RequestOptions = {
@@ -10,16 +11,13 @@ type RequestOptions = {
   permissions?: string[];
 };
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
-const useMocks = import.meta.env.VITE_USE_MOCKS === "true";
-
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...buildAuthHeaders(options),
   };
 
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetch(`${apiBaseUrl()}${path}`, {
     method: options.method ?? "GET",
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
@@ -32,7 +30,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 }
 
 export async function apiFormDataRequest<T>(path: string, options: Omit<RequestOptions, "body"> & { body: FormData }): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetch(`${apiBaseUrl()}${path}`, {
     method: options.method ?? "POST",
     headers: buildAuthHeaders(options),
     body: options.body,
@@ -45,7 +43,7 @@ export async function apiFormDataRequest<T>(path: string, options: Omit<RequestO
 }
 
 export async function apiBlobRequest(path: string, options: RequestOptions = {}): Promise<{ blob: Blob; fileName?: string; contentType?: string }> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetch(`${apiBaseUrl()}${path}`, {
     method: options.method ?? "GET",
     headers: buildAuthHeaders(options),
   });
@@ -66,7 +64,7 @@ function buildAuthHeaders(options: RequestOptions): Record<string, string> {
 
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  if (useMocks) {
+  if (isMockMode()) {
     if (options.tenantId) headers["X-Tenant-Id"] = options.tenantId;
     if (options.branchId) headers["X-Branch-Id"] = options.branchId;
     if (options.role) headers["X-Role"] = options.role;
@@ -74,6 +72,10 @@ function buildAuthHeaders(options: RequestOptions): Record<string, string> {
   }
 
   return headers;
+}
+
+function apiBaseUrl(): string {
+  return readFrontendEnv("VITE_API_BASE_URL", "/api/v1");
 }
 
 function handleUnauthorized(response: Response): void {
