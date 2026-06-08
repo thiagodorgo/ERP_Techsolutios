@@ -124,6 +124,18 @@ Notificacoes internas nao exigem variavel de ambiente propria nesta fase. Elas u
 
 Cloud usage metering nao exige credencial AWS nesta branch. O uso e registrado internamente em PostgreSQL e a agregacao diaria e acionada pelo job `cloud-usage.aggregate-daily`; scheduler/cron produtivo fica para etapa futura.
 
+AWS CUR cost import nesta fase usa arquivo local/mock e nao exige credenciais AWS. As variaveis abaixo sao passivas para etapa futura com S3/Athena:
+
+```env
+AWS_CUR_IMPORT_ENABLED=false
+AWS_CUR_S3_BUCKET=
+AWS_CUR_S3_PREFIX=
+AWS_CUR_S3_REGION=
+AWS_CUR_ATHENA_DATABASE=
+AWS_CUR_ATHENA_WORKGROUP=
+AWS_CUR_ATHENA_OUTPUT_LOCATION=
+```
+
 ## Seguranca
 
 - Nunca commitar `.env`.
@@ -131,5 +143,5 @@ Cloud usage metering nao exige credencial AWS nesta branch. O uso e registrado i
 - `DATABASE_URL`, `REDIS_URL` e `JWT_SECRET` em `.env.example` sao exemplos locais.
 - Producao deve usar secrets do provedor/cloud/GitHub Actions.
 - PostgreSQL e Redis locais nao representam ambiente produtivo.
-- Cloud usage metering nao deve receber secrets AWS reais enquanto a branch entregar apenas uso interno.
+- Cloud usage metering e AWS CUR cost import nao devem receber secrets AWS reais nas foundations atuais.
 - Este bloco nao configura deploy produtivo.

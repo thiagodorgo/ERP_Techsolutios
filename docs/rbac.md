@@ -50,6 +50,8 @@ Permissoes de plataforma:
 - `platform:tenants:create`
 - `platform:tenants:update`
 - `platform:modules:manage`
+- `platform:cloud-costs:read`
+- `platform:cloud-costs:import`
 - `platform:cloud-usage:read`
 
 Permissoes de tenant:
@@ -154,6 +156,23 @@ Matriz backend aplicada:
 - `GET /api/v1/platform/cloud-usage/tenants/:tenantId/daily`: `platform:cloud-usage:read`
 
 Tenant Admin, Supervisor, Operador e demais usuarios de tenant nao recebem essa permissao por padrao. A API retorna uso, nao custo, preco, margem, fatura ou pagamento.
+
+## cloud_cost_import
+
+Permissoes platform-scoped:
+
+- `platform:cloud-costs:read`: consultar importacoes, line items e resumo de custo AWS bruto.
+- `platform:cloud-costs:import`: importar CSV AWS CUR local/mock via API Platform.
+
+Matriz backend aplicada:
+
+- `GET /api/v1/platform/cloud-costs/imports`: `platform:cloud-costs:read`
+- `GET /api/v1/platform/cloud-costs/imports/:importId`: `platform:cloud-costs:read`
+- `GET /api/v1/platform/cloud-costs/line-items`: `platform:cloud-costs:read`
+- `GET /api/v1/platform/cloud-costs/summary`: `platform:cloud-costs:read`
+- `POST /api/v1/platform/cloud-costs/imports/manual-csv`: `platform:cloud-costs:import`
+
+Usuario comum de tenant nao acessa custo bruto. `tenant_tag` importado do CUR e apenas dado bruto para a futura allocation engine; nao concede acesso tenant-scoped.
 
 Frontend:
 

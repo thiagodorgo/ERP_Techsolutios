@@ -1,4 +1,5 @@
 import type { JobEnvelope, JobName, JobPayload } from "./job.types.js";
+import { createAwsCurImportCostFileJobHandler } from "../../modules/cloud-costs/aws-cur.jobs.js";
 import { createCloudUsageAggregateDailyJobHandler } from "../../modules/cloud-usage/cloud-usage.jobs.js";
 import { createNotificationDispatchJobHandler } from "../../modules/notifications/notification.jobs.js";
 
@@ -33,6 +34,7 @@ export function resetDefaultJobRegistryForTests(): void {
 function createDefaultJobRegistry(): JobRegistry {
   const registry = new JobRegistry();
 
+  registry.register("aws-cur.import-cost-file", createAwsCurImportCostFileJobHandler());
   registry.register("checklist-attachment-postprocess", async () => {
     // Placeholder for future checksum enrichment, thumbnail generation, AV scan or cloud sync.
   });

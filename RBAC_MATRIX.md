@@ -42,6 +42,7 @@ Baseline authorization matrix for the ERP Techsolutions multi-tenant SaaS ERP. T
 | Finance | full | tenant-finance-admin | manager-view | none | full | stock-cost-view | none | read | support-view |
 | Billing | full | full | read | none | full | none | none | read | support-view |
 | Cloud usage metering | full | none | none | none | none | none | none | read | support-view |
+| Cloud cost import | full | none | none | none | none | none | none | read | support-view |
 | Reports and analytics | full | full | full | scoped | finance-scoped | inventory-scoped | field-scoped | audit-full-read | support-scoped |
 | Audit logs | full | read | scoped | none | scoped | scoped | none | full-read | support-scoped |
 | Cross-tenant support operations | full | none | none | none | none | none | none | read | scoped-support-only |
@@ -75,6 +76,7 @@ Operational rules:
 - configurable checklist permissions are tenant-scoped and must include `tenant_checklists:*` and `checklist_runs:*` checks in backend routes/services
 - internal notifications are tenant-scoped and must keep `notifications:read`/`notifications:update` limited to the authenticated user's own inbox unless a future admin endpoint is explicitly designed
 - cloud usage metering is platform-scoped and must require `platform:cloud-usage:read`; tenant roles do not receive cross-tenant cloud usage access
+- cloud cost import is platform-scoped and must require `platform:cloud-costs:read` or `platform:cloud-costs:import`; tenant roles do not receive raw cloud cost access
 - checklist reads and writes must validate `tenant_id` together with template, field, run and answer identifiers
 - M10/M11/M12 must render checklist schemas from API data rather than hardcoded mobile field definitions
 

@@ -1,4 +1,6 @@
 export const PERMISSION_CATALOG = [
+  "platform:cloud-costs:read",
+  "platform:cloud-costs:import",
   "platform:cloud-usage:read",
   "tenant.manage",
   "users.manage",

@@ -53,6 +53,7 @@ O Docker Compose local ja sobe `erp-redis` em `localhost:6379`.
 - `notification-dispatch`
 - `audit-log-fanout`
 - `cloud-usage.aggregate-daily`
+- `aws-cur.import-cost-file`
 
 Os handlers padrao sao placeholders seguros. O worker nao executa automaticamente no startup; qualquer processo de worker futuro deve chamar `startWorker` explicitamente.
 
@@ -101,6 +102,10 @@ Fluxo integrado: cloud usage metering.
 
 Eventos de checklist/anexo, notificacoes criadas e jobs executados com `tenantId` registram usage events de forma best-effort. O job `cloud-usage.aggregate-daily` consolida eventos por tenant, dia, metrica, unidade e origem em `cloud_usage_daily_aggregates`. Nao ha scheduler automatico nesta branch.
 
+Fluxo integrado: AWS CUR cost import.
+
+O job `aws-cur.import-cost-file` recebe CSV mockado ou `sourceUri` local, cria importacao em `cloud_cost_imports`, parseia linhas e grava `cloud_cost_line_items`. Falhas marcam a importacao como `failed` com erro sanitizado. A integracao real S3/Athena fica para fase posterior.
+
 ## Testes
 
 Testes especificos:
@@ -110,6 +115,7 @@ node --test --import tsx tests/job-queue.test.ts
 node --test --import tsx tests/domain-events.test.ts
 node --test --import tsx tests/audit-log.test.ts
 node --test --import tsx tests/cloud-usage.test.ts
+node --test --import tsx tests/aws-cur-cost-import.test.ts
 ```
 
 Eles requerem Redis local ativo via:
@@ -124,6 +130,7 @@ docker compose up -d
 - Nao ha concorrencia distribuida sofisticada, heartbeat ou lock renovavel.
 - Nao ha scheduling enterprise, UI operacional ou metricas de worker.
 - `cloud-usage.aggregate-daily` existe como handler/job, mas scheduler/cron fica para uma rodada futura.
+- `aws-cur.import-cost-file` existe como handler/job local/mock; busca real S3/Athena fica para uma rodada futura.
 - Nao ha e-mail, SMS, WhatsApp, push externo ou webhook real.
 - UI completa de notificacoes fica para rodada propria.
 - Nao ha outbox transacional de banco; a integracao inicial publica evento apos commit/logica principal.
