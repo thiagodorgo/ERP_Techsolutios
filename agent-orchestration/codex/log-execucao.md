@@ -803,3 +803,17 @@
 - documentacao atualizada em `docs/frontend-screens.md`, `docs/api.md`, `docs/modules.md`, `docs/audit.md`, `docs/messaging.md`, `docs/rbac.md` e `agent-orchestration/docs/status-geral.md`
 - fora de escopo mantido: mobile Flutter, Figma, offline, drag-and-drop, redesign amplo, backend novo, migrations e contratos API destrutivos
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`
+
+## 2026-06-08 - checklist attachments S3-compatible storage
+
+- branch usada: `feature/checklist-attachments-s3-storage`
+- objetivo: implementar storage configuravel local/S3-compatible para anexos de checklist, sem expor bucket, storage key, path privado ou URL interna na API
+- dependencia adicionada: `@aws-sdk/client-s3`
+- criados providers em `src/modules/checklists/storage`
+- `checklist-attachment.storage.ts` passou a usar factory/provider e preserva aliases locais antigos
+- DTO publico de attachment passa a retornar rota protegida de download para uploads gerenciados
+- `.env.example` atualizado com `CHECKLIST_STORAGE_*`; valores S3 ficam vazios como placeholders
+- documentacao atualizada em `docs/api.md`, `docs/architecture.md`, `docs/database.md`, `docs/deployment.md`, `docs/storage.md`, `docs/modules.md`, `docs/audit.md`, `docs/messaging.md` e `agent-orchestration/docs/status-geral.md`
+- testes adicionados/alterados: `tests/checklist-storage.test.ts` e `tests/checklist-attachments.test.ts`
+- migration: nao criada; metadados internos continuam em `checklist_attachments.metadata`
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/checklist-storage.test.ts`, `node --test --import tsx tests/checklist-attachments.test.ts`, `node --test --import tsx tests/checklist-routes.test.ts`, `node --test --import tsx tests/audit-log.test.ts`, `node --test --import tsx tests/domain-events.test.ts` e `git diff --check`

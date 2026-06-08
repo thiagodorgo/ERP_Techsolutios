@@ -80,7 +80,7 @@ Se o handler falhar:
 
 Fluxo integrado: upload real de anexo de checklist.
 
-Depois que o arquivo e salvo, o registro e criado no banco e a auditoria `checklist_run.attachment_uploaded` e persistida, o backend publica o evento `checklist_run.attachment_uploaded`. Esse evento enfileira o job `checklist-attachment-postprocess`. O runtime web operacional reutiliza o mesmo endpoint de anexos usado pelo runtime mobile compartilhado.
+Depois que o arquivo e salvo pelo provider configurado (`local` ou S3-compatible), o registro e criado no banco e a auditoria `checklist_run.attachment_uploaded` e persistida, o backend publica o evento `checklist_run.attachment_uploaded`. Esse evento enfileira o job `checklist-attachment-postprocess`. O runtime web operacional reutiliza o mesmo endpoint de anexos usado pelo runtime mobile compartilhado.
 
 No hardening do runtime web, divergencia e ciencia continuam passando pelos endpoints backend existentes. Quando o backend registra `checklist_run.divergence_reported` e `checklist_run.acknowledgement_created`, os eventos/auditoria associados seguem a mesma trilha do runtime mobile compartilhado.
 

@@ -1,11 +1,16 @@
-import { createHash, randomUUID } from "node:crypto";
-import { mkdir, stat, unlink, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
+import type { Readable } from "node:stream";
 
 import Busboy from "busboy";
 import type { Request } from "express";
 
-import { env } from "../../config/env.js";
+import {
+  createChecklistStorageProviderByName,
+  getDefaultChecklistStorageProvider,
+  readChecklistStorageConfig,
+} from "./storage/checklist-storage.factory.js";
+import type { ChecklistStorageProviderName } from "./storage/checklist-storage.types.js";
 import { ChecklistError, type ChecklistAttachment, type JsonRecord } from "./checklist.types.js";
 
 export type ChecklistAttachmentUpload = {
@@ -25,36 +30,23 @@ export type StoredChecklistAttachmentFile = {
   readonly mimeType: string;
   readonly sizeBytes: number;
   readonly checksum: string;
-  readonly storageDriver: "local";
+  readonly storageDriver: ChecklistStorageProviderName;
   readonly storageKey: string;
 };
 
 export type ChecklistAttachmentDownload = {
-  readonly filePath: string;
+  readonly body: Buffer | Readable;
   readonly fileName: string;
   readonly mimeType: string;
-  readonly sizeBytes: number;
+  readonly sizeBytes?: number;
 };
-
-const storageSchemePrefix = "local://checklist-attachments/";
 
 export function isMultipartChecklistAttachmentRequest(request: Request): boolean {
   return request.is("multipart/form-data") === "multipart/form-data";
 }
 
 export function getChecklistAttachmentStorageConfig() {
-  const maxSizeBytes = Math.floor(env.CHECKLIST_ATTACHMENT_MAX_SIZE_MB * 1024 * 1024);
-  const allowedMimeTypes = env.CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES
-    .split(",")
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean);
-
-  return {
-    driver: env.CHECKLIST_ATTACHMENT_STORAGE_DRIVER,
-    basePath: path.resolve(process.cwd(), env.CHECKLIST_ATTACHMENT_STORAGE_PATH),
-    maxSizeBytes,
-    allowedMimeTypes,
-  } as const;
+  return readChecklistStorageConfig();
 }
 
 export async function parseMultipartChecklistAttachmentRequest(
@@ -112,9 +104,7 @@ export async function parseMultipartChecklistAttachmentRequest(
       });
 
       file.on("data", (chunk: Buffer) => {
-        if (terminalError) {
-          return;
-        }
+        if (terminalError) return;
 
         sizeBytes += chunk.length;
         chunks.push(chunk);
@@ -180,65 +170,52 @@ export async function saveChecklistAttachmentFile(input: {
   readonly runId: string;
   readonly upload: ChecklistAttachmentUpload["file"];
 }): Promise<StoredChecklistAttachmentFile> {
-  const config = getChecklistAttachmentStorageConfig();
-
-  if (config.driver !== "local") {
-    throw new ChecklistError(500, "CHECKLIST_ATTACHMENT_STORAGE_UNAVAILABLE", "storage_driver_unsupported", "Checklist attachment storage driver is not supported.");
-  }
-
   const checksum = createHash("sha256").update(input.upload.buffer).digest("hex");
   const fileName = sanitizeFileName(input.upload.originalName, input.upload.mimeType);
-  const storedFileName = `${randomUUID()}-${fileName}`;
-  const storageKey = path.posix.join(input.tenantId, input.runId, storedFileName);
-  const filePath = resolveSafeStoragePath(config.basePath, storageKey);
-
-  await mkdir(path.dirname(filePath), { recursive: true });
-  await writeFile(filePath, input.upload.buffer, { flag: "wx" });
-
-  return {
-    fileUrl: `${storageSchemePrefix}${storageKey}`,
-    fileName,
+  const stored = await getDefaultChecklistStorageProvider().save({
+    tenantId: input.tenantId,
+    runId: input.runId,
+    buffer: input.upload.buffer,
+    originalName: input.upload.originalName,
+    safeFileName: fileName,
     mimeType: input.upload.mimeType,
     sizeBytes: input.upload.sizeBytes,
-    checksum,
-    storageDriver: "local",
-    storageKey,
+    checksumSha256: checksum,
+  });
+
+  return {
+    fileUrl: stored.fileUrl,
+    fileName: stored.fileName,
+    mimeType: stored.mimeType,
+    sizeBytes: stored.sizeBytes,
+    checksum: stored.checksumSha256,
+    storageDriver: stored.storageProvider,
+    storageKey: stored.storageKey,
   };
 }
 
-export async function deleteStoredChecklistAttachmentFile(storageKey: string): Promise<void> {
-  const filePath = resolveSafeStoragePath(getChecklistAttachmentStorageConfig().basePath, storageKey);
-
-  try {
-    await unlink(filePath);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      throw error;
-    }
-  }
+export async function deleteStoredChecklistAttachmentFile(storageKey: string, storageDriver: ChecklistStorageProviderName = "local"): Promise<void> {
+  await createChecklistStorageProviderByName(storageDriver).deleteObject({ storageKey });
 }
 
 export async function resolveChecklistAttachmentDownload(
   attachment: ChecklistAttachment,
 ): Promise<ChecklistAttachmentDownload> {
   const metadata = attachment.metadata;
+  const storageDriver = readStorageProvider(metadata);
+  const storageKey = typeof metadata.storageKey === "string" ? metadata.storageKey : undefined;
 
-  if (metadata.storageDriver !== "local" || typeof metadata.storageKey !== "string") {
+  if (!storageDriver || !storageKey) {
     throw new ChecklistError(404, "CHECKLIST_ATTACHMENT_NOT_FOUND", "attachment_file_not_found", "Attachment file not found.");
   }
 
-  const filePath = resolveSafeStoragePath(getChecklistAttachmentStorageConfig().basePath, metadata.storageKey);
-  const fileStat = await stat(filePath).catch(() => null);
-
-  if (!fileStat?.isFile()) {
-    throw new ChecklistError(404, "CHECKLIST_ATTACHMENT_NOT_FOUND", "attachment_file_not_found", "Attachment file not found.");
-  }
+  const object = await createChecklistStorageProviderByName(storageDriver).getObject({ storageKey });
 
   return {
-    filePath,
-    fileName: attachment.fileName ?? path.basename(metadata.storageKey),
-    mimeType: attachment.mimeType ?? "application/octet-stream",
-    sizeBytes: fileStat.size,
+    body: object.body,
+    fileName: attachment.fileName ?? path.basename(storageKey),
+    mimeType: object.mimeType ?? attachment.mimeType ?? "application/octet-stream",
+    sizeBytes: object.sizeBytes ?? attachment.sizeBytes ?? undefined,
   };
 }
 
@@ -260,7 +237,7 @@ function parseMetadataField(value: string | undefined): JsonRecord {
   }
 }
 
-function sanitizeFileName(originalName: string, mimeType: string): string {
+export function sanitizeFileName(originalName: string, mimeType: string): string {
   const baseName = path.basename(originalName || `attachment${extensionForMimeType(mimeType)}`);
   const withoutControlChars = baseName.replace(/[\u0000-\u001f\u007f]/g, "");
   const sanitized = withoutControlChars.replace(/[^A-Za-z0-9._-]/g, "_").replace(/^\.+/, "").slice(0, 120);
@@ -287,22 +264,8 @@ function extensionForMimeType(mimeType: string): string {
   }
 }
 
-function resolveSafeStoragePath(basePath: string, storageKey: string): string {
-  const parts = storageKey.split("/");
-
-  if (
-    path.isAbsolute(storageKey) ||
-    parts.some((part) => !part || part === "." || part === ".." || part.includes("\\"))
-  ) {
-    throw new ChecklistError(400, "CHECKLIST_ATTACHMENT_INVALID", "invalid_storage_key", "Attachment storage key is invalid.");
-  }
-
-  const resolvedBasePath = path.resolve(basePath);
-  const resolvedPath = path.resolve(resolvedBasePath, ...parts);
-
-  if (!resolvedPath.startsWith(`${resolvedBasePath}${path.sep}`)) {
-    throw new ChecklistError(400, "CHECKLIST_ATTACHMENT_INVALID", "invalid_storage_key", "Attachment storage key is invalid.");
-  }
-
-  return resolvedPath;
+function readStorageProvider(metadata: JsonRecord): ChecklistStorageProviderName | null {
+  const value = metadata.storageProvider ?? metadata.storageDriver;
+  if (value === "local" || value === "s3") return value;
+  return null;
 }

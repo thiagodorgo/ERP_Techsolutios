@@ -393,7 +393,7 @@ Campos conceituais:
 
 #### `checklist_attachments`
 
-Representa fotos/arquivos/evidencias. O backend ja suporta upload local real em desenvolvimento e persiste um `file_url` logico, sem expor path absoluto do servidor.
+Representa fotos/arquivos/evidencias. O backend ja suporta upload real via provider configuravel (`local` ou `s3` S3-compatible) e persiste uma referencia interna, sem expor path absoluto, bucket, storage key ou URL privada ao cliente.
 
 Campos principais:
 
@@ -409,13 +409,14 @@ Campos principais:
 - `created_by`
 - `created_at`
 
-No storage local atual, `metadata` armazena:
+No storage atual, `metadata` armazena dados internos do provider:
 
-- `storageDriver`: `local`
-- `storageKey`: caminho logico relativo ao storage base, por tenant e run
+- `storageProvider`: `local` ou `s3`
+- `storageDriver`: alias legado para compatibilidade
+- `storageKey`: chave logica por tenant e run, relativa ao provider
 - `checksumSha256`: checksum do arquivo salvo
 
-Campos como `storage_driver`, `storage_key` e `checksum` podem virar colunas dedicadas em migration futura se houver necessidade de consulta/indexacao. Nesta rodada, o schema existente foi preservado para evitar migration desnecessaria.
+Campos como `storage_provider`, `storage_key` e `checksum` podem virar colunas dedicadas em migration futura se houver necessidade de consulta/indexacao. Nesta rodada, o schema existente foi preservado para evitar migration desnecessaria. DTOs publicos removem provider, driver, storage key, bucket, path e URL privada antes de responder a API.
 
 #### `checklist_markers`
 

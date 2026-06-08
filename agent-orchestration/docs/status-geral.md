@@ -1039,3 +1039,15 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - documentacao atualizada em `docs/frontend-screens.md`, `docs/api.md`, `docs/modules.md`, `docs/audit.md`, `docs/messaging.md`, `docs/rbac.md` e este status
 - fora de escopo mantido: mobile Flutter, Figma, offline, drag-and-drop, redesign amplo, backend novo, migrations e contratos API destrutivos
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`
+
+## Atualizacao 2026-06-08 - checklist attachments S3-compatible storage
+
+- branch usada: `feature/checklist-attachments-s3-storage`
+- objetivo: adicionar provider S3-compatible para anexos/evidencias de checklist preservando o provider local
+- criada interface `ChecklistStorageProvider` com implementacoes `local` e `s3`
+- provider escolhido por `CHECKLIST_STORAGE_PROVIDER`, com aliases legados `CHECKLIST_ATTACHMENT_*` mantidos
+- API publica de anexos usa rota protegida de download e nao expõe `storageKey`, bucket, path privado, `local://` ou `s3://`
+- `.env.example` e documentacao atualizados com variaveis `CHECKLIST_STORAGE_*`
+- sem migration: provider, chave e checksum permanecem em `checklist_attachments.metadata`
+- testes adicionados para local, factory, S3 mockado e contrato publico de anexos
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/checklist-storage.test.ts`, `node --test --import tsx tests/checklist-attachments.test.ts`, `node --test --import tsx tests/checklist-routes.test.ts`, `node --test --import tsx tests/audit-log.test.ts`, `node --test --import tsx tests/domain-events.test.ts` e `git diff --check`
