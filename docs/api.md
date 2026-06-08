@@ -31,8 +31,17 @@ Resposta de sucesso:
   "data": {
     "authenticated": true,
     "access_token": "jwt-assinado",
+    "accessToken": "jwt-assinado",
     "token_type": "Bearer",
+    "tokenType": "Bearer",
     "expires_in": 3600,
+    "expiresIn": 3600,
+    "refresh_token": "refresh-jwt-assinado",
+    "refreshToken": "refresh-jwt-assinado",
+    "refresh_expires_at": "2026-06-14T00:00:00.000Z",
+    "refreshExpiresAt": "2026-06-14T00:00:00.000Z",
+    "session_id": "uuid-da-sessao",
+    "sessionId": "uuid-da-sessao",
     "user": {
       "id": "uuid-do-usuario",
       "tenant_id": "uuid-do-tenant",
@@ -56,6 +65,76 @@ Resposta de sucesso:
 ```
 
 O frontend em modo real usa esse endpoint e envia `Authorization: Bearer` automaticamente nas chamadas seguintes. Headers legados ficam restritos a `VITE_USE_MOCKS=true`.
+
+O refresh token e retornado ao cliente, mas no banco fica persistido apenas como hash em `auth_sessions.refresh_token_hash`. A resposta nunca inclui senha, `password_hash` ou segredo JWT.
+
+## Refresh de sessao
+
+```http
+POST /api/v1/auth/refresh
+```
+
+Body:
+
+```json
+{
+  "refreshToken": "refresh-jwt-assinado"
+}
+```
+
+Resposta de sucesso:
+
+```json
+{
+  "data": {
+    "access_token": "novo-jwt-assinado",
+    "accessToken": "novo-jwt-assinado",
+    "token_type": "Bearer",
+    "tokenType": "Bearer",
+    "expires_in": 3600,
+    "expiresIn": 3600,
+    "refresh_token": "refresh-jwt-rotacionado",
+    "refreshToken": "refresh-jwt-rotacionado",
+    "refresh_expires_at": "2026-06-14T00:00:00.000Z",
+    "refreshExpiresAt": "2026-06-14T00:00:00.000Z",
+    "session_id": "uuid-da-sessao",
+    "sessionId": "uuid-da-sessao"
+  }
+}
+```
+
+Regras:
+
+- `refreshToken` ausente retorna `400 BAD_REQUEST`;
+- refresh invalido, expirado, revogado ou reutilizado apos rotacao retorna `401 INVALID_REFRESH_TOKEN`;
+- cada refresh bem-sucedido rotaciona o refresh token e substitui somente o hash persistido;
+- o access token novo continua sendo usado via `Authorization: Bearer`.
+
+## Logout
+
+```http
+POST /api/v1/auth/logout
+```
+
+Body:
+
+```json
+{
+  "refreshToken": "refresh-jwt-assinado"
+}
+```
+
+Resposta:
+
+```json
+{
+  "data": {
+    "revoked": true
+  }
+}
+```
+
+O logout e idempotente e revoga a sessao vinculada ao refresh token quando ela existir. Tokens ausentes, invalidos ou ja revogados nao expõem detalhes ao cliente.
 
 ## Console da Plataforma
 

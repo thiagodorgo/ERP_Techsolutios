@@ -170,6 +170,10 @@ if (!connectionString) {
       assert.equal(success.status, 200);
       assert.equal(success.body.data.authenticated, true);
       assert.equal(typeof success.body.data.access_token, "string");
+      assert.equal(success.body.data.accessToken, success.body.data.access_token);
+      assert.equal(typeof success.body.data.refresh_token, "string");
+      assert.equal(success.body.data.refreshToken, success.body.data.refresh_token);
+      assert.equal(typeof success.body.data.session_id, "string");
       assert.equal(success.body.data.token_type, "Bearer");
       assert.equal(success.body.data.expires_in, 900);
       assert.deepEqual(success.body.data.user, {
@@ -201,8 +205,7 @@ if (!connectionString) {
 
       const successJson = JSON.stringify(success.body);
       assert.equal(successJson.includes("password_hash"), false);
-      assert.equal(successJson.includes("refresh_token"), false);
-      assert.equal(successJson.includes("session"), false);
+      assert.equal(successJson.includes(password), false);
 
       const afterSuccess = await client.localAuthCredential.findUnique({
         where: {

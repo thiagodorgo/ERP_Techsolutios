@@ -3,8 +3,11 @@ import test from "node:test";
 
 import {
   getAccessTokenExpiresInSeconds,
+  getRefreshTokenExpiresInSeconds,
   signAccessToken,
+  signRefreshToken,
   verifyAccessToken,
+  verifyRefreshToken,
 } from "../src/modules/auth/index.js";
 
 const jwtTestOptions = {
@@ -62,6 +65,31 @@ test("access token expiration follows JWT_EXPIRES_IN", async () => {
 
   assert.equal(payload.exp - payload.iat, 900);
   assert.equal(getAccessTokenExpiresInSeconds("15m"), 900);
+});
+
+test("refresh token uses refresh payload and expiration", async () => {
+  const token = await signRefreshToken(
+    {
+      session_id: "11111111-1111-4111-8111-111111111111",
+      tenant_id: "22222222-2222-4222-8222-222222222222",
+      user_id: "33333333-3333-4333-8333-333333333333",
+    },
+    {
+      secret: "unit-test-refresh-secret",
+      expiresIn: "7d",
+    },
+  );
+  const payload = await verifyRefreshToken(token, {
+    secret: "unit-test-refresh-secret",
+  });
+
+  assert.equal(payload.sub, "11111111-1111-4111-8111-111111111111");
+  assert.equal(payload.session_id, "11111111-1111-4111-8111-111111111111");
+  assert.equal(payload.tenant_id, "22222222-2222-4222-8222-222222222222");
+  assert.equal(payload.user_id, "33333333-3333-4333-8333-333333333333");
+  assert.equal(payload.type, "refresh");
+  assert.equal(payload.exp - payload.iat, 604800);
+  assert.equal(getRefreshTokenExpiresInSeconds("7d"), 604800);
 });
 
 function createTokenInput() {

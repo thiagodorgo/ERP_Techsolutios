@@ -1,4 +1,5 @@
 import type { AuthSession } from "./types";
+import type { AuthTokenUpdate } from "./types";
 
 export const authSessionStorageKey = "erp-techsolutions.auth-session";
 export const authSessionChangedEvent = "erp-techsolutions.auth-session-changed";
@@ -36,6 +37,10 @@ export function getStoredToken(): string | null {
   return getStoredAuthSession()?.accessToken ?? null;
 }
 
+export function getStoredRefreshToken(): string | null {
+  return getStoredAuthSession()?.refreshToken ?? null;
+}
+
 export function setStoredToken(token: string): void {
   const session = getStoredAuthSession();
 
@@ -47,6 +52,28 @@ export function setStoredToken(token: string): void {
     ...session,
     accessToken: token,
   });
+}
+
+export function updateStoredAuthTokens(tokens: AuthTokenUpdate): AuthSession | null {
+  const session = getStoredAuthSession();
+
+  if (!session) {
+    return null;
+  }
+
+  const nextSession: AuthSession = {
+    ...session,
+    accessToken: tokens.accessToken,
+    tokenType: tokens.tokenType,
+    expiresAt: tokens.expiresAt,
+    refreshToken: tokens.refreshToken ?? session.refreshToken,
+    refreshExpiresAt: tokens.refreshExpiresAt ?? session.refreshExpiresAt,
+    sessionId: tokens.sessionId ?? session.sessionId,
+  };
+
+  setStoredAuthSession(nextSession);
+
+  return nextSession;
 }
 
 export function clearStoredToken(): void {

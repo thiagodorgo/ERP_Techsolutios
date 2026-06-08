@@ -13,6 +13,7 @@ Nesta fase, os modelos multi-tenant com `tenant_id` sao:
 - `Branch`
 - `User`
 - `LocalAuthCredential`
+- `AuthSession`
 - `Role`, quando o papel for customizado por tenant
 - `UserRoleAssignment`
 - `AuditLog`
@@ -61,11 +62,12 @@ O seed cria:
 - filial principal
 - permissoes do catalogo atual de RBAC
 - roles padrao do Core SaaS
-- usuario admin demo sem senha
+- usuario admin demo
+- credencial local do admin demo para desenvolvimento
 - atribuicao persistente do papel `tenant_admin` ao admin demo
 - evento inicial de auditoria
 
-Autenticacao real, senha e recuperacao de acesso serao tratados em bloco futuro.
+Recuperacao de acesso, MFA, OAuth/social login e politicas avancadas de senha continuam fora do escopo atual.
 
 ## Atribuicao persistente de papeis
 
@@ -105,7 +107,7 @@ Esse teste depende de `DATABASE_URL` apontando para um PostgreSQL local migrado.
 
 ## Credenciais locais de autenticacao
 
-O Bloco 04C.1 adiciona `local_auth_credentials` como base persistente para login local futuro, sem implementar endpoint de login ou JWT nesta etapa.
+O Bloco 04C.1 adicionou `local_auth_credentials` como base persistente para login local tenant-scoped. Rodadas posteriores adicionaram o endpoint de login, access token JWT, refresh token e logout/revogacao.
 
 Campos principais:
 
@@ -138,6 +140,44 @@ Teste Prisma separado:
 
 ```bash
 node --test --import tsx tests/auth-prisma.test.ts
+```
+
+Esse teste depende de `DATABASE_URL` apontando para um PostgreSQL local migrado.
+
+## Sessoes de autenticacao
+
+A migration `20260609000000_add_auth_sessions` adiciona `auth_sessions` para refresh token, rotacao e logout/revogacao.
+
+Campos principais:
+
+- `tenant_id`: obrigatorio, referencia `tenants.id`.
+- `user_id`: obrigatorio, vinculado ao usuario do mesmo tenant.
+- `refresh_token_hash`: hash HMAC-SHA256 do refresh token completo; o token puro nunca e persistido.
+- `user_agent` e `ip_address`: metadados operacionais opcionais da criacao de sessao.
+- `expires_at`: expiracao do refresh token/sessao.
+- `revoked_at`: marca logout ou revogacao.
+- `created_at` e `updated_at`: rastreabilidade operacional.
+
+Integridade e isolamento:
+
+- `@@unique([tenant_id, id])` permite FK tenant-scoped e consultas seguras por tenant.
+- `refresh_token_hash` e unico para impedir reuse de hash.
+- FK composta `tenant_id + user_id` referencia `users(tenant_id, id)`, garantindo que a sessao nao aponte para usuario de outro tenant.
+- remocao de usuario remove suas sessoes por cascade.
+- remocao de tenant segue o padrao restritivo do projeto.
+- RLS e habilitada com `FORCE ROW LEVEL SECURITY` e policy baseada em `app.current_tenant_id`.
+
+Regras de runtime:
+
+- login cria uma sessao e retorna refresh token apenas ao cliente;
+- refresh valida JWT de refresh, compara hash em tempo constante, bloqueia expirado/revogado e rotaciona o refresh token;
+- logout marca `revoked_at` de forma idempotente;
+- access tokens ja emitidos seguem validos ate expirarem.
+
+Teste separado:
+
+```bash
+node --test --import tsx tests/auth-session.test.ts
 ```
 
 Esse teste depende de `DATABASE_URL` apontando para um PostgreSQL local migrado.
@@ -450,6 +490,7 @@ RLS foi habilitado nas tabelas tenant-scoped principais:
 - `branches`
 - `users`
 - `local_auth_credentials`
+- `auth_sessions`
 - `roles`
 - `user_role_assignments`
 - `audit_logs`

@@ -114,10 +114,10 @@ Princípios adotados:
 - **Permissões:** acesso autenticado; validação de papel ativo.
 - **Dados exibidos:** identidade do usuário, tenants/filiais disponíveis, avisos de segurança.
 - **Componentes:** formulário, seletor de contexto, alerta de bloqueio, recuperação de acesso.
-- **Ações:** entrar, trocar contexto, sair, recuperar senha.
-- **Estados:** loading, credencial inválida, usuário inativo, tenant bloqueado.
-- **Regras:** AUTH-001/002/003; auditoria de login.
-- **Integrações:** provedor auth, logs de auditoria.
+- **Ações:** entrar, trocar contexto, renovar sessão em `401`, sair, recuperar senha.
+- **Estados:** loading, credencial inválida, usuário inativo, tenant bloqueado, sessão expirada.
+- **Regras:** AUTH-001/002/003; auditoria de login; access token via Bearer; refresh token rotacionado; logout revoga sessão backend de forma idempotente.
+- **Integrações:** provedor auth, `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, logs de auditoria.
 - **Responsividade/mobile:** layout colapsado em coluna única.
 - **Offline/online:** apenas online.
 - **KPIs/cards:** tentativas, bloqueios (somente suporte interno).
@@ -360,7 +360,8 @@ Princípios adotados:
 - objetivo: autenticar executor/supervisor e baixar escopo autorizado.
 - usuários: Executor Campo, Supervisor.
 - permissões: escopo mobile (AUTH-007).
-- offline: último contexto válido em cache, sem troca de tenant offline.
+- regras: sessão deve usar access token curto, refresh token rotacionado e logout/revogação quando online.
+- offline: último contexto válido em cache, sem troca de tenant offline; refresh exige conectividade.
 - prioridade: MVP.
 
 ### M02 — Agenda / Minhas OS
@@ -541,10 +542,10 @@ Princípios adotados:
 - **Papel principal:** todos os usuários Web.
 - **Permissões:** autenticação válida + papel ativo.
 - **Dados exibidos:** usuário, tenants disponíveis, filiais por tenant.
-- **Ações primárias:** entrar, selecionar tenant/filial, recuperar acesso.
-- **Estados:** default/loading/empty(error sem tenant)/error/blocked/read-only/audit-visible.
+- **Ações primárias:** entrar, selecionar tenant/filial, renovar sessão em `401`, sair, recuperar acesso.
+- **Estados:** default/loading/empty(error sem tenant)/error/blocked/session-expired/read-only/audit-visible.
 - **Alertas e bloqueios:** conta inativa, tenant suspenso, contexto inválido.
-- **Integrações:** auth, auditoria de acesso.
+- **Integrações:** auth login/refresh/logout, `auth_sessions`, auditoria de acesso.
 - **Responsividade:** painel central único em breakpoints menores.
 
 #### W02 — Dashboard Operacional
@@ -633,10 +634,10 @@ Princípios adotados:
 - **Papel principal:** Executor de Campo.
 - **Permissões:** acesso mobile por usuário/equipe.
 - **Dados exibidos:** usuário, tenant, filial, equipe ativa.
-- **Ações primárias:** autenticar, confirmar contexto, entrar offline com sessão válida.
-- **Estados:** default/loading/error/blocked/read-only/audit-visible.
+- **Ações primárias:** autenticar, confirmar contexto, renovar sessão quando online, sair, entrar offline com sessão válida.
+- **Estados:** default/loading/error/blocked/session-expired/read-only/audit-visible.
 - **Alertas/bloqueios:** sessão expirada, tenant suspenso.
-- **Integrações:** auth + sync inicial.
+- **Integrações:** auth login/refresh/logout + sync inicial.
 - **Offline:** somente com sessão/contexto previamente sincronizados.
 
 #### M02/M03/M04 — Agenda, Detalhe OS e Atualização de Status

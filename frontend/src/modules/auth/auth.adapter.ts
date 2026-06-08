@@ -1,12 +1,21 @@
 import { readFrontendEnv } from "../../config/env";
-import type { AuthSession, AuthTenant, AuthUser, LoginCredentials, UserRole } from "./types";
+import type { AuthSession, AuthTenant, AuthTokenUpdate, AuthUser, LoginCredentials, UserRole } from "./types";
 
 type LoginApiResponse = {
   readonly data: {
     readonly authenticated: boolean;
-    readonly access_token: string;
-    readonly token_type: "Bearer";
-    readonly expires_in: number;
+    readonly access_token?: string;
+    readonly accessToken?: string;
+    readonly refresh_token?: string;
+    readonly refreshToken?: string;
+    readonly token_type?: "Bearer";
+    readonly tokenType?: "Bearer";
+    readonly expires_in?: number;
+    readonly expiresIn?: number;
+    readonly refresh_expires_at?: string;
+    readonly refreshExpiresAt?: string;
+    readonly session_id?: string;
+    readonly sessionId?: string;
     readonly user: {
       readonly id: string;
       readonly tenant_id: string;
@@ -23,6 +32,23 @@ type LoginApiResponse = {
       readonly key: string;
       readonly name: string;
     }[];
+  };
+};
+
+type RefreshApiResponse = {
+  readonly data: {
+    readonly access_token?: string;
+    readonly accessToken?: string;
+    readonly refresh_token?: string;
+    readonly refreshToken?: string;
+    readonly token_type?: "Bearer";
+    readonly tokenType?: "Bearer";
+    readonly expires_in?: number;
+    readonly expiresIn?: number;
+    readonly refresh_expires_at?: string;
+    readonly refreshExpiresAt?: string;
+    readonly session_id?: string;
+    readonly sessionId?: string;
   };
 };
 
@@ -45,11 +71,41 @@ export async function loginWithJwt(credentials: LoginCredentials): Promise<AuthS
 
   const payload = (await response.json()) as LoginApiResponse;
 
-  if (!payload.data.authenticated || payload.data.token_type !== "Bearer") {
+  if (!payload.data.authenticated) {
     throw new Error("Nao foi possivel autenticar com a API.");
   }
 
   return mapLoginResponse(payload);
+}
+
+export async function refreshWithJwt(refreshToken: string): Promise<AuthTokenUpdate> {
+  const response = await fetch(`${apiBaseUrl()}/auth/refresh`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      refreshToken,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Sessao expirada. Faca login novamente.");
+  }
+
+  return mapTokenUpdate((await response.json()) as RefreshApiResponse);
+}
+
+export async function logoutWithJwt(refreshToken: string): Promise<void> {
+  await fetch(`${apiBaseUrl()}/auth/logout`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      refreshToken,
+    }),
+  });
 }
 
 function apiBaseUrl(): string {
@@ -57,6 +113,7 @@ function apiBaseUrl(): string {
 }
 
 function mapLoginResponse(payload: LoginApiResponse): AuthSession {
+  const tokens = mapTokenUpdate(payload);
   const backendRoles = payload.data.roles.map((role) => role.key);
   const permissions = resolveFrontendPermissions(backendRoles);
   const roles = resolveFrontendRoles(backendRoles);
@@ -77,11 +134,36 @@ function mapLoginResponse(payload: LoginApiResponse): AuthSession {
 
   return {
     provider: "local-jwt",
-    accessToken: payload.data.access_token,
-    tokenType: "Bearer",
-    expiresAt: new Date(Date.now() + payload.data.expires_in * 1000).toISOString(),
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+    tokenType: tokens.tokenType,
+    expiresAt: tokens.expiresAt,
+    refreshExpiresAt: tokens.refreshExpiresAt,
+    sessionId: tokens.sessionId,
     tenant,
     user,
+  };
+}
+
+function mapTokenUpdate(payload: LoginApiResponse | RefreshApiResponse): AuthTokenUpdate {
+  const accessToken = payload.data.accessToken ?? payload.data.access_token;
+  const refreshToken = payload.data.refreshToken ?? payload.data.refresh_token;
+  const tokenType = payload.data.tokenType ?? payload.data.token_type;
+  const expiresIn = payload.data.expiresIn ?? payload.data.expires_in;
+  const refreshExpiresAt = payload.data.refreshExpiresAt ?? payload.data.refresh_expires_at;
+  const sessionId = payload.data.sessionId ?? payload.data.session_id;
+
+  if (!accessToken || tokenType !== "Bearer" || typeof expiresIn !== "number") {
+    throw new Error("Resposta de autenticacao invalida.");
+  }
+
+  return {
+    accessToken,
+    refreshToken,
+    tokenType,
+    expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+    refreshExpiresAt,
+    sessionId,
   };
 }
 

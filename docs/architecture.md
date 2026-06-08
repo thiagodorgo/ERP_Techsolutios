@@ -45,6 +45,8 @@ Entidades tenant-scoped devem carregar `tenant_id` e sempre filtrar por tenant. 
 
 No modulo `checklists`, templates, campos, execucoes, respostas, anexos, marcadores e ciencias sao entidades tenant-scoped. Nenhum repository ou endpoint deve consultar essas entidades apenas por `id`; toda leitura, escrita, publicacao, exclusao logica, execucao, upload ou download deve validar tambem o `tenant_id` resolvido do contexto autenticado.
 
+No modulo `auth`, `local_auth_credentials` e `auth_sessions` tambem sao tenant-scoped. Sessao de refresh deve ser acessada sempre dentro do tenant resolvido a partir do proprio refresh token validado, com RLS ativo e sem persistir o refresh token em texto puro.
+
 A partir da migration `20260608000000_enable_tenant_rls`, o PostgreSQL tambem aplica Row Level Security nas tabelas tenant-scoped principais. O runtime Prisma deve configurar `app.current_tenant_id` por transacao antes de acessar dados de tenant. Essa camada nao substitui RBAC nem filtros de repository; ela reduz o risco de vazamento cross-tenant se uma query futura esquecer `tenant_id`.
 
 Tabelas globais como `tenants` e `permissions` continuam fora de RLS. Platform Admin consulta dados globais pelo boundary `/api/v1/platform/*`; para dados tenant-scoped, deve selecionar tenant e executar as consultas com contexto RLS explicito. Nao ha bypass amplo de RLS no fluxo HTTP normal.
@@ -93,6 +95,8 @@ O backend MVP deve atender o frontend com contratos claros, versionados e separa
 
 Para os boundaries sensiveis `/api/v1/platform/*`, Core SaaS e Checklists, qualquer fallback por headers legados fica restrito a desenvolvimento/teste/local. Em producao, esses boundaries devem depender de actor autenticado via `Authorization: Bearer`; token invalido bloqueia antes de qualquer fallback. No runtime Prisma, o actor JWT alimenta RBAC persistido e os repositories tenant-scoped executam com `app.current_tenant_id` via `withTenantRls`.
 
+Refresh/logout ficam no boundary `/api/v1/auth/*`. O refresh token usa sessao persistida em `auth_sessions`, hash HMAC-SHA256, expiracao mais longa que o access token e rotacao a cada refresh bem-sucedido. Logout marca `revoked_at` de forma idempotente. Access tokens ja emitidos continuam validos ate `exp`; revogacao imediata de access token exigiria outro mecanismo futuro, como blacklist/Redis ou introspeccao.
+
 ## Evolucao planejada
 
 - Persistir modulos habilitados por tenant.
@@ -100,3 +104,4 @@ Para os boundaries sensiveis `/api/v1/platform/*`, Core SaaS e Checklists, qualq
 - Implementar modo suporte auditado.
 - Remover codigo de headers legados por feature flag ou modo strict depois da migracao para Bearer.
 - Evoluir operacoes platform multi-tenant com contexto RLS explicito e auditoria.
+- Avaliar cookie httpOnly/secure e Redis para sessoes distribuidas quando o produto sair do MVP localStorage.

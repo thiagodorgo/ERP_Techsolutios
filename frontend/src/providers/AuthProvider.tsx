@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       },
       signOut() {
-        logout();
+        void logout();
         setSession(null);
       },
     }),

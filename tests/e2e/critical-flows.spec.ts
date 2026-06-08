@@ -53,6 +53,7 @@ test("login real cria sessao, credenciais invalidas exibem erro e rota protegida
   const session = await page.evaluate(() => window.localStorage.getItem("erp-techsolutions.auth-session"));
   expect(session).toContain(demoEmail);
   expect(session).toContain("accessToken");
+  expect(session).toContain("refreshToken");
 });
 
 test("tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Console", async ({ page }) => {
@@ -104,6 +105,16 @@ test("W03 Configuracoes renderiza categorias e temas planejados", async ({ page 
   for (const theme of ["enterprise_blue", "tech_dark", "green_operations"]) {
     await expect(page.locator(".tenant-settings-theme-card").filter({ hasText: theme })).toBeVisible();
   }
+});
+
+test("logout real revoga sessao local e volta ao login", async ({ page }) => {
+  await loginAndActivateContext(page);
+
+  await page.getByRole("button", { name: "Sair" }).click();
+
+  await expect(page).toHaveURL(/\/login$/);
+  const session = await page.evaluate(() => window.localStorage.getItem("erp-techsolutions.auth-session"));
+  expect(session).toBeNull();
 });
 
 async function loginAndActivateContext(page: Page): Promise<void> {

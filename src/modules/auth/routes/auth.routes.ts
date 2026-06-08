@@ -1,14 +1,16 @@
 import { Router } from "express";
 
-import { getLocalAuthLoginService } from "../auth-runtime.js";
+import { getAuthSessionService, getLocalAuthLoginService } from "../auth-runtime.js";
 import {
   getAccessTokenExpiresInSeconds,
   signAccessToken,
 } from "../services/jwt.service.js";
+import type { AuthSessionService } from "../services/auth-session.service.js";
 import type { LocalAuthLoginService } from "../services/local-auth-login.service.js";
 
 type AuthRouterOptions = {
   readonly getLoginService?: () => Promise<LocalAuthLoginService>;
+  readonly getSessionService?: () => Promise<AuthSessionService>;
   readonly signAccessToken?: typeof signAccessToken;
   readonly getAccessTokenExpiresInSeconds?: typeof getAccessTokenExpiresInSeconds;
 };
@@ -19,12 +21,18 @@ type LoginRequestBody = {
   readonly password?: unknown;
 };
 
+type RefreshRequestBody = {
+  readonly refreshToken?: unknown;
+  readonly refresh_token?: unknown;
+};
+
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function createAuthRouter(options: AuthRouterOptions = {}): Router {
   const router = Router();
   const resolveLoginService = options.getLoginService ?? getLocalAuthLoginService;
+  const resolveSessionService = options.getSessionService ?? getAuthSessionService;
   const issueAccessToken = options.signAccessToken ?? signAccessToken;
   const resolveTokenExpiration =
     options.getAccessTokenExpiresInSeconds ?? getAccessTokenExpiresInSeconds;
@@ -76,13 +84,33 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         email: loginResult.user.email,
         roles: loginResult.roles.map((role) => role.key),
       });
+      const session = await (
+        await resolveSessionService()
+      ).createSession({
+        tenant_id: loginResult.user.tenant_id,
+        user_id: loginResult.user.id,
+        user_agent: readHeader(request.headers["user-agent"]),
+        ip_address: request.ip,
+      });
+      const accessTokenExpiresIn = resolveTokenExpiration();
 
       response.status(200).json({
         data: {
           authenticated: true,
           access_token: accessToken,
+          accessToken,
           token_type: "Bearer",
-          expires_in: resolveTokenExpiration(),
+          tokenType: "Bearer",
+          expires_in: accessTokenExpiresIn,
+          expiresIn: accessTokenExpiresIn,
+          refresh_token: session.refreshToken,
+          refreshToken: session.refreshToken,
+          refresh_expires_at: session.refreshTokenExpiresAt.toISOString(),
+          refreshExpiresAt: session.refreshTokenExpiresAt.toISOString(),
+          refresh_expires_in: session.refreshTokenExpiresIn,
+          refreshExpiresIn: session.refreshTokenExpiresIn,
+          session_id: session.sessionId,
+          sessionId: session.sessionId,
           user: loginResult.user,
           tenant: loginResult.tenant,
           roles: loginResult.roles,
@@ -93,6 +121,82 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         error: {
           code: "INTERNAL_SERVER_ERROR",
           message: "Unable to process login.",
+        },
+      });
+    }
+  });
+
+  router.post("/refresh", async (request, response) => {
+    try {
+      const refreshToken = parseRefreshTokenRequestBody(request.body);
+
+      if (!refreshToken) {
+        response.status(400).json({
+          error: {
+            code: "BAD_REQUEST",
+            message: "refreshToken is required.",
+          },
+        });
+        return;
+      }
+
+      const refreshResult = await (await resolveSessionService()).refreshSession(refreshToken);
+
+      if (!refreshResult.ok) {
+        response.status(401).json({
+          error: {
+            code: "INVALID_REFRESH_TOKEN",
+            message: "Invalid or expired refresh token.",
+          },
+        });
+        return;
+      }
+
+      response.status(200).json({
+        data: {
+          access_token: refreshResult.accessToken,
+          accessToken: refreshResult.accessToken,
+          token_type: "Bearer",
+          tokenType: "Bearer",
+          expires_in: refreshResult.accessTokenExpiresIn,
+          expiresIn: refreshResult.accessTokenExpiresIn,
+          refresh_token: refreshResult.refreshToken,
+          refreshToken: refreshResult.refreshToken,
+          refresh_expires_at: refreshResult.refreshTokenExpiresAt.toISOString(),
+          refreshExpiresAt: refreshResult.refreshTokenExpiresAt.toISOString(),
+          refresh_expires_in: refreshResult.refreshTokenExpiresIn,
+          refreshExpiresIn: refreshResult.refreshTokenExpiresIn,
+          session_id: refreshResult.sessionId,
+          sessionId: refreshResult.sessionId,
+        },
+      });
+    } catch {
+      response.status(500).json({
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Unable to refresh session.",
+        },
+      });
+    }
+  });
+
+  router.post("/logout", async (request, response) => {
+    try {
+      const refreshToken = parseRefreshTokenRequestBody(request.body);
+
+      if (refreshToken) {
+        await (await resolveSessionService()).logout(refreshToken);
+      }
+
+      response.status(200).json({
+        data: {
+          revoked: true,
+        },
+      });
+    } catch {
+      response.status(200).json({
+        data: {
+          revoked: true,
         },
       });
     }
@@ -157,6 +261,20 @@ function parseLoginRequestBody(body: unknown): ParsedLoginRequestBody {
 
 function readString(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+function readHeader(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) {
+    return value.join(", ");
+  }
+
+  return value;
+}
+
+function parseRefreshTokenRequestBody(body: unknown): string {
+  const input = isRecord(body) ? (body as RefreshRequestBody) : {};
+
+  return readString(input.refreshToken || input.refresh_token).trim();
 }
 
 function isBasicEmail(email: string): boolean {

@@ -26,10 +26,22 @@ export type AuthTenant = {
 export type AuthSession = {
   user: AuthUser;
   accessToken: string;
+  refreshToken?: string;
   tokenType: "Bearer";
   expiresAt: string;
+  refreshExpiresAt?: string;
+  sessionId?: string;
   tenant?: AuthTenant;
   provider: "cognito-compatible" | "local-jwt" | "mock";
+};
+
+export type AuthTokenUpdate = {
+  accessToken: string;
+  tokenType: "Bearer";
+  expiresAt: string;
+  refreshToken?: string;
+  refreshExpiresAt?: string;
+  sessionId?: string;
 };
 
 export type LoginCredentials = {

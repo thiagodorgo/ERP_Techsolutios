@@ -2,6 +2,29 @@
 
 Este documento mapeia telas Web/Mobile para endpoints do backend. O prefixo implementado nesta rodada e `/api/v1`.
 
+## Autenticacao
+
+### W01 · Login e selecao de contexto
+
+Objetivo: autenticar usuario, criar sessao local tenant-scoped, renovar access token quando necessario e encerrar sessao.
+
+Endpoints implementados:
+
+```http
+POST /auth/login
+POST /auth/refresh
+POST /auth/logout
+```
+
+Regras:
+
+- `POST /auth/login` recebe `tenantId`, `email` e `password`, retorna access token, refresh token, expiracoes, usuario, tenant, roles e `sessionId`;
+- refresh token e persistido somente como hash em `auth_sessions`;
+- `POST /auth/refresh` recebe `refreshToken`, valida sessao ativa, rotaciona refresh token e retorna novo access token;
+- `POST /auth/logout` revoga a sessao de refresh de forma idempotente;
+- o frontend deve tentar refresh uma unica vez em `401` de rota protegida e nao deve tentar refresh nos endpoints `/auth/login`, `/auth/refresh` ou `/auth/logout`;
+- logout deve limpar sessao local mesmo se a revogacao backend falhar ou a sessao ja estiver revogada.
+
 ## tenant_checklist
 
 Feature configuravel por tenant. A plataforma fornece componentes permitidos; o tenant cria e publica checklists combinando esses componentes.

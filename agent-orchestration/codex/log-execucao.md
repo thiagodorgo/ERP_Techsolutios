@@ -699,3 +699,21 @@
 - pendencia registrada: acesso positivo ao Platform Console aguarda seed estavel de usuario platform
 - fora de escopo mantido: backend funcional, Prisma/migrations, contratos API, Figma, mobile Flutter, redesign e remocao de mocks
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`
+
+## 2026-06-07 - auth refresh/logout sessions
+
+- branch usada: `feature/auth-session-refresh-logout`
+- objetivo: implementar refresh token, rotacao, logout/revogacao backend, refresh-on-401 no frontend e cobertura de testes/documentacao
+- migration criada: `prisma/migrations/20260609000000_add_auth_sessions/migration.sql`
+- modelo Prisma criado: `AuthSession`, mapeado para `auth_sessions`, com FKs tenant/user, hash unico do refresh token, expiracao, revogacao, indices e RLS
+- servicos criados: `src/modules/auth/repositories/auth-session.repository.ts` e `src/modules/auth/services/auth-session.service.ts`
+- `src/modules/auth/services/jwt.service.ts` passou a assinar/verificar refresh token com secret/audience separados do access token
+- `src/modules/auth/routes/auth.routes.ts` adicionou `POST /api/v1/auth/refresh` e `POST /api/v1/auth/logout`; login manteve compatibilidade e passou a retornar refresh/session aliases
+- `.env.example` recebeu `JWT_REFRESH_SECRET` e `JWT_REFRESH_EXPIRES_IN`
+- frontend atualizado em auth adapter/service/storage/types e API client para armazenar refresh token, renovar access token uma vez em `401` e chamar logout backend em best effort
+- E2E passou a validar sessao com `refreshToken` e logout de usuario tenant
+- testes criados/alterados: `tests/auth-session.test.ts`, `tests/auth-jwt.test.ts`, `tests/auth-login.test.ts`, `frontend/tests/smoke-flow.test.tsx` e `tests/e2e/critical-flows.spec.ts`
+- documentacao atualizada em `docs/auth.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/architecture.md`, `docs/database.md`, `docs/rbac.md` e `agent-orchestration/docs/status-geral.md`
+- decisoes: refresh token nunca e persistido em texto puro; refresh rotaciona token; logout e idempotente; frontend tenta refresh unico fora dos endpoints de auth; access tokens ja emitidos continuam validos ate expirarem
+- fora de escopo mantido: cookie httpOnly, MFA, OAuth/social login, recuperacao de senha, Redis runtime, remocao definitiva dos headers legacy e revogacao imediata de access token ja emitido
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `node --test --import tsx tests/platform-routes.test.ts`, `node --test --import tsx tests/checklist-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/auth-jwt.test.ts`, `node --test --import tsx tests/auth-session.test.ts` com `DATABASE_URL` local, `npm run test:e2e` e `git diff --check`
