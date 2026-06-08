@@ -301,11 +301,11 @@ test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () =
   const operatorTenantItems = filterNavigationItems(
     {
       roles: ["Operador Logistico"],
-      permissions: ["dashboard:view", "work-orders:view", "checklist_runs:create"],
+      permissions: ["dashboard:view", "work-orders:view", "checklist_runs:create", "notifications:read"],
       mode: "operation",
       scope: "tenant",
       tenantStatus: "active",
-      enabledModules: ["dashboard", "work-orders", "tenant_checklist", "tenant-admin"],
+      enabledModules: ["dashboard", "work-orders", "tenant_checklist", "tenant-admin", "notifications"],
     },
     tenantNavigation,
   );
@@ -338,17 +338,175 @@ test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () =
     },
     platformNavigation,
   );
+  const withoutNotificationsItems = filterNavigationItems(
+    {
+      roles: ["Operador Logistico"],
+      permissions: ["dashboard:view", "work-orders:view"],
+      mode: "operation",
+      scope: "tenant",
+      tenantStatus: "active",
+      enabledModules: ["dashboard", "work-orders"],
+    },
+    tenantNavigation,
+  );
 
   const operatorPaths = flattenPaths(operatorTenantItems);
   const adminPaths = flattenPaths(adminTenantItems);
+  const withoutNotificationsPaths = flattenPaths(withoutNotificationsItems);
   assert.equal(operatorPaths.includes("/operations/checklists"), true);
+  assert.equal(operatorPaths.includes("/notifications"), true);
   assert.equal(operatorPaths.includes("/administrator/checklists"), false);
   assert.equal(operatorPaths.includes("/administrator/settings"), false);
+  assert.equal(withoutNotificationsPaths.includes("/notifications"), false);
   assert.equal(adminPaths.includes("/administrator/checklists"), true);
   assert.equal(adminPaths.includes("/administrator/settings"), true);
   assert.equal(tenantAdminPlatformItems.length, 0);
   assert.equal(platformAdminItems.some((item) => item.path === "/platform/tenants"), true);
   assert.deepEqual(flattenPaths(adminTenantItems), flattenPaths(adminTenantItems));
+});
+
+test("notifications service cobre endpoints, mocks e actionUrl interno", async () => {
+  process.env.VITE_USE_MOCKS = "true";
+  browser.clear();
+  const { NotificationCard } = await import("../src/modules/notifications/components/NotificationCard");
+  const { resetMockNotificationsForTests } = await import("../src/modules/notifications/notification.mock");
+  const {
+    archiveNotification,
+    getUnreadNotificationCount,
+    listNotifications,
+    markAllNotificationsAsRead,
+    markNotificationAsRead,
+  } = await import("../src/modules/notifications/notification.service");
+  const context = {
+    tenantId: "tenant-a",
+    role: "tenant_admin",
+    permissions: ["notifications:read", "notifications:update"],
+  };
+
+  resetMockNotificationsForTests();
+  const initial = await listNotifications(context);
+  assert.equal(initial.length, 6);
+  assert.equal(initial.every((notification) => !notification.actionUrl || notification.actionUrl.startsWith("/")), true);
+  assert.equal((await getUnreadNotificationCount(context)).count, 4);
+
+  const read = await markNotificationAsRead(context, "notif-divergence");
+  assert.equal(read.status, "read");
+  assert.equal((await getUnreadNotificationCount(context)).count, 3);
+
+  const archived = await archiveNotification(context, "notif-read");
+  assert.equal(archived.status, "archived");
+  assert.equal((await listNotifications(context, { status: "archived" })).some((notification) => notification.id === "notif-read"), true);
+
+  await markAllNotificationsAsRead(context);
+  assert.equal((await getUnreadNotificationCount(context)).count, 0);
+
+  const safeHtml = renderToString(
+    <NotificationCard
+      notification={initial[0]}
+      onArchive={() => undefined}
+      onMarkRead={() => undefined}
+      onOpen={() => undefined}
+    />,
+  );
+  const unsafeHtml = renderToString(
+    <NotificationCard
+      notification={{ ...initial[0], id: "external", actionUrl: "https://example.com" }}
+      onArchive={() => undefined}
+      onMarkRead={() => undefined}
+      onOpen={() => undefined}
+    />,
+  );
+  assert.match(safeHtml, /Abrir/);
+  assert.doesNotMatch(unsafeHtml, /Abrir/);
+});
+
+test("notifications adapter usa contrato da API interna", async () => {
+  process.env.VITE_USE_MOCKS = "false";
+  process.env.VITE_API_BASE_URL = "/api/v1";
+  browser.clear();
+  const calls = installFetchSequence([
+    {
+      payload: {
+        data: [
+          {
+            id: "notif-1",
+            type: "checklist_run.completed",
+            title: "Checklist concluido",
+            message: "Execucao finalizada.",
+            severity: "success",
+            status: "unread",
+            source_type: "checklist_run",
+            source_id: "run-1",
+            action_url: "/operations/checklists",
+            metadata: { source: "test" },
+            read_at: null,
+            created_at: "2026-06-08T10:00:00.000Z",
+            updated_at: "2026-06-08T10:00:00.000Z",
+          },
+        ],
+      },
+    },
+    { payload: { data: { count: 1 } } },
+    {
+      payload: {
+        data: {
+          id: "notif-1",
+          type: "checklist_run.completed",
+          title: "Checklist concluido",
+          message: "Execucao finalizada.",
+          severity: "success",
+          status: "read",
+          created_at: "2026-06-08T10:00:00.000Z",
+          updated_at: "2026-06-08T10:05:00.000Z",
+        },
+      },
+    },
+    { payload: { data: { count: 0 } } },
+    {
+      payload: {
+        data: {
+          id: "notif-1",
+          type: "checklist_run.completed",
+          title: "Checklist concluido",
+          message: "Execucao finalizada.",
+          severity: "success",
+          status: "archived",
+          created_at: "2026-06-08T10:00:00.000Z",
+          updated_at: "2026-06-08T10:06:00.000Z",
+        },
+      },
+    },
+  ]);
+  const {
+    archiveNotificationFromApi,
+    getUnreadNotificationCountFromApi,
+    listNotificationsFromApi,
+    markAllNotificationsAsReadFromApi,
+    markNotificationAsReadFromApi,
+  } = await import("../src/modules/notifications/notification.adapter");
+  const context = {
+    tenantId: "tenant-a",
+    role: "tenant_admin",
+    permissions: ["notifications:read", "notifications:update"],
+  };
+
+  const list = await listNotificationsFromApi(context, { status: "unread", limit: 20 });
+  const count = await getUnreadNotificationCountFromApi(context);
+  const read = await markNotificationAsReadFromApi(context, "notif-1");
+  const readAll = await markAllNotificationsAsReadFromApi(context);
+  const archived = await archiveNotificationFromApi(context, "notif-1");
+
+  assert.equal(calls[0].url, "/api/v1/notifications?status=unread&limit=20");
+  assert.equal(calls[1].url, "/api/v1/notifications/unread-count");
+  assert.equal(calls[2].url, "/api/v1/notifications/notif-1/read");
+  assert.equal(calls[3].url, "/api/v1/notifications/read-all");
+  assert.equal(calls[4].url, "/api/v1/notifications/notif-1/archive");
+  assert.equal(list[0].sourceType, "checklist_run");
+  assert.equal(list[0].actionUrl, "/operations/checklists");
+  assert.equal(count.count, 1);
+  assert.equal(read.status, "read");
+  assert.equal(readAll.count, 0);
+  assert.equal(archived.status, "archived");
 });
 
 test("checklist runtime service chama endpoints operacionais compartilhados", async () => {
@@ -629,6 +787,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   const { ChecklistRuntimePage } = await import("../src/modules/checklists/pages/ChecklistRuntimePage");
   const { ChecklistRunsPage } = await import("../src/modules/checklists/pages/ChecklistRunsPage");
   const { TenantChecklistsPage } = await import("../src/modules/checklists/pages/TenantChecklistsPage");
+  const { NotificationsPage } = await import("../src/modules/notifications/pages/NotificationsPage");
   const { TenantSettingsPage } = await import("../src/modules/settings/pages/TenantSettingsPage");
   const { PlatformTenantsPage } = await import("../src/modules/platform/pages/PlatformTenantsPage");
   setStoredAuthSession(mockSession);
@@ -641,8 +800,8 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
       branchId: "fil-sp-01",
       branchName: "Sao Paulo - Campo",
       role: "Gestor Operacional",
-      permissions: ["checklist_runs:read", "checklist_runs:create", "tenant_checklists:read", "tenant:manage"],
-      enabledModules: ["dashboard", "tenant_checklist", "tenant-admin"],
+      permissions: ["checklist_runs:read", "checklist_runs:create", "tenant_checklists:read", "tenant:manage", "notifications:read", "notifications:update"],
+      enabledModules: ["dashboard", "tenant_checklist", "tenant-admin", "notifications"],
       scope: "branch",
     }),
   );
@@ -661,6 +820,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
           <PermissionProvider>
             <ChecklistRunsPage />
             <TenantChecklistsPage />
+            <NotificationsPage />
             <TenantSettingsPage />
             <PlatformTenantsPage />
           </PermissionProvider>
@@ -684,6 +844,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
 
   assert.match(loginHtml, /W01 Login/);
   assert.match(protectedHtml, /Checklists Operacionais/);
+  assert.match(protectedHtml, /Notificacoes/);
   assert.match(runtimeHtml, /Executar checklist|Runtime operacional/);
   assert.match(protectedHtml, /Checklists|Selecione um contexto/);
   assert.match(protectedHtml, /Configurações/);

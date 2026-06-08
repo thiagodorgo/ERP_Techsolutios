@@ -833,3 +833,19 @@
 - testes criados/alterados: `tests/notifications.test.ts`, `tests/notification-routes.test.ts`, `tests/domain-events.test.ts`, `tests/rls-tenant-isolation.test.ts` e `tests/core-saas.test.ts`
 - documentacao atualizada em `docs/notifications.md`, `docs/api.md`, `docs/architecture.md`, `docs/database.md`, `docs/messaging.md`, `docs/modules.md`, `docs/rbac.md`, `docs/audit.md`, `docs/deployment.md`, `RBAC_MATRIX.md` e `agent-orchestration/docs/status-geral.md`
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/notifications.test.ts`, `node --test --import tsx tests/notification-routes.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/checklist-routes.test.ts`, `node --test --import tsx tests/audit-log.test.ts` e `git diff --check`
+
+## 2026-06-08 - notifications UI
+
+- branch usada: `feature/notifications-ui`
+- objetivo: implementar interface web de notificacoes internas a partir da API backend ja existente
+- criados `frontend/src/modules/notifications/notification.types.ts`, `notification.adapter.ts`, `notification.service.ts`, `notification.mock.ts` e `index.ts`
+- criados componentes `NotificationList`, `NotificationCard`, `NotificationStatusBadge`, `NotificationSeverityBadge` e `NotificationUnreadBadge`
+- criada pagina `NotificationsPage` em `/notifications`
+- `frontend/src/App.tsx`, `AppShell`, `tenantNavigation`, mocks de auth/contexto, auth adapter, resolvedor de modulos e CSS foram atualizados
+- sidebar e topbar exibem badge de nao lidas; contador atualiza ao montar e apos mark/read-all/archive, sem polling agressivo
+- acoes implementadas: listar, filtrar, marcar uma como lida, marcar todas como lidas, arquivar e abrir `actionUrl` interna segura
+- seguranca de UI: metadata completa, recipient, ids internos sensiveis, tokens/storage keys e URLs externas nao sao exibidos/navegados
+- testes atualizados em `frontend/tests/smoke-flow.test.tsx` e `tests/e2e/critical-flows.spec.ts`
+- documentacao atualizada em `docs/notifications.md`, `docs/api.md`, `docs/frontend-screens.md`, `docs/modules.md`, `docs/rbac.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: backend amplo, migrations, e-mail, SMS, WhatsApp, push externo, chat, provider externo, polling agressivo, Figma e mobile Flutter
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`

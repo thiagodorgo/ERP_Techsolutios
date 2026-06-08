@@ -1547,6 +1547,124 @@
   font-weight: 800;
 }
 
+.erp-sidebar nav a {
+  position: relative;
+}
+
+.erp-sidebar nav a .notification-unread-badge {
+  margin-left: auto;
+}
+
+.erp-sidebar.is-collapsed nav a .notification-unread-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: inline-flex;
+  margin-left: 0;
+}
+
+.erp-icon-button--badge {
+  position: relative;
+}
+
+.erp-icon-button--badge .notification-unread-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+}
+
+.notification-unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--space-4);
+  border: 1px solid rgb(255 255 255 / 88%);
+  border-radius: 999px;
+  background: var(--color-status-danger);
+  color: var(--text-inverse);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.notifications-page .ui-tabs {
+  justify-content: flex-start;
+}
+
+.notification-page-actions,
+.notification-card__badges,
+.notification-card footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.notification-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.notification-summary svg {
+  color: var(--color-core-primary);
+}
+
+.notification-summary strong,
+.notification-summary span {
+  display: block;
+}
+
+.notification-summary span {
+  margin-top: var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.notification-list {
+  display: grid;
+  gap: var(--space-12);
+}
+
+.notification-card {
+  display: grid;
+  gap: var(--space-12);
+  border-left: 4px solid transparent;
+}
+
+.notification-card.is-unread {
+  border-left-color: var(--color-core-primary);
+  padding-left: var(--space-12);
+}
+
+.notification-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-16);
+  align-items: flex-start;
+}
+
+.notification-card h2 {
+  margin: var(--space-8) 0 0;
+  font-size: var(--text-lg);
+  letter-spacing: 0;
+}
+
+.notification-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.notification-card time {
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
 @media (max-width: 1024px) {
   .dashboard-grid,
   .detail-grid,
@@ -1631,9 +1749,14 @@
 
   .page-heading--row,
   .erp-work-order-header,
-  .erp-sticky-action-bar {
+  .erp-sticky-action-bar,
+  .notification-card header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .notification-page-actions {
+    display: grid;
   }
 
   .context-grid,

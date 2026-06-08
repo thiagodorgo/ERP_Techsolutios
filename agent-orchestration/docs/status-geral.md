@@ -1066,3 +1066,19 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - frontend completo ficou fora desta rodada
 - documentacao atualizada em `docs/notifications.md`, `docs/api.md`, `docs/architecture.md`, `docs/database.md`, `docs/messaging.md`, `docs/modules.md`, `docs/rbac.md`, `docs/audit.md`, `docs/deployment.md`, `RBAC_MATRIX.md` e este status
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/notifications.test.ts`, `node --test --import tsx tests/notification-routes.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/checklist-routes.test.ts`, `node --test --import tsx tests/audit-log.test.ts` e `git diff --check`
+
+## Atualizacao 2026-06-08 - notifications UI
+
+- branch usada: `feature/notifications-ui`
+- objetivo: criar interface web de notificacoes internas usando a notification foundation existente, sem backend amplo novo
+- rota criada: `/notifications`
+- criados service, adapter, mock, tipos, pagina e componentes frontend em `frontend/src/modules/notifications`
+- AppShell passou a buscar contador de nao lidas ao montar/apos acoes locais, sem polling agressivo
+- sidebar/topbar exibem badge de nao lidas quando o modulo/permissao permitem
+- menu tenant adiciona `Notificacoes` com `notifications:read` e modulo `notifications`
+- a pagina lista inbox, filtra por todas/nao lidas/lidas/arquivadas, marca uma/todas como lidas, arquiva e abre apenas `actionUrl` interna segura
+- metadata completa, ids internos de destinatario, tokens, storage keys e URLs externas nao sao exibidos/navegados
+- smoke e E2E atualizados para RBAC visual, adapter, mocks, renderizacao e rota real sem depender de seed com notificacoes
+- documentacao atualizada em `docs/notifications.md`, `docs/api.md`, `docs/frontend-screens.md`, `docs/modules.md`, `docs/rbac.md` e este status
+- fora de escopo mantido: e-mail, SMS, WhatsApp, push externo, chat, provider externo, polling agressivo, Figma, mobile Flutter e backend amplo
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`

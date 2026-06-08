@@ -116,11 +116,21 @@ test("tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Co
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole("link", { name: "Checklists", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /Configuracoes|Configurações/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Notificacoes|Notificações/i })).toBeVisible();
   await expect(page.getByText("Console da Plataforma")).toHaveCount(0);
 
   await page.goto("/platform/tenants");
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByText("Console da Plataforma")).toHaveCount(0);
+});
+
+test("tenant admin acessa inbox interna de notificacoes sem depender de seed", async ({ page }) => {
+  await loginAndActivateContext(page);
+
+  await page.getByRole("link", { name: /Notificacoes|Notificações/i }).click();
+  await expect(page).toHaveURL(/\/notifications$/);
+  await expect(page.getByRole("heading", { name: /Notificacoes|Notificações/i })).toBeVisible();
+  await expect(page.getByText(/Inbox interna/i)).toBeVisible();
 });
 
 test("platform admin acessa Platform Console", async ({ page }) => {

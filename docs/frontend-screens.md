@@ -169,6 +169,36 @@ Tipos frontend previstos:
 - `ChecklistAttachment`
 - `ChecklistAcknowledgement`
 
+## Notificacoes
+
+Tela implementada:
+
+- `Notificacoes`, rota `/notifications`.
+
+Objetivo:
+
+- exibir a inbox interna do usuario autenticado no tenant ativo;
+- mostrar contador de notificacoes nao lidas no AppShell/sidebar;
+- listar titulo, mensagem, severidade, status, data e origem operacional;
+- filtrar por todas, nao lidas, lidas e arquivadas;
+- permitir marcar uma notificacao como lida, marcar todas como lidas e arquivar;
+- permitir abrir `actionUrl` apenas quando for rota interna segura iniciada por `/`.
+
+RBAC e visibilidade:
+
+- rota protegida por `notifications:read`;
+- acoes de leitura usam `notifications:read`;
+- acoes de marcar lida/read-all/arquivar usam `notifications:update`;
+- item de menu aparece apenas com modulo `notifications` habilitado e permissao `notifications:read`;
+- Platform Admin fora do shell tenant continua no Console da Plataforma, sem item de tenant.
+
+Limites:
+
+- nao ha e-mail, SMS, WhatsApp, push externo, chat ou provider externo nesta rodada;
+- nao ha polling agressivo; o contador e atualizado ao montar layout/pagina e apos acoes locais;
+- metadata sensivel ou completa nao e renderizada;
+- o E2E real valida render/empty state sem depender de seed com notificacoes.
+
 ## Sidebar dinamica
 
 A sidebar completa representada no Figma e referencia para Admin/Tenant Owner, nao para usuario comum. A sidebar real deve ser filtrada por:

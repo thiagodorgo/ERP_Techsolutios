@@ -54,5 +54,9 @@ function resolveEnabledModules(permissions: readonly string[]): string[] {
     modules.add("tenant_checklist");
   }
 
+  if (permissions.includes("notifications:read")) {
+    modules.add("notifications");
+  }
+
   return [...modules];
 }
