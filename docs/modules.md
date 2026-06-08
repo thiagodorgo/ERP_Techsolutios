@@ -28,6 +28,7 @@ Exemplos:
 - analytics
 - messaging_jobs
 - cloud_usage_metering
+- cloud_cost_import
 
 ## Modulos habilitados por tenant
 
@@ -95,3 +96,4 @@ Sao os modulos efetivamente ativos para um tenant especifico. A visibilidade no 
 - O frontend web expõe `notifications` em `/notifications` como inbox interna do usuario, com contador de nao lidas no AppShell/sidebar, filtros simples, marcar como lida/read-all, arquivar e navegacao segura apenas para `actionUrl` interna.
 - `cloud_usage_metering` e uma capacidade transversal de plataforma: registra uso interno por tenant em `cloud_usage_events`, agrega diariamente em `cloud_usage_daily_aggregates` e prepara a ponte futura para custo AWS real, rateio, markup e cobranca cloud com lucro.
 - Nesta branch `cloud_usage_metering` mede uso, nao custo: AWS CUR, Cost Explorer, Billing Conductor, preco, margem, fatura e pagamento ficam fora do escopo.
+- `cloud_cost_import` e uma capacidade transversal de plataforma: importa custo AWS bruto em `cloud_cost_imports` e `cloud_cost_line_items`, sem rateio, markup, fatura, pagamento ou UI completa nesta branch.

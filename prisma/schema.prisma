@@ -269,6 +269,70 @@ model CloudUsageDailyAggregate {
   @@map("cloud_usage_daily_aggregates")
 }
 
+model CloudCostImport {
+  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider              String
+  source_type           String
+  source_uri            String?
+  status                String              @default("pending")
+  period_start          DateTime?           @db.Timestamptz(6)
+  period_end            DateTime?           @db.Timestamptz(6)
+  imported_at           DateTime?           @db.Timestamptz(6)
+  imported_by           String?
+  row_count             Int                 @default(0)
+  total_unblended_cost  Decimal             @default(0) @db.Decimal(20, 6)
+  currency              String?
+  metadata              Json
+  error_message         String?
+  created_at            DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime            @default(now()) @updatedAt @db.Timestamptz(6)
+  line_items            CloudCostLineItem[]
+
+  @@index([provider])
+  @@index([source_type])
+  @@index([status])
+  @@index([period_start, period_end])
+  @@map("cloud_cost_imports")
+}
+
+model CloudCostLineItem {
+  id                   String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  import_id            String          @db.Uuid
+  provider             String
+  billing_period_start DateTime        @db.Timestamptz(6)
+  billing_period_end   DateTime        @db.Timestamptz(6)
+  usage_start          DateTime?       @db.Timestamptz(6)
+  usage_end            DateTime?       @db.Timestamptz(6)
+  service_code         String
+  usage_type           String?
+  operation            String?
+  region               String?
+  resource_id          String?
+  cost_category        String?
+  environment          String?
+  project              String?
+  tenant_tag           String?
+  module_tag           String?
+  usage_amount         Decimal?        @db.Decimal(20, 6)
+  usage_unit           String?
+  unblended_cost       Decimal         @db.Decimal(20, 6)
+  amortized_cost       Decimal?        @db.Decimal(20, 6)
+  currency             String
+  raw_line_hash        String
+  metadata             Json
+  created_at           DateTime        @default(now()) @db.Timestamptz(6)
+  cost_import          CloudCostImport @relation(fields: [import_id], references: [id], onDelete: Cascade)
+
+  @@unique([import_id, raw_line_hash])
+  @@index([import_id])
+  @@index([billing_period_start, billing_period_end])
+  @@index([service_code])
+  @@index([usage_type])
+  @@index([region])
+  @@index([tenant_tag])
+  @@map("cloud_cost_line_items")
+}
+
 model ChecklistTemplate {
   id           String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id    String                       @db.Uuid

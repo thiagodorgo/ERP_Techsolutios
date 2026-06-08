@@ -571,6 +571,56 @@ Indices e regras:
 
 Metadata deve ser sanitizada antes de persistir. Tokens, senhas, refresh tokens, Authorization, storage key, bucket, path privado, body, payload e query sensivel nao devem ser salvos.
 
+## AWS CUR cost import
+
+Status: implementado na migration `20260612000000_add_aws_cur_cost_import`.
+
+### `cloud_cost_imports`
+
+Lotes globais de importacao de custo AWS bruto.
+
+Campos principais:
+
+- `provider`
+- `source_type`
+- `source_uri`
+- `status`
+- `period_start`
+- `period_end`
+- `imported_at`
+- `imported_by`
+- `row_count`
+- `total_unblended_cost`
+- `currency`
+- `metadata`
+- `error_message`
+- timestamps
+
+### `cloud_cost_line_items`
+
+Linhas de custo AWS bruto importado, ainda nao rateadas.
+
+Campos principais:
+
+- `import_id`
+- `provider`
+- periodos de billing e usage
+- `service_code`, `usage_type`, `operation`, `region`, `resource_id`
+- tags `project`, `environment`, `tenant_tag` e `module_tag`
+- `usage_amount`, `usage_unit`, `unblended_cost`, `amortized_cost` e `currency`
+- `raw_line_hash`
+- `metadata`
+
+Regras:
+
+- essas tabelas nao sao tenant-scoped e nao recebem RLS por tenant;
+- acesso HTTP deve ficar restrito a Platform Admin via `platform:cloud-costs:*`;
+- usuario de tenant nao acessa custo bruto;
+- deduplicacao por `import_id + raw_line_hash`;
+- indices por import, periodo, `service_code`, `usage_type`, `region` e `tenant_tag`;
+- metadata e erro devem ser sanitizados;
+- nao salvar arquivo bruto inteiro em metadata.
+
 ## Auditoria enterprise
 
 Status: implementado sem migration adicional. A tabela `audit_logs` atual suporta o contrato enterprise por meio de colunas nativas e `metadata Json`.
@@ -632,6 +682,7 @@ Tabelas globais que nao recebem RLS nesta rodada:
 - `tenants`: raiz administrativa global, usada pelo boundary de plataforma.
 - `permissions`: catalogo global de permissoes.
 - `role_permissions`: associacao entre roles e permissoes; o acesso operacional continua controlado pelas roles visiveis no contexto.
+- `cloud_cost_imports` e `cloud_cost_line_items`: custo bruto global do provedor, protegido por RBAC platform e nao exposto a usuarios tenant.
 
 ### Politicas
 

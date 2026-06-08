@@ -25,6 +25,8 @@ const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 const permissionDescriptions = {
+  "platform:cloud-costs:read": "Consultar custos AWS CUR brutos importados no Console da Plataforma.",
+  "platform:cloud-costs:import": "Importar custos AWS CUR via fonte segura sem credenciais reais.",
   "platform:cloud-usage:read": "Consultar uso cloud medido por tenant no Console da Plataforma.",
   "tenant.manage": "Gerenciar configuracoes, filiais e dados administrativos do tenant.",
   "users.manage": "Criar e alterar usuarios do tenant.",

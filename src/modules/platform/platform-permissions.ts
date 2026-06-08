@@ -3,6 +3,8 @@ import type { NextFunction, Request, Response } from "express";
 import { resolveRequestActor } from "../auth/middleware/authenticated-actor.middleware.js";
 
 export const PLATFORM_PERMISSIONS = [
+  "platform:cloud-costs:read",
+  "platform:cloud-costs:import",
   "platform:cloud-usage:read",
   "platform:tenants:read",
   "platform:tenants:create",

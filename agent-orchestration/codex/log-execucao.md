@@ -870,3 +870,22 @@
 - fora de escopo mantido: AWS CUR, AWS Cost Explorer, AWS Billing Conductor, custo monetario real, rateio de custo AWS, markup, fatura, pagamento, credenciais AWS reais e tela complexa
 - observacao de validacao: `tests/rls-tenant-isolation.test.ts` falhou inicialmente porque a migration nova ainda nao estava aplicada no banco local; apos `npx prisma migrate deploy`, o teste passou
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/cloud-usage.test.ts`, `node --test --import tsx tests/cloud-usage-routes.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/checklist-routes.test.ts`, `node --test --import tsx tests/notification-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/audit-log.test.ts` e `git diff --check`
+
+## 2026-06-08 - AWS CUR cost import foundation
+
+- branch usada: `feature/aws-cur-cost-import`
+- objetivo: implementar a foundation para importar custo AWS CUR bruto, sem rateio, markup, fatura, pagamento, UI completa ou credenciais AWS reais
+- migration criada: `20260612000000_add_aws_cur_cost_import`
+- models Prisma adicionados: `CloudCostImport` e `CloudCostLineItem`
+- tabelas criadas: `cloud_cost_imports` e `cloud_cost_line_items`
+- decisao de isolamento: tabelas globais de plataforma, sem `tenant_id` e sem RLS por tenant; acesso protegido por `platform:cloud-costs:*`
+- modulo criado: `src/modules/cloud-costs`
+- parser criado para CSV simplificado de AWS CUR com fixture `tests/fixtures/aws-cur-sample.csv`
+- importer deduplica linhas por `raw_line_hash` dentro do import, calcula `total_unblended_cost`, salva tags `Project`, `Environment`, `Tenant` e `Module`, e sanitiza metadata/error_message
+- job criado: `aws-cur.import-cost-file`
+- API Platform criada: `GET /api/v1/platform/cloud-costs/imports`, `GET /api/v1/platform/cloud-costs/imports/:importId`, `GET /api/v1/platform/cloud-costs/line-items`, `GET /api/v1/platform/cloud-costs/summary` e `POST /api/v1/platform/cloud-costs/imports/manual-csv`
+- RBAC atualizado com `platform:cloud-costs:read` e `platform:cloud-costs:import`; `tenant_admin` permanece sem permissoes `platform:*`
+- `.env.example` atualizado com variaveis passivas `AWS_CUR_*`, sem credenciais AWS
+- documentacao criada/atualizada: `docs/aws-cur-cost-import.md`, `docs/cloud-usage-metering.md`, `docs/api.md`, `docs/architecture.md`, `docs/database.md`, `docs/deployment.md`, `docs/modules.md`, `docs/messaging.md`, `docs/rbac.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: allocation/rateio, markup/margem, cobranca, fatura, gateway, UI completa, S3/Athena real obrigatorio, Cost Explorer, Billing Conductor e secrets reais
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/aws-cur-cost-import.test.ts`, `node --test --import tsx tests/aws-cur-cost-routes.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/audit-log.test.ts` e `git diff --check`

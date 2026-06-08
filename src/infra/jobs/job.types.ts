@@ -1,4 +1,5 @@
 export const JOB_NAMES = [
+  "aws-cur.import-cost-file",
   "checklist-attachment-postprocess",
   "cloud-usage.aggregate-daily",
   "notification-dispatch",

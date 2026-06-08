@@ -40,6 +40,14 @@ Escopo: `platform`
 
 Responsabilidade desta branch: medir uso por tenant e preparar a ponte futura para custo AWS real, rateio, markup e cobranca cloud com lucro. Nao calcula custo, nao aplica margem, nao gera fatura e nao integra AWS CUR/Cost Explorer/Billing Conductor.
 
+### Cloud Cost Import
+
+Boundary transversal de plataforma para importar custo AWS bruto a partir de AWS Cost and Usage Report.
+
+Escopo: `platform`
+
+Responsabilidade desta branch: persistir lotes em `cloud_cost_imports`, linhas em `cloud_cost_line_items`, disponibilizar parser/importer local ou mock, job `aws-cur.import-cost-file` e API Platform protegida. Nao faz rateio por tenant, markup, fatura, pagamento nem conexao obrigatoria com AWS real.
+
 ## Separacao platform scope vs tenant scope
 
 - Platform scope usa permissoes `platform:*`.
@@ -116,6 +124,8 @@ Integracao inicial: `checklist_run.attachment_uploaded` publica evento depois do
 Notificacoes internas usam a mesma fundacao: eventos operacionais de checklist enfileiram `notification-dispatch`, que resolve destinatarios do tenant e cria linhas em `notifications`. A operacao principal continua sincronica e nao depende do sucesso do job de notificacao.
 
 Cloud usage metering tambem usa eventos/jobs como fonte best-effort. Eventos de checklist/anexo, notificacoes e jobs com `tenantId` podem registrar metricas de uso; falha no metering nao desfaz a operacao principal. A agregacao diaria roda pelo job `cloud-usage.aggregate-daily` e nao possui scheduler automatico nesta branch.
+
+Cloud cost import usa o job `aws-cur.import-cost-file` para importar CSV local/mock. A integracao real com S3/Athena fica documentada para fase posterior e nao deve introduzir credenciais reais no repositorio.
 
 ## Auditoria enterprise
 

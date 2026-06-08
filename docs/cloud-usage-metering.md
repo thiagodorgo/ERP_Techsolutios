@@ -16,7 +16,7 @@ Entrega desta branch:
 
 Fora do escopo desta branch:
 
-- importacao AWS CUR;
+- importacao AWS CUR, entregue separadamente pela foundation `cloud_cost_import`;
 - AWS Cost Explorer;
 - AWS Billing Conductor;
 - custo monetario real;
@@ -38,7 +38,7 @@ Fluxo pretendido:
 4. aplicar markup/margem;
 5. gerar cobranca cloud com lucro.
 
-Esta branch entrega apenas o item 1.
+Esta branch entrega apenas o item 1. A branch `feature/aws-cur-cost-import` adiciona o item 2 por meio de `cloud_cost_imports` e `cloud_cost_line_items`, sem fazer rateio ou markup.
 
 ## Metricas suportadas
 

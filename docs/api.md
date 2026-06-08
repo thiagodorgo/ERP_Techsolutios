@@ -297,6 +297,27 @@ Resposta de resumo:
 
 Esta API expõe uso interno por tenant. Nao expõe custo monetario, preco, margem, fatura, pagamento, bucket, storage key, path privado, headers ou payloads sensiveis.
 
+### Cloud costs AWS CUR
+
+```http
+GET  /api/v1/platform/cloud-costs/imports
+GET  /api/v1/platform/cloud-costs/imports/:importId
+GET  /api/v1/platform/cloud-costs/line-items
+GET  /api/v1/platform/cloud-costs/summary
+POST /api/v1/platform/cloud-costs/imports/manual-csv
+```
+
+Permissoes:
+
+- leitura: `platform:cloud-costs:read`
+- importacao manual: `platform:cloud-costs:import`
+
+Filtros aceitos em `line-items` e `summary`: `periodStart`, `periodEnd`, `serviceCode`, `usageType`, `region`, `tenantTag`, `importId` e `limit`.
+
+`POST /imports/manual-csv` aceita JSON com `csv`, `sourceUri` opcional e `metadata` segura. O limite atual e 1 MB para evitar upload pesado sem padrao dedicado. A rota nao exige AWS real e nao aceita credenciais.
+
+Esta API expõe custo AWS bruto importado apenas para Platform Admin. Nao faz rateio por tenant, markup, fatura ou pagamento.
+
 ## Observacoes
 
 - A implementacao inicial pode usar mock/service em memoria enquanto a persistencia de `tenant_modules` nao estiver versionada.

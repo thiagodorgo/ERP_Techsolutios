@@ -1098,3 +1098,19 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - documentacao criada/atualizada em `docs/cloud-usage-metering.md`, `docs/api.md`, `docs/architecture.md`, `docs/database.md`, `docs/deployment.md`, `docs/messaging.md`, `docs/modules.md`, `docs/rbac.md`, `docs/storage.md`, `docs/notifications.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e este status
 - fora de escopo mantido: AWS CUR, Cost Explorer, Billing Conductor, custo monetario real, rateio AWS, markup, fatura, pagamento e tela complexa
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/cloud-usage.test.ts`, `node --test --import tsx tests/cloud-usage-routes.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/checklist-routes.test.ts`, `node --test --import tsx tests/notification-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts` e `node --test --import tsx tests/audit-log.test.ts`
+
+## Atualizacao 2026-06-08 - AWS CUR cost import foundation
+
+- branch usada: `feature/aws-cur-cost-import`
+- objetivo: criar a foundation de importacao de custo AWS CUR bruto, preparando a futura alocacao/rateio por tenant
+- migration criada: `20260612000000_add_aws_cur_cost_import`
+- tabelas criadas: `cloud_cost_imports` e `cloud_cost_line_items`, globais da plataforma, sem RLS por tenant e protegidas por RBAC platform
+- modulo criado: `src/modules/cloud-costs`, com parser CSV, importer, repository em memoria, repository Prisma, service, job e rotas de plataforma
+- API Platform criada: `GET /api/v1/platform/cloud-costs/imports`, `GET /api/v1/platform/cloud-costs/imports/:importId`, `GET /api/v1/platform/cloud-costs/line-items`, `GET /api/v1/platform/cloud-costs/summary` e `POST /api/v1/platform/cloud-costs/imports/manual-csv`
+- RBAC atualizado com `platform:cloud-costs:read` e `platform:cloud-costs:import`; roles de tenant nao recebem acesso a custo bruto por padrao
+- job criado: `aws-cur.import-cost-file`, para CSV mockado ou `sourceUri` local, sem dependencia de AWS real
+- fixture criada: `tests/fixtures/aws-cur-sample.csv`
+- relacao documentada: `cloud_usage_*` mede uso interno por tenant, `cloud_cost_*` importa custo AWS bruto e a proxima branch `feature/cloud-cost-allocation-engine` fara o cruzamento
+- documentacao criada/atualizada em `docs/aws-cur-cost-import.md`, `docs/cloud-usage-metering.md`, `docs/api.md`, `docs/architecture.md`, `docs/database.md`, `docs/deployment.md`, `docs/modules.md`, `docs/messaging.md`, `docs/rbac.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e este status
+- fora de escopo mantido: rateio por tenant, markup, cobranca, fatura, gateway, UI completa, AWS real obrigatoria, Cost Explorer, Billing Conductor e credenciais AWS reais
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/aws-cur-cost-import.test.ts`, `node --test --import tsx tests/aws-cur-cost-routes.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/audit-log.test.ts` e `git diff --check`

@@ -36,6 +36,13 @@ const envSchema = z.object({
   CHECKLIST_ATTACHMENT_STORAGE_PATH: z.string().trim().min(1).optional(),
   CHECKLIST_ATTACHMENT_MAX_SIZE_MB: z.coerce.number().positive().max(100).optional(),
   CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES: z.string().trim().min(1).optional(),
+  AWS_CUR_IMPORT_ENABLED: z.coerce.boolean().default(false),
+  AWS_CUR_S3_BUCKET: z.string().trim().optional().default(""),
+  AWS_CUR_S3_PREFIX: z.string().trim().optional().default(""),
+  AWS_CUR_S3_REGION: z.string().trim().optional().default(""),
+  AWS_CUR_ATHENA_DATABASE: z.string().trim().optional().default(""),
+  AWS_CUR_ATHENA_WORKGROUP: z.string().trim().optional().default(""),
+  AWS_CUR_ATHENA_OUTPUT_LOCATION: z.string().trim().optional().default(""),
 }).superRefine((value, context) => {
   const developmentOnlySecrets = new Set([
     "dev-only-change-me",
