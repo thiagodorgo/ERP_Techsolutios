@@ -37,3 +37,16 @@ Variaveis legadas `CHECKLIST_ATTACHMENT_*` seguem aceitas como aliases para ambi
 ## Persistencia
 
 Nesta rodada nao ha migration. Provider, storage key e checksum ficam em `checklist_attachments.metadata` para preservar compatibilidade. Uma migration futura pode promover esses campos para colunas dedicadas se houver necessidade de indice, busca operacional ou lifecycle por provider.
+
+## Metering
+
+Uploads e downloads de anexos podem gerar eventos de uso para `cloud_usage_metering`:
+
+- `checklist_attachment.uploaded.count`
+- `checklist_attachment.uploaded.bytes`
+- `checklist_attachment.downloaded.count`
+- `checklist_attachment.downloaded.bytes`
+- `s3_put_requests`
+- `s3_get_requests`
+
+Mesmo quando o provider local e usado em desenvolvimento/teste, os nomes representam uso equivalente ao modelo S3-compatible de producao. Bucket, storage key, path privado e URLs internas nao entram na metadata de metering.

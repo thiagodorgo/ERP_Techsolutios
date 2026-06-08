@@ -1,4 +1,5 @@
 import type { JobEnvelope, JobName, JobPayload } from "./job.types.js";
+import { createCloudUsageAggregateDailyJobHandler } from "../../modules/cloud-usage/cloud-usage.jobs.js";
 import { createNotificationDispatchJobHandler } from "../../modules/notifications/notification.jobs.js";
 
 export type JobHandler<TPayload extends JobPayload = JobPayload> = (
@@ -35,6 +36,7 @@ function createDefaultJobRegistry(): JobRegistry {
   registry.register("checklist-attachment-postprocess", async () => {
     // Placeholder for future checksum enrichment, thumbnail generation, AV scan or cloud sync.
   });
+  registry.register("cloud-usage.aggregate-daily", createCloudUsageAggregateDailyJobHandler());
   registry.register("notification-dispatch", createNotificationDispatchJobHandler());
   registry.register("audit-log-fanout", async () => {
     // Placeholder for future audit fanout/export.

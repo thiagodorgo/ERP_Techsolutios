@@ -27,6 +27,7 @@ Exemplos:
 - integrations
 - analytics
 - messaging_jobs
+- cloud_usage_metering
 
 ## Modulos habilitados por tenant
 
@@ -92,3 +93,5 @@ Sao os modulos efetivamente ativos para um tenant especifico. A visibilidade no 
 - `audit` e uma capacidade transversal tenant-scoped: acoes criticas gravam `audit_logs` de forma sincronica, com contrato enterprise em `docs/audit.md`, RLS por tenant, RBAC `audit.read` para consulta e fanout complementar `audit_log.created` via Redis.
 - `notifications` e uma capacidade transversal tenant-scoped: eventos operacionais de checklist podem gerar inbox interna por usuario via job Redis, com RBAC `notifications:read`/`notifications:update`, RLS por tenant e sem integracao externa nesta fase.
 - O frontend web expõe `notifications` em `/notifications` como inbox interna do usuario, com contador de nao lidas no AppShell/sidebar, filtros simples, marcar como lida/read-all, arquivar e navegacao segura apenas para `actionUrl` interna.
+- `cloud_usage_metering` e uma capacidade transversal de plataforma: registra uso interno por tenant em `cloud_usage_events`, agrega diariamente em `cloud_usage_daily_aggregates` e prepara a ponte futura para custo AWS real, rateio, markup e cobranca cloud com lucro.
+- Nesta branch `cloud_usage_metering` mede uso, nao custo: AWS CUR, Cost Explorer, Billing Conductor, preco, margem, fatura e pagamento ficam fora do escopo.

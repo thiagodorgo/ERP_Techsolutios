@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { getDefaultJobQueue, type JobQueue } from "../jobs/job.queue.js";
+import { recordCloudUsageForDomainEvent } from "../../modules/cloud-usage/cloud-usage.events.js";
 import type { JobName, JobPayload } from "../jobs/job.types.js";
 import type {
   DomainEventContext,
@@ -47,6 +48,8 @@ export async function publishDomainEvent<TPayload extends DomainEventPayload>(
     occurredAt: new Date().toISOString(),
   };
   const jobName = eventJobMap[name];
+
+  recordCloudUsageForDomainEvent(event);
 
   if (!jobName) {
     return {

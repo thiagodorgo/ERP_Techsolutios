@@ -24,6 +24,8 @@ Nesta fase, os modelos multi-tenant com `tenant_id` sao:
 - `ChecklistAttachment`
 - `ChecklistMarker`
 - `ChecklistAcknowledgement`
+- `CloudUsageEvent`
+- `CloudUsageDailyAggregate`
 
 `Tenant` e a raiz administrativa. `Permission` e catalogo global. `RolePermission` associa roles a permissoes. `UserRoleAssignment` associa usuarios a papeis de forma persistente por tenant.
 
@@ -514,6 +516,61 @@ Indices principais:
 
 RLS esta habilitado na migration `20260610000000_add_notifications`. Mesmo com RLS por tenant, o service restringe consulta e update ao `recipient_user_id` do ator autenticado.
 
+## Cloud usage metering
+
+Status: implementado na migration `20260611000000_add_cloud_usage_metering`.
+
+### `cloud_usage_events`
+
+Eventos imutaveis de uso interno por tenant.
+
+Campos principais:
+
+- `id`
+- `tenant_id`
+- `source_type`
+- `source_id`
+- `metric_key`
+- `quantity`
+- `unit`: `bytes`, `count` ou `gb_month`
+- `occurred_at`
+- `idempotency_key`
+- `metadata`
+- `created_at`
+
+Indices e regras:
+
+- indices por `tenant_id`, `metric_key` e `occurred_at`;
+- `quantity >= 0`;
+- idempotencia MVP por `tenant_id + idempotency_key` quando `idempotency_key` existir;
+- RLS por `tenant_id`.
+
+### `cloud_usage_daily_aggregates`
+
+Agregados diarios idempotentes de uso por tenant, metrica, unidade e origem.
+
+Campos principais:
+
+- `id`
+- `tenant_id`
+- `date`
+- `metric_key`
+- `quantity`
+- `unit`
+- `source_type`
+- `metadata`
+- `created_at`
+- `updated_at`
+
+Indices e regras:
+
+- indices por `tenant_id`, `date` e `metric_key`;
+- unicidade por `tenant_id`, `date`, `metric_key`, `unit` e `source_type`;
+- `quantity >= 0`;
+- RLS por `tenant_id`.
+
+Metadata deve ser sanitizada antes de persistir. Tokens, senhas, refresh tokens, Authorization, storage key, bucket, path privado, body, payload e query sensivel nao devem ser salvos.
+
 ## Auditoria enterprise
 
 Status: implementado sem migration adicional. A tabela `audit_logs` atual suporta o contrato enterprise por meio de colunas nativas e `metadata Json`.
@@ -567,6 +624,8 @@ RLS foi habilitado nas tabelas tenant-scoped principais:
 - `checklist_markers`
 - `checklist_acknowledgements`
 - `notifications`
+- `cloud_usage_events`
+- `cloud_usage_daily_aggregates`
 
 Tabelas globais que nao recebem RLS nesta rodada:
 
@@ -629,4 +688,5 @@ Esse teste requer `DATABASE_URL`, PostgreSQL ativo e migrations aplicadas. Ele v
 - sem `app.current_tenant_id`, `users` nao retorna dados;
 - `checklist_templates` e `checklist_runs` respeitam RLS;
 - `checklist_attachments` respeita RLS;
+- `cloud_usage_events` e `cloud_usage_daily_aggregates` respeitam RLS;
 - `tenants` continua global para o boundary de plataforma.

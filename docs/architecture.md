@@ -32,6 +32,14 @@ Responsabilidade da plataforma: definir o catalogo de componentes permitidos (`t
 
 Responsabilidade do tenant: configurar templates, campos, ordem, obrigatoriedade, regras, status, publicacao e execucao dentro do seu proprio `tenant_id`.
 
+### Cloud Usage Metering
+
+Boundary transversal de plataforma para medir uso interno de infraestrutura por tenant. Ele registra eventos em `cloud_usage_events`, consolida uso em `cloud_usage_daily_aggregates` e expõe somente consultas de Platform Admin.
+
+Escopo: `platform`
+
+Responsabilidade desta branch: medir uso por tenant e preparar a ponte futura para custo AWS real, rateio, markup e cobranca cloud com lucro. Nao calcula custo, nao aplica margem, nao gera fatura e nao integra AWS CUR/Cost Explorer/Billing Conductor.
+
 ## Separacao platform scope vs tenant scope
 
 - Platform scope usa permissoes `platform:*`.
@@ -107,6 +115,8 @@ Integracao inicial: `checklist_run.attachment_uploaded` publica evento depois do
 
 Notificacoes internas usam a mesma fundacao: eventos operacionais de checklist enfileiram `notification-dispatch`, que resolve destinatarios do tenant e cria linhas em `notifications`. A operacao principal continua sincronica e nao depende do sucesso do job de notificacao.
 
+Cloud usage metering tambem usa eventos/jobs como fonte best-effort. Eventos de checklist/anexo, notificacoes e jobs com `tenantId` podem registrar metricas de uso; falha no metering nao desfaz a operacao principal. A agregacao diaria roda pelo job `cloud-usage.aggregate-daily` e nao possui scheduler automatico nesta branch.
+
 ## Auditoria enterprise
 
 A auditoria enterprise esta documentada em `docs/audit.md`. A gravacao principal usa `audit_logs` de forma sincronica, tenant-scoped e protegida por RLS. O contrato padronizado inclui actor, action, resource, outcome, severity, correlationId, requestId, IP, user-agent e metadata sanitizado. Como a tabela atual ja possui `metadata Json`, os campos complementares ficam em metadata e nenhuma migration foi criada nesta rodada.
@@ -122,3 +132,4 @@ Depois da persistencia, `audit_log.created` e publicado como domain event para f
 - Evoluir operacoes platform multi-tenant com contexto RLS explicito e auditoria.
 - Avaliar cookie httpOnly/secure e Redis para sessoes distribuidas quando o produto sair do MVP localStorage.
 - Evoluir jobs Redis para notificacoes, webhooks, relatorios, processamento de anexos e fanout de auditoria.
+- Evoluir a ponte `cloud_usage_metering` nas branches `feature/aws-cur-cost-import`, `feature/cloud-cost-allocation-engine`, `feature/cloud-charge-markup-rules`, `feature/platform-cloud-billing-ui` e `feature/billing-payment-provider`.

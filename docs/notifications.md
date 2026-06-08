@@ -96,6 +96,15 @@ Resolver inicial:
 
 O ator que causou o evento nao recebe notificacao propria. Se nao houver destinatario, o job conclui sem criar notificacao.
 
+## Metering
+
+Criacao de notificacoes internas registra metricas best-effort em `cloud_usage_metering`:
+
+- `notification.created`
+- `notifications_count`
+
+Falha ao registrar metering nao impede a criacao da notificacao nem altera o job `notification-dispatch`.
+
 ## Seguranca
 
 - Nenhum segredo real deve ser persistido ou documentado.

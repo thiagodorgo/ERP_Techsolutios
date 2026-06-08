@@ -1082,3 +1082,19 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - documentacao atualizada em `docs/notifications.md`, `docs/api.md`, `docs/frontend-screens.md`, `docs/modules.md`, `docs/rbac.md` e este status
 - fora de escopo mantido: e-mail, SMS, WhatsApp, push externo, chat, provider externo, polling agressivo, Figma, mobile Flutter e backend amplo
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`
+
+## Atualizacao 2026-06-08 - cloud usage metering foundation
+
+- branch usada: `feature/cloud-usage-metering-foundation`
+- objetivo: criar a fundacao de medicao interna de uso cloud por tenant para futura cobranca com margem
+- decisao arquitetural registrada: Opcao B, metering interno por tenant + margem futura
+- migration criada: `20260611000000_add_cloud_usage_metering`
+- tabelas criadas: `cloud_usage_events` e `cloud_usage_daily_aggregates`, ambas com `tenant_id` obrigatorio, indices por tenant/metrica/data, checks de unidade/quantidade e RLS por tenant
+- modulo criado: `src/modules/cloud-usage`, com service, repository em memoria, repository Prisma, aggregator, eventos, jobs e rotas de plataforma
+- API Platform criada: `GET /api/v1/platform/cloud-usage/summary`, `GET /api/v1/platform/cloud-usage/tenants/:tenantId/summary` e `GET /api/v1/platform/cloud-usage/tenants/:tenantId/daily`
+- RBAC atualizado com `platform:cloud-usage:read`; roles de tenant nao recebem acesso cross-tenant por padrao
+- eventos integrados: `checklist_run.created`, `checklist_run.completed`, `checklist_run.attachment_uploaded`, `checklist_run.attachment_downloaded`, `checklist_run.divergence_reported`, `checklist_run.acknowledgement_created`, `notification.created` e `job.executed`
+- metricas aceitas pelo catalogo incluem storage, S3-compatible requests, checklists, notificacoes, jobs, API e usuarios ativos; middleware de API e calculo de usuarios ativos ficam planejados para rodada propria
+- documentacao criada/atualizada em `docs/cloud-usage-metering.md`, `docs/api.md`, `docs/architecture.md`, `docs/database.md`, `docs/deployment.md`, `docs/messaging.md`, `docs/modules.md`, `docs/rbac.md`, `docs/storage.md`, `docs/notifications.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e este status
+- fora de escopo mantido: AWS CUR, Cost Explorer, Billing Conductor, custo monetario real, rateio AWS, markup, fatura, pagamento e tela complexa
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/cloud-usage.test.ts`, `node --test --import tsx tests/cloud-usage-routes.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/checklist-routes.test.ts`, `node --test --import tsx tests/notification-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts` e `node --test --import tsx tests/audit-log.test.ts`

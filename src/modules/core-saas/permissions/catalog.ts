@@ -1,4 +1,5 @@
 export const PERMISSION_CATALOG = [
+  "platform:cloud-usage:read",
   "tenant.manage",
   "users.manage",
   "users.read",
@@ -52,9 +53,13 @@ export type RoleDefinition = {
   readonly permissions: readonly Permission[];
 };
 
+const TENANT_ADMIN_PERMISSIONS = PERMISSION_CATALOG.filter(
+  (permission) => !permission.startsWith("platform:"),
+) as Permission[];
+
 export const ROLE_PERMISSIONS = {
   super_admin: PERMISSION_CATALOG,
-  tenant_admin: PERMISSION_CATALOG,
+  tenant_admin: TENANT_ADMIN_PERMISSIONS,
   manager: [
     "users.read",
     "audit.read",

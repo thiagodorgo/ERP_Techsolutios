@@ -1,5 +1,6 @@
 import type { DomainEventEnvelope } from "../../infra/events/domain-event.types.js";
 import { env } from "../../config/env.js";
+import { recordCloudUsageBestEffort } from "../cloud-usage/cloud-usage.service.js";
 import type {
   CreateNotificationInput,
   ListNotificationFilters,
@@ -20,20 +21,30 @@ export class NotificationService {
     private readonly recipientResolver = new NotificationRecipientResolver(repository),
   ) {}
 
-  createNotification(input: CreateNotificationInput): Promise<Notification> {
-    return this.repository.create({
+  async createNotification(input: CreateNotificationInput): Promise<Notification> {
+    const notification = await this.repository.create({
       ...input,
       metadata: sanitizeNotificationMetadata(input.metadata),
     });
+
+    this.recordNotificationUsage(notification);
+
+    return notification;
   }
 
   async createManyNotifications(inputs: readonly CreateNotificationInput[]): Promise<readonly Notification[]> {
-    return this.repository.createMany(
+    const notifications = await this.repository.createMany(
       inputs.map((input) => ({
         ...input,
         metadata: sanitizeNotificationMetadata(input.metadata),
       })),
     );
+
+    for (const notification of notifications) {
+      this.recordNotificationUsage(notification);
+    }
+
+    return notifications;
   }
 
   listMyNotifications(actor: NotificationActorContext, filters: ListNotificationFilters = {}): Promise<readonly Notification[]> {
@@ -108,6 +119,37 @@ export class NotificationService {
         metadata: buildEventMetadata(event),
       })),
     );
+  }
+
+  private recordNotificationUsage(notification: Notification): void {
+    recordCloudUsageBestEffort({
+      tenantId: notification.tenantId,
+      sourceType: "notification",
+      sourceId: notification.id,
+      metricKey: "notification.created",
+      quantity: 1,
+      unit: "count",
+      occurredAt: notification.createdAt,
+      idempotencyKey: `${notification.id}:notification.created`,
+      metadata: {
+        type: notification.type,
+        severity: notification.severity,
+        sourceType: notification.sourceType,
+      },
+    });
+    recordCloudUsageBestEffort({
+      tenantId: notification.tenantId,
+      sourceType: "notification",
+      sourceId: notification.id,
+      metricKey: "notifications_count",
+      quantity: 1,
+      unit: "count",
+      occurredAt: notification.createdAt,
+      idempotencyKey: `${notification.id}:notifications_count`,
+      metadata: {
+        type: notification.type,
+      },
+    });
   }
 }
 
