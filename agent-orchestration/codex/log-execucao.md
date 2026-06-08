@@ -849,3 +849,24 @@
 - documentacao atualizada em `docs/notifications.md`, `docs/api.md`, `docs/frontend-screens.md`, `docs/modules.md`, `docs/rbac.md` e `agent-orchestration/docs/status-geral.md`
 - fora de escopo mantido: backend amplo, migrations, e-mail, SMS, WhatsApp, push externo, chat, provider externo, polling agressivo, Figma e mobile Flutter
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`
+
+## 2026-06-08 - cloud usage metering foundation
+
+- branch usada: `feature/cloud-usage-metering-foundation`
+- objetivo: implementar a fundacao de metering interno de uso cloud por tenant, preparando a ponte futura para custo AWS real, rateio, markup e cobranca cloud com lucro
+- decisao registrada: Opcao B, metering interno por tenant + margem futura; esta branch mede uso, nao custo
+- migration criada: `20260611000000_add_cloud_usage_metering`
+- models Prisma adicionados: `CloudUsageEvent` e `CloudUsageDailyAggregate`
+- tabelas criadas: `cloud_usage_events` e `cloud_usage_daily_aggregates`
+- RLS aplicada nas duas tabelas por `tenant_id`, com checks de unidade/quantidade, indices por tenant/metrica/data e idempotencia MVP por `tenant_id + idempotency_key`
+- modulo criado: `src/modules/cloud-usage`
+- funcoes entregues: `recordUsageEvent`, `recordManyUsageEvents`, `aggregateDailyUsage`, `getTenantUsageSummary`, `getTenantUsageDaily` e `getPlatformUsageSummary`
+- job criado: `cloud-usage.aggregate-daily`, idempotente por tenant/dia/metrica/unidade/origem, sem scheduler automatico nesta branch
+- API Platform criada: `GET /api/v1/platform/cloud-usage/summary`, `GET /api/v1/platform/cloud-usage/tenants/:tenantId/summary` e `GET /api/v1/platform/cloud-usage/tenants/:tenantId/daily`
+- RBAC atualizado com `platform:cloud-usage:read`; `tenant_admin` foi mantido sem permissao `platform:*`
+- eventos integrados: checklist run created/completed/divergence/acknowledgement, attachment uploaded/downloaded, notification created e job executed
+- metadata de metering sanitiza tokens, senhas, secrets, Authorization, storage key, bucket, path privado, body, payload e query sensivel
+- documentacao criada/atualizada: `docs/cloud-usage-metering.md`, `docs/api.md`, `docs/architecture.md`, `docs/database.md`, `docs/deployment.md`, `docs/messaging.md`, `docs/modules.md`, `docs/rbac.md`, `docs/storage.md`, `docs/notifications.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: AWS CUR, AWS Cost Explorer, AWS Billing Conductor, custo monetario real, rateio de custo AWS, markup, fatura, pagamento, credenciais AWS reais e tela complexa
+- observacao de validacao: `tests/rls-tenant-isolation.test.ts` falhou inicialmente porque a migration nova ainda nao estava aplicada no banco local; apos `npx prisma migrate deploy`, o teste passou
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/cloud-usage.test.ts`, `node --test --import tsx tests/cloud-usage-routes.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/checklist-routes.test.ts`, `node --test --import tsx tests/notification-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/audit-log.test.ts` e `git diff --check`

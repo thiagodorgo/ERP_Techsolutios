@@ -262,6 +262,41 @@ Body:
 }
 ```
 
+### Cloud usage metering
+
+```http
+GET /api/v1/platform/cloud-usage/summary
+GET /api/v1/platform/cloud-usage/tenants/:tenantId/summary
+GET /api/v1/platform/cloud-usage/tenants/:tenantId/daily
+```
+
+Permissao: `platform:cloud-usage:read`
+
+Filtros aceitos: `periodStart`, `periodEnd` e `metricKey`.
+
+Resposta de resumo:
+
+```json
+{
+  "data": {
+    "tenantId": "uuid-do-tenant",
+    "periodStart": "2026-06-08T00:00:00.000Z",
+    "periodEnd": "2026-06-08T23:59:59.999Z",
+    "metrics": [
+      {
+        "metricKey": "checklist_run.completed",
+        "quantity": 3,
+        "unit": "count",
+        "sourceType": "checklist_run"
+      }
+    ],
+    "generatedAt": "2026-06-08T12:00:00.000Z"
+  }
+}
+```
+
+Esta API expõe uso interno por tenant. Nao expõe custo monetario, preco, margem, fatura, pagamento, bucket, storage key, path privado, headers ou payloads sensiveis.
+
 ## Observacoes
 
 - A implementacao inicial pode usar mock/service em memoria enquanto a persistencia de `tenant_modules` nao estiver versionada.

@@ -122,6 +122,8 @@ Esses testes usam o Redis local do Docker Compose e prefixes isolados por teste.
 
 Notificacoes internas nao exigem variavel de ambiente propria nesta fase. Elas usam PostgreSQL para persistencia, RLS por tenant e Redis apenas para o job `notification-dispatch`.
 
+Cloud usage metering nao exige credencial AWS nesta branch. O uso e registrado internamente em PostgreSQL e a agregacao diaria e acionada pelo job `cloud-usage.aggregate-daily`; scheduler/cron produtivo fica para etapa futura.
+
 ## Seguranca
 
 - Nunca commitar `.env`.
@@ -129,4 +131,5 @@ Notificacoes internas nao exigem variavel de ambiente propria nesta fase. Elas u
 - `DATABASE_URL`, `REDIS_URL` e `JWT_SECRET` em `.env.example` sao exemplos locais.
 - Producao deve usar secrets do provedor/cloud/GitHub Actions.
 - PostgreSQL e Redis locais nao representam ambiente produtivo.
+- Cloud usage metering nao deve receber secrets AWS reais enquanto a branch entregar apenas uso interno.
 - Este bloco nao configura deploy produtivo.

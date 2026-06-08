@@ -4,6 +4,7 @@ export const DOMAIN_EVENT_NAMES = [
   "checklist_run.created",
   "checklist_run.completed",
   "checklist_run.attachment_uploaded",
+  "checklist_run.attachment_downloaded",
   "checklist_run.divergence_reported",
   "checklist_run.acknowledgement_created",
   "notification.requested",

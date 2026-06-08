@@ -188,6 +188,19 @@ export class ChecklistService {
       templateVersion: template.version,
     });
 
+    await publishDomainEvent(
+      "checklist_run.created",
+      {
+        runId: run.id,
+        templateId: template.id,
+        status: run.status,
+      },
+      {
+        tenantId: actor.tenantId,
+        actorId: actor.userId,
+      },
+    );
+
     return run;
   }
 
@@ -321,7 +334,25 @@ export class ChecklistService {
       throw new ChecklistError(404, "CHECKLIST_ATTACHMENT_NOT_FOUND", "checklist_attachment_not_found", "Checklist attachment not found.");
     }
 
-    return resolveChecklistAttachmentDownload(attachment);
+    const download = await resolveChecklistAttachmentDownload(attachment);
+
+    await publishDomainEvent(
+      "checklist_run.attachment_downloaded",
+      {
+        runId,
+        componentId: attachment.componentId,
+        attachmentId: attachment.id,
+        fileName: attachment.fileName,
+        mimeType: attachment.mimeType,
+        sizeBytes: download.sizeBytes ?? attachment.sizeBytes,
+      },
+      {
+        tenantId: actor.tenantId,
+        actorId: actor.userId,
+      },
+    );
+
+    return download;
   }
 
   async createMarker(actor: ActorContext, runId: string, input: CreateChecklistMarkerInput): Promise<ChecklistMarker> {

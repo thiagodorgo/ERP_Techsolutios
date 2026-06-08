@@ -176,6 +176,52 @@ if (!connectionString) {
           )
           RETURNING id
         `;
+        const [usageEvent] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO cloud_usage_events (
+            tenant_id,
+            source_type,
+            source_id,
+            metric_key,
+            quantity,
+            unit,
+            occurred_at,
+            idempotency_key,
+            metadata
+          )
+          VALUES (
+            ${tenantA.id}::uuid,
+            'checklist_run',
+            ${run.id},
+            'checklist_run.completed',
+            1,
+            'count',
+            now(),
+            ${`rls-${suffix}-tenant-a-usage-event`},
+            '{}'::jsonb
+          )
+          RETURNING id
+        `;
+        const [usageAggregate] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO cloud_usage_daily_aggregates (
+            tenant_id,
+            date,
+            metric_key,
+            quantity,
+            unit,
+            source_type,
+            metadata
+          )
+          VALUES (
+            ${tenantA.id}::uuid,
+            CURRENT_DATE,
+            'checklist_run.completed',
+            1,
+            'count',
+            'checklist_run',
+            '{}'::jsonb
+          )
+          RETURNING id
+        `;
 
         return {
           branchId: branch.id,
@@ -184,6 +230,8 @@ if (!connectionString) {
           runId: run.id,
           attachmentId: attachment.id,
           notificationId: notification.id,
+          usageAggregateId: usageAggregate.id,
+          usageEventId: usageEvent.id,
         };
       });
 
@@ -302,6 +350,52 @@ if (!connectionString) {
           )
           RETURNING id
         `;
+        const [usageEvent] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO cloud_usage_events (
+            tenant_id,
+            source_type,
+            source_id,
+            metric_key,
+            quantity,
+            unit,
+            occurred_at,
+            idempotency_key,
+            metadata
+          )
+          VALUES (
+            ${tenantB.id}::uuid,
+            'checklist_run',
+            ${run.id},
+            'checklist_run.completed',
+            1,
+            'count',
+            now(),
+            ${`rls-${suffix}-tenant-b-usage-event`},
+            '{}'::jsonb
+          )
+          RETURNING id
+        `;
+        const [usageAggregate] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO cloud_usage_daily_aggregates (
+            tenant_id,
+            date,
+            metric_key,
+            quantity,
+            unit,
+            source_type,
+            metadata
+          )
+          VALUES (
+            ${tenantB.id}::uuid,
+            CURRENT_DATE,
+            'checklist_run.completed',
+            1,
+            'count',
+            'checklist_run',
+            '{}'::jsonb
+          )
+          RETURNING id
+        `;
 
         return {
           branchId: branch.id,
@@ -310,6 +404,8 @@ if (!connectionString) {
           runId: run.id,
           attachmentId: attachment.id,
           notificationId: notification.id,
+          usageAggregateId: usageAggregate.id,
+          usageEventId: usageEvent.id,
         };
       });
 
@@ -345,6 +441,30 @@ if (!connectionString) {
         notificationsWithoutContext.map((notification) => notification.id),
         [],
         "tenant-scoped notifications must not be visible without app.current_tenant_id",
+      );
+      const usageEventsWithoutContext = await client.cloudUsageEvent.findMany({
+        where: {
+          id: {
+            in: [tenantAData.usageEventId, tenantBData.usageEventId],
+          },
+        },
+      });
+      assert.deepEqual(
+        usageEventsWithoutContext.map((event) => event.id),
+        [],
+        "tenant-scoped cloud usage events must not be visible without app.current_tenant_id",
+      );
+      const usageAggregatesWithoutContext = await client.cloudUsageDailyAggregate.findMany({
+        where: {
+          id: {
+            in: [tenantAData.usageAggregateId, tenantBData.usageAggregateId],
+          },
+        },
+      });
+      assert.deepEqual(
+        usageAggregatesWithoutContext.map((aggregate) => aggregate.id),
+        [],
+        "tenant-scoped cloud usage aggregates must not be visible without app.current_tenant_id",
       );
 
       const tenantAView = await withTenantRls(client, tenantA.id, async (tx) => {
@@ -383,6 +503,20 @@ if (!connectionString) {
             },
           },
         });
+        const usageEvents = await tx.cloudUsageEvent.findMany({
+          where: {
+            id: {
+              in: [tenantAData.usageEventId, tenantBData.usageEventId],
+            },
+          },
+        });
+        const usageAggregates = await tx.cloudUsageDailyAggregate.findMany({
+          where: {
+            id: {
+              in: [tenantAData.usageAggregateId, tenantBData.usageAggregateId],
+            },
+          },
+        });
         const crossTenantUpdate = await tx.user.updateMany({
           where: {
             id: tenantBData.userId,
@@ -398,6 +532,8 @@ if (!connectionString) {
           runIds: runs.map((run) => run.id),
           templateIds: templates.map((template) => template.id),
           updatedRows: crossTenantUpdate.count,
+          usageAggregateIds: usageAggregates.map((aggregate) => aggregate.id),
+          usageEventIds: usageEvents.map((event) => event.id),
           userIds: users.map((user) => user.id),
         };
       });
@@ -407,6 +543,8 @@ if (!connectionString) {
       assert.deepEqual(tenantAView.runIds, [tenantAData.runId]);
       assert.deepEqual(tenantAView.attachmentIds, [tenantAData.attachmentId]);
       assert.deepEqual(tenantAView.notificationIds, [tenantAData.notificationId]);
+      assert.deepEqual(tenantAView.usageAggregateIds, [tenantAData.usageAggregateId]);
+      assert.deepEqual(tenantAView.usageEventIds, [tenantAData.usageEventId]);
       assert.equal(tenantAView.updatedRows, 0, "tenant A must not update tenant B rows");
 
       const tenantBUser = await withTenantRls(client, tenantB.id, (tx) =>
@@ -420,6 +558,16 @@ if (!connectionString) {
     } finally {
       for (const tenantId of tenantIds) {
         await withTenantRls(client, tenantId, async (tx) => {
+          await tx.cloudUsageDailyAggregate.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          await tx.cloudUsageEvent.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
           await tx.checklistRun.deleteMany({
             where: {
               tenant_id: tenantId,

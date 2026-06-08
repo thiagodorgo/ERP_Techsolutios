@@ -6,6 +6,8 @@ O Console da Plataforma e a area exclusiva do dono do SaaS e de usuarios Super A
 
 Permitir que o dono da plataforma crie e acompanhe tenants/clientes, defina planos, habilite modulos, crie o administrador inicial do tenant e acompanhe a saude operacional global do SaaS.
 
+Nesta fase, o Console da Plataforma tambem ganha API para consultar uso cloud interno por tenant via `cloud_usage_metering`. A UI complexa de billing/cloud usage fica para branch futura.
+
 ## Diferenca de escopo
 
 - Console da Plataforma: administra a plataforma global, tenants, planos, modulos, saude e auditoria global.
@@ -32,6 +34,7 @@ Permitir que o dono da plataforma crie e acompanhe tenants/clientes, defina plan
 - Definir plano.
 - Criar administrador inicial do tenant.
 - Ver resumo de uso.
+- Consultar uso cloud interno medido por tenant, sem custo monetario, preco, margem, fatura ou pagamento.
 
 ## Permissoes
 
@@ -43,6 +46,7 @@ Permitir que o dono da plataforma crie e acompanhe tenants/clientes, defina plan
 - `platform:users:create_admin`
 - `platform:audit:read`
 - `platform:health:read`
+- `platform:cloud-usage:read`
 
 ## Regras de seguranca
 
@@ -71,6 +75,9 @@ As rotas de API usam o prefixo atual do backend (`/api/v1`) e reservam o boundar
 - `GET /api/v1/platform/tenants/:tenantId/modules`
 - `PATCH /api/v1/platform/tenants/:tenantId/modules`
 - `POST /api/v1/platform/tenants/:tenantId/admin-user`
+- `GET /api/v1/platform/cloud-usage/summary`
+- `GET /api/v1/platform/cloud-usage/tenants/:tenantId/summary`
+- `GET /api/v1/platform/cloud-usage/tenants/:tenantId/daily`
 
 ## Pendencias planejadas
 
@@ -78,6 +85,7 @@ As rotas de API usam o prefixo atual do backend (`/api/v1`) e reservam o boundar
 - Governanca do catalogo global de componentes de checklist exposto aos tenants.
 - Componentes do handoff Figma a considerar no catalogo global: `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement` e `before_after`.
 - Auditoria global completa.
+- Tela de plataforma para cloud usage/billing apos as branches de custo real, rateio e markup.
 - Planos comerciais configuraveis.
 - Modo suporte auditado para acesso operacional a tenant.
 - Remocao gradual de headers legados.

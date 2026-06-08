@@ -41,6 +41,7 @@ O Docker Compose local ja sobe `erp-redis` em `localhost:6379`.
 - `checklist_run.created`
 - `checklist_run.completed`
 - `checklist_run.attachment_uploaded`
+- `checklist_run.attachment_downloaded`
 - `checklist_run.divergence_reported`
 - `checklist_run.acknowledgement_created`
 - `notification.requested`
@@ -51,6 +52,7 @@ O Docker Compose local ja sobe `erp-redis` em `localhost:6379`.
 - `checklist-attachment-postprocess`
 - `notification-dispatch`
 - `audit-log-fanout`
+- `cloud-usage.aggregate-daily`
 
 Os handlers padrao sao placeholders seguros. O worker nao executa automaticamente no startup; qualquer processo de worker futuro deve chamar `startWorker` explicitamente.
 
@@ -95,6 +97,10 @@ Fluxo integrado: auditoria enterprise.
 
 Depois que `EnterpriseAuditLogService` persiste um registro em `audit_logs`, o backend publica `audit_log.created`. Esse evento enfileira `audit-log-fanout` para processamento futuro. A gravacao principal da auditoria nao depende do Redis; falha no enqueue nao remove o audit log nem corrompe a operacao principal.
 
+Fluxo integrado: cloud usage metering.
+
+Eventos de checklist/anexo, notificacoes criadas e jobs executados com `tenantId` registram usage events de forma best-effort. O job `cloud-usage.aggregate-daily` consolida eventos por tenant, dia, metrica, unidade e origem em `cloud_usage_daily_aggregates`. Nao ha scheduler automatico nesta branch.
+
 ## Testes
 
 Testes especificos:
@@ -103,6 +109,7 @@ Testes especificos:
 node --test --import tsx tests/job-queue.test.ts
 node --test --import tsx tests/domain-events.test.ts
 node --test --import tsx tests/audit-log.test.ts
+node --test --import tsx tests/cloud-usage.test.ts
 ```
 
 Eles requerem Redis local ativo via:
@@ -116,6 +123,7 @@ docker compose up -d
 - Cliente Redis atual implementa apenas o subconjunto RESP necessario para a fila.
 - Nao ha concorrencia distribuida sofisticada, heartbeat ou lock renovavel.
 - Nao ha scheduling enterprise, UI operacional ou metricas de worker.
+- `cloud-usage.aggregate-daily` existe como handler/job, mas scheduler/cron fica para uma rodada futura.
 - Nao ha e-mail, SMS, WhatsApp, push externo ou webhook real.
 - UI completa de notificacoes fica para rodada propria.
 - Nao ha outbox transacional de banco; a integracao inicial publica evento apos commit/logica principal.

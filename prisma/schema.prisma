@@ -23,6 +23,8 @@ model Tenant {
   checklist_template_components ChecklistTemplateComponent[]
   checklist_templates           ChecklistTemplate[]
   auth_sessions                 AuthSession[]
+  cloud_usage_daily_aggregates  CloudUsageDailyAggregate[]
+  cloud_usage_events            CloudUsageEvent[]
   local_auth_credentials        LocalAuthCredential[]
   notifications                  Notification[]
   roles                         Role[]
@@ -222,6 +224,49 @@ model Notification {
   @@index([tenant_id, recipient_user_id, created_at])
   @@index([tenant_id, status, created_at])
   @@map("notifications")
+}
+
+model CloudUsageEvent {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id       String   @db.Uuid
+  source_type     String
+  source_id       String?
+  metric_key      String
+  quantity        Decimal  @db.Decimal(20, 6)
+  unit            String
+  occurred_at     DateTime @default(now()) @db.Timestamptz(6)
+  idempotency_key String?
+  metadata        Json
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  tenant          Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, idempotency_key])
+  @@index([tenant_id])
+  @@index([tenant_id, metric_key])
+  @@index([tenant_id, occurred_at])
+  @@index([tenant_id, metric_key, occurred_at])
+  @@map("cloud_usage_events")
+}
+
+model CloudUsageDailyAggregate {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String   @db.Uuid
+  date        DateTime @db.Date
+  metric_key  String
+  quantity    Decimal  @db.Decimal(20, 6)
+  unit        String
+  source_type String
+  metadata    Json
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, date, metric_key, unit, source_type])
+  @@index([tenant_id])
+  @@index([tenant_id, metric_key])
+  @@index([tenant_id, date])
+  @@map("cloud_usage_daily_aggregates")
 }
 
 model ChecklistTemplate {

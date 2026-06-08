@@ -1,5 +1,6 @@
 export const JOB_NAMES = [
   "checklist-attachment-postprocess",
+  "cloud-usage.aggregate-daily",
   "notification-dispatch",
   "audit-log-fanout",
 ] as const;

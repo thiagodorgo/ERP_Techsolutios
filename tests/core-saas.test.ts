@@ -14,6 +14,7 @@ import {
 } from "../src/core-saas.js";
 
 const expectedPermissionCatalog = [
+  "platform:cloud-usage:read",
   "tenant.manage",
   "users.manage",
   "users.read",
@@ -101,7 +102,8 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   }
 
   assert.deepEqual(ROLE_PERMISSIONS.super_admin, PERMISSION_CATALOG);
-  assert.deepEqual(ROLE_PERMISSIONS.tenant_admin, PERMISSION_CATALOG);
+  assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("platform:cloud-usage:read"), false);
+  assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("tenant.manage"), true);
   assert.equal(ROLE_PERMISSIONS.viewer.includes("users.manage"), false);
   assert.equal(ROLE_PERMISSIONS.technician.includes("finance.manage"), false);
 });

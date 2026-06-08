@@ -1,5 +1,6 @@
 import { JobQueue, getDefaultJobQueue } from "./job.queue.js";
 import { JobRegistry, getDefaultJobRegistry } from "./job.registry.js";
+import { recordCloudUsageBestEffort } from "../../modules/cloud-usage/cloud-usage.service.js";
 
 export type JobWorkerOptions = {
   readonly queue?: JobQueue;
@@ -38,6 +39,36 @@ export class JobWorker {
     try {
       await handler(job.payload, job);
       await this.queue.complete(job);
+      if (job.tenantId) {
+        recordCloudUsageBestEffort({
+          tenantId: job.tenantId,
+          sourceType: "job",
+          sourceId: job.id,
+          metricKey: "job.executed",
+          quantity: 1,
+          unit: "count",
+          occurredAt: new Date(),
+          idempotencyKey: `${job.id}:job.executed`,
+          metadata: {
+            jobName: job.name,
+            correlationId: job.correlationId,
+          },
+        });
+        recordCloudUsageBestEffort({
+          tenantId: job.tenantId,
+          sourceType: "job",
+          sourceId: job.id,
+          metricKey: "job_executions_count",
+          quantity: 1,
+          unit: "count",
+          occurredAt: new Date(),
+          idempotencyKey: `${job.id}:job_executions_count`,
+          metadata: {
+            jobName: job.name,
+            correlationId: job.correlationId,
+          },
+        });
+      }
       this.logger.info({ jobId: job.id, jobName: job.name }, "Job completed.");
     } catch (error) {
       const failed = await this.queue.fail(job, error);

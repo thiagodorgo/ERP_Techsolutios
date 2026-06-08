@@ -50,6 +50,7 @@ Permissoes de plataforma:
 - `platform:tenants:create`
 - `platform:tenants:update`
 - `platform:modules:manage`
+- `platform:cloud-usage:read`
 
 Permissoes de tenant:
 
@@ -139,6 +140,20 @@ Matriz backend aplicada:
 - `POST /api/v1/notifications/:notificationId/archive`: `notifications:update`
 
 Mesmo tenant admin nao consulta inbox de todos nesta fase. O service sempre filtra por `tenant_id` e `recipient_user_id` do ator autenticado.
+
+## cloud_usage_metering
+
+Permissao platform-scoped:
+
+- `platform:cloud-usage:read`: consultar uso interno cross-tenant ou por tenant no Console da Plataforma.
+
+Matriz backend aplicada:
+
+- `GET /api/v1/platform/cloud-usage/summary`: `platform:cloud-usage:read`
+- `GET /api/v1/platform/cloud-usage/tenants/:tenantId/summary`: `platform:cloud-usage:read`
+- `GET /api/v1/platform/cloud-usage/tenants/:tenantId/daily`: `platform:cloud-usage:read`
+
+Tenant Admin, Supervisor, Operador e demais usuarios de tenant nao recebem essa permissao por padrao. A API retorna uso, nao custo, preco, margem, fatura ou pagamento.
 
 Frontend:
 
@@ -252,6 +267,8 @@ O backend deve aplicar as duas camadas:
 - `tenants` e `permissions` continuam globais para o boundary de plataforma.
 
 Platform Admin nao recebe bypass amplo de RLS. Para consultar dados de tenant, deve selecionar tenant e rodar o acesso com `app.current_tenant_id` definido. Consultas globais continuam em repositories/boundaries de plataforma.
+
+Para `cloud_usage_metering`, a consulta consolidada de plataforma deve permanecer restrita ao boundary `/api/v1/platform/cloud-usage/*`, com `platform:cloud-usage:read` e sem expor metadata sensivel. Consultas tenant-scoped continuam obrigadas a respeitar `tenant_id` e RLS.
 
 ## Prioridade
 
