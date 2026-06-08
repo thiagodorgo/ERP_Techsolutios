@@ -414,6 +414,32 @@ Resposta: cria registro em `checklist_attachments` com nome sanitizado, MIME typ
 
 O provider `local` continua sendo o padrao de desenvolvimento. O provider `s3` usa storage S3-compatible via SDK AWS v3 e pode apontar para AWS S3, MinIO, Cloudflare R2 ou outro endpoint compativel. Testes de S3 usam client mockado; nenhum bucket real ou segredo real deve ser exigido.
 
+## Notificacoes internas
+
+Modulo implementado: `notifications`.
+
+Endpoints:
+
+```http
+GET  /notifications
+GET  /notifications/unread-count
+POST /notifications/:notificationId/read
+POST /notifications/read-all
+POST /notifications/:notificationId/archive
+```
+
+Permissoes:
+
+- `GET /notifications`: `notifications:read`
+- `GET /notifications/unread-count`: `notifications:read`
+- `POST /notifications/:notificationId/read`: `notifications:update`
+- `POST /notifications/read-all`: `notifications:update`
+- `POST /notifications/:notificationId/archive`: `notifications:update`
+
+`GET /notifications` retorna apenas notificacoes do usuario autenticado no tenant atual. Filtros aceitos: `status`, `severity`, `type`, `sourceType` e `limit`.
+
+Eventos iniciais que alimentam notificacoes via Redis/job: `checklist_run.completed`, `checklist_run.divergence_reported` e `checklist_run.acknowledgement_created`. Nao ha e-mail, SMS, WhatsApp, push externo ou chat nesta rodada.
+
 ## Auditoria
 
 Endpoint existente:

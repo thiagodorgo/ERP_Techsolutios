@@ -478,6 +478,42 @@ Campos principais:
 - Dados sensiveis e credenciais nao devem ser criados no schema, seeds ou documentacao.
 - Qualquer configuracao sensivel futura deve usar `.env.example` apenas como placeholder.
 
+## Notificacoes internas
+
+Tabela: `notifications`.
+
+Representa notificacoes internas tenant-scoped direcionadas a um usuario especifico.
+
+Campos principais:
+
+- `id`
+- `tenant_id`
+- `recipient_user_id`
+- `type`
+- `title`
+- `message`
+- `severity`: `info`, `success`, `warning`, `critical`
+- `status`: `unread`, `read`, `archived`
+- `source_type`
+- `source_id`
+- `action_url`
+- `metadata`
+- `idempotency_key`
+- `read_at`
+- `created_at`
+- `updated_at`
+
+Indices principais:
+
+- `tenant_id`
+- `tenant_id, recipient_user_id`
+- `tenant_id, recipient_user_id, status`
+- `tenant_id, recipient_user_id, created_at`
+- `tenant_id, status, created_at`
+- unique `tenant_id, recipient_user_id, idempotency_key`
+
+RLS esta habilitado na migration `20260610000000_add_notifications`. Mesmo com RLS por tenant, o service restringe consulta e update ao `recipient_user_id` do ator autenticado.
+
 ## Auditoria enterprise
 
 Status: implementado sem migration adicional. A tabela `audit_logs` atual suporta o contrato enterprise por meio de colunas nativas e `metadata Json`.
@@ -530,6 +566,7 @@ RLS foi habilitado nas tabelas tenant-scoped principais:
 - `checklist_attachments`
 - `checklist_markers`
 - `checklist_acknowledgements`
+- `notifications`
 
 Tabelas globais que nao recebem RLS nesta rodada:
 

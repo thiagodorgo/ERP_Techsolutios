@@ -23,7 +23,10 @@ export type PublishDomainEventResult = {
 };
 
 const eventJobMap: Partial<Record<DomainEventName, JobName>> = {
+  "checklist_run.completed": "notification-dispatch",
   "checklist_run.attachment_uploaded": "checklist-attachment-postprocess",
+  "checklist_run.divergence_reported": "notification-dispatch",
+  "checklist_run.acknowledgement_created": "notification-dispatch",
   "notification.requested": "notification-dispatch",
   "audit_log.created": "audit-log-fanout",
 };

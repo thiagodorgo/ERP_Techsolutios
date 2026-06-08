@@ -114,9 +114,13 @@ Validacao de mensageria/jobs Redis:
 docker compose up -d
 node --test --import tsx tests/job-queue.test.ts
 node --test --import tsx tests/domain-events.test.ts
+node --test --import tsx tests/notifications.test.ts
+node --test --import tsx tests/notification-routes.test.ts
 ```
 
 Esses testes usam o Redis local do Docker Compose e prefixes isolados por teste.
+
+Notificacoes internas nao exigem variavel de ambiente propria nesta fase. Elas usam PostgreSQL para persistencia, RLS por tenant e Redis apenas para o job `notification-dispatch`.
 
 ## Seguranca
 

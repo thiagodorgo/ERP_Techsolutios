@@ -25,6 +25,8 @@ const expectedPermissionCatalog = [
   "inventory.read",
   "finance.manage",
   "finance.read",
+  "notifications:read",
+  "notifications:update",
   "tenant_checklists:read",
   "tenant_checklists:create",
   "tenant_checklists:update",

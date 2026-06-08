@@ -360,6 +360,20 @@ export class ChecklistService {
       hasDivergence: input.hasDivergence,
     });
 
+    await publishDomainEvent(
+      "checklist_run.completed",
+      {
+        runId: run.run.id,
+        templateId: run.run.templateId,
+        status: run.run.status,
+        hasDivergence: input.hasDivergence,
+      },
+      {
+        tenantId: actor.tenantId,
+        actorId: actor.userId,
+      },
+    );
+
     return run;
   }
 
@@ -411,6 +425,20 @@ export class ChecklistService {
       attachmentId: attachment.id,
     });
 
+    await publishDomainEvent(
+      "checklist_run.divergence_reported",
+      {
+        runId: run.run.id,
+        templateId: run.run.templateId,
+        status: run.run.status,
+        attachmentId: attachment.id,
+      },
+      {
+        tenantId: actor.tenantId,
+        actorId: actor.userId,
+      },
+    );
+
     return run;
   }
 
@@ -443,6 +471,20 @@ export class ChecklistService {
     await this.audit(actor, CHECKLIST_AUDIT_ACTIONS.runAcknowledged, "checklist_run", run.run.id, {
       acknowledgementId: acknowledgement.id,
     });
+
+    await publishDomainEvent(
+      "checklist_run.acknowledgement_created",
+      {
+        runId: run.run.id,
+        templateId: run.run.templateId,
+        status: run.run.status,
+        acknowledgementId: acknowledgement.id,
+      },
+      {
+        tenantId: actor.tenantId,
+        actorId: actor.userId,
+      },
+    );
 
     return {
       acknowledgement,

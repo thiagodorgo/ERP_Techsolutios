@@ -817,3 +817,19 @@
 - testes adicionados/alterados: `tests/checklist-storage.test.ts` e `tests/checklist-attachments.test.ts`
 - migration: nao criada; metadados internos continuam em `checklist_attachments.metadata`
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/checklist-storage.test.ts`, `node --test --import tsx tests/checklist-attachments.test.ts`, `node --test --import tsx tests/checklist-routes.test.ts`, `node --test --import tsx tests/audit-log.test.ts`, `node --test --import tsx tests/domain-events.test.ts` e `git diff --check`
+
+## 2026-06-08 - notification foundation
+
+- branch usada: `feature/notification-foundation`
+- objetivo: implementar fundacao backend de notificacoes internas usando domain events e Redis/jobs
+- criado modelo Prisma `Notification` e migration `20260610000000_add_notifications`
+- RLS aplicada na tabela `notifications`
+- criados service, repository memory/prisma, resolver de recipients, routes, controller, DTO e job handler em `src/modules/notifications`
+- endpoint minimo criado para listar inbox propria, contar nao lidas, marcar uma/todas como lidas e arquivar
+- RBAC atualizado com `notifications:read` e `notifications:update`
+- `notification-dispatch` passou a criar notificacoes para `checklist_run.completed`, `checklist_run.divergence_reported` e `checklist_run.acknowledgement_created`
+- `checklist_run.attachment_uploaded` permanece apenas com postprocess para evitar spam no MVP
+- frontend completo, e-mail, SMS, WhatsApp, push externo e providers externos ficaram fora do escopo
+- testes criados/alterados: `tests/notifications.test.ts`, `tests/notification-routes.test.ts`, `tests/domain-events.test.ts`, `tests/rls-tenant-isolation.test.ts` e `tests/core-saas.test.ts`
+- documentacao atualizada em `docs/notifications.md`, `docs/api.md`, `docs/architecture.md`, `docs/database.md`, `docs/messaging.md`, `docs/modules.md`, `docs/rbac.md`, `docs/audit.md`, `docs/deployment.md`, `RBAC_MATRIX.md` e `agent-orchestration/docs/status-geral.md`
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/notifications.test.ts`, `node --test --import tsx tests/notification-routes.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/checklist-routes.test.ts`, `node --test --import tsx tests/audit-log.test.ts` e `git diff --check`

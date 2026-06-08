@@ -42,6 +42,7 @@ O Docker Compose local ja sobe `erp-redis` em `localhost:6379`.
 - `checklist_run.completed`
 - `checklist_run.attachment_uploaded`
 - `checklist_run.divergence_reported`
+- `checklist_run.acknowledgement_created`
 - `notification.requested`
 - `audit_log.created`
 
@@ -84,6 +85,10 @@ Depois que o arquivo e salvo pelo provider configurado (`local` ou S3-compatible
 
 No hardening do runtime web, divergencia e ciencia continuam passando pelos endpoints backend existentes. Quando o backend registra `checklist_run.divergence_reported` e `checklist_run.acknowledgement_created`, os eventos/auditoria associados seguem a mesma trilha do runtime mobile compartilhado.
 
+Fluxo integrado: notificacoes internas.
+
+`checklist_run.completed`, `checklist_run.divergence_reported` e `checklist_run.acknowledgement_created` enfileiram `notification-dispatch`. O handler resolve destinatarios ativos do tenant, deduplica por evento/destinatario e cria linhas em `notifications`. Falha desse job segue o retry/backoff da fila e nao reverte checklist, auditoria nem storage.
+
 Se Redis falhar nesse ponto, o upload critico nao e revertido. O publisher retorna falha controlada e registra warning. A consistencia principal do arquivo, registro e auditoria continua sincronica.
 
 Fluxo integrado: auditoria enterprise.
@@ -111,7 +116,8 @@ docker compose up -d
 - Cliente Redis atual implementa apenas o subconjunto RESP necessario para a fila.
 - Nao ha concorrencia distribuida sofisticada, heartbeat ou lock renovavel.
 - Nao ha scheduling enterprise, UI operacional ou metricas de worker.
-- Nao ha notificacao real, webhook real ou processamento real de anexos.
+- Nao ha e-mail, SMS, WhatsApp, push externo ou webhook real.
+- UI completa de notificacoes fica para rodada propria.
 - Nao ha outbox transacional de banco; a integracao inicial publica evento apos commit/logica principal.
 
 ## Proximos usos

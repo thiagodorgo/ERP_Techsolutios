@@ -24,6 +24,7 @@ model Tenant {
   checklist_templates           ChecklistTemplate[]
   auth_sessions                 AuthSession[]
   local_auth_credentials        LocalAuthCredential[]
+  notifications                  Notification[]
   roles                         Role[]
   user_role_assignments         UserRoleAssignment[]
   users                         User[]
@@ -61,6 +62,7 @@ model User {
   auth_sessions          AuthSession[]
   branch                 Branch?               @relation(fields: [branch_id], references: [id], onDelete: SetNull)
   local_auth_credentials LocalAuthCredential[]
+  notifications          Notification[]
   role_assignments       UserRoleAssignment[]
   tenant                 Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
@@ -190,6 +192,36 @@ model AuditLog {
   @@index([tenant_id])
   @@index([created_at])
   @@map("audit_logs")
+}
+
+model Notification {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String    @db.Uuid
+  recipient_user_id String    @db.Uuid
+  type              String
+  title             String
+  message           String
+  severity          String    @default("info")
+  status            String    @default("unread")
+  source_type       String?
+  source_id         String?
+  action_url        String?
+  metadata          Json
+  idempotency_key   String?
+  read_at           DateTime? @db.Timestamptz(6)
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  recipient_user    User      @relation(fields: [tenant_id, recipient_user_id], references: [tenant_id, id], onDelete: Cascade)
+  tenant            Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, recipient_user_id, idempotency_key])
+  @@index([tenant_id])
+  @@index([tenant_id, recipient_user_id])
+  @@index([tenant_id, recipient_user_id, status])
+  @@index([tenant_id, recipient_user_id, created_at])
+  @@index([tenant_id, status, created_at])
+  @@map("notifications")
 }
 
 model ChecklistTemplate {
