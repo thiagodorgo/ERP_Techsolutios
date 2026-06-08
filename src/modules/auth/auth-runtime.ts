@@ -49,11 +49,15 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService> {
 }
 
 async function createAuthSessionService(): Promise<AuthSessionService> {
-  const [{ prisma }, { withTenantRls }, { AuthSessionService }] = await Promise.all([
+  const [{ prisma }, { withTenantRls }, { AuditLogRepository }, { AuthSessionService }] = await Promise.all([
     import("../../database/prisma.js"),
     import("../../database/rls.js"),
+    import("../core-saas/repositories/index.js"),
     import("./services/auth-session.service.js"),
   ]);
 
-  return new AuthSessionService((tenantId, work) => withTenantRls(prisma, tenantId, work));
+  return new AuthSessionService(
+    (tenantId, work) => withTenantRls(prisma, tenantId, work),
+    (tx) => new AuditLogRepository(tx),
+  );
 }

@@ -749,3 +749,22 @@
 - testes criados: `tests/job-queue.test.ts` e `tests/domain-events.test.ts`
 - fora de escopo mantido: Kafka, RabbitMQ, cloud queue, notificacoes reais, webhooks reais, frontend, Figma, mobile Flutter, migrations e contratos API destrutivos
 - validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `npm run test:e2e` e `git diff --check`
+
+## 2026-06-08 - audit log enhancements
+
+- branch usada: `feature/audit-log-enhancements`
+- objetivo: implementar melhorias enterprise no audit log sem alterar frontend amplo, Figma, mobile ou contratos destrutivos
+- mapeamento inicial: `audit_logs` ja possuia `tenant_id`, `actor_user_id`, `action`, `entity`, `entity_id`, `metadata` e `created_at`; RLS ja estava habilitado na tabela
+- decisao: nenhuma migration criada; campos enterprise adicionais ficam em `metadata`
+- criado contrato em `src/modules/core-saas/audit/audit-log.types.ts`
+- criado `EnterpriseAuditLogService` em `src/modules/core-saas/audit/audit-log.service.ts`
+- criado helper `src/modules/core-saas/audit/audit-request-context.ts` para requestId/correlationId/IP/user-agent e auditoria best-effort de rotas
+- sanitizacao recursiva redige tokens, refresh tokens, senhas, hashes, secrets, API keys e Authorization
+- fluxos integrados: auth login/refresh/logout/sessao, `user.created`, `tenant.created`, `permission.denied` centralizado e auditoria de checklists
+- nomes de checklists padronizados para `checklist_template.*`, `checklist_run.divergence_reported` e `checklist_run.acknowledgement_created`
+- Redis/events: audit log persistido publica `audit_log.created` para `audit-log-fanout`; falha de Redis nao desfaz operacao principal
+- documentacao criada: `docs/audit.md`
+- documentacao atualizada em `docs/architecture.md`, `docs/database.md`, `docs/rbac.md`, `docs/modules.md`, `docs/messaging.md`, `docs/api.md` e `agent-orchestration/docs/status-geral.md`
+- testes criados: `tests/audit-log.test.ts` e `tests/audit-security.test.ts`
+- fora de escopo mantido: SIEM externo, exportacao, painel visual completo de auditoria, migrations, frontend amplo, Figma, mobile Flutter e contratos API destrutivos
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/audit-log.test.ts`, `node --test --import tsx tests/audit-security.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/domain-events.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts` e `git diff --check`

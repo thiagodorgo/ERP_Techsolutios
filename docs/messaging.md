@@ -84,6 +84,10 @@ Depois que o arquivo e salvo, o registro e criado no banco e a auditoria `checkl
 
 Se Redis falhar nesse ponto, o upload critico nao e revertido. O publisher retorna falha controlada e registra warning. A consistencia principal do arquivo, registro e auditoria continua sincronica.
 
+Fluxo integrado: auditoria enterprise.
+
+Depois que `EnterpriseAuditLogService` persiste um registro em `audit_logs`, o backend publica `audit_log.created`. Esse evento enfileira `audit-log-fanout` para processamento futuro. A gravacao principal da auditoria nao depende do Redis; falha no enqueue nao remove o audit log nem corrompe a operacao principal.
+
 ## Testes
 
 Testes especificos:
@@ -91,6 +95,7 @@ Testes especificos:
 ```bash
 node --test --import tsx tests/job-queue.test.ts
 node --test --import tsx tests/domain-events.test.ts
+node --test --import tsx tests/audit-log.test.ts
 ```
 
 Eles requerem Redis local ativo via:

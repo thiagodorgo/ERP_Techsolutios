@@ -389,6 +389,20 @@ Resposta: cria registro em `checklist_attachments` com `fileUrl` logico `local:/
 
 Storage S3-compatible permanece pendente. A arquitetura atual isola driver, storage key e metadados para permitir futura troca sem remover `fileUrl` nem quebrar clientes existentes.
 
+## Auditoria
+
+Endpoint existente:
+
+```http
+GET /audit-events
+```
+
+Requer `audit.read` e retorna eventos do tenant do actor autenticado. O endpoint nao foi alterado de forma destrutiva nesta rodada.
+
+A gravacao usa o contrato enterprise documentado em `docs/audit.md`. Campos complementares como `outcome`, `severity`, `correlationId`, `requestId`, IP, user-agent e `resourceType` ficam em `metadata` porque a tabela atual ja suporta JSON. Dados sensiveis sao sanitizados antes da persistencia.
+
+Eventos principais cobertos: auth login/refresh/logout/sessao, `user.created`, `permission.denied`, publicacao e execucao de checklists, upload de anexo, divergencia e ciencia.
+
 Frontend:
 
 - `frontend/src/modules/checklists/checklist-attachments.service.ts` expõe upload multipart e download protegido.

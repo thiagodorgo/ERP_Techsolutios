@@ -1,6 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
+import { EnterpriseAuditLogService } from "../core-saas/audit/audit-log.service.js";
+import type { AuditLogWriter } from "../core-saas/audit/audit-log.service.js";
 import type { ChecklistAuditEvent } from "./checklist.audit.js";
 import type {
   ChecklistAcknowledgement,
@@ -511,15 +513,23 @@ export class PrismaChecklistRepository implements ChecklistRepository {
   }
 
   async createAuditEvent(event: ChecklistAuditEvent): Promise<void> {
-    await this.client.auditLog.create({
-      data: {
-        tenant_id: event.tenantId,
-        actor_user_id: event.actorUserId ?? null,
-        action: event.action,
-        entity: event.entity,
-        entity_id: event.entityId,
-        metadata: event.metadata ?? {},
-      },
+    const auditWriter: AuditLogWriter = {
+      create: (data) =>
+        this.client.auditLog.create({
+          data,
+        }) as ReturnType<AuditLogWriter["create"]>,
+    };
+
+    await new EnterpriseAuditLogService(auditWriter).record({
+      tenantId: event.tenantId,
+      actorId: event.actorUserId,
+      actorType: event.actorUserId ? "user" : "system",
+      action: event.action,
+      resourceType: event.entity,
+      resourceId: event.entityId,
+      outcome: "success",
+      severity: event.action.includes("divergence") ? "warning" : "info",
+      metadata: event.metadata,
     });
   }
 }

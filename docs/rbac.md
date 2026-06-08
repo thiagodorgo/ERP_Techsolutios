@@ -274,6 +274,20 @@ Responsabilidade:
 
 Esse desenho mantem o `tenantContextMiddleware` sincronico como fallback/base e evita import estatico de Prisma em caminhos usados pelo runtime `memory`.
 
+## Auditoria de RBAC
+
+Negações do middleware central `requirePermission` geram auditoria `permission.denied` quando `CORE_SAAS_PERSISTENCE=prisma` e existe contexto de tenant. O registro e best-effort: falha de auditoria nao altera a resposta 403.
+
+Metadata registrada:
+
+- motivo (`tenant_required`, `role_required` ou `permission_required`);
+- permissoes exigidas;
+- roles e permissoes resolvidas no contexto;
+- rota HTTP;
+- requestId/correlationId, IP e user-agent quando disponiveis.
+
+Os registros usam `audit_logs`, respeitam RLS por tenant e passam pela sanitizacao enterprise descrita em `docs/audit.md`.
+
 ## Riscos atuais
 
 - O fallback por headers simulados ainda existe fora de producao e precisa ser removido gradualmente.

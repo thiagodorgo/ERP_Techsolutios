@@ -3,6 +3,7 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 
 import { env } from "../../../config/env.js";
+import { EnterpriseAuditLogService, type AuditLogWriter } from "../../core-saas/audit/audit-log.service.js";
 import { AuthSessionRepository } from "../repositories/auth-session.repository.js";
 import {
   getAccessTokenExpiresInSeconds,
@@ -16,6 +17,8 @@ type PrismaTenantContextRunner = <T>(
   tenantId: string,
   work: (tx: Prisma.TransactionClient) => Promise<T>,
 ) => Promise<T>;
+
+type AuditLogRepositoryFactory = (tx: Prisma.TransactionClient) => AuditLogWriter;
 
 type CreateSessionInput = {
   readonly tenant_id: string;
@@ -55,6 +58,7 @@ type RoleAssignmentRecord = {
 export class AuthSessionService {
   constructor(
     private readonly runWithTenantContext: PrismaTenantContextRunner,
+    private readonly createAuditLogRepository?: AuditLogRepositoryFactory,
   ) {}
 
   async createSession(input: CreateSessionInput): Promise<AuthSessionTokenResult> {
@@ -77,6 +81,20 @@ export class AuthSessionService {
         user_agent: trimOptional(input.user_agent, 512),
         ip_address: trimOptional(input.ip_address, 128),
         expires_at: refreshTokenExpiresAt,
+      });
+      await this.recordAudit(tx, {
+        tenantId: input.tenant_id,
+        actorId: input.user_id,
+        action: "auth.session.created",
+        resourceType: "auth_session",
+        resourceId: sessionId,
+        outcome: "success",
+        severity: "info",
+        ipAddress: input.ip_address,
+        userAgent: input.user_agent,
+        metadata: {
+          expiresAt: refreshTokenExpiresAt,
+        },
       });
     });
 
@@ -101,14 +119,50 @@ export class AuthSessionService {
       const refreshTokenHash = hashRefreshToken(refreshToken);
 
       if (!session || session.user_id !== payload.user_id || !safeEqual(session.refresh_token_hash, refreshTokenHash)) {
+        await this.recordAudit(tx, {
+          tenantId: payload.tenant_id,
+          actorId: payload.user_id,
+          action: "auth.refresh.failed",
+          resourceType: "auth_session",
+          resourceId: payload.session_id,
+          outcome: "failure",
+          severity: "warning",
+          metadata: {
+            reason: "invalid",
+          },
+        });
         return { ok: false, reason: "invalid" };
       }
 
       if (session.revoked_at) {
+        await this.recordAudit(tx, {
+          tenantId: payload.tenant_id,
+          actorId: payload.user_id,
+          action: "auth.refresh.failed",
+          resourceType: "auth_session",
+          resourceId: payload.session_id,
+          outcome: "failure",
+          severity: "warning",
+          metadata: {
+            reason: "revoked",
+          },
+        });
         return { ok: false, reason: "revoked" };
       }
 
       if (session.expires_at <= new Date()) {
+        await this.recordAudit(tx, {
+          tenantId: payload.tenant_id,
+          actorId: payload.user_id,
+          action: "auth.refresh.failed",
+          resourceType: "auth_session",
+          resourceId: payload.session_id,
+          outcome: "failure",
+          severity: "warning",
+          metadata: {
+            reason: "expired",
+          },
+        });
         return { ok: false, reason: "expired" };
       }
 
@@ -126,6 +180,18 @@ export class AuthSessionService {
       });
 
       if (!user) {
+        await this.recordAudit(tx, {
+          tenantId: payload.tenant_id,
+          actorId: payload.user_id,
+          action: "auth.refresh.failed",
+          resourceType: "auth_session",
+          resourceId: payload.session_id,
+          outcome: "failure",
+          severity: "warning",
+          metadata: {
+            reason: "inactive_user",
+          },
+        });
         return { ok: false, reason: "invalid" };
       }
 
@@ -166,8 +232,35 @@ export class AuthSessionService {
       );
 
       if (updated.count !== 1) {
+        await this.recordAudit(tx, {
+          tenantId: payload.tenant_id,
+          actorId: payload.user_id,
+          action: "auth.refresh.failed",
+          resourceType: "auth_session",
+          resourceId: payload.session_id,
+          outcome: "failure",
+          severity: "warning",
+          metadata: {
+            reason: "rotation_conflict",
+          },
+        });
         return { ok: false, reason: "invalid" };
       }
+
+      await this.recordAudit(tx, {
+        tenantId: payload.tenant_id,
+        actorId: payload.user_id,
+        actorEmail: user.email,
+        action: "auth.refresh.success",
+        resourceType: "auth_session",
+        resourceId: payload.session_id,
+        outcome: "success",
+        severity: "info",
+        metadata: {
+          roleCount: roleKeys.length,
+          expiresAt: refreshTokenExpiresAt,
+        },
+      });
 
       return {
         ok: true,
@@ -189,12 +282,49 @@ export class AuthSessionService {
     }
 
     await this.runWithTenantContext(payload.tenant_id, async (tx) => {
-      await new AuthSessionRepository(tx).revokeById(
+      const revoked = await new AuthSessionRepository(tx).revokeById(
         payload.session_id,
         payload.tenant_id,
         hashRefreshToken(refreshToken),
       );
+      const outcome = revoked.count === 1 ? "success" : "failure";
+
+      await this.recordAudit(tx, {
+        tenantId: payload.tenant_id,
+        actorId: payload.user_id,
+        action: "auth.logout",
+        resourceType: "auth_session",
+        resourceId: payload.session_id,
+        outcome,
+        severity: outcome === "success" ? "info" : "warning",
+        metadata: {
+          revoked: revoked.count === 1,
+        },
+      });
+
+      if (revoked.count === 1) {
+        await this.recordAudit(tx, {
+          tenantId: payload.tenant_id,
+          actorId: payload.user_id,
+          action: "auth.session.revoked",
+          resourceType: "auth_session",
+          resourceId: payload.session_id,
+          outcome: "success",
+          severity: "info",
+        });
+      }
     });
+  }
+
+  private async recordAudit(
+    tx: Prisma.TransactionClient,
+    input: Parameters<EnterpriseAuditLogService["record"]>[0],
+  ): Promise<void> {
+    if (!this.createAuditLogRepository) {
+      return;
+    }
+
+    await new EnterpriseAuditLogService(this.createAuditLogRepository(tx)).record(input);
   }
 }
 

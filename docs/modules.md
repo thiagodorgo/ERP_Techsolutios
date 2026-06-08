@@ -86,3 +86,4 @@ Sao os modulos efetivamente ativos para um tenant especifico. A visibilidade no 
 - O frontend possui service, adapter, mock fallback e componentes reutilizaveis para upload/lista/preview de evidencias; W02A mostra suporte no preview sem assumir papel de tela operacional.
 - `messaging_jobs` e uma fundacao transversal backend: Redis enfileira jobs/eventos internos, mas nao aparece como modulo de tenant nem como item de sidebar.
 - O fluxo inicial de mensageria publica `checklist_run.attachment_uploaded` apos upload de anexo e enfileira `checklist-attachment-postprocess` sem tornar o upload critico dependente do Redis.
+- `audit` e uma capacidade transversal tenant-scoped: acoes criticas gravam `audit_logs` de forma sincronica, com contrato enterprise em `docs/audit.md`, RLS por tenant, RBAC `audit.read` para consulta e fanout complementar `audit_log.created` via Redis.

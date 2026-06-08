@@ -477,6 +477,34 @@ Campos principais:
 - Dados sensiveis e credenciais nao devem ser criados no schema, seeds ou documentacao.
 - Qualquer configuracao sensivel futura deve usar `.env.example` apenas como placeholder.
 
+## Auditoria enterprise
+
+Status: implementado sem migration adicional. A tabela `audit_logs` atual suporta o contrato enterprise por meio de colunas nativas e `metadata Json`.
+
+Colunas nativas usadas:
+
+- `tenant_id`
+- `actor_user_id`
+- `action`
+- `entity`
+- `entity_id`
+- `created_at`
+
+Campos complementares em `metadata`:
+
+- `actorType`
+- `actorEmail`
+- `outcome`
+- `severity`
+- `correlationId`
+- `requestId`
+- `ipAddress`
+- `userAgent`
+- `resourceType`
+- `resourceId`
+
+`src/modules/core-saas/audit/` centraliza o contrato e sanitiza metadata antes da persistencia. Tokens, senhas, secrets, hashes e Authorization completo devem ser redigidos. A auditoria critica continua sincronica; Redis e usado apenas para fanout complementar via `audit_log.created`.
+
 ## Row Level Security PostgreSQL
 
 Status: implementado na migration `20260608000000_enable_tenant_rls`.
