@@ -237,6 +237,22 @@ Cobertura inicial:
 - API client envia `Authorization: Bearer`, bloqueia headers legados em modo real e preserva `FormData`;
 - renderizacao basica de `/login` e rotas protegidas relacionadas ao fluxo autenticado.
 
+E2E real em navegador:
+
+```bash
+npm run test:e2e
+```
+
+Pre-requisitos locais:
+
+- `docker compose up -d`;
+- migrations aplicadas no PostgreSQL local;
+- navegador Playwright instalado com `npx playwright install chromium`;
+- `DATABASE_URL` apontando para o PostgreSQL local ou usando o default de desenvolvimento;
+- `DEMO_ADMIN_PASSWORD` opcional, com fallback local `ChangeMe123!`.
+
+O comando roda o seed demo idempotente e valida login real com JWT, erro de credenciais invalidas, criacao de sessao em `localStorage`, guard de rota protegida e bloqueio do Console da Plataforma para usuario tenant.
+
 ## Authenticated actor middleware
 
 O Bloco 04C.4 cria a fundacao para resolver `Authorization: Bearer` em `request.actor`.

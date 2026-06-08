@@ -683,3 +683,19 @@
 - cobertura: auth.storage, auth.service real/mock, API client Bearer, ausencia de headers legacy em modo real, preservacao de FormData, sidebar/guards RBAC para W02A/W03/Platform, smoke render de `/login`, W02A, W03 e Platform Console, e anexos frontend
 - documentacao atualizada em `docs/auth.md`, `docs/frontend-screens.md`, `docs/rbac.md`, `agent-orchestration/docs/status-geral.md` e este log
 - fora de escopo mantido: backend, Prisma/migrations, contratos API, Figma, mobile Flutter e redesign
+
+## 2026-06-07 - E2E critical flows
+
+- branch usada: `feature/e2e-critical-flows`
+- objetivo: adicionar testes E2E reais em navegador para fluxos criticos do ERP Techsolutions
+- verificacao inicial: nao havia Playwright/Cypress nem script E2E no repositorio
+- dependencia adicionada: `@playwright/test` na raiz do repositorio
+- script criado: `npm run test:e2e`
+- configuracao criada: `playwright.config.ts`
+- seed usado: seed demo existente, idempotente, executado via `npm run db:seed` antes do Playwright
+- spec criada: `tests/e2e/critical-flows.spec.ts`
+- cobertura: login real/JWT, credenciais invalidas, guard de rota protegida, sessao em `localStorage`, sidebar RBAC tenant admin, W02A Checklists, W03 Configuracoes e bloqueio de Platform Console para usuario tenant
+- artifacts ignorados: `playwright-report/`, `test-results/`, `frontend/playwright-report/` e `frontend/test-results/`
+- pendencia registrada: acesso positivo ao Platform Console aguarda seed estavel de usuario platform
+- fora de escopo mantido: backend funcional, Prisma/migrations, contratos API, Figma, mobile Flutter, redesign e remocao de mocks
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`

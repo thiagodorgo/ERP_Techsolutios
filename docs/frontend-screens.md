@@ -46,7 +46,14 @@ Smoke tests frontend:
 - cobertura inicial: login, auth storage/service, API client Bearer, guards/sidebar RBAC, `/login`, W02A Checklists, W03 Configurações, Platform Console e anexos de checklist;
 - estrategia: testes leves com `node:test`, `tsx` e renderizacao server-side React, sem Playwright/Cypress nesta rodada.
 
-E2E real em navegador fica como proximo passo, preferencialmente com Playwright ou Cypress quando o fluxo de ambientes e dados de teste estiver estabilizado.
+E2E real em navegador:
+
+- comando: `npm run test:e2e`;
+- stack: Playwright com Chromium, backend Prisma em `CORE_SAAS_PERSISTENCE=prisma` e frontend Vite em modo real (`VITE_USE_MOCKS=false`);
+- pre-requisitos: Docker/PostgreSQL/Redis ativos, migrations aplicadas e Chromium instalado com `npx playwright install chromium`;
+- o comando executa o seed demo idempotente antes dos testes, usando `admin.demo@example.com` e `DEMO_ADMIN_PASSWORD` local;
+- cobertura inicial: login real, erro de login, guard de rota protegida, sidebar RBAC de tenant admin, W02A, W03 e bloqueio do Console da Plataforma para usuario tenant;
+- pendencia: acesso positivo ao Console da Plataforma depende de seed estavel para usuario platform, ainda nao existente.
 
 ## Administrador
 

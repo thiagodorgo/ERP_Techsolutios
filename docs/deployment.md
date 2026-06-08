@@ -82,6 +82,17 @@ npm test
 npm run build
 ```
 
+Validacao E2E local:
+
+```bash
+docker compose up -d
+npx playwright install chromium
+npm run db:migrate
+npm run test:e2e
+```
+
+O E2E usa Playwright, sobe backend local em modo Prisma e frontend Vite em modo real. O comando executa o seed demo idempotente antes da suite. Artifacts pesados ficam ignorados por Git em `playwright-report/` e `test-results/`.
+
 ## Seguranca
 
 - Nunca commitar `.env`.

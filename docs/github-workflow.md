@@ -42,6 +42,8 @@ git push origin chore/local-dev-infra
 - `npm run check`
 - `npm test`
 - `npm run build`
+- `npm --prefix frontend run test:smoke`
+- `npm run test:e2e` quando a mudanca tocar login, RBAC, navegacao, W02A, W03 ou fluxo autenticado.
 - Documentacao atualizada.
 - Sem `.env` real.
 - Sem secrets.
