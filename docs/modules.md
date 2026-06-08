@@ -82,7 +82,7 @@ Sao os modulos efetivamente ativos para um tenant especifico. A visibilidade no 
 - Componentes oficiais do handoff Figma: `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement` e `before_after`.
 - M10/M11 consomem schemas de guincho/reboque configurados pelo tenant; M12 consome schema de evidencia tecnica e nao pertence ao escopo de guincho/reboque.
 - Estados oficiais: checklist rascunho, checklist publicado, checklist inativo, execucao em andamento, execucao concluida, execucao com divergencia e execucao pendente de ciencia.
-- Anexos de checklist usam upload local real em desenvolvimento, com `fileUrl` logico, metadados persistidos em `checklist_attachments`, RBAC/RLS por tenant e caminho preparado para S3-compatible futuro.
+- Anexos de checklist usam storage configuravel por ambiente: provider `local` em desenvolvimento e provider `s3` para storage S3-compatible, com metadados internos persistidos em `checklist_attachments`, download protegido, RBAC/RLS por tenant e sem expor bucket/storage key/path privado na API.
 - O frontend possui service, adapter, mock fallback e componentes reutilizaveis para upload/lista/preview de evidencias; W02A mostra suporte no preview sem assumir papel de tela operacional.
 - O runtime web operacional usa `/operations/checklists` e `/operations/checklists/:checklistId/run`, consome schemas publicados via endpoints compartilhados `/mobile/*`, renderiza componentes oficiais e mantem W02A como builder administrativo.
 - Hardening do runtime web: validacao client-side por schema, progresso de obrigatorios, resumo/status do run, comparacao/divergencia/ciencia e separacao `before_after` por metadata, sem hardcode de M10/M11/M12.

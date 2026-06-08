@@ -21,10 +21,21 @@ const envSchema = z.object({
     .trim()
     .regex(/^\d+(s|m|h|d)?$/, "JWT_REFRESH_EXPIRES_IN must use seconds, minutes, hours or days.")
     .default("7d"),
-  CHECKLIST_ATTACHMENT_STORAGE_DRIVER: z.enum(["local"]).default("local"),
-  CHECKLIST_ATTACHMENT_STORAGE_PATH: z.string().trim().min(1).default("storage/checklist-attachments"),
-  CHECKLIST_ATTACHMENT_MAX_SIZE_MB: z.coerce.number().positive().max(100).default(10),
-  CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES: z.string().trim().min(1).default("image/jpeg,image/png,image/webp,application/pdf"),
+  CHECKLIST_STORAGE_PROVIDER: z.enum(["local", "s3"]).optional(),
+  CHECKLIST_STORAGE_LOCAL_DIR: z.string().trim().min(1).optional(),
+  CHECKLIST_STORAGE_S3_BUCKET: z.string().trim().optional().default(""),
+  CHECKLIST_STORAGE_S3_REGION: z.string().trim().optional().default(""),
+  CHECKLIST_STORAGE_S3_ENDPOINT: z.string().trim().optional().default(""),
+  CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE: z.coerce.boolean().default(true),
+  CHECKLIST_STORAGE_S3_ACCESS_KEY_ID: z.string().trim().optional().default(""),
+  CHECKLIST_STORAGE_S3_SECRET_ACCESS_KEY: z.string().trim().optional().default(""),
+  CHECKLIST_STORAGE_S3_PREFIX: z.string().trim().default("checklist-attachments"),
+  CHECKLIST_STORAGE_MAX_FILE_SIZE_MB: z.coerce.number().positive().max(100).optional(),
+  CHECKLIST_STORAGE_ALLOWED_MIME_TYPES: z.string().trim().min(1).optional(),
+  CHECKLIST_ATTACHMENT_STORAGE_DRIVER: z.enum(["local"]).optional(),
+  CHECKLIST_ATTACHMENT_STORAGE_PATH: z.string().trim().min(1).optional(),
+  CHECKLIST_ATTACHMENT_MAX_SIZE_MB: z.coerce.number().positive().max(100).optional(),
+  CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES: z.string().trim().min(1).optional(),
 }).superRefine((value, context) => {
   const developmentOnlySecrets = new Set([
     "dev-only-change-me",
@@ -62,5 +73,12 @@ export const env = {
   ...parsedEnv,
   JWT_SECRET: parsedEnv.JWT_SECRET ?? "dev-only-change-me",
   JWT_REFRESH_SECRET: parsedEnv.JWT_REFRESH_SECRET ?? "dev-only-refresh-change-me",
+  CHECKLIST_STORAGE_PROVIDER: parsedEnv.CHECKLIST_STORAGE_PROVIDER ?? parsedEnv.CHECKLIST_ATTACHMENT_STORAGE_DRIVER ?? "local",
+  CHECKLIST_STORAGE_LOCAL_DIR: parsedEnv.CHECKLIST_STORAGE_LOCAL_DIR ?? parsedEnv.CHECKLIST_ATTACHMENT_STORAGE_PATH ?? "storage/checklist-attachments",
+  CHECKLIST_STORAGE_MAX_FILE_SIZE_MB: parsedEnv.CHECKLIST_STORAGE_MAX_FILE_SIZE_MB ?? parsedEnv.CHECKLIST_ATTACHMENT_MAX_SIZE_MB ?? 10,
+  CHECKLIST_STORAGE_ALLOWED_MIME_TYPES:
+    parsedEnv.CHECKLIST_STORAGE_ALLOWED_MIME_TYPES ??
+    parsedEnv.CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES ??
+    "image/jpeg,image/png,image/webp,application/pdf",
 };
 

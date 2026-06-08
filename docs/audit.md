@@ -80,6 +80,8 @@ Eventos cobertos nesta rodada:
 
 O runtime web operacional chama os mesmos endpoints de execucao que o runtime mobile compartilhado. Portanto, criar, atualizar, concluir, anexar evidencia, registrar divergencia e registrar ciencia geram a mesma auditoria backend; W02A permanece limitada a auditoria de template/builder.
 
+Uploads de anexos continuam auditados como `checklist_run.attachment_uploaded` independentemente do provider de storage (`local` ou S3-compatible). A auditoria deve registrar o recurso e o resultado da acao, mas nao deve expor bucket, storage key, path privado, segredo ou URL interna do objeto.
+
 Hardening runtime web:
 - validacao client-side por schema nao gera auditoria por si so;
 - eventos auditaveis continuam saindo dos endpoints backend de update, complete, attachment upload, divergence e acknowledgement;

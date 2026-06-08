@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
-import { rm } from "node:fs/promises";
+import { readdir, rm } from "node:fs/promises";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import os from "node:os";
@@ -43,17 +42,24 @@ test("checklist attachment multipart upload stores local file, metadata and secu
     assert.equal(upload.body.data.fileName, "evidence_photo.png");
     assert.equal(upload.body.data.mimeType, "image/png");
     assert.equal(upload.body.data.sizeBytes, tinyPng.length);
-    assert.match(upload.body.data.fileUrl, /^local:\/\/checklist-attachments\//);
-    assert.equal(upload.body.data.metadata.storageDriver, "local");
-    assert.equal(typeof upload.body.data.metadata.storageKey, "string");
+    assert.match(
+      upload.body.data.fileUrl,
+      new RegExp(`^/api/v1/mobile/checklist-runs/${runId}/attachments/${upload.body.data.id}/download$`),
+    );
+    assert.equal(upload.body.data.metadata.storageDriver, undefined);
+    assert.equal(upload.body.data.metadata.storageProvider, undefined);
+    assert.equal(upload.body.data.metadata.storageKey, undefined);
     assert.equal(upload.body.data.metadata.source, "test-suite");
     assert.equal(upload.body.data.metadata.checksumSha256.length, 64);
     assert.equal(JSON.stringify(upload.body.data).includes(storagePath), false);
+    assert.equal(JSON.stringify(upload.body.data).includes("storageKey"), false);
+    assert.equal(JSON.stringify(upload.body.data).includes("local://checklist-attachments"), false);
 
-    const storageKey = upload.body.data.metadata.storageKey as string;
-    assert.equal(storageKey.includes(".."), false);
-    assert.equal(storageKey.includes("\\"), false);
-    assert.equal(existsSync(path.resolve(storagePath, ...storageKey.split("/"))), true);
+    const storedFiles = await listStoredFiles(storagePath);
+    assert.equal(storedFiles.length, 1);
+    const relativeStoredFile = path.relative(storagePath, storedFiles[0]);
+    assert.equal(relativeStoredFile.split(path.sep).includes(".."), false);
+    assert.equal(path.basename(storedFiles[0]).endsWith("-evidence_photo.png"), true);
 
     const download = await fetch(
       `${baseUrl}/api/v1/mobile/checklist-runs/${runId}/attachments/${upload.body.data.id}/download`,
@@ -213,6 +219,10 @@ type ChecklistApiContext = {
 async function withChecklistApi(callback: (context: ChecklistApiContext) => Promise<void>): Promise<void> {
   process.env.LOG_LEVEL = "silent";
   process.env.CORE_SAAS_PERSISTENCE = "memory";
+  process.env.CHECKLIST_STORAGE_PROVIDER = "local";
+  process.env.CHECKLIST_STORAGE_LOCAL_DIR = storagePath;
+  process.env.CHECKLIST_STORAGE_MAX_FILE_SIZE_MB = "0.001";
+  process.env.CHECKLIST_STORAGE_ALLOWED_MIME_TYPES = "image/jpeg,image/png,image/webp,application/pdf";
   process.env.CHECKLIST_ATTACHMENT_STORAGE_DRIVER = "local";
   process.env.CHECKLIST_ATTACHMENT_STORAGE_PATH = storagePath;
   process.env.CHECKLIST_ATTACHMENT_MAX_SIZE_MB = "0.001";
@@ -220,7 +230,7 @@ async function withChecklistApi(callback: (context: ChecklistApiContext) => Prom
 
   const [
     { createApp },
-    { resetChecklistRuntimeForTests },
+    { resetChecklistRuntimeForTests, resetChecklistStorageProviderForTests },
     { CoreSaasRegistry },
     { MemoryCoreSaasAdapter },
     { InMemoryCoreSaasStore },
@@ -233,6 +243,7 @@ async function withChecklistApi(callback: (context: ChecklistApiContext) => Prom
   ]);
 
   resetChecklistRuntimeForTests();
+  resetChecklistStorageProviderForTests();
 
   const core = new CoreSaasRegistry(new InMemoryCoreSaasStore());
   const seed = seedCoreSaas(core);
@@ -248,6 +259,7 @@ async function withChecklistApi(callback: (context: ChecklistApiContext) => Prom
   } finally {
     await closeServer(server);
     resetChecklistRuntimeForTests();
+    resetChecklistStorageProviderForTests();
   }
 }
 
@@ -409,4 +421,26 @@ async function removeStoragePath(options: { readonly throwOnFailure?: boolean } 
       await delay(100);
     }
   }
+}
+
+async function listStoredFiles(directory: string): Promise<string[]> {
+  const entries = await readdir(directory, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  });
+
+  const files: string[] = [];
+
+  for (const entry of entries) {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      const childFiles = await listStoredFiles(entryPath);
+      files.push(...childFiles);
+      continue;
+    }
+
+    files.push(entryPath);
+  }
+
+  return files;
 }

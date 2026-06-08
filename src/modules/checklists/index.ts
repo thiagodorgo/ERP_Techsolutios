@@ -9,3 +9,7 @@ export * from "./checklist.routes.js";
 export * from "./checklist.service.js";
 export * from "./checklist.types.js";
 export * from "./checklist.validator.js";
+export * from "./storage/checklist-storage.factory.js";
+export * from "./storage/checklist-storage.types.js";
+export * from "./storage/local-checklist-storage.provider.js";
+export * from "./storage/s3-checklist-storage.provider.js";

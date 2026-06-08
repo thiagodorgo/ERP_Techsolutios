@@ -12,10 +12,10 @@ type ControllerResult = {
   readonly body?: unknown;
   readonly data?: unknown;
   readonly file?: {
-    readonly filePath: string;
+    readonly body: Buffer | NodeJS.ReadableStream;
     readonly fileName: string;
     readonly mimeType: string;
-    readonly sizeBytes: number;
+    readonly sizeBytes?: number;
   };
 };
 
@@ -187,9 +187,16 @@ function sendResult(response: Response, result: ControllerResult): void {
   if (result.file) {
     response.status(result.status ?? 200);
     response.setHeader("Content-Type", result.file.mimeType);
-    response.setHeader("Content-Length", result.file.sizeBytes.toString());
+    if (result.file.sizeBytes !== undefined) {
+      response.setHeader("Content-Length", result.file.sizeBytes.toString());
+    }
     response.setHeader("Content-Disposition", `inline; filename="${escapeHeaderFileName(result.file.fileName)}"`);
-    response.sendFile(result.file.filePath);
+    if (Buffer.isBuffer(result.file.body)) {
+      response.send(result.file.body);
+      return;
+    }
+
+    result.file.body.pipe(response);
     return;
   }
 

@@ -78,19 +78,42 @@ export function toChecklistRunAnswerDto(answer: ChecklistRunAnswer) {
 }
 
 export function toChecklistAttachmentDto(attachment: ChecklistAttachment) {
+  const hasManagedStorage =
+    typeof attachment.metadata.storageKey === "string" &&
+    (attachment.metadata.storageProvider === "local" ||
+      attachment.metadata.storageProvider === "s3" ||
+      attachment.metadata.storageDriver === "local" ||
+      attachment.metadata.storageDriver === "s3");
+
   return {
     id: attachment.id,
     tenantId: attachment.tenantId,
     runId: attachment.runId,
     componentId: attachment.componentId,
-    fileUrl: attachment.fileUrl,
+    fileUrl: hasManagedStorage
+      ? `/api/v1/mobile/checklist-runs/${encodeURIComponent(attachment.runId)}/attachments/${encodeURIComponent(attachment.id)}/download`
+      : attachment.fileUrl,
     fileName: attachment.fileName ?? null,
     mimeType: attachment.mimeType ?? null,
     sizeBytes: attachment.sizeBytes ?? null,
-    metadata: attachment.metadata,
+    metadata: toPublicAttachmentMetadata(attachment.metadata),
     createdBy: attachment.createdBy ?? null,
     createdAt: attachment.createdAt.toISOString(),
   };
+}
+
+function toPublicAttachmentMetadata(metadata: Record<string, unknown>) {
+  const {
+    storageDriver: _storageDriver,
+    storageProvider: _storageProvider,
+    storageKey: _storageKey,
+    bucket: _bucket,
+    path: _path,
+    privateUrl: _privateUrl,
+    ...publicMetadata
+  } = metadata;
+
+  return publicMetadata;
 }
 
 export function toChecklistMarkerDto(marker: ChecklistMarker) {

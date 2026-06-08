@@ -264,6 +264,7 @@ export class ChecklistService {
         sizeBytes: stored.sizeBytes,
         metadata: {
           ...upload.metadata,
+          storageProvider: stored.storageDriver,
           storageDriver: stored.storageDriver,
           storageKey: stored.storageKey,
           checksumSha256: stored.checksum,
@@ -303,7 +304,7 @@ export class ChecklistService {
 
       return attachment;
     } catch (error) {
-      await deleteStoredChecklistAttachmentFile(stored.storageKey);
+      await deleteStoredChecklistAttachmentFile(stored.storageKey, stored.storageDriver);
       throw error;
     }
   }

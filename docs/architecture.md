@@ -78,11 +78,11 @@ Regras arquiteturais:
 - preservar historico de templates por versao;
 - manter execucoes antigas vinculadas a `template_version`;
 - preparar respostas/evidencias para mobile Flutter e sincronizacao offline futura.
-- salvar anexos locais fora do Git em desenvolvimento, com nome sanitizado, allowlist de MIME types, limite de tamanho, checksum e storage key logico;
-- nao expor path absoluto de arquivo em API;
-- manter a estrategia preparada para driver S3-compatible futuro sem implementar cloud real nesta rodada.
+- salvar anexos via provider configuravel, mantendo `local` como padrao de desenvolvimento e `s3` como S3-compatible opcional;
+- manter nome sanitizado, allowlist de MIME types, limite de tamanho, checksum e storage key logico interno;
+- nao expor path absoluto, bucket, storage key, URL privada `local://` ou `s3://` em API.
 
-Decisao desta fase: storage local real foi implementado para anexos de checklist. Storage cloud/S3-compatible, mobile Flutter e frontend de upload permanecem fora do escopo desta rodada.
+Decisao desta fase: anexos de checklist usam uma interface `ChecklistStorageProvider`, com implementacoes local e S3-compatible. O backend escolhe o provider por variavel de ambiente, preserva o contrato de download protegido e nao exige AWS real para testes.
 
 ## Backend MVP necessario
 

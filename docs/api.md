@@ -392,18 +392,27 @@ Formato multipart:
 - campo `componentId`: componente do template da execucao;
 - campo `metadata`: JSON object opcional em string.
 
-Limites locais configuraveis em `.env`:
+Storage configuravel em `.env`:
 
-- `CHECKLIST_ATTACHMENT_STORAGE_DRIVER=local`
-- `CHECKLIST_ATTACHMENT_STORAGE_PATH=storage/checklist-attachments`
-- `CHECKLIST_ATTACHMENT_MAX_SIZE_MB=10`
-- `CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES=image/jpeg,image/png,image/webp,application/pdf`
+- `CHECKLIST_STORAGE_PROVIDER=local|s3`
+- `CHECKLIST_STORAGE_LOCAL_DIR=storage/checklist-attachments`
+- `CHECKLIST_STORAGE_MAX_FILE_SIZE_MB=10`
+- `CHECKLIST_STORAGE_ALLOWED_MIME_TYPES=image/jpeg,image/png,image/webp,application/pdf`
+- `CHECKLIST_STORAGE_S3_BUCKET`
+- `CHECKLIST_STORAGE_S3_REGION`
+- `CHECKLIST_STORAGE_S3_ENDPOINT`
+- `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE=true`
+- `CHECKLIST_STORAGE_S3_ACCESS_KEY_ID`
+- `CHECKLIST_STORAGE_S3_SECRET_ACCESS_KEY`
+- `CHECKLIST_STORAGE_S3_PREFIX=checklist-attachments`
 
-Resposta: cria registro em `checklist_attachments` com `fileUrl` logico `local://checklist-attachments/<tenantId>/<runId>/<filename>`, nome sanitizado, MIME type, tamanho e `metadata.storageDriver`, `metadata.storageKey` e `metadata.checksumSha256`. O backend nao expõe path absoluto do servidor.
+As variaveis legadas `CHECKLIST_ATTACHMENT_*` continuam aceitas como aliases locais para preservar compatibilidade de ambiente.
+
+Resposta: cria registro em `checklist_attachments` com nome sanitizado, MIME type, tamanho e `metadata.checksumSha256`. Para uploads gerenciados pelo backend, `fileUrl` publico passa a apontar para a rota protegida de download. `storageProvider`, `storageDriver`, `storageKey`, bucket, path privado e URLs internas (`local://` ou `s3://`) ficam restritos ao backend e nao devem aparecer na resposta da API.
 
 `GET /mobile/checklist-runs/:runId/attachments/:attachmentId/download` retorna o arquivo somente quando `runId`, `attachmentId`, tenant, RBAC e RLS forem validos. Acesso cross-tenant deve retornar 404 seguro ou 403 quando faltar permissao.
 
-Storage S3-compatible permanece pendente. A arquitetura atual isola driver, storage key e metadados para permitir futura troca sem remover `fileUrl` nem quebrar clientes existentes.
+O provider `local` continua sendo o padrao de desenvolvimento. O provider `s3` usa storage S3-compatible via SDK AWS v3 e pode apontar para AWS S3, MinIO, Cloudflare R2 ou outro endpoint compativel. Testes de S3 usam client mockado; nenhum bucket real ou segredo real deve ser exigido.
 
 ## Auditoria
 
