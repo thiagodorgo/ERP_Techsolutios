@@ -923,3 +923,17 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - documentacao atualizada em `docs/auth.md`, `docs/frontend-screens.md` e `docs/rbac.md`
 - backend, Prisma/migrations, contratos API, Figma e mobile Flutter nao foram alterados
 - proximo passo recomendado: E2E real em navegador com Playwright/Cypress quando ambientes e dados de teste estiverem estabilizados
+
+## Atualizacao 2026-06-07 - E2E critical flows
+
+- branch usada: `feature/e2e-critical-flows`
+- objetivo: adicionar camada inicial de E2E real em navegador para fluxos criticos do frontend com backend Prisma em execucao
+- ferramenta escolhida: Playwright na raiz do repositorio, por depender simultaneamente de frontend, backend, seed e banco local
+- script criado: `npm run test:e2e`
+- configuracao criada: `playwright.config.ts`, com backend local em `CORE_SAAS_PERSISTENCE=prisma`, frontend Vite em `VITE_USE_MOCKS=false`, videos desativados e trace apenas em falha
+- seed usado: seed demo existente, idempotente, executado via `npm run db:seed` antes do Playwright
+- testes criados: `tests/e2e/critical-flows.spec.ts`
+- cobertura inicial: login real/JWT, erro de login, guard de rota protegida, sessao local, sidebar RBAC tenant admin, W02A Checklists, W03 Configuracoes e bloqueio do Console da Plataforma para usuario tenant
+- pendencia documentada: acesso positivo ao Console da Plataforma depende de usuario platform estavel no seed
+- fora de escopo mantido: backend funcional, Prisma/migrations, contratos API, Figma, mobile Flutter, redesign e remocao de mocks
+- validacoes finais executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e` e `git diff --check`

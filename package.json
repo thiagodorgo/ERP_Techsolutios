@@ -17,6 +17,7 @@
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "node --test --import tsx tests/core-saas.test.ts",
+    "test:e2e": "npm run db:seed && playwright test -c playwright.config.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
@@ -37,6 +38,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/busboy": "^1.5.4",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
