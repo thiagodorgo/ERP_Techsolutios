@@ -1215,3 +1215,19 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - testes criados/atualizados: `tests/field-location-routes.test.ts` e `tests/rls-tenant-isolation.test.ts`
 - documentacao atualizada em `docs/field-operator-location-map.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/database.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/02-mapa-modulos.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e este status
 - fora de escopo mantido: Google Maps, tela `/operations/map`, app Flutter, roteirizacao avancada, Work Orders completas e despacho completo
+
+## Atualizacao 2026-06-09 - operations map UI
+
+- branch usada: `feature/operations-map-ui`
+- objetivo: implementar a UI inicial do Mapa Operacional em `/operations/map` consumindo a fundacao backend de localizacao de operadores em campo
+- rota criada no frontend: `/operations/map`, protegida por `field_location:read`
+- modulo frontend criado em `frontend/src/modules/operations/map` com types, adapter, service, mock, hook, pagina e componentes
+- endpoints consumidos: `GET /api/v1/field-locations/latest` e `GET /api/v1/field-locations/history`
+- fallback seguro: `VITE_USE_MOCKS=true`, falha da API ou resposta vazia usam dados mockados sem expor coordenadas em logs
+- tela inclui cabecalho, KPIs, filtros, mapa placeholder com marcadores proporcionais por latitude/longitude, lista de operadores, painel de detalhe e estados loading/erro/vazio/fallback
+- `.env.example` recebeu placeholder `VITE_GOOGLE_MAPS_API_KEY=""`, sem uso de chave real
+- menu/fallback local atualizado para `field_operations` e `/operations/map`
+- smoke test atualizado para adapter/service/render da tela; E2E atualizado para validar a rota inicial
+- documentacao atualizada em `docs/field-operator-location-map.md`, `docs/frontend-menu-navigation.md`, `docs/frontend-screens.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/backend-navigation-menu.md`, `docs/platform-console.md`, `docs/09-mapa-telas-frontend.md` e este status
+- fora de escopo mantido: Google Maps real, app Flutter, WebSocket, Work Orders completas, despacho completo, roteirizacao avancada, novos endpoints e backend novo
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/field-location-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts` e `git diff --check`

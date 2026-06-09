@@ -328,12 +328,13 @@ Princípios adotados:
 - **Prioridade:** MVP.
 
 ### W20 — Painel Logístico e Mapa
-- **Objetivo:** despacho e acompanhamento em tempo real.
+- **Objetivo:** acompanhamento inicial de operadores em campo; despacho e tempo real permanecem evolucoes futuras.
 - **Usuários:** Gestor, Operador, Supervisor.
-- **Rota planejada:** `/operations/map`.
+- **Rota implementada:** `/operations/map`.
 - **Permissões:** `field_location:read` para ultimas posicoes; `field_location:history` para historico.
-- **APIs backend foundation:** `GET /api/v1/field-locations/latest` e `GET /api/v1/field-locations/history`.
-- **Status desta branch:** backend foundation implementado; tela web, Google Maps, roteirizacao avancada, Work Orders completas e despacho completo ficam fora do escopo.
+- **APIs consumidas:** `GET /api/v1/field-locations/latest` e `GET /api/v1/field-locations/history`.
+- **UI:** cabecalho, KPIs, filtros, mapa placeholder com marcadores proporcionais por lat/lng, lista de operadores, detalhe e fallback/mock seguro.
+- **Status desta branch:** UI inicial implementada; Google Maps real, roteirizacao avancada, Work Orders completas, WebSocket e despacho completo ficam fora do escopo.
 - **Prioridade:** MVP (básico) / Scale (assistido).
 
 ### W21 — Estoque: Itens e saldos por filial

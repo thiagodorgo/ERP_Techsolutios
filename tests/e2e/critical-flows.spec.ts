@@ -135,6 +135,18 @@ test("tenant admin acessa inbox interna de notificacoes sem depender de seed", a
   await expect(page.getByText(/Inbox interna/i)).toBeVisible();
 });
 
+test("Mapa Operacional renderiza UI inicial e fallback sem Google Maps real", async ({ page }) => {
+  await loginAndActivateContext(page);
+  await enableOperationsMapFrontendContext(page);
+
+  await page.goto("/operations/map");
+  await expect(page).toHaveURL(/\/operations\/map$/);
+  await expect(page.getByRole("heading", { name: "Mapa Operacional" })).toBeVisible();
+  await expect(page.getByText("Visualização operacional inicial", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Google Maps futuro/i)).toBeVisible();
+  await expect(page.getByText(/Marina Costa|Operador API|Nenhum operador localizado/i).first()).toBeVisible();
+});
+
 test("platform admin acessa Platform Console", async ({ page }) => {
   const navigationResponse = page.waitForResponse((response) => response.url().includes("/api/v1/navigation/menu?scope=platform"));
   await loginAsPlatformAdmin(page);
@@ -246,6 +258,19 @@ async function loginAsPlatformAdmin(page: Page): Promise<void> {
 async function activateFirstContext(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { name: "Definir tenant, filial e papel ativo" })).toBeVisible();
   await page.getByRole("button", { name: "Ativar contexto" }).first().click();
+}
+
+async function enableOperationsMapFrontendContext(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const key = "erp-techsolutions.active-context";
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return;
+
+    const context = JSON.parse(raw) as { permissions?: string[]; enabledModules?: string[] };
+    context.permissions = Array.from(new Set([...(context.permissions ?? []), "field_location:read", "field_location:history"]));
+    context.enabledModules = Array.from(new Set([...(context.enabledModules ?? []), "field_operations"]));
+    window.localStorage.setItem(key, JSON.stringify(context));
+  });
 }
 
 async function resetDemoAuthState(): Promise<void> {

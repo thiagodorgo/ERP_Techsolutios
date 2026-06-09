@@ -301,11 +301,11 @@ test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () =
   const operatorTenantItems = filterNavigationItems(
     {
       roles: ["Operador Logistico"],
-      permissions: ["dashboard:view", "work-orders:view", "checklist_runs:create", "notifications:read"],
+      permissions: ["dashboard:view", "work-orders:view", "checklist_runs:create", "field_location:read", "notifications:read"],
       mode: "operation",
       scope: "tenant",
       tenantStatus: "active",
-      enabledModules: ["dashboard", "work-orders", "tenant_checklist", "tenant-admin", "notifications"],
+      enabledModules: ["dashboard", "work-orders", "tenant_checklist", "field_operations", "tenant-admin", "notifications"],
     },
     tenantNavigation,
   );
@@ -362,6 +362,7 @@ test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () =
   const adminPaths = flattenPaths(adminTenantItems);
   const withoutNotificationsPaths = flattenPaths(withoutNotificationsItems);
   assert.equal(operatorPaths.includes("/operations/checklists"), true);
+  assert.equal(operatorPaths.includes("/operations/map"), true);
   assert.equal(operatorPaths.includes("/notifications"), true);
   assert.equal(operatorPaths.includes("/administrator/checklists"), false);
   assert.equal(operatorPaths.includes("/administrator/settings"), false);
@@ -435,6 +436,91 @@ test("navigation service consome endpoint backend com scope e mock fallback loca
   process.env.VITE_USE_MOCKS = "true";
   const mockResponse = await getNavigationMenu("tenant");
   assert.equal(mockResponse.data?.some((item) => item.path === "/administrator/checklists"), true);
+});
+
+test("operations map adapter descarta coordenadas invalidas, normaliza DTO e marca stale", async () => {
+  const { adaptFieldLocationsResponse, filterFieldLocations } = await import("../src/modules/operations/map");
+  const now = new Date("2026-06-09T12:00:00.000Z");
+
+  const locations = adaptFieldLocationsResponse(
+    {
+      data: [
+        {
+          id: "loc-valid",
+          operator_user_id: "usr-1",
+          operator_name: "Marina Costa",
+          team_name: "Equipe Norte",
+          status: "on_route",
+          latitude: "-23.55052",
+          longitude: "-46.633308",
+          accuracy_meters: "7",
+          battery_level: "82",
+          captured_at: "2026-06-09T11:40:00.000Z",
+        },
+        {
+          id: "loc-invalid",
+          operator_user_id: "usr-2",
+          latitude: -91,
+          longitude: -46.6,
+          captured_at: "2026-06-09T11:59:00.000Z",
+        },
+      ],
+    },
+    { now },
+  );
+
+  assert.equal(locations.length, 1);
+  assert.equal(locations[0].operatorId, "usr-1");
+  assert.equal(locations[0].displayName, "Marina Costa");
+  assert.equal(locations[0].accuracyMeters, 7);
+  assert.equal(locations[0].batteryLevel, 82);
+  assert.equal(locations[0].isStale, true);
+  assert.equal(filterFieldLocations(locations, { status: "on_route", team: "Equipe Norte", staleOnly: true, search: "marina" }).length, 1);
+});
+
+test("operations map service consome endpoints existentes e usa fallback seguro", async () => {
+  process.env.VITE_USE_MOCKS = "false";
+  process.env.VITE_API_BASE_URL = "/api/v1";
+  browser.clear();
+  const calls = installFetchSequence([
+    {
+      payload: {
+        data: [
+          {
+            id: "loc-api",
+            operatorUserId: "usr-api",
+            displayName: "Operador API",
+            status: "available",
+            latitude: -23.55,
+            longitude: -46.63,
+            capturedAt: "2026-06-09T11:59:00.000Z",
+          },
+        ],
+      },
+    },
+    { payload: { data: [] } },
+  ]);
+  const { getLatestFieldLocations, getFieldLocationHistory } = await import("../src/modules/operations/map");
+  const context = {
+    tenantId: "tenant-a",
+    role: "manager",
+    permissions: ["field_location:read", "field_location:history"],
+  };
+
+  const latest = await getLatestFieldLocations(context);
+  const history = await getFieldLocationHistory(context, { operatorUserId: "usr-api", limit: 10 });
+
+  assert.equal(calls[0].url, "/api/v1/field-locations/latest");
+  assert.equal(calls[1].url, "/api/v1/field-locations/history?operatorUserId=usr-api&limit=10");
+  assert.equal(latest.source, "api");
+  assert.equal(latest.locations[0].displayName, "Operador API");
+  assert.equal(history.length, 0);
+
+  const emptyCalls = installFetchJson({ data: [] });
+  const fallback = await getLatestFieldLocations(context);
+  assert.equal(emptyCalls[0].url, "/api/v1/field-locations/latest");
+  assert.equal(fallback.source, "fallback");
+  assert.equal(fallback.locations.some((location) => location.displayName === "Marina Costa"), true);
 });
 
 test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async () => {
@@ -997,6 +1083,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   const { ChecklistRunsPage } = await import("../src/modules/checklists/pages/ChecklistRunsPage");
   const { TenantChecklistsPage } = await import("../src/modules/checklists/pages/TenantChecklistsPage");
   const { NotificationsPage } = await import("../src/modules/notifications/pages/NotificationsPage");
+  const { OperationsMapPage } = await import("../src/modules/operations/map/pages/OperationsMapPage");
   const { TenantSettingsPage } = await import("../src/modules/settings/pages/TenantSettingsPage");
   const { PlatformCloudBillingPage } = await import("../src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage");
   const { PlatformTenantsPage } = await import("../src/modules/platform/pages/PlatformTenantsPage");
@@ -1010,8 +1097,17 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
       branchId: "fil-sp-01",
       branchName: "Sao Paulo - Campo",
       role: "Gestor Operacional",
-      permissions: ["checklist_runs:read", "checklist_runs:create", "tenant_checklists:read", "tenant:manage", "notifications:read", "notifications:update"],
-      enabledModules: ["dashboard", "tenant_checklist", "tenant-admin", "notifications"],
+      permissions: [
+        "checklist_runs:read",
+        "checklist_runs:create",
+        "tenant_checklists:read",
+        "tenant:manage",
+        "field_location:read",
+        "field_location:history",
+        "notifications:read",
+        "notifications:update",
+      ],
+      enabledModules: ["dashboard", "tenant_checklist", "tenant-admin", "field_operations", "notifications"],
       scope: "branch",
     }),
   );
@@ -1030,6 +1126,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
           <PermissionProvider>
             <ChecklistRunsPage />
             <TenantChecklistsPage />
+            <OperationsMapPage />
             <NotificationsPage />
             <TenantSettingsPage />
             <PlatformTenantsPage />
@@ -1055,6 +1152,8 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
 
   assert.match(loginHtml, /W01 Login/);
   assert.match(protectedHtml, /Checklists Operacionais/);
+  assert.match(protectedHtml, /Mapa Operacional/);
+  assert.match(protectedHtml, /Visualização operacional inicial/);
   assert.match(protectedHtml, /Notificacoes/);
   assert.match(runtimeHtml, /Executar checklist|Runtime operacional/);
   assert.match(protectedHtml, /Checklists|Selecione um contexto/);

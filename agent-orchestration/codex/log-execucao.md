@@ -1003,3 +1003,22 @@
 - teste RLS atualizado para incluir `field_operator_locations`
 - documentacao atualizada em `docs/field-operator-location-map.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/database.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/02-mapa-modulos.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e `agent-orchestration/docs/status-geral.md`
 - fora de escopo mantido: Google Maps, tela `/operations/map`, app Flutter, roteirizacao avancada, Work Orders completas, despacho completo e coleta real mobile
+
+## 2026-06-09 - operations map UI
+
+- branch usada: `feature/operations-map-ui`
+- comandos iniciais executados: `git branch --show-current`, `git status --short --branch` e `git log --oneline --decorate -5`
+- branch confirmada: `feature/operations-map-ui`
+- modulo frontend criado em `frontend/src/modules/operations/map`
+- pagina criada: `OperationsMapPage`, rota `/operations/map`, guard `field_location:read`
+- service criado para consumir somente `GET /api/v1/field-locations/latest` e `GET /api/v1/field-locations/history`
+- adapter criado para normalizar DTO snake_case/camelCase, descartar coordenadas invalidas e marcar stale acima de 15 minutos
+- mock/fallback criado para `VITE_USE_MOCKS=true`, API vazia ou falha de rede/autorizacao
+- componentes criados: filtros, KPIs, mapa placeholder, status badge, lista de operadores e detalhe
+- menu local/fallback atualizado com `field_operations`; contexto mock recebeu `field_location:read`, `field_location:history` e modulo `field_operations`
+- `.env.example` atualizado com placeholder vazio `VITE_GOOGLE_MAPS_API_KEY=""`, sem credencial real
+- smoke test atualizado para navegacao, adapter, service e renderizacao SSR da tela
+- E2E atualizado com fluxo direto em `/operations/map`
+- documentacao atualizada em `docs/field-operator-location-map.md`, `docs/frontend-menu-navigation.md`, `docs/frontend-screens.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/backend-navigation-menu.md`, `docs/platform-console.md`, `docs/09-mapa-telas-frontend.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: Google Maps real, app Flutter, WebSocket, Work Orders completas, despacho completo, roteirizacao avancada, novos endpoints e backend novo
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/field-location-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts` e `git diff --check`

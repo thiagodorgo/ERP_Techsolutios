@@ -7,6 +7,7 @@ import { ChecklistRuntimePage } from "./modules/checklists/pages/ChecklistRuntim
 import { ChecklistRunsPage } from "./modules/checklists/pages/ChecklistRunsPage";
 import { TenantChecklistsPage } from "./modules/checklists/pages/TenantChecklistsPage";
 import { NotificationsPage } from "./modules/notifications/pages/NotificationsPage";
+import { OperationsMapPage } from "./modules/operations/map/pages/OperationsMapPage";
 import { TenantSettingsPage } from "./modules/settings/pages/TenantSettingsPage";
 import { PlatformLayout } from "./layouts/PlatformLayout";
 import { PlatformCloudBillingPage } from "./modules/platform/cloud-billing/pages/PlatformCloudBillingPage";
@@ -91,6 +92,14 @@ export function App() {
             element={
               <PermissionGuard permissions={["checklist_runs:create"]}>
                 <ChecklistRuntimePage />
+              </PermissionGuard>
+            }
+          />
+          <Route
+            path="/operations/map"
+            element={
+              <PermissionGuard permissions={["field_location:read"]}>
+                <OperationsMapPage />
               </PermissionGuard>
             }
           />

@@ -46,6 +46,17 @@ export const tenantNavigation: NavigationItem[] = [
     featureKey: "checklist_runtime_web",
   },
   {
+    id: "tenant-operations-map",
+    label: "Mapa Operacional",
+    path: "/operations/map",
+    scope: "tenant",
+    mode: "operation",
+    requiredPermissions: ["field_location:read"],
+    icon: "Map",
+    moduleKey: "field_operations",
+    featureKey: "operations_map",
+  },
+  {
     id: "tenant-notifications",
     label: "Notificacoes",
     path: "/notifications",

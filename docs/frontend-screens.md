@@ -181,16 +181,25 @@ Tipos frontend previstos:
 
 ## Mapa Operacional
 
-Tela planejada:
+Tela implementada:
 
 - `Mapa Operacional`, rota `/operations/map`.
 
 Status desta branch:
 
-- backend foundation de localizacao implementado;
-- a tela web, Google Maps e UI de despacho permanecem fora do escopo.
+- UI inicial implementada no frontend web;
+- Google Maps real, UI de despacho, Work Orders completas, roteirizacao e tempo real permanecem fora do escopo.
 
-Endpoints backend disponiveis para a futura tela:
+Funcionalidades:
+
+- cabecalho operacional com origem de dados, refresh e alerta de fallback;
+- KPIs de localizacao dos operadores;
+- filtros por operador/equipe, status e localizacao antiga;
+- mapa placeholder com marcadores posicionados proporcionalmente por latitude/longitude;
+- lista e painel de detalhe do operador selecionado;
+- estados de loading, vazio, erro, mock e fallback seguro.
+
+Endpoints backend consumidos:
 
 - `GET /api/v1/field-locations/latest`: ultimas posicoes por operador no tenant atual;
 - `GET /api/v1/field-locations/history`: historico por operador, com permissao dedicada.
