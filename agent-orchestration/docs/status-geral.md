@@ -1178,3 +1178,21 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - documentacao criada/atualizada em `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/iconography-and-tags.md`, `docs/field-operator-location-map.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/modules.md`, `docs/rbac.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e este status
 - fora de escopo mantido: telas frontend novas, Google Maps real, localizacao de operador, Work Orders backend, logistica backend, billing/payment/fiscal tenant-scoped, CRUD persistido de menu e remocao dos menus frontend atuais
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/core-saas.test.ts` e `git diff --check`
+
+## Atualizacao 2026-06-09 - frontend navigation menu consumer
+
+- branch usada: `feature/frontend-navigation-menu-consumer`
+- objetivo: fazer o frontend consumir o menu oficial do backend via `GET /api/v1/navigation/menu`
+- modulo criado: `frontend/src/modules/navigation`
+- service criado: `getNavigationMenu(scope?)`, com suporte a `scope=platform|tenant|operations|logistics|finance`
+- adapter criado para ordenar por `order`, remover itens invalidos, preservar children/status/permissoes/endpoints relacionados e mapear icones `lucide-react`
+- hook criado: `useNavigationMenu`, com estados `loading`, `error`, `items`, `refetch` e `isFallback`
+- fallback local mantido via `navigation.mock.ts`, usando `platformNavigation` e `tenantNavigation` apenas para mock/transicao e falha segura da API
+- fallback local tambem cobre resposta backend vazia enquanto a persistencia de modulos do tenant nao estiver completa em seeds/ambientes locais
+- `PlatformLayout` passou a consumir `scope=platform`
+- `AppShell` e `Sidebar` passaram a consumir o menu tenant/operations/logistics/finance e renderizar grupos
+- icone desconhecido usa fallback `Circle`; nao ha emojis como icones
+- testes smoke atualizados para adapter/service; E2E atualizado para aguardar resposta real de `/api/v1/navigation/menu`
+- documentacao atualizada em `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/frontend-screens.md`, `docs/api-screen-endpoints.md`, `docs/iconography-and-tags.md`, `docs/platform-console.md`, `docs/modules.md` e este status
+- fora de escopo mantido: novas telas de negocio, Google Maps, localizacao de operador, backend novo, endpoints novos e remocao completa do fallback local
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts` e `git diff --check`

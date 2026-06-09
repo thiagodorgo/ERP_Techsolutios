@@ -1,9 +1,18 @@
+import type { LucideIcon } from "lucide-react";
 import type { UserRole } from "../modules/auth/types";
 import type { TenantContext } from "../modules/context/types";
 
-export type NavigationScope = "platform" | "tenant";
+export type NavigationScope = "platform" | "tenant" | "operations" | "logistics" | "finance";
 export type NavigationMode = "platform" | "tenant_admin" | "operation";
-export type NavigationItemStatus = "active" | "planned";
+export type NavigationItemStatus =
+  | "active"
+  | "implemented"
+  | "partial"
+  | "mock"
+  | "planned"
+  | "backend-ready"
+  | "frontend-ready"
+  | "future";
 
 export type NavigationItem = {
   id: string;
@@ -15,9 +24,15 @@ export type NavigationItem = {
   allowedRoles?: UserRole[];
   children?: NavigationItem[];
   status?: NavigationItemStatus;
+  backendStatus?: NavigationItemStatus;
   icon?: string;
+  iconComponent?: LucideIcon;
   moduleKey?: string;
   featureKey?: string;
+  order?: number;
+  groupLabel?: string;
+  relatedEndpoints?: string[];
+  fromBackend?: boolean;
 };
 
 export type NavigationAccessContext = {
@@ -30,11 +45,11 @@ export type NavigationAccessContext = {
 };
 
 export function canAccessNavigationItem(context: NavigationAccessContext, item: NavigationItem): boolean {
-  if (item.status === "planned") {
+  if (item.status === "planned" && !item.fromBackend) {
     return false;
   }
 
-  if (context.scope !== item.scope) {
+  if (!scopeMatches(context.scope, item.scope)) {
     return false;
   }
 
@@ -70,7 +85,7 @@ export function canAccessNavigationItem(context: NavigationAccessContext, item: 
 export function filterNavigationItems(context: NavigationAccessContext, items: readonly NavigationItem[]): NavigationItem[] {
   return items
     .map((item) => {
-      if (item.status === "planned") {
+      if (item.status === "planned" && !item.fromBackend) {
         return null;
       }
 
@@ -92,4 +107,12 @@ export function isPlatformAdmin(context: Pick<NavigationAccessContext, "roles" |
     context.roles.includes("Super Admin") ||
     context.permissions.includes("platform:tenants:read")
   );
+}
+
+function scopeMatches(contextScope: NavigationScope, itemScope: NavigationScope): boolean {
+  if (contextScope === itemScope) {
+    return true;
+  }
+
+  return contextScope === "tenant" && itemScope !== "platform";
 }

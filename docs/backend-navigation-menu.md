@@ -24,6 +24,15 @@ Regras:
 
 O menu e apenas UX. A autorizacao real permanece nos endpoints backend por RBAC, tenant context, RLS quando aplicavel e validacao de recurso por `tenant_id`.
 
+Consumidor frontend atual:
+
+- `frontend/src/modules/navigation/navigation.service.ts` chama este endpoint;
+- `frontend/src/modules/navigation/navigation.adapter.ts` normaliza a resposta para o formato visual;
+- `frontend/src/modules/navigation/useNavigationMenu.ts` mantém loading/error/data/refetch/isFallback;
+- `PlatformLayout` usa `scope=platform`;
+- `AppShell` usa o menu autenticado sem scope para renderizar grupos tenant/operations/logistics/finance;
+- fallback local permanece para `VITE_USE_MOCKS=true`, indisponibilidade temporaria da API e resposta vazia enquanto a persistencia de modulos do tenant nao estiver completa em todos os ambientes.
+
 ## Scopes
 
 - `platform`

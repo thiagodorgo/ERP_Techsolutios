@@ -3,6 +3,7 @@ import { Navigate, Outlet } from "react-router-dom";
 
 import { MobileHeader, Sidebar, Topbar } from "../components/erp";
 import { Drawer } from "../components/ui";
+import { useNavigationMenu } from "../modules/navigation";
 import { getUnreadNotificationCount } from "../modules/notifications/notification.service";
 import { useAuth } from "../providers/AuthProvider";
 import { usePermissions } from "../providers/PermissionProvider";
@@ -15,6 +16,9 @@ export function AppShell() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
+  const navigationMenu = useNavigationMenu({
+    enabled: isAuthenticated && Boolean(activeContext),
+  });
   const notificationContext = useMemo(() => {
     if (!activeContext || !permissions.includes("notifications:read")) return null;
 
@@ -57,12 +61,13 @@ export function AppShell() {
       <Sidebar
         context={activeContext}
         collapsed={sidebarCollapsed}
+        navigationItems={navigationMenu.items}
         notificationUnreadCount={notificationUnreadCount}
         onToggleCollapsed={() => setSidebarCollapsed((current) => !current)}
       />
       <MobileHeader onMenu={() => setMobileNavOpen(true)} />
       <Drawer title="Navegacao" open={mobileNavOpen} onClose={() => setMobileNavOpen(false)}>
-        <Sidebar context={activeContext} notificationUnreadCount={notificationUnreadCount} />
+        <Sidebar context={activeContext} navigationItems={navigationMenu.items} notificationUnreadCount={notificationUnreadCount} />
       </Drawer>
       <main className="app-main">
         <Topbar context={activeContext} notificationUnreadCount={notificationUnreadCount} />

@@ -10,6 +10,8 @@ Nesta fase, o Console da Plataforma tambem possui a tela `/platform/cloud-billin
 
 O item de menu do Console da Plataforma deve vir do registry backend `GET /api/v1/navigation/menu` quando disponivel, filtrado por permissoes `platform:*` e sem misturar itens tenant para usuario comum.
 
+Implementacao frontend atual: `PlatformLayout` consome `GET /api/v1/navigation/menu?scope=platform` e usa fallback local seguro apenas quando a API estiver indisponivel ou `VITE_USE_MOCKS=true`.
+
 ## Diferenca de escopo
 
 - Console da Plataforma: administra a plataforma global, tenants, planos, modulos, saude e auditoria global.

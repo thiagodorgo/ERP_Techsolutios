@@ -54,6 +54,8 @@ Regras:
 - itens tenant/operacionais exigem permissao RBAC e modulo habilitado quando definido;
 - `relatedEndpoints` e `status` documentam rastreabilidade da tela;
 - autorizacao real continua nos endpoints de dominio.
+- frontend implementado consome esta rota via `useNavigationMenu`;
+- fallback local permanece apenas para mock/transicao e falha segura da API.
 
 ## tenant_checklist
 
