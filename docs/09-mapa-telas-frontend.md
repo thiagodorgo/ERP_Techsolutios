@@ -304,14 +304,14 @@ Princípios adotados:
 - **Offline:** não.
 - **KPIs:** volume, tempo de fila, OS críticas.
 - **Timeline/logs:** acesso ao detalhe da timeline.
-- **Status desta branch:** backend foundation `work_orders` implementado e item de menu `operations.workOrders` marcado como `backend-ready`; UI completa permanece fora do escopo.
+- **Status desta branch:** UI implementada em `/work-orders` com KPIs, filtros, tabela responsiva, fallback/mock seguro e guard `work_orders:read`; item de menu `operations.workOrders` passa a `implemented`.
 - **Prioridade:** MVP.
 
 ### W18 — Ordem de Serviço: Criação/Edição
 - **Objetivo:** abertura rápida de OS com validações obrigatórias.
 - **Usuários:** Operador, Gestor.
 - **Permissões:** OS criar/editar.
-- **Status desta branch:** endpoints `POST /api/v1/work-orders` e `PATCH /api/v1/work-orders/:workOrderId` implementados; tela permanece planejada.
+- **Status desta branch:** `/work-orders/new` implementada com formulario real para `POST /api/v1/work-orders`; edicao completa permanece futura, mas o detalhe ja permite status e atribuicao simples.
 - **Prioridade:** MVP.
 
 ### W19 — Ordem de Serviço: Detalhe (padrão DeviceDetail)
@@ -633,10 +633,10 @@ Princípios adotados:
 
 #### W17/W18/W19 — OS (Lista, Criação, Detalhe)
 - **Papel principal:** Operador Logístico.
-- **Permissões:** C/E OS por escopo + aprovações por papel.
-- **Dados exibidos:** identificação OS, cliente, SLA, equipe, viatura, timeline, evidências.
-- **Ações primárias:** criar, editar, despachar, atualizar status, cancelar com motivo.
-- **Estados:** default/loading/empty/error/blocked/pending approval/exception/read-only/audit-visible.
+- **Permissões:** `work_orders:read`, `work_orders:create`, `work_orders:update`, `work_orders:status` e `work_orders:assign`.
+- **Dados exibidos:** identificacao OS, cliente, endereco, coordenadas, prioridade, status, operador, datas e timeline.
+- **Ações primárias:** listar, filtrar, criar, detalhar, atualizar status, atribuir operador por UUID e abrir mapa operacional quando houver coordenadas.
+- **Estados:** default/loading/empty/error/fallback/read-only. Despacho, aprovacao financeira, evidencias de OS e comissoes ficam futuros.
 - **Alertas e bloqueios:** SLA crítico, checklist pendente, evidência obrigatória ausente.
 - **Integrações:** mapa, estoque, financeiro, mobile sync.
 - **Responsividade:** DeviceDetail em seções verticais + drawers de ação.

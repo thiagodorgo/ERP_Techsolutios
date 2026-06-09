@@ -301,7 +301,7 @@ test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () =
   const operatorTenantItems = filterNavigationItems(
     {
       roles: ["Operador Logistico"],
-      permissions: ["dashboard:view", "work-orders:view", "checklist_runs:create", "field_location:read", "notifications:read"],
+      permissions: ["dashboard:view", "work_orders:read", "checklist_runs:create", "field_location:read", "notifications:read"],
       mode: "operation",
       scope: "tenant",
       tenantStatus: "active",
@@ -349,7 +349,7 @@ test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () =
   const withoutNotificationsItems = filterNavigationItems(
     {
       roles: ["Operador Logistico"],
-      permissions: ["dashboard:view", "work-orders:view"],
+      permissions: ["dashboard:view", "work_orders:read"],
       mode: "operation",
       scope: "tenant",
       tenantStatus: "active",
@@ -1084,6 +1084,11 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   const { TenantChecklistsPage } = await import("../src/modules/checklists/pages/TenantChecklistsPage");
   const { NotificationsPage } = await import("../src/modules/notifications/pages/NotificationsPage");
   const { OperationsMapPage } = await import("../src/modules/operations/map/pages/OperationsMapPage");
+  const { WorkOrderCreatePage } = await import("../src/modules/work-orders/pages/WorkOrderCreatePage");
+  const { WorkOrdersPage } = await import("../src/modules/work-orders/pages/WorkOrdersPage");
+  const { WorkOrderDetailPanel } = await import("../src/modules/work-orders/components/WorkOrderDetailPanel");
+  const { WorkOrderTimeline } = await import("../src/modules/work-orders/components/WorkOrderTimeline");
+  const { getMockWorkOrderDetail, getMockWorkOrderTimeline } = await import("../src/modules/work-orders/work-orders.mock");
   const { TenantSettingsPage } = await import("../src/modules/settings/pages/TenantSettingsPage");
   const { PlatformCloudBillingPage } = await import("../src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage");
   const { PlatformTenantsPage } = await import("../src/modules/platform/pages/PlatformTenantsPage");
@@ -1104,10 +1109,15 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
         "tenant:manage",
         "field_location:read",
         "field_location:history",
+        "work_orders:read",
+        "work_orders:create",
+        "work_orders:update",
+        "work_orders:assign",
+        "work_orders:status",
         "notifications:read",
         "notifications:update",
       ],
-      enabledModules: ["dashboard", "tenant_checklist", "tenant-admin", "field_operations", "notifications"],
+      enabledModules: ["dashboard", "work-orders", "tenant_checklist", "tenant-admin", "field_operations", "notifications"],
       scope: "branch",
     }),
   );
@@ -1125,6 +1135,8 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
         <TenantProvider>
           <PermissionProvider>
             <ChecklistRunsPage />
+            <WorkOrdersPage />
+            <WorkOrderCreatePage />
             <TenantChecklistsPage />
             <OperationsMapPage />
             <NotificationsPage />
@@ -1149,13 +1161,23 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
       </AuthProvider>
     </MemoryRouter>,
   );
+  const workOrderDetail = getMockWorkOrderDetail("11111111-1111-4111-8111-000000000001");
+  const workOrderDetailHtml = renderToString(
+    <MemoryRouter>
+      <WorkOrderDetailPanel workOrder={workOrderDetail} />
+      <WorkOrderTimeline events={getMockWorkOrderTimeline(workOrderDetail.id)} />
+    </MemoryRouter>,
+  );
 
   assert.match(loginHtml, /W01 Login/);
   assert.match(protectedHtml, /Checklists Operacionais/);
+  assert.match(protectedHtml, /Ordens de Servico/);
+  assert.match(protectedHtml, /Nova OS/);
   assert.match(protectedHtml, /Mapa Operacional/);
   assert.match(protectedHtml, /Visualização operacional inicial/);
   assert.match(protectedHtml, /Notificacoes/);
   assert.match(runtimeHtml, /Executar checklist|Runtime operacional/);
+  assert.match(workOrderDetailHtml, /OS-000101|Timeline|Alterar status/);
   assert.match(protectedHtml, /Checklists|Selecione um contexto/);
   assert.match(protectedHtml, /Configurações/);
   assert.match(protectedHtml, /Tenants|tenant/i);

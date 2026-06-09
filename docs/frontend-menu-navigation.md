@@ -64,7 +64,7 @@ Nao implementar telas novas nesta rodada apenas por aparecerem como `planned` ou
 
 `/operations/map` e excecao ja implementada nesta rodada: o link exige `field_location:read`, modulo `field_operations` habilitado, e a tela consome apenas os endpoints existentes de localizacao com fallback/mock seguro.
 
-`/work-orders` passa a ter backend foundation `backend-ready` via `work_orders:read`. A UI completa de Work Orders nao foi implementada nesta rodada; o menu pode expor o status como rastreabilidade, mas a autorizacao real continua nos endpoints.
+`/work-orders` agora possui UI web implementada e usa `work_orders:read` no menu/guard frontend. As rotas complementares `/work-orders/new` e `/work-orders/:workOrderId` usam `work_orders:create` e `work_orders:read`, respectivamente. Acoes sensiveis dentro do detalhe usam `work_orders:status` e `work_orders:assign`.
 
 ## Hardcode restante
 

@@ -1042,3 +1042,24 @@
 - documentacao atualizada em `docs/work-orders.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/frontend-menu-navigation.md`, `docs/field-operator-location-map.md`, `docs/backend-navigation-menu.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `RBAC_MATRIX.md` e `agent-orchestration/docs/status-geral.md`
 - fora de escopo mantido: UI completa de Work Orders, despacho avancado, roteirizacao, comissao, pagamento de prestador, app Flutter, Google Maps real, fotos/assinaturas especificas de OS, estoque/pecas e integracao externa
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/work-orders.test.ts`, `node --test --import tsx tests/work-orders-routes.test.ts`, `node --test --import tsx tests/field-location-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/core-saas.test.ts` e `git diff --check`
+
+## 2026-06-09 - work orders UI
+
+- branch usada: `feature/work-orders-ui`
+- comandos iniciais executados: `git branch --show-current`, `git status` e `git log --oneline --decorate -5`
+- branch confirmada e worktree inicial limpo
+- modulo frontend criado: `frontend/src/modules/work-orders`
+- rotas implementadas em `frontend/src/App.tsx`: `/work-orders`, `/work-orders/new` e `/work-orders/:workOrderId`
+- services criados para consumir endpoints reais de lista, criacao, detalhe, status, atribuicao e timeline
+- adapter criado para normalizar envelopes `{ items, pagination }`, `{ data }`, snake_case e camelCase
+- hooks criados: `useWorkOrders` e `useWorkOrderDetail`
+- mocks realistas criados para OS aberta, atribuida, em deslocamento, em atendimento, concluida, cancelada e urgente
+- lista implementada com KPIs, filtros, busca, badges, tabela e lista mobile
+- criacao implementada com validacao frontend e redirecionamento para detalhe
+- detalhe implementado com timeline, dados operacionais, alteracao de status, atribuicao simples por UUID e link para Mapa Operacional quando ha coordenadas
+- permissoes frontend alinhadas para `work_orders:*`; aliases legados `work-orders:*` permanecem apenas em compatibilidade de auth
+- navigation registry atualizado para `operations.workOrders` como `implemented`
+- testes atualizados: `frontend/tests/smoke-flow.test.tsx`, `frontend/tests/work-orders.adapter.test.ts` e `tests/e2e/critical-flows.spec.ts`
+- documentacao atualizada em `docs/work-orders.md`, `docs/frontend-screens.md`, `docs/frontend-menu-navigation.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/backend-navigation-menu.md`, `docs/field-operator-location-map.md`, `docs/09-mapa-telas-frontend.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: despacho avancado, roteirizacao, comissao, pagamento de prestador, Flutter/mobile, Google Maps real, upload de evidencias especificas por OS, estoque/pecas, novos endpoints backend e migrations
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/work-orders.test.ts`, `node --test --import tsx tests/work-orders-routes.test.ts`, `node --test --import tsx tests/field-location-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/core-saas.test.ts` e `git diff --check`

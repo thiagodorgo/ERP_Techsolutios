@@ -34,7 +34,7 @@ export async function listAvailableContexts(): Promise<TenantContext[]> {
 function resolveEnabledModules(permissions: readonly string[]): string[] {
   const modules = new Set(["dashboard"]);
 
-  if (permissions.some((permission) => permission.startsWith("os.") || permission.startsWith("work-orders:"))) {
+  if (permissions.some((permission) => permission.startsWith("os.") || permission.startsWith("work_orders:") || permission.startsWith("work-orders:"))) {
     modules.add("work-orders");
   }
 

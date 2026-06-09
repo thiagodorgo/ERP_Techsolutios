@@ -8,6 +8,9 @@ import { ChecklistRunsPage } from "./modules/checklists/pages/ChecklistRunsPage"
 import { TenantChecklistsPage } from "./modules/checklists/pages/TenantChecklistsPage";
 import { NotificationsPage } from "./modules/notifications/pages/NotificationsPage";
 import { OperationsMapPage } from "./modules/operations/map/pages/OperationsMapPage";
+import { WorkOrderCreatePage } from "./modules/work-orders/pages/WorkOrderCreatePage";
+import { WorkOrderDetailPage } from "./modules/work-orders/pages/WorkOrderDetailPage";
+import { WorkOrdersPage } from "./modules/work-orders/pages/WorkOrdersPage";
 import { TenantSettingsPage } from "./modules/settings/pages/TenantSettingsPage";
 import { PlatformLayout } from "./layouts/PlatformLayout";
 import { PlatformCloudBillingPage } from "./modules/platform/cloud-billing/pages/PlatformCloudBillingPage";
@@ -18,9 +21,6 @@ import { ContextSelectionPage } from "./pages/ContextSelectionPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LogisticsPage } from "./pages/LogisticsPage";
 import { LoginPage } from "./pages/LoginPage";
-import { WorkOrderDetailPage } from "./pages/WorkOrderDetailPage";
-import { WorkOrderFormPage } from "./pages/WorkOrderFormPage";
-import { WorkOrdersListPage } from "./pages/WorkOrdersListPage";
 
 export function App() {
   return (
@@ -122,23 +122,23 @@ export function App() {
           <Route
             path="/work-orders"
             element={
-              <PermissionGuard permissions={["work-orders:view"]}>
-                <WorkOrdersListPage />
+              <PermissionGuard permissions={["work_orders:read"]}>
+                <WorkOrdersPage />
               </PermissionGuard>
             }
           />
           <Route
             path="/work-orders/new"
             element={
-              <PermissionGuard permissions={["work-orders:create"]}>
-                <WorkOrderFormPage />
+              <PermissionGuard permissions={["work_orders:create"]}>
+                <WorkOrderCreatePage />
               </PermissionGuard>
             }
           />
           <Route
             path="/work-orders/:workOrderId"
             element={
-              <PermissionGuard permissions={["work-orders:view"]}>
+              <PermissionGuard permissions={["work_orders:read"]}>
                 <WorkOrderDetailPage />
               </PermissionGuard>
             }

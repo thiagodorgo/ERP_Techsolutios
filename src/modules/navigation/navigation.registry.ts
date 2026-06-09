@@ -184,7 +184,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     icon: "Wrench",
     group: "operations",
     order: 220,
-    status: "backend-ready",
+    status: "implemented",
     requiredPermissions: ["work_orders:read"],
     requiredModules: ["work_orders", "work-orders"],
     tenantOnly: true,

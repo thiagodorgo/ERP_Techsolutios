@@ -213,6 +213,14 @@ Matriz backend aplicada:
 - `POST /api/v1/work-orders/:workOrderId/assign`: `work_orders:assign`
 - `GET /api/v1/work-orders/:workOrderId/timeline`: `work_orders:read`
 
+Mapeamento frontend:
+
+- `/work-orders`: `work_orders:read`
+- `/work-orders/new`: `work_orders:create`
+- `/work-orders/:workOrderId`: `work_orders:read`
+- acao de status no detalhe/lista: `work_orders:status`
+- acao de atribuicao no detalhe: `work_orders:assign`
+
 Regras:
 
 - `tenant_id` sempre vem do contexto autenticado;

@@ -83,7 +83,7 @@ Operacao:
 
 - `operations.checklists` -> `/operations/checklists`, `ClipboardList`, `checklist_runs:read`
 - `operations.checklistRun` -> `/operations/checklists/:checklistId/run`, `PlayCircle`, `checklist_runs:create`
-- `operations.workOrders` -> `/work-orders`, `Wrench`, `work_orders:read`, status `backend-ready`
+- `operations.workOrders` -> `/work-orders`, `Wrench`, `work_orders:read`, status `implemented`
 - `operations.map` -> `/operations/map`, `Map`, `field_location:read`
 - `operations.fieldOperators` -> `/operations/field-operators`, `MapPin`, `field_operator:read`
 - `operations.dispatches` -> `/operations/dispatches`, `Route`, `field_dispatch:read`
@@ -124,7 +124,7 @@ Platform items nao dependem de modulo de tenant.
 - `/operations/map` agora possui UI inicial no frontend web, protegida por `field_location:read` e dependente do modulo `field_operations`.
 - A UI consome `GET /api/v1/field-locations/latest` e `GET /api/v1/field-locations/history`, com mapa placeholder, KPIs, filtros, lista, detalhe e fallback/mock seguro.
 - Google Maps real, WebSocket/tempo real e despacho permanecem fora desta rodada.
-- Backend de Work Orders.
+- Work Orders UI implementada em `/work-orders`, `/work-orders/new` e `/work-orders/:workOrderId`, consumindo endpoints reais e fallback/mock seguro.
 - Backend de logistica.
 - Billing, fatura, pagamento ou fiscal tenant-scoped.
 - Remocao dos menus frontend existentes.
