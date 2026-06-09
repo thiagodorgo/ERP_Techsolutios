@@ -330,6 +330,10 @@ Princípios adotados:
 ### W20 — Painel Logístico e Mapa
 - **Objetivo:** despacho e acompanhamento em tempo real.
 - **Usuários:** Gestor, Operador, Supervisor.
+- **Rota planejada:** `/operations/map`.
+- **Permissões:** `field_location:read` para ultimas posicoes; `field_location:history` para historico.
+- **APIs backend foundation:** `GET /api/v1/field-locations/latest` e `GET /api/v1/field-locations/history`.
+- **Status desta branch:** backend foundation implementado; tela web, Google Maps, roteirizacao avancada, Work Orders completas e despacho completo ficam fora do escopo.
 - **Prioridade:** MVP (básico) / Scale (assistido).
 
 ### W21 — Estoque: Itens e saldos por filial
@@ -442,6 +446,9 @@ Princípios adotados:
 
 ### M09 — Geolocalização e rota
 - objetivo: apoiar deslocamento e registro operacional.
+- status desta branch: endpoint backend `POST /api/v1/mobile/field-locations` implementado para envio de coordenadas do proprio actor autenticado; app Flutter e coleta real continuam fora do escopo.
+- permissoes: `field_location:send`.
+- regras: validar coordenadas, bateria, velocidade, heading e data; usar `tenant_id` e `operator_user_id` do contexto autenticado; preservar RLS por tenant.
 - prioridade: Scale.
 
 ### M10 — Checklist de coleta guincho/reboque

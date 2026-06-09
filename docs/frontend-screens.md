@@ -179,6 +179,32 @@ Tipos frontend previstos:
 - `ChecklistAttachment`
 - `ChecklistAcknowledgement`
 
+## Mapa Operacional
+
+Tela planejada:
+
+- `Mapa Operacional`, rota `/operations/map`.
+
+Status desta branch:
+
+- backend foundation de localizacao implementado;
+- a tela web, Google Maps e UI de despacho permanecem fora do escopo.
+
+Endpoints backend disponiveis para a futura tela:
+
+- `GET /api/v1/field-locations/latest`: ultimas posicoes por operador no tenant atual;
+- `GET /api/v1/field-locations/history`: historico por operador, com permissao dedicada.
+
+Endpoint mobile disponivel:
+
+- `POST /api/v1/mobile/field-locations`: app mobile futuro envia a localizacao do proprio actor autenticado.
+
+RBAC:
+
+- menu `/operations/map` exige `field_location:read`;
+- historico exige `field_location:history`;
+- envio mobile exige `field_location:send`.
+
 ## Notificacoes
 
 Tela implementada:

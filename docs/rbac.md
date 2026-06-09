@@ -208,6 +208,40 @@ Matriz backend aplicada:
 
 Mesmo tenant admin nao consulta inbox de todos nesta fase. O service sempre filtra por `tenant_id` e `recipient_user_id` do ator autenticado.
 
+## field_operator_location
+
+Permissoes tenant-scoped:
+
+- `field_location:send`: enviar localizacao do proprio operador autenticado via mobile.
+- `field_location:read`: consultar ultimas localizacoes do tenant para o futuro Mapa Operacional.
+- `field_location:history`: consultar historico de localizacao de um operador do tenant.
+- `field_operator:read`: visualizar operadores em campo quando a tela for implementada.
+- `field_operator:action`: reservado para acoes futuras de operador.
+- `field_dispatch:*`: reservado para despacho futuro.
+
+Matriz backend aplicada:
+
+- `POST /api/v1/mobile/field-locations`: `field_location:send`
+- `GET /api/v1/field-locations/latest`: `field_location:read`
+- `GET /api/v1/field-locations/history`: `field_location:history`
+
+Roles padrao:
+
+- `tenant_admin`: recebe as permissoes tenant-scoped do catalogo.
+- `manager`: recebe `field_location:read`, `field_location:history` e `field_operator:read`.
+- `operator`: recebe `field_location:send`.
+- `field_technician`: recebe `field_location:send`.
+- `viewer`: recebe `field_location:read` e `field_operator:read`.
+- `auditor`: recebe `field_location:read`, `field_location:history` e `field_operator:read`.
+
+Regras:
+
+- envio mobile nao aceita `tenant_id` nem `operator_user_id` do body;
+- consultas sempre combinam `tenant_id` do actor com filtros de operador;
+- historico e dado sensivel e usa permissao separada;
+- RLS protege `field_operator_locations` por `app.current_tenant_id`;
+- a tela `/operations/map` permanece planejada e nao foi implementada nesta branch.
+
 ## cloud_usage_metering
 
 Permissao platform-scoped:
