@@ -150,6 +150,39 @@ M12 nao pertence ao escopo de guincho/reboque e nao deve reutilizar a semantica 
 
 ## Operacao em Campo
 
+### Work Orders Foundation
+
+Objetivo: expor a API backend de Ordens de Servico para criar, listar, detalhar, atualizar, atribuir operador, mudar status e consultar timeline.
+
+Status desta branch: backend foundation implementado; UI completa, despacho avancado, roteirizacao, comissao, pagamento, app Flutter, Google Maps real, evidencias especificas de OS e estoque ficam fora do escopo.
+
+Endpoints:
+
+```http
+GET   /work-orders
+POST  /work-orders
+GET   /work-orders/:workOrderId
+PATCH /work-orders/:workOrderId
+PATCH /work-orders/:workOrderId/status
+POST  /work-orders/:workOrderId/assign
+GET   /work-orders/:workOrderId/timeline
+```
+
+Permissoes:
+
+- `GET /work-orders`: `work_orders:read`
+- `POST /work-orders`: `work_orders:create`
+- `PATCH /work-orders/:workOrderId`: `work_orders:update`
+- `PATCH /work-orders/:workOrderId/status`: `work_orders:status`
+- `POST /work-orders/:workOrderId/assign`: `work_orders:assign`
+- `GET /work-orders/:workOrderId/timeline`: `work_orders:read`
+
+Relações futuras:
+
+- `checklist_id` prepara vinculo com checklist operacional;
+- coordenadas/endereco/operador preparam vinculo com Mapa Operacional;
+- assignments preparam despacho e comissoes futuras, sem calculo financeiro nesta branch.
+
 ### Mapa Operacional
 
 Objetivo: permitir que a tela `/operations/map` consulte a fundacao backend de localizacao de operadores em campo.

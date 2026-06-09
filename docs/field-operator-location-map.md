@@ -98,6 +98,7 @@ Matriz aplicada:
 
 ## Proximos passos
 
+- correlacionar operadores localizados com `work_orders` quando a UI evoluir para mostrar OS atual no Mapa Operacional;
 - definir retencao e auditoria de coordenadas;
 - avaliar provider de mapas e integracao Google Maps real com `VITE_GOOGLE_MAPS_API_KEY`;
 - modelar despachos, rotas e eventos de campo;

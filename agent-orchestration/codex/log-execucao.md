@@ -1022,3 +1022,23 @@
 - documentacao atualizada em `docs/field-operator-location-map.md`, `docs/frontend-menu-navigation.md`, `docs/frontend-screens.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/backend-navigation-menu.md`, `docs/platform-console.md`, `docs/09-mapa-telas-frontend.md` e `agent-orchestration/docs/status-geral.md`
 - fora de escopo mantido: Google Maps real, app Flutter, WebSocket, Work Orders completas, despacho completo, roteirizacao avancada, novos endpoints e backend novo
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/field-location-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts` e `git diff --check`
+
+## 2026-06-09 - work orders foundation
+
+- branch usada: `feature/work-orders-foundation`
+- comandos iniciais executados: `git branch --show-current`, `git status` e `git log --oneline --decorate -5`
+- branch confirmada e worktree inicial limpo
+- migration criada: `prisma/migrations/20260616000000_add_work_orders/migration.sql`
+- schema Prisma atualizado com `WorkOrder`, `WorkOrderEvent` e `WorkOrderAssignment`
+- modulo criado: `src/modules/work-orders`
+- rotas registradas em `src/app.ts`
+- endpoints implementados: `GET /api/v1/work-orders`, `POST /api/v1/work-orders`, `GET /api/v1/work-orders/:workOrderId`, `PATCH /api/v1/work-orders/:workOrderId`, `PATCH /api/v1/work-orders/:workOrderId/status`, `POST /api/v1/work-orders/:workOrderId/assign` e `GET /api/v1/work-orders/:workOrderId/timeline`
+- validators implementados para titulo, prioridade, status, transicoes, coordenadas, datas, UUIDs, limit/offset e busca
+- RBAC atualizado com `work_orders:read`, `work_orders:create`, `work_orders:update`, `work_orders:assign`, `work_orders:status`, `work_orders:cancel` e `work_orders:delete`
+- eventos/timeline implementados: `work_order_created`, `work_order_updated`, `work_order_assigned`, `work_order_status_changed`, `work_order_cancelled` e `work_order_completed`
+- auditoria best-effort adicionada para criacao, atualizacao, atribuicao, mudanca de status, cancelamento e conclusao
+- navigation registry atualizado para `operations.workOrders` como `backend-ready`
+- testes criados/atualizados: `tests/work-orders.test.ts`, `tests/work-orders-routes.test.ts`, `tests/core-saas.test.ts` e `tests/rls-tenant-isolation.test.ts`
+- documentacao atualizada em `docs/work-orders.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/frontend-menu-navigation.md`, `docs/field-operator-location-map.md`, `docs/backend-navigation-menu.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `RBAC_MATRIX.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: UI completa de Work Orders, despacho avancado, roteirizacao, comissao, pagamento de prestador, app Flutter, Google Maps real, fotos/assinaturas especificas de OS, estoque/pecas e integracao externa
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/work-orders.test.ts`, `node --test --import tsx tests/work-orders-routes.test.ts`, `node --test --import tsx tests/field-location-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/core-saas.test.ts` e `git diff --check`
