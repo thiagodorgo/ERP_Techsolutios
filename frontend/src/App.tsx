@@ -9,6 +9,7 @@ import { TenantChecklistsPage } from "./modules/checklists/pages/TenantChecklist
 import { NotificationsPage } from "./modules/notifications/pages/NotificationsPage";
 import { TenantSettingsPage } from "./modules/settings/pages/TenantSettingsPage";
 import { PlatformLayout } from "./layouts/PlatformLayout";
+import { PlatformCloudBillingPage } from "./modules/platform/cloud-billing/pages/PlatformCloudBillingPage";
 import { PlatformTenantDetailPage } from "./modules/platform/pages/PlatformTenantDetailPage";
 import { PlatformTenantModulesPage } from "./modules/platform/pages/PlatformTenantModulesPage";
 import { PlatformTenantsPage } from "./modules/platform/pages/PlatformTenantsPage";
@@ -48,6 +49,22 @@ export function App() {
             element={
               <PermissionGuard permissions={["platform:modules:manage"]}>
                 <PlatformTenantModulesPage />
+              </PermissionGuard>
+            }
+          />
+          <Route
+            path="/platform/cloud-billing"
+            element={
+              <PermissionGuard
+                permissions={[
+                  "platform:cloud-usage:read",
+                  "platform:cloud-costs:read",
+                  "platform:cloud-cost-allocation:read",
+                  "platform:cloud-charges:read",
+                  "platform:cloud-charge-rules:read",
+                ]}
+              >
+                <PlatformCloudBillingPage />
               </PermissionGuard>
             }
           />

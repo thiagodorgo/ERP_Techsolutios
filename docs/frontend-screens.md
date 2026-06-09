@@ -17,21 +17,22 @@ Usa layout separado do tenant e deve ficar reservado ao escopo `platform`.
 - P01 - Tenants
 - P02 - Detalhe do Tenant
 - P03 - Modulos do Tenant
+- P04 - Cloud Billing
 
 Rotas MVP:
 
 - `/platform/tenants`
 - `/platform/tenants/:tenantId`
 - `/platform/tenants/:tenantId/modules`
+- `/platform/cloud-billing`
 
-APIs sem UI completa nesta branch:
+Cloud Billing implementado nesta branch:
 
-- `cloud_usage_metering`: consulta uso interno por tenant.
-- `cloud_cost_import`: consulta/importa custo AWS bruto.
-- `cloud_cost_allocation`: executa e consulta alocacao de custo AWS por tenant.
-- `cloud_charge_markup_rules`: cria regras de markup e calcula valor cobrável em `tenant_cloud_charges`.
-
-A tela completa de cloud billing/plataforma fica planejada para branch futura. Nesta branch, custo alocado, valor cobrável e margem nao aparecem em tela tenant.
+- rota `/platform/cloud-billing`;
+- abas internas: Visao geral, Uso, Custos AWS, Rateio, Cobranca, Regras e Runs;
+- consome `cloud_usage_metering`, `cloud_cost_import`, `cloud_cost_allocation` e `cloud_charge_markup_rules`;
+- acoes previstas: importacao manual de CUR, run de rateio, calculo de cobranca e criacao/edicao de regras;
+- custo alocado, valor cobravel e margem continuam restritos ao Console da Plataforma e nao aparecem em tela tenant.
 
 ## Autenticacao
 
@@ -54,7 +55,7 @@ Cookie httpOnly, storage alternativo, MFA e OAuth/social login ficam fora desta 
 Smoke tests frontend:
 
 - comando: `npm --prefix frontend run test:smoke`;
-- cobertura inicial: login, auth storage/service, refresh-on-401, logout, API client Bearer, guards/sidebar RBAC, `/login`, W02A Checklists, W03 Configurações, Platform Console e anexos de checklist;
+- cobertura inicial: login, auth storage/service, refresh-on-401, logout, API client Bearer, guards/sidebar RBAC, `/login`, W02A Checklists, W03 Configurações, Platform Console, Cloud Billing e anexos de checklist;
 - estrategia: testes leves com `node:test`, `tsx` e renderizacao server-side React, sem Playwright/Cypress nesta rodada.
 
 E2E real em navegador:
@@ -63,7 +64,7 @@ E2E real em navegador:
 - stack: Playwright com Chromium, backend Prisma em `CORE_SAAS_PERSISTENCE=prisma` e frontend Vite em modo real (`VITE_USE_MOCKS=false`);
 - pre-requisitos: Docker/PostgreSQL/Redis ativos, migrations aplicadas e Chromium instalado com `npx playwright install chromium`;
 - o comando executa o seed demo idempotente antes dos testes, usando `admin.demo@example.com` e `DEMO_ADMIN_PASSWORD` local;
-- cobertura inicial: login real, erro de login, guard de rota protegida, sessao com refresh token, logout, sidebar RBAC de tenant admin, W02A, runtime web de checklists, W03, bloqueio do Console da Plataforma para usuario tenant e acesso positivo do Platform Admin a `/platform/tenants`;
+- cobertura inicial: login real, erro de login, guard de rota protegida, sessao com refresh token, logout, sidebar RBAC de tenant admin, W02A, runtime web de checklists, W03, bloqueio do Console da Plataforma para usuario tenant e acesso positivo do Platform Admin a `/platform/tenants` e `/platform/cloud-billing`;
 - seed E2E: `platform.admin@erp.local` usa role global `super_admin` e senha local/dev `E2E_PLATFORM_PASSWORD` ou fallback `platform-admin-dev-password`.
 
 ## Administrador

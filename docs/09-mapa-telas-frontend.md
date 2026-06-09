@@ -62,9 +62,10 @@ Princípios adotados:
 1. Tenants
 2. Detalhe do tenant
 3. Módulos do tenant
-4. Auditoria global
-5. Health do sistema
-6. Configurações globais
+4. Cloud Billing
+5. Auditoria global
+6. Health do sistema
+7. Configurações globais
 
 ### Regra RBAC da navegação
 
@@ -104,13 +105,17 @@ Princípios adotados:
 - **Rota:** `/platform/tenants/:tenantId/modules`.
 - **Prioridade:** MVP da Console da Plataforma.
 
-### Plataforma cloud billing — futura
-- **Objetivo:** visualizar uso, custo bruto, custo alocado por tenant, markup, valor cobrável e cobrança cloud quando a UI de billing for implementada.
+### P04 — Cloud Billing
+- **Objetivo:** visualizar uso, custo bruto, custo alocado por tenant, markup, valor cobravel, margem e runs de cobranca cloud.
 - **Usuários:** Super Admin / dono do SaaS.
-- **Permissões previstas:** `platform:cloud-usage:read`, `platform:cloud-costs:read`, `platform:cloud-cost-allocation:read`, `platform:cloud-charge-rules:read`, `platform:cloud-charges:read` e futuras permissões de billing/pagamento.
-- **APIs já disponíveis nesta fase:** `/api/v1/platform/cloud-usage/*`, `/api/v1/platform/cloud-costs/*`, `/api/v1/platform/cloud-cost-allocations/*`, `/api/v1/platform/cloud-charge-rules/*` e `/api/v1/platform/cloud-charges/*`.
-- **Fora desta branch:** UI completa, fatura, pagamento, emissão fiscal e exposição de custo/preço/margem para usuário tenant comum.
-- **Prioridade:** próxima etapa de billing UI.
+- **Permissões:** `platform:cloud-usage:read`, `platform:cloud-costs:read`, `platform:cloud-costs:import`, `platform:cloud-cost-allocation:read`, `platform:cloud-cost-allocation:run`, `platform:cloud-charge-rules:read`, `platform:cloud-charge-rules:write`, `platform:cloud-charges:read` e `platform:cloud-charges:calculate`.
+- **Rota:** `/platform/cloud-billing`.
+- **Abas:** Visao geral, Uso, Custos AWS, Rateio, Cobranca, Regras e Runs.
+- **Ações:** atualizar dados, importar CUR manual, rodar rateio, calcular cobranca, criar regra e editar regra.
+- **Estados:** loading, empty, erro, permissao insuficiente por aba, sucesso apos acao e erro de validacao de formulario.
+- **APIs consumidas:** `/api/v1/platform/cloud-usage/*`, `/api/v1/platform/cloud-costs/*`, `/api/v1/platform/cloud-cost-allocations/*`, `/api/v1/platform/cloud-charge-rules/*` e `/api/v1/platform/cloud-charges/*`.
+- **Fora desta branch:** fatura, pagamento, checkout, emissão fiscal e exposicao de custo/preco/margem para usuario tenant comum.
+- **Prioridade:** Scale.
 
 ## Telas Web
 
@@ -697,7 +702,7 @@ Princípios adotados:
 5. **F05 Governança de exceção:** bloqueio/aprovação na W19/W26 com registro em W09.
 6. **F06 Trilha de auditoria:** ação crítica em usuário/permissão/financeiro com verificação em W09.
 7. **F07 Financeiro operacional:** W24 orçamento → W26 faturamento → fechamento inicial.
-8. **F08 Plataforma:** P01 tenants → P02 detalhe → P03 módulos do tenant.
+8. **F08 Plataforma:** P01 tenants → P02 detalhe → P03 módulos do tenant → P04 Cloud Billing.
 
 ## Registro de mudança desta versão do documento
 

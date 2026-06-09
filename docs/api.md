@@ -406,6 +406,30 @@ Permissoes:
 
 Esta API calcula valor cobrável com markup/margem apenas para Platform Admin. Nao gera fatura, nao integra pagamento, nao emite nota fiscal e nao expõe margem para usuario tenant comum.
 
+### Platform Cloud Billing UI
+
+A tela `/platform/cloud-billing` consome os endpoints de `cloud_usage_metering`, `cloud_cost_import`, `cloud_cost_allocation` e `cloud_charge_markup_rules` em uma rota unica do Console da Plataforma.
+
+Abas implementadas:
+
+- Visao geral;
+- Uso;
+- Custos AWS;
+- Rateio;
+- Cobranca;
+- Regras;
+- Runs.
+
+Acoes frontend:
+
+- atualizar dados consolidados;
+- importar CUR manual via `POST /api/v1/platform/cloud-costs/imports/manual-csv`;
+- rodar rateio via `POST /api/v1/platform/cloud-cost-allocations/runs`;
+- calcular cobranca via `POST /api/v1/platform/cloud-charges/calculation-runs`, sempre com `sourceAllocationRunId`;
+- criar e editar regras via `POST/PATCH /api/v1/platform/cloud-charge-rules`.
+
+Esta UI permanece platform-scoped. Custo, preco, valor cobravel, margem e regras comerciais nao sao exibidos em telas tenant.
+
 ## Observacoes
 
 - A implementacao inicial pode usar mock/service em memoria enquanto a persistencia de `tenant_modules` nao estiver versionada.

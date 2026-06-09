@@ -332,7 +332,15 @@ test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () =
   const platformAdminItems = filterNavigationItems(
     {
       roles: ["Super Admin"],
-      permissions: ["platform:tenants:read", "platform:modules:manage"],
+      permissions: [
+        "platform:tenants:read",
+        "platform:modules:manage",
+        "platform:cloud-usage:read",
+        "platform:cloud-costs:read",
+        "platform:cloud-cost-allocation:read",
+        "platform:cloud-charges:read",
+        "platform:cloud-charge-rules:read",
+      ],
       mode: "platform",
       scope: "platform",
     },
@@ -362,7 +370,145 @@ test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () =
   assert.equal(adminPaths.includes("/administrator/settings"), true);
   assert.equal(tenantAdminPlatformItems.length, 0);
   assert.equal(platformAdminItems.some((item) => item.path === "/platform/tenants"), true);
+  assert.equal(platformAdminItems.some((item) => item.path === "/platform/cloud-billing"), true);
   assert.deepEqual(flattenPaths(adminTenantItems), flattenPaths(adminTenantItems));
+});
+
+test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async () => {
+  process.env.VITE_USE_MOCKS = "false";
+  process.env.VITE_API_BASE_URL = "/api/v1";
+  browser.clear();
+  const calls = installFetchSequence([
+    { payload: { data: { metrics: [{ metricKey: "notification.created", quantity: 4 }], generatedAt: "2026-06-08T00:00:00.000Z" } } },
+    {
+      payload: {
+        data: [
+          {
+            id: "import-1",
+            provider: "aws",
+            status: "completed",
+            periodStart: "2026-06-01T00:00:00.000Z",
+            importedAt: "2026-06-08T00:00:00.000Z",
+            sourceUri: "aws-cur.csv",
+            rowCount: 2,
+          },
+        ],
+      },
+    },
+    { payload: { data: { totalUnblendedCost: 12.75, currency: "BRL", tenants: [] } } },
+    {
+      payload: {
+        data: [
+          {
+            id: "allocation-run-1",
+            status: "completed",
+            periodStart: "2026-06-01T00:00:00.000Z",
+            totalAllocatedCost: 12,
+            totalUnallocatedCost: 0,
+            startedAt: "2026-06-08T00:00:00.000Z",
+          },
+        ],
+      },
+    },
+    { payload: { data: { totalAllocatedCost: 12, totalUnallocatedCost: 0, tenants: [{ tenantId: "tenant-a", totalAllocatedCost: 12 }] } } },
+    {
+      payload: {
+        data: [
+          {
+            id: "charge-run-1",
+            status: "completed",
+            periodStart: "2026-06-01T00:00:00.000Z",
+            totalChargeAmount: 18,
+            totalAllocatedCost: 12,
+            startedAt: "2026-06-08T00:00:00.000Z",
+          },
+        ],
+      },
+    },
+    { payload: { data: { totalChargeAmount: 18, totalAllocatedCost: 12, tenants: [{ tenantId: "tenant-a", totalChargeAmount: 18, totalAllocatedCost: 12 }] } } },
+    {
+      payload: {
+        data: [
+          {
+            id: "rule-1",
+            name: "Default",
+            isActive: true,
+            markupValue: 50,
+            updatedAt: "2026-06-08T00:00:00.000Z",
+          },
+        ],
+      },
+    },
+    { payload: { data: { id: "allocation-run-2", status: "completed", periodStart: "2026-06-01T00:00:00.000Z", totalAllocatedCost: 12 } } },
+    { payload: { data: { id: "charge-run-2", status: "completed", periodStart: "2026-06-01T00:00:00.000Z", totalChargeAmount: 18, totalAllocatedCost: 12 } } },
+    { payload: { data: { id: "rule-2", name: "Nova", isActive: true, markupValue: 25, updatedAt: "2026-06-08T00:00:00.000Z" } } },
+    { payload: { data: { id: "rule-2", name: "Nova editada", isActive: false, markupValue: 30, updatedAt: "2026-06-08T00:00:00.000Z" } } },
+  ]);
+  const {
+    calculateCloudChargesFromApi,
+    createCloudChargeRuleFromApi,
+    getCloudAllocationSummaryFromApi,
+    getCloudChargeSummaryFromApi,
+    getCloudCostSummaryFromApi,
+    getCloudUsageSummaryFromApi,
+    listCloudAllocationRunsFromApi,
+    listCloudChargeRulesFromApi,
+    listCloudChargeRunsFromApi,
+    listCloudCostImportsFromApi,
+    runCloudAllocationFromApi,
+    updateCloudChargeRuleFromApi,
+  } = await import("../src/modules/platform/cloud-billing/cloud-billing.adapter");
+
+  const usage = await getCloudUsageSummaryFromApi();
+  const imports = await listCloudCostImportsFromApi();
+  const costs = await getCloudCostSummaryFromApi();
+  const allocationRuns = await listCloudAllocationRunsFromApi();
+  const allocation = await getCloudAllocationSummaryFromApi();
+  const chargeRuns = await listCloudChargeRunsFromApi();
+  const charges = await getCloudChargeSummaryFromApi();
+  const rules = await listCloudChargeRulesFromApi();
+  const allocationRun = await runCloudAllocationFromApi();
+  const chargeRun = await calculateCloudChargesFromApi("allocation-run-2");
+  const createdRule = await createCloudChargeRuleFromApi({
+    name: "Nova",
+    provider: "aws",
+    metric: "allocated_cost",
+    markupPercent: 25,
+    active: true,
+  });
+  const updatedRule = await updateCloudChargeRuleFromApi("rule-2", {
+    name: "Nova editada",
+    provider: "aws",
+    metric: "allocated_cost",
+    markupPercent: 30,
+    active: false,
+  });
+
+  assert.equal(calls[0].url, "/api/v1/platform/cloud-usage/summary");
+  assert.equal(calls[1].url, "/api/v1/platform/cloud-costs/imports");
+  assert.equal(calls[2].url, "/api/v1/platform/cloud-costs/summary");
+  assert.equal(calls[3].url, "/api/v1/platform/cloud-cost-allocations/runs");
+  assert.equal(calls[4].url, "/api/v1/platform/cloud-cost-allocations/summary");
+  assert.equal(calls[5].url, "/api/v1/platform/cloud-charges/calculation-runs");
+  assert.equal(calls[6].url, "/api/v1/platform/cloud-charges/summary");
+  assert.equal(calls[7].url, "/api/v1/platform/cloud-charge-rules");
+  assert.equal(calls[8].url, "/api/v1/platform/cloud-cost-allocations/runs");
+  assert.equal(calls[9].url, "/api/v1/platform/cloud-charges/calculation-runs");
+  assert.equal(JSON.parse(String(calls[9].init.body)).sourceAllocationRunId, "allocation-run-2");
+  assert.equal(calls[10].url, "/api/v1/platform/cloud-charge-rules");
+  assert.equal(calls[11].url, "/api/v1/platform/cloud-charge-rules/rule-2");
+  assert.equal(usage.totalRequests, 4);
+  assert.equal(imports[0].records, 2);
+  assert.equal(costs.totalCost, 12.75);
+  assert.equal(allocationRuns[0].allocatedCost, 12);
+  assert.equal(allocation.tenants[0].allocatedCost, 12);
+  assert.equal(chargeRuns[0].grossAmount, 18);
+  assert.equal(charges.tenants[0].amount, 18);
+  assert.equal(rules[0].markupPercent, 50);
+  assert.equal(allocationRun.allocatedCost, 12);
+  assert.equal(chargeRun.grossAmount, 18);
+  assert.equal(createdRule.name, "Nova");
+  assert.equal(updatedRule.active, false);
 });
 
 test("notifications service cobre endpoints, mocks e actionUrl interno", async () => {
@@ -789,6 +935,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   const { TenantChecklistsPage } = await import("../src/modules/checklists/pages/TenantChecklistsPage");
   const { NotificationsPage } = await import("../src/modules/notifications/pages/NotificationsPage");
   const { TenantSettingsPage } = await import("../src/modules/settings/pages/TenantSettingsPage");
+  const { PlatformCloudBillingPage } = await import("../src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage");
   const { PlatformTenantsPage } = await import("../src/modules/platform/pages/PlatformTenantsPage");
   setStoredAuthSession(mockSession);
   browser.localStorage.setItem(
@@ -823,6 +970,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
             <NotificationsPage />
             <TenantSettingsPage />
             <PlatformTenantsPage />
+            <PlatformCloudBillingPage />
           </PermissionProvider>
         </TenantProvider>
       </AuthProvider>
@@ -849,6 +997,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(protectedHtml, /Checklists|Selecione um contexto/);
   assert.match(protectedHtml, /Configurações/);
   assert.match(protectedHtml, /Tenants|tenant/i);
+  assert.match(protectedHtml, /Cloud Billing/);
 });
 
 test("anexos frontend validam ausente, renderizam lista e preview", async () => {

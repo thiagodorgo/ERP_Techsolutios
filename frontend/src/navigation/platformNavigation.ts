@@ -34,6 +34,22 @@ export const platformNavigation: NavigationItem[] = [
     icon: "platform-modules",
   },
   {
+    id: "platform-cloud-billing",
+    label: "Cloud Billing",
+    path: "/platform/cloud-billing",
+    scope: "platform",
+    mode: "platform",
+    requiredPermissions: [
+      "platform:cloud-usage:read",
+      "platform:cloud-costs:read",
+      "platform:cloud-cost-allocation:read",
+      "platform:cloud-charges:read",
+      "platform:cloud-charge-rules:read",
+    ],
+    allowedRoles: ["Super Admin"],
+    icon: "platform-cloud-billing",
+  },
+  {
     id: "platform-audit",
     label: "Auditoria Global",
     path: "/platform/audit",

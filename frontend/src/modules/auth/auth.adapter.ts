@@ -216,8 +216,36 @@ function mapBackendPermission(permission: string): string[] {
 }
 
 const rolePermissions: Record<string, string[]> = {
-  super_admin: ["platform:tenants:read", "platform:tenants:create", "platform:tenants:update", "platform:modules:manage"],
-  platform_admin: ["platform:tenants:read", "platform:tenants:create", "platform:tenants:update", "platform:modules:manage"],
+  super_admin: [
+    "platform:tenants:read",
+    "platform:tenants:create",
+    "platform:tenants:update",
+    "platform:modules:manage",
+    "platform:cloud-usage:read",
+    "platform:cloud-costs:read",
+    "platform:cloud-costs:import",
+    "platform:cloud-cost-allocation:read",
+    "platform:cloud-cost-allocation:run",
+    "platform:cloud-charges:read",
+    "platform:cloud-charges:calculate",
+    "platform:cloud-charge-rules:read",
+    "platform:cloud-charge-rules:write",
+  ],
+  platform_admin: [
+    "platform:tenants:read",
+    "platform:tenants:create",
+    "platform:tenants:update",
+    "platform:modules:manage",
+    "platform:cloud-usage:read",
+    "platform:cloud-costs:read",
+    "platform:cloud-costs:import",
+    "platform:cloud-cost-allocation:read",
+    "platform:cloud-cost-allocation:run",
+    "platform:cloud-charges:read",
+    "platform:cloud-charges:calculate",
+    "platform:cloud-charge-rules:read",
+    "platform:cloud-charge-rules:write",
+  ],
   tenant_admin: [
     "tenant.manage",
     "users.manage",
