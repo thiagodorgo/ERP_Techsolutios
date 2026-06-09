@@ -150,11 +150,11 @@ M12 nao pertence ao escopo de guincho/reboque e nao deve reutilizar a semantica 
 
 ## Operacao em Campo
 
-### Mapa Operacional planejado
+### Mapa Operacional
 
-Objetivo: permitir que a futura tela `/operations/map` consulte a fundacao backend de localizacao de operadores em campo.
+Objetivo: permitir que a tela `/operations/map` consulte a fundacao backend de localizacao de operadores em campo.
 
-Status desta branch: backend foundation implementado; tela web e Google Maps ficam fora do escopo.
+Status desta branch: UI inicial implementada no frontend web; Google Maps real, despacho, roteirizacao, WebSocket e novos endpoints ficam fora do escopo.
 
 Endpoints implementados:
 
@@ -175,7 +175,9 @@ Regras:
 - envio mobile registra a localizacao do proprio actor autenticado;
 - consulta web retorna somente dados do tenant atual;
 - historico exige permissao separada para reduzir exposicao de dados sensiveis;
-- `/operations/map` continua item planejado do menu backend e nao foi implementado nesta branch.
+- `/operations/map` consome `GET /field-locations/latest` para dados atuais e pode usar `GET /field-locations/history` para historico por operador;
+- a tela usa fallback/mock seguro quando a API falha, retorna vazia ou `VITE_USE_MOCKS=true`;
+- localizacao com `capturedAt` acima de 15 minutos aparece como antiga.
 
 ## P04 · Platform Cloud Billing
 

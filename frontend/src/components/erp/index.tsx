@@ -78,6 +78,7 @@ const iconByModule = {
   "tenant-admin": ShieldCheck,
   settings: Settings,
   tenant_checklist: ClipboardList,
+  field_operations: Map,
   notifications: Bell,
 };
 

@@ -56,11 +56,13 @@ type NavigationItem = {
 O registry referencia as telas existentes e planejadas:
 
 - P01/P02/P03/P04 no Console da Plataforma;
-- W02A Checklists, W03 Configuracoes, Notificacoes e telas administrativas tenant;
+- W02A Checklists, W03 Configuracoes, Notificacoes, Mapa Operacional e telas administrativas tenant;
 - runtime operacional de checklists em `/operations/checklists`;
 - rotas planejadas de operacao, logistica e financeiro.
 
 Nao implementar telas novas nesta rodada apenas por aparecerem como `planned` ou `future` no registry.
+
+`/operations/map` e excecao ja implementada nesta rodada: o link exige `field_location:read`, modulo `field_operations` habilitado, e a tela consome apenas os endpoints existentes de localizacao com fallback/mock seguro.
 
 ## Hardcode restante
 

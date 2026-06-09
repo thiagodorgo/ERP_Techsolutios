@@ -68,10 +68,12 @@ export const mockTenantContexts: TenantContext[] = [
       "checklist_runs:update",
       "checklist_runs:complete",
       "checklist_runs:acknowledge",
+      "field_location:read",
+      "field_location:history",
       "notifications:read",
       "notifications:update",
     ],
-    enabledModules: ["dashboard", "work-orders", "logistics", "users", "tenant-admin", "tenant_checklist", "notifications"],
+    enabledModules: ["dashboard", "work-orders", "logistics", "users", "tenant-admin", "tenant_checklist", "field_operations", "notifications"],
     scope: "branch",
   },
   {

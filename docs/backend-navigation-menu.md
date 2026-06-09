@@ -117,7 +117,13 @@ Platform items nao dependem de modulo de tenant.
 
 - CRUD persistido de menu.
 - Google Maps real.
-- Localizacao real de operador.
+- Tela real de despacho, roteirizacao e Work Orders completas.
+
+## Status frontend relacionado
+
+- `/operations/map` agora possui UI inicial no frontend web, protegida por `field_location:read` e dependente do modulo `field_operations`.
+- A UI consome `GET /api/v1/field-locations/latest` e `GET /api/v1/field-locations/history`, com mapa placeholder, KPIs, filtros, lista, detalhe e fallback/mock seguro.
+- Google Maps real, WebSocket/tempo real e despacho permanecem fora desta rodada.
 - Backend de Work Orders.
 - Backend de logistica.
 - Billing, fatura, pagamento ou fiscal tenant-scoped.

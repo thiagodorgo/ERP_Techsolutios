@@ -2,16 +2,38 @@
 
 ## Decisao desta rodada
 
-Esta branch implementa a fundacao backend de localizacao de operadores em campo. O app mobile futuro podera enviar coordenadas ao backend e o frontend web podera consultar ultimas posicoes e historico para alimentar o Mapa Operacional quando a tela for implementada.
+Esta branch implementa a UI inicial do Mapa Operacional em `/operations/map` sobre a fundacao backend de localizacao de operadores em campo. O app mobile futuro podera enviar coordenadas ao backend; o frontend web agora consulta ultimas posicoes e historico pelos endpoints ja existentes para exibir operadores em campo.
 
-Fora de escopo mantido: Google Maps real no frontend, tela `/operations/map`, app Flutter, roteirizacao avancada, Work Orders completas e despacho completo.
+Fora de escopo mantido: Google Maps real no frontend, app Flutter, roteirizacao avancada, Work Orders completas, despacho completo, WebSocket/tempo real e novos endpoints.
 
-Itens planejados:
+Itens registrados:
 
-- `operations.map` -> `/operations/map`, permissao `field_location:read`, modulo `field_operations`.
+- `operations.map` -> `/operations/map`, permissao `field_location:read`, modulo `field_operations`, UI inicial implementada.
 - `operations.fieldOperators` -> `/operations/field-operators`, permissao `field_operator:read`, modulo `field_operations`.
 - `operations.dispatches` -> `/operations/dispatches`, permissao `field_dispatch:read`, modulo `field_operations`.
 - `logistics.map` -> `/logistics/map`, permissao `field_location:read`, modulos `logistics` ou `field_operations`.
+
+## UI web
+
+Rota implementada:
+
+- `/operations/map`
+
+Componentes da tela:
+
+- cabecalho com fonte de dados e acao de refresh;
+- KPIs de operadores localizados, disponiveis, em deslocamento, em atendimento, localizacoes antigas e offline/bloqueados;
+- filtros por busca, status, equipe e localizacao antiga;
+- mapa operacional em projecao proporcional por latitude/longitude, sem Google Maps real nesta etapa;
+- marcadores selecionaveis, lista de operadores e painel de detalhe com coordenadas, precisao, bateria e timestamps;
+- estados de loading, erro, vazio e fallback/mock local.
+
+Fallback:
+
+- `VITE_USE_MOCKS=true` usa dados locais;
+- falha da API ou resposta vazia ativa fallback seguro com dados mockados;
+- registros com `capturedAt` acima de 15 minutos sao marcados como localizacao antiga;
+- coordenadas nao sao registradas em `console.log` pelo frontend.
 
 ## Persistencia
 
@@ -77,6 +99,6 @@ Matriz aplicada:
 ## Proximos passos
 
 - definir retencao e auditoria de coordenadas;
-- avaliar provider de mapas;
+- avaliar provider de mapas e integracao Google Maps real com `VITE_GOOGLE_MAPS_API_KEY`;
 - modelar despachos, rotas e eventos de campo;
 - garantir opt-in, privacidade e controles por tenant antes de qualquer coleta real.

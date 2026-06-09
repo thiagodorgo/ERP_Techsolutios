@@ -213,9 +213,9 @@ Mesmo tenant admin nao consulta inbox de todos nesta fase. O service sempre filt
 Permissoes tenant-scoped:
 
 - `field_location:send`: enviar localizacao do proprio operador autenticado via mobile.
-- `field_location:read`: consultar ultimas localizacoes do tenant para o futuro Mapa Operacional.
+- `field_location:read`: consultar ultimas localizacoes do tenant para o Mapa Operacional.
 - `field_location:history`: consultar historico de localizacao de um operador do tenant.
-- `field_operator:read`: visualizar operadores em campo quando a tela for implementada.
+- `field_operator:read`: visualizar operadores em campo em telas futuras.
 - `field_operator:action`: reservado para acoes futuras de operador.
 - `field_dispatch:*`: reservado para despacho futuro.
 
@@ -240,7 +240,8 @@ Regras:
 - consultas sempre combinam `tenant_id` do actor com filtros de operador;
 - historico e dado sensivel e usa permissao separada;
 - RLS protege `field_operator_locations` por `app.current_tenant_id`;
-- a tela `/operations/map` permanece planejada e nao foi implementada nesta branch.
+- a tela `/operations/map` esta implementada no frontend e protegida por `field_location:read`;
+- a tela usa fallback/mock seguro quando a API falha ou retorna vazia, mas a autorizacao real permanece no backend.
 
 ## cloud_usage_metering
 

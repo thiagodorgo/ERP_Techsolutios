@@ -1567,6 +1567,273 @@
   color: var(--text-secondary);
 }
 
+.operations-map-page {
+  gap: var(--space-16);
+}
+
+.operations-map-actions,
+.operations-map-canvas header,
+.operations-map-canvas header > div,
+.operations-map-canvas footer,
+.operations-map-marker,
+.operations-map-filter-inline,
+.operations-map-selected-text,
+.operations-operator-detail header,
+.operations-operator-detail__actions,
+.operations-operator-card footer,
+.operations-operator-card footer small {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.operations-map-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.operations-map-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-10);
+}
+
+.operations-map-kpi {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.operations-map-kpi svg {
+  color: var(--color-core-primary);
+}
+
+.operations-map-kpi span {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.operations-map-kpi strong {
+  font-size: var(--text-2xl);
+  letter-spacing: 0;
+}
+
+.operations-map-filters {
+  display: grid;
+  grid-template-columns: auto minmax(220px, 1fr) minmax(150px, 190px) minmax(150px, 210px) auto;
+  align-items: end;
+}
+
+.operations-map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: var(--space-16);
+  align-items: start;
+}
+
+.operations-map-main,
+.operations-map-side,
+.operations-operator-detail,
+.operations-operator-detail dl,
+.operations-operator-cards {
+  display: grid;
+  gap: var(--space-12);
+}
+
+.operations-map-canvas {
+  display: grid;
+  gap: var(--space-10);
+  min-height: 460px;
+  padding: var(--space-12);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-8);
+  background: var(--surface-panel);
+}
+
+.operations-map-canvas header,
+.operations-map-canvas footer {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.operations-map-canvas p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.operations-map-canvas__surface {
+  position: relative;
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-8);
+  background:
+    linear-gradient(90deg, rgb(15 23 42 / 8%) 1px, transparent 1px),
+    linear-gradient(0deg, rgb(15 23 42 / 8%) 1px, transparent 1px),
+    linear-gradient(135deg, rgb(14 165 233 / 12%), rgb(34 197 94 / 10%)),
+    var(--surface-panel-muted);
+  background-size: 34px 34px, 34px 34px, auto, auto;
+}
+
+.operations-map-canvas__road {
+  position: absolute;
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(15 23 42 / 28%);
+  transform-origin: center;
+}
+
+.operations-map-canvas__road--primary {
+  inset: 34% 6% auto;
+  transform: rotate(-9deg);
+}
+
+.operations-map-canvas__road--secondary {
+  inset: 66% 10% auto;
+  transform: rotate(12deg);
+  background: rgb(14 116 144 / 34%);
+}
+
+.operations-map-marker {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  z-index: 1;
+  min-width: 136px;
+  max-width: 184px;
+  transform: translate(-50%, -50%);
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--space-8);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-8);
+  background: rgb(255 255 255 / 96%);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-surface);
+  cursor: pointer;
+  text-align: left;
+}
+
+.operations-map-marker.is-selected {
+  border-color: var(--color-core-primary);
+  box-shadow: 0 0 0 3px rgb(15 143 191 / 16%), var(--shadow-surface);
+}
+
+.operations-map-marker.is-stale {
+  border-color: var(--color-status-warning);
+}
+
+.operations-map-marker span {
+  width: 100%;
+  overflow-wrap: anywhere;
+  font-weight: 800;
+}
+
+.operations-map-marker small,
+.operations-map-canvas footer {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.operations-map-selected-text {
+  color: var(--color-core-primary);
+}
+
+.operations-operator-cards {
+  display: none;
+}
+
+.operations-operator-card {
+  display: grid;
+  gap: var(--space-8);
+  width: 100%;
+  padding: var(--space-10);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-8);
+  background: var(--surface-panel-muted);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.operations-operator-card.is-selected {
+  border-color: var(--color-core-primary);
+  background: var(--surface-panel);
+}
+
+.operations-operator-card header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.operations-operator-card span,
+.operations-operator-card small,
+.operations-operator-detail span,
+.operations-operator-detail dd {
+  color: var(--text-secondary);
+}
+
+.operations-operator-card footer {
+  flex-wrap: wrap;
+}
+
+.operations-operator-card__action {
+  width: max-content;
+  padding: var(--space-6) var(--space-8);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-6);
+  background: var(--surface-panel);
+  color: var(--color-core-primary);
+  font-size: var(--text-sm);
+  font-weight: 800;
+}
+
+.operations-operator-detail header {
+  align-items: flex-start;
+}
+
+.operations-operator-detail header > div {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  flex: 1;
+}
+
+.operations-operator-detail dl {
+  margin: 0;
+}
+
+.operations-operator-detail dl > div {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-8);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-6);
+  background: var(--surface-panel-muted);
+}
+
+.operations-operator-detail dt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: 800;
+}
+
+.operations-operator-detail dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+}
+
+.operations-operator-detail__actions {
+  flex-wrap: wrap;
+}
+
 .erp-queue-items {
   display: flex;
   gap: var(--space-8);
@@ -1747,8 +2014,17 @@
     .checklist-runtime-evidence-grid,
     .checklist-runtime-comparison-grid,
     .cloud-billing-rules,
+    .operations-map-layout,
     .tenant-settings-grid,
     .tenant-settings-theme-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .operations-map-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .operations-map-filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1839,6 +2115,9 @@
     .checklist-runtime-comparison-grid,
     .checklist-runtime-marker-form,
     .cloud-billing-rules,
+    .operations-map-layout,
+    .operations-map-kpis,
+    .operations-map-filters,
     .tenant-settings-overview,
     .tenant-settings-grid,
     .tenant-settings-theme-grid {
@@ -1858,6 +2137,10 @@
     display: none;
   }
 
+  .operations-operator-cards {
+    display: grid;
+  }
+
   .cloud-billing-page .ui-table-wrap {
     display: block;
     overflow-x: auto;
@@ -1874,5 +2157,18 @@
 
   .erp-map-panel article {
     min-width: 104px;
+  }
+
+  .operations-map-canvas {
+    min-height: auto;
+  }
+
+  .operations-map-canvas__surface {
+    min-height: 420px;
+  }
+
+  .operations-map-marker {
+    min-width: 112px;
+    max-width: 142px;
   }
 }
