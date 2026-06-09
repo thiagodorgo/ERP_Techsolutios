@@ -2,7 +2,7 @@
 
 ## Escopo
 
-`cloud_cost_import` e a foundation de importacao de custo AWS real bruto para o ERP Techsolutions. Ela prepara o sistema para ler dados do AWS Cost and Usage Report e, em uma branch futura, cruzar esse custo com o uso interno medido em `cloud_usage_*`.
+`cloud_cost_import` e a foundation de importacao de custo AWS real bruto para o ERP Techsolutions. Ela prepara o sistema para ler dados do AWS Cost and Usage Report e alimentar o motor `cloud_cost_allocation`, que cruza esse custo com o uso interno medido em `cloud_usage_*`.
 
 Entrega desta branch:
 
@@ -17,7 +17,7 @@ Entrega desta branch:
 
 Fora do escopo desta branch:
 
-- rateio por tenant;
+- rateio por tenant, entregue separadamente em `cloud_cost_allocation`;
 - markup/margem;
 - cobranca;
 - fatura;
@@ -34,11 +34,11 @@ Fluxo aprovado:
 
 1. `cloud_usage_*` mede uso interno por tenant.
 2. `cloud_cost_*` importa custo AWS bruto.
-3. `cloud-cost-allocation-engine` futuro cruza custo e uso.
+3. `cloud-cost-allocation-engine` cruza custo e uso.
 4. `cloud-charge-markup-rules` futuro aplica margem.
 5. `platform-cloud-billing-ui` e `billing-payment-provider` futuros exibem e cobram.
 
-Esta branch entrega apenas o item 2. Ela armazena `tenant_tag` quando vier no CUR, mas nao associa custo automaticamente ao tenant.
+Esta branch entrega apenas o item 2. Ela armazena `tenant_tag` quando vier no CUR, mas nao associa custo automaticamente ao tenant. A associacao direta por `tenant_tag` ou ponderada por uso pertence ao modulo `cloud_cost_allocation`.
 
 ## Modelo
 
@@ -167,9 +167,12 @@ Filtros de leitura:
 
 Esta branch nao usa credenciais AWS reais.
 
+## Relacao com cloud cost allocation
+
+`cloud_cost_allocation` consome `cloud_cost_line_items` importados por esta foundation. Custos com `tenant_tag` podem ir diretamente para o tenant quando houver match; custos sem tag usam metricas de `cloud_usage_daily_aggregates` ou permanecem como custo nao alocado. O custo bruto continua protegido por RBAC Platform e nao e exposto a usuario comum de tenant.
+
 ## Proximas branches
 
-- `feature/cloud-cost-allocation-engine`
 - `feature/cloud-charge-markup-rules`
 - `feature/platform-cloud-billing-ui`
 - `feature/billing-payment-provider`

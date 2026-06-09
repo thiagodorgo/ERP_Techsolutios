@@ -889,3 +889,23 @@
 - documentacao criada/atualizada: `docs/aws-cur-cost-import.md`, `docs/cloud-usage-metering.md`, `docs/api.md`, `docs/architecture.md`, `docs/database.md`, `docs/deployment.md`, `docs/modules.md`, `docs/messaging.md`, `docs/rbac.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e `agent-orchestration/docs/status-geral.md`
 - fora de escopo mantido: allocation/rateio, markup/margem, cobranca, fatura, gateway, UI completa, S3/Athena real obrigatorio, Cost Explorer, Billing Conductor e secrets reais
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/aws-cur-cost-import.test.ts`, `node --test --import tsx tests/aws-cur-cost-routes.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/audit-log.test.ts` e `git diff --check`
+
+## 2026-06-08 - cloud cost allocation engine
+
+- branch usada: `feature/cloud-cost-allocation-engine`
+- objetivo: implementar motor de alocacao/rateio de custo cloud por tenant, sem markup, fatura, pagamento, UI completa ou AWS real adicional
+- migration criada: `20260613000000_add_cloud_cost_allocation`
+- models Prisma adicionados: `CloudCostAllocationRun` e `TenantCloudCostAllocation`
+- tabelas criadas: `cloud_cost_allocation_runs` e `tenant_cloud_cost_allocations`
+- decisao de isolamento: runs sao globais de plataforma; allocations possuem `tenant_id`, RLS por `app.current_tenant_id` e `FORCE ROW LEVEL SECURITY`
+- modulo criado: `src/modules/cloud-cost-allocation`
+- engine cruza `cloud_cost_line_items`, `cloud_usage_daily_aggregates` e tenants conhecidos
+- metodos entregues: `direct_tenant_tag`, `storage_usage_weight`, `download_usage_weight`, `api_request_weight`, `job_execution_weight`, `checklist_run_weight`; `equal_split` fica reservado e custo sem base confiavel fica em `total_unallocated_cost`
+- API Platform criada: `GET /api/v1/platform/cloud-cost-allocations/runs`, `GET /api/v1/platform/cloud-cost-allocations/runs/:runId`, `POST /api/v1/platform/cloud-cost-allocations/runs`, `GET /api/v1/platform/cloud-cost-allocations/runs/:runId/tenant-allocations` e `GET /api/v1/platform/cloud-cost-allocations/summary`
+- RBAC atualizado com `platform:cloud-cost-allocation:read` e `platform:cloud-cost-allocation:run`; `tenant_admin` permanece sem permissoes `platform:*`
+- job criado: `cloud-cost-allocation.run`
+- testes criados: `tests/cloud-cost-allocation.test.ts` e `tests/cloud-cost-allocation-routes.test.ts`
+- testes atualizados: `tests/core-saas.test.ts` e `tests/rls-tenant-isolation.test.ts`
+- documentacao criada/atualizada: `docs/cloud-cost-allocation.md`, `docs/aws-cur-cost-import.md`, `docs/cloud-usage-metering.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/architecture.md`, `docs/database.md`, `docs/deployment.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/modules.md`, `docs/messaging.md`, `docs/rbac.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e `agent-orchestration/docs/status-geral.md`
+- observacao de validacao: `tests/rls-tenant-isolation.test.ts` falhou inicialmente porque a migration nova ainda nao estava aplicada no banco local; apos `npx prisma migrate deploy`, o teste passou
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/cloud-cost-allocation.test.ts`, `node --test --import tsx tests/cloud-cost-allocation-routes.test.ts`, `node --test --import tsx tests/aws-cur-cost-import.test.ts`, `node --test --import tsx tests/cloud-usage.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/audit-log.test.ts` e `git diff --check`

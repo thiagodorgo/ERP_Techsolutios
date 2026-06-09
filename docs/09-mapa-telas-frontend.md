@@ -104,6 +104,14 @@ Princípios adotados:
 - **Rota:** `/platform/tenants/:tenantId/modules`.
 - **Prioridade:** MVP da Console da Plataforma.
 
+### Plataforma cloud billing — futura
+- **Objetivo:** visualizar uso, custo bruto, custo alocado por tenant, markup e cobrança cloud quando as regras comerciais estiverem prontas.
+- **Usuários:** Super Admin / dono do SaaS.
+- **Permissões previstas:** `platform:cloud-usage:read`, `platform:cloud-costs:read`, `platform:cloud-cost-allocation:read`, futuras permissões de markup/billing.
+- **APIs já disponíveis nesta fase:** `/api/v1/platform/cloud-usage/*`, `/api/v1/platform/cloud-costs/*`, `/api/v1/platform/cloud-cost-allocations/*`.
+- **Fora desta branch:** UI completa, markup, fatura, pagamento e exposição de custo para usuário tenant comum.
+- **Prioridade:** pós engine de markup/cobrança.
+
 ## Telas Web
 
 > Padrão de descrição aplicado a cada tela: objetivo, papéis, permissões, dados/componentes/ações/estados, regras, integrações, UX (responsividade/mobile), offline, indicadores e artefatos (filtros/tabelas/cards/modais/alertas/timeline/logs), navegação e prioridade.

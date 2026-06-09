@@ -115,3 +115,29 @@ Tipo: `technical_evidence`.
 Uso: reparo, manutencao, construcao ou servico tecnico, com foto antes, foto depois e observacoes conforme template.
 
 M12 nao pertence ao escopo de guincho/reboque e nao deve reutilizar a semantica de coleta/entrega.
+
+## Platform Cloud Cost Allocation
+
+Feature platform-scoped sem UI completa nesta branch. A futura tela de billing/cloud da plataforma deve consumir estes endpoints depois das regras de markup.
+
+Permissoes:
+
+- `platform:cloud-cost-allocation:read`
+- `platform:cloud-cost-allocation:run`
+
+Endpoints implementados:
+
+```http
+GET  /platform/cloud-cost-allocations/runs
+GET  /platform/cloud-cost-allocations/runs/:runId
+POST /platform/cloud-cost-allocations/runs
+GET  /platform/cloud-cost-allocations/runs/:runId/tenant-allocations
+GET  /platform/cloud-cost-allocations/summary
+```
+
+Regras:
+
+- apenas Platform Admin acessa estes endpoints;
+- usuario comum de tenant nao acessa custo bruto nem custo alocado nesta branch;
+- `tenant_cloud_cost_allocations` e protegida por RLS no banco;
+- markup, fatura, pagamento e UI completa ficam fora desta rodada.

@@ -25,6 +25,8 @@ const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 const permissionDescriptions = {
+  "platform:cloud-cost-allocation:read": "Consultar runs e alocacoes de custo cloud por tenant.",
+  "platform:cloud-cost-allocation:run": "Executar motor de alocacao de custo cloud por tenant.",
   "platform:cloud-costs:read": "Consultar custos AWS CUR brutos importados no Console da Plataforma.",
   "platform:cloud-costs:import": "Importar custos AWS CUR via fonte segura sem credenciais reais.",
   "platform:cloud-usage:read": "Consultar uso cloud medido por tenant no Console da Plataforma.",

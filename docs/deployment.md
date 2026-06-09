@@ -136,6 +136,8 @@ AWS_CUR_ATHENA_WORKGROUP=
 AWS_CUR_ATHENA_OUTPUT_LOCATION=
 ```
 
+Cloud cost allocation nao exige variavel de ambiente propria nesta branch. O engine consome PostgreSQL local com `cloud_usage_*` e `cloud_cost_*`, roda via API Platform ou job `cloud-cost-allocation.run` e nao depende de AWS real.
+
 ## Seguranca
 
 - Nunca commitar `.env`.
@@ -143,5 +145,5 @@ AWS_CUR_ATHENA_OUTPUT_LOCATION=
 - `DATABASE_URL`, `REDIS_URL` e `JWT_SECRET` em `.env.example` sao exemplos locais.
 - Producao deve usar secrets do provedor/cloud/GitHub Actions.
 - PostgreSQL e Redis locais nao representam ambiente produtivo.
-- Cloud usage metering e AWS CUR cost import nao devem receber secrets AWS reais nas foundations atuais.
+- Cloud usage metering, AWS CUR cost import e Cloud cost allocation nao devem receber secrets AWS reais nas foundations atuais.
 - Este bloco nao configura deploy produtivo.

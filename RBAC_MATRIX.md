@@ -43,6 +43,7 @@ Baseline authorization matrix for the ERP Techsolutions multi-tenant SaaS ERP. T
 | Billing | full | full | read | none | full | none | none | read | support-view |
 | Cloud usage metering | full | none | none | none | none | none | none | read | support-view |
 | Cloud cost import | full | none | none | none | none | none | none | read | support-view |
+| Cloud cost allocation | full | none | none | none | none | none | none | read | support-view |
 | Reports and analytics | full | full | full | scoped | finance-scoped | inventory-scoped | field-scoped | audit-full-read | support-scoped |
 | Audit logs | full | read | scoped | none | scoped | scoped | none | full-read | support-scoped |
 | Cross-tenant support operations | full | none | none | none | none | none | none | read | scoped-support-only |
@@ -77,6 +78,8 @@ Operational rules:
 - internal notifications are tenant-scoped and must keep `notifications:read`/`notifications:update` limited to the authenticated user's own inbox unless a future admin endpoint is explicitly designed
 - cloud usage metering is platform-scoped and must require `platform:cloud-usage:read`; tenant roles do not receive cross-tenant cloud usage access
 - cloud cost import is platform-scoped and must require `platform:cloud-costs:read` or `platform:cloud-costs:import`; tenant roles do not receive raw cloud cost access
+- cloud cost allocation is platform-scoped at API level and must require `platform:cloud-cost-allocation:read` or `platform:cloud-cost-allocation:run`; tenant roles do not receive allocated cloud cost access in this branch
+- `tenant_cloud_cost_allocations` remains tenant-scoped at database level with RLS, even though HTTP access is restricted to the Platform boundary in this branch
 - checklist reads and writes must validate `tenant_id` together with template, field, run and answer identifiers
 - M10/M11/M12 must render checklist schemas from API data rather than hardcoded mobile field definitions
 

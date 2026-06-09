@@ -1,4 +1,6 @@
 export const PERMISSION_CATALOG = [
+  "platform:cloud-cost-allocation:read",
+  "platform:cloud-cost-allocation:run",
   "platform:cloud-costs:read",
   "platform:cloud-costs:import",
   "platform:cloud-usage:read",

@@ -106,6 +106,10 @@ Fluxo integrado: AWS CUR cost import.
 
 O job `aws-cur.import-cost-file` recebe CSV mockado ou `sourceUri` local, cria importacao em `cloud_cost_imports`, parseia linhas e grava `cloud_cost_line_items`. Falhas marcam a importacao como `failed` com erro sanitizado. A integracao real S3/Athena fica para fase posterior.
 
+Fluxo integrado: cloud cost allocation.
+
+O job `cloud-cost-allocation.run` recebe `runId` existente ou `periodStart`, `periodEnd` e `strategy`, cria/processa run em `cloud_cost_allocation_runs`, cruza `cloud_cost_line_items` com `cloud_usage_daily_aggregates`, grava `tenant_cloud_cost_allocations` e atualiza totais alocados/nao alocados. Falhas marcam o run como `failed` com erro sanitizado. O job nao depende de AWS real nem aplica markup.
+
 ## Testes
 
 Testes especificos:
@@ -116,6 +120,7 @@ node --test --import tsx tests/domain-events.test.ts
 node --test --import tsx tests/audit-log.test.ts
 node --test --import tsx tests/cloud-usage.test.ts
 node --test --import tsx tests/aws-cur-cost-import.test.ts
+node --test --import tsx tests/cloud-cost-allocation.test.ts
 ```
 
 Eles requerem Redis local ativo via:

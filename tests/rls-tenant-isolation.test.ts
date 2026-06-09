@@ -45,6 +45,7 @@ if (!connectionString) {
     });
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const tenantIds: string[] = [];
+    let allocationRunId: string | undefined;
 
     try {
       const tenantA = await client.tenant.create({
@@ -60,6 +61,35 @@ if (!connectionString) {
         },
       });
       tenantIds.push(tenantA.id, tenantB.id);
+
+      const [allocationRun] = await client.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO cloud_cost_allocation_runs (
+          provider,
+          status,
+          period_start,
+          period_end,
+          strategy,
+          total_imported_cost,
+          total_allocated_cost,
+          total_unallocated_cost,
+          currency,
+          metadata
+        )
+        VALUES (
+          'aws',
+          'completed',
+          CURRENT_DATE,
+          CURRENT_DATE + INTERVAL '1 day',
+          'usage_weighted_v1',
+          30,
+          30,
+          0,
+          'USD',
+          '{"source":"rls-test"}'::jsonb
+        )
+        RETURNING id
+      `;
+      allocationRunId = allocationRun.id;
 
       const tenantAData = await withTenantRls(client, tenantA.id, async (tx) => {
         const branch = await tx.branch.create({
@@ -222,6 +252,45 @@ if (!connectionString) {
           )
           RETURNING id
         `;
+        const [cloudCostAllocation] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO tenant_cloud_cost_allocations (
+            allocation_run_id,
+            tenant_id,
+            provider,
+            period_start,
+            period_end,
+            service_code,
+            usage_type,
+            cost_category,
+            allocation_method,
+            allocation_basis_metric_key,
+            allocation_basis_quantity,
+            allocation_ratio,
+            allocated_cost,
+            currency,
+            source_cost_line_item_ids,
+            metadata
+          )
+          VALUES (
+            ${allocationRunId}::uuid,
+            ${tenantA.id}::uuid,
+            'aws',
+            CURRENT_DATE,
+            CURRENT_DATE + INTERVAL '1 day',
+            'AmazonS3',
+            'TimedStorage-ByteHrs',
+            'storage',
+            'storage_usage_weight',
+            'storage.bytes',
+            10,
+            0.333333333333,
+            10,
+            'USD',
+            '[]'::jsonb,
+            '{"source":"rls-test"}'::jsonb
+          )
+          RETURNING id
+        `;
 
         return {
           branchId: branch.id,
@@ -232,6 +301,7 @@ if (!connectionString) {
           notificationId: notification.id,
           usageAggregateId: usageAggregate.id,
           usageEventId: usageEvent.id,
+          cloudCostAllocationId: cloudCostAllocation.id,
         };
       });
 
@@ -396,6 +466,45 @@ if (!connectionString) {
           )
           RETURNING id
         `;
+        const [cloudCostAllocation] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO tenant_cloud_cost_allocations (
+            allocation_run_id,
+            tenant_id,
+            provider,
+            period_start,
+            period_end,
+            service_code,
+            usage_type,
+            cost_category,
+            allocation_method,
+            allocation_basis_metric_key,
+            allocation_basis_quantity,
+            allocation_ratio,
+            allocated_cost,
+            currency,
+            source_cost_line_item_ids,
+            metadata
+          )
+          VALUES (
+            ${allocationRunId}::uuid,
+            ${tenantB.id}::uuid,
+            'aws',
+            CURRENT_DATE,
+            CURRENT_DATE + INTERVAL '1 day',
+            'AmazonS3',
+            'TimedStorage-ByteHrs',
+            'storage',
+            'storage_usage_weight',
+            'storage.bytes',
+            20,
+            0.666666666667,
+            20,
+            'USD',
+            '[]'::jsonb,
+            '{"source":"rls-test"}'::jsonb
+          )
+          RETURNING id
+        `;
 
         return {
           branchId: branch.id,
@@ -406,6 +515,7 @@ if (!connectionString) {
           notificationId: notification.id,
           usageAggregateId: usageAggregate.id,
           usageEventId: usageEvent.id,
+          cloudCostAllocationId: cloudCostAllocation.id,
         };
       });
 
@@ -466,6 +576,22 @@ if (!connectionString) {
         [],
         "tenant-scoped cloud usage aggregates must not be visible without app.current_tenant_id",
       );
+      const cloudCostAllocationsWithoutContext =
+        await client.tenantCloudCostAllocation.findMany({
+          where: {
+            id: {
+              in: [
+                tenantAData.cloudCostAllocationId,
+                tenantBData.cloudCostAllocationId,
+              ],
+            },
+          },
+        });
+      assert.deepEqual(
+        cloudCostAllocationsWithoutContext.map((allocation) => allocation.id),
+        [],
+        "tenant-scoped cloud cost allocations must not be visible without app.current_tenant_id",
+      );
 
       const tenantAView = await withTenantRls(client, tenantA.id, async (tx) => {
         const users = await tx.user.findMany({
@@ -517,6 +643,16 @@ if (!connectionString) {
             },
           },
         });
+        const cloudCostAllocations = await tx.tenantCloudCostAllocation.findMany({
+          where: {
+            id: {
+              in: [
+                tenantAData.cloudCostAllocationId,
+                tenantBData.cloudCostAllocationId,
+              ],
+            },
+          },
+        });
         const crossTenantUpdate = await tx.user.updateMany({
           where: {
             id: tenantBData.userId,
@@ -525,12 +661,22 @@ if (!connectionString) {
             name: "RLS cross-tenant update should not apply",
           },
         });
+        const crossTenantAllocationUpdate = await tx.tenantCloudCostAllocation.updateMany({
+          where: {
+            id: tenantBData.cloudCostAllocationId,
+          },
+          data: {
+            cost_category: "rls_cross_tenant_update_should_not_apply",
+          },
+        });
 
         return {
           attachmentIds: attachments.map((attachment) => attachment.id),
+          cloudCostAllocationIds: cloudCostAllocations.map((allocation) => allocation.id),
           notificationIds: notifications.map((notification) => notification.id),
           runIds: runs.map((run) => run.id),
           templateIds: templates.map((template) => template.id),
+          updatedAllocationRows: crossTenantAllocationUpdate.count,
           updatedRows: crossTenantUpdate.count,
           usageAggregateIds: usageAggregates.map((aggregate) => aggregate.id),
           usageEventIds: usageEvents.map((event) => event.id),
@@ -545,7 +691,15 @@ if (!connectionString) {
       assert.deepEqual(tenantAView.notificationIds, [tenantAData.notificationId]);
       assert.deepEqual(tenantAView.usageAggregateIds, [tenantAData.usageAggregateId]);
       assert.deepEqual(tenantAView.usageEventIds, [tenantAData.usageEventId]);
+      assert.deepEqual(tenantAView.cloudCostAllocationIds, [
+        tenantAData.cloudCostAllocationId,
+      ]);
       assert.equal(tenantAView.updatedRows, 0, "tenant A must not update tenant B rows");
+      assert.equal(
+        tenantAView.updatedAllocationRows,
+        0,
+        "tenant A must not update tenant B cloud cost allocations",
+      );
 
       const tenantBUser = await withTenantRls(client, tenantB.id, (tx) =>
         tx.user.findUnique({
@@ -555,9 +709,22 @@ if (!connectionString) {
         }),
       );
       assert.equal(tenantBUser?.name, "RLS User B");
+      const tenantBCloudCostAllocation = await withTenantRls(client, tenantB.id, (tx) =>
+        tx.tenantCloudCostAllocation.findUnique({
+          where: {
+            id: tenantBData.cloudCostAllocationId,
+          },
+        }),
+      );
+      assert.equal(tenantBCloudCostAllocation?.cost_category, "storage");
     } finally {
       for (const tenantId of tenantIds) {
         await withTenantRls(client, tenantId, async (tx) => {
+          await tx.tenantCloudCostAllocation.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
           await tx.cloudUsageDailyAggregate.deleteMany({
             where: {
               tenant_id: tenantId,
@@ -591,6 +758,13 @@ if (!connectionString) {
         });
       }
 
+      if (allocationRunId) {
+        await client.cloudCostAllocationRun.deleteMany({
+          where: {
+            id: allocationRunId,
+          },
+        });
+      }
       await client.tenant.deleteMany({
         where: {
           id: {

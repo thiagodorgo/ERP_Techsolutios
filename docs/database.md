@@ -621,6 +621,76 @@ Regras:
 - metadata e erro devem ser sanitizados;
 - nao salvar arquivo bruto inteiro em metadata.
 
+## Cloud cost allocation
+
+Status: implementado na migration `20260613000000_add_cloud_cost_allocation`.
+
+### `cloud_cost_allocation_runs`
+
+Runs globais da plataforma para executar rateio de custo AWS por periodo.
+
+Campos principais:
+
+- `provider`
+- `status`
+- `period_start`
+- `period_end`
+- `strategy`
+- `total_imported_cost`
+- `total_allocated_cost`
+- `total_unallocated_cost`
+- `currency`
+- `started_at`
+- `completed_at`
+- `created_by`
+- `error_message`
+- `metadata`
+- timestamps
+
+Regras:
+
+- tabela platform-scoped, sem `tenant_id`;
+- `provider` limitado a `aws`;
+- `status` limitado a `pending`, `processing`, `completed` e `failed`;
+- `strategy` limitada a `usage_weighted_v1` e `direct_tag_then_usage_weighted_v1`;
+- totais de custo nao podem ser negativos;
+- acesso HTTP protegido por `platform:cloud-cost-allocation:*`.
+
+### `tenant_cloud_cost_allocations`
+
+Resultados tenant-scoped de alocacao por run, tenant, servico, tipo de uso, categoria e metodo.
+
+Campos principais:
+
+- `allocation_run_id`
+- `tenant_id`
+- `provider`
+- `period_start`
+- `period_end`
+- `service_code`
+- `usage_type`
+- `cost_category`
+- `allocation_method`
+- `allocation_basis_metric_key`
+- `allocation_basis_quantity`
+- `allocation_ratio`
+- `allocated_cost`
+- `currency`
+- `source_cost_line_item_ids`
+- `metadata`
+- timestamps
+
+Regras:
+
+- `tenant_id` obrigatorio e protegido por RLS;
+- indices por `allocation_run_id`, `tenant_id`, periodo, `service_code` e `cost_category`;
+- unicidade por `allocation_run_id`, `tenant_id`, `service_code`, `usage_type`, `cost_category` e `allocation_method`;
+- `allocation_method` limitado a `direct_tenant_tag`, `storage_usage_weight`, `download_usage_weight`, `api_request_weight`, `job_execution_weight`, `checklist_run_weight`, `equal_split` e `unallocated`;
+- `allocated_cost` e `allocation_ratio` nao podem ser negativos;
+- custo sem base confiavel fica em `total_unallocated_cost` e metadata do run, sem criar tenant ficticio.
+
+`cloud_cost_allocation_rules` nao foi criada nesta fase. O catalogo MVP de regras fica em codigo para manter o comportamento auditavel e pequeno; persistencia de regras fica planejada para governanca futura.
+
 ## Auditoria enterprise
 
 Status: implementado sem migration adicional. A tabela `audit_logs` atual suporta o contrato enterprise por meio de colunas nativas e `metadata Json`.
@@ -676,6 +746,7 @@ RLS foi habilitado nas tabelas tenant-scoped principais:
 - `notifications`
 - `cloud_usage_events`
 - `cloud_usage_daily_aggregates`
+- `tenant_cloud_cost_allocations`
 
 Tabelas globais que nao recebem RLS nesta rodada:
 
@@ -683,6 +754,7 @@ Tabelas globais que nao recebem RLS nesta rodada:
 - `permissions`: catalogo global de permissoes.
 - `role_permissions`: associacao entre roles e permissoes; o acesso operacional continua controlado pelas roles visiveis no contexto.
 - `cloud_cost_imports` e `cloud_cost_line_items`: custo bruto global do provedor, protegido por RBAC platform e nao exposto a usuarios tenant.
+- `cloud_cost_allocation_runs`: execucoes globais de alocacao, protegidas por RBAC platform; os resultados por tenant ficam em `tenant_cloud_cost_allocations` com RLS.
 
 ### Politicas
 
