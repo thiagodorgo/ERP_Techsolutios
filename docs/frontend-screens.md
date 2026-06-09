@@ -231,3 +231,12 @@ Padrao oficial:
 - Operador ve apenas operacao propria, tarefas, OS/atendimentos, checklists operacionais permitidos e notificacoes;
 - W02A nao e checklist operacional: operador nao deve ver `/administrator/checklists`.
 - W03 nao e tela operacional: operador e supervisor sem permissao administrativa nao devem ver `/administrator/settings`.
+
+Fonte backend oficial:
+
+- `GET /api/v1/navigation/menu` retorna o menu por usuario autenticado;
+- o frontend deve resolver os icones por nome (`LayoutDashboard`, `Building2`, `Receipt`, `ClipboardCheck`, `Bell`, `Map`, `Truck`, etc.);
+- `group` organiza a navegacao em `platform`, `tenant`, `operations`, `logistics` e `finance`;
+- `status` informa maturidade da tela (`implemented`, `partial`, `mock`, `planned`, `backend-ready`, `frontend-ready`, `future`);
+- `relatedEndpoints` documenta rastreabilidade com APIs de dominio;
+- menus locais continuam apenas como fallback/mock de transicao.

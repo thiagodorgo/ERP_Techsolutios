@@ -25,6 +25,36 @@ Regras:
 - o frontend deve tentar refresh uma unica vez em `401` de rota protegida e nao deve tentar refresh nos endpoints `/auth/login`, `/auth/refresh` ou `/auth/logout`;
 - logout deve limpar sessao local mesmo se a revogacao backend falhar ou a sessao ja estiver revogada.
 
+## Navegacao
+
+### Sidebar/AppShell dinamicos
+
+Objetivo: renderizar menu por usuario autenticado, boundary, tenant, permissoes, modulos habilitados, status de tela, rotas frontend, icones e grupos.
+
+Endpoint implementado:
+
+```http
+GET /navigation/menu
+```
+
+Filtros opcionais:
+
+```http
+GET /navigation/menu?scope=platform
+GET /navigation/menu?scope=tenant
+GET /navigation/menu?scope=operations
+GET /navigation/menu?scope=logistics
+GET /navigation/menu?scope=finance
+```
+
+Regras:
+
+- Platform Admin recebe apenas itens Platform quando filtra `scope=platform`;
+- tenant comum nao recebe itens Platform;
+- itens tenant/operacionais exigem permissao RBAC e modulo habilitado quando definido;
+- `relatedEndpoints` e `status` documentam rastreabilidade da tela;
+- autorizacao real continua nos endpoints de dominio.
+
 ## tenant_checklist
 
 Feature configuravel por tenant. A plataforma fornece componentes permitidos; o tenant cria e publica checklists combinando esses componentes.

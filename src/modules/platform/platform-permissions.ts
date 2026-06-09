@@ -12,6 +12,7 @@ export const PLATFORM_PERMISSIONS = [
   "platform:cloud-costs:read",
   "platform:cloud-costs:import",
   "platform:cloud-usage:read",
+  "platform:dashboard:read",
   "platform:tenants:read",
   "platform:tenants:create",
   "platform:tenants:update",

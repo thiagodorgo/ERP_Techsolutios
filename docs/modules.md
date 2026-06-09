@@ -32,6 +32,7 @@ Exemplos:
 - cloud_cost_allocation
 - cloud_charge_markup_rules
 - platform_cloud_billing_ui
+- backend_navigation_menu
 
 ## Modulos habilitados por tenant
 
@@ -104,3 +105,4 @@ Sao os modulos efetivamente ativos para um tenant especifico. A visibilidade no 
 - Custo sem metrica confiavel deve permanecer como `total_unallocated_cost`; o sistema nao deve distribuir arbitrariamente para simular precisao.
 - `cloud_charge_markup_rules` e uma capacidade transversal de plataforma: consome `tenant_cloud_cost_allocations`, aplica regra comercial de markup/minimo/franquia/arredondamento e grava `tenant_cloud_charges`, sem fatura, pagamento ou emissao fiscal nesta branch.
 - `platform_cloud_billing_ui` e a tela `/platform/cloud-billing` no Console da Plataforma. Ela consome uso, custos AWS, rateio, charges e regras via API Platform, com abas Visao geral, Uso, Custos AWS, Rateio, Cobranca, Regras e Runs. Permanece fora do tenant e nao expõe custo, preco ou margem para usuario comum.
+- `backend_navigation_menu` e a fonte oficial de navegacao do ERP via `GET /api/v1/navigation/menu`. O registry fica versionado em codigo nesta primeira versao, filtra itens por usuario, boundary, RBAC e modulos habilitados, e retorna grupos `platform`, `tenant`, `operations`, `logistics` e `finance` com icones e status de tela. O menu nao substitui a autorizacao real dos endpoints.

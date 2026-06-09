@@ -8,6 +8,8 @@ Permitir que o dono da plataforma crie e acompanhe tenants/clientes, defina plan
 
 Nesta fase, o Console da Plataforma tambem possui a tela `/platform/cloud-billing` para consultar uso cloud interno por tenant via `cloud_usage_metering`, custo AWS bruto via `cloud_cost_import`, custo AWS alocado por tenant via `cloud_cost_allocation` e valor cobrável via `cloud_charge_markup_rules`.
 
+O item de menu do Console da Plataforma deve vir do registry backend `GET /api/v1/navigation/menu` quando disponivel, filtrado por permissoes `platform:*` e sem misturar itens tenant para usuario comum.
+
 ## Diferenca de escopo
 
 - Console da Plataforma: administra a plataforma global, tenants, planos, modulos, saude e auditoria global.
@@ -18,10 +20,12 @@ Nesta fase, o Console da Plataforma tambem possui a tela `/platform/cloud-billin
 
 ## Telas MVP
 
+- P00 - Visao Geral Platform: planejada, rota `/platform/dashboard`, permissao `platform:dashboard:read`.
 - P01 - Tenants: listagem dos tenants, status, plano, modulos habilitados e resumo de uso.
 - P02 - Detalhe do Tenant: dados gerais, admin principal, atividade recente e acoes criticas.
 - P03 - Modulos do Tenant: habilitacao e bloqueio de modulos por tenant e plano.
 - P04 - Cloud Billing: uso, custos AWS, rateio, cobranca, regras e runs em boundary Platform.
+- P05 - Auditoria Platform: planejada, rota `/platform/audit`, permissao `platform:audit:read`.
 
 ## Funcionalidades
 
@@ -72,15 +76,18 @@ Nesta fase, o Console da Plataforma tambem possui a tela `/platform/cloud-billin
 
 ## Rotas frontend MVP
 
+- `/platform/dashboard`
 - `/platform/tenants`
 - `/platform/tenants/:tenantId`
 - `/platform/tenants/:tenantId/modules`
 - `/platform/cloud-billing`
+- `/platform/audit`
 
 ## API esperada
 
 As rotas de API usam o prefixo atual do backend (`/api/v1`) e reservam o boundary `/platform`.
 
+- `GET /api/v1/navigation/menu?scope=platform`
 - `GET /api/v1/platform/tenants`
 - `POST /api/v1/platform/tenants`
 - `GET /api/v1/platform/tenants/:tenantId`

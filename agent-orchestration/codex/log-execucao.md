@@ -944,3 +944,22 @@
 - documentacao atualizada em `docs/platform-cloud-billing-ui.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/platform-console.md`, `docs/modules.md`, `docs/api-screen-endpoints.md`, `docs/api.md`, `docs/rbac.md` e `agent-orchestration/docs/status-geral.md`
 - fora de escopo mantido: backend, migrations, fatura, pagamento, checkout, emissao fiscal, mobile Flutter, Figma e exposicao tenant de custo/preco/margem
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/cloud-cost-allocation.test.ts`, `node --test --import tsx tests/cloud-charge-markup-rules.test.ts`, `node --test --import tsx tests/aws-cur-cost-import.test.ts`, `node --test --import tsx tests/cloud-usage.test.ts` e `git diff --check`
+
+## 2026-06-09 - backend navigation menu registry
+
+- branch usada: `feature/backend-navigation-menu-registry`
+- objetivo: implementar registry backend de navegacao para o frontend consumir via API, mantendo o menu como UX e nao como autorizacao real
+- comandos iniciais executados: `git branch --show-current`, `git status` e `git log --oneline --decorate -5`
+- branch confirmada: `feature/backend-navigation-menu-registry`
+- worktree inicial confirmado limpo
+- modulo criado: `src/modules/navigation`
+- endpoint criado: `GET /api/v1/navigation/menu`
+- app atualizado para registrar `/api/v1/navigation` com `attachAuthenticatedActor()`
+- filtros implementados: permissoes, boundary Platform/Tenant, modulos habilitados do tenant e `scope`
+- registry inicial criado com grupos `platform`, `tenant`, `operations`, `logistics` e `finance`
+- permissoes planejadas adicionadas ao catalogo central para sustentar itens de navegacao sem ids inexistentes
+- seed Prisma atualizado com descricoes das permissoes planejadas para manter `npm run db:seed` e E2E consistentes com o catalogo
+- testes criados: `tests/navigation-menu.test.ts` e `tests/navigation-menu-routes.test.ts`
+- documentacao criada/atualizada: `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/iconography-and-tags.md`, `docs/field-operator-location-map.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/modules.md`, `docs/rbac.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: frontend novo, Google Maps real, localizacao de operador, Work Orders backend, logistica backend, billing/payment/fiscal tenant-scoped, CRUD persistido de menu e remocao dos menus atuais do frontend
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/core-saas.test.ts` e `git diff --check`
