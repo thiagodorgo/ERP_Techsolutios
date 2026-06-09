@@ -29,8 +29,9 @@ APIs sem UI completa nesta branch:
 - `cloud_usage_metering`: consulta uso interno por tenant.
 - `cloud_cost_import`: consulta/importa custo AWS bruto.
 - `cloud_cost_allocation`: executa e consulta alocacao de custo AWS por tenant.
+- `cloud_charge_markup_rules`: cria regras de markup e calcula valor cobrável em `tenant_cloud_charges`.
 
-A tela completa de cloud billing/plataforma fica planejada para depois de markup e regras comerciais. Nesta branch, custo alocado nao aparece em tela tenant.
+A tela completa de cloud billing/plataforma fica planejada para branch futura. Nesta branch, custo alocado, valor cobrável e margem nao aparecem em tela tenant.
 
 ## Autenticacao
 

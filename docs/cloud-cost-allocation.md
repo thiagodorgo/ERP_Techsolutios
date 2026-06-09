@@ -37,10 +37,10 @@ Fluxo aprovado:
 1. `cloud_usage_*` mede uso interno por tenant.
 2. `cloud_cost_*` importa custo AWS bruto.
 3. `cloud_cost_allocation_*` calcula custo AWS por tenant.
-4. `cloud-charge-markup-rules` futuro aplica markup, minimo mensal, franquia e excecoes por plano.
+4. `cloud-charge-markup-rules` aplica markup, minimo mensal, franquia e excecoes por plano.
 5. `platform-cloud-billing-ui` e `billing-payment-provider` futuros exibem, fecham e cobram.
 
-Esta branch entrega o item 3. Ela nao cobra o tenant e nao gera preco final.
+Esta branch entrega o item 3. Ela nao cobra o tenant e nao gera preco final. A camada `cloud_charge_markup_rules` consome `tenant_cloud_cost_allocations` para calcular o valor cobrável.
 
 ## Modelo de dados
 
@@ -172,8 +172,11 @@ Exemplo de criacao:
 - erro e metadata sao sanitizados;
 - secrets, credenciais AWS, Authorization, tokens, storage keys, bucket, path privado, body e payload sensivel nao devem ser persistidos.
 
+## Relacao com cloud charge markup rules
+
+`cloud_charge_markup_rules` consome `tenant_cloud_cost_allocations` e `cloud_cost_allocation_runs`, seleciona regras comerciais em `cloud_charge_rules`, cria runs em `cloud_charge_calculation_runs` e grava `tenant_cloud_charges`. Essa etapa calcula preco cobrável com margem, mas ainda nao gera fatura nem pagamento.
+
 ## Proximas branches
 
-- `feature/cloud-charge-markup-rules`: aplica markup, minimo mensal, franquia e excecoes por plano sobre `tenant_cloud_cost_allocations`;
 - `feature/platform-cloud-billing-ui`: UI completa de billing/cloud para plataforma;
 - `feature/billing-payment-provider`: fechamento/cobranca com provedor de pagamento.

@@ -56,6 +56,14 @@ Escopo: `platform`
 
 Responsabilidade desta branch: criar runs em `cloud_cost_allocation_runs`, gravar resultado tenant-scoped em `tenant_cloud_cost_allocations`, aplicar regras MVP de alocacao por `tenant_tag` ou uso ponderado e manter custo sem base confiavel em `total_unallocated_cost`. Nao aplica markup, nao gera fatura, nao cobra, nao cria UI completa e nao adiciona integracao AWS real.
 
+### Cloud Charge Markup Rules
+
+Boundary transversal de plataforma para transformar custo alocado em valor cobrável cloud.
+
+Escopo: `platform`
+
+Responsabilidade desta branch: criar regras em `cloud_charge_rules`, runs em `cloud_charge_calculation_runs`, resultados tenant-scoped em `tenant_cloud_charges`, aplicar markup, minimo mensal, franquia por custo incluso, arredondamento e calculo de margem. Nao gera fatura, nao emite nota fiscal, nao integra gateway, nao cria UI completa e nao expõe custo/margem ao tenant.
+
 ## Separacao platform scope vs tenant scope
 
 - Platform scope usa permissoes `platform:*`.
@@ -137,6 +145,8 @@ Cloud cost import usa o job `aws-cur.import-cost-file` para importar CSV local/m
 
 Cloud cost allocation usa o job `cloud-cost-allocation.run` para criar/processar runs de alocacao, consumir `cloud_cost_line_items` e `cloud_usage_daily_aggregates`, gravar `tenant_cloud_cost_allocations` e atualizar totais alocados/nao alocados. Falha no job marca o run como `failed` com erro sanitizado; nao ha dependencia de AWS real.
 
+Cloud charge markup rules usa o job `cloud-charges.calculate` para criar/processar runs de calculo, consumir `tenant_cloud_cost_allocations`, selecionar regra comercial aplicavel e gravar `tenant_cloud_charges`. Falha no job marca o run como `failed` com erro sanitizado; nao ha faturamento nem pagamento nesta etapa.
+
 ## Auditoria enterprise
 
 A auditoria enterprise esta documentada em `docs/audit.md`. A gravacao principal usa `audit_logs` de forma sincronica, tenant-scoped e protegida por RLS. O contrato padronizado inclui actor, action, resource, outcome, severity, correlationId, requestId, IP, user-agent e metadata sanitizado. Como a tabela atual ja possui `metadata Json`, os campos complementares ficam em metadata e nenhuma migration foi criada nesta rodada.
@@ -152,4 +162,4 @@ Depois da persistencia, `audit_log.created` e publicado como domain event para f
 - Evoluir operacoes platform multi-tenant com contexto RLS explicito e auditoria.
 - Avaliar cookie httpOnly/secure e Redis para sessoes distribuidas quando o produto sair do MVP localStorage.
 - Evoluir jobs Redis para notificacoes, webhooks, relatorios, processamento de anexos e fanout de auditoria.
-- Evoluir a ponte `cloud_usage_metering` e `cloud_cost_allocation` nas branches `feature/cloud-charge-markup-rules`, `feature/platform-cloud-billing-ui` e `feature/billing-payment-provider`.
+- Evoluir a ponte `cloud_usage_metering`, `cloud_cost_allocation` e `cloud_charges` nas branches `feature/platform-cloud-billing-ui` e `feature/billing-payment-provider`.

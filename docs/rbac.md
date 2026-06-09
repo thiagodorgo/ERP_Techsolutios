@@ -50,6 +50,10 @@ Permissoes de plataforma:
 - `platform:tenants:create`
 - `platform:tenants:update`
 - `platform:modules:manage`
+- `platform:cloud-charge-rules:read`
+- `platform:cloud-charge-rules:write`
+- `platform:cloud-charges:read`
+- `platform:cloud-charges:calculate`
 - `platform:cloud-costs:read`
 - `platform:cloud-costs:import`
 - `platform:cloud-cost-allocation:read`
@@ -192,6 +196,29 @@ Matriz backend aplicada:
 - `GET /api/v1/platform/cloud-cost-allocations/summary`: `platform:cloud-cost-allocation:read`
 
 Usuario comum de tenant nao acessa essas rotas. A tabela `tenant_cloud_cost_allocations` e tenant-scoped no banco por RLS, mas a API desta branch permanece no boundary Platform e nao expõe custo por endpoint tenant.
+
+## cloud_charge_markup_rules
+
+Permissoes platform-scoped:
+
+- `platform:cloud-charge-rules:read`: consultar regras comerciais de markup cloud.
+- `platform:cloud-charge-rules:write`: criar e editar regras comerciais de markup cloud.
+- `platform:cloud-charges:read`: consultar runs, tenant charges e summary.
+- `platform:cloud-charges:calculate`: executar cálculo de charges a partir de allocation run.
+
+Matriz backend aplicada:
+
+- `GET /api/v1/platform/cloud-charge-rules`: `platform:cloud-charge-rules:read`
+- `POST /api/v1/platform/cloud-charge-rules`: `platform:cloud-charge-rules:write`
+- `GET /api/v1/platform/cloud-charge-rules/:ruleId`: `platform:cloud-charge-rules:read`
+- `PATCH /api/v1/platform/cloud-charge-rules/:ruleId`: `platform:cloud-charge-rules:write`
+- `GET /api/v1/platform/cloud-charges/calculation-runs`: `platform:cloud-charges:read`
+- `GET /api/v1/platform/cloud-charges/calculation-runs/:runId`: `platform:cloud-charges:read`
+- `POST /api/v1/platform/cloud-charges/calculation-runs`: `platform:cloud-charges:calculate`
+- `GET /api/v1/platform/cloud-charges/calculation-runs/:runId/tenant-charges`: `platform:cloud-charges:read`
+- `GET /api/v1/platform/cloud-charges/summary`: `platform:cloud-charges:read`
+
+Usuario comum de tenant nao acessa essas rotas. `tenant_cloud_charges` tem RLS por `tenant_id`, mas margem/preco permanecem restritos ao boundary Platform nesta branch.
 
 Frontend:
 

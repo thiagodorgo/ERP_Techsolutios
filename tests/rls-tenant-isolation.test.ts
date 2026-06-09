@@ -46,6 +46,8 @@ if (!connectionString) {
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const tenantIds: string[] = [];
     let allocationRunId: string | undefined;
+    let chargeCalculationRunId: string | undefined;
+    let chargeRuleId: string | undefined;
 
     try {
       const tenantA = await client.tenant.create({
@@ -90,6 +92,68 @@ if (!connectionString) {
         RETURNING id
       `;
       allocationRunId = allocationRun.id;
+      const [chargeRule] = await client.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO cloud_charge_rules (
+          plan_code,
+          name,
+          is_active,
+          priority,
+          effective_from,
+          currency,
+          markup_type,
+          markup_value,
+          minimum_monthly_charge,
+          included_cloud_cost,
+          rounding_mode,
+          metadata
+        )
+        VALUES (
+          'default',
+          'RLS Default Cloud Charge Rule',
+          true,
+          100,
+          CURRENT_DATE,
+          'BRL',
+          'percentage',
+          60,
+          0,
+          0,
+          'nearest_cent',
+          '{"source":"rls-test"}'::jsonb
+        )
+        RETURNING id
+      `;
+      chargeRuleId = chargeRule.id;
+      const [chargeCalculationRun] = await client.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO cloud_charge_calculation_runs (
+          status,
+          period_start,
+          period_end,
+          source_allocation_run_id,
+          strategy,
+          total_allocated_cost,
+          total_charge_amount,
+          total_margin_amount,
+          total_discount_amount,
+          currency,
+          metadata
+        )
+        VALUES (
+          'completed',
+          CURRENT_DATE,
+          CURRENT_DATE + INTERVAL '1 day',
+          ${allocationRunId}::uuid,
+          'markup_rules_v1',
+          30,
+          48,
+          18,
+          0,
+          'BRL',
+          '{"source":"rls-test"}'::jsonb
+        )
+        RETURNING id
+      `;
+      chargeCalculationRunId = chargeCalculationRun.id;
 
       const tenantAData = await withTenantRls(client, tenantA.id, async (tx) => {
         const branch = await tx.branch.create({
@@ -291,6 +355,53 @@ if (!connectionString) {
           )
           RETURNING id
         `;
+        const [tenantCloudCharge] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO tenant_cloud_charges (
+            calculation_run_id,
+            tenant_id,
+            source_allocation_run_id,
+            cloud_charge_rule_id,
+            period_start,
+            period_end,
+            allocated_cost,
+            included_cloud_cost,
+            billable_cost,
+            markup_type,
+            markup_value,
+            minimum_monthly_charge,
+            gross_charge_amount,
+            discount_amount,
+            final_charge_amount,
+            margin_amount,
+            margin_percentage,
+            currency,
+            status,
+            metadata
+          )
+          VALUES (
+            ${chargeCalculationRunId}::uuid,
+            ${tenantA.id}::uuid,
+            ${allocationRunId}::uuid,
+            ${chargeRuleId}::uuid,
+            CURRENT_DATE,
+            CURRENT_DATE + INTERVAL '1 day',
+            10,
+            0,
+            10,
+            'percentage',
+            60,
+            0,
+            16,
+            0,
+            16,
+            6,
+            60,
+            'BRL',
+            'draft',
+            '{"source":"rls-test"}'::jsonb
+          )
+          RETURNING id
+        `;
 
         return {
           branchId: branch.id,
@@ -302,6 +413,7 @@ if (!connectionString) {
           usageAggregateId: usageAggregate.id,
           usageEventId: usageEvent.id,
           cloudCostAllocationId: cloudCostAllocation.id,
+          tenantCloudChargeId: tenantCloudCharge.id,
         };
       });
 
@@ -505,6 +617,53 @@ if (!connectionString) {
           )
           RETURNING id
         `;
+        const [tenantCloudCharge] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO tenant_cloud_charges (
+            calculation_run_id,
+            tenant_id,
+            source_allocation_run_id,
+            cloud_charge_rule_id,
+            period_start,
+            period_end,
+            allocated_cost,
+            included_cloud_cost,
+            billable_cost,
+            markup_type,
+            markup_value,
+            minimum_monthly_charge,
+            gross_charge_amount,
+            discount_amount,
+            final_charge_amount,
+            margin_amount,
+            margin_percentage,
+            currency,
+            status,
+            metadata
+          )
+          VALUES (
+            ${chargeCalculationRunId}::uuid,
+            ${tenantB.id}::uuid,
+            ${allocationRunId}::uuid,
+            ${chargeRuleId}::uuid,
+            CURRENT_DATE,
+            CURRENT_DATE + INTERVAL '1 day',
+            20,
+            0,
+            20,
+            'percentage',
+            60,
+            0,
+            32,
+            0,
+            32,
+            12,
+            60,
+            'BRL',
+            'draft',
+            '{"source":"rls-test"}'::jsonb
+          )
+          RETURNING id
+        `;
 
         return {
           branchId: branch.id,
@@ -516,6 +675,7 @@ if (!connectionString) {
           usageAggregateId: usageAggregate.id,
           usageEventId: usageEvent.id,
           cloudCostAllocationId: cloudCostAllocation.id,
+          tenantCloudChargeId: tenantCloudCharge.id,
         };
       });
 
@@ -592,6 +752,22 @@ if (!connectionString) {
         [],
         "tenant-scoped cloud cost allocations must not be visible without app.current_tenant_id",
       );
+      const tenantCloudChargesWithoutContext =
+        await client.tenantCloudCharge.findMany({
+          where: {
+            id: {
+              in: [
+                tenantAData.tenantCloudChargeId,
+                tenantBData.tenantCloudChargeId,
+              ],
+            },
+          },
+        });
+      assert.deepEqual(
+        tenantCloudChargesWithoutContext.map((charge) => charge.id),
+        [],
+        "tenant-scoped cloud charges must not be visible without app.current_tenant_id",
+      );
 
       const tenantAView = await withTenantRls(client, tenantA.id, async (tx) => {
         const users = await tx.user.findMany({
@@ -653,6 +829,16 @@ if (!connectionString) {
             },
           },
         });
+        const tenantCloudCharges = await tx.tenantCloudCharge.findMany({
+          where: {
+            id: {
+              in: [
+                tenantAData.tenantCloudChargeId,
+                tenantBData.tenantCloudChargeId,
+              ],
+            },
+          },
+        });
         const crossTenantUpdate = await tx.user.updateMany({
           where: {
             id: tenantBData.userId,
@@ -669,14 +855,24 @@ if (!connectionString) {
             cost_category: "rls_cross_tenant_update_should_not_apply",
           },
         });
+        const crossTenantChargeUpdate = await tx.tenantCloudCharge.updateMany({
+          where: {
+            id: tenantBData.tenantCloudChargeId,
+          },
+          data: {
+            status: "ready",
+          },
+        });
 
         return {
           attachmentIds: attachments.map((attachment) => attachment.id),
           cloudCostAllocationIds: cloudCostAllocations.map((allocation) => allocation.id),
+          tenantCloudChargeIds: tenantCloudCharges.map((charge) => charge.id),
           notificationIds: notifications.map((notification) => notification.id),
           runIds: runs.map((run) => run.id),
           templateIds: templates.map((template) => template.id),
           updatedAllocationRows: crossTenantAllocationUpdate.count,
+          updatedChargeRows: crossTenantChargeUpdate.count,
           updatedRows: crossTenantUpdate.count,
           usageAggregateIds: usageAggregates.map((aggregate) => aggregate.id),
           usageEventIds: usageEvents.map((event) => event.id),
@@ -694,11 +890,19 @@ if (!connectionString) {
       assert.deepEqual(tenantAView.cloudCostAllocationIds, [
         tenantAData.cloudCostAllocationId,
       ]);
+      assert.deepEqual(tenantAView.tenantCloudChargeIds, [
+        tenantAData.tenantCloudChargeId,
+      ]);
       assert.equal(tenantAView.updatedRows, 0, "tenant A must not update tenant B rows");
       assert.equal(
         tenantAView.updatedAllocationRows,
         0,
         "tenant A must not update tenant B cloud cost allocations",
+      );
+      assert.equal(
+        tenantAView.updatedChargeRows,
+        0,
+        "tenant A must not update tenant B cloud charges",
       );
 
       const tenantBUser = await withTenantRls(client, tenantB.id, (tx) =>
@@ -717,9 +921,22 @@ if (!connectionString) {
         }),
       );
       assert.equal(tenantBCloudCostAllocation?.cost_category, "storage");
+      const tenantBCloudCharge = await withTenantRls(client, tenantB.id, (tx) =>
+        tx.tenantCloudCharge.findUnique({
+          where: {
+            id: tenantBData.tenantCloudChargeId,
+          },
+        }),
+      );
+      assert.equal(tenantBCloudCharge?.status, "draft");
     } finally {
       for (const tenantId of tenantIds) {
         await withTenantRls(client, tenantId, async (tx) => {
+          await tx.tenantCloudCharge.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
           await tx.tenantCloudCostAllocation.deleteMany({
             where: {
               tenant_id: tenantId,
@@ -759,9 +976,23 @@ if (!connectionString) {
       }
 
       if (allocationRunId) {
+        if (chargeCalculationRunId) {
+          await client.cloudChargeCalculationRun.deleteMany({
+            where: {
+              id: chargeCalculationRunId,
+            },
+          });
+        }
         await client.cloudCostAllocationRun.deleteMany({
           where: {
             id: allocationRunId,
+          },
+        });
+      }
+      if (chargeRuleId) {
+        await client.cloudChargeRule.deleteMany({
+          where: {
+            id: chargeRuleId,
           },
         });
       }

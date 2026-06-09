@@ -105,12 +105,12 @@ Princípios adotados:
 - **Prioridade:** MVP da Console da Plataforma.
 
 ### Plataforma cloud billing — futura
-- **Objetivo:** visualizar uso, custo bruto, custo alocado por tenant, markup e cobrança cloud quando as regras comerciais estiverem prontas.
+- **Objetivo:** visualizar uso, custo bruto, custo alocado por tenant, markup, valor cobrável e cobrança cloud quando a UI de billing for implementada.
 - **Usuários:** Super Admin / dono do SaaS.
-- **Permissões previstas:** `platform:cloud-usage:read`, `platform:cloud-costs:read`, `platform:cloud-cost-allocation:read`, futuras permissões de markup/billing.
-- **APIs já disponíveis nesta fase:** `/api/v1/platform/cloud-usage/*`, `/api/v1/platform/cloud-costs/*`, `/api/v1/platform/cloud-cost-allocations/*`.
-- **Fora desta branch:** UI completa, markup, fatura, pagamento e exposição de custo para usuário tenant comum.
-- **Prioridade:** pós engine de markup/cobrança.
+- **Permissões previstas:** `platform:cloud-usage:read`, `platform:cloud-costs:read`, `platform:cloud-cost-allocation:read`, `platform:cloud-charge-rules:read`, `platform:cloud-charges:read` e futuras permissões de billing/pagamento.
+- **APIs já disponíveis nesta fase:** `/api/v1/platform/cloud-usage/*`, `/api/v1/platform/cloud-costs/*`, `/api/v1/platform/cloud-cost-allocations/*`, `/api/v1/platform/cloud-charge-rules/*` e `/api/v1/platform/cloud-charges/*`.
+- **Fora desta branch:** UI completa, fatura, pagamento, emissão fiscal e exposição de custo/preço/margem para usuário tenant comum.
+- **Prioridade:** próxima etapa de billing UI.
 
 ## Telas Web
 

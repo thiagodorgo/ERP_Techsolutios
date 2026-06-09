@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import { handleAsyncRoute, readRouteParam } from "../core-saas/routes/http.js";
 import { requirePlatformPermission } from "./platform-permissions.js";
+import { createCloudChargesPlatformRouter } from "../cloud-charges/cloud-charge.routes.js";
 import { createCloudCostAllocationPlatformRouter } from "../cloud-cost-allocation/cloud-cost-allocation.routes.js";
 import { createCloudCostsPlatformRouter } from "../cloud-costs/aws-cur.routes.js";
 import { createCloudUsagePlatformRouter } from "../cloud-usage/cloud-usage.routes.js";
@@ -17,6 +18,7 @@ import {
 export function createPlatformRouter(service = new PlatformTenantsService()): Router {
   const router = Router();
 
+  router.use("/", createCloudChargesPlatformRouter());
   router.use("/cloud-cost-allocations", createCloudCostAllocationPlatformRouter());
   router.use("/cloud-costs", createCloudCostsPlatformRouter());
   router.use("/cloud-usage", createCloudUsagePlatformRouter());

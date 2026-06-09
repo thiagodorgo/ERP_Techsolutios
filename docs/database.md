@@ -691,6 +691,104 @@ Regras:
 
 `cloud_cost_allocation_rules` nao foi criada nesta fase. O catalogo MVP de regras fica em codigo para manter o comportamento auditavel e pequeno; persistencia de regras fica planejada para governanca futura.
 
+## Cloud charge markup rules
+
+Status: implementado na migration `20260614000000_add_cloud_charge_markup_rules`.
+
+### `cloud_charge_rules`
+
+Regras comerciais que transformam custo alocado em valor cobrável.
+
+Campos principais:
+
+- `tenant_id`
+- `plan_code`
+- `name`
+- `description`
+- `is_active`
+- `priority`
+- `effective_from`
+- `effective_until`
+- `currency`
+- `markup_type`
+- `markup_value`
+- `minimum_monthly_charge`
+- `included_cloud_cost`
+- `included_usage_amount`
+- `included_usage_metric_key`
+- `overage_markup_type`
+- `overage_markup_value`
+- `rounding_mode`
+- `metadata`
+- timestamps
+
+Regras:
+
+- `markup_type` limitado a `percentage`, `fixed_multiplier` e `fixed_amount`;
+- `rounding_mode` limitado a `none`, `nearest_cent`, `nearest_10_cents`, `nearest_real` e `ceil_real`;
+- valores monetarios e quantitativos nao podem ser negativos;
+- `tenant_id` nulo permite regra global/default;
+- acesso HTTP fica restrito a Platform Admin via `platform:cloud-charge-rules:*`.
+
+### `cloud_charge_calculation_runs`
+
+Runs globais da plataforma para calcular charges cloud por período a partir de um allocation run.
+
+Campos principais:
+
+- `status`
+- `period_start`
+- `period_end`
+- `source_allocation_run_id`
+- `strategy`
+- `total_allocated_cost`
+- `total_charge_amount`
+- `total_margin_amount`
+- `total_discount_amount`
+- `currency`
+- `started_at`
+- `completed_at`
+- `created_by`
+- `error_message`
+- `metadata`
+- timestamps
+
+### `tenant_cloud_charges`
+
+Resultado tenant-scoped do cálculo cobrável.
+
+Campos principais:
+
+- `calculation_run_id`
+- `tenant_id`
+- `source_allocation_run_id`
+- `cloud_charge_rule_id`
+- `period_start`
+- `period_end`
+- `allocated_cost`
+- `included_cloud_cost`
+- `billable_cost`
+- `markup_type`
+- `markup_value`
+- `minimum_monthly_charge`
+- `gross_charge_amount`
+- `discount_amount`
+- `final_charge_amount`
+- `margin_amount`
+- `margin_percentage`
+- `currency`
+- `status`
+- `metadata`
+- timestamps
+
+Regras:
+
+- RLS por `tenant_id`;
+- status limitado a `draft`, `ready`, `locked` e `voided`;
+- unicidade por `calculation_run_id + tenant_id`;
+- indices por tenant, periodo, calculation run, allocation run, regra e status;
+- API desta branch permanece platform-scoped e nao expõe margem a usuario tenant comum.
+
 ## Auditoria enterprise
 
 Status: implementado sem migration adicional. A tabela `audit_logs` atual suporta o contrato enterprise por meio de colunas nativas e `metadata Json`.
@@ -747,6 +845,7 @@ RLS foi habilitado nas tabelas tenant-scoped principais:
 - `cloud_usage_events`
 - `cloud_usage_daily_aggregates`
 - `tenant_cloud_cost_allocations`
+- `tenant_cloud_charges`
 
 Tabelas globais que nao recebem RLS nesta rodada:
 
@@ -755,6 +854,7 @@ Tabelas globais que nao recebem RLS nesta rodada:
 - `role_permissions`: associacao entre roles e permissoes; o acesso operacional continua controlado pelas roles visiveis no contexto.
 - `cloud_cost_imports` e `cloud_cost_line_items`: custo bruto global do provedor, protegido por RBAC platform e nao exposto a usuarios tenant.
 - `cloud_cost_allocation_runs`: execucoes globais de alocacao, protegidas por RBAC platform; os resultados por tenant ficam em `tenant_cloud_cost_allocations` com RLS.
+- `cloud_charge_rules` e `cloud_charge_calculation_runs`: regras e execucoes globais de cobranca cloud, protegidas por RBAC platform; os resultados por tenant ficam em `tenant_cloud_charges` com RLS.
 
 ### Politicas
 

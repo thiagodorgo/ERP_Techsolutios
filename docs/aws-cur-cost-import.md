@@ -35,7 +35,7 @@ Fluxo aprovado:
 1. `cloud_usage_*` mede uso interno por tenant.
 2. `cloud_cost_*` importa custo AWS bruto.
 3. `cloud-cost-allocation-engine` cruza custo e uso.
-4. `cloud-charge-markup-rules` futuro aplica margem.
+4. `cloud-charge-markup-rules` aplica margem.
 5. `platform-cloud-billing-ui` e `billing-payment-provider` futuros exibem e cobram.
 
 Esta branch entrega apenas o item 2. Ela armazena `tenant_tag` quando vier no CUR, mas nao associa custo automaticamente ao tenant. A associacao direta por `tenant_tag` ou ponderada por uso pertence ao modulo `cloud_cost_allocation`.
@@ -173,6 +173,5 @@ Esta branch nao usa credenciais AWS reais.
 
 ## Proximas branches
 
-- `feature/cloud-charge-markup-rules`
 - `feature/platform-cloud-billing-ui`
 - `feature/billing-payment-provider`

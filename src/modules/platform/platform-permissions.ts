@@ -3,6 +3,10 @@ import type { NextFunction, Request, Response } from "express";
 import { resolveRequestActor } from "../auth/middleware/authenticated-actor.middleware.js";
 
 export const PLATFORM_PERMISSIONS = [
+  "platform:cloud-charge-rules:read",
+  "platform:cloud-charge-rules:write",
+  "platform:cloud-charges:read",
+  "platform:cloud-charges:calculate",
   "platform:cloud-cost-allocation:read",
   "platform:cloud-cost-allocation:run",
   "platform:cloud-costs:read",
