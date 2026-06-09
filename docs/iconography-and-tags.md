@@ -28,6 +28,8 @@ Icones iniciais:
 - `FileText`: faturas.
 - `CreditCard`: pagamentos.
 
+O frontend resolve esses nomes em `frontend/src/modules/navigation/navigation.adapter.ts` usando `lucide-react`. Quando o backend retorna um nome desconhecido, o adapter usa `Circle` como fallback seguro e a tela continua renderizando.
+
 ## Tags de status
 
 Status oficiais de navegacao:

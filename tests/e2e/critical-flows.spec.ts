@@ -111,7 +111,9 @@ test("login real cria sessao, credenciais invalidas exibem erro e rota protegida
 
 test("tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Console", async ({ page }) => {
   await loginAsTenantAdmin(page);
+  const navigationResponse = page.waitForResponse((response) => response.url().includes("/api/v1/navigation/menu"));
   await activateFirstContext(page);
+  await navigationResponse;
 
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole("link", { name: "Checklists", exact: true })).toBeVisible();
@@ -134,7 +136,9 @@ test("tenant admin acessa inbox interna de notificacoes sem depender de seed", a
 });
 
 test("platform admin acessa Platform Console", async ({ page }) => {
+  const navigationResponse = page.waitForResponse((response) => response.url().includes("/api/v1/navigation/menu?scope=platform"));
   await loginAsPlatformAdmin(page);
+  await navigationResponse;
 
   await expect(page).toHaveURL(/\/platform\/tenants$/);
   const session = await page.evaluate(() => window.localStorage.getItem("erp-techsolutions.auth-session"));
@@ -144,11 +148,11 @@ test("platform admin acessa Platform Console", async ({ page }) => {
 
   await expect(page.getByText("Console da Plataforma", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /Tenants/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Cloud Billing/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Billing Cloud|Cloud Billing/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Tenants", exact: true })).toBeVisible();
   await expect(page.getByText("Tenants cadastrados")).toBeVisible();
 
-  await page.getByRole("link", { name: /Cloud Billing/i }).click();
+  await page.getByRole("link", { name: /Billing Cloud|Cloud Billing/i }).click();
   await expect(page).toHaveURL(/\/platform\/cloud-billing$/);
   await expect(page.getByRole("heading", { name: "Cloud Billing", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Visao geral" })).toBeVisible();

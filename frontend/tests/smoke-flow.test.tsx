@@ -374,6 +374,69 @@ test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () =
   assert.deepEqual(flattenPaths(adminTenantItems), flattenPaths(adminTenantItems));
 });
 
+test("navigation adapter ordena, preserva status e usa icone fallback", async () => {
+  const { adaptBackendNavigationMenu } = await import("../src/modules/navigation/navigation.adapter");
+  const items = adaptBackendNavigationMenu({
+    data: [
+      {
+        id: "tenant.future",
+        label: "Futuro",
+        path: "/future",
+        icon: "IconeInexistente",
+        group: "finance",
+        order: 20,
+        status: "future",
+        requiredPermissions: ["finance:read"],
+      },
+      {
+        id: "tenant.checklists",
+        label: "Checklists",
+        path: "/administrator/checklists",
+        icon: "ClipboardCheck",
+        group: "tenant",
+        order: 10,
+        status: "implemented",
+        requiredPermissions: ["tenant_checklists:read"],
+      },
+    ],
+  });
+
+  assert.deepEqual(items.map((item) => item.id), ["tenant.checklists", "tenant.future"]);
+  assert.equal(items[0].backendStatus, "implemented");
+  assert.equal(items[1].backendStatus, "future");
+  assert.ok(items[1].iconComponent);
+});
+
+test("navigation service consome endpoint backend com scope e mock fallback local", async () => {
+  process.env.VITE_USE_MOCKS = "false";
+  process.env.VITE_API_BASE_URL = "/api/v1";
+  browser.clear();
+  const calls = installFetchJson({
+    data: [
+      {
+        id: "platform.cloudBilling",
+        label: "Billing Cloud",
+        path: "/platform/cloud-billing",
+        icon: "Receipt",
+        group: "platform",
+        order: 30,
+        status: "implemented",
+        requiredPermissions: ["platform:cloud-charges:read"],
+      },
+    ],
+  });
+  const { getNavigationMenu } = await import("../src/modules/navigation/navigation.service");
+
+  const response = await getNavigationMenu("platform");
+
+  assert.equal(calls[0].url, "/api/v1/navigation/menu?scope=platform");
+  assert.equal(response.data?.[0]?.id, "platform.cloudBilling");
+
+  process.env.VITE_USE_MOCKS = "true";
+  const mockResponse = await getNavigationMenu("tenant");
+  assert.equal(mockResponse.data?.some((item) => item.path === "/administrator/checklists"), true);
+});
+
 test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async () => {
   process.env.VITE_USE_MOCKS = "false";
   process.env.VITE_API_BASE_URL = "/api/v1";

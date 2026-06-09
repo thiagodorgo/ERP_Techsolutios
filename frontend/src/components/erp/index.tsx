@@ -36,6 +36,8 @@ import { useAuth } from "../../providers/AuthProvider";
 import { usePermissions } from "../../providers/PermissionProvider";
 import { useTenantContext } from "../../providers/TenantProvider";
 import { NotificationUnreadBadge } from "../../modules/notifications/components/NotificationUnreadBadge";
+import { groupNavigationItems } from "../../modules/navigation";
+import type { NavigationItem } from "../../navigation/types";
 
 export function TenantBadge({ context }: { context: TenantContext }) {
   return <Badge tone={context.tenantStatus === "blocked" ? "danger" : "info"}>{context.tenantName}</Badge>;
@@ -97,11 +99,13 @@ function getTenantNavigationMode(context: TenantContext | null | undefined, role
 export function Sidebar({
   context,
   collapsed = false,
+  navigationItems,
   notificationUnreadCount = 0,
   onToggleCollapsed,
 }: {
   context?: TenantContext | null;
   collapsed?: boolean;
+  navigationItems?: NavigationItem[];
   notificationUnreadCount?: number;
   onToggleCollapsed?: () => void;
 }) {
@@ -115,8 +119,9 @@ export function Sidebar({
       enabledModules: context?.enabledModules,
       tenantStatus: context?.tenantStatus,
     },
-    tenantNavigation,
+    navigationItems ?? tenantNavigation,
   );
+  const visibleGroups = groupNavigationItems(visibleItems);
 
   return (
     <aside className={`erp-sidebar ${collapsed ? "is-collapsed" : ""}`}>
@@ -135,27 +140,43 @@ export function Sidebar({
         ) : null}
       </div>
       <nav>
-        {visibleItems.map((item) => {
-          const Icon = iconByModule[(item.icon ?? item.moduleKey) as keyof typeof iconByModule] ?? LayoutDashboard;
-          const link = (
-            <NavLink key={item.path} to={item.path} aria-label={collapsed ? item.label : undefined}>
-              <Icon size={18} />
-              <span>{item.label}</span>
-              {item.id === "tenant-notifications" ? <NotificationUnreadBadge count={notificationUnreadCount} /> : null}
-            </NavLink>
-          );
+        {visibleGroups.map((group) => (
+          <div className="erp-sidebar__group" key={group.scope}>
+            {!collapsed ? <span className="erp-sidebar__group-label">{group.label}</span> : null}
+            {group.items.map((item) => {
+              const Icon = item.iconComponent ?? iconByModule[(item.icon ?? item.moduleKey) as keyof typeof iconByModule] ?? LayoutDashboard;
+              const link = (
+                <NavLink key={item.path} to={item.path} aria-label={collapsed ? item.label : undefined}>
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                  {item.id === "tenant-notifications" || item.id === "tenant.notifications" ? <NotificationUnreadBadge count={notificationUnreadCount} /> : null}
+                  {!collapsed ? <NavigationStatusBadge item={item} /> : null}
+                </NavLink>
+              );
 
-          return collapsed ? (
-            <Tooltip key={item.path} label={item.label}>
-              {link}
-            </Tooltip>
-          ) : (
-            link
-          );
-        })}
+              return collapsed ? (
+                <Tooltip key={item.path} label={item.label}>
+                  {link}
+                </Tooltip>
+              ) : (
+                link
+              );
+            })}
+          </div>
+        ))}
       </nav>
     </aside>
   );
+}
+
+function NavigationStatusBadge({ item }: { item: NavigationItem }) {
+  const status = item.backendStatus ?? item.status;
+
+  if (!status || status === "active" || status === "implemented" || status === "partial") {
+    return null;
+  }
+
+  return <span className="erp-nav-status">{status}</span>;
 }
 
 export function Topbar({ context, notificationUnreadCount = 0 }: { context: TenantContext; notificationUnreadCount?: number }) {

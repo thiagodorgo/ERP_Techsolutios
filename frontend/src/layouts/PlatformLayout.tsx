@@ -16,8 +16,9 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import { Tooltip } from "../components/ui";
 import { PlatformGuard } from "../guards/PlatformGuard";
+import { groupNavigationItems, useNavigationMenu } from "../modules/navigation";
 import { platformNavigation } from "../navigation/platformNavigation";
-import { filterNavigationItems } from "../navigation/types";
+import { filterNavigationItems, type NavigationItem } from "../navigation/types";
 import { useAuth } from "../providers/AuthProvider";
 import { usePermissions } from "../providers/PermissionProvider";
 import { useTenantContext } from "../providers/TenantProvider";
@@ -38,6 +39,7 @@ export function PlatformLayout() {
   const { clearContext } = useTenantContext();
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const navigationMenu = useNavigationMenu({ scope: "platform" });
   const visibleItems = filterNavigationItems(
     {
       permissions,
@@ -45,8 +47,9 @@ export function PlatformLayout() {
       scope: "platform",
       mode: "platform",
     },
-    platformNavigation,
+    navigationMenu.items ?? platformNavigation,
   );
+  const visibleGroups = groupNavigationItems(visibleItems);
 
   return (
     <PlatformGuard>
@@ -70,23 +73,29 @@ export function PlatformLayout() {
             </Tooltip>
           </div>
           <nav>
-            {visibleItems.map((item) => {
-              const Icon = iconByModule[(item.icon ?? item.moduleKey) as keyof typeof iconByModule] ?? LayoutDashboard;
-              const link = (
-                <NavLink key={item.path} to={item.path} aria-label={sidebarCollapsed ? item.label : undefined}>
-                  <Icon size={18} />
-                  <span>{item.label}</span>
-                </NavLink>
-              );
+            {visibleGroups.map((group) => (
+              <div className="platform-sidebar__group" key={group.scope}>
+                {!sidebarCollapsed ? <span className="platform-sidebar__group-label">{group.label}</span> : null}
+                {group.items.map((item) => {
+                  const Icon = item.iconComponent ?? iconByModule[(item.icon ?? item.moduleKey) as keyof typeof iconByModule] ?? LayoutDashboard;
+                  const link = (
+                    <NavLink key={item.path} to={item.path} aria-label={sidebarCollapsed ? item.label : undefined}>
+                      <Icon size={18} />
+                      <span>{item.label}</span>
+                      {!sidebarCollapsed ? <NavigationStatusBadge item={item} /> : null}
+                    </NavLink>
+                  );
 
-              return sidebarCollapsed ? (
-                <Tooltip key={item.path} label={item.label}>
-                  {link}
-                </Tooltip>
-              ) : (
-                link
-              );
-            })}
+                  return sidebarCollapsed ? (
+                    <Tooltip key={item.path} label={item.label}>
+                      {link}
+                    </Tooltip>
+                  ) : (
+                    link
+                  );
+                })}
+              </div>
+            ))}
           </nav>
         </aside>
         <main className="platform-main">
@@ -115,4 +124,14 @@ export function PlatformLayout() {
       </div>
     </PlatformGuard>
   );
+}
+
+function NavigationStatusBadge({ item }: { item: NavigationItem }) {
+  const status = item.backendStatus ?? item.status;
+
+  if (!status || status === "active" || status === "implemented" || status === "partial") {
+    return null;
+  }
+
+  return <span className="erp-nav-status">{status}</span>;
 }

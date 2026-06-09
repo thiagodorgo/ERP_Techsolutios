@@ -963,3 +963,22 @@
 - documentacao criada/atualizada: `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/iconography-and-tags.md`, `docs/field-operator-location-map.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/modules.md`, `docs/rbac.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e `agent-orchestration/docs/status-geral.md`
 - fora de escopo mantido: frontend novo, Google Maps real, localizacao de operador, Work Orders backend, logistica backend, billing/payment/fiscal tenant-scoped, CRUD persistido de menu e remocao dos menus atuais do frontend
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/core-saas.test.ts` e `git diff --check`
+
+## 2026-06-09 - frontend navigation menu consumer
+
+- branch usada: `feature/frontend-navigation-menu-consumer`
+- comandos iniciais executados: `git branch --show-current`, `git status --short --branch` e `git log --oneline --decorate -5`
+- branch confirmada: `feature/frontend-navigation-menu-consumer`
+- worktree inicial confirmado limpo
+- modulo criado: `frontend/src/modules/navigation`
+- service criado para `GET /api/v1/navigation/menu`
+- adapter criado para normalizar resposta backend, ordenar itens, mapear icones `lucide-react`, preservar status/permissoes/children e usar fallback `Circle`
+- hook criado: `useNavigationMenu`
+- fallback local criado com `navigation.mock.ts`, reutilizando menus locais apenas como fallback/mock
+- fallback local tambem cobre resposta backend vazia enquanto a persistencia de modulos do tenant nao estiver completa em seeds/ambientes locais
+- `PlatformLayout` atualizado para consumir `scope=platform`
+- `AppShell` e `Sidebar` atualizados para consumir o menu backend/fallback e renderizar grupos `platform`, `tenant`, `operations`, `logistics` e `finance`
+- smoke test atualizado para adapter/service; E2E atualizado para aguardar chamadas reais ao endpoint de navegacao
+- documentacao atualizada em `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/frontend-screens.md`, `docs/api-screen-endpoints.md`, `docs/iconography-and-tags.md`, `docs/platform-console.md`, `docs/modules.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: novas telas, Google Maps, localizacao, backend, novos endpoints e remocao completa do fallback local
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts` e `git diff --check`
