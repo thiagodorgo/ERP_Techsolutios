@@ -110,6 +110,10 @@ Fluxo integrado: cloud cost allocation.
 
 O job `cloud-cost-allocation.run` recebe `runId` existente ou `periodStart`, `periodEnd` e `strategy`, cria/processa run em `cloud_cost_allocation_runs`, cruza `cloud_cost_line_items` com `cloud_usage_daily_aggregates`, grava `tenant_cloud_cost_allocations` e atualiza totais alocados/nao alocados. Falhas marcam o run como `failed` com erro sanitizado. O job nao depende de AWS real nem aplica markup.
 
+Fluxo integrado: cloud charge markup rules.
+
+O job `cloud-charges.calculate` recebe `runId` existente ou `sourceAllocationRunId`, `periodStart`, `periodEnd` e `strategy`, cria/processa run em `cloud_charge_calculation_runs`, consome `tenant_cloud_cost_allocations`, seleciona regra comercial ativa e grava `tenant_cloud_charges`. Falhas marcam o run como `failed` com erro sanitizado. O job nao gera fatura nem pagamento.
+
 ## Testes
 
 Testes especificos:
@@ -121,6 +125,7 @@ node --test --import tsx tests/audit-log.test.ts
 node --test --import tsx tests/cloud-usage.test.ts
 node --test --import tsx tests/aws-cur-cost-import.test.ts
 node --test --import tsx tests/cloud-cost-allocation.test.ts
+node --test --import tsx tests/cloud-charge-markup-rules.test.ts
 ```
 
 Eles requerem Redis local ativo via:

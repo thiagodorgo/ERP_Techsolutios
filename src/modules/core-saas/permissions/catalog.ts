@@ -1,4 +1,8 @@
 export const PERMISSION_CATALOG = [
+  "platform:cloud-charge-rules:read",
+  "platform:cloud-charge-rules:write",
+  "platform:cloud-charges:read",
+  "platform:cloud-charges:calculate",
   "platform:cloud-cost-allocation:read",
   "platform:cloud-cost-allocation:run",
   "platform:cloud-costs:read",

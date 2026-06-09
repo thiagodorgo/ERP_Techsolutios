@@ -141,3 +141,35 @@ Regras:
 - usuario comum de tenant nao acessa custo bruto nem custo alocado nesta branch;
 - `tenant_cloud_cost_allocations` e protegida por RLS no banco;
 - markup, fatura, pagamento e UI completa ficam fora desta rodada.
+
+## Platform Cloud Charge Markup Rules
+
+Feature platform-scoped sem UI completa nesta branch. A futura tela de billing/cloud da plataforma deve consumir estes endpoints para revisar regras comerciais, charges, margem e pendências.
+
+Permissões:
+
+- `platform:cloud-charge-rules:read`
+- `platform:cloud-charge-rules:write`
+- `platform:cloud-charges:read`
+- `platform:cloud-charges:calculate`
+
+Endpoints implementados:
+
+```http
+GET  /platform/cloud-charge-rules
+POST /platform/cloud-charge-rules
+GET  /platform/cloud-charge-rules/:ruleId
+PATCH /platform/cloud-charge-rules/:ruleId
+GET  /platform/cloud-charges/calculation-runs
+GET  /platform/cloud-charges/calculation-runs/:runId
+POST /platform/cloud-charges/calculation-runs
+GET  /platform/cloud-charges/calculation-runs/:runId/tenant-charges
+GET  /platform/cloud-charges/summary
+```
+
+Regras:
+
+- apenas Platform Admin acessa estes endpoints;
+- usuario comum de tenant nao acessa custo, valor cobrável nem margem nesta branch;
+- `tenant_cloud_charges` e protegida por RLS no banco;
+- fatura, pagamento, checkout, emissão fiscal e UI completa ficam fora desta rodada.

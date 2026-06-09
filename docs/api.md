@@ -381,6 +381,31 @@ Resposta resumida:
 
 Esta API calcula custo AWS alocado por tenant para Platform Admin. Nao aplica markup, nao gera fatura, nao cobra, nao cria provider externo e nao expõe custo em endpoint tenant.
 
+### Cloud charge markup rules
+
+```http
+GET  /api/v1/platform/cloud-charge-rules
+POST /api/v1/platform/cloud-charge-rules
+GET  /api/v1/platform/cloud-charge-rules/:ruleId
+PATCH /api/v1/platform/cloud-charge-rules/:ruleId
+GET  /api/v1/platform/cloud-charges/calculation-runs
+GET  /api/v1/platform/cloud-charges/calculation-runs/:runId
+POST /api/v1/platform/cloud-charges/calculation-runs
+GET  /api/v1/platform/cloud-charges/calculation-runs/:runId/tenant-charges
+GET  /api/v1/platform/cloud-charges/summary
+```
+
+Permissoes:
+
+- regras: `platform:cloud-charge-rules:read` e `platform:cloud-charge-rules:write`
+- calculos: `platform:cloud-charges:read` e `platform:cloud-charges:calculate`
+
+`POST /cloud-charge-rules` aceita regras com `markupType` `percentage`, `fixed_multiplier` ou `fixed_amount`; `roundingMode` `none`, `nearest_cent`, `nearest_10_cents`, `nearest_real` ou `ceil_real`.
+
+`POST /cloud-charges/calculation-runs` consome `sourceAllocationRunId` de `cloud_cost_allocation_runs` e cria `tenant_cloud_charges` com status `draft`.
+
+Esta API calcula valor cobrável com markup/margem apenas para Platform Admin. Nao gera fatura, nao integra pagamento, nao emite nota fiscal e nao expõe margem para usuario tenant comum.
+
 ## Observacoes
 
 - A implementacao inicial pode usar mock/service em memoria enquanto a persistencia de `tenant_modules` nao estiver versionada.

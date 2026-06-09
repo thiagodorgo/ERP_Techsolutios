@@ -44,6 +44,7 @@ Baseline authorization matrix for the ERP Techsolutions multi-tenant SaaS ERP. T
 | Cloud usage metering | full | none | none | none | none | none | none | read | support-view |
 | Cloud cost import | full | none | none | none | none | none | none | read | support-view |
 | Cloud cost allocation | full | none | none | none | none | none | none | read | support-view |
+| Cloud charge markup rules | full | none | none | none | none | none | none | read | support-view |
 | Reports and analytics | full | full | full | scoped | finance-scoped | inventory-scoped | field-scoped | audit-full-read | support-scoped |
 | Audit logs | full | read | scoped | none | scoped | scoped | none | full-read | support-scoped |
 | Cross-tenant support operations | full | none | none | none | none | none | none | read | scoped-support-only |
@@ -80,6 +81,8 @@ Operational rules:
 - cloud cost import is platform-scoped and must require `platform:cloud-costs:read` or `platform:cloud-costs:import`; tenant roles do not receive raw cloud cost access
 - cloud cost allocation is platform-scoped at API level and must require `platform:cloud-cost-allocation:read` or `platform:cloud-cost-allocation:run`; tenant roles do not receive allocated cloud cost access in this branch
 - `tenant_cloud_cost_allocations` remains tenant-scoped at database level with RLS, even though HTTP access is restricted to the Platform boundary in this branch
+- cloud charge markup rules are platform-scoped at API level and must require `platform:cloud-charge-rules:read`, `platform:cloud-charge-rules:write`, `platform:cloud-charges:read`, or `platform:cloud-charges:calculate`; tenant roles do not receive cloud price or margin access in this branch
+- `tenant_cloud_charges` remains tenant-scoped at database level with RLS, even though HTTP access is restricted to the Platform boundary in this branch
 - checklist reads and writes must validate `tenant_id` together with template, field, run and answer identifiers
 - M10/M11/M12 must render checklist schemas from API data rather than hardcoded mobile field definitions
 

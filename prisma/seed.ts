@@ -25,6 +25,10 @@ const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 const permissionDescriptions = {
+  "platform:cloud-charge-rules:read": "Consultar regras comerciais de markup cloud no Console da Plataforma.",
+  "platform:cloud-charge-rules:write": "Criar e editar regras comerciais de markup cloud no Console da Plataforma.",
+  "platform:cloud-charges:read": "Consultar calculos e charges cloud por tenant no Console da Plataforma.",
+  "platform:cloud-charges:calculate": "Executar calculo de charges cloud com markup por tenant.",
   "platform:cloud-cost-allocation:read": "Consultar runs e alocacoes de custo cloud por tenant.",
   "platform:cloud-cost-allocation:run": "Executar motor de alocacao de custo cloud por tenant.",
   "platform:cloud-costs:read": "Consultar custos AWS CUR brutos importados no Console da Plataforma.",
