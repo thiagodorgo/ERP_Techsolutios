@@ -116,9 +116,51 @@ Uso: reparo, manutencao, construcao ou servico tecnico, com foto antes, foto dep
 
 M12 nao pertence ao escopo de guincho/reboque e nao deve reutilizar a semantica de coleta/entrega.
 
+## P04 · Platform Cloud Billing
+
+Tela platform-scoped implementada em `/platform/cloud-billing`. Consolida uso, custo AWS, rateio, cobranca, regras e runs em uma rota unica com abas internas.
+
+Permissoes:
+
+- `platform:cloud-usage:read`
+- `platform:cloud-costs:read`
+- `platform:cloud-costs:import`
+- `platform:cloud-cost-allocation:read`
+- `platform:cloud-cost-allocation:run`
+- `platform:cloud-charge-rules:read`
+- `platform:cloud-charge-rules:write`
+- `platform:cloud-charges:read`
+- `platform:cloud-charges:calculate`
+
+Endpoints consumidos pela UI:
+
+```http
+GET  /platform/cloud-usage/summary
+GET  /platform/cloud-costs/imports
+GET  /platform/cloud-costs/summary
+POST /platform/cloud-costs/imports/manual-csv
+GET  /platform/cloud-cost-allocations/runs
+GET  /platform/cloud-cost-allocations/summary
+POST /platform/cloud-cost-allocations/runs
+GET  /platform/cloud-charges/calculation-runs
+GET  /platform/cloud-charges/summary
+POST /platform/cloud-charges/calculation-runs
+GET  /platform/cloud-charge-rules
+POST /platform/cloud-charge-rules
+PATCH /platform/cloud-charge-rules/:ruleId
+```
+
+Regras:
+
+- apenas Platform Admin acessa a rota e os endpoints;
+- cada aba bloqueia conteudo quando falta permissao especifica;
+- `POST /platform/cloud-charges/calculation-runs` precisa de `sourceAllocationRunId`;
+- custo, preco, valor cobravel e margem nao sao expostos em rotas ou telas tenant;
+- fatura, pagamento, checkout e emissao fiscal ficam fora desta rodada.
+
 ## Platform Cloud Cost Allocation
 
-Feature platform-scoped sem UI completa nesta branch. A futura tela de billing/cloud da plataforma deve consumir estes endpoints depois das regras de markup.
+Feature platform-scoped consumida pela P04 Cloud Billing.
 
 Permissoes:
 
@@ -144,7 +186,7 @@ Regras:
 
 ## Platform Cloud Charge Markup Rules
 
-Feature platform-scoped sem UI completa nesta branch. A futura tela de billing/cloud da plataforma deve consumir estes endpoints para revisar regras comerciais, charges, margem e pendências.
+Feature platform-scoped consumida pela P04 Cloud Billing para revisar regras comerciais, charges, margem e pendencias.
 
 Permissões:
 

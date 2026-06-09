@@ -747,6 +747,30 @@
   flex-wrap: wrap;
 }
 
+.cloud-billing-page .ui-tabs {
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.cloud-billing-rules {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr);
+  gap: var(--space-16);
+  align-items: start;
+}
+
+.cloud-billing-form {
+  display: grid;
+  gap: var(--space-12);
+}
+
+.cloud-billing-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
 .platform-detail-list {
   display: grid;
   grid-template-columns: 160px minmax(0, 1fr);
@@ -1684,6 +1708,7 @@
     .checklist-runtime-layout,
     .checklist-runtime-evidence-grid,
     .checklist-runtime-comparison-grid,
+    .cloud-billing-rules,
     .tenant-settings-grid,
     .tenant-settings-theme-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1775,6 +1800,7 @@
     .checklist-runtime-evidence-grid,
     .checklist-runtime-comparison-grid,
     .checklist-runtime-marker-form,
+    .cloud-billing-rules,
     .tenant-settings-overview,
     .tenant-settings-grid,
     .tenant-settings-theme-grid {
@@ -1792,6 +1818,11 @@
 
   .ui-table-wrap {
     display: none;
+  }
+
+  .cloud-billing-page .ui-table-wrap {
+    display: block;
+    overflow-x: auto;
   }
 
   .work-order-mobile-list {

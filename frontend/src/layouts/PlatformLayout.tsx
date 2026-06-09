@@ -1,6 +1,7 @@
 import {
   Activity,
   Building2,
+  CloudCog,
   HeartPulse,
   LayoutDashboard,
   LogOut,
@@ -25,6 +26,7 @@ const iconByModule = {
   "platform-overview": LayoutDashboard,
   "platform-tenants": Building2,
   "platform-modules": SlidersHorizontal,
+  "platform-cloud-billing": CloudCog,
   "platform-audit": ShieldCheck,
   "platform-health": HeartPulse,
   "platform-settings": Settings,

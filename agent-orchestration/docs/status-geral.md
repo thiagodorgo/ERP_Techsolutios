@@ -1148,3 +1148,18 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - fora de escopo mantido: fatura, pagamento, checkout, gateway, emissao fiscal, UI completa, AWS real adicional, credenciais e secrets reais
 - observacao de validacao: `tests/rls-tenant-isolation.test.ts` falhou inicialmente porque a migration nova ainda nao estava aplicada no banco local; apos `npx prisma migrate deploy`, o teste passou
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/cloud-charge-markup-rules.test.ts`, `node --test --import tsx tests/cloud-charge-routes.test.ts`, `node --test --import tsx tests/cloud-cost-allocation.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/audit-log.test.ts` e `git diff --check`
+
+## Atualizacao 2026-06-08 - platform cloud billing UI
+
+- branch usada: `feature/platform-cloud-billing-ui`
+- objetivo: criar a UI web de Cloud Billing no Console da Plataforma consumindo as APIs existentes de uso, custos AWS, rateio, cobranca e regras
+- rota criada: `/platform/cloud-billing`
+- abas implementadas: Visao geral, Uso, Custos AWS, Rateio, Cobranca, Regras e Runs
+- criados types, adapter, service, mock e pagina em `frontend/src/modules/platform/cloud-billing`
+- menu Platform atualizado com item `Cloud Billing`; rota protegida por permissoes `platform:cloud-*`
+- mocks representam tenant com margem saudavel, tenant com custo alto, tenant sem regra/custo nao rateado e runs completed/failed
+- acoes de UI: atualizar dados, importar CUR manual, rodar rateio, calcular cobranca, criar regra e editar regra
+- adapter normaliza DTOs reais do backend para os modelos de tela e preserva `VITE_USE_MOCKS=true` como fallback local
+- documentacao criada/atualizada em `docs/platform-cloud-billing-ui.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/platform-console.md`, `docs/modules.md`, `docs/api-screen-endpoints.md`, `docs/api.md`, `docs/rbac.md` e este status
+- fora de escopo mantido: backend novo, migrations, scheduler, fatura, pagamento, checkout, emissao fiscal, mobile Flutter e exposicao tenant de custo/preco/margem
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/cloud-cost-allocation.test.ts`, `node --test --import tsx tests/cloud-charge-markup-rules.test.ts`, `node --test --import tsx tests/aws-cur-cost-import.test.ts`, `node --test --import tsx tests/cloud-usage.test.ts` e `git diff --check`

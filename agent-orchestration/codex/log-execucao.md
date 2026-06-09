@@ -929,3 +929,18 @@
 - documentacao criada/atualizada: `docs/cloud-charge-markup-rules.md`, `docs/cloud-cost-allocation.md`, `docs/aws-cur-cost-import.md`, `docs/cloud-usage-metering.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/architecture.md`, `docs/database.md`, `docs/deployment.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/modules.md`, `docs/messaging.md`, `docs/rbac.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e `agent-orchestration/docs/status-geral.md`
 - observacao de validacao: `tests/rls-tenant-isolation.test.ts` falhou inicialmente porque a migration nova ainda nao estava aplicada no banco local; apos `npx prisma migrate deploy`, o teste passou
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/cloud-charge-markup-rules.test.ts`, `node --test --import tsx tests/cloud-charge-routes.test.ts`, `node --test --import tsx tests/cloud-cost-allocation.test.ts`, `node --test --import tsx tests/job-queue.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/audit-log.test.ts` e `git diff --check`
+
+## 2026-06-08 - platform cloud billing UI
+
+- branch usada: `feature/platform-cloud-billing-ui`
+- objetivo: implementar a interface web Platform Cloud Billing sem backend novo
+- rota criada: `/platform/cloud-billing`
+- abas criadas: Visao geral, Uso, Custos AWS, Rateio, Cobranca, Regras e Runs
+- modulo frontend criado em `frontend/src/modules/platform/cloud-billing`
+- menu Platform, `App.tsx`, mocks/auth e auth adapter atualizados para permissoes cloud
+- CSS atualizado para layout responsivo da tela e tabela visivel em mobile dentro da pagina
+- smoke test atualizado para navegacao RBAC, adapter/endpoints e render SSR da tela
+- E2E atualizado para Platform Admin acessar o menu e a rota Cloud Billing
+- documentacao atualizada em `docs/platform-cloud-billing-ui.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/platform-console.md`, `docs/modules.md`, `docs/api-screen-endpoints.md`, `docs/api.md`, `docs/rbac.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: backend, migrations, fatura, pagamento, checkout, emissao fiscal, mobile Flutter, Figma e exposicao tenant de custo/preco/margem
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/cloud-cost-allocation.test.ts`, `node --test --import tsx tests/cloud-charge-markup-rules.test.ts`, `node --test --import tsx tests/aws-cur-cost-import.test.ts`, `node --test --import tsx tests/cloud-usage.test.ts` e `git diff --check`

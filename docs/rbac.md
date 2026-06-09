@@ -220,6 +220,13 @@ Matriz backend aplicada:
 
 Usuario comum de tenant nao acessa essas rotas. `tenant_cloud_charges` tem RLS por `tenant_id`, mas margem/preco permanecem restritos ao boundary Platform nesta branch.
 
+Frontend Platform:
+
+- `/platform/cloud-billing` exige ao menos uma permissao de leitura de Cloud Billing via `PermissionGuard`;
+- abas internas usam permissoes exatas: Uso usa `platform:cloud-usage:read`, Custos AWS usa `platform:cloud-costs:read`, Rateio usa `platform:cloud-cost-allocation:read`, Cobranca usa `platform:cloud-charges:read`, Regras usa `platform:cloud-charge-rules:read` e Runs usa leitura de rateio ou cobranca;
+- acoes de importacao, rateio, calculo e escrita de regra dependem respectivamente de `platform:cloud-costs:import`, `platform:cloud-cost-allocation:run`, `platform:cloud-charges:calculate` e `platform:cloud-charge-rules:write`;
+- o item de menu `Cloud Billing` existe apenas na navegacao do Console da Plataforma.
+
 Frontend:
 
 - `/notifications` exige `notifications:read`;

@@ -144,8 +144,14 @@ test("platform admin acessa Platform Console", async ({ page }) => {
 
   await expect(page.getByText("Console da Plataforma", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /Tenants/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Cloud Billing/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Tenants", exact: true })).toBeVisible();
   await expect(page.getByText("Tenants cadastrados")).toBeVisible();
+
+  await page.getByRole("link", { name: /Cloud Billing/i }).click();
+  await expect(page).toHaveURL(/\/platform\/cloud-billing$/);
+  await expect(page.getByRole("heading", { name: "Cloud Billing", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Visao geral" })).toBeVisible();
 });
 
 test("W02A Checklists renderiza builder, lista e preview sem quebrar", async ({ page }) => {
