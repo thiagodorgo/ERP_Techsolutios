@@ -673,6 +673,58 @@ Frontend web:
 - `actionUrl` externa nao deve ser navegada pelo cliente;
 - metadata completa, storage keys, tokens e ids internos de destinatario nao devem ser exibidos.
 
+## Field Operator Location
+
+Modulo implementado: `field_operator_location` como fundacao backend para o futuro Mapa Operacional.
+
+Endpoints:
+
+```http
+POST /mobile/field-locations
+GET  /field-locations/latest
+GET  /field-locations/history
+```
+
+Permissoes:
+
+- `POST /mobile/field-locations`: `field_location:send`
+- `GET /field-locations/latest`: `field_location:read`
+- `GET /field-locations/history`: `field_location:history`
+
+`POST /mobile/field-locations` registra a localizacao do proprio actor autenticado. O backend ignora qualquer tentativa de definir `tenant_id` ou `operator_user_id` pelo body.
+
+Body:
+
+```json
+{
+  "latitude": -23.55052,
+  "longitude": -46.633308,
+  "accuracyMeters": 8.5,
+  "headingDegrees": 120,
+  "speedMetersPerSecond": 4.2,
+  "batteryLevel": 76,
+  "recordedAt": "2026-06-09T12:00:00.000Z",
+  "metadata": {
+    "deviceId": "field-device-1"
+  }
+}
+```
+
+`GET /field-locations/latest` aceita `since` e `limit` e retorna a ultima posicao conhecida por operador no tenant atual.
+
+`GET /field-locations/history` aceita `operatorUserId`, `from`, `to` e `limit` e retorna historico do operador no tenant atual.
+
+Regras:
+
+- latitudes validas: `-90` a `90`;
+- longitudes validas: `-180` a `180`;
+- `batteryLevel` deve ser inteiro entre `0` e `100`;
+- metadata sensivel e sanitizada e nao e retornada no DTO publico;
+- RLS protege `field_operator_locations` por `tenant_id`;
+- `field_location.recorded` e `field_location.history_viewed` sao auditados em modo Prisma.
+
+Fora do escopo: Google Maps no frontend, tela `/operations/map`, app Flutter, roteirizacao avancada, Work Orders completas e despacho completo.
+
 ## Auditoria
 
 Endpoint existente:

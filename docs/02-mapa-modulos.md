@@ -120,6 +120,7 @@ ERP Techsolutions
 |---|---|
 | Motor de preço e tarifas | Tabelas versionadas, simulação e aprovação. |
 | tenant_checklist | Modelos versionados por tenant, campos configuráveis a partir de componentes permitidos pela plataforma e execução Web/Mobile. |
+| field_operations | Fundação para Mapa Operacional, operadores em campo, localizacao e despachos futuros. |
 | Estoque por viatura | Controle móvel e reposição automática. |
 | Frota avançada | Abastecimento, manutenção, danos, multas e seguros. |
 | Pré-faturamento | Validação antes do fechamento. |
@@ -202,6 +203,20 @@ ERP Techsolutions
 - preenchimento mobile/offline deve ser suportado em fase futura.
 
 **Componentes iniciais previstos:** `text`, `textarea`, `number`, `currency`, `date`, `datetime`, `select`, `multi_select`, `checkbox`, `radio`, `boolean`, `photo`, `file`, `signature`, `barcode`, `qr_code`, `location` e `rating`.
+
+### 4.2.2 field_operations
+
+**Objetivo:** preparar a operacao em campo para mapa operacional, operadores em campo e despacho futuro.
+
+**Fundacao backend atual:**
+
+- tabela `field_operator_locations`;
+- RLS por `tenant_id`;
+- envio mobile em `POST /api/v1/mobile/field-locations`;
+- consulta web futura em `GET /api/v1/field-locations/latest` e `GET /api/v1/field-locations/history`;
+- RBAC `field_location:send`, `field_location:read` e `field_location:history`.
+
+**Fora do escopo desta rodada:** Google Maps, tela `/operations/map`, app Flutter, roteirizacao avancada, Work Orders completas e despacho completo.
 
 ### 4.3 Operação e Serviços
 

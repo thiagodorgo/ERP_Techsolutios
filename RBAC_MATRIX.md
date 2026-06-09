@@ -33,6 +33,7 @@ Baseline authorization matrix for the ERP Techsolutions multi-tenant SaaS ERP. T
 | User and role assignment | full | full | limited | none | none | none | none | read | limited-support |
 | Dashboard and operational overview | full | full | full | full | scoped | scoped | scoped | read | scoped |
 | Backend navigation menu | full | tenant-scoped | scoped | scoped | scoped | scoped | scoped | read | scoped |
+| Field operator location | support-audited | full-tenant | read-history | send-own | none | none | send-own | full-read | support-view |
 | Master data | full | full | approve/edit | edit-scoped | read | read/edit-scoped | read | read | read-support |
 | Configurable checklist templates | support-audited | create/read/update/delete/publish | read | none | read | read | read | read | support-view |
 | Checklist executions and answers | support-audited | full-tenant | read/complete-by-scope | create/answer/complete-by-scope | read | read/answer-by-scope | answer-assigned | full-read | support-view |
@@ -87,6 +88,7 @@ Operational rules:
 - backend navigation menu is exposed by `GET /api/v1/navigation/menu`, filters by resolved roles, permissions, tenant modules and scope, and never replaces backend authorization on domain endpoints
 - navigation platform items use `platform:dashboard:read`, `platform:tenants:read`, `platform:cloud-charges:read` and `platform:audit:read`
 - navigation tenant/operations/logistics/finance items use planned permissions including `dashboard:read`, `tenant_settings:read`, `users:read`, `audit:read`, `work_orders:*`, `field_location:*`, `field_operator:*`, `field_dispatch:*`, `logistics:*`, `finance:read`, `billing:read`, `invoices:read` and `payments:read`
+- field operator location uses `field_location:send` for mobile self-location, `field_location:read` for latest tenant positions, and `field_location:history` for historical queries; the backend must derive `tenant_id` and `operator_user_id` from the authenticated context and protect `field_operator_locations` with RLS
 - checklist reads and writes must validate `tenant_id` together with template, field, run and answer identifiers
 - M10/M11/M12 must render checklist schemas from API data rather than hardcoded mobile field definitions
 

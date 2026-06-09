@@ -171,6 +171,29 @@ if (!connectionString) {
             email: `rls-a-${suffix}@example.com`,
           },
         });
+        const [fieldLocation] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO field_operator_locations (
+            tenant_id,
+            operator_user_id,
+            source,
+            latitude,
+            longitude,
+            accuracy_meters,
+            recorded_at,
+            metadata
+          )
+          VALUES (
+            ${tenantA.id}::uuid,
+            ${user.id}::uuid,
+            'mobile',
+            -23.550520,
+            -46.633308,
+            8,
+            now(),
+            '{"source":"rls-test"}'::jsonb
+          )
+          RETURNING id
+        `;
         const [template] = await tx.$queryRaw<Array<{ id: string; version: number }>>`
           INSERT INTO checklist_templates (tenant_id, name, type, status, version, schema)
           VALUES (${tenantA.id}::uuid, 'RLS Checklist A', 'custom', 'published', 1, ${JSON.stringify({ source: "rls-test" })}::jsonb)
@@ -413,6 +436,7 @@ if (!connectionString) {
           usageAggregateId: usageAggregate.id,
           usageEventId: usageEvent.id,
           cloudCostAllocationId: cloudCostAllocation.id,
+          fieldLocationId: fieldLocation.id,
           tenantCloudChargeId: tenantCloudCharge.id,
         };
       });
@@ -433,6 +457,29 @@ if (!connectionString) {
             email: `rls-b-${suffix}@example.com`,
           },
         });
+        const [fieldLocation] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO field_operator_locations (
+            tenant_id,
+            operator_user_id,
+            source,
+            latitude,
+            longitude,
+            accuracy_meters,
+            recorded_at,
+            metadata
+          )
+          VALUES (
+            ${tenantB.id}::uuid,
+            ${user.id}::uuid,
+            'mobile',
+            -22.906847,
+            -43.172897,
+            10,
+            now(),
+            '{"source":"rls-test"}'::jsonb
+          )
+          RETURNING id
+        `;
         const [template] = await tx.$queryRaw<Array<{ id: string; version: number }>>`
           INSERT INTO checklist_templates (tenant_id, name, type, status, version, schema)
           VALUES (${tenantB.id}::uuid, 'RLS Checklist B', 'custom', 'published', 1, ${JSON.stringify({ source: "rls-test" })}::jsonb)
@@ -675,6 +722,7 @@ if (!connectionString) {
           usageAggregateId: usageAggregate.id,
           usageEventId: usageEvent.id,
           cloudCostAllocationId: cloudCostAllocation.id,
+          fieldLocationId: fieldLocation.id,
           tenantCloudChargeId: tenantCloudCharge.id,
         };
       });
@@ -735,6 +783,19 @@ if (!connectionString) {
         usageAggregatesWithoutContext.map((aggregate) => aggregate.id),
         [],
         "tenant-scoped cloud usage aggregates must not be visible without app.current_tenant_id",
+      );
+      const fieldLocationsWithoutContext =
+        await client.fieldOperatorLocation.findMany({
+          where: {
+            id: {
+              in: [tenantAData.fieldLocationId, tenantBData.fieldLocationId],
+            },
+          },
+        });
+      assert.deepEqual(
+        fieldLocationsWithoutContext.map((location) => location.id),
+        [],
+        "tenant-scoped field operator locations must not be visible without app.current_tenant_id",
       );
       const cloudCostAllocationsWithoutContext =
         await client.tenantCloudCostAllocation.findMany({
@@ -863,16 +924,33 @@ if (!connectionString) {
             status: "ready",
           },
         });
+        const fieldLocations = await tx.fieldOperatorLocation.findMany({
+          where: {
+            id: {
+              in: [tenantAData.fieldLocationId, tenantBData.fieldLocationId],
+            },
+          },
+        });
+        const crossTenantFieldLocationUpdate = await tx.fieldOperatorLocation.updateMany({
+          where: {
+            id: tenantBData.fieldLocationId,
+          },
+          data: {
+            accuracy_meters: 99,
+          },
+        });
 
         return {
           attachmentIds: attachments.map((attachment) => attachment.id),
           cloudCostAllocationIds: cloudCostAllocations.map((allocation) => allocation.id),
+          fieldLocationIds: fieldLocations.map((location) => location.id),
           tenantCloudChargeIds: tenantCloudCharges.map((charge) => charge.id),
           notificationIds: notifications.map((notification) => notification.id),
           runIds: runs.map((run) => run.id),
           templateIds: templates.map((template) => template.id),
           updatedAllocationRows: crossTenantAllocationUpdate.count,
           updatedChargeRows: crossTenantChargeUpdate.count,
+          updatedFieldLocationRows: crossTenantFieldLocationUpdate.count,
           updatedRows: crossTenantUpdate.count,
           usageAggregateIds: usageAggregates.map((aggregate) => aggregate.id),
           usageEventIds: usageEvents.map((event) => event.id),
@@ -887,6 +965,7 @@ if (!connectionString) {
       assert.deepEqual(tenantAView.notificationIds, [tenantAData.notificationId]);
       assert.deepEqual(tenantAView.usageAggregateIds, [tenantAData.usageAggregateId]);
       assert.deepEqual(tenantAView.usageEventIds, [tenantAData.usageEventId]);
+      assert.deepEqual(tenantAView.fieldLocationIds, [tenantAData.fieldLocationId]);
       assert.deepEqual(tenantAView.cloudCostAllocationIds, [
         tenantAData.cloudCostAllocationId,
       ]);
@@ -903,6 +982,11 @@ if (!connectionString) {
         tenantAView.updatedChargeRows,
         0,
         "tenant A must not update tenant B cloud charges",
+      );
+      assert.equal(
+        tenantAView.updatedFieldLocationRows,
+        0,
+        "tenant A must not update tenant B field operator locations",
       );
 
       const tenantBUser = await withTenantRls(client, tenantB.id, (tx) =>
@@ -929,9 +1013,22 @@ if (!connectionString) {
         }),
       );
       assert.equal(tenantBCloudCharge?.status, "draft");
+      const tenantBFieldLocation = await withTenantRls(client, tenantB.id, (tx) =>
+        tx.fieldOperatorLocation.findUnique({
+          where: {
+            id: tenantBData.fieldLocationId,
+          },
+        }),
+      );
+      assert.equal(tenantBFieldLocation?.accuracy_meters, 10);
     } finally {
       for (const tenantId of tenantIds) {
         await withTenantRls(client, tenantId, async (tx) => {
+          await tx.fieldOperatorLocation.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
           await tx.tenantCloudCharge.deleteMany({
             where: {
               tenant_id: tenantId,

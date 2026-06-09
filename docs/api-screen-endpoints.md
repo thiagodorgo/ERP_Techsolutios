@@ -148,6 +148,35 @@ Uso: reparo, manutencao, construcao ou servico tecnico, com foto antes, foto dep
 
 M12 nao pertence ao escopo de guincho/reboque e nao deve reutilizar a semantica de coleta/entrega.
 
+## Operacao em Campo
+
+### Mapa Operacional planejado
+
+Objetivo: permitir que a futura tela `/operations/map` consulte a fundacao backend de localizacao de operadores em campo.
+
+Status desta branch: backend foundation implementado; tela web e Google Maps ficam fora do escopo.
+
+Endpoints implementados:
+
+```http
+POST /mobile/field-locations
+GET  /field-locations/latest
+GET  /field-locations/history
+```
+
+Permissoes:
+
+- `POST /mobile/field-locations`: `field_location:send`
+- `GET /field-locations/latest`: `field_location:read`
+- `GET /field-locations/history`: `field_location:history`
+
+Regras:
+
+- envio mobile registra a localizacao do proprio actor autenticado;
+- consulta web retorna somente dados do tenant atual;
+- historico exige permissao separada para reduzir exposicao de dados sensiveis;
+- `/operations/map` continua item planejado do menu backend e nao foi implementado nesta branch.
+
 ## P04 · Platform Cloud Billing
 
 Tela platform-scoped implementada em `/platform/cloud-billing`. Consolida uso, custo AWS, rateio, cobranca, regras e runs em uma rota unica com abas internas.

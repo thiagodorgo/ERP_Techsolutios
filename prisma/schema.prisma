@@ -22,6 +22,7 @@ model Tenant {
   checklist_runs                ChecklistRun[]
   checklist_template_components ChecklistTemplateComponent[]
   checklist_templates           ChecklistTemplate[]
+  field_operator_locations      FieldOperatorLocation[]
   auth_sessions                 AuthSession[]
   cloud_usage_daily_aggregates  CloudUsageDailyAggregate[]
   cloud_usage_events            CloudUsageEvent[]
@@ -68,6 +69,7 @@ model User {
   branch                 Branch?               @relation(fields: [branch_id], references: [id], onDelete: SetNull)
   local_auth_credentials LocalAuthCredential[]
   notifications          Notification[]
+  field_operator_locations FieldOperatorLocation[]
   role_assignments       UserRoleAssignment[]
   tenant                 Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
@@ -657,4 +659,28 @@ model ChecklistAcknowledgement {
   @@index([tenant_id])
   @@index([tenant_id, run_id])
   @@map("checklist_acknowledgements")
+}
+
+model FieldOperatorLocation {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id               String   @db.Uuid
+  operator_user_id        String   @db.Uuid
+  source                  String   @default("mobile")
+  latitude                Float
+  longitude               Float
+  accuracy_meters         Float?
+  heading_degrees         Float?
+  speed_meters_per_second Float?
+  battery_level           Int?
+  recorded_at             DateTime @db.Timestamptz(6)
+  received_at             DateTime @default(now()) @db.Timestamptz(6)
+  metadata                Json
+  operator_user           User     @relation(fields: [tenant_id, operator_user_id], references: [tenant_id, id], onDelete: Cascade)
+  tenant                  Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id])
+  @@index([tenant_id, operator_user_id, recorded_at])
+  @@index([tenant_id, recorded_at])
+  @@map("field_operator_locations")
 }

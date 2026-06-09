@@ -197,10 +197,14 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     icon: "Map",
     group: "operations",
     order: 230,
-    status: "planned",
+    status: "backend-ready",
     requiredPermissions: ["field_location:read"],
     requiredModules: ["field_operations"],
     tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/field-locations/latest",
+      "GET /api/v1/field-locations/history",
+    ],
   },
   {
     id: "operations.fieldOperators",
@@ -214,6 +218,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     requiredPermissions: ["field_operator:read"],
     requiredModules: ["field_operations"],
     tenantOnly: true,
+    relatedEndpoints: ["GET /api/v1/field-locations/latest"],
   },
   {
     id: "operations.dispatches",
@@ -266,6 +271,10 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     requiredPermissions: ["field_location:read"],
     requiredModules: ["logistics", "field_operations"],
     tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/field-locations/latest",
+      "GET /api/v1/field-locations/history",
+    ],
   },
   {
     id: "finance.dashboard",

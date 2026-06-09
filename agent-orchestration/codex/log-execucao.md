@@ -982,3 +982,24 @@
 - documentacao atualizada em `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/frontend-screens.md`, `docs/api-screen-endpoints.md`, `docs/iconography-and-tags.md`, `docs/platform-console.md`, `docs/modules.md` e `agent-orchestration/docs/status-geral.md`
 - fora de escopo mantido: novas telas, Google Maps, localizacao, backend, novos endpoints e remocao completa do fallback local
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts` e `git diff --check`
+
+## 2026-06-09 - field operator location foundation
+
+- branch usada: `feature/field-operator-location-foundation`
+- comandos iniciais executados: `git branch --show-current`, `git status --short --branch` e `git log --oneline --decorate -5`
+- branch confirmada e worktree inicial limpo
+- migration criada: `prisma/migrations/20260615000000_add_field_operator_locations/migration.sql`
+- schema Prisma atualizado com `FieldOperatorLocation` e relacoes em `Tenant`/`User`
+- modulo criado: `src/modules/field-location`
+- app atualizado para montar `createFieldLocationRouter()`
+- endpoints implementados: `POST /api/v1/mobile/field-locations`, `GET /api/v1/field-locations/latest` e `GET /api/v1/field-locations/history`
+- validacoes de entrada implementadas: coordenadas, precisao, heading, velocidade, bateria, data e source
+- DTO publico nao retorna metadata bruta de localizacao
+- auditoria best-effort adicionada para envio e consulta de historico
+- RBAC atualizado para distribuir permissao de envio/leitura/historico aos papeis operacionais adequados
+- registry de navegacao atualizado para marcar `/operations/map` como `backend-ready` e registrar endpoints relacionados
+- catalogo de modulos Platform atualizado com `field_operations`
+- teste focado `tests/field-location-routes.test.ts` criado e executado com sucesso durante a implementacao
+- teste RLS atualizado para incluir `field_operator_locations`
+- documentacao atualizada em `docs/field-operator-location-map.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/database.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/02-mapa-modulos.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e `agent-orchestration/docs/status-geral.md`
+- fora de escopo mantido: Google Maps, tela `/operations/map`, app Flutter, roteirizacao avancada, Work Orders completas, despacho completo e coleta real mobile

@@ -24,6 +24,7 @@ Nesta fase, os modelos multi-tenant com `tenant_id` sao:
 - `ChecklistAttachment`
 - `ChecklistMarker`
 - `ChecklistAcknowledgement`
+- `FieldOperatorLocation`
 - `CloudUsageEvent`
 - `CloudUsageDailyAggregate`
 
@@ -516,6 +517,39 @@ Indices principais:
 
 RLS esta habilitado na migration `20260610000000_add_notifications`. Mesmo com RLS por tenant, o service restringe consulta e update ao `recipient_user_id` do ator autenticado.
 
+## Field operator location
+
+Status: implementado na migration `20260615000000_add_field_operator_locations`.
+
+### `field_operator_locations`
+
+Representa pontos de localizacao enviados por operadores em campo.
+
+Campos principais:
+
+- `id`
+- `tenant_id`
+- `operator_user_id`
+- `source`
+- `latitude`
+- `longitude`
+- `accuracy_meters`
+- `heading_degrees`
+- `speed_meters_per_second`
+- `battery_level`
+- `recorded_at`
+- `received_at`
+- `metadata`
+
+Regras:
+
+- `tenant_id` e obrigatorio e vem do contexto autenticado;
+- `operator_user_id` referencia `users` por chave composta `tenant_id + id`;
+- o endpoint mobile registra a localizacao do proprio actor autenticado, sem aceitar operador do body;
+- coordenadas, bateria, heading, velocidade e data sao validados em service e reforcados por checks SQL;
+- `metadata` e sanitizada antes de persistir e nao retorna no DTO publico;
+- RLS fica habilitado com `FORCE ROW LEVEL SECURITY` e policy baseada em `app.current_tenant_id`.
+
 ## Cloud usage metering
 
 Status: implementado na migration `20260611000000_add_cloud_usage_metering`.
@@ -846,6 +880,7 @@ RLS foi habilitado nas tabelas tenant-scoped principais:
 - `cloud_usage_daily_aggregates`
 - `tenant_cloud_cost_allocations`
 - `tenant_cloud_charges`
+- `field_operator_locations`
 
 Tabelas globais que nao recebem RLS nesta rodada:
 
@@ -912,4 +947,5 @@ Esse teste requer `DATABASE_URL`, PostgreSQL ativo e migrations aplicadas. Ele v
 - `checklist_templates` e `checklist_runs` respeitam RLS;
 - `checklist_attachments` respeita RLS;
 - `cloud_usage_events` e `cloud_usage_daily_aggregates` respeitam RLS;
+- `field_operator_locations` respeita RLS;
 - `tenants` continua global para o boundary de plataforma.
