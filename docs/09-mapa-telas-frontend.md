@@ -79,10 +79,22 @@ Princípios adotados:
 - W02A e administrativa; operador nao deve ver `/administrator/checklists`.
 - W03 e oficialmente `Administrador — Configurações`; operador e supervisor sem permissao administrativa nao devem ver `/administrator/settings`.
 - Dashboard/Resumo Financeiro nao usa W03. Quando a tela financeira for implementada, deve ser registrada sem conflito com W03.
+- Fonte oficial backend: `GET /api/v1/navigation/menu`, com filtros opcionais `scope=platform|tenant|operations|logistics|finance`.
+- O backend registry retorna `id`, `label`, `path`, `icon`, `group`, `order`, `status`, `requiredPermissions`, `requiredModules` e `relatedEndpoints`.
+- `status` documenta maturidade (`implemented`, `partial`, `mock`, `planned`, `backend-ready`, `frontend-ready`, `future`), mas nao substitui RBAC.
+- O frontend deve usar o menu backend como fonte oficial quando disponivel; menus locais ficam apenas como fallback/mock de transicao.
 
 ## Telas Console da Plataforma
 
 > Estas telas usam escopo `platform`, layout separado do tenant e permissões `platform:*`. Não fazem parte da administração interna do tenant.
+
+### P00 — Visão Geral Platform
+- **Objetivo:** consolidar indicadores globais da plataforma.
+- **Usuários:** Super Admin / dono do SaaS.
+- **Permissões:** `platform:dashboard:read`.
+- **Rota:** `/platform/dashboard`.
+- **Status:** planejada no backend navigation registry.
+- **Prioridade:** Future.
 
 ### P01 — Tenants
 - **Objetivo:** listar tenants/clientes da plataforma, status, plano, módulos habilitados e resumo de uso.
@@ -116,6 +128,14 @@ Princípios adotados:
 - **APIs consumidas:** `/api/v1/platform/cloud-usage/*`, `/api/v1/platform/cloud-costs/*`, `/api/v1/platform/cloud-cost-allocations/*`, `/api/v1/platform/cloud-charge-rules/*` e `/api/v1/platform/cloud-charges/*`.
 - **Fora desta branch:** fatura, pagamento, checkout, emissão fiscal e exposicao de custo/preco/margem para usuario tenant comum.
 - **Prioridade:** Scale.
+
+### P05 — Auditoria Platform
+- **Objetivo:** consultar auditoria global e eventos sensiveis da plataforma.
+- **Usuários:** Super Admin / dono do SaaS.
+- **Permissões:** `platform:audit:read`.
+- **Rota:** `/platform/audit`.
+- **Status:** planejada no backend navigation registry.
+- **Prioridade:** Future.
 
 ## Telas Web
 

@@ -1163,3 +1163,18 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - documentacao criada/atualizada em `docs/platform-cloud-billing-ui.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/platform-console.md`, `docs/modules.md`, `docs/api-screen-endpoints.md`, `docs/api.md`, `docs/rbac.md` e este status
 - fora de escopo mantido: backend novo, migrations, scheduler, fatura, pagamento, checkout, emissao fiscal, mobile Flutter e exposicao tenant de custo/preco/margem
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/cloud-cost-allocation.test.ts`, `node --test --import tsx tests/cloud-charge-markup-rules.test.ts`, `node --test --import tsx tests/aws-cur-cost-import.test.ts`, `node --test --import tsx tests/cloud-usage.test.ts` e `git diff --check`
+
+## Atualizacao 2026-06-09 - backend navigation menu registry
+
+- branch usada: `feature/backend-navigation-menu-registry`
+- objetivo: criar fonte oficial backend de menu/navegacao para o frontend consumir sem duplicar hardcode sensivel
+- modulo criado: `src/modules/navigation`
+- endpoint criado: `GET /api/v1/navigation/menu`
+- filtros opcionais implementados: `scope=platform`, `scope=tenant`, `scope=operations`, `scope=logistics` e `scope=finance`
+- registry inicial cobre grupos `platform`, `tenant`, `operations`, `logistics` e `finance`, com rotas frontend, icones, status, permissoes, modulos requeridos e endpoints relacionados
+- RBAC atualizado com permissoes planejadas para navegacao, incluindo `platform:dashboard:read`, `platform:tenants:read`, `platform:audit:read`, `dashboard:read`, `tenant_settings:read`, `users:read`, `work_orders:*`, `field_location:*`, `field_operator:*`, `field_dispatch:*`, `logistics:*`, `finance:read`, `billing:read`, `invoices:read` e `payments:read`
+- seed Prisma atualizado com descricoes das permissoes planejadas para manter `npm run db:seed` e E2E consistentes com o catalogo
+- regras aplicadas: tenant comum nao recebe menu Platform; item sem permissao ou modulo habilitado e removido; metadata sensivel e sanitizada; grupos vazios nao devem ser renderizados
+- documentacao criada/atualizada em `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/iconography-and-tags.md`, `docs/field-operator-location-map.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/modules.md`, `docs/rbac.md`, `docs/platform-console.md`, `RBAC_MATRIX.md` e este status
+- fora de escopo mantido: telas frontend novas, Google Maps real, localizacao de operador, Work Orders backend, logistica backend, billing/payment/fiscal tenant-scoped, CRUD persistido de menu e remocao dos menus frontend atuais
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/core-saas.test.ts` e `git diff --check`

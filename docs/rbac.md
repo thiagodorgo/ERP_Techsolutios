@@ -46,10 +46,12 @@ As permissoes agora devem ser lidas em dois escopos diferentes.
 
 Permissoes de plataforma:
 
+- `platform:dashboard:read`
 - `platform:tenants:read`
 - `platform:tenants:create`
 - `platform:tenants:update`
 - `platform:modules:manage`
+- `platform:audit:read`
 - `platform:cloud-charge-rules:read`
 - `platform:cloud-charge-rules:write`
 - `platform:cloud-charges:read`
@@ -63,10 +65,13 @@ Permissoes de plataforma:
 Permissoes de tenant:
 
 - `users:read`
+- `users.read`
 - `users:create`
 - `users:update`
 - `roles:manage`
 - `tenant:manage`
+- `dashboard:read`
+- `tenant_settings:read`
 - `tenant_checklists:read`
 - `tenant_checklists:create`
 - `tenant_checklists:update`
@@ -89,10 +94,64 @@ Permissoes de tenant:
 - `inventory:read`
 - `approvals:read`
 - `finance:read`
+- `billing:read`
+- `invoices:read`
+- `payments:read`
 - `notifications:read`
 - `notifications:update`
+- `work_orders:read`
+- `work_orders:create`
+- `field_location:read`
+- `field_location:send`
+- `field_location:history`
+- `field_operator:read`
+- `field_operator:action`
+- `field_dispatch:read`
+- `field_dispatch:create`
+- `field_dispatch:update`
+- `logistics:read`
+- `logistics_routes:read`
 
 Permissoes `platform:*` pertencem ao Console da Plataforma. Permissoes de tenant pertencem ao Administrador e aos usuarios dentro do tenant atual.
+
+## navigation menu
+
+O endpoint `GET /api/v1/navigation/menu` usa as permissoes resolvidas do ator autenticado para filtrar o menu oficial do ERP. Ele nao concede acesso por si so.
+
+Matriz inicial de itens:
+
+- `platform.dashboard`: `platform:dashboard:read`
+- `platform.tenants`: `platform:tenants:read`
+- `platform.cloudBilling`: `platform:cloud-charges:read`
+- `platform.audit`: `platform:audit:read`
+- `tenant.dashboard`: `dashboard:read`
+- `tenant.checklists`: `tenant_checklists:read`
+- `tenant.settings`: `tenant_settings:read`
+- `tenant.users`: `users:read`
+- `tenant.audit`: `audit:read`
+- `tenant.notifications`: `notifications:read`
+- `operations.checklists`: `checklist_runs:read`
+- `operations.checklistRun`: `checklist_runs:create`
+- `operations.workOrders`: `work_orders:read`
+- `operations.map`: `field_location:read`
+- `operations.fieldOperators`: `field_operator:read`
+- `operations.dispatches`: `field_dispatch:read`
+- `logistics.dashboard`: `logistics:read`
+- `logistics.routes`: `logistics_routes:read`
+- `logistics.map`: `field_location:read`
+- `finance.dashboard`: `finance:read`
+- `finance.charges`: `billing:read`
+- `finance.invoices`: `invoices:read`
+- `finance.payments`: `payments:read`
+
+Regras:
+
+- Platform Admin e `super_admin` podem receber itens Platform quando possuem as permissoes `platform:*` do catalogo;
+- Tenant Admin nao recebe itens Platform pelo menu;
+- Operador com `checklist_runs:*` pode receber runtime operacional de checklists sem receber W02A;
+- permissao ausente remove o item;
+- modulo ausente remove o item quando `requiredModules` estiver declarado;
+- grupos vazios nao devem ser renderizados pelo frontend.
 
 ## tenant_checklist
 

@@ -8,6 +8,62 @@ Rotas protegidas devem usar `Authorization: Bearer <access_token>` como caminho 
 
 Headers legados (`x-tenant-id`, `x-user-id`, `x-actor-user-id`, `x-role`, `x-roles`, `x-permissions`) continuam aceitos apenas em desenvolvimento/teste para transicao. Em `NODE_ENV=production`, rotas sensiveis de plataforma, Core SaaS e Checklists rejeitam esse fallback. Bearer token invalido, malformado ou expirado retorna `401 INVALID_TOKEN` antes de qualquer fallback.
 
+## Navegacao backend
+
+```http
+GET /api/v1/navigation/menu
+```
+
+Objetivo: retornar o menu oficial do ERP filtrado pelo backend para o usuario autenticado.
+
+Query params opcionais:
+
+- `scope=platform`
+- `scope=tenant`
+- `scope=operations`
+- `scope=logistics`
+- `scope=finance`
+
+Resposta:
+
+```json
+{
+  "data": [
+    {
+      "id": "platform.cloudBilling",
+      "label": "Billing Cloud",
+      "path": "/platform/cloud-billing",
+      "icon": "Receipt",
+      "group": "platform",
+      "order": 30,
+      "status": "implemented",
+      "requiredPermissions": ["platform:cloud-charges:read"],
+      "platformOnly": true,
+      "relatedEndpoints": [
+        "GET /api/v1/platform/cloud-usage/summary",
+        "GET /api/v1/platform/cloud-costs/summary",
+        "GET /api/v1/platform/cloud-cost-allocations/summary",
+        "GET /api/v1/platform/cloud-charges/summary"
+      ]
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2026-06-09T12:00:00.000Z",
+    "scope": "platform",
+    "groups": ["platform"]
+  }
+}
+```
+
+Regras:
+
+- exige autenticacao;
+- nao retorna itens Platform para tenant comum;
+- nao retorna itens sem permissao;
+- considera modulos habilitados do tenant quando o item declara `requiredModules`;
+- remove metadata sensivel;
+- o menu e UX e nao substitui RBAC real dos endpoints.
+
 ## Login
 
 ```http
