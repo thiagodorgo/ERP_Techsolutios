@@ -1,0 +1,71 @@
+import type { ListWorkOrdersResult, WorkOrder, WorkOrderEvent } from "./work-order.types.js";
+
+export function toWorkOrderDto(workOrder: WorkOrder) {
+  return {
+    id: workOrder.id,
+    code: workOrder.code,
+    title: workOrder.title,
+    description: workOrder.description,
+    customerName: workOrder.customerName,
+    customerDocument: workOrder.customerDocument,
+    customerPhone: workOrder.customerPhone,
+    serviceAddress: workOrder.serviceAddress,
+    serviceCity: workOrder.serviceCity,
+    serviceState: workOrder.serviceState,
+    serviceZipCode: workOrder.serviceZipCode,
+    serviceLatitude: workOrder.serviceLatitude,
+    serviceLongitude: workOrder.serviceLongitude,
+    priority: workOrder.priority,
+    status: workOrder.status,
+    assignedOperatorId: workOrder.assignedOperatorId,
+    assignedUserId: workOrder.assignedUserId,
+    checklistId: workOrder.checklistId,
+    scheduledFor: workOrder.scheduledFor?.toISOString() ?? null,
+    startedAt: workOrder.startedAt?.toISOString() ?? null,
+    arrivedAt: workOrder.arrivedAt?.toISOString() ?? null,
+    completedAt: workOrder.completedAt?.toISOString() ?? null,
+    cancelledAt: workOrder.cancelledAt?.toISOString() ?? null,
+    cancellationReason: workOrder.cancellationReason,
+    createdBy: workOrder.createdBy,
+    updatedBy: workOrder.updatedBy,
+    createdAt: workOrder.createdAt.toISOString(),
+    updatedAt: workOrder.updatedAt.toISOString(),
+  };
+}
+
+export function toWorkOrderListDto(result: ListWorkOrdersResult) {
+  return {
+    items: result.items.map((workOrder) => ({
+      id: workOrder.id,
+      code: workOrder.code,
+      title: workOrder.title,
+      status: workOrder.status,
+      priority: workOrder.priority,
+      customerName: workOrder.customerName,
+      serviceAddress: workOrder.serviceAddress,
+      assignedOperatorId: workOrder.assignedOperatorId ?? null,
+      assignedUserId: workOrder.assignedUserId ?? null,
+      scheduledFor: workOrder.scheduledFor?.toISOString() ?? null,
+      createdAt: workOrder.createdAt.toISOString(),
+    })),
+    pagination: {
+      limit: result.limit,
+      offset: result.offset,
+      total: result.total,
+    },
+  };
+}
+
+export function toWorkOrderEventDto(event: WorkOrderEvent) {
+  return {
+    id: event.id,
+    workOrderId: event.workOrderId,
+    eventType: event.eventType,
+    fromStatus: event.fromStatus,
+    toStatus: event.toStatus,
+    actorUserId: event.actorUserId,
+    message: event.message,
+    metadata: event.metadata,
+    createdAt: event.createdAt.toISOString(),
+  };
+}

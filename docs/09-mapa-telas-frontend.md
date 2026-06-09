@@ -304,12 +304,14 @@ Princípios adotados:
 - **Offline:** não.
 - **KPIs:** volume, tempo de fila, OS críticas.
 - **Timeline/logs:** acesso ao detalhe da timeline.
+- **Status desta branch:** backend foundation `work_orders` implementado e item de menu `operations.workOrders` marcado como `backend-ready`; UI completa permanece fora do escopo.
 - **Prioridade:** MVP.
 
 ### W18 — Ordem de Serviço: Criação/Edição
 - **Objetivo:** abertura rápida de OS com validações obrigatórias.
 - **Usuários:** Operador, Gestor.
 - **Permissões:** OS criar/editar.
+- **Status desta branch:** endpoints `POST /api/v1/work-orders` e `PATCH /api/v1/work-orders/:workOrderId` implementados; tela permanece planejada.
 - **Prioridade:** MVP.
 
 ### W19 — Ordem de Serviço: Detalhe (padrão DeviceDetail)

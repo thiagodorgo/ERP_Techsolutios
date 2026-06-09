@@ -19,6 +19,7 @@ import { createFieldLocationRouter } from "./modules/field-location/index.js";
 import { createNotificationRouter } from "./modules/notifications/index.js";
 import { createNavigationRouter } from "./modules/navigation/index.js";
 import { createPlatformRouter } from "./modules/platform/index.js";
+import { createWorkOrderRouter } from "./modules/work-orders/index.js";
 import { healthRouter } from "./routes/health.routes.js";
 
 export function createApp(service: ICoreSaasService): Express {
@@ -41,6 +42,7 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createNotificationRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createChecklistRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFieldLocationRouter());
+  app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createCoreSaasRouter(service));
 
   return app;

@@ -214,6 +214,21 @@ RBAC:
 - historico exige `field_location:history`;
 - envio mobile exige `field_location:send`.
 
+## Ordens de Servico
+
+Status desta branch:
+
+- backend foundation `work_orders` implementado;
+- item de menu `operations.workOrders` passa a `backend-ready`;
+- UI completa de Work Orders nao foi implementada nesta rodada.
+
+Vinculos futuros previstos:
+
+- checklist operacional por `checklistId`;
+- Mapa Operacional por endereco/coordenadas e operador atribuido;
+- evidencias/anexos especificos de OS;
+- despacho, roteirizacao e comissoes em etapas futuras.
+
 ## Notificacoes
 
 Tela implementada:

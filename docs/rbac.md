@@ -191,6 +191,35 @@ Matriz backend aplicada:
 - `POST /api/v1/mobile/checklist-runs/:runId/divergence`: `checklist_runs:update`
 - `POST /api/v1/mobile/checklist-runs/:runId/acknowledgement`: `checklist_runs:acknowledge`
 
+## work_orders
+
+Permissoes tenant-scoped:
+
+- `work_orders:read`: listar, detalhar e consultar timeline de Ordens de Servico do tenant.
+- `work_orders:create`: criar Ordens de Servico.
+- `work_orders:update`: atualizar campos editaveis, sem alterar status.
+- `work_orders:assign`: atribuir operador/usuario.
+- `work_orders:status`: alterar status operacional.
+- `work_orders:cancel`: reservado para regra de cancelamento dedicada.
+- `work_orders:delete`: reservado para regra futura; nao ha endpoint delete nesta branch.
+
+Matriz backend aplicada:
+
+- `GET /api/v1/work-orders`: `work_orders:read`
+- `POST /api/v1/work-orders`: `work_orders:create`
+- `GET /api/v1/work-orders/:workOrderId`: `work_orders:read`
+- `PATCH /api/v1/work-orders/:workOrderId`: `work_orders:update`
+- `PATCH /api/v1/work-orders/:workOrderId/status`: `work_orders:status`
+- `POST /api/v1/work-orders/:workOrderId/assign`: `work_orders:assign`
+- `GET /api/v1/work-orders/:workOrderId/timeline`: `work_orders:read`
+
+Regras:
+
+- `tenant_id` sempre vem do contexto autenticado;
+- status usa endpoint proprio e valida transicoes;
+- timeline e atribuicoes sao tenant-scoped e protegidas por RLS;
+- metadata de eventos evita dados sensiveis excessivos de cliente.
+
 ## notifications
 
 Permissoes tenant-scoped:

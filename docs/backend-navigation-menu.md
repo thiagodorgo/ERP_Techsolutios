@@ -83,7 +83,7 @@ Operacao:
 
 - `operations.checklists` -> `/operations/checklists`, `ClipboardList`, `checklist_runs:read`
 - `operations.checklistRun` -> `/operations/checklists/:checklistId/run`, `PlayCircle`, `checklist_runs:create`
-- `operations.workOrders` -> `/work-orders`, `Wrench`, `work_orders:read`
+- `operations.workOrders` -> `/work-orders`, `Wrench`, `work_orders:read`, status `backend-ready`
 - `operations.map` -> `/operations/map`, `Map`, `field_location:read`
 - `operations.fieldOperators` -> `/operations/field-operators`, `MapPin`, `field_operator:read`
 - `operations.dispatches` -> `/operations/dispatches`, `Route`, `field_dispatch:read`

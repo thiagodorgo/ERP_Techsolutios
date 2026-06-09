@@ -64,6 +64,8 @@ Nao implementar telas novas nesta rodada apenas por aparecerem como `planned` ou
 
 `/operations/map` e excecao ja implementada nesta rodada: o link exige `field_location:read`, modulo `field_operations` habilitado, e a tela consome apenas os endpoints existentes de localizacao com fallback/mock seguro.
 
+`/work-orders` passa a ter backend foundation `backend-ready` via `work_orders:read`. A UI completa de Work Orders nao foi implementada nesta rodada; o menu pode expor o status como rastreabilidade, mas a autorizacao real continua nos endpoints.
+
 ## Hardcode restante
 
 Ainda existem `frontend/src/navigation/platformNavigation.ts` e `frontend/src/navigation/tenantNavigation.ts` como fallback/mock local. Eles nao sao a fonte oficial em modo real e devem ser removidos apenas em rodada propria, depois que o consumo backend estiver estabilizado.

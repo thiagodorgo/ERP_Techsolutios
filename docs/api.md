@@ -725,6 +725,40 @@ Regras:
 
 Fora do escopo: Google Maps no frontend, tela `/operations/map`, app Flutter, roteirizacao avancada, Work Orders completas e despacho completo.
 
+## Work Orders
+
+Modulo implementado: `work_orders` como fundacao backend tenant-scoped para Ordens de Servico.
+
+Endpoints:
+
+```http
+GET   /work-orders
+POST  /work-orders
+GET   /work-orders/:workOrderId
+PATCH /work-orders/:workOrderId
+PATCH /work-orders/:workOrderId/status
+POST  /work-orders/:workOrderId/assign
+GET   /work-orders/:workOrderId/timeline
+```
+
+Permissoes:
+
+- `GET /work-orders`: `work_orders:read`
+- `POST /work-orders`: `work_orders:create`
+- `GET /work-orders/:workOrderId`: `work_orders:read`
+- `PATCH /work-orders/:workOrderId`: `work_orders:update`
+- `PATCH /work-orders/:workOrderId/status`: `work_orders:status`
+- `POST /work-orders/:workOrderId/assign`: `work_orders:assign`
+- `GET /work-orders/:workOrderId/timeline`: `work_orders:read`
+
+Status permitidos: `open`, `assigned`, `accepted`, `on_route`, `on_site`, `in_progress`, `paused`, `completed`, `cancelled` e `rejected`.
+
+Prioridades permitidas: `low`, `medium`, `high` e `urgent`.
+
+Auditoria: criacao, atualizacao, atribuicao, mudanca de status, cancelamento e conclusao registram eventos best-effort.
+
+Fora do escopo: UI completa de Work Orders, despacho avancado, roteirizacao, comissao, pagamento de prestador, app Flutter, Google Maps real, fotos/assinaturas especificas de OS, estoque/pecas e integracao externa.
+
 ## Auditoria
 
 Endpoint existente:

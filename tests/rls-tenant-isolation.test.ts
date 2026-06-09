@@ -194,6 +194,71 @@ if (!connectionString) {
           )
           RETURNING id
         `;
+        const [workOrder] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO work_orders (
+            tenant_id,
+            code,
+            title,
+            priority,
+            status,
+            assigned_operator_id,
+            assigned_user_id,
+            created_by,
+            updated_by
+          )
+          VALUES (
+            ${tenantA.id}::uuid,
+            ${`RLS-A-${suffix}`},
+            'RLS Work Order A',
+            'medium',
+            'assigned',
+            ${user.id}::uuid,
+            ${user.id}::uuid,
+            ${user.id}::uuid,
+            ${user.id}::uuid
+          )
+          RETURNING id
+        `;
+        const [workOrderEvent] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO work_order_events (
+            tenant_id,
+            work_order_id,
+            event_type,
+            to_status,
+            actor_user_id,
+            message,
+            metadata
+          )
+          VALUES (
+            ${tenantA.id}::uuid,
+            ${workOrder.id}::uuid,
+            'work_order_created',
+            'open',
+            ${user.id}::uuid,
+            'RLS work order A created',
+            '{}'::jsonb
+          )
+          RETURNING id
+        `;
+        const [workOrderAssignment] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO work_order_assignments (
+            tenant_id,
+            work_order_id,
+            operator_id,
+            user_id,
+            assigned_by,
+            metadata
+          )
+          VALUES (
+            ${tenantA.id}::uuid,
+            ${workOrder.id}::uuid,
+            ${user.id}::uuid,
+            ${user.id}::uuid,
+            ${user.id}::uuid,
+            '{}'::jsonb
+          )
+          RETURNING id
+        `;
         const [template] = await tx.$queryRaw<Array<{ id: string; version: number }>>`
           INSERT INTO checklist_templates (tenant_id, name, type, status, version, schema)
           VALUES (${tenantA.id}::uuid, 'RLS Checklist A', 'custom', 'published', 1, ${JSON.stringify({ source: "rls-test" })}::jsonb)
@@ -438,6 +503,9 @@ if (!connectionString) {
           cloudCostAllocationId: cloudCostAllocation.id,
           fieldLocationId: fieldLocation.id,
           tenantCloudChargeId: tenantCloudCharge.id,
+          workOrderAssignmentId: workOrderAssignment.id,
+          workOrderEventId: workOrderEvent.id,
+          workOrderId: workOrder.id,
         };
       });
 
@@ -477,6 +545,71 @@ if (!connectionString) {
             10,
             now(),
             '{"source":"rls-test"}'::jsonb
+          )
+          RETURNING id
+        `;
+        const [workOrder] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO work_orders (
+            tenant_id,
+            code,
+            title,
+            priority,
+            status,
+            assigned_operator_id,
+            assigned_user_id,
+            created_by,
+            updated_by
+          )
+          VALUES (
+            ${tenantB.id}::uuid,
+            ${`RLS-B-${suffix}`},
+            'RLS Work Order B',
+            'medium',
+            'assigned',
+            ${user.id}::uuid,
+            ${user.id}::uuid,
+            ${user.id}::uuid,
+            ${user.id}::uuid
+          )
+          RETURNING id
+        `;
+        const [workOrderEvent] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO work_order_events (
+            tenant_id,
+            work_order_id,
+            event_type,
+            to_status,
+            actor_user_id,
+            message,
+            metadata
+          )
+          VALUES (
+            ${tenantB.id}::uuid,
+            ${workOrder.id}::uuid,
+            'work_order_created',
+            'open',
+            ${user.id}::uuid,
+            'RLS work order B created',
+            '{}'::jsonb
+          )
+          RETURNING id
+        `;
+        const [workOrderAssignment] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO work_order_assignments (
+            tenant_id,
+            work_order_id,
+            operator_id,
+            user_id,
+            assigned_by,
+            metadata
+          )
+          VALUES (
+            ${tenantB.id}::uuid,
+            ${workOrder.id}::uuid,
+            ${user.id}::uuid,
+            ${user.id}::uuid,
+            ${user.id}::uuid,
+            '{}'::jsonb
           )
           RETURNING id
         `;
@@ -724,6 +857,9 @@ if (!connectionString) {
           cloudCostAllocationId: cloudCostAllocation.id,
           fieldLocationId: fieldLocation.id,
           tenantCloudChargeId: tenantCloudCharge.id,
+          workOrderAssignmentId: workOrderAssignment.id,
+          workOrderEventId: workOrderEvent.id,
+          workOrderId: workOrder.id,
         };
       });
 
@@ -796,6 +932,42 @@ if (!connectionString) {
         fieldLocationsWithoutContext.map((location) => location.id),
         [],
         "tenant-scoped field operator locations must not be visible without app.current_tenant_id",
+      );
+      const workOrdersWithoutContext = await client.workOrder.findMany({
+        where: {
+          id: {
+            in: [tenantAData.workOrderId, tenantBData.workOrderId],
+          },
+        },
+      });
+      assert.deepEqual(
+        workOrdersWithoutContext.map((workOrder) => workOrder.id),
+        [],
+        "tenant-scoped work orders must not be visible without app.current_tenant_id",
+      );
+      const workOrderEventsWithoutContext = await client.workOrderEvent.findMany({
+        where: {
+          id: {
+            in: [tenantAData.workOrderEventId, tenantBData.workOrderEventId],
+          },
+        },
+      });
+      assert.deepEqual(
+        workOrderEventsWithoutContext.map((event) => event.id),
+        [],
+        "tenant-scoped work order events must not be visible without app.current_tenant_id",
+      );
+      const workOrderAssignmentsWithoutContext = await client.workOrderAssignment.findMany({
+        where: {
+          id: {
+            in: [tenantAData.workOrderAssignmentId, tenantBData.workOrderAssignmentId],
+          },
+        },
+      });
+      assert.deepEqual(
+        workOrderAssignmentsWithoutContext.map((assignment) => assignment.id),
+        [],
+        "tenant-scoped work order assignments must not be visible without app.current_tenant_id",
       );
       const cloudCostAllocationsWithoutContext =
         await client.tenantCloudCostAllocation.findMany({
@@ -939,18 +1111,51 @@ if (!connectionString) {
             accuracy_meters: 99,
           },
         });
+        const workOrders = await tx.workOrder.findMany({
+          where: {
+            id: {
+              in: [tenantAData.workOrderId, tenantBData.workOrderId],
+            },
+          },
+        });
+        const workOrderEvents = await tx.workOrderEvent.findMany({
+          where: {
+            id: {
+              in: [tenantAData.workOrderEventId, tenantBData.workOrderEventId],
+            },
+          },
+        });
+        const workOrderAssignments = await tx.workOrderAssignment.findMany({
+          where: {
+            id: {
+              in: [tenantAData.workOrderAssignmentId, tenantBData.workOrderAssignmentId],
+            },
+          },
+        });
+        const crossTenantWorkOrderUpdate = await tx.workOrder.updateMany({
+          where: {
+            id: tenantBData.workOrderId,
+          },
+          data: {
+            title: "RLS cross-tenant work order update should not apply",
+          },
+        });
 
         return {
           attachmentIds: attachments.map((attachment) => attachment.id),
           cloudCostAllocationIds: cloudCostAllocations.map((allocation) => allocation.id),
           fieldLocationIds: fieldLocations.map((location) => location.id),
           tenantCloudChargeIds: tenantCloudCharges.map((charge) => charge.id),
+          workOrderAssignmentIds: workOrderAssignments.map((assignment) => assignment.id),
+          workOrderEventIds: workOrderEvents.map((event) => event.id),
+          workOrderIds: workOrders.map((workOrder) => workOrder.id),
           notificationIds: notifications.map((notification) => notification.id),
           runIds: runs.map((run) => run.id),
           templateIds: templates.map((template) => template.id),
           updatedAllocationRows: crossTenantAllocationUpdate.count,
           updatedChargeRows: crossTenantChargeUpdate.count,
           updatedFieldLocationRows: crossTenantFieldLocationUpdate.count,
+          updatedWorkOrderRows: crossTenantWorkOrderUpdate.count,
           updatedRows: crossTenantUpdate.count,
           usageAggregateIds: usageAggregates.map((aggregate) => aggregate.id),
           usageEventIds: usageEvents.map((event) => event.id),
@@ -966,6 +1171,9 @@ if (!connectionString) {
       assert.deepEqual(tenantAView.usageAggregateIds, [tenantAData.usageAggregateId]);
       assert.deepEqual(tenantAView.usageEventIds, [tenantAData.usageEventId]);
       assert.deepEqual(tenantAView.fieldLocationIds, [tenantAData.fieldLocationId]);
+      assert.deepEqual(tenantAView.workOrderIds, [tenantAData.workOrderId]);
+      assert.deepEqual(tenantAView.workOrderEventIds, [tenantAData.workOrderEventId]);
+      assert.deepEqual(tenantAView.workOrderAssignmentIds, [tenantAData.workOrderAssignmentId]);
       assert.deepEqual(tenantAView.cloudCostAllocationIds, [
         tenantAData.cloudCostAllocationId,
       ]);
@@ -987,6 +1195,11 @@ if (!connectionString) {
         tenantAView.updatedFieldLocationRows,
         0,
         "tenant A must not update tenant B field operator locations",
+      );
+      assert.equal(
+        tenantAView.updatedWorkOrderRows,
+        0,
+        "tenant A must not update tenant B work orders",
       );
 
       const tenantBUser = await withTenantRls(client, tenantB.id, (tx) =>
@@ -1021,9 +1234,32 @@ if (!connectionString) {
         }),
       );
       assert.equal(tenantBFieldLocation?.accuracy_meters, 10);
+      const tenantBWorkOrder = await withTenantRls(client, tenantB.id, (tx) =>
+        tx.workOrder.findUnique({
+          where: {
+            id: tenantBData.workOrderId,
+          },
+        }),
+      );
+      assert.equal(tenantBWorkOrder?.title, "RLS Work Order B");
     } finally {
       for (const tenantId of tenantIds) {
         await withTenantRls(client, tenantId, async (tx) => {
+          await tx.workOrderAssignment.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          await tx.workOrderEvent.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          await tx.workOrder.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
           await tx.fieldOperatorLocation.deleteMany({
             where: {
               tenant_id: tenantId,
