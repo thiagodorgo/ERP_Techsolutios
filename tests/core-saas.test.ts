@@ -14,6 +14,8 @@ import {
 } from "../src/core-saas.js";
 
 const expectedPermissionCatalog = [
+  "platform:cloud-cost-allocation:read",
+  "platform:cloud-cost-allocation:run",
   "platform:cloud-costs:read",
   "platform:cloud-costs:import",
   "platform:cloud-usage:read",
@@ -104,6 +106,8 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   }
 
   assert.deepEqual(ROLE_PERMISSIONS.super_admin, PERMISSION_CATALOG);
+  assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("platform:cloud-cost-allocation:read"), false);
+  assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("platform:cloud-cost-allocation:run"), false);
   assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("platform:cloud-costs:read"), false);
   assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("platform:cloud-costs:import"), false);
   assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("platform:cloud-usage:read"), false);

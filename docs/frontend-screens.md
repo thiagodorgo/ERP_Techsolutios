@@ -24,6 +24,14 @@ Rotas MVP:
 - `/platform/tenants/:tenantId`
 - `/platform/tenants/:tenantId/modules`
 
+APIs sem UI completa nesta branch:
+
+- `cloud_usage_metering`: consulta uso interno por tenant.
+- `cloud_cost_import`: consulta/importa custo AWS bruto.
+- `cloud_cost_allocation`: executa e consulta alocacao de custo AWS por tenant.
+
+A tela completa de cloud billing/plataforma fica planejada para depois de markup e regras comerciais. Nesta branch, custo alocado nao aparece em tela tenant.
+
 ## Autenticacao
 
 Tela implementada:

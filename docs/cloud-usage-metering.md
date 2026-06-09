@@ -38,7 +38,7 @@ Fluxo pretendido:
 4. aplicar markup/margem;
 5. gerar cobranca cloud com lucro.
 
-Esta branch entrega apenas o item 1. A branch `feature/aws-cur-cost-import` adiciona o item 2 por meio de `cloud_cost_imports` e `cloud_cost_line_items`, sem fazer rateio ou markup.
+Esta branch entrega apenas o item 1. A branch `feature/aws-cur-cost-import` adiciona o item 2 por meio de `cloud_cost_imports` e `cloud_cost_line_items`, sem fazer rateio ou markup. A branch `feature/cloud-cost-allocation-engine` usa estes agregados para calcular custo por tenant, ainda sem markup ou cobranca.
 
 ## Metricas suportadas
 
@@ -196,8 +196,6 @@ A API nao retorna custo monetario, preco, margem, invoice ou dados de pagamento.
 
 ## Proximas branches
 
-- `feature/aws-cur-cost-import`
-- `feature/cloud-cost-allocation-engine`
 - `feature/cloud-charge-markup-rules`
 - `feature/platform-cloud-billing-ui`
 - `feature/billing-payment-provider`

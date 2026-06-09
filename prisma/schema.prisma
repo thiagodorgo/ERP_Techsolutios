@@ -25,6 +25,7 @@ model Tenant {
   auth_sessions                 AuthSession[]
   cloud_usage_daily_aggregates  CloudUsageDailyAggregate[]
   cloud_usage_events            CloudUsageEvent[]
+  tenant_cloud_cost_allocations TenantCloudCostAllocation[]
   local_auth_credentials        LocalAuthCredential[]
   notifications                  Notification[]
   roles                         Role[]
@@ -331,6 +332,64 @@ model CloudCostLineItem {
   @@index([region])
   @@index([tenant_tag])
   @@map("cloud_cost_line_items")
+}
+
+model CloudCostAllocationRun {
+  id                     String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider               String
+  status                 String                      @default("pending")
+  period_start           DateTime                    @db.Timestamptz(6)
+  period_end             DateTime                    @db.Timestamptz(6)
+  strategy               String
+  total_imported_cost    Decimal                     @default(0) @db.Decimal(20, 6)
+  total_allocated_cost   Decimal                     @default(0) @db.Decimal(20, 6)
+  total_unallocated_cost Decimal                     @default(0) @db.Decimal(20, 6)
+  currency               String?
+  started_at             DateTime?                   @db.Timestamptz(6)
+  completed_at           DateTime?                   @db.Timestamptz(6)
+  created_by             String?
+  error_message          String?
+  metadata               Json
+  created_at             DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                    @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant_allocations     TenantCloudCostAllocation[]
+
+  @@index([provider])
+  @@index([status])
+  @@index([period_start, period_end])
+  @@map("cloud_cost_allocation_runs")
+}
+
+model TenantCloudCostAllocation {
+  id                          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  allocation_run_id           String                 @db.Uuid
+  tenant_id                   String                 @db.Uuid
+  provider                    String
+  period_start                DateTime               @db.Timestamptz(6)
+  period_end                  DateTime               @db.Timestamptz(6)
+  service_code                String
+  usage_type                  String                 @default("unknown")
+  cost_category               String                 @default("unknown")
+  allocation_method           String
+  allocation_basis_metric_key String?
+  allocation_basis_quantity   Decimal                @default(0) @db.Decimal(20, 6)
+  allocation_ratio            Decimal                @default(0) @db.Decimal(20, 12)
+  allocated_cost              Decimal                @db.Decimal(20, 6)
+  currency                    String
+  source_cost_line_item_ids   Json
+  metadata                    Json
+  created_at                  DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime               @default(now()) @updatedAt @db.Timestamptz(6)
+  allocation_run              CloudCostAllocationRun @relation(fields: [allocation_run_id], references: [id], onDelete: Cascade)
+  tenant                      Tenant                 @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([allocation_run_id, tenant_id, service_code, usage_type, cost_category, allocation_method])
+  @@index([allocation_run_id])
+  @@index([tenant_id])
+  @@index([period_start, period_end])
+  @@index([service_code])
+  @@index([cost_category])
+  @@map("tenant_cloud_cost_allocations")
 }
 
 model ChecklistTemplate {

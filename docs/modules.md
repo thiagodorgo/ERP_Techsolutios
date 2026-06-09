@@ -29,6 +29,7 @@ Exemplos:
 - messaging_jobs
 - cloud_usage_metering
 - cloud_cost_import
+- cloud_cost_allocation
 
 ## Modulos habilitados por tenant
 
@@ -97,3 +98,5 @@ Sao os modulos efetivamente ativos para um tenant especifico. A visibilidade no 
 - `cloud_usage_metering` e uma capacidade transversal de plataforma: registra uso interno por tenant em `cloud_usage_events`, agrega diariamente em `cloud_usage_daily_aggregates` e prepara a ponte futura para custo AWS real, rateio, markup e cobranca cloud com lucro.
 - Nesta branch `cloud_usage_metering` mede uso, nao custo: AWS CUR, Cost Explorer, Billing Conductor, preco, margem, fatura e pagamento ficam fora do escopo.
 - `cloud_cost_import` e uma capacidade transversal de plataforma: importa custo AWS bruto em `cloud_cost_imports` e `cloud_cost_line_items`, sem rateio, markup, fatura, pagamento ou UI completa nesta branch.
+- `cloud_cost_allocation` e uma capacidade transversal de plataforma: cruza `cloud_cost_line_items` com `cloud_usage_daily_aggregates`, cria runs em `cloud_cost_allocation_runs` e grava custo por tenant em `tenant_cloud_cost_allocations`, sem markup, fatura, pagamento ou UI completa nesta branch.
+- Custo sem metrica confiavel deve permanecer como `total_unallocated_cost`; o sistema nao deve distribuir arbitrariamente para simular precisao.

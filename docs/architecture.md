@@ -48,6 +48,14 @@ Escopo: `platform`
 
 Responsabilidade desta branch: persistir lotes em `cloud_cost_imports`, linhas em `cloud_cost_line_items`, disponibilizar parser/importer local ou mock, job `aws-cur.import-cost-file` e API Platform protegida. Nao faz rateio por tenant, markup, fatura, pagamento nem conexao obrigatoria com AWS real.
 
+### Cloud Cost Allocation
+
+Boundary transversal de plataforma para cruzar custo AWS bruto com uso interno por tenant.
+
+Escopo: `platform`
+
+Responsabilidade desta branch: criar runs em `cloud_cost_allocation_runs`, gravar resultado tenant-scoped em `tenant_cloud_cost_allocations`, aplicar regras MVP de alocacao por `tenant_tag` ou uso ponderado e manter custo sem base confiavel em `total_unallocated_cost`. Nao aplica markup, nao gera fatura, nao cobra, nao cria UI completa e nao adiciona integracao AWS real.
+
 ## Separacao platform scope vs tenant scope
 
 - Platform scope usa permissoes `platform:*`.
@@ -127,6 +135,8 @@ Cloud usage metering tambem usa eventos/jobs como fonte best-effort. Eventos de 
 
 Cloud cost import usa o job `aws-cur.import-cost-file` para importar CSV local/mock. A integracao real com S3/Athena fica documentada para fase posterior e nao deve introduzir credenciais reais no repositorio.
 
+Cloud cost allocation usa o job `cloud-cost-allocation.run` para criar/processar runs de alocacao, consumir `cloud_cost_line_items` e `cloud_usage_daily_aggregates`, gravar `tenant_cloud_cost_allocations` e atualizar totais alocados/nao alocados. Falha no job marca o run como `failed` com erro sanitizado; nao ha dependencia de AWS real.
+
 ## Auditoria enterprise
 
 A auditoria enterprise esta documentada em `docs/audit.md`. A gravacao principal usa `audit_logs` de forma sincronica, tenant-scoped e protegida por RLS. O contrato padronizado inclui actor, action, resource, outcome, severity, correlationId, requestId, IP, user-agent e metadata sanitizado. Como a tabela atual ja possui `metadata Json`, os campos complementares ficam em metadata e nenhuma migration foi criada nesta rodada.
@@ -142,4 +152,4 @@ Depois da persistencia, `audit_log.created` e publicado como domain event para f
 - Evoluir operacoes platform multi-tenant com contexto RLS explicito e auditoria.
 - Avaliar cookie httpOnly/secure e Redis para sessoes distribuidas quando o produto sair do MVP localStorage.
 - Evoluir jobs Redis para notificacoes, webhooks, relatorios, processamento de anexos e fanout de auditoria.
-- Evoluir a ponte `cloud_usage_metering` nas branches `feature/aws-cur-cost-import`, `feature/cloud-cost-allocation-engine`, `feature/cloud-charge-markup-rules`, `feature/platform-cloud-billing-ui` e `feature/billing-payment-provider`.
+- Evoluir a ponte `cloud_usage_metering` e `cloud_cost_allocation` nas branches `feature/cloud-charge-markup-rules`, `feature/platform-cloud-billing-ui` e `feature/billing-payment-provider`.

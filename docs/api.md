@@ -318,6 +318,69 @@ Filtros aceitos em `line-items` e `summary`: `periodStart`, `periodEnd`, `servic
 
 Esta API expõe custo AWS bruto importado apenas para Platform Admin. Nao faz rateio por tenant, markup, fatura ou pagamento.
 
+### Cloud cost allocation
+
+```http
+GET  /api/v1/platform/cloud-cost-allocations/runs
+GET  /api/v1/platform/cloud-cost-allocations/runs/:runId
+POST /api/v1/platform/cloud-cost-allocations/runs
+GET  /api/v1/platform/cloud-cost-allocations/runs/:runId/tenant-allocations
+GET  /api/v1/platform/cloud-cost-allocations/summary
+```
+
+Permissoes:
+
+- leitura: `platform:cloud-cost-allocation:read`
+- execucao: `platform:cloud-cost-allocation:run`
+
+Filtros aceitos:
+
+- `runs`: `periodStart`, `periodEnd` e `status`;
+- `tenant-allocations`: `tenantId`, `serviceCode` e `costCategory`;
+- `summary`: `periodStart`, `periodEnd` e `runId`.
+
+Body de `POST /runs`:
+
+```json
+{
+  "periodStart": "2026-06-01",
+  "periodEnd": "2026-06-30",
+  "strategy": "direct_tag_then_usage_weighted_v1"
+}
+```
+
+Resposta resumida:
+
+```json
+{
+  "data": {
+    "periodStart": "2026-06-01T00:00:00.000Z",
+    "periodEnd": "2026-06-30T00:00:00.000Z",
+    "currency": "USD",
+    "totalImportedCost": 1000,
+    "totalAllocatedCost": 850,
+    "totalUnallocatedCost": 150,
+    "tenants": [
+      {
+        "tenantId": "uuid-do-tenant",
+        "tenantName": "Cliente Demo",
+        "allocatedCost": 120,
+        "allocationRatio": 0.12
+      }
+    ],
+    "services": [
+      {
+        "serviceCode": "AmazonS3",
+        "allocatedCost": 300,
+        "unallocatedCost": 20
+      }
+    ]
+  }
+}
+```
+
+Esta API calcula custo AWS alocado por tenant para Platform Admin. Nao aplica markup, nao gera fatura, nao cobra, nao cria provider externo e nao expõe custo em endpoint tenant.
+
 ## Observacoes
 
 - A implementacao inicial pode usar mock/service em memoria enquanto a persistencia de `tenant_modules` nao estiver versionada.

@@ -6,7 +6,7 @@ O Console da Plataforma e a area exclusiva do dono do SaaS e de usuarios Super A
 
 Permitir que o dono da plataforma crie e acompanhe tenants/clientes, defina planos, habilite modulos, crie o administrador inicial do tenant e acompanhe a saude operacional global do SaaS.
 
-Nesta fase, o Console da Plataforma tambem ganha API para consultar uso cloud interno por tenant via `cloud_usage_metering` e custo AWS bruto via `cloud_cost_import`. A UI complexa de billing/cloud usage fica para branch futura.
+Nesta fase, o Console da Plataforma tambem possui API para consultar uso cloud interno por tenant via `cloud_usage_metering`, custo AWS bruto via `cloud_cost_import` e custo AWS alocado por tenant via `cloud_cost_allocation`. A UI complexa de billing/cloud usage fica para branch futura.
 
 ## Diferenca de escopo
 
@@ -36,6 +36,7 @@ Nesta fase, o Console da Plataforma tambem ganha API para consultar uso cloud in
 - Ver resumo de uso.
 - Consultar uso cloud interno medido por tenant, sem custo monetario, preco, margem, fatura ou pagamento.
 - Consultar/importar custo AWS CUR bruto, sem rateio, markup, fatura ou pagamento.
+- Executar e consultar alocacao de custo AWS por tenant, mantendo markup, fatura e pagamento fora desta fase.
 
 ## Permissoes
 
@@ -50,6 +51,8 @@ Nesta fase, o Console da Plataforma tambem ganha API para consultar uso cloud in
 - `platform:cloud-usage:read`
 - `platform:cloud-costs:read`
 - `platform:cloud-costs:import`
+- `platform:cloud-cost-allocation:read`
+- `platform:cloud-cost-allocation:run`
 
 ## Regras de seguranca
 
@@ -86,6 +89,11 @@ As rotas de API usam o prefixo atual do backend (`/api/v1`) e reservam o boundar
 - `GET /api/v1/platform/cloud-costs/line-items`
 - `GET /api/v1/platform/cloud-costs/summary`
 - `POST /api/v1/platform/cloud-costs/imports/manual-csv`
+- `GET /api/v1/platform/cloud-cost-allocations/runs`
+- `GET /api/v1/platform/cloud-cost-allocations/runs/:runId`
+- `POST /api/v1/platform/cloud-cost-allocations/runs`
+- `GET /api/v1/platform/cloud-cost-allocations/runs/:runId/tenant-allocations`
+- `GET /api/v1/platform/cloud-cost-allocations/summary`
 
 ## Pendencias planejadas
 
@@ -94,6 +102,7 @@ As rotas de API usam o prefixo atual do backend (`/api/v1`) e reservam o boundar
 - Componentes do handoff Figma a considerar no catalogo global: `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement` e `before_after`.
 - Auditoria global completa.
 - Tela de plataforma para cloud usage/billing apos as branches de custo real, rateio e markup.
+- Regras comerciais de markup/minimo/franquia consumindo `tenant_cloud_cost_allocations`.
 - Planos comerciais configuraveis.
 - Modo suporte auditado para acesso operacional a tenant.
 - Remocao gradual de headers legados.

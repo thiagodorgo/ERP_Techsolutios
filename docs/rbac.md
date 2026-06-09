@@ -52,6 +52,8 @@ Permissoes de plataforma:
 - `platform:modules:manage`
 - `platform:cloud-costs:read`
 - `platform:cloud-costs:import`
+- `platform:cloud-cost-allocation:read`
+- `platform:cloud-cost-allocation:run`
 - `platform:cloud-usage:read`
 
 Permissoes de tenant:
@@ -173,6 +175,23 @@ Matriz backend aplicada:
 - `POST /api/v1/platform/cloud-costs/imports/manual-csv`: `platform:cloud-costs:import`
 
 Usuario comum de tenant nao acessa custo bruto. `tenant_tag` importado do CUR e apenas dado bruto para a futura allocation engine; nao concede acesso tenant-scoped.
+
+## cloud_cost_allocation
+
+Permissoes platform-scoped:
+
+- `platform:cloud-cost-allocation:read`: consultar runs, alocacoes por tenant e resumo de custo alocado/nao alocado.
+- `platform:cloud-cost-allocation:run`: criar e executar run de alocacao.
+
+Matriz backend aplicada:
+
+- `GET /api/v1/platform/cloud-cost-allocations/runs`: `platform:cloud-cost-allocation:read`
+- `GET /api/v1/platform/cloud-cost-allocations/runs/:runId`: `platform:cloud-cost-allocation:read`
+- `POST /api/v1/platform/cloud-cost-allocations/runs`: `platform:cloud-cost-allocation:run`
+- `GET /api/v1/platform/cloud-cost-allocations/runs/:runId/tenant-allocations`: `platform:cloud-cost-allocation:read`
+- `GET /api/v1/platform/cloud-cost-allocations/summary`: `platform:cloud-cost-allocation:read`
+
+Usuario comum de tenant nao acessa essas rotas. A tabela `tenant_cloud_cost_allocations` e tenant-scoped no banco por RLS, mas a API desta branch permanece no boundary Platform e nao expõe custo por endpoint tenant.
 
 Frontend:
 
