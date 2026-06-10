@@ -149,6 +149,22 @@ test("Mapa Operacional renderiza UI inicial e fallback sem Google Maps real", as
   await expect(page.getByText(/Marina Costa|Operador API|Nenhum operador localizado/i).first()).toBeVisible();
 });
 
+test("Despachos Operacionais renderiza lista, KPIs e acoes por RBAC", async ({ page }) => {
+  await loginAndActivateContext(page);
+  await enableDispatchesFrontendContext(page);
+  await enableWorkOrdersFrontendContext(page);
+
+  await page.goto("/operations/dispatches");
+  await expect(page).toHaveURL(/\/operations\/dispatches$/);
+  await expect(page.getByRole("heading", { name: "Despachos Operacionais" })).toBeVisible();
+  await expect(page.getByText("Atribuidos")).toBeVisible();
+  await expect(page.getByText(/OS-000101|Nenhum despacho encontrado/).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /Novo despacho/i })).toBeVisible();
+
+  await page.getByPlaceholder("Buscar por OS, codigo ou operador").fill("OS-000103");
+  await expect(page.getByText(/OS-000103|Nenhum despacho encontrado/).first()).toBeVisible();
+});
+
 test("Ordens de Servico renderiza lista, criacao e detalhe com fallback seguro", async ({ page }) => {
   await loginAndActivateContext(page);
   await enableWorkOrdersFrontendContext(page);
@@ -295,6 +311,28 @@ async function enableOperationsMapFrontendContext(page: Page): Promise<void> {
 
     const context = JSON.parse(raw) as { permissions?: string[]; enabledModules?: string[] };
     context.permissions = Array.from(new Set([...(context.permissions ?? []), "field_location:read", "field_location:history"]));
+    context.enabledModules = Array.from(new Set([...(context.enabledModules ?? []), "field_operations"]));
+    window.localStorage.setItem(key, JSON.stringify(context));
+  });
+}
+
+async function enableDispatchesFrontendContext(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const key = "erp-techsolutions.active-context";
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return;
+
+    const context = JSON.parse(raw) as { permissions?: string[]; enabledModules?: string[] };
+    context.permissions = Array.from(
+      new Set([
+        ...(context.permissions ?? []),
+        "field_dispatch:read",
+        "field_dispatch:create",
+        "field_dispatch:update",
+        "field_dispatch:cancel",
+        "field_dispatch:reassign",
+      ]),
+    );
     context.enabledModules = Array.from(new Set([...(context.enabledModules ?? []), "field_operations"]));
     window.localStorage.setItem(key, JSON.stringify(context));
   });

@@ -186,9 +186,9 @@ Relações com o Mapa Operacional:
 
 ### Despachos Operacionais
 
-Objetivo: criar a fundacao backend para despachar uma OS para um operador de campo e manter status/timeline/auditoria inicial.
+Objetivo: despachar uma OS para um operador de campo, manter status/timeline/auditoria inicial e expor a primeira UI web de acompanhamento.
 
-Status desta branch: backend foundation implementado; tela completa `/operations/dispatches`, Google Maps real, roteirizacao, algoritmo de otimizacao, WebSocket e app Flutter ficam fora do escopo.
+Status desta branch: backend foundation existente e tela web inicial `/operations/dispatches` implementada. Google Maps real, roteirizacao, algoritmo de otimizacao, WebSocket e app Flutter ficam fora do escopo.
 
 Endpoints implementados:
 
@@ -216,7 +216,8 @@ Regras:
 - status suportados: `draft`, `assigned`, `accepted`, `on_route`, `arrived`, `in_service`, `completed`, `cancelled`, `reassigned` e `failed`;
 - cancelamento exige `reason`;
 - detalhe retorna `timeline` com eventos `field_dispatch_created`, `field_dispatch_status_changed`, `field_dispatch_reassigned` e `field_dispatch_cancelled`;
-- endpoints preparam a futura UI de despacho e a futura integracao com `/operations/map`, sem implementar roteirizacao.
+- a UI web consome os endpoints existentes, aplica RBAC por acao e usa `/work-orders` apenas para enriquecer codigo/titulo/prioridade quando `work_orders:read` estiver disponivel;
+- endpoints preparam a futura integracao com `/operations/map`, sem implementar roteirizacao.
 
 Fallback frontend de Work Orders:
 

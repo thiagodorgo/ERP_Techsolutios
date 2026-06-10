@@ -54,6 +54,10 @@ function resolveEnabledModules(permissions: readonly string[]): string[] {
     modules.add("tenant_checklist");
   }
 
+  if (permissions.some((permission) => permission.startsWith("field_location:") || permission.startsWith("field_operator:") || permission.startsWith("field_dispatch:"))) {
+    modules.add("field_operations");
+  }
+
   if (permissions.includes("notifications:read")) {
     modules.add("notifications");
   }

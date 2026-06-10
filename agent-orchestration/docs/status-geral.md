@@ -1298,3 +1298,17 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - documentacao atualizada em `docs/modules.md`, `docs/rbac.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/field-operator-location-map.md`, `docs/work-orders.md`, `docs/database.md`, `docs/02-mapa-modulos.md`, `docs/05-requisitos-funcionais.md`, `RBAC_MATRIX.md` e este status
 - fora de escopo mantido: UI completa de despacho, Google Maps real, roteirizacao/otimizacao, WebSocket/tempo real, Flutter/mobile, comissoes, pagamentos e despacho completo
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `node --test --import tsx tests/field-dispatch.test.ts`, `node --test --import tsx tests/field-dispatch-routes.test.ts`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `npm run test:e2e` e `git diff --check`
+
+## Atualizacao 2026-06-10 - field dispatch UI
+
+- branch usada: `feature/field-dispatch-ui`
+- objetivo: implementar a primeira UI web de Despachos Operacionais consumindo a fundacao backend de `field_dispatch`
+- rota implementada: `/operations/dispatches`
+- modulo frontend criado em `frontend/src/modules/operations/dispatches` com types, adapter, service, hook, mocks, pagina e componentes
+- endpoints consumidos: `GET /api/v1/operations/dispatches`, `POST /api/v1/operations/dispatches`, `GET /api/v1/operations/dispatches/:dispatchId`, `PATCH /api/v1/operations/dispatches/:dispatchId/status`, `PATCH /api/v1/operations/dispatches/:dispatchId/reassign` e `GET /api/v1/work-orders` quando `work_orders:read` estiver disponivel para enriquecer codigo/titulo/prioridade da OS
+- UI entregue: listagem, filtros por status/prioridade/operador/busca por OS, KPIs, detalhe, criacao simples, alteracao de status, cancelamento quando permitido, reatribuicao, badges, loading, vazio, erro e fallback/mock seguro
+- RBAC frontend aplicado: `field_dispatch:read`, `field_dispatch:create`, `field_dispatch:update`, `field_dispatch:cancel` e `field_dispatch:reassign`
+- navigation registry atualizado: `operations.dispatches` passa a `implemented`
+- testes atualizados/criados: `frontend/tests/smoke-flow.test.tsx`, `frontend/tests/dispatches.adapter.test.ts` e `tests/e2e/critical-flows.spec.ts`
+- documentacao atualizada em `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/api.md`, `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/field-operator-location-map.md`, `docs/work-orders.md`, `docs/02-mapa-modulos.md`, `docs/platform-console.md` e este status
+- fora de escopo mantido: backend novo, migrations, Google Maps real, app Flutter/mobile, roteirizacao avancada, WebSocket/tempo real, despacho completo, comissoes e pagamentos

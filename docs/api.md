@@ -761,7 +761,7 @@ Fora do escopo: despacho avancado, roteirizacao, comissao, pagamento de prestado
 
 ## Field Dispatch
 
-Modulo implementado: `field_dispatch` como fundacao backend tenant-scoped para despacho operacional.
+Modulo implementado: `field_dispatch` como fundacao backend tenant-scoped para despacho operacional e UI web inicial em `/operations/dispatches`.
 
 Endpoints:
 
@@ -793,7 +793,7 @@ Regras:
 
 Auditoria: criacao, mudanca de status, reatribuicao e cancelamento registram eventos best-effort `field_dispatch.created`, `field_dispatch.status_changed`, `field_dispatch.reassigned` e `field_dispatch.cancelled`.
 
-Fora do escopo: UI completa de despacho, Google Maps real, algoritmo de roteirizacao/otimizacao, WebSocket/tempo real, app Flutter e despacho completo.
+Fora do escopo: despacho avancado, Google Maps real, algoritmo de roteirizacao/otimizacao, WebSocket/tempo real, app Flutter e despacho completo.
 
 ## Auditoria
 

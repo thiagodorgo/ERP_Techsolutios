@@ -66,7 +66,7 @@ Nao implementar telas novas nesta rodada apenas por aparecerem como `planned` ou
 
 `/work-orders` agora possui UI web implementada e usa `work_orders:read` no menu/guard frontend. As rotas complementares `/work-orders/new` e `/work-orders/:workOrderId` usam `work_orders:create` e `work_orders:read`, respectivamente. Acoes sensiveis dentro do detalhe usam `work_orders:status` e `work_orders:assign`.
 
-`/operations/dispatches` esta previsto no registry como `backend-ready`: o backend expõe listagem, criacao, detalhe, status/cancelamento e reatribuicao por `/api/v1/operations/dispatches`, mas a tela frontend completa ainda nao foi implementada. O item exige `field_dispatch:read` e modulo `field_operations`; acoes futuras devem respeitar `field_dispatch:create`, `field_dispatch:update`, `field_dispatch:cancel` e `field_dispatch:reassign`.
+`/operations/dispatches` esta implementado como UI web inicial de Despachos Operacionais. O item exige `field_dispatch:read` e modulo `field_operations`; criar, alterar status, cancelar e reatribuir sao exibidos conforme `field_dispatch:create`, `field_dispatch:update`, `field_dispatch:cancel` e `field_dispatch:reassign`. A tela consome `/api/v1/operations/dispatches` e usa `/api/v1/work-orders` apenas para enriquecer OS/prioridade quando `work_orders:read` estiver disponivel.
 
 ## Hardcode restante
 
