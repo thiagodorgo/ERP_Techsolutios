@@ -4,6 +4,7 @@ import { createCloudCostAllocationRunJobHandler } from "../../modules/cloud-cost
 import { createAwsCurImportCostFileJobHandler } from "../../modules/cloud-costs/aws-cur.jobs.js";
 import { createCloudUsageAggregateDailyJobHandler } from "../../modules/cloud-usage/cloud-usage.jobs.js";
 import { createNotificationDispatchJobHandler } from "../../modules/notifications/notification.jobs.js";
+import { createFieldOpsEventFanoutJobHandler } from "../../modules/field-dispatch/field-ops-event-fanout.jobs.js";
 
 export type JobHandler<TPayload extends JobPayload = JobPayload> = (
   payload: TPayload,
@@ -47,6 +48,7 @@ function createDefaultJobRegistry(): JobRegistry {
   registry.register("audit-log-fanout", async () => {
     // Placeholder for future audit fanout/export.
   });
+  registry.register("field-ops-event-fanout", createFieldOpsEventFanoutJobHandler());
 
   return registry;
 }
