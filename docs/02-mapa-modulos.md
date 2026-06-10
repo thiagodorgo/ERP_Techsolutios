@@ -120,7 +120,7 @@ ERP Techsolutions
 |---|---|
 | Motor de preço e tarifas | Tabelas versionadas, simulação e aprovação. |
 | tenant_checklist | Modelos versionados por tenant, campos configuráveis a partir de componentes permitidos pela plataforma e execução Web/Mobile. |
-| field_operations | Fundação para Mapa Operacional, operadores em campo, localizacao e despachos futuros. |
+| field_operations | Fundação para Mapa Operacional, operadores em campo, localizacao e despachos operacionais. |
 | Estoque por viatura | Controle móvel e reposição automática. |
 | Frota avançada | Abastecimento, manutenção, danos, multas e seguros. |
 | Pré-faturamento | Validação antes do fechamento. |
@@ -216,7 +216,7 @@ ERP Techsolutions
 - consulta web futura em `GET /api/v1/field-locations/latest` e `GET /api/v1/field-locations/history`;
 - RBAC `field_location:send`, `field_location:read` e `field_location:history`.
 
-**Fora do escopo desta rodada:** Google Maps, app Flutter, roteirizacao avancada e despacho completo. A integracao visual posterior com `work_orders` usa endpoints existentes e RBAC separado.
+**Fora do escopo desta rodada:** Google Maps, app Flutter, roteirizacao avancada, UI completa de despacho e despacho completo. A integracao visual com `work_orders` usa endpoints existentes e RBAC separado; a fundacao backend `field_dispatch` prepara criacao, listagem, status, cancelamento e reatribuicao de despachos tenant-scoped.
 
 ### 4.3 Operação e Serviços
 

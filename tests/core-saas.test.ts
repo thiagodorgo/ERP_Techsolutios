@@ -50,6 +50,8 @@ const expectedPermissionCatalog = [
   "field_dispatch:read",
   "field_dispatch:create",
   "field_dispatch:update",
+  "field_dispatch:cancel",
+  "field_dispatch:reassign",
   "logistics:read",
   "logistics_routes:read",
   "billing:read",

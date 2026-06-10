@@ -259,6 +259,52 @@ if (!connectionString) {
           )
           RETURNING id
         `;
+        const [fieldDispatch] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO field_dispatches (
+            tenant_id,
+            work_order_id,
+            operator_user_id,
+            status,
+            observation,
+            created_by,
+            updated_by,
+            metadata
+          )
+          VALUES (
+            ${tenantA.id}::uuid,
+            ${workOrder.id}::uuid,
+            ${user.id}::uuid,
+            'assigned',
+            'RLS field dispatch A',
+            ${user.id}::uuid,
+            ${user.id}::uuid,
+            '{}'::jsonb
+          )
+          RETURNING id
+        `;
+        const [fieldDispatchEvent] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO field_dispatch_events (
+            tenant_id,
+            dispatch_id,
+            work_order_id,
+            event_type,
+            to_status,
+            actor_user_id,
+            message,
+            metadata
+          )
+          VALUES (
+            ${tenantA.id}::uuid,
+            ${fieldDispatch.id}::uuid,
+            ${workOrder.id}::uuid,
+            'field_dispatch_created',
+            'assigned',
+            ${user.id}::uuid,
+            'RLS field dispatch A created',
+            '{}'::jsonb
+          )
+          RETURNING id
+        `;
         const [template] = await tx.$queryRaw<Array<{ id: string; version: number }>>`
           INSERT INTO checklist_templates (tenant_id, name, type, status, version, schema)
           VALUES (${tenantA.id}::uuid, 'RLS Checklist A', 'custom', 'published', 1, ${JSON.stringify({ source: "rls-test" })}::jsonb)
@@ -502,6 +548,8 @@ if (!connectionString) {
           usageEventId: usageEvent.id,
           cloudCostAllocationId: cloudCostAllocation.id,
           fieldLocationId: fieldLocation.id,
+          fieldDispatchEventId: fieldDispatchEvent.id,
+          fieldDispatchId: fieldDispatch.id,
           tenantCloudChargeId: tenantCloudCharge.id,
           workOrderAssignmentId: workOrderAssignment.id,
           workOrderEventId: workOrderEvent.id,
@@ -609,6 +657,52 @@ if (!connectionString) {
             ${user.id}::uuid,
             ${user.id}::uuid,
             ${user.id}::uuid,
+            '{}'::jsonb
+          )
+          RETURNING id
+        `;
+        const [fieldDispatch] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO field_dispatches (
+            tenant_id,
+            work_order_id,
+            operator_user_id,
+            status,
+            observation,
+            created_by,
+            updated_by,
+            metadata
+          )
+          VALUES (
+            ${tenantB.id}::uuid,
+            ${workOrder.id}::uuid,
+            ${user.id}::uuid,
+            'assigned',
+            'RLS field dispatch B',
+            ${user.id}::uuid,
+            ${user.id}::uuid,
+            '{}'::jsonb
+          )
+          RETURNING id
+        `;
+        const [fieldDispatchEvent] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO field_dispatch_events (
+            tenant_id,
+            dispatch_id,
+            work_order_id,
+            event_type,
+            to_status,
+            actor_user_id,
+            message,
+            metadata
+          )
+          VALUES (
+            ${tenantB.id}::uuid,
+            ${fieldDispatch.id}::uuid,
+            ${workOrder.id}::uuid,
+            'field_dispatch_created',
+            'assigned',
+            ${user.id}::uuid,
+            'RLS field dispatch B created',
             '{}'::jsonb
           )
           RETURNING id
@@ -856,6 +950,8 @@ if (!connectionString) {
           usageEventId: usageEvent.id,
           cloudCostAllocationId: cloudCostAllocation.id,
           fieldLocationId: fieldLocation.id,
+          fieldDispatchEventId: fieldDispatchEvent.id,
+          fieldDispatchId: fieldDispatch.id,
           tenantCloudChargeId: tenantCloudCharge.id,
           workOrderAssignmentId: workOrderAssignment.id,
           workOrderEventId: workOrderEvent.id,
@@ -968,6 +1064,30 @@ if (!connectionString) {
         workOrderAssignmentsWithoutContext.map((assignment) => assignment.id),
         [],
         "tenant-scoped work order assignments must not be visible without app.current_tenant_id",
+      );
+      const fieldDispatchesWithoutContext = await client.fieldDispatch.findMany({
+        where: {
+          id: {
+            in: [tenantAData.fieldDispatchId, tenantBData.fieldDispatchId],
+          },
+        },
+      });
+      assert.deepEqual(
+        fieldDispatchesWithoutContext.map((dispatch) => dispatch.id),
+        [],
+        "tenant-scoped field dispatches must not be visible without app.current_tenant_id",
+      );
+      const fieldDispatchEventsWithoutContext = await client.fieldDispatchEvent.findMany({
+        where: {
+          id: {
+            in: [tenantAData.fieldDispatchEventId, tenantBData.fieldDispatchEventId],
+          },
+        },
+      });
+      assert.deepEqual(
+        fieldDispatchEventsWithoutContext.map((event) => event.id),
+        [],
+        "tenant-scoped field dispatch events must not be visible without app.current_tenant_id",
       );
       const cloudCostAllocationsWithoutContext =
         await client.tenantCloudCostAllocation.findMany({
@@ -1132,6 +1252,20 @@ if (!connectionString) {
             },
           },
         });
+        const fieldDispatches = await tx.fieldDispatch.findMany({
+          where: {
+            id: {
+              in: [tenantAData.fieldDispatchId, tenantBData.fieldDispatchId],
+            },
+          },
+        });
+        const fieldDispatchEvents = await tx.fieldDispatchEvent.findMany({
+          where: {
+            id: {
+              in: [tenantAData.fieldDispatchEventId, tenantBData.fieldDispatchEventId],
+            },
+          },
+        });
         const crossTenantWorkOrderUpdate = await tx.workOrder.updateMany({
           where: {
             id: tenantBData.workOrderId,
@@ -1140,10 +1274,20 @@ if (!connectionString) {
             title: "RLS cross-tenant work order update should not apply",
           },
         });
+        const crossTenantFieldDispatchUpdate = await tx.fieldDispatch.updateMany({
+          where: {
+            id: tenantBData.fieldDispatchId,
+          },
+          data: {
+            observation: "RLS cross-tenant field dispatch update should not apply",
+          },
+        });
 
         return {
           attachmentIds: attachments.map((attachment) => attachment.id),
           cloudCostAllocationIds: cloudCostAllocations.map((allocation) => allocation.id),
+          fieldDispatchEventIds: fieldDispatchEvents.map((event) => event.id),
+          fieldDispatchIds: fieldDispatches.map((dispatch) => dispatch.id),
           fieldLocationIds: fieldLocations.map((location) => location.id),
           tenantCloudChargeIds: tenantCloudCharges.map((charge) => charge.id),
           workOrderAssignmentIds: workOrderAssignments.map((assignment) => assignment.id),
@@ -1155,6 +1299,7 @@ if (!connectionString) {
           updatedAllocationRows: crossTenantAllocationUpdate.count,
           updatedChargeRows: crossTenantChargeUpdate.count,
           updatedFieldLocationRows: crossTenantFieldLocationUpdate.count,
+          updatedFieldDispatchRows: crossTenantFieldDispatchUpdate.count,
           updatedWorkOrderRows: crossTenantWorkOrderUpdate.count,
           updatedRows: crossTenantUpdate.count,
           usageAggregateIds: usageAggregates.map((aggregate) => aggregate.id),
@@ -1171,6 +1316,8 @@ if (!connectionString) {
       assert.deepEqual(tenantAView.usageAggregateIds, [tenantAData.usageAggregateId]);
       assert.deepEqual(tenantAView.usageEventIds, [tenantAData.usageEventId]);
       assert.deepEqual(tenantAView.fieldLocationIds, [tenantAData.fieldLocationId]);
+      assert.deepEqual(tenantAView.fieldDispatchIds, [tenantAData.fieldDispatchId]);
+      assert.deepEqual(tenantAView.fieldDispatchEventIds, [tenantAData.fieldDispatchEventId]);
       assert.deepEqual(tenantAView.workOrderIds, [tenantAData.workOrderId]);
       assert.deepEqual(tenantAView.workOrderEventIds, [tenantAData.workOrderEventId]);
       assert.deepEqual(tenantAView.workOrderAssignmentIds, [tenantAData.workOrderAssignmentId]);
@@ -1195,6 +1342,11 @@ if (!connectionString) {
         tenantAView.updatedFieldLocationRows,
         0,
         "tenant A must not update tenant B field operator locations",
+      );
+      assert.equal(
+        tenantAView.updatedFieldDispatchRows,
+        0,
+        "tenant A must not update tenant B field dispatches",
       );
       assert.equal(
         tenantAView.updatedWorkOrderRows,
@@ -1242,9 +1394,27 @@ if (!connectionString) {
         }),
       );
       assert.equal(tenantBWorkOrder?.title, "RLS Work Order B");
+      const tenantBFieldDispatch = await withTenantRls(client, tenantB.id, (tx) =>
+        tx.fieldDispatch.findUnique({
+          where: {
+            id: tenantBData.fieldDispatchId,
+          },
+        }),
+      );
+      assert.equal(tenantBFieldDispatch?.observation, "RLS field dispatch B");
     } finally {
       for (const tenantId of tenantIds) {
         await withTenantRls(client, tenantId, async (tx) => {
+          await tx.fieldDispatchEvent.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          await tx.fieldDispatch.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
           await tx.workOrderAssignment.deleteMany({
             where: {
               tenant_id: tenantId,

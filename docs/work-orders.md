@@ -2,11 +2,11 @@
 
 ## Objetivo
 
-`work_orders` e a entidade operacional central para conectar cliente/local, servico solicitado, operador, status operacional, checklists futuros, evidencias futuras, mapa operacional, despacho futuro e comissoes futuras.
+`work_orders` e a entidade operacional central para conectar cliente/local, servico solicitado, operador, status operacional, checklists futuros, evidencias futuras, mapa operacional, despacho operacional e comissoes futuras.
 
 O backend foundation cria a API tenant-scoped e a UI web entrega a primeira experiencia operacional para supervisores acompanharem lista, criacao, detalhe, timeline, status e atribuicao simples.
 
-Fora do escopo atual: despacho avancado, roteirizacao, comissao, pagamento de prestador, app Flutter, Google Maps real, fotos/assinaturas especificas de OS, estoque/pecas ou integracao externa.
+Fora do escopo atual: despacho avancado, roteirizacao, comissao, pagamento de prestador, app Flutter, Google Maps real, fotos/assinaturas especificas de OS, estoque/pecas ou integracao externa. A fundacao backend `field_dispatch` ja permite criar/listar/atualizar despachos vinculados a OS e operador do mesmo tenant, mas a UI completa de despacho fica em etapa futura.
 
 ## UI Web
 
@@ -110,5 +110,6 @@ Eventos sao retornados por timeline em ordem cronologica e evitam metadata sensi
 
 - Checklists: `checklist_id` prepara associacao com template/configuracao de checklist.
 - Mapa operacional: endereco/coordenadas e operador atribuido permitem correlacao em `/operations/map`; o mapa exibe OS atual/atribuida sem criar endpoints novos e sem substituir `field_location:read`.
+- Despacho operacional: `field_dispatches` vincula OS e operador, registra status/timeline e prepara a futura tela `/operations/dispatches`.
 - Evidencias: anexos/fotos especificos de OS ficam fora desta branch.
 - Comissoes/prestadores: `assigned_operator_id` e assignments preparam relacao futura sem calcular pagamentos nesta etapa.

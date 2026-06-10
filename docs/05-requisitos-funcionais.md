@@ -275,6 +275,8 @@ Tipos de checklist inicialmente previstos:
 - Deve listar recursos disponíveis.
 - Deve bloquear recursos indisponíveis.
 - Deve registrar alteração na timeline.
+- Foundation backend atual: criar despacho vinculado a OS e operador do mesmo tenant, listar/detalhar despachos, mudar status, cancelar com motivo e reatribuir operador.
+- Fora desta foundation: algoritmo de disponibilidade, roteirizacao, UI completa e otimizacao assistida.
 
 ### RF-OS-006 — Despacho assistido
 

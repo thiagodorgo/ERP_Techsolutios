@@ -1278,3 +1278,23 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - testes atualizados: smoke cobre correlacao adapter/service e E2E valida link de OS no mapa quando RBAC permite
 - documentacao atualizada em `docs/field-operator-location-map.md`, `docs/work-orders.md`, `docs/frontend-screens.md`, `docs/api-screen-endpoints.md`, `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/09-mapa-telas-frontend.md`, `docs/modules.md`, `docs/api.md`, `docs/02-mapa-modulos.md` e este status
 - fora de escopo mantido: Google Maps real, WebSocket/tempo real, despacho avancado, roteirizacao, Flutter/mobile, comissoes, estoque, backend novo e migrations
+
+## Atualizacao 2026-06-10 - field dispatch routing foundation
+
+- branch usada: `feature/field-dispatch-routing-foundation`
+- objetivo: implementar a fundacao backend tenant-scoped de despacho operacional conectando Work Orders, operadores de campo e futuro Mapa Operacional
+- diagnostico inicial: PRs #53, #54 e #55 confirmadas como merged; `origin/HEAD` apontando para `origin/main`; worktree limpo antes da alteracao; branch criada a partir de `main` atualizado
+- migration criada: `20260617000000_add_field_dispatches`
+- tabelas criadas: `field_dispatches` e `field_dispatch_events`
+- RLS aplicado com `ENABLE ROW LEVEL SECURITY`, `FORCE ROW LEVEL SECURITY` e policy por `app.current_tenant_id`
+- modulo criado: `src/modules/field-dispatch`
+- endpoints criados: `GET /api/v1/operations/dispatches`, `POST /api/v1/operations/dispatches`, `GET /api/v1/operations/dispatches/:dispatchId`, `PATCH /api/v1/operations/dispatches/:dispatchId/status` e `PATCH /api/v1/operations/dispatches/:dispatchId/reassign`
+- RBAC atualizado com `field_dispatch:read`, `field_dispatch:create`, `field_dispatch:update`, `field_dispatch:cancel` e `field_dispatch:reassign`
+- regras implementadas: OS e operador precisam pertencer ao tenant do actor; cancelamento exige motivo; reatribuicao valida novo operador no mesmo tenant
+- eventos/timeline implementados: `field_dispatch_created`, `field_dispatch_status_changed`, `field_dispatch_reassigned` e `field_dispatch_cancelled`
+- auditoria best-effort adicionada para `field_dispatch.created`, `field_dispatch.status_changed`, `field_dispatch.reassigned` e `field_dispatch.cancelled`
+- navigation registry atualizado: `operations.dispatches` passa a `backend-ready` com endpoints relacionados
+- testes criados/atualizados: `tests/field-dispatch.test.ts`, `tests/field-dispatch-routes.test.ts` e `tests/rls-tenant-isolation.test.ts`
+- documentacao atualizada em `docs/modules.md`, `docs/rbac.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/field-operator-location-map.md`, `docs/work-orders.md`, `docs/database.md`, `docs/02-mapa-modulos.md`, `docs/05-requisitos-funcionais.md`, `RBAC_MATRIX.md` e este status
+- fora de escopo mantido: UI completa de despacho, Google Maps real, roteirizacao/otimizacao, WebSocket/tempo real, Flutter/mobile, comissoes, pagamentos e despacho completo
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `node --test --import tsx tests/field-dispatch.test.ts`, `node --test --import tsx tests/field-dispatch-routes.test.ts`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `npm run test:e2e` e `git diff --check`

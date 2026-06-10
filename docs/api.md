@@ -757,7 +757,43 @@ Prioridades permitidas: `low`, `medium`, `high` e `urgent`.
 
 Auditoria: criacao, atualizacao, atribuicao, mudanca de status, cancelamento e conclusao registram eventos best-effort.
 
-Fora do escopo: UI completa de Work Orders, despacho avancado, roteirizacao, comissao, pagamento de prestador, app Flutter, Google Maps real, fotos/assinaturas especificas de OS, estoque/pecas e integracao externa.
+Fora do escopo: despacho avancado, roteirizacao, comissao, pagamento de prestador, app Flutter, Google Maps real, fotos/assinaturas especificas de OS, estoque/pecas e integracao externa.
+
+## Field Dispatch
+
+Modulo implementado: `field_dispatch` como fundacao backend tenant-scoped para despacho operacional.
+
+Endpoints:
+
+```http
+GET   /operations/dispatches
+POST  /operations/dispatches
+GET   /operations/dispatches/:dispatchId
+PATCH /operations/dispatches/:dispatchId/status
+PATCH /operations/dispatches/:dispatchId/reassign
+```
+
+Permissoes:
+
+- `GET /operations/dispatches`: `field_dispatch:read`
+- `POST /operations/dispatches`: `field_dispatch:create`
+- `GET /operations/dispatches/:dispatchId`: `field_dispatch:read`
+- `PATCH /operations/dispatches/:dispatchId/status`: `field_dispatch:update`; cancelamento exige `field_dispatch:cancel`
+- `PATCH /operations/dispatches/:dispatchId/reassign`: `field_dispatch:reassign`
+
+Regras:
+
+- `tenant_id` vem do contexto autenticado e nunca do body;
+- `workOrderId` deve pertencer ao tenant atual;
+- `operatorUserId` deve pertencer ao tenant atual;
+- status permitidos: `draft`, `assigned`, `accepted`, `on_route`, `arrived`, `in_service`, `completed`, `cancelled`, `reassigned` e `failed`;
+- cancelamento exige `reason`;
+- detalhe inclui timeline;
+- tabelas `field_dispatches` e `field_dispatch_events` usam RLS por `app.current_tenant_id`.
+
+Auditoria: criacao, mudanca de status, reatribuicao e cancelamento registram eventos best-effort `field_dispatch.created`, `field_dispatch.status_changed`, `field_dispatch.reassigned` e `field_dispatch.cancelled`.
+
+Fora do escopo: UI completa de despacho, Google Maps real, algoritmo de roteirizacao/otimizacao, WebSocket/tempo real, app Flutter e despacho completo.
 
 ## Auditoria
 

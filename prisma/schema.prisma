@@ -23,6 +23,8 @@ model Tenant {
   checklist_template_components ChecklistTemplateComponent[]
   checklist_templates           ChecklistTemplate[]
   field_operator_locations      FieldOperatorLocation[]
+  field_dispatch_events         FieldDispatchEvent[]
+  field_dispatches              FieldDispatch[]
   work_order_assignments        WorkOrderAssignment[]
   work_order_events             WorkOrderEvent[]
   work_orders                   WorkOrder[]
@@ -73,6 +75,10 @@ model User {
   local_auth_credentials LocalAuthCredential[]
   notifications          Notification[]
   field_operator_locations FieldOperatorLocation[]
+  field_dispatch_events    FieldDispatchEvent[]    @relation("FieldDispatchEventActor")
+  field_dispatches_created FieldDispatch[]         @relation("FieldDispatchCreatedBy")
+  field_dispatches_operator FieldDispatch[]        @relation("FieldDispatchOperator")
+  field_dispatches_updated FieldDispatch[]         @relation("FieldDispatchUpdatedBy")
   assigned_work_orders   WorkOrder[]            @relation("WorkOrderAssignedUser")
   created_work_orders    WorkOrder[]            @relation("WorkOrderCreatedBy")
   updated_work_orders    WorkOrder[]            @relation("WorkOrderUpdatedBy")
@@ -725,6 +731,8 @@ model WorkOrder {
   created_at           DateTime              @default(now()) @db.Timestamptz(6)
   updated_at           DateTime              @default(now()) @updatedAt @db.Timestamptz(6)
   assignments          WorkOrderAssignment[]
+  field_dispatch_events FieldDispatchEvent[]
+  field_dispatches      FieldDispatch[]
   assigned_user        User?                 @relation("WorkOrderAssignedUser", fields: [tenant_id, assigned_user_id], references: [tenant_id, id], onDelete: Restrict)
   checklist            ChecklistTemplate?    @relation(fields: [tenant_id, checklist_id], references: [tenant_id, id], onDelete: Restrict)
   created_by_user      User?                 @relation("WorkOrderCreatedBy", fields: [tenant_id, created_by], references: [tenant_id, id], onDelete: Restrict)
@@ -787,4 +795,63 @@ model WorkOrderAssignment {
   @@index([tenant_id, user_id])
   @@index([tenant_id, status])
   @@map("work_order_assignments")
+}
+
+model FieldDispatch {
+  id               String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String               @db.Uuid
+  work_order_id    String               @db.Uuid
+  operator_user_id String               @db.Uuid
+  status           String               @default("assigned")
+  observation      String?
+  reason           String?
+  created_by       String?              @db.Uuid
+  updated_by       String?              @db.Uuid
+  accepted_at      DateTime?            @db.Timestamptz(6)
+  on_route_at      DateTime?            @db.Timestamptz(6)
+  arrived_at       DateTime?            @db.Timestamptz(6)
+  in_service_at    DateTime?            @db.Timestamptz(6)
+  completed_at     DateTime?            @db.Timestamptz(6)
+  cancelled_at     DateTime?            @db.Timestamptz(6)
+  failed_at        DateTime?            @db.Timestamptz(6)
+  metadata         Json
+  created_at       DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime             @default(now()) @updatedAt @db.Timestamptz(6)
+  created_by_user  User?                @relation("FieldDispatchCreatedBy", fields: [tenant_id, created_by], references: [tenant_id, id], onDelete: Restrict)
+  events           FieldDispatchEvent[]
+  operator_user    User                 @relation("FieldDispatchOperator", fields: [tenant_id, operator_user_id], references: [tenant_id, id], onDelete: Restrict)
+  tenant           Tenant               @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  updated_by_user  User?                @relation("FieldDispatchUpdatedBy", fields: [tenant_id, updated_by], references: [tenant_id, id], onDelete: Restrict)
+  work_order       WorkOrder            @relation(fields: [tenant_id, work_order_id], references: [tenant_id, id], onDelete: Cascade)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, work_order_id])
+  @@index([tenant_id, operator_user_id, status])
+  @@index([tenant_id, status])
+  @@index([tenant_id, created_at])
+  @@map("field_dispatches")
+}
+
+model FieldDispatchEvent {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String        @db.Uuid
+  dispatch_id   String        @db.Uuid
+  work_order_id String        @db.Uuid
+  event_type    String
+  from_status   String?
+  to_status     String?
+  actor_user_id String?       @db.Uuid
+  message       String
+  metadata      Json
+  created_at    DateTime      @default(now()) @db.Timestamptz(6)
+  actor_user    User?         @relation("FieldDispatchEventActor", fields: [tenant_id, actor_user_id], references: [tenant_id, id], onDelete: Restrict)
+  dispatch      FieldDispatch @relation(fields: [tenant_id, dispatch_id], references: [tenant_id, id], onDelete: Cascade)
+  tenant        Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  work_order    WorkOrder     @relation(fields: [tenant_id, work_order_id], references: [tenant_id, id], onDelete: Cascade)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, dispatch_id, created_at])
+  @@index([tenant_id, work_order_id, created_at])
+  @@index([tenant_id, event_type])
+  @@map("field_dispatch_events")
 }

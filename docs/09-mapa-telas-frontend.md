@@ -339,6 +339,15 @@ Princípios adotados:
 - **Status desta branch:** UI inicial implementada e integrada com OS atual/atribuida por RBAC; Google Maps real, roteirizacao avancada, WebSocket e despacho completo ficam fora do escopo.
 - **Prioridade:** MVP (básico) / Scale (assistido).
 
+### W20A — Despachos Operacionais
+- **Objetivo:** futura tela para listar, criar, acompanhar status, cancelar e reatribuir despachos vinculados a OS e operadores de campo.
+- **Usuários:** Gestor, Supervisor, Operador autorizado.
+- **Rota prevista:** `/operations/dispatches`.
+- **Permissões:** `field_dispatch:read`, `field_dispatch:create`, `field_dispatch:update`, `field_dispatch:cancel` e `field_dispatch:reassign`.
+- **APIs implementadas:** `GET /api/v1/operations/dispatches`, `POST /api/v1/operations/dispatches`, `GET /api/v1/operations/dispatches/:dispatchId`, `PATCH /api/v1/operations/dispatches/:dispatchId/status` e `PATCH /api/v1/operations/dispatches/:dispatchId/reassign`.
+- **Status desta branch:** backend foundation implementado e item de menu `operations.dispatches` marcado como `backend-ready`; UI completa, roteirizacao, Google Maps real, WebSocket e app Flutter ficam fora do escopo.
+- **Prioridade:** MVP foundation / Scale assistido.
+
 ### W21 — Estoque: Itens e saldos por filial
 - **Objetivo:** cadastro e saldos por almoxarifado.
 - **Usuários:** Estoquista, Compras, Gestor.
