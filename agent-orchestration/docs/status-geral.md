@@ -1341,3 +1341,15 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - testes atualizados: `frontend/tests/dispatches.adapter.test.ts` e `tests/e2e/critical-flows.spec.ts`
 - documentacao atualizada em `docs/field-operator-location-map.md`, `docs/frontend-screens.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/work-orders.md`, `docs/rbac.md` e este status
 - fora de escopo mantido: backend novo, migrations, Google Maps real, WebSocket/tempo real, Flutter/mobile, roteirizacao avancada, despacho completo, comissoes, pagamentos e fiscal
+
+## Atualizacao 2026-06-10 - frontend route splitting field ops
+
+- branch usada: `feature/frontend-route-splitting-field-ops`
+- objetivo: reduzir/eliminar o warning Vite de chunk JS acima de 500 kB aplicando lazy loading nas rotas frontend pesadas
+- escopo mantido em frontend (`App.tsx`) e documentacao; sem backend, migrations, endpoints, permissoes ou redesign
+- implementado `React.lazy` + `Suspense` em `App.tsx` para rotas pesadas: `/operations/map`, `/operations/dispatches`, `/work-orders`, `/work-orders/new`, `/work-orders/:workOrderId`, `/platform/cloud-billing`, `/platform/tenants`, `/platform/tenants/:tenantId`, `/platform/tenants/:tenantId/modules`
+- rotas eager preservadas (critical path): `/login`, `/select-context`, `/dashboard`, checklist ops, `/administrator/*`, `/notifications`, `/logistics`
+- fallback visual simples `PageLoader` adicionado inline em `App.tsx`
+- guards `PermissionGuard` e `PlatformGuard` preservados em todas as rotas
+- impacto no build: chunk principal de 512 kB -> 389 kB (-122 kB, -24%); warning Vite eliminado; 22 chunks async gerados
+- fora de escopo mantido: backend novo, migrations, Google Maps real, WebSocket/tempo real, Flutter/mobile, roteirizacao avancada, comissoes, pagamentos e fiscal
