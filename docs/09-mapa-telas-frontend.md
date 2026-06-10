@@ -330,13 +330,13 @@ Princípios adotados:
 - **Prioridade:** MVP.
 
 ### W20 — Painel Logístico e Mapa
-- **Objetivo:** acompanhamento inicial de operadores em campo com correlacao opcional de OS atribuida; despacho e tempo real permanecem evolucoes futuras.
+- **Objetivo:** acompanhamento inicial de operadores em campo com correlacao opcional de OS atribuida e despacho vinculado; despacho completo e tempo real permanecem evolucoes futuras.
 - **Usuários:** Gestor, Operador, Supervisor.
 - **Rota implementada:** `/operations/map`.
-- **Permissões:** `field_location:read` para ultimas posicoes; `field_location:history` para historico; `work_orders:read` para exibir e abrir OS vinculada.
-- **APIs consumidas:** `GET /api/v1/field-locations/latest`, `GET /api/v1/field-locations/history`, `GET /api/v1/work-orders`, `GET /api/v1/work-orders/:workOrderId` e `GET /api/v1/work-orders/:workOrderId/timeline`.
-- **UI:** cabecalho, KPIs, filtros, mapa placeholder com marcadores proporcionais por lat/lng, lista de operadores, detalhe, codigo/status da OS vinculada quando permitido e fallback/mock seguro.
-- **Status desta branch:** UI inicial implementada e integrada com OS atual/atribuida por RBAC; Google Maps real, roteirizacao avancada, WebSocket e despacho completo ficam fora do escopo.
+- **Permissões:** `field_location:read` para ultimas posicoes; `field_location:history` para historico; `work_orders:read` para exibir e abrir OS vinculada; `field_dispatch:read`, `field_dispatch:create`, `field_dispatch:update`, `field_dispatch:cancel` e `field_dispatch:reassign` para exibicao e acoes contextuais de despacho.
+- **APIs consumidas:** `GET /api/v1/field-locations/latest`, `GET /api/v1/field-locations/history`, `GET /api/v1/work-orders`, `GET /api/v1/work-orders/:workOrderId`, `GET /api/v1/work-orders/:workOrderId/timeline`, `GET /api/v1/operations/dispatches`, `PATCH /api/v1/operations/dispatches/:dispatchId/status` e `PATCH /api/v1/operations/dispatches/:dispatchId/reassign`.
+- **UI:** cabecalho, KPIs, filtros, mapa placeholder com marcadores proporcionais por lat/lng, lista de operadores, detalhe, codigo/status da OS vinculada quando permitido, despacho vinculado, alterar status, cancelar com motivo, reatribuir e fallback/mock seguro.
+- **Status desta branch:** UI inicial implementada e integrada com OS atual/atribuida e despacho vinculado por RBAC; Google Maps real, roteirizacao avancada, WebSocket, backend novo e despacho completo ficam fora do escopo.
 - **Prioridade:** MVP (básico) / Scale (assistido).
 
 ### W20A — Despachos Operacionais

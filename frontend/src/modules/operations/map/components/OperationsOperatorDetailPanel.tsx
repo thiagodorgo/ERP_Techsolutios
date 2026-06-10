@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { Button, Card, Chip } from "../../../../components/ui";
 import { DispatchStatusBadge } from "../../dispatches/components/DispatchStatusBadge";
+import type { DispatchesApiContext } from "../../dispatches/dispatches.types";
 import {
   formatAccuracy,
   formatBattery,
@@ -10,6 +11,7 @@ import {
   getFieldLocationStatusLabel,
 } from "../operations-map.adapter";
 import type { FieldLocationItem } from "../operations-map.types";
+import { OperationsDispatchActionsPanel } from "./OperationsDispatchActionsPanel";
 import { OperationsOperatorStatus } from "./OperationsMapStatusBadge";
 import { WorkOrderPriorityBadge } from "../../../work-orders/components/WorkOrderPriorityBadge";
 import { WorkOrderStatusBadge } from "../../../work-orders/components/WorkOrderStatusBadge";
@@ -19,11 +21,21 @@ export function OperationsOperatorDetailPanel({
   showWorkOrder = false,
   showDispatch = false,
   canCreateDispatch = false,
+  canUpdateDispatch = false,
+  canCancelDispatch = false,
+  canReassignDispatch = false,
+  dispatchContext,
+  onDispatchChanged,
 }: {
   location?: FieldLocationItem;
   showWorkOrder?: boolean;
   showDispatch?: boolean;
   canCreateDispatch?: boolean;
+  canUpdateDispatch?: boolean;
+  canCancelDispatch?: boolean;
+  canReassignDispatch?: boolean;
+  dispatchContext?: DispatchesApiContext;
+  onDispatchChanged?: () => Promise<void> | void;
 }) {
   if (!location) {
     return (
@@ -132,6 +144,16 @@ export function OperationsOperatorDetailPanel({
                 <Link className="ui-button ui-button--secondary ui-button--sm" to={`/operations/dispatches?${dispatchFollowParams.toString()}`}>
                   Acompanhar despacho
                 </Link>
+                {dispatchContext && onDispatchChanged ? (
+                  <OperationsDispatchActionsPanel
+                    dispatch={location.currentDispatch}
+                    context={dispatchContext}
+                    canUpdate={canUpdateDispatch}
+                    canCancel={canCancelDispatch}
+                    canReassign={canReassignDispatch}
+                    onChanged={onDispatchChanged}
+                  />
+                ) : null}
               </>
             ) : canCreateDispatch && location.currentWorkOrder ? (
               <Link className="ui-button ui-button--secondary ui-button--sm" to={`/operations/dispatches?${dispatchContextParams.toString()}`}>

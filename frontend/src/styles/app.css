@@ -1895,6 +1895,26 @@
   flex-wrap: wrap;
 }
 
+.operations-map-dispatch-actions {
+  display: grid;
+  gap: var(--space-10);
+  padding-top: var(--space-10);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.operations-map-dispatch-actions header,
+.operations-map-dispatch-actions__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.operations-map-dispatch-actions__toolbar {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
 .work-orders-page {
   gap: var(--space-16);
 }

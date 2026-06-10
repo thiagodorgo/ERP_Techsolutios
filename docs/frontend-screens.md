@@ -190,6 +190,7 @@ Status desta branch:
 - UI inicial implementada no frontend web;
 - integracao com Work Orders implementada sem endpoints novos: quando `work_orders:read` esta presente, marcador/lista/detalhe mostram OS atual ou atribuida e linkam para `/work-orders/:workOrderId`;
 - integracao com Despachos implementada sem endpoints novos: quando `field_dispatch:read` esta presente, marcador/lista/detalhe mostram o despacho vinculado e linkam para `/operations/dispatches`; quando `field_dispatch:create` tambem esta presente e existe OS atual, a acao de criacao abre `/operations/dispatches?workOrderId=...&operatorUserId=...`;
+- acoes diretas no detalhe do operador quando existe despacho vinculado: alterar status com `field_dispatch:update`, cancelar com `field_dispatch:cancel` e reatribuir com `field_dispatch:reassign`, usando os endpoints existentes e refresh do mapa apos sucesso;
 - Google Maps real, roteirizacao e tempo real permanecem fora do escopo.
 
 Funcionalidades:
@@ -200,7 +201,7 @@ Funcionalidades:
 - mapa placeholder com marcadores posicionados proporcionalmente por latitude/longitude;
 - lista e painel de detalhe do operador selecionado;
 - codigo/status da OS vinculada quando houver permissao `work_orders:read`;
-- status e acao contextual de despacho quando houver `field_dispatch:read`/`field_dispatch:create`;
+- status e acoes contextuais de despacho quando houver `field_dispatch:read` combinado com `field_dispatch:create`, `field_dispatch:update`, `field_dispatch:cancel` ou `field_dispatch:reassign`;
 - estados de loading, vazio, erro, mock e fallback seguro.
 
 Endpoints backend consumidos:
@@ -210,6 +211,8 @@ Endpoints backend consumidos:
 - `GET /api/v1/work-orders`: lista OS para correlacao opcional com operador atribuido.
 - `GET /api/v1/work-orders/:workOrderId`: destino do link de detalhe da OS.
 - `GET /api/v1/operations/dispatches`: lista despachos para correlacao opcional com operador/OS no mapa.
+- `PATCH /api/v1/operations/dispatches/:dispatchId/status`: altera status ou cancela despacho vinculado pelo detalhe do operador.
+- `PATCH /api/v1/operations/dispatches/:dispatchId/reassign`: reatribui despacho vinculado pelo detalhe do operador.
 
 Endpoint mobile disponivel:
 
@@ -223,6 +226,9 @@ RBAC:
 - OS vinculada exige `work_orders:read`; sem essa permissao, o mapa continua funcionando sem link ou detalhe de OS.
 - despacho vinculado exige `field_dispatch:read`; sem essa permissao, o mapa continua funcionando sem dados ou acoes de despacho.
 - criar despacho a partir do mapa exige `field_dispatch:create` e OS atual vinculada.
+- alterar status no mapa exige `field_dispatch:update`.
+- cancelar no mapa exige `field_dispatch:cancel` e motivo obrigatorio.
+- reatribuir no mapa exige `field_dispatch:reassign`.
 
 ## Despachos Operacionais
 

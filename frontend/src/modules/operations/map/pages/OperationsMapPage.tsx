@@ -2,7 +2,9 @@ import { AlertTriangle, Map, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Alert, Button, Chip, EmptyState, ErrorState, Skeleton } from "../../../../components/ui";
+import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
+import { useTenantContext } from "../../../../providers/TenantProvider";
 import {
   calculateOperationsMapSummary,
   filterFieldLocations,
@@ -26,12 +28,27 @@ const initialFilters: OperationsMapFilterState = {
 
 export function OperationsMapPage() {
   const { locations, source, fallbackReason, loading, error, refreshedAt, refresh } = useOperationsMap();
+  const { session } = useAuth();
+  const { activeContext } = useTenantContext();
   const { can } = usePermissions();
   const [filters, setFilters] = useState<OperationsMapFilterState>(initialFilters);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const canReadWorkOrders = can("work_orders:read");
   const canReadDispatches = can("field_dispatch:read");
   const canCreateDispatches = can("field_dispatch:create");
+  const canUpdateDispatches = can("field_dispatch:update");
+  const canCancelDispatches = can("field_dispatch:cancel");
+  const canReassignDispatches = can("field_dispatch:reassign");
+  const dispatchContext = useMemo(
+    () => ({
+      token: session?.accessToken,
+      tenantId: activeContext?.tenantId,
+      branchId: activeContext?.branchId,
+      role: activeContext?.role,
+      permissions: activeContext?.permissions,
+    }),
+    [activeContext, session?.accessToken],
+  );
   const teams = useMemo(() => listOperationTeams(locations), [locations]);
   const filteredLocations = useMemo(() => filterFieldLocations(locations, filters), [filters, locations]);
   const summary = useMemo(() => calculateOperationsMapSummary(locations), [locations]);
@@ -113,6 +130,11 @@ export function OperationsMapPage() {
               showWorkOrder={canReadWorkOrders}
               showDispatch={canReadDispatches}
               canCreateDispatch={canCreateDispatches}
+              canUpdateDispatch={canUpdateDispatches}
+              canCancelDispatch={canCancelDispatches}
+              canReassignDispatch={canReassignDispatches}
+              dispatchContext={dispatchContext}
+              onDispatchChanged={refresh}
             />
             <Alert title="Privacidade operacional" tone="info">
               Localização é dado sensível. O frontend não registra coordenadas em logs e o acesso real continua protegido por RBAC/RLS no backend.

@@ -215,6 +215,9 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
       "GET /api/v1/field-locations/history",
       "GET /api/v1/work-orders",
       "GET /api/v1/work-orders/:workOrderId",
+      "GET /api/v1/operations/dispatches",
+      "PATCH /api/v1/operations/dispatches/:dispatchId/status",
+      "PATCH /api/v1/operations/dispatches/:dispatchId/reassign",
     ],
   },
   {
