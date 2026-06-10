@@ -230,7 +230,7 @@ Fallback frontend de Work Orders:
 
 Objetivo: permitir que a tela `/operations/map` consulte a fundacao backend de localizacao de operadores em campo.
 
-Status desta branch: UI inicial implementada no frontend web e integrada de forma opcional com Work Orders; Google Maps real, despacho, roteirizacao, WebSocket e novos endpoints ficam fora do escopo.
+Status desta branch: UI inicial implementada no frontend web e integrada de forma opcional com Work Orders e Despachos Operacionais; Google Maps real, roteirizacao, WebSocket e novos endpoints ficam fora do escopo.
 
 Endpoints implementados:
 
@@ -241,6 +241,9 @@ GET  /field-locations/history
 GET  /work-orders
 GET  /work-orders/:workOrderId
 GET  /work-orders/:workOrderId/timeline
+GET  /operations/dispatches
+PATCH /operations/dispatches/:dispatchId/status
+PATCH /operations/dispatches/:dispatchId/reassign
 ```
 
 Permissoes:
@@ -251,6 +254,9 @@ Permissoes:
 - `GET /work-orders`: `work_orders:read`
 - `GET /work-orders/:workOrderId`: `work_orders:read`
 - `GET /work-orders/:workOrderId/timeline`: `work_orders:read`
+- `GET /operations/dispatches`: `field_dispatch:read`
+- `PATCH /operations/dispatches/:dispatchId/status`: `field_dispatch:update`; quando `status=cancelled`, exige `field_dispatch:cancel`
+- `PATCH /operations/dispatches/:dispatchId/reassign`: `field_dispatch:reassign`
 
 Regras:
 
@@ -262,6 +268,9 @@ Regras:
 - sem `work_orders:read`, `/operations/map` continua funcionando apenas com dados de localizacao, sem link/acao de OS;
 - se `field_dispatch:read` estiver presente, `/operations/map` tambem consome `GET /operations/dispatches` para exibir despacho vinculado e link para `/operations/dispatches`;
 - se `field_dispatch:create` estiver presente e houver OS atual, `/operations/map` exibe acao para abrir `/operations/dispatches?workOrderId=...&operatorUserId=...`;
+- se `field_dispatch:update` estiver presente e houver despacho vinculado, `/operations/map` permite alterar status diretamente no painel do operador;
+- se `field_dispatch:cancel` estiver presente e houver despacho vinculado, `/operations/map` permite cancelar com motivo obrigatorio usando o endpoint de status;
+- se `field_dispatch:reassign` estiver presente e houver despacho vinculado, `/operations/map` permite reatribuir operador pelo endpoint de reatribuicao;
 - sem `field_dispatch:read`, `/operations/map` continua funcionando sem dados ou acoes de despacho;
 - a tela usa fallback/mock seguro quando a API falha, retorna vazia ou `VITE_USE_MOCKS=true`;
 - localizacao com `capturedAt` acima de 15 minutos aparece como antiga.

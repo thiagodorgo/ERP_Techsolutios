@@ -1134,3 +1134,14 @@
 - testes atualizados: `frontend/tests/dispatches.adapter.test.ts` e `tests/e2e/critical-flows.spec.ts`
 - documentacao atualizada em `docs/field-operator-location-map.md`, `docs/frontend-screens.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/work-orders.md`, `docs/rbac.md`, `agent-orchestration/docs/status-geral.md` e este log
 - fora de escopo mantido: backend novo, migrations, Google Maps real, WebSocket/tempo real, Flutter/mobile, roteirizacao avancada, despacho completo, comissoes, pagamentos e fiscal
+
+## 2026-06-10 - operations map dispatch actions
+
+- branch usada: `feature/operations-map-dispatch-actions`
+- comandos iniciais executados: `git fetch origin`, `git checkout main`, `git pull --ff-only origin main`, `git checkout -b feature/operations-map-dispatch-actions`, `git branch --show-current`, `git status --short`, leitura de mapa/despachos/navigation/docs/testes
+- implementado painel `OperationsDispatchActionsPanel` em `/operations/map`, exibido apenas quando ha despacho vinculado e permissao de acao correspondente
+- acoes reutilizam `updateDispatchStatus` e `reassignDispatch`; cancelamento usa `PATCH /api/v1/operations/dispatches/:dispatchId/status` com `status=cancelled` e motivo obrigatorio
+- erros de API permanecem no painel de acoes, sem mutar estado local do despacho e sem acionar loading global do mapa
+- `operations.map` no registry passou a declarar os endpoints condicionais de despacho ja existentes
+- documentacao atualizada em `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/api-screen-endpoints.md`, `docs/field-operator-location-map.md`, `docs/modules.md` e `docs/rbac.md`
+- fora de escopo mantido: backend novo, migrations, endpoints novos, Google Maps real, WebSocket/tempo real, Flutter/mobile, roteirizacao, despacho completo, pagamentos e fiscal

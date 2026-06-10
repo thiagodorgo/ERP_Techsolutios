@@ -1318,6 +1318,15 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - branch usada: `feature/operations-map-dispatch-integration`
 - objetivo: integrar o Mapa Operacional com Despachos Operacionais sem backend novo, migrations ou endpoints adicionais
 - `/operations/map` continua protegido por `field_location:read` e funcionando sem `field_dispatch:read`
+
+## Atualizacao 2026-06-10 - operations map dispatch actions
+
+- branch usada: `feature/operations-map-dispatch-actions`
+- objetivo: habilitar acoes diretas de despacho no detalhe do operador em `/operations/map`, reutilizando a fundacao `field_dispatch` existente
+- escopo mantido em frontend, documentacao e testes; sem backend novo, migrations, endpoints novos, Google Maps, WebSocket, Flutter, roteirizacao ou despacho completo
+- acoes entregues: alterar status com `field_dispatch:update`, cancelar com `field_dispatch:cancel` e motivo obrigatorio, reatribuir com `field_dispatch:reassign`
+- endpoints consumidos pela tela: `GET /api/v1/operations/dispatches`, `PATCH /api/v1/operations/dispatches/:dispatchId/status` e `PATCH /api/v1/operations/dispatches/:dispatchId/reassign`
+- registro de navegacao `operations.map` atualizado para documentar endpoints de despacho consumidos condicionalmente
 - quando `field_dispatch:read` esta presente, o mapa consome `GET /api/v1/operations/dispatches` e mostra despacho vinculado no marcador/lista/painel de detalhe
 - quando `field_dispatch:create` tambem esta presente e existe OS atual, o painel abre `/operations/dispatches?workOrderId=...&operatorUserId=...` para criacao contextual
 - `/operations/dispatches` passa a aceitar contexto por query string (`workOrderId`, `operatorUserId` e `dispatchId`) para filtro, acompanhamento e pre-preenchimento de criacao
