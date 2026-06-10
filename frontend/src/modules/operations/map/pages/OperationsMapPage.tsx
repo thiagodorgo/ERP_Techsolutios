@@ -1,4 +1,4 @@
-import { AlertTriangle, Map, RefreshCw } from "lucide-react";
+import { AlertTriangle, Map, Pause, Play, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Alert, Button, Chip, EmptyState, ErrorState, Skeleton } from "../../../../components/ui";
@@ -27,7 +27,7 @@ const initialFilters: OperationsMapFilterState = {
 };
 
 export function OperationsMapPage() {
-  const { locations, source, fallbackReason, loading, error, refreshedAt, refresh } = useOperationsMap();
+  const { locations, source, fallbackReason, loading, isRefreshing, error, refreshedAt, refresh, autoRefresh, setAutoRefresh } = useOperationsMap();
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
@@ -78,7 +78,16 @@ export function OperationsMapPage() {
           {canReadWorkOrders ? <Chip tone="info">OS vinculadas</Chip> : null}
           {canReadDispatches ? <Chip tone="info">Despachos vinculados</Chip> : null}
           {refreshedAt ? <Chip tone="default">Atualizado {formatFieldLocationDate(refreshedAt)}</Chip> : null}
-          <Button type="button" variant="secondary" onClick={() => void refresh()} disabled={loading}>
+          {isRefreshing ? <Chip tone="info">Atualizando...</Chip> : null}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setAutoRefresh((prev) => !prev)}
+            title={autoRefresh ? "Pausar atualização automática" : "Retomar atualização automática"}
+          >
+            {autoRefresh ? <><Pause size={16} /> Pausar auto</> : <><Play size={16} /> Auto atualizar</>}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => void refresh()} disabled={loading || isRefreshing}>
             <RefreshCw size={16} /> Atualizar
           </Button>
         </div>

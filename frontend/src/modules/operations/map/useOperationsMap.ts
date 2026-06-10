@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { isMockMode } from "../../../config/env";
 import { useAuth } from "../../../providers/AuthProvider";
@@ -7,8 +7,11 @@ import { getMockOperationsMapData } from "./operations-map.mock";
 import { getLatestFieldLocations } from "./operations-map.service";
 import type { OperationsMapData } from "./operations-map.types";
 
+const POLL_INTERVAL_MS = 30_000;
+
 type OperationsMapHookState = OperationsMapData & {
   readonly loading: boolean;
+  readonly isRefreshing: boolean;
   readonly error?: string;
   readonly refreshedAt?: string;
 };
@@ -23,8 +26,11 @@ export function useOperationsMap() {
   const [state, setState] = useState<OperationsMapHookState>({
     ...initialData,
     loading: !isMockMode(),
+    isRefreshing: false,
     refreshedAt: isMockMode() ? new Date().toISOString() : undefined,
   });
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const refreshingRef = useRef(false);
 
   const context = useMemo(
     () => ({
@@ -37,30 +43,48 @@ export function useOperationsMap() {
     [activeContext, session?.accessToken],
   );
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (background = false) => {
     if (!activeContext) return;
+    if (background && refreshingRef.current) return;
 
-    setState((current) => ({
-      ...current,
-      loading: true,
-      error: undefined,
-    }));
+    refreshingRef.current = true;
+    setState((current) => {
+      const hasExistingData = current.locations.length > 0;
+      return {
+        ...current,
+        loading: !background && !hasExistingData,
+        isRefreshing: background || hasExistingData,
+        error: undefined,
+      };
+    });
 
     const data = await getLatestFieldLocations(context);
     setState({
       ...data,
       loading: false,
+      isRefreshing: false,
       error: data.source === "fallback" ? data.fallbackReason : undefined,
       refreshedAt: new Date().toISOString(),
     });
+    refreshingRef.current = false;
   }, [activeContext, context]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const id = setInterval(() => {
+      void refresh(true);
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [autoRefresh, refresh]);
+
   return {
     ...state,
     refresh,
+    autoRefresh,
+    setAutoRefresh,
   };
 }

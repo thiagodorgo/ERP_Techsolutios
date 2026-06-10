@@ -1404,3 +1404,16 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - route splitting da PR #61 (React.lazy + Suspense) preservado integralmente
 - 11/11 testes E2E passaram em 23.3s com Docker/PostgreSQL ativos
 - fora de escopo mantido: backend, migrations, endpoints novos, Google Maps real, WebSocket, Flutter/mobile, roteirizacao, comissoes, pagamentos e fiscal
+
+## Atualizacao 2026-06-10 - live refresh polling no Mapa Operacional
+
+- branch usada: `feature/operations-map-live-refresh-polling`
+- objetivo: polling frontend seguro de 30 s para atualizar localizacoes, OS e despachos sem reload manual
+- escopo frontend apenas; sem backend, migrations, endpoints novos, WebSocket, roteirizacao ou mobile
+- `useOperationsMap.ts`: adicionados `autoRefresh` (state), `setAutoRefresh`, `isRefreshing`, `refreshingRef`, `POLL_INTERVAL_MS = 30_000`; polling ativo por padrao; cleanup no unmount; guard contra chamadas concorrentes em background
+- `OperationsMapPage.tsx`: botao "Pausar auto" / "Auto atualizar" (Pause/Play icons), chip discreto "Atualizando...", botao "Atualizar" desabilitado durante loading e isRefreshing
+- selecao do operador preservada quando o operador ainda existe nos dados atualizados
+- fallback placeholder e Google Maps real preservados
+- 26/26 smoke passaram; 11/11 E2E passaram com Chromium real e PostgreSQL real
+- build: sem warnings Vite; OperationsMapPage chunk ligeiramente maior por novos icones (Pause, Play); vendor-react e vendor-icons intactos
+- fora de escopo mantido: backend, migrations, WebSocket, roteirizacao avancada, Flutter/mobile, comissoes, pagamentos e fiscal
