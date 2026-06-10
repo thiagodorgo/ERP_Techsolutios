@@ -61,6 +61,8 @@ const permissionDescriptions = {
   "field_dispatch:read": "Consultar despachos operacionais.",
   "field_dispatch:create": "Criar despachos operacionais.",
   "field_dispatch:update": "Atualizar despachos operacionais.",
+  "field_dispatch:cancel": "Cancelar despachos operacionais com motivo.",
+  "field_dispatch:reassign": "Reatribuir despachos operacionais para outro operador.",
   "logistics:read": "Consultar visao logistica do tenant.",
   "logistics_routes:read": "Consultar rotas logisticas.",
   "billing:read": "Consultar cobrancas do tenant.",

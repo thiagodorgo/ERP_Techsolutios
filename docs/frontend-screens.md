@@ -219,6 +219,43 @@ RBAC:
 - envio mobile exige `field_location:send`.
 - OS vinculada exige `work_orders:read`; sem essa permissao, o mapa continua funcionando sem link ou detalhe de OS.
 
+## Despachos Operacionais
+
+Tela prevista:
+
+- `Despachos`, rota `/operations/dispatches`.
+
+Status desta branch:
+
+- backend foundation implementado e item `operations.dispatches` marcado como `backend-ready` no menu backend;
+- UI completa de despacho ainda nao implementada;
+- Google Maps real, roteirizacao, otimizacao, tempo real/WebSocket e Flutter permanecem fora do escopo.
+
+Funcionalidades backend disponiveis:
+
+- listar despachos do tenant;
+- criar despacho vinculado a `workOrderId` e `operatorUserId` do mesmo tenant;
+- consultar detalhe com timeline;
+- atualizar status;
+- cancelar com motivo obrigatorio;
+- reatribuir operador.
+
+Endpoints:
+
+- `GET /api/v1/operations/dispatches`;
+- `POST /api/v1/operations/dispatches`;
+- `GET /api/v1/operations/dispatches/:dispatchId`;
+- `PATCH /api/v1/operations/dispatches/:dispatchId/status`;
+- `PATCH /api/v1/operations/dispatches/:dispatchId/reassign`.
+
+RBAC frontend futuro:
+
+- `/operations/dispatches`: `field_dispatch:read`;
+- criar: `field_dispatch:create`;
+- mudar status: `field_dispatch:update`;
+- cancelar: `field_dispatch:cancel`;
+- reatribuir: `field_dispatch:reassign`.
+
 ## Ordens de Servico
 
 Telas implementadas:
@@ -251,7 +288,7 @@ Vinculos futuros previstos:
 - checklist operacional por `checklistId`;
 - Mapa Operacional por endereco/coordenadas e operador atribuido, ja com correlacao visual basica;
 - evidencias/anexos especificos de OS;
-- despacho, roteirizacao e comissoes em etapas futuras.
+- UI completa de despacho, roteirizacao e comissoes em etapas futuras.
 
 ## Notificacoes
 

@@ -184,7 +184,41 @@ Relações com o Mapa Operacional:
 - `/operations/map` pode correlacionar a OS atual/atribuida ao operador usando `GET /work-orders` quando o usuario tambem possui `work_orders:read`;
 - assignments preparam despacho e comissoes futuras, sem calculo financeiro nesta branch.
 
-Fallback frontend:
+### Despachos Operacionais
+
+Objetivo: criar a fundacao backend para despachar uma OS para um operador de campo e manter status/timeline/auditoria inicial.
+
+Status desta branch: backend foundation implementado; tela completa `/operations/dispatches`, Google Maps real, roteirizacao, algoritmo de otimizacao, WebSocket e app Flutter ficam fora do escopo.
+
+Endpoints implementados:
+
+```http
+GET   /operations/dispatches
+POST  /operations/dispatches
+GET   /operations/dispatches/:dispatchId
+PATCH /operations/dispatches/:dispatchId/status
+PATCH /operations/dispatches/:dispatchId/reassign
+```
+
+Permissoes:
+
+- `GET /operations/dispatches`: `field_dispatch:read`
+- `POST /operations/dispatches`: `field_dispatch:create`
+- `GET /operations/dispatches/:dispatchId`: `field_dispatch:read`
+- `PATCH /operations/dispatches/:dispatchId/status`: `field_dispatch:update`; cancelamento exige `field_dispatch:cancel`
+- `PATCH /operations/dispatches/:dispatchId/reassign`: `field_dispatch:reassign`
+
+Regras:
+
+- `tenant_id` vem do contexto autenticado;
+- `workOrderId` deve apontar para OS do mesmo tenant;
+- `operatorUserId` deve apontar para usuario/operador do mesmo tenant;
+- status suportados: `draft`, `assigned`, `accepted`, `on_route`, `arrived`, `in_service`, `completed`, `cancelled`, `reassigned` e `failed`;
+- cancelamento exige `reason`;
+- detalhe retorna `timeline` com eventos `field_dispatch_created`, `field_dispatch_status_changed`, `field_dispatch_reassigned` e `field_dispatch_cancelled`;
+- endpoints preparam a futura UI de despacho e a futura integracao com `/operations/map`, sem implementar roteirizacao.
+
+Fallback frontend de Work Orders:
 
 - `VITE_USE_MOCKS=true`, API vazia, falha de API ou erro de autorizacao local usam dados demonstrativos seguros;
 - o fallback deve ficar visivel como `Dados demonstrativos` ou `Fallback local`;

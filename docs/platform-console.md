@@ -18,7 +18,7 @@ Implementacao frontend atual: `PlatformLayout` consome `GET /api/v1/navigation/m
 - Administrador: administra configuracoes, usuarios e permissoes da propria empresa cliente.
 - Usuarios: lista, convida, edita e gerencia usuarios e permissoes dentro do tenant atual.
 - tenant_checklist: configuracao feita pelo Administrador dentro do tenant; o Console da Plataforma apenas habilita/bloqueia o modulo para o tenant e mantem o catalogo global de componentes governado pela plataforma.
-- field_operations: modulo habilitavel por tenant para Mapa Operacional, operadores em campo e despachos futuros. A fundacao backend `field_operator_location` entrega persistencia e API; a rota `/operations/map` entrega UI inicial sem Google Maps real, despacho ou roteirizacao.
+- field_operations: modulo habilitavel por tenant para Mapa Operacional, operadores em campo e despachos. As fundacoes backend `field_operator_location` e `field_dispatch` entregam persistencia/API; a rota `/operations/map` entrega UI inicial sem Google Maps real, UI completa de despacho ou roteirizacao.
 - W02A pertence ao escopo Administrador/tenant, nao ao Console da Plataforma.
 
 ## Telas MVP

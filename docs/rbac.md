@@ -109,6 +109,8 @@ Permissoes de tenant:
 - `field_dispatch:read`
 - `field_dispatch:create`
 - `field_dispatch:update`
+- `field_dispatch:cancel`
+- `field_dispatch:reassign`
 - `logistics:read`
 - `logistics_routes:read`
 
@@ -245,6 +247,42 @@ Matriz backend aplicada:
 
 Mesmo tenant admin nao consulta inbox de todos nesta fase. O service sempre filtra por `tenant_id` e `recipient_user_id` do ator autenticado.
 
+## field_dispatch
+
+Permissoes tenant-scoped:
+
+- `field_dispatch:read`: listar e detalhar despachos operacionais do tenant.
+- `field_dispatch:create`: criar despacho vinculado a uma OS e operador do mesmo tenant.
+- `field_dispatch:update`: alterar status operacional nao terminal.
+- `field_dispatch:cancel`: cancelar despacho com motivo obrigatorio.
+- `field_dispatch:reassign`: reatribuir despacho para outro operador do mesmo tenant.
+
+Matriz backend aplicada:
+
+- `GET /api/v1/operations/dispatches`: `field_dispatch:read`
+- `POST /api/v1/operations/dispatches`: `field_dispatch:create`
+- `GET /api/v1/operations/dispatches/:dispatchId`: `field_dispatch:read`
+- `PATCH /api/v1/operations/dispatches/:dispatchId/status`: `field_dispatch:update`; quando `status=cancelled`, exige `field_dispatch:cancel`
+- `PATCH /api/v1/operations/dispatches/:dispatchId/reassign`: `field_dispatch:reassign`
+
+Regras:
+
+- `tenant_id` sempre vem do contexto autenticado;
+- `work_order_id` e `operator_user_id` devem pertencer ao mesmo tenant do actor;
+- status suportados: `draft`, `assigned`, `accepted`, `on_route`, `arrived`, `in_service`, `completed`, `cancelled`, `reassigned` e `failed`;
+- cancelamento exige `reason`;
+- eventos persistidos: `field_dispatch_created`, `field_dispatch_status_changed`, `field_dispatch_reassigned` e `field_dispatch_cancelled`;
+- auditoria best-effort registra `field_dispatch.created`, `field_dispatch.status_changed`, `field_dispatch.reassigned` e `field_dispatch.cancelled`;
+- RLS protege `field_dispatches` e `field_dispatch_events` por `app.current_tenant_id`;
+- UI completa de despacho, roteirizacao, Google Maps real, WebSocket e Flutter permanecem fora desta branch.
+
+Roles padrao:
+
+- `tenant_admin`: recebe as permissoes tenant-scoped do catalogo.
+- `manager`: recebe leitura, criacao, atualizacao, cancelamento e reatribuicao.
+- `operator`, `technician` e `field_technician`: recebem leitura e atualizacao operacional.
+- `viewer` e `auditor`: recebem leitura.
+
 ## field_operator_location
 
 Permissoes tenant-scoped:
@@ -254,7 +292,7 @@ Permissoes tenant-scoped:
 - `field_location:history`: consultar historico de localizacao de um operador do tenant.
 - `field_operator:read`: visualizar operadores em campo em telas futuras.
 - `field_operator:action`: reservado para acoes futuras de operador.
-- `field_dispatch:*`: reservado para despacho futuro.
+- `field_dispatch:*`: usado pela fundacao backend de despacho operacional.
 
 Matriz backend aplicada:
 

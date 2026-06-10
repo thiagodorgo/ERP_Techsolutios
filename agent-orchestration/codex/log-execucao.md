@@ -1080,3 +1080,26 @@
 - testes smoke/E2E atualizados para cobrir enriquecimento e link de OS no mapa
 - documentacao atualizada em `docs/field-operator-location-map.md`, `docs/work-orders.md`, `docs/frontend-screens.md`, `docs/api-screen-endpoints.md`, `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/09-mapa-telas-frontend.md`, `docs/modules.md`, `docs/api.md`, `docs/02-mapa-modulos.md`, `agent-orchestration/docs/status-geral.md` e este log
 - fora de escopo mantido: backend novo, migrations, Google Maps real, WebSocket, roteirizacao, despacho avancado, Flutter/mobile, comissoes e estoque
+
+## 2026-06-10 - field dispatch routing foundation
+
+- branch usada: `feature/field-dispatch-routing-foundation`
+- comandos iniciais executados: `pwd`, `git status --short`, `git branch --show-current`, `git fetch origin`, `git rev-parse --abbrev-ref origin/HEAD`, `git log --oneline -8`, `gh pr list --state open --limit 10`, `gh pr view 55`, `gh pr view 54`, `gh pr view 53`, `rg` de dispatch/OS/localizacao/mapa e listagem de modulos
+- diagnostico inicial: branch local estava em `feature/operations-map-work-orders-integration`, worktree limpo, `origin/HEAD=origin/main`, PRs #53/#54/#55 merged e sem PRs abertas; em PowerShell, `find ... -maxdepth` foi substituido por `Get-ChildItem -Recurse -File | Sort-Object FullName`
+- base atualizada: `git checkout main`, `git pull --ff-only origin main` e criada `feature/field-dispatch-routing-foundation`
+- arquivos de Mapa Operacional, Work Orders, Field Location, navigation registry, RBAC e docs obrigatorios foram lidos antes da implementacao
+- migration criada: `prisma/migrations/20260617000000_add_field_dispatches/migration.sql`
+- schema Prisma atualizado com `FieldDispatch` e `FieldDispatchEvent`
+- modulo criado: `src/modules/field-dispatch`
+- rotas registradas em `src/app.ts`
+- endpoints implementados: `GET /api/v1/operations/dispatches`, `POST /api/v1/operations/dispatches`, `GET /api/v1/operations/dispatches/:dispatchId`, `PATCH /api/v1/operations/dispatches/:dispatchId/status` e `PATCH /api/v1/operations/dispatches/:dispatchId/reassign`
+- validators implementados para UUIDs, status, transicoes, cancelamento com motivo, limit/offset e busca
+- RBAC atualizado com `field_dispatch:read`, `field_dispatch:create`, `field_dispatch:update`, `field_dispatch:cancel` e `field_dispatch:reassign`
+- service valida OS e operador no mesmo tenant antes de criar ou reatribuir despacho
+- eventos/timeline implementados: `field_dispatch_created`, `field_dispatch_status_changed`, `field_dispatch_reassigned` e `field_dispatch_cancelled`
+- auditoria best-effort adicionada para criacao, mudanca de status, reatribuicao e cancelamento
+- navigation registry atualizado para `operations.dispatches` como `backend-ready`
+- testes criados/atualizados: `tests/field-dispatch.test.ts`, `tests/field-dispatch-routes.test.ts` e `tests/rls-tenant-isolation.test.ts`
+- documentacao atualizada em `docs/modules.md`, `docs/rbac.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/field-operator-location-map.md`, `docs/work-orders.md`, `docs/database.md`, `docs/02-mapa-modulos.md`, `docs/05-requisitos-funcionais.md`, `RBAC_MATRIX.md`, `agent-orchestration/docs/status-geral.md` e este log
+- fora de escopo mantido: UI completa de despacho, Google Maps real, roteirizacao/otimizacao, WebSocket/tempo real, Flutter/mobile, comissoes, pagamentos e despacho completo
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `node --test --import tsx tests/field-dispatch.test.ts`, `node --test --import tsx tests/field-dispatch-routes.test.ts`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `npm run test:e2e` e `git diff --check`

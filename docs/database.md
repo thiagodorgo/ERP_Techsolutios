@@ -550,6 +550,54 @@ Regras:
 - `metadata` e sanitizada antes de persistir e nao retorna no DTO publico;
 - RLS fica habilitado com `FORCE ROW LEVEL SECURITY` e policy baseada em `app.current_tenant_id`.
 
+## Field dispatch
+
+Status: implementado na migration `20260617000000_add_field_dispatches`.
+
+### `field_dispatches`
+
+Representa o despacho operacional tenant-scoped de uma OS para um operador de campo.
+
+Campos principais:
+
+- `id`
+- `tenant_id`
+- `work_order_id`
+- `operator_user_id`
+- `status`
+- `observation`
+- `reason`
+- timestamps operacionais (`accepted_at`, `on_route_at`, `arrived_at`, `in_service_at`, `completed_at`, `cancelled_at`, `failed_at`)
+- `created_by`
+- `updated_by`
+- `metadata`
+
+Regras:
+
+- `tenant_id` e obrigatorio e vem do contexto autenticado;
+- `work_order_id` referencia `work_orders` por chave composta `tenant_id + id`;
+- `operator_user_id`, `created_by` e `updated_by` referenciam `users` por chave composta `tenant_id + id`;
+- status permitido: `draft`, `assigned`, `accepted`, `on_route`, `arrived`, `in_service`, `completed`, `cancelled`, `reassigned` e `failed`;
+- RLS fica habilitado com `FORCE ROW LEVEL SECURITY` e policy baseada em `app.current_tenant_id`.
+
+### `field_dispatch_events`
+
+Timeline tenant-scoped dos eventos de despacho.
+
+Eventos permitidos:
+
+- `field_dispatch_created`
+- `field_dispatch_status_changed`
+- `field_dispatch_reassigned`
+- `field_dispatch_cancelled`
+
+Regras:
+
+- `dispatch_id` e `work_order_id` referenciam recursos do mesmo tenant;
+- `actor_user_id` referencia usuario do mesmo tenant;
+- `metadata` deve evitar dados sensiveis desnecessarios;
+- RLS fica habilitado com `FORCE ROW LEVEL SECURITY` e policy baseada em `app.current_tenant_id`.
+
 ## Cloud usage metering
 
 Status: implementado na migration `20260611000000_add_cloud_usage_metering`.
@@ -881,6 +929,8 @@ RLS foi habilitado nas tabelas tenant-scoped principais:
 - `tenant_cloud_cost_allocations`
 - `tenant_cloud_charges`
 - `field_operator_locations`
+- `field_dispatches`
+- `field_dispatch_events`
 
 Tabelas globais que nao recebem RLS nesta rodada:
 

@@ -4,13 +4,13 @@
 
 Esta branch integra a UI inicial do Mapa Operacional em `/operations/map` com `work_orders` sobre a fundacao backend de localizacao de operadores em campo. O app mobile futuro podera enviar coordenadas ao backend; o frontend web consulta ultimas posicoes e, quando o usuario possui `work_orders:read`, correlaciona operadores com OS atribuidas.
 
-Fora de escopo mantido: Google Maps real no frontend, app Flutter, roteirizacao avancada, despacho completo, WebSocket/tempo real, novos endpoints, migrations e backend novo.
+Fora de escopo mantido para o mapa: Google Maps real no frontend, app Flutter, roteirizacao avancada, despacho completo e WebSocket/tempo real. A fundacao backend de despacho agora existe em `field_dispatch`, mas `/operations/map` ainda nao executa despacho pela UI.
 
 Itens registrados:
 
 - `operations.map` -> `/operations/map`, permissao `field_location:read`, modulo `field_operations`, UI inicial implementada com OS vinculada quando `work_orders:read` esta disponivel.
 - `operations.fieldOperators` -> `/operations/field-operators`, permissao `field_operator:read`, modulo `field_operations`.
-- `operations.dispatches` -> `/operations/dispatches`, permissao `field_dispatch:read`, modulo `field_operations`.
+- `operations.dispatches` -> `/operations/dispatches`, permissao `field_dispatch:read`, modulo `field_operations`, status `backend-ready`.
 - `logistics.map` -> `/logistics/map`, permissao `field_location:read`, modulos `logistics` ou `field_operations`.
 
 ## UI web
@@ -83,6 +83,16 @@ GET /api/v1/work-orders/:workOrderId
 GET /api/v1/work-orders/:workOrderId/timeline
 ```
 
+Endpoints de despacho disponiveis para futura UI:
+
+```http
+GET   /api/v1/operations/dispatches
+POST  /api/v1/operations/dispatches
+GET   /api/v1/operations/dispatches/:dispatchId
+PATCH /api/v1/operations/dispatches/:dispatchId/status
+PATCH /api/v1/operations/dispatches/:dispatchId/reassign
+```
+
 Permissoes:
 
 - `field_location:read`
@@ -93,6 +103,8 @@ Permissoes:
 - `field_dispatch:read`
 - `field_dispatch:create`
 - `field_dispatch:update`
+- `field_dispatch:cancel`
+- `field_dispatch:reassign`
 - `work_orders:read` para mostrar OS atual/atribuida e abrir o detalhe da OS.
 
 Matriz aplicada:
@@ -100,6 +112,11 @@ Matriz aplicada:
 - `POST /api/v1/mobile/field-locations`: `field_location:send`
 - `GET /api/v1/field-locations/latest`: `field_location:read`
 - `GET /api/v1/field-locations/history`: `field_location:history`
+- `GET /api/v1/operations/dispatches`: `field_dispatch:read`
+- `POST /api/v1/operations/dispatches`: `field_dispatch:create`
+- `GET /api/v1/operations/dispatches/:dispatchId`: `field_dispatch:read`
+- `PATCH /api/v1/operations/dispatches/:dispatchId/status`: `field_dispatch:update` ou `field_dispatch:cancel` para cancelamento
+- `PATCH /api/v1/operations/dispatches/:dispatchId/reassign`: `field_dispatch:reassign`
 
 ## Auditoria
 
@@ -112,5 +129,6 @@ Matriz aplicada:
 - filtro do mapa por OS especifica quando a rota receber contexto de origem;
 - definir retencao e auditoria de coordenadas;
 - avaliar provider de mapas e integracao Google Maps real com `VITE_GOOGLE_MAPS_API_KEY`;
-- modelar despachos, rotas e eventos de campo;
+- implementar UI completa de despacho em `/operations/dispatches` e acao contextual a partir do mapa;
+- evoluir rotas e eventos de campo para roteirizacao assistida;
 - garantir opt-in, privacidade e controles por tenant antes de qualquer coleta real.

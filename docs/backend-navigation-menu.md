@@ -86,7 +86,7 @@ Operacao:
 - `operations.workOrders` -> `/work-orders`, `Wrench`, `work_orders:read`, status `implemented`
 - `operations.map` -> `/operations/map`, `Map`, `field_location:read`, status `implemented`
 - `operations.fieldOperators` -> `/operations/field-operators`, `MapPin`, `field_operator:read`
-- `operations.dispatches` -> `/operations/dispatches`, `Route`, `field_dispatch:read`
+- `operations.dispatches` -> `/operations/dispatches`, `Route`, `field_dispatch:read`, status `backend-ready`
 
 Logistica:
 
@@ -124,7 +124,8 @@ Platform items nao dependem de modulo de tenant.
 - `/operations/map` agora possui UI inicial no frontend web, protegida por `field_location:read` e dependente do modulo `field_operations`.
 - A UI consome `GET /api/v1/field-locations/latest` e `GET /api/v1/field-locations/history`, com mapa placeholder, KPIs, filtros, lista, detalhe e fallback/mock seguro.
 - Quando `work_orders:read` esta presente, a UI tambem usa `GET /api/v1/work-orders` para mostrar OS atual/atribuida e linkar para `/work-orders/:workOrderId`; sem essa permissao, o mapa segue sem link ou detalhe de OS.
-- Google Maps real, WebSocket/tempo real e despacho permanecem fora desta rodada.
+- `operations.dispatches` possui backend foundation em `/api/v1/operations/dispatches` com criacao, listagem, detalhe, status e reatribuicao; a tela frontend completa permanece futura.
+- Google Maps real, WebSocket/tempo real, UI completa de despacho e roteirizacao permanecem fora desta rodada.
 - Work Orders UI implementada em `/work-orders`, `/work-orders/new` e `/work-orders/:workOrderId`, consumindo endpoints reais e fallback/mock seguro.
 - Backend de logistica.
 - Billing, fatura, pagamento ou fiscal tenant-scoped.
