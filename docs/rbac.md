@@ -276,6 +276,7 @@ Regras:
 - RLS protege `field_dispatches` e `field_dispatch_events` por `app.current_tenant_id`;
 - UI web inicial `/operations/dispatches` aplica `field_dispatch:read`, `field_dispatch:create`, `field_dispatch:update`, `field_dispatch:cancel` e `field_dispatch:reassign` por rota/acao;
 - UI web `/operations/map` exibe dados de despacho apenas com `field_dispatch:read` e habilita acoes diretas no detalhe do operador conforme `field_dispatch:update`, `field_dispatch:cancel` e `field_dispatch:reassign`;
+- permissoes parciais no mapa habilitam somente o botao correspondente; perfil apenas com `field_dispatch:read` ve mensagem de acompanhamento sem acao mutavel;
 - roteirizacao, Google Maps real, WebSocket e Flutter permanecem fora desta branch.
 
 Roles padrao:

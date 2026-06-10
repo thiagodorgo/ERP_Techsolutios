@@ -1327,6 +1327,13 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - acoes entregues: alterar status com `field_dispatch:update`, cancelar com `field_dispatch:cancel` e motivo obrigatorio, reatribuir com `field_dispatch:reassign`
 - endpoints consumidos pela tela: `GET /api/v1/operations/dispatches`, `PATCH /api/v1/operations/dispatches/:dispatchId/status` e `PATCH /api/v1/operations/dispatches/:dispatchId/reassign`
 - registro de navegacao `operations.map` atualizado para documentar endpoints de despacho consumidos condicionalmente
+
+## Atualizacao 2026-06-10 - field dispatch action audit hardening
+
+- branch usada: `feature/field-dispatch-action-audit-hardening`
+- objetivo: endurecer UX, RBAC visual e testes das acoes diretas de despacho em `/operations/map`
+- escopo mantido em frontend, documentacao e testes; sem backend, migrations, endpoints novos, Google Maps, WebSocket, Flutter, roteirizacao, pagamentos ou fiscal
+- hardening entregue: feedback local de sucesso/erro, loading restrito ao formulario ativo, protecao contra clique duplo, mensagem para perfil sem acao mutavel, bloqueio visual de despacho terminal e testes para permissoes parciais/erro de API
 - quando `field_dispatch:read` esta presente, o mapa consome `GET /api/v1/operations/dispatches` e mostra despacho vinculado no marcador/lista/painel de detalhe
 - quando `field_dispatch:create` tambem esta presente e existe OS atual, o painel abre `/operations/dispatches?workOrderId=...&operatorUserId=...` para criacao contextual
 - `/operations/dispatches` passa a aceitar contexto por query string (`workOrderId`, `operatorUserId` e `dispatchId`) para filtro, acompanhamento e pre-preenchimento de criacao
