@@ -6,6 +6,7 @@ export const JOB_NAMES = [
   "cloud-usage.aggregate-daily",
   "notification-dispatch",
   "audit-log-fanout",
+  "field-ops-event-fanout",
 ] as const;
 
 export type JobName = (typeof JOB_NAMES)[number];

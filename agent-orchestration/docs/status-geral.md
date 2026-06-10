@@ -1433,3 +1433,17 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - npm run check, lint e build: todos limpos
 - polling frontend de 30s preservado intocado
 - fora de escopo: WebSocket/SSE publico, job workers para estes eventos, endpoint de streaming, frontend, mobile, roteirizacao, comissoes e fiscal
+
+## Atualizacao 2026-06-10 - field ops event fanout job
+
+- branch usada: `feature/field-ops-event-fanout-job`
+- objetivo: mapear os 6 eventos de field ops ao job `field-ops-event-fanout` para fanout assincrono tenant-scoped, preservando fail-open e sem criar endpoint SSE/WebSocket
+- `src/infra/jobs/job.types.ts`: adicionado `field-ops-event-fanout` ao catalogo `JOB_NAMES`
+- `src/infra/events/domain-event.publisher.ts`: mapeados 6 eventos no `eventJobMap`: `field_location.updated`, `field_dispatch.created`, `field_dispatch.status_changed`, `field_dispatch.cancelled`, `field_dispatch.reassigned`, `work_order.status_changed`
+- `src/modules/field-dispatch/field-ops-event-fanout.jobs.ts`: criado handler placeholder; preserva envelope do evento na fila para consumo futuro por SSE/WebSocket
+- `src/infra/jobs/job.registry.ts`: registrado `field-ops-event-fanout` com `createFieldOpsEventFanoutJobHandler()`
+- `tests/field-ops-events.test.ts`: atualizado com mock queue capturador; 12 testes cobrem os 6 eventos, tenantId, actorId/correlationId, ausencia de coordenadas, to_status cancelled, previous_operator_user_id, fail-open, isolamento cross-tenant e unicidade
+- 15/15 npm test; 12/12 field-ops-events; 2/2 field-dispatch; 2/2 field-dispatch-routes; 2/2 work-orders; 2/2 work-orders-routes; 1/1 rls-tenant-isolation
+- npm run check, lint e build: todos limpos
+- frontend polling de 30s preservado intocado; nenhum endpoint SSE/WebSocket criado; nenhum segredo adicionado
+- fora de escopo: SSE/WebSocket, frontend realtime, Flutter/mobile, Google Maps, migrations, comissoes, pagamentos e refatoracao da infra de eventos

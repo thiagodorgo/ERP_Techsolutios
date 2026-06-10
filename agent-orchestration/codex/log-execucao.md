@@ -1302,3 +1302,45 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - Nenhum endpoint de streaming criado
 - `void publishDomainEvent()` vs `await`: escolhido `await` para manter consistencia com padrao do checklist.service.ts; seguro pois eventos sem job mapping retornam sem IO
 - Payload de localizacao exclui lat/lon intencionalmente
+
+## 2026-06-10 - field ops event fanout job
+
+- branch usada: `feature/field-ops-event-fanout-job`
+- objetivo: adicionar mapeamento de fanout assincrono para os 6 eventos de field ops, preparando transporte SSE/WebSocket futuro
+
+### FASE 0 - Git
+- main atualizada com PR #66 (afac1ef + 95e7923)
+- branch criada: `feature/field-ops-event-fanout-job`
+
+### FASE 1 - Inspecao
+- `domain-event.publisher.ts`: identificado `eventJobMap` como ponto de extensao; padrao fail-open confirmado
+- `job.types.ts`: identificado `JOB_NAMES` como catalogo tipado
+- `job.registry.ts`: identificado `createDefaultJobRegistry()` como ponto de registro de handlers
+- `domain-events.test.ts`: padrão de mock queue com `as unknown as JobQueue` confirmado
+- `field-ops-events.test.ts`: 9 testes existentes todos com `enqueuedJobId === undefined` (pre-mapping)
+
+### FASE 2 - Implementacao
+- `job.types.ts`: +1 job name `field-ops-event-fanout`
+- `domain-event.publisher.ts`: +6 entradas no eventJobMap para os 6 eventos field ops
+- `src/modules/field-dispatch/field-ops-event-fanout.jobs.ts`: criado handler placeholder
+- `job.registry.ts`: importado e registrado `createFieldOpsEventFanoutJobHandler()`
+- `tests/field-ops-events.test.ts`: reescrito com `makeCapturingQueue()`; 12 testes
+
+### FASE 3 - Validacoes
+- npm run check: OK
+- npm run lint: OK
+- npm test (15/15): OK
+- npm run build: OK
+- field-ops-events.test.ts (12/12): OK
+- field-dispatch.test.ts (2/2): OK
+- field-dispatch-routes.test.ts (2/2): OK
+- work-orders.test.ts (2/2): OK
+- work-orders-routes.test.ts (2/2): OK
+- rls-tenant-isolation.test.ts (1/1): OK
+- git diff --check: OK
+
+### Decisoes tecnicas
+- Handler e placeholder: SSE/WebSocket sera PR separado (`feature/field-ops-sse-transport`)
+- Mock queue sem Redis para testes unitarios; padrao copiado de domain-events.test.ts
+- fail-open preservado: falha de enqueue nao quebra create/changeStatus/reassign
+- Nenhum endpoint publico; Nenhum segredo; Nenhuma migration

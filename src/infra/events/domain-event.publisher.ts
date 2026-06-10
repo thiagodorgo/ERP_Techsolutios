@@ -30,6 +30,12 @@ const eventJobMap: Partial<Record<DomainEventName, JobName>> = {
   "checklist_run.acknowledgement_created": "notification-dispatch",
   "notification.requested": "notification-dispatch",
   "audit_log.created": "audit-log-fanout",
+  "field_location.updated": "field-ops-event-fanout",
+  "field_dispatch.created": "field-ops-event-fanout",
+  "field_dispatch.status_changed": "field-ops-event-fanout",
+  "field_dispatch.cancelled": "field-ops-event-fanout",
+  "field_dispatch.reassigned": "field-ops-event-fanout",
+  "work_order.status_changed": "field-ops-event-fanout",
 };
 
 export async function publishDomainEvent<TPayload extends DomainEventPayload>(
