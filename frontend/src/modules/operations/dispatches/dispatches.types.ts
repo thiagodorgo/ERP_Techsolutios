@@ -74,6 +74,7 @@ export type DispatchesFilters = {
   readonly status: DispatchStatus | "all";
   readonly priority: DispatchPriority | "all";
   readonly operatorUserId: string;
+  readonly workOrderId?: string;
 };
 
 export type DispatchesApiContext = {

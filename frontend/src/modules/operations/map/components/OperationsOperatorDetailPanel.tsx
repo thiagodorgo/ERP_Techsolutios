@@ -2,6 +2,7 @@ import { Battery, Clock, Copy, LocateFixed, Navigation, Route, UserRound } from 
 import { Link } from "react-router-dom";
 
 import { Button, Card, Chip } from "../../../../components/ui";
+import { DispatchStatusBadge } from "../../dispatches/components/DispatchStatusBadge";
 import {
   formatAccuracy,
   formatBattery,
@@ -16,9 +17,13 @@ import { WorkOrderStatusBadge } from "../../../work-orders/components/WorkOrderS
 export function OperationsOperatorDetailPanel({
   location,
   showWorkOrder = false,
+  showDispatch = false,
+  canCreateDispatch = false,
 }: {
   location?: FieldLocationItem;
   showWorkOrder?: boolean;
+  showDispatch?: boolean;
+  canCreateDispatch?: boolean;
 }) {
   if (!location) {
     return (
@@ -32,6 +37,14 @@ export function OperationsOperatorDetailPanel({
   }
 
   const coordinates = `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
+  const dispatchContextParams = new URLSearchParams({
+    ...(location.currentWorkOrder ? { workOrderId: location.currentWorkOrder.id } : {}),
+    operatorUserId: location.userId ?? location.operatorId,
+  });
+  const dispatchFollowParams = new URLSearchParams({
+    ...(location.currentDispatch ? { dispatchId: location.currentDispatch.id, workOrderId: location.currentDispatch.workOrderId } : {}),
+    operatorUserId: location.currentDispatch?.operatorUserId ?? location.userId ?? location.operatorId,
+  });
 
   return (
     <Card title="Detalhe do operador">
@@ -79,6 +92,7 @@ export function OperationsOperatorDetailPanel({
             <Copy size={16} /> Copiar coordenadas
           </Button>
           {showWorkOrder && !location.currentWorkOrder ? <Chip tone="default"><Route size={14} /> Sem OS atual</Chip> : null}
+          {showDispatch && !location.currentDispatch ? <Chip tone="default"><Route size={14} /> Sem despacho</Chip> : null}
         </div>
         {showWorkOrder && location.currentWorkOrder ? (
           <section className="operations-map-work-order-panel">
@@ -98,6 +112,34 @@ export function OperationsOperatorDetailPanel({
             <Link className="ui-button ui-button--secondary ui-button--sm" to={`/work-orders/${location.currentWorkOrder.id}`}>
               Abrir OS
             </Link>
+          </section>
+        ) : null}
+        {showDispatch ? (
+          <section className="operations-map-work-order-panel">
+            <header>
+              <Route size={16} />
+              <div>
+                <strong>{location.currentDispatch ? "Despacho ativo" : "Despacho"}</strong>
+                <span>{location.currentDispatch?.id ?? "Nenhum despacho vinculado ao operador/OS"}</span>
+              </div>
+            </header>
+            {location.currentDispatch ? (
+              <>
+                <div className="operations-map-work-order-badges">
+                  <DispatchStatusBadge status={location.currentDispatch.status} />
+                </div>
+                {location.currentDispatch.observation ? <span>Observacao: {location.currentDispatch.observation}</span> : null}
+                <Link className="ui-button ui-button--secondary ui-button--sm" to={`/operations/dispatches?${dispatchFollowParams.toString()}`}>
+                  Acompanhar despacho
+                </Link>
+              </>
+            ) : canCreateDispatch && location.currentWorkOrder ? (
+              <Link className="ui-button ui-button--secondary ui-button--sm" to={`/operations/dispatches?${dispatchContextParams.toString()}`}>
+                Criar despacho
+              </Link>
+            ) : (
+              <span>Sem acao de despacho disponivel para este perfil.</span>
+            )}
           </section>
         ) : null}
       </div>

@@ -1,21 +1,33 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Alert, Button, Input, Select } from "../../../../components/ui";
 import { validateDispatchCreate } from "../dispatches.adapter";
 
 export function DispatchCreateForm({
   disabled,
+  initialWorkOrderId = "",
+  initialOperatorUserId = "",
   onSubmit,
 }: {
   readonly disabled?: boolean;
+  readonly initialWorkOrderId?: string;
+  readonly initialOperatorUserId?: string;
   readonly onSubmit: (payload: { workOrderId: string; operatorUserId: string; status: "draft" | "assigned"; observation: string }) => Promise<void>;
 }) {
-  const [workOrderId, setWorkOrderId] = useState("");
-  const [operatorUserId, setOperatorUserId] = useState("");
+  const [workOrderId, setWorkOrderId] = useState(initialWorkOrderId);
+  const [operatorUserId, setOperatorUserId] = useState(initialOperatorUserId);
   const [status, setStatus] = useState<"draft" | "assigned">("assigned");
   const [observation, setObservation] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setWorkOrderId(initialWorkOrderId);
+  }, [initialWorkOrderId]);
+
+  useEffect(() => {
+    setOperatorUserId(initialOperatorUserId);
+  }, [initialOperatorUserId]);
 
   async function submit() {
     const nextErrors = validateDispatchCreate({ workOrderId, operatorUserId });

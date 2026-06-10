@@ -82,6 +82,7 @@ export function filterDispatches(items: readonly DispatchListItem[], filters: Di
   return items.filter((item) => {
     if (filters.status !== "all" && item.status !== filters.status) return false;
     if (filters.priority !== "all" && item.priority !== filters.priority) return false;
+    if (filters.workOrderId && item.workOrderId !== filters.workOrderId) return false;
     if (operator && item.operatorUserId !== operator) return false;
     if (!search) return true;
 

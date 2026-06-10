@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 
 import { Chip } from "../../../../components/ui";
 import { getFieldLocationStatusLabel, getMarkerPosition } from "../operations-map.adapter";
+import { getDispatchStatusLabel } from "../../dispatches/dispatches.adapter";
 import { getWorkOrderStatusLabel } from "../../../work-orders/work-orders.adapter";
 import type { FieldLocationItem } from "../operations-map.types";
 
@@ -10,10 +11,12 @@ export function OperationsMapCanvas({
   locations,
   selectedId,
   onSelect,
+  showDispatches = false,
 }: {
   locations: readonly FieldLocationItem[];
   selectedId?: string;
   onSelect: (location: FieldLocationItem) => void;
+  showDispatches?: boolean;
 }) {
   return (
     <section className="operations-map-canvas" aria-label="Visualizacao operacional inicial">
@@ -43,7 +46,9 @@ export function OperationsMapCanvas({
               {location.isStale ? <AlertTriangle size={15} /> : <MapPin size={15} />}
               <span>{location.displayName}</span>
               <small>
-                {location.currentWorkOrder
+                {showDispatches && location.currentDispatch
+                  ? `Despacho · ${getDispatchStatusLabel(location.currentDispatch.status)}`
+                  : location.currentWorkOrder
                   ? `${location.currentWorkOrder.code} · ${getWorkOrderStatusLabel(location.currentWorkOrder.status)}`
                   : getFieldLocationStatusLabel(location.status)}
               </small>

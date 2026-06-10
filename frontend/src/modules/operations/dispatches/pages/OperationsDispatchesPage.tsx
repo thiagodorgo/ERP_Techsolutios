@@ -1,5 +1,6 @@
 import { PlusCircle, RefreshCw } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { Alert, Button, Card, Chip, EmptyState, Skeleton } from "../../../../components/ui";
 import { useAuth } from "../../../../providers/AuthProvider";
@@ -25,14 +26,23 @@ const initialFilters: DispatchesFilterState = {
 };
 
 export function OperationsDispatchesPage() {
+  const [searchParams] = useSearchParams();
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
-  const [filters, setFilters] = useState<DispatchesFilterState>(initialFilters);
+  const initialWorkOrderId = searchParams.get("workOrderId") ?? "";
+  const initialOperatorUserId = searchParams.get("operatorUserId") ?? searchParams.get("operatorId") ?? "";
+  const initialDispatchId = searchParams.get("dispatchId") ?? "";
+  const [filters, setFilters] = useState<DispatchesFilterState>({
+    ...initialFilters,
+    search: initialDispatchId || initialWorkOrderId,
+    operatorUserId: initialOperatorUserId,
+    workOrderId: initialWorkOrderId || undefined,
+  });
   const [selectedDispatch, setSelectedDispatch] = useState<DispatchDetail | DispatchListItem | null>(null);
   const [quickStatusDispatch, setQuickStatusDispatch] = useState<DispatchListItem | null>(null);
   const [reassignTarget, setReassignTarget] = useState<DispatchListItem | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
+  const [showCreate, setShowCreate] = useState(Boolean(initialWorkOrderId && initialOperatorUserId));
   const { items, allItems, source, fallbackReason, loading, error, refresh } = useOperationsDispatches(filters);
   const summary = useMemo(() => calculateDispatchesSummary(allItems), [allItems]);
   const operatorOptions = useMemo(() => [...new Set(allItems.map((item) => item.operatorUserId))].sort(), [allItems]);
@@ -52,6 +62,12 @@ export function OperationsDispatchesPage() {
     const detail = await getDispatchFromApi(context, dispatch.id);
     setSelectedDispatch(detail.dispatch);
   }
+
+  useEffect(() => {
+    if (!initialDispatchId) return;
+    const dispatch = allItems.find((item) => item.id === initialDispatchId);
+    if (dispatch) void loadDetail(dispatch);
+  }, [allItems, initialDispatchId]);
 
   return (
     <section className="page-stack work-orders-page dispatches-page">
@@ -88,6 +104,8 @@ export function OperationsDispatchesPage() {
       {showCreate && can("field_dispatch:create") ? (
         <Card title="Criar despacho">
           <DispatchCreateForm
+            initialWorkOrderId={initialWorkOrderId}
+            initialOperatorUserId={initialOperatorUserId}
             onSubmit={async (payload) => {
               await createDispatch(context, payload);
               setShowCreate(false);

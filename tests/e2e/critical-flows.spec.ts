@@ -139,6 +139,7 @@ test("Mapa Operacional renderiza UI inicial e fallback sem Google Maps real", as
   await loginAndActivateContext(page);
   await enableOperationsMapFrontendContext(page);
   await enableWorkOrdersFrontendContext(page);
+  await enableDispatchesFrontendContext(page);
 
   await page.goto("/operations/map");
   await expect(page).toHaveURL(/\/operations\/map$/);
@@ -146,7 +147,12 @@ test("Mapa Operacional renderiza UI inicial e fallback sem Google Maps real", as
   await expect(page.getByText("Visualização operacional inicial", { exact: true })).toBeVisible();
   await expect(page.getByText(/Google Maps futuro/i)).toBeVisible();
   await expect(page.getByRole("link", { name: /OS-/ }).first()).toBeVisible();
-  await expect(page.getByText(/Marina Costa|Operador API|Nenhum operador localizado/i).first()).toBeVisible();
+  await expect(page.getByText(/Despacho ativo|Despacho|Sem despacho/).first()).toBeVisible();
+  const dispatchAction = page.getByRole("link", { name: /Acompanhar despacho|Criar despacho/i }).first();
+  await expect(dispatchAction).toBeVisible();
+  await dispatchAction.click();
+  await expect(page).toHaveURL(/\/operations\/dispatches\?/);
+  await expect(page.getByRole("heading", { name: "Despachos Operacionais" })).toBeVisible();
 });
 
 test("Despachos Operacionais renderiza lista, KPIs e acoes por RBAC", async ({ page }) => {

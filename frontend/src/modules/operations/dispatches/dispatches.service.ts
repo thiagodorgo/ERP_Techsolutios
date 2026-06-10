@@ -109,5 +109,6 @@ function buildQuery(params: Partial<DispatchesFilters>): string {
   if (params.status && params.status !== "all") query.set("status", params.status);
   if (params.search) query.set("search", params.search);
   if (params.operatorUserId) query.set("operatorUserId", params.operatorUserId);
+  if (params.workOrderId) query.set("workOrderId", params.workOrderId);
   return query.size ? `?${query.toString()}` : "";
 }
