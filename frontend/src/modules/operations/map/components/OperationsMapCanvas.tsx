@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 
 import { Chip } from "../../../../components/ui";
 import { getFieldLocationStatusLabel, getMarkerPosition } from "../operations-map.adapter";
+import { getWorkOrderStatusLabel } from "../../../work-orders/work-orders.adapter";
 import type { FieldLocationItem } from "../operations-map.types";
 
 export function OperationsMapCanvas({
@@ -41,7 +42,11 @@ export function OperationsMapCanvas({
             >
               {location.isStale ? <AlertTriangle size={15} /> : <MapPin size={15} />}
               <span>{location.displayName}</span>
-              <small>{getFieldLocationStatusLabel(location.status)}</small>
+              <small>
+                {location.currentWorkOrder
+                  ? `${location.currentWorkOrder.code} · ${getWorkOrderStatusLabel(location.currentWorkOrder.status)}`
+                  : getFieldLocationStatusLabel(location.status)}
+              </small>
             </button>
           );
         })}

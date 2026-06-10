@@ -1063,3 +1063,20 @@
 - documentacao atualizada em `docs/work-orders.md`, `docs/frontend-screens.md`, `docs/frontend-menu-navigation.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/backend-navigation-menu.md`, `docs/field-operator-location-map.md`, `docs/09-mapa-telas-frontend.md` e `agent-orchestration/docs/status-geral.md`
 - fora de escopo mantido: despacho avancado, roteirizacao, comissao, pagamento de prestador, Flutter/mobile, Google Maps real, upload de evidencias especificas por OS, estoque/pecas, novos endpoints backend e migrations
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/work-orders.test.ts`, `node --test --import tsx tests/work-orders-routes.test.ts`, `node --test --import tsx tests/field-location-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/core-saas.test.ts` e `git diff --check`
+
+## 2026-06-10 - operations map + work orders integration
+
+- branch usada: `feature/operations-map-work-orders-integration`
+- comandos iniciais executados: `pwd`, `git status --short`, `git branch --show-current`, `git fetch origin`, `git rev-parse --abbrev-ref origin/HEAD`, `git log --oneline -5`, `gh pr list --state open --limit 10`, `gh pr view 54`, `gh pr view 53`, `gh pr view 52`, `rg` de mapa/OS/localizacao e listagem de modulos
+- diagnostico inicial: branch local estava em `feature/work-orders-ui`, worktree limpo, `origin/HEAD=origin/main`, PRs #52/#53/#54 merged e sem PRs abertas; em PowerShell, `find ... -maxdepth` foi substituido por `Get-ChildItem -Recurse -File | Sort-Object FullName`
+- base atualizada: `git checkout main`, `git pull --ff-only origin main` e criada `feature/operations-map-work-orders-integration`
+- arquivos de mapa, Work Orders, Field Location, registry de navegacao e docs obrigatorios foram lidos antes da implementacao
+- `frontend/src/modules/operations/map` passou a suportar `currentWorkOrder` opcional em `FieldLocationItem`
+- adapter/service do mapa correlacionam localizacao com OS ativa/atribuida usando `assignedOperatorId`/`assignedUserId`
+- consumo de `/work-orders` e exibicao de link dependem de `work_orders:read`; sem a permissao, a UI nao renderiza link/acao de OS
+- componentes do mapa atualizados para mostrar codigo/status/prioridade da OS e abrir `/work-orders/:workOrderId`
+- mocks de Work Orders alinhados a operadores de campo para fallback demonstrativo seguro
+- navigation registry atualizado para `operations.map` como `implemented`, com endpoints relacionados de localizacao e OS
+- testes smoke/E2E atualizados para cobrir enriquecimento e link de OS no mapa
+- documentacao atualizada em `docs/field-operator-location-map.md`, `docs/work-orders.md`, `docs/frontend-screens.md`, `docs/api-screen-endpoints.md`, `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/09-mapa-telas-frontend.md`, `docs/modules.md`, `docs/api.md`, `docs/02-mapa-modulos.md`, `agent-orchestration/docs/status-geral.md` e este log
+- fora de escopo mantido: backend novo, migrations, Google Maps real, WebSocket, roteirizacao, despacho avancado, Flutter/mobile, comissoes e estoque

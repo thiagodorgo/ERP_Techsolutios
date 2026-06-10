@@ -1,4 +1,5 @@
 import { Battery, Clock, Copy, LocateFixed, Navigation, Route, UserRound } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { Button, Card, Chip } from "../../../../components/ui";
 import {
@@ -9,8 +10,16 @@ import {
 } from "../operations-map.adapter";
 import type { FieldLocationItem } from "../operations-map.types";
 import { OperationsOperatorStatus } from "./OperationsMapStatusBadge";
+import { WorkOrderPriorityBadge } from "../../../work-orders/components/WorkOrderPriorityBadge";
+import { WorkOrderStatusBadge } from "../../../work-orders/components/WorkOrderStatusBadge";
 
-export function OperationsOperatorDetailPanel({ location }: { location?: FieldLocationItem }) {
+export function OperationsOperatorDetailPanel({
+  location,
+  showWorkOrder = false,
+}: {
+  location?: FieldLocationItem;
+  showWorkOrder?: boolean;
+}) {
   if (!location) {
     return (
       <Card title="Detalhe do operador">
@@ -69,8 +78,28 @@ export function OperationsOperatorDetailPanel({ location }: { location?: FieldLo
           >
             <Copy size={16} /> Copiar coordenadas
           </Button>
-          <Chip tone="default"><Route size={14} /> OS atual futura</Chip>
+          {showWorkOrder && !location.currentWorkOrder ? <Chip tone="default"><Route size={14} /> Sem OS atual</Chip> : null}
         </div>
+        {showWorkOrder && location.currentWorkOrder ? (
+          <section className="operations-map-work-order-panel">
+            <header>
+              <Route size={16} />
+              <div>
+                <strong>{location.currentWorkOrder.code}</strong>
+                <span>{location.currentWorkOrder.title}</span>
+              </div>
+            </header>
+            <div className="operations-map-work-order-badges">
+              <WorkOrderStatusBadge status={location.currentWorkOrder.status} />
+              <WorkOrderPriorityBadge priority={location.currentWorkOrder.priority} />
+            </div>
+            {location.currentWorkOrder.customerName ? <span>Cliente: {location.currentWorkOrder.customerName}</span> : null}
+            {location.currentWorkOrder.serviceAddress ? <span>Endereco: {location.currentWorkOrder.serviceAddress}</span> : null}
+            <Link className="ui-button ui-button--secondary ui-button--sm" to={`/work-orders/${location.currentWorkOrder.id}`}>
+              Abrir OS
+            </Link>
+          </section>
+        ) : null}
       </div>
     </Card>
   );

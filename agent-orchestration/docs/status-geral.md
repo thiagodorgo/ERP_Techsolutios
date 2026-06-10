@@ -1265,3 +1265,16 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - navigation registry atualizado para `operations.workOrders` como `implemented`
 - fora de escopo mantido: despacho avancado, roteirizacao, comissao de guincheiro/prestador, pagamento, Flutter/mobile, Google Maps real, upload de evidencias especificas de OS, estoque/pecas e novos endpoints backend
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/work-orders.test.ts`, `node --test --import tsx tests/work-orders-routes.test.ts`, `node --test --import tsx tests/field-location-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/core-saas.test.ts` e `git diff --check`
+
+## Atualizacao 2026-06-10 - operations map + work orders integration
+
+- branch usada: `feature/operations-map-work-orders-integration`
+- objetivo: integrar a UI de Mapa Operacional com Ordens de Servico sem backend novo, migrations ou endpoints adicionais
+- diagnostico inicial: PRs #52, #53 e #54 confirmadas como merged; `origin/HEAD` apontando para `origin/main`; worktree limpo antes da alteracao; branch criada a partir de `main` atualizado
+- `operations.map` atualizado no registry para status `implemented` e endpoints relacionados de `work_orders`
+- mapa passa a enriquecer operadores com OS ativa/atribuida quando o contexto possui `work_orders:read`; sem essa permissao, a tela continua funcionando apenas com `field_location:read`
+- UI atualizada: marcador, lista e detalhe mostram codigo/status/prioridade da OS vinculada e link para `/work-orders/:workOrderId`
+- services/adapters preservam fallback/mock seguro, nao registram coordenadas em logs e nao fazem `fetch` direto em componentes
+- testes atualizados: smoke cobre correlacao adapter/service e E2E valida link de OS no mapa quando RBAC permite
+- documentacao atualizada em `docs/field-operator-location-map.md`, `docs/work-orders.md`, `docs/frontend-screens.md`, `docs/api-screen-endpoints.md`, `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/09-mapa-telas-frontend.md`, `docs/modules.md`, `docs/api.md`, `docs/02-mapa-modulos.md` e este status
+- fora de escopo mantido: Google Maps real, WebSocket/tempo real, despacho avancado, roteirizacao, Flutter/mobile, comissoes, estoque, backend novo e migrations

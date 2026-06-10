@@ -439,7 +439,7 @@ test("navigation service consome endpoint backend com scope e mock fallback loca
 });
 
 test("operations map adapter descarta coordenadas invalidas, normaliza DTO e marca stale", async () => {
-  const { adaptFieldLocationsResponse, filterFieldLocations } = await import("../src/modules/operations/map");
+  const { adaptFieldLocationsResponse, attachWorkOrdersToFieldLocations, filterFieldLocations } = await import("../src/modules/operations/map");
   const now = new Date("2026-06-09T12:00:00.000Z");
 
   const locations = adaptFieldLocationsResponse(
@@ -476,6 +476,21 @@ test("operations map adapter descarta coordenadas invalidas, normaliza DTO e mar
   assert.equal(locations[0].batteryLevel, 82);
   assert.equal(locations[0].isStale, true);
   assert.equal(filterFieldLocations(locations, { status: "on_route", team: "Equipe Norte", staleOnly: true, search: "marina" }).length, 1);
+
+  const enriched = attachWorkOrdersToFieldLocations(locations, [
+    {
+      id: "wo-1",
+      code: "OS-1",
+      title: "Atendimento vinculado",
+      status: "on_route",
+      priority: "urgent",
+      assignedUserId: "usr-1",
+      createdAt: "2026-06-09T10:00:00.000Z",
+    },
+  ]);
+
+  assert.equal(enriched[0].currentWorkOrder?.code, "OS-1");
+  assert.equal(enriched[0].currentWorkOrder?.status, "on_route");
 });
 
 test("operations map service consome endpoints existentes e usa fallback seguro", async () => {
@@ -521,6 +536,77 @@ test("operations map service consome endpoints existentes e usa fallback seguro"
   assert.equal(emptyCalls[0].url, "/api/v1/field-locations/latest");
   assert.equal(fallback.source, "fallback");
   assert.equal(fallback.locations.some((location) => location.displayName === "Marina Costa"), true);
+});
+
+test("operations map service enriquece operadores com OS somente quando RBAC permite", async () => {
+  process.env.VITE_USE_MOCKS = "false";
+  process.env.VITE_API_BASE_URL = "/api/v1";
+  browser.clear();
+  const calls = installFetchSequence([
+    {
+      payload: {
+        data: [
+          {
+            id: "loc-api",
+            operatorUserId: "usr-ops-02",
+            displayName: "Operador API",
+            status: "on_route",
+            latitude: -23.55,
+            longitude: -46.63,
+            capturedAt: "2026-06-09T11:59:00.000Z",
+          },
+        ],
+      },
+    },
+    {
+      payload: {
+        data: [
+          {
+            id: "wo-api",
+            code: "OS-API",
+            title: "OS vinculada ao operador",
+            status: "assigned",
+            priority: "high",
+            assignedUserId: "usr-ops-02",
+            createdAt: "2026-06-09T10:00:00.000Z",
+          },
+        ],
+      },
+    },
+  ]);
+  const { getLatestFieldLocations } = await import("../src/modules/operations/map");
+
+  const withWorkOrders = await getLatestFieldLocations({
+    tenantId: "tenant-a",
+    role: "manager",
+    permissions: ["field_location:read", "work_orders:read"],
+  });
+
+  assert.equal(calls[0].url, "/api/v1/field-locations/latest");
+  assert.equal(calls[1].url, "/api/v1/work-orders");
+  assert.equal(withWorkOrders.locations[0].currentWorkOrder?.code, "OS-API");
+
+  const fieldOnlyCalls = installFetchJson({
+    data: [
+      {
+        id: "loc-api-2",
+        operatorUserId: "usr-ops-02",
+        displayName: "Operador API",
+        status: "on_route",
+        latitude: -23.55,
+        longitude: -46.63,
+        capturedAt: "2026-06-09T11:59:00.000Z",
+      },
+    ],
+  });
+  const withoutWorkOrders = await getLatestFieldLocations({
+    tenantId: "tenant-a",
+    role: "manager",
+    permissions: ["field_location:read"],
+  });
+
+  assert.equal(fieldOnlyCalls.length, 1);
+  assert.equal(withoutWorkOrders.locations[0].currentWorkOrder, null);
 });
 
 test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async () => {

@@ -216,7 +216,7 @@ ERP Techsolutions
 - consulta web futura em `GET /api/v1/field-locations/latest` e `GET /api/v1/field-locations/history`;
 - RBAC `field_location:send`, `field_location:read` e `field_location:history`.
 
-**Fora do escopo desta rodada:** Google Maps, tela `/operations/map`, app Flutter, roteirizacao avancada, Work Orders completas e despacho completo.
+**Fora do escopo desta rodada:** Google Maps, app Flutter, roteirizacao avancada e despacho completo. A integracao visual posterior com `work_orders` usa endpoints existentes e RBAC separado.
 
 ### 4.3 Operação e Serviços
 

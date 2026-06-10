@@ -177,10 +177,11 @@ Permissoes:
 - `POST /work-orders/:workOrderId/assign`: `work_orders:assign`
 - `GET /work-orders/:workOrderId/timeline`: `work_orders:read`
 
-Relações futuras:
+Relações com o Mapa Operacional:
 
 - `checklist_id` prepara vinculo com checklist operacional;
-- coordenadas/endereco/operador preparam vinculo com Mapa Operacional;
+- coordenadas/endereco/operador alimentam o vinculo com Mapa Operacional;
+- `/operations/map` pode correlacionar a OS atual/atribuida ao operador usando `GET /work-orders` quando o usuario tambem possui `work_orders:read`;
 - assignments preparam despacho e comissoes futuras, sem calculo financeiro nesta branch.
 
 Fallback frontend:
@@ -193,7 +194,7 @@ Fallback frontend:
 
 Objetivo: permitir que a tela `/operations/map` consulte a fundacao backend de localizacao de operadores em campo.
 
-Status desta branch: UI inicial implementada no frontend web; Google Maps real, despacho, roteirizacao, WebSocket e novos endpoints ficam fora do escopo.
+Status desta branch: UI inicial implementada no frontend web e integrada de forma opcional com Work Orders; Google Maps real, despacho, roteirizacao, WebSocket e novos endpoints ficam fora do escopo.
 
 Endpoints implementados:
 
@@ -201,6 +202,9 @@ Endpoints implementados:
 POST /mobile/field-locations
 GET  /field-locations/latest
 GET  /field-locations/history
+GET  /work-orders
+GET  /work-orders/:workOrderId
+GET  /work-orders/:workOrderId/timeline
 ```
 
 Permissoes:
@@ -208,6 +212,9 @@ Permissoes:
 - `POST /mobile/field-locations`: `field_location:send`
 - `GET /field-locations/latest`: `field_location:read`
 - `GET /field-locations/history`: `field_location:history`
+- `GET /work-orders`: `work_orders:read`
+- `GET /work-orders/:workOrderId`: `work_orders:read`
+- `GET /work-orders/:workOrderId/timeline`: `work_orders:read`
 
 Regras:
 
@@ -215,6 +222,8 @@ Regras:
 - consulta web retorna somente dados do tenant atual;
 - historico exige permissao separada para reduzir exposicao de dados sensiveis;
 - `/operations/map` consome `GET /field-locations/latest` para dados atuais e pode usar `GET /field-locations/history` para historico por operador;
+- se `work_orders:read` estiver presente, `/operations/map` tambem consome `GET /work-orders` para exibir codigo/status da OS atual/atribuida e link para `/work-orders/:workOrderId`;
+- sem `work_orders:read`, `/operations/map` continua funcionando apenas com dados de localizacao, sem link/acao de OS;
 - a tela usa fallback/mock seguro quando a API falha, retorna vazia ou `VITE_USE_MOCKS=true`;
 - localizacao com `capturedAt` acima de 15 minutos aparece como antiga.
 

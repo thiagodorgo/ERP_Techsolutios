@@ -1,4 +1,5 @@
 import { Battery, Clock, LocateFixed } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { Card, Table } from "../../../../components/ui";
 import {
@@ -8,38 +9,64 @@ import {
 } from "../operations-map.adapter";
 import type { FieldLocationItem } from "../operations-map.types";
 import { OperationsOperatorStatus } from "./OperationsMapStatusBadge";
+import { WorkOrderStatusBadge } from "../../../work-orders/components/WorkOrderStatusBadge";
 
 export function OperationsOperatorList({
   locations,
   selectedId,
   onSelect,
+  showWorkOrders = false,
 }: {
   locations: FieldLocationItem[];
   selectedId?: string;
   onSelect: (location: FieldLocationItem) => void;
+  showWorkOrders?: boolean;
 }) {
+  const columns = [
+    {
+      key: "operator",
+      header: "Operador",
+      render: (location: FieldLocationItem) => (
+        <strong className={selectedId === location.id ? "operations-map-selected-text" : undefined}>
+          {location.displayName}
+        </strong>
+      ),
+    },
+    { key: "status", header: "Status", render: (location: FieldLocationItem) => <OperationsOperatorStatus location={location} /> },
+    ...(showWorkOrders
+      ? [
+          {
+            key: "workOrder",
+            header: "OS atual",
+            render: (location: FieldLocationItem) =>
+              location.currentWorkOrder ? (
+                <Link
+                  className="operations-map-work-order-link"
+                  to={`/work-orders/${location.currentWorkOrder.id}`}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <span>{location.currentWorkOrder.code}</span>
+                  <WorkOrderStatusBadge status={location.currentWorkOrder.status} />
+                </Link>
+              ) : (
+                <span className="operations-map-muted">Sem OS</span>
+              ),
+          },
+        ]
+      : []),
+    { key: "team", header: "Equipe", render: (location: FieldLocationItem) => location.teamName ?? "Sem equipe" },
+    { key: "battery", header: "Bateria", render: (location: FieldLocationItem) => formatBattery(location.batteryLevel) },
+    { key: "accuracy", header: "Precisão", render: (location: FieldLocationItem) => formatAccuracy(location.accuracyMeters) },
+    { key: "captured", header: "Última atualização", render: (location: FieldLocationItem) => formatFieldLocationDate(location.capturedAt) },
+  ];
+
   return (
     <Card title="Operadores em campo">
       <Table
         rows={locations}
         keyForRow={(location) => location.id}
         onRowClick={onSelect}
-        columns={[
-          {
-            key: "operator",
-            header: "Operador",
-            render: (location) => (
-              <strong className={selectedId === location.id ? "operations-map-selected-text" : undefined}>
-                {location.displayName}
-              </strong>
-            ),
-          },
-          { key: "status", header: "Status", render: (location) => <OperationsOperatorStatus location={location} /> },
-          { key: "team", header: "Equipe", render: (location) => location.teamName ?? "Sem equipe" },
-          { key: "battery", header: "Bateria", render: (location) => formatBattery(location.batteryLevel) },
-          { key: "accuracy", header: "Precisão", render: (location) => formatAccuracy(location.accuracyMeters) },
-          { key: "captured", header: "Última atualização", render: (location) => formatFieldLocationDate(location.capturedAt) },
-        ]}
+        columns={columns}
       />
       <div className="operations-operator-cards">
         {locations.map((location) => (
@@ -53,6 +80,16 @@ export function OperationsOperatorList({
               <strong>{location.displayName}</strong>
               <OperationsOperatorStatus location={location} />
             </header>
+            {showWorkOrders && location.currentWorkOrder ? (
+              <Link
+                className="operations-map-work-order-card-link"
+                to={`/work-orders/${location.currentWorkOrder.id}`}
+                onClick={(event) => event.stopPropagation()}
+              >
+                {location.currentWorkOrder.code}
+                <WorkOrderStatusBadge status={location.currentWorkOrder.status} />
+              </Link>
+            ) : null}
             <span>{location.teamName ?? "Sem equipe"}</span>
             <footer>
               <small><Battery size={14} /> {formatBattery(location.batteryLevel)}</small>
