@@ -1417,3 +1417,19 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - 26/26 smoke passaram; 11/11 E2E passaram com Chromium real e PostgreSQL real
 - build: sem warnings Vite; OperationsMapPage chunk ligeiramente maior por novos icones (Pause, Play); vendor-react e vendor-icons intactos
 - fora de escopo mantido: backend, migrations, WebSocket, roteirizacao avancada, Flutter/mobile, comissoes, pagamentos e fiscal
+
+## Atualizacao 2026-06-10 - fundacao de eventos em tempo real para operacoes de campo
+
+- branch usada: `feature/field-ops-realtime-events-foundation`
+- objetivo: publicar eventos de dominio tenant-scoped para mudancas de localizacao, despacho e OS, preparando substituicao futura do polling por WebSocket/SSE
+- escopo: backend apenas; nenhum frontend alterado; nenhuma migration; nenhum endpoint novo
+- `src/infra/events/domain-event.types.ts`: adicionados 6 eventos ao catalogo `DOMAIN_EVENT_NAMES`: `field_location.updated`, `field_dispatch.created`, `field_dispatch.status_changed`, `field_dispatch.cancelled`, `field_dispatch.reassigned`, `work_order.status_changed`
+- `FieldDispatchService`: publica `field_dispatch.created` apos create, `field_dispatch.status_changed` ou `field_dispatch.cancelled` apos changeStatus, `field_dispatch.reassigned` apos reassign
+- `FieldLocationService`: publica `field_location.updated` apos recordMobileLocation; payload nao inclui lat/lon
+- `WorkOrderService`: publica `work_order.status_changed` apos changeStatus
+- infraestrutura existente `publishDomainEvent` reutilizada; eventos sem job mapping retornam imediatamente sem Redis
+- `tests/field-ops-events.test.ts`: 9 testes cobrem payload, tenant_id, ausencia de coordenadas, unicidade de ids, isolamento cross-tenant
+- 15/15 npm test; 9/9 field-ops-events; 2/2 field-dispatch; 2/2 field-dispatch-routes; 2/2 work-orders; 2/2 work-orders-routes; 1/1 rls-tenant-isolation
+- npm run check, lint e build: todos limpos
+- polling frontend de 30s preservado intocado
+- fora de escopo: WebSocket/SSE publico, job workers para estes eventos, endpoint de streaming, frontend, mobile, roteirizacao, comissoes e fiscal
