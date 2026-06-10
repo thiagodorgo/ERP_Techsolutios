@@ -30,6 +30,8 @@ export function OperationsMapPage() {
   const [filters, setFilters] = useState<OperationsMapFilterState>(initialFilters);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const canReadWorkOrders = can("work_orders:read");
+  const canReadDispatches = can("field_dispatch:read");
+  const canCreateDispatches = can("field_dispatch:create");
   const teams = useMemo(() => listOperationTeams(locations), [locations]);
   const filteredLocations = useMemo(() => filterFieldLocations(locations, filters), [filters, locations]);
   const summary = useMemo(() => calculateOperationsMapSummary(locations), [locations]);
@@ -57,6 +59,7 @@ export function OperationsMapPage() {
             Fonte: {source === "api" ? "API real" : source === "fallback" ? "fallback seguro" : "mock local"}
           </Chip>
           {canReadWorkOrders ? <Chip tone="info">OS vinculadas</Chip> : null}
+          {canReadDispatches ? <Chip tone="info">Despachos vinculados</Chip> : null}
           {refreshedAt ? <Chip tone="default">Atualizado {formatFieldLocationDate(refreshedAt)}</Chip> : null}
           <Button type="button" variant="secondary" onClick={() => void refresh()} disabled={loading}>
             <RefreshCw size={16} /> Atualizar
@@ -93,21 +96,29 @@ export function OperationsMapPage() {
               locations={filteredLocations}
               selectedId={selectedLocation?.id}
               onSelect={(location: FieldLocationItem) => setSelectedId(location.id)}
+              showDispatches={canReadDispatches}
             />
             <OperationsOperatorList
               locations={filteredLocations}
               selectedId={selectedLocation?.id}
               onSelect={(location) => setSelectedId(location.id)}
               showWorkOrders={canReadWorkOrders}
+              showDispatches={canReadDispatches}
+              canCreateDispatch={canCreateDispatches}
             />
           </div>
           <aside className="operations-map-side">
-            <OperationsOperatorDetailPanel location={selectedLocation} showWorkOrder={canReadWorkOrders} />
+            <OperationsOperatorDetailPanel
+              location={selectedLocation}
+              showWorkOrder={canReadWorkOrders}
+              showDispatch={canReadDispatches}
+              canCreateDispatch={canCreateDispatches}
+            />
             <Alert title="Privacidade operacional" tone="info">
               Localização é dado sensível. O frontend não registra coordenadas em logs e o acesso real continua protegido por RBAC/RLS no backend.
             </Alert>
             <Alert title="Limite desta etapa" tone="info">
-              <span><Map size={16} /> Google Maps, despacho, roteirização e tempo real serão adicionados em etapas futuras.</span>
+              <span><Map size={16} /> Google Maps, roteirização e tempo real serão adicionados em etapas futuras.</span>
             </Alert>
           </aside>
         </section>

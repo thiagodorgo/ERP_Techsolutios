@@ -2,6 +2,7 @@ import { Battery, Clock, LocateFixed } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Card, Table } from "../../../../components/ui";
+import { DispatchStatusBadge } from "../../dispatches/components/DispatchStatusBadge";
 import {
   formatAccuracy,
   formatBattery,
@@ -16,11 +17,15 @@ export function OperationsOperatorList({
   selectedId,
   onSelect,
   showWorkOrders = false,
+  showDispatches = false,
+  canCreateDispatch = false,
 }: {
   locations: FieldLocationItem[];
   selectedId?: string;
   onSelect: (location: FieldLocationItem) => void;
   showWorkOrders?: boolean;
+  showDispatches?: boolean;
+  canCreateDispatch?: boolean;
 }) {
   const columns = [
     {
@@ -50,6 +55,35 @@ export function OperationsOperatorList({
                 </Link>
               ) : (
                 <span className="operations-map-muted">Sem OS</span>
+              ),
+          },
+        ]
+      : []),
+    ...(showDispatches
+      ? [
+          {
+            key: "dispatch",
+            header: "Despacho",
+            render: (location: FieldLocationItem) =>
+              location.currentDispatch ? (
+                <Link
+                  className="operations-map-work-order-link"
+                  to={`/operations/dispatches?dispatchId=${encodeURIComponent(location.currentDispatch.id)}&workOrderId=${encodeURIComponent(location.currentDispatch.workOrderId)}&operatorUserId=${encodeURIComponent(location.currentDispatch.operatorUserId)}`}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <span>{location.currentDispatch.id}</span>
+                  <DispatchStatusBadge status={location.currentDispatch.status} />
+                </Link>
+              ) : canCreateDispatch && location.currentWorkOrder ? (
+                <Link
+                  className="operations-map-work-order-link"
+                  to={`/operations/dispatches?workOrderId=${encodeURIComponent(location.currentWorkOrder.id)}&operatorUserId=${encodeURIComponent(location.userId ?? location.operatorId)}`}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  Criar despacho
+                </Link>
+              ) : (
+                <span className="operations-map-muted">Sem despacho</span>
               ),
           },
         ]
@@ -88,6 +122,25 @@ export function OperationsOperatorList({
               >
                 {location.currentWorkOrder.code}
                 <WorkOrderStatusBadge status={location.currentWorkOrder.status} />
+              </Link>
+            ) : null}
+            {showDispatches && location.currentDispatch ? (
+              <Link
+                className="operations-map-work-order-card-link"
+                to={`/operations/dispatches?dispatchId=${encodeURIComponent(location.currentDispatch.id)}&workOrderId=${encodeURIComponent(location.currentDispatch.workOrderId)}&operatorUserId=${encodeURIComponent(location.currentDispatch.operatorUserId)}`}
+                onClick={(event) => event.stopPropagation()}
+              >
+                Despacho
+                <DispatchStatusBadge status={location.currentDispatch.status} />
+              </Link>
+            ) : null}
+            {showDispatches && !location.currentDispatch && canCreateDispatch && location.currentWorkOrder ? (
+              <Link
+                className="operations-map-work-order-card-link"
+                to={`/operations/dispatches?workOrderId=${encodeURIComponent(location.currentWorkOrder.id)}&operatorUserId=${encodeURIComponent(location.userId ?? location.operatorId)}`}
+                onClick={(event) => event.stopPropagation()}
+              >
+                Criar despacho
               </Link>
             ) : null}
             <span>{location.teamName ?? "Sem equipe"}</span>

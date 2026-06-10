@@ -1118,3 +1118,19 @@
 - testes atualizados/criados: `frontend/tests/smoke-flow.test.tsx`, `frontend/tests/dispatches.adapter.test.ts` e `tests/e2e/critical-flows.spec.ts`
 - documentacao atualizada em `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/api.md`, `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/field-operator-location-map.md`, `docs/work-orders.md`, `docs/02-mapa-modulos.md`, `docs/platform-console.md`, `agent-orchestration/docs/status-geral.md` e este log
 - fora de escopo mantido: backend novo, migrations, Google Maps real, Flutter/mobile, roteirizacao avancada, WebSocket/tempo real, despacho completo, comissoes e pagamentos
+
+## 2026-06-10 - operations map dispatch integration
+
+- branch usada: `feature/operations-map-dispatch-integration`
+- comandos iniciais executados: `pwd`, `git status --short`, `git branch --show-current`, `git remote -v`, `git fetch origin`, `git checkout main`, `git pull --ff-only origin main`, `git checkout -b feature/operations-map-dispatch-integration`, listagem de arquivos de `operations`/`work-orders`, `rg` de mapa/despacho/OS e leitura dos arquivos centrais
+- diagnostico inicial: `main` foi atualizado com a PR #57 antes da criacao da branch; worktree limpo antes da implementacao
+- `frontend/src/modules/operations/map` passou a suportar `currentDispatch` opcional em `FieldLocationItem`
+- service do mapa consome `GET /api/v1/operations/dispatches` somente quando o contexto possui `field_dispatch:read`
+- falha ou ausencia de permissao de despacho nao bloqueia o mapa; o enriquecimento de despacho retorna sem quebrar a tela
+- painel/lista/marcador do mapa exibem despacho vinculado quando disponivel
+- acao contextual abre `/operations/dispatches?workOrderId=...&operatorUserId=...` quando `field_dispatch:create` esta presente e ha OS atual
+- `/operations/dispatches` aceita query string para filtro/acompanhamento/pre-preenchimento (`workOrderId`, `operatorUserId`, `dispatchId`)
+- fallback/mock cobre operador com OS e despacho vinculado
+- testes atualizados: `frontend/tests/dispatches.adapter.test.ts` e `tests/e2e/critical-flows.spec.ts`
+- documentacao atualizada em `docs/field-operator-location-map.md`, `docs/frontend-screens.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/work-orders.md`, `docs/rbac.md`, `agent-orchestration/docs/status-geral.md` e este log
+- fora de escopo mantido: backend novo, migrations, Google Maps real, WebSocket/tempo real, Flutter/mobile, roteirizacao avancada, despacho completo, comissoes, pagamentos e fiscal

@@ -2,13 +2,13 @@
 
 ## Decisao desta rodada
 
-Esta branch integra a UI inicial do Mapa Operacional em `/operations/map` com `work_orders` sobre a fundacao backend de localizacao de operadores em campo. O app mobile futuro podera enviar coordenadas ao backend; o frontend web consulta ultimas posicoes e, quando o usuario possui `work_orders:read`, correlaciona operadores com OS atribuidas.
+Esta branch integra a UI inicial do Mapa Operacional em `/operations/map` com `work_orders` e `field_dispatch` sobre a fundacao backend de localizacao de operadores em campo. O app mobile futuro podera enviar coordenadas ao backend; o frontend web consulta ultimas posicoes e, quando o usuario possui as permissoes correspondentes, correlaciona operadores com OS atribuidas e despachos operacionais.
 
-Fora de escopo mantido para o mapa: Google Maps real no frontend, app Flutter, roteirizacao avancada, despacho completo e WebSocket/tempo real. A fundacao backend de despacho agora existe em `field_dispatch`, mas `/operations/map` ainda nao executa despacho pela UI.
+Fora de escopo mantido para o mapa: Google Maps real no frontend, app Flutter, roteirizacao avancada, despacho completo, alteracao de status no mapa e WebSocket/tempo real.
 
 Itens registrados:
 
-- `operations.map` -> `/operations/map`, permissao `field_location:read`, modulo `field_operations`, UI inicial implementada com OS vinculada quando `work_orders:read` esta disponivel.
+- `operations.map` -> `/operations/map`, permissao `field_location:read`, modulo `field_operations`, UI inicial implementada com OS vinculada quando `work_orders:read` esta disponivel e despacho vinculado quando `field_dispatch:read` esta disponivel.
 - `operations.fieldOperators` -> `/operations/field-operators`, permissao `field_operator:read`, modulo `field_operations`.
 - `operations.dispatches` -> `/operations/dispatches`, permissao `field_dispatch:read`, modulo `field_operations`, status `implemented`.
 - `logistics.map` -> `/logistics/map`, permissao `field_location:read`, modulos `logistics` ou `field_operations`.
@@ -27,6 +27,8 @@ Componentes da tela:
 - mapa operacional em projecao proporcional por latitude/longitude, sem Google Maps real nesta etapa;
 - marcadores selecionaveis, lista de operadores e painel de detalhe com coordenadas, precisao, bateria e timestamps;
 - codigo/status da OS atual/atribuida no marcador, lista e painel de detalhe quando houver permissao `work_orders:read`;
+- status do despacho no marcador, lista e painel de detalhe quando houver permissao `field_dispatch:read`;
+- acao contextual para acompanhar despacho existente ou abrir `/operations/dispatches` com `workOrderId` e `operatorUserId` para criacao quando houver `field_dispatch:create`;
 - link para `/work-orders/:workOrderId` a partir da lista ou detalhe do operador;
 - estados de loading, erro, vazio e fallback/mock local.
 
@@ -83,7 +85,7 @@ GET /api/v1/work-orders/:workOrderId
 GET /api/v1/work-orders/:workOrderId/timeline
 ```
 
-Endpoints de despacho consumidos pela UI `/operations/dispatches`:
+Endpoints de despacho consumidos opcionalmente pela UI `/operations/map` e diretamente pela UI `/operations/dispatches`:
 
 ```http
 GET   /api/v1/operations/dispatches
@@ -106,6 +108,8 @@ Permissoes:
 - `field_dispatch:cancel`
 - `field_dispatch:reassign`
 - `work_orders:read` para mostrar OS atual/atribuida e abrir o detalhe da OS.
+- `field_dispatch:read` para mostrar despacho vinculado e acompanhar em `/operations/dispatches`.
+- `field_dispatch:create` para exibir acao contextual de criacao em `/operations/dispatches?workOrderId=...&operatorUserId=...`.
 
 Matriz aplicada:
 
@@ -129,6 +133,6 @@ Matriz aplicada:
 - filtro do mapa por OS especifica quando a rota receber contexto de origem;
 - definir retencao e auditoria de coordenadas;
 - avaliar provider de mapas e integracao Google Maps real com `VITE_GOOGLE_MAPS_API_KEY`;
-- evoluir acao contextual de despacho a partir do mapa;
+- evoluir status, reatribuicao e cancelamento diretamente a partir do mapa, se aprovado;
 - evoluir rotas e eventos de campo para roteirizacao assistida;
 - garantir opt-in, privacidade e controles por tenant antes de qualquer coleta real.

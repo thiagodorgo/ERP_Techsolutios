@@ -2,9 +2,11 @@ import type {
   FieldLocationItem,
   FieldLocationStatus,
   OperationsMapFilters,
+  OperationsMapDispatch,
   OperationsMapSummary,
   OperationsMapWorkOrder,
 } from "./operations-map.types";
+import type { DispatchListItem, DispatchStatus } from "../dispatches/dispatches.types";
 import type { WorkOrderListItem, WorkOrderStatus } from "../../work-orders/work-orders.types";
 
 const staleThresholdMs = 15 * 60 * 1000;
@@ -49,6 +51,20 @@ export function attachWorkOrdersToFieldLocations(
     ...location,
     currentWorkOrder: toOperationsMapWorkOrder(
       activeWorkOrders.find((workOrder) => isWorkOrderAssignedToLocation(workOrder, location)),
+    ),
+  }));
+}
+
+export function attachDispatchesToFieldLocations(
+  locations: readonly FieldLocationItem[],
+  dispatches: readonly DispatchListItem[],
+): FieldLocationItem[] {
+  const dispatchesByPriority = [...dispatches].sort(compareDispatchesForMap);
+
+  return locations.map((location) => ({
+    ...location,
+    currentDispatch: toOperationsMapDispatch(
+      dispatchesByPriority.find((dispatch) => isDispatchLinkedToLocation(dispatch, location)),
     ),
   }));
 }
@@ -169,6 +185,7 @@ function adaptFieldLocationItem(input: unknown, index: number, now: Date): Field
     receivedAt: readString(input, ["receivedAt", "received_at"]),
     isStale: now.getTime() - capturedTime > staleThresholdMs,
     currentWorkOrder: adaptCurrentWorkOrder(readRecord(input, "currentWorkOrder") ?? readRecord(input, "current_work_order") ?? readRecord(input, "workOrder")),
+    currentDispatch: adaptCurrentDispatch(readRecord(input, "currentDispatch") ?? readRecord(input, "current_dispatch") ?? readRecord(input, "dispatch")),
   };
 }
 
@@ -189,6 +206,49 @@ function toOperationsMapWorkOrder(workOrder: WorkOrderListItem | undefined): Ope
     customerName: workOrder.customerName,
     serviceAddress: workOrder.serviceAddress,
     scheduledFor: workOrder.scheduledFor,
+  };
+}
+
+function isDispatchLinkedToLocation(dispatch: DispatchListItem, location: FieldLocationItem): boolean {
+  if (dispatch.operatorUserId !== location.operatorId && dispatch.operatorUserId !== location.userId) return false;
+  if (!location.currentWorkOrder) return true;
+  return dispatch.workOrderId === location.currentWorkOrder.id;
+}
+
+function toOperationsMapDispatch(dispatch: DispatchListItem | undefined): OperationsMapDispatch | null {
+  if (!dispatch) return null;
+
+  return {
+    id: dispatch.id,
+    workOrderId: dispatch.workOrderId,
+    operatorUserId: dispatch.operatorUserId,
+    status: dispatch.status,
+    observation: dispatch.observation,
+    reason: dispatch.reason,
+    createdAt: dispatch.createdAt,
+    updatedAt: dispatch.updatedAt,
+  };
+}
+
+function adaptCurrentDispatch(input: Record<string, unknown> | undefined): OperationsMapDispatch | null {
+  if (!input) return null;
+
+  const id = readString(input, ["id"]);
+  const workOrderId = readString(input, ["workOrderId", "work_order_id"]);
+  const operatorUserId = readString(input, ["operatorUserId", "operator_user_id"]);
+  const status = normalizeDispatchStatus(readString(input, ["status"]));
+  const createdAt = readString(input, ["createdAt", "created_at"]);
+  if (!id || !workOrderId || !operatorUserId || !status || !createdAt) return null;
+
+  return {
+    id,
+    workOrderId,
+    operatorUserId,
+    status,
+    observation: readString(input, ["observation"]) ?? null,
+    reason: readString(input, ["reason"]) ?? null,
+    createdAt,
+    updatedAt: readString(input, ["updatedAt", "updated_at"]),
   };
 }
 
@@ -223,6 +283,16 @@ function compareWorkOrdersForMap(left: WorkOrderListItem, right: WorkOrderListIt
   return (Number.isNaN(leftTime) ? 0 : leftTime) - (Number.isNaN(rightTime) ? 0 : rightTime);
 }
 
+function compareDispatchesForMap(left: DispatchListItem, right: DispatchListItem): number {
+  const leftStatus = getDispatchStatusWeight(left.status);
+  const rightStatus = getDispatchStatusWeight(right.status);
+  if (leftStatus !== rightStatus) return leftStatus - rightStatus;
+
+  const leftTime = Date.parse(left.updatedAt ?? left.createdAt);
+  const rightTime = Date.parse(right.updatedAt ?? right.createdAt);
+  return (Number.isNaN(rightTime) ? 0 : rightTime) - (Number.isNaN(leftTime) ? 0 : leftTime);
+}
+
 function getWorkOrderStatusWeight(status: WorkOrderStatus): number {
   const weights: Record<WorkOrderStatus, number> = {
     on_route: 0,
@@ -240,8 +310,44 @@ function getWorkOrderStatusWeight(status: WorkOrderStatus): number {
   return weights[status];
 }
 
+function getDispatchStatusWeight(status: DispatchStatus): number {
+  const weights: Record<DispatchStatus, number> = {
+    on_route: 0,
+    arrived: 1,
+    in_service: 2,
+    accepted: 3,
+    assigned: 4,
+    reassigned: 5,
+    draft: 6,
+    completed: 7,
+    cancelled: 8,
+    failed: 9,
+  };
+
+  return weights[status];
+}
+
 function isTerminalWorkOrderStatus(status: WorkOrderStatus): boolean {
   return status === "completed" || status === "cancelled" || status === "rejected";
+}
+
+function normalizeDispatchStatus(value: string | undefined): DispatchStatus | null {
+  if (
+    value === "draft" ||
+    value === "assigned" ||
+    value === "accepted" ||
+    value === "on_route" ||
+    value === "arrived" ||
+    value === "in_service" ||
+    value === "completed" ||
+    value === "cancelled" ||
+    value === "reassigned" ||
+    value === "failed"
+  ) {
+    return value;
+  }
+
+  return null;
 }
 
 function readArray(response: unknown): unknown[] {

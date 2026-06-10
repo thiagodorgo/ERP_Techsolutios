@@ -1,4 +1,5 @@
 import type { WorkOrderPriority, WorkOrderStatus } from "../../work-orders/work-orders.types";
+import type { DispatchStatus } from "../dispatches/dispatches.types";
 
 export type FieldLocationStatus =
   | "available"
@@ -30,6 +31,7 @@ export type FieldLocationItem = {
   readonly receivedAt?: string;
   readonly isStale: boolean;
   readonly currentWorkOrder?: OperationsMapWorkOrder | null;
+  readonly currentDispatch?: OperationsMapDispatch | null;
 };
 
 export type OperationsMapWorkOrder = {
@@ -41,6 +43,17 @@ export type OperationsMapWorkOrder = {
   readonly customerName?: string | null;
   readonly serviceAddress?: string | null;
   readonly scheduledFor?: string | null;
+};
+
+export type OperationsMapDispatch = {
+  readonly id: string;
+  readonly workOrderId: string;
+  readonly operatorUserId: string;
+  readonly status: DispatchStatus;
+  readonly observation?: string | null;
+  readonly reason?: string | null;
+  readonly createdAt: string;
+  readonly updatedAt?: string;
 };
 
 export type OperationsMapData = {

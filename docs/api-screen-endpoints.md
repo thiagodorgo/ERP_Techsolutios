@@ -182,6 +182,7 @@ Relações com o Mapa Operacional:
 - `checklist_id` prepara vinculo com checklist operacional;
 - coordenadas/endereco/operador alimentam o vinculo com Mapa Operacional;
 - `/operations/map` pode correlacionar a OS atual/atribuida ao operador usando `GET /work-orders` quando o usuario tambem possui `work_orders:read`;
+- `/operations/map` pode correlacionar despacho ativo usando `GET /operations/dispatches` quando o usuario tambem possui `field_dispatch:read` e navegar para `/operations/dispatches?workOrderId=...&operatorUserId=...`;
 - assignments preparam despacho e comissoes futuras, sem calculo financeiro nesta branch.
 
 ### Despachos Operacionais
@@ -217,7 +218,7 @@ Regras:
 - cancelamento exige `reason`;
 - detalhe retorna `timeline` com eventos `field_dispatch_created`, `field_dispatch_status_changed`, `field_dispatch_reassigned` e `field_dispatch_cancelled`;
 - a UI web consome os endpoints existentes, aplica RBAC por acao e usa `/work-orders` apenas para enriquecer codigo/titulo/prioridade quando `work_orders:read` estiver disponivel;
-- endpoints preparam a futura integracao com `/operations/map`, sem implementar roteirizacao.
+- endpoints sustentam a integracao contextual com `/operations/map`, sem implementar roteirizacao.
 
 Fallback frontend de Work Orders:
 
@@ -259,6 +260,9 @@ Regras:
 - `/operations/map` consome `GET /field-locations/latest` para dados atuais e pode usar `GET /field-locations/history` para historico por operador;
 - se `work_orders:read` estiver presente, `/operations/map` tambem consome `GET /work-orders` para exibir codigo/status da OS atual/atribuida e link para `/work-orders/:workOrderId`;
 - sem `work_orders:read`, `/operations/map` continua funcionando apenas com dados de localizacao, sem link/acao de OS;
+- se `field_dispatch:read` estiver presente, `/operations/map` tambem consome `GET /operations/dispatches` para exibir despacho vinculado e link para `/operations/dispatches`;
+- se `field_dispatch:create` estiver presente e houver OS atual, `/operations/map` exibe acao para abrir `/operations/dispatches?workOrderId=...&operatorUserId=...`;
+- sem `field_dispatch:read`, `/operations/map` continua funcionando sem dados ou acoes de despacho;
 - a tela usa fallback/mock seguro quando a API falha, retorna vazia ou `VITE_USE_MOCKS=true`;
 - localizacao com `capturedAt` acima de 15 minutos aparece como antiga.
 

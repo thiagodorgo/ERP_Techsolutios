@@ -1,7 +1,9 @@
 import { isMockMode } from "../../../config/env";
 import { apiRequest } from "../../../services/api/client";
-import { adaptFieldLocationsResponse, attachWorkOrdersToFieldLocations } from "./operations-map.adapter";
+import { adaptFieldLocationsResponse, attachDispatchesToFieldLocations, attachWorkOrdersToFieldLocations } from "./operations-map.adapter";
 import { getMockOperationsMapData } from "./operations-map.mock";
+import { adaptDispatchesResponse } from "../dispatches/dispatches.adapter";
+import { getMockDispatchesData } from "../dispatches/dispatches.mock";
 import { adaptWorkOrdersResponse } from "../../work-orders/work-orders.adapter";
 import { getMockWorkOrdersData } from "../../work-orders/work-orders.mock";
 import type {
@@ -11,6 +13,7 @@ import type {
   OperationsMapData,
 } from "./operations-map.types";
 import type { WorkOrderListItem } from "../../work-orders/work-orders.types";
+import type { DispatchListItem } from "../dispatches/dispatches.types";
 
 export async function getLatestFieldLocations(context: OperationsMapApiContext): Promise<OperationsMapData> {
   if (isMockMode()) return getMockOperationsMapData("mock");
@@ -55,15 +58,19 @@ async function enrichOperationsMapData(
   context: OperationsMapApiContext,
   data: OperationsMapData,
 ): Promise<OperationsMapData> {
-  if (!hasWorkOrdersRead(context)) return data;
+  let enrichedData = data;
 
-  const workOrders = await listReadableWorkOrdersForMap(context, data.source !== "api");
-  if (workOrders.length === 0) return data;
+  if (hasWorkOrdersRead(context)) {
+    const workOrders = await listReadableWorkOrdersForMap(context, data.source !== "api");
+    if (workOrders.length > 0) {
+      enrichedData = {
+        ...enrichedData,
+        locations: attachWorkOrdersToFieldLocations(enrichedData.locations, workOrders),
+      };
+    }
+  }
 
-  return {
-    ...data,
-    locations: attachWorkOrdersToFieldLocations(data.locations, workOrders),
-  };
+  return enrichOperationsMapWithDispatches(context, enrichedData);
 }
 
 async function listReadableWorkOrdersForMap(context: OperationsMapApiContext, fallbackToMock: boolean): Promise<WorkOrderListItem[]> {
@@ -80,4 +87,35 @@ async function listReadableWorkOrdersForMap(context: OperationsMapApiContext, fa
 
 function hasWorkOrdersRead(context: OperationsMapApiContext): boolean {
   return context.permissions?.includes("work_orders:read") ?? false;
+}
+
+async function enrichOperationsMapWithDispatches(
+  context: OperationsMapApiContext,
+  data: OperationsMapData,
+): Promise<OperationsMapData> {
+  if (!hasDispatchRead(context)) return data;
+
+  const dispatches = await listReadableDispatchesForMap(context, data.source !== "api");
+  if (dispatches.length === 0) return data;
+
+  return {
+    ...data,
+    locations: attachDispatchesToFieldLocations(data.locations, dispatches),
+  };
+}
+
+async function listReadableDispatchesForMap(context: OperationsMapApiContext, fallbackToMock: boolean): Promise<DispatchListItem[]> {
+  if (isMockMode()) return getMockDispatchesData("mock").items;
+
+  try {
+    const response = await apiRequest<unknown>("/operations/dispatches", context);
+    const items = adaptDispatchesResponse(response, "api").items;
+    return items.length > 0 || !fallbackToMock ? items : getMockDispatchesData("fallback").items;
+  } catch {
+    return fallbackToMock ? getMockDispatchesData("fallback").items : [];
+  }
+}
+
+function hasDispatchRead(context: OperationsMapApiContext): boolean {
+  return context.permissions?.includes("field_dispatch:read") ?? false;
 }

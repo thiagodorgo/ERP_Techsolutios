@@ -1312,3 +1312,16 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - testes atualizados/criados: `frontend/tests/smoke-flow.test.tsx`, `frontend/tests/dispatches.adapter.test.ts` e `tests/e2e/critical-flows.spec.ts`
 - documentacao atualizada em `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/api.md`, `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/field-operator-location-map.md`, `docs/work-orders.md`, `docs/02-mapa-modulos.md`, `docs/platform-console.md` e este status
 - fora de escopo mantido: backend novo, migrations, Google Maps real, app Flutter/mobile, roteirizacao avancada, WebSocket/tempo real, despacho completo, comissoes e pagamentos
+
+## Atualizacao 2026-06-10 - operations map dispatch integration
+
+- branch usada: `feature/operations-map-dispatch-integration`
+- objetivo: integrar o Mapa Operacional com Despachos Operacionais sem backend novo, migrations ou endpoints adicionais
+- `/operations/map` continua protegido por `field_location:read` e funcionando sem `field_dispatch:read`
+- quando `field_dispatch:read` esta presente, o mapa consome `GET /api/v1/operations/dispatches` e mostra despacho vinculado no marcador/lista/painel de detalhe
+- quando `field_dispatch:create` tambem esta presente e existe OS atual, o painel abre `/operations/dispatches?workOrderId=...&operatorUserId=...` para criacao contextual
+- `/operations/dispatches` passa a aceitar contexto por query string (`workOrderId`, `operatorUserId` e `dispatchId`) para filtro, acompanhamento e pre-preenchimento de criacao
+- fallback/mock atualizado para cobrir operador com OS e despacho vinculado
+- testes atualizados: `frontend/tests/dispatches.adapter.test.ts` e `tests/e2e/critical-flows.spec.ts`
+- documentacao atualizada em `docs/field-operator-location-map.md`, `docs/frontend-screens.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/work-orders.md`, `docs/rbac.md` e este status
+- fora de escopo mantido: backend novo, migrations, Google Maps real, WebSocket/tempo real, Flutter/mobile, roteirizacao avancada, despacho completo, comissoes, pagamentos e fiscal

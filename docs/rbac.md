@@ -293,7 +293,7 @@ Permissoes tenant-scoped:
 - `field_location:history`: consultar historico de localizacao de um operador do tenant.
 - `field_operator:read`: visualizar operadores em campo em telas futuras.
 - `field_operator:action`: reservado para acoes futuras de operador.
-- `field_dispatch:*`: usado pela fundacao backend de despacho operacional.
+- `field_dispatch:*`: usado pela fundacao backend de despacho operacional e pela integracao contextual do Mapa Operacional.
 
 Matriz backend aplicada:
 
@@ -317,6 +317,9 @@ Regras:
 - historico e dado sensivel e usa permissao separada;
 - RLS protege `field_operator_locations` por `app.current_tenant_id`;
 - a tela `/operations/map` esta implementada no frontend e protegida por `field_location:read`;
+- detalhes de OS no mapa exigem `work_orders:read`;
+- detalhes e links de despacho no mapa exigem `field_dispatch:read`;
+- criacao contextual de despacho a partir do mapa exige `field_dispatch:create` e OS atual vinculada;
 - a tela usa fallback/mock seguro quando a API falha ou retorna vazia, mas a autorizacao real permanece no backend.
 
 ## cloud_usage_metering

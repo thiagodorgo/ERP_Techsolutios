@@ -110,6 +110,6 @@ Eventos sao retornados por timeline em ordem cronologica e evitam metadata sensi
 
 - Checklists: `checklist_id` prepara associacao com template/configuracao de checklist.
 - Mapa operacional: endereco/coordenadas e operador atribuido permitem correlacao em `/operations/map`; o mapa exibe OS atual/atribuida sem criar endpoints novos e sem substituir `field_location:read`.
-- Despacho operacional: `field_dispatches` vincula OS e operador, registra status/timeline e sustenta a UI inicial `/operations/dispatches`.
+- Despacho operacional: `field_dispatches` vincula OS e operador, registra status/timeline, sustenta a UI inicial `/operations/dispatches` e agora aparece como acao contextual no mapa quando `field_dispatch:read`/`field_dispatch:create` estiverem presentes.
 - Evidencias: anexos/fotos especificos de OS ficam fora desta branch.
 - Comissoes/prestadores: `assigned_operator_id` e assignments preparam relacao futura sem calcular pagamentos nesta etapa.

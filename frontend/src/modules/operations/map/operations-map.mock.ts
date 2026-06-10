@@ -1,5 +1,6 @@
 import type { FieldLocationItem, OperationsMapData } from "./operations-map.types";
-import { attachWorkOrdersToFieldLocations } from "./operations-map.adapter";
+import { attachDispatchesToFieldLocations, attachWorkOrdersToFieldLocations } from "./operations-map.adapter";
+import { getMockDispatchesData } from "../dispatches/dispatches.mock";
 import { getMockWorkOrdersData } from "../../work-orders/work-orders.mock";
 
 const now = Date.now();
@@ -80,8 +81,10 @@ export const mockFieldLocations: FieldLocationItem[] = [
 ];
 
 export function getMockOperationsMapData(source: OperationsMapData["source"] = "mock", fallbackReason?: string): OperationsMapData {
+  const locationsWithWorkOrders = attachWorkOrdersToFieldLocations(mockFieldLocations, getMockWorkOrdersData(source).items);
+
   return {
-    locations: attachWorkOrdersToFieldLocations(mockFieldLocations, getMockWorkOrdersData(source).items),
+    locations: attachDispatchesToFieldLocations(locationsWithWorkOrders, getMockDispatchesData(source).items),
     source,
     fallbackReason,
   };

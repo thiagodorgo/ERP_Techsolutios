@@ -189,7 +189,8 @@ Status desta branch:
 
 - UI inicial implementada no frontend web;
 - integracao com Work Orders implementada sem endpoints novos: quando `work_orders:read` esta presente, marcador/lista/detalhe mostram OS atual ou atribuida e linkam para `/work-orders/:workOrderId`;
-- Google Maps real, UI de despacho, roteirizacao e tempo real permanecem fora do escopo.
+- integracao com Despachos implementada sem endpoints novos: quando `field_dispatch:read` esta presente, marcador/lista/detalhe mostram o despacho vinculado e linkam para `/operations/dispatches`; quando `field_dispatch:create` tambem esta presente e existe OS atual, a acao de criacao abre `/operations/dispatches?workOrderId=...&operatorUserId=...`;
+- Google Maps real, roteirizacao e tempo real permanecem fora do escopo.
 
 Funcionalidades:
 
@@ -199,6 +200,7 @@ Funcionalidades:
 - mapa placeholder com marcadores posicionados proporcionalmente por latitude/longitude;
 - lista e painel de detalhe do operador selecionado;
 - codigo/status da OS vinculada quando houver permissao `work_orders:read`;
+- status e acao contextual de despacho quando houver `field_dispatch:read`/`field_dispatch:create`;
 - estados de loading, vazio, erro, mock e fallback seguro.
 
 Endpoints backend consumidos:
@@ -207,6 +209,7 @@ Endpoints backend consumidos:
 - `GET /api/v1/field-locations/history`: historico por operador, com permissao dedicada.
 - `GET /api/v1/work-orders`: lista OS para correlacao opcional com operador atribuido.
 - `GET /api/v1/work-orders/:workOrderId`: destino do link de detalhe da OS.
+- `GET /api/v1/operations/dispatches`: lista despachos para correlacao opcional com operador/OS no mapa.
 
 Endpoint mobile disponivel:
 
@@ -218,6 +221,8 @@ RBAC:
 - historico exige `field_location:history`;
 - envio mobile exige `field_location:send`.
 - OS vinculada exige `work_orders:read`; sem essa permissao, o mapa continua funcionando sem link ou detalhe de OS.
+- despacho vinculado exige `field_dispatch:read`; sem essa permissao, o mapa continua funcionando sem dados ou acoes de despacho.
+- criar despacho a partir do mapa exige `field_dispatch:create` e OS atual vinculada.
 
 ## Despachos Operacionais
 
