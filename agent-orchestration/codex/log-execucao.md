@@ -1169,3 +1169,24 @@
 - e2e (`npm run test:e2e`) nao foi possivel executar por exigir PostgreSQL/Docker ativo; testes unitarios e smoke cobrem o comportamento
 - documentacao atualizada em `docs/frontend-screens.md`, `docs/modules.md`, `agent-orchestration/docs/status-geral.md` e este log
 - fora de escopo mantido: backend, migrations, endpoints novos, Google Maps real, WebSocket, Flutter/mobile, roteirizacao, comissoes, pagamentos e fiscal
+
+## 2026-06-10 - validacao E2E field ops apos route splitting
+
+- branch usada: `feature/field-ops-e2e-validation-after-route-splitting`
+- objetivo: executar e registrar validacao E2E completa dos fluxos de campo apos PR #61 (route splitting/lazy loading)
+- fase 0: `git fetch origin`, `git checkout main`, `git pull --ff-only` — main atualizado com PR #61 (633ba96), worktree limpo
+- fase 0 confirmacao: `lazy`, `Suspense`, `PageLoader`, `OperationsMapPage`, `OperationsDispatchesPage` encontrados em `frontend/src/App.tsx`
+- infra: `docker compose config` passou; `docker compose up -d` — daemon Linux WSL havia parado, reiniciado via WSL start + Docker Desktop restart; containers `erp-postgres` e `erp-redis` subiram healthy
+- prisma: `validate` passou, `generate` passou, `migrate deploy` (14 migrations aplicadas, nenhuma pendente), `migrate status` (database schema up to date)
+- seed: `npm run db:seed` executado com sucesso
+- testes backend pre-E2E: `field-dispatch.test.ts` (2/2), `field-dispatch-routes.test.ts` (2/2), `work-orders.test.ts` (2/2), `work-orders-routes.test.ts` (2/2), `navigation-menu.test.ts` (9/9), `navigation-menu-routes.test.ts` (7/7), `rls-tenant-isolation.test.ts` (1/1)
+- `npm run check`: passou; `npm run lint`: passou; `npm test`: passou (15 testes); `npm run build`: passou
+- `npm --prefix frontend run check`: passou; `npm --prefix frontend run build`: passou (chunk 389 kB, sem warning); `npm --prefix frontend run test:smoke`: passou (26 testes)
+- `npm run test:e2e`: **11/11 testes passaram em 35.6s** com 1 worker chromium real e banco real
+  - lazy loading comprovado: /operations/map, /operations/dispatches e /work-orders carregam sem travar
+  - mapa renderiza UI inicial e fallback sem Google Maps
+  - despachos renderiza lista, KPIs e acoes RBAC
+  - ordens de servico renderiza lista, criacao e detalhe
+- `git diff --check`: passou; `git status --short`: limpo; nenhum arquivo de codigo precisou ser alterado
+- documentacao atualizada em `agent-orchestration/docs/status-geral.md` e este log
+- fora de escopo mantido: feature nova, backend, migrations, endpoints, Google Maps real, WebSocket, Flutter/mobile, roteirizacao, comissoes, pagamentos e fiscal
