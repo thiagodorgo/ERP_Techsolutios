@@ -1234,3 +1234,31 @@
 - `git diff --check`: passou; `git status --short`: limpo
 - documentacao atualizada em `docs/frontend-screens.md`, `docs/modules.md`, `agent-orchestration/docs/status-geral.md` e este log
 - fora de escopo mantido: backend, migrations, endpoints novos, Google Maps real, WebSocket, Flutter/mobile, roteirizacao, comissoes, pagamentos e fiscal
+
+## PR feature/operations-map-live-refresh-polling — 2026-06-10
+
+### FASE 0
+- branch base: `main` em commit `f30afe6` (PR #64 mergeada)
+- PR #64 confirmada: `GoogleMapsCanvas`, `useGoogleMapsLoader`, `google-maps.d.ts` presentes em `main`
+- worktree limpo; partida autorizada
+
+### FASE 1 — Implementacao
+Arquivos alterados:
+- `frontend/src/modules/operations/map/useOperationsMap.ts`: adicionados `POLL_INTERVAL_MS = 30_000`, estado `isRefreshing`, estado `autoRefresh`, `refreshingRef` (previne chamadas concorrentes em background), parametro `background` no `refresh`, effect de polling com cleanup, retorno exposto `autoRefresh`, `setAutoRefresh`, `isRefreshing`
+- `frontend/src/modules/operations/map/pages/OperationsMapPage.tsx`: imports `Pause`, `Play` adicionados; `isRefreshing`, `autoRefresh`, `setAutoRefresh` desestruturados do hook; chip "Atualizando..." condicional; botao "Pausar auto" / "Auto atualizar" com toggle; botao "Atualizar" desabilitado durante `loading || isRefreshing`
+- `docs/modules.md`: entrada `field_operations` atualizada com descricao do polling
+- `agent-orchestration/docs/status-geral.md`: entrada adicionada
+- `agent-orchestration/codex/log-execucao.md`: este log
+
+Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, GoogleMapsCanvas, useGoogleMapsLoader, smoke/E2E assertions
+
+### Validacoes
+- `npm run check`: passou (tsc limpo)
+- `npm run lint`: passou
+- `npm test`: 15/15
+- `npm run build`: passou
+- `npm --prefix frontend run check`: passou (tsc limpo)
+- `npm --prefix frontend run build`: passou; sem warnings Vite; chunks estáveis
+- `npm --prefix frontend run test:smoke`: 26/26
+- `npm run test:e2e`: 11/11 (docker postgres/redis healthy)
+- `git diff --check`: passou
