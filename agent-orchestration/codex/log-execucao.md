@@ -1155,3 +1155,17 @@
 - hardening implementado: feedback local de sucesso/erro por acao, loading local para status/reatribuicao/cancelamento, protecao contra clique duplo, mensagem para usuario sem permissao mutavel e bloqueio visual para despacho terminal
 - testes atualizados para permissoes parciais e erro local de API nas acoes de despacho
 - fora de escopo mantido: backend, migrations, endpoints novos, Google Maps real, WebSocket, Flutter/mobile, roteirizacao, comissoes, pagamentos e fiscal
+
+## 2026-06-10 - frontend route splitting field ops
+
+- branch usada: `feature/frontend-route-splitting-field-ops`
+- fase 0: `git fetch origin`, `git checkout main`, `git pull --ff-only`, worktree limpo, PR #60 confirmada no codigo, `main` estava 2 commits atras e foi atualizado via fast-forward
+- fase 1: criada branch `feature/frontend-route-splitting-field-ops`
+- mapeamento: lido `App.tsx` completo (176 linhas, todas imports eager), modulos operations/map/dispatches (31 arquivos), work-orders (22 arquivos), platform/cloud-billing
+- implementacao: `React.lazy` + `Suspense` adicionados em `App.tsx` para 9 rotas pesadas; `PageLoader` inline como fallback
+- build antes: chunk `index.js` 512.08 kB (gzip 142.69 kB), warning Vite ativo
+- build depois: chunk `index.js` 389.29 kB (gzip 114.92 kB), warning Vite eliminado, 22 chunks async gerados
+- validacoes: `npm run check` passou, `npm run lint` passou, `npm test` passou (15 testes), `npm run build` passou, `npm --prefix frontend run check` passou, `npm --prefix frontend run build` passou (sem warning), `npm --prefix frontend run test:smoke` passou (26 testes), `git diff --check` passou
+- e2e (`npm run test:e2e`) nao foi possivel executar por exigir PostgreSQL/Docker ativo; testes unitarios e smoke cobrem o comportamento
+- documentacao atualizada em `docs/frontend-screens.md`, `docs/modules.md`, `agent-orchestration/docs/status-geral.md` e este log
+- fora de escopo mantido: backend, migrations, endpoints novos, Google Maps real, WebSocket, Flutter/mobile, roteirizacao, comissoes, pagamentos e fiscal

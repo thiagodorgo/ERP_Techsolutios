@@ -366,3 +366,13 @@ Fonte backend oficial:
 - `relatedEndpoints` documenta rastreabilidade com APIs de dominio;
 - menus locais continuam apenas como fallback/mock de transicao.
 - implementação atual: `AppShell` e `PlatformLayout` consomem `useNavigationMenu`; o adapter mapeia ícones `lucide-react`, normaliza grupos e mantém active state via `NavLink`.
+
+## Performance — Route Splitting
+
+`App.tsx` aplica `React.lazy` + `Suspense` nas rotas operacionais pesadas para reduzir o chunk JS principal:
+
+- Rotas com lazy loading: `/operations/map`, `/operations/dispatches`, `/work-orders`, `/work-orders/new`, `/work-orders/:workOrderId`, `/platform/cloud-billing`, `/platform/tenants`, `/platform/tenants/:tenantId`, `/platform/tenants/:tenantId/modules`.
+- Rotas eager (critical path): `/login`, `/select-context`, `/dashboard`, `/operations/checklists`, `/administrator/checklists`, `/administrator/settings`, `/notifications`, `/logistics`.
+- Fallback visual: componente `PageLoader` inline com texto "Carregando...".
+- Impacto no build Vite: chunk principal reduziu de 512 kB para 389 kB (−122 kB, −24%); warning de chunk acima de 500 kB eliminado.
+- Guards e permissões preservados em todas as rotas.
