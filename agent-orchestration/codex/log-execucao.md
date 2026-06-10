@@ -1145,3 +1145,13 @@
 - `operations.map` no registry passou a declarar os endpoints condicionais de despacho ja existentes
 - documentacao atualizada em `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/api-screen-endpoints.md`, `docs/field-operator-location-map.md`, `docs/modules.md` e `docs/rbac.md`
 - fora de escopo mantido: backend novo, migrations, endpoints novos, Google Maps real, WebSocket/tempo real, Flutter/mobile, roteirizacao, despacho completo, pagamentos e fiscal
+
+## 2026-06-10 - field dispatch action audit hardening
+
+- branch usada: `feature/field-dispatch-action-audit-hardening`
+- PR base validada: #59 `feat: add operations map dispatch actions` mergeada na `main` com merge commit `bd27d6c1373b8f58f093e780270fc4f9d1151828`
+- comandos iniciais executados: `pwd`, `git status --short`, `git branch --show-current`, `git remote -v`, `git fetch origin`, `git checkout main`, `git pull --ff-only origin main`, `gh pr view 59`, `gh api repos/thiagodorgo/ERP_Techsolutios/pulls/59`, `git checkout -b feature/field-dispatch-action-audit-hardening`
+- mapeamento executado sobre `frontend/src/modules/operations`, `OperationsDispatchActionsPanel`, `OperationsOperatorDetailPanel`, `OperationsMapPage`, testes smoke/dispatches e E2E
+- hardening implementado: feedback local de sucesso/erro por acao, loading local para status/reatribuicao/cancelamento, protecao contra clique duplo, mensagem para usuario sem permissao mutavel e bloqueio visual para despacho terminal
+- testes atualizados para permissoes parciais e erro local de API nas acoes de despacho
+- fora de escopo mantido: backend, migrations, endpoints novos, Google Maps real, WebSocket, Flutter/mobile, roteirizacao, comissoes, pagamentos e fiscal

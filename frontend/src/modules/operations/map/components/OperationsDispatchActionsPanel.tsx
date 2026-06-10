@@ -8,6 +8,10 @@ import type { DispatchesApiContext } from "../../dispatches/dispatches.types";
 import type { OperationsMapDispatch } from "../operations-map.types";
 
 type ActionMode = "status" | "cancel" | "reassign" | null;
+type ActionFeedback = {
+  readonly action: Exclude<ActionMode, null>;
+  readonly message: string;
+};
 
 export function OperationsDispatchActionsPanel({
   dispatch,
@@ -28,7 +32,10 @@ export function OperationsDispatchActionsPanel({
   const [cancelReason, setCancelReason] = useState("");
   const [cancelObservation, setCancelObservation] = useState("Despacho cancelado pelo Mapa Operacional.");
   const [savingCancel, setSavingCancel] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [savingStatus, setSavingStatus] = useState(false);
+  const [savingReassign, setSavingReassign] = useState(false);
+  const [error, setError] = useState<ActionFeedback | null>(null);
+  const [success, setSuccess] = useState<ActionFeedback | null>(null);
 
   async function refreshAfterChange() {
     await onChanged();
@@ -36,28 +43,53 @@ export function OperationsDispatchActionsPanel({
   }
 
   async function cancelDispatch() {
+    if (savingCancel) return;
     if (!globalThis.window.confirm("Confirmar cancelamento do despacho?")) return;
 
     setSavingCancel(true);
     setError(null);
+    setSuccess(null);
     try {
       await updateDispatchStatus(context, dispatch.id, {
         status: "cancelled",
         observation: cancelObservation,
         reason: cancelReason,
       });
-      setCancelReason("");
       await refreshAfterChange();
+      setCancelReason("");
+      setSuccess({ action: "cancel", message: "Despacho cancelado. Mapa atualizado com a nova situacao." });
     } catch {
-      setError("Nao foi possivel cancelar o despacho pelo mapa. Tente novamente ou acompanhe pela tela de Despachos.");
+      setError({
+        action: "cancel",
+        message: "Nao foi possivel cancelar o despacho pelo mapa. O despacho nao foi alterado localmente.",
+      });
     } finally {
       setSavingCancel(false);
     }
   }
 
   const canUseActions = canUpdate || canCancel || canReassign;
+  const isTerminalDispatch = dispatch.status === "completed" || dispatch.status === "cancelled" || dispatch.status === "failed";
 
-  if (!canUseActions) return null;
+  if (!canUseActions) {
+    return (
+      <section className="operations-map-dispatch-actions" aria-label="Acoes do despacho">
+        <Alert title="Sem acoes disponiveis" tone="info">
+          Seu perfil pode acompanhar este despacho, mas nao pode alterar status, cancelar ou reatribuir pelo mapa.
+        </Alert>
+      </section>
+    );
+  }
+
+  if (isTerminalDispatch) {
+    return (
+      <section className="operations-map-dispatch-actions" aria-label="Acoes do despacho">
+        <Alert title="Despacho terminal" tone="info">
+          Este despacho esta em status final e nao permite novas acoes operacionais pelo mapa.
+        </Alert>
+      </section>
+    );
+  }
 
   return (
     <section className="operations-map-dispatch-actions" aria-label="Acoes do despacho">
@@ -72,7 +104,12 @@ export function OperationsDispatchActionsPanel({
 
       {error ? (
         <Alert title="Acao nao concluida" tone="warning">
-          {error}
+          {error.message}
+        </Alert>
+      ) : null}
+      {success ? (
+        <Alert title="Acao concluida" tone="info">
+          {success.message}
         </Alert>
       ) : null}
 
@@ -98,13 +135,23 @@ export function OperationsDispatchActionsPanel({
         <DispatchStatusActions
           currentStatus={dispatch.status}
           canCancel={canCancel}
+          disabled={savingStatus}
           onSubmit={async (payload) => {
+            if (savingStatus) return;
+            setSavingStatus(true);
             setError(null);
+            setSuccess(null);
             try {
               await updateDispatchStatus(context, dispatch.id, payload);
               await refreshAfterChange();
+              setSuccess({ action: "status", message: "Status do despacho atualizado. Mapa atualizado com os dados mais recentes." });
             } catch {
-              setError("Nao foi possivel alterar o status pelo mapa. O despacho nao foi alterado localmente.");
+              setError({
+                action: "status",
+                message: "Nao foi possivel alterar o status pelo mapa. O despacho nao foi alterado localmente.",
+              });
+            } finally {
+              setSavingStatus(false);
             }
           }}
         />
@@ -113,13 +160,23 @@ export function OperationsDispatchActionsPanel({
       {mode === "reassign" && canReassign ? (
         <DispatchReassignForm
           currentOperatorUserId={dispatch.operatorUserId}
+          disabled={savingReassign}
           onSubmit={async (payload) => {
+            if (savingReassign) return;
+            setSavingReassign(true);
             setError(null);
+            setSuccess(null);
             try {
               await reassignDispatch(context, dispatch.id, payload);
               await refreshAfterChange();
+              setSuccess({ action: "reassign", message: "Despacho reatribuido. Mapa atualizado com o novo operador." });
             } catch {
-              setError("Nao foi possivel reatribuir o despacho pelo mapa. O despacho nao foi alterado localmente.");
+              setError({
+                action: "reassign",
+                message: "Nao foi possivel reatribuir o despacho pelo mapa. O despacho nao foi alterado localmente.",
+              });
+            } finally {
+              setSavingReassign(false);
             }
           }}
         />

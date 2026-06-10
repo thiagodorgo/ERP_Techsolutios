@@ -18,10 +18,13 @@ export function DispatchReassignForm({
 
   async function submit() {
     setSaving(true);
-    await onSubmit({ operatorUserId, observation, reason });
-    setSaving(false);
-    setOperatorUserId("");
-    setReason("");
+    try {
+      await onSubmit({ operatorUserId, observation, reason });
+      setOperatorUserId("");
+      setReason("");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (

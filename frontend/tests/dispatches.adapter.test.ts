@@ -167,3 +167,50 @@ test("dispatches service usa endpoints de status, cancelamento e reatribuicao", 
     process.env.VITE_API_BASE_URL = previousApiBaseUrl;
   }
 });
+
+test("dispatches service propaga erro local de API nas acoes do mapa", async () => {
+  const previousUseMocks = process.env.VITE_USE_MOCKS;
+  const previousApiBaseUrl = process.env.VITE_API_BASE_URL;
+  process.env.VITE_USE_MOCKS = "false";
+  process.env.VITE_API_BASE_URL = "/api/v1";
+  const calls: FetchCall[] = [];
+
+  Object.defineProperty(globalThis, "fetch", {
+    configurable: true,
+    value: async (url: string, init: RequestInit = {}) => {
+      calls.push({ url, init });
+      return new Response(JSON.stringify({ error: { code: "FIELD_DISPATCH_INVALID" } }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  try {
+    const { updateDispatchStatus } = await import("../src/modules/operations/dispatches/dispatches.service");
+    await assert.rejects(
+      () =>
+        updateDispatchStatus(
+          { token: "jwt-test-token", permissions: ["field_dispatch:update"] },
+          "dispatch-1",
+          { status: "on_route", observation: "Pelo mapa" },
+        ),
+      /API request failed: 500/,
+    );
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, "/api/v1/operations/dispatches/dispatch-1/status");
+    assert.equal(calls[0].init.method, "PATCH");
+  } finally {
+    if (previousUseMocks === undefined) {
+      delete process.env.VITE_USE_MOCKS;
+    } else {
+      process.env.VITE_USE_MOCKS = previousUseMocks;
+    }
+    if (previousApiBaseUrl === undefined) {
+      delete process.env.VITE_API_BASE_URL;
+    } else {
+      process.env.VITE_API_BASE_URL = previousApiBaseUrl;
+    }
+  }
+});

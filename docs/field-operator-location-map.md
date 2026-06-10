@@ -30,6 +30,7 @@ Componentes da tela:
 - status do despacho no marcador, lista e painel de detalhe quando houver permissao `field_dispatch:read`;
 - acao contextual para acompanhar despacho existente ou abrir `/operations/dispatches` com `workOrderId` e `operatorUserId` para criacao quando houver `field_dispatch:create`;
 - acoes diretas no painel de detalhe quando houver despacho vinculado: alterar status com `field_dispatch:update`, cancelar com `field_dispatch:cancel` e motivo obrigatorio, e reatribuir com `field_dispatch:reassign`;
+- hardening de UX das acoes: feedback local de sucesso/erro, loading apenas no formulario ativo, bloqueio contra clique duplo, mensagem para perfil sem permissao de acao e bloqueio visual para despachos em status terminal;
 - link para `/work-orders/:workOrderId` a partir da lista ou detalhe do operador;
 - estados de loading, erro, vazio e fallback/mock local.
 

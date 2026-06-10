@@ -191,6 +191,7 @@ Status desta branch:
 - integracao com Work Orders implementada sem endpoints novos: quando `work_orders:read` esta presente, marcador/lista/detalhe mostram OS atual ou atribuida e linkam para `/work-orders/:workOrderId`;
 - integracao com Despachos implementada sem endpoints novos: quando `field_dispatch:read` esta presente, marcador/lista/detalhe mostram o despacho vinculado e linkam para `/operations/dispatches`; quando `field_dispatch:create` tambem esta presente e existe OS atual, a acao de criacao abre `/operations/dispatches?workOrderId=...&operatorUserId=...`;
 - acoes diretas no detalhe do operador quando existe despacho vinculado: alterar status com `field_dispatch:update`, cancelar com `field_dispatch:cancel` e reatribuir com `field_dispatch:reassign`, usando os endpoints existentes e refresh do mapa apos sucesso;
+- hardening das acoes diretas: mensagens locais de sucesso/erro, loading restrito ao painel de acao, protecao contra clique duplo, motivo obrigatorio no cancelamento, permissao parcial respeitada por botao e mensagem para perfil somente leitura;
 - Google Maps real, roteirizacao e tempo real permanecem fora do escopo.
 
 Funcionalidades:

@@ -1279,6 +1279,54 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
       onChanged={() => undefined}
     />,
   );
+  const updateOnlyDispatchActionsHtml = renderToString(
+    <OperationsDispatchActionsPanel
+      dispatch={{
+        id: "dispatch-1",
+        workOrderId: "wo-1",
+        operatorUserId: "usr-1",
+        status: "on_route",
+        createdAt: "2026-06-10T12:00:00.000Z",
+      }}
+      context={{ permissions: ["field_dispatch:update"] }}
+      canUpdate
+      canCancel={false}
+      canReassign={false}
+      onChanged={() => undefined}
+    />,
+  );
+  const readOnlyDispatchActionsHtml = renderToString(
+    <OperationsDispatchActionsPanel
+      dispatch={{
+        id: "dispatch-1",
+        workOrderId: "wo-1",
+        operatorUserId: "usr-1",
+        status: "on_route",
+        createdAt: "2026-06-10T12:00:00.000Z",
+      }}
+      context={{ permissions: ["field_dispatch:read"] }}
+      canUpdate={false}
+      canCancel={false}
+      canReassign={false}
+      onChanged={() => undefined}
+    />,
+  );
+  const terminalDispatchActionsHtml = renderToString(
+    <OperationsDispatchActionsPanel
+      dispatch={{
+        id: "dispatch-1",
+        workOrderId: "wo-1",
+        operatorUserId: "usr-1",
+        status: "completed",
+        createdAt: "2026-06-10T12:00:00.000Z",
+      }}
+      context={{ permissions: ["field_dispatch:update", "field_dispatch:cancel", "field_dispatch:reassign"] }}
+      canUpdate
+      canCancel
+      canReassign
+      onChanged={() => undefined}
+    />,
+  );
 
   assert.match(loginHtml, /W01 Login/);
   assert.match(protectedHtml, /Checklists Operacionais/);
@@ -1287,6 +1335,10 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(protectedHtml, /Mapa Operacional/);
   assert.match(protectedHtml, /Visualização operacional inicial/);
   assert.match(dispatchActionsHtml, /Acoes do despacho|Alterar status|Reatribuir/);
+  assert.match(updateOnlyDispatchActionsHtml, /Alterar status/);
+  assert.doesNotMatch(updateOnlyDispatchActionsHtml, /Reatribuir|Cancelar/);
+  assert.match(readOnlyDispatchActionsHtml, /Sem acoes disponiveis/);
+  assert.match(terminalDispatchActionsHtml, /Despacho terminal/);
   assert.match(protectedHtml, /Despachos Operacionais/);
   assert.match(protectedHtml, /Notificacoes/);
   assert.match(runtimeHtml, /Executar checklist|Runtime operacional/);

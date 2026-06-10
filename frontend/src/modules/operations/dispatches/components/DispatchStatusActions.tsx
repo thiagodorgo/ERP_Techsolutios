@@ -23,12 +23,15 @@ export function DispatchStatusActions({
 
   async function submit() {
     setSaving(true);
-    await onSubmit({
-      status,
-      observation,
-      ...(status === "cancelled" ? { reason } : {}),
-    });
-    setSaving(false);
+    try {
+      await onSubmit({
+        status,
+        observation,
+        ...(status === "cancelled" ? { reason } : {}),
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
