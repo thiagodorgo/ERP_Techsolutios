@@ -17,10 +17,11 @@ export const tenantNavigation: NavigationItem[] = [
     path: "/work-orders",
     scope: "tenant",
     mode: "operation",
-    requiredPermissions: ["work-orders:view", "work-orders:create", "work-orders:update"],
+    requiredPermissions: ["work_orders:read"],
     allowedRoles: ["Super Admin", "Administrador", "Gestor Operacional", "Supervisor", "Operador Logistico"],
     icon: "work-orders",
     moduleKey: "work-orders",
+    status: "implemented",
   },
   {
     id: "tenant-logistics",

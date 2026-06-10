@@ -1249,3 +1249,19 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - documentacao atualizada em `docs/work-orders.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/frontend-menu-navigation.md`, `docs/field-operator-location-map.md`, `docs/backend-navigation-menu.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `RBAC_MATRIX.md` e este status
 - fora de escopo mantido: UI completa de Work Orders, despacho avancado, roteirizacao, comissao, pagamento de prestador, app Flutter, Google Maps real, fotos/assinaturas especificas de OS, estoque/pecas e integracao externa
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/work-orders.test.ts`, `node --test --import tsx tests/work-orders-routes.test.ts`, `node --test --import tsx tests/field-location-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/core-saas.test.ts` e `git diff --check`
+
+## Atualizacao 2026-06-09 - work orders UI
+
+- branch usada: `feature/work-orders-ui`
+- objetivo: implementar UI web de Ordens de Servico consumindo a API real de `work_orders`
+- rotas implementadas: `/work-orders`, `/work-orders/new` e `/work-orders/:workOrderId`
+- modulo frontend criado em `frontend/src/modules/work-orders` com types, adapter, service, hooks, mocks, paginas e componentes
+- endpoints consumidos: `GET /api/v1/work-orders`, `POST /api/v1/work-orders`, `GET /api/v1/work-orders/:workOrderId`, `PATCH /api/v1/work-orders/:workOrderId/status`, `POST /api/v1/work-orders/:workOrderId/assign` e `GET /api/v1/work-orders/:workOrderId/timeline`
+- lista implementada com KPIs, busca, filtros por status/prioridade/operador/periodo, tabela responsiva e estados loading/empty/error/fallback
+- criacao implementada com validacao frontend de titulo, prioridade, latitude, longitude e agendamento
+- detalhe implementado com dados de cliente/endereco/coordenadas/datas, timeline, alteracao de status, atribuicao manual por UUID e link para `/operations/map`
+- RBAC frontend alinhado para `work_orders:read`, `work_orders:create`, `work_orders:update`, `work_orders:assign`, `work_orders:status` e `work_orders:cancel`
+- fallback/mock seguro implementado para `VITE_USE_MOCKS=true`, API vazia, falha de API ou erro local de autorizacao
+- navigation registry atualizado para `operations.workOrders` como `implemented`
+- fora de escopo mantido: despacho avancado, roteirizacao, comissao de guincheiro/prestador, pagamento, Flutter/mobile, Google Maps real, upload de evidencias especificas de OS, estoque/pecas e novos endpoints backend
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate status`, `npm run test:e2e`, `node --test --import tsx tests/work-orders.test.ts`, `node --test --import tsx tests/work-orders-routes.test.ts`, `node --test --import tsx tests/field-location-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/core-saas.test.ts` e `git diff --check`

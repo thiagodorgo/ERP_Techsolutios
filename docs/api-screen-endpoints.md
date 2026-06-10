@@ -150,11 +150,11 @@ M12 nao pertence ao escopo de guincho/reboque e nao deve reutilizar a semantica 
 
 ## Operacao em Campo
 
-### Work Orders Foundation
+### Work Orders UI
 
-Objetivo: expor a API backend de Ordens de Servico para criar, listar, detalhar, atualizar, atribuir operador, mudar status e consultar timeline.
+Objetivo: expor a UI web de Ordens de Servico para criar, listar, detalhar, atribuir operador, mudar status e consultar timeline.
 
-Status desta branch: backend foundation implementado; UI completa, despacho avancado, roteirizacao, comissao, pagamento, app Flutter, Google Maps real, evidencias especificas de OS e estoque ficam fora do escopo.
+Status desta branch: UI web implementada para `/work-orders`, `/work-orders/new` e `/work-orders/:workOrderId`; despacho avancado, roteirizacao, comissao, pagamento, app Flutter, Google Maps real, evidencias especificas de OS e estoque ficam fora do escopo.
 
 Endpoints:
 
@@ -182,6 +182,12 @@ Relações futuras:
 - `checklist_id` prepara vinculo com checklist operacional;
 - coordenadas/endereco/operador preparam vinculo com Mapa Operacional;
 - assignments preparam despacho e comissoes futuras, sem calculo financeiro nesta branch.
+
+Fallback frontend:
+
+- `VITE_USE_MOCKS=true`, API vazia, falha de API ou erro de autorizacao local usam dados demonstrativos seguros;
+- o fallback deve ficar visivel como `Dados demonstrativos` ou `Fallback local`;
+- o frontend nao cria endpoints de operadores e aceita atribuicao manual por UUID ate a etapa de despacho.
 
 ### Mapa Operacional
 

@@ -147,6 +147,31 @@ test("Mapa Operacional renderiza UI inicial e fallback sem Google Maps real", as
   await expect(page.getByText(/Marina Costa|Operador API|Nenhum operador localizado/i).first()).toBeVisible();
 });
 
+test("Ordens de Servico renderiza lista, criacao e detalhe com fallback seguro", async ({ page }) => {
+  await loginAndActivateContext(page);
+  await enableWorkOrdersFrontendContext(page);
+
+  await page.goto("/work-orders");
+  await expect(page).toHaveURL(/\/work-orders$/);
+  await expect(page.getByRole("heading", { name: "Ordens de Servico" })).toBeVisible();
+  await expect(page.getByText("Total de OS")).toBeVisible();
+  await expect(page.getByText(/OS-000101|Nenhuma OS encontrada/).first()).toBeVisible();
+
+  await page.getByPlaceholder("Buscar por codigo, titulo ou cliente").fill("Atlas");
+  await expect(page.getByText(/Atlas Refrigeracao|Nenhuma OS encontrada/).first()).toBeVisible();
+
+  await page.goto("/work-orders/new");
+  await expect(page.getByRole("heading", { name: /Nova OS/i })).toBeVisible();
+  await page.getByRole("button", { name: "Salvar OS" }).click();
+  await expect(page.getByText("Titulo obrigatorio.")).toBeVisible();
+
+  await page.goto("/work-orders/11111111-1111-4111-8111-000000000001");
+  await expect(page.getByText("OS-000101")).toBeVisible();
+  await expect(page.getByText("Timeline")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Alterar status" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Atribuir operador" })).toBeVisible();
+});
+
 test("platform admin acessa Platform Console", async ({ page }) => {
   const navigationResponse = page.waitForResponse((response) => response.url().includes("/api/v1/navigation/menu?scope=platform"));
   await loginAsPlatformAdmin(page);
@@ -269,6 +294,28 @@ async function enableOperationsMapFrontendContext(page: Page): Promise<void> {
     const context = JSON.parse(raw) as { permissions?: string[]; enabledModules?: string[] };
     context.permissions = Array.from(new Set([...(context.permissions ?? []), "field_location:read", "field_location:history"]));
     context.enabledModules = Array.from(new Set([...(context.enabledModules ?? []), "field_operations"]));
+    window.localStorage.setItem(key, JSON.stringify(context));
+  });
+}
+
+async function enableWorkOrdersFrontendContext(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const key = "erp-techsolutions.active-context";
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return;
+
+    const context = JSON.parse(raw) as { permissions?: string[]; enabledModules?: string[] };
+    context.permissions = Array.from(
+      new Set([
+        ...(context.permissions ?? []),
+        "work_orders:read",
+        "work_orders:create",
+        "work_orders:update",
+        "work_orders:assign",
+        "work_orders:status",
+      ]),
+    );
+    context.enabledModules = Array.from(new Set([...(context.enabledModules ?? []), "work-orders"]));
     window.localStorage.setItem(key, JSON.stringify(context));
   });
 }

@@ -98,7 +98,7 @@ Matriz aplicada:
 
 ## Proximos passos
 
-- correlacionar operadores localizados com `work_orders` quando a UI evoluir para mostrar OS atual no Mapa Operacional;
+- correlacionar operadores localizados com `work_orders`; a UI de detalhe de OS ja aponta para `/operations/map` quando a OS possui coordenadas, mas o mapa ainda nao filtra por OS;
 - definir retencao e auditoria de coordenadas;
 - avaliar provider de mapas e integracao Google Maps real com `VITE_GOOGLE_MAPS_API_KEY`;
 - modelar despachos, rotas e eventos de campo;

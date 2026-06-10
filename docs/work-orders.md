@@ -1,10 +1,37 @@
-# Work Orders Foundation
+# Work Orders
 
 ## Objetivo
 
 `work_orders` e a entidade operacional central para conectar cliente/local, servico solicitado, operador, status operacional, checklists futuros, evidencias futuras, mapa operacional, despacho futuro e comissoes futuras.
 
-Esta branch entrega a fundacao backend. Nao implementa UI completa de Work Orders, despacho avancado, roteirizacao, comissao, pagamento de prestador, app Flutter, Google Maps real, fotos/assinaturas especificas de OS, estoque/pecas ou integracao externa.
+O backend foundation cria a API tenant-scoped e a UI web entrega a primeira experiencia operacional para supervisores acompanharem lista, criacao, detalhe, timeline, status e atribuicao simples.
+
+Fora do escopo atual: despacho avancado, roteirizacao, comissao, pagamento de prestador, app Flutter, Google Maps real, fotos/assinaturas especificas de OS, estoque/pecas ou integracao externa.
+
+## UI Web
+
+Rotas implementadas:
+
+```txt
+/work-orders
+/work-orders/new
+/work-orders/:workOrderId
+```
+
+Funcionalidades:
+
+- lista de Ordens de Servico com busca por codigo, titulo ou cliente;
+- filtros por status, prioridade, operador atribuido e periodo;
+- KPIs de total, abertas, atribuidas, em atendimento, concluidas, canceladas e urgentes;
+- formulario de nova OS com validacao de titulo, prioridade, coordenadas e agendamento;
+- detalhe com cliente, telefone, endereco, coordenadas, agendamento, operador, datas e descricao;
+- timeline consumindo eventos do backend;
+- acao de status protegida por `work_orders:status`;
+- atribuicao simples por UUID protegida por `work_orders:assign`;
+- link para `/operations/map` quando a OS possui latitude/longitude;
+- fallback/mock seguro com indicacao visual `Dados demonstrativos` ou `Fallback local`.
+
+O frontend usa `frontend/src/modules/work-orders` com types, adapter, service, hooks, mocks e componentes dedicados. O adapter aceita snake_case e camelCase para manter compatibilidade com o contrato da API.
 
 ## Tabelas
 
@@ -57,6 +84,15 @@ GET   /api/v1/work-orders/:workOrderId/timeline
 - `work_orders:delete`
 
 `work_orders:delete` fica reservado para regra futura; nao ha endpoint de delete nesta branch.
+
+Mapeamento frontend:
+
+- `/work-orders`: `work_orders:read`
+- `/work-orders/new`: `work_orders:create`
+- `/work-orders/:workOrderId`: `work_orders:read`
+- alterar status: `work_orders:status`
+- atribuir operador: `work_orders:assign`
+- editar dados basicos futuro: `work_orders:update`
 
 ## Eventos
 

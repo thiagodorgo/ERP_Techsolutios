@@ -216,11 +216,29 @@ RBAC:
 
 ## Ordens de Servico
 
-Status desta branch:
+Telas implementadas:
 
-- backend foundation `work_orders` implementado;
-- item de menu `operations.workOrders` passa a `backend-ready`;
-- UI completa de Work Orders nao foi implementada nesta rodada.
+- `Ordens de Servico`, rota `/work-orders`.
+- `Nova OS`, rota `/work-orders/new`.
+- `Detalhe da OS`, rota `/work-orders/:workOrderId`.
+
+Funcionalidades implementadas:
+
+- lista com KPIs, busca, filtros por status/prioridade/operador/periodo e tabela responsiva;
+- formulario de criacao consumindo `POST /api/v1/work-orders`;
+- detalhe consumindo `GET /api/v1/work-orders/:workOrderId` e timeline por `GET /api/v1/work-orders/:workOrderId/timeline`;
+- alteracao de status via `PATCH /api/v1/work-orders/:workOrderId/status`;
+- atribuicao simples por UUID via `POST /api/v1/work-orders/:workOrderId/assign`;
+- badges de status/prioridade, estados loading/empty/error e fallback/mock seguro;
+- link para `/operations/map` quando a OS possui coordenadas.
+
+RBAC frontend:
+
+- `/work-orders`: `work_orders:read`;
+- `/work-orders/new`: `work_orders:create`;
+- `/work-orders/:workOrderId`: `work_orders:read`;
+- status: `work_orders:status`;
+- atribuicao: `work_orders:assign`.
 
 Vinculos futuros previstos:
 
