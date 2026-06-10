@@ -376,3 +376,14 @@ Fonte backend oficial:
 - Fallback visual: componente `PageLoader` inline com texto "Carregando...".
 - Impacto no build Vite: chunk principal reduziu de 512 kB para 389 kB (−122 kB, −24%); warning de chunk acima de 500 kB eliminado.
 - Guards e permissões preservados em todas as rotas.
+
+## Performance — Manual Vendor Chunks
+
+`vite.config.ts` define `build.rollupOptions.output.manualChunks` para separar vendors estáveis do chunk de aplicação e melhorar cache de longo prazo:
+
+- `vendor-react` (232 kB, gzip: 74 kB): `react`, `react-dom`, `react-router-dom`, `scheduler` — atualizados apenas em novas versões do framework.
+- `vendor-icons` (38 kB, gzip: 8 kB): `lucide-react` — atualizado apenas em nova versão da biblioteca de ícones.
+- Chunk principal de aplicação: 389 kB → 125 kB (−67%); apenas código de app, sem runtime de framework.
+- Nenhum warning Vite (todos os chunks abaixo de 500 kB).
+- Cache de longo prazo: em deploys comuns, apenas o chunk de app (~125 kB) muda; vendors ficam em cache do browser.
+- Route splitting da PR #61 (React.lazy + Suspense) preservado integralmente.

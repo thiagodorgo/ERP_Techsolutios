@@ -1375,3 +1375,16 @@ Iniciar implementacao do core SaaS do MVP competitivo.
   - logout real revoga sessao
 - lazy loading comprovado por E2E real: /operations/map, /operations/dispatches e /work-orders carregam sem travar o PageLoader
 - fora de escopo mantido: feature nova, backend, migrations, endpoints novos, Google Maps real, WebSocket, Flutter/mobile, roteirizacao, comissoes, pagamentos e fiscal
+
+## Atualizacao 2026-06-10 - manual vendor chunks
+
+- branch usada: `feature/frontend-manual-vendor-chunks`
+- objetivo: separar vendors estáveis via `build.rollupOptions.output.manualChunks` para melhorar cache de longo prazo
+- escopo mantido em `vite.config.ts` e documentacao; sem backend, migrations, endpoints, permissoes, redesign ou mobile
+- implementado `manualChunks` em `vite.config.ts`: `vendor-react` (react + react-dom + react-router-dom + scheduler) e `vendor-icons` (lucide-react)
+- build antes: chunk principal 389 kB (gzip 115 kB), sem warning Vite
+- build depois: chunk principal 125 kB (gzip 34 kB), `vendor-react` 232 kB (gzip 74 kB), `vendor-icons` 38 kB (gzip 8 kB); sem warning Vite
+- reducao do chunk de app: -264 kB (-67%); vendors em cache entre deploys
+- route splitting da PR #61 (React.lazy + Suspense) preservado integralmente
+- 11/11 testes E2E passaram em 23.3s com Docker/PostgreSQL ativos
+- fora de escopo mantido: backend, migrations, endpoints novos, Google Maps real, WebSocket, Flutter/mobile, roteirizacao, comissoes, pagamentos e fiscal
