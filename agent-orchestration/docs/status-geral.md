@@ -1353,3 +1353,25 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - guards `PermissionGuard` e `PlatformGuard` preservados em todas as rotas
 - impacto no build: chunk principal de 512 kB -> 389 kB (-122 kB, -24%); warning Vite eliminado; 22 chunks async gerados
 - fora de escopo mantido: backend novo, migrations, Google Maps real, WebSocket/tempo real, Flutter/mobile, roteirizacao avancada, comissoes, pagamentos e fiscal
+
+## Atualizacao 2026-06-10 - validacao E2E field ops apos route splitting
+
+- branch usada: `feature/field-ops-e2e-validation-after-route-splitting`
+- objetivo: executar e registrar a validacao E2E completa dos fluxos de campo apos o merge da PR #61 (route splitting)
+- escopo: testes, infra e documentacao; sem codigo de feature, backend, migrations, endpoints, permissoes, redesign ou mobile
+- infra: Docker Desktop reiniciado (daemon WSL havia parado), containers `erp-postgres` e `erp-redis` subidos com `docker compose up -d`, ambos healthy
+- Prisma: validate passou, generate passou, migrate deploy (14 migrations, nenhuma pendente), migrate status (database schema up to date), seed executado com sucesso
+- todos os 11 testes E2E passaram em 35.6s com 1 worker chromium real:
+  - login real, credenciais invalidas e rota protegida exige auth
+  - tenant admin ve sidebar correta e nao ve Platform Console
+  - inbox de notificacoes
+  - Mapa Operacional carrega apos lazy/Suspense e renderiza fallback sem Google Maps
+  - Despachos Operacionais carrega apos lazy/Suspense com lista, KPIs e acoes RBAC
+  - Ordens de Servico carrega apos lazy/Suspense com lista, criacao e detalhe
+  - Platform Admin acessa Platform Console
+  - W02A Checklists renderiza builder
+  - runtime web de checklists bloqueia obrigatorios incompletos
+  - W03 Configuracoes
+  - logout real revoga sessao
+- lazy loading comprovado por E2E real: /operations/map, /operations/dispatches e /work-orders carregam sem travar o PageLoader
+- fora de escopo mantido: feature nova, backend, migrations, endpoints novos, Google Maps real, WebSocket, Flutter/mobile, roteirizacao, comissoes, pagamentos e fiscal
