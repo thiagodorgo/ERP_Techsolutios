@@ -1190,3 +1190,24 @@
 - `git diff --check`: passou; `git status --short`: limpo; nenhum arquivo de codigo precisou ser alterado
 - documentacao atualizada em `agent-orchestration/docs/status-geral.md` e este log
 - fora de escopo mantido: feature nova, backend, migrations, endpoints, Google Maps real, WebSocket, Flutter/mobile, roteirizacao, comissoes, pagamentos e fiscal
+
+## 2026-06-10 - manual vendor chunks
+
+- branch usada: `feature/frontend-manual-vendor-chunks`
+- base: `main` atualizado com PR #62 (25faea2), worktree limpo
+- fase 0: `git fetch origin`, `git checkout main`, `git pull --ff-only` — fast-forward ok, PR #62 confirmada
+- fase 1: criada branch `feature/frontend-manual-vendor-chunks`
+- mapeamento: lido `vite.config.ts` (9 linhas, apenas `plugins` e `server`), `frontend/package.json` — deps: react 19, react-dom, react-router-dom 7, lucide-react, vite 6
+- build antes: chunk `index.js` 389.29 kB (gzip 114.92 kB), sem warning Vite
+- implementacao: adicionado `build.rollupOptions.output.manualChunks` em `vite.config.ts`
+  - `vendor-react`: `node_modules/react/`, `node_modules/react-dom/`, `node_modules/react-router`, `node_modules/scheduler/`
+  - `vendor-icons`: `node_modules/lucide-react/`
+- build depois: chunk `index.js` 125.38 kB (gzip 33.89 kB); `vendor-react` 232.37 kB (gzip 74.21 kB); `vendor-icons` 38.77 kB (gzip 8.15 kB); sem warning Vite
+- reducao do chunk de app: 389 kB -> 125 kB (-264 kB, -67%); total de bytes muito proximo, porcao estavel agora em cache de longo prazo
+- `npm run check`: passou; `npm run lint`: passou; `npm test`: passou (15 testes); `npm run build`: passou
+- `npm --prefix frontend run check`: passou; `npm --prefix frontend run build`: passou (125 kB, sem warning); `npm --prefix frontend run test:smoke`: passou (26 testes)
+- docker: `erp-postgres` e `erp-redis` ja estavam healthy; `prisma migrate deploy` (14 migrations, nenhuma pendente); `prisma migrate status`: up to date
+- `npm run test:e2e`: **11/11 testes passaram em 23.3s** com 1 worker chromium real e banco real
+- `git diff --check`: passou; `git status --short`: limpo
+- documentacao atualizada em `docs/frontend-screens.md`, `docs/modules.md`, `agent-orchestration/docs/status-geral.md` e este log
+- fora de escopo mantido: backend, migrations, endpoints novos, Google Maps real, WebSocket, Flutter/mobile, roteirizacao, comissoes, pagamentos e fiscal
