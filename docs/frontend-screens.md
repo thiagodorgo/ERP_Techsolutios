@@ -221,14 +221,16 @@ RBAC:
 
 ## Despachos Operacionais
 
-Tela prevista:
+Tela implementada:
 
 - `Despachos`, rota `/operations/dispatches`.
 
 Status desta branch:
 
-- backend foundation implementado e item `operations.dispatches` marcado como `backend-ready` no menu backend;
-- UI completa de despacho ainda nao implementada;
+- backend foundation existente consumido pela UI web inicial;
+- item `operations.dispatches` marcado como `implemented` no menu backend;
+- a tela lista despachos, exibe KPIs, filtra por status/prioridade/operador/busca por OS, abre detalhe, cria despacho simples, altera status, cancela quando permitido e reatribui operador;
+- fallback/mock seguro permanece visivel em ambiente local, API vazia ou erro de autorizacao;
 - Google Maps real, roteirizacao, otimizacao, tempo real/WebSocket e Flutter permanecem fora do escopo.
 
 Funcionalidades backend disponiveis:
@@ -248,7 +250,7 @@ Endpoints:
 - `PATCH /api/v1/operations/dispatches/:dispatchId/status`;
 - `PATCH /api/v1/operations/dispatches/:dispatchId/reassign`.
 
-RBAC frontend futuro:
+RBAC frontend:
 
 - `/operations/dispatches`: `field_dispatch:read`;
 - criar: `field_dispatch:create`;
@@ -288,7 +290,7 @@ Vinculos futuros previstos:
 - checklist operacional por `checklistId`;
 - Mapa Operacional por endereco/coordenadas e operador atribuido, ja com correlacao visual basica;
 - evidencias/anexos especificos de OS;
-- UI completa de despacho, roteirizacao e comissoes em etapas futuras.
+- despacho avancado, roteirizacao e comissoes em etapas futuras.
 
 ## Notificacoes
 

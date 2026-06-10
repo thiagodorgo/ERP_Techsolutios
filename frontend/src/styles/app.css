@@ -2133,6 +2133,24 @@
   align-items: start;
 }
 
+.dispatches-page,
+.dispatches-main,
+.dispatch-detail-panel {
+  display: grid;
+  gap: var(--space-16);
+}
+
+.dispatches-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  gap: var(--space-16);
+  align-items: start;
+}
+
+.dispatches-filters {
+  grid-template-columns: minmax(220px, 1fr) repeat(4, minmax(140px, 180px)) auto;
+}
+
 .erp-queue-items {
   display: flex;
   gap: var(--space-8);
@@ -2314,6 +2332,7 @@
     .checklist-runtime-comparison-grid,
     .cloud-billing-rules,
     .operations-map-layout,
+    .dispatches-layout,
     .work-order-detail-layout,
     .work-order-form-grid,
     .tenant-settings-grid,
@@ -2322,12 +2341,14 @@
   }
 
   .operations-map-kpis,
-  .work-orders-kpis {
+  .work-orders-kpis,
+  .dispatches-kpis {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .operations-map-filters,
-  .work-orders-filters {
+  .work-orders-filters,
+  .dispatches-filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -2419,12 +2440,15 @@
     .checklist-runtime-marker-form,
     .cloud-billing-rules,
     .operations-map-layout,
+    .dispatches-layout,
     .operations-map-kpis,
     .operations-map-filters,
     .work-order-detail-layout,
     .work-order-form-grid,
     .work-orders-kpis,
     .work-orders-filters,
+    .dispatches-kpis,
+    .dispatches-filters,
     .work-order-date-grid,
     .tenant-settings-overview,
     .tenant-settings-grid,

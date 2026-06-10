@@ -7,6 +7,7 @@ import { ChecklistRuntimePage } from "./modules/checklists/pages/ChecklistRuntim
 import { ChecklistRunsPage } from "./modules/checklists/pages/ChecklistRunsPage";
 import { TenantChecklistsPage } from "./modules/checklists/pages/TenantChecklistsPage";
 import { NotificationsPage } from "./modules/notifications/pages/NotificationsPage";
+import { OperationsDispatchesPage } from "./modules/operations/dispatches/pages/OperationsDispatchesPage";
 import { OperationsMapPage } from "./modules/operations/map/pages/OperationsMapPage";
 import { WorkOrderCreatePage } from "./modules/work-orders/pages/WorkOrderCreatePage";
 import { WorkOrderDetailPage } from "./modules/work-orders/pages/WorkOrderDetailPage";
@@ -100,6 +101,14 @@ export function App() {
             element={
               <PermissionGuard permissions={["field_location:read"]}>
                 <OperationsMapPage />
+              </PermissionGuard>
+            }
+          />
+          <Route
+            path="/operations/dispatches"
+            element={
+              <PermissionGuard permissions={["field_dispatch:read"]}>
+                <OperationsDispatchesPage />
               </PermissionGuard>
             }
           />

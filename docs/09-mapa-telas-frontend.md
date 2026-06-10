@@ -340,12 +340,13 @@ Princípios adotados:
 - **Prioridade:** MVP (básico) / Scale (assistido).
 
 ### W20A — Despachos Operacionais
-- **Objetivo:** futura tela para listar, criar, acompanhar status, cancelar e reatribuir despachos vinculados a OS e operadores de campo.
+- **Objetivo:** tela inicial para listar, criar, acompanhar status, cancelar e reatribuir despachos vinculados a OS e operadores de campo.
 - **Usuários:** Gestor, Supervisor, Operador autorizado.
-- **Rota prevista:** `/operations/dispatches`.
+- **Rota implementada:** `/operations/dispatches`.
 - **Permissões:** `field_dispatch:read`, `field_dispatch:create`, `field_dispatch:update`, `field_dispatch:cancel` e `field_dispatch:reassign`.
-- **APIs implementadas:** `GET /api/v1/operations/dispatches`, `POST /api/v1/operations/dispatches`, `GET /api/v1/operations/dispatches/:dispatchId`, `PATCH /api/v1/operations/dispatches/:dispatchId/status` e `PATCH /api/v1/operations/dispatches/:dispatchId/reassign`.
-- **Status desta branch:** backend foundation implementado e item de menu `operations.dispatches` marcado como `backend-ready`; UI completa, roteirizacao, Google Maps real, WebSocket e app Flutter ficam fora do escopo.
+- **APIs consumidas:** `GET /api/v1/operations/dispatches`, `POST /api/v1/operations/dispatches`, `GET /api/v1/operations/dispatches/:dispatchId`, `PATCH /api/v1/operations/dispatches/:dispatchId/status`, `PATCH /api/v1/operations/dispatches/:dispatchId/reassign` e `GET /api/v1/work-orders` quando `work_orders:read` estiver disponivel para enriquecer OS/prioridade.
+- **UI:** cabecalho, KPIs, filtros por status/prioridade/operador/busca por OS, listagem, detalhe, criacao simples, status/cancelamento, reatribuicao, badges e fallback/mock seguro.
+- **Status desta branch:** UI inicial implementada e item de menu `operations.dispatches` marcado como `implemented`; roteirizacao, Google Maps real, WebSocket e app Flutter ficam fora do escopo.
 - **Prioridade:** MVP foundation / Scale assistido.
 
 ### W21 — Estoque: Itens e saldos por filial

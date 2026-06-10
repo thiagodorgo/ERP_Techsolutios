@@ -86,7 +86,7 @@ Operacao:
 - `operations.workOrders` -> `/work-orders`, `Wrench`, `work_orders:read`, status `implemented`
 - `operations.map` -> `/operations/map`, `Map`, `field_location:read`, status `implemented`
 - `operations.fieldOperators` -> `/operations/field-operators`, `MapPin`, `field_operator:read`
-- `operations.dispatches` -> `/operations/dispatches`, `Route`, `field_dispatch:read`, status `backend-ready`
+- `operations.dispatches` -> `/operations/dispatches`, `Route`, `field_dispatch:read`, status `implemented`
 
 Logistica:
 
@@ -117,15 +117,16 @@ Platform items nao dependem de modulo de tenant.
 
 - CRUD persistido de menu.
 - Google Maps real.
-- Tela real de despacho, roteirizacao e Google Maps real.
+- Roteirizacao, Google Maps real e despacho avancado.
 
 ## Status frontend relacionado
 
 - `/operations/map` agora possui UI inicial no frontend web, protegida por `field_location:read` e dependente do modulo `field_operations`.
 - A UI consome `GET /api/v1/field-locations/latest` e `GET /api/v1/field-locations/history`, com mapa placeholder, KPIs, filtros, lista, detalhe e fallback/mock seguro.
 - Quando `work_orders:read` esta presente, a UI tambem usa `GET /api/v1/work-orders` para mostrar OS atual/atribuida e linkar para `/work-orders/:workOrderId`; sem essa permissao, o mapa segue sem link ou detalhe de OS.
-- `operations.dispatches` possui backend foundation em `/api/v1/operations/dispatches` com criacao, listagem, detalhe, status e reatribuicao; a tela frontend completa permanece futura.
-- Google Maps real, WebSocket/tempo real, UI completa de despacho e roteirizacao permanecem fora desta rodada.
+- `/operations/dispatches` possui UI web inicial protegida por `field_dispatch:read`, com acoes por `field_dispatch:create`, `field_dispatch:update`, `field_dispatch:cancel` e `field_dispatch:reassign`.
+- A UI consome `/api/v1/operations/dispatches` para criacao, listagem, detalhe, status e reatribuicao; quando `work_orders:read` esta presente, tambem usa `/api/v1/work-orders` para exibir codigo/titulo/prioridade da OS.
+- Google Maps real, WebSocket/tempo real, despacho avancado e roteirizacao permanecem fora desta rodada.
 - Work Orders UI implementada em `/work-orders`, `/work-orders/new` e `/work-orders/:workOrderId`, consumindo endpoints reais e fallback/mock seguro.
 - Backend de logistica.
 - Billing, fatura, pagamento ou fiscal tenant-scoped.

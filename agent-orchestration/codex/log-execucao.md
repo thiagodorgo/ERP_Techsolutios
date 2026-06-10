@@ -1103,3 +1103,18 @@
 - documentacao atualizada em `docs/modules.md`, `docs/rbac.md`, `docs/api.md`, `docs/api-screen-endpoints.md`, `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/field-operator-location-map.md`, `docs/work-orders.md`, `docs/database.md`, `docs/02-mapa-modulos.md`, `docs/05-requisitos-funcionais.md`, `RBAC_MATRIX.md`, `agent-orchestration/docs/status-geral.md` e este log
 - fora de escopo mantido: UI completa de despacho, Google Maps real, roteirizacao/otimizacao, WebSocket/tempo real, Flutter/mobile, comissoes, pagamentos e despacho completo
 - validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npx prisma validate`, `npx prisma generate`, `docker compose config`, `docker compose up -d`, `docker compose ps`, `npx prisma migrate deploy`, `npx prisma migrate status`, `node --test --import tsx tests/field-dispatch.test.ts`, `node --test --import tsx tests/field-dispatch-routes.test.ts`, `node --test --import tsx tests/navigation-menu.test.ts`, `node --test --import tsx tests/navigation-menu-routes.test.ts`, `node --test --import tsx tests/rls-tenant-isolation.test.ts`, `npm run test:e2e` e `git diff --check`
+
+## 2026-06-10 - field dispatch UI
+
+- branch usada: `feature/field-dispatch-ui`
+- comandos iniciais executados: `pwd`, `git status --short`, `git branch --show-current`, `git remote -v`, `git fetch origin`, `git checkout main`, `git pull --ff-only origin main`, `git checkout -b feature/field-dispatch-ui`, listagem de modulos, `rg` de Work Orders/Mapa/Field Dispatch, leitura do registry, docs e `frontend/src/App.tsx`
+- diagnostico inicial: branch anterior era `feature/field-dispatch-routing-foundation`; `main` foi atualizado ate a PR #56 e a branch `feature/field-dispatch-ui` iniciou com worktree limpo
+- modulo frontend criado: `frontend/src/modules/operations/dispatches`
+- rota criada: `/operations/dispatches`, protegida por `field_dispatch:read`
+- endpoints consumidos: `GET /api/v1/operations/dispatches`, `POST /api/v1/operations/dispatches`, `GET /api/v1/operations/dispatches/:dispatchId`, `PATCH /api/v1/operations/dispatches/:dispatchId/status`, `PATCH /api/v1/operations/dispatches/:dispatchId/reassign` e enriquecimento opcional via `GET /api/v1/work-orders`
+- UI implementada: listagem, KPIs, filtros, detalhe, criacao simples, status/cancelamento, reatribuicao, badges, fallback/mock e estados loading/empty/error
+- RBAC aplicado nas acoes: `field_dispatch:create`, `field_dispatch:update`, `field_dispatch:cancel` e `field_dispatch:reassign`
+- navigation registry atualizado para `operations.dispatches` como `implemented`; fallback local `tenantNavigation` tambem recebeu o item
+- testes atualizados/criados: `frontend/tests/smoke-flow.test.tsx`, `frontend/tests/dispatches.adapter.test.ts` e `tests/e2e/critical-flows.spec.ts`
+- documentacao atualizada em `docs/frontend-screens.md`, `docs/09-mapa-telas-frontend.md`, `docs/api-screen-endpoints.md`, `docs/modules.md`, `docs/rbac.md`, `docs/api.md`, `docs/backend-navigation-menu.md`, `docs/frontend-menu-navigation.md`, `docs/field-operator-location-map.md`, `docs/work-orders.md`, `docs/02-mapa-modulos.md`, `docs/platform-console.md`, `agent-orchestration/docs/status-geral.md` e este log
+- fora de escopo mantido: backend novo, migrations, Google Maps real, Flutter/mobile, roteirizacao avancada, WebSocket/tempo real, despacho completo, comissoes e pagamentos

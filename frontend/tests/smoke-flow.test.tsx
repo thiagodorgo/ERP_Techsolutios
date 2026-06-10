@@ -301,7 +301,7 @@ test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () =
   const operatorTenantItems = filterNavigationItems(
     {
       roles: ["Operador Logistico"],
-      permissions: ["dashboard:view", "work_orders:read", "checklist_runs:create", "field_location:read", "notifications:read"],
+      permissions: ["dashboard:view", "work_orders:read", "checklist_runs:create", "field_location:read", "field_dispatch:read", "notifications:read"],
       mode: "operation",
       scope: "tenant",
       tenantStatus: "active",
@@ -363,6 +363,7 @@ test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () =
   const withoutNotificationsPaths = flattenPaths(withoutNotificationsItems);
   assert.equal(operatorPaths.includes("/operations/checklists"), true);
   assert.equal(operatorPaths.includes("/operations/map"), true);
+  assert.equal(operatorPaths.includes("/operations/dispatches"), true);
   assert.equal(operatorPaths.includes("/notifications"), true);
   assert.equal(operatorPaths.includes("/administrator/checklists"), false);
   assert.equal(operatorPaths.includes("/administrator/settings"), false);
@@ -1169,6 +1170,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   const { ChecklistRunsPage } = await import("../src/modules/checklists/pages/ChecklistRunsPage");
   const { TenantChecklistsPage } = await import("../src/modules/checklists/pages/TenantChecklistsPage");
   const { NotificationsPage } = await import("../src/modules/notifications/pages/NotificationsPage");
+  const { OperationsDispatchesPage } = await import("../src/modules/operations/dispatches/pages/OperationsDispatchesPage");
   const { OperationsMapPage } = await import("../src/modules/operations/map/pages/OperationsMapPage");
   const { WorkOrderCreatePage } = await import("../src/modules/work-orders/pages/WorkOrderCreatePage");
   const { WorkOrdersPage } = await import("../src/modules/work-orders/pages/WorkOrdersPage");
@@ -1195,6 +1197,11 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
         "tenant:manage",
         "field_location:read",
         "field_location:history",
+        "field_dispatch:read",
+        "field_dispatch:create",
+        "field_dispatch:update",
+        "field_dispatch:cancel",
+        "field_dispatch:reassign",
         "work_orders:read",
         "work_orders:create",
         "work_orders:update",
@@ -1225,6 +1232,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
             <WorkOrderCreatePage />
             <TenantChecklistsPage />
             <OperationsMapPage />
+            <OperationsDispatchesPage />
             <NotificationsPage />
             <TenantSettingsPage />
             <PlatformTenantsPage />
@@ -1261,6 +1269,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(protectedHtml, /Nova OS/);
   assert.match(protectedHtml, /Mapa Operacional/);
   assert.match(protectedHtml, /Visualização operacional inicial/);
+  assert.match(protectedHtml, /Despachos Operacionais/);
   assert.match(protectedHtml, /Notificacoes/);
   assert.match(runtimeHtml, /Executar checklist|Runtime operacional/);
   assert.match(workOrderDetailHtml, /OS-000101|Timeline|Alterar status/);

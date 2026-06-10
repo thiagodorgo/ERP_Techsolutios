@@ -274,7 +274,8 @@ Regras:
 - eventos persistidos: `field_dispatch_created`, `field_dispatch_status_changed`, `field_dispatch_reassigned` e `field_dispatch_cancelled`;
 - auditoria best-effort registra `field_dispatch.created`, `field_dispatch.status_changed`, `field_dispatch.reassigned` e `field_dispatch.cancelled`;
 - RLS protege `field_dispatches` e `field_dispatch_events` por `app.current_tenant_id`;
-- UI completa de despacho, roteirizacao, Google Maps real, WebSocket e Flutter permanecem fora desta branch.
+- UI web inicial `/operations/dispatches` aplica `field_dispatch:read`, `field_dispatch:create`, `field_dispatch:update`, `field_dispatch:cancel` e `field_dispatch:reassign` por rota/acao;
+- roteirizacao, Google Maps real, WebSocket e Flutter permanecem fora desta branch.
 
 Roles padrao:
 

@@ -10,7 +10,7 @@ Itens registrados:
 
 - `operations.map` -> `/operations/map`, permissao `field_location:read`, modulo `field_operations`, UI inicial implementada com OS vinculada quando `work_orders:read` esta disponivel.
 - `operations.fieldOperators` -> `/operations/field-operators`, permissao `field_operator:read`, modulo `field_operations`.
-- `operations.dispatches` -> `/operations/dispatches`, permissao `field_dispatch:read`, modulo `field_operations`, status `backend-ready`.
+- `operations.dispatches` -> `/operations/dispatches`, permissao `field_dispatch:read`, modulo `field_operations`, status `implemented`.
 - `logistics.map` -> `/logistics/map`, permissao `field_location:read`, modulos `logistics` ou `field_operations`.
 
 ## UI web
@@ -83,7 +83,7 @@ GET /api/v1/work-orders/:workOrderId
 GET /api/v1/work-orders/:workOrderId/timeline
 ```
 
-Endpoints de despacho disponiveis para futura UI:
+Endpoints de despacho consumidos pela UI `/operations/dispatches`:
 
 ```http
 GET   /api/v1/operations/dispatches
@@ -129,6 +129,6 @@ Matriz aplicada:
 - filtro do mapa por OS especifica quando a rota receber contexto de origem;
 - definir retencao e auditoria de coordenadas;
 - avaliar provider de mapas e integracao Google Maps real com `VITE_GOOGLE_MAPS_API_KEY`;
-- implementar UI completa de despacho em `/operations/dispatches` e acao contextual a partir do mapa;
+- evoluir acao contextual de despacho a partir do mapa;
 - evoluir rotas e eventos de campo para roteirizacao assistida;
 - garantir opt-in, privacidade e controles por tenant antes de qualquer coleta real.

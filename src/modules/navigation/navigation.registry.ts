@@ -239,7 +239,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     icon: "Route",
     group: "operations",
     order: 250,
-    status: "backend-ready",
+    status: "implemented",
     requiredPermissions: ["field_dispatch:read"],
     requiredModules: ["field_operations"],
     tenantOnly: true,
