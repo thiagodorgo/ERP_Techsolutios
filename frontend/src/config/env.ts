@@ -1,7 +1,8 @@
 type FrontendEnvKey =
   | "VITE_API_BASE_URL"
   | "VITE_DEFAULT_TENANT_ID"
-  | "VITE_USE_MOCKS";
+  | "VITE_USE_MOCKS"
+  | "VITE_GOOGLE_MAPS_API_KEY";
 
 type ImportMetaWithEnv = ImportMeta & {
   readonly env?: Partial<Record<FrontendEnvKey, string>>;

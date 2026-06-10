@@ -1376,6 +1376,22 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - lazy loading comprovado por E2E real: /operations/map, /operations/dispatches e /work-orders carregam sem travar o PageLoader
 - fora de escopo mantido: feature nova, backend, migrations, endpoints novos, Google Maps real, WebSocket, Flutter/mobile, roteirizacao, comissoes, pagamentos e fiscal
 
+## Atualizacao 2026-06-10 - Google Maps provider no Mapa Operacional
+
+- branch usada: `feature/operations-map-google-maps-provider`
+- objetivo: integrar Google Maps real no `/operations/map` com fallback seguro para placeholder quando chave nao esta configurada
+- escopo mantido em frontend e documentacao; sem backend, migrations, endpoints novos, WebSocket, roteirizacao, Flutter/mobile ou pagamentos
+- criado hook `useGoogleMapsLoader` como singleton de modulo: carrega script Google Maps API uma vez por ciclo de pagina, notifica subscribers
+- criado `GoogleMapsCanvas`: renderiza marcadores reais com cores por status/selecao, panTo no selecionado, clique seleciona operador
+- `OperationsMapCanvas` agora funciona como seletor de provider: le `VITE_GOOGLE_MAPS_API_KEY`, se presente usa `GoogleMapsCanvas`, se ausente ou com erro usa mapa placeholder
+- tipos minimos declarados em `frontend/src/types/google-maps.d.ts`; sem nova dependencia runtime
+- `VITE_GOOGLE_MAPS_API_KEY` ja documentada no `.env.example`; nenhuma chave real commitada
+- smoke tests: corrigida assercao de texto do placeholder (26/26)
+- E2E: corrigidas assercoes do mapa para novo texto do placeholder; 11/11 passaram em 31.8s com Chromium real e PostgreSQL real
+- build: OperationsMapPage chunk 29.62 kB -> 32.45 kB; chunk principal mantido em 125 kB; sem warning Vite
+- painel lateral, OS vinculada, despacho vinculado e acoes preservados com e sem Google Maps
+- fora de escopo mantido: backend novo, migrations, WebSocket/tempo real, roteirizacao avancada, Flutter/mobile, comissoes, pagamentos e fiscal
+
 ## Atualizacao 2026-06-10 - manual vendor chunks
 
 - branch usada: `feature/frontend-manual-vendor-chunks`

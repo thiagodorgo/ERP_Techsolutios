@@ -1191,6 +1191,29 @@
 - documentacao atualizada em `agent-orchestration/docs/status-geral.md` e este log
 - fora de escopo mantido: feature nova, backend, migrations, endpoints, Google Maps real, WebSocket, Flutter/mobile, roteirizacao, comissoes, pagamentos e fiscal
 
+## 2026-06-10 - Google Maps provider no Mapa Operacional
+
+- branch usada: `feature/operations-map-google-maps-provider`
+- base: `main` atualizado com PR #63 (c2c9ff4), worktree limpo
+- fase 0: `git fetch origin`, `git checkout main`, `git pull --ff-only` — fast-forward ok, PR #63 confirmada
+- fase 0 mapeamento: lido `OperationsMapCanvas.tsx` (placeholder CSS puro), `OperationsMapPage.tsx`, `operations-map.types.ts`, `operations-map.adapter.ts`, `operations-map.mock.ts`, `.env.example` (VITE_GOOGLE_MAPS_API_KEY ja presente vazia), `frontend/src/config/env.ts` (padrao readFrontendEnv)
+- fase 1: criada branch `feature/operations-map-google-maps-provider`
+- criado `frontend/src/types/google-maps.d.ts`: tipos minimos de `google.maps.Map`, `google.maps.Marker` e interfaces; sem dependencia runtime nova
+- adicionado `VITE_GOOGLE_MAPS_API_KEY` ao tipo `FrontendEnvKey` em `frontend/src/config/env.ts`
+- criado `frontend/src/modules/operations/map/hooks/useGoogleMapsLoader.ts`: singleton de modulo, carrega script uma vez, notifica subscribers, estados: idle/loading/ready/error
+- criado `frontend/src/modules/operations/map/components/GoogleMapsCanvas.tsx`: inicializa google.maps.Map no useEffect quando ready, sincroniza marcadores (cor por status/selecao), panTo no selecionado, clique chama onSelect, cleanup no unmount
+- reescrito `frontend/src/modules/operations/map/components/OperationsMapCanvas.tsx`: le VITE_GOOGLE_MAPS_API_KEY via readFrontendEnv, chama useGoogleMapsLoader, usa GoogleMapsCanvas quando chave presente e sem erro, cai no placeholder existente quando chave ausente ou erro
+- corrigido: import `Map as MapIcon` no GoogleMapsCanvas para evitar shadowing do built-in `Map` pelo icone lucide-react
+- atualizado `frontend/src/modules/operations/map/pages/OperationsMapPage.tsx`: texto do alerta de limite removido "Google Maps" (entregue), mantido "roteirizacao e tempo real"
+- adicionado `.operations-map-canvas__gmaps` em `frontend/src/styles/app.css` (min-height 380px desktop, 420px tablet+)
+- `npm run check`: passou; `npm run lint`: passou; `npm test`: passou (15 testes); `npm run build`: passou
+- `npm --prefix frontend run check`: passou; `npm --prefix frontend run build`: passou (OperationsMapPage 32.45 kB, sem warning)
+- smoke: corrigida assercao `/Visualização operacional inicial/` para `/Visualização operacional/`; 26/26 passaram
+- E2E: corrigidas assercoes de texto do mapa placeholder e chip do provider; 11/11 passaram em 31.8s com Chromium real e PostgreSQL real
+- `git diff --check`: passou; `git status --short`: limpo
+- documentacao atualizada em `docs/frontend-screens.md`, `docs/modules.md`, `agent-orchestration/docs/status-geral.md` e este log
+- fora de escopo mantido: backend, migrations, endpoints novos, WebSocket/tempo real, roteirizacao avancada, Flutter/mobile, comissoes, pagamentos e fiscal
+
 ## 2026-06-10 - manual vendor chunks
 
 - branch usada: `feature/frontend-manual-vendor-chunks`

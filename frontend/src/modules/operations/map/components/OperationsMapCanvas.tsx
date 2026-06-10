@@ -2,10 +2,13 @@ import { AlertTriangle, Map, MapPin } from "lucide-react";
 import type { CSSProperties } from "react";
 
 import { Chip } from "../../../../components/ui";
+import { readFrontendEnv } from "../../../../config/env";
 import { getFieldLocationStatusLabel, getMarkerPosition } from "../operations-map.adapter";
 import { getDispatchStatusLabel } from "../../dispatches/dispatches.adapter";
 import { getWorkOrderStatusLabel } from "../../../work-orders/work-orders.adapter";
 import type { FieldLocationItem } from "../operations-map.types";
+import { useGoogleMapsLoader } from "../hooks/useGoogleMapsLoader";
+import { GoogleMapsCanvas } from "./GoogleMapsCanvas";
 
 export function OperationsMapCanvas({
   locations,
@@ -18,16 +21,38 @@ export function OperationsMapCanvas({
   onSelect: (location: FieldLocationItem) => void;
   showDispatches?: boolean;
 }) {
+  const apiKey = readFrontendEnv("VITE_GOOGLE_MAPS_API_KEY") || undefined;
+  const mapsLoadState = useGoogleMapsLoader(apiKey);
+
+  if (apiKey && mapsLoadState !== "error") {
+    return (
+      <GoogleMapsCanvas
+        loadState={mapsLoadState}
+        locations={locations}
+        selectedId={selectedId}
+        onSelect={onSelect}
+      />
+    );
+  }
+
+  const isApiKeyError = Boolean(apiKey) && mapsLoadState === "error";
+
   return (
-    <section className="operations-map-canvas" aria-label="Visualizacao operacional inicial">
+    <section className="operations-map-canvas" aria-label="Visualizacao operacional">
       <header>
         <div>
           <Map size={20} />
-          <strong>Visualização operacional inicial</strong>
+          <strong>Visualização operacional</strong>
         </div>
-        <Chip tone="info">Google Maps futuro</Chip>
+        <Chip tone={isApiKeyError ? "warning" : "info"}>
+          {isApiKeyError ? "Google Maps indisponível" : "Mapa placeholder"}
+        </Chip>
       </header>
-      <p>Visualização operacional inicial — integração Google Maps será adicionada em etapa futura.</p>
+      <p>
+        {isApiKeyError
+          ? "Google Maps não pôde ser carregado. Visualização operacional alternativa ativa."
+          : "Configure VITE_GOOGLE_MAPS_API_KEY para ativar o mapa real."}
+      </p>
       <div className="operations-map-canvas__surface">
         <span className="operations-map-canvas__road operations-map-canvas__road--primary" />
         <span className="operations-map-canvas__road operations-map-canvas__road--secondary" />

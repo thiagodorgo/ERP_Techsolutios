@@ -1694,6 +1694,14 @@
   background: rgb(14 116 144 / 34%);
 }
 
+.operations-map-canvas__gmaps {
+  width: 100%;
+  min-height: 380px;
+  border-radius: var(--radius-8);
+  overflow: hidden;
+  background: var(--surface-panel-muted);
+}
+
 .operations-map-marker {
   position: absolute;
   left: var(--x);
@@ -2517,6 +2525,10 @@
   }
 
   .operations-map-canvas__surface {
+    min-height: 420px;
+  }
+
+  .operations-map-canvas__gmaps {
     min-height: 420px;
   }
 
