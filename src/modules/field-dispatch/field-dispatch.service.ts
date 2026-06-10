@@ -1,4 +1,5 @@
 import { env } from "../../config/env.js";
+import { publishDomainEvent } from "../../infra/events/domain-event.publisher.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
 import { WorkOrderError } from "../work-orders/work-order.types.js";
 import {
@@ -88,6 +89,18 @@ export class FieldDispatchService {
       },
     });
 
+    await publishDomainEvent(
+      "field_dispatch.created",
+      {
+        entity_type: "field_dispatch",
+        entity_id: dispatch.id,
+        work_order_id: dispatch.workOrderId,
+        operator_user_id: dispatch.operatorUserId,
+        status: dispatch.status,
+      },
+      { tenantId: actor.tenantId, actorId: actor.userId },
+    );
+
     return dispatch;
   }
 
@@ -141,6 +154,19 @@ export class FieldDispatchService {
       },
     });
 
+    await publishDomainEvent(
+      nextStatus === "cancelled" ? "field_dispatch.cancelled" : "field_dispatch.status_changed",
+      {
+        entity_type: "field_dispatch",
+        entity_id: updated.id,
+        work_order_id: updated.workOrderId,
+        operator_user_id: updated.operatorUserId,
+        from_status: current.status,
+        to_status: nextStatus,
+      },
+      { tenantId: actor.tenantId, actorId: actor.userId },
+    );
+
     return updated;
   }
 
@@ -180,6 +206,18 @@ export class FieldDispatchService {
         reason: optionalString(body.reason),
       },
     });
+
+    await publishDomainEvent(
+      "field_dispatch.reassigned",
+      {
+        entity_type: "field_dispatch",
+        entity_id: updated.id,
+        work_order_id: updated.workOrderId,
+        operator_user_id: updated.operatorUserId,
+        previous_operator_user_id: current.operatorUserId,
+      },
+      { tenantId: actor.tenantId, actorId: actor.userId },
+    );
 
     return updated;
   }

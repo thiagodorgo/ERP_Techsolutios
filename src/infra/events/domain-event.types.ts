@@ -9,6 +9,12 @@ export const DOMAIN_EVENT_NAMES = [
   "checklist_run.acknowledgement_created",
   "notification.requested",
   "audit_log.created",
+  "field_location.updated",
+  "field_dispatch.created",
+  "field_dispatch.status_changed",
+  "field_dispatch.cancelled",
+  "field_dispatch.reassigned",
+  "work_order.status_changed",
 ] as const;
 
 export type DomainEventName = (typeof DOMAIN_EVENT_NAMES)[number];

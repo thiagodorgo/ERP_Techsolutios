@@ -1,4 +1,5 @@
 import { env } from "../../config/env.js";
+import { publishDomainEvent } from "../../infra/events/domain-event.publisher.js";
 import {
   InMemoryFieldLocationRepository,
   type FieldLocationRepository,
@@ -17,13 +18,13 @@ import {
 export class FieldLocationService {
   constructor(private readonly repository: FieldLocationRepository) {}
 
-  recordMobileLocation(
+  async recordMobileLocation(
     actor: FieldLocationActorContext,
     input: Omit<RecordFieldLocationInput, "tenantId" | "operatorUserId" | "source"> & {
       readonly source?: unknown;
     },
   ): Promise<FieldOperatorLocation> {
-    return this.repository.record({
+    const location = await this.repository.record({
       tenantId: actor.tenantId,
       operatorUserId: actor.userId,
       source: parseSource(input.source, "mobile"),
@@ -36,6 +37,19 @@ export class FieldLocationService {
       recordedAt: input.recordedAt ? parseDate(input.recordedAt, "recordedAt") : new Date(),
       metadata: sanitizeLocationMetadata(input.metadata),
     });
+
+    await publishDomainEvent(
+      "field_location.updated",
+      {
+        entity_type: "field_operator_location",
+        entity_id: location.id,
+        operator_user_id: actor.userId,
+        source: location.source,
+      },
+      { tenantId: actor.tenantId, actorId: actor.userId },
+    );
+
+    return location;
   }
 
   listLatest(

@@ -1,4 +1,5 @@
 import { env } from "../../config/env.js";
+import { publishDomainEvent } from "../../infra/events/domain-event.publisher.js";
 import {
   InMemoryWorkOrderRepository,
   type WorkOrderRepository,
@@ -183,6 +184,18 @@ export class WorkOrderService {
         cancellationReason,
       },
     });
+
+    await publishDomainEvent(
+      "work_order.status_changed",
+      {
+        entity_type: "work_order",
+        entity_id: updated.id,
+        code: updated.code,
+        from_status: current.status,
+        to_status: nextStatus,
+      },
+      { tenantId: actor.tenantId, actorId: actor.userId },
+    );
 
     return updated;
   }

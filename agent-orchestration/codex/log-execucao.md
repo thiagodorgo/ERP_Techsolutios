@@ -1262,3 +1262,43 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - `npm --prefix frontend run test:smoke`: 26/26
 - `npm run test:e2e`: 11/11 (docker postgres/redis healthy)
 - `git diff --check`: passou
+
+## Log 2026-06-10 - feature/field-ops-realtime-events-foundation
+
+### FASE 0 - Alinhamento
+- branch: main (29da59d, PR #65 confirmado)
+- worktree: limpo
+- nova branch: `feature/field-ops-realtime-events-foundation`
+
+### FASE 1 - Mapeamento
+- infra existente: `publishDomainEvent` em `src/infra/events/domain-event.publisher.ts`
+- tipos existentes: `DOMAIN_EVENT_NAMES` em `src/infra/events/domain-event.types.ts`
+- padrao existente: checklist.service.ts usa `await publishDomainEvent(name, payload, { tenantId, actorId })`
+- eventos sem job mapping retornam instantaneamente sem Redis
+
+### FASE 2 - Implementacao
+- `domain-event.types.ts`: +6 nomes de eventos field_ops
+- `field-dispatch.service.ts`: publishDomainEvent apos create, changeStatus, reassign
+- `field-location.service.ts`: recordMobileLocation tornado async, publishDomainEvent apos record (sem coords no payload)
+- `work-order.service.ts`: publishDomainEvent apos changeStatus
+- `tests/field-ops-events.test.ts`: 9 novos testes
+
+### FASE 3 - Validacoes
+- npm run check: OK
+- npm run lint: OK
+- npm test (15/15): OK
+- npm run build: OK
+- field-ops-events.test.ts (9/9): OK
+- field-dispatch.test.ts (2/2): OK
+- field-dispatch-routes.test.ts (2/2): OK
+- work-orders.test.ts (2/2): OK
+- work-orders-routes.test.ts (2/2): OK
+- rls-tenant-isolation.test.ts (1/1): OK
+- git diff --check: OK
+
+### Decisoes tecnicas
+- Nenhuma migration criada (eventos nao persistem em tabela propria)
+- Nenhum job worker criado (eventos ficam em memoria, prontos para job mapping futuro)
+- Nenhum endpoint de streaming criado
+- `void publishDomainEvent()` vs `await`: escolhido `await` para manter consistencia com padrao do checklist.service.ts; seguro pois eventos sem job mapping retornam sem IO
+- Payload de localizacao exclui lat/lon intencionalmente
