@@ -2,6 +2,7 @@ import { AlertTriangle, Map, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Alert, Button, Chip, EmptyState, ErrorState, Skeleton } from "../../../../components/ui";
+import { usePermissions } from "../../../../providers/PermissionProvider";
 import {
   calculateOperationsMapSummary,
   filterFieldLocations,
@@ -25,8 +26,10 @@ const initialFilters: OperationsMapFilterState = {
 
 export function OperationsMapPage() {
   const { locations, source, fallbackReason, loading, error, refreshedAt, refresh } = useOperationsMap();
+  const { can } = usePermissions();
   const [filters, setFilters] = useState<OperationsMapFilterState>(initialFilters);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+  const canReadWorkOrders = can("work_orders:read");
   const teams = useMemo(() => listOperationTeams(locations), [locations]);
   const filteredLocations = useMemo(() => filterFieldLocations(locations, filters), [filters, locations]);
   const summary = useMemo(() => calculateOperationsMapSummary(locations), [locations]);
@@ -53,6 +56,7 @@ export function OperationsMapPage() {
           <Chip tone={source === "api" ? "success" : source === "fallback" ? "warning" : "info"}>
             Fonte: {source === "api" ? "API real" : source === "fallback" ? "fallback seguro" : "mock local"}
           </Chip>
+          {canReadWorkOrders ? <Chip tone="info">OS vinculadas</Chip> : null}
           {refreshedAt ? <Chip tone="default">Atualizado {formatFieldLocationDate(refreshedAt)}</Chip> : null}
           <Button type="button" variant="secondary" onClick={() => void refresh()} disabled={loading}>
             <RefreshCw size={16} /> Atualizar
@@ -94,15 +98,16 @@ export function OperationsMapPage() {
               locations={filteredLocations}
               selectedId={selectedLocation?.id}
               onSelect={(location) => setSelectedId(location.id)}
+              showWorkOrders={canReadWorkOrders}
             />
           </div>
           <aside className="operations-map-side">
-            <OperationsOperatorDetailPanel location={selectedLocation} />
+            <OperationsOperatorDetailPanel location={selectedLocation} showWorkOrder={canReadWorkOrders} />
             <Alert title="Privacidade operacional" tone="info">
               Localização é dado sensível. O frontend não registra coordenadas em logs e o acesso real continua protegido por RBAC/RLS no backend.
             </Alert>
             <Alert title="Limite desta etapa" tone="info">
-              <span><Map size={16} /> Google Maps, despacho, OS atual, roteirização e tempo real serão adicionados em etapas futuras.</span>
+              <span><Map size={16} /> Google Maps, despacho, roteirização e tempo real serão adicionados em etapas futuras.</span>
             </Alert>
           </aside>
         </section>

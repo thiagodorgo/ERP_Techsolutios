@@ -138,12 +138,14 @@ test("tenant admin acessa inbox interna de notificacoes sem depender de seed", a
 test("Mapa Operacional renderiza UI inicial e fallback sem Google Maps real", async ({ page }) => {
   await loginAndActivateContext(page);
   await enableOperationsMapFrontendContext(page);
+  await enableWorkOrdersFrontendContext(page);
 
   await page.goto("/operations/map");
   await expect(page).toHaveURL(/\/operations\/map$/);
   await expect(page.getByRole("heading", { name: "Mapa Operacional" })).toBeVisible();
   await expect(page.getByText("Visualização operacional inicial", { exact: true })).toBeVisible();
   await expect(page.getByText(/Google Maps futuro/i)).toBeVisible();
+  await expect(page.getByRole("link", { name: /OS-/ }).first()).toBeVisible();
   await expect(page.getByText(/Marina Costa|Operador API|Nenhum operador localizado/i).first()).toBeVisible();
 });
 

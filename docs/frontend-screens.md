@@ -188,7 +188,8 @@ Tela implementada:
 Status desta branch:
 
 - UI inicial implementada no frontend web;
-- Google Maps real, UI de despacho, Work Orders completas, roteirizacao e tempo real permanecem fora do escopo.
+- integracao com Work Orders implementada sem endpoints novos: quando `work_orders:read` esta presente, marcador/lista/detalhe mostram OS atual ou atribuida e linkam para `/work-orders/:workOrderId`;
+- Google Maps real, UI de despacho, roteirizacao e tempo real permanecem fora do escopo.
 
 Funcionalidades:
 
@@ -197,12 +198,15 @@ Funcionalidades:
 - filtros por operador/equipe, status e localizacao antiga;
 - mapa placeholder com marcadores posicionados proporcionalmente por latitude/longitude;
 - lista e painel de detalhe do operador selecionado;
+- codigo/status da OS vinculada quando houver permissao `work_orders:read`;
 - estados de loading, vazio, erro, mock e fallback seguro.
 
 Endpoints backend consumidos:
 
 - `GET /api/v1/field-locations/latest`: ultimas posicoes por operador no tenant atual;
 - `GET /api/v1/field-locations/history`: historico por operador, com permissao dedicada.
+- `GET /api/v1/work-orders`: lista OS para correlacao opcional com operador atribuido.
+- `GET /api/v1/work-orders/:workOrderId`: destino do link de detalhe da OS.
 
 Endpoint mobile disponivel:
 
@@ -213,6 +217,7 @@ RBAC:
 - menu `/operations/map` exige `field_location:read`;
 - historico exige `field_location:history`;
 - envio mobile exige `field_location:send`.
+- OS vinculada exige `work_orders:read`; sem essa permissao, o mapa continua funcionando sem link ou detalhe de OS.
 
 ## Ordens de Servico
 
@@ -231,6 +236,7 @@ Funcionalidades implementadas:
 - atribuicao simples por UUID via `POST /api/v1/work-orders/:workOrderId/assign`;
 - badges de status/prioridade, estados loading/empty/error e fallback/mock seguro;
 - link para `/operations/map` quando a OS possui coordenadas.
+- a OS atribuida ao operador aparece em `/operations/map` quando o usuario tambem possui `work_orders:read`.
 
 RBAC frontend:
 
@@ -243,7 +249,7 @@ RBAC frontend:
 Vinculos futuros previstos:
 
 - checklist operacional por `checklistId`;
-- Mapa Operacional por endereco/coordenadas e operador atribuido;
+- Mapa Operacional por endereco/coordenadas e operador atribuido, ja com correlacao visual basica;
 - evidencias/anexos especificos de OS;
 - despacho, roteirizacao e comissoes em etapas futuras.
 

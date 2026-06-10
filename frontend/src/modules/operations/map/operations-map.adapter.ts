@@ -3,7 +3,9 @@ import type {
   FieldLocationStatus,
   OperationsMapFilters,
   OperationsMapSummary,
+  OperationsMapWorkOrder,
 } from "./operations-map.types";
+import type { WorkOrderListItem, WorkOrderStatus } from "../../work-orders/work-orders.types";
 
 const staleThresholdMs = 15 * 60 * 1000;
 
@@ -33,6 +35,22 @@ export function filterFieldLocations(
       .filter(Boolean)
       .some((value) => normalizeText(String(value)).includes(search));
   });
+}
+
+export function attachWorkOrdersToFieldLocations(
+  locations: readonly FieldLocationItem[],
+  workOrders: readonly WorkOrderListItem[],
+): FieldLocationItem[] {
+  const activeWorkOrders = workOrders
+    .filter((workOrder) => !isTerminalWorkOrderStatus(workOrder.status))
+    .sort(compareWorkOrdersForMap);
+
+  return locations.map((location) => ({
+    ...location,
+    currentWorkOrder: toOperationsMapWorkOrder(
+      activeWorkOrders.find((workOrder) => isWorkOrderAssignedToLocation(workOrder, location)),
+    ),
+  }));
 }
 
 export function calculateOperationsMapSummary(locations: readonly FieldLocationItem[]): OperationsMapSummary {
@@ -150,7 +168,80 @@ function adaptFieldLocationItem(input: unknown, index: number, now: Date): Field
     capturedAt: new Date(capturedTime).toISOString(),
     receivedAt: readString(input, ["receivedAt", "received_at"]),
     isStale: now.getTime() - capturedTime > staleThresholdMs,
+    currentWorkOrder: adaptCurrentWorkOrder(readRecord(input, "currentWorkOrder") ?? readRecord(input, "current_work_order") ?? readRecord(input, "workOrder")),
   };
+}
+
+function isWorkOrderAssignedToLocation(workOrder: WorkOrderListItem, location: FieldLocationItem): boolean {
+  const locationIds = new Set([location.operatorId, location.userId].filter(Boolean));
+  return [workOrder.assignedOperatorId, workOrder.assignedUserId].filter(Boolean).some((id) => locationIds.has(id ?? undefined));
+}
+
+function toOperationsMapWorkOrder(workOrder: WorkOrderListItem | undefined): OperationsMapWorkOrder | null {
+  if (!workOrder) return null;
+
+  return {
+    id: workOrder.id,
+    code: workOrder.code,
+    title: workOrder.title,
+    status: workOrder.status,
+    priority: workOrder.priority,
+    customerName: workOrder.customerName,
+    serviceAddress: workOrder.serviceAddress,
+    scheduledFor: workOrder.scheduledFor,
+  };
+}
+
+function adaptCurrentWorkOrder(input: Record<string, unknown> | undefined): OperationsMapWorkOrder | null {
+  if (!input) return null;
+
+  const id = readString(input, ["id"]);
+  const title = readString(input, ["title"]);
+  const status = normalizeWorkOrderStatus(readString(input, ["status"]));
+  const priority = normalizePriority(readString(input, ["priority"]));
+  if (!id || !title || !status || !priority) return null;
+
+  return {
+    id,
+    code: readString(input, ["code"]) ?? id,
+    title,
+    status,
+    priority,
+    customerName: readString(input, ["customerName", "customer_name"]) ?? null,
+    serviceAddress: readString(input, ["serviceAddress", "service_address"]) ?? null,
+    scheduledFor: readString(input, ["scheduledFor", "scheduled_for"]) ?? null,
+  };
+}
+
+function compareWorkOrdersForMap(left: WorkOrderListItem, right: WorkOrderListItem): number {
+  const leftStatus = getWorkOrderStatusWeight(left.status);
+  const rightStatus = getWorkOrderStatusWeight(right.status);
+  if (leftStatus !== rightStatus) return leftStatus - rightStatus;
+
+  const leftTime = Date.parse(left.scheduledFor ?? left.updatedAt ?? left.createdAt);
+  const rightTime = Date.parse(right.scheduledFor ?? right.updatedAt ?? right.createdAt);
+  return (Number.isNaN(leftTime) ? 0 : leftTime) - (Number.isNaN(rightTime) ? 0 : rightTime);
+}
+
+function getWorkOrderStatusWeight(status: WorkOrderStatus): number {
+  const weights: Record<WorkOrderStatus, number> = {
+    on_route: 0,
+    on_site: 1,
+    in_progress: 2,
+    paused: 3,
+    accepted: 4,
+    assigned: 5,
+    open: 6,
+    completed: 7,
+    cancelled: 8,
+    rejected: 9,
+  };
+
+  return weights[status];
+}
+
+function isTerminalWorkOrderStatus(status: WorkOrderStatus): boolean {
+  return status === "completed" || status === "cancelled" || status === "rejected";
 }
 
 function readArray(response: unknown): unknown[] {
@@ -203,6 +294,30 @@ function normalizeStatus(value: string | undefined): FieldLocationStatus {
   }
 
   return "unknown";
+}
+
+function normalizeWorkOrderStatus(value: string | undefined): WorkOrderStatus | null {
+  if (
+    value === "open" ||
+    value === "assigned" ||
+    value === "accepted" ||
+    value === "on_route" ||
+    value === "on_site" ||
+    value === "in_progress" ||
+    value === "paused" ||
+    value === "completed" ||
+    value === "cancelled" ||
+    value === "rejected"
+  ) {
+    return value;
+  }
+
+  return null;
+}
+
+function normalizePriority(value: string | undefined): OperationsMapWorkOrder["priority"] | null {
+  if (value === "low" || value === "medium" || value === "high" || value === "urgent") return value;
+  return null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

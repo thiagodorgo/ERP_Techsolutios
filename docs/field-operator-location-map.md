@@ -2,13 +2,13 @@
 
 ## Decisao desta rodada
 
-Esta branch implementa a UI inicial do Mapa Operacional em `/operations/map` sobre a fundacao backend de localizacao de operadores em campo. O app mobile futuro podera enviar coordenadas ao backend; o frontend web agora consulta ultimas posicoes e historico pelos endpoints ja existentes para exibir operadores em campo.
+Esta branch integra a UI inicial do Mapa Operacional em `/operations/map` com `work_orders` sobre a fundacao backend de localizacao de operadores em campo. O app mobile futuro podera enviar coordenadas ao backend; o frontend web consulta ultimas posicoes e, quando o usuario possui `work_orders:read`, correlaciona operadores com OS atribuidas.
 
-Fora de escopo mantido: Google Maps real no frontend, app Flutter, roteirizacao avancada, Work Orders completas, despacho completo, WebSocket/tempo real e novos endpoints.
+Fora de escopo mantido: Google Maps real no frontend, app Flutter, roteirizacao avancada, despacho completo, WebSocket/tempo real, novos endpoints, migrations e backend novo.
 
 Itens registrados:
 
-- `operations.map` -> `/operations/map`, permissao `field_location:read`, modulo `field_operations`, UI inicial implementada.
+- `operations.map` -> `/operations/map`, permissao `field_location:read`, modulo `field_operations`, UI inicial implementada com OS vinculada quando `work_orders:read` esta disponivel.
 - `operations.fieldOperators` -> `/operations/field-operators`, permissao `field_operator:read`, modulo `field_operations`.
 - `operations.dispatches` -> `/operations/dispatches`, permissao `field_dispatch:read`, modulo `field_operations`.
 - `logistics.map` -> `/logistics/map`, permissao `field_location:read`, modulos `logistics` ou `field_operations`.
@@ -26,6 +26,8 @@ Componentes da tela:
 - filtros por busca, status, equipe e localizacao antiga;
 - mapa operacional em projecao proporcional por latitude/longitude, sem Google Maps real nesta etapa;
 - marcadores selecionaveis, lista de operadores e painel de detalhe com coordenadas, precisao, bateria e timestamps;
+- codigo/status da OS atual/atribuida no marcador, lista e painel de detalhe quando houver permissao `work_orders:read`;
+- link para `/work-orders/:workOrderId` a partir da lista ou detalhe do operador;
 - estados de loading, erro, vazio e fallback/mock local.
 
 Fallback:
@@ -73,6 +75,14 @@ GET  /api/v1/field-locations/latest
 GET  /api/v1/field-locations/history
 ```
 
+Endpoints de OS consumidos opcionalmente pela UI:
+
+```http
+GET /api/v1/work-orders
+GET /api/v1/work-orders/:workOrderId
+GET /api/v1/work-orders/:workOrderId/timeline
+```
+
 Permissoes:
 
 - `field_location:read`
@@ -83,6 +93,7 @@ Permissoes:
 - `field_dispatch:read`
 - `field_dispatch:create`
 - `field_dispatch:update`
+- `work_orders:read` para mostrar OS atual/atribuida e abrir o detalhe da OS.
 
 Matriz aplicada:
 
@@ -98,7 +109,7 @@ Matriz aplicada:
 
 ## Proximos passos
 
-- correlacionar operadores localizados com `work_orders`; a UI de detalhe de OS ja aponta para `/operations/map` quando a OS possui coordenadas, mas o mapa ainda nao filtra por OS;
+- filtro do mapa por OS especifica quando a rota receber contexto de origem;
 - definir retencao e auditoria de coordenadas;
 - avaliar provider de mapas e integracao Google Maps real com `VITE_GOOGLE_MAPS_API_KEY`;
 - modelar despachos, rotas e eventos de campo;

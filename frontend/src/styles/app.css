@@ -1740,6 +1740,38 @@
   color: var(--color-core-primary);
 }
 
+.operations-map-muted {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.operations-map-work-order-link,
+.operations-map-work-order-card-link,
+.operations-map-work-order-badges,
+.operations-map-work-order-panel header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.operations-map-work-order-link,
+.operations-map-work-order-card-link {
+  width: max-content;
+  max-width: 100%;
+  color: var(--color-core-primary);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.operations-map-work-order-link:hover,
+.operations-map-work-order-card-link:hover {
+  text-decoration: underline;
+}
+
+.operations-map-work-order-card-link {
+  flex-wrap: wrap;
+}
+
 .operations-operator-cards {
   display: none;
 }
@@ -1831,6 +1863,35 @@
 }
 
 .operations-operator-detail__actions {
+  flex-wrap: wrap;
+}
+
+.operations-map-work-order-panel {
+  display: grid;
+  gap: var(--space-10);
+  padding: var(--space-10);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-8);
+  background: var(--surface-panel-muted);
+}
+
+.operations-map-work-order-panel header {
+  align-items: flex-start;
+}
+
+.operations-map-work-order-panel header > div {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.operations-map-work-order-panel span {
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.operations-map-work-order-badges {
   flex-wrap: wrap;
 }
 

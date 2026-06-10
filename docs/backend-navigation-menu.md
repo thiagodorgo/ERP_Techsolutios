@@ -84,7 +84,7 @@ Operacao:
 - `operations.checklists` -> `/operations/checklists`, `ClipboardList`, `checklist_runs:read`
 - `operations.checklistRun` -> `/operations/checklists/:checklistId/run`, `PlayCircle`, `checklist_runs:create`
 - `operations.workOrders` -> `/work-orders`, `Wrench`, `work_orders:read`, status `implemented`
-- `operations.map` -> `/operations/map`, `Map`, `field_location:read`
+- `operations.map` -> `/operations/map`, `Map`, `field_location:read`, status `implemented`
 - `operations.fieldOperators` -> `/operations/field-operators`, `MapPin`, `field_operator:read`
 - `operations.dispatches` -> `/operations/dispatches`, `Route`, `field_dispatch:read`
 
@@ -117,12 +117,13 @@ Platform items nao dependem de modulo de tenant.
 
 - CRUD persistido de menu.
 - Google Maps real.
-- Tela real de despacho, roteirizacao e Work Orders completas.
+- Tela real de despacho, roteirizacao e Google Maps real.
 
 ## Status frontend relacionado
 
 - `/operations/map` agora possui UI inicial no frontend web, protegida por `field_location:read` e dependente do modulo `field_operations`.
 - A UI consome `GET /api/v1/field-locations/latest` e `GET /api/v1/field-locations/history`, com mapa placeholder, KPIs, filtros, lista, detalhe e fallback/mock seguro.
+- Quando `work_orders:read` esta presente, a UI tambem usa `GET /api/v1/work-orders` para mostrar OS atual/atribuida e linkar para `/work-orders/:workOrderId`; sem essa permissao, o mapa segue sem link ou detalhe de OS.
 - Google Maps real, WebSocket/tempo real e despacho permanecem fora desta rodada.
 - Work Orders UI implementada em `/work-orders`, `/work-orders/new` e `/work-orders/:workOrderId`, consumindo endpoints reais e fallback/mock seguro.
 - Backend de logistica.

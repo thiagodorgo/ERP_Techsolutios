@@ -723,7 +723,7 @@ Regras:
 - RLS protege `field_operator_locations` por `tenant_id`;
 - `field_location.recorded` e `field_location.history_viewed` sao auditados em modo Prisma.
 
-Fora do escopo: Google Maps no frontend, tela `/operations/map`, app Flutter, roteirizacao avancada, Work Orders completas e despacho completo.
+Fora do escopo desta fundacao: Google Maps no frontend, app Flutter, roteirizacao avancada e despacho completo. A UI web posterior de `/operations/map` pode correlacionar localizacao com `work_orders` sem endpoints novos.
 
 ## Work Orders
 

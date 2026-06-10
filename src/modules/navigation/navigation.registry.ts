@@ -201,18 +201,20 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
   {
     id: "operations.map",
     label: "Mapa Operacional",
-    description: "Mapa operacional planejado para equipes em campo.",
+    description: "Mapa operacional de equipes em campo com vinculo opcional a OS.",
     path: "/operations/map",
     icon: "Map",
     group: "operations",
     order: 230,
-    status: "backend-ready",
+    status: "implemented",
     requiredPermissions: ["field_location:read"],
     requiredModules: ["field_operations"],
     tenantOnly: true,
     relatedEndpoints: [
       "GET /api/v1/field-locations/latest",
       "GET /api/v1/field-locations/history",
+      "GET /api/v1/work-orders",
+      "GET /api/v1/work-orders/:workOrderId",
     ],
   },
   {

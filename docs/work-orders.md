@@ -29,6 +29,7 @@ Funcionalidades:
 - acao de status protegida por `work_orders:status`;
 - atribuicao simples por UUID protegida por `work_orders:assign`;
 - link para `/operations/map` quando a OS possui latitude/longitude;
+- integracao com `/operations/map`: operadores com localizacao e OS atribuida aparecem no mapa com codigo/status da OS e link para `/work-orders/:workOrderId` quando o usuario possui `work_orders:read`;
 - fallback/mock seguro com indicacao visual `Dados demonstrativos` ou `Fallback local`.
 
 O frontend usa `frontend/src/modules/work-orders` com types, adapter, service, hooks, mocks e componentes dedicados. O adapter aceita snake_case e camelCase para manter compatibilidade com o contrato da API.
@@ -108,6 +109,6 @@ Eventos sao retornados por timeline em ordem cronologica e evitam metadata sensi
 ## Vinculos Futuros
 
 - Checklists: `checklist_id` prepara associacao com template/configuracao de checklist.
-- Mapa operacional: endereco/coordenadas e operador atribuido permitem correlacao futura com `/operations/map`.
+- Mapa operacional: endereco/coordenadas e operador atribuido permitem correlacao em `/operations/map`; o mapa exibe OS atual/atribuida sem criar endpoints novos e sem substituir `field_location:read`.
 - Evidencias: anexos/fotos especificos de OS ficam fora desta branch.
 - Comissoes/prestadores: `assigned_operator_id` e assignments preparam relacao futura sem calcular pagamentos nesta etapa.
