@@ -192,7 +192,8 @@ Status desta branch:
 - integracao com Despachos implementada sem endpoints novos: quando `field_dispatch:read` esta presente, marcador/lista/detalhe mostram o despacho vinculado e linkam para `/operations/dispatches`; quando `field_dispatch:create` tambem esta presente e existe OS atual, a acao de criacao abre `/operations/dispatches?workOrderId=...&operatorUserId=...`;
 - acoes diretas no detalhe do operador quando existe despacho vinculado: alterar status com `field_dispatch:update`, cancelar com `field_dispatch:cancel` e reatribuir com `field_dispatch:reassign`, usando os endpoints existentes e refresh do mapa apos sucesso;
 - hardening das acoes diretas: mensagens locais de sucesso/erro, loading restrito ao painel de acao, protecao contra clique duplo, motivo obrigatorio no cancelamento, permissao parcial respeitada por botao e mensagem para perfil somente leitura;
-- Google Maps real, roteirizacao e tempo real permanecem fora do escopo.
+- Google Maps real integrado via `VITE_GOOGLE_MAPS_API_KEY` com fallback automático para mapa placeholder quando a chave não está configurada ou o script falha.
+- Roteirizacao avancada e rastreamento em tempo real permanecem fora do escopo.
 
 Funcionalidades:
 
@@ -376,6 +377,20 @@ Fonte backend oficial:
 - Fallback visual: componente `PageLoader` inline com texto "Carregando...".
 - Impacto no build Vite: chunk principal reduziu de 512 kB para 389 kB (−122 kB, −24%); warning de chunk acima de 500 kB eliminado.
 - Guards e permissões preservados em todas as rotas.
+
+## Google Maps no Mapa Operacional
+
+`OperationsMapCanvas` usa `VITE_GOOGLE_MAPS_API_KEY` para selecionar o provider de mapa:
+
+- Sem chave configurada → renderiza mapa placeholder com marcadores proporcionais por lat/lng.
+- Com chave → carrega o Google Maps JS API via script dinâmico (singleton) e renderiza marcadores reais.
+- Falha no carregamento do script → fallback automático para o mapa placeholder com chip de aviso.
+- Módulo `useGoogleMapsLoader` gerencia o ciclo de vida do script como singleton de módulo (carregado apenas uma vez por ciclo de página).
+- `GoogleMapsCanvas` renderiza marcadores coloridos: azul (selecionado), âmbar (stale), verde (disponível).
+- Clique no marcador → seleciona operador e abre painel lateral; `panTo` centraliza o mapa.
+- Painel lateral, OS vinculada, despacho vinculado e ações de despacho preservados com e sem Google Maps.
+- Tipos mínimos declarados em `frontend/src/types/google-maps.d.ts`; sem dependência runtime nova.
+- Roteirização avançada e rastreamento em tempo real permanecem fora do escopo.
 
 ## Performance — Manual Vendor Chunks
 

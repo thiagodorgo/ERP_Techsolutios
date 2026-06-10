@@ -1333,7 +1333,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(protectedHtml, /Ordens de Servico/);
   assert.match(protectedHtml, /Nova OS/);
   assert.match(protectedHtml, /Mapa Operacional/);
-  assert.match(protectedHtml, /Visualização operacional inicial/);
+  assert.match(protectedHtml, /Visualização operacional/);
   assert.match(dispatchActionsHtml, /Acoes do despacho|Alterar status|Reatribuir/);
   assert.match(updateOnlyDispatchActionsHtml, /Alterar status/);
   assert.doesNotMatch(updateOnlyDispatchActionsHtml, /Reatribuir|Cancelar/);

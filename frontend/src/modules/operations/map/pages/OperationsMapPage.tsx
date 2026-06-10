@@ -140,7 +140,7 @@ export function OperationsMapPage() {
               Localização é dado sensível. O frontend não registra coordenadas em logs e o acesso real continua protegido por RBAC/RLS no backend.
             </Alert>
             <Alert title="Limite desta etapa" tone="info">
-              <span><Map size={16} /> Google Maps, roteirização e tempo real serão adicionados em etapas futuras.</span>
+              <span><Map size={16} /> Roteirização avançada e rastreamento em tempo real serão adicionados em etapas futuras.</span>
             </Alert>
           </aside>
         </section>
