@@ -1500,3 +1500,16 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - resultado E2E: 11/11 testes passaram em Chromium com PostgreSQL/Redis reais; inclui login, mapa operacional com fallback sem Google Maps real, despachos, ordens de servico, checklists, configuracoes e logout
 - nenhum fix de codigo foi necessario; alteracao desta fase e apenas documentacao operacional da validacao
 - fora de escopo preservado: remover polling, WebSocket, Flutter/mobile, novos endpoints de dominio, Google Maps provider, billing, pagamentos, fiscal e refactors nao relacionados
+
+## Atualizacao 2026-06-11 - realtime-first polling fallback tuning
+
+- branch usada: `feature/field-ops-realtime-polling-fallback`
+- pre-condicao confirmada: `main` atualizado com `git pull --ff-only origin main` e PR #71 presente em `c086c5e`
+- B-071 confirmada no codigo por `GET /api/v1/operations/field-events/health`, estados visuais `Realtime conectado`/`Realtime reconectando`/`Fallback polling ativo`/`Realtime indisponivel` e testes `field-ops-realtime` com health
+- objetivo: reduzir polling redundante quando SSE esta conectado/saudavel, mantendo polling como fallback seguro
+- `useOperationsMap.ts`: polling automatico de 30s passa a ser condicionado por `shouldUseOperationsMapPollingFallback(autoRefresh, realtime.status)`; status `connected` nao agenda intervalo, enquanto `degraded`, `fallback` e `unavailable` mantem fallback
+- refresh manual permanece independente do estado realtime
+- `frontend/tests/smoke-flow.test.tsx`: adicionado teste da regra de polling reduzido/fallback sem esperar 30s
+- validacoes executadas: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `node --test --import tsx tests/field-ops-realtime.test.ts`, `docker compose ps`, `npm run test:e2e` (11/11) e `git diff --check`
+- `agent-orchestration/**` preservado por merge aditivo; `experiments/` permaneceu nao rastreado e fora do commit
+- fora de escopo preservado: remocao completa do polling, WebSocket, Flutter/mobile, novos endpoints de localizacao/despacho, Google Maps provider, billing, pagamentos, fiscal e refactors nao relacionados
