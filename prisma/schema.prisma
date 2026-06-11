@@ -37,6 +37,14 @@ model Tenant {
   commission_policies           CommissionPolicy[]
   commission_policy_rules       CommissionPolicyRule[]
   commission_statements         CommissionStatement[]
+  expense_approval_steps        ExpenseApprovalStep[]
+  expense_events                ExpenseEvent[]
+  expense_items                 ExpenseItem[]
+  expense_policies              ExpensePolicy[]
+  expense_receipts              ExpenseReceipt[]
+  expense_reports               ExpenseReport[]
+  expense_advances              ExpenseAdvance[]
+  mobile_action_receipts        MobileActionReceipt[]
   tenant_cloud_charges          TenantCloudCharge[]
   tenant_cloud_cost_allocations TenantCloudCostAllocation[]
   local_auth_credentials        LocalAuthCredential[]
@@ -88,6 +96,12 @@ model User {
   commission_calculations_payee    CommissionCalculation[] @relation("CommissionCalculationPayee")
   commission_policies_created      CommissionPolicy[]      @relation("CommissionPolicyCreatedBy")
   commission_statements_payee      CommissionStatement[]   @relation("CommissionStatementPayee")
+  expense_approval_steps_actor     ExpenseApprovalStep[]   @relation("ExpenseApprovalStepActor")
+  expense_events_actor             ExpenseEvent[]          @relation("ExpenseEventActor")
+  expense_reports_created          ExpenseReport[]         @relation("ExpenseReportCreatedBy")
+  expense_reports_employee         ExpenseReport[]         @relation("ExpenseReportEmployee")
+  expense_advances_employee        ExpenseAdvance[]        @relation("ExpenseAdvanceEmployee")
+  mobile_action_receipts_actor     MobileActionReceipt[]   @relation("MobileActionReceiptActor")
   assigned_work_orders             WorkOrder[]             @relation("WorkOrderAssignedUser")
   created_work_orders              WorkOrder[]             @relation("WorkOrderCreatedBy")
   updated_work_orders              WorkOrder[]             @relation("WorkOrderUpdatedBy")
@@ -742,6 +756,7 @@ model WorkOrder {
   assignments           WorkOrderAssignment[]
   field_dispatch_events FieldDispatchEvent[]
   field_dispatches      FieldDispatch[]
+  expense_reports       ExpenseReport[]
   assigned_user         User?                 @relation("WorkOrderAssignedUser", fields: [tenant_id, assigned_user_id], references: [tenant_id, id], onDelete: Restrict)
   checklist             ChecklistTemplate?    @relation(fields: [tenant_id, checklist_id], references: [tenant_id, id], onDelete: Restrict)
   created_by_user       User?                 @relation("WorkOrderCreatedBy", fields: [tenant_id, created_by], references: [tenant_id, id], onDelete: Restrict)
@@ -993,4 +1008,203 @@ model CommissionStatement {
   @@index([tenant_id, status])
   @@index([tenant_id, period_start, period_end])
   @@map("commission_statements")
+}
+
+model ExpensePolicy {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id      String    @db.Uuid
+  version        String
+  name           String
+  status         String    @default("draft")
+  category_rules Json
+  limits         Json
+  approval_rules Json
+  receipt_rules  Json
+  effective_from DateTime  @db.Timestamptz(6)
+  effective_to   DateTime? @db.Timestamptz(6)
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant         Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, version])
+  @@index([tenant_id])
+  @@index([tenant_id, status])
+  @@index([tenant_id, effective_from, effective_to])
+  @@map("expense_policies")
+}
+
+model ExpenseReport {
+  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id            String                @db.Uuid
+  employee_user_id     String                @db.Uuid
+  status               String                @default("draft")
+  period_start         DateTime              @db.Date
+  period_end           DateTime              @db.Date
+  origin               String
+  work_order_id        String?               @db.Uuid
+  project_id           String?
+  cost_center          String?
+  city                 String?
+  advance_amount       Decimal               @default(0) @db.Decimal(20, 6)
+  total_amount         Decimal               @default(0) @db.Decimal(20, 6)
+  reimbursement_amount Decimal               @default(0) @db.Decimal(20, 6)
+  currency             String                @default("BRL")
+  policy_version       String?
+  created_by           String                @db.Uuid
+  submitted_at         DateTime?             @db.Timestamptz(6)
+  created_at           DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime              @default(now()) @updatedAt @db.Timestamptz(6)
+  approval_steps       ExpenseApprovalStep[]
+  advances             ExpenseAdvance[]
+  employee             User                  @relation("ExpenseReportEmployee", fields: [tenant_id, employee_user_id], references: [tenant_id, id], onDelete: Restrict)
+  events               ExpenseEvent[]
+  items                ExpenseItem[]
+  created_by_user      User                  @relation("ExpenseReportCreatedBy", fields: [tenant_id, created_by], references: [tenant_id, id], onDelete: Restrict)
+  tenant               Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  work_order           WorkOrder?            @relation(fields: [tenant_id, work_order_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id])
+  @@index([tenant_id, employee_user_id])
+  @@index([tenant_id, status])
+  @@index([tenant_id, period_start, period_end])
+  @@index([tenant_id, work_order_id])
+  @@map("expense_reports")
+}
+
+model ExpenseItem {
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id    String           @db.Uuid
+  report_id    String           @db.Uuid
+  category_key String
+  spent_at     DateTime         @db.Timestamptz(6)
+  city         String?
+  vendor_name  String?
+  amount       Decimal          @db.Decimal(20, 6)
+  currency     String           @default("BRL")
+  km           Decimal?         @db.Decimal(20, 6)
+  notes        String?
+  policy_flags Json?
+  created_at   DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+  receipts     ExpenseReceipt[]
+  report       ExpenseReport    @relation(fields: [tenant_id, report_id], references: [tenant_id, id], onDelete: Cascade)
+  tenant       Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id])
+  @@index([tenant_id, report_id])
+  @@index([tenant_id, category_key])
+  @@index([tenant_id, spent_at])
+  @@map("expense_items")
+}
+
+model ExpenseReceipt {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String      @db.Uuid
+  item_id       String      @db.Uuid
+  file_key      String?
+  local_hash    String
+  mime_type     String
+  ocr_text      String?
+  ocr_fields    Json?
+  confidence    Decimal?    @db.Decimal(8, 6)
+  upload_status String      @default("local")
+  created_at    DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
+  item          ExpenseItem @relation(fields: [tenant_id, item_id], references: [tenant_id, id], onDelete: Cascade)
+  tenant        Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id])
+  @@index([tenant_id, item_id])
+  @@index([tenant_id, local_hash])
+  @@index([tenant_id, upload_status])
+  @@map("expense_receipts")
+}
+
+model ExpenseAdvance {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String         @db.Uuid
+  employee_user_id String         @db.Uuid
+  report_id        String?        @db.Uuid
+  amount           Decimal        @db.Decimal(20, 6)
+  currency         String         @default("BRL")
+  source           String         @default("manual")
+  status           String         @default("open")
+  issued_at        DateTime       @db.Timestamptz(6)
+  created_at       DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime       @default(now()) @updatedAt @db.Timestamptz(6)
+  employee         User           @relation("ExpenseAdvanceEmployee", fields: [tenant_id, employee_user_id], references: [tenant_id, id], onDelete: Restrict)
+  report           ExpenseReport? @relation(fields: [tenant_id, report_id], references: [tenant_id, id], onDelete: Restrict)
+  tenant           Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id])
+  @@index([tenant_id, employee_user_id])
+  @@index([tenant_id, report_id])
+  @@index([tenant_id, status])
+  @@map("expense_advances")
+}
+
+model ExpenseApprovalStep {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String        @db.Uuid
+  report_id     String        @db.Uuid
+  step_type     String
+  actor_user_id String?       @db.Uuid
+  decision      String        @default("pending")
+  reason        String?
+  decided_at    DateTime?     @db.Timestamptz(6)
+  created_at    DateTime      @default(now()) @db.Timestamptz(6)
+  actor_user    User?         @relation("ExpenseApprovalStepActor", fields: [tenant_id, actor_user_id], references: [tenant_id, id], onDelete: Restrict)
+  report        ExpenseReport @relation(fields: [tenant_id, report_id], references: [tenant_id, id], onDelete: Cascade)
+  tenant        Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id])
+  @@index([tenant_id, report_id])
+  @@index([tenant_id, step_type])
+  @@index([tenant_id, decision])
+  @@map("expense_approval_steps")
+}
+
+model ExpenseEvent {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String        @db.Uuid
+  aggregate_id  String        @db.Uuid
+  event_type    String
+  payload_hash  String
+  actor_user_id String?       @db.Uuid
+  created_at    DateTime      @default(now()) @db.Timestamptz(6)
+  actor_user    User?         @relation("ExpenseEventActor", fields: [tenant_id, actor_user_id], references: [tenant_id, id], onDelete: Restrict)
+  report        ExpenseReport @relation(fields: [tenant_id, aggregate_id], references: [tenant_id, id], onDelete: Cascade)
+  tenant        Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id])
+  @@index([tenant_id, aggregate_id])
+  @@index([tenant_id, event_type])
+  @@map("expense_events")
+}
+
+model MobileActionReceipt {
+  tenant_id        String    @db.Uuid
+  client_action_id String
+  actor_user_id    String    @db.Uuid
+  action_type      String
+  status           String    @default("processed")
+  result_ref       String?
+  processed_at     DateTime? @db.Timestamptz(6)
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  actor_user       User      @relation("MobileActionReceiptActor", fields: [tenant_id, actor_user_id], references: [tenant_id, id], onDelete: Restrict)
+  tenant           Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@id([tenant_id, client_action_id])
+  @@index([tenant_id])
+  @@index([tenant_id, actor_user_id])
+  @@index([tenant_id, action_type])
+  @@index([tenant_id, status])
+  @@map("mobile_action_receipts")
 }

@@ -187,3 +187,89 @@ Support/admin visualiza fila, ultimo sync, versao, tenant e logs sanitizados. Re
 6. Implementar sync local-first minimo com fila e idempotencia.
 7. Integrar backend real em PRs posteriores.
 8. Adicionar OCR, PDF, camera e storage seguro em blocos separados.
+
+## Backend Foundation - GDV-002
+
+GDV-002 transforma a fundacao documental/mobile em backend inicial real para `expense_management`, mantendo o modulo tenant-scoped, RBAC-driven, auditavel e preparado para sync mobile idempotente.
+
+### Entidades iniciais
+
+- `expense_reports`: RDV principal com funcionario, periodo, origem, OS/projeto/centro de custo opcionais, cidade, valores, moeda, `policy_version`, criador e timestamps de submissao.
+- `expense_items`: itens do RDV com categoria, data, cidade, fornecedor, valor, moeda, quilometragem opcional, notas e flags de politica.
+- `expense_receipts`: metadados de recibos, hash local, mime type, OCR revisado/futuro, confianca e status de upload.
+- `expense_advances`: adiantamentos vinculaveis a funcionario/RDV em fase futura; nesta fundacao o valor agregado fica em `expense_reports.advance_amount`.
+- `expense_policies`: politicas versionadas com regras de categoria, limites, aprovacao e recibos.
+- `expense_approval_steps`: trilha de decisoes manager/finance.
+- `expense_events`: eventos auditaveis tenant-scoped com hash de payload sanitizado.
+- `mobile_action_receipts`: recibos de processamento idempotente por `tenant_id` + `client_action_id`.
+
+### Status oficiais
+
+- `draft`
+- `sync_pending`
+- `ready_to_submit`
+- `submitted`
+- `under_review`
+- `returned`
+- `approved_manager`
+- `approved_finance`
+- `rejected`
+- `scheduled_for_payment`
+- `paid`
+- `cancelled`
+
+### Eventos iniciais
+
+- `expense_report.created`
+- `expense_item.created`
+- `expense_item.receipt_attached`
+- `expense_report.submitted`
+- `expense_report.returned`
+- `expense_report.approved_manager`
+- `expense_report.approved_finance`
+- `expense_report.rejected`
+- `expense_report.payment_scheduled`
+- `expense_report.paid`
+- `expense_report.synced_from_mobile`
+
+### Permissoes minimas
+
+- `expense_report:read`
+- `expense_report:read_own`
+- `expense_report:create`
+- `expense_report:update`
+- `expense_report:submit`
+- `expense_report:approve_manager`
+- `expense_report:approve_finance`
+- `expense_report:return`
+- `expense_report:reject`
+- `expense_report:pay`
+- `expense_policy:read`
+- `expense_policy:manage`
+- `expense_receipt:attach`
+- `expense_sync:write`
+- `expense_audit:read`
+
+### Endpoints MVP
+
+- `GET /api/v1/expense-policies`
+- `GET /api/v1/expense-categories`
+- `GET /api/v1/expense-reports`
+- `POST /api/v1/expense-reports`
+- `GET /api/v1/expense-reports/:reportId`
+- `PATCH /api/v1/expense-reports/:reportId`
+- `POST /api/v1/expense-reports/:reportId/items`
+- `POST /api/v1/expense-reports/:reportId/submit`
+- `POST /api/v1/mobile/sync/expense-actions`
+
+### Fora de escopo backend desta fase
+
+- OCR real;
+- upload real de arquivos;
+- PDF oficial;
+- pagamento real;
+- fiscal/contabil;
+- conciliacao bancaria/cartao;
+- UI web;
+- approval completo avancado;
+- integracao direta com comissoes.

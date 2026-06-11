@@ -1632,3 +1632,74 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - `flutter pub get`: OK
 - `flutter analyze`: OK
 - `flutter test`: OK, 14/14
+
+## 2026-06-11 - GDV-002 Review Flutter Scaffold + Backend Foundation
+
+- branch usada: `feature/expense-management-flutter-foundation`
+- pre-condicao executada:
+  - `git fetch origin`: OK
+  - `git pull --ff-only origin feature/expense-management-flutter-foundation`: OK, branch ja atualizada
+  - `git status --short`: apenas `experiments/` nao rastreado
+  - confirmada existencia dos docs e do app Flutter da PR #75
+  - confirmada ausencia inicial de `src/modules/expense-management/**`, migrations de despesas e modelos Prisma reais de expenses
+- revisao Flutter:
+  - caminho `mobile/flutter_app` documentado e aceitavel
+  - Android/iOS mantidos versionados
+  - sem token salvo em SQLite
+  - secure storage planejado/documentado
+  - modelos criticos com `tenantId`
+  - testes existentes cobrem permission resolver, module resolver, totais, adiantamento, policy evaluator, tenant isolation, idempotencia e sync success/failure/conflict
+  - OCR/PDF/camera permanecem fora desta fase
+- validacoes Flutter da Etapa 1:
+  - `flutter pub get`: OK
+  - `flutter analyze`: OK
+  - `flutter test`: OK, 14/14
+  - `git diff --check`: OK
+- schema/migration/RBAC:
+  - criada migration `prisma/migrations/20260619000000_add_expense_management_foundation/migration.sql`
+  - `prisma/schema.prisma` atualizado com `ExpensePolicy`, `ExpenseReport`, `ExpenseItem`, `ExpenseReceipt`, `ExpenseAdvance`, `ExpenseApprovalStep`, `ExpenseEvent` e `MobileActionReceipt`
+  - RLS habilitado e forcado em todas as tabelas novas
+  - `src/modules/core-saas/permissions/catalog.ts`, `prisma/seed.ts` e `tests/core-saas.test.ts` atualizados com permissoes `expense_*`
+- backend implementado:
+  - `src/modules/expense-management/**`
+  - repositorio em memoria para testes
+  - repositorio Prisma lazy/RLS para runtime persistente
+  - endpoints `/api/v1/expense-policies`, `/api/v1/expense-categories`, `/api/v1/expense-reports`, `/api/v1/expense-reports/:reportId`, `/api/v1/expense-reports/:reportId/items`, `/api/v1/expense-reports/:reportId/submit` e `/api/v1/mobile/sync/expense-actions`
+  - sync mobile idempotente por `tenant_id` + `client_action_id`
+  - payload mobile nao define `tenant_id` efetivo e tecnico nao consegue criar RDV para outro usuario via sync
+- Flutter alinhado:
+  - adicionadas constantes de contratos em `mobile/flutter_app/lib/core/network/api_contracts.dart`
+  - testes Flutter agora cobrem endpoints, status e tipos de acao backend
+- testes focados:
+  - `tests/expense-management-routes.test.ts` cobre policies/categorias, RBAC, create/list, read_own, add item, recalculo, submit, sync idempotente, bloqueio sem permissao e tenant isolation
+
+### Validacoes finais
+
+- `npx prisma validate`: OK
+- `npx prisma generate`: OK
+- `npx prisma migrate deploy`: OK
+- `npx prisma migrate status`: OK, schema up to date
+- `npm run check`: OK
+- `npm run lint`: OK
+- `npm test`: OK, 15/15
+- `npm run build`: OK
+- `node --test --import tsx tests/expense-management-routes.test.ts`: OK, 6/6
+- `npm --prefix frontend run check`: OK
+- `npm --prefix frontend run build`: OK
+- `npm --prefix frontend run test:smoke`: OK, 28/28
+- `flutter analyze`: OK
+- `flutter test`: OK, 17/17
+- `docker compose ps`: `erp-postgres` e `erp-redis` healthy
+- `npm run test:e2e`: OK, 11/11
+
+### Fora de escopo mantido
+
+- OCR real
+- upload real de arquivos/recibos
+- PDF oficial
+- pagamento real
+- fiscal/contabil
+- conciliacao bancaria/cartao
+- UI web
+- approval avancado
+- integracao direta com comissoes

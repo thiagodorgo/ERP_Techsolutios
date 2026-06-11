@@ -224,3 +224,29 @@ Um conflito deve retornar:
 - proxima acao permitida.
 
 O app deve gravar o conflito em fila propria e exigir decisao explicita quando houver risco de perda de dados.
+
+## Backend Foundation - GDV-002
+
+Na fundacao backend inicial, `POST /api/v1/mobile/sync/expense-actions` aceita lote idempotente com estes tipos de acao:
+
+- `expense_report.create`;
+- `expense_item.create`;
+- `expense_report.submit`.
+
+Cada acao deve conter `client_action_id`, `type` e `payload`. O backend usa o `tenant_id` e o ator do contexto autenticado, nunca o `tenant_id` enviado no payload, e grava recibo em `mobile_action_receipts`.
+
+Resposta esperada:
+
+```json
+{
+  "results": [
+    {
+      "clientActionId": "client-action-1",
+      "status": "processed",
+      "resultRef": "server-id"
+    }
+  ]
+}
+```
+
+Quando a mesma acao for reenviada com o mesmo `client_action_id`, a resposta deve retornar o resultado ja processado sem duplicar RDV, item ou submissao.
