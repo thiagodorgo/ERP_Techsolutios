@@ -1592,3 +1592,43 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - `docker compose ps`: `erp-postgres` e `erp-redis` healthy
 - `npm run test:e2e`: primeira tentativa 10/11 com falha transitoria `net::ERR_NETWORK_CHANGED` no fluxo Platform Cloud Billing; rerun OK, 11/11
 - `git diff --check`: OK
+
+## 2026-06-11 - GDV-001 Gestao de Despesas + Flutter Foundation
+
+- branch usada: `feature/expense-management-flutter-foundation`
+- pre-condicao executada antes de alterar arquivos:
+  - `git checkout main`: OK
+  - `git pull --ff-only origin main`: fast-forward ate PR #74
+  - PR #74 confirmada em `main` por merge commit, `docs/commissions.md` e entrada de `commission_engine_foundation`
+  - `git status --short` inicial: apenas `experiments/` nao rastreado
+- documento base lido de `C:\Users\AMP\Downloads\plano_gestao_despesas_flutter_erp_techsolutions.docx`
+- toolchain verificada: Node v20.19.5, npm 11.7.0, Flutter 3.41.6 e Dart 3.11.4
+- documentacao criada:
+  - `docs/expense-management.md`
+  - `docs/mobile-flutter-app.md`
+  - `docs/mobile-sync-contracts.md`
+- `docs/modules.md` atualizado incrementalmente com `expense_management`
+- arquivos historicos e de orquestracao preservados por append/merge aditivo
+- app Flutter criado em `mobile/flutter_app` com plataformas Android/iOS
+- implementados App Shell, roteamento, home modular, tela de Gestao de Despesas, tela de novo RDV e diagnostico
+- implementados modelos e servicos Dart:
+  - `TenantContext`, `EnabledModule`, `BootstrapSession`
+  - `PermissionResolver`, `ModuleResolver`
+  - `ExpenseReport`, `ExpenseItem`, `Receipt`, `ExpenseAdvance`, `ExpensePolicy`, `PolicyViolation`
+  - `ExpenseTotalsCalculator`, `ExpensePolicyEvaluator`
+  - `SyncActionFactory`, `InMemorySyncQueueRepository`, `SyncEngine`
+- dependencias Flutter adicionadas: `flutter_riverpod`, `go_router`, `dio`, `flutter_secure_storage`, `drift`, `sqlite3_flutter_libs`, `path_provider`, `uuid`, `crypto` e `equatable`
+- OCR, PDF, camera, backend completo, pagamentos, fiscal, conciliacao, Figma final e publicacao mobile ficaram fora do escopo
+
+### Validacoes
+
+- `npm run check`: OK
+- `npm run lint`: OK
+- `npm test`: OK, 15/15
+- `npm run build`: OK
+- `npm --prefix frontend run check`: OK
+- `npm --prefix frontend run build`: OK
+- `npm --prefix frontend run test:smoke`: OK, 28/28
+- `flutter pub get`: OK
+- `flutter analyze`: OK
+- `flutter test`: OK, 14/14

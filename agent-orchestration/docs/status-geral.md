@@ -1586,3 +1586,40 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - `docker compose ps`: `erp-postgres` e `erp-redis` healthy
 - `npm run test:e2e`: rerun OK, 11/11; primeira tentativa teve `net::ERR_NETWORK_CHANGED` transitorio em Platform Cloud Billing
 - `git diff --check`: OK
+
+## Atualizacao 2026-06-11 - GDV-001 Gestao de Despesas + Flutter Foundation
+
+### Planejado
+
+- iniciado bloco GDV-001 para tratar Gestao de Despesas como modulo oficial do ERP, com chave tecnica `expense_management`
+- definido que GDV e alias historico e RDV e o documento/relatorio gerado
+- definido que Flutter sera app tudo-em-um, com modulos habilitados por tenant, plano, papel e permissoes
+- documentados cenarios operacionais offline/online, aprovacao manager, validacao finance, duplicidade, multiplos tenants, conflito, policy version, falta de permissao e diagnostico
+- consolidados RF/RNF, arquitetura mobile, contratos HTTP, sync e eventos assincronos
+
+### Preservacao
+
+- `agent-orchestration/**` atualizado somente por entrada aditiva
+- `experiments/` permanece nao rastreado, fora do commit e sem alteracao planejada
+- calculo de comissoes, pagamento real, fiscal/tributario, contabilidade, backend completo, Figma final e publicacao mobile permanecem fora do escopo desta fase
+
+### Implementado
+
+- criado app Flutter em `mobile/flutter_app` com Android e iOS preparados
+- adicionadas dependencias base: Riverpod, GoRouter, Dio, secure storage, Drift/SQLite, path provider, uuid, crypto e equatable
+- implementados App Shell, home modular, rota de Gestao de Despesas, novo RDV e diagnostico
+- implementados `PermissionResolver`, `ModuleResolver`, modelos de despesas, calculadora de totais, avaliador de politicas, `SyncActionFactory`, fila de sync em memoria e `SyncEngine` mockavel
+- testes Flutter cobrem permissoes, modulo habilitado/oculto, calculo, adiantamento, violacao de politica, tenant isolation, idempotencia e estados de sync
+
+### Validacoes
+
+- `npm run check`: OK
+- `npm run lint`: OK
+- `npm test`: OK, 15/15
+- `npm run build`: OK
+- `npm --prefix frontend run check`: OK
+- `npm --prefix frontend run build`: OK
+- `npm --prefix frontend run test:smoke`: OK, 28/28
+- `flutter pub get`: OK
+- `flutter analyze`: OK
+- `flutter test`: OK, 14/14

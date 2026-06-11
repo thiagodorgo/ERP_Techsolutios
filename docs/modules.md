@@ -14,6 +14,7 @@ Exemplos:
 - inventory
 - approvals
 - finance
+- expense_management
 - commissions
 - notifications
 - mobile
@@ -121,3 +122,4 @@ Sao os modulos efetivamente ativos para um tenant especifico. A visibilidade no 
 - `field_ops_event_fanout` e o job de mapeamento assíncrono para os 6 eventos de field ops. Adiciona `field-ops-event-fanout` ao catalogo de jobs e ao `eventJobMap` do publisher, enfileirando uma tarefa tenant-scoped para cada evento de `field_location.updated`, `field_dispatch.created`, `field_dispatch.status_changed`, `field_dispatch.cancelled`, `field_dispatch.reassigned` e `work_order.status_changed`. O handler e um placeholder: preserva o envelope do evento na fila para consumo futuro por SSE/WebSocket. Payload de localizacao continua sem coordenadas. Falha de enqueue nao quebra a operacao principal (fail-open). Nenhum endpoint publico SSE/WebSocket foi adicionado nesta PR; frontend polling permanece inalterado.
 - `commissions` e uma capacidade transversal tenant-scoped planejada para calcular, revisar, aprovar e preparar comissoes a partir de eventos operacionais, comerciais e financeiros. O desenho deve ser assincrono por padrao: Work Orders, Dispatches, Field Ops Events, Checklists e Billing futuro publicam eventos, enquanto o motor de comissoes consome esses eventos sem bloquear a operacao principal. B-073 documenta produto, regras, modelo conceitual, RBAC, status e fases futuras; migrations, calculo real, UI, pagamento, fiscal, Flutter e refactors ficam fora desta fase.
 - `commission_engine_foundation` e a primeira fundacao backend de `commissions`: adiciona schema/migration tenant-scoped com RLS para politicas, regras, eventos-base, calculos e demonstrativos; expoe rotas iniciais `/api/v1/commissions/*` com RBAC `commissions:*`; aplica idempotencia basica por `tenant_id` + `idempotency_key` em eventos-base e sanitiza payloads sensiveis. Calculo avancado, UI, pagamento, fiscal, contabil, gateway, Flutter/mobile e integracao assincrona real permanecem fora desta branch.
+- `expense_management` e o modulo oficial de Gestao de Despesas. GDV fica como alias historico e RDV como documento gerado. O modulo deve ser tenant-scoped, habilitado por plano/tenant/papel/RBAC, preparado para operacao Flutter local-first, sync idempotente, recibos, OCR/PDF futuros, aprovacao manager/finance, auditoria e eventos assincronos. Pagamento real, fiscal, contabil, conciliacao bancaria, cartao corporativo, backend completo e acoplamento direto com comissoes ficam fora da fundacao inicial.
