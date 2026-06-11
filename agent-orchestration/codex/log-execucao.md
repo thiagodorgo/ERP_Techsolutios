@@ -1529,3 +1529,25 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 
 ### Fora de escopo mantido
 - Remover polling completamente, WebSocket, Flutter/mobile, novos endpoints de localizacao/despacho, Google Maps provider, billing, pagamentos, fiscal e refactors nao relacionados
+
+## 2026-06-11 - B-073 Commission Engine Planning and Data Model
+
+- branch usada: `docs/commission-engine-planning`
+- criado `docs/commissions.md`
+- atualizado `docs/modules.md` com secao do modulo/capacidade `commissions`
+- atualizado `agent-orchestration/docs/status-geral.md`
+- atualizado `agent-orchestration/codex/log-execucao.md`
+- motor de comissoes documentado como capacidade transversal tenant-scoped
+- definido fluxo assincrono como prioridade arquitetural
+- definido modelo conceitual com `commission_policy`, `commission_policy_version`, `commission_source_event`, `commission_basis`, `commission_calculation`, `commission_split`, `commission_statement`, `commission_settlement`, `commission_adjustment` e `commission_audit_event`
+- documentado catalogo de tipos de comissao para fixo, percentual, margem, distancia, meta, produtividade, split, recorrencia, bonus, penalidade/estorno e regras hibridas
+- documentadas verticais iniciais: servicos tecnicos em campo, guincho/assistencia veicular, vendas comerciais, representantes/parceiros, logistica/entregas, instalacao/manutencao e industria/producao por meta
+- migrations, backend funcional, calculo real, UI, pagamento, fiscal, Flutter/mobile e refactors ficaram fora do escopo
+- `experiments/` preservado fora do commit
+- `agent-orchestration/**` preservado sem limpeza destrutiva
+
+### Validacoes
+- `git status --short`: arquivos documentais esperados + `experiments/` nao rastreado
+- `npm run check`: OK
+- `git diff --check`: OK
+- `git status --short`: arquivos documentais esperados + `experiments/` nao rastreado
