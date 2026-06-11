@@ -4,7 +4,7 @@ import { isMockMode } from "../../../config/env";
 import { useAuth } from "../../../providers/AuthProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
 import { getMockOperationsMapData } from "./operations-map.mock";
-import { getLatestFieldLocations } from "./operations-map.service";
+import { getLatestFieldLocations, subscribeOperationsMapEvents } from "./operations-map.service";
 import type { OperationsMapData } from "./operations-map.types";
 
 const POLL_INTERVAL_MS = 30_000;
@@ -80,6 +80,17 @@ export function useOperationsMap() {
     }, POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [autoRefresh, refresh]);
+
+  useEffect(() => {
+    if (isMockMode() || !activeContext || !context.permissions?.includes("field_location:read")) return;
+
+    return subscribeOperationsMapEvents(context, {
+      onEvent: () => {
+        void refresh(true);
+      },
+      onError: () => undefined,
+    });
+  }, [activeContext, context, refresh]);
 
   return {
     ...state,

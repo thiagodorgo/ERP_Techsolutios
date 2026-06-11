@@ -62,6 +62,16 @@ export type OperationsMapData = {
   readonly fallbackReason?: string;
 };
 
+export type OperationsMapRealtimeEvent = {
+  readonly id: string;
+  readonly name: string;
+  readonly payload: Record<string, unknown>;
+  readonly tenantId?: string;
+  readonly actorId?: string;
+  readonly correlationId: string;
+  readonly occurredAt: string;
+};
+
 export type OperationsMapFilters = {
   readonly status: FieldLocationStatus | "all";
   readonly team: string;
