@@ -1447,3 +1447,17 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - npm run check, lint e build: todos limpos
 - frontend polling de 30s preservado intocado; nenhum endpoint SSE/WebSocket criado; nenhum segredo adicionado
 - fora de escopo: SSE/WebSocket, frontend realtime, Flutter/mobile, Google Maps, migrations, comissoes, pagamentos e refatoracao da infra de eventos
+
+## Atualizacao 2026-06-10 - field ops SSE transport
+
+- branch usada: `feature/field-ops-sse-transport`
+- objetivo: transporte SSE backend tenant-scoped para eventos de operações de campo; nenhuma alteração no frontend
+- `src/infra/broadcaster/field-ops.broadcaster.ts`: criado `FieldOpsBroadcaster` com EventEmitter, canais por tenant (`tenant:{tenantId}`), maxListeners 0, singleton `getFieldOpsBroadcaster()` e `resetFieldOpsBroadcasterForTests()`
+- `src/modules/field-dispatch/field-ops-event-fanout.jobs.ts`: handler atualizado de placeholder para publicar no broadcaster com try/catch fail-open
+- `src/modules/field-ops/field-ops-sse.routes.ts`: endpoint `GET /api/v1/operations/events/stream`; RBAC com `field_location:read`, `field_dispatch:read` e `work_orders:read`; filtragem por evento; strip de coordenadas; heartbeat 30 s; cleanup no close
+- `src/modules/field-ops/index.ts`: barrel de exports do modulo field-ops
+- `src/app.ts`: registrado `createFieldOpsSseRouter()` na rota `/api/v1`
+- `tests/field-ops-sse-transport.test.ts`: 14 testes cobrem 403 sem auth, 403 sem permissao, headers SSE, entrega por tipo de evento, strip de coordenadas, isolamento cross-tenant, filtragem RBAC por permissao, multiplos eventos sequenciais, heartbeat, dois subscribers concorrentes e cleanup no disconnect
+- 14/14 field-ops-sse-transport; 12/12 field-ops-events; npm run check/lint/build: todos limpos
+- frontend polling de 30s preservado intocado; nenhum WebSocket; nenhuma migration; nenhum segredo adicionado
+- fora de escopo: substituicao do polling frontend, WebSocket, Flutter/mobile, Google Maps, roteirizacao, comissoes e fiscal

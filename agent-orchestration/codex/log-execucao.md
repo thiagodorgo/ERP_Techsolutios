@@ -1344,3 +1344,41 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - Mock queue sem Redis para testes unitarios; padrao copiado de domain-events.test.ts
 - fail-open preservado: falha de enqueue nao quebra create/changeStatus/reassign
 - Nenhum endpoint publico; Nenhum segredo; Nenhuma migration
+
+---
+
+## PR #68 - field-ops-sse-transport
+
+### FASE 0 - Leitura de contexto
+- `src/app.ts`: padrao de registro de routers confirmado
+- `src/modules/field-dispatch/field-dispatch.routes.ts`: padrao Router/middleware/RBAC confirmado
+- `tests/field-dispatch-routes.test.ts`: padrao de teste com app real port 0 confirmado
+- `src/modules/core-saas/permissions/catalog.ts`: `field_location:read`, `field_dispatch:read`, `work_orders:read` todos existem; `finance` role confirmado sem permissoes field ops
+- `src/infra/events/domain-event.types.ts`: forma de `DomainEventEnvelope` confirmada
+
+### FASE 1 - Implementacao
+- `src/infra/broadcaster/field-ops.broadcaster.ts`: criado `FieldOpsBroadcaster` (EventEmitter, maxListeners 0, canais por tenant, singleton, reset para testes, `listenerCount`)
+- `src/modules/field-dispatch/field-ops-event-fanout.jobs.ts`: atualizado de placeholder para publicar no broadcaster com try/catch fail-open
+- `src/modules/field-ops/field-ops-sse.routes.ts`: endpoint SSE com RBAC, filtragem por evento, strip de coordenadas, heartbeat, cleanup
+- `src/modules/field-ops/index.ts`: barrel de exports
+- `src/app.ts`: +1 import e +1 `app.use` para `createFieldOpsSseRouter()`
+
+### FASE 2 - Testes
+- `tests/field-ops-sse-transport.test.ts`: 14 testes com mini-app Express injetando broadcaster diretamente
+- Helper `withSseApi`: broadcaster injetado via `createFieldOpsSseRouter({ broadcaster })` — sem singleton
+- Helper `readSseBlocks`: leitor de stream SSE com timeout, separa eventos de comentarios
+- `sleep(20)` antes de publicar para garantir que a subscricao esta registrada
+
+### FASE 3 - Validacoes
+- npm run check: OK
+- npm run lint: OK
+- npm run build: OK
+- field-ops-sse-transport.test.ts (14/14): OK
+- field-ops-events.test.ts (12/12): OK
+
+### Decisoes tecnicas
+- Broadcaster injetavel via opcoes para facilitar testes sem singleton
+- `listenerCount(tenantId)` adicionado ao broadcaster para verificar cleanup no SSE_14
+- Mini-app Express nos testes (nao `createApp`) para controle de broadcaster e heartbeatIntervalMs
+- Isolamento cross-tenant por canal `tenant:{tenantId}` no EventEmitter
+- Nenhum WebSocket; Nenhuma migration; Nenhum segredo; Frontend polling preservado
