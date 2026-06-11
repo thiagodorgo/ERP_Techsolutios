@@ -32,10 +32,15 @@ model Tenant {
   cloud_usage_daily_aggregates  CloudUsageDailyAggregate[]
   cloud_usage_events            CloudUsageEvent[]
   cloud_charge_rules            CloudChargeRule[]
+  commission_basis_events       CommissionBasisEvent[]
+  commission_calculations       CommissionCalculation[]
+  commission_policies           CommissionPolicy[]
+  commission_policy_rules       CommissionPolicyRule[]
+  commission_statements         CommissionStatement[]
   tenant_cloud_charges          TenantCloudCharge[]
   tenant_cloud_cost_allocations TenantCloudCostAllocation[]
   local_auth_credentials        LocalAuthCredential[]
-  notifications                  Notification[]
+  notifications                 Notification[]
   roles                         Role[]
   user_role_assignments         UserRoleAssignment[]
   users                         User[]
@@ -61,31 +66,35 @@ model Branch {
 }
 
 model User {
-  id                     String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id              String                @db.Uuid
-  branch_id              String?               @db.Uuid
-  name                   String
-  email                  String
-  status                 String                @default("active")
-  created_at             DateTime              @default(now()) @db.Timestamptz(6)
-  updated_at             DateTime              @default(now()) @updatedAt @db.Timestamptz(6)
-  audit_logs             AuditLog[]
-  auth_sessions          AuthSession[]
-  branch                 Branch?               @relation(fields: [branch_id], references: [id], onDelete: SetNull)
-  local_auth_credentials LocalAuthCredential[]
-  notifications          Notification[]
-  field_operator_locations FieldOperatorLocation[]
-  field_dispatch_events    FieldDispatchEvent[]    @relation("FieldDispatchEventActor")
-  field_dispatches_created FieldDispatch[]         @relation("FieldDispatchCreatedBy")
-  field_dispatches_operator FieldDispatch[]        @relation("FieldDispatchOperator")
-  field_dispatches_updated FieldDispatch[]         @relation("FieldDispatchUpdatedBy")
-  assigned_work_orders   WorkOrder[]            @relation("WorkOrderAssignedUser")
-  created_work_orders    WorkOrder[]            @relation("WorkOrderCreatedBy")
-  updated_work_orders    WorkOrder[]            @relation("WorkOrderUpdatedBy")
-  work_order_assignments WorkOrderAssignment[]  @relation("WorkOrderAssignmentUser")
-  work_order_events      WorkOrderEvent[]       @relation("WorkOrderEventActor")
-  role_assignments       UserRoleAssignment[]
-  tenant                 Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  id                               String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                        String                  @db.Uuid
+  branch_id                        String?                 @db.Uuid
+  name                             String
+  email                            String
+  status                           String                  @default("active")
+  created_at                       DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at                       DateTime                @default(now()) @updatedAt @db.Timestamptz(6)
+  audit_logs                       AuditLog[]
+  auth_sessions                    AuthSession[]
+  branch                           Branch?                 @relation(fields: [branch_id], references: [id], onDelete: SetNull)
+  local_auth_credentials           LocalAuthCredential[]
+  notifications                    Notification[]
+  field_operator_locations         FieldOperatorLocation[]
+  field_dispatch_events            FieldDispatchEvent[]    @relation("FieldDispatchEventActor")
+  field_dispatches_created         FieldDispatch[]         @relation("FieldDispatchCreatedBy")
+  field_dispatches_operator        FieldDispatch[]         @relation("FieldDispatchOperator")
+  field_dispatches_updated         FieldDispatch[]         @relation("FieldDispatchUpdatedBy")
+  commission_calculations_eligible CommissionCalculation[] @relation("CommissionCalculationEligibleUser")
+  commission_calculations_payee    CommissionCalculation[] @relation("CommissionCalculationPayee")
+  commission_policies_created      CommissionPolicy[]      @relation("CommissionPolicyCreatedBy")
+  commission_statements_payee      CommissionStatement[]   @relation("CommissionStatementPayee")
+  assigned_work_orders             WorkOrder[]             @relation("WorkOrderAssignedUser")
+  created_work_orders              WorkOrder[]             @relation("WorkOrderCreatedBy")
+  updated_work_orders              WorkOrder[]             @relation("WorkOrderUpdatedBy")
+  work_order_assignments           WorkOrderAssignment[]   @relation("WorkOrderAssignmentUser")
+  work_order_events                WorkOrderEvent[]        @relation("WorkOrderEventActor")
+  role_assignments                 UserRoleAssignment[]
+  tenant                           Tenant                  @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, email])
@@ -289,23 +298,23 @@ model CloudUsageDailyAggregate {
 }
 
 model CloudCostImport {
-  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  provider              String
-  source_type           String
-  source_uri            String?
-  status                String              @default("pending")
-  period_start          DateTime?           @db.Timestamptz(6)
-  period_end            DateTime?           @db.Timestamptz(6)
-  imported_at           DateTime?           @db.Timestamptz(6)
-  imported_by           String?
-  row_count             Int                 @default(0)
-  total_unblended_cost  Decimal             @default(0) @db.Decimal(20, 6)
-  currency              String?
-  metadata              Json
-  error_message         String?
-  created_at            DateTime            @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime            @default(now()) @updatedAt @db.Timestamptz(6)
-  line_items            CloudCostLineItem[]
+  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider             String
+  source_type          String
+  source_uri           String?
+  status               String              @default("pending")
+  period_start         DateTime?           @db.Timestamptz(6)
+  period_end           DateTime?           @db.Timestamptz(6)
+  imported_at          DateTime?           @db.Timestamptz(6)
+  imported_by          String?
+  row_count            Int                 @default(0)
+  total_unblended_cost Decimal             @default(0) @db.Decimal(20, 6)
+  currency             String?
+  metadata             Json
+  error_message        String?
+  created_at           DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime            @default(now()) @updatedAt @db.Timestamptz(6)
+  line_items           CloudCostLineItem[]
 
   @@index([provider])
   @@index([source_type])
@@ -353,24 +362,24 @@ model CloudCostLineItem {
 }
 
 model CloudCostAllocationRun {
-  id                     String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  provider               String
-  status                 String                      @default("pending")
-  period_start           DateTime                    @db.Timestamptz(6)
-  period_end             DateTime                    @db.Timestamptz(6)
-  strategy               String
-  total_imported_cost    Decimal                     @default(0) @db.Decimal(20, 6)
-  total_allocated_cost   Decimal                     @default(0) @db.Decimal(20, 6)
-  total_unallocated_cost Decimal                     @default(0) @db.Decimal(20, 6)
-  currency               String?
-  started_at             DateTime?                   @db.Timestamptz(6)
-  completed_at           DateTime?                   @db.Timestamptz(6)
-  created_by             String?
-  error_message          String?
-  metadata               Json
-  created_at             DateTime                    @default(now()) @db.Timestamptz(6)
-  updated_at             DateTime                    @default(now()) @updatedAt @db.Timestamptz(6)
-  tenant_allocations     TenantCloudCostAllocation[]
+  id                      String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider                String
+  status                  String                      @default("pending")
+  period_start            DateTime                    @db.Timestamptz(6)
+  period_end              DateTime                    @db.Timestamptz(6)
+  strategy                String
+  total_imported_cost     Decimal                     @default(0) @db.Decimal(20, 6)
+  total_allocated_cost    Decimal                     @default(0) @db.Decimal(20, 6)
+  total_unallocated_cost  Decimal                     @default(0) @db.Decimal(20, 6)
+  currency                String?
+  started_at              DateTime?                   @db.Timestamptz(6)
+  completed_at            DateTime?                   @db.Timestamptz(6)
+  created_by              String?
+  error_message           String?
+  metadata                Json
+  created_at              DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime                    @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant_allocations      TenantCloudCostAllocation[]
   charge_calculation_runs CloudChargeCalculationRun[]
   tenant_cloud_charges    TenantCloudCharge[]
 
@@ -381,30 +390,30 @@ model CloudCostAllocationRun {
 }
 
 model CloudChargeRule {
-  id                     String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id              String?             @db.Uuid
-  plan_code              String?
-  name                   String
-  description            String?
-  is_active              Boolean             @default(true)
-  priority               Int                 @default(100)
-  effective_from         DateTime            @db.Timestamptz(6)
-  effective_until        DateTime?           @db.Timestamptz(6)
-  currency               String
-  markup_type            String
-  markup_value           Decimal             @db.Decimal(20, 6)
-  minimum_monthly_charge Decimal             @default(0) @db.Decimal(20, 6)
-  included_cloud_cost    Decimal             @default(0) @db.Decimal(20, 6)
-  included_usage_amount  Decimal?            @db.Decimal(20, 6)
+  id                        String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                 String?             @db.Uuid
+  plan_code                 String?
+  name                      String
+  description               String?
+  is_active                 Boolean             @default(true)
+  priority                  Int                 @default(100)
+  effective_from            DateTime            @db.Timestamptz(6)
+  effective_until           DateTime?           @db.Timestamptz(6)
+  currency                  String
+  markup_type               String
+  markup_value              Decimal             @db.Decimal(20, 6)
+  minimum_monthly_charge    Decimal             @default(0) @db.Decimal(20, 6)
+  included_cloud_cost       Decimal             @default(0) @db.Decimal(20, 6)
+  included_usage_amount     Decimal?            @db.Decimal(20, 6)
   included_usage_metric_key String?
-  overage_markup_type    String?
-  overage_markup_value   Decimal?            @db.Decimal(20, 6)
-  rounding_mode          String              @default("nearest_cent")
-  metadata               Json
-  created_at             DateTime            @default(now()) @db.Timestamptz(6)
-  updated_at             DateTime            @default(now()) @updatedAt @db.Timestamptz(6)
-  tenant                 Tenant?             @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
-  tenant_cloud_charges   TenantCloudCharge[]
+  overage_markup_type       String?
+  overage_markup_value      Decimal?            @db.Decimal(20, 6)
+  rounding_mode             String              @default("nearest_cent")
+  metadata                  Json
+  created_at                DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime            @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant                    Tenant?             @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  tenant_cloud_charges      TenantCloudCharge[]
 
   @@index([tenant_id])
   @@index([plan_code])
@@ -701,44 +710,44 @@ model FieldOperatorLocation {
 }
 
 model WorkOrder {
-  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id            String                @db.Uuid
-  code                 String
-  title                String
-  description          String?
-  customer_name        String?
-  customer_document    String?
-  customer_phone       String?
-  service_address      String?
-  service_city         String?
-  service_state        String?
-  service_zip_code     String?
-  service_latitude     Decimal?              @db.Decimal(10, 7)
-  service_longitude    Decimal?              @db.Decimal(10, 7)
-  priority             String                @default("medium")
-  status               String                @default("open")
-  assigned_operator_id String?               @db.Uuid
-  assigned_user_id     String?               @db.Uuid
-  checklist_id         String?               @db.Uuid
-  scheduled_for        DateTime?             @db.Timestamptz(6)
-  started_at           DateTime?             @db.Timestamptz(6)
-  arrived_at           DateTime?             @db.Timestamptz(6)
-  completed_at         DateTime?             @db.Timestamptz(6)
-  cancelled_at         DateTime?             @db.Timestamptz(6)
-  cancellation_reason  String?
-  created_by           String?               @db.Uuid
-  updated_by           String?               @db.Uuid
-  created_at           DateTime              @default(now()) @db.Timestamptz(6)
-  updated_at           DateTime              @default(now()) @updatedAt @db.Timestamptz(6)
-  assignments          WorkOrderAssignment[]
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String                @db.Uuid
+  code                  String
+  title                 String
+  description           String?
+  customer_name         String?
+  customer_document     String?
+  customer_phone        String?
+  service_address       String?
+  service_city          String?
+  service_state         String?
+  service_zip_code      String?
+  service_latitude      Decimal?              @db.Decimal(10, 7)
+  service_longitude     Decimal?              @db.Decimal(10, 7)
+  priority              String                @default("medium")
+  status                String                @default("open")
+  assigned_operator_id  String?               @db.Uuid
+  assigned_user_id      String?               @db.Uuid
+  checklist_id          String?               @db.Uuid
+  scheduled_for         DateTime?             @db.Timestamptz(6)
+  started_at            DateTime?             @db.Timestamptz(6)
+  arrived_at            DateTime?             @db.Timestamptz(6)
+  completed_at          DateTime?             @db.Timestamptz(6)
+  cancelled_at          DateTime?             @db.Timestamptz(6)
+  cancellation_reason   String?
+  created_by            String?               @db.Uuid
+  updated_by            String?               @db.Uuid
+  created_at            DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime              @default(now()) @updatedAt @db.Timestamptz(6)
+  assignments           WorkOrderAssignment[]
   field_dispatch_events FieldDispatchEvent[]
   field_dispatches      FieldDispatch[]
-  assigned_user        User?                 @relation("WorkOrderAssignedUser", fields: [tenant_id, assigned_user_id], references: [tenant_id, id], onDelete: Restrict)
-  checklist            ChecklistTemplate?    @relation(fields: [tenant_id, checklist_id], references: [tenant_id, id], onDelete: Restrict)
-  created_by_user      User?                 @relation("WorkOrderCreatedBy", fields: [tenant_id, created_by], references: [tenant_id, id], onDelete: Restrict)
-  events               WorkOrderEvent[]
-  tenant               Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
-  updated_by_user      User?                 @relation("WorkOrderUpdatedBy", fields: [tenant_id, updated_by], references: [tenant_id, id], onDelete: Restrict)
+  assigned_user         User?                 @relation("WorkOrderAssignedUser", fields: [tenant_id, assigned_user_id], references: [tenant_id, id], onDelete: Restrict)
+  checklist             ChecklistTemplate?    @relation(fields: [tenant_id, checklist_id], references: [tenant_id, id], onDelete: Restrict)
+  created_by_user       User?                 @relation("WorkOrderCreatedBy", fields: [tenant_id, created_by], references: [tenant_id, id], onDelete: Restrict)
+  events                WorkOrderEvent[]
+  tenant                Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  updated_by_user       User?                 @relation("WorkOrderUpdatedBy", fields: [tenant_id, updated_by], references: [tenant_id, id], onDelete: Restrict)
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, code])
@@ -854,4 +863,134 @@ model FieldDispatchEvent {
   @@index([tenant_id, work_order_id, created_at])
   @@index([tenant_id, event_type])
   @@map("field_dispatch_events")
+}
+
+model CommissionPolicy {
+  id              String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id       String                  @db.Uuid
+  name            String
+  scope           String
+  vertical        String
+  status          String                  @default("draft")
+  effective_from  DateTime                @db.Timestamptz(6)
+  effective_to    DateTime?               @db.Timestamptz(6)
+  version         Int                     @default(1)
+  created_by      String?                 @db.Uuid
+  created_at      DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime                @default(now()) @updatedAt @db.Timestamptz(6)
+  basis_events    CommissionBasisEvent[]
+  calculations    CommissionCalculation[]
+  created_by_user User?                   @relation("CommissionPolicyCreatedBy", fields: [tenant_id, created_by], references: [tenant_id, id], onDelete: Restrict)
+  rules           CommissionPolicyRule[]
+  tenant          Tenant                  @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id])
+  @@index([tenant_id, status])
+  @@index([tenant_id, vertical])
+  @@index([tenant_id, effective_from, effective_to])
+  @@map("commission_policies")
+}
+
+model CommissionPolicyRule {
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String           @db.Uuid
+  policy_id  String           @db.Uuid
+  rule_type  String
+  basis_type String
+  rate_type  String
+  rate_value Decimal          @db.Decimal(20, 6)
+  conditions Json
+  priority   Int              @default(100)
+  active     Boolean          @default(true)
+  created_at DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+  policy     CommissionPolicy @relation(fields: [tenant_id, policy_id], references: [tenant_id, id], onDelete: Cascade)
+  tenant     Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id])
+  @@index([tenant_id, policy_id])
+  @@index([tenant_id, policy_id, active, priority])
+  @@map("commission_policy_rules")
+}
+
+model CommissionBasisEvent {
+  id                String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String                  @db.Uuid
+  source_type       String
+  source_id         String
+  source_event_name String
+  idempotency_key   String
+  payload           Json
+  occurred_at       DateTime                @db.Timestamptz(6)
+  status            String                  @default("received")
+  policy_id         String?                 @db.Uuid
+  created_at        DateTime                @default(now()) @db.Timestamptz(6)
+  calculations      CommissionCalculation[]
+  policy            CommissionPolicy?       @relation(fields: [tenant_id, policy_id], references: [tenant_id, id], onDelete: Restrict)
+  tenant            Tenant                  @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, idempotency_key])
+  @@index([tenant_id])
+  @@index([tenant_id, source_type, source_id])
+  @@index([tenant_id, source_event_name])
+  @@index([tenant_id, status])
+  @@index([tenant_id, occurred_at])
+  @@index([tenant_id, policy_id])
+  @@map("commission_basis_events")
+}
+
+model CommissionCalculation {
+  id                   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id            String               @db.Uuid
+  basis_event_id       String               @db.Uuid
+  policy_id            String               @db.Uuid
+  eligible_user_id     String?              @db.Uuid
+  payee_id             String?              @db.Uuid
+  amount               Decimal              @default(0) @db.Decimal(20, 6)
+  currency             String               @default("BRL")
+  status               String               @default("pending")
+  calculation_snapshot Json
+  idempotency_key      String
+  created_at           DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime             @default(now()) @updatedAt @db.Timestamptz(6)
+  basis_event          CommissionBasisEvent @relation(fields: [tenant_id, basis_event_id], references: [tenant_id, id], onDelete: Cascade)
+  eligible_user        User?                @relation("CommissionCalculationEligibleUser", fields: [tenant_id, eligible_user_id], references: [tenant_id, id], onDelete: Restrict)
+  payee                User?                @relation("CommissionCalculationPayee", fields: [tenant_id, payee_id], references: [tenant_id, id], onDelete: Restrict)
+  policy               CommissionPolicy     @relation(fields: [tenant_id, policy_id], references: [tenant_id, id], onDelete: Restrict)
+  tenant               Tenant               @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, idempotency_key])
+  @@index([tenant_id])
+  @@index([tenant_id, basis_event_id])
+  @@index([tenant_id, policy_id])
+  @@index([tenant_id, payee_id])
+  @@index([tenant_id, status])
+  @@map("commission_calculations")
+}
+
+model CommissionStatement {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id    String   @db.Uuid
+  payee_id     String   @db.Uuid
+  period_start DateTime @db.Date
+  period_end   DateTime @db.Date
+  status       String   @default("open")
+  total_amount Decimal  @default(0) @db.Decimal(20, 6)
+  currency     String   @default("BRL")
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  payee        User     @relation("CommissionStatementPayee", fields: [tenant_id, payee_id], references: [tenant_id, id], onDelete: Restrict)
+  tenant       Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, payee_id, period_start, period_end, currency])
+  @@index([tenant_id])
+  @@index([tenant_id, payee_id])
+  @@index([tenant_id, status])
+  @@index([tenant_id, period_start, period_end])
+  @@map("commission_statements")
 }

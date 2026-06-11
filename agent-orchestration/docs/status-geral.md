@@ -1545,3 +1545,44 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - arquivos historicos de `agent-orchestration/**` foram preservados
 - o desenho prioriza integracao assincrona e nao bloqueante
 - validacoes executadas: `git status --short`, `npm run check`, `git diff --check` e `git status --short`
+
+## Atualizacao 2026-06-11 - B-074 Commission Engine Foundation Backend
+
+### Implementado
+
+- branch usada: `feature/commission-engine-foundation`
+- pre-condicao confirmada: `main` atualizado por fast-forward e PR #73 presente com `docs/commissions.md` e secao `commissions` em `docs/modules.md`
+- criado schema/migration tenant-scoped para `commission_policies`, `commission_policy_rules`, `commission_basis_events`, `commission_calculations` e `commission_statements`
+- RLS habilitado e forcado nas tabelas novas, com isolamento por `app.current_tenant_id`
+- adicionadas permissoes RBAC `commissions:read`, `commissions:read_own`, `commissions:manage_policy`, `commissions:calculate`, `commissions:approve`, `commissions:adjust`, `commissions:settle` e `commissions:audit`
+- criado modulo backend `src/modules/commissions/**` com repositorio em memoria, repositorio Prisma lazy/RLS, servico, controller, DTOs, validadores e rotas
+- rotas iniciais `/api/v1/commissions/policies`, `/api/v1/commissions/basis-events`, `/api/v1/commissions/calculations` e `/api/v1/commissions/statements`
+- eventos-base usam idempotencia por `tenant_id` + `idempotency_key`
+- payloads de eventos-base sao sanitizados para remover tokens, segredos e coordenadas antes de retornar na API
+- testes focados cobrem criacao/listagem de politica, criacao/listagem de evento-base, idempotencia, RBAC 403 e isolamento por tenant
+
+### Fora De Escopo Preservado
+
+- calculo avancado de comissoes
+- UI web/Figma/Flutter
+- pagamento, fiscal, contabil e gateway
+- integracao assincrona real com workers/eventos de dominio
+- refactors nao relacionados
+- `experiments/` permanece nao rastreado e fora do commit
+
+### Validacoes
+
+- `npx prisma validate`: OK
+- `npx prisma generate`: OK
+- `npx prisma migrate deploy`: OK, migration B-074 aplicada
+- `npm run check`: OK
+- `node --test --import tsx tests/commissions-routes.test.ts`: OK, 3/3
+- `npm test`: OK, 15/15
+- `npm run lint`: OK
+- `npm run build`: OK
+- `npm --prefix frontend run check`: OK
+- `npm --prefix frontend run build`: OK
+- `npm --prefix frontend run test:smoke`: OK, 28/28
+- `docker compose ps`: `erp-postgres` e `erp-redis` healthy
+- `npm run test:e2e`: rerun OK, 11/11; primeira tentativa teve `net::ERR_NETWORK_CHANGED` transitorio em Platform Cloud Billing
+- `git diff --check`: OK
