@@ -1409,3 +1409,47 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - `node --test --import tsx tests/field-ops-realtime.test.ts`: OK, 3/3
 - `git diff --check`: OK
 - `docker compose ps`: falhou ao conectar no Docker Desktop (`dockerDesktopLinuxEngine` ausente); `npm run test:e2e` nao executado porque Docker/PostgreSQL nao estavam ativos
+
+## 2026-06-11 - field ops realtime health e degradacao graciosa
+
+- branch usada: `feature/field-ops-realtime-health`
+- base: `origin/main` em `70a798c`; a branch remota de B-070 (`origin/test/field-ops-sse-e2e-validation`) existia, mas nao aparecia mergeada em `main` no inicio desta fase
+- worktree inicial continha `experiments/` nao rastreado; item mantido fora de escopo e nao stageado
+- objetivo: expor estado observavel de SSE/fallback no Mapa Operacional e health minimo tenant-scoped no backend sem remover polling
+
+### Implementacao
+- `src/modules/field-ops-realtime/field-ops-realtime.routes.ts`
+  - adicionado `GET /api/v1/operations/field-events/health`
+  - rota reutiliza `tenantContextMiddleware`, RBAC persistido e `requirePermission("field_location:read")`
+  - resposta limita diagnostico ao tenant atual: status, transporte SSE, `tenantScoped`, `activeSubscribers`, keep-alive e timestamp
+- `frontend/src/modules/operations/map/operations-map.types.ts`
+  - adicionados `OperationsMapRealtimeStatus` e `OperationsMapRealtimeState`
+- `frontend/src/modules/operations/map/useOperationsMap.ts`
+  - estado `connected`, `degraded`, `fallback` e `unavailable`
+  - `onOpen` marca conexao conectada; `onError` marca degradado, mantem polling e agenda reconexao
+  - polling de 30s permanece ativo e independente do SSE
+- `frontend/src/modules/operations/map/operations-map.service.ts`
+  - stream encerrado sem erro tambem aciona `onError`, para o hook entrar em degradacao/reconexao
+- `frontend/src/modules/operations/map/pages/OperationsMapPage.tsx`
+  - chips e alerts para estado realtime, fallback polling ativo e indisponibilidade
+- `tests/field-ops-realtime.test.ts`
+  - cobertura de RBAC no health, isolamento entre tenants e ausencia de coordenadas/dados sensiveis no diagnostico
+- `frontend/tests/smoke-flow.test.tsx`
+  - cobertura de `onOpen`, tolerancia a falha/encerramento do stream e render do fallback polling
+
+### Fora de escopo mantido
+- Remocao do polling, WebSocket, Flutter/mobile, novos endpoints de dominio de localizacao/despacho, Google Maps provider, billing, pagamentos, fiscal e refactors nao relacionados
+
+### Validacoes
+- `git status --short`: arquivos esperados alterados + `experiments/` nao rastreado fora de escopo
+- `npm run check`: OK
+- `npm run lint`: OK
+- `npm test`: OK, 15/15
+- `npm run build`: OK
+- `npm --prefix frontend run check`: OK
+- `npm --prefix frontend run build`: OK
+- `npm --prefix frontend run test:smoke`: OK, 27/27
+- `node --test --import tsx tests/field-ops-realtime.test.ts`: OK, 4/4
+- `docker compose ps`: `erp-postgres` e `erp-redis` healthy
+- `npm run test:e2e`: OK, 11/11
+- `git diff --check`: OK

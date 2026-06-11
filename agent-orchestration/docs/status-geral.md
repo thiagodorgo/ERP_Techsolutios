@@ -1474,3 +1474,18 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - validacoes executadas: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `node --test --import tsx tests/field-ops-realtime.test.ts` e `git diff --check`
 - `npm run test:e2e` nao foi executado porque `docker compose ps` falhou ao conectar no Docker Desktop (`dockerDesktopLinuxEngine` ausente)
 - fora de escopo mantido: WebSocket, remocao do polling, Flutter/mobile, novos endpoints de dominio, Google Maps provider, billing, pagamentos e fiscal
+
+## Atualizacao 2026-06-11 - health e degradacao graciosa do realtime field ops
+
+- branch usada: `feature/field-ops-realtime-health`
+- base observada: `origin/main` em `70a798c` com PR #69 mergeada; a branch B-070 de validacao existia remota, mas nao aparecia mergeada em `main` no inicio desta fase
+- objetivo: dar visibilidade operacional ao estado do SSE/fallback no Mapa Operacional e expor diagnostico minimo tenant-scoped no backend, sem remover polling
+- `GET /api/v1/operations/field-events/health`: novo diagnostico protegido por tenant context, RBAC persistido e `field_location:read`; retorna somente status SSE, `tenantScoped`, subscribers do tenant atual, keep-alive e timestamp
+- `useOperationsMap.ts`: estado observavel de realtime com `connected`, `degraded`, `fallback` e `unavailable`; queda do SSE agenda reconexao e preserva polling de 30s
+- `operations-map.service.ts`: encerramento limpo ou erro do stream chama `onError`, permitindo degradacao/reconexao sem quebrar o mapa
+- `OperationsMapPage.tsx`: chips/alerts exibem `Realtime conectado`, `Realtime reconectando`, `Fallback polling ativo` e `Realtime indisponivel`
+- testes backend cobrem RBAC do health, isolamento por tenant e ausencia de payload sensivel/coordenadas no diagnostico
+- smoke frontend cobre abertura do stream, estado conectado via `onOpen`, tolerancia a falha e render do fallback polling
+- infraestrutura usada para E2E: `erp-postgres` e `erp-redis` via Docker Compose, ambos healthy
+- validacoes executadas: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `node --test --import tsx tests/field-ops-realtime.test.ts`, `docker compose ps`, `npm run test:e2e` (11/11) e `git diff --check`
+- nenhum segredo, chave real, coordenada em log, migration, WebSocket, Flutter/mobile, Google Maps provider ou endpoint novo de dominio foi adicionado

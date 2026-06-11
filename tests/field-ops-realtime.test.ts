@@ -29,6 +29,47 @@ test("field ops SSE endpoint requires field_location:read", async () => {
   });
 });
 
+test("field ops realtime health is RBAC protected and tenant scoped", async () => {
+  await withFieldOpsRealtimeApi(async ({ baseUrl, seed }) => {
+    const forbidden = await fetch(`${baseUrl}/api/v1/operations/field-events/health`, {
+      headers: {
+        ...authHeaders(seed.tenantA, seed.viewerA, "manager"),
+        "x-permissions": "work_orders:read",
+      },
+    });
+
+    assert.equal(forbidden.status, 403);
+    assert.match(await forbidden.text(), /field_location:read|permission_required/);
+
+    const streamAController = new AbortController();
+    const streamBController = new AbortController();
+    const streamA = await openSseStream(baseUrl, seed.tenantA, seed.managerA, streamAController);
+    const streamB = await openSseStream(baseUrl, seed.tenantB, seed.managerB, streamBController);
+
+    assert.equal(streamA.status, 200);
+    assert.equal(streamB.status, 200);
+    await waitFor(() => fieldOpsRealtimeBroker.subscriberCount(seed.tenantA.id) === 1);
+    await waitFor(() => fieldOpsRealtimeBroker.subscriberCount(seed.tenantB.id) === 1);
+
+    const response = await fetch(`${baseUrl}/api/v1/operations/field-events/health`, {
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    const body = (await response.json()) as { data?: Record<string, unknown> };
+
+    streamAController.abort();
+    streamBController.abort();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.data?.status, "ok");
+    assert.equal(body.data?.transport, "sse");
+    assert.equal(body.data?.tenantScoped, true);
+    assert.equal(body.data?.activeSubscribers, 1);
+    assert.equal(body.data?.totalSubscribers, undefined);
+    assert.doesNotMatch(JSON.stringify(body), new RegExp(seed.tenantB.id));
+    assert.doesNotMatch(JSON.stringify(body), /latitude|longitude|lat|lng/i);
+  });
+});
+
 test("field ops SSE streams only tenant-scoped sanitized events", async () => {
   await withFieldOpsRealtimeApi(async ({ baseUrl, seed }) => {
     const streamAController = new AbortController();

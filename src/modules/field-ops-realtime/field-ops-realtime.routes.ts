@@ -15,6 +15,25 @@ export function createFieldOpsRealtimeRouter(): Router {
   router.use(createPersistentRbacContextMiddleware());
 
   router.get(
+    "/operations/field-events/health",
+    requirePermission("field_location:read"),
+    handleAsyncRoute(async (request, response) => {
+      const tenantContext = requireTenantContext(request);
+
+      response.status(200).json({
+        data: {
+          status: "ok",
+          transport: "sse",
+          tenantScoped: true,
+          activeSubscribers: fieldOpsRealtimeBroker.subscriberCount(tenantContext.tenantId),
+          keepAliveIntervalMs,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }),
+  );
+
+  router.get(
     "/operations/field-events/stream",
     requirePermission("field_location:read"),
     handleAsyncRoute(async (request, response) => {
