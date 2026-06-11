@@ -1665,3 +1665,32 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - `flutter analyze`: OK
 - `flutter test`: OK, 17/17
 - `npm run test:e2e`: OK, 11/11
+
+## Atualizacao 2026-06-11 - B-076 Flutter Mobile UX Architecture + HTML Proposals
+
+### Planejado/Documentado
+
+- branch usada: `docs/flutter-mobile-ux-html-proposals`
+- pre-condicao executada: `main` atualizado por fast-forward ate PR #75, com `mobile/flutter_app`, `docs/expense-management.md`, `docs/mobile-flutter-app.md`, `docs/mobile-sync-contracts.md` e `src/modules/expense-management` confirmados
+- criado `docs/mobile-flutter-ux-architecture.md` com mapa da estrutura Flutter real, rotas atuais, dependencias, recomendacao de navegacao, tokens, widgets, offline/sync, claims/permissoes e gaps
+- documentadas 21 telas mobile propostas, incluindo Splash, Login, Tenant selection, Home, Dashboard, OS, Field execution, Checklist, Evidence, Map, Inventory, Material request, Approvals, Finance, Expense Management, Notifications, Sync/offline, Profile, Audit e estados de erro/vazio/bloqueio/conflito
+- criado prototipo HTML/CSS estatico em `docs/prototypes/flutter-mobile/` com 12 telas navegaveis e dados ficticios
+- referencia Figma existente registrada a partir de `frontend/links_Figma.md`; nenhum arquivo Figma foi aberto, criado ou editado
+- criado comando operacional `agent-orchestration/codex/comandos/B-076-flutter-mobile-ux-html-proposals.md`
+
+### Fora de Escopo Preservado
+
+- nenhuma tela Flutter final implementada
+- nenhum backend, migration, contrato API, Field Ops realtime/map real, comissao, pagamento, fiscal, contabil, OCR, PDF, upload real ou refactor nao relacionado
+- `agent-orchestration/**` atualizado somente de forma aditiva
+- `experiments/` permaneceu nao rastreado e fora do commit
+
+### Validacoes
+
+- `git status --short`: apenas arquivos esperados da fase e `experiments/` nao rastreado
+- `flutter pub get`: OK
+- `flutter analyze`: OK
+- `flutter test`: OK, 17/17
+- `npm run check`: OK
+- validacao visual Playwright do HTML: OK, 12 telas e 12 links, sem overflow horizontal em 390x844
+- `git diff --check`: OK
