@@ -1489,3 +1489,43 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - Nenhum fix de codigo foi necessario.
 - Alteracao desta fase: registro documental da validacao em `agent-orchestration/docs/status-geral.md` e este log.
 - Fora de escopo preservado: remover polling, trocar SSE por WebSocket, Flutter/mobile, novos endpoints de dominio, Google Maps provider, billing, pagamentos, fiscal e refactors nao relacionados.
+
+## 2026-06-11 - realtime-first polling fallback tuning
+
+- branch usada: `feature/field-ops-realtime-polling-fallback`
+- pre-condicao executada antes de alterar arquivos:
+  - `git checkout main`: OK
+  - `git pull --ff-only origin main`: fast-forward ate `c086c5e`
+  - PR #71 confirmada em `main`: `c086c5e Merge pull request #71 from thiagodorgo/feature/field-ops-realtime-health`
+  - artefatos B-071 confirmados por `rg`: health `/operations/field-events/health`, estados visuais realtime no mapa e testes de health em `tests/field-ops-realtime.test.ts`
+- `git status --short` inicial: apenas `experiments/` nao rastreado, preservado e fora de escopo
+
+### Implementacao
+- `frontend/src/modules/operations/map/useOperationsMap.ts`
+  - adicionado `shouldUseOperationsMapPollingFallback(autoRefresh, realtimeStatus)`
+  - intervalo de polling de 30s agora so e agendado quando `autoRefresh` esta ativo e realtime nao esta `connected`
+  - estados `degraded`, `fallback` e `unavailable` continuam usando polling como fallback
+  - refresh manual continua chamando `refresh()` independentemente do estado SSE
+- `frontend/tests/smoke-flow.test.tsx`
+  - teste cobre polling desligado quando `connected` e fallback ativo quando `degraded`, `fallback` ou `unavailable`
+
+### Preservacao
+- `agent-orchestration/**` atualizado somente por append/merge aditivo
+- `memory/**` nao existe no checkout e nao foi criado/removido
+- `experiments/` permaneceu nao rastreado, nao stageado, nao apagado, nao movido e fora do commit
+
+### Validacoes
+- `npm run check`: OK
+- `npm run lint`: OK
+- `npm test`: OK, 15/15
+- `npm run build`: OK
+- `npm --prefix frontend run check`: OK
+- `npm --prefix frontend run build`: OK
+- `npm --prefix frontend run test:smoke`: OK, 28/28
+- `node --test --import tsx tests/field-ops-realtime.test.ts`: OK, 4/4
+- `docker compose ps`: `erp-postgres` e `erp-redis` healthy
+- `npm run test:e2e`: OK, 11/11
+- `git diff --check`: OK
+
+### Fora de escopo mantido
+- Remover polling completamente, WebSocket, Flutter/mobile, novos endpoints de localizacao/despacho, Google Maps provider, billing, pagamentos, fiscal e refactors nao relacionados

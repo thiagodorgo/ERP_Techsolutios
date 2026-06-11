@@ -722,6 +722,16 @@ test("operations map realtime SSE usa Bearer, parseia evento e tolera queda", as
   assert.equal(endedCalls[0].url, "/api/v1/operations/field-events/stream");
 });
 
+test("operations map reduz polling quando realtime esta conectado e reativa fallback", async () => {
+  const { shouldUseOperationsMapPollingFallback } = await import("../src/modules/operations/map");
+
+  assert.equal(shouldUseOperationsMapPollingFallback(true, "connected"), false);
+  assert.equal(shouldUseOperationsMapPollingFallback(true, "degraded"), true);
+  assert.equal(shouldUseOperationsMapPollingFallback(true, "fallback"), true);
+  assert.equal(shouldUseOperationsMapPollingFallback(true, "unavailable"), true);
+  assert.equal(shouldUseOperationsMapPollingFallback(false, "degraded"), false);
+});
+
 test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async () => {
   process.env.VITE_USE_MOCKS = "false";
   process.env.VITE_API_BASE_URL = "/api/v1";

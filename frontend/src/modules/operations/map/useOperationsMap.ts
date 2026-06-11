@@ -80,12 +80,13 @@ export function useOperationsMap() {
   }, [refresh]);
 
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (!shouldUseOperationsMapPollingFallback(autoRefresh, state.realtime.status)) return;
+
     const id = setInterval(() => {
       void refresh(true);
     }, POLL_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [autoRefresh, refresh]);
+  }, [autoRefresh, refresh, state.realtime.status]);
 
   useEffect(() => {
     if (isMockMode()) {
@@ -176,6 +177,13 @@ export function useOperationsMap() {
     autoRefresh,
     setAutoRefresh,
   };
+}
+
+export function shouldUseOperationsMapPollingFallback(
+  autoRefresh: boolean,
+  realtimeStatus: OperationsMapRealtimeStatus,
+): boolean {
+  return autoRefresh && realtimeStatus !== "connected";
 }
 
 function createRealtimeState(
