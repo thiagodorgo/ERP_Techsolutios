@@ -1586,3 +1586,82 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - `docker compose ps`: `erp-postgres` e `erp-redis` healthy
 - `npm run test:e2e`: rerun OK, 11/11; primeira tentativa teve `net::ERR_NETWORK_CHANGED` transitorio em Platform Cloud Billing
 - `git diff --check`: OK
+
+## Atualizacao 2026-06-11 - GDV-001 Gestao de Despesas + Flutter Foundation
+
+### Planejado
+
+- iniciado bloco GDV-001 para tratar Gestao de Despesas como modulo oficial do ERP, com chave tecnica `expense_management`
+- definido que GDV e alias historico e RDV e o documento/relatorio gerado
+- definido que Flutter sera app tudo-em-um, com modulos habilitados por tenant, plano, papel e permissoes
+- documentados cenarios operacionais offline/online, aprovacao manager, validacao finance, duplicidade, multiplos tenants, conflito, policy version, falta de permissao e diagnostico
+- consolidados RF/RNF, arquitetura mobile, contratos HTTP, sync e eventos assincronos
+
+### Preservacao
+
+- `agent-orchestration/**` atualizado somente por entrada aditiva
+- `experiments/` permanece nao rastreado, fora do commit e sem alteracao planejada
+- calculo de comissoes, pagamento real, fiscal/tributario, contabilidade, backend completo, Figma final e publicacao mobile permanecem fora do escopo desta fase
+
+### Implementado
+
+- criado app Flutter em `mobile/flutter_app` com Android e iOS preparados
+- adicionadas dependencias base: Riverpod, GoRouter, Dio, secure storage, Drift/SQLite, path provider, uuid, crypto e equatable
+- implementados App Shell, home modular, rota de Gestao de Despesas, novo RDV e diagnostico
+- implementados `PermissionResolver`, `ModuleResolver`, modelos de despesas, calculadora de totais, avaliador de politicas, `SyncActionFactory`, fila de sync em memoria e `SyncEngine` mockavel
+- testes Flutter cobrem permissoes, modulo habilitado/oculto, calculo, adiantamento, violacao de politica, tenant isolation, idempotencia e estados de sync
+
+### Validacoes
+
+- `npm run check`: OK
+- `npm run lint`: OK
+- `npm test`: OK, 15/15
+- `npm run build`: OK
+- `npm --prefix frontend run check`: OK
+- `npm --prefix frontend run build`: OK
+- `npm --prefix frontend run test:smoke`: OK, 28/28
+- `flutter pub get`: OK
+- `flutter analyze`: OK
+- `flutter test`: OK, 14/14
+
+## Atualizacao 2026-06-11 - GDV-002 Review Flutter Scaffold + Backend Foundation
+
+### Planejado
+
+- revisar scaffold Flutter da PR #75 antes de marcar a PR como ready
+- manter Android/iOS versionados na fundacao, sem remover scaffold sem autorizacao
+- adicionar backend real inicial para `expense_management`
+- preservar `agent-orchestration/**`, docs historicos, memoria local e `experiments/`
+
+### Backend Foundation
+
+- entidades planejadas: `expense_reports`, `expense_items`, `expense_receipts`, `expense_policies`, `expense_approval_steps`, `expense_events` e `mobile_action_receipts`
+- sync mobile inicial limitado a `expense_report.create`, `expense_item.create` e `expense_report.submit`
+- fora de escopo mantido: OCR real, upload real, PDF oficial, pagamento real, fiscal/contabil, conciliacao/cartao, UI web, approval avancado e integracao direta com comissoes
+
+### Implementado
+
+- migration `20260619000000_add_expense_management_foundation` adiciona tabelas tenant-scoped com indices, constraints e RLS
+- `prisma/schema.prisma` modela policies, reports, items, receipts, advances, approval steps, events e mobile action receipts
+- RBAC atualizado com permissoes `expense_report:*`, `expense_policy:*`, `expense_receipt:attach`, `expense_sync:write` e `expense_audit:read`
+- `src/modules/expense-management/**` adiciona tipos, validadores, DTOs, repositorio em memoria, repositorio Prisma/RLS, service, controller, rotas e exports
+- rotas registradas em `/api/v1`: policies, categories, reports, items, submit e mobile sync
+- Flutter alinhado com constantes de endpoints/status/acoes em `mobile/flutter_app/lib/core/network/api_contracts.dart`
+
+### Validacoes
+
+- `npx prisma validate`: OK
+- `npx prisma generate`: OK
+- `npx prisma migrate deploy`: OK
+- `npx prisma migrate status`: OK, schema up to date
+- `npm run check`: OK
+- `npm run lint`: OK
+- `npm test`: OK, 15/15
+- `npm run build`: OK
+- `node --test --import tsx tests/expense-management-routes.test.ts`: OK, 6/6
+- `npm --prefix frontend run check`: OK
+- `npm --prefix frontend run build`: OK
+- `npm --prefix frontend run test:smoke`: OK, 28/28
+- `flutter analyze`: OK
+- `flutter test`: OK, 17/17
+- `npm run test:e2e`: OK, 11/11
