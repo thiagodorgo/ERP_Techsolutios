@@ -1551,3 +1551,44 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - `npm run check`: OK
 - `git diff --check`: OK
 - `git status --short`: arquivos documentais esperados + `experiments/` nao rastreado
+
+## 2026-06-11 - B-074 Commission Engine Foundation Backend
+
+- branch usada: `feature/commission-engine-foundation`
+- pre-condicao executada antes de alterar arquivos:
+  - `git checkout main`: OK
+  - `git pull --ff-only origin main`: fast-forward ate PR #73
+  - PR #73 confirmada em `main` por `docs/commissions.md` e secao `commissions` em `docs/modules.md`
+  - `git status --short` inicial: apenas `experiments/` nao rastreado
+
+### Implementacao
+
+- `prisma/schema.prisma` e migration nova adicionam tabelas de fundacao do Motor de Comissoes com `tenant_id`, indices, constraints e RLS
+- `src/modules/core-saas/permissions/catalog.ts` e `prisma/seed.ts` adicionam catalogo RBAC `commissions:*`
+- `src/modules/commissions/**` adiciona tipos, validadores, sanitizacao de payload, repositorio em memoria, repositorio Prisma lazy/RLS, servico, controller, DTOs e rotas
+- `src/app.ts` registra o router de comissoes em `/api/v1`
+- `tests/commissions-routes.test.ts` cobre RBAC, isolamento por tenant, idempotencia e sanitizacao
+- `tests/core-saas.test.ts` atualizado para refletir o catalogo RBAC expandido
+
+### Preservacao
+
+- `agent-orchestration/**` atualizado apenas por append/merge aditivo
+- `experiments/` permaneceu nao rastreado, nao stageado, nao apagado, nao movido e fora do commit
+- calculo avancado, UI, Flutter/mobile, pagamento, fiscal, contabil, gateway e refactors nao relacionados ficaram fora do escopo
+
+### Validacoes
+
+- `npx prisma validate`: OK
+- `npx prisma generate`: OK
+- `npx prisma migrate deploy`: OK, migration `20260618000000_add_commission_engine_foundation` aplicada
+- `npm run check`: OK
+- `node --test --import tsx tests/commissions-routes.test.ts`: OK, 3/3
+- `npm test`: OK, 15/15
+- `npm run lint`: OK
+- `npm run build`: OK
+- `npm --prefix frontend run check`: OK
+- `npm --prefix frontend run build`: OK
+- `npm --prefix frontend run test:smoke`: OK, 28/28
+- `docker compose ps`: `erp-postgres` e `erp-redis` healthy
+- `npm run test:e2e`: primeira tentativa 10/11 com falha transitoria `net::ERR_NETWORK_CHANGED` no fluxo Platform Cloud Billing; rerun OK, 11/11
+- `git diff --check`: OK

@@ -8,6 +8,33 @@ Ele deve atender servicos tecnicos em campo na versao inicial, mas nascer prepar
 
 Comissoes sao prioridade comercial do produto e devem ser tratadas como capacidade enterprise multi-tenant. O desenho inicial desta fase e documental e arquitetural: nao cria migrations, nao implementa calculo real, nao cria UI, nao integra pagamento e nao trata fiscal/tributario.
 
+## Implementacao B-074 - Fundacao Backend
+
+A B-074 inicia a fundacao backend do Motor de Comissoes sem calculo avancado, UI, pagamento ou fiscal.
+
+Entregas desta fase:
+
+- schema Prisma e migration para `commission_policies`, `commission_policy_rules`, `commission_basis_events`, `commission_calculations` e `commission_statements`
+- todas as tabelas novas sao tenant-scoped e possuem indices por `tenant_id`
+- RLS habilitado e forcado nas tabelas novas com policy baseada em `app.current_tenant_id`
+- RBAC inicial em `commissions:read`, `commissions:read_own`, `commissions:manage_policy`, `commissions:calculate`, `commissions:approve`, `commissions:adjust`, `commissions:settle` e `commissions:audit`
+- rotas backend iniciais:
+  - `GET /api/v1/commissions/policies`
+  - `POST /api/v1/commissions/policies`
+  - `GET /api/v1/commissions/basis-events`
+  - `POST /api/v1/commissions/basis-events`
+  - `GET /api/v1/commissions/calculations`
+  - `GET /api/v1/commissions/statements`
+- idempotencia basica em eventos-base por `tenant_id` + `idempotency_key`
+- sanitizacao de payloads de eventos-base para nao expor tokens, segredos ou coordenadas no retorno da API
+
+Limites preservados:
+
+- nenhuma regra de calculo avancada foi implementada
+- nenhum pagamento, liquidacao real, fiscal, contabil ou gateway foi integrado
+- nenhuma UI web, Figma ou Flutter foi adicionada
+- eventos assincronos continuam planejados para fases posteriores
+
 ## Principios
 
 - multi-tenant por padrao
