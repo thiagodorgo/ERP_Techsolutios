@@ -440,7 +440,7 @@ test("navigation service consome endpoint backend com scope e mock fallback loca
 });
 
 test("operations map adapter descarta coordenadas invalidas, normaliza DTO e marca stale", async () => {
-  const { adaptFieldLocationsResponse, attachWorkOrdersToFieldLocations, filterFieldLocations } = await import("../src/modules/operations/map");
+  const { adaptFieldLocationsResponse, attachWorkOrdersToFieldLocations, filterFieldLocations, filterFieldLocationsByWorkOrder } = await import("../src/modules/operations/map");
   const now = new Date("2026-06-09T12:00:00.000Z");
 
   const locations = adaptFieldLocationsResponse(
@@ -492,6 +492,24 @@ test("operations map adapter descarta coordenadas invalidas, normaliza DTO e mar
 
   assert.equal(enriched[0].currentWorkOrder?.code, "OS-1");
   assert.equal(enriched[0].currentWorkOrder?.status, "on_route");
+
+  const dispatchLinked = {
+    ...locations[0],
+    id: "loc-dispatch",
+    currentWorkOrder: null,
+    currentDispatch: {
+      id: "dispatch-1",
+      workOrderId: "wo-dispatch",
+      operatorUserId: "usr-1",
+      status: "assigned" as const,
+      createdAt: "2026-06-09T12:00:00.000Z",
+    },
+  };
+  const contextLocations = [enriched[0], dispatchLinked];
+  assert.equal(filterFieldLocationsByWorkOrder(contextLocations, undefined).length, 2);
+  assert.equal(filterFieldLocationsByWorkOrder(contextLocations, "wo-1")[0].id, "loc-valid");
+  assert.equal(filterFieldLocationsByWorkOrder(contextLocations, "wo-dispatch")[0].id, "loc-dispatch");
+  assert.equal(filterFieldLocationsByWorkOrder(contextLocations, "wo-missing").length, 0);
 });
 
 test("operations map service consome endpoints existentes e usa fallback seguro", async () => {
@@ -1243,6 +1261,28 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
       </AuthProvider>
     </MemoryRouter>,
   );
+  const operationsMapContextHtml = renderToString(
+    <MemoryRouter initialEntries={["/operations/map?workOrderId=11111111-1111-4111-8111-000000000003"]}>
+      <AuthProvider>
+        <TenantProvider>
+          <PermissionProvider>
+            <OperationsMapPage />
+          </PermissionProvider>
+        </TenantProvider>
+      </AuthProvider>
+    </MemoryRouter>,
+  );
+  const operationsMapEmptyContextHtml = renderToString(
+    <MemoryRouter initialEntries={["/operations/map?workOrderId=wo-missing"]}>
+      <AuthProvider>
+        <TenantProvider>
+          <PermissionProvider>
+            <OperationsMapPage />
+          </PermissionProvider>
+        </TenantProvider>
+      </AuthProvider>
+    </MemoryRouter>,
+  );
   const runtimeHtml = renderToString(
     <MemoryRouter initialEntries={["/operations/checklists/chk_towing_collection/run"]}>
       <AuthProvider>
@@ -1334,6 +1374,12 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(protectedHtml, /Nova OS/);
   assert.match(protectedHtml, /Mapa Operacional/);
   assert.match(protectedHtml, /Visualização operacional/);
+  assert.match(operationsMapContextHtml, /OS filtrada:[\s\S]*OS-000103/);
+  assert.match(operationsMapContextHtml, /Limpar contexto/);
+  assert.match(operationsMapContextHtml, /Ana Martins/);
+  assert.doesNotMatch(operationsMapContextHtml, /Roberto Lima/);
+  assert.match(operationsMapEmptyContextHtml, /Nenhum operador ou despacho para esta OS/);
+  assert.match(operationsMapEmptyContextHtml, /Limpar contexto da OS/);
   assert.match(dispatchActionsHtml, /Acoes do despacho|Alterar status|Reatribuir/);
   assert.match(updateOnlyDispatchActionsHtml, /Alterar status/);
   assert.doesNotMatch(updateOnlyDispatchActionsHtml, /Reatribuir|Cancelar/);

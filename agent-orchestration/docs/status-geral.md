@@ -1447,3 +1447,16 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - npm run check, lint e build: todos limpos
 - frontend polling de 30s preservado intocado; nenhum endpoint SSE/WebSocket criado; nenhum segredo adicionado
 - fora de escopo: SSE/WebSocket, frontend realtime, Flutter/mobile, Google Maps, migrations, comissoes, pagamentos e refatoracao da infra de eventos
+
+## Atualizacao 2026-06-10 - operations map work order context filter
+
+- branch usada: `feature/operations-map-work-order-context-filter`
+- objetivo: fazer `/operations/map?workOrderId=<id>` abrir o Mapa Operacional em contexto de uma Ordem de Servico especifica
+- escopo frontend/documentacao operacional; sem backend novo, migrations, endpoints, realtime, fanout, Google Maps provider, Flutter/mobile ou permissoes novas
+- `OperationsMapPage` passa a ler `workOrderId` da query string e aplicar filtro local antes dos filtros visuais de status/equipe/busca/localizacao antiga
+- mapa, lista lateral e painel de detalhe recebem o mesmo conjunto filtrado por `currentWorkOrder.id` ou `currentDispatch.workOrderId`
+- tela mostra contexto removivel da OS e estado vazio claro com acao para limpar o contexto quando nao ha operador/despacho vinculado
+- polling existente, fallback placeholder e Google Maps real permanecem preservados porque o filtro atua sobre os dados ja carregados pelo hook
+- smoke tests atualizados para cobrir filtro por OS atual, filtro por despacho vinculado, contexto removivel e estado vazio
+- validacoes executadas: `git status --short`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npm run check`, `npm test`, `git diff --check`, `docker compose ps` e `npm run test:e2e` (11/11 com PostgreSQL/Redis healthy)
+- nenhum segredo, chave real, backend, migration ou permissao nova foi adicionado
