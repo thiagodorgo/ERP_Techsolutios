@@ -69,11 +69,17 @@ export function subscribeOperationsMapEvents(
 
   const controller = new AbortController();
 
-  void consumeOperationsMapEventStream(context, controller.signal, handlers).catch((error: unknown) => {
-    if (!controller.signal.aborted) {
-      handlers.onError?.(error);
-    }
-  });
+  void consumeOperationsMapEventStream(context, controller.signal, handlers)
+    .then(() => {
+      if (!controller.signal.aborted) {
+        handlers.onError?.(new Error("Operations map event stream ended."));
+      }
+    })
+    .catch((error: unknown) => {
+      if (!controller.signal.aborted) {
+        handlers.onError?.(error);
+      }
+    });
 
   return () => controller.abort();
 }

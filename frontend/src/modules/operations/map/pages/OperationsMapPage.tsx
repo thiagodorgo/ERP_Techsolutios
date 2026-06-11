@@ -29,7 +29,19 @@ const initialFilters: OperationsMapFilterState = {
 };
 
 export function OperationsMapPage() {
-  const { locations, source, fallbackReason, loading, isRefreshing, error, refreshedAt, refresh, autoRefresh, setAutoRefresh } = useOperationsMap();
+  const {
+    locations,
+    source,
+    fallbackReason,
+    loading,
+    isRefreshing,
+    error,
+    refreshedAt,
+    realtime,
+    refresh,
+    autoRefresh,
+    setAutoRefresh,
+  } = useOperationsMap();
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
@@ -95,6 +107,10 @@ export function OperationsMapPage() {
           <Chip tone={source === "api" ? "success" : source === "fallback" ? "warning" : "info"}>
             Fonte: {source === "api" ? "API real" : source === "fallback" ? "fallback seguro" : "mock local"}
           </Chip>
+          <Chip tone={realtime.status === "connected" ? "success" : realtime.status === "unavailable" ? "danger" : "warning"}>
+            {realtime.label}
+          </Chip>
+          {realtime.fallbackPolling && realtime.status !== "fallback" ? <Chip tone="warning">Fallback polling ativo</Chip> : null}
           {canReadWorkOrders ? <Chip tone="info">OS vinculadas</Chip> : null}
           {canReadDispatches ? <Chip tone="info">Despachos vinculados</Chip> : null}
           {refreshedAt ? <Chip tone="default">Atualizado {formatFieldLocationDate(refreshedAt)}</Chip> : null}
@@ -121,6 +137,16 @@ export function OperationsMapPage() {
       {error ? (
         <Alert title="Fonte de dados degradada" tone="warning">
           {error}
+        </Alert>
+      ) : null}
+      {realtime.status === "degraded" ? (
+        <Alert title="Realtime degradado" tone="warning">
+          {realtime.detail}
+        </Alert>
+      ) : null}
+      {realtime.status === "unavailable" ? (
+        <Alert title="Realtime indisponivel" tone="warning">
+          {realtime.detail}
         </Alert>
       ) : null}
       {workOrderContextId ? (

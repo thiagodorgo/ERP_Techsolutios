@@ -687,9 +687,10 @@ test("operations map realtime SSE usa Bearer, parseia evento e tolera queda", as
   );
   const { subscribeOperationsMapEvents } = await import("../src/modules/operations/map");
   const events: unknown[] = [];
+  const opens: string[] = [];
   const unsubscribe = subscribeOperationsMapEvents(
     { token: "jwt-test-token", permissions: ["field_location:read"] },
-    { onEvent: (event) => events.push(event) },
+    { onOpen: () => opens.push("connected"), onEvent: (event) => events.push(event) },
   );
 
   await waitFor(() => events.length === 1);
@@ -697,6 +698,7 @@ test("operations map realtime SSE usa Bearer, parseia evento e tolera queda", as
 
   assert.equal(calls[0].url, "/api/v1/operations/field-events/stream");
   assert.equal((calls[0].init.headers as Record<string, string>).Authorization, "Bearer jwt-test-token");
+  assert.equal(opens.length, 1);
   assert.equal((events[0] as typeof eventPayload).name, "field_dispatch.created");
 
   const failingCalls = installFetchTextStream("", 503);
@@ -708,6 +710,16 @@ test("operations map realtime SSE usa Bearer, parseia evento e tolera queda", as
 
   await waitFor(() => errors.length === 1);
   assert.equal(failingCalls[0].url, "/api/v1/operations/field-events/stream");
+
+  const endedCalls = installFetchTextStream("");
+  const endedErrors: unknown[] = [];
+  subscribeOperationsMapEvents(
+    { token: "jwt-test-token", permissions: ["field_location:read"] },
+    { onEvent: () => undefined, onError: (error) => endedErrors.push(error) },
+  );
+
+  await waitFor(() => endedErrors.length === 1);
+  assert.equal(endedCalls[0].url, "/api/v1/operations/field-events/stream");
 });
 
 test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async () => {
@@ -1455,6 +1467,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(protectedHtml, /Ordens de Servico/);
   assert.match(protectedHtml, /Nova OS/);
   assert.match(protectedHtml, /Mapa Operacional/);
+  assert.match(protectedHtml, /Fallback polling ativo/);
   assert.match(protectedHtml, /Visualização operacional/);
   assert.match(operationsMapContextHtml, /OS filtrada:[\s\S]*OS-000103/);
   assert.match(operationsMapContextHtml, /Limpar contexto/);

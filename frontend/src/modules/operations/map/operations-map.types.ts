@@ -72,6 +72,18 @@ export type OperationsMapRealtimeEvent = {
   readonly occurredAt: string;
 };
 
+export type OperationsMapRealtimeStatus = "connected" | "degraded" | "fallback" | "unavailable";
+
+export type OperationsMapRealtimeState = {
+  readonly status: OperationsMapRealtimeStatus;
+  readonly label: string;
+  readonly detail: string;
+  readonly fallbackPolling: boolean;
+  readonly retryCount: number;
+  readonly lastConnectedAt?: string;
+  readonly lastEventAt?: string;
+};
+
 export type OperationsMapFilters = {
   readonly status: FieldLocationStatus | "all";
   readonly team: string;
