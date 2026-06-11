@@ -1,5 +1,6 @@
-import { AlertTriangle, Map, Pause, Play, RefreshCw } from "lucide-react";
+import { AlertTriangle, Map, Pause, Play, RefreshCw, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { Alert, Button, Chip, EmptyState, ErrorState, Skeleton } from "../../../../components/ui";
 import { useAuth } from "../../../../providers/AuthProvider";
@@ -7,6 +8,7 @@ import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
 import {
   calculateOperationsMapSummary,
+  filterFieldLocationsByWorkOrder,
   filterFieldLocations,
   formatFieldLocationDate,
   listOperationTeams,
@@ -31,8 +33,10 @@ export function OperationsMapPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<OperationsMapFilterState>(initialFilters);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+  const workOrderContextId = searchParams.get("workOrderId")?.trim() || undefined;
   const canReadWorkOrders = can("work_orders:read");
   const canReadDispatches = can("field_dispatch:read");
   const canCreateDispatches = can("field_dispatch:create");
@@ -49,16 +53,32 @@ export function OperationsMapPage() {
     }),
     [activeContext, session?.accessToken],
   );
-  const teams = useMemo(() => listOperationTeams(locations), [locations]);
-  const filteredLocations = useMemo(() => filterFieldLocations(locations, filters), [filters, locations]);
-  const summary = useMemo(() => calculateOperationsMapSummary(locations), [locations]);
+  const workOrderContextLocations = useMemo(
+    () => filterFieldLocationsByWorkOrder(locations, workOrderContextId),
+    [locations, workOrderContextId],
+  );
+  const teams = useMemo(() => listOperationTeams(workOrderContextLocations), [workOrderContextLocations]);
+  const filteredLocations = useMemo(
+    () => filterFieldLocations(workOrderContextLocations, filters),
+    [filters, workOrderContextLocations],
+  );
+  const summary = useMemo(() => calculateOperationsMapSummary(workOrderContextLocations), [workOrderContextLocations]);
+  const workOrderContextLabel =
+    workOrderContextLocations.find((location) => location.currentWorkOrder?.id === workOrderContextId)?.currentWorkOrder?.code ??
+    workOrderContextId;
   const selectedLocation =
     filteredLocations.find((location) => location.id === selectedId) ??
     filteredLocations[0] ??
-    locations.find((location) => location.id === selectedId);
+    workOrderContextLocations.find((location) => location.id === selectedId);
+  const clearWorkOrderContext = () => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("workOrderId");
+    setSearchParams(nextParams, { replace: true });
+    setSelectedId(undefined);
+  };
 
   useEffect(() => {
-    if (!selectedId && filteredLocations[0]) {
+    if (filteredLocations[0] && (!selectedId || !filteredLocations.some((location) => location.id === selectedId))) {
       setSelectedId(filteredLocations[0].id);
     }
   }, [filteredLocations, selectedId]);
@@ -103,6 +123,16 @@ export function OperationsMapPage() {
           {error}
         </Alert>
       ) : null}
+      {workOrderContextId ? (
+        <section className="erp-filter-bar operations-map-actions" aria-label="Contexto da ordem de servico">
+          <Chip tone={workOrderContextLocations.length > 0 ? "info" : "warning"}>
+            OS filtrada: {workOrderContextLabel}
+          </Chip>
+          <Button type="button" variant="ghost" size="sm" onClick={clearWorkOrderContext}>
+            <X size={16} /> Limpar contexto
+          </Button>
+        </section>
+      ) : null}
 
       <OperationsMapSummaryCards summary={summary} />
       <OperationsMapFilters filters={filters} teams={teams} onChange={setFilters} />
@@ -111,8 +141,17 @@ export function OperationsMapPage() {
       {!loading && locations.length === 0 && source === "api" ? (
         <EmptyState title="Nenhum operador localizado" detail="A API nao retornou localizacoes para o tenant atual." />
       ) : null}
-      {!loading && locations.length > 0 && filteredLocations.length === 0 ? (
-        <ErrorState title="Nenhum resultado para os filtros" detail="Ajuste status, equipe, busca ou filtro de localizacao antiga." />
+      {!loading && locations.length > 0 && workOrderContextLocations.length === 0 && workOrderContextId ? (
+        <section className="ui-state ui-state--error">
+          <strong>Nenhum operador ou despacho para esta OS</strong>
+          <p>O mapa nao encontrou operadores ou despachos vinculados a OS informada no contexto atual.</p>
+          <Button type="button" variant="secondary" size="sm" onClick={clearWorkOrderContext}>
+            <X size={16} /> Limpar contexto da OS
+          </Button>
+        </section>
+      ) : null}
+      {!loading && workOrderContextLocations.length > 0 && filteredLocations.length === 0 ? (
+        <ErrorState title="Nenhum resultado para os filtros" detail="Ajuste status, equipe, busca, filtro de localizacao antiga ou limpe o contexto da OS." />
       ) : null}
 
       {filteredLocations.length > 0 ? (

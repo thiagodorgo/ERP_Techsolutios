@@ -1344,3 +1344,25 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - Mock queue sem Redis para testes unitarios; padrao copiado de domain-events.test.ts
 - fail-open preservado: falha de enqueue nao quebra create/changeStatus/reassign
 - Nenhum endpoint publico; Nenhum segredo; Nenhuma migration
+
+## 2026-06-10 - operations map work order context filter
+
+- branch usada: `feature/operations-map-work-order-context-filter`
+- base: `origin/main` em `f3ee25f` com PR #67 mergeada; branch anterior local `feature/field-ops-sse-transport` preservada sem uso
+- worktree inicial continha `experiments/` nao rastreado; item mantido fora de escopo e nao stageado
+- implementado filtro local em `frontend/src/modules/operations/map/operations-map.adapter.ts`: `filterFieldLocationsByWorkOrder()` usa `currentWorkOrder.id` ou `currentDispatch.workOrderId`
+- `OperationsMapPage` agora le `workOrderId` via query string, aplica contexto antes dos filtros visuais, atualiza KPIs/equipes pelo contexto e reseta selecao quando o operador selecionado sai do conjunto
+- contexto removivel exibido com chip "OS filtrada" e botao "Limpar contexto"; estado vazio explicito exibe opcao de limpar filtro quando a OS nao possui operador/despacho vinculado
+- mapa placeholder, Google Maps real e polling existente permanecem sem alteracao estrutural; recebem somente o subconjunto filtrado
+- smoke tests atualizados para adapter e renderizacao de `/operations/map?workOrderId=...`
+- validacoes executadas:
+  - `git status --short`: 5 arquivos alterados esperados + `experiments/` nao rastreado fora de escopo
+  - `npm --prefix frontend run check`: OK
+  - `npm --prefix frontend run build`: OK
+  - `npm --prefix frontend run test:smoke`: OK, 26/26
+  - `npm run check`: OK
+  - `npm test`: OK, 15/15
+  - `git diff --check`: OK
+  - `docker compose ps`: `erp-postgres` e `erp-redis` healthy
+  - `npm run test:e2e`: OK, 11/11
+- fora de escopo mantido: backend, migrations, endpoints novos, SSE/WebSocket/realtime, fanout job, Google Maps provider, Flutter/mobile e permissoes novas

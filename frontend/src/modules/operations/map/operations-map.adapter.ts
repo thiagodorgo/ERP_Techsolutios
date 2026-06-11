@@ -39,6 +39,16 @@ export function filterFieldLocations(
   });
 }
 
+export function filterFieldLocationsByWorkOrder(
+  locations: readonly FieldLocationItem[],
+  workOrderId: string | undefined,
+): FieldLocationItem[] {
+  const normalizedWorkOrderId = workOrderId?.trim();
+  if (!normalizedWorkOrderId) return [...locations];
+
+  return locations.filter((location) => isLocationLinkedToWorkOrder(location, normalizedWorkOrderId));
+}
+
 export function attachWorkOrdersToFieldLocations(
   locations: readonly FieldLocationItem[],
   workOrders: readonly WorkOrderListItem[],
@@ -213,6 +223,10 @@ function isDispatchLinkedToLocation(dispatch: DispatchListItem, location: FieldL
   if (dispatch.operatorUserId !== location.operatorId && dispatch.operatorUserId !== location.userId) return false;
   if (!location.currentWorkOrder) return true;
   return dispatch.workOrderId === location.currentWorkOrder.id;
+}
+
+function isLocationLinkedToWorkOrder(location: FieldLocationItem, workOrderId: string): boolean {
+  return location.currentWorkOrder?.id === workOrderId || location.currentDispatch?.workOrderId === workOrderId;
 }
 
 function toOperationsMapDispatch(dispatch: DispatchListItem | undefined): OperationsMapDispatch | null {
