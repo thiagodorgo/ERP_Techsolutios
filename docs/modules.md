@@ -14,6 +14,7 @@ Exemplos:
 - inventory
 - approvals
 - finance
+- commissions
 - notifications
 - mobile
 - tenant_checklist
@@ -72,6 +73,7 @@ Sao os modulos efetivamente ativos para um tenant especifico. A visibilidade no 
 
 - integrations
 - analytics
+- commissions
 
 ## Regras
 
@@ -117,3 +119,4 @@ Sao os modulos efetivamente ativos para um tenant especifico. A visibilidade no 
 - `work_orders` e a capacidade tenant-scoped para Ordens de Servico. O backend cria `work_orders`, `work_order_events` e `work_order_assignments`, aplica RBAC/RLS e expoe CRUD/status/assign/timeline por API. O frontend implementa `/work-orders`, `/work-orders/new` e `/work-orders/:workOrderId` com filtros, KPIs, criacao, detalhe, timeline, status, atribuicao simples e fallback/mock seguro. A integracao com `/operations/map` exibe codigo/status da OS atribuida ao operador e, quando autorizado, despacho vinculado. Despacho avancado, roteirizacao, pagamentos, comissoes e estoque permanecem futuros.
 - `field_ops_realtime_events_foundation` e a fundacao de eventos de dominio para operacoes de campo. Adiciona `field_location.updated`, `field_dispatch.created`, `field_dispatch.status_changed`, `field_dispatch.cancelled`, `field_dispatch.reassigned` e `work_order.status_changed` ao catalogo de `DOMAIN_EVENT_NAMES`, publica eventos tenant-scoped best-effort a partir de `FieldLocationService`, `FieldDispatchService` e `WorkOrderService` usando a infraestrutura `publishDomainEvent` existente. Nenhum job worker nem WebSocket/SSE publico criado nesta branch; eventos sem mapeamento de job retornam imediatamente sem Redis. O payload de localizacao nao inclui coordenadas. Esta fundacao prepara a substituicao futura do polling por WebSocket/SSE sem alterar o frontend desta PR.
 - `field_ops_event_fanout` e o job de mapeamento assíncrono para os 6 eventos de field ops. Adiciona `field-ops-event-fanout` ao catalogo de jobs e ao `eventJobMap` do publisher, enfileirando uma tarefa tenant-scoped para cada evento de `field_location.updated`, `field_dispatch.created`, `field_dispatch.status_changed`, `field_dispatch.cancelled`, `field_dispatch.reassigned` e `work_order.status_changed`. O handler e um placeholder: preserva o envelope do evento na fila para consumo futuro por SSE/WebSocket. Payload de localizacao continua sem coordenadas. Falha de enqueue nao quebra a operacao principal (fail-open). Nenhum endpoint publico SSE/WebSocket foi adicionado nesta PR; frontend polling permanece inalterado.
+- `commissions` e uma capacidade transversal tenant-scoped planejada para calcular, revisar, aprovar e preparar comissoes a partir de eventos operacionais, comerciais e financeiros. O desenho deve ser assincrono por padrao: Work Orders, Dispatches, Field Ops Events, Checklists e Billing futuro publicam eventos, enquanto o motor de comissoes consome esses eventos sem bloquear a operacao principal. B-073 documenta produto, regras, modelo conceitual, RBAC, status e fases futuras; migrations, calculo real, UI, pagamento, fiscal, Flutter e refactors ficam fora desta fase.

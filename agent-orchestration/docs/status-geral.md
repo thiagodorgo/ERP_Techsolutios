@@ -1513,3 +1513,35 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - validacoes executadas: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `node --test --import tsx tests/field-ops-realtime.test.ts`, `docker compose ps`, `npm run test:e2e` (11/11) e `git diff --check`
 - `agent-orchestration/**` preservado por merge aditivo; `experiments/` permaneceu nao rastreado e fora do commit
 - fora de escopo preservado: remocao completa do polling, WebSocket, Flutter/mobile, novos endpoints de localizacao/despacho, Google Maps provider, billing, pagamentos, fiscal e refactors nao relacionados
+
+## Atualizacao 2026-06-11 - B-073 Commission Engine Planning and Data Model
+
+### Planejado/Documentado
+
+- criado desenho inicial do Motor de Comissoes como capacidade transversal tenant-scoped
+- definido que comissoes sao prioridade comercial do ERP Techsolutions
+- definido que o fluxo de comissoes deve ser assincrono por padrao
+- documentado modelo conceitual de dados para politicas, eventos de origem, bases, calculos, splits, demonstrativos, liquidacao futura, ajustes e auditoria
+- documentado catalogo de tipos de comissao
+- documentados status de politica, base, calculo, demonstrativo e liquidacao
+- documentado RBAC conceitual
+- documentados eventos de origem candidatos a partir de Work Orders, Field Dispatch, Field Ops Events, Checklists e Billing futuro
+- documentado plano B-074 em diante
+
+### Fora De Escopo
+
+- migrations
+- codigo backend funcional
+- calculo real de comissao
+- UI
+- pagamento real
+- fiscal/tributario
+- Flutter/mobile
+- refactors nao relacionados
+
+### Observacoes
+
+- `experiments/` permanece fora do commit
+- arquivos historicos de `agent-orchestration/**` foram preservados
+- o desenho prioriza integracao assincrona e nao bloqueante
+- validacoes executadas: `git status --short`, `npm run check`, `git diff --check` e `git status --short`
