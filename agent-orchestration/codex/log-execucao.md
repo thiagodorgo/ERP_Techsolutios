@@ -1442,6 +1442,33 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 
 ### Validacoes
 - `git status --short`: arquivos esperados alterados + `experiments/` nao rastreado fora de escopo
+## 2026-06-11 - validacao E2E apos field ops SSE
+
+- branch usada: `test/field-ops-sse-e2e-validation`
+- objetivo: validar o sistema completo apos merge da PR #69 com Docker/PostgreSQL/Redis ativos
+
+### Git e confirmacao de base
+- `git fetch origin`: OK
+- `git switch main` + `git pull --ff-only origin main`: fast-forward de `f3ee25f` para `70a798c`
+- merge confirmado: `70a798c Merge pull request #69 from thiagodorgo/feature/field-ops-tenant-realtime-sse`
+- PR #69 confirmada no codigo por `rg` em:
+  - `src/app.ts`: `createFieldOpsRealtimeRouter()`
+  - `src/modules/field-ops-realtime/field-ops-realtime.routes.ts`: `/operations/field-events/stream`
+  - `src/modules/field-ops-realtime/field-ops-realtime.broker.ts`: `fieldOpsRealtimeBroker`
+  - `frontend/src/modules/operations/map/operations-map.service.ts`: `subscribeOperationsMapEvents`
+- `git status --short`: apenas `experiments/` nao rastreado, fora de escopo
+
+### Infraestrutura e banco
+- `docker compose config`: OK
+- `docker compose up -d`: OK; `erp-postgres` e `erp-redis` running
+- `docker compose ps`: `erp-postgres` e `erp-redis` healthy
+- `npx prisma validate`: OK
+- `npx prisma generate`: OK
+- `npx prisma migrate deploy`: 14 migrations, nenhuma pendente
+- `npx prisma migrate status`: database schema up to date
+- `npm run db:seed`: OK
+
+### Validacoes
 - `npm run check`: OK
 - `npm run lint`: OK
 - `npm test`: OK, 15/15
@@ -1453,3 +1480,12 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - `docker compose ps`: `erp-postgres` e `erp-redis` healthy
 - `npm run test:e2e`: OK, 11/11
 - `git diff --check`: OK
+- `node --test --import tsx tests/field-ops-realtime.test.ts`: OK, 3/3
+- `npm run test:e2e`: OK, 11/11 em 37.9s com Chromium e PostgreSQL/Redis reais
+- `git diff --check`: OK
+
+### Resultado
+- E2E confirmou que login, mapa operacional, fallback sem Google Maps real, despachos, ordens de servico, checklists, Platform Console, configuracoes e logout continuam funcionando apos o SSE.
+- Nenhum fix de codigo foi necessario.
+- Alteracao desta fase: registro documental da validacao em `agent-orchestration/docs/status-geral.md` e este log.
+- Fora de escopo preservado: remover polling, trocar SSE por WebSocket, Flutter/mobile, novos endpoints de dominio, Google Maps provider, billing, pagamentos, fiscal e refactors nao relacionados.

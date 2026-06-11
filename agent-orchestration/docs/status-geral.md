@@ -1489,3 +1489,14 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - infraestrutura usada para E2E: `erp-postgres` e `erp-redis` via Docker Compose, ambos healthy
 - validacoes executadas: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `node --test --import tsx tests/field-ops-realtime.test.ts`, `docker compose ps`, `npm run test:e2e` (11/11) e `git diff --check`
 - nenhum segredo, chave real, coordenada em log, migration, WebSocket, Flutter/mobile, Google Maps provider ou endpoint novo de dominio foi adicionado
+## Atualizacao 2026-06-11 - validacao E2E apos field ops SSE
+
+- branch usada: `test/field-ops-sse-e2e-validation`
+- objetivo: validar o sistema completo apos merge da PR #69 (`feat: add tenant scoped field ops SSE`) com Docker/PostgreSQL/Redis ativos
+- `main` atualizado para `70a798c`, merge commit da PR #69; codigo SSE confirmado por `createFieldOpsRealtimeRouter`, `fieldOpsRealtimeBroker`, `/operations/field-events/stream` e `subscribeOperationsMapEvents`
+- infraestrutura local validada: `docker compose config` OK, `docker compose up -d` OK, `erp-postgres` e `erp-redis` running/healthy
+- Prisma validado: `npx prisma validate` OK, `npx prisma generate` OK, `npx prisma migrate deploy` sem migrations pendentes, `npx prisma migrate status` com schema up to date, `npm run db:seed` OK
+- validacoes executadas com sucesso: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `node --test --import tsx tests/field-ops-realtime.test.ts`, `npm run test:e2e` e `git diff --check`
+- resultado E2E: 11/11 testes passaram em Chromium com PostgreSQL/Redis reais; inclui login, mapa operacional com fallback sem Google Maps real, despachos, ordens de servico, checklists, configuracoes e logout
+- nenhum fix de codigo foi necessario; alteracao desta fase e apenas documentacao operacional da validacao
+- fora de escopo preservado: remover polling, WebSocket, Flutter/mobile, novos endpoints de dominio, Google Maps provider, billing, pagamentos, fiscal e refactors nao relacionados
