@@ -1460,3 +1460,17 @@ Iniciar implementacao do core SaaS do MVP competitivo.
 - smoke tests atualizados para cobrir filtro por OS atual, filtro por despacho vinculado, contexto removivel e estado vazio
 - validacoes executadas: `git status --short`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `npm run check`, `npm test`, `git diff --check`, `docker compose ps` e `npm run test:e2e` (11/11 com PostgreSQL/Redis healthy)
 - nenhum segredo, chave real, backend, migration ou permissao nova foi adicionado
+
+## Atualizacao 2026-06-11 - tenant-scoped realtime SSE para field operations
+
+- branch usada: `feature/field-ops-tenant-realtime-sse`
+- objetivo: adicionar primeira camada SSE tenant-scoped para eventos de operacoes de campo, mantendo polling de 30s como fallback
+- criado broker em memoria `fieldOpsRealtimeBroker` para subscribers por tenant, com deduplicacao por `event.id` e sanitizacao de chaves de coordenadas (`lat`, `lng`, `latitude`, `longitude`)
+- criado endpoint SSE `GET /api/v1/operations/field-events/stream` protegido por `field_location:read`, tenant context e RBAC persistido quando aplicavel
+- `publishDomainEvent` publica eventos field ops no broker em best-effort alem de manter o job `field-ops-event-fanout`; handler do fanout tambem publica no broker e a deduplicacao evita duplicidade pelo mesmo envelope
+- frontend do Mapa Operacional passa a abrir stream SSE via `fetch` com `Authorization: Bearer`, parsear `field_ops_event` e chamar `refresh(true)`; falha no stream nao altera a tela nem remove polling
+- testes backend cobrem RBAC sem `field_location:read`, isolamento entre tenants, sanitizacao de coordenadas e fanout handler
+- smoke frontend cobre uso de Bearer, parsing SSE e tolerancia a queda do stream
+- validacoes executadas: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `node --test --import tsx tests/field-ops-realtime.test.ts` e `git diff --check`
+- `npm run test:e2e` nao foi executado porque `docker compose ps` falhou ao conectar no Docker Desktop (`dockerDesktopLinuxEngine` ausente)
+- fora de escopo mantido: WebSocket, remocao do polling, Flutter/mobile, novos endpoints de dominio, Google Maps provider, billing, pagamentos e fiscal

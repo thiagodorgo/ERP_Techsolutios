@@ -103,6 +103,44 @@ function installFetchSequence(responses: readonly { payload: unknown; status?: n
   return calls;
 }
 
+function installFetchTextStream(body: string, status = 200) {
+  const calls: FetchCall[] = [];
+
+  Object.defineProperty(globalThis, "fetch", {
+    configurable: true,
+    value: async (url: string, init: RequestInit = {}) => {
+      calls.push({ url, init });
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode(body));
+            controller.close();
+          },
+        }),
+        {
+          status,
+          headers: {
+            "content-type": "text/event-stream",
+          },
+        },
+      );
+    },
+  });
+
+  return calls;
+}
+
+async function waitFor(condition: () => boolean, timeoutMs = 1_000): Promise<void> {
+  const startedAt = Date.now();
+
+  while (!condition()) {
+    if (Date.now() - startedAt > timeoutMs) {
+      throw new Error("Timed out waiting for condition.");
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+}
+
 function sessionPayload() {
   return {
     data: {
@@ -626,6 +664,50 @@ test("operations map service enriquece operadores com OS somente quando RBAC per
 
   assert.equal(fieldOnlyCalls.length, 1);
   assert.equal(withoutWorkOrders.locations[0].currentWorkOrder, null);
+});
+
+test("operations map realtime SSE usa Bearer, parseia evento e tolera queda", async () => {
+  process.env.VITE_USE_MOCKS = "false";
+  process.env.VITE_API_BASE_URL = "/api/v1";
+  browser.clear();
+  const eventPayload = {
+    id: "evt-1",
+    name: "field_dispatch.created",
+    tenantId: "tenant-a",
+    correlationId: "corr-1",
+    occurredAt: "2026-06-10T12:00:00.000Z",
+    payload: {
+      entity_type: "field_dispatch",
+      entity_id: "dispatch-1",
+      work_order_id: "wo-1",
+    },
+  };
+  const calls = installFetchTextStream(
+    `event: ready\ndata: {\"connected\":true}\n\nevent: field_ops_event\ndata: ${JSON.stringify(eventPayload)}\n\n`,
+  );
+  const { subscribeOperationsMapEvents } = await import("../src/modules/operations/map");
+  const events: unknown[] = [];
+  const unsubscribe = subscribeOperationsMapEvents(
+    { token: "jwt-test-token", permissions: ["field_location:read"] },
+    { onEvent: (event) => events.push(event) },
+  );
+
+  await waitFor(() => events.length === 1);
+  unsubscribe();
+
+  assert.equal(calls[0].url, "/api/v1/operations/field-events/stream");
+  assert.equal((calls[0].init.headers as Record<string, string>).Authorization, "Bearer jwt-test-token");
+  assert.equal((events[0] as typeof eventPayload).name, "field_dispatch.created");
+
+  const failingCalls = installFetchTextStream("", 503);
+  const errors: unknown[] = [];
+  subscribeOperationsMapEvents(
+    { token: "jwt-test-token", permissions: ["field_location:read"] },
+    { onEvent: () => undefined, onError: (error) => errors.push(error) },
+  );
+
+  await waitFor(() => errors.length === 1);
+  assert.equal(failingCalls[0].url, "/api/v1/operations/field-events/stream");
 });
 
 test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async () => {

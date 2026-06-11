@@ -1366,3 +1366,46 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
   - `docker compose ps`: `erp-postgres` e `erp-redis` healthy
   - `npm run test:e2e`: OK, 11/11
 - fora de escopo mantido: backend, migrations, endpoints novos, SSE/WebSocket/realtime, fanout job, Google Maps provider, Flutter/mobile e permissoes novas
+
+## 2026-06-11 - tenant-scoped realtime SSE para field operations
+
+- branch usada: `feature/field-ops-tenant-realtime-sse`
+- base: `origin/main` em `e8166af`, com PR #68 mergeada; `experiments/` permaneceu nao rastreado e fora de escopo
+- objetivo: implementar transporte SSE tenant-scoped para eventos de operacoes de campo sem remover polling do mapa
+
+### Implementacao
+- criado `src/modules/field-ops-realtime/field-ops-realtime.broker.ts`
+  - subscribers separados por `tenantId`
+  - deduplicacao por `event.id` para evitar duplicidade entre publicacao imediata e fanout job
+  - sanitizacao recursiva de chaves de coordenadas antes de entregar ao stream
+  - entrega best-effort por subscriber, sem quebrar a operacao de dominio se um stream falhar
+- criado `src/modules/field-ops-realtime/field-ops-realtime.routes.ts`
+  - endpoint `GET /api/v1/operations/field-events/stream`
+  - headers SSE `text/event-stream`, `no-cache`, keep-alive e `X-Accel-Buffering: no`
+  - protecao por `tenantContextMiddleware`, RBAC persistido e `requirePermission("field_location:read")`
+  - cleanup de subscriber no `request.close`
+- `src/app.ts`: router realtime montado em `/api/v1` antes dos routers de field location/dispatch
+- `src/infra/events/domain-event.publisher.ts`: eventos field ops publicados no broker em best-effort alem do job Redis existente
+- `src/modules/field-dispatch/field-ops-event-fanout.jobs.ts`: handler do job passa a publicar no broker SSE
+- frontend:
+  - `operations-map.service.ts`: `subscribeOperationsMapEvents()` usa `fetch` streaming com `Authorization: Bearer`, parser SSE manual e callback `onError`
+  - `useOperationsMap.ts`: abre stream quando ha `field_location:read` e, a cada evento, chama `refresh(true)`; erro SSE e ignorado para preservar polling
+  - `operations-map.types.ts`: tipo de evento realtime adicionado
+- testes:
+  - `tests/field-ops-realtime.test.ts`: RBAC, tenant isolation, sanitizacao e fanout handler
+  - `frontend/tests/smoke-flow.test.tsx`: Bearer no stream, parsing de `field_ops_event` e tolerancia a falha
+
+### Fora de escopo mantido
+- WebSocket, remocao do polling, Flutter/mobile, novos endpoints de dominio de localizacao/despacho, Google Maps provider, billing, pagamentos e fiscal
+
+### Validacoes
+- `npm run check`: OK
+- `npm run lint`: OK
+- `npm test`: OK, 15/15
+- `npm run build`: OK
+- `npm --prefix frontend run check`: OK
+- `npm --prefix frontend run build`: OK
+- `npm --prefix frontend run test:smoke`: OK, 27/27
+- `node --test --import tsx tests/field-ops-realtime.test.ts`: OK, 3/3
+- `git diff --check`: OK
+- `docker compose ps`: falhou ao conectar no Docker Desktop (`dockerDesktopLinuxEngine` ausente); `npm run test:e2e` nao executado porque Docker/PostgreSQL nao estavam ativos
