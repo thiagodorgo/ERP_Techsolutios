@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
 import 'package:erp_techsolutions_mobile/core/permissions/permission_resolver.dart';
+import 'package:erp_techsolutions_mobile/core/sync/sync_action_store.dart';
+import 'package:erp_techsolutions_mobile/core/sync/sync_providers.dart';
+import 'package:erp_techsolutions_mobile/features/expenses/data/expense_local_store.dart';
+import 'package:erp_techsolutions_mobile/features/expenses/data/expense_repository.dart';
 import 'package:erp_techsolutions_mobile/shared/ui/home_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
@@ -10,6 +15,16 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(_homeWithPermissions({'expense_report:create'}));
+
+    expect(find.text('Gestao de Despesas'), findsOneWidget);
+  });
+
+  testWidgets('home shows enabled expense module with all permissions', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _homeWithPermissions({'expense_report:read', 'expense_report:create'}),
+    );
 
     expect(find.text('Gestao de Despesas'), findsOneWidget);
   });
@@ -47,5 +62,11 @@ Widget _homeWithPermissions(Set<String> permissions) {
     ],
   );
 
-  return MaterialApp.router(routerConfig: router);
+  return ProviderScope(
+    overrides: [
+      expenseLocalStoreProvider.overrideWithValue(InMemoryExpenseLocalStore()),
+      syncActionStoreProvider.overrideWithValue(InMemorySyncActionStore()),
+    ],
+    child: MaterialApp.router(routerConfig: router),
+  );
 }

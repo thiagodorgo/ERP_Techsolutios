@@ -1,11 +1,7 @@
 import 'sync_models.dart';
 import 'sync_queue_repository.dart';
 
-enum SyncApiResult {
-  success,
-  failure,
-  conflict,
-}
+enum SyncApiResult { success, failure, conflict }
 
 abstract class ExpenseSyncApi {
   Future<SyncApiResult> send(SyncAction action);
@@ -26,8 +22,8 @@ class SyncEngine {
   const SyncEngine({
     required SyncQueueRepository queue,
     required ExpenseSyncApi api,
-  })  : _queue = queue,
-        _api = api;
+  }) : _queue = queue,
+       _api = api;
 
   final SyncQueueRepository _queue;
   final ExpenseSyncApi _api;
@@ -42,12 +38,21 @@ class SyncEngine {
 
       final result = await _api.send(syncing);
       final next = switch (result) {
-        SyncApiResult.success => syncing.copyWith(status: SyncStatus.synced),
+        SyncApiResult.success => syncing.copyWith(
+          status: SyncStatus.synced,
+          processedAt: DateTime.now().toUtc(),
+        ),
         SyncApiResult.failure => syncing.copyWith(
-            status: SyncStatus.failed,
-            retryCount: syncing.retryCount + 1,
-          ),
-        SyncApiResult.conflict => syncing.copyWith(status: SyncStatus.conflict),
+          status: SyncStatus.failed,
+          retryCount: syncing.retryCount + 1,
+          lastErrorCode: 'sync_failed',
+          lastSafeError: 'Falha segura ao sincronizar. Tente novamente.',
+        ),
+        SyncApiResult.conflict => syncing.copyWith(
+          status: SyncStatus.conflict,
+          lastErrorCode: 'sync_conflict',
+          lastSafeError: 'Conflito remoto exige decisao manual.',
+        ),
       };
 
       await _queue.update(next);

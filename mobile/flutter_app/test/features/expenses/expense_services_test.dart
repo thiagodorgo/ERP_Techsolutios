@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('calculates total and amount receivable', () {
     final report = ExpenseReport(
-      localId: 'rdv-1',
+      localId: 'pc-1',
       tenantId: 'tenant-a',
       employeeId: 'employee-1',
       policyVersion: 'v1',
@@ -33,7 +33,7 @@ void main() {
 
   test('detects refund when advance is greater than total', () {
     final report = ExpenseReport(
-      localId: 'rdv-1',
+      localId: 'pc-1',
       tenantId: 'tenant-a',
       employeeId: 'employee-1',
       policyVersion: 'v1',
@@ -58,7 +58,7 @@ void main() {
 
   test('detects policy violations for limit and missing receipt', () {
     final report = ExpenseReport(
-      localId: 'rdv-1',
+      localId: 'pc-1',
       tenantId: 'tenant-a',
       employeeId: 'employee-1',
       policyVersion: 'v1',
@@ -93,7 +93,7 @@ void main() {
 
   test('blocks cross tenant policy evaluation', () {
     final report = ExpenseReport(
-      localId: 'rdv-1',
+      localId: 'pc-1',
       tenantId: 'tenant-a',
       employeeId: 'employee-1',
       policyVersion: 'v1',

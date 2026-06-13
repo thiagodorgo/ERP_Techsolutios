@@ -26,9 +26,52 @@ void main() {
       permissions: PermissionSet({'expense_report:read'}),
     );
 
-    final modules =
-        const ModuleResolver(PermissionResolver()).visibleModules(session);
+    final modules = const ModuleResolver(
+      PermissionResolver(),
+    ).visibleModules(session);
 
     expect(modules, isEmpty);
+  });
+
+  test('field operations module requires field location permission', () {
+    const session = BootstrapSession(
+      activeTenant: TenantContext(tenantId: 'tenant-a', displayName: 'A'),
+      enabledModules: [
+        EnabledModule(
+          id: 'field_operations',
+          title: 'Operacoes de Campo',
+          route: '/work-orders',
+          requiredPermissions: ['field_location:send'],
+        ),
+      ],
+      permissions: PermissionSet({'work_orders:read'}),
+    );
+
+    final modules = const ModuleResolver(
+      PermissionResolver(),
+    ).visibleModules(session);
+
+    expect(modules, isEmpty);
+  });
+
+  test('field operations module appears with field location permission', () {
+    const session = BootstrapSession(
+      activeTenant: TenantContext(tenantId: 'tenant-a', displayName: 'A'),
+      enabledModules: [
+        EnabledModule(
+          id: 'field_operations',
+          title: 'Operacoes de Campo',
+          route: '/work-orders',
+          requiredPermissions: ['field_location:send'],
+        ),
+      ],
+      permissions: PermissionSet({'field_location:send'}),
+    );
+
+    final modules = const ModuleResolver(
+      PermissionResolver(),
+    ).visibleModules(session);
+
+    expect(modules.single.id, 'field_operations');
   });
 }

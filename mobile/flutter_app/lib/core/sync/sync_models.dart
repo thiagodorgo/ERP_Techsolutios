@@ -1,13 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum SyncStatus {
-  local,
-  pending,
-  syncing,
-  failed,
-  conflict,
-  synced,
-}
+enum SyncStatus { local, pending, syncing, failed, conflict, synced }
 
 class SyncAction extends Equatable {
   const SyncAction({
@@ -18,6 +11,9 @@ class SyncAction extends Equatable {
     required this.status,
     required this.createdAt,
     this.retryCount = 0,
+    this.lastErrorCode,
+    this.lastSafeError,
+    this.processedAt,
   });
 
   final String clientActionId;
@@ -27,6 +23,9 @@ class SyncAction extends Equatable {
   final SyncStatus status;
   final DateTime createdAt;
   final int retryCount;
+  final String? lastErrorCode;
+  final String? lastSafeError;
+  final DateTime? processedAt;
 
   SyncAction copyWith({
     String? clientActionId,
@@ -36,6 +35,9 @@ class SyncAction extends Equatable {
     SyncStatus? status,
     DateTime? createdAt,
     int? retryCount,
+    String? lastErrorCode,
+    String? lastSafeError,
+    DateTime? processedAt,
   }) {
     return SyncAction(
       clientActionId: clientActionId ?? this.clientActionId,
@@ -45,17 +47,23 @@ class SyncAction extends Equatable {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       retryCount: retryCount ?? this.retryCount,
+      lastErrorCode: lastErrorCode ?? this.lastErrorCode,
+      lastSafeError: lastSafeError ?? this.lastSafeError,
+      processedAt: processedAt ?? this.processedAt,
     );
   }
 
   @override
   List<Object?> get props => [
-        clientActionId,
-        tenantId,
-        type,
-        payload,
-        status,
-        createdAt,
-        retryCount,
-      ];
+    clientActionId,
+    tenantId,
+    type,
+    payload,
+    status,
+    createdAt,
+    retryCount,
+    lastErrorCode,
+    lastSafeError,
+    processedAt,
+  ];
 }

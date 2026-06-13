@@ -1,10 +1,6 @@
 import '../domain/expense_models.dart';
 
-enum ExpenseSettlementKind {
-  receivable,
-  refundable,
-  zero,
-}
+enum ExpenseSettlementKind { receivable, refundable, zero }
 
 class ExpenseTotals {
   const ExpenseTotals({
