@@ -35,6 +35,12 @@ O primeiro caminho versionado nesta fase e `mobile/flutter_app`, porque nao havi
 - categorias e politicas de despesas;
 - versoes de catalogos para cache e sync.
 
+### Status backend B-098
+
+`GET /api/v1/mobile/bootstrap` ja existe no backend como contrato minimo. Ele retorna tenant ativo, usuario, roles, permissoes, modulos habilitados, categorias de despesas quando o ator tem permissao relacionada a despesas, `serverTime` e cursores nulos de sync.
+
+Ainda nao ha bootstrap expandido com todos os catalogos versionados, `feature_flags`, `mobile_policy` completo ou tenants disponiveis. Esses itens ficam para B-098A.
+
 ## Estrutura inicial
 
 ```txt

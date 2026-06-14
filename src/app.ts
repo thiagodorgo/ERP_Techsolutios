@@ -20,6 +20,7 @@ import { createExpenseManagementRouter } from "./modules/expense-management/inde
 import { createFieldDispatchRouter } from "./modules/field-dispatch/index.js";
 import { createFieldLocationRouter } from "./modules/field-location/index.js";
 import { createFieldOpsRealtimeRouter } from "./modules/field-ops-realtime/index.js";
+import { createMobileRouter } from "./modules/mobile/index.js";
 import { createNotificationRouter } from "./modules/notifications/index.js";
 import { createNavigationRouter } from "./modules/navigation/index.js";
 import { createPlatformRouter } from "./modules/platform/index.js";
@@ -42,6 +43,7 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", healthRouter);
   app.use("/api/v1/auth", createAuthRouter());
   app.use("/api/v1/platform", attachAuthenticatedActor(), createPlatformRouter());
+  app.use("/api/v1", attachAuthenticatedActor(), createMobileRouter(service));
   app.use("/api/v1/navigation", attachAuthenticatedActor(), createNavigationRouter(service));
   app.use("/api/v1", attachAuthenticatedActor(), createNotificationRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createChecklistRouter());
@@ -52,6 +54,15 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createCommissionRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createExpenseManagementRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createCoreSaasRouter(service));
+  app.use("/api/v1", (_request, response) => {
+    response.status(404).json({
+      error: {
+        code: "NOT_FOUND",
+        reason: "route_not_found",
+        message: "Route not found.",
+      },
+    });
+  });
 
   return app;
 }

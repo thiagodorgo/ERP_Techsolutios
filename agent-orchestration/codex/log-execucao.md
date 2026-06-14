@@ -2648,3 +2648,28 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - `git diff --check`: limpo
 - sem commit, push ou PR
 - backend, frontend React, Figma, secrets e areas fora do escopo nao foram alterados
+
+## 2026-06-14 - B-098 Mobile Backend Contract Readiness
+
+### Implementado
+
+- worktree isolado: `ERP_Techsolutios-codex-b098`
+- branch: `feature/mobile-backend-contract-readiness`
+- `GET /api/v1/mobile/bootstrap` minimo no backend Node/TypeScript
+- 404 JSON estavel para rotas `/api/v1` nao mapeadas
+- testes de contrato mobile/backend em `tests/mobile-backend-contracts.test.ts`
+- alinhamento do teste de permissao ao contrato atual de `requireAnyPermission`
+- documentacao consolidada em `docs/mobile-backend-contract-readiness.md`
+
+### Escopo preservado
+
+- `mobile/flutter_app/**` nao foi alterado
+- nenhum comando Flutter foi executado
+- sem push, merge ou PR
+- sem migration Prisma, secrets, `.env`, Docker/infra ou Figma
+
+### Lacunas registradas
+
+- sync mobile de OS, checklist e inventario ainda planejado
+- evidencia generica/OS ainda planejada
+- bootstrap expandido com catalogos versionados e feature flags ainda planejado
