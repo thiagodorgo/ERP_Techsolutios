@@ -48,12 +48,15 @@ test("mobile bootstrap returns tenant-scoped contract and ignores requested tena
     assert.equal(response.body.data.feature_flags.mobile_bootstrap_expanded.status, "implemented");
     assert.equal(response.body.data.feature_flags.work_order_sync.enabled, true);
     assert.equal(response.body.data.feature_flags.work_order_sync.status, "implemented");
+    assert.equal(response.body.data.feature_flags.checklist_sync.enabled, true);
+    assert.equal(response.body.data.feature_flags.checklist_sync.status, "partial");
     assert.equal(response.body.data.feature_flags.inventory_mobile.status, "planned");
     assert.equal(response.body.data.mobile_policy.auth.bearer_required, true);
     assert.equal(response.body.data.mobile_policy.auth.tenant_source, "authenticated_actor");
     assert.equal(response.body.data.mobile_policy.sync.actions_enabled, true);
     assert.deepEqual(response.body.data.mobile_policy.sync.implemented_domains, ["expenses", "work_orders"]);
-    assert.deepEqual(response.body.data.mobile_policy.sync.planned_domains, ["checklists", "inventory"]);
+    assert.deepEqual(response.body.data.mobile_policy.sync.partial_domains, ["checklists"]);
+    assert.deepEqual(response.body.data.mobile_policy.sync.planned_domains, ["inventory"]);
     assert.equal(response.body.data.catalogs.version, "mobile-catalogs:v1");
     assert.equal(response.body.data.catalogs.modules.status, "implemented");
     assert.equal(response.body.data.catalogs.permissions.status, "implemented");
@@ -61,6 +64,7 @@ test("mobile bootstrap returns tenant-scoped contract and ignores requested tena
     assert.equal(response.body.data.catalogs.endpoints.status, "partial");
     assert.equal(findCatalogEndpoint(response.body, "expense_sync").status, "implemented");
     assert.equal(findCatalogEndpoint(response.body, "work_order_sync").status, "implemented");
+    assert.equal(findCatalogEndpoint(response.body, "checklist_sync").status, "partial");
     assert.equal(response.body.data.expenseCategories.length > 0, true);
     assert.equal(response.body.data.sync.workOrdersCursor, null);
     assert.equal(response.body.data.sync.checklistsCursor, null);
@@ -137,6 +141,11 @@ test("mobile backend exposes ready checklist, expense, work order and notificati
       headers,
       body: { client_batch_id: "empty-work-order-batch", actions: [] },
     });
+    const checklistSync = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers,
+      body: { client_batch_id: "empty-checklist-batch", actions: [] },
+    });
     const workOrders = await requestJson(baseUrl, "/api/v1/work-orders", { headers });
     const notifications = await requestJson(baseUrl, "/api/v1/notifications", { headers });
 
@@ -152,6 +161,14 @@ test("mobile backend exposes ready checklist, expense, work order and notificati
     assert.deepEqual(workOrderSync.body.data.rejected, []);
     assert.deepEqual(workOrderSync.body.data.conflicts, []);
     assert.deepEqual(workOrderSync.body.data.already_applied, []);
+    assert.equal(checklistSync.status, 200);
+    assert.equal(checklistSync.body.data.contract.name, "mobile_checklist_actions_sync");
+    assert.equal(checklistSync.body.data.contract.status, "partial");
+    assert.equal(checklistSync.body.data.summary.received, 0);
+    assert.deepEqual(checklistSync.body.data.accepted, []);
+    assert.deepEqual(checklistSync.body.data.rejected, []);
+    assert.deepEqual(checklistSync.body.data.conflicts, []);
+    assert.deepEqual(checklistSync.body.data.already_applied, []);
     assert.equal(workOrders.status, 200);
     assert.ok(Array.isArray(workOrders.body.items));
     assert.equal(notifications.status, 200);
@@ -159,6 +176,7 @@ test("mobile backend exposes ready checklist, expense, work order and notificati
     assertNoStackTrace(checklists.body);
     assertNoStackTrace(expenseSync.body);
     assertNoStackTrace(workOrderSync.body);
+    assertNoStackTrace(checklistSync.body);
     assertNoStackTrace(workOrders.body);
     assertNoStackTrace(notifications.body);
   });
@@ -279,6 +297,200 @@ test("mobile work order action sync accepts, deduplicates, rejects and reports c
   });
 });
 
+test("mobile checklist action sync accepts, deduplicates, rejects and reports conflicts by action", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const checklist = await createChecklistRunForSync(baseUrl, seed, headers);
+
+    const firstSync = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers,
+      body: {
+        client_batch_id: "checklist-batch-1",
+        tenant_id: seed.tenantB.id,
+        actions: [
+          {
+            client_action_id: "checklist-action-1",
+            type: "checklist.item_answer",
+            local_created_at: "2026-06-14T12:00:00.000Z",
+            payload: {
+              tenant_id: seed.tenantB.id,
+              run_id: checklist.runId,
+              component_id: checklist.componentId,
+              value: "Vehicle checked without damage.",
+              metadata: { source: "offline_form" },
+            },
+          },
+          {
+            client_action_id: "checklist-action-note",
+            type: "checklist.item_note",
+            local_created_at: "2026-06-14T12:01:00.000Z",
+            payload: {
+              run_id: checklist.runId,
+              component_id: checklist.componentId,
+              note: "Driver confirmed condition.",
+            },
+          },
+          {
+            client_action_id: "checklist-action-unsupported",
+            type: "checklist.item_attachment",
+            local_created_at: "2026-06-14T12:02:00.000Z",
+            payload: {
+              run_id: checklist.runId,
+              component_id: checklist.componentId,
+            },
+          },
+        ],
+      },
+    });
+
+    assert.equal(firstSync.status, 200);
+    assert.equal(firstSync.body.data.tenant_id, seed.tenantA.id);
+    assert.equal(firstSync.body.data.summary.received, 3);
+    assert.equal(firstSync.body.data.summary.accepted, 2);
+    assert.equal(firstSync.body.data.summary.rejected, 1);
+    assert.equal(firstSync.body.data.summary.conflicts, 0);
+    assert.equal(firstSync.body.data.accepted[0].client_action_id, "checklist-action-1");
+    assert.equal(firstSync.body.data.accepted[0].server_state.answers[0].value, "Vehicle checked without damage.");
+    assert.equal(firstSync.body.data.accepted[1].server_state.answers[0].metadata.note, "Driver confirmed condition.");
+    assert.equal(firstSync.body.data.rejected[0].client_action_id, "checklist-action-unsupported");
+    assert.equal(firstSync.body.data.rejected[0].error.reason, "unsupported_action_type");
+    assert.equal(JSON.stringify(firstSync.body).includes(seed.tenantB.id), false);
+    assertNoStackTrace(firstSync.body);
+
+    const duplicateSync = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers,
+      body: {
+        client_batch_id: "checklist-batch-2",
+        actions: [
+          {
+            client_action_id: "checklist-action-1",
+            type: "checklist.item_answer",
+            local_created_at: "2026-06-14T12:03:00.000Z",
+            payload: {
+              run_id: checklist.runId,
+              component_id: checklist.componentId,
+              value: "Vehicle checked without damage.",
+              metadata: { source: "offline_form" },
+            },
+          },
+          {
+            client_action_id: "checklist-action-1",
+            type: "checklist.item_answer",
+            local_created_at: "2026-06-14T12:04:00.000Z",
+            payload: {
+              run_id: checklist.runId,
+              component_id: checklist.componentId,
+              value: "Different offline answer.",
+            },
+          },
+          {
+            client_action_id: "checklist-action-complete",
+            type: "checklist.complete",
+            local_created_at: "2026-06-14T12:05:00.000Z",
+            payload: {
+              run_id: checklist.runId,
+              has_divergence: false,
+            },
+          },
+        ],
+      },
+    });
+
+    assert.equal(duplicateSync.status, 200);
+    assert.equal(duplicateSync.body.data.summary.accepted, 1);
+    assert.equal(duplicateSync.body.data.summary.rejected, 0);
+    assert.equal(duplicateSync.body.data.summary.conflicts, 1);
+    assert.equal(duplicateSync.body.data.summary.already_applied, 1);
+    assert.equal(duplicateSync.body.data.already_applied[0].client_action_id, "checklist-action-1");
+    assert.equal(duplicateSync.body.data.conflicts[0].conflict.conflict_type, "idempotency_payload_mismatch");
+    assert.equal(duplicateSync.body.data.accepted[0].server_state.run.status, "completed");
+    assertNoStackTrace(duplicateSync.body);
+  });
+});
+
+test("mobile checklist action sync validates envelope, actor context, permissions and tenant spoofing", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const checklist = await createChecklistRunForSync(baseUrl, seed, headers);
+
+    const invalidEnvelope = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers,
+      body: { actions: "not-an-array" },
+    });
+    const missingTenant = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers: {
+        "x-user-id": seed.adminA.id,
+        "x-role": "tenant_admin",
+      },
+      body: { actions: [] },
+    });
+    const missingPermission = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.adminA, "viewer"),
+      body: { actions: [] },
+    });
+    const perActionPermission = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers: {
+        ...authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
+        "x-permissions": "checklist_runs:update",
+      },
+      body: {
+        actions: [
+          {
+            client_action_id: "checklist-read-only-complete",
+            type: "checklist.complete",
+            local_created_at: "2026-06-14T12:06:00.000Z",
+            payload: { run_id: checklist.runId },
+          },
+        ],
+      },
+    });
+    const tenantSpoof = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers,
+      body: {
+        client_batch_id: "checklist-spoof",
+        actions: [
+          {
+            client_action_id: "checklist-spoof-action",
+            type: "checklist.item_answer",
+            local_created_at: "2026-06-14T12:07:00.000Z",
+            payload: {
+              tenant_id: seed.tenantB.id,
+              run_id: checklist.runId,
+              component_id: checklist.componentId,
+              value: "Tenant spoof ignored.",
+            },
+          },
+        ],
+      },
+    });
+
+    assert.equal(invalidEnvelope.status, 400);
+    assert.equal(invalidEnvelope.body.error.reason, "invalid_envelope");
+    assert.equal(missingTenant.status, 403);
+    assert.equal(missingTenant.body.error.reason, "tenant_required");
+    assert.equal(missingPermission.status, 403);
+    assert.equal(missingPermission.body.error.reason, "permission_required");
+    assert.equal(perActionPermission.status, 200);
+    assert.equal(perActionPermission.body.data.rejected[0].error.reason, "permission_required");
+    assert.equal(tenantSpoof.status, 200);
+    assert.equal(tenantSpoof.body.data.tenant_id, seed.tenantA.id);
+    assert.equal(tenantSpoof.body.data.summary.accepted, 1);
+    assert.equal(JSON.stringify(tenantSpoof.body).includes(seed.tenantB.id), false);
+    assertNoStackTrace(invalidEnvelope.body);
+    assertNoStackTrace(missingTenant.body);
+    assertNoStackTrace(missingPermission.body);
+    assertNoStackTrace(perActionPermission.body);
+    assertNoStackTrace(tenantSpoof.body);
+  });
+});
+
 test("mobile work order action sync validates envelope, actor context and permissions", async () => {
   await withMobileContractApi(async ({ baseUrl, seed }) => {
     const invalidEnvelope = await requestJson(baseUrl, "/api/v1/mobile/sync/work-order-actions", {
@@ -312,25 +524,18 @@ test("mobile work order action sync validates envelope, actor context and permis
   });
 });
 
-test("planned mobile checklist sync and inventory endpoints return stable JSON 404", async () => {
+test("planned mobile inventory endpoint returns stable JSON 404", async () => {
   await withMobileContractApi(async ({ baseUrl, seed }) => {
     const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
-    const checklistSync = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
-      method: "POST",
-      headers,
-      body: { actions: [] },
-    });
     const inventory = await requestJson(baseUrl, "/api/v1/mobile/inventory/items", { headers });
 
-    for (const response of [checklistSync, inventory]) {
-      assert.equal(response.status, 404);
-      assert.deepEqual(response.body.error, {
-        code: "NOT_FOUND",
-        reason: "route_not_found",
-        message: "Route not found.",
-      });
-      assertNoStackTrace(response.body);
-    }
+    assert.equal(inventory.status, 404);
+    assert.deepEqual(inventory.body.error, {
+      code: "NOT_FOUND",
+      reason: "route_not_found",
+      message: "Route not found.",
+    });
+    assertNoStackTrace(inventory.body);
   });
 });
 
@@ -362,6 +567,8 @@ async function withMobileContractApi(
   process.env.LOG_LEVEL = "silent";
 
   const { createApp } = await import("../src/app.js");
+  const { resetChecklistRuntimeForTests } = await import("../src/modules/checklists/index.js");
+  const { resetMobileChecklistSyncRuntimeForTests } = await import("../src/modules/mobile/mobile-checklist-sync.js");
   const { resetMobileWorkOrderSyncRuntimeForTests } = await import("../src/modules/mobile/mobile-work-order-sync.js");
   const { resetWorkOrderRuntimeForTests } = await import("../src/modules/work-orders/index.js");
   const registry = new CoreSaasRegistry(new InMemoryCoreSaasStore());
@@ -370,6 +577,8 @@ async function withMobileContractApi(
   const server = app.listen(0);
   const baseUrl = await getBaseUrl(server);
 
+  resetChecklistRuntimeForTests();
+  resetMobileChecklistSyncRuntimeForTests();
   resetMobileWorkOrderSyncRuntimeForTests();
   resetWorkOrderRuntimeForTests();
 
@@ -378,6 +587,62 @@ async function withMobileContractApi(
   } finally {
     await closeServer(server);
   }
+}
+
+async function createChecklistRunForSync(
+  baseUrl: string,
+  seed: SeedData,
+  headers: Record<string, string>,
+) {
+  const create = await requestJson(baseUrl, "/api/v1/tenant/checklists", {
+    method: "POST",
+    headers,
+    body: {
+      name: "Mobile checklist sync template",
+      type: "technical_evidence",
+      schema: { source: "mobile_contract_test" },
+      components: [
+        {
+          componentKey: "condition_note",
+          type: "observation",
+          label: "Condition note",
+          required: true,
+          config: {},
+          validationRules: {},
+          visibilityRules: {},
+        },
+      ],
+    },
+  });
+
+  assert.equal(create.status, 201);
+
+  const publish = await requestJson(baseUrl, `/api/v1/tenant/checklists/${create.body.data.id}/publish`, {
+    method: "POST",
+    headers,
+    body: {},
+  });
+
+  assert.equal(publish.status, 200);
+
+  const run = await requestJson(baseUrl, "/api/v1/mobile/checklist-runs", {
+    method: "POST",
+    headers,
+    body: {
+      checklistId: publish.body.data.id,
+      relatedEntityType: "work_order",
+      relatedEntityId: "local-work-order-1",
+      answers: [],
+    },
+  });
+
+  assert.equal(run.status, 201);
+
+  return {
+    runId: run.body.data.id as string,
+    componentId: publish.body.data.components[0].id as string,
+    tenantId: seed.tenantA.id,
+  };
 }
 
 function seedCoreSaas(service: CoreSaasRegistry): SeedData {

@@ -2783,3 +2783,24 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - nenhum comando Flutter foi executado
 - sem Figma, secrets, `.env`, migrations ou infra
 - checklist sync, inventario e evidencias genericas nao foram implementados
+
+## 2026-06-14 - B-098C Mobile Checklist Actions Sync Contract
+
+### Implementado
+
+- branch: `feature/mobile-checklist-actions-sync-contract`
+- base: `origin/main` atualizada com merge commit `082320aa218b49a3a10216591046c5b88e2effbb` do PR #82 confirmado
+- criado contrato `POST /api/v1/mobile/sync/checklist-actions`
+- suporte a lote de acoes `checklist.item_answer`, `checklist.item_note` e `checklist.complete`
+- tenant resolvido exclusivamente pelo ator autenticado/contexto backend
+- idempotencia por tenant do ator + usuario do ator + `client_action_id`
+- resposta separada em `accepted`, `rejected`, `conflicts` e `already_applied`
+- bootstrap/catalogos atualizados para marcar `checklist_sync` como `partial`
+- testes de contrato mobile atualizados para aceite, replay idempotente, mismatch, rejeicoes, permissao por tipo e tenant spoofing
+
+### Escopo preservado
+
+- `mobile/flutter_app/**` nao foi alterado
+- nenhum comando Flutter foi executado
+- sem Figma, secrets, `.env`, migrations ou infra
+- B-098D, inventario e evidencias genericas nao foram iniciados

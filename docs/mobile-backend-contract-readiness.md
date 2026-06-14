@@ -44,7 +44,9 @@ Consolidar a prontidao do backend Node.js/TypeScript para o MVP mobile Flutter, 
 | Inventory | nenhum endpoint mobile real | planejado | modulo aparece em docs/catalogo, mas backend mobile ainda nao existe |
 | Evidence/Attachments | checklist attachments | implementado parcial | real para checklist; nao ha upload generico ou evidencia de OS |
 | Sync | `POST /api/v1/mobile/sync/expense-actions` | implementado parcial | despesas apenas |
-| Sync | work orders/checklists/inventory sync | planejado | retorna 404 JSON estavel quando rota nao existe |
+| Sync | `POST /api/v1/mobile/sync/work-order-actions` | implementado | replay offline controlado de status/atribuicao de OS |
+| Sync | `POST /api/v1/mobile/sync/checklist-actions` | parcial | replay offline minimo de respostas, notas e conclusao de checklist |
+| Sync | inventory sync | planejado | retorna 404 JSON estavel quando rota nao existe |
 | Notifications | `GET /api/v1/notifications` | implementado | retorna `data` como array direto |
 | Notifications | `GET /api/v1/notifications/unread-count` | implementado | contador de nao lidas |
 | Notifications | read/read-all/archive | implementado | acoes online |
@@ -52,13 +54,12 @@ Consolidar a prontidao do backend Node.js/TypeScript para o MVP mobile Flutter, 
 
 ## Endpoints faltantes ou incompletos
 
-- `POST /api/v1/mobile/sync/work-order-actions`: faltante; necessario para fila local-first de OS.
-- `POST /api/v1/mobile/sync/checklist-actions`: faltante; necessario para replay offline de checklist.
 - `GET /api/v1/mobile/inventory/items`: faltante; inventario mobile ainda nao tem API backend.
 - `POST /api/v1/mobile/sync/inventory-actions`: faltante; sem contrato de reserva/baixa offline.
 - Endpoint generico de evidencia de OS: faltante; checklist possui anexos, OS ainda nao.
-- Catalogos versionados completos no bootstrap: parcial; B-098 retorna contrato minimo e cursores nulos.
-- Conflitos de sync para OS/checklist/inventory: planejado, nao implementado.
+- Sync checklist completo: parcial; B-098C cobre respostas, notas e conclusao, mas nao cobre anexos, markers, divergencia ou acknowledgement em lote.
+- Catalogos versionados completos no bootstrap: parcial; B-098A/B/C retornam contrato expandido com lacunas planejadas.
+- Conflitos de sync para inventory: planejado, nao implementado.
 
 ## Contrato de erro
 
@@ -94,8 +95,8 @@ Decisao B-098: manter a implementacao atual, pois ela cobre o caso multi-permiss
 Estado atual:
 
 - despesas: `POST /api/v1/mobile/sync/expense-actions` existe e retorna `data.results`;
-- work orders: sem endpoint de sync mobile;
-- checklists: endpoints online existem, mas nao ha replay offline em lote;
+- work orders: `POST /api/v1/mobile/sync/work-order-actions` existe e retorna `accepted`, `rejected`, `conflicts` e `already_applied`;
+- checklists: `POST /api/v1/mobile/sync/checklist-actions` existe em status `partial` para `checklist.item_answer`, `checklist.item_note` e `checklist.complete`;
 - inventory: sem backend mobile real;
 - evidencias: checklist possui upload online protegido; OS/generico ainda faltante.
 
@@ -121,7 +122,7 @@ Regras para proximas fases:
 | --- | --- | --- |
 | B-098A | Bootstrap expandido | catalogos versionados, policies mobile, feature flags e TTL de cache |
 | B-098B | Sync de Work Orders | `POST /api/v1/mobile/sync/work-order-actions` com idempotencia e conflitos |
-| B-098C | Sync de Checklists | replay offline de runs, respostas, markers e anexos pendentes |
+| B-098C | Sync de Checklists | replay offline minimo de respostas, notas e conclusao |
 | B-098D | Evidencias de OS | upload/metadata seguro para OS, storage protegido e auditoria |
 | B-098E | Inventario mobile | leitura de catalogo e sync de baixas/reservas tenant-scoped |
 | B-098F | Observabilidade mobile | metricas de sync, auditoria mobile e diagnostico backend seguro |

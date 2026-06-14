@@ -2747,3 +2747,28 @@ B-098B implementou o primeiro contrato backend de replay offline de OS sem alter
 - evidencia generica/OS
 - idempotencia duravel em banco/Redis para ambiente multi-instancia
 - implementacao Flutter consumindo o endpoint B-098B
+
+## Atualizacao 2026-06-14 - B-098C Mobile Checklist Actions Sync Contract
+
+### Status
+
+B-098C implementou o contrato backend minimo de replay offline de checklist sem alterar Flutter. O backend agora aceita lote mobile controlado para resposta, nota e conclusao de checklist, mantendo envelope previsivel e idempotencia por `client_action_id`.
+
+### Pronto para consumo controlado
+
+- `POST /api/v1/mobile/sync/checklist-actions`
+- lote `{ client_batch_id, actions[] }`
+- acoes `checklist.item_answer`, `checklist.item_note` e `checklist.complete`
+- tenant resolvido pelo ator autenticado, nao pelo payload
+- idempotencia por tenant do ator + usuario do ator + `client_action_id`
+- retorno separado em `accepted`, `rejected`, `conflicts` e `already_applied`
+- conflito estruturado para mismatch de idempotencia
+- bootstrap/catalogos marcam `checklist_sync` como `partial`
+
+### Ainda nao pronto
+
+- anexos, markers, divergencia e acknowledgement em lote
+- inventario mobile real
+- evidencia generica/OS
+- idempotencia duravel em banco/Redis para ambiente multi-instancia
+- implementacao Flutter consumindo o endpoint B-098C
