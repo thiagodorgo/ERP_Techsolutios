@@ -2,9 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth_notifier.dart';
+import '../core/bootstrap/bootstrap_repository.dart';
 import '../core/config/app_config.dart';
 import '../core/diagnostics/diagnostics_screen.dart';
 import '../features/auth/login_screen.dart';
+import '../features/auth/tenant_selector_screen.dart';
 import '../features/expenses/ui/expense_item_receipts_screen.dart';
 import '../features/expenses/ui/expense_report_detail_screen.dart';
 import '../features/expenses/ui/expense_submit_screen.dart';
@@ -43,14 +45,33 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final authState = authAsync.asData?.value;
       if (authState == null) return null;
 
-      final isLoginRoute = state.matchedLocation == '/login';
+      final loc = state.matchedLocation;
+      final isLoginRoute = loc == '/login';
+      final isTenantSelect = loc == '/tenant-select';
 
       if (!authState.isAuthenticated && !isLoginRoute) return '/login';
-      if (authState.isAuthenticated && isLoginRoute) return '/';
+
+      if (authState.isAuthenticated && isLoginRoute) {
+        // After login: check if tenant selection is pending (remote + multi-tenant)
+        final notifier = ref.read(bootstrapNotifierProvider.notifier);
+        if (notifier.pendingTenantSelection) return '/tenant-select';
+        return '/';
+      }
+
+      // Authenticated and not on login — check ongoing tenant-select need
+      if (authState.isAuthenticated && !isLoginRoute && !isTenantSelect) {
+        final notifier = ref.read(bootstrapNotifierProvider.notifier);
+        if (notifier.pendingTenantSelection) return '/tenant-select';
+      }
+
       return null;
     },
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/tenant-select',
+        builder: (context, state) => const TenantSelectorScreen(),
+      ),
       GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(
         path: '/profile',
