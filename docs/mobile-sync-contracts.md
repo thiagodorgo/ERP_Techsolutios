@@ -19,7 +19,16 @@
 - Idempotencia: leitura.
 - Offline: app usa cache local ate expirar ou sincronizar.
 - Evento/auditoria: opcional `mobile.bootstrap.loaded`.
-- Status B-098: implementado como contrato minimo com tenant, usuario, roles, permissoes, modulos, categorias de despesas, `serverTime` e cursores nulos. Tenants disponiveis, feature flags e catalogos versionados completos continuam planejados.
+- Status B-098A: implementado como contrato expandido com tenant, usuario, roles, permissoes, modulos, categorias de despesas, `serverTime`, cursores nulos, `contract`, `mobile_app`, `cache`, `feature_flags`, `mobile_policy` e `catalogs`.
+
+Blocos de controle do bootstrap:
+
+- `contract`: `name=mobile_bootstrap`, `version=2026-06-14.b098a`, `schemaVersion=2`, `status=expanded`.
+- `mobile_app`: plataforma `flutter`, versao minima suportada e versao recomendada.
+- `cache`: TTL de 300 segundos, janela stale-while-revalidate de 900 segundos, `cache_key` por tenant/usuario e `vary_by`.
+- `feature_flags`: capacidades implementadas, planejadas ou indisponiveis para o ator.
+- `mobile_policy`: auth Bearer, tenant por ator autenticado, cache, sync sem acoes nesta fase, limites de evidencia e diagnostico seguro.
+- `catalogs`: modulos, permissoes, categorias de despesas e endpoints com status `implemented`, `planned`, `unavailable` ou `partial`.
 
 ### POST /api/v1/mobile/sync/expense-actions
 
