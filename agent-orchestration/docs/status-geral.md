@@ -2548,3 +2548,27 @@ Flutter: 23 M + ~100 ?? | Agent-orchestration: 2 M + 20 ?? | Docs: 7 M + 1 ?? | 
 **Sem migracao Drift para evidencias de OS**: `InMemoryWorkOrderLocalStore` e o store atual para OS — nenhuma migracao de schema necessaria.
 
 **`showEvidenceSourcePicker` compartilhado**: funcao top-level em `evidence_picker.dart` usada por checklist, OS e RDV — ponto unico de UX de selecao de fonte.
+
+## Atualizacao 2026-06-14 - B-098 Mobile Backend Contract Readiness
+
+### Status
+
+B-098 consolidou a prontidao minima do backend para o MVP mobile sem alterar Flutter. O backend agora possui `GET /api/v1/mobile/bootstrap` minimo, testes de contrato e documentacao que separa endpoints reais de endpoints planejados.
+
+### Pronto para consumo controlado
+
+- Auth Bearer e refresh/logout
+- Bootstrap minimo mobile
+- Work Orders online
+- Checklists online e anexos de checklist
+- Despesas online e sync MVP de despesas
+- Notificacoes online
+- Localizacao mobile de operador
+
+### Ainda nao pronto
+
+- Sync offline de OS
+- Sync offline de checklist
+- Inventario mobile real
+- Evidencias genericas/OS
+- Bootstrap expandido com catalogos versionados, feature flags e policy mobile completa
