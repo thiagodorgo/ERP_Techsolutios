@@ -2,6 +2,24 @@
 
 O backend atual usa o prefixo `/api/v1`. Os contratos abaixo documentam o boundary inicial do Console da Plataforma.
 
+## Mobile backend contract readiness
+
+O contrato consolidado para o MVP mobile esta em `docs/mobile-backend-contract-readiness.md`.
+
+`GET /api/v1/mobile/bootstrap` esta implementado como bootstrap minimo para o app Flutter: retorna tenant ativo, usuario, roles, permissoes, modulos habilitados, categorias de despesas quando permitidas, horario do servidor e cursores nulos de sync. O endpoint ignora `tenantId` vindo de query/body e usa apenas o tenant do ator autenticado.
+
+Endpoints planejados de sync mobile que ainda nao existem, como `/api/v1/mobile/sync/work-order-actions`, `/api/v1/mobile/sync/checklist-actions` e `/api/v1/mobile/inventory/items`, retornam 404 JSON estavel sob `/api/v1`:
+
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "reason": "route_not_found",
+    "message": "Route not found."
+  }
+}
+```
+
 ## Autenticacao de rotas protegidas
 
 Rotas protegidas devem usar `Authorization: Bearer <access_token>` como caminho principal de contexto autenticado. Um Bearer token valido alimenta `userId`, `tenantId`, roles e permissoes efetivas via RBAC do backend.

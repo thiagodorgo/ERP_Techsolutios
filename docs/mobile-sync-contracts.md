@@ -19,6 +19,7 @@
 - Idempotencia: leitura.
 - Offline: app usa cache local ate expirar ou sincronizar.
 - Evento/auditoria: opcional `mobile.bootstrap.loaded`.
+- Status B-098: implementado como contrato minimo com tenant, usuario, roles, permissoes, modulos, categorias de despesas, `serverTime` e cursores nulos. Tenants disponiveis, feature flags e catalogos versionados completos continuam planejados.
 
 ### POST /api/v1/mobile/sync/expense-actions
 
@@ -29,6 +30,25 @@
 - Idempotencia: obrigatoria por `tenant_id` + `client_action_id`.
 - Offline: origem principal das acoes offline.
 - Evento/auditoria: `expense_report.synced_from_mobile` e eventos especificos por acao aceita.
+- Status B-098: implementado para o MVP de despesas com resposta em `data.results`.
+
+### POST /api/v1/mobile/sync/work-order-actions
+
+- Permissao: futura por acao de OS.
+- Status B-098: planejado; rota ainda nao existe e retorna 404 JSON estavel.
+- Offline: sera o contrato principal para fila local-first de OS.
+
+### POST /api/v1/mobile/sync/checklist-actions
+
+- Permissao: futura por acao de checklist.
+- Status B-098: planejado; rotas online de checklist existem, mas replay offline em lote ainda nao.
+- Offline: sera o contrato para runs, respostas, markers, conclusao e conflitos.
+
+### GET /api/v1/mobile/inventory/items
+
+- Permissao: futura de inventario mobile.
+- Status B-098: planejado; modulo existe no catalogo/documentacao, mas nao ha backend mobile real.
+- Offline: devera alimentar cache local de itens/saldos permitidos.
 
 ### GET /api/v1/expense-policies
 
