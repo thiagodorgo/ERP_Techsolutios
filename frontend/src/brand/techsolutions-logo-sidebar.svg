@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220" height="320" viewBox="0 0 1220 320" role="img" aria-labelledby="title desc">
+  <title id="title">TechSolutions - Sidebar</title>
+  <desc id="desc">Logo de sidebar TechSolutions corrigido em SVG, fundo transparente, icone com duas folhas e talo central, texto com espaçamento equilibrado e efeito 3D discreto.</desc>
+
+  <defs>
+    <linearGradient id="brandGreen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7BE084"/>
+      <stop offset="0.50" stop-color="#45B66B"/>
+      <stop offset="1" stop-color="#1F6E69"/>
+    </linearGradient>
+
+    <linearGradient id="brandGreenStroke" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#80E28A"/>
+      <stop offset="0.55" stop-color="#49B96D"/>
+      <stop offset="1" stop-color="#1C6A66"/>
+    </linearGradient>
+
+    <linearGradient id="wordGradient" x1="0" y1="0" x2="1" y2="0.35">
+      <stop offset="0" stop-color="#0B2337"/>
+      <stop offset="0.52" stop-color="#071A2A"/>
+      <stop offset="1" stop-color="#00101D"/>
+    </linearGradient>
+
+    <linearGradient id="tagGradient" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#72957F"/>
+      <stop offset="1" stop-color="#2F6E62"/>
+    </linearGradient>
+
+    <filter id="wordDepth" x="-12%" y="-40%" width="130%" height="190%">
+      <feDropShadow dx="4" dy="5" stdDeviation="0.9" flood-color="#00101D" flood-opacity="0.23"/>
+      <feDropShadow dx="1" dy="1.3" stdDeviation="0.55" flood-color="#FFFFFF" flood-opacity="0.22"/>
+    </filter>
+
+    <filter id="iconDepth" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="5" dy="7" stdDeviation="1.8" flood-color="#00101D" flood-opacity="0.17"/>
+      <feDropShadow dx="-1.7" dy="-1.7" stdDeviation="0.9" flood-color="#FFFFFF" flood-opacity="0.20"/>
+    </filter>
+  </defs>
+
+
+  <g transform="translate(72 50) scale(0.43)" filter="url(#iconDepth)">
+    <circle cx="256" cy="256" r="178" fill="none" stroke="url(#brandGreenStroke)" stroke-width="18"/>
+    <circle cx="256" cy="256" r="158" fill="none" stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="2.4"/>
+
+    <!-- Talo central entre as folhas -->
+    <path d="M256 414 C256 356 256 302 256 248 C256 229 264 213 278 202"
+          fill="none"
+          stroke="url(#brandGreen)"
+          stroke-width="22"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+
+    <!-- Folha esquerda -->
+    <path d="M247 253
+             C190 254 144 221 128 166
+             C189 160 236 183 264 232
+             C269 241 261 253 247 253Z"
+          fill="url(#brandGreen)"/>
+
+    <!-- Folha direita -->
+    <path d="M278 199
+             C291 127 348 84 407 89
+             C402 160 350 218 285 238
+             C271 242 267 221 278 199Z"
+          fill="url(#brandGreen)"/>
+
+    <!-- Veios discretos -->
+    <path d="M300 192 C326 161 350 134 379 107"
+          fill="none"
+          stroke="#FFFFFF"
+          stroke-opacity="0.70"
+          stroke-width="8"
+          stroke-linecap="round"/>
+    <path d="M224 224 C198 208 176 190 158 170"
+          fill="none"
+          stroke="#FFFFFF"
+          stroke-opacity="0.28"
+          stroke-width="5"
+          stroke-linecap="round"/>
+  </g>
+
+
+  <g font-family="Inter, Montserrat, Poppins, Segoe UI, Arial, sans-serif"
+     font-weight="800"
+     font-size="114"
+     letter-spacing="-1.8">
+    <text x="323" y="195" fill="#00101D" opacity="0.12">TechSolutions</text>
+    <text x="320" y="192" fill="#00101D" opacity="0.17">TechSolutions</text>
+    <text x="317.5" y="189.5" fill="#0A273B" opacity="0.21">TechSolutions</text>
+    <text x="315" y="187"
+          fill="url(#wordGradient)"
+          stroke="#173348"
+          stroke-width="0.78"
+          paint-order="stroke fill"
+          filter="url(#wordDepth)">TechSolutions</text>
+  </g>
+
+</svg>
