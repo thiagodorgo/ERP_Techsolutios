@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../permissions/permission_resolver.dart';
+import 'bootstrap_expanded_session.dart';
 
 class AuthenticatedUser extends Equatable {
   const AuthenticatedUser({
@@ -123,6 +124,11 @@ class BootstrapSession extends Equatable {
       categoryLimits: <String, double>{},
       receiptRequiredCategories: <String>{},
     ),
+    // Expanded contract fields — absent when loaded from cache (defaults apply).
+    this.featureFlags = const <String, FeatureFlag>{},
+    this.expandedPolicy = ExpandedMobilePolicy.defaultPolicy,
+    this.contractMeta,
+    this.syncCursors = SyncCursors.empty,
   });
 
   final TenantContext activeTenant;
@@ -134,6 +140,21 @@ class BootstrapSession extends Equatable {
   final List<ExpenseCategorySnapshot> expenseCategories;
   final ExpensePolicySnapshot expensePolicy;
 
+  // Expanded bootstrap fields (B-098A). Empty/default when session comes from cache.
+  final Map<String, FeatureFlag> featureFlags;
+  final ExpandedMobilePolicy expandedPolicy;
+  final BootstrapContractMeta? contractMeta;
+  final SyncCursors syncCursors;
+
+  /// Returns true only when the backend explicitly enabled this flag.
+  bool isFeatureEnabled(String flagKey) =>
+      featureFlags[flagKey]?.enabled ?? false;
+
+  /// Returns the backend-reported capability status for [flagKey].
+  /// Defaults to [CapabilityStatus.unavailable] when the flag is absent.
+  CapabilityStatus featureStatus(String flagKey) =>
+      featureFlags[flagKey]?.status ?? CapabilityStatus.unavailable;
+
   @override
   List<Object?> get props => [
     activeTenant,
@@ -144,6 +165,10 @@ class BootstrapSession extends Equatable {
     mobilePolicy,
     expenseCategories,
     expensePolicy,
+    featureFlags,
+    expandedPolicy,
+    contractMeta,
+    syncCursors,
   ];
 }
 
