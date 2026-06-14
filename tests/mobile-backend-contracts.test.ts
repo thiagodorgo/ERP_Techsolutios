@@ -26,6 +26,16 @@ test("mobile bootstrap returns tenant-scoped contract and ignores requested tena
     });
 
     assert.equal(response.status, 200);
+    assert.equal(response.body.data.contract.name, "mobile_bootstrap");
+    assert.equal(response.body.data.contract.version, "2026-06-14.b098a");
+    assert.equal(response.body.data.contract.schemaVersion, 2);
+    assert.equal(response.body.data.contract.status, "expanded");
+    assert.equal(response.body.data.mobile_app.platform, "flutter");
+    assert.equal(response.body.data.mobile_app.min_supported_version, "0.1.0");
+    assert.equal(response.body.data.cache.ttl_seconds, 300);
+    assert.equal(response.body.data.cache.stale_while_revalidate_seconds, 900);
+    assert.deepEqual(response.body.data.cache.vary_by, ["tenant", "user", "roles", "permissions", "modules"]);
+    assert.match(response.body.data.cache.cache_key, /^mobile-bootstrap:2026-06-14\.b098a:tenant:/);
     assert.equal(response.body.data.tenant.id, seed.tenantA.id);
     assert.equal(response.body.data.tenant.name, "Mobile Tenant A");
     assert.equal(response.body.data.user.id, seed.adminA.id);
@@ -34,6 +44,23 @@ test("mobile bootstrap returns tenant-scoped contract and ignores requested tena
     assert.equal(response.body.data.permissions.includes("work_orders:read"), true);
     assert.equal(response.body.data.modules.some((item: { key: string; enabled: boolean }) => item.key === "mobile" && item.enabled), true);
     assert.equal(response.body.data.modules.some((item: { key: string }) => item.key === "expense_management"), true);
+    assert.equal(response.body.data.feature_flags.mobile_bootstrap_expanded.enabled, true);
+    assert.equal(response.body.data.feature_flags.mobile_bootstrap_expanded.status, "implemented");
+    assert.equal(response.body.data.feature_flags.work_order_sync.enabled, false);
+    assert.equal(response.body.data.feature_flags.work_order_sync.status, "planned");
+    assert.equal(response.body.data.feature_flags.inventory_mobile.status, "planned");
+    assert.equal(response.body.data.mobile_policy.auth.bearer_required, true);
+    assert.equal(response.body.data.mobile_policy.auth.tenant_source, "authenticated_actor");
+    assert.equal(response.body.data.mobile_policy.sync.actions_enabled, false);
+    assert.deepEqual(response.body.data.mobile_policy.sync.implemented_domains, ["expenses"]);
+    assert.deepEqual(response.body.data.mobile_policy.sync.planned_domains, ["work_orders", "checklists", "inventory"]);
+    assert.equal(response.body.data.catalogs.version, "mobile-catalogs:v1");
+    assert.equal(response.body.data.catalogs.modules.status, "implemented");
+    assert.equal(response.body.data.catalogs.permissions.status, "implemented");
+    assert.equal(response.body.data.catalogs.expense_categories.status, "implemented");
+    assert.equal(response.body.data.catalogs.endpoints.status, "partial");
+    assert.equal(findCatalogEndpoint(response.body, "expense_sync").status, "implemented");
+    assert.equal(findCatalogEndpoint(response.body, "work_order_sync").status, "planned");
     assert.equal(response.body.data.expenseCategories.length > 0, true);
     assert.equal(response.body.data.sync.workOrdersCursor, null);
     assert.equal(response.body.data.sync.checklistsCursor, null);
@@ -41,6 +68,24 @@ test("mobile bootstrap returns tenant-scoped contract and ignores requested tena
     assert.equal(response.body.data.sync.inventoryCursor, null);
     assert.equal(Number.isNaN(Date.parse(response.body.data.serverTime)), false);
     assert.equal(JSON.stringify(response.body).includes(seed.tenantB.id), false);
+    assertNoStackTrace(response.body);
+  });
+});
+
+test("mobile bootstrap marks unavailable catalogs when the actor lacks expense permission", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const response = await requestJson(baseUrl, "/api/v1/mobile/bootstrap", {
+      headers: authHeaders(seed.tenantA, seed.adminA, "viewer"),
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.body.data.roles, ["viewer"]);
+    assert.equal(response.body.data.expenseCategories.length, 0);
+    assert.equal(response.body.data.feature_flags.expense_management.enabled, false);
+    assert.equal(response.body.data.feature_flags.expense_management.status, "implemented");
+    assert.equal(response.body.data.catalogs.expense_categories.status, "unavailable");
+    assert.equal(response.body.data.catalogs.expense_categories.reason, "permission_required");
+    assert.deepEqual(response.body.data.catalogs.expense_categories.items, []);
     assertNoStackTrace(response.body);
   });
 });
@@ -243,6 +288,17 @@ function assertNoStackTrace(body: unknown): void {
   assert.equal(serialized.includes("stack"), false);
   assert.equal(serialized.includes("node_modules"), false);
   assert.equal(serialized.includes("at "), false);
+}
+
+function findCatalogEndpoint(
+  body: { readonly data: { readonly catalogs: { readonly endpoints: { readonly items: readonly Array<{ readonly key: string; readonly status: string }> } } } },
+  key: string,
+) {
+  const endpoint = body.data.catalogs.endpoints.items.find((item) => item.key === key);
+
+  assert.notEqual(endpoint, undefined);
+
+  return endpoint as { readonly key: string; readonly status: string };
 }
 
 async function getBaseUrl(server: Server): Promise<string> {

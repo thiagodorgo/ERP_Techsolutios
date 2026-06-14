@@ -6,7 +6,59 @@ O backend atual usa o prefixo `/api/v1`. Os contratos abaixo documentam o bounda
 
 O contrato consolidado para o MVP mobile esta em `docs/mobile-backend-contract-readiness.md`.
 
-`GET /api/v1/mobile/bootstrap` esta implementado como bootstrap minimo para o app Flutter: retorna tenant ativo, usuario, roles, permissoes, modulos habilitados, categorias de despesas quando permitidas, horario do servidor e cursores nulos de sync. O endpoint ignora `tenantId` vindo de query/body e usa apenas o tenant do ator autenticado.
+`GET /api/v1/mobile/bootstrap` esta implementado como bootstrap expandido para o app Flutter: retorna o contrato minimo anterior e adiciona versao do contrato, versao minima/recomendada do app mobile, metadados de cache/TTL, `feature_flags`, `mobile_policy` e `catalogs` versionados. O endpoint ignora `tenantId` vindo de query/body e usa apenas o tenant do ator autenticado.
+
+Blocos principais da resposta:
+
+```json
+{
+  "data": {
+    "contract": {
+      "name": "mobile_bootstrap",
+      "version": "2026-06-14.b098a",
+      "schemaVersion": 2,
+      "status": "expanded",
+      "generatedAt": "2026-06-14T12:00:00.000Z"
+    },
+    "mobile_app": {
+      "platform": "flutter",
+      "min_supported_version": "0.1.0",
+      "recommended_version": "0.1.0",
+      "bootstrap_contract_version": "2026-06-14.b098a"
+    },
+    "cache": {
+      "ttl_seconds": 300,
+      "stale_while_revalidate_seconds": 900,
+      "generated_at": "2026-06-14T12:00:00.000Z",
+      "expires_at": "2026-06-14T12:05:00.000Z",
+      "cache_key": "mobile-bootstrap:2026-06-14.b098a:tenant:tenant-id:user:user-id",
+      "vary_by": ["tenant", "user", "roles", "permissions", "modules"]
+    },
+    "feature_flags": {
+      "expense_sync": { "enabled": true, "status": "implemented" },
+      "work_order_sync": { "enabled": false, "status": "planned", "reason": "planned_for_b098b" }
+    },
+    "mobile_policy": {
+      "auth": { "bearer_required": true, "tenant_source": "authenticated_actor" },
+      "sync": { "actions_enabled": false, "implemented_domains": ["expenses"] }
+    },
+    "catalogs": {
+      "version": "mobile-catalogs:v1",
+      "modules": { "status": "implemented", "items": [] },
+      "permissions": { "status": "implemented", "items": [] },
+      "expense_categories": { "status": "implemented", "items": [] },
+      "endpoints": { "status": "partial", "items": [] }
+    }
+  }
+}
+```
+
+Valores de `status` em blocos versionados:
+
+- `implemented`: contrato disponivel para consumo controlado;
+- `planned`: contrato documentado, mas nao implementado nesta fase;
+- `unavailable`: indisponivel para o ator atual por modulo/permissao/contexto;
+- `partial`: familia de contratos com parte implementada e parte planejada.
 
 Endpoints planejados de sync mobile que ainda nao existem, como `/api/v1/mobile/sync/work-order-actions`, `/api/v1/mobile/sync/checklist-actions` e `/api/v1/mobile/inventory/items`, retornam 404 JSON estavel sob `/api/v1`:
 

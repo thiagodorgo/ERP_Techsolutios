@@ -2616,3 +2616,25 @@ B-098 consolidou a prontidao minima do backend para o MVP mobile sem alterar Flu
 - Inventario mobile real
 - Evidencias genericas/OS
 - Bootstrap expandido com catalogos versionados, feature flags e policy mobile completa
+
+## Atualizacao 2026-06-14 - B-098A Mobile Bootstrap Expanded Contract
+
+### Status
+
+B-098A expandiu o bootstrap mobile sem alterar Flutter. O backend agora retorna blocos cacheaveis e versionados para o app decidir inicializacao, cache e disponibilidade de capacidades.
+
+### Pronto para consumo controlado
+
+- `contract` com versao `2026-06-14.b098a` e `schemaVersion=2`
+- `mobile_app` com versao minima/recomendada
+- `cache` com TTL, stale-while-revalidate, `expires_at`, `cache_key` e `vary_by`
+- `feature_flags` por capacidade
+- `mobile_policy` para auth, cache, sync, evidencia e diagnostico
+- `catalogs` de modulos, permissoes, categorias de despesas e endpoints
+
+### Ainda nao pronto
+
+- `POST /api/v1/mobile/sync/work-order-actions`
+- replay offline de checklists
+- inventario mobile real
+- evidencia generica/OS

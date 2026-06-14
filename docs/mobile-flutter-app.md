@@ -35,11 +35,20 @@ O primeiro caminho versionado nesta fase e `mobile/flutter_app`, porque nao havi
 - categorias e politicas de despesas;
 - versoes de catalogos para cache e sync.
 
-### Status backend B-098
+### Status backend B-098A
 
-`GET /api/v1/mobile/bootstrap` ja existe no backend como contrato minimo. Ele retorna tenant ativo, usuario, roles, permissoes, modulos habilitados, categorias de despesas quando o ator tem permissao relacionada a despesas, `serverTime` e cursores nulos de sync.
+`GET /api/v1/mobile/bootstrap` ja existe no backend como contrato expandido e cacheavel. Ele preserva tenant ativo, usuario, roles, permissoes, modulos habilitados, categorias de despesas quando o ator tem permissao relacionada a despesas, `serverTime` e cursores nulos de sync.
 
-Ainda nao ha bootstrap expandido com todos os catalogos versionados, `feature_flags`, `mobile_policy` completo ou tenants disponiveis. Esses itens ficam para B-098A.
+Blocos adicionais disponiveis para o Flutter:
+
+- `contract`: nome, versao `2026-06-14.b098a`, `schemaVersion` e horario de geracao.
+- `mobile_app`: plataforma Flutter, versao minima suportada, versao recomendada e versao do contrato.
+- `cache`: TTL de 300 segundos, `stale_while_revalidate_seconds` de 900 segundos, `expires_at`, `cache_key` e `vary_by`.
+- `feature_flags`: chaves por capacidade, com `enabled`, `status` e `reason` quando aplicavel.
+- `mobile_policy`: regras de auth, cache, sync, evidencias e diagnostico seguro.
+- `catalogs`: modulos, permissoes, categorias de despesas e endpoints com versoes e status.
+
+Ainda nao ha tenants disponiveis, sync offline de OS/checklist/inventario nem upload generico de evidencia de OS. Esses itens ficam para B-098B e fases seguintes.
 
 ## Estrutura inicial
 

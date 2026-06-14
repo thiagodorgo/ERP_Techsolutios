@@ -2673,3 +2673,21 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - sync mobile de OS, checklist e inventario ainda planejado
 - evidencia generica/OS ainda planejada
 - bootstrap expandido com catalogos versionados e feature flags ainda planejado
+
+## 2026-06-14 - B-098A Mobile Bootstrap Expanded Contract
+
+### Implementado
+
+- branch: `feature/mobile-bootstrap-expanded-contract`
+- base: `main` apos merge do PR #79
+- `GET /api/v1/mobile/bootstrap` expandido mantendo campos minimos anteriores
+- adicionados `contract`, `mobile_app`, `cache`, `feature_flags`, `mobile_policy` e `catalogs`
+- catalogos diferenciam `implemented`, `planned`, `unavailable` e `partial`
+- testes de contrato mobile cobrem sucesso, ausencia de contexto/permissao e estabilidade de 404 JSON
+
+### Escopo preservado
+
+- `mobile/flutter_app/**` nao foi alterado
+- nenhum comando Flutter foi executado
+- sem Figma, secrets, `.env`, migrations ou infra
+- sync de OS nao foi implementado; permanece para B-098B
