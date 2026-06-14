@@ -2,7 +2,7 @@
 
 ## Decisao central
 
-Gestao de Despesas e um modulo oficial do ERP Techsolutions. A chave tecnica do modulo e `expense_management`, GDV permanece apenas como alias historico e RDV e o documento/relatorio gerado pelo fluxo.
+Gestao de Despesas e um modulo oficial do ERP Techsolutions. A chave tecnica do modulo e `expense_management`, Gestor de Despezas (GD) permanece apenas como alias historico e Prestação de Contas e o documento/relatorio gerado pelo fluxo.
 
 O modulo deve operar dentro do ERP SaaS multi-tenant, com backend autorizando todas as acoes por `tenant_id`, papel, permissao e modulo habilitado. O app Flutter deve ser um app tudo-em-um: o binario pode conter varios modulos, mas o login/bootstrap habilita somente o que o tenant, o plano, o papel e as permissoes permitem.
 
@@ -10,7 +10,7 @@ O modulo deve operar dentro do ERP SaaS multi-tenant, com backend autorizando to
 
 Dentro do escopo:
 
-- planejamento profissional de Gestao de Despesas/RDV;
+- planejamento profissional de Gestao de Despesas/Prestação de Contas;
 - contratos mobile/backend e eventos assincronos;
 - fundacao Flutter modular e local-first;
 - modelos e servicos testaveis para calculo, politica, permissao, modulo e sync;
@@ -34,16 +34,16 @@ Comissoes ficam em stand-by. Gestao de Despesas nao deve acoplar diretamente ao 
 
 ## Modelo de dominio
 
-- `ExpenseReport`: agrupador do RDV, com funcionario, tenant, periodo, origem, obra/projeto, OS ou centro de custo.
+- `ExpenseReport`: agrupador da Prestação de Contas, com funcionario, tenant, periodo, origem, obra/projeto, OS ou centro de custo.
 - `ExpenseItem`: linha de despesa com categoria, data, cidade, estabelecimento, valor, moeda, observacao, recibos e flags de politica.
 - `Receipt`: evidencia anexada com imagem/PDF, hash, OCR extraido, confianca, origem local/servidor e status de upload.
-- `ExpenseAdvance`: adiantamento concedido ao funcionario e abatido contra o total do RDV.
+- `ExpenseAdvance`: adiantamento concedido ao funcionario e abatido contra o total da Prestação de Contas.
 - `ExpensePolicy`: regra tenant-scoped com limites, categorias permitidas, exigencia de recibo, aprovacao e excecoes.
 - `PolicyViolation`: alerta ou bloqueio gerado pela avaliacao de politica.
 - `ApprovalStep`: etapa manager/finance com decisao, ator, motivo e trilha imutavel.
 - `AuditEvent`: evento de criacao, edicao, OCR, submissao, aprovacao, rejeicao, pagamento e sincronizacao.
 
-## Status do RDV
+## Status da Prestação de Contas
 
 - `draft`: relatorio local ou servidor ainda editavel.
 - `sync_pending`: existe alteracao local ainda nao enviada.
@@ -60,9 +60,9 @@ Comissoes ficam em stand-by. Gestao de Despesas nao deve acoplar diretamente ao 
 
 ## Cenarios operacionais
 
-### CEN-001 - Tecnico em campo cria RDV offline
+### CEN-001 - Tecnico em campo cria Prestação de Contas offline
 
-O tecnico esta sem internet, cria um RDV, adiciona item e recibo, roda OCR local, revisa os campos sugeridos, corrige o que for necessario e salva localmente. A acao entra como pendente de sync e nenhum dado e perdido ao fechar o app.
+O tecnico esta sem internet, cria uma Prestação de Contas, adiciona item e recibo, roda OCR local, revisa os campos sugeridos, corrige o que for necessario e salva localmente. A acao entra como pendente de sync e nenhum dado e perdido ao fechar o app.
 
 ### CEN-002 - Tecnico volta online e sincroniza
 
@@ -70,7 +70,7 @@ O Sync Engine envia um lote com `client_action_id`. O backend valida tenant, per
 
 ### CEN-003 - Manager aprova operacionalmente
 
-O manager recebe pendencias, analisa o RDV e aprova, rejeita ou devolve. Devolucao e rejeicao exigem motivo obrigatorio e geram auditoria.
+O manager recebe pendencias, analisa a Prestação de Contas e aprova, rejeita ou devolve. Devolucao e rejeicao exigem motivo obrigatorio e geram auditoria.
 
 ### CEN-004 - Finance valida e agenda pagamento
 
@@ -86,11 +86,11 @@ Usuario troca de tenant, dados locais nao se misturam e modulos/permissoes mudam
 
 ### CEN-007 - Conflito local/remoto
 
-Um RDV editado localmente e devolvido remotamente entra em conflito explicito. O app mostra comparacao e decisao do usuario, sem sobrescrever ou descartar alteracao silenciosamente.
+Uma Prestação de Contas editado localmente e devolvido remotamente entra em conflito explicito. O app mostra comparacao e decisao do usuario, sem sobrescrever ou descartar alteracao silenciosamente.
 
-### CEN-008 - Policy alterada no meio do RDV
+### CEN-008 - Policy alterada no meio da Prestação de Contas
 
-RDV criado com `policy_version` A continua auditavel por essa versao. Novos RDVs usam `policy_version` B apos alteracao pelo tenant admin.
+Prestação de Contas criada com `policy_version` A continua auditavel por essa versao. Novas Prestações de Contas usam `policy_version` B apos alteracao pelo tenant admin.
 
 ### CEN-009 - Sem permissao
 
@@ -105,8 +105,8 @@ Support/admin visualiza fila, ultimo sync, versao, tenant e logs sanitizados. Re
 - RF-001: modulo habilitavel por tenant, plano, papel e permissao.
 - RF-002: bootstrap mobile retorna tenants, modulos, permissoes, flags, politicas e catalogos.
 - RF-003: login estabelece sessao e tenant context.
-- RF-004: criar RDV offline.
-- RF-005: editar RDV em `draft` ou `returned`.
+- RF-004: criar Prestação de Contas offline.
+- RF-005: editar Prestação de Contas em `draft` ou `returned`.
 - RF-006: adicionar item de despesa.
 - RF-007: anexar recibo.
 - RF-008: executar OCR local quando disponivel.
@@ -115,7 +115,7 @@ Support/admin visualiza fila, ultimo sync, versao, tenant e logs sanitizados. Re
 - RF-011: registrar adiantamento.
 - RF-012: calcular A Receber, A Devolver ou Sem diferenca.
 - RF-013: aplicar policy engine local.
-- RF-014: submeter RDV.
+- RF-014: submeter Prestação de Contas.
 - RF-015: aprovar operacionalmente como manager.
 - RF-016: validar financeiramente.
 - RF-017: devolver ou rejeitar com motivo obrigatorio.
@@ -148,11 +148,11 @@ Support/admin visualiza fila, ultimo sync, versao, tenant e logs sanitizados. Re
 
 ## RBAC inicial
 
-- `expense_report:create`: cria RDV proprio.
-- `expense_report:read`: le RDVs permitidos.
-- `expense_report:read_all`: le RDVs do tenant conforme papel.
-- `expense_report:update`: edita RDV permitido.
-- `expense_report:submit`: submete RDV.
+- `expense_report:create`: cria Prestação de Contas própria.
+- `expense_report:read`: le Prestações de Contas permitidas.
+- `expense_report:read_all`: le Prestações de Contas do tenant conforme papel.
+- `expense_report:update`: edita Prestação de Contas permitida.
+- `expense_report:submit`: submete Prestação de Contas.
 - `expense_report:approve_operational`: aprova como manager.
 - `expense_report:approve_finance`: valida como finance.
 - `expense_report:return`: devolve para correcao.
@@ -167,10 +167,10 @@ Support/admin visualiza fila, ultimo sync, versao, tenant e logs sanitizados. Re
 ## Plano de testes
 
 - Unit tests: calculos, policy engine, permission resolver, module resolver e sync action factory.
-- Widget tests: home modular, permissoes, lista/detalhe RDV e banners de politica.
+- Widget tests: home modular, permissoes, lista/detalhe Prestação de Contas e banners de politica.
 - Repository tests: isolamento por tenant e persistencia local futura.
 - Sync tests: fila, replay idempotente, retry, conflito e sucesso.
-- Offline tests: criar RDV, anexar recibo e fechar/reabrir app sem perda.
+- Offline tests: criar Prestação de Contas, anexar recibo e fechar/reabrir app sem perda.
 - Permission tests: acao escondida no app e bloqueada no backend.
 - Tenant isolation tests: nenhum dado local ou remoto mistura tenants.
 - Contract tests: payloads de bootstrap, sync e workflow.
@@ -183,21 +183,21 @@ Support/admin visualiza fila, ultimo sync, versao, tenant e logs sanitizados. Re
 2. Criar fundacao Flutter em `mobile/flutter_app`.
 3. Implementar app shell, module resolver, permission resolver e mocks locais.
 4. Implementar modelos Dart e servicos testaveis.
-5. Implementar UI funcional minima para RDV.
+5. Implementar UI funcional minima para Prestação de Contas.
 6. Implementar sync local-first minimo com fila e idempotencia.
 7. Integrar backend real em PRs posteriores.
 8. Adicionar OCR, PDF, camera e storage seguro em blocos separados.
 
-## Backend Foundation - GDV-002
+## Backend Foundation - GD-002
 
-GDV-002 transforma a fundacao documental/mobile em backend inicial real para `expense_management`, mantendo o modulo tenant-scoped, RBAC-driven, auditavel e preparado para sync mobile idempotente.
+GD-002 transforma a fundacao documental/mobile em backend inicial real para `expense_management`, mantendo o modulo tenant-scoped, RBAC-driven, auditavel e preparado para sync mobile idempotente.
 
 ### Entidades iniciais
 
-- `expense_reports`: RDV principal com funcionario, periodo, origem, OS/projeto/centro de custo opcionais, cidade, valores, moeda, `policy_version`, criador e timestamps de submissao.
-- `expense_items`: itens do RDV com categoria, data, cidade, fornecedor, valor, moeda, quilometragem opcional, notas e flags de politica.
+- `expense_reports`: Prestação de Contas principal com funcionario, periodo, origem, OS/projeto/centro de custo opcionais, cidade, valores, moeda, `policy_version`, criador e timestamps de submissao.
+- `expense_items`: itens da Prestação de Contas com categoria, data, cidade, fornecedor, valor, moeda, quilometragem opcional, notas e flags de politica.
 - `expense_receipts`: metadados de recibos, hash local, mime type, OCR revisado/futuro, confianca e status de upload.
-- `expense_advances`: adiantamentos vinculaveis a funcionario/RDV em fase futura; nesta fundacao o valor agregado fica em `expense_reports.advance_amount`.
+- `expense_advances`: adiantamentos vinculaveis a funcionario/Prestação de Contas em fase futura; nesta fundacao o valor agregado fica em `expense_reports.advance_amount`.
 - `expense_policies`: politicas versionadas com regras de categoria, limites, aprovacao e recibos.
 - `expense_approval_steps`: trilha de decisoes manager/finance.
 - `expense_events`: eventos auditaveis tenant-scoped com hash de payload sanitizado.

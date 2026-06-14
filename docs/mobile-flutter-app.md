@@ -18,7 +18,7 @@ O primeiro caminho versionado nesta fase e `mobile/flutter_app`, porque nao havi
 - Evidence Engine: recibos, fotos, hashes, retencao e upload futuro.
 - OCR Engine: extracao local planejada de dados de recibos.
 - PDF Engine: previa local com marca d'agua quando nao sincronizado.
-- Expense Module: RDV, itens, totais, politica, submissao e status.
+- Expense Module: Prestação de Contas, itens, totais, politica, submissao e status.
 - Field Ops Module: OS, checklists, GPS e evidencias em fases futuras.
 - Diagnostics: fila, ultimo sync, versao, tenant e logs sanitizados.
 
@@ -88,8 +88,8 @@ OCR, PDF, camera e upload real ficam documentados, mas fora da primeira fundacao
 1. Login/Dev Session simples.
 2. Home modular por tenant/modulos/permissoes.
 3. Gestao de Despesas - lista.
-4. Novo RDV.
-5. Detalhe RDV.
+4. Nova Prestação de Contas.
+5. Detalhe Prestação de Contas.
 6. Adicionar item.
 7. Resumo para envio.
 8. Diagnostico de sync.
@@ -98,7 +98,7 @@ OCR, PDF, camera e upload real ficam documentados, mas fora da primeira fundacao
 
 - Home mostra `expense_management` quando modulo e permissao existem.
 - Home nao mostra modulo sem permissao.
-- RDV calcula total e diferenca de adiantamento.
+- Prestação de Contas calcula total e diferenca de adiantamento.
 - Violacao de politica aparece para recibo obrigatorio ou limite excedido.
 - Sync status aparece no diagnostico.
 - `tenant_id` e obrigatorio nas acoes locais.

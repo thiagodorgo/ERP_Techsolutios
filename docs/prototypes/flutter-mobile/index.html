@@ -3,291 +3,1620 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ERP Techsolutions - Flutter Mobile UX Proposals</title>
+  <title>ERP Techsolutions — Flutter Mobile UX Proposals</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="page-header">
-    <div>
-      <p class="eyebrow">B-076 proposta estatica</p>
-      <h1>Flutter Mobile UX</h1>
-      <p class="summary">Fluxo mobile-first para operacao de campo, tenant ativo, permissoes, evidencias, despesas e sincronizacao offline.</p>
+
+<!-- ══════════════════════════════════════════
+     Lucide icon symbols  (src/config/icons.tsx)
+     stroke="currentColor" fill="none"
+     ══════════════════════════════════════════ -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <!-- Home -->
+  <symbol id="ico-home" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+    <polyline points="9 22 9 12 15 12 15 22"/>
+  </symbol>
+  <!-- ClipboardList (OS) -->
+  <symbol id="ico-os" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect width="8" height="4" x="8" y="2" rx="1"/>
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+    <path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>
+  </symbol>
+  <!-- MapPin (Mapa) -->
+  <symbol id="ico-map" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+    <circle cx="12" cy="10" r="3"/>
+  </symbol>
+  <!-- Package (Estoque) -->
+  <symbol id="ico-stock" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m7.5 4.27 9 5.15"/>
+    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+    <path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+  </symbol>
+  <!-- UserRound (Perfil) -->
+  <symbol id="ico-user" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="8" r="5"/>
+    <path d="M20 21a8 8 0 0 0-16 0"/>
+  </symbol>
+  <!-- ArrowLeft (Voltar) -->
+  <symbol id="ico-back" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+  </symbol>
+  <!-- Check -->
+  <symbol id="ico-check" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 6 9 17l-5-5"/>
+  </symbol>
+  <!-- Bell (Notificações) -->
+  <symbol id="ico-bell" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+  </symbol>
+  <!-- X (Fechar) -->
+  <symbol id="ico-close" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+  </symbol>
+  <!-- Plus (Adicionar) -->
+  <symbol id="ico-plus" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 12h14"/><path d="M12 5v14"/>
+  </symbol>
+  <!-- BadgeCheck (Aprovações) -->
+  <symbol id="ico-approve" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>
+    <path d="m9 12 2 2 4-4"/>
+  </symbol>
+  <!-- Maximize2 (fullscreen) -->
+  <symbol id="ico-fullscreen" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+    <path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+  </symbol>
+  <!-- Wifi (sync) -->
+  <symbol id="ico-wifi" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+    <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor"/>
+  </symbol>
+  <!-- ShieldCheck (Permissões) -->
+  <symbol id="ico-shield" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    <path d="m9 12 2 2 4-4"/>
+  </symbol>
+  <!-- CircleDollarSign (Prestação de Contas / Financeiro) -->
+  <symbol id="ico-pc" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
+    <path d="M12 18V6"/>
+  </symbol>
+  <!-- Truck (campo Veículo) -->
+  <symbol id="ico-truck" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
+    <rect width="7" height="7" x="14" y="10" rx="1"/>
+    <circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>
+  </symbol>
+  <!-- Scan / QR frame -->
+  <symbol id="ico-scan" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+    <rect x="8" y="8" width="8" height="8" rx="1"/>
+  </symbol>
+  <!-- Barcode -->
+  <symbol id="ico-barcode" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 5v14M7 5v14M11 5v14M15 5v10M19 5v14M23 5v14"/>
+    <path d="M15 17h4" stroke-width="3" stroke-linecap="round"/>
+  </symbol>
+  <!-- Entrada (arrow down into box) -->
+  <symbol id="ico-entrada" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3v12M8 11l4 4 4-4"/>
+    <path d="M3 17v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2"/>
+  </symbol>
+  <!-- Saída (arrow up out of box) -->
+  <symbol id="ico-saida" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 21V9M8 13l4-4 4 4"/>
+    <path d="M3 17v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2"/>
+  </symbol>
+  <!-- Câmera -->
+  <symbol id="ico-camera" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+    <circle cx="12" cy="13" r="4"/>
+  </symbol>
+  <!-- Logout -->
+  <symbol id="ico-logout" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+    <polyline points="16 17 21 12 16 7"/>
+    <line x1="21" y1="12" x2="9" y2="12"/>
+  </symbol>
+</svg>
+
+<header class="page-header">
+  <div>
+    <span class="eyebrow">B-076 · Proposta UX Mobile · Figma ERP Techsolutions</span>
+    <h1>Flutter Mobile UX</h1>
+    <p class="sub">19 telas mobile-first — operação de campo, Prestação de Contas/despesas, sync offline e permissões por papel.</p>
+  </div>
+  <nav class="screen-nav" aria-label="Navegar telas">
+    <a href="#login">M01 Login</a>
+    <a href="#home">M02 Home</a>
+    <a href="#wo-list">M03 OS Lista</a>
+    <a href="#wo-detail">M04 OS Detalhe</a>
+    <a href="#checklist">M10 Checklist</a>
+    <a href="#entrega">M11 Entrega</a>
+    <a href="#evidence">M12 Evidência</a>
+    <a href="#new-os">M05 Nova OS</a>
+    <a href="#map">M09 Mapa</a>
+    <a href="#notifications">M07 Notificações</a>
+    <a href="#sync">Sincronização</a>
+    <a href="#approvals">M06 Aprovações</a>
+    <a href="#inventory">M08 Estoque</a>
+    <a href="#stock-entry">M08-A Entrada</a>
+    <a href="#stock-exit">M08-B Saída</a>
+    <a href="#PC-list">Despesas · Lista</a>
+    <a href="#PC-new">Despesas · Novo</a>
+    <a href="#PC-detail">Despesas · Detalhe</a>
+    <a href="#PC-item">Despesas · Novo Item</a>
+    <a href="#PC-submit">Despesas · Enviar</a>
+    <a href="#profile">Perfil</a>
+  </nav>
+</header>
+
+<main class="gallery">
+
+<!-- ════════════════════════════════════════
+     M01 · LOGIN
+     ════════════════════════════════════════ -->
+<section class="phone" id="login" aria-label="Login">
+  <div class="status-bar light"><span>9:41</span>
+    <span class="si">
+      <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor">
+        <rect x="0" y="4" width="3" height="7" rx="1" opacity=".3"/>
+        <rect x="4" y="2.5" width="3" height="8.5" rx="1" opacity=".5"/>
+        <rect x="8" y="1" width="3" height="10" rx="1" opacity=".75"/>
+        <rect x="12" y="0" width="3" height="11" rx="1"/>
+      </svg>
+      <svg width="20" height="11" viewBox="0 0 20 11" fill="none">
+        <rect x=".5" y=".5" width="17" height="10" rx="3" stroke="currentColor" opacity=".45"/>
+        <rect x="2" y="2" width="12" height="7" rx="1.5" fill="currentColor"/>
+        <path d="M19 3.5v4a1.5 1.5 0 000-4z" fill="currentColor" opacity=".35"/>
+      </svg>
+    </span>
+  </div>
+  <div class="screen">
+    <div class="lg-wrap">
+    <div class="lg-brand">
+      <svg class="lg-brand-svg" viewBox="0 0 1650 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="TechSolutions ERP Platform">
+        <defs>
+          <linearGradient id="lg-g1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#7BE084"/><stop offset=".50" stop-color="#45B66B"/><stop offset="1" stop-color="#1F6E69"/>
+          </linearGradient>
+          <linearGradient id="lg-g2" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#80E28A"/><stop offset=".55" stop-color="#49B96D"/><stop offset="1" stop-color="#1C6A66"/>
+          </linearGradient>
+          <linearGradient id="lg-g3" x1="0" y1="0" x2="1" y2=".35">
+            <stop offset="0" stop-color="#0B2337"/><stop offset=".52" stop-color="#071A2A"/><stop offset="1" stop-color="#00101D"/>
+          </linearGradient>
+          <linearGradient id="lg-g4" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#72957F"/><stop offset="1" stop-color="#2F6E62"/>
+          </linearGradient>
+          <filter id="lg-f1" x="-12%" y="-40%" width="130%" height="190%">
+            <feDropShadow dx="4" dy="5" stdDeviation=".9" flood-color="#00101D" flood-opacity=".23"/>
+            <feDropShadow dx="1" dy="1.3" stdDeviation=".55" flood-color="#FFF" flood-opacity=".22"/>
+          </filter>
+          <filter id="lg-f2" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="5" dy="7" stdDeviation="1.8" flood-color="#00101D" flood-opacity=".17"/>
+            <feDropShadow dx="-1.7" dy="-1.7" stdDeviation=".9" flood-color="#FFF" flood-opacity=".20"/>
+          </filter>
+        </defs>
+        <g transform="translate(98 88) scale(0.68)" filter="url(#lg-f2)">
+          <circle cx="256" cy="256" r="178" fill="none" stroke="url(#lg-g2)" stroke-width="18"/>
+          <circle cx="256" cy="256" r="158" fill="none" stroke="#FFF" stroke-opacity=".22" stroke-width="2.4"/>
+          <path d="M256 414C256 356 256 302 256 248C256 229 264 213 278 202" fill="none" stroke="url(#lg-g1)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M247 253C190 254 144 221 128 166C189 160 236 183 264 232C269 241 261 253 247 253Z" fill="url(#lg-g1)"/>
+          <path d="M278 199C291 127 348 84 407 89C402 160 350 218 285 238C271 242 267 221 278 199Z" fill="url(#lg-g1)"/>
+          <path d="M300 192C326 161 350 134 379 107" fill="none" stroke="#FFF" stroke-opacity=".70" stroke-width="8" stroke-linecap="round"/>
+          <path d="M224 224C198 208 176 190 158 170" fill="none" stroke="#FFF" stroke-opacity=".28" stroke-width="5" stroke-linecap="round"/>
+        </g>
+        <g font-family="Inter,Montserrat,Poppins,Segoe UI,Arial,sans-serif" font-weight="800" font-size="142" letter-spacing="-2.1">
+          <text x="463" y="271" fill="#00101D" opacity=".12">TechSolutions</text>
+          <text x="460" y="268" fill="#00101D" opacity=".17">TechSolutions</text>
+          <text x="457.5" y="265.5" fill="#0A273B" opacity=".21">TechSolutions</text>
+          <text x="455" y="263" fill="url(#lg-g3)" stroke="#173348" stroke-width=".85" paint-order="stroke fill" filter="url(#lg-f1)">TechSolutions</text>
+        </g>
+        <g font-family="Inter,Montserrat,Poppins,Segoe UI,Arial,sans-serif" font-weight="500" font-size="45" letter-spacing="24">
+          <text x="460" y="366" fill="#1A3F3B" opacity=".14">ERP Platform</text>
+          <text x="455" y="361" fill="url(#lg-g4)" stroke="#DAF7E5" stroke-opacity=".28" stroke-width=".65" paint-order="stroke fill">ERP Platform</text>
+        </g>
+      </svg>
     </div>
-    <nav class="screen-nav" aria-label="Telas do prototipo">
-      <a href="#login">Login</a>
-      <a href="#home">Home</a>
-      <a href="#work-orders">OS</a>
-      <a href="#detail">Detalhe</a>
-      <a href="#checklist">Checklist</a>
-      <a href="#evidence">Evidencia</a>
-      <a href="#map">Mapa</a>
-      <a href="#sync">Sync</a>
-      <a href="#approvals">Aprovacoes</a>
-      <a href="#expenses">Despesas</a>
-      <a href="#inventory">Estoque</a>
-      <a href="#profile">Perfil</a>
+    <div class="lg-form">
+      <h2 class="lg-title">Entrar</h2>
+      <label class="lg-lbl">E-mail</label>
+      <input class="lg-inp" type="email" value="voce@empresa.com.br" aria-label="E-mail">
+      <label class="lg-lbl">Senha</label>
+      <input class="lg-inp" type="password" value="••••••••" aria-label="Senha">
+      <button class="lg-cta">Entrar</button>
+    </div>
+    <p class="lg-sec">
+      <svg width="11" height="13" viewBox="0 0 11 13" fill="none" style="vertical-align:-1px">
+        <rect x=".5" y="5.5" width="10" height="7" rx="1.5" stroke="currentColor" opacity=".5"/>
+        <path d="M3 5V3.5a2.5 2.5 0 015 0V5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
+      </svg>
+      Conexão segura · TLS 1.3
+    </p>
+    </div><!-- /.lg-wrap -->
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     M02 · HOME
+     ════════════════════════════════════════ -->
+<section class="phone" id="home" aria-label="Home">
+  <div class="status-bar blue-bar"><span>9:41</span>
+    <span class="si">
+      <svg width="20" height="11" viewBox="0 0 20 11" fill="none">
+        <rect x=".5" y=".5" width="17" height="10" rx="3" stroke="white" opacity=".6"/>
+        <rect x="2" y="2" width="13" height="7" rx="1.5" fill="white"/>
+      </svg>
+    </span>
+  </div>
+  <div class="screen">
+    <div class="home-bar">
+      <div>
+        <div class="home-greeting">Bom dia, Carla.</div>
+        <div class="home-role">Técnica de campo · Filial BH</div>
+      </div>
+      <div class="notif" style="position:relative" aria-label="3 notificações">
+        <svg width="18" height="18"><use href="#ico-bell"/></svg>
+        <span style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:var(--red);border-radius:50%;font-size:9px;font-weight:800;color:white;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--blue)">3</span>
+      </div>
+    </div>
+    <div class="sscroll">
+      <div class="stats">
+        <div class="stat b"><div class="n">3</div><div class="l">OS hoje</div></div>
+        <div class="stat g"><div class="n">1</div><div class="l">Concluídas</div></div>
+        <div class="stat y"><div class="n">2</div><div class="l">Pendentes</div></div>
+      </div>
+      <div class="sec">Próxima OS</div>
+      <div class="ucard">
+        <div class="crow"><span class="chip urg">URGENTE</span><span style="font-size:13px;color:var(--muted)">OS-2891</span></div>
+        <h3>Manutenção preventiva — Alfa Ltda</h3>
+        <p>Rua Augusta, 1200 · São Paulo SP</p>
+        <p class="sched">Agendado: 10:00 · Em 18 min</p>
+        <button class="btn-p sm">Navegar</button>
+      </div>
+      <div class="sec">Suas OS de hoje</div>
+      <div class="card by"><div class="crow"><span style="font-size:11px;color:var(--muted)">OS-2891</span><span class="chip y">Agendada</span></div><h3>Manutenção preventiva</h3><p>Indústria Alfa · Rua Augusta 1200</p><small>10:00</small></div>
+      <div class="card by"><div class="crow"><span style="font-size:11px;color:var(--muted)">OS-2892</span><span class="chip y">Agendada</span></div><h3>Instalação elétrica</h3><p>Beta Comércio SA · Av. Paulista 800</p><small>14:00</small></div>
+      <div class="card bg"><div class="crow"><span style="font-size:11px;color:var(--muted)">OS-2888</span><span class="chip g">Concluída</span></div><h3>Reparo hidráulico</h3><p>Gama Serviços ME · Rua da Paz 40</p><small>08:30</small></div>
+      <div class="sec">Ações rápidas</div>
+      <div class="qa">
+        <button style="background:#DBEAFE" aria-label="Nova OS"><svg width="22" height="22" style="color:#2563EB"><use href="#ico-plus"/></svg></button>
+        <button style="background:#D1FAE5" aria-label="Checklist"><svg width="22" height="22" style="color:#10B981"><use href="#ico-check"/></svg></button>
+        <button style="background:#FEF3C7" aria-label="Prestação de Contas"><svg width="22" height="22" style="color:#F59E0B"><use href="#ico-pc"/></svg></button>
+        <button style="background:#EDE9FE" aria-label="Notificações"><svg width="22" height="22" style="color:#8B5CF6"><use href="#ico-bell"/></svg></button>
+      </div>
+    </div>
+    <nav class="bnav">
+      <a class="on" href="#home"><svg width="22" height="22"><use href="#ico-home"/></svg>Home</a>
+      <a href="#wo-list"><svg width="22" height="22"><use href="#ico-os"/></svg>OS</a>
+      <a href="#map"><svg width="22" height="22"><use href="#ico-map"/></svg>Mapa</a>
+      <a href="#inventory"><svg width="22" height="22"><use href="#ico-stock"/></svg>Estoque</a>
+      <a href="#profile"><svg width="22" height="22"><use href="#ico-user"/></svg>Perfil</a>
     </nav>
-  </header>
+  </div>
+</section>
 
-  <main class="gallery">
-    <section class="phone" id="login" aria-labelledby="login-title">
-      <div class="status-bar"><span>08:10</span><span>4G 86%</span></div>
-      <div class="screen login-screen">
-        <div class="brand-block">
-          <span class="mark">ET</span>
-          <div>
-            <p class="eyebrow">ERP Techsolutions</p>
-            <h2 id="login-title">Entrar no app</h2>
+<!-- ════════════════════════════════════════
+     M03 · LISTA DE OS
+     ════════════════════════════════════════ -->
+<section class="phone" id="wo-list" aria-label="Lista OS">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar"><h2>Ordens de Serviço</h2><span style="color:var(--blue);font-size:14px;font-weight:700">+ Nova</span></div>
+    <div class="sscroll">
+      <div style="height:12px"></div>
+      <div class="tabs">
+        <button class="tab on">Todas</button><button class="tab">Agendadas</button>
+        <button class="tab">Em campo</button><button class="tab">Concluídas</button>
+      </div>
+      <input class="search" type="search" placeholder="Buscar OS, cliente ou endereço…">
+      <div class="card by"><div class="crow"><span style="font-size:11px;color:var(--muted)">OS-2891</span><span class="chip y">Agendada</span></div><h3>Manutenção preventiva</h3><p>Indústria Alfa Ltda</p><small>10:00</small></div>
+      <div class="card by"><div class="crow"><span style="font-size:11px;color:var(--muted)">OS-2892</span><span class="chip y">Agendada</span></div><h3>Instalação elétrica</h3><p>Beta Comércio SA</p><small>14:00</small></div>
+      <div class="card bb"><div class="crow"><span style="font-size:11px;color:var(--muted)">OS-2890</span><span class="chip b">Em campo</span></div><h3>Reparo emergencial</h3><p>Delta Tech S.A.</p><small>08:00</small></div>
+      <div class="card bg"><div class="crow"><span style="font-size:11px;color:var(--muted)">OS-2888</span><span class="chip g">Concluída</span></div><h3>Reparo hidráulico</h3><p>Gama Serviços ME</p><small>08:30</small></div>
+      <div class="card bg"><div class="crow"><span style="font-size:11px;color:var(--muted)">OS-2885</span><span class="chip g">Concluída</span></div><h3>Vistoria técnica</h3><p>Épsilon Ind.</p><small>Ontem</small></div>
+    </div>
+    <nav class="bnav">
+      <a href="#home"><svg width="22" height="22"><use href="#ico-home"/></svg>Home</a>
+      <a class="on" href="#wo-list"><svg width="22" height="22"><use href="#ico-os"/></svg>OS</a>
+      <a href="#map"><svg width="22" height="22"><use href="#ico-map"/></svg>Mapa</a>
+      <a href="#inventory"><svg width="22" height="22"><use href="#ico-stock"/></svg>Estoque</a>
+      <a href="#profile"><svg width="22" height="22"><use href="#ico-user"/></svg>Perfil</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     M04 · DETALHE OS
+     ════════════════════════════════════════ -->
+<section class="phone" id="wo-detail" aria-label="Detalhe OS">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar">
+      <div class="back"><svg width="20" height="20"><use href="#ico-back"/></svg>OS-2891</div>
+      <span class="act">Editar</span>
+    </div>
+    <div class="sscroll">
+      <div class="stepper">
+        <div class="step done"><div class="sdot"><svg width="12" height="12"><use href="#ico-check"/></svg></div><div class="sname">Início</div></div>
+        <div class="step done"><div class="sdot"><svg width="12" height="12"><use href="#ico-check"/></svg></div><div class="sname">Checklist</div></div>
+        <div class="step act"><div class="sdot">3</div><div class="sname">Execução</div></div>
+        <div class="step"><div class="sdot">4</div><div class="sname">Evidência</div></div>
+        <div class="step"><div class="sdot">5</div><div class="sname">Conclusão</div></div>
+      </div>
+      <div style="padding:12px 16px 8px;display:flex;gap:8px"><span class="chip b">Agendada</span><span class="chip urg">URGENTE</span></div>
+      <div class="icard">
+        <div class="irow"><span class="lbl">Endereço</span><span class="val">Rua Augusta, 1200 · SP</span></div>
+        <div class="irow"><span class="lbl">Agendado para</span><span class="val">28/05 às 10:00</span></div>
+        <div class="irow"><span class="lbl">Técnico</span><span class="val">Carla Mendes</span></div>
+        <div class="irow"><span class="lbl">Prioridade</span><span class="val">Alta</span></div>
+      </div>
+      <div style="padding:0 16px 12px"><button class="btn-p">Iniciar atendimento</button></div>
+      <div class="act-row">
+        <button class="btn-g">Checklist</button>
+        <button class="btn-o">Evidências</button>
+        <button class="btn-t">Concluir</button>
+      </div>
+      <div class="tl">
+        <h3>Histórico</h3>
+        <div class="tl-item"><div class="tl-dot g"></div><div><div class="tl-text">OS criada por Bruno Lima</div><div class="tl-date">27/05 16:30</div></div></div>
+        <div class="tl-item"><div class="tl-dot g"></div><div><div class="tl-text">Agendada para 28/05 10:00</div><div class="tl-date">27/05 17:00</div></div></div>
+        <div class="tl-item"><div class="tl-dot b"></div><div><div class="tl-text">Técnica designada: Carla Mendes</div><div class="tl-date">27/05 17:05</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     M10 · CHECKLIST COLETA  (veículo dinâmico)
+     ════════════════════════════════════════ -->
+<section class="phone" id="checklist" aria-label="Checklist Coleta">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar">
+      <div class="back"><svg width="18" height="18"><use href="#ico-back"/></svg>Checklist de Coleta</div>
+      <span class="chip b" style="font-size:10px">COLETA</span>
+    </div>
+    <div class="app-bar-sub">OS-2891 · Indústria Alfa Ltda</div>
+    <div class="sscroll">
+      <div class="stepper">
+        <div class="step done"><div class="sdot"><svg width="12" height="12"><use href="#ico-check"/></svg></div><div class="sname">Ident.</div></div>
+        <div class="step act"><div class="sdot">2</div><div class="sname">Vistoria</div></div>
+        <div class="step"><div class="sdot">3</div><div class="sname">Fotos</div></div>
+        <div class="step"><div class="sdot">4</div><div class="sname">Final</div></div>
+      </div>
+      <div class="banner y" style="margin-top:12px">
+        <p><strong>Atenção: 2 pendências</strong></p>
+        <small>Foto da avaria e item "Vidros e espelhos" bloqueiam a finalização.</small>
+      </div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Placa *</label><input class="fi" value="ABC-1D23"></div>
+        <div class="fg"><label class="fl">Odômetro *</label><input class="fi" value="58.421 km"></div>
+      </div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Combustível *</label><input class="fi" value="3/4"></div>
+        <div class="fg"><label class="fl">Responsável *</label><input class="fi" value="Marcos Pereira"></div>
+      </div>
+
+      <!-- Tipo de veículo — campo string -->
+      <div class="fg">
+        <label class="fl">Tipo de veículo *</label>
+        <select class="fi" id="vehicle-type-select" onchange="selectVehicleType(this.value)">
+          <option value="bus">Ônibus</option>
+          <option value="motorcycle">Motocicleta</option>
+          <option value="pickup">Picape</option>
+          <option value="sedan" selected>Sedan</option>
+          <option value="truck">Caminhão</option>
+          <option value="van">Van</option>
+        </select>
+      </div>
+
+      <!-- Seletor de vista — 4 ângulos do veículo -->
+      <div class="sec" style="padding-top:4px">Vista do veículo</div>
+      <div class="view-selector" id="view-selector-coleta">
+        <button class="vview-btn on" data-view="left" onclick="selectView('left',this,'coleta')" type="button">
+          <img src="../../../mobile/flutter_app/assets/images/sedan/sedan-left.png" class="vview-thumb" id="vs-coleta-left" alt="Esquerda">
+          <span>Esquerda</span>
+        </button>
+        <button class="vview-btn" data-view="right" onclick="selectView('right',this,'coleta')" type="button">
+          <img src="../../../mobile/flutter_app/assets/images/sedan/sedan-right.png" class="vview-thumb" id="vs-coleta-right" alt="Direita">
+          <span>Direita</span>
+        </button>
+        <button class="vview-btn" data-view="front" onclick="selectView('front',this,'coleta')" type="button">
+          <img src="../../../mobile/flutter_app/assets/images/sedan/sedan-front.png" class="vview-thumb" id="vs-coleta-front" alt="Frente">
+          <span>Frente</span>
+        </button>
+        <button class="vview-btn" data-view="back" onclick="selectView('back',this,'coleta')" type="button">
+          <img src="../../../mobile/flutter_app/assets/images/sedan/sedan-back.png" class="vview-thumb" id="vs-coleta-back" alt="Traseira">
+          <span>Traseira</span>
+        </button>
+      </div>
+
+      <!-- Mapa de avarias -->
+      <div class="vd-wrap" onclick="openVehicleDiagram()" style="cursor:pointer">
+        <div class="vd-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Mapa de avarias do veículo</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--blue);font-weight:600">
+            <svg width="13" height="13"><use href="#ico-fullscreen"/></svg> Ampliar
+          </span>
+        </div>
+        <div class="vdiag" id="vdiag-preview">
+          <img id="vdiag-img" src="../../../mobile/flutter_app/assets/images/sedan/sedan-left.png" class="vdiag-vehicle-img" alt="Mapa de avarias" draggable="false" onload="renderVdiagPins()">
+          <div id="vdiag-pins-preview"></div>
+          <div class="vdiag-tap">Toque para marcar avarias ↗</div>
+        </div>
+      </div>
+
+      <div class="sec" style="padding-top:4px">Avarias registradas</div>
+      <div class="card br" style="margin-bottom:8px">
+        <div class="crow"><span style="font-size:13px;font-weight:700">1 · Para-choque traseiro</span><span class="chip y">Média</span></div>
+        <p>Amassado visível. Exigir foto e observação antes da coleta.</p>
+      </div>
+      <div class="sec" style="padding-top:4px">Checklist obrigatório</div>
+      <div class="cl-wrap">
+        <div class="cl-item"><div class="cl-left"><div class="cbox on"></div><span style="font-size:13px">Documentação do veículo</span></div><span class="chip g">Ok</span></div>
+        <div class="cl-item"><div class="cl-left"><div class="cbox on"></div><span style="font-size:13px">Pneus e calibragem</span></div><span class="chip g">Ok</span></div>
+        <div class="cl-item"><div class="cl-left"><div class="cbox"></div><span style="font-size:13px">Vidros e espelhos</span></div><span class="chip y">Pendente</span></div>
+        <div class="cl-item"><div class="cl-left"><div class="cbox on"></div><span style="font-size:13px">Foto da placa registrada</span></div><span class="chip g">Ok</span></div>
+      </div>
+    </div>
+    <div class="btn-pair">
+      <button class="outline">Salvar</button>
+      <button class="disabled">Finalizar coleta</button>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     M11 · CHECKLIST DE ENTREGA/REBOQUE
+     ════════════════════════════════════════ -->
+<section class="phone" id="entrega" aria-label="Checklist Entrega">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar">
+      <div class="back"><svg width="18" height="18"><use href="#ico-back"/></svg>Checklist de Entrega</div>
+      <span class="chip g" style="font-size:10px">ENTREGA</span>
+    </div>
+    <div class="app-bar-sub">OS-2891 · Indústria Alfa Ltda</div>
+    <div class="sscroll">
+      <div class="stepper">
+        <div class="step done"><div class="sdot"><svg width="12" height="12"><use href="#ico-check"/></svg></div><div class="sname">Coleta</div></div>
+        <div class="step done"><div class="sdot"><svg width="12" height="12"><use href="#ico-check"/></svg></div><div class="sname">Entrega</div></div>
+        <div class="step act"><div class="sdot">3</div><div class="sname">Diverg.</div></div>
+        <div class="step"><div class="sdot">4</div><div class="sname">Aceite</div></div>
+      </div>
+      <div class="banner r" style="margin-top:12px">
+        <p><strong>Divergência encontrada</strong></p>
+        <small>Há uma avaria nova em relação à foto de coleta.</small>
+      </div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Placa conferida *</label><input class="fi" value="ABC-1D23"></div>
+        <div class="fg"><label class="fl">Odômetro entrega *</label><input class="fi" value="58.489 km"></div>
+      </div>
+
+      <!-- Seletor de vista — controla coleta e entrega simultaneamente -->
+      <div class="sec" style="padding-top:4px">Vista do veículo</div>
+      <div class="view-selector" id="view-selector-entrega">
+        <button class="vview-btn on" data-view="left" onclick="selectView('left',this,'entrega')" type="button">
+          <img src="../../../mobile/flutter_app/assets/images/sedan/sedan-left.png" class="vview-thumb" id="vs-entrega-left" alt="Esquerda">
+          <span>Esquerda</span>
+        </button>
+        <button class="vview-btn" data-view="right" onclick="selectView('right',this,'entrega')" type="button">
+          <img src="../../../mobile/flutter_app/assets/images/sedan/sedan-right.png" class="vview-thumb" id="vs-entrega-right" alt="Direita">
+          <span>Direita</span>
+        </button>
+        <button class="vview-btn" data-view="front" onclick="selectView('front',this,'entrega')" type="button">
+          <img src="../../../mobile/flutter_app/assets/images/sedan/sedan-front.png" class="vview-thumb" id="vs-entrega-front" alt="Frente">
+          <span>Frente</span>
+        </button>
+        <button class="vview-btn" data-view="back" onclick="selectView('back',this,'entrega')" type="button">
+          <img src="../../../mobile/flutter_app/assets/images/sedan/sedan-back.png" class="vview-thumb" id="vs-entrega-back" alt="Traseira">
+          <span>Traseira</span>
+        </button>
+      </div>
+
+      <!-- Comparativo de fotos — toque para fullscreen -->
+      <div class="sec" style="padding-top:4px">Comparativo por fotos</div>
+      <div style="padding:0 16px 6px;font-size:11px;color:var(--muted)">
+        <svg width="12" height="12" style="vertical-align:-1px"><use href="#ico-fullscreen"/></svg>
+        Toque nas fotos para ampliar
+      </div>
+      <div class="photo-compare">
+        <!-- COLETA — somente leitura -->
+        <div class="pcomp-box" onclick="openPhoto('coleta')">
+          <div class="pc-time">Chegada · 09:12</div>
+          <div class="pc-img">
+            <img id="thumb-coleta" src="../../../mobile/flutter_app/assets/images/sedan/sedan-left.png" class="pcomp-vehicle-img" alt="Foto coleta" draggable="false" onload="renderPhotoThumbPins()">
+            <div id="pins-thumb-coleta" class="pc-pins-overlay"></div>
           </div>
+          <span class="pc-badge sent">COLETA · somente leitura</span>
         </div>
-        <div class="context-panel">
-          <span class="label">Ambiente</span>
-          <strong>Tenant Demo</strong>
-          <small>Modulo mobile habilitado</small>
-        </div>
-        <label class="field">E-mail
-          <input value="tecnico@tenant.demo" aria-label="E-mail">
-        </label>
-        <label class="field">Senha
-          <input type="password" value="123456" aria-label="Senha">
-        </label>
-        <button class="primary">Entrar</button>
-        <button class="secondary">Suporte de acesso</button>
-      </div>
-    </section>
-
-    <section class="phone" id="home" aria-labelledby="home-title">
-      <div class="status-bar"><span>08:14</span><span>Online</span></div>
-      <div class="screen">
-        <div class="app-bar">
-          <div>
-            <span class="label">Tenant Demo</span>
-            <h2 id="home-title">Meu turno</h2>
+        <!-- ENTREGA — editável -->
+        <div class="pcomp-box danger" onclick="openPhoto('entrega')">
+          <div class="pc-time">Entrega · 17:48</div>
+          <div class="pc-img">
+            <img id="thumb-entrega" src="../../../mobile/flutter_app/assets/images/sedan/sedan-left.png" class="pcomp-vehicle-img" alt="Foto entrega" draggable="false" onload="renderPhotoThumbPins()">
+            <div id="pins-thumb-entrega" class="pc-pins-overlay"></div>
           </div>
-          <span class="avatar">FT</span>
+          <span class="pc-badge req">ENTREGA · marcar avaria</span>
         </div>
-        <div class="banner success">Sync em dia ha 2 min</div>
-        <article class="priority-card">
-          <span class="chip danger">SLA critico</span>
-          <h3>OS-1042 - Guincho leve</h3>
-          <p>Cliente a 3,4 km. Checklist de coleta pendente.</p>
-          <button class="primary compact">Continuar atendimento</button>
-        </article>
-        <div class="quick-grid">
-          <button>OS<br><strong>4</strong></button>
-          <button>Mapa<br><strong>2 rotas</strong></button>
-          <button>Evidencias<br><strong>3 pend.</strong></button>
-          <button>Sync<br><strong>0 erro</strong></button>
-        </div>
-        <nav class="bottom-nav">
-          <a class="active">Home</a><a>OS</a><a>Mapa</a><a>Sync</a>
-        </nav>
       </div>
-    </section>
 
-    <section class="phone" id="work-orders" aria-labelledby="wo-title">
-      <div class="status-bar"><span>08:18</span><span>Online</span></div>
-      <div class="screen">
-        <div class="app-bar"><h2 id="wo-title">Ordens de servico</h2><span class="badge">4</span></div>
-        <div class="filter-row">
-          <span class="chip active">Prioridade</span>
-          <span class="chip">Perto</span>
-          <span class="chip">Minhas</span>
+      <div class="banner r"><p><strong>Divergência detectada:</strong> nova marcação na lateral direita não existia na coleta. Foto e observação obrigatórias.</p></div>
+      <div class="sec" style="padding-top:4px">Decisão da divergência</div>
+      <div class="card br">
+        <div class="crow"><span style="font-size:14px;font-weight:700">Novo risco na lateral direita</span><span class="chip y">Aguardando aceite</span></div>
+        <p>O cliente precisa aceitar ou registrar contestação antes do comprovante.</p>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn-s sm" style="flex:1;padding:10px">Contestar</button>
+          <button class="btn-p sm" style="flex:1;padding:10px">Aceitar</button>
         </div>
-        <article class="list-card urgent">
-          <div><strong>OS-1042</strong><span class="chip danger">45 min</span></div>
-          <p>Troca emergencial - Av. Paulista, 1200</p>
-          <small>3,4 km · checklist M10</small>
-        </article>
-        <article class="list-card">
-          <div><strong>OS-1038</strong><span class="chip warning">Hoje</span></div>
-          <p>Instalacao tecnica - Centro</p>
-          <small>7,1 km · material reservado</small>
-        </article>
-        <article class="list-card blocked">
-          <div><strong>OS-1029</strong><span class="chip muted">Bloqueada</span></div>
-          <p>Aguardando aprovacao de material</p>
-          <small>Sem acao de campo liberada</small>
-        </article>
       </div>
-    </section>
+      <div class="sec" style="padding-top:4px">Fotos de entrega</div>
+      <div class="photo-grid">
+        <div class="pbox has"><div class="pi">📷</div><div class="pl" style="color:var(--green-d)">Ok</div></div>
+        <div class="pbox has"><div class="pi">📷</div><div class="pl" style="color:var(--green-d)">Ok</div></div>
+        <div class="pbox" style="border-color:var(--yellow);background:var(--yellow-l)"><div class="pi">📷</div><div class="pl" style="color:var(--yellow-d)">NOVO</div></div>
+        <div class="pbox has"><div class="pi">📷</div><div class="pl" style="color:var(--green-d)">Ok</div></div>
+      </div>
+      <div class="fg"><label class="fl">Observações de entrega *</label><textarea class="fta" rows="3">Novo risco identificado no destino. Aguardar aceite do cliente.</textarea></div>
+      <div class="sec" style="padding-top:4px">Confirmação final</div>
+      <div class="cl-wrap">
+        <div class="cl-item"><div class="cl-left"><div class="cbox on"></div><span style="font-size:13px">Endereço confirmado</span></div><span class="chip g">Ok</span></div>
+        <div class="cl-item"><div class="cl-left"><div class="cbox on"></div><span style="font-size:13px">Divergência documentada</span></div><span class="chip g">Ok</span></div>
+      </div>
+    </div>
+    <div class="btn-pair">
+      <button class="outline">Salvar rascunho</button>
+      <button class="solid">Finalizar entrega</button>
+    </div>
+  </div>
+</section>
 
-    <section class="phone" id="detail" aria-labelledby="detail-title">
-      <div class="status-bar"><span>08:23</span><span>Online</span></div>
-      <div class="screen">
-        <div class="app-bar"><h2 id="detail-title">OS-1042</h2><span class="chip danger">Em risco</span></div>
-        <div class="section-block">
-          <span class="label">Cliente</span>
-          <strong>Rodrigues Transportes</strong>
-          <p>Av. Paulista, 1200 · Sao Paulo</p>
-        </div>
-        <div class="two-cols">
-          <div><span class="label">SLA</span><strong>45 min</strong></div>
-          <div><span class="label">Distancia</span><strong>3,4 km</strong></div>
-        </div>
-        <div class="timeline">
-          <p><span></span> Despacho criado</p>
-          <p><span></span> Tecnico atribuido</p>
-          <p class="pending"><span></span> Checklist de coleta</p>
-        </div>
-        <button class="primary">Iniciar execucao</button>
-        <button class="secondary">Abrir rota</button>
+<!-- ════════════════════════════════════════
+     M12 · EVIDÊNCIA TÉCNICA
+     ════════════════════════════════════════ -->
+<section class="phone" id="evidence" aria-label="Evidência Técnica">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar">
+      <div class="back"><svg width="18" height="18"><use href="#ico-back"/></svg>Registro de Evidência</div>
+      <span class="chip b" style="font-size:10px">TÉCNICO</span>
+    </div>
+    <div class="app-bar-sub">OS-2891 · Split 12.000 BTUs</div>
+    <div class="sscroll">
+      <div class="stepper">
+        <div class="step done"><div class="sdot"><svg width="12" height="12"><use href="#ico-check"/></svg></div><div class="sname">Início</div></div>
+        <div class="step done"><div class="sdot"><svg width="12" height="12"><use href="#ico-check"/></svg></div><div class="sname">Exec.</div></div>
+        <div class="step act"><div class="sdot">3</div><div class="sname">Evid.</div></div>
+        <div class="step"><div class="sdot">4</div><div class="sname">Fim</div></div>
       </div>
-    </section>
+      <div class="banner b" style="margin-top:12px"><p>Evidência técnica — registre a condição do equipamento antes e depois do serviço.</p></div>
+      <div class="tabs" style="padding-top:4px"><button class="tab on">Antes</button><button class="tab">Durante</button><button class="tab">Depois</button></div>
+      <div style="padding:0 16px 8px;font-size:13px;font-weight:700">Foto antes do serviço</div>
+      <div class="photo-grid">
+        <div class="pbox has"><div class="pi">📷</div><div class="pt">Antes · 09:12</div><div class="pl">Capturada</div></div>
+        <div class="pbox"><div class="pi">📷</div><div class="pl">Depois · obrigatório</div></div>
+      </div>
+      <div class="icard">
+        <div class="irow"><span class="lbl">Equipamento/Bem</span><span class="val">Split 12.000 BTUs</span></div>
+        <div class="irow"><span class="lbl">Tipo de serviço</span><span class="val">Manutenção</span></div>
+      </div>
+      <div class="cl-wrap">
+        <div class="cl-item"><div class="cl-left"><div class="cbox on"></div><span style="font-size:13px">Alimentação elétrica verificada</span></div><span class="chip g">Ok</span></div>
+        <div class="cl-item"><div class="cl-left"><div class="cbox"></div><span style="font-size:13px">Filtro de ar verificado</span></div><span class="chip y">Pendente</span></div>
+        <div class="cl-item"><div class="cl-left"><div class="cbox"></div><span style="font-size:13px">Foto depois do serviço</span></div><span class="chip y">Pendente</span></div>
+      </div>
+      <div class="fg" style="margin-top:10px"><label class="fl">Observações técnicas *</label><textarea class="fta" rows="3">Filtro com sujidade elevada. Recomendar limpeza preventiva.</textarea></div>
+    </div>
+    <div class="btn-pair">
+      <button class="outline">Rascunho</button>
+      <button class="disabled">Salvar evidência</button>
+    </div>
+  </div>
+</section>
 
-    <section class="phone" id="checklist" aria-labelledby="checklist-title">
-      <div class="status-bar"><span>08:31</span><span>Offline</span></div>
-      <div class="screen">
-        <div class="app-bar"><h2 id="checklist-title">Checklist M10</h2><span class="chip warning">Local</span></div>
-        <div class="progress"><span style="width:62%"></span></div>
-        <article class="step-card done">
-          <span class="number">1</span>
-          <div><strong>Identificar veiculo</strong><p>Placa e chassi conferidos.</p></div>
-        </article>
-        <article class="step-card active">
-          <span class="number">2</span>
-          <div><strong>Registrar avarias</strong><p>Obrigatorio antes da coleta.</p></div>
-        </article>
-        <article class="step-card">
-          <span class="number">3</span>
-          <div><strong>Assinatura do cliente</strong><p>Pendente.</p></div>
-        </article>
-        <div class="banner warning">Sem internet. 2 respostas serao sincronizadas depois.</div>
-        <button class="primary">Salvar passo</button>
+<!-- ════════════════════════════════════════
+     M05 · NOVA OS
+     ════════════════════════════════════════ -->
+<section class="phone" id="new-os" aria-label="Nova OS">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar"><div class="back"><svg width="18" height="18"><use href="#ico-back"/></svg>Nova Ordem de Serviço</div></div>
+    <div class="sscroll">
+      <div style="height:14px"></div>
+      <div class="fg"><label class="fl">Tipo de serviço</label><input class="fi" placeholder="Selecione o tipo…"></div>
+      <div class="fg"><label class="fl">Cliente</label><input class="fi" placeholder="Buscar cliente…"></div>
+      <div class="fg"><label class="fl">Endereço</label><input class="fi" placeholder="Endereço do serviço"></div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Data</label><input class="fi" value="28/05/2026"></div>
+        <div class="fg"><label class="fl">Hora</label><input class="fi" value="10:00"></div>
       </div>
-    </section>
-
-    <section class="phone" id="evidence" aria-labelledby="evidence-title">
-      <div class="status-bar"><span>08:36</span><span>Offline</span></div>
-      <div class="screen">
-        <div class="app-bar"><h2 id="evidence-title">Evidencia</h2><span class="chip warning">Pendente</span></div>
-        <div class="capture-box">
-          <div class="lens"></div>
-          <strong>Foto de avaria dianteira</strong>
-          <p>Hash local gerado. Upload aguardando rede.</p>
-        </div>
-        <div class="metadata">
-          <p><span>Vinculo</span><strong>OS-1042 · M10</strong></p>
-          <p><span>Qualidade</span><strong>Aceitavel</strong></p>
-          <p><span>Log</span><strong>Sanitizado</strong></p>
-        </div>
-        <button class="primary">Capturar outra</button>
-        <button class="secondary">Revisar antes de enviar</button>
-      </div>
-    </section>
-
-    <section class="phone" id="map" aria-labelledby="map-title">
-      <div class="status-bar"><span>08:42</span><span>GPS</span></div>
-      <div class="screen map-screen">
-        <div class="app-bar floating"><h2 id="map-title">Rota ativa</h2><span class="chip info">3,4 km</span></div>
-        <div class="map-canvas">
-          <span class="route-dot start"></span>
-          <span class="route-line"></span>
-          <span class="route-dot end"></span>
-        </div>
-        <div class="bottom-sheet">
-          <span class="label">Proximo destino</span>
-          <strong>Rodrigues Transportes</strong>
-          <p>ETA 11 min · posicao enviada ha 40 s</p>
-          <button class="primary compact">Abrir OS</button>
+      <div class="fg">
+        <label class="fl">Prioridade</label>
+        <div class="pri-row">
+          <button class="pri-btn">Baixa</button><button class="pri-btn">Média</button>
+          <button class="pri-btn on">Alta</button><button class="pri-btn">Urgente</button>
         </div>
       </div>
-    </section>
+      <div class="fg"><label class="fl">Técnico responsável</label><input class="fi" placeholder="Buscar técnico…"></div>
+      <div class="fg"><label class="fl">Observações</label><textarea class="fta" placeholder="Descreva o serviço necessário…"></textarea></div>
+      <div style="padding:0 16px 16px"><button class="btn-p">Criar ordem de serviço</button></div>
+    </div>
+  </div>
+</section>
 
-    <section class="phone" id="sync" aria-labelledby="sync-title">
-      <div class="status-bar"><span>09:05</span><span>Reconectado</span></div>
-      <div class="screen">
-        <div class="app-bar"><h2 id="sync-title">Sync e conflitos</h2><span class="chip danger">1 conflito</span></div>
-        <div class="sync-summary">
-          <div><strong>6</strong><span>acoes na fila</span></div>
-          <div><strong>5</strong><span>prontas</span></div>
-          <div><strong>1</strong><span>conflito</span></div>
+<!-- ════════════════════════════════════════
+     M09 · MAPA
+     ════════════════════════════════════════ -->
+<section class="phone" id="map" aria-label="Mapa">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar"><div class="back"><svg width="18" height="18"><use href="#ico-back"/></svg>Mapa · Em campo</div></div>
+    <div class="map-area">
+      <div class="mmarker" style="left:38%;top:22%"><div class="mlabel y">OS-2891</div><div class="mdot" style="background:var(--yellow)"></div></div>
+      <div class="mmarker" style="left:58%;top:35%"><div class="mlabel b">OS-2892</div><div class="mdot" style="background:var(--blue)"></div></div>
+      <div class="mmarker" style="left:18%;top:50%"><div class="mlabel g">OS-2890</div><div class="mdot" style="background:var(--green)"></div></div>
+      <div style="position:absolute;left:52%;top:36%;width:14px;height:14px;border-radius:50%;background:var(--blue);border:3px solid white;box-shadow:0 0 0 4px rgba(37,99,235,.2)"></div>
+    </div>
+    <div class="sscroll">
+      <div class="sec">OS próximas de você</div>
+      <div class="os-dist y"><div class="oi"><div class="oc">OS-2891</div><div class="on">Manutenção preventiva</div><div class="ot">Agendado: 10:00</div></div><div class="od">0,4 km</div><button class="go-btn">Ir</button></div>
+      <div class="os-dist b"><div class="oi"><div class="oc">OS-2892</div><div class="on">Instalação elétrica</div><div class="ot">Agendado: 14:00</div></div><div class="od">1,2 km</div><button class="go-btn">Ir</button></div>
+      <div class="os-dist g"><div class="oi"><div class="oc">OS-2890</div><div class="on">Reparo emergencial</div><div class="ot">Em campo</div></div><div class="od">2,8 km</div><button class="go-btn">Ir</button></div>
+    </div>
+    <nav class="bnav">
+      <a href="#home"><svg width="22" height="22"><use href="#ico-home"/></svg>Home</a>
+      <a href="#wo-list"><svg width="22" height="22"><use href="#ico-os"/></svg>OS</a>
+      <a class="on" href="#map"><svg width="22" height="22"><use href="#ico-map"/></svg>Mapa</a>
+      <a href="#inventory"><svg width="22" height="22"><use href="#ico-stock"/></svg>Estoque</a>
+      <a href="#profile"><svg width="22" height="22"><use href="#ico-user"/></svg>Perfil</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     M07 · NOTIFICAÇÕES
+     ════════════════════════════════════════ -->
+<section class="phone" id="notifications" aria-label="Notificações">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar">
+      <div class="back"><svg width="18" height="18"><use href="#ico-back"/></svg>Notificações</div>
+      <span style="color:var(--blue);font-size:14px;font-weight:600">Marcar lidas</span>
+    </div>
+    <div class="sscroll">
+      <div style="height:10px"></div>
+      <div class="notif-card b"><span class="nc-time" style="background:var(--yellow-l);color:var(--yellow-d)">5 min</span><div class="nc-title">Aprovação necessária — APR-0041</div><div class="nc-sub">Compra de R$ 8.400 aguardando sua decisão.</div></div>
+      <div class="notif-card r"><span class="nc-time" style="background:var(--red-l);color:var(--red-d)">18 min</span><div class="nc-title">Estoque crítico — Resistor 10kΩ</div><div class="nc-sub">Saldo (12 un.) abaixo do mínimo.</div></div>
+      <div class="notif-card g"><span class="nc-time" style="background:var(--green-l);color:var(--green-d)">42 min</span><div class="nc-title">OS-2891 concluída</div><div class="nc-sub">Carla Mendes finalizou o atendimento.</div></div>
+      <div class="notif-card p"><span class="nc-time" style="background:var(--purple-l);color:var(--purple)">1h</span><div class="nc-title">Escalação — APR-0040</div><div class="nc-sub">Aprovação escalada para a diretoria.</div></div>
+      <div class="notif-card gr"><span class="nc-time" style="background:var(--line2);color:var(--muted)">6h</span><div class="nc-title" style="color:var(--ink2)">Backup concluído</div><div class="nc-sub">Backup automático realizado às 03:00.</div></div>
+      <div class="notif-card g"><span class="nc-time" style="background:var(--green-l);color:var(--green-d)">Ontem</span><div class="nc-title">Nova viatura cadastrada</div><div class="nc-sub">VW Kombi ABC-1D23 adicionada à frota.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SYNC / OFFLINE
+     ════════════════════════════════════════ -->
+<section class="phone" id="sync" aria-label="Sincronização">
+  <div class="status-bar light"><span>9:05</span><span style="font-size:11px;color:var(--yellow-d);font-weight:700">Reconectado</span></div>
+  <div class="screen">
+    <div class="app-bar">
+      <div class="back"><svg width="18" height="18"><use href="#ico-back"/></svg>Sincronização</div>
+      <span class="chip r">1 conflito</span>
+    </div>
+    <div class="sscroll">
+      <div class="banner y" style="margin-top:12px"><p><strong>Reconexão detectada</strong></p><small>6 ações aguardando envio. 1 conflito requer atenção manual.</small></div>
+      <div class="sync-stats">
+        <div class="ss ok"><div class="n">5</div><div class="l">Prontas</div></div>
+        <div class="ss wa"><div class="n">1</div><div class="l">Pendentes</div></div>
+        <div class="ss er"><div class="n">1</div><div class="l">Conflito</div></div>
+      </div>
+      <div class="card br" style="margin-top:4px">
+        <div class="crow"><span class="chip r">Conflito</span><span style="font-size:11px;color:var(--muted)">OS-2891</span></div>
+        <h3>Checklist editado localmente e modificado pelo gestor</h3>
+        <p>Escolha uma versão. Nada será sobrescrito automaticamente.</p>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn-p sm" style="flex:1">Minha versão</button>
+          <button class="btn-s sm" style="flex:1;padding:9px;font-size:13px">Versão do gestor</button>
         </div>
-        <article class="conflict-card">
-          <span class="chip danger">Conflito RDV</span>
-          <h3>RDV local editado e devolvido pelo manager</h3>
-          <p>Escolha uma resolucao. Nada sera sobrescrito automaticamente.</p>
-          <button class="primary compact">Comparar versoes</button>
-        </article>
-        <button class="secondary">Tentar sincronizar novamente</button>
       </div>
-    </section>
-
-    <section class="phone" id="approvals" aria-labelledby="approval-title">
-      <div class="status-bar"><span>09:12</span><span>Online</span></div>
-      <div class="screen">
-        <div class="app-bar"><h2 id="approval-title">Aprovacoes</h2><span class="badge">3</span></div>
-        <article class="approval-card">
-          <span class="chip warning">Material urgente</span>
-          <h3>Pastilha de freio · OS-1042</h3>
-          <p>Impacto: atraso de SLA se nao aprovado em 20 min.</p>
-          <div class="actions"><button class="primary compact">Aprovar</button><button class="secondary compact">Devolver</button></div>
-        </article>
-        <article class="approval-card">
-          <span class="chip info">RDV</span>
-          <h3>R$ 184,90 · combustivel</h3>
-          <p>Acima da politica em R$ 34,90. Requer justificativa.</p>
-        </article>
+      <div class="sec">Fila de envio</div>
+      <div class="cl-wrap">
+        <div class="cl-item"><div class="cl-left"><div class="cbox on"></div><span style="font-size:13px">Checklist coleta · OS-2891</span></div><span class="chip g">Enviado</span></div>
+        <div class="cl-item"><div class="cl-left"><div class="cbox on"></div><span style="font-size:13px">Evidência · 2 fotos</span></div><span class="chip g">Enviado</span></div>
+        <div class="cl-item"><div class="cl-left"><div class="cbox on"></div><span style="font-size:13px">GPS · 18 registros</span></div><span class="chip g">Enviado</span></div>
+        <div class="cl-item"><div class="cl-left"><div class="cbox"></div><span style="font-size:13px">Checklist evidência · conflito</span></div><span class="chip r">Conflito</span></div>
       </div>
-    </section>
+      <div style="padding:12px 16px 0"><button class="btn-s">Tentar novamente</button></div>
+    </div>
+  </div>
+</section>
 
-    <section class="phone" id="expenses" aria-labelledby="expense-title">
-      <div class="status-bar"><span>09:20</span><span>Online</span></div>
-      <div class="screen">
-        <div class="app-bar"><h2 id="expense-title">Despesas</h2><span class="chip warning">2 pend.</span></div>
-        <article class="expense-total">
-          <span class="label">RDV Junho</span>
-          <strong>R$ 584,90</strong>
-          <p>A receber: R$ 234,90 · 1 recibo pendente</p>
-        </article>
-        <article class="list-card urgent">
-          <div><strong>Combustivel</strong><span class="chip danger">Politica</span></div>
-          <p>Limite excedido e recibo obrigatorio.</p>
-        </article>
-        <article class="list-card">
-          <div><strong>Alimentacao</strong><span class="chip success">OK</span></div>
-          <p>R$ 42,00 · sincronizado</p>
-        </article>
-        <button class="primary">Novo item</button>
+<!-- ════════════════════════════════════════
+     M06 · APROVAÇÕES
+     ════════════════════════════════════════ -->
+<section class="phone" id="approvals" aria-label="Aprovações">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar">
+      <div class="back"><svg width="18" height="18"><use href="#ico-back"/></svg>Aprovações</div>
+    </div>
+    <div class="sscroll">
+      <div style="padding:10px 16px 12px"><span class="chip y">3 pendentes</span></div>
+      <div class="apr-card by">
+        <div class="apr-head"><span class="apr-num">APR-0041</span><span class="chip b">Compra</span><span class="chip r">Urg. Alta</span></div>
+        <div class="apr-title">Compra de peças — R$ 8.400</div>
+        <div class="apr-by">por Bruno Lima</div>
+        <div class="apr-btns"><button class="abtn-ok">Aprovar</button><button class="abtn-no">Recusar</button></div>
       </div>
-    </section>
-
-    <section class="phone" id="inventory" aria-labelledby="inventory-title">
-      <div class="status-bar"><span>09:34</span><span>Online</span></div>
-      <div class="screen">
-        <div class="app-bar"><h2 id="inventory-title">Estoque do tecnico</h2><span class="chip info">Veiculo 12</span></div>
-        <article class="list-card">
-          <div><strong>Cabo 2m</strong><span class="chip success">8 un.</span></div>
-          <p>Reservado para manutencao leve.</p>
-        </article>
-        <article class="list-card urgent">
-          <div><strong>Fusivel 20A</strong><span class="chip warning">1 un.</span></div>
-          <p>Baixo saldo. Solicitar reposicao.</p>
-        </article>
-        <button class="primary">Registrar consumo</button>
-        <button class="secondary">Solicitar material</button>
+      <div class="apr-card bb">
+        <div class="apr-head"><span class="apr-num">APR-0040</span><span class="chip p">Desconto</span><span class="chip y">Urg. Média</span></div>
+        <div class="apr-title">Desconto especial — OS-2891</div>
+        <div class="apr-by">por Carla Mendes</div>
+        <div class="apr-btns"><button class="abtn-ok">Aprovar</button><button class="abtn-no">Recusar</button></div>
       </div>
-    </section>
+      <div class="apr-card bg">
+        <div class="apr-head"><span class="apr-num">APR-0039</span><span class="chip t">Estoque</span><span class="chip gr">Urg. Baixa</span></div>
+        <div class="apr-title">Baixa de estoque — 42 itens</div>
+        <div class="apr-by">por Diego Santos</div>
+        <div class="apr-btns"><button class="abtn-ok">Aprovar</button><button class="abtn-no">Recusar</button></div>
+      </div>
+      <div class="sec">Resolvidas recentemente</div>
+      <div class="card bg" style="opacity:.7"><div class="crow"><span class="apr-num">APR-0038</span><span class="chip g">Aprovada</span></div><div style="font-size:14px;font-weight:700">Reposição de estoque — R$ 1.200</div><div style="font-size:12px;color:var(--muted)">por Ana Costa · há 2h</div></div>
+      <div class="card br" style="opacity:.7"><div class="crow"><span class="apr-num">APR-0037</span><span class="chip r">Recusada</span></div><div style="font-size:14px;font-weight:700">Viagem extra-campo — R$ 3.800</div><div style="font-size:12px;color:var(--muted)">por Pedro Lima · há 5h</div></div>
+    </div>
+  </div>
+</section>
 
-    <section class="phone" id="profile" aria-labelledby="profile-title">
-      <div class="status-bar"><span>09:40</span><span>Online</span></div>
-      <div class="screen">
-        <div class="app-bar"><h2 id="profile-title">Perfil e permissoes</h2><span class="avatar">FT</span></div>
-        <div class="section-block">
-          <span class="label">Usuario</span>
-          <strong>Tecnico de campo</strong>
-          <p>field_technician · Tenant Demo</p>
+<!-- ════════════════════════════════════════
+     M08 · ESTOQUE — lista + movimentações
+     ════════════════════════════════════════ -->
+<section class="phone" id="inventory" aria-label="Estoque">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar">
+      <h2 style="display:flex;align-items:center;gap:8px">
+        <svg width="20" height="20" style="color:var(--blue)"><use href="#ico-stock"/></svg>Estoque
+      </h2>
+    </div>
+    <!-- Ações rápidas Entrada / Saída -->
+    <div class="stk-actions">
+      <a href="#stock-entry" class="stk-act-btn entrada">
+        <svg width="20" height="20"><use href="#ico-entrada"/></svg>
+        <span>Entrada</span>
+      </a>
+      <a href="#stock-exit" class="stk-act-btn saida">
+        <svg width="20" height="20"><use href="#ico-saida"/></svg>
+        <span>Saída</span>
+      </a>
+    </div>
+    <div class="sscroll">
+      <!-- Busca com ícone de scan -->
+      <div class="stk-search-wrap">
+        <svg class="stk-search-ico" width="16" height="16"><use href="#ico-stock"/></svg>
+        <input class="stk-search" type="search" placeholder="Buscar item ou código…">
+        <button class="stk-scan-btn" title="Escanear código" aria-label="Escanear">
+          <svg width="20" height="20"><use href="#ico-scan"/></svg>
+        </button>
+      </div>
+      <!-- Tabs -->
+      <div class="tabs" style="padding-top:4px">
+        <button class="tab on">Todos</button>
+        <button class="tab">Entradas</button>
+        <button class="tab">Saídas</button>
+        <button class="tab">Críticos</button>
+      </div>
+      <div class="banner r" style="margin-bottom:4px">● 3 itens em estoque crítico</div>
+      <!-- Lista de itens -->
+      <div class="stock-wrap">
+        <div class="si g"><div class="si-l"><div class="si-code">IT-001</div><div class="si-name">Capacitor 100µF 50V</div><div class="si-cat">Elétrico</div></div><div class="si-r"><span class="chip g" style="font-size:10px;margin-bottom:4px">Normal</span><div class="si-qty">248 un.</div></div></div>
+        <div class="si r"><div class="si-l"><div class="si-code">IT-002</div><div class="si-name">Resistor 10kΩ</div><div class="si-cat">Elétrico</div></div><div class="si-r"><span class="chip r" style="font-size:10px;margin-bottom:4px">Crítico</span><div class="si-qty">12 un.</div></div></div>
+        <div class="si g"><div class="si-l"><div class="si-code">IT-003</div><div class="si-name">Tubo PVC 3/4"</div><div class="si-cat">Hidráulico</div></div><div class="si-r"><span class="chip g" style="font-size:10px;margin-bottom:4px">Normal</span><div class="si-qty">85 un.</div></div></div>
+        <div class="si y"><div class="si-l"><div class="si-code">IT-004</div><div class="si-name">Chave Philips #2</div><div class="si-cat">Ferramentas</div></div><div class="si-r"><span class="chip y" style="font-size:10px;margin-bottom:4px">Baixo</span><div class="si-qty">6 un.</div></div></div>
+        <div class="si r"><div class="si-l"><div class="si-code">IT-006</div><div class="si-name">Fio elétrico 2,5mm</div><div class="si-cat">Elétrico</div></div><div class="si-r"><span class="chip r" style="font-size:10px;margin-bottom:4px">Zerado</span><div class="si-qty">0 un.</div></div></div>
+        <div class="si g"><div class="si-l"><div class="si-code">IT-005</div><div class="si-name">Capacete de segurança</div><div class="si-cat">EPI</div></div><div class="si-r"><span class="chip g" style="font-size:10px;margin-bottom:4px">Normal</span><div class="si-qty">32 un.</div></div></div>
+        <div class="si r"><div class="si-l"><div class="si-code">IT-007</div><div class="si-name">Disjuntor 20A</div><div class="si-cat">Elétrico</div></div><div class="si-r"><span class="chip r" style="font-size:10px;margin-bottom:4px">Crítico</span><div class="si-qty">3 un.</div></div></div>
+        <div class="si y"><div class="si-l"><div class="si-code">IT-008</div><div class="si-name">Abraçadeira nylon 20cm</div><div class="si-cat">Fixação</div></div><div class="si-r"><span class="chip y" style="font-size:10px;margin-bottom:4px">Baixo</span><div class="si-qty">14 un.</div></div></div>
+      </div>
+      <div style="height:8px"></div>
+    </div>
+    <nav class="bnav">
+      <a href="#home"><svg width="22" height="22"><use href="#ico-home"/></svg>Home</a>
+      <a href="#wo-list"><svg width="22" height="22"><use href="#ico-os"/></svg>OS</a>
+      <a href="#map"><svg width="22" height="22"><use href="#ico-map"/></svg>Mapa</a>
+      <a class="on" href="#inventory"><svg width="22" height="22"><use href="#ico-stock"/></svg>Estoque</a>
+      <a href="#profile"><svg width="22" height="22"><use href="#ico-user"/></svg>Perfil</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     M08-A · ESTOQUE — Cadastro de Entrada
+     ════════════════════════════════════════ -->
+<section class="phone" id="stock-entry" aria-label="Entrada de Estoque">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar">
+      <a href="#inventory" style="display:flex;align-items:center;gap:6px;color:var(--blue);font-weight:700;font-size:14px;text-decoration:none">
+        <svg width="18" height="18"><use href="#ico-back"/></svg>Estoque
+      </a>
+      <h2 style="display:flex;align-items:center;gap:7px">
+        <svg width="18" height="18" style="color:var(--green-d)"><use href="#ico-entrada"/></svg>Nova Entrada
+      </h2>
+    </div>
+    <div style="padding:10px 16px 0;flex-shrink:0">
+      <div class="stk-search-wrap" style="margin:0">
+        <svg class="stk-search-ico" width="16" height="16"><use href="#ico-stock"/></svg>
+        <input class="stk-search" type="search" placeholder="Código ou nome do produto…">
+        <button class="stk-scan-btn" title="Escanear" aria-label="Escanear">
+          <svg width="20" height="20"><use href="#ico-scan"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="sscroll">
+      <!-- Produto encontrado (estado pós-scan) -->
+      <div class="sec" style="padding-top:12px">Produto identificado</div>
+      <div class="card br" style="margin-bottom:12px">
+        <div class="crow">
+          <span class="si-code" style="font-size:12px">IT-003</span>
+          <span class="chip g" style="font-size:10px">Em estoque</span>
         </div>
-        <div class="permission-list">
-          <p><span class="ok"></span> work_orders:read</p>
-          <p><span class="ok"></span> field_location:send</p>
-          <p><span class="ok"></span> expense_report:create</p>
-          <p><span class="no"></span> expense_report:approve_finance</p>
-        </div>
-        <button class="secondary">Trocar tenant</button>
-        <button class="secondary">Sair</button>
+        <div style="font-size:15px;font-weight:700;margin:4px 0 2px">Tubo PVC 3/4"</div>
+        <div style="font-size:12px;color:var(--muted)">Hidráulico · Saldo atual: 85 un.</div>
       </div>
-    </section>
-  </main>
+      <!-- Campos da entrada -->
+      <div class="fg"><label class="fl">Quantidade *</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="fi" type="number" value="20" style="flex:1">
+          <select class="fi" style="width:90px">
+            <option>un.</option><option>cx.</option><option>kg</option><option>m</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Nota Fiscal / Documento</label>
+        <input class="fi" type="text" placeholder="NF-e, requisição ou OS…">
+      </div>
+      <div class="fg"><label class="fl">Fornecedor</label>
+        <input class="fi" type="text" placeholder="Nome ou código do fornecedor">
+      </div>
+      <div class="fg"><label class="fl">Data de entrada</label>
+        <input class="fi" type="date" value="2026-06-11">
+      </div>
+      <div class="fg"><label class="fl">Observação</label>
+        <input class="fi" type="text" placeholder="Opcional…">
+      </div>
+      <div style="height:8px"></div>
+    </div>
+    <div class="btn-pair">
+      <button class="outline" onclick="history.back()">Cancelar</button>
+      <button class="solid" style="display:flex;align-items:center;justify-content:center;gap:6px">
+        <svg width="16" height="16"><use href="#ico-entrada"/></svg>Entrada
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     M08-B · ESTOQUE — Cadastro de Saída/Baixa
+     ════════════════════════════════════════ -->
+<section class="phone" id="stock-exit" aria-label="Saída de Estoque">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar">
+      <a href="#inventory" style="display:flex;align-items:center;gap:6px;color:var(--blue);font-weight:700;font-size:14px;text-decoration:none">
+        <svg width="18" height="18"><use href="#ico-back"/></svg>Estoque
+      </a>
+      <h2 style="display:flex;align-items:center;gap:7px">
+        <svg width="18" height="18" style="color:var(--red)"><use href="#ico-saida"/></svg>Nova Saída
+      </h2>
+    </div>
+    <div style="padding:10px 16px 0;flex-shrink:0">
+      <div class="stk-search-wrap" style="margin:0">
+        <svg class="stk-search-ico" width="16" height="16"><use href="#ico-stock"/></svg>
+        <input class="stk-search" type="search" placeholder="Código ou nome do produto…">
+        <button class="stk-scan-btn" title="Escanear" aria-label="Escanear">
+          <svg width="20" height="20"><use href="#ico-scan"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="sscroll">
+      <!-- Produto encontrado -->
+      <div class="sec" style="padding-top:12px">Produto identificado</div>
+      <div class="card br" style="margin-bottom:12px">
+        <div class="crow">
+          <span class="si-code" style="font-size:12px">IT-002</span>
+          <span class="chip r" style="font-size:10px">Crítico</span>
+        </div>
+        <div style="font-size:15px;font-weight:700;margin:4px 0 2px">Resistor 10kΩ</div>
+        <div style="font-size:12px;color:var(--muted)">Elétrico · Saldo atual: <strong style="color:var(--red)">12 un.</strong></div>
+      </div>
+      <!-- Campos da saída -->
+      <div class="fg"><label class="fl">Quantidade consumida *</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="fi" type="number" value="5" style="flex:1">
+          <select class="fi" style="width:90px">
+            <option>un.</option><option>cx.</option><option>kg</option><option>m</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">OS vinculada</label>
+        <select class="fi">
+          <option>OS-2891 · Manutenção preventiva — Alfa Ltda</option>
+          <option>OS-2892 · Instalação elétrica</option>
+          <option>Consumo interno / almoxarifado</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Motivo da baixa</label>
+        <select class="fi">
+          <option>Uso em serviço</option>
+          <option>Perda / quebra</option>
+          <option>Devolução ao fornecedor</option>
+          <option>Transferência entre depósitos</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Observação</label>
+        <input class="fi" type="text" placeholder="Opcional…">
+      </div>
+      <div class="banner r" style="margin:0 16px 4px">
+        Saldo após baixa: <strong>7 un.</strong> — continuará em nível crítico.
+      </div>
+      <div style="height:8px"></div>
+    </div>
+    <div class="btn-pair">
+      <button class="outline" onclick="history.back()">Cancelar</button>
+      <button class="solid" style="background:var(--red);display:flex;align-items:center;justify-content:center;gap:6px">
+        <svg width="16" height="16"><use href="#ico-saida"/></svg>Saída
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     Prestação de Contas · LISTA
+     ════════════════════════════════════════ -->
+<section class="phone" id="PC-list" aria-label="Lista de Despesas">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar">
+      <div class="back"><svg width="18" height="18"><use href="#ico-back"/></svg>Despesas</div>
+      <span style="color:var(--blue);font-size:14px;font-weight:700">+ Novo relatório</span>
+    </div>
+    <div class="sscroll">
+      <div class="PC-summary">
+        <div class="rs-label">Total acumulado · Junho 2026</div>
+        <div class="rs-amount">R$ 1.847,50</div>
+        <div class="rs-sub">Adiantamento: R$ 1.200,00 · A receber: R$ 647,50</div>
+      </div>
+      <div class="PC-amounts">
+        <div class="PC-amount-card receive"><div class="ra-lbl">A receber</div><div class="ra-val">R$ 647,50</div></div>
+        <div class="PC-amount-card"><div class="ra-lbl">Adiantamento</div><div class="ra-val" style="color:var(--ink)">R$ 1.200,00</div></div>
+      </div>
+      <div class="tabs" style="padding-top:4px">
+        <button class="tab on">Todos</button><button class="tab">Rascunho</button>
+        <button class="tab">Enviados</button><button class="tab">Aprovados</button>
+      </div>
+      <div class="card by"><div class="crow"><span style="font-size:11px;color:var(--muted)">PC-0025</span><span class="chip y">Rascunho</span></div><h3>Visitas campo — semana 23</h3><p>3 itens · R$ 284,00</p><small>Atualizado há 10 min · envio pendente</small></div>
+      <div class="card bb"><div class="crow"><span style="font-size:11px;color:var(--muted)">PC-0024</span><span class="chip b">Em revisão</span></div><h3>Deslocamento BH–SP</h3><p>5 itens · R$ 763,50</p><small>Submetido em 26/05</small></div>
+      <div class="card bg"><div class="crow"><span style="font-size:11px;color:var(--muted)">PC-0023</span><span class="chip g">Aprovado</span></div><h3>Manutenções campo — maio</h3><p>8 itens · R$ 800,00</p><small>Pago em 20/05</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     Prestação de Contas · NOVO RELATÓRIO
+     ════════════════════════════════════════ -->
+<section class="phone" id="PC-new" aria-label="Novo Relatório de Despesa">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar"><div class="back"><svg width="18" height="18"><use href="#ico-back"/></svg>Novo Relatório de Despesa</div></div>
+    <div class="sscroll">
+      <div class="banner b" style="margin-top:14px"><p>A Prestação de Contas é criado localmente e sincronizado quando você tiver conexão.</p></div>
+      <div class="fg"><label class="fl">Título do relatório</label><input class="fi" placeholder="Ex: Visitas campo — semana 24"></div>
+      <div class="fg"><label class="fl">Período de referência</label><input class="fi" value="Junho 2026"></div>
+      <div class="fg"><label class="fl">Adiantamento recebido (R$)</label><input class="fi" type="number" placeholder="0,00"></div>
+      <div class="fg"><label class="fl">Centro de custo</label><input class="fi" value="Filial BH — Campo"></div>
+      <div class="fg"><label class="fl">Observações iniciais</label><textarea class="fta" placeholder="Descreva o contexto das despesas…"></textarea></div>
+      <div class="icard" style="margin-bottom:12px">
+        <div class="irow"><span class="lbl">Limite mensal</span><span class="val">R$ 2.000,00</span></div>
+        <div class="irow"><span class="lbl">Já utilizado</span><span class="val" style="color:var(--yellow-d)">R$ 1.563,50</span></div>
+        <div class="irow"><span class="lbl">Disponível</span><span class="val" style="color:var(--green-d)">R$ 436,50</span></div>
+      </div>
+      <div style="padding:0 16px 16px"><button class="btn-p">Criar relatório</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     Prestação de Contas · DETALHE
+     ════════════════════════════════════════ -->
+<section class="phone" id="PC-detail" aria-label="Detalhe da Despesa">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar">
+      <div class="back"><svg width="18" height="18"><use href="#ico-back"/></svg>PC-0025</div>
+      <span class="chip y">Rascunho</span>
+    </div>
+    <div class="sscroll">
+      <div class="PC-summary">
+        <div class="rs-label">Visitas campo — semana 23</div>
+        <div class="rs-amount">R$ 284,00</div>
+        <div class="rs-sub">3 itens · Adiantamento R$ 0 · A receber R$ 284,00</div>
+      </div>
+      <div class="PC-amounts">
+        <div class="PC-amount-card receive"><div class="ra-lbl">A receber</div><div class="ra-val">R$ 284,00</div></div>
+        <div class="PC-amount-card"><div class="ra-lbl">Itens</div><div class="ra-val" style="color:var(--ink)">3 itens</div></div>
+      </div>
+      <div class="banner y"><p><strong>1 item sem recibo</strong> — obrigatório para submissão.</p></div>
+      <div class="sec">Itens de despesa</div>
+      <div class="PC-item-card ok">
+        <div class="ri-cat">Combustível</div><div class="ri-vendor">Posto Shell — Av. Paulista</div><div class="ri-city">São Paulo, SP</div>
+        <div class="ri-row"><div class="ri-amount">R$ 120,00</div><span class="ri-policy-tag ok">✓ Dentro do limite</span></div>
+      </div>
+      <div class="PC-item-card warn">
+        <div class="ri-cat">Alimentação</div><div class="ri-vendor">Restaurante Central</div><div class="ri-city">São Paulo, SP</div>
+        <div class="ri-row"><div class="ri-amount">R$ 89,00</div><span class="ri-policy-tag warn">⚠ Recibo pendente</span></div>
+      </div>
+      <div class="PC-item-card ok">
+        <div class="ri-cat">Pedágio</div><div class="ri-vendor">Via Paulista — Tag</div><div class="ri-city">SP</div>
+        <div class="ri-row"><div class="ri-amount">R$ 75,00</div><span class="ri-policy-tag ok">✓ Auto-aprovado</span></div>
+      </div>
+      <div style="padding:10px 16px 14px;display:flex;align-items:center;gap:8px">
+        <button class="btn-s" style="flex:1;padding:12px 16px;font-size:14px">Editar</button>
+        <button class="btn-icon p" style="width:44px;height:44px" title="Adicionar item" aria-label="Adicionar item">
+          <svg width="20" height="20"><use href="#ico-plus"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     Prestação de Contas · NOVO ITEM
+     ════════════════════════════════════════ -->
+<section class="phone" id="PC-item" aria-label="Novo Item de Despesa">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar"><div class="back"><svg width="18" height="18"><use href="#ico-back"/></svg>Novo Item · PC-0025</div></div>
+    <div class="sscroll">
+      <div style="height:14px"></div>
+      <div class="fg">
+        <label class="fl">Categoria</label>
+        <select class="fi" id="PC-cat" onchange="pcCatChange(this)">
+          <option>Combustível</option>
+          <option>Alimentação</option>
+          <option>Hospedagem</option>
+          <option>Pedágio</option>
+          <option>Transporte</option>
+          <option>Outros</option>
+        </select>
+      </div>
+      <div class="fg" id="PC-fg-km">
+        <label class="fl">Quilometragem do veículo (km)</label>
+        <input class="fi" type="number" placeholder="Ex: 48500" inputmode="numeric">
+      </div>
+      <div class="fg" id="PC-fg-desc" style="display:none">
+        <label class="fl">Descrição da despesa</label>
+        <input class="fi" type="text" placeholder="Descreva o item de despesa">
+      </div>
+      <div class="fg"><label class="fl">Valor (R$)</label><input class="fi" type="number" placeholder="0,00"></div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Data</label><input class="fi" value="28/05/2026"></div>
+        <div class="fg"><label class="fl">Cidade</label><input class="fi" placeholder="Cidade, UF"></div>
+      </div>
+      <div class="fg"><label class="fl">Fornecedor / Estabelecimento</label><input class="fi" placeholder="Nome do estabelecimento"></div>
+      <div class="fg">
+        <label class="fl">Recibo / Comprovante</label>
+        <div class="pbox" style="display:flex;align-items:center;gap:12px;flex-direction:row;text-align:left;padding:14px;border-radius:var(--r)">
+          <div class="pi" style="font-size:28px;flex-shrink:0">📄</div>
+          <div><div style="font-size:13px;font-weight:700;color:var(--ink)">Anexar comprovante</div><div style="font-size:12px;color:var(--muted)">Foto ou arquivo · obrigatório para esta categoria</div></div>
+        </div>
+      </div>
+      <div class="icard" style="margin-bottom:12px">
+        <div class="irow"><span class="lbl">Limite categoria</span><span class="val">R$ 150,00 / item</span></div>
+        <div class="irow"><span class="lbl">Política</span><span class="val" style="color:var(--green-d)">Dentro do limite</span></div>
+      </div>
+      <div style="padding:0 16px 16px"><button class="btn-p">Salvar item</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     Prestação de Contas · REVISAR E ENVIAR
+     ════════════════════════════════════════ -->
+<section class="phone" id="PC-submit" aria-label="Revisar e Enviar">
+  <div class="status-bar light"><span>9:41</span></div>
+  <div class="screen">
+    <div class="app-bar"><div class="back"><svg width="18" height="18"><use href="#ico-back"/></svg>Revisar e Enviar</div></div>
+    <div class="sscroll">
+      <div class="PC-summary">
+        <div class="rs-label">PC-0025 · Visitas campo — semana 23</div>
+        <div class="rs-amount">R$ 284,00</div>
+        <div class="rs-sub">3 itens · A receber: R$ 284,00</div>
+      </div>
+      <div class="sec">Checagem de política</div>
+      <div class="policy-check">
+        <div class="policy-row"><div class="pr-icon ok">✓</div><div class="pr-text">Combustível R$ 120 — dentro do limite<small>Limite: R$ 150/item</small></div></div>
+        <div class="policy-row"><div class="pr-icon warn">!</div><div class="pr-text">Alimentação sem recibo anexado<small>Recibo obrigatório — submissão bloqueada</small></div></div>
+        <div class="policy-row"><div class="pr-icon ok">✓</div><div class="pr-text">Pedágio R$ 75 — auto-aprovado<small>Categoria isenta de recibo</small></div></div>
+        <div class="policy-row"><div class="pr-icon ok">✓</div><div class="pr-text">Total R$ 284 dentro do limite mensal<small>Disponível: R$ 436,50</small></div></div>
+      </div>
+      <div class="banner r"><p><strong>Submissão bloqueada:</strong> adicione o recibo de alimentação para continuar.</p></div>
+      <div class="sec">Resumo dos itens</div>
+      <div class="icard" style="margin-bottom:16px">
+        <div class="irow"><span class="lbl">Combustível</span><span class="val">R$ 120,00</span></div>
+        <div class="irow"><span class="lbl">Alimentação</span><span class="val">R$ 89,00</span></div>
+        <div class="irow"><span class="lbl">Pedágio</span><span class="val">R$ 75,00</span></div>
+        <div class="irow" style="background:var(--line2)"><span class="lbl" style="font-weight:700">Total</span><span class="val" style="font-size:16px">R$ 284,00</span></div>
+      </div>
+    </div>
+    <div class="btn-pair">
+      <button class="outline">Voltar</button>
+      <button class="disabled">Enviar relatório</button>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     PERFIL
+     ════════════════════════════════════════ -->
+<section class="phone" id="profile" aria-label="Perfil">
+  <div class="status-bar"><span>9:41</span>
+    <span class="si">
+      <svg width="20" height="11" viewBox="0 0 20 11" fill="none">
+        <rect x=".5" y=".5" width="17" height="10" rx="3" stroke="#333" opacity=".4"/>
+        <rect x="2" y="2" width="13" height="7" rx="1.5" fill="#333" opacity=".7"/>
+      </svg>
+    </span>
+  </div>
+  <div class="screen">
+    <div class="prof-hero">
+      <div class="prof-av-wrap" onclick="alert('Abrir câmera para trocar a foto')">
+        <div class="av">CM</div>
+        <div class="prof-cam-btn" aria-label="Trocar foto">
+          <svg width="14" height="14"><use href="#ico-camera"/></svg>
+        </div>
+      </div>
+      <div class="prof-name">Carla Mendes</div>
+      <div class="prof-role-badge"><span class="chip b">Técnica de Campo</span></div>
+    </div>
+
+    <div class="sscroll">
+      <!-- Dados pessoais -->
+      <div class="icard" style="margin-top:12px">
+        <div class="irow"><span class="lbl">Empresa</span><span class="val">TechSolutions Demo</span></div>
+        <div class="irow"><span class="lbl">Cargo</span><span class="val">Técnica de Campo</span></div>
+        <div class="irow"><span class="lbl">Filial</span><span class="val">Belo Horizonte — BH</span></div>
+        <div class="irow"><span class="lbl">E-mail</span><span class="val prof-email">carla.mendes@empresa.com.br</span></div>
+      </div>
+
+      <!-- O que posso fazer -->
+      <div class="sec">O que posso fazer</div>
+      <div class="icard">
+        <div class="perm-item"><div class="pdot ok"></div>Visualizar e atualizar Ordens de Serviço</div>
+        <div class="perm-item"><div class="pdot ok"></div>Enviar checklists de coleta e entrega</div>
+        <div class="perm-item"><div class="pdot ok"></div>Registrar fotos e evidências</div>
+        <div class="perm-item"><div class="pdot ok"></div>Criar e enviar relatório de despesas</div>
+        <div class="perm-item"><div class="pdot no"></div>Aprovar despesas <span class="perm-restrict">somente financeiro</span></div>
+        <div class="perm-item"><div class="pdot no"></div>Aprovar Ordens de Serviço <span class="perm-restrict">somente gestor</span></div>
+      </div>
+
+      <!-- Conectividade -->
+      <div class="sec">Conectividade</div>
+      <div class="icard">
+        <div class="irow"><span class="lbl">Última sincronização</span><span class="val" style="color:var(--green-d)">Há 2 minutos</span></div>
+        <div class="irow"><span class="lbl">Status</span><span class="val"><span class="chip g">Online</span></span></div>
+      </div>
+
+      <!-- Ação -->
+      <div style="padding:12px 16px 20px">
+        <button class="btn-s prof-logout" style="display:flex;align-items:center;justify-content:center;gap:8px">
+          <svg width="16" height="16"><use href="#ico-logout"/></svg>
+          Sair da Conta
+        </button>
+      </div>
+    </div>
+
+    <nav class="bnav">
+      <a href="#home"><svg width="22" height="22"><use href="#ico-home"/></svg>Home</a>
+      <a href="#wo-list"><svg width="22" height="22"><use href="#ico-os"/></svg>OS</a>
+      <a href="#map"><svg width="22" height="22"><use href="#ico-map"/></svg>Mapa</a>
+      <a href="#inventory"><svg width="22" height="22"><use href="#ico-stock"/></svg>Estoque</a>
+      <a class="on" href="#profile"><svg width="22" height="22"><use href="#ico-user"/></svg>Perfil</a>
+    </nav>
+  </div>
+</section>
+
+</main>
+
+<!-- ════════════════════════════════════════
+     FULLSCREEN MODAL  (veículo · coleta · entrega)
+     ════════════════════════════════════════ -->
+<div id="fs-modal" class="fs-modal" role="dialog" aria-modal="true" aria-label="Visualização ampliada">
+  <div class="fs-header">
+    <h3 id="fs-title">Mapa de Avarias</h3>
+    <div class="fs-header-right">
+      <span id="fs-badge" class="fs-badge edit">Editar</span>
+      <button class="fs-close" onclick="closeFsModal()" aria-label="Fechar">
+        <svg width="22" height="22"><use href="#ico-close"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="fs-body" id="fs-body"><!-- preenchido pelo JS --></div>
+  <div class="fs-hint" id="fs-hint">Toque no veículo para marcar avarias</div>
+  <div class="fs-footer" id="fs-footer"><!-- preenchido pelo JS --></div>
+</div>
+
+<!-- ── Dialog: detalhes da avaria ──────────────── -->
+<div id="avaria-dialog" class="avaria-dlg" role="dialog" aria-modal="true">
+  <div class="avaria-dlg-panel">
+    <div class="avaria-dlg-title" id="avaria-dlg-title">Nova Avaria</div>
+    <div class="avaria-dlg-body">
+      <div class="avaria-dlg-label">Gravidade</div>
+      <div class="avaria-sev-row">
+        <button class="sev-btn on" data-sev="leve"  onclick="selectSev(this)" type="button">Leve</button>
+        <button class="sev-btn"    data-sev="medio" onclick="selectSev(this)" type="button">Médio</button>
+        <button class="sev-btn"    data-sev="grave" onclick="selectSev(this)" type="button">Grave</button>
+      </div>
+      <div class="avaria-dlg-label">Descrição <span class="avaria-req">*</span></div>
+      <textarea id="avaria-desc" class="avaria-textarea" rows="3"
+        placeholder="Ex: Arranhão no para-choque dianteiro..."
+        oninput="this.classList.remove('error');document.getElementById('avaria-desc-err').style.display='none'"></textarea>
+      <div id="avaria-desc-err" class="avaria-err" style="display:none">Descrição obrigatória</div>
+    </div>
+    <div class="avaria-dlg-footer">
+      <button class="avaria-btn-cancel" onclick="cancelAvaria()" type="button">Cancelar</button>
+      <button class="avaria-btn-ok"     onclick="confirmAvaria()" type="button">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════
+   ERP Techsolutions · Flutter Mobile Prototype
+   Ícones: Lucide  (src/config/icons.tsx)
+   Assets: mobile/flutter_app/assets/images/{type}/{type}-{view}.png
+   ════════════════════════════════════════ */
+
+// ── Prestação de Contas Item — campos condicionais por categoria ──
+function pcCatChange(sel) {
+  const cat = sel.value;
+  document.getElementById('PC-fg-km').style.display   = cat === 'Combustível' ? '' : 'none';
+  document.getElementById('PC-fg-desc').style.display = cat === 'Outros'      ? '' : 'none';
+}
+
+// ── Estado global ──────────────────────
+let currentVehicle = 'sedan';
+let coletaView  = 'left';   // vista ativa no M10 — independente do M11
+let entregaView = 'left';   // vista ativa no M11 — independente do M10
+// pins keyed by view — cada vista guarda suas próprias marcações
+const vehiclePins = {left:[],right:[],front:[],back:[]};
+const entregaPins = {left:[],right:[],front:[],back:[]};
+const coletaPins  = {
+  left:[{x:'34',y:'72',n:1,desc:'Para-choque traseiro amassado',sev:'medio'}],
+  right:[], front:[], back:[]
+};
+let pendingPin = null; // pin aguardando confirmação do dialog
+
+// ── Helpers de imagem ─────────────────
+const IMG_BASE = '../../../mobile/flutter_app/assets/images/';
+
+function vehicleImg(type, view) {
+  return `${IMG_BASE}${type}/${type}-${view}.png`;
+}
+
+// Calcula os offsets do object-fit:contain dentro do container (em %)
+function imgContainOffsets(imgEl) {
+  const nW = imgEl.naturalWidth  || 1;
+  const nH = imgEl.naturalHeight || 1;
+  const cW = imgEl.offsetWidth   || 1;
+  const cH = imgEl.offsetHeight  || 1;
+  const nR = nW / nH, cR = cW / cH;
+  const rW = nR >= cR ? cW : cH * nR;
+  const rH = nR >= cR ? cW / nR : cH;
+  return {
+    x: (cW - rW) / 2 / cW * 100,
+    y: (cH - rH) / 2 / cH * 100,
+    w: rW / cW * 100,
+    h: rH / cH * 100
+  };
+}
+
+// Converte % da imagem para % do container (respeitando letterbox)
+function imgPinToContainerPct(pin, o) {
+  return {
+    left: (o.x + parseFloat(pin.x) * o.w / 100).toFixed(1),
+    top:  (o.y + parseFloat(pin.y) * o.h / 100).toFixed(1)
+  };
+}
+
+const SEV_COLOR = {leve:'#22c55e', medio:'#f59e0b', grave:'#ef4444'};
+
+const VEHICLE_LABELS = {
+  bus: 'Ônibus', motorcycle: 'Motocicleta', pickup: 'Picape',
+  sedan: 'Sedan', truck: 'Caminhão', van: 'Van'
+};
+
+// ── Tipo de veículo (select) ───────────
+function selectVehicleType(type) {
+  currentVehicle = type;
+  updateAllViewThumbs();
+  updateVdiagPreview();
+  updatePhotoThumbs();
+}
+
+// ── Vista do veículo ───────────────────
+function selectView(view, btn, context) {
+  if (context === 'coleta') coletaView = view;
+  else entregaView = view;
+  const sel = document.getElementById('view-selector-' + context);
+  if (sel) sel.querySelectorAll('.vview-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  if (context === 'coleta') updateVdiagPreview();
+  else updatePhotoThumbs();
+}
+
+function updateAllViewThumbs() {
+  ['left','right','front','back'].forEach(view => {
+    const src = vehicleImg(currentVehicle, view);
+    ['coleta','entrega'].forEach(ctx => {
+      const img = document.getElementById(`vs-${ctx}-${view}`);
+      if (img) img.src = src;
+    });
+  });
+}
+
+function updateVdiagPreview() {
+  const img = document.getElementById('vdiag-img');
+  if (img) img.src = vehicleImg(currentVehicle, coletaView);
+  renderVdiagPins();
+}
+
+function renderVdiagPins() {
+  const el    = document.getElementById('vdiag-pins-preview');
+  const imgEl = document.getElementById('vdiag-img');
+  if (!el) return;
+  const pins = vehiclePins[coletaView] || [];
+  if (!imgEl || !imgEl.naturalWidth || !pins.length) { el.innerHTML = ''; return; }
+  const o = imgContainOffsets(imgEl);
+  el.innerHTML = pins.map(p => {
+    const pos = imgPinToContainerPct(p, o);
+    const bg  = p.sev ? `background:${SEV_COLOR[p.sev]};` : '';
+    return `<div class="vd-pin-sm" style="left:${pos.left}%;top:${pos.top}%;${bg}" title="${p.desc||''}">${p.n}</div>`;
+  }).join('');
+}
+
+function updatePhotoThumbs() {
+  const src = vehicleImg(currentVehicle, entregaView);
+  const c = document.getElementById('thumb-coleta');
+  const e = document.getElementById('thumb-entrega');
+  if (c) c.src = src;
+  if (e) e.src = src;
+  renderPhotoThumbPins();
+}
+
+function renderPhotoThumbPins() {
+  renderThumbPins('pins-thumb-coleta', 'thumb-coleta', coletaPins[entregaView]  || []);
+  renderThumbPins('pins-thumb-entrega', 'thumb-entrega', entregaPins[entregaView] || []);
+}
+
+function renderThumbPins(elId, imgId, pins) {
+  const el    = document.getElementById(elId);
+  const imgEl = document.getElementById(imgId);
+  if (!el) return;
+  if (!imgEl || !imgEl.naturalWidth || !pins.length) { el.innerHTML = ''; return; }
+  const o = imgContainOffsets(imgEl);
+  el.innerHTML = pins.map(p => {
+    const pos = imgPinToContainerPct(p, o);
+    const bg  = p.sev ? `background:${SEV_COLOR[p.sev]};` : '';
+    return `<div class="dmg-pin-sm" style="left:${pos.left}%;top:${pos.top}%;transform:translate(-50%,-50%);${bg}" title="${p.desc||''}">${p.n}</div>`;
+  }).join('');
+}
+
+// ── Abrir modal de veículo ─────────────
+function openVehicleDiagram() {
+  const modal = document.getElementById('fs-modal');
+  modal.dataset.ctx = 'vehicle';
+  renderFsContent();
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+// ── Abrir modal de foto ────────────────
+function openPhoto(mode) {
+  const modal = document.getElementById('fs-modal');
+  modal.dataset.ctx = mode;
+  renderFsContent();
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+// ── Fechar modal ───────────────────────
+function closeFsModal() {
+  cancelAvaria();
+  document.getElementById('fs-modal').classList.remove('open');
+  document.body.style.overflow = '';
+  updateVdiagPreview();
+  renderPhotoThumbPins();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('avaria-dialog')?.classList.contains('open')) cancelAvaria();
+    else closeFsModal();
+  }
+});
+
+// ── Adicionar / remover pins ───────────
+function handleFsClick(e) {
+  const ctx = document.getElementById('fs-modal').dataset.ctx;
+  if (ctx === 'coleta') return;
+  if (e.target.closest('.fs-pin')) return;
+
+  const imgEl = document.getElementById('fs-img');
+  if (!imgEl) return;
+  const r = imgEl.getBoundingClientRect();
+  const x = ((e.clientX - r.left) / r.width  * 100).toFixed(1);
+  const y = ((e.clientY - r.top)  / r.height * 100).toFixed(1);
+  if (parseFloat(x) < 0 || parseFloat(x) > 100 || parseFloat(y) < 0 || parseFloat(y) > 100) return;
+
+  pendingPin = {x, y, ctx};
+  showAvariaDialog();
+}
+
+// ── Dialog: detalhes da avaria ─────────
+function showAvariaDialog() {
+  const view = pendingPin.ctx === 'vehicle' ? coletaView : entregaView;
+  const arr  = pendingPin.ctx === 'vehicle' ? vehiclePins[view] : entregaPins[view];
+  document.getElementById('avaria-dlg-title').textContent = `Nova Avaria #${arr.length + 1}`;
+  document.getElementById('avaria-desc').value = '';
+  document.getElementById('avaria-desc').classList.remove('error');
+  document.getElementById('avaria-desc-err').style.display = 'none';
+  document.querySelectorAll('#avaria-dialog .sev-btn').forEach((b, i) => b.classList.toggle('on', i === 0));
+  document.getElementById('avaria-dialog').classList.add('open');
+  setTimeout(() => document.getElementById('avaria-desc').focus(), 150);
+}
+
+function cancelAvaria() {
+  pendingPin = null;
+  document.getElementById('avaria-dialog').classList.remove('open');
+}
+
+function confirmAvaria() {
+  if (!pendingPin) return;
+  const descEl = document.getElementById('avaria-desc');
+  const desc   = descEl.value.trim();
+  if (!desc) {
+    descEl.classList.add('error');
+    document.getElementById('avaria-desc-err').style.display = 'block';
+    return;
+  }
+  const sev  = document.querySelector('#avaria-dialog .sev-btn.on')?.dataset.sev || 'leve';
+  const {x, y, ctx} = pendingPin;
+  const view = ctx === 'vehicle' ? coletaView : entregaView;
+  const arr  = ctx === 'vehicle' ? vehiclePins[view] : entregaPins[view];
+  arr.push({x, y, n: arr.length + 1, desc, sev});
+  pendingPin = null;
+  document.getElementById('avaria-dialog').classList.remove('open');
+  renderFsContent();
+}
+
+function selectSev(btn) {
+  btn.closest('.avaria-sev-row').querySelectorAll('.sev-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function removePin(ctx, idx) {
+  const view = ctx === 'vehicle' ? coletaView : entregaView;
+  const arr  = ctx === 'vehicle' ? vehiclePins[view] : entregaPins[view];
+  arr.splice(idx, 1);
+  arr.forEach((p, i) => { p.n = i + 1; });
+  renderFsContent();
+}
+
+function clearFsPins() {
+  const ctx  = document.getElementById('fs-modal').dataset.ctx;
+  const view = ctx === 'vehicle' ? coletaView : entregaView;
+  if (ctx === 'vehicle') vehiclePins[view] = [];
+  else if (ctx === 'entrega') entregaPins[view] = [];
+  renderFsContent();
+}
+
+// ── Renderizar conteúdo do modal ───────
+function renderFsContent() {
+  const ctx    = document.getElementById('fs-modal').dataset.ctx;
+  const title  = document.getElementById('fs-title');
+  const badge  = document.getElementById('fs-badge');
+  const body   = document.getElementById('fs-body');
+  const hint   = document.getElementById('fs-hint');
+  const footer = document.getElementById('fs-footer');
+
+  const isEdit  = (ctx !== 'coleta');
+  const view    = ctx === 'vehicle' ? coletaView : entregaView;
+  const pins    = ctx === 'vehicle' ? (vehiclePins[view] || [])
+                : ctx === 'coleta'  ? (coletaPins[view]  || [])
+                : (entregaPins[view] || []);
+
+  title.textContent = ctx === 'vehicle' ? 'Mapa de Avarias'
+                    : ctx === 'coleta'  ? 'Foto de Coleta'
+                    : 'Foto de Entrega';
+  badge.textContent = isEdit ? 'Editar avaria' : 'Somente leitura';
+  badge.className   = 'fs-badge ' + (isEdit ? 'edit' : 'view');
+
+  const pinsHtml = pins.map((p, i) => {
+    const bg = p.sev ? `background:${SEV_COLOR[p.sev]};` : '';
+    const tip = (p.desc ? `${p.n}. ${p.desc}` : `Avaria ${p.n}`) + (isEdit ? ' — clique para remover' : '');
+    return `<div class="fs-pin" style="left:${p.x}%;top:${p.y}%;pointer-events:${isEdit?'auto':'none'};${bg}"
+         title="${tip}"
+         ${isEdit ? `onclick="removePin('${ctx}',${i});event.stopPropagation()"` : ''}>
+       ${p.n}
+     </div>`;
+  }).join('');
+
+  const imgSrc = vehicleImg(currentVehicle, ctx === 'vehicle' ? coletaView : entregaView);
+
+  if (ctx === 'vehicle') {
+    body.innerHTML = `
+      <div id="fs-canvas" class="fs-canvas editable" onclick="handleFsClick(event)">
+        <div class="fs-img-frame">
+          <img id="fs-img" src="${imgSrc}" class="fs-vehicle-img" alt="Mapa de avarias" draggable="false">
+          ${pinsHtml}
+        </div>
+      </div>`;
+  } else {
+    // foto (coleta somente leitura, entrega editável)
+    body.innerHTML = `
+      <div id="fs-canvas" class="fs-photo-wrap${isEdit ? ' editable' : ''}"
+           ${isEdit ? 'onclick="handleFsClick(event)"' : ''}>
+        <div class="fs-img-frame">
+          <img id="fs-img" src="${imgSrc}" class="fs-vehicle-img" alt="Foto ${ctx}" draggable="false">
+          ${pinsHtml}
+        </div>
+      </div>`;
+  }
+
+  // Hint
+  if (ctx === 'vehicle') {
+    hint.textContent = pins.length === 0
+      ? 'Toque no diagrama para marcar avarias'
+      : `${pins.length} avaria(s) — toque para adicionar · clique no pino para remover`;
+  } else if (ctx === 'coleta') {
+    hint.textContent = '🔒 Foto de coleta — edição não permitida';
+  } else {
+    hint.textContent = pins.length === 0
+      ? 'Toque na foto para marcar divergência encontrada'
+      : `${pins.length} divergência(s) — clique no pino vermelho para remover`;
+  }
+
+  // Footer
+  footer.innerHTML = isEdit
+    ? `<button class="fs-btn-clear" onclick="clearFsPins()">
+         <svg width="16" height="16"><use href="#ico-close"/></svg> Limpar
+       </button>
+       <button class="fs-btn-ok" onclick="closeFsModal()">
+         <svg width="16" height="16"><use href="#ico-check"/></svg> Confirmar
+       </button>`
+    : `<button class="fs-btn-readonly" onclick="closeFsModal()">Fechar</button>`;
+}
+
+// ── Inicialização ──────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Sincroniza seletores de tipo: select → vview-btn inicial
+  const sel = document.getElementById('vehicle-type-select');
+  if (sel) sel.value = currentVehicle;
+  updateAllViewThumbs();
+  updateVdiagPreview();
+  updatePhotoThumbs();
+});
+</script>
 </body>
 </html>
