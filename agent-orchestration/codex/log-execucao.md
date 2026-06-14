@@ -1,5 +1,38 @@
 # Log de Execucao
 
+## 2026-06-14 - B-098 Flutter Real Auth and Bootstrap
+
+### Natureza
+
+Ativacao de autenticacao real controlada e bootstrap completo. Dois providers em paralelo para backward-compat. TenantSelectorScreen para multi-tenant. Nenhuma mudanca em backend ou frontend web.
+
+### Mudancas implementadas
+
+| Arquivo | Tipo | Descricao |
+|---------|------|-----------|
+| `core/bootstrap/bootstrap_repository.dart` | feat | fetchForTenant, BootstrapNotifier, bootstrapNotifierProvider |
+| `features/auth/tenant_selector_screen.dart` | feat | Tela de selecao de empresa (novo arquivo) |
+| `app/router.dart` | feat | /tenant-select route + redirect pendingTenantSelection |
+| `core/auth/auth_notifier.dart` | fix | Wildcard Dart 3.11.4 (_, _) |
+| `shared/ui/home_screen.dart` | feat | bootstrapNotifierProvider + _BootstrapErrorView |
+| `test/features/b098_real_auth_bootstrap_test.dart` | test | 30 novos testes (novo arquivo) |
+
+### Descoberta tecnica
+
+Riverpod 3.3.2 ativa retry exponencial automatico para Exceptions (`ProviderContainer.defaultRetry`). Quando um provider falha, ele entra em `AsyncLoading(retrying:true)` e `when()` chama `loading()`. Solucao: `ProviderScope(retry: (_, _) => null)` nos testes de estado de erro.
+
+### Validacao
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| `flutter analyze` | **No issues found** |
+| `flutter test` | **352/352 passando** |
+| `npm test` | **15/15 passando** |
+| `npm run lint` | **0 erros** |
+| `npm run build` | **0 erros** |
+
+---
+
 ## 2026-06-14 - B-097 Flutter Mobile MVP Stabilization
 
 ### Natureza

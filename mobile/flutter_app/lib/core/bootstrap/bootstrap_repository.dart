@@ -18,6 +18,13 @@ abstract class MobileBootstrapRepository {
   // Fetches bootstrap for the given auth session (null → dev/mock session).
   Future<BootstrapSession> fetch(AuthSession? session);
 
+  // Fetches bootstrap scoped to a specific tenant (multi-tenant switch).
+  // Default implementation delegates to fetch(); remote impl passes tenantId.
+  Future<BootstrapSession> fetchForTenant(
+    AuthSession session,
+    String tenantId,
+  ) => fetch(session);
+
   // Returns cached bootstrap from secure storage, or null if absent.
   Future<BootstrapSession?> restoreCached();
 
@@ -83,6 +90,30 @@ class LocalDevBootstrapRepository implements MobileBootstrapRepository {
       _storage.saveBootstrapJson(BootstrapSessionCodec.encode(session));
 
   @override
+  Future<BootstrapSession> fetchForTenant(
+    AuthSession session,
+    String tenantId,
+  ) async {
+    final base = await fetch(session);
+    // Dev mode: search across the full dev tenant list, not just session tenant
+    final allAvailable = devBootstrapSession.availableTenants;
+    final selected = allAvailable.firstWhere(
+      (t) => t.tenantId == tenantId,
+      orElse: () => base.activeTenant,
+    );
+    return BootstrapSession(
+      activeTenant: selected,
+      availableTenants: allAvailable,
+      user: base.user,
+      enabledModules: base.enabledModules,
+      permissions: base.permissions,
+      mobilePolicy: base.mobilePolicy,
+      expenseCategories: base.expenseCategories,
+      expensePolicy: base.expensePolicy,
+    );
+  }
+
+  @override
   Future<void> clearCache() => _storage.clearBootstrap();
 
   String _tenantDisplayName(String tenantId) {
@@ -110,6 +141,29 @@ class DioMobileBootstrapRepository implements MobileBootstrapRepository {
     );
     try {
       final response = await client.get(ExpenseApiEndpoints.mobileBootstrap);
+      final bootstrap = _bootstrapFromRemoteJson(
+        response.data as Map<String, dynamic>,
+      );
+      await cache(bootstrap);
+      return bootstrap;
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
+  @override
+  Future<BootstrapSession> fetchForTenant(
+    AuthSession session,
+    String tenantId,
+  ) async {
+    final client = createExpenseHttpClient(
+      ApiConfig(accessToken: session.tokens.accessToken),
+    );
+    try {
+      final response = await client.get(
+        ExpenseApiEndpoints.mobileBootstrap,
+        queryParameters: {'tenantId': tenantId},
+      );
       final bootstrap = _bootstrapFromRemoteJson(
         response.data as Map<String, dynamic>,
       );
@@ -231,12 +285,16 @@ final mobileBootstrapRepositoryProvider = Provider<MobileBootstrapRepository>((
   return LocalDevBootstrapRepository(storage);
 });
 
+// ── Bootstrap session provider (FutureProvider — kept for backward compat) ────
+//
+// All screens and pre-B-098 tests continue to use this provider unchanged.
+// HomeScreen now watches bootstrapNotifierProvider for retry/switchTenant.
+
 final bootstrapSessionProvider = FutureProvider<BootstrapSession>((ref) async {
   final authState = await ref.watch(authStateProvider.future);
   final repo = ref.watch(mobileBootstrapRepositoryProvider);
 
   if (authState.isAuthenticated && authState.session != null) {
-    // Try cached bootstrap first to avoid blocking the UI on network
     final cached = await repo.restoreCached();
     if (cached != null) return cached;
 
@@ -245,6 +303,66 @@ final bootstrapSessionProvider = FutureProvider<BootstrapSession>((ref) async {
     return fetched;
   }
 
-  // Unauthenticated / dev mode — return dev bootstrap (existing behaviour)
   return repo.fetch(null);
 });
+
+// ── Bootstrap notifier (B-098) — adds retry() and switchTenant() ─────────────
+
+class BootstrapNotifier extends AsyncNotifier<BootstrapSession> {
+  // Set to true after the user explicitly selects a tenant, preventing
+  // HomeScreen from re-triggering the /tenant-select redirect.
+  bool _tenantWasSelected = false;
+
+  bool get pendingTenantSelection {
+    if (!kIsRemoteAuth) return false;
+    if (_tenantWasSelected) return false;
+    final data = state.asData?.value;
+    return data != null && data.availableTenants.length > 1;
+  }
+
+  @override
+  Future<BootstrapSession> build() async {
+    final authState = await ref.watch(authStateProvider.future);
+    final repo = ref.watch(mobileBootstrapRepositoryProvider);
+
+    if (authState.isAuthenticated && authState.session != null) {
+      final cached = await repo.restoreCached();
+      if (cached != null) return cached;
+
+      final fetched = await repo.fetch(authState.session);
+      await repo.cache(fetched);
+      return fetched;
+    }
+
+    return repo.fetch(null);
+  }
+
+  Future<void> retry() async {
+    final repo = ref.read(mobileBootstrapRepositoryProvider);
+    await repo.clearCache();
+    _tenantWasSelected = false;
+    ref.invalidateSelf();
+  }
+
+  Future<void> switchTenant(TenantContext tenant) async {
+    final authAsync = ref.read(authStateProvider);
+    final session = authAsync.asData?.value.session;
+    if (session == null) return;
+
+    state = const AsyncValue.loading();
+    try {
+      final repo = ref.read(mobileBootstrapRepositoryProvider);
+      final updated = await repo.fetchForTenant(session, tenant.tenantId);
+      await repo.cache(updated);
+      _tenantWasSelected = true;
+      state = AsyncValue.data(updated);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+}
+
+final bootstrapNotifierProvider =
+    AsyncNotifierProvider<BootstrapNotifier, BootstrapSession>(
+      BootstrapNotifier.new,
+    );

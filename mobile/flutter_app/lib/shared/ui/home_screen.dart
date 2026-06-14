@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/bootstrap/bootstrap_repository.dart';
 import '../../core/bootstrap/bootstrap_session.dart';
+import '../../core/network/api_error.dart';
 import '../../core/modules/module_resolver.dart';
 import '../../core/network/connectivity_repository.dart';
 import '../../core/permissions/permission_resolver.dart';
@@ -28,12 +29,25 @@ class HomeScreen extends ConsumerWidget {
       return _HomeContent(session: fixedSession);
     }
 
-    final asyncSession = ref.watch(bootstrapSessionProvider);
+    final asyncSession = ref.watch(bootstrapNotifierProvider);
     return asyncSession.when(
-      data: (value) => _HomeContent(session: value),
+      data: (value) {
+        // After bootstrap loads, check if tenant selection is pending.
+        // Redirect happens post-frame to avoid navigation during build.
+        final notifier = ref.read(bootstrapNotifierProvider.notifier);
+        if (notifier.pendingTenantSelection) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) context.go('/tenant-select');
+          });
+        }
+        return _HomeContent(session: value);
+      },
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (error, stackTrace) => ErrorState(message: '$error'),
+      error: (error, _) => _BootstrapErrorView(
+        error: error,
+        onRetry: () => ref.read(bootstrapNotifierProvider.notifier).retry(),
+      ),
     );
   }
 }
@@ -663,6 +677,58 @@ class _TodayOsItem extends StatelessWidget {
                 style: Theme.of(context).textTheme.labelSmall,
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bootstrap error view (shown when bootstrapSessionProvider fails)
+// ---------------------------------------------------------------------------
+
+class _BootstrapErrorView extends StatelessWidget {
+  const _BootstrapErrorView({required this.error, required this.onRetry});
+
+  final Object error;
+  final VoidCallback onRetry;
+
+  String get _safeMessage {
+    if (error is ApiError) return (error as ApiError).safeMessage;
+    return 'Nao foi possivel carregar os dados do sistema. '
+        'Verifique sua conexao e tente novamente.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.cloud_off_outlined, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                'Erro ao carregar sistema',
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _safeMessage,
+                style: const TextStyle(color: Colors.black54),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Tentar novamente'),
+              ),
+            ],
+          ),
         ),
       ),
     );
