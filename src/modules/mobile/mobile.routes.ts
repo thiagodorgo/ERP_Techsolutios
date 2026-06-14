@@ -15,6 +15,22 @@ type ExpenseCategoryDto = {
   };
 };
 
+type CapabilityStatus = "implemented" | "planned" | "unavailable" | "partial";
+
+type FeatureFlagDto = {
+  readonly enabled: boolean;
+  readonly status: CapabilityStatus;
+  readonly reason?: string;
+};
+
+const BOOTSTRAP_CONTRACT_VERSION = "2026-06-14.b098a";
+const BOOTSTRAP_SCHEMA_VERSION = 2;
+const BOOTSTRAP_TTL_SECONDS = 300;
+const BOOTSTRAP_STALE_WHILE_REVALIDATE_SECONDS = 900;
+const MOBILE_APP_MIN_SUPPORTED_VERSION = "0.1.0";
+const MOBILE_APP_RECOMMENDED_VERSION = "0.1.0";
+const MOBILE_CATALOG_VERSION = "mobile-catalogs:v1";
+
 export function createMobileRouter(service: ICoreSaasService): Router {
   const router = Router();
 
@@ -45,9 +61,33 @@ export function createMobileRouter(service: ICoreSaasService): Router {
         service.getUserForTenant(actor.userId, actor.tenantId),
         listExpenseCategoriesForBootstrap(actor),
       ]);
+      const serverTime = new Date();
+      const expiresAt = new Date(serverTime.getTime() + BOOTSTRAP_TTL_SECONDS * 1000);
+      const featureFlags = buildFeatureFlags(tenant.modules, actor);
 
       response.json({
         data: {
+          contract: {
+            name: "mobile_bootstrap",
+            version: BOOTSTRAP_CONTRACT_VERSION,
+            schemaVersion: BOOTSTRAP_SCHEMA_VERSION,
+            status: "expanded",
+            generatedAt: serverTime.toISOString(),
+          },
+          mobile_app: {
+            platform: "flutter",
+            min_supported_version: MOBILE_APP_MIN_SUPPORTED_VERSION,
+            recommended_version: MOBILE_APP_RECOMMENDED_VERSION,
+            bootstrap_contract_version: BOOTSTRAP_CONTRACT_VERSION,
+          },
+          cache: {
+            ttl_seconds: BOOTSTRAP_TTL_SECONDS,
+            stale_while_revalidate_seconds: BOOTSTRAP_STALE_WHILE_REVALIDATE_SECONDS,
+            generated_at: serverTime.toISOString(),
+            expires_at: expiresAt.toISOString(),
+            cache_key: buildBootstrapCacheKey(tenant.id, user.id),
+            vary_by: ["tenant", "user", "roles", "permissions", "modules"],
+          },
           tenant: {
             id: tenant.id,
             name: tenant.name,
@@ -63,8 +103,11 @@ export function createMobileRouter(service: ICoreSaasService): Router {
             key,
             enabled: true,
           })),
+          feature_flags: featureFlags,
+          mobile_policy: buildMobilePolicy(),
+          catalogs: buildCatalogs(tenant.modules, actor, expenseCategories),
           expenseCategories,
-          serverTime: new Date().toISOString(),
+          serverTime: serverTime.toISOString(),
           sync: {
             workOrdersCursor: null,
             checklistsCursor: null,
@@ -77,6 +120,166 @@ export function createMobileRouter(service: ICoreSaasService): Router {
   );
 
   return router;
+}
+
+function buildFeatureFlags(
+  modules: readonly string[],
+  actor: AuthenticatedActor,
+): Record<string, FeatureFlagDto> {
+  return {
+    mobile_bootstrap_expanded: {
+      enabled: true,
+      status: "implemented",
+    },
+    expense_management: {
+      enabled: hasModule(modules, "expense_management") && canReadExpenseBootstrapCatalog(actor),
+      status: hasModule(modules, "expense_management") ? "implemented" : "unavailable",
+      ...(hasModule(modules, "expense_management") ? {} : { reason: "module_disabled" }),
+    },
+    work_orders: {
+      enabled: hasModule(modules, "work_orders") && hasPermission(actor, "work_orders:read"),
+      status: hasModule(modules, "work_orders") ? "implemented" : "unavailable",
+      ...(hasModule(modules, "work_orders") ? {} : { reason: "module_disabled" }),
+    },
+    checklists: {
+      enabled: hasModule(modules, "tenant_checklist") && hasPermission(actor, "checklist_runs:read"),
+      status: hasModule(modules, "tenant_checklist") ? "implemented" : "unavailable",
+      ...(hasModule(modules, "tenant_checklist") ? {} : { reason: "module_disabled" }),
+    },
+    notifications: {
+      enabled: hasModule(modules, "notifications") && hasPermission(actor, "notifications:read"),
+      status: hasModule(modules, "notifications") ? "implemented" : "unavailable",
+      ...(hasModule(modules, "notifications") ? {} : { reason: "module_disabled" }),
+    },
+    field_location: {
+      enabled: hasModule(modules, "field_operations") && (
+        hasPermission(actor, "field_location:send") ||
+        hasPermission(actor, "field_location:read") ||
+        hasPermission(actor, "field_location:history")
+      ),
+      status: hasModule(modules, "field_operations") ? "implemented" : "unavailable",
+      ...(hasModule(modules, "field_operations") ? {} : { reason: "module_disabled" }),
+    },
+    expense_sync: {
+      enabled: hasModule(modules, "expense_management") && canReadExpenseBootstrapCatalog(actor),
+      status: "implemented",
+    },
+    work_order_sync: {
+      enabled: false,
+      status: "planned",
+      reason: "planned_for_b098b",
+    },
+    checklist_sync: {
+      enabled: false,
+      status: "planned",
+      reason: "planned_for_b098c",
+    },
+    inventory_mobile: {
+      enabled: false,
+      status: "planned",
+      reason: "backend_contract_unavailable",
+    },
+    generic_evidence_upload: {
+      enabled: false,
+      status: "planned",
+      reason: "backend_contract_unavailable",
+    },
+  };
+}
+
+function buildMobilePolicy() {
+  return {
+    auth: {
+      bearer_required: true,
+      legacy_headers: "development_test_only",
+      tenant_source: "authenticated_actor",
+    },
+    cache: {
+      bootstrap_ttl_seconds: BOOTSTRAP_TTL_SECONDS,
+      stale_while_revalidate_seconds: BOOTSTRAP_STALE_WHILE_REVALIDATE_SECONDS,
+    },
+    sync: {
+      actions_enabled: false,
+      read_only_bootstrap: true,
+      client_action_id_required: true,
+      max_batch_size: 50,
+      retry_backoff_seconds: [10, 30, 120],
+      implemented_domains: ["expenses"],
+      planned_domains: ["work_orders", "checklists", "inventory"],
+    },
+    evidence: {
+      checklist_attachments: "implemented",
+      work_order_evidence: "planned",
+      generic_upload: "planned",
+      max_upload_mb: 10,
+      allowed_mime_types: ["image/jpeg", "image/png", "application/pdf"],
+    },
+    diagnostics: {
+      safe_logs_only: true,
+      include_tokens: false,
+      include_private_file_paths: false,
+    },
+  };
+}
+
+function buildCatalogs(
+  modules: readonly string[],
+  actor: AuthenticatedActor,
+  expenseCategories: readonly ExpenseCategoryDto[],
+) {
+  const canReadExpenseCatalog = canReadExpenseBootstrapCatalog(actor);
+
+  return {
+    version: MOBILE_CATALOG_VERSION,
+    modules: {
+      status: "implemented",
+      version: buildVersion("modules", modules),
+      items: modules.map((key) => ({
+        key,
+        enabled: true,
+      })),
+    },
+    permissions: {
+      status: "implemented",
+      version: buildVersion("permissions", actor.permissions),
+      items: [...actor.permissions],
+    },
+    expense_categories: {
+      status: canReadExpenseCatalog ? "implemented" : "unavailable",
+      version: "expense-categories:v1",
+      reason: canReadExpenseCatalog ? null : "permission_required",
+      items: expenseCategories,
+    },
+    endpoints: {
+      status: "partial",
+      version: "mobile-endpoints:v1",
+      items: [
+        endpointCatalogItem("auth_login", "POST /api/v1/auth/login", "implemented"),
+        endpointCatalogItem("auth_refresh", "POST /api/v1/auth/refresh", "implemented"),
+        endpointCatalogItem("mobile_bootstrap", "GET /api/v1/mobile/bootstrap", "implemented"),
+        endpointCatalogItem("work_orders", "GET /api/v1/work-orders", "implemented"),
+        endpointCatalogItem("mobile_checklists", "GET /api/v1/mobile/checklists/available", "implemented"),
+        endpointCatalogItem("expense_sync", "POST /api/v1/mobile/sync/expense-actions", "implemented"),
+        endpointCatalogItem("notifications", "GET /api/v1/notifications", "implemented"),
+        endpointCatalogItem("field_location_send", "POST /api/v1/mobile/field-locations", "implemented"),
+        endpointCatalogItem("work_order_sync", "POST /api/v1/mobile/sync/work-order-actions", "planned"),
+        endpointCatalogItem("checklist_sync", "POST /api/v1/mobile/sync/checklist-actions", "planned"),
+        endpointCatalogItem("inventory_items", "GET /api/v1/mobile/inventory/items", "planned"),
+      ],
+    },
+  };
+}
+
+function endpointCatalogItem(
+  key: string,
+  endpoint: string,
+  status: CapabilityStatus,
+) {
+  return {
+    key,
+    endpoint,
+    status,
+  };
 }
 
 async function listExpenseCategoriesForBootstrap(
@@ -96,6 +299,25 @@ async function listExpenseCategoriesForBootstrap(
       defaultLimit: category.defaultLimit ?? null,
     },
   }));
+}
+
+function buildBootstrapCacheKey(tenantId: string, userId: string): string {
+  return `mobile-bootstrap:${BOOTSTRAP_CONTRACT_VERSION}:tenant:${tenantId}:user:${userId}`;
+}
+
+function buildVersion(prefix: string, values: readonly string[]): string {
+  return `${prefix}:${values.length}:${values.join("|")}`;
+}
+
+function hasModule(modules: readonly string[], moduleKey: string): boolean {
+  return modules.includes(moduleKey);
+}
+
+function hasPermission(
+  actor: AuthenticatedActor,
+  permission: AuthenticatedActor["permissions"][number],
+): boolean {
+  return actor.permissions.includes(permission);
 }
 
 function canReadExpenseBootstrapCatalog(actor: AuthenticatedActor): boolean {
