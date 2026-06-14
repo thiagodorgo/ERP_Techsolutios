@@ -1,5 +1,46 @@
 # Status Geral
 
+## Atualizacao 2026-06-14 — B-098 Flutter Real Auth and Bootstrap
+
+### QA final
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| `flutter analyze` | **No issues found** |
+| `flutter test` | **352/352 passando** (+30 novos de B-098, +7 de B-097 recontagem) |
+| `npm test` | **15/15 passando** |
+| `npm run lint` | **0 erros** |
+| `npm run build` | **0 erros** |
+
+### Flutter — inventario funcional atualizado
+
+| Modulo | Status | Observacao |
+|--------|--------|------------|
+| Auth/Login | Pronto | Real via `--dart-define=ERP_AUTH_MODE=remote` |
+| Bootstrap/Session | Pronto | Dual-provider: FutureProvider (compat) + AsyncNotifierProvider (retry/switch) |
+| Multi-tenant | Pronto | TenantSelectorScreen + BootstrapNotifier.switchTenant() |
+| Bootstrap error | Pronto | _BootstrapErrorView com retry amigavel |
+| Profile | Pronto | — |
+| Connectivity | Pronto | — |
+| Auto sync | Pronto (local) | — |
+| RDV/Despesas | Pronto (local-first) | — |
+| OS | Pronto (SQLite) | DriftWorkOrderLocalStore ativo |
+| Checklist configuravel | Pronto (modelos ricos) | — |
+| Checklist renderers | Pronto (registry) | 10 tipos + fallback |
+| Sync screen | Melhorado | Grupos por dominio, KPIs |
+| Diagnostics | Dev-only | Protegida por kIsDevMode |
+| Approvals | Placeholder | — |
+| Inventory | Pronto (local-first) | — |
+| Field map | Placeholder | — |
+
+### Proximos passos sugeridos
+
+- B-099: Upload real de fotos (image_picker + presigned URL)
+- B-100: Conectar backend real de checklists
+- B-101: Notificacoes push (FCM)
+
+---
+
 ## Atualizacao 2026-06-14 — B-097 Flutter Mobile MVP Stabilization
 
 ### QA final
