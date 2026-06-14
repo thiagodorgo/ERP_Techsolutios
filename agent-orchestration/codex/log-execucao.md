@@ -2724,3 +2724,25 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - nenhum comando Flutter foi executado
 - sem Figma, secrets, `.env`, migrations ou infra
 - sync de OS nao foi implementado; permanece para B-098B
+
+## 2026-06-14 - B-098B Mobile Work Order Actions Sync Contract
+
+### Implementado
+
+- worktree isolado: `ERP_Techsolutios-codex-b098b`
+- branch: `feature/mobile-work-order-actions-sync`
+- base: `origin/main` atualizada apos merge do PR #81
+- criado contrato `POST /api/v1/mobile/sync/work-order-actions`
+- suporte a lote de acoes `work_order.status_change` e `work_order.assign`
+- tenant resolvido exclusivamente pelo ator autenticado/contexto backend
+- idempotencia por tenant do ator + usuario do ator + `client_action_id`
+- resposta separada em `accepted`, `rejected`, `conflicts` e `already_applied`
+- bootstrap/catalogos atualizados para marcar `work_order_sync` como `implemented`
+- testes de contrato mobile atualizados para aceite, replay idempotente, conflitos, rejeicoes e 404 planejado de checklist/inventario
+
+### Escopo preservado
+
+- `mobile/flutter_app/**` nao foi alterado
+- nenhum comando Flutter foi executado
+- sem Figma, secrets, `.env`, migrations ou infra
+- checklist sync, inventario e evidencias genericas nao foram implementados

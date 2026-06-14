@@ -5,6 +5,7 @@ import type { ICoreSaasService } from "../core-saas/services/core-saas-service.i
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { createDefaultExpenseManagementService } from "../expense-management/expense-management.service.js";
+import { syncMobileWorkOrderActions } from "./mobile-work-order-sync.js";
 
 type ExpenseCategoryDto = {
   readonly id: string;
@@ -119,6 +120,15 @@ export function createMobileRouter(service: ICoreSaasService): Router {
     }),
   );
 
+  router.post(
+    "/mobile/sync/work-order-actions",
+    handleAsyncRoute(async (request, response) => {
+      response.json({
+        data: await syncMobileWorkOrderActions(request.tenantContext, request.body ?? {}),
+      });
+    }),
+  );
+
   return router;
 }
 
@@ -165,9 +175,12 @@ function buildFeatureFlags(
       status: "implemented",
     },
     work_order_sync: {
-      enabled: false,
-      status: "planned",
-      reason: "planned_for_b098b",
+      enabled: hasModule(modules, "work_orders") && (
+        hasPermission(actor, "work_orders:status") ||
+        hasPermission(actor, "work_orders:assign")
+      ),
+      status: hasModule(modules, "work_orders") ? "implemented" : "unavailable",
+      ...(hasModule(modules, "work_orders") ? {} : { reason: "module_disabled" }),
     },
     checklist_sync: {
       enabled: false,
@@ -199,13 +212,13 @@ function buildMobilePolicy() {
       stale_while_revalidate_seconds: BOOTSTRAP_STALE_WHILE_REVALIDATE_SECONDS,
     },
     sync: {
-      actions_enabled: false,
-      read_only_bootstrap: true,
+      actions_enabled: true,
+      read_only_bootstrap: false,
       client_action_id_required: true,
       max_batch_size: 50,
       retry_backoff_seconds: [10, 30, 120],
-      implemented_domains: ["expenses"],
-      planned_domains: ["work_orders", "checklists", "inventory"],
+      implemented_domains: ["expenses", "work_orders"],
+      planned_domains: ["checklists", "inventory"],
     },
     evidence: {
       checklist_attachments: "implemented",
@@ -262,7 +275,7 @@ function buildCatalogs(
         endpointCatalogItem("expense_sync", "POST /api/v1/mobile/sync/expense-actions", "implemented"),
         endpointCatalogItem("notifications", "GET /api/v1/notifications", "implemented"),
         endpointCatalogItem("field_location_send", "POST /api/v1/mobile/field-locations", "implemented"),
-        endpointCatalogItem("work_order_sync", "POST /api/v1/mobile/sync/work-order-actions", "planned"),
+        endpointCatalogItem("work_order_sync", "POST /api/v1/mobile/sync/work-order-actions", "implemented"),
         endpointCatalogItem("checklist_sync", "POST /api/v1/mobile/sync/checklist-actions", "planned"),
         endpointCatalogItem("inventory_items", "GET /api/v1/mobile/inventory/items", "planned"),
       ],
