@@ -1,5 +1,49 @@
 # Status Geral
 
+## Atualizacao 2026-06-14 — B-097 Flutter Mobile MVP Stabilization
+
+### QA final
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| `flutter analyze --no-fatal-infos` | **No issues found** |
+| `flutter test` | **315/315 passando** (+35 novos) |
+| `npm test` | **15/15 passando** |
+| `npm run lint` | **0 erros** |
+| `npm run build` | **0 erros** |
+
+### Flutter — inventario funcional atualizado
+
+| Modulo | Status | Observacao |
+|--------|--------|------------|
+| Auth/Login | Pronto | Campos limpos; acesso dev em kIsDevMode |
+| Bootstrap/Session | Pronto | — |
+| Profile | Pronto | — |
+| Connectivity | Pronto | — |
+| Auto sync | Pronto (local) | — |
+| RDV/Despesas | Pronto (local-first) | Stub nao crasha mais |
+| Recibos/Evidencias RDV | Pronto (metadata) | — |
+| OS | Pronto (persistido SQLite) | DriftWorkOrderLocalStore ativo |
+| Work Order evidence | Pronto (schema v4) | Tabela work_order_evidence criada |
+| Checklist configuravel | Pronto (modelos ricos) | ChecklistTemplate versionado |
+| Checklist renderers | Pronto (registry) | 10 tipos nativos + fallback controlado |
+| Checklist persistence Drift | Pronto | — |
+| Checklist sync replay | Pronto | — |
+| Evidencias camera/galeria | Stub seguro | onPressed: null |
+| Sync screen | Melhorado | Grupos por dominio, KPIs, banner backend-pending |
+| Diagnostics | Dev-only | Protegida por kIsDevMode em producao |
+| Approvals | Placeholder | — |
+| Inventory | Pronto (local-first) | — |
+| Field map | Placeholder | — |
+
+### Proximos passos sugeridos
+
+- B-098: Conectar backend real de checklists (substituir PendingBackendChecklistSyncBatchApi)
+- B-099: Upload real de fotos (image_picker + presigned URL)
+- B-100: Auth remota como default (DioAuthRepository)
+
+---
+
 ## Atualizacao 2026-06-13 — B-094 (v2) QA Geral + Organizacao Flutter + Estrategia de PR
 
 ### QA Flutter — resultado final
