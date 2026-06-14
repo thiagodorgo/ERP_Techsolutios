@@ -35,7 +35,7 @@ O primeiro caminho versionado nesta fase e `mobile/flutter_app`, porque nao havi
 - categorias e politicas de despesas;
 - versoes de catalogos para cache e sync.
 
-### Status backend B-098A
+### Status backend B-098A/B-098B
 
 `GET /api/v1/mobile/bootstrap` ja existe no backend como contrato expandido e cacheavel. Ele preserva tenant ativo, usuario, roles, permissoes, modulos habilitados, categorias de despesas quando o ator tem permissao relacionada a despesas, `serverTime` e cursores nulos de sync.
 
@@ -48,7 +48,16 @@ Blocos adicionais disponiveis para o Flutter:
 - `mobile_policy`: regras de auth, cache, sync, evidencias e diagnostico seguro.
 - `catalogs`: modulos, permissoes, categorias de despesas e endpoints com versoes e status.
 
-Ainda nao ha tenants disponiveis, sync offline de OS/checklist/inventario nem upload generico de evidencia de OS. Esses itens ficam para B-098B e fases seguintes.
+No B-098B, `POST /api/v1/mobile/sync/work-order-actions` passou a existir para replay controlado de acoes de OS:
+
+- `feature_flags.work_order_sync.status=implemented` quando o modulo `work_orders` esta disponivel;
+- `mobile_policy.sync.implemented_domains` inclui `work_orders`;
+- `catalogs.endpoints.work_order_sync` aponta para `POST /api/v1/mobile/sync/work-order-actions` como `implemented`;
+- o app deve enviar lotes com `client_action_id` por acao e tratar `accepted`, `rejected`, `conflicts` e `already_applied` separadamente;
+- o Flutter nao deve enviar `tenant_id` como fonte de decisao; o backend usa o tenant do ator autenticado;
+- conflitos exigem resolucao explicita na fila local antes de descartar dados.
+
+Ainda nao ha tenants disponiveis, sync offline de checklist/inventario nem upload generico de evidencia de OS. Esses itens ficam para fases seguintes.
 
 ## Estrutura inicial
 
@@ -94,6 +103,7 @@ OCR, PDF, camera e upload real ficam documentados, mas fora da primeira fundacao
 - Tokens nunca devem ir para SQLite comum.
 - Toda entidade local tenant-scoped carrega `tenant_id`.
 - `client_action_id` e obrigatorio em toda acao de sync.
+- A fila de OS deve usar `POST /api/v1/mobile/sync/work-order-actions` apenas para `work_order.status_change` e `work_order.assign` nesta fase.
 - Recibos nao devem aparecer em logs.
 - Conflito nao pode ser resolvido silenciosamente.
 - UI pode esconder acoes, mas backend continua sendo a autoridade.

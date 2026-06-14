@@ -2679,3 +2679,28 @@ B-098A expandiu o bootstrap mobile sem alterar Flutter. O backend agora retorna 
 - replay offline de checklists
 - inventario mobile real
 - evidencia generica/OS
+
+## Atualizacao 2026-06-14 - B-098B Mobile Work Order Actions Sync Contract
+
+### Status
+
+B-098B implementou o primeiro contrato backend de replay offline de OS sem alterar Flutter. O backend agora aceita lote mobile controlado para status/atribuicao de Ordens de Servico, mantendo envelope previsivel e idempotencia por `client_action_id`.
+
+### Pronto para consumo controlado
+
+- `POST /api/v1/mobile/sync/work-order-actions`
+- lote `{ client_batch_id, actions[] }`
+- acoes `work_order.status_change` e `work_order.assign`
+- tenant resolvido pelo ator autenticado, nao pelo payload
+- idempotencia por tenant do ator + usuario do ator + `client_action_id`
+- retorno separado em `accepted`, `rejected`, `conflicts` e `already_applied`
+- conflitos estruturados para transicao invalida e mismatch de idempotencia
+- bootstrap/catalogos marcam `work_order_sync` como `implemented`
+
+### Ainda nao pronto
+
+- replay offline de checklists
+- inventario mobile real
+- evidencia generica/OS
+- idempotencia duravel em banco/Redis para ambiente multi-instancia
+- implementacao Flutter consumindo o endpoint B-098B

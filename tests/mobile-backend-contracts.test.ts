@@ -46,21 +46,21 @@ test("mobile bootstrap returns tenant-scoped contract and ignores requested tena
     assert.equal(response.body.data.modules.some((item: { key: string }) => item.key === "expense_management"), true);
     assert.equal(response.body.data.feature_flags.mobile_bootstrap_expanded.enabled, true);
     assert.equal(response.body.data.feature_flags.mobile_bootstrap_expanded.status, "implemented");
-    assert.equal(response.body.data.feature_flags.work_order_sync.enabled, false);
-    assert.equal(response.body.data.feature_flags.work_order_sync.status, "planned");
+    assert.equal(response.body.data.feature_flags.work_order_sync.enabled, true);
+    assert.equal(response.body.data.feature_flags.work_order_sync.status, "implemented");
     assert.equal(response.body.data.feature_flags.inventory_mobile.status, "planned");
     assert.equal(response.body.data.mobile_policy.auth.bearer_required, true);
     assert.equal(response.body.data.mobile_policy.auth.tenant_source, "authenticated_actor");
-    assert.equal(response.body.data.mobile_policy.sync.actions_enabled, false);
-    assert.deepEqual(response.body.data.mobile_policy.sync.implemented_domains, ["expenses"]);
-    assert.deepEqual(response.body.data.mobile_policy.sync.planned_domains, ["work_orders", "checklists", "inventory"]);
+    assert.equal(response.body.data.mobile_policy.sync.actions_enabled, true);
+    assert.deepEqual(response.body.data.mobile_policy.sync.implemented_domains, ["expenses", "work_orders"]);
+    assert.deepEqual(response.body.data.mobile_policy.sync.planned_domains, ["checklists", "inventory"]);
     assert.equal(response.body.data.catalogs.version, "mobile-catalogs:v1");
     assert.equal(response.body.data.catalogs.modules.status, "implemented");
     assert.equal(response.body.data.catalogs.permissions.status, "implemented");
     assert.equal(response.body.data.catalogs.expense_categories.status, "implemented");
     assert.equal(response.body.data.catalogs.endpoints.status, "partial");
     assert.equal(findCatalogEndpoint(response.body, "expense_sync").status, "implemented");
-    assert.equal(findCatalogEndpoint(response.body, "work_order_sync").status, "planned");
+    assert.equal(findCatalogEndpoint(response.body, "work_order_sync").status, "implemented");
     assert.equal(response.body.data.expenseCategories.length > 0, true);
     assert.equal(response.body.data.sync.workOrdersCursor, null);
     assert.equal(response.body.data.sync.checklistsCursor, null);
@@ -132,6 +132,11 @@ test("mobile backend exposes ready checklist, expense, work order and notificati
       headers,
       body: { actions: [] },
     });
+    const workOrderSync = await requestJson(baseUrl, "/api/v1/mobile/sync/work-order-actions", {
+      method: "POST",
+      headers,
+      body: { client_batch_id: "empty-work-order-batch", actions: [] },
+    });
     const workOrders = await requestJson(baseUrl, "/api/v1/work-orders", { headers });
     const notifications = await requestJson(baseUrl, "/api/v1/notifications", { headers });
 
@@ -140,25 +145,176 @@ test("mobile backend exposes ready checklist, expense, work order and notificati
     assert.equal(expenseSync.status, 200);
     assert.ok(Array.isArray(expenseSync.body.data.results));
     assert.equal(expenseSync.body.data.results.length, 0);
+    assert.equal(workOrderSync.status, 200);
+    assert.equal(workOrderSync.body.data.contract.name, "mobile_work_order_actions_sync");
+    assert.equal(workOrderSync.body.data.summary.received, 0);
+    assert.deepEqual(workOrderSync.body.data.accepted, []);
+    assert.deepEqual(workOrderSync.body.data.rejected, []);
+    assert.deepEqual(workOrderSync.body.data.conflicts, []);
+    assert.deepEqual(workOrderSync.body.data.already_applied, []);
     assert.equal(workOrders.status, 200);
     assert.ok(Array.isArray(workOrders.body.items));
     assert.equal(notifications.status, 200);
     assert.ok(Array.isArray(notifications.body.data));
     assertNoStackTrace(checklists.body);
     assertNoStackTrace(expenseSync.body);
+    assertNoStackTrace(workOrderSync.body);
     assertNoStackTrace(workOrders.body);
     assertNoStackTrace(notifications.body);
   });
 });
 
-test("planned mobile sync and inventory endpoints return stable JSON 404", async () => {
+test("mobile work order action sync accepts, deduplicates, rejects and reports conflicts by action", async () => {
   await withMobileContractApi(async ({ baseUrl, seed }) => {
     const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
-    const workOrderSync = await requestJson(baseUrl, "/api/v1/mobile/sync/work-order-actions", {
+    const created = await requestJson(baseUrl, "/api/v1/work-orders", {
       method: "POST",
       headers,
+      body: {
+        title: "Mobile roadside assistance",
+        priority: "high",
+      },
+    });
+
+    assert.equal(created.status, 201);
+    const workOrderId = created.body.data.id;
+
+    const firstSync = await requestJson(baseUrl, "/api/v1/mobile/sync/work-order-actions", {
+      method: "POST",
+      headers,
+      body: {
+        client_batch_id: "wo-batch-1",
+        tenant_id: seed.tenantB.id,
+        actions: [
+          {
+            client_action_id: "wo-action-1",
+            type: "work_order.status_change",
+            local_created_at: "2026-06-14T12:00:00.000Z",
+            payload: {
+              tenant_id: seed.tenantB.id,
+              work_order_id: workOrderId,
+              status: "assigned",
+              message: "Mobile accepted dispatch.",
+            },
+          },
+          {
+            client_action_id: "wo-action-invalid-status",
+            type: "work_order.status_change",
+            payload: {
+              work_order_id: workOrderId,
+              status: "invalid_status",
+            },
+          },
+          {
+            client_action_id: "wo-action-unsupported",
+            type: "work_order.evidence_attach",
+            payload: {
+              work_order_id: workOrderId,
+            },
+          },
+        ],
+      },
+    });
+
+    assert.equal(firstSync.status, 200);
+    assert.equal(firstSync.body.data.tenant_id, seed.tenantA.id);
+    assert.equal(firstSync.body.data.summary.received, 3);
+    assert.equal(firstSync.body.data.summary.accepted, 1);
+    assert.equal(firstSync.body.data.summary.rejected, 2);
+    assert.equal(firstSync.body.data.summary.conflicts, 0);
+    assert.equal(firstSync.body.data.accepted[0].client_action_id, "wo-action-1");
+    assert.equal(firstSync.body.data.accepted[0].server_state.status, "assigned");
+    assert.equal(firstSync.body.data.rejected[0].client_action_id, "wo-action-invalid-status");
+    assert.equal(firstSync.body.data.rejected[0].error.reason, "invalid_status");
+    assert.equal(firstSync.body.data.rejected[1].client_action_id, "wo-action-unsupported");
+    assert.equal(firstSync.body.data.rejected[1].error.reason, "unsupported_action_type");
+    assert.equal(JSON.stringify(firstSync.body).includes(seed.tenantB.id), false);
+    assertNoStackTrace(firstSync.body);
+
+    const duplicateSync = await requestJson(baseUrl, "/api/v1/mobile/sync/work-order-actions", {
+      method: "POST",
+      headers,
+      body: {
+        client_batch_id: "wo-batch-2",
+        actions: [
+          {
+            client_action_id: "wo-action-1",
+            type: "work_order.status_change",
+            payload: {
+              work_order_id: workOrderId,
+              status: "assigned",
+              message: "Mobile accepted dispatch.",
+            },
+          },
+          {
+            client_action_id: "wo-action-1",
+            type: "work_order.status_change",
+            payload: {
+              work_order_id: workOrderId,
+              status: "cancelled",
+              cancellation_reason: "Different offline payload.",
+            },
+          },
+          {
+            client_action_id: "wo-action-invalid-transition",
+            type: "work_order.status_change",
+            payload: {
+              work_order_id: workOrderId,
+              status: "completed",
+            },
+          },
+        ],
+      },
+    });
+
+    assert.equal(duplicateSync.status, 200);
+    assert.equal(duplicateSync.body.data.summary.accepted, 0);
+    assert.equal(duplicateSync.body.data.summary.rejected, 0);
+    assert.equal(duplicateSync.body.data.summary.conflicts, 2);
+    assert.equal(duplicateSync.body.data.summary.already_applied, 1);
+    assert.equal(duplicateSync.body.data.already_applied[0].client_action_id, "wo-action-1");
+    assert.equal(duplicateSync.body.data.conflicts[0].conflict.conflict_type, "idempotency_payload_mismatch");
+    assert.equal(duplicateSync.body.data.conflicts[1].conflict.conflict_type, "invalid_status_transition");
+    assertNoStackTrace(duplicateSync.body);
+  });
+});
+
+test("mobile work order action sync validates envelope, actor context and permissions", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const invalidEnvelope = await requestJson(baseUrl, "/api/v1/mobile/sync/work-order-actions", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
+      body: { actions: "not-an-array" },
+    });
+    const missingTenant = await requestJson(baseUrl, "/api/v1/mobile/sync/work-order-actions", {
+      method: "POST",
+      headers: {
+        "x-user-id": seed.adminA.id,
+        "x-role": "tenant_admin",
+      },
       body: { actions: [] },
     });
+    const missingPermission = await requestJson(baseUrl, "/api/v1/mobile/sync/work-order-actions", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.adminA, "viewer"),
+      body: { actions: [] },
+    });
+
+    assert.equal(invalidEnvelope.status, 400);
+    assert.equal(invalidEnvelope.body.error.reason, "invalid_envelope");
+    assert.equal(missingTenant.status, 403);
+    assert.equal(missingTenant.body.error.reason, "tenant_required");
+    assert.equal(missingPermission.status, 403);
+    assert.equal(missingPermission.body.error.reason, "permission_required");
+    assertNoStackTrace(invalidEnvelope.body);
+    assertNoStackTrace(missingTenant.body);
+    assertNoStackTrace(missingPermission.body);
+  });
+});
+
+test("planned mobile checklist sync and inventory endpoints return stable JSON 404", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
     const checklistSync = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
       method: "POST",
       headers,
@@ -166,7 +322,7 @@ test("planned mobile sync and inventory endpoints return stable JSON 404", async
     });
     const inventory = await requestJson(baseUrl, "/api/v1/mobile/inventory/items", { headers });
 
-    for (const response of [workOrderSync, checklistSync, inventory]) {
+    for (const response of [checklistSync, inventory]) {
       assert.equal(response.status, 404);
       assert.deepEqual(response.body.error, {
         code: "NOT_FOUND",
@@ -206,11 +362,16 @@ async function withMobileContractApi(
   process.env.LOG_LEVEL = "silent";
 
   const { createApp } = await import("../src/app.js");
+  const { resetMobileWorkOrderSyncRuntimeForTests } = await import("../src/modules/mobile/mobile-work-order-sync.js");
+  const { resetWorkOrderRuntimeForTests } = await import("../src/modules/work-orders/index.js");
   const registry = new CoreSaasRegistry(new InMemoryCoreSaasStore());
   const seed = seedCoreSaas(registry);
   const app = createApp(new MemoryCoreSaasAdapter(registry));
   const server = app.listen(0);
   const baseUrl = await getBaseUrl(server);
+
+  resetMobileWorkOrderSyncRuntimeForTests();
+  resetWorkOrderRuntimeForTests();
 
   try {
     await callback({ baseUrl, seed });

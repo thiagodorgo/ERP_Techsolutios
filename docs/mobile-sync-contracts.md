@@ -27,7 +27,7 @@ Blocos de controle do bootstrap:
 - `mobile_app`: plataforma `flutter`, versao minima suportada e versao recomendada.
 - `cache`: TTL de 300 segundos, janela stale-while-revalidate de 900 segundos, `cache_key` por tenant/usuario e `vary_by`.
 - `feature_flags`: capacidades implementadas, planejadas ou indisponiveis para o ator.
-- `mobile_policy`: auth Bearer, tenant por ator autenticado, cache, sync sem acoes nesta fase, limites de evidencia e diagnostico seguro.
+- `mobile_policy`: auth Bearer, tenant por ator autenticado, cache, sync de despesas/OS, limites de evidencia e diagnostico seguro.
 - `catalogs`: modulos, permissoes, categorias de despesas e endpoints com status `implemented`, `planned`, `unavailable` ou `partial`.
 
 ### POST /api/v1/mobile/sync/expense-actions
@@ -43,9 +43,77 @@ Blocos de controle do bootstrap:
 
 ### POST /api/v1/mobile/sync/work-order-actions
 
-- Permissao: futura por acao de OS.
-- Status B-098: planejado; rota ainda nao existe e retorna 404 JSON estavel.
-- Offline: sera o contrato principal para fila local-first de OS.
+- Permissao: varia por acao de OS; `work_order.status_change` exige `work_orders:status` e `work_order.assign` exige `work_orders:assign`.
+- Status B-098B: implementado para sincronizacao controlada de acoes de OS, sem checklist, inventario ou evidencias genericas.
+- Request: lote `{ client_batch_id, actions[] }`, cada acao com `client_action_id`, `type`, `payload` e `local_created_at` opcional.
+- Response: envelope em `data` com `summary`, `accepted`, `rejected`, `conflicts` e `already_applied`.
+- Erros de envelope/contexto: 400 ou 403 com envelope JSON seguro.
+- Idempotencia: obrigatoria por tenant resolvido do ator + usuario do ator + `client_action_id`.
+- Offline: contrato principal para replay local-first de status/atribuicao de OS.
+
+Request:
+
+```json
+{
+  "client_batch_id": "batch-local-1",
+  "actions": [
+    {
+      "client_action_id": "action-local-1",
+      "type": "work_order.status_change",
+      "local_created_at": "2026-06-14T12:00:00.000Z",
+      "payload": {
+        "work_order_id": "server-work-order-id",
+        "status": "assigned",
+        "message": "Aceito no app mobile."
+      }
+    }
+  ]
+}
+```
+
+Tipos implementados:
+
+- `work_order.status_change`: payload com `work_order_id`, `status`, `message?` e `cancellation_reason?`.
+- `work_order.assign`: payload com `work_order_id`, `operator_id`, `user_id?` e `message?`.
+
+Resposta:
+
+```json
+{
+  "data": {
+    "contract": {
+      "name": "mobile_work_order_actions_sync",
+      "version": "2026-06-14.b098b",
+      "status": "implemented"
+    },
+    "client_batch_id": "batch-local-1",
+    "tenant_id": "tenant-do-ator",
+    "server_time": "2026-06-14T12:00:01.000Z",
+    "summary": {
+      "received": 1,
+      "accepted": 1,
+      "rejected": 0,
+      "conflicts": 0,
+      "already_applied": 0
+    },
+    "accepted": [],
+    "rejected": [],
+    "conflicts": [],
+    "already_applied": []
+  }
+}
+```
+
+Regras obrigatorias:
+
+- `tenant_id` de body/payload nao e confiavel, nao entra no fingerprint e nao decide tenant.
+- `client_action_id` vazio rejeita o envelope.
+- lote maximo: 50 acoes.
+- acao aceita retorna `server_state` da OS no shape do endpoint real de Work Orders.
+- reenvio identico retorna `already_applied`.
+- reenvio com mesmo `client_action_id` e payload diferente retorna conflito `idempotency_payload_mismatch`.
+- transicao de status invalida retorna conflito `invalid_status_transition`.
+- payload invalido, tipo nao suportado ou permissao por acao ausente retorna rejeicao/erro estruturado sem stack trace.
 
 ### POST /api/v1/mobile/sync/checklist-actions
 

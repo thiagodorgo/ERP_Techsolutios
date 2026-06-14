@@ -36,11 +36,11 @@ Blocos principais da resposta:
     },
     "feature_flags": {
       "expense_sync": { "enabled": true, "status": "implemented" },
-      "work_order_sync": { "enabled": false, "status": "planned", "reason": "planned_for_b098b" }
+      "work_order_sync": { "enabled": true, "status": "implemented" }
     },
     "mobile_policy": {
       "auth": { "bearer_required": true, "tenant_source": "authenticated_actor" },
-      "sync": { "actions_enabled": false, "implemented_domains": ["expenses"] }
+      "sync": { "actions_enabled": true, "implemented_domains": ["expenses", "work_orders"] }
     },
     "catalogs": {
       "version": "mobile-catalogs:v1",
@@ -60,7 +60,83 @@ Valores de `status` em blocos versionados:
 - `unavailable`: indisponivel para o ator atual por modulo/permissao/contexto;
 - `partial`: familia de contratos com parte implementada e parte planejada.
 
-Endpoints planejados de sync mobile que ainda nao existem, como `/api/v1/mobile/sync/work-order-actions`, `/api/v1/mobile/sync/checklist-actions` e `/api/v1/mobile/inventory/items`, retornam 404 JSON estavel sob `/api/v1`:
+`POST /api/v1/mobile/sync/work-order-actions` esta implementado no B-098B para sincronizacao controlada de acoes de OS vindas do Flutter. O endpoint usa o tenant do ator autenticado, ignora qualquer `tenant_id` enviado no body/payload, exige `client_action_id` por acao e separa resultados em `accepted`, `rejected`, `conflicts` e `already_applied`.
+
+Request:
+
+```json
+{
+  "client_batch_id": "batch-local-1",
+  "actions": [
+    {
+      "client_action_id": "action-local-1",
+      "type": "work_order.status_change",
+      "local_created_at": "2026-06-14T12:00:00.000Z",
+      "payload": {
+        "work_order_id": "server-work-order-id",
+        "status": "assigned",
+        "message": "Aceito no app mobile."
+      }
+    }
+  ]
+}
+```
+
+Tipos implementados:
+
+- `work_order.status_change`: altera status usando as transicoes reais de OS; exige `work_orders:status`.
+- `work_order.assign`: atribui OS a operador/usuario; exige `work_orders:assign`.
+
+Resposta:
+
+```json
+{
+  "data": {
+    "contract": {
+      "name": "mobile_work_order_actions_sync",
+      "version": "2026-06-14.b098b",
+      "status": "implemented"
+    },
+    "client_batch_id": "batch-local-1",
+    "tenant_id": "tenant-do-ator",
+    "server_time": "2026-06-14T12:00:01.000Z",
+    "summary": {
+      "received": 1,
+      "accepted": 1,
+      "rejected": 0,
+      "conflicts": 0,
+      "already_applied": 0
+    },
+    "accepted": [
+      {
+        "client_action_id": "action-local-1",
+        "type": "work_order.status_change",
+        "status": "accepted",
+        "work_order_id": "server-work-order-id",
+        "server_state": {}
+      }
+    ],
+    "rejected": [],
+    "conflicts": [],
+    "already_applied": []
+  }
+}
+```
+
+Idempotencia:
+
+- chave logica: `tenant_id` resolvido do ator + `user_id` do ator + `client_action_id`;
+- reenvio com o mesmo fingerprint de acao retorna em `already_applied`;
+- reenvio com o mesmo `client_action_id` e payload diferente retorna conflito `idempotency_payload_mismatch`;
+- `tenant_id` em body/payload nao entra no fingerprint e nao e fonte de decisao.
+
+Conflitos:
+
+- transicao de status invalida retorna item em `conflicts` com `conflict_type=invalid_status_transition`;
+- conflito de idempotencia retorna `conflict_type=idempotency_payload_mismatch`;
+- cada conflito inclui `client_action_id`, `work_order_id` quando existir, dados locais sanitizados e `next_action`.
+
+Endpoints planejados de sync mobile que ainda nao existem, como `/api/v1/mobile/sync/checklist-actions` e `/api/v1/mobile/inventory/items`, retornam 404 JSON estavel sob `/api/v1`:
 
 ```json
 {
