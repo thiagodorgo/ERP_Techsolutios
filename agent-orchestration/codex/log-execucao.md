@@ -1,5 +1,566 @@
 # Log de Execucao
 
+## 2026-06-13 - B-094 (v2) QA Geral + Organizacao Flutter + Estrategia de PR
+
+### Natureza
+
+Auditoria, QA e planejamento completo. Nenhuma feature implementada. Nenhum arquivo Flutter, backend, React ou docs/prototipo modificado.
+
+### Comandos executados
+
+- `git branch --show-current` → `docs/flutter-mobile-ux-html-proposals`
+- `git log -1 --oneline` → `167fe6a docs: map flutter ux with html screen proposals`
+- `git diff --check` (pre-QA) → **CLEAN**
+- `git status --short` → 39 M + ~85 ??
+- `git diff --stat` → 39 arquivos, 6589 inserções, 1307 deleções
+- `git diff --name-only` → lista completa dos 39 M
+- `git ls-files --others --exclude-standard` → ~120 nao rastreados
+- `git ls-files mobile/flutter_app` → 82 arquivos rastreados
+- `flutter pub get` → OK (15 outdated, nao breaking)
+- `dart format --set-exit-if-changed .` → **106 arquivos verificados, 0 alterados — CLEAN**
+- `flutter analyze --no-pub` → **No issues found** (136.6s)
+- `flutter test --no-pub` → **280/280 passando** (0 falhas)
+- `git diff --check` (pos-QA) → **CLEAN**
+- `git diff --name-only -- mobile/flutter_app/pubspec.lock` → pub get nao adicionou mudancas ao lock
+
+### Resultado QA Flutter
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| `flutter pub get` | OK |
+| `dart format --set-exit-if-changed .` | **0 alterados** |
+| `flutter analyze --no-pub` | **No issues found** |
+| `flutter test --no-pub` | **280/280** |
+| `git diff --check` pos-QA | **CLEAN** |
+
+### Classificacao worktree (resumo)
+
+- Grupo 1: Flutter lib rastreado (M) — 15 arquivos
+- Grupo 2: Flutter pubspec rastreado (M) — 2 arquivos
+- Grupo 3: Flutter testes rastreados (M) — 6 arquivos
+- Grupo 4: Flutter lib novo ?? — ~75 arquivos
+- Grupo 5: Flutter testes novos ?? — 21 arquivos
+- Grupo 6: Flutter assets novos ?? — 27 PNG
+- Grupo 7: Agent-orchestration M — 2 arquivos
+- Grupo 8: Agent-orchestration ?? — 20 arquivos
+- Grupo 9: Docs/prototipo M — 7 arquivos
+- Grupo 10: Docs novos ?? — 1 arquivo
+- Grupo 11: Backend M — 4 arquivos
+- Grupo 12: Frontend React M — 2 arquivos
+- Grupo 13: README — 1 arquivo
+- Grupo 14: experiments/, src/brand/, icons.tsx — Nao entram em PR
+
+### Estrategia de PRs definida
+
+- PR A: Flutter Mobile Foundation (prioridade maxima, ~139 arquivos, draft primeiro)
+- PR B: Agent Orchestration + Codex
+- PR C: Docs mobile
+- PR D: Prototipo HTML (separado para nao inflar PR Flutter)
+- PR E: Backend/Frontend polish
+
+### Branch recomendada
+
+`feature/flutter-mobile-field-ops-foundation` (criada a partir do HEAD atual, com autorizacao do usuario)
+
+### Alterado por B-094 (v2)
+
+- `agent-orchestration/codex/comandos/B-094-qa-flutter-pr-organization.md` (novo)
+- `agent-orchestration/codex/log-execucao.md` (aditivo)
+- `agent-orchestration/docs/status-geral.md` (aditivo)
+
+---
+
+## 2026-06-13 - B-094 QA Geral + Organizacao de Branch/PR
+
+### Natureza
+
+Auditoria, QA e planejamento. Nenhuma feature alterada. Nenhum arquivo Flutter, backend ou React modificado.
+
+### Comandos executados
+
+- `git branch --show-current` → `docs/flutter-mobile-ux-html-proposals`
+- `git log -1 --oneline` → `167fe6a docs: map flutter ux with html screen proposals`
+- `git diff --check` → CLEAN
+- `git status --short` → 39 M + ~120 ??
+- `git diff --stat` → 39 arquivos, 6512 inserções, 1307 deleções
+- `git ls-files --others --exclude-standard` → ~120 nao rastreados
+- `flutter pub get` → OK
+- `dart format --set-exit-if-changed .` → **0 alterados — CLEAN**
+- `flutter analyze --no-pub` → **No issues found**
+- `flutter test --no-pub` → **280/280 passando**
+- `git diff --check` (pos-QA) → CLEAN
+
+### Alterado por B-094
+
+- `agent-orchestration/codex/comandos/B-094-qa-branch-pr-organization.md` (novo)
+- `agent-orchestration/codex/log-execucao.md` (aditivo)
+- `agent-orchestration/docs/status-geral.md` (aditivo)
+
+### KPIs
+
+- Testes: 280/280 (sem alteracao)
+- flutter analyze: 0 issues
+- dart format --set-exit-if-changed: 0 alterados
+- git diff --check: limpo
+
+---
+
+## 2026-06-13 - B-093 Flutter: Evidencia Real Camera/Galeria + Upload Metadata Seguro
+
+### Implementado
+
+- `pubspec.yaml`: `image_picker: ^1.1.2` adicionado
+- `lib/core/evidence/evidence_picker.dart` (novo): `EvidenceCaptureSource`, `EvidencePickerResult`, `EvidencePickerService`, `ImagePickerEvidenceService`, `evidencePickerProvider`, `showEvidenceSourcePicker`
+- `checklist_models.dart`: `MobileChecklistAttachmentMetadata.captureSource: String?`
+- `checklist_repository.dart`: `addAttachment()` com `captureSource` no payload
+- `checklist_run_screen.dart`: `pickAndAttach` callback com `showEvidenceSourcePicker` em `_PhotoUploadField` e `_BeforeAfterField`
+- `work_order_models.dart`: classe `WorkOrderEvidence`
+- `work_order_local_store.dart`: `saveEvidence` + `loadEvidence` na interface e `InMemoryWorkOrderLocalStore`
+- `work_order_repository.dart`: `attachEvidence()` + `loadEvidence()` com payload seguro
+- `work_order_execute_screen.dart`: `_ExecData.evidences`, `_attachEvidence`, `_EvidenceSection` (substitui placeholder futuro)
+- `expense_item_receipts_screen.dart`: `ConsumerStatefulWidget` com `_addReceipt()` conectando picker real
+- `test/features/b093_evidence_camera_gallery_test.dart` (novo, 12 testes)
+
+### KPIs
+
+- Testes: 268 → 280 (+12)
+- flutter analyze: 0 issues
+- dart format: 5 arquivos reformatados
+- git diff --check: limpo
+
+### Constraints mantidos
+
+- sem commit, sem push, sem PR
+- sem alteracoes em backend, frontend React, experiments/
+- payload de sync sem token/path/base64
+
+---
+
+## 2026-06-13 - B-092 Flutter: OS + Checklist + Conclusao Ponta a Ponta
+
+### Implementado
+
+- `lib/features/work_orders/data/work_order_repository.dart`: metodo `completeWorkOrder(localId, {required bool checklistComplete})` — valida checklist obrigatorio, gera `work_order.status_update` sync action com payload seguro (sem token/path/base64), gera `WorkOrderTimelineEventType.completed` timeline event; seed OS-1042 recebe `checklistId: 'cl-seed-1'`
+- `lib/features/work_orders/ui/work_order_execute_screen.dart`: redesenhado com classe `_ExecData` (wo + runs + canConclude); `_ensureFuture` cacheia Future com chave de identidade dos repos; secao "Checklist" com `_ChecklistStatusCard` (status chip + botao Abrir/Continuar/Ver); secao "Concluir OS" separada com card de bloqueio e mensagem exata `'Conclua o checklist obrigatorio antes de finalizar a OS.'`; botao `FilledButton 'Concluir OS'` desabilitado quando checklist incompleto; `_openChecklist` reseta future ao navegar para que ao retornar o status seja recarregado
+- `lib/features/work_orders/ui/work_order_detail_screen.dart`: `_ChecklistCard` migrado de `StatelessWidget` para `ConsumerWidget`; exibe status do run (Nao iniciado / Em andamento / Concluido) via `checklistRepositoryProvider.getRunsForWorkOrder()`; botao contextual (Abrir / Continuar / Ver checklist) navega para `/checklists/${checklistId}/run`
+- `test/features/b092_os_checklist_completion_test.dart` (novo, 10 testes em 2 grupos)
+
+### Grupos de teste (b092)
+
+- `WorkOrderRepository.completeWorkOrder` (6 unit): sem checklist sucede; com checklistId+incomplete lanca StateError exato; com checklistId+complete sucede; timeline recebe evento completed; payload sem token/path/base64; isolamento de tenant
+- `WorkOrderExecuteScreen` (4 widget): mensagem de bloqueio visivel quando checklist incompleto; botao desabilitado quando incompleto; botao habilitado sem checklist; botao habilitado quando checklist concluido
+
+### KPIs
+
+- Testes: 258 → 268 (+10)
+- flutter analyze: 0 issues
+- dart format: 3 arquivos reformatados
+- git diff --check: limpo
+
+### Constraints mantidos
+
+- sem commit, sem push, sem PR
+- sem alteracoes em backend, frontend React, experiments/
+
+---
+
+## 2026-06-12 - B-090b Flutter: Offline/Online UX + Auto Sync
+
+### Implementado
+
+- `lib/core/network/connectivity_repository.dart` (novo): `NetworkStatus` enum (online/offline/checking/unknown); `NetworkStatusNotifier extends Notifier<NetworkStatus>` com `setStatus/setOnline/setOffline/setChecking`; `networkStatusProvider`; pure Dart, sem plugin nativo
+- `lib/core/sync/auto_sync_coordinator.dart` (novo): `AutoSyncState` data class com `isRunning`, `lastSyncAt`, `lastSafeError`; `AutoSyncCoordinator extends Notifier<AutoSyncState>` com `ref.listen(networkStatusProvider)` em `build()`, triggering sync em transicao offline→online; flag `_running` previne concorrencia; `triggerManual()` para botao; `autoSyncCoordinatorProvider`
+- `lib/shared/ui/erp_components.dart`: `NetworkStatusBanner` widget (stateless, recebe `NetworkStatus`); invisible em online/unknown; vermelho com `wifi_off_outlined` em offline; amarelo com `sync_outlined` em checking
+- `lib/shared/ui/home_screen.dart`: `NetworkStatusBanner` inserido apos greeting card, visivel apenas quando offline/checking
+- `lib/shared/ui/sync_screen.dart`: watches `networkStatusProvider` e `autoSyncCoordinatorProvider`; `NetworkStatusBanner` no topo; card de estado auto sync (isRunning, lastSyncAt, lastSafeError); botao "Sincronizar tudo" chama `autoSyncCoordinatorProvider.notifier.triggerManual()`
+- `lib/core/diagnostics/diagnostics_screen.dart`: watches `networkStatusProvider`; card "Conectividade" mostrando status atual
+- `test/features/b090b_offline_auto_sync_test.dart` (novo, 14 testes em 4 grupos)
+- `test/features/expenses/expense_diagnostics_test.dart` (novo): teste de sanitizacao de payload sensivel na tela de diagnostico
+
+### Grupos de teste (b090b)
+
+- `NetworkStatusNotifier` (3): default online; setOffline/setOnline; setStatus cobre todos valores
+- `NetworkStatusBanner widget` (3): invisible em online; mensagem offline com wifi_off; mensagem checking com sync_outlined
+- `AutoSyncCoordinator` (7): estado inicial idle; offline→online dispara sync; concorrencia bloqueada; manual trigger; falha armazena safeError; sem sessao skipa silenciosamente; online→online nao dispara sync
+- `Safety` (1): nenhum campo de AutoSyncState contem token/bearer/eyj
+
+### Arquivos criados
+
+- `mobile/flutter_app/lib/core/network/connectivity_repository.dart` (novo)
+- `mobile/flutter_app/lib/core/sync/auto_sync_coordinator.dart` (novo)
+- `mobile/flutter_app/test/features/b090b_offline_auto_sync_test.dart` (novo, 14 testes)
+- `mobile/flutter_app/test/features/expenses/expense_diagnostics_test.dart` (novo)
+
+### Arquivos alterados
+
+- `mobile/flutter_app/lib/shared/ui/erp_components.dart`
+- `mobile/flutter_app/lib/shared/ui/home_screen.dart`
+- `mobile/flutter_app/lib/shared/ui/sync_screen.dart`
+- `mobile/flutter_app/lib/core/diagnostics/diagnostics_screen.dart`
+
+### Validacoes
+
+- `flutter test`: 243/243 passando (14 novos B-090b + 1 expense_diagnostics, nenhuma regressao)
+- `dart format .`: aplicado, sem divergencias
+- `flutter analyze`: No issues found
+- `git diff --check`: limpo
+- sem commit, push ou PR
+
+---
+
+## 2026-06-12 - B-090 Flutter: Auth Production Mode + Token Refresh
+
+### Implementado
+
+- `lib/core/config/app_config.dart` (novo): `kAuthMode = String.fromEnvironment('ERP_AUTH_MODE', defaultValue: 'local')` e `kIsRemoteAuth = kAuthMode == 'remote'`; seleção compile-time sem alterar comportamento default
+- `lib/core/network/auth_interceptor.dart` (novo): `AuthRefreshInterceptor extends Interceptor`; intercepta 401, chama `onRefresh()`, patcha headers do cliente e da requisição, retenta com novo token; guarda contra loops via flag `_refreshing` e marker `extra['_authRetry']`; ignora paths de auth (`/api/v1/auth/login|refresh|logout`)
+- `lib/core/network/http_client.dart`: adicionado `createAuthenticatedHttpClient(config, {onRefresh, onClearSession})` — chama `createExpenseHttpClient` e anexa `AuthRefreshInterceptor`
+- `lib/core/auth/auth_notifier.dart`: `authRepositoryProvider` usa `kIsRemoteAuth` para escolher `DioAuthRepository` (modo remoto) ou `LocalDevAuthRepository` (modo local/dev); `tryRefresh()` e falha em `build()` agora setam `AuthStatus.expired` com `safeError: 'Sua sessao expirou. Faca login novamente.'`
+- `lib/features/auth/login_screen.dart`: `safeError` agora cobre também `authState.status == AuthStatus.expired && authState.safeError != null` — exibe mensagem de sessão expirada ao redirecionar para login
+- `lib/features/checklists/data/checklist_repository.dart`: `checklistRemoteApiProvider` usa `createAuthenticatedHttpClient` com `onRefresh → tryRefresh()` e `onClearSession → logout()`
+- `lib/core/bootstrap/bootstrap_repository.dart`: `mobileBootstrapRepositoryProvider` usa `DioMobileBootstrapRepository` quando `kIsRemoteAuth`, `LocalDevBootstrapRepository` quando local
+- `test/features/b090_auth_production_token_refresh_test.dart` (novo, 16 testes em 6 grupos)
+
+### Grupos de teste
+
+- `kIsRemoteAuth constant` (1): `kIsRemoteAuth == false` em ambiente de testes
+- `AuthRefreshInterceptor` (5): 401→refresh→retry resolve; auth endpoint nao retenta; `_authRetry=true` nao retenta; `onRefresh null` → `onClearSession`; non-401 propaga sem refresh
+- `DioAuthRepository — login` (4): tokens do servidor; token em storage sem senha; 401→`ApiUnauthorizedError`; conexao→`ApiNetworkError`
+- `DioAuthRepository — refresh` (3): envia `refreshToken` do storage; retorna novo `accessToken`; sem sessao → `ApiUnauthorizedError` imediato
+- `AuthNotifier — expired state` (2): `tryRefresh` falha → `AuthStatus.expired`; `safeError` nao contem bearer
+- `Safety` (1): `mapDioError` em 401 nunca ecoa body ou token
+
+### Arquivos alterados
+
+- `mobile/flutter_app/lib/core/config/app_config.dart` (novo)
+- `mobile/flutter_app/lib/core/network/auth_interceptor.dart` (novo)
+- `mobile/flutter_app/lib/core/network/http_client.dart`
+- `mobile/flutter_app/lib/core/auth/auth_notifier.dart`
+- `mobile/flutter_app/lib/features/auth/login_screen.dart`
+- `mobile/flutter_app/lib/features/checklists/data/checklist_repository.dart`
+- `mobile/flutter_app/lib/core/bootstrap/bootstrap_repository.dart`
+- `mobile/flutter_app/test/features/b090_auth_production_token_refresh_test.dart` (novo, 16 testes)
+
+### Validacoes
+
+- `flutter test`: 229/229 passando (16 novos B-090, nenhuma regressao)
+- `dart format .`: aplicado, sem divergencias
+- `flutter analyze`: No issues found
+- `git diff --check`: limpo
+- sem commit, push ou PR
+
+---
+
+## 2026-06-12 - B-089 Flutter: Auth Real + HTTP Checklist Integration
+
+### Implementado
+
+- `checklist_remote_api.dart`: adicionado `DioChecklistRemoteApi` com todos os 9 metodos (`fetchAvailableChecklists`, `fetchChecklistRender`, `createRun`, `patchRun`, `completeRun`, `createMarker`, `createDivergence`, `acknowledge`, `attachMetadata`); parsers privados JSON→Model para `MobileChecklistTemplate`, `MobileChecklistSchema`, `MobileChecklistField`, `MobileChecklistFieldOption`
+- `auth_notifier.dart`: adicionado `authenticatedApiConfigProvider` — le `authStateProvider`, injeta `accessToken` em `ApiConfig`; retorna token null quando nao autenticado
+- `checklist_repository.dart`: construtor recebe `remoteApi: ChecklistRemoteApi`; `load()` tenta remote-first (persiste localmente em sucesso, cai para local/seed em qualquer excecao); `getSchema()` tenta remote-first (persiste localmente, cai para local em excecao); `checklistRemoteApiProvider` usa `DioChecklistRemoteApi` com token ou `PendingBackendChecklistRemoteApi` sem token; `checklistRepositoryProvider` passa `remoteApi`
+- `b085_checklist_foundation_test.dart` e `b087_checklist_persistence_test.dart`: atualizados com `remoteApi: const PendingBackendChecklistRemoteApi()` nos 3 call sites afetados
+- `test/features/b089_auth_http_checklist_test.dart`: 18 testes em 6 grupos
+
+### Arquivos alterados
+
+- `mobile/flutter_app/lib/features/checklists/data/checklist_remote_api.dart`
+- `mobile/flutter_app/lib/core/auth/auth_notifier.dart`
+- `mobile/flutter_app/lib/features/checklists/data/checklist_repository.dart`
+- `mobile/flutter_app/test/features/b089_auth_http_checklist_test.dart` (novo, 18 testes)
+- `mobile/flutter_app/test/features/b085_checklist_foundation_test.dart`
+- `mobile/flutter_app/test/features/b087_checklist_persistence_test.dart`
+
+### Validacoes
+
+- `flutter test`: 213/213 passando (18 novos B-089, nenhuma regressao)
+- `dart format .`: aplicado, sem divergencias residuais
+- `flutter analyze`: No issues found
+- sem commit, push ou PR
+
+---
+
+## 2026-06-12 - B-088 Flutter: Checklist Sync Replay
+
+### Implementado
+
+- `sync_replay_service.dart`: adicionados `ChecklistSyncBatchApi` (abstract), `MockChecklistSyncBatchApi`, `CaptureChecklistBatchApi`, `PendingBackendChecklistSyncBatchApi`, `DioChecklistSyncBatchApi`; `ChecklistSyncReplayService` com filtragem por `_checklistActionTypes` (7 tipos), logica identica ao `SyncReplayService`, suporte a `processed/failed/conflict/ignored/unknown/NETWORK_ERROR/MISSING_RESULT`
+- `sync_providers.dart`: `checklistSyncBatchApiProvider` (default `PendingBackendChecklistSyncBatchApi` — seguro enquanto backend nao disponivel) e `checklistSyncReplayServiceProvider`
+- `sync_screen.dart`: botao "Sincronizar checklist" (`OutlinedButton.icon`) usando `checklistSyncReplayServiceProvider`; domain label por action (`_domainLabel`: Checklist/RDV/OS/Estoque/Outro); empty state atualizado para citar todos os dominios
+- `diagnostics_screen.dart`: card "Por dominio" com contagem por prefixo de tipo; `_domainBreakdown` function
+- `test/features/b088_checklist_sync_replay_test.dart`: 16 testes em 6 grupos
+
+### Separacao RDV vs Checklist
+
+- `SyncReplayService` (RDV/Expense) nao foi alterado — path de replay RDV intacto
+- `ChecklistSyncReplayService` e servico dedicado e independente
+- `pendingForTenant` retorna todos os tipos; `ChecklistSyncReplayService` filtra por `_checklistActionTypes` antes de enviar
+- Actions de outros dominios nunca entram no batch checklist
+
+### Arquivos alterados
+
+- `mobile/flutter_app/lib/core/sync/sync_replay_service.dart`
+- `mobile/flutter_app/lib/core/sync/sync_providers.dart`
+- `mobile/flutter_app/lib/shared/ui/sync_screen.dart`
+- `mobile/flutter_app/lib/core/diagnostics/diagnostics_screen.dart`
+- `mobile/flutter_app/test/features/b088_checklist_sync_replay_test.dart` (novo, 16 testes)
+
+### Validacoes
+
+- `flutter test`: 195/195 passando (16 novos B-088, nenhuma regressao)
+- `dart format .`: aplicado, sem divergencias
+- `flutter analyze`: No issues found
+- `git diff --check`: sem whitespace errors
+- sem commit, push ou PR
+
+---
+
+## 2026-06-12 - B-087 Flutter: Checklist — persistencia Drift, renderers multiChoice/vehicleSelector/photoUpload/beforeAfter
+
+### Implementado
+
+- `app_database.dart`: schemaVersion 2→3; 6 novas tabelas (checklist_templates, checklist_schemas, checklist_runs, checklist_markers, checklist_attachments, checklist_acknowledgements) em `onCreate` e `onUpgrade (from < 3)` via `CREATE TABLE IF NOT EXISTS`
+- `drift_checklist_local_store.dart` (novo): `DriftChecklistLocalStore implements ChecklistLocalStore`; todos os metodos via `customSelect`/`customInsert`; `INSERT OR REPLACE`; serializa `fields_json` e `answers_json` (todos os slots nullaveis); isolamento por `tenant_id`
+- `checklist_local_store.dart`: metodos `loadAttachments`/`saveAttachment` adicionados ao abstract + `InMemoryChecklistLocalStore`
+- `checklist_repository.dart`: `checklistLocalStoreProvider` migrado para `DriftChecklistLocalStore(appDatabaseProvider)`; metodo `addAttachment` com payload seguro (sem path/base64/token); seed schema 1 ampliado (multiChoice f-checks, photoUpload f-photo, beforeAfter f-before-after); seed schema 2 com vehicleSelector f-vehicle-type (required, order 1)
+- `vehicle_asset_helper.dart` (novo): `VehicleAssetHelper` — `assetFolder`, `assetPath`, `isFallback`, `defaultOptions`, `views`, `viewLabels`; sedan tem pasta propria; car/generic → sedan como fallback documentado
+- `checklist_run_screen.dart` (reescrito): renderers `_buildMultiChoice` (CheckboxListTile), `_VehicleSelectorField` (4 thumbnails + DropdownButton), `_PhotoUploadField` (metadata placeholder seguro), `_BeforeAfterField` (Antes/Depois com IDs tagged); `onAddAttachment` callback; `_vehicleTypeFromAnswers` para navegacao ao mapa
+- `checklist_damage_map_screen.dart` (reescrito): `vehicleType` param; `_VehicleViewSelector` (4 tabs) + `_VehicleImage`; dialog usa `InputDecorator + DropdownButton` (sem deprecated); `errorBuilder` em todas as `Image.asset`
+- `router.dart`: ambos os builders do damage-map passam `vehicleType` via `queryParameters`
+- `pubspec.yaml`: entries de assets para 6 pastas de veiculos (`assets/images/sedan/` etc.)
+- `test/features/b087_checklist_persistence_test.dart` (novo): 20 testes em 7 grupos — Drift persistencia (5), multiChoice (4), vehicleSelector (2), VehicleAssetHelper (4), photoUpload (2), beforeAfter (1), damageMap (2)
+
+### Arquivos alterados/criados
+
+- `mobile/flutter_app/lib/core/local_db/app_database.dart`
+- `mobile/flutter_app/lib/core/local_db/drift_checklist_local_store.dart` (novo)
+- `mobile/flutter_app/lib/features/checklists/data/checklist_local_store.dart`
+- `mobile/flutter_app/lib/features/checklists/data/checklist_repository.dart`
+- `mobile/flutter_app/lib/features/checklists/ui/vehicle_asset_helper.dart` (novo)
+- `mobile/flutter_app/lib/features/checklists/ui/checklist_run_screen.dart`
+- `mobile/flutter_app/lib/features/checklists/ui/checklist_damage_map_screen.dart`
+- `mobile/flutter_app/lib/app/router.dart`
+- `mobile/flutter_app/pubspec.yaml`
+- `mobile/flutter_app/test/features/b087_checklist_persistence_test.dart` (novo)
+
+### Validacoes
+
+- `flutter test`: 179/179 passando, 0 falhas (20 novos em B-087, nenhuma regressao)
+- `git diff --check`: sem whitespace errors
+- sem commit, push ou PR
+
+---
+
+## 2026-06-12 - B-086 Flutter: Estoque (Inventory) — fundacao local-first
+
+### Implementado
+
+- `inventory_models.dart`: `InventoryItemStatus` (zeroed/critical/low/normal), `InventoryItem` (isCritical, copyWith), `InventoryMovement`, `InventoryMovementType`
+- `inventory_local_store.dart`: `InMemoryInventoryLocalStore` — `saveItem` tenant-aware (id+tenantId), `loadItems` por tenant, `findItem`, `saveMovement`
+- `inventory_repository.dart`: `InventoryRepository` (ChangeNotifier) — `load` (seed 8 itens demo), `findById` tenant-aware, `recordEntry`/`recordExit` com sync action + `notifyListeners`; `inventoryLocalStoreProvider` e `inventoryRepositoryProvider`
+- `inventory_list_screen.dart`: gate `inventory:read`, tabs Todos/Criticos, banner de criticos, FABs condicionais a `inventory:write`
+- `stock_entry_screen.dart`: form com dropdown defensivo (`identical` guard no value), loading via `initState` + `addPostFrameCallback` + `ref.listen`, cancellation token
+- `stock_exit_screen.dart`: mesma arquitetura do entry; valida saldo antes de saida
+- `api_contracts.dart`: `InventoryApiEndpoints` (6 constantes) + `InventorySyncActionTypes` (entryCreate/exitCreate)
+- `router.dart`: 3 rotas adicionadas (`/inventory`, `/inventory/entry`, `/inventory/exit`)
+- 15 testes em `test/features/b086_inventory_foundation_test.dart`
+
+### Arquivos alterados
+
+- `mobile/flutter_app/lib/core/network/api_contracts.dart`
+- `mobile/flutter_app/lib/app/router.dart`
+- `mobile/flutter_app/lib/features/inventory/` (criado — 6 arquivos novos: models, local_store, repository, list_screen, stock_entry_screen, stock_exit_screen)
+- `mobile/flutter_app/test/features/b086_inventory_foundation_test.dart` (criado, 15 testes)
+
+### Validacoes
+
+- `flutter test`: 159/159 passando, 0 falhas
+- `dart analyze`: No issues found
+- sem commit, push ou PR
+
+---
+
+## 2026-06-12 - B-085 Flutter: Checklist Operacional — fundacao schema-driven
+
+### Implementado
+
+- `checklist_models.dart`: dominio completo — `MobileChecklistFieldType` (11 tipos), `MobileChecklistSchema` (sortedFields, requiredFields), `MobileChecklistTemplate` (isActive), `MobileChecklistAnswer` (hasValue), `MobileChecklistRun` (copyWith), `MobileChecklistMarker`, `MobileChecklistAttachmentMetadata`, `MobileChecklistAcknowledgement`
+- `checklist_local_store.dart`: `ChecklistLocalStore` abstrato + `InMemoryChecklistLocalStore` com seed opcional via construtor
+- `checklist_remote_api.dart`: `ChecklistRemoteApi` abstrato + `PendingBackendChecklistRemoteApi` (stub seguro)
+- `checklist_repository.dart`: `ChecklistRepository` com load, getSchema, getOrStartRun, saveAnswer, completeRun, addMarker, acknowledge + providers Riverpod
+- `api_contracts.dart`: `ChecklistApiEndpoints` (11 constantes) + `ChecklistSyncActionTypes` (7 tipos)
+- `checklist_available_screen.dart`: gate de permissao `checklist_run:execute`, FutureBuilder com lista de templates ativos por OS
+- `checklist_run_screen.dart`: renderer dinamico por schema — switch exaustivo em `MobileChecklistFieldType`, FutureBuilder no build (evita race condition de sessao), labels como `Row([Text(label), Text(' *')])` para compatibilidade com find.text nos testes
+- `checklist_damage_map_screen.dart`: lista de marcadores + dialog de cadastro com `DropdownButtonFormField(initialValue:)`
+- `checklist_acknowledgement_screen.dart`: nome + cargo + checkbox de confirmacao
+- `router.dart`: 4 novas rotas adicionadas em appRouterProvider e appRouter estatico
+- `work_order_detail_screen.dart`: botao Checklist navegando para /work-orders/:id/checklists
+
+### Arquivos alterados
+
+- `mobile/flutter_app/lib/core/network/api_contracts.dart`
+- `mobile/flutter_app/lib/app/router.dart`
+- `mobile/flutter_app/lib/features/work_orders/ui/work_order_detail_screen.dart`
+- `mobile/flutter_app/lib/features/checklists/` (criado — 7 arquivos novos)
+- `mobile/flutter_app/test/features/b085_checklist_foundation_test.dart` (criado, 15 testes)
+
+### Validacoes
+
+- `dart format`: OK
+- `dart analyze`: No issues found
+- `flutter test`: **144/144 passando, 0 falhas** (129 anteriores + 15 novos)
+- sem commit, push ou PR
+
+## 2026-06-12 - B-084 Flutter: Home operacional + label OS
+
+### Implementado
+
+- `HomeScreen`: adicionado `_StatsRow` com 3 cards (OS hoje / Em campo / Concluidas) — aparece quando ha OS no tenant
+- `HomeScreen`: adicionado `_TodayOsList` com até 5 OS agendadas no dia, cada item navegavel para detalhe
+- `HomeScreen`: separado `allTenantOrders` (todos) de `workOrders` (nao-finais) para calculo correto de stats e nextOs
+- `WorkOrderDetailScreen`: botao principal renomeado de "Executar OS" para "Iniciar atendimento" (aderencia ao prototipo)
+- Helper privado `_sameDay(DateTime, DateTime)` para comparacao de datas sem timezone brittleness
+
+### Arquivos alterados
+
+- `mobile/flutter_app/lib/shared/ui/home_screen.dart` (stats row + today list)
+- `mobile/flutter_app/lib/features/work_orders/ui/work_order_detail_screen.dart` (label botao)
+- `mobile/flutter_app/test/features/b084_home_stats_test.dart` (criado, 10 testes)
+
+### Validacoes
+
+- `dart format`: OK
+- `flutter analyze`: No issues found
+- `flutter test`: **129/129 passando, 0 falhas** (119 anteriores + 10 novos)
+- `git diff --check`: OK
+- sem commit, push ou PR
+
+## 2026-06-12 - B-083 Flutter: polimento de telas (OS + RDV)
+
+### Telas polidas
+
+- `WorkOrderListScreen`: barra de busca + chips de status (`_WoGroup`: Todas/Agendadas/Em campo/Concluidas) + filtro de prioridade dropdown
+- `WorkOrderDetailScreen`: stepper horizontal `_WorkOrderStepper` (5 etapas) + `_PreparedActionButton` para Checklist/Evidencias/Mapa
+- `NewWorkOrderScreen`: nova rota `/work-orders/new`, form com Titulo/Cliente/Endereco/Prioridade/Data, gate `work_orders:create`
+- `ExpenseListScreen`: cabecalho `_SummaryHeader` (total/adiantamento/a receber) + tabs de status `_PcGroup`
+- `ExpenseReportDetailScreen`: `_TotalsHeader` com chip de status + 3 colunas de valores; `_ExpenseItemCard` com tags de politica inline
+- `ExpenseSubmitScreen`: checklist visual `_SubmissionChecklist` (5 itens) + botao desabilitado com violacoes blocking
+- `HomeScreen`: `_GreetingCard` (prefixo do email) + `_NextOsCard` + `_RdvSummaryCard` + `_QuickActions`
+
+### Arquivos alterados / criados
+
+- `mobile/flutter_app/lib/features/work_orders/ui/work_order_list_screen.dart` (reescrito)
+- `mobile/flutter_app/lib/features/work_orders/ui/work_order_detail_screen.dart` (reescrito)
+- `mobile/flutter_app/lib/features/work_orders/ui/new_work_order_screen.dart` (criado)
+- `mobile/flutter_app/lib/features/expenses/ui/expense_list_screen.dart` (reescrito)
+- `mobile/flutter_app/lib/features/expenses/ui/expense_report_detail_screen.dart` (reescrito)
+- `mobile/flutter_app/lib/features/expenses/ui/expense_submit_screen.dart` (reescrito)
+- `mobile/flutter_app/lib/shared/ui/home_screen.dart` (reescrito)
+- `mobile/flutter_app/test/features/b083_polish_test.dart` (criado, 30 testes)
+
+### Correcoes de testes aplicadas
+
+- `ListView` -> `SingleChildScrollView + Column` em `NewWorkOrderScreen` e `ExpenseSubmitScreen` — widgets built eagerly, eliminando falha de botao abaixo do fold
+- `settlementLabel(totals).split(' ').first` -> `settlementLabel(totals)` — exibe "A receber" completo
+- `find.textContaining('tecnico')` -> `find.textContaining('tecnico.')` — distingue saudacao do role line
+- `tester.ensureVisible()` antes de tap no botao de submit (borda inferior do viewport)
+- `find.text('Todas')` com `findsWidgets` (aparece em ChoiceChip E hint do dropdown)
+
+### Validacoes
+
+- `dart format`: OK (zero diffs)
+- `flutter analyze`: No issues found
+- `flutter test`: **119/119 passando, 0 falhas**
+- `git diff --check`: OK
+- sem commit, push ou PR
+
+## 2026-06-12 - B-082 Flutter: fundacao de Ordens de Servico (work_orders)
+
+- criados modelos de dominio: `WorkOrderStatus` (12 estados), `WorkOrderPriority`, `WorkOrder`, `WorkOrderTimelineEvent`, `WorkOrderAssignment`, `WorkOrderApprovalRequest`
+- extensoes `WorkOrderStatusX`/`WorkOrderPriorityX`: `label`, `statusTone`, `isFinal`, `allowedTransitions`, `canTransitionTo`
+- criado `WorkOrderLocalStore` + `InMemoryWorkOrderLocalStore` (load, save, saveAll, loadTimeline, saveTimelineEvent, clearAll)
+- criado `WorkOrderRepository extends ChangeNotifier`: `load`, `findById`, `findByServerId`, `workOrdersForUser`, `updateStatus`, `createWorkOrder`, `createApprovalRequest`, `loadTimeline`
+  - `updateStatus`: valida transicao, gera `SyncAction` tipo `work_order.status_update`, registra evento na timeline
+  - `createApprovalRequest`: valida motivo nao vazio, gera `SyncAction` tipo `work_order.approval_request`
+  - tenant isolation: filtra `workOrders` por `session.activeTenant.tenantId`
+  - seeds 3 OS de demonstracao por tenant
+- criado `WorkOrderRemoteApi` + `PendingBackendWorkOrderRemoteApi` (stub seguro) + `DioWorkOrderRemoteApi` (9 endpoints)
+- criado `workOrderLocalStoreProvider`, `workOrderRepositoryProvider`, `workOrderRemoteApiProvider` em `work_order_repository.dart`
+- adicionados `WorkOrderApiEndpoints` (9 endpoints) e `WorkOrderSyncActionTypes` (4 action types) em `api_contracts.dart`
+- bumped `AppDatabase.schemaVersion` 1→2 com `onUpgrade`: adiciona `work_orders` e `work_order_timeline` tables
+- criadas 4 telas Flutter reais (substituindo placeholder):
+  - `WorkOrderListScreen`: lista, filtros status/prioridade, permission gate, empty state, TenantContextBar
+  - `WorkOrderDetailScreen`: cabecalho, cliente/local, assignment, checklist futuro, timeline, botoes de acao permission-gated
+  - `WorkOrderExecuteScreen`: transicoes de status visivelmente rotuladas, safeError, link para evidencia/checklist futuros
+  - `WorkOrderApprovalRequestScreen`: motivo (obrigatorio), impacto, urgencia, sucesso/erro sem dados sensiveis
+- atualizadas rotas em `appRouterProvider` e `appRouter` global: `/work-orders`, `/:workOrderId`, `/:workOrderId/execute`, `/:workOrderId/approval-request`
+- criados 20 testes em `test/features/work_orders/work_order_test.dart`:
+  - testes 1-2: permission resolver (sem/com work_orders:read)
+  - testes 3-4: tenant isolation (filtra por tenant ativo, OS de outro tenant nao aparece)
+  - testes 5-9: status update (clientActionId nao vazio, payload seguro, transicao invalida, syncStatus pending, enfileira na queue)
+  - testes 10-11: approval request (ArgumentError sem motivo, action correta com motivo)
+  - testes 12-15: transicoes de status (allowed, invalid, isFinal, allowedTransitions)
+  - teste 16: timeline registra evento apos updateStatus
+  - testes 17-20: widget (blocked state sem permissao, lista OS do tenant, OS de outro tenant nao aparece, rota navegavel)
+- payload dos sync actions nunca contem Bearer token, senha, base64 ou path privado
+- `flutter test`: 89/89 passando (69 anteriores + 20 novos)
+- `flutter analyze`: No issues found
+- `dart format`: OK (8 arquivos formatados)
+- `git diff --check`: OK
+- sem commit, push ou PR
+
+## 2026-06-11 - B-081 Flutter: autenticacao mobile com secure storage e boundary real
+
+- criados `AuthStatus`, `AuthTokens`, `AuthUser`, `AuthSession`, `AuthState` em `features/auth/auth_models.dart`
+- criado `auth_token_storage.dart`: `AuthTokenStorage` interface + `SecureAuthTokenStorage` (flutter_secure_storage) + `InMemoryAuthTokenStorage` (testes)
+  - armazena: access token, refresh token, expiry, safe user JSON (sub, email, tenantId, tenantRole, tenantRoles, permissions, scope)
+  - nunca armazena: senha, payload bruto, path privado, secrets, logs de token
+- criado `auth_repository.dart`: `AuthRepository` interface + `LocalDevAuthRepository` (dev/modo local, TTL 8h) + `DioAuthRepository` (login/refresh/logout via HTTP)
+- criado `auth_notifier.dart`: `AuthState`, `AuthNotifier` (AsyncNotifier), `RouterNotifier` (ChangeNotifier), providers Riverpod
+- criado `bootstrap_codec.dart`: `BootstrapSessionCodec.encode/decode` — serializa/deserializa `BootstrapSession` completo (Set↔List para `PermissionSet` e `receiptRequiredCategories`)
+- substituido `bootstrap_repository.dart`: interface `MobileBootstrapRepository` com `fetch/restoreCached/cache/clearCache`
+  - `LocalDevBootstrapRepository`: autenticado → constroi `BootstrapSession` a partir de `AuthUser`; nao autenticado → `devBootstrapSession`
+  - `DioMobileBootstrapRepository`: `GET /api/v1/mobile/bootstrap` com Bearer token
+  - `bootstrapSessionProvider` agora aguarda `authStateProvider.future` antes de decidir
+- substituido `router.dart`: `appRouterProvider` com `RouterNotifier` + redirect de auth guard; `appRouter` global com todas as rotas sem guard (testes)
+- atualizado `app.dart`: `ConsumerWidget`, consome `appRouterProvider`
+- substituida `login_screen.dart`: `ConsumerStatefulWidget`, watcher de `authStateProvider`, safeError, disabled durante loading
+- substituida `profile_screen.dart`: exibe email, tenantRole, expiry formatado, permissions, modules, tenants; logout via `authStateProvider.notifier`
+- adicionado `ExpenseApiEndpoints.mobileBootstrap` em `api_contracts.dart`
+- criados 11 testes `auth_repository_test.dart`: login, persistencia, restore, logout+clear, null storage, isExpired, safeMessage sem token, header Bearer, codec round-trip, modo dev qualquer email
+- corrigidos 2 testes regressivos: `expense_local_first_test` e `expense_diagnostics_test` — adicionado override de `bootstrapSessionProvider` com `devBootstrapSession`
+- `flutter test`: 69/69 passando, 0 falhas, 0 erros
+- `flutter analyze`: OK, `dart format`: OK, `git diff --check`: OK
+- sem commit, push ou PR
+
+## 2026-06-11 - B-080 Flutter: HTTP remoto + SyncReplayService
+
+- criado `ApiError` sealed hierarchy (Network/Timeout/Unauthorized/Conflict/Server) — sem dados sensiveis
+- criado `ApiConfig` + `createExpenseHttpClient` + `mapDioError` em `core/network/http_client.dart`
+- substituida `ExpenseRemoteApi` com interface completa + `DioExpenseRemoteApi` + `PendingBackendExpenseRemoteApi`
+- criado `sync_replay_service.dart`: `SyncActionResult`, `SyncReplayResult`, `ExpenseSyncBatchApi`, `MockExpenseSyncBatchApi`, `CaptureBatchApi`, `DioExpenseSyncBatchApi`, `SyncReplayService`
+- `SyncReplayService`: maxRetry=5, marks syncing, batch POST, processa por clientActionId, preserva result_ref, retryCount++ em falha segura
+- adicionados `apiConfigProvider`, `syncBatchApiProvider`, `syncReplayServiceProvider` em `sync_providers.dart`
+- criados 8 testes `sync_replay_service_test.dart` com `InMemorySyncQueueRepository` + mocks
+- `flutter test`: 58/58 passando (48 anteriores + 10 novos)
+- `flutter analyze`: OK, `dart format`: OK, `git diff --check`: OK
+- sem commit, push ou PR
+
+## 2026-06-11 - B-079 Drift/SQLite Migration
+
+- migrada persistencia local da Prestação de Contas/Despesas de JSON para Drift/SQLite no Flutter
+- criado `AppDatabase` (GeneratedDatabase sem codegen) com 4 tabelas: `expense_reports`, `expense_items`, `expense_receipts`, `sync_actions`
+- criado `DriftExpenseLocalStore` implementando `ExpenseLocalStore` (interface publica preservada)
+- criado `DriftSyncActionStore` implementando `SyncActionStore` (interface publica preservada)
+- criado `appDatabaseProvider` (Riverpod) que deve ser sobreescrito antes do ProviderScope
+- atualizado `main.dart` com `async main()`, `WidgetsFlutterBinding.ensureInitialized()` e injecao via `ProviderScope.overrides`
+- atualizado `expenseLocalStoreProvider` e `syncActionStoreProvider` para usar Drift
+- adicionados 8 novos testes Drift com `NativeDatabase.memory()` (round-trip, isolamento, recibos, sync queue)
+- `flutter test`: 48/48 passando (40 anteriores + 8 novos)
+- `flutter analyze`: OK, sem issues
+- `dart format .`: OK
+- `git diff --check`: OK
+- sem commit, push ou PR
+
 ## 2026-05-07
 
 - identificado repositorio oficial `thiagodorgo/ERP_Techsolutios`
@@ -1593,7 +2154,7 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - `npm run test:e2e`: primeira tentativa 10/11 com falha transitoria `net::ERR_NETWORK_CHANGED` no fluxo Platform Cloud Billing; rerun OK, 11/11
 - `git diff --check`: OK
 
-## 2026-06-11 - GDV-001 Gestao de Despesas + Flutter Foundation
+## 2026-06-11 - GD-001 Gestao de Despesas + Flutter Foundation
 
 - branch usada: `feature/expense-management-flutter-foundation`
 - pre-condicao executada antes de alterar arquivos:
@@ -1610,7 +2171,7 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - `docs/modules.md` atualizado incrementalmente com `expense_management`
 - arquivos historicos e de orquestracao preservados por append/merge aditivo
 - app Flutter criado em `mobile/flutter_app` com plataformas Android/iOS
-- implementados App Shell, roteamento, home modular, tela de Gestao de Despesas, tela de novo RDV e diagnostico
+- implementados App Shell, roteamento, home modular, tela de Gestao de Despesas, tela de nova Prestação de Contas e diagnostico
 - implementados modelos e servicos Dart:
   - `TenantContext`, `EnabledModule`, `BootstrapSession`
   - `PermissionResolver`, `ModuleResolver`
@@ -1633,7 +2194,7 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - `flutter analyze`: OK
 - `flutter test`: OK, 14/14
 
-## 2026-06-11 - GDV-002 Review Flutter Scaffold + Backend Foundation
+## 2026-06-11 - GD-002 Review Flutter Scaffold + Backend Foundation
 
 - branch usada: `feature/expense-management-flutter-foundation`
 - pre-condicao executada:
@@ -1666,7 +2227,7 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
   - repositorio Prisma lazy/RLS para runtime persistente
   - endpoints `/api/v1/expense-policies`, `/api/v1/expense-categories`, `/api/v1/expense-reports`, `/api/v1/expense-reports/:reportId`, `/api/v1/expense-reports/:reportId/items`, `/api/v1/expense-reports/:reportId/submit` e `/api/v1/mobile/sync/expense-actions`
   - sync mobile idempotente por `tenant_id` + `client_action_id`
-  - payload mobile nao define `tenant_id` efetivo e tecnico nao consegue criar RDV para outro usuario via sync
+  - payload mobile nao define `tenant_id` efetivo e tecnico nao consegue criar Prestação de Contas para outro usuario via sync
 - Flutter alinhado:
   - adicionadas constantes de contratos em `mobile/flutter_app/lib/core/network/api_contracts.dart`
   - testes Flutter agora cobrem endpoints, status e tipos de acao backend
@@ -1738,3 +2299,314 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - `npm run check`: OK
 - validacao visual Playwright em `docs/prototypes/flutter-mobile/index.html`: OK, 12 telas, 12 links de navegacao, sem overflow horizontal em viewport 390x844; screenshot temporario salvo fora do repo
 - `git diff --check`: OK
+
+## 2026-06-11 - Flutter Mobile Operacional Local-First
+
+- pedido do usuario: nao mexer em Git/merge/release, nao criar PR, nao fazer commit/push e transformar o Flutter existente em app operacional local-first
+- preservacao inicial:
+  - `git status --short` mostrava `docs/prototypes/flutter-mobile/index.html` e `docs/prototypes/flutter-mobile/styles.css` ja modificados, preservados sem edicao deliberada nesta rodada
+  - `experiments/` permaneceu nao rastreado e fora do escopo
+- leitura executada:
+  - `AGENTS.md`
+  - `PRODUCT_CONTEXT.md`
+  - `RBAC_MATRIX.md`
+  - `DESIGN_SYSTEM.md`
+  - `COMPONENT_LIBRARY.md`
+  - `docs/mobile-flutter-app.md`
+  - `docs/mobile-sync-contracts.md`
+  - `docs/expense-management.md`
+  - `docs/mobile-flutter-ux-architecture.md`
+  - `mobile/flutter_app/**`
+  - `agent-orchestration/docs/status-geral.md`
+  - `agent-orchestration/codex/log-execucao.md`
+
+### Implementacao Flutter
+
+- app shell:
+  - `ErpMobileTheme`
+  - `ErpScaffold`
+  - rotas `/login`, `/`, `/profile`, `/diagnostics`, `/sync`, `/expenses`, `/expenses/new`, `/expenses/:reportId`, `/expenses/:reportId/items/new`, `/expenses/:reportId/submit`, `/work-orders`, `/field-map`, `/inventory` e `/approvals`
+- bootstrap/permissoes:
+  - `MobileBootstrapRepository`
+  - `bootstrapSessionProvider`
+  - `BootstrapSession` expandido com usuario, tenant role, tenants disponiveis, mobile policy, categorias e expense policy
+  - `field_location:send` incluido para o modulo de field ops do mock
+- componentes compartilhados:
+  - `TenantContextBar`
+  - `SyncStatusBanner`
+  - `OperationalStatusChip`
+  - `PermissionBlockedState`
+  - `EmptyState`
+  - `ErrorState`
+  - `OfflineState`
+  - `PolicyViolationBanner`
+  - `ExpenseReportCard`
+  - `ApprovalDecisionCard`
+- Prestação de Contas/Gestao de Despesas:
+  - `LocalExpenseRepository` local-first em memoria
+  - criacao de Prestação de Contas com `expense_report.create`
+  - adicao de item com `expense_item.create`
+  - submissao com `expense_report.submit`
+  - totais, adiantamento, A Receber/A Devolver/Sem diferenca
+  - status Prestação de Contas, violacoes de politica e bloqueio visual de submit quando ha violacao bloqueante
+  - estrutura para recibo/OCR/upload sem implementacao real
+- sync/offline:
+  - `sync_providers.dart`
+  - fila em memoria consultavel por tenant
+  - `/sync` e `/diagnostics` exibem acoes locais, retry/status e log sanitizado
+  - conflitos permanecem explicitos e nao resolvidos silenciosamente
+- placeholders:
+  - OS, mapa/localizacao, estoque e aprovacoes agora sao telas Flutter reais com permission gate e mensagem operacional de modulo em preparacao
+
+### Testes
+
+- atualizados testes de module resolver e home
+- criado `test/features/expenses/expense_screens_test.dart`
+- cobertura adicionada para:
+  - field ops exige `field_location:send`
+  - lista Prestação de Contas renderiza dados locais e violacoes
+  - detalhe Prestação de Contas renderiza totais e acao de item
+  - novo item mostra placeholder estruturado de recibo
+  - submit fica bloqueado quando politica possui violacao bloqueante
+
+### Validacoes Executadas
+
+- `flutter pub get`: OK
+- `dart format .`: OK
+- `flutter analyze`: OK
+- `flutter test`: OK, 24/24
+- `git diff --check`: OK
+
+### Lacunas Para Flutter 100%
+
+- bootstrap real via `GET /api/v1/mobile/bootstrap`
+- persistencia local Drift/SQLite real em vez de memoria
+- integracao HTTP real dos endpoints de despesas
+- camera/upload/OCR/PDF reais
+- resolucao visual completa de conflitos
+- OS/checklist/mapa/estoque/aprovacoes completos
+- auth Cognito/local real com secure storage de tokens
+
+### Fora De Escopo Mantido
+
+- backend, migrations, APIs, frontend React, Figma, pagamento, fiscal, contabil, comissoes, mapa real, GPS real, checklist completo e estoque completo
+- nenhum commit, push ou PR foi feito
+
+## 2026-06-11 - Flutter Prestação de Contas Persistencia Local-First
+
+- pedido do usuario: continuar Flutter sem commit, push ou PR, evoluinda Prestação de Contas/Gestao de Despesas de fluxo em memoria para local-first real e robusto
+- restricoes preservadas: sem backend, migrations, frontend React, Figma, pagamentos, fiscal, contabil, comissoes, mapa real, Git/PR/commit/push
+- estado inicial preservado:
+  - havia alteracoes pendentes da rodada Flutter anterior
+  - `docs/prototypes/flutter-mobile/index.html` e `docs/prototypes/flutter-mobile/styles.css` ja apareciam modificados e nao foram tratados como escopo desta implementacao
+  - `experiments/` permaneceu nao rastreado e fora do escopo
+
+### Implementacao
+
+- criada persistencia local de Prestação de Contas/itens:
+  - `mobile/flutter_app/lib/features/expenses/data/expense_local_store.dart`
+  - `ExpenseLocalStore`
+  - `InMemoryExpenseLocalStore`
+  - `JsonFileExpenseLocalStore`
+  - codecs para `ExpenseReport`, `ExpenseItem`, `Receipt` e `ExpenseAdvance`
+- criada persistencia local de fila de sync:
+  - `mobile/flutter_app/lib/core/sync/sync_action_store.dart`
+  - `SyncActionStore`
+  - `InMemorySyncActionStore`
+  - `JsonFileSyncActionStore`
+  - `SyncActionCodec`
+- `PersistentSyncQueueRepository` adicionado para persistir acoes de sync fora da memoria do processo
+- `SyncAction` expandido com `lastErrorCode`, `lastSafeError` e `processedAt`
+- `SyncEngine` agora marca sucesso com `processedAt`, falha segura com mensagem sanitizada e conflito com estado explicito
+- `sync_providers.dart` passou a usar `JsonFileSyncActionStore.appDocuments()` e `PersistentSyncQueueRepository`
+- `LocalExpenseRepository` passou a receber `ExpenseLocalStore`, carregar dados salvos, salvar mutacoes locais e preservar isolamento por `tenant_id`
+- `LocalExpenseRepository` salva Prestação de Contas, item e submit antes de retornar a mutacao e antes/junto da fila de sync
+- telas Home, lista Prestação de Contas, detalhe Prestação de Contas e submit carregam a store local antes de renderizar
+- `/sync` agora mostra pendentes, processadas, erros, conflitos, ultimo sync, retry e erro seguro por acao
+- `/diagnostics` mostra resumo seguro da fila e erros sanitizados, sem payload sensivel
+- adicionada boundary HTTP futura:
+  - `mobile/flutter_app/lib/features/expenses/data/expense_remote_api.dart`
+  - contratos isolados para list/create/get/patch/item/submit sem chamada real nesta rodada
+
+### Modelo Local
+
+- cache de leitura: `ExpenseLocalStore`
+- mutacoes pendentes/processadas/conflitos: `SyncActionStore`
+- status local/remoto: `ExpenseReport.status`, `ExpenseReport.serverId`, `SyncAction.status`, `SyncAction.processedAt`
+- idempotencia: `client_action_id`
+- tenant isolation: `tenant_id` em Prestação de Contas, item, recibo e sync action
+- dados sensiveis: tokens continuam fora da store local comum; diagnostico nao renderiza payload, token, path privado nem recibo bruto
+
+### Testes
+
+- `expense_persistence_test.dart`
+  - persiste Prestação de Contas, item, submit e fila apos recriacao do repository
+  - replay idempotente por `client_action_id`
+  - isolamento entre tenants
+- `expense_diagnostics_test.dart`
+  - diagnostico nao renderiza token nem path privado do payload
+- `expense_screens_test.dart`
+  - detalhe Prestação de Contas carrega dados vindos de store local
+
+### Validacoes Executadas
+
+- `flutter pub get`: OK
+- `dart format .`: OK
+- `flutter analyze`: OK
+- `flutter test`: OK, 29/29
+- `git diff --check`: OK
+
+### Lacunas Restantes
+
+- trocar JSON local por Drift/SQLite real com schema mobile quando for oportuno
+- integrar HTTP real com backend
+- reconciliar cache remoto incremental e conflitos ricos
+- persistir recibos/arquivos com criptografia/retenção adequada
+- implementar camera/upload/OCR/PDF reais
+- finalizar OS/checklists/mapa/estoque/aprovacoes
+
+### Confirmacao
+
+- nenhum commit, push ou PR foi feito
+
+## 2026-06-11 - B-077 Flutter Prestação de Contas local-first: timestamps e testes obrigatorios
+
+- branch ativa: `docs/flutter-mobile-ux-html-proposals`
+- escopo: apenas `mobile/flutter_app/**`
+- objetivo: evoluir a Prestação de Contas/Gestao de Despesas para local-first real com timestamps e cobertura de testes completa
+
+### Implementado
+
+- `ExpenseReport` recebeu `createdAt: DateTime?` e `updatedAt: DateTime?`
+  - campos opcionais (nao quebram codigo e testes existentes)
+  - codec `ExpenseReportCodec` atualizado para serializar/deserializar `created_at` e `updated_at` no JSON local
+- `LocalExpenseRepository.createReport()` define `createdAt: DateTime.now().toUtc()`
+- `LocalExpenseRepository.addItem()` define `updatedAt: DateTime.now().toUtc()` via `copyWith`
+- `LocalExpenseRepository.submitReport()` define `updatedAt: DateTime.now().toUtc()` via `copyWith`
+- criado `test/features/expenses/expense_local_first_test.dart` com 3 novos testes:
+  1. `totals are consistent after report and items reload from local store` — cria Prestação de Contas + 2 itens, recria repository do mesmo arquivo, verifica `items.length == 2`, totais corretos e `createdAt`/`updatedAt` nao nulos
+  2. `sync screen displays all queued actions with safe metadata` — seed de 2 acoes (pending + failed) no InMemorySyncActionStore, widget SyncScreen renderizado, verifica tipo, `client_action_id` e mensagem de erro segura exibidos
+  3. `expense list disables create button when expense_report:create is missing` — override de `bootstrapSessionProvider` com sessao sem `expense_report:create`, verifica FAB com `onPressed == null`
+
+### Validacoes Executadas
+
+- `flutter pub get`: OK
+- `dart format .`: OK (1 arquivo reformatado)
+- `flutter analyze`: OK, sem issues
+- `flutter test`: OK, 32/32 (era 29/29)
+- `git diff --check`: OK, sem whitespace errors
+
+### Arquivos Alterados
+
+- `mobile/flutter_app/lib/features/expenses/domain/expense_models.dart`
+- `mobile/flutter_app/lib/features/expenses/data/expense_local_store.dart`
+- `mobile/flutter_app/lib/features/expenses/data/expense_repository.dart`
+- `mobile/flutter_app/test/features/expenses/expense_local_first_test.dart` (criado)
+
+### Confirmacao
+
+- nenhum commit, push ou PR foi feito
+- backend, frontend React, Figma, secrets e areas fora do escopo nao foram alterados
+
+## 2026-06-12 - B-083 Polimento e hardening fora do Flutter
+
+- branch ativa: nao alterada nesta tarefa
+- escopo: backend, frontend React, testes e documentacao operacional aditiva
+- restricao critica: `mobile/flutter_app/**` e Flutter nao foram alterados neste bloco
+
+### Implementado
+
+- otimizado `NotificationRecipientResolver` para selecionar destinatarios em uma unica passada, preservando ordem, deduplicacao, exclusao do ator, exclusao de inativos e limite de 20
+- adicionado teste unitario cobrindo o limite seguro e as regras de selecao de destinatarios
+- memoizadas colunas de `DispatchesTable` e `WorkOrdersTable`
+- adicionados `aria-label` nos cards mobile de despachos e ordens de servico
+- criado registro operacional `agent-orchestration/codex/comandos/B-083-non-flutter-code-polish-and-hardening.md`
+
+### Validacoes Executadas
+
+- baseline antes das alteracoes: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`: OK
+- validacoes focadas apos alteracoes: `npm run check`, `node --test --import tsx tests/notifications.test.ts`, `npm --prefix frontend run check`: OK
+- validacoes finais: `npm run check`, `npm run lint`, `npm test`, `npm run build`, `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`, `git diff --check`: OK
+- `docker compose ps`: falhou porque o daemon Docker Desktop nao estava disponivel em `npipe:////./pipe/dockerDesktopLinuxEngine`; `npm run test:e2e` nao foi executado por depender de Docker/PostgreSQL
+
+### Confirmacao
+
+- nenhum commit, push ou PR foi feito
+- Flutter, Figma, secrets, migrations, schema e contratos publicos nao foram alterados
+
+## 2026-06-11 - B-078 Flutter Prestação de Contas: base local-first de recibos/evidencias
+
+### Implementado
+
+- expandido modelo `Receipt` com novos campos: `serverId?`, `reportLocalId?`, `itemLocalId?`, `fileName`, `mimeType`, `sizeBytes`, `localReference?`, `sha256Hash?`, `captureSource`, `uploadStatus` (expandido + `conflict`), `ocrStatus`, `ocrExtractedFields?`, `userReviewedFields?`, `createdAt`, `updatedAt?`
+- adicionados enums `ReceiptCaptureSource` (camera, gallery, file, manualPlaceholder) e `ReceiptOcrStatus` (notStarted, pending, reviewed, failed, unavailable)
+- codec `ExpenseReportCodec` atualizado com backward compat para JSON antigo (`sha256` → `sha256Hash`, `pendingUpload` → `pending`)
+- adicionado `ExpenseSyncActionTypes.receiptAttach = 'expense_receipt.attach'`
+- adicionados ao `LocalExpenseRepository`: `attachReceiptPlaceholder`, `receiptsForItem`, `receiptsForReport`, `markReceiptUploadPending`, `markReceiptUploadFailed`, `markReceiptUploaded`, `markReceiptOcrReviewed`
+- payload `_safeReceiptPayload` com somente metadata segura — sem `localReference`, token, base64 ou path privado
+- nova rota `/expenses/:reportId/items/:itemId/receipts` no `router.dart`
+- nova tela `ExpenseItemReceiptsScreen` com lista de recibos e botao de placeholder
+- item cards no `ExpenseReportDetailScreen` agora navegam para a tela de recibos com `onTap`
+- criado `test/features/expenses/expense_receipt_test.dart` com 8 testes obrigatorios
+
+### Validacoes Executadas
+
+- `dart format .`: OK (5 arquivos reformatados)
+- `flutter analyze --no-fatal-warnings`: OK, sem issues
+- `flutter test`: OK, 40/40 (era 32/32)
+- `git diff --check`: OK, sem whitespace errors
+
+### Arquivos Alterados
+
+- `mobile/flutter_app/lib/features/expenses/domain/expense_models.dart`
+- `mobile/flutter_app/lib/features/expenses/data/expense_local_store.dart`
+- `mobile/flutter_app/lib/features/expenses/data/expense_repository.dart`
+- `mobile/flutter_app/lib/core/network/api_contracts.dart`
+- `mobile/flutter_app/lib/app/router.dart`
+- `mobile/flutter_app/lib/features/expenses/ui/expense_report_detail_screen.dart`
+- `mobile/flutter_app/lib/features/expenses/ui/expense_item_receipts_screen.dart` (criado)
+- `mobile/flutter_app/test/features/expenses/expense_receipt_test.dart` (criado)
+
+### Confirmacao
+
+- nenhum commit, push ou PR foi feito
+
+## 2026-06-12 - B-091 Connectivity Real + Profile Polish
+
+### Implementado
+
+**Parte A — ConnectivityBridge (plugin desacoplado)**
+
+- `lib/core/network/connectivity_bridge.dart` (novo): interface `ConnectivitySource` com `statusStream` e `fetchCurrent()`; `ConnectivityPlusSource` implementacao real usando `connectivity_plus` 6.1.5 (mapeia `wifi/mobile/ethernet/vpn` → online, `none` → offline); `ManualConnectivitySource` para testes; `connectivitySourceProvider` e `connectivityBridgeProvider` que subscreve ao stream e aciona `networkStatusProvider.notifier.setStatus()` com `ref.onDispose`
+- `pubspec.yaml`: adicionado `connectivity_plus: ^6.0.0` (resolvido para 6.1.5)
+- `lib/app/app.dart`: `ref.watch(connectivityBridgeProvider)` montado uma vez no root para ciclo de vida do app
+
+**Parte B — ProfileScreen polished**
+
+- `lib/shared/ui/profile_screen.dart` (novo): tela completa com avatar (iniciais do email via `_initials()`), `TenantContextBar`, card de funcao/role, card de modo auth (`kIsRemoteAuth` → 'Remoto (producao)' / 'Local (desenvolvimento)'), card de status da sessao, card de expiracao do token (apenas formatted, sem valor), card de conectividade (icon + label), card de ultimo sync (de `autoSyncCoordinatorProvider`), permissoes, modulos, tenants disponiveis, botao "Sair" com cor de erro; `_ExpiredSessionView` para estado `AuthStatus.expired` com botao de re-login; sem exibicao de nenhum token, bearer ou valor sensivel
+
+### Grupos de teste (b091) — 15 testes
+
+- `ManualConnectivitySource` (3): fetchCurrent retorna status inicial; emit atualiza stream e fetchCurrent; multiplos emits entregues em ordem
+- `connectivityBridgeProvider` (3): connectivitySourceProvider e overrideavel; bridge propaga evento de stream; auto sync dispara em offline→online via bridge
+- `ProfileScreen` (9): mostra email e role do devBootstrapSession; mostra displayName do tenant; mostra modo auth 'Local (desenvolvimento)'; mostra 'Online'; mostra 'Offline'; nao renderiza valor do access token; logout aciona notifier.logout(); sessao expirada mostra aviso + botao login; avatar mostra iniciais corretas
+
+### Arquivos criados
+
+- `mobile/flutter_app/lib/core/network/connectivity_bridge.dart`
+- `mobile/flutter_app/lib/shared/ui/profile_screen.dart`
+- `mobile/flutter_app/test/features/b091_connectivity_profile_test.dart` (15 testes)
+
+### Arquivos alterados
+
+- `mobile/flutter_app/pubspec.yaml` (connectivity_plus adicionado)
+- `mobile/flutter_app/lib/app/app.dart` (bridge montado no root)
+
+### Validacoes
+
+- `flutter test`: 258/258 passando (15 novos B-091, nenhuma regressao)
+- `dart format .`: 3 arquivos reformatados
+- `flutter analyze`: No issues found
+- `git diff --check`: limpo
+- sem commit, push ou PR
+- backend, frontend React, Figma, secrets e areas fora do escopo nao foram alterados

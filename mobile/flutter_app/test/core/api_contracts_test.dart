@@ -6,10 +6,22 @@ void main() {
     expect(ExpenseApiEndpoints.expensePolicies, '/api/v1/expense-policies');
     expect(ExpenseApiEndpoints.expenseCategories, '/api/v1/expense-categories');
     expect(ExpenseApiEndpoints.expenseReports, '/api/v1/expense-reports');
-    expect(ExpenseApiEndpoints.expenseReport('report-1'), '/api/v1/expense-reports/report-1');
-    expect(ExpenseApiEndpoints.expenseReportItems('report-1'), '/api/v1/expense-reports/report-1/items');
-    expect(ExpenseApiEndpoints.submitExpenseReport('report-1'), '/api/v1/expense-reports/report-1/submit');
-    expect(ExpenseApiEndpoints.mobileExpenseSync, '/api/v1/mobile/sync/expense-actions');
+    expect(
+      ExpenseApiEndpoints.expenseReport('report-1'),
+      '/api/v1/expense-reports/report-1',
+    );
+    expect(
+      ExpenseApiEndpoints.expenseReportItems('report-1'),
+      '/api/v1/expense-reports/report-1/items',
+    );
+    expect(
+      ExpenseApiEndpoints.submitExpenseReport('report-1'),
+      '/api/v1/expense-reports/report-1/submit',
+    );
+    expect(
+      ExpenseApiEndpoints.mobileExpenseSync,
+      '/api/v1/mobile/sync/expense-actions',
+    );
   });
 
   test('expense sync action constants match backend supported actions', () {

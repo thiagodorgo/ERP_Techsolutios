@@ -194,6 +194,10 @@ As credenciais em `.env.example` sao apenas exemplos locais. Nunca versione `.en
     └── routes/
 ```
 
+## Documentação de Assets
+
+A documentação dos assets de imagens do app Flutter está em `docs/assets-images.md`.
+
 ## Ordem de leitura recomendada
 
 1. `docs/00-visao-executiva.md`

@@ -1,4 +1,5 @@
 import { Eye, Route, UserRound } from "lucide-react";
+import { useMemo } from "react";
 
 import { Button, Card, Table } from "../../../../components/ui";
 import { formatDispatchDate } from "../dispatches.adapter";
@@ -23,45 +24,56 @@ export function DispatchesTable({
   readonly onQuickStatus: (dispatch: DispatchListItem) => void;
   readonly onReassign: (dispatch: DispatchListItem) => void;
 }) {
+  const columns = useMemo(
+    () => [
+      { key: "workOrder", header: "OS", render: (item: DispatchListItem) => <strong>{item.workOrderCode ?? item.workOrderId}</strong> },
+      { key: "title", header: "Titulo", render: (item: DispatchListItem) => item.workOrderTitle ?? "OS sem titulo local" },
+      { key: "status", header: "Status", render: (item: DispatchListItem) => <DispatchStatusBadge status={item.status} /> },
+      { key: "priority", header: "Prioridade", render: (item: DispatchListItem) => <DispatchPriorityBadge priority={item.priority} /> },
+      { key: "operator", header: "Operador", render: (item: DispatchListItem) => item.operatorUserId },
+      { key: "created", header: "Criado em", render: (item: DispatchListItem) => formatDispatchDate(item.createdAt) },
+      {
+        key: "actions",
+        header: "Acoes",
+        render: (item: DispatchListItem) => (
+          <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
+            <Button type="button" size="sm" variant="secondary" onClick={() => onDetail(item)}>
+              <Eye size={14} /> Detalhe
+            </Button>
+            {canChangeStatus || canCancel ? (
+              <Button type="button" size="sm" variant="ghost" onClick={() => onQuickStatus(item)}>
+                <Route size={14} /> Status
+              </Button>
+            ) : null}
+            {canReassign ? (
+              <Button type="button" size="sm" variant="ghost" onClick={() => onReassign(item)}>
+                <UserRound size={14} /> Reatribuir
+              </Button>
+            ) : null}
+          </div>
+        ),
+      },
+    ],
+    [canCancel, canChangeStatus, canReassign, onDetail, onQuickStatus, onReassign],
+  );
+
   return (
     <Card title="Despachos Operacionais">
       <Table
         rows={items}
         keyForRow={(item) => item.id}
         onRowClick={onDetail}
-        columns={[
-          { key: "workOrder", header: "OS", render: (item) => <strong>{item.workOrderCode ?? item.workOrderId}</strong> },
-          { key: "title", header: "Titulo", render: (item) => item.workOrderTitle ?? "OS sem titulo local" },
-          { key: "status", header: "Status", render: (item) => <DispatchStatusBadge status={item.status} /> },
-          { key: "priority", header: "Prioridade", render: (item) => <DispatchPriorityBadge priority={item.priority} /> },
-          { key: "operator", header: "Operador", render: (item) => item.operatorUserId },
-          { key: "created", header: "Criado em", render: (item) => formatDispatchDate(item.createdAt) },
-          {
-            key: "actions",
-            header: "Acoes",
-            render: (item) => (
-              <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-                <Button type="button" size="sm" variant="secondary" onClick={() => onDetail(item)}>
-                  <Eye size={14} /> Detalhe
-                </Button>
-                {canChangeStatus || canCancel ? (
-                  <Button type="button" size="sm" variant="ghost" onClick={() => onQuickStatus(item)}>
-                    <Route size={14} /> Status
-                  </Button>
-                ) : null}
-                {canReassign ? (
-                  <Button type="button" size="sm" variant="ghost" onClick={() => onReassign(item)}>
-                    <UserRound size={14} /> Reatribuir
-                  </Button>
-                ) : null}
-              </div>
-            ),
-          },
-        ]}
+        columns={columns}
       />
       <div className="work-orders-mobile-list dispatches-mobile-list">
         {items.map((item) => (
-          <button key={item.id} type="button" className="work-orders-mobile-card" onClick={() => onDetail(item)}>
+          <button
+            key={item.id}
+            type="button"
+            className="work-orders-mobile-card"
+            aria-label={`Abrir detalhes do despacho ${item.workOrderCode ?? item.id}`}
+            onClick={() => onDetail(item)}
+          >
             <header>
               <div>
                 <strong>{item.workOrderCode ?? item.workOrderId}</strong>

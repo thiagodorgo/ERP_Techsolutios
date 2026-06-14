@@ -54,7 +54,7 @@
 
 - Permissao: `expense_report:read` ou `expense_report:read_all`.
 - Request: filtros por status, periodo, funcionario, OS, projeto e centro de custo.
-- Response: lista paginada de RDVs permitidos.
+- Response: lista paginada de Prestações de Contas permitidas.
 - Erros: 401, 403.
 - Idempotencia: leitura.
 - Offline: app exibe cache local e marca frescor.
@@ -63,8 +63,8 @@
 ### POST /api/v1/expense-reports
 
 - Permissao: `expense_report:create`.
-- Request: dados do RDV, `policy_version`, origem operacional e `client_action_id` quando vindo do app.
-- Response: RDV criado com `id` e status.
+- Request: dados da Prestação de Contas, `policy_version`, origem operacional e `client_action_id` quando vindo do app.
+- Response: Prestação de Contas criada com `id` e status.
 - Erros: 400, 401, 403, 409, 422.
 - Idempotencia: por `tenant_id` + `client_action_id`, quando enviado.
 - Offline: criado localmente e enviado pela sync queue.
@@ -74,7 +74,7 @@
 
 - Permissao: `expense_report:read` ou `expense_report:read_all`.
 - Request: `id` na rota.
-- Response: RDV completo, itens, recibos permitidos, totais e timeline.
+- Response: Prestação de Contas completa, itens, recibos permitidos, totais e timeline.
 - Erros: 401, 403, 404.
 - Idempotencia: leitura.
 - Offline: app usa detalhe local.
@@ -84,7 +84,7 @@
 
 - Permissao: `expense_report:update`.
 - Request: campos editaveis em `draft` ou `returned`.
-- Response: RDV atualizado e nova versao.
+- Response: Prestação de Contas atualizada e nova versao.
 - Erros: 400, 401, 403, 404, 409, 422.
 - Idempotencia: por `client_action_id` quando mobile.
 - Offline: entra na sync queue.
@@ -225,7 +225,7 @@ Um conflito deve retornar:
 
 O app deve gravar o conflito em fila propria e exigir decisao explicita quando houver risco de perda de dados.
 
-## Backend Foundation - GDV-002
+## Backend Foundation - GD-002
 
 Na fundacao backend inicial, `POST /api/v1/mobile/sync/expense-actions` aceita lote idempotente com estes tipos de acao:
 
@@ -249,4 +249,4 @@ Resposta esperada:
 }
 ```
 
-Quando a mesma acao for reenviada com o mesmo `client_action_id`, a resposta deve retornar o resultado ja processado sem duplicar RDV, item ou submissao.
+Quando a mesma acao for reenviada com o mesmo `client_action_id`, a resposta deve retornar o resultado ja processado sem duplicar Prestação de Contas, item ou submissao.

@@ -12,14 +12,14 @@ void main() {
       type: 'expense_report.create',
       clientActionId: 'action-1',
       createdAt: createdAt,
-      payload: const {'local_id': 'rdv-1'},
+      payload: const {'local_id': 'pc-1'},
     );
     final replay = factory.create(
       tenantId: 'tenant-a',
       type: 'expense_report.create',
       clientActionId: 'action-1',
       createdAt: createdAt,
-      payload: const {'local_id': 'rdv-1'},
+      payload: const {'local_id': 'pc-1'},
     );
 
     expect(first, replay);

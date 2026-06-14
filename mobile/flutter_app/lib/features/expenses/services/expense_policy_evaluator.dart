@@ -26,8 +26,9 @@ class ExpensePolicyEvaluator {
         );
       }
 
-      final requiresReceipt =
-          policy.receiptRequiredCategories.contains(item.categoryId);
+      final requiresReceipt = policy.receiptRequiredCategories.contains(
+        item.categoryId,
+      );
       if (requiresReceipt && item.receipts.isEmpty) {
         violations.add(
           PolicyViolation(

@@ -154,6 +154,36 @@ test("notification job creates notifications from checklist domain events", asyn
   );
 });
 
+test("notification resolver preserves recipient order, deduplicates and stops at the safe limit", async () => {
+  const repository = new InMemoryNotificationRepository();
+  repository.setRecipientCandidatesForTests("tenant-a", [
+    candidate("actor-a", ["tenant_admin"], ["checklist_runs:read"]),
+    candidate("inactive-a", ["tenant_admin"], ["checklist_runs:read"], "inactive"),
+    candidate("recipient-01", ["operator"], ["checklist_runs:read"]),
+    candidate("recipient-01", ["operator"], ["checklist_runs:read"]),
+    ...Array.from({ length: 25 }, (_, index) =>
+      candidate(`recipient-${String(index + 2).padStart(2, "0")}`, ["operator"], ["checklist_runs:read"]),
+    ),
+  ]);
+
+  const recipients = await new NotificationRecipientResolver(repository).resolve({
+    id: "event-limit",
+    name: "checklist_run.completed",
+    tenantId: "tenant-a",
+    actorId: "actor-a",
+    correlationId: "corr-limit",
+    occurredAt: new Date("2026-06-12T12:00:00.000Z").toISOString(),
+    payload: {},
+  });
+
+  assert.equal(recipients.length, 20);
+  assert.equal(recipients[0], "recipient-01");
+  assert.equal(recipients[19], "recipient-20");
+  assert.equal(new Set(recipients).size, recipients.length);
+  assert.equal(recipients.includes("actor-a"), false);
+  assert.equal(recipients.includes("inactive-a"), false);
+});
+
 function candidate(
   userId: string,
   roles: NotificationRecipientCandidate["roles"],
