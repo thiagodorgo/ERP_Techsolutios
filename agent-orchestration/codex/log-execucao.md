@@ -1703,3 +1703,38 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - UI web
 - approval avancado
 - integracao direta com comissoes
+
+## 2026-06-11 - B-076 Flutter Mobile UX Architecture + HTML Proposals
+
+- branch usada: `docs/flutter-mobile-ux-html-proposals`
+- pre-condicao executada antes de alterar arquivos:
+  - `git status --short`: apenas `experiments/` nao rastreado
+  - `git checkout main`: OK
+  - `git pull --ff-only origin main`: fast-forward ate PR #75
+  - `git status --short`: apenas `experiments/` nao rastreado
+  - PR #75 confirmada por existencia de `mobile/flutter_app`, `docs/expense-management.md`, `docs/mobile-flutter-app.md`, `docs/mobile-sync-contracts.md` e `src/modules/expense-management`
+- Flutter mapeado em `mobile/flutter_app`:
+  - rotas atuais `/`, `/expenses`, `/expenses/new` e `/diagnostics`
+  - app shell com `GoRouter`, `ThemeData`, `HomeScreen`, `ExpenseListScreen`, `NewExpenseReportScreen` e `DiagnosticsScreen`
+  - fundacoes existentes para bootstrap, module resolver, permission resolver, contratos API, sync engine e modelos/servicos de despesas
+- Figma:
+  - encontrada referencia versionada em `frontend/links_Figma.md`, com M01-M12 e handoffs
+  - nenhum acesso, criacao ou edicao automatica de Figma foi feita
+- documentacao criada:
+  - `docs/mobile-flutter-ux-architecture.md`
+  - `docs/prototypes/flutter-mobile/index.html`
+  - `docs/prototypes/flutter-mobile/styles.css`
+  - `agent-orchestration/codex/comandos/B-076-flutter-mobile-ux-html-proposals.md`
+- prototipo HTML cobre Login, Home operacional, lista priorizada de OS, detalhe de OS, execucao/checklist, captura de evidencia, mapa/rota/localizacao, sync/offline/conflito, aprovacao manager, Gestao de Despesas mobile, estoque do tecnico e perfil/permissoes
+- fora de escopo mantido: implementacao Flutter final, backend, migrations, APIs, realtime/map real, OCR, PDF, upload, pagamento, fiscal, contabil, comissoes, Figma automatico e refactors nao relacionados
+- preservacao: `agent-orchestration/**` atualizado somente por entradas aditivas; `experiments/` permaneceu nao rastreado e fora do commit
+
+### Validacoes
+
+- `git status --short`: arquivos esperados da fase + `experiments/` nao rastreado
+- `flutter pub get`: OK
+- `flutter analyze`: OK
+- `flutter test`: OK, 17/17
+- `npm run check`: OK
+- validacao visual Playwright em `docs/prototypes/flutter-mobile/index.html`: OK, 12 telas, 12 links de navegacao, sem overflow horizontal em viewport 390x844; screenshot temporario salvo fora do repo
+- `git diff --check`: OK

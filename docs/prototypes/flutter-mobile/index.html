@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ERP Techsolutions - Flutter Mobile UX Proposals</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">B-076 proposta estatica</p>
+      <h1>Flutter Mobile UX</h1>
+      <p class="summary">Fluxo mobile-first para operacao de campo, tenant ativo, permissoes, evidencias, despesas e sincronizacao offline.</p>
+    </div>
+    <nav class="screen-nav" aria-label="Telas do prototipo">
+      <a href="#login">Login</a>
+      <a href="#home">Home</a>
+      <a href="#work-orders">OS</a>
+      <a href="#detail">Detalhe</a>
+      <a href="#checklist">Checklist</a>
+      <a href="#evidence">Evidencia</a>
+      <a href="#map">Mapa</a>
+      <a href="#sync">Sync</a>
+      <a href="#approvals">Aprovacoes</a>
+      <a href="#expenses">Despesas</a>
+      <a href="#inventory">Estoque</a>
+      <a href="#profile">Perfil</a>
+    </nav>
+  </header>
+
+  <main class="gallery">
+    <section class="phone" id="login" aria-labelledby="login-title">
+      <div class="status-bar"><span>08:10</span><span>4G 86%</span></div>
+      <div class="screen login-screen">
+        <div class="brand-block">
+          <span class="mark">ET</span>
+          <div>
+            <p class="eyebrow">ERP Techsolutions</p>
+            <h2 id="login-title">Entrar no app</h2>
+          </div>
+        </div>
+        <div class="context-panel">
+          <span class="label">Ambiente</span>
+          <strong>Tenant Demo</strong>
+          <small>Modulo mobile habilitado</small>
+        </div>
+        <label class="field">E-mail
+          <input value="tecnico@tenant.demo" aria-label="E-mail">
+        </label>
+        <label class="field">Senha
+          <input type="password" value="123456" aria-label="Senha">
+        </label>
+        <button class="primary">Entrar</button>
+        <button class="secondary">Suporte de acesso</button>
+      </div>
+    </section>
+
+    <section class="phone" id="home" aria-labelledby="home-title">
+      <div class="status-bar"><span>08:14</span><span>Online</span></div>
+      <div class="screen">
+        <div class="app-bar">
+          <div>
+            <span class="label">Tenant Demo</span>
+            <h2 id="home-title">Meu turno</h2>
+          </div>
+          <span class="avatar">FT</span>
+        </div>
+        <div class="banner success">Sync em dia ha 2 min</div>
+        <article class="priority-card">
+          <span class="chip danger">SLA critico</span>
+          <h3>OS-1042 - Guincho leve</h3>
+          <p>Cliente a 3,4 km. Checklist de coleta pendente.</p>
+          <button class="primary compact">Continuar atendimento</button>
+        </article>
+        <div class="quick-grid">
+          <button>OS<br><strong>4</strong></button>
+          <button>Mapa<br><strong>2 rotas</strong></button>
+          <button>Evidencias<br><strong>3 pend.</strong></button>
+          <button>Sync<br><strong>0 erro</strong></button>
+        </div>
+        <nav class="bottom-nav">
+          <a class="active">Home</a><a>OS</a><a>Mapa</a><a>Sync</a>
+        </nav>
+      </div>
+    </section>
+
+    <section class="phone" id="work-orders" aria-labelledby="wo-title">
+      <div class="status-bar"><span>08:18</span><span>Online</span></div>
+      <div class="screen">
+        <div class="app-bar"><h2 id="wo-title">Ordens de servico</h2><span class="badge">4</span></div>
+        <div class="filter-row">
+          <span class="chip active">Prioridade</span>
+          <span class="chip">Perto</span>
+          <span class="chip">Minhas</span>
+        </div>
+        <article class="list-card urgent">
+          <div><strong>OS-1042</strong><span class="chip danger">45 min</span></div>
+          <p>Troca emergencial - Av. Paulista, 1200</p>
+          <small>3,4 km · checklist M10</small>
+        </article>
+        <article class="list-card">
+          <div><strong>OS-1038</strong><span class="chip warning">Hoje</span></div>
+          <p>Instalacao tecnica - Centro</p>
+          <small>7,1 km · material reservado</small>
+        </article>
+        <article class="list-card blocked">
+          <div><strong>OS-1029</strong><span class="chip muted">Bloqueada</span></div>
+          <p>Aguardando aprovacao de material</p>
+          <small>Sem acao de campo liberada</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="phone" id="detail" aria-labelledby="detail-title">
+      <div class="status-bar"><span>08:23</span><span>Online</span></div>
+      <div class="screen">
+        <div class="app-bar"><h2 id="detail-title">OS-1042</h2><span class="chip danger">Em risco</span></div>
+        <div class="section-block">
+          <span class="label">Cliente</span>
+          <strong>Rodrigues Transportes</strong>
+          <p>Av. Paulista, 1200 · Sao Paulo</p>
+        </div>
+        <div class="two-cols">
+          <div><span class="label">SLA</span><strong>45 min</strong></div>
+          <div><span class="label">Distancia</span><strong>3,4 km</strong></div>
+        </div>
+        <div class="timeline">
+          <p><span></span> Despacho criado</p>
+          <p><span></span> Tecnico atribuido</p>
+          <p class="pending"><span></span> Checklist de coleta</p>
+        </div>
+        <button class="primary">Iniciar execucao</button>
+        <button class="secondary">Abrir rota</button>
+      </div>
+    </section>
+
+    <section class="phone" id="checklist" aria-labelledby="checklist-title">
+      <div class="status-bar"><span>08:31</span><span>Offline</span></div>
+      <div class="screen">
+        <div class="app-bar"><h2 id="checklist-title">Checklist M10</h2><span class="chip warning">Local</span></div>
+        <div class="progress"><span style="width:62%"></span></div>
+        <article class="step-card done">
+          <span class="number">1</span>
+          <div><strong>Identificar veiculo</strong><p>Placa e chassi conferidos.</p></div>
+        </article>
+        <article class="step-card active">
+          <span class="number">2</span>
+          <div><strong>Registrar avarias</strong><p>Obrigatorio antes da coleta.</p></div>
+        </article>
+        <article class="step-card">
+          <span class="number">3</span>
+          <div><strong>Assinatura do cliente</strong><p>Pendente.</p></div>
+        </article>
+        <div class="banner warning">Sem internet. 2 respostas serao sincronizadas depois.</div>
+        <button class="primary">Salvar passo</button>
+      </div>
+    </section>
+
+    <section class="phone" id="evidence" aria-labelledby="evidence-title">
+      <div class="status-bar"><span>08:36</span><span>Offline</span></div>
+      <div class="screen">
+        <div class="app-bar"><h2 id="evidence-title">Evidencia</h2><span class="chip warning">Pendente</span></div>
+        <div class="capture-box">
+          <div class="lens"></div>
+          <strong>Foto de avaria dianteira</strong>
+          <p>Hash local gerado. Upload aguardando rede.</p>
+        </div>
+        <div class="metadata">
+          <p><span>Vinculo</span><strong>OS-1042 · M10</strong></p>
+          <p><span>Qualidade</span><strong>Aceitavel</strong></p>
+          <p><span>Log</span><strong>Sanitizado</strong></p>
+        </div>
+        <button class="primary">Capturar outra</button>
+        <button class="secondary">Revisar antes de enviar</button>
+      </div>
+    </section>
+
+    <section class="phone" id="map" aria-labelledby="map-title">
+      <div class="status-bar"><span>08:42</span><span>GPS</span></div>
+      <div class="screen map-screen">
+        <div class="app-bar floating"><h2 id="map-title">Rota ativa</h2><span class="chip info">3,4 km</span></div>
+        <div class="map-canvas">
+          <span class="route-dot start"></span>
+          <span class="route-line"></span>
+          <span class="route-dot end"></span>
+        </div>
+        <div class="bottom-sheet">
+          <span class="label">Proximo destino</span>
+          <strong>Rodrigues Transportes</strong>
+          <p>ETA 11 min · posicao enviada ha 40 s</p>
+          <button class="primary compact">Abrir OS</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="phone" id="sync" aria-labelledby="sync-title">
+      <div class="status-bar"><span>09:05</span><span>Reconectado</span></div>
+      <div class="screen">
+        <div class="app-bar"><h2 id="sync-title">Sync e conflitos</h2><span class="chip danger">1 conflito</span></div>
+        <div class="sync-summary">
+          <div><strong>6</strong><span>acoes na fila</span></div>
+          <div><strong>5</strong><span>prontas</span></div>
+          <div><strong>1</strong><span>conflito</span></div>
+        </div>
+        <article class="conflict-card">
+          <span class="chip danger">Conflito RDV</span>
+          <h3>RDV local editado e devolvido pelo manager</h3>
+          <p>Escolha uma resolucao. Nada sera sobrescrito automaticamente.</p>
+          <button class="primary compact">Comparar versoes</button>
+        </article>
+        <button class="secondary">Tentar sincronizar novamente</button>
+      </div>
+    </section>
+
+    <section class="phone" id="approvals" aria-labelledby="approval-title">
+      <div class="status-bar"><span>09:12</span><span>Online</span></div>
+      <div class="screen">
+        <div class="app-bar"><h2 id="approval-title">Aprovacoes</h2><span class="badge">3</span></div>
+        <article class="approval-card">
+          <span class="chip warning">Material urgente</span>
+          <h3>Pastilha de freio · OS-1042</h3>
+          <p>Impacto: atraso de SLA se nao aprovado em 20 min.</p>
+          <div class="actions"><button class="primary compact">Aprovar</button><button class="secondary compact">Devolver</button></div>
+        </article>
+        <article class="approval-card">
+          <span class="chip info">RDV</span>
+          <h3>R$ 184,90 · combustivel</h3>
+          <p>Acima da politica em R$ 34,90. Requer justificativa.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="phone" id="expenses" aria-labelledby="expense-title">
+      <div class="status-bar"><span>09:20</span><span>Online</span></div>
+      <div class="screen">
+        <div class="app-bar"><h2 id="expense-title">Despesas</h2><span class="chip warning">2 pend.</span></div>
+        <article class="expense-total">
+          <span class="label">RDV Junho</span>
+          <strong>R$ 584,90</strong>
+          <p>A receber: R$ 234,90 · 1 recibo pendente</p>
+        </article>
+        <article class="list-card urgent">
+          <div><strong>Combustivel</strong><span class="chip danger">Politica</span></div>
+          <p>Limite excedido e recibo obrigatorio.</p>
+        </article>
+        <article class="list-card">
+          <div><strong>Alimentacao</strong><span class="chip success">OK</span></div>
+          <p>R$ 42,00 · sincronizado</p>
+        </article>
+        <button class="primary">Novo item</button>
+      </div>
+    </section>
+
+    <section class="phone" id="inventory" aria-labelledby="inventory-title">
+      <div class="status-bar"><span>09:34</span><span>Online</span></div>
+      <div class="screen">
+        <div class="app-bar"><h2 id="inventory-title">Estoque do tecnico</h2><span class="chip info">Veiculo 12</span></div>
+        <article class="list-card">
+          <div><strong>Cabo 2m</strong><span class="chip success">8 un.</span></div>
+          <p>Reservado para manutencao leve.</p>
+        </article>
+        <article class="list-card urgent">
+          <div><strong>Fusivel 20A</strong><span class="chip warning">1 un.</span></div>
+          <p>Baixo saldo. Solicitar reposicao.</p>
+        </article>
+        <button class="primary">Registrar consumo</button>
+        <button class="secondary">Solicitar material</button>
+      </div>
+    </section>
+
+    <section class="phone" id="profile" aria-labelledby="profile-title">
+      <div class="status-bar"><span>09:40</span><span>Online</span></div>
+      <div class="screen">
+        <div class="app-bar"><h2 id="profile-title">Perfil e permissoes</h2><span class="avatar">FT</span></div>
+        <div class="section-block">
+          <span class="label">Usuario</span>
+          <strong>Tecnico de campo</strong>
+          <p>field_technician · Tenant Demo</p>
+        </div>
+        <div class="permission-list">
+          <p><span class="ok"></span> work_orders:read</p>
+          <p><span class="ok"></span> field_location:send</p>
+          <p><span class="ok"></span> expense_report:create</p>
+          <p><span class="no"></span> expense_report:approve_finance</p>
+        </div>
+        <button class="secondary">Trocar tenant</button>
+        <button class="secondary">Sair</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
