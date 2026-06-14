@@ -34,3 +34,13 @@ final class ApiServerError extends ApiError {
 
   final int statusCode;
 }
+
+/// Thrown by Pending* stubs when the remote integration is not yet active.
+/// UIs must catch this and display a controlled, user-friendly message.
+final class ApiIntegrationUnavailableError extends ApiError {
+  const ApiIntegrationUnavailableError([
+    super.safeMessage =
+        'Integracao remota ainda nao disponivel. '
+        'Seus dados foram mantidos localmente e serao sincronizados quando a integracao estiver ativa.',
+  ]);
+}
