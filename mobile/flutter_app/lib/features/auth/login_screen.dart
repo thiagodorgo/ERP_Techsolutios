@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_notifier.dart';
+import '../../core/config/app_config.dart';
 import '../../core/network/api_error.dart';
-import 'auth_models.dart';
 import '../../core/sync/sync_models.dart';
 import '../../shared/ui/erp_components.dart';
+import 'auth_models.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -15,8 +16,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _emailController = TextEditingController(text: 'tecnico@tenant.demo');
-  final _passwordController = TextEditingController(text: '123456');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   @override
   void dispose() {
@@ -30,13 +31,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authAsync = ref.watch(authStateProvider);
     final isLoading = authAsync.isLoading;
 
-    // Derive a safe error message — never expose token, path, or raw exception.
-    // Checks both AsyncError (login failure) and authState.safeError (expired session).
     final safeError = switch (authAsync) {
       AsyncError(:final error) =>
         error is ApiError
             ? error.safeMessage
-            : 'Nao foi possivel entrar. Verifique suas credenciais.',
+            : 'Nao foi possivel entrar. Verifique os dados ou tente novamente.',
       AsyncData(:final value)
           when value.status == AuthStatus.expired && value.safeError != null =>
         value.safeError,
@@ -46,16 +45,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           children: [
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
             Text(
               'ERP Techsolutions',
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            const SizedBox(height: 8),
-            const Text('Acesso seguro. Compativel com Cognito e auth local.'),
-            const SizedBox(height: 24),
+            const SizedBox(height: 6),
+            const Text(
+              'Acesse suas ordens de servico, checklists e despesas de campo.',
+              style: TextStyle(color: Colors.black54),
+            ),
+            const SizedBox(height: 32),
             if (safeError != null) ...[
               SyncStatusBanner(status: SyncStatus.failed, message: safeError),
               const SizedBox(height: 16),
@@ -63,17 +67,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'E-mail'),
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: 'E-mail',
+                border: OutlineInputBorder(),
+              ),
               enabled: !isLoading,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             TextField(
               controller: _passwordController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Senha'),
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(
+                labelText: 'Senha',
+                border: OutlineInputBorder(),
+              ),
               enabled: !isLoading,
+              onSubmitted: isLoading ? null : (_) => _doLogin(),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             FilledButton(
               onPressed: isLoading ? null : _doLogin,
               child: isLoading
@@ -84,11 +97,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     )
                   : const Text('Entrar'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             OutlinedButton(
-              onPressed: isLoading ? null : () {},
+              onPressed: isLoading ? null : _showSupportDialog,
               child: const Text('Suporte de acesso'),
             ),
+            // Dev-only quick-access — never visible in production builds.
+            if (kIsDevMode) ...[
+              const SizedBox(height: 20),
+              const Divider(),
+              const SizedBox(height: 8),
+              Text(
+                'Ambiente de desenvolvimento',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Colors.orange.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.orange.shade400),
+                ),
+                onPressed: isLoading ? null : _doDevLogin,
+                icon: Icon(Icons.developer_mode, color: Colors.orange.shade700),
+                label: Text(
+                  'Usar sessao de desenvolvimento',
+                  style: TextStyle(color: Colors.orange.shade700),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -96,12 +135,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _doLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    if (email.isEmpty || password.isEmpty) return;
     await ref
         .read(authStateProvider.notifier)
-        .login(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
-    // Navigation is handled by the router redirect when authState becomes authenticated
+        .login(email: email, password: password);
+  }
+
+  /// Only available when kIsDevMode is true (--dart-define=ERP_ENV=dev).
+  Future<void> _doDevLogin() async {
+    await ref
+        .read(authStateProvider.notifier)
+        .login(email: 'tecnico@tenant.demo', password: '123456');
+  }
+
+  void _showSupportDialog() {
+    final tenantHint = _emailController.text.trim();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Suporte de acesso'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Fale com o administrador da sua organizacao para recuperar o acesso.',
+            ),
+            if (tenantHint.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'E-mail informado:',
+                style: Theme.of(ctx).textTheme.labelSmall,
+              ),
+              SelectableText(tenantHint),
+            ],
+            const SizedBox(height: 12),
+            const Text(
+              'Se voce e o administrador, acesse o portal web do ERP Techsolutions para redefinir credenciais.',
+              style: TextStyle(color: Colors.black54, fontSize: 13),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
   }
 }

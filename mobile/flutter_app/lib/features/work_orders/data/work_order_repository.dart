@@ -4,6 +4,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
+import '../../../core/local_db/drift_work_order_local_store.dart';
+import '../../../core/local_db/database_provider.dart';
 import '../../../core/sync/sync_action_factory.dart';
 import '../../../core/sync/sync_models.dart';
 import '../../../core/sync/sync_providers.dart';
@@ -358,7 +360,7 @@ class WorkOrderRepository extends ChangeNotifier {
 // Providers
 
 final workOrderLocalStoreProvider = Provider<WorkOrderLocalStore>(
-  (ref) => InMemoryWorkOrderLocalStore(),
+  (ref) => DriftWorkOrderLocalStore(ref.watch(appDatabaseProvider)),
 );
 
 final workOrderRepositoryProvider = Provider<WorkOrderRepository>((ref) {

@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -22,6 +22,7 @@ class AppDatabase extends GeneratedDatabase {
       await m.database.customStatement(_kSyncActions);
       await m.database.customStatement(_kWorkOrders);
       await m.database.customStatement(_kWorkOrderTimeline);
+      await m.database.customStatement(_kWorkOrderEvidence);
       await m.database.customStatement(_kChecklistTemplates);
       await m.database.customStatement(_kChecklistSchemas);
       await m.database.customStatement(_kChecklistRuns);
@@ -41,6 +42,9 @@ class AppDatabase extends GeneratedDatabase {
         await m.database.customStatement(_kChecklistMarkers);
         await m.database.customStatement(_kChecklistAttachments);
         await m.database.customStatement(_kChecklistAcknowledgements);
+      }
+      if (from < 4) {
+        await m.database.customStatement(_kWorkOrderEvidence);
       }
     },
   );
@@ -151,6 +155,20 @@ CREATE TABLE IF NOT EXISTS work_order_timeline (
   from_status TEXT,
   to_status TEXT,
   sync_status TEXT NOT NULL
+)''';
+
+const _kWorkOrderEvidence = '''
+CREATE TABLE IF NOT EXISTS work_order_evidence (
+  local_id TEXT NOT NULL PRIMARY KEY,
+  work_order_local_id TEXT NOT NULL,
+  tenant_id TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  capture_source TEXT NOT NULL,
+  checksum TEXT,
+  sync_status TEXT NOT NULL,
+  created_at INTEGER NOT NULL
 )''';
 
 const _kChecklistTemplates = '''

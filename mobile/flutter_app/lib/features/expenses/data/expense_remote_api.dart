@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../core/bootstrap/bootstrap_session.dart';
 import '../../../core/network/api_contracts.dart';
+import '../../../core/network/api_error.dart';
 import '../../../core/network/http_client.dart';
 import '../domain/expense_models.dart';
 import 'expense_local_store.dart';
@@ -58,11 +59,8 @@ class PendingBackendExpenseRemoteApi implements ExpenseRemoteApi {
   Future<ExpenseReport> submitReport(String reportId) =>
       _pending(ExpenseApiEndpoints.submitExpenseReport(reportId));
 
-  Future<T> _pending<T>(String endpoint) {
-    throw UnimplementedError(
-      'HTTP integration pending for $endpoint. Local-first repository active.',
-    );
-  }
+  Future<T> _pending<T>(String endpoint) =>
+      Future.error(const ApiIntegrationUnavailableError());
 }
 
 class DioExpenseRemoteApi implements ExpenseRemoteApi {

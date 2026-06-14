@@ -1,5 +1,43 @@
 # Log de Execucao
 
+## 2026-06-14 - B-097 Flutter Mobile MVP Stabilization
+
+### Natureza
+
+Implementacao de correcoes criticas, persistencia SQLite para Work Orders, melhorias de UX no SyncScreen e Login, modelos de checklist dinamico versionados e registry de renderers. Zero mudancas no backend Node.js ou no frontend React.
+
+### Mudancas implementadas
+
+| Arquivo | Tipo | Descricao |
+|---------|------|-----------|
+| `core/network/api_error.dart` | fix | ApiIntegrationUnavailableError — substitui UnimplementedError nos stubs Pending* |
+| `features/expenses/data/expense_remote_api.dart` | fix | _pending() nao crasha mais — retorna Future.error controlado |
+| `core/config/app_config.dart` | feat | kIsDevMode via --dart-define=ERP_ENV=dev |
+| `core/local_db/drift_work_order_local_store.dart` | feat | Persistencia SQLite para Work Orders (novo arquivo) |
+| `core/local_db/app_database.dart` | feat | Schema v4 — tabela work_order_evidence adicionada |
+| `features/work_orders/data/work_order_repository.dart` | fix | Provider trocado: InMemory → DriftWorkOrderLocalStore |
+| `features/auth/login_screen.dart` | fix | Campos limpos, acesso dev isolado em kIsDevMode |
+| `app/router.dart` | fix | /diagnostics protegida por kIsDevMode em producao |
+| `shared/ui/sync_screen.dart` | feat | Reescrita: grupos por dominio, KPIs, banner backend-pending |
+| `features/checklists/domain/checklist_template_models.dart` | feat | Modelos ricos versionados (novo arquivo) |
+| `features/checklists/ui/checklist_question_renderer.dart` | feat | Registry de renderers com fallback controlado (novo arquivo) |
+| `test/features/b097_mvp_stabilization_test.dart` | test | 35 novos testes (Drift, stub, modelos, renderers) |
+| `test/home_screen_test.dart` | fix | Override workOrderLocalStoreProvider adicionado |
+| `test/features/expenses/expense_local_first_test.dart` | fix | Labels SyncScreen atualizados + override WO store |
+| `test/features/b088_checklist_sync_replay_test.dart` | fix | Label atualizado + override WO store |
+
+### Validacao
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| `flutter analyze --no-fatal-infos` | **No issues found** |
+| `flutter test` | **315/315 passando** |
+| `npm test` | **15/15 passando** |
+| `npm run lint` | **0 erros** |
+| `npm run build` | **0 erros** |
+
+---
+
 ## 2026-06-13 - B-094 (v2) QA Geral + Organizacao Flutter + Estrategia de PR
 
 ### Natureza
