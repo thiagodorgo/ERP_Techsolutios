@@ -9,12 +9,19 @@ export class NotificationRecipientResolver {
   async resolve(event: DomainEventEnvelope): Promise<readonly string[]> {
     if (!event.tenantId) return [];
 
-    const candidates = (await this.repository.listRecipientCandidates(event.tenantId))
-      .filter((candidate) => candidate.status === "active")
-      .filter((candidate) => candidate.userId !== event.actorId);
-    const selected = candidates.filter((candidate) => shouldReceive(event.name, candidate));
+    const recipients = new Set<string>();
+    const candidates = await this.repository.listRecipientCandidates(event.tenantId);
 
-    return [...new Set(selected.map((candidate) => candidate.userId))].slice(0, 20);
+    for (const candidate of candidates) {
+      if (candidate.status !== "active") continue;
+      if (candidate.userId === event.actorId) continue;
+      if (!shouldReceive(event.name, candidate)) continue;
+
+      recipients.add(candidate.userId);
+      if (recipients.size >= 20) break;
+    }
+
+    return [...recipients];
   }
 }
 

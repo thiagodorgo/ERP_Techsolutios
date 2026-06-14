@@ -106,7 +106,7 @@ test("expense mobile sync is idempotent and ignores cross-scope tenant payload",
     const body = {
       actions: [
         {
-          clientActionId: "sync-create-rdv-1",
+          clientActionId: "sync-create-pc-1",
           type: "expense_report.create",
           payload: {
             tenantId: seed.tenantB.id,
