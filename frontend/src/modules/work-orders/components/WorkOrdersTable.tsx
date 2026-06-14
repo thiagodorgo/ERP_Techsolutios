@@ -1,4 +1,5 @@
 import { Eye, Route } from "lucide-react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Button, Card, Table } from "../../../components/ui";
@@ -17,6 +18,39 @@ export function WorkOrdersTable({
   readonly onQuickStatus: (workOrder: WorkOrderListItem) => void;
 }) {
   const navigate = useNavigate();
+  const columns = useMemo(
+    () => [
+      { key: "code", header: "Codigo", render: (item: WorkOrderListItem) => <strong>{item.code}</strong> },
+      { key: "title", header: "Titulo", render: (item: WorkOrderListItem) => item.title },
+      { key: "customer", header: "Cliente", render: (item: WorkOrderListItem) => item.customerName ?? "Nao informado" },
+      { key: "status", header: "Status", render: (item: WorkOrderListItem) => <WorkOrderStatusBadge status={item.status} /> },
+      { key: "priority", header: "Prioridade", render: (item: WorkOrderListItem) => <WorkOrderPriorityBadge priority={item.priority} /> },
+      {
+        key: "operator",
+        header: "Operador",
+        render: (item: WorkOrderListItem) => item.assignedOperatorId ?? item.assignedUserId ?? "Nao atribuido",
+      },
+      { key: "scheduled", header: "Agendada para", render: (item: WorkOrderListItem) => formatWorkOrderDate(item.scheduledFor) },
+      { key: "created", header: "Criada em", render: (item: WorkOrderListItem) => formatWorkOrderDate(item.createdAt) },
+      {
+        key: "actions",
+        header: "Acoes",
+        render: (item: WorkOrderListItem) => (
+          <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
+            <Button type="button" size="sm" variant="secondary" onClick={() => navigate(`/work-orders/${item.id}`)}>
+              <Eye size={14} /> Ver detalhes
+            </Button>
+            {canChangeStatus ? (
+              <Button type="button" size="sm" variant="ghost" onClick={() => onQuickStatus(item)}>
+                <Route size={14} /> Alterar status
+              </Button>
+            ) : null}
+          </div>
+        ),
+      },
+    ],
+    [canChangeStatus, navigate, onQuickStatus],
+  );
 
   return (
     <Card title="Ordens de Servico">
@@ -24,36 +58,17 @@ export function WorkOrdersTable({
         rows={items}
         keyForRow={(item) => item.id}
         onRowClick={(item) => navigate(`/work-orders/${item.id}`)}
-        columns={[
-          { key: "code", header: "Codigo", render: (item) => <strong>{item.code}</strong> },
-          { key: "title", header: "Titulo", render: (item) => item.title },
-          { key: "customer", header: "Cliente", render: (item) => item.customerName ?? "Nao informado" },
-          { key: "status", header: "Status", render: (item) => <WorkOrderStatusBadge status={item.status} /> },
-          { key: "priority", header: "Prioridade", render: (item) => <WorkOrderPriorityBadge priority={item.priority} /> },
-          { key: "operator", header: "Operador", render: (item) => item.assignedOperatorId ?? item.assignedUserId ?? "Nao atribuido" },
-          { key: "scheduled", header: "Agendada para", render: (item) => formatWorkOrderDate(item.scheduledFor) },
-          { key: "created", header: "Criada em", render: (item) => formatWorkOrderDate(item.createdAt) },
-          {
-            key: "actions",
-            header: "Acoes",
-            render: (item) => (
-              <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-                <Button type="button" size="sm" variant="secondary" onClick={() => navigate(`/work-orders/${item.id}`)}>
-                  <Eye size={14} /> Ver detalhes
-                </Button>
-                {canChangeStatus ? (
-                  <Button type="button" size="sm" variant="ghost" onClick={() => onQuickStatus(item)}>
-                    <Route size={14} /> Alterar status
-                  </Button>
-                ) : null}
-              </div>
-            ),
-          },
-        ]}
+        columns={columns}
       />
       <div className="work-orders-mobile-list">
         {items.map((item) => (
-          <button key={item.id} type="button" className="work-orders-mobile-card" onClick={() => navigate(`/work-orders/${item.id}`)}>
+          <button
+            key={item.id}
+            type="button"
+            className="work-orders-mobile-card"
+            aria-label={`Abrir ordem de servico ${item.code}`}
+            onClick={() => navigate(`/work-orders/${item.id}`)}
+          >
             <header>
               <div>
                 <strong>{item.code}</strong>
