@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth_notifier.dart';
+import '../core/config/app_config.dart';
 import '../core/diagnostics/diagnostics_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/expenses/ui/expense_item_receipts_screen.dart';
@@ -88,7 +89,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/diagnostics',
-        builder: (context, state) => const DiagnosticsScreen(),
+        builder: (context, state) => kIsDevMode
+            ? const DiagnosticsScreen()
+            : const ModulePlaceholderScreen(
+                title: 'Diagnostico',
+                requiredPermission: 'diagnostics:read',
+                message:
+                    'Esta area e restrita a ambientes de desenvolvimento.',
+              ),
       ),
       GoRoute(path: '/sync', builder: (context, state) => const SyncScreen()),
       GoRoute(
@@ -227,7 +235,14 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/diagnostics',
-      builder: (context, state) => const DiagnosticsScreen(),
+      builder: (context, state) => kIsDevMode
+          ? const DiagnosticsScreen()
+          : const ModulePlaceholderScreen(
+              title: 'Diagnostico',
+              requiredPermission: 'diagnostics:read',
+              message:
+                  'Esta area e restrita a ambientes de desenvolvimento.',
+            ),
     ),
     GoRoute(path: '/sync', builder: (context, state) => const SyncScreen()),
     GoRoute(
