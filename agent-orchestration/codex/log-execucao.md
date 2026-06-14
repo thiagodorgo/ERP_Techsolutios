@@ -1,5 +1,42 @@
 # Log de Execucao
 
+## 2026-06-14 - B-098B Flutter Consume Expanded Bootstrap Contract
+
+### Natureza
+
+Adaptacao do app Flutter para consumir o contrato expandido de `GET /api/v1/mobile/bootstrap`
+introduzido pela PR #81 (B-098A), mantendo compatibilidade retroativa com o contrato minimo
+da B-098. Nenhuma mudanca em backend ou frontend web.
+
+### Mudancas implementadas
+
+| Arquivo | Tipo | Descricao |
+|---------|------|-----------|
+| `core/bootstrap/bootstrap_expanded_session.dart` | feat | Novos modelos: CapabilityStatus, FeatureFlag, SyncPolicy, EvidencePolicy, ExpandedMobilePolicy, BootstrapContractMeta, SyncCursors |
+| `core/bootstrap/bootstrap_session.dart` | feat | 4 campos opcionais expandidos + helpers isFeatureEnabled/featureStatus |
+| `core/bootstrap/bootstrap_repository.dart` | feat | bootstrapSessionFromJson(), _parseMinimal(), _parseExpanded(), _kNavigationModules lookup |
+| `test/features/b098b_expanded_bootstrap_test.dart` | test | 42 novos testes (novo arquivo) |
+
+### Decisoes tecnicas
+
+- Deteccao de formato por presenca de chave: `data` wrapper = B-098A; `feature_flags` dentro = expanded.
+- Campos expandidos NAO sao cacheados no BootstrapSessionCodec — sessoes restauradas usam defaults neutros.
+- Lookup local `_kNavigationModules` converte chaves de modulo em title/route/perms — B-098A so envia `{key, enabled}`.
+- SyncCursors parseados mas nao consumidos — preparados para B-099 (Work Orders pull incremental).
+- `devBootstrapSession` permanece `const` sem alteracoes — todos os novos campos tem defaults.
+
+### Validacao
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| `flutter analyze` | **No issues found** |
+| `flutter test` | **413/413 passando** (+42 novos de B-098B) |
+| `npm test` | **15/15 passando** |
+| `npm run lint` | **0 erros** |
+| `npm run build` | **0 erros** |
+
+---
+
 ## 2026-06-14 - B-098 Flutter Real Auth and Bootstrap
 
 ### Natureza
