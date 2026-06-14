@@ -17,9 +17,11 @@ operação de campo com dados reais.
 
 | Módulo | Status | Classificação |
 |--------|--------|---------------|
-| Auth / Login | Funcional (local) | **mock/demo** — sessão `devBootstrapSession` hardcoded |
-| Bootstrap / Session | Funcional (local) | **mock/demo** — `GET /api/v1/mobile/bootstrap` não chamado |
-| Seleção de tenant | Ausente | **futuro** |
+| Auth / Login | Funcional (real) | **pronto** — real via `--dart-define=ERP_AUTH_MODE=remote` |
+| Bootstrap / Session | Funcional (real) | **pronto** — `GET /api/v1/mobile/bootstrap` chamado; dual-format B-098/B-098A |
+| Feature Flags | Funcional | **pronto** — `FeatureFlag`, `CapabilityStatus`; helpers `isFeatureEnabled`/`featureStatus` |
+| Sync Cursors | Parseados | **parcial** — `SyncCursors` parseados; consumo aguarda B-099 |
+| Seleção de tenant | Funcional | **pronto** — `TenantSelectorScreen` pós-login |
 | Profile | Funcional | **existente** |
 | Connectivity | Funcional | **existente** |
 | Sync Engine (fila local) | Funcional (local) | **existente** — sem envio real ao backend |
@@ -47,7 +49,6 @@ O app não pode ser usado em campo real pelos seguintes motivos objetivos:
 
 | Bloqueador | Impacto | Categoria |
 |------------|---------|-----------|
-| Autenticação usa sessão demo hardcoded | Qualquer usuário acessa qualquer tenant | Crítico |
 | Work Orders nunca recebem dados reais do servidor | Técnico de campo não vê suas OS reais | Crítico |
 | Checklists são locais — nenhum template vem do backend | Templates não refletem configurações do tenant | Alto |
 | Sync de OS, checklists e inventário não chega ao servidor | Trabalho realizado em campo é perdido | Crítico |
@@ -96,9 +97,9 @@ real foi conectado nesta PR — essa foi uma decisão explícita de escopo (ver 
 
 | Item | Status atual | O que falta |
 |------|-------------|-------------|
-| Auth real com JWT | `LocalDevAuthRepository` (dev) / `DioAuthRepository` (inativo) | Ativar `--dart-define=ERP_AUTH_MODE=remote`; testar com Cognito/backend real |
-| Bootstrap real do tenant | `devBootstrapSession` hardcoded | Chamar `GET /api/v1/mobile/bootstrap` após login; mapear módulos e permissões reais |
-| Pull de Work Orders do servidor | `PendingBackendWorkOrderRemoteApi` retorna erro controlado | Implementar `DioWorkOrderRemoteApi`; sincronizar OS do backend para local |
+| Auth real com JWT | ✅ Ativo via `--dart-define=ERP_AUTH_MODE=remote` | — |
+| Bootstrap real do tenant | ✅ `bootstrapSessionFromJson()` dual-format; aceita B-098 e B-098A | — |
+| Pull de Work Orders do servidor | `PendingBackendWorkOrderRemoteApi` retorna erro controlado | Implementar `DioWorkOrderRemoteApi`; usar `syncCursors.workOrdersCursor` para pull incremental |
 | Checklist templates do backend | `PendingBackendChecklistSyncBatchApi.getUpdates()` retorna lista vazia | Implementar endpoint de templates; cachear localmente em Drift |
 | Sync real de OS | Ações enfileiradas; `PendingBackendWorkOrderRemoteApi` silencioso | Implementar batch sync de OS com o servidor |
 | Sync real de checklists | `PendingBackendChecklistSyncBatchApi.batchSync()` silencioso | Ativar `DioChecklistSyncBatchApi`; controlar conflitos |
@@ -112,7 +113,7 @@ real foi conectado nesta PR — essa foi uma decisão explícita de escopo (ver 
 | Aprovação mobile | `ModulePlaceholderScreen` | Implementar fila de aprovação e ações de aprovar/rejeitar |
 | GPS / mapa / roteirização | `ModulePlaceholderScreen` | Integrar `geolocator` + mapa |
 | Notificações push | Ausente | FCM (Android) / APNs (iOS) |
-| Seleção multi-tenant | Sem UI | Tela de seleção pós-login quando `tenants.length > 1` |
+| Seleção multi-tenant | ✅ `TenantSelectorScreen` ativa | — |
 | Piloto Android real | Sem build signed | Configurar signing, distribuição interna (Firebase App Distribution ou similar) |
 
 ### Pendências de menor urgência
