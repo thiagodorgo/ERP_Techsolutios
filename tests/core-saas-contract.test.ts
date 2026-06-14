@@ -83,7 +83,7 @@ test("Core SaaS HTTP contract keeps permission error envelope stable", async () 
     assert.equal(response.status, 403);
     assert.equal(response.body.error.code, "FORBIDDEN");
     assert.equal(response.body.error.reason, "permission_required");
-    assert.equal(response.body.error.message, "Permission roles.manage is required.");
+    assert.equal(response.body.error.message, "One of these permissions is required: roles.manage.");
   });
 });
 
