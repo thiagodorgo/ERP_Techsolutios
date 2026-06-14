@@ -6,6 +6,8 @@ import 'package:erp_techsolutions_mobile/core/sync/sync_models.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_providers.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_replay_service.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_local_store.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
 import 'package:erp_techsolutions_mobile/shared/ui/sync_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -93,6 +95,9 @@ Widget _wrapSync({
           queue: queue,
           api: MockExpenseSyncApi(SyncApiResult.success),
         ),
+      ),
+      workOrderLocalStoreProvider.overrideWithValue(
+        InMemoryWorkOrderLocalStore(),
       ),
     ],
     child: MaterialApp.router(routerConfig: router),
@@ -474,7 +479,8 @@ void main() {
         await tester.pumpWidget(_wrapSync(queue: queue));
         await tester.pumpAndSettle();
 
-        expect(find.text(ChecklistSyncActionTypes.runCreate), findsOneWidget);
+        // SyncScreen renders human-readable label (not raw type string).
+        expect(find.text('Checklist Run Create'), findsOneWidget);
         expect(find.textContaining('Checklist'), findsWidgets);
       },
     );

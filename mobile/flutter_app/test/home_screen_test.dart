@@ -5,6 +5,8 @@ import 'package:erp_techsolutions_mobile/core/sync/sync_action_store.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_providers.dart';
 import 'package:erp_techsolutions_mobile/features/expenses/data/expense_local_store.dart';
 import 'package:erp_techsolutions_mobile/features/expenses/data/expense_repository.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_local_store.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
 import 'package:erp_techsolutions_mobile/shared/ui/home_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,6 +68,9 @@ Widget _homeWithPermissions(Set<String> permissions) {
     overrides: [
       expenseLocalStoreProvider.overrideWithValue(InMemoryExpenseLocalStore()),
       syncActionStoreProvider.overrideWithValue(InMemorySyncActionStore()),
+      workOrderLocalStoreProvider.overrideWithValue(
+        InMemoryWorkOrderLocalStore(),
+      ),
     ],
     child: MaterialApp.router(routerConfig: router),
   );

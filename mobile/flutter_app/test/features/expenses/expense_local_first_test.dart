@@ -12,6 +12,8 @@ import 'package:erp_techsolutions_mobile/features/expenses/data/expense_local_st
 import 'package:erp_techsolutions_mobile/features/expenses/data/expense_repository.dart';
 import 'package:erp_techsolutions_mobile/features/expenses/services/expense_totals_calculator.dart';
 import 'package:erp_techsolutions_mobile/features/expenses/ui/expense_list_screen.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_local_store.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
 import 'package:erp_techsolutions_mobile/shared/ui/sync_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -121,17 +123,21 @@ void main() {
           bootstrapSessionProvider.overrideWith(
             (ref) async => devBootstrapSession,
           ),
+          workOrderLocalStoreProvider.overrideWithValue(
+            InMemoryWorkOrderLocalStore(),
+          ),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('expense_report.create'), findsOneWidget);
-    expect(find.text('expense_report.submit'), findsOneWidget);
-    expect(find.textContaining('lf-action-01'), findsOneWidget);
-    expect(find.textContaining('lf-action-02'), findsOneWidget);
-    // lastSafeError is embedded in the multi-line subtitle alongside client_action_id
+    // SyncScreen renders human-readable labels (not raw type strings).
+    expect(find.text('Expense Report Create'), findsOneWidget);
+    expect(find.text('Expense Report Submit'), findsOneWidget);
+    // Domain group for expenses is shown.
+    expect(find.text('Despesas (RDV)'), findsOneWidget);
+    // lastSafeError is shown in the action row subtitle.
     expect(find.textContaining('Falha segura'), findsOneWidget);
   });
 
