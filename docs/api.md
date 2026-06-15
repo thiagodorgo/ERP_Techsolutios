@@ -184,6 +184,21 @@ Resposta segue o envelope mobile de sync com `summary`, `accepted`, `rejected`, 
 
 Lacunas B-098D: persistencia duravel em banco/Redis, reserva transacional multi-instancia, associacao real com OS/armazem, politicas por estoque e consumo pelo Flutter.
 
+`POST /api/v1/mobile/sync/evidence-actions` esta implementado no B-098E como contrato parcial para registrar manifestos de evidencias de OS e evidencias genericas de campo. O endpoint nao recebe binario/base64 nem caminho local: registra apenas metadados controlados para posterior upload e persistencia duravel.
+
+Tipos aceitos:
+
+- `evidence.work_order_photo`, `evidence.work_order_signature` e `evidence.work_order_observation`, com `work_order_id` obrigatorio e permissao `work_orders:update`;
+- `evidence.field_photo`, `evidence.field_signature` e `evidence.field_observation`, com permissao `field_location:send`;
+- foto/assinatura exigem `file_name`, `content_type`, `size_bytes` e `sha256`; assinatura tambem exige `signer_name`;
+- observacao exige `note` ou `caption`; `gps` e opcional e validado quando enviado.
+
+O request usa `{ client_batch_id, actions[] }`; cada acao exige `client_evidence_id`, `type`, `local_created_at` e `payload`. O tenant e sempre o tenant do ator autenticado. `tenant_id`/`tenantId` do body ou payload e ignorado e nao participa do fingerprint.
+
+A resposta segue o envelope mobile com `summary`, `accepted`, `rejected`, `conflicts` e `already_applied`. A idempotencia usa tenant resolvido + usuario do ator + `client_evidence_id`; replay identico retorna `already_applied` e payload divergente retorna `idempotency_payload_mismatch`.
+
+Lacunas B-098E: upload binario/presigned URL, storage protegido, persistencia duravel, antivirus, auditoria de arquivo, associacao definitiva com entidades e consumo Flutter.
+
 ## Autenticacao de rotas protegidas
 
 Rotas protegidas devem usar `Authorization: Bearer <access_token>` como caminho principal de contexto autenticado. Um Bearer token valido alimenta `userId`, `tenantId`, roles e permissoes efetivas via RBAC do backend.

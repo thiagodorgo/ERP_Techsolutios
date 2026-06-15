@@ -54,12 +54,16 @@ test("mobile bootstrap returns tenant-scoped contract and ignores requested tena
     assert.equal(response.body.data.feature_flags.inventory_mobile.status, "partial");
     assert.equal(response.body.data.feature_flags.inventory_sync.enabled, true);
     assert.equal(response.body.data.feature_flags.inventory_sync.status, "partial");
+    assert.equal(response.body.data.feature_flags.generic_evidence_upload.enabled, true);
+    assert.equal(response.body.data.feature_flags.generic_evidence_upload.status, "partial");
     assert.equal(response.body.data.mobile_policy.auth.bearer_required, true);
     assert.equal(response.body.data.mobile_policy.auth.tenant_source, "authenticated_actor");
     assert.equal(response.body.data.mobile_policy.sync.actions_enabled, true);
     assert.deepEqual(response.body.data.mobile_policy.sync.implemented_domains, ["expenses", "work_orders"]);
-    assert.deepEqual(response.body.data.mobile_policy.sync.partial_domains, ["checklists", "inventory"]);
+    assert.deepEqual(response.body.data.mobile_policy.sync.partial_domains, ["checklists", "inventory", "evidence"]);
     assert.deepEqual(response.body.data.mobile_policy.sync.planned_domains, []);
+    assert.equal(response.body.data.mobile_policy.evidence.work_order_evidence, "partial");
+    assert.equal(response.body.data.mobile_policy.evidence.generic_upload, "partial");
     assert.equal(response.body.data.catalogs.version, "mobile-catalogs:v1");
     assert.equal(response.body.data.catalogs.modules.status, "implemented");
     assert.equal(response.body.data.catalogs.permissions.status, "implemented");
@@ -70,11 +74,13 @@ test("mobile bootstrap returns tenant-scoped contract and ignores requested tena
     assert.equal(findCatalogEndpoint(response.body, "checklist_sync").status, "partial");
     assert.equal(findCatalogEndpoint(response.body, "inventory_availability").status, "partial");
     assert.equal(findCatalogEndpoint(response.body, "inventory_sync").status, "partial");
+    assert.equal(findCatalogEndpoint(response.body, "evidence_sync").status, "partial");
     assert.equal(response.body.data.expenseCategories.length > 0, true);
     assert.equal(response.body.data.sync.workOrdersCursor, null);
     assert.equal(response.body.data.sync.checklistsCursor, null);
     assert.equal(response.body.data.sync.expensesCursor, null);
     assert.equal(response.body.data.sync.inventoryCursor, null);
+    assert.equal(response.body.data.sync.evidenceCursor, null);
     assert.equal(Number.isNaN(Date.parse(response.body.data.serverTime)), false);
     assert.equal(JSON.stringify(response.body).includes(seed.tenantB.id), false);
     assertNoStackTrace(response.body);
@@ -132,7 +138,7 @@ test("mobile bootstrap requires tenant, user and role context", async () => {
   });
 });
 
-test("mobile backend exposes ready checklist, expense, work order, inventory and notification contracts", async () => {
+test("mobile backend exposes ready checklist, expense, work order, inventory, evidence and notification contracts", async () => {
   await withMobileContractApi(async ({ baseUrl, seed }) => {
     const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
     const checklists = await requestJson(baseUrl, "/api/v1/mobile/checklists/available", { headers });
@@ -156,6 +162,11 @@ test("mobile backend exposes ready checklist, expense, work order, inventory and
       method: "POST",
       headers,
       body: { client_batch_id: "empty-inventory-batch", actions: [] },
+    });
+    const evidenceSync = await requestJson(baseUrl, "/api/v1/mobile/sync/evidence-actions", {
+      method: "POST",
+      headers,
+      body: { client_batch_id: "empty-evidence-batch", actions: [] },
     });
     const workOrders = await requestJson(baseUrl, "/api/v1/work-orders", { headers });
     const notifications = await requestJson(baseUrl, "/api/v1/notifications", { headers });
@@ -195,6 +206,14 @@ test("mobile backend exposes ready checklist, expense, work order, inventory and
     assert.deepEqual(inventorySync.body.data.rejected, []);
     assert.deepEqual(inventorySync.body.data.conflicts, []);
     assert.deepEqual(inventorySync.body.data.already_applied, []);
+    assert.equal(evidenceSync.status, 200);
+    assert.equal(evidenceSync.body.data.contract.name, "mobile_evidence_actions_sync");
+    assert.equal(evidenceSync.body.data.contract.status, "partial");
+    assert.equal(evidenceSync.body.data.summary.received, 0);
+    assert.deepEqual(evidenceSync.body.data.accepted, []);
+    assert.deepEqual(evidenceSync.body.data.rejected, []);
+    assert.deepEqual(evidenceSync.body.data.conflicts, []);
+    assert.deepEqual(evidenceSync.body.data.already_applied, []);
     assert.equal(workOrders.status, 200);
     assert.ok(Array.isArray(workOrders.body.items));
     assert.equal(notifications.status, 200);
@@ -205,6 +224,7 @@ test("mobile backend exposes ready checklist, expense, work order, inventory and
     assertNoStackTrace(checklistSync.body);
     assertNoStackTrace(inventoryAvailability.body);
     assertNoStackTrace(inventorySync.body);
+    assertNoStackTrace(evidenceSync.body);
     assertNoStackTrace(workOrders.body);
     assertNoStackTrace(notifications.body);
   });
@@ -783,6 +803,190 @@ test("mobile inventory action sync validates envelope, actor context, permission
   });
 });
 
+test("mobile evidence sync accepts supported metadata, rejects invalid actions and isolates tenant context", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const response = await requestJson(baseUrl, "/api/v1/mobile/sync/evidence-actions", {
+      method: "POST",
+      headers,
+      body: {
+        client_batch_id: "evidence-batch-1",
+        tenant_id: seed.tenantB.id,
+        actions: [
+          {
+            client_evidence_id: "evidence-work-order-photo",
+            type: "evidence.work_order_photo",
+            local_created_at: "2026-06-15T12:00:00.000Z",
+            payload: {
+              tenant_id: seed.tenantB.id,
+              work_order_id: "work-order-1",
+              kind: "photo",
+              file_name: "panel-before.jpg",
+              content_type: "image/jpeg",
+              size_bytes: 245000,
+              sha256: "hash-or-placeholder",
+              caption: "Before maintenance",
+              gps: { lat: -23.55052, lng: -46.633308, accuracy_m: 18 },
+              metadata: { tenant_id: seed.tenantB.id, source: "offline_queue" },
+            },
+          },
+          {
+            client_evidence_id: "evidence-field-observation",
+            type: "evidence.field_observation",
+            local_created_at: "2026-06-15T12:01:00.000Z",
+            payload: {
+              note: "Access gate was closed on arrival.",
+              gps: { lat: -23.55, lng: -46.63 },
+            },
+          },
+          {
+            client_evidence_id: "evidence-unsupported",
+            type: "evidence.video",
+            local_created_at: "2026-06-15T12:02:00.000Z",
+            payload: {},
+          },
+          {
+            client_evidence_id: "evidence-invalid-photo",
+            type: "evidence.field_photo",
+            local_created_at: "2026-06-15T12:03:00.000Z",
+            payload: {
+              file_name: "missing-metadata.jpg",
+              content_type: "image/jpeg",
+            },
+          },
+          {
+            client_evidence_id: "evidence-unsafe-path",
+            type: "evidence.field_photo",
+            local_created_at: "2026-06-15T12:04:00.000Z",
+            payload: {
+              file_name: "field.jpg",
+              content_type: "image/jpeg",
+              size_bytes: 1200,
+              sha256: "field-hash",
+              metadata: { local_path: "C:/private/field.jpg" },
+            },
+          },
+        ],
+      },
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.data.tenant_id, seed.tenantA.id);
+    assert.equal(response.body.data.contract.version, "2026-06-15.b098e");
+    assert.equal(response.body.data.summary.received, 5);
+    assert.equal(response.body.data.summary.accepted, 2);
+    assert.equal(response.body.data.summary.rejected, 3);
+    assert.equal(response.body.data.accepted[0].server_state.status, "metadata_registered");
+    assert.equal(response.body.data.accepted[0].server_state.scope, "work_order");
+    assert.equal(response.body.data.accepted[0].server_state.kind, "photo");
+    assert.equal(response.body.data.accepted[1].server_state.scope, "field");
+    assert.equal(response.body.data.rejected[0].error.reason, "unsupported_action_type");
+    assert.equal(response.body.data.rejected[1].error.reason, "invalid_size_bytes");
+    assert.equal(response.body.data.rejected[2].error.reason, "unsafe_payload");
+    assert.equal(JSON.stringify(response.body).includes(seed.tenantB.id), false);
+    assertNoStackTrace(response.body);
+  });
+});
+
+test("mobile evidence sync is idempotent by tenant, user and client evidence id", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const action = {
+      client_evidence_id: "evidence-idempotent-1",
+      type: "evidence.work_order_observation",
+      local_created_at: "2026-06-15T13:00:00.000Z",
+      payload: {
+        work_order_id: "work-order-idempotency",
+        note: "Equipment isolated before service.",
+      },
+    };
+    const first = await requestJson(baseUrl, "/api/v1/mobile/sync/evidence-actions", {
+      method: "POST",
+      headers,
+      body: { client_batch_id: "evidence-idempotency-1", actions: [action] },
+    });
+    const replay = await requestJson(baseUrl, "/api/v1/mobile/sync/evidence-actions", {
+      method: "POST",
+      headers,
+      body: {
+        client_batch_id: "evidence-idempotency-2",
+        actions: [
+          action,
+          {
+            ...action,
+            payload: {
+              work_order_id: "work-order-idempotency",
+              note: "Different offline observation.",
+            },
+          },
+        ],
+      },
+    });
+
+    assert.equal(first.status, 200);
+    assert.equal(first.body.data.summary.accepted, 1);
+    assert.equal(replay.status, 200);
+    assert.equal(replay.body.data.summary.already_applied, 1);
+    assert.equal(replay.body.data.summary.conflicts, 1);
+    assert.equal(replay.body.data.already_applied[0].client_evidence_id, "evidence-idempotent-1");
+    assert.equal(replay.body.data.conflicts[0].error.reason, "idempotency_payload_mismatch");
+    assert.equal(replay.body.data.conflicts[0].conflict.next_action, "drop_duplicate_or_create_new_client_evidence_id");
+    assertNoStackTrace(first.body);
+    assertNoStackTrace(replay.body);
+  });
+});
+
+test("mobile evidence sync validates envelope, actor and per-action permissions", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const missingPermission = await requestJson(baseUrl, "/api/v1/mobile/sync/evidence-actions", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.adminA, "viewer"),
+      body: { actions: [] },
+    });
+    const invalidEnvelope = await requestJson(baseUrl, "/api/v1/mobile/sync/evidence-actions", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
+      body: { actions: "not-an-array" },
+    });
+    const fieldOnlyHeaders = {
+      ...authHeaders(seed.tenantA, seed.adminA, "technician"),
+      "x-permissions": "field_location:send",
+    };
+    const perActionPermission = await requestJson(baseUrl, "/api/v1/mobile/sync/evidence-actions", {
+      method: "POST",
+      headers: fieldOnlyHeaders,
+      body: {
+        actions: [
+          {
+            client_evidence_id: "field-only-accepted",
+            type: "evidence.field_observation",
+            local_created_at: "2026-06-15T14:00:00.000Z",
+            payload: { note: "Field observation allowed." },
+          },
+          {
+            client_evidence_id: "work-order-rejected",
+            type: "evidence.work_order_observation",
+            local_created_at: "2026-06-15T14:01:00.000Z",
+            payload: { work_order_id: "work-order-2", note: "Should be rejected." },
+          },
+        ],
+      },
+    });
+
+    assert.equal(missingPermission.status, 403);
+    assert.equal(missingPermission.body.error.reason, "permission_required");
+    assert.equal(invalidEnvelope.status, 400);
+    assert.equal(invalidEnvelope.body.error.reason, "invalid_envelope");
+    assert.equal(perActionPermission.status, 200);
+    assert.equal(perActionPermission.body.data.summary.accepted, 1);
+    assert.equal(perActionPermission.body.data.summary.rejected, 1);
+    assert.equal(perActionPermission.body.data.rejected[0].error.reason, "permission_required");
+    assertNoStackTrace(missingPermission.body);
+    assertNoStackTrace(invalidEnvelope.body);
+    assertNoStackTrace(perActionPermission.body);
+  });
+});
+
 test("permission error contract uses stable message for one or many required permissions", async () => {
   await withMobileContractApi(async ({ baseUrl, seed }) => {
     const roles = await requestJson(baseUrl, "/api/v1/roles", {
@@ -813,6 +1017,7 @@ async function withMobileContractApi(
   const { createApp } = await import("../src/app.js");
   const { resetChecklistRuntimeForTests } = await import("../src/modules/checklists/index.js");
   const { resetMobileChecklistSyncRuntimeForTests } = await import("../src/modules/mobile/mobile-checklist-sync.js");
+  const { resetMobileEvidenceSyncRuntimeForTests } = await import("../src/modules/mobile/mobile-evidence-sync.js");
   const { resetMobileInventoryRuntimeForTests } = await import("../src/modules/mobile/mobile-inventory-sync.js");
   const { resetMobileWorkOrderSyncRuntimeForTests } = await import("../src/modules/mobile/mobile-work-order-sync.js");
   const { resetWorkOrderRuntimeForTests } = await import("../src/modules/work-orders/index.js");
@@ -824,6 +1029,7 @@ async function withMobileContractApi(
 
   resetChecklistRuntimeForTests();
   resetMobileChecklistSyncRuntimeForTests();
+  resetMobileEvidenceSyncRuntimeForTests();
   resetMobileInventoryRuntimeForTests();
   resetMobileWorkOrderSyncRuntimeForTests();
   resetWorkOrderRuntimeForTests();

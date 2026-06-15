@@ -42,11 +42,12 @@ Consolidar a prontidao do backend Node.js/TypeScript para o MVP mobile Flutter, 
 | Expenses | `GET/POST /api/v1/expense-reports` | implementado | fluxo online de prestacao de contas |
 | Expenses | `POST /api/v1/mobile/sync/expense-actions` | implementado | sync idempotente MVP para acoes de despesas |
 | Inventory | `GET /api/v1/mobile/inventory/availability` | parcial | disponibilidade mobile tenant-scoped, com dados em memoria |
-| Evidence/Attachments | checklist attachments | implementado parcial | real para checklist; nao ha upload generico ou evidencia de OS |
+| Evidence/Attachments | `POST /api/v1/mobile/sync/evidence-actions` | parcial | manifesto de foto, assinatura e observacao para OS/campo; sem upload binario |
 | Sync | `POST /api/v1/mobile/sync/expense-actions` | implementado parcial | despesas apenas |
 | Sync | `POST /api/v1/mobile/sync/work-order-actions` | implementado | replay offline controlado de status/atribuicao de OS |
 | Sync | `POST /api/v1/mobile/sync/checklist-actions` | parcial | replay offline minimo de respostas, notas e conclusao de checklist |
 | Sync | `POST /api/v1/mobile/sync/inventory-actions` | parcial | replay minimo de reserva, consumo e falta em campo |
+| Sync | `POST /api/v1/mobile/sync/evidence-actions` | parcial | replay de metadados de evidencia por tenant/usuario |
 | Notifications | `GET /api/v1/notifications` | implementado | retorna `data` como array direto |
 | Notifications | `GET /api/v1/notifications/unread-count` | implementado | contador de nao lidas |
 | Notifications | read/read-all/archive | implementado | acoes online |
@@ -54,7 +55,7 @@ Consolidar a prontidao do backend Node.js/TypeScript para o MVP mobile Flutter, 
 
 ## Endpoints faltantes ou incompletos
 
-- Endpoint generico de evidencia de OS: faltante; checklist possui anexos, OS ainda nao.
+- Evidencia OS/generica completa: parcial; B-098E cobre manifesto/metadados, mas nao upload, storage ou persistencia duravel.
 - Sync checklist completo: parcial; B-098C cobre respostas, notas e conclusao, mas nao cobre anexos, markers, divergencia ou acknowledgement em lote.
 - Catalogos versionados completos no bootstrap: parcial; B-098A/B/C retornam contrato expandido com lacunas planejadas.
 - Inventory completo: parcial; B-098D cobre availability e replay minimo, mas nao cobre persistencia duravel, reserva transacional multi-instancia ou vinculacao real com OS/armazem.
@@ -96,7 +97,7 @@ Estado atual:
 - work orders: `POST /api/v1/mobile/sync/work-order-actions` existe e retorna `accepted`, `rejected`, `conflicts` e `already_applied`;
 - checklists: `POST /api/v1/mobile/sync/checklist-actions` existe em status `partial` para `checklist.item_answer`, `checklist.item_note` e `checklist.complete`;
 - inventory: `GET /api/v1/mobile/inventory/availability` e `POST /api/v1/mobile/sync/inventory-actions` existem em status `partial`;
-- evidencias: checklist possui upload online protegido; OS/generico ainda faltante.
+- evidencias: checklist possui upload online protegido; B-098E adiciona manifesto parcial de OS/generico em `POST /api/v1/mobile/sync/evidence-actions`.
 
 Regras para proximas fases:
 
@@ -122,9 +123,9 @@ Regras para proximas fases:
 | B-098B | Sync de Work Orders | `POST /api/v1/mobile/sync/work-order-actions` com idempotencia e conflitos |
 | B-098C | Sync de Checklists | replay offline minimo de respostas, notas e conclusao |
 | B-098D | Inventario mobile | availability e sync minimo de reserva/consumo/falta tenant-scoped |
-| B-098E | Evidencias de OS | upload/metadata seguro para OS, storage protegido e auditoria |
+| B-098E | Evidencias de OS/campo | manifesto/metadata seguro, idempotente e tenant-scoped; upload/storage permanecem pendentes |
 | B-098F | Observabilidade mobile | metricas de sync, auditoria mobile e diagnostico backend seguro |
 
 ## Status B-098
 
-B-098 deixa o backend pronto para um acoplamento mobile minimo via bootstrap, confirma endpoints ja consumiveis e estabiliza 404 JSON para endpoints planejados. Com B-098B/C/D, o backend ja possui contratos parciais/implementados para replay de OS, checklist e inventario, mas ainda nao esta pronto para sync completo local-first, persistencia duravel de idempotencia ou evidencia generica de OS.
+B-098 deixa o backend pronto para um acoplamento mobile minimo via bootstrap, confirma endpoints ja consumiveis e estabiliza 404 JSON para endpoints planejados. Com B-098B/C/D/E, o backend possui contratos parciais/implementados para replay de OS, checklist, inventario e metadados de evidencia, mas ainda nao esta pronto para sync completo local-first, persistencia duravel de idempotencia ou upload protegido de arquivos.

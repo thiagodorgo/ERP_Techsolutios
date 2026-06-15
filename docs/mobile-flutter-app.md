@@ -35,7 +35,7 @@ O primeiro caminho versionado nesta fase e `mobile/flutter_app`, porque nao havi
 - categorias e politicas de despesas;
 - versoes de catalogos para cache e sync.
 
-### Status backend B-098A/B-098D
+### Status backend B-098A/B-098E
 
 `GET /api/v1/mobile/bootstrap` ja existe no backend como contrato expandido e cacheavel. Ele preserva tenant ativo, usuario, roles, permissoes, modulos habilitados, categorias de despesas quando o ator tem permissao relacionada a despesas, `serverTime` e cursores nulos de sync.
 
@@ -68,7 +68,15 @@ No B-098D, `GET /api/v1/mobile/inventory/availability` e `POST /api/v1/mobile/sy
 - o sync de inventario aceita `inventory.reserve`, `inventory.consume` e `inventory.shortage_report`;
 - o backend ignora `tenant_id` no query/body/payload e resolve o tenant pelo ator autenticado.
 
-Ainda nao ha tenants disponiveis, persistencia duravel de idempotencia mobile, reserva transacional multi-instancia, associacao real de inventario com OS/armazem nem upload generico de evidencia de OS. Esses itens ficam para fases seguintes.
+No B-098E, `POST /api/v1/mobile/sync/evidence-actions` passou a existir como contrato parcial para fotos, assinaturas e observacoes de OS/campo:
+
+- `feature_flags.generic_evidence_upload.status=partial` quando modulo e permissao permitem o uso;
+- `mobile_policy.sync.partial_domains` inclui `evidence`;
+- `mobile_policy.evidence.work_order_evidence` e `generic_upload` ficam `partial`;
+- o app deve enviar `client_evidence_id` e metadados seguros, nunca base64, path local ou token;
+- o backend separa `accepted`, `rejected`, `conflicts` e `already_applied` e ignora tenant externo.
+
+Ainda nao ha tenants disponiveis, persistencia duravel de idempotencia mobile, reserva transacional multi-instancia, associacao real de inventario com OS/armazem nem upload/storage protegido para evidencia. Esses itens ficam para fases seguintes.
 
 ## Estrutura inicial
 

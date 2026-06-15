@@ -6,6 +6,7 @@ import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { createDefaultExpenseManagementService } from "../expense-management/expense-management.service.js";
 import { syncMobileChecklistActions } from "./mobile-checklist-sync.js";
+import { syncMobileEvidenceActions } from "./mobile-evidence-sync.js";
 import { getMobileInventoryAvailability, syncMobileInventoryActions } from "./mobile-inventory-sync.js";
 import { syncMobileWorkOrderActions } from "./mobile-work-order-sync.js";
 
@@ -116,6 +117,7 @@ export function createMobileRouter(service: ICoreSaasService): Router {
             checklistsCursor: null,
             expensesCursor: null,
             inventoryCursor: null,
+            evidenceCursor: null,
           },
         },
       });
@@ -154,6 +156,15 @@ export function createMobileRouter(service: ICoreSaasService): Router {
     handleAsyncRoute(async (request, response) => {
       response.json({
         data: await syncMobileInventoryActions(request.tenantContext, request.body ?? {}),
+      });
+    }),
+  );
+
+  router.post(
+    "/mobile/sync/evidence-actions",
+    handleAsyncRoute(async (request, response) => {
+      response.json({
+        data: await syncMobileEvidenceActions(request.tenantContext, request.body ?? {}),
       });
     }),
   );
@@ -230,9 +241,15 @@ function buildFeatureFlags(
       reason: hasModule(modules, "inventory") ? "in_memory_contract" : "module_disabled",
     },
     generic_evidence_upload: {
-      enabled: false,
-      status: "planned",
-      reason: "backend_contract_unavailable",
+      enabled: (
+        hasModule(modules, "work_orders") && hasPermission(actor, "work_orders:update")
+      ) || (
+        hasModule(modules, "field_operations") && hasPermission(actor, "field_location:send")
+      ),
+      status: hasModule(modules, "work_orders") || hasModule(modules, "field_operations") ? "partial" : "unavailable",
+      reason: hasModule(modules, "work_orders") || hasModule(modules, "field_operations")
+        ? "metadata_manifest_only"
+        : "module_disabled",
     },
   };
 }
@@ -255,13 +272,13 @@ function buildMobilePolicy() {
       max_batch_size: 50,
       retry_backoff_seconds: [10, 30, 120],
       implemented_domains: ["expenses", "work_orders"],
-      partial_domains: ["checklists", "inventory"],
+      partial_domains: ["checklists", "inventory", "evidence"],
       planned_domains: [],
     },
     evidence: {
       checklist_attachments: "implemented",
-      work_order_evidence: "planned",
-      generic_upload: "planned",
+      work_order_evidence: "partial",
+      generic_upload: "partial",
       max_upload_mb: 10,
       allowed_mime_types: ["image/jpeg", "image/png", "application/pdf"],
     },
@@ -317,6 +334,7 @@ function buildCatalogs(
         endpointCatalogItem("checklist_sync", "POST /api/v1/mobile/sync/checklist-actions", "partial"),
         endpointCatalogItem("inventory_availability", "GET /api/v1/mobile/inventory/availability", "partial"),
         endpointCatalogItem("inventory_sync", "POST /api/v1/mobile/sync/inventory-actions", "partial"),
+        endpointCatalogItem("evidence_sync", "POST /api/v1/mobile/sync/evidence-actions", "partial"),
       ],
     },
   };

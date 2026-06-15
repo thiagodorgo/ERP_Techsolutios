@@ -2946,3 +2946,43 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - nenhum comando Flutter foi executado
 - sem Figma, secrets, `.env`, migrations ou infra
 - B-098E e novos contratos funcionais nao foram iniciados
+
+## 2026-06-15 - B-098E Mobile Evidence Contract
+
+### Implementado
+
+- worktree isolado: `C:\Users\AMP\Documents\GitHub\ERP_Techsolutios-codex-b098e`
+- branch: `feature/mobile-evidence-contract`
+- base: `origin/main` com merge commit `fc86ae1f70b21b7bdec02fa308b070cadca9b0a4` confirmado
+- criado `POST /api/v1/mobile/sync/evidence-actions`
+- suporte a fotos, assinaturas e observacoes de OS/campo
+- tenant resolvido exclusivamente pelo ator autenticado
+- idempotencia por tenant + usuario + `client_evidence_id`
+- rejeicao de binario/base64/path local no contrato de metadados
+- bootstrap, policy, catalogos, documentacao e `Kpis/` atualizados
+
+### Validacoes
+
+- `npm run check`: pass
+- `npm run lint`: pass
+- `npm test`: pass, 15/15
+- testes focados mobile/backend + Core SaaS: pass, 18/18
+- `npm run build`: pass
+- frontend check: pass
+- frontend smoke: pass, 28/28
+- frontend build: pass
+- Prisma validate com `DATABASE_URL` dummy: pass
+- `git diff --check`: pass
+
+### Escopo preservado
+
+- nenhum arquivo `mobile/**` alterado
+- nenhum comando Flutter executado
+- sem Figma, secrets, `.env`, migrations ou infra
+- B-098F nao iniciado
+
+### Lacunas
+
+- upload protegido, storage, antivirus e auditoria de arquivo
+- persistencia duravel DB/Redis
+- associacao definitiva com entidades e consumo Flutter

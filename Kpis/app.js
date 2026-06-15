@@ -3,14 +3,14 @@ const dashboardData = {
     name: "ERP Techsolutions",
     version: "KPI-DASHBOARD-001",
     updatedAt: "2026-06-15",
-    sourceBranch: "feature/project-kpis-dashboard",
+    sourceBranch: "feature/mobile-evidence-contract",
     summary:
-      "Painel executivo permanente para consolidar progresso tecnico, contratos mobile/backend, lacunas, riscos, validacoes e previsoes do ERP Techsolutions apos o merge de B-098D.",
+      "Painel executivo permanente atualizado com o contrato parcial B-098E para manifestos de evidencias de OS e campo.",
   },
   kpis: [
-    { label: "Backend mobile", value: "5/7", note: "Bootstrap, OS, checklist e inventario cobertos em contratos implementados/parciais." },
-    { label: "CI PR #85", value: "pass", note: "Workflow backend remoto finalizado com sucesso." },
-    { label: "Smoke React", value: "28/28", note: "Ultimo smoke conhecido do frontend React passou." },
+    { label: "Backend mobile", value: "6/7", note: "Bootstrap, OS, checklist, inventario e evidencias cobertos em contratos implementados/parciais." },
+    { label: "Contrato B-098E", value: "partial", note: "Manifesto de foto, assinatura e observacao sem upload binario ou persistencia duravel." },
+    { label: "Testes focados", value: "18/18", note: "Contratos mobile/backend e Core SaaS passaram localmente." },
     { label: "Escopo proibido", value: "0", note: "Flutter, Figma, secrets, .env, migrations e infra tocados neste bloco." },
   ],
   blocks: [
@@ -19,6 +19,7 @@ const dashboardData = {
     { id: "B-098B", title: "Sync OS", status: "concluido", progress: 100, summary: "Replay offline de status e atribuicao de OS." },
     { id: "B-098C", title: "Sync checklist", status: "parcial", progress: 65, summary: "Respostas, notas e conclusao; anexos e markers continuam fora do replay em lote." },
     { id: "B-098D", title: "Inventario mobile", status: "parcial", progress: 60, summary: "Availability e sync minimo de reserva, consumo e falta em campo." },
+    { id: "B-098E", title: "Evidencias mobile", status: "parcial", progress: 55, summary: "Manifestos idempotentes de foto, assinatura e observacao para OS/campo." },
   ],
   contracts: [
     {
@@ -47,9 +48,9 @@ const dashboardData = {
     },
     {
       domain: "Evidence OS/generic",
-      status: "planejado",
-      endpoints: [],
-      detail: "Checklist possui anexos online, mas OS/generico ainda aguardam contrato proprio.",
+      status: "parcial",
+      endpoints: ["POST /api/v1/mobile/sync/evidence-actions"],
+      detail: "Manifesto de metadados tenant-scoped; upload, storage protegido e persistencia duravel permanecem pendentes.",
     },
     {
       domain: "Idempotencia duravel",
@@ -59,15 +60,16 @@ const dashboardData = {
     },
   ],
   domains: [
-    { name: "Backend mobile", status: "parcial", detail: "Base forte, mas ainda faltam evidencia OS/generica e idempotencia duravel." },
-    { name: "Flutter", status: "planejado", detail: "Nao alterado neste bloco; pendente consumir B-098B/C/D." },
-    { name: "Frontend React", status: "concluido", detail: "Smoke conhecido 28/28." },
-    { name: "CI", status: "concluido", detail: "PR #85 backend pass." },
+    { name: "Backend mobile", status: "parcial", detail: "Evidencias agora possuem contrato de metadados; faltam upload protegido e idempotencia duravel." },
+    { name: "Flutter", status: "planejado", detail: "Nao alterado neste bloco; pendente consumir B-098B/C/D/E." },
+    { name: "Frontend React", status: "concluido", detail: "Check, smoke 28/28 e build passaram no B-098E." },
+    { name: "CI", status: "parcial", detail: "Validacoes locais verdes; CI remoto depende da publicacao do PR B-098E." },
   ],
   validations: [
     { name: "npm run check", result: "pass" },
     { name: "npm run lint", result: "pass" },
     { name: "npm test", result: "pass" },
+    { name: "testes focados mobile/backend", result: "pass 18/18" },
     { name: "npm run build", result: "pass" },
     { name: "npm --prefix frontend run check", result: "pass" },
     { name: "npm --prefix frontend run test:smoke", result: "pass 28/28" },
@@ -78,8 +80,8 @@ const dashboardData = {
   estimates: [
     {
       label: "MVP vendavel",
-      value: "40-80h",
-      detail: "Sujeito a consumo Flutter dos contratos B-098B/C/D, evidencias/OS, persistencia/idempotencia e validacao E2E.",
+      value: "36-72h",
+      detail: "Sujeito a consumo Flutter dos contratos B-098B/C/D/E, upload protegido, persistencia/idempotencia e validacao E2E.",
     },
     {
       label: "Padrao Figma premium",
@@ -91,17 +93,17 @@ const dashboardData = {
     {
       title: "Idempotencia nao duravel",
       severity: "alto",
-      detail: "Contratos B-098B/C/D usam runtime em memoria para estabilizar contrato, mas ambiente multi-instancia exige DB/Redis.",
+      detail: "Contratos B-098B/C/D/E usam runtime em memoria para estabilizar contrato, mas ambiente multi-instancia exige DB/Redis.",
     },
     {
-      title: "Flutter ainda nao consome B-098B/C/D",
+      title: "Flutter ainda nao consome B-098B/C/D/E",
       severity: "alto",
       detail: "O backend esta pronto para consumo controlado, mas o app ainda precisa integrar os novos contratos.",
     },
     {
-      title: "Evidencias OS/genericas planejadas",
+      title: "Upload de evidencias ainda pendente",
       severity: "medio",
-      detail: "Checklist tem anexos online, mas OS/generico ainda precisam de contrato seguro.",
+      detail: "B-098E registra metadados, mas nao armazena binarios nem emite URL protegida de upload.",
     },
     {
       title: "Inventario parcial",
@@ -110,11 +112,12 @@ const dashboardData = {
     },
   ],
   nextBlocks: [
-    { id: "B-098E", title: "Evidencias OS/genericas", detail: "Definir upload/metadata seguro para OS, storage protegido, auditoria e limites." },
-    { id: "MOBILE-CONSUME-B098BCD", title: "Flutter consome contratos B-098B/C/D", detail: "Integrar OS, checklist e inventory sync ao app sem perder local-first." },
+    { id: "EVIDENCE-UPLOAD-DURABILITY", title: "Upload e persistencia de evidencias", detail: "Adicionar URL protegida, storage, antivirus, auditoria e receipts duraveis." },
+    { id: "MOBILE-CONSUME-B098BCDE", title: "Flutter consome contratos B-098B/C/D/E", detail: "Integrar OS, checklist, inventario e evidencias ao app sem perder local-first." },
     { id: "SYNC-DURABILITY", title: "Idempotencia duravel", detail: "Migrar receipts para DB/Redis e preparar multi-instancia." },
   ],
   history: [
+    { date: "2026-06-15", title: "B-098E", detail: "Contrato parcial de manifestos de evidencia para OS/campo, com idempotencia e isolamento de tenant." },
     { date: "2026-06-15", title: "KPI-DASHBOARD-001", detail: "Criado painel permanente Kpis/ apos merge do PR #85 e consolidacao B-098D." },
     { date: "2026-06-15", title: "B-098D", detail: "Inventory availability + inventory actions sync parcial; PR #85 backend pass e mergeado." },
     { date: "2026-06-14", title: "B-098 ate B-098C", detail: "Readiness, bootstrap expandido, sync OS e sync checklist parcial estabilizados." },

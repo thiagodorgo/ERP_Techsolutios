@@ -295,6 +295,57 @@ Regras obrigatorias:
 - payload invalido, tipo nao suportado ou permissao ausente retorna rejeicao/erro estruturado sem stack trace.
 - lacunas B-098D: idempotencia duravel em banco/Redis, reserva transacional, vinculacao real com OS/armazem, anexos de evidencia e implementacao Flutter consumindo o endpoint.
 
+### POST /api/v1/mobile/sync/evidence-actions
+
+- Permissoes: `work_orders:update` para evidencias de OS e `field_location:send` para evidencias genericas de campo.
+- Status B-098E: parcial; registra manifesto/metadados, sem upload binario ou persistencia duravel.
+- Request: lote `{ client_batch_id, actions[] }`, cada acao com `client_evidence_id`, `type`, `local_created_at` e `payload`.
+- Response: envelope em `data` com `summary`, `accepted`, `rejected`, `conflicts` e `already_applied`.
+- Idempotencia: tenant resolvido do ator + usuario do ator + `client_evidence_id`.
+
+Tipos implementados:
+
+- `evidence.work_order_photo`
+- `evidence.work_order_signature`
+- `evidence.work_order_observation`
+- `evidence.field_photo`
+- `evidence.field_signature`
+- `evidence.field_observation`
+
+Request:
+
+```json
+{
+  "client_batch_id": "batch-evidence-1",
+  "actions": [
+    {
+      "client_evidence_id": "evidence-local-1",
+      "type": "evidence.work_order_photo",
+      "local_created_at": "2026-06-15T12:00:00.000Z",
+      "payload": {
+        "work_order_id": "server-work-order-id",
+        "kind": "photo",
+        "file_name": "panel-before.jpg",
+        "content_type": "image/jpeg",
+        "size_bytes": 245000,
+        "sha256": "hash-or-placeholder",
+        "caption": "Antes da manutencao",
+        "gps": { "lat": -23.55052, "lng": -46.633308, "accuracy_m": 18 }
+      }
+    }
+  ]
+}
+```
+
+Regras obrigatorias:
+
+- `tenant_id`/`tenantId` de body ou payload e ignorado e nao decide tenant.
+- lote maximo de 50 acoes.
+- fotos e assinaturas aceitam apenas `image/jpeg` ou `image/png`, com limite declarado de 10 MB.
+- `base64`, `file_data`, `local_path` e `path` sao rejeitados; o contrato registra metadados, nao arquivo.
+- reenvio identico retorna `already_applied`; payload diferente com o mesmo ID retorna `idempotency_payload_mismatch`.
+- lacunas: upload/presigned URL, storage protegido, persistencia DB/Redis, antivirus, auditoria completa e consumo Flutter.
+
 ### GET /api/v1/expense-policies
 
 - Permissao: `expense_report:read` ou `expense_policy:manage`.
