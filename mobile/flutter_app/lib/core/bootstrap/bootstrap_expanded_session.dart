@@ -20,11 +20,7 @@ enum CapabilityStatus {
 
 /// A feature flag entry from the bootstrap's `feature_flags` block.
 class FeatureFlag extends Equatable {
-  const FeatureFlag({
-    required this.enabled,
-    required this.status,
-    this.reason,
-  });
+  const FeatureFlag({required this.enabled, required this.status, this.reason});
 
   final bool enabled;
   final CapabilityStatus status;

@@ -315,8 +315,13 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
       schemaVersion: str('schemaVersion', 'schema_version').isEmpty
           ? 'v1'
           : str('schemaVersion', 'schema_version'),
-      status: str('status', 'status').isEmpty ? 'active' : str('status', 'status'),
-      linkedWorkOrderType: strOpt('linkedWorkOrderType', 'linked_work_order_type'),
+      status: str('status', 'status').isEmpty
+          ? 'active'
+          : str('status', 'status'),
+      linkedWorkOrderType: strOpt(
+        'linkedWorkOrderType',
+        'linked_work_order_type',
+      ),
     );
   }
 

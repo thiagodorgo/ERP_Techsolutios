@@ -159,8 +159,9 @@ class WorkOrderRepository extends ChangeNotifier {
         continue;
       }
       // Keep existing localId so cached detail routes stay valid.
-      final toSave =
-          existing != null ? ro.copyWith(localId: existing.localId) : ro;
+      final toSave = existing != null
+          ? ro.copyWith(localId: existing.localId)
+          : ro;
       await _localStore.saveWorkOrder(toSave);
     }
 
@@ -423,17 +424,14 @@ class WorkOrderRepository extends ChangeNotifier {
 
     final action = _actionFactory.create(
       tenantId: _session.activeTenant.tenantId,
-      type: WorkOrderSyncActionTypes.evidenceAttach,
+      type: EvidenceSyncActionTypes.workOrderPhoto,
       payload: {
-        'local_evidence_id': evidence.localId,
-        'work_order_local_id': workOrderLocalId,
-        'work_order_server_id': wo.serverId,
+        'work_order_id': wo.serverId ?? workOrderLocalId,
+        'kind': 'photo',
         'file_name': fileName,
-        'mime_type': mimeType,
+        'content_type': mimeType,
         'size_bytes': sizeBytes,
-        'capture_source': captureSource,
-        'created_at': now.toIso8601String(),
-        'checksum': ?checksum,
+        'sha256': ?checksum,
       },
     );
     await _syncQueue.enqueue(action);

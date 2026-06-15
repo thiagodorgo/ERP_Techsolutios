@@ -80,7 +80,10 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
       final items = (data['items'] as List<dynamic>? ?? [])
           .cast<Map<String, dynamic>>();
       return items
-          .map((j) => _workOrderFromRemoteJson(j, fallbackTenantId: tenantId ?? ''))
+          .map(
+            (j) =>
+                _workOrderFromRemoteJson(j, fallbackTenantId: tenantId ?? ''),
+          )
           .toList();
     } on DioException catch (e) {
       throw mapDioError(e);

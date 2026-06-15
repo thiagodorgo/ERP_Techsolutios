@@ -94,10 +94,7 @@ class SyncScreen extends ConsumerWidget {
                   )
                 else
                   for (final entry in grouped.entries)
-                    _DomainGroup(
-                      domain: entry.key,
-                      actions: entry.value,
-                    ),
+                    _DomainGroup(domain: entry.key, actions: entry.value),
               ],
             ),
           );
@@ -151,10 +148,7 @@ class _BackendPendingNotice extends StatelessWidget {
                   'OS, Checklists e Inventario estao em modo local. '
                   'Despesas enfileiram para sync quando a integracao for ativada. '
                   'Seus dados estao seguros no banco local do dispositivo.',
-                  style: TextStyle(
-                    color: Colors.amber.shade900,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.amber.shade900, fontSize: 12),
                 ),
               ],
             ),
@@ -318,8 +312,9 @@ class _DomainGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     final pending = actions.where((a) => a.status == SyncStatus.pending).length;
     final failed = actions.where((a) => a.status == SyncStatus.failed).length;
-    final conflicts =
-        actions.where((a) => a.status == SyncStatus.conflict).length;
+    final conflicts = actions
+        .where((a) => a.status == SyncStatus.conflict)
+        .length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,7 +334,10 @@ class _DomainGroup extends StatelessWidget {
               ),
               const Spacer(),
               if (pending > 0)
-                _StatusPill(label: '$pending pendente(s)', color: Colors.orange),
+                _StatusPill(
+                  label: '$pending pendente(s)',
+                  color: Colors.orange,
+                ),
               if (failed > 0) ...[
                 const SizedBox(width: 4),
                 _StatusPill(label: '$failed erro(s)', color: Colors.red),
@@ -417,10 +415,7 @@ class _ActionRow extends StatelessWidget {
             if (action.lastSafeError != null)
               Text(
                 action.lastSafeError!,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.red.shade700,
-                ),
+                style: TextStyle(fontSize: 11, color: Colors.red.shade700),
               ),
             if (action.retryCount > 0)
               Text(

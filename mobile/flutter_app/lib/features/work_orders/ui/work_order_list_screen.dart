@@ -132,8 +132,7 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
             child: Column(
               children: [
                 // Pull state banners
-                if (repo.isPulling)
-                  const LinearProgressIndicator(),
+                if (repo.isPulling) const LinearProgressIndicator(),
                 if (repo.lastPullError != null && !repo.isPulling)
                   _PullErrorBanner(
                     message: repo.lastPullError!,
@@ -244,7 +243,8 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
                               EmptyState(
                                 icon: Icons.build_outlined,
                                 title: 'Nenhuma OS encontrada',
-                                message: _query.isNotEmpty ||
+                                message:
+                                    _query.isNotEmpty ||
                                         _group != _WoGroup.all ||
                                         _priority != null
                                     ? 'Nenhuma OS corresponde aos filtros selecionados.'
@@ -358,8 +358,9 @@ class _PullErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialBanner(
-      backgroundColor:
-          Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.8),
+      backgroundColor: Theme.of(
+        context,
+      ).colorScheme.errorContainer.withValues(alpha: 0.8),
       leading: Icon(
         Icons.cloud_off_outlined,
         color: Theme.of(context).colorScheme.error,
@@ -369,10 +370,7 @@ class _PullErrorBanner extends StatelessWidget {
         style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
       ),
       actions: [
-        TextButton(
-          onPressed: onRetry,
-          child: const Text('Tentar novamente'),
-        ),
+        TextButton(onPressed: onRetry, child: const Text('Tentar novamente')),
       ],
     );
   }
@@ -414,7 +412,9 @@ class _LocalCacheBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.5),
+      color: Theme.of(
+        context,
+      ).colorScheme.secondaryContainer.withValues(alpha: 0.5),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
         children: [

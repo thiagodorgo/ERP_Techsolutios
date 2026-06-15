@@ -28,7 +28,11 @@ import 'package:flutter_test/flutter_test.dart';
 // ---------------------------------------------------------------------------
 
 class _FakeHttpAdapter implements HttpClientAdapter {
-  _FakeHttpAdapter({this.handler, this.statusCode = 200, this.shouldThrow = false});
+  _FakeHttpAdapter({
+    this.handler,
+    this.statusCode = 200,
+    this.shouldThrow = false,
+  });
 
   final Map<String, dynamic> Function(RequestOptions)? handler;
   final int statusCode;
@@ -114,10 +118,13 @@ class _FakeChecklistRemoteApi implements ChecklistRemoteApi {
     required String userId,
   }) => Future.error(const ApiNetworkError());
   @override
-  Future<void> patchRun({required String runId, required Map<String, Object?> answers}) =>
-      Future.error(const ApiNetworkError());
+  Future<void> patchRun({
+    required String runId,
+    required Map<String, Object?> answers,
+  }) => Future.error(const ApiNetworkError());
   @override
-  Future<void> completeRun(String runId) => Future.error(const ApiNetworkError());
+  Future<void> completeRun(String runId) =>
+      Future.error(const ApiNetworkError());
   @override
   Future<void> createMarker({
     required String runId,
@@ -127,8 +134,10 @@ class _FakeChecklistRemoteApi implements ChecklistRemoteApi {
     String? positionLabel,
   }) => Future.error(const ApiNetworkError());
   @override
-  Future<void> createDivergence({required String runId, required String description}) =>
-      Future.error(const ApiNetworkError());
+  Future<void> createDivergence({
+    required String runId,
+    required String description,
+  }) => Future.error(const ApiNetworkError());
   @override
   Future<void> acknowledge({
     required String runId,
@@ -202,8 +211,14 @@ void main() {
         _fakeDio(
           (_) => {
             'checklists': [
-              {'id': 'cl-1', 'tenantId': _tenantId, 'title': 'CL 1',
-               'isRequired': false, 'schemaVersion': 'v1', 'status': 'active'},
+              {
+                'id': 'cl-1',
+                'tenantId': _tenantId,
+                'title': 'CL 1',
+                'isRequired': false,
+                'schemaVersion': 'v1',
+                'status': 'active',
+              },
             ],
           },
         ),
@@ -218,8 +233,14 @@ void main() {
         _fakeDio(
           (_) => {
             'items': [
-              {'id': 'cl-2', 'tenantId': _tenantId, 'title': 'CL 2',
-               'isRequired': false, 'schemaVersion': 'v1', 'status': 'active'},
+              {
+                'id': 'cl-2',
+                'tenantId': _tenantId,
+                'title': 'CL 2',
+                'isRequired': false,
+                'schemaVersion': 'v1',
+                'status': 'active',
+              },
             ],
           },
         ),
@@ -234,8 +255,14 @@ void main() {
         _fakeDio(
           (_) => {
             'data': [
-              {'id': 'cl-3', 'tenantId': _tenantId, 'title': 'CL 3',
-               'isRequired': false, 'schemaVersion': 'v1', 'status': 'active'},
+              {
+                'id': 'cl-3',
+                'tenantId': _tenantId,
+                'title': 'CL 3',
+                'isRequired': false,
+                'schemaVersion': 'v1',
+                'status': 'active',
+              },
             ],
           },
         ),
@@ -245,54 +272,60 @@ void main() {
       expect(result.first.id, 'cl-3');
     });
 
-    test('1.4 parser aceita camelCase (isRequired, schemaVersion, tenantId)', () async {
-      final api = DioChecklistRemoteApi(
-        _fakeDio(
-          (_) => {
-            'checklists': [
-              {
-                'id': 'cl-camel',
-                'tenantId': _tenantId,
-                'title': 'Camel',
-                'isRequired': true,
-                'schemaVersion': 'v2',
-                'status': 'active',
-                'linkedWorkOrderType': 'installation',
-              },
-            ],
-          },
-        ),
-      );
-      final result = await api.fetchAvailableChecklists(tenantId: _tenantId);
-      expect(result.first.isRequired, isTrue);
-      expect(result.first.schemaVersion, 'v2');
-      expect(result.first.linkedWorkOrderType, 'installation');
-    });
+    test(
+      '1.4 parser aceita camelCase (isRequired, schemaVersion, tenantId)',
+      () async {
+        final api = DioChecklistRemoteApi(
+          _fakeDio(
+            (_) => {
+              'checklists': [
+                {
+                  'id': 'cl-camel',
+                  'tenantId': _tenantId,
+                  'title': 'Camel',
+                  'isRequired': true,
+                  'schemaVersion': 'v2',
+                  'status': 'active',
+                  'linkedWorkOrderType': 'installation',
+                },
+              ],
+            },
+          ),
+        );
+        final result = await api.fetchAvailableChecklists(tenantId: _tenantId);
+        expect(result.first.isRequired, isTrue);
+        expect(result.first.schemaVersion, 'v2');
+        expect(result.first.linkedWorkOrderType, 'installation');
+      },
+    );
 
-    test('1.5 parser aceita snake_case (is_required, schema_version, tenant_id)', () async {
-      final api = DioChecklistRemoteApi(
-        _fakeDio(
-          (_) => {
-            'checklists': [
-              {
-                'id': 'cl-snake',
-                'tenant_id': _tenantId,
-                'title': 'Snake',
-                'is_required': true,
-                'schema_version': 'v3',
-                'status': 'active',
-                'linked_work_order_type': 'survey',
-              },
-            ],
-          },
-        ),
-      );
-      final result = await api.fetchAvailableChecklists(tenantId: _tenantId);
-      expect(result.first.isRequired, isTrue);
-      expect(result.first.schemaVersion, 'v3');
-      expect(result.first.tenantId, _tenantId);
-      expect(result.first.linkedWorkOrderType, 'survey');
-    });
+    test(
+      '1.5 parser aceita snake_case (is_required, schema_version, tenant_id)',
+      () async {
+        final api = DioChecklistRemoteApi(
+          _fakeDio(
+            (_) => {
+              'checklists': [
+                {
+                  'id': 'cl-snake',
+                  'tenant_id': _tenantId,
+                  'title': 'Snake',
+                  'is_required': true,
+                  'schema_version': 'v3',
+                  'status': 'active',
+                  'linked_work_order_type': 'survey',
+                },
+              ],
+            },
+          ),
+        );
+        final result = await api.fetchAvailableChecklists(tenantId: _tenantId);
+        expect(result.first.isRequired, isTrue);
+        expect(result.first.schemaVersion, 'v3');
+        expect(result.first.tenantId, _tenantId);
+        expect(result.first.linkedWorkOrderType, 'survey');
+      },
+    );
 
     test('1.6 campos opcionais ausentes nao causam crash', () async {
       final api = DioChecklistRemoteApi(
@@ -314,9 +347,7 @@ void main() {
     });
 
     test('1.7 resposta vazia retorna lista vazia sem crash', () async {
-      final api = DioChecklistRemoteApi(
-        _fakeDio((_) => {'checklists': []}),
-      );
+      final api = DioChecklistRemoteApi(_fakeDio((_) => {'checklists': []}));
       final result = await api.fetchAvailableChecklists(tenantId: _tenantId);
       expect(result, isEmpty);
     });
@@ -326,12 +357,27 @@ void main() {
         _fakeDio(
           (_) => {
             'checklists': [
-              {'id': 'cl-a', 'title': 'A', 'isRequired': false,
-               'schemaVersion': 'v1', 'status': 'active'},
-              {'id': 'cl-b', 'title': 'B', 'isRequired': true,
-               'schemaVersion': 'v1', 'status': 'active'},
-              {'id': 'cl-c', 'title': 'C', 'isRequired': false,
-               'schemaVersion': 'v1', 'status': 'draft'},
+              {
+                'id': 'cl-a',
+                'title': 'A',
+                'isRequired': false,
+                'schemaVersion': 'v1',
+                'status': 'active',
+              },
+              {
+                'id': 'cl-b',
+                'title': 'B',
+                'isRequired': true,
+                'schemaVersion': 'v1',
+                'status': 'active',
+              },
+              {
+                'id': 'cl-c',
+                'title': 'C',
+                'isRequired': false,
+                'schemaVersion': 'v1',
+                'status': 'draft',
+              },
             ],
           },
         ),
@@ -343,9 +389,7 @@ void main() {
     });
 
     test('1.9 erro 401 lanca ApiUnauthorizedError', () async {
-      final api = DioChecklistRemoteApi(
-        _fakeDio((_) => {}, statusCode: 401),
-      );
+      final api = DioChecklistRemoteApi(_fakeDio((_) => {}, statusCode: 401));
       await expectLater(
         api.fetchAvailableChecklists(tenantId: _tenantId),
         throwsA(isA<ApiUnauthorizedError>()),
@@ -353,9 +397,7 @@ void main() {
     });
 
     test('1.10 erro 403 lanca ApiUnauthorizedError', () async {
-      final api = DioChecklistRemoteApi(
-        _fakeDio((_) => {}, statusCode: 403),
-      );
+      final api = DioChecklistRemoteApi(_fakeDio((_) => {}, statusCode: 403));
       await expectLater(
         api.fetchAvailableChecklists(tenantId: _tenantId),
         throwsA(isA<ApiUnauthorizedError>()),
@@ -363,9 +405,7 @@ void main() {
     });
 
     test('1.11 erro 500 lanca ApiServerError', () async {
-      final api = DioChecklistRemoteApi(
-        _fakeDio((_) => {}, statusCode: 500),
-      );
+      final api = DioChecklistRemoteApi(_fakeDio((_) => {}, statusCode: 500));
       await expectLater(
         api.fetchAvailableChecklists(tenantId: _tenantId),
         throwsA(isA<ApiServerError>()),
@@ -373,9 +413,7 @@ void main() {
     });
 
     test('1.12 erro de rede lanca ApiNetworkError', () async {
-      final api = DioChecklistRemoteApi(
-        _fakeDio((_) => {}, shouldThrow: true),
-      );
+      final api = DioChecklistRemoteApi(_fakeDio((_) => {}, shouldThrow: true));
       await expectLater(
         api.fetchAvailableChecklists(tenantId: _tenantId),
         throwsA(isA<ApiNetworkError>()),
@@ -477,29 +515,34 @@ void main() {
       expect(repo.templates, isNotEmpty); // seeds
     });
 
-    test('2.11 load() nao chama remoto na segunda chamada (idempotente)', () async {
-      final remote = _FakeChecklistRemoteApi(templates: [_tpl('x')]);
-      final repo = _makeRepo(remoteApi: remote);
-      await repo.load();
-      await repo.load();
-      expect(remote.fetchCount, equals(1));
-    });
+    test(
+      '2.11 load() nao chama remoto na segunda chamada (idempotente)',
+      () async {
+        final remote = _FakeChecklistRemoteApi(templates: [_tpl('x')]);
+        final repo = _makeRepo(remoteApi: remote);
+        await repo.load();
+        await repo.load();
+        expect(remote.fetchCount, equals(1));
+      },
+    );
 
-    test('2.12 tenant isolation: nao mistura templates de tenants diferentes',
-        () async {
-      final store = InMemoryChecklistLocalStore(
-        templates: [
-          _tpl('cl-a', tenantId: _tenantId),
-          _tpl('cl-b', tenantId: 'other-tenant'),
-        ],
-      );
-      final repo = _makeRepo(
-        remoteApi: _FakeChecklistRemoteApi(shouldThrow: true),
-        localStore: store,
-      );
-      await repo.load();
-      expect(repo.templates.every((t) => t.tenantId == _tenantId), isTrue);
-    });
+    test(
+      '2.12 tenant isolation: nao mistura templates de tenants diferentes',
+      () async {
+        final store = InMemoryChecklistLocalStore(
+          templates: [
+            _tpl('cl-a', tenantId: _tenantId),
+            _tpl('cl-b', tenantId: 'other-tenant'),
+          ],
+        );
+        final repo = _makeRepo(
+          remoteApi: _FakeChecklistRemoteApi(shouldThrow: true),
+          localStore: store,
+        );
+        await repo.load();
+        expect(repo.templates.every((t) => t.tenantId == _tenantId), isTrue);
+      },
+    );
 
     test('2.13 hasCache false quando sem templates', () async {
       final repo = _makeRepo(
@@ -543,7 +586,9 @@ void main() {
       expect(repo.templates.first.id, 'v1');
 
       // Simula segundo fetch com lista diferente usando fake via overwrite
-      final remote2 = _FakeChecklistRemoteApi(templates: [_tpl('v2'), _tpl('v3')]);
+      final remote2 = _FakeChecklistRemoteApi(
+        templates: [_tpl('v2'), _tpl('v3')],
+      );
       final repo2 = _makeRepo(remoteApi: remote2);
       await repo2.load();
       final outcome = await repo2.refresh();
@@ -632,24 +677,28 @@ void main() {
       );
     });
 
-    test('4.2 ChecklistRepository com PendingBackend: load faz fallback para seeds',
-        () async {
-      final repo = _makeRepo(
-        remoteApi: const PendingBackendChecklistRemoteApi(),
-      );
-      await repo.load();
-      expect(repo.templates, isNotEmpty);
-      expect(repo.lastPullError, isNotNull);
-    });
+    test(
+      '4.2 ChecklistRepository com PendingBackend: load faz fallback para seeds',
+      () async {
+        final repo = _makeRepo(
+          remoteApi: const PendingBackendChecklistRemoteApi(),
+        );
+        await repo.load();
+        expect(repo.templates, isNotEmpty);
+        expect(repo.lastPullError, isNotNull);
+      },
+    );
 
-    test('4.3 ChecklistRepository com PendingBackend: isPulling false apos load',
-        () async {
-      final repo = _makeRepo(
-        remoteApi: const PendingBackendChecklistRemoteApi(),
-      );
-      await repo.load();
-      expect(repo.isPulling, isFalse);
-    });
+    test(
+      '4.3 ChecklistRepository com PendingBackend: isPulling false apos load',
+      () async {
+        final repo = _makeRepo(
+          remoteApi: const PendingBackendChecklistRemoteApi(),
+        );
+        await repo.load();
+        expect(repo.isPulling, isFalse);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -658,12 +707,15 @@ void main() {
 
   group('5. ChecklistPullOutcome values (B-100)', () {
     test('5.1 enum possui todos os valores esperados', () {
-      expect(ChecklistPullOutcome.values, containsAll([
-        ChecklistPullOutcome.success,
-        ChecklistPullOutcome.cached,
-        ChecklistPullOutcome.error,
-        ChecklistPullOutcome.pulling,
-      ]));
+      expect(
+        ChecklistPullOutcome.values,
+        containsAll([
+          ChecklistPullOutcome.success,
+          ChecklistPullOutcome.cached,
+          ChecklistPullOutcome.error,
+          ChecklistPullOutcome.pulling,
+        ]),
+      );
     });
   });
 
@@ -684,43 +736,50 @@ void main() {
       expect(t.isActive, isTrue);
     });
 
-    test('6.2 InMemoryChecklistLocalStore preserva templates entre operacoes',
-        () async {
-      final store = InMemoryChecklistLocalStore();
-      final t = _tpl('persist-1');
-      await store.saveTemplate(t);
-      final loaded = await store.loadTemplates(_tenantId);
-      expect(loaded, hasLength(1));
-      expect(loaded.first.id, 'persist-1');
-    });
+    test(
+      '6.2 InMemoryChecklistLocalStore preserva templates entre operacoes',
+      () async {
+        final store = InMemoryChecklistLocalStore();
+        final t = _tpl('persist-1');
+        await store.saveTemplate(t);
+        final loaded = await store.loadTemplates(_tenantId);
+        expect(loaded, hasLength(1));
+        expect(loaded.first.id, 'persist-1');
+      },
+    );
 
-    test('6.3 ChecklistRepository.getRunsForWorkOrder ainda funciona', () async {
-      final repo = _makeRepo(
-        remoteApi: _FakeChecklistRemoteApi(templates: [_tpl('cl-1')]),
-      );
-      await repo.load();
-      final runs = await repo.getRunsForWorkOrder('wo-reg-1');
-      expect(runs, isEmpty);
-    });
+    test(
+      '6.3 ChecklistRepository.getRunsForWorkOrder ainda funciona',
+      () async {
+        final repo = _makeRepo(
+          remoteApi: _FakeChecklistRemoteApi(templates: [_tpl('cl-1')]),
+        );
+        await repo.load();
+        final runs = await repo.getRunsForWorkOrder('wo-reg-1');
+        expect(runs, isEmpty);
+      },
+    );
 
-    test('6.4 ChecklistRepository.activeTemplates filtra por status active',
-        () async {
-      final active = _tpl('active-1');
-      final draft = MobileChecklistTemplate(
-        id: 'draft-1',
-        tenantId: _tenantId,
-        title: 'Draft',
-        isRequired: false,
-        schemaVersion: 'v1',
-        status: 'draft',
-      );
-      final repo = _makeRepo(
-        remoteApi: _FakeChecklistRemoteApi(templates: [active, draft]),
-      );
-      await repo.load();
-      expect(repo.activeTemplates, hasLength(1));
-      expect(repo.activeTemplates.first.id, 'active-1');
-    });
+    test(
+      '6.4 ChecklistRepository.activeTemplates filtra por status active',
+      () async {
+        final active = _tpl('active-1');
+        final draft = MobileChecklistTemplate(
+          id: 'draft-1',
+          tenantId: _tenantId,
+          title: 'Draft',
+          isRequired: false,
+          schemaVersion: 'v1',
+          status: 'draft',
+        );
+        final repo = _makeRepo(
+          remoteApi: _FakeChecklistRemoteApi(templates: [active, draft]),
+        );
+        await repo.load();
+        expect(repo.activeTemplates, hasLength(1));
+        expect(repo.activeTemplates.first.id, 'active-1');
+      },
+    );
 
     test('6.5 ChecklistRepository notifica listeners apos load', () async {
       final repo = _makeRepo(

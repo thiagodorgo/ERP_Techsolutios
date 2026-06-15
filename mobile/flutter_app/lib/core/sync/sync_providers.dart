@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../auth/auth_notifier.dart';
+import '../evidence/evidence_sync.dart';
 import '../local_db/database_provider.dart';
 import '../local_db/drift_sync_action_store.dart';
 import '../network/http_client.dart';
@@ -57,4 +59,34 @@ final checklistSyncReplayServiceProvider = Provider<ChecklistSyncReplayService>(
       api: ref.watch(checklistSyncBatchApiProvider),
     );
   },
+);
+
+final evidenceSyncBatchApiProvider = Provider<EvidenceSyncBatchApi>((ref) {
+  final config = ref.watch(authenticatedApiConfigProvider);
+  if (config.accessToken == null) {
+    return const PendingEvidenceSyncBatchApi();
+  }
+
+  return DioEvidenceSyncBatchApi(
+    createAuthenticatedHttpClient(
+      config,
+      onRefresh: () async {
+        await ref.read(authStateProvider.notifier).tryRefresh();
+        return ref
+            .read(authStateProvider)
+            .maybeWhen(
+              data: (state) => state.session?.tokens.accessToken,
+              orElse: () => null,
+            );
+      },
+      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
+    ),
+  );
+});
+
+final evidenceSyncReplayServiceProvider = Provider<EvidenceSyncReplayService>(
+  (ref) => EvidenceSyncReplayService(
+    queue: ref.watch(syncQueueRepositoryProvider),
+    api: ref.watch(evidenceSyncBatchApiProvider),
+  ),
 );

@@ -234,9 +234,10 @@ void main() {
 
       final actions = await queue.pendingForTenant(_tenantA);
       final evAction = actions.firstWhere(
-        (a) => a.type == WorkOrderSyncActionTypes.evidenceAttach,
+        (a) => a.type == EvidenceSyncActionTypes.workOrderPhoto,
       );
-      expect(evAction.payload['capture_source'], 'gallery');
+      expect(evAction.payload['kind'], 'photo');
+      expect(evAction.payload['content_type'], 'image/jpeg');
     },
   );
 
@@ -264,7 +265,7 @@ void main() {
 
       final actions = await queue.pendingForTenant(_tenantA);
       final evAction = actions.firstWhere(
-        (a) => a.type == WorkOrderSyncActionTypes.evidenceAttach,
+        (a) => a.type == EvidenceSyncActionTypes.workOrderPhoto,
       );
       final raw = evAction.payload.toString();
       expect(raw, isNot(contains('access_token')));

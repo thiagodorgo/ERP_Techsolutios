@@ -130,6 +130,7 @@ class _WorkOrderExecuteScreenState
         mimeType: result.mimeType,
         sizeBytes: result.sizeBytes,
         captureSource: result.captureSource.name,
+        checksum: result.sha256,
       );
       setState(() => _dataFuture = null);
     } catch (e) {

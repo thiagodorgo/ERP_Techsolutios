@@ -47,9 +47,18 @@ Map<String, dynamic> _minimalBody({
       'requiredPermissions': ['expense_report:read'],
     },
   ],
-  'mobilePolicy': {'offlineEnabled': true, 'syncBatchSize': 25, 'receiptMaxSizeMb': 10},
+  'mobilePolicy': {
+    'offlineEnabled': true,
+    'syncBatchSize': 25,
+    'receiptMaxSizeMb': 10,
+  },
   'expenseCategories': [
-    {'id': 'fuel', 'label': 'Combustivel', 'requiresReceipt': true, 'limit': 150.0},
+    {
+      'id': 'fuel',
+      'label': 'Combustivel',
+      'requiresReceipt': true,
+      'limit': 150.0,
+    },
   ],
   'expensePolicy': {
     'version': '1.0',
@@ -83,7 +92,8 @@ Map<String, dynamic> _expandedBody({
   Map<String, dynamic>? contractBlock,
 }) => {
   'data': {
-    'contract': contractBlock ??
+    'contract':
+        contractBlock ??
         {
           'name': 'mobile_bootstrap',
           'version': '2026-06-14.b098a',
@@ -96,18 +106,38 @@ Map<String, dynamic> _expandedBody({
     'roles': roles,
     'permissions': permissions,
     'modules': modules,
-    'feature_flags': featureFlags ??
+    'feature_flags':
+        featureFlags ??
         {
-          'mobile_bootstrap_expanded': {'enabled': true, 'status': 'implemented'},
+          'mobile_bootstrap_expanded': {
+            'enabled': true,
+            'status': 'implemented',
+          },
           'work_orders': {'enabled': true, 'status': 'implemented'},
-          'checklists': {'enabled': false, 'status': 'unavailable', 'reason': 'module_disabled'},
-          'work_order_sync': {'enabled': false, 'status': 'planned', 'reason': 'planned_for_b098b'},
-          'inventory_mobile': {'enabled': false, 'status': 'planned', 'reason': 'backend_contract_unavailable'},
+          'checklists': {
+            'enabled': false,
+            'status': 'unavailable',
+            'reason': 'module_disabled',
+          },
+          'work_order_sync': {
+            'enabled': false,
+            'status': 'planned',
+            'reason': 'planned_for_b098b',
+          },
+          'inventory_mobile': {
+            'enabled': false,
+            'status': 'planned',
+            'reason': 'backend_contract_unavailable',
+          },
           'expense_sync': {'enabled': true, 'status': 'implemented'},
         },
-    'mobile_policy': mobilePolicy ??
+    'mobile_policy':
+        mobilePolicy ??
         {
-          'auth': {'bearer_required': true, 'tenant_source': 'authenticated_actor'},
+          'auth': {
+            'bearer_required': true,
+            'tenant_source': 'authenticated_actor',
+          },
           'sync': {
             'actions_enabled': false,
             'read_only_bootstrap': true,
@@ -137,13 +167,22 @@ Map<String, dynamic> _expandedBody({
       'endpoints': {
         'status': 'partial',
         'items': [
-          {'key': 'work_orders', 'endpoint': 'GET /api/v1/work-orders', 'status': 'implemented'},
-          {'key': 'work_order_sync', 'endpoint': 'POST /api/v1/mobile/sync/work-order-actions', 'status': 'planned'},
+          {
+            'key': 'work_orders',
+            'endpoint': 'GET /api/v1/work-orders',
+            'status': 'implemented',
+          },
+          {
+            'key': 'work_order_sync',
+            'endpoint': 'POST /api/v1/mobile/sync/work-order-actions',
+            'status': 'planned',
+          },
         ],
       },
     },
     'expenseCategories': expenseCategories,
-    'sync': syncBlock ??
+    'sync':
+        syncBlock ??
         {
           'workOrdersCursor': null,
           'checklistsCursor': null,
@@ -274,7 +313,11 @@ void main() {
 
     test('3.3 user mapped from data.user.id and data.roles', () {
       final session = bootstrapSessionFromJson(
-        _expandedBody(userId: 'u-42', email: 'field@xyz.com', roles: ['field_technician']),
+        _expandedBody(
+          userId: 'u-42',
+          email: 'field@xyz.com',
+          roles: ['field_technician'],
+        ),
       );
       expect(session.user.userId, 'u-42');
       expect(session.user.email, 'field@xyz.com');
@@ -285,45 +328,63 @@ void main() {
 
     test('3.4 permissions from top-level permissions array', () {
       final session = bootstrapSessionFromJson(
-        _expandedBody(permissions: ['work_orders:read', 'expense_report:create']),
+        _expandedBody(
+          permissions: ['work_orders:read', 'expense_report:create'],
+        ),
       );
       expect(session.permissions.contains('work_orders:read'), isTrue);
       expect(session.permissions.contains('expense_report:create'), isTrue);
       expect(session.permissions.contains('admin:all'), isFalse);
     });
 
-    test('3.5 modules mapped via local navigation lookup, platform keys ignored', () {
-      final session = bootstrapSessionFromJson(
-        _expandedBody(modules: [
-          {'key': 'expense_management', 'enabled': true},
-          {'key': 'work_orders', 'enabled': true},
-          {'key': 'mobile', 'enabled': true},       // platform key — ignored
-          {'key': 'unknown_future_module', 'enabled': true}, // unknown — ignored
-        ]),
-      );
-      expect(session.enabledModules.length, 2);
-      expect(session.enabledModules.map((m) => m.id), containsAll(['expense_management', 'work_orders']));
-    });
+    test(
+      '3.5 modules mapped via local navigation lookup, platform keys ignored',
+      () {
+        final session = bootstrapSessionFromJson(
+          _expandedBody(
+            modules: [
+              {'key': 'expense_management', 'enabled': true},
+              {'key': 'work_orders', 'enabled': true},
+              {'key': 'mobile', 'enabled': true}, // platform key — ignored
+              {
+                'key': 'unknown_future_module',
+                'enabled': true,
+              }, // unknown — ignored
+            ],
+          ),
+        );
+        expect(session.enabledModules.length, 2);
+        expect(
+          session.enabledModules.map((m) => m.id),
+          containsAll(['expense_management', 'work_orders']),
+        );
+      },
+    );
 
     test('3.6 disabled modules excluded', () {
       final session = bootstrapSessionFromJson(
-        _expandedBody(modules: [
-          {'key': 'expense_management', 'enabled': true},
-          {'key': 'work_orders', 'enabled': false},
-        ]),
+        _expandedBody(
+          modules: [
+            {'key': 'expense_management', 'enabled': true},
+            {'key': 'work_orders', 'enabled': false},
+          ],
+        ),
       );
       expect(session.enabledModules.length, 1);
       expect(session.enabledModules.first.id, 'expense_management');
     });
 
-    test('3.7 expenseCategories mapped from B-098A legacy field (name → label, policy nested)', () {
-      final session = bootstrapSessionFromJson(_expandedBody());
-      expect(session.expenseCategories.length, 1);
-      expect(session.expenseCategories.first.id, 'fuel');
-      expect(session.expenseCategories.first.label, 'Combustivel');
-      expect(session.expenseCategories.first.requiresReceipt, isTrue);
-      expect(session.expenseCategories.first.limit, 150.0);
-    });
+    test(
+      '3.7 expenseCategories mapped from B-098A legacy field (name → label, policy nested)',
+      () {
+        final session = bootstrapSessionFromJson(_expandedBody());
+        expect(session.expenseCategories.length, 1);
+        expect(session.expenseCategories.first.id, 'fuel');
+        expect(session.expenseCategories.first.label, 'Combustivel');
+        expect(session.expenseCategories.first.requiresReceipt, isTrue);
+        expect(session.expenseCategories.first.limit, 150.0);
+      },
+    );
 
     test('3.8 expensePolicy derived from expanded categories', () {
       final session = bootstrapSessionFromJson(_expandedBody());
@@ -331,11 +392,17 @@ void main() {
       expect(session.expensePolicy.receiptRequiredCategories, contains('fuel'));
     });
 
-    test('3.9 availableTenants contains only activeTenant for expanded contract', () {
-      final session = bootstrapSessionFromJson(_expandedBody());
-      expect(session.availableTenants.length, 1);
-      expect(session.availableTenants.first.tenantId, session.activeTenant.tenantId);
-    });
+    test(
+      '3.9 availableTenants contains only activeTenant for expanded contract',
+      () {
+        final session = bootstrapSessionFromJson(_expandedBody());
+        expect(session.availableTenants.length, 1);
+        expect(
+          session.availableTenants.first.tenantId,
+          session.activeTenant.tenantId,
+        );
+      },
+    );
   });
 
   // ── Group 4 — Feature flags ───────────────────────────────────────────────────
@@ -367,20 +434,32 @@ void main() {
 
     test('4.5 featureStatus returns correct CapabilityStatus', () {
       final session = bootstrapSessionFromJson(_expandedBody());
-      expect(session.featureStatus('work_orders'), CapabilityStatus.implemented);
-      expect(session.featureStatus('work_order_sync'), CapabilityStatus.planned);
+      expect(
+        session.featureStatus('work_orders'),
+        CapabilityStatus.implemented,
+      );
+      expect(
+        session.featureStatus('work_order_sync'),
+        CapabilityStatus.planned,
+      );
       expect(session.featureStatus('checklists'), CapabilityStatus.unavailable);
     });
 
     test('4.6 absent flag key: featureStatus returns unavailable', () {
       final session = bootstrapSessionFromJson(_expandedBody());
-      expect(session.featureStatus('not_a_real_flag'), CapabilityStatus.unavailable);
+      expect(
+        session.featureStatus('not_a_real_flag'),
+        CapabilityStatus.unavailable,
+      );
     });
 
     test('4.7 feature flag reason is preserved', () {
       final session = bootstrapSessionFromJson(_expandedBody());
       expect(session.featureFlags['checklists']?.reason, 'module_disabled');
-      expect(session.featureFlags['work_order_sync']?.reason, 'planned_for_b098b');
+      expect(
+        session.featureFlags['work_order_sync']?.reason,
+        'planned_for_b098b',
+      );
     });
 
     test('4.8 feature_flags block absent in expanded → empty featureFlags', () {
@@ -388,7 +467,8 @@ void main() {
       (body['data'] as Map<String, dynamic>).remove('feature_flags');
       // featureFlags key removed — but the body still has a feature_flags:null
       // Manually inject empty map to simulate absence
-      (body['data'] as Map<String, dynamic>)['feature_flags'] = <String, dynamic>{};
+      (body['data'] as Map<String, dynamic>)['feature_flags'] =
+          <String, dynamic>{};
       final session = bootstrapSessionFromJson(body);
       expect(session.featureFlags, isEmpty);
       expect(session.isFeatureEnabled('work_orders'), isFalse);
@@ -454,10 +534,13 @@ void main() {
       );
     });
 
-    test('5.8 legacy syncBatchSize derived from expandedPolicy.sync.maxBatchSize', () {
-      final session = bootstrapSessionFromJson(_expandedBody());
-      expect(session.mobilePolicy.syncBatchSize, 50);
-    });
+    test(
+      '5.8 legacy syncBatchSize derived from expandedPolicy.sync.maxBatchSize',
+      () {
+        final session = bootstrapSessionFromJson(_expandedBody());
+        expect(session.mobilePolicy.syncBatchSize, 50);
+      },
+    );
   });
 
   // ── Group 6 — Contract meta and sync cursors ──────────────────────────────────
@@ -489,12 +572,14 @@ void main() {
 
     test('6.5 syncCursors populated when backend provides cursor values', () {
       final session = bootstrapSessionFromJson(
-        _expandedBody(syncBlock: {
-          'workOrdersCursor': 'cursor-wo-abc',
-          'checklistsCursor': null,
-          'expensesCursor': 'cursor-exp-xyz',
-          'inventoryCursor': null,
-        }),
+        _expandedBody(
+          syncBlock: {
+            'workOrdersCursor': 'cursor-wo-abc',
+            'checklistsCursor': null,
+            'expensesCursor': 'cursor-exp-xyz',
+            'inventoryCursor': null,
+          },
+        ),
       );
       expect(session.syncCursors.workOrdersCursor, 'cursor-wo-abc');
       expect(session.syncCursors.expensesCursor, 'cursor-exp-xyz');
@@ -549,13 +634,15 @@ void main() {
 
     test('7.5 category with null defaultLimit → limit is null', () {
       final session = bootstrapSessionFromJson(
-        _expandedBody(expenseCategories: [
-          {
-            'id': 'misc',
-            'name': 'Outros',
-            'policy': {'receiptRequired': false, 'defaultLimit': null},
-          },
-        ]),
+        _expandedBody(
+          expenseCategories: [
+            {
+              'id': 'misc',
+              'name': 'Outros',
+              'policy': {'receiptRequired': false, 'defaultLimit': null},
+            },
+          ],
+        ),
       );
       expect(session.expenseCategories.first.limit, isNull);
       expect(session.expensePolicy.categoryLimits.containsKey('misc'), isFalse);
@@ -593,7 +680,10 @@ void main() {
         enabledModules: [],
         permissions: PermissionSet({}),
       );
-      expect(session.featureStatus('work_orders'), CapabilityStatus.unavailable);
+      expect(
+        session.featureStatus('work_orders'),
+        CapabilityStatus.unavailable,
+      );
     });
 
     test('8.3 SyncCursors.hasAnyCursor false when all null', () {
@@ -605,27 +695,36 @@ void main() {
       expect(cursors.hasAnyCursor, isTrue);
     });
 
-    test('8.5 BootstrapContractMeta.isExpanded true only for "expanded" status', () {
-      const expanded = BootstrapContractMeta(
-        version: '2026-06-14.b098a',
-        schemaVersion: 2,
-        status: 'expanded',
-      );
-      const minimal = BootstrapContractMeta(
-        version: '1.0',
-        schemaVersion: 1,
-        status: 'minimal',
-      );
-      expect(expanded.isExpanded, isTrue);
-      expect(minimal.isExpanded, isFalse);
-    });
+    test(
+      '8.5 BootstrapContractMeta.isExpanded true only for "expanded" status',
+      () {
+        const expanded = BootstrapContractMeta(
+          version: '2026-06-14.b098a',
+          schemaVersion: 2,
+          status: 'expanded',
+        );
+        const minimal = BootstrapContractMeta(
+          version: '1.0',
+          schemaVersion: 1,
+          status: 'minimal',
+        );
+        expect(expanded.isExpanded, isTrue);
+        expect(minimal.isExpanded, isFalse);
+      },
+    );
 
-    test('8.6 devBootstrapSession compiles with new optional fields at defaults', () {
-      // Verify the existing const devBootstrapSession still works unchanged.
-      expect(devBootstrapSession.featureFlags, isEmpty);
-      expect(devBootstrapSession.syncCursors, SyncCursors.empty);
-      expect(devBootstrapSession.contractMeta, isNull);
-      expect(devBootstrapSession.expandedPolicy, ExpandedMobilePolicy.defaultPolicy);
-    });
+    test(
+      '8.6 devBootstrapSession compiles with new optional fields at defaults',
+      () {
+        // Verify the existing const devBootstrapSession still works unchanged.
+        expect(devBootstrapSession.featureFlags, isEmpty);
+        expect(devBootstrapSession.syncCursors, SyncCursors.empty);
+        expect(devBootstrapSession.contractMeta, isNull);
+        expect(
+          devBootstrapSession.expandedPolicy,
+          ExpandedMobilePolicy.defaultPolicy,
+        );
+      },
+    );
   });
 }

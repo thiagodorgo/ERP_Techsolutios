@@ -82,5 +82,17 @@
     "flutter_mvp_vendavel": 52,
     "blocks_completed": 30,
     "description": "B-101 Backend Mobile Checklist Available Endpoint — handler real GET /mobile/checklists/available + DTO compativel ao Flutter B-100, tenant-scoped + RBAC, 5 testes de contrato"
+  },
+  {
+    "snapshot_date": "2026-06-15",
+    "version": "B-098F",
+    "flutter_tests": 497,
+    "npm_tests": 15,
+    "flutter_modules_ready": 14,
+    "flutter_modules_total": 16,
+    "flutter_mvp_demo": 79,
+    "flutter_mvp_vendavel": 54,
+    "blocks_completed": 31,
+    "description": "B-098F Mobile Evidence Flutter Sync — consumo do endpoint evidence-actions, request seguro, parser body.data e replay idempotente/conflito manual"
   }
 ]

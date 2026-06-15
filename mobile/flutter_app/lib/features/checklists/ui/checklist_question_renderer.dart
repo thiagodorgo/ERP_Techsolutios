@@ -49,8 +49,9 @@ class ChecklistQuestionRendererRegistry {
     required ValueChanged<ChecklistAnswer> onChanged,
     required ChecklistRunContext context,
   }) {
-    final builder = _builders.where((b) => b.supports(question.type)).firstOrNull
-        ?? _fallback;
+    final builder =
+        _builders.where((b) => b.supports(question.type)).firstOrNull ??
+        _fallback;
 
     return _QuestionShell(
       question: question,
@@ -84,10 +85,9 @@ class _QuestionShell extends StatelessWidget {
           RichText(
             text: TextSpan(
               text: question.label,
-              style: DefaultTextStyle.of(context).style.copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
+              style: DefaultTextStyle.of(
+                context,
+              ).style.copyWith(fontWeight: FontWeight.w600, fontSize: 14),
               children: [
                 if (question.required)
                   const TextSpan(
@@ -203,9 +203,8 @@ class _IntegerBuilder implements ChecklistQuestionWidgetBuilder {
       initialValue: answer?.numberValue?.toInt().toString(),
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      onChanged: (v) => onChanged(
-        _answer(question, context, number: double.tryParse(v)),
-      ),
+      onChanged: (v) =>
+          onChanged(_answer(question, context, number: double.tryParse(v))),
     );
   }
 }
@@ -313,10 +312,7 @@ class _SingleChoiceBuilder implements ChecklistQuestionWidgetBuilder {
               value: opt.value,
               title: Text(opt.label, style: const TextStyle(fontSize: 14)),
               subtitle: opt.description != null
-                  ? Text(
-                      opt.description!,
-                      style: const TextStyle(fontSize: 12),
-                    )
+                  ? Text(opt.description!, style: const TextStyle(fontSize: 12))
                   : null,
             ),
         ],
@@ -382,9 +378,7 @@ class _PhotoBuilder implements ChecklistQuestionWidgetBuilder {
     return OutlinedButton.icon(
       onPressed: null, // photo capture not yet wired — NÃO fazer upload real
       icon: const Icon(Icons.camera_alt_outlined),
-      label: Text(
-        count > 0 ? '$count foto(s) anexada(s)' : 'Tirar foto',
-      ),
+      label: Text(count > 0 ? '$count foto(s) anexada(s)' : 'Tirar foto'),
     );
   }
 }

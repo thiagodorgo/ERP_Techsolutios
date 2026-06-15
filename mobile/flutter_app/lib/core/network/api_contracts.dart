@@ -115,6 +115,32 @@ class InventorySyncActionTypes {
   static const exitCreate = 'inventory_exit.create';
 }
 
+class EvidenceApiEndpoints {
+  const EvidenceApiEndpoints._();
+
+  static const sync = '/api/v1/mobile/sync/evidence-actions';
+}
+
+class EvidenceSyncActionTypes {
+  const EvidenceSyncActionTypes._();
+
+  static const workOrderPhoto = 'evidence.work_order_photo';
+  static const workOrderSignature = 'evidence.work_order_signature';
+  static const workOrderObservation = 'evidence.work_order_observation';
+  static const fieldPhoto = 'evidence.field_photo';
+  static const fieldSignature = 'evidence.field_signature';
+  static const fieldObservation = 'evidence.field_observation';
+
+  static const supported = {
+    workOrderPhoto,
+    workOrderSignature,
+    workOrderObservation,
+    fieldPhoto,
+    fieldSignature,
+    fieldObservation,
+  };
+}
+
 class ExpenseBackendStatuses {
   const ExpenseBackendStatuses._();
 

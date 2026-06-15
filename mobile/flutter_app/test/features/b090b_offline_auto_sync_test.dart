@@ -1,5 +1,6 @@
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
+import 'package:erp_techsolutions_mobile/core/evidence/evidence_sync.dart';
 import 'package:erp_techsolutions_mobile/core/network/api_error.dart';
 import 'package:erp_techsolutions_mobile/core/network/connectivity_repository.dart';
 import 'package:erp_techsolutions_mobile/core/permissions/permission_resolver.dart';
@@ -44,6 +45,15 @@ class _NoopSyncReplayService extends SyncReplayService {
 class _NoopChecklistSyncReplayService extends ChecklistSyncReplayService {
   _NoopChecklistSyncReplayService()
     : super(queue: _NullQueue(), api: MockChecklistSyncBatchApi());
+
+  @override
+  Future<SyncReplayResult> replayTenant(String tenantId) async =>
+      const SyncReplayResult(synced: [], failed: [], conflicts: []);
+}
+
+class _NoopEvidenceSyncReplayService extends EvidenceSyncReplayService {
+  _NoopEvidenceSyncReplayService()
+    : super(queue: _NullQueue(), api: const PendingEvidenceSyncBatchApi());
 
   @override
   Future<SyncReplayResult> replayTenant(String tenantId) async =>
@@ -101,6 +111,9 @@ ProviderContainer _container({
       ),
       checklistSyncReplayServiceProvider.overrideWithValue(
         checklistService ?? _NoopChecklistSyncReplayService(),
+      ),
+      evidenceSyncReplayServiceProvider.overrideWithValue(
+        _NoopEvidenceSyncReplayService(),
       ),
     ],
   );
