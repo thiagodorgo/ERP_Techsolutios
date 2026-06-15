@@ -2,8 +2,7 @@
 
 ## Objetivo
 
-Criar e manter um dashboard de KPIs do projeto ERP Techsolutions em `Kpis/`
-na raiz do repositorio. O dashboard e um arquivo HTML estatico sem dependencias
+Criar e manter um dashboard de KPIs do projeto ERP Techsolutions em `mobile/flutter_app/Kpis/`. O dashboard e um arquivo HTML estatico sem dependencias
 externas (sem CDN, sem npm packages adicionais, sem Flutter packages adicionais).
 Os dados vem de arquivos JSON locais carregados via `fetch()`.
 
@@ -13,17 +12,17 @@ Os dados vem de arquivos JSON locais carregados via `fetch()`.
 
 ## Regra estabelecida
 
-**A partir da B-099K, toda entrega deve atualizar `Kpis/`:**
+**A partir da B-099K, toda entrega deve atualizar `mobile/flutter_app/Kpis/`:**
 
-1. Editar `Kpis/kpis-latest.json` com novos valores (reais via ferramentas, estimados via avaliacao).
-2. Adicionar snapshot ao final de `Kpis/kpis-history.json`.
-3. Adicionar entrada ao topo de `Kpis/kpis-history.md`.
+1. Editar `mobile/flutter_app/Kpis/kpis-latest.json` com novos valores (reais via ferramentas, estimados via avaliacao).
+2. Adicionar snapshot ao final de `mobile/flutter_app/Kpis/kpis-history.json`.
+3. Adicionar entrada ao topo de `mobile/flutter_app/Kpis/kpis-history.md`.
 4. Commitar: `docs(kpis): update dashboard for B-XXX`
 
 ## Estrutura entregue
 
 ```
-Kpis/
+mobile/flutter_app/Kpis/
   index.html          — 11 secoes: resumo, qualidade, mobile, modulos,
                         backend, velocidade, historico, lacunas,
                         proximos passos, constraints, como atualizar
@@ -38,7 +37,7 @@ Kpis/
 ## Visualizar
 
 ```bash
-npx serve Kpis/
+npx serve mobile/flutter_app/Kpis/
 # Abre em http://localhost:3000
 ```
 

@@ -7,15 +7,17 @@ Nenhuma dependencia externa. Sem CDN. Dados em JSON local.
 
 ```bash
 # Opcao 1 — npx serve (Node.js)
-npx serve Kpis/
+npx serve mobile/flutter_app/Kpis/
 # Abre em http://localhost:3000
 
 # Opcao 2 — Python
-python -m http.server 8080 --directory Kpis/
+python -m http.server 8080 --directory mobile/flutter_app/Kpis/
 # Abre em http://localhost:8080
 
-# Opcao 3 — VS Code
-# Instale "Live Server" e abra Kpis/index.html com "Open with Live Server"
+# Opcao 3 — bat (Windows) — duplo clique em iniciar-dashboard.bat dentro da pasta Kpis/
+
+# Opcao 4 — VS Code
+# Instale "Live Server" e abra mobile/flutter_app/Kpis/index.html com "Open with Live Server"
 ```
 
 > **Nao abrir o index.html direto no browser** — o fetch() de JSON e bloqueado
@@ -24,19 +26,20 @@ python -m http.server 8080 --directory Kpis/
 ## Estrutura
 
 ```
-Kpis/
-  index.html          — Dashboard principal (11 secoes)
-  styles.css          — Visual premium sem dependencias externas
-  app.js              — Logica de carregamento e renderizacao
-  kpis-latest.json    — Snapshot atual (atualizar a cada entrega)
-  kpis-history.json   — Array de snapshots historicos
-  kpis-history.md     — Historico legivel por humanos
-  README.md           — Este arquivo
+mobile/flutter_app/Kpis/
+  index.html           — Dashboard principal (11 secoes)
+  styles.css           — Visual premium sem dependencias externas
+  app.js               — Logica de carregamento e renderizacao
+  kpis-latest.json     — Snapshot atual (atualizar a cada entrega)
+  kpis-history.json    — Array de snapshots historicos
+  kpis-history.md      — Historico legivel por humanos
+  iniciar-dashboard.bat — Atalho Windows para npx serve
+  README.md            — Este arquivo
 ```
 
 ## Atualizar apos cada entrega
 
-A partir de **B-099K**, toda entrega deve atualizar Kpis/:
+A partir de **B-099K**, toda entrega deve atualizar mobile/flutter_app/Kpis/:
 
 ### 1. Atualizar `kpis-latest.json`
 
@@ -79,7 +82,7 @@ Adicionar ao topo do arquivo com data, versao, tabela de KPIs e resumo.
 ### 4. Commitar
 
 ```bash
-git add Kpis/
+git add mobile/flutter_app/Kpis/
 git commit -m "docs(kpis): update dashboard for B-XXX"
 ```
 

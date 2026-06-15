@@ -3,7 +3,7 @@
 **Referência de branch:** `feature/flutter-real-work-orders-pull`
 **Data:** 2026-06-14 (atualizado em B-099K)
 **Responsável:** ERP Techsolutions — Mobile Squad
-**KPI Dashboard:** `Kpis/` na raiz do repositório — visualizar com `npx serve Kpis/`
+**KPI Dashboard:** `mobile/flutter_app/Kpis/` — visualizar com `npx serve mobile/flutter_app/Kpis/`
 
 ---
 

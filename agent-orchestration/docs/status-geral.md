@@ -4,7 +4,7 @@
 
 ### Entregue
 
-- Criado `Kpis/` na raiz do repositorio com dashboard HTML/CSS/JS sem dependencias externas.
+- Criado `mobile/flutter_app/Kpis/` com dashboard HTML/CSS/JS sem dependencias externas.
 - `Kpis/kpis-latest.json` — snapshot atual (B-099) com metricas reais e estimadas.
 - `Kpis/kpis-history.json` — historico de snapshots B-094 → B-099.
 - `Kpis/kpis-history.md` — registro legivel do historico.
@@ -13,14 +13,14 @@
 
 ### Regra estabelecida
 
-**A partir da B-099K, toda entrega deve atualizar `Kpis/`:**
+**A partir da B-099K, toda entrega deve atualizar `mobile/flutter_app/Kpis/`:**
 editar `kpis-latest.json`, adicionar snapshot em `kpis-history.json` e entrada em `kpis-history.md`.
 Commitar com `docs(kpis): update dashboard for B-XXX`.
 
 ### Visualizacao
 
 ```bash
-npx serve Kpis/
+npx serve mobile/flutter_app/Kpis/
 # Abre em http://localhost:3000
 ```
 

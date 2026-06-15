@@ -4,7 +4,7 @@
 
 ### Natureza
 
-Criacao do dashboard de KPIs em `Kpis/` na raiz do repositorio.
+Criacao do dashboard de KPIs em `mobile/flutter_app/Kpis/`.
 Sem dependencias externas (sem CDN, sem npm/flutter packages adicionais).
 Dashboard HTML/CSS/JS que carrega JSON local via fetch().
 Estabelecida regra de atualizacao obrigatoria a partir desta entrega.
@@ -39,7 +39,7 @@ Estabelecida regra de atualizacao obrigatoria a partir desta entrega.
 
 ### Regra
 
-A partir da B-099K, toda entrega deve atualizar `Kpis/` e commitar com
+A partir da B-099K, toda entrega deve atualizar `mobile/flutter_app/Kpis/` e commitar com
 `docs(kpis): update dashboard for B-XXX`.
 
 ---
