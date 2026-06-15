@@ -1,5 +1,42 @@
 # Log de Execucao
 
+## 2026-06-15 - B-101 Backend Mobile Checklist Available Endpoint
+
+### Natureza
+
+Backend. Fecha a lacuna da B-100 no endpoint `GET /api/v1/mobile/checklists/available`.
+Investigacao revelou que o handler nao estava ausente — estava em `checklist.routes.ts`
+(nao em `mobile.routes.ts`). O problema real era de contrato: o DTO compartilhado expoe
+`name`/`version`/`status: published`, incompativel com o parser Flutter B-100 (`title`,
+`schema_version`, `status: active`). Solucao: DTO mobile dedicado + envelope `{data,items,meta}`.
+
+### Mudancas implementadas
+
+| Arquivo | Tipo | Descricao |
+|---------|------|-----------|
+| `src/modules/checklists/checklist.dto.ts` | feat | `toMobileChecklistTemplateDto` (title, schema_version, status active, items) |
+| `src/modules/checklists/checklist.controller.ts` | feat | `listAvailableMobileChecklists` usa DTO mobile + envelope `{data,items,meta}` |
+| `tests/mobile-checklists-available.test.ts` | test | 5 testes de contrato (rota, auth/tenant, isolamento, publicados, vazio) |
+
+### Validacao final
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| `npm test` (core-saas) | **15/15** |
+| Testes de contrato mobile (`node --test`) | **45/45** (+5 de B-101) |
+| `npm run lint` | **0 erros** |
+| `npm run build` | **0 erros** |
+| `flutter analyze` | **No issues found** |
+| `flutter test` (regressao) | **486/487** (1 instavel pre-existente, passa isolado) |
+
+### Limitacao conhecida
+
+`npm test`/CI roda apenas `core-saas.test.ts`; os testes de contrato mobile sao orfaos
+do runner (incluindo os pre-existentes). `package.json` esta fora do escopo da B-101;
+wiring de CI fica para B-102.
+
+---
+
 ## 2026-06-15 - B-100 Flutter Checklist Remote Templates
 
 ### Natureza

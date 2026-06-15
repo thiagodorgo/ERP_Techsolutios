@@ -9,26 +9,26 @@
 // ---------------------------------------------------------------------------
 const EMBEDDED_LATEST = {
   snapshot_date: "2026-06-15",
-  version: "B-100",
-  branch: "feature/flutter-checklist-remote-templates",
+  version: "B-101",
+  branch: "feature/backend-mobile-checklists-available",
   description:
-    "B-100 Flutter Checklist Remote Templates — pull de modelos de checklist do backend com parser tolerante, cache local e banners de UX",
+    "B-101 Backend Mobile Checklist Available Endpoint — fecha a lacuna da B-100 entregando o handler real de GET /api/v1/mobile/checklists/available com DTO compativel ao parser Flutter",
   release: {
-    block: "B-100",
-    title: "Flutter Checklist Remote Templates",
-    branch: "feature/flutter-checklist-remote-templates",
+    block: "B-101",
+    title: "Backend Mobile Checklist Available Endpoint",
+    branch: "feature/backend-mobile-checklists-available",
     status: "local_complete_pending_push",
     status_label: "Concluido localmente — aguardando push",
     summary:
-      "ChecklistRepository conectado ao GET /api/v1/mobile/checklists/available com parser tolerante (camelCase/snake_case + envelopes), cache Drift, fallback remoto -> cache -> seeds e banners de UX. 44 testes novos.",
+      "Endpoint GET /api/v1/mobile/checklists/available passa a retornar um DTO mobile compativel com o parser Flutter B-100 (title, schema_version, status active) e envelope { data, items, meta }. Tenant-scoped + RBAC (checklist_runs:read/create). 5 testes de contrato novos. Descoberta: o handler ja existia em checklist.routes.ts (nao estava ausente, apenas fora de mobile.routes.ts).",
     commits: [
-      { hash: "57b5604", message: "feat(mobile): pull remote checklist templates into local cache" },
-      { hash: "f122c68", message: "test(mobile): add remote checklist template coverage" },
-      { hash: "af4d0cb", message: "docs: add B-100 checklist templates command and KPI update" },
+      { hash: "pending", message: "feat(mobile-api): add available checklist templates endpoint" },
+      { hash: "pending", message: "test(mobile-api): cover checklist templates contract" },
+      { hash: "pending", message: "docs: add B-101 backend checklist endpoint status" },
     ],
     limitation:
-      "GET /api/v1/mobile/checklists/available listado como implementado no bootstrap, mas handler ausente no backend (mobile.routes.ts). Cliente degrada para cache/seeds.",
-    fallback: "remoto -> cache Drift -> seeds locais (sem sync write de checklist)",
+      "npm test (CI) executa apenas core-saas.test.ts; os testes de contrato mobile (incl. B-101) rodam via node --test direto. Wiring de CI fica para bloco de infra (package.json fora do escopo da B-101).",
+    fallback: "Flutter B-100 mantem fallback remoto -> cache Drift -> seeds; agora com backend real respondendo.",
   },
   domains: [
     {
@@ -47,13 +47,13 @@ const EMBEDDED_LATEST = {
       id: "checklists",
       name: "Checklists",
       status: "parcial",
-      detail: "Pull de templates ativo (B-100); rota backend ausente com fallback.",
+      detail: "Pull de templates ativo (B-100) + backend real (B-101); sync write pendente.",
       points: [
-        "GET /api/v1/mobile/checklists/available com parser tolerante",
-        "Envelopes aceitos: checklists / items / data",
-        "Cache Drift + fallback remoto -> cache -> seeds",
-        "Banners: loading, erro+retry, ultima atualizacao, cache offline, vazio",
-        "Pendente: rota backend real + sync write de respostas (B-101)",
+        "GET /api/v1/mobile/checklists/available com handler backend real (B-101)",
+        "DTO mobile compativel: title, schema_version, status active, items, meta",
+        "Tenant-scoped + RBAC (checklist_runs:read/create); somente templates publicados",
+        "Cache Drift + fallback remoto -> cache -> seeds no Flutter",
+        "Pendente: sync write de respostas de checklist (B-102+)",
       ],
     },
     {
@@ -86,8 +86,8 @@ const EMBEDDED_LATEST = {
       label: "Mobile Flutter MVP",
       metrics: [
         { id: "flutter_modules_ready", label: "Modulos Flutter Prontos", value: 13, total: 15, unit: "modulos", type: "real", status: "yellow", detail: "Pendentes: OS sync bidirecional, Approvals, Field Map" },
-        { id: "flutter_mvp_demo", label: "MVP Demo Readiness", value: 76, unit: "%", type: "estimated", status: "yellow", detail: "Estimado. Sobe quando rota backend de checklists e sync write forem entregues" },
-        { id: "flutter_mvp_vendavel", label: "MVP Vendavel (Producao)", value: 51, unit: "%", type: "estimated", status: "yellow", detail: "Estimado. Requer upload real de evidencias, GPS, aprovacao real" },
+        { id: "flutter_mvp_demo", label: "MVP Demo Readiness", value: 78, unit: "%", type: "estimated", status: "yellow", detail: "Estimado. Subiu com backend real de checklists (B-101). Sobe mais com sync write de respostas" },
+        { id: "flutter_mvp_vendavel", label: "MVP Vendavel (Producao)", value: 52, unit: "%", type: "estimated", status: "yellow", detail: "Estimado. Requer sync write de checklist, upload real de evidencias, GPS, aprovacao real" },
         { id: "flutter_test_files", label: "Arquivos de Teste Flutter", value: 20, unit: "arquivos", type: "real", status: "green", detail: "20 arquivos de teste no diretorio test/" },
         { id: "flutter_os_pull", label: "OS Pull Remoto", value: 1, unit: "conectado", type: "real", status: "green", detail: "GET /api/v1/work-orders com upsert Drift e fallback cache" },
         { id: "flutter_checklist_pull", label: "Checklist Templates Pull", value: 1, unit: "conectado", type: "real", status: "green", detail: "GET /api/v1/mobile/checklists/available com parser tolerante, cache Drift e fallback seeds (B-100)" },
@@ -101,14 +101,16 @@ const EMBEDDED_LATEST = {
         { id: "backend_auth", label: "Auth JWT Real", value: 1, unit: "implementado", type: "real", status: "green", detail: "Login local tenant-scoped + JWT + RBAC persistido" },
         { id: "backend_persistence", label: "Persistencia Prisma/PostgreSQL", value: 1, unit: "implementado", type: "real", status: "green", detail: "PrismaCoreSaasStore via CORE_SAAS_PERSISTENCE=prisma" },
         { id: "backend_checklist_api", label: "Checklist API", value: 1, unit: "implementado", type: "real", status: "green", detail: "/api/v1/tenant/checklists + /api/v1/mobile/checklists/*" },
+        { id: "backend_mobile_checklists_available", label: "Mobile Checklists Available", value: 1, unit: "implementado", type: "real", status: "green", detail: "GET /api/v1/mobile/checklists/available com DTO mobile compativel ao Flutter B-100, tenant-scoped + RBAC (B-101)" },
+        { id: "backend_mobile_contract_tests", label: "Testes de Contrato Mobile", value: 45, total: 45, unit: "testes", type: "real", status: "green", detail: "45/45 via node --test (core-saas 15 + mobile-backend-contracts 15 + checklist 10 + B-101 5). npm test/CI roda apenas core-saas (15)" },
       ],
     },
     {
       id: "delivery",
       label: "Velocidade de Entrega",
       metrics: [
-        { id: "blocks_completed", label: "Blocos Entregues (total)", value: 29, unit: "blocos", type: "real", status: "green", detail: "B-076 ate B-100, incluindo sub-blocos (A/B/K)" },
-        { id: "blocks_last_sprint", label: "Blocos em 2026-06-15", value: 1, unit: "blocos", type: "real", status: "green", detail: "B-100 Flutter Checklist Remote Templates" },
+        { id: "blocks_completed", label: "Blocos Entregues (total)", value: 30, unit: "blocos", type: "real", status: "green", detail: "B-076 ate B-101, incluindo sub-blocos (A/B/K)" },
+        { id: "blocks_last_sprint", label: "Blocos em 2026-06-15", value: 2, unit: "blocos", type: "real", status: "green", detail: "B-100 Flutter Checklist Remote Templates + B-101 Backend Checklist Available Endpoint" },
         { id: "prs_merged", label: "PRs Merged (estimado)", value: 15, unit: "PRs", type: "estimated", status: "green", detail: "Estimado com base no historico de branches e merges" },
       ],
     },
@@ -120,7 +122,8 @@ const EMBEDDED_LATEST = {
         { id: "upload_evidencias", label: "Upload Real de Evidencias", value: 0, unit: "implementado", type: "real", status: "red", detail: "Pendente — S3 presigned URL + image_picker" },
         { id: "gps_mapa", label: "GPS / Mapa Operacional", value: 0, unit: "implementado", type: "real", status: "red", detail: "Placeholder — aguarda definicao de requisito" },
         { id: "aprovacao_real", label: "Aprovacao Real", value: 0, unit: "implementado", type: "real", status: "red", detail: "Placeholder — fluxo de aprovacao de OS" },
-        { id: "checklist_remoto", label: "Checklist Remoto Mobile", value: 1, unit: "implementado", type: "real", status: "yellow", detail: "Pull de templates implementado (B-100). Rota backend ausente — fallback cache/seeds. Falta sync write de respostas (B-101+)" },
+        { id: "checklist_remoto", label: "Checklist Remoto Mobile", value: 1, unit: "implementado", type: "real", status: "yellow", detail: "Pull de templates (B-100) + backend real (B-101) entregues. Falta sync write de respostas de checklist (B-102+)" },
+        { id: "checklist_answers_sync", label: "Checklist Answers Sync", value: 0, unit: "implementado", type: "real", status: "red", detail: "Pendente — push/replay de respostas de checklist do mobile ao backend" },
       ],
     },
   ],
@@ -135,6 +138,7 @@ const EMBEDDED_LATEST = {
     { name: "OS — Sync Bidirecional", status: "pendente", detail: "B-102 — alteracoes locais para backend" },
     { name: "Checklist Configuravel", status: "pronto", detail: "Modelos ricos + 10 renderers" },
     { name: "Checklist — Pull Remoto", status: "pronto", detail: "GET /mobile/checklists/available; parser tolerante; cache Drift; banners UI (B-100)" },
+    { name: "Checklist — Backend Available", status: "pronto", detail: "Handler backend real com DTO mobile compativel, tenant-scoped + RBAC (B-101)" },
     { name: "Sync Screen", status: "pronto", detail: "Grupos por dominio, KPIs, banners" },
     { name: "Diagnostics", status: "pronto", detail: "Dev-only (kIsDevMode)" },
     { name: "Inventory", status: "pronto", detail: "Local-first (SQLite)" },
@@ -143,9 +147,9 @@ const EMBEDDED_LATEST = {
     { name: "Field Map / GPS", status: "placeholder", detail: "Aguarda requisito tecnico" },
   ],
   next_steps: [
-    { block: "B-101", title: "Implementar rota backend GET /mobile/checklists/available + sync write de respostas de checklist" },
-    { block: "B-102", title: "Push de alteracoes locais de OS para o backend (sync bidirecional)" },
-    { block: "B-103", title: "Upload real de fotos (image_picker + presigned URL S3)" },
+    { block: "B-102", title: "Sync write de respostas de checklist (mobile -> backend) + wiring de CI para os testes de contrato mobile" },
+    { block: "B-103", title: "Push de alteracoes locais de OS para o backend (sync bidirecional)" },
+    { block: "B-104", title: "Upload real de fotos (image_picker + presigned URL S3)" },
   ],
 };
 
@@ -156,6 +160,7 @@ const EMBEDDED_HISTORY = [
   { snapshot_date: "2026-06-14", version: "B-098B", flutter_tests: 413, npm_tests: 15, flutter_modules_ready: 12, flutter_modules_total: 15, flutter_mvp_demo: 74, flutter_mvp_vendavel: 47, blocks_completed: 27, description: "B-098B Flutter Consume Expanded Bootstrap Contract — FeatureFlags, SyncCursors, CapabilityStatus" },
   { snapshot_date: "2026-06-14", version: "B-099", flutter_tests: 443, npm_tests: 15, flutter_modules_ready: 12, flutter_modules_total: 15, flutter_mvp_demo: 75, flutter_mvp_vendavel: 50, blocks_completed: 28, description: "B-099 Flutter Real Work Orders Pull — GET /api/v1/work-orders, upsert Drift, banners UI" },
   { snapshot_date: "2026-06-15", version: "B-100", flutter_tests: 487, npm_tests: 15, flutter_modules_ready: 13, flutter_modules_total: 15, flutter_mvp_demo: 76, flutter_mvp_vendavel: 51, blocks_completed: 29, description: "B-100 Flutter Checklist Remote Templates — pull de modelos, parser tolerante, cache Drift, banners UX" },
+  { snapshot_date: "2026-06-15", version: "B-101", flutter_tests: 487, npm_tests: 15, flutter_modules_ready: 13, flutter_modules_total: 15, flutter_mvp_demo: 78, flutter_mvp_vendavel: 52, blocks_completed: 30, description: "B-101 Backend Mobile Checklist Available Endpoint — handler real + DTO compativel ao Flutter, 5 testes de contrato" },
 ];
 
 // ---------------------------------------------------------------------------

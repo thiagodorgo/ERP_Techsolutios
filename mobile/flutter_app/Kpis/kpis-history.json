@@ -70,5 +70,17 @@
     "flutter_mvp_vendavel": 51,
     "blocks_completed": 29,
     "description": "B-100 Flutter Checklist Remote Templates — pull de modelos, parser tolerante camelCase/snake_case, cache Drift, banners UX"
+  },
+  {
+    "snapshot_date": "2026-06-15",
+    "version": "B-101",
+    "flutter_tests": 487,
+    "npm_tests": 15,
+    "flutter_modules_ready": 13,
+    "flutter_modules_total": 15,
+    "flutter_mvp_demo": 78,
+    "flutter_mvp_vendavel": 52,
+    "blocks_completed": 30,
+    "description": "B-101 Backend Mobile Checklist Available Endpoint — handler real GET /mobile/checklists/available + DTO compativel ao Flutter B-100, tenant-scoped + RBAC, 5 testes de contrato"
   }
 ]

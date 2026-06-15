@@ -1,5 +1,45 @@
 # Status Geral
 
+## Atualizacao 2026-06-15 — B-101 Backend Mobile Checklist Available Endpoint
+
+### QA final
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| `npm test` (core-saas) | **15/15** |
+| Testes de contrato mobile (`node --test`) | **45/45** (+5 de B-101) |
+| `npm run lint` | **0 erros** |
+| `npm run build` | **0 erros** |
+| `flutter analyze` | **No issues found** |
+| `flutter test` (regressao) | **486/487** (1 instavel pre-existente) |
+
+### Entregue
+
+- `GET /api/v1/mobile/checklists/available` agora responde, do backend, um DTO mobile
+  compativel com o parser Flutter B-100: `title` (de name), `schema_version` (de version),
+  `status` normalizado `published -> active`, e envelope `{ data, items, meta }`.
+- Tenant-scoped + RBAC (`checklist_runs:read`/`create`); somente templates publicados.
+- DTO mobile dedicado (`toMobileChecklistTemplateDto`) — nao afeta o contrato web/tenant.
+- 5 testes de contrato novos (`tests/mobile-checklists-available.test.ts`).
+
+### Descoberta
+
+O handler nao estava ausente (como a B-100 supos): estava em `checklist.routes.ts`, nao
+em `mobile.routes.ts`. A lacuna real era de contrato (campos/status), agora corrigida.
+
+### Limitacao conhecida (CI)
+
+`npm test`/CI roda apenas `core-saas.test.ts`. Os testes de contrato mobile (incl. os
+pre-existentes) sao orfaos do runner; rodam via `node --test`. Wiring de CI fica para
+B-102 (`package.json` fora do escopo da B-101).
+
+### Pendente
+
+- Sync write de respostas de checklist (mobile -> backend).
+- Upload real de evidencias; OS sync bidirecional; GPS; aprovacao real.
+
+---
+
 ## Atualizacao 2026-06-15 — B-100 Flutter Checklist Remote Templates
 
 ### QA final
