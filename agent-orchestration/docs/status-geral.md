@@ -2866,3 +2866,41 @@ B-098D implementou contratos backend parciais para inventario mobile sem alterar
 - permissoes granulares de reserva/consumo alem de `inventory.manage`
 - evidencia generica/OS
 - implementacao Flutter consumindo os endpoints B-098D
+
+## Atualizacao 2026-06-15 - KPI-DASHBOARD-001 Painel permanente de KPIs
+
+### Status
+
+KPI-DASHBOARD-001 criou a pasta permanente `Kpis/` para consolidar KPIs, analises, lacunas, riscos, previsoes e evolucao do ERP Techsolutions a cada bloco futuro.
+
+### Artefatos criados
+
+- `Kpis/index.html`
+- `Kpis/styles.css`
+- `Kpis/app.js`
+- `Kpis/kpis-history.md`
+
+### Conteudo consolidado
+
+- KPIs consolidados apos B-098D
+- timeline B-098, B-098A, B-098B, B-098C e B-098D
+- mapa de contratos mobile/backend implementados, parciais e planejados
+- lacunas restantes
+- riscos tecnicos e operacionais
+- previsao de MVP vendavel: 40-80h
+- estimativa para padrao Figma premium: 80-160h
+- proximos blocos recomendados
+- historico inicial de execucoes
+
+### Regra operacional permanente
+
+- todo bloco futuro deve atualizar `Kpis/index.html`, `Kpis/app.js` e `Kpis/kpis-history.md`
+- `Kpis/` passa a ser artefato permanente de acompanhamento
+- `mobile/**` continua fora do escopo enquanto Claude estiver trabalhando nessa area
+
+### Escopo preservado
+
+- `mobile/**` nao foi alterado
+- nenhum comando Flutter foi executado
+- sem Figma, secrets, `.env`, migrations ou infra
+- B-098E nao foi iniciado
