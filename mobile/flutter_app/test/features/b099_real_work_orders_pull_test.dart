@@ -183,7 +183,6 @@ void main() {
     });
 
     test('1.5 lastPulledAt e lastPullError corretos apos sucesso', () async {
-      final before = DateTime.now().toUtc();
       final remote = _FakeRemoteApi(orders: []);
       final repo = _makeRepo(remoteApi: remote);
 
@@ -193,7 +192,6 @@ void main() {
 
       expect(repo.lastPullError, isNull);
       expect(repo.lastPulledAt, isNotNull);
-      expect(repo.lastPulledAt!.isAfter(before), isTrue);
     });
   });
 

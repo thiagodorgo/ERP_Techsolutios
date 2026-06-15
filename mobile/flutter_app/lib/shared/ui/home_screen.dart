@@ -63,17 +63,10 @@ class _HomeContent extends ConsumerStatefulWidget {
 
 class _HomeContentState extends ConsumerState<_HomeContent> {
   WorkOrderRepository? _woRepo;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final repo = ref.read(workOrderRepositoryProvider);
-    if (_woRepo != repo) {
-      _woRepo?.removeListener(_onRepoChanged);
-      _woRepo = repo;
-      _woRepo!.addListener(_onRepoChanged);
-    }
-  }
+  // Cached so FutureBuilder sees the same future across setState calls from
+  // the pull listener — prevents spurious waiting→done rebuild cycles.
+  // Reset whenever workOrderRepositoryProvider returns a new instance.
+  Future<List<void>>? _loadFuture;
 
   @override
   void dispose() {
@@ -90,6 +83,18 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
     final networkStatus = ref.watch(networkStatusProvider);
     final expenseRepository = ref.watch(expenseRepositoryProvider);
     final woRepository = ref.watch(workOrderRepositoryProvider);
+
+    // Detect repo instance change (Riverpod recreates the provider when
+    // bootstrapSessionProvider settles). Update listener and reset the cached
+    // future so the new repo's data is loaded.
+    if (_woRepo != woRepository) {
+      _woRepo?.removeListener(_onRepoChanged);
+      _woRepo = woRepository;
+      _woRepo!.addListener(_onRepoChanged);
+      _loadFuture = null;
+    }
+
+    _loadFuture ??= Future.wait([expenseRepository.load(), woRepository.load()]);
 
     final session = widget.session;
     final modules = const ModuleResolver(
@@ -112,7 +117,7 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
         ),
       ],
       body: FutureBuilder<List<void>>(
-        future: Future.wait([expenseRepository.load(), woRepository.load()]),
+        future: _loadFuture,
         builder: (context, snapshot) {
           final today = DateTime.now();
           final reports = expenseRepository.reports;
