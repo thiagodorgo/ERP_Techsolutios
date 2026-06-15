@@ -1,8 +1,9 @@
 # Flutter Mobile MVP — Gap Analysis
 
-**Referência de branch:** `feature/flutter-mobile-mvp-stabilization`
-**Data:** 2026-06-14
+**Referência de branch:** `feature/flutter-real-work-orders-pull`
+**Data:** 2026-06-14 (atualizado em B-099K)
 **Responsável:** ERP Techsolutions — Mobile Squad
+**KPI Dashboard:** `mobile/flutter_app/Kpis/` — visualizar com `npx serve mobile/flutter_app/Kpis/`
 
 ---
 
@@ -20,7 +21,7 @@ operação de campo com dados reais.
 | Auth / Login | Funcional (real) | **pronto** — real via `--dart-define=ERP_AUTH_MODE=remote` |
 | Bootstrap / Session | Funcional (real) | **pronto** — `GET /api/v1/mobile/bootstrap` chamado; dual-format B-098/B-098A |
 | Feature Flags | Funcional | **pronto** — `FeatureFlag`, `CapabilityStatus`; helpers `isFeatureEnabled`/`featureStatus` |
-| Sync Cursors | Parseados | **parcial** — `SyncCursors` parseados; consumo aguarda B-099 |
+| Sync Cursors | Parseados | **parcial** — `SyncCursors` parseados; consumo incremental aguarda B-100+ |
 | Seleção de tenant | Funcional | **pronto** — `TenantSelectorScreen` pós-login |
 | Profile | Funcional | **existente** |
 | Connectivity | Funcional | **existente** |
@@ -28,7 +29,8 @@ operação de campo com dados reais.
 | Auto Sync Coordinator | Funcional (local) | **existente** — dispara replay, mas stubs retornam erro controlado |
 | RDV / Despesas | Funcional (local-first) | **existente** — criação, itens, totais, envio local; submit stub seguro |
 | Recibos / Evidências RDV | Metadado apenas | **parcial** — upload real ausente |
-| Ordens de Serviço (OS) | Funcional (SQLite) | **existente** — cria, altera status, timeline, persiste; sem pull do servidor |
+| Ordens de Serviço (OS) — lista | Funcional (pull real) | **B-099** — `GET /api/v1/work-orders`; upsert Drift; fallback cache; banners UI |
+| Ordens de Serviço (OS) — sync bidirecional | Parcial | **pendente** — alterações locais não enviadas ao backend (B-100+) |
 | Work Order Evidence | Schema criado | **parcial** — salva metadado local; upload real ausente |
 | Checklists configuráveis | Funcional (local-first) | **existente** — run, respostas, persistência Drift |
 | Checklist domain model (rico) | Modelado | **proposto** — `ChecklistTemplate` versionado pronto; sem endpoint real |
@@ -49,7 +51,8 @@ O app não pode ser usado em campo real pelos seguintes motivos objetivos:
 
 | Bloqueador | Impacto | Categoria |
 |------------|---------|-----------|
-| Work Orders nunca recebem dados reais do servidor | Técnico de campo não vê suas OS reais | Crítico |
+| Work Orders — pull real implementado (B-099) | ✅ Resolvido — `GET /api/v1/work-orders` conectado | — |
+| Sync bidirecional de OS não implementado | Alterações locais não chegam ao backend | Alto |
 | Checklists são locais — nenhum template vem do backend | Templates não refletem configurações do tenant | Alto |
 | Sync de OS, checklists e inventário não chega ao servidor | Trabalho realizado em campo é perdido | Crítico |
 | Upload de fotos/evidências ausente | Evidências de campo não são persistidas remotamente | Alto |

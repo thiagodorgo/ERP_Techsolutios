@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ERP Techsolutions — KPI Dashboard</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header" id="header"></div>
+
+  <!-- Loading / Error states (shown before JS renders) -->
+  <div id="loading" style="text-align:center;padding:60px 20px;color:#8b8fa8">
+    Carregando KPIs...
+  </div>
+  <div id="error-msg" style="display:none"></div>
+
+  <!-- Dashboard — rendered by app.js -->
+  <div id="dashboard">
+
+    <!-- Alert banner -->
+    <div class="alert">
+      <strong>Nota:</strong> Metricas marcadas com <em>estimado</em> sao baseadas em avaliacao qualitativa.
+      Metricas marcadas com <em>real</em> vem diretamente de ferramentas (flutter test, npm test, etc.).
+      Abra via servidor local para fetch funcionar: <code>npx serve Kpis/</code>
+    </div>
+
+    <!-- 1. Resumo geral -->
+    <div class="section">
+      <div class="section-title">Resumo Geral</div>
+      <div id="summary-cards"></div>
+    </div>
+
+    <!-- 2. Qualidade de Codigo -->
+    <div class="section">
+      <div class="section-title">Qualidade de Codigo</div>
+      <div id="quality-cards"></div>
+    </div>
+
+    <!-- 3. Mobile Flutter MVP -->
+    <div class="section">
+      <div class="section-title">Mobile Flutter MVP</div>
+      <div id="mobile-cards"></div>
+    </div>
+
+    <!-- 4. Inventario de Modulos Flutter -->
+    <div class="section">
+      <div class="section-title">Inventario de Modulos Flutter</div>
+      <div id="module-table-wrap"
+           style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+      </div>
+    </div>
+
+    <!-- 5. Backend Node.js -->
+    <div class="section">
+      <div class="section-title">Backend Node.js / API</div>
+      <div id="backend-cards"></div>
+    </div>
+
+    <!-- 6. Velocidade de Entrega -->
+    <div class="section">
+      <div class="section-title">Velocidade de Entrega</div>
+      <div id="delivery-cards"></div>
+    </div>
+
+    <!-- 7. Historico de Evolucao -->
+    <div class="section">
+      <div class="section-title">Historico de Evolucao</div>
+      <div id="history-chart"></div>
+    </div>
+
+    <!-- 8. Lacunas para Producao -->
+    <div class="section">
+      <div class="section-title">Lacunas para Producao</div>
+      <div id="gaps-grid"></div>
+    </div>
+
+    <!-- 9. Proximos Passos -->
+    <div class="section">
+      <div class="section-title">Proximos Passos</div>
+      <div id="next-steps"></div>
+    </div>
+
+    <!-- 10. Resumo de Seguranca / Constraints -->
+    <div class="section">
+      <div class="section-title">Constraints de Entrega</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;font-size:12px">
+          <div style="color:var(--green)">✓ Backend nao alterado nesta PR</div>
+          <div style="color:var(--green)">✓ Frontend React nao alterado</div>
+          <div style="color:var(--green)">✓ Contratos de API preservados</div>
+          <div style="color:var(--green)">✓ Zero migrations Prisma</div>
+          <div style="color:var(--green)">✓ Zero secrets em commits</div>
+          <div style="color:var(--green)">✓ Zero CDN no dashboard</div>
+          <div style="color:var(--green)">✓ Zero dependencias Flutter adicionadas</div>
+          <div style="color:var(--green)">✓ Zero force push</div>
+          <div style="color:var(--green)">✓ commit cdd132f preservado em main</div>
+          <div style="color:var(--yellow)">⚠ Push/PR pendente autorizacao explicita</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 11. Como Atualizar -->
+    <div class="section">
+      <div class="section-title">Como Atualizar o Dashboard</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;font-size:12px;color:var(--muted);line-height:1.8">
+        <strong style="color:var(--text)">A partir da B-099K, toda entrega deve atualizar Kpis/:</strong><br>
+        1. Editar <code>Kpis/kpis-latest.json</code> com os novos valores reais/estimados.<br>
+        2. Adicionar snapshot ao inicio de <code>Kpis/kpis-history.json</code>.<br>
+        3. Adicionar entrada ao topo de <code>Kpis/kpis-history.md</code>.<br>
+        4. Commitar: <code>docs(kpis): update dashboard for B-XXX</code><br>
+        <br>
+        <strong style="color:var(--text)">Para visualizar:</strong>
+        <code>npx serve Kpis/</code> — abre em <code>http://localhost:3000</code>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer" id="footer"></div>
+
+  </div><!-- #dashboard -->
+</div><!-- .page -->
+
+<script src="./app.js"></script>
+</body>
+</html>

@@ -59,11 +59,28 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
   WorkOrderPriority? _priority;
   String _query = '';
   final _searchController = TextEditingController();
+  WorkOrderRepository? _repo;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final repo = ref.read(workOrderRepositoryProvider);
+    if (_repo != repo) {
+      _repo?.removeListener(_onRepoChanged);
+      _repo = repo;
+      _repo!.addListener(_onRepoChanged);
+    }
+  }
 
   @override
   void dispose() {
+    _repo?.removeListener(_onRepoChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onRepoChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -110,117 +127,147 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
         future: repo.load(),
         builder: (context, _) {
           final filtered = _applyFilters(repo.workOrders);
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (v) => setState(() => _query = v),
-                  decoration: InputDecoration(
-                    hintText: 'Buscar OS, cliente ou endereco...',
-                    prefixIcon: const Icon(Icons.search_outlined),
-                    suffixIcon: _query.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _query = '');
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+          return RefreshIndicator(
+            onRefresh: () => repo.refresh(),
+            child: Column(
+              children: [
+                // Pull state banners
+                if (repo.isPulling)
+                  const LinearProgressIndicator(),
+                if (repo.lastPullError != null && !repo.isPulling)
+                  _PullErrorBanner(
+                    message: repo.lastPullError!,
+                    onRetry: () => repo.refresh(),
+                  ),
+                if (repo.lastPulledAt != null && !repo.isPulling)
+                  _LastUpdatedBanner(at: repo.lastPulledAt!),
+                if (repo.hasRemote &&
+                    repo.lastPulledAt == null &&
+                    !repo.isPulling &&
+                    repo.lastPullError == null)
+                  const _LocalCacheBanner(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (v) => setState(() => _query = v),
+                    decoration: InputDecoration(
+                      hintText: 'Buscar OS, cliente ou endereco...',
+                      prefixIcon: const Icon(Icons.search_outlined),
+                      suffixIcon: _query.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _query = '');
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                      isDense: true,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                    isDense: true,
                   ),
                 ),
-              ),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                child: Row(
-                  children: [
-                    for (final g in _WoGroup.values)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: ChoiceChip(
-                          label: Text(g.label),
-                          selected: _group == g,
-                          onSelected: (_) => setState(() => _group = g),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 2,
-                ),
-                child: Row(
-                  children: [
-                    const Text('Prioridade:'),
-                    const SizedBox(width: 8),
-                    DropdownButton<WorkOrderPriority?>(
-                      value: _priority,
-                      hint: const Text('Todas'),
-                      isDense: true,
-                      items: [
-                        const DropdownMenuItem(
-                          value: null,
-                          child: Text('Todas'),
-                        ),
-                        for (final p in WorkOrderPriority.values)
-                          DropdownMenuItem(value: p, child: Text(p.label)),
-                      ],
-                      onChanged: (p) => setState(() => _priority = p),
-                    ),
-                    if (_priority != null) ...[
-                      const SizedBox(width: 4),
-                      TextButton(
-                        onPressed: () => setState(() => _priority = null),
-                        child: const Text('Limpar'),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              Expanded(
-                child: filtered.isEmpty
-                    ? ListView(
-                        children: [
-                          EmptyState(
-                            icon: Icons.build_outlined,
-                            title: 'Nenhuma OS encontrada',
-                            message:
-                                _query.isNotEmpty ||
-                                    _group != _WoGroup.all ||
-                                    _priority != null
-                                ? 'Nenhuma OS corresponde aos filtros selecionados.'
-                                : 'Nao ha ordens de servico disponiveis para o seu tenant.',
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    children: [
+                      for (final g in _WoGroup.values)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: ChoiceChip(
+                            label: Text(g.label),
+                            selected: _group == g,
+                            onSelected: (_) => setState(() => _group = g),
                           ),
+                        ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 2,
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('Prioridade:'),
+                      const SizedBox(width: 8),
+                      DropdownButton<WorkOrderPriority?>(
+                        value: _priority,
+                        hint: const Text('Todas'),
+                        isDense: true,
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('Todas'),
+                          ),
+                          for (final p in WorkOrderPriority.values)
+                            DropdownMenuItem(value: p, child: Text(p.label)),
                         ],
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                        itemCount: filtered.length,
-                        itemBuilder: (context, i) {
-                          final wo = filtered[i];
-                          return _WorkOrderCard(
-                            key: ValueKey(wo.localId),
-                            workOrder: wo,
-                            onTap: () =>
-                                context.go('/work-orders/${wo.localId}'),
-                          );
-                        },
+                        onChanged: (p) => setState(() => _priority = p),
                       ),
-              ),
-            ],
+                      if (_priority != null) ...[
+                        const SizedBox(width: 4),
+                        TextButton(
+                          onPressed: () => setState(() => _priority = null),
+                          child: const Text('Limpar'),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? ListView(
+                          children: [
+                            if (repo.lastPullError != null &&
+                                repo.workOrders.isEmpty)
+                              EmptyState(
+                                icon: Icons.cloud_off_outlined,
+                                title: 'Nao foi possivel carregar ordens',
+                                message: repo.lastPullError!,
+                                action: TextButton.icon(
+                                  onPressed: () => repo.refresh(),
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text('Tentar novamente'),
+                                ),
+                              )
+                            else
+                              EmptyState(
+                                icon: Icons.build_outlined,
+                                title: 'Nenhuma OS encontrada',
+                                message: _query.isNotEmpty ||
+                                        _group != _WoGroup.all ||
+                                        _priority != null
+                                    ? 'Nenhuma OS corresponde aos filtros selecionados.'
+                                    : 'Voce ainda nao possui ordens atribuidas.',
+                              ),
+                          ],
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                          itemCount: filtered.length,
+                          itemBuilder: (context, i) {
+                            final wo = filtered[i];
+                            return _WorkOrderCard(
+                              key: ValueKey(wo.localId),
+                              workOrder: wo,
+                              onTap: () =>
+                                  context.go('/work-orders/${wo.localId}'),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -296,4 +343,93 @@ class _WorkOrderCard extends StatelessWidget {
       '${dt.month.toString().padLeft(2, '0')} '
       '${dt.hour.toString().padLeft(2, '0')}:'
       '${dt.minute.toString().padLeft(2, '0')}';
+}
+
+// ---------------------------------------------------------------------------
+// Pull state banners
+// ---------------------------------------------------------------------------
+
+class _PullErrorBanner extends StatelessWidget {
+  const _PullErrorBanner({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialBanner(
+      backgroundColor:
+          Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.8),
+      leading: Icon(
+        Icons.cloud_off_outlined,
+        color: Theme.of(context).colorScheme.error,
+      ),
+      content: Text(
+        message,
+        style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+      ),
+      actions: [
+        TextButton(
+          onPressed: onRetry,
+          child: const Text('Tentar novamente'),
+        ),
+      ],
+    );
+  }
+}
+
+class _LastUpdatedBanner extends StatelessWidget {
+  const _LastUpdatedBanner({required this.at});
+
+  final DateTime at;
+
+  @override
+  Widget build(BuildContext context) {
+    final h = at.toLocal().hour.toString().padLeft(2, '0');
+    final m = at.toLocal().minute.toString().padLeft(2, '0');
+    return Container(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            Icons.sync_outlined,
+            size: 14,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Atualizado as $h:$m',
+            style: Theme.of(context).textTheme.labelSmall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LocalCacheBanner extends StatelessWidget {
+  const _LocalCacheBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.5),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            Icons.storage_outlined,
+            size: 14,
+            color: Theme.of(context).colorScheme.secondary,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Mostrando dados salvos neste aparelho.',
+            style: Theme.of(context).textTheme.labelSmall,
+          ),
+        ],
+      ),
+    );
+  }
 }

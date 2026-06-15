@@ -1,0 +1,62 @@
+[
+  {
+    "snapshot_date": "2026-06-13",
+    "version": "B-094",
+    "flutter_tests": 280,
+    "npm_tests": 15,
+    "flutter_modules_ready": 10,
+    "flutter_modules_total": 15,
+    "flutter_mvp_demo": 70,
+    "flutter_mvp_vendavel": 40,
+    "blocks_completed": 22,
+    "description": "B-094 QA Geral + Organizacao Flutter + Estrategia de PR"
+  },
+  {
+    "snapshot_date": "2026-06-14",
+    "version": "B-097",
+    "flutter_tests": 315,
+    "npm_tests": 15,
+    "flutter_modules_ready": 11,
+    "flutter_modules_total": 15,
+    "flutter_mvp_demo": 72,
+    "flutter_mvp_vendavel": 43,
+    "blocks_completed": 24,
+    "description": "B-097 Flutter Mobile MVP Stabilization — persistencia SQLite OS, checklist renderers"
+  },
+  {
+    "snapshot_date": "2026-06-14",
+    "version": "B-098",
+    "flutter_tests": 352,
+    "npm_tests": 15,
+    "flutter_modules_ready": 11,
+    "flutter_modules_total": 15,
+    "flutter_mvp_demo": 73,
+    "flutter_mvp_vendavel": 45,
+    "blocks_completed": 25,
+    "description": "B-098 Flutter Real Auth and Bootstrap — DioAuthRepository, BootstrapNotifier, multi-tenant"
+  },
+  {
+    "snapshot_date": "2026-06-14",
+    "version": "B-098B",
+    "flutter_tests": 413,
+    "npm_tests": 15,
+    "flutter_modules_ready": 12,
+    "flutter_modules_total": 15,
+    "flutter_mvp_demo": 74,
+    "flutter_mvp_vendavel": 47,
+    "blocks_completed": 27,
+    "description": "B-098B Flutter Consume Expanded Bootstrap Contract — FeatureFlags, SyncCursors, CapabilityStatus"
+  },
+  {
+    "snapshot_date": "2026-06-14",
+    "version": "B-099",
+    "flutter_tests": 443,
+    "npm_tests": 15,
+    "flutter_modules_ready": 12,
+    "flutter_modules_total": 15,
+    "flutter_mvp_demo": 75,
+    "flutter_mvp_vendavel": 50,
+    "blocks_completed": 28,
+    "description": "B-099 Flutter Real Work Orders Pull — GET /api/v1/work-orders, upsert Drift, banners UI"
+  }
+]

@@ -1,5 +1,70 @@
 # Status Geral
 
+## Atualizacao 2026-06-14 — B-099K Project KPIs Dashboard
+
+### Entregue
+
+- Criado `mobile/flutter_app/Kpis/` com dashboard HTML/CSS/JS sem dependencias externas.
+- `Kpis/kpis-latest.json` — snapshot atual (B-099) com metricas reais e estimadas.
+- `Kpis/kpis-history.json` — historico de snapshots B-094 → B-099.
+- `Kpis/kpis-history.md` — registro legivel do historico.
+- `Kpis/index.html` + `styles.css` + `app.js` — dashboard com 11 secoes.
+- `Kpis/README.md` — instrucoes de uso e atualizacao.
+
+### Regra estabelecida
+
+**A partir da B-099K, toda entrega deve atualizar `mobile/flutter_app/Kpis/`:**
+editar `kpis-latest.json`, adicionar snapshot em `kpis-history.json` e entrada em `kpis-history.md`.
+Commitar com `docs(kpis): update dashboard for B-XXX`.
+
+### Visualizacao
+
+```bash
+npx serve mobile/flutter_app/Kpis/
+# Abre em http://localhost:3000
+```
+
+---
+
+## Atualizacao 2026-06-14 — B-099 Flutter Real Work Orders Pull
+
+### QA final
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| `flutter test` | **443/443 passando** (+35 novos de B-099) |
+| `npm test` | **15/15 passando** |
+| `npm run lint` | **0 erros** |
+| `npm run build` | **0 erros** |
+
+### Flutter — inventario funcional atualizado
+
+| Modulo | Status | Observacao |
+|--------|--------|------------|
+| Auth/Login | Pronto | Real via `--dart-define=ERP_AUTH_MODE=remote` |
+| Bootstrap/Session | Pronto | Dual-format: aceita contrato minimal B-098 e expandido B-098A |
+| Feature Flags | Pronto | FeatureFlag + CapabilityStatus; helpers isFeatureEnabled/featureStatus |
+| Sync Cursors | Pronto (parsed) | SyncCursors parseados; prontos para uso incremental |
+| Multi-tenant | Pronto | TenantSelectorScreen + BootstrapNotifier.switchTenant() |
+| OS — lista local | Pronto | DriftWorkOrderLocalStore ativo |
+| OS — pull remoto | **Pronto** | GET /api/v1/work-orders; upsert Drift; fallback cache; banners UI |
+| OS — sync bidirecional | Pendente | Alteracoes locais nao enviadas ao backend (B-100+) |
+| Checklist configuravel | Pronto (modelos ricos) | — |
+| Checklist renderers | Pronto (registry) | 10 tipos + fallback |
+| Sync screen | Melhorado | Grupos por dominio, KPIs |
+| Diagnostics | Dev-only | Protegida por kIsDevMode |
+| Approvals | Placeholder | — |
+| Inventory | Pronto (local-first) | — |
+| Field map | Placeholder | — |
+
+### Proximos passos sugeridos
+
+- B-100: Push de alteracoes locais de OS para o backend (sync bidirecional)
+- B-101: Conectar backend real de checklists
+- B-102: Upload real de fotos (image_picker + presigned URL)
+
+---
+
 ## Atualizacao 2026-06-14 — B-098B Flutter Consume Expanded Bootstrap Contract
 
 ### QA final

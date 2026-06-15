@@ -1,0 +1,114 @@
+# Historico de KPIs — ERP Techsolutions
+
+Registro cronologico dos snapshots de qualidade e progresso do projeto.
+Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
+
+---
+
+## B-099 — 2026-06-14
+
+**Flutter Real Work Orders Pull**
+Conecta `WorkOrderRepository` ao `GET /api/v1/work-orders`. Upsert no Drift,
+preservacao de pending locais, banners de pull state em Home e List.
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 443 / 443 |
+| Backend Tests | 15 / 15 |
+| flutter analyze | 0 issues |
+| npm lint | 0 erros |
+| npm build | 0 erros |
+| Modulos Flutter Prontos | 12 / 15 |
+| MVP Demo Readiness (est.) | 75% |
+| MVP Vendavel (est.) | 50% |
+| Blocos Entregues | 28 |
+
+**Novidades:**
+- OS pull remoto ativo em modo `ERP_AUTH_MODE=remote`
+- Parser tolerante camelCase/snake_case no `DioWorkOrderRemoteApi`
+- `WorkOrderPullOutcome` enum (success, cached, error, pulling)
+- Banners: `LinearProgressIndicator`, `_WoPullErrorBanner`, `_WoLocalCacheBanner`
+- `_HomeContentState` convertido para `ConsumerStatefulWidget` com listener estavel
+
+**Proximos passos:** B-100 (sync bidirecional), B-101 (checklist remoto), B-102 (upload evidencias)
+
+---
+
+## B-098B — 2026-06-14
+
+**Flutter Consume Expanded Bootstrap Contract**
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 413 / 413 |
+| Backend Tests | 15 / 15 |
+| Modulos Flutter Prontos | 12 / 15 |
+| MVP Demo Readiness (est.) | 74% |
+| MVP Vendavel (est.) | 47% |
+| Blocos Entregues | 27 |
+
+**Novidades:** FeatureFlag, CapabilityStatus, SyncCursors, ExpandedMobilePolicy,
+dual-format bootstrap (B-098 minimal + B-098A expandido).
+
+---
+
+## B-098 — 2026-06-14
+
+**Flutter Real Auth and Bootstrap**
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 352 / 352 |
+| Backend Tests | 15 / 15 |
+| Modulos Flutter Prontos | 11 / 15 |
+| MVP Demo Readiness (est.) | 73% |
+| MVP Vendavel (est.) | 45% |
+| Blocos Entregues | 25 |
+
+**Novidades:** DioAuthRepository, BootstrapNotifier, TenantSelectorScreen,
+multi-tenant switch, _BootstrapErrorView com retry.
+
+---
+
+## B-097 — 2026-06-14
+
+**Flutter Mobile MVP Stabilization**
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 315 / 315 |
+| Backend Tests | 15 / 15 |
+| Modulos Flutter Prontos | 11 / 15 |
+| MVP Demo Readiness (est.) | 72% |
+| MVP Vendavel (est.) | 43% |
+| Blocos Entregues | 24 |
+
+**Novidades:** DriftWorkOrderLocalStore, checklist renderers (10 tipos),
+WorkOrder evidence schema v4, SyncScreen melhorado.
+
+---
+
+## B-094 — 2026-06-13
+
+**QA Geral + Organizacao Flutter + Estrategia de PR**
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 280 / 280 |
+| Backend Tests | 15 / 15 |
+| flutter analyze | 0 issues |
+| Modulos Flutter Prontos | 10 / 15 |
+| MVP Demo Readiness (est.) | 70% |
+| MVP Vendavel (est.) | 40% |
+| Blocos Entregues | 22 |
+
+---
+
+## Como atualizar este historico
+
+A partir da B-099K, toda entrega deve:
+
+1. Adicionar entrada ao topo deste arquivo com data, versao e KPIs reais.
+2. Adicionar snapshot em `kpis-history.json`.
+3. Atualizar `kpis-latest.json` com os novos valores.
+4. Commitar com mensagem `docs(kpis): update dashboard for B-XXX`.
