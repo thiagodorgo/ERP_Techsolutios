@@ -1,5 +1,44 @@
 # Status Geral
 
+## Atualizacao 2026-06-14 — B-099 Flutter Real Work Orders Pull
+
+### QA final
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| `flutter test` | **443/443 passando** (+35 novos de B-099) |
+| `npm test` | **15/15 passando** |
+| `npm run lint` | **0 erros** |
+| `npm run build` | **0 erros** |
+
+### Flutter — inventario funcional atualizado
+
+| Modulo | Status | Observacao |
+|--------|--------|------------|
+| Auth/Login | Pronto | Real via `--dart-define=ERP_AUTH_MODE=remote` |
+| Bootstrap/Session | Pronto | Dual-format: aceita contrato minimal B-098 e expandido B-098A |
+| Feature Flags | Pronto | FeatureFlag + CapabilityStatus; helpers isFeatureEnabled/featureStatus |
+| Sync Cursors | Pronto (parsed) | SyncCursors parseados; prontos para uso incremental |
+| Multi-tenant | Pronto | TenantSelectorScreen + BootstrapNotifier.switchTenant() |
+| OS — lista local | Pronto | DriftWorkOrderLocalStore ativo |
+| OS — pull remoto | **Pronto** | GET /api/v1/work-orders; upsert Drift; fallback cache; banners UI |
+| OS — sync bidirecional | Pendente | Alteracoes locais nao enviadas ao backend (B-100+) |
+| Checklist configuravel | Pronto (modelos ricos) | — |
+| Checklist renderers | Pronto (registry) | 10 tipos + fallback |
+| Sync screen | Melhorado | Grupos por dominio, KPIs |
+| Diagnostics | Dev-only | Protegida por kIsDevMode |
+| Approvals | Placeholder | — |
+| Inventory | Pronto (local-first) | — |
+| Field map | Placeholder | — |
+
+### Proximos passos sugeridos
+
+- B-100: Push de alteracoes locais de OS para o backend (sync bidirecional)
+- B-101: Conectar backend real de checklists
+- B-102: Upload real de fotos (image_picker + presigned URL)
+
+---
+
 ## Atualizacao 2026-06-14 — B-098B Flutter Consume Expanded Bootstrap Contract
 
 ### QA final

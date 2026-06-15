@@ -1,5 +1,42 @@
 # Log de Execucao
 
+## 2026-06-14 - B-099 Flutter Real Work Orders Pull
+
+### Natureza
+
+Conexao do `WorkOrderRepository` ao endpoint real `GET /api/v1/work-orders`.
+Pull em background com upsert no Drift, preservacao de pending locais,
+fallback para cache em caso de erro. Banners de pull state em Home e List.
+Nenhuma mudanca em backend ou frontend web.
+
+### Mudancas implementadas
+
+| Arquivo | Tipo | Descricao |
+|---------|------|-----------|
+| `features/work_orders/data/work_order_remote_api.dart` | fix+feat | Parser tolerante camelCase/snake_case; envelope items desempacotado |
+| `features/work_orders/data/work_order_repository.dart` | feat | WorkOrderPullOutcome, pull background, upsert, fallback, getters |
+| `features/work_orders/ui/work_order_list_screen.dart` | feat | Banners + RefreshIndicator |
+| `shared/ui/home_screen.dart` | feat | Banners de pull state na home |
+| `test/features/b099_real_work_orders_pull_test.dart` | test | 35 novos testes (novo arquivo) |
+
+### Decisoes tecnicas
+
+- Guard de seed voltou para `stored.isEmpty` (estava `tenantOrders.isEmpty` — regressao corrigida).
+- `refresh()` retorna `pulling` em local mode como no-op seguro.
+- `_FakeSyncQueue` nos testes sem dependencia de Riverpod.
+- `workOrderRemoteApiProvider` retorna `WorkOrderRemoteApi?` (nullable) — null em local mode.
+
+### Validacao
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| `flutter test` | **443/443 passando** (+35 novos de B-099) |
+| `npm test` | **15/15 passando** |
+| `npm run lint` | **0 erros** |
+| `npm run build` | **0 erros** |
+
+---
+
 ## 2026-06-14 - B-098B Flutter Consume Expanded Bootstrap Contract
 
 ### Natureza
