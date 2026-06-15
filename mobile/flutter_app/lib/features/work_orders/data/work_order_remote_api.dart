@@ -140,9 +140,14 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
     String? note,
   }) async {
     try {
+      final normalizedNote = note?.trim();
       final resp = await _dio.post<Map<String, dynamic>>(
         WorkOrderApiEndpoints.workOrderAssign(workOrderId),
-        data: {'user_id': userId, 'note': ?note},
+        data: {
+          'user_id': userId,
+          if (normalizedNote != null && normalizedNote.isNotEmpty)
+            'note': normalizedNote,
+        },
       );
       return _workOrderFromJson(resp.data!);
     } on DioException catch (e) {

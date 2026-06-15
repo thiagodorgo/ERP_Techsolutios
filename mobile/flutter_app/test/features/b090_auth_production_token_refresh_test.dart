@@ -321,6 +321,67 @@ void main() {
     );
 
     test(
+      't07b — login accepts enveloped body.data and omits empty tenantId',
+      () async {
+        final adapter = _StaticAdapter(
+          (_) => ResponseBody.fromString(
+            jsonEncode({'data': _sessionJson()}),
+            200,
+            headers: {
+              Headers.contentTypeHeader: ['application/json; charset=utf-8'],
+            },
+          ),
+        );
+        final dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+        dio.transformer = SyncTransformer();
+        dio.httpClientAdapter = adapter;
+        final repo = DioAuthRepository(
+          client: dio,
+          storage: InMemoryAuthTokenStorage(),
+        );
+
+        final session = await repo.login(
+          email: 'u@t.test',
+          password: 'pw',
+          tenantId: '  ',
+        );
+
+        final sentBody = adapter.captured.single.data as Map<String, dynamic>;
+        expect(sentBody.containsKey('tenantId'), isFalse);
+        expect(session.tokens.accessToken, 'acc-tok-test');
+        expect(session.user.tenantId, 'tenant-test');
+      },
+    );
+
+    test('t07c — login sends tenantId when provided', () async {
+      final adapter = _StaticAdapter(
+        (_) => ResponseBody.fromString(
+          jsonEncode(_sessionJson()),
+          200,
+          headers: {
+            Headers.contentTypeHeader: ['application/json; charset=utf-8'],
+          },
+        ),
+      );
+      final dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.transformer = SyncTransformer();
+      dio.httpClientAdapter = adapter;
+      final repo = DioAuthRepository(
+        client: dio,
+        storage: InMemoryAuthTokenStorage(),
+      );
+
+      await repo.login(
+        email: 'u@t.test',
+        password: 'pw',
+        tenantId: ' tenant-prod ',
+      );
+
+      final sentBody = adapter.captured.single.data as Map<String, dynamic>;
+      expect(sentBody['tenantId'], 'tenant-prod');
+    });
+
+    test(
       't08 — login saves token to storage and never persists password',
       () async {
         final storage = InMemoryAuthTokenStorage();

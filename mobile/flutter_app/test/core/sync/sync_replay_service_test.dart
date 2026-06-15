@@ -1,7 +1,29 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_models.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_replay_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+class _StaticAdapter implements HttpClientAdapter {
+  _StaticAdapter(this.handler);
+
+  final ResponseBody Function(RequestOptions) handler;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    return handler(options);
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
 
 SyncAction _action({
   required String id,
@@ -268,5 +290,37 @@ void main() {
         expect(sentPayload.containsKey('token'), isFalse);
       },
     );
+
+    test('9. Dio batch API reads results from body.data.results', () async {
+      final dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.transformer = SyncTransformer();
+      dio.httpClientAdapter = _StaticAdapter(
+        (_) => ResponseBody.fromString(
+          jsonEncode({
+            'data': {
+              'results': [
+                {
+                  'clientActionId': 'a1',
+                  'status': 'processed',
+                  'resultRef': 'server-a1',
+                },
+              ],
+            },
+          }),
+          200,
+          headers: {
+            Headers.contentTypeHeader: ['application/json; charset=utf-8'],
+          },
+        ),
+      );
+
+      final results = await DioExpenseSyncBatchApi(
+        dio,
+      ).sendBatch([_action(id: 'a1')]);
+
+      expect(results, hasLength(1));
+      expect(results.single.clientActionId, 'a1');
+      expect(results.single.resultRef, 'server-a1');
+    });
   });
 }

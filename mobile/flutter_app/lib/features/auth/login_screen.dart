@@ -18,11 +18,13 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _tenantController = TextEditingController();
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _tenantController.dispose();
     super.dispose();
   }
 
@@ -78,9 +80,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             TextField(
               controller: _passwordController,
               obscureText: true,
-              textInputAction: TextInputAction.done,
+              textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: 'Senha',
+                border: OutlineInputBorder(),
+              ),
+              enabled: !isLoading,
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _tenantController,
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(
+                labelText: 'Codigo do tenant',
                 border: OutlineInputBorder(),
               ),
               enabled: !isLoading,
@@ -137,17 +149,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _doLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+    final tenantId = _tenantController.text.trim();
     if (email.isEmpty || password.isEmpty) return;
     await ref
         .read(authStateProvider.notifier)
-        .login(email: email, password: password);
+        .login(
+          email: email,
+          password: password,
+          tenantId: tenantId.isEmpty ? null : tenantId,
+        );
   }
 
   /// Only available when kIsDevMode is true (--dart-define=ERP_ENV=dev).
   Future<void> _doDevLogin() async {
     await ref
         .read(authStateProvider.notifier)
-        .login(email: 'tecnico@tenant.demo', password: '123456');
+        .login(
+          email: 'tecnico@tenant.demo',
+          password: '123456',
+          tenantId: 'tenant-demo',
+        );
   }
 
   void _showSupportDialog() {
