@@ -5,6 +5,40 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-101 — 2026-06-15
+
+**Backend Mobile Checklist Available Endpoint**
+Fecha a lacuna documentada na B-100. O endpoint `GET /api/v1/mobile/checklists/available`
+(que ja existia em `checklist.routes.ts`, nao em `mobile.routes.ts`) passa a retornar um
+DTO mobile compativel com o parser Flutter B-100: `title` (de name), `schema_version`
+(de version), `status` normalizado para `active` e envelope `{ data, items, meta }`.
+Tenant-scoped + RBAC (`checklist_runs:read`/`create`); somente templates publicados.
+
+| KPI | Valor |
+|-----|-------|
+| npm test (core-saas) | 15 / 15 |
+| Testes de contrato mobile (node --test) | 45 / 45 (+5 de B-101) |
+| npm run lint | 0 erros |
+| npm run build | 0 erros |
+| Flutter analyze | sem issues |
+| Flutter tests (regressao) | 487 (486 + 1 instavel pre-existente) |
+| Blocos Entregues | 30 |
+
+**Novidades:**
+- `toMobileChecklistTemplateDto` (DTO mobile separado, nao afeta o contrato web/tenant)
+- Envelope `{ data, items, meta }` (data + items para tolerancia do parser Flutter)
+- `published` -> `active` para o filtro `activeTemplates` do app
+- 5 testes de contrato (`tests/mobile-checklists-available.test.ts`)
+
+**Descoberta:** o handler nao estava ausente; estava registrado em `checklist.routes.ts`.
+A "limitacao" da B-100 era um diagnostico impreciso (procurou apenas em `mobile.routes.ts`).
+
+**Pendente:** sync write de respostas de checklist; wiring de CI (npm test roda so core-saas).
+
+**Proximos passos:** B-102 (sync write checklist + CI wiring), B-103 (OS sync bidirecional), B-104 (upload evidencias)
+
+---
+
 ## B-100K — Limpeza do dashboard de KPIs Mobile
 
 ### Resumo
