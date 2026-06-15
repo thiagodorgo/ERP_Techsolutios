@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ERP Techsolutions - KPI Dashboard</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="dashboard-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Painel permanente de acompanhamento</p>
+          <h1 id="project-title">ERP Techsolutions</h1>
+          <p id="project-summary" class="hero-summary"></p>
+        </div>
+        <dl class="hero-meta" aria-label="Metadados do painel">
+          <div><dt>Versao</dt><dd id="dashboard-version">-</dd></div>
+          <div><dt>Atualizado</dt><dd id="last-updated">-</dd></div>
+          <div><dt>Fonte</dt><dd id="source-branch">-</dd></div>
+        </dl>
+      </header>
+
+      <section class="section-grid section-grid--tight" aria-label="KPIs consolidados">
+        <div class="section-heading">
+          <p class="eyebrow">Status executivo</p>
+          <h2>KPIs consolidados</h2>
+        </div>
+        <div id="kpi-cards" class="kpi-grid"></div>
+      </section>
+
+      <section class="section-grid" aria-label="Progresso por contrato">
+        <div class="panel panel--wide">
+          <div class="section-heading">
+            <p class="eyebrow">B-098 ate B-098D</p>
+            <h2>Linha do tempo de contratos mobile/backend</h2>
+          </div>
+          <div id="timeline" class="timeline"></div>
+        </div>
+        <aside class="panel">
+          <div class="section-heading">
+            <p class="eyebrow">Cobertura</p>
+            <h2>Progresso por contrato</h2>
+          </div>
+          <div id="contract-progress" class="progress-list"></div>
+        </aside>
+      </section>
+
+      <section class="section-grid" aria-label="Mapa de contratos e dominios">
+        <div class="panel panel--wide">
+          <div class="section-heading">
+            <p class="eyebrow">Mapa operacional</p>
+            <h2>Contratos mobile/backend</h2>
+          </div>
+          <div id="contract-map" class="contract-map"></div>
+        </div>
+        <aside class="panel">
+          <div class="section-heading">
+            <p class="eyebrow">Dominios</p>
+            <h2>Status por dominio</h2>
+          </div>
+          <div id="domain-status" class="stacked-list"></div>
+        </aside>
+      </section>
+
+      <section class="section-grid" aria-label="Validacoes e previsoes">
+        <div class="panel">
+          <div class="section-heading">
+            <p class="eyebrow">Qualidade</p>
+            <h2>Validacoes conhecidas</h2>
+          </div>
+          <div id="validation-list" class="validation-list"></div>
+        </div>
+        <div class="panel">
+          <div class="section-heading">
+            <p class="eyebrow">Planejamento</p>
+            <h2>Estimativas</h2>
+          </div>
+          <div id="estimate-list" class="estimate-list"></div>
+        </div>
+      </section>
+
+      <section class="section-grid" aria-label="Riscos e proximos blocos">
+        <div class="panel">
+          <div class="section-heading">
+            <p class="eyebrow">Controle</p>
+            <h2>Riscos e lacunas</h2>
+          </div>
+          <div id="risk-list" class="risk-list"></div>
+        </div>
+        <div class="panel">
+          <div class="section-heading">
+            <p class="eyebrow">Sequencia sugerida</p>
+            <h2>Proximos blocos</h2>
+          </div>
+          <div id="next-blocks" class="next-list"></div>
+        </div>
+      </section>
+
+      <section class="panel history-panel" aria-label="Historico resumido">
+        <div class="section-heading">
+          <p class="eyebrow">Historico</p>
+          <h2>Execucoes registradas</h2>
+        </div>
+        <div id="history-summary" class="history-list"></div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

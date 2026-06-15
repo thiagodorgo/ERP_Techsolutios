@@ -2835,3 +2835,33 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - relacionamento real entre inventario, armazem e Ordem de Servico
 - permissoes granulares `inventory:reserve`/`inventory:consume` ainda nao existem no catalogo real; B-098D usa `inventory.manage`
 - implementacao Flutter consumindo os endpoints B-098D permanece fora do escopo
+
+## 2026-06-15 - KPI-DASHBOARD-001 Painel permanente de KPIs
+
+### Implementado
+
+- worktree isolado: `ERP_Techsolutios-codex-kpis-dashboard-001`
+- branch: `feature/project-kpis-dashboard`
+- base: `origin/main` atualizada apos merge do PR #85
+- merge commit B-098D confirmado: `cd1f839e4435fbb2c2e94aa33549b7e47ea9fdbc`
+- criada pasta permanente `Kpis/`
+- criado dashboard HTML/CSS/JS puro:
+  - `Kpis/index.html`
+  - `Kpis/styles.css`
+  - `Kpis/app.js`
+  - `Kpis/kpis-history.md`
+- painel registra KPIs consolidados, timeline B-098..B-098D, mapa de contratos, lacunas, riscos, previsoes e proximos blocos
+- historico Markdown inicial criado com regra para atualizacao em blocos futuros
+
+### Regra operacional permanente
+
+- todo bloco futuro deve atualizar `Kpis/index.html`, `Kpis/app.js` e `Kpis/kpis-history.md`
+- `Kpis/` passa a ser artefato permanente de acompanhamento do ERP Techsolutions
+- `mobile/**` continua fora do escopo enquanto houver trabalho paralelo do Claude nessa area
+
+### Escopo preservado
+
+- `mobile/**` nao foi alterado
+- nenhum comando Flutter foi executado
+- sem Figma, secrets, `.env`, migrations ou infra
+- B-098E e novos contratos funcionais nao foram iniciados

@@ -1,0 +1,357 @@
+:root {
+  color-scheme: light;
+  --bg: #f5f7fa;
+  --panel: #ffffff;
+  --panel-strong: #f9fbfd;
+  --ink: #1d2733;
+  --muted: #647386;
+  --line: #d9e1ea;
+  --brand: #146c94;
+  --success: #2f7d32;
+  --partial: #b66a00;
+  --planned: #637083;
+  --risk: #b3261e;
+  --shadow: 0 18px 50px rgba(27, 39, 51, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: linear-gradient(180deg, #edf4f7 0, rgba(237, 244, 247, 0) 340px), var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.dashboard-shell {
+  width: min(1440px, 100%);
+  margin: 0 auto;
+  padding: 28px;
+}
+
+.hero,
+.panel,
+.kpi-card {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  gap: 28px;
+  align-items: end;
+  margin-bottom: 22px;
+  padding: 30px;
+  border-radius: 8px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--brand);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1, h2, h3, p { margin-top: 0; }
+
+h1 {
+  margin-bottom: 12px;
+  font-size: clamp(2.1rem, 5vw, 4.6rem);
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+h2 {
+  margin-bottom: 0;
+  font-size: 1.05rem;
+  letter-spacing: 0;
+}
+
+h3 {
+  margin-bottom: 6px;
+  font-size: 0.96rem;
+  letter-spacing: 0;
+}
+
+.hero-summary {
+  max-width: 820px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.hero-meta {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.hero-meta div {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-strong);
+}
+
+dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+dd {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.section-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.75fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.section-grid--tight { display: block; }
+.section-heading { margin-bottom: 16px; }
+
+.panel {
+  min-width: 0;
+  padding: 22px;
+  border-radius: 8px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.kpi-card {
+  min-height: 132px;
+  padding: 18px;
+  border-radius: 8px;
+}
+
+.kpi-card__label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.kpi-card__value {
+  margin: 10px 0 8px;
+  font-size: 1.82rem;
+  font-weight: 850;
+}
+
+.kpi-card__note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.timeline,
+.contract-map {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.timeline {
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+}
+
+.timeline-item,
+.contract-card,
+.status-row,
+.risk-item,
+.next-item,
+.history-item,
+.validation-item,
+.estimate-card,
+.progress-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-strong);
+}
+
+.timeline-item {
+  position: relative;
+  min-height: 168px;
+  padding: 16px;
+}
+
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 16px;
+  width: 34px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--planned);
+}
+
+.timeline-item h3 { margin-top: 16px; }
+
+.timeline-item p,
+.contract-card p,
+.status-row p,
+.risk-item p,
+.next-item p,
+.history-item p,
+.estimate-card p {
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.timeline-item[data-status="concluido"]::before,
+.status-badge[data-status="concluido"],
+.progress-bar[data-status="concluido"] span { background: var(--success); }
+
+.timeline-item[data-status="parcial"]::before,
+.status-badge[data-status="parcial"],
+.progress-bar[data-status="parcial"] span { background: var(--partial); }
+
+.timeline-item[data-status="planejado"]::before,
+.status-badge[data-status="planejado"],
+.progress-bar[data-status="planejado"] span { background: var(--planned); }
+
+.timeline-item[data-status="risco"]::before,
+.status-badge[data-status="risco"],
+.progress-bar[data-status="risco"] span { background: var(--risk); }
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.progress-list,
+.stacked-list,
+.validation-list,
+.estimate-list,
+.risk-list,
+.next-list,
+.history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.progress-item,
+.status-row,
+.risk-item,
+.next-item,
+.history-item,
+.validation-item,
+.estimate-card,
+.contract-card {
+  padding: 14px;
+}
+
+.progress-top,
+.contract-card header,
+.status-row header,
+.risk-item header,
+.next-item header,
+.history-item header,
+.validation-item {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.progress-top {
+  margin-bottom: 10px;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.progress-bar {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e4ebf2;
+}
+
+.progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.contract-card { min-height: 170px; }
+
+.contract-card ul {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.validation-item strong { font-size: 0.88rem; }
+.validation-item span {
+  color: var(--success);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.estimate-card strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 1.32rem;
+}
+
+.risk-item[data-severity="alto"] { border-left: 5px solid var(--risk); }
+.risk-item[data-severity="medio"] { border-left: 5px solid var(--partial); }
+.risk-item[data-severity="baixo"] { border-left: 5px solid var(--brand); }
+.history-panel { margin-bottom: 0; }
+
+@media (max-width: 1180px) {
+  .kpi-grid,
+  .contract-map,
+  .timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 860px) {
+  .dashboard-shell { padding: 16px; }
+  .hero,
+  .section-grid { grid-template-columns: 1fr; }
+  .hero { padding: 22px; }
+}
+
+@media (max-width: 560px) {
+  .kpi-grid,
+  .contract-map,
+  .timeline { grid-template-columns: 1fr; }
+  .hero-meta div,
+  .validation-item {
+    grid-template-columns: 1fr;
+    text-align: left;
+  }
+  dd { text-align: left; }
+}
