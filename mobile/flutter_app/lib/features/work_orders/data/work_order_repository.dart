@@ -2,15 +2,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/auth/auth_notifier.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/local_db/drift_work_order_local_store.dart';
 import '../../../core/local_db/database_provider.dart';
+import '../../../core/network/api_contracts.dart';
+import '../../../core/network/api_error.dart';
 import '../../../core/sync/sync_action_factory.dart';
 import '../../../core/sync/sync_models.dart';
 import '../../../core/sync/sync_providers.dart';
 import '../../../core/sync/sync_queue_repository.dart';
-import '../../../core/network/api_contracts.dart';
 import '../domain/work_order_models.dart';
 import 'work_order_local_store.dart';
 import 'work_order_remote_api.dart';
@@ -25,6 +28,8 @@ class WorkOrderMutationResult {
   final SyncAction action;
 }
 
+enum WorkOrderPullOutcome { success, cached, error, pulling }
+
 class WorkOrderRepository extends ChangeNotifier {
   WorkOrderRepository({
     required BootstrapSession session,
@@ -32,20 +37,31 @@ class WorkOrderRepository extends ChangeNotifier {
     required SyncActionFactory actionFactory,
     required WorkOrderLocalStore localStore,
     List<WorkOrder> seedWorkOrders = const [],
+    WorkOrderRemoteApi? remoteApi,
   }) : _session = session,
        _syncQueue = syncQueue,
        _actionFactory = actionFactory,
        _localStore = localStore,
+       _remoteApi = remoteApi,
        _orders = seedWorkOrders;
 
   final BootstrapSession _session;
   final SyncQueueRepository _syncQueue;
   final SyncActionFactory _actionFactory;
   final WorkOrderLocalStore _localStore;
+  final WorkOrderRemoteApi? _remoteApi;
   final Uuid _uuid = const Uuid();
 
   List<WorkOrder> _orders;
   bool _loaded = false;
+  bool _isPulling = false;
+  DateTime? _lastPulledAt;
+  String? _lastPullError;
+
+  bool get isPulling => _isPulling;
+  DateTime? get lastPulledAt => _lastPulledAt;
+  String? get lastPullError => _lastPullError;
+  bool get hasRemote => _remoteApi != null;
 
   List<WorkOrder> get workOrders => List.unmodifiable(_orders);
 
@@ -70,16 +86,88 @@ class WorkOrderRepository extends ChangeNotifier {
     if (_loaded) return;
 
     final stored = await _localStore.loadWorkOrders();
-    if (stored.isEmpty && seedIfEmpty) {
+    final tenantOrders = stored
+        .where((o) => o.tenantId == _session.activeTenant.tenantId)
+        .toList();
+
+    if (stored.isEmpty && seedIfEmpty && _remoteApi == null) {
+      // Only seed fake data in local/dev mode when the store is completely empty.
+      // Never seed when other-tenant orders exist; never seed in remote mode.
       _orders = _seedOrders(_session);
       await _localStore.saveWorkOrders(_orders);
     } else {
-      _orders = stored
-          .where((o) => o.tenantId == _session.activeTenant.tenantId)
-          .toList();
+      _orders = tenantOrders;
     }
     _loaded = true;
     notifyListeners();
+
+    // Kick off a background pull when remote API is configured.
+    if (_remoteApi != null) {
+      _pullInBackground().ignore();
+    }
+  }
+
+  /// Triggers a fresh pull from the remote API regardless of [_loaded] state.
+  /// Returns [WorkOrderPullOutcome.pulling] in local/dev mode (no-op).
+  Future<WorkOrderPullOutcome> refresh() async {
+    if (_remoteApi == null) return WorkOrderPullOutcome.pulling;
+    if (_isPulling) return WorkOrderPullOutcome.pulling;
+    _loaded = false;
+    return _pullInBackground();
+  }
+
+  Future<WorkOrderPullOutcome> _pullInBackground() async {
+    if (_isPulling) return WorkOrderPullOutcome.pulling;
+    _isPulling = true;
+    notifyListeners();
+
+    try {
+      final remote = await _remoteApi!.fetchWorkOrders(
+        tenantId: _session.activeTenant.tenantId,
+      );
+      await _upsertRemoteOrders(remote);
+      _lastPulledAt = DateTime.now().toUtc();
+      _lastPullError = null;
+      _loaded = true;
+      return WorkOrderPullOutcome.success;
+    } catch (e) {
+      _lastPullError = e is ApiError
+          ? e.safeMessage
+          : 'Nao foi possivel atualizar suas ordens agora.';
+      _loaded = true;
+      return _orders.isEmpty
+          ? WorkOrderPullOutcome.error
+          : WorkOrderPullOutcome.cached;
+    } finally {
+      _isPulling = false;
+      notifyListeners();
+    }
+  }
+
+  /// Upserts remote work orders into Drift, preserving local pending changes.
+  Future<void> _upsertRemoteOrders(List<WorkOrder> remote) async {
+    final localByServerId = <String, WorkOrder>{
+      for (final o in _orders)
+        if (o.serverId != null) o.serverId!: o,
+    };
+
+    for (final ro in remote) {
+      if (ro.serverId == null) continue;
+      final existing = localByServerId[ro.serverId!];
+      // Preserve local work orders with pending sync actions.
+      if (existing != null && existing.syncStatus == SyncStatus.pending) {
+        continue;
+      }
+      // Keep existing localId so cached detail routes stay valid.
+      final toSave =
+          existing != null ? ro.copyWith(localId: existing.localId) : ro;
+      await _localStore.saveWorkOrder(toSave);
+    }
+
+    final refreshed = await _localStore.loadWorkOrders();
+    _orders = refreshed
+        .where((o) => o.tenantId == _session.activeTenant.tenantId)
+        .toList();
   }
 
   Future<WorkOrderMutationResult> updateStatus(
@@ -363,6 +451,15 @@ final workOrderLocalStoreProvider = Provider<WorkOrderLocalStore>(
   (ref) => DriftWorkOrderLocalStore(ref.watch(appDatabaseProvider)),
 );
 
+// Returns DioWorkOrderRemoteApi when ERP_AUTH_MODE=remote and a token is available.
+// Returns null in local/dev mode so WorkOrderRepository stays in seed-only mode.
+final workOrderRemoteApiProvider = Provider<WorkOrderRemoteApi?>((ref) {
+  if (!kIsRemoteAuth) return null;
+  final config = ref.watch(authenticatedApiConfigProvider);
+  if (config.accessToken == null) return null;
+  return DioWorkOrderRemoteApi.create(config);
+});
+
 final workOrderRepositoryProvider = Provider<WorkOrderRepository>((ref) {
   final session = ref
       .watch(bootstrapSessionProvider)
@@ -373,12 +470,9 @@ final workOrderRepositoryProvider = Provider<WorkOrderRepository>((ref) {
     syncQueue: ref.watch(syncQueueRepositoryProvider),
     actionFactory: ref.watch(syncActionFactoryProvider),
     localStore: ref.watch(workOrderLocalStoreProvider),
+    remoteApi: ref.watch(workOrderRemoteApiProvider),
   );
 });
-
-final workOrderRemoteApiProvider = Provider<WorkOrderRemoteApi>(
-  (ref) => const PendingBackendWorkOrderRemoteApi(),
-);
 
 List<WorkOrder> _seedOrders(BootstrapSession session) {
   final tenantId = session.activeTenant.tenantId;

@@ -52,17 +52,46 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _HomeContent extends ConsumerWidget {
+class _HomeContent extends ConsumerStatefulWidget {
   const _HomeContent({required this.session});
 
   final BootstrapSession session;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends ConsumerState<_HomeContent> {
+  WorkOrderRepository? _woRepo;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final repo = ref.read(workOrderRepositoryProvider);
+    if (_woRepo != repo) {
+      _woRepo?.removeListener(_onRepoChanged);
+      _woRepo = repo;
+      _woRepo!.addListener(_onRepoChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    _woRepo?.removeListener(_onRepoChanged);
+    super.dispose();
+  }
+
+  void _onRepoChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final networkStatus = ref.watch(networkStatusProvider);
     final expenseRepository = ref.watch(expenseRepositoryProvider);
     final woRepository = ref.watch(workOrderRepositoryProvider);
 
+    final session = widget.session;
     final modules = const ModuleResolver(
       PermissionResolver(),
     ).visibleModules(session);
@@ -139,6 +168,20 @@ class _HomeContent extends ConsumerWidget {
               if (networkStatus != NetworkStatus.online &&
                   networkStatus != NetworkStatus.unknown)
                 const SizedBox(height: 8),
+
+              // Work order pull state
+              if (woRepository.isPulling)
+                const LinearProgressIndicator(),
+              if (woRepository.lastPullError != null && !woRepository.isPulling)
+                _WoPullErrorBanner(
+                  message: woRepository.lastPullError!,
+                  onRetry: () => woRepository.refresh(),
+                ),
+              if (woRepository.hasRemote &&
+                  woRepository.lastPulledAt == null &&
+                  !woRepository.isPulling &&
+                  woRepository.lastPullError == null)
+                const _WoLocalCacheBanner(),
 
               // Stats row
               if (allTenantOrders.isNotEmpty) ...[
@@ -678,6 +721,67 @@ class _TodayOsItem extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Work order pull state banners (home-specific variants)
+// ---------------------------------------------------------------------------
+
+class _WoPullErrorBanner extends StatelessWidget {
+  const _WoPullErrorBanner({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialBanner(
+      backgroundColor:
+          Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.8),
+      leading: Icon(
+        Icons.cloud_off_outlined,
+        color: Theme.of(context).colorScheme.error,
+      ),
+      content: Text(
+        message,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onErrorContainer,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: onRetry,
+          child: const Text('Tentar novamente'),
+        ),
+      ],
+    );
+  }
+}
+
+class _WoLocalCacheBanner extends StatelessWidget {
+  const _WoLocalCacheBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.5),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            Icons.storage_outlined,
+            size: 14,
+            color: Theme.of(context).colorScheme.secondary,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Mostrando dados salvos neste aparelho.',
+            style: Theme.of(context).textTheme.labelSmall,
+          ),
+        ],
       ),
     );
   }

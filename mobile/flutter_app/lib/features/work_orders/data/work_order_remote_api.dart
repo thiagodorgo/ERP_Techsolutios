@@ -73,12 +73,14 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
   @override
   Future<List<WorkOrder>> fetchWorkOrders({String? tenantId}) async {
     try {
-      final resp = await _dio.get<List<dynamic>>(
+      final resp = await _dio.get<Map<String, dynamic>>(
         WorkOrderApiEndpoints.workOrders,
       );
-      return (resp.data ?? [])
-          .cast<Map<String, dynamic>>()
-          .map(_workOrderFromJson)
+      final data = resp.data ?? const <String, dynamic>{};
+      final items = (data['items'] as List<dynamic>? ?? [])
+          .cast<Map<String, dynamic>>();
+      return items
+          .map((j) => _workOrderFromRemoteJson(j, fallbackTenantId: tenantId ?? ''))
           .toList();
     } on DioException catch (e) {
       throw mapDioError(e);
@@ -164,6 +166,47 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
       throw mapDioError(e);
     }
   }
+}
+
+// Tolerant parser for the backend list/detail DTO (camelCase) and local cache (snake_case).
+// The list endpoint returns {items:[{id, customerName, scheduledFor, ...}], pagination:...}.
+// Fields not present in the list DTO (tenantId) are filled from [fallbackTenantId].
+WorkOrder _workOrderFromRemoteJson(
+  Map<String, dynamic> json, {
+  required String fallbackTenantId,
+}) {
+  final serverId = json['id'] as String?;
+  String str(String camel, String snake) =>
+      (json[camel] as String?) ?? (json[snake] as String?) ?? '';
+  String? strOpt(String camel, String snake) =>
+      (json[camel] as String?) ?? (json[snake] as String?);
+  return WorkOrder(
+    localId: serverId ?? 'wo-remote-${DateTime.now().millisecondsSinceEpoch}',
+    serverId: serverId,
+    tenantId: strOpt('tenantId', 'tenant_id') ?? fallbackTenantId,
+    code: str('code', 'code'),
+    title: str('title', 'title'),
+    customerName: str('customerName', 'customer_name'),
+    serviceAddress: str('serviceAddress', 'service_address'),
+    status: WorkOrderStatus.values.firstWhere(
+      (s) => s.name == (json['status'] as String?),
+      orElse: () => WorkOrderStatus.scheduled,
+    ),
+    priority: WorkOrderPriority.values.firstWhere(
+      (p) => p.name == (json['priority'] as String?),
+      orElse: () => WorkOrderPriority.normal,
+    ),
+    assignedUserId: strOpt('assignedUserId', 'assigned_user_id'),
+    scheduledAt: _parseDate(strOpt('scheduledFor', 'scheduled_at')),
+    startedAt: _parseDate(strOpt('startedAt', 'started_at')),
+    arrivedAt: _parseDate(strOpt('arrivedAt', 'arrived_at')),
+    completedAt: _parseDate(strOpt('completedAt', 'completed_at')),
+    checklistId: strOpt('checklistId', 'checklist_id'),
+    syncStatus: SyncStatus.synced,
+    createdAt:
+        _parseDate(strOpt('createdAt', 'created_at')) ?? DateTime.now().toUtc(),
+    updatedAt: _parseDate(strOpt('updatedAt', 'updated_at')),
+  );
 }
 
 WorkOrder _workOrderFromJson(Map<String, dynamic> json) {
