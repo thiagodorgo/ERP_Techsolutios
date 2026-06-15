@@ -28,6 +28,48 @@ export function toChecklistTemplateDto(template: ChecklistTemplate) {
   };
 }
 
+// Mobile-facing template DTO for GET /api/v1/mobile/checklists/available.
+// Maps the persisted template to the contract the Flutter B-100 client parses:
+// it exposes `title` (from name), `schema_version` (from version), and a
+// normalized `status` ("published" -> "active") so the app's `activeTemplates`
+// filter keeps published templates. Snake_case is primary; the Flutter parser is
+// also camelCase-tolerant. Kept separate from `toChecklistTemplateDto` so the
+// web/tenant template contract is unaffected.
+export function toMobileChecklistTemplateDto(template: ChecklistTemplate) {
+  const items = [...template.components]
+    .sort((left, right) => left.orderIndex - right.orderIndex)
+    .map((component) => ({
+      id: component.id,
+      label: component.label,
+      type: component.type,
+      required: component.required,
+      order: component.orderIndex,
+    }));
+
+  return {
+    id: template.id,
+    tenant_id: template.tenantId,
+    code: template.type,
+    name: template.name,
+    title: template.name,
+    description: template.description ?? null,
+    version: template.version,
+    schema_version: `v${template.version}`,
+    status: toMobileChecklistTemplateStatus(template.status),
+    is_required: false,
+    category: template.type,
+    work_order_type: template.type,
+    linked_work_order_type: template.type,
+    module: "tenant_checklist",
+    updated_at: template.updatedAt.toISOString(),
+    items,
+  };
+}
+
+function toMobileChecklistTemplateStatus(status: ChecklistTemplate["status"]): string {
+  return status === "published" ? "active" : status;
+}
+
 export function toChecklistTemplateComponentDto(component: ChecklistTemplateComponent) {
   return {
     id: component.id,

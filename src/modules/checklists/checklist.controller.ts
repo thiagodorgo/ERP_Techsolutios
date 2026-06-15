@@ -10,6 +10,7 @@ import {
   toChecklistRunDto,
   toChecklistTemplateComponentDto,
   toChecklistTemplateDto,
+  toMobileChecklistTemplateDto,
 } from "./checklist.dto.js";
 import type { ChecklistService } from "./checklist.service.js";
 import {
@@ -116,7 +117,23 @@ export class ChecklistController {
   }
 
   async listAvailableMobileChecklists(request: Request) {
-    return this.listChecklistTemplates(request);
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const templates = await service.listAvailableTemplates(actor);
+    const items = templates.map(toMobileChecklistTemplateDto);
+
+    return {
+      body: {
+        // `data` preserves the legacy envelope; `items` matches the B-101
+        // contract and the Flutter B-100 parser (data ?? items ?? checklists).
+        data: items,
+        items,
+        meta: {
+          source: "backend",
+          count: items.length,
+          generated_at: new Date().toISOString(),
+        },
+      },
+    };
   }
 
   async renderMobileChecklist(request: Request) {
