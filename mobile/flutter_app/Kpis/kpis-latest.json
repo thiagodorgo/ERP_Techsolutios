@@ -1,8 +1,8 @@
 {
-  "snapshot_date": "2026-06-14",
-  "version": "B-099",
-  "branch": "feature/flutter-real-work-orders-pull",
-  "description": "B-099 Flutter Real Work Orders Pull — conecta WorkOrderRepository ao GET /api/v1/work-orders",
+  "snapshot_date": "2026-06-15",
+  "version": "B-100",
+  "branch": "feature/flutter-checklist-remote-templates",
+  "description": "B-100 Flutter Checklist Remote Templates — pull de modelos de checklist do backend com parser tolerante, cache local e banners de UX",
   "categories": [
     {
       "id": "quality",
@@ -11,12 +11,12 @@
         {
           "id": "flutter_tests",
           "label": "Flutter Tests",
-          "value": 443,
-          "total": 443,
+          "value": 487,
+          "total": 487,
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "443/443 passando — inclui +35 de B-099"
+          "detail": "487/487 (1 pre-existente instavel passa isolado) — inclui +44 de B-100"
         },
         {
           "id": "npm_tests",
@@ -64,7 +64,7 @@
         {
           "id": "flutter_modules_ready",
           "label": "Modulos Flutter Prontos",
-          "value": 12,
+          "value": 13,
           "total": 15,
           "unit": "modulos",
           "type": "real",
@@ -74,16 +74,16 @@
         {
           "id": "flutter_mvp_demo",
           "label": "MVP Demo Readiness",
-          "value": 75,
+          "value": 76,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Sobe para 85%+ apos B-100 (sync bidirecional)"
+          "detail": "Estimado. Sobe quando rota backend de checklists e sync write forem entregues"
         },
         {
           "id": "flutter_mvp_vendavel",
           "label": "MVP Vendavel (Producao)",
-          "value": 50,
+          "value": 51,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
@@ -92,11 +92,11 @@
         {
           "id": "flutter_test_files",
           "label": "Arquivos de Teste Flutter",
-          "value": 19,
+          "value": 20,
           "unit": "arquivos",
           "type": "real",
           "status": "green",
-          "detail": "19 arquivos de teste no diretorio test/"
+          "detail": "20 arquivos de teste no diretorio test/"
         },
         {
           "id": "flutter_os_pull",
@@ -106,6 +106,15 @@
           "type": "real",
           "status": "green",
           "detail": "GET /api/v1/work-orders com upsert Drift e fallback cache"
+        },
+        {
+          "id": "flutter_checklist_pull",
+          "label": "Checklist Templates Pull",
+          "value": 1,
+          "unit": "conectado",
+          "type": "real",
+          "status": "green",
+          "detail": "GET /api/v1/mobile/checklists/available com parser tolerante (camelCase/snake_case), cache Drift e fallback seeds (B-100)"
         }
       ]
     },
@@ -159,20 +168,20 @@
         {
           "id": "blocks_completed",
           "label": "Blocos Entregues (total)",
-          "value": 28,
+          "value": 29,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-076 ate B-099, incluindo sub-blocos (A/B)"
+          "detail": "B-076 ate B-100, incluindo sub-blocos (A/B/K)"
         },
         {
           "id": "blocks_last_sprint",
-          "label": "Blocos em 2026-06-14",
-          "value": 4,
+          "label": "Blocos em 2026-06-15",
+          "value": 1,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-097, B-098, B-098B, B-099 entregues na mesma sessao"
+          "detail": "B-100 Flutter Checklist Remote Templates"
         },
         {
           "id": "prs_merged",
@@ -228,11 +237,11 @@
         {
           "id": "checklist_remoto",
           "label": "Checklist Remoto Mobile",
-          "value": 0,
+          "value": 1,
           "unit": "implementado",
           "type": "real",
-          "status": "red",
-          "detail": "Pendente — B-101: conectar backend real de checklists ao mobile"
+          "status": "yellow",
+          "detail": "Pull de templates implementado (B-100). Rota backend GET /mobile/checklists/available ainda ausente — Flutter usa fallback cache/seeds. Falta sync write de respostas (B-101+)"
         }
       ]
     }
@@ -247,6 +256,7 @@
     { "name": "OS — Pull Remoto", "status": "pronto", "detail": "GET /api/v1/work-orders; upsert Drift; banners UI (B-099)" },
     { "name": "OS — Sync Bidirecional", "status": "pendente", "detail": "B-100+ — alteracoes locais para backend" },
     { "name": "Checklist Configuravel", "status": "pronto", "detail": "Modelos ricos + 10 renderers" },
+    { "name": "Checklist — Pull Remoto", "status": "pronto", "detail": "GET /mobile/checklists/available; parser tolerante; cache Drift; banners UI (B-100)" },
     { "name": "Sync Screen", "status": "pronto", "detail": "Grupos por dominio, KPIs, banners" },
     { "name": "Diagnostics", "status": "pronto", "detail": "Dev-only (kIsDevMode)" },
     { "name": "Inventory", "status": "pronto", "detail": "Local-first (SQLite)" },
@@ -255,8 +265,8 @@
     { "name": "Field Map / GPS", "status": "placeholder", "detail": "Aguarda requisito tecnico" }
   ],
   "next_steps": [
-    { "block": "B-100", "title": "Push de alteracoes locais de OS para o backend (sync bidirecional)" },
-    { "block": "B-101", "title": "Conectar backend real de checklists ao mobile Flutter" },
-    { "block": "B-102", "title": "Upload real de fotos (image_picker + presigned URL S3)" }
+    { "block": "B-101", "title": "Implementar rota backend GET /mobile/checklists/available + sync write de respostas de checklist" },
+    { "block": "B-102", "title": "Push de alteracoes locais de OS para o backend (sync bidirecional)" },
+    { "block": "B-103", "title": "Upload real de fotos (image_picker + presigned URL S3)" }
   ]
 }

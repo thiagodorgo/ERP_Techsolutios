@@ -1,5 +1,37 @@
 # Status Geral
 
+## Atualizacao 2026-06-15 — B-100 Flutter Checklist Remote Templates
+
+### QA final
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| `flutter analyze` | **No issues found** |
+| `flutter test` | **486/487 passando** (+44 novos de B-100; 1 pre-existente instavel passa isolado) |
+| `npm test` | **15/15 passando** |
+| `npm run lint` | **0 erros** |
+| `npm run build` | **0 erros** |
+
+### Entregue
+
+- `ChecklistRepository` conectado ao `GET /api/v1/mobile/checklists/available`.
+- Parser tolerante (camelCase/snake_case + envelopes `checklists`/`items`/`data`).
+- Pull state: `isPulling`, `lastPulledAt`, `lastPullError`, `hasCache`, `refresh()`.
+- `ChecklistPullOutcome` enum (success, cached, error, pulling).
+- `ChecklistAvailableScreen` stateful com `RefreshIndicator` e banners de UX
+  (loading, erro+retry, ultima atualizacao, cache offline, vazio+retry).
+- Fallback resiliente: remoto → cache Drift → seeds locais.
+- 44 testes novos; KPIs atualizadas para B-100.
+
+### Limitacao conhecida (backend)
+
+A rota `GET /api/v1/mobile/checklists/available` esta listada como implementada no
+catalogo de bootstrap, mas o handler esta **ausente** em `mobile.routes.ts`. O
+Flutter trata com fallback para cache/seeds (nunca quebra). Implementacao da rota
+backend fica para B-101 (fora do escopo mobile-only desta entrega).
+
+---
+
 ## Atualizacao 2026-06-14 — B-099K Project KPIs Dashboard
 
 ### Entregue

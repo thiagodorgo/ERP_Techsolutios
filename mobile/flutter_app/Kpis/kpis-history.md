@@ -5,6 +5,42 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-100 — 2026-06-15
+
+**Flutter Checklist Remote Templates**
+Conecta `ChecklistRepository` ao `GET /api/v1/mobile/checklists/available`. Parser
+tolerante (camelCase/snake_case + multiplos envelopes), cache Drift, fallback para
+seeds e banners de pull state na tela de checklists disponiveis.
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 487 / 487 |
+| Backend Tests | 15 / 15 |
+| flutter analyze | 0 issues |
+| npm lint | 0 erros |
+| npm build | 0 erros |
+| Modulos Flutter Prontos | 13 / 15 |
+| MVP Demo Readiness (est.) | 76% |
+| MVP Vendavel (est.) | 51% |
+| Blocos Entregues | 29 |
+
+**Novidades:**
+- Pull remoto de templates de checklist (`fetchAvailableChecklists`)
+- Parser tolerante: envelopes `{checklists}` / `{items}` / `{data}`, camelCase + snake_case
+- `ChecklistPullOutcome` enum (success, cached, error, pulling)
+- Estado de pull no repo: `isPulling`, `lastPulledAt`, `lastPullError`, `hasCache`, `refresh()`
+- `ChecklistAvailableScreen` convertida para `ConsumerStatefulWidget` com `RefreshIndicator`
+- Banners: `LinearProgressIndicator`, `_ChecklistErrorBanner`, `_LastUpdatedBanner`, `_CacheBanner`, `_EmptyState`
+- +44 testes (parser, repo, refresh, regressao)
+
+**Limitacao conhecida:** rota backend `GET /api/v1/mobile/checklists/available` ainda
+ausente em `mobile.routes.ts` (listada como implementada no catalogo de bootstrap).
+Flutter trata com fallback para cache/seeds. Escopo backend nao alterado nesta entrega.
+
+**Proximos passos:** B-101 (rota backend + sync write de respostas), B-102 (OS sync bidirecional), B-103 (upload evidencias)
+
+---
+
 ## B-099 — 2026-06-14
 
 **Flutter Real Work Orders Pull**
