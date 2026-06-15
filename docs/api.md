@@ -136,17 +136,53 @@ Conflitos:
 - conflito de idempotencia retorna `conflict_type=idempotency_payload_mismatch`;
 - cada conflito inclui `client_action_id`, `work_order_id` quando existir, dados locais sanitizados e `next_action`.
 
-Endpoints planejados de sync mobile que ainda nao existem, como `/api/v1/mobile/sync/checklist-actions` e `/api/v1/mobile/inventory/items`, retornam 404 JSON estavel sob `/api/v1`:
+`GET /api/v1/mobile/inventory/availability` esta implementado no B-098D como contrato parcial para consulta mobile de disponibilidade. O endpoint usa o tenant do ator autenticado, ignora `tenant_id` externo, aceita filtros seguros (`item_id`, `sku`, `warehouse_id`, `work_order_id`) e exige `inventory.read` ou `inventory.manage`.
+
+Resposta:
 
 ```json
 {
-  "error": {
-    "code": "NOT_FOUND",
-    "reason": "route_not_found",
-    "message": "Route not found."
+  "data": {
+    "contract": {
+      "name": "mobile_inventory_availability",
+      "version": "2026-06-15.b098d",
+      "status": "partial"
+    },
+    "tenant_id": "tenant-do-ator",
+    "server_time": "2026-06-15T12:00:00.000Z",
+    "filters": {
+      "item_id": null,
+      "sku": "CABO-REBOQUE-5T",
+      "warehouse_id": null,
+      "work_order_id": "wo-local-1"
+    },
+    "items": [
+      {
+        "item_id": "inv-item-tow-cable",
+        "sku": "CABO-REBOQUE-5T",
+        "name": "Cabo de reboque 5T",
+        "unit": "un",
+        "warehouse_id": "mobile-warehouse-main",
+        "available_quantity": 6,
+        "reserved_quantity": 0,
+        "status": "available"
+      }
+    ]
   }
 }
 ```
+
+`POST /api/v1/mobile/sync/inventory-actions` esta implementado no B-098D como contrato parcial para replay controlado de acoes de inventario. O endpoint exige `inventory.manage`, lote `{ client_batch_id, actions[] }` e por acao `client_action_id`, `type`, `local_created_at` e `payload`.
+
+Tipos aceitos:
+
+- `inventory.reserve`: reserva quantidade de item disponivel.
+- `inventory.consume`: consome quantidade reservada/disponivel.
+- `inventory.shortage_report`: registra falta em campo.
+
+Resposta segue o envelope mobile de sync com `summary`, `accepted`, `rejected`, `conflicts` e `already_applied`. A idempotencia usa tenant resolvido do ator + usuario do ator + `client_action_id`; reenvio identico retorna `already_applied`; payload diferente com o mesmo `client_action_id` retorna `idempotency_payload_mismatch`.
+
+Lacunas B-098D: persistencia duravel em banco/Redis, reserva transacional multi-instancia, associacao real com OS/armazem, politicas por estoque e consumo pelo Flutter.
 
 ## Autenticacao de rotas protegidas
 

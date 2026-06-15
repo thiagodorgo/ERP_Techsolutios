@@ -2804,3 +2804,34 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - nenhum comando Flutter foi executado
 - sem Figma, secrets, `.env`, migrations ou infra
 - B-098D, inventario e evidencias genericas nao foram iniciados
+
+## 2026-06-15 - B-098D Mobile Inventory Availability Contract
+
+### Implementado
+
+- worktree isolado: `ERP_Techsolutios-codex-b098d`
+- branch: `feature/mobile-inventory-availability-contract`
+- base: `origin/main` atualizada com merge commit `ce455dc40b7c860c3d4108f4e2ffdceb993cc2a6` do PR #84 confirmado
+- criado contrato `GET /api/v1/mobile/inventory/availability`
+- criado contrato `POST /api/v1/mobile/sync/inventory-actions`
+- suporte a lote de acoes `inventory.reserve`, `inventory.consume` e `inventory.shortage_report`
+- tenant resolvido exclusivamente pelo ator autenticado/contexto backend
+- idempotencia por tenant do ator + usuario do ator + `client_action_id`
+- resposta separada em `summary`, `accepted`, `rejected`, `conflicts` e `already_applied`
+- bootstrap/catalogos atualizados para marcar `inventory_mobile` e `inventory_sync` como `partial`
+- testes de contrato mobile atualizados para availability, permissoes, aceite, rejeicao, replay idempotente, mismatch e tenant spoofing
+
+### Escopo preservado
+
+- `mobile/flutter_app/**` nao foi alterado
+- nenhum comando Flutter foi executado
+- sem Figma, secrets, `.env`, migrations ou infra
+- evidencias genericas/OS e B-098E nao foram iniciados
+
+### Lacunas registradas
+
+- persistencia duravel de availability/idempotencia em banco ou Redis
+- reserva transacional multi-instancia
+- relacionamento real entre inventario, armazem e Ordem de Servico
+- permissoes granulares `inventory:reserve`/`inventory:consume` ainda nao existem no catalogo real; B-098D usa `inventory.manage`
+- implementacao Flutter consumindo os endpoints B-098D permanece fora do escopo

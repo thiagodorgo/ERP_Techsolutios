@@ -35,7 +35,7 @@ O primeiro caminho versionado nesta fase e `mobile/flutter_app`, porque nao havi
 - categorias e politicas de despesas;
 - versoes de catalogos para cache e sync.
 
-### Status backend B-098A/B-098B
+### Status backend B-098A/B-098D
 
 `GET /api/v1/mobile/bootstrap` ja existe no backend como contrato expandido e cacheavel. Ele preserva tenant ativo, usuario, roles, permissoes, modulos habilitados, categorias de despesas quando o ator tem permissao relacionada a despesas, `serverTime` e cursores nulos de sync.
 
@@ -57,7 +57,18 @@ No B-098B, `POST /api/v1/mobile/sync/work-order-actions` passou a existir para r
 - o Flutter nao deve enviar `tenant_id` como fonte de decisao; o backend usa o tenant do ator autenticado;
 - conflitos exigem resolucao explicita na fila local antes de descartar dados.
 
-Ainda nao ha tenants disponiveis, sync offline de checklist/inventario nem upload generico de evidencia de OS. Esses itens ficam para fases seguintes.
+No B-098C, `POST /api/v1/mobile/sync/checklist-actions` passou a existir como contrato parcial para replay minimo de `checklist.item_answer`, `checklist.item_note` e `checklist.complete`.
+
+No B-098D, `GET /api/v1/mobile/inventory/availability` e `POST /api/v1/mobile/sync/inventory-actions` passaram a existir como contrato parcial:
+
+- `feature_flags.inventory_mobile.status=partial` quando o modulo `inventory` esta disponivel;
+- `feature_flags.inventory_sync.status=partial` quando o ator possui `inventory.manage`;
+- `mobile_policy.sync.partial_domains` inclui `inventory`;
+- `catalogs.endpoints.inventory_availability` e `catalogs.endpoints.inventory_sync` apontam para os endpoints B-098D;
+- o sync de inventario aceita `inventory.reserve`, `inventory.consume` e `inventory.shortage_report`;
+- o backend ignora `tenant_id` no query/body/payload e resolve o tenant pelo ator autenticado.
+
+Ainda nao ha tenants disponiveis, persistencia duravel de idempotencia mobile, reserva transacional multi-instancia, associacao real de inventario com OS/armazem nem upload generico de evidencia de OS. Esses itens ficam para fases seguintes.
 
 ## Estrutura inicial
 

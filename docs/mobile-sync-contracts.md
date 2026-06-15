@@ -193,11 +193,107 @@ Regras obrigatorias:
 - payload invalido, tipo nao suportado ou permissao por acao ausente retorna rejeicao/erro estruturado sem stack trace.
 - lacunas B-098C: idempotencia duravel em banco/Redis, anexos/markers/divergencia/acknowledgement em lote e implementacao Flutter consumindo o endpoint.
 
-### GET /api/v1/mobile/inventory/items
+### GET /api/v1/mobile/inventory/availability
 
-- Permissao: futura de inventario mobile.
-- Status B-098: planejado; modulo existe no catalogo/documentacao, mas nao ha backend mobile real.
-- Offline: devera alimentar cache local de itens/saldos permitidos.
+- Permissao: `inventory.read` ou `inventory.manage`.
+- Status B-098D: parcial para consulta mobile de disponibilidade, com dados em memoria e sem reserva duravel.
+- Request: filtros opcionais `item_id`, `sku`, `warehouse_id` e `work_order_id`.
+- Response: envelope em `data` com `contract`, `tenant_id`, `server_time`, `filters` e `items`.
+- Erros de contexto/permissao: 403 com envelope JSON seguro.
+- Idempotencia: leitura.
+- Offline: fonte para cache local de saldos permitidos.
+
+Campos minimos de `data.items[]`:
+
+- `item_id`
+- `sku`
+- `name`
+- `unit`
+- `warehouse_id`
+- `available_quantity`
+- `reserved_quantity`
+- `status`
+
+Regras obrigatorias:
+
+- `tenant_id` de query/body nao e confiavel e nao decide tenant.
+- `work_order_id` e aceito como filtro seguro, mas ainda nao cruza relacionamento real de OS/estoque.
+- resposta nao deve incluir dados de outro tenant.
+
+### POST /api/v1/mobile/sync/inventory-actions
+
+- Permissao: `inventory.manage` para o contrato parcial atual. No catalogo real do repo ainda nao existem permissoes separadas `inventory:reserve`/`inventory:consume`.
+- Status B-098D: parcial para replay offline controlado de inventario, sem persistencia duravel.
+- Request: lote `{ client_batch_id, actions[] }`, cada acao com `client_action_id`, `type`, `local_created_at` e `payload`.
+- Response: envelope em `data` com `summary`, `accepted`, `rejected`, `conflicts` e `already_applied`.
+- Erros de envelope/contexto: 400 ou 403 com envelope JSON seguro.
+- Idempotencia: obrigatoria por tenant resolvido do ator + usuario do ator + `client_action_id`.
+- Offline: contrato minimo para reserva, consumo e registro de falta em campo.
+
+Request:
+
+```json
+{
+  "client_batch_id": "inventory-batch-local-1",
+  "actions": [
+    {
+      "client_action_id": "inventory-action-local-1",
+      "type": "inventory.reserve",
+      "local_created_at": "2026-06-15T12:00:00.000Z",
+      "payload": {
+        "item_id": "inv-item-tow-cable",
+        "warehouse_id": "mobile-warehouse-main",
+        "quantity": 2
+      }
+    }
+  ]
+}
+```
+
+Tipos implementados:
+
+- `inventory.reserve`: payload com `item_id`, `quantity` e `warehouse_id?`.
+- `inventory.consume`: payload com `item_id`, `quantity` e `warehouse_id?`.
+- `inventory.shortage_report`: payload com `item_id`, `quantity`, `reason` e `warehouse_id?`.
+
+Resposta:
+
+```json
+{
+  "data": {
+    "contract": {
+      "name": "mobile_inventory_actions_sync",
+      "version": "2026-06-15.b098d",
+      "status": "partial"
+    },
+    "client_batch_id": "inventory-batch-local-1",
+    "tenant_id": "tenant-do-ator",
+    "server_time": "2026-06-15T12:00:01.000Z",
+    "summary": {
+      "received": 1,
+      "accepted": 1,
+      "rejected": 0,
+      "conflicts": 0,
+      "already_applied": 0
+    },
+    "accepted": [],
+    "rejected": [],
+    "conflicts": [],
+    "already_applied": []
+  }
+}
+```
+
+Regras obrigatorias:
+
+- `tenant_id` de body/payload nao e confiavel, nao entra no fingerprint e nao decide tenant.
+- `client_action_id`, `type`, `local_created_at` e `payload` sao obrigatorios por acao.
+- lote maximo: 50 acoes.
+- reenvio identico retorna `already_applied`.
+- reenvio com mesmo `client_action_id` e payload diferente retorna conflito `idempotency_payload_mismatch`.
+- quantidade indisponivel retorna conflito de estoque, nao aceite silencioso.
+- payload invalido, tipo nao suportado ou permissao ausente retorna rejeicao/erro estruturado sem stack trace.
+- lacunas B-098D: idempotencia duravel em banco/Redis, reserva transacional, vinculacao real com OS/armazem, anexos de evidencia e implementacao Flutter consumindo o endpoint.
 
 ### GET /api/v1/expense-policies
 

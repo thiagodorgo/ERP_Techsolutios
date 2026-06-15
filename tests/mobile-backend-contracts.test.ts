@@ -50,13 +50,16 @@ test("mobile bootstrap returns tenant-scoped contract and ignores requested tena
     assert.equal(response.body.data.feature_flags.work_order_sync.status, "implemented");
     assert.equal(response.body.data.feature_flags.checklist_sync.enabled, true);
     assert.equal(response.body.data.feature_flags.checklist_sync.status, "partial");
-    assert.equal(response.body.data.feature_flags.inventory_mobile.status, "planned");
+    assert.equal(response.body.data.feature_flags.inventory_mobile.enabled, true);
+    assert.equal(response.body.data.feature_flags.inventory_mobile.status, "partial");
+    assert.equal(response.body.data.feature_flags.inventory_sync.enabled, true);
+    assert.equal(response.body.data.feature_flags.inventory_sync.status, "partial");
     assert.equal(response.body.data.mobile_policy.auth.bearer_required, true);
     assert.equal(response.body.data.mobile_policy.auth.tenant_source, "authenticated_actor");
     assert.equal(response.body.data.mobile_policy.sync.actions_enabled, true);
     assert.deepEqual(response.body.data.mobile_policy.sync.implemented_domains, ["expenses", "work_orders"]);
-    assert.deepEqual(response.body.data.mobile_policy.sync.partial_domains, ["checklists"]);
-    assert.deepEqual(response.body.data.mobile_policy.sync.planned_domains, ["inventory"]);
+    assert.deepEqual(response.body.data.mobile_policy.sync.partial_domains, ["checklists", "inventory"]);
+    assert.deepEqual(response.body.data.mobile_policy.sync.planned_domains, []);
     assert.equal(response.body.data.catalogs.version, "mobile-catalogs:v1");
     assert.equal(response.body.data.catalogs.modules.status, "implemented");
     assert.equal(response.body.data.catalogs.permissions.status, "implemented");
@@ -65,6 +68,8 @@ test("mobile bootstrap returns tenant-scoped contract and ignores requested tena
     assert.equal(findCatalogEndpoint(response.body, "expense_sync").status, "implemented");
     assert.equal(findCatalogEndpoint(response.body, "work_order_sync").status, "implemented");
     assert.equal(findCatalogEndpoint(response.body, "checklist_sync").status, "partial");
+    assert.equal(findCatalogEndpoint(response.body, "inventory_availability").status, "partial");
+    assert.equal(findCatalogEndpoint(response.body, "inventory_sync").status, "partial");
     assert.equal(response.body.data.expenseCategories.length > 0, true);
     assert.equal(response.body.data.sync.workOrdersCursor, null);
     assert.equal(response.body.data.sync.checklistsCursor, null);
@@ -127,7 +132,7 @@ test("mobile bootstrap requires tenant, user and role context", async () => {
   });
 });
 
-test("mobile backend exposes ready checklist, expense, work order and notification contracts", async () => {
+test("mobile backend exposes ready checklist, expense, work order, inventory and notification contracts", async () => {
   await withMobileContractApi(async ({ baseUrl, seed }) => {
     const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
     const checklists = await requestJson(baseUrl, "/api/v1/mobile/checklists/available", { headers });
@@ -145,6 +150,12 @@ test("mobile backend exposes ready checklist, expense, work order and notificati
       method: "POST",
       headers,
       body: { client_batch_id: "empty-checklist-batch", actions: [] },
+    });
+    const inventoryAvailability = await requestJson(baseUrl, "/api/v1/mobile/inventory/availability", { headers });
+    const inventorySync = await requestJson(baseUrl, "/api/v1/mobile/sync/inventory-actions", {
+      method: "POST",
+      headers,
+      body: { client_batch_id: "empty-inventory-batch", actions: [] },
     });
     const workOrders = await requestJson(baseUrl, "/api/v1/work-orders", { headers });
     const notifications = await requestJson(baseUrl, "/api/v1/notifications", { headers });
@@ -169,6 +180,21 @@ test("mobile backend exposes ready checklist, expense, work order and notificati
     assert.deepEqual(checklistSync.body.data.rejected, []);
     assert.deepEqual(checklistSync.body.data.conflicts, []);
     assert.deepEqual(checklistSync.body.data.already_applied, []);
+    assert.equal(inventoryAvailability.status, 200);
+    assert.equal(inventoryAvailability.body.data.contract.name, "mobile_inventory_availability");
+    assert.equal(inventoryAvailability.body.data.contract.status, "partial");
+    assert.equal(inventoryAvailability.body.data.tenant_id, seed.tenantA.id);
+    assert.equal(inventoryAvailability.body.data.items.length > 0, true);
+    assert.equal(inventoryAvailability.body.data.items[0].item_id.length > 0, true);
+    assert.equal(inventoryAvailability.body.data.items[0].available_quantity >= 0, true);
+    assert.equal(inventorySync.status, 200);
+    assert.equal(inventorySync.body.data.contract.name, "mobile_inventory_actions_sync");
+    assert.equal(inventorySync.body.data.contract.status, "partial");
+    assert.equal(inventorySync.body.data.summary.received, 0);
+    assert.deepEqual(inventorySync.body.data.accepted, []);
+    assert.deepEqual(inventorySync.body.data.rejected, []);
+    assert.deepEqual(inventorySync.body.data.conflicts, []);
+    assert.deepEqual(inventorySync.body.data.already_applied, []);
     assert.equal(workOrders.status, 200);
     assert.ok(Array.isArray(workOrders.body.items));
     assert.equal(notifications.status, 200);
@@ -177,6 +203,8 @@ test("mobile backend exposes ready checklist, expense, work order and notificati
     assertNoStackTrace(expenseSync.body);
     assertNoStackTrace(workOrderSync.body);
     assertNoStackTrace(checklistSync.body);
+    assertNoStackTrace(inventoryAvailability.body);
+    assertNoStackTrace(inventorySync.body);
     assertNoStackTrace(workOrders.body);
     assertNoStackTrace(notifications.body);
   });
@@ -524,18 +552,234 @@ test("mobile work order action sync validates envelope, actor context and permis
   });
 });
 
-test("planned mobile inventory endpoint returns stable JSON 404", async () => {
+test("mobile inventory availability filters tenant-scoped stock and rejects missing permission", async () => {
   await withMobileContractApi(async ({ baseUrl, seed }) => {
     const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
-    const inventory = await requestJson(baseUrl, "/api/v1/mobile/inventory/items", { headers });
-
-    assert.equal(inventory.status, 404);
-    assert.deepEqual(inventory.body.error, {
-      code: "NOT_FOUND",
-      reason: "route_not_found",
-      message: "Route not found.",
+    const availability = await requestJson(
+      baseUrl,
+      `/api/v1/mobile/inventory/availability?tenant_id=${seed.tenantB.id}&sku=CABO-REBOQUE-5T&work_order_id=wo-local-1`,
+      { headers },
+    );
+    const missingPermission = await requestJson(baseUrl, "/api/v1/mobile/inventory/availability", {
+      headers: authHeaders(seed.tenantA, seed.adminA, "support"),
     });
-    assertNoStackTrace(inventory.body);
+
+    assert.equal(availability.status, 200);
+    assert.equal(availability.body.data.contract.name, "mobile_inventory_availability");
+    assert.equal(availability.body.data.contract.status, "partial");
+    assert.equal(availability.body.data.tenant_id, seed.tenantA.id);
+    assert.equal(availability.body.data.filters.sku, "CABO-REBOQUE-5T");
+    assert.equal(availability.body.data.filters.work_order_id, "wo-local-1");
+    assert.equal(availability.body.data.items.length, 1);
+    assert.deepEqual(Object.keys(availability.body.data.items[0]).sort(), [
+      "available_quantity",
+      "item_id",
+      "name",
+      "reserved_quantity",
+      "sku",
+      "status",
+      "unit",
+      "warehouse_id",
+    ]);
+    assert.equal(availability.body.data.items[0].item_id, "inv-item-tow-cable");
+    assert.equal(JSON.stringify(availability.body).includes(seed.tenantB.id), false);
+    assert.equal(missingPermission.status, 403);
+    assert.equal(missingPermission.body.error.reason, "permission_required");
+    assertNoStackTrace(availability.body);
+    assertNoStackTrace(missingPermission.body);
+  });
+});
+
+test("mobile inventory action sync accepts, deduplicates, rejects and reports conflicts by action", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const firstSync = await requestJson(baseUrl, "/api/v1/mobile/sync/inventory-actions", {
+      method: "POST",
+      headers,
+      body: {
+        client_batch_id: "inventory-batch-1",
+        tenant_id: seed.tenantB.id,
+        actions: [
+          {
+            client_action_id: "inventory-reserve-1",
+            type: "inventory.reserve",
+            local_created_at: "2026-06-15T12:00:00.000Z",
+            payload: {
+              tenant_id: seed.tenantB.id,
+              item_id: "inv-item-tow-cable",
+              warehouse_id: "mobile-warehouse-main",
+              quantity: 2,
+            },
+          },
+          {
+            client_action_id: "inventory-consume-1",
+            type: "inventory.consume",
+            local_created_at: "2026-06-15T12:01:00.000Z",
+            payload: {
+              item_id: "inv-item-tow-cable",
+              warehouse_id: "mobile-warehouse-main",
+              quantity: 1,
+            },
+          },
+          {
+            client_action_id: "inventory-shortage-1",
+            type: "inventory.shortage_report",
+            local_created_at: "2026-06-15T12:02:00.000Z",
+            payload: {
+              item_id: "inv-item-fuse-kit",
+              quantity: 3,
+              reason: "Field team found fewer kits than expected.",
+            },
+          },
+          {
+            client_action_id: "inventory-invalid-payload",
+            type: "inventory.reserve",
+            local_created_at: "2026-06-15T12:03:00.000Z",
+            payload: {
+              item_id: "inv-item-tow-cable",
+            },
+          },
+          {
+            client_action_id: "inventory-unsupported",
+            type: "inventory.adjust",
+            local_created_at: "2026-06-15T12:04:00.000Z",
+            payload: {
+              item_id: "inv-item-tow-cable",
+              quantity: 1,
+            },
+          },
+        ],
+      },
+    });
+
+    assert.equal(firstSync.status, 200);
+    assert.equal(firstSync.body.data.contract.name, "mobile_inventory_actions_sync");
+    assert.equal(firstSync.body.data.contract.status, "partial");
+    assert.equal(firstSync.body.data.tenant_id, seed.tenantA.id);
+    assert.equal(firstSync.body.data.summary.received, 5);
+    assert.equal(firstSync.body.data.summary.accepted, 3);
+    assert.equal(firstSync.body.data.summary.rejected, 2);
+    assert.equal(firstSync.body.data.summary.conflicts, 0);
+    assert.equal(firstSync.body.data.accepted[0].client_action_id, "inventory-reserve-1");
+    assert.equal(firstSync.body.data.accepted[0].server_state.available_quantity, 4);
+    assert.equal(firstSync.body.data.accepted[0].server_state.reserved_quantity, 2);
+    assert.equal(firstSync.body.data.accepted[1].client_action_id, "inventory-consume-1");
+    assert.equal(firstSync.body.data.accepted[1].server_state.available_quantity, 4);
+    assert.equal(firstSync.body.data.accepted[1].server_state.reserved_quantity, 1);
+    assert.equal(firstSync.body.data.accepted[2].server_state.status, "reported");
+    assert.equal(firstSync.body.data.rejected[0].client_action_id, "inventory-invalid-payload");
+    assert.equal(firstSync.body.data.rejected[0].error.reason, "invalid_quantity");
+    assert.equal(firstSync.body.data.rejected[1].client_action_id, "inventory-unsupported");
+    assert.equal(firstSync.body.data.rejected[1].error.reason, "unsupported_action_type");
+    assert.equal(JSON.stringify(firstSync.body).includes(seed.tenantB.id), false);
+    assertNoStackTrace(firstSync.body);
+
+    const duplicateSync = await requestJson(baseUrl, "/api/v1/mobile/sync/inventory-actions", {
+      method: "POST",
+      headers,
+      body: {
+        client_batch_id: "inventory-batch-2",
+        actions: [
+          {
+            client_action_id: "inventory-reserve-1",
+            type: "inventory.reserve",
+            local_created_at: "2026-06-15T12:05:00.000Z",
+            payload: {
+              item_id: "inv-item-tow-cable",
+              warehouse_id: "mobile-warehouse-main",
+              quantity: 2,
+            },
+          },
+          {
+            client_action_id: "inventory-reserve-1",
+            type: "inventory.reserve",
+            local_created_at: "2026-06-15T12:06:00.000Z",
+            payload: {
+              item_id: "inv-item-tow-cable",
+              warehouse_id: "mobile-warehouse-main",
+              quantity: 3,
+            },
+          },
+          {
+            client_action_id: "inventory-reserve-conflict",
+            type: "inventory.reserve",
+            local_created_at: "2026-06-15T12:07:00.000Z",
+            payload: {
+              item_id: "inv-item-fuse-kit",
+              quantity: 99,
+            },
+          },
+        ],
+      },
+    });
+
+    assert.equal(duplicateSync.status, 200);
+    assert.equal(duplicateSync.body.data.summary.accepted, 0);
+    assert.equal(duplicateSync.body.data.summary.rejected, 0);
+    assert.equal(duplicateSync.body.data.summary.conflicts, 2);
+    assert.equal(duplicateSync.body.data.summary.already_applied, 1);
+    assert.equal(duplicateSync.body.data.already_applied[0].client_action_id, "inventory-reserve-1");
+    assert.equal(duplicateSync.body.data.conflicts[0].conflict.conflict_type, "idempotency_payload_mismatch");
+    assert.equal(duplicateSync.body.data.conflicts[1].conflict.conflict_type, "insufficient_available_quantity");
+    assertNoStackTrace(duplicateSync.body);
+  });
+});
+
+test("mobile inventory action sync validates envelope, actor context, permissions and tenant spoofing", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const invalidEnvelope = await requestJson(baseUrl, "/api/v1/mobile/sync/inventory-actions", {
+      method: "POST",
+      headers,
+      body: { actions: "not-an-array" },
+    });
+    const missingTenant = await requestJson(baseUrl, "/api/v1/mobile/sync/inventory-actions", {
+      method: "POST",
+      headers: {
+        "x-user-id": seed.adminA.id,
+        "x-role": "tenant_admin",
+      },
+      body: { actions: [] },
+    });
+    const missingPermission = await requestJson(baseUrl, "/api/v1/mobile/sync/inventory-actions", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.adminA, "viewer"),
+      body: { actions: [] },
+    });
+    const tenantSpoof = await requestJson(baseUrl, "/api/v1/mobile/sync/inventory-actions", {
+      method: "POST",
+      headers,
+      body: {
+        client_batch_id: "inventory-spoof",
+        actions: [
+          {
+            client_action_id: "inventory-spoof-action",
+            type: "inventory.reserve",
+            local_created_at: "2026-06-15T12:08:00.000Z",
+            payload: {
+              tenant_id: seed.tenantB.id,
+              item_id: "inv-item-safety-cone",
+              quantity: 1,
+            },
+          },
+        ],
+      },
+    });
+
+    assert.equal(invalidEnvelope.status, 400);
+    assert.equal(invalidEnvelope.body.error.reason, "invalid_envelope");
+    assert.equal(missingTenant.status, 403);
+    assert.equal(missingTenant.body.error.reason, "tenant_required");
+    assert.equal(missingPermission.status, 403);
+    assert.equal(missingPermission.body.error.reason, "permission_required");
+    assert.equal(tenantSpoof.status, 200);
+    assert.equal(tenantSpoof.body.data.tenant_id, seed.tenantA.id);
+    assert.equal(tenantSpoof.body.data.summary.accepted, 1);
+    assert.equal(JSON.stringify(tenantSpoof.body).includes(seed.tenantB.id), false);
+    assertNoStackTrace(invalidEnvelope.body);
+    assertNoStackTrace(missingTenant.body);
+    assertNoStackTrace(missingPermission.body);
+    assertNoStackTrace(tenantSpoof.body);
   });
 });
 
@@ -569,6 +813,7 @@ async function withMobileContractApi(
   const { createApp } = await import("../src/app.js");
   const { resetChecklistRuntimeForTests } = await import("../src/modules/checklists/index.js");
   const { resetMobileChecklistSyncRuntimeForTests } = await import("../src/modules/mobile/mobile-checklist-sync.js");
+  const { resetMobileInventoryRuntimeForTests } = await import("../src/modules/mobile/mobile-inventory-sync.js");
   const { resetMobileWorkOrderSyncRuntimeForTests } = await import("../src/modules/mobile/mobile-work-order-sync.js");
   const { resetWorkOrderRuntimeForTests } = await import("../src/modules/work-orders/index.js");
   const registry = new CoreSaasRegistry(new InMemoryCoreSaasStore());
@@ -579,6 +824,7 @@ async function withMobileContractApi(
 
   resetChecklistRuntimeForTests();
   resetMobileChecklistSyncRuntimeForTests();
+  resetMobileInventoryRuntimeForTests();
   resetMobileWorkOrderSyncRuntimeForTests();
   resetWorkOrderRuntimeForTests();
 
@@ -654,6 +900,7 @@ function seedCoreSaas(service: CoreSaasRegistry): SeedData {
       "work_orders",
       "tenant_checklist",
       "expense_management",
+      "inventory",
       "notifications",
       "field_operations",
     ],
