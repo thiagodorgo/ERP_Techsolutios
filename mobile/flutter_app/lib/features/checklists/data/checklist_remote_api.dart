@@ -134,10 +134,13 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
         ChecklistApiEndpoints.available,
         queryParameters: params,
       );
-      final body = response.data as Map<String, dynamic>;
-      final list = (body['checklists'] as List<dynamic>? ?? []);
+      final body = response.data as Map<String, dynamic>? ?? const {};
+      // Tolerant envelope: accept checklists / items / data wrappers.
+      final raw =
+          body['checklists'] ?? body['items'] ?? body['data'] ?? const [];
+      final list = (raw as List<dynamic>).cast<Map<String, dynamic>>();
       return list
-          .map((j) => _templateFromJson(j as Map<String, dynamic>))
+          .map((j) => _templateFromRemoteJson(j, fallbackTenantId: tenantId))
           .toList(growable: false);
     } on DioException catch (e) {
       throw mapDioError(e);
@@ -290,17 +293,32 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
 
   // ── JSON parsers ────────────────────────────────────────────────────────────
 
-  MobileChecklistTemplate _templateFromJson(Map<String, dynamic> j) =>
-      MobileChecklistTemplate(
-        id: j['id'] as String,
-        tenantId: j['tenantId'] as String,
-        title: j['title'] as String,
-        description: j['description'] as String?,
-        isRequired: j['isRequired'] as bool? ?? false,
-        schemaVersion: j['schemaVersion'] as String? ?? 'v1',
-        status: j['status'] as String? ?? 'active',
-        linkedWorkOrderType: j['linkedWorkOrderType'] as String?,
-      );
+  // Tolerant parser: accepts camelCase (backend list DTO) and snake_case
+  // (local cache format). Falls back to empty string / safe defaults so the
+  // app never crashes on an unexpected field shape.
+  MobileChecklistTemplate _templateFromRemoteJson(
+    Map<String, dynamic> j, {
+    required String fallbackTenantId,
+  }) {
+    String str(String camel, String snake) =>
+        (j[camel] as String?) ?? (j[snake] as String?) ?? '';
+    String? strOpt(String camel, String snake) =>
+        (j[camel] as String?) ?? (j[snake] as String?);
+    bool boolVal(String camel, String snake) =>
+        (j[camel] as bool?) ?? (j[snake] as bool?) ?? false;
+    return MobileChecklistTemplate(
+      id: j['id'] as String,
+      tenantId: strOpt('tenantId', 'tenant_id') ?? fallbackTenantId,
+      title: str('title', 'title'),
+      description: strOpt('description', 'description'),
+      isRequired: boolVal('isRequired', 'is_required'),
+      schemaVersion: str('schemaVersion', 'schema_version').isEmpty
+          ? 'v1'
+          : str('schemaVersion', 'schema_version'),
+      status: str('status', 'status').isEmpty ? 'active' : str('status', 'status'),
+      linkedWorkOrderType: strOpt('linkedWorkOrderType', 'linked_work_order_type'),
+    );
+  }
 
   MobileChecklistSchema _schemaFromJson(Map<String, dynamic> j) =>
       MobileChecklistSchema(

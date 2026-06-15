@@ -58,5 +58,17 @@
     "flutter_mvp_vendavel": 50,
     "blocks_completed": 28,
     "description": "B-099 Flutter Real Work Orders Pull — GET /api/v1/work-orders, upsert Drift, banners UI"
+  },
+  {
+    "snapshot_date": "2026-06-15",
+    "version": "B-100",
+    "flutter_tests": 487,
+    "npm_tests": 15,
+    "flutter_modules_ready": 13,
+    "flutter_modules_total": 15,
+    "flutter_mvp_demo": 76,
+    "flutter_mvp_vendavel": 51,
+    "blocks_completed": 29,
+    "description": "B-100 Flutter Checklist Remote Templates — pull de modelos, parser tolerante camelCase/snake_case, cache Drift, banners UX"
   }
 ]

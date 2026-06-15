@@ -1,7 +1,7 @@
 # Flutter Mobile MVP — Gap Analysis
 
-**Referência de branch:** `feature/flutter-real-work-orders-pull`
-**Data:** 2026-06-14 (atualizado em B-099K)
+**Referência de branch:** `feature/flutter-checklist-remote-templates`
+**Data:** 2026-06-15 (atualizado em B-100)
 **Responsável:** ERP Techsolutions — Mobile Squad
 **KPI Dashboard:** `mobile/flutter_app/Kpis/` — visualizar com `npx serve mobile/flutter_app/Kpis/`
 
@@ -11,8 +11,9 @@
 
 O app Flutter (`mobile/flutter_app`) está em fase de **protótipo avançado estabilizado**. Possui
 arquitetura local-first funcional, persistência SQLite via Drift, autenticação local em modo dev e
-cobertura de testes de 315 casos. Não está conectado ao backend real. Não está pronto para
-operação de campo com dados reais.
+cobertura de testes de 487 casos. Pull real de Work Orders (B-099) e de templates de checklist
+(B-100) já conectados ao backend, com fallback resiliente. Ainda não há sync write de volta ao
+backend. Não está pronto para operação de campo com dados reais.
 
 ### Inventário funcional por módulo
 
@@ -33,7 +34,8 @@ operação de campo com dados reais.
 | Ordens de Serviço (OS) — sync bidirecional | Parcial | **pendente** — alterações locais não enviadas ao backend (B-100+) |
 | Work Order Evidence | Schema criado | **parcial** — salva metadado local; upload real ausente |
 | Checklists configuráveis | Funcional (local-first) | **existente** — run, respostas, persistência Drift |
-| Checklist domain model (rico) | Modelado | **proposto** — `ChecklistTemplate` versionado pronto; sem endpoint real |
+| Checklist — pull de templates | Funcional (pull real) | **B-100** — `GET /api/v1/mobile/checklists/available`; parser tolerante; cache Drift; banners UI; fallback cache/seeds |
+| Checklist domain model (rico) | Modelado | **proposto** — `ChecklistTemplate` versionado pronto; rota backend ausente (fallback) |
 | Checklist renderer registry | Funcional | **existente** — 10 tipos nativos + fallback para tipos desconhecidos |
 | Checklist sync replay | Funcional (stub) | **parcial** — replay enfileira; `PendingBackendChecklistSyncBatchApi` silencioso |
 | Sync Screen | Melhorada | **existente** — domínios, KPIs, banner backend-pending |
@@ -53,7 +55,7 @@ O app não pode ser usado em campo real pelos seguintes motivos objetivos:
 |------------|---------|-----------|
 | Work Orders — pull real implementado (B-099) | ✅ Resolvido — `GET /api/v1/work-orders` conectado | — |
 | Sync bidirecional de OS não implementado | Alterações locais não chegam ao backend | Alto |
-| Checklists são locais — nenhum template vem do backend | Templates não refletem configurações do tenant | Alto |
+| Checklist — pull de templates implementado (B-100) | ✅ Parcial — cliente pronto; rota backend `GET /mobile/checklists/available` ainda ausente (fallback ativo) | Médio |
 | Sync de OS, checklists e inventário não chega ao servidor | Trabalho realizado em campo é perdido | Crítico |
 | Upload de fotos/evidências ausente | Evidências de campo não são persistidas remotamente | Alto |
 | Sem aprovação mobile real | Fluxo de aprovação de OS não completo | Alto |

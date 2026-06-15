@@ -1,129 +1,158 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ERP Techsolutions — KPI Dashboard</title>
-  <link rel="stylesheet" href="./styles.css">
-</head>
-<body>
-<div class="page">
-
-  <!-- Header -->
-  <div class="header" id="header"></div>
-
-  <!-- Loading / Error states (shown before JS renders) -->
-  <div id="loading" style="text-align:center;padding:60px 20px;color:#8b8fa8">
-    Carregando KPIs...
-  </div>
-  <div id="error-msg" style="display:none"></div>
-
-  <!-- Dashboard — rendered by app.js -->
-  <div id="dashboard">
-
-    <!-- Alert banner -->
-    <div class="alert">
-      <strong>Nota:</strong> Metricas marcadas com <em>estimado</em> sao baseadas em avaliacao qualitativa.
-      Metricas marcadas com <em>real</em> vem diretamente de ferramentas (flutter test, npm test, etc.).
-      Abra via servidor local para fetch funcionar: <code>npx serve Kpis/</code>
-    </div>
-
-    <!-- 1. Resumo geral -->
-    <div class="section">
-      <div class="section-title">Resumo Geral</div>
-      <div id="summary-cards"></div>
-    </div>
-
-    <!-- 2. Qualidade de Codigo -->
-    <div class="section">
-      <div class="section-title">Qualidade de Codigo</div>
-      <div id="quality-cards"></div>
-    </div>
-
-    <!-- 3. Mobile Flutter MVP -->
-    <div class="section">
-      <div class="section-title">Mobile Flutter MVP</div>
-      <div id="mobile-cards"></div>
-    </div>
-
-    <!-- 4. Inventario de Modulos Flutter -->
-    <div class="section">
-      <div class="section-title">Inventario de Modulos Flutter</div>
-      <div id="module-table-wrap"
-           style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
-      </div>
-    </div>
-
-    <!-- 5. Backend Node.js -->
-    <div class="section">
-      <div class="section-title">Backend Node.js / API</div>
-      <div id="backend-cards"></div>
-    </div>
-
-    <!-- 6. Velocidade de Entrega -->
-    <div class="section">
-      <div class="section-title">Velocidade de Entrega</div>
-      <div id="delivery-cards"></div>
-    </div>
-
-    <!-- 7. Historico de Evolucao -->
-    <div class="section">
-      <div class="section-title">Historico de Evolucao</div>
-      <div id="history-chart"></div>
-    </div>
-
-    <!-- 8. Lacunas para Producao -->
-    <div class="section">
-      <div class="section-title">Lacunas para Producao</div>
-      <div id="gaps-grid"></div>
-    </div>
-
-    <!-- 9. Proximos Passos -->
-    <div class="section">
-      <div class="section-title">Proximos Passos</div>
-      <div id="next-steps"></div>
-    </div>
-
-    <!-- 10. Resumo de Seguranca / Constraints -->
-    <div class="section">
-      <div class="section-title">Constraints de Entrega</div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;font-size:12px">
-          <div style="color:var(--green)">✓ Backend nao alterado nesta PR</div>
-          <div style="color:var(--green)">✓ Frontend React nao alterado</div>
-          <div style="color:var(--green)">✓ Contratos de API preservados</div>
-          <div style="color:var(--green)">✓ Zero migrations Prisma</div>
-          <div style="color:var(--green)">✓ Zero secrets em commits</div>
-          <div style="color:var(--green)">✓ Zero CDN no dashboard</div>
-          <div style="color:var(--green)">✓ Zero dependencias Flutter adicionadas</div>
-          <div style="color:var(--green)">✓ Zero force push</div>
-          <div style="color:var(--green)">✓ commit cdd132f preservado em main</div>
-          <div style="color:var(--yellow)">⚠ Push/PR pendente autorizacao explicita</div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KPIs Mobile — ERP Techsolutions</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="dashboard-shell">
+      <!-- 1. Visao geral -->
+      <header class="hero" aria-label="Visao geral">
+        <div>
+          <p class="eyebrow">Dashboard de KPIs — App Flutter</p>
+          <h1>ERP Techsolutions</h1>
+          <p id="project-summary" class="hero-summary"></p>
         </div>
-      </div>
-    </div>
+        <dl class="hero-meta" aria-label="Metadados do snapshot">
+          <div><dt>Versao</dt><dd id="project-version">-</dd></div>
+          <div><dt>Atualizado</dt><dd id="last-updated">-</dd></div>
+          <div><dt>Branch</dt><dd id="source-branch">-</dd></div>
+        </dl>
+      </header>
 
-    <!-- 11. Como Atualizar -->
-    <div class="section">
-      <div class="section-title">Como Atualizar o Dashboard</div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;font-size:12px;color:var(--muted);line-height:1.8">
-        <strong style="color:var(--text)">A partir da B-099K, toda entrega deve atualizar Kpis/:</strong><br>
-        1. Editar <code>Kpis/kpis-latest.json</code> com os novos valores reais/estimados.<br>
-        2. Adicionar snapshot ao inicio de <code>Kpis/kpis-history.json</code>.<br>
-        3. Adicionar entrada ao topo de <code>Kpis/kpis-history.md</code>.<br>
-        4. Commitar: <code>docs(kpis): update dashboard for B-XXX</code><br>
-        <br>
-        <strong style="color:var(--text)">Para visualizar:</strong>
-        <code>npx serve Kpis/</code> — abre em <code>http://localhost:3000</code>
-      </div>
-    </div>
+      <p id="source-banner" class="source-banner" role="status" hidden></p>
 
-    <!-- Footer -->
-    <div class="footer" id="footer"></div>
+      <section class="section section--block" aria-label="Indicadores de destaque">
+        <div class="section-heading">
+          <p class="eyebrow">Visao geral</p>
+          <h2>Indicadores de destaque</h2>
+        </div>
+        <div id="overview-cards" class="kpi-grid"></div>
+      </section>
 
-  </div><!-- #dashboard -->
-</div><!-- .page -->
+      <!-- 2. Ultima entrega -->
+      <section class="section section--block" aria-label="Ultima entrega">
+        <div class="section-heading">
+          <p class="eyebrow">Ultima entrega</p>
+          <h2 id="release-title">-</h2>
+        </div>
+        <div class="panel release-panel">
+          <div class="release-top">
+            <span id="release-status" class="status-badge" data-status="parcial">-</span>
+            <span class="release-branch">branch: <code id="release-branch">-</code></span>
+          </div>
+          <p id="release-summary" class="release-summary"></p>
+          <div class="release-grid">
+            <div>
+              <h3>Commits</h3>
+              <ul id="release-commits" class="release-commits"></ul>
+            </div>
+            <div>
+              <h3>Limitacao conhecida</h3>
+              <p id="release-limitation" class="muted-text"></p>
+              <h3>Fallback</h3>
+              <p id="release-fallback" class="muted-text"></p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-<script src="./app.js"></script>
-</body>
+      <!-- 3 + 4. KPIs reais e estimados -->
+      <section class="section section--split" aria-label="KPIs reais e estimados">
+        <div class="panel">
+          <div class="section-heading">
+            <p class="eyebrow">Medidos por ferramenta</p>
+            <h2>KPIs reais</h2>
+          </div>
+          <div id="real-kpis" class="metric-list"></div>
+        </div>
+        <div class="panel">
+          <div class="section-heading">
+            <p class="eyebrow">Avaliacao qualitativa</p>
+            <h2>KPIs estimados</h2>
+          </div>
+          <div id="estimated-kpis" class="metric-list"></div>
+        </div>
+      </section>
+
+      <!-- 5. Maturidade mobile -->
+      <section class="section section--split" aria-label="Maturidade mobile">
+        <aside class="panel">
+          <div class="section-heading">
+            <p class="eyebrow">Maturidade mobile</p>
+            <h2>Prontidao do MVP</h2>
+          </div>
+          <div id="mobile-progress" class="progress-list"></div>
+        </aside>
+        <div class="panel">
+          <div class="section-heading">
+            <p class="eyebrow">Inventario</p>
+            <h2>Modulos Flutter</h2>
+          </div>
+          <div id="module-list" class="stacked-list"></div>
+        </div>
+      </section>
+
+      <!-- 6. Entregas B-097 ate B-100 -->
+      <section class="section section--block" aria-label="Entregas recentes">
+        <div class="section-heading">
+          <p class="eyebrow">Linha do tempo</p>
+          <h2>Entregas B-097 ate B-100</h2>
+        </div>
+        <div id="deliveries" class="timeline"></div>
+      </section>
+
+      <!-- 7 + 8 + 9. Dominios funcionais -->
+      <section class="section section--triple" aria-label="Dominios funcionais">
+        <div class="panel domain-panel" id="wo-domain"></div>
+        <div class="panel domain-panel" id="cl-domain"></div>
+        <div class="panel domain-panel" id="offline-domain"></div>
+      </section>
+
+      <!-- 10 + 11. Riscos e proximos passos -->
+      <section class="section section--split" aria-label="Riscos e proximos passos">
+        <div class="panel">
+          <div class="section-heading">
+            <p class="eyebrow">Controle</p>
+            <h2>Riscos e lacunas</h2>
+          </div>
+          <div id="risk-list" class="risk-list"></div>
+        </div>
+        <div class="panel">
+          <div class="section-heading">
+            <p class="eyebrow">Sequencia sugerida</p>
+            <h2>Proximos passos</h2>
+          </div>
+          <div id="next-steps" class="next-list"></div>
+        </div>
+      </section>
+
+      <!-- 12. Historico -->
+      <section class="section section--block panel" aria-label="Historico">
+        <div class="section-heading">
+          <p class="eyebrow">Historico</p>
+          <h2>Evolucao B-094 ate B-100</h2>
+        </div>
+        <div class="table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Versao</th><th>Data</th><th>Flutter tests</th>
+                <th>Modulos</th><th>Demo</th><th>Vendavel</th><th>Blocos</th>
+              </tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="dashboard-footer">
+        <p>Artefato estatico. Abra <code>index.html</code> por duplo clique — fallback embutido garante exibicao sem servidor.</p>
+      </footer>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
 </html>

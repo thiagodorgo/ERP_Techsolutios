@@ -1,5 +1,43 @@
 # Log de Execucao
 
+## 2026-06-15 - B-100 Flutter Checklist Remote Templates
+
+### Natureza
+
+Conexao do `ChecklistRepository` ao endpoint `GET /api/v1/mobile/checklists/available`.
+Pull de templates com parser tolerante (camelCase/snake_case + multiplos envelopes),
+upsert no cache Drift, fallback para cache/seeds em caso de erro. Banners de pull
+state na tela de checklists disponiveis. Nenhuma mudanca em backend ou frontend web.
+
+### Mudancas implementadas
+
+| Arquivo | Tipo | Descricao |
+|---------|------|-----------|
+| `lib/features/checklists/data/checklist_remote_api.dart` | feat | Envelopes tolerantes; parser camelCase/snake_case |
+| `lib/features/checklists/data/checklist_repository.dart` | feat | Pull state, `refresh()`, fallback cache/seeds |
+| `lib/features/checklists/ui/checklist_available_screen.dart` | feat | Stateful + RefreshIndicator + banners |
+| `test/features/b100_checklist_remote_templates_test.dart` | test | 44 novos testes |
+
+### Limitacao conhecida
+
+Rota backend `GET /api/v1/mobile/checklists/available` ausente em `mobile.routes.ts`
+(listada como implementada no catalogo de bootstrap). Flutter trata com fallback
+resiliente para cache/seeds. Escopo backend nao alterado — implementacao da rota
+fica para B-101.
+
+### Validacao final
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| `flutter analyze` | **No issues found** |
+| `flutter test` (B-100) | **44/44 passando** |
+| `flutter test` (suite) | **486/487** (1 pre-existente instavel passa isolado) |
+| `npm test` | **15/15 passando** |
+| `npm run lint` | **0 erros** |
+| `npm run build` | **0 erros** |
+
+---
+
 ## 2026-06-14 - B-099K Project KPIs Dashboard
 
 ### Natureza
