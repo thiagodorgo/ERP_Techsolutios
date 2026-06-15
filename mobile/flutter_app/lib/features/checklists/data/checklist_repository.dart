@@ -8,6 +8,7 @@ import '../../../core/bootstrap/bootstrap_session.dart';
 import '../../../core/local_db/database_provider.dart';
 import '../../../core/local_db/drift_checklist_local_store.dart';
 import '../../../core/network/api_contracts.dart';
+import '../../../core/network/api_error.dart';
 import '../../../core/network/http_client.dart';
 import '../../../core/sync/sync_action_factory.dart';
 import '../../../core/sync/sync_models.dart';
@@ -16,6 +17,8 @@ import '../../../core/sync/sync_queue_repository.dart';
 import '../domain/checklist_models.dart';
 import 'checklist_local_store.dart';
 import 'checklist_remote_api.dart';
+
+enum ChecklistPullOutcome { success, cached, error, pulling }
 
 class ChecklistRepository extends ChangeNotifier {
   ChecklistRepository({
@@ -39,13 +42,25 @@ class ChecklistRepository extends ChangeNotifier {
 
   List<MobileChecklistTemplate> _templates = [];
   bool _loaded = false;
+  bool _isPulling = false;
+  DateTime? _lastPulledAt;
+  String? _lastPullError;
 
   List<MobileChecklistTemplate> get templates => List.unmodifiable(_templates);
+
+  bool get isPulling => _isPulling;
+  DateTime? get lastPulledAt => _lastPulledAt;
+  String? get lastPullError => _lastPullError;
+  bool get hasCache => _templates.isNotEmpty;
 
   Future<void> load({bool seedIfEmpty = true}) async {
     if (_loaded) return;
 
-    // Try remote first; fall back to local/seed on any error.
+    // _isPulling is set synchronously so the first build can read it.
+    // notifyListeners() is deferred until after the first await to avoid
+    // calling setState() during a widget build.
+    _isPulling = true;
+
     try {
       final remote = await _remoteApi.fetchAvailableChecklists(
         tenantId: _session.activeTenant.tenantId,
@@ -54,11 +69,18 @@ class ChecklistRepository extends ChangeNotifier {
         await _localStore.saveTemplate(t);
       }
       _templates = remote;
+      _lastPulledAt = DateTime.now().toUtc();
+      _lastPullError = null;
       _loaded = true;
+      _isPulling = false;
       notifyListeners();
       return;
-    } catch (_) {
-      // offline or unauthenticated — fall through
+    } catch (e) {
+      _lastPullError = e is ApiError
+          ? e.safeMessage
+          : 'Nao foi possivel atualizar os modelos de checklist agora.';
+      _isPulling = false;
+      // fall through to local cache / seed
     }
 
     final stored = await _localStore.loadTemplates(
@@ -79,6 +101,37 @@ class ChecklistRepository extends ChangeNotifier {
     }
     _loaded = true;
     notifyListeners();
+  }
+
+  Future<ChecklistPullOutcome> refresh() async {
+    if (_isPulling) return ChecklistPullOutcome.pulling;
+    _loaded = false;
+    _isPulling = true;
+    notifyListeners();
+    try {
+      final remote = await _remoteApi.fetchAvailableChecklists(
+        tenantId: _session.activeTenant.tenantId,
+      );
+      for (final t in remote) {
+        await _localStore.saveTemplate(t);
+      }
+      _templates = remote;
+      _lastPulledAt = DateTime.now().toUtc();
+      _lastPullError = null;
+      _loaded = true;
+      return ChecklistPullOutcome.success;
+    } catch (e) {
+      _lastPullError = e is ApiError
+          ? e.safeMessage
+          : 'Nao foi possivel atualizar os modelos de checklist agora.';
+      _loaded = true;
+      return _templates.isEmpty
+          ? ChecklistPullOutcome.error
+          : ChecklistPullOutcome.cached;
+    } finally {
+      _isPulling = false;
+      notifyListeners();
+    }
   }
 
   List<MobileChecklistTemplate> get activeTemplates =>
