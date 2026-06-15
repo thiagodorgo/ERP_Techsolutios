@@ -2772,3 +2772,32 @@ B-098C implementou o contrato backend minimo de replay offline de checklist sem 
 - evidencia generica/OS
 - idempotencia duravel em banco/Redis para ambiente multi-instancia
 - implementacao Flutter consumindo o endpoint B-098C
+
+## Atualizacao 2026-06-15 - B-098D Mobile Inventory Availability Contract
+
+### Status
+
+B-098D implementou contratos backend parciais para inventario mobile sem alterar Flutter. O backend agora expoe consulta de disponibilidade e replay minimo de reserva, consumo e falta em campo, mantendo tenant pelo ator autenticado e idempotencia por `client_action_id`.
+
+### Pronto para consumo controlado
+
+- `GET /api/v1/mobile/inventory/availability`
+- `POST /api/v1/mobile/sync/inventory-actions`
+- filtros seguros `item_id`, `sku`, `warehouse_id` e `work_order_id`
+- itens com `item_id`, `sku`, `name`, `unit`, `warehouse_id`, `available_quantity`, `reserved_quantity` e `status`
+- lote `{ client_batch_id, actions[] }`
+- acoes `inventory.reserve`, `inventory.consume` e `inventory.shortage_report`
+- tenant resolvido pelo ator autenticado, nao pelo query/body/payload
+- idempotencia por tenant do ator + usuario do ator + `client_action_id`
+- retorno separado em `summary`, `accepted`, `rejected`, `conflicts` e `already_applied`
+- conflito estruturado para mismatch de idempotencia e quantidade indisponivel
+- bootstrap/catalogos marcam `inventory_mobile` e `inventory_sync` como `partial`
+
+### Ainda nao pronto
+
+- persistencia duravel de disponibilidade/idempotencia em banco ou Redis
+- reserva transacional multi-instancia
+- relacionamento real entre inventario, armazem e Ordem de Servico
+- permissoes granulares de reserva/consumo alem de `inventory.manage`
+- evidencia generica/OS
+- implementacao Flutter consumindo os endpoints B-098D

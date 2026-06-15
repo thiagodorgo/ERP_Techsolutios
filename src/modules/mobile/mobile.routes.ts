@@ -6,6 +6,7 @@ import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { createDefaultExpenseManagementService } from "../expense-management/expense-management.service.js";
 import { syncMobileChecklistActions } from "./mobile-checklist-sync.js";
+import { getMobileInventoryAvailability, syncMobileInventoryActions } from "./mobile-inventory-sync.js";
 import { syncMobileWorkOrderActions } from "./mobile-work-order-sync.js";
 
 type ExpenseCategoryDto = {
@@ -139,6 +140,24 @@ export function createMobileRouter(service: ICoreSaasService): Router {
     }),
   );
 
+  router.get(
+    "/mobile/inventory/availability",
+    handleAsyncRoute(async (request, response) => {
+      response.json({
+        data: getMobileInventoryAvailability(request.tenantContext, request.query ?? {}),
+      });
+    }),
+  );
+
+  router.post(
+    "/mobile/sync/inventory-actions",
+    handleAsyncRoute(async (request, response) => {
+      response.json({
+        data: await syncMobileInventoryActions(request.tenantContext, request.body ?? {}),
+      });
+    }),
+  );
+
   return router;
 }
 
@@ -201,9 +220,14 @@ function buildFeatureFlags(
       reason: hasModule(modules, "tenant_checklist") ? "minimal_replay_contract" : "module_disabled",
     },
     inventory_mobile: {
-      enabled: false,
-      status: "planned",
-      reason: "backend_contract_unavailable",
+      enabled: hasModule(modules, "inventory") && hasPermission(actor, "inventory.read"),
+      status: hasModule(modules, "inventory") ? "partial" : "unavailable",
+      reason: hasModule(modules, "inventory") ? "availability_and_sync_partial" : "module_disabled",
+    },
+    inventory_sync: {
+      enabled: hasModule(modules, "inventory") && hasPermission(actor, "inventory.manage"),
+      status: hasModule(modules, "inventory") ? "partial" : "unavailable",
+      reason: hasModule(modules, "inventory") ? "in_memory_contract" : "module_disabled",
     },
     generic_evidence_upload: {
       enabled: false,
@@ -231,8 +255,8 @@ function buildMobilePolicy() {
       max_batch_size: 50,
       retry_backoff_seconds: [10, 30, 120],
       implemented_domains: ["expenses", "work_orders"],
-      partial_domains: ["checklists"],
-      planned_domains: ["inventory"],
+      partial_domains: ["checklists", "inventory"],
+      planned_domains: [],
     },
     evidence: {
       checklist_attachments: "implemented",
@@ -291,7 +315,8 @@ function buildCatalogs(
         endpointCatalogItem("field_location_send", "POST /api/v1/mobile/field-locations", "implemented"),
         endpointCatalogItem("work_order_sync", "POST /api/v1/mobile/sync/work-order-actions", "implemented"),
         endpointCatalogItem("checklist_sync", "POST /api/v1/mobile/sync/checklist-actions", "partial"),
-        endpointCatalogItem("inventory_items", "GET /api/v1/mobile/inventory/items", "planned"),
+        endpointCatalogItem("inventory_availability", "GET /api/v1/mobile/inventory/availability", "partial"),
+        endpointCatalogItem("inventory_sync", "POST /api/v1/mobile/sync/inventory-actions", "partial"),
       ],
     },
   };
