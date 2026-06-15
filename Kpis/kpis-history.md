@@ -83,3 +83,54 @@ Planejados:
 ### Regra permanente
 
 Todo bloco futuro deve atualizar este historico com data, escopo, KPIs alterados, validacoes executadas, riscos novos e decisao de proximo bloco.
+
+## 2026-06-15 - B-098E Mobile Evidence Contract
+
+### Resultado
+
+- Criado `POST /api/v1/mobile/sync/evidence-actions` em status `partial`.
+- Tipos de OS: `evidence.work_order_photo`, `evidence.work_order_signature` e `evidence.work_order_observation`.
+- Tipos de campo: `evidence.field_photo`, `evidence.field_signature` e `evidence.field_observation`.
+- Tenant resolvido exclusivamente pelo ator autenticado; `tenant_id`/`tenantId` externo e ignorado.
+- Idempotencia por tenant + usuario + `client_evidence_id`, com `already_applied` e `idempotency_payload_mismatch`.
+- Bootstrap, policy e catalogo mobile atualizados para marcar evidencia como parcial.
+
+### KPIs atualizados
+
+| KPI | Valor |
+| --- | --- |
+| Backend mobile | 6/7 |
+| Evidencias OS/genericas | parcial |
+| Testes focados mobile/Core SaaS | 18/18 |
+| Flutter tocado neste bloco | 0 |
+| Figma tocado neste bloco | 0 |
+| Infra/secrets/migrations tocados | 0 |
+
+### Lacunas e riscos
+
+- O contrato registra apenas manifesto/metadados; nao recebe binario/base64.
+- Faltam URL protegida de upload, storage, antivirus, auditoria de arquivo e persistencia duravel DB/Redis.
+- Flutter ainda precisa consumir os contratos B-098B/C/D/E.
+- Idempotencia em memoria nao atende ambiente multi-instancia.
+
+### Validacoes executadas
+
+- `npm run check`: pass.
+- `npm run lint`: pass.
+- `npm test`: pass, 15/15.
+- `node --test --import tsx tests/mobile-backend-contracts.test.ts tests/core-saas-contract.test.ts`: pass, 18/18.
+- `npm run build`: pass.
+- `npm --prefix frontend run check`: pass.
+- `npm --prefix frontend run test:smoke`: pass, 28/28.
+- `npm --prefix frontend run build`: pass.
+- `DATABASE_URL` dummy + `npx prisma validate`: pass.
+- `git diff --check`: pass.
+
+### Previsoes
+
+- MVP vendavel: 36-72h restantes, sujeito a integracao Flutter, upload protegido, persistencia/idempotencia e validacao E2E.
+- Padrao prototipo Figma premium: 80-160h adicionais, sem alteracao de Figma neste bloco.
+
+### Regra permanente confirmada
+
+Todo bloco futuro continua obrigado a atualizar `Kpis/index.html`, `Kpis/app.js` e `Kpis/kpis-history.md` antes de encerrar a entrega.

@@ -2904,3 +2904,26 @@ KPI-DASHBOARD-001 criou a pasta permanente `Kpis/` para consolidar KPIs, analise
 - nenhum comando Flutter foi executado
 - sem Figma, secrets, `.env`, migrations ou infra
 - B-098E nao foi iniciado
+
+## Atualizacao 2026-06-15 - B-098E Mobile Evidence Contract
+
+### Status
+
+B-098E implementou o contrato backend parcial de manifestos de evidencia para Ordem de Servico e campo, sem alterar Flutter. O endpoint registra metadados controlados de foto, assinatura e observacao e mantem tenant e idempotencia no contexto autenticado.
+
+### Pronto para consumo controlado
+
+- `POST /api/v1/mobile/sync/evidence-actions`
+- tipos `evidence.work_order_photo`, `evidence.work_order_signature`, `evidence.work_order_observation`, `evidence.field_photo`, `evidence.field_signature` e `evidence.field_observation`
+- permissao `work_orders:update` para OS e `field_location:send` para campo
+- idempotencia por tenant + usuario + `client_evidence_id`
+- resposta por acao em `accepted`, `rejected`, `conflicts` e `already_applied`
+- bootstrap/catalogos e `Kpis/` atualizados para status parcial
+
+### Ainda nao pronto
+
+- upload binario ou URL protegida
+- storage, antivirus e auditoria de arquivo
+- persistencia duravel de evidencias/receipts em DB ou Redis
+- consumo Flutter e validacao E2E de campo
+- B-098F nao foi iniciado
