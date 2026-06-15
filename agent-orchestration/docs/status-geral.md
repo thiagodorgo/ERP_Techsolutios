@@ -1,5 +1,31 @@
 # Status Geral
 
+## Atualizacao 2026-06-14 — B-099K Project KPIs Dashboard
+
+### Entregue
+
+- Criado `Kpis/` na raiz do repositorio com dashboard HTML/CSS/JS sem dependencias externas.
+- `Kpis/kpis-latest.json` — snapshot atual (B-099) com metricas reais e estimadas.
+- `Kpis/kpis-history.json` — historico de snapshots B-094 → B-099.
+- `Kpis/kpis-history.md` — registro legivel do historico.
+- `Kpis/index.html` + `styles.css` + `app.js` — dashboard com 11 secoes.
+- `Kpis/README.md` — instrucoes de uso e atualizacao.
+
+### Regra estabelecida
+
+**A partir da B-099K, toda entrega deve atualizar `Kpis/`:**
+editar `kpis-latest.json`, adicionar snapshot em `kpis-history.json` e entrada em `kpis-history.md`.
+Commitar com `docs(kpis): update dashboard for B-XXX`.
+
+### Visualizacao
+
+```bash
+npx serve Kpis/
+# Abre em http://localhost:3000
+```
+
+---
+
 ## Atualizacao 2026-06-14 — B-099 Flutter Real Work Orders Pull
 
 ### QA final

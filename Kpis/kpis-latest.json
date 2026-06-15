@@ -1,0 +1,262 @@
+{
+  "snapshot_date": "2026-06-14",
+  "version": "B-099",
+  "branch": "feature/flutter-real-work-orders-pull",
+  "description": "B-099 Flutter Real Work Orders Pull — conecta WorkOrderRepository ao GET /api/v1/work-orders",
+  "categories": [
+    {
+      "id": "quality",
+      "label": "Qualidade de Codigo",
+      "metrics": [
+        {
+          "id": "flutter_tests",
+          "label": "Flutter Tests",
+          "value": 443,
+          "total": 443,
+          "unit": "testes",
+          "type": "real",
+          "status": "green",
+          "detail": "443/443 passando — inclui +35 de B-099"
+        },
+        {
+          "id": "npm_tests",
+          "label": "Backend Tests",
+          "value": 15,
+          "total": 15,
+          "unit": "testes",
+          "type": "real",
+          "status": "green",
+          "detail": "15/15 passando"
+        },
+        {
+          "id": "flutter_analyze",
+          "label": "flutter analyze",
+          "value": 0,
+          "unit": "issues",
+          "type": "real",
+          "status": "green",
+          "detail": "No issues found"
+        },
+        {
+          "id": "npm_lint",
+          "label": "npm run lint",
+          "value": 0,
+          "unit": "erros",
+          "type": "real",
+          "status": "green",
+          "detail": "0 erros"
+        },
+        {
+          "id": "npm_build",
+          "label": "npm run build",
+          "value": 0,
+          "unit": "erros",
+          "type": "real",
+          "status": "green",
+          "detail": "0 erros"
+        }
+      ]
+    },
+    {
+      "id": "mobile",
+      "label": "Mobile Flutter MVP",
+      "metrics": [
+        {
+          "id": "flutter_modules_ready",
+          "label": "Modulos Flutter Prontos",
+          "value": 12,
+          "total": 15,
+          "unit": "modulos",
+          "type": "real",
+          "status": "yellow",
+          "detail": "Pendentes: OS sync bidirecional, Approvals, Field Map"
+        },
+        {
+          "id": "flutter_mvp_demo",
+          "label": "MVP Demo Readiness",
+          "value": 75,
+          "unit": "%",
+          "type": "estimated",
+          "status": "yellow",
+          "detail": "Estimado. Sobe para 85%+ apos B-100 (sync bidirecional)"
+        },
+        {
+          "id": "flutter_mvp_vendavel",
+          "label": "MVP Vendavel (Producao)",
+          "value": 50,
+          "unit": "%",
+          "type": "estimated",
+          "status": "yellow",
+          "detail": "Estimado. Requer upload real de evidencias, GPS, aprovacao real"
+        },
+        {
+          "id": "flutter_test_files",
+          "label": "Arquivos de Teste Flutter",
+          "value": 19,
+          "unit": "arquivos",
+          "type": "real",
+          "status": "green",
+          "detail": "19 arquivos de teste no diretorio test/"
+        },
+        {
+          "id": "flutter_os_pull",
+          "label": "OS Pull Remoto",
+          "value": 1,
+          "unit": "conectado",
+          "type": "real",
+          "status": "green",
+          "detail": "GET /api/v1/work-orders com upsert Drift e fallback cache"
+        }
+      ]
+    },
+    {
+      "id": "backend",
+      "label": "Backend Node.js",
+      "metrics": [
+        {
+          "id": "backend_modules",
+          "label": "Modulos Backend",
+          "value": 8,
+          "total": 10,
+          "unit": "modulos",
+          "type": "estimated",
+          "status": "yellow",
+          "detail": "core-saas, auth, RBAC, checklists, work-orders, tenants, audit, platform"
+        },
+        {
+          "id": "backend_auth",
+          "label": "Auth JWT Real",
+          "value": 1,
+          "unit": "implementado",
+          "type": "real",
+          "status": "green",
+          "detail": "Login local tenant-scoped + JWT + RBAC persistido"
+        },
+        {
+          "id": "backend_persistence",
+          "label": "Persistencia Prisma/PostgreSQL",
+          "value": 1,
+          "unit": "implementado",
+          "type": "real",
+          "status": "green",
+          "detail": "PrismaCoreSaasStore via CORE_SAAS_PERSISTENCE=prisma"
+        },
+        {
+          "id": "backend_checklist_api",
+          "label": "Checklist API",
+          "value": 1,
+          "unit": "implementado",
+          "type": "real",
+          "status": "green",
+          "detail": "/api/v1/tenant/checklists + /api/v1/mobile/checklists/*"
+        }
+      ]
+    },
+    {
+      "id": "delivery",
+      "label": "Velocidade de Entrega",
+      "metrics": [
+        {
+          "id": "blocks_completed",
+          "label": "Blocos Entregues (total)",
+          "value": 28,
+          "unit": "blocos",
+          "type": "real",
+          "status": "green",
+          "detail": "B-076 ate B-099, incluindo sub-blocos (A/B)"
+        },
+        {
+          "id": "blocks_last_sprint",
+          "label": "Blocos em 2026-06-14",
+          "value": 4,
+          "unit": "blocos",
+          "type": "real",
+          "status": "green",
+          "detail": "B-097, B-098, B-098B, B-099 entregues na mesma sessao"
+        },
+        {
+          "id": "prs_merged",
+          "label": "PRs Merged (estimado)",
+          "value": 15,
+          "unit": "PRs",
+          "type": "estimated",
+          "status": "green",
+          "detail": "Estimado com base no historico de branches e merges"
+        }
+      ]
+    },
+    {
+      "id": "gaps",
+      "label": "Lacunas para Producao",
+      "metrics": [
+        {
+          "id": "os_sync_bidirecional",
+          "label": "OS Sync Bidirecional",
+          "value": 0,
+          "unit": "implementado",
+          "type": "real",
+          "status": "red",
+          "detail": "Pendente — B-100: push de alteracoes locais ao backend"
+        },
+        {
+          "id": "upload_evidencias",
+          "label": "Upload Real de Evidencias",
+          "value": 0,
+          "unit": "implementado",
+          "type": "real",
+          "status": "red",
+          "detail": "Pendente — S3 presigned URL + image_picker"
+        },
+        {
+          "id": "gps_mapa",
+          "label": "GPS / Mapa Operacional",
+          "value": 0,
+          "unit": "implementado",
+          "type": "real",
+          "status": "red",
+          "detail": "Placeholder — aguarda definicao de requisito"
+        },
+        {
+          "id": "aprovacao_real",
+          "label": "Aprovacao Real",
+          "value": 0,
+          "unit": "implementado",
+          "type": "real",
+          "status": "red",
+          "detail": "Placeholder — fluxo de aprovacao de OS"
+        },
+        {
+          "id": "checklist_remoto",
+          "label": "Checklist Remoto Mobile",
+          "value": 0,
+          "unit": "implementado",
+          "type": "real",
+          "status": "red",
+          "detail": "Pendente — B-101: conectar backend real de checklists ao mobile"
+        }
+      ]
+    }
+  ],
+  "modules": [
+    { "name": "Auth/Login", "status": "pronto", "detail": "Real via --dart-define=ERP_AUTH_MODE=remote" },
+    { "name": "Bootstrap/Session", "status": "pronto", "detail": "Dual-format: B-098 minimal + B-098A expandido" },
+    { "name": "Feature Flags", "status": "pronto", "detail": "FeatureFlag + CapabilityStatus" },
+    { "name": "Sync Cursors", "status": "pronto", "detail": "Parseados; prontos para uso incremental" },
+    { "name": "Multi-tenant", "status": "pronto", "detail": "TenantSelectorScreen + switchTenant()" },
+    { "name": "OS — Lista Local", "status": "pronto", "detail": "DriftWorkOrderLocalStore ativo" },
+    { "name": "OS — Pull Remoto", "status": "pronto", "detail": "GET /api/v1/work-orders; upsert Drift; banners UI (B-099)" },
+    { "name": "OS — Sync Bidirecional", "status": "pendente", "detail": "B-100+ — alteracoes locais para backend" },
+    { "name": "Checklist Configuravel", "status": "pronto", "detail": "Modelos ricos + 10 renderers" },
+    { "name": "Sync Screen", "status": "pronto", "detail": "Grupos por dominio, KPIs, banners" },
+    { "name": "Diagnostics", "status": "pronto", "detail": "Dev-only (kIsDevMode)" },
+    { "name": "Inventory", "status": "pronto", "detail": "Local-first (SQLite)" },
+    { "name": "RDV / Despesas", "status": "pronto", "detail": "Local-first (SQLite)" },
+    { "name": "Approvals", "status": "placeholder", "detail": "Aguarda definicao de fluxo" },
+    { "name": "Field Map / GPS", "status": "placeholder", "detail": "Aguarda requisito tecnico" }
+  ],
+  "next_steps": [
+    { "block": "B-100", "title": "Push de alteracoes locais de OS para o backend (sync bidirecional)" },
+    { "block": "B-101", "title": "Conectar backend real de checklists ao mobile Flutter" },
+    { "block": "B-102", "title": "Upload real de fotos (image_picker + presigned URL S3)" }
+  ]
+}

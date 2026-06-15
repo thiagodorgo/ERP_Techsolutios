@@ -1,8 +1,9 @@
 # Flutter Mobile MVP — Gap Analysis
 
 **Referência de branch:** `feature/flutter-real-work-orders-pull`
-**Data:** 2026-06-14
+**Data:** 2026-06-14 (atualizado em B-099K)
 **Responsável:** ERP Techsolutions — Mobile Squad
+**KPI Dashboard:** `Kpis/` na raiz do repositório — visualizar com `npx serve Kpis/`
 
 ---
 

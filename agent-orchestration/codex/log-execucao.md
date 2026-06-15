@@ -1,5 +1,49 @@
 # Log de Execucao
 
+## 2026-06-14 - B-099K Project KPIs Dashboard
+
+### Natureza
+
+Criacao do dashboard de KPIs em `Kpis/` na raiz do repositorio.
+Sem dependencias externas (sem CDN, sem npm/flutter packages adicionais).
+Dashboard HTML/CSS/JS que carrega JSON local via fetch().
+Estabelecida regra de atualizacao obrigatoria a partir desta entrega.
+
+### Arquivos criados
+
+| Arquivo | Descricao |
+|---------|-----------|
+| `Kpis/index.html` | Dashboard com 11 secoes |
+| `Kpis/styles.css` | Visual premium dark-mode sem dependencias |
+| `Kpis/app.js` | Carregamento e renderizacao dos dados JSON |
+| `Kpis/kpis-latest.json` | Snapshot atual B-099 com metricas reais/estimadas |
+| `Kpis/kpis-history.json` | Historico B-094 → B-099 |
+| `Kpis/kpis-history.md` | Historico legivel por humanos |
+| `Kpis/README.md` | Instrucoes de visualizacao e atualizacao |
+
+### Fixes de estabilizacao (commit anterior)
+
+| Arquivo | Tipo | Descricao |
+|---------|------|-----------|
+| `shared/ui/home_screen.dart` | fix | Move listener WorkOrderRepository para build() — corrige regressions b084 e home_screen |
+| `test/features/b099_real_work_orders_pull_test.dart` | fix | Remove isAfter(before) flaky no teste 1.5 |
+
+### Validacao final
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| `flutter test` | **443/443 passando** |
+| `npm test` | **15/15 passando** |
+| `npm run lint` | **0 erros** |
+| `npm run build` | **0 erros** |
+
+### Regra
+
+A partir da B-099K, toda entrega deve atualizar `Kpis/` e commitar com
+`docs(kpis): update dashboard for B-XXX`.
+
+---
+
 ## 2026-06-14 - B-099 Flutter Real Work Orders Pull
 
 ### Natureza
