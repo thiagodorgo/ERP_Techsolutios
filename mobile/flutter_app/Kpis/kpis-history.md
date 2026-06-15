@@ -5,6 +5,26 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-100K — Limpeza do dashboard de KPIs Mobile
+
+### Resumo
+A pasta oficial `mobile/flutter_app/Kpis/` foi reestruturada usando a pasta raiz `Kpis/` apenas como referência visual/estrutural.
+
+### Ajustes
+- Removida dependência obrigatória de servidor local.
+- Removidos launchers e arquivos obsoletos (`iniciar-dashboard.bat`).
+- Dashboard passa a funcionar por duplo clique em `index.html`, com fallback embutido em `app.js`.
+- `kpis-latest.json` e `kpis-history.json` continuam versionados como fonte oficial.
+- A pasta raiz `Kpis/` permanece fora dos commits.
+
+### Impacto
+- Não altera código Flutter funcional.
+- Não altera backend.
+- Não altera frontend web.
+- Não altera KPIs numéricos, salvo ajustes já feitos pela B-100.
+
+---
+
 ## B-100 — 2026-06-15
 
 **Flutter Checklist Remote Templates**
