@@ -5,6 +5,7 @@ import type { ICoreSaasService } from "../core-saas/services/core-saas-service.i
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { createDefaultExpenseManagementService } from "../expense-management/expense-management.service.js";
+import { syncMobileChecklistActions } from "./mobile-checklist-sync.js";
 import { syncMobileWorkOrderActions } from "./mobile-work-order-sync.js";
 
 type ExpenseCategoryDto = {
@@ -129,6 +130,15 @@ export function createMobileRouter(service: ICoreSaasService): Router {
     }),
   );
 
+  router.post(
+    "/mobile/sync/checklist-actions",
+    handleAsyncRoute(async (request, response) => {
+      response.json({
+        data: await syncMobileChecklistActions(request.tenantContext, request.body ?? {}),
+      });
+    }),
+  );
+
   return router;
 }
 
@@ -183,9 +193,12 @@ function buildFeatureFlags(
       ...(hasModule(modules, "work_orders") ? {} : { reason: "module_disabled" }),
     },
     checklist_sync: {
-      enabled: false,
-      status: "planned",
-      reason: "planned_for_b098c",
+      enabled: hasModule(modules, "tenant_checklist") && (
+        hasPermission(actor, "checklist_runs:update") ||
+        hasPermission(actor, "checklist_runs:complete")
+      ),
+      status: hasModule(modules, "tenant_checklist") ? "partial" : "unavailable",
+      reason: hasModule(modules, "tenant_checklist") ? "minimal_replay_contract" : "module_disabled",
     },
     inventory_mobile: {
       enabled: false,
@@ -218,7 +231,8 @@ function buildMobilePolicy() {
       max_batch_size: 50,
       retry_backoff_seconds: [10, 30, 120],
       implemented_domains: ["expenses", "work_orders"],
-      planned_domains: ["checklists", "inventory"],
+      partial_domains: ["checklists"],
+      planned_domains: ["inventory"],
     },
     evidence: {
       checklist_attachments: "implemented",
@@ -276,7 +290,7 @@ function buildCatalogs(
         endpointCatalogItem("notifications", "GET /api/v1/notifications", "implemented"),
         endpointCatalogItem("field_location_send", "POST /api/v1/mobile/field-locations", "implemented"),
         endpointCatalogItem("work_order_sync", "POST /api/v1/mobile/sync/work-order-actions", "implemented"),
-        endpointCatalogItem("checklist_sync", "POST /api/v1/mobile/sync/checklist-actions", "planned"),
+        endpointCatalogItem("checklist_sync", "POST /api/v1/mobile/sync/checklist-actions", "partial"),
         endpointCatalogItem("inventory_items", "GET /api/v1/mobile/inventory/items", "planned"),
       ],
     },

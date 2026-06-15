@@ -117,9 +117,81 @@ Regras obrigatorias:
 
 ### POST /api/v1/mobile/sync/checklist-actions
 
-- Permissao: futura por acao de checklist.
-- Status B-098: planejado; rotas online de checklist existem, mas replay offline em lote ainda nao.
-- Offline: sera o contrato para runs, respostas, markers, conclusao e conflitos.
+- Permissao: varia por acao de checklist; `checklist.item_answer` e `checklist.item_note` exigem `checklist_runs:update`, `checklist.complete` exige `checklist_runs:complete`.
+- Status B-098C: implementado parcial para replay minimo de respostas, notas e conclusao, sem anexos, marcadores, divergencia ou acknowledgement em lote.
+- Request: lote `{ client_batch_id, actions[] }`, cada acao com `client_action_id`, `type`, `local_created_at` e `payload`.
+- Response: envelope em `data` com `summary`, `accepted`, `rejected`, `conflicts` e `already_applied`.
+- Erros de envelope/contexto: 400 ou 403 com envelope JSON seguro.
+- Idempotencia: obrigatoria por tenant resolvido do ator + usuario do ator + `client_action_id`.
+- Offline: contrato minimo para replay local-first de respostas/notas/conclusao de checklist.
+
+Request:
+
+```json
+{
+  "client_batch_id": "checklist-batch-local-1",
+  "actions": [
+    {
+      "client_action_id": "checklist-action-local-1",
+      "type": "checklist.item_answer",
+      "local_created_at": "2026-06-14T12:00:00.000Z",
+      "payload": {
+        "run_id": "server-checklist-run-id",
+        "component_id": "server-component-id",
+        "value": "Veiculo conferido sem avarias.",
+        "metadata": {
+          "source": "offline_form"
+        }
+      }
+    }
+  ]
+}
+```
+
+Tipos implementados:
+
+- `checklist.item_answer`: payload com `run_id`, `component_id`, `value` e `metadata?`.
+- `checklist.item_note`: payload com `run_id`, `component_id`, `note`, `value?` e `metadata?`; a nota e gravada em `metadata.note` da resposta do componente, preservando o valor existente quando houver.
+- `checklist.complete`: payload com `run_id`, `has_divergence?` e `observation?`.
+
+Resposta:
+
+```json
+{
+  "data": {
+    "contract": {
+      "name": "mobile_checklist_actions_sync",
+      "version": "2026-06-14.b098c",
+      "status": "partial"
+    },
+    "client_batch_id": "checklist-batch-local-1",
+    "tenant_id": "tenant-do-ator",
+    "server_time": "2026-06-14T12:00:01.000Z",
+    "summary": {
+      "received": 1,
+      "accepted": 1,
+      "rejected": 0,
+      "conflicts": 0,
+      "already_applied": 0
+    },
+    "accepted": [],
+    "rejected": [],
+    "conflicts": [],
+    "already_applied": []
+  }
+}
+```
+
+Regras obrigatorias:
+
+- `tenant_id` de body/payload nao e confiavel, nao entra no fingerprint e nao decide tenant.
+- `client_action_id`, `type`, `local_created_at` e `payload` sao obrigatorios por acao.
+- lote maximo: 50 acoes.
+- acao aceita retorna `server_state.run` e `server_state.answers` no shape publico dos endpoints reais de checklist.
+- reenvio identico retorna `already_applied`.
+- reenvio com mesmo `client_action_id` e payload diferente retorna conflito `idempotency_payload_mismatch`.
+- payload invalido, tipo nao suportado ou permissao por acao ausente retorna rejeicao/erro estruturado sem stack trace.
+- lacunas B-098C: idempotencia duravel em banco/Redis, anexos/markers/divergencia/acknowledgement em lote e implementacao Flutter consumindo o endpoint.
 
 ### GET /api/v1/mobile/inventory/items
 
