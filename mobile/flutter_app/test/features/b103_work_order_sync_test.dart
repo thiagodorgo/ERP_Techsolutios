@@ -177,14 +177,21 @@ WorkOrderSyncReplayService _b103ReplayService(
   InMemorySyncQueueRepository queue,
   WorkOrderSyncBatchApi api, {
   int maxRetry = 5,
+  WorkOrderSyncEntityUpdater? entityUpdater,
 }) {
-  return WorkOrderSyncReplayService(queue: queue, api: api, maxRetry: maxRetry);
+  return WorkOrderSyncReplayService(
+    queue: queue,
+    api: api,
+    maxRetry: maxRetry,
+    entityUpdater: entityUpdater,
+  );
 }
 
 WorkOrder _workOrder({
   String localId = 'wo-local-repo',
   String? serverId = 'srv-wo-repo',
   WorkOrderStatus status = WorkOrderStatus.scheduled,
+  SyncStatus syncStatus = SyncStatus.synced,
 }) {
   return WorkOrder(
     localId: localId,
@@ -196,7 +203,7 @@ WorkOrder _workOrder({
     serviceAddress: 'Address',
     status: status,
     priority: WorkOrderPriority.normal,
-    syncStatus: SyncStatus.synced,
+    syncStatus: syncStatus,
     createdAt: DateTime.utc(2026, 6, 16),
   );
 }
@@ -503,6 +510,96 @@ void main() {
       expect(result.synced.single.status, SyncStatus.synced);
     });
 
+    test('accepted marca WorkOrder local como synced', () async {
+      final queue = InMemorySyncQueueRepository();
+      await queue.enqueue(
+        _action(
+          id: 'accepted-entity',
+          payload: const {
+            'local_id': 'wo-local-repo',
+            'server_id': 'srv-wo-repo',
+            'new_status': 'dispatched',
+            'previous_status': 'scheduled',
+          },
+        ),
+      );
+      final store = InMemoryWorkOrderLocalStore([
+        _workOrder(syncStatus: SyncStatus.pending),
+      ]);
+
+      await _b103ReplayService(
+        queue,
+        _FakeWorkOrderApi(results: [_result('accepted-entity')]),
+        entityUpdater: buildWorkOrderSyncEntityUpdater(store),
+      ).replayTenant(_tenantId);
+
+      final stored = (await store.loadWorkOrders()).single;
+      expect(stored.syncStatus, SyncStatus.synced);
+      expect(stored.status, WorkOrderStatus.scheduled);
+    });
+
+    test('already_applied marca WorkOrder local como synced', () async {
+      final queue = InMemorySyncQueueRepository();
+      await queue.enqueue(
+        _action(
+          id: 'applied-entity',
+          payload: const {
+            'local_id': 'wo-local-repo',
+            'server_id': 'srv-wo-repo',
+            'new_status': 'dispatched',
+            'previous_status': 'scheduled',
+          },
+        ),
+      );
+      final store = InMemoryWorkOrderLocalStore([
+        _workOrder(syncStatus: SyncStatus.pending),
+      ]);
+
+      await _b103ReplayService(
+        queue,
+        _FakeWorkOrderApi(
+          results: [_result('applied-entity', status: 'ignored')],
+        ),
+        entityUpdater: buildWorkOrderSyncEntityUpdater(store),
+      ).replayTenant(_tenantId);
+
+      final stored = (await store.loadWorkOrders()).single;
+      expect(stored.syncStatus, SyncStatus.synced);
+    });
+
+    test(
+      'accepted com resultRef atualiza serverId da WorkOrder local',
+      () async {
+        final queue = InMemorySyncQueueRepository();
+        await queue.enqueue(
+          _action(
+            id: 'accepted-result-ref',
+            payload: const {
+              'local_id': 'wo-local-repo',
+              'server_id': 'srv-wo-old',
+              'new_status': 'dispatched',
+              'previous_status': 'scheduled',
+            },
+          ),
+        );
+        final store = InMemoryWorkOrderLocalStore([
+          _workOrder(serverId: 'srv-wo-old', syncStatus: SyncStatus.pending),
+        ]);
+
+        await _b103ReplayService(
+          queue,
+          _FakeWorkOrderApi(
+            results: [_result('accepted-result-ref', resultRef: 'srv-wo-new')],
+          ),
+          entityUpdater: buildWorkOrderSyncEntityUpdater(store),
+        ).replayTenant(_tenantId);
+
+        final stored = (await store.loadWorkOrders()).single;
+        expect(stored.syncStatus, SyncStatus.synced);
+        expect(stored.serverId, 'srv-wo-new');
+      },
+    );
+
     test('rejected marca action como failed e incrementa retry', () async {
       final queue = InMemorySyncQueueRepository();
       await queue.enqueue(_action(id: 'rejected-1'));
@@ -520,6 +617,37 @@ void main() {
       expect(result.failed.single.lastErrorCode, 'VALIDATION');
     });
 
+    test('failed nao marca WorkOrder local como synced', () async {
+      final queue = InMemorySyncQueueRepository();
+      await queue.enqueue(
+        _action(
+          id: 'failed-entity',
+          payload: const {
+            'local_id': 'wo-local-repo',
+            'server_id': 'srv-wo-repo',
+            'new_status': 'dispatched',
+            'previous_status': 'scheduled',
+          },
+        ),
+      );
+      final store = InMemoryWorkOrderLocalStore([
+        _workOrder(syncStatus: SyncStatus.pending),
+      ]);
+
+      await _b103ReplayService(
+        queue,
+        _FakeWorkOrderApi(
+          results: [
+            _result('failed-entity', status: 'failed', errorCode: 'VALIDATION'),
+          ],
+        ),
+        entityUpdater: buildWorkOrderSyncEntityUpdater(store),
+      ).replayTenant(_tenantId);
+
+      final stored = (await store.loadWorkOrders()).single;
+      expect(stored.syncStatus, SyncStatus.pending);
+    });
+
     test('conflict marca action como conflict', () async {
       final queue = InMemorySyncQueueRepository();
       await queue.enqueue(_action(id: 'conflict-1'));
@@ -530,6 +658,35 @@ void main() {
 
       expect(result.conflicts.single.status, SyncStatus.conflict);
       expect(result.conflicts.single.lastSafeError, contains('Conflito'));
+    });
+
+    test('conflict marca WorkOrder local como conflict', () async {
+      final queue = InMemorySyncQueueRepository();
+      await queue.enqueue(
+        _action(
+          id: 'conflict-entity',
+          payload: const {
+            'local_id': 'wo-local-repo',
+            'server_id': 'srv-wo-repo',
+            'new_status': 'dispatched',
+            'previous_status': 'scheduled',
+          },
+        ),
+      );
+      final store = InMemoryWorkOrderLocalStore([
+        _workOrder(syncStatus: SyncStatus.pending),
+      ]);
+
+      await _b103ReplayService(
+        queue,
+        _FakeWorkOrderApi(
+          results: [_result('conflict-entity', status: 'conflict')],
+        ),
+        entityUpdater: buildWorkOrderSyncEntityUpdater(store),
+      ).replayTenant(_tenantId);
+
+      final stored = (await store.loadWorkOrders()).single;
+      expect(stored.syncStatus, SyncStatus.conflict);
     });
 
     test('network error marca failed retryable', () async {
@@ -613,6 +770,33 @@ void main() {
         expect(stored.status, SyncStatus.pending);
       },
     );
+
+    test('statusUpdate local-only nao atualiza entidade local', () async {
+      final queue = InMemorySyncQueueRepository();
+      await queue.enqueue(
+        _action(
+          id: 'local-only-entity',
+          payload: const {
+            'local_id': 'wo-local-repo',
+            'new_status': 'dispatched',
+          },
+        ),
+      );
+      final store = InMemoryWorkOrderLocalStore([
+        _workOrder(syncStatus: SyncStatus.pending),
+      ]);
+      final api = _FakeWorkOrderApi();
+
+      await _b103ReplayService(
+        queue,
+        api,
+        entityUpdater: buildWorkOrderSyncEntityUpdater(store),
+      ).replayTenant(_tenantId);
+
+      final stored = (await store.loadWorkOrders()).single;
+      expect(api.captured, isNull);
+      expect(stored.syncStatus, SyncStatus.pending);
+    });
 
     test('create approval e evidence nao sao enviados no B-103', () async {
       final queue = InMemorySyncQueueRepository();

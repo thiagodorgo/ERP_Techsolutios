@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/auth_notifier.dart';
 import '../evidence/evidence_sync.dart';
 import '../local_db/database_provider.dart';
+import '../local_db/drift_work_order_local_store.dart';
 import '../local_db/drift_sync_action_store.dart';
 import '../network/api_contracts.dart';
 import '../network/http_client.dart';
+import '../../features/work_orders/data/work_order_local_store.dart';
 import 'sync_action_factory.dart';
 import 'sync_action_store.dart';
 import 'sync_engine.dart';
+import 'sync_models.dart';
 import 'sync_queue_repository.dart';
 import 'sync_replay_service.dart';
 
@@ -75,12 +78,45 @@ final workOrderSyncBatchApiProvider = Provider<WorkOrderSyncBatchApi>((ref) {
 
 final workOrderSyncReplayServiceProvider = Provider<WorkOrderSyncReplayService>(
   (ref) {
+    final store = DriftWorkOrderLocalStore(ref.watch(appDatabaseProvider));
     return WorkOrderSyncReplayService(
       queue: ref.watch(syncQueueRepositoryProvider),
       api: ref.watch(workOrderSyncBatchApiProvider),
+      entityUpdater: buildWorkOrderSyncEntityUpdater(store),
     );
   },
 );
+
+WorkOrderSyncEntityUpdater buildWorkOrderSyncEntityUpdater(
+  WorkOrderLocalStore store,
+) {
+  return (action, result, status) async {
+    final rawLocalId = action.payload['local_id'];
+    if (rawLocalId is! String || rawLocalId.trim().isEmpty) return;
+
+    final localId = rawLocalId.trim();
+    final orders = await store.loadWorkOrders();
+    for (final current in orders) {
+      if (current.localId != localId) continue;
+
+      final next = switch (status) {
+        SyncStatus.synced => current.copyWith(
+          syncStatus: SyncStatus.synced,
+          serverId: result.resultRef ?? current.serverId,
+        ),
+        SyncStatus.conflict => current.copyWith(
+          syncStatus: SyncStatus.conflict,
+        ),
+        _ => current,
+      };
+
+      if (next != current) {
+        await store.saveWorkOrder(next);
+      }
+      return;
+    }
+  };
+}
 
 final checklistSyncBatchApiProvider = Provider<ChecklistSyncBatchApi>((ref) {
   final config = ref.watch(authenticatedApiConfigProvider);

@@ -39,6 +39,13 @@ class SyncReplayResult {
   final List<SyncAction> conflicts;
 }
 
+typedef WorkOrderSyncEntityUpdater =
+    Future<void> Function(
+      SyncAction action,
+      SyncActionResult result,
+      SyncStatus status,
+    );
+
 // ── Batch API interface + implementations ────────────────────────────────────
 
 abstract class ExpenseSyncBatchApi {
@@ -526,12 +533,15 @@ class WorkOrderSyncReplayService {
     required SyncQueueRepository queue,
     required WorkOrderSyncBatchApi api,
     this.maxRetry = 5,
+    WorkOrderSyncEntityUpdater? entityUpdater,
   }) : _queue = queue,
-       _api = api;
+       _api = api,
+       _entityUpdater = entityUpdater;
 
   final SyncQueueRepository _queue;
   final WorkOrderSyncBatchApi _api;
   final int maxRetry;
+  final WorkOrderSyncEntityUpdater? _entityUpdater;
 
   Future<SyncReplayResult> replayTenant(String tenantId) async {
     final all = await _queue.pendingForTenant(tenantId);
@@ -629,6 +639,12 @@ class WorkOrderSyncReplayService {
       }
 
       await _queue.update(next);
+      if (result != null &&
+          (next.status == SyncStatus.synced ||
+              next.status == SyncStatus.failed ||
+              next.status == SyncStatus.conflict)) {
+        await _entityUpdater?.call(a, result, next.status);
+      }
 
       switch (next.status) {
         case SyncStatus.synced:
