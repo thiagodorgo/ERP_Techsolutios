@@ -13,11 +13,11 @@ Prisma, migrations, infra, secrets, `.env`, Figma, `pubspec` ou lockfiles.
 | Arquivo | Tipo | Descricao |
 |---------|------|-----------|
 | `mobile/flutter_app/lib/core/network/api_contracts.dart` | fix | `ExpenseSyncActionTypes.supported` para filtrar replay de RDV |
-| `mobile/flutter_app/lib/core/sync/sync_replay_service.dart` | feat/fix | `WorkOrderSyncCodec`, `WorkOrderSyncBatchApi`, `DioWorkOrderSyncBatchApi`, `WorkOrderSyncReplayService`, eligibility B-103 e filtro opcional no replay de RDV |
-| `mobile/flutter_app/lib/core/sync/sync_providers.dart` | feat | Provider real de Work Order sync com Dio autenticado e filtro de despesas |
+| `mobile/flutter_app/lib/core/sync/sync_replay_service.dart` | feat/fix | `WorkOrderSyncCodec`, `WorkOrderSyncBatchApi`, `DioWorkOrderSyncBatchApi`, `WorkOrderSyncReplayService`, updater opcional de entidade local, eligibility B-103 e filtro opcional no replay de RDV |
+| `mobile/flutter_app/lib/core/sync/sync_providers.dart` | feat/fix | Provider real de Work Order sync com Dio autenticado, updater de WorkOrder local e filtro de despesas |
 | `mobile/flutter_app/lib/core/sync/auto_sync_coordinator.dart` | feat | Auto sync passa a chamar Work Orders antes de checklist/evidence/RDV |
 | `mobile/flutter_app/lib/features/work_orders/data/work_order_repository.dart` | fix | Payload de status inclui `server_id` somente quando existe e mensagem segura por status |
-| `mobile/flutter_app/test/features/b103_work_order_sync_test.dart` | test | 37 testes de codec, parser, replay, provider, repositorio, cross-domain e autosync |
+| `mobile/flutter_app/test/features/b103_work_order_sync_test.dart` | test | 43 testes de codec, parser, replay, updater de entidade local, provider, repositorio, cross-domain e autosync |
 | `mobile/flutter_app/test/features/b090b_offline_auto_sync_test.dart` | test | Fakes/coverage de WorkOrder sync no AutoSyncCoordinator |
 | `mobile/flutter_app/test/features/b091_connectivity_profile_test.dart` | test | Overrides de WorkOrder/Evidence sync em testes de conectividade |
 | `mobile/flutter_app/Kpis/*` | docs | Snapshot B-103 dos KPIs mobile |
@@ -32,18 +32,22 @@ Prisma, migrations, infra, secrets, `.env`, Figma, `pubspec` ou lockfiles.
 - `dispatched` -> `assigned`, `enRoute` -> `on_route`, `arrived` ->
   `on_site`, `inService` -> `in_progress`
 - replay real B-103 envia somente `statusUpdate` backend-ready
+- `accepted` e `already_applied` limpam `pending` da WorkOrder local e
+  preservam/atualizam `serverId` quando existe `resultRef`
 - OS local-only fica pending
 - `work_order.create`, `work_order.approval_request` e
   `work_order.evidence_attach` nao sao enviados no B-103
 - `accepted` e `already_applied` -> `synced`
 - `rejected` -> `failed` com retry
-- `conflict` -> `conflict` com decisao manual
+- `conflict` -> `conflict` com decisao manual e WorkOrder local marcada como
+  `conflict`
 - erro de rede -> `failed` com `NETWORK_ERROR`
 - ausencia de resultado -> `failed` com `MISSING_RESULT`
 
-### Validacao parcial registrada antes do sweep final
+### Validacao pós-revisão humana
 
-- B-103 work order sync: **37/37**
+- B-103 work order sync: **43/43**
+- Flutter full suite: **582/582**
 
 ### Escopo preservado
 

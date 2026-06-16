@@ -16,7 +16,7 @@ real `POST /api/v1/mobile/sync/work-order-actions`. O Flutter envia envelope
 
 | KPI | Valor |
 |-----|-------|
-| Flutter Tests | 576 / 576 |
+| Flutter Tests | 582 / 582 |
 | flutter analyze | 0 issues |
 | Modulos Flutter Prontos | 16 / 16 |
 | MVP Demo Readiness (est.) | 83% |
@@ -31,16 +31,19 @@ real `POST /api/v1/mobile/sync/work-order-actions`. O Flutter envia envelope
   `arrived` vira `on_site` e `inService` vira `in_progress`.
 - Replay real B-103 envia somente `WorkOrderSyncActionTypes.statusUpdate`
   backend-ready.
+- `accepted` e `already_applied` limpam `pending` da WorkOrder local e
+  preservam/atualizam `serverId` quando o backend retorna `resultRef`.
 - OS local-only permanece `pending`.
 - `work_order.create`, `work_order.approval_request` e
   `work_order.evidence_attach` ficam fora do replay B-103.
 - `accepted` e `already_applied` viram `synced`.
-- `rejected` vira `failed` retryable; `conflict` exige decisao manual.
+- `rejected` vira `failed` retryable; `conflict` marca a WorkOrder local como
+  `conflict` e exige decisao manual.
 - `AutoSyncCoordinator` passa a chamar Work Order sync.
 - Replay de RDV agora filtra somente `ExpenseSyncActionTypes`, evitando captura
   de actions de OS.
-- 37 testes B-103 cobrem serializer, parser, replay, providers, repositorio,
-  cross-domain e autosync.
+- 43 testes B-103 cobrem serializer, parser, replay, entity updater, providers,
+  repositorio, cross-domain e autosync.
 
 **Lacunas mantidas:** upload real de evidencias, criacao remota de OS/mapping
 local-only, aprovacao real, GPS/mapa, resolucao manual completa de conflitos e

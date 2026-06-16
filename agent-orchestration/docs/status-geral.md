@@ -2,11 +2,12 @@
 
 ## Atualizacao 2026-06-16 — B-103 Flutter OS Sync Bidirecional
 
-### QA parcial antes do sweep final
+### QA pós-revisão humana
 
 | Verificacao | Resultado |
 |-------------|-----------|
-| B-103 work order sync | **37/37** |
+| B-103 work order sync | **43/43** |
+| Flutter full suite | **582/582** |
 
 ### Entregue
 
@@ -19,6 +20,8 @@
 - `dispatched` vira `assigned`, `enRoute` vira `on_route`, `arrived` vira
   `on_site` e `inService` vira `in_progress`.
 - Replay real B-103 envia apenas `statusUpdate` backend-ready.
+- `accepted` e `already_applied` limpam `pending` da WorkOrder local, mantendo o
+  status de negocio local e preservando/atualizando `serverId` via `resultRef`.
 - OS local-only permanece `pending`.
 - `work_order.create`, `work_order.approval_request` e
   `work_order.evidence_attach` ficam fora do replay B-103.
@@ -27,6 +30,8 @@
 - Replay nao marca sucesso sem resposta real: `accepted`/`already_applied`
   viram `synced`, `rejected` vira `failed`, `conflict` permanece manual,
   missing result vira `MISSING_RESULT`.
+- `conflict` marca a WorkOrder local como `conflict`; `failed` nao marca a OS
+  como `synced`.
 - `AutoSyncCoordinator` passa a executar Work Order sync.
 - Replay de RDV passa a filtrar somente `ExpenseSyncActionTypes`, evitando
   captura de actions de OS.

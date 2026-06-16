@@ -9,7 +9,7 @@
     "branch": "feature/flutter-work-order-sync",
     "status": "implemented_pending_review",
     "status_label": "Implementado em branch — aguardando revisao",
-    "summary": "Flutter passa a enviar alteracoes de status de OS para POST /api/v1/mobile/sync/work-order-actions usando envelope { client_batch_id, actions[] }, mapeando work_order.status_update interno para work_order.status_change backend. O replay real B-103 envia apenas statusUpdate backend-ready com server_id ou work_order_id real; OS local-only permanece pending.",
+    "summary": "Flutter passa a enviar alteracoes de status de OS para POST /api/v1/mobile/sync/work-order-actions usando envelope { client_batch_id, actions[] }, mapeando work_order.status_update interno para work_order.status_change backend. O replay real B-103 envia apenas statusUpdate backend-ready com server_id ou work_order_id real; accepted/already_applied tambem atualizam a WorkOrder local para synced. OS local-only permanece pending.",
     "commits": [
       {
         "hash": "branch-head",
@@ -21,7 +21,7 @@
       }
     ],
     "limitation": "Contrato Flutter cobre somente mudanca de status de OS reconhecida pelo backend. Permanecem fora do escopo criacao remota de OS, approval_request real, evidence_attach real, upload binario, GPS/mapa, tracking e resolucao manual completa de conflitos.",
-    "fallback": "OS continua local-first: a action local-only fica salva localmente e permanece pending ate haver mapeamento remoto; erro de rede vira failed retryable sem marcar synced sem confirmacao do servidor."
+    "fallback": "OS continua local-first: a action local-only fica salva localmente e permanece pending ate haver mapeamento remoto; erro de rede vira failed retryable sem marcar synced sem confirmacao do servidor; conflict marca a WorkOrder local como conflict para decisao manual."
   },
   "domains": [
     {
@@ -34,7 +34,7 @@
         "POST /api/v1/mobile/sync/work-order-actions conectado para statusUpdate backend-ready",
         "work_order.status_update -> work_order.status_change",
         "server_id/work_order_id real vira payload.work_order_id; local_id fica apenas em metadata",
-        "accepted/already_applied viram synced; rejected vira failed; conflict exige decisao manual",
+        "accepted/already_applied viram synced na action e na WorkOrder local; rejected vira failed; conflict marca conflito manual",
         "OS local-only, create, approval_request e evidence_attach permanecem pending/fora do replay B-103",
         "Pendente: criacao remota de OS, aprovacao real, evidencias reais, GPS/mapa e resolucao manual de conflitos"
       ]
@@ -88,12 +88,12 @@
         {
           "id": "flutter_tests",
           "label": "Flutter Tests",
-          "value": 576,
-          "total": 576,
+          "value": 582,
+          "total": 582,
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "576/576 esperado no sweep final — inclui 37 testes B-103 de OS sync e autosync de WorkOrder"
+          "detail": "582/582 no sweep final — inclui 43 testes B-103 de OS sync, entity updater e autosync de WorkOrder"
         },
         {
           "id": "npm_tests",

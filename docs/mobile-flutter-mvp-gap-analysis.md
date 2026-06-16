@@ -11,11 +11,12 @@
 
 O app Flutter (`mobile/flutter_app`) está em fase de **protótipo avançado estabilizado**. Possui
 arquitetura local-first funcional, persistência SQLite via Drift, autenticação local em modo dev e
-cobertura de testes de 576 casos esperada no sweep B-103. Pull real de Work Orders (B-099),
+cobertura de testes de 582 casos no sweep B-103. Pull real de Work Orders (B-099),
 sync write parcial de status de OS (B-103), pull de templates de checklist (B-100/B-101) e sync
 write parcial de respostas de checklist (B-102) já estão conectados ao backend, com fallback
 resiliente. B-103 sincroniza apenas `statusUpdate` de OS reconhecida pelo backend via `server_id`
-ou `work_order_id` real; OS local-only permanece na fila. Ainda falta upload real de evidências,
+ou `work_order_id` real; `accepted`/`already_applied` limpam o `pending` da WorkOrder local,
+e OS local-only permanece na fila. Ainda falta upload real de evidências,
 criação remota de OS/local-only mapping, aprovação real, GPS/mapa e resolução manual completa de
 conflitos. Não está pronto para operação de campo com dados reais.
 
