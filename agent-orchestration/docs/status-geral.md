@@ -1,5 +1,42 @@
 # Status Geral
 
+## Atualizacao 2026-06-16 — B-102 Flutter Checklist Answers Sync
+
+### QA parcial antes do sweep final
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| B-088 checklist sync replay | **16/16** |
+| B-100 checklist remote templates | **44/44** |
+| B-098F evidence sync | **10/10** |
+| B-102 checklist answers sync | **26/26** |
+
+### Entregue
+
+- `ChecklistSyncBatchApi` agora usa Dio autenticado quando ha access token.
+- `DioChecklistSyncBatchApi` envia `POST /api/v1/mobile/sync/checklist-actions`
+  com envelope `{ client_batch_id, actions[] }`.
+- `checklist_answer.upsert` vira `checklist.item_answer` ou
+  `checklist.item_note`.
+- `checklist_run.complete` vira `checklist.complete`.
+- Parser tolerante le `body.data.accepted`, `rejected`, `conflicts`,
+  `already_applied` e fallbacks legados `results`.
+- Replay nao marca sucesso sem resposta real: `accepted`/`already_applied`
+  viram `synced`, `rejected` vira `failed`, `conflict` permanece manual.
+- Payload nao envia tenant externo, token, `Authorization`, path, base64,
+  `file_data` ou binary.
+- KPIs mobile e gap analysis atualizados para B-102.
+
+### Pendente
+
+- OS sync bidirecional (B-103).
+- Upload real de evidencias (B-104).
+- GPS/mapa.
+- Aprovacao real.
+- Piloto Android real.
+
+---
+
 ## Atualizacao 2026-06-15 — B-101 Backend Mobile Checklist Available Endpoint
 
 ### QA final

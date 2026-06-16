@@ -1,7 +1,7 @@
 # Flutter Mobile MVP — Gap Analysis
 
-**Referência de branch:** `feature/backend-mobile-checklists-available`
-**Data:** 2026-06-15 (atualizado em B-101)
+**Referência de branch:** `feature/flutter-checklist-answers-sync`
+**Data:** 2026-06-16 (atualizado em B-102)
 **Responsável:** ERP Techsolutions — Mobile Squad
 **KPI Dashboard:** `mobile/flutter_app/Kpis/` — abrir `index.html` por duplo clique (fallback embutido; servidor local opcional)
 
@@ -11,9 +11,10 @@
 
 O app Flutter (`mobile/flutter_app`) está em fase de **protótipo avançado estabilizado**. Possui
 arquitetura local-first funcional, persistência SQLite via Drift, autenticação local em modo dev e
-cobertura de testes de 487 casos. Pull real de Work Orders (B-099) e de templates de checklist
-(B-100) já conectados ao backend, com fallback resiliente. Ainda não há sync write de volta ao
-backend. Não está pronto para operação de campo com dados reais.
+cobertura de testes de 526 casos. Pull real de Work Orders (B-099), pull de templates de checklist
+(B-100/B-101) e sync write de respostas de checklist (B-102) já conectados ao backend, com fallback
+resiliente. Ainda falta sync bidirecional de OS e upload real de evidências. Não está pronto para
+operação de campo com dados reais.
 
 ### Inventário funcional por módulo
 
@@ -36,9 +37,9 @@ backend. Não está pronto para operação de campo com dados reais.
 | Checklists configuráveis | Funcional (local-first) | **existente** — run, respostas, persistência Drift |
 | Checklist — pull de templates | Funcional (pull real) | **B-100/B-101** — `GET /api/v1/mobile/checklists/available` com backend real (DTO mobile compativel); cache Drift; banners UI; fallback cache/seeds |
 | Checklist — backend available endpoint | Funcional (backend) | **B-101** — handler real, tenant-scoped + RBAC, DTO `title`/`schema_version`/`status active` + envelope `{data,items,meta}` |
-| Checklist domain model (rico) | Modelado | **proposto** — `ChecklistTemplate` versionado pronto; backend `available` entregue (B-101); falta sync write de respostas |
+| Checklist domain model (rico) | Modelado | **parcial** — `ChecklistTemplate` versionado pronto; backend `available` entregue (B-101); sync write de respostas entregue (B-102) |
 | Checklist renderer registry | Funcional | **existente** — 10 tipos nativos + fallback para tipos desconhecidos |
-| Checklist sync replay | Funcional (stub) | **parcial** — replay enfileira; `PendingBackendChecklistSyncBatchApi` silencioso |
+| Checklist sync replay | Funcional (real parcial) | **B-102** — `POST /api/v1/mobile/sync/checklist-actions`; respostas/notas/conclusão com accepted/rejected/conflicts/already_applied |
 | Sync Screen | Melhorada | **existente** — domínios, KPIs, banner backend-pending |
 | Diagnostics | Dev-only | **existente** — protegida por `kIsDevMode` em produção |
 | Aprovações | Placeholder | **futuro** |
@@ -56,8 +57,9 @@ O app não pode ser usado em campo real pelos seguintes motivos objetivos:
 |------------|---------|-----------|
 | Work Orders — pull real implementado (B-099) | ✅ Resolvido — `GET /api/v1/work-orders` conectado | — |
 | Sync bidirecional de OS não implementado | Alterações locais não chegam ao backend | Alto |
-| Checklist — pull de templates (B-100) + backend real (B-101) | ✅ Resolvido — cliente + handler backend real (`GET /mobile/checklists/available`, DTO compatível). Falta apenas sync write de respostas | Baixo |
-| Sync de OS, checklists e inventário não chega ao servidor | Trabalho realizado em campo é perdido | Crítico |
+| Checklist — pull de templates (B-100) + backend real (B-101) | ✅ Resolvido — cliente + handler backend real (`GET /mobile/checklists/available`, DTO compatível) | — |
+| Checklist answers sync (B-102) | ✅ Resolvido parcialmente — respostas/notas/conclusão chegam ao contrato backend; anexos/markers/divergência seguem fora do escopo | — |
+| Sync de OS e inventário não chega ao servidor | Trabalho realizado em campo é perdido nesses domínios | Crítico |
 | Upload de fotos/evidências ausente | Evidências de campo não são persistidas remotamente | Alto |
 | Sem aprovação mobile real | Fluxo de aprovação de OS não completo | Alto |
 | Sem GPS/mapa | Roteirização e geolocalização indisponíveis | Médio |
@@ -105,10 +107,10 @@ real foi conectado nesta PR — essa foi uma decisão explícita de escopo (ver 
 |------|-------------|-------------|
 | Auth real com JWT | ✅ Ativo via `--dart-define=ERP_AUTH_MODE=remote` | — |
 | Bootstrap real do tenant | ✅ `bootstrapSessionFromJson()` dual-format; aceita B-098 e B-098A | — |
-| Pull de Work Orders do servidor | `PendingBackendWorkOrderRemoteApi` retorna erro controlado | Implementar `DioWorkOrderRemoteApi`; usar `syncCursors.workOrdersCursor` para pull incremental |
-| Checklist templates do backend | `PendingBackendChecklistSyncBatchApi.getUpdates()` retorna lista vazia | Implementar endpoint de templates; cachear localmente em Drift |
+| Pull de Work Orders do servidor | ✅ `DioWorkOrderRemoteApi` ativo (B-099) | Sync incremental por cursor ainda pendente |
+| Checklist templates do backend | ✅ `GET /api/v1/mobile/checklists/available` ativo (B-100/B-101) | Sync incremental por cursor ainda pendente |
 | Sync real de OS | Ações enfileiradas; `PendingBackendWorkOrderRemoteApi` silencioso | Implementar batch sync de OS com o servidor |
-| Sync real de checklists | `PendingBackendChecklistSyncBatchApi.batchSync()` silencioso | Ativar `DioChecklistSyncBatchApi`; controlar conflitos |
+| Sync real de checklists | ✅ `DioChecklistSyncBatchApi` ativo para respostas/notas/conclusão (B-102) | Anexos/markers/divergência/acknowledgement e reconciliação avançada |
 | Sync real de inventário | Stub pendente | Implementar batch sync de inventário |
 | Upload de fotos / evidências | `photo` builder com `onPressed: null` | Integrar `image_picker` + upload via presigned URL |
 
@@ -304,7 +306,7 @@ Login (local dev / real com ERP_AUTH_MODE=remote)
   → SyncScreen (fila de ações pendentes de envio)
 ```
 
-**Status atual:** Completo localmente. Sem pull real do servidor e sem sync real de volta.
+**Status atual:** Pull real de OS implementado (B-099). Alterações locais de OS ainda não são sincronizadas de volta ao backend.
 
 ### 9.2 Ciclo de Prestação de Contas / RDV
 
@@ -378,9 +380,9 @@ InventoryListScreen → StockEntryScreen | StockExitScreen
 
 | Item | O que fazer | Arquivo(s) alvo |
 |------|-------------|-----------------|
-| Download de templates | `GET /api/v1/mobile/checklists/templates?since=` → cachear em Drift | `features/checklists/data/checklist_repository.dart` |
-| Substituir `PendingBackendChecklistSyncBatchApi` | Ativar `DioChecklistSyncBatchApi` | `core/sync/sync_providers.dart` |
-| Versionamento de template em run | Garantir `template_version` no payload de sync | `checklist_template_models.dart` (já modelado) |
+| Download de templates | ✅ `GET /api/v1/mobile/checklists/available` cacheado em Drift | B-100/B-101 |
+| Sync write de respostas | ✅ `DioChecklistSyncBatchApi` ativo para respostas/notas/conclusão | B-102 |
+| Versionamento de template em run | Garantir `template_version` no payload de sync quando o backend exigir | `checklist_template_models.dart` (já modelado) |
 
 ### Fase 5 — Sync Completo (OS, Checklists, Inventário)
 
@@ -389,7 +391,7 @@ InventoryListScreen → StockEntryScreen | StockExitScreen
 | Item | O que fazer |
 |------|-------------|
 | Sync de OS | Substituir `PendingBackendWorkOrderRemoteApi` por `DioWorkOrderRemoteApi` em sync |
-| Sync de checklists | `DioChecklistSyncBatchApi.batchSync()` ativo |
+| Sync de checklists | Respostas/notas/conclusão ativo em B-102; anexos/markers/divergência pendentes |
 | Sync de inventário | Implementar `DioInventorySyncBatchApi` |
 | Replay com retry e backoff | `AutoSyncCoordinator` já dispara; validar com backends reais |
 
