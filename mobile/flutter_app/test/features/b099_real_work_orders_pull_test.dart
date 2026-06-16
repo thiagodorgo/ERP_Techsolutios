@@ -16,8 +16,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 class _FakeRemoteApi implements WorkOrderRemoteApi {
   _FakeRemoteApi({List<WorkOrder>? orders, Object? error})
-      : _orders = orders,
-        _error = error;
+    : _orders = orders,
+      _error = error;
 
   final List<WorkOrder>? _orders;
   final Object? _error;
@@ -43,8 +43,7 @@ class _FakeRemoteApi implements WorkOrderRemoteApi {
   Future<WorkOrder> assignWorkOrder(String id, String userId, {String? note}) =>
       throw UnimplementedError();
   @override
-  Future<void> createApprovalRequest(
-          String id, WorkOrderApprovalRequest req) =>
+  Future<void> createApprovalRequest(String id, WorkOrderApprovalRequest req) =>
       throw UnimplementedError();
 }
 
@@ -87,35 +86,33 @@ WorkOrder _remoteOrder({
   String tenantId = _tenantA,
   WorkOrderStatus status = WorkOrderStatus.scheduled,
   SyncStatus syncStatus = SyncStatus.synced,
-}) =>
-    WorkOrder(
-      localId: serverId,
-      serverId: serverId,
-      tenantId: tenantId,
-      code: 'OS-$serverId',
-      title: 'Order $serverId',
-      customerName: 'Customer $serverId',
-      serviceAddress: 'Address $serverId',
-      status: status,
-      priority: WorkOrderPriority.normal,
-      syncStatus: syncStatus,
-      createdAt: DateTime.utc(2026, 6, 14),
-    );
+}) => WorkOrder(
+  localId: serverId,
+  serverId: serverId,
+  tenantId: tenantId,
+  code: 'OS-$serverId',
+  title: 'Order $serverId',
+  customerName: 'Customer $serverId',
+  serviceAddress: 'Address $serverId',
+  status: status,
+  priority: WorkOrderPriority.normal,
+  syncStatus: syncStatus,
+  createdAt: DateTime.utc(2026, 6, 14),
+);
 
 WorkOrderRepository _makeRepo({
   BootstrapSession session = _sessionA,
   WorkOrderRemoteApi? remoteApi,
   List<WorkOrder> seed = const [],
   WorkOrderLocalStore? store,
-}) =>
-    WorkOrderRepository(
-      session: session,
-      syncQueue: _FakeSyncQueue(),
-      actionFactory: SyncActionFactory(),
-      localStore: store ?? InMemoryWorkOrderLocalStore(seed),
-      remoteApi: remoteApi,
-      seedWorkOrders: seed,
-    );
+}) => WorkOrderRepository(
+  session: session,
+  syncQueue: _FakeSyncQueue(),
+  actionFactory: SyncActionFactory(),
+  localStore: store ?? InMemoryWorkOrderLocalStore(seed),
+  remoteApi: remoteApi,
+  seedWorkOrders: seed,
+);
 
 // ---------------------------------------------------------------------------
 // Group 1 — Remote pull success
@@ -123,41 +120,51 @@ WorkOrderRepository _makeRepo({
 
 void main() {
   group('1. Pull remoto — sucesso', () {
-    test('1.1 pullFromRemote retorna sucesso e persiste no local store', () async {
-      final remote = _FakeRemoteApi(orders: [_remoteOrder(serverId: 'srv-1')]);
-      final store = InMemoryWorkOrderLocalStore();
-      final repo = _makeRepo(remoteApi: remote, store: store);
+    test(
+      '1.1 pullFromRemote retorna sucesso e persiste no local store',
+      () async {
+        final remote = _FakeRemoteApi(
+          orders: [_remoteOrder(serverId: 'srv-1')],
+        );
+        final store = InMemoryWorkOrderLocalStore();
+        final repo = _makeRepo(remoteApi: remote, store: store);
 
-      await repo.load(seedIfEmpty: false);
-      // Wait for background pull to complete
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
+        await repo.load(seedIfEmpty: false);
+        // Wait for background pull to complete
+        await Future.delayed(Duration.zero);
+        await Future.delayed(Duration.zero);
 
-      expect(repo.workOrders, hasLength(1));
-      expect(repo.workOrders.first.serverId, 'srv-1');
-      expect(repo.lastPulledAt, isNotNull);
-      expect(repo.lastPullError, isNull);
-    });
+        expect(repo.workOrders, hasLength(1));
+        expect(repo.workOrders.first.serverId, 'srv-1');
+        expect(repo.lastPulledAt, isNotNull);
+        expect(repo.lastPullError, isNull);
+      },
+    );
 
-    test('1.2 pull persiste multiplas OS no Drift (via saveWorkOrder)', () async {
-      final orders = [
-        _remoteOrder(serverId: 'srv-1'),
-        _remoteOrder(serverId: 'srv-2'),
-        _remoteOrder(serverId: 'srv-3'),
-      ];
-      final remote = _FakeRemoteApi(orders: orders);
-      final repo = _makeRepo(remoteApi: remote);
+    test(
+      '1.2 pull persiste multiplas OS no Drift (via saveWorkOrder)',
+      () async {
+        final orders = [
+          _remoteOrder(serverId: 'srv-1'),
+          _remoteOrder(serverId: 'srv-2'),
+          _remoteOrder(serverId: 'srv-3'),
+        ];
+        final remote = _FakeRemoteApi(orders: orders);
+        final repo = _makeRepo(remoteApi: remote);
 
-      await repo.load(seedIfEmpty: false);
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
+        await repo.load(seedIfEmpty: false);
+        await Future.delayed(Duration.zero);
+        await Future.delayed(Duration.zero);
 
-      expect(repo.workOrders, hasLength(3));
-    });
+        expect(repo.workOrders, hasLength(3));
+      },
+    );
 
     test('1.3 OS recebidas do backend marcadas como synced', () async {
       final remote = _FakeRemoteApi(
-        orders: [_remoteOrder(serverId: 'srv-sync', syncStatus: SyncStatus.synced)],
+        orders: [
+          _remoteOrder(serverId: 'srv-sync', syncStatus: SyncStatus.synced),
+        ],
       );
       final repo = _makeRepo(remoteApi: remote);
 
@@ -200,48 +207,54 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('2. Normalizacao do DTO remoto (parser tolerante)', () {
-    test('2.1 parser aceita campos camelCase do backend (customerName, scheduledFor)', () {
-      final json = <String, dynamic>{
-        'id': 'srv-camel',
-        'code': 'OS-C',
-        'title': 'Ordem Camel',
-        'customerName': 'Cliente Camel',
-        'serviceAddress': 'Rua Camel, 1',
-        'status': 'scheduled',
-        'priority': 'normal',
-        'assignedUserId': 'user-x',
-        'scheduledFor': '2026-06-14T08:00:00.000Z',
-        'createdAt': '2026-06-14T00:00:00.000Z',
-      };
+    test(
+      '2.1 parser aceita campos camelCase do backend (customerName, scheduledFor)',
+      () {
+        final json = <String, dynamic>{
+          'id': 'srv-camel',
+          'code': 'OS-C',
+          'title': 'Ordem Camel',
+          'customerName': 'Cliente Camel',
+          'serviceAddress': 'Rua Camel, 1',
+          'status': 'scheduled',
+          'priority': 'normal',
+          'assignedUserId': 'user-x',
+          'scheduledFor': '2026-06-14T08:00:00.000Z',
+          'createdAt': '2026-06-14T00:00:00.000Z',
+        };
 
-      // Access the top-level function exposed via the library
-      final session = _sessionA;
-      final api = _FakeRemoteApi(orders: []);
-      // We test the parser via fetchWorkOrders with injected data
-      // (tested indirectly via repository pull test above);
-      // here we test workOrderFromJson-equivalent via the normaliser:
-      final order = _remoteOrder(serverId: 'srv-camel');
-      expect(order.customerName, contains('Customer'));
-      expect(json['customerName'], 'Cliente Camel');
-      expect(json['scheduledFor'], isNotNull);
-      expect(api, isNotNull);
-      expect(session, isNotNull);
-    });
+        // Access the top-level function exposed via the library
+        final session = _sessionA;
+        final api = _FakeRemoteApi(orders: []);
+        // We test the parser via fetchWorkOrders with injected data
+        // (tested indirectly via repository pull test above);
+        // here we test workOrderFromJson-equivalent via the normaliser:
+        final order = _remoteOrder(serverId: 'srv-camel');
+        expect(order.customerName, contains('Customer'));
+        expect(json['customerName'], 'Cliente Camel');
+        expect(json['scheduledFor'], isNotNull);
+        expect(api, isNotNull);
+        expect(session, isNotNull);
+      },
+    );
 
-    test('2.2 parser aceita campos snake_case locais (customer_name, scheduled_at)', () {
-      final json = <String, dynamic>{
-        'id': 'srv-snake',
-        'code': 'OS-S',
-        'title': 'Ordem Snake',
-        'customer_name': 'Cliente Snake',
-        'service_address': 'Rua Snake, 2',
-        'status': 'inService',
-        'priority': 'high',
-        'created_at': '2026-06-14T00:00:00.000Z',
-      };
-      expect(json['customer_name'], 'Cliente Snake');
-      expect(json['service_address'], isNotNull);
-    });
+    test(
+      '2.2 parser aceita campos snake_case locais (customer_name, scheduled_at)',
+      () {
+        final json = <String, dynamic>{
+          'id': 'srv-snake',
+          'code': 'OS-S',
+          'title': 'Ordem Snake',
+          'customer_name': 'Cliente Snake',
+          'service_address': 'Rua Snake, 2',
+          'status': 'inService',
+          'priority': 'high',
+          'created_at': '2026-06-14T00:00:00.000Z',
+        };
+        expect(json['customer_name'], 'Cliente Snake');
+        expect(json['service_address'], isNotNull);
+      },
+    );
 
     test('2.3 status desconhecido cai para scheduled', () async {
       final order = WorkOrder(
@@ -300,17 +313,20 @@ void main() {
       expect(repo.lastPullError, isNotNull);
     });
 
-    test('3.2 erro remoto sem cache resulta em lista vazia + lastPullError', () async {
-      final remote = _FakeRemoteApi(error: const ApiNetworkError());
-      final repo = _makeRepo(remoteApi: remote);
+    test(
+      '3.2 erro remoto sem cache resulta em lista vazia + lastPullError',
+      () async {
+        final remote = _FakeRemoteApi(error: const ApiNetworkError());
+        final repo = _makeRepo(remoteApi: remote);
 
-      await repo.load(seedIfEmpty: false);
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
+        await repo.load(seedIfEmpty: false);
+        await Future.delayed(Duration.zero);
+        await Future.delayed(Duration.zero);
 
-      expect(repo.workOrders, isEmpty);
-      expect(repo.lastPullError, isNotNull);
-    });
+        expect(repo.workOrders, isEmpty);
+        expect(repo.lastPullError, isNotNull);
+      },
+    );
 
     test('3.3 ApiTimeoutError gera mensagem amigavel', () async {
       final remote = _FakeRemoteApi(error: const ApiTimeoutError());
@@ -414,69 +430,79 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('5. Preservacao de mudancas locais pendentes', () {
-    test('5.1 OS com SyncStatus.pending nao e sobrescrita pelo pull remoto', () async {
-      final localPending = WorkOrder(
-        localId: 'local-pending',
-        serverId: 'srv-pending',
-        tenantId: _tenantA,
-        code: 'OS-P',
-        title: 'Local Pending',
-        customerName: 'C',
-        serviceAddress: 'A',
-        status: WorkOrderStatus.inService,
-        priority: WorkOrderPriority.high,
-        syncStatus: SyncStatus.pending,
-        createdAt: DateTime.utc(2026),
-      );
-      final store = InMemoryWorkOrderLocalStore([localPending]);
+    test(
+      '5.1 OS com SyncStatus.pending nao e sobrescrita pelo pull remoto',
+      () async {
+        final localPending = WorkOrder(
+          localId: 'local-pending',
+          serverId: 'srv-pending',
+          tenantId: _tenantA,
+          code: 'OS-P',
+          title: 'Local Pending',
+          customerName: 'C',
+          serviceAddress: 'A',
+          status: WorkOrderStatus.inService,
+          priority: WorkOrderPriority.high,
+          syncStatus: SyncStatus.pending,
+          createdAt: DateTime.utc(2026),
+        );
+        final store = InMemoryWorkOrderLocalStore([localPending]);
 
-      final remoteVersion = _remoteOrder(
-        serverId: 'srv-pending',
-        status: WorkOrderStatus.scheduled,
-      ).copyWith(syncStatus: SyncStatus.synced);
-      final remote = _FakeRemoteApi(orders: [remoteVersion]);
+        final remoteVersion = _remoteOrder(
+          serverId: 'srv-pending',
+          status: WorkOrderStatus.scheduled,
+        ).copyWith(syncStatus: SyncStatus.synced);
+        final remote = _FakeRemoteApi(orders: [remoteVersion]);
 
-      final repo = _makeRepo(remoteApi: remote, store: store);
-      await repo.load(seedIfEmpty: false);
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
+        final repo = _makeRepo(remoteApi: remote, store: store);
+        await repo.load(seedIfEmpty: false);
+        await Future.delayed(Duration.zero);
+        await Future.delayed(Duration.zero);
 
-      final wo = repo.workOrders.firstWhere((o) => o.serverId == 'srv-pending');
-      // Local pending change (inService) must be preserved
-      expect(wo.status, WorkOrderStatus.inService);
-      expect(wo.syncStatus, SyncStatus.pending);
-    });
+        final wo = repo.workOrders.firstWhere(
+          (o) => o.serverId == 'srv-pending',
+        );
+        // Local pending change (inService) must be preserved
+        expect(wo.status, WorkOrderStatus.inService);
+        expect(wo.syncStatus, SyncStatus.pending);
+      },
+    );
 
-    test('5.2 OS com SyncStatus.synced e sobrescrita pelo pull remoto', () async {
-      final localSynced = WorkOrder(
-        localId: 'local-synced',
-        serverId: 'srv-synced',
-        tenantId: _tenantA,
-        code: 'OS-S',
-        title: 'Old Title',
-        customerName: 'C',
-        serviceAddress: 'A',
-        status: WorkOrderStatus.scheduled,
-        priority: WorkOrderPriority.normal,
-        syncStatus: SyncStatus.synced,
-        createdAt: DateTime.utc(2026),
-      );
-      final store = InMemoryWorkOrderLocalStore([localSynced]);
+    test(
+      '5.2 OS com SyncStatus.synced e sobrescrita pelo pull remoto',
+      () async {
+        final localSynced = WorkOrder(
+          localId: 'local-synced',
+          serverId: 'srv-synced',
+          tenantId: _tenantA,
+          code: 'OS-S',
+          title: 'Old Title',
+          customerName: 'C',
+          serviceAddress: 'A',
+          status: WorkOrderStatus.scheduled,
+          priority: WorkOrderPriority.normal,
+          syncStatus: SyncStatus.synced,
+          createdAt: DateTime.utc(2026),
+        );
+        final store = InMemoryWorkOrderLocalStore([localSynced]);
 
-      final updatedRemote = _remoteOrder(
-        serverId: 'srv-synced',
-        status: WorkOrderStatus.completed,
-      );
-      final remote = _FakeRemoteApi(orders: [updatedRemote]);
+        final updatedRemote = _remoteOrder(
+          serverId: 'srv-synced',
+          status: WorkOrderStatus.completed,
+        );
+        final remote = _FakeRemoteApi(orders: [updatedRemote]);
 
-      final repo = _makeRepo(remoteApi: remote, store: store);
-      await repo.load(seedIfEmpty: false);
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
+        final repo = _makeRepo(remoteApi: remote, store: store);
+        await repo.load(seedIfEmpty: false);
+        await Future.delayed(Duration.zero);
+        await Future.delayed(Duration.zero);
 
-      final wo = repo.workOrders.firstWhere((o) => o.serverId == 'srv-synced');
-      expect(wo.status, WorkOrderStatus.completed);
-    });
+        final wo = repo.workOrders.firstWhere(
+          (o) => o.serverId == 'srv-synced',
+        );
+        expect(wo.status, WorkOrderStatus.completed);
+      },
+    );
 
     test('5.3 upsert preserva localId de OS existente', () async {
       final existing = WorkOrder(
@@ -503,7 +529,9 @@ void main() {
       await Future.delayed(Duration.zero);
       await Future.delayed(Duration.zero);
 
-      final wo = repo.workOrders.firstWhere((o) => o.serverId == 'srv-existing');
+      final wo = repo.workOrders.firstWhere(
+        (o) => o.serverId == 'srv-existing',
+      );
       expect(wo.localId, 'existing-local-id');
     });
   });

@@ -267,17 +267,21 @@ BootstrapSession _parseExpanded(Map<String, dynamic> j) {
   // Map platform module keys to navigation modules via the local lookup table.
   final rawModules = (j['modules'] as List<dynamic>? ?? [])
       .cast<Map<String, dynamic>>();
-  final enabledModules = rawModules
-      .where((m) => m['enabled'] == true)
-      .expand((m) {
-        final key = m['key'] as String;
-        final def = _kNavigationModules[key];
-        if (def == null) return const <EnabledModule>[];
-        return [
-          EnabledModule(id: key, title: def.title, route: def.route, requiredPermissions: def.perms),
-        ];
-      })
-      .toList();
+  final enabledModules = rawModules.where((m) => m['enabled'] == true).expand((
+    m,
+  ) {
+    final key = m['key'] as String;
+    final def = _kNavigationModules[key];
+    if (def == null) return const <EnabledModule>[];
+    return [
+      EnabledModule(
+        id: key,
+        title: def.title,
+        route: def.route,
+        requiredPermissions: def.perms,
+      ),
+    ];
+  }).toList();
 
   // Expense categories — B-098A uses legacy `expenseCategories` field with
   // `name` (not `label`) and a nested `policy` object.
@@ -329,10 +333,10 @@ BootstrapSession _parseExpanded(Map<String, dynamic> j) {
     sync: SyncPolicy(
       actionsEnabled: syncJ['actions_enabled'] as bool? ?? false,
       maxBatchSize: syncJ['max_batch_size'] as int? ?? 50,
-      implementedDomains:
-          (syncJ['implemented_domains'] as List<dynamic>? ?? []).cast<String>(),
-      plannedDomains:
-          (syncJ['planned_domains'] as List<dynamic>? ?? []).cast<String>(),
+      implementedDomains: (syncJ['implemented_domains'] as List<dynamic>? ?? [])
+          .cast<String>(),
+      plannedDomains: (syncJ['planned_domains'] as List<dynamic>? ?? [])
+          .cast<String>(),
     ),
     evidence: EvidencePolicy(
       checklistAttachments: CapabilityStatus.fromString(
@@ -396,17 +400,19 @@ BootstrapSession _parseExpanded(Map<String, dynamic> j) {
   );
 }
 
-MobilePolicy _mobilePolicyFromLegacyJson(Map<String, dynamic> j) => MobilePolicy(
-  offlineEnabled: j['offlineEnabled'] as bool? ?? true,
-  syncBatchSize: j['syncBatchSize'] as int? ?? 25,
-  receiptMaxSizeMb: j['receiptMaxSizeMb'] as int? ?? 10,
-);
+MobilePolicy _mobilePolicyFromLegacyJson(Map<String, dynamic> j) =>
+    MobilePolicy(
+      offlineEnabled: j['offlineEnabled'] as bool? ?? true,
+      syncBatchSize: j['syncBatchSize'] as int? ?? 25,
+      receiptMaxSizeMb: j['receiptMaxSizeMb'] as int? ?? 10,
+    );
 
 ExpensePolicySnapshot _expensePolicyFromJson(Map<String, dynamic> j) =>
     ExpensePolicySnapshot(
       version: j['version'] as String? ?? '1.0',
-      categoryLimits: (j['categoryLimits'] as Map<String, dynamic>? ?? {})
-          .map((k, v) => MapEntry(k, (v as num).toDouble())),
+      categoryLimits: (j['categoryLimits'] as Map<String, dynamic>? ?? {}).map(
+        (k, v) => MapEntry(k, (v as num).toDouble()),
+      ),
       receiptRequiredCategories: Set<String>.from(
         (j['receiptRequiredCategories'] as List<dynamic>? ?? []),
       ),

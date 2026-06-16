@@ -76,6 +76,8 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
       await ref.read(syncReplayServiceProvider).replayTenant(tenantId);
       // Checklist sync
       await ref.read(checklistSyncReplayServiceProvider).replayTenant(tenantId);
+      // Evidence metadata sync
+      await ref.read(evidenceSyncReplayServiceProvider).replayTenant(tenantId);
 
       state = state.copyWith(
         isRunning: false,

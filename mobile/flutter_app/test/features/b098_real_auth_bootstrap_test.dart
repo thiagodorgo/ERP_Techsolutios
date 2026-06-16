@@ -103,11 +103,7 @@ Map<String, dynamic> _sessionJson({
   String access = 'acc-tok-test',
   String refresh = 'ref-tok-test',
 }) => {
-  'tokens': {
-    'accessToken': access,
-    'refreshToken': refresh,
-    'expiresIn': 3600,
-  },
+  'tokens': {'accessToken': access, 'refreshToken': refresh, 'expiresIn': 3600},
   'user': {
     'sub': 'usr-001',
     'email': 'tecnico@empresa.test',
@@ -233,23 +229,22 @@ void main() {
       expect(stored?.tokens.accessToken, 'new-acc');
     });
 
-    test('1.6 refresh sem token no storage lanca ApiUnauthorizedError',
-        () async {
-      final repo = DioAuthRepository(
-        client: _fakeDio(body: _sessionJson()),
-        storage: storage,
-      );
+    test(
+      '1.6 refresh sem token no storage lanca ApiUnauthorizedError',
+      () async {
+        final repo = DioAuthRepository(
+          client: _fakeDio(body: _sessionJson()),
+          storage: storage,
+        );
 
-      expect(repo.refresh, throwsA(isA<ApiUnauthorizedError>()));
-    });
+        expect(repo.refresh, throwsA(isA<ApiUnauthorizedError>()));
+      },
+    );
 
     test('1.7 logout limpa session e bootstrap do storage', () async {
       await storage.saveSession(fakeSession());
       await storage.saveBootstrapJson('{"cached":true}');
-      final repo = DioAuthRepository(
-        client: _fakeDio(),
-        storage: storage,
-      );
+      final repo = DioAuthRepository(client: _fakeDio(), storage: storage);
 
       await repo.logout();
 
@@ -258,27 +253,23 @@ void main() {
       expect(repo.currentSession(), isNull);
     });
 
-    test('1.8 restoreSession recupera sessao armazenada e atualiza currentSession',
-        () async {
-      await storage.saveSession(fakeSession());
-      final repo = DioAuthRepository(
-        client: _fakeDio(),
-        storage: storage,
-      );
+    test(
+      '1.8 restoreSession recupera sessao armazenada e atualiza currentSession',
+      () async {
+        await storage.saveSession(fakeSession());
+        final repo = DioAuthRepository(client: _fakeDio(), storage: storage);
 
-      final restored = await repo.restoreSession();
+        final restored = await repo.restoreSession();
 
-      expect(restored?.tokens.accessToken, 'acc-tok-test');
-      expect(repo.currentSession()?.tokens.accessToken, 'acc-tok-test');
-    });
+        expect(restored?.tokens.accessToken, 'acc-tok-test');
+        expect(repo.currentSession()?.tokens.accessToken, 'acc-tok-test');
+      },
+    );
 
     test('1.9 clearSession limpa apenas session, nao bootstrap', () async {
       await storage.saveSession(fakeSession());
       await storage.saveBootstrapJson('{"v":1}');
-      final repo = DioAuthRepository(
-        client: _fakeDio(),
-        storage: storage,
-      );
+      final repo = DioAuthRepository(client: _fakeDio(), storage: storage);
 
       await repo.clearSession();
 
@@ -306,10 +297,7 @@ void main() {
             isFalse,
             reason: '${err.runtimeType}.safeMessage nao deve conter token',
           );
-          expect(
-            err.safeMessage.toLowerCase().contains('bearer'),
-            isFalse,
-          );
+          expect(err.safeMessage.toLowerCase().contains('bearer'), isFalse);
         }
       },
     );
@@ -322,16 +310,19 @@ void main() {
 
     setUp(() => storage = InMemoryAuthTokenStorage());
 
-    test('2.1 cache + restoreCached round-trip preserva activeTenant', () async {
-      final repo = DioMobileBootstrapRepository(storage);
-      final bs = fakeBootstrapSession();
+    test(
+      '2.1 cache + restoreCached round-trip preserva activeTenant',
+      () async {
+        final repo = DioMobileBootstrapRepository(storage);
+        final bs = fakeBootstrapSession();
 
-      await repo.cache(bs);
-      final restored = await repo.restoreCached();
+        await repo.cache(bs);
+        final restored = await repo.restoreCached();
 
-      expect(restored?.activeTenant.tenantId, 'ten-test');
-      expect(restored?.activeTenant.displayName, 'Empresa Teste');
-    });
+        expect(restored?.activeTenant.tenantId, 'ten-test');
+        expect(restored?.activeTenant.displayName, 'Empresa Teste');
+      },
+    );
 
     test('2.2 restoreCached retorna null quando cache esta vazio', () async {
       final repo = DioMobileBootstrapRepository(storage);
@@ -349,37 +340,37 @@ void main() {
       expect(await repo.restoreCached(), isNull);
     });
 
-    test('2.4 cache round-trip preserva enabledModules e permissions', () async {
-      final repo = DioMobileBootstrapRepository(storage);
-      final bs = fakeBootstrapSession();
-
-      await repo.cache(bs);
-      final restored = await repo.restoreCached();
-
-      expect(restored?.enabledModules, hasLength(1));
-      expect(restored?.enabledModules.first.id, 'field_operations');
-      expect(restored?.permissions.contains('dashboard:read'), isTrue);
-      expect(restored?.permissions.contains('work_orders:read'), isTrue);
-    });
-
     test(
-      '2.5 cache round-trip preserva availableTenants multiplos',
+      '2.4 cache round-trip preserva enabledModules e permissions',
       () async {
         final repo = DioMobileBootstrapRepository(storage);
-        final bs = fakeBootstrapSession(
-          availableTenants: const [
-            TenantContext(tenantId: 'ten-a', displayName: 'Empresa A'),
-            TenantContext(tenantId: 'ten-b', displayName: 'Empresa B'),
-          ],
-        );
+        final bs = fakeBootstrapSession();
 
         await repo.cache(bs);
         final restored = await repo.restoreCached();
 
-        expect(restored?.availableTenants, hasLength(2));
-        expect(restored?.availableTenants.last.tenantId, 'ten-b');
+        expect(restored?.enabledModules, hasLength(1));
+        expect(restored?.enabledModules.first.id, 'field_operations');
+        expect(restored?.permissions.contains('dashboard:read'), isTrue);
+        expect(restored?.permissions.contains('work_orders:read'), isTrue);
       },
     );
+
+    test('2.5 cache round-trip preserva availableTenants multiplos', () async {
+      final repo = DioMobileBootstrapRepository(storage);
+      final bs = fakeBootstrapSession(
+        availableTenants: const [
+          TenantContext(tenantId: 'ten-a', displayName: 'Empresa A'),
+          TenantContext(tenantId: 'ten-b', displayName: 'Empresa B'),
+        ],
+      );
+
+      await repo.cache(bs);
+      final restored = await repo.restoreCached();
+
+      expect(restored?.availableTenants, hasLength(2));
+      expect(restored?.availableTenants.last.tenantId, 'ten-b');
+    });
 
     test(
       '2.6 restoreCached retorna null e limpa storage em JSON corrompido',
@@ -394,8 +385,7 @@ void main() {
       },
     );
 
-    test('2.7 BootstrapSessionCodec encode/decode preserva mobilePolicy',
-        () {
+    test('2.7 BootstrapSessionCodec encode/decode preserva mobilePolicy', () {
       final bs = fakeBootstrapSession();
       final encoded = BootstrapSessionCodec.encode(bs);
       final decoded = BootstrapSessionCodec.decode(encoded);
@@ -422,22 +412,27 @@ void main() {
         bs.activeTenant.tenantId,
         devBootstrapSession.activeTenant.tenantId,
       );
-      expect(bs.enabledModules.length, devBootstrapSession.enabledModules.length);
+      expect(
+        bs.enabledModules.length,
+        devBootstrapSession.enabledModules.length,
+      );
       expect(bs.permissions.contains('expense_report:create'), isTrue);
       expect(bs.expenseCategories, isNotEmpty);
     });
 
-    test('3.2 fetch(session) usa dados da sessao para user e activeTenant',
-        () async {
-      final repo = LocalDevBootstrapRepository(storage);
-      final session = fakeSession(tenantId: 'ten-customizado');
+    test(
+      '3.2 fetch(session) usa dados da sessao para user e activeTenant',
+      () async {
+        final repo = LocalDevBootstrapRepository(storage);
+        final session = fakeSession(tenantId: 'ten-customizado');
 
-      final bs = await repo.fetch(session);
+        final bs = await repo.fetch(session);
 
-      expect(bs.activeTenant.tenantId, 'ten-customizado');
-      expect(bs.user.email, 'tecnico@empresa.test');
-      expect(bs.user.tenantRole, 'field_technician');
-    });
+        expect(bs.activeTenant.tenantId, 'ten-customizado');
+        expect(bs.user.email, 'tecnico@empresa.test');
+        expect(bs.user.tenantRole, 'field_technician');
+      },
+    );
 
     test(
       '3.3 fetchForTenant seleciona tenant correto dentre os disponiveis',
@@ -483,9 +478,7 @@ void main() {
   // ── Group 4: BootstrapNotifier ─────────────────────────────────────────────
 
   group('4. BootstrapNotifier', () {
-    ProviderContainer makeContainer({
-      InMemoryAuthTokenStorage? storage,
-    }) {
+    ProviderContainer makeContainer({InMemoryAuthTokenStorage? storage}) {
       final st = storage ?? InMemoryAuthTokenStorage();
       return ProviderContainer(
         overrides: [
@@ -497,19 +490,21 @@ void main() {
       );
     }
 
-    test('4.1 build() em modo dev retorna session via LocalDevBootstrapRepository',
-        () async {
-      final st = InMemoryAuthTokenStorage();
-      await st.saveSession(fakeSession());
-      final container = makeContainer(storage: st);
-      addTearDown(container.dispose);
+    test(
+      '4.1 build() em modo dev retorna session via LocalDevBootstrapRepository',
+      () async {
+        final st = InMemoryAuthTokenStorage();
+        await st.saveSession(fakeSession());
+        final container = makeContainer(storage: st);
+        addTearDown(container.dispose);
 
-      await container.read(authStateProvider.future);
-      final bs = await container.read(bootstrapNotifierProvider.future);
+        await container.read(authStateProvider.future);
+        final bs = await container.read(bootstrapNotifierProvider.future);
 
-      expect(bs.activeTenant.tenantId, isNotEmpty);
-      expect(bs.enabledModules, isNotEmpty);
-    });
+        expect(bs.activeTenant.tenantId, isNotEmpty);
+        expect(bs.enabledModules, isNotEmpty);
+      },
+    );
 
     test('4.2 build() usa bootstrap cacheado quando disponivel', () async {
       final st = InMemoryAuthTokenStorage();
@@ -553,15 +548,16 @@ void main() {
         await container.read(authStateProvider.future);
         await container.read(bootstrapNotifierProvider.future);
 
-        await container.read(bootstrapNotifierProvider.notifier).switchTenant(
-          const TenantContext(
-            tenantId: 'tenant-field',
-            displayName: 'Tenant Field Services',
-          ),
-        );
+        await container
+            .read(bootstrapNotifierProvider.notifier)
+            .switchTenant(
+              const TenantContext(
+                tenantId: 'tenant-field',
+                displayName: 'Tenant Field Services',
+              ),
+            );
 
-        final updated =
-            container.read(bootstrapNotifierProvider).asData?.value;
+        final updated = container.read(bootstrapNotifierProvider).asData?.value;
         expect(updated?.activeTenant.tenantId, 'tenant-field');
       },
     );
@@ -579,7 +575,9 @@ void main() {
 
         // kIsRemoteAuth is always false in test builds
         expect(
-          container.read(bootstrapNotifierProvider.notifier).pendingTenantSelection,
+          container
+              .read(bootstrapNotifierProvider.notifier)
+              .pendingTenantSelection,
           isFalse,
         );
       },
@@ -596,12 +594,19 @@ void main() {
         await container.read(authStateProvider.future);
         await container.read(bootstrapNotifierProvider.future);
 
-        await container.read(bootstrapNotifierProvider.notifier).switchTenant(
-          const TenantContext(tenantId: 'tenant-demo', displayName: 'Tenant Demo'),
-        );
+        await container
+            .read(bootstrapNotifierProvider.notifier)
+            .switchTenant(
+              const TenantContext(
+                tenantId: 'tenant-demo',
+                displayName: 'Tenant Demo',
+              ),
+            );
 
         expect(
-          container.read(bootstrapNotifierProvider.notifier).pendingTenantSelection,
+          container
+              .read(bootstrapNotifierProvider.notifier)
+              .pendingTenantSelection,
           isFalse,
         );
       },
@@ -655,8 +660,9 @@ void main() {
       expect(find.text('Continuar'), findsNWidgets(2));
     });
 
-    testWidgets('5.4 exibe instrucao para o usuario selecionar empresa',
-        (t) async {
+    testWidgets('5.4 exibe instrucao para o usuario selecionar empresa', (
+      t,
+    ) async {
       await t.pumpWidget(buildScreen(multiTenantSession()));
       await t.pumpAndSettle();
 
@@ -694,7 +700,9 @@ void main() {
       child: const MaterialApp(home: HomeScreen()),
     );
 
-    testWidgets('6.1 exibe mensagem de erro de ApiError no bootstrap', (t) async {
+    testWidgets('6.1 exibe mensagem de erro de ApiError no bootstrap', (
+      t,
+    ) async {
       const error = ApiNetworkError('Sem conexao com o servidor.');
       await t.pumpWidget(buildHomeWithError(error));
       await t.pump(); // flush microtasks: AsyncNotifier.build() future rejects
@@ -703,8 +711,9 @@ void main() {
       expect(find.textContaining('Sem conexao'), findsOneWidget);
     });
 
-    testWidgets('6.2 exibe botao Tentar novamente no erro de bootstrap',
-        (t) async {
+    testWidgets('6.2 exibe botao Tentar novamente no erro de bootstrap', (
+      t,
+    ) async {
       const error = ApiServerError(statusCode: 503);
       await t.pumpWidget(buildHomeWithError(error));
       await t.pump();

@@ -183,8 +183,8 @@ class ChecklistEvidencePolicy {
         required: j['required'] as bool? ?? false,
         minCount: j['min_count'] as int? ?? 1,
         maxCount: j['max_count'] as int?,
-        allowedSources:
-            (j['allowed_sources'] as List<dynamic>?)?.cast<String>(),
+        allowedSources: (j['allowed_sources'] as List<dynamic>?)
+            ?.cast<String>(),
       );
 }
 
@@ -211,8 +211,8 @@ class ChecklistOption {
     value: j['value'] as String,
     label: j['label'] as String,
     description: j['description'] as String?,
-    triggerVisibilityFor:
-        (j['trigger_visibility_for'] as List<dynamic>?)?.cast<String>(),
+    triggerVisibilityFor: (j['trigger_visibility_for'] as List<dynamic>?)
+        ?.cast<String>(),
   );
 }
 
@@ -303,10 +303,11 @@ class ChecklistSection {
     title: j['title'] as String,
     description: j['description'] as String?,
     order: j['order'] as int? ?? 0,
-    questions: (j['questions'] as List<dynamic>? ?? [])
-        .map((q) => ChecklistQuestion.fromJson(q as Map<String, dynamic>))
-        .toList()
-      ..sort((a, b) => a.order.compareTo(b.order)),
+    questions:
+        (j['questions'] as List<dynamic>? ?? [])
+            .map((q) => ChecklistQuestion.fromJson(q as Map<String, dynamic>))
+            .toList()
+          ..sort((a, b) => a.order.compareTo(b.order)),
     visibleWhen: j['visible_when'] == null
         ? null
         : ChecklistVisibilityRule.fromJson(
@@ -383,8 +384,7 @@ class ChecklistTemplate {
       allQuestions.where((q) => q.required).toList();
 
   factory ChecklistTemplate.fromJson(Map<String, dynamic> j) {
-    final appliesTo =
-        j['applies_to'] as Map<String, dynamic>? ?? const {};
+    final appliesTo = j['applies_to'] as Map<String, dynamic>? ?? const {};
     return ChecklistTemplate(
       id: j['id'] as String,
       tenantId: j['tenant_id'] as String,
@@ -398,16 +398,18 @@ class ChecklistTemplate {
           (appliesTo['service_types'] as List<dynamic>?)?.cast<String>() ?? [],
       branchIds:
           (appliesTo['branch_ids'] as List<dynamic>?)?.cast<String>() ?? [],
-      sections: (j['sections'] as List<dynamic>? ?? [])
-          .map((s) => ChecklistSection.fromJson(s as Map<String, dynamic>))
-          .toList()
-        ..sort((a, b) => a.order.compareTo(b.order)),
+      sections:
+          (j['sections'] as List<dynamic>? ?? [])
+              .map((s) => ChecklistSection.fromJson(s as Map<String, dynamic>))
+              .toList()
+            ..sort((a, b) => a.order.compareTo(b.order)),
       syncPolicy: j['sync_policy'] == null
           ? ChecklistSyncPolicy.permissive
           : ChecklistSyncPolicy.fromJson(
               j['sync_policy'] as Map<String, dynamic>,
             ),
-      updatedAt: DateTime.tryParse(j['updated_at'] as String? ?? '') ??
+      updatedAt:
+          DateTime.tryParse(j['updated_at'] as String? ?? '') ??
           DateTime.now().toUtc(),
     );
   }

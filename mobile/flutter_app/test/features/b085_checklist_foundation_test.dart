@@ -257,7 +257,8 @@ void main() {
       tester,
     ) async {
       // Template arquivado impede re-seeding (store nao esta vazio),
-      // mas nao aparece em activeTemplates — exibe estado vazio.
+      // mas nao aparece em activeTemplates. Com o pull remoto B-100
+      // indisponivel, a tela exibe o estado seguro de erro sem inventar dados.
       final storeArquivado = InMemoryChecklistLocalStore(
         templates: [
           const MobileChecklistTemplate(
@@ -274,7 +275,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Nenhum checklist disponivel para esta OS.'),
+        find.text('Nao foi possivel atualizar os modelos de checklist agora.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Toque para tentar atualizar novamente'),
         findsOneWidget,
       );
     });

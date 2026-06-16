@@ -87,9 +87,7 @@ class _ChecklistAvailableScreenState
               slivers: [
                 // Pull state banners
                 if (repo.isPulling)
-                  const SliverToBoxAdapter(
-                    child: LinearProgressIndicator(),
-                  ),
+                  const SliverToBoxAdapter(child: LinearProgressIndicator()),
                 if (repo.lastPullError != null && !repo.isPulling)
                   SliverToBoxAdapter(
                     child: _ChecklistErrorBanner(
@@ -104,9 +102,7 @@ class _ChecklistAvailableScreenState
                 if (repo.lastPullError != null &&
                     repo.hasCache &&
                     !repo.isPulling)
-                  const SliverToBoxAdapter(
-                    child: _CacheBanner(),
-                  ),
+                  const SliverToBoxAdapter(child: _CacheBanner()),
 
                 // Content
                 if (repo.activeTemplates.isEmpty && !loading)
@@ -155,8 +151,9 @@ class _TemplateList extends StatelessWidget {
           separatorBuilder: (_, _) => const SizedBox(height: 8),
           itemBuilder: (context, i) {
             final template = templates[i];
-            final run =
-                runs.where((r) => r.checklistId == template.id).firstOrNull;
+            final run = runs
+                .where((r) => r.checklistId == template.id)
+                .firstOrNull;
             return _TemplateCard(
               template: template,
               run: run,

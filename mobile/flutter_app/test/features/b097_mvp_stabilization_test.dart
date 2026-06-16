@@ -143,7 +143,10 @@ void main() {
 
       final timeline = await store.loadTimeline('wo-1');
       expect(timeline, hasLength(1));
-      expect(timeline.first.eventType, WorkOrderTimelineEventType.statusChanged);
+      expect(
+        timeline.first.eventType,
+        WorkOrderTimelineEventType.statusChanged,
+      );
       expect(timeline.first.fromStatus, WorkOrderStatus.scheduled);
       expect(timeline.first.toStatus, WorkOrderStatus.inService);
     });
@@ -193,21 +196,30 @@ void main() {
       await expectLater(
         fn(),
         throwsA(isA<ApiIntegrationUnavailableError>()),
-        reason: 'should throw ApiIntegrationUnavailableError, not UnimplementedError',
+        reason:
+            'should throw ApiIntegrationUnavailableError, not UnimplementedError',
       );
     }
 
-    test('2.1 fetchPolicies throws ApiIntegrationUnavailableError', () =>
-        expectUnavailable(api.fetchPolicies));
+    test(
+      '2.1 fetchPolicies throws ApiIntegrationUnavailableError',
+      () => expectUnavailable(api.fetchPolicies),
+    );
 
-    test('2.2 fetchCategories throws ApiIntegrationUnavailableError', () =>
-        expectUnavailable(api.fetchCategories));
+    test(
+      '2.2 fetchCategories throws ApiIntegrationUnavailableError',
+      () => expectUnavailable(api.fetchCategories),
+    );
 
-    test('2.3 listReports throws ApiIntegrationUnavailableError', () =>
-        expectUnavailable(api.listReports));
+    test(
+      '2.3 listReports throws ApiIntegrationUnavailableError',
+      () => expectUnavailable(api.listReports),
+    );
 
-    test('2.4 submitReport throws ApiIntegrationUnavailableError', () =>
-        expectUnavailable(() => api.submitReport('any-id')));
+    test(
+      '2.4 submitReport throws ApiIntegrationUnavailableError',
+      () => expectUnavailable(() => api.submitReport('any-id')),
+    );
 
     test('2.5 error is NOT an UnimplementedError', () async {
       Object? caught;
@@ -433,7 +445,9 @@ void main() {
       expect(find.text('N/A'), findsOneWidget);
     });
 
-    testWidgets('4.3 yesNo tap emits answer with textValue=yes', (tester) async {
+    testWidgets('4.3 yesNo tap emits answer with textValue=yes', (
+      tester,
+    ) async {
       final q = _question(ChecklistQuestionType.yesNo);
       await tester.pumpWidget(
         wrap(
@@ -450,8 +464,9 @@ void main() {
       expect(captured?.type, ChecklistQuestionType.yesNo);
     });
 
-    testWidgets('4.4 singleChoice renders RadioGroup with options',
-        (tester) async {
+    testWidgets('4.4 singleChoice renders RadioGroup with options', (
+      tester,
+    ) async {
       final q = _question(
         ChecklistQuestionType.singleChoice,
         options: [
@@ -511,14 +526,14 @@ void main() {
         ),
       );
       expect(
-        find.textContaining(
-          'Este tipo de pergunta ainda nao e suportado',
-        ),
+        find.textContaining('Este tipo de pergunta ainda nao e suportado'),
         findsOneWidget,
       );
     });
 
-    testWidgets('4.7 required question shows asterisk in label', (tester) async {
+    testWidgets('4.7 required question shows asterisk in label', (
+      tester,
+    ) async {
       final q = ChecklistQuestion(
         id: 'q-r',
         code: 'qr',
@@ -545,7 +560,9 @@ void main() {
       );
     });
 
-    testWidgets('4.8 sectionNote renders info container, no input', (tester) async {
+    testWidgets('4.8 sectionNote renders info container, no input', (
+      tester,
+    ) async {
       final q = _question(ChecklistQuestionType.sectionNote);
       await tester.pumpWidget(
         wrap(
@@ -561,7 +578,9 @@ void main() {
       expect(find.byIcon(Icons.info_outline), findsOneWidget);
     });
 
-    testWidgets('4.9 photo question shows disabled camera button', (tester) async {
+    testWidgets('4.9 photo question shows disabled camera button', (
+      tester,
+    ) async {
       final q = _question(ChecklistQuestionType.photo);
       await tester.pumpWidget(
         wrap(
@@ -578,7 +597,9 @@ void main() {
       expect(btn.onPressed, isNull);
     });
 
-    testWidgets('4.10 ChecklistAnswer.hasValue is false when empty', (tester) async {
+    testWidgets('4.10 ChecklistAnswer.hasValue is false when empty', (
+      tester,
+    ) async {
       final a = ChecklistAnswer(
         questionId: 'q-1',
         questionCode: 'q1',
@@ -588,8 +609,7 @@ void main() {
       expect(a.hasValue, isFalse);
     });
 
-    test('4.11 ChecklistAnswer.copyWith updates textValue preserving type',
-        () {
+    test('4.11 ChecklistAnswer.copyWith updates textValue preserving type', () {
       final a = ChecklistAnswer(
         questionId: 'q-1',
         questionCode: 'q1',

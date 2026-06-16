@@ -44,6 +44,11 @@ void main() {
         title: 'Prestação de Contas totais persistidos',
         advanceAmount: 50,
       );
+      expect(created.action.payload['employeeUserId'], 'employee-1');
+      expect(created.action.payload['periodStart'], isA<String>());
+      expect(created.action.payload['periodEnd'], isA<String>());
+      expect(created.action.payload['origin'], 'mobile');
+      expect(created.action.payload['advanceAmount'], 50);
       await repo.addItem(
         reportId: created.report.localId,
         categoryId: 'meal',

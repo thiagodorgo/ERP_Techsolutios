@@ -94,7 +94,10 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
       _loadFuture = null;
     }
 
-    _loadFuture ??= Future.wait([expenseRepository.load(), woRepository.load()]);
+    _loadFuture ??= Future.wait([
+      expenseRepository.load(),
+      woRepository.load(),
+    ]);
 
     final session = widget.session;
     final modules = const ModuleResolver(
@@ -175,8 +178,7 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
                 const SizedBox(height: 8),
 
               // Work order pull state
-              if (woRepository.isPulling)
-                const LinearProgressIndicator(),
+              if (woRepository.isPulling) const LinearProgressIndicator(),
               if (woRepository.lastPullError != null && !woRepository.isPulling)
                 _WoPullErrorBanner(
                   message: woRepository.lastPullError!,
@@ -744,23 +746,19 @@ class _WoPullErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialBanner(
-      backgroundColor:
-          Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.8),
+      backgroundColor: Theme.of(
+        context,
+      ).colorScheme.errorContainer.withValues(alpha: 0.8),
       leading: Icon(
         Icons.cloud_off_outlined,
         color: Theme.of(context).colorScheme.error,
       ),
       content: Text(
         message,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onErrorContainer,
-        ),
+        style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
       ),
       actions: [
-        TextButton(
-          onPressed: onRetry,
-          child: const Text('Tentar novamente'),
-        ),
+        TextButton(onPressed: onRetry, child: const Text('Tentar novamente')),
       ],
     );
   }
@@ -772,7 +770,9 @@ class _WoLocalCacheBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.5),
+      color: Theme.of(
+        context,
+      ).colorScheme.secondaryContainer.withValues(alpha: 0.5),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
         children: [

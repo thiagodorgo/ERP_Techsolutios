@@ -5,6 +5,41 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+
+## B-098F — 2026-06-15
+
+**Mobile Evidence Flutter Sync**
+Consome o contrato backend parcial `POST /api/v1/mobile/sync/evidence-actions`
+para replay de manifestos de evidencias de OS/campo. O Flutter envia somente
+metadados controlados, le o envelope `body.data` e trata `accepted`,
+`rejected`, `conflicts` e `already_applied`.
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 497 / 497 |
+| flutter analyze | 0 issues |
+| Modulos Flutter Prontos | 14 / 16 |
+| MVP Demo Readiness (est.) | 79% |
+| MVP Vendavel (est.) | 54% |
+| Blocos Entregues | 31 |
+
+**Novidades:**
+- `EvidenceSyncCodec` serializa `{ client_batch_id, actions[] }`.
+- Tipos B-098F suportados: fotos, assinaturas e observacoes de OS/campo.
+- Payload seguro: sem `tenant_id`, `tenantId`, base64, binario, `file_data`,
+  `local_path` ou `path`.
+- Fotos/assinaturas respeitam limite declarado de 10 MB e enviam
+  `file_name`, `content_type`, `size_bytes`, `sha256`, `caption` e `gps`
+  quando disponiveis.
+- `already_applied` vira sucesso idempotente.
+- `conflict` permanece como conflito manual, sem retry automatico.
+
+**Lacunas mantidas:** upload/presigned URL, storage protegido, persistencia
+DB/Redis, antivirus e auditoria completa de arquivo.
+
+**Proximos passos:** B-102 (sync write checklist + CI wiring), B-103 (OS sync bidirecional), B-104 (upload real de evidencias).
+
+---
 ## B-101 — 2026-06-15
 
 **Backend Mobile Checklist Available Endpoint**

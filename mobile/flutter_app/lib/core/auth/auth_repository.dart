@@ -143,10 +143,14 @@ class DioAuthRepository implements AuthRepository {
     String? tenantId,
   }) async {
     try {
-      final response = await _client.post(
-        '/api/v1/auth/login',
-        data: {'email': email, 'password': password, 'tenantId': ?tenantId},
-      );
+      final normalizedTenantId = tenantId?.trim();
+      final payload = <String, Object?>{
+        'email': email,
+        'password': password,
+        if (normalizedTenantId != null && normalizedTenantId.isNotEmpty)
+          'tenantId': normalizedTenantId,
+      };
+      final response = await _client.post('/api/v1/auth/login', data: payload);
       final session = _sessionFromJson(response.data as Map<String, dynamic>);
       _current = session;
       await _storage.saveSession(session);
@@ -205,9 +209,11 @@ class DioAuthRepository implements AuthRepository {
   }
 
   AuthSession _sessionFromJson(Map<String, dynamic> json) {
+    final envelopeData = json['data'];
+    final body = envelopeData is Map<String, dynamic> ? envelopeData : json;
     // Backend may wrap tokens under a 'tokens' key or inline them
-    final tokenJson = json['tokens'] as Map<String, dynamic>? ?? json;
-    final userJson = json['user'] as Map<String, dynamic>;
+    final tokenJson = body['tokens'] as Map<String, dynamic>? ?? body;
+    final userJson = body['user'] as Map<String, dynamic>;
 
     final expiresIn = tokenJson['expiresIn'] as int? ?? 28800;
     final expiresAt = DateTime.now().toUtc().add(Duration(seconds: expiresIn));

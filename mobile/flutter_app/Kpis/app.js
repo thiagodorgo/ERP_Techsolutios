@@ -8,159 +8,580 @@
 // Mantido em sincronia a cada entrega. Fonte oficial: os arquivos .json ao lado.
 // ---------------------------------------------------------------------------
 const EMBEDDED_LATEST = {
-  snapshot_date: "2026-06-15",
-  version: "B-101",
-  branch: "feature/backend-mobile-checklists-available",
-  description:
-    "B-101 Backend Mobile Checklist Available Endpoint — fecha a lacuna da B-100 entregando o handler real de GET /api/v1/mobile/checklists/available com DTO compativel ao parser Flutter",
-  release: {
-    block: "B-101",
-    title: "Backend Mobile Checklist Available Endpoint",
-    branch: "feature/backend-mobile-checklists-available",
-    status: "local_complete_pending_push",
-    status_label: "Concluido localmente — aguardando push",
-    summary:
-      "Endpoint GET /api/v1/mobile/checklists/available passa a retornar um DTO mobile compativel com o parser Flutter B-100 (title, schema_version, status active) e envelope { data, items, meta }. Tenant-scoped + RBAC (checklist_runs:read/create). 5 testes de contrato novos. Descoberta: o handler ja existia em checklist.routes.ts (nao estava ausente, apenas fora de mobile.routes.ts).",
-    commits: [
-      { hash: "pending", message: "feat(mobile-api): add available checklist templates endpoint" },
-      { hash: "pending", message: "test(mobile-api): cover checklist templates contract" },
-      { hash: "pending", message: "docs: add B-101 backend checklist endpoint status" },
+  "snapshot_date": "2026-06-15",
+  "version": "B-098F",
+  "branch": "feature/mobile-evidence-flutter-sync",
+  "description": "B-098F Mobile Evidence Flutter Sync — consumo Flutter do contrato POST /api/v1/mobile/sync/evidence-actions com metadados seguros, replay idempotente e conflito manual",
+  "release": {
+    "block": "B-098F",
+    "title": "Mobile Evidence Flutter Sync",
+    "branch": "feature/mobile-evidence-flutter-sync",
+    "status": "implemented_pending_review",
+    "status_label": "Implementado em branch — aguardando revisao",
+    "summary": "Flutter passa a serializar e sincronizar manifestos de evidencia via POST /api/v1/mobile/sync/evidence-actions, lendo body.data e separando accepted, rejected, conflicts e already_applied. Fotos/assinaturas enviam somente metadados controlados, com limite de 10 MB e sem tenant externo, base64, binario, file_data ou path local.",
+    "commits": [
+      {
+        "hash": "branch-head",
+        "message": "feat(mobile): sync evidence metadata with backend contract"
+      },
+      {
+        "hash": "branch-head",
+        "message": "test(mobile): cover evidence sync request parser and replay"
+      },
+      {
+        "hash": "branch-head",
+        "message": "docs(kpis): update mobile KPIs for B-098F"
+      }
     ],
-    limitation:
-      "npm test (CI) executa apenas core-saas.test.ts; os testes de contrato mobile (incl. B-101) rodam via node --test direto. Wiring de CI fica para bloco de infra (package.json fora do escopo da B-101).",
-    fallback: "Flutter B-100 mantem fallback remoto -> cache Drift -> seeds; agora com backend real respondendo.",
+    "limitation": "Contrato continua parcial: sem upload binario final, presigned URL, storage protegido, persistencia DB/Redis, antivirus ou auditoria completa de arquivo.",
+    "fallback": "Evidencias permanecem registradas localmente e na fila de sync; already_applied e tratado como sucesso idempotente e conflict exige decisao manual."
   },
-  domains: [
+  "domains": [
     {
-      id: "work_orders",
-      name: "Work Orders (OS)",
-      status: "parcial",
-      detail: "Pull remoto ativo (B-099); sync bidirecional pendente.",
-      points: [
+      "id": "work_orders",
+      "name": "Work Orders (OS)",
+      "status": "parcial",
+      "detail": "Pull remoto ativo (B-099); sync bidirecional pendente.",
+      "points": [
         "GET /api/v1/work-orders conectado com upsert no Drift",
         "Parser tolerante camelCase/snake_case",
         "Banners de pull state em Home e List + RefreshIndicator",
-        "Pendente: push de alteracoes locais ao backend (B-102)",
-      ],
+        "Pendente: push de alteracoes locais ao backend (B-102)"
+      ]
     },
     {
-      id: "checklists",
-      name: "Checklists",
-      status: "parcial",
-      detail: "Pull de templates ativo (B-100) + backend real (B-101); sync write pendente.",
-      points: [
+      "id": "checklists",
+      "name": "Checklists",
+      "status": "parcial",
+      "detail": "Pull de templates ativo (B-100) + backend real (B-101); sync write pendente.",
+      "points": [
         "GET /api/v1/mobile/checklists/available com handler backend real (B-101)",
         "DTO mobile compativel: title, schema_version, status active, items, meta",
         "Tenant-scoped + RBAC (checklist_runs:read/create); somente templates publicados",
         "Cache Drift + fallback remoto -> cache -> seeds no Flutter",
-        "Pendente: sync write de respostas de checklist (B-102+)",
-      ],
+        "Pendente: sync write de respostas de checklist (B-102+)"
+      ]
     },
     {
-      id: "offline",
-      name: "Offline / Local-first",
-      status: "concluido",
-      detail: "Persistencia local SQLite via Drift em todos os dominios.",
-      points: [
+      "id": "evidence",
+      "name": "Evidencias Mobile",
+      "status": "parcial",
+      "detail": "Sync Flutter de metadados implementado; upload binario final permanece pendente.",
+      "points": [
+        "POST /api/v1/mobile/sync/evidence-actions conectado no replay mobile",
+        "Tipos OS/campo: foto, assinatura e observacao",
+        "Request seguro: sem tenant_id, base64, binario, file_data, local_path ou path",
+        "already_applied vira sucesso idempotente; conflict exige decisao manual",
+        "Pendente: presigned URL, storage protegido, persistencia DB/Redis, antivirus e auditoria completa"
+      ]
+    },
+    {
+      "id": "offline",
+      "name": "Offline / Local-first",
+      "status": "concluido",
+      "detail": "Persistencia local SQLite via Drift em todos os dominios.",
+      "points": [
         "Drift como cache local de OS, checklists e inventario",
         "App permanece util sem rede (cache/seeds)",
         "Fila de sync local (replay com stubs seguros)",
-        "Sem perda de dados em falha de rede no pull",
-      ],
-    },
+        "Sem perda de dados em falha de rede no pull"
+      ]
+    }
   ],
-  categories: [
+  "categories": [
     {
-      id: "quality",
-      label: "Qualidade de Codigo",
-      metrics: [
-        { id: "flutter_tests", label: "Flutter Tests", value: 487, total: 487, unit: "testes", type: "real", status: "green", detail: "487/487 (1 pre-existente instavel passa isolado) — inclui +44 de B-100" },
-        { id: "npm_tests", label: "Backend Tests", value: 15, total: 15, unit: "testes", type: "real", status: "green", detail: "15/15 passando" },
-        { id: "flutter_analyze", label: "flutter analyze", value: 0, unit: "issues", type: "real", status: "green", detail: "No issues found" },
-        { id: "npm_lint", label: "npm run lint", value: 0, unit: "erros", type: "real", status: "green", detail: "0 erros" },
-        { id: "npm_build", label: "npm run build", value: 0, unit: "erros", type: "real", status: "green", detail: "0 erros" },
-      ],
+      "id": "quality",
+      "label": "Qualidade de Codigo",
+      "metrics": [
+        {
+          "id": "flutter_tests",
+          "label": "Flutter Tests",
+          "value": 497,
+          "total": 497,
+          "unit": "testes",
+          "type": "real",
+          "status": "green",
+          "detail": "497/497 — inclui +10 testes B-098F de evidencia sync e ajustes de regressao"
+        },
+        {
+          "id": "npm_tests",
+          "label": "Backend Tests",
+          "value": 15,
+          "total": 15,
+          "unit": "testes",
+          "type": "real",
+          "status": "green",
+          "detail": "15/15 passando"
+        },
+        {
+          "id": "flutter_analyze",
+          "label": "flutter analyze",
+          "value": 0,
+          "unit": "issues",
+          "type": "real",
+          "status": "green",
+          "detail": "No issues found — B-098F"
+        },
+        {
+          "id": "npm_lint",
+          "label": "npm run lint",
+          "value": 0,
+          "unit": "erros",
+          "type": "real",
+          "status": "green",
+          "detail": "0 erros"
+        },
+        {
+          "id": "npm_build",
+          "label": "npm run build",
+          "value": 0,
+          "unit": "erros",
+          "type": "real",
+          "status": "green",
+          "detail": "0 erros"
+        }
+      ]
     },
     {
-      id: "mobile",
-      label: "Mobile Flutter MVP",
-      metrics: [
-        { id: "flutter_modules_ready", label: "Modulos Flutter Prontos", value: 13, total: 15, unit: "modulos", type: "real", status: "yellow", detail: "Pendentes: OS sync bidirecional, Approvals, Field Map" },
-        { id: "flutter_mvp_demo", label: "MVP Demo Readiness", value: 78, unit: "%", type: "estimated", status: "yellow", detail: "Estimado. Subiu com backend real de checklists (B-101). Sobe mais com sync write de respostas" },
-        { id: "flutter_mvp_vendavel", label: "MVP Vendavel (Producao)", value: 52, unit: "%", type: "estimated", status: "yellow", detail: "Estimado. Requer sync write de checklist, upload real de evidencias, GPS, aprovacao real" },
-        { id: "flutter_test_files", label: "Arquivos de Teste Flutter", value: 20, unit: "arquivos", type: "real", status: "green", detail: "20 arquivos de teste no diretorio test/" },
-        { id: "flutter_os_pull", label: "OS Pull Remoto", value: 1, unit: "conectado", type: "real", status: "green", detail: "GET /api/v1/work-orders com upsert Drift e fallback cache" },
-        { id: "flutter_checklist_pull", label: "Checklist Templates Pull", value: 1, unit: "conectado", type: "real", status: "green", detail: "GET /api/v1/mobile/checklists/available com parser tolerante, cache Drift e fallback seeds (B-100)" },
-      ],
+      "id": "mobile",
+      "label": "Mobile Flutter MVP",
+      "metrics": [
+        {
+          "id": "flutter_modules_ready",
+          "label": "Modulos Flutter Prontos",
+          "value": 14,
+          "total": 16,
+          "unit": "modulos",
+          "type": "real",
+          "status": "yellow",
+          "detail": "Evidencia metadata sync pronta; pendentes: OS sync bidirecional completo, Approvals, Field Map"
+        },
+        {
+          "id": "flutter_mvp_demo",
+          "label": "MVP Demo Readiness",
+          "value": 79,
+          "unit": "%",
+          "type": "estimated",
+          "status": "yellow",
+          "detail": "Estimado. Sobe com evidencia sync de metadados e replay idempotente; ainda depende de upload real"
+        },
+        {
+          "id": "flutter_mvp_vendavel",
+          "label": "MVP Vendavel (Producao)",
+          "value": 54,
+          "unit": "%",
+          "type": "estimated",
+          "status": "yellow",
+          "detail": "Estimado. Requer upload real de evidencias, storage protegido, GPS, aprovacao real e syncs finais"
+        },
+        {
+          "id": "flutter_test_files",
+          "label": "Arquivos de Teste Flutter",
+          "value": 21,
+          "unit": "arquivos",
+          "type": "real",
+          "status": "green",
+          "detail": "21 arquivos de teste no diretorio test/"
+        },
+        {
+          "id": "flutter_os_pull",
+          "label": "OS Pull Remoto",
+          "value": 1,
+          "unit": "conectado",
+          "type": "real",
+          "status": "green",
+          "detail": "GET /api/v1/work-orders com upsert Drift e fallback cache"
+        },
+        {
+          "id": "flutter_checklist_pull",
+          "label": "Checklist Templates Pull",
+          "value": 1,
+          "unit": "conectado",
+          "type": "real",
+          "status": "green",
+          "detail": "GET /api/v1/mobile/checklists/available com backend real B-101, parser tolerante, cache Drift e fallback seeds"
+        },
+        {
+          "id": "flutter_evidence_sync",
+          "label": "Evidence Metadata Sync",
+          "value": 1,
+          "unit": "conectado",
+          "type": "real",
+          "status": "green",
+          "detail": "POST /api/v1/mobile/sync/evidence-actions com body.data, accepted/rejected/conflicts/already_applied e payload seguro (B-098F)"
+        }
+      ]
     },
     {
-      id: "backend",
-      label: "Backend Node.js",
-      metrics: [
-        { id: "backend_modules", label: "Modulos Backend", value: 8, total: 10, unit: "modulos", type: "estimated", status: "yellow", detail: "core-saas, auth, RBAC, checklists, work-orders, tenants, audit, platform" },
-        { id: "backend_auth", label: "Auth JWT Real", value: 1, unit: "implementado", type: "real", status: "green", detail: "Login local tenant-scoped + JWT + RBAC persistido" },
-        { id: "backend_persistence", label: "Persistencia Prisma/PostgreSQL", value: 1, unit: "implementado", type: "real", status: "green", detail: "PrismaCoreSaasStore via CORE_SAAS_PERSISTENCE=prisma" },
-        { id: "backend_checklist_api", label: "Checklist API", value: 1, unit: "implementado", type: "real", status: "green", detail: "/api/v1/tenant/checklists + /api/v1/mobile/checklists/*" },
-        { id: "backend_mobile_checklists_available", label: "Mobile Checklists Available", value: 1, unit: "implementado", type: "real", status: "green", detail: "GET /api/v1/mobile/checklists/available com DTO mobile compativel ao Flutter B-100, tenant-scoped + RBAC (B-101)" },
-        { id: "backend_mobile_contract_tests", label: "Testes de Contrato Mobile", value: 45, total: 45, unit: "testes", type: "real", status: "green", detail: "45/45 via node --test (core-saas 15 + mobile-backend-contracts 15 + checklist 10 + B-101 5). npm test/CI roda apenas core-saas (15)" },
-      ],
+      "id": "backend",
+      "label": "Backend Node.js",
+      "metrics": [
+        {
+          "id": "backend_modules",
+          "label": "Modulos Backend",
+          "value": 8,
+          "total": 10,
+          "unit": "modulos",
+          "type": "estimated",
+          "status": "yellow",
+          "detail": "core-saas, auth, RBAC, checklists, work-orders, tenants, audit, platform"
+        },
+        {
+          "id": "backend_auth",
+          "label": "Auth JWT Real",
+          "value": 1,
+          "unit": "implementado",
+          "type": "real",
+          "status": "green",
+          "detail": "Login local tenant-scoped + JWT + RBAC persistido"
+        },
+        {
+          "id": "backend_persistence",
+          "label": "Persistencia Prisma/PostgreSQL",
+          "value": 1,
+          "unit": "implementado",
+          "type": "real",
+          "status": "green",
+          "detail": "PrismaCoreSaasStore via CORE_SAAS_PERSISTENCE=prisma"
+        },
+        {
+          "id": "backend_checklist_api",
+          "label": "Checklist API",
+          "value": 1,
+          "unit": "implementado",
+          "type": "real",
+          "status": "green",
+          "detail": "/api/v1/tenant/checklists + /api/v1/mobile/checklists/*"
+        },
+        {
+          "id": "backend_mobile_contract_tests",
+          "label": "Testes de Contrato Mobile",
+          "value": 45,
+          "total": 45,
+          "unit": "testes",
+          "type": "real",
+          "status": "green",
+          "detail": "45/45 via node --test (core-saas 15 + mobile-backend-contracts 15 + checklist 10 + B-101 5). npm test/CI roda apenas core-saas (15)"
+        },
+        {
+          "id": "backend_mobile_checklists_available",
+          "label": "Mobile Checklists Available",
+          "value": 1,
+          "unit": "implementado",
+          "type": "real",
+          "status": "green",
+          "detail": "GET /api/v1/mobile/checklists/available com DTO mobile compativel ao Flutter B-100, tenant-scoped + RBAC (B-101)"
+        }
+      ]
     },
     {
-      id: "delivery",
-      label: "Velocidade de Entrega",
-      metrics: [
-        { id: "blocks_completed", label: "Blocos Entregues (total)", value: 30, unit: "blocos", type: "real", status: "green", detail: "B-076 ate B-101, incluindo sub-blocos (A/B/K)" },
-        { id: "blocks_last_sprint", label: "Blocos em 2026-06-15", value: 2, unit: "blocos", type: "real", status: "green", detail: "B-100 Flutter Checklist Remote Templates + B-101 Backend Checklist Available Endpoint" },
-        { id: "prs_merged", label: "PRs Merged (estimado)", value: 15, unit: "PRs", type: "estimated", status: "green", detail: "Estimado com base no historico de branches e merges" },
-      ],
+      "id": "delivery",
+      "label": "Velocidade de Entrega",
+      "metrics": [
+        {
+          "id": "blocks_completed",
+          "label": "Blocos Entregues (total)",
+          "value": 31,
+          "unit": "blocos",
+          "type": "real",
+          "status": "green",
+          "detail": "B-076 ate B-101 + B-098F, incluindo sub-blocos (A/B/K/F)"
+        },
+        {
+          "id": "blocks_last_sprint",
+          "label": "Blocos em 2026-06-15",
+          "value": 3,
+          "unit": "blocos",
+          "type": "real",
+          "status": "green",
+          "detail": "B-100 Flutter Checklist Remote Templates + B-101 Backend Checklist Available + B-098F Evidence Flutter Sync"
+        },
+        {
+          "id": "prs_merged",
+          "label": "PRs Merged (estimado)",
+          "value": 16,
+          "unit": "PRs",
+          "type": "estimated",
+          "status": "green",
+          "detail": "Estimado com base no historico de branches e merges"
+        }
+      ]
     },
     {
-      id: "gaps",
-      label: "Lacunas para Producao",
-      metrics: [
-        { id: "os_sync_bidirecional", label: "OS Sync Bidirecional", value: 0, unit: "implementado", type: "real", status: "red", detail: "Pendente — push de alteracoes locais ao backend (B-102)" },
-        { id: "upload_evidencias", label: "Upload Real de Evidencias", value: 0, unit: "implementado", type: "real", status: "red", detail: "Pendente — S3 presigned URL + image_picker" },
-        { id: "gps_mapa", label: "GPS / Mapa Operacional", value: 0, unit: "implementado", type: "real", status: "red", detail: "Placeholder — aguarda definicao de requisito" },
-        { id: "aprovacao_real", label: "Aprovacao Real", value: 0, unit: "implementado", type: "real", status: "red", detail: "Placeholder — fluxo de aprovacao de OS" },
-        { id: "checklist_remoto", label: "Checklist Remoto Mobile", value: 1, unit: "implementado", type: "real", status: "yellow", detail: "Pull de templates (B-100) + backend real (B-101) entregues. Falta sync write de respostas de checklist (B-102+)" },
-        { id: "checklist_answers_sync", label: "Checklist Answers Sync", value: 0, unit: "implementado", type: "real", status: "red", detail: "Pendente — push/replay de respostas de checklist do mobile ao backend" },
-      ],
-    },
+      "id": "gaps",
+      "label": "Lacunas para Producao",
+      "metrics": [
+        {
+          "id": "os_sync_bidirecional",
+          "label": "OS Sync Bidirecional",
+          "value": 0,
+          "unit": "implementado",
+          "type": "real",
+          "status": "red",
+          "detail": "Pendente — B-100: push de alteracoes locais ao backend"
+        },
+        {
+          "id": "upload_evidencias",
+          "label": "Upload Real de Evidencias",
+          "value": 0,
+          "unit": "implementado",
+          "type": "real",
+          "status": "red",
+          "detail": "Pendente — presigned URL, storage protegido, persistencia DB/Redis, antivirus e auditoria completa"
+        },
+        {
+          "id": "gps_mapa",
+          "label": "GPS / Mapa Operacional",
+          "value": 0,
+          "unit": "implementado",
+          "type": "real",
+          "status": "red",
+          "detail": "Placeholder — aguarda definicao de requisito"
+        },
+        {
+          "id": "aprovacao_real",
+          "label": "Aprovacao Real",
+          "value": 0,
+          "unit": "implementado",
+          "type": "real",
+          "status": "red",
+          "detail": "Placeholder — fluxo de aprovacao de OS"
+        },
+        {
+          "id": "checklist_answers_sync",
+          "label": "Checklist Answers Sync",
+          "value": 0,
+          "unit": "implementado",
+          "type": "real",
+          "status": "red",
+          "detail": "Pendente — push/replay de respostas de checklist do mobile ao backend"
+        },
+        {
+          "id": "checklist_remoto",
+          "label": "Checklist Remoto Mobile",
+          "value": 1,
+          "unit": "implementado",
+          "type": "real",
+          "status": "yellow",
+          "detail": "Pull de templates (B-100) + backend real (B-101) entregues. Falta sync write de respostas de checklist (B-102+)"
+        },
+        {
+          "id": "evidence_binary_upload",
+          "label": "Evidence Binary Upload",
+          "value": 0,
+          "unit": "implementado",
+          "type": "real",
+          "status": "red",
+          "detail": "B-098F cobre somente metadados; upload final, storage e auditoria ficam pendentes"
+        }
+      ]
+    }
   ],
-  modules: [
-    { name: "Auth/Login", status: "pronto", detail: "Real via --dart-define=ERP_AUTH_MODE=remote" },
-    { name: "Bootstrap/Session", status: "pronto", detail: "Dual-format: B-098 minimal + B-098A expandido" },
-    { name: "Feature Flags", status: "pronto", detail: "FeatureFlag + CapabilityStatus" },
-    { name: "Sync Cursors", status: "pronto", detail: "Parseados; prontos para uso incremental" },
-    { name: "Multi-tenant", status: "pronto", detail: "TenantSelectorScreen + switchTenant()" },
-    { name: "OS — Lista Local", status: "pronto", detail: "DriftWorkOrderLocalStore ativo" },
-    { name: "OS — Pull Remoto", status: "pronto", detail: "GET /api/v1/work-orders; upsert Drift; banners UI (B-099)" },
-    { name: "OS — Sync Bidirecional", status: "pendente", detail: "B-102 — alteracoes locais para backend" },
-    { name: "Checklist Configuravel", status: "pronto", detail: "Modelos ricos + 10 renderers" },
-    { name: "Checklist — Pull Remoto", status: "pronto", detail: "GET /mobile/checklists/available; parser tolerante; cache Drift; banners UI (B-100)" },
-    { name: "Checklist — Backend Available", status: "pronto", detail: "Handler backend real com DTO mobile compativel, tenant-scoped + RBAC (B-101)" },
-    { name: "Sync Screen", status: "pronto", detail: "Grupos por dominio, KPIs, banners" },
-    { name: "Diagnostics", status: "pronto", detail: "Dev-only (kIsDevMode)" },
-    { name: "Inventory", status: "pronto", detail: "Local-first (SQLite)" },
-    { name: "RDV / Despesas", status: "pronto", detail: "Local-first (SQLite)" },
-    { name: "Approvals", status: "placeholder", detail: "Aguarda definicao de fluxo" },
-    { name: "Field Map / GPS", status: "placeholder", detail: "Aguarda requisito tecnico" },
+  "modules": [
+    {
+      "name": "Auth/Login",
+      "status": "pronto",
+      "detail": "Real via --dart-define=ERP_AUTH_MODE=remote"
+    },
+    {
+      "name": "Bootstrap/Session",
+      "status": "pronto",
+      "detail": "Dual-format: B-098 minimal + B-098A expandido"
+    },
+    {
+      "name": "Feature Flags",
+      "status": "pronto",
+      "detail": "FeatureFlag + CapabilityStatus"
+    },
+    {
+      "name": "Sync Cursors",
+      "status": "pronto",
+      "detail": "Parseados; prontos para uso incremental"
+    },
+    {
+      "name": "Multi-tenant",
+      "status": "pronto",
+      "detail": "TenantSelectorScreen + switchTenant()"
+    },
+    {
+      "name": "OS — Lista Local",
+      "status": "pronto",
+      "detail": "DriftWorkOrderLocalStore ativo"
+    },
+    {
+      "name": "OS — Pull Remoto",
+      "status": "pronto",
+      "detail": "GET /api/v1/work-orders; upsert Drift; banners UI (B-099)"
+    },
+    {
+      "name": "OS — Sync Bidirecional",
+      "status": "pendente",
+      "detail": "B-100+ — alteracoes locais para backend"
+    },
+    {
+      "name": "Checklist Configuravel",
+      "status": "pronto",
+      "detail": "Modelos ricos + 10 renderers"
+    },
+    {
+      "name": "Checklist — Pull Remoto",
+      "status": "pronto",
+      "detail": "GET /mobile/checklists/available; parser tolerante; cache Drift; banners UI (B-100)"
+    },
+    {
+      "name": "Checklist — Backend Available",
+      "status": "pronto",
+      "detail": "Handler backend real com DTO mobile compativel, tenant-scoped + RBAC (B-101)"
+    },
+    {
+      "name": "Evidence — Metadata Sync",
+      "status": "pronto",
+      "detail": "Manifestos de evidencia OS/campo enviados ao backend B-098E sem binario/path/base64 (B-098F)"
+    },
+    {
+      "name": "Sync Screen",
+      "status": "pronto",
+      "detail": "Grupos por dominio, KPIs, banners"
+    },
+    {
+      "name": "Diagnostics",
+      "status": "pronto",
+      "detail": "Dev-only (kIsDevMode)"
+    },
+    {
+      "name": "Inventory",
+      "status": "pronto",
+      "detail": "Local-first (SQLite)"
+    },
+    {
+      "name": "RDV / Despesas",
+      "status": "pronto",
+      "detail": "Local-first (SQLite)"
+    },
+    {
+      "name": "Approvals",
+      "status": "placeholder",
+      "detail": "Aguarda definicao de fluxo"
+    },
+    {
+      "name": "Field Map / GPS",
+      "status": "placeholder",
+      "detail": "Aguarda requisito tecnico"
+    }
   ],
-  next_steps: [
-    { block: "B-102", title: "Sync write de respostas de checklist (mobile -> backend) + wiring de CI para os testes de contrato mobile" },
-    { block: "B-103", title: "Push de alteracoes locais de OS para o backend (sync bidirecional)" },
-    { block: "B-104", title: "Upload real de fotos (image_picker + presigned URL S3)" },
-  ],
+  "next_steps": [
+    {
+      "block": "B-102",
+      "title": "Sync write de respostas de checklist (mobile -> backend) + wiring de CI para os testes de contrato mobile"
+    },
+    {
+      "block": "B-103",
+      "title": "Push de alteracoes locais de OS para o backend (sync bidirecional)"
+    },
+    {
+      "block": "B-104",
+      "title": "Upload real de fotos (image_picker + presigned URL S3)"
+    }
+  ]
 };
 
 const EMBEDDED_HISTORY = [
-  { snapshot_date: "2026-06-13", version: "B-094", flutter_tests: 280, npm_tests: 15, flutter_modules_ready: 10, flutter_modules_total: 15, flutter_mvp_demo: 70, flutter_mvp_vendavel: 40, blocks_completed: 22, description: "B-094 QA Geral + Organizacao Flutter + Estrategia de PR" },
-  { snapshot_date: "2026-06-14", version: "B-097", flutter_tests: 315, npm_tests: 15, flutter_modules_ready: 11, flutter_modules_total: 15, flutter_mvp_demo: 72, flutter_mvp_vendavel: 43, blocks_completed: 24, description: "B-097 Flutter Mobile MVP Stabilization — persistencia SQLite OS, checklist renderers" },
-  { snapshot_date: "2026-06-14", version: "B-098", flutter_tests: 352, npm_tests: 15, flutter_modules_ready: 11, flutter_modules_total: 15, flutter_mvp_demo: 73, flutter_mvp_vendavel: 45, blocks_completed: 25, description: "B-098 Flutter Real Auth and Bootstrap — DioAuthRepository, BootstrapNotifier, multi-tenant" },
-  { snapshot_date: "2026-06-14", version: "B-098B", flutter_tests: 413, npm_tests: 15, flutter_modules_ready: 12, flutter_modules_total: 15, flutter_mvp_demo: 74, flutter_mvp_vendavel: 47, blocks_completed: 27, description: "B-098B Flutter Consume Expanded Bootstrap Contract — FeatureFlags, SyncCursors, CapabilityStatus" },
-  { snapshot_date: "2026-06-14", version: "B-099", flutter_tests: 443, npm_tests: 15, flutter_modules_ready: 12, flutter_modules_total: 15, flutter_mvp_demo: 75, flutter_mvp_vendavel: 50, blocks_completed: 28, description: "B-099 Flutter Real Work Orders Pull — GET /api/v1/work-orders, upsert Drift, banners UI" },
-  { snapshot_date: "2026-06-15", version: "B-100", flutter_tests: 487, npm_tests: 15, flutter_modules_ready: 13, flutter_modules_total: 15, flutter_mvp_demo: 76, flutter_mvp_vendavel: 51, blocks_completed: 29, description: "B-100 Flutter Checklist Remote Templates — pull de modelos, parser tolerante, cache Drift, banners UX" },
-  { snapshot_date: "2026-06-15", version: "B-101", flutter_tests: 487, npm_tests: 15, flutter_modules_ready: 13, flutter_modules_total: 15, flutter_mvp_demo: 78, flutter_mvp_vendavel: 52, blocks_completed: 30, description: "B-101 Backend Mobile Checklist Available Endpoint — handler real + DTO compativel ao Flutter, 5 testes de contrato" },
+  {
+    "snapshot_date": "2026-06-13",
+    "version": "B-094",
+    "flutter_tests": 280,
+    "npm_tests": 15,
+    "flutter_modules_ready": 10,
+    "flutter_modules_total": 15,
+    "flutter_mvp_demo": 70,
+    "flutter_mvp_vendavel": 40,
+    "blocks_completed": 22,
+    "description": "B-094 QA Geral + Organizacao Flutter + Estrategia de PR"
+  },
+  {
+    "snapshot_date": "2026-06-14",
+    "version": "B-097",
+    "flutter_tests": 315,
+    "npm_tests": 15,
+    "flutter_modules_ready": 11,
+    "flutter_modules_total": 15,
+    "flutter_mvp_demo": 72,
+    "flutter_mvp_vendavel": 43,
+    "blocks_completed": 24,
+    "description": "B-097 Flutter Mobile MVP Stabilization — persistencia SQLite OS, checklist renderers"
+  },
+  {
+    "snapshot_date": "2026-06-14",
+    "version": "B-098",
+    "flutter_tests": 352,
+    "npm_tests": 15,
+    "flutter_modules_ready": 11,
+    "flutter_modules_total": 15,
+    "flutter_mvp_demo": 73,
+    "flutter_mvp_vendavel": 45,
+    "blocks_completed": 25,
+    "description": "B-098 Flutter Real Auth and Bootstrap — DioAuthRepository, BootstrapNotifier, multi-tenant"
+  },
+  {
+    "snapshot_date": "2026-06-14",
+    "version": "B-098B",
+    "flutter_tests": 413,
+    "npm_tests": 15,
+    "flutter_modules_ready": 12,
+    "flutter_modules_total": 15,
+    "flutter_mvp_demo": 74,
+    "flutter_mvp_vendavel": 47,
+    "blocks_completed": 27,
+    "description": "B-098B Flutter Consume Expanded Bootstrap Contract — FeatureFlags, SyncCursors, CapabilityStatus"
+  },
+  {
+    "snapshot_date": "2026-06-14",
+    "version": "B-099",
+    "flutter_tests": 443,
+    "npm_tests": 15,
+    "flutter_modules_ready": 12,
+    "flutter_modules_total": 15,
+    "flutter_mvp_demo": 75,
+    "flutter_mvp_vendavel": 50,
+    "blocks_completed": 28,
+    "description": "B-099 Flutter Real Work Orders Pull — GET /api/v1/work-orders, upsert Drift, banners UI"
+  },
+  {
+    "snapshot_date": "2026-06-15",
+    "version": "B-100",
+    "flutter_tests": 487,
+    "npm_tests": 15,
+    "flutter_modules_ready": 13,
+    "flutter_modules_total": 15,
+    "flutter_mvp_demo": 76,
+    "flutter_mvp_vendavel": 51,
+    "blocks_completed": 29,
+    "description": "B-100 Flutter Checklist Remote Templates — pull de modelos, parser tolerante camelCase/snake_case, cache Drift, banners UX"
+  },
+  {
+    "snapshot_date": "2026-06-15",
+    "version": "B-101",
+    "flutter_tests": 487,
+    "npm_tests": 15,
+    "flutter_modules_ready": 13,
+    "flutter_modules_total": 15,
+    "flutter_mvp_demo": 78,
+    "flutter_mvp_vendavel": 52,
+    "blocks_completed": 30,
+    "description": "B-101 Backend Mobile Checklist Available Endpoint — handler real GET /mobile/checklists/available + DTO compativel ao Flutter B-100, tenant-scoped + RBAC, 5 testes de contrato"
+  },
+  {
+    "snapshot_date": "2026-06-15",
+    "version": "B-098F",
+    "flutter_tests": 497,
+    "npm_tests": 15,
+    "flutter_modules_ready": 14,
+    "flutter_modules_total": 16,
+    "flutter_mvp_demo": 79,
+    "flutter_mvp_vendavel": 54,
+    "blocks_completed": 31,
+    "description": "B-098F Mobile Evidence Flutter Sync — consumo do endpoint evidence-actions, request seguro, parser body.data e replay idempotente/conflito manual"
+  }
 ];
 
 // ---------------------------------------------------------------------------
@@ -346,10 +767,10 @@ function renderMobileMaturity(latest) {
 }
 
 function renderDeliveries(history) {
-  const recent = history.filter((h) => ["B-097", "B-098", "B-098B", "B-099", "B-100"].includes(h.version));
+  const recent = history.filter((h) => ["B-098", "B-098B", "B-099", "B-100", "B-098F"].includes(h.version));
   renderInto("deliveries", recent, (h) => `
-    <article class="timeline-item" data-status="${h.version === "B-100" ? "parcial" : "concluido"}">
-      ${statusBadge(h.version === "B-100" ? "yellow" : "green", h.version === "B-100" ? "atual" : "merged")}
+    <article class="timeline-item" data-status="${h.version === "B-098F" ? "parcial" : "concluido"}">
+      ${statusBadge(h.version === "B-098F" ? "yellow" : "green", h.version === "B-098F" ? "atual" : "merged")}
       <h3>${escapeHtml(h.version)}</h3>
       <p>${escapeHtml(h.description)}</p>
       <p class="timeline-meta">${h.flutter_tests} testes • ${h.flutter_modules_ready}/${h.flutter_modules_total} modulos</p>

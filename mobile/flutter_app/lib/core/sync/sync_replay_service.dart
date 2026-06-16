@@ -85,7 +85,12 @@ class DioExpenseSyncBatchApi implements ExpenseSyncBatchApi {
         data: {'actions': actions.map(_actionToJson).toList()},
       );
       final body = response.data as Map<String, dynamic>;
-      final rawResults = body['results'] as List<dynamic>? ?? const [];
+      final data = body['data'];
+      final dataBody = data is Map<String, dynamic> ? data : null;
+      final rawResults =
+          dataBody?['results'] as List<dynamic>? ??
+          body['results'] as List<dynamic>? ??
+          const [];
       return rawResults
           .map((r) => _resultFromJson(r as Map<String, dynamic>))
           .toList(growable: false);

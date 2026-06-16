@@ -91,6 +91,7 @@ class LocalExpenseRepository extends ChangeNotifier {
   }) async {
     await load();
     final localId = 'PC-local-${_reportSequence++}';
+    final createdAt = DateTime.now().toUtc();
     final report = ExpenseReport(
       localId: localId,
       title: title.trim().isEmpty
@@ -104,7 +105,7 @@ class LocalExpenseRepository extends ChangeNotifier {
         tenantId: _session.activeTenant.tenantId,
         amount: advanceAmount,
       ),
-      createdAt: DateTime.now().toUtc(),
+      createdAt: createdAt,
     );
     final action = _actionFactory.create(
       tenantId: report.tenantId,
@@ -115,6 +116,11 @@ class LocalExpenseRepository extends ChangeNotifier {
         'employee_id': report.employeeId,
         'policy_version': report.policyVersion,
         'advance_amount': advanceAmount,
+        'employeeUserId': report.employeeId,
+        'periodStart': createdAt.toIso8601String(),
+        'periodEnd': createdAt.toIso8601String(),
+        'origin': 'mobile',
+        'advanceAmount': advanceAmount,
       },
     );
 

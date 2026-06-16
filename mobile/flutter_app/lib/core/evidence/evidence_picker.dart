@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:crypto/crypto.dart';
 
 enum EvidenceCaptureSource { camera, gallery }
 
@@ -10,12 +11,14 @@ class EvidencePickerResult {
     required this.mimeType,
     required this.sizeBytes,
     required this.captureSource,
+    this.sha256,
   });
 
   final String fileName;
   final String mimeType;
   final int sizeBytes;
   final EvidenceCaptureSource captureSource;
+  final String? sha256;
 }
 
 abstract class EvidencePickerService {
@@ -55,6 +58,7 @@ class ImagePickerEvidenceService implements EvidencePickerService {
       mimeType: 'image/jpeg',
       sizeBytes: bytes.length,
       captureSource: source,
+      sha256: sha256.convert(bytes).toString(),
     );
   }
 }

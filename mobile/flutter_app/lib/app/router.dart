@@ -115,8 +115,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             : const ModulePlaceholderScreen(
                 title: 'Diagnostico',
                 requiredPermission: 'diagnostics:read',
-                message:
-                    'Esta area e restrita a ambientes de desenvolvimento.',
+                message: 'Esta area e restrita a ambientes de desenvolvimento.',
               ),
       ),
       GoRoute(path: '/sync', builder: (context, state) => const SyncScreen()),
@@ -261,8 +260,7 @@ final appRouter = GoRouter(
           : const ModulePlaceholderScreen(
               title: 'Diagnostico',
               requiredPermission: 'diagnostics:read',
-              message:
-                  'Esta area e restrita a ambientes de desenvolvimento.',
+              message: 'Esta area e restrita a ambientes de desenvolvimento.',
             ),
     ),
     GoRoute(path: '/sync', builder: (context, state) => const SyncScreen()),
