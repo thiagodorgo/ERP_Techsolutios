@@ -98,13 +98,13 @@
   {
     "snapshot_date": "2026-06-16",
     "version": "B-102",
-    "flutter_tests": 526,
+    "flutter_tests": 538,
     "npm_tests": 15,
     "flutter_modules_ready": 15,
     "flutter_modules_total": 16,
     "flutter_mvp_demo": 81,
     "flutter_mvp_vendavel": 56,
     "blocks_completed": 32,
-    "description": "B-102 Flutter Checklist Answers Sync — serializer snake_case, provider Dio autenticado, parser body.data e replay seguro para accepted/rejected/conflicts/already_applied"
+    "description": "B-102 Flutter Checklist Answers Sync — serializer snake_case, provider Dio autenticado, parser body.data e replay seguro para runs backend-ready com server_run_id"
   }
 ]

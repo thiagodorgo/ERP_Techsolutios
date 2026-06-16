@@ -11,14 +11,14 @@ const EMBEDDED_LATEST = {
   "snapshot_date": "2026-06-16",
   "version": "B-102",
   "branch": "feature/flutter-checklist-answers-sync",
-  "description": "B-102 Flutter Checklist Answers Sync — sync write de respostas de checklist conectado ao contrato POST /api/v1/mobile/sync/checklist-actions com serializer snake_case, replay idempotente e conflito manual",
+  "description": "B-102 Flutter Checklist Answers Sync — sync write parcial de respostas de checklist conectado ao contrato POST /api/v1/mobile/sync/checklist-actions para runs reconhecidas pelo backend",
   "release": {
     "block": "B-102",
     "title": "Flutter Checklist Answers Sync",
     "branch": "feature/flutter-checklist-answers-sync",
     "status": "implemented_pending_review",
     "status_label": "Implementado em branch — aguardando revisao",
-    "summary": "Flutter passa a enviar respostas, notas e conclusao de checklist para POST /api/v1/mobile/sync/checklist-actions usando client_batch_id, client_action_id, tipos backend reais e parser de accepted, rejected, conflicts e already_applied. accepted/already_applied viram synced; rejected vira failed com retry; conflict exige decisao manual.",
+    "summary": "Flutter passa a enviar respostas, notas e conclusao de checklist para POST /api/v1/mobile/sync/checklist-actions usando client_batch_id, client_action_id, tipos backend reais e parser de accepted, rejected, conflicts e already_applied. O replay real B-102 envia apenas answerUpsert/runComplete com server_run_id ou run_id real; actions locais sem run reconhecida pelo backend permanecem pending.",
     "commits": [
       {
         "hash": "branch-head",
@@ -29,7 +29,7 @@ const EMBEDDED_LATEST = {
         "message": "docs: add B-102 checklist answers sync status"
       }
     ],
-    "limitation": "Contrato Flutter cobre respostas, notas e conclusao. Permanecem fora do escopo anexos reais, markers, divergencia, acknowledgement em lote, OS sync bidirecional e upload real de evidencias.",
+    "limitation": "Contrato Flutter cobre respostas, notas e conclusao apenas para checklist runs reconhecidas pelo backend. Permanecem fora do escopo checklist_run.create remoto, anexos reais, markers, divergencia, acknowledgement em lote, OS sync bidirecional e upload real de evidencias.",
     "fallback": "Checklist continua local-first: a resposta fica salva localmente, a action permanece na fila e erro de rede vira failed retryable sem marcar synced sem confirmacao do servidor."
   },
   "domains": [
@@ -49,15 +49,15 @@ const EMBEDDED_LATEST = {
       "id": "checklists",
       "name": "Checklists",
       "status": "parcial",
-      "detail": "Pull de templates ativo (B-100/B-101) + sync write de respostas conectado (B-102); anexos/markers/divergencia seguem pendentes.",
+      "detail": "Pull de templates ativo (B-100/B-101) + sync write de respostas conectado para runs com server_run_id/run_id real (B-102); run create, anexos/markers/divergencia/ack seguem pendentes.",
       "points": [
         "GET /api/v1/mobile/checklists/available com handler backend real (B-101)",
-        "POST /api/v1/mobile/sync/checklist-actions conectado no replay Flutter (B-102)",
+        "POST /api/v1/mobile/sync/checklist-actions conectado no replay Flutter para answerUpsert/runComplete backend-ready (B-102)",
         "checklist_answer.upsert -> checklist.item_answer ou checklist.item_note",
         "checklist_run.complete -> checklist.complete",
         "accepted/already_applied viram synced; rejected vira failed; conflict exige decisao manual",
         "Request seguro: sem tenantId, tenant_id, token, Authorization, path, base64, file_data ou binary",
-        "Pendente: anexos reais, markers/divergencia/acknowledgement em lote e reconciliacao avancada"
+        "Pendente: checklist_run.create remoto, anexos reais, markers/divergencia/acknowledgement em lote e reconciliacao avancada"
       ]
     },
     {
@@ -94,12 +94,12 @@ const EMBEDDED_LATEST = {
         {
           "id": "flutter_tests",
           "label": "Flutter Tests",
-          "value": 526,
-          "total": 526,
+          "value": 538,
+          "total": 538,
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "526/526 — inclui +26 testes B-102 de checklist answers sync"
+          "detail": "538/538 — inclui 38 testes B-102 de checklist answers sync e revisao server_run_id/escopo"
         },
         {
           "id": "npm_tests",
@@ -215,7 +215,7 @@ const EMBEDDED_LATEST = {
           "unit": "conectado",
           "type": "real",
           "status": "green",
-          "detail": "POST /api/v1/mobile/sync/checklist-actions com client_batch_id, action types reais, parser body.data e replay seguro (B-102)"
+          "detail": "POST /api/v1/mobile/sync/checklist-actions com client_batch_id, tipos reais, parser body.data e replay seguro apenas para runs backend-ready (B-102)"
         }
       ]
     },
@@ -361,7 +361,7 @@ const EMBEDDED_LATEST = {
           "unit": "implementado",
           "type": "real",
           "status": "green",
-          "detail": "Implementado no Flutter em B-102 para respostas, notas e conclusao; anexos/markers/divergencia ficam fora do escopo"
+          "detail": "Implementado no Flutter em B-102 para respostas, notas e conclusao de runs com server_run_id/run_id real; run create, anexos/markers/divergencia ficam fora do escopo"
         },
         {
           "id": "checklist_remoto",
@@ -370,7 +370,7 @@ const EMBEDDED_LATEST = {
           "unit": "implementado",
           "type": "real",
           "status": "green",
-          "detail": "Pull de templates (B-100), backend real (B-101) e sync write de respostas (B-102) entregues para o contrato parcial atual"
+          "detail": "Pull de templates (B-100), backend real (B-101) e sync write parcial de respostas (B-102) entregues para runs reconhecidas pelo backend"
         },
         {
           "id": "evidence_binary_upload",
@@ -443,7 +443,7 @@ const EMBEDDED_LATEST = {
     {
       "name": "Checklist — Answers Sync",
       "status": "pronto",
-      "detail": "POST /api/v1/mobile/sync/checklist-actions com respostas/notas/conclusao e replay idempotente (B-102)"
+      "detail": "POST /api/v1/mobile/sync/checklist-actions com respostas/notas/conclusao de runs backend-ready e replay idempotente (B-102)"
     },
     {
       "name": "Evidence — Metadata Sync",
@@ -597,14 +597,14 @@ const EMBEDDED_HISTORY = [
   {
     "snapshot_date": "2026-06-16",
     "version": "B-102",
-    "flutter_tests": 526,
+    "flutter_tests": 538,
     "npm_tests": 15,
     "flutter_modules_ready": 15,
     "flutter_modules_total": 16,
     "flutter_mvp_demo": 81,
     "flutter_mvp_vendavel": 56,
     "blocks_completed": 32,
-    "description": "B-102 Flutter Checklist Answers Sync — serializer snake_case, provider Dio autenticado, parser body.data e replay seguro para accepted/rejected/conflicts/already_applied"
+    "description": "B-102 Flutter Checklist Answers Sync — serializer snake_case, provider Dio autenticado, parser body.data e replay seguro para runs backend-ready com server_run_id"
   }
 ];
 

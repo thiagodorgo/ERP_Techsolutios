@@ -5,6 +5,12 @@
 Conectar o replay local-first de respostas de checklist do Flutter ao contrato
 backend real `POST /api/v1/mobile/sync/checklist-actions`.
 
+Escopo real apos revisao humana: B-102 envia apenas respostas/notas/conclusao
+de runs reconhecidas pelo backend (`server_run_id` ou `run_id` real). Runs
+locais sem mapeamento remoto permanecem pending; `checklist_run.create`,
+markers, divergencia, acknowledgement e anexos em lote ficam para blocos
+futuros.
+
 ## Escopo permitido
 
 - `mobile/flutter_app/**`
@@ -22,6 +28,8 @@ backend real `POST /api/v1/mobile/sync/checklist-actions`.
 - `pubspec.yaml`, `pubspec.lock`, `package.json` e lockfiles
 - OS sync bidirecional
 - upload real de evidencias
+- checklist run creation/mapping remoto
+- markers/divergencia/acknowledgement/anexos em lote
 
 ## Contrato
 
@@ -32,6 +40,10 @@ backend real `POST /api/v1/mobile/sync/checklist-actions`.
   - `checklist.item_answer`
   - `checklist.item_note`
   - `checklist.complete`
+- tipos internos enviados pelo replay real B-102:
+  - `checklist_answer.upsert`
+  - `checklist_run.complete`
+- `local_run_id` pode ir em metadata, mas nao pode virar `run_id` de backend.
 - tenant resolvido pelo backend via ator autenticado; o app nao envia
   `tenantId` ou `tenant_id`.
 

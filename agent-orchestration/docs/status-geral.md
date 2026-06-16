@@ -9,7 +9,7 @@
 | B-088 checklist sync replay | **16/16** |
 | B-100 checklist remote templates | **44/44** |
 | B-098F evidence sync | **10/10** |
-| B-102 checklist answers sync | **26/26** |
+| B-102 checklist answers sync | **38/38** |
 
 ### Entregue
 
@@ -19,6 +19,11 @@
 - `checklist_answer.upsert` vira `checklist.item_answer` ou
   `checklist.item_note`.
 - `checklist_run.complete` vira `checklist.complete`.
+- Replay real B-102 envia apenas `checklist_answer.upsert` e
+  `checklist_run.complete` quando ha `server_run_id` ou `run_id` real.
+- `local_run_id` permanece apenas em metadata e nao vira `run_id` de backend.
+- `checklist_run.create`, markers, divergencia, acknowledgement e anexos ficam
+  pending para blocos futuros.
 - Parser tolerante le `body.data.accepted`, `rejected`, `conflicts`,
   `already_applied` e fallbacks legados `results`.
 - Replay nao marca sucesso sem resposta real: `accepted`/`already_applied`
@@ -30,6 +35,8 @@
 ### Pendente
 
 - OS sync bidirecional (B-103).
+- Checklist run creation/mapping remoto para runs locais.
+- Checklist markers/divergencia/ack/anexos em lote.
 - Upload real de evidencias (B-104).
 - GPS/mapa.
 - Aprovacao real.

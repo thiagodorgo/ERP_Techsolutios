@@ -12,9 +12,10 @@ Prisma, migrations, infra, secrets, `.env`, Figma, `pubspec` ou lockfiles.
 
 | Arquivo | Tipo | Descricao |
 |---------|------|-----------|
-| `mobile/flutter_app/lib/core/sync/sync_replay_service.dart` | feat | `ChecklistSyncCodec`, envelope `client_batch_id`, serializer snake_case, parser `body.data` e replay seguro |
-| `mobile/flutter_app/lib/core/sync/sync_providers.dart` | feat | Provider real de `ChecklistSyncBatchApi` com Dio autenticado quando ha access token |
-| `mobile/flutter_app/test/features/b102_checklist_answers_sync_test.dart` | test | 26 testes de serializer, parser, replay, provider e seguranca de payload |
+| `mobile/flutter_app/lib/core/sync/sync_replay_service.dart` | feat/fix | `ChecklistSyncCodec`, envelope `client_batch_id`, serializer snake_case, parser `body.data`, replay seguro e eligibility B-102 para runs backend-ready |
+| `mobile/flutter_app/lib/core/sync/sync_providers.dart` | feat/fix | Provider real de `ChecklistSyncBatchApi` com Dio autenticado quando ha access token e filtro B-102 de tipos suportados |
+| `mobile/flutter_app/lib/features/checklists/data/checklist_repository.dart` | fix | `saveAnswer` e `completeRun` enfileiram `server_run_id` quando `MobileChecklistRun.serverId` existe |
+| `mobile/flutter_app/test/features/b102_checklist_answers_sync_test.dart` | test | 38 testes de serializer, parser, replay, provider, `server_run_id`, eligibility e seguranca de payload |
 | `mobile/flutter_app/Kpis/*` | docs | Snapshot B-102 dos KPIs mobile |
 | `docs/mobile-flutter-mvp-gap-analysis.md` | docs | Status de checklist answers sync atualizado |
 
@@ -23,6 +24,11 @@ Prisma, migrations, infra, secrets, `.env`, Figma, `pubspec` ou lockfiles.
 - endpoint: `POST /api/v1/mobile/sync/checklist-actions`
 - `checklist_answer.upsert` -> `checklist.item_answer` ou `checklist.item_note`
 - `checklist_run.complete` -> `checklist.complete`
+- replay real B-102 envia somente `checklist_answer.upsert` e
+  `checklist_run.complete` com `server_run_id` ou `run_id` real
+- `local_run_id` nao vira `run_id`; fica apenas em metadata
+- actions fora do escopo B-102 e runs locais sem mapeamento remoto ficam
+  pending para blocos futuros
 - `accepted` e `already_applied` -> `synced`
 - `rejected` -> `failed` com retry
 - `conflict` -> `conflict` com decisao manual
@@ -33,7 +39,7 @@ Prisma, migrations, infra, secrets, `.env`, Figma, `pubspec` ou lockfiles.
 - B-088 checklist sync replay: 16/16
 - B-100 checklist remote templates: 44/44
 - B-098F evidence sync: 10/10
-- B-102 checklist answers sync: 26/26
+- B-102 checklist answers sync: 38/38
 
 ### Escopo preservado
 
@@ -41,6 +47,7 @@ Prisma, migrations, infra, secrets, `.env`, Figma, `pubspec` ou lockfiles.
   `pubspec.yaml`, `pubspec.lock`, `package.json` ou lockfiles
 - sem OS sync bidirecional
 - sem upload real de evidencias
+- sem checklist run creation remoto, markers/divergencia/ack/anexos em lote
 
 ---
 
