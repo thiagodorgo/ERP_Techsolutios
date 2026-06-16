@@ -76,6 +76,8 @@ final checklistSyncReplayServiceProvider = Provider<ChecklistSyncReplayService>(
     return ChecklistSyncReplayService(
       queue: ref.watch(syncQueueRepositoryProvider),
       api: ref.watch(checklistSyncBatchApiProvider),
+      supportedActionTypes: b102BackendChecklistActionTypes,
+      extraEligibility: b102ChecklistActionReadyForBackend,
     );
   },
 );

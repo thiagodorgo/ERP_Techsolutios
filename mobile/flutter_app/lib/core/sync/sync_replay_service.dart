@@ -394,8 +394,7 @@ class ChecklistSyncCodec {
     final payload = <String, Object?>{
       'run_id':
           _readNonEmptyString(source['server_run_id']) ??
-          _readNonEmptyString(source['run_id']) ??
-          _readNonEmptyString(source['local_run_id']),
+          _readNonEmptyString(source['run_id']),
       'component_id':
           _readNonEmptyString(source['component_id']) ??
           _readNonEmptyString(source['field_id']),
@@ -424,8 +423,7 @@ class ChecklistSyncCodec {
       {
         'run_id':
             _readNonEmptyString(source['server_run_id']) ??
-            _readNonEmptyString(source['run_id']) ??
-            _readNonEmptyString(source['local_run_id']),
+            _readNonEmptyString(source['run_id']),
         'has_divergence': source['has_divergence'] == true,
         'metadata': metadata,
       }..removeWhere((_, value) => value == null),
@@ -583,24 +581,51 @@ const _checklistActionTypes = {
   ChecklistSyncActionTypes.attachmentAttach,
 };
 
+const b102BackendChecklistActionTypes = {
+  ChecklistSyncActionTypes.answerUpsert,
+  ChecklistSyncActionTypes.runComplete,
+};
+
+bool b102ChecklistActionReadyForBackend(SyncAction action) {
+  if (!b102BackendChecklistActionTypes.contains(action.type)) {
+    return false;
+  }
+
+  final serverRunId = _readBackendRunId(action.payload['server_run_id']);
+  if (serverRunId != null) return true;
+
+  final runId = _readBackendRunId(action.payload['run_id']);
+  return runId != null && !runId.startsWith('clrun-local-');
+}
+
+String? _readBackendRunId(Object? value) =>
+    value is String && value.trim().isNotEmpty ? value.trim() : null;
+
 class ChecklistSyncReplayService {
   const ChecklistSyncReplayService({
     required SyncQueueRepository queue,
     required ChecklistSyncBatchApi api,
     this.maxRetry = 5,
+    Set<String>? supportedActionTypes,
+    bool Function(SyncAction action)? extraEligibility,
   }) : _queue = queue,
-       _api = api;
+       _api = api,
+       _supportedActionTypes = supportedActionTypes ?? _checklistActionTypes,
+       _extraEligibility = extraEligibility;
 
   final SyncQueueRepository _queue;
   final ChecklistSyncBatchApi _api;
   final int maxRetry;
+  final Set<String> _supportedActionTypes;
+  final bool Function(SyncAction action)? _extraEligibility;
 
   Future<SyncReplayResult> replayTenant(String tenantId) async {
     final all = await _queue.pendingForTenant(tenantId);
     final eligible = all
-        .where((a) => _checklistActionTypes.contains(a.type))
+        .where((a) => _supportedActionTypes.contains(a.type))
         .where((a) => a.status != SyncStatus.conflict)
         .where((a) => a.retryCount < maxRetry)
+        .where((a) => _extraEligibility?.call(a) ?? true)
         .toList(growable: false);
 
     if (eligible.isEmpty) {
