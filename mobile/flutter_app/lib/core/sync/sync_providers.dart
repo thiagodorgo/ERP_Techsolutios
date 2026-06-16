@@ -4,6 +4,7 @@ import '../auth/auth_notifier.dart';
 import '../evidence/evidence_sync.dart';
 import '../local_db/database_provider.dart';
 import '../local_db/drift_sync_action_store.dart';
+import '../network/api_contracts.dart';
 import '../network/http_client.dart';
 import 'sync_action_factory.dart';
 import 'sync_action_store.dart';
@@ -45,8 +46,41 @@ final syncReplayServiceProvider = Provider<SyncReplayService>((ref) {
   return SyncReplayService(
     queue: ref.watch(syncQueueRepositoryProvider),
     api: ref.watch(syncBatchApiProvider),
+    supportedActionTypes: ExpenseSyncActionTypes.supported,
   );
 });
+
+final workOrderSyncBatchApiProvider = Provider<WorkOrderSyncBatchApi>((ref) {
+  final config = ref.watch(authenticatedApiConfigProvider);
+  if (config.accessToken == null) {
+    return const PendingBackendWorkOrderSyncBatchApi();
+  }
+
+  return DioWorkOrderSyncBatchApi(
+    createAuthenticatedHttpClient(
+      config,
+      onRefresh: () async {
+        await ref.read(authStateProvider.notifier).tryRefresh();
+        return ref
+            .read(authStateProvider)
+            .maybeWhen(
+              data: (state) => state.session?.tokens.accessToken,
+              orElse: () => null,
+            );
+      },
+      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
+    ),
+  );
+});
+
+final workOrderSyncReplayServiceProvider = Provider<WorkOrderSyncReplayService>(
+  (ref) {
+    return WorkOrderSyncReplayService(
+      queue: ref.watch(syncQueueRepositoryProvider),
+      api: ref.watch(workOrderSyncBatchApiProvider),
+    );
+  },
+);
 
 final checklistSyncBatchApiProvider = Provider<ChecklistSyncBatchApi>((ref) {
   final config = ref.watch(authenticatedApiConfigProvider);

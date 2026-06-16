@@ -199,12 +199,13 @@ class WorkOrderRepository extends ChangeNotifier {
       tenantId: _session.activeTenant.tenantId,
       type: WorkOrderSyncActionTypes.statusUpdate,
       payload: {
-        'client_action_id_ref': _uuid.v4(),
         'local_id': localId,
-        'server_id': wo.serverId,
+        if (wo.serverId != null && wo.serverId!.trim().isNotEmpty)
+          'server_id': wo.serverId!.trim(),
         'new_status': newStatus.name,
         'previous_status': wo.status.name,
         'occurred_at': now.toIso8601String(),
+        'message': _messageForStatus(newStatus),
       },
     );
 
@@ -259,10 +260,12 @@ class WorkOrderRepository extends ChangeNotifier {
       type: WorkOrderSyncActionTypes.statusUpdate,
       payload: {
         'local_id': localId,
-        'server_id': wo.serverId,
+        if (wo.serverId != null && wo.serverId!.trim().isNotEmpty)
+          'server_id': wo.serverId!.trim(),
         'new_status': WorkOrderStatus.completed.name,
         'previous_status': wo.status.name,
         'occurred_at': now.toIso8601String(),
+        'message': 'Mobile completed work order.',
       },
     );
 
@@ -475,6 +478,20 @@ final workOrderRepositoryProvider = Provider<WorkOrderRepository>((ref) {
     remoteApi: ref.watch(workOrderRemoteApiProvider),
   );
 });
+
+String _messageForStatus(WorkOrderStatus status) {
+  return switch (status) {
+    WorkOrderStatus.dispatched => 'Mobile accepted dispatch.',
+    WorkOrderStatus.enRoute => 'Mobile technician en route.',
+    WorkOrderStatus.arrived => 'Mobile arrived on site.',
+    WorkOrderStatus.inService => 'Mobile started work order.',
+    WorkOrderStatus.paused => 'Mobile paused work order.',
+    WorkOrderStatus.pendingApproval => 'Mobile requested approval.',
+    WorkOrderStatus.completed => 'Mobile completed work order.',
+    WorkOrderStatus.cancelled => 'Mobile cancelled work order.',
+    _ => 'Mobile updated work order status.',
+  };
+}
 
 List<WorkOrder> _seedOrders(BootstrapSession session) {
   final tenantId = session.activeTenant.tenantId;

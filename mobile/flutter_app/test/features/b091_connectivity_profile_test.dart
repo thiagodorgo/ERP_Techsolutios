@@ -4,6 +4,7 @@ import 'package:erp_techsolutions_mobile/core/auth/auth_notifier.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
 import 'package:erp_techsolutions_mobile/core/config/app_config.dart';
+import 'package:erp_techsolutions_mobile/core/evidence/evidence_sync.dart';
 import 'package:erp_techsolutions_mobile/core/network/connectivity_bridge.dart';
 import 'package:erp_techsolutions_mobile/core/network/connectivity_repository.dart';
 import 'package:erp_techsolutions_mobile/core/sync/auto_sync_coordinator.dart';
@@ -110,6 +111,24 @@ class _NoopChecklistSyncReplayService extends ChecklistSyncReplayService {
       const SyncReplayResult(synced: [], failed: [], conflicts: []);
 }
 
+class _NoopWorkOrderSyncReplayService extends WorkOrderSyncReplayService {
+  _NoopWorkOrderSyncReplayService()
+    : super(queue: _NullQueue(), api: MockWorkOrderSyncBatchApi());
+
+  @override
+  Future<SyncReplayResult> replayTenant(String tenantId) async =>
+      const SyncReplayResult(synced: [], failed: [], conflicts: []);
+}
+
+class _NoopEvidenceSyncReplayService extends EvidenceSyncReplayService {
+  _NoopEvidenceSyncReplayService()
+    : super(queue: _NullQueue(), api: const PendingEvidenceSyncBatchApi());
+
+  @override
+  Future<SyncReplayResult> replayTenant(String tenantId) async =>
+      const SyncReplayResult(synced: [], failed: [], conflicts: []);
+}
+
 class _CountingSync extends SyncReplayService {
   _CountingSync(this._onCall)
     : super(queue: _NullQueue(), api: MockExpenseSyncBatchApi());
@@ -177,8 +196,14 @@ Widget _profileApp({
         () => _FixedNetworkStatusNotifier(networkStatus),
       ),
       syncReplayServiceProvider.overrideWithValue(_NoopSyncReplayService()),
+      workOrderSyncReplayServiceProvider.overrideWithValue(
+        _NoopWorkOrderSyncReplayService(),
+      ),
       checklistSyncReplayServiceProvider.overrideWithValue(
         _NoopChecklistSyncReplayService(),
+      ),
+      evidenceSyncReplayServiceProvider.overrideWithValue(
+        _NoopEvidenceSyncReplayService(),
       ),
     ],
     child: MaterialApp.router(routerConfig: _router()),
@@ -292,8 +317,14 @@ void main() {
             syncReplayServiceProvider.overrideWithValue(
               _CountingSync(() => syncCount++),
             ),
+            workOrderSyncReplayServiceProvider.overrideWithValue(
+              _NoopWorkOrderSyncReplayService(),
+            ),
             checklistSyncReplayServiceProvider.overrideWithValue(
               _NoopChecklistSyncReplayService(),
+            ),
+            evidenceSyncReplayServiceProvider.overrideWithValue(
+              _NoopEvidenceSyncReplayService(),
             ),
           ],
         );
@@ -403,8 +434,14 @@ void main() {
             syncReplayServiceProvider.overrideWithValue(
               _NoopSyncReplayService(),
             ),
+            workOrderSyncReplayServiceProvider.overrideWithValue(
+              _NoopWorkOrderSyncReplayService(),
+            ),
             checklistSyncReplayServiceProvider.overrideWithValue(
               _NoopChecklistSyncReplayService(),
+            ),
+            evidenceSyncReplayServiceProvider.overrideWithValue(
+              _NoopEvidenceSyncReplayService(),
             ),
           ],
           child: MaterialApp.router(routerConfig: _router()),

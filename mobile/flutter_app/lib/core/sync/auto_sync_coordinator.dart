@@ -72,12 +72,14 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
       }
       final tenantId = session.activeTenant.tenantId;
 
-      // RDV/expense sync
-      await ref.read(syncReplayServiceProvider).replayTenant(tenantId);
+      // Work order status sync
+      await ref.read(workOrderSyncReplayServiceProvider).replayTenant(tenantId);
       // Checklist sync
       await ref.read(checklistSyncReplayServiceProvider).replayTenant(tenantId);
       // Evidence metadata sync
       await ref.read(evidenceSyncReplayServiceProvider).replayTenant(tenantId);
+      // RDV/expense sync
+      await ref.read(syncReplayServiceProvider).replayTenant(tenantId);
 
       state = state.copyWith(
         isRunning: false,
