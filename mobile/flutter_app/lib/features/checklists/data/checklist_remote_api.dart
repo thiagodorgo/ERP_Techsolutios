@@ -227,8 +227,7 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
           'type': type,
           if (normalizedLabel != null && normalizedLabel.isNotEmpty)
             'label': normalizedLabel,
-          if (normalizedDescription != null &&
-              normalizedDescription.isNotEmpty)
+          if (normalizedDescription != null && normalizedDescription.isNotEmpty)
             'description': normalizedDescription,
           if (normalizedPositionLabel != null &&
               normalizedPositionLabel.isNotEmpty)
