@@ -217,12 +217,18 @@ class ChecklistRepository extends ChangeNotifier {
         'local_run_id': runId,
         'field_id': answer.fieldId,
         'answered_at': answer.answeredAt.toIso8601String(),
-        'bool_value': ?answer.boolValue,
-        'choice_value': ?answer.choiceValue,
-        'multi_choice_values': ?answer.multiChoiceValues,
-        'text_value': ?answer.textValue,
-        'number_value': ?answer.numberValue,
-        'observation_text': ?answer.observationText,
+        if (answer.boolValue != null) 'bool_value': answer.boolValue,
+        if (answer.choiceValue != null && answer.choiceValue!.isNotEmpty)
+          'choice_value': answer.choiceValue,
+        if (answer.multiChoiceValues != null &&
+            answer.multiChoiceValues!.isNotEmpty)
+          'multi_choice_values': answer.multiChoiceValues,
+        if (answer.textValue != null && answer.textValue!.isNotEmpty)
+          'text_value': answer.textValue,
+        if (answer.numberValue != null) 'number_value': answer.numberValue,
+        if (answer.observationText != null &&
+            answer.observationText!.isNotEmpty)
+          'observation_text': answer.observationText,
       },
     );
     await _syncQueue.enqueue(action);
@@ -273,13 +279,24 @@ class ChecklistRepository extends ChangeNotifier {
     String? description,
     String? positionLabel,
   }) async {
+    final normalizedLabel = label?.trim();
+    final normalizedDescription = description?.trim();
+    final normalizedPositionLabel = positionLabel?.trim();
     final marker = MobileChecklistMarker(
       localId: 'clmark-local-${_uuid.v4()}',
       runId: runId,
       type: type,
-      label: label,
-      description: description,
-      positionLabel: positionLabel,
+      label: normalizedLabel != null && normalizedLabel.isNotEmpty
+          ? normalizedLabel
+          : null,
+      description:
+          normalizedDescription != null && normalizedDescription.isNotEmpty
+          ? normalizedDescription
+          : null,
+      positionLabel:
+          normalizedPositionLabel != null && normalizedPositionLabel.isNotEmpty
+          ? normalizedPositionLabel
+          : null,
       syncStatus: SyncStatus.pending,
     );
     await _localStore.saveMarker(marker);
@@ -291,9 +308,13 @@ class ChecklistRepository extends ChangeNotifier {
         'local_marker_id': marker.localId,
         'local_run_id': runId,
         'type': type,
-        'label': ?label,
-        'description': ?description,
-        'position_label': ?positionLabel,
+        if (normalizedLabel != null && normalizedLabel.isNotEmpty)
+          'label': normalizedLabel,
+        if (normalizedDescription != null && normalizedDescription.isNotEmpty)
+          'description': normalizedDescription,
+        if (normalizedPositionLabel != null &&
+            normalizedPositionLabel.isNotEmpty)
+          'position_label': normalizedPositionLabel,
       },
     );
     await _syncQueue.enqueue(action);
@@ -349,6 +370,7 @@ class ChecklistRepository extends ChangeNotifier {
     String? captureSource,
   }) async {
     final normalizedChecksum = checksum?.trim();
+    final normalizedCaptureSource = captureSource?.trim();
     final att = MobileChecklistAttachmentMetadata(
       localId: 'clatt-local-${_uuid.v4()}',
       runId: runId,
@@ -359,7 +381,10 @@ class ChecklistRepository extends ChangeNotifier {
       checksum: normalizedChecksum != null && normalizedChecksum.isNotEmpty
           ? normalizedChecksum
           : null,
-      captureSource: captureSource,
+      captureSource:
+          normalizedCaptureSource != null && normalizedCaptureSource.isNotEmpty
+          ? normalizedCaptureSource
+          : null,
       syncStatus: SyncStatus.pending,
     );
     await _localStore.saveAttachment(att);
@@ -376,7 +401,9 @@ class ChecklistRepository extends ChangeNotifier {
         'size_bytes': sizeBytes,
         if (normalizedChecksum != null && normalizedChecksum.isNotEmpty)
           'checksum': normalizedChecksum,
-        'capture_source': ?captureSource,
+        if (normalizedCaptureSource != null &&
+            normalizedCaptureSource.isNotEmpty)
+          'capture_source': normalizedCaptureSource,
       },
     );
     await _syncQueue.enqueue(action);
