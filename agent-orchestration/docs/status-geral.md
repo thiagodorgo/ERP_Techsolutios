@@ -1,5 +1,48 @@
 # Status Geral
 
+## Atualizacao 2026-06-16 — B-103 Flutter OS Sync Bidirecional
+
+### QA parcial antes do sweep final
+
+| Verificacao | Resultado |
+|-------------|-----------|
+| B-103 work order sync | **37/37** |
+
+### Entregue
+
+- `WorkOrderSyncCodec` envia `POST /api/v1/mobile/sync/work-order-actions`
+  com envelope `{ client_batch_id, actions[] }`.
+- `work_order.status_update` interno vira `work_order.status_change` no
+  backend.
+- `server_id` ou `work_order_id` real vira `payload.work_order_id`.
+- `local_id` fica apenas em `metadata` e nao vira ID de backend.
+- `dispatched` vira `assigned`, `enRoute` vira `on_route`, `arrived` vira
+  `on_site` e `inService` vira `in_progress`.
+- Replay real B-103 envia apenas `statusUpdate` backend-ready.
+- OS local-only permanece `pending`.
+- `work_order.create`, `work_order.approval_request` e
+  `work_order.evidence_attach` ficam fora do replay B-103.
+- Parser tolerante le `body.data.accepted`, `rejected`, `conflicts`,
+  `already_applied` e fallbacks legados `results`.
+- Replay nao marca sucesso sem resposta real: `accepted`/`already_applied`
+  viram `synced`, `rejected` vira `failed`, `conflict` permanece manual,
+  missing result vira `MISSING_RESULT`.
+- `AutoSyncCoordinator` passa a executar Work Order sync.
+- Replay de RDV passa a filtrar somente `ExpenseSyncActionTypes`, evitando
+  captura de actions de OS.
+- KPIs mobile e gap analysis atualizados para B-103.
+
+### Pendente
+
+- Upload real de evidencias (B-104).
+- Criacao remota de OS/local-only mapping.
+- Aprovacao real.
+- GPS/mapa e tracking.
+- Resolucao manual completa de conflitos.
+- Piloto Android real.
+
+---
+
 ## Atualizacao 2026-06-16 — B-102 Flutter Checklist Answers Sync
 
 ### QA parcial antes do sweep final

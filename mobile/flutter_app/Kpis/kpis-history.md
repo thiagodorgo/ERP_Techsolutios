@@ -5,6 +5,52 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-103 — 2026-06-16
+
+**Flutter OS Sync Bidirecional**
+Conecta o replay local-first de status de Ordem de Serviço ao contrato backend
+real `POST /api/v1/mobile/sync/work-order-actions`. O Flutter envia envelope
+`{ client_batch_id, actions[] }`, mapeia `work_order.status_update` interno para
+`work_order.status_change` e interpreta `accepted`, `rejected`, `conflicts` e
+`already_applied` por action.
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 576 / 576 |
+| flutter analyze | 0 issues |
+| Modulos Flutter Prontos | 16 / 16 |
+| MVP Demo Readiness (est.) | 83% |
+| MVP Vendavel (est.) | 58% |
+| Blocos Entregues | 33 |
+
+**Novidades:**
+- `WorkOrderSyncCodec` serializa status de OS para o contrato backend real.
+- `server_id` ou `work_order_id` real vira `payload.work_order_id`.
+- `local_id` fica apenas em `metadata`; nunca vira `work_order_id`.
+- `dispatched` vira `assigned`, `enRoute` vira `on_route`,
+  `arrived` vira `on_site` e `inService` vira `in_progress`.
+- Replay real B-103 envia somente `WorkOrderSyncActionTypes.statusUpdate`
+  backend-ready.
+- OS local-only permanece `pending`.
+- `work_order.create`, `work_order.approval_request` e
+  `work_order.evidence_attach` ficam fora do replay B-103.
+- `accepted` e `already_applied` viram `synced`.
+- `rejected` vira `failed` retryable; `conflict` exige decisao manual.
+- `AutoSyncCoordinator` passa a chamar Work Order sync.
+- Replay de RDV agora filtra somente `ExpenseSyncActionTypes`, evitando captura
+  de actions de OS.
+- 37 testes B-103 cobrem serializer, parser, replay, providers, repositorio,
+  cross-domain e autosync.
+
+**Lacunas mantidas:** upload real de evidencias, criacao remota de OS/mapping
+local-only, aprovacao real, GPS/mapa, resolucao manual completa de conflitos e
+piloto Android real.
+
+**Proximos passos:** B-104 (upload real de evidencias), B-105 (GPS/mapa e
+piloto Android), B-106 (criacao remota de OS/local-only mapping).
+
+---
+
 ## B-102 — 2026-06-16
 
 **Flutter Checklist Answers Sync**

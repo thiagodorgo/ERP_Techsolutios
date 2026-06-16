@@ -1,5 +1,61 @@
 # Log de Execucao
 
+## 2026-06-16 - B-103 Flutter OS Sync Bidirecional
+
+### Natureza
+
+Flutter mobile. Conecta o replay de status de Ordem de Servico ao contrato real
+`POST /api/v1/mobile/sync/work-order-actions`, sem alterar backend, web,
+Prisma, migrations, infra, secrets, `.env`, Figma, `pubspec` ou lockfiles.
+
+### Mudancas implementadas
+
+| Arquivo | Tipo | Descricao |
+|---------|------|-----------|
+| `mobile/flutter_app/lib/core/network/api_contracts.dart` | fix | `ExpenseSyncActionTypes.supported` para filtrar replay de RDV |
+| `mobile/flutter_app/lib/core/sync/sync_replay_service.dart` | feat/fix | `WorkOrderSyncCodec`, `WorkOrderSyncBatchApi`, `DioWorkOrderSyncBatchApi`, `WorkOrderSyncReplayService`, eligibility B-103 e filtro opcional no replay de RDV |
+| `mobile/flutter_app/lib/core/sync/sync_providers.dart` | feat | Provider real de Work Order sync com Dio autenticado e filtro de despesas |
+| `mobile/flutter_app/lib/core/sync/auto_sync_coordinator.dart` | feat | Auto sync passa a chamar Work Orders antes de checklist/evidence/RDV |
+| `mobile/flutter_app/lib/features/work_orders/data/work_order_repository.dart` | fix | Payload de status inclui `server_id` somente quando existe e mensagem segura por status |
+| `mobile/flutter_app/test/features/b103_work_order_sync_test.dart` | test | 37 testes de codec, parser, replay, provider, repositorio, cross-domain e autosync |
+| `mobile/flutter_app/test/features/b090b_offline_auto_sync_test.dart` | test | Fakes/coverage de WorkOrder sync no AutoSyncCoordinator |
+| `mobile/flutter_app/test/features/b091_connectivity_profile_test.dart` | test | Overrides de WorkOrder/Evidence sync em testes de conectividade |
+| `mobile/flutter_app/Kpis/*` | docs | Snapshot B-103 dos KPIs mobile |
+| `docs/mobile-flutter-mvp-gap-analysis.md` | docs | Gap analysis atualizado para OS sync parcial |
+
+### Contrato conectado
+
+- endpoint: `POST /api/v1/mobile/sync/work-order-actions`
+- `work_order.status_update` -> `work_order.status_change`
+- `server_id` ou `work_order_id` real vira `payload.work_order_id`
+- `local_id` permanece apenas em `metadata` e nunca vira `work_order_id`
+- `dispatched` -> `assigned`, `enRoute` -> `on_route`, `arrived` ->
+  `on_site`, `inService` -> `in_progress`
+- replay real B-103 envia somente `statusUpdate` backend-ready
+- OS local-only fica pending
+- `work_order.create`, `work_order.approval_request` e
+  `work_order.evidence_attach` nao sao enviados no B-103
+- `accepted` e `already_applied` -> `synced`
+- `rejected` -> `failed` com retry
+- `conflict` -> `conflict` com decisao manual
+- erro de rede -> `failed` com `NETWORK_ERROR`
+- ausencia de resultado -> `failed` com `MISSING_RESULT`
+
+### Validacao parcial registrada antes do sweep final
+
+- B-103 work order sync: **37/37**
+
+### Escopo preservado
+
+- sem backend, frontend web, Prisma, migrations, infra, secrets, `.env`, Figma,
+  `pubspec.yaml`, `pubspec.lock`, `package.json` ou lockfiles
+- sem upload real de evidencias
+- sem criacao remota de OS/local-only mapping
+- sem aprovacao real
+- sem GPS/mapa ou tracking
+
+---
+
 ## 2026-06-16 - B-102 Flutter Checklist Answers Sync
 
 ### Natureza
