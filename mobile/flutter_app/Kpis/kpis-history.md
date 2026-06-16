@@ -5,6 +5,50 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-102 — 2026-06-16
+
+**Flutter Checklist Answers Sync**
+Conecta o replay local-first de respostas de checklist ao contrato backend real
+`POST /api/v1/mobile/sync/checklist-actions`. O Flutter envia envelope
+`{ client_batch_id, actions[] }`, usa tipos backend reais e interpreta
+`accepted`, `rejected`, `conflicts` e `already_applied` sem marcar sucesso falso.
+O replay real B-102 envia apenas respostas/notas/conclusao de runs reconhecidas
+pelo backend via `server_run_id` ou `run_id` real.
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 538 / 538 |
+| flutter analyze | 0 issues |
+| Modulos Flutter Prontos | 15 / 16 |
+| MVP Demo Readiness (est.) | 81% |
+| MVP Vendavel (est.) | 56% |
+| Blocos Entregues | 32 |
+
+**Novidades:**
+- `ChecklistSyncCodec` serializa `checklist_answer.upsert` para
+  `checklist.item_answer` ou `checklist.item_note`.
+- `checklist_run.complete` vira `checklist.complete`.
+- `local_run_id` fica apenas em metadata; nao vira `run_id` de backend.
+- Actions sem `server_run_id`/`run_id` real permanecem pending.
+- `checklist_run.create`, markers, divergencia, acknowledgement e anexos ficam
+  fora do replay real B-102.
+- `DioChecklistSyncBatchApi` envia snake_case e le `body.data`.
+- `accepted` e `already_applied` viram `synced`.
+- `rejected` vira `failed` retryable; `conflict` exige decisao manual.
+- Payload seguro: sem `tenantId`, `tenant_id`, token, `Authorization`, path,
+  `local_path`, base64, `file_data` ou binary.
+- 38 testes B-102 cobrindo serializer, parser, replay, provider, `server_run_id`,
+  elegibilidade de backend e seguranca.
+
+**Lacunas mantidas:** checklist run creation/mapping remoto,
+markers/divergencia/ack/anexos em lote, OS sync bidirecional, upload real de
+evidencias, GPS/mapa, aprovacao real e piloto Android real.
+
+**Proximos passos:** B-103 (OS sync bidirecional), B-104 (upload real de
+evidencias), B-105 (GPS/mapa e piloto Android).
+
+---
+
 
 ## B-098F — 2026-06-15
 

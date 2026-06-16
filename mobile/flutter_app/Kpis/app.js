@@ -8,33 +8,29 @@
 // Mantido em sincronia a cada entrega. Fonte oficial: os arquivos .json ao lado.
 // ---------------------------------------------------------------------------
 const EMBEDDED_LATEST = {
-  "snapshot_date": "2026-06-15",
-  "version": "B-098F",
-  "branch": "feature/mobile-evidence-flutter-sync",
-  "description": "B-098F Mobile Evidence Flutter Sync — consumo Flutter do contrato POST /api/v1/mobile/sync/evidence-actions com metadados seguros, replay idempotente e conflito manual",
+  "snapshot_date": "2026-06-16",
+  "version": "B-102",
+  "branch": "feature/flutter-checklist-answers-sync",
+  "description": "B-102 Flutter Checklist Answers Sync — sync write parcial de respostas de checklist conectado ao contrato POST /api/v1/mobile/sync/checklist-actions para runs reconhecidas pelo backend",
   "release": {
-    "block": "B-098F",
-    "title": "Mobile Evidence Flutter Sync",
-    "branch": "feature/mobile-evidence-flutter-sync",
+    "block": "B-102",
+    "title": "Flutter Checklist Answers Sync",
+    "branch": "feature/flutter-checklist-answers-sync",
     "status": "implemented_pending_review",
     "status_label": "Implementado em branch — aguardando revisao",
-    "summary": "Flutter passa a serializar e sincronizar manifestos de evidencia via POST /api/v1/mobile/sync/evidence-actions, lendo body.data e separando accepted, rejected, conflicts e already_applied. Fotos/assinaturas enviam somente metadados controlados, com limite de 10 MB e sem tenant externo, base64, binario, file_data ou path local.",
+    "summary": "Flutter passa a enviar respostas, notas e conclusao de checklist para POST /api/v1/mobile/sync/checklist-actions usando client_batch_id, client_action_id, tipos backend reais e parser de accepted, rejected, conflicts e already_applied. O replay real B-102 envia apenas answerUpsert/runComplete com server_run_id ou run_id real; actions locais sem run reconhecida pelo backend permanecem pending.",
     "commits": [
       {
         "hash": "branch-head",
-        "message": "feat(mobile): sync evidence metadata with backend contract"
+        "message": "feat(mobile): connect checklist answers sync contract"
       },
       {
         "hash": "branch-head",
-        "message": "test(mobile): cover evidence sync request parser and replay"
-      },
-      {
-        "hash": "branch-head",
-        "message": "docs(kpis): update mobile KPIs for B-098F"
+        "message": "docs: add B-102 checklist answers sync status"
       }
     ],
-    "limitation": "Contrato continua parcial: sem upload binario final, presigned URL, storage protegido, persistencia DB/Redis, antivirus ou auditoria completa de arquivo.",
-    "fallback": "Evidencias permanecem registradas localmente e na fila de sync; already_applied e tratado como sucesso idempotente e conflict exige decisao manual."
+    "limitation": "Contrato Flutter cobre respostas, notas e conclusao apenas para checklist runs reconhecidas pelo backend. Permanecem fora do escopo checklist_run.create remoto, anexos reais, markers, divergencia, acknowledgement em lote, OS sync bidirecional e upload real de evidencias.",
+    "fallback": "Checklist continua local-first: a resposta fica salva localmente, a action permanece na fila e erro de rede vira failed retryable sem marcar synced sem confirmacao do servidor."
   },
   "domains": [
     {
@@ -46,20 +42,22 @@ const EMBEDDED_LATEST = {
         "GET /api/v1/work-orders conectado com upsert no Drift",
         "Parser tolerante camelCase/snake_case",
         "Banners de pull state em Home e List + RefreshIndicator",
-        "Pendente: push de alteracoes locais ao backend (B-102)"
+        "Pendente: OS sync bidirecional (B-103)"
       ]
     },
     {
       "id": "checklists",
       "name": "Checklists",
       "status": "parcial",
-      "detail": "Pull de templates ativo (B-100) + backend real (B-101); sync write pendente.",
+      "detail": "Pull de templates ativo (B-100/B-101) + sync write de respostas conectado para runs com server_run_id/run_id real (B-102); run create, anexos/markers/divergencia/ack seguem pendentes.",
       "points": [
         "GET /api/v1/mobile/checklists/available com handler backend real (B-101)",
-        "DTO mobile compativel: title, schema_version, status active, items, meta",
-        "Tenant-scoped + RBAC (checklist_runs:read/create); somente templates publicados",
-        "Cache Drift + fallback remoto -> cache -> seeds no Flutter",
-        "Pendente: sync write de respostas de checklist (B-102+)"
+        "POST /api/v1/mobile/sync/checklist-actions conectado no replay Flutter para answerUpsert/runComplete backend-ready (B-102)",
+        "checklist_answer.upsert -> checklist.item_answer ou checklist.item_note",
+        "checklist_run.complete -> checklist.complete",
+        "accepted/already_applied viram synced; rejected vira failed; conflict exige decisao manual",
+        "Request seguro: sem tenantId, tenant_id, token, Authorization, path, base64, file_data ou binary",
+        "Pendente: checklist_run.create remoto, anexos reais, markers/divergencia/acknowledgement em lote e reconciliacao avancada"
       ]
     },
     {
@@ -96,12 +94,12 @@ const EMBEDDED_LATEST = {
         {
           "id": "flutter_tests",
           "label": "Flutter Tests",
-          "value": 497,
-          "total": 497,
+          "value": 538,
+          "total": 538,
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "497/497 — inclui +10 testes B-098F de evidencia sync e ajustes de regressao"
+          "detail": "538/538 — inclui 38 testes B-102 de checklist answers sync e revisao server_run_id/escopo"
         },
         {
           "id": "npm_tests",
@@ -120,7 +118,7 @@ const EMBEDDED_LATEST = {
           "unit": "issues",
           "type": "real",
           "status": "green",
-          "detail": "No issues found — B-098F"
+          "detail": "No issues found — B-102"
         },
         {
           "id": "npm_lint",
@@ -149,39 +147,39 @@ const EMBEDDED_LATEST = {
         {
           "id": "flutter_modules_ready",
           "label": "Modulos Flutter Prontos",
-          "value": 14,
+          "value": 15,
           "total": 16,
           "unit": "modulos",
           "type": "real",
           "status": "yellow",
-          "detail": "Evidencia metadata sync pronta; pendentes: OS sync bidirecional completo, Approvals, Field Map"
+          "detail": "Checklist answers sync conectado; pendentes principais: OS sync bidirecional, upload real, Approvals e Field Map"
         },
         {
           "id": "flutter_mvp_demo",
           "label": "MVP Demo Readiness",
-          "value": 79,
+          "value": 81,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Sobe com evidencia sync de metadados e replay idempotente; ainda depende de upload real"
+          "detail": "Estimado. Sobe com sync write de checklist conectado ao contrato backend real; ainda depende de OS sync e upload real"
         },
         {
           "id": "flutter_mvp_vendavel",
           "label": "MVP Vendavel (Producao)",
-          "value": 54,
+          "value": 56,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Requer upload real de evidencias, storage protegido, GPS, aprovacao real e syncs finais"
+          "detail": "Estimado. Requer OS sync bidirecional, upload real de evidencias, storage protegido, GPS, aprovacao real e piloto Android"
         },
         {
           "id": "flutter_test_files",
           "label": "Arquivos de Teste Flutter",
-          "value": 21,
+          "value": 22,
           "unit": "arquivos",
           "type": "real",
           "status": "green",
-          "detail": "21 arquivos de teste no diretorio test/"
+          "detail": "22 arquivos de teste no diretorio test/"
         },
         {
           "id": "flutter_os_pull",
@@ -209,6 +207,15 @@ const EMBEDDED_LATEST = {
           "type": "real",
           "status": "green",
           "detail": "POST /api/v1/mobile/sync/evidence-actions com body.data, accepted/rejected/conflicts/already_applied e payload seguro (B-098F)"
+        },
+        {
+          "id": "flutter_checklist_answers_sync",
+          "label": "Checklist Answers Sync",
+          "value": 1,
+          "unit": "conectado",
+          "type": "real",
+          "status": "green",
+          "detail": "POST /api/v1/mobile/sync/checklist-actions com client_batch_id, tipos reais, parser body.data e replay seguro apenas para runs backend-ready (B-102)"
         }
       ]
     },
@@ -281,20 +288,20 @@ const EMBEDDED_LATEST = {
         {
           "id": "blocks_completed",
           "label": "Blocos Entregues (total)",
-          "value": 31,
+          "value": 32,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-076 ate B-101 + B-098F, incluindo sub-blocos (A/B/K/F)"
+          "detail": "B-076 ate B-102 + B-098F, incluindo sub-blocos (A/B/K/F)"
         },
         {
           "id": "blocks_last_sprint",
           "label": "Blocos em 2026-06-15",
-          "value": 3,
+          "value": 1,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-100 Flutter Checklist Remote Templates + B-101 Backend Checklist Available + B-098F Evidence Flutter Sync"
+          "detail": "B-102 Flutter Checklist Answers Sync"
         },
         {
           "id": "prs_merged",
@@ -318,7 +325,7 @@ const EMBEDDED_LATEST = {
           "unit": "implementado",
           "type": "real",
           "status": "red",
-          "detail": "Pendente — B-100: push de alteracoes locais ao backend"
+          "detail": "Pendente — B-103: push de alteracoes locais de OS ao backend"
         },
         {
           "id": "upload_evidencias",
@@ -350,11 +357,11 @@ const EMBEDDED_LATEST = {
         {
           "id": "checklist_answers_sync",
           "label": "Checklist Answers Sync",
-          "value": 0,
+          "value": 1,
           "unit": "implementado",
           "type": "real",
-          "status": "red",
-          "detail": "Pendente — push/replay de respostas de checklist do mobile ao backend"
+          "status": "green",
+          "detail": "Implementado no Flutter em B-102 para respostas, notas e conclusao de runs com server_run_id/run_id real; run create, anexos/markers/divergencia ficam fora do escopo"
         },
         {
           "id": "checklist_remoto",
@@ -362,8 +369,8 @@ const EMBEDDED_LATEST = {
           "value": 1,
           "unit": "implementado",
           "type": "real",
-          "status": "yellow",
-          "detail": "Pull de templates (B-100) + backend real (B-101) entregues. Falta sync write de respostas de checklist (B-102+)"
+          "status": "green",
+          "detail": "Pull de templates (B-100), backend real (B-101) e sync write parcial de respostas (B-102) entregues para runs reconhecidas pelo backend"
         },
         {
           "id": "evidence_binary_upload",
@@ -434,6 +441,11 @@ const EMBEDDED_LATEST = {
       "detail": "Handler backend real com DTO mobile compativel, tenant-scoped + RBAC (B-101)"
     },
     {
+      "name": "Checklist — Answers Sync",
+      "status": "pronto",
+      "detail": "POST /api/v1/mobile/sync/checklist-actions com respostas/notas/conclusao de runs backend-ready e replay idempotente (B-102)"
+    },
+    {
       "name": "Evidence — Metadata Sync",
       "status": "pronto",
       "detail": "Manifestos de evidencia OS/campo enviados ao backend B-098E sem binario/path/base64 (B-098F)"
@@ -441,7 +453,7 @@ const EMBEDDED_LATEST = {
     {
       "name": "Sync Screen",
       "status": "pronto",
-      "detail": "Grupos por dominio, KPIs, banners"
+      "detail": "Grupos por dominio, KPIs, banners, checklist replay com accepted/rejected/conflicts/already_applied"
     },
     {
       "name": "Diagnostics",
@@ -471,16 +483,16 @@ const EMBEDDED_LATEST = {
   ],
   "next_steps": [
     {
-      "block": "B-102",
-      "title": "Sync write de respostas de checklist (mobile -> backend) + wiring de CI para os testes de contrato mobile"
-    },
-    {
       "block": "B-103",
-      "title": "Push de alteracoes locais de OS para o backend (sync bidirecional)"
+      "title": "OS sync bidirecional (mobile -> backend)"
     },
     {
       "block": "B-104",
-      "title": "Upload real de fotos (image_picker + presigned URL S3)"
+      "title": "Upload real de fotos/evidencias com URL protegida e storage"
+    },
+    {
+      "block": "B-105",
+      "title": "GPS/mapa operacional e piloto Android real"
     }
   ]
 };
@@ -581,6 +593,18 @@ const EMBEDDED_HISTORY = [
     "flutter_mvp_vendavel": 54,
     "blocks_completed": 31,
     "description": "B-098F Mobile Evidence Flutter Sync — consumo do endpoint evidence-actions, request seguro, parser body.data e replay idempotente/conflito manual"
+  },
+  {
+    "snapshot_date": "2026-06-16",
+    "version": "B-102",
+    "flutter_tests": 538,
+    "npm_tests": 15,
+    "flutter_modules_ready": 15,
+    "flutter_modules_total": 16,
+    "flutter_mvp_demo": 81,
+    "flutter_mvp_vendavel": 56,
+    "blocks_completed": 32,
+    "description": "B-102 Flutter Checklist Answers Sync — serializer snake_case, provider Dio autenticado, parser body.data e replay seguro para runs backend-ready com server_run_id"
   }
 ];
 

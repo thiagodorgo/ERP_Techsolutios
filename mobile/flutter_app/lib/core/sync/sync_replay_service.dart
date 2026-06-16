@@ -280,44 +280,293 @@ class PendingBackendChecklistSyncBatchApi implements ChecklistSyncBatchApi {
       const <SyncActionResult>[];
 }
 
+class ChecklistSyncCodec {
+  const ChecklistSyncCodec({String Function()? batchIdFactory})
+    : _batchIdFactory = batchIdFactory;
+
+  final String Function()? _batchIdFactory;
+
+  Map<String, Object?> encodeRequest(List<SyncAction> actions) {
+    return {
+      'client_batch_id': _batchIdFactory?.call() ?? _buildBatchId(actions),
+      'actions': actions.map(_encodeAction).toList(growable: false),
+    };
+  }
+
+  List<SyncActionResult> decodeResponse(Object? rawBody) {
+    final outer = _asStringMap(rawBody);
+    final data = _asStringMap(outer['data'] ?? outer);
+    final results = <SyncActionResult>[
+      for (final item in _listOfMaps(data['accepted']))
+        if (_clientActionId(item) != null)
+          SyncActionResult(
+            clientActionId: _clientActionId(item)!,
+            status: 'processed',
+            resultRef: _resultRef(item),
+          ),
+      for (final item in _listOfMaps(
+        data['already_applied'] ?? data['alreadyApplied'],
+      ))
+        if (_clientActionId(item) != null)
+          SyncActionResult(
+            clientActionId: _clientActionId(item)!,
+            status: 'ignored',
+            resultRef: _resultRef(item),
+          ),
+      for (final item in _listOfMaps(data['rejected']))
+        if (_clientActionId(item) != null)
+          SyncActionResult(
+            clientActionId: _clientActionId(item)!,
+            status: 'failed',
+            errorCode: _errorCode(item) ?? 'CHECKLIST_REJECTED',
+          ),
+      for (final item in _listOfMaps(data['conflicts']))
+        if (_clientActionId(item) != null)
+          SyncActionResult(
+            clientActionId: _clientActionId(item)!,
+            status: 'conflict',
+            errorCode: _conflictCode(item) ?? 'CHECKLIST_CONFLICT',
+          ),
+    ];
+
+    if (results.isNotEmpty) return results;
+
+    final legacy = data['results'] ?? outer['results'];
+    return _listOfMaps(legacy)
+        .where((item) => _clientActionId(item) != null)
+        .map(_legacyResultFromJson)
+        .toList(growable: false);
+  }
+
+  String _buildBatchId(List<SyncAction> actions) {
+    if (actions.isEmpty) return 'checklist-batch-empty';
+    final first = actions.first;
+    return 'checklist-batch-${first.createdAt.toUtc().millisecondsSinceEpoch}-${first.clientActionId}';
+  }
+
+  Map<String, Object?> _encodeAction(SyncAction action) => {
+    'client_action_id': action.clientActionId,
+    'type': _backendActionType(action),
+    'local_created_at': action.createdAt.toUtc().toIso8601String(),
+    'payload': _backendPayload(action),
+  };
+
+  String _backendActionType(SyncAction action) {
+    return switch (action.type) {
+      ChecklistSyncActionTypes.answerUpsert =>
+        _hasAnswerValue(action.payload)
+            ? 'checklist.item_answer'
+            : _noteOnly(action.payload)
+            ? 'checklist.item_note'
+            : 'checklist.item_answer',
+      ChecklistSyncActionTypes.runComplete => 'checklist.complete',
+      _ => action.type,
+    };
+  }
+
+  Map<String, Object?> _backendPayload(SyncAction action) {
+    return switch (action.type) {
+      ChecklistSyncActionTypes.answerUpsert => _answerPayload(
+        action.payload,
+        noteOnly: _noteOnly(action.payload),
+      ),
+      ChecklistSyncActionTypes.runComplete => _completePayload(action.payload),
+      _ => _sanitizeMap(action.payload),
+    };
+  }
+
+  Map<String, Object?> _answerPayload(
+    Map<String, Object?> source, {
+    required bool noteOnly,
+  }) {
+    final metadata = <String, Object?>{
+      'source': 'mobile_offline',
+      if (_readNonEmptyString(source['answered_at']) != null)
+        'answered_at': _readNonEmptyString(source['answered_at']),
+      if (_readNonEmptyString(source['local_run_id']) != null)
+        'local_run_id': _readNonEmptyString(source['local_run_id']),
+    };
+    final observation = _readNonEmptyString(source['observation_text']);
+    if (!noteOnly && observation != null) {
+      metadata['note'] = observation;
+    }
+
+    final payload = <String, Object?>{
+      'run_id':
+          _readNonEmptyString(source['server_run_id']) ??
+          _readNonEmptyString(source['run_id']),
+      'component_id':
+          _readNonEmptyString(source['component_id']) ??
+          _readNonEmptyString(source['field_id']),
+      'metadata': metadata,
+    };
+
+    if (noteOnly) {
+      payload['note'] = observation;
+    } else {
+      payload['value'] = _extractAnswerValue(source);
+    }
+
+    return Map.unmodifiable(payload..removeWhere((_, value) => value == null));
+  }
+
+  Map<String, Object?> _completePayload(Map<String, Object?> source) {
+    final metadata = <String, Object?>{
+      if (_readNonEmptyString(source['completed_at']) != null)
+        'completed_at': _readNonEmptyString(source['completed_at']),
+      if (source['answer_count'] is num) 'answer_count': source['answer_count'],
+      if (_readNonEmptyString(source['local_run_id']) != null)
+        'local_run_id': _readNonEmptyString(source['local_run_id']),
+    };
+
+    return Map.unmodifiable(
+      {
+        'run_id':
+            _readNonEmptyString(source['server_run_id']) ??
+            _readNonEmptyString(source['run_id']),
+        'has_divergence': source['has_divergence'] == true,
+        'metadata': metadata,
+      }..removeWhere((_, value) => value == null),
+    );
+  }
+
+  bool _noteOnly(Map<String, Object?> payload) {
+    return !_hasAnswerValue(payload) &&
+        _readNonEmptyString(payload['observation_text']) != null;
+  }
+
+  bool _hasAnswerValue(Map<String, Object?> payload) =>
+      _extractAnswerValue(payload) != null;
+
+  Object? _extractAnswerValue(Map<String, Object?> payload) {
+    if (payload.containsKey('bool_value')) return payload['bool_value'];
+    if (payload.containsKey('number_value')) return payload['number_value'];
+    if (_readNonEmptyString(payload['choice_value']) != null) {
+      return _readNonEmptyString(payload['choice_value']);
+    }
+    final multi = payload['multi_choice_values'];
+    if (multi is List && multi.isNotEmpty) return List<Object?>.from(multi);
+    if (_readNonEmptyString(payload['text_value']) != null) {
+      return _readNonEmptyString(payload['text_value']);
+    }
+    return null;
+  }
+
+  Map<String, Object?> _sanitizeMap(Map<String, Object?> source) {
+    final result = <String, Object?>{};
+    for (final entry in source.entries) {
+      if (_isForbiddenKey(entry.key)) continue;
+      final value = _sanitizeValue(entry.value);
+      if (value != null) result[entry.key] = value;
+    }
+    return Map.unmodifiable(result);
+  }
+
+  Object? _sanitizeValue(Object? value) {
+    if (value is Map) {
+      return _sanitizeMap(Map<String, Object?>.from(value));
+    }
+    if (value is List) {
+      return value.map(_sanitizeValue).whereType<Object>().toList();
+    }
+    return value;
+  }
+
+  bool _isForbiddenKey(String key) {
+    final normalized = key.toLowerCase();
+    return normalized == 'tenantid' ||
+        normalized == 'tenant_id' ||
+        normalized == 'accesstoken' ||
+        normalized == 'authorization' ||
+        normalized == 'token' ||
+        normalized == 'path' ||
+        normalized == 'local_path' ||
+        normalized == 'base64' ||
+        normalized == 'file_data' ||
+        normalized == 'binary' ||
+        normalized == 'bearer';
+  }
+
+  String? _readNonEmptyString(Object? value) =>
+      value is String && value.trim().isNotEmpty ? value.trim() : null;
+
+  Map<String, dynamic> _asStringMap(Object? value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return const {};
+  }
+
+  List<Map<String, dynamic>> _listOfMaps(Object? value) {
+    if (value is! List) return const [];
+    return value
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList(growable: false);
+  }
+
+  SyncActionResult _legacyResultFromJson(Map<String, dynamic> json) {
+    return SyncActionResult(
+      clientActionId: _clientActionId(json)!,
+      status: _readNonEmptyString(json['status']) ?? 'failed',
+      resultRef:
+          _readNonEmptyString(json['resultRef']) ??
+          _readNonEmptyString(json['result_ref']),
+      errorCode:
+          _readNonEmptyString(json['errorCode']) ??
+          _readNonEmptyString(json['error_code']),
+    );
+  }
+
+  String? _clientActionId(Map<String, dynamic> item) =>
+      _readNonEmptyString(item['client_action_id']) ??
+      _readNonEmptyString(item['clientActionId']);
+
+  String? _resultRef(Map<String, dynamic> item) {
+    final serverState = _asStringMap(
+      item['server_state'] ?? item['serverState'],
+    );
+    final run = _asStringMap(serverState['run']);
+    return _readNonEmptyString(item['result_ref']) ??
+        _readNonEmptyString(item['resultRef']) ??
+        _readNonEmptyString(serverState['id']) ??
+        _readNonEmptyString(run['id']);
+  }
+
+  String? _errorCode(Map<String, dynamic> item) {
+    final error = _asStringMap(item['error']);
+    return _readNonEmptyString(error['reason']) ??
+        _readNonEmptyString(error['code']) ??
+        _readNonEmptyString(item['error_code']) ??
+        _readNonEmptyString(item['errorCode']);
+  }
+
+  String? _conflictCode(Map<String, dynamic> item) {
+    final conflict = _asStringMap(item['conflict']);
+    return _readNonEmptyString(conflict['conflict_type']) ??
+        _readNonEmptyString(conflict['conflictType']) ??
+        _errorCode(item);
+  }
+}
+
 class DioChecklistSyncBatchApi implements ChecklistSyncBatchApi {
-  DioChecklistSyncBatchApi(this._client);
+  DioChecklistSyncBatchApi(this._client, {ChecklistSyncCodec? codec})
+    : _codec = codec ?? const ChecklistSyncCodec();
 
   final Dio _client;
+  final ChecklistSyncCodec _codec;
 
   @override
   Future<List<SyncActionResult>> sendBatch(List<SyncAction> actions) async {
     try {
       final response = await _client.post(
         ChecklistApiEndpoints.mobileChecklistSync,
-        data: {'actions': actions.map(_checklistActionToJson).toList()},
+        data: _codec.encodeRequest(actions),
       );
-      final body = response.data as Map<String, dynamic>;
-      final rawResults = body['results'] as List<dynamic>? ?? const [];
-      return rawResults
-          .map((r) => _checklistResultFromJson(r as Map<String, dynamic>))
-          .toList(growable: false);
+      return _codec.decodeResponse(response.data);
     } on DioException catch (e) {
       throw mapDioError(e);
     }
   }
-
-  Map<String, Object?> _checklistActionToJson(SyncAction action) => {
-    'clientActionId': action.clientActionId,
-    'tenantId': action.tenantId,
-    'type': action.type,
-    'payload': action.payload,
-    'retryCount': action.retryCount,
-    'createdAt': action.createdAt.toIso8601String(),
-  };
-
-  SyncActionResult _checklistResultFromJson(Map<String, dynamic> json) =>
-      SyncActionResult(
-        clientActionId: json['clientActionId'] as String,
-        status: json['status'] as String,
-        resultRef: json['resultRef'] as String?,
-        errorCode: json['errorCode'] as String?,
-      );
 }
 
 // ── Checklist replay service ──────────────────────────────────────────────────
@@ -332,23 +581,51 @@ const _checklistActionTypes = {
   ChecklistSyncActionTypes.attachmentAttach,
 };
 
+const b102BackendChecklistActionTypes = {
+  ChecklistSyncActionTypes.answerUpsert,
+  ChecklistSyncActionTypes.runComplete,
+};
+
+bool b102ChecklistActionReadyForBackend(SyncAction action) {
+  if (!b102BackendChecklistActionTypes.contains(action.type)) {
+    return false;
+  }
+
+  final serverRunId = _readBackendRunId(action.payload['server_run_id']);
+  if (serverRunId != null) return true;
+
+  final runId = _readBackendRunId(action.payload['run_id']);
+  return runId != null && !runId.startsWith('clrun-local-');
+}
+
+String? _readBackendRunId(Object? value) =>
+    value is String && value.trim().isNotEmpty ? value.trim() : null;
+
 class ChecklistSyncReplayService {
   const ChecklistSyncReplayService({
     required SyncQueueRepository queue,
     required ChecklistSyncBatchApi api,
     this.maxRetry = 5,
+    Set<String>? supportedActionTypes,
+    bool Function(SyncAction action)? extraEligibility,
   }) : _queue = queue,
-       _api = api;
+       _api = api,
+       _supportedActionTypes = supportedActionTypes ?? _checklistActionTypes,
+       _extraEligibility = extraEligibility;
 
   final SyncQueueRepository _queue;
   final ChecklistSyncBatchApi _api;
   final int maxRetry;
+  final Set<String> _supportedActionTypes;
+  final bool Function(SyncAction action)? _extraEligibility;
 
   Future<SyncReplayResult> replayTenant(String tenantId) async {
     final all = await _queue.pendingForTenant(tenantId);
     final eligible = all
-        .where((a) => _checklistActionTypes.contains(a.type))
+        .where((a) => _supportedActionTypes.contains(a.type))
+        .where((a) => a.status != SyncStatus.conflict)
         .where((a) => a.retryCount < maxRetry)
+        .where((a) => _extraEligibility?.call(a) ?? true)
         .toList(growable: false);
 
     if (eligible.isEmpty) {

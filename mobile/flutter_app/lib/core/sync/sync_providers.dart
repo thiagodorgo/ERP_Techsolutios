@@ -48,15 +48,36 @@ final syncReplayServiceProvider = Provider<SyncReplayService>((ref) {
   );
 });
 
-final checklistSyncBatchApiProvider = Provider<ChecklistSyncBatchApi>(
-  (ref) => const PendingBackendChecklistSyncBatchApi(),
-);
+final checklistSyncBatchApiProvider = Provider<ChecklistSyncBatchApi>((ref) {
+  final config = ref.watch(authenticatedApiConfigProvider);
+  if (config.accessToken == null) {
+    return const PendingBackendChecklistSyncBatchApi();
+  }
+
+  return DioChecklistSyncBatchApi(
+    createAuthenticatedHttpClient(
+      config,
+      onRefresh: () async {
+        await ref.read(authStateProvider.notifier).tryRefresh();
+        return ref
+            .read(authStateProvider)
+            .maybeWhen(
+              data: (state) => state.session?.tokens.accessToken,
+              orElse: () => null,
+            );
+      },
+      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
+    ),
+  );
+});
 
 final checklistSyncReplayServiceProvider = Provider<ChecklistSyncReplayService>(
   (ref) {
     return ChecklistSyncReplayService(
       queue: ref.watch(syncQueueRepositoryProvider),
       api: ref.watch(checklistSyncBatchApiProvider),
+      supportedActionTypes: b102BackendChecklistActionTypes,
+      extraEligibility: b102ChecklistActionReadyForBackend,
     );
   },
 );

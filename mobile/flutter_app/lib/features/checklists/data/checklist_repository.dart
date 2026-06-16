@@ -210,11 +210,14 @@ class ChecklistRepository extends ChangeNotifier {
     );
     await _localStore.saveRun(updated);
 
+    final serverRunId = run.serverId?.trim();
     final action = _actionFactory.create(
       tenantId: _session.activeTenant.tenantId,
       type: ChecklistSyncActionTypes.answerUpsert,
       payload: {
         'local_run_id': runId,
+        if (serverRunId != null && serverRunId.isNotEmpty)
+          'server_run_id': serverRunId,
         'field_id': answer.fieldId,
         'answered_at': answer.answeredAt.toIso8601String(),
         if (answer.boolValue != null) 'bool_value': answer.boolValue,
@@ -259,11 +262,14 @@ class ChecklistRepository extends ChangeNotifier {
     );
     await _localStore.saveRun(completed);
 
+    final serverRunId = run.serverId?.trim();
     final action = _actionFactory.create(
       tenantId: _session.activeTenant.tenantId,
       type: ChecklistSyncActionTypes.runComplete,
       payload: {
         'local_run_id': runId,
+        if (serverRunId != null && serverRunId.isNotEmpty)
+          'server_run_id': serverRunId,
         'completed_at': now.toIso8601String(),
         'answer_count': run.answers.length,
       },
