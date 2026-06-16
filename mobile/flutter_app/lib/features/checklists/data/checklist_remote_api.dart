@@ -276,6 +276,7 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
     String? checksum,
   }) async {
     try {
+      final normalizedChecksum = checksum?.trim();
       await _client.post(
         ChecklistApiEndpoints.attachments(runId),
         data: {
@@ -283,7 +284,8 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
           'fileName': fileName,
           'mimeType': mimeType,
           'sizeBytes': sizeBytes,
-          'checksum': ?checksum,
+          if (normalizedChecksum != null && normalizedChecksum.isNotEmpty)
+            'checksum': normalizedChecksum,
         },
       );
     } on DioException catch (e) {

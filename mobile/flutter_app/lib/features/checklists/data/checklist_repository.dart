@@ -348,6 +348,7 @@ class ChecklistRepository extends ChangeNotifier {
     String? checksum,
     String? captureSource,
   }) async {
+    final normalizedChecksum = checksum?.trim();
     final att = MobileChecklistAttachmentMetadata(
       localId: 'clatt-local-${_uuid.v4()}',
       runId: runId,
@@ -355,7 +356,9 @@ class ChecklistRepository extends ChangeNotifier {
       fileName: fileName,
       mimeType: mimeType,
       sizeBytes: sizeBytes,
-      checksum: checksum,
+      checksum: normalizedChecksum != null && normalizedChecksum.isNotEmpty
+          ? normalizedChecksum
+          : null,
       captureSource: captureSource,
       syncStatus: SyncStatus.pending,
     );
@@ -371,7 +374,8 @@ class ChecklistRepository extends ChangeNotifier {
         'file_name': fileName,
         'mime_type': mimeType,
         'size_bytes': sizeBytes,
-        'checksum': ?checksum,
+        if (normalizedChecksum != null && normalizedChecksum.isNotEmpty)
+          'checksum': normalizedChecksum,
         'capture_source': ?captureSource,
       },
     );
