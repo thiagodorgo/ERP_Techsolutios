@@ -407,6 +407,7 @@ class WorkOrderRepository extends ChangeNotifier {
     }
 
     final now = DateTime.now().toUtc();
+    final normalizedChecksum = checksum?.trim();
     final evidence = WorkOrderEvidence(
       localId: 'woevid-local-${_uuid.v4()}',
       workOrderLocalId: workOrderLocalId,
@@ -415,7 +416,9 @@ class WorkOrderRepository extends ChangeNotifier {
       mimeType: mimeType,
       sizeBytes: sizeBytes,
       captureSource: captureSource,
-      checksum: checksum,
+      checksum: normalizedChecksum != null && normalizedChecksum.isNotEmpty
+          ? normalizedChecksum
+          : null,
       syncStatus: SyncStatus.pending,
       createdAt: now,
     );
@@ -431,7 +434,8 @@ class WorkOrderRepository extends ChangeNotifier {
         'file_name': fileName,
         'content_type': mimeType,
         'size_bytes': sizeBytes,
-        'sha256': ?checksum,
+        if (normalizedChecksum != null && normalizedChecksum.isNotEmpty)
+          'sha256': normalizedChecksum,
       },
     );
     await _syncQueue.enqueue(action);

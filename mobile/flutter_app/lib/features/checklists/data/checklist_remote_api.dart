@@ -218,13 +218,21 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
     String? positionLabel,
   }) async {
     try {
+      final normalizedLabel = label?.trim();
+      final normalizedDescription = description?.trim();
+      final normalizedPositionLabel = positionLabel?.trim();
       await _client.post(
         ChecklistApiEndpoints.markers(runId),
         data: {
           'type': type,
-          'label': ?label,
-          'description': ?description,
-          'positionLabel': ?positionLabel,
+          if (normalizedLabel != null && normalizedLabel.isNotEmpty)
+            'label': normalizedLabel,
+          if (normalizedDescription != null &&
+              normalizedDescription.isNotEmpty)
+            'description': normalizedDescription,
+          if (normalizedPositionLabel != null &&
+              normalizedPositionLabel.isNotEmpty)
+            'positionLabel': normalizedPositionLabel,
         },
       );
     } on DioException catch (e) {
@@ -276,6 +284,7 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
     String? checksum,
   }) async {
     try {
+      final normalizedChecksum = checksum?.trim();
       await _client.post(
         ChecklistApiEndpoints.attachments(runId),
         data: {
@@ -283,7 +292,8 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
           'fileName': fileName,
           'mimeType': mimeType,
           'sizeBytes': sizeBytes,
-          'checksum': ?checksum,
+          if (normalizedChecksum != null && normalizedChecksum.isNotEmpty)
+            'checksum': normalizedChecksum,
         },
       );
     } on DioException catch (e) {
