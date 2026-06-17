@@ -9,39 +9,39 @@
 // ---------------------------------------------------------------------------
 const EMBEDDED_LATEST = {
   "snapshot_date": "2026-06-17",
-  "version": "B-104",
-  "branch": "feature/mobile-evidence-real-upload",
-  "description": "B-104 Upload real de fotos/evidencias — multipart protegido para POST /api/v1/mobile/evidence-uploads, blob local opaco e upload binario apos sync de metadados",
+  "version": "B-105",
+  "branch": "feature/mobile-gps-operational-map",
+  "description": "B-105 GPS/mapa operacional da OS — fundacao mobile com provider abstrato/testavel, store field_location_events, sync Field Location e mapa operacional simples conectado a OS",
   "release": {
-    "block": "B-104",
-    "title": "Upload real de fotos/evidencias",
-    "branch": "feature/mobile-evidence-real-upload",
+    "block": "B-105",
+    "title": "GPS/mapa operacional da OS",
+    "branch": "feature/mobile-gps-operational-map",
     "status": "implemented_pending_review",
     "status_label": "Implementado em branch — aguardando revisao",
-    "summary": "Backend mobile recebe multipart em POST /api/v1/mobile/evidence-uploads com evidencia tenant-scoped, JPEG/PNG ate 10 MB, sha256 obrigatorio e resposta sem path fisico. Flutter salva bytes em blob local opaco, sincroniza metadados primeiro e executa upload binario apenas quando ha evidence_id/serverId real.",
+    "summary": "Entrega a fundacao de GPS/mapa operacional da OS no Flutter: DeviceLocationProvider abstrato/testavel, store local field_location_events, sync manual para POST /api/v1/mobile/field-locations e mapa operacional simples em /field-map sem SDK externo.",
     "commits": [
       {
         "hash": "branch-head",
-        "message": "feat: add mobile evidence binary upload contract"
+        "message": "feat(mobile): add GPS operational map foundation"
       },
       {
         "hash": "branch-head",
-        "message": "feat(mobile): upload evidence binaries after metadata sync"
+        "message": "test(mobile): cover field location contracts"
       },
       {
         "hash": "branch-head",
-        "message": "docs: record B-104 evidence upload status"
+        "message": "docs: record B-105 GPS operational map status"
       }
     ],
-    "limitation": "Contrato partial: local/dev storage, sem presigned URL, sem storage protegido final, sem persistencia DB/Redis, sem antivirus e sem auditoria completa de arquivo.",
-    "fallback": "Evidencia continua local-first: metadados pending ate OS ter serverId; upload falha como failed retryable ou conflict manual sem perder evidencia/timeline/metadados."
+    "limitation": "Sem pacote GPS nativo, sem geolocator, sem Google Maps, sem Mapbox, sem SDK externo de mapa, sem background tracking, sem stream continuo, sem timer de coleta e sem envio silencioso. Adapter GPS nativo real pendente.",
+    "fallback": "Runtime padrao mostra indisponibilidade segura de localizacao; testes injetam provider fake com coordenadas controladas."
   },
   "domains": [
     {
       "id": "work_orders",
       "name": "Work Orders (OS)",
       "status": "parcial",
-      "detail": "Pull remoto ativo (B-099) + sync write parcial de status conectado para OS com server_id/work_order_id real (B-103).",
+      "detail": "Pull remoto ativo (B-099) + sync write parcial de status conectado (B-103) + mapa operacional simples conectado a OS com Field Location sync (B-105).",
       "points": [
         "GET /api/v1/work-orders conectado com upsert no Drift",
         "POST /api/v1/mobile/sync/work-order-actions conectado para statusUpdate backend-ready",
@@ -49,7 +49,8 @@ const EMBEDDED_LATEST = {
         "server_id/work_order_id real vira payload.work_order_id; local_id fica apenas em metadata",
         "accepted/already_applied viram synced na action e na WorkOrder local; rejected vira failed; conflict marca conflito manual",
         "OS local-only, create, approval_request e evidence_attach permanecem pending/fora do replay B-103",
-        "Pendente: criacao remota de OS, aprovacao real, evidencias reais, GPS/mapa e resolucao manual de conflitos"
+        "B-105 adiciona card de localizacao operacional na OS e botao Mapa para /field-map?workOrderId=...",
+        "Pendente: criacao remota de OS, aprovacao real e resolucao manual de conflitos"
       ]
     },
     {
@@ -82,6 +83,22 @@ const EMBEDDED_LATEST = {
       ]
     },
     {
+      "id": "field_location",
+      "name": "Field Location / Mapa Operacional",
+      "status": "parcial",
+      "detail": "B-105 entrega fundacao mobile de GPS/mapa operacional da OS com provider abstrato, store Drift v6 e sync manual para Field Location.",
+      "points": [
+        "DeviceLocationProvider abstrato/testavel; adapter GPS nativo real pendente",
+        "Store local field_location_events em schemaVersion 6",
+        "POST /api/v1/mobile/field-locations via Dio autenticado quando houver token",
+        "Payload seguro: latitude, longitude, accuracyMeters, headingDegrees, speedMetersPerSecond, batteryLevel, recordedAt e metadata controlada",
+        "Sem tenant_id/tenantId, token/Authorization, base64, file_data, local_path ou path no payload real",
+        "Mapa operacional simples em /field-map, sem Google Maps, Mapbox ou SDK externo",
+        "AutoSyncCoordinator executa Field Location antes de Work Orders, Checklist, Evidence e RDV",
+        "Sem background tracking, stream continuo, timer de coleta ou envio silencioso"
+      ]
+    },
+    {
       "id": "offline",
       "name": "Offline / Local-first",
       "status": "concluido",
@@ -102,12 +119,12 @@ const EMBEDDED_LATEST = {
         {
           "id": "flutter_tests",
           "label": "Flutter Tests",
-          "value": 589,
-          "total": 589,
+          "value": 613,
+          "total": 613,
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "589/589 esperado no sweep B-104 — inclui teste dedicado de upload real de evidencias"
+          "detail": "613/613 no full Flutter B-105 — inclui 22 testes dedicados da fundacao de GPS/mapa operacional"
         },
         {
           "id": "npm_tests",
@@ -117,7 +134,7 @@ const EMBEDDED_LATEST = {
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "15/15 passando"
+          "detail": "15/15 em npm test (core-saas.test.ts)"
         },
         {
           "id": "flutter_analyze",
@@ -126,7 +143,7 @@ const EMBEDDED_LATEST = {
           "unit": "issues",
           "type": "real",
           "status": "green",
-          "detail": "No issues found esperado no sweep B-103"
+          "detail": "No issues found no sweep B-105"
         },
         {
           "id": "npm_lint",
@@ -155,39 +172,39 @@ const EMBEDDED_LATEST = {
         {
           "id": "flutter_modules_ready",
           "label": "Modulos Flutter Prontos",
-          "value": 16,
-          "total": 16,
+          "value": 17,
+          "total": 17,
           "unit": "modulos",
           "type": "real",
           "status": "yellow",
-          "detail": "Evidence binary upload parcial conectado; pendentes de produto: storage protegido, Approvals e Field Map"
+          "detail": "Field Location / mapa operacional parcial conectado; pendentes de produto: adapter GPS nativo, Approvals e hardening de campo"
         },
         {
           "id": "flutter_mvp_demo",
           "label": "MVP Demo Readiness",
-          "value": 85,
+          "value": 87,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Sobe com upload real parcial de evidencias e blob local opaco; ainda depende de piloto Android e GPS"
+          "detail": "Estimado. Sobe com fundacao de GPS/mapa operacional, mapa simples da OS e sync Field Location; ainda depende de piloto Android e adapter nativo"
         },
         {
           "id": "flutter_mvp_vendavel",
           "label": "MVP Vendavel (Producao)",
-          "value": 62,
+          "value": 64,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Requer storage protegido/presigned URL, antivirus, auditoria, GPS, aprovacao real e resolucao de conflitos"
+          "detail": "Estimado. Requer adapter GPS nativo, permissoes Android/iOS, storage protegido, approval real, geofencing/roteirizacao se aprovados e resolucao de conflitos"
         },
         {
           "id": "flutter_test_files",
           "label": "Arquivos de Teste Flutter",
-          "value": 36,
+          "value": 37,
           "unit": "arquivos",
           "type": "real",
           "status": "green",
-          "detail": "36 arquivos de teste no diretorio test/ apos B-104"
+          "detail": "37 arquivos de teste no diretorio test/ apos B-105"
         },
         {
           "id": "flutter_os_pull",
@@ -280,12 +297,12 @@ const EMBEDDED_LATEST = {
         {
           "id": "backend_mobile_contract_tests",
           "label": "Testes de Contrato Mobile",
-          "value": 45,
-          "total": 45,
+          "value": 47,
+          "total": 47,
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "45/45 via node --test (core-saas 15 + mobile-backend-contracts 15 + checklist 10 + B-101 5). npm test/CI roda apenas core-saas (15)"
+          "detail": "47/47 focados via node --test: mobile-backend-contracts 17 + core-saas-contract 15 + checklist 10 + B-101 5. npm test roda core-saas 15/15"
         },
         {
           "id": "backend_mobile_checklists_available",
@@ -305,20 +322,20 @@ const EMBEDDED_LATEST = {
         {
           "id": "blocks_completed",
           "label": "Blocos Entregues (total)",
-          "value": 34,
+          "value": 35,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-076 ate B-104 + B-098F, incluindo sub-blocos (A/B/K/F)"
+          "detail": "B-076 ate B-105 + B-098F, incluindo sub-blocos (A/B/K/F)"
         },
         {
           "id": "blocks_last_sprint",
           "label": "Blocos em 2026-06-15",
-          "value": 3,
+          "value": 4,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-102, B-103 e B-104 em 2026-06-16/17"
+          "detail": "B-102, B-103, B-104 e B-105 em 2026-06-16/17"
         },
         {
           "id": "prs_merged",
@@ -356,11 +373,11 @@ const EMBEDDED_LATEST = {
         {
           "id": "gps_mapa",
           "label": "GPS / Mapa Operacional",
-          "value": 0,
-          "unit": "implementado",
+          "value": 1,
+          "unit": "parcial",
           "type": "real",
-          "status": "red",
-          "detail": "Placeholder — aguarda definicao de requisito"
+          "status": "yellow",
+          "detail": "B-105 implementa fundacao de GPS/mapa operacional da OS, provider abstrato, mapa simples e sync Field Location; adapter GPS nativo e permissoes Android/iOS seguem pendentes"
         },
         {
           "id": "aprovacao_real",
@@ -494,21 +511,26 @@ const EMBEDDED_LATEST = {
     },
     {
       "name": "Field Map / GPS",
-      "status": "placeholder",
-      "detail": "Aguarda requisito tecnico"
+      "status": "parcial",
+      "detail": "B-105: mapa operacional simples conectado a OS, provider abstrato e sync Field Location; adapter GPS nativo pendente"
+    },
+    {
+      "name": "Field Location Sync",
+      "status": "parcial",
+      "detail": "POST /api/v1/mobile/field-locations, store field_location_events e AutoSync antes dos demais dominios"
     }
   ],
   "next_steps": [
     {
-      "block": "B-105",
-      "title": "GPS/mapa operacional e piloto Android real"
-    },
-    {
       "block": "B-106",
-      "title": "Criacao remota de OS/local-only mapping e resolucao manual de conflitos"
+      "title": "Adapter GPS nativo e permissoes Android/iOS para piloto controlado"
     },
     {
       "block": "B-107",
+      "title": "Criacao remota de OS/local-only mapping e resolucao manual de conflitos"
+    },
+    {
+      "block": "B-108",
       "title": "Hardening de evidencias: presigned URL, storage protegido, antivirus e auditoria"
     }
   ]
@@ -634,6 +656,31 @@ const EMBEDDED_HISTORY = [
     "flutter_mvp_vendavel": 58,
     "blocks_completed": 33,
     "description": "B-103 Flutter OS Sync Bidirecional — WorkOrder statusUpdate -> work_order.status_change, replay backend-ready, entity updater local, parser accepted/rejected/conflicts/already_applied e AutoSyncCoordinator"
+  },
+  {
+    "snapshot_date": "2026-06-17",
+    "version": "B-104",
+    "flutter_tests": 589,
+    "npm_tests": 15,
+    "flutter_modules_ready": 16,
+    "flutter_modules_total": 16,
+    "flutter_mvp_demo": 85,
+    "flutter_mvp_vendavel": 62,
+    "blocks_completed": 34,
+    "description": "B-104 Upload real de fotos/evidencias — multipart protegido, blob local opaco, checksum SHA-256 e upload binario apos metadata sync"
+  },
+  {
+    "snapshot_date": "2026-06-17",
+    "version": "B-105",
+    "flutter_tests": 613,
+    "npm_tests": 15,
+    "backend_contract_tests": 47,
+    "flutter_modules_ready": 17,
+    "flutter_modules_total": 17,
+    "flutter_mvp_demo": 87,
+    "flutter_mvp_vendavel": 64,
+    "blocks_completed": 35,
+    "description": "B-105 GPS/mapa operacional da OS — provider abstrato/testavel, store field_location_events, sync Field Location e mapa operacional simples conectado a OS"
   }
 ];
 

@@ -903,23 +903,23 @@ Frontend web:
 
 ## Field Operator Location
 
-Modulo implementado: `field_operator_location` como fundacao backend para o futuro Mapa Operacional.
+Modulo implementado: `field_operator_location` como fundacao backend para o Mapa Operacional. No B-105, o app Flutter passou a ter consumidor parcial desse contrato para a fundacao de GPS/mapa operacional da OS.
 
 Endpoints:
 
 ```http
-POST /mobile/field-locations
-GET  /field-locations/latest
-GET  /field-locations/history
+POST /api/v1/mobile/field-locations
+GET  /api/v1/field-locations/latest
+GET  /api/v1/field-locations/history
 ```
 
 Permissoes:
 
-- `POST /mobile/field-locations`: `field_location:send`
-- `GET /field-locations/latest`: `field_location:read`
-- `GET /field-locations/history`: `field_location:history`
+- `POST /api/v1/mobile/field-locations`: `field_location:send`
+- `GET /api/v1/field-locations/latest`: `field_location:read`
+- `GET /api/v1/field-locations/history`: `field_location:history`
 
-`POST /mobile/field-locations` registra a localizacao do proprio actor autenticado. O backend ignora qualquer tentativa de definir `tenant_id` ou `operator_user_id` pelo body.
+`POST /api/v1/mobile/field-locations` registra a localizacao do proprio actor autenticado. O backend ignora qualquer tentativa de definir `tenant_id` ou `operator_user_id` pelo body.
 
 Body:
 
@@ -933,25 +933,31 @@ Body:
   "batteryLevel": 76,
   "recordedAt": "2026-06-09T12:00:00.000Z",
   "metadata": {
-    "deviceId": "field-device-1"
+    "event": "manual_ping",
+    "work_order_id": "server-work-order-id",
+    "work_order_local_id": "wo-local-1"
   }
 }
 ```
 
-`GET /field-locations/latest` aceita `since` e `limit` e retorna a ultima posicao conhecida por operador no tenant atual.
+`GET /api/v1/field-locations/latest` aceita `since` e `limit` e retorna a ultima posicao conhecida por operador no tenant atual.
 
-`GET /field-locations/history` aceita `operatorUserId`, `from`, `to` e `limit` e retorna historico do operador no tenant atual.
+`GET /api/v1/field-locations/history` aceita `operatorUserId`, `from`, `to` e `limit` e retorna historico do operador no tenant atual.
 
 Regras:
 
 - latitudes validas: `-90` a `90`;
 - longitudes validas: `-180` a `180`;
 - `batteryLevel` deve ser inteiro entre `0` e `100`;
+- o app Flutter B-105 envia apenas metadata controlada de OS/evento; `work_order_id` so e enviado quando existe ID de servidor;
+- o payload mobile nao envia `tenant_id`, `tenantId`, token, `Authorization`, `base64`, `file_data`, `local_path` ou `path`;
 - metadata sensivel e sanitizada e nao e retornada no DTO publico;
 - RLS protege `field_operator_locations` por `tenant_id`;
 - `field_location.recorded` e `field_location.history_viewed` sao auditados em modo Prisma.
 
-Fora do escopo desta fundacao: Google Maps no frontend, app Flutter, roteirizacao avancada e despacho completo. A UI web posterior de `/operations/map` pode correlacionar localizacao com `work_orders` sem endpoints novos.
+Status B-105 Flutter: parcial. O app inclui `DeviceLocationProvider` abstrato/testavel, store Drift `field_location_events`, sync manual antes dos demais dominios no `AutoSyncCoordinator`, card de localizacao em OS e `/field-map` como mapa operacional simples conectado a OS.
+
+Fora do escopo desta fundacao mobile: adapter GPS nativo real, permissoes Android/iOS, background tracking, stream continuo, timer de coleta, envio silencioso, provider externo de mapa, roteirizacao avancada e despacho completo.
 
 ## Work Orders
 
@@ -985,7 +991,7 @@ Prioridades permitidas: `low`, `medium`, `high` e `urgent`.
 
 Auditoria: criacao, atualizacao, atribuicao, mudanca de status, cancelamento e conclusao registram eventos best-effort.
 
-Fora do escopo: despacho avancado, roteirizacao, comissao, pagamento de prestador, app Flutter, Google Maps real, fotos/assinaturas especificas de OS, estoque/pecas e integracao externa.
+Fora do escopo: despacho avancado, roteirizacao, comissao, pagamento de prestador, app Flutter, provider externo de mapa, fotos/assinaturas especificas de OS, estoque/pecas e integracao externa.
 
 ## Field Dispatch
 
@@ -1021,7 +1027,7 @@ Regras:
 
 Auditoria: criacao, mudanca de status, reatribuicao e cancelamento registram eventos best-effort `field_dispatch.created`, `field_dispatch.status_changed`, `field_dispatch.reassigned` e `field_dispatch.cancelled`.
 
-Fora do escopo: despacho avancado, Google Maps real, algoritmo de roteirizacao/otimizacao, WebSocket/tempo real, app Flutter e despacho completo.
+Fora do escopo: despacho avancado, provider externo de mapa, algoritmo de roteirizacao/otimizacao, WebSocket/tempo real, app Flutter e despacho completo.
 
 ## Auditoria
 

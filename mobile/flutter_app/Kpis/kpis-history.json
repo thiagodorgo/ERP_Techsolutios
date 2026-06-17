@@ -130,5 +130,18 @@
     "flutter_mvp_vendavel": 62,
     "blocks_completed": 34,
     "description": "B-104 Upload real de fotos/evidencias — multipart protegido, blob local opaco, checksum SHA-256 e upload binario apos metadata sync"
+  },
+  {
+    "snapshot_date": "2026-06-17",
+    "version": "B-105",
+    "flutter_tests": 613,
+    "npm_tests": 15,
+    "backend_contract_tests": 47,
+    "flutter_modules_ready": 17,
+    "flutter_modules_total": 17,
+    "flutter_mvp_demo": 87,
+    "flutter_mvp_vendavel": 64,
+    "blocks_completed": 35,
+    "description": "B-105 GPS/mapa operacional da OS — provider abstrato/testavel, store field_location_events, sync Field Location e mapa operacional simples conectado a OS"
   }
 ]

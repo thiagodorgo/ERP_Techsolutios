@@ -1,5 +1,37 @@
 # Status Geral
 
+## Atualizacao 2026-06-17 — B-105 Fundacao de GPS/mapa operacional da OS
+
+### Status
+
+Implementacao em branch `feature/mobile-gps-operational-map`, validada
+localmente com suite completa e pronta para PR normal.
+
+### Entregue
+
+- Flutter: `DeviceLocationProvider` abstrato/testavel, com runtime seguro de
+  indisponibilidade quando nao ha adapter GPS nativo real.
+- Drift local: `schemaVersion 6` com `field_location_events`.
+- Sync: `POST /api/v1/mobile/field-locations` via cliente HTTP autenticado,
+  payload controlado e sem tenant/token/path/base64/binario.
+- AutoSync: Field Location executa antes de Work Orders, Checklist, Evidence e RDV.
+- OS: card de localizacao operacional em detalhe/execucao e botao `Mapa`
+  abrindo `/field-map?workOrderId=...`.
+- `/field-map`: mapa operacional simples conectado a OS, sem Google Maps,
+  Mapbox ou SDK externo.
+- KPIs mobile atualizados para B-105: Flutter Tests 613/613, Backend Tests
+  15/15, Backend Contract Tests focados 47/47, MVP Demo 87%, MVP Vendavel 64%.
+
+### Lacunas remanescentes
+
+- Adapter GPS nativo real.
+- Permissoes Android/iOS e opt-in de privacidade.
+- Provider externo de mapa, se aprovado.
+- Background tracking, stream continuo, timer de coleta e envio silencioso.
+- Roteirizacao e geofencing.
+
+---
+
 ## Atualizacao 2026-06-17 — B-104 Upload real de fotos/evidencias
 
 ### Status
