@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
@@ -75,6 +78,7 @@ test("mobile bootstrap returns tenant-scoped contract and ignores requested tena
     assert.equal(findCatalogEndpoint(response.body, "inventory_availability").status, "partial");
     assert.equal(findCatalogEndpoint(response.body, "inventory_sync").status, "partial");
     assert.equal(findCatalogEndpoint(response.body, "evidence_sync").status, "partial");
+    assert.equal(findCatalogEndpoint(response.body, "evidence_upload").status, "partial");
     assert.equal(response.body.data.expenseCategories.length > 0, true);
     assert.equal(response.body.data.sync.workOrdersCursor, null);
     assert.equal(response.body.data.sync.checklistsCursor, null);
@@ -214,6 +218,7 @@ test("mobile backend exposes ready checklist, expense, work order, inventory, ev
     assert.deepEqual(evidenceSync.body.data.rejected, []);
     assert.deepEqual(evidenceSync.body.data.conflicts, []);
     assert.deepEqual(evidenceSync.body.data.already_applied, []);
+    assert.equal(findCatalogEndpoint((await requestJson(baseUrl, "/api/v1/mobile/bootstrap", { headers })).body, "evidence_upload").status, "partial");
     assert.equal(workOrders.status, 200);
     assert.ok(Array.isArray(workOrders.body.items));
     assert.equal(notifications.status, 200);
@@ -987,6 +992,182 @@ test("mobile evidence sync validates envelope, actor and per-action permissions"
   });
 });
 
+test("mobile evidence file upload stores binary metadata safely and enforces tenant, permission and validation boundaries", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const clientEvidenceId = "woevid-local-upload-1";
+    const bytes = Buffer.from("fake-jpeg-bytes");
+    const sha256 = createHash("sha256").update(bytes).digest("hex");
+    const registered = await requestJson(baseUrl, "/api/v1/mobile/sync/evidence-actions", {
+      method: "POST",
+      headers,
+      body: {
+        client_batch_id: "evidence-upload-register",
+        actions: [
+          {
+            client_evidence_id: clientEvidenceId,
+            type: "evidence.work_order_photo",
+            local_created_at: "2026-06-17T12:00:00.000Z",
+            payload: {
+              work_order_id: "work-order-upload-1",
+              kind: "photo",
+              file_name: "panel-before.jpg",
+              content_type: "image/jpeg",
+              size_bytes: bytes.length,
+              sha256,
+            },
+          },
+        ],
+      },
+    });
+
+    assert.equal(registered.status, 200);
+    const evidenceId = registered.body.data.accepted[0].evidence_id as string;
+    const upload = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
+      headers,
+      fields: {
+        tenant_id: seed.tenantB.id,
+        evidence_id: evidenceId,
+        client_evidence_id: clientEvidenceId,
+        work_order_id: "work-order-upload-1",
+        sha256,
+        size_bytes: String(bytes.length),
+        content_type: "image/jpeg",
+      },
+      files: [{ fieldName: "file", fileName: "../panel-before.jpg", contentType: "image/jpeg", bytes }],
+    });
+    const tenantSpoof = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
+      headers,
+      fields: {
+        tenant_id: seed.tenantB.id,
+        evidence_id: evidenceId,
+        client_evidence_id: clientEvidenceId,
+        sha256,
+        size_bytes: String(bytes.length),
+        content_type: "image/jpeg",
+      },
+      files: [{ fieldName: "file", fileName: "panel-before.jpg", contentType: "image/jpeg", bytes }],
+    });
+    const wrongTenantEvidence = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
+      headers,
+      fields: {
+        evidence_id: `evidence:${seed.tenantB.id}:${clientEvidenceId}`,
+        client_evidence_id: clientEvidenceId,
+        sha256,
+        size_bytes: String(bytes.length),
+        content_type: "image/jpeg",
+      },
+      files: [{ fieldName: "file", fileName: "panel-before.jpg", contentType: "image/jpeg", bytes }],
+    });
+    const missingPermission = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
+      headers: authHeaders(seed.tenantA, seed.adminA, "viewer"),
+      fields: {
+        evidence_id: evidenceId,
+        client_evidence_id: clientEvidenceId,
+        sha256,
+        size_bytes: String(bytes.length),
+        content_type: "image/jpeg",
+      },
+      files: [{ fieldName: "file", fileName: "panel-before.jpg", contentType: "image/jpeg", bytes }],
+    });
+    const invalidMime = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
+      headers,
+      fields: {
+        evidence_id: evidenceId,
+        client_evidence_id: clientEvidenceId,
+        sha256,
+        size_bytes: String(bytes.length),
+        content_type: "application/pdf",
+      },
+      files: [{ fieldName: "file", fileName: "panel-before.pdf", contentType: "application/pdf", bytes }],
+    });
+    const checksumMismatch = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
+      headers,
+      fields: {
+        evidence_id: evidenceId,
+        client_evidence_id: clientEvidenceId,
+        sha256: "0".repeat(64),
+        size_bytes: String(bytes.length),
+        content_type: "image/jpeg",
+      },
+      files: [{ fieldName: "file", fileName: "panel-before.jpg", contentType: "image/jpeg", bytes }],
+    });
+    const tooLarge = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
+      headers,
+      fields: {
+        evidence_id: evidenceId,
+        client_evidence_id: clientEvidenceId,
+        sha256,
+        size_bytes: String(10 * 1024 * 1024 + 1),
+        content_type: "image/jpeg",
+      },
+      files: [{ fieldName: "file", fileName: "panel-before.jpg", contentType: "image/jpeg", bytes }],
+    });
+    const multipleFiles = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
+      headers,
+      fields: {
+        evidence_id: evidenceId,
+        client_evidence_id: clientEvidenceId,
+        sha256,
+        size_bytes: String(bytes.length),
+        content_type: "image/jpeg",
+      },
+      files: [
+        { fieldName: "file", fileName: "panel-before.jpg", contentType: "image/jpeg", bytes },
+        { fieldName: "file", fileName: "panel-after.jpg", contentType: "image/jpeg", bytes },
+      ],
+    });
+    const missingFile = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
+      headers,
+      fields: {
+        evidence_id: evidenceId,
+        client_evidence_id: clientEvidenceId,
+        sha256,
+        size_bytes: String(bytes.length),
+        content_type: "image/jpeg",
+      },
+      files: [],
+    });
+
+    assert.equal(upload.status, 201);
+    assert.equal(upload.body.data.contract.name, "mobile_evidence_file_upload");
+    assert.equal(upload.body.data.contract.version, "2026-06-17.b104");
+    assert.equal(upload.body.data.contract.status, "partial");
+    assert.equal(upload.body.data.evidence_id, evidenceId);
+    assert.equal(upload.body.data.status, "uploaded");
+    assert.equal(upload.body.data.size_bytes, bytes.length);
+    assert.equal(upload.body.data.content_type, "image/jpeg");
+    assert.equal(upload.body.data.sha256, sha256);
+    assert.equal(JSON.stringify(upload.body).includes("panel-before.jpg"), false);
+    assert.equal(JSON.stringify(upload.body).includes("erp-mobile-evidence-uploads"), false);
+    assert.equal(JSON.stringify(upload.body).includes("\\\\"), false);
+    assert.equal(tenantSpoof.status, 201);
+    assert.equal(tenantSpoof.body.data.evidence_id, evidenceId);
+    assert.equal(wrongTenantEvidence.status, 403);
+    assert.equal(wrongTenantEvidence.body.error.reason, "evidence_tenant_mismatch");
+    assert.equal(missingPermission.status, 403);
+    assert.equal(missingPermission.body.error.reason, "permission_required");
+    assert.equal(invalidMime.status, 400);
+    assert.equal(invalidMime.body.error.reason, "unsupported_content_type");
+    assert.equal(checksumMismatch.status, 400);
+    assert.equal(checksumMismatch.body.error.reason, "sha256_mismatch");
+    assert.equal(tooLarge.status, 413);
+    assert.equal(tooLarge.body.error.reason, "file_too_large");
+    assert.equal(multipleFiles.status, 400);
+    assert.equal(multipleFiles.body.error.reason, "too_many_files");
+    assert.equal(missingFile.status, 400);
+    assert.equal(missingFile.body.error.reason, "file_required");
+    assertNoStackTrace(upload.body);
+    assertNoStackTrace(wrongTenantEvidence.body);
+    assertNoStackTrace(missingPermission.body);
+    assertNoStackTrace(invalidMime.body);
+    assertNoStackTrace(checksumMismatch.body);
+    assertNoStackTrace(tooLarge.body);
+    assertNoStackTrace(multipleFiles.body);
+    assertNoStackTrace(missingFile.body);
+  });
+});
+
 test("permission error contract uses stable message for one or many required permissions", async () => {
   await withMobileContractApi(async ({ baseUrl, seed }) => {
     const roles = await requestJson(baseUrl, "/api/v1/roles", {
@@ -1018,6 +1199,10 @@ async function withMobileContractApi(
   const { resetChecklistRuntimeForTests } = await import("../src/modules/checklists/index.js");
   const { resetMobileChecklistSyncRuntimeForTests } = await import("../src/modules/mobile/mobile-checklist-sync.js");
   const { resetMobileEvidenceSyncRuntimeForTests } = await import("../src/modules/mobile/mobile-evidence-sync.js");
+  const {
+    configureMobileEvidenceUploadStorageForTests,
+    resetMobileEvidenceUploadRuntimeForTests,
+  } = await import("../src/modules/mobile/mobile-evidence-upload.js");
   const { resetMobileInventoryRuntimeForTests } = await import("../src/modules/mobile/mobile-inventory-sync.js");
   const { resetMobileWorkOrderSyncRuntimeForTests } = await import("../src/modules/mobile/mobile-work-order-sync.js");
   const { resetWorkOrderRuntimeForTests } = await import("../src/modules/work-orders/index.js");
@@ -1026,10 +1211,13 @@ async function withMobileContractApi(
   const app = createApp(new MemoryCoreSaasAdapter(registry));
   const server = app.listen(0);
   const baseUrl = await getBaseUrl(server);
+  const uploadStorageRoot = path.join(tmpdir(), `erp-mobile-evidence-upload-${process.pid}-${Date.now()}`);
 
   resetChecklistRuntimeForTests();
   resetMobileChecklistSyncRuntimeForTests();
   resetMobileEvidenceSyncRuntimeForTests();
+  configureMobileEvidenceUploadStorageForTests(uploadStorageRoot);
+  await resetMobileEvidenceUploadRuntimeForTests();
   resetMobileInventoryRuntimeForTests();
   resetMobileWorkOrderSyncRuntimeForTests();
   resetWorkOrderRuntimeForTests();
@@ -1038,6 +1226,7 @@ async function withMobileContractApi(
     await callback({ baseUrl, seed });
   } finally {
     await closeServer(server);
+    await resetMobileEvidenceUploadRuntimeForTests();
   }
 }
 
@@ -1158,6 +1347,43 @@ async function requestJson(
   return {
     status: response.status,
     body: await response.json(),
+  };
+}
+
+async function requestMultipart(
+  baseUrl: string,
+  routePath: string,
+  options: {
+    readonly headers?: Record<string, string>;
+    readonly fields: Record<string, string>;
+    readonly files: readonly {
+      readonly fieldName: string;
+      readonly fileName: string;
+      readonly contentType: string;
+      readonly bytes: Buffer;
+    }[];
+  },
+) {
+  const form = new FormData();
+
+  for (const [key, value] of Object.entries(options.fields)) {
+    form.append(key, value);
+  }
+
+  for (const file of options.files) {
+    form.append(file.fieldName, new Blob([file.bytes], { type: file.contentType }), file.fileName);
+  }
+
+  const response = await fetch(`${baseUrl}${routePath}`, {
+    method: "POST",
+    headers: options.headers,
+    body: form,
+  });
+  const text = await response.text();
+
+  return {
+    status: response.status,
+    body: text ? JSON.parse(text) : null,
   };
 }
 

@@ -7,6 +7,7 @@ import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.
 import { createDefaultExpenseManagementService } from "../expense-management/expense-management.service.js";
 import { syncMobileChecklistActions } from "./mobile-checklist-sync.js";
 import { syncMobileEvidenceActions } from "./mobile-evidence-sync.js";
+import { uploadMobileEvidenceFile } from "./mobile-evidence-upload.js";
 import { getMobileInventoryAvailability, syncMobileInventoryActions } from "./mobile-inventory-sync.js";
 import { syncMobileWorkOrderActions } from "./mobile-work-order-sync.js";
 
@@ -169,6 +170,15 @@ export function createMobileRouter(service: ICoreSaasService): Router {
     }),
   );
 
+  router.post(
+    "/mobile/evidence-uploads",
+    handleAsyncRoute(async (request, response) => {
+      response.status(201).json({
+        data: await uploadMobileEvidenceFile(request.tenantContext, request),
+      });
+    }),
+  );
+
   return router;
 }
 
@@ -248,7 +258,7 @@ function buildFeatureFlags(
       ),
       status: hasModule(modules, "work_orders") || hasModule(modules, "field_operations") ? "partial" : "unavailable",
       reason: hasModule(modules, "work_orders") || hasModule(modules, "field_operations")
-        ? "metadata_manifest_only"
+        ? "metadata_and_binary_upload_partial"
         : "module_disabled",
     },
   };
@@ -280,7 +290,7 @@ function buildMobilePolicy() {
       work_order_evidence: "partial",
       generic_upload: "partial",
       max_upload_mb: 10,
-      allowed_mime_types: ["image/jpeg", "image/png", "application/pdf"],
+      allowed_mime_types: ["image/jpeg", "image/png"],
     },
     diagnostics: {
       safe_logs_only: true,
@@ -335,6 +345,7 @@ function buildCatalogs(
         endpointCatalogItem("inventory_availability", "GET /api/v1/mobile/inventory/availability", "partial"),
         endpointCatalogItem("inventory_sync", "POST /api/v1/mobile/sync/inventory-actions", "partial"),
         endpointCatalogItem("evidence_sync", "POST /api/v1/mobile/sync/evidence-actions", "partial"),
+        endpointCatalogItem("evidence_upload", "POST /api/v1/mobile/evidence-uploads", "partial"),
       ],
     },
   };
