@@ -159,6 +159,27 @@ export function resetMobileEvidenceSyncRuntimeForTests(): void {
   syncReceipts.clear();
 }
 
+export function findMobileEvidenceSyncReceiptForUpload(
+  actor: AuthenticatedActor,
+  clientEvidenceId: string,
+): {
+  evidenceId: string;
+  type?: string;
+  workOrderId?: string;
+} | undefined {
+  const receipt = syncReceipts.get(`${actor.tenantId}:${actor.userId}:${clientEvidenceId}`);
+  const result = receipt?.result;
+  const evidenceId = result?.evidence_id;
+
+  if (!evidenceId) return undefined;
+
+  return {
+    evidenceId,
+    type: result.type,
+    workOrderId: result.work_order_id,
+  };
+}
+
 function assertSyncActor(actor: AuthenticatedActor | undefined): asserts actor is AuthenticatedActor {
   if (!actor?.tenantId) {
     throw routeError(403, "FORBIDDEN", "tenant_required", "Tenant context is required.");

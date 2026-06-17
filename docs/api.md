@@ -197,7 +197,38 @@ O request usa `{ client_batch_id, actions[] }`; cada acao exige `client_evidence
 
 A resposta segue o envelope mobile com `summary`, `accepted`, `rejected`, `conflicts` e `already_applied`. A idempotencia usa tenant resolvido + usuario do ator + `client_evidence_id`; replay identico retorna `already_applied` e payload divergente retorna `idempotency_payload_mismatch`.
 
-Lacunas B-098E: upload binario/presigned URL, storage protegido, persistencia duravel, antivirus, auditoria de arquivo, associacao definitiva com entidades e consumo Flutter.
+`POST /api/v1/mobile/evidence-uploads` esta implementado no B-104 como contrato parcial para upload binario multipart apos o manifesto de evidencia existir. O endpoint exige ator autenticado com `work_orders:update` ou `field_location:send`, resolve tenant sempre pelo ator autenticado e ignora `tenant_id` enviado no form.
+
+Request multipart:
+
+- campos obrigatorios: `evidence_id`, `client_evidence_id`, `sha256`, `size_bytes`;
+- campos opcionais: `work_order_id`, `content_type`;
+- arquivo obrigatorio: campo `file`;
+- tipos aceitos: `image/jpeg` e `image/png`;
+- limite: 10 MB.
+
+O backend valida que `evidence_id` pertence ao tenant autenticado no formato emitido por `POST /api/v1/mobile/sync/evidence-actions` (`evidence:{tenant_id}:{client_evidence_id}`), calcula SHA-256 do arquivo recebido, compara com `sha256`, rejeita mismatch e nao retorna/loga caminho fisico de storage. A resposta usa envelope `{ data }`:
+
+```json
+{
+  "data": {
+    "contract": {
+      "name": "mobile_evidence_file_upload",
+      "version": "2026-06-17.b104",
+      "status": "partial"
+    },
+    "evidence_id": "evidence:tenant-a:woevid-local-1",
+    "file_id": "file:tenant-a:woevid-local-1:sha-prefix",
+    "status": "uploaded",
+    "size_bytes": 245000,
+    "content_type": "image/jpeg",
+    "sha256": "hash-real-sha256",
+    "uploaded_at": "2026-06-17T12:00:00.000Z"
+  }
+}
+```
+
+Lacunas remanescentes B-104: presigned URL, storage protegido final, persistencia duravel DB/Redis do arquivo/receipt, antivirus, auditoria completa e politica de retencao. B-098E permanece responsavel apenas pelos metadados/idempotencia do manifesto.
 
 ## Autenticacao de rotas protegidas
 

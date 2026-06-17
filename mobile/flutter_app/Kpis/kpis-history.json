@@ -118,5 +118,17 @@
     "flutter_mvp_vendavel": 58,
     "blocks_completed": 33,
     "description": "B-103 Flutter OS Sync Bidirecional — WorkOrder statusUpdate -> work_order.status_change, replay backend-ready, entity updater local, parser accepted/rejected/conflicts/already_applied e AutoSyncCoordinator"
+  },
+  {
+    "snapshot_date": "2026-06-17",
+    "version": "B-104",
+    "flutter_tests": 589,
+    "npm_tests": 15,
+    "flutter_modules_ready": 16,
+    "flutter_modules_total": 16,
+    "flutter_mvp_demo": 85,
+    "flutter_mvp_vendavel": 62,
+    "blocks_completed": 34,
+    "description": "B-104 Upload real de fotos/evidencias — multipart protegido, blob local opaco, checksum SHA-256 e upload binario apos metadata sync"
   }
 ]

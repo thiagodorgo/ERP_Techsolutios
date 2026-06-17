@@ -78,6 +78,10 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
       await ref.read(checklistSyncReplayServiceProvider).replayTenant(tenantId);
       // Evidence metadata sync
       await ref.read(evidenceSyncReplayServiceProvider).replayTenant(tenantId);
+      // Evidence binary upload
+      await ref
+          .read(evidenceBinaryUploadServiceProvider)
+          .uploadTenant(tenantId);
       // RDV/expense sync
       await ref.read(syncReplayServiceProvider).replayTenant(tenantId);
 

@@ -1,7 +1,11 @@
+import 'dart:typed_data';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:crypto/crypto.dart';
+
+import 'evidence_sync.dart';
 
 enum EvidenceCaptureSource { camera, gallery }
 
@@ -12,6 +16,7 @@ class EvidencePickerResult {
     required this.sizeBytes,
     required this.captureSource,
     this.sha256,
+    this.bytes,
   });
 
   final String fileName;
@@ -19,6 +24,7 @@ class EvidencePickerResult {
   final int sizeBytes;
   final EvidenceCaptureSource captureSource;
   final String? sha256;
+  final Uint8List? bytes;
 }
 
 abstract class EvidencePickerService {
@@ -49,6 +55,9 @@ class ImagePickerEvidenceService implements EvidencePickerService {
     if (file == null) return null;
 
     final bytes = await file.readAsBytes();
+    if (bytes.isEmpty || bytes.length > evidenceMaxFileSizeBytes) {
+      return null;
+    }
     final name = file.name.isNotEmpty
         ? file.name
         : 'evidencia-${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -59,6 +68,7 @@ class ImagePickerEvidenceService implements EvidencePickerService {
       sizeBytes: bytes.length,
       captureSource: source,
       sha256: sha256.convert(bytes).toString(),
+      bytes: bytes,
     );
   }
 }

@@ -1,27 +1,31 @@
 {
-  "snapshot_date": "2026-06-16",
-  "version": "B-103",
-  "branch": "feature/flutter-work-order-sync",
-  "description": "B-103 Flutter OS Sync Bidirecional — statusUpdate de Work Orders conectado ao contrato POST /api/v1/mobile/sync/work-order-actions para OS reconhecidas pelo backend",
+  "snapshot_date": "2026-06-17",
+  "version": "B-104",
+  "branch": "feature/mobile-evidence-real-upload",
+  "description": "B-104 Upload real de fotos/evidencias — multipart protegido para POST /api/v1/mobile/evidence-uploads, blob local opaco e upload binario apos sync de metadados",
   "release": {
-    "block": "B-103",
-    "title": "Flutter OS Sync Bidirecional",
-    "branch": "feature/flutter-work-order-sync",
+    "block": "B-104",
+    "title": "Upload real de fotos/evidencias",
+    "branch": "feature/mobile-evidence-real-upload",
     "status": "implemented_pending_review",
     "status_label": "Implementado em branch — aguardando revisao",
-    "summary": "Flutter passa a enviar alteracoes de status de OS para POST /api/v1/mobile/sync/work-order-actions usando envelope { client_batch_id, actions[] }, mapeando work_order.status_update interno para work_order.status_change backend. O replay real B-103 envia apenas statusUpdate backend-ready com server_id ou work_order_id real; accepted/already_applied tambem atualizam a WorkOrder local para synced. OS local-only permanece pending.",
+    "summary": "Backend mobile recebe multipart em POST /api/v1/mobile/evidence-uploads com evidencia tenant-scoped, JPEG/PNG ate 10 MB, sha256 obrigatorio e resposta sem path fisico. Flutter salva bytes em blob local opaco, sincroniza metadados primeiro e executa upload binario apenas quando ha evidence_id/serverId real.",
     "commits": [
       {
         "hash": "branch-head",
-        "message": "feat(mobile): connect work order status sync"
+        "message": "feat: add mobile evidence binary upload contract"
       },
       {
         "hash": "branch-head",
-        "message": "docs: record B-103 work order sync status"
+        "message": "feat(mobile): upload evidence binaries after metadata sync"
+      },
+      {
+        "hash": "branch-head",
+        "message": "docs: record B-104 evidence upload status"
       }
     ],
-    "limitation": "Contrato Flutter cobre somente mudanca de status de OS reconhecida pelo backend. Permanecem fora do escopo criacao remota de OS, approval_request real, evidence_attach real, upload binario, GPS/mapa, tracking e resolucao manual completa de conflitos.",
-    "fallback": "OS continua local-first: a action local-only fica salva localmente e permanece pending ate haver mapeamento remoto; erro de rede vira failed retryable sem marcar synced sem confirmacao do servidor; conflict marca a WorkOrder local como conflict para decisao manual."
+    "limitation": "Contrato partial: local/dev storage, sem presigned URL, sem storage protegido final, sem persistencia DB/Redis, sem antivirus e sem auditoria completa de arquivo.",
+    "fallback": "Evidencia continua local-first: metadados pending ate OS ter serverId; upload falha como failed retryable ou conflict manual sem perder evidencia/timeline/metadados."
   },
   "domains": [
     {
@@ -58,12 +62,13 @@
       "id": "evidence",
       "name": "Evidencias Mobile",
       "status": "parcial",
-      "detail": "Sync Flutter de metadados implementado; upload binario final permanece pendente.",
+      "detail": "Sync Flutter de metadados implementado + upload binario real parcial via multipart local/dev (B-104).",
       "points": [
         "POST /api/v1/mobile/sync/evidence-actions conectado no replay mobile",
-        "Tipos OS/campo: foto, assinatura e observacao",
-        "Request seguro: sem tenant_id, base64, binario, file_data, local_path ou path",
-        "already_applied vira sucesso idempotente; conflict exige decisao manual",
+        "POST /api/v1/mobile/evidence-uploads conectado para upload JPEG/PNG ate 10 MB apos evidence_id real",
+        "Blob local opaco via EvidenceBlobStore; localBlobRef nunca entra em payload remoto",
+        "Request seguro: sem tenant_id, base64, binario em JSON, file_data, local_path ou path",
+        "already_applied vira sucesso idempotente; upload conflict exige decisao manual",
         "Pendente: presigned URL, storage protegido, persistencia DB/Redis, antivirus e auditoria completa"
       ]
     },
@@ -88,12 +93,12 @@
         {
           "id": "flutter_tests",
           "label": "Flutter Tests",
-          "value": 582,
-          "total": 582,
+          "value": 589,
+          "total": 589,
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "582/582 no sweep final — inclui 43 testes B-103 de OS sync, entity updater e autosync de WorkOrder"
+          "detail": "589/589 esperado no sweep B-104 — inclui teste dedicado de upload real de evidencias"
         },
         {
           "id": "npm_tests",
@@ -146,34 +151,34 @@
           "unit": "modulos",
           "type": "real",
           "status": "yellow",
-          "detail": "OS sync de status conectado; pendentes de produto: upload real, Approvals e Field Map"
+          "detail": "Evidence binary upload parcial conectado; pendentes de produto: storage protegido, Approvals e Field Map"
         },
         {
           "id": "flutter_mvp_demo",
           "label": "MVP Demo Readiness",
-          "value": 83,
+          "value": 85,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Sobe com OS status sync conectado ao contrato backend real; ainda depende de upload real e piloto Android"
+          "detail": "Estimado. Sobe com upload real parcial de evidencias e blob local opaco; ainda depende de piloto Android e GPS"
         },
         {
           "id": "flutter_mvp_vendavel",
           "label": "MVP Vendavel (Producao)",
-          "value": 58,
+          "value": 62,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Requer upload real de evidencias, storage protegido, GPS, aprovacao real, resolucao de conflitos e piloto Android"
+          "detail": "Estimado. Requer storage protegido/presigned URL, antivirus, auditoria, GPS, aprovacao real e resolucao de conflitos"
         },
         {
           "id": "flutter_test_files",
           "label": "Arquivos de Teste Flutter",
-          "value": 35,
+          "value": 36,
           "unit": "arquivos",
           "type": "real",
           "status": "green",
-          "detail": "35 arquivos de teste no diretorio test/ apos B-103"
+          "detail": "36 arquivos de teste no diretorio test/ apos B-104"
         },
         {
           "id": "flutter_os_pull",
@@ -200,7 +205,7 @@
           "unit": "conectado",
           "type": "real",
           "status": "green",
-          "detail": "POST /api/v1/mobile/sync/evidence-actions com body.data, accepted/rejected/conflicts/already_applied e payload seguro (B-098F)"
+          "detail": "Metadados via POST /api/v1/mobile/sync/evidence-actions + upload binario parcial via POST /api/v1/mobile/evidence-uploads (B-104)"
         },
         {
           "id": "flutter_checklist_answers_sync",
@@ -291,20 +296,20 @@
         {
           "id": "blocks_completed",
           "label": "Blocos Entregues (total)",
-          "value": 33,
+          "value": 34,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-076 ate B-103 + B-098F, incluindo sub-blocos (A/B/K/F)"
+          "detail": "B-076 ate B-104 + B-098F, incluindo sub-blocos (A/B/K/F)"
         },
         {
           "id": "blocks_last_sprint",
           "label": "Blocos em 2026-06-15",
-          "value": 2,
+          "value": 3,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-102 e B-103 em 2026-06-16"
+          "detail": "B-102, B-103 e B-104 em 2026-06-16/17"
         },
         {
           "id": "prs_merged",
@@ -333,11 +338,11 @@
         {
           "id": "upload_evidencias",
           "label": "Upload Real de Evidencias",
-          "value": 0,
-          "unit": "implementado",
+          "value": 1,
+          "unit": "parcial",
           "type": "real",
-          "status": "red",
-          "detail": "Pendente — presigned URL, storage protegido, persistencia DB/Redis, antivirus e auditoria completa"
+          "status": "yellow",
+          "detail": "B-104 implementa multipart local/dev com sha256 e blob opaco; faltam presigned URL, storage protegido, DB/Redis, antivirus e auditoria completa"
         },
         {
           "id": "gps_mapa",
@@ -378,11 +383,11 @@
         {
           "id": "evidence_binary_upload",
           "label": "Evidence Binary Upload",
-          "value": 0,
-          "unit": "implementado",
+          "value": 1,
+          "unit": "parcial",
           "type": "real",
-          "status": "red",
-          "detail": "B-098F cobre somente metadados; upload final, storage e auditoria ficam pendentes"
+          "status": "yellow",
+          "detail": "B-104 envia JPEG/PNG ate 10 MB apos metadata sync; ainda sem storage protegido final/presigned URL"
         }
       ]
     }
@@ -449,9 +454,9 @@
       "detail": "POST /api/v1/mobile/sync/checklist-actions com respostas/notas/conclusao de runs backend-ready e replay idempotente (B-102)"
     },
     {
-      "name": "Evidence — Metadata Sync",
-      "status": "pronto",
-      "detail": "Manifestos de evidencia OS/campo enviados ao backend B-098E sem binario/path/base64 (B-098F)"
+      "name": "Evidence — Metadata + Binary Upload",
+      "status": "parcial",
+      "detail": "Manifestos B-098F + upload multipart parcial B-104 com blob local opaco e checksum"
     },
     {
       "name": "Sync Screen",
@@ -486,16 +491,16 @@
   ],
   "next_steps": [
     {
-      "block": "B-104",
-      "title": "Upload real de fotos/evidencias com URL protegida e storage"
-    },
-    {
       "block": "B-105",
       "title": "GPS/mapa operacional e piloto Android real"
     },
     {
       "block": "B-106",
       "title": "Criacao remota de OS/local-only mapping e resolucao manual de conflitos"
+    },
+    {
+      "block": "B-107",
+      "title": "Hardening de evidencias: presigned URL, storage protegido, antivirus e auditoria"
     }
   ]
 }

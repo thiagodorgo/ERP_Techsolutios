@@ -4,7 +4,9 @@ import 'package:erp_techsolutions_mobile/core/auth/auth_notifier.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
 import 'package:erp_techsolutions_mobile/core/config/app_config.dart';
+import 'package:erp_techsolutions_mobile/core/evidence/evidence_blob_store.dart';
 import 'package:erp_techsolutions_mobile/core/evidence/evidence_sync.dart';
+import 'package:erp_techsolutions_mobile/core/evidence/evidence_upload.dart';
 import 'package:erp_techsolutions_mobile/core/network/connectivity_bridge.dart';
 import 'package:erp_techsolutions_mobile/core/network/connectivity_repository.dart';
 import 'package:erp_techsolutions_mobile/core/sync/auto_sync_coordinator.dart';
@@ -13,6 +15,7 @@ import 'package:erp_techsolutions_mobile/core/sync/sync_providers.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_replay_service.dart';
 import 'package:erp_techsolutions_mobile/features/auth/auth_models.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_local_store.dart';
 import 'package:erp_techsolutions_mobile/shared/ui/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -205,6 +208,13 @@ Widget _profileApp({
       evidenceSyncReplayServiceProvider.overrideWithValue(
         _NoopEvidenceSyncReplayService(),
       ),
+      evidenceBinaryUploadServiceProvider.overrideWithValue(
+        EvidenceBinaryUploadService(
+          store: InMemoryWorkOrderLocalStore(),
+          blobStore: InMemoryEvidenceBlobStore(),
+          api: const PendingEvidenceUploadApi(),
+        ),
+      ),
     ],
     child: MaterialApp.router(routerConfig: _router()),
   );
@@ -325,6 +335,13 @@ void main() {
             ),
             evidenceSyncReplayServiceProvider.overrideWithValue(
               _NoopEvidenceSyncReplayService(),
+            ),
+            evidenceBinaryUploadServiceProvider.overrideWithValue(
+              EvidenceBinaryUploadService(
+                store: InMemoryWorkOrderLocalStore(),
+                blobStore: InMemoryEvidenceBlobStore(),
+                api: const PendingEvidenceUploadApi(),
+              ),
             ),
           ],
         );

@@ -1,5 +1,36 @@
 # Status Geral
 
+## Atualizacao 2026-06-17 — B-104 Upload real de fotos/evidencias
+
+### Status
+
+Implementacao em branch `feature/mobile-evidence-real-upload`, validada
+localmente e pendente de PR.
+
+### Entregue
+
+- Backend: `POST /api/v1/mobile/evidence-uploads` multipart parcial com
+  `evidence_id`, `client_evidence_id`, `sha256`, `size_bytes` e arquivo `file`.
+- Tenant sempre resolvido pelo ator autenticado; `tenant_id` externo ignorado.
+- Permissoes: `work_orders:update` ou `field_location:send`.
+- JPEG/PNG ate 10 MB, checksum SHA-256 calculado no backend e resposta sem
+  path fisico.
+- Flutter: `EvidenceBlobStore` com `localBlobRef` opaco, `EvidenceUploadApi`,
+  `EvidenceBinaryUploadService`, updater local apos metadata sync e autosync
+  na ordem OS -> checklist -> evidence metadata -> evidence binary -> RDV.
+- Drift local: `schemaVersion 5` para status de upload da evidencia.
+- KPIs mobile atualizados para B-104.
+
+### Lacunas remanescentes
+
+- Presigned URL.
+- Storage protegido final.
+- Persistencia DB/Redis de arquivo/receipt.
+- Antivirus.
+- Auditoria completa e politica de retencao.
+
+---
+
 ## Atualizacao 2026-06-16 — B-103 Flutter OS Sync Bidirecional
 
 ### QA pós-revisão humana

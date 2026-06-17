@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/auth_notifier.dart';
+import '../evidence/evidence_blob_store.dart';
 import '../evidence/evidence_sync.dart';
+import '../evidence/evidence_upload.dart';
 import '../local_db/database_provider.dart';
 import '../local_db/drift_work_order_local_store.dart';
 import '../local_db/drift_sync_action_store.dart';
@@ -175,9 +177,79 @@ final evidenceSyncBatchApiProvider = Provider<EvidenceSyncBatchApi>((ref) {
   );
 });
 
-final evidenceSyncReplayServiceProvider = Provider<EvidenceSyncReplayService>(
-  (ref) => EvidenceSyncReplayService(
+final evidenceSyncReplayServiceProvider = Provider<EvidenceSyncReplayService>((
+  ref,
+) {
+  final store = DriftWorkOrderLocalStore(ref.watch(appDatabaseProvider));
+  return EvidenceSyncReplayService(
     queue: ref.watch(syncQueueRepositoryProvider),
     api: ref.watch(evidenceSyncBatchApiProvider),
-  ),
-);
+    entityUpdater: buildEvidenceSyncEntityUpdater(store),
+  );
+});
+
+EvidenceSyncEntityUpdater buildEvidenceSyncEntityUpdater(
+  WorkOrderLocalStore store,
+) {
+  return (action, result, status) async {
+    final rawLocalEvidenceId =
+        action.payload['local_evidence_id'] ?? action.clientActionId;
+    if (rawLocalEvidenceId is! String || rawLocalEvidenceId.trim().isEmpty) {
+      return;
+    }
+
+    final current = await store.findEvidence(rawLocalEvidenceId.trim());
+    if (current == null) return;
+
+    final next = switch (status) {
+      SyncStatus.synced => current.copyWith(
+        syncStatus: SyncStatus.synced,
+        serverId: result?.evidenceId ?? current.serverId,
+        uploadStatus: current.localBlobRef == null
+            ? current.uploadStatus
+            : SyncStatus.pending,
+      ),
+      SyncStatus.conflict => current.copyWith(
+        syncStatus: SyncStatus.conflict,
+        uploadStatus: SyncStatus.conflict,
+      ),
+      _ => current,
+    };
+
+    if (next != current) {
+      await store.saveEvidence(next);
+    }
+  };
+}
+
+final evidenceUploadApiProvider = Provider<EvidenceUploadApi>((ref) {
+  final config = ref.watch(authenticatedApiConfigProvider);
+  if (config.accessToken == null) {
+    return const PendingEvidenceUploadApi();
+  }
+
+  return DioEvidenceUploadApi(
+    createAuthenticatedHttpClient(
+      config,
+      onRefresh: () async {
+        await ref.read(authStateProvider.notifier).tryRefresh();
+        return ref
+            .read(authStateProvider)
+            .maybeWhen(
+              data: (state) => state.session?.tokens.accessToken,
+              orElse: () => null,
+            );
+      },
+      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
+    ),
+  );
+});
+
+final evidenceBinaryUploadServiceProvider =
+    Provider<EvidenceBinaryUploadService>(
+      (ref) => EvidenceBinaryUploadService(
+        store: DriftWorkOrderLocalStore(ref.watch(appDatabaseProvider)),
+        blobStore: ref.watch(evidenceBlobStoreProvider),
+        api: ref.watch(evidenceUploadApiProvider),
+      ),
+    );

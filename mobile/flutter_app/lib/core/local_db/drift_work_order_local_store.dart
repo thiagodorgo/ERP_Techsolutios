@@ -111,11 +111,14 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
   Future<void> saveEvidence(WorkOrderEvidence evidence) async {
     await _db.customInsert(
       'INSERT OR REPLACE INTO work_order_evidence '
-      '(local_id, work_order_local_id, tenant_id, file_name, mime_type, '
-      'size_bytes, capture_source, checksum, sync_status, created_at) '
-      'VALUES (?,?,?,?,?,?,?,?,?,?)',
+      '(local_id, server_id, work_order_local_id, tenant_id, file_name, '
+      'mime_type, size_bytes, capture_source, checksum, sync_status, '
+      'upload_status, created_at, uploaded_at, upload_error_code, '
+      'local_blob_ref) '
+      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       variables: [
         Variable<String>(evidence.localId),
+        Variable<String>(evidence.serverId),
         Variable<String>(evidence.workOrderLocalId),
         Variable<String>(evidence.tenantId),
         Variable<String>(evidence.fileName),
@@ -124,7 +127,11 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
         Variable<String>(evidence.captureSource),
         Variable<String>(evidence.checksum),
         Variable<String>(evidence.syncStatus.name),
+        Variable<String>(evidence.uploadStatus.name),
         Variable<int>(evidence.createdAt.millisecondsSinceEpoch),
+        Variable<int>(_msOrNull(evidence.uploadedAt)),
+        Variable<String>(evidence.uploadErrorCode),
+        Variable<String>(evidence.localBlobRef),
       ],
     );
   }
@@ -139,6 +146,28 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
         )
         .get();
     return rows.map(_evidenceFromRow).toList();
+  }
+
+  @override
+  Future<List<WorkOrderEvidence>> loadAllEvidence() async {
+    final rows = await _db
+        .customSelect(
+          'SELECT * FROM work_order_evidence ORDER BY created_at ASC',
+        )
+        .get();
+    return rows.map(_evidenceFromRow).toList();
+  }
+
+  @override
+  Future<WorkOrderEvidence?> findEvidence(String localId) async {
+    final rows = await _db
+        .customSelect(
+          'SELECT * FROM work_order_evidence WHERE local_id = ? LIMIT 1',
+          variables: [Variable<String>(localId)],
+        )
+        .get();
+    if (rows.isEmpty) return null;
+    return _evidenceFromRow(rows.first);
   }
 
   // ---------------------------------------------------------------------------
@@ -203,6 +232,7 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
 
   WorkOrderEvidence _evidenceFromRow(QueryRow row) => WorkOrderEvidence(
     localId: row.read<String>('local_id'),
+    serverId: row.readNullable<String>('server_id'),
     workOrderLocalId: row.read<String>('work_order_local_id'),
     tenantId: row.read<String>('tenant_id'),
     fileName: row.read<String>('file_name'),
@@ -211,10 +241,14 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
     captureSource: row.read<String>('capture_source'),
     checksum: row.readNullable<String>('checksum'),
     syncStatus: SyncStatus.values.byName(row.read<String>('sync_status')),
+    uploadStatus: SyncStatus.values.byName(row.read<String>('upload_status')),
     createdAt: DateTime.fromMillisecondsSinceEpoch(
       row.read<int>('created_at'),
       isUtc: true,
     ),
+    uploadedAt: _fromMs(row.readNullable<int>('uploaded_at')),
+    uploadErrorCode: row.readNullable<String>('upload_error_code'),
+    localBlobRef: row.readNullable<String>('local_blob_ref'),
   );
 
   static int? _msOrNull(DateTime? dt) => dt?.millisecondsSinceEpoch;

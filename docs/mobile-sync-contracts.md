@@ -344,7 +344,26 @@ Regras obrigatorias:
 - fotos e assinaturas aceitam apenas `image/jpeg` ou `image/png`, com limite declarado de 10 MB.
 - `base64`, `file_data`, `local_path` e `path` sao rejeitados; o contrato registra metadados, nao arquivo.
 - reenvio identico retorna `already_applied`; payload diferente com o mesmo ID retorna `idempotency_payload_mismatch`.
-- lacunas: upload/presigned URL, storage protegido, persistencia DB/Redis, antivirus, auditoria completa e consumo Flutter.
+- lacunas B-098E: upload binario fica em contrato separado; persistencia DB/Redis, antivirus e auditoria completa seguem fora do manifesto.
+
+### POST /api/v1/mobile/evidence-uploads
+
+- Permissoes: `work_orders:update` ou `field_location:send`.
+- Status B-104: parcial; upload multipart local/dev apos metadata sync, sem presigned URL/storage protegido final.
+- Request: `multipart/form-data`.
+- Campos obrigatorios: `evidence_id`, `client_evidence_id`, `sha256`, `size_bytes` e arquivo `file`.
+- Campos opcionais: `work_order_id`, `content_type`.
+- Response: envelope `{ data }` com `contract`, `evidence_id`, `file_id`, `status`, `size_bytes`, `content_type`, `sha256` e `uploaded_at`.
+
+Regras obrigatorias:
+
+- tenant resolvido pelo ator autenticado; `tenant_id` do form e ignorado.
+- `evidence_id` deve pertencer ao tenant autenticado e ao `client_evidence_id` (`evidence:{tenant_id}:{client_evidence_id}`).
+- somente `image/jpeg` e `image/png`.
+- limite de 10 MB.
+- backend calcula SHA-256 do arquivo e rejeita `sha256_mismatch`.
+- resposta nunca retorna caminho fisico, `local_path`, `path`, storage key local ou conteudo binario.
+- lacunas B-104: presigned URL, storage protegido, persistencia DB/Redis, antivirus, auditoria completa e retencao definitiva.
 
 ### GET /api/v1/expense-policies
 
