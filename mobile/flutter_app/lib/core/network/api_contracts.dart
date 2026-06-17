@@ -58,6 +58,13 @@ class ExpenseSyncActionTypes {
   static const itemCreate = 'expense_item.create';
   static const reportSubmit = 'expense_report.submit';
   static const receiptAttach = 'expense_receipt.attach';
+
+  static const supported = {
+    reportCreate,
+    itemCreate,
+    reportSubmit,
+    receiptAttach,
+  };
 }
 
 class ChecklistApiEndpoints {

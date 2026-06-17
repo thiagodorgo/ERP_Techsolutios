@@ -51,6 +51,15 @@ class _NoopChecklistSyncReplayService extends ChecklistSyncReplayService {
       const SyncReplayResult(synced: [], failed: [], conflicts: []);
 }
 
+class _NoopWorkOrderSyncReplayService extends WorkOrderSyncReplayService {
+  _NoopWorkOrderSyncReplayService()
+    : super(queue: _NullQueue(), api: MockWorkOrderSyncBatchApi());
+
+  @override
+  Future<SyncReplayResult> replayTenant(String tenantId) async =>
+      const SyncReplayResult(synced: [], failed: [], conflicts: []);
+}
+
 class _NoopEvidenceSyncReplayService extends EvidenceSyncReplayService {
   _NoopEvidenceSyncReplayService()
     : super(queue: _NullQueue(), api: const PendingEvidenceSyncBatchApi());
@@ -63,6 +72,19 @@ class _NoopEvidenceSyncReplayService extends EvidenceSyncReplayService {
 class _CountingSyncReplayService extends SyncReplayService {
   _CountingSyncReplayService()
     : super(queue: _NullQueue(), api: MockExpenseSyncBatchApi());
+
+  int callCount = 0;
+
+  @override
+  Future<SyncReplayResult> replayTenant(String tenantId) async {
+    callCount++;
+    return const SyncReplayResult(synced: [], failed: [], conflicts: []);
+  }
+}
+
+class _CountingWorkOrderSyncReplayService extends WorkOrderSyncReplayService {
+  _CountingWorkOrderSyncReplayService()
+    : super(queue: _NullQueue(), api: MockWorkOrderSyncBatchApi());
 
   int callCount = 0;
 
@@ -97,6 +119,7 @@ BootstrapSession _fakeSession() => const BootstrapSession(
 
 ProviderContainer _container({
   SyncReplayService? syncService,
+  WorkOrderSyncReplayService? workOrderService,
   ChecklistSyncReplayService? checklistService,
   bool authenticated = true,
 }) {
@@ -108,6 +131,9 @@ ProviderContainer _container({
       ),
       syncReplayServiceProvider.overrideWithValue(
         syncService ?? _NoopSyncReplayService(),
+      ),
+      workOrderSyncReplayServiceProvider.overrideWithValue(
+        workOrderService ?? _NoopWorkOrderSyncReplayService(),
       ),
       checklistSyncReplayServiceProvider.overrideWithValue(
         checklistService ?? _NoopChecklistSyncReplayService(),
@@ -260,6 +286,20 @@ void main() {
       await Future.delayed(Duration.zero);
 
       // Only one replayTenant call despite two trigger attempts
+      expect(counting.callCount, 1);
+    });
+
+    test('t09b — manual trigger chama WorkOrder sync', () async {
+      final counting = _CountingWorkOrderSyncReplayService();
+      final container = _container(workOrderService: counting);
+      addTearDown(container.dispose);
+
+      await container.read(bootstrapSessionProvider.future);
+      container.read(autoSyncCoordinatorProvider);
+      await container
+          .read(autoSyncCoordinatorProvider.notifier)
+          .triggerManual();
+
       expect(counting.callCount, 1);
     });
 

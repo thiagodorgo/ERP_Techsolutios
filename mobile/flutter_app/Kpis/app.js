@@ -9,40 +9,43 @@
 // ---------------------------------------------------------------------------
 const EMBEDDED_LATEST = {
   "snapshot_date": "2026-06-16",
-  "version": "B-102",
-  "branch": "feature/flutter-checklist-answers-sync",
-  "description": "B-102 Flutter Checklist Answers Sync — sync write parcial de respostas de checklist conectado ao contrato POST /api/v1/mobile/sync/checklist-actions para runs reconhecidas pelo backend",
+  "version": "B-103",
+  "branch": "feature/flutter-work-order-sync",
+  "description": "B-103 Flutter OS Sync Bidirecional — statusUpdate de Work Orders conectado ao contrato POST /api/v1/mobile/sync/work-order-actions para OS reconhecidas pelo backend",
   "release": {
-    "block": "B-102",
-    "title": "Flutter Checklist Answers Sync",
-    "branch": "feature/flutter-checklist-answers-sync",
+    "block": "B-103",
+    "title": "Flutter OS Sync Bidirecional",
+    "branch": "feature/flutter-work-order-sync",
     "status": "implemented_pending_review",
     "status_label": "Implementado em branch — aguardando revisao",
-    "summary": "Flutter passa a enviar respostas, notas e conclusao de checklist para POST /api/v1/mobile/sync/checklist-actions usando client_batch_id, client_action_id, tipos backend reais e parser de accepted, rejected, conflicts e already_applied. O replay real B-102 envia apenas answerUpsert/runComplete com server_run_id ou run_id real; actions locais sem run reconhecida pelo backend permanecem pending.",
+    "summary": "Flutter passa a enviar alteracoes de status de OS para POST /api/v1/mobile/sync/work-order-actions usando envelope { client_batch_id, actions[] }, mapeando work_order.status_update interno para work_order.status_change backend. O replay real B-103 envia apenas statusUpdate backend-ready com server_id ou work_order_id real; accepted/already_applied tambem atualizam a WorkOrder local para synced. OS local-only permanece pending.",
     "commits": [
       {
         "hash": "branch-head",
-        "message": "feat(mobile): connect checklist answers sync contract"
+        "message": "feat(mobile): connect work order status sync"
       },
       {
         "hash": "branch-head",
-        "message": "docs: add B-102 checklist answers sync status"
+        "message": "docs: record B-103 work order sync status"
       }
     ],
-    "limitation": "Contrato Flutter cobre respostas, notas e conclusao apenas para checklist runs reconhecidas pelo backend. Permanecem fora do escopo checklist_run.create remoto, anexos reais, markers, divergencia, acknowledgement em lote, OS sync bidirecional e upload real de evidencias.",
-    "fallback": "Checklist continua local-first: a resposta fica salva localmente, a action permanece na fila e erro de rede vira failed retryable sem marcar synced sem confirmacao do servidor."
+    "limitation": "Contrato Flutter cobre somente mudanca de status de OS reconhecida pelo backend. Permanecem fora do escopo criacao remota de OS, approval_request real, evidence_attach real, upload binario, GPS/mapa, tracking e resolucao manual completa de conflitos.",
+    "fallback": "OS continua local-first: a action local-only fica salva localmente e permanece pending ate haver mapeamento remoto; erro de rede vira failed retryable sem marcar synced sem confirmacao do servidor; conflict marca a WorkOrder local como conflict para decisao manual."
   },
   "domains": [
     {
       "id": "work_orders",
       "name": "Work Orders (OS)",
       "status": "parcial",
-      "detail": "Pull remoto ativo (B-099); sync bidirecional pendente.",
+      "detail": "Pull remoto ativo (B-099) + sync write parcial de status conectado para OS com server_id/work_order_id real (B-103).",
       "points": [
         "GET /api/v1/work-orders conectado com upsert no Drift",
-        "Parser tolerante camelCase/snake_case",
-        "Banners de pull state em Home e List + RefreshIndicator",
-        "Pendente: OS sync bidirecional (B-103)"
+        "POST /api/v1/mobile/sync/work-order-actions conectado para statusUpdate backend-ready",
+        "work_order.status_update -> work_order.status_change",
+        "server_id/work_order_id real vira payload.work_order_id; local_id fica apenas em metadata",
+        "accepted/already_applied viram synced na action e na WorkOrder local; rejected vira failed; conflict marca conflito manual",
+        "OS local-only, create, approval_request e evidence_attach permanecem pending/fora do replay B-103",
+        "Pendente: criacao remota de OS, aprovacao real, evidencias reais, GPS/mapa e resolucao manual de conflitos"
       ]
     },
     {
@@ -94,12 +97,12 @@ const EMBEDDED_LATEST = {
         {
           "id": "flutter_tests",
           "label": "Flutter Tests",
-          "value": 538,
-          "total": 538,
+          "value": 582,
+          "total": 582,
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "538/538 — inclui 38 testes B-102 de checklist answers sync e revisao server_run_id/escopo"
+          "detail": "582/582 no sweep final — inclui 43 testes B-103 de OS sync, entity updater e autosync de WorkOrder"
         },
         {
           "id": "npm_tests",
@@ -118,7 +121,7 @@ const EMBEDDED_LATEST = {
           "unit": "issues",
           "type": "real",
           "status": "green",
-          "detail": "No issues found — B-102"
+          "detail": "No issues found esperado no sweep B-103"
         },
         {
           "id": "npm_lint",
@@ -147,39 +150,39 @@ const EMBEDDED_LATEST = {
         {
           "id": "flutter_modules_ready",
           "label": "Modulos Flutter Prontos",
-          "value": 15,
+          "value": 16,
           "total": 16,
           "unit": "modulos",
           "type": "real",
           "status": "yellow",
-          "detail": "Checklist answers sync conectado; pendentes principais: OS sync bidirecional, upload real, Approvals e Field Map"
+          "detail": "OS sync de status conectado; pendentes de produto: upload real, Approvals e Field Map"
         },
         {
           "id": "flutter_mvp_demo",
           "label": "MVP Demo Readiness",
-          "value": 81,
+          "value": 83,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Sobe com sync write de checklist conectado ao contrato backend real; ainda depende de OS sync e upload real"
+          "detail": "Estimado. Sobe com OS status sync conectado ao contrato backend real; ainda depende de upload real e piloto Android"
         },
         {
           "id": "flutter_mvp_vendavel",
           "label": "MVP Vendavel (Producao)",
-          "value": 56,
+          "value": 58,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Requer OS sync bidirecional, upload real de evidencias, storage protegido, GPS, aprovacao real e piloto Android"
+          "detail": "Estimado. Requer upload real de evidencias, storage protegido, GPS, aprovacao real, resolucao de conflitos e piloto Android"
         },
         {
           "id": "flutter_test_files",
           "label": "Arquivos de Teste Flutter",
-          "value": 22,
+          "value": 35,
           "unit": "arquivos",
           "type": "real",
           "status": "green",
-          "detail": "22 arquivos de teste no diretorio test/"
+          "detail": "35 arquivos de teste no diretorio test/ apos B-103"
         },
         {
           "id": "flutter_os_pull",
@@ -216,6 +219,15 @@ const EMBEDDED_LATEST = {
           "type": "real",
           "status": "green",
           "detail": "POST /api/v1/mobile/sync/checklist-actions com client_batch_id, tipos reais, parser body.data e replay seguro apenas para runs backend-ready (B-102)"
+        },
+        {
+          "id": "flutter_work_order_status_sync",
+          "label": "OS Status Sync",
+          "value": 1,
+          "unit": "parcial",
+          "type": "real",
+          "status": "yellow",
+          "detail": "POST /api/v1/mobile/sync/work-order-actions conectado para statusUpdate backend-ready (B-103)"
         }
       ]
     },
@@ -288,20 +300,20 @@ const EMBEDDED_LATEST = {
         {
           "id": "blocks_completed",
           "label": "Blocos Entregues (total)",
-          "value": 32,
+          "value": 33,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-076 ate B-102 + B-098F, incluindo sub-blocos (A/B/K/F)"
+          "detail": "B-076 ate B-103 + B-098F, incluindo sub-blocos (A/B/K/F)"
         },
         {
           "id": "blocks_last_sprint",
           "label": "Blocos em 2026-06-15",
-          "value": 1,
+          "value": 2,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-102 Flutter Checklist Answers Sync"
+          "detail": "B-102 e B-103 em 2026-06-16"
         },
         {
           "id": "prs_merged",
@@ -321,11 +333,11 @@ const EMBEDDED_LATEST = {
         {
           "id": "os_sync_bidirecional",
           "label": "OS Sync Bidirecional",
-          "value": 0,
-          "unit": "implementado",
+          "value": 1,
+          "unit": "parcial",
           "type": "real",
-          "status": "red",
-          "detail": "Pendente — B-103: push de alteracoes locais de OS ao backend"
+          "status": "yellow",
+          "detail": "B-103 conecta statusUpdate de OS com server_id/work_order_id real; local-only, create, approval e evidence_attach seguem pendentes"
         },
         {
           "id": "upload_evidencias",
@@ -422,8 +434,8 @@ const EMBEDDED_LATEST = {
     },
     {
       "name": "OS — Sync Bidirecional",
-      "status": "pendente",
-      "detail": "B-100+ — alteracoes locais para backend"
+      "status": "parcial",
+      "detail": "B-103 conecta statusUpdate para OS com server_id/work_order_id real; create/approval/evidence/local-only pendentes"
     },
     {
       "name": "Checklist Configuravel",
@@ -483,16 +495,16 @@ const EMBEDDED_LATEST = {
   ],
   "next_steps": [
     {
-      "block": "B-103",
-      "title": "OS sync bidirecional (mobile -> backend)"
-    },
-    {
       "block": "B-104",
       "title": "Upload real de fotos/evidencias com URL protegida e storage"
     },
     {
       "block": "B-105",
       "title": "GPS/mapa operacional e piloto Android real"
+    },
+    {
+      "block": "B-106",
+      "title": "Criacao remota de OS/local-only mapping e resolucao manual de conflitos"
     }
   ]
 };
@@ -605,259 +617,20 @@ const EMBEDDED_HISTORY = [
     "flutter_mvp_vendavel": 56,
     "blocks_completed": 32,
     "description": "B-102 Flutter Checklist Answers Sync — serializer snake_case, provider Dio autenticado, parser body.data e replay seguro para runs backend-ready com server_run_id"
+  },
+  {
+    "snapshot_date": "2026-06-16",
+    "version": "B-103",
+    "flutter_tests": 582,
+    "npm_tests": 15,
+    "flutter_modules_ready": 16,
+    "flutter_modules_total": 16,
+    "flutter_mvp_demo": 83,
+    "flutter_mvp_vendavel": 58,
+    "blocks_completed": 33,
+    "description": "B-103 Flutter OS Sync Bidirecional — WorkOrder statusUpdate -> work_order.status_change, replay backend-ready, entity updater local, parser accepted/rejected/conflicts/already_applied e AutoSyncCoordinator"
   }
 ];
-
-// ---------------------------------------------------------------------------
-// Carregamento: fetch oficial com fallback embutido
-// ---------------------------------------------------------------------------
-
-async function tryFetchJson(path) {
-  try {
-    const res = await fetch(path, { cache: "no-store" });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch (_) {
-    return null; // file:// / CORS / offline
-  }
-}
-
-async function loadData() {
-  const latest = await tryFetchJson("./kpis-latest.json");
-  const history = await tryFetchJson("./kpis-history.json");
-  if (latest && history) {
-    return { latest, history, source: "external" };
-  }
-  return { latest: EMBEDDED_LATEST, history: EMBEDDED_HISTORY, source: "embedded" };
-}
-
-// ---------------------------------------------------------------------------
-// Helpers de status / formatacao
-// ---------------------------------------------------------------------------
-
-const STATUS_TO_BADGE = {
-  green: "concluido",
-  yellow: "parcial",
-  red: "risco",
-  pronto: "concluido",
-  concluido: "concluido",
-  parcial: "parcial",
-  pendente: "planejado",
-  placeholder: "planejado",
-  planejado: "planejado",
-};
-
-function badgeKind(status) {
-  return STATUS_TO_BADGE[status] || "planejado";
-}
-
-const STATUS_LABEL = {
-  green: "ok",
-  yellow: "parcial",
-  red: "pendente",
-  pronto: "pronto",
-  concluido: "concluido",
-  parcial: "parcial",
-  pendente: "pendente",
-  placeholder: "placeholder",
-};
-
-function metricValue(m) {
-  if (m.total !== undefined) return `${m.value}/${m.total}`;
-  if (m.unit === "%") return `${m.value}%`;
-  if (m.unit === "conectado" || m.unit === "implementado") return m.value ? "Sim" : "Nao";
-  return `${m.value}`;
-}
-
-function allMetrics(latest) {
-  return latest.categories.flatMap((c) => c.metrics.map((m) => ({ ...m, category: c.label })));
-}
-
-// ---------------------------------------------------------------------------
-// Render
-// ---------------------------------------------------------------------------
-
-function render({ latest, history, source }) {
-  renderOverview(latest, source);
-  renderRelease(latest.release);
-  renderRealKpis(latest);
-  renderEstimatedKpis(latest);
-  renderMobileMaturity(latest);
-  renderDeliveries(history);
-  renderDomain(latest, "work_orders", "wo-domain");
-  renderDomain(latest, "checklists", "cl-domain");
-  renderDomain(latest, "offline", "offline-domain");
-  renderRisks(latest);
-  renderNextSteps(latest.next_steps);
-  renderHistory(history);
-}
-
-function renderOverview(latest, source) {
-  setText("project-version", latest.version);
-  setText("last-updated", latest.snapshot_date);
-  setText("source-branch", latest.branch);
-  setText("project-summary", latest.description);
-
-  const banner = document.getElementById("source-banner");
-  if (banner) {
-    if (source === "embedded") {
-      banner.textContent =
-        "Exibindo snapshot embutido. Para dados JSON externos, abra com servidor local opcional.";
-      banner.hidden = false;
-    } else {
-      banner.hidden = true;
-    }
-  }
-
-  const metrics = allMetrics(latest);
-  const pick = (id) => metrics.find((m) => m.id === id);
-  const cards = [
-    pick("flutter_tests"),
-    pick("flutter_modules_ready"),
-    pick("blocks_completed"),
-    pick("flutter_mvp_demo"),
-  ].filter(Boolean);
-  renderInto("overview-cards", cards, (m) => `
-    <article class="kpi-card" data-status="${escapeHtml(m.status)}">
-      <div class="kpi-card__label">${escapeHtml(m.label)}</div>
-      <div class="kpi-card__value">${escapeHtml(metricValue(m))}</div>
-      <p class="kpi-card__note">${escapeHtml(m.detail)}</p>
-    </article>
-  `);
-}
-
-function renderRelease(release) {
-  if (!release) return;
-  setText("release-title", `${release.block} — ${release.title}`);
-  setText("release-summary", release.summary);
-  setText("release-branch", release.branch);
-  const statusEl = document.getElementById("release-status");
-  if (statusEl) {
-    statusEl.textContent = release.status_label || release.status;
-    statusEl.dataset.status = "parcial";
-  }
-  renderInto("release-commits", release.commits || [], (c) => `
-    <li><code>${escapeHtml(c.hash)}</code> ${escapeHtml(c.message)}</li>
-  `);
-  setText("release-limitation", release.limitation || "");
-  setText("release-fallback", release.fallback || "");
-}
-
-function renderRealKpis(latest) {
-  const reals = allMetrics(latest).filter((m) => m.type === "real");
-  renderInto("real-kpis", reals, (m) => `
-    <article class="metric-row" data-status="${escapeHtml(m.status)}">
-      <header>
-        <h3>${escapeHtml(m.label)}</h3>
-        ${statusBadge(m.status, STATUS_LABEL[m.status] || "real")}
-      </header>
-      <strong class="metric-row__value">${escapeHtml(metricValue(m))}</strong>
-      <p>${escapeHtml(m.detail)}</p>
-    </article>
-  `);
-}
-
-function renderEstimatedKpis(latest) {
-  const ests = allMetrics(latest).filter((m) => m.type === "estimated");
-  renderInto("estimated-kpis", ests, (m) => `
-    <article class="metric-row metric-row--est" data-status="${escapeHtml(m.status)}">
-      <header>
-        <h3>${escapeHtml(m.label)}</h3>
-        <span class="tag-est">estimado</span>
-      </header>
-      <strong class="metric-row__value">${escapeHtml(metricValue(m))}</strong>
-      <p>${escapeHtml(m.detail)}</p>
-    </article>
-  `);
-}
-
-function renderMobileMaturity(latest) {
-  const mobile = latest.categories.find((c) => c.id === "mobile");
-  const pct = mobile ? mobile.metrics.filter((m) => m.unit === "%") : [];
-  renderInto("mobile-progress", pct, (m) => `
-    <article class="progress-item">
-      <div class="progress-top"><span>${escapeHtml(m.label)}</span><span>${m.value}%</span></div>
-      <div class="progress-bar" data-status="${escapeHtml(badgeKind(m.status))}"><span style="width:${clampPercent(m.value)}%"></span></div>
-      <p class="progress-note">${escapeHtml(m.detail)}</p>
-    </article>
-  `);
-
-  renderInto("module-list", latest.modules || [], (mod) => `
-    <article class="status-row" data-status="${escapeHtml(mod.status)}">
-      <header><h3>${escapeHtml(mod.name)}</h3>${statusBadge(mod.status, STATUS_LABEL[mod.status] || mod.status)}</header>
-      <p>${escapeHtml(mod.detail)}</p>
-    </article>
-  `);
-}
-
-function renderDeliveries(history) {
-  const recent = history.filter((h) => ["B-098", "B-098B", "B-099", "B-100", "B-098F"].includes(h.version));
-  renderInto("deliveries", recent, (h) => `
-    <article class="timeline-item" data-status="${h.version === "B-098F" ? "parcial" : "concluido"}">
-      ${statusBadge(h.version === "B-098F" ? "yellow" : "green", h.version === "B-098F" ? "atual" : "merged")}
-      <h3>${escapeHtml(h.version)}</h3>
-      <p>${escapeHtml(h.description)}</p>
-      <p class="timeline-meta">${h.flutter_tests} testes • ${h.flutter_modules_ready}/${h.flutter_modules_total} modulos</p>
-    </article>
-  `);
-}
-
-function renderDomain(latest, domainId, targetId) {
-  const d = (latest.domains || []).find((x) => x.id === domainId);
-  const el = document.getElementById(targetId);
-  if (!el || !d) return;
-  el.innerHTML = `
-    <header class="domain-head">
-      <h3>${escapeHtml(d.name)}</h3>
-      ${statusBadge(d.status, d.status)}
-    </header>
-    <p class="domain-detail">${escapeHtml(d.detail)}</p>
-    <ul class="domain-points">
-      ${d.points.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}
-    </ul>
-  `;
-}
-
-function renderRisks(latest) {
-  const gaps = latest.categories.find((c) => c.id === "gaps");
-  const items = gaps ? gaps.metrics : [];
-  renderInto("risk-list", items, (m) => {
-    const severity = m.status === "red" ? "alto" : "medio";
-    return `
-    <article class="risk-item" data-severity="${severity}">
-      <header><h3>${escapeHtml(m.label)}</h3>${statusBadge(m.status, m.status === "red" ? "pendente" : "parcial")}</header>
-      <p>${escapeHtml(m.detail)}</p>
-    </article>`;
-  });
-}
-
-function renderNextSteps(steps) {
-  renderInto("next-steps", steps || [], (s) => `
-    <article class="next-item">
-      <header><h3>${escapeHtml(s.block)}</h3>${statusBadge("planejado", "proximo")}</header>
-      <p>${escapeHtml(s.title)}</p>
-    </article>
-  `);
-}
-
-function renderHistory(history) {
-  const rows = [...history].reverse();
-  const body = document.getElementById("history-body");
-  if (!body) return;
-  body.innerHTML = rows
-    .map((h) => `
-      <tr>
-        <td>${escapeHtml(h.version)}</td>
-        <td>${escapeHtml(h.snapshot_date)}</td>
-        <td>${h.flutter_tests}</td>
-        <td>${h.flutter_modules_ready}/${h.flutter_modules_total}</td>
-        <td>${h.flutter_mvp_demo}%</td>
-        <td>${h.flutter_mvp_vendavel}%</td>
-        <td>${h.blocks_completed}</td>
-      </tr>
-    `)
-    .join("");
-}
 
 // ---------------------------------------------------------------------------
 // Utilitarios

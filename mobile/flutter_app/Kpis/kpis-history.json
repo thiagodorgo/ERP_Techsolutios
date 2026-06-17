@@ -106,5 +106,17 @@
     "flutter_mvp_vendavel": 56,
     "blocks_completed": 32,
     "description": "B-102 Flutter Checklist Answers Sync — serializer snake_case, provider Dio autenticado, parser body.data e replay seguro para runs backend-ready com server_run_id"
+  },
+  {
+    "snapshot_date": "2026-06-16",
+    "version": "B-103",
+    "flutter_tests": 582,
+    "npm_tests": 15,
+    "flutter_modules_ready": 16,
+    "flutter_modules_total": 16,
+    "flutter_mvp_demo": 83,
+    "flutter_mvp_vendavel": 58,
+    "blocks_completed": 33,
+    "description": "B-103 Flutter OS Sync Bidirecional — WorkOrder statusUpdate -> work_order.status_change, replay backend-ready, entity updater local, parser accepted/rejected/conflicts/already_applied e AutoSyncCoordinator"
   }
 ]
