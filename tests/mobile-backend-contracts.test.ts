@@ -15,6 +15,7 @@ type SeedData = {
   readonly tenantA: Tenant;
   readonly tenantB: Tenant;
   readonly adminA: User;
+  readonly adminB: User;
 };
 
 type ApiContext = {
@@ -232,6 +233,174 @@ test("mobile backend exposes ready checklist, expense, work order, inventory, ev
     assertNoStackTrace(evidenceSync.body);
     assertNoStackTrace(workOrders.body);
     assertNoStackTrace(notifications.body);
+  });
+});
+
+test("mobile field location contract validates actor tenant, payload and history permissions", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const sendHeaders = {
+      ...authHeaders(seed.tenantA, seed.adminA, "technician"),
+      "x-permissions": "field_location:send",
+    };
+    const readHeaders = {
+      ...authHeaders(seed.tenantA, seed.adminA, "manager"),
+      "x-permissions": "field_location:read",
+    };
+    const historyHeaders = {
+      ...authHeaders(seed.tenantA, seed.adminA, "manager"),
+      "x-permissions": "field_location:history",
+    };
+    const tenantBReadHeaders = {
+      ...authHeaders(seed.tenantB, seed.adminB, "manager"),
+      "x-permissions": "field_location:read",
+    };
+
+    const accepted = await requestJson(baseUrl, "/api/v1/mobile/field-locations", {
+      method: "POST",
+      headers: sendHeaders,
+      body: {
+        tenant_id: seed.tenantB.id,
+        latitude: -23.55052,
+        longitude: -46.633308,
+        accuracyMeters: 12.5,
+        headingDegrees: 80,
+        speedMetersPerSecond: 1.2,
+        batteryLevel: 87,
+        recordedAt: "2026-06-17T12:00:00.000Z",
+        metadata: {
+          work_order_id: "wo-server-b105",
+          local_path: "C:/private/photo.jpg",
+          path: "C:/private/photo.jpg",
+          base64: "must-not-leak",
+          file_data: "must-not-leak",
+          accessToken: "must-not-leak",
+        },
+      },
+    });
+    const tenantSpoof = await requestJson(baseUrl, "/api/v1/mobile/field-locations", {
+      method: "POST",
+      headers: sendHeaders,
+      body: {
+        tenantId: seed.tenantB.id,
+        latitude: -23.55053,
+        longitude: -46.633309,
+        recordedAt: "2026-06-17T12:01:00.000Z",
+      },
+    });
+    const invalidLatitude = await requestJson(baseUrl, "/api/v1/mobile/field-locations", {
+      method: "POST",
+      headers: sendHeaders,
+      body: { latitude: 91, longitude: -46.633308 },
+    });
+    const invalidLongitude = await requestJson(baseUrl, "/api/v1/mobile/field-locations", {
+      method: "POST",
+      headers: sendHeaders,
+      body: { latitude: -23.55052, longitude: -181 },
+    });
+    const invalidAccuracy = await requestJson(baseUrl, "/api/v1/mobile/field-locations", {
+      method: "POST",
+      headers: sendHeaders,
+      body: {
+        latitude: -23.55052,
+        longitude: -46.633308,
+        accuracyMeters: -1,
+      },
+    });
+    const invalidHeading = await requestJson(baseUrl, "/api/v1/mobile/field-locations", {
+      method: "POST",
+      headers: sendHeaders,
+      body: {
+        latitude: -23.55052,
+        longitude: -46.633308,
+        headingDegrees: 361,
+      },
+    });
+    const invalidBattery = await requestJson(baseUrl, "/api/v1/mobile/field-locations", {
+      method: "POST",
+      headers: sendHeaders,
+      body: {
+        latitude: -23.55052,
+        longitude: -46.633308,
+        batteryLevel: 101,
+      },
+    });
+    const invalidRecordedAt = await requestJson(baseUrl, "/api/v1/mobile/field-locations", {
+      method: "POST",
+      headers: sendHeaders,
+      body: {
+        latitude: -23.55052,
+        longitude: -46.633308,
+        recordedAt: "not-a-date",
+      },
+    });
+    const missingSendPermission = await requestJson(baseUrl, "/api/v1/mobile/field-locations", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.adminA, "viewer"),
+      body: { latitude: -23.55052, longitude: -46.633308 },
+    });
+    const latestTenantA = await requestJson(baseUrl, "/api/v1/field-locations/latest", {
+      headers: readHeaders,
+    });
+    const latestTenantB = await requestJson(baseUrl, "/api/v1/field-locations/latest", {
+      headers: tenantBReadHeaders,
+    });
+    const historyMissingOperator = await requestJson(baseUrl, "/api/v1/field-locations/history", {
+      headers: historyHeaders,
+    });
+    const historyMissingPermission = await requestJson(
+      baseUrl,
+      `/api/v1/field-locations/history?operatorUserId=${seed.adminA.id}`,
+      {
+        headers: authHeaders(seed.tenantA, seed.adminA, "viewer"),
+      },
+    );
+
+    assert.equal(accepted.status, 201);
+    assert.equal(accepted.body.data.operatorUserId, seed.adminA.id);
+    assert.equal(accepted.body.data.latitude, -23.55052);
+    assert.equal(accepted.body.data.longitude, -46.633308);
+    assert.equal(accepted.body.data.recordedAt, "2026-06-17T12:00:00.000Z");
+    assert.equal(accepted.body.data.metadata, undefined);
+    assert.equal(tenantSpoof.status, 201);
+    assert.equal(JSON.stringify(tenantSpoof.body).includes(seed.tenantB.id), false);
+    for (const term of ["accessToken", "base64", "file_data", "local_path", "\"path\"", "must-not-leak"]) {
+      assert.equal(JSON.stringify(accepted.body).includes(term), false);
+    }
+    assert.equal(invalidLatitude.status, 400);
+    assert.equal(invalidLatitude.body.error.reason, "invalid_coordinate");
+    assert.equal(invalidLongitude.status, 400);
+    assert.equal(invalidLongitude.body.error.reason, "invalid_coordinate");
+    assert.equal(invalidAccuracy.status, 400);
+    assert.equal(invalidAccuracy.body.error.reason, "invalid_number");
+    assert.equal(invalidHeading.status, 400);
+    assert.equal(invalidHeading.body.error.reason, "invalid_heading");
+    assert.equal(invalidBattery.status, 400);
+    assert.equal(invalidBattery.body.error.reason, "invalid_battery");
+    assert.equal(invalidRecordedAt.status, 400);
+    assert.equal(invalidRecordedAt.body.error.reason, "invalid_date");
+    assert.equal(missingSendPermission.status, 403);
+    assert.equal(missingSendPermission.body.error.reason, "permission_required");
+    assert.equal(latestTenantA.status, 200);
+    assert.equal(latestTenantA.body.data.length, 1);
+    assert.equal(latestTenantB.status, 200);
+    assert.deepEqual(latestTenantB.body.data, []);
+    assert.equal(historyMissingOperator.status, 400);
+    assert.equal(historyMissingOperator.body.error.reason, "operator_required");
+    assert.equal(historyMissingPermission.status, 403);
+    assert.equal(historyMissingPermission.body.error.reason, "permission_required");
+    assertNoStackTrace(accepted.body);
+    assertNoStackTrace(tenantSpoof.body);
+    assertNoStackTrace(invalidLatitude.body);
+    assertNoStackTrace(invalidLongitude.body);
+    assertNoStackTrace(invalidAccuracy.body);
+    assertNoStackTrace(invalidHeading.body);
+    assertNoStackTrace(invalidBattery.body);
+    assertNoStackTrace(invalidRecordedAt.body);
+    assertNoStackTrace(missingSendPermission.body);
+    assertNoStackTrace(latestTenantA.body);
+    assertNoStackTrace(latestTenantB.body);
+    assertNoStackTrace(historyMissingOperator.body);
+    assertNoStackTrace(historyMissingPermission.body);
   });
 });
 
@@ -1248,6 +1417,7 @@ async function withMobileContractApi(
   } = await import("../src/modules/mobile/mobile-evidence-upload.js");
   const { resetMobileInventoryRuntimeForTests } = await import("../src/modules/mobile/mobile-inventory-sync.js");
   const { resetMobileWorkOrderSyncRuntimeForTests } = await import("../src/modules/mobile/mobile-work-order-sync.js");
+  const { resetFieldLocationRuntimeForTests } = await import("../src/modules/field-location/index.js");
   const { resetWorkOrderRuntimeForTests } = await import("../src/modules/work-orders/index.js");
   const registry = new CoreSaasRegistry(new InMemoryCoreSaasStore());
   const seed = seedCoreSaas(registry);
@@ -1263,6 +1433,7 @@ async function withMobileContractApi(
   await resetMobileEvidenceUploadRuntimeForTests();
   resetMobileInventoryRuntimeForTests();
   resetMobileWorkOrderSyncRuntimeForTests();
+  resetFieldLocationRuntimeForTests();
   resetWorkOrderRuntimeForTests();
 
   try {
@@ -1270,6 +1441,7 @@ async function withMobileContractApi(
   } finally {
     await closeServer(server);
     await resetMobileEvidenceUploadRuntimeForTests();
+    resetFieldLocationRuntimeForTests();
   }
 }
 
@@ -1353,8 +1525,14 @@ function seedCoreSaas(service: CoreSaasRegistry): SeedData {
     email: "mobile-admin@example.com",
     roles: ["tenant_admin"],
   });
+  const adminB = service.createUser({
+    tenantId: tenantB.id,
+    name: "Mobile Admin B",
+    email: "mobile-admin-b@example.com",
+    roles: ["tenant_admin"],
+  });
 
-  return { tenantA, tenantB, adminA };
+  return { tenantA, tenantB, adminA, adminB };
 }
 
 function authHeaders(
