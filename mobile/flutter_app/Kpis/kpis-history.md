@@ -5,6 +5,28 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-104 — 2026-06-17
+
+**Upload real de fotos/evidencias**
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 589 / 589 |
+| Backend Tests | 15 / 15 |
+| Modulos Flutter Prontos | 16 / 16 |
+| MVP Demo Readiness (est.) | 85% |
+| MVP Vendavel (est.) | 62% |
+| Blocos Entregues | 34 |
+
+**Novidades:** `POST /api/v1/mobile/evidence-uploads`, blob local opaco,
+upload multipart JPEG/PNG ate 10 MB, checksum SHA-256 obrigatorio e metadata
+sync liberando upload binario somente apos `evidence_id` real.
+
+**Lacunas mantidas:** presigned URL, storage protegido final, persistencia
+DB/Redis, antivirus e auditoria completa de arquivo.
+
+---
+
 ## B-103 — 2026-06-16
 
 **Flutter OS Sync Bidirecional**

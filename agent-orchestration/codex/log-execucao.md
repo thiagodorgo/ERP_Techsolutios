@@ -1,5 +1,51 @@
 # Log de Execucao
 
+## 2026-06-17 - B-104 Upload real de fotos/evidencias
+
+### Natureza
+
+Backend mobile + Flutter mobile. Implementa contrato parcial de upload binario
+para evidencias sem tocar frontend web, Prisma, migrations, infra, secrets,
+`.env`, Figma, `pubspec` ou lockfiles.
+
+### Mudancas implementadas
+
+| Arquivo/area | Tipo | Descricao |
+|--------------|------|-----------|
+| `src/modules/mobile/mobile-evidence-upload.ts` | feat | Endpoint multipart `POST /api/v1/mobile/evidence-uploads` com tenant pelo ator, permissao, MIME JPEG/PNG, limite 10 MB e validacao SHA-256 |
+| `src/modules/mobile/mobile.routes.ts` | feat | Rota mobile e bootstrap/catalog marcando upload de evidencia como contrato parcial |
+| `mobile/flutter_app/lib/core/evidence/*` | feat | Blob store opaco, API multipart e servico de upload binario apos metadata sync |
+| `mobile/flutter_app/lib/core/local_db/*` | feat | Drift `schemaVersion 5` com campos de upload em `work_order_evidence` |
+| `mobile/flutter_app/lib/features/work_orders/*` | feat | `attachEvidence` salva bytes no blob local e enfileira metadados seguros sem path/binario/tenant |
+| `tests/mobile-backend-contracts.test.ts` | test | Cobertura backend de upload aceito, tenant spoofing, permissao, MIME, tamanho, checksum e resposta sem path |
+| `mobile/flutter_app/test/features/b104_evidence_real_upload_test.dart` | test | Cobertura Flutter de blob opaco, payload seguro, updater de metadata, upload synced e conflito manual |
+| `docs/*`, `mobile/flutter_app/Kpis/*` | docs | Contrato B-104, KPIs e lacunas remanescentes atualizados |
+
+### Lacunas mantidas
+
+- Presigned URL.
+- Storage protegido final.
+- Persistencia DB/Redis de arquivo/receipt.
+- Antivirus.
+- Auditoria completa e politica de retencao.
+
+### Validacoes
+
+- `npm run check` — passou.
+- `npm test` — passou, 15/15.
+- `npm run lint` — passou.
+- `npm run build` — passou.
+- `node --test --import tsx tests/mobile-backend-contracts.test.ts` — passou, 16/16.
+- `node --test --import tsx tests/mobile-backend-contracts.test.ts tests/core-saas-contract.test.ts` — passou, 19/19.
+- `dart format --output=none --set-exit-if-changed lib test` — passou.
+- `flutter analyze` — passou, sem issues.
+- `flutter test --reporter compact` — passou, 589/589.
+- `node --check mobile/flutter_app/Kpis/app.js` — passou.
+- `git diff --check` — passou.
+- `rg "\?tenantId|\?note" mobile/flutter_app/lib mobile/flutter_app/test` — sem matches.
+
+---
+
 ## 2026-06-16 - B-103 Flutter OS Sync Bidirecional
 
 ### Natureza
