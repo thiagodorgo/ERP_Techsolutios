@@ -129,6 +129,12 @@ class EvidenceApiEndpoints {
   static const upload = '/api/v1/mobile/evidence-uploads';
 }
 
+class FieldLocationApiEndpoints {
+  const FieldLocationApiEndpoints._();
+
+  static const mobileFieldLocations = '/api/v1/mobile/field-locations';
+}
+
 class EvidenceSyncActionTypes {
   const EvidenceSyncActionTypes._();
 

@@ -72,6 +72,11 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
       }
       final tenantId = session.activeTenant.tenantId;
 
+      try {
+        await ref.read(fieldLocationSyncServiceProvider).syncTenant(tenantId);
+      } catch (_) {
+        // Field Location falha isolada nao deve bloquear os demais dominios.
+      }
       // Work order status sync
       await ref.read(workOrderSyncReplayServiceProvider).replayTenant(tenantId);
       // Checklist sync

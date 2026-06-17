@@ -7,6 +7,10 @@ import '../evidence/evidence_upload.dart';
 import '../local_db/database_provider.dart';
 import '../local_db/drift_work_order_local_store.dart';
 import '../local_db/drift_sync_action_store.dart';
+import '../location/device_location_provider.dart';
+import '../location/field_location_api.dart';
+import '../location/field_location_service.dart';
+import '../location/field_location_store.dart';
 import '../network/api_contracts.dart';
 import '../network/http_client.dart';
 import '../../features/work_orders/data/work_order_local_store.dart';
@@ -41,6 +45,51 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
 });
 
 final apiConfigProvider = Provider<ApiConfig>((ref) => const ApiConfig());
+
+final _fieldLocationFallbackStore = InMemoryFieldLocationStore();
+
+final fieldLocationStoreProvider = Provider<FieldLocationStore>((ref) {
+  try {
+    return DriftFieldLocationStore(ref.watch(appDatabaseProvider));
+  } catch (_) {
+    return _fieldLocationFallbackStore;
+  }
+});
+
+final deviceLocationProvider = Provider<DeviceLocationProvider>(
+  (ref) => const PendingDeviceLocationProvider(),
+);
+
+final fieldLocationApiProvider = Provider<FieldLocationApi>((ref) {
+  final config = ref.watch(authenticatedApiConfigProvider);
+  if (config.accessToken == null) {
+    return const PendingFieldLocationApi();
+  }
+
+  return DioFieldLocationApi(
+    createAuthenticatedHttpClient(
+      config,
+      onRefresh: () async {
+        await ref.read(authStateProvider.notifier).tryRefresh();
+        return ref
+            .read(authStateProvider)
+            .maybeWhen(
+              data: (state) => state.session?.tokens.accessToken,
+              orElse: () => null,
+            );
+      },
+      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
+    ),
+  );
+});
+
+final fieldLocationSyncServiceProvider = Provider<FieldLocationSyncService>(
+  (ref) => FieldLocationSyncService(
+    store: ref.watch(fieldLocationStoreProvider),
+    api: ref.watch(fieldLocationApiProvider),
+    deviceLocationProvider: ref.watch(deviceLocationProvider),
+  ),
+);
 
 final syncBatchApiProvider = Provider<ExpenseSyncBatchApi>((ref) {
   final config = ref.watch(apiConfigProvider);
