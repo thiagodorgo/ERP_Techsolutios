@@ -1,3 +1,4 @@
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -6,6 +7,7 @@ import '../../../core/auth/auth_notifier.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
 import '../../../core/config/app_config.dart';
+import '../../../core/evidence/evidence_blob_store.dart';
 import '../../../core/local_db/drift_work_order_local_store.dart';
 import '../../../core/local_db/database_provider.dart';
 import '../../../core/network/api_contracts.dart';
@@ -38,11 +40,13 @@ class WorkOrderRepository extends ChangeNotifier {
     required WorkOrderLocalStore localStore,
     List<WorkOrder> seedWorkOrders = const [],
     WorkOrderRemoteApi? remoteApi,
+    EvidenceBlobStore? evidenceBlobStore,
   }) : _session = session,
        _syncQueue = syncQueue,
        _actionFactory = actionFactory,
        _localStore = localStore,
        _remoteApi = remoteApi,
+       _evidenceBlobStore = evidenceBlobStore,
        _orders = seedWorkOrders;
 
   final BootstrapSession _session;
@@ -50,6 +54,7 @@ class WorkOrderRepository extends ChangeNotifier {
   final SyncActionFactory _actionFactory;
   final WorkOrderLocalStore _localStore;
   final WorkOrderRemoteApi? _remoteApi;
+  final EvidenceBlobStore? _evidenceBlobStore;
   final Uuid _uuid = const Uuid();
 
   List<WorkOrder> _orders;
@@ -402,17 +407,40 @@ class WorkOrderRepository extends ChangeNotifier {
     required int sizeBytes,
     required String captureSource,
     String? checksum,
+    Uint8List? bytes,
   }) async {
     final wo = findById(workOrderLocalId);
     if (wo == null) throw StateError('WorkOrder $workOrderLocalId not found');
     if (wo.tenantId != _session.activeTenant.tenantId) {
       throw StateError('Tenant mismatch');
     }
+    if (sizeBytes <= 0 || sizeBytes > 10 * 1024 * 1024) {
+      throw ArgumentError.value(
+        sizeBytes,
+        'sizeBytes',
+        'Invalid evidence size',
+      );
+    }
+    if (bytes != null && bytes.length != sizeBytes) {
+      throw ArgumentError.value(
+        bytes.length,
+        'bytes',
+        'Evidence size mismatch',
+      );
+    }
 
     final now = DateTime.now().toUtc();
-    final normalizedChecksum = checksum?.trim();
+    final trimmedChecksum = checksum?.trim();
+    final normalizedChecksum =
+        trimmedChecksum != null && trimmedChecksum.isNotEmpty
+        ? trimmedChecksum
+        : (bytes == null ? null : sha256.convert(bytes).toString());
+    final localBlobRef = bytes == null || _evidenceBlobStore == null
+        ? null
+        : await _evidenceBlobStore.save(bytes, contentType: mimeType);
+    final evidenceLocalId = 'woevid-local-${_uuid.v4()}';
     final evidence = WorkOrderEvidence(
-      localId: 'woevid-local-${_uuid.v4()}',
+      localId: evidenceLocalId,
       workOrderLocalId: workOrderLocalId,
       tenantId: _session.activeTenant.tenantId,
       fileName: fileName,
@@ -423,6 +451,8 @@ class WorkOrderRepository extends ChangeNotifier {
           ? normalizedChecksum
           : null,
       syncStatus: SyncStatus.pending,
+      uploadStatus: SyncStatus.pending,
+      localBlobRef: localBlobRef,
       createdAt: now,
     );
 
@@ -431,8 +461,11 @@ class WorkOrderRepository extends ChangeNotifier {
     final action = _actionFactory.create(
       tenantId: _session.activeTenant.tenantId,
       type: EvidenceSyncActionTypes.workOrderPhoto,
+      clientActionId: evidenceLocalId,
       payload: {
-        'work_order_id': wo.serverId ?? workOrderLocalId,
+        'local_evidence_id': evidenceLocalId,
+        if (wo.serverId != null && wo.serverId!.trim().isNotEmpty)
+          'work_order_id': wo.serverId!.trim(),
         'kind': 'photo',
         'file_name': fileName,
         'content_type': mimeType,
@@ -476,6 +509,7 @@ final workOrderRepositoryProvider = Provider<WorkOrderRepository>((ref) {
     actionFactory: ref.watch(syncActionFactoryProvider),
     localStore: ref.watch(workOrderLocalStoreProvider),
     remoteApi: ref.watch(workOrderRemoteApiProvider),
+    evidenceBlobStore: ref.watch(evidenceBlobStoreProvider),
   );
 });
 

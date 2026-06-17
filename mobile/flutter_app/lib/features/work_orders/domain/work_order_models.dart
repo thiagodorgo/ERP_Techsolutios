@@ -369,9 +369,15 @@ class WorkOrderEvidence {
     required this.syncStatus,
     required this.createdAt,
     this.checksum,
+    this.serverId,
+    this.uploadStatus = SyncStatus.pending,
+    this.uploadedAt,
+    this.uploadErrorCode,
+    this.localBlobRef,
   });
 
   final String localId;
+  final String? serverId;
   final String workOrderLocalId;
   final String tenantId;
   final String fileName;
@@ -380,5 +386,54 @@ class WorkOrderEvidence {
   final String captureSource; // 'camera' | 'gallery'
   final String? checksum;
   final SyncStatus syncStatus;
+  final SyncStatus uploadStatus;
   final DateTime createdAt;
+  final DateTime? uploadedAt;
+  final String? uploadErrorCode;
+  final String? localBlobRef;
+
+  WorkOrderEvidence copyWith({
+    String? localId,
+    String? serverId,
+    String? workOrderLocalId,
+    String? tenantId,
+    String? fileName,
+    String? mimeType,
+    int? sizeBytes,
+    String? captureSource,
+    String? checksum,
+    SyncStatus? syncStatus,
+    SyncStatus? uploadStatus,
+    DateTime? createdAt,
+    DateTime? uploadedAt,
+    String? uploadErrorCode,
+    String? localBlobRef,
+    bool clearServerId = false,
+    bool clearChecksum = false,
+    bool clearUploadedAt = false,
+    bool clearUploadErrorCode = false,
+    bool clearLocalBlobRef = false,
+  }) {
+    return WorkOrderEvidence(
+      localId: localId ?? this.localId,
+      serverId: clearServerId ? null : (serverId ?? this.serverId),
+      workOrderLocalId: workOrderLocalId ?? this.workOrderLocalId,
+      tenantId: tenantId ?? this.tenantId,
+      fileName: fileName ?? this.fileName,
+      mimeType: mimeType ?? this.mimeType,
+      sizeBytes: sizeBytes ?? this.sizeBytes,
+      captureSource: captureSource ?? this.captureSource,
+      checksum: clearChecksum ? null : (checksum ?? this.checksum),
+      syncStatus: syncStatus ?? this.syncStatus,
+      uploadStatus: uploadStatus ?? this.uploadStatus,
+      createdAt: createdAt ?? this.createdAt,
+      uploadedAt: clearUploadedAt ? null : (uploadedAt ?? this.uploadedAt),
+      uploadErrorCode: clearUploadErrorCode
+          ? null
+          : (uploadErrorCode ?? this.uploadErrorCode),
+      localBlobRef: clearLocalBlobRef
+          ? null
+          : (localBlobRef ?? this.localBlobRef),
+    );
+  }
 }

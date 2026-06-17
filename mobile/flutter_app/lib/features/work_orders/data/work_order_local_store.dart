@@ -8,6 +8,8 @@ abstract class WorkOrderLocalStore {
   Future<void> saveTimelineEvent(WorkOrderTimelineEvent event);
   Future<void> saveEvidence(WorkOrderEvidence evidence);
   Future<List<WorkOrderEvidence>> loadEvidence(String workOrderLocalId);
+  Future<List<WorkOrderEvidence>> loadAllEvidence();
+  Future<WorkOrderEvidence?> findEvidence(String localId);
   Future<void> clearAll();
 }
 
@@ -64,6 +66,17 @@ class InMemoryWorkOrderLocalStore implements WorkOrderLocalStore {
         .where((e) => e.workOrderLocalId == workOrderLocalId)
         .toList()
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  }
+
+  @override
+  Future<List<WorkOrderEvidence>> loadAllEvidence() async {
+    return _evidence.values.toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  }
+
+  @override
+  Future<WorkOrderEvidence?> findEvidence(String localId) async {
+    return _evidence[localId];
   }
 
   @override

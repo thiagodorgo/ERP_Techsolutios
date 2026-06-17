@@ -126,6 +126,7 @@ class EvidenceApiEndpoints {
   const EvidenceApiEndpoints._();
 
   static const sync = '/api/v1/mobile/sync/evidence-actions';
+  static const upload = '/api/v1/mobile/evidence-uploads';
 }
 
 class EvidenceSyncActionTypes {

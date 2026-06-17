@@ -131,6 +131,7 @@ class _WorkOrderExecuteScreenState
         sizeBytes: result.sizeBytes,
         captureSource: result.captureSource.name,
         checksum: result.sha256,
+        bytes: result.bytes,
       );
       setState(() => _dataFuture = null);
     } catch (e) {

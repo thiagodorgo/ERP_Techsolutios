@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -45,6 +45,23 @@ class AppDatabase extends GeneratedDatabase {
       }
       if (from < 4) {
         await m.database.customStatement(_kWorkOrderEvidence);
+      }
+      if (from < 5) {
+        await m.database.customStatement(
+          'ALTER TABLE work_order_evidence ADD COLUMN server_id TEXT',
+        );
+        await m.database.customStatement(
+          "ALTER TABLE work_order_evidence ADD COLUMN upload_status TEXT NOT NULL DEFAULT 'pending'",
+        );
+        await m.database.customStatement(
+          'ALTER TABLE work_order_evidence ADD COLUMN uploaded_at INTEGER',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE work_order_evidence ADD COLUMN upload_error_code TEXT',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE work_order_evidence ADD COLUMN local_blob_ref TEXT',
+        );
       }
     },
   );
@@ -160,6 +177,7 @@ CREATE TABLE IF NOT EXISTS work_order_timeline (
 const _kWorkOrderEvidence = '''
 CREATE TABLE IF NOT EXISTS work_order_evidence (
   local_id TEXT NOT NULL PRIMARY KEY,
+  server_id TEXT,
   work_order_local_id TEXT NOT NULL,
   tenant_id TEXT NOT NULL,
   file_name TEXT NOT NULL,
@@ -168,7 +186,11 @@ CREATE TABLE IF NOT EXISTS work_order_evidence (
   capture_source TEXT NOT NULL,
   checksum TEXT,
   sync_status TEXT NOT NULL,
-  created_at INTEGER NOT NULL
+  upload_status TEXT NOT NULL DEFAULT 'pending',
+  created_at INTEGER NOT NULL,
+  uploaded_at INTEGER,
+  upload_error_code TEXT,
+  local_blob_ref TEXT
 )''';
 
 const _kChecklistTemplates = '''

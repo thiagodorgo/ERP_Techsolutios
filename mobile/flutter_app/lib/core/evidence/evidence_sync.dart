@@ -188,6 +188,7 @@ class EvidenceSyncCodec {
     }
 
     _copyOptionalString(source, result, 'caption');
+    _copyOptionalString(source, result, 'local_evidence_id');
     final gps = _controlledGps(source['gps']);
     if (gps != null) result['gps'] = gps;
     return Map.unmodifiable(result);
@@ -264,16 +265,26 @@ class DioEvidenceSyncBatchApi implements EvidenceSyncBatchApi {
   }
 }
 
+typedef EvidenceSyncEntityUpdater =
+    Future<void> Function(
+      SyncAction action,
+      EvidenceSyncItemResult? result,
+      SyncStatus status,
+    );
+
 class EvidenceSyncReplayService {
   const EvidenceSyncReplayService({
     required SyncQueueRepository queue,
     required EvidenceSyncBatchApi api,
     this.maxRetry = 5,
+    EvidenceSyncEntityUpdater? entityUpdater,
   }) : _queue = queue,
-       _api = api;
+       _api = api,
+       _entityUpdater = entityUpdater;
 
   final SyncQueueRepository _queue;
   final EvidenceSyncBatchApi _api;
+  final EvidenceSyncEntityUpdater? _entityUpdater;
   final int maxRetry;
 
   Future<SyncReplayResult> replayTenant(String tenantId) async {
@@ -281,6 +292,7 @@ class EvidenceSyncReplayService {
         .where(
           (action) => EvidenceSyncActionTypes.supported.contains(action.type),
         )
+        .where(b104EvidenceActionReadyForBackend)
         .where((action) => action.status != SyncStatus.conflict)
         .where((action) => action.retryCount < maxRetry)
         .toList(growable: false);
@@ -362,6 +374,7 @@ class EvidenceSyncReplayService {
       }
 
       await _queue.update(next);
+      await _entityUpdater?.call(action, result, next.status);
       switch (next.status) {
         case SyncStatus.synced:
           synced.add(next);
@@ -378,6 +391,13 @@ class EvidenceSyncReplayService {
       conflicts: conflicts,
     );
   }
+}
+
+bool b104EvidenceActionReadyForBackend(SyncAction action) {
+  if (!action.type.startsWith('evidence.work_order_')) return true;
+  final workOrderId = action.payload['work_order_id'];
+  if (workOrderId is! String || workOrderId.trim().isEmpty) return false;
+  return !workOrderId.startsWith('wo-local-');
 }
 
 Map<String, dynamic> _asMap(Object? value) {
