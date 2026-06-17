@@ -2,9 +2,9 @@
 
 ## Decisao desta rodada
 
-Esta branch integra a UI inicial do Mapa Operacional em `/operations/map` com `work_orders` e `field_dispatch` sobre a fundacao backend de localizacao de operadores em campo. O app mobile futuro podera enviar coordenadas ao backend; o frontend web consulta ultimas posicoes e, quando o usuario possui as permissoes correspondentes, correlaciona operadores com OS atribuidas, despachos operacionais e acoes diretas de despacho.
+Esta branch integra a UI inicial do Mapa Operacional em `/operations/map` com `work_orders` e `field_dispatch` sobre a fundacao backend de localizacao de operadores em campo. No B-105, o app Flutter passou a ter uma fundacao de GPS/mapa operacional conectada a OS para enviar eventos manuais ao backend; o frontend web consulta ultimas posicoes e, quando o usuario possui as permissoes correspondentes, correlaciona operadores com OS atribuidas, despachos operacionais e acoes diretas de despacho.
 
-Fora de escopo mantido para o mapa: Google Maps real no frontend, app Flutter, roteirizacao avancada, despacho completo, novos endpoints backend, migrations e WebSocket/tempo real.
+Fora de escopo mantido para o mapa mobile B-105: adapter GPS nativo real, permissoes Android/iOS, provider externo de mapa, roteirizacao avancada, despacho completo, novos endpoints backend, migrations, WebSocket/tempo real, background tracking, stream continuo, timer de coleta e envio silencioso.
 
 Itens registrados:
 
@@ -24,7 +24,7 @@ Componentes da tela:
 - cabecalho com fonte de dados e acao de refresh;
 - KPIs de operadores localizados, disponiveis, em deslocamento, em atendimento, localizacoes antigas e offline/bloqueados;
 - filtros por busca, status, equipe e localizacao antiga;
-- mapa operacional em projecao proporcional por latitude/longitude, sem Google Maps real nesta etapa;
+- mapa operacional em projecao proporcional por latitude/longitude, sem provider externo de mapa nesta etapa;
 - marcadores selecionaveis, lista de operadores e painel de detalhe com coordenadas, precisao, bateria e timestamps;
 - codigo/status da OS atual/atribuida no marcador, lista e painel de detalhe quando houver permissao `work_orders:read`;
 - status do despacho no marcador, lista e painel de detalhe quando houver permissao `field_dispatch:read`;
@@ -40,6 +40,19 @@ Fallback:
 - falha da API ou resposta vazia ativa fallback seguro com dados mockados;
 - registros com `capturedAt` acima de 15 minutos sao marcados como localizacao antiga;
 - coordenadas nao sao registradas em `console.log` pelo frontend.
+
+## App Flutter B-105
+
+Implementado como contrato parcial:
+
+- `DeviceLocationProvider` abstrato/testavel, com runtime padrao de indisponibilidade segura quando nao ha adapter GPS nativo real;
+- `field_location_events` no Drift para eventos manuais de localizacao operacional;
+- `DioFieldLocationApi` enviando `POST /api/v1/mobile/field-locations`;
+- `AutoSyncCoordinator` executando Field Location antes de Work Orders, Checklist, Evidence e RDV;
+- card de localizacao operacional em detalhe/execucao da OS;
+- `/field-map?workOrderId=...` como mapa operacional simples conectado a OS, sem Google Maps, Mapbox ou SDK externo.
+
+O payload mobile B-105 nao envia `tenant_id`, `tenantId`, token, `Authorization`, `base64`, `file_data`, `local_path` ou `path`. Coordenadas sao capturadas apenas por acao explicita do usuario e nao ha background tracking, stream continuo, timer de coleta ou envio silencioso.
 
 ## Persistencia
 
@@ -137,7 +150,7 @@ Matriz aplicada:
 
 - filtro do mapa por OS especifica quando a rota receber contexto de origem;
 - definir retencao e auditoria de coordenadas;
-- avaliar provider de mapas e integracao Google Maps real com `VITE_GOOGLE_MAPS_API_KEY`;
+- avaliar provider externo de mapa, se aprovado;
 - evoluir UX de acoes em lote ou despacho avancado, se aprovado;
 - evoluir rotas e eventos de campo para roteirizacao assistida;
-- garantir opt-in, privacidade e controles por tenant antes de qualquer coleta real.
+- implementar adapter GPS nativo real e garantir opt-in, privacidade e controles por tenant antes de qualquer coleta automatica.

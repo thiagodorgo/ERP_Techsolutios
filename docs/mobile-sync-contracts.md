@@ -365,6 +365,22 @@ Regras obrigatorias:
 - resposta nunca retorna caminho fisico, `local_path`, `path`, storage key local ou conteudo binario.
 - lacunas B-104: presigned URL, storage protegido, persistencia DB/Redis, antivirus, auditoria completa e retencao definitiva.
 
+### POST /api/v1/mobile/field-locations
+
+- Permissao: `field_location:send`.
+- Status B-105: parcial; fundacao de GPS/mapa operacional da OS com provider abstrato no Flutter, fila local e sync manual.
+- Request: evento unico, nao batch replay. Campos aceitos: `latitude`, `longitude`, `accuracyMeters`, `headingDegrees`, `speedMetersPerSecond`, `batteryLevel`, `recordedAt` e `metadata` controlada.
+- Response: envelope `{ data }` do contrato backend de Field Location.
+- Offline: Flutter armazena eventos em `field_location_events` e tenta reenviar antes de Work Orders, Checklists, Evidence e RDV.
+
+Regras obrigatorias B-105:
+
+- tenant resolvido pelo ator autenticado; app nao envia `tenant_id` ou `tenantId`.
+- `work_order_id` so entra em `metadata` quando existe ID de servidor; `work_order_local_id` pode seguir como correlacao local.
+- payload real nao inclui token, `Authorization`, `Bearer`, `accessToken`, `refreshToken`, `base64`, `file_data`, `local_path` ou `path`.
+- runtime padrao exibe indisponibilidade segura quando nao ha adapter GPS nativo real.
+- lacunas B-105: adapter GPS nativo real, permissoes Android/iOS, opt-in de privacidade, provider externo de mapa se aprovado, background tracking, stream continuo, timer de coleta, envio silencioso, roteirizacao e geofencing.
+
 ### GET /api/v1/expense-policies
 
 - Permissao: `expense_report:read` ou `expense_policy:manage`.

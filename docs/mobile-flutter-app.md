@@ -19,7 +19,7 @@ O primeiro caminho versionado nesta fase e `mobile/flutter_app`, porque nao havi
 - OCR Engine: extracao local planejada de dados de recibos.
 - PDF Engine: previa local com marca d'agua quando nao sincronizado.
 - Expense Module: Prestação de Contas, itens, totais, politica, submissao e status.
-- Field Ops Module: OS, checklists, GPS e evidencias em fases futuras.
+- Field Ops Module: OS, checklists, fundacao de GPS/mapa operacional e evidencias.
 - Diagnostics: fila, ultimo sync, versao, tenant e logs sanitizados.
 
 ## Bootstrap esperado
@@ -76,6 +76,15 @@ No B-098E, `POST /api/v1/mobile/sync/evidence-actions` passou a existir como con
 - o app deve enviar `client_evidence_id` e metadados seguros, nunca base64, path local ou token;
 - o backend separa `accepted`, `rejected`, `conflicts` e `already_applied` e ignora tenant externo.
 
+No B-105, o Flutter passou a consumir a fundacao backend de Field Location:
+
+- `DeviceLocationProvider` e abstrato/testavel; o runtime padrao exibe indisponibilidade segura quando nao ha adapter GPS nativo real;
+- `field_location_events` foi adicionado ao Drift como fila local de eventos manuais de localizacao operacional;
+- `DioFieldLocationApi` envia `POST /api/v1/mobile/field-locations` com cliente HTTP autenticado e payload controlado;
+- o payload real nao envia `tenant_id`, `tenantId`, token, `Authorization`, `base64`, `file_data`, `local_path` ou `path`;
+- `AutoSyncCoordinator` sincroniza Field Location antes de Work Orders, Checklists, Evidence e RDV;
+- `/field-map` renderiza um mapa operacional simples conectado a OS, sem Google Maps, Mapbox ou SDK externo de mapa.
+
 Ainda nao ha tenants disponiveis, persistencia duravel de idempotencia mobile, reserva transacional multi-instancia, associacao real de inventario com OS/armazem nem upload/storage protegido para evidencia. Esses itens ficam para fases seguintes.
 
 ## Estrutura inicial
@@ -90,6 +99,7 @@ mobile/flutter_app/lib/
     auth/
     bootstrap/
     diagnostics/
+    location/
     modules/
     network/
     permissions/

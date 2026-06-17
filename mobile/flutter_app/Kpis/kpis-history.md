@@ -5,6 +5,37 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-105 — 2026-06-17
+
+**Fundacao de GPS/mapa operacional da OS**
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 613 / 613 |
+| Backend Tests | 15 / 15 |
+| Backend Contract Tests focados | 47 / 47 |
+| flutter analyze | 0 issues |
+| Modulos Flutter Prontos | 17 / 17 |
+| MVP Demo Readiness (est.) | 87% |
+| MVP Vendavel (est.) | 64% |
+| Blocos Entregues | 35 |
+
+**Novidades:** `DeviceLocationProvider` abstrato/testavel, runtime seguro com
+indisponibilidade quando nao ha adapter nativo, store Drift `field_location_events`,
+sync manual para `POST /api/v1/mobile/field-locations`, card de localizacao na OS
+e `/field-map` como mapa operacional simples conectado a Ordem de Servico.
+
+**Validações:** o sweep completo Flutter passou com 613/613 testes. O primeiro
+sweep completo encontrou 9 falhas em telas antigas de OS por dependencia de DB
+em testes isolados; a correcao foi limitar o provider de Field Location a fallback
+em memoria quando a database nao esta disponivel no container de teste.
+
+**Lacunas mantidas:** adapter GPS nativo real, permissoes Android/iOS, opt-in de
+privacidade, provider externo de mapa se aprovado, background tracking, stream
+continuo, timer de coleta, envio silencioso, roteirizacao e geofencing.
+
+---
+
 ## B-104 — 2026-06-17
 
 **Upload real de fotos/evidencias**

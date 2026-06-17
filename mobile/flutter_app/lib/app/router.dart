@@ -25,6 +25,7 @@ import '../features/work_orders/ui/work_order_approval_request_screen.dart';
 import '../features/work_orders/ui/work_order_detail_screen.dart';
 import '../features/work_orders/ui/work_order_execute_screen.dart';
 import '../features/work_orders/ui/work_order_list_screen.dart';
+import '../features/work_orders/ui/work_order_operational_map_screen.dart';
 import '../shared/ui/module_placeholder_screen.dart';
 import '../shared/ui/profile_screen.dart';
 import '../shared/ui/home_screen.dart';
@@ -175,11 +176,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/field-map',
-        builder: (context, state) => const ModulePlaceholderScreen(
-          title: 'Mapa e localizacao',
-          requiredPermission: 'field_location:send',
-          message:
-              'Mapa real, GPS e roteirizacao permanecem fora desta rodada. A rota ja respeita permissao de localizacao.',
+        builder: (context, state) => WorkOrderOperationalMapScreen(
+          workOrderId: state.uri.queryParameters['workOrderId'],
         ),
       ),
       GoRoute(
@@ -319,11 +317,8 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/field-map',
-      builder: (context, state) => const ModulePlaceholderScreen(
-        title: 'Mapa e localizacao',
-        requiredPermission: 'field_location:send',
-        message:
-            'Mapa real, GPS e roteirizacao permanecem fora desta rodada. A rota ja respeita permissao de localizacao.',
+      builder: (context, state) => WorkOrderOperationalMapScreen(
+        workOrderId: state.uri.queryParameters['workOrderId'],
       ),
     ),
     GoRoute(

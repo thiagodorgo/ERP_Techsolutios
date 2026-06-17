@@ -12,6 +12,7 @@ import '../../checklists/data/checklist_repository.dart';
 import '../../checklists/domain/checklist_models.dart';
 import '../data/work_order_repository.dart';
 import '../domain/work_order_models.dart';
+import 'work_order_operational_map_screen.dart';
 
 class WorkOrderDetailScreen extends ConsumerWidget {
   const WorkOrderDetailScreen({required this.workOrderId, super.key});
@@ -86,6 +87,8 @@ class WorkOrderDetailScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               if (wo.checklistId != null) _ChecklistCard(wo: wo),
               const SizedBox(height: 8),
+              OperationalLocationCard(session: session, workOrder: wo),
+              const SizedBox(height: 8),
               _TimelineCard(workOrderId: workOrderId, repo: repo),
               const SizedBox(height: 16),
               _ActionButtons(
@@ -96,6 +99,8 @@ class WorkOrderDetailScreen extends ConsumerWidget {
                     context.go('/work-orders/$workOrderId/execute'),
                 onApproval: () =>
                     context.go('/work-orders/$workOrderId/approval-request'),
+                onMap: () =>
+                    context.push('/field-map?workOrderId=${wo.localId}'),
               ),
             ],
           ),
@@ -441,6 +446,7 @@ class _ActionButtons extends StatelessWidget {
     required this.canApproval,
     required this.onExecute,
     required this.onApproval,
+    required this.onMap,
   });
 
   final WorkOrder wo;
@@ -448,6 +454,7 @@ class _ActionButtons extends StatelessWidget {
   final bool canApproval;
   final VoidCallback onExecute;
   final VoidCallback onApproval;
+  final VoidCallback onMap;
 
   @override
   Widget build(BuildContext context) {
@@ -491,7 +498,15 @@ class _ActionButtons extends StatelessWidget {
           label: 'Evidencias',
         ),
         const SizedBox(height: 4),
-        _PreparedActionButton(icon: Icons.map_outlined, label: 'Mapa'),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            key: const Key('work-order-map-action'),
+            onPressed: onMap,
+            icon: const Icon(Icons.map_outlined),
+            label: const Text('Mapa'),
+          ),
+        ),
       ],
     );
   }

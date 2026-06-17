@@ -1,5 +1,54 @@
 # Log de Execucao
 
+## 2026-06-17 - B-105 Fundacao de GPS/mapa operacional da OS
+
+### Natureza
+
+Flutter mobile + teste backend de contrato existente. Implementa fundacao de
+GPS/mapa operacional da OS sem adicionar pacote GPS nativo, sem alterar
+`pubspec.yaml`/`pubspec.lock`, sem tocar frontend web, Prisma, migrations,
+infra, secrets, `.env` ou Figma.
+
+### Mudancas implementadas
+
+| Arquivo/area | Tipo | Descricao |
+|--------------|------|-----------|
+| `mobile/flutter_app/lib/core/location/*` | feat | `DeviceLocationProvider` abstrato, modelos, API, store, sync service e projecao do mapa operacional |
+| `mobile/flutter_app/lib/core/local_db/app_database.dart` | feat | Drift `schemaVersion 6` com store `field_location_events` |
+| `mobile/flutter_app/lib/core/sync/*` | feat | Providers de Field Location e `AutoSyncCoordinator` executando Field Location antes dos demais dominios |
+| `mobile/flutter_app/lib/features/work_orders/ui/*` | feat | Card de localizacao operacional em detalhe/execucao da OS e `/field-map` como mapa operacional simples conectado a OS |
+| `mobile/flutter_app/test/features/b105_gps_operational_map_test.dart` | test | 22 testes de provider fake, payload seguro, store, sync, mapa, UI e ordem do autosync |
+| `tests/mobile-backend-contracts.test.ts` | test | Cobertura backend de `POST /api/v1/mobile/field-locations`, tenant isolation, permissoes, payload e history |
+| `docs/*`, `mobile/flutter_app/Kpis/*` | docs | Contrato B-105, KPIs e lacunas remanescentes atualizados |
+
+### Lacunas mantidas
+
+- Adapter GPS nativo real.
+- Permissoes Android/iOS e opt-in de privacidade.
+- Provider externo de mapa, se aprovado.
+- Background tracking, stream continuo, timer de coleta e envio silencioso.
+- Roteirizacao e geofencing.
+
+### Validacoes
+
+- `flutter analyze` — passou.
+- `flutter test --reporter compact` — passou, 613/613.
+- `flutter test test/features/b105_gps_operational_map_test.dart --reporter compact` — passou, 22/22.
+- `node --test --import tsx tests/mobile-backend-contracts.test.ts` — passou, 17/17.
+- `node --test --import tsx tests/mobile-backend-contracts.test.ts tests/core-saas-contract.test.ts` — passou, 20/20.
+- `npm run check` — passou.
+- `npm run lint` — passou.
+- `npm test` — passou, 15/15.
+- `npm run build` — passou.
+- `npm --prefix frontend run check` — passou.
+- `npm --prefix frontend run test:smoke` — passou, 28/28.
+- `npm --prefix frontend run build` — passou.
+- `DATABASE_URL=dummy npx prisma validate` — passou.
+- `node --check mobile/flutter_app/Kpis/app.js` — passou.
+- `git diff --check` — passou.
+
+---
+
 ## 2026-06-17 - B-104 Upload real de fotos/evidencias
 
 ### Natureza

@@ -1,7 +1,7 @@
 # Flutter Mobile MVP — Gap Analysis
 
-**Referência de branch:** `feature/mobile-evidence-real-upload`
-**Data:** 2026-06-17 (atualizado em B-104)
+**Referência de branch:** `feature/mobile-gps-operational-map`
+**Data:** 2026-06-17 (atualizado em B-105)
 **Responsável:** ERP Techsolutions — Mobile Squad
 **KPI Dashboard:** `mobile/flutter_app/Kpis/` — abrir `index.html` por duplo clique (fallback embutido; servidor local opcional)
 
@@ -11,16 +11,19 @@
 
 O app Flutter (`mobile/flutter_app`) está em fase de **protótipo avançado estabilizado**. Possui
 arquitetura local-first funcional, persistência SQLite via Drift, autenticação local em modo dev e
-cobertura estimada de testes de 589 casos no sweep B-104. Pull real de Work Orders (B-099),
+cobertura de testes de 613 casos no sweep B-105. Pull real de Work Orders (B-099),
 sync write parcial de status de OS (B-103), pull de templates de checklist (B-100/B-101) e sync
 write parcial de respostas de checklist (B-102) já estão conectados ao backend, com fallback
 resiliente. B-103 sincroniza apenas `statusUpdate` de OS reconhecida pelo backend via `server_id`
 ou `work_order_id` real; `accepted`/`already_applied` limpam o `pending` da WorkOrder local,
 e OS local-only permanece na fila. B-104 adiciona upload multipart parcial de evidências
 JPEG/PNG com blob local opaco e checksum SHA-256 após o metadata sync devolver `evidence_id`.
-Ainda falta storage protegido/presigned URL, persistência durável de arquivo,
-criação remota de OS/local-only mapping, aprovação real, GPS/mapa e resolução manual completa de
-conflitos. Não está pronto para operação de campo com dados reais.
+B-105 adiciona fundacao de GPS/mapa operacional da OS com provider abstrato de
+localizacao, store `field_location_events`, sync para `POST /api/v1/mobile/field-locations`
+e mapa operacional simples em `/field-map`. Ainda falta storage protegido/presigned URL,
+persistência durável de arquivo, criação remota de OS/local-only mapping, aprovação real,
+adapter GPS nativo real e resolução manual completa de conflitos. Não está pronto para
+operação de campo com dados reais.
 
 ### Inventário funcional por módulo
 
@@ -34,7 +37,7 @@ conflitos. Não está pronto para operação de campo com dados reais.
 | Profile | Funcional | **existente** |
 | Connectivity | Funcional | **existente** |
 | Sync Engine (fila local) | Funcional (parcial real) | **existente** — replay real parcial para OS status, checklist answers e evidence metadata |
-| Auto Sync Coordinator | Funcional (parcial real) | **B-104** — dispara Work Orders, checklists, evidências metadata, upload binário de evidências e RDV sem misturar domínios |
+| Auto Sync Coordinator | Funcional (parcial real) | **B-105** — dispara Field Location antes de Work Orders, checklists, evidências metadata, upload binário de evidências e RDV sem misturar domínios |
 | RDV / Despesas | Funcional (local-first) | **existente** — criação, itens, totais, envio local; submit stub seguro |
 | Recibos / Evidências RDV | Metadado apenas | **parcial** — upload real ausente |
 | Ordens de Serviço (OS) — lista | Funcional (pull real) | **B-099** — `GET /api/v1/work-orders`; upsert Drift; fallback cache; banners UI |
@@ -50,7 +53,7 @@ conflitos. Não está pronto para operação de campo com dados reais.
 | Diagnostics | Dev-only | **existente** — protegida por `kIsDevMode` em produção |
 | Aprovações | Placeholder | **futuro** |
 | Inventário | Funcional (local-first) | **existente** — entrada/saída local; sem sync real |
-| Mapa / GPS | Placeholder | **futuro** |
+| Mapa / GPS | Parcial | **B-105** — mapa operacional simples conectado a OS, provider abstrato de localizacao e sync Field Location; adapter GPS nativo real pendente |
 | Notificações push | Ausente | **futuro** |
 
 ---
@@ -68,7 +71,7 @@ O app não pode ser usado em campo real pelos seguintes motivos objetivos:
 | Sync de inventário e lacunas avançadas de OS não chegam ao servidor | Inventário, criação remota de OS, aprovação e evidência real ainda não fecham ciclo de campo | Crítico |
 | Upload de fotos/evidências parcial (B-104) | Evidências JPEG/PNG chegam ao backend local/dev, mas ainda sem storage protegido, DB/Redis, antivirus e auditoria completa | Alto |
 | Sem aprovação mobile real | Fluxo de aprovação de OS não completo | Alto |
-| Sem GPS/mapa | Roteirização e geolocalização indisponíveis | Médio |
+| Fundacao de GPS/mapa operacional parcial (B-105) | Mapa operacional simples e sync manual existem, mas sem adapter GPS nativo, permissoes Android/iOS, roteirizacao ou coleta automatica | Médio |
 | Sem notificações push | Técnico não recebe atribuições em tempo real | Médio |
 
 ---
@@ -125,7 +128,7 @@ real foi conectado nesta PR — essa foi uma decisão explícita de escopo (ver 
 | Item | Status atual | O que falta |
 |------|-------------|-------------|
 | Aprovação mobile | `ModulePlaceholderScreen` | Implementar fila de aprovação e ações de aprovar/rejeitar |
-| GPS / mapa / roteirização | `ModulePlaceholderScreen` | Integrar `geolocator` + mapa |
+| GPS / mapa / roteirização | ✅ Parcial B-105 — provider abstrato, card na OS, `/field-map` e sync Field Location | Implementar adapter GPS nativo real, permissoes Android/iOS, opt-in de privacidade, provider externo de mapa se aprovado e roteirizacao |
 | Notificações push | Ausente | FCM (Android) / APNs (iOS) |
 | Seleção multi-tenant | ✅ `TenantSelectorScreen` ativa | — |
 | Piloto Android real | Sem build signed | Configurar signing, distribuição interna (Firebase App Distribution ou similar) |
@@ -428,8 +431,8 @@ InventoryListScreen → StockEntryScreen | StockExitScreen
 
 | Item | O que fazer |
 |------|-------------|
-| Localização | Integrar `geolocator`; enviar coordenadas com eventos de status de OS |
-| Mapa | Integrar `flutter_map` ou Google Maps SDK |
+| Localização | Implementar adapter GPS nativo real sobre `DeviceLocationProvider` e permissoes Android/iOS |
+| Mapa | Evoluir o mapa operacional simples para provider externo de mapa se aprovado |
 | Roteirização | Ordenar OS por proximidade; rota sugerida |
 
 ### Fase 9 — Notificações Push

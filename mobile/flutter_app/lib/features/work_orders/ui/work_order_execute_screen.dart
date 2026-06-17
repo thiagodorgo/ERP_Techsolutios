@@ -13,6 +13,7 @@ import '../../checklists/data/checklist_repository.dart';
 import '../../checklists/domain/checklist_models.dart';
 import '../data/work_order_repository.dart';
 import '../domain/work_order_models.dart';
+import 'work_order_operational_map_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Data container for OS + checklist runs
@@ -244,6 +245,8 @@ class _WorkOrderExecuteScreenState
                   ),
                 ),
               ),
+              const SizedBox(height: 8),
+              OperationalLocationCard(session: session, workOrder: wo),
               const SizedBox(height: 8),
               if (_safeError != null)
                 SyncStatusBanner(

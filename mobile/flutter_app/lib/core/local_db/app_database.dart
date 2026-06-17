@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -29,6 +29,7 @@ class AppDatabase extends GeneratedDatabase {
       await m.database.customStatement(_kChecklistMarkers);
       await m.database.customStatement(_kChecklistAttachments);
       await m.database.customStatement(_kChecklistAcknowledgements);
+      await m.database.customStatement(_kFieldLocationEvents);
     },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
@@ -61,6 +62,9 @@ class AppDatabase extends GeneratedDatabase {
         await m.database.customStatement(
           'ALTER TABLE work_order_evidence ADD COLUMN local_blob_ref TEXT',
         );
+      }
+      if (from < 6) {
+        await m.database.customStatement(_kFieldLocationEvents);
       }
     },
   );
@@ -262,4 +266,26 @@ CREATE TABLE IF NOT EXISTS checklist_acknowledgements (
   acknowledged_at INTEGER NOT NULL,
   confirmed INTEGER NOT NULL DEFAULT 1,
   sync_status TEXT NOT NULL
+)''';
+
+const _kFieldLocationEvents = '''
+CREATE TABLE IF NOT EXISTS field_location_events (
+  local_id TEXT NOT NULL PRIMARY KEY,
+  server_id TEXT,
+  tenant_id TEXT NOT NULL,
+  work_order_local_id TEXT NOT NULL,
+  work_order_server_id TEXT,
+  latitude REAL NOT NULL,
+  longitude REAL NOT NULL,
+  accuracy_meters REAL,
+  heading_degrees REAL,
+  speed_meters_per_second REAL,
+  battery_level INTEGER,
+  recorded_at INTEGER NOT NULL,
+  sync_status TEXT NOT NULL,
+  retry_count INTEGER NOT NULL DEFAULT 0,
+  last_error_code TEXT,
+  last_safe_error TEXT,
+  created_at INTEGER NOT NULL,
+  synced_at INTEGER
 )''';
