@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
@@ -6,6 +7,8 @@ import 'package:erp_techsolutions_mobile/core/evidence/evidence_blob_store.dart'
 import 'package:erp_techsolutions_mobile/core/evidence/evidence_picker.dart';
 import 'package:erp_techsolutions_mobile/core/evidence/evidence_sync.dart';
 import 'package:erp_techsolutions_mobile/core/evidence/evidence_upload.dart';
+import 'package:erp_techsolutions_mobile/core/local_db/app_database.dart';
+import 'package:erp_techsolutions_mobile/core/local_db/drift_work_order_local_store.dart';
 import 'package:erp_techsolutions_mobile/core/network/api_contracts.dart';
 import 'package:erp_techsolutions_mobile/core/network/api_error.dart';
 import 'package:erp_techsolutions_mobile/core/permissions/permission_resolver.dart';
@@ -16,7 +19,10 @@ import 'package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_local_store.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/domain/work_order_models.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+// ignore: depend_on_referenced_packages
+import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 void main() {
   test('B-104.1 picker carrega bytes sem expor path/base64 no resultado', () {
@@ -229,6 +235,14 @@ void main() {
   test('B-104.7 endpoint mobile de upload permanece registrado', () {
     expect(EvidenceApiEndpoints.upload, '/api/v1/mobile/evidence-uploads');
   });
+
+  test('B-104.8 upgrade Drift schema 3 -> 5 nao duplica colunas', () async {
+    await _expectLegacyEvidenceUpgrade(fromVersion: 3);
+  });
+
+  test('B-104.9 upgrade Drift schema 4 -> 5 preserva upload fields', () async {
+    await _expectLegacyEvidenceUpgrade(fromVersion: 4);
+  });
 }
 
 const _tenantId = 'tenant-a';
@@ -326,4 +340,69 @@ class _FakeEvidenceUploadApi implements EvidenceUploadApi {
       uploadedAt: DateTime.utc(2026, 6, 17, 13),
     );
   }
+}
+
+Future<void> _expectLegacyEvidenceUpgrade({required int fromVersion}) async {
+  final file = await _legacyDatabaseFile(fromVersion);
+  final db = AppDatabase(NativeDatabase(file));
+  addTearDown(db.close);
+  final store = DriftWorkOrderLocalStore(db);
+  final uploadedAt = DateTime.utc(2026, 6, 17, 14);
+  final evidence = WorkOrderEvidence(
+    localId: 'woevid-legacy-$fromVersion',
+    serverId: 'evidence:tenant-a:woevid-legacy-$fromVersion',
+    workOrderLocalId: 'wo-local-104',
+    tenantId: _tenantId,
+    fileName: 'legacy.jpg',
+    mimeType: 'image/jpeg',
+    sizeBytes: 123,
+    captureSource: 'camera',
+    checksum: 'a' * 64,
+    syncStatus: SyncStatus.synced,
+    uploadStatus: SyncStatus.failed,
+    createdAt: DateTime.utc(2026, 6, 17, 12),
+    uploadedAt: uploadedAt,
+    uploadErrorCode: 'UPLOAD_VALIDATION',
+    localBlobRef: 'evidence-blob:legacy-ref',
+  );
+
+  await store.saveEvidence(evidence);
+  final loaded = await store.findEvidence(evidence.localId);
+
+  expect(loaded, isNotNull);
+  expect(loaded!.serverId, evidence.serverId);
+  expect(loaded.uploadStatus, SyncStatus.failed);
+  expect(loaded.uploadedAt, uploadedAt);
+  expect(loaded.uploadErrorCode, 'UPLOAD_VALIDATION');
+  expect(loaded.localBlobRef, 'evidence-blob:legacy-ref');
+}
+
+Future<File> _legacyDatabaseFile(int version) async {
+  final directory = await Directory.systemTemp.createTemp(
+    'b104-drift-$version-',
+  );
+  addTearDown(() => directory.delete(recursive: true));
+  final file = File('${directory.path}/legacy.sqlite');
+  final db = sqlite3.sqlite3.open(file.path);
+  try {
+    if (version == 4) {
+      db.execute('''
+CREATE TABLE work_order_evidence (
+  local_id TEXT NOT NULL PRIMARY KEY,
+  work_order_local_id TEXT NOT NULL,
+  tenant_id TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  capture_source TEXT NOT NULL,
+  checksum TEXT,
+  sync_status TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+)''');
+    }
+    db.execute('PRAGMA user_version = $version');
+  } finally {
+    db.close();
+  }
+  return file;
 }

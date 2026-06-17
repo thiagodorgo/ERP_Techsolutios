@@ -45,8 +45,7 @@ class AppDatabase extends GeneratedDatabase {
       }
       if (from < 4) {
         await m.database.customStatement(_kWorkOrderEvidence);
-      }
-      if (from < 5) {
+      } else if (from < 5) {
         await m.database.customStatement(
           'ALTER TABLE work_order_evidence ADD COLUMN server_id TEXT',
         );

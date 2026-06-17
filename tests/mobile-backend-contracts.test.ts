@@ -998,6 +998,17 @@ test("mobile evidence file upload stores binary metadata safely and enforces ten
     const clientEvidenceId = "woevid-local-upload-1";
     const bytes = Buffer.from("fake-jpeg-bytes");
     const sha256 = createHash("sha256").update(bytes).digest("hex");
+    const noMetadata = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
+      headers,
+      fields: {
+        evidence_id: `evidence:${seed.tenantA.id}:woevid-local-unsynced`,
+        client_evidence_id: "woevid-local-unsynced",
+        sha256,
+        size_bytes: String(bytes.length),
+        content_type: "image/jpeg",
+      },
+      files: [{ fieldName: "file", fileName: "unsynced.jpg", contentType: "image/jpeg", bytes }],
+    });
     const registered = await requestJson(baseUrl, "/api/v1/mobile/sync/evidence-actions", {
       method: "POST",
       headers,
@@ -1023,6 +1034,29 @@ test("mobile evidence file upload stores binary metadata safely and enforces ten
 
     assert.equal(registered.status, 200);
     const evidenceId = registered.body.data.accepted[0].evidence_id as string;
+    const differentClientEvidenceId = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
+      headers,
+      fields: {
+        evidence_id: `evidence:${seed.tenantA.id}:woevid-local-upload-different`,
+        client_evidence_id: "woevid-local-upload-different",
+        sha256,
+        size_bytes: String(bytes.length),
+        content_type: "image/jpeg",
+      },
+      files: [{ fieldName: "file", fileName: "different.jpg", contentType: "image/jpeg", bytes }],
+    });
+    const workOrderMismatch = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
+      headers,
+      fields: {
+        evidence_id: evidenceId,
+        client_evidence_id: clientEvidenceId,
+        work_order_id: "work-order-upload-divergent",
+        sha256,
+        size_bytes: String(bytes.length),
+        content_type: "image/jpeg",
+      },
+      files: [{ fieldName: "file", fileName: "panel-before.jpg", contentType: "image/jpeg", bytes }],
+    });
     const upload = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
       headers,
       fields: {
@@ -1129,6 +1163,12 @@ test("mobile evidence file upload stores binary metadata safely and enforces ten
       files: [],
     });
 
+    assert.equal(noMetadata.status, 409);
+    assert.equal(noMetadata.body.error.reason, "evidence_metadata_required");
+    assert.equal(differentClientEvidenceId.status, 409);
+    assert.equal(differentClientEvidenceId.body.error.reason, "evidence_metadata_required");
+    assert.equal(workOrderMismatch.status, 409);
+    assert.equal(workOrderMismatch.body.error.reason, "work_order_mismatch");
     assert.equal(upload.status, 201);
     assert.equal(upload.body.data.contract.name, "mobile_evidence_file_upload");
     assert.equal(upload.body.data.contract.version, "2026-06-17.b104");
@@ -1157,6 +1197,9 @@ test("mobile evidence file upload stores binary metadata safely and enforces ten
     assert.equal(multipleFiles.body.error.reason, "too_many_files");
     assert.equal(missingFile.status, 400);
     assert.equal(missingFile.body.error.reason, "file_required");
+    assertNoStackTrace(noMetadata.body);
+    assertNoStackTrace(differentClientEvidenceId.body);
+    assertNoStackTrace(workOrderMismatch.body);
     assertNoStackTrace(upload.body);
     assertNoStackTrace(wrongTenantEvidence.body);
     assertNoStackTrace(missingPermission.body);

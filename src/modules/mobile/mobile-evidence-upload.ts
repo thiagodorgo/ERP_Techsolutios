@@ -7,6 +7,7 @@ import Busboy from "busboy";
 import type { Request } from "express";
 
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
+import { findMobileEvidenceSyncReceiptForUpload } from "./mobile-evidence-sync.js";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png"]);
@@ -69,6 +70,20 @@ export async function uploadMobileEvidenceFile(
 
   if (evidenceId !== `evidence:${actor!.tenantId}:${clientEvidenceId}`) {
     throw routeError(403, "FORBIDDEN", "evidence_tenant_mismatch", "Evidence does not belong to the authenticated tenant.");
+  }
+
+  const receipt = findMobileEvidenceSyncReceiptForUpload(actor, clientEvidenceId);
+  if (!receipt) {
+    throw routeError(409, "MOBILE_EVIDENCE_CONFLICT", "evidence_metadata_required", "Evidence metadata must be synced before file upload.");
+  }
+
+  if (receipt.evidenceId !== evidenceId) {
+    throw routeError(409, "MOBILE_EVIDENCE_CONFLICT", "evidence_metadata_required", "Evidence metadata does not match this upload.");
+  }
+
+  const uploadWorkOrderId = parsed.fields.get("work_order_id")?.trim();
+  if (uploadWorkOrderId && receipt.workOrderId && uploadWorkOrderId !== receipt.workOrderId) {
+    throw routeError(409, "MOBILE_EVIDENCE_CONFLICT", "work_order_mismatch", "work_order_id does not match synced evidence metadata.");
   }
 
   if (!/^[a-f0-9]{64}$/.test(declaredSha256)) {
