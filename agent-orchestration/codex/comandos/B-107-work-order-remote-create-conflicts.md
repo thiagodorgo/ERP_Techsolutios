@@ -40,3 +40,12 @@ node --test --import tsx tests/mobile-backend-contracts.test.ts tests/core-saas-
 - Sem approval real ou `evidence_attach` no replay de OS.
 - Sem Prisma, migrations, frontend web, infra, Figma ou alteracao de lockfiles.
 - Limpar artefatos Flutter/Node apos as validacoes.
+
+## KPI pos-avaliacao humana
+
+- PR #102 foi mergeada em `db36fb318adc234e1fcc6bfeaeb17b6260847c3c`.
+- Approved head: `b3da11d1605af9edb68e5e8f587881fc22115f3f`.
+- Gate B-107G aprovado.
+- KPIs publicados somente no bloco documental B-107K, com status
+  `published_after_human_approval`.
+- Feature PR #102 preservou a politica de nao alterar arquivos KPI.

@@ -3280,3 +3280,31 @@ Por politica, esta PR de feature nao altera KPIs. Proposta para avaliacao humana
 
 Validacao local B-107: Flutter 654/654, B-107 21/21, backend 15/15,
 contratos mobile 18/18 e combinado com Core SaaS 21/21.
+
+## Atualizacao 2026-06-18 - B-107K KPIs pos-avaliacao humana
+
+B-107K publica os KPIs oficiais do B-107 apos avaliacao humana, merge da PR
+#102 e gate B-107G. A feature PR #102 nao alterou arquivos KPI; os KPIs foram
+publicados apenas neste bloco documental separado.
+
+Metadados publicados:
+
+- PR: #102
+- Merge commit: `db36fb318adc234e1fcc6bfeaeb17b6260847c3c`
+- Approved head: `b3da11d1605af9edb68e5e8f587881fc22115f3f`
+- Status: `published_after_human_approval`
+
+KPIs publicados:
+
+- Flutter tests: 654/654
+- Backend tests: 15/15
+- Mobile backend contracts: 18/18
+- Mobile + Core SaaS contracts: 21/21
+- Flutter modules: 17/17
+- MVP demo: 92%
+- MVP vendavel: 72%
+- Blocos concluidos: 37
+
+Politica preservada: sem feature nova e sem alteracao em Flutter `lib/`,
+Flutter `test/`, backend funcional, frontend web, Prisma, migrations, infra,
+env, lockfiles ou Figma.

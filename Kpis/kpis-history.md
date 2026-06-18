@@ -6,6 +6,46 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-06-18 - B-107 Criacao remota de OS/local-only mapping + resolucao manual de conflitos
+
+### Resultado
+
+- `work_order.create` publicado no sync mobile existente de OS.
+- `localId -> serverId` publicado para `accepted` e `already_applied`.
+- `rejected` preserva a OS local com falha segura.
+- `conflicts` entram em resolucao manual inicial.
+- `statusUpdate` local-only permanece bloqueado antes de `serverId` e fica elegivel apos o mapeamento.
+- UI e servico de resolucao manual foram publicados para manter local, aceitar servidor e revisao manual.
+- KPIs raiz sincronizados com `mobile/flutter_app/Kpis/` apos avaliacao humana, merge da PR #102 e gate B-107G.
+
+### Metadados pos-avaliacao humana
+
+- PR: #102.
+- Merge commit: `db36fb318adc234e1fcc6bfeaeb17b6260847c3c`.
+- Approved head: `b3da11d1605af9edb68e5e8f587881fc22115f3f`.
+- Status: `published_after_human_approval`.
+
+### KPIs B-107 refletidos na raiz
+
+| KPI | Valor |
+| --- | --- |
+| Flutter Tests | 654/654 |
+| Backend Tests | 15/15 |
+| Mobile Backend Contracts | 18/18 |
+| Mobile + Core SaaS Contracts | 21/21 |
+| Flutter modules | 17/17 |
+| MVP demo mobile | 92% |
+| MVP vendavel mobile | 72% |
+| Blocos entregues | 37 |
+
+### Limitacoes registradas
+
+- Approval real pendente.
+- Evidence attach real pendente.
+- Merge avancado campo a campo de conflitos pendente.
+- Hardening final de evidencias/storage pendente.
+- Piloto Android real ainda precisa validacao em dispositivo fisico.
+
 ## 2026-06-18 - B-106 Adapter GPS nativo real + permissoes Android/iOS
 
 ### Resultado

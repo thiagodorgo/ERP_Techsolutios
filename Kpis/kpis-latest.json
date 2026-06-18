@@ -1,23 +1,23 @@
 {
   "snapshot_date": "2026-06-18",
-  "version": "B-106",
+  "version": "B-107",
   "source": "mobile/flutter_app/Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile",
   "release": {
-    "block": "B-106",
-    "title": "Adapter GPS nativo real + permissões Android/iOS",
-    "pr": 99,
-    "merge_commit": "aac998eedcd95fba1c1a6a8fa5c09ec6fcaa6f26",
-    "approved_head": "2ac4215fa6a69a93b546f53816a7bf5fc2766133",
-    "summary": "B-106 conecta adapter GPS nativo real ao DeviceLocationProvider com geolocator, permissao when-in-use, opt-in explicito e captura manual segura.",
+    "block": "B-107",
+    "title": "Criação remota de OS/local-only mapping + resolução manual de conflitos",
+    "pr": 102,
+    "merge_commit": "db36fb318adc234e1fcc6bfeaeb17b6260847c3c",
+    "approved_head": "b3da11d1605af9edb68e5e8f587881fc22115f3f",
+    "summary": "B-107 publica a criacao remota de OS local-only pelo sync mobile, mapeamento localId -> serverId e resolucao manual inicial de conflitos apos avaliacao humana, merge e gate B-107G.",
     "status": "published_after_human_approval",
-    "status_label": "Publicado apos avaliacao humana e merge"
+    "status_label": "Publicado apos avaliacao humana, merge e gate B-107G"
   },
   "metrics": {
     "flutter_tests": {
-      "value": 633,
-      "total": 633,
-      "display": "633/633"
+      "value": 654,
+      "total": 654,
+      "display": "654/654"
     },
     "backend_tests": {
       "value": 15,
@@ -25,9 +25,9 @@
       "display": "15/15"
     },
     "backend_contract_tests_focused": {
-      "value": 47,
-      "total": 47,
-      "display": "47/47"
+      "value": 21,
+      "total": 21,
+      "display": "21/21"
     },
     "flutter_modules": {
       "value": 17,
@@ -35,18 +35,28 @@
       "display": "17/17"
     },
     "mvp_demo": {
-      "value": 90,
+      "value": 92,
       "unit": "%",
-      "display": "90%"
+      "display": "92%"
     },
     "mvp_vendavel": {
-      "value": 68,
+      "value": 72,
       "unit": "%",
-      "display": "68%"
+      "display": "72%"
     },
     "blocks_completed": {
-      "value": 36,
-      "display": "36"
+      "value": 37,
+      "display": "37"
+    },
+    "mobile_backend_contracts": {
+      "value": 18,
+      "total": 18,
+      "display": "18/18"
+    },
+    "mobile_core_saas_contracts": {
+      "value": 21,
+      "total": 21,
+      "display": "21/21"
     }
   },
   "policy": {
@@ -61,15 +71,9 @@
     ]
   },
   "limitations": [
-    "Sem background tracking",
-    "Sem stream continuo",
-    "Sem timer",
-    "Sem envio silencioso",
-    "Geofencing pendente",
-    "Roteirizacao pendente",
-    "Provider externo de mapa pendente, se aprovado",
     "Approval real pendente",
-    "Conflitos manuais avancados pendentes",
+    "Evidence attach real pendente",
+    "Merge avancado campo a campo de conflitos pendente",
     "Hardening final de evidencias/storage pendente",
     "Piloto Android real ainda precisa validacao em dispositivo fisico"
   ]

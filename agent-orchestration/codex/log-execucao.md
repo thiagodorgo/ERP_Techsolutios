@@ -3406,3 +3406,35 @@ Todo bloco que executar testes, builds, Flutter, Node, Android, iOS ou geração
 - Contratos mobile: 18/18.
 - Contratos mobile + Core SaaS: 21/21.
 - `npm run check`, `npm run lint`, `npm run build` e `git diff --check`: pass.
+
+## 2026-06-18 - B-107K KPIs pos-avaliacao humana
+
+### Publicado
+
+- KPIs B-107 publicados somente apos avaliacao humana, merge da PR #102 e gate B-107G.
+- Feature PR #102 nao alterou arquivos KPI.
+- Status publicado: `published_after_human_approval`.
+
+### Metadados finais B-107
+
+- PR: #102
+- Merge commit: `db36fb318adc234e1fcc6bfeaeb17b6260847c3c`
+- Approved head: `b3da11d1605af9edb68e5e8f587881fc22115f3f`
+- Gate: B-107G aprovado
+
+### KPIs publicados
+
+- Flutter tests: 654/654
+- Backend tests: 15/15
+- Mobile backend contracts: 18/18
+- Mobile + Core SaaS contracts: 21/21
+- Flutter modules: 17/17
+- MVP demo: 92%
+- MVP vendavel: 72%
+- Blocos concluidos: 37
+
+### Politica preservada
+
+- KPIs publicados em bloco documental separado.
+- Sem feature nova.
+- Sem alteracao em Flutter `lib/`, Flutter `test/`, backend funcional, frontend web, Prisma, migrations, infra, env, lockfiles ou Figma.

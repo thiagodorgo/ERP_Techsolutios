@@ -26,23 +26,24 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
-        <article class="panel panel--wide" aria-label="Resumo B-106">
-          <h2>B-106 — Adapter GPS nativo real + permissões Android/iOS</h2>
+        <article class="panel panel--wide" aria-label="Resumo B-107">
+          <h2>B-107 — Criação remota de OS/local-only mapping + resolução manual de conflitos</h2>
           <p>
-            Field Location e DeviceLocationProvider refletidos do KPI mobile:
-            Flutter 633/633, Backend 15/15, contratos focados 47/47,
-            modulos Flutter 17/17, MVP demo 90%, MVP vendavel 68% e
-            36 blocos entregues.
+            Work Orders refletido do KPI mobile: Flutter 654/654, Backend
+            15/15, contratos mobile 18/18, contratos mobile + Core SaaS 21/21,
+            modulos Flutter 17/17, MVP demo 92%, MVP vendavel 72% e
+            37 blocos entregues.
           </p>
           <p>
-            Adapter real baseado em geolocator, permissao Android/iOS when-in-use,
-            consentimento explicito e captura manual somente por Enviar
-            localizacao agora.
+            `work_order.create` foi conectado ao sync mobile existente,
+            mapeando `localId` para `serverId`; `already_applied` reaproveita
+            ID remoto, `rejected` preserva a OS local e conflitos entram em
+            resolucao manual inicial.
           </p>
           <p>
-            Limitacoes: sem background tracking, sem stream continuo, sem timer,
-            sem envio silencioso, geofencing pendente, roteirizacao pendente,
-            provider externo de mapa pendente e piloto Android real ainda precisa
+            Limitacoes: approval real pendente, evidence attach real pendente,
+            merge avancado campo a campo de conflitos pendente, hardening final
+            de evidencias/storage pendente e piloto Android real ainda precisa
             validacao em dispositivo fisico.
           </p>
           <p>

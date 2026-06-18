@@ -82,9 +82,22 @@ Regras obrigatorias:
 - Mexeu nos dois: atualizar os dois conjuntos.
 - Se existir `index.html`: atualizar tambem o HTML.
 
-No pos-B-106, os valores mobile refletidos na raiz sao: Flutter 633/633,
-Backend 15/15, contratos focados 47/47, modulos Flutter 17/17, MVP demo 90%,
-MVP vendavel 68% e 36 blocos entregues.
+No pos-B-107, os valores mobile refletidos na raiz sao: Flutter 654/654,
+Backend 15/15, contratos mobile 18/18, contratos mobile + Core SaaS 21/21,
+modulos Flutter 17/17, MVP demo 92%, MVP vendavel 72% e 37 blocos entregues.
+
+### B-107 publicado
+
+- PR #102 mergeada em `db36fb318adc234e1fcc6bfeaeb17b6260847c3c`.
+- Approved head `b3da11d1605af9edb68e5e8f587881fc22115f3f`.
+- Status `published_after_human_approval` apos gate B-107G.
+- `work_order.create` suportado no sync mobile.
+- `localId -> serverId` implementado.
+- `already_applied` reaproveita ID remoto.
+- `rejected` mantem OS local com falha segura.
+- `conflicts` marcam resolucao manual.
+- `statusUpdate` local-only bloqueado antes de `serverId` e elegivel apos o mapeamento.
+- UI/servico de resolucao manual implementados.
 
 Toda entrega mobile relevante deve atualizar:
 
