@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../auth/auth_notifier.dart';
 import '../evidence/evidence_blob_store.dart';
@@ -11,6 +12,8 @@ import '../location/device_location_provider.dart';
 import '../location/field_location_api.dart';
 import '../location/field_location_service.dart';
 import '../location/field_location_store.dart';
+import '../location/geolocator_device_location_provider.dart';
+import '../location/location_consent_store.dart';
 import '../network/api_contracts.dart';
 import '../network/http_client.dart';
 import '../../features/work_orders/data/work_order_local_store.dart';
@@ -56,8 +59,19 @@ final fieldLocationStoreProvider = Provider<FieldLocationStore>((ref) {
   }
 });
 
+final locationConsentStoreProvider = Provider<LocationConsentStore>(
+  (ref) => const SecureLocationConsentStore(FlutterSecureStorage()),
+);
+
+final geolocatorLocationPortProvider = Provider<GeolocatorLocationPort>(
+  (ref) => const NativeGeolocatorLocationPort(),
+);
+
 final deviceLocationProvider = Provider<DeviceLocationProvider>(
-  (ref) => const PendingDeviceLocationProvider(),
+  (ref) => GeolocatorDeviceLocationProvider(
+    port: ref.watch(geolocatorLocationPortProvider),
+    consentStore: ref.watch(locationConsentStoreProvider),
+  ),
 );
 
 final fieldLocationApiProvider = Provider<FieldLocationApi>((ref) {

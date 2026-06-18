@@ -6,6 +6,42 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-06-18 - B-106 Adapter GPS nativo real + permissoes Android/iOS
+
+### Resultado
+
+- Adapter GPS nativo real conectado ao DeviceLocationProvider via geolocator.
+- Permissoes Android/iOS when-in-use.
+- Opt-in explicito antes do primeiro pedido de permissao nativa.
+- Captura manual somente por Enviar localizacao agora.
+- KPIs raiz sincronizados com mobile/flutter_app/Kpis/.
+
+### KPIs B-106 refletidos na raiz
+
+| KPI | Valor |
+| --- | --- |
+| Flutter Tests | 633/633 |
+| Backend Tests | 15/15 |
+| Backend Contract Tests focados | 47/47 |
+| Flutter modules | 17/17 |
+| MVP demo mobile | 90% |
+| MVP vendavel mobile | 68% |
+| Blocos entregues | 36 |
+
+### Limitacoes registradas
+
+- Sem background tracking.
+- Sem stream continuo.
+- Sem timer.
+- Sem envio silencioso.
+- Geofencing pendente.
+- Roteirizacao pendente.
+- Provider externo de mapa pendente, se aprovado.
+- Approval real pendente.
+- Conflitos manuais avancados pendentes.
+- Hardening final de evidencias/storage pendente.
+- Piloto Android real ainda precisa validacao em dispositivo fisico.
+
 ## 2026-06-17 - B-152F KPIs duplos pos-B-105
 
 ### Resultado

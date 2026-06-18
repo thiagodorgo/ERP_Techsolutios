@@ -18,9 +18,9 @@ Existem dois conjuntos de KPIs: `mobile/flutter_app/Kpis/` para o app Flutter e
 - mexeu nos dois: atualizar os dois conjuntos;
 - se existir `index.html`, atualizar tambem o HTML.
 
-No pos-B-105, os valores mobile refletidos na raiz sao Flutter 613/613,
-Backend 15/15, contratos focados 47/47, modulos Flutter 17/17, MVP demo 87%,
-MVP vendavel 64% e 35 blocos entregues.
+No pos-B-106, os valores mobile refletidos na raiz sao Flutter 633/633,
+Backend 15/15, contratos focados 47/47, modulos Flutter 17/17, MVP demo 90%,
+MVP vendavel 68% e 36 blocos entregues.
 
 ---
 
@@ -28,19 +28,19 @@ MVP vendavel 64% e 35 blocos entregues.
 
 O app Flutter (`mobile/flutter_app`) está em fase de **protótipo avançado estabilizado**. Possui
 arquitetura local-first funcional, persistência SQLite via Drift, autenticação local em modo dev e
-cobertura de testes de 613 casos no sweep B-105. Pull real de Work Orders (B-099),
+cobertura de testes de 633 casos no sweep B-106. Pull real de Work Orders (B-099),
 sync write parcial de status de OS (B-103), pull de templates de checklist (B-100/B-101) e sync
 write parcial de respostas de checklist (B-102) já estão conectados ao backend, com fallback
-resiliente. B-103 sincroniza apenas `statusUpdate` de OS reconhecida pelo backend via `server_id`
-ou `work_order_id` real; `accepted`/`already_applied` limpam o `pending` da WorkOrder local,
-e OS local-only permanece na fila. B-104 adiciona upload multipart parcial de evidências
-JPEG/PNG com blob local opaco e checksum SHA-256 após o metadata sync devolver `evidence_id`.
-B-105 adiciona fundacao de GPS/mapa operacional da OS com provider abstrato de
-localizacao, store `field_location_events`, sync para `POST /api/v1/mobile/field-locations`
-e mapa operacional simples em `/field-map`. Ainda falta storage protegido/presigned URL,
-persistência durável de arquivo, criação remota de OS/local-only mapping, aprovação real,
-adapter GPS nativo real e resolução manual completa de conflitos. Não está pronto para
-operação de campo com dados reais.
+resiliente. B-104 adiciona upload multipart parcial de evidências JPEG/PNG. B-105 adiciona a
+fundacao de GPS/mapa operacional da OS com store `field_location_events`, sync para
+`POST /api/v1/mobile/field-locations` e mapa operacional simples. B-106 conecta o adapter GPS
+nativo real via `geolocator`, configura permissoes Android/iOS when-in-use e exige opt-in
+explicito antes do primeiro pedido nativo. A captura continua manual, somente por
+`Enviar localizacao agora`; nao ha background tracking, stream continuo, timer ou envio
+silencioso. Ainda falta storage protegido/presigned URL, criação remota de OS/local-only
+mapping, aprovação real, conflitos manuais avançados, geofencing/roteirizacao se aprovados e
+piloto Android real em dispositivo fisico. Não está pronto para operação ampla de campo com
+dados reais.
 
 ### Inventário funcional por módulo
 
@@ -54,7 +54,7 @@ operação de campo com dados reais.
 | Profile | Funcional | **existente** |
 | Connectivity | Funcional | **existente** |
 | Sync Engine (fila local) | Funcional (parcial real) | **existente** — replay real parcial para OS status, checklist answers e evidence metadata |
-| Auto Sync Coordinator | Funcional (parcial real) | **B-105** — dispara Field Location antes de Work Orders, checklists, evidências metadata, upload binário de evidências e RDV sem misturar domínios |
+| Auto Sync Coordinator | Funcional (parcial real) | **B-106** — sincroniza Field Location antes dos demais dominios sem capturar localizacao automaticamente |
 | RDV / Despesas | Funcional (local-first) | **existente** — criação, itens, totais, envio local; submit stub seguro |
 | Recibos / Evidências RDV | Metadado apenas | **parcial** — upload real ausente |
 | Ordens de Serviço (OS) — lista | Funcional (pull real) | **B-099** — `GET /api/v1/work-orders`; upsert Drift; fallback cache; banners UI |
@@ -70,7 +70,7 @@ operação de campo com dados reais.
 | Diagnostics | Dev-only | **existente** — protegida por `kIsDevMode` em produção |
 | Aprovações | Placeholder | **futuro** |
 | Inventário | Funcional (local-first) | **existente** — entrada/saída local; sem sync real |
-| Mapa / GPS | Parcial | **B-105** — mapa operacional simples conectado a OS, provider abstrato de localizacao e sync Field Location; adapter GPS nativo real pendente |
+| Mapa / GPS | Parcial | **B-106** — adapter GPS nativo real via geolocator, permissoes when-in-use, opt-in explicito, mapa operacional simples e sync Field Location manual |
 | Notificações push | Ausente | **futuro** |
 
 ---
@@ -88,7 +88,7 @@ O app não pode ser usado em campo real pelos seguintes motivos objetivos:
 | Sync de inventário e lacunas avançadas de OS não chegam ao servidor | Inventário, criação remota de OS, aprovação e evidência real ainda não fecham ciclo de campo | Crítico |
 | Upload de fotos/evidências parcial (B-104) | Evidências JPEG/PNG chegam ao backend local/dev, mas ainda sem storage protegido, DB/Redis, antivirus e auditoria completa | Alto |
 | Sem aprovação mobile real | Fluxo de aprovação de OS não completo | Alto |
-| Fundacao de GPS/mapa operacional parcial (B-105) | Mapa operacional simples e sync manual existem, mas sem adapter GPS nativo, permissoes Android/iOS, roteirizacao ou coleta automatica | Médio |
+| GPS/mapa operacional parcial (B-106) | Adapter real, permissoes e opt-in foram conectados; ainda sem background tracking, stream, timer, envio silencioso, geofencing, roteirizacao e piloto Android fisico | Médio |
 | Sem notificações push | Técnico não recebe atribuições em tempo real | Médio |
 
 ---
@@ -145,7 +145,7 @@ real foi conectado nesta PR — essa foi uma decisão explícita de escopo (ver 
 | Item | Status atual | O que falta |
 |------|-------------|-------------|
 | Aprovação mobile | `ModulePlaceholderScreen` | Implementar fila de aprovação e ações de aprovar/rejeitar |
-| GPS / mapa / roteirização | ✅ Parcial B-105 — provider abstrato, card na OS, `/field-map` e sync Field Location | Implementar adapter GPS nativo real, permissoes Android/iOS, opt-in de privacidade, provider externo de mapa se aprovado e roteirizacao |
+| GPS / mapa / roteirização | ✅ Parcial B-106 — adapter nativo geolocator, permissoes when-in-use, opt-in explicito, card OS, `/field-map` e sync Field Location | Geofencing, roteirizacao, provider externo de mapa se aprovado e piloto Android real |
 | Notificações push | Ausente | FCM (Android) / APNs (iOS) |
 | Seleção multi-tenant | ✅ `TenantSelectorScreen` ativa | — |
 | Piloto Android real | Sem build signed | Configurar signing, distribuição interna (Firebase App Distribution ou similar) |
@@ -448,7 +448,7 @@ InventoryListScreen → StockEntryScreen | StockExitScreen
 
 | Item | O que fazer |
 |------|-------------|
-| Localização | Implementar adapter GPS nativo real sobre `DeviceLocationProvider` e permissoes Android/iOS |
+| Localização | ✅ Adapter GPS nativo real sobre `DeviceLocationProvider`; permissoes Android/iOS when-in-use; opt-in explicito; captura manual apenas |
 | Mapa | Evoluir o mapa operacional simples para provider externo de mapa se aprovado |
 | Roteirização | Ordenar OS por proximidade; rota sugerida |
 

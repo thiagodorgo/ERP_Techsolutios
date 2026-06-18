@@ -1,21 +1,21 @@
 {
-  "snapshot_date": "2026-06-17",
-  "version": "B-105",
+  "snapshot_date": "2026-06-18",
+  "version": "B-106",
   "source": "mobile/flutter_app/Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile",
   "release": {
-    "block": "B-105",
-    "title": "GPS/mapa operacional da OS",
-    "pr": 97,
-    "merge_commit": "0a01b0b5a6cc63066cd154fd7c91c1ce66edc5f3",
-    "approved_head": "8fde8b1443fe9510c7f45e9088ddf5b0d5635d6a",
-    "summary": "B-105 GPS/mapa operacional da OS com Field Location, DeviceLocationProvider, store field_location_events, sync manual e mapa operacional simples."
+    "block": "B-106",
+    "title": "Adapter GPS nativo real + permissões Android/iOS",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "summary": "B-106 conecta adapter GPS nativo real ao DeviceLocationProvider com geolocator, permissao when-in-use, opt-in explicito e captura manual segura."
   },
   "metrics": {
     "flutter_tests": {
-      "value": 613,
-      "total": 613,
-      "display": "613/613"
+      "value": 633,
+      "total": 633,
+      "display": "633/633"
     },
     "backend_tests": {
       "value": 15,
@@ -33,18 +33,18 @@
       "display": "17/17"
     },
     "mvp_demo": {
-      "value": 87,
+      "value": 90,
       "unit": "%",
-      "display": "87%"
+      "display": "90%"
     },
     "mvp_vendavel": {
-      "value": 64,
+      "value": 68,
       "unit": "%",
-      "display": "64%"
+      "display": "68%"
     },
     "blocks_completed": {
-      "value": 35,
-      "display": "35"
+      "value": 36,
+      "display": "36"
     }
   },
   "policy": {
@@ -59,17 +59,16 @@
     ]
   },
   "limitations": [
-    "Adapter GPS nativo real pendente",
-    "Permissoes Android/iOS pendentes",
-    "Opt-in de privacidade pendente",
-    "Sem pacote GPS nativo",
-    "Sem geolocator",
-    "Sem Google Maps",
-    "Sem Mapbox",
-    "Sem SDK externo",
     "Sem background tracking",
-    "Sem timer",
     "Sem stream continuo",
-    "Sem envio silencioso"
+    "Sem timer",
+    "Sem envio silencioso",
+    "Geofencing pendente",
+    "Roteirizacao pendente",
+    "Provider externo de mapa pendente, se aprovado",
+    "Approval real pendente",
+    "Conflitos manuais avancados pendentes",
+    "Hardening final de evidencias/storage pendente",
+    "Piloto Android real ainda precisa validacao em dispositivo fisico"
   ]
 }

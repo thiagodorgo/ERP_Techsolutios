@@ -46,6 +46,7 @@ dependencies:
   equatable: ^2.0.8
   connectivity_plus: ^6.0.0
   image_picker: ^1.1.2
+  geolocator: ^14.0.3
 
 dev_dependencies:
   flutter_test:

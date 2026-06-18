@@ -1,5 +1,35 @@
 # Status Geral
 
+## Atualizacao 2026-06-18 — B-106 Adapter GPS nativo real + permissoes Android/iOS
+
+### Status
+
+Implementacao em branch `feature/mobile-native-gps-permissions`, com adapter GPS nativo real conectado ao Flutter e KPIs duplos atualizados.
+
+### Entregue
+
+- Dependencia `geolocator` adicionada ao Flutter.
+- Android com permissoes foreground/when-in-use: `ACCESS_FINE_LOCATION` e `ACCESS_COARSE_LOCATION`.
+- iOS com `NSLocationWhenInUseUsageDescription`.
+- `GeolocatorDeviceLocationProvider` com port testavel e timeout seguro.
+- `LocationConsentStore` com opt-in explicito antes do primeiro pedido nativo.
+- Captura manual somente por `Enviar localizacao agora`.
+- Sem background tracking, stream continuo, timer ou envio silencioso.
+- Field Location preserva `POST /api/v1/mobile/field-locations` e payload seguro.
+- KPIs mobile e raiz atualizados para B-106.
+
+### Lacunas remanescentes
+
+- Geofencing pendente.
+- Roteirizacao pendente.
+- Provider externo de mapa pendente, se aprovado.
+- Approval real pendente.
+- Conflitos manuais avancados pendentes.
+- Hardening final de evidencias/storage pendente.
+- Piloto Android real ainda precisa validacao em dispositivo fisico.
+
+---
+
 ## Atualizacao 2026-06-17 — B-152F KPIs duplos pos-B-105
 
 ### Status

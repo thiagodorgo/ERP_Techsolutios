@@ -366,9 +366,7 @@ void main() {
       expect(projected.single.y, 0.5);
     });
 
-    testWidgets('18. card mostra estado sem adapter GPS nativo', (
-      tester,
-    ) async {
+    testWidgets('18. card mostra politica de captura manual', (tester) async {
       await tester.pumpWidget(
         _wrap(
           OperationalLocationCard(
@@ -385,10 +383,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Localizacao operacional'), findsOneWidget);
-      expect(
-        find.textContaining('adapter GPS nativo pendente'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Sem background tracking'), findsOneWidget);
     });
 
     testWidgets('19. card mostra ultimo envio e botao chama service mock', (
@@ -609,6 +604,9 @@ Widget _wrap(
     overrides: [
       fieldLocationStoreProvider.overrideWithValue(store),
       fieldLocationSyncServiceProvider.overrideWithValue(service),
+      deviceLocationProvider.overrideWithValue(
+        _FakeDeviceLocationProvider(_fix()),
+      ),
     ],
     child: MaterialApp.router(routerConfig: router),
   );
@@ -633,6 +631,9 @@ Widget _wrapRouter({
           api: _FakeFieldLocationApi(),
           deviceLocationProvider: _FakeDeviceLocationProvider(_fix()),
         ),
+      ),
+      deviceLocationProvider.overrideWithValue(
+        _FakeDeviceLocationProvider(_fix()),
       ),
     ],
     child: MaterialApp.router(

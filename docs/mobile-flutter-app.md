@@ -8,8 +8,7 @@ Existem dois conjuntos de KPIs: `mobile/flutter_app/Kpis/` para o app Flutter e
 Mexeu fora do mobile: atualizar `Kpis/*`. Mexeu nos dois: atualizar os dois.
 Se existir `index.html`, atualizar tambem o HTML.
 
-No pos-B-105, os dois conjuntos devem refletir B-105 GPS/mapa operacional da OS,
-Field Location, Flutter 613/613, MVP demo 87%, MVP vendavel 64% e 35 blocos.
+No pos-B-106, os dois conjuntos devem refletir B-106 Adapter GPS nativo real + permissoes Android/iOS, Field Location, Flutter 633/633, MVP demo 90%, MVP vendavel 68% e 36 blocos.
 
 ## Decisao
 
@@ -87,16 +86,20 @@ No B-098E, `POST /api/v1/mobile/sync/evidence-actions` passou a existir como con
 - o app deve enviar `client_evidence_id` e metadados seguros, nunca base64, path local ou token;
 - o backend separa `accepted`, `rejected`, `conflicts` e `already_applied` e ignora tenant externo.
 
-No B-105, o Flutter passou a consumir a fundacao backend de Field Location:
+No B-105, o Flutter passou a consumir a fundacao backend de Field Location.
 
-- `DeviceLocationProvider` e abstrato/testavel; o runtime padrao exibe indisponibilidade segura quando nao ha adapter GPS nativo real;
-- `field_location_events` foi adicionado ao Drift como fila local de eventos manuais de localizacao operacional;
-- `DioFieldLocationApi` envia `POST /api/v1/mobile/field-locations` com cliente HTTP autenticado e payload controlado;
-- o payload real nao envia `tenant_id`, `tenantId`, token, `Authorization`, `base64`, `file_data`, `local_path` ou `path`;
-- `AutoSyncCoordinator` sincroniza Field Location antes de Work Orders, Checklists, Evidence e RDV;
+No B-106, o Flutter conectou o adapter GPS nativo real ao `DeviceLocationProvider`:
+
+- `GeolocatorDeviceLocationProvider` usa `geolocator` com `GeolocatorLocationPort` testavel;
+- permissoes Android/iOS sao foreground/when-in-use;
+- `LocationConsentStore` exige aceite explicito antes do primeiro pedido de permissao nativa;
+- a captura continua somente por acao manual em `Enviar localizacao agora`;
+- o provider chama apenas `getCurrentPosition` com timeout seguro;
+- nao ha background tracking, stream continuo, timer, envio silencioso, captura ao abrir tela nem captura pelo `AutoSyncCoordinator`;
+- `DioFieldLocationApi` preserva `POST /api/v1/mobile/field-locations` com payload controlado;
 - `/field-map` renderiza um mapa operacional simples conectado a OS, sem Google Maps, Mapbox ou SDK externo de mapa.
 
-Ainda nao ha tenants disponiveis, persistencia duravel de idempotencia mobile, reserva transacional multi-instancia, associacao real de inventario com OS/armazem nem upload/storage protegido para evidencia. Esses itens ficam para fases seguintes.
+Ainda nao ha tenants disponiveis, persistencia duravel de idempotencia mobile, reserva transacional multi-instancia, associacao real de inventario com OS/armazem, approval real, conflitos manuais avancados, geofencing/roteirizacao, provider externo de mapa nem upload/storage protegido final para evidencia. Esses itens ficam para fases seguintes.
 
 ## Estrutura inicial
 
