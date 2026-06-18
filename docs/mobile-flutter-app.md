@@ -146,7 +146,7 @@ OCR, PDF, camera e upload real ficam documentados, mas fora da primeira fundacao
 - Tokens nunca devem ir para SQLite comum.
 - Toda entidade local tenant-scoped carrega `tenant_id`.
 - `client_action_id` e obrigatorio em toda acao de sync.
-- A fila de OS deve usar `POST /api/v1/mobile/sync/work-order-actions` apenas para `work_order.status_change` e `work_order.assign` nesta fase.
+- A fila de OS usa `POST /api/v1/mobile/sync/work-order-actions` para `work_order.create`, `work_order.status_change` e `work_order.assign`; approval/evidence continuam fora do replay B-107.
 - Recibos nao devem aparecer em logs.
 - Conflito nao pode ser resolvido silenciosamente.
 - UI pode esconder acoes, mas backend continua sendo a autoridade.
@@ -170,3 +170,15 @@ OCR, PDF, camera e upload real ficam documentados, mas fora da primeira fundacao
 - Violacao de politica aparece para recibo obrigatorio ou limite excedido.
 - Sync status aparece no diagnostico.
 - `tenant_id` e obrigatorio nas acoes locais.
+
+## B-107 - Criacao remota de OS e conflitos manuais
+
+- OS criada no aparelho nasce com `localId`, sem `serverId`, e gera `work_order.create`.
+- `WorkOrderSyncReplayService` processa criacoes antes de `statusUpdate`.
+- `accepted` e `already_applied` exigem um ID remoto e gravam `localId -> serverId`.
+- Acoes dependentes recebem `server_id` e ficam elegiveis somente depois do mapeamento.
+- Rejeicao ou erro de rede preserva a OS local e registra erro seguro.
+- Conflitos nao sao reenviados silenciosamente. O detalhe da OS permite manter local e tentar novamente, aceitar o estado do servidor quando existe referencia remota ou marcar para revisao manual.
+- O payload remoto nao envia tenant, token, Authorization, path, base64, `file_data` ou `local_path`.
+- Approval real e `evidence_attach` dentro do sync de OS continuam fora do escopo.
+- KPIs nao foram alterados nesta PR; valores propostos ficam apenas no relatorio final.

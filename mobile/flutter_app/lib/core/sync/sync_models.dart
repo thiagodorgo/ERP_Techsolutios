@@ -38,6 +38,9 @@ class SyncAction extends Equatable {
     String? lastErrorCode,
     String? lastSafeError,
     DateTime? processedAt,
+    bool clearLastErrorCode = false,
+    bool clearLastSafeError = false,
+    bool clearProcessedAt = false,
   }) {
     return SyncAction(
       clientActionId: clientActionId ?? this.clientActionId,
@@ -47,9 +50,13 @@ class SyncAction extends Equatable {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       retryCount: retryCount ?? this.retryCount,
-      lastErrorCode: lastErrorCode ?? this.lastErrorCode,
-      lastSafeError: lastSafeError ?? this.lastSafeError,
-      processedAt: processedAt ?? this.processedAt,
+      lastErrorCode: clearLastErrorCode
+          ? null
+          : (lastErrorCode ?? this.lastErrorCode),
+      lastSafeError: clearLastSafeError
+          ? null
+          : (lastSafeError ?? this.lastSafeError),
+      processedAt: clearProcessedAt ? null : (processedAt ?? this.processedAt),
     );
   }
 

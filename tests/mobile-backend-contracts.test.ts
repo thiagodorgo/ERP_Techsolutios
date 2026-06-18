@@ -519,6 +519,84 @@ test("mobile work order action sync accepts, deduplicates, rejects and reports c
   });
 });
 
+test("mobile work order create maps local client id idempotently and keeps tenant context safe", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const action = {
+      client_action_id: "wo-create-local-1",
+      type: "work_order.create",
+      local_created_at: "2026-06-18T12:00:00.000Z",
+      payload: {
+        client_id: "wo-local-create-1",
+        title: "OS criada offline",
+        customer_name: "Cliente local",
+        service_address: "Rua local, 10",
+        priority: "high",
+        scheduled_at: "2026-06-19T12:00:00.000Z",
+        tenant_id: seed.tenantB.id,
+        tenantId: seed.tenantB.id,
+        Authorization: "Bearer forbidden",
+        accessToken: "forbidden",
+        refreshToken: "forbidden",
+        base64: "forbidden",
+        file_data: "forbidden",
+        local_path: "forbidden",
+        path: "forbidden",
+      },
+    };
+
+    const created = await requestJson(baseUrl, "/api/v1/mobile/sync/work-order-actions", {
+      method: "POST",
+      headers,
+      body: { client_batch_id: "wo-create-batch-1", actions: [action] },
+    });
+
+    assert.equal(created.status, 200);
+    assert.equal(created.body.data.summary.accepted, 1);
+    assert.equal(created.body.data.accepted[0].client_action_id, action.client_action_id);
+    assert.equal(typeof created.body.data.accepted[0].work_order_id, "string");
+    assert.equal(created.body.data.accepted[0].server_state.title, "OS criada offline");
+    assert.equal(created.body.data.accepted[0].server_state.priority, "high");
+    assert.equal(JSON.stringify(created.body).includes(seed.tenantB.id), false);
+    assert.equal(JSON.stringify(created.body).includes("forbidden"), false);
+
+    const replay = await requestJson(baseUrl, "/api/v1/mobile/sync/work-order-actions", {
+      method: "POST",
+      headers,
+      body: { client_batch_id: "wo-create-batch-2", actions: [action] },
+    });
+    assert.equal(replay.status, 200);
+    assert.equal(replay.body.data.summary.already_applied, 1);
+    assert.equal(
+      replay.body.data.already_applied[0].work_order_id,
+      created.body.data.accepted[0].work_order_id,
+    );
+
+    const mismatch = await requestJson(baseUrl, "/api/v1/mobile/sync/work-order-actions", {
+      method: "POST",
+      headers,
+      body: {
+        client_batch_id: "wo-create-batch-3",
+        actions: [
+          {
+            ...action,
+            payload: { ...action.payload, title: "Outro titulo" },
+          },
+        ],
+      },
+    });
+    assert.equal(mismatch.status, 200);
+    assert.equal(mismatch.body.data.summary.conflicts, 1);
+    assert.equal(
+      mismatch.body.data.conflicts[0].conflict.conflict_type,
+      "idempotency_payload_mismatch",
+    );
+    assertNoStackTrace(created.body);
+    assertNoStackTrace(replay.body);
+    assertNoStackTrace(mismatch.body);
+  });
+});
+
 test("mobile checklist action sync accepts, deduplicates, rejects and reports conflicts by action", async () => {
   await withMobileContractApi(async ({ baseUrl, seed }) => {
     const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");

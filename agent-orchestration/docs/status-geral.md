@@ -3260,3 +3260,23 @@ Todo bloco que executar testes, builds, Flutter, Node, Android, iOS ou geração
 
 - Sem alteração em código funcional Flutter, backend, frontend web, Prisma, migrations, infra, `.env`, lockfiles JS ou Figma.
 - Os três PNGs untracked de marca permanecem fora do commit.
+
+## Atualizacao 2026-06-18 - B-107 OS local-only e conflitos
+
+B-107 conecta a criacao local de OS ao sync mobile real. A OS permanece local
+com `localId` ate `work_order.create` retornar `work_order_id`; o Flutter grava
+o `serverId` e libera as acoes dependentes no replay em duas fases.
+
+O backend reutiliza `WorkOrderService`, RBAC e tenant do ator autenticado. A
+idempotencia existente do sync evita duplicata e `already_applied` devolve o
+mesmo ID. Nenhuma migration foi necessaria.
+
+Conflitos agora possuem resolucao manual inicial no detalhe da OS, sem descarte
+silencioso de dados. Approval real, `evidence_attach` e merge avancado campo a
+campo continuam pendentes.
+
+Por politica, esta PR de feature nao altera KPIs. Proposta para avaliacao humana:
+37 blocos, MVP demo 92% e MVP vendavel 72%.
+
+Validacao local B-107: Flutter 654/654, B-107 21/21, backend 15/15,
+contratos mobile 18/18 e combinado com Core SaaS 21/21.

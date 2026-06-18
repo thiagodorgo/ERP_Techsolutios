@@ -614,3 +614,38 @@ Resposta esperada:
 ```
 
 Quando a mesma acao for reenviada com o mesmo `client_action_id`, a resposta deve retornar o resultado ja processado sem duplicar Prestação de Contas, item ou submissao.
+
+## B-107 - `work_order.create` no sync mobile
+
+`POST /api/v1/mobile/sync/work-order-actions` passa a aceitar
+`work_order.create` alem de `work_order.status_change` e `work_order.assign`.
+
+Payload efetivo de criacao:
+
+```json
+{
+  "client_id": "wo-local-id",
+  "title": "Resumo da OS",
+  "description": "Opcional",
+  "customer_name": "Cliente",
+  "service_address": "Endereco",
+  "priority": "low|medium|high|urgent",
+  "scheduled_at": "ISO opcional",
+  "metadata": {
+    "source": "mobile_local_create"
+  }
+}
+```
+
+O tenant vem do ator autenticado. Campos de tenant, token, Authorization,
+Bearer, path, base64, `file_data` e `local_path` nao sao usados nem devolvidos
+em conflito. A idempotencia usa tenant + usuario + `client_action_id`.
+`accepted` e `already_applied` retornam `work_order_id`/`server_state.id`, que o
+Flutter grava como `serverId`.
+
+O replay ocorre em duas fases: primeiro `work_order.create`; depois as acoes de
+status que receberam o `server_id`. Resposta de criacao sem referencia remota
+vira `MISSING_RESULT_REF`, sem falso sucesso.
+
+Conflitos permanecem fora do replay automatico ate decisao manual. Approval
+real e `work_order.evidence_attach` continuam fora do escopo B-107.

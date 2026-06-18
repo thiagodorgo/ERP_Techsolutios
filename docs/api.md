@@ -1070,3 +1070,20 @@ Regras especificas:
 - Se M11 detectar divergencia, exigir foto, observacao obrigatoria e ciencia de responsabilidade.
 - M12 usa `technical_evidence` para foto antes, foto depois e observacoes em reparo, manutencao, construcao ou servico tecnico; nao pertence ao escopo de guincho/reboque.
 - M10, M11 e M12 devem consumir schema de checklist vindo da API.
+
+## B-107 - Criacao de OS pelo sync mobile
+
+O endpoint existente `POST /api/v1/mobile/sync/work-order-actions` aceita
+`work_order.create` para OS criadas offline. Nao foi criado endpoint publico
+novo e `POST /api/v1/work-orders` continua sendo o contrato online.
+
+Para `work_order.create`, o backend exige `work_orders:create`, resolve o tenant
+pelo contexto autenticado e chama o mesmo `WorkOrderService` do contrato online.
+A resposta aceita inclui `work_order_id` e `server_state`. Reenvio identico do
+mesmo `client_action_id` retorna `already_applied` com o mesmo ID; payload
+divergente retorna `idempotency_payload_mismatch`.
+
+Somente campos operacionais permitidos sao encaminhados ao service. Tenant,
+Authorization, tokens, path, base64, `file_data` e `local_path` externos sao
+ignorados e sanitizados nos dados de conflito. Nao houve alteracao em Prisma ou
+migrations.

@@ -37,7 +37,7 @@ fundacao de GPS/mapa operacional da OS com store `field_location_events`, sync p
 nativo real via `geolocator`, configura permissoes Android/iOS when-in-use e exige opt-in
 explicito antes do primeiro pedido nativo. A captura continua manual, somente por
 `Enviar localizacao agora`; nao ha background tracking, stream continuo, timer ou envio
-silencioso. Ainda falta storage protegido/presigned URL, criação remota de OS/local-only
+silencioso. Ainda falta storage protegido/presigned URL, approval real,
 mapping, aprovação real, conflitos manuais avançados, geofencing/roteirizacao se aprovados e
 piloto Android real em dispositivo fisico. Não está pronto para operação ampla de campo com
 dados reais.
@@ -58,7 +58,7 @@ dados reais.
 | RDV / Despesas | Funcional (local-first) | **existente** — criação, itens, totais, envio local; submit stub seguro |
 | Recibos / Evidências RDV | Metadado apenas | **parcial** — upload real ausente |
 | Ordens de Serviço (OS) — lista | Funcional (pull real) | **B-099** — `GET /api/v1/work-orders`; upsert Drift; fallback cache; banners UI |
-| Ordens de Serviço (OS) — sync bidirecional | Parcial | **B-103** — statusUpdate backend-ready enviado para `POST /api/v1/mobile/sync/work-order-actions`; local-only/create/approval/evidence ficam pending |
+| Ordens de Serviço (OS) — sync bidirecional | Parcial | **B-107** — create local-only, mapeamento `localId -> serverId`, statusUpdate e conflito manual; approval/evidence ficam pending |
 | Work Order Evidence | Parcial real | **B-104** — salva metadado local, blob ref opaco e upload multipart apos `evidence_id` real; falta storage protegido/auditoria |
 | Checklists configuráveis | Funcional (local-first) | **existente** — run, respostas, persistência Drift |
 | Checklist — pull de templates | Funcional (pull real) | **B-100/B-101** — `GET /api/v1/mobile/checklists/available` com backend real (DTO mobile compativel); cache Drift; banners UI; fallback cache/seeds |
@@ -82,10 +82,10 @@ O app não pode ser usado em campo real pelos seguintes motivos objetivos:
 | Bloqueador | Impacto | Categoria |
 |------------|---------|-----------|
 | Work Orders — pull real implementado (B-099) | ✅ Resolvido — `GET /api/v1/work-orders` conectado | — |
-| Sync bidirecional de OS parcial (B-103) | Status de OS backend-ready chega ao backend; local-only/create/approval/evidence ainda não chegam | Médio |
+| Sync bidirecional de OS parcial (B-107) | Create e status chegam ao backend; approval/evidence ainda não chegam | Médio |
 | Checklist — pull de templates (B-100) + backend real (B-101) | ✅ Resolvido — cliente + handler backend real (`GET /mobile/checklists/available`, DTO compatível) | — |
 | Checklist answers sync (B-102) | ✅ Resolvido parcialmente — respostas/notas/conclusão chegam ao contrato backend quando a run tem `server_run_id`/`run_id` real; runs locais sem mapeamento ficam pending; runCreate/anexos/markers/divergência/ack seguem fora do escopo | — |
-| Sync de inventário e lacunas avançadas de OS não chegam ao servidor | Inventário, criação remota de OS, aprovação e evidência real ainda não fecham ciclo de campo | Crítico |
+| Sync de inventário e lacunas avançadas de OS não chegam ao servidor | Inventário, aprovação e evidência real ainda não fecham ciclo de campo | Crítico |
 | Upload de fotos/evidências parcial (B-104) | Evidências JPEG/PNG chegam ao backend local/dev, mas ainda sem storage protegido, DB/Redis, antivirus e auditoria completa | Alto |
 | Sem aprovação mobile real | Fluxo de aprovação de OS não completo | Alto |
 | GPS/mapa operacional parcial (B-106) | Adapter real, permissoes e opt-in foram conectados; ainda sem background tracking, stream, timer, envio silencioso, geofencing, roteirizacao e piloto Android fisico | Médio |
@@ -416,7 +416,7 @@ InventoryListScreen → StockEntryScreen | StockExitScreen
 
 | Item | O que fazer |
 |------|-------------|
-| Sync de OS | ✅ Parcial B-103: `WorkOrderSyncReplayService` envia `statusUpdate` backend-ready; falta create/local-only mapping, approval/evidence e conflito manual |
+| Sync de OS | ✅ Parcial B-107: `WorkOrderSyncReplayService` envia create em duas fases, mapeia `serverId`, envia `statusUpdate` e oferece conflito manual; faltam approval/evidence |
 | Sync de checklists | Respostas/notas/conclusão ativo em B-102 para runs backend-ready; run create, anexos/markers/divergência/ack pendentes |
 | Sync de inventário | Implementar `DioInventorySyncBatchApi` |
 | Replay com retry e backoff | `AutoSyncCoordinator` já dispara Work Orders, checklists, evidências e RDV; validar com backends reais |
@@ -484,3 +484,20 @@ InventoryListScreen → StockEntryScreen | StockExitScreen
 | **mock/demo** | Presente mas com dados ou sessão simulados — não apto para produção |
 | **proposto** | Modelado/documentado; sem implementação de integração real |
 | **futuro** | Não iniciado; planejado para fases posteriores |
+
+## B-107 - OS local-only e resolucao manual de conflitos
+
+B-107 fecha a lacuna de criacao remota da OS local-only. O sync envia
+`work_order.create`, recebe o ID real e persiste o mapeamento
+`localId -> serverId`. Acoes de status que dependem do ID remoto permanecem
+bloqueadas ate esse mapeamento e passam a ser elegiveis na segunda fase do
+mesmo replay.
+
+Conflitos de OS agora possuem decisao explicita no app: manter local e tentar
+novamente, aceitar a referencia do servidor quando suficiente ou manter o item
+auditavel para revisao manual. Nenhuma opcao apaga a OS local silenciosamente.
+
+Lacunas remanescentes: approval real, `evidence_attach` como acao de OS,
+resolucao com merge campo a campo e persistencia duravel dos recibos de
+idempotencia em ambiente multi-instancia. KPIs nao foram atualizados por
+politica pos-avaliacao humana.

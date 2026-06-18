@@ -6,11 +6,13 @@ import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
 import '../../../core/permissions/permission_resolver.dart';
 import '../../../core/sync/sync_models.dart';
+import '../../../core/sync/sync_providers.dart';
 import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
 import '../../checklists/data/checklist_repository.dart';
 import '../../checklists/domain/checklist_models.dart';
 import '../data/work_order_repository.dart';
+import '../data/work_order_conflict_resolution_service.dart';
 import '../domain/work_order_models.dart';
 import 'work_order_operational_map_screen.dart';
 
@@ -78,6 +80,18 @@ class WorkOrderDetailScreen extends ConsumerWidget {
                   status: SyncStatus.pending,
                   message: 'Esta OS possui alteracoes locais aguardando sync.',
                 ),
+              if (wo.syncStatus == SyncStatus.conflict) ...[
+                SyncStatusBanner(
+                  status: SyncStatus.conflict,
+                  message:
+                      'Conflito de sincronizacao. Seus dados locais foram preservados.',
+                ),
+                const SizedBox(height: 8),
+                WorkOrderConflictResolutionPanel(
+                  workOrder: wo,
+                  repository: repo,
+                ),
+              ],
               const SizedBox(height: 8),
               _HeaderCard(wo: wo),
               const SizedBox(height: 8),
@@ -107,6 +121,156 @@ class WorkOrderDetailScreen extends ConsumerWidget {
         );
       },
     );
+  }
+}
+
+class WorkOrderConflictResolutionPanel extends ConsumerStatefulWidget {
+  const WorkOrderConflictResolutionPanel({
+    required this.workOrder,
+    required this.repository,
+    super.key,
+  });
+
+  final WorkOrder workOrder;
+  final WorkOrderRepository repository;
+
+  @override
+  ConsumerState<WorkOrderConflictResolutionPanel> createState() =>
+      _WorkOrderConflictResolutionPanelState();
+}
+
+class _WorkOrderConflictResolutionPanelState
+    extends ConsumerState<WorkOrderConflictResolutionPanel> {
+  bool _resolving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final service = ref.watch(workOrderConflictResolutionServiceProvider);
+    return FutureBuilder<List<SyncAction>>(
+      future: service.conflictsForWorkOrder(
+        tenantId: widget.workOrder.tenantId,
+        localId: widget.workOrder.localId,
+      ),
+      builder: (context, snapshot) {
+        final conflicts = snapshot.data ?? const <SyncAction>[];
+        final safeMessage = _firstSafeMessage(conflicts);
+        final canAcceptServer = conflicts.any(_hasRemoteReference);
+
+        return Card(
+          key: const Key('work-order-conflict-resolution-card'),
+          color: Theme.of(context).colorScheme.errorContainer,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.warning_amber_outlined),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Resolucao manual de conflito',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                    const OperationalStatusChip(
+                      label: 'Conflito',
+                      status: 'danger',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text('Status local: ${widget.workOrder.status.label}'),
+                Text(safeMessage ?? 'O servidor retornou um conflito seguro.'),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  key: const Key('work-order-conflict-keep-local'),
+                  onPressed: _resolving
+                      ? null
+                      : () => _resolve(
+                          service,
+                          WorkOrderConflictResolution.keepLocalAndRetry,
+                        ),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Manter local e tentar novamente'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  key: const Key('work-order-conflict-accept-server'),
+                  onPressed: _resolving || !canAcceptServer
+                      ? null
+                      : () => _resolve(
+                          service,
+                          WorkOrderConflictResolution.acceptServer,
+                        ),
+                  icon: const Icon(Icons.cloud_download_outlined),
+                  label: const Text('Aceitar estado do servidor'),
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  key: const Key('work-order-conflict-manual-review'),
+                  onPressed: _resolving
+                      ? null
+                      : () => _resolve(
+                          service,
+                          WorkOrderConflictResolution.manualReview,
+                        ),
+                  icon: const Icon(Icons.fact_check_outlined),
+                  label: const Text('Marcar para revisao manual'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  bool _hasRemoteReference(SyncAction action) {
+    for (final key in const ['result_ref', 'server_id', 'work_order_id']) {
+      final value = action.payload[key];
+      if (value is String &&
+          value.trim().isNotEmpty &&
+          !value.toLowerCase().startsWith('wo-local-')) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  String? _firstSafeMessage(List<SyncAction> conflicts) {
+    for (final action in conflicts) {
+      final message = action.lastSafeError;
+      if (message != null && message.trim().isNotEmpty) return message;
+    }
+    return null;
+  }
+
+  Future<void> _resolve(
+    WorkOrderConflictResolutionService service,
+    WorkOrderConflictResolution resolution,
+  ) async {
+    setState(() => _resolving = true);
+    try {
+      await service.resolve(
+        tenantId: widget.workOrder.tenantId,
+        localId: widget.workOrder.localId,
+        resolution: resolution,
+      );
+      await widget.repository.refreshLocalState();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Decisao de conflito registrada.')),
+      );
+    } on StateError catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message.toString())));
+    } finally {
+      if (mounted) setState(() => _resolving = false);
+    }
   }
 }
 
