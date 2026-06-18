@@ -334,6 +334,7 @@ class WorkOrderSyncCodec {
           SyncActionResult(
             clientActionId: _clientActionId(item)!,
             status: 'conflict',
+            resultRef: _resultRef(item),
             errorCode: _conflictCode(item) ?? 'WORK_ORDER_CONFLICT',
           ),
     ];
@@ -368,11 +369,37 @@ class WorkOrderSyncCodec {
   }
 
   Map<String, Object?> _backendPayload(SyncAction action) {
-    if (action.type != WorkOrderSyncActionTypes.statusUpdate) {
-      return const {};
-    }
+    return switch (action.type) {
+      WorkOrderSyncActionTypes.create => _createPayload(action.payload),
+      WorkOrderSyncActionTypes.statusUpdate => _statusPayload(action.payload),
+      _ => const {},
+    };
+  }
 
-    final source = action.payload;
+  Map<String, Object?> _createPayload(Map<String, Object?> source) {
+    final localId = _readNonEmptyString(source['local_id']);
+    final title = _readNonEmptyString(source['title']);
+    final customerName = _readNonEmptyString(source['customer_name']);
+    final serviceAddress = _readNonEmptyString(source['service_address']);
+    final scheduledAt = _readNonEmptyString(source['scheduled_at']);
+    final description = _readNonEmptyString(source['description']);
+    final priority = _readNonEmptyString(source['priority']);
+
+    return Map.unmodifiable(
+      <String, Object?>{
+        'client_id': localId,
+        'title': title,
+        'description': description,
+        'customer_name': customerName,
+        'service_address': serviceAddress,
+        'priority': priority == null ? null : _backendPriority(priority),
+        'scheduled_at': scheduledAt,
+        'metadata': const {'source': 'mobile_local_create'},
+      }..removeWhere((_, value) => value == null),
+    );
+  }
+
+  Map<String, Object?> _statusPayload(Map<String, Object?> source) {
     final explicitWorkOrderId = _readNonEmptyString(source['work_order_id']);
     final workOrderId =
         _readNonEmptyString(source['server_id']) ??
@@ -399,6 +426,14 @@ class WorkOrderSyncCodec {
     if (message != null) payload['message'] = message;
 
     return Map.unmodifiable(payload);
+  }
+
+  String _backendPriority(String priority) {
+    return switch (priority) {
+      'normal' => 'medium',
+      'critical' => 'urgent',
+      _ => priority,
+    };
   }
 
   String _backendStatus(String status) {
@@ -459,8 +494,13 @@ class WorkOrderSyncCodec {
     final workOrder = _asStringMap(
       serverState['work_order'] ?? serverState['workOrder'],
     );
+    final conflict = _asStringMap(item['conflict']);
     return _readNonEmptyString(item['result_ref']) ??
         _readNonEmptyString(item['resultRef']) ??
+        _readNonEmptyString(item['work_order_id']) ??
+        _readNonEmptyString(item['workOrderId']) ??
+        _readNonEmptyString(conflict['server_id']) ??
+        _readNonEmptyString(conflict['serverId']) ??
         _readNonEmptyString(serverState['id']) ??
         _readNonEmptyString(serverState['work_order_id']) ??
         _readNonEmptyString(serverState['workOrderId']) ??
@@ -504,11 +544,21 @@ class DioWorkOrderSyncBatchApi implements WorkOrderSyncBatchApi {
   }
 }
 
-const b103BackendWorkOrderActionTypes = {WorkOrderSyncActionTypes.statusUpdate};
+const b107BackendWorkOrderActionTypes = {
+  WorkOrderSyncActionTypes.create,
+  WorkOrderSyncActionTypes.statusUpdate,
+};
+
+const b103BackendWorkOrderActionTypes = b107BackendWorkOrderActionTypes;
 
 bool b103WorkOrderActionReadyForBackend(SyncAction action) {
-  if (!b103BackendWorkOrderActionTypes.contains(action.type)) {
+  if (!b107BackendWorkOrderActionTypes.contains(action.type)) {
     return false;
+  }
+
+  if (action.type == WorkOrderSyncActionTypes.create) {
+    return _readBackendWorkOrderId(action.payload['local_id']) != null &&
+        _readBackendWorkOrderId(action.payload['title']) != null;
   }
 
   final serverId = _readBackendWorkOrderId(action.payload['server_id']);
@@ -544,9 +594,27 @@ class WorkOrderSyncReplayService {
   final WorkOrderSyncEntityUpdater? _entityUpdater;
 
   Future<SyncReplayResult> replayTenant(String tenantId) async {
-    final all = await _queue.pendingForTenant(tenantId);
-    final eligible = all
-        .where((a) => b103BackendWorkOrderActionTypes.contains(a.type))
+    final createResult = await _replayEligible(
+      tenantId,
+      actionTypes: const {WorkOrderSyncActionTypes.create},
+    );
+    final dependentResult = await _replayEligible(
+      tenantId,
+      actionTypes: const {WorkOrderSyncActionTypes.statusUpdate},
+    );
+    return SyncReplayResult(
+      synced: [...createResult.synced, ...dependentResult.synced],
+      failed: [...createResult.failed, ...dependentResult.failed],
+      conflicts: [...createResult.conflicts, ...dependentResult.conflicts],
+    );
+  }
+
+  Future<SyncReplayResult> _replayEligible(
+    String tenantId, {
+    required Set<String> actionTypes,
+  }) async {
+    final eligible = (await _queue.pendingForTenant(tenantId))
+        .where((a) => actionTypes.contains(a.type))
         .where((a) => a.status != SyncStatus.conflict)
         .where((a) => a.retryCount < maxRetry)
         .where(b103WorkOrderActionReadyForBackend)
@@ -602,26 +670,48 @@ class WorkOrderSyncReplayService {
           lastSafeError: 'Acao sem resposta do servidor.',
         );
       } else {
+        final createNeedsResultRef =
+            a.type == WorkOrderSyncActionTypes.create &&
+            (result.status == 'processed' || result.status == 'ignored') &&
+            _readBackendWorkOrderId(result.resultRef) == null;
         next = switch (result.status) {
+          'processed' when createNeedsResultRef => a.copyWith(
+            status: SyncStatus.failed,
+            retryCount: a.retryCount + 1,
+            lastErrorCode: 'MISSING_RESULT_REF',
+            lastSafeError: 'Criacao sem identificador remoto.',
+          ),
           'processed' => a.copyWith(
             status: SyncStatus.synced,
             processedAt: DateTime.now().toUtc(),
-            lastErrorCode: null,
-            lastSafeError: null,
+            clearLastErrorCode: true,
+            clearLastSafeError: true,
             payload: result.resultRef != null
                 ? {...a.payload, 'result_ref': result.resultRef}
                 : a.payload,
           ),
+          'ignored' when createNeedsResultRef => a.copyWith(
+            status: SyncStatus.failed,
+            retryCount: a.retryCount + 1,
+            lastErrorCode: 'MISSING_RESULT_REF',
+            lastSafeError: 'Criacao sem identificador remoto.',
+          ),
           'ignored' => a.copyWith(
             status: SyncStatus.synced,
             processedAt: DateTime.now().toUtc(),
-            lastErrorCode: null,
-            lastSafeError: null,
+            clearLastErrorCode: true,
+            clearLastSafeError: true,
+            payload: result.resultRef != null
+                ? {...a.payload, 'result_ref': result.resultRef}
+                : a.payload,
           ),
           'conflict' => a.copyWith(
             status: SyncStatus.conflict,
             lastErrorCode: result.errorCode ?? 'CONFLICT',
             lastSafeError: 'Conflito remoto exige decisao manual.',
+            payload: result.resultRef != null
+                ? {...a.payload, 'result_ref': result.resultRef}
+                : a.payload,
           ),
           'failed' => a.copyWith(
             status: SyncStatus.failed,
@@ -639,6 +729,15 @@ class WorkOrderSyncReplayService {
       }
 
       await _queue.update(next);
+      if (a.type == WorkOrderSyncActionTypes.create &&
+          next.status == SyncStatus.synced &&
+          result?.resultRef != null) {
+        await _mapDependentActions(
+          tenantId: tenantId,
+          localId: _readBackendWorkOrderId(a.payload['local_id']),
+          serverId: result!.resultRef!,
+        );
+      }
       if (result != null &&
           (next.status == SyncStatus.synced ||
               next.status == SyncStatus.failed ||
@@ -661,6 +760,25 @@ class WorkOrderSyncReplayService {
       failed: failed,
       conflicts: conflicts,
     );
+  }
+
+  Future<void> _mapDependentActions({
+    required String tenantId,
+    required String? localId,
+    required String serverId,
+  }) async {
+    if (localId == null || serverId.trim().isEmpty) return;
+    final actions = await _queue.actionsForTenant(tenantId);
+    for (final action in actions) {
+      if (action.type == WorkOrderSyncActionTypes.create ||
+          action.payload['local_id'] != localId ||
+          _readBackendWorkOrderId(action.payload['server_id']) != null) {
+        continue;
+      }
+      await _queue.update(
+        action.copyWith(payload: {...action.payload, 'server_id': serverId}),
+      );
+    }
   }
 }
 

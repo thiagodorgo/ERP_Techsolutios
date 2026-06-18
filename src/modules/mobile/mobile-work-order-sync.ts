@@ -154,12 +154,12 @@ function assertSyncActor(actor: AuthenticatedActor | undefined): asserts actor i
     throw routeError(403, "FORBIDDEN", "role_required", "Role is required.");
   }
 
-  if (!hasAnyPermission(actor, ["work_orders:status", "work_orders:assign"])) {
+  if (!hasAnyPermission(actor, ["work_orders:create", "work_orders:status", "work_orders:assign"])) {
     throw routeError(
       403,
       "FORBIDDEN",
       "permission_required",
-      "One of these permissions is required: work_orders:status, work_orders:assign.",
+      "One of these permissions is required: work_orders:create, work_orders:status, work_orders:assign.",
     );
   }
 }
@@ -210,6 +210,20 @@ async function processAction(
   action: MobileWorkOrderAction,
 ): Promise<MobileWorkOrderActionResult> {
   try {
+    if (action.type === "work_order.create") {
+      requireActionPermission(actor, action, "work_orders:create");
+      const workOrder = await service.create(actor, {
+        title: action.payload.title,
+        description: action.payload.description,
+        customerName: action.payload.customer_name,
+        serviceAddress: action.payload.service_address,
+        priority: action.payload.priority,
+        scheduledFor: action.payload.scheduled_at,
+      });
+
+      return acceptedResult(action, workOrder);
+    }
+
     if (action.type === "work_order.assign") {
       requireActionPermission(actor, action, "work_orders:assign");
       const workOrder = await service.assign(actor, parseRequiredString(action.payload.work_order_id, "work_order_id"), {
@@ -241,7 +255,7 @@ async function processAction(
 function requireActionPermission(
   actor: AuthenticatedActor,
   action: MobileWorkOrderAction,
-  permission: "work_orders:assign" | "work_orders:status",
+  permission: "work_orders:create" | "work_orders:assign" | "work_orders:status",
 ): void {
   if (actor.permissions.includes(permission)) {
     return;
@@ -354,9 +368,31 @@ function fingerprintAction(action: MobileWorkOrderAction): string {
 function normalizePayload(record: RawRecord): RawRecord {
   return sortRecord(
     Object.fromEntries(
-      Object.entries(record).filter(([key]) => key !== "tenant_id" && key !== "tenantId"),
+      Object.entries(record)
+        .filter(([key]) => !isForbiddenPayloadKey(key))
+        .map(([key, value]) => [key, sanitizePayloadValue(value)]),
     ),
   );
+}
+
+function sanitizePayloadValue(value: unknown): unknown {
+  if (isPlainRecord(value)) return normalizePayload(value);
+  if (Array.isArray(value)) return value.map(sanitizePayloadValue);
+  return value;
+}
+
+function isForbiddenPayloadKey(key: string): boolean {
+  const normalized = key.toLowerCase();
+  return normalized === "tenant_id"
+    || normalized === "tenantid"
+    || normalized === "authorization"
+    || normalized === "bearer"
+    || normalized === "accesstoken"
+    || normalized === "refreshtoken"
+    || normalized === "base64"
+    || normalized === "file_data"
+    || normalized === "local_path"
+    || normalized === "path";
 }
 
 function sortRecord(record: RawRecord): RawRecord {
@@ -416,7 +452,7 @@ function sanitizeActionForConflict(action: MobileWorkOrderAction): RawRecord {
 
 function hasAnyPermission(
   actor: AuthenticatedActor,
-  permissions: readonly ("work_orders:status" | "work_orders:assign")[],
+  permissions: readonly ("work_orders:create" | "work_orders:status" | "work_orders:assign")[],
 ): boolean {
   return permissions.some((permission) => actor.permissions.includes(permission));
 }

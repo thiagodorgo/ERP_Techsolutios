@@ -3374,3 +3374,35 @@ Todo bloco que executar testes, builds, Flutter, Node, Android, iOS ou geração
 - Sem feature nova.
 - Sem alteracao em Flutter `lib/` ou `test/`.
 - Sem backend funcional, frontend web, Prisma, migrations, infra, `.env`, lockfiles JS ou Figma.
+
+## 2026-06-18 - B-107 Criacao remota de OS e conflitos
+
+### Implementado
+
+- `work_order.create` no sync mobile de OS com permissao `work_orders:create`.
+- Criacao tenant-scoped pelo `WorkOrderService` existente, sem Prisma/migration.
+- Idempotencia por tenant + usuario + `client_action_id`.
+- Replay Flutter em duas fases: create e depois status dependente de `serverId`.
+- Mapeamento `localId -> serverId` para `accepted` e `already_applied`.
+- Rejeicao, conflito, resposta sem ID e erro de rede preservam a OS local.
+- Resolucao manual: manter local/retry, aceitar servidor quando seguro e revisao manual auditavel.
+- UI de conflito no detalhe da OS e agrupamento existente na tela de sync.
+
+### Politica e escopo
+
+- KPIs nao foram alterados; somente proposta no relatorio.
+- Approval real e `evidence_attach` de OS permanecem fora do escopo.
+- Sem frontend web, Prisma, migrations, infra, env, lockfiles ou Figma.
+
+### Validacoes
+
+- B-107 focused: 21/21.
+- B-106: 20/20.
+- B-105: 22/22.
+- B-103: 43/43.
+- Full Flutter: 654/654.
+- `flutter analyze`: sem issues.
+- `npm test`: 15/15.
+- Contratos mobile: 18/18.
+- Contratos mobile + Core SaaS: 21/21.
+- `npm run check`, `npm run lint`, `npm run build` e `git diff --check`: pass.

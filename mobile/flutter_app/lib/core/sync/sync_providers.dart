@@ -17,6 +17,7 @@ import '../location/location_consent_store.dart';
 import '../network/api_contracts.dart';
 import '../network/http_client.dart';
 import '../../features/work_orders/data/work_order_local_store.dart';
+import '../../features/work_orders/data/work_order_conflict_resolution_service.dart';
 import 'sync_action_factory.dart';
 import 'sync_action_store.dart';
 import 'sync_engine.dart';
@@ -152,6 +153,14 @@ final workOrderSyncReplayServiceProvider = Provider<WorkOrderSyncReplayService>(
   },
 );
 
+final workOrderConflictResolutionServiceProvider =
+    Provider<WorkOrderConflictResolutionService>((ref) {
+      return WorkOrderConflictResolutionService(
+        queue: ref.watch(syncQueueRepositoryProvider),
+        store: DriftWorkOrderLocalStore(ref.watch(appDatabaseProvider)),
+      );
+    });
+
 WorkOrderSyncEntityUpdater buildWorkOrderSyncEntityUpdater(
   WorkOrderLocalStore store,
 ) {
@@ -172,6 +181,8 @@ WorkOrderSyncEntityUpdater buildWorkOrderSyncEntityUpdater(
         SyncStatus.conflict => current.copyWith(
           syncStatus: SyncStatus.conflict,
         ),
+        SyncStatus.failed when action.type == WorkOrderSyncActionTypes.create =>
+          current.copyWith(syncStatus: SyncStatus.failed),
         _ => current,
       };
 

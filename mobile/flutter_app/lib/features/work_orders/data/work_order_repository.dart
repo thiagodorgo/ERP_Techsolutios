@@ -121,6 +121,14 @@ class WorkOrderRepository extends ChangeNotifier {
     return _pullInBackground();
   }
 
+  Future<void> refreshLocalState() async {
+    final stored = await _localStore.loadWorkOrders();
+    _orders = stored
+        .where((order) => order.tenantId == _session.activeTenant.tenantId)
+        .toList();
+    notifyListeners();
+  }
+
   Future<WorkOrderPullOutcome> _pullInBackground() async {
     if (_isPulling) return WorkOrderPullOutcome.pulling;
     _isPulling = true;
@@ -324,6 +332,7 @@ class WorkOrderRepository extends ChangeNotifier {
       type: WorkOrderSyncActionTypes.create,
       payload: {
         'local_id': localId,
+        'code': code,
         'title': title,
         'customer_name': customerName,
         'service_address': serviceAddress,
