@@ -6,17 +6,21 @@
   "release": {
     "block": "B-106",
     "title": "Adapter GPS nativo real + permissões Android/iOS",
-    "pr": null,
-    "mergeCommit": null,
-    "approvedHead": null,
+    "pr": 99,
+    "mergeCommit": "aac998eedcd95fba1c1a6a8fa5c09ec6fcaa6f26",
+    "approvedHead": "2ac4215fa6a69a93b546f53816a7bf5fc2766133",
     "branch": "feature/mobile-native-gps-permissions",
-    "status": "implemented_pending_review",
-    "status_label": "Implementado em branch — aguardando revisao",
+    "status": "published_after_human_approval",
+    "status_label": "Publicado apos avaliacao humana e merge",
     "summary": "Conecta o DeviceLocationProvider do B-105 a um adapter nativo real baseado em geolocator, com permissao when-in-use Android/iOS, consentimento explicito e captura somente por acao manual.",
     "commits": [
       {
-        "hash": "branch-head",
+        "hash": "2ac4215fa6a69a93b546f53816a7bf5fc2766133",
         "message": "feat(mobile): add native GPS adapter and permissions"
+      },
+      {
+        "hash": "aac998eedcd95fba1c1a6a8fa5c09ec6fcaa6f26",
+        "message": "Merge pull request #99 from thiagodorgo/feature/mobile-native-gps-permissions"
       }
     ],
     "limitation": "Sem background tracking; Sem stream continuo; Sem timer; Sem envio silencioso; Geofencing pendente; Roteirizacao pendente; Provider externo de mapa pendente, se aprovado; Approval real pendente; Conflitos manuais avancados pendentes; Hardening final de evidencias/storage pendente; Piloto Android real ainda precisa validacao em dispositivo fisico.",

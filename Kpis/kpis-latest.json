@@ -6,10 +6,12 @@
   "release": {
     "block": "B-106",
     "title": "Adapter GPS nativo real + permissões Android/iOS",
-    "pr": null,
-    "merge_commit": null,
-    "approved_head": null,
-    "summary": "B-106 conecta adapter GPS nativo real ao DeviceLocationProvider com geolocator, permissao when-in-use, opt-in explicito e captura manual segura."
+    "pr": 99,
+    "merge_commit": "aac998eedcd95fba1c1a6a8fa5c09ec6fcaa6f26",
+    "approved_head": "2ac4215fa6a69a93b546f53816a7bf5fc2766133",
+    "summary": "B-106 conecta adapter GPS nativo real ao DeviceLocationProvider com geolocator, permissao when-in-use, opt-in explicito e captura manual segura.",
+    "status": "published_after_human_approval",
+    "status_label": "Publicado apos avaliacao humana e merge"
   },
   "metrics": {
     "flutter_tests": {

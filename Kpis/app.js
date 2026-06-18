@@ -54,8 +54,9 @@ const dashboardData = {
     { name: "flutter test --reporter compact", result: "pass 633/633 no B-106" },
     { name: "npm test", result: "pass 15/15 no gate B-152" },
     { name: "backend contract tests focados", result: "pass 47/47 conforme KPI B-105" },
-    { name: "PR #97", result: "merged 0a01b0b5a6cc63066cd154fd7c91c1ce66edc5f3" },
-    { name: "Head aprovado", result: "8fde8b1443fe9510c7f45e9088ddf5b0d5635d6a" },
+    { name: "PR #99", result: "merged aac998eedcd95fba1c1a6a8fa5c09ec6fcaa6f26" },
+    { name: "Head aprovado", result: "2ac4215fa6a69a93b546f53816a7bf5fc2766133" },
+    { name: "Politica KPI", result: "publicado apos avaliacao humana, merge e gate" },
   ],
   estimates: [
     { label: "MVP demo", value: "90%", detail: "Estimado no KPI mobile apos B-106." },

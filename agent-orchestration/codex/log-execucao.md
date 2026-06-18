@@ -3338,3 +3338,39 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 - upload protegido, storage, antivirus e auditoria de arquivo
 - persistencia duravel DB/Redis
 - associacao definitiva com entidades e consumo Flutter
+
+## 2026-06-18 - B-152H Limpeza local e KPIs pos-avaliacao humana
+
+### Executado
+
+- Limpeza local segura de artefatos gerados por Flutter/build/testes, sem alterar arquivos rastreados.
+- Preservados os tres PNGs untracked autorizados em `mobile/flutter_app/assets/brand/`.
+- Corrigidos metadados B-106 nos KPIs mobile e raiz apos avaliacao humana:
+  - PR #99
+  - merge commit `aac998eedcd95fba1c1a6a8fa5c09ec6fcaa6f26`
+  - approved head `2ac4215fa6a69a93b546f53816a7bf5fc2766133`
+- Registrada politica permanente para publicar KPIs apenas apos avaliacao humana, merge e gate.
+- Registrada politica de limpeza pos-validacao para blocos que executem testes, builds, Flutter, Node, Android, iOS ou geracao de artefatos.
+
+### Política permanente de KPIs pós-avaliação humana
+
+1. PRs de feature não devem atualizar arquivos de KPI.
+2. PRs de feature devem reportar KPIs propostos apenas no relatório final.
+3. KPIs só devem ser atualizados após avaliação humana aprovando a entrega.
+4. KPIs só devem ser publicados após merge e gate confirmando sucesso.
+5. A publicação de KPIs deve ocorrer em bloco separado documental/KPI, como B-xxxK ou B-xxxF.
+6. Se a entrega mexeu em Flutter/mobile, atualizar `mobile/flutter_app/Kpis/*` e refletir em `Kpis/*`.
+7. Se a entrega mexeu fora do mobile, atualizar `Kpis/*`.
+8. Se a entrega mexeu nos dois, atualizar ambos.
+9. Se existir `index.html`, atualizar também o HTML.
+10. O bloco de KPI deve preencher PR, merge commit e approved head reais. Campos null bloqueiam o próximo bloco.
+
+### Política de limpeza pós-validação
+
+Todo bloco que executar testes, builds, Flutter, Node, Android, iOS ou geração de artefatos deve limpar os artefatos temporários ao final, sem apagar arquivos rastreados e preservando assets untracked explicitamente permitidos.
+
+### Escopo preservado
+
+- Sem feature nova.
+- Sem alteracao em Flutter `lib/` ou `test/`.
+- Sem backend funcional, frontend web, Prisma, migrations, infra, `.env`, lockfiles JS ou Figma.

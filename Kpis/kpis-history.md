@@ -16,6 +16,13 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - Captura manual somente por Enviar localizacao agora.
 - KPIs raiz sincronizados com mobile/flutter_app/Kpis/.
 
+### Metadados pos-avaliacao humana
+
+- PR: #99.
+- Merge commit: `aac998eedcd95fba1c1a6a8fa5c09ec6fcaa6f26`.
+- Approved head: `2ac4215fa6a69a93b546f53816a7bf5fc2766133`.
+- Status: publicado apos avaliacao humana, merge e gate.
+
 ### KPIs B-106 refletidos na raiz
 
 | KPI | Valor |
@@ -41,6 +48,23 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - Conflitos manuais avancados pendentes.
 - Hardening final de evidencias/storage pendente.
 - Piloto Android real ainda precisa validacao em dispositivo fisico.
+
+### Política permanente de KPIs pós-avaliação humana
+
+1. PRs de feature não devem atualizar arquivos de KPI.
+2. PRs de feature devem reportar KPIs propostos apenas no relatório final.
+3. KPIs só devem ser atualizados após avaliação humana aprovando a entrega.
+4. KPIs só devem ser publicados após merge e gate confirmando sucesso.
+5. A publicação de KPIs deve ocorrer em bloco separado documental/KPI, como B-xxxK ou B-xxxF.
+6. Se a entrega mexeu em Flutter/mobile, atualizar `mobile/flutter_app/Kpis/*` e refletir em `Kpis/*`.
+7. Se a entrega mexeu fora do mobile, atualizar `Kpis/*`.
+8. Se a entrega mexeu nos dois, atualizar ambos.
+9. Se existir `index.html`, atualizar também o HTML.
+10. O bloco de KPI deve preencher PR, merge commit e approved head reais. Campos null bloqueiam o próximo bloco.
+
+### Política de limpeza pós-validação
+
+Todo bloco que executar testes, builds, Flutter, Node, Android, iOS ou geração de artefatos deve limpar os artefatos temporários ao final, sem apagar arquivos rastreados e preservando assets untracked explicitamente permitidos.
 
 ## 2026-06-17 - B-152F KPIs duplos pos-B-105
 
