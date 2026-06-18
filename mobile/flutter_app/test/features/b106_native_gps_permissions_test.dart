@@ -350,30 +350,56 @@ void main() {
       expect(plist, isNot(contains('<string>location</string>')));
     });
 
-    test('20. KPIs mobile e raiz contem B-106 e totais', () {
-      final jsonFiles = [
-        File('Kpis/kpis-latest.json').readAsStringSync(),
-        File('../../Kpis/kpis-latest.json').readAsStringSync(),
+    test('20. KPIs mantem B-106 no historico e latest pode avancar', () {
+      final historyFiles = [
+        File('Kpis/kpis-history.json').readAsStringSync(),
+        File('../../Kpis/kpis-history.json').readAsStringSync(),
+        File('Kpis/kpis-history.md').readAsStringSync(),
+        File('../../Kpis/kpis-history.md').readAsStringSync(),
       ];
-      final htmlFiles = [
-        File('Kpis/index.html').readAsStringSync(),
-        File('../../Kpis/index.html').readAsStringSync(),
+      final latestJsonFiles = [
+        jsonDecode(File('Kpis/kpis-latest.json').readAsStringSync())
+            as Map<String, dynamic>,
+        jsonDecode(File('../../Kpis/kpis-latest.json').readAsStringSync())
+            as Map<String, dynamic>,
       ];
 
-      for (final content in jsonFiles) {
+      for (final content in historyFiles) {
         expect(content, contains('B-106'));
         expect(content, contains('Adapter GPS nativo real'));
         expect(content, contains('36'));
         expect(content, contains('90'));
         expect(content, contains('68'));
       }
-      for (final content in htmlFiles) {
-        expect(content, contains('B-106'));
-        expect(content, contains('Adapter GPS nativo real'));
-        expect(content, contains('36'));
-        expect(content, contains('90%'));
-        expect(content, contains('68%'));
-      }
+
+      final latestReleaseData = latestJsonFiles.map((latest) {
+        final version = latest['version'];
+        expect(version, isA<String>());
+        expect((version as String).trim(), isNotEmpty);
+
+        final release = latest['release'];
+        expect(release, isA<Map<String, dynamic>>());
+        final releaseMap = release as Map<String, dynamic>;
+        for (final entry in releaseMap.entries) {
+          expect(entry.value, isNotNull, reason: entry.key);
+        }
+        expect(
+          releaseMap['mergeCommit'] ?? releaseMap['merge_commit'],
+          isNotNull,
+        );
+        expect(
+          releaseMap['approvedHead'] ?? releaseMap['approved_head'],
+          isNotNull,
+        );
+        expect(releaseMap['status'], 'published_after_human_approval');
+
+        return (
+          version: version,
+          block: releaseMap['block'],
+          status: releaseMap['status'],
+        );
+      }).toSet();
+      expect(latestReleaseData, hasLength(1));
     });
   });
 }
