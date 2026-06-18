@@ -1,5 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
-import { mkdir, rename, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 
@@ -7,12 +6,22 @@ import Busboy from "busboy";
 import type { Request } from "express";
 
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
+import {
+  EVIDENCE_ALLOWED_MIME_TYPES,
+  EVIDENCE_MAX_FILE_SIZE_BYTES,
+  LocalProtectedEvidenceStorageProvider,
+  NoopEvidenceScanner,
+  getEvidenceAuditEventsForTests,
+  recordEvidenceAuditEvent,
+  resetEvidenceAuditEventsForTests,
+  type EvidenceAuditEvent,
+  type EvidenceScanner,
+  type EvidenceStorageProvider,
+} from "../evidence/evidence-storage.js";
 import { findMobileEvidenceSyncReceiptForUpload } from "./mobile-evidence-sync.js";
 
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png"]);
 const CONTRACT_NAME = "mobile_evidence_file_upload";
-const CONTRACT_VERSION = "2026-06-17.b104";
+const CONTRACT_VERSION = "2026-06-18.b108";
 
 type ParsedUpload = {
   readonly fields: Map<string, string>;
@@ -31,21 +40,36 @@ export type MobileEvidenceUploadResponse = {
   };
   readonly evidence_id: string;
   readonly file_id: string;
-  readonly status: "uploaded";
+  readonly status: "stored";
   readonly size_bytes: number;
+  readonly mime_type: string;
   readonly content_type: string;
+  readonly checksum_sha256: string;
   readonly sha256: string;
   readonly uploaded_at: string;
 };
 
 let evidenceUploadStorageRoot = path.join(os.tmpdir(), "erp-mobile-evidence-uploads");
+let evidenceStorageProvider: EvidenceStorageProvider = new LocalProtectedEvidenceStorageProvider(evidenceUploadStorageRoot);
+let evidenceScanner: EvidenceScanner = new NoopEvidenceScanner();
 
 export function configureMobileEvidenceUploadStorageForTests(root: string): void {
   evidenceUploadStorageRoot = root;
+  evidenceStorageProvider = new LocalProtectedEvidenceStorageProvider(root);
+}
+
+export function configureMobileEvidenceUploadScannerForTests(scanner: EvidenceScanner): void {
+  evidenceScanner = scanner;
+}
+
+export function getMobileEvidenceUploadAuditEventsForTests(): readonly EvidenceAuditEvent[] {
+  return getEvidenceAuditEventsForTests();
 }
 
 export async function resetMobileEvidenceUploadRuntimeForTests(): Promise<void> {
-  await rm(evidenceUploadStorageRoot, { force: true, recursive: true });
+  await evidenceStorageProvider.clear?.();
+  resetEvidenceAuditEventsForTests();
+  evidenceScanner = new NoopEvidenceScanner();
 }
 
 export async function uploadMobileEvidenceFile(
@@ -68,7 +92,7 @@ export async function uploadMobileEvidenceFile(
     throw routeError(400, "BAD_REQUEST", "invalid_client_evidence_id", "client_evidence_id is invalid.");
   }
 
-  if (evidenceId !== `evidence:${actor!.tenantId}:${clientEvidenceId}`) {
+  if (evidenceId !== `evidence:${actor.tenantId}:${clientEvidenceId}`) {
     throw routeError(403, "FORBIDDEN", "evidence_tenant_mismatch", "Evidence does not belong to the authenticated tenant.");
   }
 
@@ -90,25 +114,87 @@ export async function uploadMobileEvidenceFile(
     throw routeError(400, "BAD_REQUEST", "invalid_sha256", "sha256 must be a lowercase hex SHA-256 digest.");
   }
 
-  if (!ALLOWED_MIME_TYPES.has(contentType)) {
+  if (!EVIDENCE_ALLOWED_MIME_TYPES.has(contentType)) {
+    recordRejectedEvidenceAudit(actor, evidenceId, clientEvidenceId, "unsupported_content_type", parsed.file.sizeBytes, contentType);
     throw routeError(400, "BAD_REQUEST", "unsupported_content_type", "content_type must be image/jpeg or image/png.");
   }
 
   if (declaredSizeBytes !== parsed.file.sizeBytes) {
+    recordRejectedEvidenceAudit(actor, evidenceId, clientEvidenceId, "size_mismatch", parsed.file.sizeBytes, contentType);
     throw routeError(400, "BAD_REQUEST", "size_mismatch", "size_bytes does not match uploaded file size.");
   }
 
   const computedSha256 = createHash("sha256").update(parsed.file.buffer).digest("hex");
   if (computedSha256 !== declaredSha256) {
+    recordRejectedEvidenceAudit(actor, evidenceId, clientEvidenceId, "sha256_mismatch", parsed.file.sizeBytes, contentType);
     throw routeError(400, "BAD_REQUEST", "sha256_mismatch", "sha256 does not match uploaded file.");
   }
 
-  const stored = await saveEvidenceUploadFile({
-    tenantId: actor!.tenantId,
+  const scanResult = await evidenceScanner.scan({
+    tenantId: actor.tenantId,
+    evidenceId,
+    clientEvidenceId,
+    mimeType: contentType,
+    sizeBytes: parsed.file.sizeBytes,
+    checksumSha256: computedSha256,
+    buffer: parsed.file.buffer,
+  });
+  if (scanResult.status === "infected") {
+    recordRejectedEvidenceAudit(actor, evidenceId, clientEvidenceId, "scanner_infected", parsed.file.sizeBytes, contentType);
+    throw routeError(422, "UNPROCESSABLE_ENTITY", "evidence_rejected", "Evidence file was rejected by safety scan.");
+  }
+  if (scanResult.status === "failed") {
+    recordEvidenceAuditEvent({
+      action: "evidence.upload.scan_failed",
+      tenantId: actor.tenantId,
+      actorId: actor.userId,
+      evidenceId,
+      outcome: "failure",
+      metadata: {
+        client_evidence_id: clientEvidenceId,
+        mime_type: contentType,
+        size_bytes: parsed.file.sizeBytes,
+        reason: "scanner_unavailable",
+      },
+    });
+    throw routeError(503, "SERVICE_UNAVAILABLE", "evidence_scan_failed", "Evidence safety scan is temporarily unavailable.");
+  }
+
+  recordEvidenceAuditEvent({
+    action: "evidence.upload.accepted",
+    tenantId: actor.tenantId,
+    actorId: actor.userId,
+    evidenceId,
+    outcome: "success",
+    metadata: {
+      client_evidence_id: clientEvidenceId,
+      mime_type: contentType,
+      size_bytes: parsed.file.sizeBytes,
+      checksum_sha256: computedSha256,
+    },
+  });
+
+  const stored = await evidenceStorageProvider.store({
+    tenantId: actor.tenantId,
+    evidenceId,
     clientEvidenceId,
     buffer: parsed.file.buffer,
-    contentType,
-    sha256: computedSha256,
+    mimeType: contentType,
+    checksumSha256: computedSha256,
+  });
+
+  recordEvidenceAuditEvent({
+    action: "evidence.upload.stored",
+    tenantId: actor.tenantId,
+    actorId: actor.userId,
+    evidenceId,
+    outcome: "success",
+    metadata: {
+      client_evidence_id: clientEvidenceId,
+      mime_type: stored.mimeType,
+      size_bytes: stored.sizeBytes,
+      checksum_sha256: stored.checksumSha256,
+    },
   });
 
   return {
@@ -119,11 +205,13 @@ export async function uploadMobileEvidenceFile(
     },
     evidence_id: evidenceId,
     file_id: stored.fileId,
-    status: "uploaded",
-    size_bytes: parsed.file.sizeBytes,
-    content_type: contentType,
-    sha256: computedSha256,
-    uploaded_at: new Date().toISOString(),
+    status: "stored",
+    size_bytes: stored.sizeBytes,
+    mime_type: stored.mimeType,
+    content_type: stored.mimeType,
+    checksum_sha256: stored.checksumSha256,
+    sha256: stored.checksumSha256,
+    uploaded_at: stored.storedAt.toISOString(),
   };
 }
 
@@ -145,7 +233,7 @@ function parseMultipartEvidenceUploadRequest(request: Request): Promise<ParsedUp
       limits: {
         fields: 12,
         files: 1,
-        fileSize: MAX_FILE_SIZE_BYTES,
+        fileSize: EVIDENCE_MAX_FILE_SIZE_BYTES,
       },
     });
 
@@ -212,27 +300,6 @@ function parseMultipartEvidenceUploadRequest(request: Request): Promise<ParsedUp
   });
 }
 
-async function saveEvidenceUploadFile(input: {
-  readonly tenantId: string;
-  readonly clientEvidenceId: string;
-  readonly buffer: Buffer;
-  readonly contentType: string;
-  readonly sha256: string;
-}): Promise<{ readonly fileId: string }> {
-  const tenantSegment = safeStorageSegment(input.tenantId);
-  const evidenceSegment = safeStorageSegment(input.clientEvidenceId);
-  const fileId = `file:${input.tenantId}:${input.clientEvidenceId}:${input.sha256.slice(0, 16)}`;
-  const extension = input.contentType === "image/png" ? ".png" : ".jpg";
-  const dir = path.join(evidenceUploadStorageRoot, tenantSegment, evidenceSegment);
-  const finalPath = path.join(dir, `${input.sha256}${extension}`);
-  const tempPath = path.join(dir, `${randomUUID()}.tmp`);
-
-  await mkdir(dir, { recursive: true });
-  await writeFile(tempPath, input.buffer, { flag: "wx" });
-  await rename(tempPath, finalPath);
-  return { fileId };
-}
-
 function assertUploadActor(actor: AuthenticatedActor | undefined): asserts actor is AuthenticatedActor {
   if (!actor?.tenantId) {
     throw routeError(403, "FORBIDDEN", "tenant_required", "Tenant context is required.");
@@ -261,7 +328,7 @@ function parsePositiveInteger(value: string, field: string): number {
   if (!Number.isInteger(parsed) || parsed <= 0) {
     throw routeError(400, "BAD_REQUEST", "invalid_number", `${field} must be a positive integer.`);
   }
-  if (parsed > MAX_FILE_SIZE_BYTES) {
+  if (parsed > EVIDENCE_MAX_FILE_SIZE_BYTES) {
     throw routeError(413, "PAYLOAD_TOO_LARGE", "file_too_large", `${field} must not exceed 10 MB.`);
   }
   return parsed;
@@ -270,17 +337,13 @@ function parsePositiveInteger(value: string, field: string): number {
 function normalizeContentType(fileMimeType: string, declaredContentType: string | undefined): string {
   const fileType = fileMimeType.toLowerCase();
   const declaredType = declaredContentType?.trim().toLowerCase() ?? "";
-  if (ALLOWED_MIME_TYPES.has(fileType)) return fileType;
-  if (fileType === "application/octet-stream" && ALLOWED_MIME_TYPES.has(declaredType)) return declaredType;
+  if (EVIDENCE_ALLOWED_MIME_TYPES.has(fileType)) return fileType;
+  if (fileType === "application/octet-stream" && EVIDENCE_ALLOWED_MIME_TYPES.has(declaredType)) return declaredType;
   return fileType || declaredType;
 }
 
 function isSafeClientEvidenceId(value: string): boolean {
   return /^[A-Za-z0-9._:-]{1,120}$/.test(value) && !value.includes("..");
-}
-
-function safeStorageSegment(value: string): string {
-  return value.replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 120);
 }
 
 type RouteLikeError = {
@@ -292,4 +355,27 @@ type RouteLikeError = {
 
 function routeError(statusCode: number, code: string, reason: string, message: string): RouteLikeError {
   return { statusCode, code, reason, message };
+}
+
+function recordRejectedEvidenceAudit(
+  actor: AuthenticatedActor,
+  evidenceId: string,
+  clientEvidenceId: string,
+  reason: string,
+  sizeBytes: number,
+  mimeType: string,
+): void {
+  recordEvidenceAuditEvent({
+    action: "evidence.upload.rejected",
+    tenantId: actor.tenantId,
+    actorId: actor.userId,
+    evidenceId,
+    outcome: "failure",
+    metadata: {
+      client_evidence_id: clientEvidenceId,
+      mime_type: mimeType,
+      size_bytes: sizeBytes,
+      reason,
+    },
+  });
 }

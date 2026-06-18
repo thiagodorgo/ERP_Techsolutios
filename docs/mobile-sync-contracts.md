@@ -359,11 +359,11 @@ Regras obrigatorias:
 ### POST /api/v1/mobile/evidence-uploads
 
 - Permissoes: `work_orders:update` ou `field_location:send`.
-- Status B-104: parcial; upload multipart local/dev apos metadata sync, sem presigned URL/storage protegido final.
+- Status B-108: parcial endurecido; upload multipart local/dev apos metadata sync, com provider local protegido, scanner testavel e auditoria segura sem expor storage interno.
 - Request: `multipart/form-data`.
 - Campos obrigatorios: `evidence_id`, `client_evidence_id`, `sha256`, `size_bytes` e arquivo `file`.
 - Campos opcionais: `work_order_id`, `content_type`.
-- Response: envelope `{ data }` com `contract`, `evidence_id`, `file_id`, `status`, `size_bytes`, `content_type`, `sha256` e `uploaded_at`.
+- Response: envelope `{ data }` com `contract`, `evidence_id`, `file_id` opaco, `status`, `size_bytes`, `mime_type`, aliases legados `content_type`/`sha256`, `checksum_sha256` e `uploaded_at`.
 
 Regras obrigatorias:
 
@@ -372,8 +372,12 @@ Regras obrigatorias:
 - somente `image/jpeg` e `image/png`.
 - limite de 10 MB.
 - backend calcula SHA-256 do arquivo e rejeita `sha256_mismatch`.
-- resposta nunca retorna caminho fisico, `local_path`, `path`, storage key local ou conteudo binario.
-- lacunas B-104: presigned URL, storage protegido, persistencia DB/Redis, antivirus, auditoria completa e retencao definitiva.
+- scanner default Noop permite desenvolvimento/teste; fakes cobrem limpo, infectado e falha.
+- `status=stored` permite marcar upload como sincronizado; `rejected`, `scan_failed` e `pending_review` devem preservar evidencia local no app.
+- erros seguros: `evidence_rejected` para arquivo recusado pelo scanner e `evidence_scan_failed` para scanner indisponivel.
+- resposta nunca retorna caminho fisico, `local_path`, `path`, bucket, storage key local, URL publica, token ou conteudo binario.
+- auditoria B-108 registra `evidence.upload.accepted`, `evidence.upload.rejected`, `evidence.upload.scan_failed` e `evidence.upload.stored` com metadata sanitizada.
+- lacunas B-108: presigned URL/storage externo, persistencia DB/Redis do receipt, antivirus real, download protegido final e retencao definitiva.
 
 ### POST /api/v1/mobile/field-locations
 

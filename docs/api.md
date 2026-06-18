@@ -207,7 +207,7 @@ O request usa `{ client_batch_id, actions[] }`; cada acao exige `client_evidence
 
 A resposta segue o envelope mobile com `summary`, `accepted`, `rejected`, `conflicts` e `already_applied`. A idempotencia usa tenant resolvido + usuario do ator + `client_evidence_id`; replay identico retorna `already_applied` e payload divergente retorna `idempotency_payload_mismatch`.
 
-`POST /api/v1/mobile/evidence-uploads` esta implementado no B-104 como contrato parcial para upload binario multipart apos o manifesto de evidencia existir. O endpoint exige ator autenticado com `work_orders:update` ou `field_location:send`, resolve tenant sempre pelo ator autenticado e ignora `tenant_id` enviado no form.
+`POST /api/v1/mobile/evidence-uploads` esta implementado no B-108 como contrato parcial endurecido para upload binario multipart apos o manifesto de evidencia existir. O endpoint exige ator autenticado com `work_orders:update` ou `field_location:send`, resolve tenant sempre pelo ator autenticado e ignora `tenant_id` enviado no form.
 
 Request multipart:
 
@@ -217,28 +217,30 @@ Request multipart:
 - tipos aceitos: `image/jpeg` e `image/png`;
 - limite: 10 MB.
 
-O backend valida que `evidence_id` pertence ao tenant autenticado no formato emitido por `POST /api/v1/mobile/sync/evidence-actions` (`evidence:{tenant_id}:{client_evidence_id}`), calcula SHA-256 do arquivo recebido, compara com `sha256`, rejeita mismatch e nao retorna/loga caminho fisico de storage. A resposta usa envelope `{ data }`:
+O backend valida que `evidence_id` pertence ao tenant autenticado no formato emitido por `POST /api/v1/mobile/sync/evidence-actions` (`evidence:{tenant_id}:{client_evidence_id}`), calcula SHA-256 do arquivo recebido, compara com `sha256`, executa scanner testavel e grava via provider local protegido em diretorio nao publico com nome fisico gerado pelo servidor. A resposta nao retorna/loga caminho fisico, bucket, storage key, URL publica, `local_path`, `path` ou binario/base64. A resposta usa envelope `{ data }`:
 
 ```json
 {
   "data": {
     "contract": {
       "name": "mobile_evidence_file_upload",
-      "version": "2026-06-17.b104",
+      "version": "2026-06-18.b108",
       "status": "partial"
     },
     "evidence_id": "evidence:tenant-a:woevid-local-1",
-    "file_id": "file:tenant-a:woevid-local-1:sha-prefix",
-    "status": "uploaded",
+    "file_id": "evfile_0123456789abcdef0123456789abcdef",
+    "status": "stored",
     "size_bytes": 245000,
+    "mime_type": "image/jpeg",
     "content_type": "image/jpeg",
+    "checksum_sha256": "hash-real-sha256",
     "sha256": "hash-real-sha256",
     "uploaded_at": "2026-06-17T12:00:00.000Z"
   }
 }
 ```
 
-Lacunas remanescentes B-104: presigned URL, storage protegido final, persistencia duravel DB/Redis do arquivo/receipt, antivirus, auditoria completa e politica de retencao. B-098E permanece responsavel apenas pelos metadados/idempotencia do manifesto.
+B-108 adiciona `EvidenceStorageProvider`, provider local protegido para dev/test, `EvidenceScanner` com default Noop e fake em testes, auditoria segura em memoria para `evidence.upload.accepted`, `evidence.upload.rejected`, `evidence.upload.scan_failed` e `evidence.upload.stored`. Falha de scanner retorna erro seguro `evidence_scan_failed`; arquivo rejeitado retorna `evidence_rejected`. Lacunas remanescentes: presigned URL/objeto externo, persistencia duravel DB/Redis do receipt, antivirus real, retencao definitiva e download protegido final. B-098E permanece responsavel apenas pelos metadados/idempotencia do manifesto.
 
 ## Autenticacao de rotas protegidas
 

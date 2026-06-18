@@ -3438,3 +3438,33 @@ Todo bloco que executar testes, builds, Flutter, Node, Android, iOS ou geração
 - KPIs publicados em bloco documental separado.
 - Sem feature nova.
 - Sem alteracao em Flutter `lib/`, Flutter `test/`, backend funcional, frontend web, Prisma, migrations, infra, env, lockfiles ou Figma.
+
+## 2026-06-18 - B-108 Hardening de evidencias/storage
+
+### Implementado
+
+- `EvidenceStorageProvider` com provider local protegido para uploads mobile de evidencias.
+- `EvidenceScanner` com default Noop e fake testavel para limpo, infectado e falha.
+- `POST /api/v1/mobile/evidence-uploads` preserva multipart B-104 e passa a retornar contrato `2026-06-18.b108`.
+- Resposta usa `file_id` opaco, `status=stored`, `mime_type`, `checksum_sha256` e aliases legados sem expor path, bucket, storage key ou URL.
+- Auditoria segura em memoria para `evidence.upload.accepted`, `evidence.upload.rejected`, `evidence.upload.scan_failed` e `evidence.upload.stored`.
+- Flutter preserva blob local para `rejected`, `scan_failed`, `pending_review`, rede e timeout; apaga blob apenas em `stored`/`uploaded`.
+
+### Politica e escopo
+
+- KPIs nao foram alterados; somente proposta no relatorio final.
+- Sem frontend web, Prisma, migrations, infra, `.env`, package/lockfiles, `pubspec`, Figma ou arquivos KPI.
+- Presigned URL/storage externo, DB/Redis receipt, antivirus real, download protegido final e retencao definitiva permanecem fora do escopo.
+
+### Validacoes
+
+- `npm run check`, `npm run lint`, `npm test`, `npm run build`: pass.
+- `node --test --import tsx tests/mobile-backend-contracts.test.ts`: 18/18.
+- `node --test --import tsx tests/mobile-backend-contracts.test.ts tests/core-saas-contract.test.ts`: 21/21.
+- `flutter analyze`: sem issues.
+- `flutter test test/features/b108_evidence_storage_hardening_test.dart --reporter compact`: 8/8.
+- `flutter test test/features/b104_evidence_real_upload_test.dart --reporter compact`: 9/9.
+- `flutter test test/features/b107_work_order_remote_create_conflicts_test.dart --reporter compact`: 21/21.
+- `flutter test test/features/b103_work_order_sync_test.dart --reporter compact`: 43/43.
+- `flutter test --reporter compact`: 661/662, falha no teste KPI B-106 por expectativa sobre `Kpis/kpis-latest.json`; arquivos KPI nao foram alterados por regra do B-108.
+- `node --check Kpis/app.js` e `node --check mobile/flutter_app/Kpis/app.js`: pass.
