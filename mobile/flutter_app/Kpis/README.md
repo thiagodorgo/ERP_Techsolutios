@@ -65,9 +65,9 @@ Regras obrigatorias:
 - Mexeu nos dois: atualizar os dois conjuntos.
 - Se existir `index.html`: atualizar tambem o HTML.
 
-No pos-B-105, os valores mobile refletidos na raiz sao: Flutter 613/613,
-Backend 15/15, contratos focados 47/47, modulos Flutter 17/17, MVP demo 87%,
-MVP vendavel 64% e 35 blocos entregues.
+No pos-B-106, os valores mobile refletidos na raiz sao: Flutter 633/633,
+Backend 15/15, contratos focados 47/47, modulos Flutter 17/17, MVP demo 90%,
+MVP vendavel 68% e 36 blocos entregues.
 
 Toda entrega mobile relevante deve atualizar:
 

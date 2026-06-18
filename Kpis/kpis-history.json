@@ -27,5 +27,17 @@
     "snapshot_date": "2026-06-17",
     "version": "B-152F",
     "description": "Correcao obrigatoria de KPIs duplos: Kpis/ raiz sincronizado com mobile/flutter_app/Kpis/ e politica permanente documentada."
+  },
+  {
+    "snapshot_date": "2026-06-18",
+    "version": "B-106",
+    "flutter_tests": "633/633",
+    "backend_tests": "15/15",
+    "backend_contract_tests_focused": "47/47",
+    "flutter_modules": "17/17",
+    "flutter_mvp_demo": "90%",
+    "flutter_mvp_vendavel": "68%",
+    "blocks_completed": 36,
+    "description": "B-106 Adapter GPS nativo real + permissoes Android/iOS: KPIs raiz sincronizados com mobile/flutter_app/Kpis/."
   }
 ]

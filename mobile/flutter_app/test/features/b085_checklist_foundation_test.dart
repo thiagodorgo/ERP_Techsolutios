@@ -510,11 +510,14 @@ void main() {
         await tester.pumpAndSettle();
 
         // Scroll ate o botao Checklist (abaixo dos cards de info)
-        await tester.scrollUntilVisible(
-          find.widgetWithText(OutlinedButton, 'Checklist'),
-          200,
+        final checklistButton = find.widgetWithText(
+          OutlinedButton,
+          'Checklist',
         );
-        await tester.tap(find.widgetWithText(OutlinedButton, 'Checklist'));
+        await tester.scrollUntilVisible(checklistButton, 120);
+        await tester.ensureVisible(checklistButton);
+        await tester.pumpAndSettle();
+        await tester.tap(checklistButton);
         await tester.pumpAndSettle();
 
         expect(find.text('Checklists da OS'), findsOneWidget);

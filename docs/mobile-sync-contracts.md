@@ -8,9 +8,7 @@ permanente e: mexeu Flutter/mobile atualiza os KPIs mobile e reflete na raiz;
 mexeu fora mobile atualiza a raiz; mexeu nos dois atualiza ambos; se houver
 `index.html`, atualizar tambem o HTML.
 
-B-105 deve aparecer nos dois conjuntos com GPS/mapa operacional da OS, Field
-Location, Flutter 613/613, Backend 15/15, contratos focados 47/47, MVP demo
-87%, MVP vendavel 64% e 35 blocos.
+B-106 deve aparecer nos dois conjuntos com Adapter GPS nativo real + permissoes Android/iOS, Field Location, Flutter 633/633, Backend 15/15, contratos focados 47/47, MVP demo 90%, MVP vendavel 68% e 36 blocos.
 
 ## Principios
 
@@ -380,18 +378,21 @@ Regras obrigatorias:
 ### POST /api/v1/mobile/field-locations
 
 - Permissao: `field_location:send`.
-- Status B-105: parcial; fundacao de GPS/mapa operacional da OS com provider abstrato no Flutter, fila local e sync manual.
+- Status B-106: parcial avancado; adapter GPS nativo real conectado ao `DeviceLocationProvider` com `geolocator`, permissao when-in-use e opt-in explicito.
 - Request: evento unico, nao batch replay. Campos aceitos: `latitude`, `longitude`, `accuracyMeters`, `headingDegrees`, `speedMetersPerSecond`, `batteryLevel`, `recordedAt` e `metadata` controlada.
 - Response: envelope `{ data }` do contrato backend de Field Location.
 - Offline: Flutter armazena eventos em `field_location_events` e tenta reenviar antes de Work Orders, Checklists, Evidence e RDV.
 
-Regras obrigatorias B-105:
+Regras obrigatorias B-106:
 
 - tenant resolvido pelo ator autenticado; app nao envia `tenant_id` ou `tenantId`.
 - `work_order_id` so entra em `metadata` quando existe ID de servidor; `work_order_local_id` pode seguir como correlacao local.
 - payload real nao inclui token, `Authorization`, `Bearer`, `accessToken`, `refreshToken`, `base64`, `file_data`, `local_path` ou `path`.
-- runtime padrao exibe indisponibilidade segura quando nao ha adapter GPS nativo real.
-- lacunas B-105: adapter GPS nativo real, permissoes Android/iOS, opt-in de privacidade, provider externo de mapa se aprovado, background tracking, stream continuo, timer de coleta, envio silencioso, roteirizacao e geofencing.
+- antes de pedir permissao nativa, o app exige aceite explicito do texto de captura manual.
+- a localizacao so e capturada quando o usuario toca em `Enviar localizacao agora`.
+- o provider real chama apenas `getCurrentPosition` com timeout seguro.
+- nao ha background tracking, stream continuo, timer de coleta, envio silencioso, captura ao abrir tela ou captura no `AutoSyncCoordinator`.
+- lacunas B-106: geofencing, roteirizacao, provider externo de mapa se aprovado, approval real, conflitos manuais avancados, hardening final de evidencias/storage e piloto Android fisico.
 
 ### GET /api/v1/expense-policies
 

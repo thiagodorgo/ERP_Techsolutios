@@ -1,34 +1,26 @@
 {
-  "snapshot_date": "2026-06-17",
-  "version": "B-105",
-  "branch": "feature/mobile-gps-operational-map",
-  "description": "B-105 GPS/mapa operacional da OS — fundacao mobile com provider abstrato/testavel, store field_location_events, sync Field Location e mapa operacional simples conectado a OS",
+  "snapshot_date": "2026-06-18",
+  "version": "B-106",
+  "branch": "feature/mobile-native-gps-permissions",
+  "description": "B-106 Adapter GPS nativo real + permissoes Android/iOS — geolocator runtime, permissao when-in-use, opt-in explicito e captura manual preservando Field Location seguro",
   "release": {
-    "block": "B-105",
-    "title": "GPS/mapa operacional da OS",
-    "pr": 97,
-    "mergeCommit": "0a01b0b5a6cc63066cd154fd7c91c1ce66edc5f3",
-    "approvedHead": "8fde8b1443fe9510c7f45e9088ddf5b0d5635d6a",
-    "branch": "feature/mobile-gps-operational-map",
+    "block": "B-106",
+    "title": "Adapter GPS nativo real + permissões Android/iOS",
+    "pr": null,
+    "mergeCommit": null,
+    "approvedHead": null,
+    "branch": "feature/mobile-native-gps-permissions",
     "status": "implemented_pending_review",
     "status_label": "Implementado em branch — aguardando revisao",
-    "summary": "Entrega a fundacao de GPS/mapa operacional da OS no Flutter: DeviceLocationProvider abstrato/testavel, store local field_location_events, sync manual para POST /api/v1/mobile/field-locations e mapa operacional simples em /field-map sem SDK externo.",
+    "summary": "Conecta o DeviceLocationProvider do B-105 a um adapter nativo real baseado em geolocator, com permissao when-in-use Android/iOS, consentimento explicito e captura somente por acao manual.",
     "commits": [
       {
         "hash": "branch-head",
-        "message": "feat(mobile): add GPS operational map foundation"
-      },
-      {
-        "hash": "branch-head",
-        "message": "test(mobile): cover field location contracts"
-      },
-      {
-        "hash": "branch-head",
-        "message": "docs: record B-105 GPS operational map status"
+        "message": "feat(mobile): add native GPS adapter and permissions"
       }
     ],
-    "limitation": "Sem pacote GPS nativo, sem geolocator, sem Google Maps, sem Mapbox, sem SDK externo de mapa, sem background tracking, sem stream continuo, sem timer de coleta e sem envio silencioso. Adapter GPS nativo real pendente.",
-    "fallback": "Runtime padrao mostra indisponibilidade segura de localizacao; testes injetam provider fake com coordenadas controladas."
+    "limitation": "Sem background tracking; Sem stream continuo; Sem timer; Sem envio silencioso; Geofencing pendente; Roteirizacao pendente; Provider externo de mapa pendente, se aprovado; Approval real pendente; Conflitos manuais avancados pendentes; Hardening final de evidencias/storage pendente; Piloto Android real ainda precisa validacao em dispositivo fisico.",
+    "fallback": "Servico desligado, permissao negada, permissao permanente e ausencia de opt-in retornam mensagens seguras sem coordenadas, tenant ou tokens."
   },
   "domains": [
     {
@@ -80,16 +72,26 @@
       "id": "field_location",
       "name": "Field Location / Mapa Operacional",
       "status": "parcial",
-      "detail": "B-105 entrega fundacao mobile de GPS/mapa operacional da OS com provider abstrato, store Drift v6 e sync manual para Field Location.",
+      "detail": "B-106 conecta o adapter GPS nativo real ao DeviceLocationProvider, mantendo captura manual, opt-in explicito e Field Location seguro.",
       "points": [
-        "DeviceLocationProvider abstrato/testavel; adapter GPS nativo real pendente",
-        "Store local field_location_events em schemaVersion 6",
-        "POST /api/v1/mobile/field-locations via Dio autenticado quando houver token",
-        "Payload seguro: latitude, longitude, accuracyMeters, headingDegrees, speedMetersPerSecond, batteryLevel, recordedAt e metadata controlada",
-        "Sem tenant_id/tenantId, token/Authorization, base64, file_data, local_path ou path no payload real",
-        "Mapa operacional simples em /field-map, sem Google Maps, Mapbox ou SDK externo",
-        "AutoSyncCoordinator executa Field Location antes de Work Orders, Checklist, Evidence e RDV",
-        "Sem background tracking, stream continuo, timer de coleta ou envio silencioso"
+        "GeolocatorDeviceLocationProvider com GeolocatorLocationPort testavel",
+        "Permissoes Android/iOS foreground/when-in-use",
+        "Consentimento explicito antes do primeiro pedido de permissao nativa",
+        "Captura somente por Enviar localizacao agora; sem captura ao abrir tela",
+        "getCurrentPosition com timeout seguro; sem stream, timer ou envio silencioso",
+        "POST /api/v1/mobile/field-locations preservado com payload seguro",
+        "AutoSyncCoordinator continua sincronizando Field Location antes dos demais dominios sem capturar nova localizacao",
+        "Sem background tracking",
+        "Sem stream continuo",
+        "Sem timer",
+        "Sem envio silencioso",
+        "Geofencing pendente",
+        "Roteirizacao pendente",
+        "Provider externo de mapa pendente, se aprovado",
+        "Approval real pendente",
+        "Conflitos manuais avancados pendentes",
+        "Hardening final de evidencias/storage pendente",
+        "Piloto Android real ainda precisa validacao em dispositivo fisico"
       ]
     },
     {
@@ -113,12 +115,12 @@
         {
           "id": "flutter_tests",
           "label": "Flutter Tests",
-          "value": 613,
-          "total": 613,
+          "value": 633,
+          "total": 633,
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "613/613 no full Flutter B-105 — inclui 22 testes dedicados da fundacao de GPS/mapa operacional"
+          "detail": "633/633 no full Flutter B-106 — inclui 20 testes dedicados de GPS nativo/permissoes"
         },
         {
           "id": "npm_tests",
@@ -176,29 +178,29 @@
         {
           "id": "flutter_mvp_demo",
           "label": "MVP Demo Readiness",
-          "value": 87,
+          "value": 90,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Sobe com fundacao de GPS/mapa operacional, mapa simples da OS e sync Field Location; ainda depende de piloto Android e adapter nativo"
+          "detail": "Estimado. Sobe com adapter GPS nativo real, opt-in explicito e permissoes when-in-use."
         },
         {
           "id": "flutter_mvp_vendavel",
           "label": "MVP Vendavel (Producao)",
-          "value": 64,
+          "value": 68,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Requer adapter GPS nativo, permissoes Android/iOS, storage protegido, approval real, geofencing/roteirizacao se aprovados e resolucao de conflitos"
+          "detail": "Estimado. Ainda requer piloto Android fisico, geofencing/roteirizacao se aprovados, approval real, conflitos avancados e hardening final de evidencias/storage."
         },
         {
           "id": "flutter_test_files",
           "label": "Arquivos de Teste Flutter",
-          "value": 37,
+          "value": 38,
           "unit": "arquivos",
           "type": "real",
           "status": "green",
-          "detail": "37 arquivos de teste no diretorio test/ apos B-105"
+          "detail": "38 arquivos de teste no diretorio test/ apos B-106"
         },
         {
           "id": "flutter_os_pull",
@@ -316,11 +318,11 @@
         {
           "id": "blocks_completed",
           "label": "Blocos Entregues (total)",
-          "value": 35,
+          "value": 36,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-076 ate B-105 + B-098F, incluindo sub-blocos (A/B/K/F)"
+          "detail": "B-076 ate B-106 + B-098F, incluindo sub-blocos (A/B/K/F)"
         },
         {
           "id": "blocks_last_sprint",
@@ -371,7 +373,7 @@
           "unit": "parcial",
           "type": "real",
           "status": "yellow",
-          "detail": "B-105 implementa fundacao de GPS/mapa operacional da OS, provider abstrato, mapa simples e sync Field Location; adapter GPS nativo e permissoes Android/iOS seguem pendentes"
+          "detail": "B-106 implementa adapter GPS nativo real com geolocator, permissoes when-in-use e opt-in explicito; mapa externo, geofencing e roteirizacao seguem pendentes."
         },
         {
           "id": "aprovacao_real",
@@ -506,19 +508,15 @@
     {
       "name": "Field Map / GPS",
       "status": "parcial",
-      "detail": "B-105: mapa operacional simples conectado a OS, provider abstrato e sync Field Location; adapter GPS nativo pendente"
+      "detail": "B-106: adapter GPS nativo real com geolocator, permissao when-in-use, opt-in explicito, mapa operacional simples e sync Field Location manual."
     },
     {
       "name": "Field Location Sync",
       "status": "parcial",
-      "detail": "POST /api/v1/mobile/field-locations, store field_location_events e AutoSync antes dos demais dominios"
+      "detail": "POST /api/v1/mobile/field-locations, store field_location_events, captura manual e AutoSync antes dos demais dominios sem captura automatica."
     }
   ],
   "next_steps": [
-    {
-      "block": "B-106",
-      "title": "Adapter GPS nativo e permissoes Android/iOS para piloto controlado"
-    },
     {
       "block": "B-107",
       "title": "Criacao remota de OS/local-only mapping e resolucao manual de conflitos"

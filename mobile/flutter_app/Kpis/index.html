@@ -24,20 +24,26 @@
 
       <p id="source-banner" class="source-banner" role="status" hidden></p>
 
-      <section class="section section--block panel" aria-label="Resumo B-105 literal">
+      <section class="section section--block panel" aria-label="Resumo B-106 literal">
         <div class="section-heading">
-          <p class="eyebrow">Snapshot pos-B-105</p>
-          <h2>B-105 — GPS/mapa operacional da OS</h2>
+          <p class="eyebrow">Snapshot B-106</p>
+          <h2>B-106 — Adapter GPS nativo real + permissões Android/iOS</h2>
         </div>
         <p>
-          Field Location e DeviceLocationProvider no Flutter: 613/613 testes,
+          Field Location e DeviceLocationProvider no Flutter: 633/633 testes,
           Backend 15/15, contratos focados 47/47, modulos Flutter 17/17,
-          MVP demo 87%, MVP vendavel 64% e 35 blocos entregues.
+          MVP demo 90%, MVP vendavel 68% e 36 blocos entregues.
         </p>
         <p>
-          Limitacoes: adapter GPS nativo pendente, sem geolocator, sem Google
-          Maps, sem Mapbox, sem SDK externo, sem background tracking, sem timer,
-          sem stream continuo e sem envio silencioso.
+          Adapter real baseado em geolocator, permissao Android/iOS when-in-use,
+          consentimento explicito e captura manual somente por Enviar
+          localizacao agora.
+        </p>
+        <p>
+          Limitacoes: sem background tracking, sem stream continuo, sem timer,
+          sem envio silencioso, geofencing pendente, roteirizacao pendente,
+          provider externo de mapa pendente e piloto Android real ainda precisa
+          validacao em dispositivo fisico.
         </p>
         <p>
           Politica de KPIs duplos: mexeu Flutter/mobile atualiza

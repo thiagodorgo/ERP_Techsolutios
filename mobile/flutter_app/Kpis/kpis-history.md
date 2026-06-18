@@ -5,6 +5,33 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-106 — 2026-06-18
+
+**Adapter GPS nativo real + permissoes Android/iOS**
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 633 / 633 |
+| Backend Tests | 15 / 15 |
+| Backend Contract Tests focados | 47 / 47 |
+| flutter analyze | 0 issues |
+| Modulos Flutter Prontos | 17 / 17 |
+| MVP Demo Readiness (est.) | 90% |
+| MVP Vendavel (est.) | 68% |
+| Blocos Entregues | 36 |
+
+**Novidades:** `GeolocatorDeviceLocationProvider` conectado ao
+`DeviceLocationProvider`, dependencia `geolocator`, permissoes Android/iOS
+when-in-use, `LocationConsentStore` com opt-in explicito e captura manual apenas
+por `Enviar localizacao agora`.
+
+**Privacidade preservada:** sem background tracking, sem stream continuo, sem
+timer, sem envio silencioso e sem captura automatica ao abrir telas ou pelo
+`AutoSyncCoordinator`. Field Location permanece em
+`POST /api/v1/mobile/field-locations` com payload controlado.
+
+---
+
 ## B-152F — 2026-06-17
 
 **Correcao obrigatoria de KPIs duplos pos-B-105**

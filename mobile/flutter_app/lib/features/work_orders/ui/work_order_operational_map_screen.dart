@@ -6,8 +6,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
+import '../../../core/location/device_location_provider.dart';
 import '../../../core/location/field_location_models.dart';
 import '../../../core/location/field_location_service.dart';
+import '../../../core/location/location_consent_store.dart';
 import '../../../core/location/operational_map_projection.dart';
 import '../../../core/permissions/permission_resolver.dart';
 import '../../../core/sync/sync_models.dart';
@@ -116,6 +118,28 @@ class _OperationalLocationCardState
   bool _isSending = false;
   String? _safeMessage;
   int _reloadKey = 0;
+  DeviceLocationProvider? _statusProvider;
+  int? _statusReloadKey;
+  Future<DeviceLocationStatus>? _statusFuture;
+
+  Future<void> _acceptConsent() async {
+    await ref.read(locationConsentStoreProvider).acceptManualCapture();
+    if (mounted) {
+      setState(() {
+        _safeMessage = null;
+        _reloadKey++;
+      });
+    }
+  }
+
+  Future<void> _openSettings(DeviceLocationStatusReader reader) async {
+    await reader.openAppSettings();
+    if (mounted) {
+      setState(() {
+        _reloadKey++;
+      });
+    }
+  }
 
   Future<void> _captureNow() async {
     setState(() {
@@ -151,6 +175,11 @@ class _OperationalLocationCardState
   @override
   Widget build(BuildContext context) {
     final store = ref.watch(fieldLocationStoreProvider);
+    final locationProvider = ref.watch(deviceLocationProvider);
+    final DeviceLocationStatusReader? statusReader =
+        locationProvider is DeviceLocationStatusReader
+        ? locationProvider as DeviceLocationStatusReader
+        : null;
     final canSend = const PermissionResolver().has(
       widget.session.permissions,
       'field_location:send',
@@ -187,8 +216,23 @@ class _OperationalLocationCardState
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Provider abstrato preparado; adapter GPS nativo pendente.',
+                  manualLocationConsentText,
                   style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                FutureBuilder<DeviceLocationStatus>(
+                  future: _statusFor(locationProvider),
+                  builder: (context, statusSnapshot) {
+                    final status = statusSnapshot.data;
+                    return _LocationPrivacyStatus(
+                      status: status,
+                      onAcceptConsent: _acceptConsent,
+                      onRetry: () => setState(() => _reloadKey++),
+                      onOpenSettings: statusReader == null
+                          ? null
+                          : () => _openSettings(statusReader),
+                    );
+                  },
                 ),
                 const SizedBox(height: 8),
                 if (latest == null)
@@ -260,6 +304,122 @@ class _OperationalLocationCardState
     SyncStatus.local => 'Local',
     null => 'Sem fix',
   };
+
+  Future<DeviceLocationStatus> _statusFor(DeviceLocationProvider provider) {
+    if (!identical(_statusProvider, provider) ||
+        _statusReloadKey != _reloadKey ||
+        _statusFuture == null) {
+      _statusProvider = provider;
+      _statusReloadKey = _reloadKey;
+      _statusFuture = _deviceLocationStatus(provider);
+    }
+    return _statusFuture!;
+  }
+}
+
+Future<DeviceLocationStatus> _deviceLocationStatus(
+  DeviceLocationProvider provider,
+) {
+  final DeviceLocationStatusReader? reader =
+      provider is DeviceLocationStatusReader
+      ? provider as DeviceLocationStatusReader
+      : null;
+  if (reader != null) {
+    return reader.status();
+  }
+  return Future.value(
+    const DeviceLocationStatus(
+      consentAccepted: true,
+      serviceEnabled: true,
+      permissionLabel: 'Provider de teste',
+    ),
+  );
+}
+
+class _LocationPrivacyStatus extends StatelessWidget {
+  const _LocationPrivacyStatus({
+    required this.status,
+    required this.onAcceptConsent,
+    required this.onRetry,
+    this.onOpenSettings,
+  });
+
+  final DeviceLocationStatus? status;
+  final VoidCallback onAcceptConsent;
+  final VoidCallback onRetry;
+  final VoidCallback? onOpenSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = status;
+    if (current == null) {
+      return const Text('Verificando status de localizacao...');
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OperationalStatusChip(
+              label: current.consentAccepted
+                  ? 'Consentimento ativo'
+                  : 'Consentimento pendente',
+              status: current.consentAccepted ? 'success' : 'warning',
+            ),
+            OperationalStatusChip(
+              label: 'Permissao: ${current.permissionLabel}',
+              status: _permissionTone(current.permissionLabel),
+            ),
+            if (current.serviceEnabled != null)
+              OperationalStatusChip(
+                label: current.serviceEnabled!
+                    ? 'Servico ligado'
+                    : 'Servico desligado',
+                status: current.serviceEnabled! ? 'success' : 'danger',
+              ),
+          ],
+        ),
+        if (current.safeMessage != null) ...[
+          const SizedBox(height: 8),
+          Text(current.safeMessage!),
+        ],
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (!current.consentAccepted)
+              OutlinedButton.icon(
+                onPressed: onAcceptConsent,
+                icon: const Icon(Icons.privacy_tip_outlined),
+                label: const Text('Aceitar captura manual'),
+              ),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_outlined),
+              label: const Text('Tentar novamente'),
+            ),
+            if (current.settingsAvailable && onOpenSettings != null)
+              OutlinedButton.icon(
+                onPressed: onOpenSettings,
+                icon: const Icon(Icons.settings_outlined),
+                label: const Text('Abrir configuracoes'),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _permissionTone(String label) {
+    if (label.contains('Negada')) return 'danger';
+    if (label.contains('Permitida')) return 'success';
+    if (label.contains('Provider')) return 'info';
+    return 'warning';
+  }
 }
 
 class _OperationalMapPanel extends ConsumerWidget {

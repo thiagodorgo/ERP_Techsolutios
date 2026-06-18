@@ -4,6 +4,27 @@ abstract class DeviceLocationProvider {
   Future<DeviceLocationResult> currentLocation();
 }
 
+abstract class DeviceLocationStatusReader {
+  Future<DeviceLocationStatus> status();
+  Future<bool> openAppSettings();
+}
+
+class DeviceLocationStatus {
+  const DeviceLocationStatus({
+    required this.consentAccepted,
+    this.serviceEnabled,
+    this.permissionLabel = 'Nao verificada',
+    this.safeMessage,
+    this.settingsAvailable = false,
+  });
+
+  final bool consentAccepted;
+  final bool? serviceEnabled;
+  final String permissionLabel;
+  final String? safeMessage;
+  final bool settingsAvailable;
+}
+
 class DeviceLocationResult {
   const DeviceLocationResult._({
     required this.isAvailable,

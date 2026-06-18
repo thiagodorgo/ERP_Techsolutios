@@ -2,16 +2,13 @@
 
 ## Politica de KPIs duplos
 
-Como B-105 mexeu em Flutter/mobile e documentacao/contratos, os dois conjuntos
-de KPIs devem ser atualizados: `mobile/flutter_app/Kpis/` e `Kpis/`. Os valores
-Flutter/mobile de 613/613, MVP demo 87%, MVP vendavel 64% e 35 blocos devem
-aparecer tambem na raiz, inclusive em `index.html` quando existir.
+Como B-106 mexeu em Flutter/mobile, permissoes nativas e documentacao/contratos, os dois conjuntos de KPIs devem ser atualizados: `mobile/flutter_app/Kpis/` e `Kpis/`. Os valores Flutter/mobile de 633/633, MVP demo 90%, MVP vendavel 68% e 36 blocos devem aparecer tambem na raiz, inclusive em `index.html` quando existir.
 
 ## Decisao desta rodada
 
 Esta branch integra a UI inicial do Mapa Operacional em `/operations/map` com `work_orders` e `field_dispatch` sobre a fundacao backend de localizacao de operadores em campo. No B-105, o app Flutter passou a ter uma fundacao de GPS/mapa operacional conectada a OS para enviar eventos manuais ao backend; o frontend web consulta ultimas posicoes e, quando o usuario possui as permissoes correspondentes, correlaciona operadores com OS atribuidas, despachos operacionais e acoes diretas de despacho.
 
-Fora de escopo mantido para o mapa mobile B-105: adapter GPS nativo real, permissoes Android/iOS, provider externo de mapa, roteirizacao avancada, despacho completo, novos endpoints backend, migrations, WebSocket/tempo real, background tracking, stream continuo, timer de coleta e envio silencioso.
+Fora de escopo mantido para o mapa mobile B-106: background tracking, stream continuo, timer de coleta, envio silencioso, provider externo de mapa, roteirizacao avancada, geofencing, despacho completo, novos endpoints backend, migrations, WebSocket/tempo real e piloto Android fisico validado.
 
 Itens registrados:
 
@@ -48,18 +45,22 @@ Fallback:
 - registros com `capturedAt` acima de 15 minutos sao marcados como localizacao antiga;
 - coordenadas nao sao registradas em `console.log` pelo frontend.
 
-## App Flutter B-105
+## App Flutter B-106
 
-Implementado como contrato parcial:
+Implementado como contrato parcial avancado:
 
-- `DeviceLocationProvider` abstrato/testavel, com runtime padrao de indisponibilidade segura quando nao ha adapter GPS nativo real;
+- `DeviceLocationProvider` abstrato/testavel preservado;
+- `GeolocatorDeviceLocationProvider` real com `GeolocatorLocationPort` testavel;
+- `LocationConsentStore` exige opt-in explicito antes do primeiro pedido de permissao nativa;
+- Android usa somente `ACCESS_FINE_LOCATION` e `ACCESS_COARSE_LOCATION`;
+- iOS usa somente `NSLocationWhenInUseUsageDescription`;
 - `field_location_events` no Drift para eventos manuais de localizacao operacional;
 - `DioFieldLocationApi` enviando `POST /api/v1/mobile/field-locations`;
-- `AutoSyncCoordinator` executando Field Location antes de Work Orders, Checklist, Evidence e RDV;
-- card de localizacao operacional em detalhe/execucao da OS;
-- `/field-map?workOrderId=...` como mapa operacional simples conectado a OS, sem Google Maps, Mapbox ou SDK externo.
+- `AutoSyncCoordinator` executa sync de Field Location antes de Work Orders, Checklist, Evidence e RDV, sem capturar nova localizacao;
+- card de localizacao operacional em detalhe/execucao da OS mostra consentimento, permissao, servico desligado, retry e configuracoes quando aplicavel;
+- `/field-map?workOrderId=...` continua como mapa operacional simples conectado a OS, sem Google Maps, Mapbox ou SDK externo.
 
-O payload mobile B-105 nao envia `tenant_id`, `tenantId`, token, `Authorization`, `base64`, `file_data`, `local_path` ou `path`. Coordenadas sao capturadas apenas por acao explicita do usuario e nao ha background tracking, stream continuo, timer de coleta ou envio silencioso.
+O payload mobile B-106 nao envia `tenant_id`, `tenantId`, token, `Authorization`, `base64`, `file_data`, `local_path` ou `path`. Coordenadas sao capturadas apenas por acao explicita do usuario em `Enviar localizacao agora`; nao ha background tracking, stream continuo, timer de coleta, envio silencioso, captura ao abrir tela nem captura automatica no AutoSyncCoordinator.
 
 ## Persistencia
 
@@ -160,4 +161,6 @@ Matriz aplicada:
 - avaliar provider externo de mapa, se aprovado;
 - evoluir UX de acoes em lote ou despacho avancado, se aprovado;
 - evoluir rotas e eventos de campo para roteirizacao assistida;
-- implementar adapter GPS nativo real e garantir opt-in, privacidade e controles por tenant antes de qualquer coleta automatica.
+- validar piloto Android real em dispositivo fisico antes de qualquer ampliacao operacional;
+- avaliar geofencing, roteirizacao e provider externo de mapa somente se aprovados;
+- manter opt-in, captura manual e controles de privacidade antes de qualquer evolucao de coleta.

@@ -1,3 +1,37 @@
+## 2026-06-18 - B-106 Adapter GPS nativo real + permissoes Android/iOS
+
+### Resumo
+
+Conectado adapter GPS nativo real ao `DeviceLocationProvider` do B-105 usando `geolocator`, permissao when-in-use Android/iOS e opt-in explicito. A captura continua manual e ocorre somente por acao do usuario.
+
+### Arquivos-chave
+
+| Area | Resultado |
+| --- | --- |
+| `mobile/flutter_app/lib/core/location/*` | Provider geolocator, port testavel e consent store |
+| `mobile/flutter_app/lib/core/sync/sync_providers.dart` | Provider runtime real com overrides de teste preservados |
+| `mobile/flutter_app/lib/features/work_orders/ui/*` | Card operacional com consentimento, permissao, servico, retry e settings |
+| `mobile/flutter_app/android/app/src/main/AndroidManifest.xml` | Somente permissoes foreground |
+| `mobile/flutter_app/ios/Runner/Info.plist` | Somente permissao when-in-use |
+| `mobile/flutter_app/test/features/b106_native_gps_permissions_test.dart` | Cobertura de privacidade, permissoes, payload, UI e sync |
+| `mobile/flutter_app/Kpis/*`, `Kpis/*` | KPIs duplos B-106 atualizados |
+
+### Privacidade
+
+- Sem background tracking.
+- Sem stream continuo.
+- Sem timer.
+- Sem envio silencioso.
+- Sem captura automatica ao abrir telas.
+- Sem captura automatica no AutoSyncCoordinator.
+
+### Validacoes registradas
+
+- `flutter test test/features/b106_native_gps_permissions_test.dart --reporter compact` — passou, 20/20.
+- Demais validacoes completas registradas na entrega final da branch.
+
+---
+
 # Log de Execucao
 
 ## 2026-06-17 - B-152F KPIs duplos pos-B-105

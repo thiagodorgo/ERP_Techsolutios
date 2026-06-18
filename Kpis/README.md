@@ -18,19 +18,16 @@ Regras obrigatorias:
 - Mexeu nos dois: atualizar os dois conjuntos.
 - Se existir `index.html`: atualizar tambem o HTML.
 
-## B-105 refletido na raiz
+## B-106 refletido na raiz
 
-- B-105 — GPS/mapa operacional da OS.
-- Field Location e DeviceLocationProvider.
-- Flutter tests: 613/613.
+- B-106 — Adapter GPS nativo real + permissões Android/iOS.
+- Field Location e DeviceLocationProvider com adapter geolocator real.
+- Flutter tests: 633/633.
 - Backend tests: 15/15.
 - Backend contract tests focados: 47/47.
 - Flutter modules: 17/17.
-- MVP demo: 87%.
-- MVP vendavel: 64%.
-- Blocos entregues: 35.
+- MVP demo: 90%.
+- MVP vendavel: 68%.
+- Blocos entregues: 36.
 
-Limitacoes mantidas: adapter GPS nativo real pendente, permissoes Android/iOS
-pendentes, opt-in de privacidade pendente, sem pacote GPS nativo, sem
-geolocator, sem Google Maps, sem Mapbox, sem SDK externo, sem background
-tracking, sem timer, sem stream continuo e sem envio silencioso.
+Limitacoes mantidas: Sem background tracking, Sem stream continuo, Sem timer, Sem envio silencioso, Geofencing pendente, Roteirizacao pendente, Provider externo de mapa pendente, se aprovado, Approval real pendente, Conflitos manuais avancados pendentes, Hardening final de evidencias/storage pendente, Piloto Android real ainda precisa validacao em dispositivo fisico.

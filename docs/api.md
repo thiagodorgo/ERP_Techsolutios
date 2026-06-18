@@ -10,9 +10,7 @@ KPIs de projeto vivem em `Kpis/`; KPIs especificos do Flutter vivem em
 Quando mexe fora do mobile, atualizar `Kpis/*`. Quando mexe nos dois, atualizar
 ambos. Se existir `index.html`, atualizar tambem o HTML.
 
-Pos-B-105, a raiz deve refletir os valores mobile: B-105 GPS/mapa operacional da
-OS, Field Location, Flutter 613/613, Backend 15/15, contratos focados 47/47,
-MVP demo 87%, MVP vendavel 64% e 35 blocos.
+Pos-B-106, a raiz deve refletir os valores mobile: B-106 Adapter GPS nativo real + permissoes Android/iOS, Field Location, Flutter 633/633, Backend 15/15, contratos focados 47/47, MVP demo 90%, MVP vendavel 68% e 36 blocos.
 
 ## Mobile backend contract readiness
 
@@ -915,7 +913,7 @@ Frontend web:
 
 ## Field Operator Location
 
-Modulo implementado: `field_operator_location` como fundacao backend para o Mapa Operacional. No B-105, o app Flutter passou a ter consumidor parcial desse contrato para a fundacao de GPS/mapa operacional da OS.
+Modulo implementado: `field_operator_location` como fundacao backend para o Mapa Operacional. No B-105, o app Flutter passou a consumir esse contrato com store local e mapa simples. No B-106, o app conecta adapter GPS nativo real via geolocator, permissoes when-in-use e opt-in explicito, mantendo captura manual.
 
 Endpoints:
 
@@ -961,15 +959,17 @@ Regras:
 - latitudes validas: `-90` a `90`;
 - longitudes validas: `-180` a `180`;
 - `batteryLevel` deve ser inteiro entre `0` e `100`;
-- o app Flutter B-105 envia apenas metadata controlada de OS/evento; `work_order_id` so e enviado quando existe ID de servidor;
+- o app Flutter B-106 envia apenas metadata controlada de OS/evento; `work_order_id` so e enviado quando existe ID de servidor;
 - o payload mobile nao envia `tenant_id`, `tenantId`, token, `Authorization`, `base64`, `file_data`, `local_path` ou `path`;
+- o adapter nativo usa permissao when-in-use e so captura por acao explicita do usuario;
+- nao ha background tracking, stream continuo, timer, envio silencioso, captura ao abrir tela ou captura no `AutoSyncCoordinator`;
 - metadata sensivel e sanitizada e nao e retornada no DTO publico;
 - RLS protege `field_operator_locations` por `tenant_id`;
 - `field_location.recorded` e `field_location.history_viewed` sao auditados em modo Prisma.
 
-Status B-105 Flutter: parcial. O app inclui `DeviceLocationProvider` abstrato/testavel, store Drift `field_location_events`, sync manual antes dos demais dominios no `AutoSyncCoordinator`, card de localizacao em OS e `/field-map` como mapa operacional simples conectado a OS.
+Status B-106 Flutter: parcial avancado. O app inclui `DeviceLocationProvider` abstrato/testavel, `GeolocatorDeviceLocationProvider` real, `LocationConsentStore`, store Drift `field_location_events`, sync manual antes dos demais dominios no `AutoSyncCoordinator`, card de localizacao em OS e `/field-map` como mapa operacional simples conectado a OS.
 
-Fora do escopo desta fundacao mobile: adapter GPS nativo real, permissoes Android/iOS, background tracking, stream continuo, timer de coleta, envio silencioso, provider externo de mapa, roteirizacao avancada e despacho completo.
+Fora do escopo B-106: background tracking, stream continuo, timer de coleta, envio silencioso, geofencing, roteirizacao, provider externo de mapa, despacho completo e piloto Android fisico validado.
 
 ## Work Orders
 
