@@ -7,6 +7,23 @@
 
 ---
 
+## Politica de KPIs duplos
+
+Existem dois conjuntos de KPIs: `mobile/flutter_app/Kpis/` para o app Flutter e
+`Kpis/` para os KPIs gerais/raiz do projeto. A regra permanente e:
+
+- mexeu Flutter/mobile: atualizar `mobile/flutter_app/Kpis/*` e refletir os
+  percentuais mobile em `Kpis/*`;
+- mexeu fora do mobile: atualizar `Kpis/*`;
+- mexeu nos dois: atualizar os dois conjuntos;
+- se existir `index.html`, atualizar tambem o HTML.
+
+No pos-B-105, os valores mobile refletidos na raiz sao Flutter 613/613,
+Backend 15/15, contratos focados 47/47, modulos Flutter 17/17, MVP demo 87%,
+MVP vendavel 64% e 35 blocos entregues.
+
+---
+
 ## 1. Status atual do app Flutter
 
 O app Flutter (`mobile/flutter_app`) está em fase de **protótipo avançado estabilizado**. Possui

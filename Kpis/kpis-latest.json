@@ -1,0 +1,75 @@
+{
+  "snapshot_date": "2026-06-17",
+  "version": "B-105",
+  "source": "mobile/flutter_app/Kpis/kpis-latest.json",
+  "scope": "root_project_kpis_reflecting_mobile",
+  "release": {
+    "block": "B-105",
+    "title": "GPS/mapa operacional da OS",
+    "pr": 97,
+    "merge_commit": "0a01b0b5a6cc63066cd154fd7c91c1ce66edc5f3",
+    "approved_head": "8fde8b1443fe9510c7f45e9088ddf5b0d5635d6a",
+    "summary": "B-105 GPS/mapa operacional da OS com Field Location, DeviceLocationProvider, store field_location_events, sync manual e mapa operacional simples."
+  },
+  "metrics": {
+    "flutter_tests": {
+      "value": 613,
+      "total": 613,
+      "display": "613/613"
+    },
+    "backend_tests": {
+      "value": 15,
+      "total": 15,
+      "display": "15/15"
+    },
+    "backend_contract_tests_focused": {
+      "value": 47,
+      "total": 47,
+      "display": "47/47"
+    },
+    "flutter_modules": {
+      "value": 17,
+      "total": 17,
+      "display": "17/17"
+    },
+    "mvp_demo": {
+      "value": 87,
+      "unit": "%",
+      "display": "87%"
+    },
+    "mvp_vendavel": {
+      "value": 64,
+      "unit": "%",
+      "display": "64%"
+    },
+    "blocks_completed": {
+      "value": 35,
+      "display": "35"
+    }
+  },
+  "policy": {
+    "dual_kpis": true,
+    "mobile_source": "mobile/flutter_app/Kpis/",
+    "root_reflection": "Kpis/",
+    "rules": [
+      "Mexeu no Flutter/mobile: atualizar mobile/flutter_app/Kpis/* e refletir percentuais mobile em Kpis/*.",
+      "Mexeu fora do mobile: atualizar Kpis/*.",
+      "Mexeu nos dois: atualizar os dois conjuntos.",
+      "Se existir index.html: atualizar tambem o HTML."
+    ]
+  },
+  "limitations": [
+    "Adapter GPS nativo real pendente",
+    "Permissoes Android/iOS pendentes",
+    "Opt-in de privacidade pendente",
+    "Sem pacote GPS nativo",
+    "Sem geolocator",
+    "Sem Google Maps",
+    "Sem Mapbox",
+    "Sem SDK externo",
+    "Sem background tracking",
+    "Sem timer",
+    "Sem stream continuo",
+    "Sem envio silencioso"
+  ]
+}

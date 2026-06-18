@@ -1,5 +1,16 @@
 # App Flutter Tudo-em-Um
 
+## Politica de KPIs duplos
+
+Existem dois conjuntos de KPIs: `mobile/flutter_app/Kpis/` para o app Flutter e
+`Kpis/` para os KPIs gerais/raiz do projeto. Mexeu Flutter/mobile: atualizar
+`mobile/flutter_app/Kpis/*` e refletir os percentuais mobile em `Kpis/*`.
+Mexeu fora do mobile: atualizar `Kpis/*`. Mexeu nos dois: atualizar os dois.
+Se existir `index.html`, atualizar tambem o HTML.
+
+No pos-B-105, os dois conjuntos devem refletir B-105 GPS/mapa operacional da OS,
+Field Location, Flutter 613/613, MVP demo 87%, MVP vendavel 64% e 35 blocos.
+
 ## Decisao
 
 O Flutter sera um app unico modular do ERP Techsolutions. O app pode carregar os modulos no binario, mas deve habilitar telas e acoes apenas a partir do bootstrap autenticado do backend.

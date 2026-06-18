@@ -1,5 +1,42 @@
 # Log de Execucao
 
+## 2026-06-17 - B-152F KPIs duplos pos-B-105
+
+### Natureza
+
+Correcao documental obrigatoria de KPIs/dashboards apos gate B-152. Sem feature,
+sem alteracao funcional em Flutter, backend, frontend web, Prisma, migrations,
+infra, secrets, `.env`, lockfiles ou Figma.
+
+### Mudancas implementadas
+
+| Arquivo/area | Tipo | Descricao |
+|--------------|------|-----------|
+| `Kpis/*` | docs/kpis | Dashboard raiz atualizado para B-105, com `kpis-latest.json`, `kpis-history.json` e `README.md` criados |
+| `mobile/flutter_app/Kpis/*` | docs/kpis | HTML e historico mobile com B-105/totais literais e politica de KPIs duplos |
+| `docs/*` | docs | Politica permanente de KPIs duplos registrada nos docs mobile/API/sync/mapa |
+| `agent-orchestration/*` | docs | Registro operacional B-152F e atualizacao do comando B-105 |
+
+### Politica permanente registrada
+
+- Mexeu Flutter/mobile: atualizar `mobile/flutter_app/Kpis/*` e refletir
+  percentuais mobile em `Kpis/*`.
+- Mexeu fora do mobile: atualizar `Kpis/*`.
+- Mexeu nos dois: atualizar os dois conjuntos.
+- Se existir `index.html`: atualizar tambem o HTML.
+
+### KPIs B-105 refletidos
+
+- Flutter Tests: 613/613.
+- Backend Tests: 15/15.
+- Backend Contract Tests focados: 47/47.
+- Modulos Flutter: 17/17.
+- MVP Demo: 87%.
+- MVP Vendavel: 64%.
+- Blocos entregues: 35.
+
+---
+
 ## 2026-06-17 - B-105 Fundacao de GPS/mapa operacional da OS
 
 ### Natureza

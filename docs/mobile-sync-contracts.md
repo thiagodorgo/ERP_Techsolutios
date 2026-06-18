@@ -1,5 +1,17 @@
 # Contratos Mobile, Sync e Eventos
 
+## Politica de KPIs duplos
+
+Para entregas de sync/mobile, `mobile/flutter_app/Kpis/` e a fonte dos
+percentuais Flutter/mobile e `Kpis/` deve refletir esses percentuais. A regra
+permanente e: mexeu Flutter/mobile atualiza os KPIs mobile e reflete na raiz;
+mexeu fora mobile atualiza a raiz; mexeu nos dois atualiza ambos; se houver
+`index.html`, atualizar tambem o HTML.
+
+B-105 deve aparecer nos dois conjuntos com GPS/mapa operacional da OS, Field
+Location, Flutter 613/613, Backend 15/15, contratos focados 47/47, MVP demo
+87%, MVP vendavel 64% e 35 blocos.
+
 ## Principios
 
 - Todo contrato tenant-scoped usa o `tenant_id` resolvido do ator autenticado; `tenant_id` do body nao e fonte de verdade.

@@ -6,6 +6,43 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-06-17 - B-152F KPIs duplos pos-B-105
+
+### Resultado
+
+- `Kpis/` raiz foi sincronizado com os percentuais mobile de `mobile/flutter_app/Kpis/`.
+- Criados `Kpis/kpis-latest.json`, `Kpis/kpis-history.json` e `Kpis/README.md`.
+- `Kpis/index.html` e `mobile/flutter_app/Kpis/index.html` passaram a conter
+  B-105/totais de forma literal, alem do render por JavaScript.
+- A politica permanente de KPIs duplos foi documentada.
+
+### Politica permanente de KPIs duplos
+
+- Mexeu no Flutter/mobile: atualizar `mobile/flutter_app/Kpis/*` e refletir os
+  percentuais mobile em `Kpis/*`.
+- Mexeu fora do mobile: atualizar `Kpis/*`.
+- Mexeu nos dois: atualizar os dois conjuntos.
+- Se existir `index.html`: atualizar tambem o HTML.
+
+### KPIs B-105 refletidos na raiz
+
+| KPI | Valor |
+| --- | --- |
+| Flutter Tests | 613/613 |
+| Backend Tests | 15/15 |
+| Backend Contract Tests focados | 47/47 |
+| Flutter modules | 17/17 |
+| MVP demo mobile | 87% |
+| MVP vendavel mobile | 64% |
+| Blocos entregues | 35 |
+
+### Limitacoes registradas
+
+- Adapter GPS nativo real pendente.
+- Permissoes Android/iOS e opt-in de privacidade pendentes.
+- Sem pacote GPS nativo, sem geolocator, sem Google Maps, sem Mapbox e sem SDK externo.
+- Sem background tracking, sem timer, sem stream continuo e sem envio silencioso.
+
 ## 2026-06-15 - KPI-DASHBOARD-001
 
 ### Registro inicial

@@ -1,0 +1,31 @@
+[
+  {
+    "snapshot_date": "2026-06-15",
+    "version": "KPI-DASHBOARD-001",
+    "description": "Criacao do painel permanente Kpis/ apos B-098D."
+  },
+  {
+    "snapshot_date": "2026-06-15",
+    "version": "B-098E",
+    "backend_mobile": "6/7",
+    "focused_tests": "18/18",
+    "description": "Contrato parcial de manifestos de evidencia mobile/backend."
+  },
+  {
+    "snapshot_date": "2026-06-17",
+    "version": "B-105",
+    "flutter_tests": "613/613",
+    "backend_tests": "15/15",
+    "backend_contract_tests_focused": "47/47",
+    "flutter_modules": "17/17",
+    "flutter_mvp_demo": "87%",
+    "flutter_mvp_vendavel": "64%",
+    "blocks_completed": 35,
+    "description": "B-105 GPS/mapa operacional da OS, Field Location, DeviceLocationProvider, mapa simples e sync manual refletidos do KPI mobile."
+  },
+  {
+    "snapshot_date": "2026-06-17",
+    "version": "B-152F",
+    "description": "Correcao obrigatoria de KPIs duplos: Kpis/ raiz sincronizado com mobile/flutter_app/Kpis/ e politica permanente documentada."
+  }
+]

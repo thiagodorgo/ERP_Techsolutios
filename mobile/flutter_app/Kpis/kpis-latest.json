@@ -6,6 +6,9 @@
   "release": {
     "block": "B-105",
     "title": "GPS/mapa operacional da OS",
+    "pr": 97,
+    "mergeCommit": "0a01b0b5a6cc63066cd154fd7c91c1ce66edc5f3",
+    "approvedHead": "8fde8b1443fe9510c7f45e9088ddf5b0d5635d6a",
     "branch": "feature/mobile-gps-operational-map",
     "status": "implemented_pending_review",
     "status_label": "Implementado em branch — aguardando revisao",

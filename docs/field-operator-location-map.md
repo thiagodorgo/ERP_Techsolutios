@@ -1,5 +1,12 @@
 # Field Operator Location Map
 
+## Politica de KPIs duplos
+
+Como B-105 mexeu em Flutter/mobile e documentacao/contratos, os dois conjuntos
+de KPIs devem ser atualizados: `mobile/flutter_app/Kpis/` e `Kpis/`. Os valores
+Flutter/mobile de 613/613, MVP demo 87%, MVP vendavel 64% e 35 blocos devem
+aparecer tambem na raiz, inclusive em `index.html` quando existir.
+
 ## Decisao desta rodada
 
 Esta branch integra a UI inicial do Mapa Operacional em `/operations/map` com `work_orders` e `field_dispatch` sobre a fundacao backend de localizacao de operadores em campo. No B-105, o app Flutter passou a ter uma fundacao de GPS/mapa operacional conectada a OS para enviar eventos manuais ao backend; o frontend web consulta ultimas posicoes e, quando o usuario possui as permissoes correspondentes, correlaciona operadores com OS atribuidas, despachos operacionais e acoes diretas de despacho.
