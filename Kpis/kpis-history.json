@@ -43,5 +43,23 @@
     "merge_commit": "aac998eedcd95fba1c1a6a8fa5c09ec6fcaa6f26",
     "approved_head": "2ac4215fa6a69a93b546f53816a7bf5fc2766133",
     "status": "published_after_human_approval"
+  },
+  {
+    "snapshot_date": "2026-06-18",
+    "version": "B-107",
+    "flutter_tests": "654/654",
+    "backend_tests": "15/15",
+    "mobile_backend_contracts": "18/18",
+    "mobile_core_saas_contracts": "21/21",
+    "backend_contract_tests_focused": "21/21",
+    "flutter_modules": "17/17",
+    "flutter_mvp_demo": "92%",
+    "flutter_mvp_vendavel": "72%",
+    "blocks_completed": 37,
+    "description": "B-107 Criacao remota de OS/local-only mapping + resolucao manual de conflitos: KPIs publicados apos avaliacao humana, merge da PR #102 e gate B-107G.",
+    "pr": 102,
+    "merge_commit": "db36fb318adc234e1fcc6bfeaeb17b6260847c3c",
+    "approved_head": "b3da11d1605af9edb68e5e8f587881fc22115f3f",
+    "status": "published_after_human_approval"
   }
 ]

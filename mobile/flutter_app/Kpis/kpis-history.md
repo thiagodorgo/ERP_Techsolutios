@@ -5,6 +5,43 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-107 — 2026-06-18
+
+**Criacao remota de OS/local-only mapping + resolucao manual de conflitos**
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 654 / 654 |
+| Backend Tests | 15 / 15 |
+| Mobile Backend Contracts | 18 / 18 |
+| Mobile + Core SaaS Contracts | 21 / 21 |
+| flutter analyze | 0 issues |
+| Modulos Flutter Prontos | 17 / 17 |
+| MVP Demo Readiness (est.) | 92% |
+| MVP Vendavel (est.) | 72% |
+| Blocos Entregues | 37 |
+
+**Novidades:** `work_order.create` no sync mobile existente, criacao remota
+tenant-scoped/idempotente de OS local-only, mapeamento `localId -> serverId`,
+`already_applied` reaproveitando ID remoto, `rejected` mantendo a OS local com
+falha segura e conflitos marcados para resolucao manual inicial.
+
+**Fluxo preservado:** `statusUpdate` local-only fica bloqueado antes de
+`serverId` e passa a ser elegivel apos o mapeamento. UI e servico de conflito
+cobrem manter local e tentar novamente, aceitar servidor quando ha referencia
+remota e manter revisao manual auditavel.
+
+**Metadados pós-avaliação humana:** PR #102, merge commit
+`db36fb318adc234e1fcc6bfeaeb17b6260847c3c` e approved head
+`b3da11d1605af9edb68e5e8f587881fc22115f3f`. Status:
+`published_after_human_approval` apos gate B-107G.
+
+**Lacunas mantidas:** approval real, evidence attach real, merge avancado campo
+a campo de conflitos, hardening final de evidencias/storage e piloto Android
+real em dispositivo fisico.
+
+---
+
 ## B-106 — 2026-06-18
 
 **Adapter GPS nativo real + permissoes Android/iOS**
