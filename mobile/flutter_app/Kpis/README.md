@@ -48,6 +48,23 @@ mobile/flutter_app/Kpis/
   README.md          — Este arquivo
 ```
 
+## Política permanente de KPIs pós-avaliação humana
+
+1. PRs de feature nao devem atualizar arquivos de KPI.
+2. PRs de feature devem reportar KPIs propostos apenas no relatorio final.
+3. KPIs so devem ser atualizados apos avaliacao humana aprovando a entrega.
+4. KPIs so devem ser publicados apos merge e gate confirmando sucesso.
+5. A publicacao de KPIs deve ocorrer em bloco separado documental/KPI, como B-xxxK ou B-xxxF.
+6. Se a entrega mexeu em Flutter/mobile, atualizar `mobile/flutter_app/Kpis/*` e refletir em `Kpis/*`.
+7. Se a entrega mexeu fora do mobile, atualizar `Kpis/*`.
+8. Se a entrega mexeu nos dois, atualizar ambos.
+9. Se existir `index.html`, atualizar tambem o HTML.
+10. O bloco de KPI deve preencher PR, merge commit e approved head reais. Campos null bloqueiam o proximo bloco.
+
+## Política de limpeza pós-validação
+
+Todo bloco que executar testes, builds, Flutter, Node, Android, iOS ou geracao de artefatos deve limpar os artefatos temporarios ao final, sem apagar arquivos rastreados e preservando assets untracked explicitamente permitidos.
+
 ## Regra de atualizacao
 
 ### Politica de KPIs duplos

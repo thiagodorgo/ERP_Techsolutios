@@ -168,6 +168,10 @@
     "flutter_mvp_demo": 90,
     "flutter_mvp_vendavel": 68,
     "blocks_completed": 36,
-    "description": "B-106 Adapter GPS nativo real + permissoes Android/iOS — geolocator, permissao when-in-use, opt-in explicito e captura manual segura"
+    "description": "B-106 Adapter GPS nativo real + permissoes Android/iOS — geolocator, permissao when-in-use, opt-in explicito e captura manual segura",
+    "pr": 99,
+    "mergeCommit": "aac998eedcd95fba1c1a6a8fa5c09ec6fcaa6f26",
+    "approvedHead": "2ac4215fa6a69a93b546f53816a7bf5fc2766133",
+    "status": "published_after_human_approval"
   }
 ]
