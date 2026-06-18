@@ -31,13 +31,13 @@ arquitetura local-first funcional, persistência SQLite via Drift, autenticaçã
 cobertura de testes de 633 casos no sweep B-106. Pull real de Work Orders (B-099),
 sync write parcial de status de OS (B-103), pull de templates de checklist (B-100/B-101) e sync
 write parcial de respostas de checklist (B-102) já estão conectados ao backend, com fallback
-resiliente. B-104 adiciona upload multipart parcial de evidências JPEG/PNG. B-105 adiciona a
+resiliente. B-104 adiciona upload multipart parcial de evidências JPEG/PNG e B-108 endurece storage local protegido, scanner testavel e auditoria segura. B-105 adiciona a
 fundacao de GPS/mapa operacional da OS com store `field_location_events`, sync para
 `POST /api/v1/mobile/field-locations` e mapa operacional simples. B-106 conecta o adapter GPS
 nativo real via `geolocator`, configura permissoes Android/iOS when-in-use e exige opt-in
 explicito antes do primeiro pedido nativo. A captura continua manual, somente por
 `Enviar localizacao agora`; nao ha background tracking, stream continuo, timer ou envio
-silencioso. Ainda falta storage protegido/presigned URL, approval real,
+silencioso. Ainda falta presigned URL/storage externo, antivirus real, persistencia DB/Redis de receipts, approval real,
 mapping, aprovação real, conflitos manuais avançados, geofencing/roteirizacao se aprovados e
 piloto Android real em dispositivo fisico. Não está pronto para operação ampla de campo com
 dados reais.
@@ -59,7 +59,7 @@ dados reais.
 | Recibos / Evidências RDV | Metadado apenas | **parcial** — upload real ausente |
 | Ordens de Serviço (OS) — lista | Funcional (pull real) | **B-099** — `GET /api/v1/work-orders`; upsert Drift; fallback cache; banners UI |
 | Ordens de Serviço (OS) — sync bidirecional | Parcial | **B-107** — create local-only, mapeamento `localId -> serverId`, statusUpdate e conflito manual; approval/evidence ficam pending |
-| Work Order Evidence | Parcial real | **B-104** — salva metadado local, blob ref opaco e upload multipart apos `evidence_id` real; falta storage protegido/auditoria |
+| Work Order Evidence | Parcial real endurecido | **B-104/B-108** — salva metadado local, blob ref opaco, upload multipart apos `evidence_id` real, storage local protegido, scanner testavel e auditoria segura; falta presigned URL/storage externo, antivirus real e persistencia DB/Redis |
 | Checklists configuráveis | Funcional (local-first) | **existente** — run, respostas, persistência Drift |
 | Checklist — pull de templates | Funcional (pull real) | **B-100/B-101** — `GET /api/v1/mobile/checklists/available` com backend real (DTO mobile compativel); cache Drift; banners UI; fallback cache/seeds |
 | Checklist — backend available endpoint | Funcional (backend) | **B-101** — handler real, tenant-scoped + RBAC, DTO `title`/`schema_version`/`status active` + envelope `{data,items,meta}` |
@@ -86,7 +86,7 @@ O app não pode ser usado em campo real pelos seguintes motivos objetivos:
 | Checklist — pull de templates (B-100) + backend real (B-101) | ✅ Resolvido — cliente + handler backend real (`GET /mobile/checklists/available`, DTO compatível) | — |
 | Checklist answers sync (B-102) | ✅ Resolvido parcialmente — respostas/notas/conclusão chegam ao contrato backend quando a run tem `server_run_id`/`run_id` real; runs locais sem mapeamento ficam pending; runCreate/anexos/markers/divergência/ack seguem fora do escopo | — |
 | Sync de inventário e lacunas avançadas de OS não chegam ao servidor | Inventário, aprovação e evidência real ainda não fecham ciclo de campo | Crítico |
-| Upload de fotos/evidências parcial (B-104) | Evidências JPEG/PNG chegam ao backend local/dev, mas ainda sem storage protegido, DB/Redis, antivirus e auditoria completa | Alto |
+| Upload de fotos/evidências parcial (B-104/B-108) | Evidências JPEG/PNG chegam ao backend local/dev com storage local protegido, scanner testavel e auditoria segura, mas ainda sem presigned URL/storage externo, DB/Redis e antivirus real | Alto |
 | Sem aprovação mobile real | Fluxo de aprovação de OS não completo | Alto |
 | GPS/mapa operacional parcial (B-106) | Adapter real, permissoes e opt-in foram conectados; ainda sem background tracking, stream, timer, envio silencioso, geofencing, roteirizacao e piloto Android fisico | Médio |
 | Sem notificações push | Técnico não recebe atribuições em tempo real | Médio |
@@ -138,7 +138,7 @@ real foi conectado nesta PR — essa foi uma decisão explícita de escopo (ver 
 | Sync real de OS | ✅ Parcial em B-103 — `statusUpdate` backend-ready usa `POST /api/v1/mobile/sync/work-order-actions` | Criar OS remota/local-only mapping, aprovação real, evidência real e resolução manual de conflitos |
 | Sync real de checklists | ✅ `DioChecklistSyncBatchApi` ativo para respostas/notas/conclusão de runs reconhecidas pelo backend (B-102) | Checklist run creation/mapping remoto, anexos/markers/divergência/acknowledgement e reconciliação avançada |
 | Sync real de inventário | Stub pendente | Implementar batch sync de inventário |
-| Upload de fotos / evidências | ✅ Parcial B-104 — `image_picker`, blob local opaco e multipart `POST /api/v1/mobile/evidence-uploads` | Evoluir para presigned URL, storage protegido, persistencia DB/Redis, antivirus e auditoria |
+| Upload de fotos / evidências | ✅ Parcial B-104/B-108 — `image_picker`, blob local opaco, multipart `POST /api/v1/mobile/evidence-uploads`, storage local protegido, scanner testavel e auditoria segura | Evoluir para presigned URL/storage externo, persistencia DB/Redis, antivirus real e download protegido |
 
 ### Pendências importantes (não bloqueiam MVP mas necessárias para campo)
 

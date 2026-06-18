@@ -60,8 +60,13 @@ class EvidenceUploadResponse {
       fileId: _requiredString(data, 'file_id', 'fileId'),
       status: _requiredString(data, 'status', 'status'),
       sizeBytes: _requiredInt(data, 'size_bytes', 'sizeBytes'),
-      contentType: _requiredString(data, 'content_type', 'contentType'),
-      sha256: _requiredString(data, 'sha256', 'sha256'),
+      contentType: _requiredString(
+        data,
+        'mime_type',
+        'content_type',
+        'contentType',
+      ),
+      sha256: _requiredString(data, 'checksum_sha256', 'sha256', 'sha256'),
       uploadedAt: DateTime.parse(
         _requiredString(data, 'uploaded_at', 'uploadedAt'),
       ).toUtc(),
@@ -191,15 +196,26 @@ class EvidenceBinaryUploadService {
             bytes: bytes,
           ),
         );
-        final next = item.copyWith(
-          uploadStatus: SyncStatus.synced,
-          uploadedAt: response.uploadedAt,
-          uploadErrorCode: null,
-          clearUploadErrorCode: true,
-        );
-        await _store.saveEvidence(next);
-        await _blobStore.delete(blobRef);
-        uploaded.add(next);
+        if (_isStoredStatus(response.status)) {
+          final next = item.copyWith(
+            uploadStatus: SyncStatus.synced,
+            uploadedAt: response.uploadedAt,
+            uploadErrorCode: null,
+            clearUploadErrorCode: true,
+          );
+          await _store.saveEvidence(next);
+          await _blobStore.delete(blobRef);
+          uploaded.add(next);
+        } else {
+          final next = item.copyWith(
+            uploadStatus: response.status == 'pending_review'
+                ? SyncStatus.pending
+                : SyncStatus.failed,
+            uploadErrorCode: _remoteUploadStatusCode(response.status),
+          );
+          await _store.saveEvidence(next);
+          failed.add(next);
+        }
       } on ApiConflictError {
         final next = item.copyWith(
           uploadStatus: SyncStatus.conflict,
@@ -240,6 +256,21 @@ String _uploadErrorCode(ApiError error) {
       'UPLOAD_VALIDATION',
     ApiServerError(:final statusCode) when statusCode == 413 =>
       'FILE_TOO_LARGE',
+    ApiServerError(:final statusCode) when statusCode == 422 =>
+      'UPLOAD_REJECTED',
+    ApiServerError(:final statusCode) when statusCode == 503 => 'SCAN_FAILED',
+    _ => 'UPLOAD_FAILED',
+  };
+}
+
+bool _isStoredStatus(String status) =>
+    status == 'stored' || status == 'uploaded';
+
+String _remoteUploadStatusCode(String status) {
+  return switch (status) {
+    'rejected' => 'UPLOAD_REJECTED',
+    'scan_failed' => 'SCAN_FAILED',
+    'pending_review' => 'PENDING_REVIEW',
     _ => 'UPLOAD_FAILED',
   };
 }
@@ -253,9 +284,10 @@ Map<String, dynamic> _asMap(Object? value) {
 String _requiredString(
   Map<String, dynamic> source,
   String key,
-  String fallbackKey,
-) {
-  final value = source[key] ?? source[fallbackKey];
+  String fallbackKey, [
+  String? secondFallbackKey,
+]) {
+  final value = source[key] ?? source[fallbackKey] ?? source[secondFallbackKey];
   if (value is String && value.trim().isNotEmpty) return value.trim();
   throw const FormatException('Invalid evidence upload response');
 }

@@ -3308,3 +3308,36 @@ KPIs publicados:
 Politica preservada: sem feature nova e sem alteracao em Flutter `lib/`,
 Flutter `test/`, backend funcional, frontend web, Prisma, migrations, infra,
 env, lockfiles ou Figma.
+
+## Atualizacao 2026-06-18 - B-108 hardening de evidencias/storage
+
+B-108 endurece o upload mobile de evidencias iniciado no B-104 sem alterar KPIs.
+O endpoint `POST /api/v1/mobile/evidence-uploads` preserva multipart, tenant do
+ator autenticado e permissoes `work_orders:update`/`field_location:send`, mas
+agora passa por scanner testavel e provider local protegido antes de confirmar
+`status=stored`.
+
+O backend adiciona `EvidenceStorageProvider`, `LocalProtectedEvidenceStorageProvider`,
+`EvidenceScanner`, `NoopEvidenceScanner` e fake de teste. A resposta publica
+somente referencia opaca, MIME, tamanho, checksum e status; path fisico, bucket,
+storage key, URL publica, token, base64 e conteudo binario permanecem internos.
+
+Auditoria segura B-108 cobre `evidence.upload.accepted`,
+`evidence.upload.rejected`, `evidence.upload.scan_failed` e
+`evidence.upload.stored` com metadata sanitizada. O Flutter aceita
+`mime_type`/`checksum_sha256`, marca `stored` como sincronizado e preserva blob
+local em rejeicao, falha de scanner, pending review, rede ou timeout.
+
+Sem Prisma/migrations nesta rodada. Presigned URL/storage externo, DB/Redis para
+receipt, antivirus real, download protegido final e retencao definitiva seguem
+pendentes.
+
+Por politica, esta PR de feature nao altera KPIs. Proposta para avaliacao humana:
+38 blocos, MVP demo 93% e MVP vendavel 76%.
+
+Validacao local B-108: `npm run check`, `npm run lint`, `npm test`,
+`npm run build`, contratos mobile 18/18, contratos mobile + Core SaaS 21/21,
+`flutter analyze`, B-108 8/8, B-104 9/9, B-107 21/21, B-103 43/43 e syntax
+check dos dashboards KPI passaram. `flutter test --reporter compact` ficou em
+661/662 por falha no teste KPI B-106 que espera texto em `Kpis/kpis-latest.json`;
+arquivos KPI nao foram alterados por regra do B-108.

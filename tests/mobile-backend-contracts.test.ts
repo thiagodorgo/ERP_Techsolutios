@@ -6,6 +6,11 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 
+import { FakeEvidenceScanner } from "../src/modules/evidence/evidence-storage.js";
+import {
+  configureMobileEvidenceUploadScannerForTests,
+  getMobileEvidenceUploadAuditEventsForTests,
+} from "../src/modules/mobile/mobile-evidence-upload.js";
 import { CoreSaasRegistry } from "../src/modules/core-saas/services/core-saas.service.js";
 import { MemoryCoreSaasAdapter } from "../src/modules/core-saas/services/memory-core-saas.adapter.js";
 import { InMemoryCoreSaasStore } from "../src/modules/core-saas/store/core-saas.store.js";
@@ -1409,6 +1414,30 @@ test("mobile evidence file upload stores binary metadata safely and enforces ten
       },
       files: [],
     });
+    configureMobileEvidenceUploadScannerForTests(new FakeEvidenceScanner({ status: "infected" }));
+    const infected = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
+      headers,
+      fields: {
+        evidence_id: evidenceId,
+        client_evidence_id: clientEvidenceId,
+        sha256,
+        size_bytes: String(bytes.length),
+        content_type: "image/jpeg",
+      },
+      files: [{ fieldName: "file", fileName: "panel-before.jpg", contentType: "image/jpeg", bytes }],
+    });
+    configureMobileEvidenceUploadScannerForTests(new FakeEvidenceScanner({ status: "failed" }));
+    const scanFailure = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
+      headers,
+      fields: {
+        evidence_id: evidenceId,
+        client_evidence_id: clientEvidenceId,
+        sha256,
+        size_bytes: String(bytes.length),
+        content_type: "image/jpeg",
+      },
+      files: [{ fieldName: "file", fileName: "panel-before.jpg", contentType: "image/jpeg", bytes }],
+    });
 
     assert.equal(noMetadata.status, 409);
     assert.equal(noMetadata.body.error.reason, "evidence_metadata_required");
@@ -1418,15 +1447,20 @@ test("mobile evidence file upload stores binary metadata safely and enforces ten
     assert.equal(workOrderMismatch.body.error.reason, "work_order_mismatch");
     assert.equal(upload.status, 201);
     assert.equal(upload.body.data.contract.name, "mobile_evidence_file_upload");
-    assert.equal(upload.body.data.contract.version, "2026-06-17.b104");
+    assert.equal(upload.body.data.contract.version, "2026-06-18.b108");
     assert.equal(upload.body.data.contract.status, "partial");
     assert.equal(upload.body.data.evidence_id, evidenceId);
-    assert.equal(upload.body.data.status, "uploaded");
+    assert.equal(upload.body.data.status, "stored");
     assert.equal(upload.body.data.size_bytes, bytes.length);
+    assert.equal(upload.body.data.mime_type, "image/jpeg");
     assert.equal(upload.body.data.content_type, "image/jpeg");
+    assert.equal(upload.body.data.checksum_sha256, sha256);
     assert.equal(upload.body.data.sha256, sha256);
+    assert.match(upload.body.data.file_id, /^evfile_[a-f0-9]{32}$/);
     assert.equal(JSON.stringify(upload.body).includes("panel-before.jpg"), false);
-    assert.equal(JSON.stringify(upload.body).includes("erp-mobile-evidence-uploads"), false);
+    assert.equal(JSON.stringify(upload.body).includes("erp-mobile-evidence"), false);
+    assert.equal(JSON.stringify(upload.body).includes("storage_key"), false);
+    assert.equal(JSON.stringify(upload.body).includes("bucket"), false);
     assert.equal(JSON.stringify(upload.body).includes("\\\\"), false);
     assert.equal(tenantSpoof.status, 201);
     assert.equal(tenantSpoof.body.data.evidence_id, evidenceId);
@@ -1444,6 +1478,22 @@ test("mobile evidence file upload stores binary metadata safely and enforces ten
     assert.equal(multipleFiles.body.error.reason, "too_many_files");
     assert.equal(missingFile.status, 400);
     assert.equal(missingFile.body.error.reason, "file_required");
+    assert.equal(infected.status, 422);
+    assert.equal(infected.body.error.reason, "evidence_rejected");
+    assert.equal(scanFailure.status, 503);
+    assert.equal(scanFailure.body.error.reason, "evidence_scan_failed");
+    const auditEvents = getMobileEvidenceUploadAuditEventsForTests();
+    assert.equal(auditEvents.some((event) => event.action === "evidence.upload.accepted"), true);
+    assert.equal(auditEvents.some((event) => event.action === "evidence.upload.stored"), true);
+    assert.equal(auditEvents.some((event) => event.action === "evidence.upload.rejected"), true);
+    assert.equal(auditEvents.some((event) => event.action === "evidence.upload.scan_failed"), true);
+    assert.equal(auditEvents.every((event) => event.tenantId === seed.tenantA.id), true);
+    for (const event of auditEvents) {
+      const serialized = JSON.stringify(event);
+      for (const forbidden of ["Authorization", "Bearer", "accessToken", "refreshToken", "base64", "file_data", "local_path", "\"path\"", "bucket", "storage_key", "storageKey", "\\\\"]) {
+        assert.equal(serialized.includes(forbidden), false);
+      }
+    }
     assertNoStackTrace(noMetadata.body);
     assertNoStackTrace(differentClientEvidenceId.body);
     assertNoStackTrace(workOrderMismatch.body);
@@ -1455,6 +1505,8 @@ test("mobile evidence file upload stores binary metadata safely and enforces ten
     assertNoStackTrace(tooLarge.body);
     assertNoStackTrace(multipleFiles.body);
     assertNoStackTrace(missingFile.body);
+    assertNoStackTrace(infected.body);
+    assertNoStackTrace(scanFailure.body);
   });
 });
 

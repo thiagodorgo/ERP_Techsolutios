@@ -86,6 +86,13 @@ No B-098E, `POST /api/v1/mobile/sync/evidence-actions` passou a existir como con
 - o app deve enviar `client_evidence_id` e metadados seguros, nunca base64, path local ou token;
 - o backend separa `accepted`, `rejected`, `conflicts` e `already_applied` e ignora tenant externo.
 
+No B-108, `POST /api/v1/mobile/evidence-uploads` foi endurecido para upload multipart de evidencias de OS/campo:
+
+- o Flutter continua enviando multipart com `evidence_id`, `client_evidence_id`, `sha256`, `size_bytes`, `content_type` e arquivo `file`, sem `tenant_id`, token, base64, `file_data`, `local_path` ou `path`;
+- resposta `status=stored` marca a evidencia como sincronizada e permite apagar o blob local opaco;
+- respostas/erros `rejected`, `scan_failed`, `pending_review`, rede ou timeout preservam a evidencia local para retry/revisao;
+- a UI exibe apenas nome, origem e estado seguro; nunca exibe path local, bucket, storage key, URL interna ou token.
+
 No B-105, o Flutter passou a consumir a fundacao backend de Field Location.
 
 No B-106, o Flutter conectou o adapter GPS nativo real ao `DeviceLocationProvider`:
@@ -99,7 +106,7 @@ No B-106, o Flutter conectou o adapter GPS nativo real ao `DeviceLocationProvide
 - `DioFieldLocationApi` preserva `POST /api/v1/mobile/field-locations` com payload controlado;
 - `/field-map` renderiza um mapa operacional simples conectado a OS, sem Google Maps, Mapbox ou SDK externo de mapa.
 
-Ainda nao ha tenants disponiveis, persistencia duravel de idempotencia mobile, reserva transacional multi-instancia, associacao real de inventario com OS/armazem, approval real, conflitos manuais avancados, geofencing/roteirizacao, provider externo de mapa nem upload/storage protegido final para evidencia. Esses itens ficam para fases seguintes.
+Ainda nao ha tenants disponiveis, persistencia duravel de idempotencia mobile, reserva transacional multi-instancia, associacao real de inventario com OS/armazem, approval real, conflitos manuais avancados, geofencing/roteirizacao, provider externo de mapa nem storage externo/presigned URL/download protegido final para evidencia. Esses itens ficam para fases seguintes.
 
 ## Estrutura inicial
 
