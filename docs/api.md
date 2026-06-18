@@ -2,6 +2,18 @@
 
 O backend atual usa o prefixo `/api/v1`. Os contratos abaixo documentam o boundary inicial do Console da Plataforma.
 
+## Politica de KPIs duplos
+
+KPIs de projeto vivem em `Kpis/`; KPIs especificos do Flutter vivem em
+`mobile/flutter_app/Kpis/`. Quando uma entrega mexe em Flutter/mobile, atualizar
+`mobile/flutter_app/Kpis/*` e refletir os percentuais mobile em `Kpis/*`.
+Quando mexe fora do mobile, atualizar `Kpis/*`. Quando mexe nos dois, atualizar
+ambos. Se existir `index.html`, atualizar tambem o HTML.
+
+Pos-B-105, a raiz deve refletir os valores mobile: B-105 GPS/mapa operacional da
+OS, Field Location, Flutter 613/613, Backend 15/15, contratos focados 47/47,
+MVP demo 87%, MVP vendavel 64% e 35 blocos.
+
 ## Mobile backend contract readiness
 
 O contrato consolidado para o MVP mobile esta em `docs/mobile-backend-contract-readiness.md`.

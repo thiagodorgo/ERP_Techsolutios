@@ -26,13 +26,33 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo B-105">
+          <h2>B-105 — GPS/mapa operacional da OS</h2>
+          <p>
+            Field Location e DeviceLocationProvider refletidos do KPI mobile:
+            Flutter 613/613, Backend 15/15, contratos focados 47/47,
+            modulos Flutter 17/17, MVP demo 87%, MVP vendavel 64% e
+            35 blocos entregues.
+          </p>
+          <p>
+            Limitacoes: adapter GPS nativo pendente, sem geolocator, sem
+            Google Maps, sem Mapbox, sem SDK externo, sem background tracking,
+            sem timer, sem stream continuo e sem envio silencioso.
+          </p>
+          <p>
+            Politica de KPIs duplos: mexeu Flutter/mobile atualiza
+            mobile/flutter_app/Kpis/* e reflete percentuais em Kpis/*; mexeu
+            fora mobile atualiza Kpis/*; mexeu nos dois atualiza ambos; se
+            existir index.html, o HTML tambem deve ser atualizado.
+          </p>
+        </article>
         <div id="kpi-cards" class="kpi-grid"></div>
       </section>
 
       <section class="section-grid" aria-label="Progresso por contrato">
         <div class="panel panel--wide">
           <div class="section-heading">
-            <p class="eyebrow">B-098 ate B-098E</p>
+            <p class="eyebrow">B-098 ate B-105</p>
             <h2>Linha do tempo de contratos mobile/backend</h2>
           </div>
           <div id="timeline" class="timeline"></div>

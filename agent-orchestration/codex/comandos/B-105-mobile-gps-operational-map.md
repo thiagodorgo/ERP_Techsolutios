@@ -24,6 +24,25 @@ Servico, reaproveitando o contrato backend existente de Field Location:
   no `AutoSyncCoordinator`.
 - Atualizar KPIs e docs.
 
+## Politica de KPIs duplos pos-B-152F
+
+Existem dois conjuntos de KPIs:
+
+- `mobile/flutter_app/Kpis/`: KPIs especificos do app Flutter.
+- `Kpis/`: KPIs gerais/raiz do projeto.
+
+Regra permanente:
+
+- Mexeu Flutter/mobile: atualizar `mobile/flutter_app/Kpis/*` e refletir
+  percentuais mobile em `Kpis/*`.
+- Mexeu fora do mobile: atualizar `Kpis/*`.
+- Mexeu nos dois: atualizar os dois conjuntos.
+- Se existir `index.html`: atualizar tambem o HTML.
+
+B-105 deve permanecer refletido nos dois conjuntos com Flutter 613/613,
+Backend 15/15, contratos focados 47/47, modulos Flutter 17/17, MVP demo 87%,
+MVP vendavel 64% e 35 blocos.
+
 ## Proibicoes
 
 - Nao usar `geolocator`.

@@ -5,6 +5,24 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-152F — 2026-06-17
+
+**Correcao obrigatoria de KPIs duplos pos-B-105**
+
+O gate B-152 confirmou Flutter 613/613 e backend verde, mas falhou porque o
+dashboard raiz `Kpis/` nao refletia os percentuais mobile e os HTMLs nao
+continham B-105/totais de forma literal. B-152F documenta a politica permanente:
+
+- mexeu Flutter/mobile: atualizar `mobile/flutter_app/Kpis/*` e refletir os
+  percentuais mobile em `Kpis/*`;
+- mexeu fora do mobile: atualizar `Kpis/*`;
+- mexeu nos dois: atualizar os dois conjuntos;
+- se existir `index.html`, atualizar tambem o HTML.
+
+Valores B-105 preservados: Flutter Tests 613/613, Backend Tests 15/15,
+Backend Contract Tests focados 47/47, modulos Flutter 17/17, MVP Demo 87%,
+MVP Vendavel 64% e Blocos Entregues 35.
+
 ## B-105 — 2026-06-17
 
 **Fundacao de GPS/mapa operacional da OS**

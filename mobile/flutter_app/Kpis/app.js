@@ -15,6 +15,9 @@ const EMBEDDED_LATEST = {
   "release": {
     "block": "B-105",
     "title": "GPS/mapa operacional da OS",
+    "pr": 97,
+    "mergeCommit": "0a01b0b5a6cc63066cd154fd7c91c1ce66edc5f3",
+    "approvedHead": "8fde8b1443fe9510c7f45e9088ddf5b0d5635d6a",
     "branch": "feature/mobile-gps-operational-map",
     "status": "implemented_pending_review",
     "status_label": "Implementado em branch — aguardando revisao",
@@ -681,6 +684,19 @@ const EMBEDDED_HISTORY = [
     "flutter_mvp_vendavel": 64,
     "blocks_completed": 35,
     "description": "B-105 GPS/mapa operacional da OS — provider abstrato/testavel, store field_location_events, sync Field Location e mapa operacional simples conectado a OS"
+  },
+  {
+    "snapshot_date": "2026-06-17",
+    "version": "B-152F",
+    "flutter_tests": 613,
+    "npm_tests": 15,
+    "backend_contract_tests": 47,
+    "flutter_modules_ready": 17,
+    "flutter_modules_total": 17,
+    "flutter_mvp_demo": 87,
+    "flutter_mvp_vendavel": 64,
+    "blocks_completed": 35,
+    "description": "Correcao obrigatoria de KPIs duplos pos-B-105 — mobile/flutter_app/Kpis/ preservado e Kpis/ raiz sincronizado com percentuais mobile"
   }
 ];
 

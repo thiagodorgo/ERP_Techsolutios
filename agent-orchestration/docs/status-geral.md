@@ -1,5 +1,41 @@
 # Status Geral
 
+## Atualizacao 2026-06-17 — B-152F KPIs duplos pos-B-105
+
+### Status
+
+Correcao documental obrigatoria para liberar o proximo bloco depois do gate
+B-152. A correcao sincroniza `Kpis/` raiz com `mobile/flutter_app/Kpis/` e nao
+implementa feature.
+
+### Entregue
+
+- `Kpis/` raiz reflete B-105 e os percentuais mobile.
+- Criados `Kpis/kpis-latest.json`, `Kpis/kpis-history.json` e `Kpis/README.md`.
+- `Kpis/index.html` e `mobile/flutter_app/Kpis/index.html` contem B-105/totais
+  de forma literal.
+- Politica permanente de KPIs duplos documentada.
+
+### Politica permanente
+
+- Mexeu Flutter/mobile: atualizar `mobile/flutter_app/Kpis/*` e refletir
+  percentuais mobile em `Kpis/*`.
+- Mexeu fora do mobile: atualizar `Kpis/*`.
+- Mexeu nos dois: atualizar os dois conjuntos.
+- Se existir `index.html`: atualizar tambem o HTML.
+
+### Valores refletidos
+
+- Flutter Tests 613/613.
+- Backend Tests 15/15.
+- Backend Contract Tests focados 47/47.
+- Modulos Flutter 17/17.
+- MVP Demo 87%.
+- MVP Vendavel 64%.
+- Blocos entregues 35.
+
+---
+
 ## Atualizacao 2026-06-17 — B-105 Fundacao de GPS/mapa operacional da OS
 
 ### Status
