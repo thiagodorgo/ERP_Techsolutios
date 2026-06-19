@@ -1,3 +1,7 @@
+export * from "./approval.controller.js";
+export * from "./approval.repository.js";
+export * from "./approval.service.js";
+export * from "./approval.types.js";
 export * from "./work-order.controller.js";
 export * from "./work-order.dto.js";
 export * from "./work-order.repository.js";

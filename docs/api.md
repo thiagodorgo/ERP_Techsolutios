@@ -1089,3 +1089,32 @@ Somente campos operacionais permitidos sao encaminhados ao service. Tenant,
 Authorization, tokens, path, base64, `file_data` e `local_path` externos sao
 ignorados e sanitizados nos dados de conflito. Nao houve alteracao em Prisma ou
 migrations.
+
+## B-109 - Aprovacao operacional
+
+Endpoints tenant-scoped:
+
+- `GET /api/v1/approvals/pending`
+- `GET /api/v1/approvals/:approvalId`
+- `POST /api/v1/approvals/:approvalId/approve`
+- `POST /api/v1/approvals/:approvalId/reject`
+
+Entidades suportadas: `work_order`, `checklist_run` e `evidence`. Concluir uma
+OS pelo endpoint de status cria uma pendencia idempotente de aprovacao para a
+propria OS. Checklist e evidencia usam o mesmo boundary
+`ApprovalService.request`, pronto para integracao pelos fluxos de conclusao e
+armazenamento.
+
+Enquanto `approval:read` e `approval:decide` nao existem no catalogo RBAC, o
+contrato usa `work_orders:read` para consulta e `work_orders:update` para
+decisao. Rejeicao exige `reason`; aprovacao aceita `note` opcional. Segunda
+decisao retorna conflito seguro `approval_already_decided`.
+
+A resposta usa allowlist com ID, entidade, status, solicitante, datas, motivo
+operacional e mensagem segura. Tenant, token, Authorization, path, storage key,
+bucket, base64, `file_data` e `local_path` nao fazem parte do payload publico.
+
+Persistencia B-109: repositório em memoria com interface substituivel. Nao houve
+Prisma ou migration. Auditoria em memoria sanitizada e auditoria persistente
+best-effort sao acionadas na decisao. Uma notificacao segura e criada para o
+solicitante, com `actionUrl` para `/work-orders/:id` quando existe vinculo de OS.

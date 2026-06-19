@@ -4,6 +4,7 @@ import { recordRequestAuditBestEffort } from "../core-saas/audit/audit-request-c
 import { requireTenantContext } from "../core-saas/middleware/rbac.middleware.js";
 import { readRouteParam } from "../core-saas/routes/http.js";
 import { toWorkOrderDto, toWorkOrderEventDto, toWorkOrderListDto } from "./work-order.dto.js";
+import { createDefaultApprovalService } from "./approval.service.js";
 import type { WorkOrderService } from "./work-order.service.js";
 
 export type WorkOrderServiceResolver = () => Promise<WorkOrderService>;
@@ -75,6 +76,18 @@ export class WorkOrderController {
   async changeStatus(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const workOrder = await service.changeStatus(actor, readRouteParam(request.params.workOrderId), request.body ?? {});
+
+    if (workOrder.status === "completed") {
+      const approvals = await createDefaultApprovalService();
+      await approvals.request({
+        tenantId: actor.tenantId,
+        entityType: "work_order",
+        entityId: workOrder.id,
+        workOrderId: workOrder.id,
+        requestedByUserId: actor.userId,
+        pendingReason: "Ordem de servico concluida e pronta para validacao operacional.",
+      });
+    }
 
     await recordRequestAuditBestEffort(request, {
       action: statusAuditAction(workOrder.status),

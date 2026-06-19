@@ -4,6 +4,7 @@ import { createPersistentRbacContextMiddleware } from "../core-saas/middleware/p
 import { requirePermission } from "../core-saas/middleware/rbac.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
+import { ApprovalController } from "./approval.controller.js";
 import { WorkOrderController, type WorkOrderServiceResolver } from "./work-order.controller.js";
 import { createDefaultWorkOrderService } from "./work-order.service.js";
 
@@ -26,9 +27,42 @@ export const WORK_ORDER_PERMISSIONS = {
 export function createWorkOrderRouter(resolveService: WorkOrderServiceResolver = createDefaultWorkOrderService): Router {
   const router = Router();
   const controller = new WorkOrderController(resolveService);
+  const approvalController = new ApprovalController();
 
   router.use(tenantContextMiddleware);
   router.use(createPersistentRbacContextMiddleware());
+
+  router.get(
+    "/approvals/pending",
+    requirePermission(WORK_ORDER_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await approvalController.listPending(request));
+    }),
+  );
+
+  router.get(
+    "/approvals/:approvalId",
+    requirePermission(WORK_ORDER_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await approvalController.get(request));
+    }),
+  );
+
+  router.post(
+    "/approvals/:approvalId/approve",
+    requirePermission(WORK_ORDER_PERMISSIONS.update),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await approvalController.approve(request));
+    }),
+  );
+
+  router.post(
+    "/approvals/:approvalId/reject",
+    requirePermission(WORK_ORDER_PERMISSIONS.update),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await approvalController.reject(request));
+    }),
+  );
 
   router.get(
     "/work-orders",
