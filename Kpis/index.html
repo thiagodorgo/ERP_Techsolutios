@@ -26,25 +26,29 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
-        <article class="panel panel--wide" aria-label="Resumo B-107">
-          <h2>B-107 — Criação remota de OS/local-only mapping + resolução manual de conflitos</h2>
+        <article class="panel panel--wide" aria-label="Resumo B-108">
+          <h2>B-108 — Hardening de evidências/storage</h2>
           <p>
-            Work Orders refletido do KPI mobile: Flutter 654/654, Backend
+            Evidências refletido do KPI mobile: Flutter 662/662, Backend
             15/15, contratos mobile 18/18, contratos mobile + Core SaaS 21/21,
-            modulos Flutter 17/17, MVP demo 92%, MVP vendavel 72% e
-            37 blocos entregues.
+            modulos Flutter 17/17, MVP demo 93%, MVP vendavel 76% e
+            38 blocos entregues.
           </p>
           <p>
-            `work_order.create` foi conectado ao sync mobile existente,
-            mapeando `localId` para `serverId`; `already_applied` reaproveita
-            ID remoto, `rejected` preserva a OS local e conflitos entram em
-            resolucao manual inicial.
+            B-108 publicou `EvidenceStorageProvider`,
+            `LocalProtectedEvidenceStorageProvider`, `EvidenceScanner`
+            testavel, Noop/Fake scanner, referencia opaca `evfile_*`, MIME
+            validation JPEG/PNG, size validation 10 MB e checksum SHA-256.
           </p>
           <p>
-            Limitacoes: approval real pendente, evidence attach real pendente,
-            merge avancado campo a campo de conflitos pendente, hardening final
-            de evidencias/storage pendente e piloto Android real ainda precisa
-            validacao em dispositivo fisico.
+            Auditoria segura cobre accepted, rejected, scan_failed e stored. O
+            upload multipart mobile foi preservado e a resposta publica nao
+            expoe path, bucket, storage key, URL publica, token, base64 ou
+            binario.
+          </p>
+          <p>
+            Limitacoes: S3/presigned real, DB/Redis receipt, antivirus real,
+            download protegido final e retencao definitiva seguem pendentes.
           </p>
           <p>
             Politica de KPIs duplos: mexeu Flutter/mobile atualiza

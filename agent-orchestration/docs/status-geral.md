@@ -3341,3 +3341,31 @@ Validacao local B-108: `npm run check`, `npm run lint`, `npm test`,
 check dos dashboards KPI passaram. `flutter test --reporter compact` ficou em
 661/662 por falha no teste KPI B-106 que espera texto em `Kpis/kpis-latest.json`;
 arquivos KPI nao foram alterados por regra do B-108.
+
+## Atualizacao 2026-06-18 - B-108K KPIs pos-avaliacao humana
+
+B-108K publica os KPIs oficiais do B-108 apos avaliacao humana, merge da PR
+#104 e gate B-108G. A feature PR #104 nao alterou arquivos KPI; os KPIs foram
+publicados apenas neste bloco documental separado.
+
+Metadados publicados:
+
+- PR: #104
+- Merge commit: `468fcf16c6b42865aecbd45b05f4c37ced0c3068`
+- Approved head: `4b221cfdfe3acad9c65214ac5fc7e7892a050331`
+- Status: `published_after_human_approval`
+
+KPIs publicados:
+
+- Flutter tests: 662/662
+- Backend tests: 15/15
+- Mobile backend contracts: 18/18
+- Mobile + Core SaaS contracts: 21/21
+- Flutter modules: 17/17
+- MVP demo: 93%
+- MVP vendavel: 76%
+- Blocos concluidos: 38
+
+Politica preservada: sem feature nova e sem alteracao em Flutter `lib/`,
+Flutter `test/`, backend funcional, frontend web, Prisma, migrations, infra,
+env, lockfiles ou Figma.

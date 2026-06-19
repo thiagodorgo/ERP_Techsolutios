@@ -1,85 +1,252 @@
 const dashboardData = {
-  project: {
-    name: "ERP Techsolutions",
-    version: "B-107",
-    updatedAt: "2026-06-18",
-    sourceBranch: "feature/work-order-remote-create-conflicts",
-    summary:
-      "B-107 Criacao remota de OS/local-only mapping + resolucao manual de conflitos publicado apos avaliacao humana. Kpis/ reflete mobile/flutter_app/Kpis/ para Flutter 654/654, MVP demo 92%, MVP vendavel 72% e 37 blocos entregues.",
+  "project": {
+    "name": "ERP Techsolutions",
+    "version": "B-108",
+    "updatedAt": "2026-06-18",
+    "sourceBranch": "feature/evidence-storage-hardening",
+    "summary": "B-108 Hardening de evidências/storage publicado apos avaliacao humana. Kpis/ reflete mobile/flutter_app/Kpis/ para Flutter 662/662, MVP demo 93%, MVP vendavel 76% e 38 blocos entregues."
   },
-  kpis: [
-    { label: "B-107", value: "OS local-only mapping", note: "work_order.create, localId -> serverId e resolucao manual inicial de conflitos." },
-    { label: "Flutter", value: "654/654", note: "Total real validado no full Flutter B-107." },
-    { label: "Backend tests", value: "15/15", note: "npm test passou com core-saas.test.ts." },
-    { label: "Mobile contracts", value: "18/18", note: "tests/mobile-backend-contracts.test.ts." },
-    { label: "Mobile + Core SaaS", value: "21/21", note: "mobile-backend-contracts + core-saas-contract." },
-    { label: "MVP demo", value: "92%", note: "Percentual mobile vindo de mobile/flutter_app/Kpis/kpis-latest.json." },
-    { label: "MVP vendavel", value: "72%", note: "Percentual mobile vindo de mobile/flutter_app/Kpis/kpis-latest.json." },
-    { label: "Blocos entregues", value: "37", note: "B-076 ate B-107 + B-098F, incluindo sub-blocos." },
-    { label: "Escopo B-107K", value: "KPI/docs", note: "Publicacao documental pos-avaliacao humana; sem feature nova ou codigo funcional." },
-  ],
-  blocks: [
-    { id: "B-098E", title: "Evidencias mobile", status: "parcial", progress: 55, summary: "Manifestos idempotentes de evidencia para OS/campo." },
-    { id: "B-102", title: "Checklist answers sync", status: "concluido", progress: 100, summary: "Respostas/notas/conclusao para runs backend-ready." },
-    { id: "B-103", title: "OS status sync", status: "parcial", progress: 75, summary: "statusUpdate backend-ready para Work Orders." },
-    { id: "B-104", title: "Upload real de evidencias", status: "parcial", progress: 70, summary: "Multipart local/dev com blob opaco e checksum." },
-    { id: "B-105", title: "GPS/mapa operacional", status: "parcial", progress: 68, summary: "Provider abstrato, Field Location, mapa simples e sync manual." },
-    { id: "B-106", title: "Adapter GPS nativo", status: "parcial", progress: 76, summary: "Geolocator, permissao when-in-use, opt-in explicito e captura manual." },
-    { id: "B-107", title: "OS local-only mapping", status: "parcial", progress: 82, summary: "work_order.create, serverId mapping e conflito manual inicial." },
-  ],
-  contracts: [
+  "kpis": [
     {
-      domain: "Work Orders",
-      status: "parcial",
-      endpoints: ["POST /api/v1/mobile/sync/work-order-actions"],
-      detail: "B-107 envia work_order.create local-only, mapeia localId -> serverId, reaproveita already_applied e preserva rejected/conflict com seguranca.",
+      "label": "B-108",
+      "value": "Evidence storage hardening",
+      "note": "EvidenceStorageProvider, scanner testavel, evfile_* e auditoria segura."
     },
     {
-      domain: "KPIs mobile",
-      status: "concluido",
-      endpoints: ["mobile/flutter_app/Kpis/kpis-latest.json", "mobile/flutter_app/Kpis/index.html"],
-      detail: "Fonte dos percentuais Flutter/mobile: 654/654, 92%, 72%, 37 blocos.",
+      "label": "Flutter",
+      "value": "662/662",
+      "note": "Total real validado no gate B-108G."
     },
     {
-      domain: "KPIs raiz",
-      status: "concluido",
-      endpoints: ["Kpis/kpis-latest.json", "Kpis/index.html"],
-      detail: "Reflete os percentuais mobile em Kpis/ conforme politica obrigatoria de KPIs duplos.",
+      "label": "Backend tests",
+      "value": "15/15",
+      "note": "npm test passou com core-saas.test.ts."
     },
+    {
+      "label": "Mobile contracts",
+      "value": "18/18",
+      "note": "tests/mobile-backend-contracts.test.ts."
+    },
+    {
+      "label": "Mobile + Core SaaS",
+      "value": "21/21",
+      "note": "mobile-backend-contracts + core-saas-contract."
+    },
+    {
+      "label": "MVP demo",
+      "value": "93%",
+      "note": "Percentual mobile vindo de mobile/flutter_app/Kpis/kpis-latest.json."
+    },
+    {
+      "label": "MVP vendavel",
+      "value": "76%",
+      "note": "Percentual mobile vindo de mobile/flutter_app/Kpis/kpis-latest.json."
+    },
+    {
+      "label": "Blocos entregues",
+      "value": "38",
+      "note": "B-076 ate B-108 + B-098F, incluindo sub-blocos."
+    },
+    {
+      "label": "Escopo B-108K",
+      "value": "KPI/docs",
+      "note": "Publicacao documental pos-avaliacao humana; sem feature nova ou codigo funcional."
+    }
   ],
-  domains: [
-    { name: "Flutter", status: "parcial", detail: "B-107 conecta criacao remota de OS local-only, mapeamento serverId e resolucao manual inicial; approval/evidence reais seguem pendentes." },
-    { name: "Work Orders", status: "parcial", detail: "Sync mobile de OS agora cobre create e status em duas fases, com conflict manual inicial e sem descarte silencioso." },
-    { name: "Politica KPIs duplos", status: "concluido", detail: "Mexeu Flutter/mobile atualiza mobile/flutter_app/Kpis/* e reflete percentuais em Kpis/*; fora mobile atualiza Kpis/*; ambos atualizam ambos; index.html tambem deve refletir." },
+  "blocks": [
+    {
+      "id": "B-102",
+      "title": "Checklist answers sync",
+      "status": "concluido",
+      "progress": 100,
+      "summary": "Respostas/notas/conclusao para runs backend-ready."
+    },
+    {
+      "id": "B-103",
+      "title": "OS status sync",
+      "status": "parcial",
+      "progress": 75,
+      "summary": "statusUpdate backend-ready para Work Orders."
+    },
+    {
+      "id": "B-104",
+      "title": "Upload real de evidencias",
+      "status": "parcial",
+      "progress": 75,
+      "summary": "Multipart local/dev com blob opaco e checksum."
+    },
+    {
+      "id": "B-105",
+      "title": "GPS/mapa operacional",
+      "status": "parcial",
+      "progress": 68,
+      "summary": "Provider abstrato, Field Location, mapa simples e sync manual."
+    },
+    {
+      "id": "B-106",
+      "title": "Adapter GPS nativo",
+      "status": "parcial",
+      "progress": 76,
+      "summary": "Geolocator, permissao when-in-use, opt-in explicito e captura manual."
+    },
+    {
+      "id": "B-107",
+      "title": "OS local-only mapping",
+      "status": "parcial",
+      "progress": 82,
+      "summary": "work_order.create, serverId mapping e conflito manual inicial."
+    },
+    {
+      "id": "B-108",
+      "title": "Hardening de evidencias/storage",
+      "status": "parcial",
+      "progress": 86,
+      "summary": "Storage provider protegido, scanner testavel, evfile_* e auditoria segura."
+    }
   ],
-  validations: [
-    { name: "flutter test --reporter compact", result: "pass 654/654 no B-107" },
-    { name: "npm test", result: "pass 15/15 no gate B-107G" },
-    { name: "mobile-backend-contracts", result: "pass 18/18" },
-    { name: "mobile + Core SaaS contracts", result: "pass 21/21" },
-    { name: "PR #102", result: "merged db36fb318adc234e1fcc6bfeaeb17b6260847c3c" },
-    { name: "Head aprovado", result: "b3da11d1605af9edb68e5e8f587881fc22115f3f" },
-    { name: "Politica KPI", result: "publicado apos avaliacao humana, merge e gate B-107G" },
+  "contracts": [
+    {
+      "domain": "Evidencias",
+      "status": "parcial",
+      "endpoints": [
+        "POST /api/v1/mobile/evidence-uploads"
+      ],
+      "detail": "B-108 preserva multipart, valida MIME JPEG/PNG, limite 10 MB e checksum SHA-256, retorna file_id opaco evfile_* sem path/bucket/storage key/token/base64/binario."
+    },
+    {
+      "domain": "KPIs mobile",
+      "status": "concluido",
+      "endpoints": [
+        "mobile/flutter_app/Kpis/kpis-latest.json",
+        "mobile/flutter_app/Kpis/index.html"
+      ],
+      "detail": "Fonte dos percentuais Flutter/mobile: 662/662, 93%, 76%, 38 blocos."
+    },
+    {
+      "domain": "KPIs raiz",
+      "status": "concluido",
+      "endpoints": [
+        "Kpis/kpis-latest.json",
+        "Kpis/index.html"
+      ],
+      "detail": "Reflete os percentuais mobile em Kpis/ conforme politica obrigatoria de KPIs duplos."
+    }
   ],
-  estimates: [
-    { label: "MVP demo", value: "92%", detail: "Estimado no KPI mobile apos B-107." },
-    { label: "MVP vendavel", value: "72%", detail: "Estimado no KPI mobile apos B-107." },
+  "domains": [
+    {
+      "name": "Flutter",
+      "status": "parcial",
+      "detail": "B-108 trata stored, rejected, scan_failed e pending_review, preservando evidencia local em erro."
+    },
+    {
+      "name": "Evidencias",
+      "status": "parcial",
+      "detail": "Provider local protegido dev/test, EvidenceScanner Noop/Fake e auditoria segura accepted/rejected/scan_failed/stored."
+    },
+    {
+      "name": "Politica KPIs duplos",
+      "status": "concluido",
+      "detail": "KPIs publicados somente apos avaliacao humana, merge e gate, em bloco documental separado."
+    }
   ],
-  risks: [
-    { title: "Approval real pendente", severity: "medio", detail: "B-107 nao implementa aprovacao operacional real de OS." },
-    { title: "Evidence attach real pendente", severity: "medio", detail: "B-107 nao implementa anexos reais no replay de OS." },
-    { title: "Merge avancado de conflitos pendente", severity: "medio", detail: "B-107 entrega resolucao manual inicial, sem merge campo a campo." },
+  "validations": [
+    {
+      "name": "flutter test --reporter compact",
+      "result": "pass 662/662 no gate B-108G"
+    },
+    {
+      "name": "npm test",
+      "result": "pass 15/15 no gate B-108G"
+    },
+    {
+      "name": "mobile-backend-contracts",
+      "result": "pass 18/18"
+    },
+    {
+      "name": "mobile + Core SaaS contracts",
+      "result": "pass 21/21"
+    },
+    {
+      "name": "PR #104",
+      "result": "merged 468fcf16c6b42865aecbd45b05f4c37ced0c3068"
+    },
+    {
+      "name": "Head aprovado",
+      "result": "4b221cfdfe3acad9c65214ac5fc7e7892a050331"
+    },
+    {
+      "name": "Politica KPI",
+      "result": "publicado apos avaliacao humana, merge e gate B-108G"
+    }
   ],
-  nextBlocks: [
-    { id: "B-108", title: "Hardening de evidencias", detail: "Presigned URL, storage protegido, antivirus e auditoria." },
+  "estimates": [
+    {
+      "label": "MVP demo",
+      "value": "93%",
+      "detail": "Estimado no KPI mobile apos B-108."
+    },
+    {
+      "label": "MVP vendavel",
+      "value": "76%",
+      "detail": "Estimado no KPI mobile apos B-108."
+    }
   ],
-  history: [
-    { date: "2026-06-18", title: "B-107", detail: "Criacao remota de OS local-only, localId -> serverId, conflito manual inicial, Flutter 654/654, MVP demo 92%, MVP vendavel 72%, 37 blocos." },
-    { date: "2026-06-18", title: "B-106", detail: "Adapter GPS nativo real, permissoes when-in-use, opt-in explicito, Flutter 633/633, MVP demo 90%, MVP vendavel 68%, 36 blocos." },
-    { date: "2026-06-17", title: "B-152F", detail: "Kpis/ raiz sincronizado com mobile/flutter_app/Kpis/ apos B-105; politica de KPIs duplos documentada." },
-    { date: "2026-06-17", title: "B-105", detail: "GPS/mapa operacional da OS, Field Location, Flutter 613/613, MVP demo 87%, MVP vendavel 64%, 35 blocos." },
-    { date: "2026-06-15", title: "KPI-DASHBOARD-001", detail: "Criado painel permanente Kpis/." },
+  "risks": [
+    {
+      "title": "Storage externo final pendente",
+      "severity": "medio",
+      "detail": "S3/presigned real e download protegido final permanecem fora do B-108."
+    },
+    {
+      "title": "Antivirus real pendente",
+      "severity": "medio",
+      "detail": "B-108 entrega scanner testavel Noop/Fake, nao antivirus real."
+    },
+    {
+      "title": "DB/Redis receipt pendente",
+      "severity": "medio",
+      "detail": "Persistencia duravel de recibos de arquivo permanece pendente."
+    }
   ],
+  "nextBlocks": [
+    {
+      "id": "B-109",
+      "title": "Approval real de OS",
+      "detail": "Fluxo de aprovacao operacional."
+    },
+    {
+      "id": "B-110",
+      "title": "Storage externo de evidencias",
+      "detail": "Presigned URL, antivirus real, download protegido e retencao."
+    }
+  ],
+  "history": [
+    {
+      "date": "2026-06-18",
+      "title": "B-108",
+      "detail": "Hardening de evidencias/storage, EvidenceStorageProvider, EvidenceScanner, evfile_*, Flutter 662/662, MVP demo 93%, MVP vendavel 76%, 38 blocos."
+    },
+    {
+      "date": "2026-06-18",
+      "title": "B-107",
+      "detail": "Criacao remota de OS local-only, localId -> serverId, conflito manual inicial, Flutter 654/654, MVP demo 92%, MVP vendavel 72%, 37 blocos."
+    },
+    {
+      "date": "2026-06-18",
+      "title": "B-106",
+      "detail": "Adapter GPS nativo real, permissoes when-in-use, opt-in explicito, Flutter 633/633, MVP demo 90%, MVP vendavel 68%, 36 blocos."
+    },
+    {
+      "date": "2026-06-17",
+      "title": "B-152F",
+      "detail": "Kpis/ raiz sincronizado com mobile/flutter_app/Kpis/ apos B-105; politica de KPIs duplos documentada."
+    },
+    {
+      "date": "2026-06-15",
+      "title": "KPI-DASHBOARD-001",
+      "detail": "Criado painel permanente Kpis/."
+    }
+  ]
 };
 
 function renderDashboard(data) {

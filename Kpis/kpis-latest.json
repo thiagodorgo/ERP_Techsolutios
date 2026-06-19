@@ -1,23 +1,23 @@
 {
   "snapshot_date": "2026-06-18",
-  "version": "B-107",
+  "version": "B-108",
   "source": "mobile/flutter_app/Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile",
   "release": {
-    "block": "B-107",
-    "title": "Criação remota de OS/local-only mapping + resolução manual de conflitos",
-    "pr": 102,
-    "merge_commit": "db36fb318adc234e1fcc6bfeaeb17b6260847c3c",
-    "approved_head": "b3da11d1605af9edb68e5e8f587881fc22115f3f",
-    "summary": "B-107 publica a criacao remota de OS local-only pelo sync mobile, mapeamento localId -> serverId e resolucao manual inicial de conflitos apos avaliacao humana, merge e gate B-107G.",
+    "block": "B-108",
+    "title": "Hardening de evidências/storage",
+    "pr": 104,
+    "merge_commit": "468fcf16c6b42865aecbd45b05f4c37ced0c3068",
+    "approved_head": "4b221cfdfe3acad9c65214ac5fc7e7892a050331",
     "status": "published_after_human_approval",
-    "status_label": "Publicado apos avaliacao humana, merge e gate B-107G"
+    "summary": "B-108 publica o hardening de evidências/storage após avaliação humana, merge da PR #104 e gate B-108G, preservando upload multipart e resposta pública sem path, bucket, storage key, URL pública, token, base64 ou binário.",
+    "status_label": "Publicado apos avaliacao humana, merge e gate B-108G"
   },
   "metrics": {
     "flutter_tests": {
-      "value": 654,
-      "total": 654,
-      "display": "654/654"
+      "value": 662,
+      "total": 662,
+      "display": "662/662"
     },
     "backend_tests": {
       "value": 15,
@@ -35,18 +35,18 @@
       "display": "17/17"
     },
     "mvp_demo": {
-      "value": 92,
+      "value": 93,
       "unit": "%",
-      "display": "92%"
+      "display": "93%"
     },
     "mvp_vendavel": {
-      "value": 72,
+      "value": 76,
       "unit": "%",
-      "display": "72%"
+      "display": "76%"
     },
     "blocks_completed": {
-      "value": 37,
-      "display": "37"
+      "value": 38,
+      "display": "38"
     },
     "mobile_backend_contracts": {
       "value": 18,
@@ -67,14 +67,17 @@
       "Mexeu no Flutter/mobile: atualizar mobile/flutter_app/Kpis/* e refletir percentuais mobile em Kpis/*.",
       "Mexeu fora do mobile: atualizar Kpis/*.",
       "Mexeu nos dois: atualizar os dois conjuntos.",
-      "Se existir index.html: atualizar tambem o HTML."
+      "Se existir index.html: atualizar tambem o HTML.",
+      "PRs de feature nao alteram KPIs; publicacao ocorre somente em bloco documental pos-avaliacao humana, merge e gate."
     ]
   },
   "limitations": [
+    "S3/presigned real pendente",
+    "Persistencia duravel DB/Redis do receipt pendente",
+    "Antivirus real pendente",
+    "Download protegido final pendente",
+    "Retencao definitiva pendente",
     "Approval real pendente",
-    "Evidence attach real pendente",
-    "Merge avancado campo a campo de conflitos pendente",
-    "Hardening final de evidencias/storage pendente",
     "Piloto Android real ainda precisa validacao em dispositivo fisico"
   ]
 }
