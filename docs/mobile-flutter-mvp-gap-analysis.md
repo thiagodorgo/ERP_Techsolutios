@@ -501,3 +501,23 @@ Lacunas remanescentes: approval real, `evidence_attach` como acao de OS,
 resolucao com merge campo a campo e persistencia duravel dos recibos de
 idempotencia em ambiente multi-instancia. KPIs nao foram atualizados por
 politica pos-avaliacao humana.
+
+## B-109 - Aprovacao operacional real
+
+B-109 fecha a primeira lacuna funcional de approval com um MVP tenant-scoped
+para OS, checklist concluido e evidencia armazenada. O backend lista pendencias,
+aprova, reprova com motivo obrigatorio, bloqueia segunda decisao, registra
+auditoria sanitizada e gera notificacao segura. A UI web concentra a decisao no
+detalhe da OS.
+
+Classificacao: **parcial vendavel**. O fluxo e real e testavel, mas o
+repositório de approval permanece em memoria para evitar migration nesta fase.
+Persistencia duravel, workflow configuravel, escalonamento, assinatura digital
+legal e politicas multi-etapa permanecem futuros.
+
+Fallback RBAC documentado: `work_orders:read` para leitura e
+`work_orders:update` para decisao, ate a introducao futura de `approval:read` e
+`approval:decide`.
+
+KPIs nao foram publicados nesta feature PR. Proposta para avaliacao humana:
+39 blocos, MVP demo 94% e MVP vendavel 79%.

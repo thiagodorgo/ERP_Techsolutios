@@ -3309,6 +3309,28 @@ Politica preservada: sem feature nova e sem alteracao em Flutter `lib/`,
 Flutter `test/`, backend funcional, frontend web, Prisma, migrations, infra,
 env, lockfiles ou Figma.
 
+## Atualizacao 2026-06-19 - B-109 aprovacao operacional real
+
+B-109 implementa o primeiro fluxo real de aprovacao operacional para OS,
+checklist e evidencia. A API tenant-scoped lista pendencias, permite aprovacao,
+exige motivo na reprovacao e bloqueia segunda decisao com conflito seguro.
+
+O fluxo reaproveita auditoria persistente best-effort, trilha sanitizada em
+memoria e notificacoes reais com link para o detalhe da OS. A UI web inclui card
+de decisao, estados, solicitante, datas, motivo, feedback seguro e bloqueio por
+permissao.
+
+Fallback RBAC temporario: `work_orders:read` para consulta e
+`work_orders:update` para decidir. `approval:read` e `approval:decide` ficam
+documentados como permissoes futuras.
+
+O mobile nao decide no B-109; apenas tolera `pending_approval`, `approved` e
+`rejected` sem expor tenant, token, path ou binario.
+
+Persistencia de approval permanece em memoria para evitar migration. KPIs nao
+foram publicados nesta feature PR; proposta: 39 blocos, MVP demo 94% e MVP
+vendavel 79%.
+
 ## Atualizacao 2026-06-18 - B-108 hardening de evidencias/storage
 
 B-108 endurece o upload mobile de evidencias iniciado no B-104 sem alterar KPIs.

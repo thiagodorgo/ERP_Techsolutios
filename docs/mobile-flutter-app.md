@@ -189,3 +189,17 @@ OCR, PDF, camera e upload real ficam documentados, mas fora da primeira fundacao
 - O payload remoto nao envia tenant, token, Authorization, path, base64, `file_data` ou `local_path`.
 - Approval real e `evidence_attach` dentro do sync de OS continuam fora do escopo.
 - KPIs nao foram alterados nesta PR; valores propostos ficam apenas no relatorio final.
+
+## B-109 - Estados de aprovacao
+
+O mobile nao decide aprovacoes no B-109. O parser passa a tolerar
+`pending_approval`, `approved` e `rejected`, incluindo o mapeamento
+`pending_approval -> WorkOrderStatus.pendingApproval`.
+
+`MobileApprovalState` le somente ID opaco, entidade, status, `safe_message` e
+motivo seguro. `ApprovalDecisionPayload` documenta a allowlist futura de
+decisao (`note` ou `reason`) sem tenant, token, Authorization, path, base64,
+`file_data` ou `local_path`.
+
+Evidencias e checklists locais continuam preservados em rejeicao ou falha. O
+fluxo de decisao permanece exclusivo da UI web neste bloco.

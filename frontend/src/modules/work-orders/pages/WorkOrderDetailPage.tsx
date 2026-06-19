@@ -8,6 +8,7 @@ import { assignWorkOrder, updateWorkOrderStatus } from "../work-orders.service";
 import { formatWorkOrderDate } from "../work-orders.adapter";
 import { useWorkOrderDetail } from "../useWorkOrderDetail";
 import { WorkOrderAssignForm } from "../components/WorkOrderAssignForm";
+import { OperationalApprovalCard } from "../components/OperationalApprovalCard";
 import { WorkOrderDetailPanel } from "../components/WorkOrderDetailPanel";
 import { WorkOrderPriorityBadge } from "../components/WorkOrderPriorityBadge";
 import { WorkOrderStatusActions } from "../components/WorkOrderStatusActions";
@@ -63,6 +64,11 @@ export function WorkOrderDetailPage() {
           <WorkOrderTimeline events={timeline} />
         </div>
         <aside className="work-order-detail-side">
+          <OperationalApprovalCard
+            context={context}
+            workOrderId={workOrder.id}
+            canDecide={can("work_orders:update")}
+          />
           <Card title="Datas importantes">
             <div className="work-order-date-grid">
               <span>Agendada: {formatWorkOrderDate(workOrder.scheduledFor)}</span>
@@ -106,8 +112,8 @@ export function WorkOrderDetailPage() {
               <p className="work-order-helper">Seu usuario nao possui `work_orders:assign`.</p>
             )}
           </Card>
-          <Alert title="Proximas integracoes" tone="info">
-            Checklists, evidencias, despacho, mapa filtrado por OS e comissao de guincheiros permanecem preparados para etapas futuras.
+          <Alert title="Integracoes operacionais" tone="info">
+            A aprovacao conecta OS concluida, checklist e evidencia por contrato tenant-scoped. Workflow configuravel e assinatura legal permanecem fora deste MVP.
           </Alert>
         </aside>
       </section>

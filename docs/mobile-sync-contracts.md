@@ -653,3 +653,18 @@ vira `MISSING_RESULT_REF`, sem falso sucesso.
 
 Conflitos permanecem fora do replay automatico ate decisao manual. Approval
 real e `work_order.evidence_attach` continuam fora do escopo B-107.
+
+## B-109 - Compatibilidade de estados de aprovacao
+
+O B-109 nao adiciona envio de decisao ao replay mobile. A compatibilidade
+adicionada e somente de leitura/estado:
+
+- `pending_approval`
+- `approved`
+- `rejected`
+
+O parser Flutter usa allowlist e mantem `safe_message` para rejeicao. Um payload
+de decisao futuro pode conter apenas `note` na aprovacao ou `reason` na
+reprovacao. Tenant e identidade continuam resolvidos pelo contexto autenticado,
+sem `tenant_id`, token, Authorization, path, storage key, bucket, base64,
+`file_data` ou `local_path`.

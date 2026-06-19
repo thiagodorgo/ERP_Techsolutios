@@ -196,10 +196,7 @@ WorkOrder _workOrderFromRemoteJson(
     title: str('title', 'title'),
     customerName: str('customerName', 'customer_name'),
     serviceAddress: str('serviceAddress', 'service_address'),
-    status: WorkOrderStatus.values.firstWhere(
-      (s) => s.name == (json['status'] as String?),
-      orElse: () => WorkOrderStatus.scheduled,
-    ),
+    status: workOrderStatusFromApiValue(json['status']),
     priority: WorkOrderPriority.values.firstWhere(
       (p) => p.name == (json['priority'] as String?),
       orElse: () => WorkOrderPriority.normal,
@@ -226,10 +223,7 @@ WorkOrder _workOrderFromJson(Map<String, dynamic> json) {
     title: json['title'] as String,
     customerName: json['customer_name'] as String,
     serviceAddress: json['service_address'] as String,
-    status: WorkOrderStatus.values.firstWhere(
-      (s) => s.name == (json['status'] as String),
-      orElse: () => WorkOrderStatus.scheduled,
-    ),
+    status: workOrderStatusFromApiValue(json['status']),
     priority: WorkOrderPriority.values.firstWhere(
       (p) => p.name == (json['priority'] as String),
       orElse: () => WorkOrderPriority.normal,
@@ -247,6 +241,17 @@ WorkOrder _workOrderFromJson(Map<String, dynamic> json) {
     createdAt:
         _parseDate(json['created_at'] as String?) ?? DateTime.now().toUtc(),
     updatedAt: _parseDate(json['updated_at'] as String?),
+  );
+}
+
+WorkOrderStatus workOrderStatusFromApiValue(Object? value) {
+  final normalized = value is String ? value.trim() : '';
+  if (normalized == 'pending_approval') {
+    return WorkOrderStatus.pendingApproval;
+  }
+  return WorkOrderStatus.values.firstWhere(
+    (status) => status.name == normalized,
+    orElse: () => WorkOrderStatus.scheduled,
   );
 }
 

@@ -3439,6 +3439,27 @@ Todo bloco que executar testes, builds, Flutter, Node, Android, iOS ou geração
 - Sem feature nova.
 - Sem alteracao em Flutter `lib/`, Flutter `test/`, backend funcional, frontend web, Prisma, migrations, infra, env, lockfiles ou Figma.
 
+## 2026-06-19 - B-109 Aprovacao operacional real
+
+### Implementado
+
+- Endpoints `GET /approvals/pending`, `GET /approvals/:id`,
+  `POST /approvals/:id/approve` e `POST /approvals/:id/reject`.
+- Entidades `work_order`, `checklist_run` e `evidence`.
+- Conclusao de OS cria pendencia idempotente.
+- Rejeicao exige motivo e segunda decisao retorna conflito seguro.
+- Tenant isolation e fallback RBAC com `work_orders:read`/`work_orders:update`.
+- Auditoria sanitizada e notificacao segura com action URL da OS.
+- Card de aprovacao operacional no detalhe web da OS.
+- Flutter tolera `pending_approval`, `approved` e `rejected`.
+
+### Limites
+
+- Repositorio de approval em memoria com boundary substituivel.
+- Sem Prisma/migrations.
+- Sem workflow enterprise, BPM ou assinatura digital legal.
+- KPIs nao alterados; proposta: 39 blocos, MVP demo 94%, MVP vendavel 79%.
+
 ## 2026-06-18 - B-108 Hardening de evidencias/storage
 
 ### Implementado
