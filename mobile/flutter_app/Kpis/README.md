@@ -82,9 +82,24 @@ Regras obrigatorias:
 - Mexeu nos dois: atualizar os dois conjuntos.
 - Se existir `index.html`: atualizar tambem o HTML.
 
-No pos-B-107, os valores mobile refletidos na raiz sao: Flutter 654/654,
+No pos-B-108, os valores mobile refletidos na raiz sao: Flutter 662/662,
 Backend 15/15, contratos mobile 18/18, contratos mobile + Core SaaS 21/21,
-modulos Flutter 17/17, MVP demo 92%, MVP vendavel 72% e 37 blocos entregues.
+modulos Flutter 17/17, MVP demo 93%, MVP vendavel 76% e 38 blocos entregues.
+
+### B-108 publicado
+
+- PR #104 mergeada em `468fcf16c6b42865aecbd45b05f4c37ced0c3068`.
+- Approved head `4b221cfdfe3acad9c65214ac5fc7e7892a050331`.
+- Status `published_after_human_approval` apos gate B-108G.
+- Upload multipart mobile preservado.
+- Resposta sem path, bucket, storage key, URL publica, token, base64 ou binario.
+- Provider local protegido implementado para dev/test.
+- Referencia opaca `evfile_*`.
+- `EvidenceScanner` testavel implementado com Noop/Fake scanner.
+- Auditoria segura implementada para accepted/rejected/scan_failed/stored.
+- Estados `stored`, `rejected`, `scan_failed` e `pending_review` tratados no mobile.
+- Evidencia local preservada em erro, rejected, scan_failed, pending_review, rede e timeout.
+- Pendentes: S3/presigned real, DB/Redis receipt, antivirus real, download protegido final e retencao definitiva.
 
 ### B-107 publicado
 

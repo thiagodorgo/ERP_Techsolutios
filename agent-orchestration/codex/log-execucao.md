@@ -3468,3 +3468,35 @@ Todo bloco que executar testes, builds, Flutter, Node, Android, iOS ou geração
 - `flutter test test/features/b103_work_order_sync_test.dart --reporter compact`: 43/43.
 - `flutter test --reporter compact`: 661/662, falha no teste KPI B-106 por expectativa sobre `Kpis/kpis-latest.json`; arquivos KPI nao foram alterados por regra do B-108.
 - `node --check Kpis/app.js` e `node --check mobile/flutter_app/Kpis/app.js`: pass.
+
+## 2026-06-18 - B-108K KPIs pos-avaliacao humana
+
+### Publicado
+
+- KPIs B-108 publicados somente apos avaliacao humana, merge da PR #104 e gate B-108G.
+- Feature PR #104 nao alterou arquivos KPI.
+- Status publicado: `published_after_human_approval`.
+
+### Metadados finais B-108
+
+- PR: #104
+- Merge commit: `468fcf16c6b42865aecbd45b05f4c37ced0c3068`
+- Approved head: `4b221cfdfe3acad9c65214ac5fc7e7892a050331`
+- Gate: B-108G aprovado
+
+### KPIs publicados
+
+- Flutter tests: 662/662
+- Backend tests: 15/15
+- Mobile backend contracts: 18/18
+- Mobile + Core SaaS contracts: 21/21
+- Flutter modules: 17/17
+- MVP demo: 93%
+- MVP vendavel: 76%
+- Blocos concluidos: 38
+
+### Politica preservada
+
+- KPIs publicados em bloco documental separado.
+- Sem feature nova.
+- Sem alteracao em Flutter `lib/`, Flutter `test/`, backend funcional, frontend web, Prisma, migrations, infra, env, lockfiles ou Figma.

@@ -9,105 +9,89 @@
 // ---------------------------------------------------------------------------
 const EMBEDDED_LATEST = {
   "snapshot_date": "2026-06-18",
-  "version": "B-107",
-  "branch": "feature/work-order-remote-create-conflicts",
-  "description": "B-107 Criacao remota de OS/local-only mapping + resolucao manual de conflitos — work_order.create, localId -> serverId, replay em duas fases e resolucao manual inicial",
+  "version": "B-108",
+  "branch": "feature/evidence-storage-hardening",
+  "description": "B-108 Hardening de evidências/storage — storage protegido local/dev, scanner testavel, referencia opaca evfile_*, auditoria segura e upload multipart preservado sem expor path, bucket, storage key, URL publica, token, base64 ou binario",
   "release": {
-    "block": "B-107",
-    "title": "Criação remota de OS/local-only mapping + resolução manual de conflitos",
-    "pr": 102,
-    "mergeCommit": "db36fb318adc234e1fcc6bfeaeb17b6260847c3c",
-    "approvedHead": "b3da11d1605af9edb68e5e8f587881fc22115f3f",
-    "branch": "feature/work-order-remote-create-conflicts",
+    "block": "B-108",
+    "title": "Hardening de evidências/storage",
+    "pr": 104,
+    "mergeCommit": "468fcf16c6b42865aecbd45b05f4c37ced0c3068",
+    "approvedHead": "4b221cfdfe3acad9c65214ac5fc7e7892a050331",
+    "branch": "feature/evidence-storage-hardening",
     "status": "published_after_human_approval",
-    "status_label": "Publicado apos avaliacao humana, merge e gate B-107G",
-    "summary": "OS local-only agora usa o sync mobile para work_order.create, recebe serverId, libera statusUpdate dependente e possui resolucao manual inicial para conflitos.",
+    "status_label": "Publicado apos avaliacao humana, merge e gate B-108G",
+    "summary": "B-108 endureceu o upload de evidencias/storage mantendo o multipart mobile, adicionando provider local protegido, scanner testavel e auditoria segura; o mobile preserva evidencia local em erro, rejected, scan_failed e pending_review.",
     "commits": [
       {
-        "hash": "b3da11d1605af9edb68e5e8f587881fc22115f3f",
-        "message": "feat(mobile): sync local work order creation and conflicts"
+        "hash": "4b221cfdfe3acad9c65214ac5fc7e7892a050331",
+        "message": "test(mobile): keep B-106 KPI regression compatible with latest release"
       },
       {
-        "hash": "db36fb318adc234e1fcc6bfeaeb17b6260847c3c",
-        "message": "Merge pull request #102 from thiagodorgo/feature/work-order-remote-create-conflicts"
+        "hash": "be750e92f539213f3af051551434562d6c99afd6",
+        "message": "feat(evidence): harden mobile evidence storage"
+      },
+      {
+        "hash": "468fcf16c6b42865aecbd45b05f4c37ced0c3068",
+        "message": "Merge pull request #104 from thiagodorgo/feature/evidence-storage-hardening"
       }
     ],
-    "limitation": "Approval real e evidence attach real continuam fora do escopo; merge avancado campo a campo de conflitos permanece pendente.",
-    "fallback": "Rejected, conflict, resposta sem resultRef e erro de rede preservam a OS local com mensagem segura e sem sucesso falso."
+    "limitation": "S3/presigned real, DB/Redis receipt, antivirus real, download protegido final e retencao definitiva seguem pendentes.",
+    "fallback": "Rejected, scan_failed, pending_review, erro de rede e timeout preservam a evidencia local; stored/uploaded marca synced e permite apagar o blob local opaco."
   },
   "domains": [
     {
       "id": "work_orders",
       "name": "Work Orders (OS)",
       "status": "parcial",
-      "detail": "Pull remoto ativo + sync write de OS com create local-only e status conectado; B-107 adiciona work_order.create, mapeamento localId -> serverId e resolucao manual inicial de conflitos.",
+      "detail": "Pull remoto ativo + sync write de OS com create local-only e status conectado; B-107 adicionou work_order.create, mapeamento localId -> serverId e resolucao manual inicial de conflitos.",
       "points": [
         "GET /api/v1/work-orders conectado com upsert no Drift",
         "POST /api/v1/mobile/sync/work-order-actions conectado para work_order.create e statusUpdate backend-ready",
-        "B-107 concluiu criacao remota de OS local-only via sync mobile",
         "localId -> serverId implementado para accepted e already_applied",
-        "work_order.create suportado no backend mobile sync",
-        "already_applied reaproveita ID remoto",
-        "rejected mantem OS local com falha segura",
-        "conflicts marcam resolucao manual",
-        "statusUpdate local-only bloqueado antes de serverId",
-        "statusUpdate elegivel apos serverId",
-        "UI/servico de resolucao manual implementados: manter local, aceitar servidor e revisao manual",
-        "Approval real e evidence_attach continuam fora do escopo B-107"
+        "Approval real e evidence_attach continuam fora do escopo B-108"
       ]
     },
     {
       "id": "checklists",
       "name": "Checklists",
       "status": "parcial",
-      "detail": "Pull de templates ativo (B-100/B-101) + sync write de respostas conectado para runs com server_run_id/run_id real (B-102); run create, anexos/markers/divergencia/ack seguem pendentes.",
+      "detail": "Pull de templates ativo + sync write de respostas conectado para runs com server_run_id/run_id real; run create e anexos seguem pendentes.",
       "points": [
-        "GET /api/v1/mobile/checklists/available com handler backend real (B-101)",
-        "POST /api/v1/mobile/sync/checklist-actions conectado no replay Flutter para answerUpsert/runComplete backend-ready (B-102)",
-        "checklist_answer.upsert -> checklist.item_answer ou checklist.item_note",
-        "checklist_run.complete -> checklist.complete",
-        "accepted/already_applied viram synced; rejected vira failed; conflict exige decisao manual",
-        "Request seguro: sem tenantId, tenant_id, token, Authorization, path, base64, file_data ou binary",
-        "Pendente: checklist_run.create remoto, anexos reais, markers/divergencia/acknowledgement em lote e reconciliacao avancada"
+        "GET /api/v1/mobile/checklists/available com handler backend real",
+        "POST /api/v1/mobile/sync/checklist-actions conectado no replay Flutter",
+        "Payload seguro sem tenant externo, token, path, base64 ou file_data"
       ]
     },
     {
       "id": "evidence",
       "name": "Evidencias Mobile",
       "status": "parcial",
-      "detail": "Sync Flutter de metadados implementado + upload binario real parcial via multipart local/dev (B-104).",
+      "detail": "B-108 endurece o upload binario real parcial com storage protegido local/dev, scanner testavel, auditoria segura e resposta publica com referencia opaca.",
       "points": [
-        "POST /api/v1/mobile/sync/evidence-actions conectado no replay mobile",
-        "POST /api/v1/mobile/evidence-uploads conectado para upload JPEG/PNG ate 10 MB apos evidence_id real",
-        "Blob local opaco via EvidenceBlobStore; localBlobRef nunca entra em payload remoto",
-        "Request seguro: sem tenant_id, base64, binario em JSON, file_data, local_path ou path",
-        "already_applied vira sucesso idempotente; upload conflict exige decisao manual",
-        "Pendente: presigned URL, storage protegido, persistencia DB/Redis, antivirus e auditoria completa"
+        "POST /api/v1/mobile/evidence-uploads preserva upload multipart",
+        "Resposta sem path, bucket, storage key, URL publica, token, base64 ou binario",
+        "Provider local protegido implementado para dev/test",
+        "Referencia opaca evfile_*",
+        "EvidenceScanner testavel com Noop/Fake scanner",
+        "MIME validation JPEG/PNG",
+        "Size validation 10 MB",
+        "Checksum SHA-256",
+        "Auditoria segura accepted/rejected/scan_failed/stored",
+        "Estados stored, rejected, scan_failed e pending_review tratados no mobile",
+        "Evidencia local preservada em erro, rejected, scan_failed, pending_review, rede e timeout",
+        "S3/presigned real, DB/Redis receipt, antivirus real, download protegido final e retencao definitiva seguem pendentes"
       ]
     },
     {
       "id": "field_location",
       "name": "Field Location / Mapa Operacional",
       "status": "parcial",
-      "detail": "B-106 conecta o adapter GPS nativo real ao DeviceLocationProvider, mantendo captura manual, opt-in explicito e Field Location seguro.",
+      "detail": "B-106 conecta adapter GPS nativo real mantendo captura manual e opt-in explicito.",
       "points": [
         "GeolocatorDeviceLocationProvider com GeolocatorLocationPort testavel",
         "Permissoes Android/iOS foreground/when-in-use",
-        "Consentimento explicito antes do primeiro pedido de permissao nativa",
-        "Captura somente por Enviar localizacao agora; sem captura ao abrir tela",
-        "getCurrentPosition com timeout seguro; sem stream, timer ou envio silencioso",
-        "POST /api/v1/mobile/field-locations preservado com payload seguro",
-        "AutoSyncCoordinator continua sincronizando Field Location antes dos demais dominios sem capturar nova localizacao",
         "Sem background tracking",
-        "Sem stream continuo",
-        "Sem timer",
-        "Sem envio silencioso",
-        "Geofencing pendente",
-        "Roteirizacao pendente",
-        "Provider externo de mapa pendente, se aprovado",
-        "Approval real pendente",
-        "Conflitos manuais avancados pendentes",
-        "Hardening final de evidencias/storage pendente",
         "Piloto Android real ainda precisa validacao em dispositivo fisico"
       ]
     },
@@ -118,8 +102,7 @@ const EMBEDDED_LATEST = {
       "detail": "Persistencia local SQLite via Drift em todos os dominios.",
       "points": [
         "Drift como cache local de OS, checklists e inventario",
-        "App permanece util sem rede (cache/seeds)",
-        "Fila de sync local (replay com stubs seguros)",
+        "Fila de sync local",
         "Sem perda de dados em falha de rede no pull"
       ]
     }
@@ -132,12 +115,12 @@ const EMBEDDED_LATEST = {
         {
           "id": "flutter_tests",
           "label": "Flutter Tests",
-          "value": 654,
-          "total": 654,
+          "value": 662,
+          "total": 662,
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "654/654 no full Flutter validado para B-107"
+          "detail": "662/662 no full Flutter validado no gate B-108G"
         },
         {
           "id": "npm_tests",
@@ -156,7 +139,7 @@ const EMBEDDED_LATEST = {
           "unit": "issues",
           "type": "real",
           "status": "green",
-          "detail": "No issues found no sweep B-105"
+          "detail": "No issues found no gate B-108G"
         },
         {
           "id": "npm_lint",
@@ -210,25 +193,25 @@ const EMBEDDED_LATEST = {
           "unit": "modulos",
           "type": "real",
           "status": "yellow",
-          "detail": "17/17 modulos Flutter prontos; OS sync agora cobre create local-only, mapeamento serverId e conflito manual inicial."
+          "detail": "17/17 modulos Flutter prontos; evidencias agora tem hardening de storage/scanner/auditoria."
         },
         {
           "id": "flutter_mvp_demo",
           "label": "MVP Demo Readiness",
-          "value": 92,
+          "value": 93,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Sobe com criacao remota de OS local-only, serverId mapping e resolucao manual inicial de conflitos."
+          "detail": "Estimado. Sobe com hardening de evidencias/storage, scanner testavel e resposta publica segura."
         },
         {
           "id": "flutter_mvp_vendavel",
           "label": "MVP Vendavel (Producao)",
-          "value": 72,
+          "value": 76,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Ainda requer approval real, evidence attach real, merge avancado de conflitos e hardening final de evidencias/storage."
+          "detail": "Estimado. Ainda requer S3/presigned real, DB/Redis receipt, antivirus real, download protegido final e retencao definitiva."
         },
         {
           "id": "flutter_test_files",
@@ -237,52 +220,16 @@ const EMBEDDED_LATEST = {
           "unit": "arquivos",
           "type": "real",
           "status": "green",
-          "detail": "38 arquivos de teste no diretorio test/ apos B-106"
-        },
-        {
-          "id": "flutter_os_pull",
-          "label": "OS Pull Remoto",
-          "value": 1,
-          "unit": "conectado",
-          "type": "real",
-          "status": "green",
-          "detail": "GET /api/v1/work-orders com upsert Drift e fallback cache"
-        },
-        {
-          "id": "flutter_checklist_pull",
-          "label": "Checklist Templates Pull",
-          "value": 1,
-          "unit": "conectado",
-          "type": "real",
-          "status": "green",
-          "detail": "GET /api/v1/mobile/checklists/available com backend real B-101, parser tolerante, cache Drift e fallback seeds"
+          "detail": "38 arquivos de teste no diretorio test/"
         },
         {
           "id": "flutter_evidence_sync",
-          "label": "Evidence Metadata Sync",
-          "value": 1,
-          "unit": "conectado",
-          "type": "real",
-          "status": "green",
-          "detail": "Metadados via POST /api/v1/mobile/sync/evidence-actions + upload binario parcial via POST /api/v1/mobile/evidence-uploads (B-104)"
-        },
-        {
-          "id": "flutter_checklist_answers_sync",
-          "label": "Checklist Answers Sync",
-          "value": 1,
-          "unit": "conectado",
-          "type": "real",
-          "status": "green",
-          "detail": "POST /api/v1/mobile/sync/checklist-actions com client_batch_id, tipos reais, parser body.data e replay seguro apenas para runs backend-ready (B-102)"
-        },
-        {
-          "id": "flutter_work_order_status_sync",
-          "label": "OS Sync Mobile",
+          "label": "Evidence Metadata + Binary Upload",
           "value": 1,
           "unit": "parcial",
           "type": "real",
           "status": "yellow",
-          "detail": "B-107 conecta create local-only e statusUpdate em duas fases: create mapeia serverId e libera status dependente."
+          "detail": "B-108 preserva metadata sync e multipart B-104, adicionando storage protegido local/dev, scanner e auditoria segura."
         }
       ]
     },
@@ -310,24 +257,6 @@ const EMBEDDED_LATEST = {
           "detail": "Login local tenant-scoped + JWT + RBAC persistido"
         },
         {
-          "id": "backend_persistence",
-          "label": "Persistencia Prisma/PostgreSQL",
-          "value": 1,
-          "unit": "implementado",
-          "type": "real",
-          "status": "green",
-          "detail": "PrismaCoreSaasStore via CORE_SAAS_PERSISTENCE=prisma"
-        },
-        {
-          "id": "backend_checklist_api",
-          "label": "Checklist API",
-          "value": 1,
-          "unit": "implementado",
-          "type": "real",
-          "status": "green",
-          "detail": "/api/v1/tenant/checklists + /api/v1/mobile/checklists/*"
-        },
-        {
           "id": "backend_mobile_contract_tests",
           "label": "Testes de Contrato Mobile",
           "value": 18,
@@ -336,15 +265,6 @@ const EMBEDDED_LATEST = {
           "type": "real",
           "status": "green",
           "detail": "18/18 em mobile-backend-contracts; contrato combinado mobile + Core SaaS passou 21/21."
-        },
-        {
-          "id": "backend_mobile_checklists_available",
-          "label": "Mobile Checklists Available",
-          "value": 1,
-          "unit": "implementado",
-          "type": "real",
-          "status": "green",
-          "detail": "GET /api/v1/mobile/checklists/available com DTO mobile compativel ao Flutter B-100, tenant-scoped + RBAC (B-101)"
         },
         {
           "id": "backend_mobile_core_saas_contracts",
@@ -365,25 +285,16 @@ const EMBEDDED_LATEST = {
         {
           "id": "blocks_completed",
           "label": "Blocos Entregues (total)",
-          "value": 37,
+          "value": 38,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-076 ate B-107 + B-098F, incluindo sub-blocos (A/B/K/F)"
-        },
-        {
-          "id": "blocks_last_sprint",
-          "label": "Blocos em 2026-06-15",
-          "value": 4,
-          "unit": "blocos",
-          "type": "real",
-          "status": "green",
-          "detail": "B-102, B-103, B-104 e B-105 em 2026-06-16/17"
+          "detail": "B-076 ate B-108 + B-098F, incluindo sub-blocos (A/B/K/F)"
         },
         {
           "id": "prs_merged",
           "label": "PRs Merged (estimado)",
-          "value": 16,
+          "value": 17,
           "unit": "PRs",
           "type": "estimated",
           "status": "green",
@@ -396,31 +307,13 @@ const EMBEDDED_LATEST = {
       "label": "Lacunas para Producao",
       "metrics": [
         {
-          "id": "os_sync_bidirecional",
-          "label": "OS Sync Bidirecional",
-          "value": 1,
-          "unit": "parcial",
-          "type": "real",
-          "status": "yellow",
-          "detail": "B-107 conecta create local-only, mapeamento localId -> serverId e statusUpdate dependente; approval real, evidence_attach e merge avancado seguem pendentes."
-        },
-        {
           "id": "upload_evidencias",
           "label": "Upload Real de Evidencias",
           "value": 1,
           "unit": "parcial",
           "type": "real",
           "status": "yellow",
-          "detail": "B-104 implementa multipart local/dev com sha256 e blob opaco; faltam presigned URL, storage protegido, DB/Redis, antivirus e auditoria completa"
-        },
-        {
-          "id": "gps_mapa",
-          "label": "GPS / Mapa Operacional",
-          "value": 1,
-          "unit": "parcial",
-          "type": "real",
-          "status": "yellow",
-          "detail": "B-106 implementa adapter GPS nativo real com geolocator, permissoes when-in-use e opt-in explicito; mapa externo, geofencing e roteirizacao seguem pendentes."
+          "detail": "B-108 implementa hardening local/dev com storage protegido, scanner testavel e auditoria segura; faltam S3/presigned real, DB/Redis, antivirus real, download protegido e retencao."
         },
         {
           "id": "aprovacao_real",
@@ -432,31 +325,13 @@ const EMBEDDED_LATEST = {
           "detail": "Placeholder — fluxo de aprovacao de OS"
         },
         {
-          "id": "checklist_answers_sync",
-          "label": "Checklist Answers Sync",
-          "value": 1,
-          "unit": "implementado",
-          "type": "real",
-          "status": "green",
-          "detail": "Implementado no Flutter em B-102 para respostas, notas e conclusao de runs com server_run_id/run_id real; run create, anexos/markers/divergencia ficam fora do escopo"
-        },
-        {
-          "id": "checklist_remoto",
-          "label": "Checklist Remoto Mobile",
-          "value": 1,
-          "unit": "implementado",
-          "type": "real",
-          "status": "green",
-          "detail": "Pull de templates (B-100), backend real (B-101) e sync write parcial de respostas (B-102) entregues para runs reconhecidas pelo backend"
-        },
-        {
-          "id": "evidence_binary_upload",
-          "label": "Evidence Binary Upload",
+          "id": "os_sync_bidirecional",
+          "label": "OS Sync Bidirecional",
           "value": 1,
           "unit": "parcial",
           "type": "real",
           "status": "yellow",
-          "detail": "B-104 envia JPEG/PNG ate 10 MB apos metadata sync; ainda sem storage protegido final/presigned URL"
+          "detail": "B-107 conecta create local-only e statusUpdate dependente; merge avancado segue pendente."
         }
       ]
     }
@@ -495,7 +370,7 @@ const EMBEDDED_LATEST = {
     {
       "name": "OS — Pull Remoto",
       "status": "pronto",
-      "detail": "GET /api/v1/work-orders; upsert Drift; banners UI (B-099)"
+      "detail": "GET /api/v1/work-orders; upsert Drift; banners UI"
     },
     {
       "name": "OS — Sync Bidirecional",
@@ -510,27 +385,27 @@ const EMBEDDED_LATEST = {
     {
       "name": "Checklist — Pull Remoto",
       "status": "pronto",
-      "detail": "GET /mobile/checklists/available; parser tolerante; cache Drift; banners UI (B-100)"
+      "detail": "GET /mobile/checklists/available; parser tolerante; cache Drift; banners UI"
     },
     {
       "name": "Checklist — Backend Available",
       "status": "pronto",
-      "detail": "Handler backend real com DTO mobile compativel, tenant-scoped + RBAC (B-101)"
+      "detail": "Handler backend real com DTO mobile compativel, tenant-scoped + RBAC"
     },
     {
       "name": "Checklist — Answers Sync",
       "status": "pronto",
-      "detail": "POST /api/v1/mobile/sync/checklist-actions com respostas/notas/conclusao de runs backend-ready e replay idempotente (B-102)"
+      "detail": "POST /api/v1/mobile/sync/checklist-actions com respostas/notas/conclusao de runs backend-ready"
     },
     {
       "name": "Evidence — Metadata + Binary Upload",
       "status": "parcial",
-      "detail": "Manifestos B-098F + upload multipart parcial B-104 com blob local opaco e checksum"
+      "detail": "B-108: manifestos + upload multipart parcial com storage protegido local/dev, scanner testavel, auditoria segura, evfile_* e preservacao de evidencia local em erro."
     },
     {
       "name": "Sync Screen",
       "status": "pronto",
-      "detail": "Grupos por dominio, KPIs, banners, checklist replay com accepted/rejected/conflicts/already_applied"
+      "detail": "Grupos por dominio, KPIs e banners"
     },
     {
       "name": "Diagnostics",
@@ -555,22 +430,17 @@ const EMBEDDED_LATEST = {
     {
       "name": "Field Map / GPS",
       "status": "parcial",
-      "detail": "B-106: adapter GPS nativo real com geolocator, permissao when-in-use, opt-in explicito, mapa operacional simples e sync Field Location manual."
-    },
-    {
-      "name": "Field Location Sync",
-      "status": "parcial",
-      "detail": "POST /api/v1/mobile/field-locations, store field_location_events, captura manual e AutoSync antes dos demais dominios sem captura automatica."
+      "detail": "B-106: adapter GPS nativo real com geolocator, permissao when-in-use, opt-in explicito e sync Field Location manual."
     }
   ],
   "next_steps": [
     {
-      "block": "B-108",
-      "title": "Hardening de evidencias: presigned URL, storage protegido, antivirus e auditoria"
-    },
-    {
       "block": "B-109",
       "title": "Approval real de OS e fluxo de aprovacao operacional"
+    },
+    {
+      "block": "B-110",
+      "title": "Storage externo/presigned URL, antivirus real e download protegido final para evidencias"
     }
   ]
 };
@@ -768,6 +638,25 @@ const EMBEDDED_HISTORY = [
     "pr": 102,
     "mergeCommit": "db36fb318adc234e1fcc6bfeaeb17b6260847c3c",
     "approvedHead": "b3da11d1605af9edb68e5e8f587881fc22115f3f",
+    "status": "published_after_human_approval"
+  },
+  {
+    "snapshot_date": "2026-06-18",
+    "version": "B-108",
+    "flutter_tests": 662,
+    "npm_tests": 15,
+    "mobile_backend_contracts": 18,
+    "mobile_core_saas_contracts": 21,
+    "backend_contract_tests": 21,
+    "flutter_modules_ready": 17,
+    "flutter_modules_total": 17,
+    "flutter_mvp_demo": 93,
+    "flutter_mvp_vendavel": 76,
+    "blocks_completed": 38,
+    "description": "B-108 Hardening de evidências/storage — EvidenceStorageProvider, LocalProtectedEvidenceStorageProvider, EvidenceScanner testavel, Noop/Fake scanner, evfile_*, MIME JPEG/PNG, 10 MB, checksum SHA-256, auditoria segura e multipart mobile preservado",
+    "pr": 104,
+    "mergeCommit": "468fcf16c6b42865aecbd45b05f4c37ced0c3068",
+    "approvedHead": "4b221cfdfe3acad9c65214ac5fc7e7892a050331",
     "status": "published_after_human_approval"
   }
 ];

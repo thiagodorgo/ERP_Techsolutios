@@ -35,6 +35,34 @@ Regras obrigatorias:
 - Mexeu nos dois: atualizar os dois conjuntos.
 - Se existir `index.html`: atualizar tambem o HTML.
 
+## B-108 refletido na raiz
+
+- B-108 — Hardening de evidências/storage.
+- `EvidenceStorageProvider` e `LocalProtectedEvidenceStorageProvider` publicados para dev/test.
+- `EvidenceScanner` testavel com `NoopEvidenceScanner` e fake de teste.
+- Referencia opaca `evfile_*` publicada na resposta.
+- MIME validation JPEG/PNG.
+- Size validation 10 MB.
+- Checksum SHA-256 obrigatorio.
+- Auditoria segura `accepted`/`rejected`/`scan_failed`/`stored`.
+- Upload multipart mobile preservado.
+- Resposta publica sem path, bucket, storage key, URL publica, token, base64 ou binario.
+- Flutter tests: 662/662.
+- Backend tests: 15/15.
+- Mobile backend contracts: 18/18.
+- Mobile + Core SaaS contracts: 21/21.
+- Flutter modules: 17/17.
+- MVP demo: 93%.
+- MVP vendavel: 76%.
+- Blocos entregues: 38.
+
+Metadados: PR #104, merge commit `468fcf16c6b42865aecbd45b05f4c37ced0c3068`,
+approved head `4b221cfdfe3acad9c65214ac5fc7e7892a050331`, status
+`published_after_human_approval`.
+
+Limitacoes mantidas: S3/presigned real, DB/Redis receipt, antivirus real,
+download protegido final e retencao definitiva seguem pendentes.
+
 ## B-107 refletido na raiz
 
 - B-107 — Criação remota de OS/local-only mapping + resolução manual de conflitos.

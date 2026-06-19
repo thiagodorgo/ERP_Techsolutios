@@ -5,6 +5,44 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-108 — 2026-06-18
+
+**Hardening de evidências/storage**
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 662 / 662 |
+| Backend Tests | 15 / 15 |
+| Mobile Backend Contracts | 18 / 18 |
+| Mobile + Core SaaS Contracts | 21 / 21 |
+| flutter analyze | 0 issues |
+| Modulos Flutter Prontos | 17 / 17 |
+| MVP Demo Readiness (est.) | 93% |
+| MVP Vendavel (est.) | 76% |
+| Blocos Entregues | 38 |
+
+**Novidades:** B-108 endureceu o upload de evidencias/storage mantendo o
+multipart mobile, adicionando `EvidenceStorageProvider`,
+`LocalProtectedEvidenceStorageProvider`, `EvidenceScanner` testavel,
+`NoopEvidenceScanner`, fake de teste, referencia opaca `evfile_*`, validacao
+MIME JPEG/PNG, limite de 10 MB, checksum SHA-256 e auditoria segura para
+`accepted`, `rejected`, `scan_failed` e `stored`.
+
+**Seguranca preservada:** resposta publica sem path, bucket, storage key, URL
+publica, token, base64 ou binario. O mobile trata `stored`, `rejected`,
+`scan_failed` e `pending_review`, preservando evidencia local em erro,
+rejeicao, falha de scanner, rede ou timeout.
+
+**Metadados pós-avaliação humana:** PR #104, merge commit
+`468fcf16c6b42865aecbd45b05f4c37ced0c3068` e approved head
+`4b221cfdfe3acad9c65214ac5fc7e7892a050331`. Status:
+`published_after_human_approval` apos gate B-108G.
+
+**Lacunas mantidas:** S3/presigned real, DB/Redis receipt, antivirus real,
+download protegido final e retencao definitiva.
+
+---
+
 ## B-107 — 2026-06-18
 
 **Criacao remota de OS/local-only mapping + resolucao manual de conflitos**

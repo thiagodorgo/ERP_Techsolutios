@@ -24,26 +24,30 @@
 
       <p id="source-banner" class="source-banner" role="status" hidden></p>
 
-      <section class="section section--block panel" aria-label="Resumo B-107 literal">
+      <section class="section section--block panel" aria-label="Resumo B-108 literal">
         <div class="section-heading">
-          <p class="eyebrow">Snapshot B-107</p>
-          <h2>B-107 — Criação remota de OS/local-only mapping + resolução manual de conflitos</h2>
+          <p class="eyebrow">Snapshot B-108</p>
+          <h2>B-108 — Hardening de evidências/storage</h2>
         </div>
         <p>
-          Work Orders no Flutter: 654/654 testes, Backend 15/15, contratos
+          Evidências no Flutter: 662/662 testes, Backend 15/15, contratos
           mobile 18/18, contratos mobile + Core SaaS 21/21, modulos Flutter
-          17/17, MVP demo 92%, MVP vendavel 72% e 37 blocos entregues.
+          17/17, MVP demo 93%, MVP vendavel 76% e 38 blocos entregues.
         </p>
         <p>
-          B-107 concluiu a criacao remota de OS local-only via sync mobile:
-          `work_order.create`, mapeamento `localId -> serverId`,
-          `already_applied` reutilizando ID remoto, `rejected` seguro e
-          conflitos com resolucao manual inicial.
+          B-108 endureceu o upload de evidencias/storage mantendo multipart,
+          implementando provider local protegido para dev/test, referencia
+          opaca `evfile_*`, `EvidenceScanner` testavel e auditoria segura.
         </p>
         <p>
-          O `statusUpdate` local-only fica bloqueado antes de `serverId` e
-          elegivel apos o mapeamento. UI e servico de resolucao manual cobrem
-          manter local, aceitar servidor e revisao manual.
+          A resposta nao expoe path, bucket, storage key, URL publica, token,
+          base64 ou binario. Os estados `stored`, `rejected`, `scan_failed` e
+          `pending_review` sao tratados no mobile, preservando evidencia local
+          em erro.
+        </p>
+        <p>
+          Pendentes: S3/presigned real, DB/Redis receipt, antivirus real,
+          download protegido final e retencao definitiva.
         </p>
         <p>
           Politica de KPIs duplos: mexeu Flutter/mobile atualiza

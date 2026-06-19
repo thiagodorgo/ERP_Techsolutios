@@ -6,6 +6,50 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-06-18 - B-108 Hardening de evidências/storage
+
+### Resultado
+
+- `EvidenceStorageProvider` publicado para upload mobile de evidencias.
+- `LocalProtectedEvidenceStorageProvider` publicado para dev/test.
+- `EvidenceScanner` testavel publicado com `NoopEvidenceScanner` e fake de teste.
+- Referencia opaca `evfile_*` publicada na resposta publica.
+- MIME validation JPEG/PNG.
+- Size validation 10 MB.
+- Checksum SHA-256 obrigatorio.
+- Auditoria segura para `accepted`, `rejected`, `scan_failed` e `stored`.
+- Upload multipart mobile preservado.
+- Resposta publica sem path, bucket, storage key, URL publica, token, base64 ou binario.
+- KPIs raiz sincronizados com `mobile/flutter_app/Kpis/` apos avaliacao humana, merge da PR #104 e gate B-108G.
+
+### Metadados pos-avaliacao humana
+
+- PR: #104.
+- Merge commit: `468fcf16c6b42865aecbd45b05f4c37ced0c3068`.
+- Approved head: `4b221cfdfe3acad9c65214ac5fc7e7892a050331`.
+- Status: `published_after_human_approval`.
+
+### KPIs B-108 refletidos na raiz
+
+| KPI | Valor |
+| --- | --- |
+| Flutter Tests | 662/662 |
+| Backend Tests | 15/15 |
+| Mobile Backend Contracts | 18/18 |
+| Mobile + Core SaaS Contracts | 21/21 |
+| Flutter modules | 17/17 |
+| MVP demo mobile | 93% |
+| MVP vendavel mobile | 76% |
+| Blocos entregues | 38 |
+
+### Limitacoes registradas
+
+- S3/presigned real pendente.
+- DB/Redis receipt pendente.
+- Antivirus real pendente.
+- Download protegido final pendente.
+- Retencao definitiva pendente.
+
 ## 2026-06-18 - B-107 Criacao remota de OS/local-only mapping + resolucao manual de conflitos
 
 ### Resultado
