@@ -6,6 +6,7 @@ import type {
   CreateUserInput,
   ListTenantOptions,
   Tenant,
+  TenantMembership,
   User,
 } from "../types/core-saas.types.js";
 
@@ -20,6 +21,8 @@ export type ICoreSaasService = {
 
   listRoles(): Promise<RoleDefinition[]>;
   getRoleDefinition(role: string): Promise<RoleDefinition>;
+
+  listTenantsForUserEmail(email: string): Promise<TenantMembership[]>;
 
   getAuditEventsForTenant(tenantId: string): Promise<AuditEvent[]>;
 };
