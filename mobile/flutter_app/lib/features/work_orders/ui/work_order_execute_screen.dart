@@ -14,6 +14,7 @@ import '../../checklists/domain/checklist_models.dart';
 import '../data/work_order_repository.dart';
 import '../domain/work_order_models.dart';
 import 'work_order_operational_map_screen.dart';
+import 'work_order_stepper.dart';
 
 // ---------------------------------------------------------------------------
 // Data container for OS + checklist runs
@@ -242,6 +243,19 @@ class _WorkOrderExecuteScreenState
                   trailing: OperationalStatusChip(
                     label: wo.status.label,
                     status: wo.status.statusTone,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 12,
+                  ),
+                  child: WorkOrderStepper(
+                    serviceType: wo.serviceType,
+                    status: wo.status,
                   ),
                 ),
               ),
