@@ -63,6 +63,36 @@ const PlatformTenantModulesPage = lazy(() =>
   })),
 );
 
+const PlatformOverviewPage = lazy(() =>
+  import("./modules/platform/pages/PlatformOverviewPage").then((m) => ({
+    default: m.PlatformOverviewPage,
+  })),
+);
+const PlatformPlansModulesPage = lazy(() =>
+  import("./modules/platform/pages/PlatformPlansModulesPage").then((m) => ({
+    default: m.PlatformPlansModulesPage,
+  })),
+);
+const PlatformAuditPage = lazy(() =>
+  import("./modules/platform/pages/PlatformAuditPage").then((m) => ({
+    default: m.PlatformAuditPage,
+  })),
+);
+const PlatformHealthPage = lazy(() =>
+  import("./modules/platform/pages/PlatformHealthPage").then((m) => ({
+    default: m.PlatformHealthPage,
+  })),
+);
+const PlatformApisPage = lazy(() =>
+  import("./modules/platform/pages/PlatformApisPage").then((m) => ({
+    default: m.PlatformApisPage,
+  })),
+);
+const PlatformSettingsPage = lazy(() =>
+  import("./modules/platform/pages/PlatformSettingsPage").then((m) => ({
+    default: m.PlatformSettingsPage,
+  })),
+);
 const PlatformTenantsPage = lazy(() =>
   import("./modules/platform/pages/PlatformTenantsPage").then((m) => ({
     default: m.PlatformTenantsPage,
@@ -81,6 +111,54 @@ export function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/select-context" element={<ContextSelectionPage />} />
           <Route element={<PlatformLayout />}>
+            <Route
+              path="/platform/overview"
+              element={
+                <PermissionGuard permissions={["platform:health:read"]}>
+                  <PlatformOverviewPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/platform/plans-modules"
+              element={
+                <PermissionGuard permissions={["platform:modules:manage"]}>
+                  <PlatformPlansModulesPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/platform/audit"
+              element={
+                <PermissionGuard permissions={["platform:audit:read"]}>
+                  <PlatformAuditPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/platform/health"
+              element={
+                <PermissionGuard permissions={["platform:health:read"]}>
+                  <PlatformHealthPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/platform/apis"
+              element={
+                <PermissionGuard permissions={["platform:health:read"]}>
+                  <PlatformApisPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/platform/settings"
+              element={
+                <PermissionGuard permissions={["platform:health:read"]}>
+                  <PlatformSettingsPage />
+                </PermissionGuard>
+              }
+            />
             <Route
               path="/platform/tenants"
               element={
