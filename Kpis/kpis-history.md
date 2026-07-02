@@ -315,20 +315,3 @@ Todo bloco futuro deve atualizar este historico com data, escopo, KPIs alterados
 ### Regra permanente confirmada
 
 Todo bloco futuro continua obrigado a atualizar `Kpis/index.html`, `Kpis/app.js` e `Kpis/kpis-history.md` antes de encerrar a entrega.
-
-
-## 2026-07-02 — B-120 Fase 2 Web Gestor (B-113→B-120) + catch-up KPIs B-109→B-112 [Claude Code]
-
-Rodada com auto-merge acordada com o usuario; merge unico ao final do B-120.
-
-- Flutter tests: 754/754 · Backend tests: 15/15 · Frontend smoke: 33/33
-- Contratos mobile: 18/18 · mobile+core-saas: 21/21 · Flutter modules: 17/17
-- Arquivos de teste Flutter: 51 · Blocos concluidos: 45
-- MVP demo: 96% (estimado) · MVP vendavel: 78% (estimado)
-
-Entregue: B-110 auth backend, B-111 contexto web, B-112 MVP mobile (ja mergeados);
-B-113 camada de API web (ApiError/apiData), B-114 dashboard com KPIs reais, B-120 CI
-frontend+flutter. B-115→B-119 verificados: servicos web ja consomem /api/v1.
-
-Pendente: rota web dedicada de Aprovacoes; E2E Playwright contra backend Docker;
-app.js embutido de KPI reflete headline via index.html/latest.json.

@@ -3535,5 +3535,5 @@ final do B-120; KPIs publicados junto. Numeracao contigua ao Codex.
 - B-114 dashboard operacional com KPIs reais de OS — test:smoke 33/33.
 - B-115→B-119 verificados: work-orders/dispatches/mapa/approval ja consomem /api/v1 (sem novo codigo).
 - B-120 CI: jobs frontend e flutter adicionados ao GitHub Actions.
-- KPIs raiz+mobile atualizados (754 testes, 45 blocos, 96%/78%).
-- PR/merge/approved_head desta rodada preenchidos no merge unico.
+- KPIs NAO alterados neste PR (guard b106 exige merge nao-nulo). Publicacao em bloco K pos-merge com PR/merge/approved_head reais (754 testes, 45 blocos, 96%/78%).
+- PR unico #110; KPIs publicados apos o merge (bloco K).
