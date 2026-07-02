@@ -3,6 +3,7 @@ export * from "./middleware/authenticated-actor.middleware.js";
 export * from "./repositories/auth-session.repository.js";
 export * from "./repositories/local-auth-credential.repository.js";
 export * from "./routes/auth.routes.js";
+export * from "./routes/me.routes.js";
 export * from "./services/auth-session.service.js";
 export * from "./services/local-auth-credential.service.js";
 export * from "./services/local-auth-login.service.js";

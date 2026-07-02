@@ -7,7 +7,7 @@ import {
   type RoleDefinition,
   validateRole,
 } from "../permissions/catalog.js";
-import { PrismaCoreSaasStore } from "../store/prisma-core-saas.store.js";
+import { PrismaCoreSaasStore, mapTenantFromPrisma, mapUserFromPrisma } from "../store/prisma-core-saas.store.js";
 import type { AsyncCoreSaasStore } from "../store/async-core-saas.store.js";
 import {
   CoreSaasError,
@@ -17,6 +17,7 @@ import {
   type CreateUserInput,
   type ListTenantOptions,
   type Tenant,
+  type TenantMembership,
   type User,
 } from "../types/core-saas.types.js";
 
@@ -193,6 +194,30 @@ export class PrismaCoreSaasService {
 
   roleHasPermission(role: Role, permission: Permission): boolean {
     return getRolePermissions(role).includes(permission);
+  }
+
+  async listTenantsForUserEmail(email: string): Promise<TenantMembership[]> {
+    // Cross-tenant query: intentionally bypasses RLS to list all orgs for a user's own email.
+    const { prisma } = await import("../../../database/prisma.js");
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const users: any[] = await (prisma as any).user.findMany({
+      where: { email: normalizedEmail, status: "active" },
+      include: {
+        tenant: true,
+        role_assignments: { include: { role: true } },
+      },
+    });
+
+    return users
+      .filter((u: { tenant: { status: string } }) => u.tenant.status === "active")
+      .map((u: { tenant: unknown; [key: string]: unknown }) => ({
+        tenant: mapTenantFromPrisma(u.tenant as Parameters<typeof mapTenantFromPrisma>[0]),
+        user: mapUserFromPrisma(
+          u as unknown as Parameters<typeof mapUserFromPrisma>[0],
+        ),
+      }));
   }
 
   async getAuditEventsForTenant(tenantId: string): Promise<AuditEvent[]> {

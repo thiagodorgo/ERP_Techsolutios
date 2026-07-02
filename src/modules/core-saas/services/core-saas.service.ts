@@ -16,6 +16,7 @@ import {
   type CreateUserInput,
   type ListTenantOptions,
   type Tenant,
+  type TenantMembership,
   type User,
 } from "../types/core-saas.types.js";
 import {
@@ -189,6 +190,16 @@ export class CoreSaasRegistry {
 
   listUsersForTenant(tenantId: string): User[] {
     return this.listUsersByTenant(tenantId);
+  }
+
+  listTenantsForUserEmail(email: string): TenantMembership[] {
+    const users = this.store.listUsersByEmail(email.trim().toLowerCase());
+
+    return users.flatMap((user) => {
+      const tenant = this.store.findTenantById(user.tenantId);
+
+      return tenant ? [{ tenant, user }] : [];
+    });
   }
 
   getUserForTenant(userId: string, tenantId: string): User {

@@ -4,15 +4,18 @@ import { getAuthSessionService, getLocalAuthLoginService } from "../auth-runtime
 import {
   getAccessTokenExpiresInSeconds,
   signAccessToken,
+  verifyAccessToken,
 } from "../services/jwt.service.js";
 import type { AuthSessionService } from "../services/auth-session.service.js";
 import type { LocalAuthLoginService } from "../services/local-auth-login.service.js";
+import type { ICoreSaasService } from "../../core-saas/services/core-saas-service.interface.js";
 
 type AuthRouterOptions = {
   readonly getLoginService?: () => Promise<LocalAuthLoginService>;
   readonly getSessionService?: () => Promise<AuthSessionService>;
   readonly signAccessToken?: typeof signAccessToken;
   readonly getAccessTokenExpiresInSeconds?: typeof getAccessTokenExpiresInSeconds;
+  readonly getCoreSaasService?: () => Promise<ICoreSaasService>;
 };
 
 type LoginRequestBody = {
@@ -36,6 +39,7 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
   const issueAccessToken = options.signAccessToken ?? signAccessToken;
   const resolveTokenExpiration =
     options.getAccessTokenExpiresInSeconds ?? getAccessTokenExpiresInSeconds;
+  const resolveCoreSaasService = options.getCoreSaasService;
 
   router.post("/login", async (request, response) => {
     try {
@@ -51,9 +55,24 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         return;
       }
 
+      let resolvedTenantId = parsedBody.tenantId;
+      if (!resolvedTenantId && resolveCoreSaasService) {
+        const svc = await resolveCoreSaasService();
+        const memberships = await svc.listTenantsForUserEmail(parsedBody.email);
+        if (memberships.length === 0) {
+          response.status(401).json({ error: { code: "INVALID_CREDENTIALS", message: "Invalid credentials." } });
+          return;
+        }
+        resolvedTenantId = memberships[0].tenant.id;
+      }
+      if (!resolvedTenantId) {
+        response.status(400).json({ error: { code: "BAD_REQUEST", message: "tenantId is required." } });
+        return;
+      }
+
       const loginService = await resolveLoginService();
       const loginResult = await loginService.authenticateLocalCredential({
-        tenant_id: parsedBody.tenantId,
+        tenant_id: resolvedTenantId,
         email: parsedBody.email,
         password: parsedBody.password,
         request_id: readRequestId(request),
@@ -184,6 +203,101 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
     }
   });
 
+  router.post("/active-tenant", async (request, response) => {
+    if (!resolveCoreSaasService) {
+      response.status(501).json({
+        error: { code: "NOT_IMPLEMENTED", message: "active-tenant not configured." },
+      });
+      return;
+    }
+
+    const authHeader = readHeader(request.headers["authorization"]);
+    const token = authHeader ? parseBearerToken(authHeader) : null;
+
+    if (!token) {
+      response.status(401).json({
+        error: { code: "UNAUTHORIZED", message: "Bearer token required." },
+      });
+      return;
+    }
+
+    let payload: Awaited<ReturnType<typeof verifyAccessToken>>;
+
+    try {
+      payload = await verifyAccessToken(token);
+    } catch {
+      response.status(401).json({
+        error: { code: "INVALID_TOKEN", message: "Invalid or expired access token." },
+      });
+      return;
+    }
+
+    const body = isRecord(request.body) ? (request.body as Record<string, unknown>) : {};
+    const requestedTenantId = readString(body.tenantId ?? body.tenant_id);
+
+    if (!requestedTenantId) {
+      response.status(400).json({
+        error: { code: "BAD_REQUEST", message: "tenantId is required." },
+      });
+      return;
+    }
+
+    try {
+      const service = await resolveCoreSaasService();
+      const memberships = await service.listTenantsForUserEmail(payload.email);
+      const match = memberships.find((m) => m.tenant.id === requestedTenantId);
+
+      if (!match) {
+        response.status(403).json({
+          error: { code: "FORBIDDEN", message: "User does not belong to the requested tenant." },
+        });
+        return;
+      }
+
+      const accessToken = await issueAccessToken({
+        user_id: match.user.id,
+        tenant_id: match.tenant.id,
+        email: match.user.email,
+        roles: [...match.user.roles],
+      });
+      const session = await (
+        await resolveSessionService()
+      ).createSession({
+        tenant_id: match.tenant.id,
+        user_id: match.user.id,
+        user_agent: readHeader(request.headers["user-agent"]),
+        ip_address: request.ip,
+      });
+      const accessTokenExpiresIn = resolveTokenExpiration();
+
+      response.status(200).json({
+        data: {
+          access_token: accessToken,
+          accessToken,
+          token_type: "Bearer",
+          tokenType: "Bearer",
+          expires_in: accessTokenExpiresIn,
+          expiresIn: accessTokenExpiresIn,
+          refresh_token: session.refreshToken,
+          refreshToken: session.refreshToken,
+          refresh_expires_at: session.refreshTokenExpiresAt.toISOString(),
+          refreshExpiresAt: session.refreshTokenExpiresAt.toISOString(),
+          refresh_expires_in: session.refreshTokenExpiresIn,
+          refreshExpiresIn: session.refreshTokenExpiresIn,
+          session_id: session.sessionId,
+          sessionId: session.sessionId,
+          tenant: { id: match.tenant.id, name: match.tenant.name },
+          user: { id: match.user.id, name: match.user.name, email: match.user.email },
+          roles: [...match.user.roles],
+        },
+      });
+    } catch {
+      response.status(500).json({
+        error: { code: "INTERNAL_SERVER_ERROR", message: "Unable to switch tenant." },
+      });
+    }
+  });
+
   router.post("/logout", async (request, response) => {
     try {
       const refreshToken = parseRefreshTokenRequestBody(request.body);
@@ -212,7 +326,7 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
 type ParsedLoginRequestBody =
   | {
       readonly ok: true;
-      readonly tenantId: string;
+      readonly tenantId: string | null;
       readonly email: string;
       readonly password: string;
     }
@@ -223,18 +337,13 @@ type ParsedLoginRequestBody =
 
 function parseLoginRequestBody(body: unknown): ParsedLoginRequestBody {
   const input = isRecord(body) ? (body as LoginRequestBody) : {};
-  const tenantId = readString(input.tenantId);
+  const tenantIdRaw = readString(input.tenantId);
+  const tenantId = tenantIdRaw || null;
   const email = readString(input.email).trim().toLowerCase();
   const password = readString(input.password);
 
-  if (!tenantId) {
-    return {
-      ok: false,
-      message: "tenantId is required.",
-    };
-  }
-
-  if (!uuidPattern.test(tenantId)) {
+  // If tenantId is provided, validate it is a UUID
+  if (tenantId && !uuidPattern.test(tenantId)) {
     return {
       ok: false,
       message: "tenantId must be a valid UUID.",
@@ -293,4 +402,14 @@ function isBasicEmail(email: string): boolean {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseBearerToken(authorizationHeader: string): string | null {
+  const [scheme, token, ...extraParts] = authorizationHeader.split(/\s+/);
+
+  if (scheme?.toLowerCase() !== "bearer" || !token || extraParts.length > 0) {
+    return null;
+  }
+
+  return token;
 }

@@ -148,6 +148,7 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
     "super_admin",
     "tenant_admin",
     "manager",
+    "field_dispatcher",
     "technician",
     "viewer",
   ]);

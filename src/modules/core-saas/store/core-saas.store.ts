@@ -12,6 +12,7 @@ export type CoreSaasStore = {
   saveUser(user: User): User;
   findUserById(userId: string): User | undefined;
   listUsersByTenant(tenantId: string): User[];
+  listUsersByEmail(email: string): User[];
   saveAuditEvent(event: AuditEvent): AuditEvent;
   listAuditEventsByTenant(tenantId: string): AuditEvent[];
   clear(): void;
@@ -55,6 +56,14 @@ export class InMemoryCoreSaasStore implements CoreSaasStore {
   listUsersByTenant(tenantId: string): User[] {
     return [...this.users.values()]
       .filter((user) => user.tenantId === tenantId)
+      .map(cloneUser);
+  }
+
+  listUsersByEmail(email: string): User[] {
+    const normalized = email.trim().toLowerCase();
+
+    return [...this.users.values()]
+      .filter((user) => user.email === normalized)
       .map(cloneUser);
   }
 

@@ -62,6 +62,11 @@ export type ListTenantOptions = {
   readonly status?: TenantStatus;
 };
 
+export type TenantMembership = {
+  readonly tenant: Tenant;
+  readonly user: User;
+};
+
 export class CoreSaasError extends Error {
   constructor(
     readonly statusCode: number,

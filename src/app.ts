@@ -7,6 +7,7 @@ import { env } from "./config/env.js";
 import {
   attachAuthenticatedActor,
   createAuthRouter,
+  createMeRouter,
 } from "./modules/auth/index.js";
 import {
   coreSaasService,
@@ -41,7 +42,8 @@ export function createApp(service: ICoreSaasService): Express {
 
   app.use(logger);
   app.use("/api/v1", healthRouter);
-  app.use("/api/v1/auth", createAuthRouter());
+  app.use("/api/v1/auth", createAuthRouter({ getCoreSaasService: () => Promise.resolve(service) }));
+  app.use("/api/v1", attachAuthenticatedActor(), createMeRouter(service));
   app.use("/api/v1/platform", attachAuthenticatedActor(), createPlatformRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createMobileRouter(service));
   app.use("/api/v1/navigation", attachAuthenticatedActor(), createNavigationRouter(service));
