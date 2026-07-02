@@ -1,5 +1,5 @@
 import { isMockMode } from "../../config/env";
-import { mockSession } from "../../mocks/auth/context";
+import { mockSession, mockSessionForEmail } from "../../mocks/auth/context";
 import { loginWithJwt, logoutWithJwt, refreshWithJwt } from "./auth.adapter";
 import {
   clearStoredAuthSession,
@@ -21,8 +21,10 @@ export async function login(credentials: LoginCredentials): Promise<AuthSession>
       throw new Error("Credenciais obrigatorias");
     }
 
-    setStoredAuthSession(mockSession);
-    return mockSession;
+    // Perfil (plataforma/gestor/despacho/financeiro/admin/auditor) resolvido pelo e-mail.
+    const session = mockSessionForEmail(credentials.email);
+    setStoredAuthSession(session);
+    return session;
   }
 
   const session = await loginWithJwt(credentials);
@@ -33,8 +35,10 @@ export async function login(credentials: LoginCredentials): Promise<AuthSession>
 
 export async function refreshSession(): Promise<AuthSession> {
   if (isMockMode()) {
-    setStoredAuthSession(mockSession);
-    return mockSession;
+    // Mantém o perfil logado (não reverte para o usuário padrão).
+    const current = getStoredAuthSession() ?? mockSession;
+    setStoredAuthSession(current);
+    return current;
   }
 
   refreshPromise ??= refreshStoredSession().finally(() => {

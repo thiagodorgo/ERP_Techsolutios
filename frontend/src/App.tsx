@@ -44,11 +44,29 @@ const ApprovalsPage = lazy(() =>
     default: m.ApprovalsPage,
   })),
 );
+const ApprovalDetailPage = lazy(() =>
+  import("./modules/work-orders/pages/ApprovalDetailPage").then((m) => ({
+    default: m.ApprovalDetailPage,
+  })),
+);
 const WorkOrdersPage = lazy(() =>
   import("./modules/work-orders/pages/WorkOrdersPage").then((m) => ({
     default: m.WorkOrdersPage,
   })),
 );
+
+const EstoquePage = lazy(() => import("./modules/inventory/pages/EstoquePage").then((m) => ({ default: m.EstoquePage })));
+const EstoqueDetailPage = lazy(() => import("./modules/inventory/pages/EstoqueDetailPage").then((m) => ({ default: m.EstoqueDetailPage })));
+const PedidosPage = lazy(() => import("./modules/purchase-orders/pages/PedidosPage").then((m) => ({ default: m.PedidosPage })));
+const ReportsPage = lazy(() => import("./modules/reports/pages/ReportsPage").then((m) => ({ default: m.ReportsPage })));
+const UsersPage = lazy(() => import("./modules/users/pages/UsersPage").then((m) => ({ default: m.UsersPage })));
+const AuditTenantPage = lazy(() => import("./modules/audit/pages/AuditTenantPage").then((m) => ({ default: m.AuditTenantPage })));
+const FieldOperatorsPage = lazy(() => import("./modules/dispatch/pages/FieldOperatorsPage").then((m) => ({ default: m.FieldOperatorsPage })));
+const DispatchConsolePage = lazy(() => import("./modules/dispatch/pages/DispatchConsolePage").then((m) => ({ default: m.DispatchConsolePage })));
+const FinanceiroPage = lazy(() => import("./modules/finance/pages/FinanceiroPage").then((m) => ({ default: m.FinanceiroPage })));
+const ChargesPage = lazy(() => import("./modules/finance/pages/ChargesPage").then((m) => ({ default: m.ChargesPage })));
+const InvoicesPage = lazy(() => import("./modules/finance/pages/InvoicesPage").then((m) => ({ default: m.InvoicesPage })));
+const PaymentsPage = lazy(() => import("./modules/finance/pages/PaymentsPage").then((m) => ({ default: m.PaymentsPage })));
 
 const PlatformCloudBillingPage = lazy(() =>
   import("./modules/platform/cloud-billing/pages/PlatformCloudBillingPage").then((m) => ({
@@ -219,6 +237,110 @@ export function App() {
               element={
                 <PermissionGuard permissions={["work_orders:read"]}>
                   <ApprovalsPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/approvals/:approvalId"
+              element={
+                <PermissionGuard permissions={["work_orders:read"]}>
+                  <ApprovalDetailPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/inventory"
+              element={
+                <PermissionGuard permissions={["inventory:read"]}>
+                  <EstoquePage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/inventory/:sku"
+              element={
+                <PermissionGuard permissions={["inventory:read"]}>
+                  <EstoqueDetailPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/purchase-orders"
+              element={
+                <PermissionGuard permissions={["purchase_orders:read"]}>
+                  <PedidosPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <PermissionGuard permissions={["reports:read"]}>
+                  <ReportsPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <PermissionGuard permissions={["users:read"]}>
+                  <UsersPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/audit"
+              element={
+                <PermissionGuard permissions={["audit:view"]}>
+                  <AuditTenantPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/field-operators"
+              element={
+                <PermissionGuard permissions={["field_dispatch:read"]}>
+                  <FieldOperatorsPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/dispatch/console"
+              element={
+                <PermissionGuard permissions={["field_dispatch:read"]}>
+                  <DispatchConsolePage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/finance"
+              element={
+                <PermissionGuard permissions={["finance:read"]}>
+                  <FinanceiroPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/finance/charges"
+              element={
+                <PermissionGuard permissions={["finance:read"]}>
+                  <ChargesPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/finance/invoices"
+              element={
+                <PermissionGuard permissions={["finance:read"]}>
+                  <InvoicesPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/finance/payments"
+              element={
+                <PermissionGuard permissions={["finance:read"]}>
+                  <PaymentsPage />
                 </PermissionGuard>
               }
             />
