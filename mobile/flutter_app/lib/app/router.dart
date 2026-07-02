@@ -23,6 +23,7 @@ import '../features/checklists/ui/checklist_run_screen.dart';
 import '../features/inventory/ui/inventory_list_screen.dart';
 import '../features/inventory/ui/stock_entry_screen.dart';
 import '../features/inventory/ui/stock_exit_screen.dart';
+import '../features/location/ui/location_consent_screen.dart';
 import '../features/prestador/ui/prestador_service_screen.dart';
 import '../features/prestador/ui/technician_stock_screen.dart';
 import '../features/work_orders/ui/new_work_order_screen.dart';
@@ -220,6 +221,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/location',
+        builder: (context, state) => const LocationConsentScreen(),
+      ),
+      GoRoute(
         path: '/inventory',
         builder: (context, state) => const InventoryListScreen(),
       ),
@@ -388,6 +393,10 @@ final appRouter = GoRouter(
       builder: (context, state) => WorkOrderOperationalMapScreen(
         workOrderId: state.uri.queryParameters['workOrderId'],
       ),
+    ),
+    GoRoute(
+      path: '/location',
+      builder: (context, state) => const LocationConsentScreen(),
     ),
     GoRoute(
       path: '/inventory',
