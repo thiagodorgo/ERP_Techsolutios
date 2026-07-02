@@ -6,6 +6,8 @@ import '../../../core/evidence/evidence_picker.dart';
 import '../../../shared/ui/erp_scaffold.dart';
 import '../data/checklist_repository.dart';
 import '../domain/checklist_models.dart';
+import '../domain/signature_strokes.dart';
+import 'signature_pad.dart';
 import 'vehicle_asset_helper.dart';
 
 class ChecklistRunScreen extends ConsumerStatefulWidget {
@@ -427,6 +429,11 @@ class _FieldCard extends StatelessWidget {
         icon: const Icon(Icons.verified_user_outlined),
         label: const Text('Registrar ciencia'),
       ),
+      MobileChecklistFieldType.signature => _SignatureField(
+        field: field,
+        answer: answer,
+        onAnswer: onAnswer,
+      ),
       _ => Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -813,6 +820,78 @@ class _BeforeAfterFieldState extends State<_BeforeAfterField> {
           hasAttachment: afterId != null,
           adding: _addingAfter,
           onTap: _addAfter,
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// signature — assinatura persistida (traços salvos no answer.textValue)
+// ---------------------------------------------------------------------------
+
+class _SignatureField extends StatelessWidget {
+  const _SignatureField({
+    required this.field,
+    required this.onAnswer,
+    this.answer,
+  });
+
+  final MobileChecklistField field;
+  final MobileChecklistAnswer? answer;
+  final void Function(MobileChecklistAnswer) onAnswer;
+
+  Future<void> _capture(BuildContext context) async {
+    final encoded = await showSignatureCaptureSheet(
+      context,
+      title: field.label,
+      initial: answer?.textValue,
+    );
+    if (encoded == null) return;
+    onAnswer(
+      MobileChecklistAnswer(
+        fieldId: field.id,
+        textValue: encoded.isEmpty ? null : encoded,
+        answeredAt: DateTime.now(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasInk = SignatureStrokes.hasInk(answer?.textValue);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasInk) ...[
+          SignaturePad(
+            key: const Key('signature-preview'),
+            controller: SignaturePadController(initial: answer!.textValue),
+            height: 120,
+            readOnly: true,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                Icons.check_circle_outline,
+                color: Colors.green.shade600,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Assinatura registrada',
+                style: TextStyle(color: Colors.green.shade600, fontSize: 13),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+        OutlinedButton.icon(
+          key: const Key('signature-open'),
+          onPressed: () => _capture(context),
+          icon: const Icon(Icons.draw_outlined),
+          label: Text(hasInk ? 'Refazer assinatura' : 'Assinar'),
         ),
       ],
     );

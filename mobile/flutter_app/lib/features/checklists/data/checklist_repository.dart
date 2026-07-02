@@ -616,6 +616,13 @@ List<MobileChecklistSchema> _seedSchemas(BootstrapSession session) {
           required: false,
           order: 3,
         ),
+        MobileChecklistField(
+          id: 'f-signature',
+          type: MobileChecklistFieldType.signature,
+          label: 'Assinatura',
+          required: false,
+          order: 4,
+        ),
       ],
     ),
   ];

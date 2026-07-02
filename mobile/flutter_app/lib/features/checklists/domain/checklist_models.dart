@@ -11,7 +11,8 @@ enum MobileChecklistFieldType {
   damageMap,
   vehicleSelector,
   observation,
-  acknowledgement;
+  acknowledgement,
+  signature;
 
   String get apiValue => switch (this) {
     MobileChecklistFieldType.text => 'text',
@@ -25,6 +26,7 @@ enum MobileChecklistFieldType {
     MobileChecklistFieldType.vehicleSelector => 'vehicle_selector',
     MobileChecklistFieldType.observation => 'observation',
     MobileChecklistFieldType.acknowledgement => 'acknowledgement',
+    MobileChecklistFieldType.signature => 'signature',
   };
 
   static MobileChecklistFieldType fromApiValue(String v) => switch (v) {
@@ -39,6 +41,7 @@ enum MobileChecklistFieldType {
     'vehicle_selector' => MobileChecklistFieldType.vehicleSelector,
     'observation' => MobileChecklistFieldType.observation,
     'acknowledgement' => MobileChecklistFieldType.acknowledgement,
+    'signature' => MobileChecklistFieldType.signature,
     _ => MobileChecklistFieldType.text,
   };
 }
