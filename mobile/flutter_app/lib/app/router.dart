@@ -27,6 +27,7 @@ import '../features/prestador/ui/prestador_service_screen.dart';
 import '../features/prestador/ui/technician_stock_screen.dart';
 import '../features/work_orders/ui/new_work_order_screen.dart';
 import '../features/work_orders/ui/work_order_approval_request_screen.dart';
+import '../features/work_orders/ui/work_order_conclusion_screen.dart';
 import '../features/work_orders/ui/work_order_detail_screen.dart';
 import '../features/work_orders/ui/work_order_execute_screen.dart';
 import '../features/work_orders/ui/work_order_list_screen.dart';
@@ -153,6 +154,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/work-orders/:workOrderId/service',
         builder: (context, state) => PrestadorServiceScreen(
+          workOrderId: state.pathParameters['workOrderId']!,
+        ),
+      ),
+      GoRoute(
+        path: '/work-orders/:workOrderId/conclusion',
+        builder: (context, state) => WorkOrderConclusionScreen(
           workOrderId: state.pathParameters['workOrderId']!,
         ),
       ),
@@ -318,6 +325,12 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/work-orders/:workOrderId/service',
       builder: (context, state) => PrestadorServiceScreen(
+        workOrderId: state.pathParameters['workOrderId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/work-orders/:workOrderId/conclusion',
+      builder: (context, state) => WorkOrderConclusionScreen(
         workOrderId: state.pathParameters['workOrderId']!,
       ),
     ),
