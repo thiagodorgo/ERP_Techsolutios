@@ -2,6 +2,15 @@ import 'package:equatable/equatable.dart';
 
 import '../../../core/sync/sync_models.dart';
 
+enum WorkOrderServiceType { tow, provider }
+
+extension WorkOrderServiceTypeX on WorkOrderServiceType {
+  String get label => switch (this) {
+    WorkOrderServiceType.tow => 'Guincho',
+    WorkOrderServiceType.provider => 'Prestador',
+  };
+}
+
 enum WorkOrderStatus {
   scheduled,
   dispatched,
@@ -135,6 +144,7 @@ class WorkOrder extends Equatable {
     this.completedAt,
     this.checklistId,
     this.updatedAt,
+    this.serviceType,
   });
 
   final String localId;
@@ -157,6 +167,7 @@ class WorkOrder extends Equatable {
   final SyncStatus syncStatus;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final WorkOrderServiceType? serviceType;
 
   WorkOrder copyWith({
     String? localId,
@@ -179,8 +190,10 @@ class WorkOrder extends Equatable {
     SyncStatus? syncStatus,
     DateTime? createdAt,
     DateTime? updatedAt,
+    WorkOrderServiceType? serviceType,
     bool clearServerId = false,
     bool clearAssignedUserId = false,
+    bool clearServiceType = false,
   }) {
     return WorkOrder(
       localId: localId ?? this.localId,
@@ -205,6 +218,7 @@ class WorkOrder extends Equatable {
       syncStatus: syncStatus ?? this.syncStatus,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      serviceType: clearServiceType ? null : (serviceType ?? this.serviceType),
     );
   }
 
@@ -230,6 +244,7 @@ class WorkOrder extends Equatable {
     syncStatus,
     createdAt,
     updatedAt,
+    serviceType,
   ];
 }
 

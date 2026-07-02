@@ -378,9 +378,21 @@ BootstrapSession _parseExpanded(Map<String, dynamic> j) {
     inventoryCursor: syncCursJ['inventoryCursor'] as String?,
   );
 
+  final rawAvailable = j['available_tenants'] as List<dynamic>? ?? [];
+  final availableTenants = rawAvailable.isNotEmpty
+      ? rawAvailable.map((t) {
+          final m = t as Map<String, dynamic>;
+          return TenantContext(
+            tenantId: m['tenantId'] as String,
+            displayName: m['displayName'] as String,
+            userRole: m['userRole'] as String?,
+          );
+        }).toList()
+      : [activeTenant];
+
   return BootstrapSession(
     activeTenant: activeTenant,
-    availableTenants: [activeTenant],
+    availableTenants: availableTenants,
     user: AuthenticatedUser(
       userId: userJson['id'] as String,
       email: userJson['email'] as String,

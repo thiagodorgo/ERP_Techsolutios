@@ -6,7 +6,9 @@ import '../../core/bootstrap/bootstrap_repository.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/connectivity_repository.dart';
 import '../../core/sync/auto_sync_coordinator.dart';
+import '../../core/theme/theme_mode_notifier.dart';
 import '../../features/auth/auth_models.dart';
+import '../../shared/theme/erp_mobile_theme.dart';
 import 'erp_components.dart';
 import 'erp_scaffold.dart';
 
@@ -176,6 +178,9 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ),
 
+          const SizedBox(height: 8),
+          _ThemeSwitcherCard(ref: ref),
+
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: () => _logout(ref),
@@ -293,6 +298,47 @@ class _AvatarCard extends StatelessWidget {
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeSwitcherCard extends ConsumerWidget {
+  const _ThemeSwitcherCard({required this.ref});
+
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context, WidgetRef watchRef) {
+    final appTheme =
+        watchRef.watch(themeModeProvider).asData?.value ?? AppThemeMode.system;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.palette_outlined),
+              title: const Text('Aparencia'),
+              subtitle: Text(appTheme.label),
+            ),
+            Wrap(
+              spacing: 8,
+              children: AppThemeMode.values.map((mode) {
+                return ChoiceChip(
+                  label: Text(mode.label),
+                  selected: appTheme == mode,
+                  onSelected: (_) =>
+                      watchRef.read(themeModeProvider.notifier).setMode(mode),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 8),
           ],
         ),
       ),

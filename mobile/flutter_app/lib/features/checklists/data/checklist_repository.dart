@@ -14,6 +14,7 @@ import '../../../core/sync/sync_action_factory.dart';
 import '../../../core/sync/sync_models.dart';
 import '../../../core/sync/sync_providers.dart';
 import '../../../core/sync/sync_queue_repository.dart';
+import '../domain/checklist_comparison.dart';
 import '../domain/checklist_models.dart';
 import 'checklist_local_store.dart';
 import 'checklist_remote_api.dart';
@@ -155,24 +156,29 @@ class ChecklistRepository extends ChangeNotifier {
     required String checklistId,
     required String workOrderId,
     required String schemaVersion,
+    MobileChecklistRunKind kind = MobileChecklistRunKind.collection,
   }) async {
     final existing = await _localStore.loadRunsForWorkOrder(workOrderId);
     final inProgress = existing
         .where(
           (r) =>
               r.checklistId == checklistId &&
+              r.kind == kind &&
               r.status == MobileChecklistRunStatus.inProgress,
         )
         .firstOrNull;
     if (inProgress != null) return inProgress;
 
+    // Prefixo c_/e_ para rastrear a fase (coleta/entrega) no id local.
+    final prefix = kind == MobileChecklistRunKind.delivery ? 'e' : 'c';
     final run = MobileChecklistRun(
-      localId: 'clrun-local-${_uuid.v4()}',
+      localId: 'clrun-${prefix}_${_uuid.v4()}',
       tenantId: _session.activeTenant.tenantId,
       checklistId: checklistId,
       workOrderId: workOrderId,
       schemaVersion: schemaVersion,
       status: MobileChecklistRunStatus.inProgress,
+      kind: kind,
       executedByUserId: _session.user.userId,
       startedAt: DateTime.now().toUtc(),
       syncStatus: SyncStatus.pending,
@@ -189,12 +195,41 @@ class ChecklistRepository extends ChangeNotifier {
         'checklist_id': checklistId,
         'work_order_id': workOrderId,
         'schema_version': schemaVersion,
+        'kind': kind.apiValue,
         'started_at': run.startedAt.toIso8601String(),
       },
     );
     await _syncQueue.enqueue(action);
     notifyListeners();
     return run;
+  }
+
+  /// Retorna o run de uma fase específica (coleta/entrega) da OS, se houver.
+  Future<MobileChecklistRun?> getRunByKind({
+    required String workOrderId,
+    required MobileChecklistRunKind kind,
+  }) async {
+    final runs = await _localStore.loadRunsForWorkOrder(workOrderId);
+    return runs.where((r) => r.kind == kind).firstOrNull;
+  }
+
+  /// Registra divergências entre coleta e entrega e enfileira para sync.
+  Future<void> recordDivergences({
+    required String runId,
+    required List<ChecklistDivergence> divergences,
+  }) async {
+    if (divergences.isEmpty) return;
+    final action = _actionFactory.create(
+      tenantId: _session.activeTenant.tenantId,
+      type: ChecklistSyncActionTypes.divergenceCreate,
+      payload: {
+        'local_run_id': runId,
+        'divergence_count': divergences.length,
+        'field_ids': divergences.map((d) => d.fieldId).toList(),
+      },
+    );
+    await _syncQueue.enqueue(action);
+    notifyListeners();
   }
 
   Future<void> saveAnswer({
@@ -615,6 +650,13 @@ List<MobileChecklistSchema> _seedSchemas(BootstrapSession session) {
           label: 'Ciencia do motorista',
           required: false,
           order: 3,
+        ),
+        MobileChecklistField(
+          id: 'f-signature',
+          type: MobileChecklistFieldType.signature,
+          label: 'Assinatura',
+          required: false,
+          order: 4,
         ),
       ],
     ),

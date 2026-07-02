@@ -29,8 +29,9 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
       '(local_id, server_id, tenant_id, code, title, customer_name, '
       'service_address, latitude, longitude, status, priority, '
       'assigned_user_id, scheduled_at, started_at, arrived_at, '
-      'completed_at, checklist_id, sync_status, created_at, updated_at) '
-      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      'completed_at, checklist_id, sync_status, created_at, updated_at, '
+      'service_type) '
+      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       variables: [
         Variable<String>(order.localId),
         Variable<String>(order.serverId),
@@ -52,6 +53,7 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
         Variable<String>(order.syncStatus.name),
         Variable<int>(order.createdAt.millisecondsSinceEpoch),
         Variable<int>(_msOrNull(order.updatedAt)),
+        Variable<String>(order.serviceType?.name),
       ],
     );
   }
@@ -209,6 +211,7 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
       isUtc: true,
     ),
     updatedAt: _fromMs(row.readNullable<int>('updated_at')),
+    serviceType: _serviceTypeOrNull(row.readNullable<String>('service_type')),
   );
 
   WorkOrderTimelineEvent _timelineFromRow(QueryRow row) =>
@@ -258,4 +261,7 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
 
   static WorkOrderStatus? _statusOrNull(String? name) =>
       name == null ? null : WorkOrderStatus.values.byName(name);
+
+  static WorkOrderServiceType? _serviceTypeOrNull(String? name) =>
+      name == null ? null : WorkOrderServiceType.values.byName(name);
 }

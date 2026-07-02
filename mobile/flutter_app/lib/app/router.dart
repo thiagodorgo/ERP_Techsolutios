@@ -6,6 +6,7 @@ import '../core/bootstrap/bootstrap_repository.dart';
 import '../core/config/app_config.dart';
 import '../core/diagnostics/diagnostics_screen.dart';
 import '../features/auth/login_screen.dart';
+import '../features/auth/splash_screen.dart';
 import '../features/auth/tenant_selector_screen.dart';
 import '../features/expenses/ui/expense_item_receipts_screen.dart';
 import '../features/expenses/ui/expense_report_detail_screen.dart';
@@ -13,15 +14,21 @@ import '../features/expenses/ui/expense_submit_screen.dart';
 import '../features/expenses/ui/expense_list_screen.dart';
 import '../features/expenses/ui/new_expense_item_screen.dart';
 import '../features/expenses/ui/new_expense_report_screen.dart';
+import '../features/checklists/domain/checklist_models.dart';
 import '../features/checklists/ui/checklist_acknowledgement_screen.dart';
 import '../features/checklists/ui/checklist_available_screen.dart';
+import '../features/checklists/ui/checklist_comparison_screen.dart';
 import '../features/checklists/ui/checklist_damage_map_screen.dart';
 import '../features/checklists/ui/checklist_run_screen.dart';
 import '../features/inventory/ui/inventory_list_screen.dart';
 import '../features/inventory/ui/stock_entry_screen.dart';
 import '../features/inventory/ui/stock_exit_screen.dart';
+import '../features/location/ui/location_consent_screen.dart';
+import '../features/prestador/ui/prestador_service_screen.dart';
+import '../features/prestador/ui/technician_stock_screen.dart';
 import '../features/work_orders/ui/new_work_order_screen.dart';
 import '../features/work_orders/ui/work_order_approval_request_screen.dart';
+import '../features/work_orders/ui/work_order_conclusion_screen.dart';
 import '../features/work_orders/ui/work_order_detail_screen.dart';
 import '../features/work_orders/ui/work_order_execute_screen.dart';
 import '../features/work_orders/ui/work_order_list_screen.dart';
@@ -36,7 +43,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     refreshListenable: notifier,
-    initialLocation: '/login',
+    initialLocation: '/splash',
     redirect: (context, state) {
       final authAsync = ref.read(authStateProvider);
 
@@ -47,8 +54,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (authState == null) return null;
 
       final loc = state.matchedLocation;
+      final isSplash = loc == '/splash';
       final isLoginRoute = loc == '/login';
       final isTenantSelect = loc == '/tenant-select';
+
+      // Splash controls its own navigation via timer
+      if (isSplash) return null;
 
       if (!authState.isAuthenticated && !isLoginRoute) return '/login';
 
@@ -68,6 +79,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/tenant-select',
@@ -141,6 +156,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/work-orders/:workOrderId/service',
+        builder: (context, state) => PrestadorServiceScreen(
+          workOrderId: state.pathParameters['workOrderId']!,
+        ),
+      ),
+      GoRoute(
+        path: '/work-orders/:workOrderId/conclusion',
+        builder: (context, state) => WorkOrderConclusionScreen(
+          workOrderId: state.pathParameters['workOrderId']!,
+        ),
+      ),
+      GoRoute(
+        path: '/work-orders/:workOrderId/technician-stock',
+        builder: (context, state) => TechnicianStockScreen(
+          workOrderId: state.pathParameters['workOrderId']!,
+        ),
+      ),
+      GoRoute(
         path: '/work-orders/:workOrderId/approval-request',
         builder: (context, state) => WorkOrderApprovalRequestScreen(
           workOrderId: state.pathParameters['workOrderId']!,
@@ -155,6 +188,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/checklists/:checklistId/run',
         builder: (context, state) => ChecklistRunScreen(
+          checklistId: state.pathParameters['checklistId']!,
+          workOrderId: state.uri.queryParameters['workOrderId'] ?? '',
+          kind: MobileChecklistRunKind.fromApiValue(
+            state.uri.queryParameters['kind'],
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/checklists/:checklistId/comparison',
+        builder: (context, state) => ChecklistComparisonScreen(
           checklistId: state.pathParameters['checklistId']!,
           workOrderId: state.uri.queryParameters['workOrderId'] ?? '',
         ),
@@ -179,6 +222,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => WorkOrderOperationalMapScreen(
           workOrderId: state.uri.queryParameters['workOrderId'],
         ),
+      ),
+      GoRoute(
+        path: '/location',
+        builder: (context, state) => const LocationConsentScreen(),
       ),
       GoRoute(
         path: '/inventory',
@@ -212,8 +259,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 // Used by tests that navigate directly without a ProviderScope/auth guard.
 // Contains all routes but no redirect — mirrors appRouterProvider's routes.
 final appRouter = GoRouter(
-  initialLocation: '/login',
+  initialLocation: '/splash',
   routes: [
+    GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
     GoRoute(
@@ -283,6 +331,24 @@ final appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: '/work-orders/:workOrderId/service',
+      builder: (context, state) => PrestadorServiceScreen(
+        workOrderId: state.pathParameters['workOrderId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/work-orders/:workOrderId/conclusion',
+      builder: (context, state) => WorkOrderConclusionScreen(
+        workOrderId: state.pathParameters['workOrderId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/work-orders/:workOrderId/technician-stock',
+      builder: (context, state) => TechnicianStockScreen(
+        workOrderId: state.pathParameters['workOrderId']!,
+      ),
+    ),
+    GoRoute(
       path: '/work-orders/:workOrderId/approval-request',
       builder: (context, state) => WorkOrderApprovalRequestScreen(
         workOrderId: state.pathParameters['workOrderId']!,
@@ -297,6 +363,16 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/checklists/:checklistId/run',
       builder: (context, state) => ChecklistRunScreen(
+        checklistId: state.pathParameters['checklistId']!,
+        workOrderId: state.uri.queryParameters['workOrderId'] ?? '',
+        kind: MobileChecklistRunKind.fromApiValue(
+          state.uri.queryParameters['kind'],
+        ),
+      ),
+    ),
+    GoRoute(
+      path: '/checklists/:checklistId/comparison',
+      builder: (context, state) => ChecklistComparisonScreen(
         checklistId: state.pathParameters['checklistId']!,
         workOrderId: state.uri.queryParameters['workOrderId'] ?? '',
       ),
@@ -320,6 +396,10 @@ final appRouter = GoRouter(
       builder: (context, state) => WorkOrderOperationalMapScreen(
         workOrderId: state.uri.queryParameters['workOrderId'],
       ),
+    ),
+    GoRoute(
+      path: '/location',
+      builder: (context, state) => const LocationConsentScreen(),
     ),
     GoRoute(
       path: '/inventory',

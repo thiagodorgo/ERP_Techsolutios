@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 9;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -30,6 +30,7 @@ class AppDatabase extends GeneratedDatabase {
       await m.database.customStatement(_kChecklistAttachments);
       await m.database.customStatement(_kChecklistAcknowledgements);
       await m.database.customStatement(_kFieldLocationEvents);
+      await m.database.customStatement(_kWorkOrderMaterials);
     },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
@@ -65,6 +66,33 @@ class AppDatabase extends GeneratedDatabase {
       }
       if (from < 6) {
         await m.database.customStatement(_kFieldLocationEvents);
+      }
+      if (from < 7) {
+        final rows = await m.database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='work_orders'",
+            )
+            .get();
+        if (rows.isNotEmpty) {
+          await m.database.customStatement(
+            'ALTER TABLE work_orders ADD COLUMN service_type TEXT',
+          );
+        }
+      }
+      if (from < 8) {
+        final rows = await m.database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='checklist_runs'",
+            )
+            .get();
+        if (rows.isNotEmpty) {
+          await m.database.customStatement(
+            "ALTER TABLE checklist_runs ADD COLUMN kind TEXT NOT NULL DEFAULT 'collection'",
+          );
+        }
+      }
+      if (from < 9) {
+        await m.database.customStatement(_kWorkOrderMaterials);
       }
     },
   );
@@ -160,7 +188,8 @@ CREATE TABLE IF NOT EXISTS work_orders (
   checklist_id TEXT,
   sync_status TEXT NOT NULL,
   created_at INTEGER NOT NULL,
-  updated_at INTEGER
+  updated_at INTEGER,
+  service_type TEXT
 )''';
 
 const _kWorkOrderTimeline = '''
@@ -231,7 +260,8 @@ CREATE TABLE IF NOT EXISTS checklist_runs (
   started_at INTEGER NOT NULL,
   completed_at INTEGER,
   sync_status TEXT NOT NULL,
-  answers_json TEXT NOT NULL DEFAULT '{}'
+  answers_json TEXT NOT NULL DEFAULT '{}',
+  kind TEXT NOT NULL DEFAULT 'collection'
 )''';
 
 const _kChecklistMarkers = '''
@@ -266,6 +296,20 @@ CREATE TABLE IF NOT EXISTS checklist_acknowledgements (
   acknowledged_at INTEGER NOT NULL,
   confirmed INTEGER NOT NULL DEFAULT 1,
   sync_status TEXT NOT NULL
+)''';
+
+const _kWorkOrderMaterials = '''
+CREATE TABLE IF NOT EXISTS work_order_materials (
+  local_id TEXT NOT NULL PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
+  work_order_local_id TEXT NOT NULL,
+  sku TEXT NOT NULL,
+  name TEXT NOT NULL,
+  quantity INTEGER NOT NULL,
+  unit TEXT NOT NULL,
+  source TEXT NOT NULL,
+  sync_status TEXT NOT NULL,
+  created_at INTEGER NOT NULL
 )''';
 
 const _kFieldLocationEvents = '''

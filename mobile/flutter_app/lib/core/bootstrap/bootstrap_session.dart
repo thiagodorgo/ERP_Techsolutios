@@ -23,13 +23,18 @@ class AuthenticatedUser extends Equatable {
 }
 
 class TenantContext extends Equatable {
-  const TenantContext({required this.tenantId, required this.displayName});
+  const TenantContext({
+    required this.tenantId,
+    required this.displayName,
+    this.userRole,
+  });
 
   final String tenantId;
   final String displayName;
+  final String? userRole;
 
   @override
-  List<Object?> get props => [tenantId, displayName];
+  List<Object?> get props => [tenantId, displayName, userRole];
 }
 
 class EnabledModule extends Equatable {

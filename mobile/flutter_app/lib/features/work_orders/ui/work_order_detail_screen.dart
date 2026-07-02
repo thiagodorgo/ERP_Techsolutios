@@ -14,6 +14,7 @@ import '../../checklists/domain/checklist_models.dart';
 import '../data/work_order_repository.dart';
 import '../data/work_order_conflict_resolution_service.dart';
 import '../domain/work_order_models.dart';
+import '../../../core/location/gps_service.dart';
 import 'work_order_operational_map_screen.dart';
 
 class WorkOrderDetailScreen extends ConsumerWidget {
@@ -105,16 +106,10 @@ class WorkOrderDetailScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               _TimelineCard(workOrderId: workOrderId, repo: repo),
               const SizedBox(height: 16),
-              _ActionButtons(
+              _CheckinActions(
                 wo: wo,
                 canStatus: canStatus,
                 canApproval: canApproval,
-                onExecute: () =>
-                    context.go('/work-orders/$workOrderId/execute'),
-                onApproval: () =>
-                    context.go('/work-orders/$workOrderId/approval-request'),
-                onMap: () =>
-                    context.push('/field-map?workOrderId=${wo.localId}'),
               ),
             ],
           ),
@@ -600,47 +595,162 @@ class _TimelineCardState extends State<_TimelineCard> {
 }
 
 // ---------------------------------------------------------------------------
-// Action buttons
+// Check-in action buttons — context-aware based on wo.status
 // ---------------------------------------------------------------------------
 
-class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({
+class _CheckinActions extends ConsumerStatefulWidget {
+  const _CheckinActions({
     required this.wo,
     required this.canStatus,
     required this.canApproval,
-    required this.onExecute,
-    required this.onApproval,
-    required this.onMap,
   });
 
   final WorkOrder wo;
   final bool canStatus;
   final bool canApproval;
-  final VoidCallback onExecute;
-  final VoidCallback onApproval;
-  final VoidCallback onMap;
+
+  @override
+  ConsumerState<_CheckinActions> createState() => _CheckinActionsState();
+}
+
+class _CheckinActionsState extends ConsumerState<_CheckinActions> {
+  bool _loading = false;
+
+  WorkOrder get _wo => widget.wo;
+
+  Future<void> _doStatus(WorkOrderStatus next) async {
+    setState(() => _loading = true);
+    try {
+      final repo = ref.read(workOrderRepositoryProvider);
+      await repo.updateStatus(_wo.localId, next);
+    } on StateError catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _openArrivalDialog() async {
+    final gpsOk = await ref
+        .read(gpsAvailableProvider.future)
+        .catchError((_) => false);
+    if (!mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _PlateDialog(wo: _wo, gpsOk: gpsOk),
+    );
+
+    if (confirmed == true && mounted) {
+      await _doStatus(WorkOrderStatus.arrived);
+    }
+  }
+
+  Future<void> _openBlockSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _BlockSheet(
+        onSubmit: (reason, note) async {
+          final repo = ref.read(workOrderRepositoryProvider);
+          await repo.reportUnableToStart(
+            localId: _wo.localId,
+            reason: reason,
+            note: note,
+          );
+          if (!mounted) return;
+          context.go('/work-orders');
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final wo = _wo;
     final isFinal = wo.status.isFinal;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (!isFinal && canStatus)
-          FilledButton.icon(
-            onPressed: onExecute,
-            icon: const Icon(Icons.play_arrow_outlined),
-            label: const Text('Iniciar atendimento'),
-          ),
-        if (!isFinal && canApproval) ...[
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: onApproval,
-            icon: const Icon(Icons.approval_outlined),
-            label: const Text('Solicitar aprovacao'),
-          ),
+        // --- Check-in buttons (status-aware) ---
+        if (!isFinal && widget.canStatus) ...[
+          if (wo.status == WorkOrderStatus.scheduled ||
+              wo.status == WorkOrderStatus.dispatched)
+            FilledButton.icon(
+              key: const Key('checkin-start-route'),
+              onPressed: _loading
+                  ? null
+                  : () => _doStatus(WorkOrderStatus.enRoute),
+              icon: _loading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.directions_outlined),
+              label: const Text('Iniciar rota'),
+            ),
+          if (wo.status == WorkOrderStatus.enRoute) ...[
+            FilledButton.icon(
+              key: const Key('checkin-arrived'),
+              onPressed: _loading ? null : _openArrivalDialog,
+              icon: _loading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.location_on_outlined),
+              label: const Text('Cheguei ao local'),
+            ),
+            const SizedBox(height: 6),
+            TextButton.icon(
+              key: const Key('checkin-block'),
+              onPressed: _loading ? null : _openBlockSheet,
+              icon: const Icon(Icons.cancel_outlined),
+              label: const Text('Nao foi possivel iniciar'),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ],
+          if (wo.status == WorkOrderStatus.arrived)
+            FilledButton.icon(
+              key: const Key('checkin-start-service'),
+              onPressed: _loading
+                  ? null
+                  : () async {
+                      await _doStatus(WorkOrderStatus.inService);
+                      if (!context.mounted) return;
+                      context.go('/work-orders/${wo.localId}/execute');
+                    },
+              icon: _loading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.play_arrow_outlined),
+              label: const Text('Iniciar atendimento'),
+            ),
+          if (wo.status == WorkOrderStatus.inService ||
+              wo.status == WorkOrderStatus.paused)
+            FilledButton.icon(
+              key: const Key('checkin-continue'),
+              onPressed: () => context.go('/work-orders/${wo.localId}/execute'),
+              icon: const Icon(Icons.play_arrow_outlined),
+              label: const Text('Continuar atendimento'),
+            ),
         ],
+        // --- Final state ---
         if (isFinal)
           Card(
             child: ListTile(
@@ -649,7 +759,18 @@ class _ActionButtons extends StatelessWidget {
               subtitle: const Text('Nenhuma acao disponivel.'),
             ),
           ),
+        // --- Approval ---
+        if (!isFinal && widget.canApproval) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () =>
+                context.go('/work-orders/${wo.localId}/approval-request'),
+            icon: const Icon(Icons.approval_outlined),
+            label: const Text('Solicitar aprovacao'),
+          ),
+        ],
         const SizedBox(height: 8),
+        // --- Checklist ---
         OutlinedButton.icon(
           onPressed: () =>
               context.push('/work-orders/${wo.localId}/checklists'),
@@ -657,45 +778,463 @@ class _ActionButtons extends StatelessWidget {
           label: const Text('Checklist'),
         ),
         const SizedBox(height: 4),
-        _PreparedActionButton(
-          icon: Icons.photo_camera_outlined,
-          label: 'Evidencias',
-        ),
-        const SizedBox(height: 4),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            key: const Key('work-order-map-action'),
-            onPressed: onMap,
-            icon: const Icon(Icons.map_outlined),
-            label: const Text('Mapa'),
-          ),
+        // --- Map ---
+        OutlinedButton.icon(
+          key: const Key('work-order-map-action'),
+          onPressed: () => context.push('/field-map?workOrderId=${wo.localId}'),
+          icon: const Icon(Icons.map_outlined),
+          label: const Text('Mapa'),
         ),
       ],
     );
   }
 }
 
-class _PreparedActionButton extends StatelessWidget {
-  const _PreparedActionButton({required this.icon, required this.label});
+// ---------------------------------------------------------------------------
+// Plate validation dialog
+// ---------------------------------------------------------------------------
 
-  final IconData icon;
-  final String label;
+class _PlateDialog extends StatefulWidget {
+  const _PlateDialog({required this.wo, required this.gpsOk});
+
+  final WorkOrder wo;
+  final bool gpsOk;
+
+  @override
+  State<_PlateDialog> createState() => _PlateDialogState();
+}
+
+class _PlateDialogState extends State<_PlateDialog> {
+  final _ctrl = TextEditingController();
+  bool _error = false;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  String get _expected => widget.wo.code.length >= 2
+      ? widget.wo.code.substring(widget.wo.code.length - 2).toUpperCase()
+      : widget.wo.code.toUpperCase();
+
+  String get _prefix => widget.wo.code.length > 2
+      ? widget.wo.code.substring(0, widget.wo.code.length - 2)
+      : '';
+
+  bool get _isGuincho => widget.wo.serviceType == WorkOrderServiceType.tow;
+
+  String get _title =>
+      _isGuincho ? 'Confirmar veiculo' : 'Confirmar equipamento';
+  String get _subtitle => _isGuincho
+      ? 'Informe os 2 ultimos digitos da placa'
+      : 'Informe os 2 ultimos digitos do nr de serie';
+
+  void _confirm() {
+    final input = _ctrl.text.trim().toUpperCase();
+    if (input == _expected && widget.gpsOk) {
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() => _error = true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$label — em preparacao para o proximo bloco.'),
+    final cs = Theme.of(context).colorScheme;
+    final inputOk = _ctrl.text.trim().toUpperCase() == _expected;
+    final canConfirm = inputOk && widget.gpsOk;
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  _isGuincho
+                      ? Icons.local_shipping_outlined
+                      : Icons.build_outlined,
+                  color: cs.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_title, style: Theme.of(context).textTheme.titleSmall),
+                    Text(
+                      _subtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        );
-      },
-      icon: Icon(icon),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+          const SizedBox(height: 12),
+          // GPS chip
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: widget.gpsOk
+                  ? Colors.green.shade50
+                  : cs.errorContainer.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  widget.gpsOk ? Icons.gps_fixed : Icons.gps_off_outlined,
+                  size: 14,
+                  color: widget.gpsOk ? Colors.green.shade700 : cs.error,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    widget.gpsOk
+                        ? 'Localizacao confirmada · voce esta no local'
+                        : 'Ative o GPS para confirmar que chegou ao local',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: widget.gpsOk ? Colors.green.shade700 : cs.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          // 2-digit input
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _prefix,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontFamily: 'monospace',
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(width: 4),
+              SizedBox(
+                width: 64,
+                child: TextField(
+                  key: const Key('plate-input'),
+                  controller: _ctrl,
+                  autofocus: true,
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.text,
+                  maxLength: 2,
+                  textCapitalization: TextCapitalization.characters,
+                  onChanged: (_) => setState(() => _error = false),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: _error ? cs.error : cs.outline,
+                        width: 1.5,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: _error ? cs.error : cs.outline,
+                        width: 1.5,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: _error ? cs.error : cs.primary,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontFamily: 'monospace'),
+                ),
+              ),
+            ],
+          ),
+          if (_error) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.error_outline, size: 14, color: cs.error),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    _isGuincho
+                        ? 'Digitos nao conferem com a placa do veiculo'
+                        : 'Digitos nao conferem com o nr de serie',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: cs.error),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          key: const Key('plate-cancel'),
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          key: const Key('plate-confirm'),
+          onPressed: canConfirm ? _confirm : null,
+          child: const Text('Confirmar chegada'),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// "Nao foi possivel iniciar" bottom sheet
+// ---------------------------------------------------------------------------
+
+class _BlockSheet extends StatefulWidget {
+  const _BlockSheet({required this.onSubmit});
+
+  final Future<void> Function(String reason, String note) onSubmit;
+
+  @override
+  State<_BlockSheet> createState() => _BlockSheetState();
+}
+
+class _BlockSheetState extends State<_BlockSheet> {
+  static const _reasons = [
+    'Cliente ausente no local',
+    'Endereco nao localizado',
+    'Veiculo inacessivel / impedimento',
+    'Condicoes de seguranca',
+    'Outro motivo',
+  ];
+
+  String? _reason;
+  String _note = '';
+  bool _submitting = false;
+
+  bool get _canSubmit => _reason != null && _note.trim().isNotEmpty;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final mq = MediaQuery.of(context);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: mq.viewInsets.bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          const SizedBox(height: 12),
+          Container(
+            width: 38,
+            height: 4,
+            decoration: BoxDecoration(
+              color: cs.outlineVariant,
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          const SizedBox(height: 14),
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: cs.errorContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.warning_amber_outlined,
+                    color: cs.error,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Nao foi possivel iniciar',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    Text(
+                      'Registre o motivo para enviar a central',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Reasons
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Motivo',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (final r in _reasons)
+                    GestureDetector(
+                      onTap: () => setState(() => _reason = r),
+                      child: Container(
+                        key: Key('block-reason-$r'),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 13,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: _reason == r ? cs.primary : cs.outline,
+                            width: 1.5,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          color: _reason == r
+                              ? cs.primaryContainer.withValues(alpha: 0.3)
+                              : null,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 18,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: _reason == r
+                                      ? cs.primary
+                                      : cs.outlineVariant,
+                                  width: 2,
+                                ),
+                              ),
+                              child: _reason == r
+                                  ? Center(
+                                      child: Container(
+                                        width: 9,
+                                        height: 9,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: cs.primary,
+                                        ),
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 11),
+                            Text(
+                              r,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Explicacao',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    key: const Key('block-note'),
+                    maxLines: 3,
+                    onChanged: (v) => setState(() => _note = v),
+                    decoration: InputDecoration(
+                      hintText:
+                          'Descreva o que impediu o inicio do atendimento...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+          // Buttons
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _submitting
+                        ? null
+                        : () => Navigator.of(context).pop(),
+                    child: const Text('Cancelar'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 2,
+                  child: FilledButton(
+                    key: const Key('block-submit'),
+                    onPressed: _canSubmit && !_submitting
+                        ? () async {
+                            setState(() => _submitting = true);
+                            try {
+                              await widget.onSubmit(_reason!, _note.trim());
+                              if (context.mounted) Navigator.of(context).pop();
+                            } finally {
+                              if (mounted) setState(() => _submitting = false);
+                            }
+                          }
+                        : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _canSubmit
+                          ? Theme.of(context).colorScheme.error
+                          : null,
+                    ),
+                    child: _submitting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Enviar nao conclusao'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

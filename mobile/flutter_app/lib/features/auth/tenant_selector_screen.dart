@@ -112,7 +112,7 @@ class _TenantCardState extends State<_TenantCard> {
           ),
         ),
         title: Text(widget.tenant.displayName),
-        subtitle: Text(widget.tenant.tenantId),
+        subtitle: Text(_rolePtLabel(widget.tenant.userRole)),
         trailing: _loading
             ? const SizedBox(
                 width: 24,
@@ -121,7 +121,7 @@ class _TenantCardState extends State<_TenantCard> {
               )
             : FilledButton(
                 onPressed: _loading ? null : _doSelect,
-                child: const Text('Continuar'),
+                child: const Text('Acessar'),
               ),
       ),
     );
@@ -134,6 +134,18 @@ class _TenantCardState extends State<_TenantCard> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  String _rolePtLabel(String? role) {
+    return switch (role?.toLowerCase()) {
+      'field_technician' => 'Tecnico de Campo',
+      'field_dispatcher' => 'Operacao de Campo',
+      'manager' => 'Gestor Operacional',
+      'tenant_admin' => 'Administrador',
+      'finance' => 'Financeiro',
+      'auditor' => 'Auditor',
+      _ => 'Membro',
+    };
   }
 }
 
