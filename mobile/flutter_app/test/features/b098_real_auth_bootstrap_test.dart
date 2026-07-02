@@ -653,11 +653,11 @@ void main() {
       expect(find.text('Empresa Beta'), findsOneWidget);
     });
 
-    testWidgets('5.3 exibe botao Continuar para cada tenant', (t) async {
+    testWidgets('5.3 exibe botao Acessar para cada tenant', (t) async {
       await t.pumpWidget(buildScreen(multiTenantSession()));
       await t.pumpAndSettle();
 
-      expect(find.text('Continuar'), findsNWidgets(2));
+      expect(find.text('Acessar'), findsNWidgets(2));
     });
 
     testWidgets('5.4 exibe instrucao para o usuario selecionar empresa', (

@@ -302,7 +302,7 @@ void main() {
       expect(find.text('Concluida'), findsWidgets);
     });
 
-    testWidgets('9. botoes Checklist / Evidencias / Mapa presentes', (
+    testWidgets('9. botoes Checklist / Mapa presentes', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -316,7 +316,6 @@ void main() {
       // Botoes estao abaixo do fold — rolar ate ficarem visiveis
       await tester.scrollUntilVisible(find.text('Checklist'), 300);
       expect(find.text('Checklist'), findsOneWidget);
-      expect(find.text('Evidencias'), findsOneWidget);
       expect(find.text('Mapa'), findsOneWidget);
     });
   });

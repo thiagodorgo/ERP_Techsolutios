@@ -233,7 +233,7 @@ void main() {
     testWidgets('10. botao primario exibe "Iniciar atendimento"', (
       tester,
     ) async {
-      final seed = [_wo(id: 'det1', status: WorkOrderStatus.scheduled)];
+      final seed = [_wo(id: 'det1', status: WorkOrderStatus.arrived)];
       final router = GoRouter(
         initialLocation: '/',
         routes: [
