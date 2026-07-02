@@ -38,3 +38,55 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm --prefix frontend ci
+
+      - name: TypeScript check
+        run: npm --prefix frontend run check
+
+      - name: Smoke tests
+        run: npm --prefix frontend run test:smoke
+
+      - name: Build
+        run: npm --prefix frontend run build
+
+  flutter:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: mobile/flutter_app
+
+      - name: Format check
+        run: dart format --output=none --set-exit-if-changed lib test
+        working-directory: mobile/flutter_app
+
+      - name: Analyze
+        run: flutter analyze
+        working-directory: mobile/flutter_app
+
+      - name: Tests
+        run: flutter test --reporter compact
+        working-directory: mobile/flutter_app
