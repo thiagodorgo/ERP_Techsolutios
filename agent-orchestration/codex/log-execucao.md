@@ -3521,3 +3521,19 @@ Todo bloco que executar testes, builds, Flutter, Node, Android, iOS ou geração
 - KPIs publicados em bloco documental separado.
 - Sem feature nova.
 - Sem alteracao em Flutter `lib/`, Flutter `test/`, backend funcional, frontend web, Prisma, migrations, infra, env, lockfiles ou Figma.
+
+
+---
+
+## Atualizacao 2026-07-02 — Rodada Fase 2 Web Gestor (B-113→B-120) [Claude Code]
+
+Contrato desta rodada alterado pelo usuario: auto-merge (gate = testes) e merge UNICO ao
+final do B-120; KPIs publicados junto. Numeracao contigua ao Codex.
+
+- B-110 PR #107 merge 2a2ee4e; B-111 PR #108 merge 7d81395; B-112 PR #109 merge c2deb15 (ja mergeados).
+- B-113 camada de API web (ApiError/apiData) — bateria frontend verde (check/build/test:smoke 31→33).
+- B-114 dashboard operacional com KPIs reais de OS — test:smoke 33/33.
+- B-115→B-119 verificados: work-orders/dispatches/mapa/approval ja consomem /api/v1 (sem novo codigo).
+- B-120 CI: jobs frontend e flutter adicionados ao GitHub Actions.
+- KPIs raiz+mobile atualizados (754 testes, 45 blocos, 96%/78%).
+- PR/merge/approved_head desta rodada preenchidos no merge unico.

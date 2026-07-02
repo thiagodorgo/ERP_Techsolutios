@@ -19,3 +19,12 @@
 - origem: alinhamento documental e operacional desta execucao
 - impacto: README, PRODUCT_CONTEXT, docs de frontend e trilha operacional
 - observacao: C permanece apenas como historico, sem efeito na stack atual
+
+
+## D-004 - Rodada Fase 2 com auto-merge e merge unico (2026-07-02) [Claude Code]
+
+- status: aplicada nesta rodada
+- origem: instrucao do usuario
+- impacto: nesta rodada o Claude Code executa o ciclo ate o merge (gate = testes verdes),
+  com merge UNICO ao final do B-120 e KPIs publicados no mesmo PR. Fora desta rodada,
+  vale o gate humano padrao do contrato de blocos.

@@ -1,63 +1,29 @@
 {
-  "snapshot_date": "2026-06-18",
-  "version": "B-108",
+  "snapshot_date": "2026-07-02",
+  "version": "B-120",
   "source": "mobile/flutter_app/Kpis/kpis-latest.json",
-  "scope": "root_project_kpis_reflecting_mobile",
+  "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "B-108",
-    "title": "Hardening de evidências/storage",
-    "pr": 104,
-    "merge_commit": "468fcf16c6b42865aecbd45b05f4c37ced0c3068",
-    "approved_head": "4b221cfdfe3acad9c65214ac5fc7e7892a050331",
-    "status": "published_after_human_approval",
-    "summary": "B-108 publica o hardening de evidências/storage após avaliação humana, merge da PR #104 e gate B-108G, preservando upload multipart e resposta pública sem path, bucket, storage key, URL pública, token, base64 ou binário.",
-    "status_label": "Publicado apos avaliacao humana, merge e gate B-108G"
+    "block": "B-120",
+    "title": "Fase 2 Web Gestor — camada de API, dashboard real e CI (B-113→B-120), com catch-up de KPIs B-109→B-112",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "pending_single_pr_merge_this_round",
+    "summary": "Rodada com auto-merge acordada com o usuario: formaliza B-110/B-111/B-112 (auth backend, contexto web, MVP mobile) ja mergeados e adiciona a camada de API web (ApiError/apiData), dashboard operacional com KPIs reais de OS e jobs de CI de frontend e Flutter. Campos PR/merge/approved_head sao preenchidos no merge unico desta rodada.",
+    "status_label": "Aguardando merge unico da rodada (Fase 2)"
   },
   "metrics": {
-    "flutter_tests": {
-      "value": 662,
-      "total": 662,
-      "display": "662/662"
-    },
-    "backend_tests": {
-      "value": 15,
-      "total": 15,
-      "display": "15/15"
-    },
-    "backend_contract_tests_focused": {
-      "value": 21,
-      "total": 21,
-      "display": "21/21"
-    },
-    "flutter_modules": {
-      "value": 17,
-      "total": 17,
-      "display": "17/17"
-    },
-    "mvp_demo": {
-      "value": 93,
-      "unit": "%",
-      "display": "93%"
-    },
-    "mvp_vendavel": {
-      "value": 76,
-      "unit": "%",
-      "display": "76%"
-    },
-    "blocks_completed": {
-      "value": 38,
-      "display": "38"
-    },
-    "mobile_backend_contracts": {
-      "value": 18,
-      "total": 18,
-      "display": "18/18"
-    },
-    "mobile_core_saas_contracts": {
-      "value": 21,
-      "total": 21,
-      "display": "21/21"
-    }
+    "flutter_tests": { "value": 754, "total": 754, "display": "754/754" },
+    "backend_tests": { "value": 15, "total": 15, "display": "15/15" },
+    "backend_contract_tests_focused": { "value": 21, "total": 21, "display": "21/21" },
+    "frontend_smoke_tests": { "value": 33, "total": 33, "display": "33/33" },
+    "flutter_modules": { "value": 17, "total": 17, "display": "17/17" },
+    "flutter_test_files": { "value": 51, "display": "51" },
+    "mvp_demo": { "value": 96, "unit": "%", "display": "96%" },
+    "mvp_vendavel": { "value": 78, "unit": "%", "display": "78%" },
+    "blocks_completed": { "value": 45, "display": "45" },
+    "mobile_backend_contracts": { "value": 18, "total": 18, "display": "18/18" }
   },
   "policy": {
     "dual_kpis": true,
@@ -68,16 +34,14 @@
       "Mexeu fora do mobile: atualizar Kpis/*.",
       "Mexeu nos dois: atualizar os dois conjuntos.",
       "Se existir index.html: atualizar tambem o HTML.",
-      "PRs de feature nao alteram KPIs; publicacao ocorre somente em bloco documental pos-avaliacao humana, merge e gate."
+      "Rodada 2026-07-02: por decisao do usuario, KPIs sao atualizados junto ao PR (auto-merge acordado); merge unico ao final do B-120."
     ]
   },
   "limitations": [
-    "S3/presigned real pendente",
-    "Persistencia duravel DB/Redis do receipt pendente",
-    "Antivirus real pendente",
-    "Download protegido final pendente",
-    "Retencao definitiva pendente",
-    "Approval real pendente",
-    "Piloto Android real ainda precisa validacao em dispositivo fisico"
+    "MVP demo/vendavel sao estimativas.",
+    "Web Gestor: servicos ja consomem /api/v1 (work-orders, dispatches, mapa, approval); dashboard tem KPIs reais mas alertas/eventos/OS-criticas seguem mock (sem endpoint dedicado).",
+    "E2E Playwright contra backend vivo (Docker) pendente.",
+    "Rota web dedicada de Aprovacoes pendente (hoje via card embutido).",
+    "S3/presigned real, antivirus real, download protegido e retencao definitiva de evidencias pendentes."
   ]
 }

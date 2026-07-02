@@ -106,12 +106,12 @@
         {
           "id": "flutter_tests",
           "label": "Flutter Tests",
-          "value": 662,
-          "total": 662,
+          "value": 754,
+          "total": 754,
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "662/662 no full Flutter validado no gate B-108G"
+          "detail": "754/754 no full Flutter validado no gate B-108G"
         },
         {
           "id": "npm_tests",
@@ -189,7 +189,7 @@
         {
           "id": "flutter_mvp_demo",
           "label": "MVP Demo Readiness",
-          "value": 93,
+          "value": 96,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
@@ -198,7 +198,7 @@
         {
           "id": "flutter_mvp_vendavel",
           "label": "MVP Vendavel (Producao)",
-          "value": 76,
+          "value": 78,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
@@ -211,7 +211,7 @@
           "unit": "arquivos",
           "type": "real",
           "status": "green",
-          "detail": "38 arquivos de teste no diretorio test/"
+          "detail": "51 arquivos de teste no diretorio test/"
         },
         {
           "id": "flutter_evidence_sync",
@@ -280,7 +280,7 @@
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-076 ate B-108 + B-098F, incluindo sub-blocos (A/B/K/F)"
+          "detail": "B-076 ate B-120, incluindo sub-blocos (A/B/K/F) — 45 blocos"
         },
         {
           "id": "prs_merged",
