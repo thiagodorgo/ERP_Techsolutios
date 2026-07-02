@@ -214,7 +214,9 @@ export class PrismaCoreSaasService {
       .filter((u: { tenant: { status: string } }) => u.tenant.status === "active")
       .map((u: { tenant: unknown; [key: string]: unknown }) => ({
         tenant: mapTenantFromPrisma(u.tenant as Parameters<typeof mapTenantFromPrisma>[0]),
-        user: mapUserFromPrisma(u as Parameters<typeof mapUserFromPrisma>[0]),
+        user: mapUserFromPrisma(
+          u as unknown as Parameters<typeof mapUserFromPrisma>[0],
+        ),
       }));
   }
 
