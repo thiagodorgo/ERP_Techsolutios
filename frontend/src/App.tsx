@@ -39,6 +39,11 @@ const WorkOrderDetailPage = lazy(() =>
   })),
 );
 
+const ApprovalsPage = lazy(() =>
+  import("./modules/work-orders/pages/ApprovalsPage").then((m) => ({
+    default: m.ApprovalsPage,
+  })),
+);
 const WorkOrdersPage = lazy(() =>
   import("./modules/work-orders/pages/WorkOrdersPage").then((m) => ({
     default: m.WorkOrdersPage,
@@ -206,6 +211,14 @@ export function App() {
               element={
                 <PermissionGuard permissions={["dashboard:view"]}>
                   <DashboardPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/approvals"
+              element={
+                <PermissionGuard permissions={["work_orders:read"]}>
+                  <ApprovalsPage />
                 </PermissionGuard>
               }
             />
