@@ -819,7 +819,9 @@ class _ApprovalsBanner extends StatelessWidget {
         : Theme.of(context).colorScheme.secondary;
     final bgColor = hasPending
         ? Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.15)
-        : Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.2);
+        : Theme.of(
+            context,
+          ).colorScheme.secondaryContainer.withValues(alpha: 0.2);
     final label = hasPending
         ? '$pendingCount ${pendingCount == 1 ? 'OS aguardando aprovacao' : 'OS aguardando aprovacao'}'
         : 'Nenhuma aprovacao pendente';
@@ -853,9 +855,9 @@ class _ApprovalsBanner extends StatelessWidget {
                     ),
                     Text(
                       label,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: color,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: color),
                     ),
                   ],
                 ),

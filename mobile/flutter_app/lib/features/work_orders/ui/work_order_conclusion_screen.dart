@@ -130,7 +130,11 @@ class _WorkOrderConclusionScreenState
               children: [
                 Row(
                   children: [
-                    Icon(Icons.payments_outlined, color: scheme.onTertiaryContainer, size: 16),
+                    Icon(
+                      Icons.payments_outlined,
+                      color: scheme.onTertiaryContainer,
+                      size: 16,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       'Sua comissao',
@@ -237,7 +241,11 @@ class _StatCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(icon, size: 14, color: Theme.of(context).colorScheme.primary),
+                Icon(
+                  icon,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 6),
                 Text(caption, style: Theme.of(context).textTheme.labelSmall),
               ],
@@ -245,9 +253,9 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
             ),
           ],
         ),
@@ -269,9 +277,9 @@ class _SummaryRow extends StatelessWidget {
       title: Text(label, style: Theme.of(context).textTheme.labelSmall),
       subtitle: Text(
         value,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }

@@ -53,9 +53,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const SizedBox(height: 16),
             Text(
               'ERP Techsolutions',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 6),
@@ -157,19 +157,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     if (email.isEmpty || password.isEmpty) return;
-    await ref.read(authStateProvider.notifier).login(
-      email: email,
-      password: password,
-    );
+    await ref
+        .read(authStateProvider.notifier)
+        .login(email: email, password: password);
   }
 
   /// Only available when kIsDevMode is true (--dart-define=ERP_ENV=dev).
   Future<void> _doDevLogin() async {
-    await ref.read(authStateProvider.notifier).login(
-      email: 'tecnico@tenant.demo',
-      password: '123456',
-      tenantId: 'tenant-demo',
-    );
+    await ref
+        .read(authStateProvider.notifier)
+        .login(
+          email: 'tecnico@tenant.demo',
+          password: '123456',
+          tenantId: 'tenant-demo',
+        );
   }
 
   void _showForgotPasswordDialog() {

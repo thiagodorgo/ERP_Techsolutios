@@ -625,16 +625,18 @@ class _CheckinActionsState extends ConsumerState<_CheckinActions> {
       await repo.updateStatus(_wo.localId, next);
     } on StateError catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _openArrivalDialog() async {
-    final gpsOk = await ref.read(gpsAvailableProvider.future).catchError((_) => false);
+    final gpsOk = await ref
+        .read(gpsAvailableProvider.future)
+        .catchError((_) => false);
     if (!mounted) return;
 
     final confirmed = await showDialog<bool>(
@@ -727,7 +729,7 @@ class _CheckinActionsState extends ConsumerState<_CheckinActions> {
                   ? null
                   : () async {
                       await _doStatus(WorkOrderStatus.inService);
-                      if (!mounted) return;
+                      if (!context.mounted) return;
                       context.go('/work-orders/${wo.localId}/execute');
                     },
               icon: _loading
@@ -743,8 +745,7 @@ class _CheckinActionsState extends ConsumerState<_CheckinActions> {
               wo.status == WorkOrderStatus.paused)
             FilledButton.icon(
               key: const Key('checkin-continue'),
-              onPressed: () =>
-                  context.go('/work-orders/${wo.localId}/execute'),
+              onPressed: () => context.go('/work-orders/${wo.localId}/execute'),
               icon: const Icon(Icons.play_arrow_outlined),
               label: const Text('Continuar atendimento'),
             ),
@@ -762,9 +763,8 @@ class _CheckinActionsState extends ConsumerState<_CheckinActions> {
         if (!isFinal && widget.canApproval) ...[
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            onPressed: () => context.go(
-              '/work-orders/${wo.localId}/approval-request',
-            ),
+            onPressed: () =>
+                context.go('/work-orders/${wo.localId}/approval-request'),
             icon: const Icon(Icons.approval_outlined),
             label: const Text('Solicitar aprovacao'),
           ),
@@ -781,8 +781,7 @@ class _CheckinActionsState extends ConsumerState<_CheckinActions> {
         // --- Map ---
         OutlinedButton.icon(
           key: const Key('work-order-map-action'),
-          onPressed: () =>
-              context.push('/field-map?workOrderId=${wo.localId}'),
+          onPressed: () => context.push('/field-map?workOrderId=${wo.localId}'),
           icon: const Icon(Icons.map_outlined),
           label: const Text('Mapa'),
         ),
@@ -815,20 +814,18 @@ class _PlateDialogState extends State<_PlateDialog> {
     super.dispose();
   }
 
-  String get _expected =>
-      widget.wo.code.length >= 2
-          ? widget.wo.code.substring(widget.wo.code.length - 2).toUpperCase()
-          : widget.wo.code.toUpperCase();
+  String get _expected => widget.wo.code.length >= 2
+      ? widget.wo.code.substring(widget.wo.code.length - 2).toUpperCase()
+      : widget.wo.code.toUpperCase();
 
-  String get _prefix =>
-      widget.wo.code.length > 2
-          ? widget.wo.code.substring(0, widget.wo.code.length - 2)
-          : '';
+  String get _prefix => widget.wo.code.length > 2
+      ? widget.wo.code.substring(0, widget.wo.code.length - 2)
+      : '';
 
-  bool get _isGuincho =>
-      widget.wo.serviceType == WorkOrderServiceType.tow;
+  bool get _isGuincho => widget.wo.serviceType == WorkOrderServiceType.tow;
 
-  String get _title => _isGuincho ? 'Confirmar veiculo' : 'Confirmar equipamento';
+  String get _title =>
+      _isGuincho ? 'Confirmar veiculo' : 'Confirmar equipamento';
   String get _subtitle => _isGuincho
       ? 'Informe os 2 ultimos digitos da placa'
       : 'Informe os 2 ultimos digitos do nr de serie';
@@ -875,10 +872,7 @@ class _PlateDialogState extends State<_PlateDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _title,
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
+                    Text(_title, style: Theme.of(context).textTheme.titleSmall),
                     Text(
                       _subtitle,
                       style: Theme.of(context).textTheme.bodySmall,
@@ -902,9 +896,7 @@ class _PlateDialogState extends State<_PlateDialog> {
             child: Row(
               children: [
                 Icon(
-                  widget.gpsOk
-                      ? Icons.gps_fixed
-                      : Icons.gps_off_outlined,
+                  widget.gpsOk ? Icons.gps_fixed : Icons.gps_off_outlined,
                   size: 14,
                   color: widget.gpsOk ? Colors.green.shade700 : cs.error,
                 ),
@@ -971,9 +963,9 @@ class _PlateDialogState extends State<_PlateDialog> {
                       ),
                     ),
                   ),
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontFamily: 'monospace',
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontFamily: 'monospace'),
                 ),
               ),
             ],
@@ -989,9 +981,9 @@ class _PlateDialogState extends State<_PlateDialog> {
                     _isGuincho
                         ? 'Digitos nao conferem com a placa do veiculo'
                         : 'Digitos nao conferem com o nr de serie',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: cs.error,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: cs.error),
                   ),
                 ),
               ],
@@ -1219,7 +1211,7 @@ class _BlockSheetState extends State<_BlockSheet> {
                             setState(() => _submitting = true);
                             try {
                               await widget.onSubmit(_reason!, _note.trim());
-                              if (mounted) Navigator.of(context).pop();
+                              if (context.mounted) Navigator.of(context).pop();
                             } finally {
                               if (mounted) setState(() => _submitting = false);
                             }

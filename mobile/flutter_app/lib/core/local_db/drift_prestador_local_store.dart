@@ -11,9 +11,7 @@ class DriftPrestadorLocalStore implements PrestadorLocalStore {
   final AppDatabase _db;
 
   @override
-  Future<List<WorkOrderMaterial>> loadMaterials(
-    String workOrderLocalId,
-  ) async {
+  Future<List<WorkOrderMaterial>> loadMaterials(String workOrderLocalId) async {
     final rows = await _db
         .customSelect(
           'SELECT * FROM work_order_materials '

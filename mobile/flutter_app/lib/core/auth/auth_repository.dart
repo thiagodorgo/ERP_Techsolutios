@@ -230,10 +230,11 @@ class DioAuthRepository implements AuthRepository {
 
     return AuthSession(
       tokens: AuthTokens(
-        accessToken: (tokenJson['accessToken'] ?? tokenJson['access_token'])
-            as String,
-        refreshToken: (tokenJson['refreshToken'] ?? tokenJson['refresh_token'])
-            as String?,
+        accessToken:
+            (tokenJson['accessToken'] ?? tokenJson['access_token']) as String,
+        refreshToken:
+            (tokenJson['refreshToken'] ?? tokenJson['refresh_token'])
+                as String?,
         expiresAt: expiresAt,
       ),
       user: AuthUser(

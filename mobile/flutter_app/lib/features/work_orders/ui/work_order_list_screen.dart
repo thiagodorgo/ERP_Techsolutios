@@ -340,7 +340,7 @@ class _WorkOrderCard extends StatelessWidget {
                   children: [
                     if (workOrder.serviceType != null)
                       _TypeBadge(label: workOrder.serviceType!.label),
-                    if (syncIcon != null) syncIcon,
+                    ?syncIcon,
                   ],
                 ),
               ),

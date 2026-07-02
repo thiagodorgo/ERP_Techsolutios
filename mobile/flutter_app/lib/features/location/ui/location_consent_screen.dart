@@ -117,7 +117,9 @@ class _LocationConsentScreenState extends ConsumerState<LocationConsentScreen> {
                       loading: () => const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+                        child: CircularProgressIndicator.adaptive(
+                          strokeWidth: 2,
+                        ),
                       ),
                       error: (_, _) => const OperationalStatusChip(
                         label: 'Indisponivel',

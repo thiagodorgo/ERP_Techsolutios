@@ -73,8 +73,9 @@ Widget _execApp(WorkOrder wo) {
         routes: [
           GoRoute(
             path: '/work-orders/:id/execute',
-            builder: (context, state) =>
-                WorkOrderExecuteScreen(workOrderId: state.pathParameters['id']!),
+            builder: (context, state) => WorkOrderExecuteScreen(
+              workOrderId: state.pathParameters['id']!,
+            ),
           ),
           GoRoute(
             path: '/work-orders/:id',

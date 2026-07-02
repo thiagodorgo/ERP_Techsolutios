@@ -73,7 +73,10 @@ class _PrestadorServiceScreenState
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('Diagnostico tecnico', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          'Diagnostico tecnico',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 8),
         TextField(
           key: const Key('diagnosis-text'),

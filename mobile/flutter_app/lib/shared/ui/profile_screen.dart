@@ -312,7 +312,8 @@ class _ThemeSwitcherCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef watchRef) {
-    final appTheme = watchRef.watch(themeModeProvider).asData?.value ?? AppThemeMode.system;
+    final appTheme =
+        watchRef.watch(themeModeProvider).asData?.value ?? AppThemeMode.system;
 
     return Card(
       child: Padding(
@@ -332,9 +333,8 @@ class _ThemeSwitcherCard extends ConsumerWidget {
                 return ChoiceChip(
                   label: Text(mode.label),
                   selected: appTheme == mode,
-                  onSelected: (_) => watchRef
-                      .read(themeModeProvider.notifier)
-                      .setMode(mode),
+                  onSelected: (_) =>
+                      watchRef.read(themeModeProvider.notifier).setMode(mode),
                 );
               }).toList(),
             ),

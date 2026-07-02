@@ -104,7 +104,10 @@ void main() {
   group('B-120 EvidenceSyncState', () {
     test('4. fromCode mapeia os 8 estados', () {
       expect(EvidenceSyncState.fromCode('stored'), EvidenceSyncState.stored);
-      expect(EvidenceSyncState.fromCode('rejected'), EvidenceSyncState.rejected);
+      expect(
+        EvidenceSyncState.fromCode('rejected'),
+        EvidenceSyncState.rejected,
+      );
       expect(
         EvidenceSyncState.fromCode('scan_failed'),
         EvidenceSyncState.scanFailed,

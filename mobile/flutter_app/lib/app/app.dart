@@ -21,7 +21,9 @@ class ErpMobileApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'ERP Techsolutions',
       // highContrast replaces the light theme slot; ThemeMode.light selects it.
-      theme: isHighContrast ? ErpMobileTheme.highContrast() : ErpMobileTheme.light(),
+      theme: isHighContrast
+          ? ErpMobileTheme.highContrast()
+          : ErpMobileTheme.light(),
       darkTheme: ErpMobileTheme.dark(),
       themeMode: appTheme.flutterMode,
       routerConfig: router,

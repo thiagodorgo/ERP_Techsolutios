@@ -209,36 +209,35 @@ void main() {
       expect(find.byKey(const Key('signature-clear')), findsOneWidget);
     });
 
-    testWidgets(
-      '10. desenhar e confirmar registra a assinatura no campo',
-      (t) async {
-        await t.pumpWidget(_wrapRun(_store()));
-        await t.pumpAndSettle();
+    testWidgets('10. desenhar e confirmar registra a assinatura no campo', (
+      t,
+    ) async {
+      await t.pumpWidget(_wrapRun(_store()));
+      await t.pumpAndSettle();
 
-        await t.tap(find.byKey(const Key('signature-open')));
-        await t.pumpAndSettle();
+      await t.tap(find.byKey(const Key('signature-open')));
+      await t.pumpAndSettle();
 
-        // Confirmar comeca desabilitado (sem tracos)
-        final confirmBefore = t.widget<FilledButton>(
-          find.byKey(const Key('signature-confirm')),
-        );
-        expect(confirmBefore.onPressed, isNull);
+      // Confirmar comeca desabilitado (sem tracos)
+      final confirmBefore = t.widget<FilledButton>(
+        find.byKey(const Key('signature-confirm')),
+      );
+      expect(confirmBefore.onPressed, isNull);
 
-        // Desenha um traco no pad do modal
-        await t.drag(find.byType(SignaturePad), const Offset(60, 40));
-        await t.pumpAndSettle();
+      // Desenha um traco no pad do modal
+      await t.drag(find.byType(SignaturePad), const Offset(60, 40));
+      await t.pumpAndSettle();
 
-        final confirmAfter = t.widget<FilledButton>(
-          find.byKey(const Key('signature-confirm')),
-        );
-        expect(confirmAfter.onPressed, isNotNull);
+      final confirmAfter = t.widget<FilledButton>(
+        find.byKey(const Key('signature-confirm')),
+      );
+      expect(confirmAfter.onPressed, isNotNull);
 
-        await t.tap(find.byKey(const Key('signature-confirm')));
-        await t.pumpAndSettle();
+      await t.tap(find.byKey(const Key('signature-confirm')));
+      await t.pumpAndSettle();
 
-        expect(find.text('Assinatura registrada'), findsOneWidget);
-        expect(find.text('Refazer assinatura'), findsOneWidget);
-      },
-    );
+      expect(find.text('Assinatura registrada'), findsOneWidget);
+      expect(find.text('Refazer assinatura'), findsOneWidget);
+    });
   });
 }

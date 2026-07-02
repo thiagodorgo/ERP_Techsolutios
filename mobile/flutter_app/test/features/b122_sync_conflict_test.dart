@@ -30,9 +30,7 @@ SyncAction _conflict(String id, {String type = 'work_order.status_update'}) =>
 Widget _wrap(InMemorySyncActionStore store) {
   final router = GoRouter(
     initialLocation: '/sync',
-    routes: [
-      GoRoute(path: '/sync', builder: (_, _) => const SyncScreen()),
-    ],
+    routes: [GoRoute(path: '/sync', builder: (_, _) => const SyncScreen())],
   );
   return ProviderScope(
     overrides: [

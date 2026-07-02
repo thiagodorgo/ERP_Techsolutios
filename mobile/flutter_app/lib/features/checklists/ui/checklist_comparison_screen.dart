@@ -114,8 +114,7 @@ class _ChecklistComparisonScreenState
       return const EmptyState(
         icon: Icons.compare_arrows_outlined,
         title: 'Comparacao indisponivel',
-        message:
-            'E necessario ter coleta e entrega concluidas para comparar.',
+        message: 'E necessario ter coleta e entrega concluidas para comparar.',
       );
     }
     if (data.divergences.isEmpty) {
@@ -155,10 +154,7 @@ class _ChecklistComparisonScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    d.label,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
+                  Text(d.label, style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 8),
                   Row(
                     children: [

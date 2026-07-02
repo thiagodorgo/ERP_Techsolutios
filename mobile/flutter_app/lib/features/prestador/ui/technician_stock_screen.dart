@@ -58,7 +58,9 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
       if (mounted) {
         context.pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$_selCount item(ns) adicionado(s) ao servico.')),
+          SnackBar(
+            content: Text('$_selCount item(ns) adicionado(s) ao servico.'),
+          ),
         );
       }
     } finally {

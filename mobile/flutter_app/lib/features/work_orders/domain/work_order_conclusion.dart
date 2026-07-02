@@ -39,8 +39,7 @@ enum EvidenceSyncState {
     EvidenceSyncState.rejected ||
     EvidenceSyncState.scanFailed ||
     EvidenceSyncState.networkError => 'danger',
-    EvidenceSyncState.timeout ||
-    EvidenceSyncState.pendingReview => 'warning',
+    EvidenceSyncState.timeout || EvidenceSyncState.pendingReview => 'warning',
     EvidenceSyncState.pendingLocal => 'info',
   };
 

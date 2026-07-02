@@ -878,9 +878,9 @@ class _SignatureField extends StatelessWidget {
         if (deliveryMode) ...[
           Text(
             'Assinatura de quem recebeu',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
         ],

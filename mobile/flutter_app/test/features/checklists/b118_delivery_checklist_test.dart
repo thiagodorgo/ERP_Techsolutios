@@ -106,7 +106,8 @@ MobileChecklistRun _run({
 
 Widget _wrapDeliveryRun(InMemoryChecklistLocalStore store) {
   final router = GoRouter(
-    initialLocation: '/checklists/cl-b118/run?workOrderId=wo-b118&kind=delivery',
+    initialLocation:
+        '/checklists/cl-b118/run?workOrderId=wo-b118&kind=delivery',
     routes: [
       GoRoute(
         path: '/checklists/:checklistId/run',
@@ -137,7 +138,10 @@ void main() {
       final db = AppDatabase.openInMemory();
       addTearDown(db.close);
 
-      final run = _run(localId: 'clrun-e_1', kind: MobileChecklistRunKind.delivery);
+      final run = _run(
+        localId: 'clrun-e_1',
+        kind: MobileChecklistRunKind.delivery,
+      );
       await DriftChecklistLocalStore(db).saveRun(run);
       final loaded = await DriftChecklistLocalStore(db).loadRun('clrun-e_1');
 

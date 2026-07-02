@@ -31,7 +31,11 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.engineering_outlined, size: 80, color: Colors.white),
+                const Icon(
+                  Icons.engineering_outlined,
+                  size: 80,
+                  color: Colors.white,
+                ),
                 const SizedBox(height: 24),
                 Text(
                   'ERP Techsolutions',
@@ -44,9 +48,9 @@ class _SplashScreenState extends State<SplashScreen> {
                 const SizedBox(height: 6),
                 Text(
                   'Gestao de campo simplificada',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white70,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
                 ),
                 const SizedBox(height: 48),
                 const SizedBox(

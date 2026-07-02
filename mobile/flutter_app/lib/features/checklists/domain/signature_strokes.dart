@@ -15,8 +15,7 @@ class SignatureStrokes {
         .map(
           (stroke) => stroke
               .map(
-                (p) =>
-                    '${p.dx.toStringAsFixed(1)},${p.dy.toStringAsFixed(1)}',
+                (p) => '${p.dx.toStringAsFixed(1)},${p.dy.toStringAsFixed(1)}',
               )
               .join(' '),
         )
@@ -29,17 +28,13 @@ class SignatureStrokes {
         .split(';')
         .where((stroke) => stroke.trim().isNotEmpty)
         .map(
-          (stroke) => stroke
-              .split(' ')
-              .where((p) => p.contains(','))
-              .map((p) {
-                final parts = p.split(',');
-                return Offset(
-                  double.tryParse(parts[0]) ?? 0,
-                  double.tryParse(parts[1]) ?? 0,
-                );
-              })
-              .toList(),
+          (stroke) => stroke.split(' ').where((p) => p.contains(',')).map((p) {
+            final parts = p.split(',');
+            return Offset(
+              double.tryParse(parts[0]) ?? 0,
+              double.tryParse(parts[1]) ?? 0,
+            );
+          }).toList(),
         )
         .where((stroke) => stroke.isNotEmpty)
         .toList();

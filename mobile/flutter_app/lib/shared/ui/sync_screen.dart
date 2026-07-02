@@ -193,9 +193,9 @@ class _ConflictCard extends StatelessWidget {
             Text(
               '${_actionLabel(action.type)} — o gestor alterou este item. '
               'Escolha qual versao deve prevalecer.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: scheme.onErrorContainer,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: scheme.onErrorContainer),
             ),
             const SizedBox(height: 12),
             Row(

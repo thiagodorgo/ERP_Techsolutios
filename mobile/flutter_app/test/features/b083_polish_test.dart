@@ -302,9 +302,7 @@ void main() {
       expect(find.text('Concluida'), findsWidgets);
     });
 
-    testWidgets('9. botoes Checklist / Mapa presentes', (
-      tester,
-    ) async {
+    testWidgets('9. botoes Checklist / Mapa presentes', (tester) async {
       await tester.pumpWidget(
         _wrapWo(
           const WorkOrderDetailScreen(workOrderId: 'det2'),

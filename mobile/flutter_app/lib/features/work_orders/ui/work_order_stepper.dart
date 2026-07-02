@@ -48,11 +48,7 @@ class WorkOrderStepper extends StatelessWidget {
 }
 
 class _StepCell extends StatelessWidget {
-  const _StepCell({
-    required this.step,
-    required this.scheme,
-    this.onTap,
-  });
+  const _StepCell({required this.step, required this.scheme, this.onTap});
 
   final WorkOrderStepInfo step;
   final ColorScheme scheme;
@@ -91,7 +87,10 @@ class _StepCell extends StatelessWidget {
               width: 26,
               height: 26,
               alignment: Alignment.center,
-              decoration: BoxDecoration(color: circleBg, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: circleBg,
+                shape: BoxShape.circle,
+              ),
               child: step.isDone
                   ? Icon(Icons.check, size: 15, color: circleFg)
                   : Text(

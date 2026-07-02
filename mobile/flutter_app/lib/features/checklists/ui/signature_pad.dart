@@ -9,9 +9,9 @@ class SignaturePadController extends ChangeNotifier {
   SignaturePadController({String? initial})
     : _strokes = initial == null
           ? <List<Offset>>[]
-          : SignatureStrokes.decode(initial)
-                .map((s) => List<Offset>.from(s))
-                .toList();
+          : SignatureStrokes.decode(
+              initial,
+            ).map((s) => List<Offset>.from(s)).toList();
 
   final List<List<Offset>> _strokes;
 
