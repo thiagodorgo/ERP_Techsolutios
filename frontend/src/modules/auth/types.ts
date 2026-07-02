@@ -3,6 +3,7 @@ export type UserRole =
   | "Administrador"
   | "Gestor Operacional"
   | "Operador Logistico"
+  | "Operação de Campo"
   | "Supervisor"
   | "Financeiro"
   | "Auditor";

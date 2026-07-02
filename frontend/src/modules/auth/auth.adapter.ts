@@ -183,7 +183,7 @@ function readLoginErrorMessage(status: number): string {
   return "Nao foi possivel autenticar agora.";
 }
 
-function resolveFrontendRoles(backendRoles: readonly string[]): UserRole[] {
+export function resolveFrontendRoles(backendRoles: readonly string[]): UserRole[] {
   const roles = backendRoles.map(mapBackendRole).filter((role): role is UserRole => Boolean(role));
 
   return [...new Set(roles)];
@@ -199,11 +199,12 @@ function mapBackendRole(role: string): UserRole | null {
   if (normalized === "finance") return "Financeiro";
   if (normalized === "auditor" || normalized === "viewer") return "Auditor";
   if (normalized === "support") return "Supervisor";
+  if (normalized === "field_dispatcher") return "Operação de Campo";
 
   return null;
 }
 
-function resolveFrontendPermissions(backendRoles: readonly string[]): string[] {
+export function resolveFrontendPermissions(backendRoles: readonly string[]): string[] {
   const backendPermissions = backendRoles.flatMap((role) => rolePermissions[role.trim().toLowerCase()] ?? []);
 
   return [...new Set(["dashboard:view", ...backendPermissions.flatMap(mapBackendPermission)])];
@@ -294,6 +295,24 @@ const rolePermissions: Record<string, string[]> = {
   field_technician: ["os.read", "inventory.read", "notifications:read", "notifications:update"],
   auditor: ["users.read", "audit.read", "os.read", "inventory.read", "finance.read", "tenant_checklists:read", "checklist_runs:read", "notifications:read"],
   support: ["users.read", "audit.read", "os.read", "tenant_checklists:read", "checklist_runs:read", "notifications:read"],
+  field_dispatcher: [
+    "os.read",
+    "work_orders:read",
+    "work_orders:create",
+    "work_orders:assign",
+    "work_orders:status",
+    "field_dispatch:read",
+    "field_dispatch:create",
+    "field_dispatch:update",
+    "field_dispatch:cancel",
+    "field_dispatch:reassign",
+    "field_operator:read",
+    "field_location:read",
+    "field_location:history",
+    "notifications:read",
+    "notifications:update",
+    "logistics:dispatch",
+  ],
 };
 
 const frontendPermissionAliases: Record<string, string[]> = {

@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 
 import { BranchBadge, RoleBadge, SecurityNotice, TenantBadge } from "../components/erp";
 import { Button, Card, Chip, EmptyState, Skeleton } from "../components/ui";
-import { listAvailableContexts } from "../modules/context/repository";
+import { listAvailableContexts, switchTenantContext } from "../modules/context/repository";
 import type { TenantContext } from "../modules/context/types";
 import { useAuth } from "../providers/AuthProvider";
 import { useTenantContext } from "../providers/TenantProvider";
@@ -14,6 +14,8 @@ export function ContextSelectionPage() {
   const { setActiveContext } = useTenantContext();
   const [contexts, setContexts] = useState<TenantContext[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activating, setActivating] = useState<string | null>(null);
+  const [activateError, setActivateError] = useState<string | null>(null);
 
   useEffect(() => {
     listAvailableContexts().then((items) => {
@@ -25,6 +27,23 @@ export function ContextSelectionPage() {
   if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
+  async function handleActivate(context: TenantContext) {
+    setActivateError(null);
+    setActivating(context.tenantId);
+
+    try {
+      if (context.tenantId !== session?.tenant?.id) {
+        await switchTenantContext(context.tenantId);
+      }
+
+      setActiveContext(context);
+      navigate("/dashboard");
+    } catch (err) {
+      setActivateError(err instanceof Error ? err.message : "Não foi possível ativar o contexto.");
+      setActivating(null);
+    }
+  }
+
   return (
     <main className="context-page">
       <section className="page-heading">
@@ -35,6 +54,7 @@ export function ContextSelectionPage() {
       <SecurityNotice />
       {loading ? <Skeleton lines={4} /> : null}
       {!loading && contexts.length === 0 ? <EmptyState title="Nenhum contexto liberado" detail="Solicite vinculo de tenant, filial e papel ao administrador." /> : null}
+      {activateError ? <p className="context-page__error">{activateError}</p> : null}
       <div className="context-grid">
         {contexts.map((context) => (
           <Card key={`${context.tenantId}-${context.branchId}-${context.role}`}>
@@ -51,13 +71,10 @@ export function ContextSelectionPage() {
               <p>Permissoes: {context.permissions.join(", ")}</p>
               <Button
                 type="button"
-                disabled={context.tenantStatus === "blocked"}
-                onClick={() => {
-                  setActiveContext(context);
-                  navigate("/dashboard");
-                }}
+                disabled={context.tenantStatus === "blocked" || activating !== null}
+                onClick={() => void handleActivate(context)}
               >
-                Ativar contexto
+                {activating === context.tenantId ? "Ativando..." : "Ativar contexto"}
               </Button>
             </article>
           </Card>
