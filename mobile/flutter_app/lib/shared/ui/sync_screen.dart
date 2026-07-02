@@ -3,17 +3,36 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/bootstrap/bootstrap_repository.dart';
 import '../../core/network/connectivity_repository.dart';
 import '../../core/sync/auto_sync_coordinator.dart';
+import '../../core/sync/sync_conflict_resolver.dart';
 import '../../core/sync/sync_models.dart';
 import '../../core/sync/sync_providers.dart';
 import '../../core/sync/sync_summary.dart';
 import 'erp_components.dart';
 import 'erp_scaffold.dart';
 
-class SyncScreen extends ConsumerWidget {
+class SyncScreen extends ConsumerStatefulWidget {
   const SyncScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SyncScreen> createState() => _SyncScreenState();
+}
+
+class _SyncScreenState extends ConsumerState<SyncScreen> {
+  int _reloadKey = 0;
+
+  Future<void> _resolveConflict(
+    SyncAction action,
+    ConflictChoice choice,
+  ) async {
+    final queue = ref.read(syncQueueRepositoryProvider);
+    await queue.update(
+      resolveConflictAction(action, choice, resolvedAt: DateTime.now().toUtc()),
+    );
+    if (mounted) setState(() => _reloadKey++);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final networkStatus = ref.watch(networkStatusProvider);
     final autoSync = ref.watch(autoSyncCoordinatorProvider);
     final session = ref
@@ -24,6 +43,7 @@ class SyncScreen extends ConsumerWidget {
     return ErpScaffold(
       title: 'Sincronizacao',
       body: FutureBuilder<List<SyncAction>>(
+        key: ValueKey(_reloadKey),
         future: session == null
             ? Future.value(const <SyncAction>[])
             : queue.actionsForTenant(session.activeTenant.tenantId),
@@ -31,6 +51,9 @@ class SyncScreen extends ConsumerWidget {
           final actions = snapshot.data ?? const <SyncAction>[];
           final summary = SyncQueueSummary.fromActions(actions);
           final grouped = _groupByDomain(actions);
+          final conflicts = actions
+              .where((a) => a.status == SyncStatus.conflict)
+              .toList();
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -39,6 +62,7 @@ class SyncScreen extends ConsumerWidget {
                     .read(autoSyncCoordinatorProvider.notifier)
                     .triggerManual();
               }
+              if (mounted) setState(() => _reloadKey++);
             },
             child: ListView(
               padding: const EdgeInsets.all(16),
@@ -54,6 +78,19 @@ class SyncScreen extends ConsumerWidget {
                 // ── Summary KPI row ───────────────────────────────────────────
                 _SummaryRow(summary: summary),
                 const SizedBox(height: 12),
+
+                // ── Conflitos (resolucao manual) ──────────────────────────────
+                if (conflicts.isNotEmpty) ...[
+                  for (final c in conflicts)
+                    _ConflictCard(
+                      action: c,
+                      onKeepMine: () =>
+                          _resolveConflict(c, ConflictChoice.keepMine),
+                      onUseServer: () =>
+                          _resolveConflict(c, ConflictChoice.useServer),
+                    ),
+                  const SizedBox(height: 12),
+                ],
 
                 // ── Auto-sync state ───────────────────────────────────────────
                 _AutoSyncCard(autoSync: autoSync),
@@ -111,6 +148,79 @@ class SyncScreen extends ConsumerWidget {
       map.putIfAbsent(domain, () => []).add(a);
     }
     return map;
+  }
+}
+
+// ── Conflict card (resolucao manual) ─────────────────────────────────────────
+
+class _ConflictCard extends StatelessWidget {
+  const _ConflictCard({
+    required this.action,
+    required this.onKeepMine,
+    required this.onUseServer,
+  });
+
+  final SyncAction action;
+  final VoidCallback onKeepMine;
+  final VoidCallback onUseServer;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      key: Key('conflict-card-${action.clientActionId}'),
+      color: scheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.warning_amber_outlined, color: scheme.error),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Conflito · ${_domainLabel(action.type)}',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: scheme.onErrorContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${_actionLabel(action.type)} — o gestor alterou este item. '
+              'Escolha qual versao deve prevalecer.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: scheme.onErrorContainer,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    key: Key('conflict-keep-mine-${action.clientActionId}'),
+                    onPressed: onKeepMine,
+                    child: const Text('Minha versao'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton(
+                    key: Key('conflict-use-server-${action.clientActionId}'),
+                    onPressed: onUseServer,
+                    child: const Text('Versao do gestor'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
