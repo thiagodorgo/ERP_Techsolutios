@@ -1,691 +1,245 @@
 import {
+  Activity,
   AlertTriangle,
-  Calculator,
-  CloudCog,
+  ArrowUpRight,
+  ChevronDown,
+  Clock,
   DollarSign,
-  FileDown,
-  Gauge,
-  Play,
-  RefreshCcw,
-  Save,
-  Settings2,
+  Download,
+  Filter,
+  ShieldCheck,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { CSSProperties } from "react";
 
-import { KpiCard } from "../../../../components/erp";
-import { Alert, Badge, Button, Card, Checkbox, EmptyState, ErrorState, Input, Select, Skeleton, Table, Tabs } from "../../../../components/ui";
-import { usePermissions } from "../../../../providers/PermissionProvider";
-import {
-  calculateCloudCharges,
-  createCloudChargeRule,
-  getCloudAllocationSummary,
-  getCloudChargeSummary,
-  getCloudCostSummary,
-  getCloudUsageSummary,
-  importCloudCosts,
-  listCloudAllocationRuns,
-  listCloudChargeRules,
-  listCloudChargeRuns,
-  listCloudCostImports,
-  runCloudAllocation,
-  updateCloudChargeRule,
-} from "../cloud-billing.service";
-import type {
-  CloudAllocationRun,
-  CloudAllocationSummary,
-  CloudBillingTenantHealth,
-  CloudChargeRule,
-  CloudChargeRun,
-  CloudChargeRuleMetric,
-  CloudChargeSummary,
-  CloudCostImport,
-  CloudCostSummary,
-  CloudProvider,
-  CloudUsageSummary,
-  UpsertCloudChargeRuleInput,
-} from "../cloud-billing.types";
+// Tela "Cloud Billing" · perfil Plataforma. Alvo pixel a pixel:
+// docs/claude-code-handoff/screen-refs/Cloud Billing.reference.html (padrão-ouro).
 
-type TabId = "overview" | "usage" | "costs" | "allocation" | "charges" | "rules" | "runs";
-
-const tabItems: Array<{ id: TabId; label: string; permissions: string[] }> = [
-  {
-    id: "overview",
-    label: "Visao geral",
-    permissions: [
-      "platform:cloud-usage:read",
-      "platform:cloud-costs:read",
-      "platform:cloud-cost-allocation:read",
-      "platform:cloud-charges:read",
-    ],
-  },
-  { id: "usage", label: "Uso", permissions: ["platform:cloud-usage:read"] },
-  { id: "costs", label: "Custos AWS", permissions: ["platform:cloud-costs:read"] },
-  { id: "allocation", label: "Rateio", permissions: ["platform:cloud-cost-allocation:read"] },
-  { id: "charges", label: "Cobranca", permissions: ["platform:cloud-charges:read"] },
-  { id: "rules", label: "Regras", permissions: ["platform:cloud-charge-rules:read"] },
-  {
-    id: "runs",
-    label: "Runs",
-    permissions: ["platform:cloud-cost-allocation:read", "platform:cloud-charges:read"],
-  },
-];
-
-const emptyRuleForm: UpsertCloudChargeRuleInput = {
-  name: "",
-  provider: "aws",
-  metric: "allocated_cost",
-  markupPercent: 25,
-  active: true,
+type Kpi = { label: string; value: string; note: string; noteColor: string; badge: string; badgeBg: string; badgeColor: string };
+type Bar = { h: number; c: string };
+type Track = { label: string; value: string; color: string; width: string };
+type Insight = { tag: string; color: string; bg: string; icon: typeof ArrowUpRight; text: string };
+type Row = {
+  name: string; sub: string; org: string; use: string; cost: string;
+  variation: string; variationColor: string; budget: string;
+  status: string; statusBg: string; statusColor: string; action: string; actionColor: string;
 };
 
+const KPIS: Kpi[] = [
+  { label: "Custo atual", value: "R$ 48,2k", note: "+12,4% vs maio", noteColor: "#DC2626", badge: "Médio", badgeBg: "#FFFBEB", badgeColor: "#D97706" },
+  { label: "Projeção", value: "R$ 52,1k", note: "confiança 87%", noteColor: "#D97706", badge: "Médio", badgeBg: "#FFFBEB", badgeColor: "#D97706" },
+  { label: "Orçamento", value: "R$ 63k", note: "76% consumido", noteColor: "#059669", badge: "Normal", badgeBg: "#ECFDF5", badgeColor: "#059669" },
+  { label: "Desvio", value: "+R$ 4,2k", note: "acima do esperado", noteColor: "#DC2626", badge: "Atenção", badgeBg: "#FFFBEB", badgeColor: "#D97706" },
+  { label: "Economia realizada", value: "R$ 6,4k", note: "3 ações aplicadas", noteColor: "#059669", badge: "Positivo", badgeBg: "#ECFDF5", badgeColor: "#059669" },
+  { label: "Economia potencial", value: "R$ 8,1k", note: "5 recomendações", noteColor: "#2563EB", badge: "Disponível", badgeBg: "#EFF6FF", badgeColor: "#2563EB" },
+  { label: "Alertas críticos", value: "3", note: "maior: R$ 7,9k egress", noteColor: "#DC2626", badge: "Crítico", badgeBg: "#FEF2F2", badgeColor: "#DC2626" },
+  { label: "Custo / org ativa", value: "R$ 1.004", note: "48 orgs ativas", noteColor: "#475569", badge: "Normal", badgeBg: "#ECFDF5", badgeColor: "#059669" },
+];
+
+const BARS: Bar[] = [
+  { h: 63.3, c: "#BFDBFE" }, { h: 68.3, c: "#BFDBFE" }, { h: 60, c: "#BFDBFE" }, { h: 71.7, c: "#BFDBFE" },
+  { h: 75, c: "#BFDBFE" }, { h: 70, c: "#BFDBFE" }, { h: 80, c: "#BFDBFE" }, { h: 76.7, c: "#BFDBFE" },
+  { h: 83.3, c: "#BFDBFE" }, { h: 78.3, c: "#BFDBFE" }, { h: 86.7, c: "#BFDBFE" }, { h: 85, c: "#BFDBFE" },
+  { h: 80, c: "#BFDBFE" }, { h: 90, c: "#BFDBFE" }, { h: 93.3, c: "#BFDBFE" }, { h: 88.3, c: "#93C5FD" },
+  { h: 96.7, c: "#93C5FD" }, { h: 91.7, c: "#93C5FD" }, { h: 100, c: "#93C5FD" }, { h: 86.7, c: "#1D4ED8" },
+];
+
+const BY_SERVICE: Track[] = [
+  { label: "Compute", value: "R$ 18,4k", color: "#2563EB", width: "38%" },
+  { label: "Database", value: "R$ 12,7k", color: "#7C3AED", width: "26%" },
+  { label: "Storage", value: "R$ 9,1k", color: "#0891B2", width: "19%" },
+  { label: "Egress", value: "R$ 7,9k", color: "#DC2626", width: "16%" },
+  { label: "Outros", value: "R$ 3,3k", color: "#94A3B8", width: "7%" },
+];
+
+const BY_ORG: Track[] = [
+  { label: "Techsolutions SP", value: "R$ 25,0k", color: "#2563EB", width: "52%" },
+  { label: "AgroMax Coop.", value: "R$ 11,6k", color: "#DC2626", width: "24%" },
+  { label: "Logística Delta", value: "R$ 5,8k", color: "#D97706", width: "12%" },
+  { label: "Outros (45)", value: "R$ 5,8k", color: "#94A3B8", width: "12%" },
+];
+
+const INSIGHTS: Insight[] = [
+  { tag: "ANOMALIA", color: "#DC2626", bg: "#FEF2F2", icon: ArrowUpRight, text: "Egress subiu 31% nos últimos 7 dias — AgroMax Cooperativa." },
+  { tag: "ATENÇÃO", color: "#D97706", bg: "#FFFBEB", icon: AlertTriangle, text: "Banco gerenciado 18% acima do orçamento mensal." },
+  { tag: "CONCENTRAÇÃO", color: "#DC2626", bg: "#FEF2F2", icon: ArrowUpRight, text: "AgroMax representa 42% do aumento de custo do mês." },
+  { tag: "GOVERNANÇA", color: "#7C3AED", bg: "#F5F3FF", icon: ShieldCheck, text: "3 recursos identificados sem tag de organização." },
+  { tag: "OTIMIZAÇÃO", color: "#059669", bg: "#ECFDF5", icon: DollarSign, text: "R$ 8,1k de economia potencial com 5 ações disponíveis." },
+  { tag: "RISCO", color: "#DC2626", bg: "#FEF2F2", icon: Clock, text: "Projeção indica estouro de orçamento em 8 dias." },
+];
+
+const ROWS: Row[] = [
+  { name: "Compute (API)", sub: "Compute · Prod", org: "Rateio multi-organização", use: "1.284 h", cost: "R$ 18.400", variation: "+4,2%", variationColor: "#D97706", budget: "R$ 20k", status: "Normal", statusBg: "#ECFDF5", statusColor: "#059669", action: "—", actionColor: "#94A3B8" },
+  { name: "Banco gerenciado", sub: "Database · Prod", org: "Rateio multi-organização", use: "99,98% uptime", cost: "R$ 12.700", variation: "+18,3%", variationColor: "#DC2626", budget: "R$ 10,7k", status: "Acima orçamento", statusBg: "#FEF2F2", statusColor: "#DC2626", action: "Investigar", actionColor: "#2563EB" },
+  { name: "Storage (S3)", sub: "Storage · Prod", org: "Techsolutions SP", use: "2,1 TB", cost: "R$ 9.120", variation: "+1,8%", variationColor: "#059669", budget: "R$ 10k", status: "Normal", statusBg: "#ECFDF5", statusColor: "#059669", action: "—", actionColor: "#94A3B8" },
+  { name: "Egress", sub: "Rede · Prod", org: "AgroMax Cooperativa", use: "840 GB", cost: "R$ 7.980", variation: "+31,4%", variationColor: "#DC2626", budget: "R$ 6k", status: "Anomalia", statusBg: "#FEF2F2", statusColor: "#DC2626", action: "Aprovar excedente", actionColor: "#2563EB" },
+  { name: "Observability", sub: "Monitoramento · Prod", org: "Rateio multi-organização", use: "12,4M spans", cost: "R$ 2.100", variation: "+2,1%", variationColor: "#059669", budget: "R$ 2,5k", status: "Normal", statusBg: "#ECFDF5", statusColor: "#059669", action: "—", actionColor: "#94A3B8" },
+  { name: "Redis Cache", sub: "Cache · Prod", org: "Rateio multi-organização", use: "1,2 GB hit 98,7%", cost: "R$ 1.220", variation: "-0,8%", variationColor: "#059669", budget: "R$ 1,5k", status: "Normal", statusBg: "#ECFDF5", statusColor: "#059669", action: "—", actionColor: "#94A3B8" },
+];
+
+const card: CSSProperties = { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 13, padding: 16 };
+const badge = (bg: string, color: string): CSSProperties => ({ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: bg, color });
+const th: CSSProperties = { fontSize: 10.5, fontWeight: 700, color: "#94A3B8", letterSpacing: ".06em" };
+const mono = "'JetBrains Mono', monospace";
+
 export function PlatformCloudBillingPage() {
-  const { hasAny, can } = usePermissions();
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
-  const [usage, setUsage] = useState<CloudUsageSummary | null>(null);
-  const [costs, setCosts] = useState<CloudCostSummary | null>(null);
-  const [costImports, setCostImports] = useState<CloudCostImport[]>([]);
-  const [allocation, setAllocation] = useState<CloudAllocationSummary | null>(null);
-  const [allocationRuns, setAllocationRuns] = useState<CloudAllocationRun[]>([]);
-  const [charges, setCharges] = useState<CloudChargeSummary | null>(null);
-  const [chargeRuns, setChargeRuns] = useState<CloudChargeRun[]>([]);
-  const [rules, setRules] = useState<CloudChargeRule[]>([]);
-  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
-  const [ruleForm, setRuleForm] = useState<UpsertCloudChargeRuleInput>(emptyRuleForm);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadCloudBilling();
-  }, []);
-
-  const activeTabDefinition = tabItems.find((tab) => tab.id === activeTab) ?? tabItems[0];
-  const canViewActiveTab = hasAny(activeTabDefinition.permissions);
-  const totals = useMemo(
-    () => ({
-      tenants: usage?.tenants.length ?? 0,
-      totalCost: costs?.totalCost ?? 0,
-      margin: charges?.marginPercent ?? 0,
-      unallocated: allocation?.unallocatedCost ?? 0,
-    }),
-    [allocation, charges, costs, usage],
-  );
-  const overviewRows = useMemo(() => buildOverviewRows(usage, costs, allocation, charges), [allocation, charges, costs, usage]);
-
-  async function loadCloudBilling() {
-    setLoading(true);
-    setError(null);
-    try {
-      const [usageSummary, costSummary, imports, allocationSummary, allocationRunList, chargeSummary, chargeRunList, ruleList] =
-        await Promise.all([
-          getCloudUsageSummary(),
-          getCloudCostSummary(),
-          listCloudCostImports(),
-          getCloudAllocationSummary(),
-          listCloudAllocationRuns(),
-          getCloudChargeSummary(),
-          listCloudChargeRuns(),
-          listCloudChargeRules(),
-        ]);
-
-      setUsage(usageSummary);
-      setCosts(costSummary);
-      setCostImports(imports);
-      setAllocation(allocationSummary);
-      setAllocationRuns(allocationRunList);
-      setCharges(chargeSummary);
-      setChargeRuns(chargeRunList);
-      setRules(ruleList);
-    } catch (item) {
-      setError(item instanceof Error ? item.message : "Nao foi possivel carregar Cloud Billing.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleImportCosts() {
-    setActionMessage(null);
-    const imported = await importCloudCosts();
-    setCostImports((current) => [imported, ...current]);
-    setActionMessage("Importacao manual de custos AWS enfileirada.");
-  }
-
-  async function handleRunAllocation() {
-    setActionMessage(null);
-    const run = await runCloudAllocation();
-    setAllocationRuns((current) => [run, ...current]);
-    setActionMessage("Run de rateio iniciado.");
-  }
-
-  async function handleCalculateCharges() {
-    setActionMessage(null);
-    const sourceAllocationRunId = allocationRuns.find((run) => run.status === "completed")?.id ?? allocationRuns[0]?.id;
-    if (!sourceAllocationRunId) {
-      setActionMessage("Execute um run de rateio antes de calcular cobranca.");
-      return;
-    }
-    const run = await calculateCloudCharges(sourceAllocationRunId);
-    setChargeRuns((current) => [run, ...current]);
-    setActionMessage("Calculo de cobranca iniciado.");
-  }
-
-  async function handleSaveRule() {
-    setFormError(null);
-    if (!ruleForm.name.trim()) {
-      setFormError("Informe o nome da regra.");
-      return;
-    }
-    if (!Number.isFinite(ruleForm.markupPercent) || ruleForm.markupPercent < 0) {
-      setFormError("Markup deve ser maior ou igual a zero.");
-      return;
-    }
-
-    const saved = editingRuleId
-      ? await updateCloudChargeRule(editingRuleId, ruleForm)
-      : await createCloudChargeRule(ruleForm);
-
-    setRules((current) => (editingRuleId ? current.map((rule) => (rule.id === saved.id ? saved : rule)) : [saved, ...current]));
-    setRuleForm(emptyRuleForm);
-    setEditingRuleId(null);
-    setActionMessage(editingRuleId ? "Regra atualizada." : "Regra criada.");
-  }
-
-  function editRule(rule: CloudChargeRule) {
-    setEditingRuleId(rule.id);
-    setRuleForm({
-      name: rule.name,
-      provider: rule.provider,
-      metric: rule.metric,
-      markupPercent: rule.markupPercent,
-      active: rule.active,
-      appliesToTenantIds: rule.appliesToTenantIds,
-    });
-    setActiveTab("rules");
-  }
-
   return (
-    <section className="page-stack cloud-billing-page">
-      <header className="page-heading page-heading--row">
+    <div style={{ color: "#0F172A" }}>
+      {/* PAGE HEADER: título + subtítulo + ações à direita */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 10 }}>
         <div>
-          <span>P04 Console da Plataforma</span>
-          <h1>Cloud Billing</h1>
-          <p>Uso, custo, rateio e cobranca cloud em escopo exclusivo da plataforma.</p>
+          <div style={{ fontSize: 20, fontWeight: 800 }}>Cloud Billing</div>
+          <div style={{ fontFamily: mono, fontSize: 12, color: "#94A3B8", marginTop: 2 }}>Junho 2026 · Produção · atualizado há 4 min</div>
         </div>
-        <Button variant="secondary" onClick={loadCloudBilling}>
-          <RefreshCcw size={16} />
-          Atualizar
-        </Button>
-      </header>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 9, fontSize: 12.5, fontWeight: 600, color: "#334155", cursor: "pointer", fontFamily: "inherit" }}>
+            <Clock size={14} style={{ color: "#94A3B8" }} />Junho 2026<ChevronDown size={13} style={{ color: "#94A3B8" }} />
+          </button>
+          <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 9, fontSize: 12.5, fontWeight: 600, color: "#334155", cursor: "pointer", fontFamily: "inherit" }}>
+            Produção<ChevronDown size={13} style={{ color: "#94A3B8" }} />
+          </button>
+          <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", background: "#2563EB", border: "none", borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>Exportar</button>
+        </div>
+      </div>
 
-      {actionMessage ? (
-        <Alert title="Acao registrada" tone="info">
-          {actionMessage}
-        </Alert>
-      ) : null}
+      {/* KPIs 4×2 */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
+        {KPIS.map((k) => (
+          <div key={k.label} style={card}>
+            <div style={{ fontSize: 11.5, color: "#94A3B8", fontWeight: 600, marginBottom: 8 }}>{k.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.4px", marginBottom: 6 }}>{k.value}</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 11.5, color: k.noteColor }}>{k.note}</span>
+              <span style={badge(k.badgeBg, k.badgeColor)}>{k.badge}</span>
+            </div>
+          </div>
+        ))}
+      </div>
 
-      {loading ? <Skeleton lines={8} /> : null}
-      {error ? <ErrorState title="Falha ao carregar Cloud Billing" detail={error} /> : null}
-
-      {!loading && !error ? (
-        <>
-          <section className="kpi-grid">
-            <KpiCard label="Tenants medidos" value={String(totals.tenants)} delta="uso consolidado" tone="info" />
-            <KpiCard label="Custo cloud" value={formatMoney(totals.totalCost)} delta="AWS CUR" tone="default" />
-            <KpiCard label="Margem media" value={`${formatPercent(totals.margin)}`} delta="cobranca" tone={totals.margin < 10 ? "warning" : "success"} />
-            <KpiCard label="Nao rateado" value={formatMoney(totals.unallocated)} delta="exige regra" tone={totals.unallocated > 0 ? "warning" : "success"} />
-          </section>
-
-          <Tabs tabs={tabItems} active={activeTab} onChange={(id) => setActiveTab(id as TabId)} />
-
-          {!canViewActiveTab ? <PermissionDenied permissions={activeTabDefinition.permissions} /> : null}
-          {canViewActiveTab && activeTab === "overview" ? <OverviewTab rows={overviewRows} /> : null}
-          {canViewActiveTab && activeTab === "usage" ? <UsageTab usage={usage} /> : null}
-          {canViewActiveTab && activeTab === "costs" ? (
-            <CostsTab costs={costs} imports={costImports} canImport={can("platform:cloud-costs:import")} onImport={handleImportCosts} />
-          ) : null}
-          {canViewActiveTab && activeTab === "allocation" ? (
-            <AllocationTab allocation={allocation} canRun={can("platform:cloud-cost-allocation:run")} onRun={handleRunAllocation} />
-          ) : null}
-          {canViewActiveTab && activeTab === "charges" ? (
-            <ChargesTab charges={charges} canCalculate={can("platform:cloud-charges:calculate")} onCalculate={handleCalculateCharges} />
-          ) : null}
-          {canViewActiveTab && activeTab === "rules" ? (
-            <RulesTab
-              rules={rules}
-              form={ruleForm}
-              formError={formError}
-              editingRuleId={editingRuleId}
-              canWrite={can("platform:cloud-charge-rules:write")}
-              onEdit={editRule}
-              onSave={handleSaveRule}
-              onFormChange={setRuleForm}
-              onCancel={() => {
-                setEditingRuleId(null);
-                setRuleForm(emptyRuleForm);
-                setFormError(null);
-              }}
-            />
-          ) : null}
-          {canViewActiveTab && activeTab === "runs" ? <RunsTab allocationRuns={allocationRuns} chargeRuns={chargeRuns} /> : null}
-        </>
-      ) : null}
-    </section>
-  );
-}
-
-function OverviewTab({ rows }: { rows: OverviewRow[] }) {
-  if (rows.length === 0) {
-    return <EmptyState title="Nenhum dado consolidado" detail="Execute importacao, rateio e calculo para preencher a visao geral." />;
-  }
-
-  return (
-    <>
-      <Alert title="Boundary de plataforma" tone="info">
-        Margem, custo e regras de cobranca ficam restritos ao Console da Plataforma e nao aparecem nas telas tenant.
-      </Alert>
-      <Card title="Saude financeira por tenant">
-        <Table
-          rows={rows}
-          keyForRow={(row) => row.tenantId}
-          columns={[
-            { key: "tenant", header: "Tenant", render: (row) => <strong>{row.tenantName}</strong> },
-            { key: "usage", header: "Uso", render: (row) => `${formatNumber(row.computeHours)} h / ${formatNumber(row.storageGb)} GB` },
-            { key: "cost", header: "Custo", render: (row) => formatMoney(row.cost) },
-            { key: "allocated", header: "Rateado", render: (row) => formatMoney(row.allocatedCost) },
-            { key: "amount", header: "Cobranca", render: (row) => formatMoney(row.amount) },
-            { key: "margin", header: "Margem", render: (row) => <Badge tone={row.marginPercent < 10 ? "warning" : "success"}>{formatPercent(row.marginPercent)}</Badge> },
-            { key: "health", header: "Estado", render: (row) => <HealthBadge health={row.health} /> },
-          ]}
-        />
-      </Card>
-    </>
-  );
-}
-
-function UsageTab({ usage }: { usage: CloudUsageSummary | null }) {
-  if (!usage) return <EmptyState title="Sem resumo de uso" detail="Nenhum dado de uso foi encontrado para o periodo." />;
-
-  return (
-    <Card title={`Uso consolidado ${usage.period}`}>
-      <Table
-        rows={usage.tenants}
-        keyForRow={(row) => row.tenantId}
-        columns={[
-          { key: "tenant", header: "Tenant", render: (row) => <strong>{row.tenantName}</strong> },
-          { key: "compute", header: "Compute", render: (row) => `${formatNumber(row.computeHours)} h` },
-          { key: "storage", header: "Storage", render: (row) => `${formatNumber(row.storageGb)} GB` },
-          { key: "requests", header: "Requests", render: (row) => formatNumber(row.requests) },
-          { key: "health", header: "Estado", render: (row) => <HealthBadge health={row.health} /> },
-        ]}
-      />
-    </Card>
-  );
-}
-
-function CostsTab({
-  costs,
-  imports,
-  canImport,
-  onImport,
-}: {
-  costs: CloudCostSummary | null;
-  imports: CloudCostImport[];
-  canImport: boolean;
-  onImport: () => Promise<void>;
-}) {
-  return (
-    <>
-      <Card
-        title="Custos AWS"
-        action={
-          <Button size="sm" disabled={!canImport} onClick={onImport}>
-            <FileDown size={14} />
-            Importar CUR
-          </Button>
-        }
-      >
-        {costs ? (
-          <Table
-            rows={costs.tenants}
-            keyForRow={(row) => row.tenantId}
-            columns={[
-              { key: "tenant", header: "Tenant", render: (row) => <strong>{row.tenantName}</strong> },
-              { key: "cost", header: "Custo", render: (row) => formatMoney(row.cost) },
-              { key: "margin", header: "Margem", render: (row) => formatPercent(row.marginPercent) },
-              { key: "health", header: "Estado", render: (row) => <HealthBadge health={row.health} /> },
-            ]}
-          />
-        ) : (
-          <EmptyState title="Sem custos AWS" detail="Nenhum resumo de custo foi encontrado." />
-        )}
-      </Card>
-      <Card title="Importacoes">
-        <Table
-          rows={imports}
-          keyForRow={(row) => row.id}
-          columns={[
-            { key: "file", header: "Arquivo", render: (row) => <strong>{row.fileName}</strong> },
-            { key: "period", header: "Periodo", render: (row) => row.period },
-            { key: "provider", header: "Provider", render: (row) => row.provider.toUpperCase() },
-            { key: "records", header: "Registros", render: (row) => formatNumber(row.records) },
-            { key: "status", header: "Status", render: (row) => <StatusBadge status={row.status} /> },
-            { key: "error", header: "Erro", render: (row) => row.errorMessage ?? "-" },
-          ]}
-        />
-      </Card>
-    </>
-  );
-}
-
-function AllocationTab({
-  allocation,
-  canRun,
-  onRun,
-}: {
-  allocation: CloudAllocationSummary | null;
-  canRun: boolean;
-  onRun: () => Promise<void>;
-}) {
-  return (
-    <Card
-      title="Rateio de custos"
-      action={
-        <Button size="sm" disabled={!canRun} onClick={onRun}>
-          <Play size={14} />
-          Rodar rateio
-        </Button>
-      }
-    >
-      {allocation ? (
-        <Table
-          rows={allocation.tenants}
-          keyForRow={(row) => row.tenantId}
-          columns={[
-            { key: "tenant", header: "Tenant", render: (row) => <strong>{row.tenantName}</strong> },
-            { key: "allocated", header: "Custo rateado", render: (row) => formatMoney(row.allocatedCost) },
-            { key: "rule", header: "Regra", render: (row) => row.ruleKey ?? "Sem regra" },
-            { key: "health", header: "Estado", render: (row) => <HealthBadge health={row.health} /> },
-          ]}
-        />
-      ) : (
-        <EmptyState title="Sem rateio" detail="Nenhum resumo de rateio foi encontrado." />
-      )}
-    </Card>
-  );
-}
-
-function ChargesTab({
-  charges,
-  canCalculate,
-  onCalculate,
-}: {
-  charges: CloudChargeSummary | null;
-  canCalculate: boolean;
-  onCalculate: () => Promise<void>;
-}) {
-  return (
-    <Card
-      title="Cobranca cloud"
-      action={
-        <Button size="sm" disabled={!canCalculate} onClick={onCalculate}>
-          <Calculator size={14} />
-          Calcular cobranca
-        </Button>
-      }
-    >
-      {charges ? (
-        <Table
-          rows={charges.tenants}
-          keyForRow={(row) => row.tenantId}
-          columns={[
-            { key: "tenant", header: "Tenant", render: (row) => <strong>{row.tenantName}</strong> },
-            { key: "amount", header: "Valor", render: (row) => formatMoney(row.amount) },
-            { key: "cost", header: "Custo", render: (row) => formatMoney(row.netCost) },
-            { key: "margin", header: "Margem", render: (row) => <Badge tone={row.marginPercent < 10 ? "warning" : "success"}>{formatPercent(row.marginPercent)}</Badge> },
-            { key: "health", header: "Estado", render: (row) => <HealthBadge health={row.health} /> },
-          ]}
-        />
-      ) : (
-        <EmptyState title="Sem cobranca" detail="Nenhum resumo de cobranca foi encontrado." />
-      )}
-    </Card>
-  );
-}
-
-function RulesTab({
-  rules,
-  form,
-  formError,
-  editingRuleId,
-  canWrite,
-  onEdit,
-  onSave,
-  onFormChange,
-  onCancel,
-}: {
-  rules: CloudChargeRule[];
-  form: UpsertCloudChargeRuleInput;
-  formError: string | null;
-  editingRuleId: string | null;
-  canWrite: boolean;
-  onEdit: (rule: CloudChargeRule) => void;
-  onSave: () => Promise<void>;
-  onFormChange: (form: UpsertCloudChargeRuleInput) => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="cloud-billing-rules">
-      <Card title="Regras de cobranca">
-        {rules.length === 0 ? (
-          <EmptyState title="Nenhuma regra cadastrada" detail="Crie uma regra para habilitar calculos de cobranca." />
-        ) : (
-          <Table
-            rows={rules}
-            keyForRow={(row) => row.id}
-            columns={[
-              { key: "name", header: "Regra", render: (row) => <strong>{row.name}</strong> },
-              { key: "provider", header: "Provider", render: (row) => row.provider.toUpperCase() },
-              { key: "metric", header: "Metrica", render: (row) => row.metric },
-              { key: "markup", header: "Markup", render: (row) => formatPercent(row.markupPercent) },
-              { key: "active", header: "Status", render: (row) => <Badge tone={row.active ? "success" : "default"}>{row.active ? "ativa" : "inativa"}</Badge> },
-              {
-                key: "actions",
-                header: "Acoes",
-                render: (row) => (
-                  <Button size="sm" variant="secondary" disabled={!canWrite} onClick={() => onEdit(row)}>
-                    <Settings2 size={14} />
-                    Editar
-                  </Button>
-                ),
-              },
-            ]}
-          />
-        )}
-      </Card>
-      <Card title={editingRuleId ? "Editar regra" : "Nova regra"}>
-        {formError ? (
-          <Alert title="Validacao" tone="warning">
-            {formError}
-          </Alert>
-        ) : null}
-        <div className="cloud-billing-form">
-          <Input
-            label="Nome"
-            value={form.name}
-            disabled={!canWrite}
-            onChange={(event) => onFormChange({ ...form, name: event.target.value })}
-          />
-          <Select
-            label="Provider"
-            value={form.provider}
-            disabled={!canWrite}
-            onChange={(event) => onFormChange({ ...form, provider: event.target.value as CloudProvider })}
-          >
-            <option value="aws">AWS</option>
-            <option value="azure">Azure</option>
-            <option value="gcp">GCP</option>
-          </Select>
-          <Select
-            label="Metrica"
-            value={form.metric}
-            disabled={!canWrite}
-            onChange={(event) => onFormChange({ ...form, metric: event.target.value as CloudChargeRuleMetric })}
-          >
-            <option value="allocated_cost">Custo rateado</option>
-            <option value="compute_hours">Compute hours</option>
-            <option value="storage_gb">Storage GB</option>
-            <option value="requests">Requests</option>
-          </Select>
-          <Input
-            label="Markup %"
-            type="number"
-            min={0}
-            value={String(form.markupPercent)}
-            disabled={!canWrite}
-            onChange={(event) => onFormChange({ ...form, markupPercent: Number(event.target.value) })}
-          />
-          <Checkbox
-            label="Regra ativa"
-            checked={form.active}
-            disabled={!canWrite}
-            onChange={(event) => onFormChange({ ...form, active: event.target.checked })}
-          />
-          <div className="cloud-billing-form__actions">
-            <Button disabled={!canWrite} onClick={onSave}>
-              <Save size={14} />
-              Salvar regra
-            </Button>
-            {editingRuleId ? (
-              <Button variant="secondary" onClick={onCancel}>
-                Cancelar
-              </Button>
-            ) : null}
+      {/* CHARTS ROW */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr 1fr", gap: 14, marginBottom: 16 }}>
+        <div style={{ ...card, padding: 18 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800 }}>Custo diário + projeção</div>
+              <div style={{ fontSize: 11.5, color: "#94A3B8" }}>Junho 2026 · R$ mil</div>
+            </div>
+            <div style={{ display: "flex", gap: 10, fontSize: 11 }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#475569" }}><span style={{ width: 8, height: 8, borderRadius: 2, background: "#2563EB" }} />Real</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#475569" }}><span style={{ width: 8, height: 8, borderRadius: 2, background: "#BFDBFE" }} />Projeção</span>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 110 }}>
+            {BARS.map((b, i) => (
+              <div key={i} style={{ flex: 1, height: `${b.h}%`, borderRadius: "3px 3px 0 0", background: b.c }} />
+            ))}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
+            {["1/06", "6/06", "11/06", "16/06"].map((d) => <span key={d} style={{ fontSize: 10, color: "#94A3B8" }}>{d}</span>)}
+            <span style={{ fontSize: 10, fontWeight: 700, color: "#2563EB" }}>Hoje</span>
           </div>
         </div>
-      </Card>
+
+        <div style={{ ...card, padding: 18 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 4 }}>Por serviço</div>
+          <div style={{ fontSize: 11.5, color: "#94A3B8", marginBottom: 14 }}>Distribuição do custo</div>
+          {BY_SERVICE.map((t, i) => (
+            <div key={t.label} style={{ marginBottom: i === BY_SERVICE.length - 1 ? 0 : 11 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#334155" }}>{t.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 700 }}>{t.value}</span>
+              </div>
+              <div style={{ height: 7, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}>
+                <div style={{ height: "100%", borderRadius: 99, background: t.color, width: t.width }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ ...card, padding: 18 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 4 }}>Por organização</div>
+          <div style={{ fontSize: 11.5, color: "#94A3B8", marginBottom: 14 }}>Consumo por organização</div>
+          {BY_ORG.map((t, i) => (
+            <div key={t.label} style={{ marginBottom: i === BY_ORG.length - 1 ? 0 : 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#334155" }}>{t.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 700 }}>{t.value}</span>
+              </div>
+              <div style={{ height: 7, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}>
+                <div style={{ height: "100%", borderRadius: 99, background: t.color, width: t.width }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* IA + TABELA */}
+      <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 14 }}>
+        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 13, overflow: "hidden" }}>
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", gap: 8 }}>
+            <Activity size={16} style={{ color: "#2563EB" }} />
+            <span style={{ fontSize: 14, fontWeight: 800 }}>O que mudou?</span>
+            <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, background: "#EFF6FF", color: "#2563EB", padding: "2px 8px", borderRadius: 99 }}>IA</span>
+          </div>
+          {INSIGHTS.map((it) => (
+            <div key={it.tag} style={{ padding: "12px 16px", borderBottom: "1px solid #F8FAFC", display: "flex", alignItems: "flex-start", gap: 10 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: it.bg, display: "flex", alignItems: "center", justifyContent: "center", color: it.color, flexShrink: 0 }}>
+                <it.icon size={14} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: it.color, letterSpacing: ".06em", marginBottom: 2 }}>{it.tag}</div>
+                <div style={{ fontSize: 12.5, color: "#334155", lineHeight: 1.45 }}>{it.text}</div>
+              </div>
+            </div>
+          ))}
+          <div style={{ padding: "12px 16px" }}>
+            <button style={{ width: "100%", padding: 9, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: "#2563EB", cursor: "pointer", fontFamily: "inherit" }}>Ver todas as recomendações</button>
+          </div>
+        </div>
+
+        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 13, overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid #F1F5F9" }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800 }}>Recursos · detalhe</div>
+              <div style={{ fontSize: 11.5, color: "#94A3B8" }}>Consumo por recurso · rateio e orçamento</div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button style={{ padding: "7px 11px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 12, fontWeight: 700, color: "#475569", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}><Filter size={13} />Filtrar</button>
+              <button style={{ padding: "7px 11px", background: "#2563EB", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}><Download size={13} />Exportar</button>
+            </div>
+          </div>
+          <div style={{ display: "flex", padding: "9px 18px", background: "#F8FAFC", borderBottom: "1px solid #F1F5F9", gap: 10 }}>
+            <span style={{ ...th, flex: 1.4 }}>RECURSO</span>
+            <span style={{ ...th, flex: 0.9 }}>ORGANIZAÇÃO</span>
+            <span style={{ ...th, flex: 0.7 }}>USO</span>
+            <span style={{ ...th, flex: 0.7 }}>CUSTO</span>
+            <span style={{ ...th, flex: 0.6 }}>VARIAÇÃO</span>
+            <span style={{ ...th, flex: 0.6 }}>ORÇAMENTO</span>
+            <span style={{ ...th, flex: 0.9, textAlign: "right" }}>STATUS</span>
+            <span style={{ ...th, flex: 0.9, textAlign: "right" }}>AÇÃO</span>
+          </div>
+          {ROWS.map((r, i) => (
+            <div key={r.name} style={{ display: "flex", alignItems: "center", padding: "11px 18px", borderBottom: i === ROWS.length - 1 ? "none" : "1px solid #F8FAFC", gap: 10 }}>
+              <div style={{ flex: 1.4 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{r.name}</div>
+                <div style={{ fontSize: 11, color: "#94A3B8" }}>{r.sub}</div>
+              </div>
+              <span style={{ flex: 0.9, fontSize: 12.5, color: "#475569" }}>{r.org}</span>
+              <span style={{ flex: 0.7, fontSize: 12, color: "#475569", fontFamily: mono }}>{r.use}</span>
+              <span style={{ flex: 0.7, fontSize: 13, fontWeight: 700 }}>{r.cost}</span>
+              <span style={{ flex: 0.6, fontSize: 12.5, fontWeight: 700, color: r.variationColor }}>{r.variation}</span>
+              <span style={{ flex: 0.6, fontSize: 12.5, color: "#64748B" }}>{r.budget}</span>
+              <div style={{ flex: 0.9, display: "flex", justifyContent: "flex-end" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 99, background: r.statusBg, color: r.statusColor, whiteSpace: "nowrap" }}>{r.status}</span>
+              </div>
+              <div style={{ flex: 0.9, display: "flex", justifyContent: "flex-end" }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: r.actionColor }}>{r.action}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
 
-function RunsTab({ allocationRuns, chargeRuns }: { allocationRuns: CloudAllocationRun[]; chargeRuns: CloudChargeRun[] }) {
-  const rows = [
-    ...allocationRuns.map((run) => ({
-      id: run.id,
-      type: "Rateio",
-      status: run.status,
-      period: run.period,
-      startedAt: run.startedAt,
-      result: `${formatMoney(run.allocatedCost)} rateado`,
-      errorMessage: run.errorMessage,
-    })),
-    ...chargeRuns.map((run) => ({
-      id: run.id,
-      type: "Cobranca",
-      status: run.status,
-      period: run.period,
-      startedAt: run.startedAt,
-      result: `${formatMoney(run.grossAmount)} calculado`,
-      errorMessage: run.errorMessage,
-    })),
-  ].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
-
-  return (
-    <Card title="Runs operacionais">
-      <Table
-        rows={rows}
-        keyForRow={(row) => row.id}
-        columns={[
-          { key: "type", header: "Tipo", render: (row) => row.type },
-          { key: "period", header: "Periodo", render: (row) => row.period },
-          { key: "started", header: "Inicio", render: (row) => formatDateTime(row.startedAt) },
-          { key: "status", header: "Status", render: (row) => <StatusBadge status={row.status} /> },
-          { key: "result", header: "Resultado", render: (row) => row.result },
-          { key: "error", header: "Erro", render: (row) => row.errorMessage ?? "-" },
-        ]}
-      />
-    </Card>
-  );
-}
-
-function PermissionDenied({ permissions }: { permissions: string[] }) {
-  return (
-    <ErrorState
-      title="Permissao insuficiente"
-      detail={`Esta aba exige uma destas permissoes: ${permissions.join(", ")}.`}
-    />
-  );
-}
-
-function HealthBadge({ health }: { health: CloudBillingTenantHealth }) {
-  const data: Record<CloudBillingTenantHealth, { label: string; tone: "success" | "warning" | "danger" | "pending" }> = {
-    healthy: { label: "saudavel", tone: "success" },
-    high_cost: { label: "custo alto", tone: "warning" },
-    unallocated: { label: "nao rateado", tone: "pending" },
-    missing_rule: { label: "sem regra", tone: "danger" },
-  };
-  return <Badge tone={data[health].tone}>{data[health].label}</Badge>;
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const tone = status === "completed" ? "success" : status === "failed" ? "danger" : "pending";
-  return <Badge tone={tone}>{status}</Badge>;
-}
-
-type OverviewRow = {
-  tenantId: string;
-  tenantName: string;
-  computeHours: number;
-  storageGb: number;
-  cost: number;
-  allocatedCost: number;
-  amount: number;
-  marginPercent: number;
-  health: CloudBillingTenantHealth;
-};
-
-function buildOverviewRows(
-  usage: CloudUsageSummary | null,
-  costs: CloudCostSummary | null,
-  allocation: CloudAllocationSummary | null,
-  charges: CloudChargeSummary | null,
-): OverviewRow[] {
-  return (usage?.tenants ?? []).map((tenant) => {
-    const cost = costs?.tenants.find((item) => item.tenantId === tenant.tenantId);
-    const allocated = allocation?.tenants.find((item) => item.tenantId === tenant.tenantId);
-    const charge = charges?.tenants.find((item) => item.tenantId === tenant.tenantId);
-
-    return {
-      tenantId: tenant.tenantId,
-      tenantName: tenant.tenantName,
-      computeHours: tenant.computeHours,
-      storageGb: tenant.storageGb,
-      cost: cost?.cost ?? 0,
-      allocatedCost: allocated?.allocatedCost ?? 0,
-      amount: charge?.amount ?? 0,
-      marginPercent: charge?.marginPercent ?? cost?.marginPercent ?? 0,
-      health: readWorstHealth([tenant.health, cost?.health, allocated?.health, charge?.health]),
-    };
-  });
-}
-
-function readWorstHealth(values: Array<CloudBillingTenantHealth | undefined>): CloudBillingTenantHealth {
-  const order: CloudBillingTenantHealth[] = ["missing_rule", "unallocated", "high_cost", "healthy"];
-  return order.find((health) => values.includes(health)) ?? "healthy";
-}
-
-function formatMoney(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-}
-
-function formatPercent(value: number): string {
-  return `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(value)}%`;
-}
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(value);
-}
-
-function formatDateTime(value: string): ReactNode {
-  return new Date(value).toLocaleString("pt-BR");
-}
+export default PlatformCloudBillingPage;
