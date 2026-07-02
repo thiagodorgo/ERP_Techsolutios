@@ -1472,7 +1472,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
     />,
   );
 
-  assert.match(loginHtml, /W01 Login/);
+  assert.match(loginHtml, /Acesse sua organização/);
   assert.match(protectedHtml, /Checklists Operacionais/);
   assert.match(protectedHtml, /Ordens de Servico/);
   assert.match(protectedHtml, /Nova OS/);
