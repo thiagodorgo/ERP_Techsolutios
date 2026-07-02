@@ -143,6 +143,25 @@ npm run web:dev
 npm run web:build
 ```
 
+### Acesso de demonstração (mock)
+
+O portal web sobe em **modo de demonstração** (`VITE_USE_MOCKS=true`) com dados fictícios. O
+**perfil é resolvido pelo e-mail** informado no login e a **senha pode ser qualquer** valor
+(ex.: `demo123`). Cada perfil abre uma navegação diferente.
+
+| Perfil | E-mail | Onde entra |
+|---|---|---|
+| Admin da Plataforma | `platform@demo.com` | Console da Plataforma (`/platform`) |
+| Gestor / Operação | `gestor@demo.com` | Seleção de organização → Operação |
+| Despacho | `despacho@demo.com` | Operação de Campo (Console Dispatcher) |
+| Financeiro | `financeiro@demo.com` | Financeiro (cobranças, faturas, pagamentos) |
+| Administração | `admin@demo.com` | Administração da organização (usuários, auditoria) |
+| Auditoria | `auditor@demo.com` | Operação (somente leitura) |
+
+Regra do mock: qualquer e-mail contendo `platform` / `plataforma` / `super` cai na Plataforma;
+os demais perfis operacionais escolhem a organização e entram no console correspondente. A senha
+não é validada em modo de demonstração.
+
 ### Build
 
 ```bash

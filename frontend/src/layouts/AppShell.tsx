@@ -1,18 +1,26 @@
 import {
+  Activity,
   BarChart3,
   Bell,
   CheckCircle,
   ChevronDown,
   ClipboardList,
+  CreditCard,
+  FileText,
   LayoutDashboard,
   ListChecks,
   LogOut,
   MapPin,
   Package,
+  Receipt,
   Route as RouteIcon,
   Search,
   Send,
+  Settings,
+  ShieldCheck,
   ShoppingCart,
+  Users,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -25,42 +33,119 @@ import { useTenantContext } from "../providers/TenantProvider";
 
 type NavItem = { label: string; path: string; icon: LucideIcon; badge?: number };
 type NavGroup = { label: string; items: readonly NavItem[] };
+type RoleKind = "finance" | "dispatcher" | "admin" | "gestor";
 
-const NAV: readonly NavGroup[] = [
-  {
-    label: "OPERAÇÃO",
-    items: [
-      { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-      { label: "Ordens de Serviço", path: "/work-orders", icon: ClipboardList },
-      { label: "Mapa Operacional", path: "/operations/map", icon: MapPin },
-      { label: "Despachos", path: "/operations/dispatches", icon: Send },
-      { label: "Aprovações", path: "/approvals", icon: CheckCircle, badge: 3 },
-    ],
-  },
-  {
-    label: "LOGÍSTICA & ESTOQUE",
-    items: [
-      { label: "Estoque", path: "/inventory", icon: Package },
-      { label: "Checklists", path: "/operations/checklists", icon: ListChecks },
-      { label: "Pedidos de compra", path: "/purchase-orders", icon: ShoppingCart },
-      { label: "Rotas logísticas", path: "/logistics", icon: RouteIcon },
-      { label: "Relatórios", path: "/reports", icon: BarChart3 },
-    ],
-  },
-];
+// Navegação por papel — espelha `nav per role` do protótipo (ERP Web.dc.html).
+const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
+  gestor: [
+    {
+      label: "OPERAÇÃO",
+      items: [
+        { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+        { label: "Ordens de Serviço", path: "/work-orders", icon: ClipboardList },
+        { label: "Mapa Operacional", path: "/operations/map", icon: MapPin },
+        { label: "Despachos", path: "/operations/dispatches", icon: Send },
+        { label: "Aprovações", path: "/approvals", icon: CheckCircle, badge: 3 },
+      ],
+    },
+    {
+      label: "LOGÍSTICA & ESTOQUE",
+      items: [
+        { label: "Estoque", path: "/inventory", icon: Package },
+        { label: "Checklists", path: "/operations/checklists", icon: ListChecks },
+        { label: "Pedidos de compra", path: "/purchase-orders", icon: ShoppingCart },
+        { label: "Rotas logísticas", path: "/logistics", icon: RouteIcon },
+        { label: "Relatórios", path: "/reports", icon: BarChart3 },
+      ],
+    },
+  ],
+  dispatcher: [
+    {
+      label: "OPERAÇÃO DE CAMPO",
+      items: [
+        { label: "Console Tempo Real", path: "/dispatch/console", icon: Activity },
+        { label: "Mapa Operacional", path: "/operations/map", icon: MapPin },
+        { label: "Fila de Despacho", path: "/operations/dispatches", icon: Send },
+        { label: "Rotas", path: "/logistics", icon: RouteIcon },
+        { label: "Técnicos · Disponib.", path: "/field-operators", icon: Users },
+      ],
+    },
+    {
+      label: "SUPORTE",
+      items: [
+        { label: "Ordens de Serviço", path: "/work-orders", icon: ClipboardList },
+        { label: "Relatórios Operacionais", path: "/reports", icon: BarChart3 },
+      ],
+    },
+  ],
+  finance: [
+    {
+      label: "FINANCEIRO",
+      items: [
+        { label: "Financeiro", path: "/finance", icon: Wallet },
+        { label: "Cobranças", path: "/finance/charges", icon: Receipt },
+        { label: "Faturas", path: "/finance/invoices", icon: FileText },
+        { label: "Pagamentos", path: "/finance/payments", icon: CreditCard },
+      ],
+    },
+    {
+      label: "GESTÃO",
+      items: [
+        { label: "Aprovações", path: "/approvals", icon: CheckCircle, badge: 3 },
+        { label: "Relatórios", path: "/reports", icon: BarChart3 },
+        { label: "Estoque", path: "/inventory", icon: Package },
+      ],
+    },
+  ],
+  admin: [
+    {
+      label: "ADMINISTRAÇÃO",
+      items: [
+        { label: "Checklists", path: "/administrator/checklists", icon: ListChecks },
+        { label: "Usuários", path: "/users", icon: Users },
+        { label: "Configurações da Organização", path: "/administrator/settings", icon: Settings },
+        { label: "Auditoria", path: "/audit", icon: ShieldCheck },
+      ],
+    },
+    {
+      label: "CONTA",
+      items: [
+        { label: "Notificações", path: "/notifications", icon: Bell, badge: 4 },
+        { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+      ],
+    },
+  ],
+};
+
+const ROLE_SUBTITLE: Record<RoleKind, string> = {
+  gestor: "Gestor de operações",
+  dispatcher: "Operação de campo",
+  finance: "Financeiro",
+  admin: "Administrador",
+};
 
 const NAVY = "#0D1B2A";
 const ACTIVE = "#2563EB";
 const NAV_IDLE = "#9FB4CC";
 const GROUP_LABEL = "#41607A";
 
-function currentTitle(pathname: string): string {
-  for (const group of NAV) {
+function roleKindFor(roles: readonly string[]): RoleKind {
+  if (roles.includes("Financeiro")) return "finance";
+  if (roles.includes("Operador Logistico")) return "dispatcher";
+  if (roles.includes("Administrador") && !roles.includes("Gestor Operacional")) return "admin";
+  return "gestor";
+}
+
+function currentTitle(nav: readonly NavGroup[], pathname: string): string {
+  let best: NavItem | null = null;
+  for (const group of nav) {
     for (const item of group.items) {
-      if (pathname.startsWith(item.path)) return item.label;
+      if (pathname === item.path || pathname.startsWith(`${item.path}/`)) {
+        if (!best || item.path.length > best.path.length) best = item;
+      }
     }
   }
-  return "Operação";
+  return best?.label ?? "Operação";
 }
 
 function initials(name?: string): string {
@@ -77,6 +162,9 @@ export function AppShell() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [unread, setUnread] = useState(0);
+
+  const roleKind = useMemo(() => roleKindFor(session?.user?.roles ?? []), [session?.user?.roles]);
+  const nav = NAV_BY_ROLE[roleKind];
 
   const notificationContext = useMemo(() => {
     if (!activeContext || !permissions.includes("notifications:read")) return null;
@@ -140,7 +228,7 @@ export function AppShell() {
         </div>
 
         <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12 }}>
-          {NAV.map((group) => (
+          {nav.map((group) => (
             <div key={group.label} style={{ marginBottom: 6 }}>
               {!collapsed ? (
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".1em", color: GROUP_LABEL, padding: "14px 10px 7px", whiteSpace: "nowrap" }}>{group.label}</div>
@@ -183,7 +271,7 @@ export function AppShell() {
             <>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{userName}</div>
-                <div style={{ fontSize: 10.5, color: "#5B7A96", whiteSpace: "nowrap" }}>Gestor de operações</div>
+                <div style={{ fontSize: 10.5, color: "#5B7A96", whiteSpace: "nowrap" }}>{ROLE_SUBTITLE[roleKind]}</div>
               </div>
               <button type="button" aria-label="Sair" onClick={() => { clearContext(); signOut(); navigate("/login", { replace: true }); }} style={{ background: "none", border: "none", color: GROUP_LABEL, cursor: "pointer", display: "flex", flexShrink: 0 }}>
                 <LogOut size={16} />
@@ -196,7 +284,7 @@ export function AppShell() {
       {/* MAIN */}
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "#F1F5F9" }}>
         <header style={{ flexShrink: 0, height: 60, background: "#fff", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px" }}>
-          <div style={{ fontSize: 17, fontWeight: 800, color: "#0F172A" }}>{currentTitle(location.pathname)}</div>
+          <div style={{ fontSize: 17, fontWeight: 800, color: "#0F172A" }}>{currentTitle(nav, location.pathname)}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9, width: 280, padding: "8px 13px", background: "#F1F5F9", borderRadius: 10 }}>
               <Search size={16} style={{ color: "#94A3B8" }} />
