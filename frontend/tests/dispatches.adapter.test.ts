@@ -188,6 +188,7 @@ test("dispatches service propaga erro local de API nas acoes do mapa", async () 
 
   try {
     const { updateDispatchStatus } = await import("../src/modules/operations/dispatches/dispatches.service");
+    const { ApiError } = await import("../src/services/api/client");
     await assert.rejects(
       () =>
         updateDispatchStatus(
@@ -195,7 +196,7 @@ test("dispatches service propaga erro local de API nas acoes do mapa", async () 
           "dispatch-1",
           { status: "on_route", observation: "Pelo mapa" },
         ),
-      /API request failed: 500/,
+      (error: unknown) => error instanceof ApiError && error.status === 500,
     );
 
     assert.equal(calls.length, 1);

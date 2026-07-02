@@ -2,6 +2,25 @@ import { isMockMode, readFrontendEnv } from "../../config/env";
 import { clearStoredAuthSession, getStoredToken } from "../../modules/auth/auth.storage";
 import { refreshSession } from "../../modules/auth/auth.service";
 
+/** Erro de API com mensagem segura para a UI (não vaza corpo cru). */
+export class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly safeMessage: string,
+  ) {
+    super(safeMessage);
+    this.name = "ApiError";
+  }
+}
+
+function safeMessageFor(status: number): string {
+  if (status === 401 || status === 403) return "Sessão expirada ou sem permissão.";
+  if (status === 404) return "Recurso não encontrado.";
+  if (status === 409) return "Conflito de dados. Recarregue e tente novamente.";
+  if (status >= 500) return "Falha no servidor. Tente novamente em instantes.";
+  return "Não foi possível concluir a operação.";
+}
+
 type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
@@ -22,9 +41,15 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     body: options.body ? JSON.stringify(options.body) : undefined,
   }));
 
-  if (!response.ok) throw new Error(`API request failed: ${response.status}`);
+  if (!response.ok) throw new ApiError(response.status, safeMessageFor(response.status));
 
   return response.json() as Promise<T>;
+}
+
+/** Como apiRequest, mas desembrulha o envelope `{ data }` do backend. */
+export async function apiData<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const payload = await apiRequest<{ data: T }>(path, options);
+  return payload.data;
 }
 
 export async function apiFormDataRequest<T>(path: string, options: Omit<RequestOptions, "body"> & { body: FormData }): Promise<T> {
@@ -34,7 +59,7 @@ export async function apiFormDataRequest<T>(path: string, options: Omit<RequestO
     body: options.body,
   }));
 
-  if (!response.ok) throw new Error(`API request failed: ${response.status}`);
+  if (!response.ok) throw new ApiError(response.status, safeMessageFor(response.status));
 
   return response.json() as Promise<T>;
 }
@@ -45,7 +70,7 @@ export async function apiBlobRequest(path: string, options: RequestOptions = {})
     headers: buildAuthHeaders(options, forceStoredToken),
   }));
 
-  if (!response.ok) throw new Error(`API request failed: ${response.status}`);
+  if (!response.ok) throw new ApiError(response.status, safeMessageFor(response.status));
 
   return {
     blob: await response.blob(),
