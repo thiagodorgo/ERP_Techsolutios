@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -30,6 +30,7 @@ class AppDatabase extends GeneratedDatabase {
       await m.database.customStatement(_kChecklistAttachments);
       await m.database.customStatement(_kChecklistAcknowledgements);
       await m.database.customStatement(_kFieldLocationEvents);
+      await m.database.customStatement(_kWorkOrderMaterials);
     },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
@@ -89,6 +90,9 @@ class AppDatabase extends GeneratedDatabase {
             "ALTER TABLE checklist_runs ADD COLUMN kind TEXT NOT NULL DEFAULT 'collection'",
           );
         }
+      }
+      if (from < 9) {
+        await m.database.customStatement(_kWorkOrderMaterials);
       }
     },
   );
@@ -292,6 +296,20 @@ CREATE TABLE IF NOT EXISTS checklist_acknowledgements (
   acknowledged_at INTEGER NOT NULL,
   confirmed INTEGER NOT NULL DEFAULT 1,
   sync_status TEXT NOT NULL
+)''';
+
+const _kWorkOrderMaterials = '''
+CREATE TABLE IF NOT EXISTS work_order_materials (
+  local_id TEXT NOT NULL PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
+  work_order_local_id TEXT NOT NULL,
+  sku TEXT NOT NULL,
+  name TEXT NOT NULL,
+  quantity INTEGER NOT NULL,
+  unit TEXT NOT NULL,
+  source TEXT NOT NULL,
+  sync_status TEXT NOT NULL,
+  created_at INTEGER NOT NULL
 )''';
 
 const _kFieldLocationEvents = '''
