@@ -115,8 +115,8 @@ class DriftChecklistLocalStore implements ChecklistLocalStore {
       'INSERT OR REPLACE INTO checklist_runs '
       '(local_id, server_id, tenant_id, checklist_id, work_order_id, '
       'schema_version, status, executed_by_user_id, started_at, '
-      'completed_at, sync_status, answers_json) '
-      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+      'completed_at, sync_status, answers_json, kind) '
+      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
       variables: [
         Variable<String>(run.localId),
         Variable<String>(run.serverId),
@@ -130,6 +130,7 @@ class DriftChecklistLocalStore implements ChecklistLocalStore {
         Variable<int>(run.completedAt?.millisecondsSinceEpoch),
         Variable<String>(run.syncStatus.name),
         Variable<String>(json.encode(_answersToJson(run.answers))),
+        Variable<String>(run.kind.apiValue),
       ],
     );
   }
@@ -299,6 +300,9 @@ class DriftChecklistLocalStore implements ChecklistLocalStore {
           : null,
       syncStatus: SyncStatus.values.byName(row.read<String>('sync_status')),
       answers: _answersFromJson(answersJson),
+      kind: MobileChecklistRunKind.fromApiValue(
+        row.readNullable<String>('kind'),
+      ),
     );
   }
 

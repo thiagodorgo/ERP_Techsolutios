@@ -14,11 +14,13 @@ class ChecklistRunScreen extends ConsumerStatefulWidget {
   const ChecklistRunScreen({
     required this.checklistId,
     required this.workOrderId,
+    this.kind = MobileChecklistRunKind.collection,
     super.key,
   });
 
   final String checklistId;
   final String workOrderId;
+  final MobileChecklistRunKind kind;
 
   @override
   ConsumerState<ChecklistRunScreen> createState() => _ChecklistRunScreenState();
@@ -59,6 +61,7 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
       checklistId: widget.checklistId,
       workOrderId: widget.workOrderId,
       schemaVersion: schema.version,
+      kind: widget.kind,
     );
     if (run.answers.isNotEmpty) {
       _answers = Map.from(run.answers);
@@ -218,6 +221,7 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
                       ctrl: _ctrl(field.id),
                       checklistId: widget.checklistId,
                       runId: runId,
+                      kind: widget.kind,
                       vehicleType: vehicleType,
                       onAnswer: (answer) => _onAnswer(repo, runId, answer),
                       pickAndAttach: (fieldId, source) =>
@@ -255,6 +259,7 @@ class _FieldCard extends StatelessWidget {
     required this.ctrl,
     required this.checklistId,
     required this.runId,
+    required this.kind,
     required this.onAnswer,
     required this.pickAndAttach,
     this.answer,
@@ -266,6 +271,7 @@ class _FieldCard extends StatelessWidget {
   final TextEditingController ctrl;
   final String checklistId;
   final String runId;
+  final MobileChecklistRunKind kind;
   final String? vehicleType;
   final void Function(MobileChecklistAnswer) onAnswer;
   final Future<MobileChecklistAttachmentMetadata?> Function(
@@ -433,6 +439,7 @@ class _FieldCard extends StatelessWidget {
         field: field,
         answer: answer,
         onAnswer: onAnswer,
+        deliveryMode: kind == MobileChecklistRunKind.delivery,
       ),
       _ => Container(
         padding: const EdgeInsets.all(12),
@@ -835,16 +842,21 @@ class _SignatureField extends StatelessWidget {
     required this.field,
     required this.onAnswer,
     this.answer,
+    this.deliveryMode = false,
   });
 
   final MobileChecklistField field;
   final MobileChecklistAnswer? answer;
   final void Function(MobileChecklistAnswer) onAnswer;
+  final bool deliveryMode;
+
+  String get _title =>
+      deliveryMode ? 'Assinatura de quem recebeu' : field.label;
 
   Future<void> _capture(BuildContext context) async {
     final encoded = await showSignatureCaptureSheet(
       context,
-      title: field.label,
+      title: _title,
       initial: answer?.textValue,
     );
     if (encoded == null) return;
@@ -863,6 +875,15 @@ class _SignatureField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (deliveryMode) ...[
+          Text(
+            'Assinatura de quem recebeu',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         if (hasInk) ...[
           SignaturePad(
             key: const Key('signature-preview'),

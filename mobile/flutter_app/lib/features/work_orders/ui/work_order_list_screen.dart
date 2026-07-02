@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/permissions/permission_resolver.dart';
+import '../../../core/sync/sync_models.dart';
 import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
 import '../data/work_order_repository.dart';
@@ -308,6 +309,9 @@ class _WorkOrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final syncIcon = _syncIcon(workOrder.syncStatus);
+    final hasBadges = syncIcon != null || workOrder.serviceType != null;
+
     return Card(
       child: ListTile(
         onTap: onTap,
@@ -327,6 +331,19 @@ class _WorkOrderCard extends StatelessWidget {
             ),
             if (workOrder.scheduledAt != null)
               Text(_fmtDate(workOrder.scheduledAt!)),
+            if (hasBadges)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    if (workOrder.serviceType != null)
+                      _TypeBadge(label: workOrder.serviceType!.label),
+                    if (syncIcon != null) syncIcon,
+                  ],
+                ),
+              ),
           ],
         ),
         trailing: OperationalStatusChip(
@@ -338,11 +355,90 @@ class _WorkOrderCard extends StatelessWidget {
     );
   }
 
+  Widget? _syncIcon(SyncStatus status) {
+    return switch (status) {
+      SyncStatus.pending => const _SyncBadge(
+        icon: Icons.cloud_upload_outlined,
+        label: 'Sincronizando',
+        tone: 'info',
+      ),
+      SyncStatus.failed => const _SyncBadge(
+        icon: Icons.cloud_off_outlined,
+        label: 'Falha sync',
+        tone: 'danger',
+      ),
+      SyncStatus.conflict => const _SyncBadge(
+        icon: Icons.warning_amber_outlined,
+        label: 'Conflito',
+        tone: 'danger',
+      ),
+      _ => null,
+    };
+  }
+
   String _fmtDate(DateTime dt) =>
       '${dt.day.toString().padLeft(2, '0')}/'
       '${dt.month.toString().padLeft(2, '0')} '
       '${dt.hour.toString().padLeft(2, '0')}:'
       '${dt.minute.toString().padLeft(2, '0')}';
+}
+
+// ---------------------------------------------------------------------------
+// Badge widgets
+// ---------------------------------------------------------------------------
+
+class _TypeBadge extends StatelessWidget {
+  const _TypeBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _SyncBadge extends StatelessWidget {
+  const _SyncBadge({
+    required this.icon,
+    required this.label,
+    required this.tone,
+  });
+
+  final IconData icon;
+  final String label;
+  final String tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = tone == 'danger'
+        ? Theme.of(context).colorScheme.error
+        : Theme.of(context).colorScheme.tertiary;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 3),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
+        ),
+      ],
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------

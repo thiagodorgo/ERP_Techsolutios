@@ -211,26 +211,42 @@ class DioAuthRepository implements AuthRepository {
   AuthSession _sessionFromJson(Map<String, dynamic> json) {
     final envelopeData = json['data'];
     final body = envelopeData is Map<String, dynamic> ? envelopeData : json;
-    // Backend may wrap tokens under a 'tokens' key or inline them
+    // Backend may wrap tokens under a 'tokens' key or inline them at body level
     final tokenJson = body['tokens'] as Map<String, dynamic>? ?? body;
     final userJson = body['user'] as Map<String, dynamic>;
+    // Roles array: [{ id, key, name }] — present on /login and /active-tenant
+    final rolesRaw = (body['roles'] as List<dynamic>? ?? [])
+        .cast<Map<String, dynamic>>();
+    final roleKeys = rolesRaw
+        .map((r) => (r['key'] ?? r['name'] ?? '').toString())
+        .where((k) => k.isNotEmpty)
+        .toList();
 
-    final expiresIn = tokenJson['expiresIn'] as int? ?? 28800;
+    final expiresIn =
+        tokenJson['expiresIn'] as int? ??
+        tokenJson['expires_in'] as int? ??
+        28800;
     final expiresAt = DateTime.now().toUtc().add(Duration(seconds: expiresIn));
 
     return AuthSession(
       tokens: AuthTokens(
-        accessToken: tokenJson['accessToken'] as String,
-        refreshToken: tokenJson['refreshToken'] as String?,
+        accessToken: (tokenJson['accessToken'] ?? tokenJson['access_token'])
+            as String,
+        refreshToken: (tokenJson['refreshToken'] ?? tokenJson['refresh_token'])
+            as String?,
         expiresAt: expiresAt,
       ),
       user: AuthUser(
-        sub: userJson['sub'] as String,
+        // Backend sends 'id'; fall back to 'sub' for Cognito-compatible responses
+        sub: (userJson['id'] ?? userJson['sub']) as String,
         email: userJson['email'] as String,
-        tenantId: userJson['tenantId'] as String,
-        tenantRole: userJson['tenantRole'] as String,
-        tenantRoles: (userJson['tenantRoles'] as List<dynamic>).cast<String>(),
-        permissions: (userJson['permissions'] as List<dynamic>).cast<String>(),
+        // Backend sends snake_case 'tenant_id'; camelCase as fallback
+        tenantId: (userJson['tenant_id'] ?? userJson['tenantId']) as String,
+        tenantRole: roleKeys.isNotEmpty ? roleKeys.first : 'tenant_member',
+        tenantRoles: roleKeys,
+        // Permissions are not present in /login — bootstrap fills them later
+        permissions: (userJson['permissions'] as List<dynamic>? ?? [])
+            .cast<String>(),
         scope: userJson['scope'] as String? ?? 'tenant',
       ),
     );

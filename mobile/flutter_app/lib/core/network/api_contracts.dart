@@ -49,6 +49,7 @@ class WorkOrderSyncActionTypes {
   static const create = 'work_order.create';
   static const approvalRequest = 'work_order.approval_request';
   static const evidenceAttach = 'work_order.evidence_attach';
+  static const unableToStart = 'work_order.unable_to_start';
 }
 
 class ExpenseSyncActionTypes {

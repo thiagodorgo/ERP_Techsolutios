@@ -58,6 +58,28 @@ enum MobileChecklistRunStatus {
   };
 }
 
+/// Fase do run de checklist: coleta (recebimento) x entrega.
+/// Distingue os dois runs de uma mesma OS de guincho (prefixos `c_`/`e_`).
+enum MobileChecklistRunKind {
+  collection,
+  delivery;
+
+  String get apiValue => switch (this) {
+    MobileChecklistRunKind.collection => 'collection',
+    MobileChecklistRunKind.delivery => 'delivery',
+  };
+
+  String get label => switch (this) {
+    MobileChecklistRunKind.collection => 'Coleta',
+    MobileChecklistRunKind.delivery => 'Entrega',
+  };
+
+  static MobileChecklistRunKind fromApiValue(String? v) => switch (v) {
+    'delivery' => MobileChecklistRunKind.delivery,
+    _ => MobileChecklistRunKind.collection,
+  };
+}
+
 class MobileChecklistFieldOption {
   const MobileChecklistFieldOption({
     required this.value,
@@ -195,6 +217,7 @@ class MobileChecklistRun {
     required this.startedAt,
     required this.syncStatus,
     required this.answers,
+    this.kind = MobileChecklistRunKind.collection,
     this.serverId,
     this.completedAt,
   });
@@ -206,6 +229,7 @@ class MobileChecklistRun {
   final String workOrderId;
   final String schemaVersion;
   final MobileChecklistRunStatus status;
+  final MobileChecklistRunKind kind;
   final String executedByUserId;
   final DateTime startedAt;
   final DateTime? completedAt;
@@ -225,6 +249,7 @@ class MobileChecklistRun {
     workOrderId: workOrderId,
     schemaVersion: schemaVersion,
     status: status ?? this.status,
+    kind: kind,
     executedByUserId: executedByUserId,
     startedAt: startedAt,
     completedAt: completedAt ?? this.completedAt,

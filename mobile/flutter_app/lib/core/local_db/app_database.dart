@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 8;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -65,6 +65,30 @@ class AppDatabase extends GeneratedDatabase {
       }
       if (from < 6) {
         await m.database.customStatement(_kFieldLocationEvents);
+      }
+      if (from < 7) {
+        final rows = await m.database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='work_orders'",
+            )
+            .get();
+        if (rows.isNotEmpty) {
+          await m.database.customStatement(
+            'ALTER TABLE work_orders ADD COLUMN service_type TEXT',
+          );
+        }
+      }
+      if (from < 8) {
+        final rows = await m.database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='checklist_runs'",
+            )
+            .get();
+        if (rows.isNotEmpty) {
+          await m.database.customStatement(
+            "ALTER TABLE checklist_runs ADD COLUMN kind TEXT NOT NULL DEFAULT 'collection'",
+          );
+        }
       }
     },
   );
@@ -160,7 +184,8 @@ CREATE TABLE IF NOT EXISTS work_orders (
   checklist_id TEXT,
   sync_status TEXT NOT NULL,
   created_at INTEGER NOT NULL,
-  updated_at INTEGER
+  updated_at INTEGER,
+  service_type TEXT
 )''';
 
 const _kWorkOrderTimeline = '''
@@ -231,7 +256,8 @@ CREATE TABLE IF NOT EXISTS checklist_runs (
   started_at INTEGER NOT NULL,
   completed_at INTEGER,
   sync_status TEXT NOT NULL,
-  answers_json TEXT NOT NULL DEFAULT '{}'
+  answers_json TEXT NOT NULL DEFAULT '{}',
+  kind TEXT NOT NULL DEFAULT 'collection'
 )''';
 
 const _kChecklistMarkers = '''

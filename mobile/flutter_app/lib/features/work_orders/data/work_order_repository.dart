@@ -490,6 +490,45 @@ class WorkOrderRepository extends ChangeNotifier {
 
   Future<List<WorkOrderEvidence>> loadEvidence(String workOrderLocalId) =>
       _localStore.loadEvidence(workOrderLocalId);
+
+  Future<SyncAction> reportUnableToStart({
+    required String localId,
+    required String reason,
+    required String note,
+  }) async {
+    final wo = findById(localId);
+    if (wo == null) throw StateError('WorkOrder $localId not found');
+
+    final now = DateTime.now().toUtc();
+    final action = _actionFactory.create(
+      tenantId: _session.activeTenant.tenantId,
+      type: WorkOrderSyncActionTypes.unableToStart,
+      payload: {
+        'local_id': localId,
+        if (wo.serverId != null && wo.serverId!.trim().isNotEmpty)
+          'server_id': wo.serverId!.trim(),
+        'reason': reason,
+        'note': note,
+        'occurred_at': now.toIso8601String(),
+        'reported_by_user_id': _session.user.userId,
+      },
+    );
+
+    final timelineEvent = WorkOrderTimelineEvent(
+      localId: _uuid.v4(),
+      workOrderLocalId: localId,
+      tenantId: _session.activeTenant.tenantId,
+      eventType: WorkOrderTimelineEventType.exceptionRaised,
+      occurredAt: now,
+      note: '$reason: $note',
+      actorUserId: _session.user.userId,
+    );
+
+    await _localStore.saveTimelineEvent(timelineEvent);
+    await _syncQueue.enqueue(action);
+    notifyListeners();
+    return action;
+  }
 }
 
 // Providers

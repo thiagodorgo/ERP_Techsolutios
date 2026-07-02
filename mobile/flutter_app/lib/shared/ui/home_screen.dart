@@ -109,6 +109,7 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
     final canCreateOs = resolver.has(perms, 'work_orders:create');
     final canCreatePc = resolver.has(perms, 'expense_report:create');
     final canOs = resolver.has(perms, 'work_orders:read');
+    final canApprove = resolver.has(perms, 'work_orders:cancel');
 
     return ErpScaffold(
       title: 'ERP Techsolutions',
@@ -163,6 +164,9 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
               ? null
               : const ExpenseTotalsCalculator().calculate(firstReport);
           final nextOs = workOrders.isEmpty ? null : workOrders.first;
+          final pendingApprovalCount = allTenantOrders
+              .where((o) => o.status == WorkOrderStatus.pendingApproval)
+              .length;
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -228,6 +232,12 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
               // RDV summary card
               if (firstReport != null && totals != null) ...[
                 _RdvSummaryCard(report: firstReport, totals: totals),
+                const SizedBox(height: 8),
+              ],
+
+              // Approvals banner — Gestor only
+              if (canApprove) ...[
+                _ApprovalsBanner(pendingCount: pendingApprovalCount),
                 const SizedBox(height: 8),
               ],
 
@@ -787,6 +797,73 @@ class _WoLocalCacheBanner extends StatelessWidget {
             style: Theme.of(context).textTheme.labelSmall,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Approvals banner (Gestor only)
+// ---------------------------------------------------------------------------
+
+class _ApprovalsBanner extends StatelessWidget {
+  const _ApprovalsBanner({required this.pendingCount});
+
+  final int pendingCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPending = pendingCount > 0;
+    final color = hasPending
+        ? Theme.of(context).colorScheme.error
+        : Theme.of(context).colorScheme.secondary;
+    final bgColor = hasPending
+        ? Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.15)
+        : Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.2);
+    final label = hasPending
+        ? '$pendingCount ${pendingCount == 1 ? 'OS aguardando aprovacao' : 'OS aguardando aprovacao'}'
+        : 'Nenhuma aprovacao pendente';
+
+    return Card(
+      color: bgColor,
+      child: InkWell(
+        onTap: () => context.go('/approvals'),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Icon(
+                hasPending
+                    ? Icons.approval_outlined
+                    : Icons.check_circle_outline,
+                color: color,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Aprovacoes',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      label,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: color),
+            ],
+          ),
+        ),
       ),
     );
   }

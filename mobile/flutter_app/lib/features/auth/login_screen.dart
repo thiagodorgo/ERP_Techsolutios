@@ -18,13 +18,11 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _tenantController = TextEditingController();
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _tenantController.dispose();
     super.dispose();
   }
 
@@ -32,6 +30,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authAsync = ref.watch(authStateProvider);
     final isLoading = authAsync.isLoading;
+    final primary = Theme.of(context).colorScheme.primary;
 
     final safeError = switch (authAsync) {
       AsyncError(:final error) =>
@@ -49,17 +48,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            const SizedBox(height: 40),
+            const SizedBox(height: 56),
+            Icon(Icons.engineering_outlined, size: 56, color: primary),
+            const SizedBox(height: 16),
             Text(
               'ERP Techsolutions',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 6),
             const Text(
               'Acesse suas ordens de servico, checklists e despesas de campo.',
               style: TextStyle(color: Colors.black54),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
             if (safeError != null) ...[
@@ -80,25 +83,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             TextField(
               controller: _passwordController,
               obscureText: true,
-              textInputAction: TextInputAction.next,
+              textInputAction: TextInputAction.done,
               decoration: const InputDecoration(
                 labelText: 'Senha',
                 border: OutlineInputBorder(),
               ),
               enabled: !isLoading,
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: _tenantController,
-              textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                labelText: 'Codigo do tenant',
-                border: OutlineInputBorder(),
-              ),
-              enabled: !isLoading,
               onSubmitted: isLoading ? null : (_) => _doLogin(),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: isLoading ? null : _showForgotPasswordDialog,
+                child: const Text('Esqueci minha senha'),
+              ),
+            ),
+            const SizedBox(height: 20),
             FilledButton(
               onPressed: isLoading ? null : _doLogin,
               child: isLoading
@@ -108,6 +109,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: CircularProgressIndicator.adaptive(strokeWidth: 2),
                     )
                   : const Text('Entrar'),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: isLoading ? null : _showGoogleMockDialog,
+              icon: const Icon(Icons.g_mobiledata),
+              label: const Text('Entrar com Google'),
             ),
             const SizedBox(height: 10),
             OutlinedButton(
@@ -149,26 +156,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _doLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
-    final tenantId = _tenantController.text.trim();
     if (email.isEmpty || password.isEmpty) return;
-    await ref
-        .read(authStateProvider.notifier)
-        .login(
-          email: email,
-          password: password,
-          tenantId: tenantId.isEmpty ? null : tenantId,
-        );
+    await ref.read(authStateProvider.notifier).login(
+      email: email,
+      password: password,
+    );
   }
 
   /// Only available when kIsDevMode is true (--dart-define=ERP_ENV=dev).
   Future<void> _doDevLogin() async {
-    await ref
-        .read(authStateProvider.notifier)
-        .login(
-          email: 'tecnico@tenant.demo',
-          password: '123456',
-          tenantId: 'tenant-demo',
-        );
+    await ref.read(authStateProvider.notifier).login(
+      email: 'tecnico@tenant.demo',
+      password: '123456',
+      tenantId: 'tenant-demo',
+    );
+  }
+
+  void _showForgotPasswordDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Esqueci minha senha'),
+        content: const Text(
+          'Solicite ao administrador da sua organizacao a redefinção de senha.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showGoogleMockDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Login com Google'),
+        content: const Text(
+          'Login com Google nao esta disponivel nesta versao.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showSupportDialog() {
