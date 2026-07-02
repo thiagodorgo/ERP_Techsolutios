@@ -66,6 +66,7 @@ export function createMobileRouter(service: ICoreSaasService): Router {
         service.getUserForTenant(actor.userId, actor.tenantId),
         listExpenseCategoriesForBootstrap(actor),
       ]);
+      const memberships = await service.listTenantsForUserEmail(user.email);
       const serverTime = new Date();
       const expiresAt = new Date(serverTime.getTime() + BOOTSTRAP_TTL_SECONDS * 1000);
       const featureFlags = buildFeatureFlags(tenant.modules, actor);
@@ -97,6 +98,11 @@ export function createMobileRouter(service: ICoreSaasService): Router {
             id: tenant.id,
             name: tenant.name,
           },
+          available_tenants: memberships.map((m) => ({
+            tenantId: m.tenant.id,
+            displayName: m.tenant.name,
+            userRole: m.user.roles[0] ?? "tenant_member",
+          })),
           user: {
             id: user.id,
             name: user.name,

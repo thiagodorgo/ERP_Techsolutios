@@ -55,9 +55,24 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         return;
       }
 
+      let resolvedTenantId = parsedBody.tenantId;
+      if (!resolvedTenantId && resolveCoreSaasService) {
+        const svc = await resolveCoreSaasService();
+        const memberships = await svc.listTenantsForUserEmail(parsedBody.email);
+        if (memberships.length === 0) {
+          response.status(401).json({ error: { code: "INVALID_CREDENTIALS", message: "Invalid credentials." } });
+          return;
+        }
+        resolvedTenantId = memberships[0].tenant.id;
+      }
+      if (!resolvedTenantId) {
+        response.status(400).json({ error: { code: "BAD_REQUEST", message: "tenantId is required." } });
+        return;
+      }
+
       const loginService = await resolveLoginService();
       const loginResult = await loginService.authenticateLocalCredential({
-        tenant_id: parsedBody.tenantId,
+        tenant_id: resolvedTenantId,
         email: parsedBody.email,
         password: parsedBody.password,
         request_id: readRequestId(request),
@@ -311,7 +326,7 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
 type ParsedLoginRequestBody =
   | {
       readonly ok: true;
-      readonly tenantId: string;
+      readonly tenantId: string | null;
       readonly email: string;
       readonly password: string;
     }
@@ -322,18 +337,13 @@ type ParsedLoginRequestBody =
 
 function parseLoginRequestBody(body: unknown): ParsedLoginRequestBody {
   const input = isRecord(body) ? (body as LoginRequestBody) : {};
-  const tenantId = readString(input.tenantId);
+  const tenantIdRaw = readString(input.tenantId);
+  const tenantId = tenantIdRaw || null;
   const email = readString(input.email).trim().toLowerCase();
   const password = readString(input.password);
 
-  if (!tenantId) {
-    return {
-      ok: false,
-      message: "tenantId is required.",
-    };
-  }
-
-  if (!uuidPattern.test(tenantId)) {
+  // If tenantId is provided, validate it is a UUID
+  if (tenantId && !uuidPattern.test(tenantId)) {
     return {
       ok: false,
       message: "tenantId must be a valid UUID.",
