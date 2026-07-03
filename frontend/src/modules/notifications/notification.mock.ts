@@ -4,8 +4,8 @@ const initialNotifications: NotificationItem[] = [
   {
     id: "notif-checklist-completed",
     type: "checklist_run.completed",
-    title: "Checklist concluido",
-    message: "A coleta do veiculo foi concluida e ficou disponivel para acompanhamento operacional.",
+    title: "Checklist concluído",
+    message: "A coleta do veículo foi concluída e ficou disponível para acompanhamento operacional.",
     severity: "success",
     status: "unread",
     sourceType: "checklist_run",
@@ -19,8 +19,8 @@ const initialNotifications: NotificationItem[] = [
   {
     id: "notif-divergence",
     type: "checklist_run.divergence_reported",
-    title: "Divergencia registrada na entrega",
-    message: "A entrega possui divergencia contra a coleta e requer acompanhamento do gestor.",
+    title: "Divergência registrada na entrega",
+    message: "A entrega possui divergência em relação à coleta e requer acompanhamento do gestor.",
     severity: "warning",
     status: "unread",
     sourceType: "checklist_run",
@@ -34,8 +34,8 @@ const initialNotifications: NotificationItem[] = [
   {
     id: "notif-ack",
     type: "checklist_run.acknowledgement_created",
-    title: "Ciencia pendente",
-    message: "Uma execucao aguarda ciencia de responsabilidade antes de encerrar o fluxo.",
+    title: "Ciência pendente",
+    message: "Uma execução aguarda ciência de responsabilidade antes de encerrar o fluxo.",
     severity: "info",
     status: "unread",
     sourceType: "checklist_run",
@@ -49,8 +49,8 @@ const initialNotifications: NotificationItem[] = [
   {
     id: "notif-critical",
     type: "system.critical",
-    title: "Falha critica em processamento",
-    message: "Um processamento operacional falhou apos retentativas e precisa de revisao.",
+    title: "Falha crítica em processamento",
+    message: "Um processamento operacional falhou após retentativas e precisa de revisão.",
     severity: "critical",
     status: "unread",
     sourceType: "system",
@@ -63,8 +63,8 @@ const initialNotifications: NotificationItem[] = [
   {
     id: "notif-read",
     type: "checklist_run.completed",
-    title: "Evidencia tecnica concluida",
-    message: "O registro antes/depois foi concluido e auditado.",
+    title: "Evidência técnica concluída",
+    message: "O registro antes/depois foi concluído e auditado.",
     severity: "success",
     status: "read",
     sourceType: "checklist_run",
@@ -78,7 +78,7 @@ const initialNotifications: NotificationItem[] = [
   {
     id: "notif-archived",
     type: "checklist_run.completed",
-    title: "Notificacao arquivada",
+    title: "Notificação arquivada",
     message: "Item mantido apenas para validar o filtro de arquivadas.",
     severity: "info",
     status: "archived",
@@ -162,7 +162,7 @@ export function resetMockNotificationsForTests(): void {
 
 function findNotification(notificationId: string): NotificationItem {
   const notification = notifications.find((item) => item.id === notificationId);
-  if (!notification) throw new Error("Notificacao mock nao encontrada.");
+  if (!notification) throw new Error("Notificação não encontrada.");
   return notification;
 }
 

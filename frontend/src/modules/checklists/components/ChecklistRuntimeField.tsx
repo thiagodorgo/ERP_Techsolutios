@@ -78,7 +78,7 @@ export function ChecklistRuntimeField({
     if (component.type === "observation") {
       return (
         <label className="ui-field">
-          <span>Observacao operacional</span>
+          <span>Observação operacional</span>
           <textarea
             className="ui-input checklist-runtime-textarea"
             value={typeof value === "string" ? value : ""}
@@ -93,7 +93,7 @@ export function ChecklistRuntimeField({
       const options = readVehicleOptions(component.config);
 
       return (
-        <Select label="Tipo de veiculo" value={typeof value === "string" ? value : ""} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
+        <Select label="Tipo de veículo" value={typeof value === "string" ? value : ""} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
           <option value="">Selecione</option>
           {options.map((option) => (
             <option key={option.value} value={option.value}>
@@ -119,7 +119,7 @@ export function ChecklistRuntimeField({
           />
           {requireObservation ? (
             <label className="ui-field">
-              <span>Observacao da ciencia</span>
+              <span>Observação da ciência</span>
               <textarea
                 className="ui-input checklist-runtime-textarea"
                 value={acknowledgement.observation}
@@ -208,7 +208,7 @@ export function ChecklistRuntimeField({
 
     return (
       <Alert title="Componente configurado" tone="info">
-        Execucao avancada pendente para este componente. O schema foi renderizado sem bloquear o checklist.
+        Execução avançada pendente para este componente. O checklist foi renderizado sem bloqueio.
       </Alert>
     );
   }
@@ -237,7 +237,7 @@ function EvidenceBlock({
     <div className="checklist-runtime-evidence-block">
       <strong>{title}</strong>
       {!runId ? (
-        <Alert title="Execucao em preparacao" tone="info">
+        <Alert title="Execução em preparação" tone="info">
           A evidencia podera ser enviada assim que a execucao for iniciada.
         </Alert>
       ) : disabled ? null : (
@@ -316,7 +316,7 @@ function DamageMapField({
             <option value="damage">Avaria</option>
             <option value="scratch">Risco</option>
             <option value="dent">Amassado</option>
-            <option value="attention">Atencao</option>
+            <option value="attention">Atenção</option>
           </Select>
           <label className="ui-field">
             <span>Descricao</span>
@@ -429,7 +429,7 @@ function ComparisonField({
       {!disabled ? (
         <div className="checklist-runtime-divergence">
           <label className="ui-field">
-            <span>Observacao da divergencia</span>
+            <span>Observação da divergência</span>
             <textarea
               className="ui-input checklist-runtime-textarea"
               value={observation}

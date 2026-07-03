@@ -185,7 +185,7 @@ export function OperationsDispatchActionsPanel({
       {mode === "cancel" && canCancel ? (
         <div className="work-order-action-form">
           <label className="ui-field">
-            <span>Observacao</span>
+            <span>Observação</span>
             <textarea value={cancelObservation} onChange={(event) => setCancelObservation(event.target.value)} disabled={savingCancel} />
           </label>
           <label className="ui-field">

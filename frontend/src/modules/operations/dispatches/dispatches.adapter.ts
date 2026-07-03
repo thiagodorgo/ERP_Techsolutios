@@ -13,23 +13,23 @@ import type {
 
 const statusLabels: Record<DispatchStatus, string> = {
   draft: "Rascunho",
-  assigned: "Atribuido",
+  assigned: "Atribuído",
   accepted: "Aceito",
   on_route: "Em deslocamento",
   arrived: "No local",
   in_service: "Em atendimento",
-  completed: "Concluido",
+  completed: "Concluído",
   cancelled: "Cancelado",
-  reassigned: "Reatribuido",
+  reassigned: "Reatribuído",
   failed: "Falhou",
 };
 
 const priorityLabels: Record<DispatchPriority, string> = {
   low: "Baixa",
-  medium: "Media",
+  medium: "Média",
   high: "Alta",
   urgent: "Urgente",
-  unknown: "Nao informada",
+  unknown: "Não informada",
 };
 
 export function adaptDispatchesResponse(response: unknown, source: DispatchesData["source"] = "api", fallbackReason?: string): DispatchesData {
@@ -129,9 +129,9 @@ export function getDispatchPriorityTone(priority: DispatchPriority) {
 }
 
 export function formatDispatchDate(value: string | null | undefined): string {
-  if (!value) return "Nao informado";
+  if (!value) return "Não informado";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Data invalida";
+  if (Number.isNaN(date.getTime())) return "Data inválida";
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
@@ -144,8 +144,8 @@ export function formatDispatchDate(value: string | null | undefined): string {
 
 export function validateDispatchCreate(input: { readonly workOrderId: string; readonly operatorUserId: string }): string[] {
   const errors: string[] = [];
-  if (!input.workOrderId.trim()) errors.push("OS obrigatoria.");
-  if (!input.operatorUserId.trim()) errors.push("Operador obrigatorio.");
+  if (!input.workOrderId.trim()) errors.push("OS obrigatória.");
+  if (!input.operatorUserId.trim()) errors.push("Operador obrigatório.");
   return errors;
 }
 

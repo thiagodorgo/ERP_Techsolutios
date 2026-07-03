@@ -1477,7 +1477,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(protectedHtml, /Ordens de Servico/);
   assert.match(protectedHtml, /Nova OS/);
   assert.match(protectedHtml, /Mapa Operacional/);
-  assert.match(protectedHtml, /Fallback polling ativo/);
+  assert.match(protectedHtml, /Atualização periódica/);
   assert.match(protectedHtml, /Visualização operacional/);
   assert.match(operationsMapContextHtml, /OS filtrada:[\s\S]*OS-000103/);
   assert.match(operationsMapContextHtml, /Limpar contexto/);
@@ -1491,7 +1491,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(readOnlyDispatchActionsHtml, /Sem acoes disponiveis/);
   assert.match(terminalDispatchActionsHtml, /Despacho terminal/);
   assert.match(protectedHtml, /Despachos Operacionais/);
-  assert.match(protectedHtml, /Notificacoes/);
+  assert.match(protectedHtml, /Notificações/);
   assert.match(runtimeHtml, /Executar checklist|Runtime operacional/);
   assert.match(workOrderDetailHtml, /OS-000101|Timeline|Alterar status/);
   assert.match(protectedHtml, /Checklists|Selecione um contexto/);

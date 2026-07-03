@@ -13,7 +13,7 @@ type FilterTab = "all" | NotificationStatus;
 
 const tabs = [
   { id: "all", label: "Todas" },
-  { id: "unread", label: "Nao lidas" },
+  { id: "unread", label: "Não lidas" },
   { id: "read", label: "Lidas" },
   { id: "archived", label: "Arquivadas" },
 ];
@@ -40,7 +40,7 @@ export function NotificationsPage() {
       const status = activeTab === "all" ? undefined : activeTab;
       setNotifications(await listNotifications(context, { status }));
     } catch {
-      setError("Nao foi possivel carregar suas notificacoes.");
+      setError("Não foi possível carregar suas notificações.");
     } finally {
       setLoading(false);
     }
@@ -59,7 +59,7 @@ export function NotificationsPage() {
       setNotifications((current) => current.map((item) => (item.id === updated.id ? updated : item)));
       notifyCounterChanged();
     } catch {
-      setError("Nao foi possivel marcar a notificacao como lida.");
+      setError("Não foi possível marcar a notificação como lida.");
     } finally {
       setActionLoading(null);
     }
@@ -74,7 +74,7 @@ export function NotificationsPage() {
       await loadNotifications();
       notifyCounterChanged();
     } catch {
-      setError("Nao foi possivel marcar todas as notificacoes como lidas.");
+      setError("Não foi possível marcar todas as notificações como lidas.");
     } finally {
       setActionLoading(null);
     }
@@ -93,7 +93,7 @@ export function NotificationsPage() {
       );
       notifyCounterChanged();
     } catch {
-      setError("Nao foi possivel arquivar a notificacao.");
+      setError("Não foi possível arquivar a notificação.");
     } finally {
       setActionLoading(null);
     }
@@ -105,16 +105,16 @@ export function NotificationsPage() {
   }
 
   if (!context) {
-    return <ErrorState title="Contexto indisponivel" detail="Selecione um tenant ativo antes de consultar notificacoes." />;
+    return <ErrorState title="Contexto indisponível" detail="Selecione uma organização ativa antes de consultar notificações." />;
   }
 
   return (
     <div className="page-stack notifications-page">
       <header className="page-heading page-heading--row">
         <div>
-          <span>Operacao</span>
-          <h1>Notificacoes</h1>
-          <p>Inbox interna do seu usuario para eventos operacionais relevantes do tenant ativo.</p>
+          <span>Operação</span>
+          <h1>Notificações</h1>
+          <p>Avisos e eventos operacionais do seu usuário na organização.</p>
         </div>
         <div className="notification-page-actions">
           <Button type="button" variant="secondary" onClick={loadNotifications} disabled={loading || Boolean(actionLoading)}>
@@ -132,7 +132,7 @@ export function NotificationsPage() {
         <div className="notification-summary">
           <Bell size={22} />
           <div>
-            <strong>{unreadCount} nao lidas</strong>
+            <strong>{unreadCount} não lidas</strong>
             <span>{notifications.length} itens no filtro atual</span>
           </div>
         </div>
@@ -141,7 +141,7 @@ export function NotificationsPage() {
       <Tabs tabs={tabs} active={activeTab} onChange={(id) => setActiveTab(id as FilterTab)} />
 
       {error ? (
-        <Alert title="Falha na inbox" tone="warning">
+        <Alert title="Falha nas notificações" tone="warning">
           {error}
         </Alert>
       ) : null}

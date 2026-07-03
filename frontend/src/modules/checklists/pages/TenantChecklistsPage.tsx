@@ -79,7 +79,7 @@ export function TenantChecklistsPage() {
   async function loadChecklists() {
     if (!apiContext) {
       setLoading(false);
-      setError("Selecione um contexto de tenant para carregar checklists.");
+      setError("Selecione um contexto de organização para carregar checklists.");
       return;
     }
 
@@ -233,9 +233,9 @@ export function TenantChecklistsPage() {
     <div className="page-stack">
       <header className="page-heading page-heading--row">
         <div>
-          <span>W02A · Administrador</span>
+          <span>ADMINISTRADOR</span>
           <h1>Checklists</h1>
-          <p>Builder visual MVP para configurar schemas tenant_checklist publicados para Web e Mobile.</p>
+          <p>Builder visual para configurar checklists publicados para Web e Mobile.</p>
         </div>
         <div className="platform-actions">
           <Button variant="secondary" onClick={loadChecklists} disabled={loading || saving || !apiContext}>
@@ -249,7 +249,7 @@ export function TenantChecklistsPage() {
         </div>
       </header>
 
-      {error ? <ErrorState title="Falha na W02A" detail={error} /> : null}
+      {error ? <ErrorState title="Falha ao carregar checklists" detail={error} /> : null}
 
       {createOpen ? (
         <Card title="Novo checklist">
@@ -264,7 +264,7 @@ export function TenantChecklistsPage() {
       ) : null}
 
       <section className="tenant-checklist-builder-shell">
-        <Card title="Checklists do tenant">
+        <Card title="Checklists da organização">
           <div className="erp-filter-bar">
             <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Buscar checklist" />
             <Select label="Status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as ChecklistFilter)}>
@@ -278,10 +278,10 @@ export function TenantChecklistsPage() {
 
           {loading ? <Skeleton lines={6} /> : null}
           {!loading && !error && checklists.length === 0 ? (
-            <EmptyState title="Nenhum checklist cadastrado" detail="Crie um draft e monte o schema com componentes da plataforma." />
+            <EmptyState title="Nenhum checklist cadastrado" detail="Crie um rascunho e monte o checklist com componentes da plataforma." />
           ) : null}
           {!loading && !error && checklists.length > 0 && filteredChecklists.length === 0 ? (
-            <EmptyState title="Nenhum resultado" detail="Ajuste a busca ou o filtro de status para ver outros templates." />
+            <EmptyState title="Nenhum resultado" detail="Ajuste a busca ou o filtro de status para ver outros checklists." />
           ) : null}
           {!loading && filteredChecklists.length > 0 ? (
             <Table
@@ -296,11 +296,11 @@ export function TenantChecklistsPage() {
                   header: "Status",
                   render: (row) => <ChecklistStatusBadge status={row.status} uiState={hasChecklistPendingChanges(row) ? "pending_changes" : undefined} />,
                 },
-                { key: "version", header: "Versao", render: (row) => `v${row.version}` },
+                { key: "version", header: "Versão", render: (row) => `v${row.version}` },
                 { key: "updatedAt", header: "Atualizado", render: (row) => new Date(row.updatedAt).toLocaleDateString("pt-BR") },
                 {
                   key: "actions",
-                  header: "Acoes",
+                  header: "Ações",
                   render: (row) => (
                     <div className="platform-actions">
                       <Button size="sm" variant="secondary" onClick={() => selectChecklist(row)}>
@@ -335,18 +335,18 @@ export function TenantChecklistsPage() {
               <ChecklistStatusBadge status={selectedChecklist.status} uiState={hasChecklistPendingChanges(selectedChecklist) ? "pending_changes" : undefined} />
             </div>
           ) : (
-            <EmptyState title="Selecione um checklist" detail="Escolha um template existente ou crie um draft para abrir o builder." />
+            <EmptyState title="Selecione um checklist" detail="Escolha um checklist existente ou crie um rascunho para abrir o builder." />
           )}
 
           {selectedChecklist ? (
             <>
               <div className="checklist-builder-layout">
                 <section>
-                  <h3>Palette</h3>
+                  <h3>Componentes</h3>
                   <ChecklistComponentPalette components={components} onAdd={handleAddComponent} />
                 </section>
                 <section>
-                  <h3>Canvas</h3>
+                  <h3>Estrutura</h3>
                   <ChecklistCanvas
                     components={builderDraft.components}
                     selectedComponentId={selectedComponentId}
@@ -356,7 +356,7 @@ export function TenantChecklistsPage() {
                   />
                 </section>
                 <section>
-                  <h3>Inspector</h3>
+                  <h3>Propriedades</h3>
                   <ChecklistInspector
                     component={selectedComponent}
                     onChange={(componentId, patch) => setBuilderDraft((current) => updateDraftComponent(current, componentId, patch))}
@@ -365,14 +365,14 @@ export function TenantChecklistsPage() {
               </div>
 
               <div className="checklist-builder-footer">
-                <p>Publicar gera/usa uma versao de schema para consumo pelos fluxos M10, M11 e M12.</p>
+                <p>Publicar gera uma nova versão do checklist para uso nos fluxos de campo.</p>
                 <div className="platform-actions">
                   <Button onClick={handleSaveBuilder} disabled={saving || builderDraft.components.length === 0}>
                     {saving ? "Salvando..." : "Salvar builder"}
                   </Button>
                   <Button variant="secondary" onClick={() => handlePublish(selectedChecklist)} disabled={saving}>
                     <Send size={14} />
-                    Publicar schema
+                    Publicar checklist
                   </Button>
                 </div>
               </div>
@@ -381,7 +381,7 @@ export function TenantChecklistsPage() {
         </Card>
       </section>
 
-      <Card title="Preview de schema">
+      <Card title="Pré-visualização do checklist">
         <ChecklistSchemaPreview draft={builderDraft} />
       </Card>
     </div>
@@ -433,7 +433,7 @@ function formatFilterLabel(status: ChecklistFilter): string {
     published: "Publicado",
     inactive: "Inativo",
     archived: "Arquivado",
-    pending_changes: "Alteracoes pendentes",
+    pending_changes: "Alterações pendentes",
   };
 
   return labels[status];

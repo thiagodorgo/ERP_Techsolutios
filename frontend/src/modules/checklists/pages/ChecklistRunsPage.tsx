@@ -11,7 +11,7 @@ import type { ChecklistApiContext, ChecklistAvailableItem, TenantChecklistType }
 const typeLabel: Record<TenantChecklistType, string> = {
   towing_collection: "Coleta/Reboque",
   towing_delivery: "Entrega/Reboque",
-  technical_evidence: "Evidencia tecnica",
+  technical_evidence: "Evidência técnica",
   custom: "Customizado",
 };
 
@@ -38,7 +38,7 @@ export function ChecklistRunsPage() {
         const available = await listAvailableChecklists(context);
         if (active) setItems(available);
       } catch {
-        if (active) setError("Nao foi possivel carregar checklists disponiveis.");
+        if (active) setError("Não foi possível carregar checklists disponíveis.");
       } finally {
         if (active) setLoading(false);
       }
@@ -61,16 +61,16 @@ export function ChecklistRunsPage() {
   }, [items, query]);
 
   if (!context) {
-    return <ErrorState title="Contexto operacional indisponivel" detail="Selecione um tenant e uma filial antes de executar checklists." />;
+    return <ErrorState title="Contexto operacional indisponível" detail="Selecione uma organização e uma filial antes de executar checklists." />;
   }
 
   return (
     <div className="page-stack">
       <header className="page-heading page-heading--row">
         <div>
-          <span>Operacao</span>
+          <span>OPERAÇÃO</span>
           <h1>Checklists Operacionais</h1>
-          <p>Execucao web de checklists publicados, usando o mesmo runtime schema-driven preparado para web e mobile.</p>
+          <p>Execução web de checklists publicados para a operação de campo.</p>
         </div>
       </header>
 
@@ -81,7 +81,7 @@ export function ChecklistRunsPage() {
       {loading ? <Skeleton lines={4} /> : null}
       {error ? <ErrorState title="Falha ao carregar checklists" detail={error} /> : null}
       {!loading && !error && filteredItems.length === 0 ? (
-        <EmptyState title="Nenhum checklist publicado" detail="Publique um template em W02A para disponibilizar execucao operacional." />
+        <EmptyState title="Nenhum checklist publicado" detail="Publique um checklist no builder para disponibilizar a execução operacional." />
       ) : null}
 
       {!loading && !error && filteredItems.length > 0 ? (
@@ -96,15 +96,15 @@ export function ChecklistRunsPage() {
                 <div>
                   <ClipboardList size={20} />
                   <div>
-                    <p>{item.description ?? "Checklist operacional publicado para execucao."}</p>
+                    <p>{item.description ?? "Checklist operacional publicado para execução."}</p>
                     <span>
-                      Versao {item.version} · {item.components.length} componentes · {item.status}
+                      Versão {item.version} · {item.components.length} componentes · {item.status}
                     </span>
                   </div>
                 </div>
                 <Button type="button" onClick={() => navigate(`/operations/checklists/${item.id}/run`)}>
                   <Play size={16} />
-                  Iniciar execucao
+                  Iniciar execução
                 </Button>
               </article>
             </Card>

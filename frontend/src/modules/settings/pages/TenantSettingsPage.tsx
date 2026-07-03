@@ -15,7 +15,7 @@ export function TenantSettingsPage() {
     <div className="page-stack tenant-settings-page">
       <header className="page-heading page-heading--row">
         <div>
-          <span>W03 · Administrador</span>
+          <span>Administrador</span>
           <h1>Configurações</h1>
           <p>Centralize preferências, acessos, módulos e padrões operacionais da empresa.</p>
         </div>
@@ -27,8 +27,8 @@ export function TenantSettingsPage() {
           <div className="tenant-settings-callout">
             <Building2 size={24} />
             <div>
-              <strong>Central do tenant</strong>
-              <p>W03 organiza a navegação de configuração sem duplicar telas especializadas como W02A Checklists.</p>
+              <strong>Central da organização</strong>
+              <p>Organize a navegação de configuração sem duplicar telas especializadas como Checklists.</p>
             </div>
           </div>
         </Card>
@@ -36,11 +36,8 @@ export function TenantSettingsPage() {
           <div className="tenant-settings-callout">
             <PermissionIcon size={24} />
             <div>
-              <strong>RBAC atual</strong>
-              <p>
-                Acesso protegido por <code>{tenantSettingsPermissionNote.permission}</code>. Permissão dedicada{" "}
-                <code>{tenantSettingsPermissionNote.plannedPermission}</code> fica como pendência backend.
-              </p>
+              <strong>Acesso protegido</strong>
+              <p>Acesso protegido pelo seu perfil de administrador na organização.</p>
             </div>
           </div>
         </Card>
@@ -57,7 +54,7 @@ export function TenantSettingsPage() {
                   <strong>{category.title}</strong>
                 </div>
                 <Chip tone={category.status === "active" ? "info" : "pending"}>
-                  {category.status === "active" ? "MVP" : "Planejado"}
+                  {category.status === "active" ? "Ativo" : "Em breve"}
                 </Chip>
               </header>
               <p>{category.description}</p>
@@ -77,7 +74,7 @@ export function TenantSettingsPage() {
         })}
       </section>
 
-      <Card title="Aparência planejada">
+      <Card title="Aparência">
         <div className="tenant-settings-theme-grid">
           {tenantSettingsThemes.map((theme) => (
             <article key={theme.key} className="tenant-settings-theme-card">

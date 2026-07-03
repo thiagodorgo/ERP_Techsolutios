@@ -38,7 +38,7 @@ export function DispatchDetailPanel({ dispatch }: { readonly dispatch: DispatchD
             <dd><DispatchPriorityBadge priority={dispatch.priority} /></dd>
           </div>
           <div>
-            <dt>Observacao</dt>
+            <dt>Observação</dt>
             <dd>{dispatch.observation ?? "Sem observacao"}</dd>
           </div>
           <div>

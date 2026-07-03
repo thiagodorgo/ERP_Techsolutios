@@ -17,7 +17,7 @@ export function ChecklistInspector({
       <Input label="Label" value={component.label} onChange={(event) => onChange(component.id, { label: event.target.value })} />
       <Checkbox label="Componente obrigatorio" checked={component.required} onChange={(event) => onChange(component.id, { required: event.target.checked })} />
       <div>
-        <strong>Configuracoes basicas</strong>
+        <strong>Configurações básicas</strong>
         {Object.entries(component.config).length === 0 ? (
           <p>Nenhuma configuracao inicial definida pelo catalogo.</p>
         ) : (

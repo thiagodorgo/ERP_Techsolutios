@@ -42,7 +42,7 @@ export function DispatchStatusActions({
         ))}
       </Select>
       <label className="ui-field">
-        <span>Observacao</span>
+        <span>Observação</span>
         <textarea value={observation} onChange={(event) => setObservation(event.target.value)} disabled={disabled} />
       </label>
       {status === "cancelled" ? (

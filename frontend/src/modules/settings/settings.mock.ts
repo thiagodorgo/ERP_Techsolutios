@@ -53,7 +53,7 @@ export const tenantSettingsCategories: TenantSettingsCategory[] = [
     status: "active",
     icon: CheckSquare,
     path: "/administrator/checklists",
-    ctaLabel: "Abrir W02A",
+    ctaLabel: "Abrir Checklists",
   },
   {
     id: "notifications",
