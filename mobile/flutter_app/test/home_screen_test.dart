@@ -18,7 +18,7 @@ void main() {
   ) async {
     await tester.pumpWidget(_homeWithPermissions({'expense_report:create'}));
 
-    expect(find.text('Gestao de Despesas'), findsOneWidget);
+    expect(find.text('Despesas'), findsOneWidget);
   });
 
   testWidgets('home shows enabled expense module with all permissions', (
@@ -28,13 +28,13 @@ void main() {
       _homeWithPermissions({'expense_report:read', 'expense_report:create'}),
     );
 
-    expect(find.text('Gestao de Despesas'), findsOneWidget);
+    expect(find.text('Despesas'), findsOneWidget);
   });
 
   testWidgets('home hides expense module without permission', (tester) async {
     await tester.pumpWidget(_homeWithPermissions({'expense_report:read'}));
 
-    expect(find.text('Gestao de Despesas'), findsNothing);
+    expect(find.text('Despesas'), findsNothing);
   });
 }
 

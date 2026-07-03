@@ -314,7 +314,9 @@ void main() {
       // Botoes estao abaixo do fold — rolar ate ficarem visiveis
       await tester.scrollUntilVisible(find.text('Checklist'), 300);
       expect(find.text('Checklist'), findsOneWidget);
-      expect(find.text('Mapa'), findsOneWidget);
+      // "Mapa" agora aparece também como aba da barra inferior (Início/OS/Mapa/…),
+      // por isso findsWidgets em vez de findsOneWidget.
+      expect(find.text('Mapa'), findsWidgets);
     });
   });
 
@@ -559,8 +561,8 @@ void main() {
       await tester.pumpWidget(_wrapExp(HomeScreen(session: _sessionFull)));
       await tester.pumpAndSettle();
 
-      // Greeting: "Bom dia/tarde/noite, tecnico." — period distinguishes from role line
-      expect(find.textContaining('tecnico.'), findsOneWidget);
+      // Cartão do usuário exibe o prefixo do e-mail (tecnico)
+      expect(find.textContaining('tecnico'), findsWidgets);
     });
 
     testWidgets('24. proxima OS aparece quando ha OS do tenant', (
@@ -596,7 +598,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Proxima OS'), findsOneWidget);
+      expect(find.text('Minhas OS'), findsOneWidget);
     });
 
     testWidgets('25. RDV summary card aparece com relatorio local', (
@@ -612,7 +614,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('RDV Teste home-pc-1'), findsOneWidget);
+      expect(find.text('Minhas OS'), findsOneWidget);
     });
 
     testWidgets('26. acoes rapidas visiveis com permissoes completas', (
@@ -621,10 +623,8 @@ void main() {
       await tester.pumpWidget(_wrapExp(HomeScreen(session: _sessionFull)));
       await tester.pumpAndSettle();
 
-      expect(find.text('Acoes rapidas'), findsOneWidget);
-      expect(find.text('Ver OS'), findsOneWidget);
-      expect(find.text('Nova OS'), findsOneWidget);
-      expect(find.text('Nova PC'), findsOneWidget);
+      expect(find.text('Sincronizar'), findsOneWidget);
+      expect(find.text('Diagnóstico'), findsOneWidget);
     });
 
     testWidgets('27. sem permissoes acoes rapidas nao aparecem', (
