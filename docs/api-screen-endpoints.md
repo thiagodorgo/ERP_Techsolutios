@@ -374,3 +374,57 @@ Regras:
 - usuario comum de tenant nao acessa custo, valor cobrável nem margem nesta branch;
 - `tenant_cloud_charges` e protegida por RLS no banco;
 - fatura, pagamento, checkout, emissão fiscal e UI completa ficam fora desta rodada.
+
+---
+
+## B-121 · Matriz MVP tela × endpoint × status (estado real verificado 2026-07-03)
+
+Backend: **todos os endpoints do MVP existem** sob `/api/v1` (verificado em `src/`);
+o único ausente é `POST /tenant/checklist-components` (o catálogo de componentes é
+somente-leitura). Legenda de status: **integrated** (consome endpoint real) ·
+**mock-flag** (real quando `VITE_USE_MOCKS=false`; mock por padrão + fallback) ·
+**local-first** (escreve local + fila de sync, replay no backend) · **static**
+(re-skin com dados fixos, sem camada de dados — pendente religar) · **planned**
+(sem endpoint; documentado como futuro).
+
+### Mobile (11)
+
+| Tela/fluxo | Endpoint real | Status | Observação |
+|---|---|---|---|
+| Login | POST /auth/login·/refresh·/logout | integrated (remote) | modo local-dev fabrica sessão |
+| Seleção de tenant | GET /mobile/bootstrap (+?tenantId) | integrated (remote) | multi-tenant só em modo remoto |
+| Home operacional | agrega bootstrap + repo de OS | local-first | sem `/mobile/home` (não usado) |
+| Lista de OS | GET /work-orders | integrated + cache | modo local: seed |
+| Detalhe/Check-in | PATCH /work-orders/:id/status (fila) | local-first + fila | GET /timeline existe mas não é chamado (gap) |
+| Execução da OS | PATCH /status (fila) | local-first + fila | conclusão gated por checklist local |
+| Checklists da OS | GET /mobile/checklists/available | integrated + cache | não filtra por workOrderId (gap) |
+| Execução de checklist | GET /mobile/checklists/:id/render + fila | integrated (render) + fila | run/marker/divergência/ciência via fila |
+| Evidências | POST /mobile/sync/evidence-actions + /mobile/evidence-uploads | integrated (B-108, allowlist) | anexo de checklist só metadata (gap bytes) |
+| Enviar localização | POST /mobile/field-locations | integrated | ping manual; sem tracking |
+| Sync/fila offline | /mobile/sync/* + /evidence-uploads + /field-locations | integrated | auto-sync não montado no app root (gap) |
+
+### Web (16)
+
+| Tela/fluxo | Endpoint real | Status | Observação |
+|---|---|---|---|
+| Login | POST /auth/login·/refresh·/logout | mock-flag | |
+| Seleção de contexto | GET /me/tenants, POST /auth/active-tenant | mock-flag | |
+| Shell/nav | GET /notifications/unread-count (sino) | static (nav) | GET /navigation/menu existe, não ligado (gap) |
+| Dashboard | /work-orders + /operations/dispatches + /field-locations/latest + /notifications/unread-count | static | pendente religar (B-121) |
+| **Lista de OS** | GET /work-orders | **integrated (B-121)** | mock-flag + fallback local |
+| Nova OS | POST /work-orders | mock-flag | |
+| Detalhe da OS | GET /work-orders/:id·/timeline; PATCH; POST /assign | static | pendente religar (B-121) |
+| Despachos | GET/POST/PATCH /operations/dispatches | mock-flag | |
+| Mapa operacional | GET /field-locations/latest·/history, /work-orders, /operations/dispatches | mock-flag | |
+| Checklists operacionais | GET /mobile/checklists/available | mock-flag | |
+| Execução de checklist | POST /mobile/checklist-runs (+/:id,/complete,/markers,/divergence,/comparison) | mock-flag | |
+| Evidências (checklist) | POST /mobile/checklist-runs/:runId/attachments; GET /download | mock-flag | UI nunca expõe path/bucket/URL |
+| Aprovação (na OS) | GET /approvals/pending·/:id; POST /approve·/reject | static | `approval.service` existe mas órfão — pendente (B-121) |
+| Notificações | GET /notifications·/unread-count; POST /read·/read-all·/archive | mock-flag | |
+| Admin de checklists | GET/POST /tenant/checklists, GET /tenant/checklist-components, PATCH/DELETE, POST /publish | mock-flag | |
+| Settings mínimo | — | planned | sem backend de settings; lacuna documentada |
+
+### Lacunas priorizadas (próximos PRs do B-121)
+1. Web: religar **Dashboard**, **Detalhe da OS** e o painel de **Aprovação** às services reais (hoje `static` após o re-skin de fidelidade — as services já existem atrás do flag).
+2. Web: ligar a navegação a `GET /navigation/menu` (hoje NAV fixo).
+3. Mobile: chamar `GET /work-orders/:id/timeline` no detalhe; montar auto-sync no app root; adapter de checklist tolerar `components` além de `fields`; base URL configurável por `--dart-define`.

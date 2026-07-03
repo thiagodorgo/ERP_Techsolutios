@@ -3537,3 +3537,31 @@ final do B-120; KPIs publicados junto. Numeracao contigua ao Codex.
 - B-120 CI: jobs frontend e flutter adicionados ao GitHub Actions.
 - KPIs NAO alterados neste PR (guard b106 exige merge nao-nulo). Publicacao em bloco K pos-merge com PR/merge/approved_head reais (754 testes, 45 blocos, 96%/78%).
 - PR unico #110; KPIs publicados apos o merge (bloco K).
+
+---
+
+## 2026-07-03 - B-121 Integracao MVP web (lista de OS real) + matriz tela x endpoint
+
+### Implementado
+- Web: `WorkOrdersPage` religada ao hook `useWorkOrders` / `listWorkOrdersFromApi`
+  (GET /api/v1/work-orders quando `VITE_USE_MOCKS=false`; mock atras do flag;
+  fallback local em erro). KPIs, busca e filtros de estado (Todas/Agendadas/Em
+  campo/Concluidas) computados dos dados reais; estados loading/vazio/fallback;
+  fidelidade visual preservada.
+- Doc: `docs/api-screen-endpoints.md` recebeu a matriz B-121 tela x endpoint x
+  status das 27 telas MVP (estado real verificado: backend 100% pronto, mobile
+  ~integrado offline-first, web mock-first com 5 telas ainda estaticas apos o
+  re-skin de fidelidade).
+
+### Escopo e seguranca
+- Sem token/tenantId no body (contexto do ator vai nos headers do api client).
+- Apenas telas MVP; nada fora do MVP ampliado. KPIs NAO alterados (C3).
+- Id do bloco: B-121 (o id B-110 ja existe — backend-auth-me-active-tenant).
+
+### Validacoes
+- Frontend: check OK, build OK, test:smoke 33/33.
+
+### Lacunas / proximo passo
+- Religar Dashboard, Detalhe da OS e Aprovacao (static -> services reais); nav via
+  /navigation/menu; fixes mobile cirurgicos (timeline no detalhe, auto-sync no root,
+  adapter components/fields, base URL). Ver matriz em docs/api-screen-endpoints.md.

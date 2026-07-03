@@ -3391,3 +3391,27 @@ KPIs publicados:
 Politica preservada: sem feature nova e sem alteracao em Flutter `lib/`,
 Flutter `test/`, backend funcional, frontend web, Prisma, migrations, infra,
 env, lockfiles ou Figma.
+
+---
+
+## Atualizacao 2026-07-03 - B-121 Integracao MVP geral (inicio: web lista de OS)
+
+Bloco B-121 (o id B-110 ja estava ocupado por backend-auth-me-active-tenant).
+Primeiro incremento da integracao real do MVP. Backend verificado em `src/`: todos
+os 27 endpoints MVP existem sob `/api/v1` (unico ausente: `POST
+/tenant/checklist-components`, catalogo somente-leitura). Mobile ja esta ~integrado
+(auth, bootstrap, checklists render/available, field-location, evidencias B-108,
+motor de sync); o web e mock-first e 5 telas ficaram estaticas apos o re-skin de
+fidelidade (dashboard, lista/detalhe de OS, aprovacao, nav).
+
+Entregue neste PR: a **Lista de OS web** voltou a consumir dados reais
+(`useWorkOrders` -> GET /api/v1/work-orders; mock atras do flag; fallback local) com
+KPIs/busca/filtros reais e estados loading/vazio/fallback, sem perder a fidelidade.
+Adicionada a **matriz tela x endpoint x status** das 27 telas em
+`docs/api-screen-endpoints.md`.
+
+Lacunas remanescentes: religar Dashboard/Detalhe da OS/Aprovacao web e a nav
+(`/navigation/menu`); fixes mobile (timeline no detalhe, auto-sync no root, adapter
+components/fields, base URL configuravel). Settings web sem backend real (lacuna).
+
+Validacao local B-121: frontend check/build/test:smoke 33/33. KPIs nao alterados.
