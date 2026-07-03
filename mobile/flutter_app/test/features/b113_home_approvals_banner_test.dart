@@ -100,7 +100,7 @@ void main() {
       await t.pumpWidget(_wrap(_sessionManager, []));
       await t.pumpAndSettle();
 
-      expect(find.text('Aprovacoes'), findsOneWidget);
+      expect(find.text('Aprovações'), findsOneWidget);
     });
 
     testWidgets('2. Tecnico NAO ve banner de aprovacoes', (t) async {
@@ -114,7 +114,7 @@ void main() {
       await t.pumpWidget(_wrap(_sessionManager, []));
       await t.pumpAndSettle();
 
-      expect(find.text('Nenhuma aprovacao pendente'), findsOneWidget);
+      expect(find.text('Nenhuma aprovação pendente'), findsOneWidget);
     });
 
     testWidgets('4. Banner com pendentes exibe mensagem de alerta', (t) async {
@@ -129,21 +129,21 @@ void main() {
       // With orders, content above the banner (stats row + NextOS card) pushes it
       // off the 600px viewport. Scroll down to bring it into view.
       await t.scrollUntilVisible(
-        find.text('Aprovacoes'),
+        find.text('Aprovações'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
       await t.pump();
 
-      expect(find.textContaining('aguardando aprovacao'), findsOneWidget);
-      expect(find.text('Nenhuma aprovacao pendente'), findsNothing);
+      expect(find.textContaining('aguardando aprovação'), findsOneWidget);
+      expect(find.text('Nenhuma aprovação pendente'), findsNothing);
     });
 
     testWidgets('5. Tap no banner navega para /approvals', (t) async {
       await t.pumpWidget(_wrap(_sessionManager, []));
       await t.pumpAndSettle();
 
-      await t.tap(find.text('Aprovacoes'));
+      await t.tap(find.text('Aprovações'));
       await t.pumpAndSettle();
 
       expect(find.text('Aprovacoes'), findsOneWidget);

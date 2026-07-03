@@ -3,16 +3,26 @@ import 'package:flutter/material.dart';
 class ErpMobileTheme {
   const ErpMobileTheme._();
 
-  // Brand palette
-  static const primary = Color(0xFF155D7B);
-  static const primaryDark = Color(0xFF0D3F57);
-  static const accent = Color(0xFF0D8FB3);
-  static const surface = Color(0xFFF7FAFC);
-  static const success = Color(0xFF127A55);
-  static const warning = Color(0xFFA56300);
-  static const danger = Color(0xFFB33333);
-  static const info = Color(0xFF2867A8);
-  static const pending = Color(0xFF6F5A00);
+  // Brand palette — alinhada ao protótipo (screen-refs/mobile)
+  static const primary = Color(0xFF2563EB); // azul ativo/primário
+  static const primaryDark = Color(0xFF1D4ED8);
+  static const accent = Color(0xFF2563EB);
+  static const surface = Color(0xFFFFFFFF);
+  static const success = Color(0xFF059669);
+  static const warning = Color(0xFFD97706);
+  static const danger = Color(0xFFDC2626);
+  static const info = Color(0xFF2563EB);
+  static const pending = Color(0xFF7C3AED);
+
+  // Tokens do protótipo (usados diretamente pelo mobile_kit para fidelidade)
+  static const navy = Color(0xFF0D1B2A); // header escuro (Início)
+  static const navy2 = Color(0xFF16324A); // fim do gradiente do header
+  static const pageBg = Color(0xFFF1F5F9); // fundo de página
+  static const cardBorder = Color(0xFFE2E8F0);
+  static const ink = Color(0xFF0F172A); // texto forte
+  static const inkMuted = Color(0xFF64748B); // texto secundário
+  static const inkFaint = Color(0xFF94A3B8); // texto terciário/labels
+  static const purple = Color(0xFF7C3AED);
 
   // Dark palette
   static const _darkBg = Color(0xFF0E1922);
@@ -37,19 +47,20 @@ class ErpMobileTheme {
     return ThemeData(
       colorScheme: scheme,
       useMaterial3: true,
-      scaffoldBackgroundColor: surface,
+      scaffoldBackgroundColor: pageBg,
       appBarTheme: const AppBarTheme(
         centerTitle: false,
-        backgroundColor: surface,
-        foregroundColor: primaryDark,
+        backgroundColor: Colors.white,
+        foregroundColor: ink,
         elevation: 0,
       ),
       cardTheme: CardThemeData(
         elevation: 0,
+        color: Colors.white,
         margin: const EdgeInsets.symmetric(vertical: 6),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: const BorderSide(color: Color(0xFFD8E1E8)),
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: cardBorder),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(

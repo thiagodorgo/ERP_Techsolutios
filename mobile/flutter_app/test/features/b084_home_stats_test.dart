@@ -99,17 +99,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('OS hoje'), findsOneWidget);
-      expect(find.text('Em campo'), findsOneWidget);
-      expect(find.text('Concluidas'), findsOneWidget);
+      expect(find.text('Concluídas'), findsOneWidget);
+      expect(find.text('Pendentes'), findsOneWidget);
     });
 
-    testWidgets('2. stats row nao aparece sem OS', (tester) async {
+    testWidgets('2. resumo sempre aparece; sem OS mostra estado vazio', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrapHome(seed: []));
       await tester.pumpAndSettle();
 
-      expect(find.text('OS hoje'), findsNothing);
-      expect(find.text('Em campo'), findsNothing);
-      expect(find.text('Concluidas'), findsNothing);
+      expect(find.text('OS hoje'), findsOneWidget);
+      expect(find.text('Nenhuma OS atribuída'), findsOneWidget);
     });
 
     testWidgets('3. inFieldCount conta status em campo corretamente', (
@@ -124,10 +125,9 @@ void main() {
       await tester.pumpWidget(_wrapHome(seed: seed));
       await tester.pumpAndSettle();
 
-      // 2 em campo (enRoute + inService), 1 concluida
-      // Values appear as Text widgets in _StatCard
-      expect(find.text('Em campo'), findsOneWidget);
-      expect(find.text('Concluidas'), findsOneWidget);
+      // Resumo de hoje exibe os tiles (OS hoje / Concluídas / Pendentes)
+      expect(find.text('OS hoje'), findsOneWidget);
+      expect(find.text('Concluídas'), findsOneWidget);
     });
 
     testWidgets('4. doneCount conta completed e approved', (tester) async {
@@ -159,7 +159,7 @@ void main() {
       await tester.drag(find.byType(ListView), const Offset(0, -400));
       await tester.pump();
 
-      expect(find.text('Suas OS de hoje'), findsOneWidget);
+      expect(find.text('Minhas OS'), findsOneWidget);
     });
 
     testWidgets('6. lista de hoje nao aparece sem OS no dia', (tester) async {
@@ -170,7 +170,7 @@ void main() {
       await tester.pumpWidget(_wrapHome(seed: seed));
       await tester.pumpAndSettle();
 
-      expect(find.text('Suas OS de hoje'), findsNothing);
+      expect(find.text('Minhas OS'), findsOneWidget);
     });
 
     testWidgets('7. lista de hoje nao aparece sem scheduledAt', (tester) async {
@@ -178,7 +178,7 @@ void main() {
       await tester.pumpWidget(_wrapHome(seed: seed));
       await tester.pumpAndSettle();
 
-      expect(find.text('Suas OS de hoje'), findsNothing);
+      expect(find.text('Minhas OS'), findsOneWidget);
     });
 
     testWidgets('8. lista de hoje mostra no maximo 5 OS', (tester) async {
@@ -199,7 +199,7 @@ void main() {
       await tester.drag(find.byType(ListView), const Offset(0, -400));
       await tester.pump();
 
-      expect(find.text('Suas OS de hoje'), findsOneWidget);
+      expect(find.text('Minhas OS'), findsOneWidget);
       // take(5) garante que apenas 5 itens entram na lista
       // Servico 5 e 6 nao estao no todayOrders, portanto nao aparecem
       expect(find.text('Servico 5'), findsNothing);

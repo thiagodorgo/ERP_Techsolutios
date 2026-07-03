@@ -1,69 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'mobile_kit.dart';
+
+/// Scaffold com a barra inferior fiel ao protótipo
+/// (Início · OS · Mapa · Finanças · Perfil).
+///
+/// Quando [showAppBar] é `false`, a tela desenha o próprio header (ex.: header
+/// navy da Home ou [MobileScreenHeader] branco das telas internas).
 class ErpScaffold extends StatelessWidget {
   const ErpScaffold({
-    required this.title,
     required this.body,
+    this.title,
     this.actions = const <Widget>[],
     this.floatingActionButton,
+    this.showAppBar = true,
     super.key,
   });
 
-  final String title;
   final Widget body;
+  final String? title;
   final List<Widget> actions;
   final Widget? floatingActionButton;
+  final bool showAppBar;
 
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
     return Scaffold(
-      appBar: AppBar(title: Text(title), actions: actions),
+      appBar: showAppBar
+          ? AppBar(title: Text(title ?? ''), actions: actions)
+          : null,
       floatingActionButton: floatingActionButton,
       body: body,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex(location),
-        onDestinationSelected: (index) => context.go(_pathForIndex(index)),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Prestação de Contas',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.route_outlined),
-            selectedIcon: Icon(Icons.route),
-            label: 'Campo',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.sync_outlined),
-            selectedIcon: Icon(Icons.sync),
-            label: 'Sync',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Perfil',
-          ),
-        ],
+      bottomNavigationBar: MobileBottomNav(
+        currentIndex: _selectedIndex(location),
+        onTap: (index) => context.go(_pathForIndex(index)),
       ),
     );
   }
 
   int _selectedIndex(String location) {
-    if (location.startsWith('/expenses')) {
+    if (location.startsWith('/work-orders')) {
       return 1;
     }
-    if (location == '/work-orders' || location == '/field-map') {
+    if (location.startsWith('/field-map') || location.startsWith('/field')) {
       return 2;
     }
-    if (location == '/sync' || location == '/diagnostics') {
+    if (location.startsWith('/expenses')) {
       return 3;
     }
     if (location == '/profile') {
@@ -74,9 +58,9 @@ class ErpScaffold extends StatelessWidget {
 
   String _pathForIndex(int index) {
     return switch (index) {
-      1 => '/expenses',
-      2 => '/work-orders',
-      3 => '/sync',
+      1 => '/work-orders',
+      2 => '/field-map',
+      3 => '/expenses',
       4 => '/profile',
       _ => '/',
     };
