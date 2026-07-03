@@ -27,7 +27,7 @@ export function ChecklistCanvas({
           <button type="button" onClick={() => onSelect(component.id)}>
             <strong>{component.label}</strong>
             <span>
-              {index + 1}. {component.type} · {component.required ? "Obrigatorio" : "Opcional"}
+              {index + 1}. {component.type} · {component.required ? "Obrigatório" : "Opcional"}
             </span>
           </button>
           <div className="platform-actions">

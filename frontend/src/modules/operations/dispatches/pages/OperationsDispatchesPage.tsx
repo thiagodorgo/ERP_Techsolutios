@@ -73,9 +73,9 @@ export function OperationsDispatchesPage() {
     <section className="page-stack work-orders-page dispatches-page">
       <header className="page-heading page-heading--row">
         <div>
-          <span>Operacao</span>
+          <span>Operação</span>
           <h1>Despachos Operacionais</h1>
-          <p>Acompanhe criacao, status, reatribuicao e cancelamento de despachos vinculados a OS.</p>
+          <p>Acompanhe criação, status, reatribuição e cancelamento de despachos vinculados à OS.</p>
         </div>
         <div className="work-orders-actions">
           <Chip tone={source === "api" ? "success" : source === "fallback" ? "warning" : "info"}>

@@ -72,7 +72,7 @@ export const tenantNavigation: NavigationItem[] = [
   },
   {
     id: "tenant-notifications",
-    label: "Notificacoes",
+    label: "Notificações",
     path: "/notifications",
     scope: "tenant",
     mode: "operation",

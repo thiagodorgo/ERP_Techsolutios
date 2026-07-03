@@ -22,7 +22,7 @@ export const CHECKLIST_RUN_STATUSES: Exclude<ChecklistRunStatus, "cancelled">[] 
 export const checklistTypeLabel: Record<TenantChecklistType, string> = {
   towing_collection: "Guincho - coleta",
   towing_delivery: "Guincho - entrega",
-  technical_evidence: "Evidencia tecnica",
+  technical_evidence: "Evidência técnica",
   custom: "Customizado",
 };
 
@@ -44,7 +44,7 @@ export const checklistComponentTypeLabel: Record<TenantChecklistComponentType, s
   vehicle_selector: "Seletor de veiculo",
   damage_map: "Mapa de avarias",
   photo_upload: "Foto",
-  observation: "Observacao",
+  observation: "Observação",
   comparison: "Comparacao",
   acknowledgement: "Ciencia",
   before_after: "Antes e depois",

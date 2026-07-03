@@ -27,14 +27,14 @@ export function DispatchesTable({
   const columns = useMemo(
     () => [
       { key: "workOrder", header: "OS", render: (item: DispatchListItem) => <strong>{item.workOrderCode ?? item.workOrderId}</strong> },
-      { key: "title", header: "Titulo", render: (item: DispatchListItem) => item.workOrderTitle ?? "OS sem titulo local" },
+      { key: "title", header: "Título", render: (item: DispatchListItem) => item.workOrderTitle ?? "OS sem título local" },
       { key: "status", header: "Status", render: (item: DispatchListItem) => <DispatchStatusBadge status={item.status} /> },
       { key: "priority", header: "Prioridade", render: (item: DispatchListItem) => <DispatchPriorityBadge priority={item.priority} /> },
       { key: "operator", header: "Operador", render: (item: DispatchListItem) => item.operatorUserId },
       { key: "created", header: "Criado em", render: (item: DispatchListItem) => formatDispatchDate(item.createdAt) },
       {
         key: "actions",
-        header: "Acoes",
+        header: "Ações",
         render: (item: DispatchListItem) => (
           <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
             <Button type="button" size="sm" variant="secondary" onClick={() => onDetail(item)}>

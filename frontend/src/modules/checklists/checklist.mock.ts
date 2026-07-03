@@ -10,8 +10,8 @@ import type {
 export const mockChecklistComponents: TenantChecklistComponentCatalogItem[] = [
   {
     type: "vehicle_selector",
-    label: "Seletor de veiculo",
-    description: "Seleciona tipo de veiculo e resolve imagem dinamica para vistoria.",
+    label: "Seletor de veículo",
+    description: "Seleciona o tipo de veículo e resolve a imagem dinâmica para vistoria.",
     defaultConfig: {
       imageStrategy: "by_vehicle_type",
     },
@@ -19,7 +19,7 @@ export const mockChecklistComponents: TenantChecklistComponentCatalogItem[] = [
   {
     type: "damage_map",
     label: "Mapa de avarias",
-    description: "Permite marcar avarias ou pontos de atencao sobre a imagem.",
+    description: "Permite marcar avarias ou pontos de atenção sobre a imagem.",
     defaultConfig: {
       requireMarker: true,
     },
@@ -27,31 +27,31 @@ export const mockChecklistComponents: TenantChecklistComponentCatalogItem[] = [
   {
     type: "photo_upload",
     label: "Foto",
-    description: "Coleta fotos obrigatorias ou opcionais conforme template.",
+    description: "Coleta fotos obrigatórias ou opcionais conforme o modelo.",
     defaultConfig: {
       minPhotos: 1,
     },
   },
   {
     type: "observation",
-    label: "Observacao",
-    description: "Coleta observacoes textuais, inclusive em divergencias.",
+    label: "Observação",
+    description: "Coleta observações textuais, inclusive em divergências.",
     defaultConfig: {
       multiline: true,
     },
   },
   {
     type: "comparison",
-    label: "Comparacao",
-    description: "Compara entrega com coleta ou execucoes relacionadas.",
+    label: "Comparação",
+    description: "Compara a entrega com a coleta ou execuções relacionadas.",
     defaultConfig: {
       compareWith: "related_collection",
     },
   },
   {
     type: "acknowledgement",
-    label: "Ciencia",
-    description: "Registra ciencia de responsabilidade.",
+    label: "Ciência",
+    description: "Registra ciência de responsabilidade.",
     defaultConfig: {
       requireAcknowledgement: true,
     },
@@ -59,7 +59,7 @@ export const mockChecklistComponents: TenantChecklistComponentCatalogItem[] = [
   {
     type: "before_after",
     label: "Antes e depois",
-    description: "Coleta evidencia tecnica antes/depois para servicos.",
+    description: "Coleta evidência técnica antes/depois para serviços.",
     defaultConfig: {
       requireBothStages: true,
     },
@@ -70,8 +70,8 @@ let checklists: TenantChecklist[] = [
   {
     id: "chk_towing_collection",
     tenantId: "ten-industrial-01",
-    name: "Coleta de veiculo rebocado",
-    description: "Seleciona tipo de veiculo, registra avarias e fotos na coleta.",
+    name: "Coleta de veículo rebocado",
+    description: "Seleciona o tipo de veículo, registra avarias e fotos na coleta.",
     type: "towing_collection",
     status: "published",
     version: 3,
@@ -80,16 +80,16 @@ let checklists: TenantChecklist[] = [
     createdAt: "2026-06-04T13:00:00.000Z",
     updatedAt: "2026-06-05T13:00:00.000Z",
     components: [
-      component("vehicle_selector", "Tipo de veiculo", true, 0),
-      component("damage_map", "Marcacao de avarias", true, 1),
+      component("vehicle_selector", "Tipo de veículo", true, 0),
+      component("damage_map", "Marcação de avarias", true, 1),
       component("photo_upload", "Fotos da coleta", true, 2),
     ],
   },
   {
     id: "chk_towing_delivery",
     tenantId: "ten-industrial-01",
-    name: "Entrega de veiculo rebocado",
-    description: "Nova vistoria, comparacao com coleta e ciencia quando houver divergencia.",
+    name: "Entrega de veículo rebocado",
+    description: "Nova vistoria, comparação com a coleta e ciência quando houver divergência.",
     type: "towing_delivery",
     status: "published",
     version: 2,
@@ -99,12 +99,12 @@ let checklists: TenantChecklist[] = [
     updatedAt: "2026-06-06T17:30:00.000Z",
     components: [
       component("damage_map", "Nova vistoria", true, 0),
-      component("comparison", "Comparacao com coleta", true, 1),
-      component("observation", "Observacao de divergencia", true, 2),
+      component("comparison", "Comparação com a coleta", true, 1),
+      component("observation", "Observação de divergência", true, 2),
       {
-        ...component("acknowledgement", "Ciencia de responsabilidade", true, 3),
+        ...component("acknowledgement", "Ciência de responsabilidade", true, 3),
         config: {
-          message: "Declaro ciencia da divergencia registrada na entrega e da responsabilidade indicada pelo tenant.",
+          message: "Declaro ciência da divergência registrada na entrega e da responsabilidade indicada pela organização.",
           requireObservation: true,
         },
       },
@@ -113,8 +113,8 @@ let checklists: TenantChecklist[] = [
   {
     id: "chk_technical_before_after",
     tenantId: "ten-industrial-01",
-    name: "Evidencia tecnica antes/depois",
-    description: "Reparo, construcao, manutencao ou servico interno/externo.",
+    name: "Evidência técnica antes/depois",
+    description: "Reparo, construção, manutenção ou serviço interno/externo.",
     type: "technical_evidence",
     status: "published",
     version: 1,
@@ -129,7 +129,7 @@ let checklists: TenantChecklist[] = [
           requireBothStages: true,
         },
       },
-      component("observation", "Laudo tecnico", false, 1),
+      component("observation", "Laudo técnico", false, 1),
     ],
   },
 ];
@@ -229,7 +229,7 @@ function componentFromInput(input: TenantChecklistComponentInput): TenantCheckli
 
 function findChecklist(checklistId: string): TenantChecklist {
   const checklist = checklists.find((item) => item.id === checklistId);
-  if (!checklist) throw new Error("Checklist nao encontrado.");
+  if (!checklist) throw new Error("Checklist não encontrado.");
   return checklist;
 }
 

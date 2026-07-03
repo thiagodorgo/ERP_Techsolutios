@@ -105,12 +105,12 @@ export function OperationsMapPage() {
         </div>
         <div className="operations-map-actions">
           <Chip tone={source === "api" ? "success" : source === "fallback" ? "warning" : "info"}>
-            Fonte: {source === "api" ? "API real" : source === "fallback" ? "fallback seguro" : "mock local"}
+            Fonte: {source === "api" ? "API real" : source === "fallback" ? "fallback seguro" : "dados de demonstração"}
           </Chip>
           <Chip tone={realtime.status === "connected" ? "success" : realtime.status === "unavailable" ? "danger" : "warning"}>
             {realtime.label}
           </Chip>
-          {realtime.fallbackPolling && realtime.status !== "fallback" ? <Chip tone="warning">Fallback polling ativo</Chip> : null}
+          {realtime.fallbackPolling && realtime.status !== "fallback" ? <Chip tone="warning">Atualização periódica</Chip> : null}
           {canReadWorkOrders ? <Chip tone="info">OS vinculadas</Chip> : null}
           {canReadDispatches ? <Chip tone="info">Despachos vinculados</Chip> : null}
           {refreshedAt ? <Chip tone="default">Atualizado {formatFieldLocationDate(refreshedAt)}</Chip> : null}
@@ -131,7 +131,7 @@ export function OperationsMapPage() {
 
       {source === "fallback" ? (
         <Alert title="Fallback seguro ativo" tone="warning">
-          {fallbackReason ?? "A tela esta usando dados locais seguros ate a API retornar dados."}
+          {fallbackReason ?? "A tela está usando dados locais seguros até a API retornar dados."}
         </Alert>
       ) : null}
       {error ? (
@@ -145,12 +145,12 @@ export function OperationsMapPage() {
         </Alert>
       ) : null}
       {realtime.status === "unavailable" ? (
-        <Alert title="Realtime indisponivel" tone="warning">
+        <Alert title="Realtime indisponível" tone="warning">
           {realtime.detail}
         </Alert>
       ) : null}
       {workOrderContextId ? (
-        <section className="erp-filter-bar operations-map-actions" aria-label="Contexto da ordem de servico">
+        <section className="erp-filter-bar operations-map-actions" aria-label="Contexto da ordem de serviço">
           <Chip tone={workOrderContextLocations.length > 0 ? "info" : "warning"}>
             OS filtrada: {workOrderContextLabel}
           </Chip>
@@ -165,19 +165,19 @@ export function OperationsMapPage() {
 
       {loading && locations.length === 0 ? <Skeleton lines={4} /> : null}
       {!loading && locations.length === 0 && source === "api" ? (
-        <EmptyState title="Nenhum operador localizado" detail="A API nao retornou localizacoes para o tenant atual." />
+        <EmptyState title="Nenhum operador localizado" detail="A API não retornou localizações para a organização atual." />
       ) : null}
       {!loading && locations.length > 0 && workOrderContextLocations.length === 0 && workOrderContextId ? (
         <section className="ui-state ui-state--error">
           <strong>Nenhum operador ou despacho para esta OS</strong>
-          <p>O mapa nao encontrou operadores ou despachos vinculados a OS informada no contexto atual.</p>
+          <p>O mapa não encontrou operadores ou despachos vinculados à OS informada no contexto atual.</p>
           <Button type="button" variant="secondary" size="sm" onClick={clearWorkOrderContext}>
             <X size={16} /> Limpar contexto da OS
           </Button>
         </section>
       ) : null}
       {!loading && workOrderContextLocations.length > 0 && filteredLocations.length === 0 ? (
-        <ErrorState title="Nenhum resultado para os filtros" detail="Ajuste status, equipe, busca, filtro de localizacao antiga ou limpe o contexto da OS." />
+        <ErrorState title="Nenhum resultado para os filtros" detail="Ajuste status, equipe, busca, filtro de localização antiga ou limpe o contexto da OS." />
       ) : null}
 
       {filteredLocations.length > 0 ? (

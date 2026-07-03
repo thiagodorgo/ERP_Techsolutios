@@ -254,7 +254,8 @@ export function PriorityChip({ priority }: { priority: WorkOrder["priority"] }) 
 
 export function SlaChip({ state }: { state: WorkOrder["slaState"] }) {
   const tone = state === "breached" ? "danger" : state === "attention" ? "warning" : "success";
-  return <Chip tone={tone}>SLA {state.replace("_", " ")}</Chip>;
+  const slaLabel = state === "breached" ? "estourado" : state === "attention" ? "em risco" : "em dia";
+  return <Chip tone={tone}>SLA {slaLabel}</Chip>;
 }
 
 export function BlockedBanner({ reason }: { reason: string }) {
@@ -412,8 +413,8 @@ export function LogisticsKpiStrip({ assets }: { assets: LogisticsAsset[] }) {
   return (
     <div className="erp-logistics-strip">
       <KpiCard label="Equipes rastreadas" value={String(assets.length)} delta="tempo real" tone="info" />
-      <KpiCard label="Disponiveis" value={String(available)} delta="para despacho" tone="success" />
-      <KpiCard label="Bloqueios" value={String(blocked)} delta="exigem acao" tone={blocked ? "danger" : "success"} />
+      <KpiCard label="Disponíveis" value={String(available)} delta="para despacho" tone="success" />
+      <KpiCard label="Bloqueios" value={String(blocked)} delta="exigem ação" tone={blocked ? "danger" : "success"} />
     </div>
   );
 }

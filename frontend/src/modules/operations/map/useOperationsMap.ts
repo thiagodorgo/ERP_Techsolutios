@@ -207,7 +207,7 @@ function createRealtimeState(
     return {
       status,
       label: "Realtime reconectando",
-      detail: detail ?? "Realtime degradado; polling de 30s permanece ativo.",
+      detail: detail ?? "Atualização em tempo real degradada; usando atualização periódica de 30s.",
       fallbackPolling: true,
       retryCount,
       ...timestamps,
@@ -217,8 +217,8 @@ function createRealtimeState(
   if (status === "fallback") {
     return {
       status,
-      label: "Fallback polling ativo",
-      detail: detail ?? "A tela esta operando com polling local ou mock sem SSE.",
+      label: "Atualização periódica",
+      detail: detail ?? "A tela está usando atualização periódica em vez de tempo real.",
       fallbackPolling: true,
       retryCount,
       ...timestamps,

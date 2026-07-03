@@ -56,7 +56,7 @@ export function DispatchCreateForm({
         <option value="draft">Rascunho</option>
       </Select>
       <label className="ui-field">
-        <span>Observacao</span>
+        <span>Observação</span>
         <textarea value={observation} onChange={(event) => setObservation(event.target.value)} disabled={disabled} />
       </label>
       <Button type="button" onClick={submit} disabled={disabled || saving}>

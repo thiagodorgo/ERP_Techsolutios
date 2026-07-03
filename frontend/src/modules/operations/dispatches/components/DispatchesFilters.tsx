@@ -20,7 +20,7 @@ export function DispatchesFilters({
         <input
           value={filters.search}
           onChange={(event) => onChange({ ...filters, search: event.target.value })}
-          placeholder="Buscar por OS, codigo ou operador"
+          placeholder="Buscar por OS, código ou operador"
         />
       </label>
       <Select label="Status" value={filters.status} onChange={(event) => onChange({ ...filters, status: event.target.value as DispatchesFilterState["status"] })}>
@@ -41,7 +41,7 @@ export function DispatchesFilters({
           <option key={operatorId} value={operatorId}>{operatorId}</option>
         ))}
       </Select>
-      <Input label="Operador manual" value={filters.operatorUserId} onChange={(event) => onChange({ ...filters, operatorUserId: event.target.value })} placeholder="UUID ou user ID" />
+      <Input label="Operador manual" value={filters.operatorUserId} onChange={(event) => onChange({ ...filters, operatorUserId: event.target.value })} placeholder="Nome do operador" />
       <span className="work-orders-filter-label"><Filter size={16} /> Filtros ativos</span>
     </section>
   );

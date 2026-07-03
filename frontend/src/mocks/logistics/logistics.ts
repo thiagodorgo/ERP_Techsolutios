@@ -8,7 +8,7 @@ export const mockAssets: LogisticsAsset[] = [
 ];
 
 export const mockQueues: DispatchQueue[] = [
-  { id: "q-critical", title: "SLA critico", count: 4, risk: "critical", items: ["OS-10021", "OS-10018", "OS-09987"] },
+  { id: "q-critical", title: "SLA crítico", count: 4, risk: "critical", items: ["OS-10021", "OS-10018", "OS-09987"] },
   { id: "q-no-team", title: "Sem equipe", count: 7, risk: "attention", items: ["OS-10031", "OS-10033", "OS-10035"] },
-  { id: "q-approval", title: "Aguardando aprovacao", count: 5, risk: "attention", items: ["OS-10012", "OS-10021"] },
+  { id: "q-approval", title: "Aguardando aprovação", count: 5, risk: "attention", items: ["OS-10012", "OS-10021"] },
 ];

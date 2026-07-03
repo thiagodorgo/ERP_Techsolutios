@@ -140,7 +140,7 @@ export function OperationsOperatorDetailPanel({
                 <div className="operations-map-work-order-badges">
                   <DispatchStatusBadge status={location.currentDispatch.status} />
                 </div>
-                {location.currentDispatch.observation ? <span>Observacao: {location.currentDispatch.observation}</span> : null}
+                {location.currentDispatch.observation ? <span>Observação: {location.currentDispatch.observation}</span> : null}
                 <Link className="ui-button ui-button--secondary ui-button--sm" to={`/operations/dispatches?${dispatchFollowParams.toString()}`}>
                   Acompanhar despacho
                 </Link>

@@ -32,7 +32,7 @@ export function DispatchReassignForm({
       <Input label="Operador atual" value={currentOperatorUserId} disabled />
       <Input label="Novo operador" value={operatorUserId} onChange={(event) => setOperatorUserId(event.target.value)} disabled={disabled} placeholder="UUID ou user ID" />
       <label className="ui-field">
-        <span>Observacao</span>
+        <span>Observação</span>
         <textarea value={observation} onChange={(event) => setObservation(event.target.value)} disabled={disabled} />
       </label>
       <label className="ui-field">

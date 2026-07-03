@@ -20,7 +20,7 @@ export function LogisticsPage() {
   return (
     <section className="page-stack">
       <header className="page-heading">
-        <span>W20 Painel Logistico</span>
+        <span>LOGÍSTICA</span>
         <h1>Despacho, filas e acompanhamento em tempo real</h1>
       </header>
       {!data ? <Skeleton lines={7} /> : null}

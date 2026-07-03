@@ -235,7 +235,7 @@ export function ChecklistRuntimePage() {
         <div>
           <span>Runtime operacional</span>
           <h1>{schema?.name ?? "Executar checklist"}</h1>
-          <p>Execucao web schema-driven para checklists publicados do tenant.</p>
+          <p>Execução web de checklists publicados da organização.</p>
         </div>
         <Button type="button" variant="secondary" onClick={() => navigate("/operations/checklists")}>
           <RotateCcw size={16} />
@@ -267,7 +267,7 @@ export function ChecklistRuntimePage() {
           {progress.missingLabels.length > 0 ? (
             <small>Pendentes: {progress.missingLabels.join(", ")}</small>
           ) : (
-            <small>Obrigatorios basicos prontos para validacao final do backend.</small>
+            <small>Itens obrigatórios básicos prontos para validação final.</small>
           )}
         </section>
       ) : null}
@@ -333,8 +333,8 @@ function hasComparisonComponent(schema: ChecklistRenderSchema): boolean {
 }
 
 function typeHelpText(type: ChecklistRenderSchema["type"]): string {
-  if (type === "towing_collection") return "Coleta/reboque: veiculo, avarias e fotos conforme schema.";
-  if (type === "towing_delivery") return "Entrega/reboque: comparacao, divergencia e ciencia quando vierem no schema.";
-  if (type === "technical_evidence") return "Evidencia tecnica: antes/depois, fotos e observacoes conforme schema.";
-  return "Checklist customizado orientado pelo schema publicado.";
+  if (type === "towing_collection") return "Coleta/reboque: veículo, avarias e fotos.";
+  if (type === "towing_delivery") return "Entrega/reboque: comparação, divergência e ciência quando aplicável.";
+  if (type === "technical_evidence") return "Evidência técnica: antes/depois, fotos e observações.";
+  return "Checklist personalizado conforme o modelo publicado.";
 }

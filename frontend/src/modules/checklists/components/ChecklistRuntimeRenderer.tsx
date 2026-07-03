@@ -71,7 +71,7 @@ export function ChecklistRuntimeRenderer({
 
   return (
     <section className="checklist-runtime-renderer">
-      <Alert title="Execucao orientada por schema" tone="info">
+      <Alert title="Execução do checklist" tone="info">
         Os campos abaixo vieram do template publicado pela API. M10, M11 e M12 devem usar este mesmo runtime, sem campos hardcoded.
       </Alert>
       {orderedComponents.map((component) => (

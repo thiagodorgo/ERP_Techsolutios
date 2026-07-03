@@ -38,20 +38,20 @@ export function OperationsMapCanvas({
   const isApiKeyError = Boolean(apiKey) && mapsLoadState === "error";
 
   return (
-    <section className="operations-map-canvas" aria-label="Visualizacao operacional">
+    <section className="operations-map-canvas" aria-label="Visualização operacional">
       <header>
         <div>
           <Map size={20} />
           <strong>Visualização operacional</strong>
         </div>
         <Chip tone={isApiKeyError ? "warning" : "info"}>
-          {isApiKeyError ? "Google Maps indisponível" : "Mapa placeholder"}
+          {isApiKeyError ? "Google Maps indisponível" : "Modo de demonstração"}
         </Chip>
       </header>
       <p>
         {isApiKeyError
           ? "Google Maps não pôde ser carregado. Visualização operacional alternativa ativa."
-          : "Configure VITE_GOOGLE_MAPS_API_KEY para ativar o mapa real."}
+          : "Visualização de mapa em modo de demonstração."}
       </p>
       <div className="operations-map-canvas__surface">
         <span className="operations-map-canvas__road operations-map-canvas__road--primary" />
