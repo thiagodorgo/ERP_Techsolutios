@@ -642,7 +642,7 @@ void main() {
       await t.pumpWidget(buildScreen(multiTenantSession()));
       await t.pumpAndSettle();
 
-      expect(find.text('Selecionar empresa'), findsOneWidget);
+      expect(find.text('Selecionar organização'), findsOneWidget);
     });
 
     testWidgets('5.2 exibe todos os tenants disponiveis', (t) async {
@@ -653,11 +653,13 @@ void main() {
       expect(find.text('Empresa Beta'), findsOneWidget);
     });
 
-    testWidgets('5.3 exibe botao Acessar para cada tenant', (t) async {
+    testWidgets('5.3 exibe cada organização como linha tocável (chevron)', (
+      t,
+    ) async {
       await t.pumpWidget(buildScreen(multiTenantSession()));
       await t.pumpAndSettle();
 
-      expect(find.text('Acessar'), findsNWidgets(2));
+      expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
     });
 
     testWidgets('5.4 exibe instrucao para o usuario selecionar empresa', (
@@ -666,14 +668,16 @@ void main() {
       await t.pumpWidget(buildScreen(multiTenantSession()));
       await t.pumpAndSettle();
 
-      expect(find.textContaining('mais de uma empresa'), findsOneWidget);
+      expect(find.textContaining('não se misturam'), findsOneWidget);
     });
 
-    testWidgets('5.5 exibe inicial do tenant no CircleAvatar', (t) async {
+    testWidgets('5.5 exibe as iniciais da organização no avatar', (t) async {
       await t.pumpWidget(buildScreen(multiTenantSession()));
       await t.pumpAndSettle();
 
-      expect(find.text('E'), findsNWidgets(2)); // 'E' from 'Empresa Alpha/Beta'
+      // "Empresa Alpha" → EA, "Empresa Beta" → EB
+      expect(find.text('EA'), findsOneWidget);
+      expect(find.text('EB'), findsOneWidget);
     });
   });
 
