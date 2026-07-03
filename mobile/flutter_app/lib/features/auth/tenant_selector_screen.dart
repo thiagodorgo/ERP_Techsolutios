@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/bootstrap/bootstrap_repository.dart';
 import '../../core/bootstrap/bootstrap_session.dart';
 import '../../core/network/api_error.dart';
-import '../../core/sync/sync_models.dart';
-import '../../shared/ui/erp_components.dart';
+import '../../shared/theme/erp_mobile_theme.dart';
+import '../../shared/ui/mobile_kit.dart';
 
 class TenantSelectorScreen extends ConsumerWidget {
   const TenantSelectorScreen({super.key});
@@ -16,22 +16,32 @@ class TenantSelectorScreen extends ConsumerWidget {
     final bootstrapAsync = ref.watch(bootstrapNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Selecionar empresa')),
-      body: bootstrapAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _BootstrapErrorView(
-          error: error,
-          onRetry: () => ref.read(bootstrapNotifierProvider.notifier).retry(),
-        ),
-        data: (session) => _TenantList(
-          session: session,
-          onSelect: (tenant) async {
-            await ref
-                .read(bootstrapNotifierProvider.notifier)
-                .switchTenant(tenant);
-            if (context.mounted) context.go('/');
-          },
-        ),
+      body: Column(
+        children: [
+          MobileScreenHeader(
+            title: 'Selecionar organização',
+            onBack: () => context.go('/login'),
+          ),
+          Expanded(
+            child: bootstrapAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => _BootstrapErrorView(
+                error: error,
+                onRetry: () =>
+                    ref.read(bootstrapNotifierProvider.notifier).retry(),
+              ),
+              data: (session) => _TenantList(
+                session: session,
+                onSelect: (tenant) async {
+                  await ref
+                      .read(bootstrapNotifierProvider.notifier)
+                      .switchTenant(tenant);
+                  if (context.mounted) context.go('/');
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -47,28 +57,71 @@ class _TenantList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tenants = session.availableTenants;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        const SizedBox(height: 8),
-        Text(
-          'Sua conta tem acesso a mais de uma empresa.',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Selecione com qual empresa deseja trabalhar agora.',
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: Colors.black54),
-        ),
-        const SizedBox(height: 20),
-        for (final tenant in session.availableTenants)
-          _TenantCard(
-            tenant: tenant,
-            isActive: tenant.tenantId == session.activeTenant.tenantId,
-            onSelect: () => onSelect(tenant),
+        Text.rich(
+          TextSpan(
+            style: const TextStyle(
+              fontSize: 13,
+              color: ErpMobileTheme.inkMuted,
+              height: 1.4,
+            ),
+            children: [
+              const TextSpan(text: 'Você tem acesso a '),
+              TextSpan(
+                text:
+                    '${tenants.length} ${tenants.length == 1 ? 'organização' : 'organizações'}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: ErpMobileTheme.ink,
+                ),
+              ),
+              const TextSpan(
+                text: '. Os dados locais não se misturam entre elas.',
+              ),
+            ],
           ),
+        ),
+        const SizedBox(height: 16),
+        for (var i = 0; i < tenants.length; i++)
+          _TenantCard(
+            tenant: tenants[i],
+            index: i,
+            isActive: tenants[i].tenantId == session.activeTenant.tenantId,
+            onSelect: () => onSelect(tenants[i]),
+          ),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF6FF),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFBFDBFE)),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.shield_outlined,
+                size: 18,
+                color: ErpMobileTheme.info,
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'A troca de organização limpa o cache local e revalida suas '
+                  'permissões com segurança.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF1E40AF),
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -76,14 +129,23 @@ class _TenantList extends StatelessWidget {
 
 // ── Tenant card ───────────────────────────────────────────────────────────────
 
+const _avatarColors = <(Color, Color)>[
+  (Color(0xFFEFF6FF), Color(0xFF2563EB)),
+  (Color(0xFFECFDF5), Color(0xFF059669)),
+  (Color(0xFFFFFBEB), Color(0xFFD97706)),
+  (Color(0xFFF5F3FF), Color(0xFF7C3AED)),
+];
+
 class _TenantCard extends StatefulWidget {
   const _TenantCard({
     required this.tenant,
+    required this.index,
     required this.isActive,
     required this.onSelect,
   });
 
   final TenantContext tenant;
+  final int index;
   final bool isActive;
   final VoidCallback onSelect;
 
@@ -94,35 +156,87 @@ class _TenantCard extends StatefulWidget {
 class _TenantCardState extends State<_TenantCard> {
   bool _loading = false;
 
+  String get _initials {
+    final parts = widget.tenant.displayName.trim().split(RegExp(r'\s+'));
+    final first = parts.isNotEmpty && parts[0].isNotEmpty ? parts[0][0] : 'O';
+    final second = parts.length > 1 && parts[1].isNotEmpty ? parts[1][0] : '';
+    return (first + second).toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          child: Text(
-            widget.tenant.displayName.isNotEmpty
-                ? widget.tenant.displayName[0].toUpperCase()
-                : 'E',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.w800,
-            ),
+    final (bg, fg) = _avatarColors[widget.index % _avatarColors.length];
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: widget.isActive
+              ? ErpMobileTheme.primary
+              : ErpMobileTheme.cardBorder,
+          width: widget.isActive ? 1.5 : 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: _loading ? null : _doSelect,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  _initials,
+                  style: TextStyle(
+                    color: fg,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.tenant.displayName,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: ErpMobileTheme.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      _rolePtLabel(widget.tenant.userRole),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: ErpMobileTheme.inkMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_loading)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                const Icon(Icons.chevron_right, color: ErpMobileTheme.inkFaint),
+            ],
           ),
         ),
-        title: Text(widget.tenant.displayName),
-        subtitle: Text(_rolePtLabel(widget.tenant.userRole)),
-        trailing: _loading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : FilledButton(
-                onPressed: _loading ? null : _doSelect,
-                child: const Text('Acessar'),
-              ),
       ),
     );
   }
@@ -138,8 +252,8 @@ class _TenantCardState extends State<_TenantCard> {
 
   String _rolePtLabel(String? role) {
     return switch (role?.toLowerCase()) {
-      'field_technician' => 'Tecnico de Campo',
-      'field_dispatcher' => 'Operacao de Campo',
+      'field_technician' => 'Técnico de Campo',
+      'field_dispatcher' => 'Operação de Campo',
       'manager' => 'Gestor Operacional',
       'tenant_admin' => 'Administrador',
       'finance' => 'Financeiro',
@@ -159,7 +273,8 @@ class _BootstrapErrorView extends StatelessWidget {
 
   String get _safeMessage {
     if (error is ApiError) return (error as ApiError).safeMessage;
-    return 'Nao foi possivel carregar os dados da empresa. Verifique sua conexao e tente novamente.';
+    return 'Não foi possível carregar os dados da organização. '
+        'Verifique sua conexão e tente novamente.';
   }
 
   @override
@@ -169,8 +284,20 @@ class _BootstrapErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SyncStatusBanner(status: SyncStatus.failed, message: _safeMessage),
-          const SizedBox(height: 24),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFECACA)),
+            ),
+            child: Text(
+              _safeMessage,
+              style: const TextStyle(color: Color(0xFF991B1B)),
+            ),
+          ),
+          const SizedBox(height: 20),
           FilledButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh),
