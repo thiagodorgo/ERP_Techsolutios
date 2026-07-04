@@ -410,7 +410,7 @@ somente-leitura). Legenda de status: **integrated** (consome endpoint real) ·
 | Login | POST /auth/login·/refresh·/logout | mock-flag | |
 | Seleção de contexto | GET /me/tenants, POST /auth/active-tenant | mock-flag | |
 | Shell/nav | GET /notifications/unread-count (sino) | static (nav) | GET /navigation/menu existe, não ligado (gap) |
-| Dashboard | /work-orders + /operations/dispatches + /field-locations/latest + /notifications/unread-count | static | pendente religar (B-121) |
+| Dashboard | GET /work-orders + /notifications/unread-count | integrated (B-121) | KPIs/fila/eventos reais; enriquecer com /operations/dispatches + /field-locations/latest = próximo |
 | **Lista de OS** | GET /work-orders | **integrated (B-121)** | mock-flag + fallback local |
 | Nova OS | POST /work-orders | mock-flag | |
 | Detalhe da OS | GET /work-orders/:id·/timeline | integrated (B-121) | mock-flag; timeline + aprovação inclusas |
@@ -425,6 +425,6 @@ somente-leitura). Legenda de status: **integrated** (consome endpoint real) ·
 | Settings mínimo | — | planned | sem backend de settings; lacuna documentada |
 
 ### Lacunas priorizadas (próximos PRs do B-121)
-1. Web: religar **Dashboard** às services reais (hoje `static`). ✅ **Detalhe da OS** e **Aprovação** já religados neste bloco (B-121).
+1. Web: enriquecer o **Dashboard** com `/operations/dispatches` + `/field-locations/latest`. ✅ **Dashboard**, **Detalhe da OS** e **Aprovação** já religados neste bloco (B-121).
 2. Web: ligar a navegação a `GET /navigation/menu` (hoje NAV fixo).
 3. Mobile: chamar `GET /work-orders/:id/timeline` no detalhe; montar auto-sync no app root; adapter de checklist tolerar `components` além de `fields`; base URL configurável por `--dart-define`.
