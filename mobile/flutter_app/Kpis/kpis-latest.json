@@ -1,37 +1,25 @@
 {
   "snapshot_date": "2026-07-05",
-  "version": "B-122",
-  "branch": "fix/b122-visual-consistency-approved-prototype",
-  "description": "B-122 Alinhamento visual ao prototipo aprovado — Perfil do operador fiel a screen-refs/mobile/perfil.png, sem dados tecnicos crus na UI; consolida a publicacao B-121 (MVP integrado Web/Mobile: timeline real, auto-sync no app root, adapter fields/components, base URL por --dart-define, web MVP nos endpoints reais)",
+  "version": "B-123",
+  "branch": "feat/mobile-b123-os-flow-fidelity",
+  "description": "B-123 Fidelidade visual do fluxo de OS mobile (visual-only) — 7 telas/areas alinhadas ao prototipo aprovado: lista de OS, detalhe/check-in, execucao, checklists da OS, execucao de checklist, evidencias e sincronizacao/fila offline; estados semanticos por tokens centrais e sem dado tecnico cru na UI",
   "release": {
-    "block": "B-122",
-    "title": "Alinhamento visual ao prototipo aprovado",
-    "pr": 121,
-    "mergeCommit": "fc7e17810940edf933b5e4a2071f8f456e05d4e9",
-    "approvedHead": "f151b4fb6e53200204846aed5abb0699c0308d94",
-    "branch": "fix/b122-visual-consistency-approved-prototype",
+    "block": "B-123",
+    "title": "Fidelidade visual do fluxo de OS mobile",
+    "pr": 123,
+    "mergeCommit": "2537558f3f078425c13119a60445e960aac26bb2",
+    "approvedHead": "24d439072778438ed3de837fc66a4ef6bce31944",
+    "branch": "feat/mobile-b123-os-flow-fidelity",
     "status": "published_after_human_approval",
-    "status_label": "Publicado apos avaliacao humana e merges das PRs #117/#118/#119/#121",
-    "summary": "B-122 recriou o Perfil do operador fiel ao prototipo aprovado (hero com papel PT-BR e organizacao, Conta e organizacao, Aparencia, Seguranca e sessao, Sair), removendo dados tecnicos crus da UI (token, modo de autenticacao, permissoes, IDs); auditoria das telas MVP registrada. KPIs do B-121 ja publicados no B-121K (PR #120, merge 28d8a12af8abad61be37d6ceeb8ce70faf9856ce). Percentuais mvp mantidos nos valores oficiais publicados; flutter analyze limpo e 764/764 revalidados na PR #121.",
+    "status_label": "Publicado apos avaliacao humana e merge da PR #123 (B-123K)",
+    "summary": "B-123 alinhou o fluxo de OS mobile ao prototipo aprovado em 7 commits (um por tela), visual-only: nenhum repository/service/contrato/sync/model/provider alterado e nenhuma dependencia nova. Dois testes realinhados com aprovacao humana previa (b114 'Sync pendente'; b116 header 'Atendimento'). flutter test 764/764 apos cada tela; flutter analyze lib sem issues; dart format limpo. Percentuais mvp mantidos nos valores oficiais publicados (sem decisao humana para alterar).",
     "commits": [
       {
-        "hash": "38facb24a3bc8592cc3ccd6c11d4e428420532ed",
-        "message": "Merge pull request #117 — B-121 web lista de OS real + matriz tela x endpoint"
-      },
-      {
-        "hash": "f05566828a2b05d9c4400112d66be490477f0a17",
-        "message": "Merge pull request #118 — B-121 dashboard, detalhe OS, aprovacao e nav MVP"
-      },
-      {
-        "hash": "e851fd35e141545401abfc0fac774f62e1c2f615",
-        "message": "Merge pull request #119 — B-121 hardening mobile MVP"
-      },
-      {
-        "hash": "fc7e17810940edf933b5e4a2071f8f456e05d4e9",
-        "message": "Merge pull request #121 — B-122 Perfil do operador alinhado ao prototipo aprovado"
+        "hash": "2537558f3f078425c13119a60445e960aac26bb2",
+        "message": "Merge pull request #123 — B-123 fidelidade visual do fluxo de OS mobile"
       }
     ],
-    "limitation": "S3/presigned real, DB/Redis receipt, antivirus real, download protegido final, retencao definitiva, Dashboard web sem dispatches/field-locations, Settings web sem backend dedicado e fluxo de OS mobile em Material stock seguem pendentes.",
+    "limitation": "S3/presigned real, DB/Redis receipt, antivirus real, download protegido final, retencao definitiva, Dashboard web sem dispatches/field-locations e Settings web sem backend dedicado seguem pendentes.",
     "fallback": "Timeline cai para o cache local em falha de rede/404/403; rejected, scan_failed, pending_review, erro de rede e timeout preservam a evidencia local; conflitos permanecem em resolucao manual."
   },
   "domains": [
@@ -118,7 +106,7 @@
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "764/764 no full Flutter validado nas PRs #119 (B-121) e #121 (B-122)"
+          "detail": "764/764 no full Flutter revalidado na PR #123 (apos cada uma das 7 telas)"
         },
         {
           "id": "npm_tests",
@@ -283,11 +271,11 @@
         {
           "id": "blocks_completed",
           "label": "Blocos Entregues (total)",
-          "value": 47,
+          "value": 48,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-076 ate B-122, incluindo sub-blocos (A/B/K/F); consolida B-109 a B-120"
+          "detail": "B-076 ate B-123, incluindo sub-blocos (A/B/K/F); consolida B-109 a B-120"
         },
         {
           "id": "prs_merged",
@@ -432,10 +420,6 @@
     }
   ],
   "next_steps": [
-    {
-      "block": "B-12x",
-      "title": "Fidelidade visual do fluxo de OS mobile (lista/detalhe/execucao/checklists/run/sync) ao prototipo aprovado"
-    },
     {
       "block": "B-12x",
       "title": "Dashboard web enriquecido com /operations/dispatches e /field-locations/latest"

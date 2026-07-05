@@ -5,6 +5,40 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-123 — 2026-07-05
+
+**Fidelidade visual do fluxo de OS mobile (publicacao B-123K)**
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 764 / 764 |
+| Frontend Smoke Tests | 33 / 33 |
+| Backend Tests | 15 / 15 |
+| Mobile Backend Contracts | 18 / 18 |
+| Mobile + Core SaaS Contracts | 21 / 21 |
+| flutter analyze | 0 issues |
+| Modulos Flutter Prontos | 17 / 17 |
+| MVP Demo Readiness (est.) | 96% |
+| MVP Vendavel (est.) | 78% |
+| Blocos Entregues | 48 |
+
+**Novidades:** 7 telas/areas do fluxo de OS alinhadas ao prototipo aprovado
+(visual-only, um commit por tela): lista de OS (`os-lista.png`),
+detalhe/check-in (`os-detalhe.png` + `checkin-chegada.png`), execucao
+(`prestador-execucao.png`), checklists da OS (padrao aprovado), execucao de
+checklist (`checklist-coleta/entrega.png`), evidencias (`evidencias.png`) e
+sincronizacao (`sincronizacao.png`). Estados semanticos por pills/faixas do
+mobile_kit; sem dado tecnico cru; nenhum repository/service/contrato/sync/
+model/provider alterado. Dois testes realinhados com aprovacao humana previa
+(b114 'Sync pendente'; b116 header 'Atendimento').
+
+**Metadados:** PR #123 (merge `2537558f3f078425c13119a60445e960aac26bb2`,
+head `24d439072778438ed3de837fc66a4ef6bce31944`); status
+`published_after_human_approval`. Percentuais mvp mantidos nos valores
+oficiais (sem decisao humana para alterar); blocos por regra de contagem (48).
+
+---
+
 ## B-122 — 2026-07-05
 
 **Alinhamento visual ao prototipo aprovado (publicacao junto ao B-121K)**

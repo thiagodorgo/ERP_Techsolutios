@@ -255,5 +255,25 @@
     "mergeCommit": "fc7e17810940edf933b5e4a2071f8f456e05d4e9",
     "approvedHead": "f151b4fb6e53200204846aed5abb0699c0308d94",
     "status": "published_after_human_approval"
+  },
+  {
+    "snapshot_date": "2026-07-05",
+    "version": "B-123",
+    "flutter_tests": 764,
+    "frontend_smoke_tests": 33,
+    "npm_tests": 15,
+    "mobile_backend_contracts": 18,
+    "mobile_core_saas_contracts": 21,
+    "backend_contract_tests": 21,
+    "flutter_modules_ready": 17,
+    "flutter_modules_total": 17,
+    "flutter_mvp_demo": 96,
+    "flutter_mvp_vendavel": 78,
+    "blocks_completed": 48,
+    "description": "B-123 Fidelidade visual do fluxo de OS mobile (visual-only) — 7 telas/areas alinhadas ao prototipo aprovado (lista de OS, detalhe/check-in, execucao, checklists da OS, execucao de checklist, evidencias, sincronizacao), estados semanticos por tokens centrais, sem dado tecnico cru; nenhum repository/service/contrato/sync/model/provider alterado. flutter test 764/764 apos cada tela; analyze sem issues; dart format limpo. Percentuais mvp mantidos (sem decisao humana para alterar).",
+    "pr": 123,
+    "mergeCommit": "2537558f3f078425c13119a60445e960aac26bb2",
+    "approvedHead": "24d439072778438ed3de837fc66a4ef6bce31944",
+    "status": "published_after_human_approval"
   }
 ]
