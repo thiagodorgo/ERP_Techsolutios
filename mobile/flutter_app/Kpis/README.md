@@ -82,10 +82,27 @@ Regras obrigatorias:
 - Mexeu nos dois: atualizar os dois conjuntos.
 - Se existir `index.html`: atualizar tambem o HTML.
 
-No pos-B-122, os valores mobile refletidos na raiz sao: Flutter 764/764,
+No pos-B-123, os valores mobile refletidos na raiz sao: Flutter 764/764,
 Backend 15/15, contratos mobile 18/18, contratos mobile + Core SaaS 21/21,
-modulos Flutter 17/17, MVP demo 96%, MVP vendavel 78% e 47 blocos entregues
-(percentuais mantidos nos valores oficiais publicados no B-121K).
+modulos Flutter 17/17, MVP demo 96%, MVP vendavel 78% e 48 blocos entregues
+(percentuais mantidos nos valores oficiais publicados; sem decisao humana
+para altera-los no B-123).
+
+### B-123 publicado
+
+- PR #123 mergeada em `2537558f3f078425c13119a60445e960aac26bb2`
+  (approved head `24d439072778438ed3de837fc66a4ef6bce31944`).
+- Status `published_after_human_approval` (publicacao B-123K).
+- 7 telas/areas do fluxo de OS alinhadas ao prototipo aprovado (visual-only,
+  um commit por tela): lista de OS, detalhe/check-in, execucao, checklists da
+  OS, execucao de checklist, evidencias e sincronizacao/fila offline.
+- Estados semanticos por tokens centrais (pills/faixas do mobile_kit); sem
+  dado tecnico cru na UI; nenhum repository/service/contrato/sync/model/
+  provider alterado; nenhuma dependencia nova.
+- Dois testes realinhados com aprovacao humana previa (b114 'Sync pendente';
+  b116 header 'Atendimento').
+- flutter test 764/764 apos cada tela; flutter analyze lib sem issues; dart
+  format limpo.
 
 ### B-122 publicado
 

@@ -6,6 +6,53 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-05 - B-123 Fidelidade visual do fluxo de OS mobile
+
+### Resultado
+
+- 7 telas/areas do fluxo de OS mobile alinhadas ao prototipo aprovado
+  (visual-only): lista de OS, detalhe/check-in, execucao, checklists da OS,
+  execucao de checklist, evidencias e sincronizacao/fila offline.
+- Estados semanticos visiveis por tokens centrais (pendente ambar · enviando
+  roxo · sucesso verde · falha/conflito vermelho · info azul) via
+  pills/faixas laterais do mobile_kit; sem dado tecnico cru na UI.
+- Nenhum repository/service/contrato/sync/model/provider alterado; frontend e
+  backend intocados; nenhuma dependencia nova.
+- Dois testes realinhados com aprovacao humana previa (b114: rotulo 'Sync
+  pendente' fiel ao os-lista.png; b116: header 'Atendimento' fiel ao
+  prototipo).
+
+### Metadados pos-avaliacao humana
+
+- PR: #123 (merge `2537558f3f078425c13119a60445e960aac26bb2`, head `24d439072778438ed3de837fc66a4ef6bce31944`).
+- Status: `published_after_human_approval`.
+
+### KPIs B-123 refletidos na raiz
+
+| KPI | Valor |
+| --- | --- |
+| Flutter Tests | 764/764 |
+| Frontend Smoke Tests | 33/33 |
+| Backend Tests | 15/15 |
+| Mobile Backend Contracts | 18/18 |
+| Mobile + Core SaaS Contracts | 21/21 |
+| Flutter modules | 17/17 |
+| MVP demo | 96% |
+| MVP vendavel | 78% |
+| Blocos entregues | 48 |
+
+Observacao: percentuais mvp mantidos nos ultimos valores oficiais publicados
+(96%/78%); nao houve decisao humana para altera-los no B-123. Blocos: regra
+de contagem (47 ate B-122 + B-123 = 48).
+
+### Limitacoes registradas
+
+- Fluxo de OS mobile alinhado — lacuna anterior resolvida pelo B-123.
+- Permanecem: S3/presigned real, DB/Redis receipt, antivirus real, download
+  protegido final, retencao definitiva, Dashboard web sem
+  dispatches/field-locations, Settings web sem backend dedicado e piloto
+  Android em dispositivo fisico.
+
 ## 2026-07-05 - B-122 Alinhamento visual ao prototipo aprovado
 
 ### Resultado

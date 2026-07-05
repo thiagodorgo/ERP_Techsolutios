@@ -35,6 +35,26 @@ Regras obrigatorias:
 - Mexeu nos dois: atualizar os dois conjuntos.
 - Se existir `index.html`: atualizar tambem o HTML.
 
+## B-123 refletido na raiz
+
+- B-123 — Fidelidade visual do fluxo de OS mobile (publicacao B-123K).
+- 7 telas/areas alinhadas ao prototipo aprovado (visual-only): lista de OS,
+  detalhe/check-in, execucao, checklists da OS, execucao de checklist,
+  evidencias e sincronizacao/fila offline.
+- Estados semanticos por tokens centrais (pills/faixas do mobile_kit); sem
+  dado tecnico cru na UI; nenhum repository/service/contrato/sync/model/
+  provider alterado; nenhuma dependencia nova.
+- Flutter tests: 764/764 (revalidado apos cada tela na PR #123; analyze sem
+  issues; dart format limpo).
+- Frontend smoke: 33/33 (frontend nao alterado). Backend: inalterado.
+- MVP demo: 96% e MVP vendavel: 78% — mantidos nos valores oficiais
+  publicados (sem decisao humana para alterar no B-123).
+- Blocos entregues: 48 (regra de contagem: 47 ate B-122 + B-123).
+
+Metadados: PR #123 (merge `2537558f3f078425c13119a60445e960aac26bb2`, head
+`24d439072778438ed3de837fc66a4ef6bce31944`), status
+`published_after_human_approval`.
+
 ## B-122 refletido na raiz
 
 - B-122 — Alinhamento visual ao prototipo aprovado (publicado junto ao B-121K).

@@ -1,37 +1,22 @@
 {
   "snapshot_date": "2026-07-05",
-  "version": "B-122",
+  "version": "B-123",
   "source": "mobile/flutter_app/Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "B-122",
-    "title": "MVP integrado + alinhamento visual ao prototipo aprovado",
-    "pr": 121,
-    "merge_commit": "fc7e17810940edf933b5e4a2071f8f456e05d4e9",
-    "approved_head": "f151b4fb6e53200204846aed5abb0699c0308d94",
+    "block": "B-123",
+    "title": "Fidelidade visual do fluxo de OS mobile",
+    "pr": 123,
+    "merge_commit": "2537558f3f078425c13119a60445e960aac26bb2",
+    "approved_head": "24d439072778438ed3de837fc66a4ef6bce31944",
     "status": "published_after_human_approval",
-    "summary": "Publica os KPIs apos avaliacao humana e merges de B-121 e B-122. B-121 (PRs #117/#118/#119; KPIs publicados no B-121K, PR #120, merge 28d8a12af8abad61be37d6ceeb8ce70faf9856ce): web MVP nos endpoints reais + hardening mobile. B-122 (PR #121, merge fc7e17810940edf933b5e4a2071f8f456e05d4e9): Perfil do operador alinhado ao prototipo aprovado (screen-refs/mobile/perfil.png), sem dados tecnicos crus na UI; auditoria das telas MVP web/mobile registrada.",
-    "status_label": "Publicado apos avaliacao humana e merges das PRs #117/#118/#119/#121",
+    "summary": "B-123K publica os KPIs apos avaliacao humana e merge da PR #123 (visual-only): 7 telas/areas do fluxo de OS mobile alinhadas ao prototipo aprovado (lista de OS, detalhe/check-in, execucao, checklists da OS, execucao de checklist, evidencias e sincronizacao/fila offline), com estados semanticos via tokens centrais e sem dado tecnico cru na UI. Nenhum repository/service/contrato/sync/model/provider alterado. Publicacoes anteriores: B-121/B-122 (PRs #120/#122).",
+    "status_label": "Publicado apos avaliacao humana e merge da PR #123",
     "related_prs": [
       {
-        "pr": 117,
-        "merge_commit": "38facb24a3bc8592cc3ccd6c11d4e428420532ed",
-        "approved_head": "73a50e905b5a7a3c4665910e705f168d239a8dd9"
-      },
-      {
-        "pr": 118,
-        "merge_commit": "f05566828a2b05d9c4400112d66be490477f0a17",
-        "approved_head": "474e5ec49e562a39ddcb1eec15253816ff11f520"
-      },
-      {
-        "pr": 119,
-        "merge_commit": "e851fd35e141545401abfc0fac774f62e1c2f615",
-        "approved_head": "72d6ccc6476be752ccf8d368a5252c8c97fac522"
-      },
-      {
-        "pr": 121,
-        "merge_commit": "fc7e17810940edf933b5e4a2071f8f456e05d4e9",
-        "approved_head": "f151b4fb6e53200204846aed5abb0699c0308d94"
+        "pr": 123,
+        "merge_commit": "2537558f3f078425c13119a60445e960aac26bb2",
+        "approved_head": "24d439072778438ed3de837fc66a4ef6bce31944"
       }
     ]
   },
@@ -72,8 +57,8 @@
       "display": "78%"
     },
     "blocks_completed": {
-      "value": 47,
-      "display": "47"
+      "value": 48,
+      "display": "48"
     },
     "mobile_backend_contracts": {
       "value": 18,
@@ -99,10 +84,11 @@
     ]
   },
   "notes": [
-    "mvp_demo e mvp_vendavel mantidos nos ultimos valores oficiais publicados (B-121K, PR #120, merge 28d8a12af8abad61be37d6ceeb8ce70faf9856ce; tipo estimado); B-121 e B-122 nao propuseram novos percentuais e a revisao humana pode ajusta-los.",
-    "backend_tests e contratos mobile permanecem nos ultimos valores oficiais comprovados; o backend nao foi alterado em B-121/B-122.",
-    "frontend_smoke_tests mantidos em 33/33 (PRs #117/#118); o frontend nao foi alterado no B-122.",
-    "blocks_completed segue a regra de contagem de blocos entregues: 46 (ate B-121) + B-122 = 47."
+    "mvp_demo e mvp_vendavel mantidos nos ultimos valores oficiais publicados (96%/78%, B-121K/B-122K; tipo estimado); nao houve decisao humana para altera-los no B-123 — a revisao pode ajusta-los.",
+    "backend_tests e contratos mobile permanecem nos ultimos valores oficiais comprovados; o backend nao foi alterado no B-123.",
+    "frontend_smoke_tests mantidos em 33/33 (PRs #117/#118); o frontend nao foi alterado no B-123.",
+    "flutter_tests 764/764 revalidados na PR #123 (suite completa apos cada uma das 7 telas; analyze sem issues; dart format limpo).",
+    "blocks_completed segue a regra de contagem de blocos entregues: 47 (ate B-122) + B-123 = 48."
   ],
   "limitations": [
     "S3/presigned real pendente",
@@ -112,7 +98,6 @@
     "Retencao definitiva pendente",
     "Dashboard web ainda sem enriquecimento de /operations/dispatches e /field-locations/latest",
     "Settings web sem backend dedicado (lacuna documentada)",
-    "Fluxo de OS mobile (lista/detalhe/execucao/checklists/run/sync) ainda em Material stock — fidelidade nas proximas fases",
     "Piloto Android real ainda precisa validacao em dispositivo fisico"
   ]
 }
