@@ -7,8 +7,10 @@ import '../../../core/evidence/evidence_picker.dart';
 import '../../../core/network/api_error.dart';
 import '../../../core/permissions/permission_resolver.dart';
 import '../../../core/sync/sync_models.dart';
+import '../../../shared/theme/erp_mobile_theme.dart';
 import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
+import '../../../shared/ui/mobile_kit.dart';
 import '../../checklists/data/checklist_repository.dart';
 import '../../checklists/domain/checklist_models.dart';
 import '../data/work_order_repository.dart';
@@ -186,11 +188,21 @@ class _WorkOrderExecuteScreenState
 
     if (!canStatus) {
       return ErpScaffold(
-        title: 'Executar OS',
-        body: const PermissionBlockedState(
-          title: 'Acao nao autorizada',
-          message:
-              'work_orders:status necessario para alterar o status desta OS.',
+        showAppBar: false,
+        body: Column(
+          children: [
+            MobileScreenHeader(
+              title: 'Atendimento',
+              onBack: () => context.go('/work-orders/${widget.workOrderId}'),
+            ),
+            const Expanded(
+              child: PermissionBlockedState(
+                title: 'Acao nao autorizada',
+                message:
+                    'work_orders:status necessario para alterar o status desta OS.',
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -203,14 +215,23 @@ class _WorkOrderExecuteScreenState
               ? (snapshot.error as StateError).message
               : 'Erro ao carregar OS.';
           return ErpScaffold(
-            title: 'Executar OS',
-            body: ErrorState(message: msg),
+            showAppBar: false,
+            body: Column(
+              children: [
+                MobileScreenHeader(
+                  title: 'Atendimento',
+                  onBack: () =>
+                      context.go('/work-orders/${widget.workOrderId}'),
+                ),
+                Expanded(child: ErrorState(message: msg)),
+              ],
+            ),
           );
         }
 
         if (!snapshot.hasData) {
           return const ErpScaffold(
-            title: 'Executar OS',
+            showAppBar: false,
             body: Center(child: CircularProgressIndicator.adaptive()),
           );
         }
@@ -224,171 +245,189 @@ class _WorkOrderExecuteScreenState
         final canComplete = allTransitions.contains(WorkOrderStatus.completed);
 
         return ErpScaffold(
-          title: 'Executar ${wo.code}',
-          body: ListView(
-            padding: const EdgeInsets.all(16),
+          showAppBar: false,
+          body: Column(
             children: [
-              if (wo.syncStatus == SyncStatus.pending)
-                SyncStatusBanner(
-                  status: SyncStatus.pending,
-                  message:
-                      'Alteracoes locais aguardando sincronizacao com o servidor.',
-                ),
-              const SizedBox(height: 8),
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.build_outlined),
-                  title: Text('${wo.code} · ${wo.title}'),
-                  subtitle: Text(wo.customerName),
-                  trailing: OperationalStatusChip(
-                    label: wo.status.label,
-                    status: wo.status.statusTone,
-                  ),
+              MobileScreenHeader(
+                title: 'Atendimento',
+                subtitle: '${wo.code} · ${wo.customerName}',
+                onBack: () => context.go('/work-orders/${widget.workOrderId}'),
+                trailing: MobilePill(
+                  label: wo.status.label,
+                  tone: pillToneFromStatus(wo.status.statusTone),
                 ),
               ),
-              const SizedBox(height: 12),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 12,
-                  ),
-                  child: WorkOrderStepper(
-                    serviceType: wo.serviceType,
-                    status: wo.status,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              OperationalLocationCard(session: session, workOrder: wo),
-              const SizedBox(height: 8),
-              if (_safeError != null)
-                SyncStatusBanner(
-                  status: SyncStatus.failed,
-                  message: _safeError!,
-                ),
-              const SizedBox(height: 8),
-              if (wo.status.isFinal)
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.check_circle_outline),
-                    title: Text('OS ${wo.status.label.toLowerCase()}'),
-                    subtitle: const Text(
-                      'Status final — sem transicoes possiveis.',
-                    ),
-                  ),
-                )
-              else if (allTransitions.isEmpty)
-                const Card(
-                  child: ListTile(
-                    leading: Icon(Icons.block_outlined),
-                    title: Text('Nenhuma transicao disponivel'),
-                    subtitle: Text(
-                      'Este status nao permite alteracoes no momento.',
-                    ),
-                  ),
-                )
-              else ...[
-                if (wo.checklistId != null) ...[
-                  Text(
-                    'Checklist',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  _ChecklistStatusCard(
-                    data: data,
-                    onOpen: () => _openChecklist(wo),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                if (regularTransitions.isNotEmpty) ...[
-                  Text(
-                    'Proxima acao',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  for (final next in regularTransitions)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _TransitionButton(
-                        workOrder: wo,
-                        targetStatus: next,
-                        isLoading: _isLoading,
-                        onPressed: () => _doTransition(woRepo, wo, next),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    if (wo.syncStatus == SyncStatus.pending)
+                      SyncStatusBanner(
+                        status: SyncStatus.pending,
+                        message:
+                            'Alteracoes locais aguardando sincronizacao com o servidor.',
+                      ),
+                    const SizedBox(height: 8),
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.build_outlined),
+                        title: Text('${wo.code} · ${wo.title}'),
+                        subtitle: Text(wo.customerName),
+                        trailing: OperationalStatusChip(
+                          label: wo.status.label,
+                          status: wo.status.statusTone,
+                        ),
                       ),
                     ),
-                  const SizedBox(height: 8),
-                ],
-                if (canComplete) ...[
-                  const Divider(),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Concluir OS',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  if (!data.canConclude) ...[
+                    const SizedBox(height: 12),
                     Card(
-                      color: Theme.of(context).colorScheme.errorContainer,
-                      child: ListTile(
-                        leading: Icon(
-                          Icons.warning_amber_outlined,
-                          color: Theme.of(context).colorScheme.error,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 12,
                         ),
-                        title: Text(
-                          'Checklist obrigatorio pendente',
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onErrorContainer,
-                          ),
-                        ),
-                        subtitle: Text(
-                          'Conclua o checklist obrigatorio antes de finalizar a OS.',
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onErrorContainer,
-                          ),
+                        child: WorkOrderStepper(
+                          serviceType: wo.serviceType,
+                          status: wo.status,
                         ),
                       ),
                     ),
                     const SizedBox(height: 8),
-                  ],
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _isLoading || !data.canConclude
-                          ? null
-                          : () => _doComplete(woRepo, data),
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator.adaptive(
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Icon(Icons.check_circle_outline),
-                      label: const Text('Concluir OS'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: data.canConclude
-                            ? Colors.green.shade700
-                            : null,
+                    OperationalLocationCard(session: session, workOrder: wo),
+                    const SizedBox(height: 8),
+                    if (_safeError != null)
+                      SyncStatusBanner(
+                        status: SyncStatus.failed,
+                        message: _safeError!,
                       ),
+                    const SizedBox(height: 8),
+                    if (wo.status.isFinal)
+                      Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.check_circle_outline),
+                          title: Text('OS ${wo.status.label.toLowerCase()}'),
+                          subtitle: const Text(
+                            'Status final — sem transicoes possiveis.',
+                          ),
+                        ),
+                      )
+                    else if (allTransitions.isEmpty)
+                      const Card(
+                        child: ListTile(
+                          leading: Icon(Icons.block_outlined),
+                          title: Text('Nenhuma transicao disponivel'),
+                          subtitle: Text(
+                            'Este status nao permite alteracoes no momento.',
+                          ),
+                        ),
+                      )
+                    else ...[
+                      if (wo.checklistId != null) ...[
+                        Text(
+                          'Checklist',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 8),
+                        _ChecklistStatusCard(
+                          data: data,
+                          onOpen: () => _openChecklist(wo),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      if (regularTransitions.isNotEmpty) ...[
+                        Text(
+                          'Proxima acao',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 8),
+                        for (final next in regularTransitions)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _TransitionButton(
+                              workOrder: wo,
+                              targetStatus: next,
+                              isLoading: _isLoading,
+                              onPressed: () => _doTransition(woRepo, wo, next),
+                            ),
+                          ),
+                        const SizedBox(height: 8),
+                      ],
+                      if (canComplete) ...[
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Concluir OS',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 8),
+                        if (!data.canConclude) ...[
+                          Card(
+                            color: Theme.of(context).colorScheme.errorContainer,
+                            child: ListTile(
+                              leading: Icon(
+                                Icons.warning_amber_outlined,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                              title: Text(
+                                'Checklist obrigatorio pendente',
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onErrorContainer,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Conclua o checklist obrigatorio antes de finalizar a OS.',
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onErrorContainer,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: _isLoading || !data.canConclude
+                                ? null
+                                : () => _doComplete(woRepo, data),
+                            icon: _isLoading
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator.adaptive(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.check_circle_outline),
+                            label: const Text('Concluir OS'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: data.canConclude
+                                  ? ErpMobileTheme.success
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Evidencias',
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
-                  ),
-                ],
-              ],
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 8),
-              Text('Evidencias', style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 8),
-              _EvidenceSection(
-                evidences: data.evidences,
-                isLoading: _isLoading,
-                onAdd: () => _attachEvidence(woRepo),
+                    const SizedBox(height: 8),
+                    _EvidenceSection(
+                      evidences: data.evidences,
+                      isLoading: _isLoading,
+                      onAdd: () => _attachEvidence(woRepo),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -512,10 +551,10 @@ class _TransitionButton extends StatelessWidget {
 
   Color _colorFor(WorkOrderStatus s, BuildContext context) => switch (s) {
     WorkOrderStatus.completed ||
-    WorkOrderStatus.approved => Colors.green.shade700,
+    WorkOrderStatus.approved => ErpMobileTheme.success,
     WorkOrderStatus.cancelled ||
-    WorkOrderStatus.exception => Colors.red.shade700,
-    _ => Theme.of(context).colorScheme.primary,
+    WorkOrderStatus.exception => ErpMobileTheme.danger,
+    _ => ErpMobileTheme.primary,
   };
 }
 
@@ -551,7 +590,10 @@ class _EvidenceSection extends StatelessWidget {
               subtitle: Text(
                 e.captureSource == 'camera' ? 'Camera' : 'Galeria',
               ),
-              trailing: const Chip(label: Text('Pendente sync')),
+              trailing: const MobilePill(
+                label: 'Pendente sync',
+                tone: PillTone.scheduled,
+              ),
             ),
           ),
         if (evidences.isNotEmpty) const SizedBox(height: 8),

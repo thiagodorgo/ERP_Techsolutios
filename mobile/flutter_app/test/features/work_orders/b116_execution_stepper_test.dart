@@ -203,7 +203,9 @@ void main() {
         expect(find.byKey(Key('wo-step-$i')), findsOneWidget);
       }
       expect(find.byKey(const Key('wo-step-4')), findsNothing);
-      expect(find.text('Atendimento'), findsOneWidget);
+      // B-123: o header da tela tambem exibe 'Atendimento' (fiel ao
+      // prototipo); a celula do stepper ja e coberta pelas Keys acima.
+      expect(find.text('Atendimento'), findsWidgets);
     });
 
     testWidgets('12. Stepper widget aparece no topo da execucao', (t) async {
