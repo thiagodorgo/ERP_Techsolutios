@@ -1,12 +1,17 @@
 const dashboardData = {
   "project": {
     "name": "ERP Techsolutions",
-    "version": "B-121",
+    "version": "B-122",
     "updatedAt": "2026-07-05",
-    "sourceBranch": "fix/b121-kpis-post-human-approval",
-    "summary": "B-121 MVP integrado Web/Mobile publicado apos avaliacao humana e merges das PRs #117/#118/#119. Flutter 764/764, smoke web 33/33, MVP demo 96%, MVP vendavel 78% e 46 blocos entregues."
+    "sourceBranch": "fix/b121-b122-kpis-post-human-approval",
+    "summary": "B-121 (MVP integrado Web/Mobile) e B-122 (alinhamento visual ao prototipo aprovado) publicados apos avaliacao humana e merges das PRs #117/#118/#119/#121. Flutter 764/764, smoke web 33/33, MVP demo 96%, MVP vendavel 78% e 47 blocos entregues."
   },
   "kpis": [
+    {
+      "label": "B-122",
+      "value": "Alinhamento visual",
+      "note": "Perfil do operador fiel ao prototipo aprovado; sem dados tecnicos crus na UI."
+    },
     {
       "label": "B-121",
       "value": "MVP integrado Web/Mobile",
@@ -15,7 +20,7 @@ const dashboardData = {
     {
       "label": "Flutter",
       "value": "764/764",
-      "note": "Total real validado na PR #119 (10 testes novos B-121)."
+      "note": "Total real validado nas PRs #119 (B-121) e #121 (B-122)."
     },
     {
       "label": "Frontend smoke",
@@ -40,17 +45,17 @@ const dashboardData = {
     {
       "label": "MVP demo",
       "value": "96%",
-      "note": "Ultimo valor documentado na rodada B-113 a B-120 (estimado); B-121 nao propos novo percentual."
+      "note": "Mantido no valor oficial publicado no B-121K (estimado); B-122 nao propos novo percentual."
     },
     {
       "label": "MVP vendavel",
       "value": "78%",
-      "note": "Ultimo valor documentado na rodada B-113 a B-120 (estimado); B-121 nao propos novo percentual."
+      "note": "Mantido no valor oficial publicado no B-121K (estimado); B-122 nao propos novo percentual."
     },
     {
       "label": "Blocos entregues",
-      "value": "46",
-      "note": "B-076 ate B-121, incluindo sub-blocos; consolida B-109 a B-120."
+      "value": "47",
+      "note": "B-076 ate B-122, incluindo sub-blocos; consolida B-109 a B-120."
     },
     {
       "label": "Escopo B-121K",
@@ -121,6 +126,13 @@ const dashboardData = {
       "status": "concluido",
       "progress": 100,
       "summary": "Web MVP nos endpoints reais (OS lista/detalhe, Dashboard, Aprovacao, nav) + hardening mobile (timeline, auto-sync root, adapter, base URL)."
+    },
+    {
+      "id": "B-122",
+      "title": "Alinhamento visual ao prototipo aprovado",
+      "status": "concluido",
+      "progress": 100,
+      "summary": "Perfil do operador fiel ao perfil.png, sem dados tecnicos crus; auditoria das telas MVP registrada."
     }
   ],
   "contracts": [
@@ -218,8 +230,12 @@ const dashboardData = {
       "result": "merged e851fd35e141545401abfc0fac774f62e1c2f615"
     },
     {
+      "name": "PR #121",
+      "result": "merged fc7e17810940edf933b5e4a2071f8f456e05d4e9"
+    },
+    {
       "name": "Politica KPI",
-      "result": "publicado apos avaliacao humana e merges das PRs #117/#118/#119"
+      "result": "publicado apos avaliacao humana e merges das PRs #117/#118/#119/#121"
     }
   ],
   "estimates": [
@@ -253,9 +269,9 @@ const dashboardData = {
   ],
   "nextBlocks": [
     {
-      "id": "B-122",
-      "title": "Fidelidade visual ao prototipo aprovado",
-      "detail": "Alinhar telas MVP (Perfil Web do operador em especial) ao padrao visual aprovado."
+      "id": "B-12x",
+      "title": "Fidelidade do fluxo de OS mobile",
+      "detail": "Lista/detalhe/execucao/checklists/run/sync ainda em Material stock."
     },
     {
       "id": "B-12x",
@@ -264,6 +280,11 @@ const dashboardData = {
     }
   ],
   "history": [
+    {
+      "date": "2026-07-05",
+      "title": "B-122",
+      "detail": "Alinhamento visual ao prototipo aprovado: Perfil do operador fiel ao perfil.png, sem dados tecnicos crus. Flutter 764/764, 47 blocos."
+    },
     {
       "date": "2026-07-05",
       "title": "B-121",

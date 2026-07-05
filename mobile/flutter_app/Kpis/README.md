@@ -82,10 +82,24 @@ Regras obrigatorias:
 - Mexeu nos dois: atualizar os dois conjuntos.
 - Se existir `index.html`: atualizar tambem o HTML.
 
-No pos-B-121, os valores mobile refletidos na raiz sao: Flutter 764/764,
+No pos-B-122, os valores mobile refletidos na raiz sao: Flutter 764/764,
 Backend 15/15, contratos mobile 18/18, contratos mobile + Core SaaS 21/21,
-modulos Flutter 17/17, MVP demo 96%, MVP vendavel 78% e 46 blocos entregues
-(percentuais: ultimos valores documentados na rodada B-113 a B-120; estimados).
+modulos Flutter 17/17, MVP demo 96%, MVP vendavel 78% e 47 blocos entregues
+(percentuais mantidos nos valores oficiais publicados no B-121K).
+
+### B-122 publicado
+
+- PR #121 mergeada em `fc7e17810940edf933b5e4a2071f8f456e05d4e9`
+  (approved head `f151b4fb6e53200204846aed5abb0699c0308d94`).
+- Status `published_after_human_approval`.
+- Perfil do operador recriado fiel a `screen-refs/mobile/perfil.png` — hero
+  com papel PT-BR e organizacao, secoes Conta e organizacao, Aparencia,
+  Seguranca e sessao e Sair.
+- Sem dados tecnicos crus na UI: token, modo de autenticacao, permissoes,
+  modulos, tenants e IDs sairam do Perfil (Diagnostico dev-only e o lugar de
+  suporte).
+- Testes b091 realinhados (rotulo PT-BR obrigatorio; claim tecnica proibida);
+  flutter analyze limpo; flutter test 764/764.
 
 ### B-121 publicado
 

@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-05",
-  "version": "B-121",
+  "version": "B-122",
   "source": "mobile/flutter_app/Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "B-121",
-    "title": "MVP integrado Web/Mobile",
-    "pr": 119,
-    "merge_commit": "e851fd35e141545401abfc0fac774f62e1c2f615",
-    "approved_head": "72d6ccc6476be752ccf8d368a5252c8c97fac522",
+    "block": "B-122",
+    "title": "MVP integrado + alinhamento visual ao prototipo aprovado",
+    "pr": 121,
+    "merge_commit": "fc7e17810940edf933b5e4a2071f8f456e05d4e9",
+    "approved_head": "f151b4fb6e53200204846aed5abb0699c0308d94",
     "status": "published_after_human_approval",
-    "summary": "B-121K publica os KPIs apos avaliacao humana e merges dos incrementos B-121: PR #117 (lista de OS web real + matriz tela x endpoint, merge 38facb24a3bc8592cc3ccd6c11d4e428420532ed), PR #118 (Dashboard, Detalhe da OS, Aprovacao e nav MVP-only integrados, merge f05566828a2b05d9c4400112d66be490477f0a17) e PR #119 (hardening mobile: timeline real, auto-sync no app root, adapter de checklist fields/components e base URL por --dart-define, merge e851fd35e141545401abfc0fac774f62e1c2f615). Consolida tambem os blocos B-109 a B-120 mergeados desde a ultima publicacao (B-108).",
-    "status_label": "Publicado apos avaliacao humana e merges das PRs #117/#118/#119",
+    "summary": "Publica os KPIs apos avaliacao humana e merges de B-121 e B-122. B-121 (PRs #117/#118/#119; KPIs publicados no B-121K, PR #120, merge 28d8a12af8abad61be37d6ceeb8ce70faf9856ce): web MVP nos endpoints reais + hardening mobile. B-122 (PR #121, merge fc7e17810940edf933b5e4a2071f8f456e05d4e9): Perfil do operador alinhado ao prototipo aprovado (screen-refs/mobile/perfil.png), sem dados tecnicos crus na UI; auditoria das telas MVP web/mobile registrada.",
+    "status_label": "Publicado apos avaliacao humana e merges das PRs #117/#118/#119/#121",
     "related_prs": [
       {
         "pr": 117,
@@ -27,6 +27,11 @@
         "pr": 119,
         "merge_commit": "e851fd35e141545401abfc0fac774f62e1c2f615",
         "approved_head": "72d6ccc6476be752ccf8d368a5252c8c97fac522"
+      },
+      {
+        "pr": 121,
+        "merge_commit": "fc7e17810940edf933b5e4a2071f8f456e05d4e9",
+        "approved_head": "f151b4fb6e53200204846aed5abb0699c0308d94"
       }
     ]
   },
@@ -67,8 +72,8 @@
       "display": "78%"
     },
     "blocks_completed": {
-      "value": 46,
-      "display": "46"
+      "value": 47,
+      "display": "47"
     },
     "mobile_backend_contracts": {
       "value": 18,
@@ -94,8 +99,10 @@
     ]
   },
   "notes": [
-    "mvp_demo e mvp_vendavel seguem os ultimos valores documentados na rodada B-113 a B-120 (agent-orchestration/codex/log-execucao.md: 96%/78%, tipo estimado); o B-121 nao propos novos percentuais e a revisao humana pode ajusta-los.",
-    "backend_tests e contratos mobile permanecem nos ultimos valores oficiais comprovados; o backend nao foi alterado no B-121."
+    "mvp_demo e mvp_vendavel mantidos nos ultimos valores oficiais publicados (B-121K, PR #120, merge 28d8a12af8abad61be37d6ceeb8ce70faf9856ce; tipo estimado); B-121 e B-122 nao propuseram novos percentuais e a revisao humana pode ajusta-los.",
+    "backend_tests e contratos mobile permanecem nos ultimos valores oficiais comprovados; o backend nao foi alterado em B-121/B-122.",
+    "frontend_smoke_tests mantidos em 33/33 (PRs #117/#118); o frontend nao foi alterado no B-122.",
+    "blocks_completed segue a regra de contagem de blocos entregues: 46 (ate B-121) + B-122 = 47."
   ],
   "limitations": [
     "S3/presigned real pendente",
@@ -105,6 +112,7 @@
     "Retencao definitiva pendente",
     "Dashboard web ainda sem enriquecimento de /operations/dispatches e /field-locations/latest",
     "Settings web sem backend dedicado (lacuna documentada)",
+    "Fluxo de OS mobile (lista/detalhe/execucao/checklists/run/sync) ainda em Material stock — fidelidade nas proximas fases",
     "Piloto Android real ainda precisa validacao em dispositivo fisico"
   ]
 }

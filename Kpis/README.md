@@ -35,6 +35,26 @@ Regras obrigatorias:
 - Mexeu nos dois: atualizar os dois conjuntos.
 - Se existir `index.html`: atualizar tambem o HTML.
 
+## B-122 refletido na raiz
+
+- B-122 — Alinhamento visual ao prototipo aprovado (publicado junto ao B-121K).
+- Perfil do operador recriado fiel a `screen-refs/mobile/perfil.png`: hero com
+  avatar/nome/e-mail e "Papel · Organizacao" (rotulo PT-BR), secoes Conta e
+  organizacao, Aparencia, Seguranca e sessao e botao Sair.
+- Removidos da UI: modo de autenticacao, expiracao de token, permissoes cruas,
+  modulos, tenants e IDs internos (suporte tecnico no Diagnostico dev-only).
+- Auditoria: 11 telas web MVP + shell conformes; web sem rota de Perfil
+  (lacuna documentada); fluxo de OS mobile em Material stock (lacuna).
+- Flutter tests: 764/764 (revalidado na PR #121). Frontend smoke: 33/33
+  (frontend nao alterado no B-122). Backend: inalterado.
+- MVP demo: 96% e MVP vendavel: 78% — mantidos nos valores oficiais publicados
+  no B-121K (sem novos percentuais propostos).
+- Blocos entregues: 47 (regra de contagem: 46 ate B-121 + B-122).
+
+Metadados: PR #121 (merge `fc7e17810940edf933b5e4a2071f8f456e05d4e9`, head
+`f151b4fb6e53200204846aed5abb0699c0308d94`), status
+`published_after_human_approval`.
+
 ## B-121 refletido na raiz
 
 - B-121 — MVP integrado Web/Mobile (publicacao B-121K pos-avaliacao humana).
