@@ -3459,3 +3459,26 @@ fora do MVP e sem KPIs:
 Seguranca: sem token/tenant/paths/base64 no body; conflitos permanecem manuais.
 Validacao local: flutter analyze limpo, flutter test 764/764 (10 testes novos).
 KPIs nao alterados (C3). Web/backend nao tocados.
+
+---
+
+## Atualizacao 2026-07-05 - B-122 Fidelidade visual ao prototipo aprovado
+
+Branch: `fix/b122-visual-consistency-approved-prototype`. Bloco de design
+consistency: o Perfil do operador exibia dados tecnicos crus (modo de
+autenticacao, expiracao de token, lista de permissoes, modulos, tenants) —
+fora do padrao aprovado. Recriado fiel a `screen-refs/mobile/perfil.png`:
+hero com avatar/nome/papel em PT-BR/organizacao, secoes Conta e organizacao,
+Aparencia (tema preservado), Seguranca e sessao (sessao/conectividade/ultimo
+sync) e Sair. Dado tecnico saiu do Perfil (Diagnostico dev-only permanece o
+lugar de suporte).
+
+Auditoria: as 11 telas web MVP + shell ja seguem o padrao aprovado (re-skins
+§11 + integracoes B-121; grep de violacoes sem ocorrencias). **Nao existe rota
+de Perfil no web MVP** — lacuna documentada, sem criar tela fora das 16
+congeladas. Mobile: telas do fluxo de OS seguem Material stock — lacuna
+registrada para as proximas fases de fidelidade.
+
+Validacao local: flutter analyze limpo, flutter test 764/764 (b091 realinhado:
+rotulo PT-BR obrigatorio, modo de autenticacao proibido no Perfil). Frontend e
+backend nao tocados. KPIs nao alterados (C3).

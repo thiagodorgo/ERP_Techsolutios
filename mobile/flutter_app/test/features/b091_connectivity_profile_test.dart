@@ -366,14 +366,18 @@ void main() {
 
   // ── Group 3: ProfileScreen widget tests ──────────────────────────────────
   group('ProfileScreen', () {
-    testWidgets('t07 — shows email and tenant role', (tester) async {
+    testWidgets('t07 — shows email and tenant role (rotulo PT-BR)', (
+      tester,
+    ) async {
       await tester.pumpWidget(_profileApp());
       await tester.pumpAndSettle();
       await tester.pump();
       await tester.pumpAndSettle();
 
       expect(find.textContaining('tecnico@tenant.demo'), findsWidgets);
-      expect(find.textContaining('field_technician'), findsWidgets);
+      // B-122: o papel aparece como rotulo de negocio, nunca claim tecnica.
+      expect(find.textContaining('Técnico de Campo'), findsWidgets);
+      expect(find.textContaining('field_technician'), findsNothing);
     });
 
     testWidgets('t08 — shows tenant display name', (tester) async {
@@ -385,7 +389,7 @@ void main() {
       expect(find.textContaining('Tenant Demo'), findsWidgets);
     });
 
-    testWidgets('t09 — shows auth mode label (local in test env)', (
+    testWidgets('t09 — does NOT show technical auth mode (B-122)', (
       tester,
     ) async {
       await tester.pumpWidget(_profileApp());
@@ -395,11 +399,12 @@ void main() {
 
       expect(kIsRemoteAuth, isFalse);
 
-      await tester.scrollUntilVisible(
-        find.textContaining('Local (desenvolvimento)'),
-        200.0,
-      );
-      expect(find.textContaining('Local (desenvolvimento)'), findsOneWidget);
+      // B-122: modo de autenticacao e dado tecnico — fora do Perfil
+      // (disponivel apenas em Diagnostico, dev-only).
+      await tester.drag(find.byType(ListView), const Offset(0, -5000));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Local (desenvolvimento)'), findsNothing);
+      expect(find.textContaining('Modo de autenticacao'), findsNothing);
     });
 
     testWidgets('t10 — shows connectivity online', (tester) async {
@@ -468,8 +473,11 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(find.text('Sair'), 200.0);
-      await tester.tap(find.text('Sair'));
+      await tester.drag(find.byType(ListView), const Offset(0, -800));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.widgetWithText(FilledButton, 'Sair'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Sair'));
       await tester.pumpAndSettle();
 
       expect(notifier.logoutCalled, isTrue);
