@@ -26,29 +26,32 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
-        <article class="panel panel--wide" aria-label="Resumo B-108">
-          <h2>B-108 — Hardening de evidências/storage</h2>
+        <article class="panel panel--wide" aria-label="Resumo B-121">
+          <h2>B-121 — MVP integrado Web/Mobile</h2>
           <p>
-            Evidências refletido do KPI mobile: Flutter 662/662, Backend
-            15/15, contratos mobile 18/18, contratos mobile + Core SaaS 21/21,
-            modulos Flutter 17/17, MVP demo 93%, MVP vendavel 76% e
-            38 blocos entregues.
+            KPIs pos-avaliacao humana e merges das PRs #117/#118/#119: Flutter
+            764/764, smoke web 33/33, Backend 15/15, contratos mobile 18/18,
+            contratos mobile + Core SaaS 21/21, modulos Flutter 17/17, MVP demo
+            96%, MVP vendavel 78% e 46 blocos entregues (consolida B-109 a
+            B-120 desde a ultima publicacao B-108).
           </p>
           <p>
-            B-108 publicou `EvidenceStorageProvider`,
-            `LocalProtectedEvidenceStorageProvider`, `EvidenceScanner`
-            testavel, Noop/Fake scanner, referencia opaca `evfile_*`, MIME
-            validation JPEG/PNG, size validation 10 MB e checksum SHA-256.
+            Web MVP ligado aos endpoints reais: lista/detalhe de OS com timeline,
+            Dashboard composto de work-orders + notifications, Aprovacao
+            operacional no detalhe (motivo obrigatorio na reprovacao, RBAC) e
+            navegacao MVP-only via GET /navigation/menu.
           </p>
           <p>
-            Auditoria segura cobre accepted, rejected, scan_failed e stored. O
-            upload multipart mobile foi preservado e a resposta publica nao
-            expoe path, bucket, storage key, URL publica, token, base64 ou
-            binario.
+            Hardening mobile: timeline real no detalhe/check-in com fallback
+            local seguro, auto-sync montado no app root com ordem segura,
+            adapter de checklist tolerando fields e components (tipo
+            desconhecido mostra mensagem segura) e base URL por
+            --dart-define=API_BASE_URL.
           </p>
           <p>
             Limitacoes: S3/presigned real, DB/Redis receipt, antivirus real,
-            download protegido final e retencao definitiva seguem pendentes.
+            download protegido final, retencao definitiva, Dashboard web sem
+            dispatches/field-locations e Settings web sem backend dedicado.
           </p>
           <p>
             Politica de KPIs duplos: mexeu Flutter/mobile atualiza

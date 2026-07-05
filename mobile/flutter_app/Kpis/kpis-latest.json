@@ -1,55 +1,58 @@
 {
-  "snapshot_date": "2026-06-18",
-  "version": "B-108",
-  "branch": "feature/evidence-storage-hardening",
-  "description": "B-108 Hardening de evidências/storage — storage protegido local/dev, scanner testavel, referencia opaca evfile_*, auditoria segura e upload multipart preservado sem expor path, bucket, storage key, URL publica, token, base64 ou binario",
+  "snapshot_date": "2026-07-05",
+  "version": "B-121",
+  "branch": "feat/mobile-b121-mvp-hardening",
+  "description": "B-121 MVP integrado Web/Mobile — hardening mobile (timeline real no detalhe/check-in, auto-sync no app root, adapter de checklist fields/components, base URL por --dart-define) e web MVP ligado aos endpoints reais (OS lista/detalhe, Dashboard, Aprovacao, nav MVP-only)",
   "release": {
-    "block": "B-108",
-    "title": "Hardening de evidências/storage",
-    "pr": 104,
-    "mergeCommit": "468fcf16c6b42865aecbd45b05f4c37ced0c3068",
-    "approvedHead": "4b221cfdfe3acad9c65214ac5fc7e7892a050331",
-    "branch": "feature/evidence-storage-hardening",
+    "block": "B-121",
+    "title": "MVP integrado Web/Mobile",
+    "pr": 119,
+    "mergeCommit": "e851fd35e141545401abfc0fac774f62e1c2f615",
+    "approvedHead": "72d6ccc6476be752ccf8d368a5252c8c97fac522",
+    "branch": "feat/mobile-b121-mvp-hardening",
     "status": "published_after_human_approval",
-    "status_label": "Publicado apos avaliacao humana, merge e gate B-108G",
-    "summary": "B-108 endureceu o upload de evidencias/storage mantendo o multipart mobile, adicionando provider local protegido, scanner testavel e auditoria segura; o mobile preserva evidencia local em erro, rejected, scan_failed e pending_review.",
+    "status_label": "Publicado apos avaliacao humana e merges das PRs #117/#118/#119 (B-121K)",
+    "summary": "B-121 fechou os gaps cirurgicos do Mobile MVP (timeline real com fallback local seguro, auto-sync global no app root, adapter de checklist tolerando fields e components, base URL configuravel) e religou o web MVP aos endpoints reais. Consolida os blocos B-109 a B-120 mergeados desde a ultima publicacao (B-108). Percentuais mvp seguem os ultimos valores documentados na rodada B-113 a B-120 (estimados).",
     "commits": [
       {
-        "hash": "4b221cfdfe3acad9c65214ac5fc7e7892a050331",
-        "message": "test(mobile): keep B-106 KPI regression compatible with latest release"
+        "hash": "38facb24a3bc8592cc3ccd6c11d4e428420532ed",
+        "message": "Merge pull request #117 — B-121 web lista de OS real + matriz tela x endpoint"
       },
       {
-        "hash": "be750e92f539213f3af051551434562d6c99afd6",
-        "message": "feat(evidence): harden mobile evidence storage"
+        "hash": "f05566828a2b05d9c4400112d66be490477f0a17",
+        "message": "Merge pull request #118 — B-121 dashboard, detalhe OS, aprovacao e nav MVP"
       },
       {
-        "hash": "468fcf16c6b42865aecbd45b05f4c37ced0c3068",
-        "message": "Merge pull request #104 from thiagodorgo/feature/evidence-storage-hardening"
+        "hash": "e851fd35e141545401abfc0fac774f62e1c2f615",
+        "message": "Merge pull request #119 — B-121 hardening mobile MVP"
       }
     ],
-    "limitation": "S3/presigned real, DB/Redis receipt, antivirus real, download protegido final e retencao definitiva seguem pendentes.",
-    "fallback": "Rejected, scan_failed, pending_review, erro de rede e timeout preservam a evidencia local; stored/uploaded marca synced e permite apagar o blob local opaco."
+    "limitation": "S3/presigned real, DB/Redis receipt, antivirus real, download protegido final, retencao definitiva, Dashboard web sem dispatches/field-locations e Settings web sem backend dedicado seguem pendentes.",
+    "fallback": "Timeline cai para o cache local em falha de rede/404/403; rejected, scan_failed, pending_review, erro de rede e timeout preservam a evidencia local; conflitos permanecem em resolucao manual."
   },
   "domains": [
     {
       "id": "work_orders",
       "name": "Work Orders (OS)",
       "status": "parcial",
-      "detail": "Pull remoto ativo + sync write de OS com create local-only e status conectado; B-107 adicionou work_order.create, mapeamento localId -> serverId e resolucao manual inicial de conflitos.",
+      "detail": "Pull remoto ativo + sync write de OS com create local-only e status conectado; B-121 conectou a timeline real do detalhe/check-in com fallback local seguro.",
       "points": [
         "GET /api/v1/work-orders conectado com upsert no Drift",
+        "GET /api/v1/work-orders/:id/timeline conectado no detalhe/check-in (B-121) com fallback local",
         "POST /api/v1/mobile/sync/work-order-actions conectado para work_order.create e statusUpdate backend-ready",
         "localId -> serverId implementado para accepted e already_applied",
-        "Approval real e evidence_attach continuam fora do escopo B-108"
+        "Auto-sync montado no app root com ordem segura (B-121)"
       ]
     },
     {
       "id": "checklists",
       "name": "Checklists",
       "status": "parcial",
-      "detail": "Pull de templates ativo + sync write de respostas conectado para runs com server_run_id/run_id real; run create e anexos seguem pendentes.",
+      "detail": "Pull de templates ativo + sync write de respostas conectado; B-121 tornou o adapter de render tolerante a fields e components.",
       "points": [
         "GET /api/v1/mobile/checklists/available com handler backend real",
+        "GET /api/v1/mobile/checklists/:id/render aceita fields e components (orderIndex -> order, componentKey -> type)",
+        "Tipo desconhecido vira unsupported com mensagem segura no render",
         "POST /api/v1/mobile/sync/checklist-actions conectado no replay Flutter",
         "Payload seguro sem tenant externo, token, path, base64 ou file_data"
       ]
@@ -106,12 +109,12 @@
         {
           "id": "flutter_tests",
           "label": "Flutter Tests",
-          "value": 662,
-          "total": 662,
+          "value": 764,
+          "total": 764,
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "662/662 no full Flutter validado no gate B-108G"
+          "detail": "764/764 no full Flutter validado na PR #119 (10 testes novos B-121)"
         },
         {
           "id": "npm_tests",
@@ -130,7 +133,7 @@
           "unit": "issues",
           "type": "real",
           "status": "green",
-          "detail": "No issues found no gate B-108G"
+          "detail": "No issues found na PR #119 (B-121)"
         },
         {
           "id": "npm_lint",
@@ -189,29 +192,29 @@
         {
           "id": "flutter_mvp_demo",
           "label": "MVP Demo Readiness",
-          "value": 93,
+          "value": 96,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Sobe com hardening de evidencias/storage, scanner testavel e resposta publica segura."
+          "detail": "Estimado. Ultimo valor documentado na rodada B-113 a B-120; B-121 nao propos novo percentual."
         },
         {
           "id": "flutter_mvp_vendavel",
           "label": "MVP Vendavel (Producao)",
-          "value": 76,
+          "value": 78,
           "unit": "%",
           "type": "estimated",
           "status": "yellow",
-          "detail": "Estimado. Ainda requer S3/presigned real, DB/Redis receipt, antivirus real, download protegido final e retencao definitiva."
+          "detail": "Estimado. Ultimo valor documentado na rodada B-113 a B-120; ainda requer S3/presigned real, DB/Redis receipt, antivirus real, download protegido e retencao definitiva."
         },
         {
           "id": "flutter_test_files",
           "label": "Arquivos de Teste Flutter",
-          "value": 38,
+          "value": 52,
           "unit": "arquivos",
           "type": "real",
           "status": "green",
-          "detail": "38 arquivos de teste no diretorio test/"
+          "detail": "52 arquivos de teste no diretorio test/"
         },
         {
           "id": "flutter_evidence_sync",
@@ -276,20 +279,20 @@
         {
           "id": "blocks_completed",
           "label": "Blocos Entregues (total)",
-          "value": 38,
+          "value": 46,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-076 ate B-108 + B-098F, incluindo sub-blocos (A/B/K/F)"
+          "detail": "B-076 ate B-121, incluindo sub-blocos (A/B/K/F); consolida B-109 a B-120"
         },
         {
           "id": "prs_merged",
-          "label": "PRs Merged (estimado)",
-          "value": 17,
+          "label": "PRs Merged",
+          "value": 119,
           "unit": "PRs",
-          "type": "estimated",
+          "type": "real",
           "status": "green",
-          "detail": "Estimado com base no historico de branches e merges"
+          "detail": "Contagem real via GitHub (gh pr list --state merged) em 2026-07-05"
         }
       ]
     },
@@ -309,11 +312,11 @@
         {
           "id": "aprovacao_real",
           "label": "Aprovacao Real",
-          "value": 0,
+          "value": 1,
           "unit": "implementado",
           "type": "real",
-          "status": "red",
-          "detail": "Placeholder — fluxo de aprovacao de OS"
+          "status": "green",
+          "detail": "B-109 publicou approvals no backend; B-121 integrou aprovar/reprovar (motivo obrigatorio, RBAC) no detalhe da OS web. Decisao mobile permanece fora do escopo."
         },
         {
           "id": "os_sync_bidirecional",
@@ -426,11 +429,15 @@
   ],
   "next_steps": [
     {
-      "block": "B-109",
-      "title": "Approval real de OS e fluxo de aprovacao operacional"
+      "block": "B-122",
+      "title": "Fidelidade visual das telas MVP ao prototipo aprovado (Perfil Web do operador em especial)"
     },
     {
-      "block": "B-110",
+      "block": "B-12x",
+      "title": "Dashboard web enriquecido com /operations/dispatches e /field-locations/latest"
+    },
+    {
+      "block": "B-12x",
       "title": "Storage externo/presigned URL, antivirus real e download protegido final para evidencias"
     }
   ]

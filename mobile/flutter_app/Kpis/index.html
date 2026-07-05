@@ -24,30 +24,35 @@
 
       <p id="source-banner" class="source-banner" role="status" hidden></p>
 
-      <section class="section section--block panel" aria-label="Resumo B-108 literal">
+      <section class="section section--block panel" aria-label="Resumo B-121 literal">
         <div class="section-heading">
-          <p class="eyebrow">Snapshot B-108</p>
-          <h2>B-108 — Hardening de evidências/storage</h2>
+          <p class="eyebrow">Snapshot B-121</p>
+          <h2>B-121 — MVP integrado Web/Mobile</h2>
         </div>
         <p>
-          Evidências no Flutter: 662/662 testes, Backend 15/15, contratos
+          Flutter 764/764 testes, smoke web 33/33, Backend 15/15, contratos
           mobile 18/18, contratos mobile + Core SaaS 21/21, modulos Flutter
-          17/17, MVP demo 93%, MVP vendavel 76% e 38 blocos entregues.
+          17/17, MVP demo 96%, MVP vendavel 78% e 46 blocos entregues
+          (consolida B-109 a B-120; publicacao B-121K pos-avaliacao humana,
+          PRs #117/#118/#119).
         </p>
         <p>
-          B-108 endureceu o upload de evidencias/storage mantendo multipart,
-          implementando provider local protegido para dev/test, referencia
-          opaca `evfile_*`, `EvidenceScanner` testavel e auditoria segura.
+          Hardening mobile: timeline real no detalhe/check-in
+          (`GET /work-orders/:id/timeline`) com fallback local seguro,
+          auto-sync montado no app root com ordem segura, adapter de checklist
+          tolerando `fields` e `components` (tipo desconhecido mostra mensagem
+          segura) e base URL por `--dart-define=API_BASE_URL`.
         </p>
         <p>
-          A resposta nao expoe path, bucket, storage key, URL publica, token,
-          base64 ou binario. Os estados `stored`, `rejected`, `scan_failed` e
-          `pending_review` sao tratados no mobile, preservando evidencia local
-          em erro.
+          Web MVP ligado aos endpoints reais: lista/detalhe de OS com timeline,
+          Dashboard composto de work-orders + notifications, Aprovacao
+          operacional no detalhe (motivo obrigatorio, RBAC) e navegacao
+          MVP-only via `GET /navigation/menu`.
         </p>
         <p>
           Pendentes: S3/presigned real, DB/Redis receipt, antivirus real,
-          download protegido final e retencao definitiva.
+          download protegido final, retencao definitiva, Dashboard web sem
+          dispatches/field-locations e Settings web sem backend dedicado.
         </p>
         <p>
           Politica de KPIs duplos: mexeu Flutter/mobile atualiza

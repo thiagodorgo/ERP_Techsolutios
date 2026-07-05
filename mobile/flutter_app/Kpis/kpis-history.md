@@ -5,6 +5,39 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-121 — 2026-07-05
+
+**MVP integrado Web/Mobile (publicacao B-121K)**
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 764 / 764 |
+| Frontend Smoke Tests | 33 / 33 |
+| Backend Tests | 15 / 15 |
+| Mobile Backend Contracts | 18 / 18 |
+| Mobile + Core SaaS Contracts | 21 / 21 |
+| flutter analyze | 0 issues |
+| Modulos Flutter Prontos | 17 / 17 |
+| MVP Demo Readiness (est.) | 96% |
+| MVP Vendavel (est.) | 78% |
+| Blocos Entregues | 46 |
+| PRs Merged (real) | 119 |
+
+**Novidades:** B-121 fechou os gaps cirurgicos do Mobile MVP — timeline real no
+detalhe/check-in (`GET /work-orders/:id/timeline`) com fallback local seguro,
+auto-sync montado no app root com ordem segura, adapter de checklist tolerando
+`fields` e `components` (tipo desconhecido mostra mensagem segura) e base URL
+por `--dart-define=API_BASE_URL` — e religou o web MVP aos endpoints reais
+(OS lista/detalhe, Dashboard, Aprovacao operacional e nav MVP-only).
+
+**Metadados:** PRs #117 (merge `38facb2`), #118 (merge `f055668`) e #119
+(merge `e851fd3`, approved head `72d6ccc`); status
+`published_after_human_approval`. Consolida os blocos B-109 a B-120 mergeados
+desde a ultima publicacao (B-108). Percentuais mvp: ultimos valores
+documentados na rodada B-113 a B-120 (estimados; revisao humana pode ajustar).
+
+---
+
 ## B-108 — 2026-06-18
 
 **Hardening de evidências/storage**
