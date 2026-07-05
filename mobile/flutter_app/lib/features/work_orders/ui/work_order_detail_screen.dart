@@ -7,8 +7,10 @@ import '../../../core/bootstrap/bootstrap_session.dart';
 import '../../../core/permissions/permission_resolver.dart';
 import '../../../core/sync/sync_models.dart';
 import '../../../core/sync/sync_providers.dart';
+import '../../../shared/theme/erp_mobile_theme.dart';
 import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
+import '../../../shared/ui/mobile_kit.dart';
 import '../../checklists/data/checklist_repository.dart';
 import '../../checklists/domain/checklist_models.dart';
 import '../data/work_order_repository.dart';
@@ -38,10 +40,20 @@ class WorkOrderDetailScreen extends ConsumerWidget {
 
     if (!canRead) {
       return ErpScaffold(
-        title: 'OS',
-        body: const PermissionBlockedState(
-          title: 'Acesso nao autorizado',
-          message: 'work_orders:read necessario para visualizar esta OS.',
+        showAppBar: false,
+        body: Column(
+          children: [
+            MobileScreenHeader(
+              title: 'Detalhe da OS',
+              onBack: () => context.go('/work-orders'),
+            ),
+            const Expanded(
+              child: PermissionBlockedState(
+                title: 'Acesso nao autorizado',
+                message: 'work_orders:read necessario para visualizar esta OS.',
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -53,8 +65,20 @@ class WorkOrderDetailScreen extends ConsumerWidget {
 
         if (wo == null) {
           return ErpScaffold(
-            title: 'OS nao encontrada',
-            body: const ErrorState(message: 'Ordem de servico nao encontrada.'),
+            showAppBar: false,
+            body: Column(
+              children: [
+                MobileScreenHeader(
+                  title: 'Detalhe da OS',
+                  onBack: () => context.go('/work-orders'),
+                ),
+                const Expanded(
+                  child: ErrorState(
+                    message: 'Ordem de servico nao encontrada.',
+                  ),
+                ),
+              ],
+            ),
           );
         }
 
@@ -68,48 +92,60 @@ class WorkOrderDetailScreen extends ConsumerWidget {
         );
 
         return ErpScaffold(
-          title: '${wo.code} · ${wo.title}',
-          body: ListView(
-            padding: const EdgeInsets.all(16),
+          showAppBar: false,
+          body: Column(
             children: [
-              TenantContextBar(session: session),
-              const SizedBox(height: 8),
-              _WorkOrderStepper(status: wo.status),
-              const SizedBox(height: 8),
-              if (wo.syncStatus == SyncStatus.pending)
-                SyncStatusBanner(
-                  status: SyncStatus.pending,
-                  message: 'Esta OS possui alteracoes locais aguardando sync.',
+              MobileScreenHeader(
+                title: 'Detalhe da OS',
+                subtitle: wo.status.label,
+                onBack: () => context.go('/work-orders'),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    TenantContextBar(session: session),
+                    const SizedBox(height: 8),
+                    _WorkOrderStepper(status: wo.status),
+                    const SizedBox(height: 8),
+                    if (wo.syncStatus == SyncStatus.pending)
+                      SyncStatusBanner(
+                        status: SyncStatus.pending,
+                        message:
+                            'Esta OS possui alteracoes locais aguardando sync.',
+                      ),
+                    if (wo.syncStatus == SyncStatus.conflict) ...[
+                      SyncStatusBanner(
+                        status: SyncStatus.conflict,
+                        message:
+                            'Conflito de sincronizacao. Seus dados locais foram preservados.',
+                      ),
+                      const SizedBox(height: 8),
+                      WorkOrderConflictResolutionPanel(
+                        workOrder: wo,
+                        repository: repo,
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    _HeaderCard(wo: wo),
+                    const SizedBox(height: 8),
+                    _CustomerCard(wo: wo),
+                    const SizedBox(height: 8),
+                    _AssignmentCard(wo: wo, session: session),
+                    const SizedBox(height: 8),
+                    if (wo.checklistId != null) _ChecklistCard(wo: wo),
+                    const SizedBox(height: 8),
+                    OperationalLocationCard(session: session, workOrder: wo),
+                    const SizedBox(height: 8),
+                    _TimelineCard(workOrderId: workOrderId, repo: repo),
+                    const SizedBox(height: 16),
+                    _CheckinActions(
+                      wo: wo,
+                      canStatus: canStatus,
+                      canApproval: canApproval,
+                    ),
+                  ],
                 ),
-              if (wo.syncStatus == SyncStatus.conflict) ...[
-                SyncStatusBanner(
-                  status: SyncStatus.conflict,
-                  message:
-                      'Conflito de sincronizacao. Seus dados locais foram preservados.',
-                ),
-                const SizedBox(height: 8),
-                WorkOrderConflictResolutionPanel(
-                  workOrder: wo,
-                  repository: repo,
-                ),
-              ],
-              const SizedBox(height: 8),
-              _HeaderCard(wo: wo),
-              const SizedBox(height: 8),
-              _CustomerCard(wo: wo),
-              const SizedBox(height: 8),
-              _AssignmentCard(wo: wo, session: session),
-              const SizedBox(height: 8),
-              if (wo.checklistId != null) _ChecklistCard(wo: wo),
-              const SizedBox(height: 8),
-              OperationalLocationCard(session: session, workOrder: wo),
-              const SizedBox(height: 8),
-              _TimelineCard(workOrderId: workOrderId, repo: repo),
-              const SizedBox(height: 16),
-              _CheckinActions(
-                wo: wo,
-                canStatus: canStatus,
-                canApproval: canApproval,
               ),
             ],
           ),
@@ -300,8 +336,9 @@ class _WorkOrderStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = _current;
-    final cs = Theme.of(context).colorScheme;
 
+    // Tokens do protótipo: etapa feita azul sólido, atual azul suave,
+    // futuras neutras (os-detalhe.png).
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
@@ -318,27 +355,32 @@ class _WorkOrderStepper extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: i < current
-                            ? cs.primary
+                            ? ErpMobileTheme.primary
                             : i == current
-                            ? cs.primaryContainer
-                            : cs.surfaceContainerHighest,
+                            ? const Color(0xFFEFF6FF)
+                            : const Color(0xFFF1F5F9),
                       ),
                       child: Icon(
                         i < current ? Icons.check : Icons.circle,
                         size: 14,
                         color: i < current
-                            ? cs.onPrimary
+                            ? Colors.white
                             : i == current
-                            ? cs.primary
-                            : cs.onSurfaceVariant,
+                            ? ErpMobileTheme.primary
+                            : ErpMobileTheme.inkFaint,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       _labels[i],
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: i <= current ? cs.primary : cs.onSurfaceVariant,
-                        fontWeight: i == current ? FontWeight.w700 : null,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: i <= current
+                            ? ErpMobileTheme.primary
+                            : ErpMobileTheme.inkFaint,
+                        fontWeight: i == current
+                            ? FontWeight.w700
+                            : FontWeight.w600,
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
@@ -351,7 +393,9 @@ class _WorkOrderStepper extends StatelessWidget {
                 Container(
                   height: 2,
                   width: 12,
-                  color: i < current ? cs.primary : cs.outlineVariant,
+                  color: i < current
+                      ? ErpMobileTheme.primary
+                      : ErpMobileTheme.cardBorder,
                 ),
             ],
           ],
@@ -372,44 +416,56 @@ class _HeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Hero fiel ao os-detalhe.png: código azul em destaque + pills de
+    // prioridade/status + tipo de serviço + agenda.
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    wo.title,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                OperationalStatusChip(
-                  label: wo.status.label,
-                  status: wo.status.statusTone,
-                ),
-              ],
+            Text(
+              '${wo.code} · ${wo.title}',
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w800,
+                color: ErpMobileTheme.primary,
+              ),
             ),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
               children: [
-                OperationalStatusChip(
-                  label: wo.priority.label,
-                  status: wo.priority.statusTone,
+                MobilePill(
+                  label: 'Prioridade ${wo.priority.label}',
+                  tone: pillToneFromStatus(wo.priority.statusTone),
                 ),
-                const SizedBox(width: 8),
-                Text(wo.code, style: Theme.of(context).textTheme.bodySmall),
+                MobilePill(
+                  label: wo.status.label,
+                  tone: pillToneFromStatus(wo.status.statusTone),
+                ),
+                if (wo.serviceType != null)
+                  MobilePill(label: wo.serviceType!.label, tone: PillTone.info),
               ],
             ),
             if (wo.scheduledAt != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Row(
                 children: [
-                  const Icon(Icons.schedule_outlined, size: 16),
-                  const SizedBox(width: 4),
-                  Text(_fmtDate(wo.scheduledAt!)),
+                  const Icon(
+                    Icons.schedule_outlined,
+                    size: 15,
+                    color: ErpMobileTheme.inkFaint,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    _fmtDate(wo.scheduledAt!),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: ErpMobileTheme.inkMuted,
+                    ),
+                  ),
                 ],
               ),
             ],
