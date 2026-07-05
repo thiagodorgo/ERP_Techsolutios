@@ -3667,3 +3667,45 @@ final do B-120; KPIs publicados junto. Numeracao contigua ao Codex.
 - flutter analyze limpo; flutter test 764/764. Frontend nao tocado (auditoria
   sem correcoes necessarias); backend nao tocado.
 - KPIs NAO alterados (C3).
+
+## 2026-07-05 - B-124 Dashboard web enriquecido com despachos e localizacoes
+
+Branch: `feat/web-b124-dashboard-dispatches-field-locations`. Escopo cirurgico:
+somente `/dashboard` (DashboardPage), `modules/dashboard/*` (adapter + hook
+novo), `listAllPendingApprovals` no approval.service e testes frontend.
+
+### Implementado
+- `useDashboardData`: carrega em paralelo GET /work-orders (useWorkOrders),
+  GET /operations/dispatches, GET /field-locations/latest,
+  GET /notifications/unread-count e GET /approvals/pending (work_order_id e
+  opcional no backend). Cada fonte degrada de forma independente: services ja
+  aplicam mock atras de VITE_USE_MOCKS + fallback local; aprovacoes com erro
+  (403/404/500/timeout) apenas marcam "Aprovacoes indisponiveis no momento.".
+- `dashboard.adapter.ts` estendido com funcoes puras (now injetado, testaveis
+  sem rede): deriveEnrichedDashboardKpis (8 cards derivados, nunca fixos),
+  buildCriticalQueue (fila combinada com ordenacao obrigatoria: SLA vencido >
+  prioridade alta/urgente > operador sem sinal (stale) > aprovacao pendente >
+  OS sem operador; dedupe por entidade no grupo mais critico; acao contextual
+  Abrir OS / Abrir mapa / Ver aprovacao), deriveFieldStatusRows (stale
+  sobrepoe status; regra de 15 min REUTILIZADA de operations-map.adapter via
+  isStale, sem recalcular limiar), deriveActiveDispatchRows (status nao
+  terminais; desconhecido vira "Status desconhecido" sem quebrar),
+  deriveDashboardAlerts (so com ocorrencia, todos com acao, ordenados por
+  severidade) e deriveDashboardEvents (derivados das listas de OS + despachos
+  carregadas — nenhuma chamada de timeline por OS).
+- DashboardPage reescrita: 8 KPIs, fila critica combinada, alertas acionaveis,
+  Despachos ativos, Status de campo real e Ultimos eventos; chips por fonte
+  "Dados demonstrativos" (mock) / "Fallback local" (fallback); banner seguro
+  "Nao foi possivel carregar dados operacionais agora. Exibindo dados locais.";
+  aria-labels nas acoes, tabular-nums nos valores, flex-wrap responsivo.
+- Seguranca: contexto (token/tenant/role/permissions) so em headers via
+  apiRequest; nenhum token/tenantId/ID tecnico/base64/path na UI (assert no
+  smoke); rotulos PT-BR de negocio.
+
+### Validacoes
+- `npm --prefix frontend run check` OK; `npm --prefix frontend run build` OK;
+  `npm --prefix frontend run test:smoke` 44/44 (antes 33: +10 unit do adapter
+  B-124 + 1 smoke render do dashboard). Backend e mobile nao tocados.
+- Docs: matriz docs/api-screen-endpoints.md (Dashboard -> enriched/integrated
+  B-124, lacuna 1 fechada), status-geral e este log.
+- KPIs NAO alterados (C3) — B-124K depois da avaliacao humana.
