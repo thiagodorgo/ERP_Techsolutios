@@ -211,5 +211,29 @@
     "mergeCommit": "468fcf16c6b42865aecbd45b05f4c37ced0c3068",
     "approvedHead": "4b221cfdfe3acad9c65214ac5fc7e7892a050331",
     "status": "published_after_human_approval"
+  },
+  {
+    "snapshot_date": "2026-07-05",
+    "version": "B-121",
+    "flutter_tests": 764,
+    "frontend_smoke_tests": 33,
+    "npm_tests": 15,
+    "mobile_backend_contracts": 18,
+    "mobile_core_saas_contracts": 21,
+    "backend_contract_tests": 21,
+    "flutter_modules_ready": 17,
+    "flutter_modules_total": 17,
+    "flutter_mvp_demo": 96,
+    "flutter_mvp_vendavel": 78,
+    "blocks_completed": 46,
+    "description": "B-121 MVP integrado Web/Mobile — timeline real no detalhe/check-in com fallback local, auto-sync no app root, adapter de checklist fields/components, base URL por --dart-define; web MVP religado aos endpoints reais (OS lista/detalhe, Dashboard, Aprovacao, nav MVP-only). Consolida B-109 a B-120. Percentuais mvp: ultimos valores documentados na rodada B-113 a B-120 (estimados).",
+    "pr": 119,
+    "mergeCommit": "e851fd35e141545401abfc0fac774f62e1c2f615",
+    "approvedHead": "72d6ccc6476be752ccf8d368a5252c8c97fac522",
+    "status": "published_after_human_approval",
+    "relatedPrs": [
+      { "pr": 117, "mergeCommit": "38facb24a3bc8592cc3ccd6c11d4e428420532ed", "approvedHead": "73a50e905b5a7a3c4665910e705f168d239a8dd9" },
+      { "pr": 118, "mergeCommit": "f05566828a2b05d9c4400112d66be490477f0a17", "approvedHead": "474e5ec49e562a39ddcb1eec15253816ff11f520" }
+    ]
   }
 ]

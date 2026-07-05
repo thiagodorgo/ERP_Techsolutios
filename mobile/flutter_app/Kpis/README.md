@@ -82,9 +82,29 @@ Regras obrigatorias:
 - Mexeu nos dois: atualizar os dois conjuntos.
 - Se existir `index.html`: atualizar tambem o HTML.
 
-No pos-B-108, os valores mobile refletidos na raiz sao: Flutter 662/662,
+No pos-B-121, os valores mobile refletidos na raiz sao: Flutter 764/764,
 Backend 15/15, contratos mobile 18/18, contratos mobile + Core SaaS 21/21,
-modulos Flutter 17/17, MVP demo 93%, MVP vendavel 76% e 38 blocos entregues.
+modulos Flutter 17/17, MVP demo 96%, MVP vendavel 78% e 46 blocos entregues
+(percentuais: ultimos valores documentados na rodada B-113 a B-120; estimados).
+
+### B-121 publicado
+
+- PR #117 mergeada em `38facb24a3bc8592cc3ccd6c11d4e428420532ed`.
+- PR #118 mergeada em `f05566828a2b05d9c4400112d66be490477f0a17`.
+- PR #119 mergeada em `e851fd35e141545401abfc0fac774f62e1c2f615`
+  (approved head `72d6ccc6476be752ccf8d368a5252c8c97fac522`).
+- Status `published_after_human_approval` (publicacao B-121K).
+- Timeline real no detalhe/check-in (GET /work-orders/:id/timeline) com
+  fallback local seguro; timeline vazia nao quebra.
+- Auto-sync montado no app root com ordem segura preservada; sem sessao valida
+  o sync e ignorado.
+- Adapter de checklist tolera `fields` e `components` (orderIndex -> order,
+  type/componentKey -> type); tipo desconhecido mostra "Componente nao
+  suportado nesta versao do app.".
+- Base URL configuravel por `--dart-define=API_BASE_URL` (default localhost do
+  emulador para dev/test).
+- Flutter test 764/764 com 10 testes novos em
+  `test/features/b121_mobile_hardening_test.dart`.
 
 ### B-108 publicado
 

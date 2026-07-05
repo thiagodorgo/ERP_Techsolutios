@@ -35,6 +35,40 @@ Regras obrigatorias:
 - Mexeu nos dois: atualizar os dois conjuntos.
 - Se existir `index.html`: atualizar tambem o HTML.
 
+## B-121 refletido na raiz
+
+- B-121 — MVP integrado Web/Mobile (publicacao B-121K pos-avaliacao humana).
+- Web MVP ligado aos endpoints reais: lista/detalhe de OS com timeline, Dashboard
+  composto de work-orders + notifications, Aprovacao operacional no detalhe
+  (motivo obrigatorio na reprovacao, RBAC) e nav MVP-only via `GET /navigation/menu`.
+- Matriz tela x endpoint x status das 27 telas MVP em `docs/api-screen-endpoints.md`.
+- Hardening mobile: timeline real no detalhe/check-in com fallback local seguro,
+  auto-sync no app root com ordem segura, adapter de checklist tolerando `fields`
+  e `components` e base URL por `--dart-define=API_BASE_URL`.
+- Consolida os blocos B-109 a B-120 mergeados desde a ultima publicacao (B-108).
+- Flutter tests: 764/764.
+- Frontend smoke tests: 33/33.
+- Backend tests: 15/15 (backend nao alterado no B-121).
+- Mobile backend contracts: 18/18.
+- Mobile + Core SaaS contracts: 21/21.
+- Flutter modules: 17/17.
+- MVP demo: 96% (ultimo valor documentado na rodada B-113 a B-120; estimado).
+- MVP vendavel: 78% (ultimo valor documentado na rodada B-113 a B-120; estimado).
+- Blocos entregues: 46.
+
+Metadados: PR #117 (merge `38facb24a3bc8592cc3ccd6c11d4e428420532ed`, head
+`73a50e905b5a7a3c4665910e705f168d239a8dd9`), PR #118 (merge
+`f05566828a2b05d9c4400112d66be490477f0a17`, head
+`474e5ec49e562a39ddcb1eec15253816ff11f520`), PR #119 (merge
+`e851fd35e141545401abfc0fac774f62e1c2f615`, head
+`72d6ccc6476be752ccf8d368a5252c8c97fac522`), status
+`published_after_human_approval`.
+
+Limitacoes mantidas: S3/presigned real, DB/Redis receipt, antivirus real,
+download protegido final, retencao definitiva, Dashboard web sem
+dispatches/field-locations, Settings web sem backend dedicado e piloto Android
+real em dispositivo fisico pendente.
+
 ## B-108 refletido na raiz
 
 - B-108 — Hardening de evidências/storage.

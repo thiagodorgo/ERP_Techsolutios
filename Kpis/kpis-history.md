@@ -6,6 +6,57 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-05 - B-121 MVP integrado Web/Mobile
+
+### Resultado
+
+- Web MVP integrado aos endpoints reais: lista de OS (`useWorkOrders` -> GET /work-orders),
+  Dashboard composto de work-orders + notifications, Detalhe da OS com timeline real,
+  Aprovacao operacional no detalhe (GET /approvals/pending; POST /approve|/reject) e
+  navegacao MVP-only via GET /navigation/menu.
+- Matriz tela x endpoint x status das 27 telas MVP publicada em `docs/api-screen-endpoints.md`.
+- Hardening mobile: timeline real no detalhe/check-in com fallback local seguro,
+  auto-sync montado no app root com ordem segura preservada, adapter de checklist
+  tolerando `fields` e `components` (tipo desconhecido -> mensagem segura) e base URL
+  por `--dart-define=API_BASE_URL`.
+- Consolida os blocos B-109 a B-120 mergeados desde a ultima publicacao (B-108).
+
+### Metadados pos-avaliacao humana
+
+- PR: #117 (merge `38facb24a3bc8592cc3ccd6c11d4e428420532ed`, head `73a50e905b5a7a3c4665910e705f168d239a8dd9`).
+- PR: #118 (merge `f05566828a2b05d9c4400112d66be490477f0a17`, head `474e5ec49e562a39ddcb1eec15253816ff11f520`).
+- PR: #119 (merge `e851fd35e141545401abfc0fac774f62e1c2f615`, head `72d6ccc6476be752ccf8d368a5252c8c97fac522`).
+- Status: `published_after_human_approval`.
+
+### KPIs B-121 refletidos na raiz
+
+| KPI | Valor |
+| --- | --- |
+| Flutter Tests | 764/764 |
+| Frontend Smoke Tests | 33/33 |
+| Backend Tests | 15/15 |
+| Mobile Backend Contracts | 18/18 |
+| Mobile + Core SaaS Contracts | 21/21 |
+| Flutter modules | 17/17 |
+| MVP demo | 96% |
+| MVP vendavel | 78% |
+| Blocos entregues | 46 |
+
+Observacao: mvp_demo/mvp_vendavel seguem os ultimos valores documentados na rodada
+B-113 a B-120 (`agent-orchestration/codex/log-execucao.md`, estimados); o B-121 nao
+propos novos percentuais e a revisao humana pode ajusta-los.
+
+### Limitacoes registradas
+
+- S3/presigned real pendente.
+- DB/Redis receipt pendente.
+- Antivirus real pendente.
+- Download protegido final pendente.
+- Retencao definitiva pendente.
+- Dashboard web sem enriquecimento de dispatches/field-locations.
+- Settings web sem backend dedicado.
+- Piloto Android real ainda precisa validacao em dispositivo fisico.
+
 ## 2026-06-18 - B-108 Hardening de evidências/storage
 
 ### Resultado

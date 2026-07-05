@@ -1,54 +1,59 @@
 const dashboardData = {
   "project": {
     "name": "ERP Techsolutions",
-    "version": "B-108",
-    "updatedAt": "2026-06-18",
-    "sourceBranch": "feature/evidence-storage-hardening",
-    "summary": "B-108 Hardening de evidências/storage publicado apos avaliacao humana. Kpis/ reflete mobile/flutter_app/Kpis/ para Flutter 662/662, MVP demo 93%, MVP vendavel 76% e 38 blocos entregues."
+    "version": "B-121",
+    "updatedAt": "2026-07-05",
+    "sourceBranch": "fix/b121-kpis-post-human-approval",
+    "summary": "B-121 MVP integrado Web/Mobile publicado apos avaliacao humana e merges das PRs #117/#118/#119. Flutter 764/764, smoke web 33/33, MVP demo 96%, MVP vendavel 78% e 46 blocos entregues."
   },
   "kpis": [
     {
-      "label": "B-108",
-      "value": "Evidence storage hardening",
-      "note": "EvidenceStorageProvider, scanner testavel, evfile_* e auditoria segura."
+      "label": "B-121",
+      "value": "MVP integrado Web/Mobile",
+      "note": "Web MVP ligado aos endpoints reais + hardening mobile (timeline, auto-sync root, adapter, base URL)."
     },
     {
       "label": "Flutter",
-      "value": "662/662",
-      "note": "Total real validado no gate B-108G."
+      "value": "764/764",
+      "note": "Total real validado na PR #119 (10 testes novos B-121)."
+    },
+    {
+      "label": "Frontend smoke",
+      "value": "33/33",
+      "note": "test:smoke validado nas PRs #117 e #118."
     },
     {
       "label": "Backend tests",
       "value": "15/15",
-      "note": "npm test passou com core-saas.test.ts."
+      "note": "Backend nao alterado no B-121; ultimo valor oficial."
     },
     {
       "label": "Mobile contracts",
       "value": "18/18",
-      "note": "tests/mobile-backend-contracts.test.ts."
+      "note": "tests/mobile-backend-contracts.test.ts (inalterado)."
     },
     {
       "label": "Mobile + Core SaaS",
       "value": "21/21",
-      "note": "mobile-backend-contracts + core-saas-contract."
+      "note": "mobile-backend-contracts + core-saas-contract (inalterado)."
     },
     {
       "label": "MVP demo",
-      "value": "93%",
-      "note": "Percentual mobile vindo de mobile/flutter_app/Kpis/kpis-latest.json."
+      "value": "96%",
+      "note": "Ultimo valor documentado na rodada B-113 a B-120 (estimado); B-121 nao propos novo percentual."
     },
     {
       "label": "MVP vendavel",
-      "value": "76%",
-      "note": "Percentual mobile vindo de mobile/flutter_app/Kpis/kpis-latest.json."
+      "value": "78%",
+      "note": "Ultimo valor documentado na rodada B-113 a B-120 (estimado); B-121 nao propos novo percentual."
     },
     {
       "label": "Blocos entregues",
-      "value": "38",
-      "note": "B-076 ate B-108 + B-098F, incluindo sub-blocos."
+      "value": "46",
+      "note": "B-076 ate B-121, incluindo sub-blocos; consolida B-109 a B-120."
     },
     {
-      "label": "Escopo B-108K",
+      "label": "Escopo B-121K",
       "value": "KPI/docs",
       "note": "Publicacao documental pos-avaliacao humana; sem feature nova ou codigo funcional."
     }
@@ -102,9 +107,43 @@ const dashboardData = {
       "status": "parcial",
       "progress": 86,
       "summary": "Storage provider protegido, scanner testavel, evfile_* e auditoria segura."
+    },
+    {
+      "id": "B-109",
+      "title": "Aprovacao operacional real",
+      "status": "concluido",
+      "progress": 100,
+      "summary": "GET /approvals/pending e POST /approve|/reject no backend."
+    },
+    {
+      "id": "B-121",
+      "title": "MVP integrado Web/Mobile",
+      "status": "concluido",
+      "progress": 100,
+      "summary": "Web MVP nos endpoints reais (OS lista/detalhe, Dashboard, Aprovacao, nav) + hardening mobile (timeline, auto-sync root, adapter, base URL)."
     }
   ],
   "contracts": [
+    {
+      "domain": "Web MVP",
+      "status": "concluido",
+      "endpoints": [
+        "GET /api/v1/work-orders (+/:id, /:id/timeline)",
+        "GET /api/v1/approvals/pending + POST /approve|/reject",
+        "GET /api/v1/notifications/unread-count",
+        "GET /api/v1/navigation/menu"
+      ],
+      "detail": "B-121 religou lista/detalhe de OS, Dashboard, Aprovacao e nav MVP-only aos endpoints reais (mock atras de VITE_USE_MOCKS, fallback seguro)."
+    },
+    {
+      "domain": "Mobile hardening",
+      "status": "concluido",
+      "endpoints": [
+        "GET /api/v1/work-orders/:id/timeline",
+        "GET /api/v1/mobile/checklists/:id/render (fields + components)"
+      ],
+      "detail": "B-121 conectou a timeline real com fallback local, montou o auto-sync no app root e tornou a base URL configuravel por --dart-define."
+    },
     {
       "domain": "Evidencias",
       "status": "parcial",
@@ -120,7 +159,7 @@ const dashboardData = {
         "mobile/flutter_app/Kpis/kpis-latest.json",
         "mobile/flutter_app/Kpis/index.html"
       ],
-      "detail": "Fonte dos percentuais Flutter/mobile: 662/662, 93%, 76%, 38 blocos."
+      "detail": "Fonte dos percentuais Flutter/mobile: 764/764, 96%, 78%, 46 blocos."
     },
     {
       "domain": "KPIs raiz",
@@ -151,44 +190,48 @@ const dashboardData = {
   ],
   "validations": [
     {
-      "name": "flutter test --reporter compact",
-      "result": "pass 662/662 no gate B-108G"
+      "name": "flutter analyze + flutter test",
+      "result": "limpo + pass 764/764 na PR #119"
     },
     {
-      "name": "npm test",
-      "result": "pass 15/15 no gate B-108G"
+      "name": "frontend check/build/test:smoke",
+      "result": "pass 33/33 nas PRs #117 e #118"
     },
     {
       "name": "mobile-backend-contracts",
-      "result": "pass 18/18"
+      "result": "pass 18/18 (inalterado; backend nao tocado)"
     },
     {
       "name": "mobile + Core SaaS contracts",
-      "result": "pass 21/21"
+      "result": "pass 21/21 (inalterado; backend nao tocado)"
     },
     {
-      "name": "PR #104",
-      "result": "merged 468fcf16c6b42865aecbd45b05f4c37ced0c3068"
+      "name": "PR #117",
+      "result": "merged 38facb24a3bc8592cc3ccd6c11d4e428420532ed"
     },
     {
-      "name": "Head aprovado",
-      "result": "4b221cfdfe3acad9c65214ac5fc7e7892a050331"
+      "name": "PR #118",
+      "result": "merged f05566828a2b05d9c4400112d66be490477f0a17"
+    },
+    {
+      "name": "PR #119",
+      "result": "merged e851fd35e141545401abfc0fac774f62e1c2f615"
     },
     {
       "name": "Politica KPI",
-      "result": "publicado apos avaliacao humana, merge e gate B-108G"
+      "result": "publicado apos avaliacao humana e merges das PRs #117/#118/#119"
     }
   ],
   "estimates": [
     {
       "label": "MVP demo",
-      "value": "93%",
-      "detail": "Estimado no KPI mobile apos B-108."
+      "value": "96%",
+      "detail": "Ultimo valor documentado na rodada B-113 a B-120 (estimado); B-121 nao propos novo percentual."
     },
     {
       "label": "MVP vendavel",
-      "value": "76%",
-      "detail": "Estimado no KPI mobile apos B-108."
+      "value": "78%",
+      "detail": "Ultimo valor documentado na rodada B-113 a B-120 (estimado); B-121 nao propos novo percentual."
     }
   ],
   "risks": [
@@ -210,17 +253,22 @@ const dashboardData = {
   ],
   "nextBlocks": [
     {
-      "id": "B-109",
-      "title": "Approval real de OS",
-      "detail": "Fluxo de aprovacao operacional."
+      "id": "B-122",
+      "title": "Fidelidade visual ao prototipo aprovado",
+      "detail": "Alinhar telas MVP (Perfil Web do operador em especial) ao padrao visual aprovado."
     },
     {
-      "id": "B-110",
-      "title": "Storage externo de evidencias",
-      "detail": "Presigned URL, antivirus real, download protegido e retencao."
+      "id": "B-12x",
+      "title": "Dashboard web enriquecido",
+      "detail": "Compor tambem /operations/dispatches e /field-locations/latest."
     }
   ],
   "history": [
+    {
+      "date": "2026-07-05",
+      "title": "B-121",
+      "detail": "MVP integrado Web/Mobile: web nos endpoints reais + hardening mobile. Flutter 764/764, smoke 33/33, MVP demo 96%, MVP vendavel 78%, 46 blocos (consolida B-109 a B-120)."
+    },
     {
       "date": "2026-06-18",
       "title": "B-108",

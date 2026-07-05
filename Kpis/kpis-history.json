@@ -79,5 +79,28 @@
     "merge_commit": "468fcf16c6b42865aecbd45b05f4c37ced0c3068",
     "approved_head": "4b221cfdfe3acad9c65214ac5fc7e7892a050331",
     "status": "published_after_human_approval"
+  },
+  {
+    "snapshot_date": "2026-07-05",
+    "version": "B-121",
+    "flutter_tests": "764/764",
+    "frontend_smoke_tests": "33/33",
+    "backend_tests": "15/15",
+    "mobile_backend_contracts": "18/18",
+    "mobile_core_saas_contracts": "21/21",
+    "backend_contract_tests_focused": "21/21",
+    "flutter_modules": "17/17",
+    "flutter_mvp_demo": "96%",
+    "flutter_mvp_vendavel": "78%",
+    "blocks_completed": 46,
+    "description": "B-121 MVP integrado Web/Mobile: lista de OS, Dashboard, Detalhe da OS, Aprovacao e nav MVP-only web integrados aos endpoints reais (PRs #117/#118); hardening mobile com timeline real, auto-sync no app root, adapter de checklist fields/components e base URL por --dart-define (PR #119). Consolida os blocos B-109 a B-120 mergeados desde o B-108. Percentuais mvp_demo/mvp_vendavel seguem os ultimos valores documentados na rodada B-113 a B-120 (96%/78%, estimados).",
+    "pr": 119,
+    "merge_commit": "e851fd35e141545401abfc0fac774f62e1c2f615",
+    "approved_head": "72d6ccc6476be752ccf8d368a5252c8c97fac522",
+    "status": "published_after_human_approval",
+    "related_prs": [
+      { "pr": 117, "merge_commit": "38facb24a3bc8592cc3ccd6c11d4e428420532ed", "approved_head": "73a50e905b5a7a3c4665910e705f168d239a8dd9" },
+      { "pr": 118, "merge_commit": "f05566828a2b05d9c4400112d66be490477f0a17", "approved_head": "474e5ec49e562a39ddcb1eec15253816ff11f520" }
+    ]
   }
 ]
