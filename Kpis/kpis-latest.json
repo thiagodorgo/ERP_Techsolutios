@@ -1,22 +1,22 @@
 {
   "snapshot_date": "2026-07-05",
-  "version": "B-123",
+  "version": "B-124",
   "source": "mobile/flutter_app/Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "B-123",
-    "title": "Fidelidade visual do fluxo de OS mobile",
-    "pr": 123,
-    "merge_commit": "2537558f3f078425c13119a60445e960aac26bb2",
-    "approved_head": "24d439072778438ed3de837fc66a4ef6bce31944",
+    "block": "B-124",
+    "title": "Dashboard web enriquecido com despachos e localizacoes",
+    "pr": 125,
+    "merge_commit": "dcfa25063111532f8cc1c77d7af8ec4519406bb0",
+    "approved_head": "6605b13630e3f29f98670aabf9ee32e274f40d47",
     "status": "published_after_human_approval",
-    "summary": "B-123K publica os KPIs apos avaliacao humana e merge da PR #123 (visual-only): 7 telas/areas do fluxo de OS mobile alinhadas ao prototipo aprovado (lista de OS, detalhe/check-in, execucao, checklists da OS, execucao de checklist, evidencias e sincronizacao/fila offline), com estados semanticos via tokens centrais e sem dado tecnico cru na UI. Nenhum repository/service/contrato/sync/model/provider alterado. Publicacoes anteriores: B-121/B-122 (PRs #120/#122).",
-    "status_label": "Publicado apos avaliacao humana e merge da PR #123",
+    "summary": "B-124K publica os KPIs apos avaliacao humana e merge da PR #125 (web-only): o Dashboard web passou a compor 4 fontes reais em paralelo — GET /work-orders + GET /operations/dispatches + GET /field-locations/latest + GET /notifications/unread-count (+ GET /approvals/pending) — com 8 KPIs derivados, fila critica combinada (SLA vencido > prioridade > operador sem sinal > aprovacao pendente > OS sem operador), despachos ativos, status de campo real (regra stale de 15 min reutilizada do operations-map.adapter), alertas acionaveis e eventos derivados das listas carregadas (sem timeline por OS). Fallback por fonte com rotulos Dados demonstrativos/Fallback local. Nenhum arquivo mobile/backend alterado. Publicacoes anteriores: B-121/B-122/B-123 (PRs #120/#122/#124).",
+    "status_label": "Publicado apos avaliacao humana e merge da PR #125",
     "related_prs": [
       {
-        "pr": 123,
-        "merge_commit": "2537558f3f078425c13119a60445e960aac26bb2",
-        "approved_head": "24d439072778438ed3de837fc66a4ef6bce31944"
+        "pr": 125,
+        "merge_commit": "dcfa25063111532f8cc1c77d7af8ec4519406bb0",
+        "approved_head": "6605b13630e3f29f98670aabf9ee32e274f40d47"
       }
     ]
   },
@@ -27,9 +27,9 @@
       "display": "764/764"
     },
     "frontend_smoke_tests": {
-      "value": 33,
-      "total": 33,
-      "display": "33/33"
+      "value": 44,
+      "total": 44,
+      "display": "44/44"
     },
     "backend_tests": {
       "value": 15,
@@ -57,8 +57,8 @@
       "display": "78%"
     },
     "blocks_completed": {
-      "value": 48,
-      "display": "48"
+      "value": 49,
+      "display": "49"
     },
     "mobile_backend_contracts": {
       "value": 18,
@@ -84,11 +84,11 @@
     ]
   },
   "notes": [
-    "mvp_demo e mvp_vendavel mantidos nos ultimos valores oficiais publicados (96%/78%, B-121K/B-122K; tipo estimado); nao houve decisao humana para altera-los no B-123 — a revisao pode ajusta-los.",
-    "backend_tests e contratos mobile permanecem nos ultimos valores oficiais comprovados; o backend nao foi alterado no B-123.",
-    "frontend_smoke_tests mantidos em 33/33 (PRs #117/#118); o frontend nao foi alterado no B-123.",
-    "flutter_tests 764/764 revalidados na PR #123 (suite completa apos cada uma das 7 telas; analyze sem issues; dart format limpo).",
-    "blocks_completed segue a regra de contagem de blocos entregues: 47 (ate B-122) + B-123 = 48."
+    "frontend_smoke_tests avancou de 33/33 para 44/44 na PR #125 (+10 testes unitarios do dashboard.adapter B-124 e +1 render smoke do dashboard); frontend check e build OK.",
+    "blocks_completed segue a regra de contagem de blocos entregues: 48 (ate B-123) + B-124 = 49.",
+    "mvp_demo e mvp_vendavel mantidos nos ultimos valores oficiais publicados (96%/78%, tipo estimado); nao houve decisao humana explicita para altera-los no B-124 — a revisao pode ajusta-los. B-123 fechou a fidelidade do fluxo de OS mobile e B-124 fechou o dashboard web enriquecido, mas os percentuais permanecem oficiais ate decisao humana.",
+    "flutter_tests, backend_tests e contratos mobile permanecem nos ultimos valores oficiais comprovados; B-124 e web-only e nao alterou mobile nem backend.",
+    "version e release.block sao mantidos em sincronia com mobile/flutter_app/Kpis/kpis-latest.json (politica de KPIs duplos e teste-guarda que exige (version, block, status) identicos nos dois conjuntos)."
   ],
   "limitations": [
     "S3/presigned real pendente",
@@ -96,7 +96,6 @@
     "Antivirus real pendente",
     "Download protegido final pendente",
     "Retencao definitiva pendente",
-    "Dashboard web ainda sem enriquecimento de /operations/dispatches e /field-locations/latest",
     "Settings web sem backend dedicado (lacuna documentada)",
     "Piloto Android real ainda precisa validacao em dispositivo fisico"
   ]

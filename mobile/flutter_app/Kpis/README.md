@@ -82,11 +82,28 @@ Regras obrigatorias:
 - Mexeu nos dois: atualizar os dois conjuntos.
 - Se existir `index.html`: atualizar tambem o HTML.
 
-No pos-B-123, os valores mobile refletidos na raiz sao: Flutter 764/764,
-Backend 15/15, contratos mobile 18/18, contratos mobile + Core SaaS 21/21,
-modulos Flutter 17/17, MVP demo 96%, MVP vendavel 78% e 48 blocos entregues
-(percentuais mantidos nos valores oficiais publicados; sem decisao humana
-para altera-los no B-123).
+No pos-B-124 (web-only), os valores mobile refletidos na raiz sao: Flutter
+764/764, Backend 15/15, contratos mobile 18/18, contratos mobile + Core SaaS
+21/21, modulos Flutter 17/17, MVP demo 96%, MVP vendavel 78% e 49 blocos
+entregues. Frontend smoke web avancou de 33/33 para 44/44 na PR #125. B-124 e
+web-only: nenhum arquivo mobile alterado — as metricas Flutter/mobile ficam
+inalteradas e os percentuais mvp permanecem oficiais (sem decisao humana para
+altera-los no B-124). `version`/`release.block` deste conjunto mobile foram
+travados em B-124 apenas para manter `(version, block, status)` identicos
+entre `Kpis/` e `mobile/flutter_app/Kpis/` (politica de KPIs duplos +
+teste-guarda).
+
+### B-124 publicado
+
+- PR #125 mergeada em `dcfa25063111532f8cc1c77d7af8ec4519406bb0`
+  (approved head `6605b13630e3f29f98670aabf9ee32e274f40d47`).
+- Status `published_after_human_approval` (publicacao B-124K).
+- Web-only: Dashboard web enriquecido com `GET /operations/dispatches` +
+  `GET /field-locations/latest` (+ `GET /approvals/pending`), mantendo
+  work-orders + notifications. 8 KPIs derivados, fila critica combinada,
+  despachos ativos, status de campo real (stale 15 min) e eventos das listas.
+- frontend check/build OK; test:smoke 44/44 (33 -> 44). Nenhum arquivo mobile
+  ou backend alterado; percentuais mvp mantidos (sem decisao humana).
 
 ### B-123 publicado
 

@@ -140,5 +140,24 @@
     "merge_commit": "2537558f3f078425c13119a60445e960aac26bb2",
     "approved_head": "24d439072778438ed3de837fc66a4ef6bce31944",
     "status": "published_after_human_approval"
+  },
+  {
+    "snapshot_date": "2026-07-05",
+    "version": "B-124",
+    "flutter_tests": "764/764",
+    "frontend_smoke_tests": "44/44",
+    "backend_tests": "15/15",
+    "mobile_backend_contracts": "18/18",
+    "mobile_core_saas_contracts": "21/21",
+    "backend_contract_tests_focused": "21/21",
+    "flutter_modules": "17/17",
+    "flutter_mvp_demo": "96%",
+    "flutter_mvp_vendavel": "78%",
+    "blocks_completed": 49,
+    "description": "B-124 Dashboard web enriquecido com despachos e localizacoes (web-only): o Dashboard passou a compor GET /work-orders + GET /operations/dispatches + GET /field-locations/latest + GET /notifications/unread-count (+ GET /approvals/pending) em paralelo, com 8 KPIs derivados, fila critica combinada (SLA vencido > prioridade > operador sem sinal > aprovacao pendente > OS sem operador), despachos ativos, status de campo real (regra stale de 15 min reutilizada do operations-map.adapter), alertas acionaveis e eventos derivados das listas (sem timeline por OS). Fallback por fonte com rotulos Dados demonstrativos/Fallback local. frontend check/build OK e test:smoke 44/44 (33 -> 44). Nenhum arquivo mobile/backend alterado; percentuais mvp mantidos nos valores oficiais (sem decisao humana para alterar).",
+    "pr": 125,
+    "merge_commit": "dcfa25063111532f8cc1c77d7af8ec4519406bb0",
+    "approved_head": "6605b13630e3f29f98670aabf9ee32e274f40d47",
+    "status": "published_after_human_approval"
   }
 ]

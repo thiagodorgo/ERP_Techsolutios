@@ -1,12 +1,17 @@
 const dashboardData = {
   "project": {
     "name": "ERP Techsolutions",
-    "version": "B-123",
+    "version": "B-124",
     "updatedAt": "2026-07-05",
-    "sourceBranch": "fix/b123-kpis-post-human-approval",
-    "summary": "B-123 (fidelidade visual do fluxo de OS mobile) publicado apos avaliacao humana e merge da PR #123. Flutter 764/764, smoke web 33/33, MVP demo 96%, MVP vendavel 78% e 48 blocos entregues."
+    "sourceBranch": "fix/b124-kpis-post-human-approval",
+    "summary": "B-124 (dashboard web enriquecido com despachos e localizacoes) publicado apos avaliacao humana e merge da PR #125. Web-only: Flutter 764/764 e contratos mobile inalterados; smoke web 33/33 -> 44/44, MVP demo 96%, MVP vendavel 78% e 49 blocos entregues."
   },
   "kpis": [
+    {
+      "label": "B-124",
+      "value": "Dashboard web enriquecido",
+      "note": "Dashboard compoe work-orders + operations/dispatches + field-locations/latest + notifications (+ approvals/pending); 8 KPIs, fila critica combinada, despachos, status de campo e eventos derivados."
+    },
     {
       "label": "B-123",
       "value": "Fluxo de OS fiel",
@@ -29,8 +34,8 @@ const dashboardData = {
     },
     {
       "label": "Frontend smoke",
-      "value": "33/33",
-      "note": "test:smoke validado nas PRs #117 e #118."
+      "value": "44/44",
+      "note": "test:smoke 33 -> 44 na PR #125 (B-124): +10 unit do dashboard.adapter + 1 render do dashboard."
     },
     {
       "label": "Backend tests",
@@ -50,20 +55,20 @@ const dashboardData = {
     {
       "label": "MVP demo",
       "value": "96%",
-      "note": "Mantido no valor oficial publicado (estimado); sem decisao humana para alterar no B-123."
+      "note": "Mantido no valor oficial publicado (estimado); sem decisao humana para alterar no B-124."
     },
     {
       "label": "MVP vendavel",
       "value": "78%",
-      "note": "Mantido no valor oficial publicado (estimado); sem decisao humana para alterar no B-123."
+      "note": "Mantido no valor oficial publicado (estimado); sem decisao humana para alterar no B-124."
     },
     {
       "label": "Blocos entregues",
-      "value": "48",
-      "note": "B-076 ate B-123, incluindo sub-blocos; consolida B-109 a B-120."
+      "value": "49",
+      "note": "B-076 ate B-124, incluindo sub-blocos; 48 ate B-123 + B-124."
     },
     {
-      "label": "Escopo B-123K",
+      "label": "Escopo B-124K",
       "value": "KPI/docs",
       "note": "Publicacao documental pos-avaliacao humana; sem feature nova ou codigo funcional."
     }
@@ -145,6 +150,13 @@ const dashboardData = {
       "status": "concluido",
       "progress": 100,
       "summary": "7 telas do fluxo de OS alinhadas ao prototipo (visual-only): lista, detalhe/check-in, execucao, checklists, run, evidencias e sync."
+    },
+    {
+      "id": "B-124",
+      "title": "Dashboard web enriquecido com despachos e localizacoes",
+      "status": "concluido",
+      "progress": 100,
+      "summary": "Dashboard web compoe work-orders + operations/dispatches + field-locations/latest + notifications (+ approvals/pending): 8 KPIs derivados, fila critica combinada, despachos ativos, status de campo real (stale 15 min), alertas acionaveis e eventos das listas. Web-only; smoke 44/44."
     }
   ],
   "contracts": [
@@ -153,11 +165,13 @@ const dashboardData = {
       "status": "concluido",
       "endpoints": [
         "GET /api/v1/work-orders (+/:id, /:id/timeline)",
+        "GET /api/v1/operations/dispatches",
+        "GET /api/v1/field-locations/latest",
         "GET /api/v1/approvals/pending + POST /approve|/reject",
         "GET /api/v1/notifications/unread-count",
         "GET /api/v1/navigation/menu"
       ],
-      "detail": "B-121 religou lista/detalhe de OS, Dashboard, Aprovacao e nav MVP-only aos endpoints reais (mock atras de VITE_USE_MOCKS, fallback seguro)."
+      "detail": "B-121 religou lista/detalhe de OS, Dashboard, Aprovacao e nav MVP-only; B-124 enriqueceu o Dashboard com operations/dispatches + field-locations/latest (+ approvals/pending), fila critica combinada e status de campo real (mock atras de VITE_USE_MOCKS, fallback por fonte)."
     },
     {
       "domain": "Mobile hardening",
@@ -183,7 +197,7 @@ const dashboardData = {
         "mobile/flutter_app/Kpis/kpis-latest.json",
         "mobile/flutter_app/Kpis/index.html"
       ],
-      "detail": "Fonte dos percentuais Flutter/mobile: 764/764, 96%, 78%, 48 blocos."
+      "detail": "Fonte dos percentuais Flutter/mobile: 764/764, 96%, 78%, 49 blocos."
     },
     {
       "domain": "KPIs raiz",
@@ -219,7 +233,7 @@ const dashboardData = {
     },
     {
       "name": "frontend check/build/test:smoke",
-      "result": "pass 33/33 nas PRs #117 e #118"
+      "result": "pass 44/44 na PR #125 (B-124: 33 -> 44); check e build OK"
     },
     {
       "name": "mobile-backend-contracts",
@@ -250,20 +264,24 @@ const dashboardData = {
       "result": "merged 2537558f3f078425c13119a60445e960aac26bb2 (head 24d439072778438ed3de837fc66a4ef6bce31944)"
     },
     {
+      "name": "PR #125",
+      "result": "merged dcfa25063111532f8cc1c77d7af8ec4519406bb0 (head 6605b13630e3f29f98670aabf9ee32e274f40d47)"
+    },
+    {
       "name": "Politica KPI",
-      "result": "publicado apos avaliacao humana e merge da PR #123 (B-123K)"
+      "result": "publicado apos avaliacao humana e merge da PR #125 (B-124K)"
     }
   ],
   "estimates": [
     {
       "label": "MVP demo",
       "value": "96%",
-      "detail": "Mantido no valor oficial publicado (estimado); sem decisao humana para alterar no B-123."
+      "detail": "Mantido no valor oficial publicado (estimado); sem decisao humana para alterar no B-124."
     },
     {
       "label": "MVP vendavel",
       "value": "78%",
-      "detail": "Mantido no valor oficial publicado (estimado); sem decisao humana para alterar no B-123."
+      "detail": "Mantido no valor oficial publicado (estimado); sem decisao humana para alterar no B-124."
     }
   ],
   "risks": [
@@ -286,16 +304,21 @@ const dashboardData = {
   "nextBlocks": [
     {
       "id": "B-12x",
-      "title": "Dashboard web enriquecido",
-      "detail": "Compor tambem /operations/dispatches e /field-locations/latest."
+      "title": "Storage externo de evidencias",
+      "detail": "S3/presigned real, antivirus real, download protegido e retencao."
     },
     {
       "id": "B-12x",
-      "title": "Storage externo de evidencias",
-      "detail": "S3/presigned real, antivirus real, download protegido e retencao."
+      "title": "Settings web com backend dedicado",
+      "detail": "Settings web segue mock-only; falta backend de configuracao da organizacao."
     }
   ],
   "history": [
+    {
+      "date": "2026-07-05",
+      "title": "B-124",
+      "detail": "Dashboard web enriquecido com despachos e localizacoes (web-only): work-orders + operations/dispatches + field-locations/latest + notifications (+ approvals/pending), 8 KPIs, fila critica combinada, status de campo real. Flutter 764/764 inalterado, smoke 44/44, 49 blocos."
+    },
     {
       "date": "2026-07-05",
       "title": "B-123",

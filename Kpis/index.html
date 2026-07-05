@@ -26,13 +26,26 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
-        <article class="panel panel--wide" aria-label="Resumo B-123">
-          <h2>B-123 — Fidelidade visual do fluxo de OS mobile</h2>
+        <article class="panel panel--wide" aria-label="Resumo B-124">
+          <h2>B-124 — Dashboard web enriquecido com despachos e localizacoes</h2>
           <p>
-            KPIs pos-avaliacao humana e merge da PR #123 (B-123K): Flutter
-            764/764, smoke web 33/33, Backend 15/15, contratos mobile 18/18,
-            contratos mobile + Core SaaS 21/21, modulos Flutter 17/17, MVP demo
-            96%, MVP vendavel 78% e 48 blocos entregues.
+            KPIs pos-avaliacao humana e merge da PR #125 (B-124K): Flutter
+            764/764, smoke web 44/44 (era 33/33), Backend 15/15, contratos
+            mobile 18/18, contratos mobile + Core SaaS 21/21, modulos Flutter
+            17/17, MVP demo 96%, MVP vendavel 78% e 49 blocos entregues.
+          </p>
+          <p>
+            B-124 (web-only): o Dashboard web passou a compor 4 fontes reais em
+            paralelo — GET /work-orders + GET /operations/dispatches +
+            GET /field-locations/latest + GET /notifications/unread-count
+            (+ GET /approvals/pending) — com 8 KPIs derivados, fila critica
+            combinada (SLA vencido &gt; prioridade &gt; operador sem sinal &gt;
+            aprovacao pendente &gt; OS sem operador), despachos ativos, status de
+            campo real (regra stale de 15 min reutilizada do
+            operations-map.adapter), alertas acionaveis e eventos derivados das
+            listas carregadas (sem timeline por OS). Fallback por fonte com
+            rotulos Dados demonstrativos/Fallback local; nenhum arquivo
+            mobile/backend alterado.
           </p>
           <p>
             B-123 (visual-only): 7 telas/areas do fluxo de OS mobile alinhadas
@@ -62,8 +75,9 @@
           </p>
           <p>
             Limitacoes: S3/presigned real, DB/Redis receipt, antivirus real,
-            download protegido final, retencao definitiva, Dashboard web sem
-            dispatches/field-locations e Settings web sem backend dedicado.
+            download protegido final, retencao definitiva e Settings web sem
+            backend dedicado. (Dashboard web sem dispatches/field-locations foi
+            resolvido no B-124.)
           </p>
           <p>
             Politica de KPIs duplos: mexeu Flutter/mobile atualiza

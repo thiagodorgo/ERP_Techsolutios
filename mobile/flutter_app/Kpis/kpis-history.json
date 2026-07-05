@@ -275,5 +275,25 @@
     "mergeCommit": "2537558f3f078425c13119a60445e960aac26bb2",
     "approvedHead": "24d439072778438ed3de837fc66a4ef6bce31944",
     "status": "published_after_human_approval"
+  },
+  {
+    "snapshot_date": "2026-07-05",
+    "version": "B-124",
+    "flutter_tests": 764,
+    "frontend_smoke_tests": 44,
+    "npm_tests": 15,
+    "mobile_backend_contracts": 18,
+    "mobile_core_saas_contracts": 21,
+    "backend_contract_tests": 21,
+    "flutter_modules_ready": 17,
+    "flutter_modules_total": 17,
+    "flutter_mvp_demo": 96,
+    "flutter_mvp_vendavel": 78,
+    "blocks_completed": 49,
+    "description": "B-124 Dashboard web enriquecido com despachos e localizacoes (web-only) — o Dashboard web passou a compor GET /work-orders + GET /operations/dispatches + GET /field-locations/latest + GET /notifications/unread-count (+ GET /approvals/pending), com 8 KPIs derivados, fila critica combinada (SLA vencido > prioridade > operador sem sinal > aprovacao pendente > OS sem operador), despachos ativos, status de campo real (regra stale de 15 min reutilizada do operations-map.adapter), alertas acionaveis e eventos derivados das listas (sem timeline por OS). frontend check/build OK e test:smoke 44/44 (33 -> 44). Nenhum arquivo mobile alterado; metricas Flutter/mobile inalteradas (764/764, 17/17, 18/18, 21/21, 96%/78%); version/release travados em B-124 para manter (version, block, status) identicos entre os dois conjuntos.",
+    "pr": 125,
+    "mergeCommit": "dcfa25063111532f8cc1c77d7af8ec4519406bb0",
+    "approvedHead": "6605b13630e3f29f98670aabf9ee32e274f40d47",
+    "status": "published_after_human_approval"
   }
 ]

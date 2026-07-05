@@ -6,6 +6,53 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-05 - B-124 Dashboard web enriquecido com despachos e localizacoes
+
+### Resultado
+
+- Dashboard web (`/dashboard`) passou a compor 4 fontes reais em paralelo:
+  `GET /work-orders` + `GET /operations/dispatches` +
+  `GET /field-locations/latest` + `GET /notifications/unread-count`
+  (+ `GET /approvals/pending`, com `work_order_id` opcional no backend).
+- 8 KPIs derivados dos dados (nunca fixos); fila critica combinada com
+  ordenacao obrigatoria por criticidade — 1) SLA/agenda vencidos ·
+  2) prioridade alta/urgente · 3) operador sem sinal recente (stale) ·
+  4) aprovacao pendente · 5) OS sem operador — com dedupe por entidade e
+  acao contextual (Abrir OS / Abrir mapa / Ver aprovacao).
+- Status de campo real com a regra de stale de 15 min reutilizada de
+  `operations-map.adapter` (`isStale`), sem recalcular limiar; despachos
+  ativos com status desconhecido tolerado; alertas acionaveis; eventos
+  derivados das listas carregadas (sem chamada de timeline por OS).
+- Fallback por fonte com rotulos `Dados demonstrativos` (mock) / `Fallback
+  local`; mensagens seguras; nenhum token/tenantId/ID tecnico/base64/path na
+  UI. Web-only: nenhum arquivo mobile/backend alterado.
+
+### Metadados pos-avaliacao humana
+
+- PR: #125 (merge `dcfa25063111532f8cc1c77d7af8ec4519406bb0`, head `6605b13630e3f29f98670aabf9ee32e274f40d47`).
+- Status: `published_after_human_approval`.
+
+### KPIs B-124 refletidos na raiz
+
+| KPI | Valor |
+| --- | --- |
+| Flutter Tests | 764/764 (inalterado; B-124 e web-only) |
+| Frontend Smoke Tests | 44/44 (era 33/33; +10 unit adapter + 1 render) |
+| Backend Tests | 15/15 (inalterado) |
+| Mobile Backend Contracts | 18/18 (inalterado) |
+| Mobile + Core SaaS Contracts | 21/21 (inalterado) |
+| Flutter modules | 17/17 (inalterado) |
+| MVP demo | 96% (mantido; sem decisao humana para alterar) |
+| MVP vendavel | 78% (mantido; sem decisao humana para alterar) |
+| Blocos entregues | 49 (48 ate B-123 + B-124) |
+
+### Nota sobre percentuais MVP
+
+`mvp_demo`/`mvp_vendavel` permanecem nos valores oficiais publicados (96%/78%,
+estimados). B-123 fechou a fidelidade do fluxo de OS mobile e B-124 fechou o
+dashboard web enriquecido; ainda assim, **sem decisao humana explicita**, os
+percentuais nao foram alterados e ficam registrados como oficiais ate revisao.
+
 ## 2026-07-05 - B-123 Fidelidade visual do fluxo de OS mobile
 
 ### Resultado

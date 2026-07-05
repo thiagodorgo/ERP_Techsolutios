@@ -9,26 +9,26 @@
 // ---------------------------------------------------------------------------
 const EMBEDDED_LATEST = {
   "snapshot_date": "2026-07-05",
-  "version": "B-123",
-  "branch": "feat/mobile-b123-os-flow-fidelity",
-  "description": "B-123 Fidelidade visual do fluxo de OS mobile (visual-only) — 7 telas/areas alinhadas ao prototipo aprovado: lista de OS, detalhe/check-in, execucao, checklists da OS, execucao de checklist, evidencias e sincronizacao/fila offline; estados semanticos por tokens centrais e sem dado tecnico cru na UI",
+  "version": "B-124",
+  "branch": "fix/b124-kpis-post-human-approval",
+  "description": "B-124 Dashboard web enriquecido com despachos e localizacoes (web-only). O ultimo bloco mobile permanece B-123 (fidelidade visual do fluxo de OS): nenhum arquivo mobile foi alterado no B-124. version/release travados em B-124 para manter (version, block, status) identicos entre os dois conjuntos de KPI (politica de KPIs duplos + teste-guarda).",
   "release": {
-    "block": "B-123",
-    "title": "Fidelidade visual do fluxo de OS mobile",
-    "pr": 123,
-    "mergeCommit": "2537558f3f078425c13119a60445e960aac26bb2",
-    "approvedHead": "24d439072778438ed3de837fc66a4ef6bce31944",
-    "branch": "feat/mobile-b123-os-flow-fidelity",
+    "block": "B-124",
+    "title": "Dashboard web enriquecido com despachos e localizacoes",
+    "pr": 125,
+    "mergeCommit": "dcfa25063111532f8cc1c77d7af8ec4519406bb0",
+    "approvedHead": "6605b13630e3f29f98670aabf9ee32e274f40d47",
+    "branch": "feat/web-b124-dashboard-dispatches-field-locations",
     "status": "published_after_human_approval",
-    "status_label": "Publicado apos avaliacao humana e merge da PR #123 (B-123K)",
-    "summary": "B-123 alinhou o fluxo de OS mobile ao prototipo aprovado em 7 commits (um por tela), visual-only: nenhum repository/service/contrato/sync/model/provider alterado e nenhuma dependencia nova. Dois testes realinhados com aprovacao humana previa (b114 'Sync pendente'; b116 header 'Atendimento'). flutter test 764/764 apos cada tela; flutter analyze lib sem issues; dart format limpo. Percentuais mvp mantidos nos valores oficiais publicados (sem decisao humana para alterar).",
+    "status_label": "Publicado apos avaliacao humana e merge da PR #125 (B-124K)",
+    "summary": "B-124 (web-only) enriqueceu o Dashboard web: composicao paralela de GET /work-orders + GET /operations/dispatches + GET /field-locations/latest + GET /notifications/unread-count (+ GET /approvals/pending), 8 KPIs derivados, fila critica combinada (SLA vencido > prioridade > operador sem sinal > aprovacao pendente > OS sem operador), despachos ativos, status de campo real (regra stale de 15 min reutilizada do operations-map.adapter), alertas acionaveis e eventos derivados das listas (sem timeline por OS); fallback por fonte. frontend check/build OK e test:smoke 44/44 (33 -> 44). Nenhum arquivo mobile alterado — as metricas Flutter/mobile (764/764, modulos 17/17, contratos 18/18 e 21/21, MVP 96%/78%) permanecem nos valores oficiais do B-123.",
     "commits": [
       {
-        "hash": "2537558f3f078425c13119a60445e960aac26bb2",
-        "message": "Merge pull request #123 — B-123 fidelidade visual do fluxo de OS mobile"
+        "hash": "dcfa25063111532f8cc1c77d7af8ec4519406bb0",
+        "message": "Merge pull request #125 — B-124 dashboard web enriquecido com despachos e localizacoes"
       }
     ],
-    "limitation": "S3/presigned real, DB/Redis receipt, antivirus real, download protegido final, retencao definitiva, Dashboard web sem dispatches/field-locations e Settings web sem backend dedicado seguem pendentes.",
+    "limitation": "S3/presigned real, DB/Redis receipt, antivirus real, download protegido final, retencao definitiva e Settings web sem backend dedicado seguem pendentes. Dashboard web sem dispatches/field-locations foi resolvido no B-124.",
     "fallback": "Timeline cai para o cache local em falha de rede/404/403; rejected, scan_failed, pending_review, erro de rede e timeout preservam a evidencia local; conflitos permanecem em resolucao manual."
   },
   "domains": [
@@ -280,11 +280,11 @@ const EMBEDDED_LATEST = {
         {
           "id": "blocks_completed",
           "label": "Blocos Entregues (total)",
-          "value": 48,
+          "value": 49,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-076 ate B-123, incluindo sub-blocos (A/B/K/F); consolida B-109 a B-120"
+          "detail": "B-076 ate B-124, incluindo sub-blocos (A/B/K/F); 48 ate B-123 + B-124 (web-only)"
         },
         {
           "id": "prs_merged",
@@ -431,11 +431,11 @@ const EMBEDDED_LATEST = {
   "next_steps": [
     {
       "block": "B-12x",
-      "title": "Dashboard web enriquecido com /operations/dispatches e /field-locations/latest"
+      "title": "Storage externo/presigned URL, antivirus real e download protegido final para evidencias"
     },
     {
       "block": "B-12x",
-      "title": "Storage externo/presigned URL, antivirus real e download protegido final para evidencias"
+      "title": "Settings web com backend dedicado (hoje mock-only)"
     }
   ]
 };
@@ -674,16 +674,8 @@ const EMBEDDED_HISTORY = [
     "approvedHead": "72d6ccc6476be752ccf8d368a5252c8c97fac522",
     "status": "published_after_human_approval",
     "relatedPrs": [
-      {
-        "pr": 117,
-        "mergeCommit": "38facb24a3bc8592cc3ccd6c11d4e428420532ed",
-        "approvedHead": "73a50e905b5a7a3c4665910e705f168d239a8dd9"
-      },
-      {
-        "pr": 118,
-        "mergeCommit": "f05566828a2b05d9c4400112d66be490477f0a17",
-        "approvedHead": "474e5ec49e562a39ddcb1eec15253816ff11f520"
-      }
+      { "pr": 117, "mergeCommit": "38facb24a3bc8592cc3ccd6c11d4e428420532ed", "approvedHead": "73a50e905b5a7a3c4665910e705f168d239a8dd9" },
+      { "pr": 118, "mergeCommit": "f05566828a2b05d9c4400112d66be490477f0a17", "approvedHead": "474e5ec49e562a39ddcb1eec15253816ff11f520" }
     ]
   },
   {
@@ -724,6 +716,26 @@ const EMBEDDED_HISTORY = [
     "pr": 123,
     "mergeCommit": "2537558f3f078425c13119a60445e960aac26bb2",
     "approvedHead": "24d439072778438ed3de837fc66a4ef6bce31944",
+    "status": "published_after_human_approval"
+  },
+  {
+    "snapshot_date": "2026-07-05",
+    "version": "B-124",
+    "flutter_tests": 764,
+    "frontend_smoke_tests": 44,
+    "npm_tests": 15,
+    "mobile_backend_contracts": 18,
+    "mobile_core_saas_contracts": 21,
+    "backend_contract_tests": 21,
+    "flutter_modules_ready": 17,
+    "flutter_modules_total": 17,
+    "flutter_mvp_demo": 96,
+    "flutter_mvp_vendavel": 78,
+    "blocks_completed": 49,
+    "description": "B-124 Dashboard web enriquecido com despachos e localizacoes (web-only) — o Dashboard web passou a compor GET /work-orders + GET /operations/dispatches + GET /field-locations/latest + GET /notifications/unread-count (+ GET /approvals/pending), com 8 KPIs derivados, fila critica combinada (SLA vencido > prioridade > operador sem sinal > aprovacao pendente > OS sem operador), despachos ativos, status de campo real (regra stale de 15 min reutilizada do operations-map.adapter), alertas acionaveis e eventos derivados das listas (sem timeline por OS). frontend check/build OK e test:smoke 44/44 (33 -> 44). Nenhum arquivo mobile alterado; metricas Flutter/mobile inalteradas (764/764, 17/17, 18/18, 21/21, 96%/78%); version/release travados em B-124 para manter (version, block, status) identicos entre os dois conjuntos.",
+    "pr": 125,
+    "mergeCommit": "dcfa25063111532f8cc1c77d7af8ec4519406bb0",
+    "approvedHead": "6605b13630e3f29f98670aabf9ee32e274f40d47",
     "status": "published_after_human_approval"
   }
 ];
