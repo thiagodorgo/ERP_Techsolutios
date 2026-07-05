@@ -20,6 +20,17 @@ export async function listPendingApprovals(
   return approvalList(response);
 }
 
+/**
+ * Todas as aprovações pendentes da organização (sem filtro de OS) — o backend
+ * trata `work_order_id` como opcional. Usado pelo Dashboard (B-124).
+ */
+export async function listAllPendingApprovals(context: ApprovalApiContext): Promise<OperationalApproval[]> {
+  if (isMockMode()) return [mockApproval("mock-work-order")];
+
+  const response = await apiRequest<unknown>("/approvals/pending", context);
+  return approvalList(response);
+}
+
 export async function approveOperationalApproval(
   context: ApprovalApiContext,
   approvalId: string,

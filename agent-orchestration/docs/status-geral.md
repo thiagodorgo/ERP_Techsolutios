@@ -3482,3 +3482,24 @@ registrada para as proximas fases de fidelidade.
 Validacao local: flutter analyze limpo, flutter test 764/764 (b091 realinhado:
 rotulo PT-BR obrigatorio, modo de autenticacao proibido no Perfil). Frontend e
 backend nao tocados. KPIs nao alterados (C3).
+
+---
+
+## Atualizacao 2026-07-05 - B-124 Dashboard web enriquecido
+
+Branch: `feat/web-b124-dashboard-dispatches-field-locations`. O Dashboard web
+(unica lacuna de integracao do MVP web) agora compoe 4 fontes reais em
+paralelo: GET /work-orders + GET /operations/dispatches +
+GET /field-locations/latest + GET /notifications/unread-count (+
+GET /approvals/pending). 8 KPIs derivados dos dados (nunca fixos), fila
+critica combinada com ordenacao por criticidade (SLA vencido > prioridade >
+operador sem sinal > aprovacao pendente > OS sem operador) e acao contextual
+por item, painel de despachos ativos (status desconhecido tolerado), status
+de campo real (regra stale de 15 min reutilizada do operations-map.adapter),
+alertas acionaveis e eventos derivados das listas carregadas (sem timeline
+por OS). Fallback por fonte com rotulos "Dados demonstrativos"/"Fallback
+local" e mensagens seguras.
+
+Validacao local: check OK, build OK, test:smoke 44/44 (33 -> 44). Backend e
+mobile nao tocados. KPIs nao alterados (C3) — publicacao via B-124K apos
+avaliacao humana.

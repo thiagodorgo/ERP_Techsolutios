@@ -410,7 +410,7 @@ somente-leitura). Legenda de status: **integrated** (consome endpoint real) ·
 | Login | POST /auth/login·/refresh·/logout | mock-flag | |
 | Seleção de contexto | GET /me/tenants, POST /auth/active-tenant | mock-flag | |
 | Shell/nav | GET /navigation/menu + /notifications/unread-count (sino) | integrated (B-121) | nav MVP-only (allowlist); menu oculta itens `planned`; fidelidade preservada |
-| Dashboard | GET /work-orders + /notifications/unread-count | integrated (B-121) | KPIs/fila/eventos reais; enriquecer com /operations/dispatches + /field-locations/latest = próximo |
+| Dashboard | GET /work-orders + /operations/dispatches + /field-locations/latest + /notifications/unread-count (+ /approvals/pending) | **enriched/integrated (B-124)** | 8 KPIs derivados, fila crítica combinada (SLA vencido → prioridade → sem sinal → aprovação → sem operador), despachos ativos, status de campo real (stale = regra de 15 min do operations-map.adapter), alertas acionáveis e eventos derivados das listas (sem timeline por OS); fallback por fonte com "Dados demonstrativos"/"Fallback local" |
 | **Lista de OS** | GET /work-orders | **integrated (B-121)** | mock-flag + fallback local |
 | Nova OS | POST /work-orders | mock-flag | |
 | Detalhe da OS | GET /work-orders/:id·/timeline | integrated (B-121) | mock-flag; timeline + aprovação inclusas |
@@ -425,6 +425,6 @@ somente-leitura). Legenda de status: **integrated** (consome endpoint real) ·
 | Settings mínimo | — | planned | sem backend de settings; lacuna documentada |
 
 ### Lacunas priorizadas (próximos PRs do B-121)
-1. Web: enriquecer o **Dashboard** com `/operations/dispatches` + `/field-locations/latest`. ✅ **Dashboard**, **Detalhe da OS** e **Aprovação** já religados neste bloco (B-121).
+1. ✅ **Dashboard enriquecido (B-124)**: `/operations/dispatches` + `/field-locations/latest` integrados ao Dashboard (KPIs, fila crítica combinada, despachos ativos, status de campo, alertas, eventos). Dashboard, Detalhe da OS e Aprovação já haviam sido religados no B-121.
 2. Web: **Settings** (`/administrator/settings`) segue mock-only — sem backend de settings dedicado (lacuna; não criar backend nesta fase). ✅ **Nav** já MVP-only via `/navigation/menu` (B-121).
 3. ✅ **Mobile (B-121)**: timeline real no detalhe/check-in, auto-sync no app root, adapter de checklist tolerando `components`+`fields` e base URL por `--dart-define` — **concluídos**. Base URL configurável: `--dart-define=API_BASE_URL=https://.../api/v1` (default: localhost do emulador).

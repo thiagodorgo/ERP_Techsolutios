@@ -1581,6 +1581,60 @@ test("anexos frontend validam ausente, renderizam lista e preview", async () => 
   assert.equal(download.fileName, "evidence.pdf");
 });
 
+test("dashboard enriquecido (B-124) renderiza seções, KPIs e nada de dado técnico", async () => {
+  process.env.VITE_USE_MOCKS = "true";
+  browser.clear();
+  const { AuthProvider } = await import("../src/providers/AuthProvider");
+  const { TenantProvider } = await import("../src/providers/TenantProvider");
+  const { PermissionProvider } = await import("../src/providers/PermissionProvider");
+  const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
+  const { DashboardPage } = await import("../src/pages/DashboardPage");
+
+  setStoredAuthSession(mockSession);
+  browser.localStorage.setItem(
+    "erp-techsolutions.active-context",
+    JSON.stringify({
+      tenantId: "ten-industrial-01",
+      tenantName: "Techsolutions Industrial",
+      tenantStatus: "active",
+      branchId: "fil-sp-01",
+      branchName: "Sao Paulo - Campo",
+      role: "Gestor Operacional",
+      permissions: ["work_orders:read", "field_location:read", "field_dispatch:read", "notifications:read"],
+      enabledModules: ["dashboard", "work-orders", "field_operations", "notifications"],
+      scope: "branch",
+    }),
+  );
+
+  const dashboardHtml = renderToString(
+    <MemoryRouter initialEntries={["/dashboard"]}>
+      <AuthProvider>
+        <TenantProvider>
+          <PermissionProvider>
+            <DashboardPage />
+          </PermissionProvider>
+        </TenantProvider>
+      </AuthProvider>
+    </MemoryRouter>,
+  );
+
+  // Seções do dashboard enriquecido presentes já no primeiro render.
+  assert.match(dashboardHtml, /Fila crítica/);
+  assert.match(dashboardHtml, /Alertas operacionais/);
+  assert.match(dashboardHtml, /Despachos ativos/);
+  assert.match(dashboardHtml, /Status de campo/);
+  assert.match(dashboardHtml, /Últimos eventos/);
+  // KPIs enriquecidos (derivados, sem números fixos hardcoded).
+  assert.match(dashboardHtml, /OS abertas/);
+  assert.match(dashboardHtml, /OS atrasadas/);
+  assert.match(dashboardHtml, /Pendentes de aprovação/);
+  assert.match(dashboardHtml, /Despachos ativos/);
+  assert.match(dashboardHtml, /Operadores em campo/);
+  assert.match(dashboardHtml, /Sem sinal recente/);
+  // Segurança: nenhum dado técnico cru na UI.
+  assert.doesNotMatch(dashboardHtml, /Bearer|access_?token|tenant_id|tenantId/i);
+});
+
 function flattenPaths(items: readonly { path: string; children?: readonly { path: string }[] }[]): string[] {
   return items.flatMap((item) => [item.path, ...(item.children?.map((child) => child.path) ?? [])]);
 }
