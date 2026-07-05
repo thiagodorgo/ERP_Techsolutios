@@ -9,6 +9,7 @@ import '../../core/sync/sync_providers.dart';
 import '../../core/sync/sync_summary.dart';
 import 'erp_components.dart';
 import 'erp_scaffold.dart';
+import 'mobile_kit.dart';
 
 class SyncScreen extends ConsumerStatefulWidget {
   const SyncScreen({super.key});
@@ -40,102 +41,121 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
         .maybeWhen(data: (v) => v, orElse: () => null);
     final queue = ref.watch(syncQueueRepositoryProvider);
 
+    final online =
+        networkStatus == NetworkStatus.online ||
+        networkStatus == NetworkStatus.unknown;
+
     return ErpScaffold(
-      title: 'Sincronizacao',
-      body: FutureBuilder<List<SyncAction>>(
-        key: ValueKey(_reloadKey),
-        future: session == null
-            ? Future.value(const <SyncAction>[])
-            : queue.actionsForTenant(session.activeTenant.tenantId),
-        builder: (context, snapshot) {
-          final actions = snapshot.data ?? const <SyncAction>[];
-          final summary = SyncQueueSummary.fromActions(actions);
-          final grouped = _groupByDomain(actions);
-          final conflicts = actions
-              .where((a) => a.status == SyncStatus.conflict)
-              .toList();
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              if (session != null) {
-                await ref
-                    .read(autoSyncCoordinatorProvider.notifier)
-                    .triggerManual();
-              }
-              if (mounted) setState(() => _reloadKey++);
-            },
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // ── Connectivity ──────────────────────────────────────────────
-                NetworkStatusBanner(status: networkStatus),
-                const SizedBox(height: 12),
-
-                // ── Backend-pending notice ────────────────────────────────────
-                _BackendPendingNotice(),
-                const SizedBox(height: 12),
-
-                // ── Summary KPI row ───────────────────────────────────────────
-                _SummaryRow(summary: summary),
-                const SizedBox(height: 12),
-
-                // ── Conflitos (resolucao manual) ──────────────────────────────
-                if (conflicts.isNotEmpty) ...[
-                  for (final c in conflicts)
-                    _ConflictCard(
-                      action: c,
-                      onKeepMine: () =>
-                          _resolveConflict(c, ConflictChoice.keepMine),
-                      onUseServer: () =>
-                          _resolveConflict(c, ConflictChoice.useServer),
-                    ),
-                  const SizedBox(height: 12),
-                ],
-
-                // ── Auto-sync state ───────────────────────────────────────────
-                _AutoSyncCard(autoSync: autoSync),
-                const SizedBox(height: 10),
-
-                // ── Primary action ────────────────────────────────────────────
-                FilledButton.icon(
-                  onPressed: autoSync.isRunning || session == null
-                      ? null
-                      : () => ref
-                            .read(autoSyncCoordinatorProvider.notifier)
-                            .triggerManual(),
-                  icon: autoSync.isRunning
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.sync),
-                  label: Text(
-                    autoSync.isRunning
-                        ? 'Sincronizando...'
-                        : 'Sincronizar agora',
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // ── Domain groups ─────────────────────────────────────────────
-                if (actions.isEmpty)
-                  const EmptyState(
-                    icon: Icons.cloud_done_outlined,
-                    title: 'Fila vazia',
-                    message:
-                        'Acoes de OS, Checklists, Despesas e Estoque aparecao aqui quando houver pendencias locais.',
-                  )
-                else
-                  for (final entry in grouped.entries)
-                    _DomainGroup(domain: entry.key, actions: entry.value),
-              ],
+      showAppBar: false,
+      body: Column(
+        children: [
+          // Header fiel ao prototipo (sincronizacao.png): titulo + pill de
+          // conectividade Online/Offline.
+          MobileScreenHeader(
+            title: 'Sincronizacao',
+            trailing: MobilePill(
+              label: online ? 'Online' : 'Offline',
+              tone: online ? PillTone.done : PillTone.danger,
             ),
-          );
-        },
+          ),
+          Expanded(
+            child: FutureBuilder<List<SyncAction>>(
+              key: ValueKey(_reloadKey),
+              future: session == null
+                  ? Future.value(const <SyncAction>[])
+                  : queue.actionsForTenant(session.activeTenant.tenantId),
+              builder: (context, snapshot) {
+                final actions = snapshot.data ?? const <SyncAction>[];
+                final summary = SyncQueueSummary.fromActions(actions);
+                final grouped = _groupByDomain(actions);
+                final conflicts = actions
+                    .where((a) => a.status == SyncStatus.conflict)
+                    .toList();
+
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    if (session != null) {
+                      await ref
+                          .read(autoSyncCoordinatorProvider.notifier)
+                          .triggerManual();
+                    }
+                    if (mounted) setState(() => _reloadKey++);
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      // ── Connectivity ──────────────────────────────────────────────
+                      NetworkStatusBanner(status: networkStatus),
+                      const SizedBox(height: 12),
+
+                      // ── Backend-pending notice ────────────────────────────────────
+                      _BackendPendingNotice(),
+                      const SizedBox(height: 12),
+
+                      // ── Summary KPI row ───────────────────────────────────────────
+                      _SummaryRow(summary: summary),
+                      const SizedBox(height: 12),
+
+                      // ── Conflitos (resolucao manual) ──────────────────────────────
+                      if (conflicts.isNotEmpty) ...[
+                        for (final c in conflicts)
+                          _ConflictCard(
+                            action: c,
+                            onKeepMine: () =>
+                                _resolveConflict(c, ConflictChoice.keepMine),
+                            onUseServer: () =>
+                                _resolveConflict(c, ConflictChoice.useServer),
+                          ),
+                        const SizedBox(height: 12),
+                      ],
+
+                      // ── Auto-sync state ───────────────────────────────────────────
+                      _AutoSyncCard(autoSync: autoSync),
+                      const SizedBox(height: 10),
+
+                      // ── Primary action ────────────────────────────────────────────
+                      FilledButton.icon(
+                        onPressed: autoSync.isRunning || session == null
+                            ? null
+                            : () => ref
+                                  .read(autoSyncCoordinatorProvider.notifier)
+                                  .triggerManual(),
+                        icon: autoSync.isRunning
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.sync),
+                        label: Text(
+                          autoSync.isRunning
+                              ? 'Sincronizando...'
+                              : 'Sincronizar agora',
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // ── Domain groups ─────────────────────────────────────────────
+                      if (actions.isEmpty)
+                        const EmptyState(
+                          icon: Icons.cloud_done_outlined,
+                          title: 'Fila vazia',
+                          message:
+                              'Acoes de OS, Checklists, Despesas e Estoque aparecao aqui quando houver pendencias locais.',
+                        )
+                      else
+                        for (final entry in grouped.entries)
+                          _DomainGroup(domain: entry.key, actions: entry.value),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
