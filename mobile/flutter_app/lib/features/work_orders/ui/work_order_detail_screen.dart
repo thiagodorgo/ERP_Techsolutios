@@ -554,12 +554,22 @@ class _TimelineCard extends StatefulWidget {
 }
 
 class _TimelineCardState extends State<_TimelineCard> {
+  late Future<List<WorkOrderTimelineEvent>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    // Busca a timeline uma vez (real quando online; fallback local seguro).
+    _future = widget.repo.loadTimeline(widget.workOrderId);
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<WorkOrderTimelineEvent>>(
-      future: widget.repo.loadTimeline(widget.workOrderId),
+      future: _future,
       builder: (context, snapshot) {
-        final events = snapshot.data ?? [];
+        final loading = snapshot.connectionState == ConnectionState.waiting;
+        final events = snapshot.data ?? const <WorkOrderTimelineEvent>[];
         return Card(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -567,9 +577,18 @@ class _TimelineCardState extends State<_TimelineCard> {
               ListTile(
                 leading: const Icon(Icons.timeline_outlined),
                 title: const Text('Historico'),
-                subtitle: Text('${events.length} evento(s)'),
+                subtitle: Text(
+                  loading
+                      ? 'Carregando historico...'
+                      : '${events.length} evento(s)',
+                ),
               ),
-              if (events.isEmpty)
+              if (loading)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: LinearProgressIndicator(),
+                )
+              else if (events.isEmpty)
                 const Padding(
                   padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: Text('Nenhum evento registrado.'),

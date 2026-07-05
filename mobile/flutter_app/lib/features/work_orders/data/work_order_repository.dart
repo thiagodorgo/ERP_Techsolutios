@@ -406,8 +406,33 @@ class WorkOrderRepository extends ChangeNotifier {
     return action;
   }
 
-  Future<List<WorkOrderTimelineEvent>> loadTimeline(String localId) =>
-      _localStore.loadTimeline(localId);
+  /// Timeline do detalhe/check-in: quando ha API e id de servidor, busca o
+  /// historico real (GET /work-orders/:id/timeline). Em falha de rede/timeout
+  /// ou 404/403 (ApiError), cai de forma segura para o cache local — sem
+  /// quebrar a tela e sem stack trace.
+  Future<List<WorkOrderTimelineEvent>> loadTimeline(String localId) async {
+    final remote = _remoteApi;
+    if (remote != null) {
+      String? serverId;
+      for (final order in _orders) {
+        if (order.localId == localId) {
+          serverId = order.serverId;
+          break;
+        }
+      }
+      if (serverId != null && serverId.isNotEmpty) {
+        try {
+          final events = await remote.fetchTimeline(serverId);
+          if (events.isNotEmpty) return events;
+        } on ApiError {
+          // Falha segura — mantem o historico local.
+        } catch (_) {
+          // Qualquer outra falha inesperada tambem cai para o local.
+        }
+      }
+    }
+    return _localStore.loadTimeline(localId);
+  }
 
   Future<WorkOrderEvidence> attachEvidence({
     required String workOrderLocalId,

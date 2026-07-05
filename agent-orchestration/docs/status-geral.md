@@ -3440,3 +3440,22 @@ fixes mobile (timeline no detalhe, auto-sync no root, adapter components/fields,
 base URL configuravel).
 
 Validacao local: frontend check OK, build OK, test:smoke 33/33. KPIs nao alterados (C3).
+
+---
+
+## Atualizacao 2026-07-05 - B-121 (mobile) Hardening cirurgico do Mobile MVP
+
+Branch: feat/mobile-b121-mvp-hardening. Quatro ajustes cirurgicos, sem telas
+fora do MVP e sem KPIs:
+- Timeline real no detalhe/check-in (GET /work-orders/:id/timeline) com fallback
+  local seguro; timeline vazia nao quebra; `_TimelineCard` cacheia o future.
+- Auto-sync montado no app root (listener offline->online global), ordem segura
+  de replay preservada; coordinator ignora sessao nula.
+- Adapter de checklist tolerando `fields` e `components` (orderIndex->order,
+  type/componentKey->type); tipo desconhecido -> `unsupported` com mensagem
+  "Componente nao suportado nesta versao do app.".
+- Base URL por `--dart-define=API_BASE_URL` (default localhost do emulador).
+
+Seguranca: sem token/tenant/paths/base64 no body; conflitos permanecem manuais.
+Validacao local: flutter analyze limpo, flutter test 764/764 (10 testes novos).
+KPIs nao alterados (C3). Web/backend nao tocados.

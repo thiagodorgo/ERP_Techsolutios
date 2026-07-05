@@ -3,15 +3,24 @@ import 'package:dio/dio.dart';
 import 'api_error.dart';
 import 'auth_interceptor.dart';
 
+/// Base URL padrão — configurável em build/CI via
+/// `--dart-define=API_BASE_URL=https://api.exemplo.com.br/api/v1`.
+/// Sem o define, mantém o localhost do emulador Android (dev/test), então
+/// testes nunca dependem de rede real.
+const String kDefaultApiBaseUrl = String.fromEnvironment(
+  'API_BASE_URL',
+  defaultValue: 'http://10.0.2.2:3000',
+);
+
 class ApiConfig {
   const ApiConfig({
-    this.baseUrl = 'http://10.0.2.2:3000',
+    this.baseUrl = kDefaultApiBaseUrl,
     this.accessToken,
     this.connectTimeoutMs = 10000,
     this.receiveTimeoutMs = 15000,
   });
 
-  // 10.0.2.2 is localhost from Android emulator; override for iOS/physical device
+  // Default vem de --dart-define=API_BASE_URL (fallback: localhost do emulador).
   final String baseUrl;
 
   // Injected at runtime after authentication — never hardcoded

@@ -395,13 +395,13 @@ somente-leitura). Legenda de status: **integrated** (consome endpoint real) ·
 | Seleção de tenant | GET /mobile/bootstrap (+?tenantId) | integrated (remote) | multi-tenant só em modo remoto |
 | Home operacional | agrega bootstrap + repo de OS | local-first | sem `/mobile/home` (não usado) |
 | Lista de OS | GET /work-orders | integrated + cache | modo local: seed |
-| Detalhe/Check-in | PATCH /work-orders/:id/status (fila) | local-first + fila | GET /timeline existe mas não é chamado (gap) |
+| Detalhe/Check-in | GET /work-orders/:id/timeline + PATCH /status (fila) | integrated (timeline) + fila | timeline real com fallback local seguro (B-121) |
 | Execução da OS | PATCH /status (fila) | local-first + fila | conclusão gated por checklist local |
 | Checklists da OS | GET /mobile/checklists/available | integrated + cache | não filtra por workOrderId (gap) |
-| Execução de checklist | GET /mobile/checklists/:id/render + fila | integrated (render) + fila | run/marker/divergência/ciência via fila |
+| Execução de checklist | GET /mobile/checklists/:id/render + fila | integrated (render) + fila | adapter tolera `fields`+`components` (B-121); run/marker/etc via fila |
 | Evidências | POST /mobile/sync/evidence-actions + /mobile/evidence-uploads | integrated (B-108, allowlist) | anexo de checklist só metadata (gap bytes) |
 | Enviar localização | POST /mobile/field-locations | integrated | ping manual; sem tracking |
-| Sync/fila offline | /mobile/sync/* + /evidence-uploads + /field-locations | integrated | auto-sync não montado no app root (gap) |
+| Sync/fila offline | /mobile/sync/* + /evidence-uploads + /field-locations | integrated | auto-sync montado no app root (B-121); ordem segura preservada |
 
 ### Web (16)
 
@@ -427,4 +427,4 @@ somente-leitura). Legenda de status: **integrated** (consome endpoint real) ·
 ### Lacunas priorizadas (próximos PRs do B-121)
 1. Web: enriquecer o **Dashboard** com `/operations/dispatches` + `/field-locations/latest`. ✅ **Dashboard**, **Detalhe da OS** e **Aprovação** já religados neste bloco (B-121).
 2. Web: **Settings** (`/administrator/settings`) segue mock-only — sem backend de settings dedicado (lacuna; não criar backend nesta fase). ✅ **Nav** já MVP-only via `/navigation/menu` (B-121).
-3. Mobile: chamar `GET /work-orders/:id/timeline` no detalhe; montar auto-sync no app root; adapter de checklist tolerar `components` além de `fields`; base URL configurável por `--dart-define`.
+3. ✅ **Mobile (B-121)**: timeline real no detalhe/check-in, auto-sync no app root, adapter de checklist tolerando `components`+`fields` e base URL por `--dart-define` — **concluídos**. Base URL configurável: `--dart-define=API_BASE_URL=https://.../api/v1` (default: localhost do emulador).
