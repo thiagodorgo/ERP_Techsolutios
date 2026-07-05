@@ -341,19 +341,31 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
         version: j['version'] as String,
         title: j['title'] as String,
         instructions: j['instructions'] as String?,
-        fields: (j['fields'] as List<dynamic>? ?? [])
+        // Tolera os DOIS formatos do contrato: `fields` (render) e `components`
+        // (builder/admin). Ver mapeamento em _fieldFromJson.
+        fields: ((j['fields'] ?? j['components']) as List<dynamic>? ?? const [])
             .map((f) => _fieldFromJson(f as Map<String, dynamic>))
             .toList(growable: false),
       );
 
+  // Aceita tanto o shape `field` quanto `component`:
+  //   component.id         -> id
+  //   component.type/componentKey -> type
+  //   component.label      -> label
+  //   component.required   -> required
+  //   component.orderIndex -> order
+  // Tipo desconhecido vira `unsupported` e o render mostra
+  // "Componente não suportado nesta versão do app.".
   MobileChecklistField _fieldFromJson(Map<String, dynamic> j) =>
       MobileChecklistField(
         id: j['id'] as String,
-        type: MobileChecklistFieldType.fromApiValue(j['type'] as String),
-        label: j['label'] as String,
+        type: MobileChecklistFieldType.fromApiValue(
+          (j['type'] ?? j['componentKey']) as String? ?? 'unsupported',
+        ),
+        label: (j['label'] as String?) ?? '',
         description: j['description'] as String?,
         required: j['required'] as bool? ?? false,
-        order: j['order'] as int,
+        order: (j['order'] ?? j['orderIndex']) as int? ?? 0,
         options: (j['options'] as List<dynamic>?)
             ?.map((o) => _optionFromJson(o as Map<String, dynamic>))
             .toList(),

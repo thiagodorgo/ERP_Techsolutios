@@ -3596,3 +3596,32 @@ final do B-120; KPIs publicados junto. Numeracao contigua ao Codex.
 - Web: enriquecer Dashboard (dispatches/field-locations); Settings sem backend
   (lacuna documentada, sem criar backend). Mobile: timeline no detalhe, auto-sync
   no root, adapter components/fields, base URL por --dart-define.
+
+## 2026-07-05 - B-121 (mobile) Hardening: timeline, auto-sync root, adapter, base URL
+
+> Branch: feat/mobile-b121-mvp-hardening. Escopo cirurgico do Mobile MVP.
+
+### Implementado
+- Timeline no detalhe/check-in: `WorkOrderRepository.loadTimeline` busca
+  GET /work-orders/:id/timeline quando ha id de servidor; em falha (rede/timeout
+  ou 404/403 = ApiError) cai de forma segura para o cache local. Sem stack trace;
+  timeline vazia nao quebra. `_TimelineCard` cacheia o future (uma busca).
+- Auto-sync no app root: `ErpMobileApp` observa `autoSyncCoordinatorProvider.notifier`,
+  armando o listener offline->online globalmente. Ordem segura preservada
+  (work-order -> checklist -> evidence metadata -> evidence binary -> field
+  location -> RDV existente). O coordinator ignora sessao nula.
+- Adapter de checklist tolera `fields` e `components`: `_schemaFromJson` aceita os
+  dois; `_fieldFromJson` mapeia orderIndex->order e type/componentKey->type. Tipo
+  desconhecido vira `unsupported` e o render mostra "Componente nao suportado
+  nesta versao do app.".
+- Base URL por --dart-define: `ApiConfig.baseUrl` vem de
+  `String.fromEnvironment('API_BASE_URL', default 'http://10.0.2.2:3000')`.
+
+### Seguranca
+- Sem token/tenantId no body; sem path/local_path/base64/file_data/storage key.
+- Conflitos nao sao resolvidos silenciosamente (fila mantem manual).
+
+### Validacoes
+- Mobile: flutter analyze limpo; flutter test 764/764 (10 testes novos em
+  test/features/b121_mobile_hardening_test.dart). Frontend/backend nao tocados.
+- KPIs NAO alterados (C3).

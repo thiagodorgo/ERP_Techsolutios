@@ -203,3 +203,18 @@ decisao (`note` ou `reason`) sem tenant, token, Authorization, path, base64,
 
 Evidencias e checklists locais continuam preservados em rejeicao ou falha. O
 fluxo de decisao permanece exclusivo da UI web neste bloco.
+
+## B-121 - Hardening mobile MVP (timeline, auto-sync, adapter, base URL)
+
+- Detalhe/check-in busca a timeline real (GET /work-orders/:id/timeline) quando ha
+  id de servidor; em falha (rede/timeout/404/403) cai para o cache local, sem
+  stack trace e sem quebrar a tela (timeline vazia tambem e tratada).
+- Auto-sync montado no root do app: o listener offline->online passa a existir
+  globalmente (antes so era armado ao abrir Sync/Perfil), preservando a ordem
+  segura de replay. Sem sessao valida, o coordinator ignora o sync.
+- O adapter de render de checklist aceita tanto `fields` quanto `components`
+  (orderIndex->order, type/componentKey->type). Tipo desconhecido vira
+  `unsupported` e a tela mostra "Componente nao suportado nesta versao do app.".
+- A base URL da API e configuravel em build/CI:
+  `--dart-define=API_BASE_URL=https://.../api/v1` (default: localhost do emulador,
+  para dev/test sem rede real).

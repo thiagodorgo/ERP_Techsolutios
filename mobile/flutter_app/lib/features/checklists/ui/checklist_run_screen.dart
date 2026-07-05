@@ -448,7 +448,7 @@ class _FieldCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
-          '${field.type.apiValue} — disponivel em bloco futuro',
+          'Componente não suportado nesta versão do app.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ),

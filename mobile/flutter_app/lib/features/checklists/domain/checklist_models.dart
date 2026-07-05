@@ -12,7 +12,9 @@ enum MobileChecklistFieldType {
   vehicleSelector,
   observation,
   acknowledgement,
-  signature;
+  signature,
+  // Tipo desconhecido/não renderizável nesta versão do app (fallback seguro).
+  unsupported;
 
   String get apiValue => switch (this) {
     MobileChecklistFieldType.text => 'text',
@@ -27,6 +29,7 @@ enum MobileChecklistFieldType {
     MobileChecklistFieldType.observation => 'observation',
     MobileChecklistFieldType.acknowledgement => 'acknowledgement',
     MobileChecklistFieldType.signature => 'signature',
+    MobileChecklistFieldType.unsupported => 'unsupported',
   };
 
   static MobileChecklistFieldType fromApiValue(String v) => switch (v) {
@@ -42,7 +45,7 @@ enum MobileChecklistFieldType {
     'observation' => MobileChecklistFieldType.observation,
     'acknowledgement' => MobileChecklistFieldType.acknowledgement,
     'signature' => MobileChecklistFieldType.signature,
-    _ => MobileChecklistFieldType.text,
+    _ => MobileChecklistFieldType.unsupported,
   };
 }
 
