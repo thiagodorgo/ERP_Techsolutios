@@ -89,7 +89,7 @@ void main() {
 
       expect(find.text('Guincho'), findsNothing);
       expect(find.text('Prestador'), findsNothing);
-      expect(find.text('Sincronizando'), findsNothing);
+      expect(find.text('Sync pendente'), findsNothing);
       expect(find.text('Falha sync'), findsNothing);
       expect(find.text('Conflito'), findsNothing);
     });
@@ -116,13 +116,14 @@ void main() {
       expect(find.text('Guincho'), findsNothing);
     });
 
-    testWidgets('4. Card com syncStatus=pending exibe label Sincronizando', (
+    testWidgets('4. Card com syncStatus=pending exibe label Sync pendente', (
       t,
     ) async {
+      // B-123: rotulo fiel ao prototipo (os-lista.png).
       await t.pumpWidget(_wrap([_wo('a', syncStatus: SyncStatus.pending)]));
       await t.pumpAndSettle();
 
-      expect(find.text('Sincronizando'), findsOneWidget);
+      expect(find.text('Sync pendente'), findsOneWidget);
     });
 
     testWidgets('5. Card com syncStatus=failed exibe label Falha sync', (
@@ -149,7 +150,7 @@ void main() {
       await t.pumpWidget(_wrap([_wo('a', syncStatus: SyncStatus.synced)]));
       await t.pumpAndSettle();
 
-      expect(find.text('Sincronizando'), findsNothing);
+      expect(find.text('Sync pendente'), findsNothing);
       expect(find.text('Falha sync'), findsNothing);
       expect(find.text('Conflito'), findsNothing);
     });
@@ -167,7 +168,7 @@ void main() {
       await t.pumpAndSettle();
 
       expect(find.text('Guincho'), findsOneWidget);
-      expect(find.text('Sincronizando'), findsOneWidget);
+      expect(find.text('Sync pendente'), findsOneWidget);
     });
 
     testWidgets(
@@ -189,7 +190,7 @@ void main() {
         expect(find.text('Guincho'), findsOneWidget);
         expect(find.text('Prestador'), findsOneWidget);
         expect(find.text('Falha sync'), findsOneWidget);
-        expect(find.text('Sincronizando'), findsNothing);
+        expect(find.text('Sync pendente'), findsNothing);
       },
     );
   });

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/evidence/evidence_picker.dart';
 import '../../../shared/ui/erp_scaffold.dart';
+import '../../../shared/ui/mobile_kit.dart';
 import '../data/checklist_repository.dart';
 import '../domain/checklist_models.dart';
 import '../domain/signature_strokes.dart';
@@ -161,13 +162,23 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return ErpScaffold(
-            title: 'Checklist',
-            body: Center(child: Text(snapshot.error!.toString())),
+            showAppBar: false,
+            body: Column(
+              children: [
+                MobileScreenHeader(
+                  title: 'Checklist',
+                  onBack: () => Navigator.of(context).maybePop(),
+                ),
+                Expanded(
+                  child: Center(child: Text(snapshot.error!.toString())),
+                ),
+              ],
+            ),
           );
         }
         if (!snapshot.hasData) {
           return const ErpScaffold(
-            title: 'Checklist',
+            showAppBar: false,
             body: Center(child: CircularProgressIndicator()),
           );
         }
@@ -185,9 +196,20 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
         final vehicleType = _vehicleTypeFromAnswers(schema);
 
         return ErpScaffold(
-          title: schema.title,
+          showAppBar: false,
           body: Column(
             children: [
+              MobileScreenHeader(
+                title: schema.title,
+                subtitle: totalRequired > 0
+                    ? 'Obrigatorios: $answeredRequired/$totalRequired'
+                    : null,
+                onBack: () => Navigator.of(context).maybePop(),
+                trailing: MobilePill(
+                  label: widget.kind.label,
+                  tone: PillTone.info,
+                ),
+              ),
               if (totalRequired > 0)
                 LinearProgressIndicator(
                   value: answeredRequired / totalRequired,

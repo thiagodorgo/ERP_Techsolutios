@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/permissions/permission_resolver.dart';
 import '../../../core/sync/sync_models.dart';
+import '../../../shared/theme/erp_mobile_theme.dart';
 import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
+import '../../../shared/ui/mobile_kit.dart';
 import '../data/work_order_repository.dart';
 import '../domain/work_order_models.dart';
 
@@ -44,7 +46,7 @@ extension _WoGroupX on _WoGroup {
 }
 
 // ---------------------------------------------------------------------------
-// Screen
+// Screen — alvo visual: screen-refs/mobile/os-lista.png
 // ---------------------------------------------------------------------------
 
 class WorkOrderListScreen extends ConsumerStatefulWidget {
@@ -106,20 +108,29 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
 
     if (!canRead) {
       return ErpScaffold(
-        title: 'Ordens de Servico',
-        body: const PermissionBlockedState(
-          title: 'Acesso nao autorizado',
-          message:
-              'Voce nao possui a permissao work_orders:read para visualizar ordens de servico.',
+        showAppBar: false,
+        body: Column(
+          children: [
+            const _ListHeader(),
+            const Expanded(
+              child: PermissionBlockedState(
+                title: 'Acesso nao autorizado',
+                message:
+                    'Voce nao possui a permissao work_orders:read para visualizar ordens de servico.',
+              ),
+            ),
+          ],
         ),
       );
     }
 
     return ErpScaffold(
-      title: 'Ordens de Servico',
+      showAppBar: false,
       floatingActionButton: canCreate
           ? FloatingActionButton.extended(
               onPressed: () => context.go('/work-orders/new'),
+              backgroundColor: ErpMobileTheme.primary,
+              foregroundColor: Colors.white,
               icon: const Icon(Icons.add),
               label: const Text('Nova OS'),
             )
@@ -132,6 +143,7 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
             onRefresh: () => repo.refresh(),
             child: Column(
               children: [
+                const _ListHeader(),
                 // Pull state banners
                 if (repo.isPulling) const LinearProgressIndicator(),
                 if (repo.lastPullError != null && !repo.isPulling)
@@ -146,51 +158,78 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
                     !repo.isPulling &&
                     repo.lastPullError == null)
                   const _LocalCacheBanner(),
+
+                // Filtros de estado (chips fieis ao prototipo)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+                  child: Row(
+                    children: [
+                      for (final g in _WoGroup.values) ...[
+                        if (g != _WoGroup.values.first)
+                          const SizedBox(width: 8),
+                        _FilterChip(
+                          label: g.label,
+                          active: _group == g,
+                          onTap: () => setState(() => _group = g),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // Busca
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                   child: TextField(
                     controller: _searchController,
                     onChanged: (v) => setState(() => _query = v),
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      color: ErpMobileTheme.ink,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Buscar OS, cliente ou endereco...',
-                      prefixIcon: const Icon(Icons.search_outlined),
+                      hintStyle: const TextStyle(
+                        color: ErpMobileTheme.inkFaint,
+                        fontSize: 13.5,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search_outlined,
+                        size: 19,
+                        color: ErpMobileTheme.inkFaint,
+                      ),
                       suffixIcon: _query.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(Icons.clear, size: 18),
+                              color: ErpMobileTheme.inkFaint,
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() => _query = '');
                               },
                             )
                           : null,
+                      filled: true,
+                      fillColor: Colors.white,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: ErpMobileTheme.cardBorder,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: ErpMobileTheme.cardBorder,
+                        ),
                       ),
                       contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       isDense: true,
                     ),
                   ),
                 ),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    children: [
-                      for (final g in _WoGroup.values)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: ChoiceChip(
-                            label: Text(g.label),
-                            selected: _group == g,
-                            onSelected: (_) => setState(() => _group = g),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+
+                // Filtro de prioridade (mantido; estilo discreto)
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -198,12 +237,25 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Text('Prioridade:'),
+                      const Text(
+                        'Prioridade:',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: ErpMobileTheme.inkMuted,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       DropdownButton<WorkOrderPriority?>(
                         value: _priority,
                         hint: const Text('Todas'),
                         isDense: true,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: ErpMobileTheme.ink,
+                        ),
+                        underline: const SizedBox.shrink(),
                         items: [
                           const DropdownMenuItem(
                             value: null,
@@ -258,9 +310,28 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
                           itemCount: filtered.length,
                           itemBuilder: (context, i) {
                             final wo = filtered[i];
-                            return _WorkOrderCard(
+                            return MobileOsCard(
                               key: ValueKey(wo.localId),
-                              workOrder: wo,
+                              code: wo.code,
+                              title: wo.title,
+                              customerLine: wo.customerName,
+                              accentColor: _accentForTone(
+                                wo.priority.statusTone,
+                              ),
+                              priorityLabel: wo.priority.label,
+                              priorityTone: pillToneFromStatus(
+                                wo.priority.statusTone,
+                              ),
+                              statusLabel: wo.status.label,
+                              statusTone: pillToneFromStatus(
+                                wo.status.statusTone,
+                              ),
+                              address: wo.serviceAddress,
+                              time: wo.scheduledAt != null
+                                  ? _fmtDate(wo.scheduledAt!)
+                                  : null,
+                              vehicleLabel: wo.serviceType?.label,
+                              pendingChips: _pendingChips(wo.syncStatus),
                               onTap: () =>
                                   context.go('/work-orders/${wo.localId}'),
                             );
@@ -291,90 +362,23 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
       return true;
     }).toList();
   }
-}
 
-// ---------------------------------------------------------------------------
-// Card
-// ---------------------------------------------------------------------------
-
-class _WorkOrderCard extends StatelessWidget {
-  const _WorkOrderCard({
-    required this.workOrder,
-    required this.onTap,
-    super.key,
-  });
-
-  final WorkOrder workOrder;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final syncIcon = _syncIcon(workOrder.syncStatus);
-    final hasBadges = syncIcon != null || workOrder.serviceType != null;
-
-    return Card(
-      child: ListTile(
-        onTap: onTap,
-        leading: OperationalStatusChip(
-          label: workOrder.priority.label,
-          status: workOrder.priority.statusTone,
-        ),
-        title: Text('${workOrder.code} · ${workOrder.title}'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(workOrder.customerName),
-            Text(
-              workOrder.serviceAddress,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (workOrder.scheduledAt != null)
-              Text(_fmtDate(workOrder.scheduledAt!)),
-            if (hasBadges)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: [
-                    if (workOrder.serviceType != null)
-                      _TypeBadge(label: workOrder.serviceType!.label),
-                    ?syncIcon,
-                  ],
-                ),
-              ),
-          ],
-        ),
-        trailing: OperationalStatusChip(
-          label: workOrder.status.label,
-          status: workOrder.status.statusTone,
-        ),
-        isThreeLine: true,
-      ),
-    );
-  }
-
-  Widget? _syncIcon(SyncStatus status) {
+  List<(String, PillTone)> _pendingChips(SyncStatus status) {
     return switch (status) {
-      SyncStatus.pending => const _SyncBadge(
-        icon: Icons.cloud_upload_outlined,
-        label: 'Sincronizando',
-        tone: 'info',
-      ),
-      SyncStatus.failed => const _SyncBadge(
-        icon: Icons.cloud_off_outlined,
-        label: 'Falha sync',
-        tone: 'danger',
-      ),
-      SyncStatus.conflict => const _SyncBadge(
-        icon: Icons.warning_amber_outlined,
-        label: 'Conflito',
-        tone: 'danger',
-      ),
-      _ => null,
+      SyncStatus.pending => const [('Sync pendente', PillTone.scheduled)],
+      SyncStatus.failed => const [('Falha sync', PillTone.danger)],
+      SyncStatus.conflict => const [('Conflito', PillTone.danger)],
+      _ => const <(String, PillTone)>[],
     };
   }
+
+  Color _accentForTone(String tone) => switch (tone) {
+    'danger' => ErpMobileTheme.danger,
+    'warning' => ErpMobileTheme.warning,
+    'success' => ErpMobileTheme.success,
+    'info' => ErpMobileTheme.info,
+    _ => ErpMobileTheme.inkFaint,
+  };
 
   String _fmtDate(DateTime dt) =>
       '${dt.day.toString().padLeft(2, '0')}/'
@@ -384,65 +388,79 @@ class _WorkOrderCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Badge widgets
+// Header branco com título bold (os-lista.png)
 // ---------------------------------------------------------------------------
 
-class _TypeBadge extends StatelessWidget {
-  const _TypeBadge({required this.label});
-
-  final String label;
+class _ListHeader extends StatelessWidget {
+  const _ListHeader();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(4),
+      color: Colors.white,
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        16,
+        MediaQuery.of(context).padding.top + 14,
+        16,
+        12,
       ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
-          fontWeight: FontWeight.w600,
+      child: const Text(
+        'Ordens de Servico',
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w800,
+          color: ErpMobileTheme.ink,
         ),
       ),
-    );
-  }
-}
-
-class _SyncBadge extends StatelessWidget {
-  const _SyncBadge({
-    required this.icon,
-    required this.label,
-    required this.tone,
-  });
-
-  final IconData icon;
-  final String label;
-  final String tone;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = tone == 'danger'
-        ? Theme.of(context).colorScheme.error
-        : Theme.of(context).colorScheme.tertiary;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 12, color: color),
-        const SizedBox(width: 3),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
-        ),
-      ],
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Pull state banners
+// Chip de filtro (ativo azul sólido, como no protótipo)
+// ---------------------------------------------------------------------------
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(99),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: active ? ErpMobileTheme.primary : Colors.white,
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(
+            color: active ? ErpMobileTheme.primary : ErpMobileTheme.cardBorder,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+            color: active ? Colors.white : const Color(0xFF475569),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Pull state banners (tokens do protótipo)
 // ---------------------------------------------------------------------------
 
 class _PullErrorBanner extends StatelessWidget {
@@ -453,21 +471,31 @@ class _PullErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialBanner(
-      backgroundColor: Theme.of(
-        context,
-      ).colorScheme.errorContainer.withValues(alpha: 0.8),
-      leading: Icon(
-        Icons.cloud_off_outlined,
-        color: Theme.of(context).colorScheme.error,
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFECACA)),
       ),
-      content: Text(
-        message,
-        style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.cloud_off_outlined,
+            size: 18,
+            color: ErpMobileTheme.danger,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(fontSize: 12.5, color: Color(0xFF991B1B)),
+            ),
+          ),
+          TextButton(onPressed: onRetry, child: const Text('Tentar novamente')),
+        ],
       ),
-      actions: [
-        TextButton(onPressed: onRetry, child: const Text('Tentar novamente')),
-      ],
     );
   }
 }
@@ -482,19 +510,23 @@ class _LastUpdatedBanner extends StatelessWidget {
     final h = at.toLocal().hour.toString().padLeft(2, '0');
     final m = at.toLocal().minute.toString().padLeft(2, '0');
     return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      width: double.infinity,
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.sync_outlined,
             size: 14,
-            color: Theme.of(context).colorScheme.primary,
+            color: ErpMobileTheme.success,
           ),
           const SizedBox(width: 6),
           Text(
             'Atualizado as $h:$m',
-            style: Theme.of(context).textTheme.labelSmall,
+            style: const TextStyle(
+              fontSize: 11,
+              color: ErpMobileTheme.inkMuted,
+            ),
           ),
         ],
       ),
@@ -508,21 +540,21 @@ class _LocalCacheBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Theme.of(
-        context,
-      ).colorScheme.secondaryContainer.withValues(alpha: 0.5),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Row(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+      ),
+      child: const Row(
         children: [
-          Icon(
-            Icons.storage_outlined,
-            size: 14,
-            color: Theme.of(context).colorScheme.secondary,
-          ),
-          const SizedBox(width: 6),
+          Icon(Icons.storage_outlined, size: 14, color: ErpMobileTheme.info),
+          SizedBox(width: 6),
           Text(
             'Mostrando dados salvos neste aparelho.',
-            style: Theme.of(context).textTheme.labelSmall,
+            style: TextStyle(fontSize: 11.5, color: Color(0xFF1E40AF)),
           ),
         ],
       ),
