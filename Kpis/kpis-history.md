@@ -6,6 +6,50 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-05 - B-122 Alinhamento visual ao prototipo aprovado
+
+### Resultado
+
+- Perfil do operador recriado fiel a `screen-refs/mobile/perfil.png`: hero com
+  avatar/nome/e-mail e "Papel · Organizacao" (rotulo PT-BR), secoes Conta e
+  organizacao, Aparencia (tema preservado), Seguranca e sessao e botao Sair.
+- Removidos da UI: modo de autenticacao, expiracao de token, permissoes cruas,
+  modulos, tenants e IDs internos (suporte tecnico permanece no Diagnostico
+  dev-only).
+- Auditoria: 11 telas web MVP + shell conformes ao padrao aprovado; web sem
+  rota de Perfil (lacuna documentada, sem criar tela fora das 16 congeladas);
+  fluxo de OS mobile em Material stock (lacuna para as proximas fases).
+
+### Metadados pos-avaliacao humana
+
+- PR: #121 (merge `fc7e17810940edf933b5e4a2071f8f456e05d4e9`, head `f151b4fb6e53200204846aed5abb0699c0308d94`).
+- Status: `published_after_human_approval`.
+
+### KPIs B-122 refletidos na raiz
+
+| KPI | Valor |
+| --- | --- |
+| Flutter Tests | 764/764 |
+| Frontend Smoke Tests | 33/33 |
+| Backend Tests | 15/15 |
+| Mobile Backend Contracts | 18/18 |
+| Mobile + Core SaaS Contracts | 21/21 |
+| Flutter modules | 17/17 |
+| MVP demo | 96% |
+| MVP vendavel | 78% |
+| Blocos entregues | 47 |
+
+Observacao: percentuais mvp mantidos nos ultimos valores oficiais publicados
+(B-121K, PR #120); B-122 nao propos novos percentuais. Blocos: regra de
+contagem (46 ate B-121 + B-122 = 47).
+
+### Limitacoes registradas
+
+- Fluxo de OS mobile ainda em Material stock (fidelidade nas proximas fases).
+- Demais limitacoes do B-121 permanecem (S3/presigned, DB/Redis receipt,
+  antivirus real, download protegido, retencao, Dashboard web sem
+  dispatches/field-locations, Settings web sem backend).
+
 ## 2026-07-05 - B-121 MVP integrado Web/Mobile
 
 ### Resultado

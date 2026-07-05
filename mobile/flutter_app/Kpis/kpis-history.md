@@ -5,6 +5,37 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-122 — 2026-07-05
+
+**Alinhamento visual ao prototipo aprovado (publicacao junto ao B-121K)**
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 764 / 764 |
+| Frontend Smoke Tests | 33 / 33 |
+| Backend Tests | 15 / 15 |
+| Mobile Backend Contracts | 18 / 18 |
+| Mobile + Core SaaS Contracts | 21 / 21 |
+| flutter analyze | 0 issues |
+| Modulos Flutter Prontos | 17 / 17 |
+| MVP Demo Readiness (est.) | 96% |
+| MVP Vendavel (est.) | 78% |
+| Blocos Entregues | 47 |
+
+**Novidades:** Perfil do operador recriado fiel a
+`screen-refs/mobile/perfil.png` — hero com avatar/nome/e-mail e "Papel ·
+Organizacao" (rotulo PT-BR), secoes Conta e organizacao, Aparencia (tema
+preservado), Seguranca e sessao (sessao/conectividade/ultimo sync) e Sair.
+Dados tecnicos (token, modo de autenticacao, permissoes cruas, IDs) sairam da
+UI; suporte tecnico permanece no Diagnostico (dev-only). Testes b091
+realinhados (rotulo PT-BR obrigatorio; claim tecnica proibida).
+
+**Metadados:** PR #121 (merge `fc7e178`, head `f151b4f`); status
+`published_after_human_approval`. Percentuais mvp mantidos nos valores
+oficiais do B-121K; blocos por regra de contagem (47).
+
+---
+
 ## B-121 — 2026-07-05
 
 **MVP integrado Web/Mobile (publicacao B-121K)**

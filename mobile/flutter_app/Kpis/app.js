@@ -9,19 +9,19 @@
 // ---------------------------------------------------------------------------
 const EMBEDDED_LATEST = {
   "snapshot_date": "2026-07-05",
-  "version": "B-121",
-  "branch": "feat/mobile-b121-mvp-hardening",
-  "description": "B-121 MVP integrado Web/Mobile — hardening mobile (timeline real no detalhe/check-in, auto-sync no app root, adapter de checklist fields/components, base URL por --dart-define) e web MVP ligado aos endpoints reais (OS lista/detalhe, Dashboard, Aprovacao, nav MVP-only)",
+  "version": "B-122",
+  "branch": "fix/b122-visual-consistency-approved-prototype",
+  "description": "B-122 Alinhamento visual ao prototipo aprovado — Perfil do operador fiel a screen-refs/mobile/perfil.png, sem dados tecnicos crus na UI; consolida a publicacao B-121 (MVP integrado Web/Mobile: timeline real, auto-sync no app root, adapter fields/components, base URL por --dart-define, web MVP nos endpoints reais)",
   "release": {
-    "block": "B-121",
-    "title": "MVP integrado Web/Mobile",
-    "pr": 119,
-    "mergeCommit": "e851fd35e141545401abfc0fac774f62e1c2f615",
-    "approvedHead": "72d6ccc6476be752ccf8d368a5252c8c97fac522",
-    "branch": "feat/mobile-b121-mvp-hardening",
+    "block": "B-122",
+    "title": "Alinhamento visual ao prototipo aprovado",
+    "pr": 121,
+    "mergeCommit": "fc7e17810940edf933b5e4a2071f8f456e05d4e9",
+    "approvedHead": "f151b4fb6e53200204846aed5abb0699c0308d94",
+    "branch": "fix/b122-visual-consistency-approved-prototype",
     "status": "published_after_human_approval",
-    "status_label": "Publicado apos avaliacao humana e merges das PRs #117/#118/#119 (B-121K)",
-    "summary": "B-121 fechou os gaps cirurgicos do Mobile MVP (timeline real com fallback local seguro, auto-sync global no app root, adapter de checklist tolerando fields e components, base URL configuravel) e religou o web MVP aos endpoints reais. Consolida os blocos B-109 a B-120 mergeados desde a ultima publicacao (B-108). Percentuais mvp seguem os ultimos valores documentados na rodada B-113 a B-120 (estimados).",
+    "status_label": "Publicado apos avaliacao humana e merges das PRs #117/#118/#119/#121",
+    "summary": "B-122 recriou o Perfil do operador fiel ao prototipo aprovado (hero com papel PT-BR e organizacao, Conta e organizacao, Aparencia, Seguranca e sessao, Sair), removendo dados tecnicos crus da UI (token, modo de autenticacao, permissoes, IDs); auditoria das telas MVP registrada. KPIs do B-121 ja publicados no B-121K (PR #120, merge 28d8a12af8abad61be37d6ceeb8ce70faf9856ce). Percentuais mvp mantidos nos valores oficiais publicados; flutter analyze limpo e 764/764 revalidados na PR #121.",
     "commits": [
       {
         "hash": "38facb24a3bc8592cc3ccd6c11d4e428420532ed",
@@ -34,9 +34,13 @@ const EMBEDDED_LATEST = {
       {
         "hash": "e851fd35e141545401abfc0fac774f62e1c2f615",
         "message": "Merge pull request #119 — B-121 hardening mobile MVP"
+      },
+      {
+        "hash": "fc7e17810940edf933b5e4a2071f8f456e05d4e9",
+        "message": "Merge pull request #121 — B-122 Perfil do operador alinhado ao prototipo aprovado"
       }
     ],
-    "limitation": "S3/presigned real, DB/Redis receipt, antivirus real, download protegido final, retencao definitiva, Dashboard web sem dispatches/field-locations e Settings web sem backend dedicado seguem pendentes.",
+    "limitation": "S3/presigned real, DB/Redis receipt, antivirus real, download protegido final, retencao definitiva, Dashboard web sem dispatches/field-locations, Settings web sem backend dedicado e fluxo de OS mobile em Material stock seguem pendentes.",
     "fallback": "Timeline cai para o cache local em falha de rede/404/403; rejected, scan_failed, pending_review, erro de rede e timeout preservam a evidencia local; conflitos permanecem em resolucao manual."
   },
   "domains": [
@@ -123,7 +127,7 @@ const EMBEDDED_LATEST = {
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "764/764 no full Flutter validado na PR #119 (10 testes novos B-121)"
+          "detail": "764/764 no full Flutter validado nas PRs #119 (B-121) e #121 (B-122)"
         },
         {
           "id": "npm_tests",
@@ -288,11 +292,11 @@ const EMBEDDED_LATEST = {
         {
           "id": "blocks_completed",
           "label": "Blocos Entregues (total)",
-          "value": 46,
+          "value": 47,
           "unit": "blocos",
           "type": "real",
           "status": "green",
-          "detail": "B-076 ate B-121, incluindo sub-blocos (A/B/K/F); consolida B-109 a B-120"
+          "detail": "B-076 ate B-122, incluindo sub-blocos (A/B/K/F); consolida B-109 a B-120"
         },
         {
           "id": "prs_merged",
@@ -438,8 +442,8 @@ const EMBEDDED_LATEST = {
   ],
   "next_steps": [
     {
-      "block": "B-122",
-      "title": "Fidelidade visual das telas MVP ao prototipo aprovado (Perfil Web do operador em especial)"
+      "block": "B-12x",
+      "title": "Fidelidade visual do fluxo de OS mobile (lista/detalhe/execucao/checklists/run/sync) ao prototipo aprovado"
     },
     {
       "block": "B-12x",
@@ -697,6 +701,26 @@ const EMBEDDED_HISTORY = [
         "approvedHead": "474e5ec49e562a39ddcb1eec15253816ff11f520"
       }
     ]
+  },
+  {
+    "snapshot_date": "2026-07-05",
+    "version": "B-122",
+    "flutter_tests": 764,
+    "frontend_smoke_tests": 33,
+    "npm_tests": 15,
+    "mobile_backend_contracts": 18,
+    "mobile_core_saas_contracts": 21,
+    "backend_contract_tests": 21,
+    "flutter_modules_ready": 17,
+    "flutter_modules_total": 17,
+    "flutter_mvp_demo": 96,
+    "flutter_mvp_vendavel": 78,
+    "blocks_completed": 47,
+    "description": "B-122 Alinhamento visual ao prototipo aprovado — Perfil do operador recriado fiel a screen-refs/mobile/perfil.png (hero com papel PT-BR e organizacao, Conta e organizacao, Aparencia, Seguranca e sessao, Sair), sem dados tecnicos crus (token, modo de autenticacao, permissoes, IDs); testes b091 realinhados. Auditoria: 11 telas web MVP conformes; fluxo de OS mobile em Material stock (lacuna). Percentuais mvp mantidos nos valores oficiais do B-121K.",
+    "pr": 121,
+    "mergeCommit": "fc7e17810940edf933b5e4a2071f8f456e05d4e9",
+    "approvedHead": "f151b4fb6e53200204846aed5abb0699c0308d94",
+    "status": "published_after_human_approval"
   }
 ];
 
