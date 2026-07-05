@@ -18,7 +18,6 @@ import {
   Send,
   Settings,
   ShieldCheck,
-  ShoppingCart,
   Users,
   Wallet,
   type LucideIcon,
@@ -26,6 +25,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 
+import { useNavigationMenu } from "../modules/navigation/useNavigationMenu";
 import { getUnreadNotificationCount } from "../modules/notifications/notification.service";
 import { useAuth } from "../providers/AuthProvider";
 import { usePermissions } from "../providers/PermissionProvider";
@@ -43,19 +43,18 @@ const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
       items: [
         { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
         { label: "Ordens de Serviço", path: "/work-orders", icon: ClipboardList },
-        { label: "Mapa Operacional", path: "/operations/map", icon: MapPin },
         { label: "Despachos", path: "/operations/dispatches", icon: Send },
+        { label: "Mapa Operacional", path: "/operations/map", icon: MapPin },
         { label: "Aprovações", path: "/approvals", icon: CheckCircle, badge: 3 },
       ],
     },
     {
-      label: "LOGÍSTICA & ESTOQUE",
+      label: "CHECKLISTS & CONTA",
       items: [
-        { label: "Estoque", path: "/inventory", icon: Package },
         { label: "Checklists", path: "/operations/checklists", icon: ListChecks },
-        { label: "Pedidos de compra", path: "/purchase-orders", icon: ShoppingCart },
-        { label: "Rotas logísticas", path: "/logistics", icon: RouteIcon },
-        { label: "Relatórios", path: "/reports", icon: BarChart3 },
+        { label: "Builder de checklists", path: "/administrator/checklists", icon: ClipboardList },
+        { label: "Notificações", path: "/notifications", icon: Bell },
+        { label: "Configurações", path: "/administrator/settings", icon: Settings },
       ],
     },
   ],
@@ -124,6 +123,20 @@ const ROLE_SUBTITLE: Record<RoleKind, string> = {
   admin: "Administrador",
 };
 
+// §4.3 — a navegação mostra SOMENTE telas do MVP web (esconde estoque, compras,
+// faturamento, relatórios avançados, roteirização, platform admin, etc.).
+const MVP_NAV_PATHS = new Set<string>([
+  "/dashboard",
+  "/work-orders",
+  "/operations/dispatches",
+  "/operations/map",
+  "/operations/checklists",
+  "/approvals",
+  "/notifications",
+  "/administrator/checklists",
+  "/administrator/settings",
+]);
+
 const NAVY = "#0D1B2A";
 const ACTIVE = "#2563EB";
 const NAV_IDLE = "#9FB4CC";
@@ -164,7 +177,15 @@ export function AppShell() {
   const [unread, setUnread] = useState(0);
 
   const roleKind = useMemo(() => roleKindFor(session?.user?.roles ?? []), [session?.user?.roles]);
-  const nav = NAV_BY_ROLE[roleKind];
+  // Navegação vem de GET /api/v1/navigation/menu (mock atrás do flag; fallback local),
+  // usada para ocultar itens marcados "planned"; a allowlist MVP garante o escopo (§4.3).
+  const menu = useNavigationMenu();
+  const nav = useMemo(() => {
+    const plannedPaths = new Set(menu.items.filter((item) => item.status === "planned").map((item) => item.path));
+    return NAV_BY_ROLE[roleKind]
+      .map((group) => ({ ...group, items: group.items.filter((item) => MVP_NAV_PATHS.has(item.path) && !plannedPaths.has(item.path)) }))
+      .filter((group) => group.items.length > 0);
+  }, [roleKind, menu.items]);
 
   const notificationContext = useMemo(() => {
     if (!activeContext || !permissions.includes("notifications:read")) return null;

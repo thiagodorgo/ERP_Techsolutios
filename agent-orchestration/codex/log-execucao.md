@@ -3565,3 +3565,34 @@ final do B-120; KPIs publicados junto. Numeracao contigua ao Codex.
 - Religar Dashboard, Detalhe da OS e Aprovacao (static -> services reais); nav via
   /navigation/menu; fixes mobile cirurgicos (timeline no detalhe, auto-sync no root,
   adapter components/fields, base URL). Ver matriz em docs/api-screen-endpoints.md.
+
+## 2026-07-04 - B-121 (cont.) Detalhe da OS + Aprovacao + Dashboard + Nav MVP web
+
+> PR separada da #117 (a #117 mergeou apenas o incremento 1 / lista de OS).
+> Branch: feat/web-b121-dashboard-detail-approval-nav.
+
+### Implementado
+- Detalhe da OS (`WorkOrderDetailPage`) religado a `useWorkOrderDetail`
+  (GET /work-orders/:id + /work-orders/:id/timeline) com estados
+  loading/nao-encontrada/fallback; painel de **Aprovacao operacional** real via
+  `approval.service` (GET /approvals/pending; POST /approve|/reject) com motivo
+  obrigatorio na reprovacao e gate por permissao (RBAC).
+- Dashboard operacional (`DashboardPage`) composto de dados reais: `useWorkOrders`
+  (GET /work-orders) + `getUnreadNotificationCount` (GET /notifications/unread-count).
+  10 tiles, fila critica, status de campo, ultimos eventos e alertas derivados das
+  OS reais; sem numeros fixos.
+- Navegacao (`AppShell`) MVP-only via `useNavigationMenu` (GET /navigation/menu,
+  mock atras do flag): allowlist das telas MVP + ocultacao de itens `planned` do
+  menu; remove estoque/compras/rotas/relatorios do menu; fidelidade preservada.
+
+### Escopo e seguranca
+- Sem token/tenantId no body; contexto do ator vai nos headers do api client.
+- Apenas telas MVP; KPIs NAO alterados (C3).
+
+### Validacoes
+- Frontend: check OK, build OK, test:smoke 33/33.
+
+### Lacunas / proximo passo
+- Web: enriquecer Dashboard (dispatches/field-locations); Settings sem backend
+  (lacuna documentada, sem criar backend). Mobile: timeline no detalhe, auto-sync
+  no root, adapter components/fields, base URL por --dart-define.
