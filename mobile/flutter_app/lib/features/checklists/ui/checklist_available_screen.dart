@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/permissions/permission_resolver.dart';
+import '../../../shared/theme/erp_mobile_theme.dart';
 import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
+import '../../../shared/ui/mobile_kit.dart';
 import '../data/checklist_repository.dart';
 import '../domain/checklist_models.dart';
 
@@ -57,11 +59,22 @@ class _ChecklistAvailableScreenState
         );
 
     if (!canExecute) {
-      return const ErpScaffold(
-        title: 'Checklists',
-        body: PermissionBlockedState(
-          title: 'Acesso nao autorizado',
-          message: 'checklist_run:execute necessario para executar checklists.',
+      return ErpScaffold(
+        showAppBar: false,
+        body: Column(
+          children: [
+            MobileScreenHeader(
+              title: 'Checklists da OS',
+              onBack: () => context.go('/work-orders/${widget.workOrderId}'),
+            ),
+            const Expanded(
+              child: PermissionBlockedState(
+                title: 'Acesso nao autorizado',
+                message:
+                    'checklist_run:execute necessario para executar checklists.',
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -69,61 +82,73 @@ class _ChecklistAvailableScreenState
     final repo = ref.watch(checklistRepositoryProvider);
 
     return ErpScaffold(
-      title: 'Checklists da OS',
-      body: RefreshIndicator(
-        onRefresh: () => repo.refresh(),
-        child: FutureBuilder<void>(
-          future: repo.load(),
-          builder: (context, snapshot) {
-            final loading =
-                snapshot.connectionState == ConnectionState.waiting ||
-                repo.isPulling;
+      showAppBar: false,
+      body: Column(
+        children: [
+          MobileScreenHeader(
+            title: 'Checklists da OS',
+            onBack: () => context.go('/work-orders/${widget.workOrderId}'),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => repo.refresh(),
+              child: FutureBuilder<void>(
+                future: repo.load(),
+                builder: (context, snapshot) {
+                  final loading =
+                      snapshot.connectionState == ConnectionState.waiting ||
+                      repo.isPulling;
 
-            if (loading && repo.templates.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
-            }
+                  if (loading && repo.templates.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-            return CustomScrollView(
-              slivers: [
-                // Pull state banners
-                if (repo.isPulling)
-                  const SliverToBoxAdapter(child: LinearProgressIndicator()),
-                if (repo.lastPullError != null && !repo.isPulling)
-                  SliverToBoxAdapter(
-                    child: _ChecklistErrorBanner(
-                      message: repo.lastPullError!,
-                      onRetry: () => repo.refresh(),
-                    ),
-                  ),
-                if (repo.lastPulledAt != null && !repo.isPulling)
-                  SliverToBoxAdapter(
-                    child: _LastUpdatedBanner(at: repo.lastPulledAt!),
-                  ),
-                if (repo.lastPullError != null &&
-                    repo.hasCache &&
-                    !repo.isPulling)
-                  const SliverToBoxAdapter(child: _CacheBanner()),
+                  return CustomScrollView(
+                    slivers: [
+                      // Pull state banners
+                      if (repo.isPulling)
+                        const SliverToBoxAdapter(
+                          child: LinearProgressIndicator(),
+                        ),
+                      if (repo.lastPullError != null && !repo.isPulling)
+                        SliverToBoxAdapter(
+                          child: _ChecklistErrorBanner(
+                            message: repo.lastPullError!,
+                            onRetry: () => repo.refresh(),
+                          ),
+                        ),
+                      if (repo.lastPulledAt != null && !repo.isPulling)
+                        SliverToBoxAdapter(
+                          child: _LastUpdatedBanner(at: repo.lastPulledAt!),
+                        ),
+                      if (repo.lastPullError != null &&
+                          repo.hasCache &&
+                          !repo.isPulling)
+                        const SliverToBoxAdapter(child: _CacheBanner()),
 
-                // Content
-                if (repo.activeTemplates.isEmpty && !loading)
-                  SliverFillRemaining(
-                    child: _EmptyState(
-                      hasError: repo.lastPullError != null,
-                      onRetry: () => repo.refresh(),
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.all(16),
-                    sliver: _TemplateList(
-                      repo: repo,
-                      workOrderId: widget.workOrderId,
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
+                      // Content
+                      if (repo.activeTemplates.isEmpty && !loading)
+                        SliverFillRemaining(
+                          child: _EmptyState(
+                            hasError: repo.lastPullError != null,
+                            onRetry: () => repo.refresh(),
+                          ),
+                        )
+                      else
+                        SliverPadding(
+                          padding: const EdgeInsets.all(16),
+                          sliver: _TemplateList(
+                            repo: repo,
+                            workOrderId: widget.workOrderId,
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -201,33 +226,45 @@ class _TemplateCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     template.title,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: ErpMobileTheme.ink,
+                    ),
                   ),
                 ),
                 if (template.isRequired)
-                  OperationalStatusChip(label: 'Obrigatorio', status: 'danger'),
+                  const MobilePill(label: 'Obrigatorio', tone: PillTone.danger),
               ],
             ),
             if (template.description != null) ...[
               const SizedBox(height: 4),
               Text(
                 template.description!,
-                style: Theme.of(context).textTheme.bodySmall,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: ErpMobileTheme.inkMuted,
+                ),
               ),
             ],
             const SizedBox(height: 12),
             Row(
               children: [
                 if (status != null) ...[
-                  OperationalStatusChip(
+                  MobilePill(
                     label: status.label,
-                    status: isDone ? 'success' : 'warning',
+                    tone: isDone ? PillTone.done : PillTone.scheduled,
                   ),
                   const Spacer(),
                 ] else
                   const Spacer(),
-                FilledButton.tonal(
+                FilledButton(
                   onPressed: isDone ? null : onStart,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: ErpMobileTheme.primary,
+                    minimumSize: const Size(0, 40),
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                  ),
                   child: Text(
                     isDone
                         ? 'Concluido'
