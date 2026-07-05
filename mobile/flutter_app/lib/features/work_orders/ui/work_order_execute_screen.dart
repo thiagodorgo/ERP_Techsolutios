@@ -573,28 +573,122 @@ class _EvidenceSection extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onAdd;
 
+  // Mapeia o estado real da evidência para o pill/faixa semânticos do
+  // protótipo (evidencias.png): Armazenado verde, Pendente sync âmbar,
+  // Salvo no aparelho azul, Falha/Conflito vermelho.
+  (String, PillTone, Color) _stateFor(WorkOrderEvidence e) {
+    if (e.uploadStatus == SyncStatus.synced) {
+      return ('Armazenado', PillTone.done, ErpMobileTheme.success);
+    }
+    return switch (e.syncStatus) {
+      SyncStatus.synced => ('Enviando', PillTone.purple, ErpMobileTheme.purple),
+      SyncStatus.failed => (
+        'Falha no envio',
+        PillTone.danger,
+        ErpMobileTheme.danger,
+      ),
+      SyncStatus.conflict => (
+        'Conflito',
+        PillTone.danger,
+        ErpMobileTheme.danger,
+      ),
+      SyncStatus.local => (
+        'Salvo no aparelho',
+        PillTone.info,
+        ErpMobileTheme.info,
+      ),
+      _ => ('Pendente sync', PillTone.scheduled, ErpMobileTheme.warning),
+    };
+  }
+
+  String _sizeLabel(int bytes) {
+    if (bytes >= 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    if (bytes >= 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    return '$bytes B';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final e in evidences)
-          Card(
-            child: ListTile(
-              leading: Icon(
-                e.captureSource == 'camera'
-                    ? Icons.camera_alt_outlined
-                    : Icons.photo_library_outlined,
-              ),
-              title: Text(e.fileName),
-              subtitle: Text(
-                e.captureSource == 'camera' ? 'Camera' : 'Galeria',
-              ),
-              trailing: const MobilePill(
-                label: 'Pendente sync',
-                tone: PillTone.scheduled,
-              ),
-            ),
+          Builder(
+            builder: (context) {
+              final (label, tone, accent) = _stateFor(e);
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: ErpMobileTheme.cardBorder),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(width: 4, color: accent),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF1F5F9),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  e.captureSource == 'camera'
+                                      ? Icons.camera_alt_outlined
+                                      : Icons.photo_library_outlined,
+                                  size: 17,
+                                  color: const Color(0xFF475569),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      e.fileName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: ErpMobileTheme.ink,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${e.captureSource == 'camera' ? 'Camera' : 'Galeria'}'
+                                      ' · ${_sizeLabel(e.sizeBytes)}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: ErpMobileTheme.inkMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              MobilePill(label: label, tone: tone),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         if (evidences.isNotEmpty) const SizedBox(height: 8),
         SizedBox(
