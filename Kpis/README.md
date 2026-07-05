@@ -35,6 +35,35 @@ Regras obrigatorias:
 - Mexeu nos dois: atualizar os dois conjuntos.
 - Se existir `index.html`: atualizar tambem o HTML.
 
+## B-124 refletido na raiz
+
+- B-124 — Dashboard web enriquecido com despachos e localizacoes (publicacao
+  B-124K pos-avaliacao humana). **Web-only**: nenhum arquivo mobile/backend
+  alterado.
+- O Dashboard web (`/dashboard`) passou a compor 4 fontes reais em paralelo:
+  `GET /work-orders` + `GET /operations/dispatches` +
+  `GET /field-locations/latest` + `GET /notifications/unread-count`
+  (+ `GET /approvals/pending`, com `work_order_id` opcional no backend).
+- 8 KPIs derivados dos dados (nunca fixos); fila critica combinada com
+  ordenacao por criticidade (SLA vencido &gt; prioridade &gt; operador sem
+  sinal &gt; aprovacao pendente &gt; OS sem operador) e acao contextual por
+  item; status de campo real (regra stale de 15 min reutilizada do
+  `operations-map.adapter`); despachos ativos com status desconhecido
+  tolerado; alertas acionaveis; eventos derivados das listas (sem timeline por
+  OS). Fallback por fonte com rotulos Dados demonstrativos/Fallback local.
+- Flutter tests: 764/764 (inalterado; B-124 e web-only). Backend: inalterado.
+- Frontend smoke: **44/44** (era 33/33; +10 unit do `dashboard.adapter` + 1
+  render do dashboard na PR #125); frontend check e build OK.
+- MVP demo: 96% e MVP vendavel: 78% — mantidos nos valores oficiais publicados
+  (sem decisao humana explicita para alterar no B-124; B-123 fechou fidelidade
+  mobile de OS e B-124 fechou o dashboard web, mas os percentuais seguem
+  oficiais ate revisao).
+- Blocos entregues: 49 (regra de contagem: 48 ate B-123 + B-124).
+
+Metadados: PR #125 (merge `dcfa25063111532f8cc1c77d7af8ec4519406bb0`, head
+`6605b13630e3f29f98670aabf9ee32e274f40d47`), status
+`published_after_human_approval`.
+
 ## B-123 refletido na raiz
 
 - B-123 — Fidelidade visual do fluxo de OS mobile (publicacao B-123K).

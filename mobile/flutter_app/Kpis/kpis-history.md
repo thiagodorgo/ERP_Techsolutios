@@ -5,6 +5,48 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## B-124 — 2026-07-05
+
+**Dashboard web enriquecido com despachos e localizacoes (publicacao B-124K) — web-only**
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 764 / 764 (inalterado; B-124 e web-only) |
+| Frontend Smoke Tests | 44 / 44 (era 33 / 33) |
+| Backend Tests | 15 / 15 (inalterado) |
+| Mobile Backend Contracts | 18 / 18 (inalterado) |
+| Mobile + Core SaaS Contracts | 21 / 21 (inalterado) |
+| flutter analyze | 0 issues (inalterado) |
+| Modulos Flutter Prontos | 17 / 17 (inalterado) |
+| MVP Demo Readiness (est.) | 96% (mantido; sem decisao humana) |
+| MVP Vendavel (est.) | 78% (mantido; sem decisao humana) |
+| Blocos Entregues | 49 |
+
+**Novidades:** o Dashboard web (`/dashboard`) passou a compor 4 fontes reais em
+paralelo — `GET /work-orders` + `GET /operations/dispatches` +
+`GET /field-locations/latest` + `GET /notifications/unread-count`
+(+ `GET /approvals/pending`) — com 8 KPIs derivados, fila critica combinada
+(SLA vencido > prioridade > operador sem sinal > aprovacao pendente > OS sem
+operador), despachos ativos (status desconhecido tolerado), status de campo
+real (regra stale de 15 min reutilizada do `operations-map.adapter`), alertas
+acionaveis e eventos derivados das listas (sem timeline por OS). Fallback por
+fonte com rotulos `Dados demonstrativos`/`Fallback local`.
+
+**Nota (KPIs duplos):** B-124 e **web-only** — nenhum arquivo mobile/backend
+alterado. As metricas Flutter/mobile permanecem nos valores oficiais do B-123.
+`version` e `release.block` foram travados em **B-124** neste conjunto mobile
+apenas para manter `(version, block, status)` identicos entre
+`Kpis/` e `mobile/flutter_app/Kpis/` (politica de KPIs duplos + teste-guarda).
+
+**Metadados:** PR #125 (merge `dcfa25063111532f8cc1c77d7af8ec4519406bb0`, head
+`6605b13630e3f29f98670aabf9ee32e274f40d47`), status
+`published_after_human_approval`.
+
+**Percentuais MVP:** mantidos em 96%/78% (oficiais, estimados). Sem decisao
+humana explicita para alterar no B-124.
+
+---
+
 ## B-123 — 2026-07-05
 
 **Fidelidade visual do fluxo de OS mobile (publicacao B-123K)**
