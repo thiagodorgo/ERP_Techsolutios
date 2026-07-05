@@ -3625,3 +3625,45 @@ final do B-120; KPIs publicados junto. Numeracao contigua ao Codex.
 - Mobile: flutter analyze limpo; flutter test 764/764 (10 testes novos em
   test/features/b121_mobile_hardening_test.dart). Frontend/backend nao tocados.
 - KPIs NAO alterados (C3).
+
+## 2026-07-05 - B-122 Fidelidade visual ao prototipo aprovado (Perfil do operador)
+
+> Branch: fix/b122-visual-consistency-approved-prototype.
+
+### Problema identificado
+- O Perfil do operador exibia andaime tecnico cru: "Modo de autenticacao",
+  "Token expira", lista crua de permissoes, modulos habilitados e tenants
+  disponiveis — fora do padrao visual aprovado (screen-refs/mobile/perfil.png)
+  e violando a regra de nao expor dado tecnico na UI.
+
+### Auditoria realizada
+- Web (11 telas MVP + shell): dashboard, work-orders (lista/nova/detalhe),
+  despachos, mapa, checklists ops/run, notificacoes, admin checklists e
+  settings ja estao no padrao aprovado (re-skins §11 + integracoes B-121);
+  grep de violacoes (token/tenantId/permissoes cruas exibidas) sem ocorrencias
+  — hits sao apenas plumbing interno de API. **Nao existe rota de Perfil no
+  web MVP** (as 16 telas congeladas nao incluem perfil); lacuna documentada,
+  sem criar tela nova fora do MVP.
+- Mobile: login, selecao de organizacao e home ja fieis (Fases 1/2a). O
+  ofensor real era o **ProfileScreen** — corrigido neste bloco. Telas do fluxo
+  de OS (lista/detalhe/execucao/checklists/run/sync) seguem em Material stock
+  — fora do padrao bespoke, registradas como lacuna para as proximas fases de
+  fidelidade (sem reescrita ampla neste bloco).
+
+### Implementado
+- `profile_screen.dart` recriado fiel ao perfil.png: header central "Perfil",
+  hero com avatar/nome/e-mail e "Papel · Organizacao" (rotulo PT-BR, nunca
+  claim tecnica), secoes **Conta e organizacao** (Organizacao, Papel, Trocar
+  de organizacao -> /tenant-select), **Aparencia** (cards Sistema/Claro/
+  Escuro/Contraste, AppThemeMode preservado), **Seguranca e sessao** (Sessao
+  ativa, Conectividade Online/Offline, Ultimo sync) e botao **Sair**.
+- Removidos do Perfil: modo de autenticacao, expiracao de token, permissoes
+  cruas, modulos, tenants, IDs internos. Diagnostico tecnico permanece na tela
+  Diagnostico (dev-only). Logout, RBAC, tema e sessao expirada preservados.
+- Testes b091 realinhados: t07 exige rotulo PT-BR e proibe claim crua; t09
+  vira teste negativo (sem modo de autenticacao); t13 robustecido.
+
+### Validacoes
+- flutter analyze limpo; flutter test 764/764. Frontend nao tocado (auditoria
+  sem correcoes necessarias); backend nao tocado.
+- KPIs NAO alterados (C3).
