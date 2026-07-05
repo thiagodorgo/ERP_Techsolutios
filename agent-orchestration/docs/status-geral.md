@@ -3415,3 +3415,28 @@ Lacunas remanescentes: religar Dashboard/Detalhe da OS/Aprovacao web e a nav
 components/fields, base URL configuravel). Settings web sem backend real (lacuna).
 
 Validacao local B-121: frontend check/build/test:smoke 33/33. KPIs nao alterados.
+
+---
+
+## Atualizacao 2026-07-04 - B-121 (cont.) Dashboard + Detalhe OS + Aprovacao + Nav MVP
+
+Segundo PR do bloco B-121 (a #117 mergeou apenas o incremento 1 / lista de OS).
+Branch: `feat/web-b121-dashboard-detail-approval-nav`.
+
+Entregue:
+- **Detalhe da OS** real (`useWorkOrderDetail` -> GET /work-orders/:id + /timeline)
+  com **Aprovacao operacional** real no proprio detalhe (`approval.service`:
+  GET /approvals/pending; POST /approve|/reject; motivo obrigatorio na reprovacao;
+  RBAC).
+- **Dashboard** composto de dados reais (GET /work-orders + /notifications/unread-count):
+  tiles, fila critica, status de campo, eventos e alertas derivados das OS reais.
+- **Navegacao MVP-only** via GET /navigation/menu (mock atras do flag): allowlist
+  das telas MVP + ocultacao de itens `planned`; some estoque/compras/rotas/relatorios
+  do menu; fidelidade preservada.
+
+Lacunas remanescentes: enriquecer Dashboard com /operations/dispatches +
+/field-locations/latest; Settings web sem backend real (lacuna, sem criar backend);
+fixes mobile (timeline no detalhe, auto-sync no root, adapter components/fields,
+base URL configuravel).
+
+Validacao local: frontend check OK, build OK, test:smoke 33/33. KPIs nao alterados (C3).
