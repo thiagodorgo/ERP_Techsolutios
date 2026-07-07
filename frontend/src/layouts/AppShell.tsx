@@ -5,6 +5,7 @@ import {
   CheckCircle,
   ChevronDown,
   ClipboardList,
+  Contact,
   CreditCard,
   FileText,
   LayoutDashboard,
@@ -18,8 +19,11 @@ import {
   Send,
   Settings,
   ShieldCheck,
+  Truck,
   Users,
+  UsersRound,
   Wallet,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -35,6 +39,17 @@ type NavItem = { label: string; path: string; icon: LucideIcon; badge?: number }
 type NavGroup = { label: string; items: readonly NavItem[] };
 type RoleKind = "finance" | "dispatcher" | "admin" | "gestor";
 
+// Grupo de Cadastros — registros operacionais (clientes, viaturas, equipes, serviços).
+const CADASTROS_GROUP: NavGroup = {
+  label: "CADASTROS",
+  items: [
+    { label: "Clientes", path: "/cadastros/clientes", icon: Contact },
+    { label: "Viaturas", path: "/cadastros/viaturas", icon: Truck },
+    { label: "Equipes", path: "/cadastros/equipes", icon: UsersRound },
+    { label: "Serviços", path: "/cadastros/servicos", icon: Wrench },
+  ],
+};
+
 // Navegação por papel — espelha `nav per role` do protótipo (ERP Web.dc.html).
 const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
   gestor: [
@@ -48,6 +63,7 @@ const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
         { label: "Aprovações", path: "/approvals", icon: CheckCircle, badge: 3 },
       ],
     },
+    CADASTROS_GROUP,
     {
       label: "CHECKLISTS & CONTA",
       items: [
@@ -69,6 +85,7 @@ const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
         { label: "Técnicos · Disponib.", path: "/field-operators", icon: Users },
       ],
     },
+    CADASTROS_GROUP,
     {
       label: "SUPORTE",
       items: [
@@ -106,6 +123,7 @@ const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
         { label: "Auditoria", path: "/audit", icon: ShieldCheck },
       ],
     },
+    CADASTROS_GROUP,
     {
       label: "CONTA",
       items: [
@@ -131,6 +149,10 @@ const MVP_NAV_PATHS = new Set<string>([
   "/operations/dispatches",
   "/operations/map",
   "/operations/checklists",
+  "/cadastros/clientes",
+  "/cadastros/viaturas",
+  "/cadastros/equipes",
+  "/cadastros/servicos",
   "/approvals",
   "/notifications",
   "/administrator/checklists",
