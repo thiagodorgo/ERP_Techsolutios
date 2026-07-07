@@ -127,14 +127,22 @@ export function getMockWorkOrdersData(source: WorkOrdersData["source"] = "mock",
 }
 
 export function getMockWorkOrderDetail(workOrderId: string): WorkOrderDetail {
+  const base = mockWorkOrderItems.find((item) => item.id === workOrderId) ?? mockWorkOrderItems[0];
   return {
-    ...(mockWorkOrderItems.find((item) => item.id === workOrderId) ?? mockWorkOrderItems[0]),
+    ...base,
     customerDocument: "00.000.000/0001-00",
     checklistId: "chk_towing_collection",
     startedAt: "2026-06-09T12:20:00.000Z",
     arrivedAt: "2026-06-09T12:50:00.000Z",
     createdBy: "usr-ops-01",
     updatedBy: "usr-ops-01",
+    // C2: vínculos resolvidos com os Cadastros (ilustrativo em modo mock/fallback).
+    links: {
+      customer: { id: "11111111-1111-4111-8111-0000000000c1", name: base.customerName ?? "Cliente vinculado", isActive: true },
+      vehicle: { id: "11111111-1111-4111-8111-0000000000v1", plate: "ABC-1D23", model: "Iveco Daily 35S14" },
+      team: { id: "11111111-1111-4111-8111-0000000000t1", name: "Equipe Guincho Norte" },
+      serviceCatalog: { id: "11111111-1111-4111-8111-0000000000s1", name: "Reboque leve até 20 km", basePrice: 320 },
+    },
   };
 }
 

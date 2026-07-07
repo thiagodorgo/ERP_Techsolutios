@@ -1,9 +1,14 @@
 import type {
   WorkOrderDetail,
   WorkOrderEvent,
+  WorkOrderLinkedCustomer,
+  WorkOrderLinkedServiceCatalog,
+  WorkOrderLinkedTeam,
+  WorkOrderLinkedVehicle,
   WorkOrderListItem,
   WorkOrderPriority,
   WorkOrderRegistryLinks,
+  WorkOrderRegistryLinksDetail,
   WorkOrdersData,
   WorkOrdersFilters,
   WorkOrdersPagination,
@@ -212,7 +217,59 @@ function adaptWorkOrderItem(input: unknown): WorkOrderDetail | null {
     updatedBy: readNullableString(item, ["updatedBy", "updated_by"]),
     createdAt,
     updatedAt: readString(item, ["updatedAt", "updated_at"]),
+    links: adaptWorkOrderRegistryLinks(item.links ?? item.registryLinks ?? item.registry_links),
   };
+}
+
+// C2 (Detalhe de OS enriquecido): interpreta o objeto `links` do detalhe.
+// Defensivo: tolera camel/snake, aceita ausência (null) e resolve cada vínculo
+// só quando traz um identificador humano (nome/placa) — nunca expõe UUID cru.
+export function adaptWorkOrderRegistryLinks(input: unknown): WorkOrderRegistryLinksDetail | null {
+  const links = readRecord(input);
+  if (!links) return null;
+
+  return {
+    customer: adaptLinkedCustomer(links.customer),
+    vehicle: adaptLinkedVehicle(links.vehicle),
+    team: adaptLinkedTeam(links.team),
+    serviceCatalog: adaptLinkedServiceCatalog(links.serviceCatalog ?? links.service_catalog),
+  };
+}
+
+function adaptLinkedCustomer(input: unknown): WorkOrderLinkedCustomer | null {
+  const record = readRecord(input);
+  if (!record) return null;
+  const id = readString(record, ["id"]);
+  const name = readString(record, ["name"]);
+  if (!id || !name) return null;
+  return { id, name, isActive: readBoolean(record, ["isActive", "is_active"]) ?? true };
+}
+
+function adaptLinkedVehicle(input: unknown): WorkOrderLinkedVehicle | null {
+  const record = readRecord(input);
+  if (!record) return null;
+  const id = readString(record, ["id"]);
+  const plate = readString(record, ["plate"]);
+  if (!id || !plate) return null;
+  return { id, plate, model: readNullableString(record, ["model"]) };
+}
+
+function adaptLinkedTeam(input: unknown): WorkOrderLinkedTeam | null {
+  const record = readRecord(input);
+  if (!record) return null;
+  const id = readString(record, ["id"]);
+  const name = readString(record, ["name"]);
+  if (!id || !name) return null;
+  return { id, name };
+}
+
+function adaptLinkedServiceCatalog(input: unknown): WorkOrderLinkedServiceCatalog | null {
+  const record = readRecord(input);
+  if (!record) return null;
+  const id = readString(record, ["id"]);
+  const name = readString(record, ["name"]);
+  if (!id || !name) return null;
+  return { id, name, basePrice: readNullableNumber(record, ["basePrice", "base_price"]) };
 }
 
 function adaptWorkOrderEvent(input: unknown): WorkOrderEvent | null {
@@ -280,6 +337,16 @@ function readNumber(input: Record<string, unknown> | undefined, keys: readonly s
 
 function readNullableNumber(input: Record<string, unknown>, keys: readonly string[]): number | null {
   return readNumber(input, keys) ?? null;
+}
+
+function readBoolean(input: Record<string, unknown>, keys: readonly string[]): boolean | undefined {
+  for (const key of keys) {
+    const value = input[key];
+    if (typeof value === "boolean") return value;
+    if (value === "true") return true;
+    if (value === "false") return false;
+  }
+  return undefined;
 }
 
 function normalizeStatus(value: string | undefined): WorkOrderStatus | null {
