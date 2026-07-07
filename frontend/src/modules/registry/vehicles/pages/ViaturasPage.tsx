@@ -2,19 +2,28 @@ import { Ban, Pencil, Plus, RefreshCw, RotateCcw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
-import { Alert, Button, Card, Chip, EmptyState, SearchBar, Skeleton, Table } from "../../../../components/ui";
+import type { DenseColumn } from "../../../../components/dense-list";
+import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../../components/dense-list";
+import { Alert, Button, Card, Chip, EmptyState, SearchBar, Skeleton } from "../../../../components/ui";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
 import { VehicleFormModal } from "../components/VehicleFormModal";
-import { filterVehicles, formatVehicleYear, getVehicleOperationalStatusLabel, getVehicleStatusLabel, getVehicleStatusTone } from "../vehicles.adapter";
+import {
+  filterVehicles,
+  formatVehicleDate,
+  formatVehicleYear,
+  getVehicleOperationalStatusLabel,
+  getVehicleStatusLabel,
+  getVehicleStatusTone,
+} from "../vehicles.adapter";
 import { updateVehicle } from "../vehicles.service";
 import type { Vehicle, VehiclesFilters, VehiclesStatusFilter } from "../vehicles.types";
 import { useVehicles } from "../useVehicles";
 
 // Lista de "Viaturas" (cadastro) — ligada ao endpoint real /api/v1/vehicles.
-// Busca full-list uma vez (filtros estáveis) e filtra em memória para evitar refresh loop.
-const STABLE_FILTERS: VehiclesFilters = { search: "", isActive: "all" };
+// Carrega a janela de trabalho (limit) uma vez; busca/ordenação/paginação são client-side.
+const STABLE_FILTERS: VehiclesFilters = { search: "", isActive: "all", limit: DENSE_LIST_FETCH_LIMIT };
 
 const STATUS_TABS: readonly { value: VehiclesStatusFilter; label: string }[] = [
   { value: "all", label: "Todas" },
@@ -29,10 +38,8 @@ export function ViaturasPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
-  const { items, loading, error, refresh } = useVehicles(STABLE_FILTERS);
+  const { items, pagination, loading, error, refresh } = useVehicles(STABLE_FILTERS);
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<VehiclesStatusFilter>("all");
   const [editing, setEditing] = useState<Vehicle | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -51,9 +58,6 @@ export function ViaturasPage() {
     }),
     [activeContext, session?.accessToken],
   );
-
-  const visible = useMemo(() => filterVehicles(items, { search, isActive: statusFilter }), [items, search, statusFilter]);
-  const hasActiveFilters = search.trim().length > 0 || statusFilter !== "all";
 
   function openCreate() {
     setEditing(null);
@@ -83,21 +87,37 @@ export function ViaturasPage() {
     }
   }
 
-  const columns = [
-    { key: "plate", header: "Placa", render: (vehicle: Vehicle) => <strong>{vehicle.plate}</strong> },
-    { key: "model", header: "Modelo", render: (vehicle: Vehicle) => vehicle.model },
-    { key: "type", header: "Tipo", render: (vehicle: Vehicle) => vehicle.type ?? "—" },
-    { key: "year", header: "Ano", render: (vehicle: Vehicle) => formatVehicleYear(vehicle.year) },
-    { key: "opstatus", header: "Status", render: (vehicle: Vehicle) => getVehicleOperationalStatusLabel(vehicle.status) },
+  const columns: DenseColumn<Vehicle>[] = [
+    { key: "plate", header: "Placa", sortable: true, sortValue: (vehicle) => vehicle.plate, render: (vehicle) => <strong>{vehicle.plate}</strong> },
+    { key: "model", header: "Modelo", sortable: true, sortValue: (vehicle) => vehicle.model, render: (vehicle) => vehicle.model },
+    { key: "type", header: "Tipo", sortable: true, sortValue: (vehicle) => vehicle.type, render: (vehicle) => vehicle.type ?? "—" },
+    { key: "year", header: "Ano", sortable: true, align: "right", tabular: true, sortValue: (vehicle) => vehicle.year, render: (vehicle) => formatVehicleYear(vehicle.year) },
+    {
+      key: "opstatus",
+      header: "Status",
+      sortable: true,
+      sortValue: (vehicle) => getVehicleOperationalStatusLabel(vehicle.status),
+      render: (vehicle) => getVehicleOperationalStatusLabel(vehicle.status),
+    },
     {
       key: "status",
       header: "Situação",
-      render: (vehicle: Vehicle) => <Chip tone={getVehicleStatusTone(vehicle.isActive)}>{getVehicleStatusLabel(vehicle.isActive)}</Chip>,
+      sortable: true,
+      sortValue: (vehicle) => getVehicleStatusLabel(vehicle.isActive),
+      render: (vehicle) => <Chip tone={getVehicleStatusTone(vehicle.isActive)}>{getVehicleStatusLabel(vehicle.isActive)}</Chip>,
+    },
+    {
+      key: "createdAt",
+      header: "Cadastrada em",
+      sortable: true,
+      tabular: true,
+      sortValue: (vehicle) => vehicle.createdAt,
+      render: (vehicle) => formatVehicleDate(vehicle.createdAt),
     },
     {
       key: "actions",
       header: "Ações",
-      render: (vehicle: Vehicle) =>
+      render: (vehicle) =>
         canUpdate ? (
           <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
             <Button type="button" size="sm" variant="secondary" aria-label={`Editar ${vehicle.plate}`} onClick={() => openEdit(vehicle)}>
@@ -121,6 +141,8 @@ export function ViaturasPage() {
     },
   ];
 
+  const dense = useDenseList<Vehicle>({ items, columns, filter: filterVehicles, defaultSort: { key: "plate", dir: "asc" } });
+
   return (
     <section className="page-stack work-orders-page">
       <header className="page-heading page-heading--row">
@@ -130,7 +152,7 @@ export function ViaturasPage() {
           <p>Cadastro central da frota da organização — placa, modelo, tipo e situação operacional.</p>
         </div>
         <div className="work-orders-actions">
-          <SearchBar value={search} onChange={setSearch} placeholder="Buscar por placa, modelo ou tipo…" />
+          <SearchBar value={dense.search} onChange={dense.setSearch} placeholder="Buscar por placa, modelo ou tipo…" />
           <Button type="button" variant="secondary" onClick={() => void refresh()} disabled={loading}>
             <RefreshCw size={16} aria-hidden /> Atualizar
           </Button>
@@ -160,9 +182,9 @@ export function ViaturasPage() {
             key={tab.value}
             type="button"
             size="sm"
-            variant={statusFilter === tab.value ? "primary" : "ghost"}
-            aria-pressed={statusFilter === tab.value}
-            onClick={() => setStatusFilter(tab.value)}
+            variant={dense.status === tab.value ? "primary" : "ghost"}
+            aria-pressed={dense.status === tab.value}
+            onClick={() => dense.setStatus(tab.value)}
           >
             {tab.label}
           </Button>
@@ -174,17 +196,40 @@ export function ViaturasPage() {
         ) : null}
       </div>
 
-      <Card title="Viaturas cadastradas" action={<span style={countStyle}>{visible.length} registro(s)</span>}>
+      <Card
+        title="Viaturas cadastradas"
+        action={
+          <span style={countStyle}>
+            {dense.total} registro(s)
+            {pagination.total > items.length ? ` · janela: primeiros ${items.length} de ${pagination.total}` : ""}
+          </span>
+        }
+      >
         {loading && items.length === 0 ? <Skeleton lines={5} /> : null}
 
-        {!loading && !error && visible.length === 0 ? (
+        {!loading && !error && dense.total === 0 ? (
           <EmptyState
             title="Nenhuma viatura cadastrada"
-            detail={hasActiveFilters ? "Ajuste a busca ou o filtro de situação para encontrar viaturas." : "Cadastre a primeira viatura para começar a operar."}
+            detail={dense.hasActiveFilters ? "Ajuste a busca ou o filtro de situação para encontrar viaturas." : "Cadastre a primeira viatura para começar a operar."}
           />
         ) : null}
 
-        {!error && visible.length > 0 ? <Table rows={visible} keyForRow={(vehicle) => vehicle.id} columns={columns} /> : null}
+        {!error && dense.total > 0 ? (
+          <>
+            <DenseTable rows={dense.visibleItems} keyForRow={(vehicle) => vehicle.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseListPagination
+              page={dense.page}
+              pageSize={dense.pageSize}
+              pageSizeOptions={dense.pageSizeOptions}
+              total={dense.total}
+              totalPages={dense.totalPages}
+              pageStart={dense.pageStart}
+              pageEnd={dense.pageEnd}
+              onPageChange={dense.setPage}
+              onPageSizeChange={dense.setPageSize}
+            />
+          </>
+        ) : null}
       </Card>
 
       {modalOpen ? (

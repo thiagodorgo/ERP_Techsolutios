@@ -63,5 +63,6 @@ function buildQuery(params: Partial<ServiceCatalogFilters>): string {
   if (search) query.set("search", search);
   if (params.isActive === "active") query.set("is_active", "true");
   if (params.isActive === "inactive") query.set("is_active", "false");
+  if (params.limit && Number.isFinite(params.limit)) query.set("limit", String(params.limit));
   return query.size ? `?${query.toString()}` : "";
 }
