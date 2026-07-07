@@ -1,6 +1,12 @@
-import type { ListWorkOrdersResult, WorkOrder, WorkOrderEvent } from "./work-order.types.js";
+import type { ListWorkOrdersResult, WorkOrder, WorkOrderEvent, WorkOrderLinks } from "./work-order.types.js";
 
-export function toWorkOrderDto(workOrder: WorkOrder) {
+/**
+ * Serializes a work order. On the single-detail path (`GET /:id`) the caller
+ * passes the resolved cadastro summaries, which are exposed under `links`. Every
+ * other path (list, create, update, status, assign, mobile sync) omits the
+ * argument, so the response keeps its pre-C2 shape with no `links` key.
+ */
+export function toWorkOrderDto(workOrder: WorkOrder, links?: WorkOrderLinks) {
   return {
     id: workOrder.id,
     code: workOrder.code,
@@ -34,6 +40,7 @@ export function toWorkOrderDto(workOrder: WorkOrder) {
     updatedBy: workOrder.updatedBy,
     createdAt: workOrder.createdAt.toISOString(),
     updatedAt: workOrder.updatedAt.toISOString(),
+    ...(links === undefined ? {} : { links }),
   };
 }
 

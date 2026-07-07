@@ -46,10 +46,10 @@ export class WorkOrderController {
 
   async get(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
-    const workOrder = await service.get(actor, readRouteParam(request.params.workOrderId));
+    const { workOrder, links } = await service.getWithLinks(actor, readRouteParam(request.params.workOrderId));
 
     return {
-      data: toWorkOrderDto(workOrder),
+      data: toWorkOrderDto(workOrder, links),
     };
   }
 
