@@ -56,6 +56,10 @@ export type WorkOrder = {
   readonly assignedOperatorId?: string;
   readonly assignedUserId?: string;
   readonly checklistId?: string;
+  readonly customerId?: string;
+  readonly vehicleId?: string;
+  readonly teamId?: string;
+  readonly serviceCatalogId?: string;
   readonly scheduledFor?: Date;
   readonly startedAt?: Date;
   readonly arrivedAt?: Date;
