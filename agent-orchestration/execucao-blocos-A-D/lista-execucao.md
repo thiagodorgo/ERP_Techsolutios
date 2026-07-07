@@ -15,7 +15,7 @@
 - [x] A5 Menu Cadastros (nav RBAC — `AppShell` + `tenantNavigation`) — PR #132, merge `9461e1f`, gates 3/3 CI verdes, 5 testes de navegação, skills: ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
 
 ## Bloco B — OS integrada
-- [ ] B1 OS integrada + snapshot (FKs opcionais em `WorkOrder` + cópia de snapshot)
+- [x] B1 OS integrada + snapshot (FKs opcionais em `WorkOrder` + cópia de snapshot) — PR #133, merge `842cd58`, gates 3/3 CI verdes, testes 10 (snapshot) + regressão WO+FD 6/6 + 3 (web), skills: saas-multi-tenant + ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
 - [ ] B2 Cadastro rápido via modal na OS
 
 ## Bloco C — Densidade & Dashboard
