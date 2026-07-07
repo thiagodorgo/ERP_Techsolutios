@@ -47,3 +47,21 @@
 - impacto: cada migration aditiva desta rodada documenta o rollback como `DROP TABLE ...` manual, testado no
   `erp-postgres` local (aplicar migration -> validar -> DROP -> confirmar). Ordem respeita FKs (junçoes antes).
 - status: aberto (procedimento padrao da rodada)
+
+## P-008 - Fallback mock-first do modulo work-orders permanece fabricado (2026-07-07)
+
+- descricao: o modulo `work-orders` e pre-existente e mock-first; seu fallback de API-down (`getMockWorkOrderDetail`)
+  ja fabricava a OS inteira. C2 apenas estendeu esse mock local com o objeto `links`. D-007 (sem dados fabricados)
+  mira as telas NOVAS de Cadastros (A1-A4), nao `frontend/src/mocks/`; o mock do work-orders e module-local e fora
+  desse escopo.
+- impacto: em modo mock/offline o Detalhe de OS mostra vinculos ilustrativos; o endpoint real continua primario.
+  Os testes constroem o detail diretamente (nao dependem do mock).
+- status: aberto (aceito por convencao do modulo; reabrir se o usuario quiser zerar o fallback do work-orders)
+
+## P-009 - Contraste de texto muted (#94A3B8) abaixo de 4.5:1 no DS (2026-07-07)
+
+- descricao: token muted DS-wide (#94A3B8 sobre branco ~2.6:1) e usado tambem como CONTEUDO (ex.: afordancias
+  "Sem ... vinculado" no Detalhe de OS, datas de timeline, helpers). Abaixo de WCAG AA para texto de conteudo.
+- impacto: a11y (§11 contraste 4.5:1). DS esta congelado -> correcao e follow-up transversal do DS (trocar por
+  ~#64748B nos textos de conteudo), fora do escopo de C2.
+- status: aberto (proposta de a11y do DS)
