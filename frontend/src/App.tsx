@@ -58,6 +58,7 @@ const WorkOrdersPage = lazy(() =>
 const ClientesPage = lazy(() => import("./modules/registry/customers/pages/ClientesPage").then((m) => ({ default: m.ClientesPage })));
 const ViaturasPage = lazy(() => import("./modules/registry/vehicles/pages/ViaturasPage").then((m) => ({ default: m.ViaturasPage })));
 const EquipesPage = lazy(() => import("./modules/registry/teams/pages/EquipesPage").then((m) => ({ default: m.EquipesPage })));
+const ServicosPage = lazy(() => import("./modules/registry/service-catalog/pages/ServicosPage").then((m) => ({ default: m.ServicosPage })));
 const EstoquePage = lazy(() => import("./modules/inventory/pages/EstoquePage").then((m) => ({ default: m.EstoquePage })));
 const EstoqueDetailPage = lazy(() => import("./modules/inventory/pages/EstoqueDetailPage").then((m) => ({ default: m.EstoqueDetailPage })));
 const PedidosPage = lazy(() => import("./modules/purchase-orders/pages/PedidosPage").then((m) => ({ default: m.PedidosPage })));
@@ -272,6 +273,14 @@ export function App() {
               element={
                 <PermissionGuard permissions={["teams:read"]}>
                   <EquipesPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/cadastros/servicos"
+              element={
+                <PermissionGuard permissions={["service_catalog:read"]}>
+                  <ServicosPage />
                 </PermissionGuard>
               }
             />
