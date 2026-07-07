@@ -12,7 +12,7 @@
 - [x] A2 Viatura `Vehicle` `/api/v1/vehicles` — PR #129, merge `3ee4af3`, gates 3/3 CI verdes, testes 13 (backend) +7 (web), skills: saas-multi-tenant + ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
 - [x] A3 Equipe `Team`+`TeamMember` `/api/v1/teams` — PR #130, merge `9b9ab52`, gates 3/3 CI verdes, testes 18 (backend) +7 (web), skills: saas-multi-tenant + ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
 - [x] A4 Catálogo de Serviço `ServiceCatalog` `/api/v1/service-catalog` — PR #131, merge `67e47ee`, gates 3/3 CI verdes, testes 15 (backend) +7 (web), skills: saas-multi-tenant + ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
-- [ ] A5 Menu Cadastros (nav RBAC — `AppShell` + `tenantNavigation`)
+- [x] A5 Menu Cadastros (nav RBAC — `AppShell` + `tenantNavigation`) — PR #132, merge `9461e1f`, gates 3/3 CI verdes, 5 testes de navegação, skills: ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
 
 ## Bloco B — OS integrada
 - [ ] B1 OS integrada + snapshot (FKs opcionais em `WorkOrder` + cópia de snapshot)
