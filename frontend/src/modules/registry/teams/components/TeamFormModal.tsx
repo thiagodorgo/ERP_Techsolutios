@@ -46,7 +46,9 @@ export function TeamFormModal({
   readonly context: TeamsApiContext;
   readonly users: readonly TenantUser[];
   readonly onClose: () => void;
-  readonly onSaved: () => void;
+  // B2: devolve o cadastro salvo para quem abriu o modal (ex.: seleção rápida na OS).
+  // Callers legados (`() => void`) seguem válidos — o argumento extra é ignorado.
+  readonly onSaved: (created?: Team) => void;
   readonly onMembersChanged?: () => void;
 }) {
   const isEdit = Boolean(team);
@@ -125,11 +127,12 @@ export function TeamFormModal({
     setSaving(true);
     try {
       if (isEdit && team) {
-        await updateTeam(context, team.id, { ...payload, isActive });
+        const updated = await updateTeam(context, team.id, { ...payload, isActive });
+        onSaved(updated ?? undefined);
       } else {
-        await createTeam(context, payload);
+        const created = await createTeam(context, payload);
+        onSaved(created ?? undefined);
       }
-      onSaved();
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "Não foi possível salvar a equipe.");
     } finally {

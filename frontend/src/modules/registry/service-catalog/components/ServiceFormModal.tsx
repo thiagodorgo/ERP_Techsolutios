@@ -33,7 +33,9 @@ export function ServiceFormModal({
   readonly service: ServiceItem | null;
   readonly context: ServiceCatalogApiContext;
   readonly onClose: () => void;
-  readonly onSaved: () => void;
+  // B2: devolve o cadastro salvo para quem abriu o modal (ex.: seleção rápida na OS).
+  // Callers legados (`() => void`) seguem válidos — o argumento extra é ignorado.
+  readonly onSaved: (created?: ServiceItem) => void;
 }) {
   const isEdit = Boolean(service);
   const [name, setName] = useState(service?.name ?? "");
@@ -79,11 +81,12 @@ export function ServiceFormModal({
     setSaving(true);
     try {
       if (isEdit && service) {
-        await updateServiceItem(context, service.id, { ...payload, isActive });
+        const updated = await updateServiceItem(context, service.id, { ...payload, isActive });
+        onSaved(updated ?? undefined);
       } else {
-        await createServiceItem(context, payload);
+        const created = await createServiceItem(context, payload);
+        onSaved(created ?? undefined);
       }
-      onSaved();
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "Não foi possível salvar o serviço.");
     } finally {
