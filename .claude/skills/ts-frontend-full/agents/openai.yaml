@@ -1,0 +1,4 @@
+interface:
+  display_name: "TS Frontend Full"
+  short_description: "Staff-level frontend, mobile, APIs, Codex prompts, KPIs"
+  default_prompt: "Use $ts-frontend-full to design and implement a production-grade TypeScript/Flutter frontend with API resilience and KPI intelligence."
