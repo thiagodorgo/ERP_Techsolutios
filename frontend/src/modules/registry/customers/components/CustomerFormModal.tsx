@@ -36,7 +36,9 @@ export function CustomerFormModal({
   readonly customer: Customer | null;
   readonly context: CustomersApiContext;
   readonly onClose: () => void;
-  readonly onSaved: () => void;
+  // B2: devolve o cadastro salvo para quem abriu o modal (ex.: seleção rápida na OS).
+  // Callers legados (`() => void`) seguem válidos — o argumento extra é ignorado.
+  readonly onSaved: (created?: Customer) => void;
 }) {
   const isEdit = Boolean(customer);
   const [name, setName] = useState(customer?.name ?? "");
@@ -83,11 +85,12 @@ export function CustomerFormModal({
     setSaving(true);
     try {
       if (isEdit && customer) {
-        await updateCustomer(context, customer.id, { ...payload, isActive });
+        const updated = await updateCustomer(context, customer.id, { ...payload, isActive });
+        onSaved(updated ?? undefined);
       } else {
-        await createCustomer(context, payload);
+        const created = await createCustomer(context, payload);
+        onSaved(created ?? undefined);
       }
-      onSaved();
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "Não foi possível salvar o cliente.");
     } finally {
