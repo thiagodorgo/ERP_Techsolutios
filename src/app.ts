@@ -26,6 +26,7 @@ import { createMobileRouter } from "./modules/mobile/index.js";
 import { createNotificationRouter } from "./modules/notifications/index.js";
 import { createNavigationRouter } from "./modules/navigation/index.js";
 import { createPlatformRouter } from "./modules/platform/index.js";
+import { createVehicleRouter } from "./modules/vehicles/index.js";
 import { createWorkOrderRouter } from "./modules/work-orders/index.js";
 import { healthRouter } from "./routes/health.routes.js";
 
@@ -54,6 +55,7 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createFieldLocationRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createCustomerRouter());
+  app.use("/api/v1", attachAuthenticatedActor(), createVehicleRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFieldDispatchRouter(service));
   app.use("/api/v1", attachAuthenticatedActor(), createCommissionRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createExpenseManagementRouter());

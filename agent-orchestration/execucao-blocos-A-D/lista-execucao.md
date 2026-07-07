@@ -8,7 +8,7 @@
 - [x] A0 Plano-mestre + lista + skills versionadas + controle atualizado — PR #127, merge `bb35341`, gates 3/3 CI verdes (backend/frontend/flutter), skills: (documental), concluída 2026-07-07
 
 ## Bloco A — Cadastros (banco + API + tela)
-- [ ] A1 Cliente `Customer` `/api/v1/customers`
+- [x] A1 Cliente `Customer` `/api/v1/customers` — PR #128, merge `4a9b4de`, gates 3/3 CI verdes, testes 12 (backend) +7 (web), skills: saas-multi-tenant + ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
 - [ ] A2 Viatura `Vehicle` `/api/v1/vehicles`
 - [ ] A3 Equipe `Team`+`TeamMember` `/api/v1/teams`
 - [ ] A4 Catálogo de Serviço `ServiceCatalog` `/api/v1/service-catalog`
