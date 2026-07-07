@@ -1,7 +1,8 @@
 import { type FormEvent, useState } from "react";
 
 import { Alert, Button, Card, Input, Select } from "../../../components/ui";
-import { getWorkOrderPriorityLabel, toApiDateTime, validateWorkOrderForm } from "../work-orders.adapter";
+import { buildRegistryLinksPayload, getWorkOrderPriorityLabel, toApiDateTime, validateWorkOrderForm } from "../work-orders.adapter";
+import { useRegistryLinkOptions } from "../useRegistryLinkOptions";
 import { WORK_ORDER_PRIORITIES, type WorkOrderCreatePayload } from "../work-orders.types";
 
 type FormState = {
@@ -17,6 +18,10 @@ type FormState = {
   readonly serviceLongitude: string;
   readonly priority: WorkOrderCreatePayload["priority"];
   readonly scheduledFor: string;
+  readonly customerId: string;
+  readonly vehicleId: string;
+  readonly teamId: string;
+  readonly serviceCatalogId: string;
 };
 
 const initialState: FormState = {
@@ -32,6 +37,10 @@ const initialState: FormState = {
   serviceLongitude: "",
   priority: "medium",
   scheduledFor: "",
+  customerId: "",
+  vehicleId: "",
+  teamId: "",
+  serviceCatalogId: "",
 };
 
 export function WorkOrderForm({
@@ -45,6 +54,10 @@ export function WorkOrderForm({
 }) {
   const [state, setState] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<string[]>([]);
+  const { customers, vehicles, teams, services } = useRegistryLinkOptions();
+
+  const selectedCustomer = state.customerId ? customers.find((customer) => customer.id === state.customerId) : undefined;
+  const customerLinked = Boolean(state.customerId);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -55,8 +68,10 @@ export function WorkOrderForm({
     await onSubmit({
       title: state.title.trim(),
       description: state.description.trim() || undefined,
-      customerName: state.customerName.trim() || undefined,
-      customerPhone: state.customerPhone.trim() || undefined,
+      // Com cliente vinculado, o backend deriva o snapshot (nome/documento/telefone).
+      // Sem vínculo, os campos livres seguem valendo como antes.
+      customerName: customerLinked ? undefined : state.customerName.trim() || undefined,
+      customerPhone: customerLinked ? undefined : state.customerPhone.trim() || undefined,
       serviceAddress: state.serviceAddress.trim() || undefined,
       serviceCity: state.serviceCity.trim() || undefined,
       serviceState: state.serviceState.trim() || undefined,
@@ -65,6 +80,12 @@ export function WorkOrderForm({
       serviceLongitude: state.serviceLongitude ? Number(state.serviceLongitude) : null,
       priority: state.priority,
       scheduledFor: toApiDateTime(state.scheduledFor),
+      ...buildRegistryLinksPayload({
+        customerId: state.customerId,
+        vehicleId: state.vehicleId,
+        teamId: state.teamId,
+        serviceCatalogId: state.serviceCatalogId,
+      }),
     });
   }
 
@@ -90,10 +111,64 @@ export function WorkOrderForm({
             </Select>
           </div>
         </Card>
+        <Card title="Vínculos de cadastro">
+          <div className="form-section">
+            <Select
+              label="Cliente"
+              value={state.customerId}
+              onChange={(event) => setState({ ...state, customerId: event.target.value })}
+            >
+              <option value="">Sem cliente vinculado</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>{customer.name}</option>
+              ))}
+            </Select>
+            <Select
+              label="Viatura"
+              value={state.vehicleId}
+              onChange={(event) => setState({ ...state, vehicleId: event.target.value })}
+            >
+              <option value="">Sem viatura</option>
+              {vehicles.map((vehicle) => (
+                <option key={vehicle.id} value={vehicle.id}>{`${vehicle.plate} - ${vehicle.model}`}</option>
+              ))}
+            </Select>
+            <Select
+              label="Equipe"
+              value={state.teamId}
+              onChange={(event) => setState({ ...state, teamId: event.target.value })}
+            >
+              <option value="">Sem equipe</option>
+              {teams.map((team) => (
+                <option key={team.id} value={team.id}>{team.name}</option>
+              ))}
+            </Select>
+            <Select
+              label="Serviço"
+              value={state.serviceCatalogId}
+              onChange={(event) => setState({ ...state, serviceCatalogId: event.target.value })}
+            >
+              <option value="">Sem serviço</option>
+              {services.map((service) => (
+                <option key={service.id} value={service.id}>{service.name}</option>
+              ))}
+            </Select>
+          </div>
+        </Card>
         <Card title="Cliente">
           <div className="form-section">
-            <Input label="Nome do cliente" value={state.customerName} onChange={(event) => setState({ ...state, customerName: event.target.value })} />
-            <Input label="Telefone do cliente" value={state.customerPhone} onChange={(event) => setState({ ...state, customerPhone: event.target.value })} />
+            {customerLinked ? (
+              <>
+                <Input label="Nome do cliente" value={selectedCustomer?.name ?? ""} readOnly helper="Copiado do cadastro ao salvar." />
+                <Input label="Documento" value={selectedCustomer?.document ?? ""} placeholder="Não informado" readOnly helper="Copiado do cadastro ao salvar." />
+                <Input label="Telefone do cliente" value={selectedCustomer?.phone ?? ""} placeholder="Não informado" readOnly helper="Copiado do cadastro ao salvar." />
+              </>
+            ) : (
+              <>
+                <Input label="Nome do cliente" value={state.customerName} onChange={(event) => setState({ ...state, customerName: event.target.value })} />
+                <Input label="Telefone do cliente" value={state.customerPhone} onChange={(event) => setState({ ...state, customerPhone: event.target.value })} inputMode="tel" />
+              </>
+            )}
           </div>
         </Card>
         <Card title="Atendimento">

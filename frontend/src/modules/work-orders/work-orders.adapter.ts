@@ -3,12 +3,35 @@ import type {
   WorkOrderEvent,
   WorkOrderListItem,
   WorkOrderPriority,
+  WorkOrderRegistryLinks,
   WorkOrdersData,
   WorkOrdersFilters,
   WorkOrdersPagination,
   WorkOrdersSummary,
   WorkOrderStatus,
 } from "./work-orders.types";
+
+// B1 (OS integrada): converte os vínculos selecionados (camelCase) no recorte snake_case
+// do payload POST /work-orders. Apenas os vínculos preenchidos entram — vazio é omitido.
+export type WorkOrderRegistryLinksPayload = {
+  customer_id?: string;
+  vehicle_id?: string;
+  team_id?: string;
+  service_catalog_id?: string;
+};
+
+export function buildRegistryLinksPayload(links: WorkOrderRegistryLinks): WorkOrderRegistryLinksPayload {
+  const payload: WorkOrderRegistryLinksPayload = {};
+  const customerId = links.customerId?.trim();
+  const vehicleId = links.vehicleId?.trim();
+  const teamId = links.teamId?.trim();
+  const serviceCatalogId = links.serviceCatalogId?.trim();
+  if (customerId) payload.customer_id = customerId;
+  if (vehicleId) payload.vehicle_id = vehicleId;
+  if (teamId) payload.team_id = teamId;
+  if (serviceCatalogId) payload.service_catalog_id = serviceCatalogId;
+  return payload;
+}
 
 const statusLabels: Record<WorkOrderStatus, string> = {
   open: "Aberta",
