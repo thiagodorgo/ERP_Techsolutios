@@ -17,6 +17,7 @@ import { MemoryCoreSaasAdapter } from "./modules/core-saas/services/memory-core-
 import type { ICoreSaasService } from "./modules/core-saas/services/core-saas-service.interface.js";
 import { createChecklistRouter } from "./modules/checklists/index.js";
 import { createCommissionRouter } from "./modules/commissions/index.js";
+import { createCustomerRouter } from "./modules/customers/index.js";
 import { createExpenseManagementRouter } from "./modules/expense-management/index.js";
 import { createFieldDispatchRouter } from "./modules/field-dispatch/index.js";
 import { createFieldLocationRouter } from "./modules/field-location/index.js";
@@ -52,6 +53,7 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createFieldOpsRealtimeRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFieldLocationRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderRouter());
+  app.use("/api/v1", attachAuthenticatedActor(), createCustomerRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFieldDispatchRouter(service));
   app.use("/api/v1", attachAuthenticatedActor(), createCommissionRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createExpenseManagementRouter());
