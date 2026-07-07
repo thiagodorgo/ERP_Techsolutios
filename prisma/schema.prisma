@@ -24,6 +24,8 @@ model Tenant {
   checklist_templates           ChecklistTemplate[]
   customers                     Customer[]
   vehicles                      Vehicle[]
+  teams                         Team[]
+  team_members                  TeamMember[]
   field_operator_locations      FieldOperatorLocation[]
   field_dispatch_events         FieldDispatchEvent[]
   field_dispatches              FieldDispatch[]
@@ -110,6 +112,8 @@ model User {
   work_order_assignments           WorkOrderAssignment[]   @relation("WorkOrderAssignmentUser")
   work_order_events                WorkOrderEvent[]        @relation("WorkOrderEventActor")
   role_assignments                 UserRoleAssignment[]
+  led_teams                        Team[]                  @relation("TeamLeader")
+  team_memberships                 TeamMember[]            @relation("TeamMemberUser")
   tenant                           Tenant                  @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
   @@unique([tenant_id, id])
@@ -772,6 +776,48 @@ model Vehicle {
   @@index([tenant_id, is_active])
   @@index([tenant_id, created_at])
   @@map("vehicles")
+}
+
+model Team {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id      String       @db.Uuid
+  name           String
+  leader_user_id String?      @db.Uuid
+  status         String       @default("active")
+  notes          String?
+  is_active      Boolean      @default(true)
+  created_by     String?      @db.Uuid
+  updated_by     String?      @db.Uuid
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+  leader         User?        @relation("TeamLeader", fields: [tenant_id, leader_user_id], references: [tenant_id, id], onDelete: Restrict)
+  tenant         Tenant       @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  members        TeamMember[]
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, name])
+  @@index([tenant_id, is_active])
+  @@index([tenant_id, created_at])
+  @@map("teams")
+}
+
+model TeamMember {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id    String   @db.Uuid
+  team_id      String   @db.Uuid
+  user_id      String   @db.Uuid
+  role_in_team String?
+  created_by   String?  @db.Uuid
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  team         Team     @relation(fields: [tenant_id, team_id], references: [tenant_id, id], onDelete: Cascade)
+  tenant       Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  user         User     @relation("TeamMemberUser", fields: [tenant_id, user_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, team_id, user_id])
+  @@index([tenant_id, team_id])
+  @@map("team_members")
 }
 
 model WorkOrder {
