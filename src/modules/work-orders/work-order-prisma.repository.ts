@@ -71,6 +71,10 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
         assigned_operator_id: input.assignedOperatorId ?? null,
         assigned_user_id: input.assignedUserId ?? null,
         checklist_id: input.checklistId ?? null,
+        customer_id: input.customerId ?? null,
+        vehicle_id: input.vehicleId ?? null,
+        team_id: input.teamId ?? null,
+        service_catalog_id: input.serviceCatalogId ?? null,
         scheduled_for: input.scheduledFor ?? null,
         created_by: input.createdBy ?? null,
         updated_by: input.updatedBy ?? null,
@@ -328,6 +332,10 @@ function mapWorkOrderRecord(record: {
   readonly assigned_operator_id: string | null;
   readonly assigned_user_id: string | null;
   readonly checklist_id: string | null;
+  readonly customer_id: string | null;
+  readonly vehicle_id: string | null;
+  readonly team_id: string | null;
+  readonly service_catalog_id: string | null;
   readonly scheduled_for: Date | null;
   readonly started_at: Date | null;
   readonly arrived_at: Date | null;
@@ -359,6 +367,10 @@ function mapWorkOrderRecord(record: {
     assignedOperatorId: record.assigned_operator_id ?? undefined,
     assignedUserId: record.assigned_user_id ?? undefined,
     checklistId: record.checklist_id ?? undefined,
+    customerId: record.customer_id ?? undefined,
+    vehicleId: record.vehicle_id ?? undefined,
+    teamId: record.team_id ?? undefined,
+    serviceCatalogId: record.service_catalog_id ?? undefined,
     scheduledFor: record.scheduled_for ?? undefined,
     startedAt: record.started_at ?? undefined,
     arrivedAt: record.arrived_at ?? undefined,

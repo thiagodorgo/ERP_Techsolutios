@@ -2156,7 +2156,7 @@
 
 .work-order-form-grid {
   display: grid;
-  grid-template-columns: 1fr 0.7fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--space-16);
   align-items: start;
 }

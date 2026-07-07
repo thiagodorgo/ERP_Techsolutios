@@ -103,6 +103,21 @@ export type WorkOrderCreatePayload = {
   readonly serviceLongitude?: number | null;
   readonly priority: WorkOrderPriority;
   readonly scheduledFor?: string | null;
+  // B1 (OS integrada): vínculos opcionais com os Cadastros (A1-A4).
+  // Enviados em snake_case, exatamente como o contrato POST /work-orders espera.
+  // Quando customer_id é enviado, o backend deriva o snapshot do cliente (nome/documento/telefone).
+  readonly customer_id?: string;
+  readonly vehicle_id?: string;
+  readonly team_id?: string;
+  readonly service_catalog_id?: string;
+};
+
+// Vínculos de cadastro selecionados na UI (ids camelCase internos do formulário).
+export type WorkOrderRegistryLinks = {
+  readonly customerId?: string;
+  readonly vehicleId?: string;
+  readonly teamId?: string;
+  readonly serviceCatalogId?: string;
 };
 
 export type WorkOrderUpdatePayload = Partial<WorkOrderCreatePayload> & {

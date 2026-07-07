@@ -747,7 +747,8 @@ model Customer {
   updated_by String?  @db.Uuid
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  tenant     Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  tenant     Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  work_orders WorkOrder[] @relation("WorkOrderCustomer")
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, document])
@@ -770,7 +771,8 @@ model Vehicle {
   updated_by String?  @db.Uuid
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  tenant     Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  tenant     Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  work_orders WorkOrder[] @relation("WorkOrderVehicle")
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, plate])
@@ -793,7 +795,8 @@ model ServiceCatalog {
   updated_by                 String?  @db.Uuid
   created_at                 DateTime @default(now()) @db.Timestamptz(6)
   updated_at                 DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  tenant                     Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  tenant                     Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  work_orders                WorkOrder[] @relation("WorkOrderServiceCatalog")
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, name])
@@ -817,6 +820,7 @@ model Team {
   leader         User?        @relation("TeamLeader", fields: [tenant_id, leader_user_id], references: [tenant_id, id], onDelete: Restrict)
   tenant         Tenant       @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   members        TeamMember[]
+  work_orders    WorkOrder[]  @relation("WorkOrderTeam")
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, name])
@@ -864,6 +868,10 @@ model WorkOrder {
   assigned_operator_id  String?               @db.Uuid
   assigned_user_id      String?               @db.Uuid
   checklist_id          String?               @db.Uuid
+  customer_id           String?               @db.Uuid
+  vehicle_id            String?               @db.Uuid
+  team_id               String?               @db.Uuid
+  service_catalog_id    String?               @db.Uuid
   scheduled_for         DateTime?             @db.Timestamptz(6)
   started_at            DateTime?             @db.Timestamptz(6)
   arrived_at            DateTime?             @db.Timestamptz(6)
@@ -880,6 +888,10 @@ model WorkOrder {
   expense_reports       ExpenseReport[]
   assigned_user         User?                 @relation("WorkOrderAssignedUser", fields: [tenant_id, assigned_user_id], references: [tenant_id, id], onDelete: Restrict)
   checklist             ChecklistTemplate?    @relation(fields: [tenant_id, checklist_id], references: [tenant_id, id], onDelete: Restrict)
+  customer              Customer?             @relation("WorkOrderCustomer", fields: [tenant_id, customer_id], references: [tenant_id, id], onDelete: Restrict)
+  vehicle               Vehicle?              @relation("WorkOrderVehicle", fields: [tenant_id, vehicle_id], references: [tenant_id, id], onDelete: Restrict)
+  team                  Team?                 @relation("WorkOrderTeam", fields: [tenant_id, team_id], references: [tenant_id, id], onDelete: Restrict)
+  service_catalog       ServiceCatalog?       @relation("WorkOrderServiceCatalog", fields: [tenant_id, service_catalog_id], references: [tenant_id, id], onDelete: Restrict)
   created_by_user       User?                 @relation("WorkOrderCreatedBy", fields: [tenant_id, created_by], references: [tenant_id, id], onDelete: Restrict)
   events                WorkOrderEvent[]
   tenant                Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
@@ -891,6 +903,10 @@ model WorkOrder {
   @@index([tenant_id, priority])
   @@index([tenant_id, assigned_operator_id])
   @@index([tenant_id, assigned_user_id])
+  @@index([tenant_id, customer_id])
+  @@index([tenant_id, vehicle_id])
+  @@index([tenant_id, team_id])
+  @@index([tenant_id, service_catalog_id])
   @@index([tenant_id, scheduled_for])
   @@index([tenant_id, created_at])
   @@map("work_orders")
