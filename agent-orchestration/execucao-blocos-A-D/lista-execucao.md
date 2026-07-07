@@ -10,7 +10,7 @@
 ## Bloco A — Cadastros (banco + API + tela)
 - [x] A1 Cliente `Customer` `/api/v1/customers` — PR #128, merge `4a9b4de`, gates 3/3 CI verdes, testes 12 (backend) +7 (web), skills: saas-multi-tenant + ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
 - [x] A2 Viatura `Vehicle` `/api/v1/vehicles` — PR #129, merge `3ee4af3`, gates 3/3 CI verdes, testes 13 (backend) +7 (web), skills: saas-multi-tenant + ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
-- [ ] A3 Equipe `Team`+`TeamMember` `/api/v1/teams`
+- [x] A3 Equipe `Team`+`TeamMember` `/api/v1/teams` — PR #130, merge `9b9ab52`, gates 3/3 CI verdes, testes 18 (backend) +7 (web), skills: saas-multi-tenant + ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
 - [ ] A4 Catálogo de Serviço `ServiceCatalog` `/api/v1/service-catalog`
 - [ ] A5 Menu Cadastros (nav RBAC — `AppShell` + `tenantNavigation`)
 
