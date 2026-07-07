@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{margin:0;background:#EEF2F6;font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;color:#1E293B}
+.doc{box-sizing:border-box;max-width:8.6in;margin:0 auto;background:#fff;padding:52px clamp(22px,4vw,0.72in) 92px;box-shadow:0 1px 3px rgba(15,23,41,.08)}
+.doc-frame{width:100%;border-collapse:collapse}.doc-frame td{padding:0}
+.pad-top,.pad-bottom{display:none}
+h1,h2,h3,h4{text-wrap:balance;color:#0F172A}
+p,li{text-wrap:pretty}
+.lead{font-size:13.5px;line-height:1.65;color:#475569}
+.kv{font-family:'JetBrains Mono',monospace;font-size:11px;color:#0F172A;background:#EFF3F8;border-radius:5px;padding:1px 6px}
+.legend{display:flex;flex-wrap:wrap;gap:9px 18px;margin:14px 0;padding:14px 16px;background:#F8FAFC;border:1px solid #E8EDF3;border-radius:12px;font-size:11.5px;color:#475569}
+.legend b{color:#0F172A}
+.mk{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.03em;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.mk-ok{background:#ECFDF5;color:#059669}.mk-alt{background:#EFF6FF;color:#2563EB}.mk-extra{background:#F5F3FF;color:#7C3AED}.mk-pend{background:#FFFBEB;color:#B45309}
+.smry{width:100%;border-collapse:collapse;margin:8px 0 4px;font-size:11.5px;table-layout:fixed}
+.smry th{background:#0F172A;color:#fff;text-align:left;font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:8px 10px}
+.smry th:nth-child(1){width:6%}.smry th:nth-child(2){width:29%}.smry th:nth-child(3){width:26%}.smry th:nth-child(4){width:13%}.smry th:nth-child(5){width:26%}
+.smry td{border-bottom:1px solid #E8EDF3;padding:8px 10px;vertical-align:top;line-height:1.45;overflow-wrap:anywhere;word-break:break-word}
+.smry .id{overflow-wrap:anywhere;word-break:break-word}
+.smry tr:nth-child(even) td{background:#FAFBFC}
+.smry .n{font-family:'JetBrains Mono',monospace;font-weight:700;color:#94A3B8}
+.smry .id{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#2563EB}
+.scard{border:1px solid #E2E8F0;border-radius:14px;padding:0;margin:16px 0;overflow:hidden}
+.scard-head{display:flex;align-items:center;gap:11px;padding:13px 16px;background:#F8FAFC;border-bottom:1px solid #EEF2F6}
+.scard-num{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#fff;background:#2563EB;border-radius:7px;padding:3px 9px;flex-shrink:0}
+.scard-tt{font-size:15px;font-weight:800;color:#0F172A}
+.scard-rt{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#94A3B8;margin-top:2px}
+.scard-body{padding:14px 16px}
+.sub{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#94A3B8;margin:0 0 6px}
+.blk{margin-bottom:13px}
+.blk:last-child{margin-bottom:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-block;font-size:11px;font-weight:600;color:#475569;background:#F1F5F9;border:1px solid #E8EDF3;border-radius:7px;padding:3px 9px}
+.fn{font-size:12.5px;color:#475569;line-height:1.55}
+.ep{font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.75;color:#334155;display:block}
+.m-get{color:#1D4ED8;font-weight:700}.m-post{color:#059669;font-weight:700}.m-put{color:#B45309;font-weight:700}.m-del{color:#DC2626;font-weight:700}.m-ws{color:#7C3AED;font-weight:700}
+.callout{background:#FBFAFF;border:1px solid #ECE9FB;border-left:3px solid #7C3AED;border-radius:10px;padding:11px 13px}
+.callout .sub{color:#7C3AED}
+.callout p,.callout li{font-size:12px;line-height:1.55;color:#4A4560}
+.callout ul{margin:0;padding-left:17px}
+.callout li{margin-bottom:3px}
+.modhead{display:flex;align-items:center;gap:10px;margin:28px 0 4px;padding-bottom:7px;border-bottom:2px solid #0F172A}
+.modhead h3{font-size:16px;font-weight:800}
+.modhead .meta{margin-left:auto;font-size:10.5px;color:#94A3B8;font-weight:600;font-family:'JetBrains Mono',monospace}
+.note{font-size:11px;color:#94A3B8;margin:6px 0 0;font-style:italic}
+.refbox{background:#F8FAFC;border:1px solid #E8EDF3;border-radius:12px;padding:15px 17px;margin:10px 0}
+.refbox .sub{margin-bottom:9px}
+.refrow{display:flex;gap:10px;font-size:12px;color:#475569;padding:5px 0;border-bottom:1px dashed #E8EDF3;line-height:1.5}
+.refrow:last-child{border-bottom:none}
+.refrow b{color:#0F172A;font-family:'JetBrains Mono',monospace;font-size:11px;flex-shrink:0;width:150px}
+@page{size:letter;margin:0}
+@media print{
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html,body{margin:0;padding:0;background:#fff}
+  .doc{max-width:none!important;margin:0!important;padding:0 0.6in!important;box-shadow:none!important}
+  .pad-top,.pad-bottom{display:table-cell;height:0.55in}
+  h1,h2,h3,h4{break-after:avoid}
+  .scard,.modhead,.legend,.refbox,.smry tr{break-inside:avoid}
+}
+</style>
+</helmet>
+<main class="doc">
+<table class="doc-frame" role="presentation">
+<thead><tr><td class="pad-top"></td></tr></thead>
+<tbody><tr><td>
+
+<h1 style="font-size:28px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px">Handoff — MVP Mobile</h1>
+<div style="font-size:12.5px;font-weight:600;color:#2563EB;font-family:'JetBrains Mono',monospace;margin-bottom:14px">ERP Techsolutions · App de Campo (Flutter) · 11 telas MVP · v2026.06</div>
+<p class="lead" style="margin-bottom:12px">Escopo: <b>somente o MVP Mobile</b> (11 telas de operação de campo). Este documento <b>concilia a especificação do orquestrador com o que já está construído</b> no protótipo <span class="kv">ERP Mobile.dc.html</span> — porque o orquestrador não está ciente de todas as mudanças de lógica que fizemos. Cada tela traz a spec, os endpoints e um bloco <b>"No protótipo"</b> destacando o que mudou, foi estendido ou ainda falta.</p>
+
+<div class="legend">
+  <span><b>Marcadores de reconciliação:</b></span>
+  <span><span class="mk mk-ok">CONFORME</span> como na spec</span>
+  <span><span class="mk mk-alt">ALTERADO</span> construído diferente / estendido</span>
+  <span><span class="mk mk-extra">EXTRA</span> existe no protótipo, fora da spec</span>
+  <span><span class="mk mk-pend">PENDENTE</span> na spec, ainda não/parcial</span>
+</div>
+
+<div class="callout" style="border-left-color:#2563EB;background:#F7FAFF;border-color:#E3ECFB">
+  <div class="sub" style="color:#2563EB">Contexto de integração — ler primeiro</div>
+  <p style="color:#3B4657">Todos os dados do protótipo são <b>mock estruturado</b> na classe de lógica (<span class="kv">class Component</span>). <b>Nenhum endpoint mobile está conectado à rede</b> ainda — as rotas abaixo são o contrato a implementar no Flutter. Ações de escrita (check-in, checklist, assinatura, conclusão) hoje só mudam o estado local. As três coisas que mais divergem da spec do orquestrador: <b>(1)</b> guincho tem coleta <u>e</u> entrega como execuções separadas; <b>(2)</b> o check-in valida por 2 dígitos (placa no guincho / nº de série no prestador) + geolocalização; <b>(3)</b> o prestador tem sub-fluxo Diagnóstico → Execução → Estoque do técnico.</p>
+</div>
+
+<h2 style="font-size:16px;font-weight:800;margin:24px 0 4px">Convenções (Mobile)</h2>
+<table class="smry">
+<colgroup><col style="width:22%"><col style="width:78%"></colgroup>
+<thead><tr><th colspan="2" style="width:auto">Padrão de plataforma</th></tr></thead>
+<tbody>
+<tr><td class="n" style="font-weight:800;color:#0F172A">Sessão</td><td><span class="m-post">POST</span> <span class="kv">/auth/login</span> → JWT access+refresh · <span class="m-post">POST</span> <span class="kv">/auth/refresh</span> · <span class="m-post">POST</span> <span class="kv">/auth/logout</span> · header <span class="kv">Authorization: Bearer</span> + <span class="kv">X-Tenant-Id</span>.</td></tr>
+<tr><td class="n" style="font-weight:800;color:#0F172A">Bootstrap</td><td><span class="m-get">GET</span> <span class="kv">/mobile/bootstrap</span> devolve usuário, organizações, papel, módulos e flags — origem da Seleção de Organização e da Home.</td></tr>
+<tr><td class="n" style="font-weight:800;color:#0F172A">Offline-first</td><td>Escrita em fila local (Hive/Isar/SQLite) → replay via <span class="kv">/mobile/sync/*</span>. Conflito = <span class="kv">409</span> com as duas versões; resolução <b>manual</b>, nada sobrescrito.</td></tr>
+<tr><td class="n" style="font-weight:800;color:#0F172A">Localização</td><td><b>Só manual</b> — <span class="m-post">POST</span> <span class="kv">/mobile/field-locations</span>. Sem background tracking, timer ou stream. Consentimento LGPD obrigatório (retenção 90d, revogável).</td></tr>
+<tr><td class="n" style="font-weight:800;color:#0F172A">Mascaramento</td><td>Placa e nº de série exibidos com os 2 últimos dígitos como <span class="kv">**</span>; o operador digita os 2 dígitos na chegada para liberar "Iniciar atendimento" (validação local + geo).</td></tr>
+<tr><td class="n" style="font-weight:800;color:#0F172A">Checklist</td><td><b>Schema-driven</b> — o modelo vem do backend por cliente (<span class="kv">/checklists/:id/render</span>); o app renderiza os componentes dinamicamente. Run persistido com markers/attachments/complete.</td></tr>
+</tbody>
+</table>
+
+<h2 style="font-size:16px;font-weight:800;margin:24px 0 4px">Mapa de reconciliação — 11 telas MVP</h2>
+<table class="smry">
+<thead><tr><th>#</th><th>Tela (spec do orquestrador)</th><th>No protótipo (screen id)</th><th>Cobertura</th><th>Observação-chave</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td>Login</td><td><span class="id">splash → login</span></td><td><span class="mk mk-ok">CONFORME</span></td><td>Google presente; biometria fica em Preferências (toggle), não em tela.</td></tr>
+<tr><td class="n">2</td><td>Seleção de organização</td><td><span class="id">tenant</span></td><td><span class="mk mk-ok">CONFORME</span></td><td><span class="kv">userClients&gt;1</span> mostra a tela; senão pula para a Home.</td></tr>
+<tr><td class="n">3</td><td>Home operacional</td><td><span class="id">home</span></td><td><span class="mk mk-ok">CONFORME</span></td><td>Saudação por papel; banner de aprovações só p/ Gestor.</td></tr>
+<tr><td class="n">4</td><td>Lista de OS</td><td><span class="id">osList</span></td><td><span class="mk mk-ok">CONFORME</span></td><td>Filtros + badge de tipo (guincho/prestador) e sync.</td></tr>
+<tr><td class="n">5</td><td>Detalhe da OS / Check-in</td><td><span class="id">osDetail + checkin</span></td><td><span class="mk mk-alt">ALTERADO</span></td><td>Detalhe embutido (decisão mantida) + validação 2 dígitos & geo construída.</td></tr>
+<tr><td class="n">6</td><td>Execução da OS</td><td><span class="id">checkin·checklist·atDiag·atExec·atStock·entrega·conclusao</span></td><td><span class="mk mk-alt">ALTERADO</span></td><td>Stepper guincho 6 passos / prestador 4; prestador expandido em Diagnóstico→Execução→Estoque.</td></tr>
+<tr><td class="n">7</td><td>Checklists da OS (lista)</td><td><span class="id">— (direto)</span></td><td><span class="mk mk-pend">PENDENTE</span></td><td>Hoje abrimos coleta/entrega direto; sem tela-lista intermediária. O próprio orquestrador marcou como "futuro".</td></tr>
+<tr><td class="n">8</td><td>Execução de checklist</td><td><span class="id">checklist + entrega</span></td><td><span class="mk mk-alt">ALTERADO</span></td><td>Coleta E entrega como runs separados: damage map e assinatura independentes.</td></tr>
+<tr><td class="n">9</td><td>Evidências</td><td><span class="id">evidence</span></td><td><span class="mk mk-extra">EXTRA</span></td><td>Temos tela dedicada Antes/Durante/Depois além do registro embutido.</td></tr>
+<tr><td class="n">10</td><td>Enviar localização agora</td><td><span class="id">embutido + consent · locStatus</span></td><td><span class="mk mk-ok">CONFORME</span></td><td>Envio manual + 2 telas LGPD (consentimento / status) extras.</td></tr>
+<tr><td class="n">11</td><td>Sync / fila offline</td><td><span class="id">sync</span></td><td><span class="mk mk-ok">CONFORME</span></td><td>Conflito com escolha manual "minha versão / versão do gestor".</td></tr>
+</tbody>
+</table>
+
+<div class="modhead"><h3>Detalhe por tela</h3><span class="meta">1–11</span></div>
+
+<div class="scard">
+  <div class="scard-head"><span class="scard-num">01</span><div style="flex:1"><div class="scard-tt">Login</div><div class="scard-rt">/login · screen:splash → login</div></div><span class="mk mk-ok">CONFORME</span></div>
+  <div class="scard-body">
+    <div class="blk"><div class="sub">Função</div><div class="fn">Entrada do operador no app. Splash com timer ~2200ms (Future.delayed + fallback de toque) precede o login.</div></div>
+    <div class="blk"><div class="sub">Conteúdo</div><div class="chips"><span class="chip">Logo Techsolutions</span><span class="chip">E-mail</span><span class="chip">Senha</span><span class="chip">Entrar</span><span class="chip">Entrar com Google</span><span class="chip">Esqueci minha senha</span><span class="chip">Loading</span><span class="chip">Erro seguro</span></div></div>
+    <div class="blk"><div class="sub">Endpoints</div><span class="ep"><span class="m-post">POST</span> /api/v1/auth/login</span><span class="ep"><span class="m-post">POST</span> /api/v1/auth/refresh · /auth/logout</span><span class="ep"><span class="m-get">GET</span> /api/v1/mobile/bootstrap</span></div>
+    <div class="callout"><div class="sub">No protótipo</div><ul><li><b>Biometria</b> existe como <b>preferência</b> (toggle em Preferências), não como passo de login — decidir se vira etapa no MVP.</li><li>Login com Google está na UI (mockado) — precisa do fluxo OAuth real no Flutter.</li></ul></div>
+  </div>
+</div>
+
+<div class="scard">
+  <div class="scard-head"><span class="scard-num">02</span><div style="flex:1"><div class="scard-tt">Seleção de Organização</div><div class="scard-rt">/tenant-select · screen:tenant</div></div><span class="mk mk-ok">CONFORME</span></div>
+  <div class="scard-body">
+    <div class="blk"><div class="sub">Função</div><div class="fn">Escolher a empresa quando o usuário tem múltiplas organizações. Regra: se houver só uma, a tela é pulada.</div></div>
+    <div class="blk"><div class="sub">Conteúdo</div><div class="chips"><span class="chip">Lista de organizações</span><span class="chip">Nome</span><span class="chip">Papel/perfil</span><span class="chip">Status</span><span class="chip">Último acesso</span><span class="chip">Acessar</span><span class="chip">Aviso de troca de contexto</span></div></div>
+    <div class="blk"><div class="sub">Endpoints</div><span class="ep"><span class="m-get">GET</span> /api/v1/mobile/bootstrap</span><span class="ep"><span class="m-post">POST</span> /api/v1/auth/active-tenant <span style="color:#94A3B8">(fixa a organização ativa)</span></span></div>
+    <div class="callout" style="border-left-color:#2563EB;background:#F7FAFF;border-color:#E3ECFB"><div class="sub" style="color:#2563EB">No protótipo</div><p>Controlado por <span class="kv">userClients</span> (mock = 3, então a tela aparece). O contrato <span class="kv">/auth/active-tenant</span> não está na spec, mas é necessário para persistir a escolha no token/sessão.</p></div>
+  </div>
+</div>
+
+<div class="scard">
+  <div class="scard-head"><span class="scard-num">03</span><div style="flex:1"><div class="scard-tt">Home Operacional</div><div class="scard-rt">/ · screen:home</div></div><span class="mk mk-ok">CONFORME</span></div>
+  <div class="scard-body">
+    <div class="blk"><div class="sub">Função</div><div class="fn">Porta de entrada do operador: contexto, pendências e atalhos.</div></div>
+    <div class="blk"><div class="sub">Conteúdo</div><div class="chips"><span class="chip">Saudação</span><span class="chip">Organização ativa</span><span class="chip">Online/offline</span><span class="chip">OS do dia</span><span class="chip">Pendências de sync</span><span class="chip">Evidências pendentes</span><span class="chip">Atalhos: Minhas OS · Sync · Localização · Notificações</span></div></div>
+    <div class="blk"><div class="sub">Endpoints</div><span class="ep"><span class="m-get">GET</span> /api/v1/mobile/bootstrap</span><span class="ep"><span class="m-get">GET</span> /api/v1/work-orders</span></div>
+    <div class="callout"><div class="sub">No protótipo</div><p><b>Banner de aprovações</b> (roxo, "3 aprovações aguardando") aparece só para o papel <b>Gestor</b> — derivar da sessão/claims, não de seletor. Para o Técnico a Home não mostra esse bloco.</p></div>
+  </div>
+</div>
+
+<div class="scard">
+  <div class="scard-head"><span class="scard-num">04</span><div style="flex:1"><div class="scard-tt">Lista de OS</div><div class="scard-rt">/work-orders · screen:osList</div></div><span class="mk mk-ok">CONFORME</span></div>
+  <div class="scard-body">
+    <div class="blk"><div class="sub">Função</div><div class="fn">Listar as OS atribuídas ao operador no dia.</div></div>
+    <div class="blk"><div class="sub">Conteúdo</div><div class="chips"><span class="chip">Busca</span><span class="chip">Filtros: Todas · Agendadas · Em campo · Concluídas</span><span class="chip">Card: cliente</span><span class="chip">Endereço</span><span class="chip">Janela</span><span class="chip">Status</span><span class="chip">Tipo guincho/prestador</span><span class="chip">Badge sync</span><span class="chip">Badge checklist/evidência</span></div></div>
+    <div class="blk"><div class="sub">Endpoints</div><span class="ep"><span class="m-get">GET</span> /api/v1/work-orders</span></div>
+    <div class="callout" style="border-left-color:#2563EB;background:#F7FAFF;border-color:#E3ECFB"><div class="sub" style="color:#2563EB">No protótipo</div><p>O <b>tipo de atendimento</b> (<span class="kv">serviceType: guincho|prestador</span>) muda todo o fluxo a jusante (checklist, campos do veículo/equipamento, badge). Deve vir na própria OS.</p></div>
+  </div>
+</div>
+
+<div class="scard">
+  <div class="scard-head"><span class="scard-num">05</span><div style="flex:1"><div class="scard-tt">Detalhe da OS / Check-in</div><div class="scard-rt">/work-orders/:id · screen:osDetail + checkin</div></div><span class="mk mk-alt">ALTERADO</span></div>
+  <div class="scard-body">
+    <div class="blk"><div class="sub">Função</div><div class="fn">Mostrar o dossiê da OS e iniciar o atendimento. Decisão mantida: <b>detalhe embutido no check-in</b>, sem tela read-only separada.</div></div>
+    <div class="blk"><div class="sub">Conteúdo</div><div class="chips"><span class="chip">Código da OS</span><span class="chip">Cliente</span><span class="chip">Tipo</span><span class="chip">Veículo ou equipamento</span><span class="chip">Placa/nº série mascarado</span><span class="chip">Endereço</span><span class="chip">Janela</span><span class="chip">Mapa/distância</span><span class="chip">Histórico</span><span class="chip">Conexão + GPS</span><span class="chip">Em rota</span><span class="chip">Cheguei ao local</span><span class="chip">Iniciar atendimento</span></div></div>
+    <div class="blk"><div class="sub">Endpoints</div><span class="ep"><span class="m-get">GET</span> /api/v1/work-orders/:id · /:id/timeline</span><span class="ep"><span class="m-put">PATCH</span> /api/v1/work-orders/:id/status</span><span class="ep"><span class="m-post">POST</span> /api/v1/mobile/field-locations</span></div>
+    <div class="callout"><div class="sub">No protótipo — o que mudamos</div><ul><li>Stepper padronizado <b>Início · Rota · Atendimento · Conclusão</b> (fase controlada por <span class="kv">checkinPhase: idle→enroute→onsite</span>).</li><li><b>"Cheguei ao local"</b> abre popup pedindo os <b>2 últimos dígitos</b> — <b>placa</b> (guincho) ou <b>nº de série</b> (prestador) — combinados com <b>geolocalização</b> (<span class="kv">plateGeoOk / plateGeoBlocked</span>) para liberar "Iniciar atendimento".</li><li>Botão <b>"Não foi possível iniciar"</b> → popup com motivo + fotos (contrato <span class="kv">POST /:id/unable-to-start</span>, fora da spec).</li></ul></div>
+  </div>
+</div>
+
+<div class="scard">
+  <div class="scard-head"><span class="scard-num">06</span><div style="flex:1"><div class="scard-tt">Execução da OS</div><div class="scard-rt">/work-orders/:id/execute · stepper</div></div><span class="mk mk-alt">ALTERADO</span></div>
+  <div class="scard-body">
+    <div class="blk"><div class="sub">Função</div><div class="fn">Guiar o operador durante o atendimento com um stepper que muda por tipo de serviço.</div></div>
+    <div class="blk"><div class="sub">Fluxos (implementados)</div>
+      <div class="chips" style="margin-bottom:6px"><span class="chip" style="background:#EFF6FF;border-color:#DBEAFE;color:#2563EB;font-weight:700">GUINCHO · 6 passos</span><span class="chip">Início</span><span class="chip">Rota coleta</span><span class="chip">Coleta</span><span class="chip">Rota entrega</span><span class="chip">Entrega</span><span class="chip">Conclusão</span></div>
+      <div class="chips"><span class="chip" style="background:#F5F3FF;border-color:#E9D5FF;color:#7C3AED;font-weight:700">PRESTADOR · 4 passos</span><span class="chip">Início</span><span class="chip">Rota</span><span class="chip">Atendimento</span><span class="chip">Conclusão</span></div>
+    </div>
+    <div class="blk"><div class="sub">Endpoints</div><span class="ep"><span class="m-put">PATCH</span> /api/v1/work-orders/:id/status</span><span class="ep"><span class="m-post">POST</span> /api/v1/mobile/sync/work-order-actions</span></div>
+    <div class="callout"><div class="sub">No protótipo — o que o orquestrador não sabe</div><ul><li>O stepper do <b>guincho já é de 6 passos</b> exatamente como a spec (<span class="kv">stepLabels</span> confirmado no código) — coleta e entrega são <b>duas execuções de checklist distintas</b>.</li><li>O passo <b>"Atendimento" do prestador</b> foi expandido em 3 telas próprias: <span class="kv">atDiag</span> (Diagnóstico + foto) → <span class="kv">atExec</span> (Serviço executado + foto + materiais) → <span class="kv">atStock</span> (Estoque do técnico).</li><li>Conclusão é uma tela dedicada (<span class="kv">conclusao</span> / <span class="kv">atResumo</span>) com card de tempo, resumo do atendimento, deslocamento agrupado (popup) e comissão; sync silenciosa.</li></ul></div>
+  </div>
+</div>
+
+<div class="scard">
+  <div class="scard-head"><span class="scard-num">07</span><div style="flex:1"><div class="scard-tt">Checklists da OS (lista)</div><div class="scard-rt">/work-orders/:id/checklists</div></div><span class="mk mk-pend">PENDENTE</span></div>
+  <div class="scard-body">
+    <div class="blk"><div class="sub">Função</div><div class="fn">Listar os checklists disponíveis para a OS (coleta / entrega / técnico) com status e progresso.</div></div>
+    <div class="blk"><div class="sub">Conteúdo</div><div class="chips"><span class="chip">Checklist de coleta</span><span class="chip">Checklist de entrega</span><span class="chip">Checklist técnico</span><span class="chip">Status</span><span class="chip">Obrigatório/opcional</span><span class="chip">Progresso</span><span class="chip">Iniciar / Continuar / Concluído</span></div></div>
+    <div class="blk"><div class="sub">Endpoints</div><span class="ep"><span class="m-get">GET</span> /api/v1/mobile/checklists/available</span><span class="ep" style="color:#94A3B8"><span class="m-get">GET</span> /api/v1/mobile/work-orders/:id/checklists <span>(futuro)</span></span></div>
+    <div class="callout" style="border-left-color:#B45309;background:#FFFDF7;border-color:#F5E9CC"><div class="sub" style="color:#B45309">No protótipo — lacuna</div><p>Hoje <b>não existe</b> essa tela-lista: o fluxo entra <b>direto</b> no checklist de coleta e depois no de entrega (via <span class="kv">entregaMode</span>). Como o próprio orquestrador marcou o endpoint por-OS como "futuro", tratar a lista como <b>opcional no MVP</b> — ou construí-la como hub quando houver 3+ checklists por OS.</p></div>
+  </div>
+</div>
+
+<div class="scard">
+  <div class="scard-head"><span class="scard-num">08</span><div style="flex:1"><div class="scard-tt">Execução de Checklist</div><div class="scard-rt">/checklists/:id/run · screen:checklist + entrega</div></div><span class="mk mk-alt">ALTERADO</span></div>
+  <div class="scard-body">
+    <div class="blk"><div class="sub">Função</div><div class="fn">Executar checklist <b>schema-driven</b> — o modelo vem do backend por cliente; o app renderiza os componentes dinamicamente.</div></div>
+    <div class="blk"><div class="sub">Componentes suportados (MVP)</div><div class="chips"><span class="chip">vehicle_selector</span><span class="chip">damage_map</span><span class="chip">photo_upload</span><span class="chip">observation</span><span class="chip">comparison</span><span class="chip">acknowledgement</span><span class="chip">before_after</span></div></div>
+    <div class="blk"><div class="sub">Endpoints</div><span class="ep"><span class="m-get">GET</span> /api/v1/mobile/checklists/:id/render</span><span class="ep"><span class="m-post">POST</span> /api/v1/mobile/checklist-runs · /:runId/markers · /:runId/attachments · /:runId/complete</span><span class="ep"><span class="m-put">PATCH</span> /api/v1/mobile/checklist-runs/:runId</span><span class="ep"><span class="m-get">GET</span> /api/v1/mobile/checklist-runs/:runId/comparison</span><span class="ep"><span class="m-post">POST</span> /api/v1/mobile/checklist-runs/:runId/divergence · /acknowledgement</span></div>
+    <div class="callout"><div class="sub">No protótipo — o que mudamos</div><ul><li><b>Coleta e entrega são runs separados</b>: o estado usa prefixos <span class="kv">c_</span> (coleta) e <span class="kv">e_</span> (entrega) — cada um com seu <b>damage_map</b> (mapa de avarias) e sua <b>assinatura</b>.</li><li>A <b>assinatura da entrega é distinta</b> da coleta: título "Assinatura de quem recebeu" e canvas próprio; ambas <b>persistem</b> ao reabrir (localStorage no protótipo → storage seguro no Flutter).</li><li><b>photo_upload</b> = grid de <b>8 miniaturas</b>: só aparecem com foto capturada; a próxima vaga mostra o ícone de câmera; tocar numa foto já feita abre "capturar nova foto".</li><li>Botão "Finalizar" habilita só com <b>pendências = 0</b> (derivado dos itens obrigatórios); a barra de progresso atualiza por passo.</li></ul></div>
+  </div>
+</div>
+
+<div class="scard">
+  <div class="scard-head"><span class="scard-num">09</span><div style="flex:1"><div class="scard-tt">Evidências</div><div class="scard-rt">screen:evidence · + embutido em OS/checklist/sync</div></div><span class="mk mk-extra">EXTRA</span></div>
+  <div class="scard-body">
+    <div class="blk"><div class="sub">Função</div><div class="fn">Registrar fotos, observações e assinaturas. A spec não pede tela isolada; o protótipo tem uma dedicada.</div></div>
+    <div class="blk"><div class="sub">Conteúdo</div><div class="chips"><span class="chip">Segmented Antes/Durante/Depois</span><span class="chip">Grid de fotos (obrigatória/preenchida)</span><span class="chip">Tabela de equipamento</span><span class="chip">Lista de verificações</span><span class="chip">Observações</span><span class="chip">Status de upload</span><span class="chip">Retry</span></div></div>
+    <div class="blk"><div class="sub">Endpoints</div><span class="ep"><span class="m-post">POST</span> /api/v1/mobile/evidence-uploads</span><span class="ep"><span class="m-post">POST</span> /api/v1/mobile/sync/evidence-actions</span><span class="ep"><span class="m-post">POST</span> /api/v1/mobile/checklist-runs/:runId/attachments</span></div>
+    <div class="blk"><div class="sub">Estados de evidência</div><div class="chips"><span class="chip">pending_local</span><span class="chip">accepted</span><span class="chip">stored</span><span class="chip">rejected</span><span class="chip">scan_failed</span><span class="chip">pending_review</span><span class="chip">network_error</span><span class="chip">timeout</span></div></div>
+    <div class="callout" style="border-left-color:#7C3AED"><div class="sub">No protótipo</div><p>Além do registro embutido no checklist, existe a tela <span class="kv">evidence</span> com abas <b>Antes / Durante / Depois</b> (<span class="kv">evidTab</span>) — usar como visão consolidada; as fotos individuais continuam anexadas ao run do checklist.</p></div>
+  </div>
+</div>
+
+<div class="scard">
+  <div class="scard-head"><span class="scard-num">10</span><div style="flex:1"><div class="scard-tt">Enviar Localização Agora</div><div class="scard-rt">embutido · + screen:consent / locStatus (LGPD)</div></div><span class="mk mk-ok">CONFORME</span></div>
+  <div class="scard-body">
+    <div class="blk"><div class="sub">Função</div><div class="fn">Envio <b>manual</b> de localização — sem tela isolada obrigatória. Aparece na Home, no Check-in e na Execução, e num popup de GPS.</div></div>
+    <div class="blk"><div class="sub">Conteúdo</div><div class="chips"><span class="chip">Status de GPS</span><span class="chip">Status de consentimento</span><span class="chip">Enviar localização agora</span><span class="chip">Confirmação com horário</span><span class="chip">Precisão aproximada</span><span class="chip">Aviso de fila offline</span><span class="chip">Reenviar</span></div></div>
+    <div class="blk"><div class="sub">Endpoints</div><span class="ep"><span class="m-post">POST</span> /api/v1/mobile/field-locations</span></div>
+    <div class="callout" style="border-left-color:#7C3AED"><div class="sub">No protótipo — telas extras (LGPD)</div><ul><li><span class="kv">consent</span> — Consentimento de Localização: uso só com OS ativa, retenção 90d, revogável ("Permitir durante atendimentos" / "Agora não").</li><li><span class="kv">locStatus</span> — Status de Localização: estado da permissão + toggles (check-in / rota / 2º plano <b>OFF</b>) + Revogar.</li><li>Regra firmada: <b>sem background tracking, sem timer, sem stream</b> — só envio manual (<span class="kv">locSentAt</span> guarda o último envio).</li></ul></div>
+  </div>
+</div>
+
+<div class="scard">
+  <div class="scard-head"><span class="scard-num">11</span><div style="flex:1"><div class="scard-tt">Sync / Fila Offline</div><div class="scard-rt">/sync · screen:sync</div></div><span class="mk mk-ok">CONFORME</span></div>
+  <div class="scard-body">
+    <div class="blk"><div class="sub">Função</div><div class="fn">Mostrar tudo que está pendente, enviado, com erro ou em conflito — e permitir reenvio.</div></div>
+    <div class="blk"><div class="sub">Conteúdo</div><div class="chips"><span class="chip">Banner online/offline</span><span class="chip">Prontas para enviar</span><span class="chip">Pendentes</span><span class="chip">Conflitos</span><span class="chip">Erros</span><span class="chip">Fila item a item</span><span class="chip">Sincronizar agora</span><span class="chip">Tentar novamente</span><span class="chip">Abrir item relacionado</span></div></div>
+    <div class="blk"><div class="sub">Endpoints</div><span class="ep"><span class="m-post">POST</span> /api/v1/mobile/sync/work-order-actions · /sync/checklist-actions · /sync/evidence-actions</span><span class="ep"><span class="m-post">POST</span> /api/v1/mobile/evidence-uploads · /field-locations</span></div>
+    <div class="callout"><div class="sub">No protótipo</div><p>O <b>card de conflito</b> oferece escolha explícita <b>"Minha versão / Versão do gestor"</b> — <b>nada é sobrescrito automaticamente</b>. 3 stats no topo (Prontas / Pendentes / Conflito) e fila com status por item. No Flutter, mapear para <span class="kv">/mobile/sync/batch</span> ou os três canais por tipo acima.</p></div>
+  </div>
+</div>
+
+<div class="modhead"><h3>Referências de implementação</h3></div>
+
+<div class="refbox">
+  <div class="sub">Componentes de checklist schema-driven (7)</div>
+  <div class="refrow"><b>vehicle_selector</b><span>Seleção de veículo/tipo; alimenta o cabeçalho (placa, modelo, odômetro no guincho).</span></div>
+  <div class="refrow"><b>damage_map</b><span>Mapa de avarias com marcadores numerados (tipo + nota); estado por run <span class="kv">c_dmgMarks</span> / <span class="kv">e_dmgMarks</span>.</span></div>
+  <div class="refrow"><b>photo_upload</b><span>Grid de 8 miniaturas; captura obrigatória por posição; ícone de câmera na próxima vaga.</span></div>
+  <div class="refrow"><b>observation</b><span>Campo de texto livre por item / avaria.</span></div>
+  <div class="refrow"><b>comparison</b><span>Comparativo coleta × entrega (divergências) — <span class="kv">GET /:runId/comparison</span>.</span></div>
+  <div class="refrow"><b>acknowledgement</b><span>Ciência/assinatura do responsável — <span class="kv">POST /:runId/acknowledgement</span>.</span></div>
+  <div class="refrow"><b>before_after</b><span>Par de evidências antes/depois; alinha com as abas Antes/Durante/Depois da tela de Evidências.</span></div>
+</div>
+
+<div class="refbox">
+  <div class="sub">Índice de endpoints — MVP Mobile</div>
+  <div class="refrow"><b>auth</b><span><span class="m-post">POST</span> /auth/login · /auth/refresh · /auth/logout · /auth/active-tenant · <span class="m-get">GET</span> /mobile/bootstrap</span></div>
+  <div class="refrow"><b>work-orders</b><span><span class="m-get">GET</span> /work-orders · /:id · /:id/timeline &nbsp; <span class="m-put">PATCH</span> /:id/status</span></div>
+  <div class="refrow"><b>checklists</b><span><span class="m-get">GET</span> /mobile/checklists/available · /:id/render · /checklist-runs/:runId/comparison &nbsp; <span class="m-post">POST</span> /mobile/checklist-runs · /:runId/markers · /attachments · /complete · /divergence · /acknowledgement &nbsp; <span class="m-put">PATCH</span> /:runId</span></div>
+  <div class="refrow"><b>evidências</b><span><span class="m-post">POST</span> /mobile/evidence-uploads · /mobile/sync/evidence-actions</span></div>
+  <div class="refrow"><b>localização</b><span><span class="m-post">POST</span> /mobile/field-locations <span style="color:#94A3B8">(manual · LGPD)</span></span></div>
+  <div class="refrow"><b>sync</b><span><span class="m-post">POST</span> /mobile/sync/work-order-actions · /sync/checklist-actions · /sync/evidence-actions</span></div>
+</div>
+
+<div class="callout" style="border-left-color:#059669;background:#F6FCF9;border-color:#CFEBDD;margin-top:16px">
+  <div class="sub" style="color:#059669">Pendências para o MVP</div>
+  <ul>
+    <li><b>Tela 7 (lista de checklists)</b> — não construída; decidir se entra como hub ou fica como "abrir direto" no MVP.</li>
+    <li><b>OAuth Google</b> e <b>biometria</b> — hoje mockados/como preferência; precisam de fluxo real.</li>
+    <li><b>Todos os endpoints</b> estão como contrato — nenhuma chamada de rede real no protótipo; ações escrevem só no estado local.</li>
+    <li>Definir <b>schema real do checklist por cliente</b> (o backend modela; o app já renderiza os 7 componentes).</li>
+  </ul>
+</div>
+
+<p class="note" style="margin-top:14px">Gerado a partir de <span class="kv">ERP Mobile.dc.html</span> · reconcilia a spec do orquestrador (11 telas) com a lógica construída · exportar: Salvar como PDF (retrato).</p>
+
+</td></tr></tbody>
+<tfoot><tr><td class="pad-bottom"></td></tr></tfoot>
+</table>
+</main>
+</x-dc>
+</body>
+</html>

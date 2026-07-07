@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;background:#F1F5F9}
+input[type=email],input[type=password]{display:block;width:100%;padding:12px 14px;border:1.5px solid #E2E8F0;border-radius:10px;background:#fff;font-size:14px;color:#0F172A;font-family:inherit;outline:none;box-sizing:border-box}
+input[type=email]:focus,input[type=password]:focus{border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+
+<div class="login-root" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 24px;background:#F1F5F9;position:relative">
+  <!-- theme toggle -->
+  <div style="position:absolute;top:18px;right:18px;display:flex;background:#fff;border:1px solid #E2E8F0;border-radius:9px;padding:3px;gap:2px;z-index:10">
+    <button onClick="{{ themeLight }}" style="padding:5px 11px;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;background:{{ tLightBg }};color:{{ tLightFg }}">Claro</button>
+    <button onClick="{{ themeDark }}" style="padding:5px 11px;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;background:{{ tDarkBg }};color:{{ tDarkFg }}">Dark</button>
+    <button onClick="{{ themeHC }}" style="padding:5px 11px;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;background:{{ tHCBg }};color:{{ tHCFg }}">Contraste</button>
+  </div>
+  <div style="width:100%;max-width:420px">
+
+    <!-- ░░ Zona de identidade do tenant — configurada pelo admin da plataforma ░░ -->
+    <div style="display:flex;justify-content:center;margin-bottom:32px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:{{ brandGap }};min-height:{{ brandMinH }};max-height:{{ brandMaxH }};padding:{{ brandPad }}">
+
+        <sc-if value="{{ showBrandImg }}" hint-placeholder-val="{{ true }}">
+        <div style="height:{{ brandImgH }};width:{{ brandImgH }};max-width:{{ brandImgMaxW }};border-radius:{{ brandImgRadius }};flex-shrink:0;background-image:url('{{ brandImgUrl }}');background-size:contain;background-repeat:no-repeat;background-position:center"></div>
+        </sc-if>
+
+        <sc-if value="{{ showBrandText }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;{{ brandTextAlign }}">
+          <div style="font-size:{{ brandNameSize }};font-weight:800;color:#0F172A;letter-spacing:-.3px;white-space:nowrap">{{ brandName }}</div>
+          <sc-if value="{{ showBrandTagline }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:{{ brandTaglineSize }};font-weight:500;color:#64748B;margin-top:2px;white-space:nowrap">{{ brandTagline }}</div>
+          </sc-if>
+        </div>
+        </sc-if>
+
+      </div>
+    </div>
+    <!-- ░░ fim zona de identidade ░░ -->
+
+    <sc-if value="{{ stepLogin }}" hint-placeholder-val="{{ true }}">
+    <div style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:36px;box-shadow:0 4px 24px rgba(0,0,0,.06)">
+
+      <div style="font-size:24px;font-weight:800;color:#0F172A;margin-bottom:4px">Entrar</div>
+      <div style="font-size:14px;color:#64748B;margin-bottom:20px">Acesse sua organização</div>
+
+      <div style="display:flex;align-items:flex-start;gap:9px;padding:10px 13px;border-radius:10px;background:#FFFBEB;border:1px solid #FDE68A;margin-bottom:22px">
+        <span style="width:7px;height:7px;border-radius:50%;background:#D97706;flex-shrink:0;margin-top:5px"></span>
+        <span style="font-size:12px;font-weight:600;color:#92400E;line-height:1.45">Ambiente de demonstração · dados fictícios. Use qualquer e-mail e senha para entrar.</span>
+      </div>
+
+      <sc-if value="{{ loginError }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:9px;padding:11px 14px;border-radius:10px;background:#FEF2F2;border:1px solid #FECACA;margin-bottom:18px">
+        <span style="width:7px;height:7px;border-radius:50%;background:#DC2626;flex-shrink:0"></span>
+        <span style="font-size:12.5px;font-weight:600;color:#DC2626">{{ loginErrorMsg }}</span>
+      </div>
+      </sc-if>
+
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:12.5px;font-weight:700;color:#374151;margin-bottom:6px">E-mail corporativo</label>
+        <input type="email" placeholder="usuario@empresa.com.br">
+      </div>
+
+      <div style="margin-bottom:10px">
+        <label style="display:block;font-size:12.5px;font-weight:700;color:#374151;margin-bottom:6px">Senha</label>
+        <input type="password" placeholder="••••••••">
+      </div>
+
+      <div style="text-align:right;margin-bottom:24px">
+        <span style="font-size:12.5px;font-weight:600;color:#2563EB;cursor:pointer">Esqueci minha senha</span>
+      </div>
+
+      <button onClick="{{ onSubmit }}" style="width:100%;padding:13px;background:#2563EB;border:none;border-radius:10px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px">
+        <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <span style="width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .7s linear infinite;flex-shrink:0"></span>
+        </sc-if>
+        <span>{{ btnLabel }}</span>
+      </button>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="flex:1;height:1px;background:#E2E8F0"></div>
+        <span style="font-size:12.5px;color:#94A3B8;white-space:nowrap">ou continue com</span>
+        <div style="flex:1;height:1px;background:#E2E8F0"></div>
+      </div>
+
+      <button onClick="{{ onGoogle }}" style="width:100%;padding:12px;background:#fff;border:1.5px solid #E2E8F0;border-radius:10px;font-size:14px;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:white;box-shadow:0 0 0 1.5px #E2E8F0;flex-shrink:0;overflow:hidden;padding:1px"><svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg></span>
+        <span>Entrar com Google</span>
+      </button>
+    </div>
+    </sc-if>
+
+    <!-- ░░ Seleção de organização ░░ -->
+    <sc-if value="{{ stepOrgs }}" hint-placeholder-val="{{ false }}">
+    <div style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:28px;box-shadow:0 4px 24px rgba(0,0,0,.06)">
+      <div style="font-size:22px;font-weight:800;color:#0F172A;margin-bottom:4px">Selecionar organização</div>
+      <div style="font-size:14px;color:#64748B;margin-bottom:20px">Escolha a empresa que deseja acessar</div>
+      <div style="display:flex;align-items:center;gap:9px;padding:10px 13px;background:#F1F5F9;border-radius:10px;margin-bottom:16px">
+        <span style="width:14px;height:14px;border-radius:50%;border:1.5px solid #94A3B8;display:inline-block;flex-shrink:0;position:relative"><span style="position:absolute;bottom:-3px;right:-1px;width:5px;height:1.5px;background:#94A3B8;transform:rotate(45deg);transform-origin:right"></span></span>
+        <span style="font-size:13px;color:#94A3B8">Buscar organização…</span>
+      </div>
+      <sc-for list="{{ orgs }}" as="o" hint-placeholder-count="3">
+      <div onClick="{{ o.onPick }}" style="border:1.5px solid #E2E8F0;border-radius:13px;margin-bottom:10px;cursor:pointer;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:13px;padding:14px 14px 0">
+          <div style="width:42px;height:42px;border-radius:11px;background:{{ o.iconBg }};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:{{ o.iconColor }};flex-shrink:0">{{ o.initials }}</div>
+          <div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:700;color:#0F172A">{{ o.name }}</div><div style="font-size:12px;color:#64748B;margin-top:1px">{{ o.role }} · {{ o.plan }}</div></div>
+          <div style="text-align:right"><span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:{{ o.stBg }};color:{{ o.stCl }}">{{ o.status }}</span><div style="font-size:10.5px;color:#94A3B8;margin-top:3px">{{ o.last }}</div></div>
+        </div>
+        <div style="padding:11px 14px 13px;margin-top:11px;display:flex;flex-direction:column;gap:6px;border-top:1px solid #F1F5F9">
+          <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:9.5px;font-weight:700;color:#94A3B8;letter-spacing:.04em;width:70px;flex-shrink:0">MÓDULOS</span><span style="font-size:11.5px;color:#475569">{{ o.modules }}</span></div>
+          <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:9.5px;font-weight:700;color:#94A3B8;letter-spacing:.04em;width:70px;flex-shrink:0">PERMISSÕES</span><span style="font-size:11.5px;color:#475569">{{ o.perms }}</span></div>
+        </div>
+      </div>
+      </sc-for>
+      <div style="display:flex;align-items:center;justify-content:center;gap:20px;margin-top:14px">
+        <span onClick="{{ backToLogin }}" style="font-size:13px;font-weight:600;color:#64748B;cursor:pointer">Entrar com outra conta</span>
+        <span onClick="{{ backToLogin }}" style="font-size:13px;font-weight:700;color:#DC2626;cursor:pointer">Sair</span>
+      </div>
+    </div>
+    </sc-if>
+
+    <div style="text-align:center;margin-top:24px;font-size:11px;color:#94A3B8;font-family:'JetBrains Mono',monospace">
+      v2.4.1 · Produção · TechSolutions ERP
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: {&quot;width&quot;: 1280, &quot;height&quot;: 800},
+  &quot;brandMode&quot;: {
+    &quot;editor&quot;: &quot;enum&quot;,
+    &quot;default&quot;: &quot;image+text&quot;,
+    &quot;options&quot;: [&quot;image+text&quot;, &quot;image-only&quot;, &quot;text-only&quot;],
+    &quot;tsType&quot;: &quot;'image+text' | 'image-only' | 'text-only'&quot;
+  },
+  &quot;brandSize&quot;: {
+    &quot;editor&quot;: &quot;enum&quot;,
+    &quot;default&quot;: &quot;md&quot;,
+    &quot;options&quot;: [&quot;sm&quot;, &quot;md&quot;, &quot;lg&quot;],
+    &quot;tsType&quot;: &quot;'sm' | 'md' | 'lg'&quot;
+  },
+  &quot;brandImgUrl&quot;: {
+    &quot;editor&quot;: &quot;text&quot;,
+    &quot;default&quot;: &quot;uploads/techsolutions-logo-icon.png&quot;,
+    &quot;tsType&quot;: &quot;string&quot;
+  },
+  &quot;brandName&quot;: {
+    &quot;editor&quot;: &quot;text&quot;,
+    &quot;default&quot;: &quot;TechSolutions&quot;,
+    &quot;tsType&quot;: &quot;string&quot;
+  },
+  &quot;brandTagline&quot;: {
+    &quot;editor&quot;: &quot;text&quot;,
+    &quot;default&quot;: &quot;Plataforma de gestão empresarial&quot;,
+    &quot;tsType&quot;: &quot;string&quot;
+  }
+}">
+class Component extends DCLogic {
+  state = { loading: false, error: false, errorMsg: '', step: 'login', theme: 'light' };
+
+  componentDidMount() { this._inj(this.state.theme); }
+  componentDidUpdate() { this._inj(this.state.theme); }
+  _inj(theme) {
+    const dark = `
+      .login-root{background:#0F172A!important}
+      .login-root [style*="background: rgb(255, 255, 255)"]{background:#1E293B!important}
+      .login-root [style*="background: rgb(241, 245, 249)"]{background:#0F172A!important}
+      .login-root [style*="color: rgb(15, 23, 42)"]{color:#F1F5F9!important}
+      .login-root [style*="color: rgb(55, 65, 81)"]{color:#CBD5E1!important}
+      .login-root [style*="color: rgb(100, 116, 139)"]{color:#94A3B8!important}
+      .login-root [style*="border: 1px solid rgb(226, 232, 240)"]{border-color:#334155!important}
+      .login-root [style*="border: 1.5px solid rgb(226, 232, 240)"]{border-color:#334155!important}
+      .login-root input[type=email],.login-root input[type=password]{background:#0F172A!important;border-color:#334155!important;color:#F1F5F9!important}
+    `;
+    const hc = `
+      .login-root [style*="color: rgb(100, 116, 139)"]{color:#1E293B!important}
+      .login-root [style*="color: rgb(148, 163, 184)"]{color:#475569!important}
+      .login-root [style*="border: 1px solid rgb(226, 232, 240)"]{border-color:#0F172A!important;border-width:2px!important}
+      .login-root [style*="border: 1.5px solid rgb(226, 232, 240)"]{border-color:#0F172A!important;border-width:2px!important}
+    `;
+    const css = theme==='dark'?dark:theme==='hc'?hc:'';
+    let el=document.getElementById('loginThemeStyle');
+    if(!el){el=document.createElement('style');el.id='loginThemeStyle';document.head.appendChild(el);}
+    el.textContent=css;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const th = s.theme;
+
+    // ── Zona de identidade white-label ──
+    // brandMode: 'image+text' | 'image-only' | 'text-only'
+    // brandSize: 'sm' | 'md' | 'lg' (dentro das margens da plataforma)
+    const mode = this.props.brandMode ?? 'image+text';
+    const size = this.props.brandSize ?? 'md';
+
+    const sizeMap = {
+      sm: { imgH:'40px', imgMaxW:'120px', nameSize:'18px', taglineSize:'11px', minH:'48px', maxH:'60px', pad:'8px 0', gap:'10px', radius:'10px' },
+      md: { imgH:'56px', imgMaxW:'180px', nameSize:'22px', taglineSize:'12.5px', minH:'60px', maxH:'80px', pad:'10px 0', gap:'14px', radius:'14px' },
+      lg: { imgH:'72px', imgMaxW:'220px', nameSize:'26px', taglineSize:'14px', minH:'76px', maxH:'96px', pad:'12px 0', gap:'18px', radius:'18px' },
+    };
+    const sz = sizeMap[size] || sizeMap.md;
+
+    return {
+      showBrandImg:     mode !== 'text-only',
+      showBrandText:    mode !== 'image-only',
+      showBrandTagline: !!(this.props.brandTagline ?? 'Plataforma de gestão empresarial'),
+      brandImgUrl:      this.props.brandImgUrl    ?? 'uploads/techsolutions-logo-icon.png',
+      brandName:        this.props.brandName      ?? 'TechSolutions',
+      brandTagline:     this.props.brandTagline   ?? 'Plataforma de gestão empresarial',
+      brandImgH:        sz.imgH,
+      brandImgMaxW:     sz.imgMaxW,
+      brandImgRadius:   sz.radius,
+      brandNameSize:    sz.nameSize,
+      brandTaglineSize: sz.taglineSize,
+      brandMinH:        sz.minH,
+      brandMaxH:        sz.maxH,
+      brandPad:         sz.pad,
+      brandGap:         sz.gap,
+      brandTextAlign:   mode === 'text-only' ? 'align-items:center' : 'align-items:flex-start',
+      stepLogin: s.step === 'login',
+      stepOrgs:  s.step === 'orgs',
+      orgs: [
+        { name:'Techsolutions BH', role:'Gestor de operações', plan:'Enterprise', modules:'OS · Estoque · Financeiro · Aprovações', perms:'Aprovar · Despachar · Editar OS', initials:'BH', iconBg:'#EFF6FF', iconColor:'#2563EB', status:'Ativa', stBg:'#ECFDF5', stCl:'#059669', last:'há 2h', onPick: () => { window.location.href = 'ERP Web.dc.html'; } },
+        { name:'Techsolutions SP', role:'Gestor regional', plan:'Enterprise', modules:'OS · Despachos · Mapa · Comissões', perms:'Aprovar · Despachar · Ver relatórios', initials:'SP', iconBg:'#ECFDF5', iconColor:'#059669', status:'Ativa', stBg:'#ECFDF5', stCl:'#059669', last:'ontem', onPick: () => { window.location.href = 'ERP Web.dc.html'; } },
+        { name:'Techsolutions RJ', role:'Administrador', plan:'Business', modules:'OS · Checklists · Configurações', perms:'Admin do tenant · Publicar checklists', initials:'RJ', iconBg:'#F5F3FF', iconColor:'#7C3AED', status:'Implantação', stBg:'#FFFBEB', stCl:'#D97706', last:'há 5 dias', onPick: () => { window.location.href = 'ERP Web.dc.html'; } },
+      ],
+      backToLogin: () => this.setState({ step: 'login' }),
+      themeLight: () => this.setState({ theme:'light' }),
+      themeDark:  () => this.setState({ theme:'dark' }),
+      themeHC:    () => this.setState({ theme:'hc' }),
+      tLightBg: th==='light'?'#2563EB':'transparent', tLightFg: th==='light'?'#fff':'#64748B',
+      tDarkBg:  th==='dark'?'#2563EB':'transparent',  tDarkFg:  th==='dark'?'#fff':'#64748B',
+      tHCBg:    th==='hc'?'#2563EB':'transparent',     tHCFg:    th==='hc'?'#fff':'#64748B',
+      loading: s.loading,
+      loginError: s.error,
+      loginErrorMsg: s.errorMsg || 'E-mail ou senha incorretos. Tente novamente.',
+      btnLabel: s.loading ? 'Entrando…' : 'Entrar',
+      onSubmit: () => {
+        this.setState({ loading: true, error: false });
+        setTimeout(() => {
+          this.setState({ loading: false, step: 'orgs' });
+        }, 800);
+      },
+      onGoogle: () => {
+        this.setState({ loading: true });
+        setTimeout(() => {
+          this.setState({ loading: false, step: 'orgs' });
+        }, 700);
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

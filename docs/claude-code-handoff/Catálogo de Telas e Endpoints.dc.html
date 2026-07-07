@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{margin:0;background:#EEF2F6;font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;color:#1E293B}
+.doc{box-sizing:border-box;max-width:10.4in;margin:0 auto;background:#fff;padding:52px clamp(22px,4vw,0.7in) 92px;box-shadow:0 1px 3px rgba(15,23,41,.08)}
+.doc-frame{width:100%;border-collapse:collapse}.doc-frame td{padding:0}
+.pad-top,.pad-bottom{display:none}
+h1,h2,h3,h4{text-wrap:balance;color:#0F172A}
+p,li{text-wrap:pretty}
+.cat{width:100%;border-collapse:collapse;margin:8px 0 4px;font-size:11px;table-layout:fixed}
+.cat th{background:#0F172A;color:#fff;text-align:left;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:7px 9px;vertical-align:top}
+.cat th:nth-child(1){width:18%}.cat th:nth-child(2){width:30%}.cat th:nth-child(3){width:26%}.cat th:nth-child(4){width:26%}
+.cat td{border-bottom:1px solid #E8EDF3;padding:8px 9px;vertical-align:top;line-height:1.5}
+.cat tr:nth-child(even) td{background:#FAFBFC}
+.scr{font-weight:800;color:#0F172A;font-size:11.5px;line-height:1.3}
+.scr small{display:block;font-weight:600;color:#94A3B8;font-size:9.5px;font-family:'JetBrains Mono',monospace;margin-top:3px;text-transform:none;letter-spacing:0;word-break:break-all}
+.scr .role{display:inline-block;font-size:8.5px;font-weight:800;letter-spacing:.04em;color:#2563EB;background:#EFF6FF;border-radius:4px;padding:1px 5px;margin-top:4px}
+.cmp{color:#475569;font-size:10.5px}
+.ep{font-family:'JetBrains Mono',monospace;font-size:9.5px;line-height:1.7;color:#334155;display:block;word-break:break-word}
+.m-get{color:#1D4ED8;font-weight:700}.m-post{color:#059669;font-weight:700}.m-put{color:#B45309;font-weight:700}.m-del{color:#DC2626;font-weight:700}.m-ws{color:#7C3AED;font-weight:700}
+.wired{color:#059669;font-weight:800}
+.modhead{display:flex;align-items:center;gap:10px;margin:26px 0 2px;padding-bottom:6px;border-bottom:2px solid #0F172A}
+.modnum{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#fff;background:#2563EB;border-radius:6px;padding:2px 8px}
+.modhead h3{font-size:15px;font-weight:800}
+.modhead .meta{margin-left:auto;font-size:10px;color:#94A3B8;font-weight:600;font-family:'JetBrains Mono',monospace}
+.lead{font-size:13px;line-height:1.65;color:#475569}
+.legend{display:flex;flex-wrap:wrap;gap:7px 16px;margin:12px 0;padding:13px 15px;background:#F8FAFC;border:1px solid #E8EDF3;border-radius:11px;font-size:11px;color:#475569}
+.legend b{color:#0F172A}
+.note{font-size:10.5px;color:#94A3B8;margin:6px 0 0;font-style:italic}
+.kv{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#0F172A;background:#EFF3F8;border-radius:5px;padding:1px 5px}
+.parthead{font-size:19px;font-weight:800;margin:30px 0 2px;padding-top:13px;border-top:3px solid #2563EB}
+.parthead small{font-weight:600;color:#94A3B8;font-size:12.5px}
+@page{size:letter landscape;margin:0}
+@media print{
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html,body{margin:0;padding:0;background:#fff}
+  .doc{max-width:none!important;margin:0!important;padding:0 0.45in!important;box-shadow:none!important}
+  .pad-top,.pad-bottom{display:table-cell;height:0.45in}
+  h1,h2,h3,h4{break-after:avoid}
+  tr,.modhead,.legend,.parthead{break-inside:avoid}
+}
+</style>
+</helmet>
+<main class="doc">
+<table class="doc-frame" role="presentation">
+<thead><tr><td class="pad-top"></td></tr></thead>
+<tbody><tr><td>
+
+<h1 style="font-size:29px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px">Catálogo de Telas &amp; Endpoints</h1>
+<div style="font-size:12.5px;font-weight:600;color:#2563EB;font-family:'JetBrains Mono',monospace;margin-bottom:14px">ERP Techsolutions · Web (React) + Mobile (Flutter) · v2026.06</div>
+<p class="lead" style="margin-bottom:13px">Inventário completo dos protótipos navegáveis: cada tela com seus <b>componentes principais</b> e o <b>contrato de dados</b> — entradas (leitura) e saídas (escrita). <b>Web: 37 telas</b> em 5 papéis · <b>Mobile: 37 telas</b> em 2 papéis e 2 tipos de atendimento (guincho / prestador).</p>
+
+<div class="legend">
+  <span><b>Entradas →</b> <span class="m-get">GET</span> leitura/listagem</span>
+  <span><b>Saídas →</b> <span class="m-post">POST</span> <span class="m-put">PUT/PATCH</span> <span class="m-del">DEL</span> escrita</span>
+  <span><span class="m-ws">WS</span> tempo real (WebSocket)</span>
+  <span><span class="wired">●</span> já referenciado no protótipo (<span class="kv">data-endpoint</span>)</span>
+  <span>○ contrato REST proposto (validar com o time)</span>
+</div>
+
+<h2 style="font-size:16px;font-weight:800;margin:22px 0 6px">Convenções de API</h2>
+<table class="cat">
+<colgroup><col style="width:18%"><col style="width:82%"></colgroup>
+<thead><tr><th>Aspecto</th><th>Padrão</th></tr></thead>
+<tbody>
+<tr><td class="scr">Base URL</td><td class="cmp"><span class="kv">https://api.techsolutions.com.br/api/v1</span> · JSON · datas ISO-8601 · moeda em centavos (int)</td></tr>
+<tr><td class="scr">Autenticação</td><td class="cmp"><span class="m-post">POST</span> <span class="kv">/auth/login</span> → JWT (access+refresh). Header <span class="kv">Authorization: Bearer &lt;token&gt;</span> em toda chamada.</td></tr>
+<tr><td class="scr">Multi-organização</td><td class="cmp">Organização resolvida <b>após</b> login. Header <span class="kv">X-Tenant-Id</span> obrigatório. Permissões por papel (Gestor · Financeiro · Admin · Operação de Campo · Admin Plataforma).</td></tr>
+<tr><td class="scr">Paginação / filtro</td><td class="cmp"><span class="kv">?page=&amp;pageSize=&amp;sort=&amp;q=</span> + filtros por recurso. Listas grandes: <span class="kv">{ data, page, total }</span>.</td></tr>
+<tr><td class="scr">Mutações</td><td class="cmp"><span class="kv">Idempotency-Key</span> em POST (evita duplo-clique). Erros em RFC-7807 <span class="kv">{ type, title, detail }</span>.</td></tr>
+<tr><td class="scr">Sync (mobile)</td><td class="cmp">Escrita offline em fila local → <span class="m-post">POST</span> <span class="kv">/mobile/sync/batch</span>. Conflito devolve <span class="kv">409</span> com as duas versões; resolução <b>manual</b>.</td></tr>
+<tr><td class="scr">Tempo real</td><td class="cmp"><span class="m-ws">WS</span> <span class="kv">/ws</span> — canais: localização de campo, console de despacho, chat, notificações.</td></tr>
+</tbody>
+</table>
+<p class="note">Endpoints <span class="wired">●</span> aparecem como <span class="kv">data-endpoint</span> no markup; os demais (○) são o contrato sugerido, derivado das mesmas convenções.</p>
+
+<div class="parthead">Parte 1 — Web · Console ERP <small>(React · shell sidebar 236px + topbar 60px · 37 telas)</small></div>
+
+<div class="modhead"><span class="modnum">A</span><h3>Operação — papel Gestor</h3><span class="meta">13 telas</span></div>
+<table class="cat">
+<thead><tr><th>Tela · rota · papel</th><th>Componentes principais</th><th>Entradas (GET)</th><th>Saídas (escrita)</th></tr></thead>
+<tbody>
+<tr>
+  <td class="scr">Dashboard Operacional<small>/dashboard · screen:dashboard</small><span class="role">GESTOR</span></td>
+  <td class="cmp">4 KPIs (ícone em tile, valor 25px, delta ↑/↓); gráfico de barras Faturamento (meta+receita, 7 meses); painel Aprovações pendentes; Estoque crítico; timeline Atividade recente; ação Nova OS.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /dashboard/summary</span><span class="ep"><span class="m-get">GET</span> /work-orders?status=open</span><span class="ep"><span class="m-get">GET</span> /approvals?status=pending</span><span class="ep"><span class="m-get">GET</span> /inventory/critical</span></td>
+  <td><span class="ep">— navega para detalhes</span><span class="ep"><span class="m-post">POST</span> /work-orders <span style="color:#94A3B8">(drawer)</span></span></td>
+</tr>
+<tr>
+  <td class="scr">Ordens de Serviço — lista<small>/work-orders · screen:workOrders</small><span class="role">GESTOR</span></td>
+  <td class="cmp">KPIs; busca + filtros; tabela OS (código mono / cliente / serviço / técnico / SLA / status-chip); linhas clicáveis → detalhe; botão Nova OS (drawer bespoke).</td>
+  <td><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /work-orders</span><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /work-orders?priority=high</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /work-orders</span><span class="ep"><span class="m-put">PATCH</span> /work-orders/:id</span></td>
+</tr>
+<tr>
+  <td class="scr">Detalhe da OS<small>/work-orders/:id · screen:workOrderDetail</small><span class="role">GESTOR</span></td>
+  <td class="cmp">Header com status; timeline do chamado; abas (evidências / checklist / materiais); mini-mapa; bloco de atribuição; ações Editar / Atribuir / Mudar status.</td>
+  <td><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /work-orders/:id</span><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /work-orders/:id/timeline</span><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /notifications?workOrderId=:id</span></td>
+  <td><span class="ep"><span class="wired">●</span> <span class="m-put">PATCH</span> /work-orders/:id/status</span><span class="ep"><span class="wired">●</span> <span class="m-post">POST</span> /work-orders/:id/assign</span></td>
+</tr>
+<tr>
+  <td class="scr">Despachos<small>/operations/dispatches · screen:dispatches</small><span class="role">GESTOR</span></td>
+  <td class="cmp">Header AO VIVO; 4 KPIs; cards de envio com rota animada (origem→paradas→destino), caminhão em movimento, ETA mm:ss ao vivo, ponto atual pulsando; modal de detalhe (timeline vertical); modal Novo despacho.</td>
+  <td><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /operations/dispatches</span><span class="ep"><span class="m-get">GET</span> /operations/dispatches/:id</span><span class="ep"><span class="m-ws">WS</span> /ws/dispatches</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /operations/dispatches</span><span class="ep"><span class="m-put">PATCH</span> /operations/dispatches/:id/status</span><span class="ep"><span class="m-put">PATCH</span> /operations/dispatches/:id/reassign</span></td>
+</tr>
+<tr>
+  <td class="scr">Mapa Operacional<small>/operations/map · screen:opsMap</small><span class="role">GESTOR</span></td>
+  <td class="cmp">Google Maps (markers de técnicos/OS por status); painel lateral do técnico selecionado; lista OS próximas (distância); ações Despachar / Reagendar.</td>
+  <td><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /field-locations/latest</span><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /work-orders</span></td>
+  <td><span class="ep"><span class="m-put">PATCH</span> /work-orders/:id/assign</span></td>
+</tr>
+<tr>
+  <td class="scr">Fila de Aprovações<small>/approvals · screen:approvals</small><span class="role">GESTOR · FIN</span></td>
+  <td class="cmp">Abas (Pendentes·3 / Aprovadas / Recusadas); cards com borda-esquerda por tipo, código mono, chips, valor 20px; botões Detalhar / Aprovar / Recusar.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /approvals?status=</span></td>
+  <td><span class="ep"><span class="wired">●</span> <span class="m-post">POST</span> /approvals/:id/approve</span><span class="ep"><span class="wired">●</span> <span class="m-post">POST</span> /approvals/:id/reject</span></td>
+</tr>
+<tr>
+  <td class="scr">Aprovação — detalhe<small>/approvals/:id · screen:approvalDetail</small><span class="role">GESTOR · FIN</span></td>
+  <td class="cmp">2 colunas: esquerda (valor 34px, grid de metadados, tabela de itens do pedido); direita (painel Decisão + aviso de alçada + trilha de aprovação vertical).</td>
+  <td><span class="ep"><span class="m-get">GET</span> /approvals/:id</span></td>
+  <td><span class="ep"><span class="wired">●</span> <span class="m-post">POST</span> /approvals/:id/approve|reject</span><span class="ep"><span class="m-post">POST</span> /approvals/:id/request-revision</span></td>
+</tr>
+<tr>
+  <td class="scr">Estoque — lista<small>/inventory · screen:estoque</small><span class="role">GESTOR</span></td>
+  <td class="cmp">Barra interna do módulo (Visão/Produtos/Entradas/Saídas/Notas/Reservas/Ajustes/Relatórios/Config); 4–8 KPIs; bloco "O que exige atenção"; tabela de Produtos; botão + Movimentar (menu).</td>
+  <td><span class="ep"><span class="m-get">GET</span> /inventory/items</span><span class="ep"><span class="m-get">GET</span> /inventory/movements</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /inventory/movements · /entries · /exits</span><span class="ep"><span class="m-post">POST</span> /inventory/notes · /reservations · /adjustments</span></td>
+</tr>
+<tr>
+  <td class="scr">Estoque — detalhe do produto<small>/inventory/:itemId · screen:estoqueDetail</small><span class="role">GESTOR</span></td>
+  <td class="cmp">Header (ícone + ações Editar / Repor); banner crítico vermelho; 4 KPIs (saldo / mínimo / custo médio / cobertura); tabela de Movimentações (chip Entrada/Saída/Ajuste).</td>
+  <td><span class="ep"><span class="m-get">GET</span> /inventory/items/:itemId</span><span class="ep"><span class="m-get">GET</span> /inventory/items/:itemId/movements</span></td>
+  <td><span class="ep"><span class="m-put">PATCH</span> /inventory/items/:itemId</span><span class="ep"><span class="m-post">POST</span> /inventory/movements</span></td>
+</tr>
+<tr>
+  <td class="scr">Pedidos de Compra<small>/purchase-orders · screen:pedidos</small><span class="role">GESTOR</span></td>
+  <td class="cmp">Tabela Código (mono azul) / Fornecedor / Itens / Valor / Data / Status.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /purchase-orders</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /purchase-orders</span><span class="ep"><span class="m-put">PATCH</span> /purchase-orders/:id</span></td>
+</tr>
+<tr>
+  <td class="scr">Checklists Operacionais<small>/operations/checklists · screen:checklistsOps</small><span class="role">GESTOR</span></td>
+  <td class="cmp">KPIs (disponíveis / execução / concluídos / divergência); tabs por estado; tabela/cards (checklist / OS / técnico / progresso / status); ações Iniciar / Continuar / Revisar.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/checklists/available</span><span class="ep"><span class="m-get">GET</span> /mobile/checklist-runs</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/checklist-runs</span><span class="ep"><span class="m-put">PATCH</span> /mobile/checklist-runs/:runId</span></td>
+</tr>
+<tr>
+  <td class="scr">Execução de Checklist<small>/operations/checklists/:runId · screen:checklistRun</small><span class="role">GESTOR</span></td>
+  <td class="cmp">Render do checklist publicado; itens com evidência; barra de progresso; revisão de anexos; conclusão.</td>
+  <td><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /mobile/checklists/:id/render</span><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /mobile/checklist-runs/:runId/attachments</span></td>
+  <td><span class="ep"><span class="m-put">PATCH</span> /mobile/checklist-runs/:runId</span><span class="ep"><span class="m-post">POST</span> /mobile/checklist-runs/:runId/complete</span></td>
+</tr>
+<tr>
+  <td class="scr">Relatórios<small>/reports · screen:reports</small><span class="role">GESTOR · FIN · DISP</span></td>
+  <td class="cmp">KPIs (catálogo / agendados / gerados / falhas); lista de relatórios; agendamentos; downloads.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /reports/catalog</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /reports/generate</span><span class="ep"><span class="m-post">POST</span> /reports/schedule</span></td>
+</tr>
+</tbody>
+</table>
+
+<div class="modhead"><span class="modnum">B</span><h3>Administração — papel Admin</h3><span class="meta">5 telas</span></div>
+<table class="cat">
+<thead><tr><th>Tela · rota · papel</th><th>Componentes principais</th><th>Entradas (GET)</th><th>Saídas (escrita)</th></tr></thead>
+<tbody>
+<tr>
+  <td class="scr">Builder de Checklists<small>/administrator/checklists · screen:adminChecklists</small><span class="role">ADMIN</span></td>
+  <td class="cmp">Lista de modelos de checklist; editor de campos (tipo, obrigatório, evidência); versionamento e publicação por organização.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /checklists/templates</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /checklists/templates</span><span class="ep"><span class="m-put">PUT</span> /checklists/templates/:id</span><span class="ep"><span class="m-post">POST</span> /checklists/templates/:id/publish</span></td>
+</tr>
+<tr>
+  <td class="scr">Usuários<small>/users · screen:users</small><span class="role">ADMIN</span></td>
+  <td class="cmp">KPIs (ativos 138 / convidados / suspensos / papéis); tabela de usuários (nome / papel / permissões / status); ação Novo usuário.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /users</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /users <span style="color:#94A3B8">(convite)</span></span><span class="ep"><span class="m-put">PATCH</span> /users/:id · /users/:id/role</span></td>
+</tr>
+<tr>
+  <td class="scr">Configurações da Organização<small>/administrator/settings · screen:settings</small><span class="role">ADMIN</span></td>
+  <td class="cmp">Preferências; tema (claro/escuro/contraste); segurança; governança; branding da organização.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /organization/settings</span></td>
+  <td><span class="ep"><span class="m-put">PUT</span> /organization/settings</span></td>
+</tr>
+<tr>
+  <td class="scr">Auditoria<small>/administrator/audit · screen:auditTenant</small><span class="role">ADMIN</span></td>
+  <td class="cmp">KPIs (eventos 24h / logins / alterações / negados); trilha de eventos; filtros; exportar.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /audit-events</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /audit-events/export</span></td>
+</tr>
+<tr>
+  <td class="scr">Notificações<small>/notifications · screen:notifications</small><span class="role">ADMIN · GESTOR</span></td>
+  <td class="cmp">Lista de notificações com ícone semântico; filtros por tipo; marcar lida; badge no sino da topbar (4).</td>
+  <td><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /notifications</span></td>
+  <td><span class="ep"><span class="m-put">PATCH</span> /notifications/:id/read</span></td>
+</tr>
+</tbody>
+</table>
+
+<div class="modhead"><span class="modnum">C</span><h3>Financeiro — papel Financeiro</h3><span class="meta">4 telas</span></div>
+<table class="cat">
+<thead><tr><th>Tela · rota · papel</th><th>Componentes principais</th><th>Entradas (GET)</th><th>Saídas (escrita)</th></tr></thead>
+<tbody>
+<tr>
+  <td class="scr">Financeiro<small>/finance · screen:financeiro</small><span class="role">FINANCEIRO</span></td>
+  <td class="cmp">4 KPIs (A receber / A pagar / Saldo / Inadimplência); gráfico de fluxo de caixa (entradas verde + saídas vermelho, 6 meses, legenda); tabela Títulos recentes.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /finance/summary</span><span class="ep"><span class="m-get">GET</span> /finance/cashflow</span><span class="ep"><span class="m-get">GET</span> /finance/titles</span></td>
+  <td><span class="ep">— somente leitura</span></td>
+</tr>
+<tr>
+  <td class="scr">Cobranças<small>/finance/charges · screen:charges</small><span class="role">FINANCEIRO</span></td>
+  <td class="cmp">KPIs (em aberto / vencidas / pagas / adimplência); tabs por status; tabela de cobranças; <b>drawer de detalhe</b> (timeline de eventos, contestação, ações).</td>
+  <td><span class="ep"><span class="m-get">GET</span> /billing/charges</span><span class="ep"><span class="m-get">GET</span> /billing/charges/:id</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /billing/charges/:id/payment</span><span class="ep"><span class="m-post">POST</span> /billing/charges/:id/reminder · /dispute · /notes</span></td>
+</tr>
+<tr>
+  <td class="scr">Faturas<small>/finance/invoices · screen:invoices</small><span class="role">FINANCEIRO</span></td>
+  <td class="cmp">KPIs (emitidas / autorizadas / rejeitadas / canceladas); tabela de NF-e; ação Emitir NF-e.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /finance/invoices</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /finance/invoices <span style="color:#94A3B8">(emitir)</span></span><span class="ep"><span class="m-post">POST</span> /finance/invoices/:id/cancel</span></td>
+</tr>
+<tr>
+  <td class="scr">Pagamentos<small>/finance/payments · screen:payments</small><span class="role">FINANCEIRO</span></td>
+  <td class="cmp">KPIs (a pagar / agendados / pagos / vencendo hoje); tabela de contas a pagar; ação Agendar pagamento.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /finance/payments</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /finance/payments <span style="color:#94A3B8">(agendar)</span></span></td>
+</tr>
+</tbody>
+</table>
+
+<div class="modhead"><span class="modnum">D</span><h3>Operação de Campo — papel Dispatcher</h3><span class="meta">4 telas</span></div>
+<table class="cat">
+<thead><tr><th>Tela · rota · papel</th><th>Componentes principais</th><th>Entradas (GET)</th><th>Saídas (escrita)</th></tr></thead>
+<tbody>
+<tr>
+  <td class="scr">Console Tempo Real<small>/dispatch/console · screen:dispatchConsole</small><span class="role">DISPATCHER</span></td>
+  <td class="cmp">4 KPIs (na fila / em campo / SLA em risco / reforços); fila viva de OS (prioridade, SLA, técnico sugerido); painel de técnicos disponíveis; bloco de alertas; ações Despachar / Reagendar / Reatribuir / Reforço.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /operations/dispatches/queue</span><span class="ep"><span class="m-get">GET</span> /operations/technicians/availability</span><span class="ep"><span class="m-ws">WS</span> /ws/dispatch</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /operations/dispatches</span><span class="ep"><span class="m-put">PATCH</span> /operations/dispatches/:id/status · /reassign</span></td>
+</tr>
+<tr>
+  <td class="scr">Técnicos · Disponibilidade<small>/dispatch/technicians · screen:dispatchTechs</small><span class="role">DISPATCHER</span></td>
+  <td class="cmp">Tabela/grid de técnicos (status / habilidades / localização / carga / jornada / indisponibilidade).</td>
+  <td><span class="ep"><span class="m-get">GET</span> /operations/technicians/availability</span><span class="ep"><span class="m-get">GET</span> /field-locations/latest</span></td>
+  <td><span class="ep"><span class="m-put">PATCH</span> /technicians/:id/availability</span></td>
+</tr>
+<tr>
+  <td class="scr">Rotas Logísticas<small>/logistics/routes · screen:logisticsRoutes</small><span class="role">DISPATCHER · GESTOR</span></td>
+  <td class="cmp">KPIs (rotas ativas / paradas / km / atrasos); tabela de rotas; ação Otimizar rotas.</td>
+  <td><span class="ep">○ <span class="m-get">GET</span> /logistics/routes <span style="color:#94A3B8">(projetado)</span></span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /routes/recalculate</span></td>
+</tr>
+<tr>
+  <td class="scr">Operadores de Campo<small>/operations/field-operators · screen:fieldOperators</small><span class="role">DISPATCHER</span></td>
+  <td class="cmp">KPIs (em campo / disponíveis / pausa / offline); grid/tabela de operadores; ação Convidar operador.</td>
+  <td><span class="ep">○ <span class="m-get">GET</span> /operations/field-operators <span style="color:#94A3B8">(projetado)</span></span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /operators/invite</span></td>
+</tr>
+</tbody>
+</table>
+
+<div class="modhead"><span class="modnum">E</span><h3>Plataforma — papel Admin Plataforma</h3><span class="meta">11 telas</span></div>
+<table class="cat">
+<thead><tr><th>Tela · rota · papel</th><th>Componentes principais</th><th>Entradas (GET)</th><th>Saídas (escrita)</th></tr></thead>
+<tbody>
+<tr>
+  <td class="scr">Visão Geral da Plataforma<small>/platform/dashboard · screen:platformDashboard</small><span class="role">PLATAFORMA</span></td>
+  <td class="cmp">Page header + ações (Exportar / Atualizar / Ver relatório); 4 KPIs semânticos (orgs / usuários / MRR / uptime); gráfico de barras MRR (7 meses, mês atual destacado); timeline Atividade da plataforma; tabela Saúde das organizações.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /platform/dashboard/summary</span><span class="ep"><span class="m-get">GET</span> /platform/dashboard/mrr-trend · /activity</span><span class="ep"><span class="m-get">GET</span> /platform/tenants/health</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /platform/dashboard/export</span></td>
+</tr>
+<tr>
+  <td class="scr">Organizações — lista<small>/platform/tenants · screen:console</small><span class="role">PLATAFORMA</span></td>
+  <td class="cmp">4 KPIs de plataforma; filtros (plano / status / saúde); tabela de Organizações (avatar / plano / usuários / módulos / MRR / saúde com dot); linhas → detalhe.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /platform/tenants</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /platform/tenants</span><span class="ep"><span class="m-put">PATCH</span> /platform/tenants/:id/status</span></td>
+</tr>
+<tr>
+  <td class="scr">Detalhe da Organização<small>/platform/tenants/:id · screen:tenantDetail</small><span class="role">PLATAFORMA</span></td>
+  <td class="cmp">Header com badge de saúde; 4 KPIs (usuários / módulos X/12 / MRR / uptime); módulos contratados (chips verde/cinza); saúde do sistema (latência / fila de sync / 5xx / backup).</td>
+  <td><span class="ep"><span class="m-get">GET</span> /platform/tenants/:tenantId</span></td>
+  <td><span class="ep"><span class="m-put">PATCH</span> /platform/tenants/:tenantId</span><span class="ep"><span class="m-put">PATCH</span> /platform/tenants/:tenantId/modules</span></td>
+</tr>
+<tr>
+  <td class="scr">Organizações · Clientes<small>screen:platformClients <span style="color:#C4CDD8">(variante de lista)</span></small><span class="role">PLATAFORMA</span></td>
+  <td class="cmp">Lista alternativa de clientes da plataforma (cards/tabela) — variante histórica de "Organizações"; mesma base de dados.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /platform/tenants</span></td>
+  <td><span class="ep"><span class="m-put">PATCH</span> /platform/tenants/:id/status</span></td>
+</tr>
+<tr>
+  <td class="scr">Planos e Módulos<small>/platform/plans · screen:plans</small><span class="role">PLATAFORMA</span></td>
+  <td class="cmp">Cards de planos; matriz de módulos por plano; disponibilidade comercial.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /platform/plans</span><span class="ep"><span class="m-get">GET</span> /platform/modules</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /platform/plans</span><span class="ep"><span class="m-put">PUT</span> /platform/plans/:id</span></td>
+</tr>
+<tr>
+  <td class="scr">Módulos<small>/platform/modules · screen:modulesList</small><span class="role">PLATAFORMA</span></td>
+  <td class="cmp">KPIs (módulos 12 / GA / beta / adoção média); catálogo de módulos; adoção por organização; ação Novo módulo.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /platform/modules</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /platform/modules</span><span class="ep"><span class="m-put">PATCH</span> /platform/modules/:id</span></td>
+</tr>
+<tr>
+  <td class="scr">Cloud Billing<small>/platform/cloud-billing · screen:cloudBilling</small><span class="role">PLATAFORMA</span></td>
+  <td class="cmp">KPIs de custo cloud; gráficos de consumo; tabela por serviço/organização; governança de custo; exportar.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /platform/cloud-billing/summary</span><span class="ep"><span class="m-get">GET</span> /platform/cloud-billing/usage · /by-tenant</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /platform/cloud-billing/export</span></td>
+</tr>
+<tr>
+  <td class="scr">APIs e Credenciais<small>/platform/apis · screen:apis</small><span class="role">PLATAFORMA</span></td>
+  <td class="cmp">Lista de chaves / integrações; escopos; criar/revogar credencial.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /platform/api-keys</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /platform/api-keys</span><span class="ep"><span class="m-del">DEL</span> /platform/api-keys/:id</span></td>
+</tr>
+<tr>
+  <td class="scr">Auditoria da Plataforma<small>/platform/audit · screen:auditPlatform</small><span class="role">PLATAFORMA</span></td>
+  <td class="cmp">KPIs (eventos 24h / orgs ativas / mudanças de plano / incidentes); trilha global; exportar.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /platform/audit-events</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /platform/audit-events/export</span></td>
+</tr>
+<tr>
+  <td class="scr">Health do Sistema<small>/platform/health · screen:platformHealth</small><span class="role">PLATAFORMA</span></td>
+  <td class="cmp">Status dos serviços; incidentes; métricas (latência / erros 5xx / uptime / fila).</td>
+  <td><span class="ep"><span class="m-get">GET</span> /platform/health</span><span class="ep"><span class="m-get">GET</span> /platform/incidents</span></td>
+  <td><span class="ep">— somente leitura</span></td>
+</tr>
+<tr>
+  <td class="scr">Configurações da Plataforma<small>/platform/settings · screen:platformSettings</small><span class="role">PLATAFORMA</span></td>
+  <td class="cmp">Preferências; temas; segurança; governança global.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /platform/settings</span></td>
+  <td><span class="ep"><span class="m-put">PUT</span> /platform/settings</span></td>
+</tr>
+</tbody>
+</table>
+
+<div class="parthead">Parte 2 — Mobile · App de Campo <small>(Flutter · bezel 390×844 · 37 telas · guincho / prestador)</small></div>
+
+<div class="modhead"><span class="modnum">A</span><h3>Acesso &amp; Contexto</h3><span class="meta">3 telas</span></div>
+<table class="cat">
+<thead><tr><th>Tela · id</th><th>Componentes principais</th><th>Entradas (GET)</th><th>Saídas (escrita)</th></tr></thead>
+<tbody>
+<tr>
+  <td class="scr">Splash<small>screen:splash</small></td>
+  <td class="cmp">Logo Techsolutions (gradiente verde); timer ~2200ms (Future.delayed) com fallback de toque → Login.</td>
+  <td><span class="ep">— bootstrap local</span></td>
+  <td><span class="ep">— </span></td>
+</tr>
+<tr>
+  <td class="scr">Login<small>screen:login</small></td>
+  <td class="cmp">Logo; campos e-mail / senha; botão Entrar; <b>Entrar com Google</b>; Esqueci minha senha; estados loading / erro; sem shell.</td>
+  <td><span class="ep">— </span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /auth/login</span><span class="ep"><span class="m-post">POST</span> /auth/google</span></td>
+</tr>
+<tr>
+  <td class="scr">Seleção de Organização<small>screen:tenant</small></td>
+  <td class="cmp">Título "Selecionar organização"; busca; cards touch (nome / perfil / status / último acesso); CTA Acessar. Mostrada só se &gt;1 organização.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /me/tenants</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /auth/active-tenant</span></td>
+</tr>
+</tbody>
+</table>
+
+<div class="modhead"><span class="modnum">B</span><h3>Operação &amp; Execução de OS <small style="font-weight:600;color:#94A3B8">— fluxo central (guincho + prestador)</small></h3><span class="meta">14 telas</span></div>
+<table class="cat">
+<thead><tr><th>Tela · id</th><th>Componentes principais</th><th>Entradas (GET)</th><th>Saídas (escrita)</th></tr></thead>
+<tbody>
+<tr>
+  <td class="scr">Home Operacional<small>screen:home</small></td>
+  <td class="cmp">Saudação por papel; cards de resumo (OS do dia / pendências); banner de aprovações (só Gestor); atalhos modulares; bottom-nav.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/home</span><span class="ep"><span class="m-get">GET</span> /mobile/work-orders/assigned</span></td>
+  <td><span class="ep">— navegação</span></td>
+</tr>
+<tr>
+  <td class="scr">Lista de OS<small>screen:osList</small></td>
+  <td class="cmp">Lista "Minhas OS do dia"; chip de status; cliente / endereço / janela; busca; pull-to-refresh.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/work-orders/assigned</span></td>
+  <td><span class="ep">— </span></td>
+</tr>
+<tr>
+  <td class="scr">Detalhe da OS<small>screen:osDetail</small></td>
+  <td class="cmp">Cabeçalho (código / cliente / equipamento ou veículo); descrição; mapa read-only com seta GPS; histórico; badge GUINCHO/PRESTADOR; botão Iniciar.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/work-orders/:id</span></td>
+  <td><span class="ep"><span class="m-put">PATCH</span> /mobile/work-orders/:id/status</span></td>
+</tr>
+<tr>
+  <td class="scr">Check-in / Iniciar atendimento<small>screen:checkin</small></td>
+  <td class="cmp">Barra de etapas (Início · Rota · Atendimento · Conclusão); botão "Em rota"; ao chegar → popup pede 2 últimos dígitos (placa/nº de série) + geolocalização para liberar "Iniciar atendimento"; opção "Não foi possível iniciar" (popup com motivo + fotos).</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/work-orders/:id</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/work-orders/:id/check-in</span><span class="ep"><span class="m-post">POST</span> /mobile/field-locations</span><span class="ep"><span class="m-post">POST</span> /mobile/work-orders/:id/unable-to-start</span></td>
+</tr>
+<tr>
+  <td class="scr">Checklist da OS (coleta)<small>screen:checklist</small></td>
+  <td class="cmp">Itens bool (doc/pneus/vidros/placa); contador de pendências; vistoria de avaria (marcação); grid de 8 miniaturas (só com foto; ícone de câmera no próximo); botão Finalizar habilita só com pendências=0. Modelo vem do backend (por cliente).</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/checklists/:id/render</span></td>
+  <td><span class="ep"><span class="m-put">PATCH</span> /mobile/checklist-runs/:runId</span></td>
+</tr>
+<tr>
+  <td class="scr">Materiais usados<small>screen:materials</small></td>
+  <td class="cmp">Resumo (itens / pendentes de sync / impacto no estoque); lista de materiais (produto / SKU / qtd / local / sync); buscar produto / escanear; salvar offline.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/inventory/items</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/work-orders/:id/materials</span></td>
+</tr>
+<tr>
+  <td class="scr">Registro de Evidência<small>screen:evidence</small></td>
+  <td class="cmp">Segmented Antes / Durante / Depois (evidTab); grid de fotos (obrigatória/preenchida); tabela de equipamento; lista de verificações; observações.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/work-orders/:id/evidence</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/work-orders/:id/evidence</span></td>
+</tr>
+<tr>
+  <td class="scr">Assinatura do cliente<small>screen:signature</small></td>
+  <td class="cmp">Tela cheia paisagem (gira o aparelho); canvas de assinatura; Limpar; "Confirmar e fechar atendimento" (verde); persiste ao reabrir. Habilita só com checklist obrigatório completo.</td>
+  <td><span class="ep">— </span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/work-orders/:id/signature</span></td>
+</tr>
+<tr>
+  <td class="scr">Checklist de Entrega<small>screen:entrega</small></td>
+  <td class="cmp">Botão "Chegada no destino" (mesma lógica geo + dígitos) inicia o checklist de entrega; verificações finais; fotos / tipo / vistoria de avaria; <b>assinatura do recebedor</b> (distinta da coleta); "Concluir OS".</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/checklists/:id/render</span></td>
+  <td><span class="ep"><span class="m-put">PATCH</span> /mobile/checklist-runs/:runId</span><span class="ep"><span class="m-post">POST</span> /mobile/work-orders/:id/delivery</span></td>
+</tr>
+<tr>
+  <td class="scr">Atendimento Concluído<small>screen:conclusao</small></td>
+  <td class="cmp">Título "Atendimento concluído"; card de tempo detalhado; resumo (serviço / cliente / veículo ou equipamento / finalizado em); deslocamento agrupado (popup detalhado); comissão; botão OK; sincronização silenciosa.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/work-orders/:id/summary</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/work-orders/:id/complete</span></td>
+</tr>
+<tr>
+  <td class="scr">Sincronização / Fila offline<small>screen:sync</small></td>
+  <td class="cmp">Banner de reconexão; 3 stats (Prontas / Pendentes / Conflito); card de conflito ("Minha versão / Versão do gestor" — nada sobrescrito); fila de envio por item.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/sync/status</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/sync/batch</span></td>
+</tr>
+<tr>
+  <td class="scr">Mapa · Em campo<small>screen:map</small></td>
+  <td class="cmp">Google Maps com pins de OS por status + operadores (igual ao Web); lista "OS próximas" (distância / Ir); seta que abre o GPS nativo; relógio + botão rota nas extremidades do rodapé.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /field-locations/latest</span><span class="ep"><span class="m-get">GET</span> /mobile/work-orders/assigned</span></td>
+  <td><span class="ep">— deep-link p/ GPS</span></td>
+</tr>
+<tr>
+  <td class="scr">Status de Localização (LGPD)<small>screen:locStatus</small></td>
+  <td class="cmp">Estado da permissão (ativa/concedida); toggles (check-in / rota / 2º plano OFF); botão Revogar permissão.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/location-consent</span></td>
+  <td><span class="ep"><span class="m-put">PUT</span> /mobile/location-consent</span></td>
+</tr>
+<tr>
+  <td class="scr">Consentimento de Localização (LGPD)<small>screen:consent</small></td>
+  <td class="cmp">Explicação de uso (só com OS ativa, retenção 90d, revogável); "Permitir durante atendimentos" / "Agora não".</td>
+  <td><span class="ep">— </span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/location-consent</span></td>
+</tr>
+</tbody>
+</table>
+
+<div class="modhead"><span class="modnum">C</span><h3>Atendimento — Prestador <small style="font-weight:600;color:#94A3B8">(2 etapas + estoque + conclusão)</small></h3><span class="meta">4 telas</span></div>
+<table class="cat">
+<thead><tr><th>Tela · id</th><th>Componentes principais</th><th>Entradas (GET)</th><th>Saídas (escrita)</th></tr></thead>
+<tbody>
+<tr>
+  <td class="scr">Atendimento · Diagnóstico<small>screen:atDiag</small></td>
+  <td class="cmp">Cabeçalho (cliente / equipamento / descrição do defeito); campo de texto "Diagnóstico"; campo de foto; botão Avançar.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/work-orders/:id</span></td>
+  <td><span class="ep"><span class="m-put">PATCH</span> /mobile/work-orders/:id/diagnosis</span></td>
+</tr>
+<tr>
+  <td class="scr">Atendimento · Execução<small>screen:atExec</small></td>
+  <td class="cmp">Campo "Serviço executado"; campo de foto; lista de material usado (abre Estoque do técnico); botão Avançar para conclusão.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/work-orders/:id</span></td>
+  <td><span class="ep"><span class="m-put">PATCH</span> /mobile/work-orders/:id/execution</span></td>
+</tr>
+<tr>
+  <td class="scr">Estoque do Técnico<small>screen:atStock</small></td>
+  <td class="cmp">Lista de peças no carro do técnico; busca / escanear; quantidade; adicionar ao serviço; saldo por item.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/technician/stock</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/work-orders/:id/materials</span></td>
+</tr>
+<tr>
+  <td class="scr">Conclusão do Atendimento<small>screen:atResumo</small></td>
+  <td class="cmp">Resumo do serviço; equipamento atendido (não veículo); badge PRESTADOR; assinatura do cliente (persistida); encerra → Sincronização.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/work-orders/:id/summary</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/work-orders/:id/complete</span></td>
+</tr>
+</tbody>
+</table>
+
+<div class="modhead"><span class="modnum">D</span><h3>Despesas / RDV <small style="font-weight:600;color:#94A3B8">(Relatório → Lançamento → Recibo)</small></h3><span class="meta">8 telas</span></div>
+<table class="cat">
+<thead><tr><th>Tela · id</th><th>Componentes principais</th><th>Entradas (GET)</th><th>Saídas (escrita)</th></tr></thead>
+<tbody>
+<tr>
+  <td class="scr">Relatórios de Despesas<small>screen:rdvList</small></td>
+  <td class="cmp">Tela de entrada do módulo; "+ Novo relatório"; agrupados por status (Em aberto / Enviados); card com código RDV-AAAA-MM, total e contagem.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/expense-reports</span></td>
+  <td><span class="ep">— navegação</span></td>
+</tr>
+<tr>
+  <td class="scr">Novo Relatório<small>screen:rdvCreate</small></td>
+  <td class="cmp">Cria um relatório (período) e o abre.</td>
+  <td><span class="ep">— </span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/expense-reports</span></td>
+</tr>
+<tr>
+  <td class="scr">Relatório aberto<small>screen:rdvReport</small></td>
+  <td class="cmp">Card-resumo gradiente (total / sem-recibo / prontos); "+ Adicionar lançamento"; lista de lançamentos (ícone por categoria, chip Com/Sem recibo); rodapé "Revisar e enviar".</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/expense-reports/:reportId</span></td>
+  <td><span class="ep">— </span></td>
+</tr>
+<tr>
+  <td class="scr">Nova Despesa (lançamento)<small>screen:rdvNew</small></td>
+  <td class="cmp">Grid de categorias (4); campo de valor destacado; data + OS vinculada; dropzone "Escanear recibo"; abre novo relatório de despesas com inserção de dados.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/work-orders/assigned <span style="color:#94A3B8">(vincular OS)</span></span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/expense-reports/:reportId/entries</span></td>
+</tr>
+<tr>
+  <td class="scr">Item / Lançamento<small>screen:rdvItem</small></td>
+  <td class="cmp">Detalhe do lançamento; thumbnail do recibo (abre fullscreen); tabela de metadados; banner de confirmação OCR.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/expense-entries/:id</span></td>
+  <td><span class="ep"><span class="m-put">PATCH</span> /mobile/expense-entries/:id</span></td>
+</tr>
+<tr>
+  <td class="scr">Recibo (fullscreen)<small>screen:rdvReceipt</small></td>
+  <td class="cmp">Fundo escuro; "papel" de recibo branco com fonte mono; zoom.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/expense-entries/:id/receipt</span></td>
+  <td><span class="ep">— </span></td>
+</tr>
+<tr>
+  <td class="scr">Revisão OCR<small>screen:ocr</small></td>
+  <td class="cmp">Preview do recibo com bounding boxes verdes; campos extraídos com % de confiança (verde alto / âmbar revisar); Reescanear / Confirmar dados.</td>
+  <td><span class="ep">— </span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/ocr/scan</span></td>
+</tr>
+<tr>
+  <td class="scr">Enviar Relatório<small>screen:rdvSubmit</small></td>
+  <td class="cmp">Total + breakdown por categoria; aviso de lançamentos sem recibo; aprovador + centro de custo; "Enviar para aprovação" (gera aprovação ao gestor).</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/expense-reports/:reportId</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/expense-reports/:reportId/submit</span></td>
+</tr>
+</tbody>
+</table>
+
+<div class="modhead"><span class="modnum">E</span><h3>Gestão, Conta &amp; Comunicação</h3><span class="meta">8 telas</span></div>
+<table class="cat">
+<thead><tr><th>Tela · id</th><th>Componentes principais</th><th>Entradas (GET)</th><th>Saídas (escrita)</th></tr></thead>
+<tbody>
+<tr>
+  <td class="scr">Aprovações [Gestor]<small>screen:approvals</small></td>
+  <td class="cmp">Stats; cards de aprovação (RDV / compra escalada) com Aprovar / Recusar / Escalar.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/approvals</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/approvals/:id/approve|reject</span></td>
+</tr>
+<tr>
+  <td class="scr">Perfil<small>screen:profile</small></td>
+  <td class="cmp">Identidade (nome / papel / organização); estatísticas; acesso a Comissões / Config / Sair.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /me</span></td>
+  <td><span class="ep">— </span></td>
+</tr>
+<tr>
+  <td class="scr">Editar Perfil<small>screen:profileEdit</small></td>
+  <td class="cmp">Formulário (foto / contato / preferências / tema).</td>
+  <td><span class="ep"><span class="m-get">GET</span> /me</span></td>
+  <td><span class="ep"><span class="m-put">PUT</span> /me</span></td>
+</tr>
+<tr>
+  <td class="scr">Minhas Comissões<small>screen:comStats</small></td>
+  <td class="cmp">KPIs de comissão; gráfico por período; lista de atendimentos remunerados; total a receber.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/commissions</span></td>
+  <td><span class="ep">— </span></td>
+</tr>
+<tr>
+  <td class="scr">Diagnóstico (app)<small>screen:diagnostics</small></td>
+  <td class="cmp">Estado de conexão / GPS / versão / fila de sync; teste de conectividade.</td>
+  <td><span class="ep">— local / health</span></td>
+  <td><span class="ep">— </span></td>
+</tr>
+<tr>
+  <td class="scr">Notificações / Push<small>screen:notifications</small></td>
+  <td class="cmp">Lista de notificações com ícone semântico; alterações de OS; push.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/notifications</span><span class="ep"><span class="m-ws">WS</span> /ws/notifications</span></td>
+  <td><span class="ep"><span class="m-put">PATCH</span> /mobile/notifications/:id/read</span></td>
+</tr>
+<tr>
+  <td class="scr">Conversas (lista)<small>screen:chatList</small></td>
+  <td class="cmp">Lista de conversas; última mensagem; não-lidas; busca.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/chats</span></td>
+  <td><span class="ep">— </span></td>
+</tr>
+<tr>
+  <td class="scr">Conversa<small>screen:chatThread</small></td>
+  <td class="cmp">Thread de mensagens; composer; anexos; status de entrega.</td>
+  <td><span class="ep"><span class="m-get">GET</span> /mobile/chats/:id/messages</span><span class="ep"><span class="m-ws">WS</span> /ws/chat/:id</span></td>
+  <td><span class="ep"><span class="m-post">POST</span> /mobile/chats/:id/messages</span></td>
+</tr>
+</tbody>
+</table>
+
+<div class="parthead">Parte 3 — Índice de Endpoints por Domínio</div>
+<p class="lead" style="margin:6px 0 4px">Consolidado dos contratos referenciados acima. <span class="wired">●</span> = já no protótipo · ○ = proposto. Todos sob <span class="kv">/api/v1</span>.</p>
+<table class="cat">
+<colgroup><col style="width:20%"><col style="width:80%"></colgroup>
+<thead><tr><th>Domínio</th><th>Endpoints</th></tr></thead>
+<tbody>
+<tr><td class="scr">auth</td><td><span class="ep"><span class="m-post">POST</span> /auth/login · /auth/google · /auth/active-tenant &nbsp; <span class="m-get">GET</span> /me · /me/tenants</span></td></tr>
+<tr><td class="scr">work-orders</td><td><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /work-orders · /work-orders/:id · /work-orders/:id/timeline &nbsp; <span class="wired">●</span> <span class="m-put">PATCH</span> /work-orders/:id/status &nbsp; <span class="wired">●</span> <span class="m-post">POST</span> /work-orders/:id/assign &nbsp; <span class="m-post">POST</span> /work-orders · <span class="m-put">PATCH</span> /work-orders/:id</span></td></tr>
+<tr><td class="scr">operations / dispatch</td><td><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /operations/dispatches · /operations/dispatches/:id &nbsp; <span class="m-get">GET</span> /operations/dispatches/queue · /operations/technicians/availability · /field-locations/latest &nbsp; <span class="m-post">POST</span> /operations/dispatches &nbsp; <span class="m-put">PATCH</span> /operations/dispatches/:id/status · /reassign &nbsp; <span class="m-ws">WS</span> /ws/dispatch</span></td></tr>
+<tr><td class="scr">inventory</td><td><span class="ep"><span class="m-get">GET</span> /inventory/items · /inventory/items/:id · /inventory/movements · /inventory/critical &nbsp; <span class="m-post">POST</span> /inventory/movements · /entries · /exits · /notes · /reservations · /adjustments &nbsp; <span class="m-put">PATCH</span> /inventory/items/:id</span></td></tr>
+<tr><td class="scr">checklists</td><td><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /mobile/checklists/:id/render · /mobile/checklist-runs/:runId/attachments &nbsp; <span class="m-get">GET</span> /mobile/checklists/available · /checklists/templates &nbsp; <span class="m-post">POST</span> /mobile/checklist-runs · /:runId/complete · /checklists/templates · /:id/publish &nbsp; <span class="m-put">PATCH/PUT</span> /mobile/checklist-runs/:runId · /checklists/templates/:id</span></td></tr>
+<tr><td class="scr">approvals</td><td><span class="ep"><span class="wired">●</span> <span class="m-post">POST</span> /approvals/:id/approve · /approvals/:id/reject &nbsp; <span class="m-get">GET</span> /approvals · /approvals/:id · /mobile/approvals &nbsp; <span class="m-post">POST</span> /approvals/:id/request-revision</span></td></tr>
+<tr><td class="scr">finance / billing</td><td><span class="ep"><span class="m-get">GET</span> /finance/summary · /cashflow · /titles · /invoices · /payments · /billing/charges · /billing/charges/:id &nbsp; <span class="m-post">POST</span> /finance/invoices · /finance/payments · /billing/charges/:id/payment · /reminder · /dispute · /notes</span></td></tr>
+<tr><td class="scr">mobile (campo)</td><td><span class="ep"><span class="m-post">POST</span> /mobile/work-orders/:id/check-in · /materials · /evidence · /signature · /delivery · /complete · /diagnosis · /execution · /unable-to-start · /field-locations &nbsp; <span class="m-get">GET</span> /mobile/work-orders/assigned · /mobile/inventory/items · /mobile/technician/stock &nbsp; <span class="m-post">POST</span> /mobile/sync/batch</span></td></tr>
+<tr><td class="scr">expenses / RDV</td><td><span class="ep"><span class="m-get">GET</span> /mobile/expense-reports · /:reportId · /expense-entries/:id · /:id/receipt &nbsp; <span class="m-post">POST</span> /mobile/expense-reports · /:reportId/entries · /:reportId/submit · /ocr/scan · /mobile/commissions</span></td></tr>
+<tr><td class="scr">notifications / chat</td><td><span class="ep"><span class="wired">●</span> <span class="m-get">GET</span> /notifications &nbsp; <span class="m-get">GET</span> /mobile/notifications · /mobile/chats · /mobile/chats/:id/messages &nbsp; <span class="m-post">POST</span> /mobile/chats/:id/messages &nbsp; <span class="m-put">PATCH</span> /notifications/:id/read &nbsp; <span class="m-ws">WS</span> /ws/notifications · /ws/chat/:id</span></td></tr>
+<tr><td class="scr">platform</td><td><span class="ep"><span class="m-get">GET</span> /platform/dashboard/summary · /mrr-trend · /activity · /tenants · /tenants/:id · /tenants/health · /plans · /modules · /cloud-billing/* · /api-keys · /audit-events · /health · /incidents · /settings &nbsp; <span class="m-post">POST</span> /platform/tenants · /plans · /modules · /api-keys · /*/export &nbsp; <span class="m-put">PATCH/PUT</span> /platform/tenants/:id · /:id/status · /:id/modules · /plans/:id · /settings &nbsp; <span class="m-del">DEL</span> /platform/api-keys/:id</span></td></tr>
+<tr><td class="scr">admin / org</td><td><span class="ep"><span class="m-get">GET</span> /users · /organization/settings · /audit-events · /reports/catalog · /purchase-orders &nbsp; <span class="m-post">POST</span> /users · /reports/generate · /reports/schedule · /purchase-orders · /audit-events/export &nbsp; <span class="m-put">PATCH/PUT</span> /users/:id · /users/:id/role · /organization/settings</span></td></tr>
+</tbody>
+</table>
+
+<div style="margin-top:22px;padding:15px 18px;background:#F8FAFC;border:1px solid #E8EDF3;border-left:3px solid #2563EB;border-radius:11px">
+  <div style="font-size:12.5px;font-weight:800;color:#0F172A;margin-bottom:6px">Estado da integração</div>
+  <p style="font-size:11.5px;line-height:1.65;color:#475569;margin:0">Todos os dados são <b>mock estruturado</b> na lógica de cada protótipo (<span class="kv">class Component</span>). <b>13 endpoints</b> já estão ancorados no markup como <span class="kv">data-endpoint</span> (marcados <span class="wired">●</span>) — pontos de integração prioritários. Os demais são o contrato REST sugerido, coerente com as convenções da Parte 0. Ações de escrita (aprovar, pagar, despachar, concluir) hoje atualizam só o estado local; nenhuma chamada de rede real é feita.</p>
+</div>
+<p class="note" style="margin-top:14px">Gerado a partir do código-fonte dos protótipos · <span class="kv">ERP Web.dc.html</span> (37 telas) · <span class="kv">ERP Mobile.dc.html</span> (37 telas) · <span class="kv">Login.dc.html</span>. Para exportar: abra e use Salvar como PDF (paisagem).</p>
+
+
+</td></tr></tbody>
+<tfoot><tr><td class="pad-bottom"></td></tr></tfoot>
+</table>
+</main>
+</x-dc>
+</body>
+</html>
