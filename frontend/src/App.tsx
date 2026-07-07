@@ -55,6 +55,7 @@ const WorkOrdersPage = lazy(() =>
   })),
 );
 
+const ClientesPage = lazy(() => import("./modules/registry/customers/pages/ClientesPage").then((m) => ({ default: m.ClientesPage })));
 const EstoquePage = lazy(() => import("./modules/inventory/pages/EstoquePage").then((m) => ({ default: m.EstoquePage })));
 const EstoqueDetailPage = lazy(() => import("./modules/inventory/pages/EstoqueDetailPage").then((m) => ({ default: m.EstoqueDetailPage })));
 const PedidosPage = lazy(() => import("./modules/purchase-orders/pages/PedidosPage").then((m) => ({ default: m.PedidosPage })));
@@ -245,6 +246,14 @@ export function App() {
               element={
                 <PermissionGuard permissions={["work_orders:read"]}>
                   <ApprovalDetailPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/cadastros/clientes"
+              element={
+                <PermissionGuard permissions={["customers:read"]}>
+                  <ClientesPage />
                 </PermissionGuard>
               }
             />
