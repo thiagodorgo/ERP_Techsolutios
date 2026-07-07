@@ -2537,3 +2537,90 @@
     max-width: 142px;
   }
 }
+
+/* Listas densas de Cadastros (C1): cabeçalhos ordenáveis, colunas tabulares e paginação. */
+.dense-table th.dense-col-right,
+.dense-table td.dense-col-right {
+  text-align: right;
+}
+
+.dense-table td.dense-col-tabular,
+.dense-table th.dense-col-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.dense-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dense-sort-btn:hover {
+  color: var(--text-primary);
+}
+
+.dense-sort-btn:focus-visible {
+  outline: 2px solid var(--color-core-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-4);
+}
+
+.dense-table th.dense-col-right .dense-sort-btn {
+  justify-content: flex-end;
+}
+
+.dense-sort-icon {
+  flex: none;
+}
+
+.dense-sort-icon--idle {
+  opacity: 0.45;
+}
+
+.dense-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+  margin-top: var(--space-12);
+  padding-top: var(--space-12);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.dense-pagination__size {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.dense-pagination__size .ui-select {
+  min-width: 84px;
+}
+
+.dense-pagination__nav {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-10);
+}
+
+.dense-pagination__range {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}

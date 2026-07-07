@@ -2,19 +2,28 @@ import { Ban, Pencil, Plus, RefreshCw, RotateCcw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
 
-import { Alert, Button, Card, Chip, EmptyState, SearchBar, Skeleton, Table } from "../../../../components/ui";
+import type { DenseColumn } from "../../../../components/dense-list";
+import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../../components/dense-list";
+import { Alert, Button, Card, Chip, EmptyState, SearchBar, Skeleton } from "../../../../components/ui";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
 import { TeamFormModal } from "../components/TeamFormModal";
-import { filterTeams, formatTeamMemberCount, getTeamOperationalStatusLabel, getTeamStatusLabel, getTeamStatusTone } from "../teams.adapter";
+import {
+  filterTeams,
+  formatTeamDate,
+  formatTeamMemberCount,
+  getTeamOperationalStatusLabel,
+  getTeamStatusLabel,
+  getTeamStatusTone,
+} from "../teams.adapter";
 import { listTenantUsers, updateTeam } from "../teams.service";
 import type { Team, TeamsFilters, TeamsStatusFilter, TenantUser } from "../teams.types";
 import { useTeams } from "../useTeams";
 
 // Lista de "Equipes" (cadastro) — ligada ao endpoint real /api/v1/teams.
-// Busca full-list uma vez (filtros estáveis) e filtra em memória para evitar refresh loop.
-const STABLE_FILTERS: TeamsFilters = { search: "", isActive: "all" };
+// Carrega a janela de trabalho (limit) uma vez; busca/ordenação/paginação são client-side.
+const STABLE_FILTERS: TeamsFilters = { search: "", isActive: "all", limit: DENSE_LIST_FETCH_LIMIT };
 
 const STATUS_TABS: readonly { value: TeamsStatusFilter; label: string }[] = [
   { value: "all", label: "Todas" },
@@ -29,10 +38,8 @@ export function EquipesPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
-  const { items, loading, error, refresh } = useTeams(STABLE_FILTERS);
+  const { items, pagination, loading, error, refresh } = useTeams(STABLE_FILTERS);
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<TeamsStatusFilter>("all");
   const [editing, setEditing] = useState<Team | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -66,9 +73,6 @@ export function EquipesPage() {
   }, [activeContext, context]);
 
   const usersById = useMemo(() => new Map(users.map((user) => [user.id, user.name])), [users]);
-
-  const visible = useMemo(() => filterTeams(items, { search, isActive: statusFilter }), [items, search, statusFilter]);
-  const hasActiveFilters = search.trim().length > 0 || statusFilter !== "all";
 
   function openCreate() {
     setEditing(null);
@@ -104,20 +108,44 @@ export function EquipesPage() {
     return usersById.get(team.leaderUserId) ?? "Líder indisponível";
   }
 
-  const columns = [
-    { key: "name", header: "Nome", render: (team: Team) => <strong>{team.name}</strong> },
-    { key: "leader", header: "Líder", render: (team: Team) => resolveLeader(team) },
-    { key: "members", header: "Membros", render: (team: Team) => formatTeamMemberCount(team) },
-    { key: "opstatus", header: "Status", render: (team: Team) => getTeamOperationalStatusLabel(team.status) },
+  const columns: DenseColumn<Team>[] = [
+    { key: "name", header: "Nome", sortable: true, sortValue: (team) => team.name, render: (team) => <strong>{team.name}</strong> },
+    { key: "leader", header: "Líder", sortable: true, sortValue: (team) => resolveLeader(team), render: (team) => resolveLeader(team) },
+    {
+      key: "members",
+      header: "Membros",
+      sortable: true,
+      align: "right",
+      tabular: true,
+      sortValue: (team) => formatTeamMemberCount(team),
+      render: (team) => formatTeamMemberCount(team),
+    },
+    {
+      key: "opstatus",
+      header: "Status",
+      sortable: true,
+      sortValue: (team) => getTeamOperationalStatusLabel(team.status),
+      render: (team) => getTeamOperationalStatusLabel(team.status),
+    },
     {
       key: "status",
       header: "Situação",
-      render: (team: Team) => <Chip tone={getTeamStatusTone(team.isActive)}>{getTeamStatusLabel(team.isActive)}</Chip>,
+      sortable: true,
+      sortValue: (team) => getTeamStatusLabel(team.isActive),
+      render: (team) => <Chip tone={getTeamStatusTone(team.isActive)}>{getTeamStatusLabel(team.isActive)}</Chip>,
+    },
+    {
+      key: "createdAt",
+      header: "Criada em",
+      sortable: true,
+      tabular: true,
+      sortValue: (team) => team.createdAt,
+      render: (team) => formatTeamDate(team.createdAt),
     },
     {
       key: "actions",
       header: "Ações",
-      render: (team: Team) =>
+      render: (team) =>
         canUpdate ? (
           <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
             <Button type="button" size="sm" variant="secondary" aria-label={`Editar ${team.name}`} onClick={() => openEdit(team)}>
@@ -141,6 +169,8 @@ export function EquipesPage() {
     },
   ];
 
+  const dense = useDenseList<Team>({ items, columns, filter: filterTeams, defaultSort: { key: "name", dir: "asc" } });
+
   return (
     <section className="page-stack work-orders-page">
       <header className="page-heading page-heading--row">
@@ -150,7 +180,7 @@ export function EquipesPage() {
           <p>Cadastro das equipes de campo da organização — líder, integrantes e situação operacional.</p>
         </div>
         <div className="work-orders-actions">
-          <SearchBar value={search} onChange={setSearch} placeholder="Buscar por nome da equipe…" />
+          <SearchBar value={dense.search} onChange={dense.setSearch} placeholder="Buscar por nome da equipe…" />
           <Button type="button" variant="secondary" onClick={() => void refresh()} disabled={loading}>
             <RefreshCw size={16} aria-hidden /> Atualizar
           </Button>
@@ -180,9 +210,9 @@ export function EquipesPage() {
             key={tab.value}
             type="button"
             size="sm"
-            variant={statusFilter === tab.value ? "primary" : "ghost"}
-            aria-pressed={statusFilter === tab.value}
-            onClick={() => setStatusFilter(tab.value)}
+            variant={dense.status === tab.value ? "primary" : "ghost"}
+            aria-pressed={dense.status === tab.value}
+            onClick={() => dense.setStatus(tab.value)}
           >
             {tab.label}
           </Button>
@@ -194,17 +224,40 @@ export function EquipesPage() {
         ) : null}
       </div>
 
-      <Card title="Equipes cadastradas" action={<span style={countStyle}>{visible.length} registro(s)</span>}>
+      <Card
+        title="Equipes cadastradas"
+        action={
+          <span style={countStyle}>
+            {dense.total} registro(s)
+            {pagination.total > items.length ? ` · janela: primeiras ${items.length} de ${pagination.total}` : ""}
+          </span>
+        }
+      >
         {loading && items.length === 0 ? <Skeleton lines={5} /> : null}
 
-        {!loading && !error && visible.length === 0 ? (
+        {!loading && !error && dense.total === 0 ? (
           <EmptyState
             title="Nenhuma equipe cadastrada"
-            detail={hasActiveFilters ? "Ajuste a busca ou o filtro de situação para encontrar equipes." : "Cadastre a primeira equipe para começar a operar."}
+            detail={dense.hasActiveFilters ? "Ajuste a busca ou o filtro de situação para encontrar equipes." : "Cadastre a primeira equipe para começar a operar."}
           />
         ) : null}
 
-        {!error && visible.length > 0 ? <Table rows={visible} keyForRow={(team) => team.id} columns={columns} /> : null}
+        {!error && dense.total > 0 ? (
+          <>
+            <DenseTable rows={dense.visibleItems} keyForRow={(team) => team.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseListPagination
+              page={dense.page}
+              pageSize={dense.pageSize}
+              pageSizeOptions={dense.pageSizeOptions}
+              total={dense.total}
+              totalPages={dense.totalPages}
+              pageStart={dense.pageStart}
+              pageEnd={dense.pageEnd}
+              onPageChange={dense.setPage}
+              onPageSizeChange={dense.setPageSize}
+            />
+          </>
+        ) : null}
       </Card>
 
       {modalOpen ? (

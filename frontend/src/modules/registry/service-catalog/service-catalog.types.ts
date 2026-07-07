@@ -31,6 +31,8 @@ export type ServiceCatalogStatusFilter = "all" | "active" | "inactive";
 export type ServiceCatalogFilters = {
   readonly search: string;
   readonly isActive: ServiceCatalogStatusFilter;
+  // Janela de busca (parâmetro `limit` do backend); ordenação/paginação são client-side.
+  readonly limit?: number;
 };
 
 export type ServiceCatalogApiContext = {

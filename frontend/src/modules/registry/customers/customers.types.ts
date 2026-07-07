@@ -34,6 +34,8 @@ export type CustomersStatusFilter = "all" | "active" | "inactive";
 export type CustomersFilters = {
   readonly search: string;
   readonly isActive: CustomersStatusFilter;
+  // Janela de busca (parâmetro `limit` do backend); ordenação/paginação são client-side.
+  readonly limit?: number;
 };
 
 export type CustomersApiContext = {

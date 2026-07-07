@@ -2,19 +2,21 @@ import { Ban, Pencil, RefreshCw, RotateCcw, UserPlus } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
-import { Alert, Button, Card, Chip, EmptyState, SearchBar, Skeleton, Table } from "../../../../components/ui";
+import type { DenseColumn } from "../../../../components/dense-list";
+import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../../components/dense-list";
+import { Alert, Button, Card, Chip, EmptyState, SearchBar, Skeleton } from "../../../../components/ui";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
 import { CustomerFormModal } from "../components/CustomerFormModal";
-import { filterCustomers, formatCustomerLocation, getCustomerStatusLabel, getCustomerStatusTone } from "../customers.adapter";
+import { filterCustomers, formatCustomerDate, formatCustomerLocation, getCustomerStatusLabel, getCustomerStatusTone } from "../customers.adapter";
 import { updateCustomer } from "../customers.service";
 import type { Customer, CustomersFilters, CustomersStatusFilter } from "../customers.types";
 import { useCustomers } from "../useCustomers";
 
 // Lista de "Clientes" (cadastro) — ligada ao endpoint real /api/v1/customers.
-// Busca full-list uma vez (filtros estáveis) e filtra em memória para evitar refresh loop.
-const STABLE_FILTERS: CustomersFilters = { search: "", isActive: "all" };
+// Carrega a janela de trabalho (limit) uma vez; busca/ordenação/paginação são client-side.
+const STABLE_FILTERS: CustomersFilters = { search: "", isActive: "all", limit: DENSE_LIST_FETCH_LIMIT };
 
 const STATUS_TABS: readonly { value: CustomersStatusFilter; label: string }[] = [
   { value: "all", label: "Todos" },
@@ -29,10 +31,8 @@ export function ClientesPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
-  const { items, loading, error, refresh } = useCustomers(STABLE_FILTERS);
+  const { items, pagination, loading, error, refresh } = useCustomers(STABLE_FILTERS);
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<CustomersStatusFilter>("all");
   const [editing, setEditing] = useState<Customer | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -51,9 +51,6 @@ export function ClientesPage() {
     }),
     [activeContext, session?.accessToken],
   );
-
-  const visible = useMemo(() => filterCustomers(items, { search, isActive: statusFilter }), [items, search, statusFilter]);
-  const hasActiveFilters = search.trim().length > 0 || statusFilter !== "all";
 
   function openCreate() {
     setEditing(null);
@@ -83,20 +80,30 @@ export function ClientesPage() {
     }
   }
 
-  const columns = [
-    { key: "name", header: "Nome", render: (customer: Customer) => <strong>{customer.name}</strong> },
-    { key: "document", header: "Documento", render: (customer: Customer) => customer.document ?? "—" },
-    { key: "phone", header: "Telefone", render: (customer: Customer) => customer.phone ?? "—" },
-    { key: "location", header: "Cidade/UF", render: (customer: Customer) => formatCustomerLocation(customer) },
+  const columns: DenseColumn<Customer>[] = [
+    { key: "name", header: "Nome", sortable: true, sortValue: (customer) => customer.name, render: (customer) => <strong>{customer.name}</strong> },
+    { key: "document", header: "Documento", render: (customer) => customer.document ?? "—" },
+    { key: "phone", header: "Telefone", render: (customer) => customer.phone ?? "—" },
+    { key: "location", header: "Cidade/UF", sortable: true, sortValue: (customer) => customer.city, render: (customer) => formatCustomerLocation(customer) },
     {
       key: "status",
       header: "Situação",
-      render: (customer: Customer) => <Chip tone={getCustomerStatusTone(customer.isActive)}>{getCustomerStatusLabel(customer.isActive)}</Chip>,
+      sortable: true,
+      sortValue: (customer) => getCustomerStatusLabel(customer.isActive),
+      render: (customer) => <Chip tone={getCustomerStatusTone(customer.isActive)}>{getCustomerStatusLabel(customer.isActive)}</Chip>,
+    },
+    {
+      key: "createdAt",
+      header: "Cadastrado em",
+      sortable: true,
+      tabular: true,
+      sortValue: (customer) => customer.createdAt,
+      render: (customer) => formatCustomerDate(customer.createdAt),
     },
     {
       key: "actions",
       header: "Ações",
-      render: (customer: Customer) =>
+      render: (customer) =>
         canUpdate ? (
           <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
             <Button type="button" size="sm" variant="secondary" aria-label={`Editar ${customer.name}`} onClick={() => openEdit(customer)}>
@@ -120,6 +127,8 @@ export function ClientesPage() {
     },
   ];
 
+  const dense = useDenseList<Customer>({ items, columns, filter: filterCustomers, defaultSort: { key: "name", dir: "asc" } });
+
   return (
     <section className="page-stack work-orders-page">
       <header className="page-heading page-heading--row">
@@ -129,7 +138,7 @@ export function ClientesPage() {
           <p>Cadastro central de clientes da organização — contato, endereço e situação de atendimento.</p>
         </div>
         <div className="work-orders-actions">
-          <SearchBar value={search} onChange={setSearch} placeholder="Buscar por nome, documento ou cidade…" />
+          <SearchBar value={dense.search} onChange={dense.setSearch} placeholder="Buscar por nome, documento ou cidade…" />
           <Button type="button" variant="secondary" onClick={() => void refresh()} disabled={loading}>
             <RefreshCw size={16} aria-hidden /> Atualizar
           </Button>
@@ -159,9 +168,9 @@ export function ClientesPage() {
             key={tab.value}
             type="button"
             size="sm"
-            variant={statusFilter === tab.value ? "primary" : "ghost"}
-            aria-pressed={statusFilter === tab.value}
-            onClick={() => setStatusFilter(tab.value)}
+            variant={dense.status === tab.value ? "primary" : "ghost"}
+            aria-pressed={dense.status === tab.value}
+            onClick={() => dense.setStatus(tab.value)}
           >
             {tab.label}
           </Button>
@@ -173,17 +182,40 @@ export function ClientesPage() {
         ) : null}
       </div>
 
-      <Card title="Clientes cadastrados" action={<span style={countStyle}>{visible.length} registro(s)</span>}>
+      <Card
+        title="Clientes cadastrados"
+        action={
+          <span style={countStyle}>
+            {dense.total} registro(s)
+            {pagination.total > items.length ? ` · janela: primeiros ${items.length} de ${pagination.total}` : ""}
+          </span>
+        }
+      >
         {loading && items.length === 0 ? <Skeleton lines={5} /> : null}
 
-        {!loading && !error && visible.length === 0 ? (
+        {!loading && !error && dense.total === 0 ? (
           <EmptyState
             title="Nenhum cliente cadastrado"
-            detail={hasActiveFilters ? "Ajuste a busca ou o filtro de situação para encontrar clientes." : "Cadastre o primeiro cliente para começar a atender."}
+            detail={dense.hasActiveFilters ? "Ajuste a busca ou o filtro de situação para encontrar clientes." : "Cadastre o primeiro cliente para começar a atender."}
           />
         ) : null}
 
-        {!error && visible.length > 0 ? <Table rows={visible} keyForRow={(customer) => customer.id} columns={columns} /> : null}
+        {!error && dense.total > 0 ? (
+          <>
+            <DenseTable rows={dense.visibleItems} keyForRow={(customer) => customer.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseListPagination
+              page={dense.page}
+              pageSize={dense.pageSize}
+              pageSizeOptions={dense.pageSizeOptions}
+              total={dense.total}
+              totalPages={dense.totalPages}
+              pageStart={dense.pageStart}
+              pageEnd={dense.pageEnd}
+              onPageChange={dense.setPage}
+              onPageSizeChange={dense.setPageSize}
+            />
+          </>
+        ) : null}
       </Card>
 
       {modalOpen ? (

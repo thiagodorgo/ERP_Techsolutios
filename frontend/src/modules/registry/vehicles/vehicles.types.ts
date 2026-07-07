@@ -31,6 +31,8 @@ export type VehiclesStatusFilter = "all" | "active" | "inactive";
 export type VehiclesFilters = {
   readonly search: string;
   readonly isActive: VehiclesStatusFilter;
+  // Janela de busca (parâmetro `limit` do backend); ordenação/paginação são client-side.
+  readonly limit?: number;
 };
 
 export type VehiclesApiContext = {

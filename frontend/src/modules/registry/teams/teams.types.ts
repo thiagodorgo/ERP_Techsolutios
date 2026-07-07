@@ -38,6 +38,8 @@ export type TeamsStatusFilter = "all" | "active" | "inactive";
 export type TeamsFilters = {
   readonly search: string;
   readonly isActive: TeamsStatusFilter;
+  // Janela de busca (parâmetro `limit` do backend); ordenação/paginação são client-side.
+  readonly limit?: number;
 };
 
 export type TeamsApiContext = {
