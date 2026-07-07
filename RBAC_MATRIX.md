@@ -35,6 +35,7 @@ Baseline authorization matrix for the ERP Techsolutions multi-tenant SaaS ERP. T
 | Backend navigation menu | full | tenant-scoped | scoped | scoped | scoped | scoped | scoped | read | scoped |
 | Field operator location | support-audited | full-tenant | read-history | send-own | none | none | send-own | full-read | support-view |
 | Master data | full | full | approve/edit | edit-scoped | read | read/edit-scoped | read | read | read-support |
+| Customer registry (Cadastros - Clientes) | full | full | create/edit | read | none | none | read | read | none |
 | Configurable checklist templates | support-audited | create/read/update/delete/publish | read | none | read | read | read | read | support-view |
 | Checklist executions and answers | support-audited | full-tenant | read/complete-by-scope | create/answer/complete-by-scope | read | read/answer-by-scope | answer-assigned | full-read | support-view |
 | Work orders / service orders | full | full | full | create/edit | read | material-view | execute/update-assigned | read | support-view |
@@ -91,6 +92,7 @@ Operational rules:
 - work orders foundation uses `work_orders:read`, `work_orders:create`, `work_orders:update`, `work_orders:assign`, `work_orders:status`, `work_orders:cancel` and reserved `work_orders:delete`; all routes derive `tenant_id` from authenticated context and protect `work_orders`, `work_order_events` and `work_order_assignments` with RLS
 - field operator location uses `field_location:send` for mobile self-location, `field_location:read` for latest tenant positions, and `field_location:history` for historical queries; the backend must derive `tenant_id` and `operator_user_id` from the authenticated context and protect `field_operator_locations` with RLS
 - field dispatch foundation uses `field_dispatch:read`, `field_dispatch:create`, `field_dispatch:update`, `field_dispatch:cancel` and `field_dispatch:reassign`; dispatches are tenant-scoped, must link only to Work Orders and operators from the same tenant, and protect `field_dispatches` and `field_dispatch_events` with RLS
+- customer registry (Cadastros - Clientes) uses `customers:read`, `customers:create`, `customers:update`; all routes derive `tenant_id` from authenticated context, enforce composite uniqueness `@@unique([tenant_id, document])`, use logical deactivation via `is_active` (no physical delete) and protect `customers` with RLS. Write access (create/update/deactivate) is limited to tenant_admin, manager (and super_admin); operator, field_technician and auditor read; support has no access
 - checklist reads and writes must validate `tenant_id` together with template, field, run and answer identifiers
 - M10/M11/M12 must render checklist schemas from API data rather than hardcoded mobile field definitions
 
