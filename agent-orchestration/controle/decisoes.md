@@ -28,3 +28,34 @@
 - impacto: nesta rodada o Claude Code executa o ciclo ate o merge (gate = testes verdes),
   com merge UNICO ao final do B-120 e KPIs publicados no mesmo PR. Fora desta rodada,
   vale o gate humano padrao do contrato de blocos.
+
+## D-005 - Rodada BLOCO-AUTO A-D com auto-merge por PR (2026-07-07) [Claude Code]
+
+- status: aplicada nesta rodada
+- origem: instrucao do usuario (prompt BLOCO-AUTO v3)
+- impacto: execucao automatica A1..D2, 1 item = 1 branch = 1 PR na `main`, merge automatico
+  SOMENTE com todos os criterios do plano-mestre §9 verdes (CI incluido). `main` sem branch
+  protection; squash + delete branch. Plano em `agent-orchestration/execucao-blocos-A-D/`.
+- observacao: KPIs NAO publicados nesta rodada (so apos avaliacao humana, padrao C3 do CLAUDE.md).
+
+## D-006 - Normalizacao do layout de skills do projeto (2026-07-07) [Claude Code]
+
+- status: aplicada em A0
+- origem: recon — skills em `.claude/skills/<outer>/<inner>/SKILL.md` (double-nested) nao carregam;
+  alvo do prompt e `.claude/skills/<nome>/SKILL.md`.
+- impacto: mover para caminho single-level (nome do frontmatter), corrigindo
+  `skillflutter-ai-architect`->`flutter-ai-architect`. Versionadas apenas as skills desta iniciativa
+  (saas-multi-tenant, ts-frontend-full, ui-ux-pro-max, flutter-expert, flutter-ai-architect,
+  erp-techsolutions-code-auditor) + agent `frontend-pixel-master`. Skills genericas nao referenciadas
+  ficam untracked.
+
+## D-007 - Reconciliacao "servico completo sem mock" x repo mock-first (2026-07-07) [Claude Code]
+
+- status: aplicada (conflito registrado, sem consolidacao silenciosa — CLAUDE.md A2)
+- origem: prompt exige "sem mock/placeholder/constante local"; repo web e mock-first
+  (isMockMode + fallback com dados fabricados) em todos os modulos.
+- impacto: endpoint real e o caminho primario e unico de dados das telas novas. Estados
+  obrigatorios offline/erro usam estado VAZIO + banner de erro, SEM linhas demonstrativas
+  fabricadas. Nada novo em `frontend/src/mocks/`. Mantem a forma service->adapter->hook do repo.
+- observacao: se o usuario preferir manter o fallback com dados de exemplo (padrao do repo),
+  reabrir esta decisao.

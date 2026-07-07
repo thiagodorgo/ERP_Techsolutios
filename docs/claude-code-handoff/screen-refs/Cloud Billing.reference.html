@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cloud Billing — referência fiel (ERP Techsolutions · Plataforma)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;background:#F1F5F9;color:#0F172A}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .scrl{scrollbar-width:thin;scrollbar-color:#CBD5E1 transparent}
+  .scrl::-webkit-scrollbar{width:8px;height:8px}
+  .scrl::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:99px}
+  .scrl::-webkit-scrollbar-track{background:transparent}
+  .rowh:hover{background:#F8FAFC}
+  .navrow:hover{background:rgba(255,255,255,.06)}
+</style>
+</head>
+<body>
+<!--
+  ┌───────────────────────────────────────────────────────────────────────────┐
+  │ REFERÊNCIA FIEL — Tela "Cloud Billing" · perfil PLATAFORMA (platform_admin) │
+  │ Rota sugerida: /platform/cloud-billing                                      │
+  │                                                                             │
+  │ Este arquivo é o ALVO VISUAL/ESTRUTURAL exato. Reproduza fielmente em React │
+  │ (frontend/). Não simplifique, não invente abas, não use "Tenant" na UI.     │
+  │ Regras que ESTA tela prova (ver CLAUDE.md §3 / PROJECT_MEMORY.md §4):        │
+  │  • Linguagem: "Organização/Organizações" — NUNCA "Tenant/Tenants".          │
+  │  • Sidebar: grupos PRINCIPAL / PLATAFORMA, item ativo azul sólido.          │
+  │    SEM badges "PLANNED" (aquilo é andaime de dev, não vai para a UI).        │
+  │  • Acentuação PT-BR correta (Visão, Órgão, Configurações…).                 │
+  │  • Page header = título + subtítulo + AÇÕES à direita (não botão esticado). │
+  │  • 8 KPIs com semântica (valor + variação + selo de risco), não só número.  │
+  │  • 3 gráficos + painel "O que mudou?" (IA) + tabela de recursos.            │
+  └───────────────────────────────────────────────────────────────────────────┘
+-->
+
+<!-- ══ ICON SPRITE (Lucide) ══ -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="w-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="w-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><path d="M6 6h.01"/><path d="M6 18h.01"/></symbol>
+  <symbol id="w-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
+  <symbol id="w-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></symbol>
+  <symbol id="w-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="w-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+  <symbol id="w-cog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="w-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+  <symbol id="w-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="w-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+  <symbol id="w-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="w-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="w-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+  <symbol id="w-dl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="w-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></symbol>
+  <symbol id="w-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="w-money" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></symbol>
+</svg>
+
+<!-- ══ APP SHELL ══ -->
+<div style="height:100vh;display:flex;background:#F1F5F9">
+
+  <!-- ── SIDEBAR (236px, navy) ── -->
+  <aside style="width:236px;flex-shrink:0;background:#0D1B2A;display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,.06)">
+    <!-- brand -->
+    <div style="padding:16px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0">
+        <div style="width:34px;height:34px;border-radius:10px;border:1px solid #33475B;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg>
+        </div>
+        <div style="line-height:1.15;white-space:nowrap">
+          <div style="font-size:14px;font-weight:800;color:#fff">TechSolutions</div>
+          <div style="font-size:10px;color:#5E8C86;font-weight:600;letter-spacing:.12em">PLATAFORMA ERP</div>
+        </div>
+      </div>
+      <div title="Recolher menu" style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">
+        <span style="display:inline-block;width:7px;height:7px;border-left:2px solid #9FB4CC;border-top:2px solid #9FB4CC;transform:rotate(-45deg);margin-left:3px"></span>
+      </div>
+    </div>
+    <!-- nav -->
+    <div class="scrl" style="flex:1;min-height:0;overflow-y:auto;padding:12px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:6px 10px 7px;white-space:nowrap">PRINCIPAL</div>
+      <div class="navrow" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;cursor:pointer;color:#9FB4CC">
+        <svg width="18" height="18"><use href="#w-grid"/></svg><span style="font-size:13.5px;font-weight:600">Visão Geral</span>
+      </div>
+      <div class="navrow" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;cursor:pointer;color:#9FB4CC">
+        <svg width="18" height="18"><use href="#w-server"/></svg><span style="font-size:13.5px;font-weight:600">Organizações</span>
+      </div>
+      <div class="navrow" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;cursor:pointer;color:#9FB4CC">
+        <svg width="18" height="18"><use href="#w-box"/></svg><span style="font-size:13.5px;font-weight:600">Planos e Módulos</span>
+      </div>
+      <div class="navrow" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;cursor:pointer;background:#2563EB;color:#fff">
+        <svg width="18" height="18"><use href="#w-cloud"/></svg><span style="font-size:13.5px;font-weight:700">Cloud Billing</span>
+      </div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:14px 10px 7px;white-space:nowrap">PLATAFORMA</div>
+      <div class="navrow" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;cursor:pointer;color:#9FB4CC">
+        <svg width="18" height="18"><use href="#w-shield"/></svg><span style="font-size:13.5px;font-weight:600">Auditoria Global</span>
+      </div>
+      <div class="navrow" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;cursor:pointer;color:#9FB4CC">
+        <svg width="18" height="18"><use href="#w-activity"/></svg><span style="font-size:13.5px;font-weight:600">Health do Sistema</span>
+      </div>
+      <div class="navrow" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;cursor:pointer;color:#9FB4CC">
+        <svg width="18" height="18"><use href="#w-server"/></svg><span style="font-size:13.5px;font-weight:600">APIs e Credenciais</span>
+      </div>
+      <div class="navrow" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;cursor:pointer;color:#9FB4CC">
+        <svg width="18" height="18"><use href="#w-cog"/></svg><span style="font-size:13.5px;font-weight:600">Configurações</span>
+      </div>
+    </div>
+    <!-- user -->
+    <div style="flex-shrink:0;padding:12px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px">
+      <div style="width:34px;height:34px;border-radius:50%;background:#1E3A5F;display:flex;align-items:center;justify-content:center;color:#9DC3E6;font-size:12px;font-weight:800;flex-shrink:0">AP</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Admin Plataforma</div>
+        <div style="font-size:10.5px;color:#5B7A96;white-space:nowrap">Super-administrador</div>
+      </div>
+      <svg width="16" height="16" style="color:#41607A;flex-shrink:0"><use href="#w-logout"/></svg>
+    </div>
+  </aside>
+
+  <!-- ── MAIN COLUMN ── -->
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;background:#F1F5F9">
+    <!-- topbar -->
+    <header style="flex-shrink:0;height:60px;background:#fff;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between;padding:0 24px">
+      <div style="font-size:17px;font-weight:800;color:#0F172A">Cloud Billing</div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="display:flex;align-items:center;gap:9px;width:280px;padding:8px 13px;background:#F1F5F9;border-radius:10px">
+          <svg width="16" height="16" style="color:#94A3B8"><use href="#w-search"/></svg>
+          <span style="font-size:13px;color:#94A3B8">Buscar organização, recurso, serviço…</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #E2E8F0;border-radius:10px;cursor:pointer">
+          <svg width="15" height="15" style="color:#64748B"><use href="#w-server"/></svg>
+          <span style="font-size:12.5px;font-weight:700;color:#334155">Todas as organizações</span>
+          <svg width="14" height="14" style="color:#94A3B8"><use href="#w-down"/></svg>
+        </div>
+        <div style="position:relative;width:38px;height:38px;border-radius:10px;background:#F1F5F9;display:flex;align-items:center;justify-content:center;color:#475569;cursor:pointer">
+          <svg width="18" height="18"><use href="#w-bell"/></svg>
+          <span style="position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:#EF4444;border:1.5px solid #fff"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- content -->
+    <main class="scrl" style="flex:1;min-height:0;overflow-y:auto;padding:24px">
+
+      <!-- PAGE HEADER: título + subtítulo + AÇÕES à direita -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:20px;font-weight:800;color:#0F172A">Cloud Billing</div>
+          <div class="mono" style="font-size:12px;color:#94A3B8;margin-top:2px">Junho 2026 · Produção · atualizado há 4 min</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer"><svg width="14" height="14" style="color:#94A3B8"><use href="#w-clock"/></svg>Junho 2026<svg width="13" height="13" style="color:#94A3B8"><use href="#w-down"/></svg></div>
+          <div style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer">Produção<svg width="13" height="13" style="color:#94A3B8"><use href="#w-down"/></svg></div>
+          <button style="display:flex;align-items:center;gap:6px;padding:7px 14px;background:#2563EB;border:none;border-radius:9px;font-size:12.5px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Exportar</button>
+        </div>
+      </div>
+
+      <!-- KPI CARDS 4×2 (valor + variação + selo semântico) -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:13px;padding:16px"><div style="font-size:11.5px;color:#94A3B8;font-weight:600;margin-bottom:8px">Custo atual</div><div style="font-size:22px;font-weight:800;color:#0F172A;letter-spacing:-.4px;margin-bottom:6px">R$ 48,2k</div><div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:11.5px;color:#DC2626">+12,4% vs maio</span><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#FFFBEB;color:#D97706">Médio</span></div></div>
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:13px;padding:16px"><div style="font-size:11.5px;color:#94A3B8;font-weight:600;margin-bottom:8px">Projeção</div><div style="font-size:22px;font-weight:800;color:#0F172A;letter-spacing:-.4px;margin-bottom:6px">R$ 52,1k</div><div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:11.5px;color:#D97706">confiança 87%</span><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#FFFBEB;color:#D97706">Médio</span></div></div>
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:13px;padding:16px"><div style="font-size:11.5px;color:#94A3B8;font-weight:600;margin-bottom:8px">Orçamento</div><div style="font-size:22px;font-weight:800;color:#0F172A;letter-spacing:-.4px;margin-bottom:6px">R$ 63k</div><div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:11.5px;color:#059669">76% consumido</span><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#ECFDF5;color:#059669">Normal</span></div></div>
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:13px;padding:16px"><div style="font-size:11.5px;color:#94A3B8;font-weight:600;margin-bottom:8px">Desvio</div><div style="font-size:22px;font-weight:800;color:#0F172A;letter-spacing:-.4px;margin-bottom:6px">+R$ 4,2k</div><div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:11.5px;color:#DC2626">acima do esperado</span><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#FFFBEB;color:#D97706">Atenção</span></div></div>
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:13px;padding:16px"><div style="font-size:11.5px;color:#94A3B8;font-weight:600;margin-bottom:8px">Economia realizada</div><div style="font-size:22px;font-weight:800;color:#0F172A;letter-spacing:-.4px;margin-bottom:6px">R$ 6,4k</div><div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:11.5px;color:#059669">3 ações aplicadas</span><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#ECFDF5;color:#059669">Positivo</span></div></div>
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:13px;padding:16px"><div style="font-size:11.5px;color:#94A3B8;font-weight:600;margin-bottom:8px">Economia potencial</div><div style="font-size:22px;font-weight:800;color:#0F172A;letter-spacing:-.4px;margin-bottom:6px">R$ 8,1k</div><div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:11.5px;color:#2563EB">5 recomendações</span><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#EFF6FF;color:#2563EB">Disponível</span></div></div>
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:13px;padding:16px"><div style="font-size:11.5px;color:#94A3B8;font-weight:600;margin-bottom:8px">Alertas críticos</div><div style="font-size:22px;font-weight:800;color:#0F172A;letter-spacing:-.4px;margin-bottom:6px">3</div><div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:11.5px;color:#DC2626">maior: R$ 7,9k egress</span><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#FEF2F2;color:#DC2626">Crítico</span></div></div>
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:13px;padding:16px"><div style="font-size:11.5px;color:#94A3B8;font-weight:600;margin-bottom:8px">Custo / org ativa</div><div style="font-size:22px;font-weight:800;color:#0F172A;letter-spacing:-.4px;margin-bottom:6px">R$ 1.004</div><div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:11.5px;color:#475569">48 orgs ativas</span><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#ECFDF5;color:#059669">Normal</span></div></div>
+      </div>
+
+      <!-- CHARTS ROW: diário + por serviço + por organização -->
+      <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:14px;margin-bottom:16px">
+        <!-- daily -->
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:13px;padding:18px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+            <div><div style="font-size:14px;font-weight:800;color:#0F172A">Custo diário + projeção</div><div style="font-size:11.5px;color:#94A3B8">Junho 2026 · R$ mil</div></div>
+            <div style="display:flex;gap:10px;font-size:11px"><span style="display:flex;align-items:center;gap:4px;color:#475569"><span style="width:8px;height:8px;border-radius:2px;background:#2563EB"></span>Real</span><span style="display:flex;align-items:center;gap:4px;color:#475569"><span style="width:8px;height:8px;border-radius:2px;background:#BFDBFE"></span>Projeção</span></div>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:3px;height:110px">
+            <div style="flex:1;height:63.3%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:68.3%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:60%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:71.7%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:75%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:70%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:80%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:76.7%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:83.3%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:78.3%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:86.7%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:85%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:80%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:90%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:93.3%;border-radius:3px 3px 0 0;background:#BFDBFE"></div>
+            <div style="flex:1;height:88.3%;border-radius:3px 3px 0 0;background:#93C5FD"></div>
+            <div style="flex:1;height:96.7%;border-radius:3px 3px 0 0;background:#93C5FD"></div>
+            <div style="flex:1;height:91.7%;border-radius:3px 3px 0 0;background:#93C5FD"></div>
+            <div style="flex:1;height:100%;border-radius:3px 3px 0 0;background:#93C5FD"></div>
+            <div style="flex:1;height:86.7%;border-radius:3px 3px 0 0;background:#1D4ED8"></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+            <span style="font-size:10px;color:#94A3B8">1/06</span><span style="font-size:10px;color:#94A3B8">6/06</span><span style="font-size:10px;color:#94A3B8">11/06</span><span style="font-size:10px;color:#94A3B8">16/06</span><span style="font-size:10px;font-weight:700;color:#2563EB">Hoje</span>
+          </div>
+        </div>
+        <!-- by service -->
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:13px;padding:18px">
+          <div style="font-size:14px;font-weight:800;color:#0F172A;margin-bottom:4px">Por serviço</div>
+          <div style="font-size:11.5px;color:#94A3B8;margin-bottom:14px">Distribuição do custo</div>
+          <div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:12px;font-weight:600;color:#334155">Compute</span><span style="font-size:12px;font-weight:700;color:#0F172A">R$ 18,4k</span></div><div style="height:7px;background:#F1F5F9;border-radius:99px;overflow:hidden"><div style="height:100%;border-radius:99px;background:#2563EB;width:38%"></div></div></div>
+          <div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:12px;font-weight:600;color:#334155">Database</span><span style="font-size:12px;font-weight:700;color:#0F172A">R$ 12,7k</span></div><div style="height:7px;background:#F1F5F9;border-radius:99px;overflow:hidden"><div style="height:100%;border-radius:99px;background:#7C3AED;width:26%"></div></div></div>
+          <div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:12px;font-weight:600;color:#334155">Storage</span><span style="font-size:12px;font-weight:700;color:#0F172A">R$ 9,1k</span></div><div style="height:7px;background:#F1F5F9;border-radius:99px;overflow:hidden"><div style="height:100%;border-radius:99px;background:#0891B2;width:19%"></div></div></div>
+          <div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:12px;font-weight:600;color:#334155">Egress</span><span style="font-size:12px;font-weight:700;color:#0F172A">R$ 7,9k</span></div><div style="height:7px;background:#F1F5F9;border-radius:99px;overflow:hidden"><div style="height:100%;border-radius:99px;background:#DC2626;width:16%"></div></div></div>
+          <div style="margin-bottom:0"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:12px;font-weight:600;color:#334155">Outros</span><span style="font-size:12px;font-weight:700;color:#0F172A">R$ 3,3k</span></div><div style="height:7px;background:#F1F5F9;border-radius:99px;overflow:hidden"><div style="height:100%;border-radius:99px;background:#94A3B8;width:7%"></div></div></div>
+        </div>
+        <!-- by org -->
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:13px;padding:18px">
+          <div style="font-size:14px;font-weight:800;color:#0F172A;margin-bottom:4px">Por organização</div>
+          <div style="font-size:11.5px;color:#94A3B8;margin-bottom:14px">Consumo por organização</div>
+          <div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:12px;font-weight:600;color:#334155">Techsolutions SP</span><span style="font-size:12px;font-weight:700;color:#0F172A">R$ 25,0k</span></div><div style="height:7px;background:#F1F5F9;border-radius:99px;overflow:hidden"><div style="height:100%;border-radius:99px;background:#2563EB;width:52%"></div></div></div>
+          <div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:12px;font-weight:600;color:#334155">AgroMax Coop.</span><span style="font-size:12px;font-weight:700;color:#0F172A">R$ 11,6k</span></div><div style="height:7px;background:#F1F5F9;border-radius:99px;overflow:hidden"><div style="height:100%;border-radius:99px;background:#DC2626;width:24%"></div></div></div>
+          <div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:12px;font-weight:600;color:#334155">Logística Delta</span><span style="font-size:12px;font-weight:700;color:#0F172A">R$ 5,8k</span></div><div style="height:7px;background:#F1F5F9;border-radius:99px;overflow:hidden"><div style="height:100%;border-radius:99px;background:#D97706;width:12%"></div></div></div>
+          <div style="margin-bottom:0"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:12px;font-weight:600;color:#334155">Outros (45)</span><span style="font-size:12px;font-weight:700;color:#0F172A">R$ 5,8k</span></div><div style="height:7px;background:#F1F5F9;border-radius:99px;overflow:hidden"><div style="height:100%;border-radius:99px;background:#94A3B8;width:12%"></div></div></div>
+        </div>
+      </div>
+
+      <!-- INTELLIGENCE + RESOURCE TABLE -->
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:14px">
+        <!-- O que mudou? (IA) -->
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:13px;overflow:hidden">
+          <div style="padding:14px 16px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;gap:8px"><svg width="16" height="16" style="color:#2563EB"><use href="#w-activity"/></svg><span style="font-size:14px;font-weight:800;color:#0F172A">O que mudou?</span><span style="margin-left:auto;font-size:10px;font-weight:700;background:#EFF6FF;color:#2563EB;padding:2px 8px;border-radius:99px">IA</span></div>
+          <div style="padding:12px 16px;border-bottom:1px solid #F8FAFC;display:flex;align-items:flex-start;gap:10px"><div style="width:30px;height:30px;border-radius:8px;background:#FEF2F2;display:flex;align-items:center;justify-content:center;color:#DC2626;flex-shrink:0"><svg width="14" height="14"><use href="#w-up"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:10px;font-weight:700;color:#DC2626;letter-spacing:.06em;margin-bottom:2px">ANOMALIA</div><div style="font-size:12.5px;color:#334155;line-height:1.45">Egress subiu 31% nos últimos 7 dias — AgroMax Cooperativa.</div></div></div>
+          <div style="padding:12px 16px;border-bottom:1px solid #F8FAFC;display:flex;align-items:flex-start;gap:10px"><div style="width:30px;height:30px;border-radius:8px;background:#FFFBEB;display:flex;align-items:center;justify-content:center;color:#D97706;flex-shrink:0"><svg width="14" height="14"><use href="#w-alert"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:10px;font-weight:700;color:#D97706;letter-spacing:.06em;margin-bottom:2px">ATENÇÃO</div><div style="font-size:12.5px;color:#334155;line-height:1.45">Banco gerenciado 18% acima do orçamento mensal.</div></div></div>
+          <div style="padding:12px 16px;border-bottom:1px solid #F8FAFC;display:flex;align-items:flex-start;gap:10px"><div style="width:30px;height:30px;border-radius:8px;background:#FEF2F2;display:flex;align-items:center;justify-content:center;color:#DC2626;flex-shrink:0"><svg width="14" height="14"><use href="#w-up"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:10px;font-weight:700;color:#DC2626;letter-spacing:.06em;margin-bottom:2px">CONCENTRAÇÃO</div><div style="font-size:12.5px;color:#334155;line-height:1.45">AgroMax representa 42% do aumento de custo do mês.</div></div></div>
+          <div style="padding:12px 16px;border-bottom:1px solid #F8FAFC;display:flex;align-items:flex-start;gap:10px"><div style="width:30px;height:30px;border-radius:8px;background:#F5F3FF;display:flex;align-items:center;justify-content:center;color:#7C3AED;flex-shrink:0"><svg width="14" height="14"><use href="#w-shield"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:10px;font-weight:700;color:#7C3AED;letter-spacing:.06em;margin-bottom:2px">GOVERNANÇA</div><div style="font-size:12.5px;color:#334155;line-height:1.45">3 recursos identificados sem tag de organização.</div></div></div>
+          <div style="padding:12px 16px;border-bottom:1px solid #F8FAFC;display:flex;align-items:flex-start;gap:10px"><div style="width:30px;height:30px;border-radius:8px;background:#ECFDF5;display:flex;align-items:center;justify-content:center;color:#059669;flex-shrink:0"><svg width="14" height="14"><use href="#w-money"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:10px;font-weight:700;color:#059669;letter-spacing:.06em;margin-bottom:2px">OTIMIZAÇÃO</div><div style="font-size:12.5px;color:#334155;line-height:1.45">R$ 8,1k de economia potencial com 5 ações disponíveis.</div></div></div>
+          <div style="padding:12px 16px;border-bottom:1px solid #F8FAFC;display:flex;align-items:flex-start;gap:10px"><div style="width:30px;height:30px;border-radius:8px;background:#FEF2F2;display:flex;align-items:center;justify-content:center;color:#DC2626;flex-shrink:0"><svg width="14" height="14"><use href="#w-clock"/></svg></div><div style="flex:1;min-width:0"><div style="font-size:10px;font-weight:700;color:#DC2626;letter-spacing:.06em;margin-bottom:2px">RISCO</div><div style="font-size:12.5px;color:#334155;line-height:1.45">Projeção indica estouro de orçamento em 8 dias.</div></div></div>
+          <div style="padding:12px 16px"><button style="width:100%;padding:9px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:700;color:#2563EB;cursor:pointer;font-family:inherit">Ver todas as recomendações</button></div>
+        </div>
+        <!-- resource table -->
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:13px;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #F1F5F9">
+            <div><div style="font-size:14px;font-weight:800;color:#0F172A">Recursos · detalhe</div><div style="font-size:11.5px;color:#94A3B8">Consumo por recurso · rateio e orçamento</div></div>
+            <div style="display:flex;gap:8px"><button style="padding:7px 11px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg width="13" height="13"><use href="#w-filter"/></svg>Filtrar</button><button style="padding:7px 11px;background:#2563EB;border:none;border-radius:8px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg width="13" height="13"><use href="#w-dl"/></svg>Exportar</button></div>
+          </div>
+          <div style="display:flex;padding:9px 18px;background:#F8FAFC;border-bottom:1px solid #F1F5F9;gap:10px">
+            <span style="flex:1.4;font-size:10.5px;font-weight:700;color:#94A3B8;letter-spacing:.06em">RECURSO</span>
+            <span style="flex:.9;font-size:10.5px;font-weight:700;color:#94A3B8;letter-spacing:.06em">ORGANIZAÇÃO</span>
+            <span style="flex:.7;font-size:10.5px;font-weight:700;color:#94A3B8;letter-spacing:.06em">USO</span>
+            <span style="flex:.7;font-size:10.5px;font-weight:700;color:#94A3B8;letter-spacing:.06em">CUSTO</span>
+            <span style="flex:.6;font-size:10.5px;font-weight:700;color:#94A3B8;letter-spacing:.06em">VARIAÇÃO</span>
+            <span style="flex:.6;font-size:10.5px;font-weight:700;color:#94A3B8;letter-spacing:.06em">ORÇAMENTO</span>
+            <span style="flex:.9;font-size:10.5px;font-weight:700;color:#94A3B8;letter-spacing:.06em;text-align:right">STATUS</span>
+            <span style="flex:.9;font-size:10.5px;font-weight:700;color:#94A3B8;letter-spacing:.06em;text-align:right">AÇÃO</span>
+          </div>
+          <div class="rowh" style="display:flex;align-items:center;padding:11px 18px;border-bottom:1px solid #F8FAFC;gap:10px;cursor:pointer"><div style="flex:1.4"><div style="font-size:13px;font-weight:700;color:#0F172A">Compute (API)</div><div style="font-size:11px;color:#94A3B8">Compute · Prod</div></div><span style="flex:.9;font-size:12.5px;color:#475569">Rateio multi-organização</span><span class="mono" style="flex:.7;font-size:12px;color:#475569">1.284 h</span><span style="flex:.7;font-size:13px;font-weight:700;color:#0F172A">R$ 18.400</span><span style="flex:.6;font-size:12.5px;font-weight:700;color:#D97706">+4,2%</span><span style="flex:.6;font-size:12.5px;color:#64748B">R$ 20k</span><div style="flex:.9;display:flex;justify-content:flex-end"><span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:#ECFDF5;color:#059669;white-space:nowrap">Normal</span></div><div style="flex:.9;display:flex;justify-content:flex-end"><span style="font-size:12px;font-weight:600;color:#94A3B8">—</span></div></div>
+          <div class="rowh" style="display:flex;align-items:center;padding:11px 18px;border-bottom:1px solid #F8FAFC;gap:10px;cursor:pointer"><div style="flex:1.4"><div style="font-size:13px;font-weight:700;color:#0F172A">Banco gerenciado</div><div style="font-size:11px;color:#94A3B8">Database · Prod</div></div><span style="flex:.9;font-size:12.5px;color:#475569">Rateio multi-organização</span><span class="mono" style="flex:.7;font-size:12px;color:#475569">99,98% uptime</span><span style="flex:.7;font-size:13px;font-weight:700;color:#0F172A">R$ 12.700</span><span style="flex:.6;font-size:12.5px;font-weight:700;color:#DC2626">+18,3%</span><span style="flex:.6;font-size:12.5px;color:#64748B">R$ 10,7k</span><div style="flex:.9;display:flex;justify-content:flex-end"><span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:#FEF2F2;color:#DC2626;white-space:nowrap">Acima orçamento</span></div><div style="flex:.9;display:flex;justify-content:flex-end"><span style="font-size:12px;font-weight:600;color:#2563EB">Investigar</span></div></div>
+          <div class="rowh" style="display:flex;align-items:center;padding:11px 18px;border-bottom:1px solid #F8FAFC;gap:10px;cursor:pointer"><div style="flex:1.4"><div style="font-size:13px;font-weight:700;color:#0F172A">Storage (S3)</div><div style="font-size:11px;color:#94A3B8">Storage · Prod</div></div><span style="flex:.9;font-size:12.5px;color:#475569">Techsolutions SP</span><span class="mono" style="flex:.7;font-size:12px;color:#475569">2,1 TB</span><span style="flex:.7;font-size:13px;font-weight:700;color:#0F172A">R$ 9.120</span><span style="flex:.6;font-size:12.5px;font-weight:700;color:#059669">+1,8%</span><span style="flex:.6;font-size:12.5px;color:#64748B">R$ 10k</span><div style="flex:.9;display:flex;justify-content:flex-end"><span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:#ECFDF5;color:#059669;white-space:nowrap">Normal</span></div><div style="flex:.9;display:flex;justify-content:flex-end"><span style="font-size:12px;font-weight:600;color:#94A3B8">—</span></div></div>
+          <div class="rowh" style="display:flex;align-items:center;padding:11px 18px;border-bottom:1px solid #F8FAFC;gap:10px;cursor:pointer"><div style="flex:1.4"><div style="font-size:13px;font-weight:700;color:#0F172A">Egress</div><div style="font-size:11px;color:#94A3B8">Rede · Prod</div></div><span style="flex:.9;font-size:12.5px;color:#475569">AgroMax Cooperativa</span><span class="mono" style="flex:.7;font-size:12px;color:#475569">840 GB</span><span style="flex:.7;font-size:13px;font-weight:700;color:#0F172A">R$ 7.980</span><span style="flex:.6;font-size:12.5px;font-weight:700;color:#DC2626">+31,4%</span><span style="flex:.6;font-size:12.5px;color:#64748B">R$ 6k</span><div style="flex:.9;display:flex;justify-content:flex-end"><span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:#FEF2F2;color:#DC2626;white-space:nowrap">Anomalia</span></div><div style="flex:.9;display:flex;justify-content:flex-end"><span style="font-size:12px;font-weight:600;color:#2563EB">Aprovar excedente</span></div></div>
+          <div class="rowh" style="display:flex;align-items:center;padding:11px 18px;border-bottom:1px solid #F8FAFC;gap:10px;cursor:pointer"><div style="flex:1.4"><div style="font-size:13px;font-weight:700;color:#0F172A">Observability</div><div style="font-size:11px;color:#94A3B8">Monitoramento · Prod</div></div><span style="flex:.9;font-size:12.5px;color:#475569">Rateio multi-organização</span><span class="mono" style="flex:.7;font-size:12px;color:#475569">12,4M spans</span><span style="flex:.7;font-size:13px;font-weight:700;color:#0F172A">R$ 2.100</span><span style="flex:.6;font-size:12.5px;font-weight:700;color:#059669">+2,1%</span><span style="flex:.6;font-size:12.5px;color:#64748B">R$ 2,5k</span><div style="flex:.9;display:flex;justify-content:flex-end"><span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:#ECFDF5;color:#059669;white-space:nowrap">Normal</span></div><div style="flex:.9;display:flex;justify-content:flex-end"><span style="font-size:12px;font-weight:600;color:#94A3B8">—</span></div></div>
+          <div class="rowh" style="display:flex;align-items:center;padding:11px 18px;gap:10px;cursor:pointer"><div style="flex:1.4"><div style="font-size:13px;font-weight:700;color:#0F172A">Redis Cache</div><div style="font-size:11px;color:#94A3B8">Cache · Prod</div></div><span style="flex:.9;font-size:12.5px;color:#475569">Rateio multi-organização</span><span class="mono" style="flex:.7;font-size:12px;color:#475569">1,2 GB hit 98,7%</span><span style="flex:.7;font-size:13px;font-weight:700;color:#0F172A">R$ 1.220</span><span style="flex:.6;font-size:12.5px;font-weight:700;color:#059669">-0,8%</span><span style="flex:.6;font-size:12.5px;color:#64748B">R$ 1,5k</span><div style="flex:.9;display:flex;justify-content:flex-end"><span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:#ECFDF5;color:#059669;white-space:nowrap">Normal</span></div><div style="flex:.9;display:flex;justify-content:flex-end"><span style="font-size:12px;font-weight:600;color:#94A3B8">—</span></div></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>
