@@ -6,6 +6,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { approveOperationalApproval, listPendingApprovals, rejectOperationalApproval } from "../approval.service";
 import type { OperationalApproval } from "../approval.types";
+import { WorkOrderRegistryLinksCard } from "../components/WorkOrderRegistryLinksCard";
 import { useWorkOrderDetail } from "../useWorkOrderDetail";
 import type { WorkOrderPriority, WorkOrderStatus } from "../work-orders.types";
 
@@ -130,6 +131,9 @@ export function WorkOrderDetailPage() {
             </div>
             <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>{[workOrder.serviceAddress, workOrder.serviceCity, workOrder.serviceState, workOrder.serviceZipCode].filter(Boolean).join(" · ") || "Endereço não informado"}</div>
           </div>
+
+          {/* C2: cadastros vinculados (cliente/viatura/equipe/serviço) */}
+          <WorkOrderRegistryLinksCard workOrder={workOrder} />
 
           {/* timeline */}
           <div style={{ ...card, padding: 20 }}>

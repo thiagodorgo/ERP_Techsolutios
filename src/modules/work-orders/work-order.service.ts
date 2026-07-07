@@ -15,8 +15,13 @@ import type {
   UpdateWorkOrderInput,
   WorkOrder,
   WorkOrderActorContext,
+  WorkOrderCustomerLink,
   WorkOrderEvent,
+  WorkOrderLinks,
+  WorkOrderServiceCatalogLink,
   WorkOrderStatus,
+  WorkOrderTeamLink,
+  WorkOrderVehicleLink,
 } from "./work-order.types.js";
 import { WorkOrderError } from "./work-order.types.js";
 import {
@@ -57,6 +62,15 @@ export type WorkOrderReferenceResolvers = {
   readonly resolveVehicle?: (actor: WorkOrderActorContext, id: string) => Promise<boolean>;
   readonly resolveTeam?: (actor: WorkOrderActorContext, id: string) => Promise<boolean>;
   readonly resolveServiceCatalog?: (actor: WorkOrderActorContext, id: string) => Promise<boolean>;
+  // C2 — detail-only summaries for the linked cadastros. Each returns a small,
+  // tenant-scoped projection or null (missing/cross-tenant/unresolvable id).
+  readonly resolveCustomerSummary?: (actor: WorkOrderActorContext, id: string) => Promise<WorkOrderCustomerLink | null>;
+  readonly resolveVehicleSummary?: (actor: WorkOrderActorContext, id: string) => Promise<WorkOrderVehicleLink | null>;
+  readonly resolveTeamSummary?: (actor: WorkOrderActorContext, id: string) => Promise<WorkOrderTeamLink | null>;
+  readonly resolveServiceCatalogSummary?: (
+    actor: WorkOrderActorContext,
+    id: string,
+  ) => Promise<WorkOrderServiceCatalogLink | null>;
 };
 
 export class WorkOrderService {
@@ -187,6 +201,32 @@ export class WorkOrderService {
     }
 
     return workOrder;
+  }
+
+  /**
+   * Detail path (`GET /:id`): fetches the OS and resolves each linked cadastro to
+   * its small summary. Kept separate from get() so the list and the internal
+   * get() callers (update/status/assign/timeline) stay cheap and unchanged.
+   */
+  async getWithLinks(
+    actor: WorkOrderActorContext,
+    workOrderId: string,
+  ): Promise<{ readonly workOrder: WorkOrder; readonly links: WorkOrderLinks }> {
+    const workOrder = await this.get(actor, workOrderId);
+    const links = await this.resolveLinks(actor, workOrder);
+
+    return { workOrder, links };
+  }
+
+  private async resolveLinks(actor: WorkOrderActorContext, workOrder: WorkOrder): Promise<WorkOrderLinks> {
+    const [customer, vehicle, team, serviceCatalog] = await Promise.all([
+      resolveSummary(this.references.resolveCustomerSummary, actor, workOrder.customerId),
+      resolveSummary(this.references.resolveVehicleSummary, actor, workOrder.vehicleId),
+      resolveSummary(this.references.resolveTeamSummary, actor, workOrder.teamId),
+      resolveSummary(this.references.resolveServiceCatalogSummary, actor, workOrder.serviceCatalogId),
+    ]);
+
+    return { customer, vehicle, team, serviceCatalog };
   }
 
   async update(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord): Promise<WorkOrder> {
@@ -361,7 +401,65 @@ function createDefaultReferenceResolvers(): WorkOrderReferenceResolvers {
     resolveVehicle: (actor, id) => referenceExists(createDefaultVehicleService, actor, id),
     resolveTeam: (actor, id) => referenceExists(createDefaultTeamService, actor, id),
     resolveServiceCatalog: (actor, id) => referenceExists(createDefaultServiceCatalogService, actor, id),
+    resolveCustomerSummary: (actor, id) =>
+      resolveEntitySummary(createDefaultCustomerService, actor, id, (customer) => ({
+        id: customer.id,
+        name: customer.name,
+        isActive: customer.isActive,
+      })),
+    resolveVehicleSummary: (actor, id) =>
+      resolveEntitySummary(createDefaultVehicleService, actor, id, (vehicle) => ({
+        id: vehicle.id,
+        plate: vehicle.plate,
+        model: vehicle.model,
+      })),
+    resolveTeamSummary: (actor, id) =>
+      resolveEntitySummary(createDefaultTeamService, actor, id, (team) => ({
+        id: team.id,
+        name: team.name,
+      })),
+    resolveServiceCatalogSummary: (actor, id) =>
+      resolveEntitySummary(createDefaultServiceCatalogService, actor, id, (service) => ({
+        id: service.id,
+        name: service.name,
+        basePrice: service.basePrice ?? null,
+      })),
   };
+}
+
+/**
+ * Runs a resolver only when the OS actually carries the FK, so a work order with
+ * no link short-circuits to null without a lookup.
+ */
+async function resolveSummary<T>(
+  resolver: ((actor: WorkOrderActorContext, id: string) => Promise<T | null>) | undefined,
+  actor: WorkOrderActorContext,
+  id: string | undefined,
+): Promise<T | null> {
+  if (!id || !resolver) return null;
+
+  return resolver(actor, id);
+}
+
+/**
+ * Loads an entity via its tenant-scoped default service and projects it to a
+ * small summary. A missing/cross-tenant id (get() throws not_found) yields null,
+ * so unresolvable links never leak data and never fail the detail request.
+ */
+async function resolveEntitySummary<Entity, Summary>(
+  createService: () => Promise<{ get(actor: WorkOrderActorContext, id: string): Promise<Entity> }>,
+  actor: WorkOrderActorContext,
+  id: string,
+  project: (entity: Entity) => Summary,
+): Promise<Summary | null> {
+  try {
+    const service = await createService();
+    const entity = await service.get(actor, id);
+
+    return project(entity);
+  } catch {
+    return null;
+  }
 }
 
 type ReferenceLookupService = {

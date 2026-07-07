@@ -40,10 +40,45 @@ export type WorkOrderListItem = {
   readonly updatedAt?: string;
 };
 
+// C2 (Detalhe de OS enriquecido): vínculos resolvidos que o backend anexa ao
+// GET /work-orders/:id. Cada campo é null quando a FK está ausente/irresolúvel.
+export type WorkOrderLinkedCustomer = {
+  readonly id: string;
+  readonly name: string;
+  readonly isActive: boolean;
+};
+
+export type WorkOrderLinkedVehicle = {
+  readonly id: string;
+  readonly plate: string;
+  readonly model: string | null;
+};
+
+export type WorkOrderLinkedTeam = {
+  readonly id: string;
+  readonly name: string;
+};
+
+export type WorkOrderLinkedServiceCatalog = {
+  readonly id: string;
+  readonly name: string;
+  readonly basePrice: number | null;
+};
+
+export type WorkOrderRegistryLinksDetail = {
+  readonly customer: WorkOrderLinkedCustomer | null;
+  readonly vehicle: WorkOrderLinkedVehicle | null;
+  readonly team: WorkOrderLinkedTeam | null;
+  readonly serviceCatalog: WorkOrderLinkedServiceCatalog | null;
+};
+
 export type WorkOrderDetail = WorkOrderListItem & {
   readonly customerDocument?: string | null;
   readonly createdBy?: string | null;
   readonly updatedBy?: string | null;
+  // C2: vínculos resolvidos com os Cadastros (A1-A4). Ausente em OS antigas
+  // ou em backend sem C2 — a tela degrada para o snapshot do cliente.
+  readonly links?: WorkOrderRegistryLinksDetail | null;
 };
 
 export type WorkOrderEvent = {

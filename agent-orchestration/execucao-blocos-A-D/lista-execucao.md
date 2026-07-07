@@ -19,7 +19,7 @@
 - [x] B2 Cadastro rápido via modal na OS — PR #134, merge `1b683da`, gates 3/3 CI verdes, cadastro rápido + gating por permissão, skills: ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
 
 ## Bloco C — Densidade & Dashboard
-- [ ] C1 Listas densas (número tabular, ordenação, paginação, filtros preservados)
+- [x] C1 Listas densas (número tabular, ordenação, paginação, filtros preservados) — PR #135, merge `34500f6`, gates 3/3 CI verdes, 9 testes de lógica, skills: ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
 - [ ] C2 Detalhe de OS enriquecido (cliente/viatura/equipe/serviço)
 - [ ] C3 Dashboard gap-fill (rotas agregadas reais por tenant, sem mock)
 

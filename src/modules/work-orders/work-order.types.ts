@@ -72,6 +72,41 @@ export type WorkOrder = {
   readonly updatedAt: Date;
 };
 
+/**
+ * Resolved cadastro summaries attached to the OS detail response (C2). Each is a
+ * small, tenant-scoped projection of the linked entity, or null when the FK is
+ * absent or no longer resolves. Never carries tenant_id or other internal fields.
+ */
+export type WorkOrderCustomerLink = {
+  readonly id: string;
+  readonly name: string;
+  readonly isActive: boolean;
+};
+
+export type WorkOrderVehicleLink = {
+  readonly id: string;
+  readonly plate: string;
+  readonly model: string;
+};
+
+export type WorkOrderTeamLink = {
+  readonly id: string;
+  readonly name: string;
+};
+
+export type WorkOrderServiceCatalogLink = {
+  readonly id: string;
+  readonly name: string;
+  readonly basePrice: number | null;
+};
+
+export type WorkOrderLinks = {
+  readonly customer: WorkOrderCustomerLink | null;
+  readonly vehicle: WorkOrderVehicleLink | null;
+  readonly team: WorkOrderTeamLink | null;
+  readonly serviceCatalog: WorkOrderServiceCatalogLink | null;
+};
+
 export type WorkOrderEvent = {
   readonly id: string;
   readonly tenantId: string;
