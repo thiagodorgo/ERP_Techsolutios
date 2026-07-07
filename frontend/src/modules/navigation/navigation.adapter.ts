@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   Cloud,
+  Contact,
   CreditCard,
   FileText,
   LayoutDashboard,
@@ -39,6 +40,7 @@ export const navigationGroupLabels: Record<NavigationScope, string> = {
   operations: "Operação",
   logistics: "Logística",
   finance: "Financeiro",
+  registry: "Cadastros",
 };
 
 export const navigationIconMap: Record<string, LucideIcon> = {
@@ -52,6 +54,7 @@ export const navigationIconMap: Record<string, LucideIcon> = {
   ClipboardCheck,
   ClipboardList,
   Cloud,
+  Contact,
   CreditCard,
   FileText,
   LayoutDashboard,
