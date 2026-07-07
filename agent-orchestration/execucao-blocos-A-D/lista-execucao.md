@@ -5,7 +5,7 @@
 > Rodada BLOCO-AUTO v3 · parte de `main@ebc3e82` (B-124K) · 2026-07-07.
 
 ## Fase 0 — Documentação + Skills
-- [ ] A0 Plano-mestre + lista + skills versionadas + controle atualizado — branch `bloco-a0-plano`
+- [x] A0 Plano-mestre + lista + skills versionadas + controle atualizado — PR #127, merge `bb35341`, gates 3/3 CI verdes (backend/frontend/flutter), skills: (documental), concluída 2026-07-07
 
 ## Bloco A — Cadastros (banco + API + tela)
 - [ ] A1 Cliente `Customer` `/api/v1/customers`
