@@ -6,6 +6,7 @@ import { renderToString } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 
 import { buildRegistryLinksPayload } from "../src/modules/work-orders/work-orders.adapter";
+import { prependRegistryOption } from "../src/modules/work-orders/useRegistryLinkOptions";
 
 // --- Unit: recorte snake_case do payload de vinculos (B1 OS integrada) ---
 
@@ -34,6 +35,30 @@ test("buildRegistryLinksPayload omite vinculos vazios", () => {
   assert.equal("vehicle_id" in partial, false);
   assert.equal("team_id" in partial, false);
   assert.equal("service_catalog_id" in partial, false);
+});
+
+// --- Unit: append+select do cadastro rapido (B2) ---
+
+test("prependRegistryOption coloca o novo cadastro no topo e deduplica por id", () => {
+  const list = [
+    { id: "a", name: "A" },
+    { id: "b", name: "B" },
+  ];
+
+  const next = prependRegistryOption(list, { id: "c", name: "C" });
+  // Novo cadastro fica no topo (imediatamente selecionavel) sem perder os anteriores.
+  assert.equal(next[0].id, "c");
+  assert.equal(next.length, 3);
+  assert.deepEqual(next.map((item) => item.id), ["c", "a", "b"]);
+  // Nao muta a lista original.
+  assert.equal(list.length, 2);
+
+  // Reinserir um id existente atualiza os dados e evita duplicata (o novo vence).
+  const deduped = prependRegistryOption(next, { id: "a", name: "A2" });
+  assert.equal(deduped[0].id, "a");
+  assert.equal(deduped[0].name, "A2");
+  assert.equal(deduped.filter((item) => item.id === "a").length, 1);
+  assert.equal(deduped.length, 3);
 });
 
 // --- SSR: seletores de vinculo renderizam com as opcoes "Sem ..." (D-007) ---
@@ -93,7 +118,16 @@ function seedContext(permissions: readonly string[]) {
   );
 }
 
-async function renderCreatePage(): Promise<string> {
+async function renderCreatePage(
+  permissions: readonly string[] = [
+    "work_orders:read",
+    "work_orders:create",
+    "customers:create",
+    "vehicles:create",
+    "teams:create",
+    "service_catalog:create",
+  ],
+): Promise<string> {
   process.env.VITE_USE_MOCKS = "true";
   browser.clear();
   const { mockSessionForEmail } = await import("../src/mocks/auth/context");
@@ -104,7 +138,7 @@ async function renderCreatePage(): Promise<string> {
   const { WorkOrderCreatePage } = await import("../src/modules/work-orders/pages/WorkOrderCreatePage");
 
   setStoredAuthSession(mockSessionForEmail("gestor.web@techsolutions.example"));
-  seedContext(["work_orders:read", "work_orders:create"]);
+  seedContext(permissions);
 
   return renderToString(
     <MemoryRouter initialEntries={["/work-orders/new"]}>
@@ -129,6 +163,22 @@ test("form de OS renderiza secao de vinculos com as opcoes 'Sem ...' (D-007)", a
   assert.match(html, /Sem serviço/);
   // Aditivo: os campos livres de cliente seguem disponiveis quando nada esta vinculado.
   assert.match(html, /Nome do cliente/);
+  // B2: cada seletor tem seu botao "+ Novo" (cadastro rapido) com aria-label descritivo.
+  assert.match(html, /aria-label="Cadastrar novo cliente"/);
+  assert.match(html, /aria-label="Cadastrar nova viatura"/);
+  assert.match(html, /aria-label="Cadastrar nova equipe"/);
+  assert.match(html, /aria-label="Cadastrar novo serviço"/);
   // D-007: modo mock nao fabrica cadastros; sem termo tecnico "Tenant" na UI.
   assert.doesNotMatch(html, /cus-1|veh-1|Tenant/);
+});
+
+test("B2: botoes '+ Novo' sao gated por *:create (ocultos sem permissao)", async () => {
+  const html = await renderCreatePage(["work_orders:read", "work_orders:create"]);
+  // Sem as permissoes de cadastro, os botoes de cadastro rapido nao aparecem (backend e a autoridade).
+  assert.doesNotMatch(html, /aria-label="Cadastrar novo cliente"/);
+  assert.doesNotMatch(html, /aria-label="Cadastrar nova viatura"/);
+  assert.doesNotMatch(html, /aria-label="Cadastrar nova equipe"/);
+  assert.doesNotMatch(html, /aria-label="Cadastrar novo serviço"/);
+  // Mas os seletores de vinculo continuam presentes.
+  assert.match(html, /Sem cliente vinculado/);
 });
