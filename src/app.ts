@@ -26,6 +26,7 @@ import { createFieldOpsRealtimeRouter } from "./modules/field-ops-realtime/index
 import { createFuelLogRouter } from "./modules/fuel-logs/index.js";
 import { createMaintenanceOrderRouter } from "./modules/maintenance-orders/index.js";
 import { createFineRouter } from "./modules/fines/index.js";
+import { createInsurancePolicyRouter } from "./modules/insurance-policies/index.js";
 import { createMobileRouter } from "./modules/mobile/index.js";
 import { createNotificationRouter } from "./modules/notifications/index.js";
 import { createNavigationRouter } from "./modules/navigation/index.js";
@@ -66,6 +67,7 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createFuelLogRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createMaintenanceOrderRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFineRouter(service));
+  app.use("/api/v1", attachAuthenticatedActor(), createInsurancePolicyRouter(service));
   app.use("/api/v1", attachAuthenticatedActor(), createServiceCatalogRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTeamRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFieldDispatchRouter(service));
