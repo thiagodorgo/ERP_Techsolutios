@@ -1,0 +1,54 @@
+{
+  "_doc": "Scaffold OPERACIONAL da rodada BLOCO-AUTO-F (Modulo Controle). Preenchido a cada PR mergeada (evolucao + burnup). NAO e o marco oficial: o marco (MVP demo%/vendavel%/blocos) em Kpis/kpis-latest.json so muda em bloco ...K apos avaliacao humana (politica C3). Aqui ficam so metricas verificaveis (testes, PRs, sub-modulos por data) e a projecao de termino por velocity.",
+  "round": "BLOCO-AUTO-F",
+  "module": "Controle",
+  "prepared_in": "F0 (bloco-f0-pd)",
+  "baseline": {
+    "date": "2026-07-07",
+    "backend_core_saas_tests": 15,
+    "backend_new_module_tests_AtoD": 86,
+    "frontend_smoke_tests": 101,
+    "flutter_tests": 782,
+    "regression_wo_fd_contracts": 39
+  },
+  "targets": {
+    "test_growth_min": 180,
+    "test_growth_max": 240,
+    "test_quota": "200% (M >= 2N por PR)",
+    "submodules_total": 12,
+    "pr_ceiling": 18,
+    "zero_mocks_target": true,
+    "roles_matrix_tested": 9
+  },
+  "evolution": {
+    "_note": "append 1 ponto por PR mergeada",
+    "series": [
+      {
+        "date": "2026-07-07",
+        "event": "F0 aberta (P&D + fundacao)",
+        "pr": null,
+        "merge_commit": null,
+        "submodules_done": 0,
+        "backend_tests_total": 101,
+        "frontend_smoke_total": 101,
+        "flutter_total": 782,
+        "cumulative_new_tests": 0
+      }
+    ]
+  },
+  "burnup": {
+    "_note": "scope = 12 sub-modulos F1-F12; done += 1 por PR de sub-modulo mergeada; projecao de termino = data + (restante / velocity_media_ultimas_5_PRs). Recalcular a cada merge.",
+    "scope_submodules": 12,
+    "done_submodules": 0,
+    "velocity_window": 5,
+    "velocity_avg_submodules_per_pr": null,
+    "projected_completion": null,
+    "points": [
+      { "date": "2026-07-07", "scope": 12, "done": 0 }
+    ]
+  },
+  "publish_policy": {
+    "marco": "NAO publicar em PR de feature/fundacao; so em bloco ...K com PR#/merge/approved_head reais apos avaliacao humana (Kpis/kpis-latest.json + index.html).",
+    "operational": "evolution + burnup deste arquivo sao atualizados a cada merge (dados reais, verificaveis)."
+  }
+}
