@@ -24,6 +24,7 @@ model Tenant {
   checklist_templates           ChecklistTemplate[]
   customers                     Customer[]
   vehicles                      Vehicle[]
+  fuel_logs                     FuelLog[]
   service_catalog_items         ServiceCatalog[]
   teams                         Team[]
   team_members                  TeamMember[]
@@ -773,12 +774,41 @@ model Vehicle {
   updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
   tenant     Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   work_orders WorkOrder[] @relation("WorkOrderVehicle")
+  fuel_logs   FuelLog[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, plate])
   @@index([tenant_id, is_active])
   @@index([tenant_id, created_at])
   @@map("vehicles")
+}
+
+model FuelLog {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String   @db.Uuid
+  vehicle_id    String   @db.Uuid
+  operator_id   String?  @db.Uuid
+  work_order_id String?  @db.Uuid
+  fueled_at     DateTime @db.Timestamptz(6)
+  fuel_type     String   @default("gasolina")
+  liters        Decimal  @db.Decimal(20, 6)
+  total_value   Decimal  @db.Decimal(20, 6)
+  odometer      Int
+  station       String?
+  notes         String?
+  is_active     Boolean  @default(true)
+  created_by    String?  @db.Uuid
+  updated_by    String?  @db.Uuid
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant        Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  vehicle       Vehicle  @relation(fields: [tenant_id, vehicle_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, vehicle_id, fueled_at])
+  @@index([tenant_id, is_active])
+  @@index([tenant_id, created_at])
+  @@map("fuel_logs")
 }
 
 model ServiceCatalog {
