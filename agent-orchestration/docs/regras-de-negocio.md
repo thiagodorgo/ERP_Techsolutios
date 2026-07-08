@@ -27,6 +27,18 @@ As regras iniciais do repositorio estao em `docs/04-regras-negocio.md`.
 - transversais herdadas: tenant da claim, RLS, auditoria em toda mutacao, desativacao logica
   (`is_active`), dinheiro `Decimal(20,6)`, datas `timestamptz`.
 
+### F2 Manutencao (`MaintenanceOrder`) — aplicada 2026-07-08
+
+- **R2.1 maquina de estados**: `agendada→{em_execucao,cancelada}`, `em_execucao→{concluida,cancelada}`,
+  `concluida`/`cancelada` finais; transicao invalida = **422**. **Concluir exige custo + data de
+  conclusao** (senao 422).
+- **R2.2 aviso idempotente**: preventiva `agendada` vencendo em <=7 dias gera 1 `Notification`
+  (idempotente por `maintenance_due:<id>` — rodar 2x = 1 aviso).
+- **R2.3 disponibilidade**: viatura com manutencao `em_execucao` fica indisponivel; criar OS nova
+  vinculando-a = **409** (leitura em `resolveVehicle`/`create`; field-dispatch intocado).
+- **odometro (R1.2 cross-entity)**: quando informado, >= maior odometro da viatura entre manutencoes e
+  abastecimentos, senao 422. Viatura obrigatoria (400 se cross-tenant/inexistente).
+
 ## Observacao de alinhamento
 
 As regras de negocio seguem a documentacao enviada pelo usuario e o repositorio oficial atual. Qualquer retorno para backend em C exige nova decisao explicita porque conflita com o estado atual do repositorio.

@@ -1,5 +1,35 @@
 # Status Geral
 
+## Atualizacao 2026-07-08 — Rodada BLOCO-AUTO-F: F2 Manutencao (em gate) [Claude Code]
+
+### Status
+
+F1 Abastecimento mergeada (PR #142, merge 1950ade, validador APROVADO). **F2 Manutencao** implementado
+(backend + web) na branch `bloco-f2-manutencao`, gate mecanico VERDE; validador-mestre em execucao.
+
+### Entregue (F2)
+
+- Backend `src/modules/maintenance-orders/` (espelha `fuel-logs/`): `MaintenanceOrder`
+  (`/api/v1/maintenance-orders`), FK composta `(tenant_id, vehicle_id) -> vehicles`, `Decimal(20,6)`
+  (custo), `timestamptz`, RLS ENABLE+FORCE + policy inline na migration `20260713000000_add_maintenance_orders`.
+- **R2.1** maquina de estados table-driven (espelha `field-dispatch.validators`): transicao invalida = 422;
+  **concluir exige custo + data** (422). **R1.2** odometro cross-entity (manutencoes + abastecimentos) = 422.
+- **R2.3** viatura em `em_execucao` indisponivel: guard read-only `hasActiveMaintenance`/`assertVehicleAvailable`
+  so em `work-order.service.create()` (OS nova) -> 409 `vehicle_in_maintenance`; **field-dispatch intocado**
+  (regressao 8/8 verde). Fronteira: assign nao passa pelo guard -> P-013.
+- **R2.2** `runMaintenanceDueNotifications` idempotente (key `maintenance_due:<id>`; rodar 2x = 1 aviso).
+- Permissoes `maintenance_orders:read|create|update`. Web `frontend/src/modules/fleet/maintenance/`
+  (`/fleet/maintenance`): abas Preventivas/Corretivas/Historico, afford. de transicao (so proximas validas),
+  modal Concluir (custo+data), 4 estados, sem link morto de pecas (F7). D-007.
+
+### Gate mecanico (verde)
+
+- Backend: `check` OK · `npm test` 15/15 · **F2 explicito 26/26** · regressoes WO+field-dispatch+fuel-logs
+  28/28 · `build` OK. Frontend: `check` OK · `test:smoke` **117/117** · `build` OK.
+- Migration up/down no `erp-postgres`: UP cria tabela+indices+2 FKs+RLS(t|t)+policy; DOWN dropa limpo.
+- Fidelidade: frontend-pixel-master. Testes 34 novos F2 (backend 26 + front 8) sobre N=8 -> **cota 200%**.
+- KPIs NAO publicados (C3).
+
 ## Atualizacao 2026-07-08 — Rodada BLOCO-AUTO-F: F1 Abastecimento (em gate) [Claude Code]
 
 ### Status
