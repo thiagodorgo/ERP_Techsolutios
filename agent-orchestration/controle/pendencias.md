@@ -143,3 +143,14 @@
 - impacto: baixo/cosmetico; nao e card morto nem engana (Chip e autoridade). Teste assere `tone==="default"`.
 - status: aberto (F12/cera — introduzir 4º tom "muted" so para canceladas, ajustando o teste em lockstep).
   Nao bloqueia F4.
+
+## P-018 - Attachments: allowlist de mime confia no Content-Type declarado (sem sniffing) (2026-07-08)
+
+- descricao: o upload de anexos (checklist E danos F5, mesmo storage provider) valida o mime SO pelo
+  Content-Type declarado no multipart, sem magic-byte/content sniffing. Achado LOW do workflow adversarial
+  de seguranca do F5. Herdado do modulo de checklist (comportamento pre-existente, nao introduzido pelo F5).
+- impacto: baixo — o download serve com o mime DECLARADO armazenado (nao text/html), entao payload HTML
+  falso nao renderiza (sem stored-XSS); path de storage e sanitizado (sem traversal). Nao e exploravel p/
+  escrever fora do diretorio nem executar.
+- status: aberto (hardening futuro do storage compartilhado: sniffing de magic bytes + Content-Disposition
+  attachment + talvez X-Content-Type-Options nosniff). Vale p/ checklist e danos. Nao bloqueia F5.

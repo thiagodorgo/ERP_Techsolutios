@@ -174,3 +174,26 @@
 - impacto: `Decimal(20,6)` (valor), `timestamptz`, RLS inline; rotas `/api/v1/insurance-policies`; perms
   `insurance_policies:read|create|update` (operator/auditor so leitura; finance escreve). Tela
   `/fleet/insurance` (barra de vigencia). Aditivo.
+
+## D-014 - F5: fotos de dano reusam o STORAGE PROVIDER do checklist, nao a tabela ChecklistAttachment (2026-07-08) [Claude Code]
+
+- status: aplicada (default consistente com a intencao do pd-controle §F5; sinalizada p/ confirmacao humana — A2)
+- origem: pd-controle §F5 diz "fotos reusam `ChecklistAttachment` (multipart file+componentId)" e o endpoint
+  `POST /mobile/checklist-runs/:runId/attachments`. Mas o modelo `ChecklistAttachment` e HARD-COUPLED a
+  `run_id` + `component_id` (FKs compostas obrigatorias p/ ChecklistRun e ChecklistTemplateComponent) — um
+  `Damage` NAO tem checklist run. Reusar a tabela/endpoint literalmente exigiria run sintetico por dano
+  (acoplamento fragil) ou afrouxar NOT NULLs de uma tabela muito usada (risco de regressao no checklist).
+- **conflito (A2):** premissa do pd-controle (reusar a TABELA/endpoint de checklist) x schema real
+  (tabela acoplada a run). Registrado, nao resolvido em silencio.
+- decisao: F5 reusa o **STORAGE PROVIDER** do checklist (`getDefaultChecklistStorageProvider` +
+  `readChecklistStorageConfig` + `parseMultipart...` Busboy, local/s3, checksum SHA-256, allowlist de
+  mime/tamanho) — MESMO backend de storage, **SEM storage novo, SEM presigned** (honra recon §1) — atraves
+  de uma tabela **`DamageAttachment`** (espelha `ChecklistAttachment`, particionada por `damage_id`) e
+  endpoints `POST/GET/GET download` sob `/api/v1/damages/:id/attachments`. Marcador (x,y) opcional guardado
+  em coluna dedicada `marker JSONB` no `DamageAttachment` (a figura interativa fica p/ cera/futuro).
+- seguranca (allowlist §2.8): DTO NUNCA expoe `file_url`/`storage_key`/bucket/path/base64 — so `id`,
+  `file_name`, `mime_type`, `size_bytes`, `created_at` e uma URL de download autenticada. Tenant do ator.
+- impacto: aditivo; nova tabela `damages` + `damage_attachments` com RLS; rotas `/api/v1/damages`; perms
+  `damages:read|create|update`; tela `/fleet/damages` (lista + modal + detalhe com galeria). Reversivel.
+- ambiguidade sinalizada: se o negocio exigir literalmente a mesma tabela/endpoint de checklist, reabrir
+  (exigiria refactor do modelo de attachment p/ desacoplar de run) — decisao de arquitetura maior. Nao parei.

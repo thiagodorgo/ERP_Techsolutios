@@ -44,6 +44,9 @@ Detalhe funcional por sub-modulo em `docs/pd-controle.md` e `docs/screen-element
 - **RF-FROTA-004 (F4 Seguros)** — apolices por viatura com numero unico por tenant (409), `vencida`
   derivada da vigencia (read-only), alertas de renovacao 30/15/7d idempotentes, barra de vigencia,
   tela `/fleet/insurance`.
-- RF-FROTA-005..008 (F5..F8) — Danos, Estoque, Remuneracoes (ver plano-mestre);
+- **RF-FROTA-005 (F5 Danos)** — danos por viatura (opcionalmente vinculados a OS de origem) com maquina
+  de estados (registrado→em_tratativa→resolvido, 422), fotos (reuso do storage do checklist; galeria com
+  upload/download autenticado; sem storage novo — D-014), custos estimado/real, tela `/fleet/damages`.
+- RF-FROTA-006..008 (F6..F8) — Mapa real, Estoque, Remuneracoes (ver plano-mestre);
   F9..F12 enriquecem Usuarios/Notificacoes/Sidebar e aplicam cera.
 

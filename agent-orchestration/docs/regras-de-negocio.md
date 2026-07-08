@@ -58,6 +58,17 @@ As regras iniciais do repositorio estao em `docs/04-regras-negocio.md`.
   inicio`. Viatura obrigatoria.
 - **R4.3 (adiado, P-016)**: indicador "sem apolice vigente" na Viatura/Mapa fica para F6/bloco dedicado.
 
+### F5 Danos (`Damage` + `DamageAttachment`) — aplicada 2026-07-08
+
+- **R5.1 maquina de estados**: `registrado → em_tratativa → resolvido` (422 fora disso).
+- **R5.2 fotos**: reusam o STORAGE PROVIDER do checklist (D-014) — sem storage novo/presigned; DTO expoe
+  so metadados seguros (id/nome/mime/tamanho/marker) + URL de download autenticada; nunca path/key/bucket.
+  Upload multipart com allowlist de mime (415) e limite de tamanho (413); galeria + download por API.
+- **R5.3 vinculos**: dano -> OS de origem (`/work-orders/:id`, opcional, validado no tenant); viatura ->
+  cadastro. Viatura obrigatoria. Custos estimado/real `Decimal(20,6)` opcionais.
+- **RBAC**: operator/field_technician registram (create); manager/tenant_admin tratam (update);
+  finance/auditor leem. Upload por create OU update; download por read; delete por update.
+
 ## Observacao de alinhamento
 
 As regras de negocio seguem a documentacao enviada pelo usuario e o repositorio oficial atual. Qualquer retorno para backend em C exige nova decisao explicita porque conflita com o estado atual do repositorio.

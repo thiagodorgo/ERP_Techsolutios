@@ -34,7 +34,12 @@
       apolice)` 409/201 + R4.3 adiado (P-016); testes N=7 → **M=34** (backend 23 + front 11, ≥2N); D-013
       registrada; **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA; P-016/P-017 informativos; Viaturas
       intocada confirmada); PR #NN, merge <hash> — preencher pós-merge
-- [ ] F5 Danos (`Damage` `/api/v1/damages` + fotos reuso attachment)
+- [~] F5 Danos (`Damage` `/api/v1/damages` + fotos reuso attachment) — branch `bloco-f5-danos`; gate
+      mecânico verde (back check/15+19/regressões 34 incl. checklist intocado/build; front check/150/build;
+      migrate up+down 2 tabelas `erp-postgres`); máquina de estados 422 + fotos via reuso do storage (D-014;
+      DTO sem internals; 415/413) + OS de origem; testes N=7 → **M=30** (backend 19 + front 11, ≥2N); D-014
+      registrada; pixel-master + **workflow adversarial de segurança (4 probes SAFE)** + **validador-mestre:
+      VEREDITO APROVADO** (0 VETO/0 ALTA; P-018 LOW; doc-drift §F5/D-014 corrigido); PR #NN, merge <hash> — pós-merge
 - [ ] F6 Mapa Operacional real (matar operations-map.mock.ts) [até 2 sub-PRs]
 - [ ] F7 Estoque (`InventoryItem`/`StockMovement`/`CycleCount`) [até 3 sub-PRs]
 - [ ] F8 Remunerações (extrato por operador/período sobre commissions)

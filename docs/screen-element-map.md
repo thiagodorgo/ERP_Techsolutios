@@ -62,8 +62,9 @@ Chips por status + **prazos coloridos** (≤7d aviso, vencido perigo). Vínculos
 Lista por viatura com **barra de vigência**; "vencida" derivada (read-only). Vínculo: viatura → cadastro.
 
 ## F5 Danos `/fleet/damages`
-Lista + modal com **FOTOS** (reusa `ChecklistAttachment`) + detalhe com **galeria**. Vínculos: **dano →
-OS de origem `/work-orders/:id`**; viatura → histórico de danos.
+Lista + modal com **FOTOS** (reusa o **storage provider** do checklist via tabela `DamageAttachment` — sem
+storage novo/presigned, ver D-014) + detalhe com **galeria** (upload/baixar/remover; blob autenticado).
+Vínculos: **dano → OS de origem `/work-orders/:id`**; **viatura → `/cadastros/viaturas`** (cadastro).
 
 ## F7 Estoque `/inventory`
 Abas Itens | Movimentações | Contagem. Item: saldo (derivado), classe ABC, mín/máx, status reposição.

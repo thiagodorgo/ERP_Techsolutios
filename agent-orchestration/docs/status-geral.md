@@ -1,5 +1,38 @@
 # Status Geral
 
+## Atualizacao 2026-07-08 — Rodada BLOCO-AUTO-F: F5 Danos (em gate) [Claude Code]
+
+### Status
+
+F1-F4 mergeadas (#142-#145), validador APROVADO. **F5 Danos** implementado (backend + web) na branch
+`bloco-f5-danos`, gate mecanico VERDE; pixel-master + workflow adversarial de seguranca + validador-mestre.
+
+### Entregue (F5)
+
+- Backend `src/modules/damages/` (espelha `insurance-policies/`): `Damage` (`/api/v1/damages`) + tabela
+  `DamageAttachment`, FK composta `(tenant_id, vehicle_id) -> vehicles` + `work_order_id?` validado no
+  tenant, `Decimal(20,6)` (custos), `timestamptz`, RLS ENABLE+FORCE + policy nas DUAS tabelas na migration
+  `20260716000000_add_damages`.
+- **R5.1** maquina de estados `registrado→em_tratativa→resolvido` (422). **R5.2 fotos**: reusam o STORAGE
+  PROVIDER do checklist (D-014 — sem storage novo/presigned); upload multipart (allowlist mime 415, tamanho
+  413, checksum SHA-256), galeria + download autenticado; **DTO expoe so metadados seguros** (nunca
+  path/key/bucket/checksum/base64/tenant externo). **R5.3** dano -> OS de origem (`/work-orders/:id`);
+  viatura -> cadastro. Permissoes `damages:read|create|update` (operator/field_tech registram; manager trata).
+- Web `frontend/src/modules/fleet/damages/` (`/fleet/damages`): lista densa + cards de totais + modal +
+  detalhe com **galeria de fotos** (thumbnail via blob autenticado; upload/baixar/remover; erro 415).
+  Chips situacao+gravidade; menu de transicao; OS -> link. 4 estados; D-007.
+
+### Gate mecanico (verde)
+
+- Backend: `check` OK · `npm test` 15/15 · **F5 explicito 19/19** · regressoes insurance+checklist-attach+
+  checklist-routes+fines 34/34 (**checklist intocado**) · `build` OK. Frontend: `check` OK · `test:smoke`
+  **150/150** · `build` OK.
+- Migration up/down no `erp-postgres`: UP cria damages+damage_attachments com RLS(t|t)+policy nas duas +
+  FK composta attachment->damage; DOWN (attachments antes de damages) limpo.
+- Fidelidade: frontend-pixel-master. Seguranca: workflow adversarial (leak de DTO, RLS/isolamento nas 2
+  tabelas, seguranca multipart, integridade do checklist). Testes 30 novos F5 (back 19 + front 11) sobre
+  N=7 -> **cota 200%**. KPIs NAO publicados (C3).
+
 ## Atualizacao 2026-07-08 — Rodada BLOCO-AUTO-F: F4 Seguros (em gate) [Claude Code]
 
 ### Status
