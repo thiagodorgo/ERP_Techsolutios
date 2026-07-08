@@ -1,4 +1,4 @@
-import type { OperationalKpi } from "./types";
+import type { OperationalAlert, OperationalKpi } from "./types";
 import type { WorkOrderListItem, WorkOrderStatus, WorkOrdersData } from "../work-orders/work-orders.types";
 import type { DispatchListItem, DispatchStatus } from "../operations/dispatches/dispatches.types";
 import type { FieldLocationItem } from "../operations/map/operations-map.types";
@@ -528,4 +528,290 @@ export function deriveDashboardEvents(input: EnrichedDashboardInput, limit = 6):
     .sort((a, b) => b.sortKey.localeCompare(a.sortKey))
     .slice(0, limit)
     .map(({ sortKey: _sortKey, ...event }) => event);
+}
+
+// ===========================================================================
+// C3 — Dashboard operacional a partir do agregado real GET /dashboard/summary.
+// O backend calcula as contagens por tenant; o front apenas mapeia para os
+// cards/listas da tela, com parse DEFENSIVO (null/0/[]-tolerante, camel/snake).
+// Nenhum número é fabricado no caminho real: `value` é a contagem real e
+// `delta` é sempre um rótulo descritivo (nunca um percentual inventado).
+// ===========================================================================
+
+export type DashboardSummaryByStatus = {
+  readonly open: number;
+  readonly assigned: number;
+  readonly accepted: number;
+  readonly on_route: number;
+  readonly on_site: number;
+  readonly in_progress: number;
+  readonly paused: number;
+  readonly completed: number;
+  readonly cancelled: number;
+  readonly rejected: number;
+};
+
+export type DashboardSummaryModel = {
+  readonly workOrders: {
+    readonly total: number;
+    readonly byStatus: DashboardSummaryByStatus;
+    readonly createdToday: number;
+    readonly createdThisWeek: number;
+    readonly overdue: number;
+  };
+  readonly registry: {
+    readonly customers: number;
+    readonly vehicles: number;
+    readonly teams: number;
+    readonly services: number;
+  };
+  readonly criticalWorkOrders: readonly DashboardCriticalOrder[];
+  readonly recentEvents: readonly DashboardRecentEvent[];
+};
+
+export type DashboardCriticalOrder = {
+  readonly id: string;
+  readonly code: string;
+  readonly title: string;
+  readonly customerName: string | null;
+  readonly status: string;
+  readonly statusLabel: string;
+  readonly statusTone: DashboardTone;
+  readonly priority: string;
+  readonly priorityLabel: string;
+  readonly priorityTone: DashboardTone;
+  readonly scheduledFor: string | null;
+};
+
+export type DashboardRecentEvent = {
+  readonly id: string;
+  readonly workOrderId: string | null;
+  readonly eventType: string;
+  readonly eventLabel: string;
+  readonly message: string;
+  readonly createdAt: string | null;
+  readonly tone: DashboardTone;
+};
+
+export type DashboardSummaryBundle = {
+  readonly kpis: OperationalKpi[];
+  readonly alerts: OperationalAlert[];
+  readonly criticalWorkOrders: DashboardCriticalOrder[];
+  readonly recentEvents: DashboardRecentEvent[];
+};
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
+}
+
+/** Contagem tolerante: número ou string numérica; ausência/NaN → 0, sem negativos. */
+function summaryCount(record: Record<string, unknown> | undefined, keys: readonly string[]): number {
+  if (!record) return 0;
+  for (const key of keys) {
+    const value = record[key];
+    const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
+    if (Number.isFinite(parsed)) return Math.max(0, Math.trunc(parsed));
+  }
+  return 0;
+}
+
+/** String não-vazia por lista de chaves (camel/snake); ausência → null. */
+function summaryString(record: Record<string, unknown> | undefined, keys: readonly string[]): string | null {
+  if (!record) return null;
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+const PRIORITY_TONE: Record<string, DashboardTone> = {
+  urgent: "danger",
+  high: "warning",
+  medium: "info",
+  low: "neutral",
+};
+
+const EVENT_TYPE_META: Record<string, { label: string; tone: DashboardTone }> = {
+  work_order_created: { label: "OS criada", tone: "info" },
+  created: { label: "OS criada", tone: "info" },
+  work_order_assigned: { label: "OS atribuída", tone: "info" },
+  assigned: { label: "OS atribuída", tone: "info" },
+  work_order_status_changed: { label: "Status alterado", tone: "warning" },
+  status_changed: { label: "Status alterado", tone: "warning" },
+  work_order_completed: { label: "OS concluída", tone: "success" },
+  completed: { label: "OS concluída", tone: "success" },
+  work_order_cancelled: { label: "OS cancelada", tone: "danger" },
+  cancelled: { label: "OS cancelada", tone: "danger" },
+  work_order_rejected: { label: "OS recusada", tone: "danger" },
+  rejected: { label: "OS recusada", tone: "danger" },
+  work_order_note_added: { label: "Anotação registrada", tone: "neutral" },
+  note_added: { label: "Anotação registrada", tone: "neutral" },
+  evidence_uploaded: { label: "Evidência anexada", tone: "accent" },
+  approval_requested: { label: "Aprovação solicitada", tone: "accent" },
+  approval_approved: { label: "Aprovação concedida", tone: "success" },
+  approval_rejected: { label: "Aprovação recusada", tone: "danger" },
+};
+
+/** Rótulo/tonalidade de evento; desconhecido é humanizado sem quebrar. */
+function eventTypeMeta(eventType: string): { label: string; tone: DashboardTone } {
+  const key = eventType.toLowerCase();
+  const known = EVENT_TYPE_META[key];
+  if (known) return known;
+  const humanized = eventType.replace(/^work_order_/, "").replaceAll("_", " ").trim();
+  const label = humanized ? humanized.charAt(0).toUpperCase() + humanized.slice(1) : "Evento";
+  return { label, tone: "neutral" };
+}
+
+function parseSummaryByStatus(raw: Record<string, unknown> | undefined): DashboardSummaryByStatus {
+  return {
+    open: summaryCount(raw, ["open"]),
+    assigned: summaryCount(raw, ["assigned"]),
+    accepted: summaryCount(raw, ["accepted"]),
+    on_route: summaryCount(raw, ["on_route", "onRoute"]),
+    on_site: summaryCount(raw, ["on_site", "onSite"]),
+    in_progress: summaryCount(raw, ["in_progress", "inProgress"]),
+    paused: summaryCount(raw, ["paused"]),
+    completed: summaryCount(raw, ["completed"]),
+    cancelled: summaryCount(raw, ["cancelled", "canceled"]),
+    rejected: summaryCount(raw, ["rejected"]),
+  };
+}
+
+function parseCriticalOrder(input: unknown): DashboardCriticalOrder | null {
+  const record = asRecord(input);
+  if (!record) return null;
+  const id = summaryString(record, ["id"]);
+  if (!id) return null; // sem id não há como abrir a OS — descartado
+  const status = summaryString(record, ["status"]) ?? "open";
+  const statusMeta = workOrderStatusMeta(status);
+  const priority = summaryString(record, ["priority"]) ?? "medium";
+  return {
+    id,
+    // Nunca expõe UUID cru: usa code/title/customerName.
+    code: summaryString(record, ["code"]) ?? "OS",
+    title: summaryString(record, ["title"]) ?? "Ordem de serviço",
+    customerName: summaryString(record, ["customerName", "customer_name"]),
+    status,
+    statusLabel: statusMeta.label,
+    statusTone: statusMeta.tone,
+    priority,
+    priorityLabel: PRIORITY_LABEL[priority] ?? priority,
+    priorityTone: PRIORITY_TONE[priority] ?? "neutral",
+    scheduledFor: summaryString(record, ["scheduledFor", "scheduled_for"]),
+  };
+}
+
+function parseRecentEvent(input: unknown): DashboardRecentEvent | null {
+  const record = asRecord(input);
+  if (!record) return null;
+  const id = summaryString(record, ["id"]);
+  if (!id) return null;
+  const eventType = summaryString(record, ["eventType", "event_type"]) ?? "";
+  const meta = eventTypeMeta(eventType);
+  return {
+    id,
+    workOrderId: summaryString(record, ["workOrderId", "work_order_id"]),
+    eventType,
+    eventLabel: meta.label,
+    // Mensagem humana do backend; se ausente, cai no rótulo (nunca UUID cru).
+    message: summaryString(record, ["message"]) ?? meta.label,
+    createdAt: summaryString(record, ["createdAt", "created_at"]),
+    tone: meta.tone,
+  };
+}
+
+/** Normaliza o payload do agregado real em um modelo tipado e defensivo. */
+export function parseDashboardSummary(raw: unknown): DashboardSummaryModel {
+  const root = asRecord(raw) ?? {};
+  // Tolera receber o envelope { data: {...} } cru, além do já desembrulhado.
+  const container = asRecord(root.data) ?? root;
+  const workOrders = asRecord(container.workOrders) ?? asRecord(container.work_orders) ?? {};
+  const byStatus = asRecord(workOrders.byStatus) ?? asRecord(workOrders.by_status);
+  const registry = asRecord(container.registry) ?? {};
+  const criticalRaw = Array.isArray(container.criticalWorkOrders)
+    ? container.criticalWorkOrders
+    : Array.isArray(container.critical_work_orders)
+      ? container.critical_work_orders
+      : [];
+  const eventsRaw = Array.isArray(container.recentEvents)
+    ? container.recentEvents
+    : Array.isArray(container.recent_events)
+      ? container.recent_events
+      : [];
+
+  return {
+    workOrders: {
+      total: summaryCount(workOrders, ["total"]),
+      byStatus: parseSummaryByStatus(byStatus),
+      createdToday: summaryCount(workOrders, ["createdToday", "created_today"]),
+      createdThisWeek: summaryCount(workOrders, ["createdThisWeek", "created_this_week"]),
+      overdue: summaryCount(workOrders, ["overdue"]),
+    },
+    registry: {
+      customers: summaryCount(registry, ["customers"]),
+      vehicles: summaryCount(registry, ["vehicles"]),
+      teams: summaryCount(registry, ["teams"]),
+      services: summaryCount(registry, ["services"]),
+    },
+    criticalWorkOrders: criticalRaw.map(parseCriticalOrder).filter((order): order is DashboardCriticalOrder => order !== null),
+    recentEvents: eventsRaw.map(parseRecentEvent).filter((event): event is DashboardRecentEvent => event !== null),
+  };
+}
+
+/** KPIs reais do agregado. Sem percentuais fabricados — apenas contagens + rótulo. */
+export function summaryToKpis(model: DashboardSummaryModel): OperationalKpi[] {
+  const s = model.workOrders.byStatus;
+  const abertas = s.open + s.assigned + s.accepted;
+  const andamento = s.on_route + s.on_site + s.in_progress + s.paused;
+  const overdue = model.workOrders.overdue;
+  const registry = model.registry;
+
+  return [
+    { id: "open", label: "OS abertas", value: String(abertas), delta: "aguardando início", tone: "info" },
+    { id: "in_progress", label: "Em andamento", value: String(andamento), delta: "em campo agora", tone: "warning" },
+    { id: "completed", label: "Concluídas", value: String(s.completed), delta: "no total", tone: "success" },
+    {
+      id: "overdue",
+      label: "Atrasadas",
+      value: String(overdue),
+      delta: overdue > 0 ? "agenda vencida" : "sem atrasos",
+      tone: overdue > 0 ? "danger" : "success",
+    },
+    { id: "created_today", label: "OS hoje", value: String(model.workOrders.createdToday), delta: "criadas hoje", tone: "info" },
+    { id: "customers", label: "Clientes", value: String(registry.customers), delta: "no cadastro", tone: "default" },
+    { id: "vehicles", label: "Viaturas", value: String(registry.vehicles), delta: "no cadastro", tone: "default" },
+    { id: "teams", label: "Equipes", value: String(registry.teams), delta: "no cadastro", tone: "default" },
+    { id: "services", label: "Serviços", value: String(registry.services), delta: "no cadastro", tone: "default" },
+  ];
+}
+
+/** Alertas derivados de contagens reais; lista vazia quando não há ocorrência. */
+export function summaryToAlerts(model: DashboardSummaryModel): OperationalAlert[] {
+  const alerts: OperationalAlert[] = [];
+  const overdue = model.workOrders.overdue;
+  if (overdue > 0) {
+    alerts.push({
+      id: "overdue",
+      title: `${overdue} ${overdue === 1 ? "OS atrasada" : "OS atrasadas"}`,
+      detail: "Agenda vencida — priorize a fila crítica.",
+      severity: "danger",
+    });
+  }
+  return alerts;
+}
+
+/**
+ * Adapter defensivo do agregado real: converte o payload de
+ * GET /dashboard/summary nas formas que o Dashboard consome (KPIs, alertas,
+ * OS críticas e eventos recentes), tolerante a null/0/[] e camel/snake.
+ */
+export function adaptDashboardSummary(raw: unknown): DashboardSummaryBundle {
+  const model = parseDashboardSummary(raw);
+  return {
+    kpis: summaryToKpis(model),
+    alerts: summaryToAlerts(model),
+    criticalWorkOrders: [...model.criticalWorkOrders],
+    recentEvents: [...model.recentEvents],
+  };
 }

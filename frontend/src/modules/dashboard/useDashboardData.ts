@@ -1,64 +1,59 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { isMockMode } from "../../config/env";
 import { useAuth } from "../../providers/AuthProvider";
-import { usePermissions } from "../../providers/PermissionProvider";
 import { useTenantContext } from "../../providers/TenantProvider";
-import { getUnreadNotificationCount } from "../notifications/notification.service";
 import { listDispatchesFromApi } from "../operations/dispatches/dispatches.service";
 import { getLatestFieldLocations } from "../operations/map/operations-map.service";
-import { listAllPendingApprovals } from "../work-orders/approval.service";
-import { useWorkOrders } from "../work-orders/useWorkOrders";
+import { getMockOperationalDashboard, getOperationalDashboard, type DashboardSource, type OperationalDashboard } from "./repository";
+import type { DashboardCriticalOrder, DashboardRecentEvent } from "./dashboard.adapter";
+import type { OperationalAlert, OperationalKpi } from "./types";
 import type { DispatchListItem, DispatchesSource } from "../operations/dispatches/dispatches.types";
 import type { FieldLocationItem, OperationsMapSource } from "../operations/map/operations-map.types";
-import type { OperationalApproval } from "../work-orders/approval.types";
-import type { WorkOrdersFilters } from "../work-orders/work-orders.types";
 
-// B-124 — fonte única de dados do Dashboard enriquecido. Carrega em paralelo:
-// GET /work-orders (via useWorkOrders) · GET /operations/dispatches ·
-// GET /field-locations/latest · GET /notifications/unread-count ·
-// GET /approvals/pending. Cada fonte degrada de forma independente (as
-// services já aplicam mock atrás de VITE_USE_MOCKS e fallback local seguro);
-// aprovações/notificações apenas se marcam como indisponíveis, sem quebrar.
+// C3 — fonte única do Dashboard operacional. Primário: o agregado real
+// GET /api/v1/dashboard/summary (KPIs, OS críticas, eventos e alertas por
+// tenant), via getOperationalDashboard. Complementares (painéis próprios):
+// GET /operations/dispatches e GET /field-locations/latest, que já degradam
+// de forma independente. Erro no agregado real → estado de erro/vazio, sem
+// dados fabricados (D-007).
 
-const STABLE_FILTERS: WorkOrdersFilters = {
-  search: "",
-  status: "all",
-  priority: "all",
-  assignedOperatorId: "",
-  from: "",
-  to: "",
+const EMPTY_SUMMARY: OperationalDashboard = {
+  kpis: [],
+  alerts: [],
+  criticalWorkOrders: [],
+  recentEvents: [],
+  source: "api",
+  error: false,
 };
-
-export type DashboardSourceState = "api" | "mock" | "fallback";
 
 export type DashboardData = {
   readonly loading: boolean;
-  readonly workOrders: ReturnType<typeof useWorkOrders>["items"];
-  readonly workOrdersSource: DashboardSourceState;
+  readonly kpis: OperationalKpi[];
+  readonly alerts: OperationalAlert[];
+  readonly criticalWorkOrders: DashboardCriticalOrder[];
+  readonly recentEvents: DashboardRecentEvent[];
+  readonly summarySource: DashboardSource;
+  readonly summaryError: boolean;
   readonly dispatches: readonly DispatchListItem[];
   readonly dispatchesSource: DispatchesSource;
   readonly locations: readonly FieldLocationItem[];
   readonly locationsSource: OperationsMapSource;
-  readonly pendingApprovals: readonly OperationalApproval[];
-  readonly approvalsUnavailable: boolean;
-  readonly unread: number | null;
   readonly refresh: () => Promise<void>;
 };
 
 export function useDashboardData(): DashboardData {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
-  const { permissions } = usePermissions();
-  const workOrdersState = useWorkOrders(STABLE_FILTERS);
 
+  // Mock (demo) já semeia síncrono para pintar KPIs no primeiro render; o
+  // caminho real começa vazio e preenche após a resposta do agregado.
+  const [summary, setSummary] = useState<OperationalDashboard>(() => (isMockMode() ? getMockOperationalDashboard() : EMPTY_SUMMARY));
   const [dispatches, setDispatches] = useState<readonly DispatchListItem[]>([]);
   const [dispatchesSource, setDispatchesSource] = useState<DispatchesSource>("api");
   const [locations, setLocations] = useState<readonly FieldLocationItem[]>([]);
   const [locationsSource, setLocationsSource] = useState<OperationsMapSource>("api");
-  const [pendingApprovals, setPendingApprovals] = useState<readonly OperationalApproval[]>([]);
-  const [approvalsUnavailable, setApprovalsUnavailable] = useState(false);
-  const [unread, setUnread] = useState<number | null>(null);
-  const [loadingExtras, setLoadingExtras] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   const context = useMemo(
     () => ({
@@ -71,18 +66,22 @@ export function useDashboardData(): DashboardData {
     [activeContext, session?.accessToken],
   );
 
-  const canReadNotifications = permissions.includes("notifications:read");
-
-  const loadExtras = useCallback(async () => {
+  const load = useCallback(async () => {
     if (!activeContext) return;
-    setLoadingExtras(true);
+    setLoading(true);
 
-    const [dispatchesResult, locationsResult, approvalsResult, unreadResult] = await Promise.allSettled([
+    const [summaryResult, dispatchesResult, locationsResult] = await Promise.allSettled([
+      getOperationalDashboard(context),
       listDispatchesFromApi(context),
       getLatestFieldLocations(context),
-      listAllPendingApprovals(context),
-      canReadNotifications ? getUnreadNotificationCount({ ...context, tenantId: activeContext.tenantId }) : Promise.resolve(null),
     ]);
+
+    // Agregado: getOperationalDashboard já resolve erro para estado vazio (D-007).
+    if (summaryResult.status === "fulfilled") {
+      setSummary(summaryResult.value);
+    } else {
+      setSummary({ ...EMPTY_SUMMARY, source: "error", error: true });
+    }
 
     // Despachos e localizações: as services nunca lançam (fallback interno).
     if (dispatchesResult.status === "fulfilled") {
@@ -101,43 +100,29 @@ export function useDashboardData(): DashboardData {
       setLocationsSource("fallback");
     }
 
-    // Aprovações: erro (403/404/500/timeout) degrada sem quebrar o Dashboard.
-    if (approvalsResult.status === "fulfilled") {
-      setPendingApprovals(approvalsResult.value);
-      setApprovalsUnavailable(false);
-    } else {
-      setPendingApprovals([]);
-      setApprovalsUnavailable(true);
-    }
-
-    if (unreadResult.status === "fulfilled" && unreadResult.value !== null) {
-      setUnread(unreadResult.value.count);
-    } else {
-      setUnread(null);
-    }
-
-    setLoadingExtras(false);
-  }, [activeContext, canReadNotifications, context]);
+    setLoading(false);
+  }, [activeContext, context]);
 
   useEffect(() => {
-    void loadExtras();
-  }, [loadExtras]);
+    void load();
+  }, [load]);
 
   const refresh = useCallback(async () => {
-    await Promise.all([workOrdersState.refresh(), loadExtras()]);
-  }, [loadExtras, workOrdersState.refresh]);
+    await load();
+  }, [load]);
 
   return {
-    loading: workOrdersState.loading || loadingExtras,
-    workOrders: workOrdersState.items,
-    workOrdersSource: workOrdersState.source,
+    loading,
+    kpis: summary.kpis,
+    alerts: summary.alerts,
+    criticalWorkOrders: summary.criticalWorkOrders,
+    recentEvents: summary.recentEvents,
+    summarySource: summary.source,
+    summaryError: summary.error,
     dispatches,
     dispatchesSource,
     locations,
     locationsSource,
-    pendingApprovals,
-    approvalsUnavailable,
-    unread,
     refresh,
   };
 }

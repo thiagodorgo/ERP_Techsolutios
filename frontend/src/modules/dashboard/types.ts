@@ -2,7 +2,9 @@ export type OperationalKpi = {
   id: string;
   label: string;
   value: string;
-  delta: string;
+  // Rótulo descritivo do card (ex.: "no período"). Nunca um percentual
+  // fabricado: quando não há base de comparação real, use rótulo ou omita.
+  delta?: string;
   tone: "default" | "success" | "warning" | "danger" | "info";
 };
 
