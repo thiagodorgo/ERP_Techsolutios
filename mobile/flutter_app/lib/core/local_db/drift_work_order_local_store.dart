@@ -27,11 +27,12 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
     await _db.customInsert(
       'INSERT OR REPLACE INTO work_orders '
       '(local_id, server_id, tenant_id, code, title, customer_name, '
+      'customer_document, customer_phone, '
       'service_address, latitude, longitude, status, priority, '
       'assigned_user_id, scheduled_at, started_at, arrived_at, '
       'completed_at, checklist_id, sync_status, created_at, updated_at, '
       'service_type) '
-      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       variables: [
         Variable<String>(order.localId),
         Variable<String>(order.serverId),
@@ -39,6 +40,8 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
         Variable<String>(order.code),
         Variable<String>(order.title),
         Variable<String>(order.customerName),
+        Variable<String>(order.customerDocument),
+        Variable<String>(order.customerPhone),
         Variable<String>(order.serviceAddress),
         Variable<double>(order.latitude),
         Variable<double>(order.longitude),
@@ -194,6 +197,8 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
     code: row.read<String>('code'),
     title: row.read<String>('title'),
     customerName: row.read<String>('customer_name'),
+    customerDocument: row.readNullable<String>('customer_document'),
+    customerPhone: row.readNullable<String>('customer_phone'),
     serviceAddress: row.read<String>('service_address'),
     latitude: row.readNullable<double>('latitude'),
     longitude: row.readNullable<double>('longitude'),

@@ -483,6 +483,8 @@ class _CustomerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final document = wo.customerDocument?.trim();
+    final phone = wo.customerPhone?.trim();
     return Card(
       child: Column(
         children: [
@@ -491,6 +493,18 @@ class _CustomerCard extends StatelessWidget {
             title: const Text('Cliente'),
             subtitle: Text(wo.customerName),
           ),
+          if (document != null && document.isNotEmpty)
+            ListTile(
+              leading: const Icon(Icons.badge_outlined),
+              title: const Text('Documento'),
+              subtitle: Text(document),
+            ),
+          if (phone != null && phone.isNotEmpty)
+            ListTile(
+              leading: const Icon(Icons.phone_outlined),
+              title: const Text('Telefone'),
+              subtitle: Text(phone),
+            ),
           ListTile(
             leading: const Icon(Icons.location_on_outlined),
             title: const Text('Endereco de atendimento'),

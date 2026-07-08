@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -94,6 +94,21 @@ class AppDatabase extends GeneratedDatabase {
       if (from < 9) {
         await m.database.customStatement(_kWorkOrderMaterials);
       }
+      if (from < 10) {
+        final rows = await m.database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='work_orders'",
+            )
+            .get();
+        if (rows.isNotEmpty) {
+          await m.database.customStatement(
+            'ALTER TABLE work_orders ADD COLUMN customer_document TEXT',
+          );
+          await m.database.customStatement(
+            'ALTER TABLE work_orders ADD COLUMN customer_phone TEXT',
+          );
+        }
+      }
     },
   );
 
@@ -175,6 +190,8 @@ CREATE TABLE IF NOT EXISTS work_orders (
   code TEXT NOT NULL,
   title TEXT NOT NULL,
   customer_name TEXT NOT NULL,
+  customer_document TEXT,
+  customer_phone TEXT,
   service_address TEXT NOT NULL,
   latitude REAL,
   longitude REAL,

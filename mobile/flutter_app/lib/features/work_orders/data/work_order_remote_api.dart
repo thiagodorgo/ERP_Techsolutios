@@ -195,6 +195,8 @@ WorkOrder _workOrderFromRemoteJson(
     code: str('code', 'code'),
     title: str('title', 'title'),
     customerName: str('customerName', 'customer_name'),
+    customerDocument: strOpt('customerDocument', 'customer_document'),
+    customerPhone: strOpt('customerPhone', 'customer_phone'),
     serviceAddress: str('serviceAddress', 'service_address'),
     status: workOrderStatusFromApiValue(json['status']),
     priority: WorkOrderPriority.values.firstWhere(
@@ -222,6 +224,8 @@ WorkOrder _workOrderFromJson(Map<String, dynamic> json) {
     code: json['code'] as String,
     title: json['title'] as String,
     customerName: json['customer_name'] as String,
+    customerDocument: json['customer_document'] as String?,
+    customerPhone: json['customer_phone'] as String?,
     serviceAddress: json['service_address'] as String,
     status: workOrderStatusFromApiValue(json['status']),
     priority: WorkOrderPriority.values.firstWhere(
