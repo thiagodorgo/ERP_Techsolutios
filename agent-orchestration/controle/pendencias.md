@@ -95,3 +95,13 @@
   exige navegacao em KPI. Cosmetico/affordance.
 - status: aberto (reavaliar o affordance na F12/cera — tornar o card um atalho para a janela filtrada,
   ou manter como indicador). Nao bloqueia F1 (veredito APROVADO).
+
+## P-013 - F2: guard de disponibilidade so na criacao de OS, nao no assign (2026-07-08)
+
+- descricao: R2.3 (viatura em `em_execucao` = indisponivel) foi aplicada em `work-order.service.create()`
+  (OS nova), conforme a spec ("OS nova" + "nao mexer no field-dispatch"). O fluxo `work_order.assign`
+  (D1/mobile, que seta viatura numa OS existente) NAO passa pelo guard.
+- impacto: e teoricamente possivel vincular via assign uma viatura que entrou em manutencao depois da
+  criacao da OS. Baixo risco (janela pequena; despachante ve o estado). Consistente com o escopo aprovado.
+- status: aberto (se o negocio exigir bloquear no assign, abrir bloco dedicado tocando o fluxo de assign
+  com a regressao field-dispatch/registry-assign coberta). Nao bloqueia F2.

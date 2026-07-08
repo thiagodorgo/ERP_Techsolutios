@@ -1,6 +1,7 @@
 import { env } from "../../config/env.js";
 import { publishDomainEvent } from "../../infra/events/domain-event.publisher.js";
 import { createDefaultCustomerService } from "../customers/customer.service.js";
+import { createDefaultMaintenanceOrderService } from "../maintenance-orders/maintenance-order.service.js";
 import { createDefaultServiceCatalogService } from "../service-catalog/service-catalog.service.js";
 import { createDefaultTeamService } from "../teams/team.service.js";
 import { createDefaultVehicleService } from "../vehicles/vehicle.service.js";
@@ -62,6 +63,10 @@ export type WorkOrderReferenceResolvers = {
   readonly resolveVehicle?: (actor: WorkOrderActorContext, id: string) => Promise<boolean>;
   readonly resolveTeam?: (actor: WorkOrderActorContext, id: string) => Promise<boolean>;
   readonly resolveServiceCatalog?: (actor: WorkOrderActorContext, id: string) => Promise<boolean>;
+  // F2 R2.3 — read-only availability seam. True when the vehicle has an ACTIVE
+  // maintenance order in `em_execucao`; such a vehicle cannot be bound to a NEW
+  // work order (409 vehicle_in_maintenance). Additive; field-dispatch untouched.
+  readonly hasActiveMaintenance?: (actor: WorkOrderActorContext, id: string) => Promise<boolean>;
   // C2 — detail-only summaries for the linked cadastros. Each returns a small,
   // tenant-scoped projection or null (missing/cross-tenant/unresolvable id).
   readonly resolveCustomerSummary?: (actor: WorkOrderActorContext, id: string) => Promise<WorkOrderCustomerLink | null>;
@@ -106,6 +111,8 @@ export class WorkOrderService {
     // cross-tenant id resolves to "not found" and is rejected with a 400.
     const customerSnapshot = await this.resolveCustomerSnapshot(actor, customerId);
     await this.assertReferenceExists("vehicle", this.references.resolveVehicle, actor, vehicleId);
+    // F2 R2.3 — a vehicle under active maintenance cannot be bound to a NEW OS.
+    await this.assertVehicleAvailable(actor, vehicleId);
     await this.assertReferenceExists("team", this.references.resolveTeam, actor, teamId);
     await this.assertReferenceExists("service_catalog", this.references.resolveServiceCatalog, actor, serviceCatalogId);
 
@@ -172,6 +179,24 @@ export class WorkOrderService {
     }
 
     return snapshot;
+  }
+
+  // F2 R2.3 — read-only guard: reject binding a vehicle that has an active
+  // maintenance order in `em_execucao` to a new work order (409). No-op when the
+  // OS carries no vehicle or the resolver is not wired.
+  private async assertVehicleAvailable(actor: WorkOrderActorContext, vehicleId: string | undefined): Promise<void> {
+    if (!vehicleId) return;
+
+    const resolver = this.references.hasActiveMaintenance;
+    const inMaintenance = resolver ? await resolver(actor, vehicleId) : false;
+    if (inMaintenance) {
+      throw new WorkOrderError(
+        409,
+        "WORK_ORDER_CONFLICT",
+        "vehicle_in_maintenance",
+        "The vehicle is under active maintenance and cannot be assigned to a new work order.",
+      );
+    }
   }
 
   private async assertReferenceExists(
@@ -415,6 +440,18 @@ function createDefaultReferenceResolvers(): WorkOrderReferenceResolvers {
     resolveVehicle: (actor, id) => referenceExists(createDefaultVehicleService, actor, id),
     resolveTeam: (actor, id) => referenceExists(createDefaultTeamService, actor, id),
     resolveServiceCatalog: (actor, id) => referenceExists(createDefaultServiceCatalogService, actor, id),
+    // F2 R2.3 — reuses the maintenance default service singleton so an OS-facing
+    // availability check sees maintenance orders created via the API. Fails open
+    // (available) on any error so maintenance never blocks OS creation spuriously.
+    hasActiveMaintenance: async (actor, id) => {
+      try {
+        const service = await createDefaultMaintenanceOrderService();
+
+        return await service.hasActiveMaintenance(actor, id);
+      } catch {
+        return false;
+      }
+    },
     resolveCustomerSummary: (actor, id) =>
       resolveEntitySummary(createDefaultCustomerService, actor, id, (customer) => ({
         id: customer.id,

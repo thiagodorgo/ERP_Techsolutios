@@ -17,7 +17,12 @@
       2 correções); testes N=7 → **M=30** (backend 22 + front 8, ≥2N); skills saas-multi-tenant + ts-frontend
       + ui-ux-pro-max + frontend-pixel-master; **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA; 1 BAIXA
       → P-012 registrada); PR #NN, merge <hash> — preencher pós-merge
-- [ ] F2 Manutenção (`MaintenanceOrder` `/api/v1/maintenance-orders` + disponibilidade)
+- [x] F2 Manutenção (`MaintenanceOrder` `/api/v1/maintenance-orders` + disponibilidade) — branch
+      `bloco-f2-manutencao`; gate mecânico verde (back check/15+26/regressões WO+FD+fuel 28/build; front
+      check/117/build; migrate up+down `erp-postgres`); máquina de estados 422 + concluir custo+data + R2.3
+      disponibilidade (409, create-only; P-013 p/ assign) + aviso idempotente; testes N=8 → **M=34**
+      (backend 26 + front 8, ≥2N); D-011 registrada; **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA;
+      2 BAIXA informativos); PR #NN, merge <hash> — preencher pós-merge
 - [ ] F3 Multas (`Fine` `/api/v1/fines`)
 - [ ] F4 Seguros (`InsurancePolicy` `/api/v1/insurance-policies`)
 - [ ] F5 Danos (`Damage` `/api/v1/damages` + fotos reuso attachment)

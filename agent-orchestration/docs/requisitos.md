@@ -34,6 +34,10 @@ Detalhe funcional por sub-modulo em `docs/pd-controle.md` e `docs/screen-element
 - **RF-FROTA-001 (F1 Abastecimento)** — registrar abastecimentos por viatura (data, combustivel,
   litros, valor, odometro, posto), listar por viatura/periodo com totais (litros, R$, km/L medio),
   km/L derivado no servidor (nunca armazenado), odometro monotonico (422), tela `/fleet/fuel`.
-- RF-FROTA-002..008 (F2..F8) — Manutencao, Multas, Seguros, Danos, Estoque, Remuneracoes
-  (ver plano-mestre); F9..F12 enriquecem Usuarios/Notificacoes/Sidebar e aplicam cera.
+- **RF-FROTA-002 (F2 Manutencao)** — ordens de manutencao (preventiva/corretiva) por viatura com
+  maquina de estados (agendada→em_execucao→concluida|cancelada, 422 em transicao invalida), conclusao
+  exige custo+data, aviso idempotente de preventiva vencendo (<=7d), viatura em execucao indisponivel
+  para OS nova (409), abas Preventivas/Corretivas/Historico em `/fleet/maintenance`.
+- RF-FROTA-003..008 (F3..F8) — Multas, Seguros, Danos, Estoque, Remuneracoes (ver plano-mestre);
+  F9..F12 enriquecem Usuarios/Notificacoes/Sidebar e aplicam cera.
 

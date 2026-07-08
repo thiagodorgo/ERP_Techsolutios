@@ -109,6 +109,15 @@ export class FuelLogService {
     return this.withEfficiency(actor.tenantId, fuelLog);
   }
 
+  /**
+   * Tenant-scoped, read-only max odometer for a vehicle across fuel logs. Reused
+   * by the maintenance module (F2 R1.2) so the odometer stays monotonic across
+   * BOTH fuel_logs and maintenance_orders.
+   */
+  async getMaxOdometerForVehicle(actor: FuelLogActorContext, vehicleId: string): Promise<number | undefined> {
+    return this.repository.maxOdometerForVehicle(actor.tenantId, vehicleId);
+  }
+
   async update(actor: FuelLogActorContext, fuelLogId: string, body: RawRecord): Promise<FuelLogWithEfficiency> {
     await this.getEntity(actor, fuelLogId);
     const input: UpdateFuelLogInput = {
