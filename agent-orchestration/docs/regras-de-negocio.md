@@ -39,6 +39,16 @@ As regras iniciais do repositorio estao em `docs/04-regras-negocio.md`.
 - **odometro (R1.2 cross-entity)**: quando informado, >= maior odometro da viatura entre manutencoes e
   abastecimentos, senao 422. Viatura obrigatoria (400 se cross-tenant/inexistente).
 
+### F3 Multas (`Fine`) — aplicada 2026-07-08
+
+- **R3.1 maquina de estados**: `recebida→{em_recurso,paga,cancelada}`, `em_recurso→{deferida,indeferida,
+  cancelada}`, `indeferida→{paga,cancelada}`, `deferida→{cancelada}`, `paga`/`cancelada` finais; invalida = 422.
+- **cancelamento** so por `tenant_admin`/`super_admin` (403 caso contrario).
+- **R3.3 unicidade**: `numero_auto` unico por tenant — duplicar = 409; mesmo numero em outro tenant = 201.
+- **R3.2 prazos**: `prazo_recurso`/`prazo_pagamento` <=7d = aviso (ambar), vencido = perigo (vermelho);
+  <=7d gera 1 `Notification` idempotente. `pontos` informativos (sem calculo de CNH).
+- **condutor** opcional, validado no tenant (400 se cross-tenant/inexistente). Viatura obrigatoria.
+
 ## Observacao de alinhamento
 
 As regras de negocio seguem a documentacao enviada pelo usuario e o repositorio oficial atual. Qualquer retorno para backend em C exige nova decisao explicita porque conflita com o estado atual do repositorio.

@@ -23,7 +23,11 @@
       disponibilidade (409, create-only; P-013 p/ assign) + aviso idempotente; testes N=8 → **M=34**
       (backend 26 + front 8, ≥2N); D-011 registrada; **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA;
       2 BAIXA informativos); PR #NN, merge <hash> — preencher pós-merge
-- [ ] F3 Multas (`Fine` `/api/v1/fines`)
+- [~] F3 Multas (`Fine` `/api/v1/fines`) — branch `bloco-f3-multas`; gate mecânico verde (back check/15+24/
+      regressões 34/build; front check/128/build; migrate up+down `erp-postgres`); máquina de estados 422 +
+      cancelar admin-only (403) + `@@unique(numero_auto)` 409/201 + prazos/aviso idempotente + condutor no
+      tenant (400); testes N=8 → **M=35** (backend 24 + front 11, ≥2N); D-012 registrada; **validador-mestre:
+      VEREDITO APROVADO** (0 VETO/0 ALTA; P-014/P-015 informativos); PR #NN, merge <hash> — preencher pós-merge
 - [ ] F4 Seguros (`InsurancePolicy` `/api/v1/insurance-policies`)
 - [ ] F5 Danos (`Damage` `/api/v1/damages` + fotos reuso attachment)
 - [ ] F6 Mapa Operacional real (matar operations-map.mock.ts) [até 2 sub-PRs]

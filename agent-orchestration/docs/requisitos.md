@@ -38,6 +38,9 @@ Detalhe funcional por sub-modulo em `docs/pd-controle.md` e `docs/screen-element
   maquina de estados (agendada→em_execucao→concluida|cancelada, 422 em transicao invalida), conclusao
   exige custo+data, aviso idempotente de preventiva vencendo (<=7d), viatura em execucao indisponivel
   para OS nova (409), abas Preventivas/Corretivas/Historico em `/fleet/maintenance`.
-- RF-FROTA-003..008 (F3..F8) — Multas, Seguros, Danos, Estoque, Remuneracoes (ver plano-mestre);
+- **RF-FROTA-003 (F3 Multas)** — multas por viatura/condutor com numero do auto unico por tenant (409),
+  maquina de estados (422; cancelar so admin, 403), prazos coloridos + aviso idempotente (<=7d), pontuacao
+  informativa, tela `/fleet/fines`.
+- RF-FROTA-004..008 (F4..F8) — Seguros, Danos, Estoque, Remuneracoes (ver plano-mestre);
   F9..F12 enriquecem Usuarios/Notificacoes/Sidebar e aplicam cera.
 
