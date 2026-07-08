@@ -131,3 +131,25 @@
 - impacto: dinheiro `Decimal(20,6)`, `timestamptz`, FK composta -> vehicles, RLS inline; aditivo.
   Rotas `/api/v1/maintenance-orders`; perms `maintenance_orders:read|create|update`. Tela `/fleet/maintenance`
   (abas Preventivas/Corretivas/Historico). Pecas consumidas ficam para F7 (sem link morto agora).
+
+## D-012 - F3: maquina de estados de multa + cancelamento admin-only + unicidade do auto (2026-07-08) [Claude Code]
+
+- status: aplicada (implementa plano-mestre F3 e `docs/pd-controle.md` §F3)
+- origem: F3 Multas (`Fine`) — maquina de estados, cancelamento restrito, unicidade do numero do auto
+  e vinculo opcional de condutor.
+- decisao 1 (R3.1): tabela `FINE_STATUS_TRANSITIONS`: `recebida→{em_recurso,paga,cancelada}`,
+  `em_recurso→{deferida,indeferida,cancelada}`, `indeferida→{paga,cancelada}`, `deferida→{cancelada}`,
+  `paga`/`cancelada` finais; transicao invalida = **422** `invalid_status_transition`.
+- decisao 2: **cancelar (`→cancelada`) exige `tenant_admin`/`super_admin`** (checagem de papel do ator no
+  service) senao **403** `cancel_requires_admin`. UI esconde "Cancelar" de nao-admin; backend e autoridade.
+- decisao 3 (R3.3): `@@unique([tenant_id, numero_auto])` — duplicar no mesmo tenant = **409**
+  `duplicate_numero_auto`; mesmo numero em outro tenant = **201** (P6).
+- decisao 4 (condutor): `driver_id` opcional, SEM FK dura; validado no service via
+  `coreService.getUserForTenant` (usuario do tenant) senao **400** `invalid_driver_reference`. Ids de
+  usuario sao `usr_`-prefixados em memoria -> `driver_id` aceito como string limitada (resolver e a
+  autoridade de existencia). Viatura obrigatoria (FK composta; 400 se cross-tenant).
+- decisao 5 (R3.2): `runFineDueNotifications` idempotente (key `fine_due:<id>`) para multas nao-finais com
+  `prazo_recurso`/`prazo_pagamento` em <=7d; rodar 2x = 1 aviso. Prazos coloridos na UI (<=7d ambar,
+  vencido vermelho). Pontuacao (`pontos`) informativa, sem calculo de CNH.
+- impacto: `Decimal(20,6)` (valor), `timestamptz`, RLS inline; rotas `/api/v1/fines`; perms
+  `fines:read|create|update` (operator so leitura; finance escreve). Tela `/fleet/fines`. Aditivo.

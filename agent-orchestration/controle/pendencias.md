@@ -105,3 +105,22 @@
   criacao da OS. Baixo risco (janela pequena; despachante ve o estado). Consistente com o escopo aprovado.
 - status: aberto (se o negocio exigir bloquear no assign, abrir bloco dedicado tocando o fluxo de assign
   com a regressao field-dispatch/registry-assign coberta). Nao bloqueia F2.
+
+## P-014 - F3: cancelamento de multa gateado so por papel (sem permissao dedicada) (2026-07-08)
+
+- descricao: "Cancelar" multa (`→cancelada`) e restrito a `tenant_admin`/`super_admin` via checagem de
+  PAPEL (UI: `usePermissions().roles` vs `["Super Admin","Administrador"]`, convencao do `tenantNavigation`;
+  backend: 403 `cancel_requires_admin`). Nao existe permissao dedicada `fines:cancel` no `catalog.ts`.
+- impacto: correto e consistente (backend e autoridade); porem menos granular que uma permissao dedicada.
+- status: aberto (se quiser RBAC mais granular no futuro, criar `fines:cancel` no catalogo + trocar o
+  gate de papel por permissao). Nao bloqueia F3.
+
+## P-015 - F3: `driver_id` parser afrouxado (string) x coluna UUID (2026-07-08)
+
+- descricao: `fine.validators.ts:parseOptionalUserId` aceita string limitada (nao-UUID estrito) porque em
+  modo memoria os ids de usuario sao `usr_`-prefixados; a coluna `fines.driver_id` no Postgres e `UUID`.
+- impacto: nenhum hoje — os dois espacos de id nao se cruzam (memoria nao usa Postgres; em modo persistente
+  os usuarios tem id UUID). Risco latente: se o cadastro de usuarios emitir id nao-UUID em modo persistente,
+  um condutor valido falharia no insert Prisma (500). Registrado pelo validador-mestre (BAIXA).
+- status: aberto (se/quando unificar o formato de id de usuario, alinhar o parser a UUID ou a coluna a TEXT).
+  Nao bloqueia F3 (veredito APROVADO).

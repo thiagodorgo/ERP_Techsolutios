@@ -1,5 +1,35 @@
 # Status Geral
 
+## Atualizacao 2026-07-08 — Rodada BLOCO-AUTO-F: F3 Multas (em gate) [Claude Code]
+
+### Status
+
+F1 (#142/1950ade) e F2 (#143/59decac) mergeadas, validador APROVADO. **F3 Multas** implementado
+(backend + web) na branch `bloco-f3-multas`, gate mecanico VERDE; validador-mestre em execucao.
+
+### Entregue (F3)
+
+- Backend `src/modules/fines/` (espelha `maintenance-orders/`): `Fine` (`/api/v1/fines`), FK composta
+  `(tenant_id, vehicle_id) -> vehicles`, `@@unique([tenant_id, numero_auto])`, `Decimal(20,6)` (valor),
+  `timestamptz`, RLS ENABLE+FORCE + policy inline na migration `20260714000000_add_fines`.
+- **R3.1** maquina de estados table-driven (recebida→em_recurso→deferida/indeferida→paga; cancelada);
+  invalida = 422. **Cancelar so admin** (`tenant_admin`/`super_admin`) senao 403 `cancel_requires_admin`.
+- **R3.3** unicidade `numero_auto` por tenant: 409 duplicado / 201 outro tenant. **Condutor** opcional
+  validado no tenant (400 se cross-tenant); via `coreService.getUserForTenant`.
+- **R3.2** `runFineDueNotifications` idempotente (key `fine_due:<id>`); prazos coloridos na UI
+  (<=7d ambar, vencido vermelho). Permissoes `fines:read|create|update` (operator so leitura; finance escreve).
+- Web `frontend/src/modules/fleet/fines/` (`/fleet/fines`): lista densa, filtros na URL (status/viatura/
+  "a vencer"), cards de totais (multas, valor, a vencer), coloracao de prazo, menu de transicao (Cancelar
+  so admin), modal (409 sob Nº do auto). Condutor -> `/users`; viatura -> `/cadastros/viaturas`. 4 estados; D-007.
+
+### Gate mecanico (verde)
+
+- Backend: `check` OK · `npm test` 15/15 · **F3 explicito 24/24** · regressoes maintenance+fuel+WO+FD 34/34 ·
+  `build` OK. Frontend: `check` OK · `test:smoke` **128/128** · `build` OK.
+- Migration up/down no `erp-postgres`: UP tabela + 2 uniques compostas + 2 FKs + RLS(t|t) + policy; DOWN limpo.
+- Fidelidade: frontend-pixel-master. Testes 35 novos F3 (backend 24 + front 11) sobre N=8 -> **cota 200%**.
+- KPIs NAO publicados (C3).
+
 ## Atualizacao 2026-07-08 — Rodada BLOCO-AUTO-F: F2 Manutencao (em gate) [Claude Code]
 
 ### Status
