@@ -1,0 +1,35 @@
+# Lista de execução — Rodada BLOCO-AUTO-F (Módulo Controle)
+
+> Checklist vivo (atualiza a cada PR; entra na PR seguinte). Formato após conclusão:
+> `[x] <id> <nome> — PR #NN, merge <hash>, gates X/X, veredito APROVADO, testes N/M, skills, data`.
+> Rodada parte de `main` pós-A–D. **F0 abre PR e PARA para aprovação humana.**
+
+## F0 — P&D + Fundação (PR bloco-f0-pd; abre e PARA)
+- [ ] docs/pd-controle.md · docs/actor-flows.md · docs/screen-element-map.md · docs/sidebar-ia.md ·
+      docs/navigation-matrix.md · plano-mestre.md · lista-execucao.md · validador-mestre.md · Kpis/ preparado
+
+## F1–F12 (automático após merge da F0)
+- [ ] F1 Abastecimento (`FuelLog` `/api/v1/fuel-logs`)
+- [ ] F2 Manutenção (`MaintenanceOrder` `/api/v1/maintenance-orders` + disponibilidade)
+- [ ] F3 Multas (`Fine` `/api/v1/fines`)
+- [ ] F4 Seguros (`InsurancePolicy` `/api/v1/insurance-policies`)
+- [ ] F5 Danos (`Damage` `/api/v1/damages` + fotos reuso attachment)
+- [ ] F6 Mapa Operacional real (matar operations-map.mock.ts) [até 2 sub-PRs]
+- [ ] F7 Estoque (`InventoryItem`/`StockMovement`/`CycleCount`) [até 3 sub-PRs]
+- [ ] F8 Remunerações (extrato por operador/período sobre commissions)
+- [ ] F9 Usuários (enriquecer módulo existente)
+- [ ] F10 Central de Notificações (produtores F2/F3/F4/F7 + badge real)
+- [ ] F11 Sidebar + navegação por perfil (IA aprovada, matriz 9 papéis)
+- [ ] F12 Cera (Mapa, Dashboard, OS lista, Multas, Manutenção)
+
+## Relatório final (F12 concluída)
+- [ ] 9/9 sub-módulos com tela+backend+navegação; 0 mocks (mapa incluso); matriz 9/9 testada; suíte
+      antes→depois (+180–240); docs 5/5 por PR; KPIs com gráficos vivos; 0 cards mortos; vereditos APROVADO;
+      pendências novas; rollback por PR; branch -a limpo (KPIs NÃO publicados)
+
+---
+
+### Baseline de testes (antes da rodada F, pós-A–D — 2026-07-07)
+- Backend CI `npm test` (core-saas): 15/15 · Backend módulos novos A–D: 86 · Frontend `test:smoke`: 101/101 ·
+  Flutter: 782/782 · Regressões WO/FD/contracts: 39/39.
+- Meta de crescimento da rodada F: **+180–240 testes** (200% sobre ~11 sub-módulos).
