@@ -136,6 +136,9 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
       ...current,
       assignedOperatorId: input.operatorId,
       assignedUserId: input.userId,
+      // D1 — set the viatura/equipe FKs only when provided; otherwise keep existing.
+      ...(input.vehicleId !== undefined ? { vehicleId: input.vehicleId } : {}),
+      ...(input.teamId !== undefined ? { teamId: input.teamId } : {}),
       status: "assigned",
       updatedBy: input.assignedBy ?? current.updatedBy,
       updatedAt: now,

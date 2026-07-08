@@ -200,6 +200,10 @@ export type AssignWorkOrderInput = {
   readonly workOrderId: string;
   readonly operatorId: string;
   readonly userId?: string;
+  // D1 — optional viatura/equipe selection. When present the OS vehicle_id/team_id
+  // FKs (added in B1) are set; when absent they are left untouched.
+  readonly vehicleId?: string;
+  readonly teamId?: string;
   readonly message: string;
   readonly assignedBy?: string;
 };

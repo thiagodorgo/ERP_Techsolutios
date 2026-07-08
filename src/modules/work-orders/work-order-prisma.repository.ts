@@ -177,6 +177,9 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
         data: {
           assigned_operator_id: input.operatorId,
           assigned_user_id: input.userId ?? null,
+          // D1 — set the viatura/equipe FKs only when provided; otherwise untouched.
+          ...(input.vehicleId !== undefined ? { vehicle_id: input.vehicleId } : {}),
+          ...(input.teamId !== undefined ? { team_id: input.teamId } : {}),
           status: "assigned",
           updated_by: input.assignedBy ?? null,
         },
