@@ -24,11 +24,11 @@
 - [x] C3 Dashboard gap-fill (rotas agregadas reais por tenant, sem mock) — PR #137, merge `6d060e7`, gates 3/3 CI verdes, endpoint /dashboard/summary (8 testes backend + 4 web), skills: saas-multi-tenant + ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
 
 ## Bloco D — Mobile (Flutter, aditivo)
-- [ ] D1 Mobile: seleção viatura/equipe (sync action aditivo, offline-safe)
+- [x] D1 Mobile: seleção viatura/equipe (sync action aditivo, offline-safe) — PR #139, merge `f5d9770`, gates 3/3 CI verdes, contrato @2026-07-07.d1 aditivo, Drift v11, 5 (backend) + 12 (mobile), flutter 770→782, regressão 39/39, skills: flutter-expert + flutter-ai-architect + saas-multi-tenant + frontend-pixel-master, concluída 2026-07-07
 - [x] D2 Mobile: dados de cliente na OS (customer document/phone aditivos) — PR #138, merge `5d3b5f9`, gates 3/3 CI verdes, Drift v10 aditivo, flutter 764→770, skills: flutter-expert + flutter-ai-architect, concluída 2026-07-07
 
 ## Relatório final
-- [ ] Resumo por bloco, contratos criados, rollback por PR, testes antes→depois, `git branch -a` limpo (KPIs NÃO publicados)
+- [x] Resumo por bloco, contratos criados, rollback por PR, testes antes→depois, `git branch -a` limpo (KPIs NÃO publicados) — ver `relatorio-final.md`, concluído 2026-07-07
 
 ---
 

@@ -1,5 +1,19 @@
 # Status Geral
 
+## Atualizacao 2026-07-07 — Rodada BLOCO-AUTO A→D concluida (13 PRs #127–#139) [Claude Code]
+
+### Status
+
+Rodada automatica completa mergeada na `main` (squash + branch deletada, CI 3/3 verde em todas):
+cadastros Cliente/Viatura/Equipe/Servico (banco+API+tela+RBAC+RLS), menu Cadastros, OS integrada
+aos cadastros com snapshot server-side congelado, cadastro rapido na OS, listas densas, detalhe
+de OS enriquecido, dashboard com agregados reais por tenant (`GET /dashboard/summary`), e mobile
+(dados de cliente + selecao de viatura/equipe offline-first, Drift v9→v11 aditivo, contrato
+`mobile_work_order_actions_sync@2026-07-07.d1` aditivo). Testes: flutter 764→782, smoke web
+44→101, +86 testes backend novos; regressoes 39/39 inalteradas. Trilha completa, decisoes
+(D-005..D-009) e pendencias (P-003..P-011) em `agent-orchestration/execucao-blocos-A-D/` e
+`controle/`. KPIs NAO publicados (aguardam avaliacao humana, politica C3).
+
 ## Atualizacao 2026-06-18 — B-106 Adapter GPS nativo real + permissoes Android/iOS
 
 ### Status
