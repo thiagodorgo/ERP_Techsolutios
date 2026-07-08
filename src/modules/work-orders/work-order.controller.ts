@@ -108,6 +108,8 @@ export class WorkOrderController {
 
   async assign(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
+    // D1 — the body may carry optional vehicleId/teamId (or vehicle_id/team_id); the
+    // service validates them tenant-scoped and sets the OS FKs when present.
     const workOrder = await service.assign(actor, readRouteParam(request.params.workOrderId), request.body ?? {});
 
     await recordRequestAuditBestEffort(request, {
@@ -120,6 +122,8 @@ export class WorkOrderController {
         code: workOrder.code,
         assignedOperatorId: workOrder.assignedOperatorId,
         assignedUserId: workOrder.assignedUserId,
+        vehicleId: workOrder.vehicleId,
+        teamId: workOrder.teamId,
       },
     });
 

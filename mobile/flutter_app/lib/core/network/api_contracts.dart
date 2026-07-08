@@ -27,6 +27,10 @@ class WorkOrderApiEndpoints {
   static const mobileFieldAssignments = '/api/v1/mobile/field-assignments';
   static const mobileWorkOrderSync = '/api/v1/mobile/sync/work-order-actions';
 
+  // D1 (seleção viatura/equipe): listas de cadastro para os seletores.
+  static const vehicles = '/api/v1/vehicles';
+  static const teams = '/api/v1/teams';
+
   static String workOrder(String id) => '/api/v1/work-orders/$id';
   static String workOrderStatus(String id) => '/api/v1/work-orders/$id/status';
   static String workOrderTimeline(String id) =>
@@ -50,6 +54,10 @@ class WorkOrderSyncActionTypes {
   static const approvalRequest = 'work_order.approval_request';
   static const evidenceAttach = 'work_order.evidence_attach';
   static const unableToStart = 'work_order.unable_to_start';
+
+  // D1 (seleção viatura/equipe): carrega vehicle_id/team_id opcionais + o
+  // operator_id atual da OS (obrigatório no backend).
+  static const assign = 'work_order.assign';
 }
 
 class ExpenseSyncActionTypes {

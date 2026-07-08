@@ -31,8 +31,8 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
       'service_address, latitude, longitude, status, priority, '
       'assigned_user_id, scheduled_at, started_at, arrived_at, '
       'completed_at, checklist_id, sync_status, created_at, updated_at, '
-      'service_type) '
-      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      'service_type, vehicle_id, vehicle_plate, team_id, team_name) '
+      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       variables: [
         Variable<String>(order.localId),
         Variable<String>(order.serverId),
@@ -57,6 +57,10 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
         Variable<int>(order.createdAt.millisecondsSinceEpoch),
         Variable<int>(_msOrNull(order.updatedAt)),
         Variable<String>(order.serviceType?.name),
+        Variable<String>(order.vehicleId),
+        Variable<String>(order.vehiclePlate),
+        Variable<String>(order.teamId),
+        Variable<String>(order.teamName),
       ],
     );
   }
@@ -217,6 +221,10 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
     ),
     updatedAt: _fromMs(row.readNullable<int>('updated_at')),
     serviceType: _serviceTypeOrNull(row.readNullable<String>('service_type')),
+    vehicleId: row.readNullable<String>('vehicle_id'),
+    vehiclePlate: row.readNullable<String>('vehicle_plate'),
+    teamId: row.readNullable<String>('team_id'),
+    teamName: row.readNullable<String>('team_name'),
   );
 
   WorkOrderTimelineEvent _timelineFromRow(QueryRow row) =>

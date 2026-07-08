@@ -147,6 +147,10 @@ class WorkOrder extends Equatable {
     this.checklistId,
     this.updatedAt,
     this.serviceType,
+    this.vehicleId,
+    this.vehiclePlate,
+    this.teamId,
+    this.teamName,
   });
 
   final String localId;
@@ -173,6 +177,13 @@ class WorkOrder extends Equatable {
   final DateTime? updatedAt;
   final WorkOrderServiceType? serviceType;
 
+  // D1 (viatura/equipe): vínculo opcional de viatura e equipe à OS. Snapshot
+  // local para exibição offline; o sync envia apenas os IDs (vehicle_id/team_id).
+  final String? vehicleId;
+  final String? vehiclePlate;
+  final String? teamId;
+  final String? teamName;
+
   WorkOrder copyWith({
     String? localId,
     String? serverId,
@@ -197,9 +208,15 @@ class WorkOrder extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     WorkOrderServiceType? serviceType,
+    String? vehicleId,
+    String? vehiclePlate,
+    String? teamId,
+    String? teamName,
     bool clearServerId = false,
     bool clearAssignedUserId = false,
     bool clearServiceType = false,
+    bool clearVehicle = false,
+    bool clearTeam = false,
   }) {
     return WorkOrder(
       localId: localId ?? this.localId,
@@ -227,6 +244,10 @@ class WorkOrder extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       serviceType: clearServiceType ? null : (serviceType ?? this.serviceType),
+      vehicleId: clearVehicle ? null : (vehicleId ?? this.vehicleId),
+      vehiclePlate: clearVehicle ? null : (vehiclePlate ?? this.vehiclePlate),
+      teamId: clearTeam ? null : (teamId ?? this.teamId),
+      teamName: clearTeam ? null : (teamName ?? this.teamName),
     );
   }
 
@@ -255,6 +276,10 @@ class WorkOrder extends Equatable {
     createdAt,
     updatedAt,
     serviceType,
+    vehicleId,
+    vehiclePlate,
+    teamId,
+    teamName,
   ];
 }
 

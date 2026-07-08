@@ -84,7 +84,7 @@ Request:
 Tipos implementados:
 
 - `work_order.status_change`: payload com `work_order_id`, `status`, `message?` e `cancellation_reason?`.
-- `work_order.assign`: payload com `work_order_id`, `operator_id`, `user_id?` e `message?`.
+- `work_order.assign`: payload com `work_order_id`, `operator_id`, `user_id?`, `vehicle_id?`, `team_id?` e `message?`. `vehicle_id`/`team_id` sao opcionais (D1): quando presentes, o backend valida cada referencia tenant-scoped pelos resolvers do B1 e grava os FKs `vehicle_id`/`team_id` da OS; quando ausentes, o comportamento de atribuicao existente permanece inalterado.
 
 Resposta:
 
@@ -93,7 +93,7 @@ Resposta:
   "data": {
     "contract": {
       "name": "mobile_work_order_actions_sync",
-      "version": "2026-06-14.b098b",
+      "version": "2026-07-07.d1",
       "status": "implemented"
     },
     "client_batch_id": "batch-local-1",
@@ -668,3 +668,43 @@ de decisao futuro pode conter apenas `note` na aprovacao ou `reason` na
 reprovacao. Tenant e identidade continuam resolvidos pelo contexto autenticado,
 sem `tenant_id`, token, Authorization, path, storage key, bucket, base64,
 `file_data` ou `local_path`.
+
+## D1 - Selecao de viatura/equipe na atribuicao de OS
+
+A acao `work_order.assign` do
+`POST /api/v1/mobile/sync/work-order-actions` passa a aceitar dois campos
+opcionais no payload, alem dos ja existentes:
+
+- `vehicle_id?`: referencia a viatura cadastrada (mesmo tenant).
+- `team_id?`: referencia a equipe cadastrada (mesmo tenant).
+
+Payload efetivo de atribuicao:
+
+```json
+{
+  "work_order_id": "server-work-order-id",
+  "operator_id": "operator-uuid",
+  "user_id": "user-uuid-opcional",
+  "vehicle_id": "vehicle-uuid-opcional",
+  "team_id": "team-uuid-opcional",
+  "message": "Atribuido no app mobile."
+}
+```
+
+Regras D1 (aditivas, sem quebrar B-098B/B-107):
+
+- `vehicle_id`/`team_id` sao opcionais. Quando ausentes, a atribuicao
+  operador/usuario existente permanece exatamente igual.
+- Quando presentes, o backend valida cada referencia com os mesmos resolvers
+  tenant-scoped do B1 (`resolveVehicle`/`resolveTeam`). Uma id inexistente ou de
+  outra organizacao resolve para "nao encontrado" e retorna
+  `400 WORK_ORDER_INVALID` com `reason` `invalid_vehicle_reference` ou
+  `invalid_team_reference`.
+- Referencias validas gravam os FKs `vehicle_id`/`team_id` da OS (criados no B1),
+  visiveis no detalhe da OS via `links.vehicle`/`links.team` (C2).
+- Permissao inalterada: `work_orders:assign` (decisao D-009).
+- Idempotencia, tenant resolvido pelo ator, limite de lote e regras de conflito
+  permanecem as do contrato base. `tenant_id` de body/payload continua ignorado.
+- A mesma leitura vale na rota REST `POST /api/v1/work-orders/:id/assign`, que
+  aceita `vehicleId`/`teamId` (ou `vehicle_id`/`team_id`) no corpo.
+- Versao do contrato de sync de OS: `2026-07-07.d1`.

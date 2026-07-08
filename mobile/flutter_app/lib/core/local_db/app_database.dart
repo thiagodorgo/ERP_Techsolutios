@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -109,6 +109,28 @@ class AppDatabase extends GeneratedDatabase {
           );
         }
       }
+      if (from < 11) {
+        // D1 (seleção viatura/equipe): vínculo opcional de viatura/equipe.
+        final rows = await m.database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='work_orders'",
+            )
+            .get();
+        if (rows.isNotEmpty) {
+          await m.database.customStatement(
+            'ALTER TABLE work_orders ADD COLUMN vehicle_id TEXT',
+          );
+          await m.database.customStatement(
+            'ALTER TABLE work_orders ADD COLUMN vehicle_plate TEXT',
+          );
+          await m.database.customStatement(
+            'ALTER TABLE work_orders ADD COLUMN team_id TEXT',
+          );
+          await m.database.customStatement(
+            'ALTER TABLE work_orders ADD COLUMN team_name TEXT',
+          );
+        }
+      }
     },
   );
 
@@ -206,7 +228,11 @@ CREATE TABLE IF NOT EXISTS work_orders (
   sync_status TEXT NOT NULL,
   created_at INTEGER NOT NULL,
   updated_at INTEGER,
-  service_type TEXT
+  service_type TEXT,
+  vehicle_id TEXT,
+  vehicle_plate TEXT,
+  team_id TEXT,
+  team_name TEXT
 )''';
 
 const _kWorkOrderTimeline = '''

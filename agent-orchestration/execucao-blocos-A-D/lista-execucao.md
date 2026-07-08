@@ -25,7 +25,7 @@
 
 ## Bloco D — Mobile (Flutter, aditivo)
 - [ ] D1 Mobile: seleção viatura/equipe (sync action aditivo, offline-safe)
-- [ ] D2 Mobile: dados de cliente na OS (customer document/phone aditivos)
+- [x] D2 Mobile: dados de cliente na OS (customer document/phone aditivos) — PR #138, merge `5d3b5f9`, gates 3/3 CI verdes, Drift v10 aditivo, flutter 764→770, skills: flutter-expert + flutter-ai-architect, concluída 2026-07-07
 
 ## Relatório final
 - [ ] Resumo por bloco, contratos criados, rollback por PR, testes antes→depois, `git branch -a` limpo (KPIs NÃO publicados)

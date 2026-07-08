@@ -329,11 +329,23 @@ export class WorkOrderService {
 
   async assign(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord) {
     const current = await this.get(actor, workOrderId);
+    // D1 — the assign action gains optional viatura/equipe selection, carried by the
+    // mobile `work_order.assign` sync action and accepted on the REST body. Each
+    // provided reference is validated tenant-scoped via the same B1 resolvers used on
+    // create; a missing/cross-tenant id resolves to "not found" and is rejected with a
+    // 400. When both are absent the legacy assign path is unchanged.
+    const vehicleId = parseOptionalUuid(body.vehicleId ?? body.vehicle_id, "vehicleId");
+    const teamId = parseOptionalUuid(body.teamId ?? body.team_id, "teamId");
+    await this.assertReferenceExists("vehicle", this.references.resolveVehicle, actor, vehicleId);
+    await this.assertReferenceExists("team", this.references.resolveTeam, actor, teamId);
+
     const input: AssignWorkOrderInput = {
       tenantId: actor.tenantId,
       workOrderId: current.id,
       operatorId: parseRequiredUuid(body.operatorId ?? body.userId, "operatorId"),
       userId: parseOptionalUuid(body.userId, "userId"),
+      vehicleId,
+      teamId,
       message: optionalString(body.message) ?? "Ordem de servico atribuida.",
       assignedBy: actor.userId,
     };
@@ -356,6 +368,8 @@ export class WorkOrderService {
       metadata: {
         operatorId: input.operatorId,
         userId: input.userId,
+        vehicleId: input.vehicleId,
+        teamId: input.teamId,
         assignmentId: result.assignment.id,
       },
     });

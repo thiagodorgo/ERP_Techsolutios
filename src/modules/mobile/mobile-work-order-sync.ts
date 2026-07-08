@@ -42,7 +42,7 @@ type MobileWorkOrderSyncReceipt = {
 export type MobileWorkOrderSyncResponse = {
   readonly contract: {
     readonly name: "mobile_work_order_actions_sync";
-    readonly version: "2026-06-14.b098b";
+    readonly version: "2026-07-07.d1";
     readonly status: "implemented";
   };
   readonly client_batch_id: string | null;
@@ -117,7 +117,7 @@ export async function syncMobileWorkOrderActions(
   return {
     contract: {
       name: "mobile_work_order_actions_sync",
-      version: "2026-06-14.b098b",
+      version: "2026-07-07.d1",
       status: "implemented",
     },
     client_batch_id: request.client_batch_id,
@@ -229,6 +229,9 @@ async function processAction(
       const workOrder = await service.assign(actor, parseRequiredString(action.payload.work_order_id, "work_order_id"), {
         operatorId: action.payload.operator_id,
         userId: action.payload.user_id,
+        // D1 — optional viatura/equipe carried by the mobile assign action.
+        vehicleId: action.payload.vehicle_id,
+        teamId: action.payload.team_id,
         message: action.payload.message,
       });
 
