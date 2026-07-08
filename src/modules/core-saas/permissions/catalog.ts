@@ -264,6 +264,8 @@ export const ROLE_PERMISSIONS = {
     "fuel_logs:read",
     "maintenance_orders:read",
     "fines:read",
+    // F6 (Mapa real): despachante ve o badge "sem seguro" no pin (screen-element-map §Mapa)
+    "insurance_policies:read",
     "work_orders:read",
     "work_orders:create",
     "work_orders:assign",
