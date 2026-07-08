@@ -25,6 +25,7 @@ model Tenant {
   customers                     Customer[]
   vehicles                      Vehicle[]
   fuel_logs                     FuelLog[]
+  maintenance_orders            MaintenanceOrder[]
   service_catalog_items         ServiceCatalog[]
   teams                         Team[]
   team_members                  TeamMember[]
@@ -775,6 +776,7 @@ model Vehicle {
   tenant     Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   work_orders WorkOrder[] @relation("WorkOrderVehicle")
   fuel_logs   FuelLog[]
+  maintenance_orders MaintenanceOrder[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, plate])
@@ -809,6 +811,33 @@ model FuelLog {
   @@index([tenant_id, is_active])
   @@index([tenant_id, created_at])
   @@map("fuel_logs")
+}
+
+model MaintenanceOrder {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String    @db.Uuid
+  vehicle_id    String    @db.Uuid
+  type          String
+  status        String    @default("agendada")
+  scheduled_for DateTime? @db.Timestamptz(6)
+  completed_at  DateTime? @db.Timestamptz(6)
+  cost          Decimal?  @db.Decimal(20, 6)
+  supplier      String?
+  odometer      Int?
+  description   String
+  is_active     Boolean   @default(true)
+  created_by    String?   @db.Uuid
+  updated_by    String?   @db.Uuid
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant        Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  vehicle       Vehicle   @relation(fields: [tenant_id, vehicle_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, vehicle_id, status])
+  @@index([tenant_id, status, scheduled_for])
+  @@index([tenant_id, created_at])
+  @@map("maintenance_orders")
 }
 
 model ServiceCatalog {
