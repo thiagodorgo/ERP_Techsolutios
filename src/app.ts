@@ -18,6 +18,7 @@ import type { ICoreSaasService } from "./modules/core-saas/services/core-saas-se
 import { createChecklistRouter } from "./modules/checklists/index.js";
 import { createCommissionRouter } from "./modules/commissions/index.js";
 import { createCustomerRouter } from "./modules/customers/index.js";
+import { createDashboardRouter } from "./modules/dashboard/index.js";
 import { createExpenseManagementRouter } from "./modules/expense-management/index.js";
 import { createFieldDispatchRouter } from "./modules/field-dispatch/index.js";
 import { createFieldLocationRouter } from "./modules/field-location/index.js";
@@ -56,6 +57,7 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createFieldOpsRealtimeRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFieldLocationRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderRouter());
+  app.use("/api/v1", attachAuthenticatedActor(), createDashboardRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createCustomerRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createVehicleRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createServiceCatalogRouter());
