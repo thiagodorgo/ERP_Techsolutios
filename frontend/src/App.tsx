@@ -62,6 +62,7 @@ const ServicosPage = lazy(() => import("./modules/registry/service-catalog/pages
 const AbastecimentoPage = lazy(() => import("./modules/fleet/fuel/pages/AbastecimentoPage").then((m) => ({ default: m.AbastecimentoPage })));
 const ManutencaoPage = lazy(() => import("./modules/fleet/maintenance/pages/ManutencaoPage").then((m) => ({ default: m.ManutencaoPage })));
 const MultasPage = lazy(() => import("./modules/fleet/fines/pages/MultasPage").then((m) => ({ default: m.MultasPage })));
+const SegurosPage = lazy(() => import("./modules/fleet/insurance/pages/SegurosPage").then((m) => ({ default: m.SegurosPage })));
 const EstoquePage = lazy(() => import("./modules/inventory/pages/EstoquePage").then((m) => ({ default: m.EstoquePage })));
 const EstoqueDetailPage = lazy(() => import("./modules/inventory/pages/EstoqueDetailPage").then((m) => ({ default: m.EstoqueDetailPage })));
 const PedidosPage = lazy(() => import("./modules/purchase-orders/pages/PedidosPage").then((m) => ({ default: m.PedidosPage })));
@@ -308,6 +309,14 @@ export function App() {
               element={
                 <PermissionGuard permissions={["fines:read"]}>
                   <MultasPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/fleet/insurance"
+              element={
+                <PermissionGuard permissions={["insurance_policies:read"]}>
+                  <SegurosPage />
                 </PermissionGuard>
               }
             />

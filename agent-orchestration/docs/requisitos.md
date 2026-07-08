@@ -41,6 +41,9 @@ Detalhe funcional por sub-modulo em `docs/pd-controle.md` e `docs/screen-element
 - **RF-FROTA-003 (F3 Multas)** — multas por viatura/condutor com numero do auto unico por tenant (409),
   maquina de estados (422; cancelar so admin, 403), prazos coloridos + aviso idempotente (<=7d), pontuacao
   informativa, tela `/fleet/fines`.
-- RF-FROTA-004..008 (F4..F8) — Seguros, Danos, Estoque, Remuneracoes (ver plano-mestre);
+- **RF-FROTA-004 (F4 Seguros)** — apolices por viatura com numero unico por tenant (409), `vencida`
+  derivada da vigencia (read-only), alertas de renovacao 30/15/7d idempotentes, barra de vigencia,
+  tela `/fleet/insurance`.
+- RF-FROTA-005..008 (F5..F8) — Danos, Estoque, Remuneracoes (ver plano-mestre);
   F9..F12 enriquecem Usuarios/Notificacoes/Sidebar e aplicam cera.
 

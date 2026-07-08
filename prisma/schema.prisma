@@ -27,6 +27,7 @@ model Tenant {
   fuel_logs                     FuelLog[]
   maintenance_orders            MaintenanceOrder[]
   fines                         Fine[]
+  insurance_policies            InsurancePolicy[]
   service_catalog_items         ServiceCatalog[]
   teams                         Team[]
   team_members                  TeamMember[]
@@ -779,6 +780,7 @@ model Vehicle {
   fuel_logs   FuelLog[]
   maintenance_orders MaintenanceOrder[]
   fines       Fine[]
+  insurance_policies InsurancePolicy[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, plate])
@@ -870,6 +872,33 @@ model Fine {
   @@index([tenant_id, vehicle_id])
   @@index([tenant_id, created_at])
   @@map("fines")
+}
+
+model InsurancePolicy {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id       String   @db.Uuid
+  vehicle_id      String   @db.Uuid
+  seguradora      String
+  numero_apolice  String
+  vigencia_inicio DateTime @db.Timestamptz(6)
+  vigencia_fim    DateTime @db.Timestamptz(6)
+  valor           Decimal  @db.Decimal(20, 6)
+  cobertura       String?
+  status          String   @default("vigente")
+  is_active       Boolean  @default(true)
+  created_by      String?  @db.Uuid
+  updated_by      String?  @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant          Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  vehicle         Vehicle  @relation(fields: [tenant_id, vehicle_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, numero_apolice])
+  @@index([tenant_id, status, vigencia_fim])
+  @@index([tenant_id, vehicle_id])
+  @@index([tenant_id, created_at])
+  @@map("insurance_policies")
 }
 
 model ServiceCatalog {

@@ -49,6 +49,15 @@ As regras iniciais do repositorio estao em `docs/04-regras-negocio.md`.
   <=7d gera 1 `Notification` idempotente. `pontos` informativos (sem calculo de CNH).
 - **condutor** opcional, validado no tenant (400 se cross-tenant/inexistente). Viatura obrigatoria.
 
+### F4 Seguros (`InsurancePolicy`) — aplicada 2026-07-08
+
+- **R4.1 `vencida` derivada**: status armazena so `vigente|cancelada`; `vencida` e computada
+  (`vigencia_fim < hoje`), nunca setada manualmente (setar = 422). So `vigente↔cancelada` editaveis.
+- **R4.2 alertas 30/15/7 dias** antes do fim da vigencia -> 1 `Notification` idempotente por janela.
+- **unicidade**: `numero_apolice` unico por tenant (409 duplicado / 201 outro tenant); `vigencia_fim >
+  inicio`. Viatura obrigatoria.
+- **R4.3 (adiado, P-016)**: indicador "sem apolice vigente" na Viatura/Mapa fica para F6/bloco dedicado.
+
 ## Observacao de alinhamento
 
 As regras de negocio seguem a documentacao enviada pelo usuario e o repositorio oficial atual. Qualquer retorno para backend em C exige nova decisao explicita porque conflita com o estado atual do repositorio.
