@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 
 import {
   DEFAULT_PAGE_SIZE,
+  DENSE_LIST_PARAM,
   PAGE_SIZE_OPTIONS,
   buildDenseListSearchParams,
   paginate,
@@ -47,10 +48,14 @@ export function useDenseList<T>(options: UseDenseListOptions<T>) {
   const update = useCallback(
     (patch: Partial<DenseListState>) => {
       const next = { ...state, ...patch };
-      // replace: mantém os parâmetros na URL sem poluir o histórico a cada tecla.
-      setSearchParams(buildDenseListSearchParams(next, config), { replace: true });
+      // Preserva parâmetros de URL alheios à dense-list (ex.: filtros de viatura/período do F1),
+      // reescrevendo apenas as chaves próprias. replace: não polui o histórico a cada tecla.
+      const merged = new URLSearchParams(searchParams);
+      for (const key of Object.values(DENSE_LIST_PARAM)) merged.delete(key);
+      buildDenseListSearchParams(next, config).forEach((value, key) => merged.set(key, value));
+      setSearchParams(merged, { replace: true });
     },
-    [state, config, setSearchParams],
+    [state, config, searchParams, setSearchParams],
   );
 
   const setSearch = useCallback((value: string) => update({ search: value, page: 1 }), [update]);

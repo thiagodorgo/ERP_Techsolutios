@@ -23,6 +23,7 @@ import { createExpenseManagementRouter } from "./modules/expense-management/inde
 import { createFieldDispatchRouter } from "./modules/field-dispatch/index.js";
 import { createFieldLocationRouter } from "./modules/field-location/index.js";
 import { createFieldOpsRealtimeRouter } from "./modules/field-ops-realtime/index.js";
+import { createFuelLogRouter } from "./modules/fuel-logs/index.js";
 import { createMobileRouter } from "./modules/mobile/index.js";
 import { createNotificationRouter } from "./modules/notifications/index.js";
 import { createNavigationRouter } from "./modules/navigation/index.js";
@@ -60,6 +61,7 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createDashboardRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createCustomerRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createVehicleRouter());
+  app.use("/api/v1", attachAuthenticatedActor(), createFuelLogRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createServiceCatalogRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTeamRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFieldDispatchRouter(service));

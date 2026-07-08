@@ -1,5 +1,40 @@
 # Status Geral
 
+## Atualizacao 2026-07-08 — Rodada BLOCO-AUTO-F: F1 Abastecimento (em gate) [Claude Code]
+
+### Status
+
+F0 (Fundacao/P&D do Modulo Controle) mergeada e aprovada pelo humano (PR #141, merge bed17db).
+Iniciada a rodada F1–F12 automatica. **F1 Abastecimento** implementado (backend + web) na branch
+`bloco-f1-abastecimento`, gate mecanico VERDE; validador-mestre em execucao antes do push/PR.
+
+### Entregue (F1)
+
+- Backend `src/modules/fuel-logs/` espelhando `customers/`: `FuelLog` (`/api/v1/fuel-logs`), FK composta
+  `(tenant_id, vehicle_id) -> vehicles`, `Decimal(20,6)` para litros/valor, `timestamptz`, RLS
+  ENABLE+FORCE + policy `app.current_tenant_id` inline na migration `20260712000000_add_fuel_logs`.
+- Regras: **km/L derivado no servidor** (nunca armazenado; baseline "—"); **odometro monotonico** por
+  viatura -> 422 `odometer_regressive`; vinculo de viatura obrigatorio (400 se cross-tenant/inexistente).
+- Permissoes novas `fuel_logs:read|create|update` (espelham `vehicles:*`, ajustadas por `navigation-matrix`).
+- Web `frontend/src/modules/fleet/fuel/` (rota `/fleet/fuel`, PermissionGuard `fuel_logs:read`): lista densa
+  (filtros na URL: viatura/periodo/status/busca) + cards de totais (litros, R$, **km/L medio da frota**
+  agregado real) + modal (sem campo km/L; 422 sob o campo odometro). 4 estados; D-007 (mock/erro -> vazio).
+  Ajuste backward-compatible em `dense-list/useDenseList.ts` (preserva params estrangeiros da URL).
+
+### Gate mecanico (verde)
+
+- Backend: `npm run check` OK · `npm test` (core-saas) 15/15 · **F1 explicito 22/22** · `npm run build` OK.
+- Frontend: `check` OK · `test:smoke` **109/109** (incl. `fuel-logs.adapter`+`fuel-logs.smoke`) · `build` OK.
+- Migration **up/down** aplicada no `erp-postgres`: UP cria tabela+4 indices+2 FKs+RLS(t|t)+policy; DOWN
+  (rollback documentado) dropa limpo. `git diff --check` limpo.
+- Fidelidade: frontend-pixel-master revisou; 2 correcoes aplicadas (grid de KPIs responsivo via `auto-fit`;
+  aria-labels por linha). Testes 30 novos F1 (backend 22 + front 8) sobre N=7 -> **cota 200% cumprida**.
+
+### KPIs
+
+NAO publicados (politica C3: PR de feature nao altera `Kpis/*`; propostos so no relatorio final;
+marco `…K` apos aprovacao humana).
+
 ## Atualizacao 2026-07-07 — Rodada BLOCO-AUTO A→D concluida (13 PRs #127–#139) [Claude Code]
 
 ### Status
