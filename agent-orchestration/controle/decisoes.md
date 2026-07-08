@@ -153,3 +153,24 @@
   vencido vermelho). Pontuacao (`pontos`) informativa, sem calculo de CNH.
 - impacto: `Decimal(20,6)` (valor), `timestamptz`, RLS inline; rotas `/api/v1/fines`; perms
   `fines:read|create|update` (operator so leitura; finance escreve). Tela `/fleet/fines`. Aditivo.
+
+## D-013 - F4: status `vencida` derivado + alertas 30/15/7 + unicidade da apolice (2026-07-08) [Claude Code]
+
+- status: aplicada (implementa plano-mestre F4 e `docs/pd-controle.md` §F4)
+- origem: F4 Seguros (`InsurancePolicy`) — onde vive `vencida`, como alertar renovacao, unicidade da apolice.
+- decisao 1 (R4.1): coluna `status` armazena SO `vigente|cancelada` (default `vigente`); **`vencida` NUNCA e
+  armazenada** — e derivada no read por `deriveInsuranceStatus(stored, vigencia_fim, now)` (cancelada se
+  cancelada; senao vencida se `vigencia_fim < now`; senao vigente). Transicoes editaveis = `vigente↔cancelada`;
+  PATCH/create com `status="vencida"` = **422** `cannot_set_derived_status`. Filtro de lista traduz o status
+  derivado (`status=vencida` -> stored vigente + `fim<now`).
+- decisao 2 (R4.2): `runInsuranceRenewalNotifications` idempotente por JANELA — chaves
+  `insurance:<id>:30d|15d|7d`; uma `Notification` por janela cruzada; rodar 2x = sem duplicatas.
+- decisao 3: `@@unique([tenant_id, numero_apolice])` — duplicar mesmo tenant = **409**
+  `duplicate_numero_apolice`; outro tenant = **201** (P6). `vigencia_fim > inicio` senao 400. Viatura
+  obrigatoria (FK composta).
+- decisao 4 (R4.3 ADIADO): indicador "viatura sem apolice vigente" na tela Viaturas + Mapa NAO entra no F4
+  (fora do escopo do plano; evita regressao no registry; Mapa e F6). Helper `hasActivePolicy` exportado
+  read-only para reuso futuro. Registrado em **P-016**.
+- impacto: `Decimal(20,6)` (valor), `timestamptz`, RLS inline; rotas `/api/v1/insurance-policies`; perms
+  `insurance_policies:read|create|update` (operator/auditor so leitura; finance escreve). Tela
+  `/fleet/insurance` (barra de vigencia). Aditivo.

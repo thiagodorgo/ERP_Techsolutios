@@ -27,8 +27,9 @@
 - F0 Fundacao/P&D — status: concluido (PR #141, merge bed17db; aprovado pelo humano)
 - F1 Abastecimento — status: concluido (PR #142, merge 1950ade; validador-mestre APROVADO)
 - F2 Manutencao — status: concluido (PR #143, merge 59decac; validador-mestre APROVADO)
-- **F3 Multas** — status: em validacao (backend + web + migration up/down OK; gate + validador-mestre)
-- F4 Seguros / F5 Danos — status: pendente
+- F3 Multas — status: concluido (PR #144, merge 48788d1; validador-mestre APROVADO)
+- **F4 Seguros** — status: em validacao (backend + web + migration up/down OK; gate + validador-mestre)
+- F5 Danos — status: pendente
 - F6 Mapa real / F7 Estoque / F8 Remuneracoes — status: pendente
 - F9 Usuarios / F10 Notificacoes / F11 Sidebar / F12 Cera — status: pendente
 

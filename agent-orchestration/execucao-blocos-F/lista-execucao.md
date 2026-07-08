@@ -28,7 +28,12 @@
       cancelar admin-only (403) + `@@unique(numero_auto)` 409/201 + prazos/aviso idempotente + condutor no
       tenant (400); testes N=8 → **M=35** (backend 24 + front 11, ≥2N); D-012 registrada; **validador-mestre:
       VEREDITO APROVADO** (0 VETO/0 ALTA; P-014/P-015 informativos); PR #NN, merge <hash> — preencher pós-merge
-- [ ] F4 Seguros (`InsurancePolicy` `/api/v1/insurance-policies`)
+- [~] F4 Seguros (`InsurancePolicy` `/api/v1/insurance-policies`) — branch `bloco-f4-seguros`; gate
+      mecânico verde (back check/15+23/regressões 45/build; front check/139/build; migrate up+down
+      `erp-postgres`); `vencida` derivada (422 se setada) + alertas 30/15/7 idempotentes + `@@unique(numero_
+      apolice)` 409/201 + R4.3 adiado (P-016); testes N=7 → **M=34** (backend 23 + front 11, ≥2N); D-013
+      registrada; **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA; P-016/P-017 informativos; Viaturas
+      intocada confirmada); PR #NN, merge <hash> — preencher pós-merge
 - [ ] F5 Danos (`Damage` `/api/v1/damages` + fotos reuso attachment)
 - [ ] F6 Mapa Operacional real (matar operations-map.mock.ts) [até 2 sub-PRs]
 - [ ] F7 Estoque (`InventoryItem`/`StockMovement`/`CycleCount`) [até 3 sub-PRs]

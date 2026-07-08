@@ -1,5 +1,36 @@
 # Status Geral
 
+## Atualizacao 2026-07-08 — Rodada BLOCO-AUTO-F: F4 Seguros (em gate) [Claude Code]
+
+### Status
+
+F1 (#142), F2 (#143), F3 (#144/48788d1) mergeadas, validador APROVADO. **F4 Seguros** implementado
+(backend + web) na branch `bloco-f4-seguros`, gate mecanico VERDE; validador-mestre em execucao.
+
+### Entregue (F4)
+
+- Backend `src/modules/insurance-policies/` (espelha `fines/`): `InsurancePolicy`
+  (`/api/v1/insurance-policies`), FK composta `(tenant_id, vehicle_id) -> vehicles`,
+  `@@unique([tenant_id, numero_apolice])`, `Decimal(20,6)` (valor), `timestamptz`, RLS ENABLE+FORCE +
+  policy inline na migration `20260715000000_add_insurance_policies`.
+- **R4.1** status `vencida` DERIVADO (`deriveInsuranceStatus`; nunca armazenado; coluna so vigente|cancelada);
+  setar vencida = 422 `cannot_set_derived_status`; filtro de lista traduz o status derivado.
+- **R4.2** `runInsuranceRenewalNotifications` idempotente por janela (30/15/7d; chaves
+  `insurance:<id>:Nd`; rodar 2x = sem duplicatas). **unicidade** 409/201; `vigencia_fim>inicio` (400).
+- **R4.3 adiado** (P-016): indicador "sem apolice vigente" na Viatura/Mapa fica para F6/dedicado (helper
+  `hasActivePolicy` exportado). Permissoes `insurance_policies:read|create|update` (operator/auditor leem).
+- Web `frontend/src/modules/fleet/insurance/` (`/fleet/insurance`): lista densa + **barra de vigencia**
+  (proximidade colorida com rotulo textual), cards de totais (apolices/vigentes/a vencer ≤30d/vencidas),
+  Cancelar/Reativar por status derivado, modal (409 sob Nº da apolice; sem campo status). 4 estados; D-007.
+
+### Gate mecanico (verde)
+
+- Backend: `check` OK · `npm test` 15/15 · **F4 explicito 23/23** · regressoes fines+maintenance+fuel 45/45 ·
+  `build` OK. Frontend: `check` OK · `test:smoke` **139/139** · `build` OK.
+- Migration up/down no `erp-postgres`: UP tabela + 2 uniques compostas + RLS(t|t) + policy; DOWN limpo.
+- Fidelidade: frontend-pixel-master. Testes 34 novos F4 (backend 23 + front 11) sobre N=7 -> **cota 200%**.
+- KPIs NAO publicados (C3).
+
 ## Atualizacao 2026-07-08 — Rodada BLOCO-AUTO-F: F3 Multas (em gate) [Claude Code]
 
 ### Status
