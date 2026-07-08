@@ -87,3 +87,23 @@
   equipe (papel sem `work_orders:assign`), sera necessaria decisao RBAC nova (permissao/ acao de campo
   dedicada). Como o campo esta coberto pelo default do plano, NAO parei — registro para confirmacao.
 - contrato: `docs/mobile-sync-contracts.md` `work_order.assign` ganha `vehicle_id?`/`team_id?` (aditivo) + bump de versao.
+
+## D-010 - F1: km/L derivado no servidor + odometro monotonico + namespace /fleet (2026-07-08) [Claude Code]
+
+- status: aplicada (implementa o plano-mestre F1 e `docs/pd-controle.md` §F1)
+- origem: F1 Abastecimento (`FuelLog`) precisa definir onde vive a eficiencia (km/L) e como impedir
+  odometro retroativo, sem inventar convencao.
+- decisao 1 (R1.1): **km/L NUNCA e armazenado**. E derivado em tempo de leitura a partir da historia
+  ordenada do odometro da viatura (`fueled_at -> created_at -> id`): `distanceKm = odometro - anterior`,
+  `kmPerLiter = round(distance/liters, 2)`; primeiro registro da viatura -> `null`/"—" (baseline).
+  O predecessor considera registros inativos tambem (ancoram a distancia). Exposto so no DTO de leitura.
+- decisao 2 (R1.2): **odometro monotonico por viatura** -> criar/editar com `odometro < max(viatura)`
+  retorna **422** `FUEL_LOG_INVALID` reason `odometer_regressive` (mensagem PT-BR sob o campo na UI).
+- decisao 3: rotas de controle de frota nascem sob **`/fleet/*`** no front (`/fleet/fuel`) e
+  `/api/v1/fuel-logs` no back; permissoes novas `fuel_logs:read|create|update` espelham os grants de
+  `vehicles:*` (escrita: super/tenant_admin/manager + operator/field_technician; leitura: operacionais +
+  auditor + finance; `support` nenhuma) — conforme `navigation-matrix.md`.
+- impacto: dinheiro `Decimal(20,6)`, datas `timestamptz`, FK composta `(tenant_id, vehicle_id)` ->
+  `vehicles`, RLS ENABLE+FORCE + policy `app.current_tenant_id` inline na migration. Aditivo; sem breaking.
+- observacao: se o negocio exigir eficiencia "tanque cheio a tanque cheio" (flag de enchimento total),
+  reabrir para adicionar `full_tank boolean` e recalcular so entre enchimentos completos.

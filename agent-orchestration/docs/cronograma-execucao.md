@@ -22,3 +22,11 @@
 - status: pendente
 - objetivo: fluxo minimo de campo com offline controlado
 
+## Rodada BLOCO-AUTO-F — Modulo Controle de Frota (pos A–D)
+
+- F0 Fundacao/P&D — status: concluido (PR #141, merge bed17db; aprovado pelo humano)
+- **F1 Abastecimento** — status: em validacao (backend + web + migration up/down OK; gate + validador-mestre)
+- F2 Manutencao / F3 Multas / F4 Seguros / F5 Danos — status: pendente
+- F6 Mapa real / F7 Estoque / F8 Remuneracoes — status: pendente
+- F9 Usuarios / F10 Notificacoes / F11 Sidebar / F12 Cera — status: pendente
+

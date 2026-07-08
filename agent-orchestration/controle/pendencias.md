@@ -83,3 +83,15 @@
   (o dot de nao-lidas do topbar, por contraste, e real via `getUnreadNotificationCount`).
 - impacto: numero fabricado na UI (§ REGRA-MESTRA); pre-existente, fora do escopo C3.
 - status: aberto (ligar a uma contagem real de aprovacoes pendentes ou remover o numero — chore)
+
+## P-012 - F1: tile "km/L medio da frota" e agregado nao-clicavel (2026-07-08)
+
+- descricao: em `frontend/src/modules/fleet/fuel/pages/AbastecimentoPage.tsx`, o tile "km/L medio da
+  frota" (padrao `.work-orders-kpi`) e um agregado real da janela filtrada, mas nao e clicavel. O
+  `docs/screen-element-map.md` §F1 menciona de forma solta "card 'consumo medio da frota' → lista
+  filtrada". Registrado pelo validador-mestre (achado BAIXA no gate do F1).
+- impacto: nao e card morto (nao clicavel, nao engana; replica o padrao aceito dos KPIs do dashboard/OS);
+  requisito substantivo (agregados reais, R1.1) cumprido; a tabela de elementos OBRIGATORIOS do mapa nao
+  exige navegacao em KPI. Cosmetico/affordance.
+- status: aberto (reavaliar o affordance na F12/cera — tornar o card um atalho para a janela filtrada,
+  ou manter como indicador). Nao bloqueia F1 (veredito APROVADO).

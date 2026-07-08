@@ -8,8 +8,15 @@
 - [ ] docs/pd-controle.md · docs/actor-flows.md · docs/screen-element-map.md · docs/sidebar-ia.md ·
       docs/navigation-matrix.md · plano-mestre.md · lista-execucao.md · validador-mestre.md · Kpis/ preparado
 
+## F0 — concluído
+- [x] F0 P&D + Fundação — PR #141, merge bed17db, aprovado pelo humano (2026-07-07)
+
 ## F1–F12 (automático após merge da F0)
-- [ ] F1 Abastecimento (`FuelLog` `/api/v1/fuel-logs`)
+- [x] F1 Abastecimento (`FuelLog` `/api/v1/fuel-logs`) — branch `bloco-f1-abastecimento`; gate mecânico
+      8/8 verde (back check/15+22/build; front check/109/build; migrate up+down `erp-postgres`; pixel-master
+      2 correções); testes N=7 → **M=30** (backend 22 + front 8, ≥2N); skills saas-multi-tenant + ts-frontend
+      + ui-ux-pro-max + frontend-pixel-master; **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA; 1 BAIXA
+      → P-012 registrada); PR #NN, merge <hash> — preencher pós-merge
 - [ ] F2 Manutenção (`MaintenanceOrder` `/api/v1/maintenance-orders` + disponibilidade)
 - [ ] F3 Multas (`Fine` `/api/v1/fines`)
 - [ ] F4 Seguros (`InsurancePolicy` `/api/v1/insurance-policies`)

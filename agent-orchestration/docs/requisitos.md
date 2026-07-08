@@ -26,3 +26,14 @@ Os requisitos iniciais foram consolidados a partir de:
 5. ordem de servico MVP
 6. checklists configuraveis por tenant, em fases: documentacao, migration/backend base, templates/campos, execucoes/respostas, frontend e mobile/evidencias
 
+## Modulo Controle de Frota (Rodada F)
+
+Detalhe funcional por sub-modulo em `docs/pd-controle.md` e `docs/screen-element-map.md`; plano em
+`agent-orchestration/execucao-blocos-F/plano-mestre.md`.
+
+- **RF-FROTA-001 (F1 Abastecimento)** — registrar abastecimentos por viatura (data, combustivel,
+  litros, valor, odometro, posto), listar por viatura/periodo com totais (litros, R$, km/L medio),
+  km/L derivado no servidor (nunca armazenado), odometro monotonico (422), tela `/fleet/fuel`.
+- RF-FROTA-002..008 (F2..F8) — Manutencao, Multas, Seguros, Danos, Estoque, Remuneracoes
+  (ver plano-mestre); F9..F12 enriquecem Usuarios/Notificacoes/Sidebar e aplicam cera.
+
