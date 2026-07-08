@@ -21,7 +21,7 @@
 ## Bloco C — Densidade & Dashboard
 - [x] C1 Listas densas (número tabular, ordenação, paginação, filtros preservados) — PR #135, merge `34500f6`, gates 3/3 CI verdes, 9 testes de lógica, skills: ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
 - [x] C2 Detalhe de OS enriquecido (cliente/viatura/equipe/serviço) — PR #136, merge `13b1fcb`, gates 3/3 CI verdes, 5 (backend) + 6 (web), regressão WO+FD 16/16, skills: saas-multi-tenant + ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
-- [ ] C3 Dashboard gap-fill (rotas agregadas reais por tenant, sem mock)
+- [x] C3 Dashboard gap-fill (rotas agregadas reais por tenant, sem mock) — PR #137, merge `6d060e7`, gates 3/3 CI verdes, endpoint /dashboard/summary (8 testes backend + 4 web), skills: saas-multi-tenant + ts-frontend-full + ui-ux-pro-max + frontend-pixel-master, concluída 2026-07-07
 
 ## Bloco D — Mobile (Flutter, aditivo)
 - [ ] D1 Mobile: seleção viatura/equipe (sync action aditivo, offline-safe)

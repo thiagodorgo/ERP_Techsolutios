@@ -134,6 +134,8 @@ class WorkOrder extends Equatable {
     required this.priority,
     required this.syncStatus,
     required this.createdAt,
+    this.customerDocument,
+    this.customerPhone,
     this.serverId,
     this.latitude,
     this.longitude,
@@ -153,6 +155,8 @@ class WorkOrder extends Equatable {
   final String code;
   final String title;
   final String customerName;
+  final String? customerDocument;
+  final String? customerPhone;
   final String serviceAddress;
   final double? latitude;
   final double? longitude;
@@ -176,6 +180,8 @@ class WorkOrder extends Equatable {
     String? code,
     String? title,
     String? customerName,
+    String? customerDocument,
+    String? customerPhone,
     String? serviceAddress,
     double? latitude,
     double? longitude,
@@ -202,6 +208,8 @@ class WorkOrder extends Equatable {
       code: code ?? this.code,
       title: title ?? this.title,
       customerName: customerName ?? this.customerName,
+      customerDocument: customerDocument ?? this.customerDocument,
+      customerPhone: customerPhone ?? this.customerPhone,
       serviceAddress: serviceAddress ?? this.serviceAddress,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
@@ -230,6 +238,8 @@ class WorkOrder extends Equatable {
     code,
     title,
     customerName,
+    customerDocument,
+    customerPhone,
     serviceAddress,
     latitude,
     longitude,
