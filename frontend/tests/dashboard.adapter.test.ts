@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  adaptDashboardSummary,
   buildCriticalQueue,
   deriveActiveDispatchRows,
   deriveDashboardAlerts,
@@ -251,4 +252,94 @@ test("deriveDashboardEvents deriva das listas carregadas (OS + despachos) em ord
   assert.equal(events[0].id, "dp-d1"); // mais recente primeiro
   assert.equal(events[1].id, "os-w1");
   assert.ok(events[0].title.startsWith("Despacho"));
+});
+
+// ---------------------------------------------------------------------------
+// C3 — agregado real GET /api/v1/dashboard/summary → KPIs/alertas/listas.
+// ---------------------------------------------------------------------------
+
+test("adaptDashboardSummary mapeia contagens reais para KPIs (números reais, sem % fabricado)", () => {
+  const bundle = adaptDashboardSummary({
+    workOrders: {
+      total: 20,
+      byStatus: { open: 4, assigned: 3, accepted: 2, on_route: 1, on_site: 1, in_progress: 3, paused: 1, completed: 5, cancelled: 0, rejected: 0 },
+      createdToday: 6,
+      createdThisWeek: 14,
+      overdue: 2,
+    },
+    registry: { customers: 30, vehicles: 8, teams: 3, services: 12 },
+    criticalWorkOrders: [],
+    recentEvents: [],
+  });
+  const byId = Object.fromEntries(bundle.kpis.map((k) => [k.id, k.value]));
+  assert.equal(byId.open, "9"); // open + assigned + accepted
+  assert.equal(byId.in_progress, "6"); // on_route + on_site + in_progress + paused
+  assert.equal(byId.completed, "5");
+  assert.equal(byId.overdue, "2");
+  assert.equal(byId.created_today, "6");
+  assert.equal(byId.customers, "30");
+  assert.equal(byId.vehicles, "8");
+  assert.equal(byId.teams, "3");
+  assert.equal(byId.services, "12");
+  // Nenhum delta com percentual inventado (D-007 / regra de fidelidade).
+  assert.ok(bundle.kpis.every((k) => !/%/.test(k.delta ?? "")));
+  // Atrasadas com valor > 0 sinaliza risco (tone danger).
+  assert.equal(bundle.kpis.find((k) => k.id === "overdue")?.tone, "danger");
+});
+
+test("adaptDashboardSummary deriva alerta de OS atrasadas a partir do overdue real", () => {
+  const withOverdue = adaptDashboardSummary({ workOrders: { overdue: 3 } });
+  assert.equal(withOverdue.alerts.length, 1);
+  assert.equal(withOverdue.alerts[0].id, "overdue");
+  assert.equal(withOverdue.alerts[0].severity, "danger");
+  assert.ok(withOverdue.alerts[0].title.includes("3"));
+
+  const noOverdue = adaptDashboardSummary({ workOrders: { overdue: 0 } });
+  assert.deepEqual(noOverdue.alerts, []);
+  // Overdue 0 → KPI Atrasadas vira sucesso (sem atrasos).
+  assert.equal(noOverdue.kpis.find((k) => k.id === "overdue")?.tone, "success");
+});
+
+test("adaptDashboardSummary tolera payload ausente/parcial (parse defensivo) sem quebrar", () => {
+  const bundle = adaptDashboardSummary({});
+  assert.equal(bundle.kpis.length, 9);
+  assert.ok(bundle.kpis.every((k) => /^\d+$/.test(k.value)));
+  const byId = Object.fromEntries(bundle.kpis.map((k) => [k.id, k.value]));
+  assert.equal(byId.open, "0");
+  assert.equal(byId.overdue, "0");
+  assert.equal(byId.customers, "0");
+  assert.equal(bundle.criticalWorkOrders.length, 0);
+  assert.equal(bundle.recentEvents.length, 0);
+  assert.deepEqual(bundle.alerts, []);
+});
+
+test("adaptDashboardSummary aceita snake_case e mapeia OS críticas/eventos sem expor UUID cru", () => {
+  const bundle = adaptDashboardSummary({
+    work_orders: { by_status: { in_progress: 2 }, created_today: 1, overdue: 1 },
+    criticalWorkOrders: [
+      { id: "11111111-2222-3333-4444-555555555555", code: "OS-77", title: "Troca de compressor", status: "on_route", priority: "urgent", scheduled_for: "2026-07-07T10:00:00Z", customer_name: "Cliente X" },
+      { title: "sem id" }, // descartado por não ter id
+    ],
+    recent_events: [
+      { id: "e1", work_order_id: "w1", event_type: "work_order_completed", message: "OS-77 concluída.", created_at: "2026-07-07T09:00:00Z" },
+      { id: "e2", event_type: "coisa_nova_do_backend", message: "" }, // rótulo humanizado, sem quebrar
+    ],
+  });
+
+  const byId = Object.fromEntries(bundle.kpis.map((k) => [k.id, k.value]));
+  assert.equal(byId.in_progress, "2"); // by_status snake_case lido
+  assert.equal(byId.overdue, "1");
+
+  assert.equal(bundle.criticalWorkOrders.length, 1); // item sem id descartado
+  const crit = bundle.criticalWorkOrders[0];
+  assert.equal(crit.code, "OS-77");
+  assert.equal(crit.customerName, "Cliente X");
+  assert.equal(crit.priorityLabel, "Urgente");
+  assert.notEqual(crit.statusLabel, "Status desconhecido");
+
+  assert.equal(bundle.recentEvents.length, 2);
+  assert.equal(bundle.recentEvents[0].eventLabel, "OS concluída");
+  assert.equal(bundle.recentEvents[0].message, "OS-77 concluída.");
+  assert.ok(bundle.recentEvents[1].eventLabel.length > 0); // tipo desconhecido humanizado
+  assert.equal(bundle.recentEvents[1].message, bundle.recentEvents[1].eventLabel); // message vazio → cai no rótulo
 });

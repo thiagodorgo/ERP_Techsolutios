@@ -65,3 +65,21 @@
 - impacto: a11y (§11 contraste 4.5:1). DS esta congelado -> correcao e follow-up transversal do DS (trocar por
   ~#64748B nos textos de conteudo), fora do escopo de C2.
 - status: aberto (proposta de a11y do DS)
+
+## P-010 - Codigo morto do adapter de dashboard (pre-C3) (2026-07-07)
+
+- descricao: apos C3, `dashboard.adapter.ts` ainda exporta a engine de derivacao client-side B-124
+  (`deriveDashboardKpis`, `deriveEnrichedDashboardKpis`, `buildCriticalQueue`, `deriveDashboardAlerts`,
+  `deriveDashboardEvents` etc.), consumida SO pelos testes; a pagina usa apenas o summary real +
+  `deriveActiveDispatchRows`/`deriveFieldStatusRows`. Tree-shaken no bundle, mas e codigo morto e
+  contem PT-BR sem acento no trecho inativo.
+- impacto: manutencao/rot; sem efeito em runtime.
+- status: aberto (limpeza — remover funcoes/tipos/testes B-124 obsoletos num bloco de chore)
+
+## P-011 - Badge de aprovacoes no sidebar e constante hardcoded (2026-07-07)
+
+- descricao: `AppShell.tsx` mostra `badge: 3` fixo no item "Aprovacoes" (e no grupo). Apos C3 remover o
+  painel de aprovacoes do dashboard, o sidebar e a superficie que carrega o sinal — e o numero e falso
+  (o dot de nao-lidas do topbar, por contraste, e real via `getUnreadNotificationCount`).
+- impacto: numero fabricado na UI (§ REGRA-MESTRA); pre-existente, fora do escopo C3.
+- status: aberto (ligar a uma contagem real de aprovacoes pendentes ou remover o numero — chore)
