@@ -1581,7 +1581,7 @@ test("anexos frontend validam ausente, renderizam lista e preview", async () => 
   assert.equal(download.fileName, "evidence.pdf");
 });
 
-test("dashboard enriquecido (B-124) renderiza seções, KPIs e nada de dado técnico", async () => {
+test("dashboard operacional (C3) renderiza seções, KPIs reais e nada de dado técnico", async () => {
   process.env.VITE_USE_MOCKS = "true";
   browser.clear();
   const { AuthProvider } = await import("../src/providers/AuthProvider");
@@ -1618,19 +1618,25 @@ test("dashboard enriquecido (B-124) renderiza seções, KPIs e nada de dado téc
     </MemoryRouter>,
   );
 
-  // Seções do dashboard enriquecido presentes já no primeiro render.
+  // Seções do dashboard presentes já no primeiro render.
   assert.match(dashboardHtml, /Fila crítica/);
   assert.match(dashboardHtml, /Alertas operacionais/);
   assert.match(dashboardHtml, /Despachos ativos/);
   assert.match(dashboardHtml, /Status de campo/);
   assert.match(dashboardHtml, /Últimos eventos/);
-  // KPIs enriquecidos (derivados, sem números fixos hardcoded).
+  // KPIs do agregado real GET /dashboard/summary (mock semeado no modo demo).
   assert.match(dashboardHtml, /OS abertas/);
-  assert.match(dashboardHtml, /OS atrasadas/);
-  assert.match(dashboardHtml, /Pendentes de aprovação/);
-  assert.match(dashboardHtml, /Despachos ativos/);
-  assert.match(dashboardHtml, /Operadores em campo/);
-  assert.match(dashboardHtml, /Sem sinal recente/);
+  assert.match(dashboardHtml, /Em andamento/);
+  assert.match(dashboardHtml, /Concluídas/);
+  assert.match(dashboardHtml, /Atrasadas/);
+  assert.match(dashboardHtml, /OS hoje/);
+  assert.match(dashboardHtml, /Clientes/);
+  assert.match(dashboardHtml, /Viaturas/);
+  assert.match(dashboardHtml, /Equipes/);
+  assert.match(dashboardHtml, /Serviços/);
+  // OS crítica exibida por código/cliente — nunca UUID cru.
+  assert.match(dashboardHtml, /OS-10021/);
+  assert.doesNotMatch(dashboardHtml, /wo-10021/);
   // Segurança: nenhum dado técnico cru na UI.
   assert.doesNotMatch(dashboardHtml, /Bearer|access_?token|tenant_id|tenantId/i);
 });
