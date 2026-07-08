@@ -73,3 +73,17 @@
   aprovacoes seguem acessiveis via pagina `/approvals` + item de menu (com badge).
 - observacao: se o usuario quiser o painel de aprovacoes de volta NO dashboard, reabrir (restaurar
   o fetch `/approvals/pending` + painel) ou incluir a contagem de aprovacoes no summary.
+
+## D-009 - D1: selecao de viatura/equipe reutiliza o fluxo de assign da OS (2026-07-07) [Claude Code]
+
+- status: aplicada (default consistente com o plano-mestre; sinalizada para confirmacao humana no gate)
+- origem: D1 "Mobile: selecao viatura/equipe" precisa de acao/permissao. `work_order.assign` ja existe
+  e exige `work_orders:assign`; hoje SO `manager`/`field_dispatcher` (e super/tenant_admin) o possuem —
+  `field_technician`/`technician` NAO. O plano-mestre ja apontava reutilizar a rota de assign.
+- impacto: a selecao de viatura/equipe estende ADITIVAMENTE o payload de `work_order.assign` (mobile-sync)
+  com `vehicle_id`/`team_id` opcionais; backend valida as refs (resolvers B1) e seta as FKs da OS.
+  Permissao = `work_orders:assign` -> quem seleciona no mobile e o DESPACHANTE/gestor (nao o tecnico).
+- ambiguidade sinalizada: se a regra de negocio for que o TECNICO de campo selecione a propria viatura/
+  equipe (papel sem `work_orders:assign`), sera necessaria decisao RBAC nova (permissao/ acao de campo
+  dedicada). Como o campo esta coberto pelo default do plano, NAO parei — registro para confirmacao.
+- contrato: `docs/mobile-sync-contracts.md` `work_order.assign` ganha `vehicle_id?`/`team_id?` (aditivo) + bump de versao.
