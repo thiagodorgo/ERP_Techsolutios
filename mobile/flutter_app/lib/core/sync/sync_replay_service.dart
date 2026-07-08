@@ -372,6 +372,7 @@ class WorkOrderSyncCodec {
     return switch (action.type) {
       WorkOrderSyncActionTypes.create => _createPayload(action.payload),
       WorkOrderSyncActionTypes.statusUpdate => _statusPayload(action.payload),
+      WorkOrderSyncActionTypes.assign => _assignPayload(action.payload),
       _ => const {},
     };
   }
@@ -423,6 +424,38 @@ class WorkOrderSyncCodec {
     final payload = <String, Object?>{'metadata': metadata};
     if (workOrderId != null) payload['work_order_id'] = workOrderId;
     if (status != null) payload['status'] = _backendStatus(status);
+    if (message != null) payload['message'] = message;
+
+    return Map.unmodifiable(payload);
+  }
+
+  // D1 (seleção viatura/equipe): assign carrega operator_id (obrigatório no
+  // backend) + vehicle_id/team_id opcionais. tenant/token/path nunca vão no
+  // payload — apenas os campos permitidos.
+  Map<String, Object?> _assignPayload(Map<String, Object?> source) {
+    final explicitWorkOrderId = _readNonEmptyString(source['work_order_id']);
+    final workOrderId =
+        _readNonEmptyString(source['server_id']) ??
+        (explicitWorkOrderId != null &&
+                !_isLocalWorkOrderId(explicitWorkOrderId)
+            ? explicitWorkOrderId
+            : null);
+    final operatorId = _readNonEmptyString(source['operator_id']);
+    final vehicleId = _readNonEmptyString(source['vehicle_id']);
+    final teamId = _readNonEmptyString(source['team_id']);
+    final message = _readNonEmptyString(source['message']);
+    final localId = _readNonEmptyString(source['local_id']);
+    final occurredAt = _readNonEmptyString(source['occurred_at']);
+
+    final metadata = <String, Object?>{'source': 'mobile_offline'};
+    if (localId != null) metadata['local_id'] = localId;
+    if (occurredAt != null) metadata['occurred_at'] = occurredAt;
+
+    final payload = <String, Object?>{'metadata': metadata};
+    if (workOrderId != null) payload['work_order_id'] = workOrderId;
+    if (operatorId != null) payload['operator_id'] = operatorId;
+    if (vehicleId != null) payload['vehicle_id'] = vehicleId;
+    if (teamId != null) payload['team_id'] = teamId;
     if (message != null) payload['message'] = message;
 
     return Map.unmodifiable(payload);
@@ -547,6 +580,9 @@ class DioWorkOrderSyncBatchApi implements WorkOrderSyncBatchApi {
 const b107BackendWorkOrderActionTypes = {
   WorkOrderSyncActionTypes.create,
   WorkOrderSyncActionTypes.statusUpdate,
+  // D1 (seleção viatura/equipe): assign é replay-elegível (precisa de serverId
+  // real + operator_id).
+  WorkOrderSyncActionTypes.assign,
 };
 
 const b103BackendWorkOrderActionTypes = b107BackendWorkOrderActionTypes;
@@ -562,10 +598,18 @@ bool b103WorkOrderActionReadyForBackend(SyncAction action) {
   }
 
   final serverId = _readBackendWorkOrderId(action.payload['server_id']);
-  if (serverId != null) return true;
-
   final workOrderId = _readBackendWorkOrderId(action.payload['work_order_id']);
-  return workOrderId != null && !_isLocalWorkOrderId(workOrderId);
+  final hasRealWorkOrderId =
+      serverId != null ||
+      (workOrderId != null && !_isLocalWorkOrderId(workOrderId));
+
+  // assign exige o operador atual (operator_id) além do id remoto da OS.
+  if (action.type == WorkOrderSyncActionTypes.assign) {
+    return hasRealWorkOrderId &&
+        _readBackendWorkOrderId(action.payload['operator_id']) != null;
+  }
+
+  return hasRealWorkOrderId;
 }
 
 String? _readBackendWorkOrderId(Object? value) =>
@@ -600,7 +644,10 @@ class WorkOrderSyncReplayService {
     );
     final dependentResult = await _replayEligible(
       tenantId,
-      actionTypes: const {WorkOrderSyncActionTypes.statusUpdate},
+      actionTypes: const {
+        WorkOrderSyncActionTypes.statusUpdate,
+        WorkOrderSyncActionTypes.assign,
+      },
     );
     return SyncReplayResult(
       synced: [...createResult.synced, ...dependentResult.synced],

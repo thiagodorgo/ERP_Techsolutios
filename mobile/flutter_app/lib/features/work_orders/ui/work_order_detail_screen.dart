@@ -17,6 +17,7 @@ import '../data/work_order_repository.dart';
 import '../data/work_order_conflict_resolution_service.dart';
 import '../domain/work_order_models.dart';
 import '../../../core/location/gps_service.dart';
+import 'registry_assignment_section.dart';
 import 'work_order_operational_map_screen.dart';
 
 class WorkOrderDetailScreen extends ConsumerWidget {
@@ -90,6 +91,10 @@ class WorkOrderDetailScreen extends ConsumerWidget {
           session.permissions,
           'work_orders:update',
         );
+        final canAssign = const PermissionResolver().has(
+          session.permissions,
+          'work_orders:assign',
+        );
 
         return ErpScaffold(
           showAppBar: false,
@@ -132,6 +137,13 @@ class WorkOrderDetailScreen extends ConsumerWidget {
                     _CustomerCard(wo: wo),
                     const SizedBox(height: 8),
                     _AssignmentCard(wo: wo, session: session),
+                    if (canAssign) ...[
+                      const SizedBox(height: 8),
+                      RegistryAssignmentSection(
+                        workOrder: wo,
+                        canAssign: canAssign,
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     if (wo.checklistId != null) _ChecklistCard(wo: wo),
                     const SizedBox(height: 8),

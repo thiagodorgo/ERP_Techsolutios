@@ -73,6 +73,11 @@ class WorkOrderRepository extends ChangeNotifier {
   List<WorkOrder> workOrdersForUser(String userId) =>
       _orders.where((o) => o.assignedUserId == userId).toList();
 
+  static String? _normalized(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
+
   WorkOrder? findById(String localId) {
     for (final o in _orders) {
       if (o.localId == localId) return o;
@@ -230,6 +235,80 @@ class WorkOrderRepository extends ChangeNotifier {
       occurredAt: now,
       fromStatus: wo.status,
       toStatus: newStatus,
+      actorUserId: _session.user.userId,
+    );
+
+    _orders = List<WorkOrder>.from(_orders)..[idx] = updated;
+    await _localStore.saveWorkOrder(updated);
+    await _localStore.saveTimelineEvent(timelineEvent);
+    await _syncQueue.enqueue(action);
+    notifyListeners();
+
+    return WorkOrderMutationResult(workOrder: updated, action: action);
+  }
+
+  /// D1 (seleção viatura/equipe): vincula viatura/equipe à OS de forma otimista
+  /// (salva local + enfileira `work_order.assign`). O backend exige `operator_id`
+  /// — reenviamos o operador atualmente atribuído à OS. Se a OS não tiver operador
+  /// atribuído, lançamos [StateError] e NÃO enfileiramos (safe): a UI orienta a
+  /// atribuir um operador antes.
+  Future<WorkOrderMutationResult> assignRegistry(
+    String localId, {
+    String? vehicleId,
+    String? vehiclePlate,
+    String? teamId,
+    String? teamName,
+  }) async {
+    final idx = _orders.indexWhere((o) => o.localId == localId);
+    if (idx == -1) throw StateError('WorkOrder $localId not found');
+
+    final wo = _orders[idx];
+    final operatorId = wo.assignedUserId?.trim();
+    if (operatorId == null || operatorId.isEmpty) {
+      throw StateError('Atribua um operador antes de definir viatura/equipe.');
+    }
+
+    final normalizedVehicleId = _normalized(vehicleId);
+    final normalizedTeamId = _normalized(teamId);
+
+    final now = DateTime.now().toUtc();
+    final updated = wo.copyWith(
+      vehicleId: normalizedVehicleId,
+      vehiclePlate: _normalized(vehiclePlate),
+      teamId: normalizedTeamId,
+      teamName: _normalized(teamName),
+      syncStatus: SyncStatus.pending,
+      updatedAt: now,
+    );
+
+    final payload = <String, Object?>{
+      'local_id': localId,
+      if (wo.serverId != null && wo.serverId!.trim().isNotEmpty)
+        'server_id': wo.serverId!.trim(),
+      'operator_id': operatorId,
+      'occurred_at': now.toIso8601String(),
+      'message': 'Mobile definiu viatura/equipe.',
+    };
+    if (normalizedVehicleId != null) {
+      payload['vehicle_id'] = normalizedVehicleId;
+    }
+    if (normalizedTeamId != null) {
+      payload['team_id'] = normalizedTeamId;
+    }
+
+    final action = _actionFactory.create(
+      tenantId: _session.activeTenant.tenantId,
+      type: WorkOrderSyncActionTypes.assign,
+      payload: payload,
+    );
+
+    final timelineEvent = WorkOrderTimelineEvent(
+      localId: _uuid.v4(),
+      workOrderLocalId: localId,
+      tenantId: _session.activeTenant.tenantId,
+      eventType: WorkOrderTimelineEventType.assigned,
+      occurredAt: now,
+      note: 'Viatura/equipe atualizada.',
       actorUserId: _session.user.userId,
     );
 
