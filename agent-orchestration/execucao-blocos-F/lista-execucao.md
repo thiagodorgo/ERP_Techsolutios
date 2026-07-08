@@ -40,7 +40,13 @@
       DTO sem internals; 415/413) + OS de origem; testes N=7 → **M=30** (backend 19 + front 11, ≥2N); D-014
       registrada; pixel-master + **workflow adversarial de segurança (4 probes SAFE)** + **validador-mestre:
       VEREDITO APROVADO** (0 VETO/0 ALTA; P-018 LOW; doc-drift §F5/D-014 corrigido); PR #NN, merge <hash> — pós-merge
-- [ ] F6 Mapa Operacional real (matar operations-map.mock.ts) [até 2 sub-PRs]
+- [~] F6 Mapa Operacional real (matar operations-map.mock.ts) — branch `bloco-f6-mapa-real`; 1 PR (as 3
+      fontes reais já estavam ligadas); mock morto + painel lateral + stale 15min + badges F2/F4 com
+      deep-link real (`?vehicle=` adicionado à ManutencaoPage p/ honrar a LEI) + preservação de dados em
+      falha de poll (§7) + UUID mascarado; D-015 (grant seguro ao despachante + `vehicleId` no DTO de lista
+      de OS); gate verde (front check/**163**/build; back check/15/regressões WO+frota verdes/build);
+      testes N=6 → **M=18** (13 novos + lockstep); pixel-master 4 correções; **validador-mestre: VEREDITO
+      APROVADO** (0 achados; 0 cards mortos); PR #NN, merge <hash> — preencher pós-merge
 - [ ] F7 Estoque (`InventoryItem`/`StockMovement`/`CycleCount`) [até 3 sub-PRs]
 - [ ] F8 Remunerações (extrato por operador/período sobre commissions)
 - [ ] F9 Usuários (enriquecer módulo existente)

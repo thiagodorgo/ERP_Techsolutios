@@ -206,6 +206,7 @@ function adaptWorkOrderItem(input: unknown): WorkOrderDetail | null {
     serviceLongitude: readNullableNumber(item, ["serviceLongitude", "service_longitude"]),
     assignedOperatorId: readNullableString(item, ["assignedOperatorId", "assigned_operator_id"]),
     assignedUserId: readNullableString(item, ["assignedUserId", "assigned_user_id"]),
+    vehicleId: readNullableString(item, ["vehicleId", "vehicle_id"]),
     checklistId: readNullableString(item, ["checklistId", "checklist_id"]),
     scheduledFor: readNullableString(item, ["scheduledFor", "scheduled_for"]),
     startedAt: readNullableString(item, ["startedAt", "started_at"]),

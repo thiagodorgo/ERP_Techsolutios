@@ -1,9 +1,15 @@
 import { AlertTriangle, Map, MapPin } from "lucide-react";
 import type { CSSProperties } from "react";
+import { Link } from "react-router-dom";
 
 import { Chip } from "../../../../components/ui";
 import { readFrontendEnv } from "../../../../config/env";
-import { getFieldLocationStatusLabel, getMarkerPosition } from "../operations-map.adapter";
+import {
+  formatLastSeen,
+  getFieldLocationStatusLabel,
+  getMarkerPosition,
+  getVehicleFleetBadges,
+} from "../operations-map.adapter";
 import { getDispatchStatusLabel } from "../../dispatches/dispatches.adapter";
 import { getWorkOrderStatusLabel } from "../../../work-orders/work-orders.adapter";
 import type { FieldLocationItem } from "../operations-map.types";
@@ -15,11 +21,15 @@ export function OperationsMapCanvas({
   selectedId,
   onSelect,
   showDispatches = false,
+  maintenanceVehicleIds,
+  insuredVehicleIds,
 }: {
   locations: readonly FieldLocationItem[];
   selectedId?: string;
   onSelect: (location: FieldLocationItem) => void;
   showDispatches?: boolean;
+  maintenanceVehicleIds?: readonly string[];
+  insuredVehicleIds?: readonly string[];
 }) {
   const apiKey = readFrontendEnv("VITE_GOOGLE_MAPS_API_KEY") || undefined;
   const mapsLoadState = useGoogleMapsLoader(apiKey);
@@ -58,26 +68,56 @@ export function OperationsMapCanvas({
         <span className="operations-map-canvas__road operations-map-canvas__road--secondary" />
         {locations.map((location) => {
           const position = getMarkerPosition(location, locations);
+          const fleetBadges = getVehicleFleetBadges(location, { maintenanceVehicleIds, insuredVehicleIds });
 
           return (
-            <button
+            <div
               key={location.id}
-              type="button"
-              className={`operations-map-marker ${selectedId === location.id ? "is-selected" : ""} ${location.isStale ? "is-stale" : ""}`}
+              className="operations-map-marker-wrap"
               style={{ "--x": `${position.x}%`, "--y": `${position.y}%` } as CSSProperties}
-              onClick={() => onSelect(location)}
-              aria-label={`Selecionar ${location.displayName}`}
             >
-              {location.isStale ? <AlertTriangle size={15} /> : <MapPin size={15} />}
-              <span>{location.displayName}</span>
-              <small>
-                {showDispatches && location.currentDispatch
-                  ? `Despacho · ${getDispatchStatusLabel(location.currentDispatch.status)}`
-                  : location.currentWorkOrder
-                  ? `${location.currentWorkOrder.code} · ${getWorkOrderStatusLabel(location.currentWorkOrder.status)}`
-                  : getFieldLocationStatusLabel(location.status)}
-              </small>
-            </button>
+              <button
+                type="button"
+                className={`operations-map-marker ${selectedId === location.id ? "is-selected" : ""} ${location.isStale ? "is-stale" : ""}`}
+                onClick={() => onSelect(location)}
+                aria-label={`Selecionar ${location.displayName}`}
+              >
+                {location.isStale ? <AlertTriangle size={15} /> : <MapPin size={15} />}
+                <span>{location.displayName}</span>
+                <small>
+                  {showDispatches && location.currentDispatch
+                    ? `Despacho · ${getDispatchStatusLabel(location.currentDispatch.status)}`
+                    : location.currentWorkOrder
+                    ? `${location.currentWorkOrder.code} · ${getWorkOrderStatusLabel(location.currentWorkOrder.status)}`
+                    : getFieldLocationStatusLabel(location.status)}
+                </small>
+                {location.isStale ? (
+                  <small className="operations-map-marker__stale">Último visto {formatLastSeen(location.capturedAt)}</small>
+                ) : null}
+              </button>
+              {fleetBadges ? (
+                <span className="operations-map-marker-badges">
+                  {fleetBadges.inMaintenance ? (
+                    <Link
+                      className="ui-chip ui-tone-warning operations-map-marker-badge"
+                      to={`/fleet/maintenance?vehicle=${encodeURIComponent(fleetBadges.vehicleId)}`}
+                      aria-label={`Viatura da OS de ${location.displayName} em manutenção — abrir Manutenção da frota`}
+                    >
+                      Em manutenção
+                    </Link>
+                  ) : null}
+                  {fleetBadges.missingInsurance ? (
+                    <Link
+                      className="ui-chip ui-tone-danger operations-map-marker-badge"
+                      to={`/fleet/insurance?vehicle=${encodeURIComponent(fleetBadges.vehicleId)}`}
+                      aria-label={`Viatura da OS de ${location.displayName} sem seguro vigente — abrir Seguros da frota`}
+                    >
+                      Sem seguro
+                    </Link>
+                  ) : null}
+                </span>
+              ) : null}
+            </div>
           );
         })}
       </div>

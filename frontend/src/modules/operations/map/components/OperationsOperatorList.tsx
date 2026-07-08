@@ -71,7 +71,7 @@ export function OperationsOperatorList({
                   to={`/operations/dispatches?dispatchId=${encodeURIComponent(location.currentDispatch.id)}&workOrderId=${encodeURIComponent(location.currentDispatch.workOrderId)}&operatorUserId=${encodeURIComponent(location.currentDispatch.operatorUserId)}`}
                   onClick={(event) => event.stopPropagation()}
                 >
-                  <span>{location.currentDispatch.id}</span>
+                  <span>Despacho</span>
                   <DispatchStatusBadge status={location.currentDispatch.status} />
                 </Link>
               ) : canCreateDispatch && location.currentWorkOrder ? (

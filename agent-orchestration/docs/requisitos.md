@@ -47,6 +47,9 @@ Detalhe funcional por sub-modulo em `docs/pd-controle.md` e `docs/screen-element
 - **RF-FROTA-005 (F5 Danos)** — danos por viatura (opcionalmente vinculados a OS de origem) com maquina
   de estados (registrado→em_tratativa→resolvido, 422), fotos (reuso do storage do checklist; galeria com
   upload/download autenticado; sem storage novo — D-014), custos estimado/real, tela `/fleet/damages`.
-- RF-FROTA-006..008 (F6..F8) — Mapa real, Estoque, Remuneracoes (ver plano-mestre);
+- **RF-FROTA-006 (F6 Mapa real)** — mapa operacional 100% real (mock morto, D-007/D-015): posicoes de
+  campo + despachos + OS das APIs existentes, painel lateral por pin (OS ativa -> detalhe), stale por
+  threshold, badges "Em manutencao"/"Sem seguro" gated por permissao com deep-link para a frota.
+- RF-FROTA-007..008 (F7..F8) — Estoque, Remuneracoes (ver plano-mestre);
   F9..F12 enriquecem Usuarios/Notificacoes/Sidebar e aplicam cera.
 

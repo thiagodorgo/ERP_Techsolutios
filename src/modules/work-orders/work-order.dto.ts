@@ -56,6 +56,8 @@ export function toWorkOrderListDto(result: ListWorkOrdersResult) {
       serviceAddress: workOrder.serviceAddress,
       assignedOperatorId: workOrder.assignedOperatorId ?? null,
       assignedUserId: workOrder.assignedUserId ?? null,
+      // F6 (Mapa real): badges de manutencao/seguro no pin precisam da viatura da OS
+      vehicleId: workOrder.vehicleId ?? null,
       scheduledFor: workOrder.scheduledFor?.toISOString() ?? null,
       createdAt: workOrder.createdAt.toISOString(),
     })),

@@ -8,6 +8,7 @@ import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
 import {
   calculateOperationsMapSummary,
+  FIELD_LOCATION_STALE_THRESHOLD_MS,
   filterFieldLocationsByWorkOrder,
   filterFieldLocations,
   formatFieldLocationDate,
@@ -33,9 +34,10 @@ export function OperationsMapPage() {
     locations,
     source,
     fallbackReason,
+    maintenanceVehicleIds,
+    insuredVehicleIds,
     loading,
     isRefreshing,
-    error,
     refreshedAt,
     realtime,
     refresh,
@@ -105,7 +107,7 @@ export function OperationsMapPage() {
         </div>
         <div className="operations-map-actions">
           <Chip tone={source === "api" ? "success" : source === "fallback" ? "warning" : "info"}>
-            Fonte: {source === "api" ? "API real" : source === "fallback" ? "fallback seguro" : "dados de demonstração"}
+            Fonte: {source === "api" ? "API real" : source === "fallback" ? "indisponível" : "modo demonstração"}
           </Chip>
           <Chip tone={realtime.status === "connected" ? "success" : realtime.status === "unavailable" ? "danger" : "warning"}>
             {realtime.label}
@@ -130,13 +132,19 @@ export function OperationsMapPage() {
       </header>
 
       {source === "fallback" ? (
-        <Alert title="Fallback seguro ativo" tone="warning">
-          {fallbackReason ?? "A tela está usando dados locais seguros até a API retornar dados."}
-        </Alert>
-      ) : null}
-      {error ? (
-        <Alert title="Fonte de dados degradada" tone="warning">
-          {error}
+        <Alert
+          title={locations.length > 0 ? "Não foi possível atualizar as localizações" : "Não foi possível carregar as localizações"}
+          tone="warning"
+        >
+          <span className="operations-map-error-retry">
+            {fallbackReason ?? "A API de localização não respondeu."}{" "}
+            {locations.length > 0
+              ? "Exibindo os últimos dados carregados — eles podem estar desatualizados."
+              : "Nenhum dado é exibido até a fonte real voltar."}
+            <Button type="button" variant="secondary" size="sm" onClick={() => void refresh()} disabled={loading || isRefreshing}>
+              <RefreshCw size={14} /> Tentar novamente
+            </Button>
+          </span>
         </Alert>
       ) : null}
       {realtime.status === "degraded" ? (
@@ -164,8 +172,11 @@ export function OperationsMapPage() {
       <OperationsMapFilters filters={filters} teams={teams} onChange={setFilters} />
 
       {loading && locations.length === 0 ? <Skeleton lines={4} /> : null}
-      {!loading && locations.length === 0 && source === "api" ? (
-        <EmptyState title="Nenhum operador localizado" detail="A API não retornou localizações para a organização atual." />
+      {!loading && locations.length === 0 && source !== "fallback" ? (
+        <EmptyState
+          title="Nenhum operador em campo"
+          detail="Quando os operadores iniciarem o envio de localização pelo aplicativo de campo, os últimos pontos conhecidos aparecerão aqui automaticamente. Verifique se há despachos ativos ou use Atualizar para consultar novamente."
+        />
       ) : null}
       {!loading && locations.length > 0 && workOrderContextLocations.length === 0 && workOrderContextId ? (
         <section className="ui-state ui-state--error">
@@ -188,6 +199,8 @@ export function OperationsMapPage() {
               selectedId={selectedLocation?.id}
               onSelect={(location: FieldLocationItem) => setSelectedId(location.id)}
               showDispatches={canReadDispatches}
+              maintenanceVehicleIds={maintenanceVehicleIds}
+              insuredVehicleIds={insuredVehicleIds}
             />
             <OperationsOperatorList
               locations={filteredLocations}
@@ -201,6 +214,8 @@ export function OperationsMapPage() {
           <aside className="operations-map-side">
             <OperationsOperatorDetailPanel
               location={selectedLocation}
+              maintenanceVehicleIds={maintenanceVehicleIds}
+              insuredVehicleIds={insuredVehicleIds}
               showWorkOrder={canReadWorkOrders}
               showDispatch={canReadDispatches}
               canCreateDispatch={canCreateDispatches}
@@ -222,7 +237,10 @@ export function OperationsMapPage() {
 
       {locations.some((location) => location.isStale) ? (
         <Alert title="Há localização antiga" tone="warning">
-          <span><AlertTriangle size={16} /> Registros com mais de 15 minutos aparecem destacados para revisão operacional.</span>
+          <span>
+            <AlertTriangle size={16} /> Registros com mais de {Math.round(FIELD_LOCATION_STALE_THRESHOLD_MS / 60_000)} minutos aparecem
+            destacados para revisão operacional.
+          </span>
         </Alert>
       ) : null}
     </div>

@@ -5,7 +5,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import type { DenseColumn } from "../../../../components/dense-list";
 import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../../components/dense-list";
-import { Alert, Button, Card, Chip, EmptyState, SearchBar, Skeleton } from "../../../../components/ui";
+import { Alert, Button, Card, Chip, EmptyState, SearchBar, Select, Skeleton } from "../../../../components/ui";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
@@ -101,6 +101,19 @@ export function ManutencaoPage() {
   const canUpdate = can("maintenance_orders:update");
 
   const activeTab: MaintenanceTab = isTab(searchParams.get("tab")) ? (searchParams.get("tab") as MaintenanceTab) : "preventivas";
+  // F6 (Mapa real): deep-link do badge "Em manutenção" filtra por viatura (screen-element-map §Mapa)
+  const vehicleFilter = searchParams.get("vehicle") ?? "";
+
+  const setVehicleParam = useCallback(
+    (value: string) => {
+      const next = new URLSearchParams(searchParams);
+      if (value) next.set("vehicle", value);
+      else next.delete("vehicle");
+      next.delete("page"); // troca de filtro volta para a primeira página
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
 
   const setTab = useCallback(
     (tab: MaintenanceTab) => {
@@ -278,8 +291,8 @@ export function ManutencaoPage() {
 
   const denseFilter = useCallback(
     (rows: readonly MaintenanceOrder[], base: { search: string; isActive: MaintenanceStatusFilter }) =>
-      filterMaintenanceOrders(rows, { ...base, tab: activeTab, resolveVehicleName }),
-    [activeTab, resolveVehicleName],
+      filterMaintenanceOrders(rows, { ...base, tab: activeTab, vehicleId: vehicleFilter || undefined, resolveVehicleName }),
+    [activeTab, vehicleFilter, resolveVehicleName],
   );
 
   const dense = useDenseList<MaintenanceOrder>({ items, columns, filter: denseFilter, defaultSort: { key: "scheduledFor", dir: "desc" } });
@@ -346,6 +359,14 @@ export function ManutencaoPage() {
             </Button>
           ))}
         </div>
+        <Select label="Viatura" value={vehicleFilter} onChange={(event) => setVehicleParam(event.target.value)}>
+          <option value="">Todas as viaturas</option>
+          {vehicles.map((vehicle) => (
+            <option key={vehicle.id} value={vehicle.id}>
+              {vehicle.plate} {vehicle.model}
+            </option>
+          ))}
+        </Select>
         {error ? (
           <Button type="button" size="sm" variant="secondary" onClick={() => void refresh()}>
             <RefreshCw size={14} aria-hidden /> Tentar novamente

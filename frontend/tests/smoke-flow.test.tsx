@@ -487,7 +487,7 @@ test("operations map adapter descarta coordenadas invalidas, normaliza DTO e mar
         {
           id: "loc-valid",
           operator_user_id: "usr-1",
-          operator_name: "Marina Costa",
+          operator_name: "Operadora Alfa",
           team_name: "Equipe Norte",
           status: "on_route",
           latitude: "-23.55052",
@@ -510,11 +510,11 @@ test("operations map adapter descarta coordenadas invalidas, normaliza DTO e mar
 
   assert.equal(locations.length, 1);
   assert.equal(locations[0].operatorId, "usr-1");
-  assert.equal(locations[0].displayName, "Marina Costa");
+  assert.equal(locations[0].displayName, "Operadora Alfa");
   assert.equal(locations[0].accuracyMeters, 7);
   assert.equal(locations[0].batteryLevel, 82);
   assert.equal(locations[0].isStale, true);
-  assert.equal(filterFieldLocations(locations, { status: "on_route", team: "Equipe Norte", staleOnly: true, search: "marina" }).length, 1);
+  assert.equal(filterFieldLocations(locations, { status: "on_route", team: "Equipe Norte", staleOnly: true, search: "alfa" }).length, 1);
 
   const enriched = attachWorkOrdersToFieldLocations(locations, [
     {
@@ -524,12 +524,15 @@ test("operations map adapter descarta coordenadas invalidas, normaliza DTO e mar
       status: "on_route",
       priority: "urgent",
       assignedUserId: "usr-1",
+      vehicleId: "veh-1",
       createdAt: "2026-06-09T10:00:00.000Z",
     },
   ]);
 
   assert.equal(enriched[0].currentWorkOrder?.code, "OS-1");
   assert.equal(enriched[0].currentWorkOrder?.status, "on_route");
+  // F6 (R6.4): o vínculo OS→viatura sobrevive ao attach (habilita badges de Frota).
+  assert.equal(enriched[0].currentWorkOrder?.vehicleId, "veh-1");
 
   const dispatchLinked = {
     ...locations[0],
@@ -550,7 +553,7 @@ test("operations map adapter descarta coordenadas invalidas, normaliza DTO e mar
   assert.equal(filterFieldLocationsByWorkOrder(contextLocations, "wo-missing").length, 0);
 });
 
-test("operations map service consome endpoints existentes e usa fallback seguro", async () => {
+test("operations map service consome endpoints existentes e degrada para vazio (D-007)", async () => {
   process.env.VITE_USE_MOCKS = "false";
   process.env.VITE_API_BASE_URL = "/api/v1";
   browser.clear();
@@ -588,11 +591,21 @@ test("operations map service consome endpoints existentes e usa fallback seguro"
   assert.equal(latest.locations[0].displayName, "Operador API");
   assert.equal(history.length, 0);
 
+  // D-007: lista vazia da API é estado vazio LEGÍTIMO (source "api"), sem fabricar pins.
   const emptyCalls = installFetchJson({ data: [] });
-  const fallback = await getLatestFieldLocations(context);
+  const empty = await getLatestFieldLocations(context);
   assert.equal(emptyCalls[0].url, "/api/v1/field-locations/latest");
+  assert.equal(empty.source, "api");
+  assert.equal(empty.locations.length, 0);
+  assert.equal(empty.fallbackReason, undefined);
+
+  // D-007: erro real da API → dataset vazio + razão (nunca linhas fabricadas).
+  installFetchJson({ message: "boom" }, 500);
+  const fallback = await getLatestFieldLocations(context);
   assert.equal(fallback.source, "fallback");
-  assert.equal(fallback.locations.some((location) => location.displayName === "Marina Costa"), true);
+  assert.equal(fallback.locations.length, 0);
+  assert.match(fallback.fallbackReason ?? "", /localização/i);
+  assert.doesNotMatch(JSON.stringify(fallback), /Marina Costa|Roberto Lima/);
 });
 
 test("operations map service enriquece operadores com OS somente quando RBAC permite", async () => {
@@ -1478,13 +1491,14 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(protectedHtml, /Nova OS/);
   assert.match(protectedHtml, /Mapa Operacional/);
   assert.match(protectedHtml, /Atualização periódica/);
-  assert.match(protectedHtml, /Visualização operacional/);
-  assert.match(operationsMapContextHtml, /OS filtrada:[\s\S]*OS-000103/);
+  // D-007 (F6): modo mock renderiza estado vazio orientado — zero pin fabricado no SSR.
+  assert.match(protectedHtml, /Nenhum operador em campo/);
+  assert.doesNotMatch(protectedHtml, /Marina Costa|Roberto Lima|Ana Martins|Caio Nunes/);
+  assert.match(operationsMapContextHtml, /OS filtrada:/);
   assert.match(operationsMapContextHtml, /Limpar contexto/);
-  assert.match(operationsMapContextHtml, /Ana Martins/);
-  assert.doesNotMatch(operationsMapContextHtml, /Roberto Lima/);
-  assert.match(operationsMapEmptyContextHtml, /Nenhum operador ou despacho para esta OS/);
-  assert.match(operationsMapEmptyContextHtml, /Limpar contexto da OS/);
+  assert.match(operationsMapContextHtml, /Nenhum operador em campo/);
+  assert.doesNotMatch(operationsMapContextHtml, /Roberto Lima|Ana Martins/);
+  assert.match(operationsMapEmptyContextHtml, /Nenhum operador em campo/);
   assert.match(dispatchActionsHtml, /Acoes do despacho|Alterar status|Reatribuir/);
   assert.match(updateOnlyDispatchActionsHtml, /Alterar status/);
   assert.doesNotMatch(updateOnlyDispatchActionsHtml, /Reatribuir|Cancelar/);

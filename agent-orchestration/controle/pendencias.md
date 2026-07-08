@@ -154,3 +154,15 @@
   escrever fora do diretorio nem executar.
 - status: aberto (hardening futuro do storage compartilhado: sniffing de magic bytes + Content-Disposition
   attachment + talvez X-Content-Type-Options nosniff). Vale p/ checklist e danos. Nao bloqueia F5.
+
+## P-019 - Ocorrencias residuais de persona demo "Marina Costa" fora do mapa (2026-07-08)
+
+- descricao: F6 matou o mock do mapa (0 pins fabricados), mas restam 3 ocorrencias de "Marina Costa"
+  FORA do escopo do mapa: `frontend/src/mocks/auth/context.ts:18` (persona demo do login, amarrada ao
+  e-mail demo) e linhas demo estaticas em `PlatformAuditPage.tsx` / `PlatformTenantDetailPage.tsx`
+  (telas bespoke de plataforma que espelham `screen-refs/` §11).
+- impacto: telas de PLATAFORMA (fora do AppShell do tenant) e persona de login demo — nao violam o D-007
+  operacional do tenant, mas sao dados estaticos que eventualmente devem virar reais (mesmo espirito do
+  P-011). Renomear agora divergiria das referencias visuais aprovadas.
+- status: aberto (tratar quando as telas de plataforma forem conectadas a dados reais; a persona demo do
+  login e intencional em modo mock). Nao bloqueia F6.

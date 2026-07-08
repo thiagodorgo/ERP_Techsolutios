@@ -29,6 +29,10 @@ export type WorkOrderListItem = {
   readonly serviceLongitude?: number | null;
   readonly assignedOperatorId?: string | null;
   readonly assignedUserId?: string | null;
+  // F6 (Mapa): viatura vinculada à OS (B1). O adapter lê vehicleId/vehicle_id de forma
+  // defensiva — o DTO de lista pode omitir o campo; nesse caso fica null e o Mapa
+  // simplesmente não exibe badges de Frota para esta OS.
+  readonly vehicleId?: string | null;
   readonly checklistId?: string | null;
   readonly scheduledFor?: string | null;
   readonly startedAt?: string | null;

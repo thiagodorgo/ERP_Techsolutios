@@ -43,6 +43,8 @@ export type OperationsMapWorkOrder = {
   readonly customerName?: string | null;
   readonly serviceAddress?: string | null;
   readonly scheduledFor?: string | null;
+  // F6 (R6.4): viatura vinculada à OS — habilita os badges "Em manutenção"/"Sem seguro" no pin.
+  readonly vehicleId?: string | null;
 };
 
 export type OperationsMapDispatch = {
@@ -60,6 +62,14 @@ export type OperationsMapData = {
   readonly locations: FieldLocationItem[];
   readonly source: OperationsMapSource;
   readonly fallbackReason?: string;
+  // F6 (R6.4) — conjuntos de viaturas derivados das fontes reais da Frota, buscados
+  // UMA vez por refresh e SOMENTE quando o papel tem a permissão de leitura:
+  // `maintenanceVehicleIds` ← /maintenance-orders?status=em_execucao (maintenance_orders:read);
+  // `insuredVehicleIds` ← /insurance-policies?status=vigente (insurance_policies:read).
+  // `undefined` = fonte indisponível (sem permissão ou erro) → nenhum badge é exibido;
+  // nunca inferimos "Sem seguro" sem a lista vigente real.
+  readonly maintenanceVehicleIds?: readonly string[];
+  readonly insuredVehicleIds?: readonly string[];
 };
 
 export type OperationsMapRealtimeEvent = {
