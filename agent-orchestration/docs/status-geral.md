@@ -1,5 +1,36 @@
 # Status Geral
 
+## Atualizacao 2026-07-08 — Rodada BLOCO-AUTO-F: F6 Mapa real (em gate) [Claude Code]
+
+### Status
+
+F1-F5 mergeadas (#142-#146), validador APROVADO. **F6 Mapa Operacional REAL** implementado na branch
+`bloco-f6-mapa-real` (1 PR — as 3 fontes reais ja estavam ligadas), gate mecanico VERDE;
+pixel-master + validador-mestre em execucao.
+
+### Entregue (F6)
+
+- **Mock morto**: `operations-map.mock.ts` deletado (pins "Marina Costa"/"Roberto Lima" etc.); D-007 no
+  mapa: modo mock -> vazio; erro de API -> vazio + razao (retry); resposta vazia legitima = estado vazio
+  orientado ("Nenhum operador em campo"). Fallbacks fabricados de OS/despacho no enriquecimento removidos.
+  `grep operations-map.mock|Roberto Lima` = zero no repo.
+- **R6.1 painel lateral**: operador (nome/equipe/status/bateria/velocidade/"ultimo visto ha X") -> OS
+  ativa -> "Abrir OS" `/work-orders/:id` (sem OS -> chip); despacho -> "Acompanhar despacho".
+- **Stale**: `FIELD_LOCATION_STALE_THRESHOLD_MS` (15min, exportado); linha ambar no pin + Alert no painel.
+- **R6.4 badges**: "Em manutencao" (set de MO `em_execucao`, F2) e "Sem seguro" (complemento do set
+  `vigente`, F4), 1 fetch por refresh, gated por permissao, aplicados so com `source==="api"` (erro nunca
+  vira falso "sem seguro"); Links com aria-label; deep-link `/fleet/insurance?vehicle=<id>`.
+- **D-015**: grant aditivo `insurance_policies:read` ao `field_dispatcher` (LEI do mapa) + campo aditivo
+  `vehicleId` no `toWorkOrderListDto` (sem ele o badge seria elemento morto em producao).
+- **R6.3** polling 30s + SSE + cleanup preservados.
+
+### Gate mecanico (verde)
+
+- Frontend: `check` OK · `test:smoke` **161/161** (11 novos + lockstep) · `build` OK.
+- Backend: `check` OK · `npm test` 15/15 · regressoes WO+mobile-contracts **42/42** (campo DTO aditivo).
+- Sem migration (nenhuma tabela nova). Testes N=6 -> **M=16**. KPIs NAO publicados (C3).
+- Pendencias: P-019 (personas demo residuais fora do mapa — plataforma/login).
+
 ## Atualizacao 2026-07-08 — Rodada BLOCO-AUTO-F: F5 Danos (em gate) [Claude Code]
 
 ### Status

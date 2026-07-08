@@ -191,6 +191,29 @@
   de uma tabela **`DamageAttachment`** (espelha `ChecklistAttachment`, particionada por `damage_id`) e
   endpoints `POST/GET/GET download` sob `/api/v1/damages/:id/attachments`. Marcador (x,y) opcional guardado
   em coluna dedicada `marker JSONB` no `DamageAttachment` (a figura interativa fica p/ cera/futuro).
+
+## D-015 - F6: mapa real mata o mock (D-007) + grant de seguro ao despachante (2026-07-08) [Claude Code]
+
+- status: aplicada (implementa plano-mestre F6 e `docs/pd-controle.md` §F6)
+- origem: o mapa ja consumia as 3 fontes REAIS (`/field-locations/latest`, `/work-orders`,
+  `/operations/dispatches` + SSE + polling 30s com cleanup) — a ofensa era o FALLBACK fabricado
+  (`operations-map.mock.ts` com pins "Marina Costa"/"Roberto Lima" em modo mock/erro/vazio).
+- decisao 1: **matar `operations-map.mock.ts`** e todos os imports; D-007 no mapa: mock -> vazio;
+  erro de API -> vazio + razao (retry); resposta vazia legitima = estado vazio orientado
+  ("Nenhum operador em campo"), nunca fallback. Fallbacks de enriquecimento (WOs/despachos mock)
+  tambem removidos. Condicao do plano satisfeita: as 3 fontes reais JA estavam ligadas.
+- decisao 2 (R6.4 + RBAC): o badge "sem seguro" no pin e da LEI (`screen-element-map` §Mapa:
+  despachante, gestor), mas F4 nao concedeu `insurance_policies:read` a `field_dispatcher`.
+  **Grant aditivo em F6** no `catalog.ts` (so leitura; escrita continua manager/finance/admin).
+  Badges gated por permissao no front (sem permissao -> sem badge, sem fetch).
+- decisao 3 (R6.1/R6.2): painel lateral por pin (operador -> OS ativa -> `/work-orders/:id`;
+  despacho -> `/operations/dispatches`); stale por threshold nomeado (~10min) com alerta
+  "ultimo visto ha X"; badges "Em manutencao" (F2, set de `em_execucao`) e "Sem seguro" (F4,
+  complemento do set `vigente`), 1 fetch por refresh cada, deep-link para as telas de frota.
+- decisao 4 (gap de DTO): `toWorkOrderListDto` nao emitia `vehicleId` na lista `GET /work-orders` —
+  sem ele os badges nunca renderizariam em producao (elemento morto = veto da LEI). **Adicao aditiva**
+  de `vehicleId` ao DTO de lista (1 linha; regressoes WO 42/42 verdes). O front ja lia defensivamente.
+- impacto: frontend + 1 grant no catalogo + 1 campo aditivo no DTO de lista de OS. Aditivo, reversivel.
 - seguranca (allowlist §2.8): DTO NUNCA expoe `file_url`/`storage_key`/bucket/path/base64 — so `id`,
   `file_name`, `mime_type`, `size_bytes`, `created_at` e uma URL de download autenticada. Tenant do ator.
 - impacto: aditivo; nova tabela `damages` + `damage_attachments` com RLS; rotas `/api/v1/damages`; perms

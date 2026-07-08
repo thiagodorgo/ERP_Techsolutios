@@ -69,6 +69,17 @@ As regras iniciais do repositorio estao em `docs/04-regras-negocio.md`.
 - **RBAC**: operator/field_technician registram (create); manager/tenant_admin tratam (update);
   finance/auditor leem. Upload por create OU update; download por read; delete por update.
 
+### F6 Mapa Operacional real — aplicada 2026-07-08
+
+- **R6.1 painel lateral**: pin de operador -> OS ativa dele -> `/work-orders/:id`; pin/linha de
+  despacho -> detalhe; pin stale (ultimo visto > threshold) -> alerta "ultimo visto ha X".
+- **R6.2 estados**: skeleton, vazio orientado ("nenhum operador em campo"), erro+retry, stale.
+  **Zero pin fabricado** (D-007): mock -> vazio; erro -> vazio + razao.
+- **R6.3 polling** 30s + SSE com cleanup no unmount (preservados).
+- **R6.4 badges no pin**: "Em manutencao" (viatura com MO `em_execucao`, F2) e "Sem seguro"
+  (viatura sem apolice vigente, F4), com cor+label, gated por permissao; deep-link para
+  `/fleet/maintenance` e `/fleet/insurance`. Despachante ganhou `insurance_policies:read` (D-015).
+
 ## Observacao de alinhamento
 
 As regras de negocio seguem a documentacao enviada pelo usuario e o repositorio oficial atual. Qualquer retorno para backend em C exige nova decisao explicita porque conflita com o estado atual do repositorio.
