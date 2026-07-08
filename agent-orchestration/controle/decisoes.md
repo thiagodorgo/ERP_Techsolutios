@@ -59,3 +59,17 @@
   fabricadas. Nada novo em `frontend/src/mocks/`. Mantem a forma service->adapter->hook do repo.
 - observacao: se o usuario preferir manter o fallback com dados de exemplo (padrao do repo),
   reabrir esta decisao.
+
+## D-008 - C3: Dashboard com agregados reais + simplificacao de paineis (2026-07-07) [Claude Code]
+
+- status: aplicada (registrada para confirmacao humana no gate — CLAUDE.md A2)
+- origem: a premissa da tarefa C3 descrevia o dashboard PRE-B-124; o dashboard vigente (B-124)
+  derivava KPIs client-side de uma pagina de OS + fan-out de 5 endpoints.
+- impacto: C3 substitui a linha de KPIs (antes client-side/fraca) pelo agregado REAL por tenant
+  (`GET /api/v1/dashboard/summary`: OS por status, contagens de cadastros, OS criticas, eventos,
+  alertas). Paineis Despachos + Status de campo (B-124) preservados dos seus proprios endpoints
+  reais. O painel de "aprovacoes pendentes" e o card de "nao lidas" foram removidos do dashboard.
+- nao ha perda de feature: notificacoes nao-lidas seguem no shell (badge do topbar/sidebar);
+  aprovacoes seguem acessiveis via pagina `/approvals` + item de menu (com badge).
+- observacao: se o usuario quiser o painel de aprovacoes de volta NO dashboard, reabrir (restaurar
+  o fetch `/approvals/pending` + painel) ou incluir a contagem de aprovacoes no summary.
