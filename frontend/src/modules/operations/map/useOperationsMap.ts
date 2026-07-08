@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isMockMode } from "../../../config/env";
 import { useAuth } from "../../../providers/AuthProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
-import { getMockOperationsMapData } from "./operations-map.mock";
 import { getLatestFieldLocations, subscribeOperationsMapEvents } from "./operations-map.service";
 import type { OperationsMapData, OperationsMapRealtimeState, OperationsMapRealtimeStatus } from "./operations-map.types";
 
@@ -21,8 +20,9 @@ type OperationsMapHookState = OperationsMapData & {
 export function useOperationsMap() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
-  const initialData = useMemo(
-    () => (isMockMode() ? getMockOperationsMapData("mock") : { locations: [], source: "api" as const }),
+  // D-007: estado inicial SEMPRE vazio — modo mock nunca semeia pins fabricados.
+  const initialData = useMemo<OperationsMapData>(
+    () => ({ locations: [], source: isMockMode() ? "mock" : "api" }),
     [],
   );
   const [state, setState] = useState<OperationsMapHookState>({
@@ -64,14 +64,19 @@ export function useOperationsMap() {
     });
 
     const data = await getLatestFieldLocations(context);
-    setState((current) => ({
-      ...data,
-      loading: false,
-      isRefreshing: false,
-      error: data.source === "fallback" ? data.fallbackReason : undefined,
-      refreshedAt: new Date().toISOString(),
-      realtime: current.realtime,
-    }));
+    setState((current) => {
+      const merged = mergeOperationsMapRefresh(current, data);
+      const preservedExisting = merged !== data;
+      return {
+        ...merged,
+        loading: false,
+        isRefreshing: false,
+        error: data.source === "fallback" ? data.fallbackReason : undefined,
+        // Falha de atualização preserva o "Atualizado às HH:MM" verdadeiro do último dado real.
+        refreshedAt: preservedExisting ? current.refreshedAt : new Date().toISOString(),
+        realtime: current.realtime,
+      };
+    });
     refreshingRef.current = false;
   }, [activeContext, context]);
 
@@ -177,6 +182,25 @@ export function useOperationsMap() {
     autoRefresh,
     setAutoRefresh,
   };
+}
+
+// Estado "dados desatualizados" (CLAUDE.md §7) sem violar D-007: quando um refresh
+// FALHA (source "fallback", sempre vazio por contrato) e a tela já exibe um dataset
+// vindo da API real, preserva-se esse último dado bom — nada é fabricado, apenas não
+// se apaga o que a fonte real já entregou. A UI sinaliza a fonte indisponível e que
+// os dados podem estar desatualizados. Refresh bem-sucedido substitui tudo.
+export function mergeOperationsMapRefresh(current: OperationsMapData, incoming: OperationsMapData): OperationsMapData {
+  if (incoming.source === "fallback" && incoming.locations.length === 0 && current.locations.length > 0) {
+    return {
+      locations: current.locations,
+      source: "fallback",
+      fallbackReason: incoming.fallbackReason,
+      maintenanceVehicleIds: current.maintenanceVehicleIds,
+      insuredVehicleIds: current.insuredVehicleIds,
+    };
+  }
+
+  return incoming;
 }
 
 export function shouldUseOperationsMapPollingFallback(

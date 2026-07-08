@@ -8,8 +8,35 @@ import type {
 } from "./operations-map.types";
 import type { DispatchListItem, DispatchStatus } from "../dispatches/dispatches.types";
 import type { WorkOrderListItem, WorkOrderStatus } from "../../work-orders/work-orders.types";
+import type { MaintenanceOrder } from "../../fleet/maintenance/maintenance-orders.types";
+import type { InsurancePolicy } from "../../fleet/insurance/insurance.types";
 
-const staleThresholdMs = 15 * 60 * 1000;
+// R6.1 — limiar de "localização antiga" (stale). Registro com captura mais velha
+// que isto ganha alerta explícito "Último visto há X" no pin e no painel lateral.
+export const FIELD_LOCATION_STALE_THRESHOLD_MS = 15 * 60 * 1000;
+
+// R6.1 — derivação client-side do stale (usada quando a API não envia flag própria).
+export function isFieldLocationTimestampStale(capturedAtMs: number, nowMs: number): boolean {
+  return nowMs - capturedAtMs > FIELD_LOCATION_STALE_THRESHOLD_MS;
+}
+
+// R6.1 — "Último visto há X" (PT-BR, sem jargão técnico).
+export function formatLastSeen(capturedAt: string | undefined, now: Date = new Date()): string {
+  if (!capturedAt) return "sem registro";
+  const capturedTime = Date.parse(capturedAt);
+  if (Number.isNaN(capturedTime)) return "sem registro";
+
+  const diffMinutes = Math.floor((now.getTime() - capturedTime) / 60_000);
+  if (diffMinutes < 1) return "agora";
+  if (diffMinutes < 60) return `há ${diffMinutes} min`;
+
+  const hours = Math.floor(diffMinutes / 60);
+  const minutes = diffMinutes % 60;
+  if (hours < 24) return minutes > 0 ? `há ${hours} h ${minutes} min` : `há ${hours} h`;
+
+  const days = Math.floor(hours / 24);
+  return `há ${days} dia${days > 1 ? "s" : ""}`;
+}
 
 export function adaptFieldLocationsResponse(
   response: unknown,
@@ -136,6 +163,46 @@ export function formatBattery(value: number | null | undefined): string {
   return typeof value === "number" ? `${value}%` : "N/D";
 }
 
+export function formatSpeed(value: number | null | undefined): string {
+  // API envia metros/segundo (speedMetersPerSecond); a UI fala km/h.
+  return typeof value === "number" ? `${Math.round(value * 3.6)} km/h` : "N/D";
+}
+
+// ————— R6.4 — badges de Frota no pin/painel (dados reais, permission-gated) —————
+
+export type OperationsMapVehicleBadges = {
+  readonly vehicleId: string;
+  readonly inMaintenance: boolean;
+  readonly missingInsurance: boolean;
+};
+
+// Viaturas com ordem de manutenção EM EXECUÇÃO (F2) — só linhas ativas contam.
+export function deriveMaintenanceVehicleIds(orders: readonly MaintenanceOrder[]): string[] {
+  return [...new Set(orders.filter((order) => order.status === "em_execucao" && order.isActive).map((order) => order.vehicleId))];
+}
+
+// Viaturas COM apólice vigente (F4) — quem estiver fora deste conjunto está "Sem seguro" (R4.3).
+export function deriveInsuredVehicleIds(policies: readonly InsurancePolicy[]): string[] {
+  return [...new Set(policies.filter((policy) => policy.status === "vigente" && policy.isActive).map((policy) => policy.vehicleId))];
+}
+
+// Badges do pin: exigem OS ativa com viatura vinculada. Cada badge só é derivado
+// quando o conjunto correspondente veio de fonte real (permissão + API ok) —
+// conjunto ausente (undefined) nunca gera badge, para não acusar falso "Sem seguro".
+export function getVehicleFleetBadges(
+  location: FieldLocationItem,
+  sets: { readonly maintenanceVehicleIds?: readonly string[]; readonly insuredVehicleIds?: readonly string[] },
+): OperationsMapVehicleBadges | null {
+  const vehicleId = location.currentWorkOrder?.vehicleId;
+  if (!vehicleId) return null;
+
+  const inMaintenance = sets.maintenanceVehicleIds ? sets.maintenanceVehicleIds.includes(vehicleId) : false;
+  const missingInsurance = sets.insuredVehicleIds ? !sets.insuredVehicleIds.includes(vehicleId) : false;
+  if (!inMaintenance && !missingInsurance) return null;
+
+  return { vehicleId, inMaintenance, missingInsurance };
+}
+
 export function formatAccuracy(value: number | null | undefined): string {
   return typeof value === "number" ? `${Math.round(value)} m` : "N/D";
 }
@@ -176,6 +243,8 @@ function adaptFieldLocationItem(input: unknown, index: number, now: Date): Field
   if (Number.isNaN(capturedTime)) return null;
 
   const status = normalizeStatus(readString(input, ["status"]));
+  // R6.1 — respeita a flag da API quando presente; deriva client-side quando ausente.
+  const apiIsStale = readBooleanFlag(input, ["isStale", "is_stale"]);
 
   return {
     id: readString(input, ["id"]) ?? `${operatorId}-${capturedAt}`,
@@ -193,7 +262,7 @@ function adaptFieldLocationItem(input: unknown, index: number, now: Date): Field
     batteryLevel: readNumber(input, ["batteryLevel", "battery_level"]),
     capturedAt: new Date(capturedTime).toISOString(),
     receivedAt: readString(input, ["receivedAt", "received_at"]),
-    isStale: now.getTime() - capturedTime > staleThresholdMs,
+    isStale: apiIsStale ?? isFieldLocationTimestampStale(capturedTime, now.getTime()),
     currentWorkOrder: adaptCurrentWorkOrder(readRecord(input, "currentWorkOrder") ?? readRecord(input, "current_work_order") ?? readRecord(input, "workOrder")),
     currentDispatch: adaptCurrentDispatch(readRecord(input, "currentDispatch") ?? readRecord(input, "current_dispatch") ?? readRecord(input, "dispatch")),
   };
@@ -216,6 +285,7 @@ function toOperationsMapWorkOrder(workOrder: WorkOrderListItem | undefined): Ope
     customerName: workOrder.customerName,
     serviceAddress: workOrder.serviceAddress,
     scheduledFor: workOrder.scheduledFor,
+    vehicleId: workOrder.vehicleId ?? null,
   };
 }
 
@@ -284,6 +354,7 @@ function adaptCurrentWorkOrder(input: Record<string, unknown> | undefined): Oper
     customerName: readString(input, ["customerName", "customer_name"]) ?? null,
     serviceAddress: readString(input, ["serviceAddress", "service_address"]) ?? null,
     scheduledFor: readString(input, ["scheduledFor", "scheduled_for"]) ?? null,
+    vehicleId: readString(input, ["vehicleId", "vehicle_id"]) ?? null,
   };
 }
 
@@ -385,6 +456,17 @@ function readString(input: Record<string, unknown> | undefined, keys: readonly s
     const value = input[key];
     const normalized = typeof value === "string" ? value.trim() : "";
     if (normalized) return normalized;
+  }
+
+  return undefined;
+}
+
+function readBooleanFlag(input: Record<string, unknown>, keys: readonly string[]): boolean | undefined {
+  for (const key of keys) {
+    const value = input[key];
+    if (typeof value === "boolean") return value;
+    if (value === "true") return true;
+    if (value === "false") return false;
   }
 
   return undefined;
