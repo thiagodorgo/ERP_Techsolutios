@@ -30,8 +30,9 @@
 - F3 Multas — status: concluido (PR #144, merge 48788d1; validador-mestre APROVADO)
 - F4 Seguros — status: concluido (PR #145, merge 639ebb1; validador-mestre APROVADO)
 - F5 Danos — status: concluido (PR #146, merge 72729b4; validador-mestre APROVADO; workflow seguranca SAFE)
-- **F6 Mapa real** — status: em implementacao (matar mock; painel lateral; stale; badges F2/F4)
-- F7 Estoque / F8 Remuneracoes — status: pendente
+- F6 Mapa real — status: concluido (PR #147, merge 25bed8e; validador-mestre APROVADO 0 achados)
+- **F7a Estoque core** — status: em validacao (itens+movimentacoes, saldo em tx, custo medio; gate)
+- F7b Estoque (ABC + ponto de pedido + contagem) / F8 Remuneracoes — status: pendente
 - F6 Mapa real / F7 Estoque / F8 Remuneracoes — status: pendente
 - F9 Usuarios / F10 Notificacoes / F11 Sidebar / F12 Cera — status: pendente
 

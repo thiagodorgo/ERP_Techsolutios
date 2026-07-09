@@ -16,38 +16,44 @@
       8/8 verde (back check/15+22/build; front check/109/build; migrate up+down `erp-postgres`; pixel-master
       2 correções); testes N=7 → **M=30** (backend 22 + front 8, ≥2N); skills saas-multi-tenant + ts-frontend
       + ui-ux-pro-max + frontend-pixel-master; **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA; 1 BAIXA
-      → P-012 registrada); PR #NN, merge <hash> — preencher pós-merge
+      → P-012 registrada); PR #142, merge 1950ade
 - [x] F2 Manutenção (`MaintenanceOrder` `/api/v1/maintenance-orders` + disponibilidade) — branch
       `bloco-f2-manutencao`; gate mecânico verde (back check/15+26/regressões WO+FD+fuel 28/build; front
       check/117/build; migrate up+down `erp-postgres`); máquina de estados 422 + concluir custo+data + R2.3
       disponibilidade (409, create-only; P-013 p/ assign) + aviso idempotente; testes N=8 → **M=34**
       (backend 26 + front 8, ≥2N); D-011 registrada; **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA;
-      2 BAIXA informativos); PR #NN, merge <hash> — preencher pós-merge
-- [~] F3 Multas (`Fine` `/api/v1/fines`) — branch `bloco-f3-multas`; gate mecânico verde (back check/15+24/
+      2 BAIXA informativos); PR #143, merge 59decac
+- [x] F3 Multas (`Fine` `/api/v1/fines`) — branch `bloco-f3-multas`; gate mecânico verde (back check/15+24/
       regressões 34/build; front check/128/build; migrate up+down `erp-postgres`); máquina de estados 422 +
       cancelar admin-only (403) + `@@unique(numero_auto)` 409/201 + prazos/aviso idempotente + condutor no
       tenant (400); testes N=8 → **M=35** (backend 24 + front 11, ≥2N); D-012 registrada; **validador-mestre:
-      VEREDITO APROVADO** (0 VETO/0 ALTA; P-014/P-015 informativos); PR #NN, merge <hash> — preencher pós-merge
-- [~] F4 Seguros (`InsurancePolicy` `/api/v1/insurance-policies`) — branch `bloco-f4-seguros`; gate
+      VEREDITO APROVADO** (0 VETO/0 ALTA; P-014/P-015 informativos); PR #144, merge 48788d1
+- [x] F4 Seguros (`InsurancePolicy` `/api/v1/insurance-policies`) — branch `bloco-f4-seguros`; gate
       mecânico verde (back check/15+23/regressões 45/build; front check/139/build; migrate up+down
       `erp-postgres`); `vencida` derivada (422 se setada) + alertas 30/15/7 idempotentes + `@@unique(numero_
       apolice)` 409/201 + R4.3 adiado (P-016); testes N=7 → **M=34** (backend 23 + front 11, ≥2N); D-013
       registrada; **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA; P-016/P-017 informativos; Viaturas
-      intocada confirmada); PR #NN, merge <hash> — preencher pós-merge
-- [~] F5 Danos (`Damage` `/api/v1/damages` + fotos reuso attachment) — branch `bloco-f5-danos`; gate
+      intocada confirmada); PR #145, merge 639ebb1
+- [x] F5 Danos (`Damage` `/api/v1/damages` + fotos reuso attachment) — branch `bloco-f5-danos`; gate
       mecânico verde (back check/15+19/regressões 34 incl. checklist intocado/build; front check/150/build;
       migrate up+down 2 tabelas `erp-postgres`); máquina de estados 422 + fotos via reuso do storage (D-014;
       DTO sem internals; 415/413) + OS de origem; testes N=7 → **M=30** (backend 19 + front 11, ≥2N); D-014
       registrada; pixel-master + **workflow adversarial de segurança (4 probes SAFE)** + **validador-mestre:
-      VEREDITO APROVADO** (0 VETO/0 ALTA; P-018 LOW; doc-drift §F5/D-014 corrigido); PR #NN, merge <hash> — pós-merge
-- [~] F6 Mapa Operacional real (matar operations-map.mock.ts) — branch `bloco-f6-mapa-real`; 1 PR (as 3
+      VEREDITO APROVADO** (0 VETO/0 ALTA; P-018 LOW; doc-drift §F5/D-014 corrigido); PR #146, merge 72729b4
+- [x] F6 Mapa Operacional real (matar operations-map.mock.ts) — branch `bloco-f6-mapa-real`; 1 PR (as 3
       fontes reais já estavam ligadas); mock morto + painel lateral + stale 15min + badges F2/F4 com
       deep-link real (`?vehicle=` adicionado à ManutencaoPage p/ honrar a LEI) + preservação de dados em
       falha de poll (§7) + UUID mascarado; D-015 (grant seguro ao despachante + `vehicleId` no DTO de lista
       de OS); gate verde (front check/**163**/build; back check/15/regressões WO+frota verdes/build);
       testes N=6 → **M=18** (13 novos + lockstep); pixel-master 4 correções; **validador-mestre: VEREDITO
-      APROVADO** (0 achados; 0 cards mortos); PR #NN, merge <hash> — preencher pós-merge
-- [ ] F7 Estoque (`InventoryItem`/`StockMovement`/`CycleCount`) [até 3 sub-PRs]
+      APROVADO** (0 achados; 0 cards mortos); PR #147, merge 25bed8e
+- [~] F7 Estoque (`InventoryItem`/`StockMovement`/`CycleCount`) [2 sub-PRs previstos no plano]
+  - [~] **F7a core** (itens + movimentações) — branch `bloco-f7a-estoque-core`; saldo derivado em `$transaction`
+        (409 `insufficient_balance`) + movimentos imutáveis + consumo por OS + custo médio móvel; D-016
+        registrada; gate mecânico verde (back check/15+25/regressões 29/build; front check/**178**/build;
+        migrate up+down 2 tabelas `erp-postgres`); testes N=8 → **M=40** (backend 25 + front 15); fidelidade
+        revisada inline (pixel-master indisponível por limite de sessão); **validador-mestre: em avaliação**
+  - [ ] F7b (ABC Pareto + ponto de pedido idempotente + contagem cíclica) — pendente
 - [ ] F8 Remunerações (extrato por operador/período sobre commissions)
 - [ ] F9 Usuários (enriquecer módulo existente)
 - [ ] F10 Central de Notificações (produtores F2/F3/F4/F7 + badge real)

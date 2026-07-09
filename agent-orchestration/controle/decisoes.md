@@ -214,6 +214,30 @@
   sem ele os badges nunca renderizariam em producao (elemento morto = veto da LEI). **Adicao aditiva**
   de `vehicleId` ao DTO de lista (1 linha; regressoes WO 42/42 verdes). O front ja lia defensivamente.
 - impacto: frontend + 1 grant no catalogo + 1 campo aditivo no DTO de lista de OS. Aditivo, reversivel.
+
+## D-016 - F7a: estoque core — saldo em transacao, movimento imutavel, rota por id (2026-07-08) [Claude Code]
+
+- status: aplicada (implementa plano-mestre F7/pd-controle §F7; F7 dividido em 2 sub-PRs conforme previsto
+  no plano: F7a itens+movimentacoes; F7b ABC+ponto de pedido+contagem)
+- decisao 1 (R7.1): **saldo NUNCA e coluna** — `Σ quantidade_sinalizada` calculado em `$transaction`
+  (aggregate _sum -> checa -> insere); saida/consumo alem do saldo = **409** `insufficient_balance`.
+  DTO de item expoe `saldo` + `belowMin` computados (groupBy por pagina, sem N+1).
+- decisao 2: **movimentos IMUTAVEIS** (sem PATCH/DELETE); correcao = movimento de `ajuste` com `reason`
+  obrigatorio. Consumo exige `work_order_id` validado no tenant (R7.2); entrada exige `unit_cost`;
+  **custo medio movel (R7.3)** recalculado na entrada DENTRO da mesma transacao
+  (`novo_avg=(saldo×avg+qtd×custo)/(saldo+qtd)`; saldo<=0 -> avg=custo).
+- decisao 3 (UX do ajuste): quantidade sempre positiva no formulario + select "Direcao do ajuste"
+  (entrada+/saida−) — evita erro de sinal com decimais pt-BR; sinal derivado no payload (testado).
+- decisao 4 (rota do detalhe): a shell estatica usava `/inventory/:sku`; a API real busca por id ->
+  rota alterada para **`/inventory/:id`** (aditivo; navegacoes internas ajustadas). Guards das rotas de
+  estoque atualizados de `inventory:read` (vocabulario mock) para **`inventory_items:read`** (matriz F7;
+  o restante do vocabulario e reconciliado na F11).
+- decisao 5: shells estaticas de Estoque (linhas fabricadas "Industria Alfa"/"NF-e 4471") MORTAS (D-007);
+  identidade visual preservada. Shells fabricadas de OUTROS blocos (Dispatch/Charges/Financeiro/Invoices/
+  Approvals) ficam para seus proprios blocos/F11 — fora do escopo F7a.
+- impacto: perms novas `inventory_items:read|create|update` + `stock_movements:read|create`; tabelas
+  `inventory_items` + `stock_movements` com RLS; `abc_class`/`cycle_count_id` ja no schema (populados na
+  F7b). Aditivo.
 - seguranca (allowlist §2.8): DTO NUNCA expoe `file_url`/`storage_key`/bucket/path/base64 — so `id`,
   `file_name`, `mime_type`, `size_bytes`, `created_at` e uma URL de download autenticada. Tenant do ator.
 - impacto: aditivo; nova tabela `damages` + `damage_attachments` com RLS; rotas `/api/v1/damages`; perms
