@@ -66,10 +66,10 @@
       in-module (sem remodelar): rota agregada `statements/summary` + `my-summary` (read_own fixa operador;
       403 cruzado testado) + drill-down por origem (`sourceType`/`sourceId`; OS-link só p/ work_order — D-018);
       bug latente do uuidPattern corrigido; sem migration; testes N=6 → **M=26** (backend 13 + front 13);
-      gate verde (back check/15+16/build; front check/**199**/build); fidelidade inline; **validador-mestre:
-      REPROVOU 1x (ALTA: drill do operador chamava rota `commissions:read` → 403 p/ o read_own) → correção:
-      nova rota `GET /commissions/calculations/mine` (read_own, payee fixado) + drawer own-scope roteado p/
-      ela; re-validação em andamento**
+      gate verde (back check/15+20/build; front check/**201**/build); fidelidade inline; **validador-mestre:
+      REPROVOU 1x (ALTA: drill do operador chamava rota `commissions:read` → 403 p/ o read_own; BAIXA: id
+      cru) → corrigido (rota `GET /commissions/calculations/mine` read_own + drawer own-scope; origem sem id)
+      → 2ª passada VEREDITO APROVADO**; testes N=6 → M=28 (backend 17 + front 11); PR #NN, merge <hash> — pós-merge
 - [ ] F9 Usuários (enriquecer módulo existente)
 - [ ] F10 Central de Notificações (produtores F2/F3/F4/F7 + badge real)
 - [ ] F11 Sidebar + navegação por perfil (IA aprovada, matriz 9 papéis)
