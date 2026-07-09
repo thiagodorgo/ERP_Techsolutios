@@ -83,7 +83,13 @@
       categoria + "Gerar alertas" + **badge do sino real** (mata parte do P-011; Aprovações → F11); D-020;
       sem migration; testes N=5 → **M=19** (backend 10 + front 9); gate verde (back check/**26**+10/regressões
       60/build; front check/**220**/build); fidelidade inline; **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA; 1 BAIXA pré-existente fora do diff → P-025/F12); PR #NN, merge <hash> — pós-merge
-- [ ] F11 Sidebar + navegação por perfil (IA aprovada, matriz 9 papéis)
+- [~] F11 Sidebar + navegação por perfil (IA aprovada, matriz 9 papéis) — branch `bloco-f11-sidebar`;
+      frontend-only; IA 5 grupos (config pura `appSidebarNav.ts`) + `MVP_NAV_PATHS` expandido (telas F1-F8
+      aparecem no menu) + finance restaurado + RoleKind `support`; vocab RBAC reconciliado ao backend com
+      alias legado (guards OR, retrocompatível) → P-024 resolvido; badge Aprovações real + zero badge literal
+      → **P-011 RESOLVIDO**; teste 9 papéis (14 testes) vs matriz; tokens/colapso congelados; D-021; sinalizado
+      P-026/P-027 (reconciliação de catálogo backend); testes N=9 → **M=14**; gate verde (front check/**234**/
+      build); **validador-mestre: em avaliação**
 - [ ] F12 Cera (Mapa, Dashboard, OS lista, Multas, Manutenção)
 
 ## Relatório final (F12 concluída)

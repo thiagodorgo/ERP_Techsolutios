@@ -82,9 +82,10 @@
   painel de aprovacoes do dashboard, o sidebar e a superficie que carrega o sinal — e o numero e falso
   (o dot de nao-lidas do topbar, por contraste, e real via `getUnreadNotificationCount`).
 - impacto: numero fabricado na UI (§ REGRA-MESTRA); pre-existente, fora do escopo C3.
-- status: **PARCIAL** — F10 (D-020) trocou o `badge: 4` do item **Notificacoes** pela contagem real
-  `unread`. Falta o `badge: 3` de **Aprovacoes** (ligar a `/approvals/pending` real ou remover) — fica p/
-  **F11** (reestruturacao do NAV_BY_ROLE + badges reais). Aberto so quanto a Aprovacoes.
+- status: **RESOLVIDO** — F10 (D-020) fez o badge de **Notificacoes** real (`unread`); F11 (D-021) fez o
+  badge de **Aprovacoes** real (`getPendingApprovals`/`GET /approvals/pending`) e removeu TODO badge
+  numerico literal do AppShell (grep `badge: [0-9]` = 0). Badges de dominio (vencendo/reposicao) omitidos
+  (sem numero fabricado) — enhancement futuro, nao fabricado.
 
 ## P-012 - F1: tile "km/L medio da frota" e agregado nao-clicavel (2026-07-08)
 
@@ -215,7 +216,8 @@
   `frontend/src/navigation/tenantNavigation.ts` ainda usa `users:read`.
 - impacto: baixo; a rota agora funciona. A reconciliacao completa do vocabulario (sidebar + demais telas
   religadas) e escopo do F11 (ver `navigation-matrix.md`).
-- status: aberto (F11 finaliza a reconciliacao). Nao bloqueia F9.
+- status: **RESOLVIDO** por F11 (D-021): sidebar/tenantNavigation + guards reconciliados ao vocab do backend
+  (com alias legado retrocompativel). Residual de reconciliacao de CATALOGO (backend) rastreado em P-027.
 
 ## P-025 - NotificationList EmptyState com termo tecnico "tenant" + acentos (pre-existente) (2026-07-09)
 
@@ -226,3 +228,24 @@
 - impacto: cosmetico/copy; "tenant" na UI e uma quebra de regra-de-ouro, porem pre-existente.
 - status: aberto -> **F12 (cera)** faz o pente-fino de copy/acentuacao: trocar "tenant"->"organizacao",
   "inbox"->"caixa de notificacoes", corrigir acentos. Nao bloqueia F10.
+
+## P-026 - F11: front `UserRole` nao cobre os 9 papeis canonicos (menu visual aproxima) (2026-07-09)
+
+- descricao: a uniao `UserRole` (frontend) + `mapBackendRole` nao tem rotulo para `inventory` (cai em null)
+  e `support`/`field_dispatcher` colapsam. Por isso F11 gate os itens NOVOS por PERMISSAO (nao por
+  `allowedRoles`), e o menu VISUAL de `inventory` aproxima (cai no kind `gestor`). A autoridade de acesso e
+  o route-guard/backend (correto); so o menu visual nao honra 100% a matriz para esses papeis.
+- impacto: baixo — acesso e correto (permissao); estetica de menu aproxima p/ inventory/support.
+- status: aberto (bloco futuro: adicionar `inventory` (+ representacoes distintas) a `UserRole`+`mapBackendRole`).
+
+## P-027 - F11: divergencias matriz x catalog + perms `purchase_orders:read`/`reports:read` ausentes (2026-07-09)
+
+- descricao: `navigation-matrix.md` concede a `finance`/`inventory` o Dashboard e a `finance` as Aprovacoes,
+  mas o `catalog.ts` nao lhes da `dashboard:read`/`work_orders:read`; e `support` tem `dashboard:read` no
+  catalogo mas a matriz o oculta. Alem disso `purchase_orders:read` e `reports:read` NAO existem no
+  `catalog.ts` (a matriz os marca como novos a adicionar ao backend). F11 (frontend) seguiu a MATRIZ nos
+  fixtures do teste e a PERMISSAO real no gate, sem inventar nem tocar `catalog.ts`.
+- impacto: os itens Pedidos/Relatorios usam as strings que os guards de rota do App.tsx ja usavam; ate o
+  backend adicionar as perms, esses itens so aparecem para quem ja as tiver — honesto, sem fabricar acesso.
+- status: aberto (**bloco backend de reconciliacao de permissoes**: adicionar `purchase_orders:read`/
+  `reports:read` ao `PERMISSION_CATALOG` + alinhar grants de dashboard/aprovacoes a matriz). Nao bloqueia F11.

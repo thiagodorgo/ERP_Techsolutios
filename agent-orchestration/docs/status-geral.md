@@ -1,5 +1,32 @@
 # Status Geral
 
+## Atualizacao 2026-07-09 — Rodada BLOCO-AUTO-F: F11 Sidebar (em gate) [Claude Code]
+
+### Status
+
+F1-F10 mergeadas (#142-#152). **F11 Sidebar + navegacao por perfil** implementado (frontend-only) na branch
+`bloco-f11-sidebar`, gate mecanico VERDE; validador-mestre. Penultimo bloco (falta F12 cera + relatorio).
+
+### Entregue (F11)
+
+- **IA 5 grupos** (VISAO GERAL/OPERACAO/FROTA/GESTAO/ADMINISTRACAO) sobre `NAV_BY_ROLE` (config pura em
+  `appSidebarNav.ts`); `MVP_NAV_PATHS` expandido -> **as telas F1-F8 aparecem no menu** (antes filtradas).
+  Grupo `finance` RESTAURADO; RoleKind `support` novo; `roleKindFor` corrigido.
+- **Vocabulario RBAC reconciliado** ao backend (`catalog.ts`) com alias legado (guards `hasAny`/OR ->
+  retrocompativel; nao quebra sessao mock): dashboard/users/audit/tenant + itens de frota/estoque/
+  remuneracoes por permissao real. Novo escopo `fleet`->"Frota". P-024 RESOLVIDO.
+- **Badges reais**: Aprovacoes = contagem real (`GET /approvals/pending`); Notificacoes real (F10); ZERO
+  badge numerico literal no AppShell -> **P-011 RESOLVIDO** (dominio vencendo/reposicao omitido, sem fabricar).
+- **Teste 9 papeis** (`sidebar-nav.test.tsx`, 14 testes) x `navigation-matrix.md`. Estilo/colapso/tokens
+  (navy `#0D1B2A`/ativo `#2563EB`/236<->74/lucide) CONGELADOS e intactos.
+
+### Gate mecanico (verde)
+
+- Frontend: `check` OK · `test:smoke` **234/234** (14 novos) · `build` OK. `grep badge:[0-9]`=0; tokens
+  intactos. Sem backend/migration. Guards de rota aditivos (OR) — sem regressao de acesso. C3.
+- Sinalizado: P-026 (`UserRole` do front nao cobre `inventory`), P-027 (matriz x catalog + `purchase_orders`/
+  `reports` ausentes no catalogo -> bloco backend de reconciliacao). Testes F11 N=9 -> **M=14**.
+
 ## Atualizacao 2026-07-09 — Rodada BLOCO-AUTO-F: F10 Notificacoes (em gate) [Claude Code]
 
 ### Status

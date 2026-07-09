@@ -68,5 +68,9 @@ Detalhe funcional por sub-modulo em `docs/pd-controle.md` e `docs/screen-element
   (Manutencao/Multas/Seguros/Estoque), marcar lida/todas; **liga os 4 produtores** F2/F3/F4/F7 via
   `POST /notifications/fleet-alerts/run` (idempotente) + acao "Gerar alertas"; badge do sino = contagem
   real (mata a parte do sino do P-011).
-- F11..F12 aplicam a IA de sidebar e a cera.
+- **RF-ADM-011 (F11 Sidebar)** — IA de navegacao por perfil: 5 grupos (VISAO GERAL/OPERACAO/FROTA/GESTAO/
+  ADMINISTRACAO); as telas F1-F8 aparecem no menu (`MVP_NAV_PATHS` expandido); vocabulario RBAC reconciliado
+  ao backend (alias legado); finance restaurado; badge de Aprovacoes real (mata resto do P-011); teste por 9
+  papeis (matriz). Estilo/colapso/tokens congelados.
+- F12 aplica a cera (header fixo, tabulares, Ctrl+K, pente-fino de copy P-025).
 
