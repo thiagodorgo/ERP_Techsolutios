@@ -59,6 +59,8 @@ export const PERMISSION_CATALOG = [
   "inventory_items:update",
   "stock_movements:read",
   "stock_movements:create",
+  "cycle_counts:read",
+  "cycle_counts:create",
   "field_location:read",
   "field_location:send",
   "field_location:history",
@@ -204,6 +206,9 @@ export const ROLE_PERMISSIONS = {
     "inventory_items:update",
     "stock_movements:read",
     "stock_movements:create",
+    // F7b (Estoque avançado): manager conduz contagens cíclicas (quem conta).
+    "cycle_counts:read",
+    "cycle_counts:create",
     "field_location:read",
     "field_location:history",
     "field_operator:read",
@@ -312,6 +317,8 @@ export const ROLE_PERMISSIONS = {
     // F7a (Estoque core): viewer só lê (mirror vehicles:read grants).
     "inventory_items:read",
     "stock_movements:read",
+    // F7b (Estoque avançado): viewer lê contagens cíclicas (read-only).
+    "cycle_counts:read",
     "work_orders:read",
     "field_location:read",
     "field_operator:read",
@@ -346,6 +353,9 @@ export const ROLE_PERMISSIONS = {
     "inventory_items:read",
     "stock_movements:read",
     "stock_movements:create",
+    // F7b (Estoque avançado): operator conta (contagem cíclica), mas não recalcula ABC.
+    "cycle_counts:read",
+    "cycle_counts:create",
     "work_orders:read",
     "work_orders:update",
     "work_orders:status",
@@ -382,6 +392,8 @@ export const ROLE_PERMISSIONS = {
     // F7a (Estoque core): finance só lê (navigation-matrix F7: finance R).
     "inventory_items:read",
     "stock_movements:read",
+    // F7b (Estoque avançado): finance lê contagens cíclicas (read-only).
+    "cycle_counts:read",
     "commissions:read",
     "commissions:calculate",
     "commissions:approve",
@@ -406,6 +418,9 @@ export const ROLE_PERMISSIONS = {
     "inventory_items:update",
     "stock_movements:read",
     "stock_movements:create",
+    // F7b (Estoque avançado): inventory é DONO do estoque — conduz contagens cíclicas.
+    "cycle_counts:read",
+    "cycle_counts:create",
     "os.read",
     "notifications:read",
     "notifications:update",
@@ -456,6 +471,8 @@ export const ROLE_PERMISSIONS = {
     // F7a (Estoque core): auditor lê itens e o razão de movimentos (matrix F7: auditor R).
     "inventory_items:read",
     "stock_movements:read",
+    // F7b (Estoque avançado): auditor lê contagens cíclicas (read-only).
+    "cycle_counts:read",
     "work_orders:read",
     "field_location:read",
     "field_location:history",

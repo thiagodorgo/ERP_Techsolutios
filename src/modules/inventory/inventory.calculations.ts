@@ -54,3 +54,56 @@ export function sumSignedQuantities(quantities: readonly number[]): number {
 export function wouldOverdraw(saldoBefore: number, signedQuantity: number): boolean {
   return signedQuantity < 0 && roundToDecimalPrecision(saldoBefore + signedQuantity) < 0;
 }
+
+/** R7.5 — the rolling window (days) that averages consumo/saida into a daily usage. */
+export const REORDER_USAGE_WINDOW_DAYS = 90;
+
+/**
+ * R7.5 — `uso_medio_diario = (Σ |consumo/saida| na janela) / janela_dias`. The
+ * incoming `usageAbs` is the ABSOLUTE outflow over `windowDays` (saida + consumo).
+ */
+export function computeDailyUsage(usageAbs: number, windowDays: number = REORDER_USAGE_WINDOW_DAYS): number {
+  if (windowDays <= 0) return 0;
+
+  return roundToDecimalPrecision(Math.abs(usageAbs) / windowDays);
+}
+
+/**
+ * R7.5 — `ponto_de_pedido = uso_medio_diario × lead_time_dias + estoque_seguranca`.
+ * DERIVED, never stored. Returns `null` when `leadTimeDays` is unknown — a reorder
+ * point cannot be computed without a lead time.
+ */
+export function computeReorderPoint(
+  dailyUsage: number,
+  leadTimeDays: number | undefined,
+  safetyStock: number | undefined,
+): number | null {
+  if (leadTimeDays === undefined || leadTimeDays === null) return null;
+
+  return roundToDecimalPrecision(dailyUsage * leadTimeDays + (safetyStock ?? 0));
+}
+
+/** R7.5 — a reorder is needed when the derived saldo is at/below the reorder point. */
+export function computeNeedsReorder(saldo: number, reorderPoint: number | null): boolean {
+  if (reorderPoint === null) return false;
+
+  return roundToDecimalPrecision(saldo) <= reorderPoint;
+}
+
+/**
+ * R7.5 — the full reorder derivation for one item, from its snapshot saldo and the
+ * absolute outflow over the usage window. Pure so both repositories reuse it and
+ * the math stays unit-testable in isolation.
+ */
+export function deriveReorder(params: {
+  readonly saldo: number;
+  readonly usageAbs: number;
+  readonly leadTimeDays: number | undefined;
+  readonly safetyStock: number | undefined;
+  readonly windowDays?: number;
+}): { readonly reorderPoint: number | null; readonly needsReorder: boolean } {
+  const dailyUsage = computeDailyUsage(params.usageAbs, params.windowDays ?? REORDER_USAGE_WINDOW_DAYS);
+  const reorderPoint = computeReorderPoint(dailyUsage, params.leadTimeDays, params.safetyStock);
+
+  return { reorderPoint, needsReorder: computeNeedsReorder(params.saldo, reorderPoint) };
+}

@@ -67,10 +67,12 @@ storage novo/presigned, ver D-014) + detalhe com **galeria** (upload/baixar/remo
 Vínculos: **dano → OS de origem `/work-orders/:id`**; **viatura → `/cadastros/viaturas`** (cadastro).
 
 ## F7 Estoque `/inventory`
-Abas Itens | Movimentações | Contagem. Item: saldo (derivado), classe ABC, mín/máx, status reposição.
-Elementos: "+ Movimento" (entrada/saída/consumo/ajuste); **consumo → OS `/work-orders/:id`**; alerta
-"ponto de pedido" → sugestão **`/purchase-orders`** (link, sem comprar); "Nova contagem" (por classe) →
-sessão → relatório de variância.
+Abas Itens | Movimentações | Contagem. Item: saldo (derivado), classe ABC, mín/máx, status reposição,
+**ponto de pedido** (F7b, `reorderPoint`). Elementos: "+ Movimento" (entrada/saída/consumo/ajuste);
+**consumo → OS `/work-orders/:id`**; chip-alerta **"Repor"** quando `needsReorder` + filtro "Precisa repor"
+→ sugestão **`/purchase-orders`** (link, sem comprar); "Recalcular ABC" (gated `inventory_items:update`,
+confirmação → resumo A/B/C); "Nova contagem" (por classe, gated `cycle_counts:create`) → sessão (drawer,
+contado editável PATCH on blur) → "Fechar contagem" → relatório de variância + N ajustes gerados / "Cancelar".
 
 ## F8 Remunerações `/finance/commissions`
 Extrato por operador/período (filtros na URL). Vínculo: linha → **detalhamento por OS**. `operator` vê SÓ

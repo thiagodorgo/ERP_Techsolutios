@@ -19,12 +19,24 @@ export type InventoryItem = {
   readonly avgCost: number;
   readonly leadTimeDays: number | null;
   readonly safetyStock: number | null;
+  // F7b — ponto de pedido (R7.5): uso_medio_diario × lead_time + estoque_seguranca.
+  // `reorderPoint` é COMPUTADO no servidor ("—" enquanto null); `needsReorder` = saldo ≤ ponto.
+  readonly reorderPoint: number | null;
+  readonly needsReorder: boolean;
   // Computados no servidor a cada listagem (Σ quantidade_sinalizada / saldo < mínimo).
   readonly saldo: number;
   readonly belowMin: boolean;
   readonly isActive: boolean;
   readonly createdAt: string;
   readonly updatedAt: string;
+};
+
+// F7b — resumo do recálculo ABC (Pareto por valor de consumo 12m — R7.4).
+export type AbcRecalculateSummary = {
+  readonly A: number;
+  readonly B: number;
+  readonly C: number;
+  readonly recalculatedAt: string | null;
 };
 
 export type StockMovement = {
@@ -71,6 +83,8 @@ export type InventoryItemsFilters = {
   readonly isActive: InventoryStatusFilter;
   // Toggle "Abaixo do mínimo" — vira `below_min=true` no servidor.
   readonly belowMin?: boolean;
+  // F7b — toggle "Precisa repor" — vira `needs_reorder=true` no servidor.
+  readonly needsReorder?: boolean;
   // Janela de busca (`limit`); ordenação/paginação/filtros extras são client-side sobre ela.
   readonly limit?: number;
   readonly offset?: number;

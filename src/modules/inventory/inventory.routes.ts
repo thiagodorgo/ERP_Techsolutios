@@ -52,6 +52,16 @@ export function createInventoryItemRouter(
     }),
   );
 
+  // R7.4 — ABC recalc is a management action (mirrors item management: inventory_items:update).
+  // Registered before the `:itemId` routes so "abc-recalculate" is never read as an id.
+  router.post(
+    "/inventory-items/abc-recalculate",
+    requirePermission(INVENTORY_ITEM_PERMISSIONS.update),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.recalculateAbc(request));
+    }),
+  );
+
   router.get(
     "/inventory-items/:itemId",
     requirePermission(INVENTORY_ITEM_PERMISSIONS.read),

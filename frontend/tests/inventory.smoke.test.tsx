@@ -96,10 +96,10 @@ test("estoque page renderiza cabeçalho, abas Itens|Movimentações, ações gat
   ]);
 
   assert.match(html, /Estoque/);
-  // Abas do F7a — Contagem é F7b e NÃO pode aparecer (aba morta = veto).
+  // Abas — F7b entrega a Contagem (não é mais aba morta): as três precisam aparecer.
   assert.match(html, /Itens</);
   assert.match(html, /Movimentações</);
-  assert.doesNotMatch(html, /Contagem/);
+  assert.match(html, /Contagem</);
   // Ações do cabeçalho (gated por criação).
   assert.match(html, /Novo item/);
   assert.match(html, /Movimento</);
@@ -148,4 +148,42 @@ test("estoque page aba Movimentações via URL: filtros PT-BR, vazio real e nada
   // Imutabilidade comunicada; sem linhas fabricadas.
   assert.match(html, /definitivas/);
   assert.doesNotMatch(html, /NF-e 4471|Indústria Alfa|Fornecedor Beta/);
+});
+
+test("estoque F7b: aba Contagem presente e 'Nova contagem' gated por cycle_counts:create", async () => {
+  // Com leitura+criação de contagem → botão 'Nova contagem' aparece na aba Contagem.
+  const withCreate = await renderEstoque(
+    ["inventory_items:read", "stock_movements:read", "cycle_counts:read", "cycle_counts:create"],
+    "/inventory?tab=contagem",
+  );
+  assert.match(withCreate, /Contagem</); // aba legítima (F7b)
+  assert.match(withCreate, /Contagens cíclicas/); // card da lista de sessões
+  assert.match(withCreate, /Nova contagem/);
+  assert.match(withCreate, /Nenhuma contagem encontrada/); // estado vazio real (D-007)
+  assert.doesNotMatch(withCreate, /NF-e 4471|Indústria Alfa|Fornecedor Beta/);
+
+  // Só leitura → sem 'Nova contagem', mas com acesso à lista.
+  const readOnly = await renderEstoque(["inventory_items:read", "cycle_counts:read"], "/inventory?tab=contagem");
+  assert.match(readOnly, /Contagens cíclicas/);
+  assert.doesNotMatch(readOnly, /Nova contagem/);
+
+  // Sem cycle_counts:read → estado de acesso não permitido (não vaza dados).
+  const noAccess = await renderEstoque(["inventory_items:read"], "/inventory?tab=contagem");
+  assert.match(noAccess, /Sem acesso à contagem cíclica/);
+  assert.doesNotMatch(noAccess, /Nova contagem/);
+});
+
+test("estoque F7b: 'Recalcular ABC' e chip 'Repor' gated por inventory_items:update na aba Itens", async () => {
+  // Com update → botão de recálculo ABC visível na área da aba Itens.
+  const withUpdate = await renderEstoque(["inventory_items:read", "inventory_items:update"]);
+  assert.match(withUpdate, /Recalcular ABC/);
+  // Toggle de reposição do F7b sempre presente na aba Itens (a coluna 'Ponto de pedido'
+  // só aparece com linhas; em modo demonstração a lista é vazia — D-007).
+  assert.match(withUpdate, /Precisa repor/);
+  // Sem dados fabricados.
+  assert.doesNotMatch(withUpdate, /Resistor 10k|Cabo USB-C/);
+
+  // Sem update → 'Recalcular ABC' não renderiza (some, não fica desabilitado de enfeite).
+  const withoutUpdate = await renderEstoque(["inventory_items:read"]);
+  assert.doesNotMatch(withoutUpdate, /Recalcular ABC/);
 });

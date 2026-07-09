@@ -2,13 +2,15 @@ import { env } from "../../config/env.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
 import { createDefaultVehicleService } from "../vehicles/vehicle.service.js";
 import { createDefaultWorkOrderService } from "../work-orders/work-order.service.js";
-import { signQuantity } from "./inventory.calculations.js";
+import { classifyAbc, summarizeAbc, type AbcSummary } from "./inventory.abc.js";
+import { deriveReorder, signQuantity } from "./inventory.calculations.js";
 import { InMemoryInventoryRepository, type InventoryRepository } from "./inventory.repository.js";
 import {
   InventoryError,
+  type AbcClassAssignment,
   type InventoryActorContext,
   type InventoryItem,
-  type InventoryItemWithSaldo,
+  type InventoryItemView,
   type ListInventoryItemsInput,
   type ListInventoryItemsResult,
   type ListStockMovementsInput,
@@ -16,6 +18,16 @@ import {
   type StockMovement,
   type UpdateInventoryItemInput,
 } from "./inventory.types.js";
+
+const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** R7.4 — the ABC window: consumption value is summed over the last 12 months. */
+const ABC_WINDOW_DAYS = 365;
+
+export type AbcRecalculateResult = {
+  readonly summary: AbcSummary;
+  readonly recalculatedAt: Date;
+};
 import {
   parseLimit,
   parseMovementType,
@@ -65,6 +77,8 @@ export class InventoryService {
       search: parseOptionalSearch(query.search),
       isActive: readOptionalBoolean(query.is_active ?? query.isActive),
       belowMin: readOptionalBoolean(query.below_min ?? query.belowMin, "belowMin"),
+      // R7.5 — derived reorder filter: true → only items whose saldo <= reorder point.
+      needsReorder: readOptionalBoolean(query.needs_reorder ?? query.needsReorder, "needsReorder"),
       limit: parseLimit(query.limit),
       offset: parseOffset(query.offset),
     };
@@ -72,7 +86,7 @@ export class InventoryService {
     return this.repository.listItems(input);
   }
 
-  async createItem(actor: InventoryActorContext, body: RawRecord): Promise<InventoryItemWithSaldo> {
+  async createItem(actor: InventoryActorContext, body: RawRecord): Promise<InventoryItemView> {
     // `abc_class` and `avg_cost` are NEVER writable through the API: the class
     // comes from the F7b job and the average from the entrada flow (R7.3).
     const item = await this.repository.createItem({
@@ -89,11 +103,35 @@ export class InventoryService {
       updatedBy: actor.userId,
     });
 
-    // A fresh item has no ledger yet — its derived saldo is 0 by definition.
-    return { ...item, saldo: 0 };
+    // A fresh item has no ledger yet — saldo and usage are 0 by definition (R7.5).
+    const { reorderPoint, needsReorder } = deriveReorder({
+      saldo: 0,
+      usageAbs: 0,
+      leadTimeDays: item.leadTimeDays,
+      safetyStock: item.safetyStock,
+    });
+
+    return { ...item, saldo: 0, reorderPoint, needsReorder };
   }
 
-  async getItem(actor: InventoryActorContext, itemId: string): Promise<InventoryItemWithSaldo> {
+  /**
+   * R7.4 — recompute the ABC class of every ACTIVE item from its consumption value
+   * over the last 12 months (Σ |qty| × cost of consumo/saida movements). The pure
+   * `classifyAbc` does the Pareto cut (A ~80%, B ~95%, C rest); the repository then
+   * writes the classes atomically. Returns a summary for the caller.
+   */
+  async recalculateAbc(actor: InventoryActorContext, now: Date = new Date()): Promise<AbcRecalculateResult> {
+    const since = new Date(now.getTime() - ABC_WINDOW_DAYS * MILLIS_PER_DAY);
+    const consumption = await this.repository.getConsumptionValues(actor.tenantId, since);
+    const classes = classifyAbc(consumption);
+
+    const assignments: AbcClassAssignment[] = [...classes.entries()].map(([id, abcClass]) => ({ id, abcClass }));
+    await this.repository.applyAbcClasses(actor.tenantId, assignments, actor.userId);
+
+    return { summary: summarizeAbc(classes), recalculatedAt: now };
+  }
+
+  async getItem(actor: InventoryActorContext, itemId: string): Promise<InventoryItemView> {
     const item = await this.repository.findItemWithSaldo(actor.tenantId, parseRequiredUuid(itemId, "itemId"));
 
     if (!item) {
@@ -103,7 +141,7 @@ export class InventoryService {
     return item;
   }
 
-  async updateItem(actor: InventoryActorContext, itemId: string, body: RawRecord): Promise<InventoryItemWithSaldo> {
+  async updateItem(actor: InventoryActorContext, itemId: string, body: RawRecord): Promise<InventoryItemView> {
     await this.getItemEntity(actor, itemId);
 
     const input: UpdateInventoryItemInput = {
@@ -136,6 +174,7 @@ export class InventoryService {
       itemId: parseOptionalUuid(query.item_id ?? query.itemId, "itemId"),
       type: parseOptionalMovementType(query.type),
       workOrderId: parseOptionalUuid(query.work_order_id ?? query.workOrderId, "workOrderId"),
+      cycleCountId: parseOptionalUuid(query.cycle_count_id ?? query.cycleCountId, "cycleCountId"),
       from: parseOptionalDate(query.from, "from"),
       to: parseOptionalDate(query.to, "to"),
       limit: parseLimit(query.limit),

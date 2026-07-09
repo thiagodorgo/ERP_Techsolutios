@@ -244,3 +244,27 @@
   `damages:read|create|update`; tela `/fleet/damages` (lista + modal + detalhe com galeria). Reversivel.
 - ambiguidade sinalizada: se o negocio exigir literalmente a mesma tabela/endpoint de checklist, reabrir
   (exigiria refactor do modelo de attachment p/ desacoplar de run) — decisao de arquitetura maior. Nao parei.
+
+## D-017 - F7b: ABC (Pareto 12m) + ponto de pedido derivado + contagem ciclica (2026-07-09) [Claude Code]
+
+- status: aplicada (2o sub-PR do F7; implementa pd-controle §F7 R7.4/R7.5/R7.6). Estende o modulo
+  `src/modules/inventory/` (F7a) — sem modulo paralelo.
+- decisao 1 (R7.4 ABC): rota `POST /api/v1/inventory-items/abc-recalculate` (exige `inventory_items:update`)
+  classifica por **valor de consumo 12m** (`Σ |qtd|×custo` de consumo/saida em 365d); `classifyAbc` puro
+  acumula % do valor: **A ate ~80%, B ate ~95%, C resto** (zero-consumo -> C; empate por id). Escreve
+  `abc_class` atomicamente; retorna resumo A/B/C.
+- decisao 2 (R7.5 ponto de pedido): DERIVADO read-only — `reorder_point = (consumo90d/90)×lead_time +
+  safety_stock` (null se lead_time null); `needsReorder = saldo <= reorder_point`. Filtro `needs_reorder`.
+  `runReorderPointNotifications` idempotente (key `reorder_point:<id>:<yyyy-mm-dd>`; rodar 2x/dia = 1);
+  sugere reposicao com link `/purchase-orders` — **sem comprar**.
+- decisao 3 (R7.6 contagem ciclica): `CycleCount` + `CycleCountEntry`; abrir = snapshot do saldo dos itens
+  ativos (por classe ABC ou todos); registrar `counted`; **fechar gera ajuste real** via o fluxo
+  transacional de movimento do F7a (variancia = contado−sistema, `reason`/`cycle_count_id` ligados) +
+  relatorio de variancia; concluida/cancelada = terminal (422 em mutacao posterior).
+- decisao 4 (FK diferida): a coluna `stock_movements.cycle_count_id` (criada solta no F7a) ganha FK
+  `(tenant_id, cycle_count_id) -> cycle_counts` na migration do F7b (MATCH SIMPLE -> linhas NULL nao
+  travam; regressao F7a 25/25 verde). Aba **Contagem** agora e legitima (deixa de ser aba morta).
+- decisao 5 (UI): sessao de contagem via **Drawer** (nao rota) — autocontida na aba, reusa overlay do DS,
+  sem rota/guard novos. Recalcular ABC com confirmacao (reescreve todas as classes).
+- impacto: perms novas `cycle_counts:read|create`; tabelas `cycle_counts` + `cycle_count_entries` com RLS;
+  `screen-element-map` §F7 atualizado. Aditivo, reversivel.
