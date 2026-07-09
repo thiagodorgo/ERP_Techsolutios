@@ -237,7 +237,7 @@ export function App() {
             <Route
               path="/dashboard"
               element={
-                <PermissionGuard permissions={["dashboard:view"]}>
+                <PermissionGuard permissions={["dashboard:read", "dashboard:view"]}>
                   <DashboardPage />
                 </PermissionGuard>
               }
@@ -366,7 +366,7 @@ export function App() {
             <Route
               path="/users"
               element={
-                <PermissionGuard permissions={["users.read"]}>
+                <PermissionGuard permissions={["users.read", "users:read"]}>
                   <UsersPage />
                 </PermissionGuard>
               }
@@ -374,7 +374,7 @@ export function App() {
             <Route
               path="/audit"
               element={
-                <PermissionGuard permissions={["audit:view"]}>
+                <PermissionGuard permissions={["audit:read", "audit.read", "audit:view"]}>
                   <AuditTenantPage />
                 </PermissionGuard>
               }
@@ -479,7 +479,7 @@ export function App() {
             <Route
               path="/administrator/settings"
               element={
-                <PermissionGuard permissions={["tenant:manage"]}>
+                <PermissionGuard permissions={["tenant.manage", "tenant:manage"]}>
                   <TenantSettingsPage />
                 </PermissionGuard>
               }
