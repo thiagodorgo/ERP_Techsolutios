@@ -89,7 +89,7 @@
       alias legado (guards OR, retrocompatível) → P-024 resolvido; badge Aprovações real + zero badge literal
       → **P-011 RESOLVIDO**; teste 9 papéis (14 testes) vs matriz; tokens/colapso congelados; D-021; sinalizado
       P-026/P-027 (reconciliação de catálogo backend); testes N=9 → **M=14**; gate verde (front check/**234**/
-      build); **validador-mestre: em avaliação**
+      build); **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA; 1 BAIXA item oculto; verificado com rigor extra — classificador off no subagente); PR #NN, merge <hash> — pós-merge
 - [ ] F12 Cera (Mapa, Dashboard, OS lista, Multas, Manutenção)
 
 ## Relatório final (F12 concluída)
