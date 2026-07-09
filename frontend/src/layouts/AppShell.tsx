@@ -127,7 +127,7 @@ const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
     {
       label: "CONTA",
       items: [
-        { label: "Notificações", path: "/notifications", icon: Bell, badge: 4 },
+        { label: "Notificações", path: "/notifications", icon: Bell },
         { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
       ],
     },
@@ -278,32 +278,36 @@ export function AppShell() {
               ) : (
                 <div style={{ height: 12 }} />
               )}
-              {group.items.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  title={collapsed ? item.label : undefined}
-                  style={({ isActive }) => ({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 11,
-                    padding: "9px 11px",
-                    borderRadius: 9,
-                    marginBottom: 2,
-                    textDecoration: "none",
-                    justifyContent: collapsed ? "center" : "flex-start",
-                    background: isActive ? ACTIVE : "transparent",
-                    color: isActive ? "#fff" : NAV_IDLE,
-                    fontWeight: isActive ? 700 : 600,
-                  })}
-                >
-                  <item.icon size={18} style={{ flexShrink: 0 }} />
-                  {!collapsed ? <span style={{ fontSize: 13.5, flex: 1 }}>{item.label}</span> : null}
-                  {!collapsed && item.badge ? (
-                    <span style={{ minWidth: 18, height: 18, padding: "0 5px", borderRadius: 99, background: "#EF4444", color: "#fff", fontSize: 10.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{item.badge}</span>
-                  ) : null}
-                </NavLink>
-              ))}
+              {group.items.map((item) => {
+                // Badge de Notificações = contagem real de não lidas (mata P-011); demais itens usam o valor estático do menu.
+                const badgeValue = item.path === "/notifications" ? unread : item.badge;
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    title={collapsed ? item.label : undefined}
+                    style={({ isActive }) => ({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 11,
+                      padding: "9px 11px",
+                      borderRadius: 9,
+                      marginBottom: 2,
+                      textDecoration: "none",
+                      justifyContent: collapsed ? "center" : "flex-start",
+                      background: isActive ? ACTIVE : "transparent",
+                      color: isActive ? "#fff" : NAV_IDLE,
+                      fontWeight: isActive ? 700 : 600,
+                    })}
+                  >
+                    <item.icon size={18} style={{ flexShrink: 0 }} />
+                    {!collapsed ? <span style={{ fontSize: 13.5, flex: 1 }}>{item.label}</span> : null}
+                    {!collapsed && badgeValue ? (
+                      <span style={{ minWidth: 18, height: 18, padding: "0 5px", borderRadius: 99, background: "#EF4444", color: "#fff", fontSize: 10.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{badgeValue > 99 ? "99+" : badgeValue}</span>
+                    ) : null}
+                  </NavLink>
+                );
+              })}
             </div>
           ))}
         </nav>

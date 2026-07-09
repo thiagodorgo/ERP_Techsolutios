@@ -34,6 +34,15 @@ export type NotificationUnreadCount = {
   count: number;
 };
 
+// Resultado da execução dos produtores de alertas de frota (F10 — POST /notifications/fleet-alerts/run).
+export type FleetAlertsRunResult = {
+  maintenance: number;
+  fines: number;
+  insurance: number;
+  reorder: number;
+  ranAt: string | null;
+};
+
 export type NotificationApiContext = {
   token?: string;
   tenantId: string;

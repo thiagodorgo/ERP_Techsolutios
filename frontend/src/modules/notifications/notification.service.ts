@@ -5,6 +5,7 @@ import {
   listNotificationsFromApi,
   markAllNotificationsAsReadFromApi,
   markNotificationAsReadFromApi,
+  runFleetAlertsFromApi,
 } from "./notification.adapter";
 import {
   archiveMockNotification,
@@ -12,8 +13,15 @@ import {
   listMockNotifications,
   markAllMockNotificationsAsRead,
   markMockNotificationAsRead,
+  runMockFleetAlerts,
 } from "./notification.mock";
-import type { NotificationApiContext, NotificationItem, NotificationListFilters, NotificationUnreadCount } from "./notification.types";
+import type {
+  FleetAlertsRunResult,
+  NotificationApiContext,
+  NotificationItem,
+  NotificationListFilters,
+  NotificationUnreadCount,
+} from "./notification.types";
 
 export function listNotifications(context: NotificationApiContext, filters: NotificationListFilters = {}): Promise<NotificationItem[]> {
   if (isMockMode()) return listMockNotifications(filters);
@@ -38,4 +46,9 @@ export function markAllNotificationsAsRead(context: NotificationApiContext): Pro
 export function archiveNotification(context: NotificationApiContext, notificationId: string): Promise<NotificationItem> {
   if (isMockMode()) return archiveMockNotification(notificationId);
   return archiveNotificationFromApi(context, notificationId);
+}
+
+export function runFleetAlerts(context: NotificationApiContext): Promise<FleetAlertsRunResult> {
+  if (isMockMode()) return runMockFleetAlerts();
+  return runFleetAlertsFromApi(context);
 }

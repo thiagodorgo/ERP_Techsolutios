@@ -86,8 +86,13 @@ Lista (papel, status, último acesso) + modal criar/editar (papéis do `RBAC_MAT
 gerencia; `manager` lê.
 
 ## F10 Notificações `/notifications`
-Central com categorias/filtros ligados aos produtores (F2/F3/F4/F7). "Marcar lida"/"Marcar todas".
-**Badge do sino = contagem real** (`getUnreadNotificationCount`). Item com `work_order_id?` → `/work-orders/:id`.
+Central com categorias/filtros ligados aos produtores (F2/F3/F4/F7). Chips de categoria PT-BR
+(Manutenção/Multas/Seguros/Estoque/Outros) + situação (Todas/Não lidas/Lidas/Arquivadas), estado na URL.
+"Marcar lida"/"Marcar todas". **"Gerar alertas"** (gated `notifications:update`) dispara
+`POST /notifications/fleet-alerts/run` e atualiza lista + contagem.
+**Badge do sino E do menu lateral = contagem real** (`getUnreadNotificationCount`; sem número fixo).
+Item com `actionUrl` (ex.: `work_order_id?` → `/work-orders/:id`, `maintenance.due` → `/fleet/maintenance`)
+navega ao clicar/abrir — sem link morto.
 
 > **Cobertura:** telas herdadas sem elemento novo (Aprovações, Despachos, Checklists, Configurações,
 > Auditoria, Relatórios, Financeiro, Pedidos) mantêm seus elementos atuais; F12 (cera) aplica cabeçalho

@@ -2341,6 +2341,13 @@
   flex-wrap: wrap;
 }
 
+.notification-category-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
 .notification-summary {
   display: flex;
   align-items: center;

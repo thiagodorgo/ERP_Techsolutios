@@ -1,4 +1,4 @@
-import type { NotificationItem, NotificationListFilters, NotificationUnreadCount } from "./notification.types";
+import type { FleetAlertsRunResult, NotificationItem, NotificationListFilters, NotificationUnreadCount } from "./notification.types";
 
 const initialNotifications: NotificationItem[] = [
   {
@@ -154,6 +154,12 @@ export async function archiveMockNotification(notificationId: string): Promise<N
       : notification,
   );
   return findNotification(notificationId);
+}
+
+export async function runMockFleetAlerts(): Promise<FleetAlertsRunResult> {
+  await wait();
+  // Sem produtores de domínio no modo mock — execução idempotente e vazia.
+  return { maintenance: 0, fines: 0, insurance: 0, reorder: 0, ranAt: new Date().toISOString() };
 }
 
 export function resetMockNotificationsForTests(): void {
