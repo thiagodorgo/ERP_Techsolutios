@@ -366,7 +366,7 @@ export function App() {
             <Route
               path="/users"
               element={
-                <PermissionGuard permissions={["users:read"]}>
+                <PermissionGuard permissions={["users.read"]}>
                   <UsersPage />
                 </PermissionGuard>
               }
