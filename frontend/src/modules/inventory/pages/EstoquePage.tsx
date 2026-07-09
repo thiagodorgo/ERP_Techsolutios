@@ -1,11 +1,11 @@
-import { AlertTriangle, Archive, ArchiveRestore, ArrowLeftRight, Package, Pencil, Plus, RefreshCw } from "lucide-react";
+import { AlertTriangle, Archive, ArchiveRestore, ArrowLeftRight, CheckCircle2, ClipboardList, Layers, Package, Pencil, Plus, RefreshCw, ShoppingCart, X } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import type { DenseColumn } from "../../../components/dense-list";
 import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../components/dense-list";
-import { Alert, Button, Card, Chip, EmptyState, SearchBar, Select, Skeleton } from "../../../components/ui";
+import { Alert, Button, Card, Chip, EmptyState, Modal, SearchBar, Select, Skeleton } from "../../../components/ui";
 import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
@@ -13,45 +13,73 @@ import { useVehicles } from "../../registry/vehicles/useVehicles";
 import type { VehiclesFilters } from "../../registry/vehicles/vehicles.types";
 import { useWorkOrders } from "../../work-orders/useWorkOrders";
 import type { WorkOrdersFilters } from "../../work-orders/work-orders.types";
+import { CycleCountModal } from "../components/CycleCountModal";
+import { CycleCountSessionDrawer } from "../components/CycleCountSessionDrawer";
 import { InventoryItemFormModal } from "../components/InventoryItemFormModal";
 import { StockMovementFormModal } from "../components/StockMovementFormModal";
+import {
+  getCycleCountClassLabel,
+  getCycleCountStatusLabel,
+  getCycleCountStatusTone,
+} from "../cycle-counts.adapter";
+import type { CycleCount, CycleCountClassFilter, CycleCountStatusFilter, CycleCountsFilters } from "../cycle-counts.types";
 import {
   STOCK_MOVEMENT_TYPE_OPTIONS,
   computeInventoryTotals,
   filterInventoryItems,
   filterStockMovements,
+  formatAbcRecalcSummary,
   formatMovementDateTime,
   formatQuantity,
+  formatReorderPoint,
   formatSignedQuantity,
   formatValor,
   getAbcClassLabel,
   getMovementTypeLabel,
   getMovementTypeTone,
+  getReorderChipLabel,
+  getReorderChipTone,
   getReplenishmentLabel,
   getReplenishmentTone,
   isStockMovementType,
 } from "../inventory.adapter";
-import { updateInventoryItem } from "../inventory.service";
+import { recalculateAbc, updateInventoryItem } from "../inventory.service";
 import type { InventoryItem, InventoryItemsFilters, InventoryStatusFilter, StockMovement, StockMovementsFilters } from "../inventory.types";
+import { useCycleCounts } from "../useCycleCounts";
 import { useInventoryItems } from "../useInventoryItems";
 import { useStockMovements } from "../useStockMovements";
 
-// F7a Estoque core — "Estoque" (sc_estoque), agora ligado aos endpoints reais
-// /api/v1/inventory-items e /api/v1/stock-movements. A identidade visual da tela
-// aprovada (cabeçalho, abas em pílula e cartões de indicador) foi preservada;
-// as linhas fabricadas da casca estática foram removidas (D-007).
-// Abas: Itens | Movimentações (estado na URL). Contagem é F7b — NÃO renderizar.
+// F7a Estoque core + F7b Estoque avançado — "Estoque" (sc_estoque), ligado aos
+// endpoints reais /api/v1/inventory-items, /stock-movements e /cycle-counts.
+// A identidade visual da tela aprovada (cabeçalho, abas em pílula e cartões de
+// indicador) foi preservada; as linhas fabricadas da casca estática seguem removidas (D-007).
+// Abas: Itens | Movimentações | Contagem (estado na URL). F7b entrega a aba Contagem,
+// o ponto de pedido/reposição sugerida (R7.5) e o recálculo ABC (R7.4).
 
 const STABLE_MOVEMENTS_FILTERS: StockMovementsFilters = { limit: DENSE_LIST_FETCH_LIMIT };
 const STABLE_VEHICLE_FILTERS: VehiclesFilters = { search: "", isActive: "all", limit: DENSE_LIST_FETCH_LIMIT };
 const STABLE_WORK_ORDER_FILTERS: WorkOrdersFilters = { search: "", status: "all", priority: "all", assignedOperatorId: "", from: "", to: "" };
 
-type TabKey = "itens" | "movimentacoes";
+type TabKey = "itens" | "movimentacoes" | "contagem";
 
 const STATUS_TABS: readonly { value: InventoryStatusFilter; label: string }[] = [
   { value: "all", label: "Todos" },
   { value: "active", label: "Ativos" },
   { value: "inactive", label: "Inativos" },
+];
+
+// F7b — opções de filtro da aba Contagem (situação e classe da sessão).
+const CYCLE_COUNT_STATUS_OPTIONS: readonly { value: CycleCountStatusFilter; label: string }[] = [
+  { value: "all", label: "Todas as situações" },
+  { value: "aberta", label: "Aberta" },
+  { value: "concluida", label: "Concluída" },
+  { value: "cancelada", label: "Cancelada" },
+];
+const CYCLE_COUNT_CLASS_OPTIONS: readonly { value: CycleCountClassFilter; label: string }[] = [
+  { value: "all", label: "Todas as classes" },
+  { value: "A", label: "Classe A" },
+  { value: "B", label: "Classe B" },
+  { value: "C", label: "Classe C" },
 ];
 
 // Tokens visuais herdados da tela aprovada (casca sc_estoque).
@@ -84,6 +112,19 @@ const filterFieldStyle: CSSProperties = { minWidth: 200 };
 const countStyle: CSSProperties = { fontSize: "var(--text-sm)", color: "var(--text-secondary)", fontWeight: 700 };
 const mutedStyle: CSSProperties = { fontSize: "var(--text-sm)", color: "var(--text-secondary)" };
 const alertSectionStyle: CSSProperties = { marginBottom: 14 };
+const successBannerStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  marginBottom: 14,
+  padding: "11px 14px",
+  borderRadius: 12,
+  background: "#F0FDF4",
+  border: "1px solid #BBF7D0",
+  color: "#166534",
+  fontSize: 13,
+  fontWeight: 600,
+};
 
 function tabButtonStyle(active: boolean): CSSProperties {
   return {
@@ -106,16 +147,25 @@ export function EstoquePage() {
   const { can } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const tab: TabKey = searchParams.get("tab") === "movimentacoes" ? "movimentacoes" : "itens";
+  const tabParam = searchParams.get("tab");
+  const tab: TabKey = tabParam === "movimentacoes" ? "movimentacoes" : tabParam === "contagem" ? "contagem" : "itens";
   // Toggle "Abaixo do mínimo" na URL → refetch com below_min=true no servidor.
   const belowMinOnly = searchParams.get("below_min") === "true";
+  // F7b — toggle "Precisa repor" na URL → refetch com needs_reorder=true no servidor.
+  const needsReorderOnly = searchParams.get("needs_reorder") === "true";
   const movementItemFilter = searchParams.get("item") ?? "";
   const tipoParam = searchParams.get("tipo");
   const movementTypeFilter = isStockMovementType(tipoParam) ? tipoParam : undefined;
 
   const itemsFilters = useMemo<InventoryItemsFilters>(
-    () => ({ search: "", isActive: "all", belowMin: belowMinOnly || undefined, limit: DENSE_LIST_FETCH_LIMIT }),
-    [belowMinOnly],
+    () => ({
+      search: "",
+      isActive: "all",
+      belowMin: belowMinOnly || undefined,
+      needsReorder: needsReorderOnly || undefined,
+      limit: DENSE_LIST_FETCH_LIMIT,
+    }),
+    [belowMinOnly, needsReorderOnly],
   );
 
   const { items, pagination, loading, error, refresh } = useInventoryItems(itemsFilters);
@@ -132,12 +182,21 @@ export function EstoquePage() {
   const canCreateItem = can("inventory_items:create");
   const canUpdateItem = can("inventory_items:update");
   const canCreateMovement = can("stock_movements:create");
+  // F7b — RBAC de contagem cíclica (RBAC_MATRIX: cycle_counts:read|create).
+  const canReadCycleCount = can("cycle_counts:read");
+  const canCreateCycleCount = can("cycle_counts:create");
 
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [itemFormOpen, setItemFormOpen] = useState(false);
   const [movementFormOpen, setMovementFormOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // F7b — recálculo ABC (confirmação + feedback de sucesso).
+  const [abcConfirmOpen, setAbcConfirmOpen] = useState(false);
+  const [abcBusy, setAbcBusy] = useState(false);
+  const [abcFeedback, setAbcFeedback] = useState<string | null>(null);
+  const [abcError, setAbcError] = useState<string | null>(null);
 
   const context = useMemo(
     () => ({
@@ -155,7 +214,7 @@ export function EstoquePage() {
 
   // Escreve um parâmetro extra preservando os demais; troca de filtro volta à primeira página.
   const setExtraParam = useCallback(
-    (key: "below_min" | "item" | "tipo", value: string) => {
+    (key: "below_min" | "needs_reorder" | "item" | "tipo", value: string) => {
       const next = new URLSearchParams(searchParams);
       if (value) next.set(key, value);
       else next.delete(key);
@@ -204,6 +263,22 @@ export function EstoquePage() {
     }
   }
 
+  // F7b — recálculo ABC: reescreve TODAS as classes (Pareto 12m) → confirmar antes.
+  async function runAbcRecalc() {
+    setAbcBusy(true);
+    setAbcError(null);
+    try {
+      const summary = await recalculateAbc(context);
+      setAbcFeedback(`Classes ABC recalculadas. ${formatAbcRecalcSummary(summary)}`);
+      setAbcConfirmOpen(false);
+      await refresh();
+    } catch {
+      setAbcError("Não foi possível recalcular as classes ABC. Tente novamente.");
+    } finally {
+      setAbcBusy(false);
+    }
+  }
+
   // Totais reais das janelas carregadas — renderizam mesmo vazio.
   const totals = useMemo(() => computeInventoryTotals(items, movements), [items, movements]);
 
@@ -227,7 +302,13 @@ export function EstoquePage() {
               next.delete("page");
               setSearchParams(next, { replace: true });
             }}
-            placeholder={tab === "itens" ? "Buscar por SKU ou nome…" : "Buscar por item, OS ou motivo…"}
+            placeholder={
+              tab === "itens"
+                ? "Buscar por SKU ou nome…"
+                : tab === "movimentacoes"
+                  ? "Buscar por item, OS ou motivo…"
+                  : "Buscar por situação ou classe…"
+            }
           />
           <Button type="button" variant="secondary" onClick={refreshAll} disabled={anyLoading}>
             <RefreshCw size={16} aria-hidden /> Atualizar
@@ -245,7 +326,7 @@ export function EstoquePage() {
         </div>
       </div>
 
-      {/* abas em pílula — só Itens | Movimentações (Contagem é F7b) */}
+      {/* abas em pílula — Itens | Movimentações | Contagem (F7b entrega a Contagem) */}
       <div style={tabBarStyle} role="tablist" aria-label="Seções do estoque">
         <button type="button" role="tab" aria-selected={tab === "itens"} style={tabButtonStyle(tab === "itens")} onClick={() => switchTab("itens")}>
           Itens
@@ -259,12 +340,45 @@ export function EstoquePage() {
         >
           Movimentações
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "contagem"}
+          style={tabButtonStyle(tab === "contagem")}
+          onClick={() => switchTab("contagem")}
+        >
+          Contagem
+        </button>
       </div>
 
       {actionError ? (
         <div style={alertSectionStyle}>
           <Alert title="Ação não concluída" tone="danger">
             {actionError}
+          </Alert>
+        </div>
+      ) : null}
+
+      {/* F7b — feedback de sucesso do recálculo ABC (aria-live para leitores de tela) */}
+      {abcFeedback ? (
+        <div style={successBannerStyle} role="status" aria-live="polite">
+          <CheckCircle2 size={18} aria-hidden style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1 }}>{abcFeedback}</span>
+          <button
+            type="button"
+            aria-label="Dispensar aviso"
+            onClick={() => setAbcFeedback(null)}
+            style={{ border: "none", background: "transparent", cursor: "pointer", color: "#166534", display: "inline-flex" }}
+          >
+            <X size={16} aria-hidden />
+          </button>
+        </div>
+      ) : null}
+
+      {abcError ? (
+        <div style={alertSectionStyle}>
+          <Alert title="Não foi possível recalcular o ABC" tone="danger">
+            {abcError}
           </Alert>
         </div>
       ) : null}
@@ -292,6 +406,16 @@ export function EstoquePage() {
           tagColor={totals.belowMinItems > 0 ? "#D97706" : "#059669"}
         />
         <StatCard
+          icon={<ShoppingCart size={16} aria-hidden />}
+          iconBg="#FEF2F2"
+          iconColor="#DC2626"
+          value={totals.needsReorderItems.toLocaleString("pt-BR")}
+          label="Precisam repor"
+          tag={totals.needsReorderItems > 0 ? "Repor" : "OK"}
+          tagBg={totals.needsReorderItems > 0 ? "#FEF2F2" : "#ECFDF5"}
+          tagColor={totals.needsReorderItems > 0 ? "#DC2626" : "#059669"}
+        />
+        <StatCard
           icon={<ArrowLeftRight size={16} aria-hidden />}
           iconBg="#F5F3FF"
           iconColor="#7C3AED"
@@ -312,12 +436,19 @@ export function EstoquePage() {
           onRetry={() => void refresh()}
           belowMinOnly={belowMinOnly}
           onToggleBelowMin={() => setExtraParam("below_min", belowMinOnly ? "" : "true")}
+          needsReorderOnly={needsReorderOnly}
+          onToggleNeedsReorder={() => setExtraParam("needs_reorder", needsReorderOnly ? "" : "true")}
           canUpdate={canUpdateItem}
+          onRecalcAbc={() => {
+            setAbcFeedback(null);
+            setAbcError(null);
+            setAbcConfirmOpen(true);
+          }}
           busyId={busyId}
           onEdit={openEditItem}
           onToggleActive={(item) => void toggleItemActive(item)}
         />
-      ) : (
+      ) : tab === "movimentacoes" ? (
         <MovementsTab
           movements={movements}
           items={items}
@@ -332,6 +463,15 @@ export function EstoquePage() {
           onItemFilterChange={(value) => setExtraParam("item", value)}
           onTypeFilterChange={(value) => setExtraParam("tipo", value)}
         />
+      ) : canReadCycleCount ? (
+        <CycleCountsTab context={context} itemById={itemById} canCreate={canCreateCycleCount} canManage={canCreateCycleCount} />
+      ) : (
+        <Card title="Contagem cíclica">
+          <EmptyState
+            title="Sem acesso à contagem cíclica"
+            detail="Seu perfil não tem permissão para consultar as contagens cíclicas desta organização."
+          />
+        </Card>
       )}
 
       {itemFormOpen ? (
@@ -364,6 +504,24 @@ export function EstoquePage() {
             refreshAll();
           }}
         />
+      ) : null}
+
+      {/* F7b — confirmação do recálculo ABC (reescreve todas as classes) */}
+      {abcConfirmOpen ? (
+        <Modal title="Recalcular classes ABC" open onClose={() => (abcBusy ? undefined : setAbcConfirmOpen(false))}>
+          <p style={{ fontSize: 13.5, color: "#334155", lineHeight: 1.5 }}>
+            O recálculo reordena os itens por <strong>valor de consumo dos últimos 12 meses</strong> (curva de Pareto) e{" "}
+            <strong>reescreve a classe ABC de todos os itens</strong> desta organização. Esta ação substitui as classes atuais.
+          </p>
+          <footer style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-8)", marginTop: "var(--space-16)" }}>
+            <Button type="button" variant="ghost" onClick={() => setAbcConfirmOpen(false)} disabled={abcBusy}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={() => void runAbcRecalc()} disabled={abcBusy}>
+              {abcBusy ? "Recalculando…" : "Recalcular ABC"}
+            </Button>
+          </footer>
+        </Modal>
       ) : null}
     </div>
   );
@@ -411,7 +569,10 @@ function ItemsTab({
   onRetry,
   belowMinOnly,
   onToggleBelowMin,
+  needsReorderOnly,
+  onToggleNeedsReorder,
   canUpdate,
+  onRecalcAbc,
   busyId,
   onEdit,
   onToggleActive,
@@ -423,7 +584,10 @@ function ItemsTab({
   readonly onRetry: () => void;
   readonly belowMinOnly: boolean;
   readonly onToggleBelowMin: () => void;
+  readonly needsReorderOnly: boolean;
+  readonly onToggleNeedsReorder: () => void;
   readonly canUpdate: boolean;
+  readonly onRecalcAbc: () => void;
   readonly busyId: string | null;
   readonly onEdit: (item: InventoryItem) => void;
   readonly onToggleActive: (item: InventoryItem) => void;
@@ -467,6 +631,29 @@ function ItemsTab({
       align: "right",
       tabular: true,
       render: (item) => `${formatQuantity(item.minQuantity)} / ${item.maxQuantity != null ? formatQuantity(item.maxQuantity) : "—"}`,
+    },
+    {
+      // F7b — ponto de pedido (R7.5) + chip-link "Repor" (sugestão, sem automatizar compra).
+      key: "reorderPoint",
+      header: "Ponto de pedido",
+      sortable: true,
+      align: "right",
+      tabular: true,
+      sortValue: (item) => item.reorderPoint,
+      render: (item) => (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
+          <span>{formatReorderPoint(item.reorderPoint)}</span>
+          {item.needsReorder ? (
+            <Link
+              to="/purchase-orders"
+              aria-label={`Sugerir reposição de ${item.sku} em Pedidos`}
+              style={{ textDecoration: "none" }}
+            >
+              <Chip tone={getReorderChipTone()}>{getReorderChipLabel()}</Chip>
+            </Link>
+          ) : null}
+        </span>
+      ),
     },
     {
       key: "avgCost",
@@ -530,8 +717,8 @@ function ItemsTab({
 
   const denseFilter = useCallback(
     (rows: readonly InventoryItem[], base: { search: string; isActive: InventoryStatusFilter }) =>
-      filterInventoryItems(rows, { ...base, belowMin: belowMinOnly || undefined }),
-    [belowMinOnly],
+      filterInventoryItems(rows, { ...base, belowMin: belowMinOnly || undefined, needsReorder: needsReorderOnly || undefined }),
+    [belowMinOnly, needsReorderOnly],
   );
 
   const dense = useDenseList<InventoryItem>({ items, columns, filter: denseFilter, defaultSort: { key: "sku", dir: "asc" } });
@@ -553,9 +740,19 @@ function ItemsTab({
             </Button>
           ))}
         </div>
-        <Button type="button" size="sm" variant={belowMinOnly ? "primary" : "ghost"} aria-pressed={belowMinOnly} onClick={onToggleBelowMin}>
-          <AlertTriangle size={14} aria-hidden /> Abaixo do mínimo
-        </Button>
+        <div style={statusRowStyle}>
+          <Button type="button" size="sm" variant={belowMinOnly ? "primary" : "ghost"} aria-pressed={belowMinOnly} onClick={onToggleBelowMin}>
+            <AlertTriangle size={14} aria-hidden /> Abaixo do mínimo
+          </Button>
+          <Button type="button" size="sm" variant={needsReorderOnly ? "primary" : "ghost"} aria-pressed={needsReorderOnly} onClick={onToggleNeedsReorder}>
+            <ShoppingCart size={14} aria-hidden /> Precisa repor
+          </Button>
+          {canUpdate ? (
+            <Button type="button" size="sm" variant="secondary" onClick={onRecalcAbc}>
+              <Layers size={14} aria-hidden /> Recalcular ABC
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       {error ? (
@@ -584,8 +781,8 @@ function ItemsTab({
           <EmptyState
             title="Nenhum item encontrado"
             detail={
-              dense.hasActiveFilters || belowMinOnly
-                ? "Ajuste a busca, a situação ou o filtro de reposição para encontrar itens."
+              dense.hasActiveFilters || belowMinOnly || needsReorderOnly
+                ? "Ajuste a busca, a situação ou os filtros de reposição para encontrar itens."
                 : "Cadastre o primeiro item para controlar saldo, custo médio e reposição."
             }
           />
@@ -826,6 +1023,228 @@ function MovementsTab({
       </Card>
     </>
   );
+}
+
+// ── Aba Contagem (F7b · R7.6 — sessões de contagem cíclica) ──────────────────
+function CycleCountsTab({
+  context,
+  itemById,
+  canCreate,
+  canManage,
+}: {
+  readonly context: {
+    readonly token?: string;
+    readonly tenantId?: string;
+    readonly branchId?: string;
+    readonly role?: string;
+    readonly permissions?: string[];
+  };
+  readonly itemById: ReadonlyMap<string, InventoryItem>;
+  readonly canCreate: boolean;
+  readonly canManage: boolean;
+}) {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const statusParam = searchParams.get("cc_status");
+  const ccStatus: CycleCountStatusFilter = isCycleCountStatusFilter(statusParam) ? statusParam : "all";
+  const classParam = searchParams.get("cc_class");
+  const ccClass: CycleCountClassFilter = isCycleCountClassFilter(classParam) ? classParam : "all";
+
+  const filters = useMemo<CycleCountsFilters>(
+    () => ({ status: ccStatus, abcClass: ccClass, limit: DENSE_LIST_FETCH_LIMIT }),
+    [ccStatus, ccClass],
+  );
+  const { items: cycleCounts, pagination, loading, error, refresh } = useCycleCounts(filters);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  const setFilterParam = useCallback(
+    (key: "cc_status" | "cc_class", value: string) => {
+      const next = new URLSearchParams(searchParams);
+      if (value && value !== "all") next.set(key, value);
+      else next.delete(key);
+      next.delete("page");
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const columns: DenseColumn<CycleCount>[] = [
+    {
+      key: "createdAt",
+      header: "Data",
+      sortable: true,
+      tabular: true,
+      sortValue: (session) => Date.parse(session.createdAt) || null,
+      render: (session) => formatMovementDateTime(session.createdAt),
+    },
+    {
+      key: "abcClass",
+      header: "Classe",
+      sortable: true,
+      sortValue: (session) => getCycleCountClassLabel(session.abcClass),
+      render: (session) => getCycleCountClassLabel(session.abcClass),
+    },
+    {
+      key: "status",
+      header: "Situação",
+      sortable: true,
+      sortValue: (session) => getCycleCountStatusLabel(session.status),
+      render: (session) => <Chip tone={getCycleCountStatusTone(session.status)}>{getCycleCountStatusLabel(session.status)}</Chip>,
+    },
+    {
+      key: "progress",
+      header: "Itens contados/total",
+      align: "right",
+      tabular: true,
+      sortable: true,
+      sortValue: (session) => session.countedCount,
+      render: (session) => `${session.countedCount.toLocaleString("pt-BR")} / ${session.totalCount.toLocaleString("pt-BR")}`,
+    },
+    {
+      key: "actions",
+      header: "Ações",
+      render: (session) => (
+        <div className="work-orders-row-actions">
+          <Button type="button" size="sm" variant="secondary" aria-label={`Abrir contagem de ${formatMovementDateTime(session.createdAt)}`} onClick={() => setSessionId(session.id)}>
+            <ClipboardList size={14} aria-hidden /> Abrir
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  const denseFilter = useCallback((rows: readonly CycleCount[], base: { search: string; isActive: InventoryStatusFilter }) => {
+    const search = base.search.trim().toLowerCase();
+    if (!search) return [...rows];
+    return rows.filter((session) =>
+      [getCycleCountStatusLabel(session.status), getCycleCountClassLabel(session.abcClass), session.id]
+        .some((value) => value.toLowerCase().includes(search)),
+    );
+  }, []);
+
+  const dense = useDenseList<CycleCount>({ items: cycleCounts, columns, filter: denseFilter, defaultSort: { key: "createdAt", dir: "desc" } });
+
+  const hasExtraFilters = ccStatus !== "all" || ccClass !== "all";
+
+  return (
+    <>
+      <div style={chipRowStyle}>
+        <div style={filterGroupStyle}>
+          <div style={filterFieldStyle}>
+            <Select label="Situação" value={ccStatus} onChange={(event) => setFilterParam("cc_status", event.target.value)}>
+              {CYCLE_COUNT_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div style={filterFieldStyle}>
+            <Select label="Classe" value={ccClass} onChange={(event) => setFilterParam("cc_class", event.target.value)}>
+              {CYCLE_COUNT_CLASS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </div>
+        {canCreate ? (
+          <Button type="button" onClick={() => setModalOpen(true)}>
+            <Plus size={16} aria-hidden /> Nova contagem
+          </Button>
+        ) : null}
+      </div>
+
+      {error ? (
+        <div style={alertSectionStyle}>
+          <Alert title="Não foi possível carregar as contagens" tone="warning">
+            {error}{" "}
+            <Button type="button" size="sm" variant="secondary" onClick={() => void refresh()}>
+              Tentar novamente
+            </Button>
+          </Alert>
+        </div>
+      ) : null}
+
+      <Card
+        title="Contagens cíclicas"
+        action={
+          <span style={countStyle}>
+            {dense.total} contagem(ns)
+            {pagination.total > cycleCounts.length ? ` · janela: primeiras ${cycleCounts.length} de ${pagination.total}` : ""}
+          </span>
+        }
+      >
+        {loading && cycleCounts.length === 0 ? <Skeleton lines={5} /> : null}
+
+        {!loading && !error && dense.total === 0 ? (
+          <EmptyState
+            title="Nenhuma contagem encontrada"
+            detail={
+              dense.hasActiveFilters || hasExtraFilters
+                ? "Ajuste a busca, a situação ou a classe para encontrar contagens."
+                : "Abra a primeira sessão por classe (A/B/C ou todas) — a variância apurada vira ajuste ao fechar."
+            }
+          />
+        ) : null}
+
+        {!error && dense.total > 0 ? (
+          <>
+            <DenseTable rows={dense.visibleItems} keyForRow={(session) => session.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseListPagination
+              page={dense.page}
+              pageSize={dense.pageSize}
+              pageSizeOptions={dense.pageSizeOptions}
+              total={dense.total}
+              totalPages={dense.totalPages}
+              pageStart={dense.pageStart}
+              pageEnd={dense.pageEnd}
+              onPageChange={dense.setPage}
+              onPageSizeChange={dense.setPageSize}
+            />
+          </>
+        ) : null}
+      </Card>
+
+      {modalOpen ? (
+        <CycleCountModal
+          context={context}
+          onClose={() => setModalOpen(false)}
+          onCreated={(created) => {
+            setModalOpen(false);
+            setSessionId(created.id);
+            void refresh();
+          }}
+        />
+      ) : null}
+
+      {sessionId ? (
+        <CycleCountSessionDrawer
+          key={sessionId}
+          cycleCountId={sessionId}
+          context={context}
+          itemById={itemById}
+          canManage={canManage}
+          onClose={() => {
+            setSessionId(null);
+            void refresh();
+          }}
+          onChanged={() => void refresh()}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function isCycleCountStatusFilter(value: string | null): value is CycleCountStatusFilter {
+  return value === "all" || value === "aberta" || value === "concluida" || value === "cancelada";
+}
+
+function isCycleCountClassFilter(value: string | null): value is CycleCountClassFilter {
+  return value === "all" || value === "A" || value === "B" || value === "C";
 }
 
 export default EstoquePage;

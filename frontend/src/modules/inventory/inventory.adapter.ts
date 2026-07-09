@@ -1,5 +1,6 @@
 import { formatBRL } from "../registry/service-catalog/service-catalog.adapter";
 import type {
+  AbcRecalculateSummary,
   InventoryAbcClass,
   InventoryItem,
   InventoryItemDraft,
@@ -71,6 +72,43 @@ export function getAbcClassLabel(abcClass: InventoryAbcClass | null): string {
   return abcClass ?? "—";
 }
 
+// ── Ponto de pedido / reposição sugerida (F7b · R7.5) ────────────────────────
+// `needsReorder` (saldo ≤ ponto de pedido) → chip de PERIGO "Repor" com cor+rótulo.
+// É apenas SUGESTÃO: o link leva a /purchase-orders sem automatizar a compra.
+export const REORDER_CHIP = { label: "Repor", tone: "danger" as const };
+
+export function getReorderChipLabel(): string {
+  return REORDER_CHIP.label;
+}
+
+export function getReorderChipTone(): "danger" {
+  return REORDER_CHIP.tone;
+}
+
+// Ponto de pedido formatado ("—" quando o servidor ainda não o calculou).
+export function formatReorderPoint(reorderPoint: number | null | undefined, unit?: string): string {
+  return formatQuantity(reorderPoint, unit);
+}
+
+// ── Recálculo ABC (F7b · R7.4 — Pareto por valor de consumo 12m) ─────────────
+export function adaptAbcRecalculateResponse(response: unknown): AbcRecalculateSummary {
+  const payload = readRecord(response);
+  const data = readRecord(payload?.data) ?? payload;
+  return {
+    A: readNumber(data, ["A", "a"]) ?? 0,
+    B: readNumber(data, ["B", "b"]) ?? 0,
+    C: readNumber(data, ["C", "c"]) ?? 0,
+    recalculatedAt: readString(data, ["recalculatedAt", "recalculated_at"]) ?? null,
+  };
+}
+
+// Resumo textual do recálculo para a confirmação de sucesso.
+export function formatAbcRecalcSummary(summary: AbcRecalculateSummary): string {
+  const total = summary.A + summary.B + summary.C;
+  const format = (value: number) => value.toLocaleString("pt-BR");
+  return `Classe A: ${format(summary.A)} · Classe B: ${format(summary.B)} · Classe C: ${format(summary.C)} · Total: ${format(total)} item(ns)`;
+}
+
 // ── Adaptação de respostas (envelope {data:{items,pagination}}) ──────────────
 export function adaptInventoryItemsResponse(response: unknown, source: InventorySource = "api", fallbackReason?: string): InventoryItemsData {
   const payload = readRecord(response);
@@ -126,6 +164,7 @@ function adaptInventoryItem(input: unknown): InventoryItem | null {
   const minQuantity = readNumber(item, ["minQuantity", "min_quantity"]) ?? 0;
   const saldo = readNumber(item, ["saldo"]) ?? 0;
   const abcRaw = readString(item, ["abcClass", "abc_class"]);
+  const reorderPoint = readNullableNumber(item, ["reorderPoint", "reorder_point"]);
 
   return {
     id,
@@ -138,6 +177,9 @@ function adaptInventoryItem(input: unknown): InventoryItem | null {
     avgCost: readNumber(item, ["avgCost", "avg_cost"]) ?? 0,
     leadTimeDays: readNullableNumber(item, ["leadTimeDays", "lead_time_days"]),
     safetyStock: readNullableNumber(item, ["safetyStock", "safety_stock"]),
+    // F7b — ponto de pedido computado no servidor; needsReorder deriva de saldo ≤ ponto.
+    reorderPoint,
+    needsReorder: readBoolean(item, ["needsReorder", "needs_reorder"]) ?? (reorderPoint != null && saldo <= reorderPoint),
     saldo,
     // O servidor computa `belowMin`; se a flag faltar, deriva do saldo × mínimo.
     belowMin: readBoolean(item, ["belowMin", "below_min"]) ?? saldo < minQuantity,
@@ -175,6 +217,8 @@ export type InventoryItemFilterCriteria = {
   readonly search: string;
   readonly isActive: InventoryStatusFilter;
   readonly belowMin?: boolean;
+  // F7b — filtro "Precisa repor" (saldo ≤ ponto de pedido).
+  readonly needsReorder?: boolean;
 };
 
 export function filterInventoryItems(items: readonly InventoryItem[], criteria: InventoryItemFilterCriteria): InventoryItem[] {
@@ -184,9 +228,17 @@ export function filterInventoryItems(items: readonly InventoryItem[], criteria: 
     if (criteria.isActive === "active" && !item.isActive) return false;
     if (criteria.isActive === "inactive" && item.isActive) return false;
     if (criteria.belowMin && !item.belowMin) return false;
+    if (criteria.needsReorder && !item.needsReorder) return false;
 
     if (!search) return true;
-    return [item.sku, item.name, item.unit, getAbcClassLabel(item.abcClass), getReplenishmentLabel(item.belowMin)]
+    return [
+      item.sku,
+      item.name,
+      item.unit,
+      getAbcClassLabel(item.abcClass),
+      getReplenishmentLabel(item.belowMin),
+      item.needsReorder ? getReorderChipLabel() : "",
+    ]
       .filter(Boolean)
       .some((value) => normalize(String(value)).includes(search));
   });
@@ -376,17 +428,21 @@ export function interpretStockMovementSubmitError(error: unknown, context: Stock
 export type InventoryTotals = {
   readonly activeItems: number;
   readonly belowMinItems: number;
+  // F7b — itens que atingiram o ponto de pedido (precisam repor).
+  readonly needsReorderItems: number;
   readonly movementsCount: number;
 };
 
 export function computeInventoryTotals(items: readonly InventoryItem[], movements: readonly StockMovement[]): InventoryTotals {
   let activeItems = 0;
   let belowMinItems = 0;
+  let needsReorderItems = 0;
   for (const item of items) {
     if (item.isActive) activeItems += 1;
     if (item.belowMin) belowMinItems += 1;
+    if (item.needsReorder) needsReorderItems += 1;
   }
-  return { activeItems, belowMinItems, movementsCount: movements.length };
+  return { activeItems, belowMinItems, needsReorderItems, movementsCount: movements.length };
 }
 
 // Movimentações do item nos últimos 30 dias (stat do detalhe).

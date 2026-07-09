@@ -1,12 +1,14 @@
 import { isMockMode } from "../../config/env";
 import { apiRequest } from "../../services/api/client";
 import {
+  adaptAbcRecalculateResponse,
   adaptInventoryItemResponse,
   adaptInventoryItemsResponse,
   adaptStockMovementResponse,
   adaptStockMovementsResponse,
 } from "./inventory.adapter";
 import type {
+  AbcRecalculateSummary,
   InventoryApiContext,
   InventoryItem,
   InventoryItemCreatePayload,
@@ -67,6 +69,17 @@ export async function updateInventoryItem(context: InventoryApiContext, id: stri
   return adaptInventoryItemResponse(response);
 }
 
+// F7b — recálculo ABC (rota admin): recomputa as classes por Pareto (valor 12m) e
+// devolve o resumo {A,B,C,recalculatedAt}. Reescreve TODAS as classes (confirmar na UI).
+export async function recalculateAbc(context: InventoryApiContext): Promise<AbcRecalculateSummary> {
+  const response = await apiRequest<unknown>("/inventory-items/abc-recalculate", {
+    ...context,
+    method: "POST",
+    body: {},
+  });
+  return adaptAbcRecalculateResponse(response);
+}
+
 export async function listStockMovementsFromApi(context: InventoryApiContext, params: Partial<StockMovementsFilters> = {}): Promise<StockMovementsData> {
   if (isMockMode()) {
     return { items: [], pagination: { ...EMPTY_PAGINATION }, source: "mock" };
@@ -102,6 +115,7 @@ function buildItemsQuery(params: Partial<InventoryItemsFilters>): string {
   if (params.isActive === "active") query.set("is_active", "true");
   if (params.isActive === "inactive") query.set("is_active", "false");
   if (params.belowMin) query.set("below_min", "true");
+  if (params.needsReorder) query.set("needs_reorder", "true");
   if (params.limit && Number.isFinite(params.limit)) query.set("limit", String(params.limit));
   if (params.offset && Number.isFinite(params.offset)) query.set("offset", String(params.offset));
   return query.size ? `?${query.toString()}` : "";

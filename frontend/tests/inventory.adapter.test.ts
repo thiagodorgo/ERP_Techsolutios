@@ -12,6 +12,8 @@ function makeItem(partial: Partial<InventoryItem> & Pick<InventoryItem, "id" | "
     avgCost: 0,
     leadTimeDays: null,
     safetyStock: null,
+    reorderPoint: null,
+    needsReorder: false,
     saldo: 0,
     belowMin: false,
     isActive: true,
@@ -356,4 +358,178 @@ test("inventory adapter: filtros client-side (busca/situação/reposição em it
   // Busca pelo código resolvido da OS.
   const resolveWorkOrderCode = (id: string) => (id === "wo-1" ? "OS-1042" : undefined);
   assert.deepEqual(filterStockMovements(movements, { search: "os-1042", resolveWorkOrderCode }).map((m) => m.id), ["m2"]);
+});
+
+// ── F7b Estoque avançado ──────────────────────────────────────────────────────
+
+test("inventory adapter (F7b): item normaliza reorderPoint/needsReorder do servidor (e deriva quando faltam)", async () => {
+  const { adaptInventoryItemsResponse } = await import("../src/modules/inventory/inventory.adapter");
+
+  const data = adaptInventoryItemsResponse({
+    data: {
+      items: [
+        // Servidor manda a flag needs_reorder + reorder_point explícitos.
+        { id: "i1", sku: "ELE-1", name: "Cabo", saldo: 8, reorder_point: 20, needs_reorder: true },
+        // Sem a flag: deriva de saldo ≤ ponto de pedido.
+        { id: "i2", sku: "ELE-2", name: "Conector", saldo: 40, reorder_point: 15 },
+        // Ponto de pedido ausente → null e não precisa repor.
+        { id: "i3", sku: "ELE-3", name: "Fita", saldo: 3 },
+      ],
+      pagination: { limit: 20, offset: 0, total: 3 },
+    },
+  });
+
+  assert.equal(data.items[0].reorderPoint, 20);
+  assert.equal(data.items[0].needsReorder, true);
+  assert.equal(data.items[1].reorderPoint, 15);
+  assert.equal(data.items[1].needsReorder, false); // 40 > 15 → não repõe
+  assert.equal(data.items[2].reorderPoint, null);
+  assert.equal(data.items[2].needsReorder, false);
+});
+
+test("inventory adapter (F7b): chip 'Repor' (cor de perigo + rótulo) e ponto de pedido '—' quando null", async () => {
+  const { REORDER_CHIP, getReorderChipLabel, getReorderChipTone, formatReorderPoint } = await import(
+    "../src/modules/inventory/inventory.adapter"
+  );
+
+  assert.equal(REORDER_CHIP.label, "Repor");
+  assert.equal(REORDER_CHIP.tone, "danger");
+  assert.equal(getReorderChipLabel(), "Repor");
+  assert.equal(getReorderChipTone(), "danger");
+
+  assert.equal(formatReorderPoint(null), "—");
+  assert.match(formatReorderPoint(20, "un"), /20 un/);
+});
+
+test("inventory adapter (F7b): filtro 'Precisa repor' e total 'Precisam repor'", async () => {
+  const { filterInventoryItems, computeInventoryTotals } = await import("../src/modules/inventory/inventory.adapter");
+
+  const items = [
+    makeItem({ id: "1", sku: "A", name: "Item A", needsReorder: true, belowMin: true }),
+    makeItem({ id: "2", sku: "B", name: "Item B", needsReorder: false }),
+    makeItem({ id: "3", sku: "C", name: "Item C", needsReorder: true }),
+  ];
+
+  // needs_reorder=true → só itens que atingiram o ponto de pedido.
+  assert.deepEqual(filterInventoryItems(items, { search: "", isActive: "all", needsReorder: true }).map((i) => i.id), ["1", "3"]);
+  // Combina com busca pelo rótulo "Repor".
+  assert.deepEqual(filterInventoryItems(items, { search: "repor", isActive: "all" }).map((i) => i.id), ["1", "3"]);
+
+  const totals = computeInventoryTotals(items, []);
+  assert.equal(totals.needsReorderItems, 2);
+});
+
+test("inventory adapter (F7b): recálculo ABC parseia {A,B,C,recalculatedAt} e formata resumo", async () => {
+  const { adaptAbcRecalculateResponse, formatAbcRecalcSummary } = await import("../src/modules/inventory/inventory.adapter");
+
+  const summary = adaptAbcRecalculateResponse({ data: { A: 12, B: 30, C: 58, recalculatedAt: "2026-07-09T10:00:00.000Z" } });
+  assert.equal(summary.A, 12);
+  assert.equal(summary.B, 30);
+  assert.equal(summary.C, 58);
+  assert.equal(summary.recalculatedAt, "2026-07-09T10:00:00.000Z");
+
+  const text = formatAbcRecalcSummary(summary);
+  assert.match(text, /Classe A: 12/);
+  assert.match(text, /Classe B: 30/);
+  assert.match(text, /Classe C: 58/);
+  assert.match(text, /Total: 100/); // 12+30+58
+
+  // Resposta malformada degrada para zeros sem lançar.
+  const bare = adaptAbcRecalculateResponse(null);
+  assert.equal(bare.A, 0);
+  assert.equal(bare.recalculatedAt, null);
+});
+
+test("cycle-counts adapter (F7b): situação PT-BR (aberta=warning/concluida=success/cancelada=muted) e classe 'Todas'", async () => {
+  const { getCycleCountStatusLabel, getCycleCountStatusTone, getCycleCountClassLabel, isCycleCountStatus, isCycleCountEditable } = await import(
+    "../src/modules/inventory/cycle-counts.adapter"
+  );
+
+  assert.equal(getCycleCountStatusLabel("aberta"), "Aberta");
+  assert.equal(getCycleCountStatusLabel("concluida"), "Concluída");
+  assert.equal(getCycleCountStatusLabel("cancelada"), "Cancelada");
+
+  assert.equal(getCycleCountStatusTone("aberta"), "warning");
+  assert.equal(getCycleCountStatusTone("concluida"), "success");
+  assert.equal(getCycleCountStatusTone("cancelada"), "default");
+
+  // Classe null = Todas as classes.
+  assert.equal(getCycleCountClassLabel(null), "Todas");
+  assert.equal(getCycleCountClassLabel("B"), "B");
+
+  assert.equal(isCycleCountStatus("aberta"), true);
+  assert.equal(isCycleCountStatus("pausada"), false);
+  assert.equal(isCycleCountEditable("aberta"), true);
+  assert.equal(isCycleCountEditable("concluida"), false);
+});
+
+test("cycle-counts adapter (F7b): variância computada e relatório (linhas ≠ 0, total, ajustes gerados)", async () => {
+  const { computeVariance, buildVarianceReport, adaptCycleCountResponse, adaptCycleCountCloseResponse } = await import(
+    "../src/modules/inventory/cycle-counts.adapter"
+  );
+
+  // Variância = contado − sistema; null enquanto não há contagem.
+  assert.equal(computeVariance(10, 12), 2);
+  assert.equal(computeVariance(10, 7), -3);
+  assert.equal(computeVariance(10, null), null);
+
+  // Detalhe da sessão computa a variância por entrada quando o servidor não a manda.
+  const session = adaptCycleCountResponse({
+    data: {
+      id: "cc-1",
+      abc_class: "A",
+      status: "aberta",
+      entries: [
+        { id: "e1", item_id: "i1", system_quantity: 10, counted_quantity: 12 }, // +2
+        { id: "e2", item_id: "i2", system_quantity: 5, counted_quantity: 5 }, // 0 (sem variância)
+        { id: "e3", item_id: "i3", system_quantity: 8 }, // não contado
+      ],
+    },
+  });
+  assert.ok(session);
+  assert.equal(session?.abcClass, "A");
+  assert.equal(session?.entries[0].variance, 2);
+  assert.equal(session?.entries[1].variance, 0);
+  assert.equal(session?.entries[2].variance, null);
+  assert.equal(session?.countedCount, 2);
+  assert.equal(session?.totalCount, 3);
+
+  // Relatório: só a linha com variância ≠ 0 entra; total soma as variâncias.
+  const report = buildVarianceReport(session?.entries ?? []);
+  assert.equal(report.lines.length, 1);
+  assert.equal(report.lines[0].entryId, "e1");
+  assert.equal(report.totalVariance, 2);
+  assert.equal(report.adjustmentsGenerated, 1);
+
+  // Fechamento devolve relatório + nº de ajustes gerados quando o servidor o informa.
+  const closed = adaptCycleCountCloseResponse({
+    data: {
+      cycleCount: {
+        id: "cc-1",
+        status: "concluida",
+        entries: [
+          { id: "e1", item_id: "i1", system_quantity: 10, counted_quantity: 12, variance: 2, adjustment_movement_id: "mv-1" },
+          { id: "e2", item_id: "i2", system_quantity: 5, counted_quantity: 5, variance: 0 },
+        ],
+      },
+      adjustmentsGenerated: 1,
+    },
+  });
+  assert.equal(closed.cycleCount.status, "concluida");
+  assert.equal(closed.report.lines.length, 1);
+  assert.equal(closed.report.totalVariance, 2);
+  assert.equal(closed.report.adjustmentsGenerated, 1);
+});
+
+test("cycle-counts adapter (F7b): 422 invalid-status → mensagem de contagem já encerrada; genérico preservado", async () => {
+  const { interpretCycleCountError } = await import("../src/modules/inventory/cycle-counts.adapter");
+
+  const invalid = interpretCycleCountError({ status: 422, error: { reason: "invalid-status" } });
+  assert.equal(invalid.reason, "invalid-status");
+  assert.match(invalid.message, /concluída ou cancelada/);
+
+  const forbidden = interpretCycleCountError({ status: 403 });
+  assert.match(forbidden.message, /permissão/);
+
+  assert.equal(interpretCycleCountError(new Error("Falha de rede")).message, "Falha de rede");
 });
