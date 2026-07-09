@@ -76,6 +76,7 @@ const FinanceiroPage = lazy(() => import("./modules/finance/pages/FinanceiroPage
 const ChargesPage = lazy(() => import("./modules/finance/pages/ChargesPage").then((m) => ({ default: m.ChargesPage })));
 const InvoicesPage = lazy(() => import("./modules/finance/pages/InvoicesPage").then((m) => ({ default: m.InvoicesPage })));
 const PaymentsPage = lazy(() => import("./modules/finance/pages/PaymentsPage").then((m) => ({ default: m.PaymentsPage })));
+const RemuneracoesPage = lazy(() => import("./modules/finance/commissions/pages/RemuneracoesPage").then((m) => ({ default: m.RemuneracoesPage })));
 
 const PlatformCloudBillingPage = lazy(() =>
   import("./modules/platform/cloud-billing/pages/PlatformCloudBillingPage").then((m) => ({
@@ -423,6 +424,15 @@ export function App() {
               element={
                 <PermissionGuard permissions={["finance:read"]}>
                   <PaymentsPage />
+                </PermissionGuard>
+              }
+            />
+            {/* F8 Remunerações — extrato de comissões (adaptativo por permissão: read → todos; read_own → próprio). */}
+            <Route
+              path="/finance/commissions"
+              element={
+                <PermissionGuard permissions={["commissions:read", "commissions:read_own"]}>
+                  <RemuneracoesPage />
                 </PermissionGuard>
               }
             />
