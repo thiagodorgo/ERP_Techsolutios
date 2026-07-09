@@ -332,3 +332,25 @@
   e a reestruturacao do NAV_BY_ROLE ficam para F11.)
 - impacto: sem migration, sem tabela nova, sem permissao nova; toca 4 services (add repo factory, aditivo)
   + modulo de notificacoes + AppShell (so o badge de notificacoes). `screen-element-map` §F10 atualizado.
+
+## D-021 - F11: IA da sidebar (5 grupos) + reconciliacao de vocabulario RBAC + badges reais (2026-07-09) [Claude Code]
+
+- status: aplicada (aplica `docs/sidebar-ia.md` sobre `NAV_BY_ROLE`+`MVP_NAV_PATHS`; frontend-only)
+- decisao 1 (IA): `NAV_BY_ROLE` reestruturado nos 5 grupos **VISAO GERAL/OPERACAO/FROTA/GESTAO/
+  ADMINISTRACAO** (config pura extraida p/ `frontend/src/layouts/appSidebarNav.ts`); `MVP_NAV_PATHS`
+  expandido com `/fleet/*`, `/inventory`, `/purchase-orders`, `/reports`, `/finance`, `/finance/commissions`,
+  `/users`, `/audit` -> as telas F1-F8 finalmente aparecem no menu. **Grupo `finance` RESTAURADO** (via
+  RoleKind); novo RoleKind `support` (so ADMINISTRACAO). `roleKindFor` corrige Supervisor/Operacao de Campo.
+- decisao 2 (vocab): reconciliacao para o vocabulario do **backend** (`catalog.ts`) mantendo alias legado
+  (guards usam `hasAny`/OR -> aditivo, retrocompativel; nao quebra a sessao mock). Ex.: `dashboard:view`+
+  `dashboard:read`, `users:read`+`users.read`, `audit:view`+`audit:read/.read`, `tenant:manage`+`tenant.manage`.
+  Novo escopo `fleet`->label "Frota".
+- decisao 3 (badges reais): **mata o resto do P-011** — badge de **Aprovacoes** = contagem real de pendentes
+  (`getPendingApprovals`/`GET /approvals/pending`, padrao do sino); zero badge numerico literal no AppShell.
+  Badges de dominio (vencendo/a vencer/reposicao) OMITIDOS (sem numero fabricado) -> enhancement futuro.
+- decisao 4 (teste): `sidebar-nav.test.tsx` (9 papeis canonicos x matriz — camada RBAC por permissao +
+  camada visual por kind); estilo/colapso/tokens (navy/ativo/236<->74/lucide) CONGELADOS e intactos.
+- sinalizado (nao bloqueia): P-026 (`UserRole` do front nao cobre `inventory` -> menu visual aproxima;
+  acesso e por permissao), P-027 (divergencias matriz x catalog + `purchase_orders:read`/`reports:read`
+  ausentes no catalogo -> **bloco backend de reconciliacao de permissoes**). P-024 (vocab de usuarios) RESOLVIDO.
+- impacto: frontend-only; sem backend/migration/permissao nova. Aditivo.

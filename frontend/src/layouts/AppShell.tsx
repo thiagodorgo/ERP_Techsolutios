@@ -1,187 +1,19 @@
-import {
-  Activity,
-  BarChart3,
-  Bell,
-  CheckCircle,
-  ChevronDown,
-  ClipboardList,
-  Contact,
-  CreditCard,
-  FileText,
-  LayoutDashboard,
-  ListChecks,
-  LogOut,
-  MapPin,
-  Package,
-  Receipt,
-  Route as RouteIcon,
-  Search,
-  Send,
-  Settings,
-  ShieldCheck,
-  Truck,
-  Users,
-  UsersRound,
-  Wallet,
-  Wrench,
-  type LucideIcon,
-} from "lucide-react";
+import { Bell, ChevronDown, LogOut, Package, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { useNavigationMenu } from "../modules/navigation/useNavigationMenu";
 import { getUnreadNotificationCount } from "../modules/notifications/notification.service";
+import { listAllPendingApprovals } from "../modules/work-orders/approval.service";
 import { useAuth } from "../providers/AuthProvider";
 import { usePermissions } from "../providers/PermissionProvider";
 import { useTenantContext } from "../providers/TenantProvider";
-
-type NavItem = { label: string; path: string; icon: LucideIcon; badge?: number };
-type NavGroup = { label: string; items: readonly NavItem[] };
-type RoleKind = "finance" | "dispatcher" | "admin" | "gestor";
-
-// Grupo de Cadastros — registros operacionais (clientes, viaturas, equipes, serviços).
-const CADASTROS_GROUP: NavGroup = {
-  label: "CADASTROS",
-  items: [
-    { label: "Clientes", path: "/cadastros/clientes", icon: Contact },
-    { label: "Viaturas", path: "/cadastros/viaturas", icon: Truck },
-    { label: "Equipes", path: "/cadastros/equipes", icon: UsersRound },
-    { label: "Serviços", path: "/cadastros/servicos", icon: Wrench },
-  ],
-};
-
-// Navegação por papel — espelha `nav per role` do protótipo (ERP Web.dc.html).
-const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
-  gestor: [
-    {
-      label: "OPERAÇÃO",
-      items: [
-        { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-        { label: "Ordens de Serviço", path: "/work-orders", icon: ClipboardList },
-        { label: "Despachos", path: "/operations/dispatches", icon: Send },
-        { label: "Mapa Operacional", path: "/operations/map", icon: MapPin },
-        { label: "Aprovações", path: "/approvals", icon: CheckCircle, badge: 3 },
-      ],
-    },
-    CADASTROS_GROUP,
-    {
-      label: "CHECKLISTS & CONTA",
-      items: [
-        { label: "Checklists", path: "/operations/checklists", icon: ListChecks },
-        { label: "Builder de checklists", path: "/administrator/checklists", icon: ClipboardList },
-        { label: "Notificações", path: "/notifications", icon: Bell },
-        { label: "Configurações", path: "/administrator/settings", icon: Settings },
-      ],
-    },
-  ],
-  dispatcher: [
-    {
-      label: "OPERAÇÃO DE CAMPO",
-      items: [
-        { label: "Console Tempo Real", path: "/dispatch/console", icon: Activity },
-        { label: "Mapa Operacional", path: "/operations/map", icon: MapPin },
-        { label: "Fila de Despacho", path: "/operations/dispatches", icon: Send },
-        { label: "Rotas", path: "/logistics", icon: RouteIcon },
-        { label: "Técnicos · Disponib.", path: "/field-operators", icon: Users },
-      ],
-    },
-    CADASTROS_GROUP,
-    {
-      label: "SUPORTE",
-      items: [
-        { label: "Ordens de Serviço", path: "/work-orders", icon: ClipboardList },
-        { label: "Relatórios Operacionais", path: "/reports", icon: BarChart3 },
-      ],
-    },
-  ],
-  finance: [
-    {
-      label: "FINANCEIRO",
-      items: [
-        { label: "Financeiro", path: "/finance", icon: Wallet },
-        { label: "Cobranças", path: "/finance/charges", icon: Receipt },
-        { label: "Faturas", path: "/finance/invoices", icon: FileText },
-        { label: "Pagamentos", path: "/finance/payments", icon: CreditCard },
-      ],
-    },
-    {
-      label: "GESTÃO",
-      items: [
-        { label: "Aprovações", path: "/approvals", icon: CheckCircle, badge: 3 },
-        { label: "Relatórios", path: "/reports", icon: BarChart3 },
-        { label: "Estoque", path: "/inventory", icon: Package },
-      ],
-    },
-  ],
-  admin: [
-    {
-      label: "ADMINISTRAÇÃO",
-      items: [
-        { label: "Checklists", path: "/administrator/checklists", icon: ListChecks },
-        { label: "Usuários", path: "/users", icon: Users },
-        { label: "Configurações da Organização", path: "/administrator/settings", icon: Settings },
-        { label: "Auditoria", path: "/audit", icon: ShieldCheck },
-      ],
-    },
-    CADASTROS_GROUP,
-    {
-      label: "CONTA",
-      items: [
-        { label: "Notificações", path: "/notifications", icon: Bell },
-        { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-      ],
-    },
-  ],
-};
-
-const ROLE_SUBTITLE: Record<RoleKind, string> = {
-  gestor: "Gestor de operações",
-  dispatcher: "Operação de campo",
-  finance: "Financeiro",
-  admin: "Administrador",
-};
-
-// §4.3 — a navegação mostra SOMENTE telas do MVP web (esconde estoque, compras,
-// faturamento, relatórios avançados, roteirização, platform admin, etc.).
-const MVP_NAV_PATHS = new Set<string>([
-  "/dashboard",
-  "/work-orders",
-  "/operations/dispatches",
-  "/operations/map",
-  "/operations/checklists",
-  "/cadastros/clientes",
-  "/cadastros/viaturas",
-  "/cadastros/equipes",
-  "/cadastros/servicos",
-  "/approvals",
-  "/notifications",
-  "/administrator/checklists",
-  "/administrator/settings",
-]);
+import { ROLE_SUBTITLE, buildSidebarNav, currentNavTitle, roleKindFor } from "./appSidebarNav";
 
 const NAVY = "#0D1B2A";
 const ACTIVE = "#2563EB";
 const NAV_IDLE = "#9FB4CC";
 const GROUP_LABEL = "#41607A";
-
-function roleKindFor(roles: readonly string[]): RoleKind {
-  if (roles.includes("Financeiro")) return "finance";
-  if (roles.includes("Operador Logistico")) return "dispatcher";
-  if (roles.includes("Administrador") && !roles.includes("Gestor Operacional")) return "admin";
-  return "gestor";
-}
-
-function currentTitle(nav: readonly NavGroup[], pathname: string): string {
-  let best: NavItem | null = null;
-  for (const group of nav) {
-    for (const item of group.items) {
-      if (pathname === item.path || pathname.startsWith(`${item.path}/`)) {
-        if (!best || item.path.length > best.path.length) best = item;
-      }
-    }
-  }
-  return best?.label ?? "Operação";
-}
 
 function initials(name?: string): string {
   if (!name) return "RS";
@@ -197,6 +29,7 @@ export function AppShell() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [pendingApprovals, setPendingApprovals] = useState(0);
 
   const roleKind = useMemo(() => roleKindFor(session?.user?.roles ?? []), [session?.user?.roles]);
   // Navegação vem de GET /api/v1/navigation/menu (mock atrás do flag; fallback local),
@@ -204,13 +37,24 @@ export function AppShell() {
   const menu = useNavigationMenu();
   const nav = useMemo(() => {
     const plannedPaths = new Set(menu.items.filter((item) => item.status === "planned").map((item) => item.path));
-    return NAV_BY_ROLE[roleKind]
-      .map((group) => ({ ...group, items: group.items.filter((item) => MVP_NAV_PATHS.has(item.path) && !plannedPaths.has(item.path)) }))
-      .filter((group) => group.items.length > 0);
-  }, [roleKind, menu.items]);
+    return buildSidebarNav(session?.user?.roles ?? [], plannedPaths);
+  }, [session?.user?.roles, menu.items]);
 
   const notificationContext = useMemo(() => {
     if (!activeContext || !permissions.includes("notifications:read")) return null;
+    return {
+      token: session?.accessToken,
+      tenantId: activeContext.tenantId,
+      branchId: activeContext.branchId,
+      role: activeContext.role,
+      permissions: activeContext.permissions,
+    };
+  }, [activeContext, permissions, session?.accessToken]);
+
+  // Badge de Aprovações = contagem real de pendências do tenant (GET /approvals/pending).
+  // Mesmo padrão do sino de notificações; 0 pendências → sem badge (nunca número fixo).
+  const approvalContext = useMemo(() => {
+    if (!activeContext || !permissions.includes("work_orders:read")) return null;
     return {
       token: session?.accessToken,
       tenantId: activeContext.tenantId,
@@ -233,11 +77,30 @@ export function AppShell() {
     }
   }, [notificationContext]);
 
+  const refreshPendingApprovals = useCallback(async () => {
+    if (!approvalContext) {
+      setPendingApprovals(0);
+      return;
+    }
+    try {
+      const items = await listAllPendingApprovals(approvalContext);
+      setPendingApprovals(items.length);
+    } catch {
+      setPendingApprovals(0);
+    }
+  }, [approvalContext]);
+
   useEffect(() => {
     void refreshUnread();
     window.addEventListener("notifications:changed", refreshUnread);
     return () => window.removeEventListener("notifications:changed", refreshUnread);
   }, [refreshUnread]);
+
+  useEffect(() => {
+    void refreshPendingApprovals();
+    window.addEventListener("approvals:changed", refreshPendingApprovals);
+    return () => window.removeEventListener("approvals:changed", refreshPendingApprovals);
+  }, [refreshPendingApprovals]);
 
   if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
@@ -279,8 +142,10 @@ export function AppShell() {
                 <div style={{ height: 12 }} />
               )}
               {group.items.map((item) => {
-                // Badge de Notificações = contagem real de não lidas (mata P-011); demais itens usam o valor estático do menu.
-                const badgeValue = item.path === "/notifications" ? unread : item.badge;
+                // Badges REAIS por rota: Notificações = não lidas (F10); Aprovações = pendências
+                // do tenant (F11). Demais itens sem badge (nunca literal — mata P-011).
+                const badgeValue =
+                  item.path === "/notifications" ? unread : item.path === "/approvals" ? pendingApprovals : 0;
                 return (
                   <NavLink
                     key={item.path}
@@ -331,7 +196,7 @@ export function AppShell() {
       {/* MAIN */}
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "#F1F5F9" }}>
         <header style={{ flexShrink: 0, height: 60, background: "#fff", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px" }}>
-          <div style={{ fontSize: 17, fontWeight: 800, color: "#0F172A" }}>{currentTitle(nav, location.pathname)}</div>
+          <div style={{ fontSize: 17, fontWeight: 800, color: "#0F172A" }}>{currentNavTitle(nav, location.pathname)}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9, width: 280, padding: "8px 13px", background: "#F1F5F9", borderRadius: 10 }}>
               <Search size={16} style={{ color: "#94A3B8" }} />

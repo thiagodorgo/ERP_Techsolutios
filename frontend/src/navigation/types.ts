@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import type { UserRole } from "../modules/auth/types";
 import type { TenantContext } from "../modules/context/types";
 
-export type NavigationScope = "platform" | "tenant" | "operations" | "logistics" | "finance" | "registry";
+export type NavigationScope = "platform" | "tenant" | "operations" | "logistics" | "finance" | "registry" | "fleet";
 export type NavigationMode = "platform" | "tenant_admin" | "operation";
 export type NavigationItemStatus =
   | "active"
