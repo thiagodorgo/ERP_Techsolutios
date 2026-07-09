@@ -473,6 +473,7 @@ function buildMovementWhere(input: ListStockMovementsInput): Prisma.StockMovemen
     ...(input.itemId ? { item_id: input.itemId } : {}),
     ...(input.type ? { type: input.type } : {}),
     ...(input.workOrderId ? { work_order_id: input.workOrderId } : {}),
+    ...(input.cycleCountId ? { cycle_count_id: input.cycleCountId } : {}),
     ...(input.from || input.to
       ? {
           created_at: {

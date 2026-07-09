@@ -65,6 +65,14 @@ test("[R7.6] fluxo completo: abre (snapshot do saldo) → conta → fecha (gera 
     assert.equal(adjustment.cycleCountId, sessionId);
     assert.equal(adjustment.reason, `contagem cíclica ${sessionId}`);
     assert.equal(adjustment.id, closedEntryA.adjustmentMovementId);
+
+    // Filtro por sessão (mecanismo do guard de idempotência do close — P-021):
+    // a sessão gera EXATAMENTE 1 ajuste (o item que bateu não gera), sem duplicata.
+    const bySession = await requestJson(baseUrl, `/api/v1/stock-movements?cycle_count_id=${sessionId}`, {
+      headers: authHeaders(seed.tenantA, seed.inventoryA, "inventory"),
+    });
+    assert.equal(bySession.body.pagination.total, 1, JSON.stringify(bySession.body));
+    assert.equal(bySession.body.items[0].id, closedEntryA.adjustmentMovementId);
   });
 });
 

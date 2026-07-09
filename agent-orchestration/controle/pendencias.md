@@ -176,3 +176,23 @@
   estreita e o saldo negativo seria visivel/corrigivel por ajuste. Nao ha lock de linha.
 - status: aberto (hardening futuro: `FOR UPDATE` no agregado por item, ou isolamento SERIALIZABLE no
   create de movimento, ou uma tabela de saldo materializado com advisory lock). Nao bloqueia F7a.
+
+## P-021 - F7b: fechar contagem nao duplica ajustes em retry (RESOLVIDO no bloco) (2026-07-09)
+
+- descricao: achado MEDIA do validador — `close()` gera ajustes um a um (cada `createMovement` commita na
+  propria transacao) e so marca `concluida` no fim; uma falha no meio deixava a sessao `aberta` com ajustes
+  parciais, e um novo "Fechar" duplicaria os ajustes (variancia identica), corrompendo o saldo.
+- correcao (neste PR): `close()` agora e IDEMPOTENTE — antes do laco, le os ajustes ja ligados a sessao
+  (`listMovements({cycleCountId})`, novo filtro) e PULA os itens ja ajustados (reaproveita o movimento
+  existente no relatorio, sem recriar). Filtro `cycle_count_id` exposto tambem no `GET /stock-movements`
+  (util + testavel). Teste reforcado (a sessao gera exatamente 1 ajuste por item divergente).
+- status: **resolvido** (guard de idempotencia). Hardening opcional futuro: envolver todo o close numa
+  unica transacao (rollback total em falha parcial) — vale junto de P-020.
+
+## P-022 - F7b: AuditLog na contagem do item (RESOLVIDO no bloco) (2026-07-09)
+
+- descricao: achado BAIXA do validador — `recordEntry` (PATCH `counted_quantity`) nao gravava AuditLog,
+  divergindo do resto do modulo (todas as demais mutacoes auditam).
+- correcao (neste PR): `recordEntry` grava `cycle_count.entry_counted` (resourceType `cycle_count_entry`,
+  metadata cycleCountId/itemId/countedQuantity) no padrao existente.
+- status: **resolvido**.

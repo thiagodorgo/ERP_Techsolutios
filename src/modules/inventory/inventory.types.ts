@@ -138,6 +138,7 @@ export type ListStockMovementsInput = {
   readonly itemId?: string;
   readonly type?: StockMovementType;
   readonly workOrderId?: string;
+  readonly cycleCountId?: string;
   readonly from?: Date;
   readonly to?: Date;
   readonly limit: number;

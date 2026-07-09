@@ -59,7 +59,9 @@
         `CycleCount`/`CycleCountEntry` (fechar gera ajuste real via fluxo transacional F7a) + aba Contagem
         (legítima); FK diferida `stock_movements.cycle_count_id`; D-017; gate verde (back check/15+16/
         **F7a regressão 25**/build; front check/**187**/build; migrate up+down F7a→F7b `erp-postgres`);
-        testes N=5 → **M=25** (backend 16 + front 9); fidelidade inline; **validador-mestre: em avaliação**
+        testes N=5 → **M=25** (backend 16 + front 9); fidelidade inline; **validador-mestre: VEREDITO
+        APROVADO** — 1 MÉDIA (close idempotente) + 1 BAIXA (audit) **corrigidas no bloco** (P-021/P-022);
+        PR #NN, merge <hash> — pós-merge
 - [ ] F8 Remunerações (extrato por operador/período sobre commissions)
 - [ ] F9 Usuários (enriquecer módulo existente)
 - [ ] F10 Central de Notificações (produtores F2/F3/F4/F7 + badge real)

@@ -174,6 +174,7 @@ export class InventoryService {
       itemId: parseOptionalUuid(query.item_id ?? query.itemId, "itemId"),
       type: parseOptionalMovementType(query.type),
       workOrderId: parseOptionalUuid(query.work_order_id ?? query.workOrderId, "workOrderId"),
+      cycleCountId: parseOptionalUuid(query.cycle_count_id ?? query.cycleCountId, "cycleCountId"),
       from: parseOptionalDate(query.from, "from"),
       to: parseOptionalDate(query.to, "to"),
       limit: parseLimit(query.limit),

@@ -66,6 +66,20 @@ export class CycleCountController {
       request.body ?? {},
     );
 
+    // P-022: registrar a contagem do item (toda mutacao do modulo audita).
+    await recordRequestAuditBestEffort(request, {
+      action: "cycle_count.entry_counted",
+      resourceType: "cycle_count_entry",
+      resourceId: entry.id,
+      outcome: "success",
+      severity: "info",
+      metadata: {
+        cycleCountId: readRouteParam(request.params.cycleCountId),
+        itemId: entry.itemId,
+        countedQuantity: entry.countedQuantity ?? null,
+      },
+    });
+
     return {
       data: toCycleCountEntryDto(entry),
     };

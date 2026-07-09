@@ -34,6 +34,9 @@ type RawRecord = Record<string, unknown>;
 /** A cycle count never counts more items than this in one session (guard rail). */
 const SNAPSHOT_LIMIT = 10_000;
 
+/** Upper bound when re-reading a session's own adjustments for idempotent close (P-021). */
+const MAX_CYCLE_COUNT_ADJUSTMENTS = SNAPSHOT_LIMIT;
+
 export class CycleCountService {
   constructor(
     private readonly repository: CycleCountRepository,
@@ -147,11 +150,32 @@ export class CycleCountService {
     const entryResults: CloseEntryResult[] = [];
     let totalVarianceValue = 0;
 
+    // Idempotência (P-021): se um fechamento anterior falhou no meio do laço, ajustes
+    // ja podem ter sido gravados para alguns itens (cada createMovement commita na
+    // propria transacao). Um novo "Fechar" NAO pode duplicar esses ajustes → puxamos os
+    // ajustes ja ligados a esta sessao e pulamos os itens correspondentes.
+    const existingAdjustments = await this.inventory.listMovements({
+      tenantId: actor.tenantId,
+      cycleCountId: session.id,
+      limit: MAX_CYCLE_COUNT_ADJUSTMENTS,
+      offset: 0,
+    });
+    const alreadyAdjusted = new Map(existingAdjustments.items.map((movement) => [movement.itemId, movement]));
+
     for (const entry of session.entries) {
       if (entry.countedQuantity === undefined) continue;
 
       const variance = roundToDecimalPrecision(entry.countedQuantity - entry.systemQuantity);
       if (variance === 0) continue;
+
+      const priorAdjustment = alreadyAdjusted.get(entry.itemId);
+      if (priorAdjustment) {
+        // Ajuste desta sessao ja existe para o item — reaproveita (nao duplica).
+        entryResults.push({ entryId: entry.id, variance, adjustmentMovementId: priorAdjustment.id });
+        const priorItem = await this.inventory.findItemById(actor.tenantId, entry.itemId);
+        totalVarianceValue += variance * (priorItem?.avgCost ?? 0);
+        continue;
+      }
 
       // Generate the ajuste through the F7a flow (signed variance is applied as-is
       // for an ajuste). The reason + cycle_count_id link it back to this session.

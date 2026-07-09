@@ -180,6 +180,7 @@ export class InMemoryInventoryRepository implements InventoryRepository {
       .filter((movement) => input.itemId === undefined || movement.itemId === input.itemId)
       .filter((movement) => input.type === undefined || movement.type === input.type)
       .filter((movement) => input.workOrderId === undefined || movement.workOrderId === input.workOrderId)
+      .filter((movement) => input.cycleCountId === undefined || movement.cycleCountId === input.cycleCountId)
       .filter((movement) => input.from === undefined || movement.createdAt.getTime() >= input.from.getTime())
       .filter((movement) => input.to === undefined || movement.createdAt.getTime() <= input.to.getTime());
 
