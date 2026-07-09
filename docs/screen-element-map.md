@@ -75,8 +75,10 @@ confirmação → resumo A/B/C); "Nova contagem" (por classe, gated `cycle_count
 contado editável PATCH on blur) → "Fechar contagem" → relatório de variância + N ajustes gerados / "Cancelar".
 
 ## F8 Remunerações `/finance/commissions`
-Extrato por operador/período (filtros na URL). Vínculo: linha → **detalhamento por OS**. `operator` vê SÓ
-o próprio (`read_own`); `finance`/`tenant_admin` veem todos.
+Extrato por operador/período (filtros na URL). Vínculo: linha → **detalhamento por ORIGEM** (drawer com as
+comissões da janela) — cada comissão liga a um basis event; quando `source_type="work_order"`, a origem
+navega para **`/work-orders/:id`** (senão rótulo PT-BR da origem, sem link morto — ver D-018). `operator`
+vê SÓ o próprio (`read_own`); `finance`/`tenant_admin`/`manager`/`auditor` veem todos (`commissions:read`).
 
 ## F9 Usuários `/users`
 Lista (papel, status, último acesso) + modal criar/editar (papéis do `RBAC_MATRIX`); "Ativar/Desativar"

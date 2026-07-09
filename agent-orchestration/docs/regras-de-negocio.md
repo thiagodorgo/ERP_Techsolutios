@@ -97,6 +97,14 @@ As regras iniciais do repositorio estao em `docs/04-regras-negocio.md`.
 - **R7.6 contagem ciclica**: sessao por classe -> conta itens (contado vs sistema) -> fechar gera ajuste
   real (variancia) + relatorio; sessao concluida/cancelada e terminal (422).
 
+### F8 Remuneracoes (sobre `commissions` existente) — aplicada 2026-07-09
+
+- **R8.1 extrato agregado**: `GET /commissions/statements/summary?from&to` agrupa comissoes por operador
+  (SUM na janela). `finance`/`tenant_admin`/`manager`/`auditor` veem todos.
+- **R8.2 `read_own`**: `my-summary` fixa o operador = usuario autenticado; `operator` ve so o proprio.
+- **detalhamento por origem (D-018)**: comissao liga a um basis event generico (nao ha FK de OS); a UI
+  mostra a origem e navega para a OS quando `source_type="work_order"`. Sem inventar produtor de OS.
+
 ## Observacao de alinhamento
 
 As regras de negocio seguem a documentacao enviada pelo usuario e o repositorio oficial atual. Qualquer retorno para backend em C exige nova decisao explicita porque conflita com o estado atual do repositorio.
