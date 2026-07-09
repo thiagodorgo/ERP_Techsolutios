@@ -57,6 +57,9 @@ Detalhe funcional por sub-modulo em `docs/pd-controle.md` e `docs/screen-element
 - **RF-FROTA-007b (F7b Estoque avancado)** — classe ABC recalculada por consumo 12m (Pareto); ponto de
   pedido derivado + chip "Repor" + aviso idempotente com sugestao /purchase-orders (sem comprar); contagem
   ciclica (sessao por classe -> contado vs sistema -> ajuste + relatorio de variancia). Aba Contagem em
-  `/inventory`. RF-FROTA-008 (F8) — Remuneracoes (ver plano-mestre);
-  F9..F12 enriquecem Usuarios/Notificacoes/Sidebar e aplicam cera.
+  `/inventory`.
+- **RF-FROTA-008 (F8 Remuneracoes)** — extrato de comissao por operador/periodo (rota agregada in-module
+  sobre `commissions`), `read_own` (operator so o proprio), detalhamento por origem (OS quando a comissao
+  vem de OS — D-018), tela `/finance/commissions`.
+- F9..F12 enriquecem Usuarios/Notificacoes/Sidebar e aplicam cera.
 

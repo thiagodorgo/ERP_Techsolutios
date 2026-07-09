@@ -268,3 +268,29 @@
   sem rota/guard novos. Recalcular ABC com confirmacao (reescreve todas as classes).
 - impacto: perms novas `cycle_counts:read|create`; tabelas `cycle_counts` + `cycle_count_entries` com RLS;
   `screen-element-map` §F7 atualizado. Aditivo, reversivel.
+
+## D-018 - F8: extrato de comissao detalha por ORIGEM (basis event), OS quando aplicavel (2026-07-09) [Claude Code]
+
+- status: aplicada (in-module sobre `commissions`; implementa pd-controle §F8)
+- origem: R8.1/R8.2 pedem rota agregada + `read_own`; a LEI (`screen-element-map` §F8) pede "linha ->
+  detalhamento por OS". Mas `CommissionCalculation` **nao tem `work_order_id`** — liga a um
+  `CommissionBasisEvent` generico (`source_type` string livre + `source_id`). NAO existe produtor no repo
+  que emita basis event com `source_type="work_order"` (fontes atuais: job/auth_session/checklist_run/etc.).
+- conflito (A2): "detalhamento por OS" (LEI) x modelo real (comissao liga a basis event generico, sem FK de
+  OS nem convencao de source_type=work_order). Registrado, nao resolvido em silencio, e SEM inventar produtor.
+- decisao 1 (R8.1): `GET /commissions/statements/summary?from&to&payee_id?` (`commissions:read`) agrega
+  `CommissionCalculation` por `payee_id` na janela (SUM amount, count) via `groupBy`; range em `created_at`
+  (nao existe `calculated_at`). `RlsPrismaCommissionRepository` + `decimalToNumber`.
+- decisao 2 (R8.2): `GET /commissions/statements/my-summary?from&to` (`commissions:read_own`) FIXA
+  `payee_id = actor.userId` no servidor (payee_id forjado ignorado); operator ve so o proprio (teste).
+  RBAC exact-match: operator->summary(all)=403; finance->my-summary=403.
+- decisao 3 (detalhamento): o drill-down (`/commissions/calculations`) expoe a ORIGEM real da comissao —
+  `sourceType` + `sourceId` do basis event. A UI mostra "Origem": **link `/work-orders/:id` SO quando
+  `sourceType==="work_order"`**; senao rotulo humanizado da origem (sem link morto). Assim a LEI e cumprida
+  de forma honesta (OS quando a comissao vem de OS), sem fabricar convencao.
+- correcao de bug latente (pre-existente): `uuidPattern` do modulo estava malformado (rejeitava todo UUID
+  hifenizado) — corrigido; sem isso o filtro `payee_id` daria 400 em producao.
+- impacto: read-only, sem migration, sem tabela nova; perms `commissions:read`/`read_own` ja existiam.
+  Tela nova `/finance/commissions` (adaptativa por permissao). Aditivo.
+- ambiguidade sinalizada: se o negocio exigir OS direta em toda comissao, criar um produtor de basis event
+  com `source_type="work_order"`+`source_id=<os>` (bloco de integracao) — nao inventei um agora.

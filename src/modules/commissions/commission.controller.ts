@@ -7,6 +7,7 @@ import {
   toCommissionCalculationDto,
   toCommissionPolicyDto,
   toCommissionStatementDto,
+  toCommissionSummaryDto,
   toListDto,
 } from "./commission.dto.js";
 import type { CommissionService } from "./commission.service.js";
@@ -88,12 +89,39 @@ export class CommissionController {
     };
   }
 
+  async listMyCalculations(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.listMyCalculations(actor, request.query as Record<string, unknown>);
+
+    return {
+      body: toListDto(result, toCommissionCalculationDto),
+    };
+  }
+
   async listStatements(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const result = await service.listStatements(actor, request.query as Record<string, unknown>);
 
     return {
       body: toListDto(result, toCommissionStatementDto),
+    };
+  }
+
+  async summarizeStatements(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.summarizeStatements(actor, request.query as Record<string, unknown>);
+
+    return {
+      data: toCommissionSummaryDto(result),
+    };
+  }
+
+  async summarizeMyStatements(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.summarizeMyStatements(actor, request.query as Record<string, unknown>);
+
+    return {
+      data: toCommissionSummaryDto(result),
     };
   }
 

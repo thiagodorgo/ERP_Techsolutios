@@ -62,7 +62,14 @@
         testes N=5 → **M=25** (backend 16 + front 9); fidelidade inline; **validador-mestre: VEREDITO
         APROVADO** — 1 MÉDIA (close idempotente) + 1 BAIXA (audit) **corrigidas no bloco** (P-021/P-022);
         PR #NN, merge <hash> — pós-merge
-- [ ] F8 Remunerações (extrato por operador/período sobre commissions)
+- [~] F8 Remunerações (extrato por operador/período sobre commissions) — branch `bloco-f8-remuneracoes`;
+      in-module (sem remodelar): rota agregada `statements/summary` + `my-summary` (read_own fixa operador;
+      403 cruzado testado) + drill-down por origem (`sourceType`/`sourceId`; OS-link só p/ work_order — D-018);
+      bug latente do uuidPattern corrigido; sem migration; testes N=6 → **M=26** (backend 13 + front 13);
+      gate verde (back check/15+20/build; front check/**201**/build); fidelidade inline; **validador-mestre:
+      REPROVOU 1x (ALTA: drill do operador chamava rota `commissions:read` → 403 p/ o read_own; BAIXA: id
+      cru) → corrigido (rota `GET /commissions/calculations/mine` read_own + drawer own-scope; origem sem id)
+      → 2ª passada VEREDITO APROVADO**; testes N=6 → M=28 (backend 17 + front 11); PR #NN, merge <hash> — pós-merge
 - [ ] F9 Usuários (enriquecer módulo existente)
 - [ ] F10 Central de Notificações (produtores F2/F3/F4/F7 + badge real)
 - [ ] F11 Sidebar + navegação por perfil (IA aprovada, matriz 9 papéis)

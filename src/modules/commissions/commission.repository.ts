@@ -3,6 +3,9 @@ import { randomUUID } from "node:crypto";
 import type {
   CommissionBasisEvent,
   CommissionCalculation,
+  CommissionCalculationStatus,
+  CommissionJsonRecord,
+  CommissionPayeeSummary,
   CommissionPolicy,
   CommissionPolicyRule,
   CommissionStatement,
@@ -13,6 +16,7 @@ import type {
   ListCommissionPoliciesInput,
   ListCommissionStatementsInput,
   ListResult,
+  SummarizeCalculationsByPayeeInput,
 } from "./commission.types.js";
 
 export interface CommissionRepository {
@@ -21,9 +25,25 @@ export interface CommissionRepository {
   createBasisEvent(input: CreateCommissionBasisEventInput): Promise<CommissionBasisEvent>;
   listBasisEvents(input: ListCommissionBasisEventsInput): Promise<ListResult<CommissionBasisEvent>>;
   listCalculations(input: ListCommissionCalculationsInput): Promise<ListResult<CommissionCalculation>>;
+  summarizeCalculationsByPayee(input: SummarizeCalculationsByPayeeInput): Promise<CommissionPayeeSummary>;
   listStatements(input: ListCommissionStatementsInput): Promise<ListResult<CommissionStatement>>;
   reset?(): void;
 }
+
+export type SeedCommissionCalculationInput = {
+  readonly tenantId: string;
+  readonly payeeId?: string;
+  readonly amount: number;
+  readonly id?: string;
+  readonly basisEventId?: string;
+  readonly policyId?: string;
+  readonly eligibleUserId?: string;
+  readonly currency?: string;
+  readonly status?: CommissionCalculationStatus;
+  readonly calculationSnapshot?: CommissionJsonRecord;
+  readonly idempotencyKey?: string;
+  readonly createdAt?: Date;
+};
 
 export class InMemoryCommissionRepository implements CommissionRepository {
   private readonly policies = new Map<string, CommissionPolicy>();
@@ -117,9 +137,70 @@ export class InMemoryCommissionRepository implements CommissionRepository {
     const items = this.sortedCalculations()
       .filter((calculation) => calculation.tenantId === input.tenantId)
       .filter((calculation) => !input.status || calculation.status === input.status)
-      .filter((calculation) => !input.payeeId || calculation.payeeId === input.payeeId);
+      .filter((calculation) => !input.payeeId || calculation.payeeId === input.payeeId)
+      .filter((calculation) => withinRange(calculation.createdAt, input.from, input.to));
+    const page = paginate(items, input.limit, input.offset);
 
-    return paginate(items, input.limit, input.offset);
+    return { ...page, items: this.attachBasisOrigin(page.items, input.tenantId) };
+  }
+
+  // Drill-down enrichment: resolve each calculation's basis origin (source_type/source_id)
+  // from its linked basis event via a single lookup pass (no per-row query).
+  private attachBasisOrigin(calculations: readonly CommissionCalculation[], tenantId: string): CommissionCalculation[] {
+    return calculations.map((calculation) => {
+      const event = this.basisEvents.get(calculation.basisEventId);
+
+      if (!event || event.tenantId !== tenantId) return calculation;
+
+      return { ...calculation, sourceType: event.sourceType, sourceId: event.sourceId };
+    });
+  }
+
+  async summarizeCalculationsByPayee(input: SummarizeCalculationsByPayeeInput): Promise<CommissionPayeeSummary> {
+    const totals = new Map<string, { total: number; count: number }>();
+
+    for (const calculation of this.calculations.values()) {
+      if (calculation.tenantId !== input.tenantId) continue;
+      if (!calculation.payeeId) continue;
+      if (input.payeeId && calculation.payeeId !== input.payeeId) continue;
+      if (!withinRange(calculation.createdAt, input.from, input.to)) continue;
+
+      const current = totals.get(calculation.payeeId) ?? { total: 0, count: 0 };
+      totals.set(calculation.payeeId, {
+        total: current.total + calculation.amount,
+        count: current.count + 1,
+      });
+    }
+
+    const items = [...totals.entries()]
+      .map(([payeeId, aggregate]) => ({ payeeId, total: aggregate.total, count: aggregate.count }))
+      .sort((left, right) => right.total - left.total);
+    const total = items.reduce((sum, item) => sum + item.total, 0);
+
+    return { items, total };
+  }
+
+  seedCalculationForTests(input: SeedCommissionCalculationInput): CommissionCalculation {
+    const now = input.createdAt ?? new Date();
+    const calculation: CommissionCalculation = {
+      id: input.id ?? randomUUID(),
+      tenantId: input.tenantId,
+      basisEventId: input.basisEventId ?? randomUUID(),
+      policyId: input.policyId ?? randomUUID(),
+      eligibleUserId: input.eligibleUserId,
+      payeeId: input.payeeId,
+      amount: input.amount,
+      currency: input.currency ?? "BRL",
+      status: input.status ?? "calculated",
+      calculationSnapshot: input.calculationSnapshot ?? {},
+      idempotencyKey: input.idempotencyKey ?? randomUUID(),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.calculations.set(calculation.id, calculation);
+
+    return calculation;
   }
 
   async listStatements(input: ListCommissionStatementsInput): Promise<ListResult<CommissionStatement>> {
@@ -162,4 +243,13 @@ function paginate<T>(items: readonly T[], limit: number, offset: number): ListRe
     limit,
     offset,
   };
+}
+
+function withinRange(value: Date, from?: Date, to?: Date): boolean {
+  const timestamp = value.getTime();
+
+  if (from && timestamp < from.getTime()) return false;
+  if (to && timestamp > to.getTime()) return false;
+
+  return true;
 }

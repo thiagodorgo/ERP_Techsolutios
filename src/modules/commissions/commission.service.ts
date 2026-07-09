@@ -6,6 +6,7 @@ import type {
   CommissionCalculation,
   CommissionPolicy,
   CommissionStatement,
+  CommissionSummaryResult,
   CreateCommissionPolicyInput,
   ListResult,
 } from "./commission.types.js";
@@ -16,6 +17,7 @@ import {
   parseBasisEventStatus,
   parseBoolean,
   parseCalculationStatus,
+  parseDateRange,
   parseLimit,
   parseNonNegativeNumber,
   parseOffset,
@@ -92,13 +94,62 @@ export class CommissionService {
   }
 
   listCalculations(actor: CommissionActorContext, query: RawRecord): Promise<ListResult<CommissionCalculation>> {
+    const { from, to } = parseDateRange(query.from, query.to);
+
     return this.repository.listCalculations({
       tenantId: actor.tenantId,
       status: parseCalculationStatus(query.status),
       payeeId: parseOptionalUuid(query.payeeId ?? query.payee_id, "payeeId"),
+      from,
+      to,
       limit: parseLimit(query.limit),
       offset: parseOffset(query.offset),
     });
+  }
+
+  // R8.2 — drill-down do próprio ator (requer commissions:read_own). payeeId FIXADO no
+  // servidor; qualquer payee_id vindo do cliente é IGNORADO. Reusa o mesmo enriquecimento
+  // (sourceType/sourceId) do listCalculations.
+  listMyCalculations(actor: CommissionActorContext, query: RawRecord): Promise<ListResult<CommissionCalculation>> {
+    const { from, to } = parseDateRange(query.from, query.to);
+
+    return this.repository.listCalculations({
+      tenantId: actor.tenantId,
+      status: parseCalculationStatus(query.status),
+      payeeId: actor.userId,
+      from,
+      to,
+      limit: parseLimit(query.limit),
+      offset: parseOffset(query.offset),
+    });
+  }
+
+  // R8.1 — extrato agregado por payee na janela (requer commissions:read).
+  async summarizeStatements(actor: CommissionActorContext, query: RawRecord): Promise<CommissionSummaryResult> {
+    const { from, to } = parseDateRange(query.from, query.to);
+    const payeeId = parseOptionalUuid(query.payeeId ?? query.payee_id, "payeeId");
+    const summary = await this.repository.summarizeCalculationsByPayee({
+      tenantId: actor.tenantId,
+      payeeId,
+      from,
+      to,
+    });
+
+    return { ...summary, from, to };
+  }
+
+  // R8.2 — extrato do próprio ator (requer commissions:read_own). payeeId FIXADO no servidor;
+  // qualquer payee_id vindo do cliente é IGNORADO.
+  async summarizeMyStatements(actor: CommissionActorContext, query: RawRecord): Promise<CommissionSummaryResult> {
+    const { from, to } = parseDateRange(query.from, query.to);
+    const summary = await this.repository.summarizeCalculationsByPayee({
+      tenantId: actor.tenantId,
+      payeeId: actor.userId,
+      from,
+      to,
+    });
+
+    return { ...summary, from, to };
   }
 
   listStatements(actor: CommissionActorContext, query: RawRecord): Promise<ListResult<CommissionStatement>> {

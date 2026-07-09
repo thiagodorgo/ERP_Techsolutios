@@ -1,5 +1,32 @@
 # Status Geral
 
+## Atualizacao 2026-07-09 — Rodada BLOCO-AUTO-F: F8 Remuneracoes (em gate) [Claude Code]
+
+### Status
+
+F1-F7 mergeadas (#142-#149). **F8 Remuneracoes** (in-module sobre `commissions`) implementado na branch
+`bloco-f8-remuneracoes`, gate mecanico VERDE; fidelidade inline; validador-mestre.
+
+### Entregue (F8)
+
+- Backend estende `src/modules/commissions/` (sem remodelar): **R8.1** `GET /commissions/statements/summary
+  ?from&to&payee_id?` (`commissions:read`) agrega por operador (groupBy SUM amount, range em `created_at`).
+  **R8.2** `GET /commissions/statements/my-summary?from&to` (`commissions:read_own`) FIXA payee=usuario
+  autenticado (payee forjado ignorado; operator so o proprio — testado; RBAC exact-match: operator->summary
+  403, finance->my-summary 403). Drill-down `/commissions/calculations` enriquecido com `sourceType`/
+  `sourceId` da origem (batch, sem N+1). Corrigido bug latente do `uuidPattern` (rejeitava todo UUID).
+  Sem migration, sem tabela nova; perms ja existiam.
+- Web `frontend/src/modules/finance/commissions/` (`/finance/commissions`, guard ANY-of read/read_own):
+  tela adaptativa por permissao (read -> tabela de todos os operadores; read_own -> so o proprio extrato);
+  drawer de detalhamento por **Origem** (link `/work-orders/:id` so quando `source_type="work_order"`,
+  senao rotulo PT-BR — D-018). 4 estados; D-007. `screen-element-map` §F8 atualizado.
+
+### Gate mecanico (verde)
+
+- Backend: `check` OK · `npm test` 15/15 · **F8 16/16** (summary 13 + routes 3) · `build` OK · `diff --check`.
+  Frontend: `check` OK · `test:smoke` **199/199** (13 novos F8) · `build` OK.
+- Sem migration (bloco read-only). Testes F8 N=6 -> **M=26** (backend 13 + front 13). KPIs NAO publicados (C3).
+
 ## Atualizacao 2026-07-09 — Rodada BLOCO-AUTO-F: F7b Estoque avancado (em gate) [Claude Code]
 
 ### Status

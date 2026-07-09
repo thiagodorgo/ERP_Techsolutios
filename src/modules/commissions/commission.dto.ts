@@ -4,6 +4,7 @@ import type {
   CommissionPolicy,
   CommissionPolicyRule,
   CommissionStatement,
+  CommissionSummaryResult,
   ListResult,
 } from "./commission.types.js";
 
@@ -59,6 +60,8 @@ export function toCommissionCalculationDto(calculation: CommissionCalculation) {
   return {
     id: calculation.id,
     basisEventId: calculation.basisEventId,
+    sourceType: calculation.sourceType ?? null,
+    sourceId: calculation.sourceId ?? null,
     policyId: calculation.policyId,
     eligibleUserId: calculation.eligibleUserId ?? null,
     payeeId: calculation.payeeId ?? null,
@@ -83,6 +86,19 @@ export function toCommissionStatementDto(statement: CommissionStatement) {
     currency: statement.currency,
     createdAt: statement.createdAt.toISOString(),
     updatedAt: statement.updatedAt.toISOString(),
+  };
+}
+
+export function toCommissionSummaryDto(summary: CommissionSummaryResult) {
+  return {
+    items: summary.items.map((item) => ({
+      payeeId: item.payeeId,
+      total: item.total,
+      count: item.count,
+    })),
+    total: summary.total,
+    from: summary.from ? summary.from.toISOString() : null,
+    to: summary.to ? summary.to.toISOString() : null,
   };
 }
 

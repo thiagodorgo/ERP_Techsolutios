@@ -90,6 +90,10 @@ export type CommissionCalculation = {
   readonly idempotencyKey: string;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  // Basis origin resolved for the drill-down from the linked CommissionBasisEvent
+  // (source_type/source_id). Undefined when the basis event cannot be resolved.
+  readonly sourceType?: string;
+  readonly sourceId?: string;
 };
 
 export type CommissionStatement = {
@@ -125,11 +129,36 @@ export type ListCommissionBasisEventsInput = ListCommissionsInput & {
 export type ListCommissionCalculationsInput = ListCommissionsInput & {
   readonly status?: CommissionCalculationStatus;
   readonly payeeId?: string;
+  readonly from?: Date;
+  readonly to?: Date;
 };
 
 export type ListCommissionStatementsInput = ListCommissionsInput & {
   readonly status?: CommissionStatementStatus;
   readonly payeeId?: string;
+};
+
+export type SummarizeCalculationsByPayeeInput = {
+  readonly tenantId: string;
+  readonly payeeId?: string;
+  readonly from?: Date;
+  readonly to?: Date;
+};
+
+export type CommissionPayeeSummaryItem = {
+  readonly payeeId: string;
+  readonly total: number;
+  readonly count: number;
+};
+
+export type CommissionPayeeSummary = {
+  readonly items: readonly CommissionPayeeSummaryItem[];
+  readonly total: number;
+};
+
+export type CommissionSummaryResult = CommissionPayeeSummary & {
+  readonly from?: Date;
+  readonly to?: Date;
 };
 
 export type ListResult<T> = {
