@@ -52,7 +52,8 @@
         (409 `insufficient_balance`) + movimentos imutáveis + consumo por OS + custo médio móvel; D-016
         registrada; gate mecânico verde (back check/15+25/regressões 29/build; front check/**178**/build;
         migrate up+down 2 tabelas `erp-postgres`); testes N=8 → **M=40** (backend 25 + front 15); fidelidade
-        revisada inline (pixel-master indisponível por limite de sessão); **validador-mestre: em avaliação**
+        revisada inline (pixel-master indisponível por limite de sessão); **validador-mestre: VEREDITO
+        APROVADO** (0 VETO/0 ALTA; P-020 corrida de saldo BAIXA); PR #NN, merge <hash> — pós-merge
   - [ ] F7b (ABC Pareto + ponto de pedido idempotente + contagem cíclica) — pendente
 - [ ] F8 Remunerações (extrato por operador/período sobre commissions)
 - [ ] F9 Usuários (enriquecer módulo existente)
