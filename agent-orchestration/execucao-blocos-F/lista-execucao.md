@@ -77,7 +77,12 @@
       "último acesso" sem fonte → "Criado em" (P-023); sem migration; testes N=5 → M≥10 (back +11, front +10);
       gate verde (back check/**26**/regressões 14/build; front check/**211**/build); fidelidade inline;
       **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA; MÉDIA sidebar → F11/P-024; P-023 último-acesso); PR #NN, merge <hash> — pós-merge
-- [ ] F10 Central de Notificações (produtores F2/F3/F4/F7 + badge real)
+- [~] F10 Central de Notificações (produtores F2/F3/F4/F7 + badge real) — branch `bloco-f10-notificacoes`;
+      orquestrador `fleet-alerts.runner` liga os 4 produtores idempotentes + `POST /notifications/fleet-
+      alerts/run` (gated `notifications:update`; destinatários admin/manager; 2x=0 dup) + filtros por
+      categoria + "Gerar alertas" + **badge do sino real** (mata parte do P-011; Aprovações → F11); D-020;
+      sem migration; testes N=5 → **M=19** (backend 10 + front 9); gate verde (back check/**26**+10/regressões
+      60/build; front check/**220**/build); fidelidade inline; **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA; 1 BAIXA pré-existente fora do diff → P-025/F12); PR #NN, merge <hash> — pós-merge
 - [ ] F11 Sidebar + navegação por perfil (IA aprovada, matriz 9 papéis)
 - [ ] F12 Cera (Mapa, Dashboard, OS lista, Multas, Manutenção)
 

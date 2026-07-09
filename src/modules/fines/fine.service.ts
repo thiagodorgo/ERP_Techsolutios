@@ -241,6 +241,22 @@ export function resetFineRuntimeForTests(): void {
   defaultServicePromise = undefined;
 }
 
+/**
+ * Returns the SAME repository the default service reads/writes: the shared
+ * in-memory singleton in memory mode (so API-created fines are visible), or the
+ * Prisma-backed repository in `prisma` mode. Used by the fleet-alerts orchestrator
+ * to run the R3.2 "fine due" producer without hand-rolling a repository.
+ */
+export async function createDefaultFineRepository(): Promise<FineRepository> {
+  if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
+    return memoryRepository;
+  }
+
+  const { createPrismaFineRepository } = await import("./fine-prisma.repository.js");
+
+  return createPrismaFineRepository();
+}
+
 async function createPrismaFineService(coreService: ICoreSaasService): Promise<FineService> {
   const { createPrismaFineRepository } = await import("./fine-prisma.repository.js");
   const repository = await createPrismaFineRepository();

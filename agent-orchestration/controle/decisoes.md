@@ -312,3 +312,23 @@
   (sidebar) fica p/ F11 (P-024). "ultimo acesso" nao tem fonte -> exibe "Criado em" (P-023).
 - impacto: sem migration, sem tabela nova; `core-saas.test.ts` 15->26 (roda no CI). Trilha de auditoria
   visivel via link "Auditoria" -> `/audit` (para quem tem audit.read). Aditivo.
+
+## D-020 - F10: ligar os 4 produtores de alerta + badge do sino real (mata P-011 do sino) (2026-07-09) [Claude Code]
+
+- status: aplicada (Central de Notificacoes; liga os produtores idempotentes F2/F3/F4/F7)
+- origem: os 4 produtores `run*Notifications` (manutencao/multas/seguros/estoque) existiam mas NUNCA eram
+  executados -> a central nunca recebia alertas reais; e o badge do item "Notificacoes" na sidebar era
+  `badge: 4` hardcoded (P-011).
+- decisao 1 (ligar produtores): novo orquestrador `src/modules/notifications/fleet-alerts.runner.ts`
+  `runFleetAlerts({tenantId, recipientUserIds, now?})` roda os 4 produtores com o `NotificationService` +
+  os repos default de cada dominio (adicionei `createDefault*Repository` a cada service, espelhando
+  `createDefault*Service`); rota `POST /api/v1/notifications/fleet-alerts/run` gated `notifications:update`.
+  Destinatarios = usuarios ativos com papel `tenant_admin`/`manager`/`super_admin` (`FLEET_ALERT_RECIPIENT_ROLES`).
+  Idempotente ponta-a-ponta (chaves estaveis intactas; rodar 2x = 0 duplicatas). Sem permissao nova.
+- decisao 2 (badge real): a central ja era real (`listNotifications`); F10 adiciona filtros por CATEGORIA
+  (Manutencao/Multas/Seguros/Estoque/Outros, derivada de `type`/`sourceType`) + acao "Gerar alertas"
+  (gated `notifications:update`). O item de sidebar "Notificacoes" troca `badge: 4` hardcoded pela contagem
+  real `unread` (`getUnreadNotificationCount`) -> **mata a parte do sino do P-011**. (O badge "Aprovacoes: 3"
+  e a reestruturacao do NAV_BY_ROLE ficam para F11.)
+- impacto: sem migration, sem tabela nova, sem permissao nova; toca 4 services (add repo factory, aditivo)
+  + modulo de notificacoes + AppShell (so o badge de notificacoes). `screen-element-map` §F10 atualizado.

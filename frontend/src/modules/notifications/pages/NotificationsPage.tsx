@@ -1,15 +1,30 @@
-import { Bell, CheckCheck, RefreshCw } from "lucide-react";
+import { Bell, CheckCheck, RefreshCw, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { Alert, Button, Card, ErrorState, Skeleton, Tabs } from "../../../components/ui";
 import { useAuth } from "../../../providers/AuthProvider";
+import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
-import { archiveNotification, listNotifications, markAllNotificationsAsRead, markNotificationAsRead } from "../notification.service";
-import type { NotificationApiContext, NotificationItem, NotificationStatus } from "../notification.types";
 import { NotificationList } from "../components/NotificationList";
+import {
+  filterNotificationsByCategory,
+  isNotificationCategory,
+  NOTIFICATION_CATEGORY_LABELS,
+  NOTIFICATION_CATEGORY_ORDER,
+  type NotificationCategory,
+} from "../notification.adapter";
+import {
+  archiveNotification,
+  listNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+  runFleetAlerts,
+} from "../notification.service";
+import type { NotificationApiContext, NotificationItem, NotificationStatus } from "../notification.types";
 
 type FilterTab = "all" | NotificationStatus;
+type CategoryFilter = "all" | NotificationCategory;
 
 const tabs = [
   { id: "all", label: "Todas" },
@@ -18,17 +33,39 @@ const tabs = [
   { id: "archived", label: "Arquivadas" },
 ];
 
+function isFilterTab(value: string | null): value is FilterTab {
+  return value === "all" || value === "unread" || value === "read" || value === "archived";
+}
+
 export function NotificationsPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
+  const { can } = usePermissions();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const context = useMemo(() => buildNotificationContext(session?.accessToken, activeContext), [activeContext, session?.accessToken]);
-  const unreadCount = notifications.filter((notification) => notification.status === "unread").length;
+  const canManage = can("notifications:update");
+
+  // Filtros (situação + categoria) persistidos na URL — compartilháveis e estáveis no recarregamento.
+  const statusParam = searchParams.get("status");
+  const activeTab: FilterTab = isFilterTab(statusParam) ? statusParam : "all";
+  const categoryParam = searchParams.get("categoria");
+  const activeCategory: CategoryFilter = isNotificationCategory(categoryParam) ? categoryParam : "all";
+
+  const setParam = useCallback(
+    (key: "status" | "categoria", value: string) => {
+      const next = new URLSearchParams(searchParams);
+      if (value && value !== "all") next.set(key, value);
+      else next.delete(key);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
 
   const loadNotifications = useCallback(async () => {
     if (!context) return;
@@ -40,6 +77,8 @@ export function NotificationsPage() {
       const status = activeTab === "all" ? undefined : activeTab;
       setNotifications(await listNotifications(context, { status }));
     } catch {
+      // D-007: falha real degrada para lista vazia — nunca fabrica notificações.
+      setNotifications([]);
       setError("Não foi possível carregar suas notificações.");
     } finally {
       setLoading(false);
@@ -49,6 +88,14 @@ export function NotificationsPage() {
   useEffect(() => {
     void loadNotifications();
   }, [loadNotifications]);
+
+  // Categoria é filtrada client-side sobre a janela já carregada (a situação vai ao endpoint).
+  const visibleNotifications = useMemo(
+    () => filterNotificationsByCategory(notifications, activeCategory),
+    [notifications, activeCategory],
+  );
+  const loadedUnread = notifications.filter((notification) => notification.status === "unread").length;
+  const visibleUnread = visibleNotifications.filter((notification) => notification.status === "unread").length;
 
   async function handleMarkRead(notification: NotificationItem) {
     if (!context) return;
@@ -99,6 +146,24 @@ export function NotificationsPage() {
     }
   }
 
+  async function handleRunAlerts() {
+    if (!context) return;
+
+    setActionLoading("run-alerts");
+    setError(null);
+    setAlertMessage(null);
+    try {
+      await runFleetAlerts(context);
+      await loadNotifications();
+      notifyCounterChanged();
+      setAlertMessage("Alertas atualizados");
+    } catch {
+      setError("Não foi possível gerar os alertas de frota.");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   function handleOpen(notification: NotificationItem) {
     if (!notification.actionUrl?.startsWith("/") || notification.actionUrl.startsWith("//")) return;
     navigate(notification.actionUrl);
@@ -107,6 +172,8 @@ export function NotificationsPage() {
   if (!context) {
     return <ErrorState title="Contexto indisponível" detail="Selecione uma organização ativa antes de consultar notificações." />;
   }
+
+  const busy = loading || Boolean(actionLoading);
 
   return (
     <div className="page-stack notifications-page">
@@ -117,12 +184,18 @@ export function NotificationsPage() {
           <p>Avisos e eventos operacionais do seu usuário na organização.</p>
         </div>
         <div className="notification-page-actions">
-          <Button type="button" variant="secondary" onClick={loadNotifications} disabled={loading || Boolean(actionLoading)}>
-            <RefreshCw size={16} />
+          <Button type="button" variant="secondary" onClick={loadNotifications} disabled={busy}>
+            <RefreshCw size={16} aria-hidden />
             Atualizar
           </Button>
-          <Button type="button" onClick={handleMarkAllRead} disabled={unreadCount === 0 || Boolean(actionLoading)}>
-            <CheckCheck size={16} />
+          {canManage ? (
+            <Button type="button" variant="secondary" onClick={handleRunAlerts} disabled={busy}>
+              <Sparkles size={16} aria-hidden />
+              Gerar alertas
+            </Button>
+          ) : null}
+          <Button type="button" onClick={handleMarkAllRead} disabled={loadedUnread === 0 || Boolean(actionLoading)}>
+            <CheckCheck size={16} aria-hidden />
             Marcar todas como lidas
           </Button>
         </div>
@@ -130,16 +203,45 @@ export function NotificationsPage() {
 
       <Card>
         <div className="notification-summary">
-          <Bell size={22} />
+          <Bell size={22} aria-hidden />
           <div>
-            <strong>{unreadCount} não lidas</strong>
-            <span>{notifications.length} itens no filtro atual</span>
+            <strong>{visibleUnread} não lidas</strong>
+            <span>{visibleNotifications.length} itens no filtro atual</span>
           </div>
         </div>
       </Card>
 
-      <Tabs tabs={tabs} active={activeTab} onChange={(id) => setActiveTab(id as FilterTab)} />
+      <div className="notification-category-filter" role="group" aria-label="Filtrar notificações por categoria">
+        <Button
+          type="button"
+          size="sm"
+          variant={activeCategory === "all" ? "primary" : "ghost"}
+          aria-pressed={activeCategory === "all"}
+          onClick={() => setParam("categoria", "all")}
+        >
+          Todas
+        </Button>
+        {NOTIFICATION_CATEGORY_ORDER.map((category) => (
+          <Button
+            key={category}
+            type="button"
+            size="sm"
+            variant={activeCategory === category ? "primary" : "ghost"}
+            aria-pressed={activeCategory === category}
+            onClick={() => setParam("categoria", category)}
+          >
+            {NOTIFICATION_CATEGORY_LABELS[category]}
+          </Button>
+        ))}
+      </div>
 
+      <Tabs tabs={tabs} active={activeTab} onChange={(id) => setParam("status", id)} />
+
+      {alertMessage ? (
+        <Alert title={alertMessage} tone="info">
+          Os produtores de alertas de frota foram executados.
+        </Alert>
+      ) : null}
       {error ? (
         <Alert title="Falha nas notificações" tone="warning">
           {error}
@@ -148,7 +250,7 @@ export function NotificationsPage() {
       {loading ? <Skeleton lines={5} /> : null}
       {!loading ? (
         <NotificationList
-          notifications={notifications}
+          notifications={visibleNotifications}
           onArchive={handleArchive}
           onMarkRead={handleMarkRead}
           onOpen={handleOpen}

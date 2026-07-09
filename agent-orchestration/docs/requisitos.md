@@ -64,5 +64,9 @@ Detalhe funcional por sub-modulo em `docs/pd-controle.md` e `docs/screen-element
 - **RF-ADM-009 (F9 Usuarios)** — tela `/users` real (mata shell fabricada): lista de usuarios do tenant
   (papel/situacao/criado em), modal criar/editar papeis, ativar/desativar (logico, PATCH), link de
   auditoria p/ auditor; guard corrigido p/ `users.read`.
-- F10..F12 enriquecem Notificacoes/Sidebar e aplicam cera.
+- **RF-ADM-010 (F10 Notificacoes)** — central `/notifications` real com filtros por categoria
+  (Manutencao/Multas/Seguros/Estoque), marcar lida/todas; **liga os 4 produtores** F2/F3/F4/F7 via
+  `POST /notifications/fleet-alerts/run` (idempotente) + acao "Gerar alertas"; badge do sino = contagem
+  real (mata a parte do sino do P-011).
+- F11..F12 aplicam a IA de sidebar e a cera.
 
