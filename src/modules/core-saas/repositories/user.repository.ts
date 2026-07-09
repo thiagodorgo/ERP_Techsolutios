@@ -89,6 +89,21 @@ export class UserRepository {
     });
   }
 
+  updateProfile(
+    userId: string,
+    data: { readonly name?: string; readonly status?: string },
+  ) {
+    return this.client.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.status !== undefined ? { status: data.status } : {}),
+      },
+    });
+  }
+
   createWithRoleAssignments(data: CreateUserData) {
     return this.client.user.create({
       data: {

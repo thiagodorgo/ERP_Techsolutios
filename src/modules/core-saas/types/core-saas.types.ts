@@ -58,6 +58,14 @@ export type CreateUserInput = {
   readonly actorUserId?: string;
 };
 
+export type UpdateUserInput = {
+  readonly userId: string;
+  readonly tenantId: string;
+  readonly name?: string;
+  readonly roles?: readonly string[];
+  readonly status?: UserStatus;
+};
+
 export type ListTenantOptions = {
   readonly status?: TenantStatus;
 };

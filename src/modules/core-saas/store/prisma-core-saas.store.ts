@@ -21,7 +21,11 @@ import type {
   User,
   UserStatus,
 } from "../types/core-saas.types.js";
-import type { AsyncCoreSaasStore, CreatePersistentAuditEventInput } from "./async-core-saas.store.js";
+import type {
+  AsyncCoreSaasStore,
+  CreatePersistentAuditEventInput,
+  UpdateUserPersistenceInput,
+} from "./async-core-saas.store.js";
 
 type PrismaTenant = Awaited<ReturnType<TenantRepository["create"]>>;
 type PrismaUser = NonNullable<Awaited<ReturnType<UserRepository["findByIdForTenant"]>>>;
@@ -154,6 +158,73 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
       const savedUser = await txUsers.findByIdForTenant(user.id, input.tenantId);
 
       return mapUserFromPrisma(savedUser ?? user);
+    });
+  }
+
+  async updateUser(input: UpdateUserPersistenceInput): Promise<User> {
+    return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
+      const txUsers = new UserRepository(tx);
+      const txRoles = new RoleRepository(tx);
+      const txUserRoles = new UserRoleRepository(tx);
+      const txAudit = new AuditLogRepository(tx);
+
+      // Step 1: update scalar profile fields (name/status) when provided.
+      if (input.name !== undefined || input.status !== undefined) {
+        await txUsers.updateProfile(input.userId, {
+          name: input.name,
+          status: input.status,
+        });
+      }
+
+      // Step 2: replace role assignments when roles were provided. Clearing then
+      // reassigning keeps the set exactly equal to the requested roles.
+      if (input.roles !== undefined) {
+        await txUserRoles.removeAllForUser(input.userId, input.tenantId);
+
+        for (const role of input.roles) {
+          const roleRecord = await txRoles.findByKeyForTenant(role, input.tenantId);
+
+          if (!roleRecord) {
+            throw new Error(`Role is not assignable to tenant: ${role}`);
+          }
+
+          await txUserRoles.assignRole({
+            tenant_id: input.tenantId,
+            user_id: input.userId,
+            role_id: roleRecord.id,
+            branch_id: null,
+          });
+        }
+      }
+
+      // Step 3: audit inside the transaction — if audit fails, the update rolls back.
+      const actorId = isUuid(input.actorUserId ?? "")
+        ? (
+            await tx.user.findFirst({
+              where: { id: input.actorUserId!, tenant_id: input.tenantId },
+              select: { id: true },
+            })
+          )?.id ?? null
+        : null;
+
+      await new EnterpriseAuditLogService(txAudit).record({
+        tenantId: input.tenantId,
+        actorId,
+        actorType: actorId ? "user" : "system",
+        action: "user.updated",
+        resourceType: "user",
+        resourceId: input.userId,
+        outcome: "success",
+        severity: "info",
+      });
+
+      const savedUser = await txUsers.findByIdForTenant(input.userId, input.tenantId);
+
+      if (!savedUser) {
+        throw new Error(`User not found after update: ${input.userId}`);
+      }
+
+      return mapUserFromPrisma(savedUser);
     });
   }
 

@@ -7,6 +7,7 @@ import type {
   ListTenantOptions,
   Tenant,
   TenantMembership,
+  UpdateUserInput,
   User,
 } from "../types/core-saas.types.js";
 
@@ -16,6 +17,7 @@ export type ICoreSaasService = {
   getTenantForActor(tenantId: string, actorTenantId: string): Promise<Tenant>;
 
   createUser(input: CreateUserInput, actor?: AuthenticatedActor): Promise<User>;
+  updateUser(input: UpdateUserInput, actor?: AuthenticatedActor): Promise<User>;
   listUsersForTenant(tenantId: string): Promise<User[]>;
   getUserForTenant(userId: string, tenantId: string): Promise<User>;
 

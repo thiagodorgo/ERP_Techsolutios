@@ -4,6 +4,7 @@ import type { AddressInfo } from "node:net";
 import test from "node:test";
 
 import {
+  CoreSaasError,
   CoreSaasRegistry,
   DEFAULT_ROLES,
   PERMISSION_CATALOG,
@@ -434,6 +435,292 @@ test("bloqueia supervisor e operador em RBAC avancado", async () => {
     assert.equal(operatorRoles.body.error.reason, "permission_required");
     assert.equal(operatorCreateUser.status, 403);
     assert.equal(operatorCreateUser.body.error.reason, "permission_required");
+  });
+});
+
+test("updateUser atualiza papeis do usuario tenant-scoped", () => {
+  const core = new CoreSaasRegistry();
+  const tenant = core.createTenant({ name: "Tenant Update" });
+  const user = core.createUser({
+    tenantId: tenant.id,
+    name: "Usuario Papel",
+    email: "papel@example.com",
+    roles: ["viewer"],
+  });
+
+  const updated = core.updateUser({
+    userId: user.id,
+    tenantId: tenant.id,
+    roles: ["manager", "manager"],
+  });
+
+  assert.deepEqual(updated.roles, ["manager"]);
+  assert.equal(updated.id, user.id);
+  assert.equal(updated.email, "papel@example.com");
+  assert.deepEqual(
+    core.getUserForTenant(user.id, tenant.id).roles,
+    ["manager"],
+  );
+});
+
+test("updateUser desativa e reativa usuario (status logico reversivel)", () => {
+  const core = new CoreSaasRegistry();
+  const tenant = core.createTenant({ name: "Tenant Status" });
+  const user = core.createUser({
+    tenantId: tenant.id,
+    name: "Usuario Status",
+    email: "status@example.com",
+    roles: ["viewer"],
+  });
+
+  const deactivated = core.updateUser({
+    userId: user.id,
+    tenantId: tenant.id,
+    status: "inactive",
+  });
+
+  assert.equal(deactivated.status, "inactive");
+
+  const reactivated = core.updateUser({
+    userId: user.id,
+    tenantId: tenant.id,
+    status: "active",
+  });
+
+  assert.equal(reactivated.status, "active");
+  assert.equal(core.getUserForTenant(user.id, tenant.id).status, "active");
+});
+
+test("updateUser rejeita papel invalido com invalid_role 400", () => {
+  const core = new CoreSaasRegistry();
+  const tenant = core.createTenant({ name: "Tenant Papel Invalido" });
+  const user = core.createUser({
+    tenantId: tenant.id,
+    name: "Usuario",
+    email: "invalido@example.com",
+    roles: ["viewer"],
+  });
+
+  assert.throws(
+    () =>
+      core.updateUser({
+        userId: user.id,
+        tenantId: tenant.id,
+        roles: ["owner"],
+      }),
+    (error: unknown) =>
+      error instanceof CoreSaasError &&
+      error.statusCode === 400 &&
+      error.reason === "invalid_role",
+  );
+});
+
+test("updateUser exige ao menos um campo", () => {
+  const core = new CoreSaasRegistry();
+  const tenant = core.createTenant({ name: "Tenant Vazio" });
+  const user = core.createUser({
+    tenantId: tenant.id,
+    name: "Usuario",
+    email: "vazio@example.com",
+    roles: ["viewer"],
+  });
+
+  assert.throws(
+    () => core.updateUser({ userId: user.id, tenantId: tenant.id }),
+    (error: unknown) =>
+      error instanceof CoreSaasError &&
+      error.statusCode === 400 &&
+      error.reason === "user_update_empty",
+  );
+});
+
+test("updateUser trata userId de outro tenant como 404", () => {
+  const core = new CoreSaasRegistry();
+  const tenantA = core.createTenant({ name: "Tenant A" });
+  const tenantB = core.createTenant({ name: "Tenant B" });
+  const userB = core.createUser({
+    tenantId: tenantB.id,
+    name: "User B",
+    email: "user-b@example.com",
+    roles: ["viewer"],
+  });
+
+  assert.throws(
+    () =>
+      core.updateUser({
+        userId: userB.id,
+        tenantId: tenantA.id,
+        status: "inactive",
+      }),
+    (error: unknown) =>
+      error instanceof CoreSaasError &&
+      error.statusCode === 404 &&
+      error.reason === "user_not_found",
+  );
+});
+
+test("PATCH /users/:id atualiza papeis e registra auditoria user.updated", async () => {
+  await withApi(async ({ baseUrl, seed, service }) => {
+    const response = await requestJson(
+      baseUrl,
+      `/api/v1/users/${seed.viewerA.id}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
+        body: { roles: ["manager"] },
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.body.data.roles, ["manager"]);
+
+    const detail = await requestJson(
+      baseUrl,
+      `/api/v1/users/${seed.viewerA.id}`,
+      {
+        headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
+      },
+    );
+
+    assert.equal(detail.status, 200);
+    assert.deepEqual(detail.body.data.roles, ["manager"]);
+
+    const list = await requestJson(baseUrl, "/api/v1/users", {
+      headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
+    });
+    const listed = list.body.data.find(
+      (user: User) => user.id === seed.viewerA.id,
+    );
+
+    assert.deepEqual(listed.roles, ["manager"]);
+
+    const auditEvents = service.getAuditEventsForTenant(seed.tenantA.id);
+    const lastEvent = auditEvents.at(-1);
+
+    assert.equal(lastEvent?.action, "user.updated");
+    assert.equal(lastEvent?.actor_user_id, seed.adminA.id);
+    assert.equal(lastEvent?.tenant_id, seed.tenantA.id);
+  });
+});
+
+test("PATCH /users/:id desativa e reativa usuario", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const deactivate = await requestJson(
+      baseUrl,
+      `/api/v1/users/${seed.viewerA.id}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
+        body: { status: "inactive" },
+      },
+    );
+
+    assert.equal(deactivate.status, 200);
+    assert.equal(deactivate.body.data.status, "inactive");
+
+    const reactivate = await requestJson(
+      baseUrl,
+      `/api/v1/users/${seed.viewerA.id}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
+        body: { status: "active" },
+      },
+    );
+
+    assert.equal(reactivate.status, 200);
+    assert.equal(reactivate.body.data.status, "active");
+  });
+});
+
+test("PATCH /users/:id rejeita papel invalido e corpo vazio", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const invalidRole = await requestJson(
+      baseUrl,
+      `/api/v1/users/${seed.viewerA.id}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
+        body: { roles: ["owner"] },
+      },
+    );
+    const emptyBody = await requestJson(
+      baseUrl,
+      `/api/v1/users/${seed.viewerA.id}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
+        body: {},
+      },
+    );
+
+    assert.equal(invalidRole.status, 400);
+    assert.equal(invalidRole.body.error.reason, "invalid_role");
+    assert.equal(emptyBody.status, 400);
+    assert.equal(emptyBody.body.error.reason, "user_update_empty");
+  });
+});
+
+test("PATCH /users/:id de outro tenant retorna 404 not_found", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const response = await requestJson(
+      baseUrl,
+      `/api/v1/users/${seed.userB.id}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
+        body: { status: "inactive" },
+      },
+    );
+
+    assert.equal(response.status, 404);
+    assert.equal(response.body.error.reason, "user_not_found");
+  });
+});
+
+test("PATCH /users/:id exige users.manage (viewer 403, admin 200)", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const readOnly = await requestJson(
+      baseUrl,
+      `/api/v1/users/${seed.viewerA.id}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(seed.tenantA, seed.viewerA, "viewer"),
+        body: { status: "inactive" },
+      },
+    );
+    const managed = await requestJson(
+      baseUrl,
+      `/api/v1/users/${seed.viewerA.id}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
+        body: { status: "inactive" },
+      },
+    );
+
+    assert.equal(readOnly.status, 403);
+    assert.equal(readOnly.body.error.reason, "permission_required");
+    assert.equal(managed.status, 200);
+    assert.equal(managed.body.data.status, "inactive");
+  });
+});
+
+test("PATCH /users/:id ignora tenantId do body", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const response = await requestJson(
+      baseUrl,
+      `/api/v1/users/${seed.viewerA.id}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
+        body: { tenantId: seed.tenantB.id, roles: ["manager"] },
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.data.tenantId, seed.tenantA.id);
+    assert.deepEqual(response.body.data.roles, ["manager"]);
   });
 });
 

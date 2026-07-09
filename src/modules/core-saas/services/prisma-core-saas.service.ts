@@ -18,7 +18,9 @@ import {
   type ListTenantOptions,
   type Tenant,
   type TenantMembership,
+  type UpdateUserInput,
   type User,
+  type UserStatus,
 } from "../types/core-saas.types.js";
 
 export class PrismaCoreSaasService {
@@ -149,6 +151,93 @@ export class PrismaCoreSaasService {
     return user;
   }
 
+  async updateUser(
+    input: UpdateUserInput,
+    actor?: AuthenticatedActor,
+  ): Promise<User> {
+    assertTenantId(input.tenantId);
+
+    // Tenant-scoped resolution: a user outside the tenant is reported as not_found
+    // (404) so we never leak the existence of another tenant's resource.
+    const existing = await this.store.findUserByIdForTenant(
+      input.userId,
+      input.tenantId,
+    );
+
+    if (!existing) {
+      throw notFound("user_not_found", `User not found: ${input.userId}`);
+    }
+
+    const hasName = input.name !== undefined;
+    const hasRoles = input.roles !== undefined;
+    const hasStatus = input.status !== undefined;
+
+    if (!hasName && !hasRoles && !hasStatus) {
+      throw new CoreSaasError(
+        400,
+        "BAD_REQUEST",
+        "user_update_empty",
+        "At least one field is required to update the user.",
+      );
+    }
+
+    let name: string | undefined;
+
+    if (hasName) {
+      name = (input.name ?? "").trim();
+
+      if (!name) {
+        throw new CoreSaasError(
+          400,
+          "BAD_REQUEST",
+          "user_name_required",
+          "User name is required.",
+        );
+      }
+    }
+
+    let roles: Role[] | undefined;
+
+    if (hasRoles) {
+      const providedRoles = input.roles ?? [];
+
+      if (providedRoles.length === 0) {
+        throw new CoreSaasError(
+          400,
+          "BAD_REQUEST",
+          "user_role_required",
+          "User must have at least one role.",
+        );
+      }
+
+      roles = uniqueRoles(providedRoles.map((role) => this.validateUserRole(role)));
+    }
+
+    let status: UserStatus | undefined;
+
+    if (hasStatus) {
+      if (input.status !== "active" && input.status !== "inactive") {
+        throw new CoreSaasError(
+          400,
+          "BAD_REQUEST",
+          "invalid_user_status",
+          "User status must be active or inactive.",
+        );
+      }
+
+      status = input.status;
+    }
+
+    return this.store.updateUser({
+      userId: input.userId,
+      tenantId: input.tenantId,
+      name,
+      roles,
+      status,
+      actorUserId: actor?.userId,
+    });
+  }
+
   async listUsersForTenant(tenantId: string): Promise<User[]> {
     assertTenantId(tenantId);
 
@@ -190,6 +279,19 @@ export class PrismaCoreSaasService {
     } catch {
       throw new Error(`Invalid role: ${role}`);
     }
+  }
+
+  private validateUserRole(role: string): Role {
+    if (!isValidRole(role)) {
+      throw new CoreSaasError(
+        400,
+        "BAD_REQUEST",
+        "invalid_role",
+        `Invalid role: ${role}`,
+      );
+    }
+
+    return validateRole(role);
   }
 
   roleHasPermission(role: Role, permission: Permission): boolean {
