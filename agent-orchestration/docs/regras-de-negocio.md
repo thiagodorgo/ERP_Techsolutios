@@ -89,6 +89,14 @@ As regras iniciais do repositorio estao em `docs/04-regras-negocio.md`.
 - **R7.3 custo medio movel**: recalculado na entrada, na mesma transacao; entrada exige custo unitario.
 - **unicidade**: SKU unico por tenant (409/201). `abc_class` e ponto de pedido ficam para F7b.
 
+### F7b Estoque avancado (ABC + ponto de pedido + contagem) — aplicada 2026-07-09
+
+- **R7.4 classe ABC**: recalculo (rota admin) por valor de consumo 12m (Pareto: A~80%/B~15%/C~5%).
+- **R7.5 ponto de pedido**: derivado (`consumo_medio_diario × lead_time + estoque_seguranca`); `saldo <=
+  ponto` -> chip "Repor" + aviso idempotente + sugestao `/purchase-orders` (link, sem comprar).
+- **R7.6 contagem ciclica**: sessao por classe -> conta itens (contado vs sistema) -> fechar gera ajuste
+  real (variancia) + relatorio; sessao concluida/cancelada e terminal (422).
+
 ## Observacao de alinhamento
 
 As regras de negocio seguem a documentacao enviada pelo usuario e o repositorio oficial atual. Qualquer retorno para backend em C exige nova decisao explicita porque conflita com o estado atual do repositorio.

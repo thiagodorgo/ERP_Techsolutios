@@ -54,7 +54,12 @@
         migrate up+down 2 tabelas `erp-postgres`); testes N=8 → **M=40** (backend 25 + front 15); fidelidade
         revisada inline (pixel-master indisponível por limite de sessão); **validador-mestre: VEREDITO
         APROVADO** (0 VETO/0 ALTA; P-020 corrida de saldo BAIXA); PR #NN, merge <hash> — pós-merge
-  - [ ] F7b (ABC Pareto + ponto de pedido idempotente + contagem cíclica) — pendente
+  - [~] **F7b avançado** (ABC + ponto de pedido + contagem cíclica) — branch `bloco-f7b-estoque-abc`;
+        estende o módulo F7a; ABC recalc (Pareto 12m) + ponto de pedido derivado + aviso idempotente +
+        `CycleCount`/`CycleCountEntry` (fechar gera ajuste real via fluxo transacional F7a) + aba Contagem
+        (legítima); FK diferida `stock_movements.cycle_count_id`; D-017; gate verde (back check/15+16/
+        **F7a regressão 25**/build; front check/**187**/build; migrate up+down F7a→F7b `erp-postgres`);
+        testes N=5 → **M=25** (backend 16 + front 9); fidelidade inline; **validador-mestre: em avaliação**
 - [ ] F8 Remunerações (extrato por operador/período sobre commissions)
 - [ ] F9 Usuários (enriquecer módulo existente)
 - [ ] F10 Central de Notificações (produtores F2/F3/F4/F7 + badge real)

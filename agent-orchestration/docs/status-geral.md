@@ -1,5 +1,33 @@
 # Status Geral
 
+## Atualizacao 2026-07-09 — Rodada BLOCO-AUTO-F: F7b Estoque avancado (em gate) [Claude Code]
+
+### Status
+
+F1-F6 + F7a mergeadas (#142-#148). **F7b Estoque avancado** (2o sub-PR do F7) implementado na branch
+`bloco-f7b-estoque-abc`, gate mecanico VERDE; fidelidade revisada inline; validador-mestre.
+
+### Entregue (F7b)
+
+- Backend estende `src/modules/inventory/`: **R7.4 ABC** rota `POST /inventory-items/abc-recalculate`
+  (Pareto por consumo 12m; `classifyAbc` puro; exige `inventory_items:update`). **R7.5 ponto de pedido**
+  derivado (`(consumo90d/90)×lead_time+safety`; `needsReorder`; filtro `needs_reorder`;
+  `runReorderPointNotifications` idempotente por dia; sugere `/purchase-orders` sem comprar). **R7.6
+  contagem ciclica**: `CycleCount`+`CycleCountEntry`; fechar gera **ajuste real** via o fluxo transacional
+  do F7a + relatorio de variancia; concluida/cancelada terminal (422). Migration
+  `20260718000000_add_cycle_counts` (2 tabelas RLS + FK diferida `stock_movements.cycle_count_id`).
+  Perms `cycle_counts:read|create`.
+- Web: 3a aba **Contagem** (agora legitima) + coluna/chip "Repor" -> `/purchase-orders` + filtro "Precisa
+  repor" + card "Precisam repor" + botao "Recalcular ABC" (confirma + resumo) + drawer de sessao (contado
+  editavel, fechar -> relatorio de variancia). `screen-element-map` §F7 atualizado.
+
+### Gate mecanico (verde)
+
+- Backend: `check` OK · `npm test` 15/15 · **F7b explicito 16/16** · **regressoes F7a 25/25** · damages+WO
+  14/14 · `build` OK. Frontend: `check` OK · `test:smoke` **187/187** (9 novos) · `build` OK.
+- Migration up/down (F7a->F7b sequenciada) no `erp-postgres`: 2 tabelas RLS(t|t)+policy + FK diferida em
+  stock_movements; DOWN limpo (FK F7a intactas). Testes F7b N=5 -> **M=25** (backend 16 + front 9). C3.
+
 ## Atualizacao 2026-07-08 — Rodada BLOCO-AUTO-F: F7a Estoque core (em gate) [Claude Code]
 
 ### Status

@@ -54,7 +54,9 @@ Detalhe funcional por sub-modulo em `docs/pd-controle.md` e `docs/screen-element
   imutaveis (entrada/saida/consumo/ajuste) com saldo derivado em transacao (409 saldo insuficiente),
   consumo vinculado a OS, custo medio movel na entrada, filtro "abaixo do minimo" real, telas
   `/inventory` (abas Itens|Movimentacoes) + `/inventory/:id` reais (shells fabricadas mortas).
-- RF-FROTA-007b (F7b) — classe ABC (Pareto 12m), ponto de pedido idempotente (link /purchase-orders),
-  contagem ciclica com ajuste e variancia; RF-FROTA-008 (F8) — Remuneracoes (ver plano-mestre);
+- **RF-FROTA-007b (F7b Estoque avancado)** — classe ABC recalculada por consumo 12m (Pareto); ponto de
+  pedido derivado + chip "Repor" + aviso idempotente com sugestao /purchase-orders (sem comprar); contagem
+  ciclica (sessao por classe -> contado vs sistema -> ajuste + relatorio de variancia). Aba Contagem em
+  `/inventory`. RF-FROTA-008 (F8) — Remuneracoes (ver plano-mestre);
   F9..F12 enriquecem Usuarios/Notificacoes/Sidebar e aplicam cera.
 
