@@ -95,7 +95,7 @@
       reduced-motion) + pente-fino de copy (**P-025 resolvido** + 4 telas "tenant"→"organização"; P-028
       registra dívida de acentuação) + cabeçalho fixo (`sticky`) + tabulares verificados; D-022; testes
       N=5 → **M=10** (8 palette + 2 copy); gate verde (front check/**244**/build; backend intocado);
-      **validador-mestre: em avaliação** → ENCERRA a Rodada F
+      **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA; 1 BAIXA §11.2 path→grupo **corrigida no bloco**); PR #NN, merge <hash> → **ENCERRA a Rodada F (F1-F12)**
 
 ## Relatório final (F12 concluída)
 - [ ] 9/9 sub-módulos com tela+backend+navegação; 0 mocks (mapa incluso); matriz 9/9 testada; suíte

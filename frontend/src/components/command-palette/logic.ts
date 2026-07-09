@@ -1,8 +1,8 @@
 import { buildSidebarNav } from "../../layouts/appSidebarNav";
 import { tenantNavigation } from "../../navigation/tenantNavigation";
 
-// Destino navegável da paleta (Ctrl+K): rótulo PT-BR + rota real.
-export type CommandDestination = { label: string; path: string };
+// Destino navegável da paleta (Ctrl+K): rótulo PT-BR + rota real + grupo (seção) PT-BR.
+export type CommandDestination = { label: string; path: string; group: string };
 
 // Mapa rota → permissões exigidas, extraído de tenantNavigation (a fonte RBAC do
 // front espelha a autoridade do backend). A paleta NUNCA fabrica destino: só usa
@@ -29,7 +29,7 @@ export function buildCommandDestinations(
       // Sem mapa: já foi filtrado por papel pela sidebar, então mantém.
       if (required && required.length > 0 && !required.some((permission) => can(permission))) continue;
       seen.add(item.path);
-      destinations.push({ label: item.label, path: item.path });
+      destinations.push({ label: item.label, path: item.path, group: group.label });
     }
   }
 

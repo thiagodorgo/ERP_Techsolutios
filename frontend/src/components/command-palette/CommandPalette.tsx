@@ -80,7 +80,7 @@ export function CommandPaletteView({
                   }}
                 >
                   <span>{destination.label}</span>
-                  <span className="command-palette__option-path">{destination.path}</span>
+                  <span className="command-palette__option-path">{destination.group}</span>
                 </li>
               );
             })}
