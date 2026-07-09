@@ -4,6 +4,7 @@ import { recordRequestAuditBestEffort } from "../core-saas/audit/audit-request-c
 import { requireTenantContext } from "../core-saas/middleware/rbac.middleware.js";
 import { readRouteParam } from "../core-saas/routes/http.js";
 import {
+  toAbcRecalculateDto,
   toInventoryItemDto,
   toInventoryItemListDto,
   toStockMovementDto,
@@ -77,6 +78,28 @@ export class InventoryController {
 
     return {
       data: toInventoryItemDto(item),
+    };
+  }
+
+  async recalculateAbc(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.recalculateAbc(actor);
+
+    await recordRequestAuditBestEffort(request, {
+      action: "inventory_item.abc_recalculated",
+      resourceType: "inventory_item",
+      resourceId: actor.tenantId,
+      outcome: "success",
+      severity: "info",
+      metadata: {
+        a: result.summary.A,
+        b: result.summary.B,
+        c: result.summary.C,
+      },
+    });
+
+    return {
+      data: toAbcRecalculateDto(result.summary, result.recalculatedAt),
     };
   }
 

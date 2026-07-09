@@ -32,6 +32,8 @@ model Tenant {
   damage_attachments            DamageAttachment[]
   inventory_items               InventoryItem[]
   stock_movements               StockMovement[]
+  cycle_counts                  CycleCount[]
+  cycle_count_entries           CycleCountEntry[]
   service_catalog_items         ServiceCatalog[]
   teams                         Team[]
   team_members                  TeamMember[]
@@ -980,6 +982,7 @@ model InventoryItem {
   updated_at     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
   tenant         Tenant          @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   movements      StockMovement[]
+  cycle_count_entries CycleCountEntry[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, sku])
@@ -1008,12 +1011,66 @@ model StockMovement {
   created_at            DateTime @default(now()) @db.Timestamptz(6)
   tenant                Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   item                  InventoryItem @relation(fields: [tenant_id, item_id], references: [tenant_id, id], onDelete: Restrict)
+  cycle_count           CycleCount?   @relation(fields: [tenant_id, cycle_count_id], references: [tenant_id, id], onDelete: Restrict)
 
   @@unique([tenant_id, id])
   @@index([tenant_id, item_id, created_at])
   @@index([tenant_id, work_order_id])
   @@index([tenant_id, created_at])
   @@map("stock_movements")
+}
+
+/// F7b (Estoque avançado) — contagem cíclica SESSION (R7.6). Snapshots the derived
+/// saldo of the chosen `abc_class` (or all active items) into `entries` at open,
+/// then generates `ajuste` movements for the variances at close. `status`
+/// ('aberta'|'concluida'|'cancelada') is terminal once concluida/cancelada
+/// (further mutation = 422). The saldo is NEVER stored here — only the snapshot.
+model CycleCount {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String   @db.Uuid
+  abc_class  String?
+  status     String   @default("aberta")
+  notes      String?
+  is_active  Boolean  @default(true)
+  created_by String?  @db.Uuid
+  updated_by String?  @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant     Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  entries    CycleCountEntry[]
+  movements  StockMovement[]
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, status])
+  @@index([tenant_id, is_active])
+  @@index([tenant_id, created_at])
+  @@map("cycle_counts")
+}
+
+/// F7b (Estoque avançado) — counted line of a `CycleCount`. `system_quantity` is
+/// the derived saldo snapshotted at open; `counted_quantity` is filled while
+/// counting; `variance` (counted − system) and `adjustment_movement_id` (the
+/// generated `ajuste`) are filled at close. One line per item per session.
+model CycleCountEntry {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id              String   @db.Uuid
+  cycle_count_id         String   @db.Uuid
+  item_id                String   @db.Uuid
+  system_quantity        Decimal  @db.Decimal(20, 6)
+  counted_quantity       Decimal? @db.Decimal(20, 6)
+  variance               Decimal? @db.Decimal(20, 6)
+  adjustment_movement_id String?  @db.Uuid
+  created_at             DateTime @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant                 Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  cycle_count            CycleCount    @relation(fields: [tenant_id, cycle_count_id], references: [tenant_id, id], onDelete: Cascade)
+  item                   InventoryItem @relation(fields: [tenant_id, item_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, cycle_count_id, item_id])
+  @@index([tenant_id, cycle_count_id])
+  @@index([tenant_id, item_id])
+  @@map("cycle_count_entries")
 }
 
 model ServiceCatalog {

@@ -46,6 +46,16 @@ export type InventoryItemWithSaldo = InventoryItem & {
 };
 
 /**
+ * F7b — the item plus every DERIVED field the API surfaces (R7.5): `saldo`, the
+ * `reorderPoint` (null when `leadTimeDays` is unknown) and `needsReorder`
+ * (`saldo <= reorderPoint`). None of these are stored columns.
+ */
+export type InventoryItemView = InventoryItemWithSaldo & {
+  readonly reorderPoint: number | null;
+  readonly needsReorder: boolean;
+};
+
+/**
  * IMMUTABLE ledger entry — there is no update/delete surface for movements.
  * `quantidadeSinalizada` is SIGNED: + for entrada / positive ajuste, − for
  * saida / consumo / negative ajuste.
@@ -69,17 +79,33 @@ export type ListInventoryItemsInput = {
   readonly tenantId: string;
   readonly search?: string;
   readonly isActive?: boolean;
+  /** F7b — restrict to a single ABC class (used to scope a cycle count snapshot). */
+  readonly abcClass?: InventoryAbcClass;
   /** Derived filter (R7.1): true → saldo < min_quantity; false → saldo >= min_quantity. */
   readonly belowMin?: boolean;
+  /** Derived filter (R7.5): true → saldo <= reorder_point (needs reposição). */
+  readonly needsReorder?: boolean;
   readonly limit: number;
   readonly offset: number;
 };
 
 export type ListInventoryItemsResult = {
-  readonly items: readonly InventoryItemWithSaldo[];
+  readonly items: readonly InventoryItemView[];
   readonly total: number;
   readonly limit: number;
   readonly offset: number;
+};
+
+/** R7.4 — one active item and its consumption value over the ABC window. */
+export type ItemConsumptionValue = {
+  readonly id: string;
+  readonly consumptionValue: number;
+};
+
+/** R7.4 — the class assignment applied to a single item by the ABC recalc. */
+export type AbcClassAssignment = {
+  readonly id: string;
+  readonly abcClass: InventoryAbcClass;
 };
 
 export type CreateInventoryItemInput = Omit<
@@ -135,6 +161,12 @@ export type CreateStockMovementInput = {
   readonly workOrderId?: string;
   readonly vehicleId?: string;
   readonly reason?: string;
+  /**
+   * F7b — links an `ajuste` back to the cycle count that generated it (R7.6). NOT
+   * settable through the public movement API (users cannot forge it); only the
+   * cycle-count close flow sets it.
+   */
+  readonly cycleCountId?: string;
   readonly createdBy?: string;
 };
 

@@ -1,3 +1,4 @@
+import type { AbcSummary } from "./inventory.abc.js";
 import type {
   InventoryItemWithSaldo,
   ListInventoryItemsResult,
@@ -5,12 +6,20 @@ import type {
   StockMovement,
 } from "./inventory.types.js";
 
+/** Accepts the F7b derived view, tolerating the F7a saldo-only shape (reorder fields default). */
+type InventoryItemDtoInput = InventoryItemWithSaldo & {
+  readonly reorderPoint?: number | null;
+  readonly needsReorder?: boolean;
+};
+
 /**
  * The external `tenant_id` is never exposed. `saldo` is the DERIVED balance
- * (R7.1 — Σ quantidade_sinalizada, never a stored column) and `belowMin` is the
- * derived reorder flag (saldo < minQuantity).
+ * (R7.1 — Σ quantidade_sinalizada, never a stored column), `belowMin` is the
+ * derived below-minimum flag (saldo < minQuantity), and `reorderPoint`/
+ * `needsReorder` are the DERIVED reorder-point signals (R7.5 — never stored;
+ * reorderPoint is null when leadTimeDays is unknown).
  */
-export function toInventoryItemDto(item: InventoryItemWithSaldo) {
+export function toInventoryItemDto(item: InventoryItemDtoInput) {
   return {
     id: item.id,
     sku: item.sku,
@@ -24,6 +33,8 @@ export function toInventoryItemDto(item: InventoryItemWithSaldo) {
     safetyStock: item.safetyStock ?? null,
     saldo: item.saldo,
     belowMin: item.saldo < item.minQuantity,
+    reorderPoint: item.reorderPoint ?? null,
+    needsReorder: item.needsReorder ?? false,
     isActive: item.isActive,
     createdBy: item.createdBy ?? null,
     updatedBy: item.updatedBy ?? null,
@@ -47,6 +58,8 @@ export function toInventoryItemListDto(result: ListInventoryItemsResult) {
       safetyStock: item.safetyStock ?? null,
       saldo: item.saldo,
       belowMin: item.saldo < item.minQuantity,
+      reorderPoint: item.reorderPoint ?? null,
+      needsReorder: item.needsReorder,
       isActive: item.isActive,
       createdAt: item.createdAt.toISOString(),
     })),
@@ -55,6 +68,15 @@ export function toInventoryItemListDto(result: ListInventoryItemsResult) {
       offset: result.offset,
       total: result.total,
     },
+  };
+}
+
+/** R7.4 — the ABC recalc summary: how many items landed in each class + when. */
+export function toAbcRecalculateDto(summary: AbcSummary, recalculatedAt: Date) {
+  return {
+    counts: { A: summary.A, B: summary.B, C: summary.C },
+    total: summary.A + summary.B + summary.C,
+    recalculatedAt: recalculatedAt.toISOString(),
   };
 }
 

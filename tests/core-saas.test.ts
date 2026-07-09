@@ -74,6 +74,8 @@ const expectedPermissionCatalog = [
   "inventory_items:update",
   "stock_movements:read",
   "stock_movements:create",
+  "cycle_counts:read",
+  "cycle_counts:create",
   "field_location:read",
   "field_location:send",
   "field_location:history",

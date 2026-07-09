@@ -2,16 +2,22 @@ import { randomUUID } from "node:crypto";
 
 import {
   computeMovingAverage,
+  deriveReorder,
+  REORDER_USAGE_WINDOW_DAYS,
+  roundToDecimalPrecision,
   sumSignedQuantities,
   wouldOverdraw,
 } from "./inventory.calculations.js";
 import {
   duplicateSkuError,
   insufficientBalanceError,
+  type AbcClassAssignment,
   type CreateInventoryItemInput,
   type CreateStockMovementInput,
   type InventoryItem,
+  type InventoryItemView,
   type InventoryItemWithSaldo,
+  type ItemConsumptionValue,
   type ListInventoryItemsInput,
   type ListInventoryItemsResult,
   type ListStockMovementsInput,
@@ -20,11 +26,16 @@ import {
   type UpdateInventoryItemInput,
 } from "./inventory.types.js";
 
+const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** Movement types that count as OUTFLOW for the R7.5 usage window (saida + consumo). */
+const OUTFLOW_TYPES = new Set(["saida", "consumo"]);
+
 export interface InventoryRepository {
   createItem(input: CreateInventoryItemInput): Promise<InventoryItem>;
   listItems(input: ListInventoryItemsInput): Promise<ListInventoryItemsResult>;
   findItemById(tenantId: string, itemId: string): Promise<InventoryItem | undefined>;
-  findItemWithSaldo(tenantId: string, itemId: string): Promise<InventoryItemWithSaldo | undefined>;
+  findItemWithSaldo(tenantId: string, itemId: string): Promise<InventoryItemView | undefined>;
   updateItem(input: UpdateInventoryItemInput): Promise<InventoryItem | undefined>;
   /**
    * R7.1/R7.3 — the transactional flow: derive saldo (Σ quantidade_sinalizada),
@@ -35,6 +46,10 @@ export interface InventoryRepository {
   createMovement(input: CreateStockMovementInput): Promise<StockMovement | undefined>;
   listMovements(input: ListStockMovementsInput): Promise<ListStockMovementsResult>;
   findMovementById(tenantId: string, movementId: string): Promise<StockMovement | undefined>;
+  /** R7.4 — consumption value (Σ |qty| × cost) over the ABC window, per ACTIVE item. */
+  getConsumptionValues(tenantId: string, since: Date): Promise<readonly ItemConsumptionValue[]>;
+  /** R7.4 — atomically write the ABC class for the classified items. */
+  applyAbcClasses(tenantId: string, assignments: readonly AbcClassAssignment[], updatedBy?: string): Promise<void>;
   reset?(): void;
 }
 
@@ -68,12 +83,15 @@ export class InMemoryInventoryRepository implements InventoryRepository {
   }
 
   async listItems(input: ListInventoryItemsInput): Promise<ListInventoryItemsResult> {
+    const now = new Date();
     const filtered = this.sortedItems()
       .filter((item) => item.tenantId === input.tenantId)
       .filter((item) => input.isActive === undefined || item.isActive === input.isActive)
+      .filter((item) => input.abcClass === undefined || item.abcClass === input.abcClass)
       .filter((item) => matchesSearch(item, input.search))
-      .map((item) => this.withSaldo(item))
-      .filter((item) => matchesBelowMin(item, input.belowMin));
+      .map((item) => this.withView(item, now))
+      .filter((item) => matchesBelowMin(item, input.belowMin))
+      .filter((item) => matchesNeedsReorder(item, input.needsReorder));
 
     return {
       items: filtered.slice(input.offset, input.offset + input.limit),
@@ -89,10 +107,10 @@ export class InMemoryInventoryRepository implements InventoryRepository {
     return item?.tenantId === tenantId ? item : undefined;
   }
 
-  async findItemWithSaldo(tenantId: string, itemId: string): Promise<InventoryItemWithSaldo | undefined> {
+  async findItemWithSaldo(tenantId: string, itemId: string): Promise<InventoryItemView | undefined> {
     const item = await this.findItemById(tenantId, itemId);
 
-    return item ? this.withSaldo(item) : undefined;
+    return item ? this.withView(item, new Date()) : undefined;
   }
 
   async updateItem(input: UpdateInventoryItemInput): Promise<InventoryItem | undefined> {
@@ -144,7 +162,7 @@ export class InMemoryInventoryRepository implements InventoryRepository {
       workOrderId: input.workOrderId,
       vehicleId: input.vehicleId,
       reason: input.reason,
-      cycleCountId: undefined,
+      cycleCountId: input.cycleCountId,
       createdBy: input.createdBy,
       createdAt: new Date(),
     };
@@ -179,6 +197,41 @@ export class InMemoryInventoryRepository implements InventoryRepository {
     return movement?.tenantId === tenantId ? movement : undefined;
   }
 
+  async getConsumptionValues(tenantId: string, since: Date): Promise<readonly ItemConsumptionValue[]> {
+    const activeItems = [...this.items.values()].filter((item) => item.tenantId === tenantId && item.isActive);
+
+    return activeItems.map((item) => {
+      const consumptionValue = [...this.movements.values()]
+        .filter(
+          (movement) =>
+            movement.tenantId === tenantId &&
+            movement.itemId === item.id &&
+            OUTFLOW_TYPES.has(movement.type) &&
+            movement.createdAt.getTime() >= since.getTime(),
+        )
+        .reduce(
+          (sum, movement) => sum + Math.abs(movement.quantidadeSinalizada) * (movement.unitCost ?? item.avgCost),
+          0,
+        );
+
+      return { id: item.id, consumptionValue: roundToDecimalPrecision(consumptionValue) };
+    });
+  }
+
+  async applyAbcClasses(tenantId: string, assignments: readonly AbcClassAssignment[], updatedBy?: string): Promise<void> {
+    for (const assignment of assignments) {
+      const item = this.items.get(assignment.id);
+      if (!item || item.tenantId !== tenantId) continue;
+
+      this.items.set(item.id, {
+        ...item,
+        abcClass: assignment.abcClass,
+        updatedBy: updatedBy ?? item.updatedBy,
+        updatedAt: new Date(),
+      });
+    }
+  }
+
   reset(): void {
     this.items.clear();
     this.movements.clear();
@@ -186,8 +239,17 @@ export class InMemoryInventoryRepository implements InventoryRepository {
     this.movementSequence = 0;
   }
 
-  private withSaldo(item: InventoryItem): InventoryItemWithSaldo {
-    return { ...item, saldo: this.saldoOf(item.tenantId, item.id) };
+  private withView(item: InventoryItem, now: Date): InventoryItemView {
+    const saldo = this.saldoOf(item.tenantId, item.id);
+    const usageAbs = this.usageOf(item.tenantId, item.id, now);
+    const { reorderPoint, needsReorder } = deriveReorder({
+      saldo,
+      usageAbs,
+      leadTimeDays: item.leadTimeDays,
+      safetyStock: item.safetyStock,
+    });
+
+    return { ...item, saldo, reorderPoint, needsReorder };
   }
 
   private saldoOf(tenantId: string, itemId: string): number {
@@ -195,6 +257,23 @@ export class InMemoryInventoryRepository implements InventoryRepository {
       [...this.movements.values()]
         .filter((movement) => movement.tenantId === tenantId && movement.itemId === itemId)
         .map((movement) => movement.quantidadeSinalizada),
+    );
+  }
+
+  /** R7.5 — absolute outflow (saida + consumo) over the last REORDER window. */
+  private usageOf(tenantId: string, itemId: string, now: Date): number {
+    const since = now.getTime() - REORDER_USAGE_WINDOW_DAYS * MILLIS_PER_DAY;
+
+    return roundToDecimalPrecision(
+      [...this.movements.values()]
+        .filter(
+          (movement) =>
+            movement.tenantId === tenantId &&
+            movement.itemId === itemId &&
+            OUTFLOW_TYPES.has(movement.type) &&
+            movement.createdAt.getTime() >= since,
+        )
+        .reduce((sum, movement) => sum + Math.abs(movement.quantidadeSinalizada), 0),
     );
   }
 
@@ -236,6 +315,12 @@ function matchesBelowMin(item: InventoryItemWithSaldo, belowMin: boolean | undef
   if (belowMin === undefined) return true;
 
   return belowMin ? item.saldo < item.minQuantity : item.saldo >= item.minQuantity;
+}
+
+function matchesNeedsReorder(item: InventoryItemView, needsReorder: boolean | undefined): boolean {
+  if (needsReorder === undefined) return true;
+
+  return item.needsReorder === needsReorder;
 }
 
 function definedFields<T extends Record<string, unknown>>(input: T): Partial<T> {
