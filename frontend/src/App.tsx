@@ -332,15 +332,16 @@ export function App() {
             <Route
               path="/inventory"
               element={
-                <PermissionGuard permissions={["inventory:read"]}>
+                <PermissionGuard permissions={["inventory_items:read"]}>
                   <EstoquePage />
                 </PermissionGuard>
               }
             />
+            {/* F7a: a API busca item por ID (GET /inventory-items/:id) → rota por :id, não :sku. */}
             <Route
-              path="/inventory/:sku"
+              path="/inventory/:id"
               element={
-                <PermissionGuard permissions={["inventory:read"]}>
+                <PermissionGuard permissions={["inventory_items:read"]}>
                   <EstoqueDetailPage />
                 </PermissionGuard>
               }

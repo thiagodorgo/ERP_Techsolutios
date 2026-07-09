@@ -50,6 +50,11 @@ Detalhe funcional por sub-modulo em `docs/pd-controle.md` e `docs/screen-element
 - **RF-FROTA-006 (F6 Mapa real)** — mapa operacional 100% real (mock morto, D-007/D-015): posicoes de
   campo + despachos + OS das APIs existentes, painel lateral por pin (OS ativa -> detalhe), stale por
   threshold, badges "Em manutencao"/"Sem seguro" gated por permissao com deep-link para a frota.
-- RF-FROTA-007..008 (F7..F8) — Estoque, Remuneracoes (ver plano-mestre);
+- **RF-FROTA-007a (F7a Estoque core)** — itens de estoque (SKU unico por tenant) + movimentacoes
+  imutaveis (entrada/saida/consumo/ajuste) com saldo derivado em transacao (409 saldo insuficiente),
+  consumo vinculado a OS, custo medio movel na entrada, filtro "abaixo do minimo" real, telas
+  `/inventory` (abas Itens|Movimentacoes) + `/inventory/:id` reais (shells fabricadas mortas).
+- RF-FROTA-007b (F7b) — classe ABC (Pareto 12m), ponto de pedido idempotente (link /purchase-orders),
+  contagem ciclica com ajuste e variancia; RF-FROTA-008 (F8) — Remuneracoes (ver plano-mestre);
   F9..F12 enriquecem Usuarios/Notificacoes/Sidebar e aplicam cera.
 

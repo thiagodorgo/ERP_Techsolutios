@@ -30,6 +30,8 @@ model Tenant {
   insurance_policies            InsurancePolicy[]
   damages                       Damage[]
   damage_attachments            DamageAttachment[]
+  inventory_items               InventoryItem[]
+  stock_movements               StockMovement[]
   service_catalog_items         ServiceCatalog[]
   teams                         Team[]
   team_members                  TeamMember[]
@@ -953,6 +955,65 @@ model DamageAttachment {
   @@unique([tenant_id, id])
   @@index([tenant_id, damage_id])
   @@map("damage_attachments")
+}
+
+/// F7a (Estoque core) — catalog item. The BALANCE IS NEVER A COLUMN (R7.1):
+/// saldo = SUM(stock_movements.quantidade_sinalizada) computed in a transaction.
+/// `avg_cost` is the moving average recalculated on `entrada` (R7.3); `abc_class`
+/// is populated by the F7b ABC job (schema-only in F7a — no API write).
+model InventoryItem {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id      String   @db.Uuid
+  sku            String
+  name           String
+  unit           String
+  min_quantity   Decimal  @default(0) @db.Decimal(20, 6)
+  max_quantity   Decimal? @db.Decimal(20, 6)
+  abc_class      String?
+  avg_cost       Decimal  @default(0) @db.Decimal(20, 6)
+  lead_time_days Int?
+  safety_stock   Decimal? @db.Decimal(20, 6)
+  is_active      Boolean  @default(true)
+  created_by     String?  @db.Uuid
+  updated_by     String?  @db.Uuid
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant         Tenant          @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  movements      StockMovement[]
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, sku])
+  @@index([tenant_id, is_active])
+  @@index([tenant_id, created_at])
+  @@map("inventory_items")
+}
+
+/// F7a (Estoque core) — IMMUTABLE stock ledger entry (no update/delete surface).
+/// `quantidade_sinalizada` is stored SIGNED: + for entrada / positive ajuste,
+/// − for saida / consumo / negative ajuste. `work_order_id` (required for
+/// consumo, R7.2) and `vehicle_id` are validated in-tenant at the service layer
+/// (no hard FK); `cycle_count_id` is a plain column — F7b adds the table.
+model StockMovement {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String   @db.Uuid
+  item_id               String   @db.Uuid
+  type                  String
+  quantidade_sinalizada Decimal  @db.Decimal(20, 6)
+  unit_cost             Decimal? @db.Decimal(20, 6)
+  work_order_id         String?  @db.Uuid
+  vehicle_id            String?  @db.Uuid
+  reason                String?
+  cycle_count_id        String?  @db.Uuid
+  created_by            String?  @db.Uuid
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
+  tenant                Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  item                  InventoryItem @relation(fields: [tenant_id, item_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, item_id, created_at])
+  @@index([tenant_id, work_order_id])
+  @@index([tenant_id, created_at])
+  @@map("stock_movements")
 }
 
 model ServiceCatalog {

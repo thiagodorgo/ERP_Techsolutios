@@ -80,6 +80,15 @@ As regras iniciais do repositorio estao em `docs/04-regras-negocio.md`.
   (viatura sem apolice vigente, F4), com cor+label, gated por permissao; deep-link para
   `/fleet/maintenance` e `/fleet/insurance`. Despachante ganhou `insurance_policies:read` (D-015).
 
+### F7a Estoque core (`InventoryItem` + `StockMovement`) — aplicada 2026-07-08
+
+- **R7.1 saldo derivado em transacao**: saldo = soma dos movimentos assinados; nunca coluna; saida/consumo
+  alem do saldo = **409**. Movimentos **imutaveis** (correcao via ajuste com motivo).
+- **R7.2 consumo por OS**: movimento `consumo` exige OS valida do tenant (400 sem/invalida); viatura
+  opcional validada.
+- **R7.3 custo medio movel**: recalculado na entrada, na mesma transacao; entrada exige custo unitario.
+- **unicidade**: SKU unico por tenant (409/201). `abc_class` e ponto de pedido ficam para F7b.
+
 ## Observacao de alinhamento
 
 As regras de negocio seguem a documentacao enviada pelo usuario e o repositorio oficial atual. Qualquer retorno para backend em C exige nova decisao explicita porque conflita com o estado atual do repositorio.

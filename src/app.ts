@@ -28,6 +28,7 @@ import { createMaintenanceOrderRouter } from "./modules/maintenance-orders/index
 import { createFineRouter } from "./modules/fines/index.js";
 import { createInsurancePolicyRouter } from "./modules/insurance-policies/index.js";
 import { createDamageRouter } from "./modules/damages/index.js";
+import { createInventoryItemRouter, createStockMovementRouter } from "./modules/inventory/index.js";
 import { createMobileRouter } from "./modules/mobile/index.js";
 import { createNotificationRouter } from "./modules/notifications/index.js";
 import { createNavigationRouter } from "./modules/navigation/index.js";
@@ -70,6 +71,8 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createFineRouter(service));
   app.use("/api/v1", attachAuthenticatedActor(), createInsurancePolicyRouter(service));
   app.use("/api/v1", attachAuthenticatedActor(), createDamageRouter(service));
+  app.use("/api/v1", attachAuthenticatedActor(), createInventoryItemRouter(service));
+  app.use("/api/v1", attachAuthenticatedActor(), createStockMovementRouter(service));
   app.use("/api/v1", attachAuthenticatedActor(), createServiceCatalogRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTeamRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFieldDispatchRouter(service));

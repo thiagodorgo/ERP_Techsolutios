@@ -166,3 +166,13 @@
   P-011). Renomear agora divergiria das referencias visuais aprovadas.
 - status: aberto (tratar quando as telas de plataforma forem conectadas a dados reais; a persona demo do
   login e intencional em modo mock). Nao bloqueia F6.
+
+## P-020 - F7a: check de saldo sem SELECT FOR UPDATE (corrida teorica de debito) (2026-07-08)
+
+- descricao: R7.1 checa o saldo com `aggregate` -> valida -> insere na MESMA `$transaction` (READ COMMITTED),
+  mas sem `SELECT ... FOR UPDATE` nas linhas de movimento; dois debitos estritamente concorrentes do mesmo
+  item podem, em teoria, passar ambos (nenhum ve o outro ainda nao commitado). Achado BAIXA do validador.
+- impacto: baixo — atende o contrato R7.1 declarado e e coerente com o resto do repo; janela de corrida
+  estreita e o saldo negativo seria visivel/corrigivel por ajuste. Nao ha lock de linha.
+- status: aberto (hardening futuro: `FOR UPDATE` no agregado por item, ou isolamento SERIALIZABLE no
+  create de movimento, ou uma tabela de saldo materializado com advisory lock). Nao bloqueia F7a.

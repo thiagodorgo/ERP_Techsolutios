@@ -54,6 +54,11 @@ export const PERMISSION_CATALOG = [
   "damages:read",
   "damages:create",
   "damages:update",
+  "inventory_items:read",
+  "inventory_items:create",
+  "inventory_items:update",
+  "stock_movements:read",
+  "stock_movements:create",
   "field_location:read",
   "field_location:send",
   "field_location:history",
@@ -193,6 +198,12 @@ export const ROLE_PERMISSIONS = {
     "damages:read",
     "damages:create",
     "damages:update",
+    // F7a (Estoque core): manager gerencia itens e movimenta (navigation-matrix: manager E).
+    "inventory_items:read",
+    "inventory_items:create",
+    "inventory_items:update",
+    "stock_movements:read",
+    "stock_movements:create",
     "field_location:read",
     "field_location:history",
     "field_operator:read",
@@ -298,6 +309,9 @@ export const ROLE_PERMISSIONS = {
     "fines:read",
     "insurance_policies:read",
     "damages:read",
+    // F7a (Estoque core): viewer só lê (mirror vehicles:read grants).
+    "inventory_items:read",
+    "stock_movements:read",
     "work_orders:read",
     "field_location:read",
     "field_operator:read",
@@ -327,6 +341,11 @@ export const ROLE_PERMISSIONS = {
     "insurance_policies:read",
     "damages:read",
     "damages:create",
+    // F7a (Estoque core): operator movimenta estoque mas NÃO gerencia itens
+    // (navigation-matrix F7: operator E(mov)).
+    "inventory_items:read",
+    "stock_movements:read",
+    "stock_movements:create",
     "work_orders:read",
     "work_orders:update",
     "work_orders:status",
@@ -360,6 +379,9 @@ export const ROLE_PERMISSIONS = {
     "insurance_policies:create",
     "insurance_policies:update",
     "damages:read",
+    // F7a (Estoque core): finance só lê (navigation-matrix F7: finance R).
+    "inventory_items:read",
+    "stock_movements:read",
     "commissions:read",
     "commissions:calculate",
     "commissions:approve",
@@ -374,7 +396,20 @@ export const ROLE_PERMISSIONS = {
     "expense_policy:read",
     "expense_audit:read",
   ],
-  inventory: ["inventory.manage", "inventory.read", "os.read", "notifications:read", "notifications:update"],
+  inventory: [
+    "inventory.manage",
+    "inventory.read",
+    // F7a (Estoque core): inventory é DONO do estoque — gerencia itens e movimenta
+    // (navigation-matrix F7: inventory F).
+    "inventory_items:read",
+    "inventory_items:create",
+    "inventory_items:update",
+    "stock_movements:read",
+    "stock_movements:create",
+    "os.read",
+    "notifications:read",
+    "notifications:update",
+  ],
   field_technician: [
     "dashboard:read",
     "os.read",
@@ -418,6 +453,9 @@ export const ROLE_PERMISSIONS = {
     "fines:read",
     "insurance_policies:read",
     "damages:read",
+    // F7a (Estoque core): auditor lê itens e o razão de movimentos (matrix F7: auditor R).
+    "inventory_items:read",
+    "stock_movements:read",
     "work_orders:read",
     "field_location:read",
     "field_location:history",

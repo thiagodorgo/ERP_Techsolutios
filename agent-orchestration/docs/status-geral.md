@@ -1,5 +1,34 @@
 # Status Geral
 
+## Atualizacao 2026-07-08 — Rodada BLOCO-AUTO-F: F7a Estoque core (em gate) [Claude Code]
+
+### Status
+
+F1-F6 mergeadas (#142-#147), validador APROVADO em todas. **F7a Estoque core** (1º de 2 sub-PRs do F7)
+implementado na branch `bloco-f7a-estoque-core`, gate mecanico VERDE; pixel-master + validador-mestre.
+
+### Entregue (F7a)
+
+- Backend `src/modules/inventory/` (espelha `damages/`): `InventoryItem` + `StockMovement` em
+  `/api/v1/inventory-items` e `/api/v1/stock-movements`; `@@unique([tenant_id, sku])`; migration
+  `20260717000000_add_inventory_core` (2 tabelas, RLS ENABLE+FORCE+policy nas duas).
+- **R7.1** saldo NUNCA e coluna: `Σ quantidade_sinalizada` em `$transaction` (aggregate -> checa ->
+  insere); saida/consumo alem do saldo = **409** `insufficient_balance`; DTO expoe `saldo`+`belowMin`
+  (groupBy por pagina, sem N+1). **Movimentos imutaveis** (sem PATCH/DELETE; correcao = ajuste c/ motivo).
+- **R7.2** consumo exige OS do tenant (400); viatura opcional validada. Entrada exige custo unitario.
+- **R7.3** custo medio movel na entrada, na MESMA transacao (`computeMovingAverage` puro testado).
+- Permissoes `inventory_items:read|create|update` + `stock_movements:read|create` (inventory dono;
+  operator movimenta; finance/auditor leem). Web: `/inventory` real (abas Itens|Movimentacoes, SEM aba
+  Contagem — F7b) + `/inventory/:id` real; **shells estaticas fabricadas MORTAS** (D-007/D-016);
+  modal de movimento com validacao condicional por tipo + 409 sob Quantidade com saldo atual.
+
+### Gate mecanico (verde)
+
+- Backend: `check` OK · `npm test` 15/15 · **F7a explicito 25/25** · regressoes damages+WO+fines 29/29 ·
+  `build` OK. Frontend: `check` OK · `test:smoke` **178/178** (15 novos) · `build` OK.
+- Migration up/down no `erp-postgres`: 2 tabelas RLS(t|t)+policy; uniques `(tenant_id,sku)`+`(tenant_id,id)`;
+  DOWN limpo. Testes F7a N=8 -> **M=40** (backend 25 + front 15). KPIs NAO publicados (C3).
+
 ## Atualizacao 2026-07-08 — Rodada BLOCO-AUTO-F: F6 Mapa real (em gate) [Claude Code]
 
 ### Status
