@@ -102,6 +102,17 @@ export class UserRoleRepository {
     return result.count > 0;
   }
 
+  async removeAllForUser(userId: string, tenantId: string) {
+    const result = await this.client.userRoleAssignment.deleteMany({
+      where: {
+        user_id: userId,
+        tenant_id: tenantId,
+      },
+    });
+
+    return result.count;
+  }
+
   private async assertUserBelongsToTenant(userId: string, tenantId: string) {
     const user = await this.client.user.findFirst({
       where: {

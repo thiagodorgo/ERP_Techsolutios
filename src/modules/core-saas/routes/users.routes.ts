@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import { requirePermission, requireTenantContext } from "../middleware/rbac.middleware.js";
 import type { ICoreSaasService } from "../services/core-saas-service.interface.js";
+import type { UpdateUserInput, UserStatus } from "../types/core-saas.types.js";
 import {
   handleAsyncRoute,
   readRouteParam,
@@ -44,6 +45,30 @@ export function createUsersRouter(service: ICoreSaasService): Router {
       );
 
       response.status(201).json({
+        data: user,
+      });
+    }),
+  );
+
+  router.patch(
+    "/:userId",
+    requirePermission("users.manage"),
+    handleAsyncRoute(async (request, response) => {
+      const actor = requireTenantContext(request);
+      const body = request.body as Record<string, unknown>;
+
+      const input: UpdateUserInput = {
+        userId: readRouteParam(request.params.userId),
+        // Tenant comes from the authenticated claim; any tenant in the body is ignored.
+        tenantId: actor.tenantId,
+        ...(typeof body.name === "string" ? { name: readString(body.name) } : {}),
+        ...("roles" in body ? { roles: readStringArray(body.roles) } : {}),
+        ...("status" in body ? { status: body.status as UserStatus } : {}),
+      };
+
+      const user = await service.updateUser(input, actor);
+
+      response.status(200).json({
         data: user,
       });
     }),

@@ -7,6 +7,7 @@ import type {
   ListTenantOptions,
   Tenant,
   TenantMembership,
+  UpdateUserInput,
   User,
 } from "../types/core-saas.types.js";
 import { CoreSaasRegistry } from "./core-saas.service.js";
@@ -29,6 +30,10 @@ export class MemoryCoreSaasAdapter implements ICoreSaasService {
 
   async createUser(input: CreateUserInput, actor?: AuthenticatedActor): Promise<User> {
     return this.registry.createUser(input, actor);
+  }
+
+  async updateUser(input: UpdateUserInput, actor?: AuthenticatedActor): Promise<User> {
+    return this.registry.updateUser(input, actor);
   }
 
   async listUsersForTenant(tenantId: string): Promise<User[]> {

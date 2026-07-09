@@ -294,3 +294,21 @@
   Tela nova `/finance/commissions` (adaptativa por permissao). Aditivo.
 - ambiguidade sinalizada: se o negocio exigir OS direta em toda comissao, criar um produtor de basis event
   com `source_type="work_order"`+`source_id=<os>` (bloco de integracao) — nao inventei um agora.
+
+## D-019 - F9: Usuarios reais (matar shell) + PATCH de usuario + fix do guard (2026-07-09) [Claude Code]
+
+- status: aplicada (enriquece a capacidade de usuarios do core-saas, in-module; tela `/users` real)
+- decisao 1: **matar a shell estatica** de `/users` (linhas fabricadas "Rafael Souza"/KPIs "138"); tela
+  real sobre `GET /users` (D-007). KPI "Convidados" (sempre 0 — enum real e `active|inactive`, sem
+  `invited`) trocado por **"Total"** (metrica real); mapping de `invited` mantido no adapter por robustez.
+- decisao 2 (backend): adiciona `updateUser` ao `ICoreSaasService` (+ `PATCH /users/:userId` gated
+  `users.manage`) p/ editar papeis e ativar/desativar (logico, reversivel). Validacao: papeis ⊆ canonicos
+  (400 `invalid_role`), status ∈ {active,inactive}, corpo vazio 400, cross-tenant **404**. Auditoria
+  `user.updated` espelhando `user.created`. Paridade no 2o implementor (`PrismaCoreSaasService` +
+  `AsyncCoreSaasStore.updateUser`) p/ compilar em modo prisma (compile-verified; runtime prisma nao roda no
+  ambiente de teste).
+- decisao 3 (guard): a rota `/users` guardava `users:read` (mock, sem grant -> tela inacessivel a TODOS);
+  corrigido p/ **`users.read`** (vocabulario real do backend). Reconciliacao do restante do vocabulario
+  (sidebar) fica p/ F11 (P-024). "ultimo acesso" nao tem fonte -> exibe "Criado em" (P-023).
+- impacto: sem migration, sem tabela nova; `core-saas.test.ts` 15->26 (roda no CI). Trilha de auditoria
+  visivel via link "Auditoria" -> `/audit` (para quem tem audit.read). Aditivo.

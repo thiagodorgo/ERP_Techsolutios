@@ -17,6 +17,7 @@ import {
   type ListTenantOptions,
   type Tenant,
   type TenantMembership,
+  type UpdateUserInput,
   type User,
 } from "../types/core-saas.types.js";
 import {
@@ -182,6 +183,98 @@ export class CoreSaasRegistry {
     return savedUser;
   }
 
+  updateUser(input: UpdateUserInput, actor?: AuthenticatedActor): User {
+    assertTenantId(input.tenantId);
+
+    const user = this.store.findUserById(input.userId);
+
+    // Tenant-scoped resolution: a user outside the actor's tenant is reported as
+    // not_found (404) so we never leak the existence of another tenant's resource.
+    if (!user || user.tenantId !== input.tenantId) {
+      throw notFound("user_not_found", `User not found: ${input.userId}`);
+    }
+
+    const hasName = input.name !== undefined;
+    const hasRoles = input.roles !== undefined;
+    const hasStatus = input.status !== undefined;
+
+    if (!hasName && !hasRoles && !hasStatus) {
+      throw new CoreSaasError(
+        400,
+        "BAD_REQUEST",
+        "user_update_empty",
+        "At least one field is required to update the user.",
+      );
+    }
+
+    let name = user.name;
+
+    if (hasName) {
+      name = (input.name ?? "").trim();
+
+      if (!name) {
+        throw new CoreSaasError(
+          400,
+          "BAD_REQUEST",
+          "user_name_required",
+          "User name is required.",
+        );
+      }
+    }
+
+    let roles = user.roles;
+
+    if (hasRoles) {
+      const providedRoles = input.roles ?? [];
+
+      if (providedRoles.length === 0) {
+        throw new CoreSaasError(
+          400,
+          "BAD_REQUEST",
+          "user_role_required",
+          "User must have at least one role.",
+        );
+      }
+
+      roles = uniqueRoles(providedRoles.map((role) => this.validateUserRole(role)));
+    }
+
+    let status = user.status;
+
+    if (hasStatus) {
+      if (input.status !== "active" && input.status !== "inactive") {
+        throw new CoreSaasError(
+          400,
+          "BAD_REQUEST",
+          "invalid_user_status",
+          "User status must be active or inactive.",
+        );
+      }
+
+      status = input.status;
+    }
+
+    const updatedUser: User = {
+      ...user,
+      name,
+      roles,
+      status,
+    };
+
+    const savedUser = this.store.saveUser(updatedUser);
+
+    this.recordAudit({
+      action: "user.updated",
+      actor_user_id: actor?.userId ?? "system",
+      tenant_id: savedUser.tenantId,
+      metadata: {
+        userId: savedUser.id,
+      },
+    });
+
+    return savedUser;
+  }
+
   listUsersByTenant(tenantId: string): User[] {
     assertTenantId(tenantId);
 
@@ -241,6 +334,19 @@ export class CoreSaasRegistry {
     } catch {
       throw new Error(`Invalid role: ${role}`);
     }
+  }
+
+  private validateUserRole(role: string): Role {
+    if (!isValidRole(role)) {
+      throw new CoreSaasError(
+        400,
+        "BAD_REQUEST",
+        "invalid_role",
+        `Invalid role: ${role}`,
+      );
+    }
+
+    return validateRole(role);
   }
 
   roleHasPermission(role: Role, permission: Permission): boolean {

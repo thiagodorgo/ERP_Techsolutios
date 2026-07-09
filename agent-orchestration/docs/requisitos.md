@@ -61,5 +61,8 @@ Detalhe funcional por sub-modulo em `docs/pd-controle.md` e `docs/screen-element
 - **RF-FROTA-008 (F8 Remuneracoes)** — extrato de comissao por operador/periodo (rota agregada in-module
   sobre `commissions`), `read_own` (operator so o proprio), detalhamento por origem (OS quando a comissao
   vem de OS — D-018), tela `/finance/commissions`.
-- F9..F12 enriquecem Usuarios/Notificacoes/Sidebar e aplicam cera.
+- **RF-ADM-009 (F9 Usuarios)** — tela `/users` real (mata shell fabricada): lista de usuarios do tenant
+  (papel/situacao/criado em), modal criar/editar papeis, ativar/desativar (logico, PATCH), link de
+  auditoria p/ auditor; guard corrigido p/ `users.read`.
+- F10..F12 enriquecem Notificacoes/Sidebar e aplicam cera.
 

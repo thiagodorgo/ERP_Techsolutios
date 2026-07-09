@@ -196,3 +196,21 @@
 - correcao (neste PR): `recordEntry` grava `cycle_count.entry_counted` (resourceType `cycle_count_entry`,
   metadata cycleCountId/itemId/countedQuantity) no padrao existente.
 - status: **resolvido**.
+
+## P-023 - F9: "ultimo acesso" do usuario nao tem fonte de dado (2026-07-09)
+
+- descricao: `screen-element-map` §F9 lista "ultimo acesso" na lista de usuarios, mas o modelo `User`
+  (core-saas) so tem `createdAt` — nao ha `last_login`/`last_access`. F9 exibe "Criado em" (real) em vez de
+  inventar ultimo acesso. Coluna de ultimo acesso OMITIDA (nao renderiza "—" perpetuo).
+- impacto: nenhum; entrega honesta. Falta uma fonte de ultimo login (o modulo auth tem sessoes/audit — um
+  bloco futuro pode derivar o ultimo `auth_session`/login por usuario).
+- status: aberto (quando quiser ultimo acesso real, derivar do audit/sessoes de auth). Nao bloqueia F9.
+
+## P-024 - F9/F11: vocabulario RBAC de usuarios (users:read x users.read) parcialmente reconciliado (2026-07-09)
+
+- descricao: o guard da rota `/users` foi corrigido de `users:read` (mock, sem grant em nenhum papel) para
+  `users.read` (vocabulario real do backend) — a tela estava inacessivel a todos. Mas o item de sidebar em
+  `frontend/src/navigation/tenantNavigation.ts` ainda usa `users:read`.
+- impacto: baixo; a rota agora funciona. A reconciliacao completa do vocabulario (sidebar + demais telas
+  religadas) e escopo do F11 (ver `navigation-matrix.md`).
+- status: aberto (F11 finaliza a reconciliacao). Nao bloqueia F9.
