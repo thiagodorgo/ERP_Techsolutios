@@ -130,7 +130,7 @@ export function Sidebar({
         <Building2 size={22} />
         <div>
           <strong>ERP Techsolutions</strong>
-          <span>Operacao multi-tenant</span>
+          <span>Operação multiempresa</span>
         </div>
         {onToggleCollapsed ? (
           <Tooltip label={collapsed ? "Expandir navegacao" : "Recolher navegacao"}>

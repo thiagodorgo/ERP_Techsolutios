@@ -14,7 +14,7 @@ export function NotificationList({
   onOpen: (notification: NotificationItem) => void;
 }) {
   if (notifications.length === 0) {
-    return <EmptyState title="Nenhuma notificacao encontrada" detail="A inbox exibira eventos relevantes do seu usuario neste tenant." />;
+    return <EmptyState title="Nenhuma notificação encontrada" detail="A central exibirá eventos relevantes da sua organização aqui." />;
   }
 
   return (
