@@ -354,3 +354,21 @@
   acesso e por permissao), P-027 (divergencias matriz x catalog + `purchase_orders:read`/`reports:read`
   ausentes no catalogo -> **bloco backend de reconciliacao de permissoes**). P-024 (vocab de usuarios) RESOLVIDO.
 - impacto: frontend-only; sem backend/migration/permissao nova. Aditivo.
+
+## D-022 - F12: cera — Ctrl+K por papel + pente-fino de copy + cabecalho fixo (2026-07-09) [Claude Code]
+
+- status: aplicada (ultimo bloco da Rodada F; polish, tokens congelados)
+- decisao 1 (Ctrl+K): novo `frontend/src/components/command-palette/` — palette aberta por **Ctrl+K/⌘K**,
+  lista os destinos navegaveis **filtrados pela permissao do papel** (reusa `buildSidebarNav` ∩ permissoes
+  reais via `tenantNavigation`), Enter navega, setas movem, Esc/scrim fecham; a11y (`role=dialog/combobox/
+  listbox`, foco preso, `aria-activedescendant`); microinteracao 180ms + `prefers-reduced-motion`. Nao
+  fabrica destino; nao altera destino de tela (nota do screen-element-map §F12). Dica "Ctrl K" na topbar.
+- decisao 2 (copy, P-025): corrigidas strings de UI com termo tecnico cru/§3: NotificationList
+  ("tenant"/"inbox" -> "organizacao"/"central"), ChecklistRuntime/WorkOrdersList/components-erp/
+  PlatformTenantModules ("tenant" -> "organizacao"/"multiempresa"). **P-025 RESOLVIDO.**
+- decisao 3 (polish): cabecalho fixo (`position: sticky` no `.page-heading--row` das telas densas, padrao
+  ja existente); tabulares verificados (todas as 5 telas de frota + Viaturas ja tinham). Tokens CONGELADOS
+  (zero hex novo; so `var(--*)`).
+- sinalizado: divida sistemica de acentuacao no app (Situacao/usuario/Operacao etc. em varias telas antigas)
+  -> bloco dedicado de copy (nao e reescrita ampla deste bloco) — P-028.
+- impacto: frontend-only; sem backend/migration/dep nova. Aditivo. **Encerra a Rodada F (F1-F12).**

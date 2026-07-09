@@ -1,5 +1,28 @@
 # Status Geral
 
+## Atualizacao 2026-07-09 — Rodada BLOCO-AUTO-F: F12 Cera (em gate — ENCERRA a rodada) [Claude Code]
+
+### Status
+
+F1-F11 mergeadas (#142-#153). **F12 Cera** (ultimo bloco) implementado (frontend-only) na branch
+`bloco-f12-cera`, gate mecanico VERDE; validador-mestre. **Encerra a Rodada F (F1-F12).**
+
+### Entregue (F12)
+
+- **Command palette Ctrl+K por papel**: `frontend/src/components/command-palette/` (logic pura + hook +
+  view), montada no AppShell; abre com Ctrl+K/⌘K, lista destinos navegaveis **filtrados pela permissao do
+  papel** (reusa `buildSidebarNav` ∩ permissoes reais), setas/Enter/Esc, a11y (dialog/combobox/listbox,
+  foco preso), microinteracao 180ms + `prefers-reduced-motion`. Nao fabrica nem altera destino. Dica "Ctrl K".
+- **Pente-fino de copy (P-025 RESOLVIDO)**: NotificationList + 4 telas com "tenant"/"inbox" -> "organizacao"/
+  "central" (§3/§11). Divida sistemica de acentuacao registrada em P-028 (bloco dedicado).
+- **Polish**: cabecalho fixo (`sticky` no `.page-heading--row`); tabulares verificados (ja presentes).
+  Tokens CONGELADOS (zero hex novo). D-022.
+
+### Gate mecanico (verde)
+
+- Frontend: `check` OK · `test:smoke` **244/244** (10 novos: 8 palette + 2 copy) · `build` OK. Backend
+  INTOCADO. `grep tenant/inbox NotificationList`=0; tokens congelados. Testes F12 N=5 -> **M=10**. C3.
+
 ## Atualizacao 2026-07-09 — Rodada BLOCO-AUTO-F: F11 Sidebar (em gate) [Claude Code]
 
 ### Status
