@@ -43,6 +43,17 @@ export function createNotificationRouter(
     }),
   );
 
+  // F10 — orchestrator that runs the four fleet-alert producers for the tenant.
+  // Gated by the notifications management permission (managers/tenant admins hold
+  // it); tenant comes from the claim, any request body is ignored.
+  router.post(
+    "/notifications/fleet-alerts/run",
+    requirePermission(NOTIFICATION_PERMISSIONS.update),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.runFleetAlerts(request));
+    }),
+  );
+
   router.post(
     "/notifications/:notificationId/read",
     requirePermission(NOTIFICATION_PERMISSIONS.update),

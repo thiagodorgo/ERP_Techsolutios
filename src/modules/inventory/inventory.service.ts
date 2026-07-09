@@ -342,6 +342,23 @@ export function resetInventoryRuntimeForTests(): void {
   defaultServicePromise = undefined;
 }
 
+/**
+ * Returns the SAME repository the default service reads/writes: the shared
+ * in-memory singleton in memory mode (so API-created items/movements are visible),
+ * or the Prisma-backed repository in `prisma` mode. Used by the fleet-alerts
+ * orchestrator to run the R7.5 reorder-point producer without hand-rolling a
+ * repository.
+ */
+export async function createDefaultInventoryRepository(): Promise<InventoryRepository> {
+  if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
+    return memoryRepository;
+  }
+
+  const { createPrismaInventoryRepository } = await import("./inventory-prisma.repository.js");
+
+  return createPrismaInventoryRepository();
+}
+
 async function createPrismaInventoryService(): Promise<InventoryService> {
   const { createPrismaInventoryRepository } = await import("./inventory-prisma.repository.js");
   const repository = await createPrismaInventoryRepository();

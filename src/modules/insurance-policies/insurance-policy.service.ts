@@ -251,6 +251,22 @@ export function resetInsurancePolicyRuntimeForTests(): void {
   defaultServicePromise = undefined;
 }
 
+/**
+ * Returns the SAME repository the default service reads/writes: the shared
+ * in-memory singleton in memory mode (so API-created policies are visible), or the
+ * Prisma-backed repository in `prisma` mode. Used by the fleet-alerts orchestrator
+ * to run the R4.2 insurance renewal producer without hand-rolling a repository.
+ */
+export async function createDefaultInsurancePolicyRepository(): Promise<InsurancePolicyRepository> {
+  if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
+    return memoryRepository;
+  }
+
+  const { createPrismaInsurancePolicyRepository } = await import("./insurance-policy-prisma.repository.js");
+
+  return createPrismaInsurancePolicyRepository();
+}
+
 async function createPrismaInsurancePolicyService(): Promise<InsurancePolicyService> {
   const { createPrismaInsurancePolicyRepository } = await import("./insurance-policy-prisma.repository.js");
   const repository = await createPrismaInsurancePolicyRepository();

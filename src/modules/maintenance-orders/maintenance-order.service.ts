@@ -255,6 +255,22 @@ export function resetMaintenanceOrderRuntimeForTests(): void {
   defaultServicePromise = undefined;
 }
 
+/**
+ * Returns the SAME repository the default service reads/writes: the shared
+ * in-memory singleton in memory mode (so API-created orders are visible), or the
+ * Prisma-backed repository in `prisma` mode. Used by the fleet-alerts orchestrator
+ * to run the R2.2 "maintenance due" producer without hand-rolling a repository.
+ */
+export async function createDefaultMaintenanceOrderRepository(): Promise<MaintenanceOrderRepository> {
+  if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
+    return memoryRepository;
+  }
+
+  const { createPrismaMaintenanceOrderRepository } = await import("./maintenance-order-prisma.repository.js");
+
+  return createPrismaMaintenanceOrderRepository();
+}
+
 async function createPrismaMaintenanceOrderService(): Promise<MaintenanceOrderService> {
   const { createPrismaMaintenanceOrderRepository } = await import("./maintenance-order-prisma.repository.js");
   const repository = await createPrismaMaintenanceOrderRepository();

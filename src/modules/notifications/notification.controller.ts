@@ -1,7 +1,9 @@
 import type { Request } from "express";
 
+import { recordRequestAuditBestEffort } from "../core-saas/audit/audit-request-context.js";
 import { requireTenantContext } from "../core-saas/middleware/rbac.middleware.js";
 import { readRouteParam } from "../core-saas/routes/http.js";
+import { runFleetAlerts, selectFleetAlertRecipientIds } from "./fleet-alerts.runner.js";
 import { toNotificationDto } from "./notification.dto.js";
 import type { NotificationService } from "./notification.service.js";
 import {
@@ -62,6 +64,46 @@ export class NotificationController {
 
     return {
       data: toNotificationDto(notification),
+    };
+  }
+
+  /**
+   * F10 — runs the four fleet-alert producers for the authenticated tenant.
+   * Tenant comes from the claim (any body `tenantId` is ignored). Recipients are
+   * the tenant's active management-role users. Idempotent: re-running in the same
+   * window creates no duplicates. Records a best-effort audit log.
+   */
+  async runFleetAlerts(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const recipientUserIds = selectFleetAlertRecipientIds(
+      await service.listRecipientCandidates(actor.tenantId),
+    );
+    const ranAt = new Date();
+    const summary = await runFleetAlerts({
+      tenantId: actor.tenantId,
+      recipientUserIds,
+      now: ranAt,
+    });
+
+    await recordRequestAuditBestEffort(request, {
+      action: "notifications.fleet_alerts_ran",
+      resourceType: "fleet_alerts",
+      outcome: "success",
+      severity: "info",
+      metadata: {
+        recipients: recipientUserIds.length,
+        maintenance: summary.maintenance,
+        fines: summary.fines,
+        insurance: summary.insurance,
+        reorder: summary.reorder,
+      },
+    });
+
+    return {
+      data: {
+        ...summary,
+        ranAt,
+      },
     };
   }
 

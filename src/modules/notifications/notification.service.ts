@@ -7,6 +7,7 @@ import type {
   Notification,
   NotificationActorContext,
   NotificationError,
+  NotificationRecipientCandidate,
 } from "./notification.types.js";
 import { NotificationError as NotificationRouteError } from "./notification.types.js";
 import {
@@ -95,6 +96,15 @@ export class NotificationService {
     }
 
     return notification;
+  }
+
+  /**
+   * Exposes the tenant's recipient candidates (active users with their roles and
+   * permissions) so app-level orchestrators (e.g. fleet alerts) can pick who
+   * should receive a batch of notifications. Read-only, tenant-scoped.
+   */
+  listRecipientCandidates(tenantId: string): Promise<readonly NotificationRecipientCandidate[]> {
+    return this.repository.listRecipientCandidates(tenantId);
   }
 
   async createFromDomainEvent(event: DomainEventEnvelope): Promise<readonly Notification[]> {
