@@ -70,7 +70,13 @@
       REPROVOU 1x (ALTA: drill do operador chamava rota `commissions:read` → 403 p/ o read_own; BAIXA: id
       cru) → corrigido (rota `GET /commissions/calculations/mine` read_own + drawer own-scope; origem sem id)
       → 2ª passada VEREDITO APROVADO**; testes N=6 → M=28 (backend 17 + front 11); PR #NN, merge <hash> — pós-merge
-- [ ] F9 Usuários (enriquecer módulo existente)
+- [~] F9 Usuários (enriquecer módulo existente) — branch `bloco-f9-usuarios`; matou a shell fabricada de
+      `/users` (tela real + modal + ativar/desativar); backend `updateUser` + `PATCH /users/:id`
+      (`users.manage`, cross-tenant 404, audit `user.updated`, paridade prisma); guard `users:read`→
+      `users.read` (D-019; sidebar/vocab restante = F11/P-024); "Convidados"→"Total" (enum sem invited);
+      "último acesso" sem fonte → "Criado em" (P-023); sem migration; testes N=5 → M≥10 (back +11, front +10);
+      gate verde (back check/**26**/regressões 14/build; front check/**211**/build); fidelidade inline;
+      **validador-mestre: em avaliação**
 - [ ] F10 Central de Notificações (produtores F2/F3/F4/F7 + badge real)
 - [ ] F11 Sidebar + navegação por perfil (IA aprovada, matriz 9 papéis)
 - [ ] F12 Cera (Mapa, Dashboard, OS lista, Multas, Manutenção)

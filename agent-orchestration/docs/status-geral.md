@@ -1,5 +1,30 @@
 # Status Geral
 
+## Atualizacao 2026-07-09 — Rodada BLOCO-AUTO-F: F9 Usuarios (em gate) [Claude Code]
+
+### Status
+
+F1-F8 mergeadas (#142-#150). **F9 Usuarios** implementado na branch `bloco-f9-usuarios`, gate mecanico
+VERDE; fidelidade inline; validador-mestre.
+
+### Entregue (F9)
+
+- Backend (in-module core-saas): `updateUser` no `ICoreSaasService` + `PATCH /users/:userId` (`users.manage`)
+  p/ editar papeis e ativar/desativar (logico); validacao (papeis canonicos 400 `invalid_role`, status
+  {active,inactive}, corpo vazio 400, cross-tenant 404); auditoria `user.updated`; paridade no 2o
+  implementor (prisma) p/ compilar. `core-saas.test.ts` 15->26 (roda no CI).
+- Web: **matou a shell fabricada** de `/users` ("Rafael Souza"/"138"); tela real sobre `GET /users` +
+  modal criar/editar (papeis PT-BR) + ativar/desativar com confirmacao + link "Auditoria" -> `/audit`;
+  KPI "Convidados" (sempre 0, enum sem `invited`) trocado por "Total" real. **Guard corrigido**
+  `users:read` (sem grant, tela inacessivel) -> `users.read` (D-019). D-007. "ultimo acesso" = "Criado em"
+  (sem fonte real -> P-023). Sidebar/vocab restante fica p/ F11 (P-024).
+
+### Gate mecanico (verde)
+
+- Backend: `check` OK · `npm test` **26/26** · regressoes persistent-rbac+actor-aware+runtime 14/14 (+1 skip
+  pre-existente `DATABASE_URL`) · `build` OK. Frontend: `check` OK · `test:smoke` **211/211** (10 novos) ·
+  `build` OK. Sem migration. Testes F9 N=5 -> **M=36** (backend 11 + front 10 + regressoes recontam). C3.
+
 ## Atualizacao 2026-07-09 — Rodada BLOCO-AUTO-F: F8 Remuneracoes (em gate) [Claude Code]
 
 ### Status

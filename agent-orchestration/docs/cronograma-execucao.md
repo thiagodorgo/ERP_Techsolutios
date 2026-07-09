@@ -33,8 +33,9 @@
 - F6 Mapa real — status: concluido (PR #147, merge 25bed8e; validador-mestre APROVADO 0 achados)
 - F7a Estoque core — status: concluido (PR #148, merge be1964e; validador-mestre APROVADO)
 - F7b Estoque avancado — status: concluido (PR #149, merge 528e360; validador APROVADO; F7 completo)
-- **F8 Remuneracoes** — status: em validacao (rota agregada + read_own + detalhamento por origem; gate)
-- F9 Usuarios / F10 Notificacoes / F11 Sidebar / F12 Cera — status: pendente
+- F8 Remuneracoes — status: concluido (PR #150, merge 9acadf4; validador APROVADO apos re-gate)
+- **F9 Usuarios** — status: em validacao (tela real + PATCH usuario + fix do guard; gate)
+- F10 Notificacoes / F11 Sidebar / F12 Cera — status: pendente
 - F6 Mapa real / F7 Estoque / F8 Remuneracoes — status: pendente
 - F9 Usuarios / F10 Notificacoes / F11 Sidebar / F12 Cera — status: pendente
 
