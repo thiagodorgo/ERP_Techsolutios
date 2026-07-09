@@ -76,7 +76,7 @@
       `users.read` (D-019; sidebar/vocab restante = F11/P-024); "Convidados"→"Total" (enum sem invited);
       "último acesso" sem fonte → "Criado em" (P-023); sem migration; testes N=5 → M≥10 (back +11, front +10);
       gate verde (back check/**26**/regressões 14/build; front check/**211**/build); fidelidade inline;
-      **validador-mestre: em avaliação**
+      **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA; MÉDIA sidebar → F11/P-024; P-023 último-acesso); PR #NN, merge <hash> — pós-merge
 - [ ] F10 Central de Notificações (produtores F2/F3/F4/F7 + badge real)
 - [ ] F11 Sidebar + navegação por perfil (IA aprovada, matriz 9 papéis)
 - [ ] F12 Cera (Mapa, Dashboard, OS lista, Multas, Manutenção)
