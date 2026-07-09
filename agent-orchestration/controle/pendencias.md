@@ -216,3 +216,13 @@
 - impacto: baixo; a rota agora funciona. A reconciliacao completa do vocabulario (sidebar + demais telas
   religadas) e escopo do F11 (ver `navigation-matrix.md`).
 - status: aberto (F11 finaliza a reconciliacao). Nao bloqueia F9.
+
+## P-025 - NotificationList EmptyState com termo tecnico "tenant" + acentos (pre-existente) (2026-07-09)
+
+- descricao: `frontend/src/modules/notifications/components/NotificationList.tsx` (EmptyState) usa "tenant"/
+  "inbox" e strings sem acento ("notificacao/exibira/usuario") — viola CLAUDE.md §3 (sem termo tecnico na
+  UI) e §11.1 (PT-BR de negocio/acentuacao). Achado BAIXA do validador no gate do F10, mas o arquivo e
+  PRE-EXISTENTE (fora do diff F10 — nao introduzido por este bloco).
+- impacto: cosmetico/copy; "tenant" na UI e uma quebra de regra-de-ouro, porem pre-existente.
+- status: aberto -> **F12 (cera)** faz o pente-fino de copy/acentuacao: trocar "tenant"->"organizacao",
+  "inbox"->"caixa de notificacoes", corrigir acentos. Nao bloqueia F10.
