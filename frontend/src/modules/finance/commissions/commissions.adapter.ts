@@ -8,6 +8,7 @@ import type {
   CommissionSummaryData,
   CommissionSummaryFilters,
   CommissionSummaryItem,
+  CommissionSummaryScope,
 } from "./commissions.types";
 
 // Reexport do formatador de moeda do repo (fonte única — Catálogo de Serviço).
@@ -74,6 +75,27 @@ export function isWorkOrderSource(sourceType: string | null | undefined): boolea
   return key === "work_order" || key === "workorder";
 }
 
+// Descreve como exibir a origem (fonte única, pura e testável — a célula "Origem" delega aqui):
+//   `none`  → sem tipo de origem conhecido → "—"
+//   `link`  → OS (work_order) com id → link para /work-orders/:id
+//   `label` → demais origens (ou OS sem id) → APENAS o rótulo PT-BR (nunca id cru/fragmento)
+export type CommissionOriginDisplay =
+  | { readonly kind: "none" }
+  | { readonly kind: "label"; readonly label: string }
+  | { readonly kind: "link"; readonly label: string; readonly href: string };
+
+export function describeCommissionOrigin(
+  sourceType: string | null | undefined,
+  sourceId: string | null | undefined,
+): CommissionOriginDisplay {
+  if (!sourceType || !sourceType.trim()) return { kind: "none" };
+  const label = getCommissionSourceLabel(sourceType);
+  if (isWorkOrderSource(sourceType) && sourceId && sourceId.trim()) {
+    return { kind: "link", label, href: `/work-orders/${sourceId}` };
+  }
+  return { kind: "label", label };
+}
+
 // ── Query de período (from/to) + operador/paginação (date-range query build) ──────────
 export function buildCommissionsQuery(filters: CommissionSummaryFilters & CommissionCalculationsFilters): string {
   const query = new URLSearchParams();
@@ -86,6 +108,19 @@ export function buildCommissionsQuery(filters: CommissionSummaryFilters & Commis
   if (filters.limit && Number.isFinite(filters.limit)) query.set("limit", String(filters.limit));
   if (filters.offset && Number.isFinite(filters.offset)) query.set("offset", String(filters.offset));
   return query.size ? `?${query.toString()}` : "";
+}
+
+// Escolhe o endpoint de detalhamento conforme o escopo permitido ao chamador (fonte única,
+// pura e testável — o serviço e o drawer delegam aqui):
+//   `own` → /commissions/calculations/mine  (commissions:read_own; o servidor fixa o payee
+//            pelo token, então NUNCA propagamos payee_id — a rota geral daria 403 ao operador)
+//   `all` → /commissions/calculations?payee_id=…  (commissions:read; filtra por operador)
+export function buildCalculationsPath(scope: CommissionSummaryScope, filters: CommissionCalculationsFilters): string {
+  if (scope === "own") {
+    // Sem payee_id: autoria resolvida no servidor.
+    return `/commissions/calculations/mine${buildCommissionsQuery({ from: filters.from, to: filters.to, limit: filters.limit, offset: filters.offset })}`;
+  }
+  return `/commissions/calculations${buildCommissionsQuery(filters)}`;
 }
 
 // ── Extrato agregado (summary / my-summary — mesmo shape) ──────────────────────────────

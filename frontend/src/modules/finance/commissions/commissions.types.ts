@@ -86,3 +86,10 @@ export type CommissionCalculationsFilters = CommissionDateRange & {
   readonly limit?: number;
   readonly offset?: number;
 };
+
+// Detalhamento do próprio chamador (endpoint `/calculations/mine`): sem payee_id — o servidor
+// fixa a autoria pelo token. Só período/paginação.
+export type MyCommissionCalculationsFilters = CommissionDateRange & {
+  readonly limit?: number;
+  readonly offset?: number;
+};

@@ -206,3 +206,51 @@ test("commissions adapter: D-007 lista vazia/fallback preservados e query de per
   assert.equal(buildCommissionsQuery({ from: "2026-06-01" }), "?from=2026-06-01");
   assert.equal(buildCommissionsQuery({}), ""); // sem filtros → sem query string
 });
+
+test("commissions adapter: escopo escolhe o endpoint — own → /calculations/mine (SEM payee_id), all → /calculations?payee_id", async () => {
+  const { buildCalculationsPath } = await import("../src/modules/finance/commissions/commissions.adapter");
+
+  // Escopo próprio (operador, read_own): endpoint /mine e NUNCA payee_id (servidor fixa o autor).
+  const own = buildCalculationsPath("own", { from: "2026-06-01", to: "2026-06-30", limit: 200 });
+  assert.match(own, /^\/commissions\/calculations\/mine\?/);
+  assert.doesNotMatch(own, /payee_id/);
+  assert.match(own, /from=2026-06-01/);
+  assert.match(own, /to=2026-06-30/);
+
+  // Mesmo se um payee_id vazar nos filtros, o escopo own o descarta (defesa contra 403 cruzado).
+  const ownWithPayee = buildCalculationsPath("own", { payeeId: "usr-1", from: "2026-06-01" });
+  assert.match(ownWithPayee, /^\/commissions\/calculations\/mine/);
+  assert.doesNotMatch(ownWithPayee, /payee_id/);
+
+  // Escopo total (finance/admin, read): rota geral filtrando pelo operador da linha.
+  const all = buildCalculationsPath("all", { payeeId: "usr-1", from: "2026-06-01", to: "2026-06-30" });
+  assert.match(all, /^\/commissions\/calculations\?/);
+  assert.match(all, /payee_id=usr-1/);
+  assert.doesNotMatch(all, /\/mine/);
+});
+
+test("commissions adapter: descritor de origem — OS vira link, não-OS só rótulo (sem id cru), sem tipo → none", async () => {
+  const { describeCommissionOrigin } = await import("../src/modules/finance/commissions/commissions.adapter");
+
+  // OS (work_order) com id → link navegável para /work-orders/:id.
+  const os = describeCommissionOrigin("work_order", "wo-77");
+  assert.equal(os.kind, "link");
+  assert.equal(os.kind === "link" ? os.href : null, "/work-orders/wo-77");
+  assert.equal(os.kind === "link" ? os.label : null, "Ordem de serviço");
+
+  // Origem não-OS → apenas o rótulo PT-BR; NÃO há href e o rótulo não carrega o id.
+  const other = describeCommissionOrigin("checklist_run", "chk-3");
+  assert.equal(other.kind, "label");
+  assert.equal("href" in other, false); // sem link morto
+  assert.equal(other.kind === "label" ? other.label : null, "Checklist");
+  assert.doesNotMatch(other.kind === "label" ? other.label : "", /chk-3/); // nenhum fragmento de id
+
+  // OS sem id → não vira link morto; degrada para rótulo.
+  const osNoId = describeCommissionOrigin("work_order", null);
+  assert.equal(osNoId.kind, "label");
+  assert.equal(osNoId.kind === "label" ? osNoId.label : null, "Ordem de serviço");
+
+  // Sem tipo de origem conhecido → none ("—").
+  assert.equal(describeCommissionOrigin(null, "x").kind, "none");
+  assert.equal(describeCommissionOrigin("", null).kind, "none");
+});

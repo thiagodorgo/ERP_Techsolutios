@@ -107,6 +107,23 @@ export class CommissionService {
     });
   }
 
+  // R8.2 — drill-down do próprio ator (requer commissions:read_own). payeeId FIXADO no
+  // servidor; qualquer payee_id vindo do cliente é IGNORADO. Reusa o mesmo enriquecimento
+  // (sourceType/sourceId) do listCalculations.
+  listMyCalculations(actor: CommissionActorContext, query: RawRecord): Promise<ListResult<CommissionCalculation>> {
+    const { from, to } = parseDateRange(query.from, query.to);
+
+    return this.repository.listCalculations({
+      tenantId: actor.tenantId,
+      status: parseCalculationStatus(query.status),
+      payeeId: actor.userId,
+      from,
+      to,
+      limit: parseLimit(query.limit),
+      offset: parseOffset(query.offset),
+    });
+  }
+
   // R8.1 — extrato agregado por payee na janela (requer commissions:read).
   async summarizeStatements(actor: CommissionActorContext, query: RawRecord): Promise<CommissionSummaryResult> {
     const { from, to } = parseDateRange(query.from, query.to);

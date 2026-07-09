@@ -199,6 +199,7 @@ export function RemuneracoesPage() {
 
         {selected ? (
           <CommissionDetailDrawer
+            scope="own"
             payeeId={selected.id}
             payeeName={selected.name}
             from={from}
@@ -226,6 +227,7 @@ export function RemuneracoesPage() {
     >
       {selected ? (
         <CommissionDetailDrawer
+          scope="all"
           payeeId={selected.id}
           payeeName={selected.name}
           from={from}

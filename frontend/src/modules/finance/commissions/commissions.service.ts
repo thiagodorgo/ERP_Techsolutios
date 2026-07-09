@@ -3,6 +3,7 @@ import { apiRequest } from "../../../services/api/client";
 import {
   adaptCommissionCalculationsResponse,
   adaptCommissionSummaryResponse,
+  buildCalculationsPath,
   buildCommissionsQuery,
 } from "./commissions.adapter";
 import type {
@@ -12,6 +13,7 @@ import type {
   CommissionSummaryFilters,
   CommissionSummaryScope,
   CommissionsApiContext,
+  MyCommissionCalculationsFilters,
 } from "./commissions.types";
 
 const EMPTY_PAGINATION = { limit: 20, offset: 0, total: 0 } as const;
@@ -48,25 +50,42 @@ export async function fetchCommissionSummary(
   }
 }
 
-// Detalhamento por OS (cálculos individuais) de um operador no período.
-// D-007: modo mock → vazio; erro real → fallback vazio com motivo.
+const CALCULATIONS_FALLBACK = "Não foi possível consultar o detalhamento por origem.";
+
+function emptyCalculations(source: CommissionCalculationsData["source"], fallbackReason?: string): CommissionCalculationsData {
+  return { items: [], pagination: { ...EMPTY_PAGINATION }, source, fallbackReason };
+}
+
+// Detalhamento por origem (cálculos individuais) — escopo `all` (commissions:read).
+// Filtra por operador via payee_id. D-007: modo mock → vazio; erro real → fallback com motivo.
 export async function fetchCommissionCalculations(
   context: CommissionsApiContext,
   filters: CommissionCalculationsFilters = {},
 ): Promise<CommissionCalculationsData> {
-  if (isMockMode()) {
-    return { items: [], pagination: { ...EMPTY_PAGINATION }, source: "mock" };
-  }
+  if (isMockMode()) return emptyCalculations("mock");
 
   try {
-    const response = await apiRequest<unknown>(`/commissions/calculations${buildCommissionsQuery(filters)}`, context);
+    const response = await apiRequest<unknown>(buildCalculationsPath("all", filters), context);
     return adaptCommissionCalculationsResponse(response, "api");
   } catch {
-    return {
-      items: [],
-      pagination: { ...EMPTY_PAGINATION },
-      source: "fallback",
-      fallbackReason: "Não foi possível consultar o detalhamento por OS.",
-    };
+    return emptyCalculations("fallback", CALCULATIONS_FALLBACK);
+  }
+}
+
+// Detalhamento por origem do PRÓPRIO chamador — escopo `own` (commissions:read_own).
+// Endpoint dedicado `/mine`: o backend fixa o payee = ator autenticado, então NÃO enviamos
+// payee_id (operador não tem commissions:read; a rota geral responderia 403). Mesmo DTO
+// enriquecido (sourceType/sourceId). D-007: modo mock → vazio; erro real → fallback com motivo.
+export async function fetchMyCommissionCalculations(
+  context: CommissionsApiContext,
+  filters: MyCommissionCalculationsFilters = {},
+): Promise<CommissionCalculationsData> {
+  if (isMockMode()) return emptyCalculations("mock");
+
+  try {
+    const response = await apiRequest<unknown>(buildCalculationsPath("own", filters), context);
+    return adaptCommissionCalculationsResponse(response, "api");
+  } catch {
+    return emptyCalculations("fallback", CALCULATIONS_FALLBACK);
   }
 }

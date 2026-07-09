@@ -89,6 +89,15 @@ export class CommissionController {
     };
   }
 
+  async listMyCalculations(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.listMyCalculations(actor, request.query as Record<string, unknown>);
+
+    return {
+      body: toListDto(result, toCommissionCalculationDto),
+    };
+  }
+
   async listStatements(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const result = await service.listStatements(actor, request.query as Record<string, unknown>);

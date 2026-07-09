@@ -258,6 +258,95 @@ test("calculations drill-down exposes sourceType/sourceId from the linked basis 
   });
 });
 
+test("operator reads only their own enriched calculations via /calculations/mine", async () => {
+  await withSummaryApi(async ({ baseUrl, ids, repo }) => {
+    const sourceId = randomUUID();
+    const created = await fetch(`${baseUrl}/api/v1/commissions/basis-events`, {
+      method: "POST",
+      headers: { ...authHeaders(ids.tenantA.id, randomUUID(), "tenant_admin"), "content-type": "application/json" },
+      body: JSON.stringify({
+        sourceType: "work_order",
+        sourceId,
+        sourceEventName: "work_order.completed",
+        idempotencyKey: `mine-${sourceId}`,
+        occurredAt: "2026-06-10T10:00:00.000Z",
+      }),
+    });
+    const basisEventId = (await readJson(created)).data?.id as string;
+
+    // One calc linked to a real basis event for the operator; one for another payee.
+    repo.seedCalculationForTests({
+      tenantId: ids.tenantA.id,
+      payeeId: ids.operatorA,
+      amount: 40,
+      basisEventId,
+      createdAt: new Date("2026-06-11T10:00:00.000Z"),
+    });
+    seed(repo, ids.tenantA.id, ids.payee2A, 999, "2026-06-12T10:00:00.000Z");
+
+    // Forged payee_id on /mine must be ignored: payeeId is fixed to the actor server-side.
+    const response = await fetch(
+      `${baseUrl}/api/v1/commissions/calculations/mine?payee_id=${ids.payee2A}` +
+        `&from=2026-06-01T00:00:00.000Z&to=2026-06-30T23:59:59.000Z`,
+      { headers: authHeaders(ids.tenantA.id, ids.operatorA, "operator") },
+    );
+    const body = await readJson(response);
+
+    assert.equal(response.status, 200);
+    const items = (body.items ?? []) as Array<Record<string, unknown>>;
+    assert.equal(items.length, 1);
+    assert.equal(items[0]?.payeeId, ids.operatorA);
+    assert.equal(items[0]?.sourceType, "work_order");
+    assert.equal(items[0]?.sourceId, sourceId);
+    assert.ok(!items.some((item) => item.payeeId === ids.payee2A));
+  });
+});
+
+test("operator remains denied on the all-payees /calculations route", async () => {
+  await withSummaryApi(async ({ baseUrl, ids }) => {
+    const response = await fetch(`${baseUrl}/api/v1/commissions/calculations`, {
+      headers: authHeaders(ids.tenantA.id, ids.operatorA, "operator"),
+    });
+
+    assert.equal(response.status, 403);
+    assert.match(await response.text(), /commissions:read|permission_required/);
+  });
+});
+
+test("any read_own holder (e.g. tenant_admin) gets only their own row via /calculations/mine", async () => {
+  await withSummaryApi(async ({ baseUrl, ids, repo }) => {
+    const adminUser = randomUUID();
+    seed(repo, ids.tenantA.id, adminUser, 55, "2026-06-05T10:00:00.000Z");
+    seed(repo, ids.tenantA.id, ids.operatorA, 12, "2026-06-05T10:00:00.000Z");
+
+    const response = await fetch(`${baseUrl}/api/v1/commissions/calculations/mine`, {
+      headers: authHeaders(ids.tenantA.id, adminUser, "tenant_admin"),
+    });
+    const body = await readJson(response);
+
+    assert.equal(response.status, 200);
+    const items = (body.items ?? []) as Array<Record<string, unknown>>;
+    assert.equal(items.length, 1);
+    assert.equal(items[0]?.payeeId, adminUser);
+    assert.ok(!items.some((item) => item.payeeId === ids.operatorA));
+  });
+});
+
+test("/calculations/mine is isolated per tenant and never leaks another tenant's calcs", async () => {
+  await withSummaryApi(async ({ baseUrl, ids, repo }) => {
+    seed(repo, ids.tenantB.id, ids.operatorB, 500, "2026-06-05T10:00:00.000Z");
+
+    const response = await fetch(`${baseUrl}/api/v1/commissions/calculations/mine`, {
+      headers: authHeaders(ids.tenantA.id, ids.operatorB, "operator"),
+    });
+    const body = await readJson(response);
+
+    assert.equal(response.status, 200);
+    assert.equal(((body.items ?? []) as unknown[]).length, 0);
+    assert.equal(body.pagination?.total, 0);
+  });
+});
+
 test("summary rejects an inverted date range with 400", async () => {
   await withSummaryApi(async ({ baseUrl, ids }) => {
     const response = await fetch(

@@ -6,17 +6,16 @@ import { Link } from "react-router-dom";
 import { DENSE_LIST_FETCH_LIMIT } from "../../../../components/dense-list";
 import { Alert, Button, Chip, Drawer, EmptyState, Skeleton } from "../../../../components/ui";
 import {
+  describeCommissionOrigin,
   formatBRL,
   formatCommissionCount,
   formatCommissionDate,
   formatPeriodLabel,
-  getCommissionSourceLabel,
   getCommissionStatusLabel,
   getCommissionStatusTone,
-  isWorkOrderSource,
 } from "../commissions.adapter";
-import { fetchCommissionCalculations } from "../commissions.service";
-import type { CommissionCalculation, CommissionsApiContext } from "../commissions.types";
+import { fetchCommissionCalculations, fetchMyCommissionCalculations } from "../commissions.service";
+import type { CommissionCalculation, CommissionSummaryScope, CommissionsApiContext } from "../commissions.types";
 
 const subtitleStyle: CSSProperties = { fontSize: "var(--text-sm)", color: "var(--text-secondary)", marginTop: "var(--space-2)" };
 const summaryRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: "var(--space-8)", flexWrap: "wrap", margin: "var(--space-12) 0" };
@@ -31,10 +30,14 @@ type DrillState = {
   readonly error: string | null;
 };
 
-// F8 — detalhamento por OS: lista os cálculos individuais (OS · valor · situação) de um
-// operador no período. Optei por um DRAWER (não rota) para manter o extrato autocontido,
+// F8 — detalhamento por origem: lista os cálculos individuais (origem · valor · situação) de
+// um operador no período. Optei por um DRAWER (não rota) para manter o extrato autocontido,
 // reaproveitando o overlay do design system. D-007: modo mock/erro → vazio, sem fabricar.
+// O `scope` decide o endpoint (o backend é a autoridade final):
+//   `own` (operador, read_own) → /calculations/mine (sem payee_id — servidor fixa o autor)
+//   `all` (finance/admin, read) → /calculations?payee_id=… (filtra pelo operador da linha)
 export function CommissionDetailDrawer({
+  scope,
   payeeId,
   payeeName,
   from,
@@ -42,6 +45,7 @@ export function CommissionDetailDrawer({
   context,
   onClose,
 }: {
+  readonly scope: CommissionSummaryScope;
   readonly payeeId?: string;
   readonly payeeName: string;
   readonly from: string;
@@ -53,18 +57,21 @@ export function CommissionDetailDrawer({
 
   const load = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
-    const data = await fetchCommissionCalculations(context, {
-      payeeId: payeeId || undefined,
-      from: from || undefined,
-      to: to || undefined,
-      limit: DENSE_LIST_FETCH_LIMIT,
-    });
+    const data =
+      scope === "own"
+        ? await fetchMyCommissionCalculations(context, { from: from || undefined, to: to || undefined, limit: DENSE_LIST_FETCH_LIMIT })
+        : await fetchCommissionCalculations(context, {
+            payeeId: payeeId || undefined,
+            from: from || undefined,
+            to: to || undefined,
+            limit: DENSE_LIST_FETCH_LIMIT,
+          });
     if (data.source === "fallback") {
       setState({ items: [], total: 0, loading: false, error: data.fallbackReason ?? "Não foi possível carregar o detalhamento." });
       return;
     }
     setState({ items: data.items, total: data.pagination.total, loading: false, error: null });
-  }, [context, payeeId, from, to]);
+  }, [context, scope, payeeId, from, to]);
 
   useEffect(() => {
     void load();
@@ -144,35 +151,23 @@ export function CommissionDetailDrawer({
   );
 }
 
-// Encurta um id para exibição (ex.: "wo-2026-000123" → "…000123") sem esconder a origem.
-function shortId(id: string): string {
-  const trimmed = id.trim();
-  return trimmed.length > 10 ? `…${trimmed.slice(-8)}` : trimmed;
-}
-
-// Célula "Origem": só a origem OS (work_order) vira link navegável para a OS; as demais são
-// rótulos PT-BR informativos (sem link morto); sem origem conhecida → "—".
+// Célula "Origem": delega a decisão de exibição ao descritor puro (fonte única):
+//   OS (work_order) com id → link navegável; demais origens → só o rótulo PT-BR; sem tipo → "—".
 function OriginCell({ sourceType, sourceId }: { readonly sourceType: string | null; readonly sourceId: string | null }) {
-  if (!sourceType && !sourceId) return <span style={mutedStyle}>—</span>;
+  const origin = describeCommissionOrigin(sourceType, sourceId);
 
-  const label = getCommissionSourceLabel(sourceType);
+  if (origin.kind === "none") return <span style={mutedStyle}>—</span>;
 
-  if (isWorkOrderSource(sourceType) && sourceId) {
+  if (origin.kind === "link") {
     return (
-      <Link to={`/work-orders/${sourceId}`} aria-label={`Abrir ordem de serviço ${sourceId}`}>
-        <ExternalLink size={13} aria-hidden /> {label}
+      <Link to={origin.href} aria-label={`Abrir ordem de serviço ${sourceId}`}>
+        <ExternalLink size={13} aria-hidden /> {origin.label}
       </Link>
     );
   }
 
-  if (!sourceType && sourceId) return <span style={mutedStyle}>—</span>;
-
-  return (
-    <span>
-      {label}
-      {sourceId ? <span style={mutedStyle}> · {shortId(sourceId)}</span> : null}
-    </span>
-  );
+  // Origem não-OS (ou OS sem id): apenas o rótulo, sem expor fragmento de id.
+  return <span>{origin.label}</span>;
 }
 
 export default CommissionDetailDrawer;
