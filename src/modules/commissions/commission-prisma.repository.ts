@@ -6,6 +6,7 @@ import type {
   CommissionBasisEventStatus,
   CommissionCalculation,
   CommissionCalculationStatus,
+  CommissionPayeeSummary,
   CommissionPolicy,
   CommissionPolicyRule,
   CommissionPolicyStatus,
@@ -18,6 +19,7 @@ import type {
   ListCommissionPoliciesInput,
   ListCommissionStatementsInput,
   ListResult,
+  SummarizeCalculationsByPayeeInput,
 } from "./commission.types.js";
 import type { CommissionRepository } from "./commission.repository.js";
 
@@ -158,11 +160,59 @@ export class PrismaCommissionRepository implements CommissionRepository {
     ]);
 
     return {
-      items: items.map(mapCalculationRecord),
+      items: await this.attachBasisOrigin(items.map(mapCalculationRecord), input.tenantId),
       total,
       limit: input.limit,
       offset: input.offset,
     };
+  }
+
+  // Drill-down enrichment: resolve the page's basis events in ONE query (batch, no N+1)
+  // and pass through each calculation's real source_type/source_id.
+  private async attachBasisOrigin(
+    calculations: readonly CommissionCalculation[],
+    tenantId: string,
+  ): Promise<CommissionCalculation[]> {
+    const basisEventIds = [...new Set(calculations.map((calculation) => calculation.basisEventId))];
+
+    if (basisEventIds.length === 0) {
+      return [...calculations];
+    }
+
+    const events = await this.client.commissionBasisEvent.findMany({
+      where: { tenant_id: tenantId, id: { in: basisEventIds } },
+      select: { id: true, source_type: true, source_id: true },
+    });
+    const eventsById = new Map(events.map((event) => [event.id, event]));
+
+    return calculations.map((calculation) => {
+      const event = eventsById.get(calculation.basisEventId);
+
+      if (!event) return calculation;
+
+      return { ...calculation, sourceType: event.source_type, sourceId: event.source_id };
+    });
+  }
+
+  async summarizeCalculationsByPayee(input: SummarizeCalculationsByPayeeInput): Promise<CommissionPayeeSummary> {
+    const grouped = await this.client.commissionCalculation.groupBy({
+      by: ["payee_id"],
+      where: buildSummaryWhere(input),
+      _sum: { amount: true },
+      _count: true,
+    });
+
+    const items = grouped
+      .filter((row): row is typeof row & { payee_id: string } => row.payee_id !== null)
+      .map((row) => ({
+        payeeId: row.payee_id,
+        total: decimalToNumber(row._sum.amount),
+        count: row._count,
+      }))
+      .sort((left, right) => right.total - left.total);
+    const total = items.reduce((sum, item) => sum + item.total, 0);
+
+    return { items, total };
   }
 
   async listStatements(input: ListCommissionStatementsInput): Promise<ListResult<CommissionStatement>> {
@@ -212,6 +262,10 @@ export class RlsPrismaCommissionRepository implements CommissionRepository {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaCommissionRepository(tx).listCalculations(input));
   }
 
+  summarizeCalculationsByPayee(input: SummarizeCalculationsByPayeeInput): Promise<CommissionPayeeSummary> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaCommissionRepository(tx).summarizeCalculationsByPayee(input));
+  }
+
   listStatements(input: ListCommissionStatementsInput): Promise<ListResult<CommissionStatement>> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaCommissionRepository(tx).listStatements(input));
   }
@@ -254,6 +308,26 @@ function buildCalculationWhere(input: ListCommissionCalculationsInput): Prisma.C
     tenant_id: input.tenantId,
     ...(input.status ? { status: input.status } : {}),
     ...(input.payeeId ? { payee_id: input.payeeId } : {}),
+    ...buildCreatedAtRange(input.from, input.to),
+  };
+}
+
+function buildSummaryWhere(input: SummarizeCalculationsByPayeeInput): Prisma.CommissionCalculationWhereInput {
+  return {
+    tenant_id: input.tenantId,
+    payee_id: input.payeeId ? input.payeeId : { not: null },
+    ...buildCreatedAtRange(input.from, input.to),
+  };
+}
+
+function buildCreatedAtRange(from?: Date, to?: Date): Prisma.CommissionCalculationWhereInput {
+  if (!from && !to) return {};
+
+  return {
+    created_at: {
+      ...(from ? { gte: from } : {}),
+      ...(to ? { lte: to } : {}),
+    },
   };
 }
 

@@ -11,7 +11,7 @@ import {
   type CommissionStatementStatus,
 } from "./commission.types.js";
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const sensitivePayloadKeys = new Set([
   "apikey",
   "authorization",
@@ -74,6 +74,17 @@ export function parseOptionalDate(value: unknown, field: string): Date | undefin
   }
 
   return date;
+}
+
+export function parseDateRange(fromValue: unknown, toValue: unknown): { from?: Date; to?: Date } {
+  const from = parseOptionalDate(fromValue, "from");
+  const to = parseOptionalDate(toValue, "to");
+
+  if (from && to && from.getTime() > to.getTime()) {
+    throw new CommissionError(400, "COMMISSION_FILTER_INVALID", "invalid_date_range", "from must be before or equal to to.");
+  }
+
+  return { from, to };
 }
 
 export function parseLimit(value: unknown): number {

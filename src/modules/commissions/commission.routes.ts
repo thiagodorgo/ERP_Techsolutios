@@ -79,6 +79,24 @@ export function createCommissionRouter(resolveService: CommissionServiceResolver
     }),
   );
 
+  // R8.1 — extrato agregado por payee na janela (visão tenant).
+  router.get(
+    "/commissions/statements/summary",
+    requirePermission(COMMISSION_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.summarizeStatements(request));
+    }),
+  );
+
+  // R8.2 — extrato do próprio ator; payeeId fixado no servidor (commissions:read_own).
+  router.get(
+    "/commissions/statements/my-summary",
+    requirePermission(COMMISSION_PERMISSIONS.readOwn),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.summarizeMyStatements(request));
+    }),
+  );
+
   return router;
 }
 
