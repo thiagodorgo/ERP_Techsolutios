@@ -226,8 +226,16 @@
   UI) e §11.1 (PT-BR de negocio/acentuacao). Achado BAIXA do validador no gate do F10, mas o arquivo e
   PRE-EXISTENTE (fora do diff F10 — nao introduzido por este bloco).
 - impacto: cosmetico/copy; "tenant" na UI e uma quebra de regra-de-ouro, porem pre-existente.
-- status: aberto -> **F12 (cera)** faz o pente-fino de copy/acentuacao: trocar "tenant"->"organizacao",
-  "inbox"->"caixa de notificacoes", corrigir acentos. Nao bloqueia F10.
+- status: **RESOLVIDO** por F12 (D-022): NotificationList -> "Nenhuma notificação encontrada" / "A central
+  exibirá eventos relevantes da sua organização aqui." (+4 outras telas com "tenant" corrigidas).
+
+## P-028 - Divida sistemica de acentuacao em strings de UI antigas (2026-07-09)
+
+- descricao: varias telas pre-existentes tem strings sem acento ("Situacao" ~x12, "usuario" ~x7,
+  "Operacao"/"indisponivel"/"Auditoria" espalhados). F12 corrigiu as violacoes de §3 ("tenant"/"inbox") +
+  acentos DENTRO dessas strings, mas nao fez a reescrita ampla (fora do escopo do bloco de cera).
+- impacto: cosmetico/§11.1; nao afeta funcao. Concentrado em telas bespoke de plataforma/legado.
+- status: aberto (bloco dedicado de copy/i18n varrendo `frontend/src/**` por acentuacao de UI). Nao bloqueia F12.
 
 ## P-026 - F11: front `UserRole` nao cobre os 9 papeis canonicos (menu visual aproxima) (2026-07-09)
 

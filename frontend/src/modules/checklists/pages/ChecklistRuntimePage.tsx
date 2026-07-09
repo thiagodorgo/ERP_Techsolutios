@@ -95,7 +95,7 @@ export function ChecklistRuntimePage() {
   }, [checklistId, context]);
 
   if (!context) {
-    return <ErrorState title="Contexto operacional indisponivel" detail="Selecione um tenant antes de executar checklists." />;
+    return <ErrorState title="Contexto operacional indisponível" detail="Selecione uma organização antes de executar checklists." />;
   }
 
   if (!checklistId) {

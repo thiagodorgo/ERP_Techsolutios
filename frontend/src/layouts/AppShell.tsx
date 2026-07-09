@@ -2,6 +2,7 @@ import { Bell, ChevronDown, LogOut, Package, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 
+import { CommandPalette, useCommandPalette } from "../components/command-palette";
 import { useNavigationMenu } from "../modules/navigation/useNavigationMenu";
 import { getUnreadNotificationCount } from "../modules/notifications/notification.service";
 import { listAllPendingApprovals } from "../modules/work-orders/approval.service";
@@ -30,6 +31,8 @@ export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const [unread, setUnread] = useState(0);
   const [pendingApprovals, setPendingApprovals] = useState(0);
+  // Paleta de comandos (Ctrl+K / ⌘K) — destinos filtrados pela permissão do papel.
+  const { open: paletteOpen, openPalette, closePalette } = useCommandPalette();
 
   const roleKind = useMemo(() => roleKindFor(session?.user?.roles ?? []), [session?.user?.roles]);
   // Navegação vem de GET /api/v1/navigation/menu (mock atrás do flag; fallback local),
@@ -198,10 +201,11 @@ export function AppShell() {
         <header style={{ flexShrink: 0, height: 60, background: "#fff", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px" }}>
           <div style={{ fontSize: 17, fontWeight: 800, color: "#0F172A" }}>{currentNavTitle(nav, location.pathname)}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 9, width: 280, padding: "8px 13px", background: "#F1F5F9", borderRadius: 10 }}>
+            <button type="button" onClick={openPalette} aria-label="Abrir busca de páginas (Ctrl+K)" style={{ display: "flex", alignItems: "center", gap: 9, width: 280, padding: "8px 13px", background: "#F1F5F9", borderRadius: 10, border: "none", cursor: "pointer", textAlign: "left" }}>
               <Search size={16} style={{ color: "#94A3B8" }} />
-              <span style={{ fontSize: 13, color: "#94A3B8" }}>Buscar pedidos, itens, clientes…</span>
-            </div>
+              <span style={{ fontSize: 13, color: "#94A3B8", flex: 1 }}>Buscar pedidos, itens, clientes…</span>
+              <span className="command-kbd" aria-hidden>Ctrl K</span>
+            </button>
             <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 11px", border: "1px solid #E2E8F0", borderRadius: 10, cursor: "pointer" }}>
               <Package size={15} style={{ color: "#64748B" }} />
               <span style={{ fontSize: 12.5, fontWeight: 700, color: "#334155", whiteSpace: "nowrap", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis" }}>{orgName}</span>
@@ -217,6 +221,8 @@ export function AppShell() {
           <Outlet />
         </div>
       </div>
+
+      <CommandPalette open={paletteOpen} onClose={closePalette} />
     </div>
   );
 }

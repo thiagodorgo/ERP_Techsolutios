@@ -55,7 +55,7 @@ export function WorkOrdersListPage() {
       <Drawer title="Filtros avancados" open={filterOpen} onClose={() => setFilterOpen(false)}>
         <div className="drawer-stack">
           <FilterBar />
-          <p>Estrutura preparada para filtros salvos por usuario, tenant e papel.</p>
+          <p>Estrutura preparada para filtros salvos por usuário, organização e papel.</p>
           <Button onClick={() => setFilterOpen(false)}>Aplicar filtros</Button>
         </div>
       </Drawer>

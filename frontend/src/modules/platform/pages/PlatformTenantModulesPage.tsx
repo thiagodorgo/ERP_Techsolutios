@@ -54,7 +54,7 @@ export function PlatformTenantModulesPage() {
       <header className="page-heading page-heading--row">
         <div>
           <span>P03 Console da Plataforma</span>
-          <h1>Modulos do Tenant</h1>
+          <h1>Módulos da Organização</h1>
           <p>{tenant.name} · plano {tenant.plan}</p>
         </div>
         <Button onClick={saveModules}>

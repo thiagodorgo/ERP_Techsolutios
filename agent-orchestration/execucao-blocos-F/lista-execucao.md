@@ -90,7 +90,12 @@
       → **P-011 RESOLVIDO**; teste 9 papéis (14 testes) vs matriz; tokens/colapso congelados; D-021; sinalizado
       P-026/P-027 (reconciliação de catálogo backend); testes N=9 → **M=14**; gate verde (front check/**234**/
       build); **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA; 1 BAIXA item oculto; verificado com rigor extra — classificador off no subagente); PR #NN, merge <hash> — pós-merge
-- [ ] F12 Cera (Mapa, Dashboard, OS lista, Multas, Manutenção)
+- [~] F12 Cera (Mapa, Dashboard, OS lista, Multas, Manutenção) — branch `bloco-f12-cera`; frontend-only,
+      tokens congelados; **command palette Ctrl+K por papel** (destinos filtrados por permissão, a11y,
+      reduced-motion) + pente-fino de copy (**P-025 resolvido** + 4 telas "tenant"→"organização"; P-028
+      registra dívida de acentuação) + cabeçalho fixo (`sticky`) + tabulares verificados; D-022; testes
+      N=5 → **M=10** (8 palette + 2 copy); gate verde (front check/**244**/build; backend intocado);
+      **validador-mestre: VEREDITO APROVADO** (0 VETO/0 ALTA; 1 BAIXA §11.2 path→grupo **corrigida no bloco**); PR #NN, merge <hash> → **ENCERRA a Rodada F (F1-F12)**
 
 ## Relatório final (F12 concluída)
 - [ ] 9/9 sub-módulos com tela+backend+navegação; 0 mocks (mapa incluso); matriz 9/9 testada; suíte

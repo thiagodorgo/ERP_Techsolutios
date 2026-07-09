@@ -36,8 +36,9 @@
 - F8 Remuneracoes — status: concluido (PR #150, merge 9acadf4; validador APROVADO apos re-gate)
 - F9 Usuarios — status: concluido (PR #151, merge b3272c2; validador APROVADO)
 - F10 Notificacoes — status: concluido (PR #152, merge f47062b; validador APROVADO)
-- **F11 Sidebar** — status: em validacao (IA 5 grupos + vocab reconciliado + badge Aprovacoes real + 9 papeis; gate)
-- F12 Cera — status: pendente
+- F11 Sidebar — status: concluido (PR #153, merge 78bbf4f; validador APROVADO; P-011 resolvido)
+- **F12 Cera** — status: em validacao (Ctrl+K por papel + pente-fino de copy P-025 + cabecalho fixo; gate)
+  -> ENCERRA a Rodada F (F1-F12)
 - F6 Mapa real / F7 Estoque / F8 Remuneracoes — status: pendente
 - F9 Usuarios / F10 Notificacoes / F11 Sidebar / F12 Cera — status: pendente
 
