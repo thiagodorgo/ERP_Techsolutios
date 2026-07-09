@@ -82,7 +82,9 @@
   painel de aprovacoes do dashboard, o sidebar e a superficie que carrega o sinal — e o numero e falso
   (o dot de nao-lidas do topbar, por contraste, e real via `getUnreadNotificationCount`).
 - impacto: numero fabricado na UI (§ REGRA-MESTRA); pre-existente, fora do escopo C3.
-- status: aberto (ligar a uma contagem real de aprovacoes pendentes ou remover o numero — chore)
+- status: **PARCIAL** — F10 (D-020) trocou o `badge: 4` do item **Notificacoes** pela contagem real
+  `unread`. Falta o `badge: 3` de **Aprovacoes** (ligar a `/approvals/pending` real ou remover) — fica p/
+  **F11** (reestruturacao do NAV_BY_ROLE + badges reais). Aberto so quanto a Aprovacoes.
 
 ## P-012 - F1: tile "km/L medio da frota" e agregado nao-clicavel (2026-07-08)
 

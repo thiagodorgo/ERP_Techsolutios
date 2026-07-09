@@ -1,5 +1,30 @@
 # Status Geral
 
+## Atualizacao 2026-07-09 — Rodada BLOCO-AUTO-F: F10 Notificacoes (em gate) [Claude Code]
+
+### Status
+
+F1-F9 mergeadas (#142-#151). **F10 Central de Notificacoes** implementado na branch `bloco-f10-notificacoes`,
+gate mecanico VERDE; fidelidade inline; validador-mestre.
+
+### Entregue (F10)
+
+- Backend: orquestrador `fleet-alerts.runner.ts` `runFleetAlerts` liga os **4 produtores** idempotentes
+  (manutencao/multas/seguros/estoque) com repos default de cada dominio (add `createDefault*Repository`) +
+  `NotificationService`; rota `POST /notifications/fleet-alerts/run` (gated `notifications:update`;
+  destinatarios = tenant_admin/manager/super_admin). Idempotente ponta-a-ponta (2x = 0 duplicatas). Sem
+  permissao nova, sem migration.
+- Web: central `/notifications` (ja real) ganha **filtros por categoria** (Manutencao/Multas/Seguros/Estoque/
+  Outros, de `type`/`sourceType`; estado na URL) + acao "Gerar alertas" (gated). **Badge do sino real**:
+  item de sidebar "Notificacoes" troca `badge: 4` hardcoded pela contagem `unread` real -> **mata a parte do
+  sino do P-011** (Aprovacoes + NAV restante ficam p/ F11). D-007; `screen-element-map` §F10 atualizado.
+
+### Gate mecanico (verde)
+
+- Backend: `check` OK · `npm test` **26/26** · **F10 10/10** · regressoes notif+4 dominios 60/60 · `build` OK.
+  Frontend: `check` OK · `test:smoke` **220/220** (9 novos) · `build` OK. Sem migration. Testes F10 N=5 ->
+  **M=19** (backend 10 + front 9). C3.
+
 ## Atualizacao 2026-07-09 — Rodada BLOCO-AUTO-F: F9 Usuarios (em gate) [Claude Code]
 
 ### Status
