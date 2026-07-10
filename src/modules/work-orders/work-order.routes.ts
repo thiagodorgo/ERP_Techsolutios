@@ -120,6 +120,15 @@ export function createWorkOrderRouter(resolveService: WorkOrderServiceResolver =
     }),
   );
 
+  // Ω1b-2 — geocodificação sob demanda (gated OFF por env; backend é a autoridade de permissão).
+  router.post(
+    "/work-orders/:workOrderId/geocode",
+    requirePermission(WORK_ORDER_PERMISSIONS.update),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.geocode(request));
+    }),
+  );
+
   return router;
 }
 

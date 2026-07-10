@@ -51,6 +51,9 @@ export type WorkOrder = {
   readonly serviceZipCode?: string;
   readonly serviceLatitude?: number;
   readonly serviceLongitude?: number;
+  // Ω1b-2 — metadados do cache de geocodificação (null enquanto a OS não foi geocodificada).
+  readonly serviceGeocodedAt?: Date;
+  readonly serviceGeocodeSource?: string;
   readonly priority: WorkOrderPriority;
   readonly status: WorkOrderStatus;
   readonly assignedOperatorId?: string;
@@ -192,6 +195,17 @@ export type ChangeWorkOrderStatusInput = {
   readonly status: WorkOrderStatus;
   readonly message: string;
   readonly cancellationReason?: string;
+  readonly actorUserId?: string;
+};
+
+// Ω1b-2 — grava a coordenada geocodificada + metadados do cache na OS (tenant-scoped).
+export type UpdateWorkOrderGeocodeInput = {
+  readonly tenantId: string;
+  readonly workOrderId: string;
+  readonly latitude: number;
+  readonly longitude: number;
+  readonly source: string;
+  readonly geocodedAt: Date;
   readonly actorUserId?: string;
 };
 

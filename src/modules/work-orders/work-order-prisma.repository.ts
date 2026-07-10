@@ -7,6 +7,7 @@ import type {
   CreateWorkOrderInput,
   ListWorkOrdersInput,
   ListWorkOrdersResult,
+  UpdateWorkOrderGeocodeInput,
   UpdateWorkOrderInput,
   WorkOrder,
   WorkOrderAssignment,
@@ -146,6 +147,25 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
     return updated[0] ? mapWorkOrderRecord(updated[0]) : undefined;
   }
 
+  async updateGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined> {
+    // R10 — where tenant_id+id; RETURNING vazio (inexistente/cross-tenant) → undefined (serviço → 404).
+    const updated = await this.client.workOrder.updateManyAndReturn({
+      where: {
+        tenant_id: input.tenantId,
+        id: input.workOrderId,
+      },
+      data: {
+        service_latitude: input.latitude,
+        service_longitude: input.longitude,
+        service_geocoded_at: input.geocodedAt,
+        service_geocode_source: input.source,
+        updated_by: input.actorUserId ?? null,
+      },
+    });
+
+    return updated[0] ? mapWorkOrderRecord(updated[0]) : undefined;
+  }
+
   async changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
     const now = new Date();
     const updated = await this.client.workOrder.updateManyAndReturn({
@@ -260,6 +280,10 @@ export class RlsPrismaWorkOrderRepository implements WorkOrderRepository {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx).update(input));
   }
 
+  updateGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx).updateGeocode(input));
+  }
+
   changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx).changeStatus(input));
   }
@@ -330,6 +354,8 @@ function mapWorkOrderRecord(record: {
   readonly service_zip_code: string | null;
   readonly service_latitude: unknown;
   readonly service_longitude: unknown;
+  readonly service_geocoded_at: Date | null;
+  readonly service_geocode_source: string | null;
   readonly priority: string;
   readonly status: string;
   readonly assigned_operator_id: string | null;
@@ -365,6 +391,8 @@ function mapWorkOrderRecord(record: {
     serviceZipCode: record.service_zip_code ?? undefined,
     serviceLatitude: decimalToNumber(record.service_latitude),
     serviceLongitude: decimalToNumber(record.service_longitude),
+    serviceGeocodedAt: record.service_geocoded_at ?? undefined,
+    serviceGeocodeSource: record.service_geocode_source ?? undefined,
     priority: record.priority as WorkOrderPriority,
     status: record.status as WorkOrderStatus,
     assignedOperatorId: record.assigned_operator_id ?? undefined,
