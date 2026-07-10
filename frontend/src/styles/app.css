@@ -1930,6 +1930,25 @@
   white-space: nowrap;
 }
 
+/* Ω1b-2 — linha com ação "Localizar no mapa" */
+.operations-wo-nolocation__row {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.operations-wo-nolocation__action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+  padding-left: var(--space-8);
+}
+
+.operations-wo-nolocation__error {
+  color: var(--color-status-warning);
+  font-size: var(--text-xs);
+}
+
 /* Atribuição/controles MapLibre sobre o basemap navy */
 .operations-map-libre .maplibregl-ctrl-attrib {
   background: rgb(15 23 34 / 78%);
