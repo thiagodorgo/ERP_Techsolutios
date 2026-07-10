@@ -131,16 +131,19 @@ async function main(): Promise<void> {
   const roles = new Map<Role, { id: string }>();
 
   for (const permission of PERMISSION_CATALOG) {
+    // Fallback: permissões novas (ex.: frota/estoque da Rodada F) podem não ter
+    // descrição no mapa — `description` é NOT NULL, então geramos uma genérica.
+    const description = permissionDescriptions[permission] ?? `Permissão ${permission}.`;
     const permissionRecord = await prisma.permission.upsert({
       where: {
         key: permission,
       },
       update: {
-        description: permissionDescriptions[permission],
+        description,
       },
       create: {
         key: permission,
-        description: permissionDescriptions[permission],
+        description,
       },
       select: {
         id: true,
