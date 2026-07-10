@@ -653,7 +653,7 @@ test("operations map service enriquece operadores com OS somente quando RBAC per
   });
 
   assert.equal(calls[0].url, "/api/v1/field-locations/latest");
-  assert.equal(calls[1].url, "/api/v1/work-orders");
+  assert.equal(calls[1].url, "/api/v1/work-orders?limit=100"); // Ω1b R1 — carrega até 100 OS (não o default 20)
   assert.equal(withWorkOrders.locations[0].currentWorkOrder?.code, "OS-API");
 
   const fieldOnlyCalls = installFetchJson({
@@ -1492,13 +1492,13 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(protectedHtml, /Mapa Operacional/);
   assert.match(protectedHtml, /Atualização periódica/);
   // D-007 (F6): modo mock renderiza estado vazio orientado — zero pin fabricado no SSR.
-  assert.match(protectedHtml, /Nenhum operador em campo/);
+  assert.match(protectedHtml, /Nenhum operador ou chamado no mapa/);
   assert.doesNotMatch(protectedHtml, /Marina Costa|Roberto Lima|Ana Martins|Caio Nunes/);
   assert.match(operationsMapContextHtml, /OS filtrada:/);
   assert.match(operationsMapContextHtml, /Limpar contexto/);
-  assert.match(operationsMapContextHtml, /Nenhum operador em campo/);
+  assert.match(operationsMapContextHtml, /Nenhum operador ou chamado no mapa/);
   assert.doesNotMatch(operationsMapContextHtml, /Roberto Lima|Ana Martins/);
-  assert.match(operationsMapEmptyContextHtml, /Nenhum operador em campo/);
+  assert.match(operationsMapEmptyContextHtml, /Nenhum operador ou chamado no mapa/);
   assert.match(dispatchActionsHtml, /Acoes do despacho|Alterar status|Reatribuir/);
   assert.match(updateOnlyDispatchActionsHtml, /Alterar status/);
   assert.doesNotMatch(updateOnlyDispatchActionsHtml, /Reatribuir|Cancelar/);
