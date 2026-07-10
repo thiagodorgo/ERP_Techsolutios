@@ -6,6 +6,7 @@ import type {
   CreateWorkOrderInput,
   ListWorkOrdersInput,
   ListWorkOrdersResult,
+  UpdateWorkOrderGeocodeInput,
   UpdateWorkOrderInput,
   WorkOrder,
   WorkOrderAssignment,
@@ -20,6 +21,7 @@ export interface WorkOrderRepository {
   list(input: ListWorkOrdersInput): Promise<ListWorkOrdersResult>;
   findById(tenantId: string, workOrderId: string): Promise<WorkOrder | undefined>;
   update(input: UpdateWorkOrderInput): Promise<WorkOrder | undefined>;
+  updateGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined>;
   changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined>;
   assign(input: AssignWorkOrderInput): Promise<{ readonly workOrder: WorkOrder; readonly assignment: WorkOrderAssignment } | undefined>;
   createEvent(input: CreateWorkOrderEventInput): Promise<WorkOrderEvent>;
@@ -101,6 +103,25 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
     const updated: WorkOrder = {
       ...current,
       ...definedFields(input),
+      updatedAt: new Date(),
+    };
+    this.workOrders.set(updated.id, updated);
+
+    return updated;
+  }
+
+  async updateGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined> {
+    // R10 — tenant-scoped: OS inexistente ou de outro tenant retorna undefined (serviço mapeia 404).
+    const current = await this.findById(input.tenantId, input.workOrderId);
+    if (!current) return undefined;
+
+    const updated: WorkOrder = {
+      ...current,
+      serviceLatitude: input.latitude,
+      serviceLongitude: input.longitude,
+      serviceGeocodedAt: input.geocodedAt,
+      serviceGeocodeSource: input.source,
+      updatedBy: input.actorUserId ?? current.updatedBy,
       updatedAt: new Date(),
     };
     this.workOrders.set(updated.id, updated);

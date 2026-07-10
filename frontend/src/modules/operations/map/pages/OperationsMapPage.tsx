@@ -28,6 +28,7 @@ import { OperationsOperatorDetailPanel } from "../components/OperationsOperatorD
 import { OperationsOperatorList } from "../components/OperationsOperatorList";
 import { OperationsWorkOrderPinPanel } from "../components/OperationsWorkOrderPinPanel";
 import { OperationsWorkOrdersWithoutLocationPanel } from "../components/OperationsWorkOrdersWithoutLocationPanel";
+import { geocodeWorkOrder } from "../../../work-orders/work-orders.service";
 
 export function OperationsMapPage() {
   const {
@@ -132,6 +133,15 @@ export function OperationsMapPage() {
   const visibleWorkOrderPins = canReadWorkOrders ? workOrderPins ?? [] : [];
   const visibleWorkOrdersWithoutLocation = canReadWorkOrders ? workOrdersWithoutLocation ?? [] : [];
   const selectedWorkOrderPin = visibleWorkOrderPins.find((pin) => pin.id === selectedWorkOrderId);
+  // Ω1b-2 — geocodificar sob demanda exige work_orders:update; em sucesso, atualiza o mapa (pin aparece).
+  const canGeocodeWorkOrders = can("work_orders:update");
+  const handleGeocodeWorkOrder = canGeocodeWorkOrders
+    ? async (id: string) => {
+        const result = await geocodeWorkOrder(dispatchContext, id);
+        if (result.geocoded) await refresh();
+        return result;
+      }
+    : undefined;
   const hasMapContent =
     filteredLocations.length > 0 || visibleWorkOrderPins.length > 0 || visibleWorkOrdersWithoutLocation.length > 0;
 
@@ -271,7 +281,10 @@ export function OperationsMapPage() {
           </div>
           <aside className="operations-map-side">
             {selectedWorkOrderPin ? <OperationsWorkOrderPinPanel pin={selectedWorkOrderPin} /> : null}
-            <OperationsWorkOrdersWithoutLocationPanel workOrders={visibleWorkOrdersWithoutLocation} />
+            <OperationsWorkOrdersWithoutLocationPanel
+              workOrders={visibleWorkOrdersWithoutLocation}
+              onGeocode={handleGeocodeWorkOrder}
+            />
             {selectedLocation ? (
               <OperationsOperatorDetailPanel
                 location={selectedLocation}

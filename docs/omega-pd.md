@@ -33,3 +33,19 @@ Obrigações: exibir atribuição OSM/OMT; geocodificação (Nominatim) só em d
 (pendência declarada). Para o MVP/venda, dev-mode + cache resolve.
 **Decisão:** migration aditiva em `work_orders` (colunas nullable) + serviço de geocodificação com cache e
 throttle; OS sem coordenada mostram painel "Sem localização".
+
+---
+
+## PD-003 — Política de uso do Nominatim público (implementação Ω1b-2)
+**Fontes:**
+- https://operations.osmfoundation.org/policies/nominatim/ — Usage Policy: **máx. absoluto 1 req/s**;
+  **User-Agent/Referer identificável** obrigatório; **proibido** uso sistemático/bulk no endpoint público
+  (banimento de IP); resultados devem ser cacheados.
+- https://nominatim.org/release-docs/latest/api/Search/ — endpoint `/search` com `q`, `format=jsonv2`,
+  `limit`, `addressdetails`, `countrycodes`; `lat`/`lon` vêm como strings.
+
+**Aplicado no código:** `NominatimGeocoder` com fila serial + `minIntervalMs` (default 1100), cache em processo
+(inclui o "não encontrado"), User-Agent por env, `AbortController`+timeout (R3, nunca trava a fila). Factory
+gated por `GEOCODING_ENABLED` (default false → `NoopGeocoder`, CI/prod seguros). **Gate de release (R11):** o
+`env.ts` REJEITA `GEOCODING_ENABLED=true` + URL pública do Nominatim em `NODE_ENV=production`. Provedor próprio
+para alto volume/produção segue como pendência declarada.

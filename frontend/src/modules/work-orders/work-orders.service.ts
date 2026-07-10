@@ -100,6 +100,24 @@ export async function assignWorkOrder(context: WorkOrdersApiContext, workOrderId
   return adaptWorkOrderResponse(response) ?? getMockWorkOrderDetail(workOrderId);
 }
 
+// Ω1b-2 — geocodifica a OS sob demanda (botão "Localizar no mapa"). Devolve se localizou + a razão.
+export async function geocodeWorkOrder(
+  context: WorkOrdersApiContext,
+  workOrderId: string,
+): Promise<{ geocoded: boolean; reason?: string }> {
+  if (isMockMode()) {
+    return { geocoded: false, reason: "Geocodificação indisponível no modo demonstração." };
+  }
+
+  const response = (await apiRequest<unknown>(`/work-orders/${workOrderId}/geocode`, {
+    ...context,
+    method: "POST",
+    body: {},
+  })) as { data?: { geocoded?: boolean; reason?: string } } | null;
+  const data = response?.data;
+  return { geocoded: data?.geocoded === true, reason: data?.reason };
+}
+
 export async function getWorkOrderTimeline(context: WorkOrdersApiContext, workOrderId: string): Promise<WorkOrderEvent[]> {
   if (isMockMode()) return getMockWorkOrderTimeline(workOrderId);
 

@@ -1155,6 +1155,8 @@ model WorkOrder {
   service_zip_code      String?
   service_latitude      Decimal?              @db.Decimal(10, 7)
   service_longitude     Decimal?              @db.Decimal(10, 7)
+  service_geocoded_at   DateTime?             @db.Timestamptz(6)
+  service_geocode_source String?
   priority              String                @default("medium")
   status                String                @default("open")
   assigned_operator_id  String?               @db.Uuid

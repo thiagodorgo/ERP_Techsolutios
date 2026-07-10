@@ -21,6 +21,9 @@ export function toWorkOrderDto(workOrder: WorkOrder, links?: WorkOrderLinks) {
     serviceZipCode: workOrder.serviceZipCode,
     serviceLatitude: workOrder.serviceLatitude,
     serviceLongitude: workOrder.serviceLongitude,
+    // Ω1b-2 — rastreabilidade do geocode (quando/fonte); null enquanto não geocodificada.
+    serviceGeocodedAt: workOrder.serviceGeocodedAt?.toISOString() ?? null,
+    serviceGeocodeSource: workOrder.serviceGeocodeSource ?? null,
     priority: workOrder.priority,
     status: workOrder.status,
     assignedOperatorId: workOrder.assignedOperatorId,

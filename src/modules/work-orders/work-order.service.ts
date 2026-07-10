@@ -9,6 +9,9 @@ import {
   InMemoryWorkOrderRepository,
   type WorkOrderRepository,
 } from "./work-order.repository.js";
+import { buildGeocodeQueryString, GeocoderUnavailableError, type Geocoder } from "./geocoding/geocoder.js";
+import { NoopGeocoder } from "./geocoding/noop-geocoder.js";
+import { createDefaultGeocoder } from "./geocoding/geocoder.factory.js";
 import type {
   AssignWorkOrderInput,
   ListWorkOrdersInput,
@@ -82,7 +85,97 @@ export class WorkOrderService {
   constructor(
     private readonly repository: WorkOrderRepository,
     private readonly references: WorkOrderReferenceResolvers = {},
+    // Ω1b-2 — geocoder injetável; default no-op (memory/CI nunca toca rede).
+    private readonly geocoder: Geocoder = new NoopGeocoder(),
   ) {}
+
+  /**
+   * Ω1b-2 — geocodifica o endereço da OS sob demanda e persiste a coordenada + metadados.
+   * Contrato (junta): 404 inexistente/cross-tenant · 409 já geocodificada sem force · 422 sem endereço ·
+   * 502 provedor indisponível (fail-open, nada persistido) · 200 {geocoded:false} quando não há match.
+   * NUNCA no caminho de create (R4): create não é atrasado nem falha por geocoding.
+   */
+  async geocodeById(
+    actor: WorkOrderActorContext,
+    workOrderId: string,
+    force = false,
+  ): Promise<{ readonly workOrder?: WorkOrder; readonly geocoded: boolean; readonly reason?: string }> {
+    const id = parseRequiredUuid(workOrderId, "workOrderId");
+    const workOrder = await this.repository.findById(actor.tenantId, id);
+    if (!workOrder) {
+      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
+
+    if (hasValidCoordinate(workOrder.serviceLatitude, workOrder.serviceLongitude) && !force) {
+      throw new WorkOrderError(
+        409,
+        "WORK_ORDER_CONFLICT",
+        "already_geocoded",
+        "Work order already has coordinates. Use force to override.",
+      );
+    }
+
+    const queryString = buildGeocodeQueryString({
+      address: workOrder.serviceAddress,
+      city: workOrder.serviceCity,
+      state: workOrder.serviceState,
+      zipCode: workOrder.serviceZipCode,
+    });
+    if (!queryString) {
+      throw new WorkOrderError(
+        422,
+        "WORK_ORDER_INVALID",
+        "no_address",
+        "Work order has no address to geocode.",
+      );
+    }
+
+    // B8 — quando a geocodificação está desabilitada (NoopGeocoder), a razão é HONESTA: "desabilitada",
+    // nunca "endereço não localizado". O botão do painel não mente sobre o motivo.
+    if (!this.geocoder.isEnabled()) {
+      return { geocoded: false, reason: "Geocodificação está desabilitada neste ambiente." };
+    }
+
+    let result;
+    try {
+      result = await this.geocoder.geocode({
+        address: workOrder.serviceAddress,
+        city: workOrder.serviceCity,
+        state: workOrder.serviceState,
+        zipCode: workOrder.serviceZipCode,
+      });
+    } catch (error) {
+      if (error instanceof GeocoderUnavailableError) {
+        throw new WorkOrderError(502, "GEOCODER_UNAVAILABLE", "geocoder_unavailable", "Geocoding provider is unavailable.");
+      }
+      throw error;
+    }
+
+    if (!result) {
+      return { geocoded: false, reason: "Endereço não localizado pelo provedor." };
+    }
+
+    // R2 — nunca persiste sentinela/fora de faixa (o geocoder já filtra; guarda dupla na borda).
+    if (!hasValidCoordinate(result.latitude, result.longitude)) {
+      return { geocoded: false, reason: "Coordenada retornada é inválida." };
+    }
+
+    const updated = await this.repository.updateGeocode({
+      tenantId: actor.tenantId,
+      workOrderId: id,
+      latitude: result.latitude,
+      longitude: result.longitude,
+      source: result.source,
+      geocodedAt: new Date(),
+      actorUserId: actor.userId,
+    });
+    // R10 — corrida: RETURNING vazio → 404, nunca 500 nem vazamento de existência.
+    if (!updated) {
+      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
+
+    return { workOrder: updated, geocoded: true };
+  }
 
   async list(actor: WorkOrderActorContext, query: RawRecord): Promise<ListWorkOrdersResult> {
     const input: ListWorkOrdersInput = {
@@ -555,7 +648,21 @@ async function createPrismaWorkOrderService(): Promise<WorkOrderService> {
   const { createPrismaWorkOrderRepository } = await import("./work-order-prisma.repository.js");
   const repository = await createPrismaWorkOrderRepository();
 
-  return new WorkOrderService(repository, createDefaultReferenceResolvers());
+  // Ω1b-2 — só o serviço Prisma recebe o geocoder real (gated por GEOCODING_ENABLED, default noop).
+  return new WorkOrderService(repository, createDefaultReferenceResolvers(), createDefaultGeocoder());
+}
+
+// Ω1b-2 — coordenada válida = número finito, dentro da faixa e não-sentinela 0/0 (mesmo predicado do mapa).
+function hasValidCoordinate(latitude: number | undefined, longitude: number | undefined): boolean {
+  return (
+    typeof latitude === "number" &&
+    typeof longitude === "number" &&
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    Math.abs(latitude) <= 90 &&
+    Math.abs(longitude) <= 180 &&
+    !(latitude === 0 && longitude === 0)
+  );
 }
 
 function defaultStatusMessage(status: WorkOrderStatus): string {

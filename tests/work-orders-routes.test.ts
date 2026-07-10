@@ -129,6 +129,68 @@ test("work order routes validate payloads and block cross-tenant access", async 
   });
 });
 
+test("Ω1b-2: geocode route enforces RBAC, honest disabled reason, 404/422/409 and force parsing", async () => {
+  await withWorkOrderApi(async ({ baseUrl, seed }) => {
+    const withAddress = await requestJson(baseUrl, "/api/v1/work-orders", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { title: "OS com endereço", serviceAddress: "Av. Paulista, 1578", priority: "high" },
+    });
+    const id = withAddress.body.data.id;
+
+    // 403 — sem work_orders:update (viewer é read-only).
+    const forbidden = await requestJson(baseUrl, `/api/v1/work-orders/${id}/geocode`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.viewerA, "viewer"),
+    });
+    // 200 {geocoded:false} — em memória o geocoder é Noop (desabilitado): razão HONESTA, não "não localizado".
+    const disabled = await requestJson(baseUrl, `/api/v1/work-orders/${id}/geocode`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    // 404 — OS inexistente.
+    const notFound = await requestJson(baseUrl, `/api/v1/work-orders/${randomUUID()}/geocode`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    // 422 — OS sem endereço.
+    const noAddress = await requestJson(baseUrl, "/api/v1/work-orders", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { title: "OS sem endereço", priority: "low" },
+    });
+    const unprocessable = await requestJson(baseUrl, `/api/v1/work-orders/${noAddress.body.data.id}/geocode`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    // 409 — OS já com coordenada, sem force; ?force=true passa a barreira (parsing do force no controller).
+    const withCoords = await requestJson(baseUrl, "/api/v1/work-orders", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { title: "OS geocodificada", serviceAddress: "Rua X", serviceLatitude: -23.5, serviceLongitude: -46.6 },
+    });
+    const conflict = await requestJson(baseUrl, `/api/v1/work-orders/${withCoords.body.data.id}/geocode`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    const forced = await requestJson(baseUrl, `/api/v1/work-orders/${withCoords.body.data.id}/geocode?force=true`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+
+    assert.equal(forbidden.status, 403);
+    assert.equal(disabled.status, 200);
+    assert.equal(disabled.body.data.geocoded, false);
+    assert.match(disabled.body.data.reason, /desabilitada/i);
+    assert.equal(notFound.status, 404);
+    assert.equal(unprocessable.status, 422);
+    assert.equal(conflict.status, 409);
+    // Com force, passa da barreira de 409 e cai no geocoder desabilitado → 200 {geocoded:false}.
+    assert.equal(forced.status, 200);
+    assert.equal(forced.body.data.geocoded, false);
+  });
+});
+
 type SeedData = {
   readonly tenantA: Tenant;
   readonly tenantB: Tenant;

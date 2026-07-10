@@ -3,7 +3,22 @@ import { z } from "zod";
 
 config();
 
-const envSchema = z.object({
+/**
+ * Flag booleana de ambiente parseada de forma ESTRITA. `z.coerce.boolean()` usa `Boolean(value)`,
+ * então a string `"false"` (não-vazia) vira `true` — um footgun que já ligou geocoding por engano.
+ * Aqui só `true`/`1`/`yes`/`on` (case-insensitive) contam como verdadeiro; qualquer outra coisa é falso.
+ */
+export function booleanFlag(defaultValue: boolean) {
+  return z
+    .union([z.boolean(), z.string()])
+    .default(defaultValue)
+    .transform((value) => {
+      if (typeof value === "boolean") return value;
+      return ["true", "1", "yes", "on"].includes(value.trim().toLowerCase());
+    });
+}
+
+export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
   LOG_LEVEL: z.string().default("info"),
@@ -43,6 +58,15 @@ const envSchema = z.object({
   AWS_CUR_ATHENA_DATABASE: z.string().trim().optional().default(""),
   AWS_CUR_ATHENA_WORKGROUP: z.string().trim().optional().default(""),
   AWS_CUR_ATHENA_OUTPUT_LOCATION: z.string().trim().optional().default(""),
+  // Ω1b-2 — Geocodificação de endereços de OS (dev-only). Master switch DESLIGADO por default:
+  // com false o backend usa o NoopGeocoder (nenhuma chamada externa) — CI e prod ficam seguros.
+  GEOCODING_ENABLED: booleanFlag(false),
+  GEOCODING_PROVIDER: z.enum(["nominatim"]).default("nominatim"),
+  NOMINATIM_BASE_URL: z.string().trim().url().default("https://nominatim.openstreetmap.org/search"),
+  NOMINATIM_USER_AGENT: z.string().trim().min(1).default("ERP-Techsolutions/1.0 (+contato-do-operador)"),
+  NOMINATIM_COUNTRY_CODES: z.string().trim().default("br"),
+  NOMINATIM_MIN_INTERVAL_MS: z.coerce.number().int().nonnegative().default(1100),
+  NOMINATIM_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 }).superRefine((value, context) => {
   const developmentOnlySecrets = new Set([
     "dev-only-change-me",
@@ -70,6 +94,21 @@ const envSchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ["JWT_REFRESH_SECRET"],
       message: "JWT_REFRESH_SECRET must be set to a production secret.",
+    });
+  }
+
+  // Ω1b-2 (R11) — o uso sistemático da instância PÚBLICA do Nominatim é proibido pela política de uso
+  // (banimento de IP). Em produção, geocodificação só é permitida contra um provedor próprio/self-host.
+  if (
+    value.NODE_ENV === "production" &&
+    value.GEOCODING_ENABLED &&
+    /nominatim\.openstreetmap\.org/i.test(value.NOMINATIM_BASE_URL)
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["GEOCODING_ENABLED"],
+      message:
+        "Geocodificação com a instância pública do Nominatim é proibida em produção (política de uso). Use um provedor próprio ou mantenha GEOCODING_ENABLED=false.",
     });
   }
 });

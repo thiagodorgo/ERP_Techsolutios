@@ -116,3 +116,22 @@ test("OperationsWorkOrdersWithoutLocationPanel não renderiza quando vazio", () 
   );
   assert.equal(html, "");
 });
+
+test("Ω1b-2: botão 'Localizar no mapa' só aparece quando onGeocode é fornecido (gated por permissão)", () => {
+  const workOrders: OperationsMapWorkOrderWithoutLocation[] = [
+    { id: "a", code: "OS-A", title: "T", priority: "medium", customerName: null, serviceAddress: "Rua A" },
+  ];
+  const withAction = renderToString(
+    createElement(
+      MemoryRouter,
+      null,
+      createElement(OperationsWorkOrdersWithoutLocationPanel, { workOrders, onGeocode: async () => ({ geocoded: true }) }),
+    ),
+  );
+  assert.match(withAction, /Localizar no mapa/);
+
+  const readOnly = renderToString(
+    createElement(MemoryRouter, null, createElement(OperationsWorkOrdersWithoutLocationPanel, { workOrders })),
+  );
+  assert.doesNotMatch(readOnly, /Localizar no mapa/);
+});

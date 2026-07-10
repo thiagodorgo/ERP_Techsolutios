@@ -141,6 +141,30 @@ export class WorkOrderController {
     };
   }
 
+  // Ω1b-2 — geocodifica o endereço da OS sob demanda (botão "Localizar no mapa").
+  async geocode(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const body = (request.body ?? {}) as { force?: unknown };
+    const force = body.force === true || request.query.force === "true";
+    const result = await service.geocodeById(actor, readRouteParam(request.params.workOrderId), force);
+
+    if (!result.geocoded || !result.workOrder) {
+      return { data: { geocoded: false, reason: result.reason ?? "Endereço não localizado pelo provedor." } };
+    }
+
+    await recordRequestAuditBestEffort(request, {
+      action: "work_order.geocoded",
+      resourceType: "work_order",
+      resourceId: result.workOrder.id,
+      outcome: "success",
+      severity: "info",
+      // Allowlist: nunca logamos a coordenada (dado sensível de localização) — só código e fonte.
+      metadata: { code: result.workOrder.code, source: result.workOrder.serviceGeocodeSource ?? null },
+    });
+
+    return { data: { geocoded: true, workOrder: toWorkOrderDto(result.workOrder) } };
+  }
+
   private async resolveServiceWithActor(request: Request) {
     return [await this.resolveService(), requireTenantContext(request)] as const;
   }
