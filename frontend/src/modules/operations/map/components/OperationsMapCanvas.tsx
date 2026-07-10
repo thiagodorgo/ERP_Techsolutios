@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { readFrontendEnv } from "../../../../config/env";
-import type { FieldLocationItem } from "../operations-map.types";
+import type { FieldLocationItem, OperationsMapWorkOrderPin } from "../operations-map.types";
 import { useGoogleMapsLoader } from "../hooks/useGoogleMapsLoader";
 import { GoogleMapsCanvas } from "./GoogleMapsCanvas";
 import { OperationsMapLibreCanvas } from "./OperationsMapLibreCanvas";
@@ -14,6 +14,9 @@ export function OperationsMapCanvas({
   showDispatches = false,
   maintenanceVehicleIds,
   insuredVehicleIds,
+  workOrderPins,
+  selectedWorkOrderId,
+  onSelectWorkOrder,
 }: {
   locations: readonly FieldLocationItem[];
   selectedId?: string;
@@ -21,6 +24,10 @@ export function OperationsMapCanvas({
   showDispatches?: boolean;
   maintenanceVehicleIds?: readonly string[];
   insuredVehicleIds?: readonly string[];
+  // Ω1b — pins de chamado (só o canvas MapLibre; Google/esquemático mostram só operadores).
+  workOrderPins?: readonly OperationsMapWorkOrderPin[];
+  selectedWorkOrderId?: string;
+  onSelectWorkOrder?: (id: string) => void;
 }) {
   const apiKey = readFrontendEnv("VITE_GOOGLE_MAPS_API_KEY") || undefined;
   const mapsLoadState = useGoogleMapsLoader(apiKey);
@@ -47,6 +54,9 @@ export function OperationsMapCanvas({
         selectedId={selectedId}
         onSelect={onSelect}
         onInitError={() => setLibreFailed(true)}
+        workOrderPins={workOrderPins}
+        selectedWorkOrderId={selectedWorkOrderId}
+        onSelectWorkOrder={onSelectWorkOrder}
       />
     );
   }

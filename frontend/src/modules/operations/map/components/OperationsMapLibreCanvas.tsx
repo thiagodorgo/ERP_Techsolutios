@@ -10,12 +10,18 @@ import {
 import {
   OPERATIONS_MAP_SOURCE_ID,
   OPERATIONS_MAP_ANIMATION_MS,
+  WORK_ORDERS_MAP_SOURCE_ID,
+  WORK_ORDER_PRIORITY_HEX,
+  WORK_ORDER_PRIORITY_KEY,
   buildFieldLocationsFeatureCollection,
+  buildWorkOrderPinsFeatureCollection,
   interpolateCoords,
   type FieldLocationFeatureCollection,
+  type WorkOrderPinFeatureCollection,
   type LngLat,
 } from "../map/mapMarkers";
-import type { FieldLocationItem } from "../operations-map.types";
+import type { FieldLocationItem, OperationsMapWorkOrderPin } from "../operations-map.types";
+import type { WorkOrderPriority } from "../../../work-orders/work-orders.types";
 
 /**
  * Ω1 (J-002) — Canvas real do Mapa Operacional com MapLibre GL + OpenFreeMap.
@@ -31,9 +37,26 @@ type Props = {
   readonly selectedId?: string;
   readonly onSelect: (location: FieldLocationItem) => void;
   readonly onInitError?: () => void;
+  // Ω1b — pins de chamado (OS abertas com coordenada) + seleção de chamado.
+  readonly workOrderPins?: readonly OperationsMapWorkOrderPin[];
+  readonly selectedWorkOrderId?: string;
+  readonly onSelectWorkOrder?: (id: string) => void;
 };
 
 const EMPTY_FC: FieldLocationFeatureCollection = { type: "FeatureCollection", features: [] };
+const EMPTY_WO_FC: WorkOrderPinFeatureCollection = { type: "FeatureCollection", features: [] };
+
+// Ω1b — teardrop SVG por prioridade (MapLibre rasteriza HTMLImageElement); ponta ancora na coord.
+function teardropSvg(color: string): string {
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 24 31">` +
+    `<path d="M12 0.6C6 0.6 1.2 5.4 1.2 11.4c0 8 10.8 18.8 10.8 18.8S22.8 19.4 22.8 11.4C22.8 5.4 18 0.6 12 0.6z" ` +
+    `fill="${color}" stroke="#0b1420" stroke-width="1.4"/>` +
+    `<circle cx="12" cy="11.2" r="4.4" fill="#f8fafc"/></svg>`
+  );
+}
+
+const WORK_ORDER_PIN_LAYERS = ["wo-teardrop"] as const;
 
 function idSetKey(locations: readonly FieldLocationItem[]): string {
   return locations
@@ -42,7 +65,15 @@ function idSetKey(locations: readonly FieldLocationItem[]): string {
     .join("|");
 }
 
-export function OperationsMapLibreCanvas({ locations, selectedId, onSelect, onInitError }: Props) {
+export function OperationsMapLibreCanvas({
+  locations,
+  selectedId,
+  onSelect,
+  onInitError,
+  workOrderPins,
+  selectedWorkOrderId,
+  onSelectWorkOrder,
+}: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MlMap | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -56,10 +87,19 @@ export function OperationsMapLibreCanvas({ locations, selectedId, onSelect, onIn
   const animRef = useRef<number | null>(null);
   const fitKeyRef = useRef<string>("");
   const readyRef = useRef(false);
+  // Ω1b — refs dos pins de chamado.
+  const workOrderPinsRef = useRef(workOrderPins);
+  const selectedWorkOrderRef = useRef(selectedWorkOrderId);
+  const onSelectWorkOrderRef = useRef(onSelectWorkOrder);
+  const woReadyRef = useRef(false);
+  const woPulseRafRef = useRef<number | null>(null);
 
   locationsRef.current = locations;
   selectedRef.current = selectedId;
   onSelectRef.current = onSelect;
+  workOrderPinsRef.current = workOrderPins;
+  selectedWorkOrderRef.current = selectedWorkOrderId;
+  onSelectWorkOrderRef.current = onSelectWorkOrder;
   onInitErrorRef.current = onInitError;
 
   // --- inicialização (uma vez) ---
@@ -88,11 +128,21 @@ export function OperationsMapLibreCanvas({ locations, selectedId, onSelect, onIn
 
         map.on("load", () => {
           if (cancelled || !map) return;
-          registerLayers(map);
-          registerInteractions(map);
+          const activeMap = map;
+          registerLayers(activeMap);
+          registerInteractions(activeMap);
           readyRef.current = true;
           setStatus("ready");
           applyData(true);
+          // Pins de chamado: rasteriza os teardrops (async), então adiciona fonte/camadas.
+          void (async () => {
+            await loadTeardropImages(activeMap);
+            if (cancelled || mapRef.current !== activeMap) return;
+            registerWorkOrderLayers(activeMap);
+            registerWorkOrderInteractions(activeMap);
+            woReadyRef.current = true;
+            applyWorkOrderData();
+          })();
         });
       } catch {
         if (cancelled) return;
@@ -104,14 +154,16 @@ export function OperationsMapLibreCanvas({ locations, selectedId, onSelect, onIn
     return () => {
       cancelled = true;
       readyRef.current = false;
+      woReadyRef.current = false;
       if (animRef.current !== null) cancelAnimationFrame(animRef.current);
+      if (woPulseRafRef.current !== null) cancelAnimationFrame(woPulseRafRef.current);
       mapRef.current?.remove();
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- reação a mudanças de dados/seleção ---
+  // --- reação a mudanças de dados/seleção (operadores) ---
   useEffect(() => {
     if (!readyRef.current) return;
     const nextKey = idSetKey(locations);
@@ -119,6 +171,13 @@ export function OperationsMapLibreCanvas({ locations, selectedId, onSelect, onIn
     applyData(shouldFit);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locations, selectedId]);
+
+  // --- reação a mudanças dos pins de chamado ---
+  useEffect(() => {
+    if (!woReadyRef.current) return;
+    applyWorkOrderData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workOrderPins, selectedWorkOrderId]);
 
   function registerLayers(map: MlMap) {
     const t = OPERATIONAL_MAP_TOKENS;
@@ -223,6 +282,151 @@ export function OperationsMapLibreCanvas({ locations, selectedId, onSelect, onIn
     }
     for (const layer of pinLayers) {
       map.on("click", layer, handlePinClick);
+    }
+  }
+
+  // === Ω1b — pins de chamado (OS) ===
+
+  // R5 — carga idempotente das 4 imagens teardrop (guard hasImage cobre StrictMode/re-init).
+  async function loadTeardropImages(map: MlMap) {
+    await Promise.all(
+      (Object.keys(WORK_ORDER_PRIORITY_HEX) as WorkOrderPriority[]).map(async (priority) => {
+        const id = `wo-teardrop-${WORK_ORDER_PRIORITY_KEY[priority]}`;
+        if (map.hasImage(id)) return;
+        const image = new Image(34, 44);
+        await new Promise<void>((resolve) => {
+          image.onload = () => resolve();
+          image.onerror = () => resolve();
+          image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(teardropSvg(WORK_ORDER_PRIORITY_HEX[priority]))}`;
+        });
+        if (!map.hasImage(id) && image.complete && image.naturalWidth > 0) {
+          map.addImage(id, image, { pixelRatio: 2 });
+        }
+      }),
+    );
+  }
+
+  function registerWorkOrderLayers(map: MlMap) {
+    if (map.getSource(WORK_ORDERS_MAP_SOURCE_ID)) return;
+    map.addSource(WORK_ORDERS_MAP_SOURCE_ID, { type: "geojson", data: EMPTY_WO_FC });
+
+    // Camadas de chamado ficam ABAIXO dos operadores (o técnico é a ação; sobrepõe o chamado).
+    const beforeId = map.getLayer("op-clusters") ? "op-clusters" : undefined;
+
+    map.addLayer(
+      {
+        id: "wo-pulse",
+        type: "circle",
+        source: WORK_ORDERS_MAP_SOURCE_ID,
+        filter: ["==", ["get", "urgent"], true],
+        paint: { "circle-radius": 16, "circle-color": "#dc2626", "circle-opacity": 0.25 },
+      },
+      beforeId,
+    );
+    map.addLayer(
+      {
+        id: "wo-selected-ring",
+        type: "circle",
+        source: WORK_ORDERS_MAP_SOURCE_ID,
+        filter: ["==", ["get", "selected"], true],
+        paint: {
+          "circle-radius": 18,
+          "circle-color": "#2563eb",
+          "circle-opacity": 0.18,
+          "circle-stroke-color": "#2563eb",
+          "circle-stroke-width": 1.5,
+        },
+      },
+      beforeId,
+    );
+    map.addLayer(
+      {
+        id: "wo-teardrop",
+        type: "symbol",
+        source: WORK_ORDERS_MAP_SOURCE_ID,
+        layout: {
+          "icon-image": ["concat", "wo-teardrop-", ["get", "priorityKey"]],
+          "icon-anchor": "bottom",
+          "icon-size": 1,
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
+        },
+      },
+      beforeId,
+    );
+    map.addLayer(
+      {
+        id: "wo-label",
+        type: "symbol",
+        source: WORK_ORDERS_MAP_SOURCE_ID,
+        minzoom: 12,
+        layout: {
+          "text-field": ["get", "code"],
+          "text-font": ["Noto Sans Bold"],
+          "text-size": 10,
+          "text-offset": [0, -2.6],
+          "text-anchor": "bottom",
+        },
+        paint: { "text-color": "#e2e8f0", "text-halo-color": "#0b1420", "text-halo-width": 1.2 },
+      },
+      beforeId,
+    );
+  }
+
+  function registerWorkOrderInteractions(map: MlMap) {
+    const handleClick = (event: { features?: MapGeoJSONFeature[] }) => {
+      const id = event.features?.[0]?.properties?.id;
+      if (typeof id === "string") onSelectWorkOrderRef.current?.(id);
+    };
+    for (const layer of WORK_ORDER_PIN_LAYERS) {
+      map.on("mouseenter", layer, () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", layer, () => {
+        map.getCanvas().style.cursor = "";
+      });
+      map.on("click", layer, handleClick);
+    }
+  }
+
+  function applyWorkOrderData() {
+    const map = mapRef.current;
+    if (!map || !woReadyRef.current) return;
+    const fc = buildWorkOrderPinsFeatureCollection(workOrderPinsRef.current ?? [], selectedWorkOrderRef.current);
+    const source = map.getSource(WORK_ORDERS_MAP_SOURCE_ID) as GeoJSONSource | undefined;
+    source?.setData(fc);
+    const hasUrgent = fc.features.some((feature) => feature.properties.urgent);
+    if (hasUrgent) startWorkOrderPulse(map);
+    else stopWorkOrderPulse(map);
+  }
+
+  // R5 — pulso só roda com >=1 urgente visível; destruído no unmount (cancelAnimationFrame).
+  function startWorkOrderPulse(map: MlMap) {
+    if (woPulseRafRef.current !== null) return;
+    const period = 1400;
+    let startTs: number | null = null;
+    const frame = (ts: number) => {
+      if (mapRef.current !== map || !map.getLayer("wo-pulse")) {
+        woPulseRafRef.current = null;
+        return;
+      }
+      if (startTs === null) startTs = ts;
+      const phase = ((ts - startTs) % period) / period; // 0..1
+      map.setPaintProperty("wo-pulse", "circle-radius", 14 + phase * 12);
+      map.setPaintProperty("wo-pulse", "circle-opacity", 0.35 * (1 - phase));
+      woPulseRafRef.current = requestAnimationFrame(frame);
+    };
+    woPulseRafRef.current = requestAnimationFrame(frame);
+  }
+
+  function stopWorkOrderPulse(map: MlMap) {
+    if (woPulseRafRef.current !== null) {
+      cancelAnimationFrame(woPulseRafRef.current);
+      woPulseRafRef.current = null;
+    }
+    if (map.getLayer("wo-pulse")) {
+      map.setPaintProperty("wo-pulse", "circle-radius", 16);
+      map.setPaintProperty("wo-pulse", "circle-opacity", 0.25);
     }
   }
 
@@ -337,6 +541,10 @@ export function OperationsMapLibreCanvas({ locations, selectedId, onSelect, onIn
           <li><span className="operations-map-libre__dot" style={{ background: "#6366f1" }} /> Em atendimento</li>
           <li><span className="operations-map-libre__dot" style={{ background: "#f59e0b" }} /> Antiga &gt; 3 min</li>
           <li><span className="operations-map-libre__dot" style={{ background: "#64748b" }} /> Antiga &gt; 10 min</li>
+          <li className="operations-map-libre__legend-sep" aria-hidden="true" />
+          <li><span className="operations-map-libre__pin" style={{ background: WORK_ORDER_PRIORITY_HEX.urgent }} /> Chamado urgente</li>
+          <li><span className="operations-map-libre__pin" style={{ background: WORK_ORDER_PRIORITY_HEX.high }} /> Chamado alta</li>
+          <li><span className="operations-map-libre__pin" style={{ background: WORK_ORDER_PRIORITY_HEX.medium }} /> Chamado média/baixa</li>
         </ul>
       ) : null}
     </section>
