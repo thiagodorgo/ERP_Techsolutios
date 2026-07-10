@@ -51,9 +51,10 @@ Sem RLS/FK/índice novos (a tabela já tem RLS; a query do mapa não filtra por 
 | Estados do botão | por item | idle · localizando… (disabled) · erro (razão) |
 
 ## RESULTADO TESTÁVEL
-- Backend: `check`/`lint`/`build` verde · `npm test` (core-saas) 0 fail · **geocoding 11/11 + geocode-route 8/8**
-  (contrato completo: 404 cross-tenant, 409, 422, 502, 200 sem-match, sentinela 0/0, throttle, cache, timeout,
-  parse) · `git diff --check` limpo · migration up/down/re-up OK.
+- Backend: `check`/`lint`/`build` verde · `npm test` (core-saas) 0 fail · **geocoding 10/10 + geocode-route 12/12
+  + geocode-route-http (RBAC/controller) + env-geocoding 5/5** (contrato completo: 403, 404 cross-tenant, 409+force,
+  422, 502, 200 sem-match, sentinela 0/0, R4 create-não-geocodifica, R10 RETURNING-vazio, R11 gate-prod, B1
+  flag-estrito, B8 desabilitado-honesto, throttle, cache, timeout, parse) · `git diff --check` limpo · migration up/down/re-up OK.
 - Frontend: `check` verde · `build` verde · `test:smoke` **270/270** (+1 botão gated).
 
 ## Pendência declarada
