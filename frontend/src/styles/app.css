@@ -1627,6 +1627,32 @@
   letter-spacing: 0;
 }
 
+/* Ω1 — KPI clicável que filtra o mapa */
+.operations-map-kpi-card {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+
+.operations-map-kpi-card:hover {
+  border-color: var(--color-core-primary);
+}
+
+.operations-map-kpi-card:active {
+  transform: translateY(1px);
+}
+
+.operations-map-kpi-card:focus-visible {
+  outline: 2px solid var(--color-core-primary);
+  outline-offset: 2px;
+}
+
+.operations-map-kpi-card.is-active {
+  border-color: var(--color-core-primary);
+  box-shadow: 0 0 0 2px rgb(15 143 191 / 22%);
+}
+
 .operations-map-filters {
   display: grid;
   grid-template-columns: auto minmax(220px, 1fr) minmax(150px, 190px) minmax(150px, 210px) auto;
@@ -1710,6 +1736,89 @@
   border-radius: var(--radius-8);
   overflow: hidden;
   background: var(--surface-panel-muted);
+}
+
+/* Ω1 — Mapa Operacional real (MapLibre GL + OpenFreeMap) */
+.operations-map-libre {
+  position: relative;
+  min-height: 480px;
+  height: 480px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-8);
+  overflow: hidden;
+  background: #0f1722;
+}
+
+.operations-map-libre__canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.operations-map-libre__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  color: #cbd5e1;
+  font-size: var(--text-sm);
+  background: rgb(15 23 34 / 82%);
+}
+
+.operations-map-libre__spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgb(148 163 184 / 35%);
+  border-top-color: #38bdf8;
+  border-radius: 999px;
+  animation: operations-map-libre-spin 0.8s linear infinite;
+}
+
+@keyframes operations-map-libre-spin {
+  to { transform: rotate(360deg); }
+}
+
+.operations-map-libre__legend {
+  position: absolute;
+  left: var(--space-10);
+  bottom: var(--space-10);
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin: 0;
+  padding: var(--space-6) var(--space-8);
+  list-style: none;
+  border: 1px solid rgb(148 163 184 / 22%);
+  border-radius: var(--radius-8);
+  background: rgb(15 23 34 / 82%);
+  color: #cbd5e1;
+  font-size: 11px;
+}
+
+.operations-map-libre__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.operations-map-libre__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgb(15 23 34 / 90%);
+}
+
+/* Atribuição/controles MapLibre sobre o basemap navy */
+.operations-map-libre .maplibregl-ctrl-attrib {
+  background: rgb(15 23 34 / 78%);
+}
+
+.operations-map-libre .maplibregl-ctrl-attrib a,
+.operations-map-libre .maplibregl-ctrl-attrib {
+  color: #94a3b8;
 }
 
 .operations-map-marker {

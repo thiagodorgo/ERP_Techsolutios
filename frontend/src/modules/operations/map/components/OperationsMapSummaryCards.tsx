@@ -1,32 +1,98 @@
 import { Activity, AlertTriangle, Clock, LocateFixed, Navigation, UserRound } from "lucide-react";
 
 import { Card, Chip } from "../../../../components/ui";
-import type { OperationsMapSummary } from "../operations-map.types";
+import type { FieldLocationStatus, OperationsMapSummary } from "../operations-map.types";
 
-export function OperationsMapSummaryCards({ summary }: { summary: OperationsMapSummary }) {
-  const cards = [
-    { label: "Operadores com localização", value: summary.total, tone: "info" as const, icon: UserRound },
-    { label: "Disponíveis", value: summary.available, tone: "success" as const, icon: LocateFixed },
-    { label: "Em deslocamento", value: summary.onRoute, tone: "info" as const, icon: Navigation },
-    { label: "Em atendimento", value: summary.inService, tone: "pending" as const, icon: Activity },
-    { label: "Localizações antigas", value: summary.stale, tone: summary.stale ? "warning" as const : "success" as const, icon: Clock },
-    { label: "Offline/bloqueados", value: summary.offlineOrBlocked, tone: summary.offlineOrBlocked ? "danger" as const : "success" as const, icon: AlertTriangle },
+type StatusFilter = FieldLocationStatus | "all";
+
+type KpiCard = {
+  readonly label: string;
+  readonly value: number;
+  readonly tone: "info" | "success" | "pending" | "warning" | "danger";
+  readonly icon: typeof UserRound;
+  readonly filterStatus?: StatusFilter;
+  readonly toggleStale?: boolean;
+};
+
+/**
+ * Ω1 — faixa de KPIs do Mapa Operacional. Cada card com semântica de filtro vira botão clicável
+ * que molda o mapa (status ou "localização antiga"). Sem handlers, permanece informativo.
+ */
+export function OperationsMapSummaryCards({
+  summary,
+  activeStatus,
+  staleOnly,
+  onFilterStatus,
+  onToggleStale,
+}: {
+  summary: OperationsMapSummary;
+  activeStatus?: StatusFilter;
+  staleOnly?: boolean;
+  onFilterStatus?: (status: StatusFilter) => void;
+  onToggleStale?: () => void;
+}) {
+  const interactive = Boolean(onFilterStatus && onToggleStale);
+  const cards: readonly KpiCard[] = [
+    { label: "Operadores com localização", value: summary.total, tone: "info", icon: UserRound, filterStatus: "all" },
+    { label: "Disponíveis", value: summary.available, tone: "success", icon: LocateFixed, filterStatus: "available" },
+    { label: "Em deslocamento", value: summary.onRoute, tone: "info", icon: Navigation, filterStatus: "on_route" },
+    { label: "Em atendimento", value: summary.inService, tone: "pending", icon: Activity, filterStatus: "in_service" },
+    {
+      label: "Localizações antigas",
+      value: summary.stale,
+      tone: summary.stale ? "warning" : "success",
+      icon: Clock,
+      toggleStale: true,
+    },
+    {
+      label: "Offline/bloqueados",
+      value: summary.offlineOrBlocked,
+      tone: summary.offlineOrBlocked ? "danger" : "success",
+      icon: AlertTriangle,
+      filterStatus: "offline",
+    },
   ];
 
   return (
     <div className="operations-map-kpis">
       {cards.map((card) => {
         const Icon = card.icon;
+        const isActive = card.toggleStale
+          ? Boolean(staleOnly)
+          : card.filterStatus !== undefined && activeStatus === card.filterStatus && !staleOnly;
+
+        const inner = (
+          <div className="operations-map-kpi">
+            <Icon size={18} />
+            <span>{card.label}</span>
+            <strong>{card.value}</strong>
+            <Chip tone={card.tone}>agora</Chip>
+          </div>
+        );
+
+        if (!interactive) {
+          return <Card key={card.label}>{inner}</Card>;
+        }
+
+        const handleClick = () => {
+          if (card.toggleStale) {
+            onToggleStale?.();
+          } else if (card.filterStatus !== undefined) {
+            onFilterStatus?.(card.filterStatus);
+          }
+        };
 
         return (
-          <Card key={card.label}>
-            <div className="operations-map-kpi">
-              <Icon size={18} />
-              <span>{card.label}</span>
-              <strong>{card.value}</strong>
-              <Chip tone={card.tone}>agora</Chip>
-            </div>
-          </Card>
+          <button
+            key={card.label}
+            type="button"
+            className={`ui-card operations-map-kpi-card ${isActive ? "is-active" : ""}`}
+            aria-pressed={isActive}
+            onClick={handleClick}
+            title={card.toggleStale ? "Filtrar por localização antiga" : `Filtrar por ${card.label.toLowerCase()}`}
+          >
+            {inner}
+          </button>
         );
       })}
     </div>
