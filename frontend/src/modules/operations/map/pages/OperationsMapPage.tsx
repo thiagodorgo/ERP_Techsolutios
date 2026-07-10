@@ -26,6 +26,8 @@ import { OperationsMapFilters } from "../components/OperationsMapFilters";
 import { OperationsMapSummaryCards } from "../components/OperationsMapSummaryCards";
 import { OperationsOperatorDetailPanel } from "../components/OperationsOperatorDetailPanel";
 import { OperationsOperatorList } from "../components/OperationsOperatorList";
+import { OperationsWorkOrderPinPanel } from "../components/OperationsWorkOrderPinPanel";
+import { OperationsWorkOrdersWithoutLocationPanel } from "../components/OperationsWorkOrdersWithoutLocationPanel";
 
 export function OperationsMapPage() {
   const {
@@ -34,6 +36,9 @@ export function OperationsMapPage() {
     fallbackReason,
     maintenanceVehicleIds,
     insuredVehicleIds,
+    workOrderPins,
+    workOrdersWithoutLocation,
+    workOrdersTruncated,
     loading,
     isRefreshing,
     refreshedAt,
@@ -47,6 +52,7 @@ export function OperationsMapPage() {
   const { can } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+  const [selectedWorkOrderId, setSelectedWorkOrderId] = useState<string | undefined>(undefined);
 
   // Ω1 — filtros ficam na URL (?status=&team=&stale=&q=) para permitir link direto e refresh.
   const statusParam = searchParams.get("status") ?? "all";
@@ -121,6 +127,13 @@ export function OperationsMapPage() {
       setSelectedId(filteredLocations[0].id);
     }
   }, [filteredLocations, selectedId]);
+
+  // Ω1b — pins de chamado só quando o papel pode ler OS (backend é a autoridade; UI apenas esconde).
+  const visibleWorkOrderPins = canReadWorkOrders ? workOrderPins ?? [] : [];
+  const visibleWorkOrdersWithoutLocation = canReadWorkOrders ? workOrdersWithoutLocation ?? [] : [];
+  const selectedWorkOrderPin = visibleWorkOrderPins.find((pin) => pin.id === selectedWorkOrderId);
+  const hasMapContent =
+    filteredLocations.length > 0 || visibleWorkOrderPins.length > 0 || visibleWorkOrdersWithoutLocation.length > 0;
 
   return (
     <div className="page-stack operations-map-page">
@@ -202,11 +215,20 @@ export function OperationsMapPage() {
       />
       <OperationsMapFilters filters={filters} teams={teams} onChange={setFilters} />
 
+      {workOrdersTruncated ? (
+        <Alert title="Há mais chamados do que os exibidos" tone="info">
+          <span>
+            O mapa carrega os primeiros chamados; existem mais ordens de serviço no sistema do que as exibidas aqui.
+            Use a tela de Ordens de Serviço para a lista completa.
+          </span>
+        </Alert>
+      ) : null}
+
       {loading && locations.length === 0 ? <Skeleton lines={4} /> : null}
-      {!loading && locations.length === 0 && source !== "fallback" ? (
+      {!loading && locations.length === 0 && !hasMapContent && source !== "fallback" ? (
         <EmptyState
-          title="Nenhum operador em campo"
-          detail="Quando os operadores iniciarem o envio de localização pelo aplicativo de campo, os últimos pontos conhecidos aparecerão aqui automaticamente. Verifique se há despachos ativos ou use Atualizar para consultar novamente."
+          title="Nenhum operador ou chamado no mapa"
+          detail="Quando os operadores enviarem localização pelo aplicativo de campo, ou houver ordens de serviço abertas com endereço geolocalizado, os pontos aparecerão aqui automaticamente. Verifique se há despachos ativos ou use Atualizar para consultar novamente."
         />
       ) : null}
       {!loading && locations.length > 0 && workOrderContextLocations.length === 0 && workOrderContextId ? (
@@ -222,7 +244,7 @@ export function OperationsMapPage() {
         <ErrorState title="Nenhum resultado para os filtros" detail="Ajuste status, equipe, busca, filtro de localização antiga ou limpe o contexto da OS." />
       ) : null}
 
-      {filteredLocations.length > 0 ? (
+      {hasMapContent ? (
         <section className="operations-map-layout">
           <div className="operations-map-main">
             <OperationsMapCanvas
@@ -232,30 +254,39 @@ export function OperationsMapPage() {
               showDispatches={canReadDispatches}
               maintenanceVehicleIds={maintenanceVehicleIds}
               insuredVehicleIds={insuredVehicleIds}
+              workOrderPins={visibleWorkOrderPins}
+              selectedWorkOrderId={selectedWorkOrderPin?.id}
+              onSelectWorkOrder={setSelectedWorkOrderId}
             />
-            <OperationsOperatorList
-              locations={filteredLocations}
-              selectedId={selectedLocation?.id}
-              onSelect={(location) => setSelectedId(location.id)}
-              showWorkOrders={canReadWorkOrders}
-              showDispatches={canReadDispatches}
-              canCreateDispatch={canCreateDispatches}
-            />
+            {filteredLocations.length > 0 ? (
+              <OperationsOperatorList
+                locations={filteredLocations}
+                selectedId={selectedLocation?.id}
+                onSelect={(location) => setSelectedId(location.id)}
+                showWorkOrders={canReadWorkOrders}
+                showDispatches={canReadDispatches}
+                canCreateDispatch={canCreateDispatches}
+              />
+            ) : null}
           </div>
           <aside className="operations-map-side">
-            <OperationsOperatorDetailPanel
-              location={selectedLocation}
-              maintenanceVehicleIds={maintenanceVehicleIds}
-              insuredVehicleIds={insuredVehicleIds}
-              showWorkOrder={canReadWorkOrders}
-              showDispatch={canReadDispatches}
-              canCreateDispatch={canCreateDispatches}
-              canUpdateDispatch={canUpdateDispatches}
-              canCancelDispatch={canCancelDispatches}
-              canReassignDispatch={canReassignDispatches}
-              dispatchContext={dispatchContext}
-              onDispatchChanged={refresh}
-            />
+            {selectedWorkOrderPin ? <OperationsWorkOrderPinPanel pin={selectedWorkOrderPin} /> : null}
+            <OperationsWorkOrdersWithoutLocationPanel workOrders={visibleWorkOrdersWithoutLocation} />
+            {selectedLocation ? (
+              <OperationsOperatorDetailPanel
+                location={selectedLocation}
+                maintenanceVehicleIds={maintenanceVehicleIds}
+                insuredVehicleIds={insuredVehicleIds}
+                showWorkOrder={canReadWorkOrders}
+                showDispatch={canReadDispatches}
+                canCreateDispatch={canCreateDispatches}
+                canUpdateDispatch={canUpdateDispatches}
+                canCancelDispatch={canCancelDispatches}
+                canReassignDispatch={canReassignDispatches}
+                dispatchContext={dispatchContext}
+                onDispatchChanged={refresh}
+              />
+            ) : null}
             <Alert title="Privacidade operacional" tone="info">
               Localização é dado sensível. O frontend não registra coordenadas em logs e o acesso real continua protegido por RBAC/RLS no backend.
             </Alert>

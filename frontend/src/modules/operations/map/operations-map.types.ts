@@ -47,6 +47,29 @@ export type OperationsMapWorkOrder = {
   readonly vehicleId?: string | null;
 };
 
+// Ω1b — chamado (OS aberta) posicionável como pin no Mapa Operacional.
+export type OperationsMapWorkOrderPin = {
+  readonly id: string;
+  readonly code: string;
+  readonly title: string;
+  readonly priority: WorkOrderPriority;
+  readonly status: WorkOrderStatus;
+  readonly customerName?: string | null;
+  readonly serviceAddress?: string | null;
+  readonly latitude: number;
+  readonly longitude: number;
+};
+
+// Ω1b — OS aberta com endereço mas SEM coordenada válida (vai para o painel "Sem localização").
+export type OperationsMapWorkOrderWithoutLocation = {
+  readonly id: string;
+  readonly code: string;
+  readonly title: string;
+  readonly priority: WorkOrderPriority;
+  readonly customerName?: string | null;
+  readonly serviceAddress?: string | null;
+};
+
 export type OperationsMapDispatch = {
   readonly id: string;
   readonly workOrderId: string;
@@ -70,6 +93,13 @@ export type OperationsMapData = {
   // nunca inferimos "Sem seguro" sem a lista vigente real.
   readonly maintenanceVehicleIds?: readonly string[];
   readonly insuredVehicleIds?: readonly string[];
+  // Ω1b — pins de chamado (OS abertas com coordenada) e OS abertas sem coordenada (painel).
+  // `undefined` = leitura de OS indisponível (sem permissão/erro) → nenhum pin de chamado.
+  readonly workOrderPins?: readonly OperationsMapWorkOrderPin[];
+  readonly workOrdersWithoutLocation?: readonly OperationsMapWorkOrderWithoutLocation[];
+  // R1 (junta Ω1b) — `true` quando há mais OS no sistema do que as carregadas para o mapa
+  // (nunca truncar em silêncio: a página avisa "há OS além das exibidas").
+  readonly workOrdersTruncated?: boolean;
 };
 
 export type OperationsMapRealtimeEvent = {

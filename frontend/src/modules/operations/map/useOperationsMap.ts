@@ -197,6 +197,10 @@ export function mergeOperationsMapRefresh(current: OperationsMapData, incoming: 
       fallbackReason: incoming.fallbackReason,
       maintenanceVehicleIds: current.maintenanceVehicleIds,
       insuredVehicleIds: current.insuredVehicleIds,
+      // Ω1b (R14) — preserva os pins de chamado no estado "dados desatualizados", como os badges de Frota.
+      workOrderPins: current.workOrderPins,
+      workOrdersWithoutLocation: current.workOrdersWithoutLocation,
+      workOrdersTruncated: current.workOrdersTruncated,
     };
   }
 

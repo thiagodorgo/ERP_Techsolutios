@@ -1,6 +1,7 @@
 import type { FeatureCollection, Feature, Point } from "geojson";
 
-import type { FieldLocationItem, FieldLocationStatus } from "../operations-map.types";
+import type { WorkOrderPriority } from "../../../work-orders/work-orders.types";
+import type { FieldLocationItem, FieldLocationStatus, OperationsMapWorkOrderPin } from "../operations-map.types";
 
 /**
  * Ω1 — helpers puros do Mapa Operacional (cores de status, níveis de "localização antiga",
@@ -133,3 +134,90 @@ export function interpolateCoords(from: LngLat, to: LngLat, progress: number): [
 
 export const OPERATIONS_MAP_SOURCE_ID = "field-operators";
 export const OPERATIONS_MAP_ANIMATION_MS = 550;
+
+// === Ω1b — pins de CHAMADO (ordens de serviço) ===
+
+export const WORK_ORDERS_MAP_SOURCE_ID = "work-order-pins";
+
+/**
+ * R2 (junta Ω1b) — predicado ÚNICO de coordenada válida, compartilhado entre o construtor de pins
+ * de OS e a separação com/sem-localização no adapter. Rejeita NaN, fora de faixa E o sentinela 0/0
+ * (endereço não geocodificado costuma virar 0,0). Assim uma OS com coord inválida-porém-presente
+ * volta para o painel "Sem localização" em vez de sumir (evita a "OS fantasma").
+ */
+export function isValidMapCoordinate(latitude: unknown, longitude: unknown): latitude is number {
+  return (
+    typeof latitude === "number" &&
+    typeof longitude === "number" &&
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    Math.abs(latitude) <= 90 &&
+    Math.abs(longitude) <= 180 &&
+    !(latitude === 0 && longitude === 0)
+  );
+}
+
+// Cor do pin por prioridade (MapLibre não lê CSS var; tokens.css espelha os mesmos hex para o DOM).
+export const WORK_ORDER_PRIORITY_HEX: Record<WorkOrderPriority, string> = {
+  low: "#94a3b8",
+  medium: "#64748b",
+  high: "#d97706",
+  urgent: "#dc2626",
+};
+
+// Chave PT-BR da prioridade — usada no icon-image do teardrop e nos swatches da legenda.
+export const WORK_ORDER_PRIORITY_KEY: Record<WorkOrderPriority, "baixa" | "media" | "alta" | "urgente"> = {
+  low: "baixa",
+  medium: "media",
+  high: "alta",
+  urgent: "urgente",
+};
+
+// R8 (junta Ω1b) — priority no banco é free-form (default "medium"); qualquer valor fora do enum
+// cai para "medium"/"media" para o icon-image sempre resolver uma imagem registrada.
+export function getWorkOrderPriorityColor(priority: string): string {
+  return WORK_ORDER_PRIORITY_HEX[priority as WorkOrderPriority] ?? WORK_ORDER_PRIORITY_HEX.medium;
+}
+
+export function getWorkOrderPriorityKey(priority: string): "baixa" | "media" | "alta" | "urgente" {
+  return WORK_ORDER_PRIORITY_KEY[priority as WorkOrderPriority] ?? "media";
+}
+
+export type WorkOrderPinFeatureProps = {
+  readonly id: string;
+  readonly code: string;
+  readonly title: string;
+  readonly priority: WorkOrderPriority;
+  readonly priorityKey: "baixa" | "media" | "alta" | "urgente";
+  readonly priorityColor: string;
+  readonly urgent: boolean;
+  readonly selected: boolean;
+  readonly customerName: string | null;
+};
+
+export type WorkOrderPinFeatureCollection = FeatureCollection<Point, WorkOrderPinFeatureProps>;
+
+/** GeoJSON dos pins de chamado. Coordenada inválida (predicado único) é descartada — nunca 0,0. */
+export function buildWorkOrderPinsFeatureCollection(
+  pins: readonly OperationsMapWorkOrderPin[],
+  selectedId: string | undefined,
+): WorkOrderPinFeatureCollection {
+  const features = pins
+    .filter((pin) => isValidMapCoordinate(pin.latitude, pin.longitude))
+    .map<Feature<Point, WorkOrderPinFeatureProps>>((pin) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [pin.longitude, pin.latitude] },
+      properties: {
+        id: pin.id,
+        code: pin.code,
+        title: pin.title,
+        priority: pin.priority,
+        priorityKey: getWorkOrderPriorityKey(pin.priority),
+        priorityColor: getWorkOrderPriorityColor(pin.priority),
+        urgent: pin.priority === "urgent",
+        selected: pin.id === selectedId,
+        customerName: pin.customerName ?? null,
+      },
+    }));
+  return { type: "FeatureCollection", features };
+}

@@ -12,8 +12,12 @@ Formato após conclusão: `[x] <fase> — PR #NN, merge <hash>, junta X/X, vered
       placeholder; pins técnico + cluster; seleção↔painel; KPIs clicáveis; filtros na URL (`?status=&team=&stale=&q=`);
       stale 3/10 min; animação ease-out; estados completos + fallback esquemático. SSE/polling já existentes
       (reaproveitados). **task-history T-001.**
-- **Ω1b (próxima fatia, declarada — J-003):** pins de **chamado (OS)** geocodificados — migration aditiva
-      `work_orders` lat/lng + Nominatim dev (1 req/s + cache) + painel "Sem localização". Isolada por tocar `prisma/**`.
+- **Ω1b-1 (esta fatia — J-005) — chamados como pins:** teardrops por prioridade (urgente pulsa), painel do
+      chamado, painel "Sem localização", `?limit=100` anti-truncamento, predicado único de coord. Sem migration,
+      sem Nominatim (colunas de coord já existiam). **task-history T-002.**
+- **Ω1b-2 (próxima fatia, declarada — J-005):** geocodificação sob demanda — migration aditiva
+      `work_orders.service_geocoded_at/source` + Nominatim dev gated OFF + `POST /work-orders/:id/geocode` +
+      botão "Localizar no mapa". Isolada por tocar `prisma/**` + cliente HTTP.
 
 ## Ω2 — Configurações restantes
 - [ ] Fornecedores · Profissionais (OperatorProfile) · Filiais · Tabela de Valores · Tarifas · Tags · POI ·

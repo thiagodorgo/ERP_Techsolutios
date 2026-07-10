@@ -54,6 +54,10 @@ export function toWorkOrderListDto(result: ListWorkOrdersResult) {
       priority: workOrder.priority,
       customerName: workOrder.customerName,
       serviceAddress: workOrder.serviceAddress,
+      // Ω1b (Mapa · pins de chamado): coordenadas da OS para o Mapa Operacional posicionar o pin.
+      // `null` quando ainda não geocodificada — o mapa lista a OS no painel "Sem localização".
+      serviceLatitude: workOrder.serviceLatitude ?? null,
+      serviceLongitude: workOrder.serviceLongitude ?? null,
       assignedOperatorId: workOrder.assignedOperatorId ?? null,
       assignedUserId: workOrder.assignedUserId ?? null,
       // F6 (Mapa real): badges de manutencao/seguro no pin precisam da viatura da OS

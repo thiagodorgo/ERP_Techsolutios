@@ -6,6 +6,7 @@ import {
   attachWorkOrdersToFieldLocations,
   deriveInsuredVehicleIds,
   deriveMaintenanceVehicleIds,
+  selectMappableWorkOrders,
 } from "./operations-map.adapter";
 import { adaptDispatchesResponse } from "../dispatches/dispatches.adapter";
 import { adaptWorkOrdersResponse } from "../../work-orders/work-orders.adapter";
@@ -105,11 +106,17 @@ async function enrichOperationsMapData(
   let enrichedData = data;
 
   if (hasWorkOrdersRead(context)) {
-    const workOrders = await listReadableWorkOrdersForMap(context);
-    if (workOrders.length > 0) {
+    const { items, total } = await listReadableWorkOrdersForMap(context);
+    if (items.length > 0) {
+      // A MESMA lista completa alimenta os pins de operador E os pins de chamado (R9).
+      const { withLocation, withoutLocation } = selectMappableWorkOrders(items);
       enrichedData = {
         ...enrichedData,
-        locations: attachWorkOrdersToFieldLocations(enrichedData.locations, workOrders),
+        locations: attachWorkOrdersToFieldLocations(enrichedData.locations, items),
+        workOrderPins: withLocation,
+        workOrdersWithoutLocation: withoutLocation,
+        // R1: nunca truncar em silêncio — há mais OS no sistema do que as carregadas.
+        workOrdersTruncated: total > items.length,
       };
     }
   }
@@ -120,12 +127,18 @@ async function enrichOperationsMapData(
 }
 
 // D-007: enriquecimento é real ou vazio — erro em fonte auxiliar nunca fabrica linhas.
-async function listReadableWorkOrdersForMap(context: OperationsMapApiContext): Promise<WorkOrderListItem[]> {
+// R1: carrega até 100 OS (teto da API) em vez do default 20, e devolve o total para a página
+// sinalizar quando houver OS além das exibidas no mapa.
+const WORK_ORDERS_MAP_FETCH_LIMIT = 100;
+async function listReadableWorkOrdersForMap(
+  context: OperationsMapApiContext,
+): Promise<{ items: WorkOrderListItem[]; total: number }> {
   try {
-    const response = await apiRequest<unknown>("/work-orders", context);
-    return adaptWorkOrdersResponse(response, "api").items;
+    const response = await apiRequest<unknown>(`/work-orders?limit=${WORK_ORDERS_MAP_FETCH_LIMIT}`, context);
+    const adapted = adaptWorkOrdersResponse(response, "api");
+    return { items: adapted.items, total: adapted.pagination.total };
   } catch {
-    return [];
+    return { items: [], total: 0 };
   }
 }
 

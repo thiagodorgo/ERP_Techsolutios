@@ -328,7 +328,7 @@ test("R6.4: service busca Frota UMA vez por refresh, com querystring exata e gat
   const data = await getLatestFieldLocations({ token: "jwt", permissions: FULL_PERMISSIONS });
 
   assert.equal(calls[0].url, "/api/v1/field-locations/latest");
-  assert.equal(calls[1].url, "/api/v1/work-orders");
+  assert.equal(calls[1].url, "/api/v1/work-orders?limit=100"); // Ω1b R1 — carrega até 100 OS (não o default 20)
   assert.equal(calls[2].url, "/api/v1/operations/dispatches");
   assert.equal(calls[3].url, "/api/v1/maintenance-orders?status=em_execucao&is_active=true&limit=200");
   assert.equal(calls[4].url, "/api/v1/insurance-policies?status=vigente&is_active=true&limit=200");
