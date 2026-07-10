@@ -5,7 +5,10 @@ import type {
   OperationsMapDispatch,
   OperationsMapSummary,
   OperationsMapWorkOrder,
+  OperationsMapWorkOrderPin,
+  OperationsMapWorkOrderWithoutLocation,
 } from "./operations-map.types";
+import { isValidMapCoordinate } from "./map/mapMarkers";
 import type { DispatchListItem, DispatchStatus } from "../dispatches/dispatches.types";
 import type { WorkOrderListItem, WorkOrderStatus } from "../../work-orders/work-orders.types";
 import type { MaintenanceOrder } from "../../fleet/maintenance/maintenance-orders.types";
@@ -90,6 +93,53 @@ export function attachWorkOrdersToFieldLocations(
       activeWorkOrders.find((workOrder) => isWorkOrderAssignedToLocation(workOrder, location)),
     ),
   }));
+}
+
+/**
+ * Ω1b — separa as OS abertas em (a) pins com coordenada válida e (b) sem localização (têm endereço
+ * mas ainda não geocodificadas). Usa o predicado ÚNICO `isValidMapCoordinate` (R2) para que uma OS
+ * com coord inválida-porém-presente caia em `withoutLocation` em vez de sumir. OS terminal e OS sem
+ * coord E sem endereço são descartadas (nada a mostrar). Recebe a lista COMPLETA de OS lidas (R9).
+ */
+export function selectMappableWorkOrders(workOrders: readonly WorkOrderListItem[]): {
+  readonly withLocation: OperationsMapWorkOrderPin[];
+  readonly withoutLocation: OperationsMapWorkOrderWithoutLocation[];
+} {
+  const withLocation: OperationsMapWorkOrderPin[] = [];
+  const withoutLocation: OperationsMapWorkOrderWithoutLocation[] = [];
+
+  for (const workOrder of workOrders) {
+    if (isTerminalWorkOrderStatus(workOrder.status)) continue;
+
+    if (isValidMapCoordinate(workOrder.serviceLatitude, workOrder.serviceLongitude)) {
+      withLocation.push({
+        id: workOrder.id,
+        code: workOrder.code,
+        title: workOrder.title,
+        priority: workOrder.priority,
+        status: workOrder.status,
+        customerName: workOrder.customerName ?? null,
+        serviceAddress: workOrder.serviceAddress ?? null,
+        latitude: workOrder.serviceLatitude as number,
+        longitude: workOrder.serviceLongitude as number,
+      });
+      continue;
+    }
+
+    // Sem coordenada válida: só entra no painel se houver endereço para geocodificar depois.
+    if ((workOrder.serviceAddress ?? "").trim()) {
+      withoutLocation.push({
+        id: workOrder.id,
+        code: workOrder.code,
+        title: workOrder.title,
+        priority: workOrder.priority,
+        customerName: workOrder.customerName ?? null,
+        serviceAddress: workOrder.serviceAddress ?? null,
+      });
+    }
+  }
+
+  return { withLocation, withoutLocation };
 }
 
 export function attachDispatchesToFieldLocations(
