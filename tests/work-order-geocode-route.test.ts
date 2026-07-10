@@ -11,7 +11,7 @@ import { WorkOrderError, type WorkOrderActorContext } from "../src/modules/work-
 // 422 sem endereço · 502 provedor · 200 {geocoded:false} sem match · 200 sucesso persiste coord.
 
 function stub(result: GeocodeResult | null): Geocoder {
-  return { geocode: async () => result };
+  return { geocode: async () => result, isEnabled: () => true };
 }
 
 function actor(tenantId = randomUUID()): WorkOrderActorContext {
@@ -105,6 +105,7 @@ test("E8: provedor indisponível (throw) → 502, nada persiste (fail-open)", as
     geocode: async () => {
       throw new GeocoderUnavailableError();
     },
+    isEnabled: () => true,
   };
   const service = new WorkOrderService(repo, {}, throwing);
   const ctx = actor();
@@ -116,6 +117,53 @@ test("E8: provedor indisponível (throw) → 502, nada persiste (fail-open)", as
   );
   const after = await service.get(ctx, wo.id);
   assert.equal(after.serviceLatitude, undefined);
+});
+
+test("R4: create NUNCA invoca o geocoder — OS é criada mesmo com geocoder que lança", async () => {
+  const repo = new InMemoryWorkOrderRepository();
+  let geocodeCalls = 0;
+  const throwing: Geocoder = {
+    geocode: async () => {
+      geocodeCalls += 1;
+      throw new GeocoderUnavailableError();
+    },
+    isEnabled: () => true,
+  };
+  const service = new WorkOrderService(repo, {}, throwing);
+  const wo = await seedWorkOrder(service, actor());
+  assert.ok(wo.id);
+  assert.equal(geocodeCalls, 0); // create não geocodifica
+});
+
+test("R10: updateGeocode com RETURNING vazio (corrida) → 404, nunca 500", async () => {
+  // OS existe (findById devolve), mas o update volta vazio (removida/cross-tenant entre leitura e escrita).
+  const base = new InMemoryWorkOrderRepository();
+  const service0 = new WorkOrderService(base, {}, stub({ latitude: -23.5, longitude: -46.6, source: "stub" }));
+  const ctx = actor();
+  const wo = await seedWorkOrder(service0, ctx);
+
+  const racyRepo = {
+    findById: async () => wo,
+    updateGeocode: async () => undefined,
+  } as unknown as InMemoryWorkOrderRepository;
+  const service = new WorkOrderService(racyRepo, {}, stub({ latitude: -23.5, longitude: -46.6, source: "stub" }));
+
+  await assert.rejects(
+    () => service.geocodeById(ctx, wo.id),
+    (error: unknown) => error instanceof WorkOrderError && error.statusCode === 404,
+  );
+});
+
+test("B8: geocoder desabilitado (Noop) → 200 {geocoded:false} com razão honesta, sem persistir", async () => {
+  const repo = new InMemoryWorkOrderRepository();
+  const disabled: Geocoder = { geocode: async () => null, isEnabled: () => false };
+  const service = new WorkOrderService(repo, {}, disabled);
+  const ctx = actor();
+  const wo = await seedWorkOrder(service, ctx);
+
+  const result = await service.geocodeById(ctx, wo.id);
+  assert.equal(result.geocoded, false);
+  assert.match(result.reason ?? "", /desabilitada/i);
 });
 
 test("E-sentinela: provedor devolve 0/0 → 200 {geocoded:false}, não persiste sentinela (R2)", async () => {
