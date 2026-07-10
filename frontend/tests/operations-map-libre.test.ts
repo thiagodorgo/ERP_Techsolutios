@@ -141,6 +141,10 @@ test("OperationsMapSummaryCards vira botões acessíveis quando há handlers de 
   assert.match(html, /operations-map-kpi-card/);
   assert.match(html, /aria-pressed="true"/); // "Disponíveis" ativo
   assert.match(html, /<button/);
+  // Só cards de status ÚNICO filtram: total(all), Disponíveis, Em deslocamento e o toggle "antiga" = 4.
+  // "Em atendimento" e "Offline/bloqueados" são contagens COMPOSTAS → informativos (não viram botão-filtro).
+  const interactiveCount = (html.match(/operations-map-kpi-card/g) ?? []).length;
+  assert.equal(interactiveCount, 4);
 });
 
 test("OperationsMapSummaryCards permanece informativo (sem botão) sem handlers", async () => {

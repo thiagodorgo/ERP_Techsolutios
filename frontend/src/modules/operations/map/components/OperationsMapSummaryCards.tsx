@@ -36,7 +36,10 @@ export function OperationsMapSummaryCards({
     { label: "Operadores com localização", value: summary.total, tone: "info", icon: UserRound, filterStatus: "all" },
     { label: "Disponíveis", value: summary.available, tone: "success", icon: LocateFixed, filterStatus: "available" },
     { label: "Em deslocamento", value: summary.onRoute, tone: "info", icon: Navigation, filterStatus: "on_route" },
-    { label: "Em atendimento", value: summary.inService, tone: "pending", icon: Activity, filterStatus: "in_service" },
+    // "Em atendimento" e "Offline/bloqueados" são contagens COMPOSTAS (in_service+on_site / offline+blocked).
+    // O filtro do mapa é de status único, então esses cards ficam informativos — clicá-los aplicaria um
+    // recorte mais estreito que o número exibido (contradição pega pela junta Ω1). Filtre pela combo Status.
+    { label: "Em atendimento", value: summary.inService, tone: "pending", icon: Activity },
     {
       label: "Localizações antigas",
       value: summary.stale,
@@ -49,7 +52,6 @@ export function OperationsMapSummaryCards({
       value: summary.offlineOrBlocked,
       tone: summary.offlineOrBlocked ? "danger" : "success",
       icon: AlertTriangle,
-      filterStatus: "offline",
     },
   ];
 
@@ -57,6 +59,7 @@ export function OperationsMapSummaryCards({
     <div className="operations-map-kpis">
       {cards.map((card) => {
         const Icon = card.icon;
+        const cardInteractive = interactive && (card.filterStatus !== undefined || Boolean(card.toggleStale));
         const isActive = card.toggleStale
           ? Boolean(staleOnly)
           : card.filterStatus !== undefined && activeStatus === card.filterStatus && !staleOnly;
@@ -70,7 +73,7 @@ export function OperationsMapSummaryCards({
           </div>
         );
 
-        if (!interactive) {
+        if (!cardInteractive) {
           return <Card key={card.label}>{inner}</Card>;
         }
 
