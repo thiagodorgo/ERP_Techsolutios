@@ -109,7 +109,10 @@ async function main(): Promise<void> {
 
     // OS em andamento atribuída ao operador + viatura (o mapa mostra a OS ativa no pin).
     const wo = await tx.workOrder.create({ data: { tenant_id: tenantId, code: "OS-2026-0001", title: "Manutenção preventiva em campo", description: "Atendimento agendado — Indústria Alfa.", status: "in_progress", priority: "high", customer_id: customer.id, customer_name: customer.name ?? "Indústria Alfa Ltda", vehicle_id: v1.id, team_id: team.id, assigned_operator_id: operator.id, assigned_user_id: operator.id, service_city: "São Paulo", service_state: "SP", service_latitude: BASE_LAT, service_longitude: BASE_LNG, started_at: new Date(Date.now() - 90 * 60 * 1000), created_by: adminId }, select: { id: true } });
-    await tx.workOrder.create({ data: { tenant_id: tenantId, code: "OS-2026-0002", title: "Vistoria de frota", status: "open", priority: "medium", vehicle_id: v3.id, assigned_operator_id: operator2.id, assigned_user_id: operator2.id, service_city: "São Paulo", service_state: "SP", created_by: adminId } });
+    // Ω1b — OS aberta COM endereço mas SEM coordenada: demonstra o painel "Sem localização" no mapa.
+    await tx.workOrder.create({ data: { tenant_id: tenantId, code: "OS-2026-0002", title: "Vistoria de frota", status: "open", priority: "medium", vehicle_id: v3.id, assigned_operator_id: operator2.id, assigned_user_id: operator2.id, service_address: "Av. Paulista, 1578", service_city: "São Paulo", service_state: "SP", created_by: adminId } });
+    // Ω1b — OS urgente aberta COM coordenada: pin de chamado vermelho que pulsa no mapa.
+    await tx.workOrder.create({ data: { tenant_id: tenantId, code: "OS-2026-0003", title: "Reboque emergencial — via expressa", status: "open", priority: "urgent", customer_id: customer.id, customer_name: customer.name ?? "Indústria Alfa Ltda", service_address: "Marginal Tietê, km 22", service_city: "São Paulo", service_state: "SP", service_latitude: BASE_LAT + 0.012, service_longitude: BASE_LNG - 0.009, created_by: adminId } });
 
     // Despacho ativo para a OS.
     await tx.fieldDispatch.create({ data: { tenant_id: tenantId, work_order_id: wo.id, operator_user_id: operator.id, status: "on_route", metadata: {} } });
