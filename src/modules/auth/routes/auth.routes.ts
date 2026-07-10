@@ -9,6 +9,15 @@ import {
 import type { AuthSessionService } from "../services/auth-session.service.js";
 import type { LocalAuthLoginService } from "../services/local-auth-login.service.js";
 import type { ICoreSaasService } from "../../core-saas/services/core-saas-service.interface.js";
+import { ROLE_PERMISSIONS, resolvePermissionsForRoles, type Role } from "../../core-saas/permissions/catalog.js";
+
+// Permissões efetivas dos papéis do usuário — a MESMA resolução que o backend usa
+// no RBAC (tenant-context). Vai no corpo do login para o frontend derivar os guards
+// da fonte de verdade (catálogo), em vez de um mapa hardcoded que sai de sincronia.
+function resolveLoginPermissions(roleKeys: readonly string[]): string[] {
+  const known = roleKeys.filter((key): key is Role => key in ROLE_PERMISSIONS);
+  return resolvePermissionsForRoles(known);
+}
 
 type AuthRouterOptions = {
   readonly getLoginService?: () => Promise<LocalAuthLoginService>;
@@ -137,6 +146,7 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
           user: loginResult.user,
           tenant: loginResult.tenant,
           roles: loginResult.roles,
+          permissions: resolveLoginPermissions(loginResult.roles.map((role) => role.key)),
         },
       });
     } catch {

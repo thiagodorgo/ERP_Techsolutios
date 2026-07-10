@@ -162,6 +162,66 @@ Regra do mock: qualquer e-mail contendo `platform` / `plataforma` / `super` cai 
 os demais perfis operacionais escolhem a organização e entram no console correspondente. A senha
 não é validada em modo de demonstração.
 
+### Acesso de demonstração (modo REAL — backend + banco)
+
+Para ver as telas **com dados reais** (login validado, RBAC do backend, Mapa Operacional com pins,
+Frota/Estoque/Remunerações populados), rode o backend em modo `prisma` e semeie o banco.
+
+**1. Backend em modo real** — em `.env` (raiz):
+
+```
+CORE_SAAS_PERSISTENCE="prisma"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/erp_techsolutions?schema=public"
+```
+
+**2. Frontend em modo real** — em `frontend/.env`:
+
+```
+VITE_USE_MOCKS=false
+VITE_API_BASE_URL=http://localhost:3000/api/v1
+```
+
+**3. Banco + seed de demonstração** (Postgres via Docker já ativo):
+
+```bash
+docker compose up -d
+npm run db:generate && npm run db:migrate
+npm run db:seed:demo     # base (papéis) + usuários por papel + dados de frota
+```
+
+`db:seed:demo` = `db:seed` (tenant/papéis/admin) + `db:seed:users` (um usuário por papel) +
+`db:seed:fleet` (viaturas, abastecimentos, manutenção, multa, seguro, OS + despacho, localizações
+de campo = os pins do mapa, e itens de estoque). Todos os scripts são idempotentes.
+
+**4. Subir e logar** — dois terminais:
+
+```bash
+npm run dev        # backend :3000 (prisma)
+npm run web:dev    # frontend :5173
+```
+
+Abra o frontend, faça login e navegue. **A visão muda conforme a permissão do papel** (a mesma
+matriz de `docs/navigation-matrix.md`). Senha de todos: **`ChangeMe123!`** (configurável via
+`DEMO_ADMIN_PASSWORD`).
+
+| Papel (RBAC) | E-mail | Senha | O que enxerga |
+|---|---|---|---|
+| Admin da Plataforma (`super_admin`) | `plataforma.demo@example.com` | `ChangeMe123!` | Tudo (todas as permissões) |
+| Administrador (`tenant_admin`) | `admin.demo@example.com` | `ChangeMe123!` | Toda a organização: Operação, **Frota**, Gestão, Administração |
+| Gestor Operacional (`manager`) | `gestor.demo@example.com` | `ChangeMe123!` | Operação + **Frota** + Gestão + Mapa + Aprovações (sem admin) |
+| Operador (`operator`) | `operador.demo@example.com` | `ChangeMe123!` | OS, Frota (lança), Cadastros (leitura), só o **próprio** extrato de comissão |
+| Financeiro (`finance`) | `financeiro.demo@example.com` | `ChangeMe123!` | Multas, Seguros, **Remunerações**, Financeiro, Relatórios (Frota leitura) |
+| Estoque (`inventory`) | `estoque.demo@example.com` | `ChangeMe123!` | **Estoque** (dono: itens, movimentações, contagem) + leitura operacional |
+| Técnico de Campo (`field_technician`) | `tecnico.demo@example.com` | `ChangeMe123!` | Fluxo de campo (OS, checklists — mobile-first) |
+| Auditor (`auditor`) | `auditor.demo@example.com` | `ChangeMe123!` | Leitura forte em tudo + **Auditoria** (não executa) |
+| Suporte (`support`) | `suporte.demo@example.com` | `ChangeMe123!` | Acesso limitado (Notificações/Auditoria) |
+
+> Onde ver a Rodada F: **OPERAÇÃO → Mapa Operacional** (2 pins com OS ativa + badges "Em manutenção"/
+> "Sem seguro"); grupo **FROTA** (Abastecimento, Manutenção, Multas, Seguros, Danos); **GESTÃO →
+> Estoque / Remunerações**. Atalho: **Ctrl+K** abre a paleta de comandos filtrada pelo papel.
+>
+> As senhas acima são **apenas para desenvolvimento local**. Nunca use estes valores fora do seu ambiente.
+
 ### Build
 
 ```bash

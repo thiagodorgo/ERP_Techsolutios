@@ -32,6 +32,9 @@ type LoginApiResponse = {
       readonly key: string;
       readonly name: string;
     }[];
+    // Permissões efetivas resolvidas pelo backend (fonte de verdade do catálogo).
+    // Quando presente, o frontend a usa em vez do mapa role→permissão hardcoded.
+    readonly permissions?: readonly string[];
   };
 };
 
@@ -115,7 +118,12 @@ function apiBaseUrl(): string {
 function mapLoginResponse(payload: LoginApiResponse): AuthSession {
   const tokens = mapTokenUpdate(payload);
   const backendRoles = payload.data.roles.map((role) => role.key);
-  const permissions = resolveFrontendPermissions(backendRoles);
+  // Prefere as permissões REAIS do backend (catálogo); só cai no mapa por papel
+  // quando o backend não as envia (retrocompatível com respostas antigas/mock).
+  const backendPermissions = payload.data.permissions ?? [];
+  const permissions = backendPermissions.length > 0
+    ? resolveFrontendPermissionsFromBackend(backendPermissions)
+    : resolveFrontendPermissions(backendRoles);
   const roles = resolveFrontendRoles(backendRoles);
   const tenant: AuthTenant = {
     id: payload.data.tenant.id,
@@ -207,6 +215,13 @@ function mapBackendRole(role: string): UserRole | null {
 export function resolveFrontendPermissions(backendRoles: readonly string[]): string[] {
   const backendPermissions = backendRoles.flatMap((role) => rolePermissions[role.trim().toLowerCase()] ?? []);
 
+  return [...new Set(["dashboard:view", ...backendPermissions.flatMap(mapBackendPermission)])];
+}
+
+// Recebe as permissões REAIS do backend (catálogo) e expande os aliases de UI
+// (ex.: dashboard:read→dashboard:view, work_orders:read→work-orders:view), para
+// que os guards que usam vocabulário mock e os que usam o real funcionem.
+export function resolveFrontendPermissionsFromBackend(backendPermissions: readonly string[]): string[] {
   return [...new Set(["dashboard:view", ...backendPermissions.flatMap(mapBackendPermission)])];
 }
 
