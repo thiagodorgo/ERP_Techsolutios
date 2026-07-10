@@ -20,6 +20,11 @@ export type GeocodeResult = {
 export interface Geocoder {
   /** Resolve a query para uma coordenada; `null` quando o provedor não encontra o endereço. */
   geocode(query: GeocodeQuery): Promise<GeocodeResult | null>;
+  /**
+   * `false` quando a geocodificação está desabilitada (NoopGeocoder). Permite ao serviço dar uma
+   * razão HONESTA ("desabilitada") em vez de "endereço não localizado" — o botão nunca mente.
+   */
+  isEnabled(): boolean;
 }
 
 /** Monta a string de busca a partir das partes não-vazias; `null` quando não há nada para geocodificar. */

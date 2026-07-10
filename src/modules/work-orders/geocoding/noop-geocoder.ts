@@ -8,4 +8,8 @@ export class NoopGeocoder implements Geocoder {
   async geocode(): Promise<GeocodeResult | null> {
     return null;
   }
+
+  isEnabled(): boolean {
+    return false;
+  }
 }

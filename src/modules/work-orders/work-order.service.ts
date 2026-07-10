@@ -130,6 +130,12 @@ export class WorkOrderService {
       );
     }
 
+    // B8 — quando a geocodificação está desabilitada (NoopGeocoder), a razão é HONESTA: "desabilitada",
+    // nunca "endereço não localizado". O botão do painel não mente sobre o motivo.
+    if (!this.geocoder.isEnabled()) {
+      return { geocoded: false, reason: "Geocodificação está desabilitada neste ambiente." };
+    }
+
     let result;
     try {
       result = await this.geocoder.geocode({

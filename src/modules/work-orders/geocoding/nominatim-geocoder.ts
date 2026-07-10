@@ -47,6 +47,10 @@ export class NominatimGeocoder implements Geocoder {
     this.fetchImpl = options.fetchImpl ?? ((url, init) => fetch(url, init));
   }
 
+  isEnabled(): boolean {
+    return true;
+  }
+
   async geocode(query: GeocodeQuery): Promise<GeocodeResult | null> {
     const queryString = buildGeocodeQueryString(query);
     if (!queryString) return null;
