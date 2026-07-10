@@ -478,10 +478,31 @@ test("painel de despacho: rótulo de negócio no lugar do UUID cru (id só no de
   assert.doesNotMatch(html, />[^<]*0f1e2d3c-uuid-cru-do-despacho/);
 });
 
-test("R6.2: pins do canvas exibem stale e badges navegáveis fora do botão de seleção", async () => {
+test("Ω1: sem chave Google, o canvas renderiza o mapa real (MapLibre), não o esquemático", async () => {
   process.env.VITE_USE_MOCKS = "false";
   delete process.env.VITE_GOOGLE_MAPS_API_KEY;
   const { OperationsMapCanvas } = await import("../src/modules/operations/map/components/OperationsMapCanvas");
+
+  const html = renderToString(
+    createElement(
+      MemoryRouter,
+      null,
+      createElement(OperationsMapCanvas, {
+        locations: [makeLocation({ id: "loc-1" })],
+        onSelect: () => undefined,
+      }),
+    ),
+  );
+
+  // Padrão da rodada Ω: mapa interativo real (sem custo/chave), não a foto esquemática.
+  assert.match(html, /operations-map-libre/);
+  assert.match(html, /Carregando mapa operacional/);
+});
+
+test("R6.2: fallback esquemático exibe stale e badges navegáveis fora do botão de seleção", async () => {
+  const { OperationsMapSchematicCanvas } = await import(
+    "../src/modules/operations/map/components/OperationsMapSchematicCanvas"
+  );
 
   const locations = [
     makeLocation({
@@ -503,7 +524,7 @@ test("R6.2: pins do canvas exibem stale e badges navegáveis fora do botão de s
     createElement(
       MemoryRouter,
       null,
-      createElement(OperationsMapCanvas, {
+      createElement(OperationsMapSchematicCanvas, {
         locations,
         onSelect: () => undefined,
         maintenanceVehicleIds: ["veh-1"],

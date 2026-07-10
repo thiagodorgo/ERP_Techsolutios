@@ -1,5 +1,5 @@
 import { AlertTriangle, Map, Pause, Play, RefreshCw, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { Alert, Button, Chip, EmptyState, ErrorState, Skeleton } from "../../../../components/ui";
@@ -14,20 +14,18 @@ import {
   formatFieldLocationDate,
   listOperationTeams,
 } from "../operations-map.adapter";
-import type { FieldLocationItem, OperationsMapFilters as OperationsMapFilterState } from "../operations-map.types";
+import {
+  FIELD_LOCATION_STATUSES,
+  type FieldLocationItem,
+  type FieldLocationStatus,
+  type OperationsMapFilters as OperationsMapFilterState,
+} from "../operations-map.types";
 import { useOperationsMap } from "../useOperationsMap";
 import { OperationsMapCanvas } from "../components/OperationsMapCanvas";
 import { OperationsMapFilters } from "../components/OperationsMapFilters";
 import { OperationsMapSummaryCards } from "../components/OperationsMapSummaryCards";
 import { OperationsOperatorDetailPanel } from "../components/OperationsOperatorDetailPanel";
 import { OperationsOperatorList } from "../components/OperationsOperatorList";
-
-const initialFilters: OperationsMapFilterState = {
-  status: "all",
-  team: "all",
-  staleOnly: false,
-  search: "",
-};
 
 export function OperationsMapPage() {
   const {
@@ -48,8 +46,35 @@ export function OperationsMapPage() {
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [filters, setFilters] = useState<OperationsMapFilterState>(initialFilters);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+
+  // Ω1 — filtros ficam na URL (?status=&team=&stale=&q=) para permitir link direto e refresh.
+  const statusParam = searchParams.get("status") ?? "all";
+  const teamParam = searchParams.get("team") ?? "all";
+  const staleParam = searchParams.get("stale") === "1";
+  const searchQuery = searchParams.get("q") ?? "";
+  const filters = useMemo<OperationsMapFilterState>(() => {
+    const status: OperationsMapFilterState["status"] =
+      statusParam !== "all" && FIELD_LOCATION_STATUSES.includes(statusParam as FieldLocationStatus)
+        ? (statusParam as FieldLocationStatus)
+        : "all";
+    return { status, team: teamParam, staleOnly: staleParam, search: searchQuery };
+  }, [statusParam, teamParam, staleParam, searchQuery]);
+  const setFilters = useCallback(
+    (next: OperationsMapFilterState) => {
+      const params = new URLSearchParams(searchParams);
+      if (next.status && next.status !== "all") params.set("status", next.status);
+      else params.delete("status");
+      if (next.team && next.team !== "all") params.set("team", next.team);
+      else params.delete("team");
+      if (next.staleOnly) params.set("stale", "1");
+      else params.delete("stale");
+      if (next.search.trim()) params.set("q", next.search);
+      else params.delete("q");
+      setSearchParams(params, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
   const workOrderContextId = searchParams.get("workOrderId")?.trim() || undefined;
   const canReadWorkOrders = can("work_orders:read");
   const canReadDispatches = can("field_dispatch:read");
@@ -168,7 +193,13 @@ export function OperationsMapPage() {
         </section>
       ) : null}
 
-      <OperationsMapSummaryCards summary={summary} />
+      <OperationsMapSummaryCards
+        summary={summary}
+        activeStatus={filters.status}
+        staleOnly={filters.staleOnly}
+        onFilterStatus={(status) => setFilters({ ...filters, status, staleOnly: false })}
+        onToggleStale={() => setFilters({ ...filters, staleOnly: !filters.staleOnly })}
+      />
       <OperationsMapFilters filters={filters} teams={teams} onChange={setFilters} />
 
       {loading && locations.length === 0 ? <Skeleton lines={4} /> : null}
