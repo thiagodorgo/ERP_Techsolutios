@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 
+import type { Request } from "express";
+
 import { InMemoryWorkOrderRepository } from "../src/modules/work-orders/work-order.repository.js";
 import { WorkOrderService } from "../src/modules/work-orders/work-order.service.js";
+import { WorkOrderController } from "../src/modules/work-orders/work-order.controller.js";
 import { GeocoderUnavailableError, type Geocoder, type GeocodeResult } from "../src/modules/work-orders/geocoding/geocoder.js";
 import { WorkOrderError, type WorkOrderActorContext } from "../src/modules/work-orders/work-order.types.js";
 
@@ -164,6 +167,52 @@ test("B8: geocoder desabilitado (Noop) → 200 {geocoded:false} com razão hones
   const result = await service.geocodeById(ctx, wo.id);
   assert.equal(result.geocoded, false);
   assert.match(result.reason ?? "", /desabilitada/i);
+});
+
+// --- Controller (boundary): shape da resposta de sucesso e de {geocoded:false} ---
+
+function fakeRequest(ctx: WorkOrderActorContext, workOrderId: string, body: Record<string, unknown> = {}): Request {
+  return {
+    params: { workOrderId },
+    body,
+    query: {},
+    header: () => undefined,
+    tenantContext: { tenantId: ctx.tenantId, userId: ctx.userId, roles: ctx.roles, permissions: ctx.permissions },
+  } as unknown as Request;
+}
+
+test("Controller: ramo de SUCESSO devolve { data: { geocoded:true, workOrder } } (audit + DTO)", async () => {
+  const repo = new InMemoryWorkOrderRepository();
+  const realService = new WorkOrderService(repo, {}, stub({ latitude: -23.5, longitude: -46.6, source: "stub" }));
+  const ctx = actor();
+  const created = await seedWorkOrder(realService, ctx);
+  // Serviço-stub que devolve a OS real como já geocodificada — foco no CONTROLLER, não no serviço.
+  const stubService = {
+    geocodeById: async () => ({ geocoded: true, workOrder: { ...created, serviceGeocodeSource: "stub" } }),
+  } as unknown as WorkOrderService;
+  const controller = new WorkOrderController(async () => stubService);
+
+  const result = (await controller.geocode(fakeRequest(ctx, created.id))) as {
+    data: { geocoded: boolean; workOrder?: { id: string; code: string } };
+  };
+  assert.equal(result.data.geocoded, true);
+  assert.equal(result.data.workOrder?.id, created.id);
+  assert.equal(result.data.workOrder?.code, created.code);
+});
+
+test("Controller: ramo {geocoded:false} devolve razão, sem workOrder", async () => {
+  const ctx = actor();
+  const stubService = {
+    geocodeById: async () => ({ geocoded: false, reason: "Endereço não localizado pelo provedor." }),
+  } as unknown as WorkOrderService;
+  const controller = new WorkOrderController(async () => stubService);
+
+  const result = (await controller.geocode(fakeRequest(ctx, "wo-1"))) as {
+    data: { geocoded: boolean; reason?: string; workOrder?: unknown };
+  };
+  assert.equal(result.data.geocoded, false);
+  assert.match(result.data.reason ?? "", /não localizado/i);
+  assert.equal(result.data.workOrder, undefined);
 });
 
 test("E-sentinela: provedor devolve 0/0 → 200 {geocoded:false}, não persiste sentinela (R2)", async () => {

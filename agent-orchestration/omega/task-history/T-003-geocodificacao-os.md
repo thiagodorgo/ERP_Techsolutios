@@ -51,10 +51,13 @@ Sem RLS/FK/índice novos (a tabela já tem RLS; a query do mapa não filtra por 
 | Estados do botão | por item | idle · localizando… (disabled) · erro (razão) |
 
 ## RESULTADO TESTÁVEL
-- Backend: `check`/`lint`/`build` verde · `npm test` (core-saas) 0 fail · **geocoding 10/10 + geocode-route 12/12
-  + geocode-route-http (RBAC/controller) + env-geocoding 5/5** (contrato completo: 403, 404 cross-tenant, 409+force,
-  422, 502, 200 sem-match, sentinela 0/0, R4 create-não-geocodifica, R10 RETURNING-vazio, R11 gate-prod, B1
-  flag-estrito, B8 desabilitado-honesto, throttle, cache, timeout, parse) · `git diff --check` limpo · migration up/down/re-up OK.
+- Backend: `check`/`lint`/`build` verde · `npm test` (core-saas) 0 fail · contagem REAL dos arquivos do bloco:
+  **`work-order-geocoding.test.ts` 10/10** (query, parse, cache, throttle, 429/500, timeout+abort R3, noop),
+  **`work-order-geocode-route.test.ts` 13/13** (E1–E8 + sentinela 0/0 R2, R4 create-não-geocodifica, R10
+  RETURNING-vazio→404, B8 desabilitado-honesto, + 2 do controller: shape de sucesso e de {geocoded:false}),
+  **`env-geocoding.test.ts` 5/5** (B1 flag estrito, R11 gate de prod) e **+1 bloco de rota HTTP** em
+  `work-orders-routes.test.ts` (403 RBAC · 200 desabilitado · 404 · 422 · 409+`?force=true`) · `git diff --check`
+  limpo · migration up/down/re-up OK.
 - Frontend: `check` verde · `build` verde · `test:smoke` **270/270** (+1 botão gated).
 
 ## Pendência declarada
