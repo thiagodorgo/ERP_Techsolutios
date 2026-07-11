@@ -8,6 +8,8 @@ type CreateTenantData = {
   readonly name: string;
   readonly slug: string;
   readonly status?: string;
+  // Ω-ACESSO — módulos provisionados ao tenant (governam a visibilidade dos itens de menu).
+  readonly modules?: readonly string[];
 };
 
 export class TenantRepository {
@@ -60,6 +62,7 @@ export class TenantRepository {
         name: data.name,
         slug: data.slug,
         status: data.status ?? "active",
+        modules: data.modules ? [...data.modules] : [],
       },
     });
   }
