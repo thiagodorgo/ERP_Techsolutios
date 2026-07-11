@@ -9,7 +9,7 @@ import { listAllPendingApprovals } from "../modules/work-orders/approval.service
 import { useAuth } from "../providers/AuthProvider";
 import { usePermissions } from "../providers/PermissionProvider";
 import { useTenantContext } from "../providers/TenantProvider";
-import { ROLE_SUBTITLE, buildSidebarNav, currentNavTitle, roleKindFor } from "./appSidebarNav";
+import { ROLE_SUBTITLE, buildSidebarNav, computeHiddenNavPaths, currentNavTitle, roleKindFor } from "./appSidebarNav";
 
 const NAVY = "#0D1B2A";
 const ACTIVE = "#2563EB";
@@ -39,9 +39,10 @@ export function AppShell() {
   // usada para ocultar itens marcados "planned"; a allowlist MVP garante o escopo (§4.3).
   const menu = useNavigationMenu();
   const nav = useMemo(() => {
-    const plannedPaths = new Set(menu.items.filter((item) => item.status === "planned").map((item) => item.path));
-    return buildSidebarNav(session?.user?.roles ?? [], plannedPaths);
-  }, [session?.user?.roles, menu.items]);
+    // Ω-ACESSO — esconde "planned" + gating dinâmico por provisionamento (governedPaths não visíveis).
+    const hidden = computeHiddenNavPaths(menu.items, menu.governedPaths);
+    return buildSidebarNav(session?.user?.roles ?? [], hidden);
+  }, [session?.user?.roles, menu.items, menu.governedPaths]);
 
   const notificationContext = useMemo(() => {
     if (!activeContext || !permissions.includes("notifications:read")) return null;

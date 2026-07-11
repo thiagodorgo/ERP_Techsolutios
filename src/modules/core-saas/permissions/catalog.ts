@@ -360,6 +360,8 @@ export const ROLE_PERMISSIONS = {
     "work_orders:update",
     "work_orders:status",
     "field_location:send",
+    // Ω-ACESSO — o Operador opera o Mapa Operacional (despacha e acompanha campo): lê as localizações.
+    "field_location:read",
     "field_dispatch:read",
     "field_dispatch:update",
     "commissions:read_own",

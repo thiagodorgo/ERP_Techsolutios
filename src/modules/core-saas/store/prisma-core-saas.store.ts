@@ -50,6 +50,8 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
         name: input.name,
         slug: createTenantSlug(input.name),
         status: input.status ?? "active",
+        // Ω-ACESSO — persiste os módulos provisionados (antes ficavam só em memória; prisma perdia).
+        modules: input.modules ?? [],
       });
 
       await setTenantRlsContext(tx, tenant.id);
@@ -347,7 +349,8 @@ export function mapTenantFromPrisma(tenant: PrismaTenant): Tenant {
     id: tenant.id,
     name: tenant.name,
     status: mapTenantStatus(tenant.status),
-    modules: [],
+    // Ω-ACESSO — módulos provisionados de verdade (antes era [] hardcoded → menu vazio p/ todos).
+    modules: tenant.modules ?? [],
     createdAt: tenant.created_at,
   };
 }

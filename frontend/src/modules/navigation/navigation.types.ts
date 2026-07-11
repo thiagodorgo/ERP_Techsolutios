@@ -29,6 +29,8 @@ export type BackendNavigationMenuResponse = {
     generatedAt?: string;
     scope?: NavigationScope;
     groups?: NavigationScope[];
+    // Ω-ACESSO — paths governados pelo registry backend (para gating dinâmico do sidebar).
+    governedPaths?: string[];
   };
 };
 
@@ -37,5 +39,7 @@ export type NavigationMenuState = {
   loading: boolean;
   error: Error | null;
   isFallback: boolean;
+  // Ω-ACESSO — conjunto governado pelo backend; vazio no fallback (nada é escondido por provisionamento).
+  governedPaths: string[];
   refetch: () => Promise<void>;
 };

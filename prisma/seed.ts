@@ -112,6 +112,20 @@ const permissionDescriptions = {
 } satisfies Record<Permission, string>;
 
 async function main(): Promise<void> {
+  // Ω-ACESSO — módulos provisionados ao tenant demo (governam a visibilidade dos itens de menu com
+  // requiredModules; field_operations habilita o Mapa Operacional). Sem isto o menu vem vazio (modules []).
+  const DEMO_TENANT_MODULES = [
+    "dashboard",
+    "work_orders",
+    "field_operations",
+    "logistics",
+    "finance",
+    "checklists",
+    "tenant_checklist",
+    "notifications",
+    "users",
+    "audit",
+  ];
   const tenant = await prisma.tenant.upsert({
     where: {
       slug: "demo",
@@ -119,11 +133,13 @@ async function main(): Promise<void> {
     update: {
       name: "Tenant Demo",
       status: "active",
+      modules: DEMO_TENANT_MODULES,
     },
     create: {
       name: "Tenant Demo",
       slug: "demo",
       status: "active",
+      modules: DEMO_TENANT_MODULES,
     },
   });
 

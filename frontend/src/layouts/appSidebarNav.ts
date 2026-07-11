@@ -173,6 +173,24 @@ export function buildSidebarNav(
     .filter((group) => group.items.length > 0);
 }
 
+/**
+ * Ω-ACESSO — paths a esconder do sidebar: os itens "planned" do menu backend MAIS o gating dinâmico por
+ * provisionamento — um path GOVERNADO pelo backend que NÃO veio no menu do tenant (módulo/feature não
+ * provisionado ou papel sem permissão) é escondido. No fallback (backend indisponível) `governedPaths` é
+ * vazio, então nada extra é escondido (o sidebar volta ao comportamento por papel).
+ */
+export function computeHiddenNavPaths(
+  menuItems: readonly { readonly path: string; readonly status?: string }[],
+  governedPaths: readonly string[],
+): Set<string> {
+  const hidden = new Set<string>(menuItems.filter((item) => item.status === "planned").map((item) => item.path));
+  const visible = new Set(menuItems.map((item) => item.path));
+  for (const path of governedPaths) {
+    if (!visible.has(path)) hidden.add(path);
+  }
+  return hidden;
+}
+
 export function currentNavTitle(nav: readonly NavGroup[], pathname: string): string {
   let best: NavItem | null = null;
   for (const group of nav) {

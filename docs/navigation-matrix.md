@@ -12,13 +12,20 @@
 > guards do front das telas novas/religadas para casar. As telas de cadastro (`customers/vehicles/teams/
 > service_catalog:*`) já casam nos dois lados.
 
+> **Ω-ACESSO — gating por PROVISIONAMENTO (novo eixo).** Além da permissão do papel, um item de menu com
+> `requiredModules` só aparece se o **módulo estiver provisionado ao tenant** (`tenants.modules`). O Mapa
+> Operacional exige o módulo `field_operations`. O backend (`GET /navigation/menu`) filtra por módulo e
+> expõe `governedPaths`; o sidebar esconde dinamicamente paths governados não provisionados (remover
+> `field_operations` do tenant → o Mapa some de TODOS os papéis). O `operator` passou a ter
+> `field_location:read` (opera o mapa). Validado por login real dos 9 papéis — ver `demo-credentials.md`.
+
 | Tela (rota) | permissão backend | plat_admin | tenant_admin | manager | operator | finance | inventory | field_tech | auditor | support |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Dashboard `/dashboard` | `dashboard:read` | F | F | F | R | R | R | M | R | — |
 | Ordens de Serviço `/work-orders` | `work_orders:read` | F | F | F | E | R | R | M | R | — |
 | OS detalhe `/work-orders/:id` | `work_orders:read` | F | F | F | E | R | R | M | R | — |
 | Despachos `/operations/dispatches` | `field_dispatch:read` | F | F | F | R | — | — | M | R | — |
-| Mapa Operacional `/operations/map` (F6) | `field_location:read` | F | F | F | R | — | — | M | R | — |
+| Mapa Operacional `/operations/map` (F6, Ω-ACESSO) | `field_location:read` + módulo `field_operations` | F | F | F | E | — | — | M | R | — |
 | Aprovações `/approvals` | `work_orders:read` | F | F | F | request | approval | — | — | R | — |
 | Checklists `/operations/checklists` | `checklist_runs:read` | F | F | F | E | — | — | M | R | — |
 | Clientes `/cadastros/clientes` | `customers:read` | F | F | E | R | — | — | R | R | — |
