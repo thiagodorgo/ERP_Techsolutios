@@ -5,7 +5,7 @@ import { createPersistentRbacContextMiddleware } from "../core-saas/middleware/p
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
-import { getMenuForCurrentUser, isNavigationScope } from "./navigation.service.js";
+import { getGovernedNavigationPaths, getMenuForCurrentUser, isNavigationScope } from "./navigation.service.js";
 import type { NavigationScope } from "./navigation.types.js";
 
 export function createNavigationRouter(service?: ICoreSaasService): Router {
@@ -50,6 +50,8 @@ export function createNavigationRouter(service?: ICoreSaasService): Router {
           generatedAt: new Date().toISOString(),
           ...(scope ? { scope } : {}),
           groups: [...new Set(menu.map((item) => item.group))],
+          // Ω-ACESSO — conjunto governado pelo registry, para o gating dinâmico do sidebar.
+          governedPaths: getGovernedNavigationPaths(),
         },
       });
     }),

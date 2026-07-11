@@ -66,6 +66,21 @@ export function isNavigationScope(value: string): value is NavigationScope {
   return value === "platform" || value === "tenant" || value === "operations" || value === "logistics" || value === "finance";
 }
 
+// Ω-ACESSO — todos os paths GOVERNADOS pelo registry (recursivo). O frontend usa este conjunto para
+// gating dinâmico: um item cujo path é governado mas NÃO veio no menu do tenant (feature/permissão não
+// provisionada) é escondido do sidebar. Paths fora deste conjunto seguem a regra de papel do frontend.
+export function getGovernedNavigationPaths(): string[] {
+  const paths = new Set<string>();
+  const walk = (items: readonly NavigationItem[]): void => {
+    for (const item of items) {
+      paths.add(item.path);
+      if (item.children?.length) walk(item.children);
+    }
+  };
+  walk(NAVIGATION_REGISTRY);
+  return [...paths];
+}
+
 function filterNavigationByActorBoundary(
   items: readonly NavigationItem[],
   context: NavigationMenuContext,
