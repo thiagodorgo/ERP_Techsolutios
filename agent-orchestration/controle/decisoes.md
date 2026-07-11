@@ -374,3 +374,9 @@
 - validador achou 1 BAIXA (§11.2): a paleta mostrava o PATH cru da rota como subtitulo -> **corrigido no
   bloco** (mostra o GRUPO/secao PT-BR do item: OPERACAO/FROTA/GESTAO...); 244/244 verde.
 - impacto: frontend-only; sem backend/migration/dep nova. Aditivo. **Encerra a Rodada F (F1-F12).**
+
+## D-ACESSO (Ω-ACESSO) — operator ganha field_location:read (opera o Mapa)
+- Conflito: diretriz #1 (operator opera o Mapa → precisa ler posições) × RBAC_MATRIX (operator = send-own).
+- Decisão: A1 (usuário vence); reconciliado em RBAC_MATRIX.md (send-own → send-own/read-tenant),
+  navigation-matrix.md (operator R→E) e catalog.ts. Tenant-scoped (RLS), sem vazamento cross-tenant.
+- Detalhe: agent-orchestration/controle/D-ACESSO-operator-field-location-read.md. Validado por login real.

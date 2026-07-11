@@ -33,7 +33,7 @@ Baseline authorization matrix for the ERP Techsolutions multi-tenant SaaS ERP. T
 | User and role assignment | full | full | limited | none | none | none | none | read | limited-support |
 | Dashboard and operational overview | full | full | full | full | scoped | scoped | scoped | read | scoped |
 | Backend navigation menu | full | tenant-scoped | scoped | scoped | scoped | scoped | scoped | read | scoped |
-| Field operator location | support-audited | full-tenant | read-history | send-own | none | none | send-own | full-read | support-view |
+| Field operator location | support-audited | full-tenant | read-history | send-own/read-tenant | none | none | send-own | full-read | support-view |
 | Master data | full | full | approve/edit | edit-scoped | read | read/edit-scoped | read | read | read-support |
 | Customer registry (Cadastros - Clientes) | full | full | create/edit | read | none | none | read | read | none |
 | Vehicle registry (Cadastros - Viaturas) | full | full | create/edit | read | none | none | read | read | none |
