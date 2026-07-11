@@ -17,6 +17,8 @@ export function useNavigationMenu(options: UseNavigationMenuOptions = {}): Navig
   const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<Error | null>(null);
   const [isFallback, setIsFallback] = useState(true);
+  // Ω-ACESSO — vazio no fallback: sem menu real do backend, nada é escondido por provisionamento.
+  const [governedPaths, setGovernedPaths] = useState<string[]>([]);
 
   const refetch = useCallback(async () => {
     if (!enabled) {
@@ -24,6 +26,7 @@ export function useNavigationMenu(options: UseNavigationMenuOptions = {}): Navig
       setLoading(false);
       setError(null);
       setIsFallback(true);
+      setGovernedPaths([]);
       return;
     }
 
@@ -35,15 +38,18 @@ export function useNavigationMenu(options: UseNavigationMenuOptions = {}): Navig
       if (nextItems.length === 0 && fallbackItems.length > 0) {
         setItems(fallbackItems);
         setIsFallback(true);
+        setGovernedPaths([]);
       } else {
         setItems(nextItems);
         setIsFallback(false);
+        setGovernedPaths(response.metadata?.governedPaths ?? []);
       }
       setError(null);
     } catch (caughtError) {
       setItems(fallbackItems);
       setError(caughtError instanceof Error ? caughtError : new Error("Navigation menu unavailable."));
       setIsFallback(true);
+      setGovernedPaths([]);
     } finally {
       setLoading(false);
     }
@@ -58,6 +64,7 @@ export function useNavigationMenu(options: UseNavigationMenuOptions = {}): Navig
     loading,
     error,
     isFallback,
+    governedPaths,
     refetch,
   };
 }
