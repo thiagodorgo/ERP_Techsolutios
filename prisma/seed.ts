@@ -109,6 +109,9 @@ const permissionDescriptions = {
   "checklist_runs:update": "Registrar respostas, anexos, marcadores e divergencias de checklist.",
   "checklist_runs:complete": "Concluir execucoes de checklist.",
   "checklist_runs:acknowledge": "Registrar ciencia de responsabilidade em execucoes de checklist.",
+  "price_tables:read": "Consultar Tabelas de Valores (precos) do tenant.",
+  "price_tables:create": "Criar Tabelas de Valores do tenant.",
+  "price_tables:update": "Editar, publicar, arquivar e inativar Tabelas de Valores do tenant.",
 } satisfies Record<Permission, string>;
 
 async function main(): Promise<void> {

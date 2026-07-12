@@ -4,6 +4,7 @@ import {
   Bell,
   CheckCircle,
   ClipboardList,
+  Coins,
   ConciergeBell,
   Contact,
   Fuel,
@@ -52,6 +53,7 @@ const DANOS: NavItem = { label: "Danos", path: "/fleet/damages", icon: AlertTria
 const CLIENTES: NavItem = { label: "Clientes", path: "/cadastros/clientes", icon: Contact };
 const EQUIPES: NavItem = { label: "Equipes", path: "/cadastros/equipes", icon: UsersRound };
 const SERVICOS: NavItem = { label: "Serviços", path: "/cadastros/servicos", icon: ConciergeBell };
+const TABELAS_VALORES: NavItem = { label: "Tabela de Valores", path: "/cadastros/tabelas-valores", icon: Coins };
 const ESTOQUE: NavItem = { label: "Estoque", path: "/inventory", icon: Package };
 const PEDIDOS: NavItem = { label: "Pedidos", path: "/purchase-orders", icon: ShoppingCart };
 const REMUNERACOES: NavItem = { label: "Remunerações", path: "/finance/commissions", icon: Wallet };
@@ -73,7 +75,7 @@ const G_FROTA_FULL: NavGroup = {
 };
 const G_GESTAO_FULL: NavGroup = {
   label: "GESTÃO",
-  items: [CLIENTES, EQUIPES, SERVICOS, ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO],
+  items: [CLIENTES, EQUIPES, SERVICOS, TABELAS_VALORES, ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO],
 };
 const G_ADMIN_FULL: NavGroup = {
   label: "ADMINISTRAÇÃO",
@@ -94,7 +96,7 @@ export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
     G_VISAO_GERAL,
     G_OPERACAO_FULL,
     G_FROTA_FULL,
-    { label: "GESTÃO", items: [CLIENTES, EQUIPES, SERVICOS, ESTOQUE] },
+    { label: "GESTÃO", items: [CLIENTES, EQUIPES, SERVICOS, TABELAS_VALORES, ESTOQUE] },
     { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES] },
   ],
   // finance — recupera o grupo (multas/seguros/remunerações/financeiro/relatórios/aprovações).
@@ -131,6 +133,7 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/cadastros/viaturas",
   "/cadastros/equipes",
   "/cadastros/servicos",
+  "/cadastros/tabelas-valores",
   "/fleet/fuel",
   "/fleet/maintenance",
   "/fleet/fines",
