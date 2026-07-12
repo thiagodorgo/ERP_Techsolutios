@@ -246,3 +246,27 @@ test("get retorna a tarifa criada no mesmo tenant", async () => {
   const fetched = await svc.get(ctx, created.id);
   assert.equal(fetched.id, created.id);
 });
+
+// Veto junta Ω2-a.2 (B1) — a coluna Vigência da lista consome validFrom/validTo do LIST DTO;
+// sem eles toda linha exibia "Sem vigência definida" mesmo com vigência gravada.
+test("list DTO emite validFrom/validTo (coluna Vigência)", async () => {
+  const { toTariffListDto } = await import("../src/modules/tariffs/tariff.dto.js");
+  const svc = service();
+  const ctx = actor();
+  await svc.create(ctx, baseBody({ valid_from: "2026-07-01T00:00:00Z", valid_to: "2026-12-31T00:00:00Z" }));
+  const result = await svc.list(ctx, {});
+  const dto = toTariffListDto(result);
+  assert.equal(dto.items.length, 1);
+  assert.equal(dto.items[0]!.validFrom, "2026-07-01T00:00:00.000Z");
+  assert.equal(dto.items[0]!.validTo, "2026-12-31T00:00:00.000Z");
+});
+
+test("list DTO emite validFrom/validTo null quando sem vigência", async () => {
+  const { toTariffListDto } = await import("../src/modules/tariffs/tariff.dto.js");
+  const svc = service();
+  const ctx = actor();
+  await svc.create(ctx, baseBody());
+  const dto = toTariffListDto(await svc.list(ctx, {}));
+  assert.equal(dto.items[0]!.validFrom, null);
+  assert.equal(dto.items[0]!.validTo, null);
+});

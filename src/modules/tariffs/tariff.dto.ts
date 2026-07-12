@@ -33,6 +33,10 @@ export function toTariffListDto(result: ListTariffResult) {
       unitPrice: tariff.unitPrice,
       currency: tariff.currency,
       origin: tariff.origin,
+      // Veto junta Ω2-a.2 (B1): a coluna Vigência da lista consome estes campos — sem eles toda
+      // linha exibia "Sem vigência definida" mesmo com vigência gravada.
+      validFrom: tariff.validFrom?.toISOString() ?? null,
+      validTo: tariff.validTo?.toISOString() ?? null,
       status: tariff.status,
       isActive: tariff.isActive,
       createdAt: tariff.createdAt.toISOString(),
