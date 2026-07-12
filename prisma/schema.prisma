@@ -40,6 +40,7 @@ model Tenant {
   service_catalog_items         ServiceCatalog[]
   price_tables                  PriceTable[]
   tariffs                       Tariff[]
+  suppliers                     Supplier[]
   teams                         Team[]
   team_members                  TeamMember[]
   field_operator_locations      FieldOperatorLocation[]
@@ -1164,6 +1165,32 @@ model Tariff {
   @@index([tenant_id, price_table_id])
   @@index([tenant_id, is_active])
   @@map("tariffs")
+}
+
+// Ω2-b — Fornecedor (cadastro). Chave natural [tenant_id, name]; desativação lógica via is_active.
+model Supplier {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String   @db.Uuid
+  name       String
+  document   String?
+  email      String?
+  phone      String?
+  address    String?
+  category   String?
+  notes      String?
+  status     String   @default("active")
+  is_active  Boolean  @default(true)
+  created_by String?  @db.Uuid
+  updated_by String?  @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, name])
+  @@index([tenant_id, is_active])
+  @@index([tenant_id, created_at])
+  @@map("suppliers")
 }
 
 model Team {

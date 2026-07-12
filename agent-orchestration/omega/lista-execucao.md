@@ -20,8 +20,16 @@ Formato após conclusão: `[x] <fase> — PR #NN, merge <hash>, junta X/X, vered
       botão "Localizar no mapa". Isolada por tocar `prisma/**` + cliente HTTP.
 
 ## Ω2 — Configurações restantes
-- [ ] Fornecedores · Profissionais (OperatorProfile) · Filiais · Tabela de Valores · Tarifas · Tags · POI ·
-      Parâmetros (matar settings.mock)
+- [x] **Ω1b-2 Geocodificação** — PR #161, merge 2d494f4, junta 5/5 (após 1 reprovação: B1 booleanFlag,
+      B8 razão honesta), 2026-07-11
+- [x] **Ω-ACESSO (corretivo)** — PR #162, merge 1953234, junta 4/4 com login real (após veto RBAC→D-ACESSO),
+      2026-07-11 · + decisão checklist unificado PR #163
+- [x] **Ω2-a.1 Tabela de Valores** — PR #164, merge 4812c45, junta 5/5, backend 11/11 + front 284/284, 2026-07-11
+- [x] **Ω2-a.2 Tarifas** — PR #165, merge c26467e, junta 5/5 no ciclo 2 (veto do inspetor: B1 vigência no
+      list DTO, B2 falso sucesso na edição — R-omega2a2-1), backend 19/19 + front 293/293, natural key A1
+      com customer_id, 2026-07-12
+- [ ] **Ω2-b Filiais + Fornecedores** (Branch model já existe; Supplier greenfield) → **Ω2-c Profissionais**
+      (OperatorProfile 1-1 User, LGPD, isolado) → **Ω2-d Tags + POI** → **Ω2-e Parâmetros** (matar settings.mock)
 
 ## Ω3 — Painel Logístico avançado
 - [ ] ServiceQuote (congela preço) · comentários/timeline · anexos (reuso evidence) · duplicar/cancelar/

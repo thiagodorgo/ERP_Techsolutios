@@ -61,6 +61,8 @@ const EquipesPage = lazy(() => import("./modules/registry/teams/pages/EquipesPag
 const ServicosPage = lazy(() => import("./modules/registry/service-catalog/pages/ServicosPage").then((m) => ({ default: m.ServicosPage })));
 const TabelasValoresPage = lazy(() => import("./modules/registry/price-tables/pages/TabelasValoresPage").then((m) => ({ default: m.TabelasValoresPage })));
 const TarifasPage = lazy(() => import("./modules/registry/tariffs/pages/TarifasPage").then((m) => ({ default: m.TarifasPage })));
+const FiliaisPage = lazy(() => import("./modules/registry/branches/pages/FiliaisPage").then((m) => ({ default: m.FiliaisPage })));
+const FornecedoresPage = lazy(() => import("./modules/registry/suppliers/pages/FornecedoresPage").then((m) => ({ default: m.FornecedoresPage })));
 const AbastecimentoPage = lazy(() => import("./modules/fleet/fuel/pages/AbastecimentoPage").then((m) => ({ default: m.AbastecimentoPage })));
 const ManutencaoPage = lazy(() => import("./modules/fleet/maintenance/pages/ManutencaoPage").then((m) => ({ default: m.ManutencaoPage })));
 const MultasPage = lazy(() => import("./modules/fleet/fines/pages/MultasPage").then((m) => ({ default: m.MultasPage })));
@@ -305,6 +307,22 @@ export function App() {
               element={
                 <PermissionGuard permissions={["tariffs:read"]}>
                   <TarifasPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/cadastros/filiais"
+              element={
+                <PermissionGuard permissions={["branches:read"]}>
+                  <FiliaisPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/cadastros/fornecedores"
+              element={
+                <PermissionGuard permissions={["suppliers:read"]}>
+                  <FornecedoresPage />
                 </PermissionGuard>
               }
             />
