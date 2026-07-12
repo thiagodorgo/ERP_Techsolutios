@@ -39,4 +39,4 @@ inválida → 422). Backend memory|prisma + RLS, RBAC `price_tables:*`, tela den
   `price-tables.test.ts` **11/11** (defaults, currency/version, 400/409, máquina de estado 422, terminal,
   published-editável, cross-tenant 404, list filtros, soft-delete) · migration up/down/re-up OK · `git diff --check` limpo.
 - **Live HTTP** (gestor.demo): create→201(draft), publish→200, published→draft→**422**, duplicate→**409**, finance→**403**.
-- Frontend: `check`/`build` verde · `test:smoke` **284/284** (+9: adapter 7 + smoke 2; cadastros-nav 4→5).
+- Frontend: `check`/`build` verde · `test:smoke` **284/284** (+8: adapter 6 + smoke 2; cadastros-nav 4→5).

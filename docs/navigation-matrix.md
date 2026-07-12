@@ -32,6 +32,7 @@
 | Viaturas `/cadastros/viaturas` | `vehicles:read` | F | F | E | R | — | — | R | R | — |
 | Equipes `/cadastros/equipes` | `teams:read` | F | F | E | R | — | — | R | R | — |
 | Serviços `/cadastros/servicos` | `service_catalog:read` | F | F | E | R | — | — | R | R | — |
+| Tabela de Valores `/cadastros/tabelas-valores` (Ω2-a.1) | `price_tables:read` | F | F | E | R | — | — | R | R | — |
 | **Abastecimento `/fleet/fuel` (F1)** | `fuel_logs:read` | F | E | E | E | R | — | M/E | R | — |
 | **Manutenção `/fleet/maintenance` (F2)** | `maintenance_orders:read` | F | E | E | E | R | — | R | R | — |
 | **Multas `/fleet/fines` (F3)** | `fines:read` | F | E | E | R | E | — | — | R | — |
