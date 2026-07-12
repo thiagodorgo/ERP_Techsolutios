@@ -189,6 +189,19 @@ export const tenantNavigation: NavigationItem[] = [
     icon: "Factory",
     status: "implemented",
   },
+  {
+    // Ω2-c — Profissionais (OperatorProfile, perfil 1-1 com Usuário). Gate por permissão real
+    // (operator_profiles:read); sem requiredModules (mesmo padrão dos demais Cadastros irmãos).
+    id: "tenant-registry-operator-profiles",
+    label: "Profissionais",
+    path: "/cadastros/profissionais",
+    scope: "registry",
+    mode: "operation",
+    requiredPermissions: ["operator_profiles:read"],
+    allowedRoles: REGISTRY_READ_ROLES,
+    icon: "IdCard",
+    status: "implemented",
+  },
   // ── FROTA (F1–F5) — vocabulário do backend (catalog.ts). Gate por permissão real
   // (sem allowedRoles): a UserRole do front não representa todos os 9 papéis (ex.:
   // `inventory`), então a permissão é a autoridade. Ver navigation-matrix.md. ──

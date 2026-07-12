@@ -11,6 +11,7 @@ import {
   Factory,
   Fuel,
   Gavel,
+  IdCard,
   LayoutDashboard,
   ListChecks,
   MapPin,
@@ -57,6 +58,7 @@ const CLIENTES: NavItem = { label: "Clientes", path: "/cadastros/clientes", icon
 const FILIAIS: NavItem = { label: "Filiais", path: "/cadastros/filiais", icon: Building2 };
 const FORNECEDORES: NavItem = { label: "Fornecedores", path: "/cadastros/fornecedores", icon: Factory };
 const EQUIPES: NavItem = { label: "Equipes", path: "/cadastros/equipes", icon: UsersRound };
+const PROFISSIONAIS: NavItem = { label: "Profissionais", path: "/cadastros/profissionais", icon: IdCard };
 const SERVICOS: NavItem = { label: "Serviços", path: "/cadastros/servicos", icon: ConciergeBell };
 const TABELAS_VALORES: NavItem = { label: "Tabela de Valores", path: "/cadastros/tabelas-valores", icon: Coins };
 const TARIFAS: NavItem = { label: "Tarifas", path: "/cadastros/tarifas", icon: Tags };
@@ -81,7 +83,7 @@ const G_FROTA_FULL: NavGroup = {
 };
 const G_GESTAO_FULL: NavGroup = {
   label: "GESTÃO",
-  items: [CLIENTES, FILIAIS, FORNECEDORES, EQUIPES, SERVICOS, TABELAS_VALORES, TARIFAS, ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO],
+  items: [CLIENTES, FILIAIS, FORNECEDORES, EQUIPES, PROFISSIONAIS, SERVICOS, TABELAS_VALORES, TARIFAS, ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO],
 };
 const G_ADMIN_FULL: NavGroup = {
   label: "ADMINISTRAÇÃO",
@@ -140,6 +142,7 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/cadastros/fornecedores",
   "/cadastros/viaturas",
   "/cadastros/equipes",
+  "/cadastros/profissionais",
   "/cadastros/servicos",
   "/cadastros/tabelas-valores",
   "/cadastros/tarifas",
