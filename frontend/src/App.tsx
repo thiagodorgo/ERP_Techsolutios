@@ -59,6 +59,7 @@ const ClientesPage = lazy(() => import("./modules/registry/customers/pages/Clien
 const ViaturasPage = lazy(() => import("./modules/registry/vehicles/pages/ViaturasPage").then((m) => ({ default: m.ViaturasPage })));
 const EquipesPage = lazy(() => import("./modules/registry/teams/pages/EquipesPage").then((m) => ({ default: m.EquipesPage })));
 const ServicosPage = lazy(() => import("./modules/registry/service-catalog/pages/ServicosPage").then((m) => ({ default: m.ServicosPage })));
+const TabelasValoresPage = lazy(() => import("./modules/registry/price-tables/pages/TabelasValoresPage").then((m) => ({ default: m.TabelasValoresPage })));
 const AbastecimentoPage = lazy(() => import("./modules/fleet/fuel/pages/AbastecimentoPage").then((m) => ({ default: m.AbastecimentoPage })));
 const ManutencaoPage = lazy(() => import("./modules/fleet/maintenance/pages/ManutencaoPage").then((m) => ({ default: m.ManutencaoPage })));
 const MultasPage = lazy(() => import("./modules/fleet/fines/pages/MultasPage").then((m) => ({ default: m.MultasPage })));
@@ -287,6 +288,14 @@ export function App() {
               element={
                 <PermissionGuard permissions={["service_catalog:read"]}>
                   <ServicosPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/cadastros/tabelas-valores"
+              element={
+                <PermissionGuard permissions={["price_tables:read"]}>
+                  <TabelasValoresPage />
                 </PermissionGuard>
               }
             />
