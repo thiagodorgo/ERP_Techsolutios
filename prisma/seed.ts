@@ -115,6 +115,12 @@ const permissionDescriptions = {
   "tariffs:read": "Consultar Tarifas (itens de preco) das Tabelas de Valores do tenant.",
   "tariffs:create": "Criar Tarifas nas Tabelas de Valores do tenant.",
   "tariffs:update": "Editar e inativar Tarifas das Tabelas de Valores do tenant.",
+  "branches:read": "Consultar Filiais do tenant.",
+  "branches:create": "Criar Filiais do tenant.",
+  "branches:update": "Editar e inativar Filiais do tenant (status inactive).",
+  "suppliers:read": "Consultar Fornecedores do tenant.",
+  "suppliers:create": "Criar Fornecedores do tenant.",
+  "suppliers:update": "Editar e inativar Fornecedores do tenant.",
 } satisfies Record<Permission, string>;
 
 async function main(): Promise<void> {
