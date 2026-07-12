@@ -28,8 +28,11 @@ Formato após conclusão: `[x] <fase> — PR #NN, merge <hash>, junta X/X, vered
 - [x] **Ω2-a.2 Tarifas** — PR #165, merge c26467e, junta 5/5 no ciclo 2 (veto do inspetor: B1 vigência no
       list DTO, B2 falso sucesso na edição — R-omega2a2-1), backend 19/19 + front 293/293, natural key A1
       com customer_id, 2026-07-12
-- [ ] **Ω2-b Filiais + Fornecedores** (Branch model já existe; Supplier greenfield) → **Ω2-c Profissionais**
-      (OperatorProfile 1-1 User, LGPD, isolado) → **Ω2-d Tags + POI** → **Ω2-e Parâmetros** (matar settings.mock)
+- [x] **Ω2-b Filiais + Fornecedores** — PR #166, merge 2758181, junta 5/5 (4 vetos re-rodados com login real
+      após limite de sessão; J-OMEGA2B), backend 27/27 + front 311/311, 2026-07-12
+- [ ] **Ω2-c Profissionais** (OperatorProfile 1-1 User via FK (tenant_id,user_id) UNIQUE, CNH + tracking_consent,
+      LGPD — nunca logar CNH; novo módulo registry isolado) → **Ω2-d Tags + POI** → **Ω2-e Parâmetros**
+      (matar settings.mock, TenantSetting key-value)
 
 ## Ω3 — Painel Logístico avançado
 - [ ] ServiceQuote (congela preço) · comentários/timeline · anexos (reuso evidence) · duplicar/cancelar/
