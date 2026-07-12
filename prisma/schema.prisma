@@ -39,6 +39,7 @@ model Tenant {
   cycle_count_entries           CycleCountEntry[]
   service_catalog_items         ServiceCatalog[]
   price_tables                  PriceTable[]
+  tariffs                       Tariff[]
   teams                         Team[]
   team_members                  TeamMember[]
   field_operator_locations      FieldOperatorLocation[]
@@ -763,6 +764,7 @@ model Customer {
   updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
   tenant     Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   work_orders WorkOrder[] @relation("WorkOrderCustomer")
+  tariffs     Tariff[]    @relation("TariffCustomer")
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, document])
@@ -1093,6 +1095,7 @@ model ServiceCatalog {
   updated_at                 DateTime @default(now()) @updatedAt @db.Timestamptz(6)
   tenant                     Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   work_orders                WorkOrder[] @relation("WorkOrderServiceCatalog")
+  tariffs                    Tariff[]    @relation("TariffService")
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, name])
@@ -1119,12 +1122,48 @@ model PriceTable {
   updated_at  DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
   tenant      Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
+  tariffs     Tariff[]
+
   @@unique([tenant_id, id])
   @@unique([tenant_id, name])
   @@index([tenant_id, is_active])
   @@index([tenant_id, status])
   @@index([tenant_id, created_at])
   @@map("price_tables")
+}
+
+// Ω2-a.2 — Tarifa (item de preço), pertence a uma Tabela de Valores. RN-CAD-009.
+model Tariff {
+  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String          @db.Uuid
+  price_table_id     String          @db.Uuid
+  service_catalog_id String?         @db.Uuid
+  customer_id        String?         @db.Uuid
+  name               String?
+  unit_price         Decimal         @db.Decimal(12, 2)
+  currency           String          @default("BRL")
+  origin             String
+  rule               String?
+  valid_from         DateTime?       @db.Timestamptz(6)
+  valid_to           DateTime?       @db.Timestamptz(6)
+  status             String          @default("active")
+  is_active          Boolean         @default(true)
+  created_by         String?         @db.Uuid
+  updated_by         String?         @db.Uuid
+  created_at         DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant             Tenant          @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  price_table        PriceTable      @relation(fields: [tenant_id, price_table_id], references: [tenant_id, id], onDelete: Cascade)
+  service_catalog    ServiceCatalog? @relation("TariffService", fields: [tenant_id, service_catalog_id], references: [tenant_id, id], onDelete: Restrict)
+  customer           Customer?       @relation("TariffCustomer", fields: [tenant_id, customer_id], references: [tenant_id, id], onDelete: Restrict)
+
+  // A1 (crítico) — chave natural INCLUI customer_id: tarifa padrão (customer NULL) e por-cliente
+  // para o mesmo serviço NÃO colidem (NULLs distintos no índice único do Postgres).
+  @@unique([tenant_id, price_table_id, service_catalog_id, customer_id])
+  @@unique([tenant_id, id])
+  @@index([tenant_id, price_table_id])
+  @@index([tenant_id, is_active])
+  @@map("tariffs")
 }
 
 model Team {

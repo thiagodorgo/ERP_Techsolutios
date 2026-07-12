@@ -150,6 +150,19 @@ export const tenantNavigation: NavigationItem[] = [
     icon: "Coins",
     status: "implemented",
   },
+  {
+    // Ω2-a.2 — Tarifas (itens de preço das Tabelas de Valores). Gate por permissão real
+    // (tariffs:read); sem requiredModules (mesmo padrão dos demais Cadastros irmãos).
+    id: "tenant-registry-tariffs",
+    label: "Tarifas",
+    path: "/cadastros/tarifas",
+    scope: "registry",
+    mode: "operation",
+    requiredPermissions: ["tariffs:read"],
+    allowedRoles: REGISTRY_READ_ROLES,
+    icon: "Tags",
+    status: "implemented",
+  },
   // ── FROTA (F1–F5) — vocabulário do backend (catalog.ts). Gate por permissão real
   // (sem allowedRoles): a UserRole do front não representa todos os 9 papéis (ex.:
   // `inventory`), então a permissão é a autoridade. Ver navigation-matrix.md. ──

@@ -3,15 +3,22 @@ import test from "node:test";
 
 import type { NavigationAccessContext } from "../src/navigation/types";
 
-const CADASTROS_PATHS = ["/cadastros/clientes", "/cadastros/viaturas", "/cadastros/equipes", "/cadastros/servicos", "/cadastros/tabelas-valores"];
+const CADASTROS_PATHS = [
+  "/cadastros/clientes",
+  "/cadastros/viaturas",
+  "/cadastros/equipes",
+  "/cadastros/servicos",
+  "/cadastros/tabelas-valores",
+  "/cadastros/tarifas",
+];
 
-const REGISTRY_PERMISSIONS = ["customers:read", "vehicles:read", "teams:read", "service_catalog:read", "price_tables:read"];
+const REGISTRY_PERMISSIONS = ["customers:read", "vehicles:read", "teams:read", "service_catalog:read", "price_tables:read", "tariffs:read"];
 
 function flattenPaths(items: readonly { path: string; children?: readonly { path: string }[] }[]): string[] {
   return items.flatMap((item) => [item.path, ...(item.children?.map((child) => child.path) ?? [])]);
 }
 
-test("cadastros: Gestor com permissoes de leitura ve todas as 5 telas do menu Cadastros (A5 + Ω2-a.1)", async () => {
+test("cadastros: Gestor com permissoes de leitura ve todas as 6 telas do menu Cadastros (A5 + Ω2-a.1 + Ω2-a.2)", async () => {
   const { filterNavigationItems } = await import("../src/navigation/types");
   const { tenantNavigation } = await import("../src/navigation/tenantNavigation");
 
@@ -89,7 +96,7 @@ test("cadastros: cada tela some individualmente ao faltar sua permissao de leitu
   assert.equal(paths.includes("/cadastros/servicos"), true);
 });
 
-test("cadastros: rotulo do grupo 'Cadastros' resolve e agrupa as 5 telas (A5 + Ω2-a.1)", async () => {
+test("cadastros: rotulo do grupo 'Cadastros' resolve e agrupa as 6 telas (A5 + Ω2-a.1 + Ω2-a.2)", async () => {
   const { filterNavigationItems } = await import("../src/navigation/types");
   const { tenantNavigation } = await import("../src/navigation/tenantNavigation");
   const { groupNavigationItems, navigationGroupLabels } = await import("../src/modules/navigation/navigation.adapter");
@@ -109,7 +116,7 @@ test("cadastros: rotulo do grupo 'Cadastros' resolve e agrupa as 5 telas (A5 + �
 
   assert.ok(registryGroup, "grupo registry deve existir");
   assert.equal(registryGroup.label, "Cadastros");
-  assert.equal(registryGroup.items.length, 5);
+  assert.equal(registryGroup.items.length, 6);
   assert.deepEqual(
     registryGroup.items.map((item) => item.path).sort(),
     [...CADASTROS_PATHS].sort(),

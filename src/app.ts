@@ -35,6 +35,7 @@ import { createNavigationRouter } from "./modules/navigation/index.js";
 import { createPlatformRouter } from "./modules/platform/index.js";
 import { createServiceCatalogRouter } from "./modules/service-catalog/index.js";
 import { createPriceTableRouter } from "./modules/price-tables/index.js";
+import { createTariffRouter } from "./modules/tariffs/index.js";
 import { createTeamRouter } from "./modules/teams/index.js";
 import { createVehicleRouter } from "./modules/vehicles/index.js";
 import { createWorkOrderRouter } from "./modules/work-orders/index.js";
@@ -77,6 +78,7 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createCycleCountRouter(service));
   app.use("/api/v1", attachAuthenticatedActor(), createServiceCatalogRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createPriceTableRouter());
+  app.use("/api/v1", attachAuthenticatedActor(), createTariffRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTeamRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFieldDispatchRouter(service));
   app.use("/api/v1", attachAuthenticatedActor(), createCommissionRouter());

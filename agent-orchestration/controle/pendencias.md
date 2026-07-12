@@ -257,3 +257,38 @@
   backend adicionar as perms, esses itens so aparecem para quem ja as tiver — honesto, sem fabricar acesso.
 - status: aberto (**bloco backend de reconciliacao de permissoes**: adicionar `purchase_orders:read`/
   `reports:read` ao `PERMISSION_CATALOG` + alinhar grants de dashboard/aprovacoes a matriz). Nao bloqueia F11.
+
+## P-029 - Ω2-a.2: modal de edicao de Tarifa mantem selects de referencia habilitados, mas o backend os ignora (2026-07-12)
+
+- descricao: achado MEDIA do validador-mestre no gate de Ω2-a.2. Referencias da Tarifa (Tabela de Valores/
+  Servico/Cliente) sao IMUTAVEIS no update por design (oraculo T-OMEGA2A-2): `tariff.service.ts:update()`
+  nao le `price_table_id`/`service_catalog_id`/`customer_id` do body. Porem `TariffFormModal.tsx` em modo
+  edicao mantem os tres selects habilitados e envia os valores no PATCH — o backend responde 200 mantendo
+  o original (verificado ao vivo: PATCH trocando `price_table_id` devolveu 200 com o priceTableId original).
+  O usuario altera a referencia, ve sucesso, e nada muda (edicao silenciosamente descartada).
+- impacto: honestidade de UX (intencao do usuario descartada sem feedback); sem corrupcao de dado (a lista
+  re-busca e mostra o estado real). Sem impacto de seguranca/isolamento.
+- correcao sugerida: `disabled={isEdit}` + hint ("referencia nao pode ser alterada; crie outra tarifa")
+  nos tres selects em modo edicao — ou 400 no backend para tentativa de alteracao de referencia.
+- status: aberto. Nao bloqueia Ω2-a.2 (veredito APROVADO).
+
+## P-030 - Ω2-a.2: residuais BAIXA do gate (comentario 422 enganoso; mapeamento P2003 especifico nao dispara; A6 fora deste arquivo) (2026-07-12)
+
+- descricao: (a) `frontend/src/modules/registry/tariffs/tariffs.types.ts:74` comenta que `status` tem
+  "transicao validada no backend → 422" — Tarifa NAO tem maquina de estado (status e texto livre max 40;
+  o proprio types.ts diz isso no topo). (b) o mapeamento P2003→`invalid_price_table_reference`/`invalid_
+  service_catalog_reference`/`invalid_customer_reference` em `tariff-prisma.repository.ts` nao dispara no
+  ambiente vivo (Prisma 7 nao expoe o nome da constraint no meta da forma esperada); cai no generico
+  `invalid_reference` (400 com mensagem clara — o proprio oraculo declara `invalid_reference` no teste
+  live, sem divergencia declarada x real; os ramos especificos sao codigo morto hoje). (c) a pendencia A6
+  (busca server-side nos selects para tenants >100 registros) esta registrada em D-OMEGA2A-tabela-valores-
+  tarifas.md, mas nao espelhada aqui — fica espelhada por esta entrada.
+- impacto: cosmetico/manutencao; nenhum efeito funcional.
+- status: aberto (limpar comentario e ramos mortos num chore; A6 vira bloco de UX quando houver tenant >100).
+
+## P-031 - Higiene: diretorios untracked .claude/skills/* fora do escopo das PRs (2026-07-12)
+
+- descricao: working tree contem `.claude/skills/{blockchain-developer,cloud-architect,cloud-devops,
+  payment-integration,skill-creator}` untracked, alheios ao diff de Ω2-a.2 (pre-existentes ao gate).
+- impacto: risco de entrarem por acidente num commit futuro (`git add -A`).
+- status: aberto (decidir: versionar deliberadamente em bloco proprio ou adicionar ao .gitignore).

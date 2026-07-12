@@ -112,6 +112,9 @@ const permissionDescriptions = {
   "price_tables:read": "Consultar Tabelas de Valores (precos) do tenant.",
   "price_tables:create": "Criar Tabelas de Valores do tenant.",
   "price_tables:update": "Editar, publicar, arquivar e inativar Tabelas de Valores do tenant.",
+  "tariffs:read": "Consultar Tarifas (itens de preco) das Tabelas de Valores do tenant.",
+  "tariffs:create": "Criar Tarifas nas Tabelas de Valores do tenant.",
+  "tariffs:update": "Editar e inativar Tarifas das Tabelas de Valores do tenant.",
 } satisfies Record<Permission, string>;
 
 async function main(): Promise<void> {
