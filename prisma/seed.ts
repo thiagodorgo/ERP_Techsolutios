@@ -121,6 +121,9 @@ const permissionDescriptions = {
   "suppliers:read": "Consultar Fornecedores do tenant.",
   "suppliers:create": "Criar Fornecedores do tenant.",
   "suppliers:update": "Editar e inativar Fornecedores do tenant.",
+  "operator_profiles:read": "Consultar Profissionais (perfis dos operadores de campo) do tenant.",
+  "operator_profiles:create": "Criar Profissionais (perfil profissional de operador de campo) do tenant.",
+  "operator_profiles:update": "Editar, gerir consentimento e inativar Profissionais do tenant.",
 } satisfies Record<Permission, string>;
 
 async function main(): Promise<void> {
