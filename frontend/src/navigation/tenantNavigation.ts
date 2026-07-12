@@ -163,6 +163,32 @@ export const tenantNavigation: NavigationItem[] = [
     icon: "Tags",
     status: "implemented",
   },
+  {
+    // Ω2-b — Filiais. Gate por permissão real (branches:read); sem requiredModules
+    // (mesmo padrão dos demais Cadastros irmãos).
+    id: "tenant-registry-branches",
+    label: "Filiais",
+    path: "/cadastros/filiais",
+    scope: "registry",
+    mode: "operation",
+    requiredPermissions: ["branches:read"],
+    allowedRoles: REGISTRY_READ_ROLES,
+    icon: "Building2",
+    status: "implemented",
+  },
+  {
+    // Ω2-b — Fornecedores. Gate por permissão real (suppliers:read); sem requiredModules
+    // (mesmo padrão dos demais Cadastros irmãos).
+    id: "tenant-registry-suppliers",
+    label: "Fornecedores",
+    path: "/cadastros/fornecedores",
+    scope: "registry",
+    mode: "operation",
+    requiredPermissions: ["suppliers:read"],
+    allowedRoles: REGISTRY_READ_ROLES,
+    icon: "Factory",
+    status: "implemented",
+  },
   // ── FROTA (F1–F5) — vocabulário do backend (catalog.ts). Gate por permissão real
   // (sem allowedRoles): a UserRole do front não representa todos os 9 papéis (ex.:
   // `inventory`), então a permissão é a autoridade. Ver navigation-matrix.md. ──

@@ -2,11 +2,13 @@ import {
   AlertTriangle,
   BarChart3,
   Bell,
+  Building2,
   CheckCircle,
   ClipboardList,
   Coins,
   ConciergeBell,
   Contact,
+  Factory,
   Fuel,
   Gavel,
   LayoutDashboard,
@@ -52,6 +54,8 @@ const SEGUROS: NavItem = { label: "Seguros", path: "/fleet/insurance", icon: Shi
 const DANOS: NavItem = { label: "Danos", path: "/fleet/damages", icon: AlertTriangle };
 
 const CLIENTES: NavItem = { label: "Clientes", path: "/cadastros/clientes", icon: Contact };
+const FILIAIS: NavItem = { label: "Filiais", path: "/cadastros/filiais", icon: Building2 };
+const FORNECEDORES: NavItem = { label: "Fornecedores", path: "/cadastros/fornecedores", icon: Factory };
 const EQUIPES: NavItem = { label: "Equipes", path: "/cadastros/equipes", icon: UsersRound };
 const SERVICOS: NavItem = { label: "Serviços", path: "/cadastros/servicos", icon: ConciergeBell };
 const TABELAS_VALORES: NavItem = { label: "Tabela de Valores", path: "/cadastros/tabelas-valores", icon: Coins };
@@ -77,7 +81,7 @@ const G_FROTA_FULL: NavGroup = {
 };
 const G_GESTAO_FULL: NavGroup = {
   label: "GESTÃO",
-  items: [CLIENTES, EQUIPES, SERVICOS, TABELAS_VALORES, TARIFAS, ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO],
+  items: [CLIENTES, FILIAIS, FORNECEDORES, EQUIPES, SERVICOS, TABELAS_VALORES, TARIFAS, ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO],
 };
 const G_ADMIN_FULL: NavGroup = {
   label: "ADMINISTRAÇÃO",
@@ -132,6 +136,8 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/operations/checklists",
   "/approvals",
   "/cadastros/clientes",
+  "/cadastros/filiais",
+  "/cadastros/fornecedores",
   "/cadastros/viaturas",
   "/cadastros/equipes",
   "/cadastros/servicos",
