@@ -109,7 +109,11 @@ export function TariffFormModal({
     setSaving(true);
     try {
       if (isEdit && tariff) {
-        const updated = await updateTariff(context, tariff.id, { ...payload, isActive });
+        // Veto junta Ω2-a.2 (B2): as referências (tabela/serviço/cliente) são IMUTÁVEIS no backend —
+        // enviá-las dava falso sucesso (200 sem efeito). Na edição elas ficam desabilitadas e FORA
+        // do payload; para trocar a referência, crie outra tarifa.
+        const { priceTableId: _pt, serviceCatalogId: _sc, customerId: _cu, ...editable } = payload;
+        const updated = await updateTariff(context, tariff.id, { ...editable, isActive });
         onSaved(updated ?? undefined);
       } else {
         const created = await createTariff(context, payload);
@@ -150,6 +154,7 @@ export function TariffFormModal({
                 aria-invalid={fieldErrors.priceTableId ? true : undefined}
                 aria-describedby={fieldErrors.priceTableId ? `${FIELD_ID.priceTableId}-error` : undefined}
                 onChange={(event) => setPriceTableId(event.target.value)}
+                disabled={isEdit}
               >
                 <option value="">Selecione a tabela…</option>
                 {priceTables.map((option) => (
@@ -158,6 +163,7 @@ export function TariffFormModal({
                   </option>
                 ))}
               </Select>
+              {isEdit ? <small>Fixa após a criação — para trocar, crie outra tarifa.</small> : null}
               {fieldErrors.priceTableId ? (
                 <small className="form-error" id={`${FIELD_ID.priceTableId}-error`}>
                   {fieldErrors.priceTableId}
@@ -172,7 +178,7 @@ export function TariffFormModal({
 
           <label className="ui-field">
             <span>Serviço</span>
-            <Select id={FIELD_ID.serviceCatalogId} value={serviceCatalogId} onChange={(event) => setServiceCatalogId(event.target.value)}>
+            <Select id={FIELD_ID.serviceCatalogId} value={serviceCatalogId} onChange={(event) => setServiceCatalogId(event.target.value)} disabled={isEdit}>
               <option value="">Todos os serviços</option>
               {services.map((option) => (
                 <option key={option.id} value={option.id}>
@@ -180,12 +186,12 @@ export function TariffFormModal({
                 </option>
               ))}
             </Select>
-            <small>Opcional. Vazio = vale para qualquer serviço.</small>
+            <small>{isEdit ? "Fixo após a criação — para trocar, crie outra tarifa." : "Opcional. Vazio = vale para qualquer serviço."}</small>
           </label>
 
           <label className="ui-field">
             <span>Cliente</span>
-            <Select id={FIELD_ID.customerId} value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
+            <Select id={FIELD_ID.customerId} value={customerId} onChange={(event) => setCustomerId(event.target.value)} disabled={isEdit}>
               <option value="">Todos os clientes</option>
               {customers.map((option) => (
                 <option key={option.id} value={option.id}>
@@ -193,7 +199,7 @@ export function TariffFormModal({
                 </option>
               ))}
             </Select>
-            <small>Opcional. Vazio = vale para qualquer cliente.</small>
+            <small>{isEdit ? "Fixo após a criação — para trocar, crie outra tarifa." : "Opcional. Vazio = vale para qualquer cliente."}</small>
           </label>
 
           <Field

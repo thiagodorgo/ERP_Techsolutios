@@ -71,7 +71,9 @@ export type TariffCreatePayload = {
   readonly isActive?: boolean;
 };
 
-// Atualização aceita transição de `status` opaco (validada no backend → 422 se inválida).
+// `status` da Tarifa é texto livre (máx. 40) — diferente da Tabela de Valores, NÃO há máquina de
+// estado aqui. Referências (tabela/serviço/cliente) são imutáveis no update (o backend as ignora;
+// na edição os selects ficam desabilitados e fora do payload — veto B2 da junta Ω2-a.2).
 export type TariffUpdatePayload = Partial<TariffCreatePayload> & {
   readonly status?: string;
 };

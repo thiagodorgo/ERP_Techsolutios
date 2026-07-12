@@ -108,3 +108,59 @@ test("tarifas esconde 'Nova tarifa' sem permissao de criacao", async () => {
   assert.match(html, /Nenhuma tarifa cadastrada/);
   assert.doesNotMatch(html, /Nova tarifa/);
 });
+
+// Veto junta Ω2-a.2 (B2) — na EDIÇÃO as referências (tabela/serviço/cliente) são imutáveis no
+// backend; os selects ficam desabilitados com dica, para nunca dar falso sucesso.
+test("modal de edicao desabilita os selects de referencia (imutaveis)", async () => {
+  const { TariffFormModal } = await import("../src/modules/registry/tariffs/components/TariffFormModal");
+  const tariff = {
+    id: "t1",
+    name: "Guincho leve",
+    priceTableId: "pt1",
+    serviceCatalogId: "sc1",
+    customerId: null,
+    unitPrice: 150.5,
+    currency: "BRL",
+    origin: "tabela base",
+    rule: null,
+    validFrom: null,
+    validTo: null,
+    status: "active",
+    isActive: true,
+    createdAt: "2026-07-01T00:00:00.000Z",
+  };
+  const html = renderToString(
+    <TariffFormModal
+      tariff={tariff}
+      context={{}}
+      priceTables={[{ id: "pt1", label: "Tabela Padrão" }]}
+      services={[{ id: "sc1", label: "Guincho" }]}
+      customers={[]}
+      onClose={() => undefined}
+      onSaved={() => undefined}
+    />,
+  );
+  assert.match(html, /Editar tarifa/);
+  // Os 3 selects de referência saem desabilitados no HTML.
+  const disabledSelects = (html.match(/<select[^>]*disabled[^>]*>/g) ?? []).length;
+  assert.equal(disabledSelects, 3);
+  assert.match(html, /Fixa após a criação|Fixo após a criação/);
+});
+
+test("modal de criacao mantem os selects de referencia habilitados", async () => {
+  const { TariffFormModal } = await import("../src/modules/registry/tariffs/components/TariffFormModal");
+  const html = renderToString(
+    <TariffFormModal
+      tariff={null}
+      context={{}}
+      priceTables={[{ id: "pt1", label: "Tabela Padrão" }]}
+      services={[]}
+      customers={[]}
+      onClose={() => undefined}
+      onSaved={() => undefined}
+    />,
+  );
+  assert.match(html, /Nova tarifa/);
+  const disabledSelects = (html.match(/<select[^>]*disabled[^>]*>/g) ?? []).length;
+  assert.equal(disabledSelects, 0);
+});
