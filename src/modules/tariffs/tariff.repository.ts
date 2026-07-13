@@ -14,6 +14,15 @@ export interface TariffRepository {
   list(input: ListTariffInput): Promise<ListTariffResult>;
   findById(tenantId: string, tariffId: string): Promise<Tariff | undefined>;
   update(input: UpdateTariffInput): Promise<Tariff | undefined>;
+  // Ω3-a — resolve a Tarifa aplicável para congelar num orçamento. Recebe o conjunto de tabelas
+  // PUBLICADAS (resolvido pelo consumidor) para não acoplar este repo ao de PriceTable. Método
+  // aditivo e inerte sem consumidor. Retorna a MELHOR tarifa por ordem determinística (A2 do crítico).
+  findApplicable(
+    tenantId: string,
+    serviceCatalogId: string,
+    customerId: string | undefined,
+    publishedPriceTableIds: ReadonlySet<string>,
+  ): Promise<Tariff | undefined>;
   reset?(): void;
 }
 
@@ -58,6 +67,19 @@ export class InMemoryTariffRepository implements TariffRepository {
     return tariff?.tenantId === tenantId ? tariff : undefined;
   }
 
+  async findApplicable(
+    tenantId: string,
+    serviceCatalogId: string,
+    customerId: string | undefined,
+    publishedPriceTableIds: ReadonlySet<string>,
+  ): Promise<Tariff | undefined> {
+    const now = new Date();
+    const candidates = [...this.tariffs.values()].filter((tariff) =>
+      isApplicableCandidate(tariff, tenantId, serviceCatalogId, customerId, publishedPriceTableIds, now),
+    );
+    return pickApplicableTariff(candidates, customerId);
+  }
+
   async update(input: UpdateTariffInput): Promise<Tariff | undefined> {
     const current = await this.findById(input.tenantId, input.tariffId);
     if (!current) return undefined;
@@ -100,6 +122,52 @@ function matchesSearch(tariff: Tariff, search: string | undefined): boolean {
   if (!search) return true;
   const normalized = search.toLowerCase();
   return [tariff.name, tariff.origin].filter(Boolean).some((value) => String(value).toLowerCase().includes(normalized));
+}
+
+// Ω3-a — candidato aplicável: ativo, tabela publicada, serviço exato, cliente-específico OU padrão
+// (customer NULL), e vigência cobrindo hoje (bordas ausentes = aberto). Compartilhado InMemory×Prisma.
+export function isApplicableCandidate(
+  tariff: Tariff,
+  tenantId: string,
+  serviceCatalogId: string,
+  customerId: string | undefined,
+  publishedPriceTableIds: ReadonlySet<string>,
+  now: Date,
+): boolean {
+  if (tariff.tenantId !== tenantId) return false;
+  if (!tariff.isActive) return false;
+  if (!publishedPriceTableIds.has(tariff.priceTableId)) return false;
+  if (tariff.serviceCatalogId !== serviceCatalogId) return false;
+  if (tariff.customerId !== undefined && tariff.customerId !== customerId) return false;
+  if (tariff.validFrom && tariff.validFrom.getTime() > now.getTime()) return false;
+  if (tariff.validTo && tariff.validTo.getTime() < now.getTime()) return false;
+  return true;
+}
+
+// A2 (crítico) — ordem TOTAL determinística entre tarifas concorrentes, para o congelamento ser
+// reproduzível (não depender da ordem de linhas do banco):
+//   1) cliente-específico vence tarifa padrão (customer NULL);
+//   2) maior valid_from (mais recente/vigente); ausência de valid_from = mais antigo;
+//   3) mais recente created_at;
+//   4) id ascendente (desempate final estável).
+// Compartilhado InMemory×Prisma para paridade exata.
+export function pickApplicableTariff(candidates: readonly Tariff[], customerId: string | undefined): Tariff | undefined {
+  if (candidates.length === 0) return undefined;
+  return [...candidates].sort((left, right) => {
+    const leftSpecific = left.customerId === customerId && customerId !== undefined ? 0 : 1;
+    const rightSpecific = right.customerId === customerId && customerId !== undefined ? 0 : 1;
+    if (leftSpecific !== rightSpecific) return leftSpecific - rightSpecific;
+
+    const leftFrom = left.validFrom ? left.validFrom.getTime() : Number.NEGATIVE_INFINITY;
+    const rightFrom = right.validFrom ? right.validFrom.getTime() : Number.NEGATIVE_INFINITY;
+    if (leftFrom !== rightFrom) return rightFrom - leftFrom;
+
+    const leftCreated = left.createdAt.getTime();
+    const rightCreated = right.createdAt.getTime();
+    if (leftCreated !== rightCreated) return rightCreated - leftCreated;
+
+    return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+  })[0];
 }
 
 function definedFields<T extends Record<string, unknown>>(input: T): Partial<T> {

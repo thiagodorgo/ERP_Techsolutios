@@ -10,6 +10,7 @@ import type {
 } from "./tariff.types.js";
 import { TariffError } from "./tariff.types.js";
 import type { TariffRepository } from "./tariff.repository.js";
+import { pickApplicableTariff } from "./tariff.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -57,6 +58,32 @@ export class PrismaTariffRepository implements TariffRepository {
     return tariff ? mapTariffRecord(tariff) : undefined;
   }
 
+  async findApplicable(
+    tenantId: string,
+    serviceCatalogId: string,
+    customerId: string | undefined,
+    publishedPriceTableIds: ReadonlySet<string>,
+  ): Promise<Tariff | undefined> {
+    if (publishedPriceTableIds.size === 0) return undefined;
+    const now = new Date();
+    // Busca o conjunto de candidatos e aplica o MESMO desempate em JS (pickApplicableTariff), para
+    // paridade exata com o InMemory — a ordem determinística não pode depender do banco (A2).
+    const rows = await this.client.tariff.findMany({
+      where: {
+        tenant_id: tenantId,
+        is_active: true,
+        service_catalog_id: serviceCatalogId,
+        price_table_id: { in: [...publishedPriceTableIds] },
+        OR: [{ customer_id: customerId ?? null }, { customer_id: null }],
+        AND: [
+          { OR: [{ valid_from: null }, { valid_from: { lte: now } }] },
+          { OR: [{ valid_to: null }, { valid_to: { gte: now } }] },
+        ],
+      },
+    });
+    return pickApplicableTariff(rows.map(mapTariffRecord), customerId);
+  }
+
   async update(input: UpdateTariffInput): Promise<Tariff | undefined> {
     try {
       const updated = await this.client.tariff.updateManyAndReturn({
@@ -94,6 +121,17 @@ export class RlsPrismaTariffRepository implements TariffRepository {
 
   findById(tenantId: string, tariffId: string): Promise<Tariff | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaTariffRepository(tx).findById(tenantId, tariffId));
+  }
+
+  findApplicable(
+    tenantId: string,
+    serviceCatalogId: string,
+    customerId: string | undefined,
+    publishedPriceTableIds: ReadonlySet<string>,
+  ): Promise<Tariff | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaTariffRepository(tx).findApplicable(tenantId, serviceCatalogId, customerId, publishedPriceTableIds),
+    );
   }
 
   update(input: UpdateTariffInput): Promise<Tariff | undefined> {

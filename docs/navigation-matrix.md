@@ -28,6 +28,7 @@
 | Mapa Operacional `/operations/map` (F6, Ω-ACESSO) | `field_location:read` + módulo `field_operations` | F | F | F | E | — | — | M | R | — |
 | Aprovações `/approvals` | `work_orders:read` | F | F | F | request | approval | — | — | R | — |
 | Checklists `/operations/checklists` | `checklist_runs:read` | F | F | F | E | — | — | M | R | — |
+| Orçamentos `/operations/quotes` (Ω3-a) | `service_quotes:read` | F | F | E | E | E | — | R | R | — |
 | Clientes `/cadastros/clientes` | `customers:read` | F | F | E | R | — | — | R | R | — |
 | Viaturas `/cadastros/viaturas` | `vehicles:read` | F | F | E | R | — | — | R | R | — |
 | Equipes `/cadastros/equipes` | `teams:read` | F | F | E | R | — | — | R | R | — |
