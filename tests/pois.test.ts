@@ -160,3 +160,24 @@ test("update para sentinela (0,0) → 400 invalid_coordinate", async () => {
     (e: unknown) => e instanceof PoiError && e.statusCode === 400 && e.reason === "invalid_coordinate",
   );
 });
+
+// Veto junta Ω2-d: o LIST DTO precisa emitir `address` — a coluna "Endereço" e a busca por endereço da
+// tela consomem esse campo (sem ele a coluna ficava morta mesmo com endereço gravado).
+test("list DTO emite address (coluna Endereço da lista)", async () => {
+  const { toPoiListDto } = await import("../src/modules/pois/poi.dto.js");
+  const svc = service();
+  const ctx = actor();
+  await svc.create(ctx, { name: "Base Paulista", latitude: -23.561, longitude: -46.656, address: "Av. Paulista, 1000" });
+  const dto = toPoiListDto(await svc.list(ctx, {}));
+  assert.equal(dto.items.length, 1);
+  assert.equal((dto.items[0] as Record<string, unknown>).address, "Av. Paulista, 1000");
+});
+
+test("list DTO: address null quando não informado", async () => {
+  const { toPoiListDto } = await import("../src/modules/pois/poi.dto.js");
+  const svc = service();
+  const ctx = actor();
+  await svc.create(ctx, { name: "Sem Endereço", latitude: -23.5, longitude: -46.6 });
+  const dto = toPoiListDto(await svc.list(ctx, {}));
+  assert.equal((dto.items[0] as Record<string, unknown>).address, null);
+});

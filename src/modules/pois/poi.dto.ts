@@ -24,6 +24,9 @@ export function toPoiListDto(result: ListPoiResult) {
       category: poi.category ?? null,
       latitude: poi.latitude,
       longitude: poi.longitude,
+      // Veto junta Ω2-d (lição B1): a coluna "Endereço" e a busca por endereço da tela consomem este campo —
+      // sem ele a coluna ficava morta ("—") mesmo com endereço gravado.
+      address: poi.address ?? null,
       isActive: poi.isActive,
       createdAt: poi.createdAt.toISOString(),
     })),
