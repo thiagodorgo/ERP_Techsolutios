@@ -62,6 +62,8 @@ export type WorkOrder = {
   readonly assignedOperatorId?: string;
   readonly assignedUserId?: string;
   readonly checklistId?: string;
+  // Ω3-c — snapshot imutável do template de checklist, congelado no despacho. null antes do despacho.
+  readonly checklistSnapshot?: Record<string, unknown> | null;
   readonly customerId?: string;
   readonly vehicleId?: string;
   readonly teamId?: string;
@@ -209,6 +211,14 @@ export type UpdateWorkOrderGeocodeInput = {
   readonly longitude: number;
   readonly source: string;
   readonly geocodedAt: Date;
+  readonly actorUserId?: string;
+};
+
+// Ω3-c — congela (ou limpa) o snapshot de checklist na OS. tenant-scoped (OS de outro tenant → undefined).
+export type FreezeChecklistSnapshotInput = {
+  readonly tenantId: string;
+  readonly workOrderId: string;
+  readonly checklistSnapshot: Record<string, unknown> | null;
   readonly actorUserId?: string;
 };
 

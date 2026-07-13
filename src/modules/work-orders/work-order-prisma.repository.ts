@@ -1,4 +1,5 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
 import type {
@@ -8,6 +9,7 @@ import type {
   ListWorkOrdersInput,
   ListWorkOrdersResult,
   UpdateWorkOrderGeocodeInput,
+  FreezeChecklistSnapshotInput,
   UpdateWorkOrderInput,
   WorkOrder,
   WorkOrderAssignment,
@@ -166,6 +168,19 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
     return updated[0] ? mapWorkOrderRecord(updated[0]) : undefined;
   }
 
+  // Ω3-c — grava (sobrescreve) o snapshot JSON na OS. where tenant_id+id; RETURNING vazio → undefined.
+  async freezeChecklistSnapshot(input: FreezeChecklistSnapshotInput): Promise<WorkOrder | undefined> {
+    const updated = await this.client.workOrder.updateManyAndReturn({
+      where: { tenant_id: input.tenantId, id: input.workOrderId },
+      data: {
+        checklist_snapshot: input.checklistSnapshot === null ? Prisma.DbNull : (input.checklistSnapshot as Prisma.InputJsonValue),
+        updated_by: input.actorUserId ?? null,
+      },
+    });
+
+    return updated[0] ? mapWorkOrderRecord(updated[0]) : undefined;
+  }
+
   async changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
     const now = new Date();
     const updated = await this.client.workOrder.updateManyAndReturn({
@@ -284,6 +299,10 @@ export class RlsPrismaWorkOrderRepository implements WorkOrderRepository {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx).updateGeocode(input));
   }
 
+  freezeChecklistSnapshot(input: FreezeChecklistSnapshotInput): Promise<WorkOrder | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx).freezeChecklistSnapshot(input));
+  }
+
   changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx).changeStatus(input));
   }
@@ -361,6 +380,7 @@ function mapWorkOrderRecord(record: {
   readonly assigned_operator_id: string | null;
   readonly assigned_user_id: string | null;
   readonly checklist_id: string | null;
+  readonly checklist_snapshot: Prisma.JsonValue | null;
   readonly customer_id: string | null;
   readonly vehicle_id: string | null;
   readonly team_id: string | null;
@@ -398,6 +418,7 @@ function mapWorkOrderRecord(record: {
     assignedOperatorId: record.assigned_operator_id ?? undefined,
     assignedUserId: record.assigned_user_id ?? undefined,
     checklistId: record.checklist_id ?? undefined,
+    checklistSnapshot: (record.checklist_snapshot as Record<string, unknown> | null) ?? null,
     customerId: record.customer_id ?? undefined,
     vehicleId: record.vehicle_id ?? undefined,
     teamId: record.team_id ?? undefined,

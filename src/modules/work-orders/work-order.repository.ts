@@ -7,6 +7,7 @@ import type {
   ListWorkOrdersInput,
   ListWorkOrdersResult,
   UpdateWorkOrderGeocodeInput,
+  FreezeChecklistSnapshotInput,
   UpdateWorkOrderInput,
   WorkOrder,
   WorkOrderAssignment,
@@ -22,6 +23,7 @@ export interface WorkOrderRepository {
   findById(tenantId: string, workOrderId: string): Promise<WorkOrder | undefined>;
   update(input: UpdateWorkOrderInput): Promise<WorkOrder | undefined>;
   updateGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined>;
+  freezeChecklistSnapshot(input: FreezeChecklistSnapshotInput): Promise<WorkOrder | undefined>;
   changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined>;
   assign(input: AssignWorkOrderInput): Promise<{ readonly workOrder: WorkOrder; readonly assignment: WorkOrderAssignment } | undefined>;
   createEvent(input: CreateWorkOrderEventInput): Promise<WorkOrderEvent>;
@@ -121,6 +123,22 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
       serviceLongitude: input.longitude,
       serviceGeocodedAt: input.geocodedAt,
       serviceGeocodeSource: input.source,
+      updatedBy: input.actorUserId ?? current.updatedBy,
+      updatedAt: new Date(),
+    };
+    this.workOrders.set(updated.id, updated);
+
+    return updated;
+  }
+
+  // Ω3-c — congela (idempotente/sobrescreve) o snapshot na OS. tenant-scoped (undefined → 404 no serviço).
+  async freezeChecklistSnapshot(input: FreezeChecklistSnapshotInput): Promise<WorkOrder | undefined> {
+    const current = await this.findById(input.tenantId, input.workOrderId);
+    if (!current) return undefined;
+
+    const updated: WorkOrder = {
+      ...current,
+      checklistSnapshot: input.checklistSnapshot,
       updatedBy: input.actorUserId ?? current.updatedBy,
       updatedAt: new Date(),
     };

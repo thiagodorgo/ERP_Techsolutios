@@ -54,8 +54,14 @@ Formato após conclusão: `[x] <fase> — PR #NN, merge <hash>, junta X/X, vered
       `GET /operations/dispatches/:id/timeline`; comentário = evento imutável `work_order_comment` (Opção A,
       SEM migration) + `POST /work-orders/:id/comments` (perm nova) + auditoria allowlist provada ao vivo
       (marker 0× em audit_logs). Achado validador P-034 (corpo no feed do dashboard → support) CORRIGIDO no
-      ciclo 2. 25 novos + regressão intacta. J-OMEGA3B. **PR #NN, merge <hash> — pendente push/merge.**
-- [ ] Ω3-c Checklist snapshot na OS (congela no despacho; decisão checklist-unificado)
+      ciclo 2. 25 novos + regressão intacta. J-OMEGA3B. **PR #171, merge af811e7, junta 5/5, 2026-07-13.**
+- [x] **Ω3-c Checklist snapshot na OS (freeze + entrega aditiva)** — junta 5/5 (critico/master-teste/
+      validador/inspetor/coordenador; cognicao N/A). Recorte do crítico (Req A–E): congela o template no
+      DESPACHO (FieldDispatch.create via PORT injetado, sem ciclo) + `checklistSnapshot` aditivo no
+      toWorkOrderDto (chega ao GET /:id E ao server_state do sync); migration JSONB aditiva up/down/re-up.
+      NÃO toca /available nem createRun (evita skew v1×v2 — consumo = Ω3-c.1 declarado). §2.8/imutabilidade
+      DB-provados ao vivo. 14 novos. J-OMEGA3C. **PR #NN, merge <hash> — pendente push/merge.**
+- [ ] Ω3-c.1 (declarado) CONSUMO atômico: /available OS-scoped + createRun do snapshot + Flutter rewire
 - [ ] Ω3-d Anexos de OS (reuso evidence/checklist storage)
 - [ ] Ω3-e Ações de OS (duplicar — NÃO copia quotes congelados/F1 · cancelar · imprimir · logs) + quotes[] no detalhe
 - [ ] Ω3-f km estimado×real (ingestão via sync mobile GPS)

@@ -29,6 +29,10 @@ export function toWorkOrderDto(workOrder: WorkOrder, links?: WorkOrderLinks) {
     assignedOperatorId: workOrder.assignedOperatorId,
     assignedUserId: workOrder.assignedUserId,
     checklistId: workOrder.checklistId,
+    // Ω3-c — snapshot imutável do checklist congelado no despacho; null antes do despacho. Aditivo:
+    // chega ao GET /work-orders/:id E ao server_state do sync mobile (mobile-work-order-sync). Fora do
+    // list DTO (payload enxuto). O consumo (createRun a partir do snapshot) é Ω3-c.1.
+    checklistSnapshot: workOrder.checklistSnapshot ?? null,
     customerId: workOrder.customerId ?? null,
     vehicleId: workOrder.vehicleId ?? null,
     teamId: workOrder.teamId ?? null,
