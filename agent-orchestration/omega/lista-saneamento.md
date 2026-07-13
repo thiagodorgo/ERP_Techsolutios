@@ -19,9 +19,12 @@ handoff humano — ratificada em J-SAN-0).
       política antiga; corrigido; re-aprovado). D-KPI-PER-PR + D-SAN-AUTONOMIA. Reescrita normativa em
       CLAUDE.md (§C1/§C2/§C3/§C4/§C7 nova/§8/§9/§10 DoD)/READMEs KPI/plano-mestre; backend_tests 15/15→766/766;
       nota Ω4 ×1,5. P-SAN-KPI-BACKFILL. **PR #NN, merge <hash> — pendente push/merge.**
-- [ ] **PR 3 — Ω-DOCS** (descontaminação Kryos; D-DOCS-KRYOS).
-- [ ] **PR 4 — Ω-INFRA-1** (Dockerfile multi-stage + `/health` real + docker-compose.prod + PD-INFRA-1 escolha
-      de provedor [junta 5] + publish GHCR [usa GITHUB_TOKEN, sem conta externa] + docs/deployment). **100% autônomo.**
+- [x] **PR 3 — Ω-DOCS** (descontaminação Kryos; D-DOCS-KRYOS) — **PR #176, merge `d0126d5`**, junta J-SAN-3 3/3.
+- [x] **PR 4 — Ω-INFRA-1** (containerização + healthcheck + provedor) — junta **J-SAN-4 UNÂNIME 5/5**.
+      Dockerfile multi-stage (não-root) + frontend nginx + /health(liveness)+/health/ready(profundo) +
+      compose.prod validado ponta a ponta + GHCR via GITHUB_TOKEN + PD-INFRA-1. **D-INFRA-PROVIDER: Fly.io/gru
+      1º · AWS 2º** com R1 (ratificar "dados no BR" no hand-off; senão Render) e R2 (drill de restore + RPO
+      escrito = gate de go-live). backend 766→768. **PR #NN, merge <hash> — pendente push/merge.**
 
 > ### ⛔ CHECKPOINT PAUSA-HANDOFF-CREDENCIAIS (entre PR4 e PR5 — ratificado J-SAN-0/J-SAN-1 critico)
 > Fronteira externa IRREDUTÍVEL. A partir do PR5, a ATIVAÇÃO VIVA exige o que a D-SAN-AUTONOMIA não fabrica:
