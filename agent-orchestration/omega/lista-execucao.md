@@ -60,9 +60,15 @@ Formato após conclusão: `[x] <fase> — PR #NN, merge <hash>, junta X/X, vered
       DESPACHO (FieldDispatch.create via PORT injetado, sem ciclo) + `checklistSnapshot` aditivo no
       toWorkOrderDto (chega ao GET /:id E ao server_state do sync); migration JSONB aditiva up/down/re-up.
       NÃO toca /available nem createRun (evita skew v1×v2 — consumo = Ω3-c.1 declarado). §2.8/imutabilidade
-      DB-provados ao vivo. 14 novos. J-OMEGA3C. **PR #NN, merge <hash> — pendente push/merge.**
+      DB-provados ao vivo. 14 novos. J-OMEGA3C. **PR #172, merge cbd158d, junta 5/5, 2026-07-13.**
 - [ ] Ω3-c.1 (declarado) CONSUMO atômico: /available OS-scoped + createRun do snapshot + Flutter rewire
-- [ ] Ω3-d Anexos de OS (reuso evidence/checklist storage)
+- [x] **Ω3-d Anexos de OS (reuso evidence/checklist storage)** — junta 5/5 (critico R0–R6/validador/master-teste/
+      inspetor/coordenador; cognicao N/A). Novo módulo work-order-attachment (espelho Danos + scan antes de store
+      + idempotência tenant-scoped + delete lógico); REUSA checklist storage provider (sem storage/env/presigned
+      novo). §2.8 (DTO+audit sem storage_key/checksum/tenant_id, provado em audit_logs), scan infected→422/
+      failed→503 sem persistir, download gate, cross-tenant 404 (2 orgs vivas). Migration 20260801000000 aditiva
+      up/down/re-up (partial idem index + CHECK + RLS). 23 novos. J-OMEGA3D. Achado transversal P-INFRA-RLS
+      (RLS bypassada em runtime dev, pré-existente → saneamento). **PR #NN, merge <hash> — pendente push/merge.**
 - [ ] Ω3-e Ações de OS (duplicar — NÃO copia quotes congelados/F1 · cancelar · imprimir · logs) + quotes[] no detalhe
 - [ ] Ω3-f km estimado×real (ingestão via sync mobile GPS)
 
