@@ -434,3 +434,31 @@
   MPG entrega, escalar para AWS (RDS PITR ~5min) — o fallback existe para isso.
 - Config-as-code do PR 5+ (fly.toml, CD, smoke) será escrita para o Fly.io; a reversibilidade (OCI) mantém a
   troca barata.
+
+## D-JUNTA-MAPAS — criação da Junta de Mapas (3 agentes) (2026-07-13) [autor humano: Thiago]
+- Contexto: substitui a ideia inicial de um **agente único** de Google Maps por uma **junta de 3 papéis**,
+  no molde da casa (`.claude/agents/*.md`, frontmatter + corpo denso PT-BR), acionada em TODA tarefa que
+  toque mapa/geo — web ou Flutter.
+- Decisão: criar `planejador-mapas` → `dev-mapas` → `avaliador-mapas`. **Fluxo fixo:** gatilho (qualquer
+  tarefa de mapa/geo) → **planejador-mapas** (plano + dossiê geo) → **dev-mapas** (implementa o plano
+  aprovado) → **avaliador-mapas** (aprova ou VETA). Cada agente encerra declarando o próximo; o fio
+  principal da sessão conduz a sequência. Registro por tema em `agent-orchestration/omega/juntas/J-MAPAS-<n>-<tema>.md`.
+- **Regra de ouro (arquitetura):** **MapLibre GL + OpenFreeMap permanecem** como base de exibição web (custo
+  zero, decisão de junta Ω1 — ver `agent-orchestration/omega/juntas/J-002-provedor-de-mapa.md`). Google Maps Platform entra **onde agrega**
+  (geocoding de produção, Places Autocomplete, Routes/ETA/matriz, mapa mobile). **Ativar SKU pago do Google
+  OU trocar provedor geo = serviço externo:** exige **PD-xxx (≥3 fontes)** + **junta de 5 unânime** antes de
+  configurar billing. A Junta de Mapas prepara o dossiê técnico/custo; **não** ativa nada por conta própria
+  (coerente com D-SAN-AUTONOMIA §1 e a lista de decisões críticas).
+- **Relação com o `planejador-mestre`:** o plano do `planejador-mapas` usa o **MESMO template** do
+  planejador-mestre (objetivo; ator; fluxo; contrato 404/422/409; modelagem aditiva tenant-scoped; arquivos
+  com regra do espelho; baseline N + meta ≥2N; riscos+rollback), ACRESCIDO do dossiê geo (API/provedor +
+  alternativa aberta; custo por SKU no piloto com fonte datada; ToS de cache place_id vs lat/lng; chave por
+  plataforma; LGPD). Assim satisfaz a regra permanente "sem plano = veto automático".
+- **Protocolo de dificuldade:** veto do avaliador abre `R-MAPAS-<n>` e segue o protocolo da casa (D-SAN-AUTONOMIA
+  §4): ciclos 1–2 = `agente-fabrica` cria especialista de apoio ANTES de qualquer parada; ciclo 3 reabre a
+  premissa com pesquisa ≥5 fontes.
+- **Conhecimento volátil** (preços, cotas, ToS, versões) vive em `docs/maps/kb-mapas.md`, datado e mantido
+  pela junta — fora do corpo (enxuto) dos agentes.
+- **Escopo desta rodada (1 PR):** cria a junta + KB + registro; **nenhuma chave, billing ou SKU ativado**.
+  Aprovação: junta J-JUNTA-MAPAS (agente-fabrica, planejador-mestre, critico-adversarial, inspetor-de-rotas —
+  maioria). KPIs atualizados no próprio PR (política KPI-por-PR, D-KPI-PER-PR).

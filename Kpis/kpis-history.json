@@ -216,5 +216,24 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-13",
+    "version": "JUNTA-MAPAS",
+    "flutter_tests": "764/764",
+    "backend_tests": "768/768",
+    "frontend_smoke_tests": "44/44",
+    "mobile_backend_contracts": "18/18",
+    "mobile_core_saas_contracts": "21/21",
+    "backend_contract_tests_focused": "21/21",
+    "flutter_modules": "17/17",
+    "flutter_mvp_demo": "96%",
+    "flutter_mvp_vendavel": "78%",
+    "blocks_completed": 49,
+    "description": "JUNTA-MAPAS: criada a Junta de Mapas — 3 agentes (.claude/agents/planejador-mapas, dev-mapas, avaliador-mapas) em cadeia planejador->dev->avaliador para toda tarefa de mapa/geo (web ou Flutter) + base viva docs/maps/kb-mapas.md (pesquisa real datada 2026: precos por SKU do Google Maps Platform tabela oficial 2026-07-10 UTC, ToS de cache place_id vs lat/lng 2025-05-01, google_maps_flutter 2.17.1, flutter_map 8.3.0, OpenFreeMap sem limites) + registro D-JUNTA-MAPAS e ata J-JUNTA-MAPAS (junta 4/4 FAVORAVEL). Regra de ouro: MapLibre+OpenFreeMap permanecem base web (custo zero, Ω1); Google/SKU pago = PD + junta de 5. PR docs/agentes-only: NENHUM codigo/teste de produto tocado (contagem real de testes novos = 0), NENHUMA chave/billing/SKU ativado. Metricas de teste carregam o ultimo valor oficial (Ω-INFRA-1); blocks_completed inalterado (governanca/tooling nao conta como bloco de feature, mesmo criterio de Ω-GOV/Ω-DOCS); mvp_demo/mvp_vendavel inalterados (nenhum escopo de produto movido).",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]
