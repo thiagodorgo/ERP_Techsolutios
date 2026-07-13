@@ -46,6 +46,7 @@ const permissionDescriptions = {
   "audit:read": "Consultar trilhas de auditoria do tenant no padrao RBAC namespace.",
   "dashboard:read": "Consultar dashboard e visao operacional do tenant.",
   "tenant_settings:read": "Consultar configuracoes administrativas do tenant.",
+  "tenant_settings:update": "Criar e atualizar Parametros (configuracoes key-value) do tenant.",
   "work_orders:read": "Consultar ordens de servico.",
   "work_orders:create": "Criar ordens de servico.",
   "work_orders:update": "Atualizar dados editaveis de ordens de servico.",
@@ -247,6 +248,35 @@ async function main(): Promise<void> {
         status: "active",
       },
     });
+
+    // Ω2-e — Parâmetros default do tenant demo (upsert idempotente por [tenant_id, key]).
+    const demoTenantSettings = [
+      { key: "organization.theme", value: "enterprise_blue", category: "appearance" },
+      { key: "organization.currency", value: "BRL", category: "general" },
+      { key: "organization.timezone", value: "America/Sao_Paulo", category: "general" },
+      { key: "organization.business_name", value: "Organização Demonstração", category: "general" },
+    ];
+
+    for (const setting of demoTenantSettings) {
+      await tx.tenantSetting.upsert({
+        where: {
+          tenant_id_key: {
+            tenant_id: tenant.id,
+            key: setting.key,
+          },
+        },
+        update: {
+          value: setting.value,
+          category: setting.category,
+        },
+        create: {
+          tenant_id: tenant.id,
+          key: setting.key,
+          value: setting.value,
+          category: setting.category,
+        },
+      });
+    }
 
     const admin = await tx.user.upsert({
       where: {

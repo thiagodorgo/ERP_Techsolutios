@@ -542,7 +542,7 @@ export function App() {
             <Route
               path="/administrator/settings"
               element={
-                <PermissionGuard permissions={["tenant.manage", "tenant:manage"]}>
+                <PermissionGuard permissions={["tenant_settings:read", "tenant.manage", "tenant:manage"]}>
                   <TenantSettingsPage />
                 </PermissionGuard>
               }

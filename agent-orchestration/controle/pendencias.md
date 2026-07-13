@@ -292,3 +292,12 @@
   payment-integration,skill-creator}` untracked, alheios ao diff de Ω2-a.2 (pre-existentes ao gate).
 - impacto: risco de entrarem por acidente num commit futuro (`git add -A`).
 - status: aberto (decidir: versionar deliberadamente em bloco proprio ou adicionar ao .gitignore).
+
+## P-032 (Ω2-e) — item de menu Configurações ainda gateado por tenant.manage
+- `frontend/src/navigation/tenantNavigation.ts` (item tenant-settings) segue com `tenant.manage`/allowedRoles
+  [Super Admin, Administrador], enquanto App.tsx (guard da rota) e as matrizes já usam `tenant_settings:read`
+  (manager lê). Efeito de RENDER é inerte (sidebar vem de NAV_BY_ROLE; o path não está no /navigation/menu).
+  Alinhar tenantNavigation ao `tenant_settings:read` em bloco futuro (revisar cadastros-nav/sidebar-nav).
+- P-033 (transversal): `prisma/seed.ts` só concede permissões aos STANDARD_ROLES; `auditor` não recebe no
+  banco os `*:read` que o catalog.ts lhe dá (tags/pois/tenant_settings) → GET 403 ao vivo p/ auditor. A
+  matriz promete R. Alinhar o seed de role_permissions ao catálogo (afeta blocos Ω2-b→e).

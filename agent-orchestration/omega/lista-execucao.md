@@ -33,7 +33,10 @@ Formato após conclusão: `[x] <fase> — PR #NN, merge <hash>, junta X/X, vered
 - [x] **Ω2-c Profissionais** (OperatorProfile 1-1 User = operador de CAMPO/guincheiro) — PR #167, merge 788290f,
       junta 5/5 no ciclo 2 (veto LGPD: list DTO expunha o selo via cnhNumber; corrigido p/ hasCnh sem o número —
       R-omega2c-1/J-OMEGA2C), backend 17/17 + front 323/323, auditoria sem CNH, 2026-07-12
-- [ ] **Ω2-d Tags + POI** → **Ω2-e Parâmetros** (matar settings.mock, TenantSetting key-value)
+- [x] **Ω2-d Tags + POI** — PR #168, merge 19d6027, junta aprovada no ciclo 2 (veto: POI list DTO omitia
+      `address` → coluna/busca mortas; corrigido — R-omega2d-1/J-OMEGA2D). Tags 13/13 + pois 18/18 + front 339;
+      TagAssignment declarado pendência. 2026-07-12
+- [ ] **Ω2-e Parâmetros** (matar settings.mock, TenantSetting key-value) — ÚLTIMO cadastro do Ω2
 
 ## Ω3 — Painel Logístico avançado
 - [ ] ServiceQuote (congela preço) · comentários/timeline · anexos (reuso evidence) · duplicar/cancelar/

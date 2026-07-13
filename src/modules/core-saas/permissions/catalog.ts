@@ -20,6 +20,7 @@ export const PERMISSION_CATALOG = [
   "audit:read",
   "dashboard:read",
   "tenant_settings:read",
+  "tenant_settings:update",
   "work_orders:read",
   "work_orders:create",
   "work_orders:update",
@@ -182,6 +183,9 @@ export const ROLE_PERMISSIONS = {
     "users.read",
     "audit.read",
     "audit:read",
+    // Ω2-e (Parâmetros): Configurações é território admin. Manager só LÊ (matriz: Configurações manager R);
+    // o update fica com super_admin/tenant_admin via catálogo integral.
+    "tenant_settings:read",
     "os.manage",
     "os.read",
     "inventory.read",
@@ -534,6 +538,8 @@ export const ROLE_PERMISSIONS = {
     "users.read",
     "audit.read",
     "audit:read",
+    // Ω2-e (Parâmetros): auditor lê as Configurações do tenant (somente leitura).
+    "tenant_settings:read",
     "os.read",
     "inventory.read",
     "finance.read",

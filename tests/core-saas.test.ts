@@ -36,6 +36,7 @@ const expectedPermissionCatalog = [
   "audit:read",
   "dashboard:read",
   "tenant_settings:read",
+  "tenant_settings:update",
   "work_orders:read",
   "work_orders:create",
   "work_orders:update",
