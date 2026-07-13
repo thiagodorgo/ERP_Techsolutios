@@ -47,8 +47,14 @@ Formato após conclusão: `[x] <fase> — PR #NN, merge <hash>, junta X/X, vered
       referências resolvem nome; coordenador V1/V2/V3 governança de menu; achado validador quantity overflow →
       guard 422 — R-omega3a-1/J-OMEGA3A). Módulo espelho de tariffs + `findApplicable` determinístico +
       índice parcial (C1) + migration up/down/re-up. back 43 (29+14) + front 14; conjunto 99/99 + smoke 362.
-      Invariante anti-refaturamento provada ao vivo. **PR #NN, merge <hash> — pendente push/merge.**
-- [ ] Ω3-b Despacho web→campo endurecido + Comentários/Timeline da OS
+      Invariante anti-refaturamento provada ao vivo. **PR #170, merge 42522f9, junta 5/5, 2026-07-13.**
+- [x] **Ω3-b Despacho web→campo endurecido + Comentários/Timeline da OS** — junta 5/5 (validador/inspetor/
+      master-teste/coordenador/critico; cognicao N/A backend-only). Alvo de despacho = técnico de campo
+      (guard único create+reassign → 422; 404 antes do papel; R1 fixtures operator→technician, D-OMEGA3B);
+      `GET /operations/dispatches/:id/timeline`; comentário = evento imutável `work_order_comment` (Opção A,
+      SEM migration) + `POST /work-orders/:id/comments` (perm nova) + auditoria allowlist provada ao vivo
+      (marker 0× em audit_logs). Achado validador P-034 (corpo no feed do dashboard → support) CORRIGIDO no
+      ciclo 2. 25 novos + regressão intacta. J-OMEGA3B. **PR #NN, merge <hash> — pendente push/merge.**
 - [ ] Ω3-c Checklist snapshot na OS (congela no despacho; decisão checklist-unificado)
 - [ ] Ω3-d Anexos de OS (reuso evidence/checklist storage)
 - [ ] Ω3-e Ações de OS (duplicar — NÃO copia quotes congelados/F1 · cancelar · imprimir · logs) + quotes[] no detalhe

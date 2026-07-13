@@ -44,6 +44,7 @@ const expectedPermissionCatalog = [
   "work_orders:status",
   "work_orders:cancel",
   "work_orders:delete",
+  "work_orders:comment",
   "customers:read",
   "customers:create",
   "customers:update",

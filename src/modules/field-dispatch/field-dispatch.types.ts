@@ -24,6 +24,12 @@ export type FieldDispatchStatus = (typeof FIELD_DISPATCH_STATUSES)[number];
 export type FieldDispatchEventType = (typeof FIELD_DISPATCH_EVENTS)[number];
 export type JsonRecord = Record<string, unknown>;
 
+// Ω3-b (R1 do crítico) — o ALVO de um despacho deve ser um técnico DE CAMPO. `field_technician`
+// (LEGACY) e `technician` (STANDARD) são os papéis de campo; `operator` = operador web/despacho
+// (direciona chamados, NÃO recebe despacho — ver decisão em controle/D-OMEGA3B). A checagem incide
+// sobre `FieldDispatch.operatorUserId` (o alvo), nunca sobre o ator-despachante (D3).
+export const FIELD_DISPATCH_TARGET_ROLES = ["field_technician", "technician"] as const satisfies readonly Role[];
+
 export type FieldDispatchActorContext = {
   readonly tenantId: string;
   readonly userId: string;

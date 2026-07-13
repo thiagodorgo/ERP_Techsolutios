@@ -22,6 +22,9 @@ export const WORK_ORDER_EVENTS = [
   "work_order_status_changed",
   "work_order_cancelled",
   "work_order_completed",
+  // Ω3-b — comentário livre do usuário na timeline da OS (evento imutável; sem migration, event_type
+  // é String livre no Postgres). O corpo vai só em `message`; NUNCA em metadados de auditoria (§2.8).
+  "work_order_comment",
 ] as const;
 
 export type WorkOrderStatus = (typeof WORK_ORDER_STATUSES)[number];

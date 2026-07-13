@@ -6,6 +6,7 @@ import { readRouteParam } from "../core-saas/routes/http.js";
 import {
   toFieldDispatchDetailDto,
   toFieldDispatchDto,
+  toFieldDispatchEventDto,
   toFieldDispatchListDto,
 } from "./field-dispatch.dto.js";
 import type { FieldDispatchService } from "./field-dispatch.service.js";
@@ -98,6 +99,17 @@ export class FieldDispatchController {
 
     return {
       data: toFieldDispatchDto(dispatch),
+    };
+  }
+
+  // Ω3-b (R5) — timeline do despacho como rota dedicada (o service.timeline já existia sem rota).
+  // Espelha WorkOrderController.timeline; o DTO não vaza tenant_id (field-dispatch.dto.ts).
+  async timeline(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const events = await service.timeline(actor, readRouteParam(request.params.dispatchId));
+
+    return {
+      data: events.map(toFieldDispatchEventDto),
     };
   }
 

@@ -21,8 +21,8 @@ test("field dispatch service cria, lista, muda status, reatribui e isola tenants
   const tenantB = core.createTenant({ name: "Tenant Dispatch B", modules: ["work_orders", "field_operations"] });
   const managerA = core.createUser({ tenantId: tenantA.id, name: "Manager A", email: "dispatch-manager-a@example.com", roles: ["manager"] });
   const managerB = core.createUser({ tenantId: tenantB.id, name: "Manager B", email: "dispatch-manager-b@example.com", roles: ["manager"] });
-  const operatorA = core.createUser({ tenantId: tenantA.id, name: "Operator A", email: "dispatch-operator-a@example.com", roles: ["operator"] });
-  const operatorB = core.createUser({ tenantId: tenantB.id, name: "Operator B", email: "dispatch-operator-b@example.com", roles: ["operator"] });
+  const operatorA = core.createUser({ tenantId: tenantA.id, name: "Operator A", email: "dispatch-operator-a@example.com", roles: ["technician"] });
+  const operatorB = core.createUser({ tenantId: tenantB.id, name: "Operator B", email: "dispatch-operator-b@example.com", roles: ["technician"] });
   const workOrderService = createMemoryWorkOrderService();
   const dispatchService = createMemoryFieldDispatchService(new MemoryCoreSaasAdapter(core));
 
@@ -93,7 +93,7 @@ test("field dispatch service exige motivo para cancelamento e valida transicoes"
   const core = new CoreSaasRegistry(new InMemoryCoreSaasStore());
   const tenant = core.createTenant({ name: "Tenant Dispatch Validation", modules: ["work_orders", "field_operations"] });
   const manager = core.createUser({ tenantId: tenant.id, name: "Manager", email: "dispatch-validation-manager@example.com", roles: ["manager"] });
-  const operator = core.createUser({ tenantId: tenant.id, name: "Operator", email: "dispatch-validation-operator@example.com", roles: ["operator"] });
+  const operator = core.createUser({ tenantId: tenant.id, name: "Operator", email: "dispatch-validation-operator@example.com", roles: ["technician"] });
   const workOrderService = createMemoryWorkOrderService();
   const dispatchService = createMemoryFieldDispatchService(new MemoryCoreSaasAdapter(core));
 

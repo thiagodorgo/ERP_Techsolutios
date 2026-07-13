@@ -178,6 +178,9 @@ export class InMemoryDashboardRepository implements DashboardRepository {
       events.push(...timeline);
     }
     const recentEvents = events
+      // Ω3-b (P-034) — comentário livre (work_order_comment) fora do feed do dashboard: o corpo pode
+      // conter PII e o feed é visível a papéis com dashboard:read sem work_orders:read (ex.: support).
+      .filter((event) => event.eventType !== "work_order_comment")
       .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
       .slice(0, DASHBOARD_RECENT_EVENTS_LIMIT)
       .map(toRecentEvent);

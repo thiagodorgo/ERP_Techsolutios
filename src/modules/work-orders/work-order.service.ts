@@ -32,6 +32,7 @@ import {
   assertNonEmptyString,
   assertStatusTransition,
   optionalString,
+  parseComment,
   parseLimit,
   parseOffset,
   parseOptionalCoordinate,
@@ -499,6 +500,22 @@ export class WorkOrderService {
     const workOrder = await this.get(actor, workOrderId);
 
     return this.repository.listTimeline(actor.tenantId, workOrder.id);
+  }
+
+  // Ω3-b — comentário livre do usuário: grava um evento imutável na timeline da OS (Opção A da decisão
+  // checklist-unificado/D4). `get` garante 404 cross-tenant (RLS). O corpo vai só em `message`.
+  async addComment(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord): Promise<WorkOrderEvent> {
+    const workOrder = await this.get(actor, workOrderId);
+    const message = parseComment(body.message ?? body.text ?? body.comment);
+
+    return this.repository.createEvent({
+      tenantId: actor.tenantId,
+      workOrderId: workOrder.id,
+      eventType: "work_order_comment",
+      actorUserId: actor.userId,
+      message,
+      metadata: {},
+    });
   }
 }
 

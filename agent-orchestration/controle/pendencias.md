@@ -314,3 +314,20 @@
   `service_catalog:read`+`customers:read`+`work_orders:read`, ou aceitar a degradação. Não bloqueia (junta 5/5).
 - **Achados validador-mestre resolvidos no ciclo 2:** quantity sem teto → guard `assertMoneyInRange(quantity)`
   (422, paridade InMemory×Prisma) + 2 testes; contagem de smoke documentada corrigida (13→12).
+
+## P-Ω3b (Ω3-b Despacho endurecido + Comentário/Timeline da OS) — validador-mestre
+- **P-034 (MÉDIA — granularidade RBAC, não isolamento):** o feed `recentEvents` do dashboard
+  (`dashboard-prisma.repository.ts:91` — `workOrderEvent.findMany({ where: { tenant_id } })`) NÃO
+  filtra por `event_type`. Com `work_order_comment` agora sendo evento de timeline da OS, o CORPO
+  livre do comentário passa a aparecer no dashboard para papéis com `dashboard:read` mas SEM
+  `work_orders:read` — hoje **apenas `support`** (verificado: support = dashboard:read Y / work_orders:read N).
+  É TENANT-ISOLADO (RLS por tenant_id; sem vazamento cross-tenant) e estende comportamento
+  pré-existente (mensagens de sistema created/status/assigned já vazavam a support pelo mesmo feed);
+  o novo é o texto livre do usuário poder conter PII. Cenário concreto: manager comenta "cliente com
+  CPF X reclamou" → support (sem work_orders:read) lê no dashboard. Mitigar em bloco futuro: filtrar
+  `work_order_comment` do `recentEvents`, OU alinhar a exposição do feed a `work_orders:read`. Não bloqueia.
+  **RESOLVIDO no fechamento do bloco (ciclo 2):** `dashboard-prisma.repository.ts` e `dashboard.repository.ts`
+  (memory, paridade) agora filtram `event_type != work_order_comment` no feed; teste de regressão
+  `[P-034]` em `work-order-comments-routes.test.ts` prova que o comentário (com marcador) não aparece no
+  `/dashboard/summary`. Auditoria (§2.8) provada AO VIVO: `SELECT count(*) FROM audit_logs WHERE metadata LIKE '%marker%'` = 0.
+- **P-035 (BAIXA — doc):** contagem por arquivo do task-history — **CORRIGIDA** para 8+9+8=25 (após +P-034).
