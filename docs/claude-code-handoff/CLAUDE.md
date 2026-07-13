@@ -206,6 +206,9 @@ validação** e **rastreabilidade**. Tipos:
 
 ## C3. Política de KPI pós-avaliação humana (permanente)
 
+> ⚠️ **REVOGADA em 2026-07-13 (D-KPI-PER-PR).** Política vigente = **KPI por PR** (atualiza no próprio PR, com
+> contagem real; junta do PR valida). Fonte de verdade: `/CLAUDE.md` §C3. O texto abaixo é o snapshot original.
+
 1. PR de **feature não altera** arquivos KPI.
 2. Feature reporta **KPIs propostos apenas no relatório final**.
 3. KPI só atualiza **após avaliação humana** aprovar.

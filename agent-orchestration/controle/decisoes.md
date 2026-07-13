@@ -394,3 +394,14 @@
 - Paradas imediatas irredutíveis desta rodada = { migration destrutiva, exposição de segredo, ação irreversível
   em produção sem junta unânime prévia, **falta de credencial/pagamento/domínio externo** }.
 - D-KPI-PER-PR (revogação da política de KPI pós-avaliação-humana) fica para o PR2 (Ω-GOV), como no plano.
+
+## D-KPI-PER-PR — KPI atualizado em todo PR (revoga a política pós-avaliação humana) (2026-07-13) [Ω-GOV]
+- Decisão do dono (Thiago, prompt-rodada-saneamento-infra.md, PR2/Ω-GOV): a política "KPI só após avaliação
+  humana em bloco `…K`" está **REVOGADA**. Vigente: **todo PR que altere código/teste/escopo atualiza
+  `Kpis/kpis-latest.json`, `Kpis/kpis-history.*` (append) e `Kpis/index.html` no mesmo PR** (política dupla p/
+  mobile mantida). Contagens vêm de **execução real no PR** (nunca copiadas). `mvp_demo`/`mvp_vendavel` só mudam
+  ao mover escopo (1 linha de justificativa no history). Blocos `…K`/`…F` viram resumo de marco (opcionais);
+  `status: "published_per_pr"`. **A validação dos números é da junta do PR**; o humano audita pelo history.
+- Reescrito em: `/CLAUDE.md` (§C1 tabela, §C2, §C3, §C7 nova, DoD), `Kpis/README.md`,
+  `mobile/flutter_app/Kpis/README.md`, `agent-orchestration/omega/plano-mestre.md`. Handoff-package
+  (`docs/claude-code-handoff/*`) e logs históricos recebem banner "revogada", não reescrita.

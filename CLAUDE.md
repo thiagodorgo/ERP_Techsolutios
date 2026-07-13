@@ -185,8 +185,8 @@ validação** e **rastreabilidade**. Tipos:
 
 | Sufixo | Tipo | Papel |
 |---|---|---|
-| `B-NNN` | **Feature** | implementa código funcional (não toca KPI) |
-| `B-NNNK` | **KPI pós-avaliação** | publica KPIs após merge+gate aprovados |
+| `B-NNN` | **Feature** | implementa código funcional **e atualiza os KPIs no próprio PR** (C3) |
+| `B-NNNK` | **Resumo de marco** (opcional) | consolida KPIs de um marco; deixou de ser etapa obrigatória (C3) |
 | `B-NNNF` | **Correção de KPI** | conserta/limpa KPIs e documentação |
 | `B-NNNG` | **Gate** | avaliação/aprovação de um bloco de feature |
 
@@ -198,32 +198,39 @@ validação** e **rastreabilidade**. Tipos:
    regressões dos blocos anteriores → suíte → `npm run check/lint/test/build` →
    contratos → `git diff --check`).
 4. **Limpar artefatos** (política de limpeza pós-validação).
-5. **Abrir PR no GitHub** (branch por bloco). **KPIs propostos vão só no relatório final** — não
-   no diff.
-6. **Avaliação humana + gate.** Só então um bloco `…K`/`…F` publica KPIs com **PR #, merge
-   commit e approved head reais**.
+5. **Atualizar os KPIs no próprio PR** (C3) com contagens de execução real e **abrir PR no GitHub**
+   (branch por bloco).
+6. **Junta do PR valida** (inclusive os números de KPI). Verde da junta = merge (autonomia por juntas,
+   §C7); o humano audita a posteriori pelo history.
 7. **Registrar** decisão/estado em `agent-orchestration/`.
 
-## C3. Política de KPI pós-avaliação humana (permanente)
+## C3. Política de KPI por PR (permanente) — **revoga a política pós-avaliação humana (2026-07-13, D-KPI-PER-PR)**
 
-1. PR de **feature não altera** arquivos KPI.
-2. Feature reporta **KPIs propostos apenas no relatório final**.
-3. KPI só atualiza **após avaliação humana** aprovar.
-4. KPI só publica **após merge e gate** confirmarem sucesso.
-5. Publicação em **bloco separado** (`B-xxxK`/`B-xxxF`).
-6. Mexeu em **Flutter/mobile** → atualizar `mobile/flutter_app/Kpis/*` **e** refletir em
-   `Kpis/*`.
-7. Mexeu **fora do mobile** → atualizar `Kpis/*`.
-8. Mexeu nos **dois** → atualizar **ambos**.
-9. Se existir `index.html` de KPI → atualizar o HTML também.
-10. Bloco KPI preenche **PR, merge commit e approved head reais**. **Campo `null` bloqueia o
-    próximo bloco.**
+> A política antiga ("KPI só após avaliação humana em bloco `…K`") está **REVOGADA**. Decisão do dono
+> (Thiago), rodada Ω-GOV. A junta do PR valida os números; o humano audita a posteriori pelo history.
+
+1. Todo PR que altere **código, teste ou escopo** atualiza `Kpis/kpis-latest.json`, `Kpis/kpis-history.*`
+   (append) e `Kpis/index.html` **no mesmo PR**.
+2. PR que toque **Flutter/mobile** atualiza **também** `mobile/flutter_app/Kpis/*` (política dupla mantida).
+3. Contagens de teste **do que o PR exerceu** vêm de **execução real no PR** — nunca copiadas do bloco
+   anterior. Métricas de trilhas que o PR **não tocou** (ex.: mobile num PR web-only) carregam o último valor
+   oficial **com nota explícita** no history.
+4. `mvp_demo`/`mvp_vendavel` só mudam quando o PR **mover escopo**, com 1 linha de justificativa no history.
+5. Blocos `…K`/`…F` deixam de ser etapa obrigatória (podem virar **resumo de marco**). Campos `pr`,
+   `merge_commit`, `approved_head` referem-se ao **PR corrente**; `status: "published_per_pr"`.
+   **`merge_commit`/`approved_head` são `null` na autoria** (só existem pós-merge) e recebem **backfill
+   pós-merge** (com a reconciliação de PR#/hash no bloco seguinte); `pr` é preenchido após `gh pr create`.
+   `null` nesses campos na autoria **não bloqueia** (a regra antiga de bloqueio por `null` foi revogada).
+6. A **validação dos números é da junta do PR**. Mexeu nos **dois** (mobile+backend) → atualizar ambos;
+   fora do mobile → só `Kpis/*`. Se existir `index.html` de KPI → atualizar o HTML também.
 
 ## C4. Disciplina de escopo (por bloco)
 
 Todo comando declara **escopo permitido** e **escopo proibido** com caminhos exatos. Fora de
 autorização explícita, **não** tocar: `prisma/**`, `migrations/**`, `infra/**`, `.env`,
-lockfiles JS, `pubspec.yaml/lock`, Figma, e — em bloco de feature — **nenhum** arquivo KPI.
+lockfiles JS, `pubspec.yaml/lock`, Figma. **KPIs deixaram de ser escopo proibido de feature (D-KPI-PER-PR):**
+todo PR que altere código/teste/escopo **DEVE atualizar** `Kpis/*` (e `mobile/flutter_app/Kpis/*` quando tocar
+mobile) **no próprio PR** — ver §C3.
 
 ## C5. Limpeza pós-validação (permanente)
 
@@ -234,8 +241,30 @@ os 3 PNGs de marca).
 ## C6. Rastreabilidade
 
 Todo bloco registra: **ID · PR # · merge commit · approved head · gate · status**
-(`published_after_human_approval` quando aplicável). Contratos versionados por data/bloco (ex.:
-`mobile_evidence_file_upload@2026-06-18.b108`).
+(`published_per_pr` na política vigente; `published_after_human_approval` no histórico anterior).
+Contratos versionados por data/bloco (ex.: `mobile_evidence_file_upload@2026-06-18.b108`).
+
+## C7. Política de autonomia por juntas (permanente) — **D-SAN-AUTONOMIA (2026-07-13)**
+
+Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprovação humana por PR.
+
+1. **Verde da junta = merge + próximo bloco.** Toda decisão que seria humana passa por **junta de agentes**
+   (composição por bloco, ≥3): maioria simples nos blocos normais; **unânime com 5 agentes** nas decisões
+   críticas (deploy de PRODUÇÃO, dependência nova, contratação/config de serviço externo, **chamada a serviço
+   externo tarifado/pago**). Votos+justificativa
+   em `agent-orchestration/omega/juntas/J-<n>-<tema>.md`. **Junta sem registro = merge inválido.**
+2. O humano é **informado** (relatório + history de KPI por PR), **não consultado** por PR.
+3. **Regra da dúvida:** qualquer dúvida → `agente-pesquisador-web` (≥3 fontes) → registro PD em
+   `docs/omega-pd.md` **antes** da decisão. Dúvida sem pesquisa = veto.
+4. **Protocolo de dificuldade — CRIAR AGENTES ANTES DE PARAR.** Reprovação/bloqueio técnico **não gera parada
+   direta**. Ciclos (registro em `omega/reprovacoes/R-<entrega>-<ciclo>.md`): **ciclos 1–2 = a `agente-fabrica`
+   CRIA 1–2 especialistas sob medida** para o problema (entram na junta seguinte e votam); ciclo 3 = crítico
+   reabre a premissa + pesquisa ≥5 fontes (teto 6 agentes); ciclos 4–5 = junta ampliada replaneja a fatia.
+   **Parada + dossiê ao humano SOMENTE** após o ciclo 5 falho, **ou** nas paradas imediatas irredutíveis.
+5. **Paradas imediatas irredutíveis (lista encolhida):** { migration destrutiva; exposição de segredo; ação
+   irreversível em produção sem junta unânime prévia }. (A antiga parada por "integração externa" saiu — vira
+   decisão de junta + PD. Rodadas específicas podem somar uma parada temporária, ex.: falta de credencial/
+   pagamento/domínio externo na trilha de infra — ver D-SAN-AUTONOMIA em `controle/decisoes.md`.)
 
 ---
 
@@ -252,14 +281,16 @@ O repositório oficial vive no **GitHub**. **GitHub Flow**, um **bloco por PR**:
    bateria de validação passar e a DoD (§10) estiver cumprida:
    `git push -u origin feat/<area>-<bloco>` → `gh pr create --base main --title
    "feat(mobile): criação remota de OS (B-107)" --body "…"`. No corpo: objetivo, telas, DoD,
-   como testar, **KPIs propostos** (não publicados) e o ID do bloco.
+   como testar, **KPIs atualizados no próprio PR** (§C3, contagem real) e o ID do bloco.
 5. **Merge só com CI verde** + revisão quando exigida. Prefira **squash merge** e **delete a
    branch**.
 6. **Marco de fase → tag + GitHub Release** (`git tag -a mvp-mobile … && git push origin
    mvp-mobile`). Ex.: `mvp-mobile`, `mvp-web-gestor`.
 7. **Rails:** nunca segredo no git (chaves de CI via **GitHub Secrets**); nunca
-   `git push --force` na `main`; nunca merge com CI vermelho, DoD incompleta ou KPI publicado em
-   PR de feature; respeite **proteção de branch**; não versione artefatos de processo em `src/`.
+   `git push --force` na `main`; nunca merge com CI vermelho, DoD incompleta ou **KPI divergente da
+   execução real** (na política KPI-por-PR §C3, todo PR de feature ATUALIZA os KPIs — o rail antigo
+   "nenhum KPI em PR de feature" foi revogado); respeite **proteção de branch**; não versione
+   artefatos de processo em `src/`.
 
 ## 9. Bateria de validação (padrão dos comandos)
 
@@ -277,8 +308,11 @@ anteriores → `flutter test --reporter compact` → `cd ../..`.
 **Frontend** — `npm --prefix frontend run check` · `npm --prefix frontend run build`
 (+ `test:smoke` quando existir).
 
-**KPI/documental** — `node --check` dos `app.js` de KPI · `rg` que **falha se houver campo
-`null`** de PR/merge/approved head · `rg` confirmando marcadores do bloco · `git diff --check`.
+**KPI/documental** — `node --check` dos `app.js` de KPI · `rg` confirmando marcadores do bloco ·
+`git diff --check`. Na política **KPI-por-PR** (§C3), `merge_commit`/`approved_head` do PR corrente
+**são `null` na autoria** (só existem pós-merge) e recebem **backfill pós-merge** (junto da reconciliação de
+PR#/hash no bloco seguinte) — o antigo check que falhava em `null` de PR/merge/approved head **não se aplica
+ao PR corrente**.
 
 ## 10. Definition of Done (por bloco)
 
@@ -288,7 +322,7 @@ anteriores → `flutter test --reporter compact` → `cd ../..`.
 - [ ] Permissão validada no **backend** conforme `RBAC_MATRIX.md`.
 - [ ] Sem termo técnico na UI (§3); sem segredo/PII em payload/auditoria (§2.8).
 - [ ] Artefatos temporários limpos (C5).
-- [ ] PR aberto no GitHub; **KPIs só no relatório final** (C3).
+- [ ] PR aberto no GitHub; **KPIs atualizados no próprio PR** com contagens reais (C3).
 - [ ] A11y: alvo de toque ≥44px (mobile), foco visível, aria em ícones-ação.
 - [ ] **Fidelidade visual (§11):** a tela bate com a referência renderizada em `screen-refs/` (quando existir) — sem simplificar, sem inventar abas, sem andaime de dev na UI.
 

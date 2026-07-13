@@ -4,7 +4,7 @@ const dashboardData = {
     "version": "B-124",
     "updatedAt": "2026-07-05",
     "sourceBranch": "fix/b124-kpis-post-human-approval",
-    "summary": "B-124 (dashboard web enriquecido com despachos e localizacoes) publicado apos avaliacao humana e merge da PR #125. Web-only: Flutter 764/764 e contratos mobile inalterados; smoke web 33/33 -> 44/44, MVP demo 96%, MVP vendavel 78% e 49 blocos entregues."
+    "summary": "Ω-GOV (2026-07-13): politica KPI-por-PR (D-KPI-PER-PR) substitui a publicacao pos-avaliacao humana; backend_tests corrigido 15/15 -> 766/766 (suite backend INTEIRA que o Ω-GATE/PR #174 fez o CI rodar com Postgres+Redis). Contexto anterior (B-124, PR #125, web-only): dashboard web enriquecido; Flutter 764/764 e contratos mobile inalterados; smoke web 33/33 -> 44/44, MVP demo 96%, MVP vendavel 78% e 49 blocos entregues."
   },
   "kpis": [
     {
@@ -39,8 +39,8 @@ const dashboardData = {
     },
     {
       "label": "Backend tests",
-      "value": "15/15",
-      "note": "Backend nao alterado no B-121; ultimo valor oficial."
+      "value": "766/766",
+      "note": "Ω-GATE: suite backend INTEIRA no gate do CI (100 arquivos + Postgres+Redis), 0 fail. Substitui o antigo 15/15 (so core-saas). KPI-por-PR (D-KPI-PER-PR)."
     },
     {
       "label": "Mobile contracts",
@@ -222,8 +222,8 @@ const dashboardData = {
     },
     {
       "name": "Politica KPIs duplos",
-      "status": "concluido",
-      "detail": "KPIs publicados somente apos avaliacao humana, merge e gate, em bloco documental separado."
+      "status": "vigente",
+      "detail": "KPI por PR (D-KPI-PER-PR, 2026-07-13): todo PR que altere codigo/teste/escopo atualiza os KPIs no proprio PR com contagem real; a junta do PR valida. A publicacao pos-avaliacao humana foi REVOGADA. Politica dupla mobile/raiz mantida."
     }
   ],
   "validations": [
@@ -269,7 +269,7 @@ const dashboardData = {
     },
     {
       "name": "Politica KPI",
-      "result": "publicado apos avaliacao humana e merge da PR #125 (B-124K)"
+      "result": "B-124 foi publicado sob a politica ANTERIOR (pos-avaliacao humana, PR #125); desde 2026-07-13 vale KPI-por-PR (D-KPI-PER-PR)"
     }
   ],
   "estimates": [

@@ -392,3 +392,12 @@
 - acao: bloco futuro adiciona um teste do adapter prisma do core (subir contra Postgres do CI, um smoke de
   createTenant/listUsers no modo prisma) OU decisão explícita de manter o core em memory até a migração completa.
 - status: aberto (cobertura; não bloqueante — modo controlado)
+
+## P-SAN-KPI-BACKFILL - Backfill de merge_commit/approved_head nos KPIs pode persistir null (Ω-GOV, 2026-07-13)
+- descricao: na politica KPI-por-PR (D-KPI-PER-PR), `merge_commit`/`approved_head` da entrada de KPI do PR nascem
+  `null` (so existem pos-merge) e sao preenchidos no BACKFILL do bloco seguinte (junto da reconciliacao PR#/hash).
+  Se um bloco for o ULTIMO antes de uma pausa, o `null` pode persistir sem backfill. Apontado pelo critico (J-SAN-2).
+- impacto: rastreabilidade — uma entrada de history com merge_commit null fica sem link de commit ate o proximo
+  bloco reconciliar. Baixo (o `pr` e o merge sao recuperaveis pelo git/gh).
+- acao: ao encerrar uma rodada/pausa, rodar um backfill final dos campos null das ultimas entradas de KPI.
+- status: aberto (trade-off documentado da politica per-PR)

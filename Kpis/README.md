@@ -3,18 +3,19 @@
 Esta pasta contem os KPIs gerais do projeto. Desde B-152F, ela tambem reflete
 os percentuais mobile quando uma entrega mexe em Flutter/mobile.
 
-## Política permanente de KPIs pós-avaliação humana
+## Política de KPIs por PR (vigente desde 2026-07-13 — D-KPI-PER-PR)
 
-1. PRs de feature nao devem atualizar arquivos de KPI.
-2. PRs de feature devem reportar KPIs propostos apenas no relatorio final.
-3. KPIs so devem ser atualizados apos avaliacao humana aprovando a entrega.
-4. KPIs so devem ser publicados apos merge e gate confirmando sucesso.
-5. A publicacao de KPIs deve ocorrer em bloco separado documental/KPI, como B-xxxK ou B-xxxF.
-6. Se a entrega mexeu em Flutter/mobile, atualizar `mobile/flutter_app/Kpis/*` e refletir em `Kpis/*`.
-7. Se a entrega mexeu fora do mobile, atualizar `Kpis/*`.
-8. Se a entrega mexeu nos dois, atualizar ambos.
-9. Se existir `index.html`, atualizar tambem o HTML.
-10. O bloco de KPI deve preencher PR, merge commit e approved head reais. Campos null bloqueiam o proximo bloco.
+> A política anterior ("KPIs so apos avaliacao humana em bloco B-xxxK") esta **REVOGADA** (decisao do dono,
+> rodada Ω-GOV). A validacao dos numeros passa a ser da **junta do PR**; o humano audita a posteriori pelo history.
+
+1. Todo PR que altere codigo, teste ou escopo atualiza `kpis-latest.json`, `kpis-history.*` (append) e
+   `index.html` **no mesmo PR**.
+2. As contagens de teste vem de **execucao real no PR** — nunca copiadas do bloco anterior.
+3. `mvp_demo`/`mvp_vendavel` so mudam quando o PR mover escopo, com 1 linha de justificativa no history.
+4. Blocos `B-xxxK`/`B-xxxF` deixam de ser etapa obrigatoria (podem virar resumo de marco). Os campos `pr`,
+   `merge_commit`, `approved_head` referem-se ao **PR corrente**; `status: "published_per_pr"`.
+5. Se a entrega mexeu em Flutter/mobile, atualizar `mobile/flutter_app/Kpis/*` **e** refletir em `Kpis/*`;
+   fora do mobile, so `Kpis/*`; nos dois, ambos. Se existir `index.html`, atualizar tambem o HTML.
 
 ## Política de limpeza pós-validação
 

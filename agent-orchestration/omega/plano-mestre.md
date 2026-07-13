@@ -2,8 +2,8 @@
 
 > Herda TODAS as regras A–F: serviço completo (zero mock), regra do espelho, migrations aditivas
 > up/down testadas, delete lógico, cota 200%, docs vivas por PR, KPIs+burnup por merge, ciclo Git
-> completo, padrões P1–P6, Decimal p/ dinheiro, timestamptz, PT-BR. **KPIs não publicados** (marco `…K`
-> só após avaliação humana).
+> completo, padrões P1–P6, Decimal p/ dinheiro, timestamptz, PT-BR. **KPIs atualizados no próprio PR**
+> (D-KPI-PER-PR, 2026-07-13; a política de marco `…K` pós-avaliação humana foi **revogada**).
 
 ## Governo por juntas (no lugar da aprovação humana)
 Toda decisão que seria humana passa por **junta de ≥3 agentes**, maioria vence, votos+justificativa em
@@ -11,12 +11,15 @@ Toda decisão que seria humana passa por **junta de ≥3 agentes**, maioria venc
 protocolo). **Regra da dúvida:** qualquer dúvida instancia `agente-pesquisador-web` (≥3 fontes) →
 `docs/omega-pd.md`. Dúvida sem pesquisa = veto.
 
-## Protocolo de reprovação escalonada (regra suprema)
-Por entrega reprovada, ciclos 1–5 (registro em `omega/reprovacoes/R-<entrega>-<ciclo>.md`):
-ciclos 1–3 escalam mão de obra (+2/ciclo, teto 6); ciclos 4–5 replanejam a premissa (crítico-adversarial
-reabre o objetivo, pesquisa web ≥5 fontes). Ciclo 5 ainda reprovado = PARADA + dossiê ao humano.
-**Paradas imediatas (estruturais):** migration destrutiva; integração externa (NF-e/gateway/API paga);
-dependência sem junta unânime; conflito com main; falha de push/gh.
+## Protocolo de reprovação escalonada (regra suprema) — CRIAR AGENTES ANTES DE PARAR
+Por entrega reprovada, ciclos 1–5 (registro em `omega/reprovacoes/R-<entrega>-<ciclo>.md`): **ciclos 1–2 = a
+`agente-fabrica` CRIA 1–2 especialistas sob medida** para o problema (entram na junta seguinte e votam) ANTES
+de qualquer parada; ciclo 3 = crítico-adversarial reabre a premissa + pesquisa web ≥5 fontes (teto 6 agentes);
+ciclos 4–5 = junta ampliada replaneja a fatia. Ciclo 5 ainda reprovado = PARADA + dossiê ao humano.
+**Paradas imediatas (estruturais — lista encolhida, D-SAN-AUTONOMIA 2026-07-13):** migration destrutiva;
+exposição de segredo; ação irreversível em produção sem junta unânime prévia. (A antiga parada por "integração
+externa" **saiu** — vira decisão de junta de 5 unânime + PD. Conflito com main / falha de push = rebase/retry,
+não parada. Rodadas de infra somam temporariamente: falta de credencial/pagamento/domínio externo.)
 
 ## Fases
 - **Ω0 — Fábrica de agentes** (PR `omega-0-agentes`): agentes + `omega/` + junta J-001. ✅ este PR.
