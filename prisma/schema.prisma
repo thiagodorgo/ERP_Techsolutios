@@ -44,6 +44,7 @@ model Tenant {
   tags                          Tag[]
   pois                          Poi[]
   operator_profiles             OperatorProfile[]
+  tenant_settings               TenantSetting[]
   teams                         Team[]
   team_members                  TeamMember[]
   field_operator_locations      FieldOperatorLocation[]
@@ -1242,6 +1243,27 @@ model Poi {
   @@index([tenant_id, is_active])
   @@index([tenant_id, created_at])
   @@map("pois")
+}
+
+// Ω2-e — Parâmetro (cadastro key-value administrativo do tenant). Chave natural [tenant_id, key]
+// (upsert por chave). value é @db.Text e pode conter JSON serializado. Sem delete físico: upsert
+// sobrescreve o valor. Território de admin (RBAC tenant_settings:read/update).
+model TenantSetting {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String   @db.Uuid
+  key         String
+  value       String   @db.Text
+  category    String?
+  description String?
+  updated_by  String?  @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, key])
+  @@unique([tenant_id, id])
+  @@index([tenant_id, category])
+  @@map("tenant_settings")
 }
 
 // Ω2-c — Profissional (perfil profissional do operador de campo). Extensão 1-1 de User (unique
