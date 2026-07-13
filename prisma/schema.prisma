@@ -41,6 +41,8 @@ model Tenant {
   price_tables                  PriceTable[]
   tariffs                       Tariff[]
   suppliers                     Supplier[]
+  tags                          Tag[]
+  pois                          Poi[]
   operator_profiles             OperatorProfile[]
   teams                         Team[]
   team_members                  TeamMember[]
@@ -1193,6 +1195,53 @@ model Supplier {
   @@index([tenant_id, is_active])
   @@index([tenant_id, created_at])
   @@map("suppliers")
+}
+
+// Ω2-d — Tag (marcador/etiqueta). Chave natural [tenant_id, name]; desativação lógica via is_active.
+// color opcional em hex (#RRGGBB), validado na aplicação.
+model Tag {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String   @db.Uuid
+  name        String
+  color       String?
+  description String?
+  is_active   Boolean  @default(true)
+  created_by  String?  @db.Uuid
+  updated_by  String?  @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, name])
+  @@index([tenant_id, is_active])
+  @@index([tenant_id, created_at])
+  @@map("tags")
+}
+
+// Ω2-d — POI (ponto de interesse geográfico). Chave natural [tenant_id, name]; latitude/longitude
+// NUMERIC(10,7) obrigatórios, validados pelo predicado do mapa Ω1 (finito, |lat|<=90, |lng|<=180,
+// sem sentinela 0/0). Desativação lógica via is_active.
+model Poi {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String   @db.Uuid
+  name       String
+  category   String?
+  latitude   Decimal  @db.Decimal(10, 7)
+  longitude  Decimal  @db.Decimal(10, 7)
+  address    String?
+  is_active  Boolean  @default(true)
+  created_by String?  @db.Uuid
+  updated_by String?  @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, name])
+  @@index([tenant_id, is_active])
+  @@index([tenant_id, created_at])
+  @@map("pois")
 }
 
 // Ω2-c — Profissional (perfil profissional do operador de campo). Extensão 1-1 de User (unique
