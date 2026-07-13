@@ -524,3 +524,14 @@ Todo bloco futuro continua obrigado a atualizar `Kpis/index.html`, `Kpis/app.js`
   Entidade). 6 citações históricas ao estudo **retificadas** (não apagadas). **D-DOCS-KRYOS**.
 - **Docs-only:** nenhuma métrica de teste mudou (backend segue **766/766** do gate). Fontes canônicas de UI =
   `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md`, docs próprias. Backfill do Ω-GOV: **PR #175 / 361f2c1**.
+
+## 2026-07-13 — Ω-INFRA-1 (rodada saneamento, PR4): containerização + healthcheck + provedor
+
+- **Containerização:** `Dockerfile` multi-stage do backend (runtime `node:20-bookworm-slim` **não-root**, Prisma
+  Client gerado, HEALTHCHECK na readiness); `frontend/Dockerfile` (Vite → **nginx** estático + proxy same-origin
+  `/api`). CI (`docker` job) builda em todo PR e **publica no GHCR** (`erp-backend:<sha>`) em push na main via
+  `GITHUB_TOKEN`.
+- **Healthcheck real:** `GET /health` (liveness, estável) + `GET /health/ready` (ping Postgres+Redis, 200/503,
+  sem vazar dado). Validado ao vivo no `docker-compose.prod.yml` (api+web+migrate ponta a ponta).
+- **backend_tests 766 → 768** (+2 `health-routes.test.ts`). **PD-INFRA-1** escolhe o provedor (Fly.io/gru 1º,
+  AWS 2º) para a junta de 5. Backfill do Ω-DOCS: **PR #176 / d0126d5**.

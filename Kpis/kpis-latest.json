@@ -1,22 +1,27 @@
 {
   "snapshot_date": "2026-07-13",
-  "version": "Ω-DOCS",
+  "version": "Ω-INFRA-1",
   "source": "mobile/flutter_app/Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω-DOCS",
-    "title": "Descontaminacao Kryos (rodada saneamento, PR3)",
+    "block": "Ω-INFRA-1",
+    "title": "Containerizacao + healthcheck real + escolha de provedor (rodada saneamento, PR4)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω-DOCS remove o conteudo do projeto Kryos (supervisao de refrigeracao/SCADA) que vazou para o repo: docs/research/estudo-doutoral-interfaces-10-saas.md (+ pasta) removido, 4 linhas de 09-mapa-telas reescritas, 6 citacoes historicas retificadas (D-DOCS-KRYOS). Fontes canonicas de UI = DESIGN_SYSTEM.md/COMPONENT_LIBRARY.md/docs proprias. Docs-only: nenhuma metrica de teste mudou (backend 766/766 do gate Ω-GATE). Backfill do Ω-GOV (PR #175 / 361f2c1) neste bloco. merge_commit/approved_head deste PR ficam null na autoria (backfill no proximo bloco).",
-    "status_label": "KPI por PR (D-KPI-PER-PR); docs-only, sem mudanca de metrica",
+    "summary": "Ω-INFRA-1: Dockerfile multi-stage do backend (runtime slim, nao-root, Prisma), frontend Vite servido por nginx, GET /health (liveness) + /health/ready (ping Postgres+Redis, sem vazar dado), docker-compose.prod (stack local-prod validado ponta a ponta), CI publica a imagem no GHCR (tag do commit, GITHUB_TOKEN). PD-INFRA-1 escolhe o provedor (Fly.io/gru 1o, AWS 2o) para junta de 5. backend_tests 766->768 (+2 health-routes). Backfill do Ω-DOCS (PR #176 / d0126d5) neste bloco. merge_commit/approved_head deste PR ficam null na autoria (backfill no proximo bloco).",
+    "status_label": "KPI por PR (D-KPI-PER-PR); +2 testes health-routes",
     "related_prs": [
+      {
+        "pr": 176,
+        "merge_commit": "d0126d5",
+        "note": "Ω-DOCS — descontaminacao Kryos; backfill neste bloco"
+      },
       {
         "pr": 175,
         "merge_commit": "361f2c1",
-        "note": "Ω-GOV — politica KPI-por-PR; backfill neste bloco"
+        "note": "Ω-GOV — politica KPI-por-PR"
       },
       {
         "pr": 174,
@@ -43,10 +48,10 @@
       "display": "44/44"
     },
     "backend_tests": {
-      "value": 766,
-      "total": 766,
-      "display": "766/766",
-      "note": "Suite backend INTEIRA no gate do CI (Ω-GATE): 100 arquivos com Postgres+Redis. Substitui o antigo 15/15 (so core-saas). Execucao real no ambiente do CI (memory + DATABASE_URL): 0 fail."
+      "value": 768,
+      "total": 768,
+      "display": "768/768",
+      "note": "Suite backend INTEIRA no gate do CI: 101 arquivos com Postgres+Redis. Ω-INFRA-1 +2 (health-routes: liveness /health + readiness /health/ready). Execucao real no ambiente do CI (memory + DATABASE_URL): 0 fail, 0 skip."
     },
     "backend_contract_tests_focused": {
       "value": 21,

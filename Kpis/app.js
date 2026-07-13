@@ -39,8 +39,8 @@ const dashboardData = {
     },
     {
       "label": "Backend tests",
-      "value": "766/766",
-      "note": "Ω-GATE: suite backend INTEIRA no gate do CI (100 arquivos + Postgres+Redis), 0 fail. Substitui o antigo 15/15 (so core-saas). KPI-por-PR (D-KPI-PER-PR)."
+      "value": "768/768",
+      "note": "Suite backend INTEIRA no gate do CI (101 arquivos + Postgres+Redis), 0 fail/0 skip. Ω-INFRA-1 +2 (health-routes). Substitui o antigo 15/15 (so core-saas). KPI-por-PR (D-KPI-PER-PR)."
     },
     {
       "label": "Mobile contracts",
