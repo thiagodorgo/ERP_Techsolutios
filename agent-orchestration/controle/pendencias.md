@@ -18,7 +18,14 @@
   (arquivos identicos entre `main` e a branch b123r; fonte platform nao mudou). Nao rodam no CI (`npm test`
   so executa `core-saas.test.ts`).
 - impacto: rodada BLOCO-AUTO monitora "sem NOVAS falhas" no dir completo; essas 2 nao contam como regressao.
-- status: aberto (baseline conhecida; correcao fora do escopo desta rodada)
+- status: **RESOLVIDO (2026-07-13, PR Ω-GATE)**. Causa raiz de cada um:
+  - `platform-routes` ("legacy headers disabled in production"): o me-router monta em `/api/v1` (largo) ANTES
+    de `/api/v1/platform` e seu `tenantContextMiddleware` interceptava /platform/* em produção com motivo
+    genérico `legacy_headers_disabled`. Corrigido reordenando `src/app.ts` (platform antes de me).
+  - `approval-frontend-contract`: afirmava contrato obsoleto (OperationalApprovalCard / `can("work_orders:update")`);
+    a tela foi refatorada para `ApprovalPanel` inline com gate `work_orders:approve`/`canDecide`. Teste reescrito
+    para o contrato vivo (mais forte). Além destes 2, o gate real revelou e corrigiu `cloud-usage-routes` (fixture
+    que apodrecia no relógio — período default de 30d). Suíte inteira agora roda no CI: 0 fail (~761-766 pass).
 
 ## P-004 - Codigo morto e sidebar dupla no frontend (2026-07-07)
 
@@ -367,3 +374,21 @@
   pela camada de APLICAÇÃO (filtros `tenant_id` + `assertX` + `withTenantRls` que seta `app.current_tenant_id`).
   PRÉ-EXISTENTE e plataforma-wide (não do Ω3-d). RLS fica como defense-in-depth para quando o app conectar
   com role NÃO-superusuário. **Forte candidato para a rodada de saneamento-infra.**
+
+## P-SAN-E2E - Playwright e2e fora do gate obrigatório (Ω-GATE, 2026-07-13)
+- descricao: `npm run test:e2e` (Playwright) NÃO entra no gate obrigatório do CI neste PR Ω-GATE — exige app
+  servido + seed e é lento/frágil sem staging. O gate backend agora roda a SUÍTE INTEIRA (`node --test tests/*.test.ts`)
+  com Postgres+Redis service containers + `prisma migrate deploy`.
+- impacto: cobertura e2e não bloqueia merge até haver staging no ar.
+- acao: promover o Playwright e2e para job bloqueante rodando CONTRA o staging na trilha Ω-INFRA-2 (PR 5).
+- status: aberto (planejado p/ Ω-INFRA-2)
+
+## P-SAN-CORE-PRISMA-COV - Adapter prisma do Core SaaS não é exercido pelo gate (Ω-GATE, 2026-07-13)
+- descricao: o gate força `CORE_SAAS_PERSISTENCE=memory`; testes que precisam de banco (auth-*/*-prisma/RLS/
+  audit) usam `DATABASE_URL` direto, mas o **adapter prisma do Core SaaS** (`createCoreSaasService` no modo
+  `prisma`) nunca é executado na suíte. Apontado pelo critico J-SAN-1.
+- impacto: o caminho prisma do core é "experimental/controlado" (env.ts) e sem cobertura automatizada; regressões
+  nele passariam pelo gate.
+- acao: bloco futuro adiciona um teste do adapter prisma do core (subir contra Postgres do CI, um smoke de
+  createTenant/listUsers no modo prisma) OU decisão explícita de manter o core em memory até a migração completa.
+- status: aberto (cobertura; não bloqueante — modo controlado)

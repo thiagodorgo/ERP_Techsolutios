@@ -63,8 +63,12 @@ export function createApp(service: ICoreSaasService): Express {
   app.use(logger);
   app.use("/api/v1", healthRouter);
   app.use("/api/v1/auth", createAuthRouter({ getCoreSaasService: () => Promise.resolve(service) }));
-  app.use("/api/v1", attachAuthenticatedActor(), createMeRouter(service));
+  // Ω-GATE: a rota de plataforma vem ANTES do me-router. O me-router monta no prefixo largo
+  // "/api/v1" e aplica tenantContextMiddleware no topo; em produção isso interceptaria
+  // /api/v1/platform/* com o motivo genérico "legacy_headers_disabled" antes do guard de
+  // plataforma emitir "platform_legacy_headers_disabled". Plataforma primeiro preserva o motivo.
   app.use("/api/v1/platform", attachAuthenticatedActor(), createPlatformRouter());
+  app.use("/api/v1", attachAuthenticatedActor(), createMeRouter(service));
   app.use("/api/v1", attachAuthenticatedActor(), createMobileRouter(service));
   app.use("/api/v1/navigation", attachAuthenticatedActor(), createNavigationRouter(service));
   app.use("/api/v1", attachAuthenticatedActor(), createNotificationRouter());
