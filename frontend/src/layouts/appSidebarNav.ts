@@ -22,6 +22,7 @@ import {
   Settings,
   ShieldCheck,
   ShoppingCart,
+  Tag,
   Tags,
   Truck,
   Users,
@@ -62,6 +63,8 @@ const PROFISSIONAIS: NavItem = { label: "Profissionais", path: "/cadastros/profi
 const SERVICOS: NavItem = { label: "Serviços", path: "/cadastros/servicos", icon: ConciergeBell };
 const TABELAS_VALORES: NavItem = { label: "Tabela de Valores", path: "/cadastros/tabelas-valores", icon: Coins };
 const TARIFAS: NavItem = { label: "Tarifas", path: "/cadastros/tarifas", icon: Tags };
+const TAGS: NavItem = { label: "Tags", path: "/cadastros/tags", icon: Tag };
+const PONTOS_INTERESSE: NavItem = { label: "Pontos de Interesse", path: "/cadastros/pontos-interesse", icon: MapPin };
 const ESTOQUE: NavItem = { label: "Estoque", path: "/inventory", icon: Package };
 const PEDIDOS: NavItem = { label: "Pedidos", path: "/purchase-orders", icon: ShoppingCart };
 const REMUNERACOES: NavItem = { label: "Remunerações", path: "/finance/commissions", icon: Wallet };
@@ -83,7 +86,7 @@ const G_FROTA_FULL: NavGroup = {
 };
 const G_GESTAO_FULL: NavGroup = {
   label: "GESTÃO",
-  items: [CLIENTES, FILIAIS, FORNECEDORES, EQUIPES, PROFISSIONAIS, SERVICOS, TABELAS_VALORES, TARIFAS, ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO],
+  items: [CLIENTES, FILIAIS, FORNECEDORES, EQUIPES, PROFISSIONAIS, SERVICOS, TABELAS_VALORES, TARIFAS, TAGS, PONTOS_INTERESSE, ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO],
 };
 const G_ADMIN_FULL: NavGroup = {
   label: "ADMINISTRAÇÃO",
@@ -146,6 +149,8 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/cadastros/servicos",
   "/cadastros/tabelas-valores",
   "/cadastros/tarifas",
+  "/cadastros/tags",
+  "/cadastros/pontos-interesse",
   "/fleet/fuel",
   "/fleet/maintenance",
   "/fleet/fines",

@@ -30,9 +30,10 @@ Formato após conclusão: `[x] <fase> — PR #NN, merge <hash>, junta X/X, vered
       com customer_id, 2026-07-12
 - [x] **Ω2-b Filiais + Fornecedores** — PR #166, merge 2758181, junta 5/5 (4 vetos re-rodados com login real
       após limite de sessão; J-OMEGA2B), backend 27/27 + front 311/311, 2026-07-12
-- [ ] **Ω2-c Profissionais** (OperatorProfile 1-1 User via FK (tenant_id,user_id) UNIQUE, CNH + tracking_consent,
-      LGPD — nunca logar CNH; novo módulo registry isolado) → **Ω2-d Tags + POI** → **Ω2-e Parâmetros**
-      (matar settings.mock, TenantSetting key-value)
+- [x] **Ω2-c Profissionais** (OperatorProfile 1-1 User = operador de CAMPO/guincheiro) — PR #167, merge 788290f,
+      junta 5/5 no ciclo 2 (veto LGPD: list DTO expunha o selo via cnhNumber; corrigido p/ hasCnh sem o número —
+      R-omega2c-1/J-OMEGA2C), backend 17/17 + front 323/323, auditoria sem CNH, 2026-07-12
+- [ ] **Ω2-d Tags + POI** → **Ω2-e Parâmetros** (matar settings.mock, TenantSetting key-value)
 
 ## Ω3 — Painel Logístico avançado
 - [ ] ServiceQuote (congela preço) · comentários/timeline · anexos (reuso evidence) · duplicar/cancelar/

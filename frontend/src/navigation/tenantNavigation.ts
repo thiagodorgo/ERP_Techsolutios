@@ -190,6 +190,32 @@ export const tenantNavigation: NavigationItem[] = [
     status: "implemented",
   },
   {
+    // Ω2-d — Tags/Etiquetas. Gate por permissão real (tags:read); sem requiredModules
+    // (mesmo padrão dos demais Cadastros irmãos).
+    id: "tenant-registry-tags",
+    label: "Tags",
+    path: "/cadastros/tags",
+    scope: "registry",
+    mode: "operation",
+    requiredPermissions: ["tags:read"],
+    allowedRoles: REGISTRY_READ_ROLES,
+    icon: "Tags",
+    status: "implemented",
+  },
+  {
+    // Ω2-d — Pontos de Interesse (POI). Gate por permissão real (pois:read); sem requiredModules
+    // (mesmo padrão dos demais Cadastros irmãos).
+    id: "tenant-registry-pois",
+    label: "Pontos de Interesse",
+    path: "/cadastros/pontos-interesse",
+    scope: "registry",
+    mode: "operation",
+    requiredPermissions: ["pois:read"],
+    allowedRoles: REGISTRY_READ_ROLES,
+    icon: "MapPin",
+    status: "implemented",
+  },
+  {
     // Ω2-c — Profissionais (OperatorProfile, perfil 1-1 com Usuário). Gate por permissão real
     // (operator_profiles:read); sem requiredModules (mesmo padrão dos demais Cadastros irmãos).
     id: "tenant-registry-operator-profiles",

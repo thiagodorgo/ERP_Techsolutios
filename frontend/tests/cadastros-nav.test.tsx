@@ -12,6 +12,8 @@ const CADASTROS_PATHS = [
   "/cadastros/tarifas",
   "/cadastros/filiais",
   "/cadastros/fornecedores",
+  "/cadastros/tags",
+  "/cadastros/pontos-interesse",
   "/cadastros/profissionais",
 ];
 
@@ -24,6 +26,8 @@ const REGISTRY_PERMISSIONS = [
   "tariffs:read",
   "branches:read",
   "suppliers:read",
+  "tags:read",
+  "pois:read",
   "operator_profiles:read",
 ];
 
@@ -31,7 +35,7 @@ function flattenPaths(items: readonly { path: string; children?: readonly { path
   return items.flatMap((item) => [item.path, ...(item.children?.map((child) => child.path) ?? [])]);
 }
 
-test("cadastros: Gestor com permissoes de leitura ve todas as 9 telas do menu Cadastros (A5 + Ω2-a + Ω2-b + Ω2-c)", async () => {
+test("cadastros: Gestor com permissoes de leitura ve todas as 11 telas do menu Cadastros (A5 + Ω2-a + Ω2-b + Ω2-c + Ω2-d)", async () => {
   const { filterNavigationItems } = await import("../src/navigation/types");
   const { tenantNavigation } = await import("../src/navigation/tenantNavigation");
 
@@ -109,7 +113,7 @@ test("cadastros: cada tela some individualmente ao faltar sua permissao de leitu
   assert.equal(paths.includes("/cadastros/servicos"), true);
 });
 
-test("cadastros: rotulo do grupo 'Cadastros' resolve e agrupa as 9 telas (A5 + Ω2-a + Ω2-b + Ω2-c)", async () => {
+test("cadastros: rotulo do grupo 'Cadastros' resolve e agrupa as 11 telas (A5 + Ω2-a + Ω2-b + Ω2-c + Ω2-d)", async () => {
   const { filterNavigationItems } = await import("../src/navigation/types");
   const { tenantNavigation } = await import("../src/navigation/tenantNavigation");
   const { groupNavigationItems, navigationGroupLabels } = await import("../src/modules/navigation/navigation.adapter");
@@ -129,7 +133,7 @@ test("cadastros: rotulo do grupo 'Cadastros' resolve e agrupa as 9 telas (A5 + �
 
   assert.ok(registryGroup, "grupo registry deve existir");
   assert.equal(registryGroup.label, "Cadastros");
-  assert.equal(registryGroup.items.length, 9);
+  assert.equal(registryGroup.items.length, 11);
   assert.deepEqual(
     registryGroup.items.map((item) => item.path).sort(),
     [...CADASTROS_PATHS].sort(),
