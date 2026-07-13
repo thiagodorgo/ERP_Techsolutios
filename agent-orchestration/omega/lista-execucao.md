@@ -36,7 +36,11 @@ Formato após conclusão: `[x] <fase> — PR #NN, merge <hash>, junta X/X, vered
 - [x] **Ω2-d Tags + POI** — PR #168, merge 19d6027, junta aprovada no ciclo 2 (veto: POI list DTO omitia
       `address` → coluna/busca mortas; corrigido — R-omega2d-1/J-OMEGA2D). Tags 13/13 + pois 18/18 + front 339;
       TagAssignment declarado pendência. 2026-07-12
-- [ ] **Ω2-e Parâmetros** (matar settings.mock, TenantSetting key-value) — ÚLTIMO cadastro do Ω2
+- [x] **Ω2-e Parâmetros** (matar settings.mock, TenantSetting key-value) — PR #169, merge 55f6ac6, junta 5/5
+      no ciclo 2 (veto cognicao-visual: "Tenant Demo" na UI + value vazio; corrigido — R implícita/J-OMEGA2E),
+      tenant-settings 17/17 + front 348/348, RBAC read=manager/auditor update=só admin, mock removido. 2026-07-13
+- **Ω2 COMPLETO** — 8 cadastros (Fornecedores·Profissionais·Filiais·Tabela de Valores·Tarifas·Tags·POI·
+      Parâmetros) em 5 PRs (#164–#169), todas as juntas 5/5. Pendências: TagAssignment (P-Ω2d), P-032/P-033.
 
 ## Ω3 — Painel Logístico avançado
 - [ ] ServiceQuote (congela preço) · comentários/timeline · anexos (reuso evidence) · duplicar/cancelar/
