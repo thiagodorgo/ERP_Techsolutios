@@ -47,6 +47,18 @@ export const tenantNavigation: NavigationItem[] = [
     status: "implemented",
   },
   {
+    // Ω3-a — Orçamentos (ServiceQuote): documento operacional de preço congelado. Escopo "operations"
+    // (NÃO "registry" — não conta como Cadastro). Gate por permissão real (service_quotes:read).
+    id: "tenant-operations-quotes",
+    label: "Orçamentos",
+    path: "/operations/quotes",
+    scope: "operations",
+    mode: "operation",
+    requiredPermissions: ["service_quotes:read"],
+    icon: "Calculator",
+    status: "implemented",
+  },
+  {
     id: "tenant-logistics",
     label: "Painel Logistico",
     path: "/logistics",

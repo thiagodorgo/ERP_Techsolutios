@@ -235,6 +235,28 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     relatedEndpoints: ["GET /api/v1/field-locations/latest"],
   },
   {
+    // Ω3-a — Orçamentos: path GOVERNADO (veto coordenador-de-acessos V1). Só permissão (sem
+    // requiredModules) — sem provisão de módulo novo; getGovernedNavigationPaths o inclui, então o
+    // gating dinâmico ESCONDE o item de quem não tem service_quotes:read (ex.: inventory).
+    id: "operations.quotes",
+    label: "Orçamentos",
+    description: "Orçamentos com preço congelado a partir da Tarifa vigente.",
+    path: "/operations/quotes",
+    icon: "Calculator",
+    group: "operations",
+    order: 245,
+    status: "implemented",
+    requiredPermissions: ["service_quotes:read"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/service-quotes",
+      "POST /api/v1/service-quotes",
+      "GET /api/v1/service-quotes/:serviceQuoteId",
+      "PATCH /api/v1/service-quotes/:serviceQuoteId",
+      "PATCH /api/v1/service-quotes/:serviceQuoteId/status",
+    ],
+  },
+  {
     id: "operations.dispatches",
     label: "Despachos",
     description: "Despacho operacional vinculado a OS, operador e mapa.",

@@ -61,6 +61,7 @@ const EquipesPage = lazy(() => import("./modules/registry/teams/pages/EquipesPag
 const ServicosPage = lazy(() => import("./modules/registry/service-catalog/pages/ServicosPage").then((m) => ({ default: m.ServicosPage })));
 const TabelasValoresPage = lazy(() => import("./modules/registry/price-tables/pages/TabelasValoresPage").then((m) => ({ default: m.TabelasValoresPage })));
 const TarifasPage = lazy(() => import("./modules/registry/tariffs/pages/TarifasPage").then((m) => ({ default: m.TarifasPage })));
+const OrcamentosPage = lazy(() => import("./modules/registry/service-quotes/pages/OrcamentosPage").then((m) => ({ default: m.OrcamentosPage })));
 const FiliaisPage = lazy(() => import("./modules/registry/branches/pages/FiliaisPage").then((m) => ({ default: m.FiliaisPage })));
 const FornecedoresPage = lazy(() => import("./modules/registry/suppliers/pages/FornecedoresPage").then((m) => ({ default: m.FornecedoresPage })));
 const TagsPage = lazy(() => import("./modules/registry/tags/pages/TagsPage").then((m) => ({ default: m.TagsPage })));
@@ -528,6 +529,14 @@ export function App() {
               element={
                 <PermissionGuard permissions={["field_dispatch:read"]}>
                   <OperationsDispatchesPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/operations/quotes"
+              element={
+                <PermissionGuard permissions={["service_quotes:read"]}>
+                  <OrcamentosPage />
                 </PermissionGuard>
               }
             />

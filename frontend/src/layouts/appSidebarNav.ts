@@ -3,6 +3,7 @@ import {
   BarChart3,
   Bell,
   Building2,
+  Calculator,
   CheckCircle,
   ClipboardList,
   Coins,
@@ -47,6 +48,7 @@ const DESPACHOS: NavItem = { label: "Despachos", path: "/operations/dispatches",
 const MAPA: NavItem = { label: "Mapa Operacional", path: "/operations/map", icon: MapPin };
 const APROVACOES: NavItem = { label: "Aprovações", path: "/approvals", icon: CheckCircle };
 const CHECKLISTS: NavItem = { label: "Checklists", path: "/operations/checklists", icon: ListChecks };
+const ORCAMENTOS: NavItem = { label: "Orçamentos", path: "/operations/quotes", icon: Calculator };
 
 const VIATURAS: NavItem = { label: "Viaturas", path: "/cadastros/viaturas", icon: Truck };
 const ABASTECIMENTO: NavItem = { label: "Abastecimento", path: "/fleet/fuel", icon: Fuel };
@@ -79,7 +81,7 @@ const AUDITORIA: NavItem = { label: "Auditoria", path: "/audit", icon: ScrollTex
 const G_VISAO_GERAL: NavGroup = { label: "VISÃO GERAL", items: [DASHBOARD] };
 
 // Grupos completos (gestor/admin) — os demais papéis recebem subconjuntos.
-const G_OPERACAO_FULL: NavGroup = { label: "OPERAÇÃO", items: [OS, DESPACHOS, MAPA, APROVACOES, CHECKLISTS] };
+const G_OPERACAO_FULL: NavGroup = { label: "OPERAÇÃO", items: [OS, DESPACHOS, MAPA, ORCAMENTOS, APROVACOES, CHECKLISTS] };
 const G_FROTA_FULL: NavGroup = {
   label: "FROTA",
   items: [VIATURAS, ABASTECIMENTO, MANUTENCAO, MULTAS, SEGUROS, DANOS],
@@ -113,7 +115,8 @@ export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
   // finance — recupera o grupo (multas/seguros/remunerações/financeiro/relatórios/aprovações).
   finance: [
     G_VISAO_GERAL,
-    { label: "OPERAÇÃO", items: [APROVACOES] },
+    // Ω3-a — finance tem service_quotes:read/create/update (matriz RBAC): vê "Orçamentos" (veto V2).
+    { label: "OPERAÇÃO", items: [ORCAMENTOS, APROVACOES] },
     { label: "FROTA", items: [ABASTECIMENTO, MANUTENCAO, MULTAS, SEGUROS, DANOS] },
     { label: "GESTÃO", items: [ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO] },
     { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES, AUDITORIA] },
@@ -138,6 +141,7 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/work-orders",
   "/operations/dispatches",
   "/operations/map",
+  "/operations/quotes",
   "/operations/checklists",
   "/approvals",
   "/cadastros/clientes",

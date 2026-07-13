@@ -43,8 +43,16 @@ Formato após conclusão: `[x] <fase> — PR #NN, merge <hash>, junta X/X, vered
       Parâmetros) em 5 PRs (#164–#169), todas as juntas 5/5. Pendências: TagAssignment (P-Ω2d), P-032/P-033.
 
 ## Ω3 — Painel Logístico avançado
-- [ ] ServiceQuote (congela preço) · comentários/timeline · anexos (reuso evidence) · duplicar/cancelar/
-      imprimir/logs · km estimado×real
+- [x] **Ω3-a ServiceQuote (congela preço)** — junta 5/5 no ciclo 2 (vetos: cognicao coluna Serviço=UUID →
+      referências resolvem nome; coordenador V1/V2/V3 governança de menu; achado validador quantity overflow →
+      guard 422 — R-omega3a-1/J-OMEGA3A). Módulo espelho de tariffs + `findApplicable` determinístico +
+      índice parcial (C1) + migration up/down/re-up. back 43 (29+14) + front 14; conjunto 99/99 + smoke 362.
+      Invariante anti-refaturamento provada ao vivo. **PR #NN, merge <hash> — pendente push/merge.**
+- [ ] Ω3-b Despacho web→campo endurecido + Comentários/Timeline da OS
+- [ ] Ω3-c Checklist snapshot na OS (congela no despacho; decisão checklist-unificado)
+- [ ] Ω3-d Anexos de OS (reuso evidence/checklist storage)
+- [ ] Ω3-e Ações de OS (duplicar — NÃO copia quotes congelados/F1 · cancelar · imprimir · logs) + quotes[] no detalhe
+- [ ] Ω3-f km estimado×real (ingestão via sync mobile GPS)
 
 ## Ω4 — Financeiro do tenant
 - [ ] Contas · Títulos · Faturamento (anti-refaturamento) · Extrato · Caixa · Conciliação · Cheques ·

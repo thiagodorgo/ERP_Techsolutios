@@ -301,3 +301,16 @@
 - P-033 (transversal): `prisma/seed.ts` só concede permissões aos STANDARD_ROLES; `auditor` não recebe no
   banco os `*:read` que o catalog.ts lhe dá (tags/pois/tenant_settings) → GET 403 ao vivo p/ auditor. A
   matriz promete R. Alinhar o seed de role_permissions ao catálogo (afeta blocos Ω2-b→e).
+
+## P-Ω3a (Ω3-a ServiceQuote) — pendências declaradas
+- **Aditivo `quotes[]` no detalhe da OS** (`GET /work-orders/:id`) DEFERIDO para Ω3-e (consumidor natural;
+  H1 do crítico: exige novo parâmetro opcional em `toWorkOrderDto`, não cabe em `links`). O filtro
+  `/service-quotes?workOrderId=` já entrega quotes-por-OS por ora.
+- **Degradação por permissão (ressalva cognicao-visual):** um papel com `service_quotes:read` mas SEM
+  `service_catalog:read`/`customers:read`/`work_orders:read` verá as colunas Serviço/OS/Cliente caírem no
+  fallback `shortRef` (UUID truncado, id completo no `title`) — degradação graciosa, não bug. Caso concreto:
+  **finance** tem quotes:read/create/update mas NÃO tem service_catalog:read/customers:read → o modal de novo
+  orçamento e as colunas ficam sem rótulo humano para finance. Decidir: conceder a finance
+  `service_catalog:read`+`customers:read`+`work_orders:read`, ou aceitar a degradação. Não bloqueia (junta 5/5).
+- **Achados validador-mestre resolvidos no ciclo 2:** quantity sem teto → guard `assertMoneyInRange(quantity)`
+  (422, paridade InMemory×Prisma) + 2 testes; contagem de smoke documentada corrigida (13→12).
