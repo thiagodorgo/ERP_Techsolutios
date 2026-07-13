@@ -9,6 +9,7 @@ import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
 import { OperatorProfileFormModal } from "../components/OperatorProfileFormModal";
+import { getOperatorProfile } from "../operator-profiles.service";
 import {
   filterOperatorProfiles,
   formatCnhStatus,
@@ -81,8 +82,11 @@ export function ProfissionaisPage() {
     setModalOpen(true);
   }
 
-  function openEdit(profile: OperatorProfileItem) {
-    setEditing(profile);
+  async function openEdit(profile: OperatorProfileItem) {
+    // LGPD: a lista não traz o número da CNH. Busca o DETALHE (GET /:id) antes de abrir o modal, para o
+    // formulário de edição pré-preencher a CNH sem que o número trafegue em massa na listagem.
+    const detail = await getOperatorProfile(context, profile.id).catch(() => null);
+    setEditing(detail ?? profile);
     setModalOpen(true);
   }
 
@@ -116,14 +120,13 @@ export function ProfissionaisPage() {
       sortable: true,
       sortValue: (profile) => profile.cnhExpiresAt ?? "",
       render: (profile) => {
-        const status = formatCnhStatus(profile.cnhNumber, profile.cnhExpiresAt);
+        // LGPD: a lista mostra só a CATEGORIA + o selo derivado (Vencida/Válida/Sem CNH). O NÚMERO da CNH
+        // não aparece em massa — só é visível ao editar (detalhe sob demanda).
+        const status = formatCnhStatus(profile.hasCnh, profile.cnhExpiresAt);
         return (
           <div style={stackCellStyle}>
-            {profile.cnhNumber ? (
-              <span style={{ fontVariantNumeric: "tabular-nums" }}>
-                {profile.cnhNumber}
-                {profile.cnhCategory ? ` · ${profile.cnhCategory}` : ""}
-              </span>
+            {profile.hasCnh && profile.cnhCategory ? (
+              <span style={{ fontVariantNumeric: "tabular-nums" }}>Cat. {profile.cnhCategory}</span>
             ) : null}
             <Chip tone={status.tone}>{status.label}</Chip>
           </div>

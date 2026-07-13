@@ -56,8 +56,9 @@ export function filterOperatorProfiles(
     if (filters.hasConsent === "without" && item.trackingConsent) return false;
     if (!search) return true;
 
-    // A busca cobre nome, CNH, categoria, telefone e o próprio ID do usuário (nunca inventa nome).
-    return [item.fullName, item.cnhNumber, item.cnhCategory, item.phone, item.userId]
+    // Busca client-side cobre nome, categoria, telefone e o ID do usuário. O NÚMERO da CNH não vem na
+    // lista (LGPD) — a busca por número é feita server-side (validator `search` do backend cobre cnhNumber).
+    return [item.fullName, item.cnhCategory, item.phone, item.userId]
       .filter(Boolean)
       .some((value) => normalize(String(value)).includes(search));
   });
@@ -120,14 +121,14 @@ export function formatUserIdShort(userId: string | null | undefined): string {
 }
 
 // Selo da CNH: âmbar "Vencida" se a validade já passou · verde "Válida até dd/mm/aaaa" se em dia ·
-// cinza "Sem CNH" quando não há número. `now` é injetável para teste determinístico.
+// cinza "Sem CNH" quando não há CNH. Deriva de `hasCnh` (sinal do list DTO — LGPD, sem o número cru) +
+// a validade. `now` é injetável para teste determinístico.
 export function formatCnhStatus(
-  cnhNumber: string | null | undefined,
+  hasCnh: boolean,
   cnhExpiresAt: string | null | undefined,
   now: Date = new Date(),
 ): { label: string; tone: ProfileChipTone } {
-  const hasNumber = Boolean((cnhNumber ?? "").trim());
-  if (!hasNumber) return { label: "Sem CNH", tone: "default" };
+  if (!hasCnh) return { label: "Sem CNH", tone: "default" };
 
   const expires = parseDate(cnhExpiresAt);
   if (!expires) return { label: "Sem validade", tone: "default" };
@@ -170,7 +171,10 @@ function adaptOperatorProfile(input: unknown): OperatorProfileItem | null {
     id,
     userId,
     fullName: readNullableString(item, ["fullName", "full_name"]),
+    // `cnhNumber` só existe no DETALHE; na lista é null. `hasCnh` vem da lista (sinal p/ o selo) ou é
+    // derivado da presença do número no detalhe.
     cnhNumber: readNullableString(item, ["cnhNumber", "cnh_number"]),
+    hasCnh: readBoolean(item, ["hasCnh", "has_cnh"]) ?? Boolean(readString(item, ["cnhNumber", "cnh_number"])),
     cnhCategory: readNullableString(item, ["cnhCategory", "cnh_category"]),
     cnhExpiresAt: readNullableString(item, ["cnhExpiresAt", "cnh_expires_at"]),
     trackingConsent: readBoolean(item, ["trackingConsent", "tracking_consent"]) ?? false,

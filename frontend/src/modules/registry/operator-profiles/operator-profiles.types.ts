@@ -11,7 +11,10 @@ export type OperatorProfileItem = {
   readonly id: string;
   readonly userId: string;
   readonly fullName: string | null;
+  // LGPD (veto Ω2-c): a LISTA não traz o número da CNH (só `hasCnh` p/ o selo). `cnhNumber` só vem no
+  // DETALHE (GET /:id), usado ao editar. Na lista fica null.
   readonly cnhNumber: string | null;
+  readonly hasCnh: boolean;
   readonly cnhCategory: string | null;
   readonly cnhExpiresAt: string | null;
   readonly trackingConsent: boolean;

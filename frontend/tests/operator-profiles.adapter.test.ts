@@ -82,20 +82,45 @@ test("operator-profiles formata o selo da CNH: vencida (âmbar), válida (verde)
 
   const now = new Date("2026-07-12T12:00:00.000Z");
 
-  // Sem número de CNH → cinza "Sem CNH".
-  assert.deepEqual(formatCnhStatus(null, "2027-01-01T00:00:00.000Z", now), { label: "Sem CNH", tone: "default" });
-  assert.deepEqual(formatCnhStatus("   ", null, now), { label: "Sem CNH", tone: "default" });
+  // Veto Ω2-c: o selo deriva de `hasCnh` (sinal do list DTO, LGPD) + validade — NÃO do número cru.
+  // Sem CNH (hasCnh=false) → cinza "Sem CNH".
+  assert.deepEqual(formatCnhStatus(false, "2027-01-01T00:00:00.000Z", now), { label: "Sem CNH", tone: "default" });
 
   // CNH com validade no passado → âmbar "Vencida".
-  assert.deepEqual(formatCnhStatus("01234567890", "2026-01-01T00:00:00.000Z", now), { label: "Vencida", tone: "warning" });
+  assert.deepEqual(formatCnhStatus(true, "2026-01-01T00:00:00.000Z", now), { label: "Vencida", tone: "warning" });
 
   // CNH com validade futura → verde "Válida até dd/mm/aaaa" (data em UTC, sem deslocar o dia).
-  const valida = formatCnhStatus("01234567890", "2027-12-31T00:00:00.000Z", now);
+  const valida = formatCnhStatus(true, "2027-12-31T00:00:00.000Z", now);
   assert.equal(valida.tone, "success");
   assert.equal(valida.label, "Válida até 31/12/2027");
 
   // CNH sem validade informada → cinza "Sem validade" (honesto, não presume vigência).
-  assert.deepEqual(formatCnhStatus("01234567890", null, now), { label: "Sem validade", tone: "default" });
+  assert.deepEqual(formatCnhStatus(true, null, now), { label: "Sem validade", tone: "default" });
+});
+
+test("Ω2-c (veto B1): a partir do payload REAL do list DTO (sem cnhNumber, com hasCnh) o selo é honesto", async () => {
+  const { adaptOperatorProfilesResponse, formatCnhStatus, formatConsentStatus } = await import(
+    "../src/modules/registry/operator-profiles/operator-profiles.adapter"
+  );
+  const now = new Date("2026-07-12T12:00:00.000Z");
+  // Formato EXATO do toOperatorProfileListDto: hasCnh + cnhCategory + cnhExpiresAt + trackingConsentAt,
+  // SEM cnhNumber (LGPD).
+  const data = adaptOperatorProfilesResponse({
+    items: [
+      { id: "p1", userId: "u1", fullName: "Guincheiro Válido", hasCnh: true, cnhCategory: "E", cnhExpiresAt: "2030-05-01T00:00:00.000Z", trackingConsent: true, trackingConsentAt: "2026-07-01T00:00:00.000Z", phone: null, isActive: true, createdAt: "2026-07-01T00:00:00.000Z" },
+      { id: "p2", userId: "u2", fullName: "Sem Habilitação", hasCnh: false, cnhCategory: null, cnhExpiresAt: null, trackingConsent: false, trackingConsentAt: null, phone: null, isActive: true, createdAt: "2026-07-01T00:00:00.000Z" },
+    ],
+    pagination: { limit: 20, offset: 0, total: 2 },
+  });
+  assert.equal(data.items.length, 2);
+  // p1: hasCnh derivado do sinal, cnhNumber ausente na lista.
+  assert.equal(data.items[0].hasCnh, true);
+  assert.equal(data.items[0].cnhNumber, null);
+  assert.deepEqual(formatCnhStatus(data.items[0].hasCnh, data.items[0].cnhExpiresAt, now), { label: "Válida até 01/05/2030", tone: "success" });
+  assert.deepEqual(formatConsentStatus(data.items[0].trackingConsent, data.items[0].trackingConsentAt), { label: "Consentido em 01/07/2026", tone: "success" });
+  // p2: sem CNH.
+  assert.equal(data.items[1].hasCnh, false);
+  assert.deepEqual(formatCnhStatus(data.items[1].hasCnh, data.items[1].cnhExpiresAt, now), { label: "Sem CNH", tone: "default" });
 });
 
 test("operator-profiles formata o selo de rastreamento LGPD (consentido em dd/mm/aaaa verde / sem consentimento cinza)", async () => {
@@ -144,7 +169,7 @@ test("operator-profiles valida userId obrigatório, validade de CNH, telefone e 
   );
 });
 
-test("operator-profiles busca cobre nome/CNH/categoria/telefone/userId e filtra por situação e consentimento; fallback vazio (D-007)", async () => {
+test("operator-profiles busca cobre nome/categoria/telefone/userId (CNH é server-side, LGPD) e filtra por situação e consentimento; fallback vazio (D-007)", async () => {
   const { filterOperatorProfiles, adaptOperatorProfilesResponse } = await import("../src/modules/registry/operator-profiles/operator-profiles.adapter");
 
   const base = { cnhCategory: null, cnhExpiresAt: null, trackingConsentAt: null, notes: null, createdAt: "2026-06-01T00:00:00.000Z" };
@@ -163,7 +188,9 @@ test("operator-profiles busca cobre nome/CNH/categoria/telefone/userId e filtra 
 
   // Busca por vários campos, inclusive o userId (nunca traduzido para nome).
   assert.equal(filterOperatorProfiles(items, { search: "joão", isActive: "all" })[0].id, "a"); // nome
-  assert.equal(filterOperatorProfiles(items, { search: "0123456", isActive: "all" })[0].id, "a"); // CNH
+  // LGPD: o número da CNH NÃO é buscável client-side (não trafega na lista) — busca por número é server-side.
+  assert.equal(filterOperatorProfiles(items, { search: "0123456", isActive: "all" }).length, 0);
+  assert.equal(filterOperatorProfiles(items, { search: "550e8400", isActive: "all" })[0].id, "a"); // userId
   assert.equal(filterOperatorProfiles(items, { search: "92222", isActive: "all" })[0].id, "b"); // telefone
   assert.equal(filterOperatorProfiles(items, { search: "6f1e2d3c", isActive: "all" })[0].id, "b"); // userId
   assert.equal(filterOperatorProfiles(items, { search: "maria", isActive: "active" }).length, 0);
