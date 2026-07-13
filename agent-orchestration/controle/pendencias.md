@@ -409,3 +409,13 @@
   D-DOCS-KRYOS registrada. Grep de auditoria zerado (exceto registro da limpeza + notas de retificacao + falso
   positivo "fluido refrigerante" em WorkOrderDetailPage.tsx).
 - status: **RESOLVIDA** (Ω-DOCS, PR3 da rodada saneamento).
+
+## P-SAN-CORS - CORS bare (`app.use(cors())` = `*`) e CORS_ORIGIN é config morta (Ω-INFRA-1, 2026-07-13)
+- descricao: `src/app.ts` usa `cors()` sem opcoes → `Access-Control-Allow-Origin: *` em todos os ambientes; a env
+  `CORS_ORIGIN` (compose/.env.example) nao e consumida em lugar nenhum. PRE-EXISTENTE (fora do diff Ω-INFRA-1).
+  Mitigado hoje: auth 100% Bearer (sem cookie; cors() default nao seta Allow-Credentials) e a topologia
+  containerizada e same-origin (nginx faz proxy /api → api:3000).
+- impacto: aceitavel em dev/validacao local; INACEITAVEL em producao real.
+- acao: **GATE do Ω-INFRA-3 (go-live)** — ligar o CORS a allowlist por env lendo `CORS_ORIGIN` (sem `*`), com
+  teste. Apontado pelo agente-secops (J-SAN-4). TLS/HSTS terminados no provedor tambem entram na config do PR5/6.
+- status: aberto (bloqueia o PR de PRODUCAO, nao a containerizacao)
