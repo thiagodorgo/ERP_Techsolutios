@@ -20,3 +20,10 @@ PATCH só com campos editáveis (referências intactas); 19/19 + 4/4; checks ver
 **Veredito final: 5/5 APROVADO.** Nota não-bloqueante do inspetor: `GET /navigation/menu` não lista nenhum
 item `/cadastros/*` (padrão do repo — o grupo Cadastros é servido pelo registry do frontend com gate por
 permissão real); fica relatado para eventual unificação futura.
+
+> **RETIFICAÇÃO (Ω-DOCS · D-DOCS-KRYOS · 2026-07-13):** as citações a "estudo doutoral" acima referenciavam
+> `docs/research/estudo-doutoral-interfaces-10-saas.md` — conteúdo do projeto **Kryos** (outro SaaS do dono,
+> supervisão de refrigeração/SCADA) que vazou para este repo e foi **REMOVIDO**. As decisões de UI destes
+> blocos permanecem válidas por mérito próprio (tabelas densas, cópia PT-BR, estados/transições válidos); a
+> **fonte canônica de UI do ERP Techsolutions** é `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md` e as docs próprias
+> (`docs/09-mapa-telas-frontend.md`, `screen-refs/`). A atribuição ao estudo Kryos fica retificada.

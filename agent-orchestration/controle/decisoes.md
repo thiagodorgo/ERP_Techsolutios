@@ -405,3 +405,16 @@
 - Reescrito em: `/CLAUDE.md` (§C1 tabela, §C2, §C3, §C7 nova, DoD), `Kpis/README.md`,
   `mobile/flutter_app/Kpis/README.md`, `agent-orchestration/omega/plano-mestre.md`. Handoff-package
   (`docs/claude-code-handoff/*`) e logs históricos recebem banner "revogada", não reescrita.
+
+## D-DOCS-KRYOS — descontaminação do conteúdo do projeto Kryos (2026-07-13) [Ω-DOCS]
+- Contexto: conteúdo do projeto **Kryos** (outro SaaS do dono — supervisão de refrigeração/SCADA, Carel/Modbus)
+  vazou para este repo e chegou a ser citado como "fonte canônica de UI" em blocos do Ω2.
+- Decisão: **removido** `docs/research/estudo-doutoral-interfaces-10-saas.md` (100% Kryos; o dono mantém cópia no
+  projeto Kryos) e a pasta `docs/research/` (ficou vazia). Reescritas as 4 linhas contaminadas de
+  `docs/09-mapa-telas-frontend.md` (SCADA → "workspace operacional denso"; "DeviceDetail/Kryos" → "Detalhe de
+  Entidade", 3 ocorrências). Retificadas (não apagadas) as 6 citações históricas ao estudo (juntas J-OMEGA2A-1/
+  J-OMEGA2A2 + task-histories T-OMEGA2A-1/2B/2C/2D).
+- **Fontes canônicas de UI do ERP Techsolutions:** `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md` e as docs próprias
+  (`docs/09-mapa-telas-frontend.md`, `screen-refs/`). NÃO o estudo Kryos.
+- Falso positivo declarado (não mexer): `frontend/src/pages/WorkOrderDetailPage.tsx` "fluido refrigerante"
+  (item de estoque automotivo — arrefecimento de veículo), sem relação com refrigeração/SCADA.

@@ -7,7 +7,7 @@ Este documento consolida o mapa de telas Web e Mobile do ERP Techsolutions com b
 Princípios adotados:
 - plataforma SaaS multi-tenant com isolamento por `tenant_id` e escopo por filial/equipe;
 - operação orientada por Ordem de Serviço (OS), timeline e evidências;
-- UX técnica/industrial (workspace tipo SCADA, tabelas densas, cards operacionais, alertas claros);
+- UX técnica/operacional (workspace operacional denso: tabelas densas, cards operacionais, alertas claros);
 - frontend React único para Web com responsividade, e fluxo Mobile orientado a execução de campo/offline;
 - priorização explícita por fase: MVP, Scale e Enterprise.
 
@@ -16,7 +16,7 @@ Princípios adotados:
 ### Diretriz estrutural
 - **Layout-base Web**: sidebar persistente + header operacional + conteúdo modular.
 - **Layout-base Mobile**: navegação simplificada por contexto (Agenda, OS, Evidências, Sync, Pendências).
-- **Padrão DeviceDetail/Kryos**: detalhe técnico em bloco único por entidade (identificação, estado, timeline, ações, logs).
+- **Padrão Detalhe de Entidade**: detalhe técnico em bloco único por entidade (identificação, estado, timeline, ações, logs).
 - **Sem redundância de tabs**: priorizar uma visão principal com seções dobráveis, drawer e modal contextual.
 
 ### Estados semânticos mínimos
@@ -314,7 +314,7 @@ Princípios adotados:
 - **Status desta branch:** `/work-orders/new` implementada com formulario real para `POST /api/v1/work-orders`; edicao completa permanece futura, mas o detalhe ja permite status e atribuicao simples.
 - **Prioridade:** MVP.
 
-### W19 — Ordem de Serviço: Detalhe (padrão DeviceDetail)
+### W19 — Ordem de Serviço: Detalhe (padrão Detalhe de Entidade)
 - **Objetivo:** centralizar contexto completo da OS em visão única.
 - **Usuários:** Operação, Financeiro, Estoque, Auditor, Supervisor.
 - **Permissões:** leitura/ações por papel.
@@ -649,7 +649,7 @@ Princípios adotados:
 - **Estados:** default/loading/empty/error/fallback/read-only. Despacho, aprovacao financeira, evidencias de OS e comissoes ficam futuros.
 - **Alertas e bloqueios:** SLA crítico, checklist pendente, evidência obrigatória ausente.
 - **Integrações:** mapa, estoque, financeiro, mobile sync.
-- **Responsividade:** DeviceDetail em seções verticais + drawers de ação.
+- **Responsividade:** Detalhe de Entidade em seções verticais + drawers de ação.
 
 #### W21/W22 — Estoque (Itens, Saldos, Movimentações, Consumo OS)
 - **Papel principal:** Estoquista.
