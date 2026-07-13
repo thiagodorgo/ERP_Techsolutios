@@ -1,102 +1,67 @@
-import { ArrowRight, Building2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { RefreshCw } from "lucide-react";
+import type { CSSProperties } from "react";
 
-import { Badge, Card, Chip } from "../../../components/ui";
-import {
-  tenantSettingsCategories,
-  tenantSettingsPermissionNote,
-  tenantSettingsThemes,
-} from "../settings.mock";
+import { Alert, Badge, Button, EmptyState, Skeleton } from "../../../components/ui";
+import { usePermissions } from "../../../providers/PermissionProvider";
+import { TenantSettingsGroups } from "../components/TenantSettingsGroups";
+import { useTenantSettings } from "../useTenantSettings";
+
+// Configurações da Organização (Ω2-e) — DATA-BACKED por parâmetros key-value reais
+// (`GET /api/v1/tenant-settings`). Os parâmetros são agrupados por `category` (apresentação só
+// decora com título/ícone). Página gated por `tenant_settings:read`; edição por
+// `tenant_settings:update` (o botão Salvar some para quem só lê). D-007: nada é fabricado.
+
+const retryRowStyle: CSSProperties = { display: "flex", justifyContent: "flex-start" };
 
 export function TenantSettingsPage() {
-  const PermissionIcon = tenantSettingsPermissionNote.icon;
+  const { items, loading, error, refresh, context } = useTenantSettings();
+  const { can } = usePermissions();
+
+  const canUpdate = can("tenant_settings:update");
 
   return (
-    <div className="page-stack tenant-settings-page">
+    <section className="page-stack tenant-settings-page">
       <header className="page-heading page-heading--row">
         <div>
           <span>Administrador</span>
           <h1>Configurações</h1>
-          <p>Centralize preferências, acessos, módulos e padrões operacionais da empresa.</p>
+          <p>Parâmetros da organização — valores reais, agrupados por categoria.</p>
         </div>
-        <Badge tone="info">Configuração da empresa</Badge>
+        <div className="work-orders-actions">
+          <Button type="button" variant="secondary" onClick={() => void refresh()} disabled={loading}>
+            <RefreshCw size={16} aria-hidden /> Atualizar
+          </Button>
+          {canUpdate ? null : <Badge tone="info">Somente leitura</Badge>}
+        </div>
       </header>
 
-      <section className="tenant-settings-overview">
-        <Card>
-          <div className="tenant-settings-callout">
-            <Building2 size={24} />
-            <div>
-              <strong>Central da organização</strong>
-              <p>Organize a navegação de configuração sem duplicar telas especializadas como Checklists.</p>
-            </div>
+      {error ? (
+        <>
+          <Alert title="Não foi possível carregar os parâmetros" tone="warning">
+            {error}
+          </Alert>
+          <div style={retryRowStyle}>
+            <Button type="button" variant="secondary" onClick={() => void refresh()}>
+              <RefreshCw size={16} aria-hidden /> Tentar novamente
+            </Button>
           </div>
-        </Card>
-        <Card>
-          <div className="tenant-settings-callout">
-            <PermissionIcon size={24} />
-            <div>
-              <strong>Acesso protegido</strong>
-              <p>Acesso protegido pelo seu perfil de administrador na organização.</p>
-            </div>
-          </div>
-        </Card>
-      </section>
+        </>
+      ) : null}
 
-      <section className="tenant-settings-grid">
-        {tenantSettingsCategories.map((category) => {
-          const Icon = category.icon;
-          return (
-            <article key={category.id} className="tenant-settings-card">
-              <header>
-                <div>
-                  <Icon size={20} />
-                  <strong>{category.title}</strong>
-                </div>
-                <Chip tone={category.status === "active" ? "info" : "pending"}>
-                  {category.status === "active" ? "Ativo" : "Em breve"}
-                </Chip>
-              </header>
-              <p>{category.description}</p>
-              <ul>
-                {category.items.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-              {category.path ? (
-                <Link to={category.path} className="tenant-settings-link">
-                  {category.ctaLabel ?? "Abrir"}
-                  <ArrowRight size={14} />
-                </Link>
-              ) : null}
-            </article>
-          );
-        })}
-      </section>
+      {loading && items.length === 0 ? <Skeleton lines={6} /> : null}
 
-      <Card title="Aparência">
-        <div className="tenant-settings-theme-grid">
-          {tenantSettingsThemes.map((theme) => (
-            <article key={theme.key} className="tenant-settings-theme-card">
-              <header>
-                <strong>{theme.label}</strong>
-                <Chip tone="pending">Visual</Chip>
-              </header>
-              <div className="tenant-settings-swatches" aria-label={`Paleta ${theme.label}`}>
-                {theme.colors.map((color) => (
-                  <span key={color} style={{ backgroundColor: color }} />
-                ))}
-              </div>
-              <p>
-                <strong>Uso:</strong> {theme.use}.
-              </p>
-              <p>
-                <strong>Perfil:</strong> {theme.profile}.
-              </p>
-            </article>
-          ))}
-        </div>
-      </Card>
-    </div>
+      {!loading && !error && items.length === 0 ? (
+        <EmptyState
+          title="Nenhum parâmetro configurado"
+          detail="Os parâmetros da organização aparecem aqui assim que forem provisionados. Use Atualizar para recarregar."
+        />
+      ) : null}
+
+      {items.length > 0 ? (
+        <TenantSettingsGroups items={items} canUpdate={canUpdate} context={context} onSaved={() => void refresh()} />
+      ) : null}
+    </section>
   );
 }
+
+export default TenantSettingsPage;
