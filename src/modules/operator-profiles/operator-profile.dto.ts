@@ -26,9 +26,13 @@ export function toOperatorProfileListDto(result: ListOperatorProfileResult) {
       id: profile.id,
       userId: profile.userId,
       fullName: profile.fullName ?? null,
+      // Veto junta Ω2-c (B1/LGPD): a lista NÃO expõe o número da CNH em massa — só um sinal `hasCnh` +
+      // a validade, para o selo derivar Vencida/Válida/Sem CNH sem vazar o dado sensível.
+      hasCnh: Boolean(profile.cnhNumber && profile.cnhNumber.trim()),
       cnhCategory: profile.cnhCategory ?? null,
       cnhExpiresAt: profile.cnhExpiresAt?.toISOString() ?? null,
       trackingConsent: profile.trackingConsent,
+      trackingConsentAt: profile.trackingConsentAt?.toISOString() ?? null,
       phone: profile.phone ?? null,
       isActive: profile.isActive,
       createdAt: profile.createdAt.toISOString(),

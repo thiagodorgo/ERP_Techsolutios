@@ -188,3 +188,25 @@ test("get retorna o perfil criado no mesmo tenant", async () => {
   assert.equal(fetched.id, created.id);
   assert.equal(fetched.userId, created.userId);
 });
+
+// Veto junta Ω2-c (B1/LGPD): o LIST DTO expõe hasCnh + trackingConsentAt (para o selo), mas NÃO o
+// número da CNH em massa; o DETAIL DTO expõe cnhNumber (leitura de 1 registro).
+test("list DTO: hasCnh + trackingConsentAt presentes; cnhNumber AUSENTE (LGPD)", async () => {
+  const { toOperatorProfileListDto, toOperatorProfileDto } = await import("../src/modules/operator-profiles/operator-profile.dto.js");
+  const svc = service();
+  const ctx = actor();
+  const created = await svc.create(ctx, { userId: randomUUID(), cnhNumber: "99887766554", cnhCategory: "E", cnhExpiresAt: "2030-05-01", trackingConsent: true });
+  const listDto = toOperatorProfileListDto(await svc.list(ctx, {}));
+  const item = listDto.items[0] as Record<string, unknown>;
+  assert.equal(item.hasCnh, true);
+  assert.ok(typeof item.trackingConsentAt === "string");
+  assert.equal("cnhNumber" in item, false, "list DTO NÃO pode conter cnhNumber (LGPD)");
+  // sem CNH → hasCnh false
+  const created2 = await svc.create(ctx, { userId: randomUUID() });
+  const list2 = toOperatorProfileListDto(await svc.list(ctx, {}));
+  const found = (list2.items as Record<string, unknown>[]).find((i) => i.id === created2.id)!;
+  assert.equal(found.hasCnh, false);
+  // detail DTO expõe o número (leitura de 1 registro autorizada)
+  const detail = toOperatorProfileDto(await svc.get(ctx, created.id)) as Record<string, unknown>;
+  assert.equal(detail.cnhNumber, "99887766554");
+});
