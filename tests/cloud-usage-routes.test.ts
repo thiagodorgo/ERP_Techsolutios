@@ -17,9 +17,13 @@ test("platform admin acessa cloud usage summary e usuario comum nao acessa", asy
       occurredAt: new Date("2026-06-08T10:00:00.000Z"),
     });
 
-    const platform = await requestJson(baseUrl, "/api/v1/platform/cloud-usage/summary", {
-      headers: platformHeaders(),
-    });
+    // Período explícito cobrindo o evento (2026-06-08). Sem período, o summary usa a janela
+    // padrão de 30 dias relativa a "agora" — o que fazia este teste apodrecer com o relógio.
+    const platform = await requestJson(
+      baseUrl,
+      "/api/v1/platform/cloud-usage/summary?periodStart=2026-06-01T00:00:00.000Z&periodEnd=2026-06-30T23:59:59.999Z",
+      { headers: platformHeaders() },
+    );
     const tenantUser = await requestJson(baseUrl, "/api/v1/platform/cloud-usage/summary", {
       headers: authHeaders(seed.tenantA, seed.adminA, "tenant_admin"),
     });

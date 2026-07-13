@@ -380,3 +380,17 @@
 - Decisão: A1 (usuário vence); reconciliado em RBAC_MATRIX.md (send-own → send-own/read-tenant),
   navigation-matrix.md (operator R→E) e catalog.ts. Tenant-scoped (RLS), sem vazamento cross-tenant.
 - Detalhe: agent-orchestration/controle/D-ACESSO-operator-field-location-read.md. Validado por login real.
+
+## D-SAN-AUTONOMIA — pré-autorização de decisão de infra por junta (2026-07-13) [rodada saneamento, gravada no Ω-GATE por requisito do critico J-SAN-0]
+- Decisão do dono (Thiago, via prompt-rodada-saneamento-infra.md): nesta rodada, **contratar/configurar
+  provedor de deploy, serviço de logs/uptime, GHCR e as dependências mínimas de infra** deixam de ser "parada
+  estrutural" do plano-mestre Ω — passam a exigir **junta de 5 unânime + PD** e seguem, sem consulta humana por PR.
+- ESCOPO EXATO: a pré-autorização cobre a **DECISÃO** (qual provedor, qual serviço) e o **gasto**. NÃO fabrica
+  credencial. Permanece como **PARADA IRREDUTÍVEL** (fronteira externa, ratificada em J-SAN-0): falta de conta no
+  provedor, método de pagamento/cartão, domínio registrado+DNS, ou secrets iniciais para os GitHub Environments.
+  Logo: PRs 5-7 (staging/produção/backup) entregam TODA a config-as-code + pipelines + scripts + runbooks em
+  junta-de-código; a **ativação viva** (criar conta, pagar, apontar domínio, injetar secrets, smoke/restore reais)
+  = **um único dossiê de hand-off** ao humano, entre PR4 e PR5.
+- Paradas imediatas irredutíveis desta rodada = { migration destrutiva, exposição de segredo, ação irreversível
+  em produção sem junta unânime prévia, **falta de credencial/pagamento/domínio externo** }.
+- D-KPI-PER-PR (revogação da política de KPI pós-avaliação-humana) fica para o PR2 (Ω-GOV), como no plano.

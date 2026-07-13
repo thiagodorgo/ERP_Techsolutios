@@ -13,6 +13,39 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/erp_techsolutions?schema=public
+      REDIS_URL: redis://localhost:6379
+      # Ω-GATE: fixa o modo do gate. A suíte é verde em `memory` (default); testes que exigem o
+      # caminho prisma setam CORE_SAAS_PERSISTENCE=prisma eles mesmos em runtime. Forçar aqui
+      # elimina a fragilidade de o gate depender da AUSÊNCIA da var (um runner que herdasse
+      # `prisma` veria falhas de poluição). Robustez pedida pela junta (critico J-SAN-1).
+      CORE_SAAS_PERSISTENCE: memory
+
+    # Ω-GATE: a suíte completa (testes *-prisma, rls-tenant-isolation, job-queue etc.) exige
+    # Postgres e Redis reais. Sem estes service containers, `npm test` (suíte inteira) nunca
+    # rodava de fato no CI — o gate era ilusório.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: erp_techsolutions
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d erp_techsolutions"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout
@@ -29,6 +62,17 @@ jobs:
 
       - name: Generate Prisma Client
         run: npm run db:generate
+
+      # Ω-GATE: falha rápido se o banco não estiver no ambiente. Vários testes (auth/*-prisma/
+      # persistent-rbac) leem DATABASE_URL no load do módulo e AUTO-SKIPAM se ausente — sem este
+      # guard o gate poderia ficar verde-cego (suíte "passa" pulando cobertura real).
+      - name: Guard required env
+        run: |
+          test -n "$DATABASE_URL" || { echo "DATABASE_URL ausente — gate seria verde-cego"; exit 1; }
+          test -n "$REDIS_URL" || { echo "REDIS_URL ausente"; exit 1; }
+
+      - name: Apply migrations (Prisma)
+        run: npx prisma migrate deploy
 
       - name: TypeScript check
         run: npm run check
