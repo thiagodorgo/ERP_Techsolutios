@@ -25,6 +25,7 @@
 | Ordens de Serviço `/work-orders` | `work_orders:read` | F | F | F | E | R | R | M | R | — |
 | OS detalhe `/work-orders/:id` | `work_orders:read` | F | F | F | E | R | R | M | R | — |
 | Despachos `/operations/dispatches` | `field_dispatch:read` | F | F | F | R | — | — | M | R | — |
+| Timeline do despacho `/operations/dispatches/:id/timeline` (Ω3-b) | `field_dispatch:read` | F | F | F | R | — | — | M | R | — |
 | Mapa Operacional `/operations/map` (F6, Ω-ACESSO) | `field_location:read` + módulo `field_operations` | F | F | F | E | — | — | M | R | — |
 | Aprovações `/approvals` | `work_orders:read` | F | F | F | request | approval | — | — | R | — |
 | Checklists `/operations/checklists` | `checklist_runs:read` | F | F | F | E | — | — | M | R | — |

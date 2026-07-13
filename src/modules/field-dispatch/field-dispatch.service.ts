@@ -19,7 +19,7 @@ import type {
   ListFieldDispatchesInput,
   ListFieldDispatchesResult,
 } from "./field-dispatch.types.js";
-import { FieldDispatchError } from "./field-dispatch.types.js";
+import { FIELD_DISPATCH_TARGET_ROLES, FieldDispatchError } from "./field-dispatch.types.js";
 import {
   assertNonTerminalStatus,
   assertStatusTransition,
@@ -239,11 +239,26 @@ export class FieldDispatchService {
     }
   }
 
+  // D1/D3 — valida que o ALVO (operatorUserId) existe no tenant (404) E é técnico de campo (422).
+  // Existência é checada ANTES do papel (404 não é mascarado por 422). Guard único → cobre create E
+  // reassign. Checa o CONJUNTO `roles` (plural), não só o primeiro (D1.a).
   private async assertOperatorBelongsToTenant(tenantId: string, operatorUserId: string): Promise<void> {
+    let user: Awaited<ReturnType<ICoreSaasService["getUserForTenant"]>>;
     try {
-      await this.coreService.getUserForTenant(operatorUserId, tenantId);
+      user = await this.coreService.getUserForTenant(operatorUserId, tenantId);
     } catch {
       throw new FieldDispatchError(404, "FIELD_OPERATOR_NOT_FOUND", "not_found", "Field operator was not found.");
+    }
+
+    const roles = user.roles ?? [];
+    const isFieldTarget = roles.some((role) => (FIELD_DISPATCH_TARGET_ROLES as readonly string[]).includes(role));
+    if (!isFieldTarget) {
+      throw new FieldDispatchError(
+        422,
+        "FIELD_DISPATCH_TARGET_INVALID",
+        "target_not_field_technician",
+        "The dispatch target must be a field technician.",
+      );
     }
   }
 }

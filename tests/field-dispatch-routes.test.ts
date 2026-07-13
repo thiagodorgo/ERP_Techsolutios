@@ -220,13 +220,13 @@ function seedCoreSaas(service: {
     tenantId: tenantA.id,
     name: "Operator A",
     email: "field-dispatch-operator-a@example.com",
-    roles: ["operator"],
+    roles: ["technician"],
   });
   const operatorB = service.createUser({
     tenantId: tenantB.id,
     name: "Operator B",
     email: "field-dispatch-operator-b@example.com",
-    roles: ["operator"],
+    roles: ["technician"],
   });
   const viewerA = service.createUser({
     tenantId: tenantA.id,

@@ -31,6 +31,19 @@ export function assertNonEmptyString(value: unknown, field: string): string {
   return normalized;
 }
 
+// Ω3-b — corpo de comentário livre da OS. Obrigatório (400 comment_required), limitado a 4000 chars
+// (422 comment_too_long). Preserva quebras de linha internas; só apara as bordas.
+export function parseComment(value: unknown): string {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  if (!normalized) {
+    throw new WorkOrderError(400, "WORK_ORDER_INVALID", "comment_required", "comment message is required.");
+  }
+  if (normalized.length > 4000) {
+    throw new WorkOrderError(422, "WORK_ORDER_UNPROCESSABLE", "comment_too_long", "comment must be at most 4000 characters.");
+  }
+  return normalized;
+}
+
 export function optionalString(value: unknown): string | undefined {
   const normalized = typeof value === "string" ? value.trim() : "";
 

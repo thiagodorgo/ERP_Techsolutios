@@ -54,6 +54,7 @@ const permissionDescriptions = {
   "work_orders:status": "Alterar status operacional de ordens de servico.",
   "work_orders:cancel": "Cancelar ordens de servico.",
   "work_orders:delete": "Excluir ordens de servico quando permitido por regra futura.",
+  "work_orders:comment": "Registrar comentario livre na timeline da ordem de servico.",
   "field_location:read": "Consultar localizacao operacional de campo.",
   "field_location:send": "Enviar localizacao operacional de campo.",
   "field_location:history": "Consultar historico de localizacao de campo.",

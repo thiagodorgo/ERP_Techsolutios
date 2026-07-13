@@ -88,8 +88,11 @@ export class PrismaDashboardRepository implements DashboardRepository {
         ],
         take: DASHBOARD_CRITICAL_LIMIT,
       }),
+      // Ω3-b (P-034 do validador-mestre): o comentário livre (work_order_comment) NÃO entra no feed do
+      // dashboard — o corpo pode conter PII e o feed é visível a papéis com dashboard:read porém SEM
+      // work_orders:read (ex.: support). Comentário é dado de detalhe da OS, não de atividade agregada.
       this.client.workOrderEvent.findMany({
-        where: { tenant_id: tenantId },
+        where: { tenant_id: tenantId, event_type: { not: "work_order_comment" } },
         orderBy: [{ created_at: "desc" }],
         take: DASHBOARD_RECENT_EVENTS_LIMIT,
       }),

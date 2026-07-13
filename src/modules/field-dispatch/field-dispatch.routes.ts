@@ -57,6 +57,15 @@ export function createFieldDispatchRouter(
     }),
   );
 
+  // Ω3-b — timeline do despacho (eventos create/status/reassign/cancel) como rota dedicada.
+  router.get(
+    "/operations/dispatches/:dispatchId/timeline",
+    requirePermission(FIELD_DISPATCH_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.timeline(request));
+    }),
+  );
+
   router.patch(
     "/operations/dispatches/:dispatchId/status",
     requireStatusPermission(),

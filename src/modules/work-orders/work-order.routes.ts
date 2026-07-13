@@ -22,6 +22,7 @@ export const WORK_ORDER_PERMISSIONS = {
   status: "work_orders:status",
   cancel: "work_orders:cancel",
   delete: "work_orders:delete",
+  comment: "work_orders:comment",
 } as const;
 
 export function createWorkOrderRouter(resolveService: WorkOrderServiceResolver = createDefaultWorkOrderService): Router {
@@ -117,6 +118,15 @@ export function createWorkOrderRouter(resolveService: WorkOrderServiceResolver =
     requirePermission(WORK_ORDER_PERMISSIONS.read),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.timeline(request));
+    }),
+  );
+
+  // Ω3-b — comentário livre na timeline da OS (aparece no GET .../timeline acima).
+  router.post(
+    "/work-orders/:workOrderId/comments",
+    requirePermission(WORK_ORDER_PERMISSIONS.comment),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.addComment(request));
     }),
   );
 
