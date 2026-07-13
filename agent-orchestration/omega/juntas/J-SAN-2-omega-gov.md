@@ -37,4 +37,15 @@ antes de uma pausa, o `null` pode persistir. Trade-off aceito e documentado (P-S
 ## Evidência
 `node --check` dos 2 `app.js` OK; JSON válidos; `npm run check` verde; `git diff --check` limpo; grep confirma
 **zero ocorrência normativa viva** da política antiga em `/CLAUDE.md` §8/§9/§10; suíte do gate 766/0 (ci-doutor).
-Escopo: só docs/KPI/orquestração (nenhum `src/`/teste de produto). **APROVADO — merge do Ω-GOV.**
+**APROVADO — merge do Ω-GOV.**
+
+## Addendum — o gate (Ω-GATE) pegou o que a junta não pegou
+O CI (job flutter) reprovou o 1º push: `mobile/flutter_app/test/features/b106_native_gps_permissions_test.dart`
+teste 20 ("KPIs mantem B-106... latest pode avancar") era **A "teste-guarda" que os 3 agentes procuraram e não
+acharam** — está em `mobile/flutter_app/test/` (eles varreram `tests/` backend e `frontend/tests/`). Ele exigia
+os invariantes REVOGADOS: (a) todos os campos do release not-null, (b) `status == 'published_after_human_approval'`,
+(c) paridade estrita raiz×mobile (`hasLength(1)`). A reescrita do release (published_per_pr, merge/approved null)
+os quebrou — exatamente o comportamento esperado do gate real. **Correção (root-cause, não skip):** o teste foi
+alinhado à D-KPI-PER-PR — aceita ambos os status; exige merge/approved not-null **só** em marco human-approved
+(histórico); permite null na autoria per-PR; paridade estrita não é mais exigida (PR de um lado só diverge). 20/20
+verde local (`flutter test`) + `dart format` limpo. Prova viva de que o Ω-GATE tornou o gate real.

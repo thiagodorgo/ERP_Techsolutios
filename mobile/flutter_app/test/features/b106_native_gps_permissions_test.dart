@@ -372,7 +372,11 @@ void main() {
         expect(content, contains('68'));
       }
 
-      final latestReleaseData = latestJsonFiles.map((latest) {
+      // KPI-por-PR (D-KPI-PER-PR, 2026-07-13): a publicacao pos-avaliacao humana foi revogada.
+      // O release aceita ambos os status; 'published_per_pr' (vigente) permite merge_commit/
+      // approved_head null na autoria (backfill pos-merge — CLAUDE.md §C3.5), e
+      // 'published_after_human_approval' (marco historico) exige merge/approved reais.
+      final latestStatuses = latestJsonFiles.map((latest) {
         final version = latest['version'];
         expect(version, isA<String>());
         expect((version as String).trim(), isNotEmpty);
@@ -380,26 +384,34 @@ void main() {
         final release = latest['release'];
         expect(release, isA<Map<String, dynamic>>());
         final releaseMap = release as Map<String, dynamic>;
-        for (final entry in releaseMap.entries) {
-          expect(entry.value, isNotNull, reason: entry.key);
-        }
-        expect(
-          releaseMap['mergeCommit'] ?? releaseMap['merge_commit'],
-          isNotNull,
-        );
-        expect(
-          releaseMap['approvedHead'] ?? releaseMap['approved_head'],
-          isNotNull,
-        );
-        expect(releaseMap['status'], 'published_after_human_approval');
 
-        return (
-          version: version,
-          block: releaseMap['block'],
-          status: releaseMap['status'],
+        final status = releaseMap['status'];
+        expect(
+          status,
+          anyOf('published_per_pr', 'published_after_human_approval'),
+          reason: 'status de release',
         );
-      }).toSet();
-      expect(latestReleaseData, hasLength(1));
+
+        if (status == 'published_after_human_approval') {
+          expect(
+            releaseMap['mergeCommit'] ?? releaseMap['merge_commit'],
+            isNotNull,
+            reason: 'merge_commit (marco human-approved)',
+          );
+          expect(
+            releaseMap['approvedHead'] ?? releaseMap['approved_head'],
+            isNotNull,
+            reason: 'approved_head (marco human-approved)',
+          );
+        }
+
+        return status;
+      }).toList();
+
+      // Paridade estrita (version/block/status identicos raiz x mobile) NAO e mais exigida sob
+      // KPI-por-PR: um PR de um lado so (ex.: web/backend) faz a raiz avancar enquanto o mobile
+      // segue no ultimo marco. Basta cada arquivo estar bem-formado e com status valido.
+      expect(latestStatuses, hasLength(2));
     });
   });
 }
