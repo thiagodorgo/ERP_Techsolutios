@@ -1,17 +1,27 @@
+import type { Readable } from "node:stream";
+
 import { Router, type Response } from "express";
 
 import { createPersistentRbacContextMiddleware } from "../core-saas/middleware/persistent-rbac-context.middleware.js";
-import { requirePermission } from "../core-saas/middleware/rbac.middleware.js";
+import { requireAnyPermission, requirePermission } from "../core-saas/middleware/rbac.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
 import { ApprovalController } from "./approval.controller.js";
 import { WorkOrderController, type WorkOrderServiceResolver } from "./work-order.controller.js";
 import { createDefaultWorkOrderService } from "./work-order.service.js";
+import { WorkOrderAttachmentController } from "./work-order-attachment.controller.js";
+import { createDefaultWorkOrderAttachmentService } from "./work-order-attachment.service.js";
 
 type ControllerResult = {
   readonly status?: number;
   readonly body?: unknown;
   readonly data?: unknown;
+  readonly file?: {
+    readonly body: Buffer | Readable;
+    readonly fileName: string;
+    readonly mimeType: string;
+    readonly sizeBytes?: number;
+  };
 };
 
 export const WORK_ORDER_PERMISSIONS = {
@@ -29,6 +39,7 @@ export function createWorkOrderRouter(resolveService: WorkOrderServiceResolver =
   const router = Router();
   const controller = new WorkOrderController(resolveService);
   const approvalController = new ApprovalController();
+  const attachmentController = new WorkOrderAttachmentController(createDefaultWorkOrderAttachmentService);
 
   router.use(tenantContextMiddleware);
   router.use(createPersistentRbacContextMiddleware());
@@ -130,6 +141,37 @@ export function createWorkOrderRouter(resolveService: WorkOrderServiceResolver =
     }),
   );
 
+  // Ω3-d — Anexos de OS (reuso do storage de checklist + AV-scan). Upload = create OU update (fiel a
+  // Danos, inclui field_dispatcher). Download stream server-side (sem presigned). Delete lógico.
+  router.get(
+    "/work-orders/:workOrderId/attachments",
+    requirePermission(WORK_ORDER_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await attachmentController.listAttachments(request));
+    }),
+  );
+  router.post(
+    "/work-orders/:workOrderId/attachments",
+    requireAnyPermission([WORK_ORDER_PERMISSIONS.create, WORK_ORDER_PERMISSIONS.update]),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await attachmentController.createAttachment(request));
+    }),
+  );
+  router.get(
+    "/work-orders/:workOrderId/attachments/:attachmentId/download",
+    requirePermission(WORK_ORDER_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await attachmentController.downloadAttachment(request));
+    }),
+  );
+  router.delete(
+    "/work-orders/:workOrderId/attachments/:attachmentId",
+    requirePermission(WORK_ORDER_PERMISSIONS.update),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await attachmentController.deleteAttachment(request));
+    }),
+  );
+
   // Ω1b-2 — geocodificação sob demanda (gated OFF por env; backend é a autoridade de permissão).
   router.post(
     "/work-orders/:workOrderId/geocode",
@@ -143,5 +185,24 @@ export function createWorkOrderRouter(resolveService: WorkOrderServiceResolver =
 }
 
 function sendResult(response: Response, result: ControllerResult): void {
+  // Ω3-d — stream de arquivo (download de anexo): sem presigned, servidor entrega o binário.
+  if (result.file) {
+    response.status(result.status ?? 200);
+    response.setHeader("Content-Type", result.file.mimeType);
+    if (result.file.sizeBytes !== undefined) {
+      response.setHeader("Content-Length", result.file.sizeBytes.toString());
+    }
+    response.setHeader("Content-Disposition", `inline; filename="${result.file.fileName.replace(/["\\\r\n]/g, "_")}"`);
+    if (Buffer.isBuffer(result.file.body)) {
+      response.send(result.file.body);
+    } else {
+      result.file.body.pipe(response);
+    }
+    return;
+  }
+  if (result.status === 204) {
+    response.status(204).send();
+    return;
+  }
   response.status(result.status ?? 200).json(result.body ?? { data: result.data });
 }

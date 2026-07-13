@@ -349,3 +349,21 @@
   `updateGeocode` (memory `?? current.updatedBy` × prisma `?? null`) — mantido por consistência com o
   irmão. Alinhar ambos (freeze + geocode) num bloco de higiene futuro. Não bloqueia.
 - (A asserção tautológica em checklist-snapshot-dispatch.test.ts — 2º achado BAIXA — foi REMOVIDA no fechamento.)
+
+## P-Ω3d (Ω3-d Anexos de OS) — coverage/cosmético (junta APROVOU; não-veto)
+- **413 too_large:** COBERTO no fechamento (teste com blob 11MB > default 10MB).
+- **file_required:** COBERTO no fechamento (multipart sem part `file` → 400 file_required); título do teste corrigido.
+- **Cleanup de órfão (service.ts catch pós-store):** só código + revisão de 3 agentes; falta teste que force
+  falha de insert pós-store e prove `deleteObject`. Follow-up (precisa de repo-stub injetável no service).
+- **Auditoria §2.8 no caminho prisma:** `recordRequestAuditBestEffort` faz early-return em memory
+  (audit-request-context.ts:39) → o allowlist de metadados curados só roda em prisma. §2.8 provado no DTO
+  (API+DB, ao vivo) e por código; falta um teste prisma-mode do registro de auditoria. Follow-up.
+- **Migration name:** RENOMEADA de `20260732000000` (dia 32 inválido) → `20260801000000` (2026-08-01) + registro
+  do _prisma_migrations do dev atualizado; `migrate status` = up to date. RESOLVIDO.
+
+## P-INFRA-RLS (transversal — apontado pelo coordenador no Ω3-d) — RLS não enforçada em runtime (dev)
+- O app conecta no Postgres como `postgres` (`rolsuper=true`, `rolbypassrls=true`), então as policies RLS
+  (ENABLE+FORCE) de TODAS as tabelas são BYPASSADAS em runtime dev. O isolamento multi-tenant é sustentado
+  pela camada de APLICAÇÃO (filtros `tenant_id` + `assertX` + `withTenantRls` que seta `app.current_tenant_id`).
+  PRÉ-EXISTENTE e plataforma-wide (não do Ω3-d). RLS fica como defense-in-depth para quando o app conectar
+  com role NÃO-superusuário. **Forte candidato para a rodada de saneamento-infra.**
