@@ -418,3 +418,19 @@
   (`docs/09-mapa-telas-frontend.md`, `screen-refs/`). NÃO o estudo Kryos.
 - Falso positivo declarado (não mexer): `frontend/src/pages/WorkOrderDetailPage.tsx` "fluido refrigerante"
   (item de estoque automotivo — arrefecimento de veículo), sem relação com refrigeração/SCADA.
+
+## D-INFRA-PROVIDER — Fly.io (gru/São Paulo) 1º · AWS 2º (2026-07-13) [Ω-INFRA-1, junta J-SAN-4 5/5]
+- Decisão (junta de 5 UNÂNIME, pré-autorizada por D-SAN-AUTONOMIA; PD-INFRA-1 em docs/omega-pd.md): provedor de
+  deploy = **Fly.io, região gru (São Paulo)**; fallback pré-aprovado = **AWS (Lightsail→RDS/ECS, sa-east-1)**.
+  Racional: única dupla com região BR real; Fly vence por menor lock-in (imagem OCI + fly.toml; sair = pg_dump +
+  push da mesma imagem) e menor superfície de hand-off; AWS vence em PITR (padrão-ouro) e fica como switch.
+- **R1 (critico — premissa a RATIFICAR pelo humano no dossiê de hand-off):** a decisão pondera "dados no Brasil"
+  como requisito forte de produto/venda (LGPD art. 33 NÃO obriga). Se o dono disser que dado-no-país NÃO é
+  requisito, o 1º correto passa a ser **Render** (PITR forte + mais barato + baixo lock-in). A premissa não pode
+  ser carimbada em silêncio — vai explícita no dossiê de ativação.
+- **R2 (critico + dba-guardiao — gate BLOQUEANTE de go-live):** drill de restore CRONOMETRADO no Fly MPG
+  (dump real → banco vazio → app apontado → login OK + 1 rota autenticada), com **alvo de RPO escrito** no runbook
+  do PR 7; pg_dump diário → S3 (retenção 30d) independente do MPG. Se o RPO exigido for mais apertado do que o
+  MPG entrega, escalar para AWS (RDS PITR ~5min) — o fallback existe para isso.
+- Config-as-code do PR 5+ (fly.toml, CD, smoke) será escrita para o Fly.io; a reversibilidade (OCI) mantém a
+  troca barata.

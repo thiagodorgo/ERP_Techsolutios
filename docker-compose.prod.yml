@@ -1,0 +1,83 @@
+# Ω-INFRA-1 — validação LOCAL-PROD do stack containerizado (não é o deploy do provedor).
+# Sobe Postgres + Redis + migrate (one-shot) + api (imagem de runtime) + web (nginx estático).
+# Produção real fica por conta do provedor decidido na PD-INFRA-1 (config-as-code no PR5/6).
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: erp_techsolutions
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - erp_prod_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d erp_techsolutions"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # One-shot: aplica as migrations. Usa o estágio `builder` (tem a CLI do Prisma + schema).
+  migrate:
+    build:
+      context: .
+      target: builder
+    command: sh -c "npx prisma migrate deploy"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/erp_techsolutions?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      args:
+        APP_VERSION: ${APP_VERSION:-0.1.0}
+        GIT_COMMIT: ${GIT_COMMIT:-local}
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      CORE_SAAS_PERSISTENCE: memory
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/erp_techsolutions?schema=public
+      REDIS_URL: redis://redis:6379
+      # Placeholders de VALIDAÇÃO local-prod (mesma classe do POSTGRES_PASSWORD acima) — NÃO são segredos
+      # de produção. Produção injeta via GitHub Environments/secrets do provedor (PR5/6). Literais (sem ${})
+      # de propósito: evitam que o docker compose interpole a JWT_SECRET do .env de dev, que é um dev-secret
+      # bloqueado pelo gate de produção do env.ts.
+      JWT_SECRET: local-prod-validation-placeholder-not-a-secret
+      JWT_REFRESH_SECRET: local-prod-validation-refresh-placeholder-not-a-secret
+      JWT_EXPIRES_IN: 15m
+      CORS_ORIGIN: http://localhost:8080
+    ports:
+      - "${API_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api/v1
+        VITE_USE_MOCKS: "false"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api
+
+volumes:
+  erp_prod_pg:

@@ -1,0 +1,25 @@
+# Ω-INFRA-1 — contexto mínimo para a imagem do backend.
+node_modules
+dist
+.git
+.gitignore
+.env
+.env.*
+*.log
+
+# Fora do backend
+frontend
+mobile
+screen-refs
+Kpis
+docs
+agent-orchestration
+.claude
+tests
+playwright.config.ts
+*.dc.html
+support.js
+
+# Artefatos
+coverage
+.DS_Store

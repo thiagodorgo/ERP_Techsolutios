@@ -1,6 +1,9 @@
 node_modules/
 dist/
 .env
+# Ω-INFRA-1 (secops J-SAN-4): variantes de env também nunca entram no git; só o example é versionado.
+.env.*
+!.env.example
 storage/checklist-attachments/**
 !storage/checklist-attachments/.gitkeep
 .DS_Store
