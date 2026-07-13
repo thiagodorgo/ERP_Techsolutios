@@ -2,6 +2,11 @@
 
 > Detalhamento da **lógica de execução** que o Codex seguia e que o Claude Code deve manter.
 > Referenciado por `CLAUDE.md` (Parte C). Molde pronto em `comando-template.md`.
+>
+> ⚠️ **KPI pós-avaliação humana REVOGADA (2026-07-13, D-KPI-PER-PR).** Onde este arquivo disser que KPI só
+> publica após avaliação humana / em bloco `…K` (ex.: §4 e as menções a `B-NNNK` no §1), leia a política
+> vigente **KPI-por-PR** em `/CLAUDE.md` §C3 (atualiza no próprio PR, contagem real, junta do PR valida). Aplica-se
+> a TODO este arquivo, inclusive a tabela de tipos em §2.1 (`B-NNNK`) e a §4.
 
 ## 1. Por que blocos
 
@@ -66,6 +71,10 @@ registrar decisão/estado em agent-orchestration/
 ```
 
 ## 4. Política de KPI pós-avaliação humana (permanente, 10 regras)
+
+> ⚠️ **REVOGADA em 2026-07-13 (D-KPI-PER-PR).** A política vigente é **KPI por PR** — todo PR que altere
+> código/teste/escopo atualiza os KPIs no próprio PR, com contagens de execução real; a junta do PR valida.
+> Fonte de verdade: `/CLAUDE.md` §C3. O texto abaixo é histórico (pacote de handoff original).
 
 1. PR de feature **não** altera arquivos KPI.
 2. Feature reporta **KPIs propostos apenas no relatório final**.

@@ -1,22 +1,28 @@
 {
-  "snapshot_date": "2026-07-05",
-  "version": "B-124",
+  "snapshot_date": "2026-07-13",
+  "version": "Ω-GOV",
   "source": "mobile/flutter_app/Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "B-124",
-    "title": "Dashboard web enriquecido com despachos e localizacoes",
-    "pr": 125,
-    "merge_commit": "dcfa25063111532f8cc1c77d7af8ec4519406bb0",
-    "approved_head": "6605b13630e3f29f98670aabf9ee32e274f40d47",
-    "status": "published_after_human_approval",
-    "summary": "B-124K publica os KPIs apos avaliacao humana e merge da PR #125 (web-only): o Dashboard web passou a compor 4 fontes reais em paralelo — GET /work-orders + GET /operations/dispatches + GET /field-locations/latest + GET /notifications/unread-count (+ GET /approvals/pending) — com 8 KPIs derivados, fila critica combinada (SLA vencido > prioridade > operador sem sinal > aprovacao pendente > OS sem operador), despachos ativos, status de campo real (regra stale de 15 min reutilizada do operations-map.adapter), alertas acionaveis e eventos derivados das listas carregadas (sem timeline por OS). Fallback por fonte com rotulos Dados demonstrativos/Fallback local. Nenhum arquivo mobile/backend alterado. Publicacoes anteriores: B-121/B-122/B-123 (PRs #120/#122/#124).",
-    "status_label": "Publicado apos avaliacao humana e merge da PR #125",
+    "block": "Ω-GOV",
+    "title": "Politica KPI-por-PR + autonomia por juntas (rodada saneamento, PR2)",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr",
+    "summary": "Ω-GOV revoga a publicacao de KPI pos-avaliacao humana (D-KPI-PER-PR): todo PR que altere codigo/teste/escopo atualiza os KPIs no proprio PR com contagem de execucao real; a junta do PR valida. Primeira aplicacao: backend_tests 15/15 -> 766/766 — a suite backend INTEIRA que o Ω-GATE (PR #174, merge fb2e5fd) fez o CI rodar com Postgres+Redis+prisma migrate deploy (0 fail). PR web/backend/docs-only: metricas Flutter/mobile/frontend seguem os ultimos valores oficiais (B-124) ate re-baseamento nas respectivas trilhas. merge_commit/approved_head ficam null na autoria (backfill pos-merge).",
+    "status_label": "KPI por PR (D-KPI-PER-PR); backfill de merge pos-merge",
     "related_prs": [
+      {
+        "pr": 174,
+        "merge_commit": "fb2e5fd",
+        "note": "Ω-GATE — CI passou a rodar a suite inteira; origem do 766/766"
+      },
       {
         "pr": 125,
         "merge_commit": "dcfa25063111532f8cc1c77d7af8ec4519406bb0",
-        "approved_head": "6605b13630e3f29f98670aabf9ee32e274f40d47"
+        "approved_head": "6605b13630e3f29f98670aabf9ee32e274f40d47",
+        "note": "B-124 — contexto historico das demais metricas"
       }
     ]
   },
@@ -32,9 +38,10 @@
       "display": "44/44"
     },
     "backend_tests": {
-      "value": 15,
-      "total": 15,
-      "display": "15/15"
+      "value": 766,
+      "total": 766,
+      "display": "766/766",
+      "note": "Suite backend INTEIRA no gate do CI (Ω-GATE): 100 arquivos com Postgres+Redis. Substitui o antigo 15/15 (so core-saas). Execucao real no ambiente do CI (memory + DATABASE_URL): 0 fail."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -80,15 +87,16 @@
       "Mexeu fora do mobile: atualizar Kpis/*.",
       "Mexeu nos dois: atualizar os dois conjuntos.",
       "Se existir index.html: atualizar tambem o HTML.",
-      "PRs de feature nao alteram KPIs; publicacao ocorre somente em bloco documental pos-avaliacao humana, merge e gate."
+      "KPI por PR (D-KPI-PER-PR, 2026-07-13): todo PR que altere codigo/teste/escopo atualiza os KPIs no proprio PR com contagem de execucao real; a junta do PR valida (a politica pos-avaliacao humana foi REVOGADA)."
     ]
   },
   "notes": [
+    "Ω-GOV (2026-07-13): backend_tests corrigido de 15/15 (so core-saas) para 766/766 — a suite INTEIRA que o gate do CI passou a rodar no Ω-GATE (100 arquivos + Postgres+Redis). Primeira aplicacao da politica KPI-por-PR (D-KPI-PER-PR). Este PR e web/backend/docs-only: metrics de Flutter/mobile e frontend seguem os ultimos valores oficiais (B-124) ate serem re-baseadas em PRs das respectivas trilhas.",
     "frontend_smoke_tests avancou de 33/33 para 44/44 na PR #125 (+10 testes unitarios do dashboard.adapter B-124 e +1 render smoke do dashboard); frontend check e build OK.",
     "blocks_completed segue a regra de contagem de blocos entregues: 48 (ate B-123) + B-124 = 49.",
     "mvp_demo e mvp_vendavel mantidos nos ultimos valores oficiais publicados (96%/78%, tipo estimado); nao houve decisao humana explicita para altera-los no B-124 — a revisao pode ajusta-los. B-123 fechou a fidelidade do fluxo de OS mobile e B-124 fechou o dashboard web enriquecido, mas os percentuais permanecem oficiais ate decisao humana.",
-    "flutter_tests, backend_tests e contratos mobile permanecem nos ultimos valores oficiais comprovados; B-124 e web-only e nao alterou mobile nem backend.",
-    "version e release.block sao mantidos em sincronia com mobile/flutter_app/Kpis/kpis-latest.json (politica de KPIs duplos e teste-guarda que exige (version, block, status) identicos nos dois conjuntos)."
+    "flutter_tests e contratos mobile permanecem nos ultimos valores oficiais (B-124, web-only); backend_tests foi ATUALIZADO para 766/766 no Ω-GOV (suite backend inteira do gate do CI apos o Ω-GATE).",
+    "Na politica KPI-por-PR (D-KPI-PER-PR), um PR web/backend-only (como este Ω-GOV) atualiza so a raiz Kpis/*; a paridade de version/block com mobile/flutter_app/Kpis/ vale quando o PR toca ambos os conjuntos. Aqui a raiz avanca para Ω-GOV e o mobile segue em B-124 ate um PR que mexa em Flutter/mobile."
   ],
   "limitations": [
     "S3/presigned real pendente",

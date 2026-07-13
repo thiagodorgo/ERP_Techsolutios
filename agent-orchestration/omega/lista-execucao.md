@@ -75,6 +75,9 @@ Formato após conclusão: `[x] <fase> — PR #NN, merge <hash>, junta X/X, vered
 ## Ω4 — Financeiro do tenant
 - [ ] Contas · Títulos · Faturamento (anti-refaturamento) · Extrato · Caixa · Conciliação · Cheques ·
       Fechamento (trava retroativa)
+> **Governança de estimativa (Ω-GOV):** as estimativas do Ω4 contam **×1,5** (invariantes financeiras fortes:
+> idempotência de faturamento, imutabilidade pós-fechamento). **Conciliação** e **Fechamento (trava retroativa)**
+> são candidatos a reprovação em junta — planejar **buffer** e **fatiar em PRs menores** por agregado.
 
 ## Relatório final
 - [ ] matriz vídeo→tela→PR→junta→veredito (40); evidência visual do mapa (screenshots + ata 5/5); suíte

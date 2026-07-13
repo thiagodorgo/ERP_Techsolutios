@@ -504,3 +504,14 @@ Todo bloco futuro deve atualizar este historico com data, escopo, KPIs alterados
 ### Regra permanente confirmada
 
 Todo bloco futuro continua obrigado a atualizar `Kpis/index.html`, `Kpis/app.js` e `Kpis/kpis-history.md` antes de encerrar a entrega.
+
+## 2026-07-13 — Ω-GOV (rodada saneamento, PR2): política KPI-por-PR + correção do backend
+
+- **Política revogada→vigente:** "KPI só após avaliação humana (bloco …K)" **REVOGADA** (D-KPI-PER-PR). Vigente:
+  todo PR que altere código/teste/escopo atualiza os KPIs **no próprio PR** com contagem de execução real; a
+  **junta do PR** valida; o humano audita pelo history. Reescrito em CLAUDE.md (§C1/§C2/§C3/§C7/DoD),
+  Kpis/README.md, mobile/flutter_app/Kpis/README.md, plano-mestre.md; handoff-package e logs = banner revogada.
+- **backend_tests: 15/15 → 766/766.** O Ω-GATE (PR #174) fez o CI rodar a **suíte backend inteira** (100
+  arquivos + Postgres+Redis + `prisma migrate deploy`), 0 fail. O antigo 15/15 media só `core-saas.test.ts`.
+- **Escopo:** web/backend/docs-only. Flutter/mobile e frontend seguem valores oficiais B-124 até re-baseamento
+  nas respectivas trilhas (política dupla mantida).

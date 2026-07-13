@@ -8,13 +8,17 @@ handoff humano — ratificada em J-SAN-0).
 
 ## Ordem: Ω-GATE → Ω-GOV → Ω-DOCS → Ω-INFRA-1 → 2 → 3 → 4
 
-- [ ] **PR 1 — Ω-GATE (CI roda a suíte inteira + main verde)** — EM JUNTA (J-SAN-1). Fábrica da rodada criada
-      (ci-doutor, devops-provisionador, secops, dba-guardiao, finops) + J-SAN-0 (plano ratificado). Diagnóstico
+- [x] **PR 1 — Ω-GATE (CI roda a suíte inteira + main verde)** — **PR #174, merge `fb2e5fd`**. Junta J-SAN-1
+      4/4 APROVADO (critico condicional, condições atendidas) + J-SAN-0 3/3. Fábrica da rodada criada. Diagnóstico
       28→3→0: 25 fails eram poluição do `.env` local (CORE_SAAS_PERSISTENCE=prisma que o CI não tem); 3 reais
       corrigidos por causa raiz (app.ts platform-antes-de-me; cloud-usage fixture-relógio; approval contrato
-      vivo). `npm test` = suíte inteira; CI ganhou postgres:16+redis:7+migrate deploy. Suíte 0 fail no ambiente
-      real do CI (766 pass). P-003 RESOLVIDO. **PR #NN, merge <hash> — pendente.**
-- [ ] **PR 2 — Ω-GOV** (KPI por PR + autonomia por juntas como norma permanente; D-KPI-PER-PR + D-SAN-AUTONOMIA).
+      vivo). `npm test` = suíte inteira; CI ganhou postgres:16+redis:7+migrate deploy+guard env+memory fixo.
+      Suíte 0 fail no ambiente real do CI (766 pass, ~2m11s no gate). P-003 RESOLVIDO.
+- [x] **PR 2 — Ω-GOV** (KPI por PR + autonomia por juntas como norma permanente) — **junta J-SAN-2 UNÂNIME 5/5**
+      (1 ciclo de reprovação: critico/planejador/validador acharam §C4/§8.4/§8.7/§9 + index.html/release ainda na
+      política antiga; corrigido; re-aprovado). D-KPI-PER-PR + D-SAN-AUTONOMIA. Reescrita normativa em
+      CLAUDE.md (§C1/§C2/§C3/§C4/§C7 nova/§8/§9/§10 DoD)/READMEs KPI/plano-mestre; backend_tests 15/15→766/766;
+      nota Ω4 ×1,5. P-SAN-KPI-BACKFILL. **PR #NN, merge <hash> — pendente push/merge.**
 - [ ] **PR 3 — Ω-DOCS** (descontaminação Kryos; D-DOCS-KRYOS).
 - [ ] **PR 4 — Ω-INFRA-1** (Dockerfile multi-stage + `/health` real + docker-compose.prod + PD-INFRA-1 escolha
       de provedor [junta 5] + publish GHCR [usa GITHUB_TOKEN, sem conta externa] + docs/deployment). **100% autônomo.**

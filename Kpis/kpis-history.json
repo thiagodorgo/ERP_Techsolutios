@@ -159,5 +159,24 @@
     "merge_commit": "dcfa25063111532f8cc1c77d7af8ec4519406bb0",
     "approved_head": "6605b13630e3f29f98670aabf9ee32e274f40d47",
     "status": "published_after_human_approval"
+  },
+  {
+    "snapshot_date": "2026-07-13",
+    "version": "Ω-GOV",
+    "backend_tests": "766/766",
+    "flutter_tests": "764/764",
+    "frontend_smoke_tests": "44/44",
+    "mobile_backend_contracts": "18/18",
+    "mobile_core_saas_contracts": "21/21",
+    "backend_contract_tests_focused": "21/21",
+    "flutter_modules": "17/17",
+    "flutter_mvp_demo": "96%",
+    "flutter_mvp_vendavel": "78%",
+    "blocks_completed": 49,
+    "description": "Ω-GOV (rodada saneamento, PR2): primeira aplicacao da politica KPI-por-PR (D-KPI-PER-PR, revoga a publicacao pos-avaliacao humana). backend_tests corrigido de 15/15 (so core-saas) para 766/766 — a suite backend INTEIRA que o Ω-GATE (PR #174) fez o CI passar a rodar (100 arquivos + Postgres+Redis + prisma migrate deploy), 0 fail no ambiente do CI. Este PR e web/backend/docs-only: metrics de Flutter/mobile e frontend seguem os ultimos valores oficiais (B-124) ate re-baseamento nas respectivas trilhas. Reescrita normativa da politica em CLAUDE.md (§C1/§C2/§C3/§C7/DoD), Kpis/README.md, mobile/flutter_app/Kpis/README.md e plano-mestre.md; handoff-package e logs receberam banner revogada.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]
