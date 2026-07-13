@@ -40,3 +40,10 @@ inválida → 422). Backend memory|prisma + RLS, RBAC `price_tables:*`, tela den
   published-editável, cross-tenant 404, list filtros, soft-delete) · migration up/down/re-up OK · `git diff --check` limpo.
 - **Live HTTP** (gestor.demo): create→201(draft), publish→200, published→draft→**422**, duplicate→**409**, finance→**403**.
 - Frontend: `check`/`build` verde · `test:smoke` **284/284** (+8: adapter 6 + smoke 2; cadastros-nav 4→5).
+
+> **RETIFICAÇÃO (Ω-DOCS · D-DOCS-KRYOS · 2026-07-13):** as citações a "estudo doutoral" acima referenciavam
+> `docs/research/estudo-doutoral-interfaces-10-saas.md` — conteúdo do projeto **Kryos** (outro SaaS do dono,
+> supervisão de refrigeração/SCADA) que vazou para este repo e foi **REMOVIDO**. As decisões de UI destes
+> blocos permanecem válidas por mérito próprio (tabelas densas, cópia PT-BR, estados/transições válidos); a
+> **fonte canônica de UI do ERP Techsolutions** é `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md` e as docs próprias
+> (`docs/09-mapa-telas-frontend.md`, `screen-refs/`). A atribuição ao estudo Kryos fica retificada.

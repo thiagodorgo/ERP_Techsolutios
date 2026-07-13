@@ -39,3 +39,10 @@ greenfield: model + migration RLS). Telas `/cadastros/filiais` e `/cadastros/for
 ## Pendência registrada
 `prisma/seed.ts` `satisfies Record<Permission,string>` já estava violado no HEAD (~34 descrições antigas
 ausentes; nenhum gate typechecka o seed; fallback runtime cobre). Registrado para rodada de documentação.
+
+> **RETIFICAÇÃO (Ω-DOCS · D-DOCS-KRYOS · 2026-07-13):** as citações a "estudo doutoral" acima referenciavam
+> `docs/research/estudo-doutoral-interfaces-10-saas.md` — conteúdo do projeto **Kryos** (outro SaaS do dono,
+> supervisão de refrigeração/SCADA) que vazou para este repo e foi **REMOVIDO**. As decisões de UI destes
+> blocos permanecem válidas por mérito próprio (tabelas densas, cópia PT-BR, estados/transições válidos); a
+> **fonte canônica de UI do ERP Techsolutions** é `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md` e as docs próprias
+> (`docs/09-mapa-telas-frontend.md`, `screen-refs/`). A atribuição ao estudo Kryos fica retificada.

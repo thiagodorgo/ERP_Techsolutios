@@ -1,18 +1,23 @@
 {
   "snapshot_date": "2026-07-13",
-  "version": "Ω-GOV",
+  "version": "Ω-DOCS",
   "source": "mobile/flutter_app/Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω-GOV",
-    "title": "Politica KPI-por-PR + autonomia por juntas (rodada saneamento, PR2)",
+    "block": "Ω-DOCS",
+    "title": "Descontaminacao Kryos (rodada saneamento, PR3)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω-GOV revoga a publicacao de KPI pos-avaliacao humana (D-KPI-PER-PR): todo PR que altere codigo/teste/escopo atualiza os KPIs no proprio PR com contagem de execucao real; a junta do PR valida. Primeira aplicacao: backend_tests 15/15 -> 766/766 — a suite backend INTEIRA que o Ω-GATE (PR #174, merge fb2e5fd) fez o CI rodar com Postgres+Redis+prisma migrate deploy (0 fail). PR web/backend/docs-only: metricas Flutter/mobile/frontend seguem os ultimos valores oficiais (B-124) ate re-baseamento nas respectivas trilhas. merge_commit/approved_head ficam null na autoria (backfill pos-merge).",
-    "status_label": "KPI por PR (D-KPI-PER-PR); backfill de merge pos-merge",
+    "summary": "Ω-DOCS remove o conteudo do projeto Kryos (supervisao de refrigeracao/SCADA) que vazou para o repo: docs/research/estudo-doutoral-interfaces-10-saas.md (+ pasta) removido, 4 linhas de 09-mapa-telas reescritas, 6 citacoes historicas retificadas (D-DOCS-KRYOS). Fontes canonicas de UI = DESIGN_SYSTEM.md/COMPONENT_LIBRARY.md/docs proprias. Docs-only: nenhuma metrica de teste mudou (backend 766/766 do gate Ω-GATE). Backfill do Ω-GOV (PR #175 / 361f2c1) neste bloco. merge_commit/approved_head deste PR ficam null na autoria (backfill no proximo bloco).",
+    "status_label": "KPI por PR (D-KPI-PER-PR); docs-only, sem mudanca de metrica",
     "related_prs": [
+      {
+        "pr": 175,
+        "merge_commit": "361f2c1",
+        "note": "Ω-GOV — politica KPI-por-PR; backfill neste bloco"
+      },
       {
         "pr": 174,
         "merge_commit": "fb2e5fd",

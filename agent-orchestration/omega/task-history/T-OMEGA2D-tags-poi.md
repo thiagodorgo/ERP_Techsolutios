@@ -30,3 +30,10 @@ Dois cadastros greenfield do lote Ω2, espelhando price-tables/suppliers: **Tags
 **TagAssignment** (join polimórfico tag↔recurso) FICA FORA deste bloco — precisa das entidades-alvo estáveis.
 Model futuro `[tenant_id, tag_id, entity_type, entity_id]` + FK composta a tags(tenant_id,id) + RLS/permissões.
 Sem ele, Tags é cadastro isolado (CRUD puro), ainda não vinculável.
+
+> **RETIFICAÇÃO (Ω-DOCS · D-DOCS-KRYOS · 2026-07-13):** as citações a "estudo doutoral" acima referenciavam
+> `docs/research/estudo-doutoral-interfaces-10-saas.md` — conteúdo do projeto **Kryos** (outro SaaS do dono,
+> supervisão de refrigeração/SCADA) que vazou para este repo e foi **REMOVIDO**. As decisões de UI destes
+> blocos permanecem válidas por mérito próprio (tabelas densas, cópia PT-BR, estados/transições válidos); a
+> **fonte canônica de UI do ERP Techsolutions** é `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md` e as docs próprias
+> (`docs/09-mapa-telas-frontend.md`, `screen-refs/`). A atribuição ao estudo Kryos fica retificada.

@@ -515,3 +515,12 @@ Todo bloco futuro continua obrigado a atualizar `Kpis/index.html`, `Kpis/app.js`
   arquivos + Postgres+Redis + `prisma migrate deploy`), 0 fail. O antigo 15/15 media só `core-saas.test.ts`.
 - **Escopo:** web/backend/docs-only. Flutter/mobile e frontend seguem valores oficiais B-124 até re-baseamento
   nas respectivas trilhas (política dupla mantida).
+
+## 2026-07-13 — Ω-DOCS (rodada saneamento, PR3): descontaminação Kryos
+
+- Removido `docs/research/estudo-doutoral-interfaces-10-saas.md` (100% conteúdo do projeto **Kryos** —
+  supervisão de refrigeração/SCADA) + a pasta `docs/research/` (ficou vazia). 4 linhas de
+  `docs/09-mapa-telas-frontend.md` reescritas (SCADA/DeviceDetail/Kryos → operacional denso / Detalhe de
+  Entidade). 6 citações históricas ao estudo **retificadas** (não apagadas). **D-DOCS-KRYOS**.
+- **Docs-only:** nenhuma métrica de teste mudou (backend segue **766/766** do gate). Fontes canônicas de UI =
+  `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md`, docs próprias. Backfill do Ω-GOV: **PR #175 / 361f2c1**.

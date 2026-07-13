@@ -401,3 +401,11 @@
   bloco reconciliar. Baixo (o `pr` e o merge sao recuperaveis pelo git/gh).
 - acao: ao encerrar uma rodada/pausa, rodar um backfill final dos campos null das ultimas entradas de KPI.
 - status: aberto (trade-off documentado da politica per-PR)
+
+## P-SAN-KRYOS - Descontaminação Kryos (Ω-DOCS, 2026-07-13) — RESOLVIDA
+- descricao: conteudo do projeto Kryos (refrigeracao/SCADA) vazou para o repo (estudo-doutoral-interfaces-10-saas.md
+  citado como fonte de UI; 4 linhas de 09-mapa-telas com SCADA/DeviceDetail/Kryos).
+- resolucao: arquivo + pasta docs/research/ removidos; 09-mapa-telas reescrito; 6 citacoes historicas retificadas;
+  D-DOCS-KRYOS registrada. Grep de auditoria zerado (exceto registro da limpeza + notas de retificacao + falso
+  positivo "fluido refrigerante" em WorkOrderDetailPage.tsx).
+- status: **RESOLVIDA** (Ω-DOCS, PR3 da rodada saneamento).
