@@ -41,6 +41,7 @@ model Tenant {
   price_tables                  PriceTable[]
   tariffs                       Tariff[]
   suppliers                     Supplier[]
+  operator_profiles             OperatorProfile[]
   teams                         Team[]
   team_members                  TeamMember[]
   field_operator_locations      FieldOperatorLocation[]
@@ -131,6 +132,7 @@ model User {
   role_assignments                 UserRoleAssignment[]
   led_teams                        Team[]                  @relation("TeamLeader")
   team_memberships                 TeamMember[]            @relation("TeamMemberUser")
+  operator_profile                 OperatorProfile?
   tenant                           Tenant                  @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
   @@unique([tenant_id, id])
@@ -1191,6 +1193,37 @@ model Supplier {
   @@index([tenant_id, is_active])
   @@index([tenant_id, created_at])
   @@map("suppliers")
+}
+
+// Ω2-c — Profissional (perfil profissional do operador de campo). Extensão 1-1 de User (unique
+// [tenant_id, user_id] → 409 duplicate_profile). Dado sensível LGPD: CNH e consentimento de rastreamento.
+// FK composta (tenant_id, user_id) → users(tenant_id, id) ON DELETE Cascade (apagar o usuário remove o
+// perfil). user_id imutável no update. Desativação lógica via is_active.
+model OperatorProfile {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id           String    @db.Uuid
+  user_id             String    @db.Uuid
+  full_name           String?
+  cnh_number          String?
+  cnh_category        String?
+  cnh_expires_at      DateTime? @db.Timestamptz(6)
+  tracking_consent    Boolean   @default(false)
+  tracking_consent_at DateTime? @db.Timestamptz(6)
+  phone               String?
+  notes               String?
+  is_active           Boolean   @default(true)
+  created_by          String?   @db.Uuid
+  updated_by          String?   @db.Uuid
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant              Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  user                User      @relation(fields: [tenant_id, user_id], references: [tenant_id, id], onDelete: Cascade)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, user_id])
+  @@index([tenant_id, is_active])
+  @@index([tenant_id, created_at])
+  @@map("operator_profiles")
 }
 
 model Team {

@@ -36,6 +36,7 @@
 | Tarifas `/cadastros/tarifas` (Ω2-a.2) | `tariffs:read` | F | F | E | R | — | — | R | R | — |
 | Filiais `/cadastros/filiais` (Ω2-b) | `branches:read` | F | F | E | R | — | — | R | R | — |
 | Fornecedores `/cadastros/fornecedores` (Ω2-b) | `suppliers:read` | F | F | E | R | — | — | R | R | — |
+| Profissionais `/cadastros/profissionais` (Ω2-c) | `operator_profiles:read` | F | F | E | R | — | — | R | R | — |
 | **Abastecimento `/fleet/fuel` (F1)** | `fuel_logs:read` | F | E | E | E | R | — | M/E | R | — |
 | **Manutenção `/fleet/maintenance` (F2)** | `maintenance_orders:read` | F | E | E | E | R | — | R | R | — |
 | **Multas `/fleet/fines` (F3)** | `fines:read` | F | E | E | R | E | — | — | R | — |
