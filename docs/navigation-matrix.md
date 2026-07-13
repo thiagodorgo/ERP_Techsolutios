@@ -51,7 +51,7 @@
 | Relatórios `/reports` | `reports:read`* | F | F | F | R | R | R | — | R | — |
 | Usuários `/users` (F9) | `users.read`/`users.manage` | F | F(manage) | R | — | — | — | — | R | limited |
 | Notificações `/notifications` | `notifications:read` | F | F | F | R | R | R | M | R | R |
-| Configurações `/administrator/settings` | `tenant.manage` | F | F | R | — | — | — | — | R | — |
+| Configurações `/administrator/settings` (Ω2-e) | `tenant_settings:read` (edita: `tenant_settings:update`) | F | E | R | — | — | — | — | R | — |
 | Auditoria `/audit` | `audit:read` | F | F | R | — | R | R | — | F | R |
 
 `*` Permissões `fuel_logs:*`, `maintenance_orders:*`, `fines:*`, `insurance_policies:*`, `damages:*`,
