@@ -103,6 +103,15 @@ test("value ausente → 400 required_value; value não-string → 400 invalid_va
     () => svc.upsert(ctx, "organization.y", { value: 42 }),
     (error: unknown) => error instanceof TenantSettingError && error.statusCode === 400 && error.reason === "invalid_value",
   );
+  // Veto junta Ω2-e: value vazio/só-espaços → 400 required_value (parâmetro precisa ter conteúdo).
+  await assert.rejects(
+    () => svc.upsert(ctx, "organization.z", { value: "" }),
+    (error: unknown) => error instanceof TenantSettingError && error.statusCode === 400 && error.reason === "required_value",
+  );
+  await assert.rejects(
+    () => svc.upsert(ctx, "organization.z", { value: "   " }),
+    (error: unknown) => error instanceof TenantSettingError && error.statusCode === 400 && error.reason === "required_value",
+  );
 });
 
 test("value acima de 5000 chars → 400 value_too_long; exatamente 5000 é aceito", async () => {
@@ -178,9 +187,9 @@ test("get de key inexistente → 404 not_found", async () => {
 test("get retorna o parâmetro após o upsert", async () => {
   const svc = service();
   const ctx = actor();
-  await svc.upsert(ctx, "organization.business_name", { value: "Tenant Demo", category: "general" });
+  await svc.upsert(ctx, "organization.business_name", { value: "Organização Demonstração", category: "general" });
   const fetched = await svc.get(ctx, "organization.business_name");
-  assert.equal(fetched.value, "Tenant Demo");
+  assert.equal(fetched.value, "Organização Demonstração");
   assert.equal(fetched.category, "general");
 });
 

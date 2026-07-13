@@ -254,7 +254,7 @@ async function main(): Promise<void> {
       { key: "organization.theme", value: "enterprise_blue", category: "appearance" },
       { key: "organization.currency", value: "BRL", category: "general" },
       { key: "organization.timezone", value: "America/Sao_Paulo", category: "general" },
-      { key: "organization.business_name", value: "Tenant Demo", category: "general" },
+      { key: "organization.business_name", value: "Organização Demonstração", category: "general" },
     ];
 
     for (const setting of demoTenantSettings) {

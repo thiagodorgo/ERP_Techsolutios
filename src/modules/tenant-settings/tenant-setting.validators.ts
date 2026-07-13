@@ -16,13 +16,19 @@ export function parseKey(value: unknown): string {
   return key;
 }
 
-// value é obrigatório no upsert; texto livre (pode conter JSON serializado), sem trim, ≤5000.
+// value é obrigatório no upsert; texto livre (pode conter JSON serializado), ≤5000. NÃO faz trim do
+// conteúdo (preserva JSON/formatação), mas rejeita value vazio/só-espaços — um parâmetro precisa ter
+// conteúdo (veto junta Ω2-e: value em branco é dado incompleto). Para "remover" um parâmetro use um
+// value significativo; não há DELETE nesta fatia.
 export function parseValue(value: unknown): string {
   if (value === undefined || value === null) {
     throw new TenantSettingError(400, "TENANT_SETTING_INVALID", "required_value", "value is required.");
   }
   if (typeof value !== "string") {
     throw new TenantSettingError(400, "TENANT_SETTING_INVALID", "invalid_value", "value must be a string.");
+  }
+  if (value.trim().length === 0) {
+    throw new TenantSettingError(400, "TENANT_SETTING_INVALID", "required_value", "value must not be empty.");
   }
   if (value.length > 5000) {
     throw new TenantSettingError(400, "TENANT_SETTING_INVALID", "value_too_long", "value must be at most 5000 characters.");
