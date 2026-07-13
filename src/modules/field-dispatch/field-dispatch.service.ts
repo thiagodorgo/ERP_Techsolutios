@@ -1,12 +1,16 @@
 import { env } from "../../config/env.js";
 import { publishDomainEvent } from "../../infra/events/domain-event.publisher.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
-import { WorkOrderError } from "../work-orders/work-order.types.js";
+import { WorkOrderError, type WorkOrder } from "../work-orders/work-order.types.js";
 import {
   createDefaultWorkOrderService,
   createMemoryWorkOrderService,
   type WorkOrderService,
 } from "../work-orders/work-order.service.js";
+import {
+  createDefaultChecklistService,
+  createMemoryChecklistService,
+} from "../checklists/checklist.service.js";
 import {
   InMemoryFieldDispatchRepository,
   type FieldDispatchRepository,
@@ -35,11 +39,17 @@ import {
 
 type RawRecord = Record<string, unknown>;
 
+// Ω3-c (port do crítico, Req C) — resolve o snapshot congelável de um checklist SEM que este módulo
+// importe `checklists` diretamente (dependency-inverted; a raiz de composição injeta o resolver).
+// Retorna null quando não há template publicado — o despacho segue sem checklist.
+export type ChecklistSnapshotResolver = (tenantId: string, checklistId: string) => Promise<Record<string, unknown> | null>;
+
 export class FieldDispatchService {
   constructor(
     private readonly repository: FieldDispatchRepository,
     private readonly workOrderService: WorkOrderService,
     private readonly coreService: ICoreSaasService,
+    private readonly resolveChecklistSnapshot: ChecklistSnapshotResolver = async () => null,
   ) {}
 
   async list(actor: FieldDispatchActorContext, query: RawRecord): Promise<ListFieldDispatchesResult> {
@@ -61,8 +71,16 @@ export class FieldDispatchService {
     const operatorUserId = parseRequiredUuid(body.operatorUserId ?? body.operatorId ?? body.userId, "operatorUserId");
     const status = parseInitialFieldDispatchStatus(body.status);
 
-    await this.assertWorkOrderBelongsToTenant(actor, workOrderId);
+    const workOrder = await this.assertWorkOrderBelongsToTenant(actor, workOrderId);
     await this.assertOperatorBelongsToTenant(actor.tenantId, operatorUserId);
+
+    // Ω3-c (E1/E3) — congela o snapshot do checklist vigente da OS ANTES de criar o despacho
+    // (freeze→create; falha após o freeze deixa OS com snapshot órfão, inócuo — nunca despacho sem
+    // checklist). Idempotente: re-despacho re-congela com o template vigente daquele momento.
+    const snapshot = workOrder.checklistId
+      ? await this.resolveChecklistSnapshot(actor.tenantId, workOrder.checklistId)
+      : null;
+    await this.workOrderService.freezeChecklistSnapshot(actor, workOrder.id, snapshot);
 
     const dispatch = await this.repository.create({
       tenantId: actor.tenantId,
@@ -228,9 +246,11 @@ export class FieldDispatchService {
     return this.repository.listTimeline(actor.tenantId, dispatch.id);
   }
 
-  private async assertWorkOrderBelongsToTenant(actor: FieldDispatchActorContext, workOrderId: string): Promise<void> {
+  // Ω3-c — passa a RETORNAR a OS (antes descartava) para o `create` ler o `checklistId` e congelar o
+  // snapshot. Mesmo mapeamento de 404.
+  private async assertWorkOrderBelongsToTenant(actor: FieldDispatchActorContext, workOrderId: string): Promise<WorkOrder> {
     try {
-      await this.workOrderService.get(actor, workOrderId);
+      return await this.workOrderService.get(actor, workOrderId);
     } catch (error) {
       if (error instanceof WorkOrderError && error.statusCode === 404) {
         throw new FieldDispatchError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
@@ -267,7 +287,10 @@ const memoryRepository = new InMemoryFieldDispatchRepository();
 let defaultServicePromise: Promise<FieldDispatchService> | undefined;
 
 export function createMemoryFieldDispatchService(coreService: ICoreSaasService): FieldDispatchService {
-  return new FieldDispatchService(memoryRepository, createMemoryWorkOrderService(), coreService);
+  // Composição: injeta o resolver de snapshot (aresta field-dispatch→checklists só aqui, não na classe).
+  const resolveChecklistSnapshot: ChecklistSnapshotResolver = (tenantId, checklistId) =>
+    createMemoryChecklistService().snapshotPublishedTemplate(tenantId, checklistId);
+  return new FieldDispatchService(memoryRepository, createMemoryWorkOrderService(), coreService, resolveChecklistSnapshot);
 }
 
 export function getMemoryFieldDispatchRepositoryForTests(): InMemoryFieldDispatchRepository {
@@ -293,8 +316,11 @@ async function createPrismaFieldDispatchService(coreService: ICoreSaasService): 
   const { createPrismaFieldDispatchRepository } = await import("./field-dispatch-prisma.repository.js");
   const repository = await createPrismaFieldDispatchRepository();
   const workOrderService = await createDefaultWorkOrderService();
+  const checklistService = await createDefaultChecklistService();
+  const resolveChecklistSnapshot: ChecklistSnapshotResolver = (tenantId, checklistId) =>
+    checklistService.snapshotPublishedTemplate(tenantId, checklistId);
 
-  return new FieldDispatchService(repository, workOrderService, coreService);
+  return new FieldDispatchService(repository, workOrderService, coreService, resolveChecklistSnapshot);
 }
 
 function defaultStatusMessage(status: FieldDispatchStatus): string {

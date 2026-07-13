@@ -1396,6 +1396,9 @@ model WorkOrder {
   assigned_operator_id  String?               @db.Uuid
   assigned_user_id      String?               @db.Uuid
   checklist_id          String?               @db.Uuid
+  // Ω3-c — snapshot JSON durável do template de checklist, CONGELADO no despacho (FieldDispatch.create).
+  // Cópia imutável (não FK); editar o template depois não altera o snapshot. Aditivo/nullable.
+  checklist_snapshot    Json?
   customer_id           String?               @db.Uuid
   vehicle_id            String?               @db.Uuid
   team_id               String?               @db.Uuid

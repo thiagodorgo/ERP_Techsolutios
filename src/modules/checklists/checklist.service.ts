@@ -9,6 +9,7 @@ import {
 } from "./checklist-attachment.storage.js";
 import { CHECKLIST_AUDIT_ACTIONS } from "./checklist.audit.js";
 import { CHECKLIST_COMPONENT_CATALOG } from "./checklist.components.js";
+import { buildChecklistSnapshot } from "./checklist.dto.js";
 import type {
   ChecklistAcknowledgement,
   ChecklistAttachment,
@@ -92,6 +93,18 @@ export class ChecklistService {
     }
 
     return template;
+  }
+
+  // Ω3-c (port resolveChecklistSnapshot) — resolve o snapshot congelável de um template. Só congela
+  // template PUBLICADO e não-deletado (paridade com o guard de createRun/render). tenant-scoped.
+  // Retorna null (não erro) quando não há template, não está publicado, ou foi deletado — o despacho
+  // segue sem checklist. Nunca lança: o congelamento é efeito colateral do despacho.
+  async snapshotPublishedTemplate(tenantId: string, checklistId: string): Promise<Record<string, unknown> | null> {
+    const template = await this.repository.getTemplate(tenantId, checklistId);
+    if (!template || template.status !== "published" || template.deletedAt) {
+      return null;
+    }
+    return buildChecklistSnapshot(template);
   }
 
   async updateTemplate(

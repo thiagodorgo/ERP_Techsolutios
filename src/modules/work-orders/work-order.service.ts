@@ -517,6 +517,25 @@ export class WorkOrderService {
       metadata: {},
     });
   }
+
+  // Ω3-c — congela (ou limpa) o snapshot de checklist na OS. Chamado pelo FieldDispatchService no
+  // despacho (E1/E3); tenant-scoped (OS de outro tenant → 404). Snapshot é cópia imutável (JSON).
+  async freezeChecklistSnapshot(
+    actor: WorkOrderActorContext,
+    workOrderId: string,
+    snapshot: Record<string, unknown> | null,
+  ): Promise<WorkOrder> {
+    const updated = await this.repository.freezeChecklistSnapshot({
+      tenantId: actor.tenantId,
+      workOrderId: parseRequiredUuid(workOrderId, "workOrderId"),
+      checklistSnapshot: snapshot,
+      actorUserId: actor.userId,
+    });
+    if (!updated) {
+      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
+    return updated;
+  }
 }
 
 const memoryRepository = new InMemoryWorkOrderRepository();

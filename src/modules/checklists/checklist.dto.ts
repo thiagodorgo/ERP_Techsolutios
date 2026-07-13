@@ -66,6 +66,21 @@ export function toMobileChecklistTemplateDto(template: ChecklistTemplate) {
   };
 }
 
+// Ω3-c — snapshot imutável do template para congelar no despacho. Reusa toMobileChecklistTemplateDto
+// (produz objetos NOVOS = deep-copy dos items) e REMOVE `tenant_id` (§2.8 allowlist — nunca sai do
+// backend na cópia). Só labels/tipos/ordem (sem PII de cliente). O consumo é Ω3-c.1.
+export function buildChecklistSnapshot(template: ChecklistTemplate): Record<string, unknown> {
+  const { tenant_id: _omitTenant, ...templateBody } = toMobileChecklistTemplateDto(template);
+  return {
+    contract: "checklist_snapshot@2026-07-31.omega3c",
+    frozen_at: new Date().toISOString(),
+    template_id: template.id,
+    template_version: template.version,
+    template_status: template.status,
+    template: templateBody,
+  };
+}
+
 function toMobileChecklistTemplateStatus(status: ChecklistTemplate["status"]): string {
   return status === "published" ? "active" : status;
 }
