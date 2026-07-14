@@ -6,6 +6,10 @@
 #   REDIS_URL             → Redis (Upstash) de staging
 #   JWT_SECRET            → segredo real (o gate do env.ts rejeita dev-secrets)
 #   JWT_REFRESH_SECRET    → segredo real
+#   CORS_ORIGIN           → allowlist https:// da origem web de staging. NÃO é segredo, mas NODE_ENV=production
+#                           (abaixo) faz o gate do env.ts EXIGIR allowlist sem '*' — sem ela o boot FALHA de
+#                           propósito (fail-closed). Ex.: https://erp-techsolutions-web-staging.fly.dev
+#                           (regra geral: TODO ambiente com NODE_ENV=production, staging incluso, exige CORS_ORIGIN.)
 # Rollback do provisionamento: `fly apps destroy erp-techsolutions-api-staging` (app inteiro) ou
 # `fly releases -c fly.staging.toml` + `fly deploy --image <imagem anterior do GHCR>` (só código).
 

@@ -61,19 +61,25 @@ jobs:
         with:
           ref: ${{ inputs.promote_sha }}
 
-      # ---- TRAVA DUPLA (a): ata de go-live junta-5 POR SHA ----
-      - name: "Trava (a) — ata de go-live junta-5 por SHA"
+      # ---- TRAVA DUPLA (a): ata de go-live junta-5 POR SHA (lida da MAIN, não do checkout) ----
+      - name: "Trava (a) — ata de go-live junta-5 por SHA (lida da main)"
         run: |
-          ATA="agent-orchestration/omega/juntas/J-SAN-PROD-GOLIVE-${SHA}.md"
-          if [ ! -f "$ATA" ]; then
-            echo "::error::Trava (a) FALHOU: ata de go-live ausente ($ATA). A junta-5 unânime deve ser registrada ANTES do deploy, nomeando o promote_sha."
+          ATA_PATH="agent-orchestration/omega/juntas/J-SAN-PROD-GOLIVE-${SHA}.md"
+          # A ata NOMEIA o promote_sha, logo e registrada num commit DESCENDENTE dele (a arvore de um
+          # commit nao pode conter um arquivo nomeado com o proprio hash). Le da MAIN via API — dissocia
+          # o ref de GOVERNANCA (main) do SHA do ARTEFATO (promote_sha): a junta-5 comita a ata na main
+          # ANTES de disparar este workflow com o promote_sha.
+          ata=$(gh api "repos/${{ github.repository }}/contents/${ATA_PATH}?ref=main" \
+                  -H "Accept: application/vnd.github.raw" 2>/dev/null || true)
+          if [ -z "$ata" ]; then
+            echo "::error::Trava (a) FALHOU: ata de go-live ausente na main ($ATA_PATH). A junta-5 unânime deve comitar a ata (nomeando o promote_sha) na main ANTES do deploy."
             exit 1
           fi
-          if ! grep -q "$SHA" "$ATA"; then
-            echo "::error::Trava (a) FALHOU: a ata $ATA não referencia o SHA $SHA."
+          if ! echo "$ata" | grep -q "$SHA"; then
+            echo "::error::Trava (a) FALHOU: a ata $ATA_PATH (na main) nao referencia o SHA $SHA."
             exit 1
           fi
-          echo "Trava (a) OK — ata de go-live presente e referencia o SHA."
+          echo "Trava (a) OK — ata de go-live presente na main e referencia o SHA."
 
       # ---- TRAVA DUPLA (b): smoke de staging VERDE no MESMO SHA (execução real, não 'skipped') ----
       - name: "Trava (b) — smoke de staging verde no mesmo SHA"
@@ -138,8 +144,9 @@ jobs:
         run: flyctl deploy --config fly.production.toml --image "ghcr.io/${OWNER}/erp-backend:${SHA}"
 
       # Web não tem imagem GHCR → builda a partir do SHA fixado (checkout já é o promote_sha).
+      # working-directory=frontend → --config é relativo a frontend/ (NÃO prefixar frontend/ de novo).
       - name: Deploy Web (Fly production)
-        run: flyctl deploy --config frontend/fly.production.toml --remote-only
+        run: flyctl deploy --config fly.production.toml --remote-only
         working-directory: frontend
 
       # Smoke de produção: readiness + prova de CORS restritivo (NODE_ENV=production efetivo) +

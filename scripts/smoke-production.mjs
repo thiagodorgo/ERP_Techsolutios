@@ -1,8 +1,9 @@
 // Ω-INFRA-3 — smoke HTTP pós-deploy de PRODUÇÃO. Falhou = exit 1 = deploy inválido.
 // Diferente do staging (que tem seed demo), produção NÃO tem credencial demo. Prova:
 //   (1) readiness profunda (Postgres+Redis up);
-//   (2) CORS RESTRITIVO — uma origem proibida NÃO é refletida (prova viva de que NODE_ENV=production
-//       está efetivo; fecha o ponto único de falha silenciosa se o env subir sem NODE_ENV=production);
+//   (2) CORS RESTRITIVO — uma origem proibida NÃO é refletida (allowlist ativa). NB: isto prova o CORS
+//       restritivo, NÃO diretamente NODE_ENV=production (uma allowlist não-vazia fora de prod também
+//       restringe); a garantia de prod vem do gate fail-closed do env.ts (boot falha sem allowlist);
 //   (3) OPCIONAL — login com usuário de smoke REAL (PROD_SMOKE_EMAIL/PROD_SMOKE_PASSWORD) + rota
 //       autenticada; se os secrets não existirem, o passo é PULADO com aviso (não falha).
 // NUNCA imprime token/senha — só status e latência.

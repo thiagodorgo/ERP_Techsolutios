@@ -24,8 +24,12 @@ JA no repo (o provisionamento vivo e hand-off — ver "Fronteira de provisioname
 
 **Ativacao (hand-off humano — dossie):** criar conta Fly + `fly apps create` dos 2 apps + Postgres/Redis
 gerenciados + preencher o **GitHub Environment `staging`** com os secrets `FLY_API_TOKEN`, `STAGING_DATABASE_URL`,
-`STAGING_DEMO_ADMIN_PASSWORD`, `STAGING_API_URL` + `STAGING_DEPLOY_ENABLED=true`. URL do staging entra aqui e em
-`docs/demo-credentials.md` apos o primeiro deploy verde.
+`STAGING_DEMO_ADMIN_PASSWORD`, `STAGING_API_URL` + `STAGING_DEPLOY_ENABLED=true`. **Secrets do app de staging**
+(via `fly secrets set -a erp-techsolutions-api-staging`): `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`,
+`JWT_REFRESH_SECRET` **e `CORS_ORIGIN`** (allowlist https:// da origem web de staging). **Atencao:** o staging roda
+`NODE_ENV=production`, entao o gate do `env.ts` EXIGE `CORS_ORIGIN` sem `*` — **sem ela o boot falha de proposito**
+(fail-closed) e o healthcheck nunca fica verde. **Regra geral: todo ambiente com `NODE_ENV=production` (staging e
+producao) exige `CORS_ORIGIN`.** URL do staging entra aqui e em `docs/demo-credentials.md` apos o primeiro deploy verde.
 
 ### Production (config-as-code — Ω-INFRA-3)
 

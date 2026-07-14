@@ -42,7 +42,9 @@ handoff humano — ratificada em J-SAN-0).
       STAGING_API_URL sem `/api/v1` no dossiê. Ativação viva (smoke real) = junta-de-ativação no hand-off.
       **PR #181, merge `b772103`, CI verde (backend/flutter/frontend/docker), 2026-07-14.**
 - [x] **PR 6 — Ω-INFRA-3** (produção config-as-code + trava dupla) — design-junta APROVADO_CONDICIONADO 3/3
-      (critico/devops/secops; condições dobradas na impl) + junta-de-código J-SAN-PROD-CODE. FIX **P-SAN-CORS**
+      (critico/devops/secops) + **junta-de-código J-SAN-PROD-CODE 4/4** (secops+inspetor APROVADO; devops+critico
+      APROVADO_CONDICIONADO — 4 furos CORRIGIDOS antes do merge: trava-a lê ata da main, web `--config` em prod+staging,
+      CORS_ORIGIN no checklist de staging, comentário do smoke). FIX **P-SAN-CORS**
       (env.ts gate rejeita vazio/`*` em prod + app.ts allowlist + testes) e **P-SAN-SEED-GUARD** (assertSeedAllowed
       estrito nos 3 seeds). `fly.production.toml` api+web (min>=1, force_https, sem seed) + `deploy-production.yml`
       GATED (workflow_dispatch, promoção por IMAGEM, trava dupla: ata go-live por SHA + smoke-staging-verde-mesmo-SHA
