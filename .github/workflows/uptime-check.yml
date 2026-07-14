@@ -1,0 +1,47 @@
+# Ω-INFRA-4 — uptime probe do /health de staging e produção (peça grátis do MVP; ver PD-INFRA-2).
+# INERTE por padrão: cada job só roda quando a repo variable da URL existe (vars.*_HEALTH_URL != '').
+# LIMITAÇÕES (aceitas p/ MVP, ver runbook): o schedule do Actions atrasa/pula sob carga (não é sub-minuto
+# nem multi-PoP); alerta = notificação nativa do GitHub no run vermelho (sem on-call/ACK/escalonamento);
+# o schedule auto-desabilita após 60d sem atividade no repo — CONFIRMAR vivo no dossiê de ativação.
+# Upgrade documentado (não adotado): Better Stack FREE (10 monitores/30s + status page) — junta-5 + LGPD.
+
+name: uptime-check
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: uptime-check
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  staging:
+    if: vars.STAGING_HEALTH_URL != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Probe staging /health
+        run: node scripts/uptime-check.mjs
+        env:
+          HEALTH_URL: ${{ vars.STAGING_HEALTH_URL }}
+
+  production:
+    if: vars.PROD_HEALTH_URL != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Probe production /health
+        run: node scripts/uptime-check.mjs
+        env:
+          HEALTH_URL: ${{ vars.PROD_HEALTH_URL }}

@@ -50,10 +50,19 @@ handoff humano — ratificada em J-SAN-0).
       GATED (workflow_dispatch, promoção por IMAGEM, trava dupla: ata go-live por SHA + smoke-staging-verde-mesmo-SHA
       real + rollback ensaiado) + `smoke-production.mjs` (readiness + CORS restritivo) + Runbooks A/B. migration_needed
       =false. Suíte 0 fail (+15 backend). Follow-ups: P-SAN-PROD-BOOTSTRAP, P-SAN-PROD-WEBIMG. Go-live = hand-off.
+      **PR #182, merge `4a2db09`, CI verde (backend 783/783 + flutter/frontend/docker), 2026-07-14.**
+- [x] **PR 7 — Ω-INFRA-4** (backup + restore COMPROVADO + observabilidade) — design-junta dba/critico/secops
+      **APROVADO_CONDICIONADO 3/3**, todas as condições dobradas + provadas no drill. `backup-database.mjs`
+      (pg_dump -Fc → valida pg_restore -l → PutObject SSE → retenção segura; creds via PG* env) + `backup-database.yml`
+      GATED (Environment `backup`) + `uptime-check` (cron */5) + **PD-INFRA-2** (Fly-native US$0; Better Stack/Axiom
+      não adotados). **DRILL DE RESTORE COMPROVADO AO VIVO**: script REAL → MinIO(SSE) → download byte-exato →
+      pg_restore EXIT=0 ~3,6s → integridade exata (62 policies RLS) + isolamento por tenant sob role não-superuser.
+      RPO≤24h + PITR=hand-off. migration_needed=false. Suíte 0 fail (+14 backend). Junta-de-código J-SAN-6.
       **PR #NN, merge `<hash>` — pendente push/merge.**
-- [ ] **PR 7 — Ω-INFRA-4** (backup + observabilidade). Scripts backup/restore + PD-INFRA-2 autônomos; restore
-      comprovado contra ambiente real = handoff.
-- [ ] **Relatório final** `relatorio-saneamento-infra.md` + dossiê único de ativação ao humano.
+- [x] **Relatório final** `relatorio-saneamento-infra.md` + **DOSSIÊ ÚNICO DE ATIVAÇÃO** ao humano (na mesma PR7).
+
+## ✅ RODADA SANEAMENTO COMPLETA (PRs 1-7): Ω-GATE #174 · Ω-GOV #175 · Ω-DOCS #176 · Ω-INFRA-1 #177 ·
+## Ω-INFRA-2 #181 · Ω-INFRA-3 #182 · Ω-INFRA-4 #NN. Teto autônomo atingido; ativação viva = 1 dossiê de hand-off.
 
 ## Teto autônomo (ratificado J-SAN-0): PR1→PR4 completos + IaC/pipelines/scripts/runbooks de PR5-7 escritos e
 ## aprovados em junta-de-código. Hand-off = ativação viva (um único dossiê, humano interrompido uma vez).
