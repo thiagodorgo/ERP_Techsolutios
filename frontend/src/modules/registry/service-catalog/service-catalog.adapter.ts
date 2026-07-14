@@ -144,6 +144,9 @@ function adaptServiceItem(input: unknown): ServiceItem | null {
     name,
     description: readNullableString(item, ["description"]),
     category: readNullableString(item, ["category"]),
+    // Ω3F-2b — discriminador de tipo (C4); ausente/legado degrada para null/false (sem exigir destino).
+    serviceType: readNullableString(item, ["serviceType", "service_type"]),
+    requiresDestination: readBoolean(item, ["requiresDestination", "requires_destination"]) ?? false,
     estimatedDurationMinutes: readNullableNumber(item, ["estimatedDurationMinutes", "estimated_duration_minutes"]),
     basePrice: readNullableNumber(item, ["basePrice", "base_price"]),
     status: readString(item, ["status"]) ?? "active",

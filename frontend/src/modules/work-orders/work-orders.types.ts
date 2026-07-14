@@ -140,6 +140,15 @@ export type WorkOrderCreatePayload = {
   readonly serviceZipCode?: string;
   readonly serviceLatitude?: number | null;
   readonly serviceLongitude?: number | null;
+  // Ω3F-2b — destino (#24, tipos que exigem: reboque) + campos dinâmicos por tipo (#23).
+  // Backend é a autoridade (422 destination_required); a UI só espelha. service_details = objeto plano.
+  readonly destinationAddress?: string;
+  readonly destinationCity?: string;
+  readonly destinationState?: string;
+  readonly destinationZipCode?: string;
+  readonly destinationLatitude?: number | null;
+  readonly destinationLongitude?: number | null;
+  readonly service_details?: Record<string, string>;
   readonly priority: WorkOrderPriority;
   readonly scheduledFor?: string | null;
   // B1 (OS integrada): vínculos opcionais com os Cadastros (A1-A4).

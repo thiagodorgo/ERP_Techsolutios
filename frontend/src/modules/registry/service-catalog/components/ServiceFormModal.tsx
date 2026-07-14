@@ -40,6 +40,9 @@ export function ServiceFormModal({
   const isEdit = Boolean(service);
   const [name, setName] = useState(service?.name ?? "");
   const [category, setCategory] = useState(service?.category ?? "");
+  // Ω3F-2b — discriminador de tipo (C4): dirige os campos dinâmicos e a exigência de destino no form de OS.
+  const [serviceType, setServiceType] = useState(service?.serviceType ?? "");
+  const [requiresDestination, setRequiresDestination] = useState(service?.requiresDestination ?? false);
   const [status, setStatus] = useState(service?.status && SERVICE_STATUS_OPTIONS.some((o) => o.value === service.status) ? service.status : "active");
   const [duration, setDuration] = useState(service?.estimatedDurationMinutes != null ? String(service.estimatedDurationMinutes) : "");
   const [basePrice, setBasePrice] = useState(
@@ -58,6 +61,8 @@ export function ServiceFormModal({
     return {
       name: name.trim(),
       category: category.trim() || undefined,
+      serviceType: serviceType.trim() || undefined,
+      requiresDestination,
       status: status.trim() || undefined,
       estimatedDurationMinutes: trimmedDuration ? Number(trimmedDuration) : undefined,
       basePrice: trimmedPrice ? Number(trimmedPrice) : undefined,
@@ -116,6 +121,19 @@ export function ServiceFormModal({
                 </option>
               ))}
             </Select>
+          </div>
+          {/* Ω3F-2b — tipo de serviço (dirige campos dinâmicos + exigência de destino no form de OS) */}
+          <div>
+            <Select id="service-field-type" label="Tipo de serviço" value={serviceType} onChange={(event) => setServiceType(event.target.value)}>
+              <option value="">Sem tipo definido</option>
+              <option value="reboque">Reboque</option>
+              <option value="socorro">Socorro mecânico</option>
+              <option value="residencial">Reparo residencial</option>
+              <option value="outro">Outro</option>
+            </Select>
+          </div>
+          <div style={{ alignSelf: "end" }}>
+            <Checkbox label="Exige endereço de destino" checked={requiresDestination} onChange={(event) => setRequiresDestination(event.target.checked)} />
           </div>
           <Field
             id={FIELD_ID.estimatedDurationMinutes}
