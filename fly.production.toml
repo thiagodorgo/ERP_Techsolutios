@@ -1,0 +1,65 @@
+# Ω-INFRA-3 — config-as-code do BACKEND em PRODUÇÃO (Fly.io, região gru — D-INFRA-PROVIDER).
+# INERTE até a ativação: o CD (.github/workflows/deploy-production.yml) é GATED por
+# vars.PROD_DEPLOY_ENABLED e só promove com TRAVA DUPLA (junta-5 unânime por SHA + smoke de staging
+# verde no MESMO SHA + rollback ensaiado). App e banco DISTINTOS do staging. NADA de segredo aqui —
+# go-live = hand-off humano (fronteira J-SAN-0 / D-SAN-AUTONOMIA).
+#
+# Valores exigidos na ATIVAÇÃO (via `fly secrets set -c fly.production.toml` OU GitHub Environment
+# `production`) — NUNCA versionados:
+#   DATABASE_URL          → Postgres gerenciado de PRODUÇÃO (distinto do staging)
+#   REDIS_URL             → Redis de produção
+#   JWT_SECRET            → segredo real (o gate do env.ts rejeita dev-secrets em produção)
+#   JWT_REFRESH_SECRET    → segredo real
+#   CORS_ORIGIN           → allowlist https:// da(s) origem(ns) web REAL de produção. NÃO é segredo,
+#                           mas é específico do ambiente: o gate do env.ts rejeita vazio/'*'. Por isso
+#                           NÃO é definido aqui (fail-closed): sem allowlist real o boot em produção
+#                           falha de propósito, em vez de degradar silenciosamente para "*".
+# Rollback (ver Runbook A em docs/deployment.md §Produção): `fly releases -c fly.production.toml` +
+# `fly deploy --config fly.production.toml --image ghcr.io/<owner>/erp-backend:<sha-anterior>`
+# (o pull do GHCR privado exige registry auth configurada no Fly — item do dossiê de ativação).
+
+app = "erp-techsolutions-api-production"
+primary_region = "gru"
+
+# [build] é fallback; o CD de produção PROMOVE a imagem já validada em staging por
+# `flyctl deploy --image ghcr.io/<owner>/erp-backend:<sha>` (mesmo artefato/mesmo SHA — não rebuilda).
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+  CORE_SAAS_PERSISTENCE = "prisma"
+  JWT_EXPIRES_IN = "15m"
+  LOG_LEVEL = "info"
+  # CORS_ORIGIN é intencionalmente OMITIDO (fail-closed) — ver cabeçalho. Setar na ativação, sem '*'.
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  # Produção NÃO escala a zero (disponibilidade + sem cold-start no readiness/uptime).
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  # min=1 para go-live MVP. Limitação registrada (Runbook A): com 1 máquina há breve indisponibilidade
+  # durante deploy/rollback; para HA rolling sem blip, elevar para >=2 na operação.
+  min_machines_running = 1
+
+  # Liveness RASO (sem I/O de dependência — blip de banco não derruba a máquina em cascata).
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/api/v1/health"
+
+  # Readiness PROFUNDO (ping Postgres+Redis; 503 tira a máquina do balanceamento sem reiniciá-la).
+  [[http_service.checks]]
+    interval = "60s"
+    timeout = "8s"
+    grace_period = "45s"
+    method = "GET"
+    path = "/api/v1/health/ready"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

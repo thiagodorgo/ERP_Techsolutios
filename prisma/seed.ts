@@ -14,6 +14,10 @@ import {
   LocalAuthCredentialService,
 } from "../src/modules/auth/index.js";
 import { withTenantRls } from "../src/database/rls.js";
+import { assertSeedAllowed } from "./seed-guard.js";
+
+// P-SAN-SEED-GUARD (Ω-INFRA-3): aborta se NODE_ENV=production sem opt-in explícito (seed é demo).
+assertSeedAllowed();
 
 const connectionString = process.env.DATABASE_URL;
 

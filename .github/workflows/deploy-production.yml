@@ -1,0 +1,152 @@
+# Ω-INFRA-3 — CD de PRODUÇÃO (Fly.io/gru). PROMOÇÃO por artefato (mesma imagem GHCR validada em
+# staging pelo MESMO SHA) → migrate (forward-only, sem seed) → deploy api+web → smoke de produção.
+#
+# INERTE até a ativação. Duas barreiras:
+#   1) GATE: só roda com a repo variable PROD_DEPLOY_ENABLED == 'true' (até lá nunca dispara).
+#   2) TRAVA DUPLA (prompt PR6; NÃO usa required-reviewers humano) — três selos maquináveis:
+#        (a) ata de GO-LIVE junta-5 unânime POR SHA registrada ANTES (arquivo
+#            agent-orchestration/omega/juntas/J-SAN-PROD-GOLIVE-<sha>.md nomeando o promote_sha);
+#        (b) smoke de STAGING VERDE no MESMO SHA — verifica a EXECUÇÃO real do job 'deploy' + step
+#            'Smoke staging' (rejeita run 'skipped=success'); enquanto STAGING_DEPLOY_ENABLED estiver
+#            off este selo é VÁCUO — ativar staging é pré-requisito;
+#        (c) rollback ENSAIADO — atestação (input rollback_rehearsed) amarrada à evidência
+#            cronometrada na ata de go-live + imagem anterior existente no GHCR.
+#
+# HONESTIDADE (registrado em task-history): o MERGE deste PR NÃO é go-live. Entrega config-as-code
+# inerte. Os três selos são shell no repo; a barreira humana real é a junta-5 + a ativação (apps,
+# banco, secrets, domínio, PROD_DEPLOY_ENABLED, deploy, drill de restore) = hand-off irredutível.
+#
+# Secrets exigidos no GitHub Environment `production` (NUNCA versionados):
+#   FLY_API_TOKEN · PROD_DATABASE_URL · PROD_API_URL · (opcional) PROD_SMOKE_EMAIL · PROD_SMOKE_PASSWORD
+# CORS_ORIGIN / JWT_SECRET / JWT_REFRESH_SECRET / DATABASE_URL / REDIS_URL do app vivem nos Fly
+# secrets do app de produção (ver fly.production.toml), não neste workflow.
+
+name: deploy-production
+
+on:
+  workflow_dispatch:
+    inputs:
+      promote_sha:
+        description: "SHA (40 chars) a promover — DEVE ser a imagem GHCR validada em staging."
+        required: true
+        type: string
+      rollback_rehearsed:
+        description: "O drill de rollback (deploy N → imagem N-1 → smoke verde) foi ensaiado e está na ata de go-live?"
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    if: vars.PROD_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SHA: ${{ inputs.promote_sha }}
+      OWNER: ${{ github.repository_owner }}
+
+    steps:
+      - name: Checkout (no SHA promovido)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.promote_sha }}
+
+      # ---- TRAVA DUPLA (a): ata de go-live junta-5 POR SHA ----
+      - name: "Trava (a) — ata de go-live junta-5 por SHA"
+        run: |
+          ATA="agent-orchestration/omega/juntas/J-SAN-PROD-GOLIVE-${SHA}.md"
+          if [ ! -f "$ATA" ]; then
+            echo "::error::Trava (a) FALHOU: ata de go-live ausente ($ATA). A junta-5 unânime deve ser registrada ANTES do deploy, nomeando o promote_sha."
+            exit 1
+          fi
+          if ! grep -q "$SHA" "$ATA"; then
+            echo "::error::Trava (a) FALHOU: a ata $ATA não referencia o SHA $SHA."
+            exit 1
+          fi
+          echo "Trava (a) OK — ata de go-live presente e referencia o SHA."
+
+      # ---- TRAVA DUPLA (b): smoke de staging VERDE no MESMO SHA (execução real, não 'skipped') ----
+      - name: "Trava (b) — smoke de staging verde no mesmo SHA"
+        run: |
+          runs=$(gh api "repos/${{ github.repository }}/actions/workflows/deploy-staging.yml/runs?head_sha=${SHA}&status=completed" --jq '.workflow_runs[].id' || true)
+          if [ -z "$runs" ]; then
+            echo "::error::Trava (b) FALHOU: nenhum run COMPLETO de deploy-staging para o SHA ${SHA}. (Enquanto STAGING_DEPLOY_ENABLED estiver off, staging nunca deploya/smoka — este selo é vácuo; ative staging primeiro.)"
+            exit 1
+          fi
+          ok=false
+          for run in $runs; do
+            # Exige o JOB 'deploy' com conclusion=success E o STEP 'Smoke staging' com conclusion=success.
+            # Um job SKIPPED (STAGING_DEPLOY_ENABLED!=true) NÃO satisfaz — rejeita o falso-verde.
+            jobs_json=$(gh api "repos/${{ github.repository }}/actions/runs/${run}/jobs")
+            deploy_concl=$(echo "$jobs_json" | jq -r '.jobs[] | select(.name=="deploy") | .conclusion')
+            smoke_concl=$(echo "$jobs_json" | jq -r '.jobs[] | select(.name=="deploy") | .steps[] | select(.name=="Smoke staging") | .conclusion')
+            if [ "$deploy_concl" = "success" ] && [ "$smoke_concl" = "success" ]; then
+              ok=true; echo "Trava (b) OK — run ${run}: job deploy=success, step 'Smoke staging'=success."; break
+            fi
+          done
+          if [ "$ok" != "true" ]; then
+            echo "::error::Trava (b) FALHOU: nenhum run de deploy-staging no SHA ${SHA} tem job 'deploy'=success E step 'Smoke staging'=success (runs skipped não contam)."
+            exit 1
+          fi
+
+      # ---- TRAVA DUPLA (c): rollback ensaiado (atestação amarrada à evidência) ----
+      - name: "Trava (c) — rollback ensaiado + imagem anterior existe"
+        run: |
+          if [ "${{ inputs.rollback_rehearsed }}" != "true" ]; then
+            echo "::error::Trava (c) FALHOU: rollback_rehearsed != true. O drill cronometrado (deploy N → imagem N-1 → smoke verde) deve estar na ata de go-live antes de promover."
+            exit 1
+          fi
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          if ! docker manifest inspect "ghcr.io/${OWNER}/erp-backend:${SHA}" >/dev/null 2>&1; then
+            echo "::error::imagem GHCR erp-backend:${SHA} não encontrada — a promoção é POR IMAGEM (mesmo artefato validado). Garanta que o SHA foi mergeado na main e publicado no GHCR."
+            exit 1
+          fi
+          echo "Trava (c) OK — rollback atestado na ata e imagem do SHA presente no GHCR (rollback simétrico possível)."
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Schema ANTES do app (migrations aditivas/forward-only — P-007). Da PIPELINE (a imagem runtime
+      # slim não carrega a CLI do Prisma). SEM db:seed — produção NUNCA semeia (defesa primária do
+      # vetor de pipeline; a guarda assertSeedAllowed cobre o container/manual).
+      - name: Apply migrations (production DB)
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+
+      - name: Setup flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # PROMOÇÃO POR IMAGEM: deploya a MESMA imagem GHCR validada em staging pelo SHA — não rebuilda.
+      - name: Deploy API (Fly production, promoção por imagem)
+        run: flyctl deploy --config fly.production.toml --image "ghcr.io/${OWNER}/erp-backend:${SHA}"
+
+      # Web não tem imagem GHCR → builda a partir do SHA fixado (checkout já é o promote_sha).
+      - name: Deploy Web (Fly production)
+        run: flyctl deploy --config frontend/fly.production.toml --remote-only
+        working-directory: frontend
+
+      # Smoke de produção: readiness + prova de CORS restritivo (NODE_ENV=production efetivo) +
+      # (opcional) login com usuário de smoke REAL. Vermelho = deploy inválido. Nunca imprime segredo.
+      - name: Smoke production
+        run: node scripts/smoke-production.mjs
+        env:
+          PROD_API_URL: ${{ secrets.PROD_API_URL }}
+          PROD_SMOKE_EMAIL: ${{ secrets.PROD_SMOKE_EMAIL }}
+          PROD_SMOKE_PASSWORD: ${{ secrets.PROD_SMOKE_PASSWORD }}

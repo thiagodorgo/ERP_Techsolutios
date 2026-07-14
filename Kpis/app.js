@@ -1,16 +1,21 @@
 const dashboardData = {
   "project": {
     "name": "ERP Techsolutions",
-    "version": "Ω-INFRA-2",
+    "version": "Ω-INFRA-3",
     "updatedAt": "2026-07-14",
-    "sourceBranch": "feat-omega-infra2-staging-v2",
-    "summary": "Ω-INFRA-2 (2026-07-14): staging config-as-code (PR5 do saneamento). fly.staging.toml api+web (Fly.io/gru, liveness /health + readiness /health/ready, min_machines_running=0, API_UPSTREAM via .flycast) + nginx.conf.template envsubst VALIDADO AO VIVO (docker build+run, SPA 200) + CD deploy-staging.yml GATED (STAGING_DEPLOY_ENABLED -> SKIPPED ate ativar; migrate->seed staging->deploy api+web->smoke) + smoke-staging.mjs (/health/ready + login demo + /me, falha=vermelho). Junta-de-codigo J-SAN-5 UNANIME 3/3 (devops-provisionador, secops, inspetor-de-rotas). Zero segredo no diff; gate env.ts intacto. Config-as-code + docs: 0 teste de produto tocado; metricas carregam o ultimo oficial (backend 768/768, Flutter 764/764, smoke web 378/378, MVP demo 96%, MVP vendavel 78%). Backfill do Ω3F-0 (#180/4d3bf3c). Ativacao viva (smoke real) = junta-de-ativacao no hand-off (fronteira J-SAN-0).",
+    "sourceBranch": "feat-omega-infra3-production",
+    "summary": "Ω-INFRA-3 (2026-07-14): produção config-as-code + 2 fixes de codigo real (PR6 do saneamento). FIX P-SAN-CORS (env.ts gate rejeita CORS vazio/'*' em producao, fail-closed; app.ts allowlist por ambiente) + FIX P-SAN-SEED-GUARD (assertSeedAllowed ESTRITO nos 3 seeds — corrige o footgun Boolean('false')). fly.production.toml api+web (min>=1, force_https, sem seed, CORS fail-closed) + deploy-production.yml GATED (workflow_dispatch, PROMOCAO POR IMAGEM ghcr:<sha>, trava dupla: ata go-live por SHA + smoke-staging-verde-mesmo-SHA real + rollback ensaiado) + smoke-production.mjs (readiness + CORS restritivo) + Runbooks A/B. Design-junta (planejador-mestre + critico/devops/secops) APROVADO_CONDICIONADO 3/3; condicoes dobradas (promocao por imagem, assert real de smoke, seed-platform infeasivel removido->P-SAN-PROD-BOOTSTRAP). migration_needed=false. Suite 0 fail (+15 backend). O MERGE NAO e go-live: config inerte, go-live=hand-off humano. Backfill do Ω-INFRA-2 (#181/b772103).",
   },
   "kpis": [
     {
+      "label": "Ω-INFRA-3",
+      "value": "Produção config-as-code + CORS/seed fixes",
+      "note": "fly.production.toml api+web (min>=1, force_https, sem seed) + deploy-production.yml GATED (promocao por imagem, trava dupla real) + smoke-production. FIX P-SAN-CORS (gate prod rejeita vazio/'*') + P-SAN-SEED-GUARD (guarda estrita). +15 testes. Design-junta 3/3 condicionado. Go-live=hand-off; o merge NAO e go-live."
+    },
+    {
       "label": "Ω-INFRA-2",
       "value": "Staging config-as-code",
-      "note": "fly.staging.toml api+web (gru, liveness/readiness, scale-to-zero) + nginx template envsubst (validado ao vivo) + CD GATED (SKIPPED ate ativar, main verde) + smoke (/health/ready+login+/me). Junta-de-codigo J-SAN-5 3/3. Ativacao viva = hand-off humano (conta/secrets)."
+      "note": "fly.staging.toml api+web (gru, liveness/readiness, scale-to-zero) + nginx template envsubst (validado ao vivo) + CD GATED (SKIPPED ate ativar, main verde) + smoke (/health/ready+login+/me). Junta-de-codigo J-SAN-5 3/3. PR #181/b772103."
     },
     {
       "label": "JUNTA-MAPAS",
@@ -49,8 +54,8 @@ const dashboardData = {
     },
     {
       "label": "Backend tests",
-      "value": "768/768",
-      "note": "Suite backend INTEIRA no gate do CI (101 arquivos + Postgres+Redis), 0 fail/0 skip. Ω-INFRA-1 +2 (health-routes). Substitui o antigo 15/15 (so core-saas). KPI-por-PR (D-KPI-PER-PR)."
+      "value": "783/783",
+      "note": "Suite backend INTEIRA no gate do CI (Postgres+Redis). Ω-INFRA-3 +15 (seed-guard 4 + cors-env 7 + cors-routes 4) sobre 768. Local 0 fail (6 skip pre-existentes DB-gated). Total real confirmado pelo gate do CI. KPI-por-PR."
     },
     {
       "label": "Mobile contracts",

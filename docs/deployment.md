@@ -27,12 +27,63 @@ gerenciados + preencher o **GitHub Environment `staging`** com os secrets `FLY_A
 `STAGING_DEMO_ADMIN_PASSWORD`, `STAGING_API_URL` + `STAGING_DEPLOY_ENABLED=true`. URL do staging entra aqui e em
 `docs/demo-credentials.md` apos o primeiro deploy verde.
 
-### Production (plano — Ω-INFRA-3)
+### Production (config-as-code — Ω-INFRA-3)
 
-App e banco distintos do staging. Promocao para producao so com **trava dupla**: junta de 5 unanime registrada
-ANTES do deploy + smoke de staging verde no mesmo commit + rollback ensaiado. Dominio + TLS; CORS/URLs por
-ambiente via env; `NODE_ENV=production` com os gates do `env.ts` ativos (JWT_SECRET/JWT_REFRESH_SECRET reais,
-Nominatim publico bloqueado). **Sem seed demo em producao.** Secrets via **GitHub Environment `production`**.
+App e banco **distintos** do staging, no **Fly.io/gru**. Config-as-code JA no repo; o go-live e hand-off humano.
+
+- **`fly.production.toml`** (backend `erp-techsolutions-api-production`) e **`frontend/fly.production.toml`** (web) —
+  `min_machines_running >= 1` e `auto_stop_machines = "off"` (produção NAO escala a zero), `force_https = true`,
+  os mesmos dois healthchecks liveness/readiness. **`NODE_ENV = production`** com os gates do `env.ts` ativos
+  (JWT_SECRET/JWT_REFRESH_SECRET reais; Nominatim publico bloqueado; **CORS allowlist obrigatoria** — o gate
+  rejeita vazio/`*`). `CORS_ORIGIN` NAO e versionado no toml (**fail-closed**): sem allowlist https real o boot
+  em produção falha de propósito, em vez de degradar para `*`. Nenhum segredo nos tomls.
+- **CD `.github/workflows/deploy-production.yml`** — `workflow_dispatch` (nao dispara sozinho), GATED por
+  `vars.PROD_DEPLOY_ENABLED == 'true'`, `environment: production`, `concurrency: deploy-production`. **Promocao por
+  IMAGEM** (`flyctl deploy --image ghcr.io/<owner>/erp-backend:<promote_sha>` — o MESMO artefato validado em
+  staging pelo SHA; nao rebuilda). Migrate `deploy` forward-only da pipeline; **sem `db:seed`**. Smoke de produção
+  (`scripts/smoke-production.mjs`): readiness + prova de CORS restritivo + login opcional (usuario de smoke real).
+- **Trava dupla** (nao usa required-reviewers humano; tres selos maquinaveis no CD): **(a)** ata de go-live
+  junta-5 unanime **por SHA** (`agent-orchestration/omega/juntas/J-SAN-PROD-GOLIVE-<sha>.md`, nomeando o
+  `promote_sha`) registrada ANTES; **(b)** smoke de staging **verde no mesmo SHA** (o CD checa a EXECUCAO real do
+  job `deploy` + step `Smoke staging`, rejeitando run `skipped=success` — enquanto staging estiver desativado este
+  selo e VACUO, entao ativar staging e pre-requisito); **(c)** rollback ensaiado (atestacao `rollback_rehearsed`
+  amarrada a evidencia cronometrada na ata + imagem anterior presente no GHCR). **O merge do PR NAO e go-live** —
+  entrega config inerte; a junta-5 por SHA + a ativacao viva sao hand-off humano irredutivel.
+
+**Secrets** via **GitHub Environment `production`** (`FLY_API_TOKEN`, `PROD_DATABASE_URL`, `PROD_API_URL`,
+opcional `PROD_SMOKE_EMAIL`/`PROD_SMOKE_PASSWORD`) + **Fly secrets do app** (`DATABASE_URL`, `REDIS_URL`,
+`JWT_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGIN`). Nenhum versionado.
+
+#### Runbook A — rollback ensaiavel (forward-only, P-007)
+
+O deploy e a promocao da imagem GHCR `:<sha>`; o rollback e a **redeploy da imagem `:<sha-anterior>`** — simetrico.
+
+1. **Backend:** `fly deploy --config fly.production.toml --image ghcr.io/<owner>/erp-backend:<sha-anterior>`
+   (o pull do GHCR **privado** exige registry auth no Fly — item do dossie de ativacao; alternativa nativa:
+   `fly releases -c fly.production.toml` + `fly deploy --image <release anterior>`).
+2. **Frontend:** o web **nao** tem imagem GHCR (gap **P-SAN-PROD-WEBIMG**) → rollback via `fly releases -c
+   frontend/fly.production.toml` (release nativo anterior) ou rebuild do SHA anterior.
+3. **Migrations sao forward-only (P-007):** rollback de codigo **nao** desfaz schema. Se o codigo anterior for
+   incompativel com uma migration ja aplicada, o runbook exige um **fix-forward** (nova migration aditiva) — nunca
+   `migrate resolve --rolled-back` as cegas em produção. Toda migration da rodada e aditiva justamente para isso.
+4. **Ensaio (pre-go-live):** executar o ciclo `deploy N → deploy da imagem N-1 → smoke verde` **em staging**,
+   cronometrar o RTO e anexar a evidencia (comando + saida + tempo) na ata `J-SAN-PROD-GOLIVE-<sha>`. O selo (c)
+   do CD referencia essa evidencia; a parte cronometrada permanece atestacao humana registrada na junta-5.
+
+#### Runbook B — provisionamento do 1o tenant real (sem seed demo)
+
+Produção **nunca** roda `db:seed`/`db:seed:demo` (guarda `assertSeedAllowed` + ausencia do passo no CD). O
+bootstrap do 1o tenant/administrador de plataforma real e uma acao de **ativacao** contra o banco vivo de
+produção (exige o DB provisionado), NAO um passo deste PR. Requisitos:
+
+1. E um **bootstrap dedicado e idempotente** (tenant de sistema + role `super_admin` + platform admin +
+   credencial), exigindo `PLATFORM_ADMIN_EMAIL`/`PLATFORM_ADMIN_PASSWORD` — **nunca** o seed demo. O script de
+   bootstrap idempotente e verificado contra um banco prod-like e entregue na ativacao (follow-up
+   **P-SAN-PROD-BOOTSTRAP**; o seed atual so cria o tenant demo, inadequado para produção).
+2. Se o bootstrap precisar rodar com `NODE_ENV=production`, usar o escape hatch **one-shot** `ALLOW_PROD_SEED=1`
+   **inline no unico comando** e **remove-lo em seguida** — NUNCA persistir a variavel no `[env]` do toml nem
+   como secret fixo (senao reabre o seed demo no mesmo ambiente).
+3. Dominio + TLS pelo Fly (certs gerenciados) apos o `fly apps create` e o apontamento de DNS.
 
 ### Provedor (decidido na PD-INFRA-1 — `docs/omega-pd.md`)
 

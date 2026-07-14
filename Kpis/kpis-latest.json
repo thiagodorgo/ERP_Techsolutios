@@ -1,22 +1,27 @@
 {
   "snapshot_date": "2026-07-14",
-  "version": "Ω-INFRA-2",
+  "version": "Ω-INFRA-3",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω-INFRA-2 (staging config-as-code — PR5 do saneamento)",
-    "title": "Ω-INFRA-2: fly.staging.toml api+web + CD gated + smoke + nginx template (junta-de-codigo J-SAN-5 3/3)",
+    "block": "Ω-INFRA-3 (produção config-as-code + trava dupla + fixes CORS/seed — PR6 do saneamento)",
+    "title": "Ω-INFRA-3: fly.production.toml api+web + CD gated (promoção por imagem, trava dupla) + FIX P-SAN-CORS + P-SAN-SEED-GUARD (+15 testes)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω-INFRA-2 (PR5 do saneamento): staging config-as-code no Fly.io/gru. fly.staging.toml (backend erp-techsolutions-api-staging) + frontend/fly.staging.toml (web) — liveness /health + readiness /health/ready, min_machines_running=0, web proxia /api same-origin via API_UPSTREAM=.flycast. nginx.conf.template (envsubst nativo) VALIDADO AO VIVO (docker build+run: proxy_pass rendeu, SPA 200). CD .github/workflows/deploy-staging.yml GATED (if vars.STAGING_DEPLOY_ENABLED=='true' -> SKIPPED ate ativar, main verde): migrate deploy -> db:seed:demo (so staging) -> flyctl deploy api+web -> smoke. scripts/smoke-staging.mjs: /health/ready 200 + login demo + GET /me, falha=exit1=vermelho. Junta-de-codigo J-SAN-5 UNANIME 3/3 (agente-devops-provisionador, agente-secops, inspetor-de-rotas — maioria exigida). Zero segredo real versionado (grep classificado); gate env.ts intacto (NODE_ENV=production sem JWT_SECRET -> segredos vem do Fly). Achados nao-bloqueantes p/ Ω-INFRA-3: P-SAN-SEED-GUARD (guarda runtime no seed), P-SAN-SMOKE-PROXY (e2e via nginx web), STAGING_API_URL sem /api/v1 no dossie. Config-as-code + docs: 0 teste de produto tocado; todas as metricas carregam o ultimo valor oficial (backend 768/768, Flutter 764/764, smoke web 378/378). Ativacao viva (smoke real) = junta-de-ativacao no hand-off (fronteira J-SAN-0). Backfill do Ω3F-0 (PR #180 / 4d3bf3c).",
-    "status_label": "KPI por PR (D-KPI-PER-PR); config-as-code + docs, 0 testes novos",
+    "summary": "Ω-INFRA-3 (PR6 do saneamento): produção config-as-code no Fly.io/gru + 2 fixes de codigo real. FIX P-SAN-CORS (env.ts ganha CORS_ORIGIN CSV + gate no superRefine que REJEITA vazio/'*' e qualquer entrada contendo '*' em producao, fail-closed espelhando o gate do JWT; app.ts cors({origin: allowlist||true}), sem credentials) e FIX P-SAN-SEED-GUARD (prisma/seed-guard.ts assertSeedAllowed ESTRITO nos 3 seeds — 'false'/'0' NAO desarmam, corrige o footgun Boolean('false')). fly.production.toml + frontend/fly.production.toml (min_machines_running>=1, auto_stop=off, force_https, CORS_ORIGIN fail-closed nao versionado, sem segredo). deploy-production.yml GATED (workflow_dispatch, PROD_DEPLOY_ENABLED, environment production, concurrency): PROMOCAO POR IMAGEM (ghcr erp-backend:<promote_sha>, mesmo artefato validado em staging, nao rebuilda), migrate forward-only da pipeline SEM seed, TRAVA DUPLA (ata go-live por SHA + smoke-staging-verde-mesmo-SHA checando job/step real rejeitando skipped + rollback ensaiado). smoke-production.mjs (readiness + prova de CORS restritivo + login opcional). Runbooks A (rollback ensaiavel forward-only P-007) e B (1o tenant real sem seed) em deployment.md. Design-junta (workflow: planejador-mestre + critico/devops/secops) APROVADO_CONDICIONADO 3/3, condicoes dobradas (seed guard estrito, promocao por imagem, assert real de smoke, 2 atas separadas, seed-platform infeasivel REMOVIDO -> P-SAN-PROD-BOOTSTRAP). migration_needed=false. Suite inteira 0 fail (+15 backend: seed-guard 4 + cors-env 7 + cors-routes 4). Go-live = hand-off humano irredutivel (o merge NAO e go-live). Backfill do Ω-INFRA-2 (PR #181 / b772103).",
+    "status_label": "KPI por PR (D-KPI-PER-PR); codigo real (CORS/seed) + config-as-code, +15 testes backend",
     "related_prs": [
+      {
+        "pr": 181,
+        "merge_commit": "b772103",
+        "note": "Ω-INFRA-2 (staging config-as-code, J-SAN-5 3/3); backfill neste bloco"
+      },
       {
         "pr": 180,
         "merge_commit": "4d3bf3c",
-        "note": "Ω3F-0 (setup RODADA Ω3F, junta 5/5); backfill neste bloco"
+        "note": "Ω3F-0 (setup RODADA Ω3F, junta 5/5)"
       },
       {
         "pr": 179,
@@ -59,10 +64,10 @@
       "note": "test:smoke real do frontend (execucao no PR): substitui o antigo 44/44 (estava congelado no B-124). Google Maps (J-MAPAS-3/4) +16 (6 google-canvas + 10 focus-city). 0 fail."
     },
     "backend_tests": {
-      "value": 768,
-      "total": 768,
-      "display": "768/768",
-      "note": "Suite backend INTEIRA no gate do CI: 101 arquivos com Postgres+Redis. Ω-INFRA-1 +2 (health-routes: liveness /health + readiness /health/ready). Execucao real no ambiente do CI (memory + DATABASE_URL): 0 fail, 0 skip."
+      "value": 783,
+      "total": 783,
+      "display": "783/783",
+      "note": "Suite backend INTEIRA no gate do CI (memory + Postgres+Redis). Ω-INFRA-3 +15 (seed-guard 4 + cors-env 7 + cors-routes 4) sobre os 768 do Ω-INFRA-1. Execucao local: 0 fail (6 skip pre-existentes DB-gated que rodam no CI). O total real e confirmado pelo gate do CI no PR."
     },
     "backend_contract_tests_focused": {
       "value": 21,
