@@ -177,6 +177,60 @@ test("Ω3F-2a §2.8: service_details/access_code NUNCA aparecem no metadata dos 
   assert.equal(JSON.stringify(created.metadata).includes("access_code"), false);
 });
 
+test("Ω3F-2a (furo #2): apagar só o endereço de OS reboque com destino por PIN NÃO dispara 422 (pin intacto)", async () => {
+  const { service, reboqueId } = await makeService();
+  const manager = actor();
+
+  // destino só por coordenada (pin) — hasDestination aceita coordenada válida.
+  const os = await service.create(manager, {
+    title: "Reboque com pin",
+    serviceCatalogId: reboqueId,
+    destinationLatitude: -25.5,
+    destinationLongitude: -49.2,
+  });
+
+  // limpa só o endereço (que nunca existiu); o corpo NÃO toca lat/long → o pin persistido continua
+  // valendo no merge por-campo → sem 422 e sem perder o pin.
+  const updated = await service.update(manager, os.id, { destinationAddress: "", destinationCity: "" });
+  assert.equal(updated.destinationLatitude, -25.5);
+  assert.equal(updated.destinationLongitude, -49.2);
+});
+
+test("Ω3F-2a (furo #2b): OS legada sem destino em catálogo que passa a exigir — edição que NÃO toca destino não trava", async () => {
+  process.env.CORE_SAAS_PERSISTENCE = "memory";
+  const { WorkOrderService } = await import("../src/modules/work-orders/work-order.service.js");
+  const { InMemoryWorkOrderRepository } = await import("../src/modules/work-orders/work-order.repository.js");
+
+  const svcId = randomUUID();
+  const flag = { requiresDestination: false };
+  const service = new WorkOrderService(new InMemoryWorkOrderRepository(), {
+    resolveServiceCatalog: async (_actor, id) => id === svcId,
+    resolveServiceCatalogTypeInfo: async (_actor, id) =>
+      id === svcId ? { serviceType: "reboque", requiresDestination: flag.requiresDestination } : null,
+  });
+  const manager = actor();
+
+  // criada quando o catálogo NÃO exigia destino (legado)
+  const os = await service.create(manager, { title: "Legada sem destino", serviceCatalogId: svcId });
+  // o dono liga requires_destination no catálogo depois
+  flag.requiresDestination = true;
+
+  // editar o título (não toca destino) NÃO deve 422 — senão a OS legada fica congelada
+  const updated = await service.update(manager, os.id, { title: "Corrige typo" });
+  assert.equal(updated.title, "Corrige typo");
+  assert.equal(updated.destinationAddress, undefined);
+});
+
+test("Ω3F-2a (obs 1): destino 'lixo' (só cidade, sem endereço nem coordenada) NÃO satisfaz o 422 do reboque", async () => {
+  const { service, reboqueId } = await makeService();
+  const manager = actor();
+
+  await assert.rejects(
+    () => service.create(manager, { title: "Reboque", serviceCatalogId: reboqueId, destinationCity: "Curitiba" }),
+    expect422DestinationRequired,
+  );
+});
+
 test("Ω3F-2a: wiring padrão (createDefaultReferenceResolvers) lê requires_destination do catálogo em memória", async () => {
   process.env.CORE_SAAS_PERSISTENCE = "memory";
   const woMod = await import("../src/modules/work-orders/index.js");

@@ -417,13 +417,17 @@ export class WorkOrderService {
     const destination = this.parseDestination(body);
     const serviceDetails = parseServiceDetails(body.service_details ?? body.serviceDetails);
 
-    // effectiveHasDestination: se o corpo menciona algum campo de destino, vale o destino do corpo;
-    // senão, vale o destino já persistido na OS. Assim um update parcial (ex.: só título) não dispara o
-    // 422, mas tentar apagar o destino de uma OS que exige destino dispara.
-    const effectiveHasDestination = bodyMentionsDestination(body)
-      ? hasDestination(destination)
-      : currentHasDestination(current);
-    await this.assertDestinationForType(actor, current.serviceCatalogId, effectiveHasDestination);
+    // Ω3F-2a (J-Ω3F-2 critico, furos #2/#2b) — a regra de destino no update SÓ se aplica quando o corpo
+    // TOCA destino: edição parcial de OS legada/sem-destino (ex.: só o título) NÃO trava. Quando toca,
+    // o destino efetivo é o MERGE por-campo (campo tocado = corpo; não-tocado = persistido), então
+    // limpar só o endereço de uma OS com destino por coordenada não apaga o pin nem dispara o 422.
+    if (bodyMentionsDestination(body)) {
+      await this.assertDestinationForType(
+        actor,
+        current.serviceCatalogId,
+        hasDestination(mergeDestination(current, body, destination)),
+      );
+    }
 
     const input: UpdateWorkOrderInput = {
       tenantId: actor.tenantId,
@@ -791,15 +795,12 @@ type ParsedDestination = {
   readonly destinationLongitude?: number;
 };
 
-// Ω3F-2a — verdadeiro quando qualquer campo de destino foi preenchido.
+// Ω3F-2a (J-Ω3F-2 critico, obs 1/2) — destino REAL = endereço OU coordenada válida (não-sentinela 0/0,
+// mesmo predicado do mapa). Cidade/estado/CEP soltos não bastam para um reboque (destino "lixo").
 function hasDestination(destination: ParsedDestination): boolean {
-  return Boolean(
-    destination.destinationAddress ||
-      destination.destinationCity ||
-      destination.destinationState ||
-      destination.destinationZipCode ||
-      destination.destinationLatitude !== undefined ||
-      destination.destinationLongitude !== undefined,
+  return (
+    Boolean(destination.destinationAddress) ||
+    hasValidCoordinate(destination.destinationLatitude, destination.destinationLongitude)
   );
 }
 
@@ -815,16 +816,18 @@ function bodyMentionsDestination(body: RawRecord): boolean {
   );
 }
 
-// Ω3F-2a — verdadeiro quando a OS já persistida carrega algum campo de destino.
-function currentHasDestination(workOrder: WorkOrder): boolean {
-  return Boolean(
-    workOrder.destinationAddress ||
-      workOrder.destinationCity ||
-      workOrder.destinationState ||
-      workOrder.destinationZipCode ||
-      workOrder.destinationLatitude !== undefined ||
-      workOrder.destinationLongitude !== undefined,
-  );
+// Ω3F-2a (J-Ω3F-2 critico, furo #2) — destino efetivo do update: campo TOCADO pelo corpo vale o corpo;
+// não-tocado mantém o persistido. Evita que limpar um campo (ex.: endereço) apague o destino por
+// coordenada intacto e dispare 422 indevido.
+function mergeDestination(current: WorkOrder, body: RawRecord, parsed: ParsedDestination): ParsedDestination {
+  return {
+    destinationAddress: "destinationAddress" in body ? parsed.destinationAddress : current.destinationAddress,
+    destinationCity: "destinationCity" in body ? parsed.destinationCity : current.destinationCity,
+    destinationState: "destinationState" in body ? parsed.destinationState : current.destinationState,
+    destinationZipCode: "destinationZipCode" in body ? parsed.destinationZipCode : current.destinationZipCode,
+    destinationLatitude: "destinationLatitude" in body ? parsed.destinationLatitude : current.destinationLatitude,
+    destinationLongitude: "destinationLongitude" in body ? parsed.destinationLongitude : current.destinationLongitude,
+  };
 }
 
 // Ω1b-2 — coordenada válida = número finito, dentro da faixa e não-sentinela 0/0 (mesmo predicado do mapa).
