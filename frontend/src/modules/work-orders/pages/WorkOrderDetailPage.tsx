@@ -64,13 +64,9 @@ export function WorkOrderDetailPage() {
       </div>
 
       <WorkOrderTabsShell tabs={visibleTabs()} activeTab={activeTab} accessAllowed={accessAllowed} onSelect={selectTab}>
-        {activeTab === "informacoes-gerais" ? (
-          <GeneralInfoTab workOrder={workOrder} timeline={timeline} context={context} canDecide={canDecide} />
-        ) : (
-          // As demais abas são acesas por seus blocos (Ω3F-3..8); enquanto ocultas, resolveActiveTab
-          // já cai em "informacoes-gerais", então este ramo não é alcançado na Fase 1.
-          <GeneralInfoTab workOrder={workOrder} timeline={timeline} context={context} canDecide={canDecide} />
-        )}
+        {/* Fase 1: só "Informações gerais" é visível → resolveActiveTab sempre devolve essa aba. Cada
+            bloco seguinte (Ω3F-3..8) troca isto por um switch/mapa de conteúdo ao acender sua aba. */}
+        <GeneralInfoTab workOrder={workOrder} timeline={timeline} context={context} canDecide={canDecide} />
       </WorkOrderTabsShell>
     </div>
   );
