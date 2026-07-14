@@ -576,3 +576,18 @@ Todo bloco futuro continua obrigado a atualizar `Kpis/index.html`, `Kpis/app.js`
   (matriz de 35 capacidades RECONCILIADA: **4✅/18🟡/13🔴** vs spec 3/15/17; 5 linhas subiram por PRs mergeados) +
   `lista-execucao-omega3f.md` (9 planos Fase 1 + Fase 2). **Junta J-Ω3F-0 UNÂNIME 5/5**; 6 decisões + condições C1-C4.
 - Docs/agentes-only: **0 testes de produto**; métricas carregam o último oficial. Backfill do Google Maps: **#179 / 7d5d984**.
+
+## 2026-07-14 — Ω-INFRA-2 (rodada saneamento, PR5): staging config-as-code
+
+- **`fly.staging.toml`** (backend `erp-techsolutions-api-staging`) + **`frontend/fly.staging.toml`** (web) no **Fly.io/gru**:
+  liveness `/health` + readiness `/health/ready`, `min_machines_running=0` (scale-to-zero), web proxia `/api` same-origin
+  via `API_UPSTREAM=…api-staging.flycast` (rede privada Fly).
+- **`nginx.conf.template`** (envsubst nativo do entrypoint) **VALIDADO AO VIVO** (docker build+run: `proxy_pass` renderizado,
+  SPA 200). **CD `.github/workflows/deploy-staging.yml` GATED** (`if: vars.STAGING_DEPLOY_ENABLED == 'true'` → SKIPPED até
+  ativar, `main` verde): migrate deploy → `db:seed:demo` (só staging) → deploy api+web → **smoke**. **`scripts/smoke-staging.mjs`**:
+  `/health/ready` 200 + login demo + `GET /me`, falha = vermelho.
+- **Junta-de-código J-SAN-5 UNÂNIME 3/3** (`agente-devops-provisionador`, `agente-secops`, `inspetor-de-rotas` — maioria).
+  Zero segredo real versionado (grep classificado); gate `env.ts` intacto. Achados não-bloqueantes p/ Ω-INFRA-3:
+  P-SAN-SEED-GUARD · P-SAN-SMOKE-PROXY · `STAGING_API_URL` sem `/api/v1` no dossiê.
+- Config-as-code + docs: **0 teste de produto tocado**; métricas carregam o último oficial (backend 768/768, Flutter 764/764,
+  smoke web 378/378). Ativação viva (smoke real) = junta-de-ativação no hand-off (fronteira J-SAN-0). Backfill do Ω3F-0: **#180 / 4d3bf3c**.

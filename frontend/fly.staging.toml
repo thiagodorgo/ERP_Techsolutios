@@ -1,0 +1,36 @@
+# Ω-INFRA-2 — config-as-code do FRONTEND (nginx estático) em STAGING (Fly.io, gru).
+# Vive em frontend/ para o build context do flyctl ser o diretório do app (Dockerfile local).
+# Ativação viva = hand-off humano. Pré-requisito de rede: `fly ips allocate-v6 --private -a
+# erp-techsolutions-api-staging` (habilita o endereço .flycast do backend para o proxy interno).
+
+app = "erp-techsolutions-web-staging"
+primary_region = "gru"
+
+[build]
+  dockerfile = "Dockerfile"
+  [build.args]
+    VITE_API_BASE_URL = "/api/v1"
+    VITE_USE_MOCKS = "false"
+
+[env]
+  # Proxy same-origin /api → backend de staging pela rede PRIVADA do Fly (.flycast passa pelo
+  # proxy na porta 80 e honra o http_service do app de destino). Sem tráfego público entre apps.
+  API_UPSTREAM = "http://erp-techsolutions-api-staging.flycast"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "4s"
+    grace_period = "15s"
+    method = "GET"
+    path = "/"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

@@ -1,22 +1,27 @@
 {
-  "snapshot_date": "2026-07-13",
-  "version": "Ω3F-0",
+  "snapshot_date": "2026-07-14",
+  "version": "Ω-INFRA-2",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω3F-0 (setup RODADA Ω3F-fidelidade)",
-    "title": "Ω3F-0: agentes da rodada + spec + dossie de paridade + lista de execucao (junta 5/5)",
+    "block": "Ω-INFRA-2 (staging config-as-code — PR5 do saneamento)",
+    "title": "Ω-INFRA-2: fly.staging.toml api+web + CD gated + smoke + nginx template (junta-de-codigo J-SAN-5 3/3)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω3F-0 (setup da RODADA Ω3-FIDELIDADE, a pedido do dono): 3 agentes efemeros (fid-analista/fid-planejador/fid-avaliador — clausula de escopo: nenhum outro agente tocado) + spec canonica docs/referencia/alinhamento-painel-logistico.md + dossie de paridade (matriz de 35 capacidades RECONCILIADA com o repo: placar 4✅/18🟡/13🔴 vs spec 3/15/17; 5 linhas subiram por PRs ja mergeados — Arquivos/Ω3-d, Comentarios/Ω3-b, Orcamento/Ω3-a, Tags/Ω2-d) + lista-execucao-omega3f.md (9 planos Fase 1 + Fase 2, ordem por dependencia, testes >=2N) + remissao 'Ω3 substituido por Ω3F'. Junta J-Ω3F-0 UNANIME 5/5 (planejador-mestre, estrategista, critico, fid-analista, fid-planejador); 6 decisoes resolvidas + condicoes C1-C4 na lista §6. PR docs/agentes-only: NENHUM codigo/teste de produto tocado (0 testes novos); metricas carregam o ultimo valor oficial (google-maps: frontend_smoke 378, backend 768). Backfill do Google Maps (PR #179 / 7d5d984).",
-    "status_label": "KPI por PR (D-KPI-PER-PR); docs/agentes-only, 0 testes novos",
+    "summary": "Ω-INFRA-2 (PR5 do saneamento): staging config-as-code no Fly.io/gru. fly.staging.toml (backend erp-techsolutions-api-staging) + frontend/fly.staging.toml (web) — liveness /health + readiness /health/ready, min_machines_running=0, web proxia /api same-origin via API_UPSTREAM=.flycast. nginx.conf.template (envsubst nativo) VALIDADO AO VIVO (docker build+run: proxy_pass rendeu, SPA 200). CD .github/workflows/deploy-staging.yml GATED (if vars.STAGING_DEPLOY_ENABLED=='true' -> SKIPPED ate ativar, main verde): migrate deploy -> db:seed:demo (so staging) -> flyctl deploy api+web -> smoke. scripts/smoke-staging.mjs: /health/ready 200 + login demo + GET /me, falha=exit1=vermelho. Junta-de-codigo J-SAN-5 UNANIME 3/3 (agente-devops-provisionador, agente-secops, inspetor-de-rotas — maioria exigida). Zero segredo real versionado (grep classificado); gate env.ts intacto (NODE_ENV=production sem JWT_SECRET -> segredos vem do Fly). Achados nao-bloqueantes p/ Ω-INFRA-3: P-SAN-SEED-GUARD (guarda runtime no seed), P-SAN-SMOKE-PROXY (e2e via nginx web), STAGING_API_URL sem /api/v1 no dossie. Config-as-code + docs: 0 teste de produto tocado; todas as metricas carregam o ultimo valor oficial (backend 768/768, Flutter 764/764, smoke web 378/378). Ativacao viva (smoke real) = junta-de-ativacao no hand-off (fronteira J-SAN-0). Backfill do Ω3F-0 (PR #180 / 4d3bf3c).",
+    "status_label": "KPI por PR (D-KPI-PER-PR); config-as-code + docs, 0 testes novos",
     "related_prs": [
+      {
+        "pr": 180,
+        "merge_commit": "4d3bf3c",
+        "note": "Ω3F-0 (setup RODADA Ω3F, junta 5/5); backfill neste bloco"
+      },
       {
         "pr": 179,
         "merge_commit": "7d5d984",
-        "note": "Google Maps (J-MAPAS-3/4); backfill neste bloco"
+        "note": "Google Maps (J-MAPAS-3/4)"
       },
       {
         "pr": 176,

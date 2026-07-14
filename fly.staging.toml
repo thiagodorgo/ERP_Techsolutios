@@ -1,0 +1,52 @@
+# Ω-INFRA-2 — config-as-code do BACKEND em STAGING (Fly.io, região gru — D-INFRA-PROVIDER).
+# Ativação viva (conta, `fly apps create`, secrets) = hand-off humano (dossiê). Nada de segredo aqui.
+#
+# Secrets exigidos (via `fly secrets set -c fly.staging.toml` OU GitHub Environment `staging`):
+#   DATABASE_URL          → Postgres gerenciado (Fly MPG) de staging
+#   REDIS_URL             → Redis (Upstash) de staging
+#   JWT_SECRET            → segredo real (o gate do env.ts rejeita dev-secrets)
+#   JWT_REFRESH_SECRET    → segredo real
+# Rollback do provisionamento: `fly apps destroy erp-techsolutions-api-staging` (app inteiro) ou
+# `fly releases -c fly.staging.toml` + `fly deploy --image <imagem anterior do GHCR>` (só código).
+
+app = "erp-techsolutions-api-staging"
+primary_region = "gru"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+  # Persistência real em staging (o compose local-prod usa memory; aqui é o caminho prisma de verdade).
+  CORE_SAAS_PERSISTENCE = "prisma"
+  JWT_EXPIRES_IN = "15m"
+  LOG_LEVEL = "info"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  # Staging pode escalar a zero fora de uso (custo); produção NÃO (min_machines_running >= 1 no PR6).
+  min_machines_running = 0
+
+  # Liveness RASO (sem I/O de dependência — blip de banco não derruba a máquina em cascata).
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/api/v1/health"
+
+  # Readiness PROFUNDO (ping Postgres+Redis; 503 tira a máquina do balanceamento sem reiniciá-la).
+  [[http_service.checks]]
+    interval = "60s"
+    timeout = "8s"
+    grace_period = "45s"
+    method = "GET"
+    path = "/api/v1/health/ready"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

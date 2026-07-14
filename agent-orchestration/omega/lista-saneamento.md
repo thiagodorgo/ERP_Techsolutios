@@ -32,8 +32,15 @@ handoff humano — ratificada em J-SAN-0).
 > Environments. O agente entrega toda a config-as-code aprovada em junta-de-código; o **hand-off** é um único
 > dossiê ao humano. Adicionado às paradas imediatas: **falta de credencial/pagamento/domínio externo**.
 
-- [ ] **PR 5 — Ω-INFRA-2** (staging). Config-as-code + pipeline CD + smoke script AUTÔNOMOS; ativação viva
-      (conta/secrets) = handoff humano (fronteira J-SAN-0).
+- [x] **PR 5 — Ω-INFRA-2** (staging config-as-code + CD + smoke) — junta **J-SAN-5 UNÂNIME 3/3** (maioria
+      exigida; devops-provisionador · secops · inspetor-de-rotas, junta-de-código). `fly.staging.toml` api+web
+      (gru, liveness `/health`+readiness `/health/ready`, `min_machines_running=0`, `API_UPSTREAM` via `.flycast`)
+      + `nginx.conf.template` envsubst **validado ao vivo** (build+run, SPA 200) + CD `deploy-staging.yml` GATED
+      (`STAGING_DEPLOY_ENABLED` → SKIPPED até ativar; migrate→seed staging→deploy api+web→smoke) + `smoke-staging.mjs`
+      (`/health/ready`+login demo+`/me`, falha=vermelho). Zero segredo no diff; gate `env.ts` intacto. Achados
+      não-bloqueantes p/ PR6: P-SAN-SEED-GUARD (guarda runtime no seed), P-SAN-SMOKE-PROXY (e2e via nginx web),
+      STAGING_API_URL sem `/api/v1` no dossiê. Ativação viva (smoke real) = junta-de-ativação no hand-off.
+      **PR #NN, merge `<hash>` — pendente push/merge.**
 - [ ] **PR 6 — Ω-INFRA-3** (produção + trava dupla). IaC + runbook rollback autônomos; go-live = handoff.
 - [ ] **PR 7 — Ω-INFRA-4** (backup + observabilidade). Scripts backup/restore + PD-INFRA-2 autônomos; restore
       comprovado contra ambiente real = handoff.

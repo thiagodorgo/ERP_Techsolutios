@@ -26,20 +26,24 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
-        <article class="panel panel--wide" aria-label="Resumo JUNTA-MAPAS">
-          <h2>JUNTA-MAPAS — Junta de Mapas (planejador → dev → avaliador)</h2>
+        <article class="panel panel--wide" aria-label="Resumo Ω-INFRA-2">
+          <h2>Ω-INFRA-2 — staging config-as-code (Fly.io/gru)</h2>
           <p>
-            <strong>JUNTA-MAPAS (2026-07-13):</strong> criada a Junta de Mapas —
-            3 agentes (<code>planejador-mapas</code> → <code>dev-mapas</code> →
-            <code>avaliador-mapas</code>) acionados em cadeia para toda tarefa de
-            mapa/geo (web ou Flutter) + base viva <code>docs/maps/kb-mapas.md</code>
-            (pesquisa 2026 datada: precos por SKU, ToS de cache place_id vs lat/lng,
-            versoes Flutter) + registro D-JUNTA-MAPAS/ata J-JUNTA-MAPAS (junta 4/4
-            FAVORAVEL). Regra de ouro: MapLibre+OpenFreeMap permanecem base web
-            (custo zero, Ω1); Google/SKU pago = PD + junta de 5.
-            <strong>PR docs/agentes-only:</strong> nenhum codigo/teste de produto
-            tocado, nenhuma chave/billing/SKU ativado; metricas de teste carregam o
-            ultimo valor oficial (Ω-INFRA-1).
+            <strong>Ω-INFRA-2 (2026-07-14, PR5 do saneamento):</strong>
+            <code>fly.staging.toml</code> api+web — liveness <code>/health</code> +
+            readiness <code>/health/ready</code>, <code>min_machines_running=0</code>,
+            web proxia <code>/api</code> same-origin via
+            <code>API_UPSTREAM=…api-staging.flycast</code>. <code>nginx.conf.template</code>
+            (envsubst) <strong>validado ao vivo</strong> (docker build+run, SPA 200). CD
+            <code>deploy-staging.yml</code> <strong>GATED</strong>
+            (<code>STAGING_DEPLOY_ENABLED</code> → SKIPPED até ativar, <code>main</code> verde):
+            migrate → seed staging → deploy api+web → <strong>smoke</strong>
+            (<code>/health/ready</code> + login demo + <code>/me</code>). Junta-de-código
+            <strong>J-SAN-5 UNÂNIME 3/3</strong> (devops-provisionador · secops · inspetor-de-rotas).
+            Zero segredo real versionado; gate <code>env.ts</code> intacto. Ativação viva
+            (smoke real) = hand-off humano (conta/secrets — fronteira J-SAN-0).
+            <strong>Config-as-code + docs:</strong> 0 teste de produto tocado; métricas
+            carregam o último valor oficial. Backfill do Ω3F-0 (#180 / 4d3bf3c).
           </p>
           <p>
             <strong>Ω-GOV (2026-07-13):</strong> politica KPI-por-PR (D-KPI-PER-PR)

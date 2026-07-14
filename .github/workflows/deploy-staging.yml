@@ -1,0 +1,71 @@
+# Ω-INFRA-2 — CD do STAGING (Fly.io/gru, D-INFRA-PROVIDER). merge na main → migrate → seed demo →
+# deploy api+web → SMOKE (falhou = job vermelho).
+#
+# GATE DE ATIVAÇÃO: o job só roda com a repo variable STAGING_DEPLOY_ENABLED == 'true'. Até o humano
+# provisionar (dossiê de hand-off: conta Fly + apps + secrets no Environment `staging`), o workflow é
+# SKIPPED e a main permanece verde. Secrets exigidos no GitHub Environment `staging`:
+#   FLY_API_TOKEN · STAGING_DATABASE_URL · STAGING_DEMO_ADMIN_PASSWORD · STAGING_API_URL
+
+name: deploy-staging
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: vars.STAGING_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Schema ANTES do app (migrations aditivas/forward-only — P-007). Roda da pipeline porque a
+      # imagem de runtime não carrega a CLI do Prisma (decisão J-SAN-4/devops).
+      - name: Apply migrations (staging DB)
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+
+      # Seed demo é EXCLUSIVO de staging (produção nunca roda seed — Ω-INFRA-3).
+      - name: Seed demo (staging only)
+        run: npm run db:seed:demo
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DEMO_ADMIN_PASSWORD: ${{ secrets.STAGING_DEMO_ADMIN_PASSWORD }}
+
+      - name: Setup flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy API (Fly staging)
+        run: flyctl deploy --config fly.staging.toml --remote-only --build-arg APP_VERSION=${{ github.sha }} --build-arg GIT_COMMIT=${{ github.sha }}
+
+      - name: Deploy Web (Fly staging)
+        run: flyctl deploy --config frontend/fly.staging.toml --remote-only
+        working-directory: frontend
+
+      # Smoke pós-deploy: readiness profunda + login demo + rota autenticada. Vermelho = deploy inválido.
+      - name: Smoke staging
+        run: node scripts/smoke-staging.mjs
+        env:
+          STAGING_API_URL: ${{ secrets.STAGING_API_URL }}
+          SMOKE_EMAIL: gestor.demo@example.com
+          SMOKE_PASSWORD: ${{ secrets.STAGING_DEMO_ADMIN_PASSWORD }}
