@@ -75,8 +75,14 @@ A config-as-code está pronta e aprovada em junta. O **go-live real** exige do h
 - **Vars de uptime:** `STAGING_HEALTH_URL`, `PROD_HEALTH_URL` (URL completa do `/health`).
 
 ## 5. Bucket S3 do backup (privado + imutável)
-- Bucket DEDICADO, **Block Public Access (4 flags)** + **SSE default (KMS)** + **bucket policy** (nega PutObject sem
+- Bucket DEDICADO, **Block Public Access (4 flags)** + **SSE default** + **bucket policy** (nega PutObject sem
   encriptação; TLS-only) + **Lifecycle 30d** + **Versioning** + **Object Lock (WORM)**. IAM mínimo (só o bucket/prefixo).
+- **ALINHAR SSE (condição do critico J-SAN-6):** o `backup-database.mjs` envia `ServerSideEncryption: "AES256"`
+  (SSE-S3). A bucket policy DEVE **aceitar SSE-S3 (AES256)** — se exigir `aws:kms`, o header AES256 é negado (403) e
+  o cron quebra silenciosamente no 1º dia. Ou a policy aceita AES256, ou o script passa `aws:kms`+KeyId. Verificar
+  ANTES de ligar `BACKUP_ENABLED`.
+- **OIDC (condição do critico J-SAN-6):** se migrar as creds AWS de chave estática para OIDC (recomendado), somar
+  `permissions: id-token: write` ao `backup-database.yml`.
 
 ## 6. Ativação viva + gates de go-live (ordem)
 1. Ligar `STAGING_DEPLOY_ENABLED` → 1º deploy de staging verde (smoke real). Só então o selo (b) da trava dupla de
@@ -84,7 +90,11 @@ A config-as-code está pronta e aprovada em junta. O **go-live real** exige do h
 2. **PITR/WAL nativo** do Postgres gerenciado ATIVADO (R2 — RPO sub-24h). Ratificar **RPO<=24h** como decisão de
    negócio (aceitável p/ MVP? senão PITR é pré-go-live).
 3. **Drill de restore CRONOMETRADO no ambiente real** (Runbook A) + RPO escrito → gate de go-live (R2). O drill
-   local já provou o procedimento (~3,6s RTO / 62 policies RLS / isolamento não-superuser).
+   local já provou o procedimento na camada de banco (~3,6s RTO / 62 policies RLS / isolamento não-superuser).
+   **Condição do dba (J-SAN-6):** completar e REGISTRAR o passo 3 do runbook — **app apontando para a cópia
+   restaurada + login HTTP OK + 1 rota autenticada** (o drill provou o banco; a subida do app + login contra a
+   cópia restaurada é o registro de ativação que fecha o veto do dba). Restore-drill AUTOMÁTICO periódico
+   (Actions schedule contra o último backup real) = follow-up de ativação.
 4. Bootstrap do 1º tenant real (Runbook B / P-SAN-PROD-BOOTSTRAP) — sem seed demo.
 5. **Go-live de produção:** junta-5 unânime por SHA (`J-SAN-PROD-GOLIVE-<sha>` na main) + smoke-staging-verde-mesmo-SHA
    + rollback ensaiado → `workflow_dispatch` do `deploy-production.yml` com o `promote_sha`.

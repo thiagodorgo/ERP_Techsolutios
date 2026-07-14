@@ -5,13 +5,13 @@
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
     "block": "Ω-INFRA-4 (backup + restore comprovado + observabilidade — PR7, FECHA o saneamento)",
-    "title": "Ω-INFRA-4: backup pg_dump -Fc → S3 (SSE, retenção segura) + DRILL de restore comprovado ao vivo + PD-INFRA-2 (Fly-native, US$0) + uptime cron (+14 testes)",
+    "title": "Ω-INFRA-4: backup pg_dump -Fc → S3 (SSE, retenção segura) + DRILL de restore comprovado ao vivo + PD-INFRA-2 (Fly-native, US$0) + uptime cron (+16 testes)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω-INFRA-4 (PR7, FECHA a RODADA SANEAMENTO): backup + observabilidade config-as-code INERTE. scripts/backup-database.mjs (pg_dump -Fc -> auto-valida pg_restore -l -> PutObject bucket dedicado com ServerSideEncryption -> retencao 30d SEGURA: prune so apos upload OK, so prefixo/formato, protectKey, keepMinimum, lista truncada aborta; creds Postgres via PG* env NUNCA em argv). backup-database.yml (schedule diario GATED BACKUP_ENABLED, Environment dedicado 'backup' nao 'production' p/ nao travar cron). uptime-check.mjs + uptime-check.yml (cron */5, GET /health, gated por *_HEALTH_URL). PD-INFRA-2 (2 lentes, >=3 fontes): Fly-native logs/metricas US$0 gru/BR + GitHub Actions cron uptime; Better Stack/Axiom = upgrades NAO adotados (junta-5-por-pago NAO dispara). DRILL DE RESTORE COMPROVADO AO VIVO (veto do dba-guardiao satisfeito): backup-database.mjs REAL -> MinIO(SSE) -> download byte-exato (713655) -> pg_restore EXIT=0 ~3,6s RTO -> integridade SOURCE==RESTAURADO exata (9 tenants/16 users/62 policies RLS/71 tabelas) -> isolamento por tenant COMPORTAMENTAL sob role NAO-superuser (FORCE RLS: 1 tenant visivel). RPO<=24h (dump) + PITR nativo (sub-24h)=hand-off. Design-junta dba/critico/secops APROVADO_CONDICIONADO 3/3, TODAS as condicoes dobradas + provadas no drill (formato -Fc unificado, retencao segura, senha fora do argv, SSE, colisao de chave com ms+rand, doc-vs-build do PD, environment dedicado, teto 5GB). migration_needed=false. Suite 0 fail (+14 backend: backup-database.test). Ativacao viva (bucket S3 real, PITR, contas obs) = hand-off. Backfill do Ω-INFRA-3 (PR #182 / 4a2db09).",
-    "status_label": "KPI por PR (D-KPI-PER-PR); backup/restore/obs config-as-code, +14 testes backend, drill comprovado",
+    "summary": "Ω-INFRA-4 (PR7, FECHA a RODADA SANEAMENTO): backup + observabilidade config-as-code INERTE. scripts/backup-database.mjs (pg_dump -Fc -> auto-valida pg_restore -l -> PutObject bucket dedicado com ServerSideEncryption -> retencao 30d SEGURA: prune so apos upload OK, so prefixo/formato, protectKey, keepMinimum, lista truncada aborta; creds Postgres via PG* env NUNCA em argv). backup-database.yml (schedule diario GATED BACKUP_ENABLED, Environment dedicado 'backup' nao 'production' p/ nao travar cron). uptime-check.mjs + uptime-check.yml (cron */5, GET /health, gated por *_HEALTH_URL). PD-INFRA-2 (2 lentes, >=3 fontes): Fly-native logs/metricas US$0 gru/BR + GitHub Actions cron uptime; Better Stack/Axiom = upgrades NAO adotados (junta-5-por-pago NAO dispara). DRILL DE RESTORE COMPROVADO AO VIVO (veto do dba-guardiao satisfeito): backup-database.mjs REAL -> MinIO(SSE) -> download byte-exato (713655) -> pg_restore EXIT=0 ~3,6s RTO -> integridade SOURCE==RESTAURADO exata (9 tenants/16 users/62 policies RLS/71 tabelas) -> isolamento por tenant COMPORTAMENTAL sob role NAO-superuser (FORCE RLS: 1 tenant visivel). RPO<=24h (dump) + PITR nativo (sub-24h)=hand-off. Design-junta dba/critico/secops APROVADO_CONDICIONADO 3/3, TODAS as condicoes dobradas + provadas no drill (formato -Fc unificado, retencao segura, senha fora do argv, SSE, colisao de chave com ms+rand, doc-vs-build do PD, environment dedicado, teto 5GB). migration_needed=false. Suite 0 fail (+16 backend: backup-database.test). Ativacao viva (bucket S3 real, PITR, contas obs) = hand-off. Backfill do Ω-INFRA-3 (PR #182 / 4a2db09).",
+    "status_label": "KPI por PR (D-KPI-PER-PR); backup/restore/obs config-as-code, +16 testes backend, drill comprovado",
     "related_prs": [
       {
         "pr": 182,
@@ -69,10 +69,10 @@
       "note": "test:smoke real do frontend (execucao no PR): substitui o antigo 44/44 (estava congelado no B-124). Google Maps (J-MAPAS-3/4) +16 (6 google-canvas + 10 focus-city). 0 fail."
     },
     "backend_tests": {
-      "value": 797,
-      "total": 797,
-      "display": "797/797",
-      "note": "Suite backend INTEIRA no gate do CI (memory + Postgres+Redis). Ω-INFRA-4 +14 (backup-database.test: nome/parse/retencao segura/config S3/PG* env) sobre os 783 do Ω-INFRA-3. Execucao local: 0 fail (6 skip pre-existentes DB-gated que rodam no CI). Total real confirmado pelo gate do CI no PR."
+      "value": 799,
+      "total": 799,
+      "display": "799/799",
+      "note": "Suite backend INTEIRA no gate do CI (memory + Postgres+Redis). Ω-INFRA-4 +16 (backup-database.test: nome/parse/retencao segura/config S3/PG* env) sobre os 783 do Ω-INFRA-3. Execucao local: 0 fail (6 skip pre-existentes DB-gated que rodam no CI). Total real confirmado pelo gate do CI no PR."
     },
     "backend_contract_tests_focused": {
       "value": 21,

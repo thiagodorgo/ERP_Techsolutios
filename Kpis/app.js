@@ -4,7 +4,7 @@ const dashboardData = {
     "version": "Ω-INFRA-4",
     "updatedAt": "2026-07-14",
     "sourceBranch": "feat-omega-infra4-backup",
-    "summary": "Ω-INFRA-4 (2026-07-14, PR7 — FECHA a RODADA SANEAMENTO): backup + observabilidade config-as-code INERTE. backup-database.mjs (pg_dump -Fc -> auto-valida pg_restore -l -> PutObject bucket dedicado SSE -> retencao 30d SEGURA; creds via PG* env, nunca argv) + backup-database.yml (schedule diario GATED, Environment 'backup' dedicado) + uptime-check (cron */5 /health). PD-INFRA-2: Fly-native logs/metricas US$0 gru/BR + Actions cron; Better Stack/Axiom = upgrades NAO adotados. DRILL DE RESTORE COMPROVADO AO VIVO: script REAL -> MinIO(SSE) -> download byte-exato -> pg_restore EXIT=0 ~3,6s -> integridade SOURCE==RESTAURADO exata (9/16/62 policies RLS/71) -> isolamento por tenant sob role NAO-superuser (FORCE RLS: 1 tenant visivel). RPO<=24h + PITR nativo=hand-off. Design-junta dba/critico/secops APROVADO_CONDICIONADO 3/3, todas as condicoes dobradas+provadas. migration_needed=false. Suite 0 fail (+14 backend). Backfill do Ω-INFRA-3 (#182/4a2db09).",
+    "summary": "Ω-INFRA-4 (2026-07-14, PR7 — FECHA a RODADA SANEAMENTO): backup + observabilidade config-as-code INERTE. backup-database.mjs (pg_dump -Fc -> auto-valida pg_restore -l -> PutObject bucket dedicado SSE -> retencao 30d SEGURA; creds via PG* env, nunca argv) + backup-database.yml (schedule diario GATED, Environment 'backup' dedicado) + uptime-check (cron */5 /health). PD-INFRA-2: Fly-native logs/metricas US$0 gru/BR + Actions cron; Better Stack/Axiom = upgrades NAO adotados. DRILL DE RESTORE COMPROVADO AO VIVO: script REAL -> MinIO(SSE) -> download byte-exato -> pg_restore EXIT=0 ~3,6s -> integridade SOURCE==RESTAURADO exata (9/16/62 policies RLS/71) -> isolamento por tenant sob role NAO-superuser (FORCE RLS: 1 tenant visivel). RPO<=24h + PITR nativo=hand-off. Design-junta dba/critico/secops APROVADO_CONDICIONADO 3/3, todas as condicoes dobradas+provadas. migration_needed=false. Suite 0 fail (+16 backend). Backfill do Ω-INFRA-3 (#182/4a2db09).",
   },
   "kpis": [
     {
@@ -59,8 +59,8 @@ const dashboardData = {
     },
     {
       "label": "Backend tests",
-      "value": "797/797",
-      "note": "Suite backend INTEIRA no gate do CI (Postgres+Redis). Ω-INFRA-4 +14 (backup-database.test) sobre 783. Local 0 fail (6 skip pre-existentes DB-gated). Total real confirmado pelo gate do CI. KPI-por-PR."
+      "value": "799/799",
+      "note": "Suite backend INTEIRA no gate do CI (Postgres+Redis). Ω-INFRA-4 +16 (backup-database.test) sobre 783. Local 0 fail (6 skip pre-existentes DB-gated). Total real confirmado pelo gate do CI. KPI-por-PR."
     },
     {
       "label": "Mobile contracts",

@@ -624,5 +624,5 @@ Todo bloco futuro continua obrigado a atualizar `Kpis/index.html`, `Kpis/app.js`
   (9 tenants / 16 users / **62 policies RLS** / 71 tabelas) → **isolamento por tenant sob role NÃO-superuser**
   (FORCE RLS: 1 tenant distinto visível). **RPO ≤ 24h** (dump) + PITR nativo (sub-24h) = hand-off.
 - **Design-junta dba/critico/secops APROVADO_CONDICIONADO 3/3** — TODAS as condições dobradas + provadas no drill.
-  `migration_needed=false`. Suíte **0 fail** (+14 backend). Backfill do Ω-INFRA-3: **#182 / 4a2db09**.
+  `migration_needed=false`. Suíte **0 fail** (+16 backend). Backfill do Ω-INFRA-3: **#182 / 4a2db09**.
 - **FECHA a RODADA SANEAMENTO** (PRs 1-7: Ω-GATE → Ω-GOV → Ω-DOCS → Ω-INFRA-1..4). Ativação viva = dossiê de hand-off.

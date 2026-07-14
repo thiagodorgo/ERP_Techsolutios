@@ -70,6 +70,38 @@ test("selectExpiredKeys: guarda keepMinimum nunca apaga os N mais recentes", () 
   assert.ok(expired[0].includes("00000001"));
 });
 
+test("selectExpiredKeys: keepMinimum DEFAULT (caminho de producao, sem passar a opcao) preserva os 3 mais recentes", () => {
+  // O main() chama selectExpiredKeys(keys, now, 30, { prefix, protectKey }) SEM keepMinimum → default KEEP_MINIMUM=3.
+  const now = D("2026-12-01T00:00:00.000Z"); // tudo > 30d
+  const keys = [
+    buildBackupKey("db-backups", D("2026-06-01T06:00:00.000Z"), "00000001"),
+    buildBackupKey("db-backups", D("2026-06-02T06:00:00.000Z"), "00000002"),
+    buildBackupKey("db-backups", D("2026-06-03T06:00:00.000Z"), "00000003"),
+    buildBackupKey("db-backups", D("2026-06-04T06:00:00.000Z"), "00000004"),
+    buildBackupKey("db-backups", D("2026-06-05T06:00:00.000Z"), "00000005"),
+  ];
+  const expired = selectExpiredKeys(keys, now, 30, { prefix: "db-backups" }); // default keepMinimum=3
+  assert.equal(expired.length, 2, "5 válidas, default 3 → só as 2 mais antigas expiram");
+  assert.ok(expired.every((k) => k.includes("00000001") || k.includes("00000002")));
+});
+
+test("selectExpiredKeys: borda 30d exata — idade==30d MANTIDA, 30d+1ms EXPIRA (corte estrito)", () => {
+  const now = D("2026-08-01T00:00:00.000Z");
+  const day = 24 * 60 * 60 * 1000;
+  const exactly30d = new Date(now.getTime() - 30 * day); // == cutoff → mantida (at < cutoff é false)
+  const justOver = new Date(now.getTime() - 30 * day - 1); // 30d+1ms → expira
+  const keys = [
+    buildBackupKey("db-backups", exactly30d, "00000001"),
+    buildBackupKey("db-backups", justOver, "00000002"),
+    buildBackupKey("db-backups", new Date(now.getTime() - 1000), "00000003"), // recentes p/ satisfazer keepMinimum
+    buildBackupKey("db-backups", new Date(now.getTime() - 2000), "00000004"),
+    buildBackupKey("db-backups", new Date(now.getTime() - 3000), "00000005"),
+  ];
+  const expired = selectExpiredKeys(keys, now, 30, { prefix: "db-backups", keepMinimum: 3 });
+  assert.ok(!expired.some((k) => k.includes("00000001")), "idade == 30d exata deve ser MANTIDA");
+  assert.ok(expired.some((k) => k.includes("00000002")), "30d + 1ms deve EXPIRAR");
+});
+
 test("selectExpiredKeys: <= keepMinimum válidas → não apaga nada (anti-destruição)", () => {
   const now = D("2026-12-01T00:00:00.000Z");
   const keys = [
