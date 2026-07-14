@@ -36,6 +36,44 @@ async function main(): Promise<void> {
   await withTenantRls(prisma, tenant.id, async (tx) => {
     const tenantId = tenant.id;
 
+    // === 4 técnicos na região de CURITIBA (demo do Mapa Operacional) ===
+    // Bloco próprio e IDEMPOTENTE (guarda por tecnico1.cwb): roda mesmo quando a frota de SP já
+    // está populada, para que bancos existentes também recebam os pins de Curitiba.
+    {
+      const cwbExists = await tx.user.findFirst({ where: { tenant_id: tenantId, email: "tecnico1.cwb@example.com" }, select: { id: true } });
+      if (!cwbExists) {
+        const cwbBranch = await tx.branch.findFirst({ where: { tenant_id: tenantId, code: "MAIN" }, select: { id: true } });
+        const cwbRole = await tx.role.findFirst({ where: { key: "operator", tenant_id: null }, select: { id: true } });
+        const cwbCreds = new LocalAuthCredentialService(new LocalAuthCredentialRepository(tx), {
+          findByIdForTenant: (userId, tId) => tx.user.findFirst({ where: { id: userId, tenant_id: tId }, select: { id: true, tenant_id: true, email: true } }),
+        });
+        const cwbPassword = process.env.DEMO_ADMIN_PASSWORD?.trim() || "ChangeMe123!";
+        // Curitiba (~ -25.43, -49.27) — 4 pontos espalhados pela cidade. 3 recentes (verde) + 1 com
+        // 4 min (âmbar "Antiga > 3 min") para exercer a legenda.
+        const curitibaTechs = [
+          { name: "Ana Beatriz Rocha", email: "tecnico1.cwb@example.com", lat: -25.4284, lng: -49.2733, ageMin: 1, heading: 30, speed: 5.2, battery: 91 },
+          { name: "Rafael Mendes", email: "tecnico2.cwb@example.com", lat: -25.4525, lng: -49.2890, ageMin: 2, heading: 150, speed: 0, battery: 77 },
+          { name: "Camila Nunes", email: "tecnico3.cwb@example.com", lat: -25.409, lng: -49.256, ageMin: 4, heading: 210, speed: 3.1, battery: 68 },
+          { name: "Diego Ferreira", email: "tecnico4.cwb@example.com", lat: -25.469, lng: -49.252, ageMin: 1, heading: 95, speed: 7.8, battery: 84 },
+        ];
+        for (const t of curitibaTechs) {
+          const u = await tx.user.upsert({
+            where: { tenant_id_email: { tenant_id: tenantId, email: t.email } },
+            update: { name: t.name, status: "active", branch_id: cwbBranch?.id ?? null },
+            create: { tenant_id: tenantId, branch_id: cwbBranch?.id ?? null, name: t.name, email: t.email, status: "active" },
+            select: { id: true, email: true },
+          });
+          if (cwbRole) {
+            const has = await tx.userRoleAssignment.findFirst({ where: { tenant_id: tenantId, user_id: u.id, role_id: cwbRole.id, branch_id: null }, select: { id: true } });
+            if (!has) await tx.userRoleAssignment.create({ data: { tenant_id: tenantId, user_id: u.id, role_id: cwbRole.id, branch_id: null } });
+          }
+          await cwbCreds.upsertCredentialForUser({ tenant_id: tenantId, user_id: u.id, email: u.email, password: cwbPassword });
+          await tx.fieldOperatorLocation.create({ data: { tenant_id: tenantId, operator_user_id: u.id, source: "mobile", latitude: t.lat, longitude: t.lng, accuracy_meters: 9, heading_degrees: t.heading, speed_meters_per_second: t.speed, battery_level: t.battery, recorded_at: new Date(Date.now() - t.ageMin * 60 * 1000), metadata: {} } });
+        }
+        console.log("[seed-fleet] 4 técnicos de Curitiba semeados.");
+      }
+    }
+
     const already = await tx.vehicle.findFirst({ where: { tenant_id: tenantId, plate: "FLT-0001" }, select: { id: true } });
     if (already) {
       console.log("[seed-fleet] Frota demo já populada (FLT-0001 existe) — nada a fazer.");

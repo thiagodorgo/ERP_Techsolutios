@@ -24,7 +24,8 @@ export function OperationsMapCanvas({
   showDispatches?: boolean;
   maintenanceVehicleIds?: readonly string[];
   insuredVehicleIds?: readonly string[];
-  // Ω1b — pins de chamado (só o canvas MapLibre; Google/esquemático mostram só operadores).
+  // Ω1b — pins de chamado. Google e MapLibre exibem operadores + chamados; o esquemático
+  // (sem coordenada real) segue só com operadores.
   workOrderPins?: readonly OperationsMapWorkOrderPin[];
   selectedWorkOrderId?: string;
   onSelectWorkOrder?: (id: string) => void;
@@ -42,6 +43,9 @@ export function OperationsMapCanvas({
         locations={locations}
         selectedId={selectedId}
         onSelect={onSelect}
+        workOrderPins={workOrderPins}
+        selectedWorkOrderId={selectedWorkOrderId}
+        onSelectWorkOrder={onSelectWorkOrder}
       />
     );
   }

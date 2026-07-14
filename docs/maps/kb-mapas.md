@@ -196,10 +196,54 @@ de sync **Drift** (dado geo offline entra na fila como os demais domínios).
 - `pub.dev/packages/{google_maps_flutter,flutter_map}` — versões/changelog.
 - `openfreemap.org` + GitHub `hyperknot/openfreemap`, `maplibre/maplibre-gl-js`.
 
+## (f) Foco de câmera "cidade com mais técnicos" — clustering vs geocoding (J-MAPAS-4)
+
+**Última verificação:** 2026-07-13 · **Decisão de junta:** J-MAPAS-4 (planejador → dev → avaliador).
+
+**Regra do dono (literal):** "o mapa vai FOCAR onde tem MAIS técnicos; em EMPATE de números, vai
+focar em ORDEM ALFABÉTICA no NOME DA CIDADE."
+
+**Como foi implementado (custo ZERO, sem SKU novo):**
+- **Núcleo — "focar onde há mais técnicos":** resolvido 100% por **CLUSTERING GEOGRÁFICO** local
+  (`clusterByProximity` em `mapMarkers.ts`), single-linkage/union-find sobre **haversine**, limiar
+  **50 km**. O maior cluster = "cidade com mais técnicos". A câmera dá `fitBounds` só nos pontos do
+  cluster vencedor (`pickFocusCluster`). Cobre o demo (4 Curitiba vs 2 SP → foca Curitiba) **sem
+  nenhuma chamada externa**. Curitiba↔SP ≈ 339 km ≫ 50 km; jitter intra-cidade do seed ≪ 50 km.
+- **Limiar 50 km:** ≈ raio de região metropolitana — funde o jitter de uma mesma cidade e mantém
+  cidades vizinhas separadas. Constante nomeada `FOCUS_CITY_CLUSTER_THRESHOLD_KM` (ajuste = 1 linha),
+  coberta por teste (une a 45 km, separa a 55 km).
+
+**DIVERGÊNCIA REGISTRADA (A2 — sem consolidação silenciosa): desempate NÃO é literalmente
+"nome da cidade em ordem alfabética".**
+- Obter o **nome** de uma cidade a partir de lat/lng exige **reverse geocoding = Geocoding API =
+  SKU PAGO** (Tier Essentials: 10.000 grátis/mês, depois **US$ 5,00/1.000** — ver §(a), tabela
+  oficial "Last updated 2026-07-10 UTC") **e** carregar `libraries=geocoding` no loader (hoje
+  `libraries=maps,marker`, ausente). Isso é exatamente o gatilho do **veto "SKU pago sem junta"**.
+- **Escolha (opção b): desempate PROXY determinístico por centroide — oeste-primeiro (menor
+  longitude), depois menor latitude** (`westFirstTieBreak`). Custo **US$ 0**, sem lib nova, estável.
+  **Trade-off honesto:** não é o nome alfabético literal; é um proxy geográfico documentado. O
+  empate é **raro** e **não ocorre no demo** (4 ≠ 2), logo o desempate **nunca dispara** na
+  verificação atual.
+- **Rejeitado (c):** tabela coord→cidade só-para-demo — hack que mente fora do seed, não escala.
+- **Seam para a versão fiel (futuro, GATED):** `pickFocusCluster(clusters, tieBreak)` recebe o
+  comparador **injetável**. A opção **(a)** — reverse-geocode **SÓ os centroides empatados**
+  (poucas chamadas, cacheadas por centroide arredondado; comparar `city` A→Z) — fica como dossiê
+  **PD + "requer junta de 5 unânime"** atrás do gate de custo. **Não** entra neste bloco.
+
+**Custo deste bloco:** **US$ 0**. Nenhum SKU novo; `libraries=geocoding` NÃO adicionada; nenhuma
+coordenada persistida ou logada (LGPD: clustering opera sobre coordenada já em tela, centroides
+efêmeros de UI, sem `place_id`, sem coordenada de técnico em log/console).
+
 ## Histórico de revisões
 - **2026-07-13** — Semeadura inicial (criação da Junta de Mapas). Preços verificados na tabela
   oficial marcada 2026-07-10 UTC; ToS na versão 2025-05-01 (EEA 2025-10-01); Flutter
   `google_maps_flutter` 2.17.1 e `flutter_map` 8.3.0; OpenFreeMap público sem limites.
+- **2026-07-13 (J-MAPAS-4 · dev-mapas)** — Câmera do Mapa Operacional passa a **enquadrar a cidade
+  com mais técnicos** por **clustering geográfico** (`clusterByProximity`/`pickFocusCluster` em
+  `mapMarkers.ts`; haversine, limiar 50 km). Substitui o `fitBounds` "em todos os pontos" no
+  `GoogleMapsCanvas.tsx`. **Custo US$ 0** — sem SKU novo, `geocoding` NÃO carregada. Desempate por
+  **proxy determinístico oeste-primeiro** (não nome-alfabético literal): divergência A2 registrada
+  em §(f) e em `agent-orchestration/controle/`. 10 testes puros novos. Ver §(f) para o dossiê.
 - **2026-07-13 (J-MAPAS-3 · dev-mapas)** — Paridade do canvas **Google Maps** com o MapLibre
   (operador colorido por status real · pins de chamado por prioridade · legenda circulada).
   **Sem SKU novo:** o único SKU tocado é **Dynamic Maps (Maps JavaScript API)**, já ativo no

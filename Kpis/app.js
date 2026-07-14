@@ -39,8 +39,8 @@ const dashboardData = {
     },
     {
       "label": "Frontend smoke",
-      "value": "44/44",
-      "note": "test:smoke 33 -> 44 na PR #125 (B-124): +10 unit do dashboard.adapter + 1 render do dashboard."
+      "value": "378/378",
+      "note": "test:smoke real do frontend (execucao no PR); substitui o 44/44 congelado no B-124. Google Maps (J-MAPAS-3/4) +16. 0 fail."
     },
     {
       "label": "Backend tests",

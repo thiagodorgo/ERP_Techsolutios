@@ -13,6 +13,7 @@ import {
   WORK_ORDERS_MAP_SOURCE_ID,
   WORK_ORDER_PRIORITY_HEX,
   WORK_ORDER_PRIORITY_KEY,
+  MAP_LEGEND_ITEMS,
   buildFieldLocationsFeatureCollection,
   buildWorkOrderPinsFeatureCollection,
   interpolateCoords,
@@ -536,15 +537,19 @@ export function OperationsMapLibreCanvas({
       ) : null}
       {status === "ready" ? (
         <ul className="operations-map-libre__legend" aria-label="Legenda do mapa">
-          <li><span className="operations-map-libre__dot" style={{ background: "#22c55e" }} /> Disponível</li>
-          <li><span className="operations-map-libre__dot" style={{ background: "#38bdf8" }} /> Em rota</li>
-          <li><span className="operations-map-libre__dot" style={{ background: "#6366f1" }} /> Em atendimento</li>
-          <li><span className="operations-map-libre__dot" style={{ background: "#f59e0b" }} /> Antiga &gt; 3 min</li>
-          <li><span className="operations-map-libre__dot" style={{ background: "#64748b" }} /> Antiga &gt; 10 min</li>
-          <li className="operations-map-libre__legend-sep" aria-hidden="true" />
-          <li><span className="operations-map-libre__pin" style={{ background: WORK_ORDER_PRIORITY_HEX.urgent }} /> Chamado urgente</li>
-          <li><span className="operations-map-libre__pin" style={{ background: WORK_ORDER_PRIORITY_HEX.high }} /> Chamado alta</li>
-          <li><span className="operations-map-libre__pin" style={{ background: WORK_ORDER_PRIORITY_HEX.medium }} /> Chamado média/baixa</li>
+          {MAP_LEGEND_ITEMS.map((item, index) =>
+            item.kind === "sep" ? (
+              <li key={`sep-${index}`} className="operations-map-libre__legend-sep" aria-hidden="true" />
+            ) : (
+              <li key={item.label}>
+                <span
+                  className={item.kind === "pin" ? "operations-map-libre__pin" : "operations-map-libre__dot"}
+                  style={{ background: item.color }}
+                />{" "}
+                {item.label}
+              </li>
+            ),
+          )}
         </ul>
       ) : null}
     </section>

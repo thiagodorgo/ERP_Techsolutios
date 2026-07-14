@@ -235,5 +235,24 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-13",
+    "version": "google-maps-frontend",
+    "flutter_tests": "764/764",
+    "backend_tests": "768/768",
+    "frontend_smoke_tests": "378/378",
+    "mobile_backend_contracts": "18/18",
+    "mobile_core_saas_contracts": "21/21",
+    "backend_contract_tests_focused": "21/21",
+    "flutter_modules": "17/17",
+    "flutter_mvp_demo": "96%",
+    "flutter_mvp_vendavel": "78%",
+    "blocks_completed": 49,
+    "description": "google-maps-frontend (J-MAPAS-3/4, a pedido do dono): Google Maps (Web Components gmp-map/gmp-advanced-marker, v=beta) no Mapa Operacional — operador colorido pela paleta REAL de status (getRingColor), pins de CHAMADO por prioridade e LEGENDA (8 itens) fieis ao MapLibre (J-MAPAS-3 junta 3/3). Camera FOCA a cidade com mais tecnicos por CLUSTERING geografico (haversine, custo ZERO, sem geocoding); empate por proxy oeste-primeiro (divergencia da regra literal 'nome alfabetico' documentada em D-JMAPAS4 — versao fiel = Geocoding API SKU pago, requer junta de 5) (J-MAPAS-4 APROVADO). Seed: 4 tecnicos demo em Curitiba (idempotente). frontend_smoke 44->378 (contagem REAL; +16 testes de mapa: 6 google-canvas + 10 focus-city; o 44/44 estava congelado no B-124). Chave do Google so em frontend/.env gitignorado (nunca versionada). Backfill do Ω-INFRA-1: PR #177 / f457d9f.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]
