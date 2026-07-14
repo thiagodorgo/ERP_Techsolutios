@@ -98,6 +98,11 @@ arquivos (regra do espelho) · baseline+meta · aceite (vídeo+timestamp) · ris
 
 ### Ω3F-1 — Hub da OS (PRIORIDADE — é o container; vem 1º)
 
+> **[x] CONCLUÍDO — junta J-OMEGA3F-1 3/3 APROVADO** (fid-avaliador + cognicao-visual + master-teste, sem veto/
+> condição). Shell de abas + menu lateral interno + barra de ações (Copiar #22 + ⋮ WhatsApp #32); C2 revelação
+> progressiva (só "Informações gerais" visível; ocultas AUSENTES). UI-only. Front detalhe 6 → +13 (smoke 378→391),
+> tsc/build verdes. Pendência P-Ω3F1-ENTITYTYPE → Ω3F-3. **PR #NN, merge `<hash>` — pendente push/merge.**
+
 Capacidades **#5** (hub de 11 abas + barra de ações), **#22** (Copiar URL), **#32** (texto WhatsApp).
 
 - **Objetivo:** transformar `WorkOrderDetailPage.tsx` (296 linhas, card único, 0 abas) em **shell de
