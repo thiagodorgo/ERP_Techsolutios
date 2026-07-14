@@ -556,3 +556,15 @@ Todo bloco futuro continua obrigado a atualizar `Kpis/index.html`, `Kpis/app.js`
   não conta como bloco de feature entregue (mesmo critério de Ω-GOV/Ω-DOCS). `mvp_demo`/`mvp_vendavel`
   inalterados (nenhum escopo de produto movido). Teste de gatilho da cadeia: **pendente de sessão nova** (o
   roteador carrega agentes no início da sessão; ver evidência/análise estática na ata J-JUNTA-MAPAS).
+
+## 2026-07-13 — google-maps-frontend (J-MAPAS-3/4): Google Maps no Mapa Operacional (a pedido do dono)
+
+- **Google Maps (Web Components)** no Mapa Operacional: operador colorido pela paleta REAL de status, pins de
+  chamado por prioridade, LEGENDA (8 itens) fiéis ao MapLibre (**J-MAPAS-3**, junta 3/3). Câmera **foca a cidade
+  com mais técnicos** por **clustering geográfico** (haversine, custo ZERO, sem geocoding) — empate por proxy
+  oeste-primeiro (divergência da regra literal "nome alfabético" documentada em **D-JMAPAS4**; versão fiel =
+  Geocoding API/SKU pago → junta de 5) (**J-MAPAS-4** APROVADO).
+- **Seed:** 4 técnicos demo na região de Curitiba (idempotente). Chave do Google **só** em `frontend/.env`
+  gitignorado (nunca versionada; `.env.example` placeholder).
+- **frontend_smoke 44 → 378** (contagem REAL; +16 testes de mapa; o 44/44 estava congelado no B-124). Backfill do
+  Ω-INFRA-1: **PR #177 / f457d9f**.

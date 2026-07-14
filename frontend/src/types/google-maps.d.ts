@@ -8,6 +8,22 @@ declare namespace google {
     class Map {
       constructor(element: HTMLElement, options?: MapOptions);
       panTo(latLng: LatLngLiteral): void;
+      setCenter(latLng: LatLngLiteral): void;
+      setZoom(zoom: number): void;
+      fitBounds(bounds: LatLngBounds, padding?: number | Padding): void;
+    }
+
+    interface Padding {
+      top?: number;
+      right?: number;
+      bottom?: number;
+      left?: number;
+    }
+
+    class LatLngBounds {
+      constructor();
+      extend(latLng: LatLngLiteral): LatLngBounds;
+      isEmpty(): boolean;
     }
 
     class Marker {
@@ -59,3 +75,23 @@ declare namespace google {
     }
   }
 }
+
+/**
+ * Google Maps Web Components (gmp-map / gmp-advanced-marker, v=beta).
+ * Subconjunto usado pelo GoogleMapsCanvas: atributos declarativos + innerMap para pan imperativo
+ * + evento gmp-click nos markers (ligado via ref, não via prop — React 18 não faz bind de custom event).
+ */
+interface GmpMapElement extends HTMLElement {
+  innerMap?: google.maps.Map;
+  // Propriedades JS dos web components exigem OBJETO (LatLngLiteral), não a string do atributo
+  // HTML — React 19 faz property-assign em custom elements, então geometria é setada via ref.
+  center?: google.maps.LatLngLiteral | null;
+  zoom?: number | null;
+}
+
+interface GmpAdvancedMarkerElement extends HTMLElement {
+  position?: google.maps.LatLngLiteral | null;
+}
+
+// A augmentation JSX dos web components vive em google-maps-elements.d.ts (arquivo MÓDULO —
+// augmentation de módulo não funciona a partir deste script global).

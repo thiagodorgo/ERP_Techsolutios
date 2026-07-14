@@ -1731,11 +1731,65 @@
 }
 
 .operations-map-canvas__gmaps {
+  position: relative; /* contexto p/ a legenda absoluta sobreposta ao mapa (não vaza p/ o card) */
   width: 100%;
   min-height: 380px;
+  height: 380px;
   border-radius: var(--radius-8);
   overflow: hidden;
   background: var(--surface-panel-muted);
+}
+
+/* Web component gmp-map exige altura explícita (exemplo oficial: gmp-map { height: 100% }). */
+.operations-map-canvas__gmaps gmp-map {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Pin de operador (conteúdo custom do gmp-advanced-marker) — cor vem INLINE (getRingColor),
+   com a paleta REAL de status (paridade com o MapLibre): status ao vivo · âmbar >3min ·
+   cinza >10min. A seleção NÃO troca a cor (nunca UI mentirosa): só cresce e ganha anel. */
+.gmp-operator-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgb(15 23 42 / 35%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gmp-operator-pin--selected {
+  width: 34px;
+  height: 34px;
+  font-size: 13px;
+  outline: 2px solid #0f8fbf;
+  outline-offset: 2px;
+}
+
+/* Pin de CHAMADO (conteúdo custom do gmp-advanced-marker) — teardrop por prioridade; cor vem
+   INLINE (getWorkOrderPriorityColor). Espelha a forma do swatch da legenda em tamanho de marker. */
+.gmp-workorder-pin {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 2px 6px rgb(15 23 42 / 35%);
+  cursor: pointer;
+}
+
+.gmp-workorder-pin--selected {
+  width: 26px;
+  height: 26px;
+  outline: 2px solid #0f8fbf;
+  outline-offset: 2px;
 }
 
 /* Ω1 — Mapa Operacional real (MapLibre GL + OpenFreeMap) */

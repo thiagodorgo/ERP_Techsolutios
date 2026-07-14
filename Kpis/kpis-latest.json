@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-13",
-  "version": "JUNTA-MAPAS",
+  "version": "google-maps-frontend",
   "source": "Kpis/kpis-latest.json",
-  "scope": "root_project_kpis_docs_and_agents_only",
+  "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "JUNTA-MAPAS",
-    "title": "Criacao da Junta de Mapas (3 agentes) + KB geo + registro",
+    "block": "google-maps-frontend (J-MAPAS-3/4)",
+    "title": "Google Maps no Mapa Operacional: paridade + legenda + foco na cidade com mais tecnicos",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "JUNTA-MAPAS: criacao de 3 agentes no molde da casa (.claude/agents/planejador-mapas, dev-mapas, avaliador-mapas) acionados em cadeia (planejador->dev->avaliador) para toda tarefa de mapa/geo (web ou Flutter); base de conhecimento viva docs/maps/kb-mapas.md preenchida com pesquisa real datada 2026 (precos por SKU do Google Maps Platform tabela oficial 2026-07-10 UTC, ToS de cache place_id vs lat/lng 2025-05-01, google_maps_flutter 2.17.1, flutter_map 8.3.0, OpenFreeMap sem limites); registro D-JUNTA-MAPAS em decisoes.md e ata J-JUNTA-MAPAS (junta 4/4 FAVORAVEL). Regra de ouro: MapLibre+OpenFreeMap permanecem base web (custo zero, Ω1); Google/SKU pago = PD + junta de 5. PR docs/agentes-only: NENHUMA chave/billing/SKU ativado, NENHUM codigo de produto tocado, contagem real de testes novos = 0. Demais metricas carregam o ultimo valor oficial (Ω-INFRA-1). merge_commit/approved_head ficam null na autoria (backfill no proximo bloco).",
-    "status_label": "KPI por PR (D-KPI-PER-PR); docs/agentes-only, 0 testes novos",
+    "summary": "Google Maps (Web Components gmp-map/gmp-advanced-marker, v=beta) no Mapa Operacional a pedido do dono: pin de operador colorido pela paleta REAL de status (getRingColor), pins de CHAMADO por prioridade, e a LEGENDA (8 itens) fieis ao canvas MapLibre (J-MAPAS-3, junta 3/3). Camera FOCA a cidade com MAIS tecnicos via CLUSTERING geografico (haversine, custo ZERO, sem geocoding pago) — empate por proxy determinístico oeste-primeiro, divergencia da regra literal 'nome da cidade alfabetico' registrada em D-JMAPAS4/kb-mapas (versao fiel exige Geocoding API = SKU pago, requer junta de 5) (J-MAPAS-4, junta APROVADO). Seed: 4 tecnicos demo na regiao de Curitiba (idempotente). Chave do Google SO em frontend/.env GITIGNORADO (nunca versionada; .env.example placeholder). frontend_smoke 44->378 (contagem real; +16 testes de mapa). Backfill do Ω-INFRA-1 (PR #177 / f457d9f). merge_commit/approved_head null na autoria (backfill no proximo bloco).",
+    "status_label": "KPI por PR (D-KPI-PER-PR); +16 testes de mapa, smoke real 378",
     "related_prs": [
       {
         "pr": 176,
@@ -43,9 +43,10 @@
       "display": "764/764"
     },
     "frontend_smoke_tests": {
-      "value": 44,
-      "total": 44,
-      "display": "44/44"
+      "value": 378,
+      "total": 378,
+      "display": "378/378",
+      "note": "test:smoke real do frontend (execucao no PR): substitui o antigo 44/44 (estava congelado no B-124). Google Maps (J-MAPAS-3/4) +16 (6 google-canvas + 10 focus-city). 0 fail."
     },
     "backend_tests": {
       "value": 768,
