@@ -257,7 +257,7 @@ export function WorkOrderForm({
           </Card>
           <Card title="Origem do atendimento">
             <div className="form-section">
-              <Input label="Endereco de origem" value={state.serviceAddress} onChange={(event) => setState({ ...state, serviceAddress: event.target.value })} />
+              <Input label="Endereço de origem" value={state.serviceAddress} onChange={(event) => setState({ ...state, serviceAddress: event.target.value })} />
               <Input label="Cidade" value={state.serviceCity} onChange={(event) => setState({ ...state, serviceCity: event.target.value })} />
               <Input label="Estado" value={state.serviceState} onChange={(event) => setState({ ...state, serviceState: event.target.value })} maxLength={2} />
               <Input label="CEP" value={state.serviceZipCode} onChange={(event) => setState({ ...state, serviceZipCode: event.target.value })} />
@@ -270,7 +270,7 @@ export function WorkOrderForm({
           {requiresDestination ? (
             <Card title="Destino do reboque">
               <div className="form-section">
-                <Input label="Endereco de destino" value={state.destinationAddress} onChange={(event) => setState({ ...state, destinationAddress: event.target.value })} />
+                <Input label="Endereço de destino" value={state.destinationAddress} onChange={(event) => setState({ ...state, destinationAddress: event.target.value })} />
                 <Input label="Cidade" value={state.destinationCity} onChange={(event) => setState({ ...state, destinationCity: event.target.value })} />
                 <Input label="Estado" value={state.destinationState} onChange={(event) => setState({ ...state, destinationState: event.target.value })} maxLength={2} />
                 <Input label="CEP" value={state.destinationZipCode} onChange={(event) => setState({ ...state, destinationZipCode: event.target.value })} />
@@ -283,8 +283,8 @@ export function WorkOrderForm({
           {serviceType === "socorro" ? (
             <Card title="Detalhes do socorro">
               <div className="form-section">
-                <Input label="Placa do veiculo" value={state.detailPlate} onChange={(event) => setState({ ...state, detailPlate: event.target.value })} maxLength={10} />
-                <Input label="Veiculo" value={state.detailVehicle} onChange={(event) => setState({ ...state, detailVehicle: event.target.value })} />
+                <Input label="Placa do veículo" value={state.detailPlate} onChange={(event) => setState({ ...state, detailPlate: event.target.value })} maxLength={10} />
+                <Input label="Veículo" value={state.detailVehicle} onChange={(event) => setState({ ...state, detailVehicle: event.target.value })} />
                 <Input label="Cor" value={state.detailColor} onChange={(event) => setState({ ...state, detailColor: event.target.value })} maxLength={30} />
               </div>
             </Card>
@@ -292,10 +292,10 @@ export function WorkOrderForm({
           {serviceType === "residencial" ? (
             <Card title="Detalhes do reparo residencial">
               <div className="form-section">
-                <Input label="Senha de acesso" value={state.detailAccessCode} onChange={(event) => setState({ ...state, detailAccessCode: event.target.value })} maxLength={40} helper="Visivel so para a operacao; nunca vai para auditoria." />
+                <Input label="Senha de acesso" value={state.detailAccessCode} onChange={(event) => setState({ ...state, detailAccessCode: event.target.value })} maxLength={40} helper="Visível só para a operação; nunca vai para auditoria." />
                 <Input label="Objeto do reparo" value={state.detailObject} onChange={(event) => setState({ ...state, detailObject: event.target.value })} />
                 <label className="ui-field">
-                  <span>Descricao do problema</span>
+                  <span>Descrição do problema</span>
                   <textarea value={state.detailDescription} onChange={(event) => setState({ ...state, detailDescription: event.target.value })} maxLength={2000} />
                 </label>
               </div>

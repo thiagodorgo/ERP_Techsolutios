@@ -178,15 +178,15 @@ export function validateWorkOrderForm(input: {
   if (input.serviceLatitude && !isValidLatitude(Number(input.serviceLatitude))) errors.push("Latitude invalida.");
   if (input.serviceLongitude && !isValidLongitude(Number(input.serviceLongitude))) errors.push("Longitude invalida.");
   if (input.scheduledFor && Number.isNaN(Date.parse(input.scheduledFor))) errors.push("Agendamento invalido.");
-  if (input.destinationLatitude && !isValidLatitude(Number(input.destinationLatitude))) errors.push("Latitude do destino invalida.");
-  if (input.destinationLongitude && !isValidLongitude(Number(input.destinationLongitude))) errors.push("Longitude do destino invalida.");
+  if (input.destinationLatitude && !isValidLatitude(Number(input.destinationLatitude))) errors.push("Latitude do destino inválida.");
+  if (input.destinationLongitude && !isValidLongitude(Number(input.destinationLongitude))) errors.push("Longitude do destino inválida.");
   // Destino real = endereço OU coordenada completa não-sentinela (mesma regra do backend/mapa; 0/0 não vale).
   if (input.requiresDestination) {
     const hasAddress = Boolean(input.destinationAddress?.trim());
     const lat = input.destinationLatitude?.trim() ? Number(input.destinationLatitude) : undefined;
     const lng = input.destinationLongitude?.trim() ? Number(input.destinationLongitude) : undefined;
     const hasPin = lat !== undefined && lng !== undefined && isValidLatitude(lat) && isValidLongitude(lng) && !(lat === 0 && lng === 0);
-    if (!hasAddress && !hasPin) errors.push("Endereco de destino obrigatorio para este tipo de servico.");
+    if (!hasAddress && !hasPin) errors.push("Endereço de destino obrigatório para este tipo de serviço.");
   }
   return errors;
 }
