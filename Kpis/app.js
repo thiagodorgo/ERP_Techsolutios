@@ -4,7 +4,7 @@ const dashboardData = {
     "version": "JUNTA-MAPAS",
     "updatedAt": "2026-07-13",
     "sourceBranch": "feat/agents-junta-mapas",
-    "summary": "JUNTA-MAPAS (2026-07-13): criada a Junta de Mapas — 3 agentes (planejador-mapas -> dev-mapas -> avaliador-mapas) + base viva docs/maps/kb-mapas.md (pesquisa 2026 datada) + registro D-JUNTA-MAPAS/ata J-JUNTA-MAPAS. PR docs/agentes-only: nenhum codigo/teste de produto tocado, nenhuma chave/billing/SKU ativado; todas as metricas de teste carregam o ultimo valor oficial (Ω-INFRA-1: backend 768/768, Flutter 764/764, smoke web 44/44, MVP demo 96%, MVP vendavel 78%, 49 blocos). Regra de ouro: MapLibre+OpenFreeMap permanecem base web (custo zero, Ω1); Google/SKU pago = PD + junta de 5."
+    "summary": "Ω3F-0 (2026-07-14): setup da RODADA Ω3-FIDELIDADE — 3 agentes efemeros (fid-analista/planejador/avaliador; clausula de escopo respeitada) + spec canonica + dossie de paridade (matriz de 35 caps RECONCILIADA: 4 verde/18 amarelo/13 vermelho vs spec 3/15/17; 5 linhas subiram por PRs mergeados) + lista-execucao-omega3f (9 planos Fase 1 + Fase 2). Junta J-Ω3F-0 UNANIME 5/5; 6 decisoes + condicoes C1-C4. PR docs/agentes-only: 0 testes de produto; metricas carregam o ultimo oficial (backend 768/768, Flutter 764/764, smoke web 378/378, MVP demo 96%, MVP vendavel 78%). Backfill do Google Maps (#179/7d5d984).",
   },
   "kpis": [
     {

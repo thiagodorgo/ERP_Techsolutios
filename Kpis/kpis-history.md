@@ -568,3 +568,11 @@ Todo bloco futuro continua obrigado a atualizar `Kpis/index.html`, `Kpis/app.js`
   gitignorado (nunca versionada; `.env.example` placeholder).
 - **frontend_smoke 44 → 378** (contagem REAL; +16 testes de mapa; o 44/44 estava congelado no B-124). Backfill do
   Ω-INFRA-1: **PR #177 / f457d9f**.
+
+## 2026-07-14 — Ω3F-0 (setup da RODADA Ω3-FIDELIDADE)
+
+- 3 agentes efêmeros da rodada (`fid-analista`/`fid-planejador`/`fid-avaliador` — cláusula de escopo: nenhum outro
+  agente tocado) + spec canônica (`docs/referencia/alinhamento-painel-logistico.md`) + **dossiê de paridade**
+  (matriz de 35 capacidades RECONCILIADA: **4✅/18🟡/13🔴** vs spec 3/15/17; 5 linhas subiram por PRs mergeados) +
+  `lista-execucao-omega3f.md` (9 planos Fase 1 + Fase 2). **Junta J-Ω3F-0 UNÂNIME 5/5**; 6 decisões + condições C1-C4.
+- Docs/agentes-only: **0 testes de produto**; métricas carregam o último oficial. Backfill do Google Maps: **#179 / 7d5d984**.
