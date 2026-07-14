@@ -3,6 +3,10 @@ export type ServiceItem = {
   readonly name: string;
   readonly description: string | null;
   readonly category: string | null;
+  // Ω3F-2b — discriminador de tipo (C4): dirige os campos dinâmicos do form de OS (#23)
+  // e a exigência de destino (#24). Soft-enum (reboque|socorro|residencial|outro).
+  readonly serviceType: string | null;
+  readonly requiresDestination: boolean;
   readonly estimatedDurationMinutes: number | null;
   readonly basePrice: number | null;
   readonly status: string;
@@ -47,6 +51,9 @@ export type ServiceItemCreatePayload = {
   readonly name: string;
   readonly description?: string;
   readonly category?: string;
+  // Ω3F-2b — o backend aceita camelCase (service_type ?? serviceType / requires_destination ?? requiresDestination).
+  readonly serviceType?: string;
+  readonly requiresDestination?: boolean;
   readonly estimatedDurationMinutes?: number;
   readonly basePrice?: number;
   readonly status?: string;

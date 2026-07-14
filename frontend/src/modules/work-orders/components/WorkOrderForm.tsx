@@ -7,7 +7,7 @@ import { ServiceFormModal } from "../../registry/service-catalog/components/Serv
 import { TeamFormModal } from "../../registry/teams/components/TeamFormModal";
 import { VehicleFormModal } from "../../registry/vehicles/components/VehicleFormModal";
 import { usePermissions } from "../../../providers/PermissionProvider";
-import { buildRegistryLinksPayload, getWorkOrderPriorityLabel, toApiDateTime, validateWorkOrderForm } from "../work-orders.adapter";
+import { buildRegistryLinksPayload, buildServiceDetails, getWorkOrderPriorityLabel, toApiDateTime, validateWorkOrderForm } from "../work-orders.adapter";
 import { useRegistryLinkOptions } from "../useRegistryLinkOptions";
 import { WORK_ORDER_PRIORITIES, type WorkOrderCreatePayload } from "../work-orders.types";
 
@@ -28,6 +28,19 @@ type FormState = {
   readonly vehicleId: string;
   readonly teamId: string;
   readonly serviceCatalogId: string;
+  // Ω3F-2b — destino (#24, revelado quando o tipo exige) + campos dinâmicos por tipo (#23).
+  readonly destinationAddress: string;
+  readonly destinationCity: string;
+  readonly destinationState: string;
+  readonly destinationZipCode: string;
+  readonly destinationLatitude: string;
+  readonly destinationLongitude: string;
+  readonly detailPlate: string;
+  readonly detailVehicle: string;
+  readonly detailColor: string;
+  readonly detailAccessCode: string;
+  readonly detailObject: string;
+  readonly detailDescription: string;
 };
 
 // B2: cadastro rápido — qual modal de cadastro está aberto a partir da OS (null = nenhum).
@@ -50,6 +63,18 @@ const initialState: FormState = {
   vehicleId: "",
   teamId: "",
   serviceCatalogId: "",
+  destinationAddress: "",
+  destinationCity: "",
+  destinationState: "",
+  destinationZipCode: "",
+  destinationLatitude: "",
+  destinationLongitude: "",
+  detailPlate: "",
+  detailVehicle: "",
+  detailColor: "",
+  detailAccessCode: "",
+  detailObject: "",
+  detailDescription: "",
 };
 
 const linkRowStyle: CSSProperties = { display: "flex", alignItems: "flex-end", gap: "var(--space-8)" };
@@ -86,12 +111,26 @@ export function WorkOrderForm({
 
   const selectedCustomer = state.customerId ? customers.find((customer) => customer.id === state.customerId) : undefined;
   const customerLinked = Boolean(state.customerId);
+  // Ω3F-2b — o tipo do serviço selecionado dirige a revelação: card Destino (requires_destination)
+  // e campos dinâmicos por tipo (socorro/residencial). Backend é a autoridade (422); a UI só molda.
+  const selectedService = state.serviceCatalogId ? services.find((service) => service.id === state.serviceCatalogId) : undefined;
+  const requiresDestination = selectedService?.requiresDestination ?? false;
+  const serviceType = selectedService?.serviceType ?? null;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const nextErrors = validateWorkOrderForm(state);
+    const nextErrors = validateWorkOrderForm({ ...state, requiresDestination });
     setErrors(nextErrors);
     if (nextErrors.length > 0) return;
+
+    // Campos dinâmicos por tipo (#23): só as chaves do tipo selecionado, só valores preenchidos.
+    const serviceDetails = buildServiceDetails(
+      serviceType === "socorro"
+        ? { plate: state.detailPlate, vehicle: state.detailVehicle, color: state.detailColor }
+        : serviceType === "residencial"
+          ? { access_code: state.detailAccessCode, object: state.detailObject, description: state.detailDescription }
+          : {},
+    );
 
     await onSubmit({
       title: state.title.trim(),
@@ -106,6 +145,14 @@ export function WorkOrderForm({
       serviceZipCode: state.serviceZipCode.trim() || undefined,
       serviceLatitude: state.serviceLatitude ? Number(state.serviceLatitude) : null,
       serviceLongitude: state.serviceLongitude ? Number(state.serviceLongitude) : null,
+      // Destino só quando o tipo exige (reboque) — campos vazios não vão ao payload.
+      destinationAddress: requiresDestination ? state.destinationAddress.trim() || undefined : undefined,
+      destinationCity: requiresDestination ? state.destinationCity.trim() || undefined : undefined,
+      destinationState: requiresDestination ? state.destinationState.trim() || undefined : undefined,
+      destinationZipCode: requiresDestination ? state.destinationZipCode.trim() || undefined : undefined,
+      destinationLatitude: requiresDestination && state.destinationLatitude ? Number(state.destinationLatitude) : undefined,
+      destinationLongitude: requiresDestination && state.destinationLongitude ? Number(state.destinationLongitude) : undefined,
+      service_details: serviceDetails,
       priority: state.priority,
       scheduledFor: toApiDateTime(state.scheduledFor),
       ...buildRegistryLinksPayload({
@@ -208,9 +255,9 @@ export function WorkOrderForm({
               )}
             </div>
           </Card>
-          <Card title="Atendimento">
+          <Card title="Origem do atendimento">
             <div className="form-section">
-              <Input label="Endereco do atendimento" value={state.serviceAddress} onChange={(event) => setState({ ...state, serviceAddress: event.target.value })} />
+              <Input label="Endereço de origem" value={state.serviceAddress} onChange={(event) => setState({ ...state, serviceAddress: event.target.value })} />
               <Input label="Cidade" value={state.serviceCity} onChange={(event) => setState({ ...state, serviceCity: event.target.value })} />
               <Input label="Estado" value={state.serviceState} onChange={(event) => setState({ ...state, serviceState: event.target.value })} maxLength={2} />
               <Input label="CEP" value={state.serviceZipCode} onChange={(event) => setState({ ...state, serviceZipCode: event.target.value })} />
@@ -219,6 +266,41 @@ export function WorkOrderForm({
               <Input label="Agendada para" type="datetime-local" value={state.scheduledFor} onChange={(event) => setState({ ...state, scheduledFor: event.target.value })} />
             </div>
           </Card>
+          {/* Ω3F-2b (#24) — destino revelado só quando o tipo do serviço exige (ex.: reboque). */}
+          {requiresDestination ? (
+            <Card title="Destino do reboque">
+              <div className="form-section">
+                <Input label="Endereço de destino" value={state.destinationAddress} onChange={(event) => setState({ ...state, destinationAddress: event.target.value })} />
+                <Input label="Cidade" value={state.destinationCity} onChange={(event) => setState({ ...state, destinationCity: event.target.value })} />
+                <Input label="Estado" value={state.destinationState} onChange={(event) => setState({ ...state, destinationState: event.target.value })} maxLength={2} />
+                <Input label="CEP" value={state.destinationZipCode} onChange={(event) => setState({ ...state, destinationZipCode: event.target.value })} />
+                <Input label="Latitude" value={state.destinationLatitude} onChange={(event) => setState({ ...state, destinationLatitude: event.target.value })} inputMode="decimal" />
+                <Input label="Longitude" value={state.destinationLongitude} onChange={(event) => setState({ ...state, destinationLongitude: event.target.value })} inputMode="decimal" />
+              </div>
+            </Card>
+          ) : null}
+          {/* Ω3F-2b (#23) — campos dinâmicos revelados pelo tipo do serviço selecionado. */}
+          {serviceType === "socorro" ? (
+            <Card title="Detalhes do socorro">
+              <div className="form-section">
+                <Input label="Placa do veículo" value={state.detailPlate} onChange={(event) => setState({ ...state, detailPlate: event.target.value })} maxLength={10} />
+                <Input label="Veículo" value={state.detailVehicle} onChange={(event) => setState({ ...state, detailVehicle: event.target.value })} />
+                <Input label="Cor" value={state.detailColor} onChange={(event) => setState({ ...state, detailColor: event.target.value })} maxLength={30} />
+              </div>
+            </Card>
+          ) : null}
+          {serviceType === "residencial" ? (
+            <Card title="Detalhes do reparo residencial">
+              <div className="form-section">
+                <Input label="Senha de acesso" value={state.detailAccessCode} onChange={(event) => setState({ ...state, detailAccessCode: event.target.value })} maxLength={40} helper="Visível só para a operação; nunca vai para auditoria." />
+                <Input label="Objeto do reparo" value={state.detailObject} onChange={(event) => setState({ ...state, detailObject: event.target.value })} />
+                <label className="ui-field">
+                  <span>Descrição do problema</span>
+                  <textarea value={state.detailDescription} onChange={(event) => setState({ ...state, detailDescription: event.target.value })} maxLength={2000} />
+                </label>
+              </div>
+            </Card>
+          ) : null}
         </section>
         <div className="erp-sticky-action-bar">
           <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>

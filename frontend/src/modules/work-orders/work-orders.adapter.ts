@@ -160,14 +160,44 @@ export function formatWorkOrderDate(value: string | null | undefined): string {
   }).format(date);
 }
 
-export function validateWorkOrderForm(input: { readonly title: string; readonly priority: string; readonly serviceLatitude?: string; readonly serviceLongitude?: string; readonly scheduledFor?: string }): string[] {
+export function validateWorkOrderForm(input: {
+  readonly title: string;
+  readonly priority: string;
+  readonly serviceLatitude?: string;
+  readonly serviceLongitude?: string;
+  readonly scheduledFor?: string;
+  // Ω3F-2b — espelho client-side do 422 destination_required (backend é a autoridade).
+  readonly requiresDestination?: boolean;
+  readonly destinationAddress?: string;
+  readonly destinationLatitude?: string;
+  readonly destinationLongitude?: string;
+}): string[] {
   const errors: string[] = [];
   if (!input.title.trim()) errors.push("Titulo obrigatorio.");
   if (!input.priority.trim()) errors.push("Prioridade obrigatoria.");
   if (input.serviceLatitude && !isValidLatitude(Number(input.serviceLatitude))) errors.push("Latitude invalida.");
   if (input.serviceLongitude && !isValidLongitude(Number(input.serviceLongitude))) errors.push("Longitude invalida.");
   if (input.scheduledFor && Number.isNaN(Date.parse(input.scheduledFor))) errors.push("Agendamento invalido.");
+  if (input.destinationLatitude && !isValidLatitude(Number(input.destinationLatitude))) errors.push("Latitude do destino inválida.");
+  if (input.destinationLongitude && !isValidLongitude(Number(input.destinationLongitude))) errors.push("Longitude do destino inválida.");
+  // Destino real = endereço OU coordenada completa não-sentinela (mesma regra do backend/mapa; 0/0 não vale).
+  if (input.requiresDestination) {
+    const hasAddress = Boolean(input.destinationAddress?.trim());
+    const lat = input.destinationLatitude?.trim() ? Number(input.destinationLatitude) : undefined;
+    const lng = input.destinationLongitude?.trim() ? Number(input.destinationLongitude) : undefined;
+    const hasPin = lat !== undefined && lng !== undefined && isValidLatitude(lat) && isValidLongitude(lng) && !(lat === 0 && lng === 0);
+    if (!hasAddress && !hasPin) errors.push("Endereço de destino obrigatório para este tipo de serviço.");
+  }
   return errors;
+}
+
+// Ω3F-2b — monta o objeto plano `service_details` só com valores preenchidos (chaves por tipo:
+// socorro {plate,vehicle,color}; residencial {access_code,object,description}). Tudo vazio → undefined.
+export function buildServiceDetails(fields: Record<string, string>): Record<string, string> | undefined {
+  const entries = Object.entries(fields)
+    .map(([key, value]) => [key, value.trim()] as const)
+    .filter(([, value]) => value.length > 0);
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
 export function toApiDateTime(value: string): string | null {

@@ -467,3 +467,11 @@
   1:1 da página de detalhe antiga; NÃO introduzido pelo Ω3F-1). Apontado por cognicao-visual (J-OMEGA3F-1).
 - acao: humanizar (mapa enum→rótulo PT-BR) no **Ω3F-3** (dono da superfície Financeiro/aprovação).
 - status: aberto (não bloqueia; fora do escopo UI-shell do Ω3F-1)
+
+## P-Ω3F2B-ACENTOS - Varredura de acentuação no WorkOrderForm + validador (J-OMEGA3F-2B, 2026-07-14)
+- descricao: labels de Input e mensagens do validador de OS são sem-acento pré-existentes ("Identificacao",
+  "Titulo", "Endereco do atendimento", "Titulo obrigatorio.") — débito §11.3 NÃO imputável ao Ω3F-2b (que
+  seguiu a família certa p/ não criar dissonância lado a lado). Microcopy nova já acentua.
+- acao: bloco de varredura único acentuando labels + mensagens de `WorkOrderForm.tsx` e
+  `work-orders.adapter.ts` (validateWorkOrderForm) de uma vez, destravando a convenção p/ os próximos Ω3F.
+- status: aberto (apontado por cognicao-visual)

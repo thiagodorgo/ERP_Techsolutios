@@ -148,7 +148,10 @@ Capacidades **#5** (hub de 11 abas + barra de ações), **#22** (Copiar URL), **
 > (`20260802000000`, drill up/down/re-up comprovado 2×) + discriminador C4 (service_type + requires_destination)
 > + destination_* + service_details + 422 destination_required (create+update lendo tipo persistido) + §2.8
 > access_code fora do metadata. Baseline back 5 → +12; suíte 794→806. D-Ω3F-2-DESTINATION-UPDATE registrada.
-> **Falta Ω3F-2b (front WorkOrderForm: revelar campos por tipo + cards Origem/Destino).** PR #NN pendente.
+> **[x] Ω3F-2b (front) CONCLUÍDO — junta J-OMEGA3F-2B 3/3** (fid-avaliador + cognicao-visual + master-teste,
+> todos APROVADO_CONDICIONADO; condições APLICADAS: C1 acentuação nas strings novas + D-Ω3F-KPI-RELATORIO
+> registrada). WorkOrderForm dirigido pelo tipo (card Destino revelado; campos dinâmicos socorro/residencial;
+> espelho do 422); ServiceFormModal ganha o discriminador. +5 front (smoke 391→396). **Ω3F-2 COMPLETO (2a+2b).**
 
 Capacidades **#24** (origem E destino), **#23** (campos dinâmicos por tipo). **Toca `prisma/**` →
 exige autorização C4.**
