@@ -3,23 +3,26 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("frontend de OS expoe painel e comandos de approval com bloqueio por permissao", async () => {
-  const [page, service] = await Promise.all([
+  const [page, tab, service] = await Promise.all([
     readFile("frontend/src/modules/work-orders/pages/WorkOrderDetailPage.tsx", "utf8"),
+    readFile("frontend/src/modules/work-orders/components/tabs/GeneralInfoTab.tsx", "utf8"),
     readFile("frontend/src/modules/work-orders/approval.service.ts", "utf8"),
   ]);
 
-  // O painel de aprovação vive inline na tela de detalhe da OS (ApprovalPanel), ligado ao
-  // service real de approval — não mais um card separado (OperationalApprovalCard ficou legado).
-  assert.match(page, /ApprovalPanel/);
-  assert.match(page, /approveOperationalApproval/);
-  assert.match(page, /rejectOperationalApproval/);
-  // Bloqueio por permissão: os comandos só aparecem para quem pode decidir. A tela deriva
-  // `canDecide` da permissão dedicada de aprovação (work_orders:approve / :cancel).
+  // Ω3F-1: o Hub da OS virou shell de abas; o painel de aprovação (ApprovalPanel) migrou INTEGRAL para
+  // a aba "Informações gerais" (GeneralInfoTab), ligado ao service real de approval. O contrato (painel +
+  // comandos + gating por permissão) segue intacto — só mudou de arquivo.
+  assert.match(tab, /ApprovalPanel/);
+  assert.match(tab, /approveOperationalApproval/);
+  assert.match(tab, /rejectOperationalApproval/);
+  // Comandos de decisão visíveis (na aba).
+  assert.match(tab, /Aprovar/);
+  assert.match(tab, /Reprovar/);
+  // Bloqueio por permissão: a PÁGINA deriva `canDecide` da permissão dedicada (work_orders:approve / :cancel)
+  // e injeta na aba, que só mostra os comandos para quem pode decidir.
   assert.match(page, /work_orders:approve/);
   assert.match(page, /canDecide/);
-  // Comandos de decisão visíveis.
-  assert.match(page, /Aprovar/);
-  assert.match(page, /Reprovar/);
+  assert.match(tab, /canDecide/);
   // Service consome os endpoints reais de approval.
   assert.match(service, /\/approvals\/pending\?work_order_id=/);
   assert.match(service, /\/approve/);
