@@ -1,12 +1,17 @@
 const dashboardData = {
   "project": {
     "name": "ERP Techsolutions",
-    "version": "B-124",
-    "updatedAt": "2026-07-05",
-    "sourceBranch": "fix/b124-kpis-post-human-approval",
-    "summary": "Ω-GOV (2026-07-13): politica KPI-por-PR (D-KPI-PER-PR) substitui a publicacao pos-avaliacao humana; backend_tests corrigido 15/15 -> 766/766 (suite backend INTEIRA que o Ω-GATE/PR #174 fez o CI rodar com Postgres+Redis). Contexto anterior (B-124, PR #125, web-only): dashboard web enriquecido; Flutter 764/764 e contratos mobile inalterados; smoke web 33/33 -> 44/44, MVP demo 96%, MVP vendavel 78% e 49 blocos entregues."
+    "version": "JUNTA-MAPAS",
+    "updatedAt": "2026-07-13",
+    "sourceBranch": "feat/agents-junta-mapas",
+    "summary": "JUNTA-MAPAS (2026-07-13): criada a Junta de Mapas — 3 agentes (planejador-mapas -> dev-mapas -> avaliador-mapas) + base viva docs/maps/kb-mapas.md (pesquisa 2026 datada) + registro D-JUNTA-MAPAS/ata J-JUNTA-MAPAS. PR docs/agentes-only: nenhum codigo/teste de produto tocado, nenhuma chave/billing/SKU ativado; todas as metricas de teste carregam o ultimo valor oficial (Ω-INFRA-1: backend 768/768, Flutter 764/764, smoke web 44/44, MVP demo 96%, MVP vendavel 78%, 49 blocos). Regra de ouro: MapLibre+OpenFreeMap permanecem base web (custo zero, Ω1); Google/SKU pago = PD + junta de 5."
   },
   "kpis": [
+    {
+      "label": "JUNTA-MAPAS",
+      "value": "Junta de Mapas criada",
+      "note": "3 agentes em cadeia (planejador->dev->avaliador) para toda tarefa de mapa/geo + docs/maps/kb-mapas.md (precos SKU, ToS de cache, versoes Flutter, tudo datado 2026) + D-JUNTA-MAPAS. Docs/agentes-only: nada ativado. MapLibre permanece base web; Google/SKU pago = PD + junta de 5."
+    },
     {
       "label": "B-124",
       "value": "Dashboard web enriquecido",

@@ -535,3 +535,24 @@ Todo bloco futuro continua obrigado a atualizar `Kpis/index.html`, `Kpis/app.js`
   sem vazar dado). Validado ao vivo no `docker-compose.prod.yml` (api+web+migrate ponta a ponta).
 - **backend_tests 766 → 768** (+2 `health-routes.test.ts`). **PD-INFRA-1** escolhe o provedor (Fly.io/gru 1º,
   AWS 2º) para a junta de 5. Backfill do Ω-DOCS: **PR #176 / d0126d5**.
+
+## 2026-07-13 — JUNTA-MAPAS: criação da Junta de Mapas (3 agentes) + KB geo
+
+- **3 agentes novos** no molde da casa: `.claude/agents/planejador-mapas.md`, `dev-mapas.md`, `avaliador-mapas.md`
+  — acionados em **cadeia** (planejador → dev → avaliador) em toda tarefa de mapa/geo, web ou Flutter. Total de
+  agentes: 16 → **19**, sem colisão de nomes.
+- **Base de conhecimento viva** `docs/maps/kb-mapas.md` **preenchida** com pesquisa real datada (2026-07-13):
+  preços por SKU do Google Maps Platform (tabela oficial marcada 2026-07-10 UTC), regras de cache do ToS
+  (`place_id` perene vs `lat/lng` ≤30 dias, termos 2025-05-01), matriz caso-de-uso do ERP → API → custo no
+  piloto (≈US$0 no volume piloto; gargalo de custo em escala = Route Matrix), estado do `google_maps_flutter`
+  (2.17.1) e `flutter_map` (8.3.0), limites OpenFreeMap (sem limite, público).
+- **Registro:** `D-JUNTA-MAPAS` em `agent-orchestration/controle/decisoes.md`; ata `J-JUNTA-MAPAS.md`
+  (agente-fabrica, planejador-mestre, critico-adversarial, inspetor-de-rotas — **4/4 FAVORÁVEL**).
+- **Regra de ouro:** MapLibre GL + OpenFreeMap permanecem como **base de exibição web** (custo zero, junta Ω1);
+  Google Maps Platform entra só onde agrega; **ativar SKU pago / trocar provedor geo = PD + junta de 5 unânime**.
+- **Escopo docs/agentes-only:** nenhum código/teste de produto tocado (**contagem real de testes novos = 0**),
+  **nenhuma chave/billing/SKU ativado**. Métricas de teste carregam o último valor oficial (**Ω-INFRA-1**:
+  backend 768/768, Flutter 764/764, smoke web 44/44). `blocks_completed` **inalterado (49)** — governança/tooling
+  não conta como bloco de feature entregue (mesmo critério de Ω-GOV/Ω-DOCS). `mvp_demo`/`mvp_vendavel`
+  inalterados (nenhum escopo de produto movido). Teste de gatilho da cadeia: **pendente de sessão nova** (o
+  roteador carrega agentes no início da sessão; ver evidência/análise estática na ata J-JUNTA-MAPAS).
