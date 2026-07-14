@@ -43,6 +43,11 @@ Formato após conclusão: `[x] <fase> — PR #NN, merge <hash>, junta X/X, vered
       Parâmetros) em 5 PRs (#164–#169), todas as juntas 5/5. Pendências: TagAssignment (P-Ω2d), P-032/P-033.
 
 ## Ω3 — Painel Logístico avançado
+> **Ω3 SUBSTITUÍDO/EXPANDIDO por Ω3F (RODADA Ω3-FIDELIDADE, 2026-07-13).** O alinhamento de fidelidade
+> (`docs/referencia/alinhamento-painel-logistico.md`, matriz de 35 capacidades) reescreve o escopo do Painel
+> Logístico em blocos Ω3F-1..9 (fase 1) + fase 2. Fonte de execução: `agent-orchestration/omega/lista-execucao-omega3f.md`.
+> Os blocos Ω3-a..d abaixo (já mergeados) são REUSADOS pelos blocos Ω3F correspondentes (ServiceQuote→Ω3F-4,
+> Comentários→Ω3F-5, Anexos→Ω3F-5, checklist snapshot→hub). Ω3-c.1/Ω3-e/Ω3-f são absorvidos pelo Ω3F.
 - [x] **Ω3-a ServiceQuote (congela preço)** — junta 5/5 no ciclo 2 (vetos: cognicao coluna Serviço=UUID →
       referências resolvem nome; coordenador V1/V2/V3 governança de menu; achado validador quantity overflow →
       guard 422 — R-omega3a-1/J-OMEGA3A). Módulo espelho de tariffs + `findApplicable` determinístico +

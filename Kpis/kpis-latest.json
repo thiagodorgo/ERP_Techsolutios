@@ -1,22 +1,27 @@
 {
   "snapshot_date": "2026-07-13",
-  "version": "google-maps-frontend",
+  "version": "Ω3F-0",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "google-maps-frontend (J-MAPAS-3/4)",
-    "title": "Google Maps no Mapa Operacional: paridade + legenda + foco na cidade com mais tecnicos",
+    "block": "Ω3F-0 (setup RODADA Ω3F-fidelidade)",
+    "title": "Ω3F-0: agentes da rodada + spec + dossie de paridade + lista de execucao (junta 5/5)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Google Maps (Web Components gmp-map/gmp-advanced-marker, v=beta) no Mapa Operacional a pedido do dono: pin de operador colorido pela paleta REAL de status (getRingColor), pins de CHAMADO por prioridade, e a LEGENDA (8 itens) fieis ao canvas MapLibre (J-MAPAS-3, junta 3/3). Camera FOCA a cidade com MAIS tecnicos via CLUSTERING geografico (haversine, custo ZERO, sem geocoding pago) — empate por proxy determinístico oeste-primeiro, divergencia da regra literal 'nome da cidade alfabetico' registrada em D-JMAPAS4/kb-mapas (versao fiel exige Geocoding API = SKU pago, requer junta de 5) (J-MAPAS-4, junta APROVADO). Seed: 4 tecnicos demo na regiao de Curitiba (idempotente). Chave do Google SO em frontend/.env GITIGNORADO (nunca versionada; .env.example placeholder). frontend_smoke 44->378 (contagem real; +16 testes de mapa). Backfill do Ω-INFRA-1 (PR #177 / f457d9f). merge_commit/approved_head null na autoria (backfill no proximo bloco).",
-    "status_label": "KPI por PR (D-KPI-PER-PR); +16 testes de mapa, smoke real 378",
+    "summary": "Ω3F-0 (setup da RODADA Ω3-FIDELIDADE, a pedido do dono): 3 agentes efemeros (fid-analista/fid-planejador/fid-avaliador — clausula de escopo: nenhum outro agente tocado) + spec canonica docs/referencia/alinhamento-painel-logistico.md + dossie de paridade (matriz de 35 capacidades RECONCILIADA com o repo: placar 4✅/18🟡/13🔴 vs spec 3/15/17; 5 linhas subiram por PRs ja mergeados — Arquivos/Ω3-d, Comentarios/Ω3-b, Orcamento/Ω3-a, Tags/Ω2-d) + lista-execucao-omega3f.md (9 planos Fase 1 + Fase 2, ordem por dependencia, testes >=2N) + remissao 'Ω3 substituido por Ω3F'. Junta J-Ω3F-0 UNANIME 5/5 (planejador-mestre, estrategista, critico, fid-analista, fid-planejador); 6 decisoes resolvidas + condicoes C1-C4 na lista §6. PR docs/agentes-only: NENHUM codigo/teste de produto tocado (0 testes novos); metricas carregam o ultimo valor oficial (google-maps: frontend_smoke 378, backend 768). Backfill do Google Maps (PR #179 / 7d5d984).",
+    "status_label": "KPI por PR (D-KPI-PER-PR); docs/agentes-only, 0 testes novos",
     "related_prs": [
+      {
+        "pr": 179,
+        "merge_commit": "7d5d984",
+        "note": "Google Maps (J-MAPAS-3/4); backfill neste bloco"
+      },
       {
         "pr": 176,
         "merge_commit": "d0126d5",
-        "note": "Ω-DOCS — descontaminacao Kryos; backfill neste bloco"
+        "note": "Ω-DOCS — descontaminacao Kryos"
       },
       {
         "pr": 175,
