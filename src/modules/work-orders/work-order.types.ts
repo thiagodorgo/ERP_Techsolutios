@@ -57,6 +57,19 @@ export type WorkOrder = {
   // Ω1b-2 — metadados do cache de geocodificação (null enquanto a OS não foi geocodificada).
   readonly serviceGeocodedAt?: Date;
   readonly serviceGeocodeSource?: string;
+  // Ω3F-2a — DESTINO (a origem = os campos service_* acima). Espelho simétrico, preenchido quando o
+  // tipo do serviço exige destino (ex.: reboque). Aditivo/opcional; retrocompat mantida.
+  readonly destinationAddress?: string;
+  readonly destinationCity?: string;
+  readonly destinationState?: string;
+  readonly destinationZipCode?: string;
+  readonly destinationLatitude?: number;
+  readonly destinationLongitude?: number;
+  readonly destinationGeocodedAt?: Date;
+  readonly destinationGeocodeSource?: string;
+  // Ω3F-2a — campos dinâmicos por tipo (socorro {plate,vehicle,color}; residencial {access_code,object,
+  // description}). §2.8: access_code é SENSÍVEL — vive aqui (payload funcional), NUNCA em metadata/log.
+  readonly serviceDetails?: Record<string, unknown>;
   readonly priority: WorkOrderPriority;
   readonly status: WorkOrderStatus;
   readonly assignedOperatorId?: string;
@@ -184,6 +197,13 @@ export type UpdateWorkOrderInput = Partial<
     | "serviceZipCode"
     | "serviceLatitude"
     | "serviceLongitude"
+    | "destinationAddress"
+    | "destinationCity"
+    | "destinationState"
+    | "destinationZipCode"
+    | "destinationLatitude"
+    | "destinationLongitude"
+    | "serviceDetails"
     | "priority"
     | "checklistId"
     | "scheduledFor"

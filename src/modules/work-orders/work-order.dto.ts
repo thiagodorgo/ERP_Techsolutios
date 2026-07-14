@@ -24,6 +24,18 @@ export function toWorkOrderDto(workOrder: WorkOrder, links?: WorkOrderLinks) {
     // Ω1b-2 — rastreabilidade do geocode (quando/fonte); null enquanto não geocodificada.
     serviceGeocodedAt: workOrder.serviceGeocodedAt?.toISOString() ?? null,
     serviceGeocodeSource: workOrder.serviceGeocodeSource ?? null,
+    // Ω3F-2a — destino (espelho da origem) + campos dinâmicos por tipo. serviceDetails é payload
+    // FUNCIONAL que o operador vê (pode conter senha de acesso do residencial) — §2.8: fica no DTO de
+    // detalhe, NUNCA em metadata de evento/auditoria/log.
+    destinationAddress: workOrder.destinationAddress ?? null,
+    destinationCity: workOrder.destinationCity ?? null,
+    destinationState: workOrder.destinationState ?? null,
+    destinationZipCode: workOrder.destinationZipCode ?? null,
+    destinationLatitude: workOrder.destinationLatitude ?? null,
+    destinationLongitude: workOrder.destinationLongitude ?? null,
+    destinationGeocodedAt: workOrder.destinationGeocodedAt?.toISOString() ?? null,
+    destinationGeocodeSource: workOrder.destinationGeocodeSource ?? null,
+    serviceDetails: workOrder.serviceDetails ?? null,
     priority: workOrder.priority,
     status: workOrder.status,
     assignedOperatorId: workOrder.assignedOperatorId,

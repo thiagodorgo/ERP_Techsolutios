@@ -13,6 +13,11 @@ export type ServiceCatalog = {
   readonly name: string;
   readonly description?: string;
   readonly category?: string;
+  // Ω3F-2a — discriminador de tipo (reboque|socorro|residencial|outro). Soft-enum String (configurável
+  // por organização), dirige os campos dinâmicos do form da OS e o 422 de destino.
+  readonly serviceType?: string;
+  // Ω3F-2a — quando true, a OS deste tipo exige endereço de destino (ex.: reboque). Default false.
+  readonly requiresDestination: boolean;
   readonly estimatedDurationMinutes?: number;
   readonly basePrice?: number;
   readonly status: string;
@@ -51,6 +56,8 @@ export type UpdateServiceCatalogInput = Partial<
     | "name"
     | "description"
     | "category"
+    | "serviceType"
+    | "requiresDestination"
     | "estimatedDurationMinutes"
     | "basePrice"
     | "status"

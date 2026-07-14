@@ -24,6 +24,8 @@ export class PrismaServiceCatalogRepository implements ServiceCatalogRepository 
           name: input.name,
           description: input.description ?? null,
           category: input.category ?? null,
+          service_type: input.serviceType ?? null,
+          requires_destination: input.requiresDestination ?? false,
           estimated_duration_minutes: input.estimatedDurationMinutes ?? null,
           base_price: input.basePrice ?? null,
           status: input.status || "active",
@@ -85,6 +87,8 @@ export class PrismaServiceCatalogRepository implements ServiceCatalogRepository 
           name: input.name,
           description: nullable(input.description),
           category: nullable(input.category),
+          service_type: nullable(input.serviceType),
+          requires_destination: input.requiresDestination,
           estimated_duration_minutes: nullable(input.estimatedDurationMinutes),
           base_price: nullable(input.basePrice),
           status: input.status,
@@ -152,6 +156,8 @@ function mapServiceCatalogRecord(record: {
   readonly name: string;
   readonly description: string | null;
   readonly category: string | null;
+  readonly service_type: string | null;
+  readonly requires_destination: boolean;
   readonly estimated_duration_minutes: number | null;
   readonly base_price: Prisma.Decimal | null;
   readonly status: string;
@@ -167,6 +173,8 @@ function mapServiceCatalogRecord(record: {
     name: record.name,
     description: record.description ?? undefined,
     category: record.category ?? undefined,
+    serviceType: record.service_type ?? undefined,
+    requiresDestination: record.requires_destination,
     estimatedDurationMinutes: record.estimated_duration_minutes ?? undefined,
     basePrice: record.base_price == null ? undefined : Number(record.base_price),
     status: record.status,

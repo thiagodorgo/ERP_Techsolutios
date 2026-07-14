@@ -94,6 +94,38 @@ export function parseOptionalDate(value: unknown, field: string): Date | undefin
   return date;
 }
 
+// Ω3F-2a — campos dinâmicos por tipo. Aceita SÓ objeto plano (chave string → valor primitivo/null);
+// rejeita não-objeto, array e valores aninhados (422). Limita cardinalidade e tamanho de string para
+// evitar payload abusivo. NUNCA loga os valores (§2.8: pode conter senha de acesso do residencial).
+export function parseServiceDetails(value: unknown): Record<string, unknown> | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+
+  if (typeof value !== "object" || Array.isArray(value)) {
+    throw new WorkOrderError(422, "WORK_ORDER_UNPROCESSABLE", "invalid_service_details", "service_details must be a plain object.");
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>);
+  if (entries.length > 50) {
+    throw new WorkOrderError(422, "WORK_ORDER_UNPROCESSABLE", "service_details_too_large", "service_details has too many fields.");
+  }
+
+  const result: Record<string, unknown> = {};
+  for (const [key, entry] of entries) {
+    if (key.length > 100) {
+      throw new WorkOrderError(422, "WORK_ORDER_UNPROCESSABLE", "invalid_service_details", "service_details keys are invalid.");
+    }
+    if (entry !== null && typeof entry === "object") {
+      throw new WorkOrderError(422, "WORK_ORDER_UNPROCESSABLE", "invalid_service_details", "service_details values must be primitives.");
+    }
+    if (typeof entry === "string" && entry.length > 2000) {
+      throw new WorkOrderError(422, "WORK_ORDER_UNPROCESSABLE", "service_details_too_large", "service_details value is too long.");
+    }
+    result[key] = entry;
+  }
+
+  return result;
+}
+
 export function parseOptionalCoordinate(value: unknown, field: string, min: number, max: number): number | undefined {
   if (value === undefined || value === null || value === "") return undefined;
   const parsed = typeof value === "number" ? value : Number(value);

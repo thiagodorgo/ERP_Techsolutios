@@ -69,6 +69,14 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
         service_zip_code: input.serviceZipCode ?? null,
         service_latitude: input.serviceLatitude ?? null,
         service_longitude: input.serviceLongitude ?? null,
+        // Ω3F-2a — destino + campos dinâmicos por tipo (aditivos/nullable).
+        destination_address: input.destinationAddress ?? null,
+        destination_city: input.destinationCity ?? null,
+        destination_state: input.destinationState ?? null,
+        destination_zip_code: input.destinationZipCode ?? null,
+        destination_latitude: input.destinationLatitude ?? null,
+        destination_longitude: input.destinationLongitude ?? null,
+        service_details: input.serviceDetails === undefined ? Prisma.DbNull : (input.serviceDetails as Prisma.InputJsonObject),
         priority: input.priority,
         status: input.status ?? "open",
         assigned_operator_id: input.assignedOperatorId ?? null,
@@ -139,6 +147,14 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
         service_zip_code: nullable(input.serviceZipCode),
         service_latitude: nullable(input.serviceLatitude),
         service_longitude: nullable(input.serviceLongitude),
+        // Ω3F-2a — destino + campos dinâmicos; só tocados quando presentes no corpo.
+        destination_address: nullable(input.destinationAddress),
+        destination_city: nullable(input.destinationCity),
+        destination_state: nullable(input.destinationState),
+        destination_zip_code: nullable(input.destinationZipCode),
+        destination_latitude: nullable(input.destinationLatitude),
+        destination_longitude: nullable(input.destinationLongitude),
+        service_details: input.serviceDetails === undefined ? undefined : (input.serviceDetails as Prisma.InputJsonObject),
         priority: input.priority,
         checklist_id: nullable(input.checklistId),
         scheduled_for: nullable(input.scheduledFor),
@@ -375,6 +391,15 @@ function mapWorkOrderRecord(record: {
   readonly service_longitude: unknown;
   readonly service_geocoded_at: Date | null;
   readonly service_geocode_source: string | null;
+  readonly destination_address: string | null;
+  readonly destination_city: string | null;
+  readonly destination_state: string | null;
+  readonly destination_zip_code: string | null;
+  readonly destination_latitude: unknown;
+  readonly destination_longitude: unknown;
+  readonly destination_geocoded_at: Date | null;
+  readonly destination_geocode_source: string | null;
+  readonly service_details: Prisma.JsonValue | null;
   readonly priority: string;
   readonly status: string;
   readonly assigned_operator_id: string | null;
@@ -413,6 +438,15 @@ function mapWorkOrderRecord(record: {
     serviceLongitude: decimalToNumber(record.service_longitude),
     serviceGeocodedAt: record.service_geocoded_at ?? undefined,
     serviceGeocodeSource: record.service_geocode_source ?? undefined,
+    destinationAddress: record.destination_address ?? undefined,
+    destinationCity: record.destination_city ?? undefined,
+    destinationState: record.destination_state ?? undefined,
+    destinationZipCode: record.destination_zip_code ?? undefined,
+    destinationLatitude: decimalToNumber(record.destination_latitude),
+    destinationLongitude: decimalToNumber(record.destination_longitude),
+    destinationGeocodedAt: record.destination_geocoded_at ?? undefined,
+    destinationGeocodeSource: record.destination_geocode_source ?? undefined,
+    serviceDetails: (record.service_details as Record<string, unknown> | null) ?? undefined,
     priority: record.priority as WorkOrderPriority,
     status: record.status as WorkOrderStatus,
     assignedOperatorId: record.assigned_operator_id ?? undefined,

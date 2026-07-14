@@ -6,6 +6,9 @@ export function toServiceCatalogDto(service: ServiceCatalog) {
     name: service.name,
     description: service.description ?? null,
     category: service.category ?? null,
+    // Ω3F-2a — tipo + flag de destino; dirigem o form dinâmico da OS e o 422 de destino no cliente.
+    serviceType: service.serviceType ?? null,
+    requiresDestination: service.requiresDestination,
     estimatedDurationMinutes: service.estimatedDurationMinutes ?? null,
     basePrice: service.basePrice ?? null,
     status: service.status,
@@ -23,6 +26,9 @@ export function toServiceCatalogListDto(result: ListServiceCatalogResult) {
       id: service.id,
       name: service.name,
       category: service.category ?? null,
+      // Ω3F-2a — o form da OS precisa do tipo/flag já na listagem para popular o seletor de serviço.
+      serviceType: service.serviceType ?? null,
+      requiresDestination: service.requiresDestination,
       estimatedDurationMinutes: service.estimatedDurationMinutes ?? null,
       basePrice: service.basePrice ?? null,
       status: service.status,

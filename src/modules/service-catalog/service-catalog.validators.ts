@@ -49,6 +49,22 @@ export function parseOptionalStatus(value: unknown): string | undefined {
   return boundedOptionalString(value, "status", 0, 40);
 }
 
+// Ω3F-2a — tipo do serviço (reboque|socorro|residencial|outro). String livre/opcional, limitada.
+export function parseOptionalServiceType(value: unknown): string | undefined {
+  return boundedOptionalString(value, "service_type", 0, 40);
+}
+
+// Ω3F-2a — flag "exige destino" por tipo. Boolean estrito: aceita boolean ou "true"/"false"; rejeita
+// qualquer outro valor. undefined quando ausente (create aplica default false; update deixa intacto).
+export function parseRequiresDestination(value: unknown): boolean | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (typeof value === "boolean") return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+
+  throw new ServiceCatalogError(400, "SERVICE_CATALOG_INVALID", "invalid_requires_destination", "requiresDestination must be a boolean.");
+}
+
 export function parseOptionalDurationMinutes(value: unknown): number | undefined {
   if (value === undefined || value === null || value === "") return undefined;
   const parsed = Number.parseInt(String(value), 10);

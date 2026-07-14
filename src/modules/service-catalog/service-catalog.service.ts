@@ -20,8 +20,10 @@ import {
   parseOptionalDescription,
   parseOptionalDurationMinutes,
   parseOptionalSearch,
+  parseOptionalServiceType,
   parseOptionalStatus,
   parseRequiredUuid,
+  parseRequiresDestination,
   readOptionalBoolean,
 } from "./service-catalog.validators.js";
 
@@ -48,6 +50,8 @@ export class ServiceCatalogService {
       name: parseName(body.name),
       description: parseOptionalDescription(body.description),
       category: parseOptionalCategory(body.category),
+      serviceType: parseOptionalServiceType(body.service_type ?? body.serviceType),
+      requiresDestination: parseRequiresDestination(body.requires_destination ?? body.requiresDestination) ?? false,
       estimatedDurationMinutes: parseOptionalDurationMinutes(body.estimated_duration_minutes ?? body.estimatedDurationMinutes),
       basePrice: parseOptionalBasePrice(body.base_price ?? body.basePrice),
       status: parseOptionalStatus(body.status) ?? "active",
@@ -77,6 +81,8 @@ export class ServiceCatalogService {
       name: body.name === undefined ? undefined : parseName(body.name),
       description: parseOptionalDescription(body.description),
       category: parseOptionalCategory(body.category),
+      serviceType: parseOptionalServiceType(body.service_type ?? body.serviceType),
+      requiresDestination: parseRequiresDestination(body.requires_destination ?? body.requiresDestination),
       estimatedDurationMinutes: parseOptionalDurationMinutes(body.estimated_duration_minutes ?? body.estimatedDurationMinutes),
       basePrice: parseOptionalBasePrice(body.base_price ?? body.basePrice),
       status: parseOptionalStatus(body.status),
