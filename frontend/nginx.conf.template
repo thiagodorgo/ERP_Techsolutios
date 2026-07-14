@@ -1,4 +1,7 @@
-# Ω-INFRA-1 — nginx do frontend: SPA estático + proxy same-origin de /api/v1 para o backend.
+# Ω-INFRA-1/2 — nginx do frontend: SPA estático + proxy same-origin de /api para o backend.
+# TEMPLATE (envsubst do entrypoint oficial do nginx): ${API_UPSTREAM} vem do ambiente —
+# default http://api:3000 (compose.prod); no Fly, o endereço interno do app de backend.
+# Variáveis nginx ($host, $uri...) NÃO são env vars → o envsubst do entrypoint não as toca.
 server {
   listen 8080;
   server_name _;
@@ -17,10 +20,9 @@ server {
     try_files $uri =404;
   }
 
-  # API same-origin → proxy para o serviço de backend (nome do serviço no compose.prod / rota do provedor).
-  # `api` e a porta 3000 são o alvo do docker-compose.prod.yml; em produção o roteamento é por provedor (PR5/6).
+  # API same-origin → proxy para o backend. Alvo configurável por env (API_UPSTREAM).
   location /api/ {
-    proxy_pass http://api:3000;
+    proxy_pass ${API_UPSTREAM};
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;

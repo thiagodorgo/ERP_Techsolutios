@@ -14,9 +14,11 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# ---- runtime: nginx servindo o estático + proxy de /api/v1 ----
+# ---- runtime: nginx servindo o estático + proxy de /api ----
 FROM nginx:1.27-alpine AS runtime
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Upstream do proxy configurável por env (envsubst nativo do entrypoint em /etc/nginx/templates).
+ENV API_UPSTREAM=http://api:3000
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=4s --start-period=10s --retries=3 \
