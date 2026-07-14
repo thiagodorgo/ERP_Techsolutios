@@ -143,6 +143,13 @@ Capacidades **#5** (hub de 11 abas + barra de ações), **#22** (Copiar URL), **
 
 ### Ω3F-2 — Origem/destino + campos dinâmicos por tipo
 
+> **[x] Ω3F-2a (backend) CONCLUÍDO — junta J-OMEGA3F-2 3/3** (fid-avaliador + validador-mestre APROVADO;
+> critico APROVADO_CONDICIONADO, furo #2/#2b CORRIGIDO antes do merge). Schema+migration aditiva
+> (`20260802000000`, drill up/down/re-up comprovado 2×) + discriminador C4 (service_type + requires_destination)
+> + destination_* + service_details + 422 destination_required (create+update lendo tipo persistido) + §2.8
+> access_code fora do metadata. Baseline back 5 → +12; suíte 794→806. D-Ω3F-2-DESTINATION-UPDATE registrada.
+> **Falta Ω3F-2b (front WorkOrderForm: revelar campos por tipo + cards Origem/Destino).** PR #NN pendente.
+
 Capacidades **#24** (origem E destino), **#23** (campos dinâmicos por tipo). **Toca `prisma/**` →
 exige autorização C4.**
 

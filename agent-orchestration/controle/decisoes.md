@@ -462,3 +462,12 @@
 - **Escopo desta rodada (1 PR):** cria a junta + KB + registro; **nenhuma chave, billing ou SKU ativado**.
   Aprovação: junta J-JUNTA-MAPAS (agente-fabrica, planejador-mestre, critico-adversarial, inspetor-de-rotas —
   maioria). KPIs atualizados no próprio PR (política KPI-por-PR, D-KPI-PER-PR).
+
+## D-Ω3F-2-DESTINATION-UPDATE (2026-07-14, junta J-OMEGA3F-2 — furo #2/#2b do critico)
+No UPDATE de OS, a regra "tipo exige destino" (422 destination_required) só se aplica quando o corpo
+**toca** algum campo de destino. Quando toca, o destino efetivo é o **merge por-campo** (campo tocado =
+corpo; não-tocado = persistido), então limpar só o endereço de uma OS com destino por coordenada não
+apaga o pin nem dispara 422. OS legada/sem-destino num catálogo que passou a exigir destino NÃO fica
+congelada (edições que não tocam destino passam). `hasDestination` = endereço OU coordenada válida
+(não-sentinela 0/0, mesmo predicado do mapa) — cidade/estado/CEP soltos não bastam. O CREATE continua
+exigindo destino real para tipos que o requerem.

@@ -40,6 +40,7 @@ import {
   parseOptionalSearch,
   parseOptionalUuid,
   parseRequiredUuid,
+  parseServiceDetails,
   parseWorkOrderPriority,
   parseWorkOrderStatus,
 } from "./work-order.validators.js";
@@ -67,6 +68,13 @@ export type WorkOrderReferenceResolvers = {
   readonly resolveVehicle?: (actor: WorkOrderActorContext, id: string) => Promise<boolean>;
   readonly resolveTeam?: (actor: WorkOrderActorContext, id: string) => Promise<boolean>;
   readonly resolveServiceCatalog?: (actor: WorkOrderActorContext, id: string) => Promise<boolean>;
+  // Ω3F-2a — tipo do catálogo persistido: dirige o 422 destination_required. Tenant-scoped; null quando
+  // o id não resolve (inexistente/cross-tenant). Separado do resolveServiceCatalog (existência) porque
+  // precisa do serviceType/requiresDestination, não só de um booleano.
+  readonly resolveServiceCatalogTypeInfo?: (
+    actor: WorkOrderActorContext,
+    id: string,
+  ) => Promise<{ readonly serviceType: string | null; readonly requiresDestination: boolean } | null>;
   // F2 R2.3 — read-only availability seam. True when the vehicle has an ACTIVE
   // maintenance order in `em_execucao`; such a vehicle cannot be bound to a NEW
   // work order (409 vehicle_in_maintenance). Additive; field-dispatch untouched.
@@ -210,6 +218,14 @@ export class WorkOrderService {
     await this.assertReferenceExists("team", this.references.resolveTeam, actor, teamId);
     await this.assertReferenceExists("service_catalog", this.references.resolveServiceCatalog, actor, serviceCatalogId);
 
+    // Ω3F-2a — destino (espelho da origem) + campos dinâmicos por tipo.
+    const destination = this.parseDestination(body);
+    const serviceDetails = parseServiceDetails(body.service_details ?? body.serviceDetails);
+
+    // Ω3F-2a — reboque exige destino: bloqueia o create quando o tipo do catálogo pede destino e nenhum
+    // campo de destino veio no corpo. Antes do nextCode/create para não consumir número de OS.
+    await this.assertDestinationForType(actor, serviceCatalogId, hasDestination(destination));
+
     const code = await this.repository.nextCode(actor.tenantId);
     const workOrder = await this.repository.create({
       tenantId: actor.tenantId,
@@ -227,6 +243,13 @@ export class WorkOrderService {
       serviceZipCode: optionalString(body.serviceZipCode),
       serviceLatitude: parseOptionalCoordinate(body.serviceLatitude, "serviceLatitude", -90, 90),
       serviceLongitude: parseOptionalCoordinate(body.serviceLongitude, "serviceLongitude", -180, 180),
+      destinationAddress: destination.destinationAddress,
+      destinationCity: destination.destinationCity,
+      destinationState: destination.destinationState,
+      destinationZipCode: destination.destinationZipCode,
+      destinationLatitude: destination.destinationLatitude,
+      destinationLongitude: destination.destinationLongitude,
+      serviceDetails,
       priority: parseWorkOrderPriority(body.priority),
       checklistId: parseOptionalUuid(body.checklistId, "checklistId"),
       customerId,
@@ -312,6 +335,40 @@ export class WorkOrderService {
     }
   }
 
+  // Ω3F-2a — normaliza os campos de destino do corpo (espelho da origem service_*).
+  private parseDestination(body: RawRecord): ParsedDestination {
+    return {
+      destinationAddress: optionalString(body.destinationAddress),
+      destinationCity: optionalString(body.destinationCity),
+      destinationState: optionalString(body.destinationState),
+      destinationZipCode: optionalString(body.destinationZipCode),
+      destinationLatitude: parseOptionalCoordinate(body.destinationLatitude, "destinationLatitude", -90, 90),
+      destinationLongitude: parseOptionalCoordinate(body.destinationLongitude, "destinationLongitude", -180, 180),
+    };
+  }
+
+  // Ω3F-2a — regra "reboque exige destino": se o catálogo referenciado marca requires_destination e a OS
+  // não carrega destino, rejeita com 422 destination_required. No-op quando não há catálogo, o resolver não
+  // está ligado, ou o id não resolve (tenant-scoped: cross-tenant → null → sem regra de tipo aplicável).
+  private async assertDestinationForType(
+    actor: WorkOrderActorContext,
+    serviceCatalogId: string | undefined,
+    hasDestinationValue: boolean,
+  ): Promise<void> {
+    if (!serviceCatalogId) return;
+
+    const resolver = this.references.resolveServiceCatalogTypeInfo;
+    const typeInfo = resolver ? await resolver(actor, serviceCatalogId) : null;
+    if (typeInfo?.requiresDestination && !hasDestinationValue) {
+      throw new WorkOrderError(
+        422,
+        "WORK_ORDER_UNPROCESSABLE",
+        "destination_required",
+        "Este tipo de serviço exige endereço de destino.",
+      );
+    }
+  }
+
   async get(actor: WorkOrderActorContext, workOrderId: string): Promise<WorkOrder> {
     const workOrder = await this.repository.findById(actor.tenantId, parseRequiredUuid(workOrderId, "workOrderId"));
 
@@ -353,7 +410,25 @@ export class WorkOrderService {
       throw new WorkOrderError(400, "WORK_ORDER_INVALID", "status_endpoint_required", "Use the status endpoint to change work order status.");
     }
 
-    await this.get(actor, workOrderId);
+    // Ω3F-2a — reusa o current (tipo IMUTÁVEL pós-create): a regra de destino no update lê o
+    // service_catalog_id PERSISTIDO, nunca um do corpo (update não aceita troca de tipo).
+    const current = await this.get(actor, workOrderId);
+
+    const destination = this.parseDestination(body);
+    const serviceDetails = parseServiceDetails(body.service_details ?? body.serviceDetails);
+
+    // Ω3F-2a (J-Ω3F-2 critico, furos #2/#2b) — a regra de destino no update SÓ se aplica quando o corpo
+    // TOCA destino: edição parcial de OS legada/sem-destino (ex.: só o título) NÃO trava. Quando toca,
+    // o destino efetivo é o MERGE por-campo (campo tocado = corpo; não-tocado = persistido), então
+    // limpar só o endereço de uma OS com destino por coordenada não apaga o pin nem dispara o 422.
+    if (bodyMentionsDestination(body)) {
+      await this.assertDestinationForType(
+        actor,
+        current.serviceCatalogId,
+        hasDestination(mergeDestination(current, body, destination)),
+      );
+    }
+
     const input: UpdateWorkOrderInput = {
       tenantId: actor.tenantId,
       workOrderId: parseRequiredUuid(workOrderId, "workOrderId"),
@@ -368,6 +443,13 @@ export class WorkOrderService {
       serviceZipCode: optionalString(body.serviceZipCode),
       serviceLatitude: parseOptionalCoordinate(body.serviceLatitude, "serviceLatitude", -90, 90),
       serviceLongitude: parseOptionalCoordinate(body.serviceLongitude, "serviceLongitude", -180, 180),
+      destinationAddress: destination.destinationAddress,
+      destinationCity: destination.destinationCity,
+      destinationState: destination.destinationState,
+      destinationZipCode: destination.destinationZipCode,
+      destinationLatitude: destination.destinationLatitude,
+      destinationLongitude: destination.destinationLongitude,
+      serviceDetails,
       priority: body.priority === undefined ? undefined : parseWorkOrderPriority(body.priority),
       checklistId: parseOptionalUuid(body.checklistId, "checklistId"),
       scheduledFor: parseOptionalDate(body.scheduledFor, "scheduledFor"),
@@ -569,6 +651,21 @@ function createDefaultReferenceResolvers(): WorkOrderReferenceResolvers {
     resolveVehicle: (actor, id) => referenceExists(createDefaultVehicleService, actor, id),
     resolveTeam: (actor, id) => referenceExists(createDefaultTeamService, actor, id),
     resolveServiceCatalog: (actor, id) => referenceExists(createDefaultServiceCatalogService, actor, id),
+    // Ω3F-2a — lê o tipo do serviço no catálogo (tenant-scoped). null quando o id não resolve
+    // (inexistente/cross-tenant) — nesse caso a regra de destino não se aplica.
+    resolveServiceCatalogTypeInfo: async (actor, id) => {
+      try {
+        const service = await createDefaultServiceCatalogService();
+        const serviceCatalog = await service.get(actor, id);
+
+        return {
+          serviceType: serviceCatalog.serviceType ?? null,
+          requiresDestination: serviceCatalog.requiresDestination,
+        };
+      } catch {
+        return null;
+      }
+    },
     // F2 R2.3 — reuses the maintenance default service singleton so an OS-facing
     // availability check sees maintenance orders created via the API. Fails open
     // (available) on any error so maintenance never blocks OS creation spuriously.
@@ -686,6 +783,51 @@ async function createPrismaWorkOrderService(): Promise<WorkOrderService> {
 
   // Ω1b-2 — só o serviço Prisma recebe o geocoder real (gated por GEOCODING_ENABLED, default noop).
   return new WorkOrderService(repository, createDefaultReferenceResolvers(), createDefaultGeocoder());
+}
+
+// Ω3F-2a — destino normalizado do corpo (campos opcionais; espelho da origem).
+type ParsedDestination = {
+  readonly destinationAddress?: string;
+  readonly destinationCity?: string;
+  readonly destinationState?: string;
+  readonly destinationZipCode?: string;
+  readonly destinationLatitude?: number;
+  readonly destinationLongitude?: number;
+};
+
+// Ω3F-2a (J-Ω3F-2 critico, obs 1/2) — destino REAL = endereço OU coordenada válida (não-sentinela 0/0,
+// mesmo predicado do mapa). Cidade/estado/CEP soltos não bastam para um reboque (destino "lixo").
+function hasDestination(destination: ParsedDestination): boolean {
+  return (
+    Boolean(destination.destinationAddress) ||
+    hasValidCoordinate(destination.destinationLatitude, destination.destinationLongitude)
+  );
+}
+
+// Ω3F-2a — verdadeiro quando o corpo do update toca em algum campo de destino (mesmo que para limpá-lo).
+function bodyMentionsDestination(body: RawRecord): boolean {
+  return (
+    "destinationAddress" in body ||
+    "destinationCity" in body ||
+    "destinationState" in body ||
+    "destinationZipCode" in body ||
+    "destinationLatitude" in body ||
+    "destinationLongitude" in body
+  );
+}
+
+// Ω3F-2a (J-Ω3F-2 critico, furo #2) — destino efetivo do update: campo TOCADO pelo corpo vale o corpo;
+// não-tocado mantém o persistido. Evita que limpar um campo (ex.: endereço) apague o destino por
+// coordenada intacto e dispare 422 indevido.
+function mergeDestination(current: WorkOrder, body: RawRecord, parsed: ParsedDestination): ParsedDestination {
+  return {
+    destinationAddress: "destinationAddress" in body ? parsed.destinationAddress : current.destinationAddress,
+    destinationCity: "destinationCity" in body ? parsed.destinationCity : current.destinationCity,
+    destinationState: "destinationState" in body ? parsed.destinationState : current.destinationState,
+    destinationZipCode: "destinationZipCode" in body ? parsed.destinationZipCode : current.destinationZipCode,
+    destinationLatitude: "destinationLatitude" in body ? parsed.destinationLatitude : current.destinationLatitude,
+    destinationLongitude: "destinationLongitude" in body ? parsed.destinationLongitude : current.destinationLongitude,
+  };
 }
 
 // Ω1b-2 — coordenada válida = número finito, dentro da faixa e não-sentinela 0/0 (mesmo predicado do mapa).

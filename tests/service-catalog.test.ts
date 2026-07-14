@@ -114,6 +114,49 @@ test("service-catalog service aceita base_price como string numerica e arredonda
   }
 });
 
+test("service-catalog persiste service_type + requires_destination e o DTO retorna ambos", async () => {
+  process.env.CORE_SAAS_PERSISTENCE = "memory";
+  const { createMemoryServiceCatalogService, resetServiceCatalogRuntimeForTests, toServiceCatalogDto } = await import(
+    "../src/modules/service-catalog/index.js"
+  );
+  const service = createMemoryServiceCatalogService();
+  const manager = actor(randomUUID(), randomUUID(), ["manager"], [
+    "service_catalog:read",
+    "service_catalog:create",
+    "service_catalog:update",
+  ]);
+
+  try {
+    const reboque = await service.create(manager, {
+      name: "Reboque",
+      service_type: "reboque",
+      requires_destination: true,
+    });
+    assert.equal(reboque.serviceType, "reboque");
+    assert.equal(reboque.requiresDestination, true);
+
+    const dto = toServiceCatalogDto(reboque);
+    assert.equal(dto.serviceType, "reboque");
+    assert.equal(dto.requiresDestination, true);
+
+    // Sem requires_destination → default false; service_type opcional preservado.
+    const socorro = await service.create(manager, { name: "Socorro", service_type: "socorro" });
+    assert.equal(socorro.serviceType, "socorro");
+    assert.equal(socorro.requiresDestination, false);
+
+    const updated = await service.update(manager, socorro.id, { requires_destination: true });
+    assert.equal(updated.requiresDestination, true);
+
+    // requires_destination é boolean estrito.
+    await assert.rejects(
+      () => service.create(manager, { name: "Invalido", requires_destination: "yes" }),
+      /requiresDestination must be a boolean/,
+    );
+  } finally {
+    resetServiceCatalogRuntimeForTests();
+  }
+});
+
 function actor(
   tenantId: string,
   userId: string,
