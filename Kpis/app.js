@@ -1,12 +1,17 @@
 const dashboardData = {
   "project": {
     "name": "ERP Techsolutions",
-    "version": "JUNTA-MAPAS",
-    "updatedAt": "2026-07-13",
-    "sourceBranch": "feat/agents-junta-mapas",
-    "summary": "Ω3F-0 (2026-07-14): setup da RODADA Ω3-FIDELIDADE — 3 agentes efemeros (fid-analista/planejador/avaliador; clausula de escopo respeitada) + spec canonica + dossie de paridade (matriz de 35 caps RECONCILIADA: 4 verde/18 amarelo/13 vermelho vs spec 3/15/17; 5 linhas subiram por PRs mergeados) + lista-execucao-omega3f (9 planos Fase 1 + Fase 2). Junta J-Ω3F-0 UNANIME 5/5; 6 decisoes + condicoes C1-C4. PR docs/agentes-only: 0 testes de produto; metricas carregam o ultimo oficial (backend 768/768, Flutter 764/764, smoke web 378/378, MVP demo 96%, MVP vendavel 78%). Backfill do Google Maps (#179/7d5d984).",
+    "version": "Ω-INFRA-2",
+    "updatedAt": "2026-07-14",
+    "sourceBranch": "feat-omega-infra2-staging-v2",
+    "summary": "Ω-INFRA-2 (2026-07-14): staging config-as-code (PR5 do saneamento). fly.staging.toml api+web (Fly.io/gru, liveness /health + readiness /health/ready, min_machines_running=0, API_UPSTREAM via .flycast) + nginx.conf.template envsubst VALIDADO AO VIVO (docker build+run, SPA 200) + CD deploy-staging.yml GATED (STAGING_DEPLOY_ENABLED -> SKIPPED ate ativar; migrate->seed staging->deploy api+web->smoke) + smoke-staging.mjs (/health/ready + login demo + /me, falha=vermelho). Junta-de-codigo J-SAN-5 UNANIME 3/3 (devops-provisionador, secops, inspetor-de-rotas). Zero segredo no diff; gate env.ts intacto. Config-as-code + docs: 0 teste de produto tocado; metricas carregam o ultimo oficial (backend 768/768, Flutter 764/764, smoke web 378/378, MVP demo 96%, MVP vendavel 78%). Backfill do Ω3F-0 (#180/4d3bf3c). Ativacao viva (smoke real) = junta-de-ativacao no hand-off (fronteira J-SAN-0).",
   },
   "kpis": [
+    {
+      "label": "Ω-INFRA-2",
+      "value": "Staging config-as-code",
+      "note": "fly.staging.toml api+web (gru, liveness/readiness, scale-to-zero) + nginx template envsubst (validado ao vivo) + CD GATED (SKIPPED ate ativar, main verde) + smoke (/health/ready+login+/me). Junta-de-codigo J-SAN-5 3/3. Ativacao viva = hand-off humano (conta/secrets)."
+    },
     {
       "label": "JUNTA-MAPAS",
       "value": "Junta de Mapas criada",

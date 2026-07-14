@@ -6,12 +6,26 @@
 
 Ambiente de desenvolvimento na maquina do dev. Usa Docker Compose para subir PostgreSQL 16 e Redis 7 com credenciais locais de exemplo.
 
-### Staging (plano — Ω-INFRA-2)
+### Staging (config-as-code — Ω-INFRA-2)
 
-Ambiente de validacao integrada antes de producao. Deploy automatico por push na `main`: `prisma migrate deploy`
-+ `db:seed:demo` (so staging) + smoke HTTP pos-deploy (login demo + `GET /health/ready` + 1 rota autenticada).
-Secrets via **GitHub Environment `staging`**. Provisionamento real (conta + secrets) e hand-off humano (ver
-"Fronteira de provisionamento" abaixo). Config-as-code do provedor entra no PR 5.
+Ambiente de validacao integrada antes de producao, no **Fly.io / regiao `gru`** (D-INFRA-PROVIDER). Config-as-code
+JA no repo (o provisionamento vivo e hand-off — ver "Fronteira de provisionamento"):
+
+- **`fly.staging.toml`** (backend) e **`frontend/fly.staging.toml`** (web/nginx) — apps `erp-techsolutions-api-staging`
+  e `erp-techsolutions-web-staging`, `primary_region = gru`, healthchecks liveness (`/health`) + readiness
+  (`/health/ready`), `min_machines_running = 0` (staging pode escalar a zero). O web faz proxy same-origin de
+  `/api` pela rede privada do Fly (`API_UPSTREAM = http://erp-techsolutions-api-staging.flycast`), via **template
+  nginx** (`frontend/nginx.conf.template` + envsubst nativo do entrypoint) — validado local: envsubst renderiza o
+  upstream e o nginx serve a SPA. (No Fly, `.flycast` resolve pela DNS interna mesmo com 0 maquinas ativas.)
+- **CD `.github/workflows/deploy-staging.yml`**: push na `main` → `prisma migrate deploy` → `db:seed:demo` (SO
+  staging) → `flyctl deploy` (api + web) → **smoke** (`scripts/smoke-staging.mjs`: `/health/ready` 200 + login
+  demo + `GET /me`). **Smoke vermelho = deploy invalido.** O job e **GATED**: so roda com a repo variable
+  `STAGING_DEPLOY_ENABLED == 'true'` — ate o humano provisionar, e SKIPPED e a `main` fica verde.
+
+**Ativacao (hand-off humano — dossie):** criar conta Fly + `fly apps create` dos 2 apps + Postgres/Redis
+gerenciados + preencher o **GitHub Environment `staging`** com os secrets `FLY_API_TOKEN`, `STAGING_DATABASE_URL`,
+`STAGING_DEMO_ADMIN_PASSWORD`, `STAGING_API_URL` + `STAGING_DEPLOY_ENABLED=true`. URL do staging entra aqui e em
+`docs/demo-credentials.md` apos o primeiro deploy verde.
 
 ### Production (plano — Ω-INFRA-3)
 

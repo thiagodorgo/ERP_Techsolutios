@@ -40,3 +40,11 @@ O menu vinha **vazio para todos** porque o backend devolvia `modules: []` hardco
 filtrando todo item com `requiredModules`. Corrigido com a coluna real `tenants.modules` (provisionada ao
 demo), o `operator` ganhando `field_location:read` para operar o mapa, e o sidebar respeitando o
 `governedPaths` do backend (gating dinâmico). Ver task-history `T-ACESSO`.
+
+## Staging (Fly.io/gru — Ω-INFRA-2, config-as-code)
+
+O CD `deploy-staging.yml` roda `db:seed:demo` no banco de staging a cada push na `main` (gated por
+`STAGING_DEPLOY_ENABLED=true`), então os **mesmos usuários/senha acima** valem no staging. A **URL do staging**
+(`https://erp-techsolutions-web-staging.fly.dev` ou domínio próprio) entra aqui após o primeiro deploy verde —
+depende do hand-off de ativação (conta Fly + secrets no GitHub Environment `staging`; ver `docs/deployment.md`).
+Login demo do smoke pós-deploy: `gestor.demo@example.com` / `STAGING_DEMO_ADMIN_PASSWORD`.
