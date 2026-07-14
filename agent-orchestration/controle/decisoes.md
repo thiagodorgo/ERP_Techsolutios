@@ -471,3 +471,12 @@ apaga o pin nem dispara 422. OS legada/sem-destino num catálogo que passou a ex
 congelada (edições que não tocam destino passam). `hasDestination` = endereço OU coordenada válida
 (não-sentinela 0/0, mesmo predicado do mapa) — cidade/estado/CEP soltos não bastam. O CREATE continua
 exigindo destino real para tipos que o requerem.
+
+## D-Ω3F-KPI-RELATORIO (2026-07-14 — formalização pedida pelo master-teste em J-OMEGA3F-2B)
+Na RODADA Ω3F, os PRs de feature **não tocam** os arquivos de KPI (`Kpis/*`): as contagens reais de cada
+bloco ficam na ata da junta (J-OMEGA3F-<n>) e a **reconciliação de KPI é publicada no RELATÓRIO FINAL da
+rodada** (`fidelidade/relatorio-omega3f.md`), em um único PR de fechamento. Fonte: regra de governança da
+rodada ratificada UNÂNIME 5/5 na junta J-Ω3F-0 (`lista-execucao-omega3f.md` §0.1: "KPI por PR: feature não
+toca arquivos KPI; KPIs vão só no relatório final") — exceção de rodada à D-KPI-PER-PR, registrada aqui
+para rastreabilidade (aplicada em #184, #185 e seguintes). O rail permanece: contagens de teste reais em
+toda ata/PR-body; nenhum KPI fabricado.
