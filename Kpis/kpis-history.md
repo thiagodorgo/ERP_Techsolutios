@@ -591,3 +591,22 @@ Todo bloco futuro continua obrigado a atualizar `Kpis/index.html`, `Kpis/app.js`
   P-SAN-SEED-GUARD · P-SAN-SMOKE-PROXY · `STAGING_API_URL` sem `/api/v1` no dossiê.
 - Config-as-code + docs: **0 teste de produto tocado**; métricas carregam o último oficial (backend 768/768, Flutter 764/764,
   smoke web 378/378). Ativação viva (smoke real) = junta-de-ativação no hand-off (fronteira J-SAN-0). Backfill do Ω3F-0: **#180 / 4d3bf3c**.
+
+## 2026-07-14 — Ω-INFRA-3 (rodada saneamento, PR6): produção config-as-code + fixes CORS/seed
+
+- **Código real (2 fixes):** **P-SAN-CORS** — `env.ts` ganha `CORS_ORIGIN` (CSV) + gate no `superRefine` que
+  REJEITA vazio/`*` (e qualquer entrada contendo `*`) em produção (**fail-closed**, espelha o gate do JWT);
+  `app.ts` passa a `cors({ origin: env.CORS_ORIGINS.length>0 ? array : true })` (sem `credentials`). **P-SAN-SEED-GUARD**
+  — `prisma/seed-guard.ts` (`assertSeedAllowed` ESTRITO) no topo dos 3 seeds; `'false'`/`'0'` **não** desarmam
+  (corrige o footgun `Boolean("false")`). **+15 testes** (seed-guard 4 + cors-env 7 + cors-routes 4).
+- **Config-as-code de produção:** `fly.production.toml` + `frontend/fly.production.toml` (`min_machines_running>=1`,
+  `auto_stop=off`, `force_https`, `CORS_ORIGIN` fail-closed não versionado, sem segredo). **`deploy-production.yml`**
+  GATED (`workflow_dispatch`, `PROD_DEPLOY_ENABLED`, `environment: production`, `concurrency`): **promoção por IMAGEM**
+  (`ghcr…:<promote_sha>` — mesmo artefato validado em staging, não rebuilda), migrate forward-only da pipeline **sem
+  seed**, **trava dupla** (ata go-live por SHA + smoke-staging-verde-mesmo-SHA checando job/step real + rollback
+  ensaiado). `scripts/smoke-production.mjs` (readiness + prova de CORS restritivo). Runbooks A/B em `deployment.md`.
+- **Design-junta** (workflow: 5 leitores → `planejador-mestre` → `critico`/`devops`/`secops`) **APROVADO_CONDICIONADO
+  3/3**; condições dobradas na impl (seed guard estrito, promoção por imagem, assert real de smoke, 2 atas separadas,
+  `seed-platform` infeasível REMOVIDO → P-SAN-PROD-BOOTSTRAP; web sem imagem GHCR → P-SAN-PROD-WEBIMG). `migration_needed=false`.
+- **O MERGE NÃO é go-live** (config inerte). Go-live = junta-5 por SHA + ativação viva = hand-off humano irredutível.
+  Suíte inteira **0 fail**. Backfill do Ω-INFRA-2: **#181 / b772103**.

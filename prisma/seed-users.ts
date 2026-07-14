@@ -12,6 +12,10 @@ import { PrismaClient } from "@prisma/client";
 import { ROLE_PERMISSIONS, type Role } from "../src/modules/core-saas/permissions/catalog.js";
 import { LocalAuthCredentialRepository, LocalAuthCredentialService } from "../src/modules/auth/index.js";
 import { withTenantRls } from "../src/database/rls.js";
+import { assertSeedAllowed } from "./seed-guard.js";
+
+// P-SAN-SEED-GUARD (Ω-INFRA-3): aborta se NODE_ENV=production sem opt-in explícito (seed é demo).
+assertSeedAllowed();
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL is required to run prisma/seed-users.ts.");

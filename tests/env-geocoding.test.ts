@@ -24,6 +24,8 @@ const PROD_BASE = {
   NODE_ENV: "production",
   JWT_SECRET: "a-real-production-secret",
   JWT_REFRESH_SECRET: "a-real-production-refresh-secret",
+  // Ω-INFRA-3 (P-SAN-CORS): produção agora exige allowlist de CORS explícita (o gate rejeita vazio/'*').
+  CORS_ORIGIN: "https://app.exemplo.com",
 };
 
 test("B1: GEOCODING_ENABLED=false realmente desliga (não coage para true)", () => {

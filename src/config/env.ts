@@ -22,6 +22,9 @@ export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
   LOG_LEVEL: z.string().default("info"),
+  // P-SAN-CORS (Ω-INFRA-3) — allowlist de origens (CSV). Vazio = permissivo (reflete a origem da
+  // requisição) em dev/test; em PRODUÇÃO o gate abaixo exige allowlist explícita sem curinga.
+  CORS_ORIGIN: z.string().trim().default(""),
   CORE_SAAS_PERSISTENCE: z.enum(["memory", "prisma"]).default("memory"),
   REDIS_URL: z.string().trim().url().default("redis://localhost:6379"),
   JWT_SECRET: z.string().trim().min(1).optional(),
@@ -97,6 +100,24 @@ export const envSchema = z.object({
     });
   }
 
+  // P-SAN-CORS (Ω-INFRA-3) — o bare `app.use(cors())` refletia QUALQUER origem ("*"). Em produção o
+  // CORS não pode ser wildcard nem vazio: exige allowlist explícita, espelhando o gate do JWT.
+  // Qualquer entrada CONTENDO '*' é rejeitada (não só a igual a '*' — ex.: "*.exemplo.com" fecha).
+  const corsOrigins = value.CORS_ORIGIN.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  if (
+    value.NODE_ENV === "production" &&
+    (corsOrigins.length === 0 || corsOrigins.some((origin) => origin.includes("*")))
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["CORS_ORIGIN"],
+      message:
+        "CORS_ORIGIN deve ser uma allowlist explícita de origens (sem curinga '*') em produção.",
+    });
+  }
+
   // Ω1b-2 (R11) — o uso sistemático da instância PÚBLICA do Nominatim é proibido pela política de uso
   // (banimento de IP). Em produção, geocodificação só é permitida contra um provedor próprio/self-host.
   if (
@@ -117,6 +138,11 @@ const parsedEnv = envSchema.parse(process.env);
 
 export const env = {
   ...parsedEnv,
+  // Allowlist derivada (CSV → array). Vazio em dev/test → app.ts usa `origin: true` (permissivo);
+  // em produção o superRefine garante array não-vazio e sem curinga.
+  CORS_ORIGINS: parsedEnv.CORS_ORIGIN.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
   JWT_SECRET: parsedEnv.JWT_SECRET ?? "dev-only-change-me",
   JWT_REFRESH_SECRET: parsedEnv.JWT_REFRESH_SECRET ?? "dev-only-refresh-change-me",
   CHECKLIST_STORAGE_PROVIDER: parsedEnv.CHECKLIST_STORAGE_PROVIDER ?? parsedEnv.CHECKLIST_ATTACHMENT_STORAGE_DRIVER ?? "local",

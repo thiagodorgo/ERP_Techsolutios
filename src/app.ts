@@ -52,7 +52,10 @@ export function createApp(service: ICoreSaasService): Express {
   const app = express();
 
   app.use(helmet());
-  app.use(cors());
+  // P-SAN-CORS (Ω-INFRA-3): allowlist por ambiente. Vazio (dev/test) → `origin: true` reflete a
+  // origem da requisição; em produção o gate do env.ts garante array não-vazio e sem curinga.
+  // Sem `credentials: true` — a autenticação é 100% Bearer, não usa cookie de sessão.
+  app.use(cors({ origin: env.CORS_ORIGINS.length > 0 ? env.CORS_ORIGINS : true }));
   app.use(express.json({ limit: "2mb" }));
 
   const logger = pinoHttp({

@@ -58,8 +58,9 @@ jobs:
       - name: Deploy API (Fly staging)
         run: flyctl deploy --config fly.staging.toml --remote-only --build-arg APP_VERSION=${{ github.sha }} --build-arg GIT_COMMIT=${{ github.sha }}
 
+      # working-directory=frontend → --config é relativo a frontend/ (NÃO prefixar frontend/ de novo).
       - name: Deploy Web (Fly staging)
-        run: flyctl deploy --config frontend/fly.staging.toml --remote-only
+        run: flyctl deploy --config fly.staging.toml --remote-only
         working-directory: frontend
 
       # Smoke pós-deploy: readiness profunda + login demo + rota autenticada. Vermelho = deploy inválido.

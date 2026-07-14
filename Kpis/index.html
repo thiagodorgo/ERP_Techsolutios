@@ -26,24 +26,24 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
-        <article class="panel panel--wide" aria-label="Resumo Ω-INFRA-2">
-          <h2>Ω-INFRA-2 — staging config-as-code (Fly.io/gru)</h2>
+        <article class="panel panel--wide" aria-label="Resumo Ω-INFRA-3">
+          <h2>Ω-INFRA-3 — produção config-as-code + fixes CORS/seed (Fly.io/gru)</h2>
           <p>
-            <strong>Ω-INFRA-2 (2026-07-14, PR5 do saneamento):</strong>
-            <code>fly.staging.toml</code> api+web — liveness <code>/health</code> +
-            readiness <code>/health/ready</code>, <code>min_machines_running=0</code>,
-            web proxia <code>/api</code> same-origin via
-            <code>API_UPSTREAM=…api-staging.flycast</code>. <code>nginx.conf.template</code>
-            (envsubst) <strong>validado ao vivo</strong> (docker build+run, SPA 200). CD
-            <code>deploy-staging.yml</code> <strong>GATED</strong>
-            (<code>STAGING_DEPLOY_ENABLED</code> → SKIPPED até ativar, <code>main</code> verde):
-            migrate → seed staging → deploy api+web → <strong>smoke</strong>
-            (<code>/health/ready</code> + login demo + <code>/me</code>). Junta-de-código
-            <strong>J-SAN-5 UNÂNIME 3/3</strong> (devops-provisionador · secops · inspetor-de-rotas).
-            Zero segredo real versionado; gate <code>env.ts</code> intacto. Ativação viva
-            (smoke real) = hand-off humano (conta/secrets — fronteira J-SAN-0).
-            <strong>Config-as-code + docs:</strong> 0 teste de produto tocado; métricas
-            carregam o último valor oficial. Backfill do Ω3F-0 (#180 / 4d3bf3c).
+            <strong>Ω-INFRA-3 (2026-07-14, PR6 do saneamento):</strong> produção config-as-code
+            + 2 fixes de código real. <strong>FIX P-SAN-CORS</strong> — <code>env.ts</code> ganha
+            <code>CORS_ORIGIN</code> + gate que rejeita vazio/<code>*</code> em produção
+            (<strong>fail-closed</strong>); <code>app.ts</code> usa allowlist por ambiente.
+            <strong>FIX P-SAN-SEED-GUARD</strong> — <code>assertSeedAllowed</code> estrito nos 3 seeds
+            (<code>'false'</code>/<code>'0'</code> não desarmam). <code>fly.production.toml</code> api+web
+            (<code>min≥1</code>, <code>force_https</code>, sem seed) + <code>deploy-production.yml</code>
+            <strong>GATED</strong> (<code>workflow_dispatch</code>, <strong>promoção por imagem</strong>
+            <code>ghcr…:&lt;sha&gt;</code>, <strong>trava dupla</strong>: ata go-live por SHA +
+            smoke-staging-verde-mesmo-SHA real + rollback ensaiado) + <code>smoke-production.mjs</code>
+            (readiness + CORS restritivo) + Runbooks A/B. Design-junta (planejador-mestre + critico ·
+            devops · secops) <strong>APROVADO_CONDICIONADO 3/3</strong>; condições dobradas.
+            <code>migration_needed=false</code>. <strong>+15 testes backend</strong>, suíte 0 fail.
+            <strong>O merge NÃO é go-live</strong> — config inerte; go-live = hand-off humano.
+            Backfill do Ω-INFRA-2 (#181 / b772103).
           </p>
           <p>
             <strong>Ω-GOV (2026-07-13):</strong> politica KPI-por-PR (D-KPI-PER-PR)

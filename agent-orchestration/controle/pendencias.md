@@ -422,7 +422,35 @@
 - impacto: aceitavel em dev/validacao local; INACEITAVEL em producao real.
 - acao: **GATE do Ω-INFRA-3 (go-live)** — ligar o CORS a allowlist por env lendo `CORS_ORIGIN` (sem `*`), com
   teste. Apontado pelo agente-secops (J-SAN-4). TLS/HSTS terminados no provedor tambem entram na config do PR5/6.
-- status: aberto (bloqueia o PR de PRODUCAO, nao a containerizacao)
+- status: **RESOLVIDO (Ω-INFRA-3, 2026-07-14).** `src/app.ts` usa `cors({ origin: env.CORS_ORIGINS.length>0 ?
+  array : true })`; `env.ts` adiciona `CORS_ORIGIN` (CSV) + gate no superRefine que REJEITA vazio/`*` (e qualquer
+  entrada contendo `*`) em produção (fail-closed, espelha o gate do JWT). Testes: `tests/cors-env.test.ts` (gate) +
+  `tests/cors-routes.test.ts` (integração no express: origem permitida refletida, proibida não). `force_https`
+  nos tomls de produção. Prova viva de CORS restritivo no `smoke-production.mjs`.
+
+## P-SAN-SEED-GUARD - Seed demo sem guarda de runtime contra produção (J-SAN-5, 2026-07-14)
+- descricao: `db:seed:demo` nao tinha guarda de runtime `NODE_ENV=production`; a protecao dependia so da ausencia
+  do passo no CD. Apontado pelo agente-secops (J-SAN-5, obs MÉDIA).
+- status: **RESOLVIDO (Ω-INFRA-3, 2026-07-14).** `prisma/seed-guard.ts` (`assertSeedAllowed`) chamado no topo de
+  `seed.ts`/`seed-users.ts`/`seed-fleet.ts`: aborta em `NODE_ENV=production` salvo opt-in ESTRITO one-shot
+  `ALLOW_PROD_SEED` (só `1/true/yes/on` — sem o footgun `Boolean("false")`). Teste `tests/seed-guard.test.ts`.
+  HONESTIDADE: no RUNNER do CI o `NODE_ENV` NAO e production → a guarda cobre container/manual; no vetor de
+  pipeline a protecao primaria e a AUSENCIA do passo de seed no `deploy-production.yml`.
+
+## P-SAN-PROD-BOOTSTRAP - Bootstrap idempotente do 1o platform_admin real (Ω-INFRA-3, 2026-07-14)
+- descricao: o seed atual so cria o tenant DEMO; `User.tenant_id` e NOT NULL/FK Restrict (nao existe platform_admin
+  tenant-less). Um bootstrap de produção precisa criar tenant de SISTEMA + role super_admin + admin + credencial,
+  idempotente, verificado contra banco prod-like. Fora do escopo do PR6 (config-as-code) — apontado por critico (C9).
+- acao: entregar o script de bootstrap dedicado na ATIVACAO (Runbook B), rodado one-shot com `ALLOW_PROD_SEED=1`
+  inline (removido em seguida). NUNCA usa `db:seed`/demo.
+- status: aberto (follow-up de ativacao; nao bloqueia o merge da config inerte)
+
+## P-SAN-PROD-WEBIMG - Rollback do frontend sem imagem GHCR (Ω-INFRA-3, 2026-07-14)
+- descricao: o job docker do `ci.yml` publica só `erp-backend` no GHCR; o web nao tem imagem → o rollback-por-imagem
+  (simetrico ao backend) nao se aplica ao frontend (hoje: `fly releases` nativo ou rebuild do SHA). Apontado por
+  devops (C3).
+- acao: publicar a imagem do web no GHCR num bloco futuro de infra para simetria total do rollback.
+- status: aberto (mitigado por `fly releases`; nao bloqueia o merge)
 
 ## P-SAN-INFRA1-NITS - Nits não-bloqueantes do Ω-INFRA-1 (J-SAN-4, 2026-07-13)
 - (1) Imagem do backend 837MB (engine Prisma + node slim): aceitável p/ MVP; otimizar (distroless/alpine +
