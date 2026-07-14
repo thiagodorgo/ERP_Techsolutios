@@ -26,6 +26,8 @@
     "db:seed:users": "tsx prisma/seed-users.ts",
     "db:seed:demo": "npm run db:seed && npm run db:seed:users && npm run db:seed:fleet",
     "db:studio": "prisma studio",
+    "db:backup": "node scripts/backup-database.mjs",
+    "db:restore-drill": "bash scripts/restore-drill.sh",
     "lint": "npm run check"
   },
   "dependencies": {

@@ -1,16 +1,21 @@
 const dashboardData = {
   "project": {
     "name": "ERP Techsolutions",
-    "version": "Ω-INFRA-3",
+    "version": "Ω-INFRA-4",
     "updatedAt": "2026-07-14",
-    "sourceBranch": "feat-omega-infra3-production",
-    "summary": "Ω-INFRA-3 (2026-07-14): produção config-as-code + 2 fixes de codigo real (PR6 do saneamento). FIX P-SAN-CORS (env.ts gate rejeita CORS vazio/'*' em producao, fail-closed; app.ts allowlist por ambiente) + FIX P-SAN-SEED-GUARD (assertSeedAllowed ESTRITO nos 3 seeds — corrige o footgun Boolean('false')). fly.production.toml api+web (min>=1, force_https, sem seed, CORS fail-closed) + deploy-production.yml GATED (workflow_dispatch, PROMOCAO POR IMAGEM ghcr:<sha>, trava dupla: ata go-live por SHA + smoke-staging-verde-mesmo-SHA real + rollback ensaiado) + smoke-production.mjs (readiness + CORS restritivo) + Runbooks A/B. Design-junta (planejador-mestre + critico/devops/secops) APROVADO_CONDICIONADO 3/3; condicoes dobradas (promocao por imagem, assert real de smoke, seed-platform infeasivel removido->P-SAN-PROD-BOOTSTRAP). migration_needed=false. Suite 0 fail (+15 backend). O MERGE NAO e go-live: config inerte, go-live=hand-off humano. Backfill do Ω-INFRA-2 (#181/b772103).",
+    "sourceBranch": "feat-omega-infra4-backup",
+    "summary": "Ω-INFRA-4 (2026-07-14, PR7 — FECHA a RODADA SANEAMENTO): backup + observabilidade config-as-code INERTE. backup-database.mjs (pg_dump -Fc -> auto-valida pg_restore -l -> PutObject bucket dedicado SSE -> retencao 30d SEGURA; creds via PG* env, nunca argv) + backup-database.yml (schedule diario GATED, Environment 'backup' dedicado) + uptime-check (cron */5 /health). PD-INFRA-2: Fly-native logs/metricas US$0 gru/BR + Actions cron; Better Stack/Axiom = upgrades NAO adotados. DRILL DE RESTORE COMPROVADO AO VIVO: script REAL -> MinIO(SSE) -> download byte-exato -> pg_restore EXIT=0 ~3,6s -> integridade SOURCE==RESTAURADO exata (9/16/62 policies RLS/71) -> isolamento por tenant sob role NAO-superuser (FORCE RLS: 1 tenant visivel). RPO<=24h + PITR nativo=hand-off. Design-junta dba/critico/secops APROVADO_CONDICIONADO 3/3, todas as condicoes dobradas+provadas. migration_needed=false. Suite 0 fail (+16 backend). Backfill do Ω-INFRA-3 (#182/4a2db09).",
   },
   "kpis": [
     {
+      "label": "Ω-INFRA-4",
+      "value": "Backup + restore comprovado + observabilidade",
+      "note": "backup-database.mjs (pg_dump -Fc -> S3 SSE, retencao segura) + backup-database.yml GATED + uptime cron + PD-INFRA-2 (Fly-native US$0). DRILL DE RESTORE COMPROVADO AO VIVO: script REAL -> MinIO -> download -> pg_restore ~3,6s -> integridade exata (62 policies RLS) + isolamento por tenant sob role nao-superuser. Design-junta 3/3 condicionado. FECHA o saneamento (PRs 1-7). Ativacao=hand-off."
+    },
+    {
       "label": "Ω-INFRA-3",
       "value": "Produção config-as-code + CORS/seed fixes",
-      "note": "fly.production.toml api+web (min>=1, force_https, sem seed) + deploy-production.yml GATED (promocao por imagem, trava dupla real) + smoke-production. FIX P-SAN-CORS (gate prod rejeita vazio/'*') + P-SAN-SEED-GUARD (guarda estrita). +15 testes. Design-junta 3/3 condicionado. Go-live=hand-off; o merge NAO e go-live."
+      "note": "fly.production.toml api+web (min>=1, force_https, sem seed) + deploy-production.yml GATED (promocao por imagem, trava dupla real) + smoke-production. FIX P-SAN-CORS + P-SAN-SEED-GUARD. +15 testes. Junta J-SAN-PROD-CODE 4/4. PR #182/4a2db09."
     },
     {
       "label": "Ω-INFRA-2",
@@ -54,8 +59,8 @@ const dashboardData = {
     },
     {
       "label": "Backend tests",
-      "value": "783/783",
-      "note": "Suite backend INTEIRA no gate do CI (Postgres+Redis). Ω-INFRA-3 +15 (seed-guard 4 + cors-env 7 + cors-routes 4) sobre 768. Local 0 fail (6 skip pre-existentes DB-gated). Total real confirmado pelo gate do CI. KPI-por-PR."
+      "value": "799/799",
+      "note": "Suite backend INTEIRA no gate do CI (Postgres+Redis). Ω-INFRA-4 +16 (backup-database.test) sobre 783. Local 0 fail (6 skip pre-existentes DB-gated). Total real confirmado pelo gate do CI. KPI-por-PR."
     },
     {
       "label": "Mobile contracts",

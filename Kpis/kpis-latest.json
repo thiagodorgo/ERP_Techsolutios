@@ -1,22 +1,27 @@
 {
   "snapshot_date": "2026-07-14",
-  "version": "Ω-INFRA-3",
+  "version": "Ω-INFRA-4",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω-INFRA-3 (produção config-as-code + trava dupla + fixes CORS/seed — PR6 do saneamento)",
-    "title": "Ω-INFRA-3: fly.production.toml api+web + CD gated (promoção por imagem, trava dupla) + FIX P-SAN-CORS + P-SAN-SEED-GUARD (+15 testes)",
+    "block": "Ω-INFRA-4 (backup + restore comprovado + observabilidade — PR7, FECHA o saneamento)",
+    "title": "Ω-INFRA-4: backup pg_dump -Fc → S3 (SSE, retenção segura) + DRILL de restore comprovado ao vivo + PD-INFRA-2 (Fly-native, US$0) + uptime cron (+16 testes)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω-INFRA-3 (PR6 do saneamento): produção config-as-code no Fly.io/gru + 2 fixes de codigo real. FIX P-SAN-CORS (env.ts ganha CORS_ORIGIN CSV + gate no superRefine que REJEITA vazio/'*' e qualquer entrada contendo '*' em producao, fail-closed espelhando o gate do JWT; app.ts cors({origin: allowlist||true}), sem credentials) e FIX P-SAN-SEED-GUARD (prisma/seed-guard.ts assertSeedAllowed ESTRITO nos 3 seeds — 'false'/'0' NAO desarmam, corrige o footgun Boolean('false')). fly.production.toml + frontend/fly.production.toml (min_machines_running>=1, auto_stop=off, force_https, CORS_ORIGIN fail-closed nao versionado, sem segredo). deploy-production.yml GATED (workflow_dispatch, PROD_DEPLOY_ENABLED, environment production, concurrency): PROMOCAO POR IMAGEM (ghcr erp-backend:<promote_sha>, mesmo artefato validado em staging, nao rebuilda), migrate forward-only da pipeline SEM seed, TRAVA DUPLA (ata go-live por SHA + smoke-staging-verde-mesmo-SHA checando job/step real rejeitando skipped + rollback ensaiado). smoke-production.mjs (readiness + prova de CORS restritivo + login opcional). Runbooks A (rollback ensaiavel forward-only P-007) e B (1o tenant real sem seed) em deployment.md. Design-junta (workflow: planejador-mestre + critico/devops/secops) APROVADO_CONDICIONADO 3/3, condicoes dobradas (seed guard estrito, promocao por imagem, assert real de smoke, 2 atas separadas, seed-platform infeasivel REMOVIDO -> P-SAN-PROD-BOOTSTRAP). migration_needed=false. Suite inteira 0 fail (+15 backend: seed-guard 4 + cors-env 7 + cors-routes 4). Go-live = hand-off humano irredutivel (o merge NAO e go-live). Backfill do Ω-INFRA-2 (PR #181 / b772103).",
-    "status_label": "KPI por PR (D-KPI-PER-PR); codigo real (CORS/seed) + config-as-code, +15 testes backend",
+    "summary": "Ω-INFRA-4 (PR7, FECHA a RODADA SANEAMENTO): backup + observabilidade config-as-code INERTE. scripts/backup-database.mjs (pg_dump -Fc -> auto-valida pg_restore -l -> PutObject bucket dedicado com ServerSideEncryption -> retencao 30d SEGURA: prune so apos upload OK, so prefixo/formato, protectKey, keepMinimum, lista truncada aborta; creds Postgres via PG* env NUNCA em argv). backup-database.yml (schedule diario GATED BACKUP_ENABLED, Environment dedicado 'backup' nao 'production' p/ nao travar cron). uptime-check.mjs + uptime-check.yml (cron */5, GET /health, gated por *_HEALTH_URL). PD-INFRA-2 (2 lentes, >=3 fontes): Fly-native logs/metricas US$0 gru/BR + GitHub Actions cron uptime; Better Stack/Axiom = upgrades NAO adotados (junta-5-por-pago NAO dispara). DRILL DE RESTORE COMPROVADO AO VIVO (veto do dba-guardiao satisfeito): backup-database.mjs REAL -> MinIO(SSE) -> download byte-exato (713655) -> pg_restore EXIT=0 ~3,6s RTO -> integridade SOURCE==RESTAURADO exata (9 tenants/16 users/62 policies RLS/71 tabelas) -> isolamento por tenant COMPORTAMENTAL sob role NAO-superuser (FORCE RLS: 1 tenant visivel). RPO<=24h (dump) + PITR nativo (sub-24h)=hand-off. Design-junta dba/critico/secops APROVADO_CONDICIONADO 3/3, TODAS as condicoes dobradas + provadas no drill (formato -Fc unificado, retencao segura, senha fora do argv, SSE, colisao de chave com ms+rand, doc-vs-build do PD, environment dedicado, teto 5GB). migration_needed=false. Suite 0 fail (+16 backend: backup-database.test). Ativacao viva (bucket S3 real, PITR, contas obs) = hand-off. Backfill do Ω-INFRA-3 (PR #182 / 4a2db09).",
+    "status_label": "KPI por PR (D-KPI-PER-PR); backup/restore/obs config-as-code, +16 testes backend, drill comprovado",
     "related_prs": [
+      {
+        "pr": 182,
+        "merge_commit": "4a2db09",
+        "note": "Ω-INFRA-3 (produção config-as-code + fixes CORS/seed, J-SAN-PROD-CODE 4/4); backfill neste bloco"
+      },
       {
         "pr": 181,
         "merge_commit": "b772103",
-        "note": "Ω-INFRA-2 (staging config-as-code, J-SAN-5 3/3); backfill neste bloco"
+        "note": "Ω-INFRA-2 (staging config-as-code, J-SAN-5 3/3)"
       },
       {
         "pr": 180,
@@ -64,10 +69,10 @@
       "note": "test:smoke real do frontend (execucao no PR): substitui o antigo 44/44 (estava congelado no B-124). Google Maps (J-MAPAS-3/4) +16 (6 google-canvas + 10 focus-city). 0 fail."
     },
     "backend_tests": {
-      "value": 783,
-      "total": 783,
-      "display": "783/783",
-      "note": "Suite backend INTEIRA no gate do CI (memory + Postgres+Redis). Ω-INFRA-3 +15 (seed-guard 4 + cors-env 7 + cors-routes 4) sobre os 768 do Ω-INFRA-1. Execucao local: 0 fail (6 skip pre-existentes DB-gated que rodam no CI). O total real e confirmado pelo gate do CI no PR."
+      "value": 799,
+      "total": 799,
+      "display": "799/799",
+      "note": "Suite backend INTEIRA no gate do CI (memory + Postgres+Redis). Ω-INFRA-4 +16 (backup-database.test: nome/parse/retencao segura/config S3/PG* env) sobre os 783 do Ω-INFRA-3. Execucao local: 0 fail (6 skip pre-existentes DB-gated que rodam no CI). Total real confirmado pelo gate do CI no PR."
     },
     "backend_contract_tests_focused": {
       "value": 21,

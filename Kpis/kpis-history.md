@@ -610,3 +610,19 @@ Todo bloco futuro continua obrigado a atualizar `Kpis/index.html`, `Kpis/app.js`
   `seed-platform` infeasível REMOVIDO → P-SAN-PROD-BOOTSTRAP; web sem imagem GHCR → P-SAN-PROD-WEBIMG). `migration_needed=false`.
 - **O MERGE NÃO é go-live** (config inerte). Go-live = junta-5 por SHA + ativação viva = hand-off humano irredutível.
   Suíte inteira **0 fail**. Backfill do Ω-INFRA-2: **#181 / b772103**.
+
+## 2026-07-14 — Ω-INFRA-4 (rodada saneamento, PR7 — FECHA o saneamento): backup + restore comprovado + observabilidade
+
+- **`scripts/backup-database.mjs`** — `pg_dump -Fc` → auto-valida `pg_restore -l` (nunca sobe truncado) → `PutObject`
+  (bucket dedicado, **SSE**) → **retenção 30d SEGURA** (prune só após upload OK · só prefixo/formato · nunca a
+  recém-enviada nem as `keepMinimum` · lista truncada aborta). Creds do Postgres via **`PG*` env** (nunca argv).
+  **`backup-database.yml`** GATED (`BACKUP_ENABLED`, Environment dedicado `backup`) + **`uptime-check.yml`** (cron `*/5`).
+- **PD-INFRA-2** (`docs/omega-pd.md`, 2 lentes ≥3 fontes): **Fly-native** logs/métricas US$0 (gru/BR) + Actions cron
+  uptime; Better Stack/Axiom = upgrades **NÃO adotados** (junta-5-por-pago não dispara). US$0 do cron = repo PÚBLICO.
+- **DRILL DE RESTORE COMPROVADO AO VIVO** (veto do dba-guardiao): `backup-database.mjs` REAL → MinIO(SSE) → download
+  byte-exato (713.655) → `pg_restore` **EXIT=0 ~3,6s (RTO)** → integridade SOURCE==RESTAURADO exata
+  (9 tenants / 16 users / **62 policies RLS** / 71 tabelas) → **isolamento por tenant sob role NÃO-superuser**
+  (FORCE RLS: 1 tenant distinto visível). **RPO ≤ 24h** (dump) + PITR nativo (sub-24h) = hand-off.
+- **Design-junta dba/critico/secops APROVADO_CONDICIONADO 3/3** — TODAS as condições dobradas + provadas no drill.
+  `migration_needed=false`. Suíte **0 fail** (+16 backend). Backfill do Ω-INFRA-3: **#182 / 4a2db09**.
+- **FECHA a RODADA SANEAMENTO** (PRs 1-7: Ω-GATE → Ω-GOV → Ω-DOCS → Ω-INFRA-1..4). Ativação viva = dossiê de hand-off.

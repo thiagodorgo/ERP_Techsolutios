@@ -26,6 +26,23 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo Ω-INFRA-4">
+          <h2>Ω-INFRA-4 — backup + restore comprovado + observabilidade (FECHA o saneamento)</h2>
+          <p>
+            <strong>Ω-INFRA-4 (2026-07-14, PR7 — último do saneamento):</strong> backup + observabilidade
+            config-as-code inerte. <code>backup-database.mjs</code> (<code>pg_dump -Fc</code> → valida
+            <code>pg_restore -l</code> → <code>PutObject</code> bucket dedicado <strong>SSE</strong> → retenção
+            30d segura; creds via <code>PG*</code> env, nunca argv) + <code>backup-database.yml</code> GATED
+            (Environment <code>backup</code>) + <code>uptime-check</code> (cron <code>*/5</code>). PD-INFRA-2:
+            <strong>Fly-native US$0</strong> (gru/BR) + Actions cron; Better Stack/Axiom = upgrades não adotados.
+            <strong>DRILL DE RESTORE COMPROVADO AO VIVO</strong>: script real → MinIO(SSE) → download byte-exato →
+            <code>pg_restore</code> EXIT=0 ~3,6s → integridade exata (9/16/<strong>62 policies RLS</strong>/71) +
+            isolamento por tenant sob role <strong>não-superuser</strong> (1 tenant visível). RPO≤24h + PITR=hand-off.
+            Design-junta dba/critico/secops <strong>APROVADO_CONDICIONADO 3/3</strong>, condições provadas no drill.
+            <code>migration_needed=false</code>. <strong>+16 testes backend</strong>, suíte 0 fail. Backfill do
+            Ω-INFRA-3 (#182 / 4a2db09).
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo Ω-INFRA-3">
           <h2>Ω-INFRA-3 — produção config-as-code + fixes CORS/seed (Fly.io/gru)</h2>
           <p>

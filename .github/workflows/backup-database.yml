@@ -1,0 +1,59 @@
+# Ω-INFRA-4 — backup diário do Postgres de PRODUÇÃO → S3 (pg_dump -Fc, validado, retenção 30d).
+# INERTE até ativação: o job só roda com a repo variable BACKUP_ENABLED == 'true'. Até lá é SKIPPED.
+#
+# Environment DEDICADO `backup` (NÃO `production`): um cron NÃO-ASSISTIDO não pode ficar preso num
+# environment com required-reviewers/wait-timer. O `backup` deve ser criado SEM protection rules,
+# apenas para escopar os secrets. Secrets exigidos no Environment `backup` (NUNCA versionados):
+#   PROD_DATABASE_URL · BACKUP_S3_BUCKET · BACKUP_S3_REGION · AWS_ACCESS_KEY_ID · AWS_SECRET_ACCESS_KEY
+# (ou papel OIDC). O bucket S3 deve ser PRIVADO + SSE + (recomendado) Versioning/Object Lock — ver
+# docs/deployment.md §Operação. O dump contém PII: nunca vira artefato público nem vai para log.
+#
+# PITR/WAL nativo do Postgres gerenciado (RPO sub-24h) é ATIVAÇÃO à parte — o dump S3 é a cópia
+# portável/off-provider (RPO <= 24h). A missão exige AMBOS (ver runbook).
+
+name: backup-database
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 06:00 UTC = 03:00 America/Sao_Paulo (fora do pico)
+  workflow_dispatch: {}
+
+concurrency:
+  group: backup-database
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    if: vars.BACKUP_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: backup
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # pg_dump precisa ser >= major do servidor gerenciado. Fixado em 16 (== servidor atual). Re-verificar
+      # em qualquer upgrade de major do provedor (ver runbook — armadilha de versão).
+      - name: Install postgresql-client-16
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Backup → S3
+        run: node scripts/backup-database.mjs
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          BACKUP_S3_REGION: ${{ secrets.BACKUP_S3_REGION }}
+          BACKUP_S3_PREFIX: db-backups
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

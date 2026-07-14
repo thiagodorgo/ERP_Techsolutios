@@ -267,3 +267,67 @@ Cloud charge markup rules nao exige variavel de ambiente propria nesta branch. O
 - PostgreSQL e Redis locais nao representam ambiente produtivo.
 - Cloud usage metering, AWS CUR cost import, Cloud cost allocation e Cloud charge markup rules nao devem receber secrets AWS reais nas foundations atuais.
 - Este bloco nao configura deploy produtivo.
+
+## Operacao (Ω-INFRA-4) — observabilidade, backup, restore, uptime
+
+### Observabilidade (onde ver log/metrica)
+Decisao PD-INFRA-2 (`docs/omega-pd.md`): **nativo da Fly** (custo US$0, dado em gru/BR). Logs em tempo real:
+`fly logs -a <app>` (live-tail) e o dashboard. Metricas: managed Prometheus (~15d) + managed Grafana em
+`fly-metrics.net`. Alerta de aplicacao: regras no Grafana. NENHUM serviço externo pago adotado (Better Stack/
+Axiom sao upgrades documentados, so com junta-5 + LGPD — ver PD-INFRA-2). **Nota de escopo:** os logs/metricas
+nativos sao ATIVACAO viva (nao wired neste PR); o PR entrega o BACKUP e o UPTIME-PROBE.
+
+### Backup do Postgres (pg_dump -Fc → S3)
+- **`.github/workflows/backup-database.yml`** — schedule diario 06:00 UTC (03:00 BRT), GATED por
+  `vars.BACKUP_ENABLED == 'true'` (SKIPPED ate ativar), Environment DEDICADO `backup` (sem required-reviewers,
+  para o cron nao-assistido nao travar). Roda `scripts/backup-database.mjs`: `pg_dump -Fc` (custom, comprimido) →
+  auto-valida com `pg_restore -l` (nunca sobe dump truncado) → `PutObject` no bucket dedicado com
+  `ServerSideEncryption` → retencao 30d SEGURA. Credenciais do Postgres via `PG*` env (nunca em argv/process table);
+  creds AWS pela cadeia padrao do SDK.
+- **Bucket S3 (hand-off de ativacao — OBRIGATORIO):** PRIVADO (Block Public Access nos 4 flags), **SSE default**
+  (idealmente KMS), **bucket policy** negando `PutObject` sem encriptacao e negando `aws:SecureTransport=false`
+  (TLS-only), e **retencao autoritativa do provedor**: S3 **Lifecycle** (expiracao 30d) + **Versioning** +
+  **Object Lock (WORM)** para que um bug/credencial comprometida NAO destrua os backups. O `DeleteObject` do
+  script e conveniencia (guardas: so apos upload OK, so chaves do prefixo com timestamp valido, nunca a chave
+  recem-enviada, nunca deixa < keepMinimum, lista truncada aborta a poda) — a rede de seguranca e o provedor.
+- **IAM minimo:** as credenciais AWS do workflow so `s3:PutObject/GetObject/ListBucket/DeleteObject` no bucket/
+  prefixo dedicado (preferir OIDC a chave longa); o `PROD_DATABASE_URL` do backup pode apontar para um papel
+  Postgres **read-only** dedicado (reduz blast radius).
+- **Teto de 5GB por objeto** (PutObject cru, sem multipart): DB cujo `.dump` passe de 5GB FALHA — quando o
+  volume crescer, migrar para `@aws-sdk/lib-storage` (multipart). Registrado como limite de escala conhecido.
+- **Versao do cliente:** `pg_dump` DEVE ser >= major do servidor gerenciado (o workflow fixa `postgresql-client-16`).
+  Re-verificar em QUALQUER upgrade de major do provedor.
+
+### Restore — runbook + RPO/RTO (DRILL COMPROVADO)
+Restaurar o `.dump` (pg_dump -Fc) baixado do S3 num banco vazio via `pg_restore`, exatamente o formato que o
+script produz (casado com `scripts/restore-drill.sh`):
+```bash
+# 1) baixar o objeto do S3 (aws s3 cp s3://<bucket>/db-backups/<chave>.dump ./restore.dump)
+# 2) restaurar num alvo VAZIO
+createdb -h <host> -U <admin> erp_restore
+pg_restore -h <host> -U <admin> -d erp_restore -j4 restore.dump
+# 3) apontar uma instancia do app (DATABASE_URL=...erp_restore) e provar login + rota autenticada
+```
+- **DRILL comprovado ao vivo (Ω-INFRA-4):** o `scripts/backup-database.mjs` REAL rodou (`pg_dump -Fc` 713.655
+  bytes) → upload a um S3-compativel (MinIO, SSE) → **download do objeto** (byte-exato) → `pg_restore` do objeto
+  baixado **EXIT=0 em ~3,6s (RTO)** → integridade SOURCE==RESTAURADO exata (9 tenants / 16 users / **62 policies
+  RLS** / 71 tabelas) → **isolamento por tenant comportamental sob role NAO-superuser** (FORCE RLS): com
+  `app.current_tenant_id` de UMA org, so as linhas dessa org sao visiveis (1 tenant distinto). Re-medir o RTO
+  por faixa de tamanho no provedor gerenciado (restore e super-linear com indices).
+- **Em PRODUCAO o app conecta com role NAO-superuser** (o `app_user`, sem BYPASSRLS) — nunca `postgres` —, senao
+  o `FORCE ROW LEVEL SECURITY` e ignorado e o isolamento por tenant nao vale. Confirmar na ativacao.
+- **RPO/RTO:** RPO **<= 24h** com o dump diario (perda maxima de 1 dia). Para **RPO sub-24h**, ATIVAR o
+  **PITR/WAL nativo** do Postgres gerenciado (R2 do D-INFRA-PROVIDER) — trilha de hand-off separada. O dump S3 e a
+  copia **portavel/off-provider**; o PITR e a copia de **baixo RPO**. A missao exige AMBOS. **RPO<=24h e decisao
+  de NEGOCIO a ratificar** (aceitavel para MVP? um ERP financeiro/OS pode exigir menos — nesse caso PITR e
+  pre-go-live, nao ativacao futura).
+
+### Uptime / alerta (quem e alertado)
+- **`.github/workflows/uptime-check.yml`** — cron `*/5`, dois jobs (staging/prod) gated por
+  `vars.STAGING_HEALTH_URL`/`vars.PROD_HEALTH_URL` != ''. Roda `scripts/uptime-check.mjs` (GET `/health`;
+  status != 200/timeout = down → run vermelho → **notificacao nativa do GitHub**).
+- **Limitacoes aceitas p/ MVP (dossie de ativacao):** o schedule do Actions atrasa/pula sob carga (NAO e
+  sub-minuto nem multi-PoP); o alerta nativo NAO tem on-call/ACK/escalonamento; o schedule **auto-desabilita
+  apos 60d** sem atividade no repo (confirmar vivo). O custo US$0 do cron depende de o repo ser **PUBLICO**
+  (minutos ilimitados) — se virar PRIVADO, `*/5` passa a custar: reduzir cadencia ou migrar para monitor
+  sintetico (Better Stack FREE, upgrade documentado no PD-INFRA-2).
