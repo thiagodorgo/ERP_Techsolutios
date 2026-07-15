@@ -14,6 +14,10 @@ export interface ServiceQuoteRepository {
   list(input: ListServiceQuoteInput): Promise<ListServiceQuoteResult>;
   findById(tenantId: string, serviceQuoteId: string): Promise<ServiceQuote | undefined>;
   update(input: UpdateServiceQuoteInput): Promise<ServiceQuote | undefined>;
+  // Ω3F-4b (condição critico J-Ω3F-4B) — CAS: reserva o orçamento p/ aprovação (draft→approved) de forma
+  // ATÔMICA, só se ainda draft E sem OS gerada. Fecha a janela TOCTOU (dois approve concorrentes criariam
+  // 2 OSs). Retorna o orçamento reservado (vencedor) ou undefined (perdedor → 409, sem criar OS).
+  claimForApproval(tenantId: string, serviceQuoteId: string): Promise<ServiceQuote | undefined>;
   reset?(): void;
 }
 
@@ -64,6 +68,18 @@ export class InMemoryServiceQuoteRepository implements ServiceQuoteRepository {
     return quote?.tenantId === tenantId ? quote : undefined;
   }
 
+  // CAS atômico (JS single-thread: sem `await` entre o read e o write → duas chamadas concorrentes
+  // NÃO se intercalam aqui). Só o 1º vencedor transita draft→approved; os demais veem status já
+  // mudado e recebem undefined.
+  async claimForApproval(tenantId: string, serviceQuoteId: string): Promise<ServiceQuote | undefined> {
+    const current = this.quotes.get(serviceQuoteId);
+    if (!current || current.tenantId !== tenantId) return undefined;
+    if (current.status !== "draft" || current.createdWorkOrderId) return undefined;
+    const claimed: ServiceQuote = { ...current, status: "approved", updatedAt: new Date() };
+    this.quotes.set(claimed.id, claimed);
+    return claimed;
+  }
+
   async update(input: UpdateServiceQuoteInput): Promise<ServiceQuote | undefined> {
     const current = await this.findById(input.tenantId, input.serviceQuoteId);
     if (!current) return undefined;
@@ -76,6 +92,11 @@ export class InMemoryServiceQuoteRepository implements ServiceQuoteRepository {
         notes: input.notes,
         status: input.status,
         isActive: input.isActive,
+        number: input.number,
+        issuedAt: input.issuedAt,
+        validUntil: input.validUntil,
+        createdWorkOrderId: input.createdWorkOrderId,
+        shareToken: input.shareToken,
         updatedBy: input.updatedBy,
       }),
       updatedAt: new Date(),

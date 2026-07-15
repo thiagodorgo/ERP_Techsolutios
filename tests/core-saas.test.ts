@@ -83,6 +83,7 @@ const expectedPermissionCatalog = [
   "pois:update",
   "tariffs:update",
   "service_quotes:update",
+  "service_quotes:approve",
   "work_order_financials:update",
   "fuel_logs:read",
   "fuel_logs:create",

@@ -505,3 +505,22 @@
   tariff_not_found_for_service (a ordem é garantida pela posição do código; um teste trava regressão de
   reordenação).
 - status: aberto (não-bloqueante; guarda de invariante para blocos futuros).
+
+## P-Ω3F4B-SHARE-TOKEN-UNIQUE - share_token sem unicidade/índice; endpoint público adiado (J-OMEGA3F-4B, 2026-07-15)
+- descricao: o Ω3F-4b gera `service_quotes.share_token` (randomUUID) mas a coluna NÃO tem `@@unique`/índice.
+  Enquanto a leitura pública por token está ADIADA (D-Ω3F-4B-SHARE), é inerte. Apontado por validador-mestre
+  (BAIXA) e fid-avaliador (não-bloqueante).
+- acao: a fatia que abrir o endpoint público de leitura-por-token (`GET /orcamentos/compartilhado/:token`)
+  DEVE adicionar unicidade + índice de lookup do share_token (migration) e passar por revisão secops
+  (superfície não-autenticada; §2.8; sem vazar tenant/dados internos).
+- status: aberto (não-bloqueante; guarda para a fatia do consumo público).
+
+## P-Ω3F4B-APPROVE-CRASH - Crash duro entre reserva e carimbo do approve (J-OMEGA3F-4B ciclo1, 2026-07-15)
+- descricao: o CAS fecha o duplo-faturamento concorrente (1 OS + 1×409), mas um crash DURO do processo ENTRE
+  o claimForApproval (orçamento já approved) e o carimbo de created_work_order_id deixaria o orçamento
+  approved-SEM-OS, irrecuperável pela máquina de estado. É FALHA SEGURA (nunca gera 2ª OS), não duplo-
+  faturamento. Apontado pelo critico como residual de durabilidade cross-agregado (não-bloqueante).
+- acao: resolver com transação única / outbox / job de reconciliação (orçamento approved sem OS há N min →
+  reabrir ou reconciliar) numa fatia futura de robustez. A compensação atual só cobre erro do create (volta a
+  draft), não crash entre passos.
+- status: aberto (não-bloqueante; falha segura).

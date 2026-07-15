@@ -17,6 +17,11 @@ export function toServiceQuoteDto(quote: ServiceQuote) {
     status: quote.status,
     isActive: quote.isActive,
     notes: quote.notes ?? null,
+    // Ω3F-4a/4b — cabeçalho exposto. shareToken NUNCA entra aqui (§2.8): só o endpoint /share o devolve.
+    number: quote.number ?? null,
+    issuedAt: quote.issuedAt ? quote.issuedAt.toISOString() : null,
+    validUntil: quote.validUntil ? quote.validUntil.toISOString() : null,
+    createdWorkOrderId: quote.createdWorkOrderId ?? null,
     createdBy: quote.createdBy ?? null,
     updatedBy: quote.updatedBy ?? null,
     createdAt: quote.createdAt.toISOString(),

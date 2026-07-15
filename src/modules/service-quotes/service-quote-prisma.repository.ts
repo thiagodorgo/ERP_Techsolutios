@@ -35,6 +35,11 @@ export class PrismaServiceQuoteRepository implements ServiceQuoteRepository {
           status: input.status,
           is_active: input.isActive ?? true,
           notes: input.notes ?? null,
+          number: input.number ?? null,
+          issued_at: input.issuedAt ?? null,
+          valid_until: input.validUntil ?? null,
+          created_work_order_id: input.createdWorkOrderId ?? null,
+          share_token: input.shareToken ?? null,
           created_by: input.createdBy ?? null,
           updated_by: input.updatedBy ?? null,
         },
@@ -59,6 +64,17 @@ export class PrismaServiceQuoteRepository implements ServiceQuoteRepository {
     return quote ? mapServiceQuoteRecord(quote) : undefined;
   }
 
+  // CAS no banco: UPDATE ... WHERE status='draft' AND created_work_order_id IS NULL. A cláusula WHERE é
+  // a guarda atômica — sob concorrência estrita só UMA transação afeta a linha; as demais recebem 0 e
+  // retornam undefined (→ 409, sem criar OS). Fecha a janela TOCTOU do approve (condição critico J-Ω3F-4B).
+  async claimForApproval(tenantId: string, serviceQuoteId: string): Promise<ServiceQuote | undefined> {
+    const rows = await this.client.serviceQuote.updateManyAndReturn({
+      where: { tenant_id: tenantId, id: serviceQuoteId, status: "draft", created_work_order_id: null },
+      data: { status: "approved", updated_at: new Date() },
+    });
+    return rows[0] ? mapServiceQuoteRecord(rows[0]) : undefined;
+  }
+
   async update(input: UpdateServiceQuoteInput): Promise<ServiceQuote | undefined> {
     try {
       const updated = await this.client.serviceQuote.updateManyAndReturn({
@@ -69,6 +85,11 @@ export class PrismaServiceQuoteRepository implements ServiceQuoteRepository {
           notes: nullable(input.notes),
           status: input.status,
           is_active: input.isActive,
+          number: nullable(input.number),
+          issued_at: input.issuedAt,
+          valid_until: input.validUntil,
+          created_work_order_id: input.createdWorkOrderId,
+          share_token: input.shareToken,
           updated_by: nullable(input.updatedBy),
         }),
       });
@@ -96,6 +117,10 @@ export class RlsPrismaServiceQuoteRepository implements ServiceQuoteRepository {
 
   update(input: UpdateServiceQuoteInput): Promise<ServiceQuote | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaServiceQuoteRepository(tx).update(input));
+  }
+
+  claimForApproval(tenantId: string, serviceQuoteId: string): Promise<ServiceQuote | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaServiceQuoteRepository(tx).claimForApproval(tenantId, serviceQuoteId));
   }
 }
 
@@ -139,6 +164,11 @@ function mapServiceQuoteRecord(record: {
   readonly status: string;
   readonly is_active: boolean;
   readonly notes: string | null;
+  readonly number: string | null;
+  readonly issued_at: Date | null;
+  readonly valid_until: Date | null;
+  readonly created_work_order_id: string | null;
+  readonly share_token: string | null;
   readonly created_by: string | null;
   readonly updated_by: string | null;
   readonly created_at: Date;
@@ -161,6 +191,11 @@ function mapServiceQuoteRecord(record: {
     status: record.status,
     isActive: record.is_active,
     notes: record.notes ?? undefined,
+    number: record.number ?? undefined,
+    issuedAt: record.issued_at ?? undefined,
+    validUntil: record.valid_until ?? undefined,
+    createdWorkOrderId: record.created_work_order_id ?? undefined,
+    shareToken: record.share_token ?? undefined,
     createdBy: record.created_by ?? undefined,
     updatedBy: record.updated_by ?? undefined,
     createdAt: record.created_at,

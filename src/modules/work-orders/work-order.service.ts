@@ -212,7 +212,15 @@ export class WorkOrderService {
     return this.repository.list(input);
   }
 
-  async create(actor: WorkOrderActorContext, body: RawRecord): Promise<WorkOrder> {
+  async create(
+    actor: WorkOrderActorContext,
+    body: RawRecord,
+    // Ω3F-4b — opção INTERNA (composta no código, NUNCA aceita no corpo REST): pula a validação #4
+    // (tarifa vigente) no approve→cria OS, porque a OS derivada de orçamento já é precificada pelo
+    // preço CONGELADO do orçamento (anti-refaturamento — re-exigir tarifa viva contradiria o freeze e
+    // bloquearia orçamentos MANUAIS ou de tarifa arquivada). Ver D-Ω3F-4B-APPROVE-SKIP-TARIFF.
+    options?: { readonly skipApplicableTariffCheck?: boolean },
+  ): Promise<WorkOrder> {
     const customerId = parseOptionalUuid(body.customer_id ?? body.customerId, "customerId");
     const vehicleId = parseOptionalUuid(body.vehicle_id ?? body.vehicleId, "vehicleId");
     const teamId = parseOptionalUuid(body.team_id ?? body.teamId, "teamId");
@@ -236,8 +244,11 @@ export class WorkOrderService {
     await this.assertDestinationForType(actor, serviceCatalogId, hasDestination(destination));
 
     // Ω3F-3b (#4, spec §1.2) — quando a OS vincula cliente E serviço, o tipo precisa ter tarifa vigente
-    // na tabela do cliente. Antes do nextCode/create para não consumir número de OS.
-    await this.assertServiceHasApplicableTariff(actor, serviceCatalogId, customerId);
+    // na tabela do cliente. Antes do nextCode/create para não consumir número de OS. Ω3F-4b: o approve→cria
+    // OS pula esta validação (skipApplicableTariffCheck) — a OS derivada já é precificada pelo orçamento.
+    if (!options?.skipApplicableTariffCheck) {
+      await this.assertServiceHasApplicableTariff(actor, serviceCatalogId, customerId);
+    }
 
     const code = await this.repository.nextCode(actor.tenantId);
     const workOrder = await this.repository.create({

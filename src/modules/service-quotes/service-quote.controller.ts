@@ -67,6 +67,40 @@ export class ServiceQuoteController {
     return { data: toServiceQuoteDto(item) };
   }
 
+  // Ω3F-4b — aprovar orçamento → cria OS (idempotente). Audita a aprovação (nunca o token de share).
+  async approve(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const { quote, workOrderId } = await service.approve(
+      actor,
+      readRouteParam(request.params.serviceQuoteId),
+      (request.body ?? {}) as Record<string, unknown>,
+    );
+    await recordRequestAuditBestEffort(request, {
+      action: "service_quote.approved",
+      resourceType: "service_quote",
+      resourceId: quote.id,
+      outcome: "success",
+      severity: "info",
+      metadata: { status: quote.status, workOrderId },
+    });
+    return { data: { ...toServiceQuoteDto(quote), workOrderId } };
+  }
+
+  // Ω3F-4b — compartilhar orçamento: devolve o link ao dono. §2.8: o token NUNCA vai para a auditoria.
+  async share(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.share(actor, readRouteParam(request.params.serviceQuoteId));
+    await recordRequestAuditBestEffort(request, {
+      action: "service_quote.shared",
+      resourceType: "service_quote",
+      resourceId: readRouteParam(request.params.serviceQuoteId),
+      outcome: "success",
+      severity: "info",
+      metadata: {},
+    });
+    return { data: { shareToken: result.shareToken, sharePath: result.sharePath } };
+  }
+
   private async resolveServiceWithActor(request: Request) {
     return [await this.resolveService(), requireTenantContext(request)] as const;
   }
