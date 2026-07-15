@@ -7,7 +7,6 @@ import {
   formatServiceQuoteDate,
   getServiceQuoteStatusLabel,
   getServiceQuoteStatusTone,
-  shortRef,
 } from "../../../registry/service-quotes/service-quotes.adapter";
 import {
   approveServiceQuote,
@@ -192,15 +191,18 @@ export function QuoteCard({
   onShare: () => void;
 }) {
   const tone = TONE_STYLE[getServiceQuoteStatusTone(quote.status)] ?? TONE_STYLE.default;
-  const title = quote.number ?? `Orçamento ${shortRef(quote.id)}`;
+  // §11.2 (cognicao J-Ω3F-4C) — sem andaime técnico: quando o backend não traz número, rótulo de negócio
+  // neutro (nunca fragmento de UUID cru, nem no hover).
+  const title = quote.number ?? "Orçamento sem número";
   const lineItems = items?.items ?? [];
+  const [copied, setCopied] = useState(false);
 
   return (
     <div style={{ ...card, padding: 18 }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 14.5, fontWeight: 800 }} title={quote.id}>{title}</span>
+            <span style={{ fontSize: 14.5, fontWeight: 800 }}>{title}</span>
             <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99, color: tone.color, background: tone.background }}>
               {getServiceQuoteStatusLabel(quote.status)}
             </span>
@@ -266,10 +268,14 @@ export function QuoteCard({
               type="button"
               style={ghostBtn}
               onClick={() => {
-                if (typeof navigator !== "undefined" && navigator.clipboard) void navigator.clipboard.writeText(sharePath);
+                if (typeof navigator !== "undefined" && navigator.clipboard) {
+                  void navigator.clipboard.writeText(sharePath);
+                  setCopied(true);
+                  window.setTimeout(() => setCopied(false), 2000);
+                }
               }}
             >
-              Copiar link
+              {copied ? "Copiado!" : "Copiar link"}
             </button>
           </div>
         </div>

@@ -524,3 +524,12 @@
   reabrir ou reconciliar) numa fatia futura de robustez. A compensação atual só cobre erro do create (volta a
   draft), não crash entre passos.
 - status: aberto (não-bloqueante; falha segura).
+
+## P-Ω3F4C-ACTIVATION-PROMPT - Aprovar dispara sem diálogo de modo de acionamento/origem-destino (J-OMEGA3F-4C, 2026-07-15)
+- descricao: no QuoteTab/OrcamentosPage o botão Aprovar chama approveServiceQuote(context, id, {}) — clique único,
+  sem coletar `activation_mode` nem origem/destino (que o backend aceita como OPCIONAIS). O vídeo §1.3 mostra o
+  approve perguntando "criar novo serviço?" + modo de acionamento. Apontado por fid-avaliador (não-bloqueante:
+  o plano do -4c escopou "Aprovar→cria OS, mostra link"; activation_mode é opcional server-side).
+- acao: fatia de UX subsequente — diálogo de confirmação no approve coletando modo de acionamento + origem/
+  destino (para tipos que exigem, ex. reboque), passando ao corpo do approve. Fecha a fidelidade fina do #7.
+- status: aberto (não-bloqueante).
