@@ -505,3 +505,12 @@
   tariff_not_found_for_service (a ordem é garantida pela posição do código; um teste trava regressão de
   reordenação).
 - status: aberto (não-bloqueante; guarda de invariante para blocos futuros).
+
+## P-Ω3F4B-SHARE-TOKEN-UNIQUE - share_token sem unicidade/índice; endpoint público adiado (J-OMEGA3F-4B, 2026-07-15)
+- descricao: o Ω3F-4b gera `service_quotes.share_token` (randomUUID) mas a coluna NÃO tem `@@unique`/índice.
+  Enquanto a leitura pública por token está ADIADA (D-Ω3F-4B-SHARE), é inerte. Apontado por validador-mestre
+  (BAIXA) e fid-avaliador (não-bloqueante).
+- acao: a fatia que abrir o endpoint público de leitura-por-token (`GET /orcamentos/compartilhado/:token`)
+  DEVE adicionar unicidade + índice de lookup do share_token (migration) e passar por revisão secops
+  (superfície não-autenticada; §2.8; sem vazar tenant/dados internos).
+- status: aberto (não-bloqueante; guarda para a fatia do consumo público).

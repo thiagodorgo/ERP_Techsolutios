@@ -64,6 +64,17 @@ export class PrismaServiceQuoteRepository implements ServiceQuoteRepository {
     return quote ? mapServiceQuoteRecord(quote) : undefined;
   }
 
+  // CAS no banco: UPDATE ... WHERE status='draft' AND created_work_order_id IS NULL. A cláusula WHERE é
+  // a guarda atômica — sob concorrência estrita só UMA transação afeta a linha; as demais recebem 0 e
+  // retornam undefined (→ 409, sem criar OS). Fecha a janela TOCTOU do approve (condição critico J-Ω3F-4B).
+  async claimForApproval(tenantId: string, serviceQuoteId: string): Promise<ServiceQuote | undefined> {
+    const rows = await this.client.serviceQuote.updateManyAndReturn({
+      where: { tenant_id: tenantId, id: serviceQuoteId, status: "draft", created_work_order_id: null },
+      data: { status: "approved", updated_at: new Date() },
+    });
+    return rows[0] ? mapServiceQuoteRecord(rows[0]) : undefined;
+  }
+
   async update(input: UpdateServiceQuoteInput): Promise<ServiceQuote | undefined> {
     try {
       const updated = await this.client.serviceQuote.updateManyAndReturn({
@@ -106,6 +117,10 @@ export class RlsPrismaServiceQuoteRepository implements ServiceQuoteRepository {
 
   update(input: UpdateServiceQuoteInput): Promise<ServiceQuote | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaServiceQuoteRepository(tx).update(input));
+  }
+
+  claimForApproval(tenantId: string, serviceQuoteId: string): Promise<ServiceQuote | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaServiceQuoteRepository(tx).claimForApproval(tenantId, serviceQuoteId));
   }
 }
 

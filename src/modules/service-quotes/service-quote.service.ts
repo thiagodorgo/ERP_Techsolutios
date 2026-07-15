@@ -253,36 +253,68 @@ export class ServiceQuoteService {
       throw new ServiceQuoteError(422, "SERVICE_QUOTE_UNPROCESSABLE", "quote_empty", "This quote has no billable total to approve.");
     }
 
-    const activationMode = optionalString(body.activation_mode ?? body.activationMode);
+    // CAS reserve-before-create (condição critico J-Ω3F-4B): reserva o orçamento (draft→approved) de
+    // forma ATÔMICA ANTES de criar a OS. As checagens acima são fast-fail de UX; a guarda REAL contra
+    // duplo-faturamento sob concorrência é esta. O perdedor recebe undefined → 409 e NÃO cria OS.
+    const reserved = await this.repository.claimForApproval(actor.tenantId, quote.id);
+    if (!reserved) {
+      throw new ServiceQuoteError(
+        409,
+        "SERVICE_QUOTE_CONFLICT",
+        "quote_already_approved",
+        "This quote has already been approved and generated a work order.",
+      );
+    }
+
+    const activationMode = optionalString(body.activation_mode ?? body.activationMode)?.slice(0, 120);
     const title = optionalString(body.title) ?? `OS do orçamento ${quote.number ?? quote.id}`;
 
-    // DYNAMIC import — evita o ciclo (work-orders JÁ importa este módulo estaticamente para o resolver
-    // de tarifa). NÃO adicionar import estático de work-orders no topo. Ver item 5 / D-Ω3F-4B.
-    const { createDefaultWorkOrderService } = await import("../work-orders/work-order.service.js");
-    const workOrders = await createDefaultWorkOrderService();
-    const workOrder = await workOrders.create(
-      actor,
-      {
-        title,
-        customer_id: quote.customerId,
-        service_catalog_id: quote.serviceCatalogId,
-        destinationAddress: body.destinationAddress,
-        destinationCity: body.destinationCity,
-        destinationState: body.destinationState,
-        destinationZipCode: body.destinationZipCode,
-        destinationLatitude: body.destinationLatitude,
-        destinationLongitude: body.destinationLongitude,
-        service_details: { ...(activationMode ? { activation_mode: activationMode } : {}) },
-        priority: optionalString(body.priority) ?? "medium",
-      },
-      { skipApplicableTariffCheck: true },
-    );
+    let workOrder: { readonly id: string };
+    try {
+      // DYNAMIC import — evita o ciclo (work-orders JÁ importa este módulo estaticamente para o resolver
+      // de tarifa). NÃO adicionar import estático de work-orders no topo. Ver item 5 / D-Ω3F-4B.
+      const { createDefaultWorkOrderService } = await import("../work-orders/work-order.service.js");
+      const workOrders = await createDefaultWorkOrderService();
+      workOrder = await workOrders.create(
+        actor,
+        {
+          title,
+          customer_id: quote.customerId,
+          service_catalog_id: quote.serviceCatalogId,
+          // Origem (ponto de coleta) — encaminhada junto do destino (condição fid-avaliador J-Ω3F-4B).
+          serviceAddress: body.serviceAddress,
+          serviceCity: body.serviceCity,
+          serviceState: body.serviceState,
+          serviceZipCode: body.serviceZipCode,
+          serviceLatitude: body.serviceLatitude,
+          serviceLongitude: body.serviceLongitude,
+          destinationAddress: body.destinationAddress,
+          destinationCity: body.destinationCity,
+          destinationState: body.destinationState,
+          destinationZipCode: body.destinationZipCode,
+          destinationLatitude: body.destinationLatitude,
+          destinationLongitude: body.destinationLongitude,
+          service_details: { ...(activationMode ? { activation_mode: activationMode } : {}) },
+          priority: optionalString(body.priority) ?? "medium",
+        },
+        { skipApplicableTariffCheck: true },
+      );
+    } catch (error) {
+      // Compensação: a OS falhou após a reserva → devolve o orçamento a draft para permitir nova tentativa
+      // (senão ficaria approved sem OS, irrecuperável pela máquina de estado).
+      await this.repository.update({
+        tenantId: actor.tenantId,
+        serviceQuoteId: quote.id,
+        status: "draft",
+        updatedBy: actor.userId,
+      });
+      throw error;
+    }
 
     const updated = await this.repository.update({
       tenantId: actor.tenantId,
       serviceQuoteId: quote.id,
       createdWorkOrderId: workOrder.id,
-      status: "approved",
       updatedBy: actor.userId,
     });
     if (!updated) {

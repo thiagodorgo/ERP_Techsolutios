@@ -107,6 +107,47 @@ test("approve de orçamento draft (tarifa) → cria OS, createdWorkOrderId preen
   assert.equal(wo.serviceCatalogId, serviceCatalogId);
 });
 
+test("CONCORRÊNCIA (condição critico J-Ω3F-4B): dois approve simultâneos → 1 OS + 1×409 (sem OS órfã)", async () => {
+  const svc = setup();
+  const ctx = actor();
+  const serviceCatalogId = await seedServiceCatalog(ctx);
+  await seedTariff(ctx.tenantId, serviceCatalogId, 150);
+  const quote = await svc.create(ctx, { service_catalog_id: serviceCatalogId, quantity: 1 });
+
+  // Duplo-clique/retry: dois approve concorrentes do MESMO orçamento.
+  const results = await Promise.allSettled([svc.approve(ctx, quote.id, {}), svc.approve(ctx, quote.id, {})]);
+  const fulfilled = results.filter((r) => r.status === "fulfilled");
+  const rejected = results.filter((r) => r.status === "rejected");
+  // Exatamente um vencedor (1 OS) e um 409 — nunca 2 OSs.
+  assert.equal(fulfilled.length, 1);
+  assert.equal(rejected.length, 1);
+  const err = (rejected[0] as PromiseRejectedResult).reason;
+  assert.ok(err instanceof ServiceQuoteError && err.statusCode === 409 && err.reason === "quote_already_approved");
+
+  // Só UMA OS nasceu no tenant (o perdedor NÃO criou OS órfã).
+  const wos = await createMemoryWorkOrderService().list(ctx, {});
+  assert.equal(wos.items.length, 1);
+});
+
+test("approve encaminha a ORIGEM do corpo à OS (condição fid-avaliador J-Ω3F-4B)", async () => {
+  const svc = setup();
+  const ctx = actor();
+  const serviceCatalogId = await seedServiceCatalog(ctx);
+  await seedTariff(ctx.tenantId, serviceCatalogId, 150);
+  const quote = await svc.create(ctx, { service_catalog_id: serviceCatalogId, quantity: 1 });
+
+  const { workOrderId } = await svc.approve(ctx, quote.id, {
+    serviceAddress: "Rua da Coleta, 10",
+    serviceCity: "Curitiba",
+    destinationAddress: "Oficina Central, 200",
+    activation_mode: "guincho",
+  });
+  const wo = await createMemoryWorkOrderService().get(ctx, workOrderId);
+  assert.equal(wo.serviceAddress, "Rua da Coleta, 10");
+  assert.equal(wo.serviceCity, "Curitiba");
+  assert.equal(wo.destinationAddress, "Oficina Central, 200");
+});
+
 test("approve de orçamento MANUAL (sem tarifa, cliente+serviço) → SUCESSO (prova skipApplicableTariffCheck)", async () => {
   const svc = setup();
   const ctx = actor();
