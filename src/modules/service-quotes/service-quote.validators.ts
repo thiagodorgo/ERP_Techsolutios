@@ -1,4 +1,5 @@
-import { MONEY_MAX, ServiceQuoteError } from "./service-quote.types.js";
+import { createFinancialItemParsers, roundMoney } from "../tariffs/financial-item.shape.js";
+import { ServiceQuoteError } from "./service-quote.types.js";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -7,64 +8,25 @@ export function optionalString(value: unknown): string | undefined {
   return normalized || undefined;
 }
 
-// A1 (crítico) — arredondamento monetário meio-para-cima em 2 casas, aplicado a AMBOS os seams
-// (cópia da Tarifa e preço manual) no momento do congelamento. A Tarifa InMemory não arredonda
-// (`tariff.validators.parseUnitPrice`) enquanto a Prisma já entrega Decimal(12,2); sem este helper
-// no ponto de congelamento, InMemory (10.999) e Prisma (11.00) divergiriam.
-export function roundMoney(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
+// C3 (Ω3F-3a, junta J-Ω3F-0) — os helpers monetários (roundMoney/assertMoneyInRange/parseUnitPrice/
+// parseQuantity/parsePriceSource/parseCurrency) agora vivem no shape COMPARTILHADO
+// src/modules/tariffs/financial-item.shape.ts (A1/A3/A4 documentados lá), parametrizados pela
+// error-factory deste módulo. Contrato INALTERADO: mesmos reasons/mensagens/status de antes —
+// a suíte tests/service-quotes.test.ts prova a paridade.
+const moneyParsers = createFinancialItemParsers(
+  {
+    invalid: (reason, message) => new ServiceQuoteError(400, "SERVICE_QUOTE_INVALID", reason, message),
+    unprocessable: (reason, message) => new ServiceQuoteError(422, "SERVICE_QUOTE_UNPROCESSABLE", reason, message),
+  },
+  { overflowReason: "quote_total_overflow" },
+);
 
-// A3 (crítico) — garante que o valor cabe em Decimal(12,2); acima do teto seria 500 (numeric overflow
-// no Postgres). Rejeita como erro de negócio (422) antes de tocar o banco.
-export function assertMoneyInRange(value: number, field: string): number {
-  if (!Number.isFinite(value) || value < 0) {
-    throw new ServiceQuoteError(400, "SERVICE_QUOTE_INVALID", `invalid_${field}`, `${field} must be a number greater than or equal to zero.`);
-  }
-  if (value > MONEY_MAX) {
-    throw new ServiceQuoteError(422, "SERVICE_QUOTE_UNPROCESSABLE", "quote_total_overflow", `${field} exceeds the maximum monetary value (${MONEY_MAX}).`);
-  }
-  return value;
-}
-
-export function parseUnitPrice(value: unknown): number {
-  if (value === undefined || value === null || value === "") {
-    throw new ServiceQuoteError(400, "SERVICE_QUOTE_INVALID", "required_unit_price", "unitPrice is required for a manual price source.");
-  }
-  const parsed = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new ServiceQuoteError(400, "SERVICE_QUOTE_INVALID", "invalid_unit_price", "unitPrice must be a number greater than or equal to zero.");
-  }
-  return parsed;
-}
-
-// A4 (crítico) — quantidade estritamente positiva (rejeita 0 e negativo). Default 1 quando ausente.
-export function parseQuantity(value: unknown): number {
-  if (value === undefined || value === null || value === "") return 1;
-  const parsed = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new ServiceQuoteError(400, "SERVICE_QUOTE_INVALID", "invalid_quantity", "quantity must be a number greater than zero.");
-  }
-  return roundMoney(parsed);
-}
-
-export function parsePriceSource(value: unknown): "tariff" | "manual" {
-  const normalized = optionalString(value);
-  if (normalized === undefined) return "tariff";
-  if (normalized !== "tariff" && normalized !== "manual") {
-    throw new ServiceQuoteError(400, "SERVICE_QUOTE_INVALID", "invalid_price_source", "priceSource must be 'tariff' or 'manual'.");
-  }
-  return normalized;
-}
-
-export function parseCurrency(value: unknown): string {
-  const normalized = optionalString(value);
-  if (normalized === undefined) return "BRL";
-  if (!/^[A-Za-z]{3}$/.test(normalized)) {
-    throw new ServiceQuoteError(400, "SERVICE_QUOTE_INVALID", "invalid_currency", "currency must be a 3-letter ISO code.");
-  }
-  return normalized.toUpperCase();
-}
+export { roundMoney };
+export const assertMoneyInRange = moneyParsers.assertMoneyInRange;
+export const parseUnitPrice = moneyParsers.parseUnitPrice;
+export const parseQuantity = moneyParsers.parseQuantity;
+export const parsePriceSource = moneyParsers.parsePriceSource;
+export const parseCurrency = moneyParsers.parseCurrency;
 
 export function parseOptionalNotes(value: unknown): string | undefined {
   const normalized = optionalString(value);

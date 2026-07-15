@@ -203,17 +203,41 @@ async function resolvePublishedPriceTableIds(repo: PriceTableRepository, tenantI
   return new Set(result.items.map((table) => table.id));
 }
 
+// Ω3F-3a (C3) — factories do resolver EXPORTADAS: o módulo work-order-financials congela preço pela
+// MESMA máquina de resolução de Tarifa aplicável do orçamento (tabela PUBLICADA + vigência +
+// cliente). Extraídas da composição inline anterior SEM mudar comportamento.
+export function createMemoryApplicableTariffResolver(): ApplicableTariffResolver {
+  const tariffRepository = getMemoryTariffRepositoryForTests();
+  const priceTableRepository = getMemoryPriceTableRepositoryForTests();
+  return async (tenantId, serviceCatalogId, customerId) => {
+    const publishedIds = await resolvePublishedPriceTableIds(priceTableRepository, tenantId);
+    return tariffRepository.findApplicable(tenantId, serviceCatalogId, customerId, publishedIds);
+  };
+}
+
+export async function createPrismaApplicableTariffResolver(): Promise<ApplicableTariffResolver> {
+  const { createPrismaTariffRepository } = await import("../tariffs/tariff-prisma.repository.js");
+  const { createPrismaPriceTableRepository } = await import("../price-tables/price-table-prisma.repository.js");
+  const tariffRepository = await createPrismaTariffRepository();
+  const priceTableRepository = await createPrismaPriceTableRepository();
+  return async (tenantId, serviceCatalogId, customerId) => {
+    const publishedIds = await resolvePublishedPriceTableIds(priceTableRepository, tenantId);
+    return tariffRepository.findApplicable(tenantId, serviceCatalogId, customerId, publishedIds);
+  };
+}
+
+export async function createApplicableTariffResolver(): Promise<ApplicableTariffResolver> {
+  if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
+    return createMemoryApplicableTariffResolver();
+  }
+  return createPrismaApplicableTariffResolver();
+}
+
 const memoryRepository = new InMemoryServiceQuoteRepository();
 let defaultServicePromise: Promise<ServiceQuoteService> | undefined;
 
 export function createMemoryServiceQuoteService(): ServiceQuoteService {
-  const tariffRepository = getMemoryTariffRepositoryForTests();
-  const priceTableRepository = getMemoryPriceTableRepositoryForTests();
-  const resolver: ApplicableTariffResolver = async (tenantId, serviceCatalogId, customerId) => {
-    const publishedIds = await resolvePublishedPriceTableIds(priceTableRepository, tenantId);
-    return tariffRepository.findApplicable(tenantId, serviceCatalogId, customerId, publishedIds);
-  };
-  return new ServiceQuoteService(memoryRepository, resolver);
+  return new ServiceQuoteService(memoryRepository, createMemoryApplicableTariffResolver());
 }
 
 export function getMemoryServiceQuoteRepositoryForTests(): InMemoryServiceQuoteRepository {
@@ -235,14 +259,6 @@ export function resetServiceQuoteRuntimeForTests(): void {
 
 async function createPrismaServiceQuoteService(): Promise<ServiceQuoteService> {
   const { createPrismaServiceQuoteRepository } = await import("./service-quote-prisma.repository.js");
-  const { createPrismaTariffRepository } = await import("../tariffs/tariff-prisma.repository.js");
-  const { createPrismaPriceTableRepository } = await import("../price-tables/price-table-prisma.repository.js");
   const repository = await createPrismaServiceQuoteRepository();
-  const tariffRepository = await createPrismaTariffRepository();
-  const priceTableRepository = await createPrismaPriceTableRepository();
-  const resolver: ApplicableTariffResolver = async (tenantId, serviceCatalogId, customerId) => {
-    const publishedIds = await resolvePublishedPriceTableIds(priceTableRepository, tenantId);
-    return tariffRepository.findApplicable(tenantId, serviceCatalogId, customerId, publishedIds);
-  };
-  return new ServiceQuoteService(repository, resolver);
+  return new ServiceQuoteService(repository, await createPrismaApplicableTariffResolver());
 }

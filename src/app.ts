@@ -37,6 +37,7 @@ import { createServiceCatalogRouter } from "./modules/service-catalog/index.js";
 import { createPriceTableRouter } from "./modules/price-tables/index.js";
 import { createTariffRouter } from "./modules/tariffs/index.js";
 import { createServiceQuoteRouter } from "./modules/service-quotes/index.js";
+import { createWorkOrderFinancialRouter } from "./modules/work-order-financials/index.js";
 import { createBranchRouter } from "./modules/branches/index.js";
 import { createSupplierRouter } from "./modules/suppliers/index.js";
 import { createTagRouter } from "./modules/tags/index.js";
@@ -94,6 +95,9 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createPriceTableRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTariffRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createServiceQuoteRouter());
+  // Ω3F-3a — Financeiro da OS (/work-orders/:id/financial-items) em router próprio: o path não
+  // colide com nenhuma rota do work-orders router (que segue intocado neste bloco).
+  app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderFinancialRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createBranchRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createSupplierRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTagRouter());
