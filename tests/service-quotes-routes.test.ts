@@ -245,6 +245,108 @@ test("[isolamento] POST forjando tenant_id no corpo é ignorado; registro perten
   });
 });
 
+// ---------- Ω3F-4b: approve → cria OS + share ----------
+
+test("POST /:id/approve (manager) cria OS: 200 com workOrderId+createdWorkOrderId e status approved; replay → 409", async () => {
+  await withQuoteApi(async ({ baseUrl, seed, seedServiceCatalog }) => {
+    const serviceCatalogId = await seedServiceCatalog(seed.tenantA.id);
+    const created = await requestJson(baseUrl, "/api/v1/service-quotes", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { service_catalog_id: serviceCatalogId, price_source: "manual", unit_price: 120 },
+    });
+    assert.equal(created.status, 201);
+
+    const approved = await requestJson(baseUrl, `/api/v1/service-quotes/${created.body.data.id}/approve`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { activation_mode: "aplicativo" },
+    });
+    assert.equal(approved.status, 200);
+    assert.equal(approved.body.data.status, "approved");
+    assert.ok(approved.body.data.workOrderId);
+    assert.equal(approved.body.data.createdWorkOrderId, approved.body.data.workOrderId);
+
+    const replay = await requestJson(baseUrl, `/api/v1/service-quotes/${created.body.data.id}/approve`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: {},
+    });
+    assert.equal(replay.status, 409);
+    assert.equal(replay.body.error.reason, "quote_already_approved");
+  });
+});
+
+test("[RBAC] POST /:id/approve sem service_quotes:approve (viewer) → 403; sem headers → 403", async () => {
+  await withQuoteApi(async ({ baseUrl, seed }) => {
+    const created = await requestJson(baseUrl, "/api/v1/service-quotes", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { service_catalog_id: randomUUID(), price_source: "manual", unit_price: 10 },
+    });
+    const asViewer = await requestJson(baseUrl, `/api/v1/service-quotes/${created.body.data.id}/approve`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.viewerA, "viewer"),
+      body: {},
+    });
+    const anon = await requestJson(baseUrl, `/api/v1/service-quotes/${created.body.data.id}/approve`, {
+      method: "POST",
+      body: {},
+    });
+    assert.equal(asViewer.status, 403);
+    assert.equal(anon.status, 403);
+  });
+});
+
+test("POST /:id/share (manager) devolve shareToken+sharePath; token NÃO aparece no GET /:id", async () => {
+  await withQuoteApi(async ({ baseUrl, seed }) => {
+    const created = await requestJson(baseUrl, "/api/v1/service-quotes", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { service_catalog_id: randomUUID(), price_source: "manual", unit_price: 10 },
+    });
+    const shared = await requestJson(baseUrl, `/api/v1/service-quotes/${created.body.data.id}/share`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: {},
+    });
+    assert.equal(shared.status, 200);
+    assert.ok(shared.body.data.shareToken);
+    assert.equal(shared.body.data.sharePath, `/orcamentos/compartilhado/${shared.body.data.shareToken}`);
+
+    // 2ª chamada reusa o mesmo token (idempotente).
+    const again = await requestJson(baseUrl, `/api/v1/service-quotes/${created.body.data.id}/share`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: {},
+    });
+    assert.equal(again.body.data.shareToken, shared.body.data.shareToken);
+
+    // §2.8 — o token nunca vaza no DTO normal.
+    const got = await requestJson(baseUrl, `/api/v1/service-quotes/${created.body.data.id}`, {
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    assert.equal(got.body.data.shareToken, undefined);
+    assert.equal(JSON.stringify(got.body).includes(shared.body.data.shareToken), false);
+  });
+});
+
+test("[RBAC] POST /:id/share sem service_quotes:update (viewer) → 403", async () => {
+  await withQuoteApi(async ({ baseUrl, seed }) => {
+    const created = await requestJson(baseUrl, "/api/v1/service-quotes", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { service_catalog_id: randomUUID(), price_source: "manual", unit_price: 10 },
+    });
+    const asViewer = await requestJson(baseUrl, `/api/v1/service-quotes/${created.body.data.id}/share`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.viewerA, "viewer"),
+      body: {},
+    });
+    assert.equal(asViewer.status, 403);
+  });
+});
+
 // ---------- harness ----------
 
 type SeedData = {
@@ -261,10 +363,13 @@ type SeedTariffFn = (
   opts: { readonly serviceCatalogId: string; readonly customerId?: string; readonly unitPrice: number; readonly currency?: string },
 ) => Promise<void>;
 
+type SeedServiceCatalogFn = (tenantId: string) => Promise<string>;
+
 type QuoteApiContext = {
   readonly baseUrl: string;
   readonly seed: SeedData;
   readonly seedTariff: SeedTariffFn;
+  readonly seedServiceCatalog: SeedServiceCatalogFn;
 };
 
 async function withQuoteApi(callback: (context: QuoteApiContext) => Promise<void>): Promise<void> {
@@ -276,6 +381,8 @@ async function withQuoteApi(callback: (context: QuoteApiContext) => Promise<void
     { resetServiceQuoteRuntimeForTests },
     { getMemoryTariffRepositoryForTests, resetTariffRuntimeForTests },
     { getMemoryPriceTableRepositoryForTests, resetPriceTableRuntimeForTests },
+    { createMemoryServiceCatalogService, resetServiceCatalogRuntimeForTests },
+    { resetWorkOrderRuntimeForTests },
     { CoreSaasRegistry },
     { MemoryCoreSaasAdapter },
     { InMemoryCoreSaasStore },
@@ -284,6 +391,8 @@ async function withQuoteApi(callback: (context: QuoteApiContext) => Promise<void
     import("../src/modules/service-quotes/index.js"),
     import("../src/modules/tariffs/tariff.service.js"),
     import("../src/modules/price-tables/price-table.service.js"),
+    import("../src/modules/service-catalog/index.js"),
+    import("../src/modules/work-orders/index.js"),
     import("../src/modules/core-saas/services/core-saas.service.js"),
     import("../src/modules/core-saas/services/memory-core-saas.adapter.js"),
     import("../src/modules/core-saas/store/core-saas.store.js"),
@@ -292,6 +401,14 @@ async function withQuoteApi(callback: (context: QuoteApiContext) => Promise<void
   resetPriceTableRuntimeForTests();
   resetTariffRuntimeForTests();
   resetServiceQuoteRuntimeForTests();
+  resetServiceCatalogRuntimeForTests();
+  resetWorkOrderRuntimeForTests();
+
+  const seedServiceCatalog: SeedServiceCatalogFn = async (tenantId) => {
+    const catalogActor = { tenantId, userId: randomUUID(), roles: ["manager"], permissions: [] } as never;
+    const created = await createMemoryServiceCatalogService().create(catalogActor, { name: `Serviço ${randomUUID()}` });
+    return created.id;
+  };
 
   const seedTariff: SeedTariffFn = async (tenantId, opts) => {
     const table = await getMemoryPriceTableRepositoryForTests().create({
@@ -320,12 +437,14 @@ async function withQuoteApi(callback: (context: QuoteApiContext) => Promise<void
   const baseUrl = await getBaseUrl(server);
 
   try {
-    await callback({ baseUrl, seed, seedTariff });
+    await callback({ baseUrl, seed, seedTariff, seedServiceCatalog });
   } finally {
     await closeServer(server);
     resetPriceTableRuntimeForTests();
     resetTariffRuntimeForTests();
     resetServiceQuoteRuntimeForTests();
+    resetServiceCatalogRuntimeForTests();
+    resetWorkOrderRuntimeForTests();
   }
 }
 

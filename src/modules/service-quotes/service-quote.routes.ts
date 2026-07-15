@@ -17,6 +17,7 @@ export const SERVICE_QUOTE_PERMISSIONS = {
   read: "service_quotes:read",
   create: "service_quotes:create",
   update: "service_quotes:update",
+  approve: "service_quotes:approve",
 } as const;
 
 export function createServiceQuoteRouter(
@@ -65,6 +66,24 @@ export function createServiceQuoteRouter(
     requirePermission(SERVICE_QUOTE_PERMISSIONS.update),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.updateStatus(request));
+    }),
+  );
+
+  // Ω3F-4b — aprovar→cria OS (idempotente); permissão dedicada service_quotes:approve.
+  router.post(
+    "/service-quotes/:serviceQuoteId/approve",
+    requirePermission(SERVICE_QUOTE_PERMISSIONS.approve),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.approve(request));
+    }),
+  );
+
+  // Ω3F-4b — compartilhar (gera/reusa token); reusa service_quotes:update (quem edita compartilha).
+  router.post(
+    "/service-quotes/:serviceQuoteId/share",
+    requirePermission(SERVICE_QUOTE_PERMISSIONS.update),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.share(request));
     }),
   );
 

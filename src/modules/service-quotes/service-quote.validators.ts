@@ -37,6 +37,26 @@ export function parseOptionalNotes(value: unknown): string | undefined {
   return normalized;
 }
 
+// Ω3F-4a — número/identificador do cabeçalho do orçamento (editável em draft). String curta.
+export function parseOptionalQuoteNumber(value: unknown): string | undefined {
+  const normalized = optionalString(value);
+  if (normalized === undefined) return undefined;
+  if (normalized.length > 60) {
+    throw new ServiceQuoteError(400, "SERVICE_QUOTE_INVALID", "invalid_number", "number must be at most 60 characters.");
+  }
+  return normalized;
+}
+
+// Ω3F-4a/4b — data opcional do cabeçalho (issued_at/valid_until). Aceita Date ou ISO string.
+export function parseOptionalDate(value: unknown, field: string): Date | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const date = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(date.getTime())) {
+    throw new ServiceQuoteError(400, "SERVICE_QUOTE_INVALID", "invalid_date", `${field} must be a valid date.`);
+  }
+  return date;
+}
+
 export function parseStatus(value: unknown): string {
   const normalized = optionalString(value);
   if (normalized === undefined) {

@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { env } from "../../config/env.js";
 import { getMemoryPriceTableRepositoryForTests } from "../price-tables/price-table.service.js";
 import type { PriceTableRepository } from "../price-tables/price-table.repository.js";
@@ -16,10 +18,13 @@ import type {
 import { SERVICE_QUOTE_STATUS_TRANSITIONS, ServiceQuoteError } from "./service-quote.types.js";
 import {
   assertMoneyInRange,
+  optionalString,
   parseCurrency,
   parseLimit,
   parseOffset,
+  parseOptionalDate,
   parseOptionalNotes,
+  parseOptionalQuoteNumber,
   parseOptionalSearch,
   parseOptionalStatusFilter,
   parseOptionalUuid,
@@ -71,6 +76,10 @@ export class ServiceQuoteService {
     const quantity = assertMoneyInRange(parseQuantity(body.quantity), "quantity");
     const notes = parseOptionalNotes(body.notes);
     const priceSource = parsePriceSource(body.price_source ?? body.priceSource);
+    // Ω3F-4a — cabeçalho opcional editável no create (number/issued_at/valid_until).
+    const number = parseOptionalQuoteNumber(body.number);
+    const issuedAt = parseOptionalDate(body.issued_at ?? body.issuedAt, "issuedAt");
+    const validUntil = parseOptionalDate(body.valid_until ?? body.validUntil, "validUntil");
 
     // A5 (crítico) — o snapshot vem de UMA única leitura da fonte; nada é relido depois. Todos os
     // `frozen_*` derivam desta resolução atômica.
@@ -119,6 +128,9 @@ export class ServiceQuoteService {
       priceSource,
       status: "draft",
       notes,
+      number,
+      issuedAt,
+      validUntil,
       createdBy: actor.userId,
       updatedBy: actor.userId,
     });
@@ -152,6 +164,14 @@ export class ServiceQuoteService {
       frozenTotal = assertMoneyInRange(roundMoney(current.frozenUnitPrice * quantity), "frozenTotal");
     }
     const notes = body.notes === undefined ? undefined : parseOptionalNotes(body.notes);
+    // Ω3F-4a — cabeçalho editável enquanto draft. `in`-check para permitir edição por-campo.
+    const number = body.number === undefined ? undefined : parseOptionalQuoteNumber(body.number);
+    const issuedAt =
+      "issued_at" in body || "issuedAt" in body ? parseOptionalDate(body.issued_at ?? body.issuedAt, "issuedAt") : undefined;
+    const validUntil =
+      "valid_until" in body || "validUntil" in body
+        ? parseOptionalDate(body.valid_until ?? body.validUntil, "validUntil")
+        : undefined;
 
     const updated = await this.repository.update({
       tenantId: actor.tenantId,
@@ -159,6 +179,9 @@ export class ServiceQuoteService {
       quantity,
       frozenTotal,
       notes,
+      number,
+      issuedAt,
+      validUntil,
       updatedBy: actor.userId,
     });
     if (!updated) {
@@ -193,6 +216,107 @@ export class ServiceQuoteService {
       throw new ServiceQuoteError(404, "SERVICE_QUOTE_NOT_FOUND", "not_found", "Service quote was not found.");
     }
     return updated;
+  }
+
+  // Ω3F-4b (D-Ω3F-4B) — aprovar orçamento → cria OS. Operação composta IDEMPOTENTE ancorada em
+  // `created_work_order_id` (um orçamento gera no MÁX. uma OS). Passa customer+serviço ao
+  // WorkOrderService.create com skipApplicableTariffCheck=true (a OS derivada já é precificada pelo
+  // preço CONGELADO — anti-refaturamento). O `activation_mode` (GAP 2) mora em service_details da OS.
+  async approve(
+    actor: ServiceQuoteActorContext,
+    serviceQuoteId: string,
+    body: RawRecord,
+  ): Promise<{ readonly quote: ServiceQuote; readonly workOrderId: string }> {
+    const quote = await this.get(actor, serviceQuoteId);
+
+    // Replay: um orçamento já aprovado (com OS gerada) não gera outra OS.
+    if (quote.createdWorkOrderId) {
+      throw new ServiceQuoteError(
+        409,
+        "SERVICE_QUOTE_CONFLICT",
+        "quote_already_approved",
+        "This quote has already been approved and generated a work order.",
+      );
+    }
+    if (quote.status !== "draft") {
+      throw new ServiceQuoteError(
+        409,
+        "SERVICE_QUOTE_CONFLICT",
+        "quote_not_approvable",
+        `A ${quote.status} quote cannot be approved.`,
+      );
+    }
+    if (quote.validUntil && quote.validUntil.getTime() < Date.now()) {
+      throw new ServiceQuoteError(422, "SERVICE_QUOTE_UNPROCESSABLE", "quote_expired", "This quote is past its valid_until date.");
+    }
+    if (quote.frozenTotal <= 0) {
+      throw new ServiceQuoteError(422, "SERVICE_QUOTE_UNPROCESSABLE", "quote_empty", "This quote has no billable total to approve.");
+    }
+
+    const activationMode = optionalString(body.activation_mode ?? body.activationMode);
+    const title = optionalString(body.title) ?? `OS do orçamento ${quote.number ?? quote.id}`;
+
+    // DYNAMIC import — evita o ciclo (work-orders JÁ importa este módulo estaticamente para o resolver
+    // de tarifa). NÃO adicionar import estático de work-orders no topo. Ver item 5 / D-Ω3F-4B.
+    const { createDefaultWorkOrderService } = await import("../work-orders/work-order.service.js");
+    const workOrders = await createDefaultWorkOrderService();
+    const workOrder = await workOrders.create(
+      actor,
+      {
+        title,
+        customer_id: quote.customerId,
+        service_catalog_id: quote.serviceCatalogId,
+        destinationAddress: body.destinationAddress,
+        destinationCity: body.destinationCity,
+        destinationState: body.destinationState,
+        destinationZipCode: body.destinationZipCode,
+        destinationLatitude: body.destinationLatitude,
+        destinationLongitude: body.destinationLongitude,
+        service_details: { ...(activationMode ? { activation_mode: activationMode } : {}) },
+        priority: optionalString(body.priority) ?? "medium",
+      },
+      { skipApplicableTariffCheck: true },
+    );
+
+    const updated = await this.repository.update({
+      tenantId: actor.tenantId,
+      serviceQuoteId: quote.id,
+      createdWorkOrderId: workOrder.id,
+      status: "approved",
+      updatedBy: actor.userId,
+    });
+    if (!updated) {
+      throw new ServiceQuoteError(404, "SERVICE_QUOTE_NOT_FOUND", "not_found", "Service quote was not found.");
+    }
+    return { quote: updated, workOrderId: workOrder.id };
+  }
+
+  // Ω3F-4b (D-Ω3F-4B-SHARE) — gera (ou reusa, idempotente) o token de compartilhamento e devolve o link
+  // ao dono AUTENTICADO. O token NUNCA entra em auditoria nem no DTO normal (§2.8). Orçamento anulado
+  // não é compartilhável. Endpoint público de leitura-por-token fica ADIADO (fatia secops).
+  async share(
+    actor: ServiceQuoteActorContext,
+    serviceQuoteId: string,
+  ): Promise<{ readonly shareToken: string; readonly sharePath: string }> {
+    const quote = await this.get(actor, serviceQuoteId);
+    if (quote.status === "void") {
+      throw new ServiceQuoteError(422, "SERVICE_QUOTE_UNPROCESSABLE", "quote_not_shareable", "A void quote cannot be shared.");
+    }
+
+    let shareToken = quote.shareToken;
+    if (!shareToken) {
+      shareToken = randomUUID();
+      const updated = await this.repository.update({
+        tenantId: actor.tenantId,
+        serviceQuoteId: quote.id,
+        shareToken,
+        updatedBy: actor.userId,
+      });
+      if (!updated) {
+        throw new ServiceQuoteError(404, "SERVICE_QUOTE_NOT_FOUND", "not_found", "Service quote was not found.");
+      }
+    }
+    return { shareToken, sharePath: `/orcamentos/compartilhado/${shareToken}` };
   }
 }
 

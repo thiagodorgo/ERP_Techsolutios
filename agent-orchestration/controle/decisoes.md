@@ -480,3 +480,26 @@ rodada ratificada UNÂNIME 5/5 na junta J-Ω3F-0 (`lista-execucao-omega3f.md` §
 toca arquivos KPI; KPIs vão só no relatório final") — exceção de rodada à D-KPI-PER-PR, registrada aqui
 para rastreabilidade (aplicada em #184, #185 e seguintes). O rail permanece: contagens de teste reais em
 toda ata/PR-body; nenhum KPI fabricado.
+
+## D-Ω3F-4B — Aprovar orçamento → cria OS + compartilhar (2026-07-15)
+
+Decisões de arquitetura do bloco Ω3F-4b (backend approve+share), tomadas pelo orquestrador e levadas à junta:
+
+- **D-Ω3F-4B-APPROVE-SKIP-TARIFF (tensão com a validação #4 do Ω3F-3b):** o `approve→cria OS` passa
+  `customer_id` + `service_catalog_id` ao `WorkOrderService.create`, MAS com opção INTERNA
+  `skipApplicableTariffCheck: true`. Motivo: a validação #4 existe para garantir que uma OS NOVA seja
+  precificável por tarifa vigente; uma OS derivada de orçamento já é precificada pelo orçamento
+  (preço CONGELADO — anti-refaturamento). Re-exigir tarifa viva no approve contradiria o congelamento e
+  bloquearia orçamentos MANUAIS (sem tarifa) ou de tarifa arquivada depois. A opção é interna (composta no
+  código, NUNCA aceita no corpo REST).
+- **D-Ω3F-4B-IDEMPOTENCY:** idempotência ancorada em `service_quotes.created_work_order_id` (um orçamento
+  gera no MÁX. uma OS). `approve` com `created_work_order_id` já preenchido → **409 quote_already_approved**
+  (replay). Orçamento não-`draft` → **409 quote_not_approvable**. `valid_until` < agora → **422 quote_expired**.
+  `frozen_total` ≤ 0 → **422 quote_empty**. Cross-tenant → **404**. (Não usa client_action_id: o próprio
+  orçamento é a chave de idempotência.)
+- **D-Ω3F-4B-ACTIVATION-MODE (GAP 2 — "modo de acionamento" não existe no WorkOrder):** gravado em
+  `WorkOrder.service_details` (JSON já existente) como `activation_mode`, SEM nova coluna/migration.
+- **D-Ω3F-4B-SHARE:** `share` gera `share_token` (crypto aleatório), carimba no orçamento e retorna o link ao
+  dono AUTENTICADO. O token NUNCA entra em metadado de auditoria (§2.8) nem no DTO normal do orçamento (só o
+  endpoint /share o devolve). O endpoint público de leitura-por-token fica ADIADO (superfície não-autenticada
+  → precisa de fatia com revisão secops) — o -4b só gera+devolve o link ao dono.

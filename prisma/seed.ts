@@ -124,6 +124,7 @@ const permissionDescriptions = {
   "service_quotes:read": "Consultar Orcamentos (precos congelados) do tenant.",
   "service_quotes:create": "Criar Orcamentos congelando o preco da Tarifa vigente.",
   "service_quotes:update": "Editar (quantidade/notas em rascunho) e mudar situacao de Orcamentos.",
+  "service_quotes:approve": "Aprovar Orcamento gerando a OS (idempotente) e compartilhar o link do Orcamento.",
   "work_order_financials:read": "Consultar o Financeiro da OS (itens lancados e total agregado).",
   "work_order_financials:create": "Lancar itens no Financeiro da OS congelando o preco da Tarifa vigente.",
   "work_order_financials:update": "Editar (quantidade/descricao/notas) e remover (exclusao logica) itens do Financeiro da OS.",

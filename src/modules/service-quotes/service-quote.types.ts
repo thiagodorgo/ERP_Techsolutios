@@ -29,6 +29,14 @@ export type ServiceQuote = {
   readonly status: string; // draft | approved | rejected | void
   readonly isActive: boolean;
   readonly notes?: string;
+  // Ω3F-4a/4b — cabeçalho do orçamento. `number/issuedAt/validUntil` são editáveis enquanto draft.
+  // `createdWorkOrderId` é a âncora de idempotência do approve (um orçamento gera no máx. 1 OS).
+  // `shareToken` é o segredo de compartilhamento — NUNCA exposto no DTO normal (§2.8), só no /share.
+  readonly number?: string;
+  readonly issuedAt?: Date;
+  readonly validUntil?: Date;
+  readonly createdWorkOrderId?: string;
+  readonly shareToken?: string;
   readonly createdBy?: string;
   readonly updatedBy?: string;
   readonly createdAt: Date;
@@ -70,6 +78,13 @@ export type UpdateServiceQuoteInput = {
   readonly notes?: string;
   readonly status?: string;
   readonly isActive?: boolean;
+  // Ω3F-4a — cabeçalho editável em draft.
+  readonly number?: string;
+  readonly issuedAt?: Date;
+  readonly validUntil?: Date;
+  // Ω3F-4b — setados internamente por approve/share (nunca pelo corpo do PATCH normal).
+  readonly createdWorkOrderId?: string;
+  readonly shareToken?: string;
   readonly updatedBy?: string;
 };
 
