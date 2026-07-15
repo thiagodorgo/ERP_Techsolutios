@@ -31,23 +31,28 @@ test("WORK_ORDER_TABS: 11 abas na ordem exata da spec §1.3", () => {
   );
 });
 
-test("C2: 'Informações gerais' + 'Financeiro' visíveis (Ω3F-3 acende Financeiro); demais ocultas", () => {
+test("C2: 'Informações gerais' + 'Financeiro' + 'Orçamento' visíveis (Ω3F-4 acende Orçamento); demais ocultas", () => {
   const vis = visibleTabs();
-  assert.deepEqual(vis.map((t) => t.slug), ["informacoes-gerais", "financeiro"]);
+  assert.deepEqual(vis.map((t) => t.slug), ["informacoes-gerais", "financeiro", "orcamento"]);
   const financeiro = vis.find((t) => t.slug === "financeiro");
   assert.equal(financeiro?.label, "Financeiro");
   // A aba Financeiro é governada: exige work_order_financials:read (§7).
   assert.equal(financeiro?.requiredPermission, "work_order_financials:read");
+  const orcamento = vis.find((t) => t.slug === "orcamento");
+  assert.equal(orcamento?.label, "Orçamento");
+  // A aba Orçamento é governada: exige service_quotes:read (§7).
+  assert.equal(orcamento?.requiredPermission, "service_quotes:read");
 });
 
 test("resolveActiveTab: slug visível → ele mesmo", () => {
   assert.equal(resolveActiveTab("informacoes-gerais"), "informacoes-gerais");
   assert.equal(resolveActiveTab("financeiro"), "financeiro");
+  assert.equal(resolveActiveTab("orcamento"), "orcamento");
 });
 
 test("resolveActiveTab: aba OCULTA (flag OFF) cai no default, não 404", () => {
-  assert.equal(resolveActiveTab("orcamento"), DEFAULT_TAB);
   assert.equal(resolveActiveTab("logs"), DEFAULT_TAB);
+  assert.equal(resolveActiveTab("mapa"), DEFAULT_TAB);
 });
 
 test("resolveActiveTab: slug inexistente / nulo / vazio → default", () => {
@@ -99,7 +104,8 @@ test("WorkOrderTabsShell: menu só com abas visíveis; ocultas AUSENTES (C2, sem
   );
   assert.match(html, /Informações gerais/);
   assert.match(html, /Financeiro/); // Ω3F-3 acendeu a aba
-  assert.doesNotMatch(html, /Orçamento|Logs|Mapa|Estoque/); // demais ainda ocultas (C2)
+  assert.match(html, /Orçamento/); // Ω3F-4 acendeu a aba
+  assert.doesNotMatch(html, /Logs|Mapa|Estoque/); // demais ainda ocultas (C2)
   assert.doesNotMatch(html, /em breve|PLANNED|TODO/i);
   assert.match(html, /conteudo-da-aba/);
 });

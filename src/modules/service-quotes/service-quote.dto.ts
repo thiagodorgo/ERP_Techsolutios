@@ -49,6 +49,12 @@ export function toServiceQuoteListDto(result: ListServiceQuoteResult) {
       priceSource: quote.priceSource,
       status: quote.status,
       isActive: quote.isActive,
+      // B1 (lição recorrente que vetou 4 blocos) — o list DTO emite o cabeçalho que a aba Orçamento (Ω3F-4c)
+      // lê: número, validade e a OS gerada. Sem eles a tela cai no id-curto e mostra "—" na validade.
+      number: quote.number ?? null,
+      issuedAt: quote.issuedAt ? quote.issuedAt.toISOString() : null,
+      validUntil: quote.validUntil ? quote.validUntil.toISOString() : null,
+      createdWorkOrderId: quote.createdWorkOrderId ?? null,
       createdAt: quote.createdAt.toISOString(),
     })),
     pagination: {

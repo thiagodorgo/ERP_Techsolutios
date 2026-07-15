@@ -1,8 +1,10 @@
 import type {
   ServiceQuoteCreatePayload,
   ServiceQuoteFieldError,
-  ServiceQuoteItem,
+  ServiceQuoteLineItem,
+  ServiceQuoteLineList,
   ServiceQuotePriceSource,
+  ServiceQuoteRow,
   ServiceQuoteStatus,
   ServiceQuotesData,
   ServiceQuotesFilters,
@@ -33,7 +35,7 @@ export function adaptServiceQuotesResponse(
   const itemsSource = Array.isArray(response)
     ? response
     : readArray(dataRecord?.items) ?? readArray(payload?.items) ?? readArray(payload?.data) ?? [];
-  const items = itemsSource.map((item) => adaptServiceQuote(item)).filter((item): item is ServiceQuoteItem => Boolean(item));
+  const items = itemsSource.map((item) => adaptServiceQuote(item)).filter((item): item is ServiceQuoteRow => Boolean(item));
 
   return {
     items,
@@ -43,7 +45,7 @@ export function adaptServiceQuotesResponse(
   };
 }
 
-export function adaptServiceQuoteResponse(response: unknown): ServiceQuoteItem | null {
+export function adaptServiceQuoteResponse(response: unknown): ServiceQuoteRow | null {
   const payload = readRecord(response);
   return adaptServiceQuote(readRecord(payload?.data) ?? response);
 }
@@ -52,10 +54,10 @@ export function adaptServiceQuoteResponse(response: unknown): ServiceQuoteItem |
 // OS) do item, para a busca casar o NOME e não só o UUID — o placeholder promete "OS, serviço" (veto
 // cognicao-visual). Sem o resolver, cai nos ids (comportamento antigo).
 export function filterServiceQuotes(
-  items: readonly ServiceQuoteItem[],
+  items: readonly ServiceQuoteRow[],
   filters: { search: string; isActive: ServiceQuotesFilters["isActive"] },
-  resolveLabels?: (item: ServiceQuoteItem) => (string | null | undefined)[],
-): ServiceQuoteItem[] {
+  resolveLabels?: (item: ServiceQuoteRow) => (string | null | undefined)[],
+): ServiceQuoteRow[] {
   const search = normalize(filters.search);
 
   return items.filter((item) => {
@@ -146,7 +148,7 @@ export function formatServiceQuoteDate(value: string | null | undefined): string
   return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
 }
 
-function adaptServiceQuote(input: unknown): ServiceQuoteItem | null {
+function adaptServiceQuote(input: unknown): ServiceQuoteRow | null {
   const item = readRecord(input);
   if (!item) return null;
 
@@ -169,6 +171,50 @@ function adaptServiceQuote(input: unknown): ServiceQuoteItem | null {
     status: (readString(item, ["status"]) as ServiceQuoteStatus) ?? "draft",
     isActive: readBoolean(item, ["isActive", "is_active"]) ?? true,
     createdAt: readString(item, ["createdAt", "created_at"]) ?? new Date().toISOString(),
+    // Cabeçalho do documento (Ω3F-4a/4b): o list DTO pode não emitir todos → null gracioso.
+    number: readNullableString(item, ["number"]),
+    issuedAt: readNullableString(item, ["issuedAt", "issued_at"]),
+    validUntil: readNullableString(item, ["validUntil", "valid_until"]),
+    createdWorkOrderId: readNullableString(item, ["createdWorkOrderId", "created_work_order_id"]),
+  };
+}
+
+// ---------- linhas-de-item do orçamento (leitura defensiva; total do BACKEND) ----------
+
+export function adaptServiceQuoteLineList(response: unknown): ServiceQuoteLineList {
+  const payload = readRecord(response);
+  const dataRecord = readRecord(payload?.data);
+  const rawItems = Array.isArray(response)
+    ? response
+    : readArray(dataRecord?.items) ?? readArray(payload?.items) ?? readArray(payload?.data) ?? [];
+  const items = rawItems.map((item) => adaptServiceQuoteLineItem(item)).filter((item): item is ServiceQuoteLineItem => item !== null);
+  const totalsRecord = dataRecord ?? payload ?? {};
+  return {
+    items,
+    // O total vem AGREGADO do backend; o front nunca soma. Fallback 0 quando ausente.
+    totalAmount: readNumber(totalsRecord, ["totalAmount", "total_amount"]) ?? 0,
+    currency: readString(totalsRecord, ["currency"]) ?? items[0]?.currency ?? "BRL",
+  };
+}
+
+function adaptServiceQuoteLineItem(input: unknown): ServiceQuoteLineItem | null {
+  const item = readRecord(input);
+  if (!item) return null;
+  const id = readString(item, ["id"]);
+  const serviceQuoteId = readString(item, ["serviceQuoteId", "service_quote_id"]);
+  if (!id || !serviceQuoteId) return null;
+  return {
+    id,
+    serviceQuoteId,
+    tariffId: readNullableString(item, ["tariffId", "tariff_id"]),
+    priceTableId: readNullableString(item, ["priceTableId", "price_table_id"]),
+    description: readString(item, ["description"]) ?? "—",
+    quantity: readNumber(item, ["quantity"]) ?? 0,
+    unitAmount: readNumber(item, ["unitAmount", "unit_amount"]) ?? 0,
+    totalAmount: readNumber(item, ["totalAmount", "total_amount"]) ?? 0,
+    currency: readString(item, ["currency"]) ?? "BRL",
+    source: readString(item, ["source"]) === "tariff" ? "tariff" : "manual",
+    notes: readNullableString(item, ["notes"]),
   };
 }
 
