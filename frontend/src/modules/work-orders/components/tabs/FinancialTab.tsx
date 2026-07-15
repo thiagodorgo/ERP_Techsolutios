@@ -4,12 +4,15 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import {
   createManualFinancialItem,
+  createTariffFinancialItem,
   deleteFinancialItem,
   formatMoney,
   listWorkOrderFinancials,
   patchFinancialItem,
 } from "../../financials.service";
 import type { WorkOrderFinancialApiContext, WorkOrderFinancialItem, WorkOrderFinancialList } from "../../financials.types";
+import { listServiceCatalogFromApi } from "../../../registry/service-catalog/service-catalog.service";
+import type { ServiceItem } from "../../../registry/service-catalog/service-catalog.types";
 
 // Ω3F-3b — aba "Financeiro" do Hub da OS (spec §1.3 / §1.1 0:24–1:08): itens da tabela de valores
 // (valor CONGELADO no lançamento, anti-refaturamento) + item avulso ("+", ex.: pedágio) + edição
@@ -25,7 +28,9 @@ const primaryBtn: CSSProperties = { display: "inline-flex", alignItems: "center"
 
 type EditState = { readonly quantity: string; readonly unitAmount: string; readonly notes: string };
 type ManualState = { readonly description: string; readonly unitAmount: string; readonly quantity: string; readonly notes: string };
+type TariffState = { readonly serviceCatalogId: string; readonly quantity: string; readonly notes: string };
 const EMPTY_MANUAL: ManualState = { description: "", unitAmount: "", quantity: "1", notes: "" };
+const EMPTY_TARIFF: TariffState = { serviceCatalogId: "", quantity: "1", notes: "" };
 
 export function FinancialTab({
   workOrderId,
@@ -44,6 +49,12 @@ export function FinancialTab({
   const [edit, setEdit] = useState<EditState>({ quantity: "", unitAmount: "", notes: "" });
   const [adding, setAdding] = useState(false);
   const [manual, setManual] = useState<ManualState>(EMPTY_MANUAL);
+  // Lançamento a partir da TABELA DE VALORES do cliente (capacidade #6): escolhe um serviço do catálogo
+  // → o backend resolve a tarifa vigente do cliente e CONGELA o valor (anti-refaturamento).
+  const [addingTariff, setAddingTariff] = useState(false);
+  const [tariff, setTariff] = useState<TariffState>(EMPTY_TARIFF);
+  const [services, setServices] = useState<readonly ServiceItem[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
 
   const canCreate = permissions.includes("work_order_financials:create");
   const canUpdate = permissions.includes("work_order_financials:update");
@@ -125,6 +136,47 @@ export function FinancialTab({
     }
   };
 
+  const openTariffForm = async () => {
+    const next = !addingTariff;
+    setAddingTariff(next);
+    setAdding(false);
+    if (next && services.length === 0) {
+      setServicesLoading(true);
+      try {
+        const catalog = await listServiceCatalogFromApi(context, { isActive: "active" });
+        setServices(catalog.items);
+      } catch {
+        setError("Não foi possível carregar o catálogo de serviços.");
+      } finally {
+        setServicesLoading(false);
+      }
+    }
+  };
+
+  const addTariff = async () => {
+    if (!tariff.serviceCatalogId) {
+      setError("Selecione um serviço da tabela de valores.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await createTariffFinancialItem(context, workOrderId, {
+        serviceCatalogId: tariff.serviceCatalogId,
+        quantity: Number(tariff.quantity) || 1,
+        notes: tariff.notes,
+      });
+      setTariff(EMPTY_TARIFF);
+      setAddingTariff(false);
+      await load();
+    } catch {
+      // O backend recusa (422) quando o serviço não tem tarifa vigente na tabela do cliente.
+      setError("Não foi possível lançar o serviço: verifique se há tarifa vigente na tabela de valores deste cliente.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const items = data?.items ?? [];
   const currency = data?.currency ?? "BRL";
 
@@ -136,14 +188,52 @@ export function FinancialTab({
           <div style={{ fontSize: 12.5, color: "#64748B", marginTop: 3 }}>Serviços da tabela de valores do cliente (valor congelado no lançamento) e itens avulsos.</div>
         </div>
         {canCreate ? (
-          <button type="button" style={primaryBtn} disabled={busy} onClick={() => setAdding((v) => !v)}>
-            <Plus size={16} /> Lançar item avulso
-          </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" style={primaryBtn} disabled={busy} onClick={() => void openTariffForm()}>
+              <Plus size={16} /> Lançar da tabela
+            </button>
+            <button type="button" style={{ ...primaryBtn, background: "#fff", color: "#2563EB", border: "1px solid #BFDBFE" }} disabled={busy} onClick={() => { setAdding((v) => !v); setAddingTariff(false); }}>
+              <Plus size={16} /> Item avulso
+            </button>
+          </div>
         ) : null}
       </div>
 
       {error ? (
         <div style={{ marginTop: 14, padding: "10px 13px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 9, fontSize: 12.5, color: "#B91C1C" }}>{error}</div>
+      ) : null}
+
+      {addingTariff && canCreate ? (
+        <div style={{ marginTop: 14, padding: 14, border: "1px solid #BFDBFE", borderRadius: 12, background: "#F8FAFF" }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: "#1E40AF", marginBottom: 10 }}>Lançar serviço da tabela de valores do cliente</div>
+          {servicesLoading ? (
+            <div style={{ fontSize: 12.5, color: "#94A3B8" }}>Carregando serviços…</div>
+          ) : (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10 }}>
+                <label style={{ fontSize: 12, color: "#475569", fontWeight: 600 }}>Serviço
+                  <select style={input} value={tariff.serviceCatalogId} onChange={(e) => setTariff({ ...tariff, serviceCatalogId: e.target.value })}>
+                    <option value="">Selecione um serviço…</option>
+                    {services.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label style={{ fontSize: 12, color: "#475569", fontWeight: 600 }}>Quantidade
+                  <input style={input} value={tariff.quantity} inputMode="decimal" onChange={(e) => setTariff({ ...tariff, quantity: e.target.value })} />
+                </label>
+              </div>
+              <label style={{ fontSize: 12, color: "#475569", fontWeight: 600, display: "block", marginTop: 10 }}>Observação (opcional)
+                <input style={input} value={tariff.notes} onChange={(e) => setTariff({ ...tariff, notes: e.target.value })} />
+              </label>
+              <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 8 }}>O valor é congelado a partir da tarifa vigente do cliente no momento do lançamento.</div>
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button type="button" style={primaryBtn} disabled={busy} onClick={() => void addTariff()}>Lançar</button>
+                <button type="button" style={{ ...primaryBtn, background: "#fff", color: "#475569", border: "1px solid #E2E8F0" }} disabled={busy} onClick={() => { setAddingTariff(false); setTariff(EMPTY_TARIFF); }}>Cancelar</button>
+              </div>
+            </>
+          )}
+        </div>
       ) : null}
 
       {adding && canCreate ? (

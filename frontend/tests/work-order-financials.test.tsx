@@ -21,16 +21,20 @@ test("FinancialTab: cabeçalho + estado de carregamento (§7) no primeiro render
   assert.match(html, /Carregando itens financeiros/);
 });
 
-test("FinancialTab: 'Lançar item avulso' só com work_order_financials:create", () => {
+test("FinancialTab: lançar da TABELA e item AVULSO (capacidade #6) só com work_order_financials:create", () => {
   const withCreate = renderToString(
     <FinancialTab workOrderId="wo-1" context={ctx} permissions={["work_order_financials:read", "work_order_financials:create"]} />,
   );
-  assert.match(withCreate, /Lançar item avulso/);
+  // Capacidade #6 (veto R-Ω3F-3b): tem que existir o caminho de lançar item da tabela do cliente,
+  // não só o avulso.
+  assert.match(withCreate, /Lançar da tabela/);
+  assert.match(withCreate, /Item avulso/);
 
   const readOnly = renderToString(
     <FinancialTab workOrderId="wo-1" context={ctx} permissions={["work_order_financials:read"]} />,
   );
-  assert.doesNotMatch(readOnly, /Lançar item avulso/);
+  assert.doesNotMatch(readOnly, /Lançar da tabela/);
+  assert.doesNotMatch(readOnly, /Item avulso/);
 });
 
 test("formatMoney: usa a moeda do item (não assume BRL) e degrada valor inválido", () => {
