@@ -121,7 +121,11 @@ export class WorkOrderFinancialService {
 
     // Homogeneidade de moeda por OS (achado do validador-mestre J-Ω3F-3A): o total agregado do GET soma
     // valores — misturar moedas na mesma OS produziria um total sem sentido. O 1º item fixa a moeda da OS;
-    // os demais precisam coincidir (422 currency_mismatch). Assim o agregado é SEMPRE single-currency.
+    // os demais precisam coincidir (422 currency_mismatch), mantendo o agregado single-currency SOB ACESSO
+    // SEQUENCIAL. Ressalva (critico J-Ω3F-3A, C1): é um read-then-write não-transacional — dois POST
+    // concorrentes numa OS vazia podem ambos ver length===0 e inserir moedas distintas. Janela TOCTOU sem
+    // backstop de banco (a moeda não tem constraint como a idempotência tem o unique parcial); limitação
+    // conhecida, dano restrito ao rótulo do agregado — ver P-Ω3F3A-MOEDA-AGREGADO (follow-up: CHECK/trigger).
     const currentItems = await this.repository.listByWorkOrder(actor.tenantId, workOrder.id);
     if (currentItems.length > 0 && currentItems[0].currency !== currency) {
       throw new WorkOrderFinancialError(

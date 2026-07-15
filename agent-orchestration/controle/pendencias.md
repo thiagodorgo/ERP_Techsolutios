@@ -485,4 +485,11 @@
   moeda por OS — o 1º item fixa a moeda; lançamento com moeda divergente → 422 `currency_mismatch`
   (`work-order-financial.service.ts`). Assim o agregado é SEMPRE single-currency e o rótulo `items[0].currency`
   é fiel. PATCH não altera moeda (congelada no lançamento).
-- status: RESOLVIDO neste PR (Ω3F-3a) + teste de regressão `currency_mismatch`.
+- status: RESOLVIDO neste PR (Ω3F-3a) para acesso SEQUENCIAL + teste de regressão `currency_mismatch`.
+- ressalva TOCTOU (critico J-Ω3F-3A, C1 — não bloqueia): a trava é um read-then-write não-transacional sem
+  backstop de banco (diferente da idempotência, que tem o unique parcial). Dois POST concorrentes numa OS vazia
+  podem ver ambos `length===0` e inserir moedas distintas. Dano restrito: cada linha preserva sua própria moeda
+  no DTO; só o rótulo/soma do agregado do GET fica sem sentido nessa janela. Caminho interativo de finance/manager
+  (baixa concorrência); mesmo padrão TOCTOU já aceito no codebase.
+- follow-up: guarda em nível de banco (CHECK/trigger de moeda única por `work_order_id` ativo) num bloco futuro,
+  se a janela vier a importar. Aberto (não-bloqueante).
