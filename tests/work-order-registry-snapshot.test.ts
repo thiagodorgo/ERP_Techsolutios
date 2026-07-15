@@ -249,7 +249,7 @@ test("[regressao] criar OS sem nenhum dos novos campos ainda retorna 201 com ids
 });
 
 test("[integrada] as quatro referencias juntas sao validadas, armazenadas e a snapshot do cliente aplicada", async () => {
-  await withRegistryApi(async ({ baseUrl, seed }) => {
+  await withRegistryApi(async ({ baseUrl, seed, seedTariff }) => {
     const customer = await requestJson(baseUrl, "/api/v1/customers", {
       method: "POST",
       headers: authHeaders(seed.tenantA, seed.managerA),
@@ -270,6 +270,8 @@ test("[integrada] as quatro referencias juntas sao validadas, armazenadas e a sn
       headers: authHeaders(seed.tenantA, seed.managerA),
       body: { name: "Servico Integrado" },
     });
+    // Ω3F-3b (#4) — OS com cliente + serviço exige tarifa vigente na tabela do cliente.
+    await seedTariff(seed.tenantA.id, service.body.data.id);
 
     const created = await requestJson(baseUrl, "/api/v1/work-orders", {
       method: "POST",
@@ -293,6 +295,96 @@ test("[integrada] as quatro referencias juntas sao validadas, armazenadas e a sn
     assert.equal(created.body.data.customerName, "Cliente Integrado");
     assert.equal(created.body.data.customerDocument, "55544433322");
     assert.equal(created.body.data.customerPhone, "1140021234");
+  });
+});
+
+// Ω3F-3b (#4, spec §1.2) — no create, o tipo de serviço precisa ter tarifa vigente na tabela do cliente.
+// A guarda só dispara com AMBOS (cliente E serviço) presentes; reusa resolveApplicableTariff (tenant-scoped).
+
+test("[#4] OS com cliente + servico SEM tarifa vigente → 422 tariff_not_found_for_service", async () => {
+  await withRegistryApi(async ({ baseUrl, seed }) => {
+    const customer = await requestJson(baseUrl, "/api/v1/customers", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA),
+      body: { name: "Cliente Sem Tarifa", document: "10000000001", phone: "1130001111" },
+    });
+    const service = await requestJson(baseUrl, "/api/v1/service-catalog", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA),
+      body: { name: "Servico Sem Tarifa" },
+    });
+    const created = await requestJson(baseUrl, "/api/v1/work-orders", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA),
+      body: { title: "OS sem tarifa", customer_id: customer.body.data.id, service_catalog_id: service.body.data.id },
+    });
+    assert.equal(created.status, 422);
+    assert.equal(created.body.error.reason, "tariff_not_found_for_service");
+  });
+});
+
+test("[#4] OS com cliente + servico COM tarifa publicada → 201", async () => {
+  await withRegistryApi(async ({ baseUrl, seed, seedTariff }) => {
+    const customer = await requestJson(baseUrl, "/api/v1/customers", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA),
+      body: { name: "Cliente Com Tarifa", document: "10000000002", phone: "1130002222" },
+    });
+    const service = await requestJson(baseUrl, "/api/v1/service-catalog", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA),
+      body: { name: "Servico Com Tarifa" },
+    });
+    await seedTariff(seed.tenantA.id, service.body.data.id);
+    const created = await requestJson(baseUrl, "/api/v1/work-orders", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA),
+      body: { title: "OS com tarifa", customer_id: customer.body.data.id, service_catalog_id: service.body.data.id },
+    });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.data.serviceCatalogId, service.body.data.id);
+  });
+});
+
+test("[#4] OS so com servico (sem cliente) NAO exige tarifa → 201 (guarda so dispara com ambos)", async () => {
+  await withRegistryApi(async ({ baseUrl, seed }) => {
+    const service = await requestJson(baseUrl, "/api/v1/service-catalog", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA),
+      body: { name: "Servico Avulso" },
+    });
+    const created = await requestJson(baseUrl, "/api/v1/work-orders", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA),
+      body: { title: "OS so servico", service_catalog_id: service.body.data.id, customerName: "Cliente Manual" },
+    });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.data.serviceCatalogId, service.body.data.id);
+    assert.equal(created.body.data.customerId, null);
+  });
+});
+
+test("[#4/isolamento] tarifa publicada SO em outra org e invisivel → 422 (nunca vaza cross-tenant)", async () => {
+  await withRegistryApi(async ({ baseUrl, seed, seedTariff }) => {
+    const customer = await requestJson(baseUrl, "/api/v1/customers", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA),
+      body: { name: "Cliente Org A", document: "10000000003", phone: "1130003333" },
+    });
+    const service = await requestJson(baseUrl, "/api/v1/service-catalog", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA),
+      body: { name: "Servico Org A" },
+    });
+    // Tarifa existe, mas SÓ na org B — invisível para a org A (resolver tenant-scoped).
+    await seedTariff(seed.tenantB.id, service.body.data.id);
+    const created = await requestJson(baseUrl, "/api/v1/work-orders", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA),
+      body: { title: "OS cross-tenant tarifa", customer_id: customer.body.data.id, service_catalog_id: service.body.data.id },
+    });
+    assert.equal(created.status, 422);
+    assert.equal(created.body.error.reason, "tariff_not_found_for_service");
   });
 });
 
@@ -333,6 +425,7 @@ type SeedData = {
 type RegistryApiContext = {
   readonly baseUrl: string;
   readonly seed: SeedData;
+  readonly seedTariff: (tenantId: string, serviceCatalogId: string, unitPrice?: number) => Promise<void>;
 };
 
 async function withRegistryApi(callback: (context: RegistryApiContext) => Promise<void>): Promise<void> {
@@ -346,6 +439,8 @@ async function withRegistryApi(callback: (context: RegistryApiContext) => Promis
     { resetVehicleRuntimeForTests },
     { resetTeamRuntimeForTests },
     { resetServiceCatalogRuntimeForTests },
+    { getMemoryTariffRepositoryForTests, resetTariffRuntimeForTests },
+    { getMemoryPriceTableRepositoryForTests, resetPriceTableRuntimeForTests },
     { CoreSaasRegistry },
     { MemoryCoreSaasAdapter },
     { InMemoryCoreSaasStore },
@@ -356,12 +451,16 @@ async function withRegistryApi(callback: (context: RegistryApiContext) => Promis
     import("../src/modules/vehicles/index.js"),
     import("../src/modules/teams/index.js"),
     import("../src/modules/service-catalog/index.js"),
+    import("../src/modules/tariffs/tariff.service.js"),
+    import("../src/modules/price-tables/price-table.service.js"),
     import("../src/modules/core-saas/services/core-saas.service.js"),
     import("../src/modules/core-saas/services/memory-core-saas.adapter.js"),
     import("../src/modules/core-saas/store/core-saas.store.js"),
   ]);
 
   const resetAll = () => {
+    resetPriceTableRuntimeForTests();
+    resetTariffRuntimeForTests();
     resetWorkOrderRuntimeForTests();
     resetCustomerRuntimeForTests();
     resetVehicleRuntimeForTests();
@@ -377,8 +476,29 @@ async function withRegistryApi(callback: (context: RegistryApiContext) => Promis
   const server = app.listen(0);
   const baseUrl = await getBaseUrl(server);
 
+  // Ω3F-3b (#4) — OS com cliente E serviço exige tarifa vigente na tabela do cliente. Semeia uma tarifa
+  // publicada (tenant-scoped) para o serviço, satisfazendo o invariante do create no cenário integrado.
+  const seedTariff = async (tenantId: string, serviceCatalogId: string, unitPrice = 250.5): Promise<void> => {
+    const table = await getMemoryPriceTableRepositoryForTests().create({
+      tenantId,
+      name: `Tabela ${serviceCatalogId}`,
+      currency: "BRL",
+      version: 1,
+      status: "published",
+    });
+    await getMemoryTariffRepositoryForTests().create({
+      tenantId,
+      priceTableId: table.id,
+      serviceCatalogId,
+      unitPrice,
+      currency: "BRL",
+      origin: "seed",
+      status: "active",
+    });
+  };
+
   try {
-    await callback({ baseUrl, seed });
+    await callback({ baseUrl, seed, seedTariff });
   } finally {
     await closeServer(server);
     resetAll();

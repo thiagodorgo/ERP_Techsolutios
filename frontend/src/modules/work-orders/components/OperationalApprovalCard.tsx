@@ -7,6 +7,7 @@ import {
   listPendingApprovals,
   rejectOperationalApproval,
 } from "../approval.service";
+import { entityTypeLabel } from "../approval.types";
 import type { OperationalApproval } from "../approval.types";
 import type { WorkOrdersApiContext } from "../work-orders.types";
 
@@ -153,9 +154,7 @@ function approvalTone(approval: OperationalApproval): "success" | "danger" | "pe
 }
 
 function entityLabel(approval: OperationalApproval): string {
-  if (approval.entityType === "checklist_run") return "Checklist";
-  if (approval.entityType === "evidence") return "Evidencia";
-  return "Ordem de Servico";
+  return entityTypeLabel(approval.entityType);
 }
 
 function formatDate(value: string): string {

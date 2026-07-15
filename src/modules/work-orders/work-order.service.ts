@@ -3,6 +3,7 @@ import { publishDomainEvent } from "../../infra/events/domain-event.publisher.js
 import { createDefaultCustomerService } from "../customers/customer.service.js";
 import { createDefaultMaintenanceOrderService } from "../maintenance-orders/maintenance-order.service.js";
 import { createDefaultServiceCatalogService } from "../service-catalog/service-catalog.service.js";
+import { createApplicableTariffResolver } from "../service-quotes/service-quote.service.js";
 import { createDefaultTeamService } from "../teams/team.service.js";
 import { createDefaultVehicleService } from "../vehicles/vehicle.service.js";
 import {
@@ -75,6 +76,14 @@ export type WorkOrderReferenceResolvers = {
     actor: WorkOrderActorContext,
     id: string,
   ) => Promise<{ readonly serviceType: string | null; readonly requiresDestination: boolean } | null>;
+  // Ω3F-3b (#4, spec §1.2) — existe tarifa vigente na tabela do cliente para o serviço? Reusa o
+  // resolveApplicableTariff (anti-refaturamento), projetado para booleano (existência) para manter o
+  // módulo work-orders desacoplado do tipo Tarifa. Tenant-scoped; false quando não há tarifa aplicável.
+  readonly resolveApplicableTariffForOrder?: (
+    actor: WorkOrderActorContext,
+    serviceCatalogId: string,
+    customerId: string,
+  ) => Promise<boolean>;
   // F2 R2.3 — read-only availability seam. True when the vehicle has an ACTIVE
   // maintenance order in `em_execucao`; such a vehicle cannot be bound to a NEW
   // work order (409 vehicle_in_maintenance). Additive; field-dispatch untouched.
@@ -226,6 +235,10 @@ export class WorkOrderService {
     // campo de destino veio no corpo. Antes do nextCode/create para não consumir número de OS.
     await this.assertDestinationForType(actor, serviceCatalogId, hasDestination(destination));
 
+    // Ω3F-3b (#4, spec §1.2) — quando a OS vincula cliente E serviço, o tipo precisa ter tarifa vigente
+    // na tabela do cliente. Antes do nextCode/create para não consumir número de OS.
+    await this.assertServiceHasApplicableTariff(actor, serviceCatalogId, customerId);
+
     const code = await this.repository.nextCode(actor.tenantId);
     const workOrder = await this.repository.create({
       tenantId: actor.tenantId,
@@ -365,6 +378,33 @@ export class WorkOrderService {
         "WORK_ORDER_UNPROCESSABLE",
         "destination_required",
         "Este tipo de serviço exige endereço de destino.",
+      );
+    }
+  }
+
+  // Ω3F-3b (#4, spec §1.2) — o tipo de serviço da OS precisa estar na tabela de valores do cliente:
+  // reusa resolveApplicableTariff (via resolver injetado). Sem tarifa aplicável → 422
+  // tariff_not_found_for_service (a OS não teria base de preço p/ os itens financeiros). Só dispara com
+  // AMBOS (cliente E serviço) presentes; no-op quando o resolver não está montado (degrada como as demais
+  // refs opcionais). Cross-tenant: o resolver é tenant-scoped → tarifa alheia invisível → false → 422
+  // (nunca vaza existência entre organizações).
+  private async assertServiceHasApplicableTariff(
+    actor: WorkOrderActorContext,
+    serviceCatalogId: string | undefined,
+    customerId: string | undefined,
+  ): Promise<void> {
+    if (!serviceCatalogId || !customerId) return;
+
+    const resolver = this.references.resolveApplicableTariffForOrder;
+    if (!resolver) return;
+
+    const hasTariff = await resolver(actor, serviceCatalogId, customerId);
+    if (!hasTariff) {
+      throw new WorkOrderError(
+        422,
+        "WORK_ORDER_UNPROCESSABLE",
+        "tariff_not_found_for_service",
+        "O serviço selecionado não tem tarifa vigente na tabela de valores deste cliente.",
       );
     }
   }
@@ -664,6 +704,19 @@ function createDefaultReferenceResolvers(): WorkOrderReferenceResolvers {
         };
       } catch {
         return null;
+      }
+    },
+    // Ω3F-3b (#4) — existência de tarifa aplicável (tenant+cliente) para o serviço, reusando o mesmo
+    // resolveApplicableTariff do orçamento/financeiro. Projeta a Tarifa para booleano (só existência),
+    // mantendo work-orders desacoplado. Falha → false (a validação #4 rejeita com 422; nunca 500).
+    resolveApplicableTariffForOrder: async (actor, serviceCatalogId, customerId) => {
+      try {
+        const resolve = await createApplicableTariffResolver();
+        const tariff = await resolve(actor.tenantId, serviceCatalogId, customerId);
+
+        return Boolean(tariff);
+      } catch {
+        return false;
       }
     },
     // F2 R2.3 — reuses the maintenance default service singleton so an OS-facing
