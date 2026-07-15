@@ -1232,6 +1232,13 @@ model ServiceQuote {
   status                String   @default("draft")
   is_active             Boolean  @default(true)
   notes                 String?
+  // Ω3F-4a — cabeçalho do orçamento multi-item (aditivos/nullable; item único legado permanece válido).
+  number                String?
+  issued_at             DateTime? @db.Timestamptz(6)
+  valid_until           DateTime? @db.Timestamptz(6)
+  // Ω3F-4b — aprovar→cria OS (idempotência ancorada aqui: um orçamento gera no máx. UMA OS) e compartilhar.
+  created_work_order_id String?  @db.Uuid
+  share_token           String?
   created_by            String?  @db.Uuid
   updated_by            String?  @db.Uuid
   created_at            DateTime @default(now()) @db.Timestamptz(6)
@@ -1241,6 +1248,35 @@ model ServiceQuote {
   @@index([tenant_id, work_order_id])
   @@index([tenant_id, status])
   @@map("service_quotes")
+}
+
+// Ω3F-4a — item (linha) do orçamento multi-item. Espelho 1:1 de WorkOrderFinancialItem (source+description,
+// NÃO kind — reuso do shape C3 e do congelamento). CONGELA unit_amount/total_amount a partir da Tarifa
+// vigente do cliente (leitura única, anti-refaturamento) ou valor manual. Delete LÓGICO. Idempotência
+// tenant-scoped por client_action_id (unique parcial em SQL bruto na migration). FKs compostas RESTRICT + RLS.
+model ServiceQuoteItem {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String    @db.Uuid
+  service_quote_id String    @db.Uuid
+  tariff_id        String?   @db.Uuid
+  price_table_id   String?   @db.Uuid
+  description      String
+  quantity         Decimal   @default(1) @db.Decimal(12, 2)
+  unit_amount      Decimal   @db.Decimal(12, 2)
+  total_amount     Decimal   @db.Decimal(12, 2)
+  currency         String    @default("BRL")
+  source           String    @default("tariff")
+  notes            String?
+  client_action_id String?
+  created_by       String?   @db.Uuid
+  updated_by       String?   @db.Uuid
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at       DateTime? @db.Timestamptz(6)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, service_quote_id])
+  @@map("service_quote_items")
 }
 
 // Ω3F-3a — WorkOrderFinancialItem (Financeiro da OS): item lançado que CONGELA unit_amount +
