@@ -514,3 +514,13 @@
   DEVE adicionar unicidade + índice de lookup do share_token (migration) e passar por revisão secops
   (superfície não-autenticada; §2.8; sem vazar tenant/dados internos).
 - status: aberto (não-bloqueante; guarda para a fatia do consumo público).
+
+## P-Ω3F4B-APPROVE-CRASH - Crash duro entre reserva e carimbo do approve (J-OMEGA3F-4B ciclo1, 2026-07-15)
+- descricao: o CAS fecha o duplo-faturamento concorrente (1 OS + 1×409), mas um crash DURO do processo ENTRE
+  o claimForApproval (orçamento já approved) e o carimbo de created_work_order_id deixaria o orçamento
+  approved-SEM-OS, irrecuperável pela máquina de estado. É FALHA SEGURA (nunca gera 2ª OS), não duplo-
+  faturamento. Apontado pelo critico como residual de durabilidade cross-agregado (não-bloqueante).
+- acao: resolver com transação única / outbox / job de reconciliação (orçamento approved sem OS há N min →
+  reabrir ou reconciliar) numa fatia futura de robustez. A compensação atual só cobre erro do create (volta a
+  draft), não crash entre passos.
+- status: aberto (não-bloqueante; falha segura).
