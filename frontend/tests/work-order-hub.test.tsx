@@ -31,19 +31,22 @@ test("WORK_ORDER_TABS: 11 abas na ordem exata da spec §1.3", () => {
   );
 });
 
-test("C2: só 'Informações gerais' nasce visível na Fase 1 (revelação progressiva)", () => {
+test("C2: 'Informações gerais' + 'Financeiro' visíveis (Ω3F-3 acende Financeiro); demais ocultas", () => {
   const vis = visibleTabs();
-  assert.equal(vis.length, 1);
-  assert.equal(vis[0].slug, "informacoes-gerais");
-  assert.equal(vis[0].label, "Informações gerais");
+  assert.deepEqual(vis.map((t) => t.slug), ["informacoes-gerais", "financeiro"]);
+  const financeiro = vis.find((t) => t.slug === "financeiro");
+  assert.equal(financeiro?.label, "Financeiro");
+  // A aba Financeiro é governada: exige work_order_financials:read (§7).
+  assert.equal(financeiro?.requiredPermission, "work_order_financials:read");
 });
 
 test("resolveActiveTab: slug visível → ele mesmo", () => {
   assert.equal(resolveActiveTab("informacoes-gerais"), "informacoes-gerais");
+  assert.equal(resolveActiveTab("financeiro"), "financeiro");
 });
 
 test("resolveActiveTab: aba OCULTA (flag OFF) cai no default, não 404", () => {
-  assert.equal(resolveActiveTab("financeiro"), DEFAULT_TAB);
+  assert.equal(resolveActiveTab("orcamento"), DEFAULT_TAB);
   assert.equal(resolveActiveTab("logs"), DEFAULT_TAB);
 });
 
@@ -95,7 +98,8 @@ test("WorkOrderTabsShell: menu só com abas visíveis; ocultas AUSENTES (C2, sem
     </WorkOrderTabsShell>,
   );
   assert.match(html, /Informações gerais/);
-  assert.doesNotMatch(html, /Financeiro|Orçamento|Logs|Mapa/);
+  assert.match(html, /Financeiro/); // Ω3F-3 acendeu a aba
+  assert.doesNotMatch(html, /Orçamento|Logs|Mapa|Estoque/); // demais ainda ocultas (C2)
   assert.doesNotMatch(html, /em breve|PLANNED|TODO/i);
   assert.match(html, /conteudo-da-aba/);
 });

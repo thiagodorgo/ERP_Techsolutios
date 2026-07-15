@@ -493,3 +493,15 @@
   (baixa concorrência); mesmo padrão TOCTOU já aceito no codebase.
 - follow-up: guarda em nível de banco (CHECK/trigger de moeda única por `work_order_id` ativo) num bloco futuro,
   se a janela vier a importar. Aberto (não-bloqueante).
+
+## P-Ω3F3B-UPDATE-VALIDA4 - Validação #4 depende da imutabilidade de customer/service no update (J-OMEGA3F-3B, 2026-07-15)
+- descricao: a validação #4 (tarifa vigente na tabela do cliente) roda SÓ no create de OS. Hoje é sólida
+  porque `UpdateWorkOrderInput` NÃO inclui `customerId`/`serviceCatalogId` (imutáveis pós-create) — o update
+  é fisicamente incapaz de introduzir um par serviço+cliente novo sem tarifa. Apontado pelo critico-adversarial
+  como INVARIANTE a registrar.
+- acao: se um bloco futuro tornar `customer_id`/`service_catalog_id` MUTÁVEIS no update, a validação #4 DEVE
+  ser replicada no update (senão abre bypass). Recomendação adicional (critico): adicionar teste explícito de
+  ORDEM — serviceCatalogId bem-formado-mas-inexistente → 400 invalid_service_catalog_reference ANTES do 422
+  tariff_not_found_for_service (a ordem é garantida pela posição do código; um teste trava regressão de
+  reordenação).
+- status: aberto (não-bloqueante; guarda de invariante para blocos futuros).

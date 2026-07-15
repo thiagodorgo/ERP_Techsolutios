@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { approveOperationalApproval, listPendingApprovals, rejectOperationalApproval } from "../../approval.service";
+import { entityTypeLabel } from "../../approval.types";
 import type { OperationalApproval } from "../../approval.types";
 import { WorkOrderRegistryLinksCard } from "../WorkOrderRegistryLinksCard";
 import type { WorkOrderDetail, WorkOrderEvent, WorkOrderPriority, WorkOrderStatus } from "../../work-orders.types";
@@ -219,7 +220,7 @@ function ApprovalPanel({
         <>
           <div style={{ border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
             {[
-              { k: "Entidade", v: `${approval.entityType} · ${workOrderCode}` },
+              { k: "Entidade", v: `${entityTypeLabel(approval.entityType)} · ${workOrderCode}` },
               { k: "Pendência", v: approval.pendingReason },
               { k: "Solicitado por", v: `${approval.requestedBy} · ${fmtDate(approval.requestedAt)}` },
               ...(approval.decidedBy ? [{ k: "Decidido por", v: `${approval.decidedBy} · ${fmtDate(approval.decidedAt)}` }] : []),

@@ -12,7 +12,7 @@ import type { Tenant, User } from "../src/modules/core-saas/types/core-saas.type
 // list endpoint stays ids-only and the frozen snapshot fields are untouched.
 
 test("[links] detalhe da OS resolve resumo dos quatro cadastros vinculados", async () => {
-  await withRegistryApi(async ({ baseUrl, seed }) => {
+  await withRegistryApi(async ({ baseUrl, seed, seedTariff }) => {
     const customer = await requestJson(baseUrl, "/api/v1/customers", {
       method: "POST",
       headers: authHeaders(seed.tenantA, seed.managerA),
@@ -33,6 +33,8 @@ test("[links] detalhe da OS resolve resumo dos quatro cadastros vinculados", asy
       headers: authHeaders(seed.tenantA, seed.managerA),
       body: { name: "Remocao de veiculo", base_price: 250.5 },
     });
+    // Ω3F-3b (#4) — OS com cliente + serviço exige tarifa vigente na tabela do cliente.
+    await seedTariff(seed.tenantA.id, service.body.data.id);
 
     const created = await requestJson(baseUrl, "/api/v1/work-orders", {
       method: "POST",
@@ -184,6 +186,7 @@ type SeedData = {
 type RegistryApiContext = {
   readonly baseUrl: string;
   readonly seed: SeedData;
+  readonly seedTariff: (tenantId: string, serviceCatalogId: string, unitPrice?: number) => Promise<void>;
 };
 
 async function withRegistryApi(callback: (context: RegistryApiContext) => Promise<void>): Promise<void> {
@@ -197,6 +200,8 @@ async function withRegistryApi(callback: (context: RegistryApiContext) => Promis
     { resetVehicleRuntimeForTests },
     { resetTeamRuntimeForTests },
     { resetServiceCatalogRuntimeForTests },
+    { getMemoryTariffRepositoryForTests, resetTariffRuntimeForTests },
+    { getMemoryPriceTableRepositoryForTests, resetPriceTableRuntimeForTests },
     { CoreSaasRegistry },
     { MemoryCoreSaasAdapter },
     { InMemoryCoreSaasStore },
@@ -207,12 +212,16 @@ async function withRegistryApi(callback: (context: RegistryApiContext) => Promis
     import("../src/modules/vehicles/index.js"),
     import("../src/modules/teams/index.js"),
     import("../src/modules/service-catalog/index.js"),
+    import("../src/modules/tariffs/tariff.service.js"),
+    import("../src/modules/price-tables/price-table.service.js"),
     import("../src/modules/core-saas/services/core-saas.service.js"),
     import("../src/modules/core-saas/services/memory-core-saas.adapter.js"),
     import("../src/modules/core-saas/store/core-saas.store.js"),
   ]);
 
   const resetAll = () => {
+    resetPriceTableRuntimeForTests();
+    resetTariffRuntimeForTests();
     resetWorkOrderRuntimeForTests();
     resetCustomerRuntimeForTests();
     resetVehicleRuntimeForTests();
@@ -228,8 +237,30 @@ async function withRegistryApi(callback: (context: RegistryApiContext) => Promis
   const server = app.listen(0);
   const baseUrl = await getBaseUrl(server);
 
+  // Ω3F-3b (#4) — OS com cliente E serviço exige tarifa vigente na tabela do cliente. Semeia uma tarifa
+  // publicada para o serviço (tenant-scoped) para os cenários "OS totalmente vinculada" satisfazerem o
+  // invariante do create (fora isso, o create → 422 tariff_not_found_for_service).
+  const seedTariff = async (tenantId: string, serviceCatalogId: string, unitPrice = 250.5): Promise<void> => {
+    const table = await getMemoryPriceTableRepositoryForTests().create({
+      tenantId,
+      name: `Tabela ${serviceCatalogId}`,
+      currency: "BRL",
+      version: 1,
+      status: "published",
+    });
+    await getMemoryTariffRepositoryForTests().create({
+      tenantId,
+      priceTableId: table.id,
+      serviceCatalogId,
+      unitPrice,
+      currency: "BRL",
+      origin: "seed",
+      status: "active",
+    });
+  };
+
   try {
-    await callback({ baseUrl, seed });
+    await callback({ baseUrl, seed, seedTariff });
   } finally {
     await closeServer(server);
     resetAll();

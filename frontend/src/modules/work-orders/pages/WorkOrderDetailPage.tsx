@@ -4,6 +4,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { WorkOrderActionBar } from "../components/WorkOrderActionBar";
 import { WorkOrderTabsShell } from "../components/WorkOrderTabsShell";
+import { FinancialTab } from "../components/tabs/FinancialTab";
 import { GeneralInfoTab } from "../components/tabs/GeneralInfoTab";
 import { canAccessTab, findTab, resolveActiveTab, visibleTabs, type WorkOrderTabSlug } from "../tabs.config";
 import { useWorkOrderDetail } from "../useWorkOrderDetail";
@@ -64,9 +65,13 @@ export function WorkOrderDetailPage() {
       </div>
 
       <WorkOrderTabsShell tabs={visibleTabs()} activeTab={activeTab} accessAllowed={accessAllowed} onSelect={selectTab}>
-        {/* Fase 1: só "Informações gerais" é visível → resolveActiveTab sempre devolve essa aba. Cada
-            bloco seguinte (Ω3F-3..8) troca isto por um switch/mapa de conteúdo ao acender sua aba. */}
-        <GeneralInfoTab workOrder={workOrder} timeline={timeline} context={context} canDecide={canDecide} />
+        {/* Conteúdo por aba (C2: só abas acesas chegam aqui). Ω3F-3 acende "Financeiro"; as demais
+            entram nos blocos seguintes. `accessAllowed=false` já é tratado pelo shell (§7). */}
+        {activeTab === "financeiro" ? (
+          <FinancialTab workOrderId={workOrder.id} context={context} permissions={permissions} />
+        ) : (
+          <GeneralInfoTab workOrder={workOrder} timeline={timeline} context={context} canDecide={canDecide} />
+        )}
       </WorkOrderTabsShell>
     </div>
   );

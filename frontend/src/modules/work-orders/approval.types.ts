@@ -10,6 +10,18 @@ export type OperationalApprovalEntityType =
   | "checklist_run"
   | "evidence";
 
+// P-Ω3F1-ENTITYTYPE — o enum técnico NUNCA aparece cru na UI (§3/§11.2). Rótulos PT-BR de
+// negócio, acentuados (§11.3). Valor desconhecido degrada para "Registro" (nunca o token cru).
+const ENTITY_TYPE_LABELS: Record<OperationalApprovalEntityType, string> = {
+  work_order: "Ordem de serviço",
+  checklist_run: "Checklist",
+  evidence: "Evidência",
+};
+
+export function entityTypeLabel(entityType: string): string {
+  return ENTITY_TYPE_LABELS[entityType as OperationalApprovalEntityType] ?? "Registro";
+}
+
 export type OperationalApproval = {
   readonly id: string;
   readonly entityType: OperationalApprovalEntityType;
