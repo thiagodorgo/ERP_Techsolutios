@@ -35,7 +35,7 @@ export const DEFAULT_TAB: WorkOrderTabSlug = "informacoes-gerais";
 export const WORK_ORDER_TABS: readonly WorkOrderTabDef[] = [
   { slug: "informacoes-gerais", label: "Informações gerais", visible: true, deliveredBy: "Ω3F-1" },
   { slug: "financeiro", label: "Financeiro", visible: true, requiredPermission: "work_order_financials:read", deliveredBy: "Ω3F-3" },
-  { slug: "orcamento", label: "Orçamento", visible: false, deliveredBy: "Ω3F-4" },
+  { slug: "orcamento", label: "Orçamento", visible: true, requiredPermission: "service_quotes:read", deliveredBy: "Ω3F-4" },
   { slug: "estoque", label: "Estoque", visible: false, deliveredBy: "Ω3F-10 (Fase 2)" },
   { slug: "comentarios", label: "Comentários", visible: false, deliveredBy: "Ω3F-5" },
   { slug: "arquivos", label: "Arquivos", visible: false, deliveredBy: "Ω3F-5" },

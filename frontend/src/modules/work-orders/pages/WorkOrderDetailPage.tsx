@@ -6,6 +6,7 @@ import { WorkOrderActionBar } from "../components/WorkOrderActionBar";
 import { WorkOrderTabsShell } from "../components/WorkOrderTabsShell";
 import { FinancialTab } from "../components/tabs/FinancialTab";
 import { GeneralInfoTab } from "../components/tabs/GeneralInfoTab";
+import { QuoteTab } from "../components/tabs/QuoteTab";
 import { canAccessTab, findTab, resolveActiveTab, visibleTabs, type WorkOrderTabSlug } from "../tabs.config";
 import { useWorkOrderDetail } from "../useWorkOrderDetail";
 
@@ -69,6 +70,8 @@ export function WorkOrderDetailPage() {
             entram nos blocos seguintes. `accessAllowed=false` já é tratado pelo shell (§7). */}
         {activeTab === "financeiro" ? (
           <FinancialTab workOrderId={workOrder.id} context={context} permissions={permissions} />
+        ) : activeTab === "orcamento" ? (
+          <QuoteTab workOrderId={workOrder.id} context={context} permissions={permissions} />
         ) : (
           <GeneralInfoTab workOrder={workOrder} timeline={timeline} context={context} canDecide={canDecide} />
         )}

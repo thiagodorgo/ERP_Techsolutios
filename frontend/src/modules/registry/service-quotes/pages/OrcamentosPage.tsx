@@ -1,4 +1,4 @@
-import { BadgeCheck, Ban, Plus, RefreshCw } from "lucide-react";
+import { BadgeCheck, Ban, Plus, RefreshCw, Share2 } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useCallback, useMemo, useState } from "react";
 
@@ -18,8 +18,9 @@ import {
   getServiceQuoteStatusTone,
   shortRef,
 } from "../service-quotes.adapter";
-import { changeServiceQuoteStatus } from "../service-quotes.service";
-import type { ServiceQuoteItem, ServiceQuoteStatus, ServiceQuotesFilters } from "../service-quotes.types";
+import { approveServiceQuote, changeServiceQuoteStatus, shareServiceQuote } from "../service-quotes.service";
+import { ApiError } from "../../../../services/api/client";
+import type { ServiceQuoteRow, ServiceQuoteStatus, ServiceQuotesFilters } from "../service-quotes.types";
 import { useServiceQuotes } from "../useServiceQuotes";
 import { useServiceQuoteReferences } from "../useServiceQuoteReferences";
 
@@ -42,6 +43,17 @@ const mutedStyle: CSSProperties = { color: "var(--text-secondary)" };
 const monoStyle: CSSProperties = { fontFamily: "var(--font-mono, monospace)", fontSize: "var(--text-xs)" };
 const moneyStyle: CSSProperties = { fontVariantNumeric: "tabular-nums", fontWeight: 600 };
 
+// Erros do backend viram mensagem clara (o cliente só expõe o status, não o código do corpo — §2.8).
+function messageForQuoteError(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    if (err.status === 422) return "Não foi possível concluir: o orçamento pode estar vencido ou sem itens.";
+    if (err.status === 409) return "O orçamento já foi aprovado ou não está em situação aprovável.";
+    if (err.status === 404) return "Orçamento não encontrado.";
+    return err.safeMessage;
+  }
+  return err instanceof Error ? err.message : fallback;
+}
+
 export function OrcamentosPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
@@ -52,9 +64,11 @@ export function OrcamentosPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<QuoteStatusFilter>("all");
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   const canCreate = can("service_quotes:create");
   const canUpdate = can("service_quotes:update");
+  const canApprove = can("service_quotes:approve");
 
   const context = useMemo(
     () => ({
@@ -72,8 +86,9 @@ export function OrcamentosPage() {
     [items, statusFilter],
   );
 
-  async function applyStatus(quote: ServiceQuoteItem, status: ServiceQuoteStatus) {
+  async function applyStatus(quote: ServiceQuoteRow, status: ServiceQuoteStatus) {
     setActionError(null);
+    setActionNotice(null);
     try {
       await changeServiceQuoteStatus(context, quote.id, status);
       void refresh();
@@ -82,13 +97,43 @@ export function OrcamentosPage() {
     }
   }
 
+  // Ω3F-4c — aprova o orçamento (draft) → CRIA a OS. Mostra a OS gerada e recarrega a lista.
+  async function approveQuote(quote: ServiceQuoteRow) {
+    setActionError(null);
+    setActionNotice(null);
+    try {
+      const result = await approveServiceQuote(context, quote.id, {});
+      setActionNotice(result.workOrderId ? `Orçamento aprovado — OS gerada (${result.workOrderId}).` : "Orçamento aprovado.");
+      void refresh();
+    } catch (actionErr) {
+      setActionError(messageForQuoteError(actionErr, "Não foi possível aprovar o orçamento."));
+    }
+  }
+
+  // Ω3F-4c — compartilha o orçamento: devolve o link (sharePath) para copiar.
+  async function shareQuote(quote: ServiceQuoteRow) {
+    setActionError(null);
+    setActionNotice(null);
+    try {
+      const result = await shareServiceQuote(context, quote.id);
+      if (result.sharePath) {
+        if (typeof navigator !== "undefined" && navigator.clipboard) void navigator.clipboard.writeText(result.sharePath);
+        setActionNotice(`Link de compartilhamento: ${result.sharePath}`);
+      } else {
+        setActionError("O orçamento não retornou um link de compartilhamento.");
+      }
+    } catch (actionErr) {
+      setActionError(messageForQuoteError(actionErr, "Não foi possível compartilhar o orçamento."));
+    }
+  }
+
   // Resolve o RÓTULO humano (nome do serviço/cliente, código da OS); UUID só no title (veto
   // cognicao-visual). Fallback shortRef enquanto as referências carregam / D-007 vazio.
-  const serviceName = (quote: ServiceQuoteItem) => references.serviceLabelById.get(quote.serviceCatalogId);
-  const customerName = (quote: ServiceQuoteItem) => (quote.customerId ? references.customerLabelById.get(quote.customerId) : undefined);
-  const workOrderCode = (quote: ServiceQuoteItem) => (quote.workOrderId ? references.workOrderLabelById.get(quote.workOrderId) : undefined);
+  const serviceName = (quote: ServiceQuoteRow) => references.serviceLabelById.get(quote.serviceCatalogId);
+  const customerName = (quote: ServiceQuoteRow) => (quote.customerId ? references.customerLabelById.get(quote.customerId) : undefined);
+  const workOrderCode = (quote: ServiceQuoteRow) => (quote.workOrderId ? references.workOrderLabelById.get(quote.workOrderId) : undefined);
 
-  const columns: DenseColumn<ServiceQuoteItem>[] = [
+  const columns: DenseColumn<ServiceQuoteRow>[] = [
     {
       key: "workOrderId",
       header: "OS",
@@ -166,16 +211,25 @@ export function OrcamentosPage() {
       key: "actions",
       header: "Ações",
       render: (quote) => {
-        if (!canUpdate) return <span style={countStyle}>—</span>;
+        if (!canUpdate && !canApprove) return <span style={countStyle}>—</span>;
         const actions = [];
-        if (quote.status === "draft") {
+        // Aprovar (draft) → cria a OS. Exige a permissão dedicada service_quotes:approve.
+        if (quote.status === "draft" && canApprove) {
           actions.push(
-            <Button key="approve" type="button" size="sm" variant="secondary" aria-label="Aprovar orçamento" onClick={() => void applyStatus(quote, "approved")}>
+            <Button key="approve" type="button" size="sm" variant="secondary" aria-label="Aprovar orçamento" onClick={() => void approveQuote(quote)}>
               <BadgeCheck size={14} aria-hidden /> Aprovar
             </Button>,
           );
         }
-        if (quote.status === "draft" || quote.status === "approved" || quote.status === "rejected") {
+        // Compartilhar (gera/reusa o link). Reusa service_quotes:update.
+        if (canUpdate && quote.status !== "void") {
+          actions.push(
+            <Button key="share" type="button" size="sm" variant="ghost" aria-label="Compartilhar orçamento" onClick={() => void shareQuote(quote)}>
+              <Share2 size={14} aria-hidden /> Compartilhar
+            </Button>,
+          );
+        }
+        if (canUpdate && (quote.status === "draft" || quote.status === "approved" || quote.status === "rejected")) {
           actions.push(
             <Button key="void" type="button" size="sm" variant="ghost" aria-label="Anular orçamento" onClick={() => void applyStatus(quote, "void")}>
               <Ban size={14} aria-hidden /> Anular
@@ -195,7 +249,7 @@ export function OrcamentosPage() {
 
   // Busca casa os RÓTULOS resolvidos (nome do serviço/cliente, código da OS), não só o UUID.
   const filterWithLabels = useCallback(
-    (its: readonly ServiceQuoteItem[], f: { search: string; isActive: ServiceQuotesFilters["isActive"] }) =>
+    (its: readonly ServiceQuoteRow[], f: { search: string; isActive: ServiceQuotesFilters["isActive"] }) =>
       filterServiceQuotes(its, f, (q) => [
         q.serviceCatalogId ? references.serviceLabelById.get(q.serviceCatalogId) : undefined,
         q.customerId ? references.customerLabelById.get(q.customerId) : undefined,
@@ -204,7 +258,7 @@ export function OrcamentosPage() {
     [references],
   );
 
-  const dense = useDenseList<ServiceQuoteItem>({ items: visibleItems, columns, filter: filterWithLabels, defaultSort: { key: "frozenTotal", dir: "desc" } });
+  const dense = useDenseList<ServiceQuoteRow>({ items: visibleItems, columns, filter: filterWithLabels, defaultSort: { key: "frozenTotal", dir: "desc" } });
 
   return (
     <section className="page-stack work-orders-page">
@@ -234,8 +288,14 @@ export function OrcamentosPage() {
       ) : null}
 
       {actionError ? (
-        <Alert title="Não foi possível alterar a situação" tone="danger">
+        <Alert title="Não foi possível concluir a ação" tone="danger">
           {actionError}
+        </Alert>
+      ) : null}
+
+      {actionNotice ? (
+        <Alert title="Ação concluída" tone="info">
+          {actionNotice}
         </Alert>
       ) : null}
 
