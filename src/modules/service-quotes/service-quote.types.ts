@@ -86,7 +86,9 @@ export const SERVICE_QUOTE_STATUSES = ["draft", "approved", "rejected", "void"] 
 export const SERVICE_QUOTE_PRICE_SOURCES = ["tariff", "manual"] as const;
 
 // Teto do Decimal(12,2): 9.999.999.999,99. Preço e total precisam caber (A3 do crítico).
-export const MONEY_MAX = 9999999999.99;
+// C3 (Ω3F-3a) — o valor agora mora no shape compartilhado (mesmo literal de antes); re-export
+// preserva o contrato deste módulo e elimina o risco de drift entre os consumidores.
+export { MONEY_MAX } from "../tariffs/financial-item.shape.js";
 
 export class ServiceQuoteError extends Error {
   constructor(
