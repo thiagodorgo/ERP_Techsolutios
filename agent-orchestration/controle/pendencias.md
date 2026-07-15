@@ -475,3 +475,14 @@
 - acao: bloco de varredura único acentuando labels + mensagens de `WorkOrderForm.tsx` e
   `work-orders.adapter.ts` (validateWorkOrderForm) de uma vez, destravando a convenção p/ os próximos Ω3F.
 - status: aberto (apontado por cognicao-visual)
+
+## P-Ω3F3A-MOEDA-AGREGADO - Total agregado somava moedas heterogêneas (J-OMEGA3F-3A, 2026-07-15) — RESOLVIDO NO PR
+- descricao: o GET de itens financeiros da OS agrega `totalAmount = roundMoney(items.reduce(...))` e emite
+  `currency: items[0]?.currency`. Sem trava, itens de moedas diferentes na MESMA OS produziriam um total sem
+  sentido (soma de BRL+USD sob o rótulo do 1º item). Apontado por **validador-mestre** (achado MÉDIA) na junta
+  J-OMEGA3F-3A.
+- decisao: **correção imediata** (não adiado). `WorkOrderFinancialService.create` passa a exigir homogeneidade de
+  moeda por OS — o 1º item fixa a moeda; lançamento com moeda divergente → 422 `currency_mismatch`
+  (`work-order-financial.service.ts`). Assim o agregado é SEMPRE single-currency e o rótulo `items[0].currency`
+  é fiel. PATCH não altera moeda (congelada no lançamento).
+- status: RESOLVIDO neste PR (Ω3F-3a) + teste de regressão `currency_mismatch`.

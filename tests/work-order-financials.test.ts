@@ -190,6 +190,23 @@ test("source inválido → 400 invalid_price_source", async () => {
   );
 });
 
+test("homogeneidade de moeda por OS: 1º item fixa a moeda; divergente → 422 currency_mismatch (achado J-Ω3F-3A)", async () => {
+  const s = setup();
+  const ctx = actor();
+  const wo = await s.workOrders.create(ctx, { title: "OS" });
+  // 1º item fixa BRL.
+  const brl = await s.financials.create(ctx, wo.id, { source: "manual", description: "Pedágio", unit_amount: 10, currency: "BRL" });
+  assert.equal(brl.currency, "BRL");
+  // 2º item em moeda diferente na MESMA OS → 422 (o total agregado seria sem sentido).
+  await assert.rejects(
+    () => s.financials.create(ctx, wo.id, { source: "manual", description: "Toll", unit_amount: 5, currency: "USD" }),
+    (e: unknown) => e instanceof WorkOrderFinancialError && e.statusCode === 422 && e.reason === "currency_mismatch",
+  );
+  // Mesma moeda → segue aceitando (o agregado permanece single-currency).
+  const brl2 = await s.financials.create(ctx, wo.id, { source: "manual", description: "Estacionamento", unit_amount: 8, currency: "BRL" });
+  assert.equal(brl2.currency, "BRL");
+});
+
 // ---------- Quantidade / teto Decimal(12,2) ----------
 
 test("quantity=0 e negativa → 400 invalid_quantity (precedente do orçamento, NÃO 422)", async () => {

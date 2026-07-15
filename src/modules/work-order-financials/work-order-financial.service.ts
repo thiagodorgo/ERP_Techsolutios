@@ -119,6 +119,19 @@ export class WorkOrderFinancialService {
       priceTableId = tariff.priceTableId;
     }
 
+    // Homogeneidade de moeda por OS (achado do validador-mestre J-Ω3F-3A): o total agregado do GET soma
+    // valores — misturar moedas na mesma OS produziria um total sem sentido. O 1º item fixa a moeda da OS;
+    // os demais precisam coincidir (422 currency_mismatch). Assim o agregado é SEMPRE single-currency.
+    const currentItems = await this.repository.listByWorkOrder(actor.tenantId, workOrder.id);
+    if (currentItems.length > 0 && currentItems[0].currency !== currency) {
+      throw new WorkOrderFinancialError(
+        422,
+        "WORK_ORDER_FINANCIAL_UNPROCESSABLE",
+        "currency_mismatch",
+        `All financial items on this work order must use the same currency (${currentItems[0].currency}).`,
+      );
+    }
+
     assertMoneyInRange(unitAmount, "unitAmount");
     const totalAmount = assertMoneyInRange(roundMoney(unitAmount * quantity), "totalAmount");
 
