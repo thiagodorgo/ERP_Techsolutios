@@ -541,3 +541,13 @@
 - acao: se a fidelidade exigir categoria, estender `WorkOrderAttachment.metadata.documentType` (aditivo, sem
   migration) + expor no DTO + selector na UI, numa fatia futura tocando o módulo de anexos.
 - status: aberto (não-bloqueante).
+
+## P-Ω3F5A-TAG-TOCTOU - Comentário pode persistir com uma tag a menos sob delete concorrente de tag (J-OMEGA3F-5A, 2026-07-15)
+- descricao: addComment pré-valida todas as tags (422) e cria o comentário + attach das tags em transações
+  RLS SEPARADAS. Se uma tag for HARD-deletada na janela entre a pré-validação e o attach, a FK RESTRICT
+  rejeita (agora traduzido para 422 tag_not_found, não mais 500 — corrigido no PR), mas o comentário JÁ foi
+  gravado → persiste com uma tag a menos + cliente recebe 422. Janela estreitíssima; estado resultante válido
+  (comentário existe). Apontado pelo critico (não-bloqueante).
+- acao: robustez — envolver create-do-comentário + attach-das-tags numa ÚNICA transação (ou reordenar) para
+  atomicidade total, numa fatia futura. Hoje: 500→422 corrigido; orfandade residual só sob corrida rara.
+- status: aberto (não-bloqueante; falha seseg — o 500 já foi eliminado).

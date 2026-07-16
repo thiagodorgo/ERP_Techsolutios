@@ -2,7 +2,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
 import type { CreateTagAssignmentInput, TagAssignment } from "./tag-assignment.types.js";
-import { duplicateTagAssignmentError } from "./tag-assignment.types.js";
+import { duplicateTagAssignmentError, tagNotFoundError } from "./tag-assignment.types.js";
 import type { TagAssignmentRepository } from "./tag-assignment.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
@@ -23,10 +23,14 @@ export class PrismaTagAssignmentRepository implements TagAssignmentRepository {
       });
       return mapRecord(record);
     } catch (error) {
-      // P2002 (unique polimórfico) → 409. P2003 (FK de tag_id inválida/cross-tenant) fica para o
-      // service, que já pré-valida a tag e emite 422 tag_not_found antes de tocar o banco.
+      // P2002 (unique polimórfico) → 409. P2003 (FK de tag_id inválida/cross-tenant) → 422 tag_not_found:
+      // o service já pré-valida a tag, mas se ela for HARD-deletada na janela entre a pré-validação e o
+      // attach (TOCTOU, condição critico J-Ω3F-5A), a FK RESTRICT rejeita — traduzimos p/ 422, nunca 500.
       if (isPrismaError(error, "P2002")) {
         throw duplicateTagAssignmentError();
+      }
+      if (isPrismaError(error, "P2003")) {
+        throw tagNotFoundError();
       }
       throw error;
     }
