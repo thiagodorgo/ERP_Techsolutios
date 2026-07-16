@@ -33,7 +33,6 @@ import {
   assertNonEmptyString,
   assertStatusTransition,
   optionalString,
-  parseComment,
   parseLimit,
   parseOffset,
   parseOptionalCoordinate,
@@ -635,21 +634,10 @@ export class WorkOrderService {
     return this.repository.listTimeline(actor.tenantId, workOrder.id);
   }
 
-  // Ω3-b — comentário livre do usuário: grava um evento imutável na timeline da OS (Opção A da decisão
-  // checklist-unificado/D4). `get` garante 404 cross-tenant (RLS). O corpo vai só em `message`.
-  async addComment(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord): Promise<WorkOrderEvent> {
-    const workOrder = await this.get(actor, workOrderId);
-    const message = parseComment(body.message ?? body.text ?? body.comment);
-
-    return this.repository.createEvent({
-      tenantId: actor.tenantId,
-      workOrderId: workOrder.id,
-      eventType: "work_order_comment",
-      actorUserId: actor.userId,
-      message,
-      metadata: {},
-    });
-  }
+  // Ω3F-5 (D-Ω3F-5-COMMENT) — o comentário do usuário deixou de gravar evento na timeline: agora é um
+  // AGREGADO PRÓPRIO mutável (`WorkOrderComment`), servido por WorkOrderCommentService/`/comments`.
+  // WorkOrderEvent volta a ser SÓ audit trail de sistema (append-only). Eventos `work_order_comment`
+  // históricos permanecem inertes em work_order_events (sem backfill; o filtro P-034 do dashboard segue).
 
   // Ω3-c — congela (ou limpa) o snapshot de checklist na OS. Chamado pelo FieldDispatchService no
   // despacho (E1/E3); tenant-scoped (OS de outro tenant → 404). Snapshot é cópia imutável (JSON).

@@ -533,3 +533,21 @@
 - acao: fatia de UX subsequente — diálogo de confirmação no approve coletando modo de acionamento + origem/
   destino (para tipos que exigem, ex. reboque), passando ao corpo do approve. Fecha a fidelidade fina do #7.
 - status: aberto (não-bloqueante).
+
+## P-Ω3F5-DOC-TYPE - Categoria de documento no upload manual de anexo (Ω3F-5, 2026-07-15)
+- descricao: o back de anexos (Ω3-d) deriva nome=fileName e tipo=mimeType; NÃO tem campo de categoria
+  selecionável pelo usuário (só `description` livre, que nem é exposto no DTO). O vídeo §1.3 1:46–2:09 pode
+  mostrar "tipo" como categoria. Decisão D-Ω3F-5-UPLOAD-TYPE: a aba usa `description` como rótulo por ora.
+- acao: se a fidelidade exigir categoria, estender `WorkOrderAttachment.metadata.documentType` (aditivo, sem
+  migration) + expor no DTO + selector na UI, numa fatia futura tocando o módulo de anexos.
+- status: aberto (não-bloqueante).
+
+## P-Ω3F5A-TAG-TOCTOU - Comentário pode persistir com uma tag a menos sob delete concorrente de tag (J-OMEGA3F-5A, 2026-07-15)
+- descricao: addComment pré-valida todas as tags (422) e cria o comentário + attach das tags em transações
+  RLS SEPARADAS. Se uma tag for HARD-deletada na janela entre a pré-validação e o attach, a FK RESTRICT
+  rejeita (agora traduzido para 422 tag_not_found, não mais 500 — corrigido no PR), mas o comentário JÁ foi
+  gravado → persiste com uma tag a menos + cliente recebe 422. Janela estreitíssima; estado resultante válido
+  (comentário existe). Apontado pelo critico (não-bloqueante).
+- acao: robustez — envolver create-do-comentário + attach-das-tags numa ÚNICA transação (ou reordenar) para
+  atomicidade total, numa fatia futura. Hoje: 500→422 corrigido; orfandade residual só sob corrida rara.
+- status: aberto (não-bloqueante; falha seseg — o 500 já foi eliminado).

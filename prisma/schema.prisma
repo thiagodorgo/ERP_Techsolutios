@@ -1312,6 +1312,46 @@ model WorkOrderFinancialItem {
   @@map("work_order_financial_items")
 }
 
+// Ω3F-5 (D-Ω3F-5-COMMENT) — comentário do usuário como AGREGADO PRÓPRIO mutável (deixa WorkOrderEvent
+// como audit trail append-only intacto). Editar = PATCH message (carimba edited_at); excluir = delete
+// LÓGICO (deleted_at). FKs compostas (tenant_id, work_order_id) → work_orders e (tenant_id,
+// author_user_id) → users, RESTRICT (só no SQL da migration; modelo scalar-only, espelho dos vizinhos).
+model WorkOrderComment {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id      String    @db.Uuid
+  work_order_id  String    @db.Uuid
+  author_user_id String    @db.Uuid
+  message        String
+  edited_at      DateTime? @db.Timestamptz(6)
+  deleted_at     DateTime? @db.Timestamptz(6)
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, work_order_id])
+  @@map("work_order_comments")
+}
+
+// Ω3F-5 (D-Ω3F-5-TAGASSIGN) — junção POLIMÓRFICA tag ↔ alvo (entity_type/entity_id). entity_type =
+// "work_order_comment" agora; outros depois sem retrabalho. @@unique polimórfico → 409 duplicate.
+// SEM FK nativa ao alvo polimórfico (integridade app-level: attach valida alvo/tag). Detach = HARD-delete.
+// FK composta (tenant_id, tag_id) → tags RESTRICT (só no SQL da migration; modelo scalar-only).
+model TagAssignment {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String   @db.Uuid
+  tag_id      String   @db.Uuid
+  entity_type String
+  entity_id   String   @db.Uuid
+  created_by  String?  @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, entity_type, entity_id, tag_id])
+  @@index([tenant_id, entity_type, entity_id])
+  @@index([tenant_id, tag_id])
+  @@map("tag_assignments")
+}
+
 // Ω2-b — Fornecedor (cadastro). Chave natural [tenant_id, name]; desativação lógica via is_active.
 model Supplier {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
