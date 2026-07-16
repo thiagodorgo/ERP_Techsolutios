@@ -2,8 +2,11 @@ import { ClipboardList } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { usePermissions } from "../../../providers/PermissionProvider";
+import { useAuth } from "../../../providers/AuthProvider";
 import { WorkOrderActionBar } from "../components/WorkOrderActionBar";
 import { WorkOrderTabsShell } from "../components/WorkOrderTabsShell";
+import { AttachmentsTab } from "../components/tabs/AttachmentsTab";
+import { CommentsTab } from "../components/tabs/CommentsTab";
 import { FinancialTab } from "../components/tabs/FinancialTab";
 import { GeneralInfoTab } from "../components/tabs/GeneralInfoTab";
 import { QuoteTab } from "../components/tabs/QuoteTab";
@@ -20,6 +23,8 @@ export function WorkOrderDetailPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { workOrder, timeline, loading, source, context, refresh } = useWorkOrderDetail(workOrderId);
   const { permissions } = usePermissions();
+  const { session } = useAuth();
+  const currentUserId = session?.user.id;
   const canDecide = permissions.includes("work_orders:cancel") || permissions.includes("work_orders:approve");
 
   const activeTab = resolveActiveTab(searchParams.get("aba"));
@@ -72,6 +77,10 @@ export function WorkOrderDetailPage() {
           <FinancialTab workOrderId={workOrder.id} context={context} permissions={permissions} />
         ) : activeTab === "orcamento" ? (
           <QuoteTab workOrderId={workOrder.id} context={context} permissions={permissions} />
+        ) : activeTab === "comentarios" ? (
+          <CommentsTab workOrderId={workOrder.id} context={context} permissions={permissions} currentUserId={currentUserId} />
+        ) : activeTab === "arquivos" ? (
+          <AttachmentsTab workOrderId={workOrder.id} context={context} permissions={permissions} />
         ) : (
           <GeneralInfoTab workOrder={workOrder} timeline={timeline} context={context} canDecide={canDecide} />
         )}

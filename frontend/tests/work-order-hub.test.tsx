@@ -31,9 +31,9 @@ test("WORK_ORDER_TABS: 11 abas na ordem exata da spec §1.3", () => {
   );
 });
 
-test("C2: 'Informações gerais' + 'Financeiro' + 'Orçamento' visíveis (Ω3F-4 acende Orçamento); demais ocultas", () => {
+test("C2: 5 abas visíveis (Ω3F-5b acende Comentários + Arquivos); demais ocultas", () => {
   const vis = visibleTabs();
-  assert.deepEqual(vis.map((t) => t.slug), ["informacoes-gerais", "financeiro", "orcamento"]);
+  assert.deepEqual(vis.map((t) => t.slug), ["informacoes-gerais", "financeiro", "orcamento", "comentarios", "arquivos"]);
   const financeiro = vis.find((t) => t.slug === "financeiro");
   assert.equal(financeiro?.label, "Financeiro");
   // A aba Financeiro é governada: exige work_order_financials:read (§7).
@@ -42,12 +42,21 @@ test("C2: 'Informações gerais' + 'Financeiro' + 'Orçamento' visíveis (Ω3F-4
   assert.equal(orcamento?.label, "Orçamento");
   // A aba Orçamento é governada: exige service_quotes:read (§7).
   assert.equal(orcamento?.requiredPermission, "service_quotes:read");
+  const comentarios = vis.find((t) => t.slug === "comentarios");
+  assert.equal(comentarios?.label, "Comentários");
+  // Comentários e Arquivos exigem work_orders:read (§7).
+  assert.equal(comentarios?.requiredPermission, "work_orders:read");
+  const arquivos = vis.find((t) => t.slug === "arquivos");
+  assert.equal(arquivos?.label, "Arquivos");
+  assert.equal(arquivos?.requiredPermission, "work_orders:read");
 });
 
 test("resolveActiveTab: slug visível → ele mesmo", () => {
   assert.equal(resolveActiveTab("informacoes-gerais"), "informacoes-gerais");
   assert.equal(resolveActiveTab("financeiro"), "financeiro");
   assert.equal(resolveActiveTab("orcamento"), "orcamento");
+  assert.equal(resolveActiveTab("comentarios"), "comentarios");
+  assert.equal(resolveActiveTab("arquivos"), "arquivos");
 });
 
 test("resolveActiveTab: aba OCULTA (flag OFF) cai no default, não 404", () => {
