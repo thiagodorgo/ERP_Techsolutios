@@ -22,8 +22,9 @@ export const WORK_ORDER_EVENTS = [
   "work_order_status_changed",
   "work_order_cancelled",
   "work_order_completed",
-  // Ω3-b — comentário livre do usuário na timeline da OS (evento imutável; sem migration, event_type
-  // é String livre no Postgres). O corpo vai só em `message`; NUNCA em metadados de auditoria (§2.8).
+  // Ω3-b (LEGADO, D-Ω3F-5-COMMENT) — o comentário NÃO é mais gravado como evento (virou o agregado
+  // WorkOrderComment). Este membro fica só para os eventos `work_order_comment` HISTÓRICOS já
+  // persistidos (inertes, sem backfill) e para o filtro P-034 do dashboard, que segue os excluindo.
   "work_order_comment",
 ] as const;
 

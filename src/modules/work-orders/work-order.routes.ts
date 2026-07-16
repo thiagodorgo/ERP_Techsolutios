@@ -132,14 +132,8 @@ export function createWorkOrderRouter(resolveService: WorkOrderServiceResolver =
     }),
   );
 
-  // Ω3-b — comentário livre na timeline da OS (aparece no GET .../timeline acima).
-  router.post(
-    "/work-orders/:workOrderId/comments",
-    requirePermission(WORK_ORDER_PERMISSIONS.comment),
-    handleAsyncRoute(async (request, response) => {
-      sendResult(response, await controller.addComment(request));
-    }),
-  );
+  // Ω3F-5 (D-Ω3F-5-COMMENT) — os comentários da OS saíram deste router: viraram AGREGADO PRÓPRIO
+  // (`/work-orders/:id/comments`), servido por createWorkOrderCommentRouter (montado em src/app.ts).
 
   // Ω3-d — Anexos de OS (reuso do storage de checklist + AV-scan). Upload = create OU update (fiel a
   // Danos, inclui field_dispatcher). Download stream server-side (sem presigned). Delete lógico.

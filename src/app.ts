@@ -39,6 +39,7 @@ import { createTariffRouter } from "./modules/tariffs/index.js";
 import { createServiceQuoteRouter } from "./modules/service-quotes/index.js";
 import { createServiceQuoteItemRouter } from "./modules/service-quote-items/index.js";
 import { createWorkOrderFinancialRouter } from "./modules/work-order-financials/index.js";
+import { createWorkOrderCommentRouter } from "./modules/work-order-comments/index.js";
 import { createBranchRouter } from "./modules/branches/index.js";
 import { createSupplierRouter } from "./modules/suppliers/index.js";
 import { createTagRouter } from "./modules/tags/index.js";
@@ -102,6 +103,9 @@ export function createApp(service: ICoreSaasService): Express {
   // Ω3F-3a — Financeiro da OS (/work-orders/:id/financial-items) em router próprio: o path não
   // colide com nenhuma rota do work-orders router (que segue intocado neste bloco).
   app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderFinancialRouter());
+  // Ω3F-5 — Comentários da OS (/work-orders/:id/comments) em router próprio: o path não colide com o
+  // work-orders router (a antiga POST /comments foi removida de lá).
+  app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderCommentRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createBranchRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createSupplierRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTagRouter());

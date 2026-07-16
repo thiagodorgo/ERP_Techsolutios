@@ -141,27 +141,6 @@ export class WorkOrderController {
     };
   }
 
-  // Ω3-b — registra comentário livre na timeline da OS. Auditoria com ALLOWLIST: só
-  // workOrderId/eventType/messageLength — NUNCA o corpo do comentário (§2.8, pode conter PII).
-  async addComment(request: Request) {
-    const [service, actor] = await this.resolveServiceWithActor(request);
-    const event = await service.addComment(actor, readRouteParam(request.params.workOrderId), (request.body ?? {}) as Record<string, unknown>);
-
-    await recordRequestAuditBestEffort(request, {
-      action: "work_order.commented",
-      resourceType: "work_order",
-      resourceId: event.workOrderId,
-      outcome: "success",
-      severity: "info",
-      metadata: { workOrderId: event.workOrderId, eventType: event.eventType, messageLength: event.message.length },
-    });
-
-    return {
-      status: 201,
-      data: toWorkOrderEventDto(event),
-    };
-  }
-
   // Ω1b-2 — geocodifica o endereço da OS sob demanda (botão "Localizar no mapa").
   async geocode(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);

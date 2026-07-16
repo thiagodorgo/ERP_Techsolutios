@@ -503,3 +503,29 @@ Decisões de arquitetura do bloco Ω3F-4b (backend approve+share), tomadas pelo 
   dono AUTENTICADO. O token NUNCA entra em metadado de auditoria (§2.8) nem no DTO normal do orçamento (só o
   endpoint /share o devolve). O endpoint público de leitura-por-token fica ADIADO (superfície não-autenticada
   → precisa de fatia com revisão secops) — o -4b só gera+devolve o link ao dono.
+
+## D-Ω3F-5 — Comentários (agregado próprio) + TagAssignment polimórfico (2026-07-15)
+
+Decisões do bloco Ω3F-5, com base no dossiê do fid-analista (blast radius rastreado); junta valida.
+
+- **D-Ω3F-5-TAGASSIGN (D2, já ratificado 5/5 em J-Ω3F-0):** modelo `TagAssignment` **polimórfico**
+  (`tenant_id, tag_id, entity_type, entity_id, created_at, created_by?`), `@@unique([tenant_id, entity_type,
+  entity_id, tag_id])` → **409** em duplicata, índices `(tenant_id,entity_type,entity_id)` e `(tenant_id,tag_id)`.
+  `entity_type="work_order_comment"` agora; `work_order`/outros depois sem retrabalho. SEM FK nativa ao alvo
+  polimórfico → **integridade app-level**: attach valida que `tag_id` existe+ativo tenant-scoped (**422
+  tag_not_found**) e que o alvo existe (**404**). **Detach = HARD-delete** da associação (remover tag do
+  comentário é ação corriqueira, não evidência auditável; o audit-log da request cobre). RLS ENABLE+FORCE+policy.
+  Resolve a pendência **P-Ω2d (TagAssignment)**.
+- **D-Ω3F-5-COMMENT:** o comentário do usuário passa a ser um AGREGADO PRÓPRIO mutável **`WorkOrderComment`**
+  (`tenant_id, work_order_id, author_user_id, message, edited_at?, deleted_at?, timestamps`), deixando
+  `WorkOrderEvent` como **audit trail append-only intacto**. `addComment` deixa de emitir o evento
+  `work_order_comment` e passa a gravar `WorkOrderComment`. **Editar** = PATCH message (carimba edited_at);
+  **excluir** = delete LÓGICO (deleted_at). Reusa `parseComment` (≤4000→422 comment_too_long, vazio→400
+  comment_required). Comentário SAI da timeline/Histórico → aba própria. **SEM backfill** dos eventos legados
+  neste PR (eventos `work_order_comment` históricos permanecem em work_order_events, inertes; o filtro P-034 do
+  dashboard PERMANECE). Os 17 testes de comentário (Ω3-b) são reescritos para a nova fonte. Blast radius: só
+  work-orders + os 2 repos de dashboard (já filtram); **dispatch NÃO afetado** (FieldDispatchEvent é timeline
+  separada).
+- **D-Ω3F-5-UPLOAD-TYPE:** a aba Arquivos (upload manual multipart, campo `file`) usa `description` como
+  rótulo livre ("tipo/nome") — o back de anexos (Ω3-d) NÃO é tocado. Categoria selecionável de documento
+  (`metadata.documentType` + DTO) fica ADIADA (P-Ω3F5-DOC-TYPE) para não invadir o módulo de anexos.

@@ -533,3 +533,11 @@
 - acao: fatia de UX subsequente — diálogo de confirmação no approve coletando modo de acionamento + origem/
   destino (para tipos que exigem, ex. reboque), passando ao corpo do approve. Fecha a fidelidade fina do #7.
 - status: aberto (não-bloqueante).
+
+## P-Ω3F5-DOC-TYPE - Categoria de documento no upload manual de anexo (Ω3F-5, 2026-07-15)
+- descricao: o back de anexos (Ω3-d) deriva nome=fileName e tipo=mimeType; NÃO tem campo de categoria
+  selecionável pelo usuário (só `description` livre, que nem é exposto no DTO). O vídeo §1.3 1:46–2:09 pode
+  mostrar "tipo" como categoria. Decisão D-Ω3F-5-UPLOAD-TYPE: a aba usa `description` como rótulo por ora.
+- acao: se a fidelidade exigir categoria, estender `WorkOrderAttachment.metadata.documentType` (aditivo, sem
+  migration) + expor no DTO + selector na UI, numa fatia futura tocando o módulo de anexos.
+- status: aberto (não-bloqueante).
