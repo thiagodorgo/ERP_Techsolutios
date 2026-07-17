@@ -130,15 +130,28 @@ test("WorkOrderTabsShell: accessAllowed=false → 'Acesso não permitido' e cont
 });
 
 // --- WorkOrderActionBar (SSR) ---
-test("WorkOrderActionBar: Copiar + menu ⋮; NÃO mostra Cancelar/Imprimir/Duplicar (entram no Ω3F-6)", () => {
+const actionBarWorkOrder: WorkOrderDetail = {
+  id: "wo-1", code: "OS-1", title: "Reboque", status: "open", priority: "high",
+  checklistId: null, createdAt: "2026-06-09T11:20:00.000Z", links: null,
+};
+
+test("WorkOrderActionBar: Copiar + Imprimir + menu ⋮ (Ω3F-6b acendeu as 3 ações reservadas)", () => {
   const html = renderToString(
     <MemoryRouter>
-      <WorkOrderActionBar workOrder={{ id: "wo-1", code: "OS-1", checklistId: null }} activeTab="informacoes-gerais" onRefresh={() => {}} />
+      <WorkOrderActionBar
+        workOrder={actionBarWorkOrder}
+        activeTab="informacoes-gerais"
+        context={{ tenantId: "t1" }}
+        permissions={["work_orders:cancel", "work_orders:create"]}
+        onRefresh={() => {}}
+      />
     </MemoryRouter>,
   );
   assert.match(html, /Copiar/);
   assert.match(html, /Mais ações/);
-  assert.doesNotMatch(html, /Cancelar|Imprimir|Duplicar/);
+  // Imprimir fica na barra; Duplicar e Cancelar moram no ⋮ (só montam no clique) — gating coberto em
+  // tests/work-order-cancel-duplicate-tab.test.tsx.
+  assert.match(html, /Imprimir/);
 });
 
 // --- GeneralInfoTab (SSR) — reuso do corpo vivo ---

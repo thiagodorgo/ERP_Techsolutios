@@ -596,3 +596,26 @@
 - acao: guarda de estado terminal em work-order-financials (e avaliar em service-quote-items): recusar
   create/update quando a OS está `cancelled` (422). Coordenar com Ω4/comissões.
 - status: aberto (não-bloqueante hoje — não há consumidor de comissão ainda).
+
+## P-Ω3F6B-MENUITEM-INLINE - `.ui-menu-item` com background inline mata o hover (J-OMEGA3F-6B, 2026-07-17)
+- descricao: a classe `.ui-menu-item` do DS só tinha `:hover`/`:focus-visible`, SEM regra base — então cada
+  consumidor setava `background: transparent` INLINE para não herdar o cinza do UA. Como style inline vence
+  seletor de classe, o `:hover` NUNCA disparava. A cognicao MEDIU no app vivo: hover morto no ⋮ da OS **e**
+  em `DanosPage.tsx:77-86`, `MultasPage`, `ManutencaoPage` (todas copiaram o mesmo padrão quebrado).
+- corrigido NESTE PR (Ω3F-6b): regra base `.ui-menu-item { background: transparent }` em `app.css` (a classe
+  virou auto-suficiente) + remoção do inline no `WorkOrderActionBar`.
+- acao: remover o `background: "transparent"` inline dos menus de `DanosPage`/`MultasPage`/`ManutencaoPage`
+  (agora desnecessário e nocivo) — hover volta a viver nelas também. Fatia de chore no front.
+- status: aberto (o DS já está consertado; falta limpar os consumidores legados).
+
+## P-Ω3F6B-DS-NITS - Nits de DS/A11y apontados na J-OMEGA3F-6B (2026-07-17)
+- (1) **CTA navy × azul**: `.ui-button--primary` = `#12385c` (tokens) enquanto a MESMA barra usa `#2563EB`
+  inline no "Abrir checklist" (e o protótipo usa #2563EB). Divergência SISTÊMICA (atinge WorkOrderForm) →
+  promoção de token merece junta própria, não contrabando num PR de cancelar/duplicar/imprimir.
+- (2) **⋮ não fecha com Esc nem clique fora** (medido: ambos deixam o menu aberto) — e o menu tem item
+  destrutivo. Precedente pronto em `DanosPage.tsx:529-566` (Escape + foco + clique-fora).
+- (3) **`Modal` sem foco inicial/trap/Esc** (`components/ui/index.tsx:121-136`) — gap pré-existente do DS.
+- (4) Ícones da barra ANTIGA sem `aria-hidden` (os do Ω3F-6b já têm).
+- (5) `WorkOrderStatusPayload` ficou órfão em types (o `updateWorkOrderStatus` foi removido) — limpar no
+  próximo bloco que tocar o arquivo (coordenador, cosmético).
+- status: aberto (nenhum bloqueia; a cognicao deferiu todos como pendência).
