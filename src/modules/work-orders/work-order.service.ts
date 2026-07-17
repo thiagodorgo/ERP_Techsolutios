@@ -542,8 +542,9 @@ export class WorkOrderService {
    *  · persiste só os km fornecidos + mileageSource=source; se source="base" também mileageCorrectedAt=agora;
    *  · grava o evento de timeline `work_order_mileage_updated` com metadata CURADA (§2.8: source + km,
    *    sem tenant/segredo).
-   * A permissão vive em CADA caller, não aqui: a rota REST exige `work_orders:update`; a fila do app exige
-   * `work_orders:status` (o técnico de campo tem :status, não :update) — o gate vive em cada caller.
+   * A permissão vive em CADA caller (não aqui): a correção da base (PATCH) exige a permissão DEDICADA
+   * `work_orders:mileage_correct` (só o escritório a tem); a fila do app exige `work_orders:status` (o campo
+   * a tem). O `source` é decidido pelo SERVIDOR (parâmetro), nunca pelo corpo — o app não vira 'base'.
    */
   async setMileage(
     actor: WorkOrderActorContext,
@@ -555,6 +556,13 @@ export class WorkOrderService {
 
     const mileageStart = parseOptionalMileage(body.mileage_start ?? body.mileageStart, "mileageStart");
     const mileageEnd = parseOptionalMileage(body.mileage_end ?? body.mileageEnd, "mileageEnd");
+
+    // FURO 2 (critico J-Ω3F-7A): corpo SEM nenhum km não pode mutar a OS — antes, `{}` reescrevia
+    // mileage_source='base' + carimbava mileage_corrected_at + emitia evento/auditoria FANTASMA (uma
+    // "correção" que não corrigiu nada). Exige ≥1 km → 400 mileage_required.
+    if (mileageStart === undefined && mileageEnd === undefined) {
+      throw new WorkOrderError(400, "WORK_ORDER_INVALID", "mileage_required", "At least one of mileageStart or mileageEnd is required.");
+    }
 
     // Merge por-campo: km efetivo = corpo (se veio) senão o persistido. `0` é valor válido, então ??
     // (que só cai no persistido em null/undefined) é o operador certo aqui — não `||`.

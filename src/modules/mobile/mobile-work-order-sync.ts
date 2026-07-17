@@ -238,9 +238,10 @@ async function processAction(
       return acceptedResult(action, workOrder);
     }
 
-    // Ω3F-7a — o app PREENCHE a quilometragem (km) da OS pela fila offline. Exige work_orders:status (o
-    // técnico de campo tem :status, NÃO :update — a base é quem corrige, via PATCH /:id/mileage). source=
-    // "app". A idempotência da fila (dedup por client_action_id) já é do harness de sync (mais acima).
+    // Ω3F-7a — o app PREENCHE a quilometragem (km) da OS pela fila offline. Exige work_orders:status (que o
+    // campo tem). A CORREÇÃO da base é outro caminho (PATCH /:id/mileage) e exige a permissão dedicada
+    // work_orders:mileage_correct — o técnico NÃO corrige. source="app" (decidido pelo servidor, não pelo
+    // corpo). A idempotência da fila (dedup por client_action_id) já é do harness de sync (mais acima).
     if (action.type === "work_order.mileage") {
       requireActionPermission(actor, action, "work_orders:status");
       const workOrder = await service.setMileage(

@@ -14,8 +14,9 @@ import type { Tenant, User } from "../src/modules/core-saas/types/core-saas.type
 //  · 400 invalid_mileage para km negativo/NaN/não-número;
 //  · source tracking (app → base): a correção da base carimba mileageCorrectedAt e vira source="base";
 //  · 404 cross-tenant nas duas portas (base e app);
-//  · sync idempotente (replay do client_action_id não duplica o evento) e RBAC (base exige :update, app
-//    exige :status — o técnico de campo tem :status, NÃO :update);
+//  · sync idempotente (replay do client_action_id não duplica o evento) e RBAC: a CORREÇÃO da base exige
+//    a permissão dedicada work_orders:mileage_correct (só o escritório a tem; o técnico de campo, que tem
+//    :update, NÃO a tem → 403), e o app exige :status (que o campo tem);
 //  · o DETAIL DTO expõe os 4 campos (o list omite, payload enxuto).
 
 process.env.CORE_SAAS_PERSISTENCE = "memory";
@@ -366,7 +367,7 @@ test("PATCH /mileage: final < inicial → 422 invalid_mileage_range; negativo �
   });
 });
 
-test("[RBAC] PATCH /mileage sem work_orders:update (field_dispatcher) → 403; sem headers → 403", async () => {
+test("[RBAC] PATCH /mileage sem work_orders:mileage_correct (field_dispatcher) → 403; sem headers → 403", async () => {
   await withWorkOrderApi(async ({ baseUrl, seed, createWorkOrder }) => {
     const workOrderId = await createWorkOrder(seed.tenantA, seed.managerA);
 
@@ -390,6 +391,69 @@ test("[RBAC] PATCH /mileage sem work_orders:update (field_dispatcher) → 403; s
     });
     assert.equal(detail.body.data.mileageStart, null);
     assert.equal(detail.body.data.mileageSource, null);
+  });
+});
+
+test("[J-Ω3F-7A furo] field_technician TEM :update mas NÃO :mileage_correct → PATCH /mileage = 403 (não forja base)", async () => {
+  await withWorkOrderApi(async ({ baseUrl, seed, createWorkOrder }) => {
+    const workOrderId = await createWorkOrder(seed.tenantA, seed.managerA);
+
+    // Este é EXATAMENTE o repro que a junta expôs: o técnico de campo tem work_orders:update, então gatear
+    // a correção por :update o deixava carimbar source='base'. Com a permissão dedicada, ele leva 403.
+    const asTech = await requestJson(baseUrl, `/api/v1/work-orders/${workOrderId}/mileage`, {
+      method: "PATCH",
+      headers: authHeaders(seed.tenantA, seed.technicianA, "field_technician"),
+      body: { mileage_start: 100 },
+    });
+    assert.equal(asTech.status, 403);
+
+    // A base (operator = despacho web) TEM mileage_correct → corrige (200), source='base'.
+    const asOperator = await requestJson(baseUrl, `/api/v1/work-orders/${workOrderId}/mileage`, {
+      method: "PATCH",
+      headers: authHeaders(seed.tenantA, seed.operatorA, "operator"),
+      body: { mileage_start: 100, mileage_end: 250 },
+    });
+    assert.equal(asOperator.status, 200);
+    assert.equal(asOperator.body.data.mileageSource, "base");
+
+    // O técnico NÃO conseguiu forjar: quem carimbou foi a base.
+    const detail = await requestJson(baseUrl, `/api/v1/work-orders/${workOrderId}`, {
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    assert.equal(detail.body.data.mileageStart, 100);
+    assert.equal(detail.body.data.mileageSource, "base");
+  });
+});
+
+test("[J-Ω3F-7A furo 2] PATCH /mileage com corpo SEM km → 400 mileage_required (não flipa source nem carimba)", async () => {
+  await withWorkOrderApi(async ({ baseUrl, seed, createWorkOrder }) => {
+    const workOrderId = await createWorkOrder(seed.tenantA, seed.managerA);
+    const vazio = await requestJson(baseUrl, `/api/v1/work-orders/${workOrderId}/mileage`, {
+      method: "PATCH",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: {},
+    });
+    assert.equal(vazio.status, 400);
+    assert.equal(vazio.body.error.reason, "mileage_required");
+    // Nada foi mutado: sem source, sem carimbo, sem evento fantasma.
+    const detail = await requestJson(baseUrl, `/api/v1/work-orders/${workOrderId}`, {
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    assert.equal(detail.body.data.mileageSource, null);
+    assert.equal(detail.body.data.mileageCorrectedAt, null);
+  });
+});
+
+test("[J-Ω3F-7A furo 3] km ≥ 1e9 estoura DECIMAL(10,1) → 400 invalid_mileage (não 500)", async () => {
+  await withWorkOrderApi(async ({ baseUrl, seed, createWorkOrder }) => {
+    const workOrderId = await createWorkOrder(seed.tenantA, seed.managerA);
+    const overflow = await requestJson(baseUrl, `/api/v1/work-orders/${workOrderId}/mileage`, {
+      method: "PATCH",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { mileage_start: 1_000_000_000 },
+    });
+    assert.equal(overflow.status, 400);
+    assert.equal(overflow.body.error.reason, "invalid_mileage");
   });
 });
 
@@ -520,6 +584,8 @@ type SeedData = {
   readonly managerA: User;
   readonly managerB: User;
   readonly dispatcherA: User;
+  readonly technicianA: User;
+  readonly operatorA: User;
 };
 
 type WorkOrderApiContext = {
@@ -592,7 +658,17 @@ function seedCoreSaas(service: {
     email: "km-dispatcher-a@example.com",
     roles: ["field_dispatcher"],
   });
-  return { tenantA, tenantB, managerA, managerB, dispatcherA };
+  // field_technician TEM work_orders:update mas NÃO work_orders:mileage_correct — o papel que provava o
+  // furo J-Ω3F-7A (gatear a correção por :update deixava o técnico de campo forjar source='base').
+  const technicianA = service.createUser({
+    tenantId: tenantA.id,
+    name: "Field Tech A",
+    email: "km-tech-a@example.com",
+    roles: ["field_technician"],
+  });
+  // operator (despacho web = BASE) TEM mileage_correct — prova que a base corrige.
+  const operatorA = service.createUser({ tenantId: tenantA.id, name: "Operator A", email: "km-operator-a@example.com", roles: ["operator"] });
+  return { tenantA, tenantB, managerA, managerB, dispatcherA, technicianA, operatorA };
 }
 
 function authHeaders(tenant: Tenant, user: User, role: string): Record<string, string> {
