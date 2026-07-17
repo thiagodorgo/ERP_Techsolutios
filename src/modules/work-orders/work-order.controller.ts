@@ -3,7 +3,12 @@ import type { Request } from "express";
 import { recordRequestAuditBestEffort } from "../core-saas/audit/audit-request-context.js";
 import { requireTenantContext } from "../core-saas/middleware/rbac.middleware.js";
 import { readRouteParam } from "../core-saas/routes/http.js";
-import { toWorkOrderDto, toWorkOrderEventDto, toWorkOrderListDto } from "./work-order.dto.js";
+import {
+  toWorkOrderDto,
+  toWorkOrderEventDto,
+  toWorkOrderListDto,
+  toWorkOrderMapStartPointsDto,
+} from "./work-order.dto.js";
 import { createDefaultApprovalService } from "./approval.service.js";
 import type { WorkOrderService } from "./work-order.service.js";
 
@@ -241,6 +246,39 @@ export class WorkOrderController {
     });
 
     return { data: { geocoded: true, workOrder: toWorkOrderDto(result.workOrder) } };
+  }
+
+  // Ω3F-8b (J-MAPAS-5) — geocodifica o DESTINO da OS sob demanda (espelho do geocode de origem).
+  async geocodeDestination(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const body = (request.body ?? {}) as { force?: unknown };
+    const force = body.force === true || request.query.force === "true";
+    const result = await service.geocodeDestinationById(actor, readRouteParam(request.params.workOrderId), force);
+
+    if (!result.geocoded || !result.workOrder) {
+      return { data: { geocoded: false, reason: result.reason ?? "Endereço de destino não localizado pelo provedor." } };
+    }
+
+    await recordRequestAuditBestEffort(request, {
+      action: "work_order.destination_geocoded",
+      resourceType: "work_order",
+      resourceId: result.workOrder.id,
+      outcome: "success",
+      severity: "info",
+      // Allowlist (LGPD/§2.8): NUNCA a coordenada (dado sensível de localização) — só código e fonte.
+      metadata: { code: result.workOrder.code, source: result.workOrder.destinationGeocodeSource ?? null },
+    });
+
+    return { data: { geocoded: true, workOrder: toWorkOrderDto(result.workOrder) } };
+  }
+
+  // Ω3F-8b (J-MAPAS-5) — read minimizado dos pontos de partida do mapa da OS (perm work_orders:read).
+  // SEM auditoria: é leitura, e a allowlist proíbe coordenada em log/auditoria (LGPD — item de veto).
+  async mapStartPoints(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const points = await service.listMapStartPoints(actor, readRouteParam(request.params.workOrderId));
+
+    return { data: toWorkOrderMapStartPointsDto(points) };
   }
 
   private async resolveServiceWithActor(request: Request) {

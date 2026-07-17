@@ -221,6 +221,25 @@ export function createWorkOrderRouter(
     }),
   );
 
+  // Ω3F-8b (J-MAPAS-5) — geocode do DESTINO (espelho da origem; mesma permissão :update, gated OFF por env).
+  router.post(
+    "/work-orders/:workOrderId/geocode-destination",
+    requirePermission(WORK_ORDER_PERMISSIONS.update),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.geocodeDestination(request));
+    }),
+  );
+
+  // Ω3F-8b (J-MAPAS-5) — read MINIMIZADO dos pontos de partida do mapa da OS (só work_orders:read; LGPD:
+  // devolve só o técnico ATRIBUÍDO, nunca a frota — ao contrário do /field-locations/latest).
+  router.get(
+    "/work-orders/:workOrderId/map-start-points",
+    requirePermission(WORK_ORDER_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.mapStartPoints(request));
+    }),
+  );
+
   return router;
 }
 

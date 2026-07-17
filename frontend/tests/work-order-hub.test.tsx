@@ -31,9 +31,9 @@ test("WORK_ORDER_TABS: 11 abas na ordem exata da spec §1.3", () => {
   );
 });
 
-test("C2: 8 abas visíveis (Ω3F-8a acende Logs); base/mapa/estoque seguem ocultas", () => {
+test("C2: 9 abas visíveis (Ω3F-8b acende Mapa); base/estoque seguem ocultas", () => {
   const vis = visibleTabs();
-  assert.deepEqual(vis.map((t) => t.slug), ["informacoes-gerais", "financeiro", "orcamento", "comentarios", "arquivos", "mobile", "quilometragem", "logs"]);
+  assert.deepEqual(vis.map((t) => t.slug), ["informacoes-gerais", "financeiro", "orcamento", "comentarios", "arquivos", "mobile", "quilometragem", "mapa", "logs"]);
   const financeiro = vis.find((t) => t.slug === "financeiro");
   assert.equal(financeiro?.label, "Financeiro");
   // A aba Financeiro é governada: exige work_order_financials:read (§7).
@@ -56,6 +56,10 @@ test("C2: 8 abas visíveis (Ω3F-8a acende Logs); base/mapa/estoque seguem ocult
   const quilometragem = vis.find((t) => t.slug === "quilometragem");
   assert.equal(quilometragem?.label, "Quilometragem");
   assert.equal(quilometragem?.requiredPermission, "work_orders:read");
+  // Ω3F-8b — Mapa da OS exige work_orders:read (§7).
+  const mapa = vis.find((t) => t.slug === "mapa");
+  assert.equal(mapa?.label, "Mapa");
+  assert.equal(mapa?.requiredPermission, "work_orders:read");
   // Ω3F-8a — Logs (leitura da auditoria) exige work_orders:read (§7).
   const logs = vis.find((t) => t.slug === "logs");
   assert.equal(logs?.label, "Logs");
@@ -70,13 +74,14 @@ test("resolveActiveTab: slug visível → ele mesmo", () => {
   assert.equal(resolveActiveTab("arquivos"), "arquivos");
   assert.equal(resolveActiveTab("mobile"), "mobile");
   assert.equal(resolveActiveTab("quilometragem"), "quilometragem");
+  assert.equal(resolveActiveTab("mapa"), "mapa");
   assert.equal(resolveActiveTab("logs"), "logs");
 });
 
 test("resolveActiveTab: aba OCULTA (flag OFF) cai no default, não 404", () => {
-  // base/mapa seguem ocultas (entram em blocos futuros) → fallback ao default.
-  assert.equal(resolveActiveTab("mapa"), DEFAULT_TAB);
+  // base/estoque seguem ocultas (entram em blocos futuros) → fallback ao default.
   assert.equal(resolveActiveTab("base"), DEFAULT_TAB);
+  assert.equal(resolveActiveTab("estoque"), DEFAULT_TAB);
 });
 
 test("resolveActiveTab: slug inexistente / nulo / vazio → default", () => {
@@ -131,8 +136,9 @@ test("WorkOrderTabsShell: menu só com abas visíveis; ocultas AUSENTES (C2, sem
   assert.match(html, /Orçamento/); // Ω3F-4 acendeu a aba
   assert.match(html, /Mobile/); // Ω3F-7b acendeu a aba
   assert.match(html, /Quilometragem/); // Ω3F-7b acendeu a aba
+  assert.match(html, /Mapa/); // Ω3F-8b acendeu a aba
   assert.match(html, /Logs/); // Ω3F-8a acendeu a aba
-  assert.doesNotMatch(html, /Mapa|Estoque/); // demais ainda ocultas (C2)
+  assert.doesNotMatch(html, /Estoque/); // Estoque/Base ainda ocultas (C2)
   assert.doesNotMatch(html, /em breve|PLANNED|TODO/i);
   assert.match(html, /conteudo-da-aba/);
 });

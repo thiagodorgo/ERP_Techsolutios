@@ -87,6 +87,9 @@ export type WorkOrderDetail = WorkOrderListItem & {
   readonly customerDocument?: string | null;
   readonly createdBy?: string | null;
   readonly updatedBy?: string | null;
+  // Ω3F-8b — destino da OS (endereço; coordenadas vêm do read minimizado do mapa). `null`/ausente
+  // quando o tipo de serviço não exige destino. A aba Mapa usa o endereço para o CTA "geocodificar destino".
+  readonly destinationAddress?: string | null;
   // C2: vínculos resolvidos com os Cadastros (A1-A4). Ausente em OS antigas
   // ou em backend sem C2 — a tela degrada para o snapshot do cliente.
   readonly links?: WorkOrderRegistryLinksDetail | null;

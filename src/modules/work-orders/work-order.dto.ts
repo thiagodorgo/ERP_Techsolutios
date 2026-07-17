@@ -1,4 +1,10 @@
-import type { ListWorkOrdersResult, WorkOrder, WorkOrderEvent, WorkOrderLinks } from "./work-order.types.js";
+import type {
+  ListWorkOrdersResult,
+  WorkOrder,
+  WorkOrderEvent,
+  WorkOrderLinks,
+  WorkOrderMapStartPoints,
+} from "./work-order.types.js";
 
 /**
  * Serializes a work order. On the single-detail path (`GET /:id`) the caller
@@ -99,6 +105,39 @@ export function toWorkOrderListDto(result: ListWorkOrdersResult) {
       offset: result.offset,
       total: result.total,
     },
+  };
+}
+
+/**
+ * Ω3F-8b (J-MAPAS-5) — serializa o read minimizado do mapa da OS. §2.8: expõe SÓ coordenadas (dado
+ * próprio do tenant) + rótulos de exibição; NUNCA tenant_id, place_id, chave ou id de operador. O
+ * técnico vem SEM userId (minimização LGPD — a aba não precisa identificar quem, só a posição/idade).
+ */
+export function toWorkOrderMapStartPointsDto(points: WorkOrderMapStartPoints) {
+  return {
+    origin: points.origin
+      ? { latitude: points.origin.latitude, longitude: points.origin.longitude, address: points.origin.address ?? null }
+      : null,
+    destination: points.destination
+      ? {
+          latitude: points.destination.latitude,
+          longitude: points.destination.longitude,
+          address: points.destination.address ?? null,
+        }
+      : null,
+    technician: points.technician
+      ? {
+          latitude: points.technician.latitude,
+          longitude: points.technician.longitude,
+          capturedAt: points.technician.capturedAt.toISOString(),
+        }
+      : null,
+    bases: points.bases.map((base) => ({
+      id: base.id,
+      name: base.name,
+      latitude: base.latitude,
+      longitude: base.longitude,
+    })),
   };
 }
 
