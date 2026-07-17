@@ -41,7 +41,9 @@ function coerceValue(value: unknown): string {
   if (typeof value === "number") return String(value);
   if (typeof value === "string") return value.trim() || "—";
   if (Array.isArray(value)) return value.map(coerceValue).join(", ");
-  if (typeof value === "object") return JSON.stringify(value);
+  // §11.2 (cognicao J-Ω3F-7B) — NUNCA imprimir JSON cru na tela. Objeto aninhado inesperado no snapshot
+  // degrada para "—" (rótulo neutro), não para {"…"}.
+  if (typeof value === "object") return "—";
   return String(value);
 }
 
