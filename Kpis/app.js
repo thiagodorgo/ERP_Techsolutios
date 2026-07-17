@@ -1,12 +1,17 @@
 const dashboardData = {
   "project": {
     "name": "ERP Techsolutions",
-    "version": "Ω-INFRA-4",
-    "updatedAt": "2026-07-14",
-    "sourceBranch": "feat-omega-infra4-backup",
-    "summary": "Ω-INFRA-4 (2026-07-14, PR7 — FECHA a RODADA SANEAMENTO): backup + observabilidade config-as-code INERTE. backup-database.mjs (pg_dump -Fc -> auto-valida pg_restore -l -> PutObject bucket dedicado SSE -> retencao 30d SEGURA; creds via PG* env, nunca argv) + backup-database.yml (schedule diario GATED, Environment 'backup' dedicado) + uptime-check (cron */5 /health). PD-INFRA-2: Fly-native logs/metricas US$0 gru/BR + Actions cron; Better Stack/Axiom = upgrades NAO adotados. DRILL DE RESTORE COMPROVADO AO VIVO: script REAL -> MinIO(SSE) -> download byte-exato -> pg_restore EXIT=0 ~3,6s -> integridade SOURCE==RESTAURADO exata (9/16/62 policies RLS/71) -> isolamento por tenant sob role NAO-superuser (FORCE RLS: 1 tenant visivel). RPO<=24h + PITR nativo=hand-off. Design-junta dba/critico/secops APROVADO_CONDICIONADO 3/3, todas as condicoes dobradas+provadas. migration_needed=false. Suite 0 fail (+16 backend). Backfill do Ω-INFRA-3 (#182/4a2db09).",
+    "version": "Ω3F-9",
+    "updatedAt": "2026-07-17",
+    "sourceBranch": "feat-omega3f-9-row-actions",
+    "summary": "Ω3F (RODADA — Fase 1, reconciliacao D-Ω3F-KPI-RELATORIO, 2026-07-17): do Ω3F-1 ao Ω3F-9 entregou o hub do Detalhe de OS com revelacao progressiva (C2) — abas Financeiro (x1,5, preco congelado anti-refaturamento), Orcamento (congela preco + aprovar->cria OS idempotente + compartilhar), Comentarios + Anexos (UserNameResolver, sem UUID cru), Cancelar/Duplicar/Imprimir (decisao financeira no cancel), Quilometragem (app preenche/base corrige, permissao dedicada), Mobile, Logs (auditoria por OS) e Mapa (haversine US$0, sem SKU pago) — e, fechando a Fase 1, as Acoes de linha na lista de OS (dar andamento forward-only, revogar via field_dispatch:cancel, badge de atraso). Cada bloco por junta adversarial (fid-avaliador + veto) + pos-analise efemera. Suite: backend 799->989 (0 fail, 6 skip DB-gated), smoke web 378->486. Flutter/mobile INALTERADOS (web/backend-only). D-Ω3F-KPI-RELATORIO reconciliou os PRs #184-#204 neste snapshot unico.",
   },
   "kpis": [
+    {
+      "label": "Ω3F (Fase 1)",
+      "value": "Hub operacional da OS ponta a ponta + ações de linha",
+      "note": "10 abas/capacidades do hub de OS via revelacao progressiva C2 (Financeiro x1,5, Orcamento, Comentarios, Anexos, Cancelar/Duplicar/Imprimir, Quilometragem, Mobile, Logs, Mapa) + acoes de linha na lista; junta adversarial + pos-analise por bloco; backend 799->989 (0 fail, 6 skip), smoke 378->486; Flutter/mobile inalterados; D-Ω3F-KPI-RELATORIO reconciliado (PRs #184-#204)."
+    },
     {
       "label": "Ω-INFRA-4",
       "value": "Backup + restore comprovado + observabilidade",
