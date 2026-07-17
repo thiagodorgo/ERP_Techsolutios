@@ -34,8 +34,10 @@ export function WorkOrderDelayBadge({
     color: tone.color,
     whiteSpace: "nowrap",
   };
+  // aria distingue crítico de atraso fresco (cor sozinha não basta — WCAG 1.4.1: leitor de tela/daltônico).
+  const label = severity === "critical" ? "Ordem de serviço atrasada há mais de um dia" : "Ordem de serviço atrasada";
   return (
-    <span style={style} aria-label="Ordem de serviço atrasada">
+    <span style={style} aria-label={label}>
       Atrasada
     </span>
   );

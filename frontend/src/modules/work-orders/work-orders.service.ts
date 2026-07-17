@@ -92,9 +92,9 @@ export async function updateWorkOrder(context: WorkOrdersApiContext, workOrderId
 
 // Ω3F-9 (D-Ω3F-9-ANDAMENTO) — "dar andamento" pela linha da lista: avanço de status FORWARD-ONLY reusando
 // PATCH /status. `next` vem SEMPRE do mapa nextForwardStatus (nunca `cancelled` — a porta dos fundos do
-// Ω3F-6b continua fechada). Como cancel/mileage, o erro do backend NÃO é engolido (sem fallback/mock
-// silencioso): a linha precisa do status para mostrar o 409 (transição inválida / corrida). Em mock,
-// devolve a OS já avançada.
+// Ω3F-6b continua fechada). Como cancel/mileage, o ERRO (non-2xx) NÃO é engolido: propaga para a linha
+// mostrar o 409 (transição inválida / corrida). O `?? mock` só cobre um 2xx sem OS parseável (retorno
+// ignorado pelo chamador, que apenas dá refresh). Em mock, devolve a OS já avançada.
 export async function advanceWorkOrderStatus(
   context: WorkOrdersApiContext,
   workOrderId: string,

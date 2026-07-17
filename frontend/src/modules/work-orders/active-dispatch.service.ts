@@ -21,5 +21,7 @@ export async function findActiveDispatch(
     context,
   );
   const data = adaptDispatchesResponse(response, "api");
-  return data.items.find((dispatch) => isActiveDispatch(dispatch.status)) ?? null;
+  // Re-filtra por workOrderId no cliente (endurecimento): confiamos no filtro tenant+workOrderId do backend,
+  // mas se algum dia o serializer devolver despacho de outra OS, nunca revogamos o envio errado.
+  return data.items.find((dispatch) => dispatch.workOrderId === workOrderId && isActiveDispatch(dispatch.status)) ?? null;
 }

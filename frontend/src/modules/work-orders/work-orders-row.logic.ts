@@ -61,9 +61,16 @@ const REVOCABLE_WO_STATUSES: readonly WorkOrderStatus[] = [
   "paused",
 ];
 
-// Revogar envio reusa o cancelamento de despacho já existente → exige `field_dispatch:cancel`.
+// Revogar envio precisa das DUAS permissões que o fluxo usa: `field_dispatch:read` (descobrir o despacho
+// ativo via GET /operations/dispatches?workOrderId=X) e `field_dispatch:cancel` (o cancelamento em si). Todo
+// portador de cancel também tem read hoje (verificado na junta), mas exigir ambas evita o beco de um papel
+// com cancel sem read ver o botão e só colher "não foi possível consultar o envio".
 export function canRevokeDispatch(permissions: readonly string[], status: WorkOrderStatus): boolean {
-  return permissions.includes("field_dispatch:cancel") && REVOCABLE_WO_STATUSES.includes(status);
+  return (
+    permissions.includes("field_dispatch:cancel") &&
+    permissions.includes("field_dispatch:read") &&
+    REVOCABLE_WO_STATUSES.includes(status)
+  );
 }
 
 // Um despacho é ATIVO (revogável) enquanto não terminal. Espelha assertNonTerminalStatus do backend
