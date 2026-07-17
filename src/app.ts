@@ -41,6 +41,7 @@ import { createServiceQuoteRouter } from "./modules/service-quotes/index.js";
 import { createServiceQuoteItemRouter } from "./modules/service-quote-items/index.js";
 import { createWorkOrderFinancialRouter } from "./modules/work-order-financials/index.js";
 import { createWorkOrderCommentRouter } from "./modules/work-order-comments/index.js";
+import { createWorkOrderAuditLogRouter } from "./modules/work-order-audit-logs/index.js";
 import { createBranchRouter } from "./modules/branches/index.js";
 import { createSupplierRouter } from "./modules/suppliers/index.js";
 import { createTagRouter } from "./modules/tags/index.js";
@@ -111,6 +112,9 @@ export function createApp(service: ICoreSaasService): Express {
   // Ω3F-5 — Comentários da OS (/work-orders/:id/comments) em router próprio: o path não colide com o
   // work-orders router (a antiga POST /comments foi removida de lá).
   app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderCommentRouter(undefined, resolveUserName));
+  // Ω3F-8a — Logs da OS (/work-orders/:id/audit-logs) em router próprio: leitura da auditoria filtrada
+  // pela OS. Path não colide com o work-orders router; módulo separado evita o ciclo audit↔work-orders.
+  app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderAuditLogRouter(undefined, resolveUserName));
   app.use("/api/v1", attachAuthenticatedActor(), createBranchRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createSupplierRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTagRouter());

@@ -264,6 +264,9 @@ model AuditLog {
 
   @@index([tenant_id])
   @@index([created_at])
+  // Ω3F-8a — leitura da auditoria por entidade (aba "Logs da OS"): filtro
+  // (tenant_id, entity, entity_id) + ordenação created_at DESC sem varrer o tenant.
+  @@index([tenant_id, entity, entity_id, created_at])
   @@map("audit_logs")
 }
 
