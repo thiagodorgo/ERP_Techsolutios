@@ -667,3 +667,16 @@
   `enrich:false` em listDispatchesFromApi) e M3 (cap do front alinhado ao MILEAGE_MAX do backend + comentário
   impreciso do service).
 - status: aberto (M2/M4 são cobertura/fidelidade de teste; M1/M3 resolvidos).
+
+## P-Ω3F-9-SLA-FIELD — Campo de prazo/SLA real na OS (aberta, Ω3F-9)
+O badge de atraso do Ω3F-9 é DERIVADO de `scheduled_for` (não há `due_at`/SLA no schema). O protótipo mostra
+"Xh restantes" (deadline real), que o dado atual não sustenta — por isso o selo é binário "Atrasada". Reabrir
+para adicionar um campo de prazo/SLA real (migration) + recompor o "restantes" fiel ao protótipo. Não é bug;
+é fidelidade adiada por decisão explícita (D-Ω3F-9-BADGE).
+
+## P-Ω3F-9-DISPATCH-DTO — Expor "envio ativo" no DTO da lista de OS (aberta, Ω3F-9)
+A visibilidade de "Revogar envio" na linha é heurística (permissão + status não-terminal); a existência real do
+despacho só é confirmada no clique (descoberta lazy). Follow-up opcional: expor `hasActiveDispatch`/
+`activeDispatchId` no DTO da lista de OS para visibilidade exata sem o GET extra. Rejeitado no PR do -9 para
+manter 100% front (tocaria o serializer da lista + suíte de contrato). Baixo impacto (o clique já trata
+ausência com mensagem benigna e a corrida GET→PATCH cai em 409/terminal_dispatch).

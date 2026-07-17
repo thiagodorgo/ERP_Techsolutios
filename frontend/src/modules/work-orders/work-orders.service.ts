@@ -14,6 +14,7 @@ import type {
   WorkOrdersApiContext,
   WorkOrdersData,
   WorkOrdersFilters,
+  WorkOrderStatus,
   WorkOrderStatusPayload,
   WorkOrderUpdatePayload,
 } from "./work-orders.types";
@@ -88,6 +89,26 @@ export async function updateWorkOrder(context: WorkOrdersApiContext, workOrderId
 // dos fundos que o Ω3F-6a acabou de fechar (cancelar sem decisão financeira). O único caminho de
 // cancelamento na UI é o item gated do ⋮ → POST /cancel. Se algum dia o status precisar de UI própria,
 // ela NÃO deve oferecer `cancelled` (ver P-Ω3F6-STATUS-BYPASS).
+
+// Ω3F-9 (D-Ω3F-9-ANDAMENTO) — "dar andamento" pela linha da lista: avanço de status FORWARD-ONLY reusando
+// PATCH /status. `next` vem SEMPRE do mapa nextForwardStatus (nunca `cancelled` — a porta dos fundos do
+// Ω3F-6b continua fechada). Como cancel/mileage, o erro do backend NÃO é engolido (sem fallback/mock
+// silencioso): a linha precisa do status para mostrar o 409 (transição inválida / corrida). Em mock,
+// devolve a OS já avançada.
+export async function advanceWorkOrderStatus(
+  context: WorkOrdersApiContext,
+  workOrderId: string,
+  next: WorkOrderStatus,
+): Promise<WorkOrderDetail> {
+  if (isMockMode()) return { ...getMockWorkOrderDetail(workOrderId), status: next };
+
+  const response = await apiRequest<unknown>(`/work-orders/${encodeURIComponent(workOrderId)}/status`, {
+    ...context,
+    method: "PATCH",
+    body: { status: next },
+  });
+  return adaptWorkOrderResponse(response) ?? getMockWorkOrderDetail(workOrderId);
+}
 
 export async function assignWorkOrder(context: WorkOrdersApiContext, workOrderId: string, payload: WorkOrderAssignPayload): Promise<WorkOrderDetail> {
   if (isMockMode()) return { ...getMockWorkOrderDetail(workOrderId), status: "assigned", assignedOperatorId: payload.operatorId, assignedUserId: payload.userId ?? null };

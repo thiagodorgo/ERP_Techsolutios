@@ -46,5 +46,7 @@ export function useWorkOrders(filters: WorkOrdersFilters) {
     loading,
     error,
     refresh,
+    // Ω3F-9 — o mesmo contexto que alimenta a lista serve às ações de linha (avançar status, revogar envio).
+    context,
   };
 }
