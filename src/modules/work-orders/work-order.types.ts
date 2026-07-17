@@ -15,6 +15,15 @@ export const WORK_ORDER_STATUSES = [
 
 export const WORK_ORDER_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
 
+// Ω3F-6 (D-Ω3F-6-CANCEL) — decisão financeira obrigatória ao cancelar:
+//   keep        → mantém os itens financeiros e a cobrança (serviço prestado antes do cancelamento);
+//   keep_unpaid → mantém os itens no extrato, mas a OS não deve gerar recebimento/comissão;
+//   zero        → soft-delete dos itens ATIVOS: o total agregado vira 0 e as linhas persistem com
+//                 deleted_at (auditoria). NÃO "zera valores" (que deixaria linhas 0,00 poluindo a aba).
+// A decisão gravada na OS é a FONTE DE VERDADE para o módulo de comissões honrar depois; este bloco
+// NÃO mexe em comissões (P-Ω3F6-COMISSAO).
+export const WORK_ORDER_FINANCIAL_CANCELLATION_DECISIONS = ["keep", "keep_unpaid", "zero"] as const;
+
 export const WORK_ORDER_EVENTS = [
   "work_order_created",
   "work_order_updated",
@@ -30,6 +39,7 @@ export const WORK_ORDER_EVENTS = [
 
 export type WorkOrderStatus = (typeof WORK_ORDER_STATUSES)[number];
 export type WorkOrderPriority = (typeof WORK_ORDER_PRIORITIES)[number];
+export type WorkOrderFinancialCancellationDecision = (typeof WORK_ORDER_FINANCIAL_CANCELLATION_DECISIONS)[number];
 export type WorkOrderEventType = (typeof WORK_ORDER_EVENTS)[number];
 export type JsonRecord = Record<string, unknown>;
 
@@ -88,6 +98,12 @@ export type WorkOrder = {
   readonly completedAt?: Date;
   readonly cancelledAt?: Date;
   readonly cancellationReason?: string;
+  // Ω3F-6 (D-Ω3F-6-CANCEL) — decisão financeira do cancelamento. undefined = OS nunca cancelada por
+  // este fluxo (inclui as canceladas pelo endpoint de status legado, anterior ao bloco).
+  readonly financialCancellationDecision?: WorkOrderFinancialCancellationDecision;
+  // Ω3F-6 (D-Ω3F-6-DUPLICATE) — chave de idempotência do duplicate (unique PARCIAL tenant-scoped no
+  // banco). undefined no create normal de OS: só o duplicate carimba. NUNCA vai ao DTO público.
+  readonly clientActionId?: string;
   readonly createdBy?: string;
   readonly updatedBy?: string;
   readonly createdAt: Date;
@@ -221,6 +237,9 @@ export type ChangeWorkOrderStatusInput = {
   readonly status: WorkOrderStatus;
   readonly message: string;
   readonly cancellationReason?: string;
+  // Ω3F-6 — só o `cancel` (D-Ω3F-6-CANCEL) preenche. O endpoint de status legado segue sem decisão
+  // (undefined → coluna intocada), então cancelar por lá NÃO forja uma decisão financeira.
+  readonly financialCancellationDecision?: WorkOrderFinancialCancellationDecision;
   readonly actorUserId?: string;
 };
 

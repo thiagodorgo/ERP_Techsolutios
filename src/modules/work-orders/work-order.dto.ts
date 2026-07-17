@@ -55,6 +55,10 @@ export function toWorkOrderDto(workOrder: WorkOrder, links?: WorkOrderLinks) {
     completedAt: workOrder.completedAt?.toISOString() ?? null,
     cancelledAt: workOrder.cancelledAt?.toISOString() ?? null,
     cancellationReason: workOrder.cancellationReason,
+    // Ω3F-6 (D-Ω3F-6-CANCEL) — decisão financeira do cancelamento; null quando a OS não foi cancelada
+    // por este fluxo. O front mostra o desfecho do dinheiro no cabeçalho da OS cancelada.
+    // `clientActionId` fica FORA do DTO de propósito: é chave de idempotência do cliente, não dado da OS.
+    financialCancellationDecision: workOrder.financialCancellationDecision ?? null,
     createdBy: workOrder.createdBy,
     updatedBy: workOrder.updatedBy,
     createdAt: workOrder.createdAt.toISOString(),

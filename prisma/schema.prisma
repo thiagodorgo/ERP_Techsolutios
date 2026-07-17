@@ -1569,6 +1569,15 @@ model WorkOrder {
   completed_at          DateTime?             @db.Timestamptz(6)
   cancelled_at          DateTime?             @db.Timestamptz(6)
   cancellation_reason   String?
+  // Ω3F-6 (D-Ω3F-6-CANCEL) — decisão financeira do cancelamento: keep | keep_unpaid | zero. Validada na
+  // aplicação (sem enum/CHECK, como status/priority). FONTE DE VERDADE para o módulo de comissões honrar
+  // depois (P-Ω3F6-COMISSAO). NULL = OS nunca cancelada por este fluxo. Aditivo/nullable.
+  financial_cancellation_decision String?
+  // Ω3F-6 (D-Ω3F-6-DUPLICATE) — idempotência do DUPLICATE (GAP-1 do dossiê Ω3F-4). O unique PARCIAL
+  // (tenant_id, client_action_id) WHERE client_action_id IS NOT NULL NÃO é expressável aqui (Prisma não
+  // modela índice parcial) — vive só na migration 20260806000000, como nos vizinhos. O create normal de
+  // OS não carimba (NULL cai fora do índice parcial).
+  client_action_id      String?
   created_by            String?               @db.Uuid
   updated_by            String?               @db.Uuid
   created_at            DateTime              @default(now()) @db.Timestamptz(6)

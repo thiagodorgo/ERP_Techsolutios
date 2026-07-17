@@ -551,3 +551,48 @@
 - acao: robustez — envolver create-do-comentário + attach-das-tags numa ÚNICA transação (ou reordenar) para
   atomicidade total, numa fatia futura. Hoje: 500→422 corrigido; orfandade residual só sob corrida rara.
 - status: aberto (não-bloqueante; falha seseg — o 500 já foi eliminado).
+
+## P-Ω3F6-COMISSAO - `keep_unpaid` grava a decisão mas não suprime a comissão (Ω3F-6, 2026-07-17)
+- descricao: o cancel com `financial_decision='keep_unpaid'` ("manter valores sem remunerar o profissional")
+  grava a decisão em `work_orders.financial_cancellation_decision`, mas o módulo `src/modules/commissions/`
+  NÃO a consome — a supressão da remuneração ainda não acontece de fato. Decisão D-Ω3F-6-CANCEL: a OS é a
+  fonte de verdade; o consumo fica para quem calcula comissão.
+- acao: fatia futura — o cálculo de comissão deve ler `financial_cancellation_decision` da OS e suprimir a
+  remuneração quando `keep_unpaid` (e quando `zero`, avaliar). Cruza com Ω4 (Financeiro do tenant).
+- REQUISITO (critico J-Ω3F-6A): decisão `NULL` NÃO pode ser lida como `keep` por default — OS cancelada pelo
+  caminho legado (P-Ω3F6-STATUS-BYPASS) é AMBÍGUA e exige tratamento explícito, senão vira cobrança errada.
+- status: aberto (não-bloqueante; a decisão está persistida e auditável).
+
+## P-Ω3F6-STATUS-BYPASS - Cancelamento legado por PATCH /status não grava decisão financeira (J-OMEGA3F-6A, 2026-07-17)
+- descricao: o `PATCH /work-orders/:id/status` (perm `work_orders:status`; usado também pela fila offline do
+  mobile via `mobile-work-order-sync.ts`) ainda aceita `status=cancelled` e NÃO grava
+  `financial_cancellation_decision` (fica NULL) — contornando o gate do `POST /cancel`. Repro executado pela
+  junta (coordenador-de-acessos + critico): operator cancelava por lá com decisão null e itens financeiros
+  intactos.
+- mitigado NESTE PR: `changeStatus` passa a exigir `work_orders:cancel` para o destino `cancelled` (403
+  `cancel_requires_permission`) — cumpre o que o catálogo já dizia e barra operator/technician/
+  field_technician/field_dispatcher (inclusive pelo mobile). **Resíduo:** quem TEM :cancel (manager/
+  tenant_admin/super_admin) ainda cancela pelo legado sem decisão → NULL.
+- acao: antes de Ω4/comissões, FECHAR o cancelamento pelo legado (422 redirecionando para `POST /cancel`) —
+  exige coordenar o contrato da fila offline do mobile (o app precisaria enviar a decisão ou perder a
+  capacidade de cancelar, o que é defensável: técnico de campo não arbitra cobrança).
+- IRREPARABILIDADE (critico J-Ω3F-6A, rodada 2 — muda a FORMA da correção): a OS cancelada pelo legado fica
+  irreparável — `POST /cancel` responde 422 em OS já cancelada, logo NÃO existe caminho de API que grave a
+  decisão depois; o dinheiro fica de pé (itens intactos, total > 0). Consequência: quando Ω4/comissões chegar,
+  NÃO basta "ler o campo e tratar NULL" — vai exigir BACKFILL/migração das OSs já canceladas pelo legado,
+  decidido caso a caso. A irreparabilidade NASCE deste PR (antes não havia rota /cancel): é dívida por omissão
+  cujo custo CRESCE a cada cancelamento legado → o prazo "antes de Ω4/comissões" é prazo COM JUROS, não desejo.
+- MOBILE (coordenador J-Ω3F-6A, não-bloqueante): `mobile/flutter_app/lib/features/work_orders/ui/
+  work_order_execute_screen.dart:241` ainda renderiza `allowedTransitions` incluindo `cancelled` (models:67-92) —
+  o técnico VÊ o botão "Cancelada", enfileira local-first e só descobre o 403 no sync (a fila rejeita limpo via
+  actionErrorResult, não envenena). Remover a afordância no app junto do fechamento do bypass.
+- status: aberto (mitigado; resíduo conhecido).
+
+## P-Ω3F6-TERMINAL-GUARD - Itens financeiros podem ser lançados em OS cancelada (J-OMEGA3F-6A, 2026-07-17)
+- descricao: `work-order-financial.service.create` só valida a existência da OS (`assertWorkOrder`), sem guarda
+  de estado terminal → POST de item numa OS já cancelada retorna 201. Isso quebra a invariante criada pelo
+  Ω3F-6a (`decision=zero ⇒ total=0`): basta lançar um item depois do cancel. Repro do critico: decision=zero +
+  total=999. Não é regressão deste PR (a porta já existia), mas a invariante é nova.
+- acao: guarda de estado terminal em work-order-financials (e avaliar em service-quote-items): recusar
+  create/update quando a OS está `cancelled` (422). Coordenar com Ω4/comissões.
+- status: aberto (não-bloqueante hoje — não há consumidor de comissão ainda).

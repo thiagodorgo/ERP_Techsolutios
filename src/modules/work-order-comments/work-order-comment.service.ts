@@ -146,6 +146,12 @@ function assertCanMutate(actor: WorkOrderCommentActorContext, comment: WorkOrder
 
 const memoryRepository = new InMemoryWorkOrderCommentRepository();
 let defaultServicePromise: Promise<WorkOrderCommentService> | undefined;
+let defaultRepositoryPromise: Promise<WorkOrderCommentRepository> | undefined;
+
+// Ω3F-6 (D-Ω3F-6-DUPLICATE) — acesso ao REPOSITÓRIO (não ao service) para o `copy_comments` do
+// duplicate: a cópia precisa preservar o AUTOR ORIGINAL, e addComment carimba `actor.userId` como
+// autor (quem duplica viraria autor de todos os comentários — reescrita de autoria). O chamador é
+// responsável pelo recorte de tenant/OS (o duplicate já resolveu ambos via WorkOrderService.get).
 
 export function createMemoryWorkOrderCommentService(): WorkOrderCommentService {
   return new WorkOrderCommentService(memoryRepository, createMemoryWorkOrderService(), createMemoryTagAssignmentService());
@@ -163,9 +169,23 @@ export async function createDefaultWorkOrderCommentService(): Promise<WorkOrderC
   return defaultServicePromise;
 }
 
+export async function createDefaultWorkOrderCommentRepository(): Promise<WorkOrderCommentRepository> {
+  if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
+    return memoryRepository;
+  }
+  defaultRepositoryPromise ??= createPrismaWorkOrderCommentRepositoryInstance();
+  return defaultRepositoryPromise;
+}
+
 export function resetWorkOrderCommentRuntimeForTests(): void {
   memoryRepository.reset();
   defaultServicePromise = undefined;
+  defaultRepositoryPromise = undefined;
+}
+
+async function createPrismaWorkOrderCommentRepositoryInstance(): Promise<WorkOrderCommentRepository> {
+  const { createPrismaWorkOrderCommentRepository } = await import("./work-order-comment-prisma.repository.js");
+  return createPrismaWorkOrderCommentRepository();
 }
 
 async function createPrismaWorkOrderCommentService(): Promise<WorkOrderCommentService> {

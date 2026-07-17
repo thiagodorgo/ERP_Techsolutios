@@ -1,6 +1,8 @@
 import {
+  WORK_ORDER_FINANCIAL_CANCELLATION_DECISIONS,
   WORK_ORDER_PRIORITIES,
   WORK_ORDER_STATUSES,
+  type WorkOrderFinancialCancellationDecision,
   type WorkOrderPriority,
   type WorkOrderStatus,
   WorkOrderError,
@@ -69,6 +71,25 @@ export function parseWorkOrderStatus(value: unknown): WorkOrderStatus {
   }
 
   throw new WorkOrderError(400, "WORK_ORDER_INVALID", "invalid_status", "status is invalid.");
+}
+
+// Ω3F-6 (D-Ω3F-6-CANCEL) — a decisão financeira do cancelamento é OBRIGATÓRIA e fechada em
+// keep|keep_unpaid|zero. Ausente OU fora do conjunto → 422 invalid_financial_decision (mesmo reason
+// nos dois casos, de propósito: quem cancela dinheiro decide explicitamente — não existe default
+// silencioso, que arbitraria a cobrança do cliente pelo operador).
+export function parseFinancialCancellationDecision(value: unknown): WorkOrderFinancialCancellationDecision {
+  const normalized = typeof value === "string" ? value.trim() : "";
+
+  if (WORK_ORDER_FINANCIAL_CANCELLATION_DECISIONS.includes(normalized as WorkOrderFinancialCancellationDecision)) {
+    return normalized as WorkOrderFinancialCancellationDecision;
+  }
+
+  throw new WorkOrderError(
+    422,
+    "WORK_ORDER_UNPROCESSABLE",
+    "invalid_financial_decision",
+    `financial_decision must be one of ${WORK_ORDER_FINANCIAL_CANCELLATION_DECISIONS.join(", ")}.`,
+  );
 }
 
 export function assertStatusTransition(from: WorkOrderStatus, to: WorkOrderStatus): void {
