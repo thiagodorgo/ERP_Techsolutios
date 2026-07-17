@@ -1,6 +1,7 @@
 import { isMockMode } from "../../config/env";
 import { apiRequest } from "../../services/api/client";
 import { adaptWorkOrderResponse, adaptWorkOrdersResponse, adaptWorkOrderTimelineResponse } from "./work-orders.adapter";
+import type { WorkOrderAuditLog, WorkOrderAuditLogList } from "./audit-logs.types";
 import { getMockWorkOrderDetail, getMockWorkOrdersData, getMockWorkOrderTimeline } from "./work-orders.mock";
 import type {
   WorkOrderAssignPayload,
@@ -217,6 +218,59 @@ export async function getWorkOrderTimeline(context: WorkOrdersApiContext, workOr
   } catch {
     return getMockWorkOrderTimeline(workOrderId);
   }
+}
+
+// Ω3F-8a — aba "Logs da OS": leitura da auditoria filtrada pela OS. GET /work-orders/:id/audit-logs.
+// Leitura DEFENSIVA (o backend pode evoluir campos); modo mock → lista vazia honesta (nunca fabrica log).
+export async function listWorkOrderAuditLogs(
+  context: WorkOrdersApiContext,
+  workOrderId: string,
+): Promise<WorkOrderAuditLogList> {
+  if (isMockMode()) return { items: [] };
+
+  const response = await apiRequest<unknown>(`/work-orders/${encodeURIComponent(workOrderId)}/audit-logs`, context);
+  return adaptAuditLogList(response);
+}
+
+function adaptAuditLogList(response: unknown): WorkOrderAuditLogList {
+  const record = asAuditRecord(response);
+  const rawItems = Array.isArray(record.items)
+    ? record.items
+    : Array.isArray(record.data)
+      ? record.data
+      : Array.isArray(response)
+        ? response
+        : [];
+  const items = rawItems
+    .map((item) => adaptAuditLog(item))
+    .filter((item): item is WorkOrderAuditLog => item !== null);
+  return { items };
+}
+
+function adaptAuditLog(value: unknown): WorkOrderAuditLog | null {
+  const item = asAuditRecord(value);
+  const id = readAuditString(item.id);
+  const action = readAuditString(item.action);
+  if (!id || !action) return null;
+  const metadata = item.metadata;
+  return {
+    id,
+    action,
+    actorUserId: readAuditString(item.actorUserId ?? item.actor_user_id) ?? null,
+    actorName: readAuditString(item.actorName ?? item.actor_name) ?? null,
+    entity: readAuditString(item.entity) ?? "",
+    entityId: readAuditString(item.entityId ?? item.entity_id) ?? null,
+    metadata: typeof metadata === "object" && metadata !== null && !Array.isArray(metadata) ? (metadata as Record<string, unknown>) : null,
+    createdAt: readAuditString(item.createdAt ?? item.created_at) ?? "",
+  };
+}
+
+function asAuditRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+}
+
+function readAuditString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value : undefined;
 }
 
 function buildQuery(params: Partial<WorkOrdersFilters>): string {

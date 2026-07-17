@@ -43,7 +43,7 @@ export const WORK_ORDER_TABS: readonly WorkOrderTabDef[] = [
   { slug: "quilometragem", label: "Quilometragem", visible: true, requiredPermission: "work_orders:read", deliveredBy: "Ω3F-7" },
   { slug: "base", label: "Base", visible: false, deliveredBy: "Ω3F-13 (Fase 2)" },
   { slug: "mapa", label: "Mapa", visible: false, deliveredBy: "Ω3F-8" },
-  { slug: "logs", label: "Logs", visible: false, deliveredBy: "Ω3F-8" },
+  { slug: "logs", label: "Logs", visible: true, requiredPermission: "work_orders:read", deliveredBy: "Ω3F-8a" },
 ];
 
 /** Abas que aparecem no menu lateral interno (C2: só as `visible`). */

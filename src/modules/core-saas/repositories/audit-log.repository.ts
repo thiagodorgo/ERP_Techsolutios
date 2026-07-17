@@ -27,6 +27,23 @@ export class AuditLogRepository {
     });
   }
 
+  // Ω3F-8a — LEITURA da auditoria de UMA entidade (aba "Logs da OS"): filtra por
+  // (tenant_id, entity, entity_id), ordena por created_at DESC e limita (apoiado pelo índice
+  // audit_logs_tenant_entity_idx). O chamador (serviço) já roda dentro de withTenantRls.
+  listByEntity(tenantId: string, entity: string, entityId: string, limit = 200) {
+    return this.client.auditLog.findMany({
+      where: {
+        tenant_id: tenantId,
+        entity,
+        entity_id: entityId,
+      },
+      orderBy: {
+        created_at: "desc",
+      },
+      take: limit,
+    });
+  }
+
   create(data: CreateAuditLogData) {
     return this.client.auditLog.create({
       data: {
