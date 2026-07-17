@@ -1,6 +1,7 @@
 import type {
   WorkOrderDetail,
   WorkOrderEvent,
+  WorkOrderFinancialCancellationDecision,
   WorkOrderLinkedCustomer,
   WorkOrderLinkedServiceCatalog,
   WorkOrderLinkedTeam,
@@ -244,6 +245,9 @@ function adaptWorkOrderItem(input: unknown): WorkOrderDetail | null {
     completedAt: readNullableString(item, ["completedAt", "completed_at"]),
     cancelledAt: readNullableString(item, ["cancelledAt", "cancelled_at"]),
     cancellationReason: readNullableString(item, ["cancellationReason", "cancellation_reason"]),
+    financialCancellationDecision: normalizeFinancialCancellationDecision(
+      readString(item, ["financialCancellationDecision", "financial_cancellation_decision"]),
+    ),
     createdBy: readNullableString(item, ["createdBy", "created_by"]),
     updatedBy: readNullableString(item, ["updatedBy", "updated_by"]),
     createdAt,
@@ -395,6 +399,13 @@ function normalizeStatus(value: string | undefined): WorkOrderStatus | null {
   ) {
     return value;
   }
+  return null;
+}
+
+// Ω3F-6b — decisão financeira do cancelamento (DTO). Valor fora do conjunto conhecido → null
+// (leitura defensiva: o front nunca inventa uma decisão que o backend não gravou).
+function normalizeFinancialCancellationDecision(value: string | undefined): WorkOrderFinancialCancellationDecision | null {
+  if (value === "keep" || value === "keep_unpaid" || value === "zero") return value;
   return null;
 }
 

@@ -12,6 +12,10 @@ export type WorkOrderStatus =
 
 export type WorkOrderPriority = "low" | "medium" | "high" | "urgent";
 
+// Ω3F-6a — destino do dinheiro no cancelamento. Valores TÉCNICOS: só payload/DTO, NUNCA texto de UI
+// (§3 / C2 da J-Ω3F-6A). Os rótulos de negócio moram em CancelWorkOrderModal.
+export type WorkOrderFinancialCancellationDecision = "keep" | "keep_unpaid" | "zero";
+
 export type WorkOrderListItem = {
   readonly id: string;
   readonly code: string;
@@ -40,6 +44,9 @@ export type WorkOrderListItem = {
   readonly completedAt?: string | null;
   readonly cancelledAt?: string | null;
   readonly cancellationReason?: string | null;
+  // Ω3F-6a — decisão financeira gravada no cancelamento. `null` em OS não cancelada e também em OS
+  // cancelada pelo caminho legado (PATCH /status), que não grava decisão.
+  readonly financialCancellationDecision?: WorkOrderFinancialCancellationDecision | null;
   readonly createdAt: string;
   readonly updatedAt?: string;
 };
@@ -176,6 +183,21 @@ export type WorkOrderStatusPayload = {
   readonly status: WorkOrderStatus;
   readonly message?: string;
   readonly cancellationReason?: string;
+};
+
+// Ω3F-6b — POST /work-orders/:id/cancel. A decisão é OBRIGATÓRIA (o backend recusa 422
+// invalid_financial_decision quando ausente/inválida) e o motivo também (400 cancellation_reason_required).
+export type WorkOrderCancelPayload = {
+  readonly financialDecision: WorkOrderFinancialCancellationDecision;
+  readonly reason: string;
+};
+
+// Ω3F-6b — POST /work-orders/:id/duplicate. NÃO existe "copiar orçamento": a OS duplicada nasce sem
+// valores/preço congelado (invariante do domínio). `clientActionId` blinda o duplo-clique (409 no replay).
+export type WorkOrderDuplicatePayload = {
+  readonly copyComments?: boolean;
+  readonly copyChecklist?: boolean;
+  readonly clientActionId?: string;
 };
 
 export type WorkOrderAssignPayload = {

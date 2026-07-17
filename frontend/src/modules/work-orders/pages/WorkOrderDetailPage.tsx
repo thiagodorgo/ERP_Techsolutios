@@ -67,7 +67,9 @@ export function WorkOrderDetailPage() {
             <div style={{ fontSize: 13, color: "#64748B", marginTop: 3 }}>{[workOrder.customerName, workOrder.serviceAddress].filter(Boolean).join(" · ") || "Sem cliente/endereço informado"}</div>
           </div>
         </div>
-        <WorkOrderActionBar workOrder={workOrder} activeTab={activeTab} onRefresh={() => void refresh()} />
+        {/* Ω3F-6b — a barra passa a gatilhar Cancelar/Duplicar/Imprimir: precisa do contexto de API
+            (chamadas reais) e das permissões do ator (gating das ações). */}
+        <WorkOrderActionBar workOrder={workOrder} activeTab={activeTab} context={context} permissions={permissions} onRefresh={() => void refresh()} />
       </div>
 
       <WorkOrderTabsShell tabs={visibleTabs()} activeTab={activeTab} accessAllowed={accessAllowed} onSelect={selectTab}>

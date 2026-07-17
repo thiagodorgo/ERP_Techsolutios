@@ -4,8 +4,10 @@ import { adaptWorkOrderResponse, adaptWorkOrdersResponse, adaptWorkOrderTimeline
 import { getMockWorkOrderDetail, getMockWorkOrdersData, getMockWorkOrderTimeline } from "./work-orders.mock";
 import type {
   WorkOrderAssignPayload,
+  WorkOrderCancelPayload,
   WorkOrderCreatePayload,
   WorkOrderDetail,
+  WorkOrderDuplicatePayload,
   WorkOrderEvent,
   WorkOrdersApiContext,
   WorkOrdersData,
@@ -98,6 +100,63 @@ export async function assignWorkOrder(context: WorkOrdersApiContext, workOrderId
     body: payload,
   });
   return adaptWorkOrderResponse(response) ?? getMockWorkOrderDetail(workOrderId);
+}
+
+// Ω3F-6b — cancelamento COM decisão financeira (contrato Ω3F-6a):
+//   POST /work-orders/:id/cancel  { financial_decision, reason }
+// Diferente do PATCH /status legado, esta rota GRAVA o destino do dinheiro. Os erros do backend NÃO são
+// engolidos aqui (sem fallback/mock silencioso): o modal precisa do status para dizer o que falhou
+// (422 decisão ausente/inválida ou OS não cancelável · 400 motivo · 403 permissão · 404 OS).
+export async function cancelWorkOrder(
+  context: WorkOrdersApiContext,
+  workOrderId: string,
+  payload: WorkOrderCancelPayload,
+): Promise<WorkOrderDetail> {
+  if (isMockMode()) {
+    return {
+      ...getMockWorkOrderDetail(workOrderId),
+      status: "cancelled",
+      cancellationReason: payload.reason,
+      financialCancellationDecision: payload.financialDecision,
+    };
+  }
+
+  const response = await apiRequest<unknown>(`/work-orders/${encodeURIComponent(workOrderId)}/cancel`, {
+    ...context,
+    method: "POST",
+    body: {
+      financial_decision: payload.financialDecision,
+      reason: payload.reason,
+    },
+  });
+  return adaptWorkOrderResponse(response) ?? getMockWorkOrderDetail(workOrderId);
+}
+
+// Ω3F-6b — duplica a OS (contrato Ω3F-6a): POST /work-orders/:id/duplicate → 201 com a OS NOVA (novo code).
+// Só `copy_comments`/`copy_checklist` existem: duplicar NÃO herda financeiro/orçamento (preço congelado).
+// `client_action_id` torna o duplo-clique idempotente (o replay volta 409, tratado no modal).
+export async function duplicateWorkOrder(
+  context: WorkOrdersApiContext,
+  workOrderId: string,
+  payload: WorkOrderDuplicatePayload = {},
+): Promise<WorkOrderDetail> {
+  if (isMockMode()) {
+    return { ...getMockWorkOrderDetail(workOrderId), id: "mock-duplicated-work-order", code: "OS-MOCK-2", status: "open" };
+  }
+
+  const response = await apiRequest<unknown>(`/work-orders/${encodeURIComponent(workOrderId)}/duplicate`, {
+    ...context,
+    method: "POST",
+    body: {
+      copy_comments: payload.copyComments ?? false,
+      copy_checklist: payload.copyChecklist ?? false,
+      client_action_id: payload.clientActionId,
+    },
+  });
+  const duplicated = adaptWorkOrderResponse(response);
+  // Sem OS válida na resposta não há para onde navegar — falhar alto é mais honesto que inventar uma OS.
+  if (!duplicated) throw new Error("invalid_duplicate_response");
+  return duplicated;
 }
 
 // Ω1b-2 — geocodifica a OS sob demanda (botão "Localizar no mapa"). Devolve se localizou + a razão.
