@@ -1,18 +1,78 @@
 {
-  "snapshot_date": "2026-07-14",
-  "version": "Ω-INFRA-4",
+  "snapshot_date": "2026-07-17",
+  "version": "Ω3F-9",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω-INFRA-4 (backup + restore comprovado + observabilidade — PR7, FECHA o saneamento)",
-    "title": "Ω-INFRA-4: backup pg_dump -Fc → S3 (SSE, retenção segura) + DRILL de restore comprovado ao vivo + PD-INFRA-2 (Fly-native, US$0) + uptime cron (+16 testes)",
-    "pr": null,
+    "block": "Ω3F-9 (Ações de linha na lista de OS — FECHA A FASE 1)",
+    "title": "Ω3F (RODADA — Fase 1): hub operacional da OS ponta a ponta + reconciliação KPI D-Ω3F-KPI-RELATORIO",
+    "pr": 204,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω-INFRA-4 (PR7, FECHA a RODADA SANEAMENTO): backup + observabilidade config-as-code INERTE. scripts/backup-database.mjs (pg_dump -Fc -> auto-valida pg_restore -l -> PutObject bucket dedicado com ServerSideEncryption -> retencao 30d SEGURA: prune so apos upload OK, so prefixo/formato, protectKey, keepMinimum, lista truncada aborta; creds Postgres via PG* env NUNCA em argv). backup-database.yml (schedule diario GATED BACKUP_ENABLED, Environment dedicado 'backup' nao 'production' p/ nao travar cron). uptime-check.mjs + uptime-check.yml (cron */5, GET /health, gated por *_HEALTH_URL). PD-INFRA-2 (2 lentes, >=3 fontes): Fly-native logs/metricas US$0 gru/BR + GitHub Actions cron uptime; Better Stack/Axiom = upgrades NAO adotados (junta-5-por-pago NAO dispara). DRILL DE RESTORE COMPROVADO AO VIVO (veto do dba-guardiao satisfeito): backup-database.mjs REAL -> MinIO(SSE) -> download byte-exato (713655) -> pg_restore EXIT=0 ~3,6s RTO -> integridade SOURCE==RESTAURADO exata (9 tenants/16 users/62 policies RLS/71 tabelas) -> isolamento por tenant COMPORTAMENTAL sob role NAO-superuser (FORCE RLS: 1 tenant visivel). RPO<=24h (dump) + PITR nativo (sub-24h)=hand-off. Design-junta dba/critico/secops APROVADO_CONDICIONADO 3/3, TODAS as condicoes dobradas + provadas no drill (formato -Fc unificado, retencao segura, senha fora do argv, SSE, colisao de chave com ms+rand, doc-vs-build do PD, environment dedicado, teto 5GB). migration_needed=false. Suite 0 fail (+16 backend: backup-database.test). Ativacao viva (bucket S3 real, PITR, contas obs) = hand-off. Backfill do Ω-INFRA-3 (PR #182 / 4a2db09).",
-    "status_label": "KPI por PR (D-KPI-PER-PR); backup/restore/obs config-as-code, +16 testes backend, drill comprovado",
+    "summary": "Ω3F (RODADA — Fase 1, reconciliacao D-Ω3F-KPI-RELATORIO): do Ω3F-1 ao Ω3F-9 entregou o hub do Detalhe de OS com revelacao progressiva (C2) das abas Financeiro (x1,5, preco congelado anti-refaturamento), Orcamento (congela preco + aprovar->cria OS idempotente + compartilhar), Comentarios + Anexos (UserNameResolver, sem UUID cru), Cancelar/Duplicar/Imprimir (decisao financeira no cancel, sem porta dos fundos), Quilometragem (app preenche/base corrige, permissao dedicada), Mobile, Logs (auditoria por OS) e Mapa (haversine US$0, sem SKU pago, LGPD read-minimizado); fechando a Fase 1, as Acoes de linha na lista de OS (dar andamento forward-only, revogar envio via field_dispatch:cancel, badge de atraso derivado). Cada bloco passou por junta adversarial (fid-avaliador + agentes-veto relevantes) e pos-analise efemera. Suite ao fim da Fase 1: backend 799->989 (0 fail, 6 skip DB-gated que rodam no CI), smoke web 378->486. Flutter/mobile INALTERADOS (Ω3F foi web/backend-only; politica dupla: mobile/flutter_app/Kpis/* segue em seu ultimo valor). D-Ω3F-KPI-RELATORIO deferiu a atualizacao de KPI de todos os PRs #184-#204 para esta reconciliacao unica. pr: 204; merge_commit/approved_head null na autoria (backfill pos-merge).",
+    "status_label": "KPI reconciliado (D-Ω3F-KPI-RELATORIO); Ω3F Fase 1: backend 799->989, smoke 378->486, +9 blocos-feature, hub da OS ponta a ponta",
     "related_prs": [
+      {
+        "pr": 204,
+        "merge_commit": null,
+        "note": "Ω3F-9 pós-análise — handlers testáveis + endurecimentos"
+      },
+      {
+        "pr": 203,
+        "merge_commit": null,
+        "note": "Ω3F-9 ações de linha (dar andamento/revogar/atraso) — FECHA A FASE 1"
+      },
+      {
+        "pr": 202,
+        "merge_commit": null,
+        "note": "Ω3F-8 pós-análise (mapa)"
+      },
+      {
+        "pr": 201,
+        "merge_commit": null,
+        "note": "Ω3F-8b aba Mapa (haversine US$0)"
+      },
+      {
+        "pr": 200,
+        "merge_commit": null,
+        "note": "Ω3F-8a aba Logs"
+      },
+      {
+        "pr": 199,
+        "merge_commit": null,
+        "note": "Ω3F-7 pós-análise"
+      },
+      {
+        "pr": 198,
+        "merge_commit": null,
+        "note": "Ω3F-7b Mobile+Quilometragem"
+      },
+      {
+        "pr": 197,
+        "merge_commit": null,
+        "note": "Ω3F-7a Quilometragem"
+      },
+      {
+        "pr": 192,
+        "merge_commit": null,
+        "note": "Ω3F-5a comentário + TagAssignment"
+      },
+      {
+        "pr": 191,
+        "merge_commit": null,
+        "note": "Ω3F-4c aba Orçamento"
+      },
+      {
+        "pr": 190,
+        "merge_commit": null,
+        "note": "Ω3F-4b aprovar→OS + compartilhar"
+      },
+      {
+        "pr": 189,
+        "merge_commit": null,
+        "note": "Ω3F-4a orçamento multi-item preço congelado"
+      },
       {
         "pr": 182,
         "merge_commit": "4a2db09",
@@ -60,24 +120,26 @@
     "flutter_tests": {
       "value": 764,
       "total": 764,
-      "display": "764/764"
+      "display": "764/764",
+      "note": "carrega o ultimo valor oficial — Ω3F nao tocou Flutter/mobile (politica dupla: mobile/flutter_app/Kpis/* segue em seu ultimo valor)."
     },
     "frontend_smoke_tests": {
-      "value": 378,
-      "total": 378,
-      "display": "378/378",
-      "note": "test:smoke real do frontend (execucao no PR): substitui o antigo 44/44 (estava congelado no B-124). Google Maps (J-MAPAS-3/4) +16 (6 google-canvas + 10 focus-city). 0 fail."
+      "value": 486,
+      "total": 486,
+      "display": "486/486",
+      "note": "test:smoke real; +108 sobre 378 ao longo do Ω3F (abas do hub de OS + acoes de linha)."
     },
     "backend_tests": {
-      "value": 799,
-      "total": 799,
-      "display": "799/799",
-      "note": "Suite backend INTEIRA no gate do CI (memory + Postgres+Redis). Ω-INFRA-4 +16 (backup-database.test: nome/parse/retencao segura/config S3/PG* env) sobre os 783 do Ω-INFRA-3. Execucao local: 0 fail (6 skip pre-existentes DB-gated que rodam no CI). Total real confirmado pelo gate do CI no PR."
+      "value": 989,
+      "total": 989,
+      "display": "989/989",
+      "note": "0 fail, 6 skip DB-gated que rodam no CI; +190 sobre 799 ao longo de Ω2..Ω3F. Reconciliacao D-Ω3F-KPI-RELATORIO ao fim da Fase 1 (989 pass / 995 total / 6 skip / 0 fail)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
       "total": 21,
-      "display": "21/21"
+      "display": "21/21",
+      "note": "subset especifico carregado do ultimo valor oficial; pode ser maior (nao re-baseado nesta reconciliacao)."
     },
     "flutter_modules": {
       "value": 17,
@@ -85,18 +147,21 @@
       "display": "17/17"
     },
     "mvp_demo": {
-      "value": 96,
+      "value": 98,
       "unit": "%",
-      "display": "96%"
+      "display": "98%",
+      "note": "Ω3F fechou o hub operacional da OS ponta a ponta (Financeiro, Orcamento, Comentarios, Anexos, Cancelar/Duplicar/Imprimir, Quilometragem, Mobile, Logs, Mapa) + acoes de linha — o nucleo operacional demoavel/vendavel. Percentual estimado, sujeito a revisao humana."
     },
     "mvp_vendavel": {
-      "value": 78,
+      "value": 83,
       "unit": "%",
-      "display": "78%"
+      "display": "83%",
+      "note": "Ω3F fechou o hub operacional da OS ponta a ponta (Financeiro, Orcamento, Comentarios, Anexos, Cancelar/Duplicar/Imprimir, Quilometragem, Mobile, Logs, Mapa) + acoes de linha — o nucleo operacional demoavel/vendavel. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 49,
-      "display": "49"
+      "value": 58,
+      "display": "58",
+      "note": "reconciliacao D-Ω3F-KPI-RELATORIO adiciona os 9 blocos-feature do Ω3F (1..9); blocos de governanca/pos-analise nao contam como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,
@@ -122,6 +187,7 @@
     ]
   },
   "notes": [
+    "D-Ω3F-KPI-RELATORIO (reconciliação 2026-07-17): a rodada Ω3F deferiu a atualização de KPI de todos os seus PRs (#184–#204) para este snapshot único. Contagens de teste vêm de execução real ao fim da Fase 1: backend 989 (0 fail, 6 skip), smoke web 486. Flutter/mobile inalterados (Ω3F foi web/backend-only). mvp_demo/vendavel movidos (+2/+5) por escopo — hub operacional da OS completo.",
     "JUNTA-MAPAS (2026-07-13): PR docs/agentes-only — cria 3 agentes (.claude/agents/planejador-mapas, dev-mapas, avaliador-mapas) + docs/maps/kb-mapas.md + D-JUNTA-MAPAS + ata J-JUNTA-MAPAS. NENHUM codigo de produto/teste tocado: TODAS as metricas de teste carregam o ultimo valor oficial (Ω-INFRA-1: backend 768/768, Flutter 764/764, smoke web 44/44). blocks_completed inalterado (49) — governanca/tooling nao conta como bloco de feature entregue, mesmo criterio de Ω-GOV/Ω-DOCS. mvp_demo/mvp_vendavel inalterados (nenhum escopo de produto movido). Nenhuma chave/billing/SKU do Google ativado.",
     "Ω-GOV (2026-07-13): backend_tests corrigido de 15/15 (so core-saas) para 766/766 — a suite INTEIRA que o gate do CI passou a rodar no Ω-GATE (100 arquivos + Postgres+Redis). Primeira aplicacao da politica KPI-por-PR (D-KPI-PER-PR). Este PR e web/backend/docs-only: metrics de Flutter/mobile e frontend seguem os ultimos valores oficiais (B-124) ate serem re-baseadas em PRs das respectivas trilhas.",
     "frontend_smoke_tests avancou de 33/33 para 44/44 na PR #125 (+10 testes unitarios do dashboard.adapter B-124 e +1 render smoke do dashboard); frontend check e build OK.",

@@ -587,3 +587,11 @@ Bloco 100% front (sem migration, sem backend novo), reusando endpoints existente
   {completed,cancelled,rejected}) → selo "Atrasada" (âmbar; vermelho se vencida >24h). Reintroduz o sinal de
   SLA que o React perdeu ao dropar a coluna do protótipo. NÃO reproduz "Xh restantes" (exige campo de prazo
   real — ver P-Ω3F-9-SLA-FIELD).
+
+## D-Ω3F-CLOSE — Fechamento da RODADA Ω3F / Fase 1 (2026-07-17)
+Ω3F-1..9 + pós-análises mergeados (#184–#204, 21 PRs, todos CI verde). Relatório final em
+`agent-orchestration/omega/RELATORIO-FINAL-OMEGA3F.md` (matriz bloco→PR→junta, suíte 799→989 back / 378→486
+smoke, 4 reprovações). Reconciliação KPI D-Ω3F-KPI-RELATORIO aplicada a `Kpis/*` (blocks 49→58, MVP 98/83).
+**Agentes fid-analista/fid-planejador/fid-avaliador DESCOMISSIONADOS** (criados no Ω3F-0 para o fluxo de
+fidelidade da Fase 1; a fase encerrou). A Junta de Mapas (planejador/dev/avaliador-mapas) PERMANECE (norma
+permanente: nenhum código de mapa sem plano). Próximo: Ω4 Financeiro (×1,5).

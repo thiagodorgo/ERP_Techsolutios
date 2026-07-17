@@ -338,5 +338,37 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-17",
+    "version": "Ω3F-9",
+    "backend_tests": "989/989",
+    "flutter_tests": "764/764",
+    "frontend_smoke_tests": "486/486",
+    "mobile_backend_contracts": "18/18",
+    "mobile_core_saas_contracts": "21/21",
+    "backend_contract_tests_focused": "21/21",
+    "flutter_modules": "17/17",
+    "flutter_mvp_demo": "98%",
+    "flutter_mvp_vendavel": "83%",
+    "blocks_completed": 58,
+    "description": "Ω3F-9 (FECHA A FASE 1) + reconciliacao KPI D-Ω3F-KPI-RELATORIO: a rodada Ω3F deferiu a atualizacao de KPI de todos os seus PRs (#184-#204) para este snapshot unico. Do Ω3F-1 ao Ω3F-9, o hub do Detalhe de OS ganhou revelacao progressiva (C2) das abas Financeiro (x1,5, preco congelado anti-refaturamento), Orcamento (congela preco + aprovar->cria OS idempotente + compartilhar), Comentarios + Anexos (UserNameResolver, sem UUID cru), Cancelar/Duplicar/Imprimir (decisao financeira no cancel, sem porta dos fundos), Quilometragem (app preenche/base corrige, permissao dedicada), Mobile, Logs (auditoria por OS) e Mapa (haversine US$0, sem SKU pago, LGPD read-minimizado); fechando a Fase 1, as Acoes de linha na lista de OS (dar andamento forward-only, revogar envio via field_dispatch:cancel, badge de atraso derivado). Cada bloco passou por junta adversarial (fid-avaliador + agentes-veto) e pos-analise efemera. Contagens de execucao real ao fim da Fase 1: backend 799->989 (0 fail, 6 skip DB-gated que rodam no CI; +190 ao longo de Ω2..Ω3F), smoke web 378->486 (+108 no Ω3F). Flutter 764/764 e modulos 17/17 INALTERADOS (Ω3F foi web/backend-only; politica dupla: mobile/flutter_app/Kpis/* segue em seu ultimo valor). blocks_completed 49->58 (+9 blocos-feature Ω3F-1..9; governanca/pos-analise nao conta). mvp_demo 96->98 e mvp_vendavel 78->83 (+2/+5 por escopo: hub operacional da OS completo; estimados, sujeitos a revisao humana). merge_commit/approved_head null na autoria (backfill pos-merge).",
+    "pr": 204,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr",
+    "related_prs": [
+      { "pr": 203, "merge_commit": null, "note": "Ω3F-9 acoes de linha (dar andamento/revogar/atraso) — FECHA A FASE 1" },
+      { "pr": 202, "merge_commit": null, "note": "Ω3F-8 pos-analise (mapa)" },
+      { "pr": 201, "merge_commit": null, "note": "Ω3F-8b aba Mapa (haversine US$0)" },
+      { "pr": 200, "merge_commit": null, "note": "Ω3F-8a aba Logs" },
+      { "pr": 199, "merge_commit": null, "note": "Ω3F-7 pos-analise" },
+      { "pr": 198, "merge_commit": null, "note": "Ω3F-7b Mobile+Quilometragem" },
+      { "pr": 197, "merge_commit": null, "note": "Ω3F-7a Quilometragem" },
+      { "pr": 192, "merge_commit": null, "note": "Ω3F-5a comentario + TagAssignment" },
+      { "pr": 191, "merge_commit": null, "note": "Ω3F-4c aba Orcamento" },
+      { "pr": 190, "merge_commit": null, "note": "Ω3F-4b aprovar->OS + compartilhar" },
+      { "pr": 189, "merge_commit": null, "note": "Ω3F-4a orcamento multi-item preco congelado" }
+    ]
   }
 ]

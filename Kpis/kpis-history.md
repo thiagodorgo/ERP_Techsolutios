@@ -626,3 +626,43 @@ Todo bloco futuro continua obrigado a atualizar `Kpis/index.html`, `Kpis/app.js`
 - **Design-junta dba/critico/secops APROVADO_CONDICIONADO 3/3** — TODAS as condições dobradas + provadas no drill.
   `migration_needed=false`. Suíte **0 fail** (+16 backend). Backfill do Ω-INFRA-3: **#182 / 4a2db09**.
 - **FECHA a RODADA SANEAMENTO** (PRs 1-7: Ω-GATE → Ω-GOV → Ω-DOCS → Ω-INFRA-1..4). Ativação viva = dossiê de hand-off.
+
+## 2026-07-17 — Ω3F-9 (FECHA A FASE 1) + reconciliação KPI D-Ω3F-KPI-RELATORIO
+
+- **Reconciliação única (D-Ω3F-KPI-RELATORIO):** a rodada Ω3F **deferiu a atualização de KPI de todos os
+  seus PRs (#184–#204)** para este snapshot. As contagens vêm de **execução real ao fim da Fase 1**, nunca
+  copiadas dos blocos.
+- **Hub operacional da OS ponta a ponta (Ω3F-1 → Ω3F-9):** o Detalhe de OS ganhou **revelação progressiva
+  (C2)** das abas **Financeiro** (×1,5, preço congelado anti-refaturamento), **Orçamento** (congela preço +
+  aprovar→cria OS idempotente + compartilhar), **Comentários + Anexos** (UserNameResolver, sem UUID cru),
+  **Cancelar/Duplicar/Imprimir** (decisão financeira no cancel, sem porta dos fundos), **Quilometragem**
+  (app preenche / base corrige, permissão dedicada), **Mobile**, **Logs** (auditoria por OS) e **Mapa**
+  (haversine US$0, sem SKU pago, LGPD read-minimizado). Fechando a Fase 1, as **Ações de linha** na lista
+  de OS (dar andamento forward-only, revogar envio via `field_dispatch:cancel`, badge de atraso derivado).
+- **Governança:** cada bloco passou por **junta adversarial** (fid-avaliador + agentes-veto relevantes) e
+  **pós-análise efêmera**. `pr: 204`; `merge_commit`/`approved_head` **null na autoria** (backfill pós-merge).
+
+### KPIs Ω3F reconciliados na raiz
+
+| KPI | Valor |
+| --- | --- |
+| Backend Tests | 989/989 (0 fail, 6 skip DB-gated que rodam no CI; +190 sobre 799 ao longo de Ω2..Ω3F) |
+| Frontend Smoke Tests | 486/486 (real; +108 sobre 378 no Ω3F — abas do hub de OS + ações de linha) |
+| Flutter Tests | 764/764 (INALTERADO; Ω3F foi web/backend-only — mobile carrega) |
+| Flutter modules | 17/17 (inalterado) |
+| Mobile Backend Contracts | 18/18 (inalterado) |
+| Mobile + Core SaaS Contracts | 21/21 (inalterado) |
+| Backend Contract Tests focados | 21/21 (subset; pode ser maior, não re-baseado) |
+| MVP demo | 98% (era 96%; +2 por escopo, estimado) |
+| MVP vendável | 83% (era 78%; +5 por escopo, estimado) |
+| Blocos entregues | 58 (49 + 9 blocos-feature Ω3F-1..9; governança/pós-análise não conta) |
+
+### Nota sobre percentuais MVP
+
+`mvp_demo`/`mvp_vendavel` movidos **+2/+5** (96→98 / 78→83) por **escopo** — o Ω3F fechou o núcleo operacional
+demoável/vendável da OS ponta a ponta. Percentuais **estimados**, sujeitos a revisão humana.
+
+### Política dupla (mobile carrega)
+
+`mobile/flutter_app/Kpis/*` **não** foi tocado nesta reconciliação (Ω3F foi web/backend-only); segue no seu
+último valor oficial (Flutter 764/764, módulos 17/17).

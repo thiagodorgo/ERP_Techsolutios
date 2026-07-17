@@ -26,6 +26,31 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo Ω3F Fase 1">
+          <h2>Ω3F (RODADA — Fase 1) — hub operacional da OS ponta a ponta + reconciliação KPI</h2>
+          <p>
+            <strong>Ω3F Fase 1 (2026-07-17, reconciliação D-Ω3F-KPI-RELATORIO):</strong> do
+            <strong>Ω3F-1 ao Ω3F-9</strong> o hub do Detalhe de OS ganhou revelação progressiva (C2)
+            das abas <strong>Financeiro</strong> (×1,5, preço congelado anti-refaturamento),
+            <strong>Orçamento</strong> (congela preço + aprovar→cria OS idempotente + compartilhar),
+            <strong>Comentários + Anexos</strong> (UserNameResolver, sem UUID cru),
+            <strong>Cancelar/Duplicar/Imprimir</strong> (decisão financeira no cancel, sem porta dos
+            fundos), <strong>Quilometragem</strong> (app preenche/base corrige, permissão dedicada),
+            <strong>Mobile</strong>, <strong>Logs</strong> (auditoria por OS) e <strong>Mapa</strong>
+            (haversine US$0, sem SKU pago, LGPD read-minimizado); fechando a Fase 1, as
+            <strong>Ações de linha</strong> na lista de OS (dar andamento forward-only, revogar envio
+            via <code>field_dispatch:cancel</code>, badge de atraso derivado). Cada bloco passou por
+            <strong>junta adversarial</strong> (fid-avaliador + agentes-veto) e pós-análise efêmera.
+            A rodada <strong>deferiu a atualização de KPI de todos os PRs #184–#204</strong> para esta
+            reconciliação única. Números de execução real ao fim da Fase 1: <strong>backend 989/989</strong>
+            (0 fail / 6 skip DB-gated que rodam no CI), <strong>smoke web 486/486</strong>,
+            Flutter <strong>764/764</strong> e módulos Flutter <strong>17/17</strong>
+            <strong>inalterados</strong> (Ω3F foi web/backend-only; política dupla: mobile carrega),
+            <strong>MVP demo 98%</strong>, <strong>MVP vendável 83%</strong> (+2/+5 por escopo) e
+            <strong>58 blocos entregues</strong> (+9 blocos-feature do Ω3F). <code>pr: 204</code>;
+            <code>merge_commit</code>/<code>approved_head</code> null na autoria (backfill pós-merge).
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo Ω-INFRA-4">
           <h2>Ω-INFRA-4 — backup + restore comprovado + observabilidade (FECHA o saneamento)</h2>
           <p>
@@ -64,12 +89,15 @@
           </p>
           <p>
             <strong>Ω-GOV (2026-07-13):</strong> politica KPI-por-PR (D-KPI-PER-PR)
-            substitui a publicacao pos-avaliacao humana. <strong>Backend 768/768</strong>
-            (suite backend INTEIRA no gate do CI; Ω-INFRA-1 +2 health-routes; antes 15/15
-            media so core-saas). Demais metricas nos ultimos valores oficiais (B-124,
-            web/backend/docs-only): Flutter 764/764, smoke web 378/378 (real; era 44/44 congelado),
-            contratos mobile 18/18, contratos mobile + Core SaaS 21/21, modulos
-            Flutter 17/17, MVP demo 96%, MVP vendavel 78% e 49 blocos entregues.
+            substitui a publicacao pos-avaliacao humana. No Ω-GOV o backend media
+            768/768 (suite backend INTEIRA no gate do CI; Ω-INFRA-1 +2 health-routes; antes
+            15/15 media so core-saas). <strong>Reconciliacao Ω3F / Fase 1 (2026-07-17,
+            D-Ω3F-KPI-RELATORIO)</strong> — valores atuais de execucao real:
+            <strong>backend 989/989</strong> (0 fail / 6 skip DB-gated que rodam no CI),
+            <strong>smoke web 486/486</strong> (real; +108 no Ω3F), Flutter 764/764 e modulos
+            Flutter 17/17 inalterados (Ω3F web/backend-only; mobile carrega), contratos mobile
+            18/18, contratos mobile + Core SaaS 21/21, <strong>MVP demo 98%</strong>,
+            <strong>MVP vendavel 83%</strong> e <strong>58 blocos entregues</strong>.
           </p>
           <p>
             B-124 (web-only): o Dashboard web passou a compor 4 fontes reais em
