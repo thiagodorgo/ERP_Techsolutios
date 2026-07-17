@@ -153,9 +153,18 @@ test("gating: Cancelar só com work_orders:cancel", () => {
   assert.equal(canCancelWorkOrder([], "open"), false);
 });
 
-test("gating: OS já cancelada não pode ser cancelada de novo (o backend recusa a transição)", () => {
-  assert.equal(canCancelWorkOrder(["work_orders:cancel"], "cancelled"), false);
-  assert.equal(canCancelWorkOrder(["work_orders:cancel"], "completed"), true);
+// coordenador J-Ω3F-6B: a UI NÃO pode ser mais permissiva que o backend. A tabela de transições
+// (work-order.validators.ts) só aceita `cancelled` a partir de open/assigned/accepted/on_route/on_site/
+// in_progress — em `paused`, `completed`, `rejected` e `cancelled` o backend responde 422. Oferecer
+// "Cancelar" nesses casos fazia o gestor preencher decisão financeira + motivo para colher um erro.
+test("gating: só as situações que o BACKEND aceita cancelar oferecem a ação (espelho da tabela de transições)", () => {
+  for (const status of ["open", "assigned", "accepted", "on_route", "on_site", "in_progress"] as const) {
+    assert.equal(canCancelWorkOrder(["work_orders:cancel"], status), true, `${status} deveria ser cancelável`);
+  }
+  // O backend recusa (422) — a UI não oferece.
+  for (const status of ["paused", "completed", "cancelled", "rejected"] as const) {
+    assert.equal(canCancelWorkOrder(["work_orders:cancel"], status), false, `${status} NÃO deveria oferecer Cancelar`);
+  }
 });
 
 test("gating: Duplicar só com work_orders:create (a cópia é uma OS nova)", () => {

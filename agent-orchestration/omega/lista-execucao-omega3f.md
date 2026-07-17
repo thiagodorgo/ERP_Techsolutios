@@ -124,10 +124,12 @@ Capacidades **#5** (hub de 11 abas + barra de ações), **#22** (Copiar URL), **
   `frontend/src/modules/work-orders/pages/WorkOrderDetailPage.tsx` (vira shell),
   `frontend/src/modules/work-orders/components/WorkOrderTabsShell.tsx` (novo),
   `frontend/src/modules/work-orders/components/tabs/GeneralInfoTab.tsx` (novo; encapsula
-  `WorkOrderDetailPanel`+`WorkOrderTimeline`+`WorkOrderStatusActions`),
+  `WorkOrderDetailPanel`+`WorkOrderTimeline`),
   `frontend/src/modules/work-orders/components/WorkOrderActionBar.tsx` (novo; barra + Copiar + WhatsApp),
   `frontend/src/modules/work-orders/tabs.config.ts` (novo; registro das 11 abas + flags de visibilidade).
-  **Reusa:** `WorkOrderDetailPanel.tsx`, `WorkOrderTimeline.tsx`, `WorkOrderStatusActions.tsx`.
+  **Reusa:** `WorkOrderDetailPanel.tsx`, `WorkOrderTimeline.tsx`. (CORREÇÃO Ω3F-6b/coordenador J-Ω3F-6B: o
+  `WorkOrderStatusActions.tsx` NUNCA foi reusado pelo GeneralInfoTab — era código morto e foi REMOVIDO, pois
+  oferecia "Cancelada" sem gate e reabriria a porta dos fundos do cancelamento.)
 - **Baseline+meta:** front detalhe N=6 (`work-order-registry-links-detail.test.tsx` + smoke atual) →
   **M ≥ 12** (roteamento de aba, deep-link `?aba`, Copiar URL, texto WhatsApp, estado "acesso não
   permitido", estado vazio de aba futura). Sem novos testes back.

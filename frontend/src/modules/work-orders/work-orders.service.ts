@@ -80,16 +80,12 @@ export async function updateWorkOrder(context: WorkOrdersApiContext, workOrderId
   return adaptWorkOrderResponse(response) ?? getMockWorkOrderDetail(workOrderId);
 }
 
-export async function updateWorkOrderStatus(context: WorkOrdersApiContext, workOrderId: string, payload: WorkOrderStatusPayload): Promise<WorkOrderDetail> {
-  if (isMockMode()) return { ...getMockWorkOrderDetail(workOrderId), status: payload.status, cancellationReason: payload.cancellationReason ?? null };
-
-  const response = await apiRequest<unknown>(`/work-orders/${workOrderId}/status`, {
-    ...context,
-    method: "PATCH",
-    body: payload,
-  });
-  return adaptWorkOrderResponse(response) ?? getMockWorkOrderDetail(workOrderId);
-}
+// Ω3F-6b (coordenador J-Ω3F-6B) — `updateWorkOrderStatus` (PATCH /status) foi REMOVIDO junto do
+// `WorkOrderStatusActions`: ambos eram código morto (zero importadores) e o componente listava
+// WORK_ORDER_STATUSES inteiro — "Cancelada" incluída — SEM gate de permissão. Remontá-lo reabriria a porta
+// dos fundos que o Ω3F-6a acabou de fechar (cancelar sem decisão financeira). O único caminho de
+// cancelamento na UI é o item gated do ⋮ → POST /cancel. Se algum dia o status precisar de UI própria,
+// ela NÃO deve oferecer `cancelled` (ver P-Ω3F6-STATUS-BYPASS).
 
 export async function assignWorkOrder(context: WorkOrdersApiContext, workOrderId: string, payload: WorkOrderAssignPayload): Promise<WorkOrderDetail> {
   if (isMockMode()) return { ...getMockWorkOrderDetail(workOrderId), status: "assigned", assignedOperatorId: payload.operatorId, assignedUserId: payload.userId ?? null };

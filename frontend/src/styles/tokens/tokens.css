@@ -15,7 +15,12 @@
   --color-neutral-900: #121a22;
   --color-status-success: #1f8a5b;
   --color-status-warning: #a96b00;
-  --color-status-danger: #b42318;
+  /* Ω3F-6b (cognicao J-Ω3F-6B, medido no app vivo) — o token era #b42318 e destoava do PROTÓTIPO, que usa
+     #DC2626 (120 ocorrências em "ERP Web.dc.html"); o próprio front já usava #DC2626 em 27 arquivos, enquanto
+     variant="danger" aparecia em só 2. Resultado: a MESMA ação destrutiva pintava dois vermelhos a dois cliques
+     de distância (gatilho #DC2626 × confirmação #b42318). Protótipo vence (§1/J-002) → token promovido a
+     #DC2626 e consumido como TOKEN nos dois pontos (nem hex solto, nem duas paletas). */
+  --color-status-danger: #DC2626;
   --color-status-info: #206bc4;
   --color-status-pending: #7652b7;
   --color-status-escalated: #9a3412;

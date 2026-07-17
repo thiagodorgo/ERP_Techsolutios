@@ -38,6 +38,12 @@ type QuoteWithLines = { readonly quote: ServiceQuoteRow; readonly lines: Service
 
 // A área imprimível vive dentro do modal, mas some da tela e reaparece só no papel. Os controles do modal
 // (`.wo-print-hide`) saem da impressão; o overlay é neutralizado para não pintar fundo/limitar altura.
+// `.wo-print-anchor` (cognicao J-Ω3F-6B, medido no app vivo): o print-root é filho da barra de ações, que é
+// position:relative — então `left:0/top:0` resolviam contra ELA, não contra a folha, e o papel saía com calha
+// fantasma de 260px à esquerda, 174px no topo e ~129px estourando à direita (a última coluna da tabela de
+// valores era cortada FORA da folha). Neutralizar o ancestral posicionado devolve o print-root ao fluxo da
+// página; o !important de autor vence o style inline do wrapper.
+// NB: comentários DENTRO deste template viajam para o DOM (o CSS é injetado num <style>) — explicação fica aqui.
 const PRINT_CSS = `
 .wo-print-root { display: none; }
 @media print {
@@ -45,6 +51,7 @@ const PRINT_CSS = `
   .wo-print-hide { display: none !important; }
   .wo-print-root, .wo-print-root * { visibility: visible !important; }
   .wo-print-root { display: block !important; position: absolute !important; left: 0; top: 0; width: 100%; color: #000; }
+  .wo-print-anchor { position: static !important; }
   .ui-overlay { position: static !important; background: none !important; display: block !important; padding: 0 !important; }
   .ui-modal { position: static !important; overflow: visible !important; max-height: none !important; width: auto !important; border: none !important; box-shadow: none !important; background: none !important; }
   .wo-print-section { page-break-inside: avoid; }

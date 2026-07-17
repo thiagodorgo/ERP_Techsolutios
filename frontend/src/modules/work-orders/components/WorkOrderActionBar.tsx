@@ -28,9 +28,25 @@ const menuItem: CSSProperties = { display: "flex", alignItems: "center", gap: 8,
 // Gating das ações do Ω3F-6b como predicados PUROS: a UI só molda — o backend é a autoridade (§2.4).
 // Ficam exportados porque o ⋮ só monta no clique; testá-los aqui prova a regra sem depender do menu aberto.
 
+/**
+ * Situações a partir das quais o BACKEND aceita cancelar — espelho da tabela de transições
+ * (`src/modules/work-orders/work-order.validators.ts`: cancelled é destino de open/assigned/accepted/
+ * on_route/on_site/in_progress; `paused`, `completed`, `rejected` e `cancelled` NÃO cancelam).
+ * cognicao/coordenador J-Ω3F-6B: oferecer "Cancelar" numa OS concluída fazia o gestor preencher decisão
+ * financeira + motivo para colher 422 — a UI não pode ser mais permissiva que o backend.
+ */
+const CANCELLABLE_STATUSES: readonly WorkOrderStatus[] = [
+  "open",
+  "assigned",
+  "accepted",
+  "on_route",
+  "on_site",
+  "in_progress",
+];
+
 /** Cancelar exige `work_orders:cancel` (decide o destino do dinheiro) e uma OS ainda cancelável. */
 export function canCancelWorkOrder(permissions: readonly string[], status: WorkOrderStatus): boolean {
-  return permissions.includes("work_orders:cancel") && status !== "cancelled";
+  return permissions.includes("work_orders:cancel") && CANCELLABLE_STATUSES.includes(status);
 }
 
 /** Duplicar exige `work_orders:create`: a cópia é uma OS nova, não uma edição desta. */
@@ -92,7 +108,9 @@ export function WorkOrderActionBar({
   }
 
   return (
-    <div style={{ display: "flex", gap: 8, position: "relative" }}>
+    // `wo-print-anchor`: esta barra é position:relative e HOSPEDA o modal de impressão. Sem neutralizá-la
+    // no @media print, o print-root (absolute) ancora NELA e o papel sai deslocado/cortado (cognicao J-Ω3F-6B).
+    <div className="wo-print-anchor" style={{ display: "flex", gap: 8, position: "relative" }}>
       <button type="button" onClick={onRefresh} style={btnGhost}><RefreshCw size={14} />Atualizar</button>
 
       {workOrder.checklistId ? (
@@ -114,12 +132,12 @@ export function WorkOrderActionBar({
       </button>
       {menuOpen ? (
         <div role="menu" style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, boxShadow: "0 8px 24px rgba(15,23,42,.10)", padding: 6, zIndex: 20, minWidth: 220 }}>
-          <button type="button" role="menuitem" onClick={() => void handleCopyWhatsApp()} style={{ ...menuItem, color: waCopied ? "#059669" : "#334155" }}>
+          <button type="button" role="menuitem" onClick={() => void handleCopyWhatsApp()} className="ui-menu-item" style={{ ...menuItem, color: waCopied ? "#059669" : "#334155" }}>
             <Share2 size={14} />{waCopied ? "Texto copiado!" : "Copiar texto p/ WhatsApp"}
           </button>
 
           {canDuplicate ? (
-            <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setDuplicateOpen(true); }} style={{ ...menuItem, color: "#334155" }}>
+            <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setDuplicateOpen(true); }} className="ui-menu-item" style={{ ...menuItem, color: "#334155" }}>
               <CopyPlus size={14} aria-hidden />Duplicar
             </button>
           ) : null}
@@ -127,7 +145,7 @@ export function WorkOrderActionBar({
           {canCancel ? (
             <>
               <div style={{ height: 1, background: "#F1F5F9", margin: "5px 4px" }} />
-              <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setCancelOpen(true); }} style={{ ...menuItem, color: "#DC2626" }}>
+              <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setCancelOpen(true); }} className="ui-menu-item" style={{ ...menuItem, color: "var(--color-status-danger)" }}>
                 <Ban size={14} aria-hidden />Cancelar
               </button>
             </>
