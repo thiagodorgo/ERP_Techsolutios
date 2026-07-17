@@ -253,6 +253,13 @@ function adaptWorkOrderItem(input: unknown): WorkOrderDetail | null {
     createdAt,
     updatedAt: readString(item, ["updatedAt", "updated_at"]),
     links: adaptWorkOrderRegistryLinks(item.links ?? item.registryLinks ?? item.registry_links),
+    // Ω3F-7a — quilometragem + molde de checklist congelado. Leitura defensiva (camel/snake);
+    // ausência vira null/undefined e a UI degrada para o estado vazio honesto.
+    mileageStart: readNullableNumber(item, ["mileageStart", "mileage_start"]),
+    mileageEnd: readNullableNumber(item, ["mileageEnd", "mileage_end"]),
+    mileageSource: readNullableString(item, ["mileageSource", "mileage_source"]),
+    mileageCorrectedAt: readNullableString(item, ["mileageCorrectedAt", "mileage_corrected_at"]),
+    checklistSnapshot: item.checklistSnapshot ?? item.checklist_snapshot ?? null,
   };
 }
 

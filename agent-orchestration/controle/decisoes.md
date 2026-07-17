@@ -530,6 +530,14 @@ Decisões do bloco Ω3F-5, com base no dossiê do fid-analista (blast radius ras
   rótulo livre ("tipo/nome") — o back de anexos (Ω3-d) NÃO é tocado. Categoria selecionável de documento
   (`metadata.documentType` + DTO) fica ADIADA (P-Ω3F5-DOC-TYPE) para não invadir o módulo de anexos.
 
+## D-Ω3F-7B-MAPA — Mapa de posição por etapa diferido (2026-07-17)
+- O "mapa da posição por etapa" da aba Mobile (spec Ω3F-7) fica DIFERIDO para a Junta de Mapas (Ω3F-8). Razão
+  técnica (não preguiça): NÃO existe fonte de dados — FieldOperatorLocation é localização AO VIVO, não snapshot
+  por etapa de despacho; o mapa exigiria agregação/captura backend nova (P-Ω3F7B-MAPA-ETAPA). A MobileTab entrega
+  timeline de etapas + preview do checklist, SEM andaime "em breve" (§11.2 — a seção do mapa nem existe até haver
+  dado). O canvas OperationsMapLibreCanvas (já aprovado pela Junta de Mapas no Ω1) será reusado read-only quando
+  a fonte existir.
+
 ## D-Ω3F-6 — Cancelar (decisão financeira) + Duplicar + Imprimir (2026-07-17)
 
 Decisões do bloco Ω3F-6; junta valida.
