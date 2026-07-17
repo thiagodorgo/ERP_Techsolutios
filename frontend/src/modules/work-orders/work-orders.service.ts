@@ -9,6 +9,7 @@ import type {
   WorkOrderDetail,
   WorkOrderDuplicatePayload,
   WorkOrderEvent,
+  WorkOrderMileageCorrectionPayload,
   WorkOrdersApiContext,
   WorkOrdersData,
   WorkOrdersFilters,
@@ -153,6 +154,39 @@ export async function duplicateWorkOrder(
   // Sem OS válida na resposta não há para onde navegar — falhar alto é mais honesto que inventar uma OS.
   if (!duplicated) throw new Error("invalid_duplicate_response");
   return duplicated;
+}
+
+// Ω3F-7b — correção de quilometragem pela BASE (contrato Ω3F-7a): PATCH /work-orders/:id/mileage
+//   { mileage_start?, mileage_end? } → 200 com a OS. Como o cancelamento, os erros do backend NÃO são
+// engolidos (sem fallback/mock silencioso): o form precisa do status para dizer o que falhou
+// (400 mileage_required corpo vazio · 400 invalid_mileage negativo/>1e9 · 422 invalid_mileage_range
+// final<inicial · 403 sem permissão · 404 OS). Envia só os campos preenchidos, em snake_case.
+export async function correctMileage(
+  context: WorkOrdersApiContext,
+  workOrderId: string,
+  payload: WorkOrderMileageCorrectionPayload,
+): Promise<WorkOrderDetail> {
+  if (isMockMode()) {
+    const current = getMockWorkOrderDetail(workOrderId);
+    return {
+      ...current,
+      mileageStart: payload.mileageStart ?? current.mileageStart ?? null,
+      mileageEnd: payload.mileageEnd ?? current.mileageEnd ?? null,
+      mileageSource: "base",
+      mileageCorrectedAt: new Date().toISOString(),
+    };
+  }
+
+  const body: Record<string, number> = {};
+  if (payload.mileageStart !== undefined) body.mileage_start = payload.mileageStart;
+  if (payload.mileageEnd !== undefined) body.mileage_end = payload.mileageEnd;
+
+  const response = await apiRequest<unknown>(`/work-orders/${encodeURIComponent(workOrderId)}/mileage`, {
+    ...context,
+    method: "PATCH",
+    body,
+  });
+  return adaptWorkOrderResponse(response) ?? getMockWorkOrderDetail(workOrderId);
 }
 
 // Ω1b-2 — geocodifica a OS sob demanda (botão "Localizar no mapa"). Devolve se localizou + a razão.

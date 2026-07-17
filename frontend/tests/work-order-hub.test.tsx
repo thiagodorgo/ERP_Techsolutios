@@ -31,9 +31,9 @@ test("WORK_ORDER_TABS: 11 abas na ordem exata da spec §1.3", () => {
   );
 });
 
-test("C2: 5 abas visíveis (Ω3F-5b acende Comentários + Arquivos); demais ocultas", () => {
+test("C2: 7 abas visíveis (Ω3F-7b acende Mobile + Quilometragem); demais ocultas", () => {
   const vis = visibleTabs();
-  assert.deepEqual(vis.map((t) => t.slug), ["informacoes-gerais", "financeiro", "orcamento", "comentarios", "arquivos"]);
+  assert.deepEqual(vis.map((t) => t.slug), ["informacoes-gerais", "financeiro", "orcamento", "comentarios", "arquivos", "mobile", "quilometragem"]);
   const financeiro = vis.find((t) => t.slug === "financeiro");
   assert.equal(financeiro?.label, "Financeiro");
   // A aba Financeiro é governada: exige work_order_financials:read (§7).
@@ -49,6 +49,13 @@ test("C2: 5 abas visíveis (Ω3F-5b acende Comentários + Arquivos); demais ocul
   const arquivos = vis.find((t) => t.slug === "arquivos");
   assert.equal(arquivos?.label, "Arquivos");
   assert.equal(arquivos?.requiredPermission, "work_orders:read");
+  // Ω3F-7b — Mobile e Quilometragem exigem work_orders:read (§7).
+  const mobile = vis.find((t) => t.slug === "mobile");
+  assert.equal(mobile?.label, "Mobile");
+  assert.equal(mobile?.requiredPermission, "work_orders:read");
+  const quilometragem = vis.find((t) => t.slug === "quilometragem");
+  assert.equal(quilometragem?.label, "Quilometragem");
+  assert.equal(quilometragem?.requiredPermission, "work_orders:read");
 });
 
 test("resolveActiveTab: slug visível → ele mesmo", () => {
@@ -57,11 +64,15 @@ test("resolveActiveTab: slug visível → ele mesmo", () => {
   assert.equal(resolveActiveTab("orcamento"), "orcamento");
   assert.equal(resolveActiveTab("comentarios"), "comentarios");
   assert.equal(resolveActiveTab("arquivos"), "arquivos");
+  assert.equal(resolveActiveTab("mobile"), "mobile");
+  assert.equal(resolveActiveTab("quilometragem"), "quilometragem");
 });
 
 test("resolveActiveTab: aba OCULTA (flag OFF) cai no default, não 404", () => {
+  // base/mapa/logs seguem ocultas (entram em blocos futuros) → fallback ao default.
   assert.equal(resolveActiveTab("logs"), DEFAULT_TAB);
   assert.equal(resolveActiveTab("mapa"), DEFAULT_TAB);
+  assert.equal(resolveActiveTab("base"), DEFAULT_TAB);
 });
 
 test("resolveActiveTab: slug inexistente / nulo / vazio → default", () => {
@@ -114,6 +125,8 @@ test("WorkOrderTabsShell: menu só com abas visíveis; ocultas AUSENTES (C2, sem
   assert.match(html, /Informações gerais/);
   assert.match(html, /Financeiro/); // Ω3F-3 acendeu a aba
   assert.match(html, /Orçamento/); // Ω3F-4 acendeu a aba
+  assert.match(html, /Mobile/); // Ω3F-7b acendeu a aba
+  assert.match(html, /Quilometragem/); // Ω3F-7b acendeu a aba
   assert.doesNotMatch(html, /Logs|Mapa|Estoque/); // demais ainda ocultas (C2)
   assert.doesNotMatch(html, /em breve|PLANNED|TODO/i);
   assert.match(html, /conteudo-da-aba/);

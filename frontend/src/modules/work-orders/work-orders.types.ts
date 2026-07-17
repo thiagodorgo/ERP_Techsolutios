@@ -90,6 +90,22 @@ export type WorkOrderDetail = WorkOrderListItem & {
   // C2: vínculos resolvidos com os Cadastros (A1-A4). Ausente em OS antigas
   // ou em backend sem C2 — a tela degrada para o snapshot do cliente.
   readonly links?: WorkOrderRegistryLinksDetail | null;
+  // Ω3F-7a — quilometragem da OS (app + correção da base). `null` quando o app não informou.
+  // `mileageSource`: "app" (preenchido no campo) | "base" (corrigido no escritório).
+  readonly mileageStart?: number | null;
+  readonly mileageEnd?: number | null;
+  readonly mileageSource?: string | null;
+  readonly mileageCorrectedAt?: string | null;
+  // Ω3F-7a — molde de checklist congelado que o técnico preencheu no app (JSON opaco).
+  // `null`/ausente quando nenhum checklist foi preenchido. Renderizado de forma defensiva na aba Mobile.
+  readonly checklistSnapshot?: unknown;
+};
+
+// Ω3F-7b — correção de quilometragem pela BASE (PATCH /work-orders/:id/mileage). Ambos opcionais,
+// mas ao menos um é obrigatório (o backend recusa 400 mileage_required quando o corpo vem vazio).
+export type WorkOrderMileageCorrectionPayload = {
+  readonly mileageStart?: number;
+  readonly mileageEnd?: number;
 };
 
 export type WorkOrderEvent = {

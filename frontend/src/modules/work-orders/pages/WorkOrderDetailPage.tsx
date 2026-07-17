@@ -9,6 +9,8 @@ import { AttachmentsTab } from "../components/tabs/AttachmentsTab";
 import { CommentsTab } from "../components/tabs/CommentsTab";
 import { FinancialTab } from "../components/tabs/FinancialTab";
 import { GeneralInfoTab } from "../components/tabs/GeneralInfoTab";
+import { MileageTab } from "../components/tabs/MileageTab";
+import { MobileTab } from "../components/tabs/MobileTab";
 import { QuoteTab } from "../components/tabs/QuoteTab";
 import { canAccessTab, findTab, resolveActiveTab, visibleTabs, type WorkOrderTabSlug } from "../tabs.config";
 import { useWorkOrderDetail } from "../useWorkOrderDetail";
@@ -83,6 +85,10 @@ export function WorkOrderDetailPage() {
           <CommentsTab workOrderId={workOrder.id} context={context} permissions={permissions} currentUserId={currentUserId} />
         ) : activeTab === "arquivos" ? (
           <AttachmentsTab workOrderId={workOrder.id} context={context} permissions={permissions} />
+        ) : activeTab === "mobile" ? (
+          <MobileTab workOrder={workOrder} context={context} permissions={permissions} />
+        ) : activeTab === "quilometragem" ? (
+          <MileageTab workOrder={workOrder} context={context} permissions={permissions} onRefresh={() => void refresh()} />
         ) : (
           <GeneralInfoTab workOrder={workOrder} timeline={timeline} context={context} canDecide={canDecide} />
         )}

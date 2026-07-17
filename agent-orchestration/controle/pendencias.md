@@ -641,3 +641,16 @@
 - corrigido NESTE PR de chore: menu extraído para `WorkOrderActionsMenu` (componente puro, exportado) +
   teste SSR que monta o menu com/sem permissão. A mutação agora quebra.
 - status: RESOLVIDO (mantido o registro: a lição é que predicado testado ≠ predicado ligado).
+
+## P-Ω3F7B-MAPA-ETAPA - Mapa de posição por etapa: falta a FONTE DE DADOS (Ω3F-7b, 2026-07-17)
+- descricao: a spec do Ω3F-7 pede na aba Mobile um "mapa da posição do técnico em cada etapa" (enviado/aceito/
+  origem/destino). Mas `FieldOperatorLocation` é localização AO VIVO (Mapa Operacional), não um snapshot
+  histórico por etapa de despacho — NÃO existe endpoint/agregação que devolva lat/lng do operador em cada
+  validação de uma OS. O `OperationsMapLibreCanvas` consome FieldLocationItem[] ao vivo, não posições por etapa.
+- decisão (D-Ω3F-7B-MAPA): o mapa por etapa fica DIFERIDO para a Junta de Mapas (mais central ao Ω3F-8, aba
+  Mapa da OS). A MobileTab NÃO mostra andaime "em breve" (§11.2) — a seção do mapa simplesmente não existe até
+  haver dado. Entregou timeline de etapas (com hora) + preview do checklist.
+- acao (Junta de Mapas): (a) definir a fonte — snapshot de FieldOperatorLocation por etapa do despacho
+  (migration/agregação backend nova, ou capturar a posição no momento de cada FieldDispatchEvent); (b) modo
+  read-only do canvas (markers estáticos por etapa, sem cluster/animação/pulso); (c) fallback sem WebGL.
+- status: aberto (endereçar no Ω3F-8 com o planejador-mapas).
