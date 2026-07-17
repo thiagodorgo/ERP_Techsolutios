@@ -117,6 +117,7 @@ export function MapTab({
       });
     }
     for (const poi of pois) {
+      if (!poi.isActive) continue; // POI inativo não é partida válida (espelha o filtro is_active do backend)
       if ((poi.category ?? "").trim().toLowerCase() === "base") continue; // bases já vieram do read minimizado
       options.push({
         key: `poi:${poi.id}`,

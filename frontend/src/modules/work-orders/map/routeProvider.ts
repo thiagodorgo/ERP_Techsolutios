@@ -63,9 +63,10 @@ export class HaversineRouteProvider implements RouteProvider {
 }
 
 /**
- * Fábrica com env-gate para troca futura SEM retrabalho (espelha `geocoder.factory.ts` — Noop por
- * default). Hoje retorna SEMPRE o provedor de linha reta (US$ 0, sem chave): um provedor rodoviário/pago
- * só entra aqui depois de PD-ROUTES + junta-5. Mantida como função para o ponto de injeção existir já.
+ * SEAM (ponto de injeção) para troca futura SEM retrabalho. Hoje NÃO há env-gate: retorna SEMPRE o
+ * provedor de linha reta (US$ 0, sem chave). Quando um provedor rodoviário/pago existir, o gate por env
+ * (à moda de `geocoder.factory.ts`, que hoje é o único com gate real `GEOCODING_ENABLED`) entra AQUI —
+ * mas só depois de PD-ROUTES + junta-5. Mantida como função para o ponto de injeção existir já.
  */
 export function createRouteProvider(): RouteProvider {
   return new HaversineRouteProvider();

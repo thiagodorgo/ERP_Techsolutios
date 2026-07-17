@@ -56,11 +56,16 @@ export async function fetchMapStartPoints(
   return adaptMapStartPoints(readData(response));
 }
 
+// Modo mock não tem backend de geocode → retorno honesto (sem bater na rede só para cair no catch).
+const MOCK_GEOCODE: GeocodeAttemptResult = { geocoded: false, reason: "Geocodificação indisponível no modo demonstração." };
+
 export async function geocodeWorkOrderOrigin(
   context: WorkOrdersApiContext,
   workOrderId: string,
   force = false,
 ): Promise<GeocodeAttemptResult> {
+  if (isMockMode()) return MOCK_GEOCODE;
+
   const response = await apiRequest<unknown>(`${basePath(workOrderId)}/geocode`, {
     ...context,
     method: "POST",
@@ -74,6 +79,8 @@ export async function geocodeWorkOrderDestination(
   workOrderId: string,
   force = false,
 ): Promise<GeocodeAttemptResult> {
+  if (isMockMode()) return MOCK_GEOCODE;
+
   const response = await apiRequest<unknown>(`${basePath(workOrderId)}/geocode-destination`, {
     ...context,
     method: "POST",
