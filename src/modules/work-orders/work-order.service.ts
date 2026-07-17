@@ -40,6 +40,7 @@ import {
   parseOptionalClientActionId,
   parseOptionalCoordinate,
   parseOptionalDate,
+  parseOptionalMileage,
   parseOptionalSearch,
   parseOptionalUuid,
   parseRequiredUuid,
@@ -523,6 +524,88 @@ export class WorkOrderService {
       metadata: {
         code: updated.code,
         changedFields: Object.keys(body).filter((key) => body[key] !== undefined),
+      },
+    });
+
+    return updated;
+  }
+
+  /**
+   * Ω3F-7a — quilometragem (km) da OS. FONTE ÚNICA usada pela base (PATCH /:id/mileage, source="base")
+   * E pelo app (fila offline `work_order.mileage`, source="app"). Contrato:
+   *  · 404 inexistente/cross-tenant (via get());
+   *  · aceita snake (mileage_start/mileage_end) e camel; cada km é decimal OPCIONAL >= 0 (400
+   *    invalid_mileage em negativo/NaN/não-número);
+   *  · MERGE por-campo — o valor efetivo de cada km = o do corpo se presente, senão o persistido; assim o
+   *    app pode mandar só o inicial e, depois, só o final;
+   *  · 422 invalid_mileage_range quando AMBOS os efetivos existem e o final < inicial;
+   *  · persiste só os km fornecidos + mileageSource=source; se source="base" também mileageCorrectedAt=agora;
+   *  · grava o evento de timeline `work_order_mileage_updated` com metadata CURADA (§2.8: source + km,
+   *    sem tenant/segredo).
+   * A permissão vive em CADA caller (não aqui): a correção da base (PATCH) exige a permissão DEDICADA
+   * `work_orders:mileage_correct` (só o escritório a tem); a fila do app exige `work_orders:status` (o campo
+   * a tem). O `source` é decidido pelo SERVIDOR (parâmetro), nunca pelo corpo — o app não vira 'base'.
+   */
+  async setMileage(
+    actor: WorkOrderActorContext,
+    workOrderId: string,
+    body: RawRecord,
+    source: "app" | "base",
+  ): Promise<WorkOrder> {
+    const current = await this.get(actor, workOrderId);
+
+    const mileageStart = parseOptionalMileage(body.mileage_start ?? body.mileageStart, "mileageStart");
+    const mileageEnd = parseOptionalMileage(body.mileage_end ?? body.mileageEnd, "mileageEnd");
+
+    // FURO 2 (critico J-Ω3F-7A): corpo SEM nenhum km não pode mutar a OS — antes, `{}` reescrevia
+    // mileage_source='base' + carimbava mileage_corrected_at + emitia evento/auditoria FANTASMA (uma
+    // "correção" que não corrigiu nada). Exige ≥1 km → 400 mileage_required.
+    if (mileageStart === undefined && mileageEnd === undefined) {
+      throw new WorkOrderError(400, "WORK_ORDER_INVALID", "mileage_required", "At least one of mileageStart or mileageEnd is required.");
+    }
+
+    // Merge por-campo: km efetivo = corpo (se veio) senão o persistido. `0` é valor válido, então ??
+    // (que só cai no persistido em null/undefined) é o operador certo aqui — não `||`.
+    const effectiveStart = mileageStart ?? current.mileageStart;
+    const effectiveEnd = mileageEnd ?? current.mileageEnd;
+
+    if (effectiveStart !== undefined && effectiveEnd !== undefined && effectiveEnd < effectiveStart) {
+      throw new WorkOrderError(
+        422,
+        "WORK_ORDER_UNPROCESSABLE",
+        "invalid_mileage_range",
+        "mileageEnd must be greater than or equal to mileageStart.",
+      );
+    }
+
+    const updated = await this.repository.update({
+      tenantId: actor.tenantId,
+      workOrderId: parseRequiredUuid(workOrderId, "workOrderId"),
+      // Só os km FORNECIDOS vão ao banco (compactRecord/definedFields descartam undefined): o merge
+      // por-campo preserva o que já estava lá.
+      ...(mileageStart !== undefined ? { mileageStart } : {}),
+      ...(mileageEnd !== undefined ? { mileageEnd } : {}),
+      mileageSource: source,
+      ...(source === "base" ? { mileageCorrectedAt: new Date() } : {}),
+      updatedBy: actor.userId,
+    });
+
+    // Corrida: RETURNING vazio (inexistente/cross-tenant entre o get e o update) → 404, nunca 500.
+    if (!updated) {
+      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
+
+    await this.repository.createEvent({
+      tenantId: actor.tenantId,
+      workOrderId: updated.id,
+      eventType: "work_order_mileage_updated",
+      actorUserId: actor.userId,
+      message: "Quilometragem da ordem de servico atualizada.",
+      // Metadata CURADA (§2.8): origem + km efetivos. Sem tenant_id, sem segredo/PII.
+      metadata: {
+        source,
+        mileageStart: updated.mileageStart ?? null,
+        mileageEnd: updated.mileageEnd ?? null,
       },
     });
 

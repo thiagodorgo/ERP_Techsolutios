@@ -158,6 +158,26 @@ export function parseOptionalCoordinate(value: unknown, field: string, min: numb
   return parsed;
 }
 
+// Ω3F-7a — quilometragem (km) OPCIONAL da OS: decimal >= 0. Ausente/vazio → undefined (permite o app
+// mandar só o inicial e depois só o final — o merge por-campo vive no setMileage). Negativo, NaN, não
+// finito ou tipo não-numérico (boolean/objeto) → 400 invalid_mileage. Emite number (o repo converte
+// DECIMAL→number no mapWorkOrderRecord). NÃO trava por escala/casas: o DECIMAL(10,1) do banco arredonda.
+// DECIMAL(10,1) no Postgres → máximo 999.999.999,9. FURO 3 (critico J-Ω3F-7A): sem TETO, um km ≥ 1e9
+// passava (finito, ≥0) e estourava a coluna no INSERT (Postgres 22003 numeric_field_overflow) → 500 não
+// tratado. O cap aqui vira 400, coerente com o piso.
+const MILEAGE_MAX = 999_999_999.9;
+
+export function parseOptionalMileage(value: unknown, field: string): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > MILEAGE_MAX) {
+    throw new WorkOrderError(400, "WORK_ORDER_INVALID", "invalid_mileage", `${field} must be a number between 0 and ${MILEAGE_MAX}.`);
+  }
+
+  return parsed;
+}
+
 export function parseRequiredUuid(value: unknown, field: string): string {
   const normalized = assertNonEmptyString(value, field);
 

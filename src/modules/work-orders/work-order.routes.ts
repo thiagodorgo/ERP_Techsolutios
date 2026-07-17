@@ -34,6 +34,7 @@ export const WORK_ORDER_PERMISSIONS = {
   cancel: "work_orders:cancel",
   delete: "work_orders:delete",
   comment: "work_orders:comment",
+  mileageCorrect: "work_orders:mileage_correct",
 } as const;
 
 export function createWorkOrderRouter(
@@ -119,6 +120,20 @@ export function createWorkOrderRouter(
     requirePermission(WORK_ORDER_PERMISSIONS.status),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.changeStatus(request));
+    }),
+  );
+
+  // Ω3F-7a (correção J-Ω3F-7A) — a BASE corrige a quilometragem (km) da OS. O app preenche pela fila
+  // offline (POST /mobile/sync/work-order-actions, ação work_order.mileage, perm work_orders:status). A
+  // correção do escritório exige a permissão DEDICADA `work_orders:mileage_correct` — NÃO `work_orders:update`
+  // (que field_technician/technician/operator TÊM: gatear por :update deixaria o técnico de campo forjar
+  // source='base', anulando a proveniência app×base que é a razão da feature). mileage_correct é dado só à
+  // base/escritório (manager, operator=despacho web, tenant_admin, super/platform admin); campo NÃO corrige.
+  router.patch(
+    "/work-orders/:workOrderId/mileage",
+    requirePermission(WORK_ORDER_PERMISSIONS.mileageCorrect),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.setMileage(request));
     }),
   );
 

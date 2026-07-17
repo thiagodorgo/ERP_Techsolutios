@@ -195,6 +195,12 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
         priority: input.priority,
         checklist_id: nullable(input.checklistId),
         scheduled_for: nullable(input.scheduledFor),
+        // Ω3F-7a — km: só os campos fornecidos por setMileage chegam aqui; undefined é descartado pelo
+        // compactRecord (o merge por-campo já foi resolvido no serviço).
+        mileage_start: input.mileageStart,
+        mileage_end: input.mileageEnd,
+        mileage_source: input.mileageSource,
+        mileage_corrected_at: input.mileageCorrectedAt,
         updated_by: nullable(input.updatedBy),
       }),
     });
@@ -465,6 +471,10 @@ function mapWorkOrderRecord(record: {
   readonly cancellation_reason: string | null;
   readonly financial_cancellation_decision: string | null;
   readonly client_action_id: string | null;
+  readonly mileage_start: unknown;
+  readonly mileage_end: unknown;
+  readonly mileage_source: string | null;
+  readonly mileage_corrected_at: Date | null;
   readonly created_by: string | null;
   readonly updated_by: string | null;
   readonly created_at: Date;
@@ -516,6 +526,11 @@ function mapWorkOrderRecord(record: {
     // contrato validado na escrita (parseFinancialCancellationDecision é o único caminho de gravação).
     financialCancellationDecision: (record.financial_cancellation_decision as WorkOrderFinancialCancellationDecision | null) ?? undefined,
     clientActionId: record.client_action_id ?? undefined,
+    // Ω3F-7a — km: DECIMAL(10,1) → number (padrão decimalToNumber do repo). undefined quando NULL.
+    mileageStart: decimalToNumber(record.mileage_start),
+    mileageEnd: decimalToNumber(record.mileage_end),
+    mileageSource: record.mileage_source ?? undefined,
+    mileageCorrectedAt: record.mileage_corrected_at ?? undefined,
     createdBy: record.created_by ?? undefined,
     updatedBy: record.updated_by ?? undefined,
     createdAt: record.created_at,

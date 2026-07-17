@@ -29,6 +29,9 @@ export const PERMISSION_CATALOG = [
   "work_orders:cancel",
   "work_orders:delete",
   "work_orders:comment",
+  // Ω3F-7a (correção J-Ω3F-7A) — a BASE corrige o km (a proveniência app×base é a razão da feature).
+  // Permissão DEDICADA (não `work_orders:update`, que o técnico de campo TEM): só o escritório corrige.
+  "work_orders:mileage_correct",
   "customers:read",
   "customers:create",
   "customers:update",
@@ -207,6 +210,7 @@ export const ROLE_PERMISSIONS = {
     "work_orders:assign",
     "work_orders:status",
     "work_orders:cancel",
+    "work_orders:mileage_correct",
     "customers:read",
     "customers:create",
     "customers:update",
@@ -465,6 +469,8 @@ export const ROLE_PERMISSIONS = {
     "work_orders:comment",
     "work_orders:update",
     "work_orders:status",
+    // Ω3F-7a — o Operador (despacho web = BASE) corrige o km que o app enviou.
+    "work_orders:mileage_correct",
     "field_location:send",
     // Ω-ACESSO — o Operador opera o Mapa Operacional (despacha e acompanha campo): lê as localizações.
     "field_location:read",

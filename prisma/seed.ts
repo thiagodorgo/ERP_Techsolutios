@@ -57,6 +57,7 @@ const permissionDescriptions = {
   "work_orders:assign": "Atribuir operador ou usuario a ordens de servico.",
   "work_orders:status": "Alterar status operacional de ordens de servico.",
   "work_orders:cancel": "Cancelar ordens de servico.",
+  "work_orders:mileage_correct": "Corrigir a quilometragem da OS (base).",
   "work_orders:delete": "Excluir ordens de servico quando permitido por regra futura.",
   "work_orders:comment": "Registrar comentario livre na timeline da ordem de servico.",
   "field_location:read": "Consultar localizacao operacional de campo.",
