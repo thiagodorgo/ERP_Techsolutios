@@ -31,6 +31,8 @@ export const WORK_ORDER_EVENTS = [
   "work_order_status_changed",
   "work_order_cancelled",
   "work_order_completed",
+  // Ω3F-7a — quilometragem (km) da OS atualizada (app preenche / base corrige). Audit trail de sistema.
+  "work_order_mileage_updated",
   // Ω3-b (LEGADO, D-Ω3F-5-COMMENT) — o comentário NÃO é mais gravado como evento (virou o agregado
   // WorkOrderComment). Este membro fica só para os eventos `work_order_comment` HISTÓRICOS já
   // persistidos (inertes, sem backfill) e para o filtro P-034 do dashboard, que segue os excluindo.
@@ -104,6 +106,13 @@ export type WorkOrder = {
   // Ω3F-6 (D-Ω3F-6-DUPLICATE) — chave de idempotência do duplicate (unique PARCIAL tenant-scoped no
   // banco). undefined no create normal de OS: só o duplicate carimba. NUNCA vai ao DTO público.
   readonly clientActionId?: string;
+  // Ω3F-7a — quilometragem (km): o app PREENCHE (via sync), a base CORRIGE (via PATCH). Merge por-campo
+  // (app pode mandar só o inicial e depois só o final). mileageSource = "app" | "base"; mileageCorrectedAt
+  // carimba a correção da base. undefined enquanto a OS não tem km. Aditivo/opcional.
+  readonly mileageStart?: number;
+  readonly mileageEnd?: number;
+  readonly mileageSource?: string;
+  readonly mileageCorrectedAt?: Date;
   readonly createdBy?: string;
   readonly updatedBy?: string;
   readonly createdAt: Date;
@@ -224,6 +233,12 @@ export type UpdateWorkOrderInput = Partial<
     | "priority"
     | "checklistId"
     | "scheduledFor"
+    // Ω3F-7a — km persistida pela mesma trilha de update (só os campos fornecidos; compactRecord/
+    // definedFields descartam undefined). setMileage é o ÚNICO caminho que preenche estes campos.
+    | "mileageStart"
+    | "mileageEnd"
+    | "mileageSource"
+    | "mileageCorrectedAt"
     | "updatedBy"
   >
 > & {

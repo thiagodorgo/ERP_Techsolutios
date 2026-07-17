@@ -59,6 +59,12 @@ export function toWorkOrderDto(workOrder: WorkOrder, links?: WorkOrderLinks) {
     // por este fluxo. O front mostra o desfecho do dinheiro no cabeçalho da OS cancelada.
     // `clientActionId` fica FORA do DTO de propósito: é chave de idempotência do cliente, não dado da OS.
     financialCancellationDecision: workOrder.financialCancellationDecision ?? null,
+    // Ω3F-7a — quilometragem (km) da OS: app preenche / base corrige. A aba KM lê do DETAIL (o list DTO
+    // omite, payload enxuto). mileageCorrectedAt = ISO da correção da base, ou null. Aditivo.
+    mileageStart: workOrder.mileageStart ?? null,
+    mileageEnd: workOrder.mileageEnd ?? null,
+    mileageSource: workOrder.mileageSource ?? null,
+    mileageCorrectedAt: workOrder.mileageCorrectedAt?.toISOString() ?? null,
     createdBy: workOrder.createdBy,
     updatedBy: workOrder.updatedBy,
     createdAt: workOrder.createdAt.toISOString(),

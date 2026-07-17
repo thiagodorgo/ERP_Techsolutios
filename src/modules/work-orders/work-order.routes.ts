@@ -122,6 +122,17 @@ export function createWorkOrderRouter(
     }),
   );
 
+  // Ω3F-7a — a BASE corrige a quilometragem (km) da OS. O app preenche pela fila offline
+  // (POST /mobile/sync/work-order-actions, ação work_order.mileage, que exige work_orders:status). A
+  // correção do escritório é uma edição de OS → perm work_orders:update (o técnico de campo não a tem).
+  router.patch(
+    "/work-orders/:workOrderId/mileage",
+    requirePermission(WORK_ORDER_PERMISSIONS.update),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.setMileage(request));
+    }),
+  );
+
   // Ω3F-6a (D-Ω3F-6-CANCEL) — cancelar com decisão financeira. Primeira rota a CONSUMIR
   // work_orders:cancel: cancelar decide o destino do dinheiro e por isso NÃO é `work_orders:status`
   // (que operator/técnico têm). Papéis com :cancel hoje: super_admin, platform_admin, tenant_admin, manager.

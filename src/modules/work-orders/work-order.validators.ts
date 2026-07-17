@@ -158,6 +158,21 @@ export function parseOptionalCoordinate(value: unknown, field: string, min: numb
   return parsed;
 }
 
+// Ω3F-7a — quilometragem (km) OPCIONAL da OS: decimal >= 0. Ausente/vazio → undefined (permite o app
+// mandar só o inicial e depois só o final — o merge por-campo vive no setMileage). Negativo, NaN, não
+// finito ou tipo não-numérico (boolean/objeto) → 400 invalid_mileage. Emite number (o repo converte
+// DECIMAL→number no mapWorkOrderRecord). NÃO trava por escala/casas: o DECIMAL(10,1) do banco arredonda.
+export function parseOptionalMileage(value: unknown, field: string): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new WorkOrderError(400, "WORK_ORDER_INVALID", "invalid_mileage", `${field} must be a number greater than or equal to zero.`);
+  }
+
+  return parsed;
+}
+
 export function parseRequiredUuid(value: unknown, field: string): string {
   const normalized = assertNonEmptyString(value, field);
 
