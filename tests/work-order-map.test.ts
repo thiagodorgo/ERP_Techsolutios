@@ -286,6 +286,33 @@ test("RBAC: GET /map-start-points exige work_orders:read (support sem a permiss�
   });
 });
 
+test("[coordenador J-Ω3F-8B C1] POST /geocode-destination exige work_orders:update (support sem a permissão → 403)", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const created = await requestJson(baseUrl, "/api/v1/work-orders", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { title: "OS geocode destino", destinationAddress: "Av. Destino, 100", priority: "high" },
+    });
+    const id = created.body.data.id;
+
+    // support não tem work_orders:update (a correção de geocode é do escritório) → 403, como no geocode da origem.
+    const forbidden = await requestJson(baseUrl, `/api/v1/work-orders/${id}/geocode-destination`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.supportA, "support"),
+      body: {},
+    });
+    assert.equal(forbidden.status, 403);
+
+    // manager tem :update → passa o gate (200; em memory o geocoder é Noop → {geocoded:false} honesto).
+    const ok = await requestJson(baseUrl, `/api/v1/work-orders/${id}/geocode-destination`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: {},
+    });
+    assert.equal(ok.status, 200);
+  });
+});
+
 // --- harness mínima do app (memory) ---
 
 type SeedData = {
