@@ -15,10 +15,16 @@ import type {
   WorkOrderAssignment,
   WorkOrderEvent,
   WorkOrderEventType,
+  WorkOrderFinancialCancellationDecision,
   WorkOrderPriority,
   WorkOrderStatus,
 } from "./work-order.types.js";
-import { formatWorkOrderCode, type CreateWorkOrderEventInput, type WorkOrderRepository } from "./work-order.repository.js";
+import {
+  duplicateWorkOrderError,
+  formatWorkOrderCode,
+  type CreateWorkOrderEventInput,
+  type WorkOrderRepository,
+} from "./work-order.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -54,6 +60,21 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
   }
 
   async create(input: CreateWorkOrderInput): Promise<WorkOrder> {
+    try {
+      return await this.insert(input);
+    } catch (error) {
+      // Ω3F-6 — corrida no duplicate: o unique PARCIAL é a rede atrás do pre-check do serviço.
+      // Traduzido SÓ quando o alvo é a chave de idempotência: work_orders também tem unique
+      // (tenant_id, code), e uma colisão de CÓDIGO (corrida do nextCode) não é "duplicate_work_order"
+      // — reportá-la como replay mentiria para o cliente e esconderia a corrida do contador.
+      if (isIdempotencyConflict(error)) {
+        throw duplicateWorkOrderError();
+      }
+      throw error;
+    }
+  }
+
+  private async insert(input: CreateWorkOrderInput): Promise<WorkOrder> {
     const workOrder = await this.client.workOrder.create({
       data: {
         tenant_id: input.tenantId,
@@ -87,12 +108,28 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
         team_id: input.teamId ?? null,
         service_catalog_id: input.serviceCatalogId ?? null,
         scheduled_for: input.scheduledFor ?? null,
+        // Ω3F-6 — só o duplicate carimba client_action_id; o create normal manda null e cai FORA do
+        // unique parcial. financial_cancellation_decision nasce null (a OS nova nunca é cancelada).
+        client_action_id: input.clientActionId ?? null,
+        financial_cancellation_decision: input.financialCancellationDecision ?? null,
         created_by: input.createdBy ?? null,
         updated_by: input.updatedBy ?? null,
       },
     });
 
     return mapWorkOrderRecord(workOrder);
+  }
+
+  // Ω3F-6 — pre-check tenant-scoped da idempotência do duplicate (o unique parcial é a rede contra corrida).
+  async findByClientActionId(tenantId: string, clientActionId: string): Promise<WorkOrder | undefined> {
+    const workOrder = await this.client.workOrder.findFirst({
+      where: {
+        tenant_id: tenantId,
+        client_action_id: clientActionId,
+      },
+    });
+
+    return workOrder ? mapWorkOrderRecord(workOrder) : undefined;
   }
 
   async list(input: ListWorkOrdersInput): Promise<ListWorkOrdersResult> {
@@ -207,6 +244,9 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
       data: compactRecord({
         status: input.status,
         cancellation_reason: input.status === "cancelled" ? input.cancellationReason ?? input.message : undefined,
+        // Ω3F-6 — undefined é DESCARTADO pelo compactRecord: o endpoint de status legado cancela sem
+        // tocar a coluna (nunca forja uma decisão financeira); só o `cancel` a preenche.
+        financial_cancellation_decision: input.status === "cancelled" ? input.financialCancellationDecision : undefined,
         arrived_at: input.status === "on_site" ? now : undefined,
         started_at: input.status === "in_progress" ? now : undefined,
         completed_at: input.status === "completed" ? now : undefined,
@@ -305,6 +345,13 @@ export class RlsPrismaWorkOrderRepository implements WorkOrderRepository {
 
   findById(tenantId: string, workOrderId: string): Promise<WorkOrder | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaWorkOrderRepository(tx).findById(tenantId, workOrderId));
+  }
+
+  // Ω3F-6 — sob RLS como todo o resto: a chave de idempotência só é visível dentro do próprio tenant.
+  findByClientActionId(tenantId: string, clientActionId: string): Promise<WorkOrder | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaWorkOrderRepository(tx).findByClientActionId(tenantId, clientActionId),
+    );
   }
 
   update(input: UpdateWorkOrderInput): Promise<WorkOrder | undefined> {
@@ -416,6 +463,8 @@ function mapWorkOrderRecord(record: {
   readonly completed_at: Date | null;
   readonly cancelled_at: Date | null;
   readonly cancellation_reason: string | null;
+  readonly financial_cancellation_decision: string | null;
+  readonly client_action_id: string | null;
   readonly created_by: string | null;
   readonly updated_by: string | null;
   readonly created_at: Date;
@@ -463,6 +512,10 @@ function mapWorkOrderRecord(record: {
     completedAt: record.completed_at ?? undefined,
     cancelledAt: record.cancelled_at ?? undefined,
     cancellationReason: record.cancellation_reason ?? undefined,
+    // Ω3F-6 — a coluna é TEXT livre no banco (sem enum/CHECK, como status/priority): o cast reflete o
+    // contrato validado na escrita (parseFinancialCancellationDecision é o único caminho de gravação).
+    financialCancellationDecision: (record.financial_cancellation_decision as WorkOrderFinancialCancellationDecision | null) ?? undefined,
+    clientActionId: record.client_action_id ?? undefined,
     createdBy: record.created_by ?? undefined,
     updatedBy: record.updated_by ?? undefined,
     createdAt: record.created_at,
@@ -524,6 +577,29 @@ function mapWorkOrderAssignmentRecord(record: {
     completedAt: record.completed_at ?? undefined,
     metadata: isRecord(record.metadata) ? record.metadata : {},
   };
+}
+
+// Ω3F-6 — P2002 é conflito de unique; só interessa quando o alvo é a chave de idempotência
+// (work_orders_idem_key / client_action_id). Qualquer outro unique (ex.: tenant_id+code) sobe cru.
+function isIdempotencyConflict(error: unknown): boolean {
+  if (!isPrismaError(error, "P2002")) return false;
+  const target = uniqueConstraintTarget(error);
+
+  return target.includes("client_action_id") || target.includes("work_orders_idem_key");
+}
+
+function isPrismaError(error: unknown, code: string): boolean {
+  return typeof error === "object" && error !== null && "code" in error && (error as { readonly code?: unknown }).code === code;
+}
+
+// O meta.target do P2002 vem como lista de campos OU como nome do índice, conforme o caso.
+function uniqueConstraintTarget(error: unknown): string {
+  const meta = (error as { readonly meta?: { readonly target?: unknown } }).meta;
+  const target = meta?.target;
+
+  if (Array.isArray(target)) return target.join(",");
+
+  return typeof target === "string" ? target : "";
 }
 
 function decimalToNumber(value: unknown): number | undefined {

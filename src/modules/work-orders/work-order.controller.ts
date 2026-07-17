@@ -106,6 +106,57 @@ export class WorkOrderController {
     };
   }
 
+  // Ω3F-6a (D-Ω3F-6-CANCEL) — cancelar com decisão financeira (usa work_orders:cancel, a permissão que
+  // existia no catálogo sem nenhuma rota consumindo).
+  async cancel(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const workOrder = await service.cancel(actor, readRouteParam(request.params.workOrderId), request.body ?? {});
+
+    await recordRequestAuditBestEffort(request, {
+      action: "work_order.cancelled",
+      resourceType: "work_order",
+      resourceId: workOrder.id,
+      outcome: "success",
+      severity: "info",
+      // Allowlist (§2.8): o MOTIVO fica fora — é texto livre do operador e pode carregar PII (nome,
+      // telefone, placa de terceiro). Ele vive na timeline da OS, sob RBAC; a auditoria guarda só o
+      // fato e a decisão do dinheiro.
+      metadata: {
+        code: workOrder.code,
+        status: workOrder.status,
+        financialDecision: workOrder.financialCancellationDecision ?? null,
+      },
+    });
+
+    return {
+      data: toWorkOrderDto(workOrder),
+    };
+  }
+
+  // Ω3F-6a (D-Ω3F-6-DUPLICATE) — duplica a OS (perm work_orders:create; a cópia é uma OS nova).
+  async duplicate(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const workOrder = await service.duplicate(actor, readRouteParam(request.params.workOrderId), request.body ?? {});
+
+    await recordRequestAuditBestEffort(request, {
+      action: "work_order.duplicated",
+      resourceType: "work_order",
+      resourceId: workOrder.id,
+      outcome: "success",
+      severity: "info",
+      metadata: {
+        code: workOrder.code,
+        priority: workOrder.priority,
+        duplicatedFrom: readRouteParam(request.params.workOrderId),
+      },
+    });
+
+    return {
+      status: 201,
+      data: toWorkOrderDto(workOrder),
+    };
+  }
+
   async assign(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     // D1 — the body may carry optional vehicleId/teamId (or vehicle_id/team_id); the

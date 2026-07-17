@@ -122,6 +122,26 @@ export function createWorkOrderRouter(
     }),
   );
 
+  // Ω3F-6a (D-Ω3F-6-CANCEL) — cancelar com decisão financeira. Primeira rota a CONSUMIR
+  // work_orders:cancel: cancelar decide o destino do dinheiro e por isso não é `work_orders:status`
+  // (que operator/técnico têm) — só tenant_admin e manager cancelam.
+  router.post(
+    "/work-orders/:workOrderId/cancel",
+    requirePermission(WORK_ORDER_PERMISSIONS.cancel),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.cancel(request));
+    }),
+  );
+
+  // Ω3F-6a (D-Ω3F-6-DUPLICATE) — duplicar: o resultado é uma OS NOVA, então a permissão é a de criar.
+  router.post(
+    "/work-orders/:workOrderId/duplicate",
+    requirePermission(WORK_ORDER_PERMISSIONS.create),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.duplicate(request));
+    }),
+  );
+
   router.post(
     "/work-orders/:workOrderId/assign",
     requirePermission(WORK_ORDER_PERMISSIONS.assign),

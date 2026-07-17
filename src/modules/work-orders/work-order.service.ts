@@ -7,6 +7,7 @@ import { createApplicableTariffResolver } from "../service-quotes/service-quote.
 import { createDefaultTeamService } from "../teams/team.service.js";
 import { createDefaultVehicleService } from "../vehicles/vehicle.service.js";
 import {
+  duplicateWorkOrderError,
   InMemoryWorkOrderRepository,
   type WorkOrderRepository,
 } from "./work-order.repository.js";
@@ -33,6 +34,7 @@ import {
   assertNonEmptyString,
   assertStatusTransition,
   optionalString,
+  parseFinancialCancellationDecision,
   parseLimit,
   parseOffset,
   parseOptionalCoordinate,
@@ -578,6 +580,235 @@ export class WorkOrderService {
     return updated;
   }
 
+  /**
+   * Ω3F-6a (D-Ω3F-6-CANCEL) — cancelar com DECISÃO FINANCEIRA explícita.
+   * Contrato: 400 motivo ausente · 422 decisão inválida/ausente · 422 transição inválida (inclui OS já
+   * cancelada) · 404 cross-tenant. A decisão gravada é a FONTE DE VERDADE que o módulo de comissões
+   * honra depois — este bloco NÃO mexe em comissões (P-Ω3F6-COMISSAO).
+   * `zero` faz SOFT-DELETE dos itens financeiros ativos (total agregado → 0, linhas preservadas com
+   * deleted_at para auditoria); `keep`/`keep_unpaid` não tocam os itens.
+   */
+  async cancel(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord): Promise<WorkOrder> {
+    const current = await this.get(actor, workOrderId);
+
+    // Motivo é obrigatório: cancelamento sem justificativa não é auditável (mesmo reason do endpoint
+    // de status legado, que já exigia motivo ao cancelar).
+    const reason = optionalString(body.reason ?? body.cancellationReason);
+    if (!reason) {
+      throw new WorkOrderError(400, "WORK_ORDER_INVALID", "cancellation_reason_required", "cancellationReason is required.");
+    }
+
+    // Sem default silencioso: quem cancela decide o destino do dinheiro (422 quando ausente/inválida).
+    const decision = parseFinancialCancellationDecision(body.financial_decision ?? body.financialDecision);
+
+    this.assertCancellable(current.status);
+
+    // `zero` ANTES de persistir o cancelamento: se a limpeza dos itens falhar, a OS NÃO fica cancelada
+    // com o financeiro por zerar (estado incoerente). Não há transação cross-módulo aqui — a ordem é o
+    // que garante que o par (status cancelado ↔ total 0) nunca se separe no caminho de erro.
+    if (decision === "zero") {
+      await this.zeroFinancialItems(actor, current.id);
+    }
+
+    const updated = await this.repository.changeStatus({
+      tenantId: actor.tenantId,
+      workOrderId: current.id,
+      status: "cancelled",
+      message: defaultStatusMessage("cancelled"),
+      cancellationReason: reason,
+      financialCancellationDecision: decision,
+      actorUserId: actor.userId,
+    });
+
+    if (!updated) {
+      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
+
+    await this.repository.createEvent({
+      tenantId: actor.tenantId,
+      workOrderId: updated.id,
+      eventType: "work_order_cancelled",
+      fromStatus: current.status,
+      toStatus: "cancelled",
+      actorUserId: actor.userId,
+      message: defaultStatusMessage("cancelled"),
+      // Metadata CURADA (§2.8): decisão + motivo (texto que o operador digitou, visível na timeline da
+      // própria OS). Nada de tenant_id, id de item financeiro, valor ou qualquer chave de storage.
+      metadata: {
+        financialDecision: decision,
+        cancellationReason: reason,
+      },
+    });
+
+    await publishDomainEvent(
+      "work_order.status_changed",
+      {
+        entity_type: "work_order",
+        entity_id: updated.id,
+        code: updated.code,
+        from_status: current.status,
+        to_status: "cancelled",
+      },
+      { tenantId: actor.tenantId, actorId: actor.userId },
+    );
+
+    return updated;
+  }
+
+  // Ω3F-6 — a OS já cancelada NÃO é pega por assertStatusTransition: o helper retorna cedo quando
+  // from === to (idempotência do endpoint de status legado), então cancelar duas vezes passaria batido.
+  // Guarda explícita antes. Nas demais transições, o helper segue sendo a ÚNICA fonte da tabela de
+  // transições; só o status HTTP é reajustado: D-Ω3F-6-CANCEL fixa 422 para transição inválida nesta
+  // rota, enquanto o helper emite o 409 do endpoint de status. Código e reason do módulo preservados.
+  private assertCancellable(from: WorkOrderStatus): void {
+    if (from === "cancelled") {
+      throw cancelTransitionError(from);
+    }
+
+    try {
+      assertStatusTransition(from, "cancelled");
+    } catch (error) {
+      if (error instanceof WorkOrderError && error.reason === "invalid_status_transition") {
+        throw cancelTransitionError(from);
+      }
+      throw error;
+    }
+  }
+
+  // D-Ω3F-6-CANCEL (`zero`) — reusa o DELETE LÓGICO já testado do Ω3F-3a: os itens somem da lista e do
+  // total agregado, mas as linhas persistem com deleted_at (auditoria). Não "zera valores" (que
+  // deixaria linhas 0,00 poluindo a aba). DYNAMIC import: work-order-financials importa work-orders
+  // estaticamente — um import estático aqui fecharia o ciclo (mesmo padrão do approve→OS, D-Ω3F-4B).
+  private async zeroFinancialItems(actor: WorkOrderActorContext, workOrderId: string): Promise<void> {
+    const { createDefaultWorkOrderFinancialService } = await import(
+      "../work-order-financials/work-order-financial.service.js"
+    );
+    const financials = await createDefaultWorkOrderFinancialService();
+    const { items } = await financials.list(actor, workOrderId);
+
+    for (const item of items) {
+      await financials.delete(actor, workOrderId, item.id);
+    }
+  }
+
+  /**
+   * Ω3F-6a (D-Ω3F-6-DUPLICATE) — duplica a OS: novo código, novo ciclo (status open), data/hora atual.
+   * NÃO herda orçamento nem itens financeiros congelados (invariante Ω3-e: duplicar não herda preço
+   * congelado — a OS nova precifica do zero, contra refaturamento) nem anexos nem o desfecho da fonte
+   * (cancelamento/decisão financeira). 404 cross-tenant · 409 replay do client_action_id.
+   */
+  async duplicate(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord): Promise<WorkOrder> {
+    const source = await this.get(actor, workOrderId);
+
+    // Idempotência tenant-scoped (§6): replay → 409 ANTES de consumir número de OS (nextCode). O unique
+    // PARCIAL do Postgres é a rede contra corrida (P2002 → 409 no repositório Prisma).
+    const clientActionId = optionalString(body.client_action_id ?? body.clientActionId);
+    if (clientActionId) {
+      const existing = await this.repository.findByClientActionId(actor.tenantId, clientActionId);
+      if (existing) {
+        throw duplicateWorkOrderError();
+      }
+    }
+
+    const copyComments = body.copy_comments === true || body.copyComments === true;
+    const copyChecklist = body.copy_checklist === true || body.copyChecklist === true;
+
+    // Grava DIRETO pelo repositório (não por this.create): (a) create não carimba client_action_id e
+    // ligá-lo lá levaria idempotência ao create normal, que D-Ω3F-6-DUPLICATE deixa para depois;
+    // (b) o snapshot do cliente é COPIADO da fonte, enquanto create o RE-RESOLVE do cadastro (um
+    // cliente renomeado reescreveria o snapshot congelado da OS-fonte). Consequência assumida: as
+    // validações do create (#4 tarifa vigente, destino por tipo, viatura em manutenção, refs) NÃO se
+    // aplicam — correto por construção, porque a fonte JÁ passou por elas e uma cópia não pode falhar
+    // por uma tarifa que venceu ou uma viatura que entrou em manutenção depois.
+    const code = await this.repository.nextCode(actor.tenantId);
+    const workOrder = await this.repository.create({
+      tenantId: actor.tenantId,
+      code,
+      title: source.title,
+      description: source.description,
+      // Snapshot do cliente: cópia literal do congelado na fonte (não re-resolve o cadastro).
+      customerName: source.customerName,
+      customerDocument: source.customerDocument,
+      customerPhone: source.customerPhone,
+      // Origem + destino (o mesmo trajeto).
+      serviceAddress: source.serviceAddress,
+      serviceCity: source.serviceCity,
+      serviceState: source.serviceState,
+      serviceZipCode: source.serviceZipCode,
+      serviceLatitude: source.serviceLatitude,
+      serviceLongitude: source.serviceLongitude,
+      destinationAddress: source.destinationAddress,
+      destinationCity: source.destinationCity,
+      destinationState: source.destinationState,
+      destinationZipCode: source.destinationZipCode,
+      destinationLatitude: source.destinationLatitude,
+      destinationLongitude: source.destinationLongitude,
+      serviceDetails: source.serviceDetails,
+      priority: source.priority,
+      // Vínculos de cadastro (cliente/viatura/equipe/tipo de serviço).
+      customerId: source.customerId,
+      vehicleId: source.vehicleId,
+      teamId: source.teamId,
+      serviceCatalogId: source.serviceCatalogId,
+      // Checklist: opt-in. Template + snapshot congelado andam JUNTOS — herdar o id sem o snapshot (ou
+      // vice-versa) produziria uma OS cujo checklist exibido não é o que o despacho congelou.
+      checklistId: copyChecklist ? source.checklistId : undefined,
+      checklistSnapshot: copyChecklist ? source.checklistSnapshot : null,
+      // NOVO ciclo: sem agendamento, sem atribuição, sem desfecho da fonte (cancelled_at/
+      // cancellation_reason/financial_cancellation_decision nascem vazios).
+      status: "open",
+      scheduledFor: undefined,
+      clientActionId,
+      createdBy: actor.userId,
+      updatedBy: actor.userId,
+    });
+
+    if (copyComments) {
+      await this.copyComments(actor, source.id, workOrder.id);
+    }
+
+    await this.repository.createEvent({
+      tenantId: actor.tenantId,
+      workOrderId: workOrder.id,
+      eventType: "work_order_created",
+      toStatus: workOrder.status,
+      actorUserId: actor.userId,
+      message: "Ordem de servico duplicada.",
+      // Metadata curada (§2.8): rastreia a origem da cópia. Sem tenant_id, sem service_details.
+      metadata: {
+        code: workOrder.code,
+        priority: workOrder.priority,
+        duplicatedFrom: source.id,
+      },
+    });
+
+    return workOrder;
+  }
+
+  // D-Ω3F-6-DUPLICATE (`copy_comments`) — copia os comentários ATIVOS (o repositório já exclui os
+  // deletados logicamente) preservando a AUTORIA ORIGINAL. Vai ao repositório, não ao
+  // WorkOrderCommentService: addComment carimba o ator como autor, e quem duplica não escreveu o que a
+  // equipe comentou. Copia SÓ mensagem + autor: as TAGS ficam de fora — a associação polimórfica
+  // (TagAssignment) classifica AQUELE comentário naquele contexto; replicá-la inflaria a contagem de
+  // uso de cada tag numa OS nova que ainda não foi triada. Reclassificar é 1 clique; desfazer tag
+  // fantasma em massa, não. DYNAMIC import: work-order-comments importa work-orders estaticamente.
+  private async copyComments(actor: WorkOrderActorContext, sourceId: string, targetId: string): Promise<void> {
+    const { createDefaultWorkOrderCommentRepository } = await import(
+      "../work-order-comments/work-order-comment.service.js"
+    );
+    const comments = await createDefaultWorkOrderCommentRepository();
+    const sourceComments = await comments.listByWorkOrder(actor.tenantId, sourceId);
+
+    for (const comment of sourceComments) {
+      await comments.create({
+        tenantId: actor.tenantId,
+        workOrderId: targetId,
+        authorUserId: comment.authorUserId,
+        message: comment.message,
+      });
+    }
+  }
+
   async assign(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord) {
     const current = await this.get(actor, workOrderId);
     // D1 — the assign action gains optional viatura/equipe selection, carried by the
@@ -892,6 +1123,16 @@ function hasValidCoordinate(latitude: number | undefined, longitude: number | un
     Math.abs(latitude) <= 90 &&
     Math.abs(longitude) <= 180 &&
     !(latitude === 0 && longitude === 0)
+  );
+}
+
+// Ω3F-6 — transição inválida no `cancel`: 422 (D-Ω3F-6-CANCEL), preservando código e reason do módulo.
+function cancelTransitionError(from: WorkOrderStatus): WorkOrderError {
+  return new WorkOrderError(
+    422,
+    "WORK_ORDER_STATUS_INVALID",
+    "invalid_status_transition",
+    `Cannot transition work order from ${from} to cancelled.`,
   );
 }
 

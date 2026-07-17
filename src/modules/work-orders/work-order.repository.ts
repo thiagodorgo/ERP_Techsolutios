@@ -15,12 +15,17 @@ import type {
   WorkOrderEventType,
   WorkOrderStatus,
 } from "./work-order.types.js";
+import { WorkOrderError } from "./work-order.types.js";
 
 export interface WorkOrderRepository {
   nextCode(tenantId: string): Promise<string>;
   create(input: CreateWorkOrderInput): Promise<WorkOrder>;
   list(input: ListWorkOrdersInput): Promise<ListWorkOrdersResult>;
   findById(tenantId: string, workOrderId: string): Promise<WorkOrder | undefined>;
+  // Ω3F-6 (D-Ω3F-6-DUPLICATE) — pre-check da idempotência do duplicate. TENANT-SCOPED: a chave do
+  // cliente só colide dentro da própria organização (o unique parcial no banco inclui tenant_id).
+  // work_orders não tem delete lógico, então não há recorte por deleted_at (ao contrário dos vizinhos).
+  findByClientActionId(tenantId: string, clientActionId: string): Promise<WorkOrder | undefined>;
   update(input: UpdateWorkOrderInput): Promise<WorkOrder | undefined>;
   updateGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined>;
   freezeChecklistSnapshot(input: FreezeChecklistSnapshotInput): Promise<WorkOrder | undefined>;
@@ -60,6 +65,12 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   }
 
   async create(input: CreateWorkOrderInput): Promise<WorkOrder> {
+    // Ω3F-6 — espelha o unique PARCIAL do Postgres: replay do mesmo client_action_id no tenant → 409.
+    // Rede extra ao pre-check do serviço (aqui é o "banco" do modo memory).
+    if (input.clientActionId && (await this.findByClientActionId(input.tenantId, input.clientActionId))) {
+      throw duplicateWorkOrderError();
+    }
+
     const now = new Date();
     const workOrder: WorkOrder = {
       ...input,
@@ -72,6 +83,12 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
     this.workOrders.set(workOrder.id, workOrder);
 
     return workOrder;
+  }
+
+  async findByClientActionId(tenantId: string, clientActionId: string): Promise<WorkOrder | undefined> {
+    return [...this.workOrders.values()].find(
+      (workOrder) => workOrder.tenantId === tenantId && workOrder.clientActionId === clientActionId,
+    );
   }
 
   async list(input: ListWorkOrdersInput): Promise<ListWorkOrdersResult> {
@@ -155,6 +172,12 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
       ...current,
       status: input.status,
       cancellationReason: input.status === "cancelled" ? input.cancellationReason : current.cancellationReason,
+      // Ω3F-6 — só grava a decisão quando ela VEM (cancel). Paridade exata com o compactRecord do
+      // Prisma: o endpoint de status legado (sem decisão) cancela SEM carimbar a coluna, em vez de
+      // sobrescrevê-la com undefined.
+      ...(input.status === "cancelled" && input.financialCancellationDecision !== undefined
+        ? { financialCancellationDecision: input.financialCancellationDecision }
+        : {}),
       updatedBy: input.actorUserId ?? current.updatedBy,
       updatedAt: now,
       arrivedAt: input.status === "on_site" ? now : current.arrivedAt,
@@ -236,6 +259,17 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
 
 export function formatWorkOrderCode(sequence: number): string {
   return `OS-${String(sequence).padStart(6, "0")}`;
+}
+
+// Ω3F-6 (D-Ω3F-6-DUPLICATE) — replay do duplicate (mesmo client_action_id no tenant) → 409. Emitido
+// pelo pre-check do serviço E pela violação do unique parcial (P2002) traduzida no Prisma.
+export function duplicateWorkOrderError(): WorkOrderError {
+  return new WorkOrderError(
+    409,
+    "WORK_ORDER_CONFLICT",
+    "duplicate_work_order",
+    "A work order with this client_action_id already exists for this organization.",
+  );
 }
 
 function matchesSearch(workOrder: WorkOrder, search: string | undefined): boolean {

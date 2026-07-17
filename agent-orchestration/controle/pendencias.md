@@ -551,3 +551,12 @@
 - acao: robustez — envolver create-do-comentário + attach-das-tags numa ÚNICA transação (ou reordenar) para
   atomicidade total, numa fatia futura. Hoje: 500→422 corrigido; orfandade residual só sob corrida rara.
 - status: aberto (não-bloqueante; falha seseg — o 500 já foi eliminado).
+
+## P-Ω3F6-COMISSAO - `keep_unpaid` grava a decisão mas não suprime a comissão (Ω3F-6, 2026-07-17)
+- descricao: o cancel com `financial_decision='keep_unpaid'` ("manter valores sem remunerar o profissional")
+  grava a decisão em `work_orders.financial_cancellation_decision`, mas o módulo `src/modules/commissions/`
+  NÃO a consome — a supressão da remuneração ainda não acontece de fato. Decisão D-Ω3F-6-CANCEL: a OS é a
+  fonte de verdade; o consumo fica para quem calcula comissão.
+- acao: fatia futura — o cálculo de comissão deve ler `financial_cancellation_decision` da OS e suprimir a
+  remuneração quando `keep_unpaid` (e quando `zero`, avaliar). Cruza com Ω4 (Financeiro do tenant).
+- status: aberto (não-bloqueante; a decisão está persistida e auditável).

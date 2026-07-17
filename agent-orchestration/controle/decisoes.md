@@ -529,3 +529,30 @@ Decisões do bloco Ω3F-5, com base no dossiê do fid-analista (blast radius ras
 - **D-Ω3F-5-UPLOAD-TYPE:** a aba Arquivos (upload manual multipart, campo `file`) usa `description` como
   rótulo livre ("tipo/nome") — o back de anexos (Ω3-d) NÃO é tocado. Categoria selecionável de documento
   (`metadata.documentType` + DTO) fica ADIADA (P-Ω3F5-DOC-TYPE) para não invadir o módulo de anexos.
+
+## D-Ω3F-6 — Cancelar (decisão financeira) + Duplicar + Imprimir (2026-07-17)
+
+Decisões do bloco Ω3F-6; junta valida.
+
+- **D-Ω3F-6-CANCEL:** nova rota `POST /work-orders/:id/cancel` com `financial_decision` ∈
+  `keep|keep_unpaid|zero` + `reason` (obrigatório). Finalmente USA a permissão `work_orders:cancel` (já
+  existia no catálogo sem nenhuma rota consumindo). Grava `financial_cancellation_decision` +
+  `cancellation_reason` + status `cancelled` + `cancelled_at`. **422** decisão inválida / transição inválida
+  (ex.: já cancelada); **400** motivo ausente; **404** cross-tenant.
+  - **`zero`** → **soft-delete** dos itens financeiros ATIVOS da OS: o total agregado vira 0 e as linhas
+    persistem com `deleted_at` (auditoria). Reusa o mecanismo de delete lógico já testado do Ω3F-3a — não
+    inventa "zerar valores" (que deixaria linhas 0,00 poluindo a aba).
+  - **`keep`/`keep_unpaid`** → itens INTACTOS. A decisão gravada na OS é a FONTE DE VERDADE para o módulo de
+    comissões honrar depois; este bloco **NÃO** mexe em comissões (ver P-Ω3F6-COMISSAO).
+  - **Ciclo de import:** work-order-financials importa work-orders → o cancel usa **dynamic import** do
+    financial service (mesmo padrão do approve→OS em D-Ω3F-4B).
+- **D-Ω3F-6-DUPLICATE:** `POST /work-orders/:id/duplicate` (perm `work_orders:create`) com opções
+  (`copy_comments`, `copy_checklist`) → **201** nova OS (novo código, data/hora atual). **NÃO copia orçamento
+  nem itens financeiros congelados** (invariante Ω3-e: duplicar não herda preço congelado). **404** cross-tenant.
+  - **Idempotência:** exige `work_orders.client_action_id` (não existia — o create de OS não tinha idempotência,
+    GAP-1 do dossiê Ω3F-4). Migration adiciona a coluna + **unique PARCIAL** `(tenant_id, client_action_id)
+    WHERE client_action_id IS NOT NULL` → replay do duplicate = **409**. `create` normal segue sem carimbar
+    (null fica fora do índice parcial); wire no create é evolução futura.
+- **D-Ω3F-6-PRINT:** imprimir é **client-side** (seleção de seções sobre o GET da OS) — sem rota nova.
+- **Migration** `20260806000000` aditiva: `work_orders.financial_cancellation_decision String?` +
+  `work_orders.client_action_id String?` + índice único parcial. up/down/re-up.
