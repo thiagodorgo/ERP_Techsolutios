@@ -37,6 +37,7 @@ import {
   parseFinancialCancellationDecision,
   parseLimit,
   parseOffset,
+  parseOptionalClientActionId,
   parseOptionalCoordinate,
   parseOptionalDate,
   parseOptionalSearch,
@@ -620,9 +621,15 @@ export class WorkOrderService {
 
     this.assertCancellable(current.status);
 
-    // `zero` ANTES de persistir o cancelamento: se a limpeza dos itens falhar, a OS NÃO fica cancelada
-    // com o financeiro por zerar (estado incoerente). Não há transação cross-módulo aqui — a ordem é o
-    // que garante que o par (status cancelado ↔ total 0) nunca se separe no caminho de erro.
+    // `zero` ANTES de persistir o cancelamento: assim a OS nunca fica cancelada com o financeiro por
+    // zerar — a direção que mais dói (cobrança viva numa OS morta) está fechada.
+    // HONESTIDADE (pós-análise Ω3F-6): a ordem NÃO garante o par (cancelado ↔ total 0) nas outras duas
+    // direções, e afirmar isso seria mentira: (a) `cancelled ∧ total>0` é alcançável lançando item numa
+    // OS já cancelada — o financeiro não tem guarda de estado terminal (P-Ω3F6-TERMINAL-GUARD); (b) a
+    // limpeza é um LOOP de N deletes SEM transação — se o 3º de 5 falhar, dois itens já foram
+    // soft-deletados e a OS não cancela (OS viva com itens destruídos + 500). Ver
+    // P-Ω3F6-ZERO-ATOMICIDADE: o conserto é um softDeleteAll no repositório de financials (mata o N+1 e a
+    // parcialidade de uma vez).
     if (decision === "zero") {
       await this.zeroFinancialItems(actor, current.id);
     }
@@ -719,7 +726,7 @@ export class WorkOrderService {
 
     // Idempotência tenant-scoped (§6): replay → 409 ANTES de consumir número de OS (nextCode). O unique
     // PARCIAL do Postgres é a rede contra corrida (P2002 → 409 no repositório Prisma).
-    const clientActionId = optionalString(body.client_action_id ?? body.clientActionId);
+    const clientActionId = parseOptionalClientActionId(body.client_action_id ?? body.clientActionId);
     if (clientActionId) {
       const existing = await this.repository.findByClientActionId(actor.tenantId, clientActionId);
       if (existing) {
@@ -763,6 +770,11 @@ export class WorkOrderService {
       serviceDetails: source.serviceDetails,
       priority: source.priority,
       // Vínculos de cadastro (cliente/viatura/equipe/tipo de serviço).
+      // RESSALVA HONESTA (pós-análise Ω3F-6): `vehicleId`/`teamId` são DUAL-ORIGIN — nascem no create, mas o
+      // `assign` também os grava (work-order.repository.ts). Numa OS já despachada, a cópia nasce `open` e
+      // SEM operador/assignment, porém COM a viatura e a equipe do despacho anterior. É o comportamento
+      // aceito (a cópia herda o plano de recurso, não a atribuição), mas não diga "sem atribuição" como se
+      // nenhum resíduo do despacho viesse junto — vem.
       customerId: source.customerId,
       vehicleId: source.vehicleId,
       teamId: source.teamId,

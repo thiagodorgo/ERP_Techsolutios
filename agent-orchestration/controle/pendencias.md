@@ -619,3 +619,25 @@
 - (5) `WorkOrderStatusPayload` ficou órfão em types (o `updateWorkOrderStatus` foi removido) — limpar no
   próximo bloco que tocar o arquivo (coordenador, cosmético).
 - status: aberto (nenhum bloqueia; a cognicao deferiu todos como pendência).
+
+## P-Ω3F6-ZERO-ATOMICIDADE - `zero` do cancel: N deletes sequenciais sem transação (+ N+1) (pós-análise Ω3F-6, 2026-07-17)
+- descricao: `WorkOrderService.zeroFinancialItems` percorre os itens e chama `financials.delete` um a um, SEM
+  transação. Se o k-ésimo delete falhar, os anteriores já foram soft-deletados e a OS **não** é cancelada →
+  OS VIVA com itens financeiros destruídos silenciosamente + 500 para o gestor (pior dos dois mundos). O
+  comentário do código chegou a afirmar que a ordem impedia isso — corrigido para dizer a verdade.
+  Além disso é N+1: cada `financials.delete` refaz `assertWorkOrder` (re-busca a OS inteira) + findById +
+  softDelete → 2+3N queries, com a OS já resolvida no `cancel`.
+- acao: `softDeleteAllByWorkOrder(tenantId, workOrderId, actorUserId)` no repositório de work-order-financials
+  (uma query, atômica no Postgres) consumido pelo `zeroFinancialItems` — mata a parcialidade E o N+1 de uma vez.
+  Casar com P-Ω3F6-TERMINAL-GUARD (a outra direção do par cancelado↔total 0).
+- status: aberto (N é pequeno hoje; falha no meio é rara — mas o dano é destrutivo e silencioso).
+
+## P-Ω3F6B-MENU-GATE-SEM-TESTE - Gate do menu ⋮ não é coberto (provado por mutação) (pós-análise Ω3F-6, 2026-07-17)
+- descricao: os predicados `canCancelWorkOrder`/`canDuplicateWorkOrder` são testados, mas **nada prova que o
+  JSX os usa**: o menu só monta com `menuOpen=true` e os testes são SSR sem interação. A pós-análise trocou
+  `{canDuplicate ?` e `{canCancel ?` por `{true ?` (removendo o gate dos dois itens destrutivos) e a suíte
+  ficou **427/427 verde**. Os testes que pareciam cobrir isso miram títulos de MODAL (que só existem com o
+  modal aberto) ou um caminho que a ActionBar nem renderiza.
+- corrigido NESTE PR de chore: menu extraído para `WorkOrderActionsMenu` (componente puro, exportado) +
+  teste SSR que monta o menu com/sem permissão. A mutação agora quebra.
+- status: RESOLVIDO (mantido o registro: a lição é que predicado testado ≠ predicado ligado).

@@ -570,3 +570,21 @@ test("[J-Ω3F-6A] operator SEGUE podendo mudar status não-terminal pelo legado 
   const updated = await s.workOrders.changeStatus(operator, wo.id, { status: "assigned" });
   assert.equal(updated.status, "assigned");
 });
+
+// Pós-análise Ω3F-6 — paridade com os espelhos (work-order-financial/service-quote-item validators):
+// o client_action_id vai para a coluna do unique PARCIAL; sem cap, uma string enorme estouraria o limite
+// de linha do btree no Postgres (ERROR 54000, que NÃO é P2002) e viraria 500 em vez de 400.
+test("[pós-análise] duplicate com client_action_id > 120 chars → 400 invalid_client_action_id (espelho dos vizinhos)", async () => {
+  const s = setup();
+  const ctx = actor();
+  const wo = await s.workOrders.create(ctx, { title: "OS" });
+
+  await assert.rejects(
+    () => s.workOrders.duplicate(ctx, wo.id, { client_action_id: "x".repeat(121) }),
+    (e: unknown) => e instanceof WorkOrderError && e.statusCode === 400 && e.reason === "invalid_client_action_id",
+  );
+
+  // No limite (120) segue válido — o cap é o mesmo dos espelhos.
+  const copy = await s.workOrders.duplicate(ctx, wo.id, { client_action_id: "y".repeat(120) });
+  assert.notEqual(copy.code, wo.code);
+});

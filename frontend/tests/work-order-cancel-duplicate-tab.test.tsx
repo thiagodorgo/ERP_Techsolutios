@@ -10,6 +10,7 @@ import { DuplicateWorkOrderModal } from "../src/modules/work-orders/components/D
 import { PrintWorkOrderModal } from "../src/modules/work-orders/components/PrintWorkOrderModal";
 import {
   WorkOrderActionBar,
+  WorkOrderActionsMenu,
   canCancelWorkOrder,
   canDuplicateWorkOrder,
 } from "../src/modules/work-orders/components/WorkOrderActionBar";
@@ -183,4 +184,44 @@ test("WorkOrderActionBar: decisão financeira gravada nunca é renderizada crua 
   const cancelada: WorkOrderDetail = { ...wo, status: "cancelled", financialCancellationDecision: "zero" };
   const html = renderBar(["work_orders:cancel", "work_orders:create"], cancelada);
   assert.doesNotMatch(html, /keep_unpaid|>zero<|"zero"/);
+});
+
+// ---------- O gate LIGADO ao JSX (pós-análise Ω3F-6: provado por mutação que faltava) ----------
+// Os predicados acima provam a REGRA. Estes provam que o menu REALMENTE os usa: antes desta extração, o
+// menu só montava com `menuOpen=true` e nenhum teste SSR o alcançava — trocar `{canCancel ?` por `{true ?`
+// mantinha a suíte 427/427 verde. Agora a mutação quebra aqui.
+
+const noop = () => {};
+
+test("[gate ligado] menu ⋮ com permissão: mostra Duplicar e Cancelar", () => {
+  const html = renderToString(
+    <WorkOrderActionsMenu canDuplicate canCancel waCopied={false} onCopyWhatsApp={noop} onDuplicate={noop} onCancel={noop} />,
+  );
+  assert.match(html, /Duplicar/);
+  assert.match(html, /Cancelar/);
+  assert.match(html, /Copiar texto p\/ WhatsApp/);
+});
+
+test("[gate ligado] menu ⋮ SEM permissão: Duplicar e Cancelar AUSENTES (não é só desabilitado)", () => {
+  const html = renderToString(
+    <WorkOrderActionsMenu canDuplicate={false} canCancel={false} waCopied={false} onCopyWhatsApp={noop} onDuplicate={noop} onCancel={noop} />,
+  );
+  assert.doesNotMatch(html, /Duplicar/);
+  assert.doesNotMatch(html, /Cancelar/);
+  // O item de todos permanece — a ausência é dos gated, não do menu inteiro.
+  assert.match(html, /Copiar texto p\/ WhatsApp/);
+});
+
+test("[gate ligado] cada gate é independente (só Duplicar; só Cancelar)", () => {
+  const soDuplicar = renderToString(
+    <WorkOrderActionsMenu canDuplicate canCancel={false} waCopied={false} onCopyWhatsApp={noop} onDuplicate={noop} onCancel={noop} />,
+  );
+  assert.match(soDuplicar, /Duplicar/);
+  assert.doesNotMatch(soDuplicar, /Cancelar/);
+
+  const soCancelar = renderToString(
+    <WorkOrderActionsMenu canDuplicate={false} canCancel waCopied={false} onCopyWhatsApp={noop} onDuplicate={noop} onCancel={noop} />,
+  );
+  assert.doesNotMatch(soCancelar, /Duplicar/);
+  assert.match(soCancelar, /Cancelar/);
 });

@@ -202,3 +202,17 @@ export function parseOptionalSearch(value: unknown): string | undefined {
 
   return search.slice(0, 120);
 }
+
+// Ω3F-6 (pós-análise) — token OPACO de idempotência do cliente (duplicate). Espelha os validadores dos
+// vizinhos (`work-order-financial.validators.ts`, `service-quote-item.validators.ts`): só sanidade de
+// TAMANHO, formato livre. Sem o cap, uma string enorme ia crua para a coluna do unique parcial
+// `work_orders_idem_key` e o Postgres estouraria o limite de linha do btree (ERROR 54000) — que NÃO é
+// P2002, logo escaparia do tradutor para 409 e viraria 500. Aqui vira 400, como nos espelhos.
+export function parseOptionalClientActionId(value: unknown): string | undefined {
+  const normalized = optionalString(value);
+  if (normalized === undefined) return undefined;
+  if (normalized.length > 120) {
+    throw new WorkOrderError(400, "WORK_ORDER_INVALID", "invalid_client_action_id", "clientActionId must be at most 120 characters.");
+  }
+  return normalized;
+}
