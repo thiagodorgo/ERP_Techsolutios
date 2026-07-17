@@ -42,7 +42,7 @@ export const WORK_ORDER_TABS: readonly WorkOrderTabDef[] = [
   { slug: "mobile", label: "Mobile", visible: true, requiredPermission: "work_orders:read", deliveredBy: "Ω3F-7" },
   { slug: "quilometragem", label: "Quilometragem", visible: true, requiredPermission: "work_orders:read", deliveredBy: "Ω3F-7" },
   { slug: "base", label: "Base", visible: false, deliveredBy: "Ω3F-13 (Fase 2)" },
-  { slug: "mapa", label: "Mapa", visible: false, deliveredBy: "Ω3F-8" },
+  { slug: "mapa", label: "Mapa", visible: true, requiredPermission: "work_orders:read", deliveredBy: "Ω3F-8b" },
   { slug: "logs", label: "Logs", visible: true, requiredPermission: "work_orders:read", deliveredBy: "Ω3F-8a" },
 ];
 

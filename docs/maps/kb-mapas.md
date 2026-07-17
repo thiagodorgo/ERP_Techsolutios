@@ -13,13 +13,13 @@
 > exige PD-xxx (≥3 fontes) + **junta de 5 unânime** antes de configurar billing. Este documento é
 > o dossiê técnico/custo que instrui essa decisão — ele **não** ativa nada.
 
-**Última revisão geral:** 2026-07-13 · **Responsável:** Junta de Mapas (semeadura inicial)
+**Última revisão geral:** 2026-07-17 · **Responsável:** Junta de Mapas (J-MAPAS-5 · planejador-mapas — plano Ω3F-8b Mapa da OS)
 
 ---
 
 ## (a) Preços, tiers e cotas grátis por SKU — Google Maps Platform
 
-**Última verificação:** 2026-07-13 · **Fonte primária:** [developers.google.com/maps/billing-and-pricing/pricing](https://developers.google.com/maps/billing-and-pricing/pricing) (página marcada "Last updated 2026-07-10 UTC").
+**Última verificação:** 2026-07-17 (re-checada para J-MAPAS-5; sem mudança de valores desde 2026-07-13) · **Fonte primária:** [developers.google.com/maps/billing-and-pricing/pricing](https://developers.google.com/maps/billing-and-pricing/pricing) (página marcada "Last updated 2026-07-15 UTC"). Confirmado 2026-07-17: **Routes — Compute Routes (Essentials) US$ 5,00/1.000** e **Geocoding US$ 5,00/1.000**, **cota grátis 10.000/mês por SKU** (Essentials) — inalterados.
 
 ### Mudança estrutural de 2025 (contexto que muda tudo)
 Desde **1º de março de 2025** o modelo de **US$ 200 de crédito mensal** foi **extinto** e
@@ -234,7 +234,70 @@ focar em ORDEM ALFABÉTICA no NOME DA CIDADE."
 coordenada persistida ou logada (LGPD: clustering opera sobre coordenada já em tela, centroides
 efêmeros de UI, sem `place_id`, sem coordenada de técnico em log/console).
 
-## Histórico de revisões
+## (g) Rota + km da aba "Mapa da OS" (Ω3F-8b) — provedor e seam (J-MAPAS-5)
+
+**Data:** 2026-07-17 · **Decisão de junta:** J-MAPAS-5 (planejador -> dev -> avaliador). **Escopo:**
+aba **Mapa** do Hub da OS — partida selecionavel (real/base/POI) -> origem -> destino -> **km estimado**.
+
+**Decisao de provedor (custo ZERO, sem SKU novo):** a rota e o km da aba Mapa saem por
+**marcadores + polyline reta + distancia HAVERSINE** (reusa `haversineKm` em `mapMarkers.ts`),
+sobre a **base MapLibre + OpenFreeMap** (regra de ouro). O numero e rotulado com honestidade
+**"distancia aproximada em linha reta"** (a rota rodoviaria real e tipicamente 1,2-1,4x maior). Sem
+provedor de rotas, sem chave, sem billing, sem `place_id`, sem trava de cache de ToS.
+
+**Alternativas no mesmo quadro (abertas, NAO ativadas):**
+- **(b) OSRM/OpenRouteService publico** — rota rodoviaria real. **Rejeitado para -8b:** o servidor
+  demo publico do OSRM (`router.project-osrm.org`) **proibe uso em producao** no seu ToS; o
+  OpenRouteService exige **API key + cota** (dependencia/credencial externa nova = decisao de junta +
+  PD). Fica como seam para self-host OSRM/Valhalla se o piloto exigir km rodoviario sem Google.
+- **(c) Google Routes — Compute Routes** — rota+ETA reais. **PAGO** (Essentials **US$ 5,00/1.000**,
+  cota gratis 10.000/mes cobre o piloto — §(a), re-checado 2026-07-17). E **SKU pago** -> exige
+  **PD-ROUTES (>=3 fontes) + junta de 5 unanime + billing/quota** antes de ativar. **NAO** entra no
+  -8b; dossie pronto aqui para o dono decidir se quer km rodoviario/ETA.
+
+**Seam obrigatorio (para trocar sem retrabalho):** o calculo vive atras de uma interface
+`RouteProvider.computeRoute(start, origin, destination) -> { km, geometry, mode: 'straight-line'|'road', label }`.
+Default = `HaversineRouteProvider` (cliente, US$ 0). Um `GoogleRoutesProvider`/`OsrmRouteProvider`
+futuro pluga atras de env-gate (espelha o padrao `geocoder.factory.ts` — Noop por default), **so
+apos** junta-5+PD. O `mode`/`label` carrega a honestidade para a UI.
+
+**Fontes das partidas (o que existe / o que falta):**
+- **origem/destino:** `WorkOrder.service_latitude/longitude` e `destination_latitude/longitude`
+  (Omega3F-2, ja no detalhe). **Gap absorvido pelo -8:** o geocode so preenche a **origem**
+  (`geocodeById` usa `serviceAddress`); **destino nao geocodifica** -> estender o servico (campos ja
+  existem, **sem migration**) e rodar geocode nos dois pontos.
+- **"posicao real":** ultima `FieldOperatorLocation` do tecnico atribuido. Existe endpoint
+  `GET /field-locations/latest` (`field_location:read`), mas ele devolve **todos** os operadores
+  (over-exposicao LGPD) e exige permissao diferente da aba. -> **read minimizado por OS** devolvendo
+  **so** o ponto do tecnico atribuido (LGPD: minimizacao), gated por `work_orders:read`, 404
+  cross-tenant, §2.8.
+- **"base":** **NAO ha fonte geo** — `Branch` (`schema.prisma:85`) tem name/code/status, **sem
+  lat/lng**. Decisao de modelagem para a junta (recomendacao: representar base como **POI de
+  categoria "base"** — zero migration, usa Omega2-d como desenhado — em vez de somar `lat/lng` ao
+  `Branch`). Registrar como divergencia A2 se a junta escolher o modelo alternativo.
+- **"POI":** `Poi` (`schema.prisma:1406`, lat/lng Decimal, tenant-scoped) + registry front
+  (`frontend/src/modules/registry/pois/`) — pronto.
+
+**P-Omega3F7B-MAPA-ETAPA (mapa de posicao por etapa):** **fica DIFERIDO** — feature distinta do -8b
+(read-only partida->destino) com modelo de dados distinto (captura no **write path** do despacho).
+Design minimo registrado para virar follow-up decidido (nao pendencia aberta): carimbar lat/lng no
+**momento de cada `FieldDispatchEvent`** (colunas nullable `latitude/longitude` ou no `metadata` Json
+ja existente), a partir da posicao do sync mobile ou da ultima `FieldOperatorLocation`. **So ajuda
+dados FUTUROS** (eventos passados ficam sem posicao). LGPD: coordenada NUNCA em audit/log.
+
+**Custo deste bloco:** **US$ 0** — sem SKU novo, sem chave, sem billing, sem `place_id`; coordenadas
+sao dado proprio do tenant (OS/POI/posicao do tecnico). Nao dispara "junta de 5 + PD". LGPD:
+minimizacao da posicao do tecnico + nenhuma coordenada em log.
+
+## Historico de revisoes
+- **2026-07-17 (J-MAPAS-5 · planejador-mapas)** — Plano da aba **Mapa da OS (Omega3F-8b)**. Rota+km =
+  **haversine em linha reta** sobre MapLibre (rotulo honesto "distancia aproximada em linha reta"),
+  **custo US$ 0**, seam `RouteProvider` para futura rota rodoviaria (OSRM self-host) ou Google Routes
+  (PAGO, so com PD-ROUTES + junta-5). Precos re-checados 2026-07-17 (pagina marcada 2026-07-15 UTC):
+  Routes/Geocoding Essentials US$ 5,00/1.000, cota 10K/mes — inalterados. Gaps mapeados: geocode do
+  **destino** (sem migration), **read minimizado** da posicao do tecnico por OS (LGPD), **base sem
+  lat/lng** (recomendacao POI-categoria). **P-Omega3F7B-MAPA-ETAPA** segue diferido (design minimo
+  registrado em §(g)). Ver §(g) para o dossie. Proximo: dev-mapas.
 - **2026-07-13** — Semeadura inicial (criação da Junta de Mapas). Preços verificados na tabela
   oficial marcada 2026-07-10 UTC; ToS na versão 2025-05-01 (EEA 2025-10-01); Flutter
   `google_maps_flutter` 2.17.1 e `flutter_map` 8.3.0; OpenFreeMap público sem limites.

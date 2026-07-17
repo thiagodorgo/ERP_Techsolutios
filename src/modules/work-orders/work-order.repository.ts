@@ -28,6 +28,8 @@ export interface WorkOrderRepository {
   findByClientActionId(tenantId: string, clientActionId: string): Promise<WorkOrder | undefined>;
   update(input: UpdateWorkOrderInput): Promise<WorkOrder | undefined>;
   updateGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined>;
+  // Ω3F-8b — geocode do DESTINO (espelho de updateGeocode; colunas destination_* já existem, SEM migration).
+  updateDestinationGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined>;
   freezeChecklistSnapshot(input: FreezeChecklistSnapshotInput): Promise<WorkOrder | undefined>;
   changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined>;
   assign(input: AssignWorkOrderInput): Promise<{ readonly workOrder: WorkOrder; readonly assignment: WorkOrderAssignment } | undefined>;
@@ -140,6 +142,26 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
       serviceLongitude: input.longitude,
       serviceGeocodedAt: input.geocodedAt,
       serviceGeocodeSource: input.source,
+      updatedBy: input.actorUserId ?? current.updatedBy,
+      updatedAt: new Date(),
+    };
+    this.workOrders.set(updated.id, updated);
+
+    return updated;
+  }
+
+  // Ω3F-8b — grava a coordenada geocodificada do DESTINO + metadados. Espelho de updateGeocode;
+  // tenant-scoped: OS inexistente/cross-tenant → undefined (serviço mapeia 404).
+  async updateDestinationGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined> {
+    const current = await this.findById(input.tenantId, input.workOrderId);
+    if (!current) return undefined;
+
+    const updated: WorkOrder = {
+      ...current,
+      destinationLatitude: input.latitude,
+      destinationLongitude: input.longitude,
+      destinationGeocodedAt: input.geocodedAt,
+      destinationGeocodeSource: input.source,
       updatedBy: input.actorUserId ?? current.updatedBy,
       updatedAt: new Date(),
     };

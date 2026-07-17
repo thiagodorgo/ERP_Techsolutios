@@ -227,6 +227,26 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
     return updated[0] ? mapWorkOrderRecord(updated[0]) : undefined;
   }
 
+  // Ω3F-8b — geocode do DESTINO: espelho de updateGeocode nas colunas destination_* (já existentes,
+  // SEM migration). where tenant_id+id; RETURNING vazio (inexistente/cross-tenant) → undefined (→ 404).
+  async updateDestinationGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined> {
+    const updated = await this.client.workOrder.updateManyAndReturn({
+      where: {
+        tenant_id: input.tenantId,
+        id: input.workOrderId,
+      },
+      data: {
+        destination_latitude: input.latitude,
+        destination_longitude: input.longitude,
+        destination_geocoded_at: input.geocodedAt,
+        destination_geocode_source: input.source,
+        updated_by: input.actorUserId ?? null,
+      },
+    });
+
+    return updated[0] ? mapWorkOrderRecord(updated[0]) : undefined;
+  }
+
   // Ω3-c — grava (sobrescreve) o snapshot JSON na OS. where tenant_id+id; RETURNING vazio → undefined.
   async freezeChecklistSnapshot(input: FreezeChecklistSnapshotInput): Promise<WorkOrder | undefined> {
     const updated = await this.client.workOrder.updateManyAndReturn({
@@ -366,6 +386,10 @@ export class RlsPrismaWorkOrderRepository implements WorkOrderRepository {
 
   updateGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx).updateGeocode(input));
+  }
+
+  updateDestinationGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx).updateDestinationGeocode(input));
   }
 
   freezeChecklistSnapshot(input: FreezeChecklistSnapshotInput): Promise<WorkOrder | undefined> {

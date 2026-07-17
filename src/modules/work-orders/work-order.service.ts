@@ -1,7 +1,9 @@
 import { env } from "../../config/env.js";
 import { publishDomainEvent } from "../../infra/events/domain-event.publisher.js";
 import { createDefaultCustomerService } from "../customers/customer.service.js";
+import { createDefaultFieldLocationService } from "../field-location/field-location.service.js";
 import { createDefaultMaintenanceOrderService } from "../maintenance-orders/maintenance-order.service.js";
+import { createDefaultPoiService } from "../pois/poi.service.js";
 import { createDefaultServiceCatalogService } from "../service-catalog/service-catalog.service.js";
 import { createApplicableTariffResolver } from "../service-quotes/service-quote.service.js";
 import { createDefaultTeamService } from "../teams/team.service.js";
@@ -24,6 +26,8 @@ import type {
   WorkOrderCustomerLink,
   WorkOrderEvent,
   WorkOrderLinks,
+  WorkOrderMapBase,
+  WorkOrderMapStartPoints,
   WorkOrderServiceCatalogLink,
   WorkOrderStatus,
   WorkOrderTeamLink,
@@ -100,6 +104,14 @@ export type WorkOrderReferenceResolvers = {
     actor: WorkOrderActorContext,
     id: string,
   ) => Promise<WorkOrderServiceCatalogLink | null>;
+  // Ω3F-8b (J-MAPAS-5) — última posição do técnico ATRIBUÍDO (LGPD: minimização — só ele, nunca a
+  // frota). null quando não há posição válida / resolver ausente. Coordenada NUNCA vai a log.
+  readonly resolveAssignedOperatorLocation?: (
+    actor: WorkOrderActorContext,
+    operatorUserId: string,
+  ) => Promise<{ readonly latitude: number; readonly longitude: number; readonly capturedAt: Date } | null>;
+  // Ω3F-8b — bases disponíveis = POIs de categoria "base" (Ω2-d; zero migration). Tenant-scoped.
+  readonly listMapBases?: (actor: WorkOrderActorContext) => Promise<readonly WorkOrderMapBase[]>;
 };
 
 export class WorkOrderService {
@@ -196,6 +208,133 @@ export class WorkOrderService {
     }
 
     return { workOrder: updated, geocoded: true };
+  }
+
+  /**
+   * Ω3F-8b (J-MAPAS-5) — geocodifica o DESTINO da OS (absorve o gap: geocodeById só preenchia a origem).
+   * Espelho EXATO do contrato de geocodeById, porém nas colunas destination_* (já existentes, SEM
+   * migration): 404 inexistente/cross-tenant · 409 destino já geocodificado sem force · 422 sem endereço
+   * de destino · 502 provedor indisponível (fail-open) · 200 {geocoded:false} sem match/desabilitado.
+   * NUNCA no caminho de create (create não geocodifica origem NEM destino).
+   */
+  async geocodeDestinationById(
+    actor: WorkOrderActorContext,
+    workOrderId: string,
+    force = false,
+  ): Promise<{ readonly workOrder?: WorkOrder; readonly geocoded: boolean; readonly reason?: string }> {
+    const id = parseRequiredUuid(workOrderId, "workOrderId");
+    const workOrder = await this.repository.findById(actor.tenantId, id);
+    if (!workOrder) {
+      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
+
+    if (hasValidCoordinate(workOrder.destinationLatitude, workOrder.destinationLongitude) && !force) {
+      throw new WorkOrderError(
+        409,
+        "WORK_ORDER_CONFLICT",
+        "already_geocoded",
+        "Work order destination already has coordinates. Use force to override.",
+      );
+    }
+
+    const queryString = buildGeocodeQueryString({
+      address: workOrder.destinationAddress,
+      city: workOrder.destinationCity,
+      state: workOrder.destinationState,
+      zipCode: workOrder.destinationZipCode,
+    });
+    if (!queryString) {
+      throw new WorkOrderError(
+        422,
+        "WORK_ORDER_INVALID",
+        "no_destination_address",
+        "Work order has no destination address to geocode.",
+      );
+    }
+
+    // B8 (espelho) — geocoder desabilitado (Noop) → razão HONESTA "desabilitada", nunca "não localizado".
+    if (!this.geocoder.isEnabled()) {
+      return { geocoded: false, reason: "Geocodificação está desabilitada neste ambiente." };
+    }
+
+    let result;
+    try {
+      result = await this.geocoder.geocode({
+        address: workOrder.destinationAddress,
+        city: workOrder.destinationCity,
+        state: workOrder.destinationState,
+        zipCode: workOrder.destinationZipCode,
+      });
+    } catch (error) {
+      if (error instanceof GeocoderUnavailableError) {
+        throw new WorkOrderError(502, "GEOCODER_UNAVAILABLE", "geocoder_unavailable", "Geocoding provider is unavailable.");
+      }
+      throw error;
+    }
+
+    if (!result) {
+      return { geocoded: false, reason: "Endereço de destino não localizado pelo provedor." };
+    }
+
+    // R2 (espelho) — nunca persiste sentinela/fora de faixa (guarda dupla na borda).
+    if (!hasValidCoordinate(result.latitude, result.longitude)) {
+      return { geocoded: false, reason: "Coordenada de destino retornada é inválida." };
+    }
+
+    const updated = await this.repository.updateDestinationGeocode({
+      tenantId: actor.tenantId,
+      workOrderId: id,
+      latitude: result.latitude,
+      longitude: result.longitude,
+      source: result.source,
+      geocodedAt: new Date(),
+      actorUserId: actor.userId,
+    });
+    // Corrida: RETURNING vazio → 404, nunca 500 nem vazamento de existência.
+    if (!updated) {
+      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
+
+    return { workOrder: updated, geocoded: true };
+  }
+
+  /**
+   * Ω3F-8b (J-MAPAS-5) — read MINIMIZADO dos pontos de partida do mapa da OS (perm work_orders:read).
+   * Devolve SÓ: origem, destino, a posição do técnico ATRIBUÍDO (LGPD: minimização — nunca a frota) com
+   * carimbo de idade, e as bases disponíveis (POIs de categoria "base"). 404 cross-tenant/inexistente
+   * (via get()). §2.8: nunca tenant_id/place_id/segredo; coordenada NUNCA logada.
+   */
+  async listMapStartPoints(actor: WorkOrderActorContext, workOrderId: string): Promise<WorkOrderMapStartPoints> {
+    const workOrder = await this.get(actor, workOrderId);
+
+    const origin = hasValidCoordinate(workOrder.serviceLatitude, workOrder.serviceLongitude)
+      ? {
+          latitude: workOrder.serviceLatitude as number,
+          longitude: workOrder.serviceLongitude as number,
+          address: workOrder.serviceAddress,
+        }
+      : null;
+    const destination = hasValidCoordinate(workOrder.destinationLatitude, workOrder.destinationLongitude)
+      ? {
+          latitude: workOrder.destinationLatitude as number,
+          longitude: workOrder.destinationLongitude as number,
+          address: workOrder.destinationAddress,
+        }
+      : null;
+
+    // Posição real: SÓ o técnico atribuído (assignedUserId). Sem atribuição → sem posição (LGPD).
+    let technician: WorkOrderMapStartPoints["technician"] = null;
+    const assignedUserId = workOrder.assignedUserId;
+    if (assignedUserId && this.references.resolveAssignedOperatorLocation) {
+      const point = await this.references.resolveAssignedOperatorLocation(actor, assignedUserId);
+      if (point && hasValidCoordinate(point.latitude, point.longitude)) {
+        technician = { latitude: point.latitude, longitude: point.longitude, capturedAt: point.capturedAt };
+      }
+    }
+
+    const bases = this.references.listMapBases ? await this.references.listMapBases(actor) : [];
+
+    return { origin, destination, technician, bases };
   }
 
   async list(actor: WorkOrderActorContext, query: RawRecord): Promise<ListWorkOrdersResult> {
@@ -1096,6 +1235,33 @@ function createDefaultReferenceResolvers(): WorkOrderReferenceResolvers {
         name: service.name,
         basePrice: service.basePrice ?? null,
       })),
+    // Ω3F-8b — última posição do técnico atribuído: reusa FieldLocationService (listHistory, limit 1) —
+    // o mesmo singleton em memória que a rota mobile alimenta. Falha/ausência → null (o mapa degrada:
+    // sem posição real, cai na origem). LGPD: só o operatorUserId atribuído; coordenada nunca logada.
+    resolveAssignedOperatorLocation: async (actor, operatorUserId) => {
+      try {
+        const service = await createDefaultFieldLocationService();
+        const history = await service.listHistory(actor, { operatorUserId, limit: 1 });
+        const latest = history[0];
+        if (!latest) return null;
+        return { latitude: latest.latitude, longitude: latest.longitude, capturedAt: latest.recordedAt };
+      } catch {
+        return null;
+      }
+    },
+    // Ω3F-8b — bases = POIs de categoria "base" (Ω2-d; zero migration). Reusa PoiService (mesmo singleton
+    // que a rota /pois). Falha → lista vazia (o mapa degrada sem quebrar).
+    listMapBases: async (actor) => {
+      try {
+        const service = await createDefaultPoiService();
+        const { items } = await service.list(actor, { limit: 100, is_active: true });
+        return items
+          .filter((poi) => poi.isActive && (poi.category ?? "").trim().toLowerCase() === "base")
+          .map((poi) => ({ id: poi.id, name: poi.name, latitude: poi.latitude, longitude: poi.longitude }));
+      } catch {
+        return [];
+      }
+    },
   };
 }
 

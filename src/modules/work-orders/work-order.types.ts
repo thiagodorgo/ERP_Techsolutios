@@ -269,6 +269,36 @@ export type UpdateWorkOrderGeocodeInput = {
   readonly actorUserId?: string;
 };
 
+// Ω3F-8b (J-MAPAS-5) — read MINIMIZADO dos pontos de partida do mapa da OS. LGPD: só o técnico
+// ATRIBUÍDO (nunca a frota); §2.8: nunca tenant_id/place_id/segredo; coordenada NUNCA vai a log.
+export type WorkOrderMapPoint = {
+  readonly latitude: number;
+  readonly longitude: number;
+  readonly address?: string;
+};
+
+// Base = POI de categoria "base" (Ω2-d; zero migration — não somamos lat/lng ao Branch).
+export type WorkOrderMapBase = {
+  readonly id: string;
+  readonly name: string;
+  readonly latitude: number;
+  readonly longitude: number;
+};
+
+// Posição REAL = última FieldOperatorLocation do técnico atribuído, com carimbo de idade (staleness).
+export type WorkOrderMapTechnicianPoint = {
+  readonly latitude: number;
+  readonly longitude: number;
+  readonly capturedAt: Date;
+};
+
+export type WorkOrderMapStartPoints = {
+  readonly origin: WorkOrderMapPoint | null;
+  readonly destination: WorkOrderMapPoint | null;
+  readonly technician: WorkOrderMapTechnicianPoint | null;
+  readonly bases: readonly WorkOrderMapBase[];
+};
+
 // Ω3-c — congela (ou limpa) o snapshot de checklist na OS. tenant-scoped (OS de outro tenant → undefined).
 export type FreezeChecklistSnapshotInput = {
   readonly tenantId: string;

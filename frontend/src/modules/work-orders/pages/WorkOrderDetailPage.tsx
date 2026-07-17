@@ -10,6 +10,7 @@ import { CommentsTab } from "../components/tabs/CommentsTab";
 import { FinancialTab } from "../components/tabs/FinancialTab";
 import { GeneralInfoTab } from "../components/tabs/GeneralInfoTab";
 import { LogsTab } from "../components/tabs/LogsTab";
+import { MapTab } from "../components/tabs/MapTab";
 import { MileageTab } from "../components/tabs/MileageTab";
 import { MobileTab } from "../components/tabs/MobileTab";
 import { QuoteTab } from "../components/tabs/QuoteTab";
@@ -90,6 +91,8 @@ export function WorkOrderDetailPage() {
           <MobileTab workOrder={workOrder} context={context} permissions={permissions} />
         ) : activeTab === "quilometragem" ? (
           <MileageTab workOrder={workOrder} context={context} permissions={permissions} onRefresh={() => void refresh()} />
+        ) : activeTab === "mapa" ? (
+          <MapTab workOrder={workOrder} context={context} permissions={permissions} />
         ) : activeTab === "logs" ? (
           <LogsTab workOrderId={workOrder.id} context={context} permissions={permissions} />
         ) : (

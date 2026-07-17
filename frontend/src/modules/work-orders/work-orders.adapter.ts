@@ -235,6 +235,8 @@ function adaptWorkOrderItem(input: unknown): WorkOrderDetail | null {
     serviceZipCode: readNullableString(item, ["serviceZipCode", "service_zip_code"]),
     serviceLatitude: readNullableNumber(item, ["serviceLatitude", "service_latitude"]),
     serviceLongitude: readNullableNumber(item, ["serviceLongitude", "service_longitude"]),
+    // Ω3F-8b — endereço de destino (a aba Mapa usa para o CTA "geocodificar destino").
+    destinationAddress: readNullableString(item, ["destinationAddress", "destination_address"]),
     assignedOperatorId: readNullableString(item, ["assignedOperatorId", "assigned_operator_id"]),
     assignedUserId: readNullableString(item, ["assignedUserId", "assigned_user_id"]),
     vehicleId: readNullableString(item, ["vehicleId", "vehicle_id"]),
