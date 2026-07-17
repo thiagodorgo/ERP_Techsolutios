@@ -10,24 +10,26 @@ import { RevokeDispatchPrompt } from "../components/RevokeDispatchPrompt";
 import { WorkOrderDelayBadge } from "../components/WorkOrderDelayBadge";
 import { WorkOrderRowActions } from "../components/WorkOrderRowActions";
 import { advanceWorkOrderStatus } from "../work-orders.service";
-import { nextForwardStatus } from "../work-orders-row.logic";
+import { nextForwardStatus, WORK_ORDER_STATUS_LABEL } from "../work-orders-row.logic";
 import { useWorkOrders } from "../useWorkOrders";
 import type { WorkOrderListItem, WorkOrderPriority, WorkOrderStatus, WorkOrdersFilters } from "../work-orders.types";
 
 // "Ordens de Serviço" (lista) — ligada a work-orders.service (real atrás de
 // VITE_USE_MOCKS; fallback local em erro). Alvo visual: ERP Web.dc.html.
 
-const STATUS_META: Record<WorkOrderStatus, { label: string; bg: string; color: string }> = {
-  open: { label: "Aberta", bg: "#F1F5F9", color: "#475569" },
-  assigned: { label: "Atribuída", bg: "#EFF6FF", color: "#2563EB" },
-  accepted: { label: "Aceita", bg: "#EFF6FF", color: "#2563EB" },
-  on_route: { label: "Em rota", bg: "#EFF6FF", color: "#2563EB" },
-  on_site: { label: "No local", bg: "#ECFDF5", color: "#059669" },
-  in_progress: { label: "Em atendimento", bg: "#FFFBEB", color: "#D97706" },
-  paused: { label: "Pausada", bg: "#FFFBEB", color: "#D97706" },
-  completed: { label: "Concluída", bg: "#ECFDF5", color: "#059669" },
-  cancelled: { label: "Cancelada", bg: "#FEF2F2", color: "#DC2626" },
-  rejected: { label: "Recusada", bg: "#FEF2F2", color: "#DC2626" },
+// Cor por status; o RÓTULO vem da fonte única WORK_ORDER_STATUS_LABEL (work-orders-row.logic) — sem
+// duas verdades de rótulo (condição fid J-Ω3F-9).
+const STATUS_TONE: Record<WorkOrderStatus, { bg: string; color: string }> = {
+  open: { bg: "#F1F5F9", color: "#475569" },
+  assigned: { bg: "#EFF6FF", color: "#2563EB" },
+  accepted: { bg: "#EFF6FF", color: "#2563EB" },
+  on_route: { bg: "#EFF6FF", color: "#2563EB" },
+  on_site: { bg: "#ECFDF5", color: "#059669" },
+  in_progress: { bg: "#FFFBEB", color: "#D97706" },
+  paused: { bg: "#FFFBEB", color: "#D97706" },
+  completed: { bg: "#ECFDF5", color: "#059669" },
+  cancelled: { bg: "#FEF2F2", color: "#DC2626" },
+  rejected: { bg: "#FEF2F2", color: "#DC2626" },
 };
 
 const PRIORITY_LABEL: Record<WorkOrderPriority, string> = {
@@ -231,7 +233,7 @@ export function WorkOrdersPage() {
           </div>
         ) : (
           visible.map((o: WorkOrderListItem) => {
-            const sm = STATUS_META[o.status];
+            const sm = STATUS_TONE[o.status];
             return (
               <div key={o.id} onClick={() => navigate(`/work-orders/${o.id}`)} style={{ display: "flex", alignItems: "center", padding: "12px 18px", borderBottom: "1px solid #F8FAFC", cursor: "pointer", gap: 10 }}>
                 <div style={{ flex: 0.9 }}>
@@ -252,7 +254,7 @@ export function WorkOrdersPage() {
                   <span style={{ fontSize: 12.5, color: "#475569", fontVariantNumeric: "tabular-nums" }}>{fmtDate(o.scheduledFor)}</span>
                   <WorkOrderDelayBadge scheduledFor={o.scheduledFor} status={o.status} />
                 </div>
-                <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}><span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: sm.bg, color: sm.color, whiteSpace: "nowrap" }}>{sm.label}</span></div>
+                <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}><span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: sm.bg, color: sm.color, whiteSpace: "nowrap" }}>{WORK_ORDER_STATUS_LABEL[o.status]}</span></div>
                 <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
                   <WorkOrderRowActions
                     status={o.status}

@@ -5,8 +5,9 @@ import type { WorkOrderStatus } from "./work-orders.types";
 // Predicados exportados e testados diretamente; os componentes os LIGAM ao JSX (lição do Ω3F-6:
 // predicado testado ≠ predicado LIGADO). Nada aqui bate na rede.
 
-// Rótulos PT-BR dos status (§11.2: a UI nunca mostra o valor técnico `on_route`). Fonte única — o
-// STATUS_META da página herda daqui, para não haver duas verdades de rótulo.
+// Rótulos PT-BR dos status (§11.2: a UI nunca mostra o valor técnico `on_route`). FONTE ÚNICA de rótulo —
+// a WorkOrdersPage consome este mapa (tanto no chip de STATUS quanto no botão "Dar andamento"), sem manter
+// uma segunda tabela de rótulos.
 export const WORK_ORDER_STATUS_LABEL: Record<WorkOrderStatus, string> = {
   open: "Aberta",
   assigned: "Atribuída",

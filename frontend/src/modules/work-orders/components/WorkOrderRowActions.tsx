@@ -159,7 +159,7 @@ export function WorkOrderRowActions({
             aria-expanded={menuOpen}
             style={kebabBtn}
           >
-            <MoreVertical size={15} />
+            <MoreVertical size={15} aria-hidden />
           </button>
           {menuOpen ? <WorkOrderRowMenu onRevoke={() => { setMenuOpen(false); onRevoke(); }} /> : null}
         </>
