@@ -568,3 +568,22 @@ Decisões do bloco Ω3F-6; junta valida.
 - **D-Ω3F-6-PRINT:** imprimir é **client-side** (seleção de seções sobre o GET da OS) — sem rota nova.
 - **Migration** `20260806000000` aditiva: `work_orders.financial_cancellation_decision String?` +
   `work_orders.client_action_id String?` + índice único parcial. up/down/re-up.
+
+## D-Ω3F-9 — Ações de linha na lista de OS (2026-07-17, FECHA A FASE 1)
+Bloco 100% front (sem migration, sem backend novo), reusando endpoints existentes. 3 sub-decisões:
+- **D-Ω3F-9-ANDAMENTO:** "dar andamento" pela linha = avanço de status **forward-only** reusando `PATCH
+  /work-orders/:id/status` (perm `work_orders:status`). Mapa de próximo passo único: `assigned→accepted ·
+  accepted→on_route · on_route→on_site · on_site→in_progress · paused→in_progress`. EXCLUÍDOS do 1-clique:
+  `cancelled` (JAMAIS — não reabre a porta dos fundos do Ω3F-6b, ver P-Ω3F6-STATUS-BYPASS), terminais, `open`
+  (precisa de operador via assign) e `in_progress` (bifurca completed[dinheiro]|paused — fica no hub). Backend é
+  a autoridade (409 em transição inválida → erro por-linha). `advanceWorkOrderStatus` NÃO engole o erro.
+- **D-Ω3F-9-REVOGAR:** "revogar envio" = **cancelar o despacho ATIVO da OS**, reusando o cancelamento de campo
+  já pronto (`field_dispatch:cancel`, `PATCH /operations/dispatches/:id/status {status:cancelled, reason}`).
+  Zero endpoint novo, zero migration. Descoberta LAZY do despacho no clique (`findActiveDispatch` via
+  `GET /operations/dispatches?workOrderId=X`) — sem GET por linha no render. Motivo OBRIGATÓRIO (prompt +
+  backend 400). Rejeitadas: revogar share do orçamento (endpoint novo, share é per-ServiceQuote e não aparece
+  na lista de OS) e des-atribuir (não há transição `assigned→open`).
+- **D-Ω3F-9-BADGE:** "badge de atraso" = **derivado** no front (`scheduled_for < agora` E status ∉
+  {completed,cancelled,rejected}) → selo "Atrasada" (âmbar; vermelho se vencida >24h). Reintroduz o sinal de
+  SLA que o React perdeu ao dropar a coluna do protótipo. NÃO reproduz "Xh restantes" (exige campo de prazo
+  real — ver P-Ω3F-9-SLA-FIELD).

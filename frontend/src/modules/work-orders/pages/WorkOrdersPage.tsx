@@ -1,8 +1,16 @@
 import { AlertTriangle, Plus, RefreshCw, Search } from "lucide-react";
 import type { CSSProperties } from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { usePermissions } from "../../../providers/PermissionProvider";
+import { updateDispatchStatus } from "../../operations/dispatches/dispatches.service";
+import { findActiveDispatch } from "../active-dispatch.service";
+import { RevokeDispatchPrompt } from "../components/RevokeDispatchPrompt";
+import { WorkOrderDelayBadge } from "../components/WorkOrderDelayBadge";
+import { WorkOrderRowActions } from "../components/WorkOrderRowActions";
+import { advanceWorkOrderStatus } from "../work-orders.service";
+import { nextForwardStatus } from "../work-orders-row.logic";
 import { useWorkOrders } from "../useWorkOrders";
 import type { WorkOrderListItem, WorkOrderPriority, WorkOrderStatus, WorkOrdersFilters } from "../work-orders.types";
 
@@ -62,11 +70,80 @@ function KpiCard({ n, label, badge, bg, color }: { n: number; label: string; bad
   );
 }
 
+type RevokeTarget = { readonly workOrder: WorkOrderListItem; readonly dispatchId: string };
+
 export function WorkOrdersPage() {
   const navigate = useNavigate();
-  const { items, loading, source, refresh } = useWorkOrders(STABLE_FILTERS);
+  const { items, loading, source, refresh, context } = useWorkOrders(STABLE_FILTERS);
+  const { permissions } = usePermissions();
   const [search, setSearch] = useState("");
   const [group, setGroup] = useState<Group>("all");
+  // Ω3F-9 — estado por-linha das ações (avançar/revogar) + o prompt de motivo do revogar.
+  const [rowBusy, setRowBusy] = useState<Record<string, boolean>>({});
+  const [rowError, setRowError] = useState<Record<string, string | null>>({});
+  const [revoke, setRevoke] = useState<RevokeTarget | null>(null);
+  const [revokeBusy, setRevokeBusy] = useState(false);
+  const [revokeError, setRevokeError] = useState<string | null>(null);
+
+  const setBusy = useCallback((id: string, value: boolean) => setRowBusy((m) => ({ ...m, [id]: value })), []);
+  const setError = useCallback((id: string, value: string | null) => setRowError((m) => ({ ...m, [id]: value })), []);
+
+  const handleAdvance = useCallback(
+    async (order: WorkOrderListItem) => {
+      const next = nextForwardStatus(order.status);
+      if (!next) return;
+      setError(order.id, null);
+      setBusy(order.id, true);
+      try {
+        await advanceWorkOrderStatus(context, order.id, next);
+        await refresh();
+      } catch {
+        setError(order.id, "Não foi possível dar andamento agora.");
+      } finally {
+        setBusy(order.id, false);
+      }
+    },
+    [context, refresh, setBusy, setError],
+  );
+
+  const handleRevokeClick = useCallback(
+    async (order: WorkOrderListItem) => {
+      setError(order.id, null);
+      setBusy(order.id, true);
+      try {
+        const dispatch = await findActiveDispatch(context, order.id);
+        if (!dispatch) {
+          setError(order.id, "Nenhum envio ativo para esta OS.");
+          return;
+        }
+        setRevokeError(null);
+        setRevoke({ workOrder: order, dispatchId: dispatch.id });
+      } catch {
+        setError(order.id, "Não foi possível consultar o envio.");
+      } finally {
+        setBusy(order.id, false);
+      }
+    },
+    [context, setBusy, setError],
+  );
+
+  const handleRevokeConfirm = useCallback(
+    async (reason: string) => {
+      if (!revoke) return;
+      setRevokeBusy(true);
+      setRevokeError(null);
+      try {
+        await updateDispatchStatus(context, revoke.dispatchId, { status: "cancelled", reason });
+        setRevoke(null);
+        await refresh();
+      } catch {
+        setRevokeError("Não foi possível revogar o envio. Ele pode já ter sido finalizado.");
+      } finally {
+        setRevokeBusy(false);
+      }
+    },
+    [context, revoke, refresh],
+  );
 
   const kpis = useMemo(() => {
     const isFinal = (s: WorkOrderStatus) => s === "completed" || s === "cancelled" || s === "rejected";
@@ -131,9 +208,9 @@ export function WorkOrdersPage() {
           <span style={{ ...th, flex: 0.9 }}>CÓDIGO</span>
           <span style={{ ...th, flex: 2.2 }}>CLIENTE / SERVIÇO</span>
           <span style={{ ...th, flex: 1.2 }}>TÉCNICO</span>
-          <span style={{ ...th, flex: 0.9 }}>AGENDA</span>
+          <span style={{ ...th, flex: 1.1 }}>AGENDA</span>
           <span style={{ ...th, flex: 1, textAlign: "right" }}>STATUS</span>
-          <span style={{ ...th, flex: 0.7, textAlign: "right" }}>AÇÃO</span>
+          <span style={{ ...th, flex: 1.5, textAlign: "right" }}>AÇÃO</span>
         </div>
 
         {loading ? (
@@ -142,9 +219,9 @@ export function WorkOrdersPage() {
               <div style={{ height: 12, background: "#F1F5F9", borderRadius: 6, flex: 0.9 }} />
               <div style={{ height: 12, background: "#F1F5F9", borderRadius: 6, flex: 2.2 }} />
               <div style={{ height: 12, background: "#F1F5F9", borderRadius: 6, flex: 1.2 }} />
-              <div style={{ height: 12, background: "#F1F5F9", borderRadius: 6, flex: 0.9 }} />
+              <div style={{ height: 12, background: "#F1F5F9", borderRadius: 6, flex: 1.1 }} />
               <div style={{ height: 12, background: "#F1F5F9", borderRadius: 6, flex: 1 }} />
-              <div style={{ height: 12, background: "#F1F5F9", borderRadius: 6, flex: 0.7 }} />
+              <div style={{ height: 12, background: "#F1F5F9", borderRadius: 6, flex: 1.5 }} />
             </div>
           ))
         ) : visible.length === 0 ? (
@@ -171,14 +248,37 @@ export function WorkOrdersPage() {
                   ) : null}
                 </div>
                 <div style={{ flex: 1.2, fontSize: 12.5, color: o.assignedOperatorId ? "#475569" : "#94A3B8" }}>{o.assignedOperatorId ? "Atribuída" : "A atribuir"}</div>
-                <span style={{ flex: 0.9, fontSize: 12.5, color: "#475569", fontVariantNumeric: "tabular-nums" }}>{fmtDate(o.scheduledFor)}</span>
+                <div style={{ flex: 1.1, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 12.5, color: "#475569", fontVariantNumeric: "tabular-nums" }}>{fmtDate(o.scheduledFor)}</span>
+                  <WorkOrderDelayBadge scheduledFor={o.scheduledFor} status={o.status} />
+                </div>
                 <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}><span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: sm.bg, color: sm.color, whiteSpace: "nowrap" }}>{sm.label}</span></div>
-                <div style={{ flex: 0.7, display: "flex", justifyContent: "flex-end" }}><button style={{ padding: "5px 10px", background: "#F1F5F9", border: "none", borderRadius: 7, fontSize: 11.5, fontWeight: 700, color: "#2563EB", cursor: "pointer", fontFamily: "inherit" }}>Abrir</button></div>
+                <div style={{ flex: 1.5, display: "flex", justifyContent: "flex-end" }}>
+                  <WorkOrderRowActions
+                    status={o.status}
+                    permissions={permissions}
+                    busy={rowBusy[o.id] ?? false}
+                    error={rowError[o.id] ?? null}
+                    onOpen={() => navigate(`/work-orders/${o.id}`)}
+                    onAdvance={() => void handleAdvance(o)}
+                    onRevoke={() => void handleRevokeClick(o)}
+                  />
+                </div>
               </div>
             );
           })
         )}
       </div>
+
+      {revoke ? (
+        <RevokeDispatchPrompt
+          workOrderCode={revoke.workOrder.code}
+          submitting={revokeBusy}
+          errorMessage={revokeError}
+          onConfirm={(reason) => void handleRevokeConfirm(reason)}
+          onClose={() => setRevoke(null)}
+        />
+      ) : null}
     </div>
   );
 }
