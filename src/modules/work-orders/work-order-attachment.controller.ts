@@ -3,6 +3,7 @@ import type { Request } from "express";
 import { recordRequestAuditBestEffort } from "../core-saas/audit/audit-request-context.js";
 import { requireTenantContext } from "../core-saas/middleware/rbac.middleware.js";
 import { readRouteParam } from "../core-saas/routes/http.js";
+import { resolveUserNames, type UserNameResolver } from "../core-saas/users/user-name-resolver.js";
 import { toWorkOrderAttachmentDto, toWorkOrderAttachmentListDto } from "./work-order-attachment.dto.js";
 import type { WorkOrderAttachmentService } from "./work-order-attachment.service.js";
 import {
@@ -14,12 +15,18 @@ import { WorkOrderAttachmentError } from "./work-order-attachment.types.js";
 export type WorkOrderAttachmentServiceResolver = () => Promise<WorkOrderAttachmentService>;
 
 export class WorkOrderAttachmentController {
-  constructor(private readonly resolveService: WorkOrderAttachmentServiceResolver) {}
+  // Ω3F-5b — `resolveUserName` opcional (composto no app.ts): traduz uploadedBy → nome legível. Sem ele,
+  // uploadedByName sai null e o front cai num rótulo neutro (NUNCA o UUID, §11.2).
+  constructor(
+    private readonly resolveService: WorkOrderAttachmentServiceResolver,
+    private readonly resolveUserName?: UserNameResolver,
+  ) {}
 
   async listAttachments(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const attachments = await service.listAttachments(actor, readRouteParam(request.params.workOrderId));
-    return { body: toWorkOrderAttachmentListDto(attachments) };
+    const names = await resolveUserNames(this.resolveUserName, actor.tenantId, attachments.map((a) => a.uploadedBy));
+    return { body: toWorkOrderAttachmentListDto(attachments, names) };
   }
 
   async createAttachment(request: Request) {
@@ -49,7 +56,8 @@ export class WorkOrderAttachmentController {
       },
     });
 
-    return { status: 201, body: { data: toWorkOrderAttachmentDto(attachment) } };
+    const names = await resolveUserNames(this.resolveUserName, actor.tenantId, [attachment.uploadedBy]);
+    return { status: 201, body: { data: toWorkOrderAttachmentDto(attachment, names) } };
   }
 
   async downloadAttachment(request: Request) {

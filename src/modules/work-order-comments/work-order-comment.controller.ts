@@ -3,18 +3,25 @@ import type { Request } from "express";
 import { recordRequestAuditBestEffort } from "../core-saas/audit/audit-request-context.js";
 import { requireTenantContext } from "../core-saas/middleware/rbac.middleware.js";
 import { readRouteParam } from "../core-saas/routes/http.js";
+import { resolveUserNames, type UserNameResolver } from "../core-saas/users/user-name-resolver.js";
 import { toWorkOrderCommentDto, toWorkOrderCommentListDto } from "./work-order-comment.dto.js";
 import type { WorkOrderCommentService } from "./work-order-comment.service.js";
 
 export type WorkOrderCommentServiceResolver = () => Promise<WorkOrderCommentService>;
 
 export class WorkOrderCommentController {
-  constructor(private readonly resolveService: WorkOrderCommentServiceResolver) {}
+  // Ω3F-5b — `resolveUserName` é opcional: composto na raiz (app.ts) a partir do core service. Sem ele,
+  // `authorName` sai null e o front cai num rótulo neutro (NUNCA o UUID).
+  constructor(
+    private readonly resolveService: WorkOrderCommentServiceResolver,
+    private readonly resolveUserName?: UserNameResolver,
+  ) {}
 
   async list(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const comments = await service.listComments(actor, readRouteParam(request.params.workOrderId));
-    return { body: toWorkOrderCommentListDto(comments) };
+    const names = await resolveUserNames(this.resolveUserName, actor.tenantId, comments.map((c) => c.authorUserId));
+    return { body: toWorkOrderCommentListDto(comments, names) };
   }
 
   async create(request: Request) {
@@ -30,7 +37,8 @@ export class WorkOrderCommentController {
       severity: "info",
       metadata: { commentId: comment.id, messageLength: comment.message.length, tagCount: comment.tags.length },
     });
-    return { status: 201, data: toWorkOrderCommentDto(comment) };
+    const names = await resolveUserNames(this.resolveUserName, actor.tenantId, [comment.authorUserId]);
+    return { status: 201, data: toWorkOrderCommentDto(comment, names) };
   }
 
   async update(request: Request) {
@@ -50,7 +58,8 @@ export class WorkOrderCommentController {
       severity: "info",
       metadata: { commentId: comment.id, messageLength: comment.message.length },
     });
-    return { data: toWorkOrderCommentDto(comment) };
+    const names = await resolveUserNames(this.resolveUserName, actor.tenantId, [comment.authorUserId]);
+    return { data: toWorkOrderCommentDto(comment, names) };
   }
 
   async delete(request: Request) {

@@ -26,9 +26,12 @@ function attachment(overrides: Partial<WorkOrderAttachment> = {}): WorkOrderAtta
 
 test("§2.8 — DTO expõe SÓ campos seguros e NUNCA storage_key/provider/fileUrl/checksum/tenant_id", () => {
   const dto = toWorkOrderAttachmentDto(attachment());
+  // Ω3F-5b — `uploadedByName` entra na allowlist: é o NOME legível de quem enviou (resolvido no backend
+  // para a UI não imprimir o UUID, §11.2). Nome de usuário não é segredo — storage_key/checksum/tenant_id
+  // seguem PROIBIDOS (asseverado abaixo).
   assert.deepEqual(
     Object.keys(dto).sort(),
-    ["createdAt", "downloadPath", "fileName", "id", "mimeType", "sizeBytes", "status", "uploadedBy", "workOrderId"],
+    ["createdAt", "downloadPath", "fileName", "id", "mimeType", "sizeBytes", "status", "uploadedBy", "uploadedByName", "workOrderId"],
   );
   const raw = JSON.stringify(dto);
   for (const secret of ["tenant-secreto", "secret-path", "deadbeefchecksum", "prefix/tenant-secreto", "s3"]) {
@@ -42,6 +45,17 @@ test("DTO emite status e uploadedBy null quando ausente", () => {
   const dto = toWorkOrderAttachmentDto(attachment({ status: "pending_review", uploadedBy: undefined }));
   assert.equal(dto.status, "pending_review");
   assert.equal(dto.uploadedBy, null);
+});
+
+// Ω3F-5b (veto §11.2 J-Ω3F-5B) — o DTO resolve uploadedBy → uploadedByName para a UI mostrar o NOME.
+test("§11.2 — DTO emite uploadedByName do mapa de nomes; sem mapa (ou id ausente) → null", () => {
+  const withName = toWorkOrderAttachmentDto(attachment({ uploadedBy: "user-1" }), new Map([["user-1", "Marina Costa"]]));
+  assert.equal(withName.uploadedByName, "Marina Costa");
+
+  // Sem resolver/mapa: null (o front cai em rótulo neutro — nunca imprime o UUID).
+  assert.equal(toWorkOrderAttachmentDto(attachment({ uploadedBy: "user-1" })).uploadedByName, null);
+  // Sem autor: null.
+  assert.equal(toWorkOrderAttachmentDto(attachment({ uploadedBy: undefined }), new Map([["user-1", "X"]])).uploadedByName, null);
 });
 
 test("list DTO envelopa items[] §2.8-safe", () => {

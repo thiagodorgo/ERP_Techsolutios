@@ -4,6 +4,7 @@ import { createPersistentRbacContextMiddleware } from "../core-saas/middleware/p
 import { requirePermission } from "../core-saas/middleware/rbac.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
+import type { UserNameResolver } from "../core-saas/users/user-name-resolver.js";
 import { WorkOrderCommentController, type WorkOrderCommentServiceResolver } from "./work-order-comment.controller.js";
 import { createDefaultWorkOrderCommentService } from "./work-order-comment.service.js";
 
@@ -23,9 +24,12 @@ export const WORK_ORDER_COMMENT_PERMISSIONS = {
 
 export function createWorkOrderCommentRouter(
   resolveService: WorkOrderCommentServiceResolver = createDefaultWorkOrderCommentService,
+  // Ω3F-5b — resolver de NOME do autor (composto no app.ts a partir do core service): a UI mostra o nome,
+  // nunca o UUID (§11.2). Ausente → authorName null (rótulo neutro no front).
+  resolveUserName?: UserNameResolver,
 ): Router {
   const router = Router();
-  const controller = new WorkOrderCommentController(resolveService);
+  const controller = new WorkOrderCommentController(resolveService, resolveUserName);
 
   router.use(tenantContextMiddleware);
   router.use(createPersistentRbacContextMiddleware());
