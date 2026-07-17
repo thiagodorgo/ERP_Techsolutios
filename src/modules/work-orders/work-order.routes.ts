@@ -123,8 +123,13 @@ export function createWorkOrderRouter(
   );
 
   // Ω3F-6a (D-Ω3F-6-CANCEL) — cancelar com decisão financeira. Primeira rota a CONSUMIR
-  // work_orders:cancel: cancelar decide o destino do dinheiro e por isso não é `work_orders:status`
-  // (que operator/técnico têm) — só tenant_admin e manager cancelam.
+  // work_orders:cancel: cancelar decide o destino do dinheiro e por isso NÃO é `work_orders:status`
+  // (que operator/técnico têm). Papéis com :cancel hoje: super_admin, platform_admin, tenant_admin, manager.
+  // ATENÇÃO (J-Ω3F-6A): este NÃO é o único caminho de cancelamento — o PATCH /status legado (usado também
+  // pela fila offline do mobile) ainda cancela, agora exigindo :cancel (o service barra 403 sem ela), porém
+  // SEM gravar decisão financeira → `financial_cancellation_decision` fica NULL. Dívida em
+  // P-Ω3F6-STATUS-BYPASS: fechar/redirecionar o cancelamento legado antes de Ω4/comissões. Não afirme que
+  // este gate é a única porta enquanto isso não for feito.
   router.post(
     "/work-orders/:workOrderId/cancel",
     requirePermission(WORK_ORDER_PERMISSIONS.cancel),

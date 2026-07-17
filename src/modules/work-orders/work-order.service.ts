@@ -534,6 +534,23 @@ export class WorkOrderService {
     const message = optionalString(body.message) ?? defaultStatusMessage(nextStatus);
     const cancellationReason = optionalString(body.cancellationReason) ?? optionalString(body.reason);
 
+    // Ω3F-6a (condição BLOQUEANTE do coordenador-de-acessos, J-Ω3F-6A) — a porta dos fundos.
+    // Este endpoint legado exige só `work_orders:status`, que operator/technician/field_technician/
+    // field_dispatcher têm — e por ele qualquer um deles cancelava SEM decisão financeira, contornando
+    // todo o gate do POST /cancel e deixando `financial_cancellation_decision` NULL para o consumidor de
+    // comissões (P-Ω3F6-COMISSAO). Aqui não inventamos política: o CATÁLOGO já diz que esses papéis não
+    // têm `work_orders:cancel` — passamos a CUMPRIR isso também nesta rota (e, por tabela, na fila offline
+    // do mobile, que chama este mesmo método). Quem tem :cancel segue podendo usar o caminho legado, mas
+    // sem gravar decisão — dívida registrada em P-Ω3F6-STATUS-BYPASS (fechar antes de Ω4/comissões).
+    if (nextStatus === "cancelled" && !actor.permissions.includes("work_orders:cancel")) {
+      throw new WorkOrderError(
+        403,
+        "WORK_ORDER_FORBIDDEN",
+        "cancel_requires_permission",
+        "Cancelling a work order requires work_orders:cancel; use POST /work-orders/:id/cancel.",
+      );
+    }
+
     assertStatusTransition(current.status, nextStatus);
     if (nextStatus === "cancelled" && !cancellationReason) {
       throw new WorkOrderError(400, "WORK_ORDER_INVALID", "cancellation_reason_required", "cancellationReason is required.");

@@ -553,6 +553,10 @@ Decisões do bloco Ω3F-6; junta valida.
     GAP-1 do dossiê Ω3F-4). Migration adiciona a coluna + **unique PARCIAL** `(tenant_id, client_action_id)
     WHERE client_action_id IS NOT NULL` → replay do duplicate = **409**. `create` normal segue sem carimbar
     (null fica fora do índice parcial); wire no create é evolução futura.
+- **D-Ω3F-6-DUPLICATE-TAGS (condição fid J-Ω3F-6A):** o `copy_comments` copia MENSAGEM + AUTOR ORIGINAL, **sem as tags**.
+  Motivo: a associação de tag classifica AQUELE comentário naquele contexto; replicá-la infla o uso da tag numa OS
+  ainda não triada. A assimetria decide: reclassificar é 1 clique; desfazer tag fantasma em massa não é. O autor
+  vai pelo REPOSITÓRIO (não pelo `addComment`, que carimbaria quem duplicou como autor do que a equipe escreveu).
 - **D-Ω3F-6-PRINT:** imprimir é **client-side** (seleção de seções sobre o GET da OS) — sem rota nova.
 - **Migration** `20260806000000` aditiva: `work_orders.financial_cancellation_decision String?` +
   `work_orders.client_action_id String?` + índice único parcial. up/down/re-up.

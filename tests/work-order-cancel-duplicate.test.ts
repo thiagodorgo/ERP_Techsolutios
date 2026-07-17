@@ -525,3 +525,48 @@ test("duplicate: a fonte permanece intacta e a cópia é uma OS independente no 
   assert.equal(fonteAtual?.status, "open", "cancelar a cópia não mexe na fonte");
   assert.equal(fonteAtual?.financialCancellationDecision, undefined);
 });
+
+// ---------- Porta dos fundos do cancelamento (condição BLOQUEANTE do coordenador-de-acessos, J-Ω3F-6A) ----------
+// O PATCH /status legado exige só `work_orders:status` — que operator/técnico têm. Antes deste bloco, eles
+// cancelavam por lá SEM decisão financeira, contornando o gate do POST /cancel e deixando NULL para o
+// consumidor de comissões. Agora o service exige `work_orders:cancel` para o destino `cancelled`: não é
+// política nova, é CUMPRIR o catálogo (que já não dava :cancel a esses papéis).
+
+test("[J-Ω3F-6A] changeStatus→cancelled SEM work_orders:cancel → 403 (operator não cancela pelo legado)", async () => {
+  const s = setup();
+  const manager = actor();
+  const wo = await s.workOrders.create(manager, { title: "OS" });
+
+  // Mesmo tenant, mas papel de operador: tem :status, NÃO tem :cancel (espelha o catálogo real).
+  const operator: WorkOrderActorContext = {
+    ...manager,
+    userId: randomUUID(),
+    roles: ["operator"],
+    permissions: ["work_orders:read", "work_orders:update", "work_orders:status"],
+  };
+
+  await assert.rejects(
+    () => s.workOrders.changeStatus(operator, wo.id, { status: "cancelled", cancellationReason: "tentativa pelo legado" }),
+    (e: unknown) => e instanceof WorkOrderError && e.statusCode === 403 && e.reason === "cancel_requires_permission",
+  );
+
+  // A OS NÃO foi cancelada: a porta dos fundos está fechada para quem não pode cancelar.
+  const after = await s.workOrders.get(manager, wo.id);
+  assert.notEqual(after.status, "cancelled");
+});
+
+test("[J-Ω3F-6A] operator SEGUE podendo mudar status não-terminal pelo legado (o gate é só p/ cancelled)", async () => {
+  const s = setup();
+  const manager = actor();
+  const wo = await s.workOrders.create(manager, { title: "OS" });
+  const operator: WorkOrderActorContext = {
+    ...manager,
+    userId: randomUUID(),
+    roles: ["operator"],
+    permissions: ["work_orders:read", "work_orders:update", "work_orders:status"],
+  };
+
+  // Não quebramos o fluxo legítimo do operador — só o cancelamento passou a exigir :cancel.
+  const updated = await s.workOrders.changeStatus(operator, wo.id, { status: "assigned" });
+  assert.equal(updated.status, "assigned");
+});

@@ -559,4 +559,30 @@
   fonte de verdade; o consumo fica para quem calcula comissão.
 - acao: fatia futura — o cálculo de comissão deve ler `financial_cancellation_decision` da OS e suprimir a
   remuneração quando `keep_unpaid` (e quando `zero`, avaliar). Cruza com Ω4 (Financeiro do tenant).
+- REQUISITO (critico J-Ω3F-6A): decisão `NULL` NÃO pode ser lida como `keep` por default — OS cancelada pelo
+  caminho legado (P-Ω3F6-STATUS-BYPASS) é AMBÍGUA e exige tratamento explícito, senão vira cobrança errada.
 - status: aberto (não-bloqueante; a decisão está persistida e auditável).
+
+## P-Ω3F6-STATUS-BYPASS - Cancelamento legado por PATCH /status não grava decisão financeira (J-OMEGA3F-6A, 2026-07-17)
+- descricao: o `PATCH /work-orders/:id/status` (perm `work_orders:status`; usado também pela fila offline do
+  mobile via `mobile-work-order-sync.ts`) ainda aceita `status=cancelled` e NÃO grava
+  `financial_cancellation_decision` (fica NULL) — contornando o gate do `POST /cancel`. Repro executado pela
+  junta (coordenador-de-acessos + critico): operator cancelava por lá com decisão null e itens financeiros
+  intactos.
+- mitigado NESTE PR: `changeStatus` passa a exigir `work_orders:cancel` para o destino `cancelled` (403
+  `cancel_requires_permission`) — cumpre o que o catálogo já dizia e barra operator/technician/
+  field_technician/field_dispatcher (inclusive pelo mobile). **Resíduo:** quem TEM :cancel (manager/
+  tenant_admin/super_admin) ainda cancela pelo legado sem decisão → NULL.
+- acao: antes de Ω4/comissões, FECHAR o cancelamento pelo legado (422 redirecionando para `POST /cancel`) —
+  exige coordenar o contrato da fila offline do mobile (o app precisaria enviar a decisão ou perder a
+  capacidade de cancelar, o que é defensável: técnico de campo não arbitra cobrança).
+- status: aberto (mitigado; resíduo conhecido).
+
+## P-Ω3F6-TERMINAL-GUARD - Itens financeiros podem ser lançados em OS cancelada (J-OMEGA3F-6A, 2026-07-17)
+- descricao: `work-order-financial.service.create` só valida a existência da OS (`assertWorkOrder`), sem guarda
+  de estado terminal → POST de item numa OS já cancelada retorna 201. Isso quebra a invariante criada pelo
+  Ω3F-6a (`decision=zero ⇒ total=0`): basta lançar um item depois do cancel. Repro do critico: decision=zero +
+  total=999. Não é regressão deste PR (a porta já existia), mas a invariante é nova.
+- acao: guarda de estado terminal em work-order-financials (e avaliar em service-quote-items): recusar
+  create/update quando a OS está `cancelled` (422). Coordenar com Ω4/comissões.
+- status: aberto (não-bloqueante hoje — não há consumidor de comissão ainda).
