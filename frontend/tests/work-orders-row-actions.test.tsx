@@ -64,12 +64,15 @@ test("[A4] canAdvanceRow: exige work_orders:status E próximo válido", () => {
 });
 
 test("[A5] canRevokeDispatch: exige field_dispatch:cancel E status com envio possível", () => {
+  const REVOKE_PERMS = ["field_dispatch:cancel", "field_dispatch:read"];
   for (const s of ["assigned", "accepted", "on_route", "on_site", "in_progress", "paused"] as WorkOrderStatus[]) {
-    assert.equal(canRevokeDispatch(["field_dispatch:cancel"], s), true, `${s} deve permitir revogar`);
+    assert.equal(canRevokeDispatch(REVOKE_PERMS, s), true, `${s} deve permitir revogar`);
   }
   assert.equal(canRevokeDispatch([], "assigned"), false); // sem permissão
+  assert.equal(canRevokeDispatch(["field_dispatch:cancel"], "assigned"), false); // cancel sem read → não revoga (B2)
+  assert.equal(canRevokeDispatch(["field_dispatch:read"], "assigned"), false); // read sem cancel → não revoga
   for (const s of ["open", "completed", "cancelled", "rejected"] as WorkOrderStatus[]) {
-    assert.equal(canRevokeDispatch(["field_dispatch:cancel"], s), false, `${s} não revoga`);
+    assert.equal(canRevokeDispatch(REVOKE_PERMS, s), false, `${s} não revoga`);
   }
 });
 
@@ -122,6 +125,8 @@ test("[B6] WorkOrderDelayBadge: renderiza 'Atrasada' (âmbar/vermelho); some qua
 
   const crit = renderToString(<WorkOrderDelayBadge scheduledFor={PAST} status="assigned" now={NOW_2DAYS} />);
   assert.match(crit, /#DC2626/); // vermelho (critical)
+  assert.match(crit, /mais de um dia/); // aria distingue crítico (B2 pós-análise — WCAG 1.4.1, cor não basta)
+  assert.doesNotMatch(warn, /mais de um dia/); // atraso fresco não usa o aria crítico
 
   const none = renderToString(<WorkOrderDelayBadge scheduledFor={FUTURE} status="assigned" now={NOW} />);
   assert.equal(none, "");
@@ -154,26 +159,28 @@ test("[C3] open/in_progress ⇒ sem andamento mesmo com permissão (só 'Abrir')
   }
 });
 
-test("[C4] com field_dispatch:cancel e status revogável ⇒ gatilho ⋮ 'Mais ações' presente", () => {
-  const html = renderActions("assigned", STATUS(["field_dispatch:cancel"]));
+test("[C4] com field_dispatch:cancel+read e status revogável ⇒ gatilho ⋮ 'Mais ações' presente", () => {
+  const html = renderActions("assigned", STATUS(["field_dispatch:cancel", "field_dispatch:read"]));
   assert.match(html, /Mais ações/);
 });
 
-test("[C5] sem field_dispatch:cancel ⇒ gatilho ⋮ AUSENTE (gate ligado ao JSX)", () => {
-  const html = renderActions("assigned", STATUS(["work_orders:status"]));
-  assert.doesNotMatch(html, /Mais ações/);
+test("[C5] sem as permissões de revogar ⇒ gatilho ⋮ AUSENTE (gate ligado ao JSX)", () => {
+  assert.doesNotMatch(renderActions("assigned", STATUS(["work_orders:status"])), /Mais ações/);
+  // cancel SEM read também não mostra (B2 — o fluxo precisa de read para descobrir o envio)
+  assert.doesNotMatch(renderActions("assigned", STATUS(["field_dispatch:cancel"])), /Mais ações/);
 });
 
 test("[C6] gates independentes: só andamento / só revogar / ambos / nenhum", () => {
+  const REVOKE = ["field_dispatch:cancel", "field_dispatch:read"];
   const onlyAdvance = renderActions("on_route", ["work_orders:status"]);
   assert.match(onlyAdvance, /Dar andamento/);
   assert.doesNotMatch(onlyAdvance, /Mais ações/);
 
-  const onlyRevoke = renderActions("on_route", ["field_dispatch:cancel"]);
+  const onlyRevoke = renderActions("on_route", REVOKE);
   assert.doesNotMatch(onlyRevoke, /Dar andamento/);
   assert.match(onlyRevoke, /Mais ações/);
 
-  const both = renderActions("on_route", ["work_orders:status", "field_dispatch:cancel"]);
+  const both = renderActions("on_route", ["work_orders:status", ...REVOKE]);
   assert.match(both, /Dar andamento/);
   assert.match(both, /Mais ações/);
 
@@ -218,7 +225,7 @@ test("[D3] RevokeDispatchPrompt: motivo vazio começa com botão desabilitado", 
 // =============================== E. §3 — sem termo técnico na UI ===============================
 
 test("[E1] linha de ação não vaza permissão/status técnico cru", () => {
-  const html = renderActions("on_route", ["work_orders:status", "field_dispatch:cancel"]);
+  const html = renderActions("on_route", ["work_orders:status", "field_dispatch:cancel", "field_dispatch:read"]);
   assert.doesNotMatch(html, /work_orders:status|field_dispatch|on_route|on_site\b/);
 });
 
@@ -273,6 +280,117 @@ test("[F3] findActiveDispatch: devolve o despacho ATIVO; null quando só há ter
 
     globalThis.fetch = reply([]);
     assert.equal(await findActiveDispatch({}, "wo-1"), null);
+
+    // B1 (pós-análise): despacho ativo de OUTRA OS NUNCA é revogado por esta linha (re-filtro cliente).
+    globalThis.fetch = reply([{ id: "d3", workOrderId: "wo-OUTRA", operatorUserId: "u1", status: "assigned", priority: "high", createdAt: PAST }]);
+    assert.equal(await findActiveDispatch({}, "wo-1"), null);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+// =============================== H. Handlers da PÁGINA (M1 pós-análise) ===============================
+// A lição do bloco (handler testado ≠ LIGADO) aplicada à fiação: exercita runAdvance/runRevokeDiscovery/
+// runRevokeConfirm com fetch stub e setters-espião, cobrindo os ramos que a página liga.
+
+function spyDeps() {
+  const busy: Array<[string, boolean]> = [];
+  const errors: Array<[string, string | null]> = [];
+  let refreshed = 0;
+  return {
+    context: {},
+    refresh: async () => { refreshed += 1; },
+    setBusy: (id: string, v: boolean) => busy.push([id, v]),
+    setError: (id: string, v: string | null) => errors.push([id, v]),
+    get busy() { return busy; },
+    get errors() { return errors; },
+    get refreshed() { return refreshed; },
+  };
+}
+
+const ORDER = { id: "wo-1", code: "OS-1", title: "x", status: "on_route" as WorkOrderStatus, priority: "high" as const, createdAt: PAST };
+
+test("[H1] runAdvance: sucesso → refresh, sem erro, busy sobe e desce", async () => {
+  const { runAdvance } = await import("../src/modules/work-orders/work-orders-row.handlers");
+  const d = spyDeps();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => new Response(JSON.stringify({ data: { id: "wo-1" } }), { status: 200, headers: { "content-type": "application/json" } })) as typeof fetch;
+  try {
+    await runAdvance(d, ORDER);
+    assert.equal(d.refreshed, 1);
+    assert.deepEqual(d.busy, [["wo-1", true], ["wo-1", false]]);
+    assert.ok(d.errors.every(([, v]) => v === null)); // nunca setou mensagem de erro
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("[H2] runAdvance: 409 → mensagem por-linha, SEM refresh, busy volta a false", async () => {
+  const { runAdvance } = await import("../src/modules/work-orders/work-orders-row.handlers");
+  const d = spyDeps();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => new Response("conflict", { status: 409 })) as typeof fetch;
+  try {
+    await runAdvance(d, ORDER);
+    assert.equal(d.refreshed, 0);
+    assert.deepEqual(d.busy.at(-1), ["wo-1", false]);
+    assert.ok(d.errors.some(([, v]) => v === "Não foi possível dar andamento agora."));
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("[H3] runAdvance: status sem próximo (open) → no-op (sem fetch/busy/refresh)", async () => {
+  const { runAdvance } = await import("../src/modules/work-orders/work-orders-row.handlers");
+  const d = spyDeps();
+  let called = false;
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => { called = true; return new Response("{}", { status: 200 }); }) as typeof fetch;
+  try {
+    await runAdvance(d, { ...ORDER, status: "open" });
+    assert.equal(called, false);
+    assert.equal(d.busy.length, 0);
+    assert.equal(d.refreshed, 0);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("[H4] runRevokeDiscovery: despacho ativo → alvo; vazio → null + 'Nenhum envio ativo'", async () => {
+  const { runRevokeDiscovery } = await import("../src/modules/work-orders/work-orders-row.handlers");
+  const original = globalThis.fetch;
+  const reply = (items: unknown[]) => (async () => new Response(JSON.stringify({ data: items }), { status: 200, headers: { "content-type": "application/json" } })) as typeof fetch;
+  try {
+    globalThis.fetch = reply([{ id: "d9", workOrderId: "wo-1", operatorUserId: "u1", status: "assigned", priority: "high", createdAt: PAST }]);
+    const d1 = spyDeps();
+    const target = await runRevokeDiscovery(d1, ORDER);
+    assert.equal(target?.dispatchId, "d9");
+    assert.equal(target?.workOrder.id, "wo-1");
+
+    globalThis.fetch = reply([]);
+    const d2 = spyDeps();
+    assert.equal(await runRevokeDiscovery(d2, ORDER), null);
+    assert.ok(d2.errors.some(([, v]) => v === "Nenhum envio ativo para esta OS."));
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("[H5] runRevokeConfirm: sucesso → true + refresh; erro → mensagem (sem lançar)", async () => {
+  const { runRevokeConfirm } = await import("../src/modules/work-orders/work-orders-row.handlers");
+  const target = { workOrder: ORDER, dispatchId: "d9" };
+  const original = globalThis.fetch;
+  try {
+    let refreshed = 0;
+    globalThis.fetch = (async () => new Response(JSON.stringify({ data: { id: "d9" } }), { status: 200, headers: { "content-type": "application/json" } })) as typeof fetch;
+    const ok = await runRevokeConfirm({ context: {}, refresh: async () => { refreshed += 1; } }, target, "cliente remarcou");
+    assert.equal(ok, true);
+    assert.equal(refreshed, 1);
+
+    globalThis.fetch = (async () => new Response("conflict", { status: 409 })) as typeof fetch;
+    const err = await runRevokeConfirm({ context: {}, refresh: async () => {} }, target, "x");
+    assert.equal(typeof err, "string");
+    assert.match(String(err), /Não foi possível revogar/);
   } finally {
     globalThis.fetch = original;
   }
