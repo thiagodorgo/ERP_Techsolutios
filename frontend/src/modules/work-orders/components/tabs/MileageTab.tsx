@@ -93,7 +93,9 @@ export function MileageTab({
       setError("Informe ao menos um valor.");
       return;
     }
-    const invalid = (v: number | undefined) => v !== undefined && (!Number.isFinite(v) || v < 0 || v > 1e9);
+    // Espelha o MILEAGE_MAX do backend (DECIMAL(10,1)); antes usava 1e9, um pouco mais frouxo (pós-análise M3).
+    const MILEAGE_MAX = 999_999_999.9;
+    const invalid = (v: number | undefined) => v !== undefined && (!Number.isFinite(v) || v < 0 || v > MILEAGE_MAX);
     if (invalid(startValue) || invalid(endValue)) {
       setError("Valor de km inválido.");
       return;

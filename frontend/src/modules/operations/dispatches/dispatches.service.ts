@@ -18,13 +18,20 @@ import type {
   DispatchesFilters,
 } from "./dispatches.types";
 
-export async function listDispatchesFromApi(context: DispatchesApiContext, params: Partial<DispatchesFilters> = {}): Promise<DispatchesData> {
+export async function listDispatchesFromApi(
+  context: DispatchesApiContext,
+  params: Partial<DispatchesFilters> = {},
+  // Ω3F-7 (pós-análise M1) — `enrich:false` PULA o GET da lista inteira de OS que anexa código/título/
+  // prioridade aos despachos. A aba Mobile da OS só lê status+timestamps do despacho, então enriquecer era
+  // 1 request extra (a lista completa) para ganho zero. A página de Despachos segue enriquecendo (default).
+  options: { readonly enrich?: boolean } = {},
+): Promise<DispatchesData> {
   if (isMockMode()) return getMockDispatchesData("mock");
 
   try {
     const response = await apiRequest<unknown>(`/operations/dispatches${buildQuery(params)}`, context);
     const data = adaptDispatchesResponse(response, "api");
-    const items = await enrichWithWorkOrdersIfAllowed(context, data.items);
+    const items = options.enrich === false ? data.items : await enrichWithWorkOrdersIfAllowed(context, data.items);
     if (items.length === 0) return getMockDispatchesData("fallback", "A API retornou lista vazia.");
     return { ...data, items };
   } catch {
