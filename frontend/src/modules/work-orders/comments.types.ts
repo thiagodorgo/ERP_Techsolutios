@@ -14,7 +14,10 @@ export type WorkOrderCommentTag = {
 export type WorkOrderComment = {
   readonly id: string;
   readonly workOrderId: string;
+  // §11.2 — `authorUserId` serve SÓ ao gating de autoria (comparar com o usuário logado); NUNCA é
+  // renderizado. O que a UI exibe é `authorName` (nome resolvido no backend), com rótulo neutro no null.
   readonly authorUserId: string;
+  readonly authorName: string | null;
   readonly message: string;
   readonly tags: readonly WorkOrderCommentTag[];
   // Preenchido quando o comentário foi editado após a criação (mostra selo "editado").

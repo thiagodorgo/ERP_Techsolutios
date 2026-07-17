@@ -132,6 +132,7 @@ function adaptAttachment(value: unknown): WorkOrderAttachment | null {
     status: adaptStatus(item.status),
     downloadPath: readString(item.downloadPath ?? item.download_path) ?? null,
     uploadedBy: readString(item.uploadedBy ?? item.uploaded_by) ?? null,
+    uploadedByName: readString(item.uploadedByName ?? item.uploaded_by_name) ?? null,
     createdAt: readString(item.createdAt ?? item.created_at) ?? "",
   };
 }

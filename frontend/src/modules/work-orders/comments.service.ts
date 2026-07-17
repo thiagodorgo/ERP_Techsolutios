@@ -120,6 +120,7 @@ function adaptComment(value: unknown): WorkOrderComment | null {
     id,
     workOrderId,
     authorUserId: readString(item.authorUserId ?? item.author_user_id) ?? "",
+    authorName: readString(item.authorName ?? item.author_name) ?? null,
     message: readString(item.message) ?? "",
     tags: adaptTags(item.tags),
     editedAt: readString(item.editedAt ?? item.edited_at) ?? null,

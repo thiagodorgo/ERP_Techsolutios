@@ -16,6 +16,8 @@ export type WorkOrderAttachment = {
   // Caminho opaco de download servido pelo backend (sem storage key). Só usável quando status=stored.
   readonly downloadPath: string | null;
   readonly uploadedBy: string | null;
+  // §11.2 — a UI exibe o NOME (resolvido no backend); `uploadedBy` (UUID) nunca é renderizado.
+  readonly uploadedByName: string | null;
   readonly createdAt: string;
 };
 

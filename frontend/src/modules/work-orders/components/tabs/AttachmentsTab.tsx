@@ -259,7 +259,8 @@ export function AttachmentRow({
       <td style={td}>
         <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 99, color: badge.color, background: badge.background }}>{badge.label}</span>
       </td>
-      <td style={td}>{attachment.uploadedBy ?? "—"}</td>
+      {/* §11.2 — NOME de quem enviou (resolvido no backend); o UUID nunca aparece. */}
+      <td style={td}>{attachment.uploadedByName ?? "—"}</td>
       <td style={td}>{formatDateTime(attachment.createdAt)}</td>
       <td style={{ ...td, textAlign: "right" }}>
         <div style={{ display: "inline-flex", gap: 6 }}>

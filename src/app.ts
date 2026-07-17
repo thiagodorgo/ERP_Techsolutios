@@ -15,6 +15,7 @@ import {
 } from "./modules/core-saas/index.js";
 import { MemoryCoreSaasAdapter } from "./modules/core-saas/services/memory-core-saas.adapter.js";
 import type { ICoreSaasService } from "./modules/core-saas/services/core-saas-service.interface.js";
+import { createUserNameResolver } from "./modules/core-saas/users/user-name-resolver.js";
 import { createChecklistRouter } from "./modules/checklists/index.js";
 import { createCommissionRouter } from "./modules/commissions/index.js";
 import { createCustomerRouter } from "./modules/customers/index.js";
@@ -53,6 +54,10 @@ import { healthRouter } from "./routes/health.routes.js";
 
 export function createApp(service: ICoreSaasService): Express {
   const app = express();
+  // Ω3F-5b (veto §11.2 da cognicao) — resolver de NOME do usuário, composto AQUI (onde o core service já
+  // está injetado) e passado aos routers que exibem autoria. Assim o DTO emite authorName/uploadedByName e
+  // a UI mostra o NOME, nunca o UUID. Tenant-scoped; falha → null (rótulo neutro no front).
+  const resolveUserName = createUserNameResolver(service);
 
   app.use(helmet());
   // P-SAN-CORS (Ω-INFRA-3): allowlist por ambiente. Vazio (dev/test) → `origin: true` reflete a
@@ -81,7 +86,7 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createChecklistRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFieldOpsRealtimeRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFieldLocationRouter());
-  app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderRouter());
+  app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderRouter(undefined, resolveUserName));
   app.use("/api/v1", attachAuthenticatedActor(), createDashboardRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createCustomerRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createVehicleRouter());
@@ -105,7 +110,7 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderFinancialRouter());
   // Ω3F-5 — Comentários da OS (/work-orders/:id/comments) em router próprio: o path não colide com o
   // work-orders router (a antiga POST /comments foi removida de lá).
-  app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderCommentRouter());
+  app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderCommentRouter(undefined, resolveUserName));
   app.use("/api/v1", attachAuthenticatedActor(), createBranchRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createSupplierRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTagRouter());

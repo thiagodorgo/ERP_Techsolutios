@@ -9,6 +9,7 @@ import { handleAsyncRoute } from "../core-saas/routes/http.js";
 import { ApprovalController } from "./approval.controller.js";
 import { WorkOrderController, type WorkOrderServiceResolver } from "./work-order.controller.js";
 import { createDefaultWorkOrderService } from "./work-order.service.js";
+import type { UserNameResolver } from "../core-saas/users/user-name-resolver.js";
 import { WorkOrderAttachmentController } from "./work-order-attachment.controller.js";
 import { createDefaultWorkOrderAttachmentService } from "./work-order-attachment.service.js";
 
@@ -35,11 +36,16 @@ export const WORK_ORDER_PERMISSIONS = {
   comment: "work_orders:comment",
 } as const;
 
-export function createWorkOrderRouter(resolveService: WorkOrderServiceResolver = createDefaultWorkOrderService): Router {
+export function createWorkOrderRouter(
+  resolveService: WorkOrderServiceResolver = createDefaultWorkOrderService,
+  // Ω3F-5b — resolver de NOME (composto no app.ts): a aba Arquivos mostra "Enviado por" com o nome do
+  // usuário, nunca o UUID (§11.2). Ausente → uploadedByName null (rótulo neutro no front).
+  resolveUserName?: UserNameResolver,
+): Router {
   const router = Router();
   const controller = new WorkOrderController(resolveService);
   const approvalController = new ApprovalController();
-  const attachmentController = new WorkOrderAttachmentController(createDefaultWorkOrderAttachmentService);
+  const attachmentController = new WorkOrderAttachmentController(createDefaultWorkOrderAttachmentService, resolveUserName);
 
   router.use(tenantContextMiddleware);
   router.use(createPersistentRbacContextMiddleware());

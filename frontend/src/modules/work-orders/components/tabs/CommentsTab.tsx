@@ -283,7 +283,9 @@ export function CommentsTab({
             <div key={comment.id} style={{ ...card, padding: 16 }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <div style={{ fontSize: 12.5, color: "#64748B" }}>
-                  <span style={{ fontWeight: 700, color: "#334155" }}>{comment.authorUserId || "Autor desconhecido"}</span>
+                  {/* §11.2 — NOME do autor (resolvido no backend). O UUID (authorUserId) só governa o
+                      gating de autoria; jamais é renderizado. */}
+                  <span style={{ fontWeight: 700, color: "#334155" }}>{comment.authorName ?? "Usuário"}</span>
                   {comment.createdAt ? <span> · {formatDateTime(comment.createdAt)}</span> : null}
                   {comment.editedAt ? <span style={{ color: "#94A3B8" }}> · editado</span> : null}
                 </div>
