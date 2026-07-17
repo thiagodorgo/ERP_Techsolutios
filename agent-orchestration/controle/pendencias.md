@@ -576,6 +576,16 @@
 - acao: antes de Ω4/comissões, FECHAR o cancelamento pelo legado (422 redirecionando para `POST /cancel`) —
   exige coordenar o contrato da fila offline do mobile (o app precisaria enviar a decisão ou perder a
   capacidade de cancelar, o que é defensável: técnico de campo não arbitra cobrança).
+- IRREPARABILIDADE (critico J-Ω3F-6A, rodada 2 — muda a FORMA da correção): a OS cancelada pelo legado fica
+  irreparável — `POST /cancel` responde 422 em OS já cancelada, logo NÃO existe caminho de API que grave a
+  decisão depois; o dinheiro fica de pé (itens intactos, total > 0). Consequência: quando Ω4/comissões chegar,
+  NÃO basta "ler o campo e tratar NULL" — vai exigir BACKFILL/migração das OSs já canceladas pelo legado,
+  decidido caso a caso. A irreparabilidade NASCE deste PR (antes não havia rota /cancel): é dívida por omissão
+  cujo custo CRESCE a cada cancelamento legado → o prazo "antes de Ω4/comissões" é prazo COM JUROS, não desejo.
+- MOBILE (coordenador J-Ω3F-6A, não-bloqueante): `mobile/flutter_app/lib/features/work_orders/ui/
+  work_order_execute_screen.dart:241` ainda renderiza `allowedTransitions` incluindo `cancelled` (models:67-92) —
+  o técnico VÊ o botão "Cancelada", enfileira local-first e só descobre o 403 no sync (a fila rejeita limpo via
+  actionErrorResult, não envenena). Remover a afordância no app junto do fechamento do bypass.
 - status: aberto (mitigado; resíduo conhecido).
 
 ## P-Ω3F6-TERMINAL-GUARD - Itens financeiros podem ser lançados em OS cancelada (J-OMEGA3F-6A, 2026-07-17)
