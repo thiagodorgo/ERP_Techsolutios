@@ -183,8 +183,9 @@ export class WorkOrderController {
     };
   }
 
-  // Ω3F-7a — a BASE corrige a quilometragem (km) da OS (PATCH /:id/mileage, perm work_orders:update).
-  // O app preenche pela fila offline (source="app"); aqui é sempre source="base".
+  // Ω3F-7a — a BASE corrige a quilometragem (km) da OS (PATCH /:id/mileage, perm work_orders:mileage_correct
+  // — dedicada, o técnico de campo NÃO a tem). O app preenche pela fila offline (source="app"); aqui é
+  // sempre source="base".
   async setMileage(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const workOrder = await service.setMileage(actor, readRouteParam(request.params.workOrderId), request.body ?? {}, "base");
