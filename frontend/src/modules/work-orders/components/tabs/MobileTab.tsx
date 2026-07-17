@@ -102,7 +102,7 @@ export function MobileTab({
   const load = useCallback(async () => {
     setState({ status: "loading" });
     try {
-      const data = await listDispatchesFromApi(context, { workOrderId: workOrder.id });
+      const data = await listDispatchesFromApi(context, { workOrderId: workOrder.id }, { enrich: false });
       // O serviço cai em mock quando a API devolve vazio/erro; filtrar pela OS garante que
       // despachos não relacionados nunca vazem para esta aba (OS sem despacho → lista vazia).
       const related = data.items

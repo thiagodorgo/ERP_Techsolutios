@@ -159,7 +159,7 @@ export async function duplicateWorkOrder(
 // Ω3F-7b — correção de quilometragem pela BASE (contrato Ω3F-7a): PATCH /work-orders/:id/mileage
 //   { mileage_start?, mileage_end? } → 200 com a OS. Como o cancelamento, os erros do backend NÃO são
 // engolidos (sem fallback/mock silencioso): o form precisa do status para dizer o que falhou
-// (400 mileage_required corpo vazio · 400 invalid_mileage negativo/>1e9 · 422 invalid_mileage_range
+// (400 mileage_required corpo vazio · 400 invalid_mileage negativo/> 999.999.999,9 · 422 invalid_mileage_range
 // final<inicial · 403 sem permissão · 404 OS). Envia só os campos preenchidos, em snake_case.
 export async function correctMileage(
   context: WorkOrdersApiContext,

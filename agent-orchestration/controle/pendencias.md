@@ -654,3 +654,16 @@
   (migration/agregação backend nova, ou capturar a posição no momento de cada FieldDispatchEvent); (b) modo
   read-only do canvas (markers estáticos por etapa, sem cluster/animação/pulso); (c) fallback sem WebGL.
 - status: aberto (endereçar no Ω3F-8 com o planejador-mapas).
+
+## P-Ω3F7-MOBILETAB-NITS - Nits da pós-análise da MobileTab (Ω3F-7, 2026-07-17)
+- (M2) A defesa contra vazamento de mock na MobileTab (filtro `item.workOrderId === workOrder.id` quando o
+  dispatch service cai em fallback-mock) NÃO é testada: os testes SSR não rodam useEffect, então o estado
+  `ready` (onde o filtro age) nunca renderiza. Vale um teste que injete um DispatchListItem de outra OS e prove
+  que ele não aparece. Baixo risco (o filtro está correto por inspeção), mas é anteparo load-bearing sem rede.
+- (M4) Divergência memory×Prisma de precisão não coberta: os testes de km rodam em memory (guarda o number JS
+  verbatim); no Postgres DECIMAL(10,1) arredonda p/ 1 casa. Borda invisível ao teste (km é 1-casa por design);
+  registrar a lacuna de fidelidade.
+- corrigido NESTE chore: M1 (a MobileTab disparava um GET da lista INTEIRA de OS que nunca usava → opt-out
+  `enrich:false` em listDispatchesFromApi) e M3 (cap do front alinhado ao MILEAGE_MAX do backend + comentário
+  impreciso do service).
+- status: aberto (M2/M4 são cobertura/fidelidade de teste; M1/M3 resolvidos).
