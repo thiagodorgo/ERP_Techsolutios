@@ -23,7 +23,9 @@ import { PrintWorkOrderModal } from "./PrintWorkOrderModal";
 
 const btn: CSSProperties = { display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };
 const btnGhost: CSSProperties = { ...btn, background: "#fff", border: "1px solid #E2E8F0", color: "#334155" };
-const menuItem: CSSProperties = { display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "9px 12px", background: "transparent", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "left" };
+// SEM `background` inline: quem pinta (repouso/hover/foco) é a classe `.ui-menu-item` do DS. Style inline
+// venceria o seletor e mataria o :hover — foi exatamente o que a cognicao mediu morto no ⋮ (J-Ω3F-6B).
+const menuItem: CSSProperties = { display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "9px 12px", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "left" };
 
 // Gating das ações do Ω3F-6b como predicados PUROS: a UI só molda — o backend é a autoridade (§2.4).
 // Ficam exportados porque o ⋮ só monta no clique; testá-los aqui prova a regra sem depender do menu aberto.

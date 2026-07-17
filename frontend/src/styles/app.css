@@ -515,6 +515,16 @@
   text-transform: none;
 }
 
+/* Ω3F-6b (cognicao J-Ω3F-6B, medido no app vivo): a classe só tinha :hover/:focus-visible, SEM regra base —
+   então todo consumidor era obrigado a setar `background: transparent` INLINE para não herdar o cinza do UA…
+   e style inline VENCE seletor de classe, matando o próprio :hover que a classe promete. Resultado medido:
+   hover morto no ⋮ (e também em Danos/Multas/Manutenção, que copiaram o mesmo padrão quebrado). Com a regra
+   base aqui, a classe passa a ser auto-suficiente: o consumidor NÃO precisa (e não deve) setar background
+   inline — ver P-Ω3F6B-MENUITEM-INLINE p/ as páginas que ainda carregam o inline legado. */
+.ui-menu-item {
+  background: transparent;
+}
+
 .ui-menu-item:hover {
   background: var(--surface-panel-muted);
 }
