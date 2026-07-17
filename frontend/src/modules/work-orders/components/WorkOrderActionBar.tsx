@@ -133,26 +133,14 @@ export function WorkOrderActionBar({
         <MoreVertical size={16} />
       </button>
       {menuOpen ? (
-        <div role="menu" style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, boxShadow: "0 8px 24px rgba(15,23,42,.10)", padding: 6, zIndex: 20, minWidth: 220 }}>
-          <button type="button" role="menuitem" onClick={() => void handleCopyWhatsApp()} className="ui-menu-item" style={{ ...menuItem, color: waCopied ? "#059669" : "#334155" }}>
-            <Share2 size={14} />{waCopied ? "Texto copiado!" : "Copiar texto p/ WhatsApp"}
-          </button>
-
-          {canDuplicate ? (
-            <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setDuplicateOpen(true); }} className="ui-menu-item" style={{ ...menuItem, color: "#334155" }}>
-              <CopyPlus size={14} aria-hidden />Duplicar
-            </button>
-          ) : null}
-
-          {canCancel ? (
-            <>
-              <div style={{ height: 1, background: "#F1F5F9", margin: "5px 4px" }} />
-              <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setCancelOpen(true); }} className="ui-menu-item" style={{ ...menuItem, color: "var(--color-status-danger)" }}>
-                <Ban size={14} aria-hidden />Cancelar
-              </button>
-            </>
-          ) : null}
-        </div>
+        <WorkOrderActionsMenu
+          canDuplicate={canDuplicate}
+          canCancel={canCancel}
+          waCopied={waCopied}
+          onCopyWhatsApp={() => void handleCopyWhatsApp()}
+          onDuplicate={() => { setMenuOpen(false); setDuplicateOpen(true); }}
+          onCancel={() => { setMenuOpen(false); setCancelOpen(true); }}
+        />
       ) : null}
 
       {printOpen ? (
@@ -180,3 +168,51 @@ export function WorkOrderActionBar({
 }
 
 export default WorkOrderActionBar;
+
+/**
+ * Conteúdo do ⋮ como componente PURO e exportado.
+ *
+ * Por quê: a pós-análise do Ω3F-6 provou POR MUTAÇÃO que o gate destes dois itens destrutivos não tinha
+ * cobertura — trocando `{canDuplicate ?` / `{canCancel ?` por `{true ?` a suíte seguia 427/427 verde. Os
+ * predicados (canCancelWorkOrder/canDuplicateWorkOrder) eram testados, mas NADA provava que o JSX os usa: o
+ * menu só montava com `menuOpen=true` e os testes são SSR sem clique. Extraído, o teste monta o menu direto
+ * e a mutação quebra. Lição: predicado testado ≠ predicado LIGADO.
+ */
+export function WorkOrderActionsMenu({
+  canDuplicate,
+  canCancel,
+  waCopied,
+  onCopyWhatsApp,
+  onDuplicate,
+  onCancel,
+}: {
+  canDuplicate: boolean;
+  canCancel: boolean;
+  waCopied: boolean;
+  onCopyWhatsApp: () => void;
+  onDuplicate: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div role="menu" style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, boxShadow: "0 8px 24px rgba(15,23,42,.10)", padding: 6, zIndex: 20, minWidth: 220 }}>
+      <button type="button" role="menuitem" onClick={onCopyWhatsApp} className="ui-menu-item" style={{ ...menuItem, color: waCopied ? "#059669" : "#334155" }}>
+        <Share2 size={14} />{waCopied ? "Texto copiado!" : "Copiar texto p/ WhatsApp"}
+      </button>
+
+      {canDuplicate ? (
+        <button type="button" role="menuitem" onClick={onDuplicate} className="ui-menu-item" style={{ ...menuItem, color: "#334155" }}>
+          <CopyPlus size={14} aria-hidden />Duplicar
+        </button>
+      ) : null}
+
+      {canCancel ? (
+        <>
+          <div style={{ height: 1, background: "#F1F5F9", margin: "5px 4px" }} />
+          <button type="button" role="menuitem" onClick={onCancel} className="ui-menu-item" style={{ ...menuItem, color: "var(--color-status-danger)" }}>
+            <Ban size={14} aria-hidden />Cancelar
+          </button>
+        </>
+      ) : null}
+    </div>
+  );
+}
