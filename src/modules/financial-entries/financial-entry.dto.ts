@@ -2,7 +2,9 @@ import type { FinancialAccountBalance, FinancialEntry, ListFinancialEntryResult 
 
 // §2.8 — a resposta OMITE tenant_id (resolvido pelo ator), deleted_at (só expõe `active`) e o
 // client_action_id (token opaco de idempotência). amount sai como number. direction/payment_method/
-// category/competencia são valores de NEGÓCIO (não segredo/UUID) → OK expor. Expõe reconciled (bool).
+// category/competencia são valores de NEGÓCIO (não segredo/UUID) → OK expor. Expõe reconciled (bool) e os
+// metadados de conciliação (Ω4-5): divergenceType/reconciliationRef/reconciledAt/reconciledBy. reconciledBy
+// (UUID) tem paridade com createdBy/updatedBy já expostos — não é nova classe de vazamento.
 export function toFinancialEntryDto(entry: FinancialEntry) {
   return {
     id: entry.id,
@@ -18,6 +20,10 @@ export function toFinancialEntryDto(entry: FinancialEntry) {
     description: entry.description ?? null,
     reversalOf: entry.reversalOf ?? null,
     reconciled: entry.reconciled,
+    divergenceType: entry.divergenceType ?? null,
+    reconciliationRef: entry.reconciliationRef ?? null,
+    reconciledAt: entry.reconciledAt ? entry.reconciledAt.toISOString() : null,
+    reconciledBy: entry.reconciledBy ?? null,
     active: entry.deletedAt == null,
     createdBy: entry.createdBy ?? null,
     updatedBy: entry.updatedBy ?? null,
@@ -41,6 +47,7 @@ export function toFinancialEntryListDto(result: ListFinancialEntryResult) {
       competencia: entry.competencia,
       reversalOf: entry.reversalOf ?? null,
       reconciled: entry.reconciled,
+      divergenceType: entry.divergenceType ?? null,
       active: entry.deletedAt == null,
       createdAt: entry.createdAt.toISOString(),
     })),

@@ -5,6 +5,7 @@ import type {
   FinancialEntry,
   ListFinancialEntryInput,
   ListFinancialEntryResult,
+  ReconcileFinancialEntryInput,
   UpdateFinancialEntryInput,
 } from "./financial-entry.types.js";
 import { FinancialEntryError } from "./financial-entry.types.js";
@@ -15,6 +16,8 @@ export interface FinancialEntryRepository {
   findById(tenantId: string, financialEntryId: string): Promise<FinancialEntry | undefined>;
   update(input: UpdateFinancialEntryInput): Promise<FinancialEntry | undefined>;
   softDelete(tenantId: string, financialEntryId: string, deletedBy?: string): Promise<FinancialEntry | undefined>;
+  // Conciliação bancária (Ω4-5): grava reconciled + os 4 metadados. Lançamento deletado → undefined (→404).
+  reconcile(input: ReconcileFinancialEntryInput): Promise<FinancialEntry | undefined>;
   // Estorno já feito? (existe contra-lançamento ATIVO apontando este original) — sustenta a idempotência
   // do estorno (a rede real no Prisma é a mesma consulta; não há índice único porque reversal_of é app-level).
   findActiveReversalOf(tenantId: string, originalEntryId: string): Promise<FinancialEntry | undefined>;
@@ -124,6 +127,8 @@ export class InMemoryFinancialEntryRepository implements FinancialEntryRepositor
       .filter((entry) => input.accountId === undefined || entry.accountId === input.accountId)
       .filter((entry) => input.direction === undefined || entry.direction === input.direction)
       .filter((entry) => input.category === undefined || entry.category === input.category)
+      .filter((entry) => input.reconciled === undefined || entry.reconciled === input.reconciled)
+      .filter((entry) => input.divergenceType === undefined || entry.divergenceType === input.divergenceType)
       .filter((entry) => input.occurredFrom === undefined || entry.occurredAt.getTime() >= input.occurredFrom.getTime())
       .filter((entry) => input.occurredTo === undefined || entry.occurredAt.getTime() <= input.occurredTo.getTime());
 
@@ -170,6 +175,26 @@ export class InMemoryFinancialEntryRepository implements FinancialEntryRepositor
     };
     this.entries.set(removed.id, removed);
     return removed;
+  }
+
+  async reconcile(input: ReconcileFinancialEntryInput): Promise<FinancialEntry | undefined> {
+    const current = await this.findById(input.tenantId, input.financialEntryId);
+    // reconcile em lançamento deletado → inexistente (→404), simétrico a update/softDelete.
+    if (!current || current.deletedAt != null) return undefined;
+
+    const updated: FinancialEntry = {
+      ...current,
+      reconciled: input.reconciled,
+      // undefined (não null) para os opcionais quando limpo → some do objeto/DTO como os demais optionals.
+      divergenceType: input.divergenceType ?? undefined,
+      reconciliationRef: input.reconciliationRef ?? undefined,
+      reconciledAt: input.reconciledAt ?? undefined,
+      reconciledBy: input.reconciledBy ?? undefined,
+      ...(input.updatedBy !== undefined ? { updatedBy: input.updatedBy } : {}),
+      updatedAt: new Date(),
+    };
+    this.entries.set(updated.id, updated);
+    return updated;
   }
 
   async findActiveReversalOf(tenantId: string, originalEntryId: string): Promise<FinancialEntry | undefined> {

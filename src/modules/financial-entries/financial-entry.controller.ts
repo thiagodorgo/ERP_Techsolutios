@@ -54,6 +54,14 @@ export class FinancialEntryController {
     return { status: 201, data: toFinancialEntryDto(item) };
   }
 
+  async reconcile(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const body = (request.body ?? {}) as Record<string, unknown>;
+    const item = await service.reconcile(actor, readRouteParam(request.params.financialEntryId), body);
+    await this.auditReconcile(request, item);
+    return { data: toFinancialEntryDto(item) };
+  }
+
   async payTitle(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const body = (request.body ?? {}) as Record<string, unknown>;
@@ -78,6 +86,19 @@ export class FinancialEntryController {
       outcome: "success",
       severity: "info",
       metadata: { direction: item.direction, payment_method: item.paymentMethod },
+    });
+  }
+
+  // §2.8 — metadados SEM tenant_id nem valores sensíveis (nada de reconciliation_ref, texto/ref externa do
+  // extrato). Só a "forma" da conciliação: {reconciled, divergence_type}.
+  private async auditReconcile(request: Request, item: FinancialEntry): Promise<void> {
+    await recordRequestAuditBestEffort(request, {
+      action: "financial_entry.reconciled",
+      resourceType: "financial_entry",
+      resourceId: item.id,
+      outcome: "success",
+      severity: "info",
+      metadata: { reconciled: item.reconciled, divergence_type: item.divergenceType ?? null },
     });
   }
 

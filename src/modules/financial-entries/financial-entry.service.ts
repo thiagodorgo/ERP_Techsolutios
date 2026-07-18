@@ -40,9 +40,13 @@ import {
   parseOptionalCategory,
   parseOptionalClientActionId,
   parseOptionalDescription,
+  parseOptionalDivergenceType,
+  parseOptionalFilterBoolean,
   parseOptionalFilterDate,
   parseOptionalFilterUuid,
+  parseOptionalReconciliationRef,
   parsePaymentMethod,
+  parseReconciledFlag,
   parseRequiredUuid,
   readOptionalBoolean,
   resolveCurrency,
@@ -68,6 +72,8 @@ export class FinancialEntryService {
       accountId: parseOptionalFilterUuid(query.account_id ?? query.accountId),
       direction: parseFilterToken(query.direction),
       category: parseFilterToken(query.category),
+      reconciled: parseOptionalFilterBoolean(query.reconciled),
+      divergenceType: parseFilterToken(query.divergence_type ?? query.divergenceType),
       occurredFrom: parseOptionalFilterDate(query.from ?? query.occurredFrom),
       occurredTo: parseOptionalFilterDate(query.to ?? query.occurredTo),
       limit: parseLimit(query.limit),
@@ -156,6 +162,10 @@ export class FinancialEntryService {
   // (concern do Ω4-5+; registrado em P-Ω4-4-EDGES) — o contra-lançamento nasce sem title_id.
   async reverse(actor: FinancialEntryActorContext, financialEntryId: string): Promise<FinancialEntry> {
     const original = await this.getWritable(actor, financialEntryId);
+    // Ω4-5 (fecha P-Ω4-4-REVERSE-MUTABLE): estornar um lançamento CONCILIADO exige desconciliar antes → 422
+    // entry_reconciled. Espelha a ordem de delete() (assertMutable ANTES do guard de par de estorno) → um
+    // contra-lançamento conciliado dispara entry_reconciled com precedência sobre reversal_pair_immutable.
+    this.assertMutable(original);
     // B1 (pós-análise): não se estorna um contra-lançamento (chain infinita de re-estorno flipando o saldo).
     if (original.reversalOf != null) {
       throw reversalPairImmutableError();
@@ -183,6 +193,42 @@ export class FinancialEntryService {
       createdBy: actor.userId,
       updatedBy: actor.userId,
     });
+  }
+
+  // RECONCILE (Ω4-5, fecha P-Ω4-5-DIVERGENCE) — write-path da conciliação bancária. reconciled=true carimba
+  // reconciled_at/by server-side; divergence_type ∈ {value,date} OU ausente (conciliação LIMPA, sem ressalva).
+  // reconciled=false DESCONCILIA (limpa divergence_type/ref/at/by). NÃO chama assertMutable (é quem muda o
+  // estado de conciliação) e NÃO checa reversal-pair: conciliar é sobre o EXTRATO, um lançamento de par de
+  // estorno também consta lá (original e contra-lançamento podem casar no extrato).
+  // NÃO atravessa o chokepoint de período (D-Ω4-5-RECONCILE-META, coerente com D-Ω4-POS-FECHAMENTO):
+  // conciliação é META-DADO — não altera amount/direction/deleted, logo não mexe na soma da competência que o
+  // fechamento protege. O extrato bancário chega DEPOIS do fechamento do mês → gate-ar por período fechado
+  // travaria o caso de uso nº1 e congelaria o estado de conciliação para sempre. Passa independente do período.
+  async reconcile(actor: FinancialEntryActorContext, financialEntryId: string, body: RawRecord): Promise<FinancialEntry> {
+    const current = await this.getWritable(actor, financialEntryId); // 404 inexistente/deletado/cross-tenant
+    const reconciled = parseReconciledFlag(body.reconciled);         // 400 invalid_reconciled
+
+    const divergenceType = reconciled
+      ? (parseOptionalDivergenceType(body.divergence_type ?? body.divergenceType) ?? null) // 400 invalid_divergence_type
+      : null;
+    const reconciliationRef = reconciled
+      ? (parseOptionalReconciliationRef(body.reconciliation_ref ?? body.reconciliationRef) ?? null)
+      : null;
+
+    const updated = await this.repository.reconcile({
+      tenantId: actor.tenantId,
+      financialEntryId: current.id,
+      reconciled,
+      divergenceType,
+      reconciliationRef,
+      reconciledAt: reconciled ? new Date() : null, // carimbo server-side
+      reconciledBy: reconciled ? actor.userId : null,
+      updatedBy: actor.userId,
+    });
+    if (!updated) {
+      throw entryNotFoundError();
+    }
+    return updated;
   }
 
   // LIQUIDAÇÃO (o gancho Ω4-4 → Título): cria um lançamento de caixa contra o título e dirige paid_amount/

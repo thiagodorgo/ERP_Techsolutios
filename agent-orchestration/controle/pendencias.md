@@ -806,10 +806,13 @@ client_action_id o 2º entry.create dá 409 duplicate_payment ANTES do applyPaym
 applyPayment em prisma.$transaction (documentar limitação InMemory). Só o cenário sem token idempotente + concorrência
 genuína abre a janela.
 
-## P-Ω4-4-REVERSE-MUTABLE — reverse() não chama assertMutable (BAIXA, guardar no Ω4-5)
-update/delete barram lançamento reconciled (422), mas reverse não. Não-explorável hoje (reconciled nasce false, sem
-endpoint que concilie até o Ω4-5). Quando o Ω4-5 introduzir reconciled=true, o reverse precisa também barrar
-(estornar um lançamento já conciliado deve exigir desconciliar antes). Guardar junto com a conciliação.
+## P-Ω4-4-REVERSE-MUTABLE — reverse() não chama assertMutable — ✅ RESOLVIDO no Ω4-5
+update/delete barram lançamento reconciled (422), mas reverse não. **Fechado no bloco Ω4-5**
+(branch feat-omega4-5-reconciliation): reverse() agora chama `this.assertMutable(original)` logo após
+`getWritable`, ANTES do guard B1 (espelha a ordem de delete()). Estornar um lançamento conciliado → 422
+entry_reconciled (exige desconciliar antes). Precedência documentada: um contra-lançamento conciliado que
+for estornado dispara `entry_reconciled` (422) ANTES de `reversal_pair_immutable` (422) — mesma classe HTTP,
+reason diferente. Sem regressão em A1/B1 (testes de estorno operam sobre lançamentos não conciliados).
 
 ## P-Ω4-4-REVERSE-IDEM — Idempotência do estorno é app-level sem rede no banco (MÉDIA)
 reverse faz check-then-act (findActiveReversalOf → create) SEM índice único em reversal_of (diferente da
@@ -825,8 +828,36 @@ isPeriodClosed tratar 'closing' como bloqueante (ou guard isPeriodLocked); (c) s
 P-Ω4-2A-NITS(closing). **M1 (liquidar título de período fechado) NÃO é bug** — é D-Ω4-POS-FECHAMENTO ratificada
 (pagamento é evento da competência corrente; paid_amount é acumulador vitalício; applyPayment gated só pelo período do caixa).
 
-## P-Ω4-5-DIVERGENCE — Ω4-5 Conciliação precisa de divergence_type + write-path de reconcile (GUIA)
-FinancialEntry tem reconciled:boolean mas NÃO divergence_type. Ω4-5 precisa: migration/typing divergence_type
-(value|date|missing|duplicate) + PATCH /financial-entries/:id/reconcile (ou bulk). assertMutable(reconciled) já
-congela lançamento reconciliado — MAS reverse pula esse guard (P-Ω4-4-REVERSE-MUTABLE, fechar no Ω4-5). Faltam
-testes: overpayment na borda de centavo + acúmulo (400+600→paid, 400+700→422); chokepoint bloqueando pay/reverse.
+## P-Ω4-5-DIVERGENCE — Ω4-5 Conciliação (divergence_type + write-path de reconcile) — ✅ RESOLVIDO
+**Entregue no bloco Ω4-5** (branch feat-omega4-5-reconciliation). Migration aditiva 20260813000000_add_reconciliation
+(4 colunas nullable divergence_type/reconciliation_ref/reconciled_at/reconciled_by + @@index(tenant_id,reconciled)),
+typing, PATCH /financial-entries/:id/reconcile (reusa financial_entries:update, sem permissão nova) + 2 filtros de
+lista (?reconciled=, ?divergence_type=). Decisões endurecidas pelo ataque adversarial:
+
+- **D-Ω4-5-DIVERGENCE-NARROW (allowlist {value,date}, não {value,date,missing,duplicate}):** o guia original
+  misturava duas naturezas — value/date são "conciliado com ressalva" (reconciled=true faz sentido), enquanto
+  missing/duplicate são razões de NÃO conciliar (estado reconciled=false). Como o write-path só grava divergence
+  quando reconciled=true, missing/duplicate seriam inalcançáveis e a semântica ficaria contraditória. Estreitado
+  para {value,date}. missing/duplicate agora → 400 invalid_divergence_type. Anotar "razão de não-conciliação" num
+  lançamento desconciliado é fatia futura (exigiria desacoplar divergence_type da flag).
+- **D-Ω4-5-RECONCILE-META (conciliar/desconciliar ATRAVESSA período fechado):** reconcile NÃO chama assertPeriodOpen.
+  Conciliação é META-DADO (não altera amount/direction/deleted → não mexe na soma da competência que o chokepoint
+  protege). Coerente com D-Ω4-POS-FECHAMENTO. Racional decisivo: o extrato bancário chega DEPOIS do fechamento do
+  mês — gate-ar por período fechado travaria o caso de uso nº1 (conciliar lançamento de competência já fechada) e
+  congelaria o estado de conciliação para sempre (nem update/delete/reverse por assertMutable, nem desconciliar pelo
+  gate). O teste-guia que esperava 422 period_closed foi INVERTIDO para asseverar sucesso.
+- **D-Ω4-5-RECONCILE-REVERSAL-PAIR (conciliar par de estorno é permitido):** reconcile NÃO checa reversal-pair
+  (conciliar é sobre o EXTRATO; o original estornado E o contra-lançamento podem casar no extrato). update/delete
+  de reconciliado seguem 422 via assertMutable (inalterado).
+- **§2.8:** reconciledBy (UUID) exposto no DTO de detalhe (paridade com createdBy/updatedBy já expostos); lista
+  expõe só divergenceType (enxuta). Auditoria financial_entry.reconciled carrega só {reconciled, divergence_type}
+  — reconciliation_ref (texto/ref externa) FICA FORA da auditoria (conservador com §2.8, como audit() omite amount).
+
+Testes de overpayment na borda de centavo + chokepoint bloqueando pay/reverse já cobertos no Ω4-4; nada pendente aqui.
+
+## P-Ω4-5-BATCH — conciliação em LOTE (importar extrato CSV/OFX → casar N lançamentos) — ADIADO
+O Ω4-5 entrega só o reconcile UNITÁRIO por lançamento (PATCH /financial-entries/:id/reconcile). Conciliação em lote
+(upload de extrato bancário CSV/OFX, matching automático de N lançamentos, tabela ReconciliationBatch com linhas
+importadas e status de casamento) é fatia futura — não cria tabela/endpoint de lote nesta fatia. Quando priorizada,
+avaliar: modelo ReconciliationBatch + ReconciliationLine, parser de OFX/CSV, heurística de matching (valor+data+ref),
+e resolução manual de linhas não casadas.

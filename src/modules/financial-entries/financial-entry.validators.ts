@@ -1,6 +1,7 @@
 import { createFinancialItemParsers, roundMoney } from "../tariffs/financial-item.shape.js";
 import {
   FINANCIAL_ENTRY_DIRECTIONS,
+  FINANCIAL_ENTRY_DIVERGENCE_TYPES,
   FINANCIAL_ENTRY_PAYMENT_METHODS,
   FinancialEntryError,
 } from "./financial-entry.types.js";
@@ -9,6 +10,7 @@ const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}
 
 const DIRECTION_ALLOWLIST = new Set<string>(FINANCIAL_ENTRY_DIRECTIONS);
 const PAYMENT_METHOD_ALLOWLIST = new Set<string>(FINANCIAL_ENTRY_PAYMENT_METHODS);
+const DIVERGENCE_TYPE_ALLOWLIST = new Set<string>(FINANCIAL_ENTRY_DIVERGENCE_TYPES);
 
 // Máquina monetária COMPARTILHADA (mesma de Conta/Título/Orçamento): roundMoney (2 casas) +
 // assertMoneyInRange (estoura Decimal(12,2) → 422 amount_overflow). Error-factory DESTE módulo.
@@ -173,4 +175,35 @@ export function readOptionalBoolean(value: unknown, field: string): boolean | un
   if (value === "true") return true;
   if (value === "false") return false;
   throw new FinancialEntryError(400, "FINANCIAL_ENTRY_INVALID", "invalid_boolean", `${field} must be a boolean.`);
+}
+
+// reconciled OBRIGATÓRIO e ESTRITO no write-path do reconcile. Ausente/não-boolean → 400 invalid_reconciled.
+export function parseReconciledFlag(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  throw new FinancialEntryError(400, "FINANCIAL_ENTRY_INVALID", "invalid_reconciled", "reconciled must be a boolean.");
+}
+
+// divergence_type OPCIONAL ∈ {value,date}. Ausente/vazio → undefined (conciliação LIMPA, sem ressalva).
+// Fora da allowlist → 400 invalid_divergence_type.
+export function parseOptionalDivergenceType(value: unknown): string | undefined {
+  const normalized = optionalString(value)?.toLowerCase();
+  if (normalized === undefined) return undefined;
+  if (!DIVERGENCE_TYPE_ALLOWLIST.has(normalized)) {
+    throw new FinancialEntryError(400, "FINANCIAL_ENTRY_INVALID", "invalid_divergence_type", "divergence_type must be one of value, date.");
+  }
+  return normalized;
+}
+
+export function parseOptionalReconciliationRef(value: unknown): string | undefined {
+  return parseOptionalBounded(value, "reconciliation_ref", 200);
+}
+
+// Filtro de conciliação (?reconciled=) — LENIENTE: valor desconhecido vira undefined (não 400). Diferente de
+// readOptionalBoolean (estrito, serve o write-path include_deleted).
+export function parseOptionalFilterBoolean(value: unknown): boolean | undefined {
+  if (value === "true" || value === true) return true;
+  if (value === "false" || value === false) return false;
+  return undefined;
 }
