@@ -981,3 +981,14 @@ O agregado carrega TODAS as linhas de título/lançamento/cheque do tenant em me
 operacional; correto e com paridade InMemory↔Prisma). Para tenants grandes, otimizar com agregados SQL (SUM/COUNT/GROUP BY
 por status/direção/competência direto no Postgres) — hoje só o saldo por conta já usa groupBy. Não bloqueia (data set de
 dashboard); correção é performance, nunca correção de valor.
+
+## P-Ω4-8-DASHBOARD-FIDELITY — Reduções de composição do dashboard vs financeiro.png (BAIXA/MÉDIA)
+Junta do Ω4-8b (cognicao-visual) apontou 2 reduções HONESTAS de composição vs a referência (não bloqueantes):
+- Tabela "Títulos recentes" tem 4 colunas (PARTE/VALOR/VENC./STATUS) em vez de 5 — a coluna DOCUMENTO (NF-e/Fatura) foi
+  omitida porque o DTO GET /financial-summary não expõe tipo/número de documento do título. Follow-up: expor `document`
+  no recentTitles do agregado e restaurar a coluna. Omissão honesta (não fabrica), mas diverge da §11 regra 6.
+- Header expõe só "Atualizar" (refresh) em vez do CTA primário "Novo lançamento" + "Conciliar NF-e" da referência — não há
+  fluxo de criação de lançamento no front ainda. Follow-up: reintroduzir o CTA quando o modal de novo lançamento existir.
+CORRIGIDO na junta (MÉDIA): o adapter agora NORMALIZA status/direction dos recentTitles contra o enum (fallback seguro) →
+o chip/label nunca recebe valor fora do mapa e quebra o render. Re-etiquetagem de KPI ("aberto" em vez de "30d"; "Saldo em
+caixa" em vez de "projetado"; subtítulo sem org hardcoded) é MAIS honesta aos agregados reais (D-007) — mantida de propósito.

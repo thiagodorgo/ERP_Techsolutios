@@ -65,18 +65,31 @@ function readCashFlow(value: unknown): CashFlowPoint[] {
   });
 }
 
+// enums conhecidos — o adapter NORMALIZA status/direction aqui (fonte única) para o consumo (chip/label) nunca
+// receber um valor fora do mapa e quebrar o render (condição MÉDIA da junta). Valor desconhecido → fallback seguro.
+const KNOWN_STATUSES = new Set(["open", "scheduled", "partially_paid", "paid", "in_dispute", "cancelled"]);
+const KNOWN_DIRECTIONS = new Set(["receivable", "payable"]);
+
+function normalizeStatus(value: string | undefined): string {
+  return value !== undefined && KNOWN_STATUSES.has(value) ? value : "open";
+}
+
+function normalizeDirection(value: string | undefined): string {
+  return value !== undefined && KNOWN_DIRECTIONS.has(value) ? value : "receivable";
+}
+
 function readRecentTitles(value: unknown): RecentTitle[] {
   if (!Array.isArray(value)) return [];
   return value.map((raw) => {
     const record = readRecord(raw);
     return {
       id: str(record, ["id"]) ?? "",
-      direction: str(record, ["direction"]) ?? "receivable",
+      direction: normalizeDirection(str(record, ["direction"])),
       partyName: str(record, ["partyName", "party_name"]) ?? "—",
       amount: num(record, ["amount"]),
       openAmount: num(record, ["openAmount", "open_amount"]),
       dueDate: str(record, ["dueDate", "due_date"]) ?? "",
-      status: str(record, ["status"]) ?? "open",
+      status: normalizeStatus(str(record, ["status"])),
       overdue: bool(record, ["overdue"]),
     };
   });

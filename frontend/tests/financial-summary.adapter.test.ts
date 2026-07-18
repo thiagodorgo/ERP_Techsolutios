@@ -61,6 +61,15 @@ test("adapter: payload ausente/vazio → tudo ZERO (front nunca inventa)", () =>
   assert.equal(s.recentTitles.length, 0);
 });
 
+test("adapter: status/direction fora do enum são NORMALIZADOS (chip/label nunca quebra o render)", () => {
+  const s = adaptFinancialSummaryResponse(
+    { data: { recentTitles: [{ id: "t9", direction: "weird", partyName: "X", amount: 10, openAmount: 10, dueDate: "2026-08-01", status: "bogus_status", overdue: false }] } },
+    "api",
+  );
+  assert.equal(s.recentTitles[0]?.status, "open"); // fallback seguro
+  assert.equal(s.recentTitles[0]?.direction, "receivable"); // fallback seguro
+});
+
 test("adapter: campos parciais não derrubam o resto (default 0/\"\")", () => {
   const s = adaptFinancialSummaryResponse({ data: { receivable: { openAmount: 10 } } }, "api");
   assert.equal(s.receivable.openAmount, 10);
