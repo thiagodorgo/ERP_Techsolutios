@@ -975,3 +975,9 @@ entrar em escopo do cheque, vincular cheque↔título e impedir liquidação dup
 O clear sempre usa server-now → competência CORRENTE. Se o banco compensou de fato num mês já FECHADO, a data verdadeira
 não é escriturável (usar now posta no mês corrente, coerente com caixa quando registrado). Política: compensação sempre no
 período corrente aberto; retroação a período fechado exigiria reabertura (D-Ω4-6). Espelha D-Ω4-POS-FECHAMENTO. Documentado, não é dead-end silencioso (o clear falha com 422 period_closed se o mês corrente estiver fechado → cheque fica 'deposited').
+
+## P-Ω4-8-SUMMARY-SCALE — /financial-summary faz full-scan das linhas (BAIXA)
+O agregado carrega TODAS as linhas de título/lançamento/cheque do tenant em memória e soma em JS (espelha o dashboard
+operacional; correto e com paridade InMemory↔Prisma). Para tenants grandes, otimizar com agregados SQL (SUM/COUNT/GROUP BY
+por status/direção/competência direto no Postgres) — hoje só o saldo por conta já usa groupBy. Não bloqueia (data set de
+dashboard); correção é performance, nunca correção de valor.

@@ -49,6 +49,7 @@ import { createFinancialTitleRouter } from "./modules/financial-titles/index.js"
 import { createFinancialEntryRouter } from "./modules/financial-entries/index.js";
 import { createFinancialPeriodCloseRouter } from "./modules/financial-period-closes/index.js";
 import { createChequeRouter } from "./modules/cheques/index.js";
+import { createFinancialSummaryRouter } from "./modules/financial-summary/index.js";
 import { createTagRouter } from "./modules/tags/index.js";
 import { createPoiRouter } from "./modules/pois/index.js";
 import { createOperatorProfileRouter } from "./modules/operator-profiles/index.js";
@@ -134,6 +135,9 @@ export function createApp(service: ICoreSaasService): Express {
   // (/deposit,/clear,/bounce,/cancel). Compensar/devolver postam caixa via o serviço de lançamentos
   // (chokepoint de competência). Vem DEPOIS do financeiro (compõe com ele).
   app.use("/api/v1", attachAuthenticatedActor(), createChequeRouter());
+  // Ω4-8 — Agregado financeiro (dashboard). GET /financial-summary: somas/contagens de título/lançamento/conta/
+  // cheque computadas NO BACKEND (o front nunca soma; resolve P-Ω4-2B-KPI-AGREGADO). Read-only, vem DEPOIS.
+  app.use("/api/v1", attachAuthenticatedActor(), createFinancialSummaryRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTagRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createPoiRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createOperatorProfileRouter());
