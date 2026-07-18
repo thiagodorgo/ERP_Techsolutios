@@ -714,3 +714,9 @@ soft-delete) aceita account_id de conta desativada. Agenda-se liquidação para 
   deve aparecer; hoje inconsistente e não testado.
 - Sem índice `(tenant_id, created_at)` (ordenação default faz sort em memória) — perf quando o volume crescer.
 - `nullable()` no prisma-repo é dead code (service nunca passa null; campos opcionais não limpáveis — nit conhecido).
+
+## P-Ω4-FINANCE-READ-ORFA — /finance (dashboard) ainda gated pela órfã finance:read (BAIXA, Ω4-8)
+O Ω4-2b moveu as rotas-filhas /finance/charges e /finance/payments para a perm real financial_titles:read, mas
+o dashboard-pai /finance (FinanceiroPage, ainda MOCK) e o item de menu FINANCEIRO seguem na órfã finance:read/
+finance.read. Resolver no Ω4-8 (dashboard real): trocar o gate por uma perm real (financial_titles:read ou uma
+finance_dashboard:read dedicada) quando a FinanceiroPage consumir o backend.

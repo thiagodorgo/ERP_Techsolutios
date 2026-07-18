@@ -9,9 +9,11 @@ import {
   Coins,
   ConciergeBell,
   Contact,
+  CreditCard,
   Factory,
   Fuel,
   Gavel,
+  HandCoins,
   IdCard,
   LayoutDashboard,
   ListChecks,
@@ -72,6 +74,8 @@ const PEDIDOS: NavItem = { label: "Pedidos", path: "/purchase-orders", icon: Sho
 const REMUNERACOES: NavItem = { label: "Remunerações", path: "/finance/commissions", icon: Wallet };
 const RELATORIOS: NavItem = { label: "Relatórios", path: "/reports", icon: BarChart3 };
 const FINANCEIRO: NavItem = { label: "Financeiro", path: "/finance", icon: Receipt };
+const COBRANCAS: NavItem = { label: "Cobranças", path: "/finance/charges", icon: HandCoins };
+const PAGAMENTOS: NavItem = { label: "Pagamentos", path: "/finance/payments", icon: CreditCard };
 
 const USUARIOS: NavItem = { label: "Usuários", path: "/users", icon: Users };
 const NOTIFICACOES: NavItem = { label: "Notificações", path: "/notifications", icon: Bell };
@@ -88,7 +92,7 @@ const G_FROTA_FULL: NavGroup = {
 };
 const G_GESTAO_FULL: NavGroup = {
   label: "GESTÃO",
-  items: [CLIENTES, FILIAIS, FORNECEDORES, EQUIPES, PROFISSIONAIS, SERVICOS, TABELAS_VALORES, TARIFAS, TAGS, PONTOS_INTERESSE, ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO],
+  items: [CLIENTES, FILIAIS, FORNECEDORES, EQUIPES, PROFISSIONAIS, SERVICOS, TABELAS_VALORES, TARIFAS, TAGS, PONTOS_INTERESSE, ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO, COBRANCAS, PAGAMENTOS],
 };
 const G_ADMIN_FULL: NavGroup = {
   label: "ADMINISTRAÇÃO",
@@ -118,7 +122,7 @@ export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
     // Ω3-a — finance tem service_quotes:read/create/update (matriz RBAC): vê "Orçamentos" (veto V2).
     { label: "OPERAÇÃO", items: [ORCAMENTOS, APROVACOES] },
     { label: "FROTA", items: [ABASTECIMENTO, MANUTENCAO, MULTAS, SEGUROS, DANOS] },
-    { label: "GESTÃO", items: [ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO] },
+    { label: "GESTÃO", items: [ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO, COBRANCAS, PAGAMENTOS] },
     { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES, AUDITORIA] },
   ],
   // support — apenas administração limitada (nunca Frota/Cadastros/Operação).
@@ -165,6 +169,8 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/finance/commissions",
   "/reports",
   "/finance",
+  "/finance/charges",
+  "/finance/payments",
   "/users",
   "/audit",
   "/notifications",

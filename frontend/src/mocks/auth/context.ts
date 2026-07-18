@@ -73,6 +73,11 @@ const OPERATIONAL_PERMS = [
   "purchase_orders:read",
   "reports:read",
   "finance:read",
+  // Ω4-2b — Cobranças/Pagamentos são gated pela permissão REAL do backend financial-titles (não pela
+  // órfã finance:read). O perfil operacional/financeiro do modo demonstração as recebe para navegar as telas.
+  "financial_titles:read",
+  "financial_titles:create",
+  "financial_titles:update",
 ];
 
 type MockProfile = { name: string; roles: UserRole[]; permissions: string[] };
@@ -150,6 +155,10 @@ export const mockTenantContexts: TenantContext[] = [
       "field_dispatch:reassign",
       "notifications:read",
       "notifications:update",
+      // Ω4-2b — Cobranças/Pagamentos (títulos a receber/pagar) na organização ativa do modo demonstração.
+      "financial_titles:read",
+      "financial_titles:create",
+      "financial_titles:update",
     ],
     enabledModules: ["dashboard", "work-orders", "logistics", "users", "tenant-admin", "tenant_checklist", "field_operations", "notifications"],
     scope: "branch",

@@ -470,7 +470,7 @@ export function App() {
             <Route
               path="/finance/charges"
               element={
-                <PermissionGuard permissions={["finance:read"]}>
+                <PermissionGuard permissions={["financial_titles:read"]}>
                   <ChargesPage />
                 </PermissionGuard>
               }
@@ -486,7 +486,7 @@ export function App() {
             <Route
               path="/finance/payments"
               element={
-                <PermissionGuard permissions={["finance:read"]}>
+                <PermissionGuard permissions={["financial_titles:read"]}>
                   <PaymentsPage />
                 </PermissionGuard>
               }
