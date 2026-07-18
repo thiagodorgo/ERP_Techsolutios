@@ -925,3 +925,27 @@ parseBusinessDate + isTitleOverdue comparar contra fim-do-dia BR. Baixo impacto 
 O DTO/snapshot de fechamento expõe closedBy/reopenedBy como UUID cru (padrão backend, §2.8 OK — não vaza tenant/nome).
 A futura tela de Fechamento (front) DEVE resolver UUID→nome antes de renderizar (precedente R-Ω3F-5b §11.2: UUID cru na UI = veto)
 — reusar o UserNameResolver do Ω3F-5b.
+
+## P-Ω4-6-NITS — Nits da pós-análise do Ω4-6 (BAIXA)
+- L-4: pg_advisory_xact_lock(hashtext(tenant:period)) é int4 (2^32) — colisão serializa close/reopen cross-tenant
+  (só throughput, nunca correção — a tx re-lê o estado). Considerar chave 64-bit (pg_advisory_xact_lock(int,int)) se o nº de tenants crescer.
+- CORRIGIDOS nesta pós-análise: M-1 (balance.receivableOpen/payableOpen excluíam cancelados → agora sumOpen exclui;
+  material mantém p/ checksum), L-1 (reclose deixava reopened_* obsoleto no DTO → nula quando status≠reopened),
+  L-2 (forced:true só quando houve override real), L-3 (comentário "tabela vazia e nunca bloqueia" — falso desde Ω4-6, corrigido).
+
+## P-Ω4-8-READINESS — Guia do Dashboard financeiro real (Ω4-8)
+- GET /financial-periods/:period NÃO computa agregados de dinheiro AO VIVO para período ABERTO (só o checklist de
+  pendências). O Dashboard precisa de A receber/A pagar/saldo do mês CORRENTE (não fechado). Barato de adicionar: um
+  computeMaterialSnapshot preview ao vivo p/ período aberto (as linhas já são carregadas p/ o checklist). (L-5)
+- Para período REOPENED, snapshot é o corpo pré-reabertura (stale-by-design) + checklist ao vivo — documentar p/ o Dashboard não tratar como corrente.
+- snapshotHistory volta INTEIRO no GET/:period (cresce a cada reabertura) — o Dashboard deve pedir só o latest/paginar (L-6).
+- balance.* já EXCLUI cancelados (M-1 corrigido) → o Dashboard pode consumir receivableOpen/payableOpen direto.
+- P-Ω4-6-FRONT-RESOLVE-NAME: resolver closedBy/reopenedBy UUID→nome (UserNameResolver do Ω3F-5b) antes de renderizar.
+- P-Ω4-2B-KPI-AGREGADO: os KPIs de Cobranças/Pagamentos somam só a página carregada — o Dashboard deve usar agregados de verdade.
+
+## P-Ω4-7-READINESS — Guia do Cheque (Ω4-7)
+- Cheque = meio de pagamento com status próprio (issued→deposited→cleared/bounced). Ao lançar caixa passa pelo
+  chokepoint/competência automaticamente (via occurred_at do lançamento) — sem plumbing novo p/ o happy path.
+- DECIDIR no comando: (a) competência de cheque PRÉ-DATADO ("bom para") — mês de EMISSÃO (occurred_at) vs mês de
+  COMPENSAÇÃO — determina qual período o trava; (b) transições que flipam/revertem um lançamento (bounced) DEVEM ir
+  pelo caminho de ESTORNO (chokepoint-guarded), NUNCA update destrutivo de lançamento de período possivelmente fechado.

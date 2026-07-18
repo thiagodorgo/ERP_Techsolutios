@@ -23,6 +23,7 @@ import {
   FinancialPeriodCloseError,
   FinancialPeriodCloseService,
   computeMaterialSnapshot,
+  computeSnapshotBody,
   createMemoryFinancialPeriodCloseService,
   resetFinancialPeriodCloseRuntimeForTests,
   type FinancialPeriodCloseActorContext,
@@ -106,6 +107,25 @@ test("guard M2: período 'closing' bloqueia CREATE de título e lançamento → 
     () => entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix", occurred_at: "2026-07-10T12:00:00-03:00" }),
     (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 422 && e.reason === "period_closed",
   );
+});
+
+test("[pós-análise M-1] balance.receivableOpen/payableOpen EXCLUEM títulos cancelados (mas material os mantém p/ o checksum)", () => {
+  const ctx = { period: "2026-07", computedAt: "2026-07-31T00:00:00.000Z", closedBy: null, forced: false, forcedReason: null };
+  const titles = [
+    { id: "t1", direction: "receivable", amount: 1000, paidAmount: 0, status: "open" },
+    { id: "t2", direction: "receivable", amount: 500, paidAmount: 0, status: "cancelled" }, // NÃO é aberto
+    { id: "t3", direction: "receivable", amount: 300, paidAmount: 100, status: "partially_paid" }, // aberto: 200
+    { id: "t4", direction: "payable", amount: 400, paidAmount: 0, status: "cancelled" }, // NÃO é aberto
+    { id: "t5", direction: "payable", amount: 700, paidAmount: 0, status: "scheduled" },
+  ] as never;
+  const snap = computeSnapshotBody(titles, [] as never, ctx);
+  // aberto = Σ(amount−paid) dos NÃO-cancelados: receivable 1000 + 200 = 1200; payable 700.
+  assert.equal(snap.balance.receivableOpen, 1200);
+  assert.equal(snap.balance.payableOpen, 700);
+  // material (checksum re-derivável) mantém TODOS os títulos, inclusive cancelados:
+  assert.equal(snap.material.titles.receivable.sumAmount, 1800); // 1000+500+300
+  assert.equal(snap.material.titles.payable.sumAmount, 1100); // 400+700
+  assert.equal(snap.titles.byStatus.cancelled, 2);
 });
 
 // 4 — reconcile em período FECHADO PASSA (exento do chokepoint) e NÃO altera o snapshot congelado (M1).

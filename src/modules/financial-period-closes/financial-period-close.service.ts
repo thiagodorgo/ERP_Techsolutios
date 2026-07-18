@@ -64,18 +64,21 @@ export class FinancialPeriodCloseService {
       if (checklist.blocking.inDisputeTitles > 0 && !force) {
         throw pendingItemsBlockCloseError(period, checklist);
       }
+      // pós-análise L-2: `forced` só é verdade quando um gate bloqueante REALMENTE foi sobreposto (força + havia
+      // disputa). force:true numa competência sem pendência bloqueante não polui a forense com "fechamento forçado".
+      const overrode = force && checklist.blocking.inDisputeTitles > 0;
       const snapshotBody = computeSnapshotBody(titles, entries, {
         period,
         computedAt: now.toISOString(),
         closedBy: actor.userId ?? null,
-        forced: force,
-        forcedReason: reason,
+        forced: overrode,
+        forcedReason: overrode ? reason : null,
       });
       const history = existing?.snapshot?.history ?? [];
       const snapshot: StoredSnapshot = { latest: snapshotBody, history: [...history, snapshotBody] };
       return {
         write: { status: "closed", closedAt: now, closedBy: actor.userId, snapshot },
-        meta: { overriddenDisputeTitleIds: force ? [...checklist.blocking.inDisputeTitleIds] : [], forced: force },
+        meta: { overriddenDisputeTitleIds: overrode ? [...checklist.blocking.inDisputeTitleIds] : [], forced: overrode },
       };
     };
 
