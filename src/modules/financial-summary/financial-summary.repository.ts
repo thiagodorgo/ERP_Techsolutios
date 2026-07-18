@@ -37,7 +37,11 @@ export class InMemoryFinancialSummaryRepository implements FinancialSummaryRepos
         return { openingBalance: account.openingBalance, inflow, outflow };
       }),
     );
-    const currency = accountsResult.items[0]?.currency ?? "BRL";
+    // currency = a da conta ativa MAIS ANTIGA — paridade com o Prisma (orderBy created_at asc). O list InMemory
+    // ordena por created_at DESC, então re-seleciono a mais antiga aqui (latente hoje: v1 trava BRL, mas evita
+    // divergência InMemory↔Prisma se multi-moeda for habilitado).
+    const oldestAccount = [...accountsResult.items].sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime())[0];
+    const currency = oldestAccount?.currency ?? "BRL";
 
     return computeFinancialSummary({
       titles: titlesResult.items.map((t) => ({
