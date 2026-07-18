@@ -54,6 +54,7 @@ export const PERMISSION_CATALOG = [
   "financial_accounts:read",
   "financial_titles:read",
   "financial_entries:read",
+  "cheques:read",
   "service_catalog:create",
   "price_tables:create",
   "branches:create",
@@ -67,6 +68,7 @@ export const PERMISSION_CATALOG = [
   "financial_accounts:create",
   "financial_titles:create",
   "financial_entries:create",
+  "cheques:create",
   "service_catalog:update",
   "price_tables:update",
   "branches:update",
@@ -81,6 +83,9 @@ export const PERMISSION_CATALOG = [
   "financial_accounts:update",
   "financial_titles:update",
   "financial_entries:update",
+  // Ω4-7 — Cheque (instrumento de pagamento). read {…,finance,manager,auditor,viewer}; create/update {…,finance}.
+  // As transições que MOVEM caixa (/clear,/bounce) exigem também financial_entries:create (gate na rota).
+  "cheques:update",
   // Ω4-6 — Fechamento de período (trava retroativa). read {super,platform,tenant_admin,finance,manager,
   // auditor,viewer}; close {…,finance}; reopen só admins (override administrativo — fora de finance,
   // separação de funções RN-FIN-009).
@@ -248,6 +253,7 @@ export const ROLE_PERMISSIONS = {
     "financial_accounts:read",
     "financial_titles:read",
     "financial_entries:read",
+    "cheques:read",
     // Ω4-6 — manager LÊ o fechamento de período (não fecha/reabre).
     "financial_period:read",
     "service_catalog:create",
@@ -427,6 +433,7 @@ export const ROLE_PERMISSIONS = {
     "financial_accounts:read",
     "financial_titles:read",
     "financial_entries:read",
+    "cheques:read",
     // Ω4-6 — viewer LÊ o fechamento de período (read-only).
     "financial_period:read",
     "fuel_logs:read",
@@ -551,6 +558,7 @@ export const ROLE_PERMISSIONS = {
     "financial_accounts:read",
     "financial_titles:read",
     "financial_entries:read",
+    "cheques:read",
     // Ω4-6 — a tesouraria LÊ e FECHA a competência; reopen (desfazer o controle) fica só com admins.
     "financial_period:read",
     "financial_period:close",
@@ -559,12 +567,14 @@ export const ROLE_PERMISSIONS = {
     "financial_accounts:create",
     "financial_titles:create",
     "financial_entries:create",
+    "cheques:create",
     "service_quotes:update",
     "service_quotes:approve",
     "work_order_financials:update",
     "financial_accounts:update",
     "financial_titles:update",
     "financial_entries:update",
+    "cheques:update",
   ],
   inventory: [
     "inventory.manage",
@@ -645,6 +655,7 @@ export const ROLE_PERMISSIONS = {
     "financial_accounts:read",
     "financial_titles:read",
     "financial_entries:read",
+    "cheques:read",
     // Ω4-6 — auditor LÊ o fechamento de período (read-only).
     "financial_period:read",
     "fuel_logs:read",

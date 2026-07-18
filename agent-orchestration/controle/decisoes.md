@@ -664,3 +664,31 @@ Decisões ratificadas:
 - **Perms novas:** financial_period:read (amplo) | close (finance+admins) | reopen (só admins).
 - Residuais rastreados: P-Ω4-6-CLOSE-RACE (close-vs-writer read-skew — o mesmo lock deve ir ao guard-read do write-path Ω4-2..4,
   fase de endurecimento; controle detetivo por re-derivação existe), P-Ω4-6-REOPEN-FOUR-EYES (sem segundo ator, MVP aceita).
+
+## D-Ω4-7 — Cheque (instrumento de pagamento com ciclo próprio) (2026-07-18, desenho pós-ataque adversarial 3-lentes)
+Módulo `src/modules/cheques/` (registered→deposited→cleared/bounced; registered→cancelled). direction ∈ {received,issued}.
+O desenho foi submetido a um workflow de ATAQUE adversarial em 3 lentes (dinheiro/conservação · período/competência/
+chokepoint · máquina-de-estados/reversão) ANTES de codar; 3 ALTA convergentes + vários MÉDIA endereçados no código:
+
+- **D-Ω4-7-CLEAR-MUTEX:** a transição de status é o MUTEX contra dupla-postagem. Compensar/devolver-após-compensar
+  usam FLIP CONDICIONAL atômico (`WHERE status=fromStatus`; InMemory check-and-set síncrono; Prisma updateMany
+  rowcount). Ordem: **reservar (deposited→cleared) → postar 1 lançamento via entryService.create → vincular
+  cleared_entry_id**; falha do post (period_closed/account_inactive/currency/overflow) → **ROLLBACK cleared→deposited**.
+  Perdedor da corrida → 409 transition_conflict. Invariante: cada cheque contribui com ≤1 lançamento líquido de caixa.
+- **D-Ω4-7-COMPETENCIA-CLEAR:** a compensação SEMPRE posta na competência CORRENTE (server-now — a compensação é HOJE).
+  A due_date "bom para"/pré-datado é MEMO puro e NUNCA entra na competência. O clear/bounce IGNORAM occurred_at do
+  cliente (mata o foot-gun de datar no mês futuro). O chokepoint do create() bloqueia se o mês corrente estiver fechado.
+- **D-Ω4-7-BOUNCE-NEW-ENTRY:** devolver-após-compensar (cleared→bounced) posta um CONTRA-lançamento NOVO (direção
+  invertida, category='cheque_bounce', server-now) — NÃO reverse() do original. Assim NÃO é travado se o lançamento
+  compensado já foi CONCILIADO (Ω4-5) e preserva a conciliação dele. Consistente com D-Ω4-5-RECONCILE-META (estorno de
+  devolução é FATO bancário, não edição do original).
+- **D-Ω4-7-MONEY-GATE:** as transições que MOVEM caixa (/clear, /bounce) exigem `cheques:update` E `financial_entries:create`
+  (cadeia de dois requirePermission na rota + assertCanMoveMoney no serviço). Fecha a escalada de privilégio (a chamada
+  service→service a entryService.create não reatravessa a rota de lançamentos). Registrado em RBAC_MATRIX.md.
+- **D-Ω4-7-COMPENSAVEL:** amount Decimal(12,2) (mesma faixa do lançamento) validado no REGISTRO (>0 + assertMoneyInRange)
+  → todo cheque registrado é compensável (nunca fica preso em 'deposited' por amount_overflow no clear).
+- **D-Ω4-7-NO-TITLE:** o registro de cheque é INDEPENDENTE de título (title_id FORA de escopo). Liquidar título com
+  cheque é o caminho payTitle(payment_method='check'). Sem dupla contagem NO módulo (ver P-Ω4-7-DUPLA-CONTAGEM p/ o
+  risco de PROCESSO — fora do escopo do backend deste bloco).
+KPI: PR NÃO toca Kpis/* (D-Ω4-KPI-RELATORIO). Migration aditiva 20260815000000_add_cheques (drill BEGIN/ROLLBACK: RLS
+enabled+forced, policy tenant_isolation, 2 FKs compostas RESTRICT, financial_accounts intocada).

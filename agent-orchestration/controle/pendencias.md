@@ -949,3 +949,29 @@ A futura tela de Fechamento (front) DEVE resolver UUID→nome antes de renderiza
 - DECIDIR no comando: (a) competência de cheque PRÉ-DATADO ("bom para") — mês de EMISSÃO (occurred_at) vs mês de
   COMPENSAÇÃO — determina qual período o trava; (b) transições que flipam/revertem um lançamento (bounced) DEVEM ir
   pelo caminho de ESTORNO (chokepoint-guarded), NUNCA update destrutivo de lançamento de período possivelmente fechado.
+
+## P-Ω4-7-CLEAR-ATOMIC — Resíduo de atomicidade do clear/bounce do cheque (BAIXA — espelha P-Ω4-4-LIQUID-ATOMIC)
+O MUTEX (flip condicional) ELIMINA a dupla-postagem concorrente e o rollback trata falha do post. Resíduo: crash entre
+o create do lançamento (sucesso) e o attach do id → cheque fica 'cleared' com cleared_entry_id=null (ou 'bounced' com
+bounce_entry_id=null) e um lançamento posto sem back-link. Recuperável/detectável (cleared sem entry). Mesma classe do
+payTitle (P-Ω4-4-LIQUID-ATOMIC). Ideal futuro: create+attach na MESMA $transaction Prisma (o InMemory já é atômico no
+event-loop). Não bloqueia — a conservação de dinheiro nunca é violada (o post não duplica).
+
+## P-Ω4-7-ENTRY-OWNERSHIP — Lançamento de cheque manipulável direto por /financial-entries (BAIXA)
+cleared_entry_id/bounce_entry_id apontam FinancialEntry comuns. Um ator com financial_entries:update pode delete/reverse
+esses lançamentos DIRETO pela API de lançamentos, dessincronizando o estado do cheque (o cheque exibiria 'cleared' com o
+caixa removido). Mitigado por RBAC (financial_entries:update é finance/admin — mesma fronteira de confiança de
+cheques:update) e pelo desenho D-Ω4-7-BOUNCE-NEW-ENTRY (o bounce NÃO depende mais de reverter cleared_entry_id — posta
+contra-lançamento fresco). Fechamento forte (flag owned_by='cheque' bloqueando delete/reverse fora do orquestrador)
+inverteria a dependência entries→cheques → adiado. Conservação de dinheiro do LEDGER é preservada (o guard de par de
+estorno já impede re-estorno).
+
+## P-Ω4-7-DUPLA-CONTAGEM — cheque-register vs payTitle p/ o mesmo dinheiro (BAIXA — risco de PROCESSO)
+Nada no backend impede registrar+compensar um cheque E liquidar o mesmo título com payTitle(payment_method='check') p/ o
+mesmo dinheiro físico → dois lançamentos independentes. É disciplina do usuário (fluxos distintos). Quando title_id
+entrar em escopo do cheque, vincular cheque↔título e impedir liquidação dupla. Fora do escopo do Ω4-7 (title_id não modelado).
+
+## P-Ω4-7-CLEAR-RETRO — Compensação retroativa a período fechado (BAIXA)
+O clear sempre usa server-now → competência CORRENTE. Se o banco compensou de fato num mês já FECHADO, a data verdadeira
+não é escriturável (usar now posta no mês corrente, coerente com caixa quando registrado). Política: compensação sempre no
+período corrente aberto; retroação a período fechado exigiria reabertura (D-Ω4-6). Espelha D-Ω4-POS-FECHAMENTO. Documentado, não é dead-end silencioso (o clear falha com 422 period_closed se o mês corrente estiver fechado → cheque fica 'deposited').
