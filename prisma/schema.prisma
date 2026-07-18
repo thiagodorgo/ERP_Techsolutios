@@ -46,6 +46,7 @@ model Tenant {
   financial_titles              FinancialTitle[]
   financial_period_closes       FinancialPeriodClose[]
   financial_entries             FinancialEntry[]
+  cheques                       Cheque[]
   tags                          Tag[]
   pois                          Poi[]
   operator_profiles             OperatorProfile[]
@@ -760,23 +761,23 @@ model FieldOperatorLocation {
 }
 
 model Customer {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id  String   @db.Uuid
-  name       String
-  document   String?
-  phone      String?
-  email      String?
-  address    String?
-  city       String?
-  state      String?
-  zip_code   String?
-  is_active  Boolean  @default(true)
-  notes      String?
-  created_by String?  @db.Uuid
-  updated_by String?  @db.Uuid
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  tenant     Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String      @db.Uuid
+  name        String
+  document    String?
+  phone       String?
+  email       String?
+  address     String?
+  city        String?
+  state       String?
+  zip_code    String?
+  is_active   Boolean     @default(true)
+  notes       String?
+  created_by  String?     @db.Uuid
+  updated_by  String?     @db.Uuid
+  created_at  DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant      Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   work_orders WorkOrder[] @relation("WorkOrderCustomer")
   tariffs     Tariff[]    @relation("TariffCustomer")
 
@@ -788,26 +789,26 @@ model Customer {
 }
 
 model Vehicle {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id  String   @db.Uuid
-  plate      String
-  model      String
-  type       String?
-  year       Int?
-  status     String   @default("active")
-  notes      String?
-  is_active  Boolean  @default(true)
-  created_by String?  @db.Uuid
-  updated_by String?  @db.Uuid
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  tenant     Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
-  work_orders WorkOrder[] @relation("WorkOrderVehicle")
-  fuel_logs   FuelLog[]
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String             @db.Uuid
+  plate              String
+  model              String
+  type               String?
+  year               Int?
+  status             String             @default("active")
+  notes              String?
+  is_active          Boolean            @default(true)
+  created_by         String?            @db.Uuid
+  updated_by         String?            @db.Uuid
+  created_at         DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant             Tenant             @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  work_orders        WorkOrder[]        @relation("WorkOrderVehicle")
+  fuel_logs          FuelLog[]
   maintenance_orders MaintenanceOrder[]
-  fines       Fine[]
+  fines              Fine[]
   insurance_policies InsurancePolicy[]
-  damages     Damage[]
+  damages            Damage[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, plate])
@@ -929,21 +930,21 @@ model InsurancePolicy {
 }
 
 model Damage {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id      String    @db.Uuid
-  vehicle_id     String    @db.Uuid
-  work_order_id  String?   @db.Uuid
-  data           DateTime  @db.Timestamptz(6)
+  id             String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id      String             @db.Uuid
+  vehicle_id     String             @db.Uuid
+  work_order_id  String?            @db.Uuid
+  data           DateTime           @db.Timestamptz(6)
   gravidade      String
   descricao      String
-  status         String    @default("registrado")
-  custo_estimado Decimal?  @db.Decimal(20, 6)
-  custo_real     Decimal?  @db.Decimal(20, 6)
-  is_active      Boolean   @default(true)
-  created_by     String?   @db.Uuid
-  updated_by     String?   @db.Uuid
-  created_at     DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  status         String             @default("registrado")
+  custo_estimado Decimal?           @db.Decimal(20, 6)
+  custo_real     Decimal?           @db.Decimal(20, 6)
+  is_active      Boolean            @default(true)
+  created_by     String?            @db.Uuid
+  updated_by     String?            @db.Uuid
+  created_at     DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
   tenant         Tenant             @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   vehicle        Vehicle            @relation(fields: [tenant_id, vehicle_id], references: [tenant_id, id], onDelete: Restrict)
   attachments    DamageAttachment[]
@@ -1015,24 +1016,24 @@ model DamageAttachment {
 /// `avg_cost` is the moving average recalculated on `entrada` (R7.3); `abc_class`
 /// is populated by the F7b ABC job (schema-only in F7a — no API write).
 model InventoryItem {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id      String   @db.Uuid
-  sku            String
-  name           String
-  unit           String
-  min_quantity   Decimal  @default(0) @db.Decimal(20, 6)
-  max_quantity   Decimal? @db.Decimal(20, 6)
-  abc_class      String?
-  avg_cost       Decimal  @default(0) @db.Decimal(20, 6)
-  lead_time_days Int?
-  safety_stock   Decimal? @db.Decimal(20, 6)
-  is_active      Boolean  @default(true)
-  created_by     String?  @db.Uuid
-  updated_by     String?  @db.Uuid
-  created_at     DateTime @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  tenant         Tenant          @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
-  movements      StockMovement[]
+  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id           String            @db.Uuid
+  sku                 String
+  name                String
+  unit                String
+  min_quantity        Decimal           @default(0) @db.Decimal(20, 6)
+  max_quantity        Decimal?          @db.Decimal(20, 6)
+  abc_class           String?
+  avg_cost            Decimal           @default(0) @db.Decimal(20, 6)
+  lead_time_days      Int?
+  safety_stock        Decimal?          @db.Decimal(20, 6)
+  is_active           Boolean           @default(true)
+  created_by          String?           @db.Uuid
+  updated_by          String?           @db.Uuid
+  created_at          DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant              Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  movements           StockMovement[]
   cycle_count_entries CycleCountEntry[]
 
   @@unique([tenant_id, id])
@@ -1048,18 +1049,18 @@ model InventoryItem {
 /// consumo, R7.2) and `vehicle_id` are validated in-tenant at the service layer
 /// (no hard FK); `cycle_count_id` is a plain column — F7b adds the table.
 model StockMovement {
-  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id             String   @db.Uuid
-  item_id               String   @db.Uuid
+  id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String        @db.Uuid
+  item_id               String        @db.Uuid
   type                  String
-  quantidade_sinalizada Decimal  @db.Decimal(20, 6)
-  unit_cost             Decimal? @db.Decimal(20, 6)
-  work_order_id         String?  @db.Uuid
-  vehicle_id            String?  @db.Uuid
+  quantidade_sinalizada Decimal       @db.Decimal(20, 6)
+  unit_cost             Decimal?      @db.Decimal(20, 6)
+  work_order_id         String?       @db.Uuid
+  vehicle_id            String?       @db.Uuid
   reason                String?
-  cycle_count_id        String?  @db.Uuid
-  created_by            String?  @db.Uuid
-  created_at            DateTime @default(now()) @db.Timestamptz(6)
+  cycle_count_id        String?       @db.Uuid
+  created_by            String?       @db.Uuid
+  created_at            DateTime      @default(now()) @db.Timestamptz(6)
   tenant                Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   item                  InventoryItem @relation(fields: [tenant_id, item_id], references: [tenant_id, id], onDelete: Restrict)
   cycle_count           CycleCount?   @relation(fields: [tenant_id, cycle_count_id], references: [tenant_id, id], onDelete: Restrict)
@@ -1077,16 +1078,16 @@ model StockMovement {
 /// ('aberta'|'concluida'|'cancelada') is terminal once concluida/cancelada
 /// (further mutation = 422). The saldo is NEVER stored here — only the snapshot.
 model CycleCount {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id  String   @db.Uuid
+  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String            @db.Uuid
   abc_class  String?
-  status     String   @default("aberta")
+  status     String            @default("aberta")
   notes      String?
-  is_active  Boolean  @default(true)
-  created_by String?  @db.Uuid
-  updated_by String?  @db.Uuid
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  is_active  Boolean           @default(true)
+  created_by String?           @db.Uuid
+  updated_by String?           @db.Uuid
+  created_at DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
   tenant     Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   entries    CycleCountEntry[]
   movements  StockMovement[]
@@ -1103,16 +1104,16 @@ model CycleCount {
 /// counting; `variance` (counted − system) and `adjustment_movement_id` (the
 /// generated `ajuste`) are filled at close. One line per item per session.
 model CycleCountEntry {
-  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id              String   @db.Uuid
-  cycle_count_id         String   @db.Uuid
-  item_id                String   @db.Uuid
-  system_quantity        Decimal  @db.Decimal(20, 6)
-  counted_quantity       Decimal? @db.Decimal(20, 6)
-  variance               Decimal? @db.Decimal(20, 6)
-  adjustment_movement_id String?  @db.Uuid
-  created_at             DateTime @default(now()) @db.Timestamptz(6)
-  updated_at             DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  id                     String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id              String        @db.Uuid
+  cycle_count_id         String        @db.Uuid
+  item_id                String        @db.Uuid
+  system_quantity        Decimal       @db.Decimal(20, 6)
+  counted_quantity       Decimal?      @db.Decimal(20, 6)
+  variance               Decimal?      @db.Decimal(20, 6)
+  adjustment_movement_id String?       @db.Uuid
+  created_at             DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
   tenant                 Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   cycle_count            CycleCount    @relation(fields: [tenant_id, cycle_count_id], references: [tenant_id, id], onDelete: Cascade)
   item                   InventoryItem @relation(fields: [tenant_id, item_id], references: [tenant_id, id], onDelete: Restrict)
@@ -1125,8 +1126,8 @@ model CycleCountEntry {
 }
 
 model ServiceCatalog {
-  id                         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id                  String   @db.Uuid
+  id                         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                  String      @db.Uuid
   name                       String
   description                String?
   category                   String?
@@ -1134,15 +1135,15 @@ model ServiceCatalog {
   // Soft-enum String (reboque|socorro|residencial|outro), NÃO enum Prisma — tipos são configuráveis por
   // organização (spec §1.2). requires_destination separado para o cliente decidir por tipo. Aditivo/nullable.
   service_type               String?
-  requires_destination       Boolean  @default(false)
+  requires_destination       Boolean     @default(false)
   estimated_duration_minutes Int?
-  base_price                 Decimal? @db.Decimal(12, 2)
-  status                     String   @default("active")
-  is_active                  Boolean  @default(true)
-  created_by                 String?  @db.Uuid
-  updated_by                 String?  @db.Uuid
-  created_at                 DateTime @default(now()) @db.Timestamptz(6)
-  updated_at                 DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  base_price                 Decimal?    @db.Decimal(12, 2)
+  status                     String      @default("active")
+  is_active                  Boolean     @default(true)
+  created_by                 String?     @db.Uuid
+  updated_by                 String?     @db.Uuid
+  created_at                 DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
   tenant                     Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   work_orders                WorkOrder[] @relation("WorkOrderServiceCatalog")
   tariffs                    Tariff[]    @relation("TariffService")
@@ -1172,7 +1173,7 @@ model PriceTable {
   updated_at  DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
   tenant      Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
-  tariffs     Tariff[]
+  tariffs Tariff[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, name])
@@ -1223,33 +1224,33 @@ model Tariff {
 // bruto na migration — C1 (crítico): a chave natural NÃO pode ser @@unique CHEIO do Prisma, senão
 // bloquearia re-orçar após void. RLS ENABLE+FORCE+policy em app.current_tenant_id (SQL bruto).
 model ServiceQuote {
-  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id             String   @db.Uuid
-  work_order_id         String?  @db.Uuid
-  customer_id           String?  @db.Uuid
-  service_catalog_id    String   @db.Uuid
-  source_tariff_id      String?  @db.Uuid
-  source_price_table_id String?  @db.Uuid
-  frozen_unit_price     Decimal  @db.Decimal(12, 2)
-  frozen_currency       String   @default("BRL")
-  quantity              Decimal  @default(1) @db.Decimal(12, 2)
-  frozen_total          Decimal  @db.Decimal(12, 2)
-  frozen_at             DateTime @default(now()) @db.Timestamptz(6)
-  price_source          String   @default("tariff")
-  status                String   @default("draft")
-  is_active             Boolean  @default(true)
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String    @db.Uuid
+  work_order_id         String?   @db.Uuid
+  customer_id           String?   @db.Uuid
+  service_catalog_id    String    @db.Uuid
+  source_tariff_id      String?   @db.Uuid
+  source_price_table_id String?   @db.Uuid
+  frozen_unit_price     Decimal   @db.Decimal(12, 2)
+  frozen_currency       String    @default("BRL")
+  quantity              Decimal   @default(1) @db.Decimal(12, 2)
+  frozen_total          Decimal   @db.Decimal(12, 2)
+  frozen_at             DateTime  @default(now()) @db.Timestamptz(6)
+  price_source          String    @default("tariff")
+  status                String    @default("draft")
+  is_active             Boolean   @default(true)
   notes                 String?
   // Ω3F-4a — cabeçalho do orçamento multi-item (aditivos/nullable; item único legado permanece válido).
   number                String?
   issued_at             DateTime? @db.Timestamptz(6)
   valid_until           DateTime? @db.Timestamptz(6)
   // Ω3F-4b — aprovar→cria OS (idempotência ancorada aqui: um orçamento gera no máx. UMA OS) e compartilhar.
-  created_work_order_id String?  @db.Uuid
+  created_work_order_id String?   @db.Uuid
   share_token           String?
-  created_by            String?  @db.Uuid
-  updated_by            String?  @db.Uuid
-  created_at            DateTime @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  created_by            String?   @db.Uuid
+  updated_by            String?   @db.Uuid
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
 
   @@unique([tenant_id, id])
   @@index([tenant_id, work_order_id])
@@ -1295,30 +1296,30 @@ model ServiceQuoteItem {
 // client_action_id IS NOT NULL AND deleted_at IS NULL) e o RLS ENABLE+FORCE+policy são SQL bruto na
 // migration (não expressáveis no schema).
 model WorkOrderFinancialItem {
-  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id        String    @db.Uuid
-  work_order_id    String    @db.Uuid
-  tariff_id        String?   @db.Uuid
-  price_table_id   String?   @db.Uuid
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String          @db.Uuid
+  work_order_id    String          @db.Uuid
+  tariff_id        String?         @db.Uuid
+  price_table_id   String?         @db.Uuid
   description      String
-  quantity         Decimal   @default(1) @db.Decimal(12, 2)
-  unit_amount      Decimal   @db.Decimal(12, 2)
-  total_amount     Decimal   @db.Decimal(12, 2)
-  currency         String    @default("BRL")
-  source           String    @default("tariff")
+  quantity         Decimal         @default(1) @db.Decimal(12, 2)
+  unit_amount      Decimal         @db.Decimal(12, 2)
+  total_amount     Decimal         @db.Decimal(12, 2)
+  currency         String          @default("BRL")
+  source           String          @default("tariff")
   notes            String?
   client_action_id String?
   // Ω4-3 (D-Ω4-C1) — carimbo de faturamento. invoiced_at != NULL trava PATCH/DELETE do item (422
   // item_invoiced, app-level). title_id aponta o Título gerado via FK composta RESTRICT (só no SQL da
   // migration 20260811000000; o relation abaixo dá acesso tipado). Aditivo/nullable (item não-faturado =
   // ambos NULL).
-  invoiced_at      DateTime? @db.Timestamptz(6)
-  title_id         String?   @db.Uuid
-  created_by       String?   @db.Uuid
-  updated_by       String?   @db.Uuid
-  created_at       DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
-  deleted_at       DateTime? @db.Timestamptz(6)
+  invoiced_at      DateTime?       @db.Timestamptz(6)
+  title_id         String?         @db.Uuid
+  created_by       String?         @db.Uuid
+  updated_by       String?         @db.Uuid
+  created_at       DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at       DateTime?       @db.Timestamptz(6)
   title            FinancialTitle? @relation(fields: [tenant_id, title_id], references: [tenant_id, id], onDelete: Restrict)
 
   @@unique([tenant_id, id])
@@ -1398,26 +1399,27 @@ model Supplier {
 // não expressa índice único parcial (WHERE is_active=true); por isso NÃO há @@unique([tenant_id,name]).
 // Delete é LÓGICO: is_active=false + status='inactive'.
 model FinancialAccount {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id       String   @db.Uuid
-  name            String
-  kind            String   @default("cash")
-  currency        String   @default("BRL")
-  opening_balance Decimal  @default(0) @db.Decimal(12, 2)
-  bank_name       String?
-  agency          String?
-  account_number  String?
-  document        String?
-  notes           String?
-  status          String   @default("active")
-  is_active       Boolean  @default(true)
-  created_by      String?  @db.Uuid
-  updated_by      String?  @db.Uuid
-  created_at      DateTime @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  tenant          Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
-  financial_titles FinancialTitle[]
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String           @db.Uuid
+  name              String
+  kind              String           @default("cash")
+  currency          String           @default("BRL")
+  opening_balance   Decimal          @default(0) @db.Decimal(12, 2)
+  bank_name         String?
+  agency            String?
+  account_number    String?
+  document          String?
+  notes             String?
+  status            String           @default("active")
+  is_active         Boolean          @default(true)
+  created_by        String?          @db.Uuid
+  updated_by        String?          @db.Uuid
+  created_at        DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant            Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  financial_titles  FinancialTitle[]
   financial_entries FinancialEntry[]
+  cheques           Cheque[]
 
   @@unique([tenant_id, id])
   @@index([tenant_id, is_active])
@@ -1434,36 +1436,36 @@ model FinancialAccount {
 // a FK quando a coluna não é NULL. paid_amount é DIRIGIDO por pagamentos (Ω4-4): nasce 0 aqui. Delete
 // LÓGICO via deleted_at.
 model FinancialTitle {
-  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id        String    @db.Uuid
-  direction        String // receivable|payable (app-level)
-  party_type       String // customer|supplier|other
-  party_id         String?   @db.Uuid // polimórfico: SEM FK nativa ao alvo variável
-  party_name       String // snapshot obrigatório
-  document         String? // rótulo NF-e/Fatura/Boleto (texto livre; NF-e não emitida no v1)
-  category         String?
-  description      String?
-  amount           Decimal   @db.Decimal(12, 2) // > 0
-  currency         String    @default("BRL") // allowlist {BRL} no v1
-  issue_date       DateTime  @default(now()) @db.Timestamptz(6)
-  due_date         DateTime  @db.Timestamptz(6) // obrigatório
-  paid_amount      Decimal   @default(0) @db.Decimal(12, 2) // <= amount; dirigido por pagamentos (Ω4-4)
-  status           String    @default("open") // open|scheduled|partially_paid|paid|in_dispute|cancelled
-  competencia      String // 'YYYY-MM' derivado do issue_date (server-side)
-  account_id       String?   @db.Uuid // conta de liquidação prevista (FK composta)
-  work_order_id    String?   @db.Uuid // proveniência (setado no Ω4-3; sem idempotência aqui)
-  service_quote_id String?   @db.Uuid // proveniência
-  client_action_id String?
-  created_by       String?   @db.Uuid
-  updated_by       String?   @db.Uuid
-  created_at       DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
-  deleted_at       DateTime? @db.Timestamptz(6)
-  tenant           Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
-  account          FinancialAccount? @relation(fields: [tenant_id, account_id], references: [tenant_id, id], onDelete: Restrict)
-  work_order       WorkOrder?        @relation(fields: [tenant_id, work_order_id], references: [tenant_id, id], onDelete: Restrict)
+  id                String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String                   @db.Uuid
+  direction         String // receivable|payable (app-level)
+  party_type        String // customer|supplier|other
+  party_id          String?                  @db.Uuid // polimórfico: SEM FK nativa ao alvo variável
+  party_name        String // snapshot obrigatório
+  document          String? // rótulo NF-e/Fatura/Boleto (texto livre; NF-e não emitida no v1)
+  category          String?
+  description       String?
+  amount            Decimal                  @db.Decimal(12, 2) // > 0
+  currency          String                   @default("BRL") // allowlist {BRL} no v1
+  issue_date        DateTime                 @default(now()) @db.Timestamptz(6)
+  due_date          DateTime                 @db.Timestamptz(6) // obrigatório
+  paid_amount       Decimal                  @default(0) @db.Decimal(12, 2) // <= amount; dirigido por pagamentos (Ω4-4)
+  status            String                   @default("open") // open|scheduled|partially_paid|paid|in_dispute|cancelled
+  competencia       String // 'YYYY-MM' derivado do issue_date (server-side)
+  account_id        String?                  @db.Uuid // conta de liquidação prevista (FK composta)
+  work_order_id     String?                  @db.Uuid // proveniência (setado no Ω4-3; sem idempotência aqui)
+  service_quote_id  String?                  @db.Uuid // proveniência
+  client_action_id  String?
+  created_by        String?                  @db.Uuid
+  updated_by        String?                  @db.Uuid
+  created_at        DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime                 @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at        DateTime?                @db.Timestamptz(6)
+  tenant            Tenant                   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  account           FinancialAccount?        @relation(fields: [tenant_id, account_id], references: [tenant_id, id], onDelete: Restrict)
+  work_order        WorkOrder?               @relation(fields: [tenant_id, work_order_id], references: [tenant_id, id], onDelete: Restrict)
   // Ω4-3 (D-Ω4-C1) — itens do Financeiro da OS carimbados por este título no faturamento.
-  invoiced_items   WorkOrderFinancialItem[]
+  invoiced_items    WorkOrderFinancialItem[]
   // Ω4-4 — lançamentos de caixa que LIQUIDAM este título (title_id preenchido pela liquidação).
   financial_entries FinancialEntry[]
 
@@ -1482,22 +1484,22 @@ model FinancialTitle {
 // period_closed). Nesta fatia NÃO há endpoint de escrita (fechar/reabrir vem no Ω4-6) — a tabela nasce
 // vazia e o guard nunca bloqueia, mas a fiação é REAL.
 model FinancialPeriodClose {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id  String    @db.Uuid
-  period     String // 'YYYY-MM'
-  status     String    @default("open") // open|closing|closed|reopened
-  closed_at  DateTime? @db.Timestamptz(6)
-  closed_by  String?   @db.Uuid
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String    @db.Uuid
+  period             String // 'YYYY-MM'
+  status             String    @default("open") // open|closing|closed|reopened
+  closed_at          DateTime? @db.Timestamptz(6)
+  closed_by          String?   @db.Uuid
   // Ω4-6 — reabertura (reopened_*), janela de fechamento (closing_started_at, reservada) e o SNAPSHOT
   // financeiro congelado (JSONB: {latest, history} append-only — d/ataque). Todos nullable (ALTER aditivo).
   reopened_at        DateTime? @db.Timestamptz(6)
   reopened_by        String?   @db.Uuid
   reopen_reason      String?
   closing_started_at DateTime? @db.Timestamptz(6) // reservado p/ close assíncrono futuro (v1 não escreve)
-  snapshot           Json?     @db.JsonB          // resumo financeiro material congelado ao fechar (M1)
-  created_at DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
-  tenant     Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  snapshot           Json?     @db.JsonB // resumo financeiro material congelado ao fechar (M1)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant             Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, period])
@@ -1513,33 +1515,33 @@ model FinancialPeriodClose {
 // ESTORNO (contra-lançamento, direção invertida) — SEM FK nativa (app-level, como party_id do título).
 // reconciled nasce false (conciliação é Ω4-5). Delete LÓGICO via deleted_at.
 model FinancialEntry {
-  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id        String    @db.Uuid
-  account_id       String    @db.Uuid // conta obrigatória
-  title_id         String?   @db.Uuid // liquidação de título (opcional)
-  direction        String // in|out (app-level)
-  amount           Decimal   @db.Decimal(12, 2) // > 0
-  currency         String    @default("BRL")
-  payment_method   String // cash|pix|boleto|card|transfer|check
-  category         String?
-  occurred_at      DateTime  @default(now()) @db.Timestamptz(6)
-  competencia      String // 'YYYY-MM' derivada de occurred_at (server-side)
-  description      String?
-  reversal_of      String?   @db.Uuid // estorno = contra-lançamento aponta o original (P-Ω4-ESTORNO)
-  reconciled       Boolean   @default(false) // Ω4-5 (nasce false)
-  divergence_type    String?   // value|date — "conciliado com ressalva" (app-level; Ω4-5)
-  reconciliation_ref String?   // referência opaca do extrato bancário (Ω4-5)
-  reconciled_at      DateTime? @db.Timestamptz(6) // carimbo server-side ao conciliar (Ω4-5)
-  reconciled_by      String?   @db.Uuid // ator que conciliou (Ω4-5)
-  client_action_id String?
-  created_by       String?   @db.Uuid
-  updated_by       String?   @db.Uuid
-  created_at       DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
-  deleted_at       DateTime? @db.Timestamptz(6)
-  tenant           Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
-  account          FinancialAccount  @relation(fields: [tenant_id, account_id], references: [tenant_id, id], onDelete: Restrict)
-  title            FinancialTitle?   @relation(fields: [tenant_id, title_id], references: [tenant_id, id], onDelete: Restrict)
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String           @db.Uuid
+  account_id         String           @db.Uuid // conta obrigatória
+  title_id           String?          @db.Uuid // liquidação de título (opcional)
+  direction          String // in|out (app-level)
+  amount             Decimal          @db.Decimal(12, 2) // > 0
+  currency           String           @default("BRL")
+  payment_method     String // cash|pix|boleto|card|transfer|check
+  category           String?
+  occurred_at        DateTime         @default(now()) @db.Timestamptz(6)
+  competencia        String // 'YYYY-MM' derivada de occurred_at (server-side)
+  description        String?
+  reversal_of        String?          @db.Uuid // estorno = contra-lançamento aponta o original (P-Ω4-ESTORNO)
+  reconciled         Boolean          @default(false) // Ω4-5 (nasce false)
+  divergence_type    String? // value|date — "conciliado com ressalva" (app-level; Ω4-5)
+  reconciliation_ref String? // referência opaca do extrato bancário (Ω4-5)
+  reconciled_at      DateTime?        @db.Timestamptz(6) // carimbo server-side ao conciliar (Ω4-5)
+  reconciled_by      String?          @db.Uuid // ator que conciliou (Ω4-5)
+  client_action_id   String?
+  created_by         String?          @db.Uuid
+  updated_by         String?          @db.Uuid
+  created_at         DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at         DateTime?        @db.Timestamptz(6)
+  tenant             Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  account            FinancialAccount @relation(fields: [tenant_id, account_id], references: [tenant_id, id], onDelete: Restrict)
+  title              FinancialTitle?  @relation(fields: [tenant_id, title_id], references: [tenant_id, id], onDelete: Restrict)
 
   // Idempotência da liquidação (unique PARCIAL (tenant_id, title_id, client_action_id) WHERE
   // client_action_id IS NOT NULL AND deleted_at IS NULL) vive SÓ na migration 20260812000000 — o
@@ -1550,6 +1552,43 @@ model FinancialEntry {
   @@index([tenant_id, deleted_at])
   @@index([tenant_id, reconciled])
   @@map("financial_entries")
+}
+
+// Ω4-7 — Cheque como INSTRUMENTO de pagamento com ciclo próprio (registered→deposited→cleared/bounced;
+// registered→cancelled). direction (received|issued) e status são validados na aplicação (sem enum/CHECK,
+// como status da OS). amount DECIMAL(12,2) > 0 (mesma faixa do lançamento → cheque registrado é sempre
+// compensável). due_date ("bom para"/pré-datado) é MEMO — a compensação posta caixa na competência CORRENTE
+// (server-now), nunca na due_date. account_id FK composta RESTRICT. cleared_entry_id/bounce_entry_id apontam
+// os lançamentos postados na compensação/devolução (app-level, SEM FK nativa — o lançamento vive no seu
+// próprio módulo). Delete LÓGICO via deleted_at.
+model Cheque {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String           @db.Uuid
+  account_id       String           @db.Uuid // conta de depósito (received) / pagadora (issued)
+  direction        String // received|issued (app-level)
+  cheque_number    String
+  bank             String
+  amount           Decimal          @db.Decimal(12, 2) // > 0
+  currency         String           @default("BRL")
+  due_date         DateTime?        @db.Date // "bom para"/pré-datado — MEMO (não entra na competência)
+  status           String           @default("registered") // registered|deposited|cleared|bounced|cancelled
+  cleared_entry_id String?          @db.Uuid // lançamento postado ao compensar (app-level)
+  bounce_entry_id  String?          @db.Uuid // contra-lançamento postado ao devolver-após-compensar (app-level)
+  bounce_reason    String? // motivo da devolução (auditoria)
+  notes            String?
+  created_by       String?          @db.Uuid
+  updated_by       String?          @db.Uuid
+  created_at       DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at       DateTime?        @db.Timestamptz(6)
+  tenant           Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  account          FinancialAccount @relation(fields: [tenant_id, account_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, account_id, due_date])
+  @@index([tenant_id, status])
+  @@index([tenant_id, deleted_at])
+  @@map("cheques")
 }
 
 // Ω2-d — Tag (marcador/etiqueta). Chave natural [tenant_id, name]; desativação lógica via is_active.
@@ -1695,54 +1734,54 @@ model TeamMember {
 }
 
 model WorkOrder {
-  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id             String                @db.Uuid
-  code                  String
-  title                 String
-  description           String?
-  customer_name         String?
-  customer_document     String?
-  customer_phone        String?
-  service_address       String?
-  service_city          String?
-  service_state         String?
-  service_zip_code      String?
-  service_latitude      Decimal?              @db.Decimal(10, 7)
-  service_longitude     Decimal?              @db.Decimal(10, 7)
-  service_geocoded_at   DateTime?             @db.Timestamptz(6)
-  service_geocode_source String?
+  id                              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                       String                @db.Uuid
+  code                            String
+  title                           String
+  description                     String?
+  customer_name                   String?
+  customer_document               String?
+  customer_phone                  String?
+  service_address                 String?
+  service_city                    String?
+  service_state                   String?
+  service_zip_code                String?
+  service_latitude                Decimal?              @db.Decimal(10, 7)
+  service_longitude               Decimal?              @db.Decimal(10, 7)
+  service_geocoded_at             DateTime?             @db.Timestamptz(6)
+  service_geocode_source          String?
   // Ω3F-2 — DESTINO (a origem = os campos service_* acima, mantidos sem rename para retrocompat).
   // Aditivo/nullable, espelho simétrico da origem. Preenchido quando o tipo do serviço exige destino (#24).
-  destination_address   String?
-  destination_city      String?
-  destination_state     String?
-  destination_zip_code  String?
-  destination_latitude  Decimal?              @db.Decimal(10, 7)
-  destination_longitude Decimal?              @db.Decimal(10, 7)
-  destination_geocoded_at DateTime?           @db.Timestamptz(6)
-  destination_geocode_source String?
+  destination_address             String?
+  destination_city                String?
+  destination_state               String?
+  destination_zip_code            String?
+  destination_latitude            Decimal?              @db.Decimal(10, 7)
+  destination_longitude           Decimal?              @db.Decimal(10, 7)
+  destination_geocoded_at         DateTime?             @db.Timestamptz(6)
+  destination_geocode_source      String?
   // Ω3F-2 — campos dinâmicos por tipo (#23): socorro {plate,vehicle,color}; residencial {access_code,object,
   // description}. §2.8: access_code (senha de acesso) é SENSÍVEL — vive aqui (payload funcional), NUNCA em
   // metadata de evento/auditoria/log.
-  service_details       Json?
-  priority              String                @default("medium")
-  status                String                @default("open")
-  assigned_operator_id  String?               @db.Uuid
-  assigned_user_id      String?               @db.Uuid
-  checklist_id          String?               @db.Uuid
+  service_details                 Json?
+  priority                        String                @default("medium")
+  status                          String                @default("open")
+  assigned_operator_id            String?               @db.Uuid
+  assigned_user_id                String?               @db.Uuid
+  checklist_id                    String?               @db.Uuid
   // Ω3-c — snapshot JSON durável do template de checklist, CONGELADO no despacho (FieldDispatch.create).
   // Cópia imutável (não FK); editar o template depois não altera o snapshot. Aditivo/nullable.
-  checklist_snapshot    Json?
-  customer_id           String?               @db.Uuid
-  vehicle_id            String?               @db.Uuid
-  team_id               String?               @db.Uuid
-  service_catalog_id    String?               @db.Uuid
-  scheduled_for         DateTime?             @db.Timestamptz(6)
-  started_at            DateTime?             @db.Timestamptz(6)
-  arrived_at            DateTime?             @db.Timestamptz(6)
-  completed_at          DateTime?             @db.Timestamptz(6)
-  cancelled_at          DateTime?             @db.Timestamptz(6)
-  cancellation_reason   String?
+  checklist_snapshot              Json?
+  customer_id                     String?               @db.Uuid
+  vehicle_id                      String?               @db.Uuid
+  team_id                         String?               @db.Uuid
+  service_catalog_id              String?               @db.Uuid
+  scheduled_for                   DateTime?             @db.Timestamptz(6)
+  started_at                      DateTime?             @db.Timestamptz(6)
+  arrived_at                      DateTime?             @db.Timestamptz(6)
+  completed_at                    DateTime?             @db.Timestamptz(6)
+  cancelled_at                    DateTime?             @db.Timestamptz(6)
+  cancellation_reason             String?
   // Ω3F-6 (D-Ω3F-6-CANCEL) — decisão financeira do cancelamento: keep | keep_unpaid | zero. Validada na
   // aplicação (sem enum/CHECK, como status/priority). FONTE DE VERDADE para o módulo de comissões honrar
   // depois (P-Ω3F6-COMISSAO). NULL = OS nunca cancelada por este fluxo. Aditivo/nullable.
@@ -1751,35 +1790,35 @@ model WorkOrder {
   // (tenant_id, client_action_id) WHERE client_action_id IS NOT NULL NÃO é expressável aqui (Prisma não
   // modela índice parcial) — vive só na migration 20260806000000, como nos vizinhos. O create normal de
   // OS não carimba (NULL cai fora do índice parcial).
-  client_action_id      String?
+  client_action_id                String?
   // Ω3F-7a — Quilometragem (km) da OS: o app PREENCHE (via sync), a base CORRIGE (via PATCH). Aditivo/
   // nullable. mileage_source = "app" | "base" (validado na aplicação, sem enum/CHECK, como status/priority).
   // mileage_corrected_at carimba a correção da base (source="base"). Faixa (end >= start) e valor (>= 0)
   // validados no serviço (setMileage/parseOptionalMileage).
-  mileage_start         Decimal?              @db.Decimal(10, 1)
-  mileage_end           Decimal?              @db.Decimal(10, 1)
-  mileage_source        String?
-  mileage_corrected_at  DateTime?             @db.Timestamptz(6)
-  created_by            String?               @db.Uuid
-  updated_by            String?               @db.Uuid
-  created_at            DateTime              @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime              @default(now()) @updatedAt @db.Timestamptz(6)
-  assignments           WorkOrderAssignment[]
-  field_dispatch_events FieldDispatchEvent[]
-  field_dispatches      FieldDispatch[]
-  expense_reports       ExpenseReport[]
-  attachments           WorkOrderAttachment[]
-  financial_titles      FinancialTitle[]
-  assigned_user         User?                 @relation("WorkOrderAssignedUser", fields: [tenant_id, assigned_user_id], references: [tenant_id, id], onDelete: Restrict)
-  checklist             ChecklistTemplate?    @relation(fields: [tenant_id, checklist_id], references: [tenant_id, id], onDelete: Restrict)
-  customer              Customer?             @relation("WorkOrderCustomer", fields: [tenant_id, customer_id], references: [tenant_id, id], onDelete: Restrict)
-  vehicle               Vehicle?              @relation("WorkOrderVehicle", fields: [tenant_id, vehicle_id], references: [tenant_id, id], onDelete: Restrict)
-  team                  Team?                 @relation("WorkOrderTeam", fields: [tenant_id, team_id], references: [tenant_id, id], onDelete: Restrict)
-  service_catalog       ServiceCatalog?       @relation("WorkOrderServiceCatalog", fields: [tenant_id, service_catalog_id], references: [tenant_id, id], onDelete: Restrict)
-  created_by_user       User?                 @relation("WorkOrderCreatedBy", fields: [tenant_id, created_by], references: [tenant_id, id], onDelete: Restrict)
-  events                WorkOrderEvent[]
-  tenant                Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
-  updated_by_user       User?                 @relation("WorkOrderUpdatedBy", fields: [tenant_id, updated_by], references: [tenant_id, id], onDelete: Restrict)
+  mileage_start                   Decimal?              @db.Decimal(10, 1)
+  mileage_end                     Decimal?              @db.Decimal(10, 1)
+  mileage_source                  String?
+  mileage_corrected_at            DateTime?             @db.Timestamptz(6)
+  created_by                      String?               @db.Uuid
+  updated_by                      String?               @db.Uuid
+  created_at                      DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at                      DateTime              @default(now()) @updatedAt @db.Timestamptz(6)
+  assignments                     WorkOrderAssignment[]
+  field_dispatch_events           FieldDispatchEvent[]
+  field_dispatches                FieldDispatch[]
+  expense_reports                 ExpenseReport[]
+  attachments                     WorkOrderAttachment[]
+  financial_titles                FinancialTitle[]
+  assigned_user                   User?                 @relation("WorkOrderAssignedUser", fields: [tenant_id, assigned_user_id], references: [tenant_id, id], onDelete: Restrict)
+  checklist                       ChecklistTemplate?    @relation(fields: [tenant_id, checklist_id], references: [tenant_id, id], onDelete: Restrict)
+  customer                        Customer?             @relation("WorkOrderCustomer", fields: [tenant_id, customer_id], references: [tenant_id, id], onDelete: Restrict)
+  vehicle                         Vehicle?              @relation("WorkOrderVehicle", fields: [tenant_id, vehicle_id], references: [tenant_id, id], onDelete: Restrict)
+  team                            Team?                 @relation("WorkOrderTeam", fields: [tenant_id, team_id], references: [tenant_id, id], onDelete: Restrict)
+  service_catalog                 ServiceCatalog?       @relation("WorkOrderServiceCatalog", fields: [tenant_id, service_catalog_id], references: [tenant_id, id], onDelete: Restrict)
+  created_by_user                 User?                 @relation("WorkOrderCreatedBy", fields: [tenant_id, created_by], references: [tenant_id, id], onDelete: Restrict)
+  events                          WorkOrderEvent[]
+  tenant                          Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  updated_by_user                 User?                 @relation("WorkOrderUpdatedBy", fields: [tenant_id, updated_by], references: [tenant_id, id], onDelete: Restrict)
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, code])

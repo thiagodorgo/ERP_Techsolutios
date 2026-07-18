@@ -48,6 +48,7 @@ import { createFinancialAccountRouter } from "./modules/financial-accounts/index
 import { createFinancialTitleRouter } from "./modules/financial-titles/index.js";
 import { createFinancialEntryRouter } from "./modules/financial-entries/index.js";
 import { createFinancialPeriodCloseRouter } from "./modules/financial-period-closes/index.js";
+import { createChequeRouter } from "./modules/cheques/index.js";
 import { createTagRouter } from "./modules/tags/index.js";
 import { createPoiRouter } from "./modules/pois/index.js";
 import { createOperatorProfileRouter } from "./modules/operator-profiles/index.js";
@@ -129,6 +130,10 @@ export function createApp(service: ICoreSaasService): Express {
   // Ω4-6 — Fechamento de período (/financial-periods/*). Rotas próprias (não colidem com título/lançamento);
   // trava retroativa: fechar/reabrir a competência + snapshot congelado. Vem DEPOIS do financeiro.
   app.use("/api/v1", attachAuthenticatedActor(), createFinancialPeriodCloseRouter());
+  // Ω4-7 — Cheque (instrumento de pagamento com ciclo próprio). Rotas /cheques/* e verbos dedicados
+  // (/deposit,/clear,/bounce,/cancel). Compensar/devolver postam caixa via o serviço de lançamentos
+  // (chokepoint de competência). Vem DEPOIS do financeiro (compõe com ele).
+  app.use("/api/v1", attachAuthenticatedActor(), createChequeRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTagRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createPoiRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createOperatorProfileRouter());
