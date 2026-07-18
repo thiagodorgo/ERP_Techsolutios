@@ -702,3 +702,15 @@ aberto = status ∉ {paid,cancelled} (openAmount = Σ amount−paidAmount); venc
 Σ(abertura + Σin − Σout) das contas ATIVAS; cheque pendente = registered+deposited; settledThisMonth/cashFlow por
 competência (fuso de negócio). Permissão: reusa financial_entries:read (mesmo conjunto de papéis dos demais reads
 financeiros; sem permissão nova). SEM migration (nenhuma tabela nova). Consumido pelo dashboard no Ω4-8b.
+
+## D-Ω4-8b — Dashboard financeiro real (front consome /financial-summary) (2026-07-18)
+Reescreve frontend/src/modules/finance/pages/FinanceiroPage.tsx (era 100% mock: FIN_KPIS/FIN_ROWS/FIN_BARS) para
+consumir GET /financial-summary via o módulo novo frontend/src/modules/finance/dashboard/ (types/adapter defensivo
+snake+camel/service com fallback D-007/hook), espelhando o padrão de finance/titles/. KPIs (A receber/A pagar/Saldo em
+caixa/Inadimplência%), gráfico de fluxo de caixa (6 meses, alturas relativas ao máximo) e tabela de títulos recentes
+agora são DADOS REAIS somados no backend (o front nunca soma). Estados: loading (placeholders), fallback (banner
+honesto), vazio (mensagens). Reusa formatBRL/formatCompactBRL/formatDueDate/getTitleStatusLabel/Tone/getDirectionLabel
+do adapter de títulos. Rota/permissão/sidebar já existiam (/finance, finance:read) — só troca do conteúdo.
+P-Ω4-6-FRONT-RESOLVE-NAME NÃO se aplica aqui: o dashboard mostra party_name (campo de negócio modelado), não UUID de
+usuário — a pendência de UUID→nome segue para a futura tela de FECHAMENTO de período (closedBy/reopenedBy). KPI: sem
+Kpis/* (D-Ω4-KPI-RELATORIO).
