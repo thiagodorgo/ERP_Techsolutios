@@ -75,7 +75,10 @@ export class InMemoryFinancialAccountRepository implements FinancialAccountRepos
 
   async update(input: UpdateFinancialAccountInput): Promise<FinancialAccount | undefined> {
     const current = await this.findById(input.tenantId, input.financialAccountId);
-    if (!current) return undefined;
+    // Conta arquivada (soft-deleted) NÃO é editável — trata como inexistente (→404), simétrico ao re-delete.
+    // Editar currency/opening_balance de uma conta "excluída" corromperia o saldo quando Título/Caixa a
+    // referenciarem (Ω4-2/4-4). Reativar, se um dia existir, será endpoint dedicado. (pós-análise M1)
+    if (!current || !current.isActive) return undefined;
 
     // Paridade com o índice PARCIAL (WHERE is_active=true): renomear só colide se ESTA conta está ativa —
     // renomear uma conta INATIVA para um nome de conta ativa não fura o índice (a linha inativa não é
@@ -132,7 +135,11 @@ export class InMemoryFinancialAccountRepository implements FinancialAccountRepos
   }
 
   private sorted(): FinancialAccount[] {
-    return [...this.accounts.values()].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
+    // Desempate por id quando created_at empata (mesmo ms): paginação determinística e paridade com o
+    // Postgres (que sem desempate devolve ordem arbitrária). (pós-análise B2)
+    return [...this.accounts.values()].sort(
+      (left, right) => right.createdAt.getTime() - left.createdAt.getTime() || (left.id < right.id ? 1 : left.id > right.id ? -1 : 0),
+    );
   }
 }
 

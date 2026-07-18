@@ -214,6 +214,37 @@ test("re-delete de conta já inativa → 404", async () => {
   );
 });
 
+test("[pós-análise M1] PATCH de conta arquivada (soft-deleted) → 404 (simétrico ao re-delete)", async () => {
+  const svc = service();
+  const ctx = actor();
+  const created = await svc.create(ctx, { name: "Arquivada" });
+  await svc.delete(ctx, created.id);
+  await assert.rejects(
+    () => svc.update(ctx, created.id, { openingBalance: 999, currency: "BRL" }),
+    (e: unknown) => e instanceof FinancialAccountError && e.statusCode === 404,
+  );
+});
+
+test("[pós-análise B3] renomear para nome de conta INATIVA → OK (índice parcial não indexa a inativa)", async () => {
+  const svc = service();
+  const ctx = actor();
+  const velha = await svc.create(ctx, { name: "Nome Livre" });
+  await svc.delete(ctx, velha.id); // "Nome Livre" fica só numa conta inativa
+  const nova = await svc.create(ctx, { name: "Provisória" });
+  const renomeada = await svc.update(ctx, nova.id, { name: "Nome Livre" });
+  assert.equal(renomeada.name, "Nome Livre"); // não colide com a inativa
+});
+
+test("[pós-análise B3] PATCH de opening_balance que estoura Decimal(12,2) → 422", async () => {
+  const svc = service();
+  const ctx = actor();
+  const created = await svc.create(ctx, { name: "Estouro no patch" });
+  await assert.rejects(
+    () => svc.update(ctx, created.id, { openingBalance: 100_000_000_000 }),
+    (e: unknown) => e instanceof FinancialAccountError && e.statusCode === 422 && e.reason === "opening_balance_overflow",
+  );
+});
+
 test("list exclui inativos por padrão; includeInactive traz todos", async () => {
   const svc = service();
   const ctx = actor();
