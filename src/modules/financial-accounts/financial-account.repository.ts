@@ -77,7 +77,10 @@ export class InMemoryFinancialAccountRepository implements FinancialAccountRepos
     const current = await this.findById(input.tenantId, input.financialAccountId);
     if (!current) return undefined;
 
-    if (input.name !== undefined && input.name !== current.name && this.hasActiveName(input.tenantId, input.name)) {
+    // Paridade com o índice PARCIAL (WHERE is_active=true): renomear só colide se ESTA conta está ativa —
+    // renomear uma conta INATIVA para um nome de conta ativa não fura o índice (a linha inativa não é
+    // indexada), então o Prisma permitiria; o InMemory precisa permitir também.
+    if (input.name !== undefined && input.name !== current.name && current.isActive && this.hasActiveName(input.tenantId, input.name)) {
       throw duplicateAccountError();
     }
 

@@ -166,8 +166,9 @@ function mapRecord(record: {
   };
 }
 
-// P2002 (unique PARCIAL de nome ativo) → 409 duplicate_account (o pre-check do service é o caminho
-// normal; a constraint é a rede). P2003 (FK do tenant inválida) → 400.
+// P2002 (unique PARCIAL de nome ativo) → 409 duplicate_account. No caminho Prisma, o índice único parcial
+// (WHERE is_active=true) é o ÚNICO detector de nome duplicado — não há pre-check no service (o pre-check por
+// nome existe só no repositório InMemory). P2003 (FK do tenant inválida) → 400.
 function translatePersistenceError(error: unknown): unknown {
   if (isPrismaError(error, "P2002")) {
     return duplicateAccountError();
