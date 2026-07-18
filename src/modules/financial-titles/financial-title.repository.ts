@@ -15,6 +15,9 @@ export interface FinancialTitleRepository {
   create(input: CreateFinancialTitleInput): Promise<FinancialTitle>;
   list(input: ListFinancialTitleInput): Promise<ListFinancialTitleResult>;
   findById(tenantId: string, financialTitleId: string): Promise<FinancialTitle | undefined>;
+  // Ω4-3 (D-Ω4-C2) — título ATIVO (deleted_at NULL) de uma OS+direção. Sustenta o PRE-CHECK de
+  // idempotência do faturamento (a rede real é o índice parcial → P2002).
+  findActiveByWorkOrder(tenantId: string, workOrderId: string, direction: string): Promise<FinancialTitle | undefined>;
   update(input: UpdateFinancialTitleInput): Promise<FinancialTitle | undefined>;
   changeStatus(input: ChangeFinancialTitleStatusInput): Promise<FinancialTitle | undefined>;
   softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<FinancialTitle | undefined>;
@@ -50,17 +53,35 @@ export function periodClosedError(competencia: string): FinancialTitleError {
   );
 }
 
+// Ω4-3 (D-Ω4-C2) — rede do índice PARCIAL de idempotência: um 2º título ATIVO para a mesma OS+direção.
+// 409 no nível do título; o módulo de faturamento traduz para `already_invoiced` na resposta da rota.
+export function workOrderAlreadyInvoicedError(): FinancialTitleError {
+  return new FinancialTitleError(
+    409,
+    "FINANCIAL_TITLE_CONFLICT",
+    "work_order_already_invoiced",
+    "An active financial title already exists for this work order and direction.",
+  );
+}
+
 export class InMemoryFinancialTitleRepository implements FinancialTitleRepository {
   private readonly titles = new Map<string, FinancialTitle>();
 
   async create(input: CreateFinancialTitleInput): Promise<FinancialTitle> {
+    // Ω4-3 (D-Ω4-C2) — SIMULA o índice PARCIAL do Postgres (unique tenant+work_order+direction WHERE
+    // deleted_at IS NULL AND work_order_id IS NOT NULL): rejeita um 2º título ATIVO da mesma OS+direção.
+    // Só o caminho de faturamento popula workOrderId; o create público o deixa undefined (fora do índice).
+    if (input.workOrderId && (await this.findActiveByWorkOrder(input.tenantId, input.workOrderId, input.direction))) {
+      throw workOrderAlreadyInvoicedError();
+    }
+
     const now = new Date();
     const title: FinancialTitle = {
       ...input,
       id: randomUUID(),
-      // paid_amount nasce SEMPRE 0 (dirigido por pagamentos no Ω4-4); work_order/service_quote no Ω4-3.
+      // paid_amount nasce SEMPRE 0 (dirigido por pagamentos no Ω4-4); service_quote no Ω4-3+.
       paidAmount: 0,
-      workOrderId: undefined,
+      workOrderId: input.workOrderId,
       serviceQuoteId: undefined,
       createdAt: now,
       updatedAt: now,
@@ -68,6 +89,16 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
     };
     this.titles.set(title.id, title);
     return title;
+  }
+
+  async findActiveByWorkOrder(tenantId: string, workOrderId: string, direction: string): Promise<FinancialTitle | undefined> {
+    return [...this.titles.values()].find(
+      (title) =>
+        title.tenantId === tenantId &&
+        title.workOrderId === workOrderId &&
+        title.direction === direction &&
+        title.deletedAt == null,
+    );
   }
 
   async list(input: ListFinancialTitleInput): Promise<ListFinancialTitleResult> {

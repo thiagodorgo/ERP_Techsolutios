@@ -10,6 +10,7 @@ import {
   type WorkOrderService,
 } from "../work-orders/work-order.service.js";
 import { WorkOrderError } from "../work-orders/work-order.types.js";
+import type { FinancialTitle } from "../financial-titles/financial-title.types.js";
 import {
   InMemoryWorkOrderFinancialItemRepository,
   duplicateFinancialItemError,
@@ -166,6 +167,8 @@ export class WorkOrderFinancialService {
     body: RawRecord,
   ): Promise<WorkOrderFinancialItem> {
     const current = await this.getItem(actor, workOrderId, itemId);
+    // Ω4-3 (D-Ω4-C1) — trava anti-refaturamento: item já faturado é IMUTÁVEL (o valor já virou Título).
+    assertItemNotInvoiced(current);
 
     const description = body.description === undefined ? undefined : parseRequiredDescription(body.description);
 
@@ -218,6 +221,8 @@ export class WorkOrderFinancialService {
   // DELETE lógico: carimba deleted_at; o item some da lista e do total agregado. Re-delete → 404.
   async delete(actor: WorkOrderFinancialActorContext, workOrderId: string, itemId: string): Promise<WorkOrderFinancialItem> {
     const current = await this.getItem(actor, workOrderId, itemId);
+    // Ω4-3 (D-Ω4-C1) — trava anti-refaturamento: item já faturado não pode ser removido do extrato.
+    assertItemNotInvoiced(current);
     const removed = await this.repository.softDelete(actor.tenantId, current.workOrderId, current.id, actor.userId);
     if (!removed) {
       throw financialItemNotFoundError();
@@ -261,8 +266,147 @@ function financialItemNotFoundError(): WorkOrderFinancialError {
   );
 }
 
+// Ω4-3 (D-Ω4-C1) — item já faturado (invoiced_at != null) é imutável: PATCH/DELETE → 422 item_invoiced.
+function assertItemNotInvoiced(item: WorkOrderFinancialItem): void {
+  if (item.invoicedAt != null) {
+    throw new WorkOrderFinancialError(
+      422,
+      "WORK_ORDER_FINANCIAL_UNPROCESSABLE",
+      "item_invoiced",
+      "This financial item was already invoiced and can no longer be changed or removed.",
+    );
+  }
+}
+
+// Ω4-3 (D-Ω4-C2) — 409 do faturamento: a OS já tem título ATIVO (idempotência anti-refaturamento).
+function alreadyInvoicedError(): WorkOrderFinancialError {
+  return new WorkOrderFinancialError(
+    409,
+    "WORK_ORDER_FINANCIAL_CONFLICT",
+    "already_invoiced",
+    "This work order has already been invoiced.",
+  );
+}
+
+// Ω4-3 (D-Ω4-C1/C2) — FATURAMENTO OS→Título. Vive no módulo work-order-financials porque (a) lê e carimba
+// os itens do Financeiro da OS e (b) a trava item_invoiced também mora aqui. Depende do WorkOrderService e
+// do FinancialTitleService por DYNAMIC import (espelho do approve→OS do Ω3F-4b) — nunca import estático,
+// para não acoplar/ciclar módulos. NÃO relê tarifa: o Título usa a Σ CONGELADA dos itens.
+export type WorkOrderInvoiceResult = {
+  readonly title: FinancialTitle;
+  readonly totalAmount: number;
+  readonly currency: string;
+  readonly invoicedItemCount: number;
+};
+
+export class WorkOrderInvoicingService {
+  constructor(private readonly repository: WorkOrderFinancialItemRepository) {}
+
+  async invoice(
+    actor: WorkOrderFinancialActorContext,
+    workOrderId: string,
+    body: RawRecord,
+  ): Promise<WorkOrderInvoiceResult> {
+    const workOrder = await this.resolveWorkOrder(actor, workOrderId);
+
+    // DYNAMIC import — evita acoplar/ciclar com financial-titles (item 5 do comando / D-Ω3F-4B).
+    const { createDefaultFinancialTitleService } = await import("../financial-titles/financial-title.service.js");
+    const titleService = await createDefaultFinancialTitleService();
+
+    // PRE-CHECK de idempotência (D-Ω4-C2) ANTES do agregado: se a OS já tem título receivable ATIVO, é
+    // 409 already_invoiced — mesmo que todos os itens já estejam carimbados (senão o 2º faturamento cairia
+    // em nothing_to_invoice e mascararia a idempotência). `nothing_to_invoice` fica para a OS sem título
+    // ativo E sem itens faturáveis (ex.: título cancelado/removido, itens já carimbados).
+    if (await titleService.findActiveByWorkOrder(actor, workOrder.id, "receivable")) {
+      throw alreadyInvoicedError();
+    }
+
+    // Agregado CONGELADO dos itens ativos e AINDA NÃO faturados (invoiced_at IS NULL). Σ no backend.
+    const items = await this.repository.listInvoiceableByWorkOrder(actor.tenantId, workOrder.id);
+    const totalAmount = roundMoney(items.reduce((sum, item) => sum + item.totalAmount, 0));
+    if (items.length === 0 || totalAmount <= 0) {
+      throw new WorkOrderFinancialError(
+        422,
+        "WORK_ORDER_FINANCIAL_UNPROCESSABLE",
+        "nothing_to_invoice",
+        "This work order has no invoiceable financial items.",
+      );
+    }
+    const currency = items[0].currency;
+    const dueDate = parseInvoiceDueDate(body.due_date ?? body.dueDate);
+    const now = new Date();
+
+    let title: FinancialTitle;
+    try {
+      title = await titleService.createForWorkOrder(actor, {
+        workOrderId: workOrder.id,
+        direction: "receivable",
+        partyType: "customer",
+        // Cliente do Título = snapshot da OS. Sem nome (OS antiga/rascunho) → rótulo neutro (NÃO 422).
+        partyName: optionalString(workOrder.customerName) ?? "Cliente não informado",
+        partyId: workOrder.customerId,
+        amount: totalAmount, // Σ CONGELADA — nunca relê tarifa.
+        currency,
+        issueDate: now, // competencia derivada disto no titleService.
+        dueDate,
+      });
+    } catch (error) {
+      // Rede da constraint parcial (corrida que passou o pre-check): 409 do título → already_invoiced.
+      if (isConflictError(error)) {
+        throw alreadyInvoicedError();
+      }
+      throw error;
+    }
+
+    // CARIMBO (D-Ω4-C1): sequencial (título → itens). Se o carimbo falhar, o título já existe e a
+    // idempotência barra o replay — ver pendência P-Ω4-3-REFATURAR-DELTA.
+    const invoicedItemCount = await this.repository.markInvoiced({
+      tenantId: actor.tenantId,
+      workOrderId: workOrder.id,
+      itemIds: items.map((item) => item.id),
+      titleId: title.id,
+      invoicedAt: now,
+      updatedBy: actor.userId,
+    });
+
+    return { title, totalAmount, currency, invoicedItemCount };
+  }
+
+  private async resolveWorkOrder(actor: WorkOrderFinancialActorContext, workOrderId: string) {
+    const workOrders = await createDefaultWorkOrderService();
+    try {
+      return await workOrders.get(actor, workOrderId);
+    } catch (error) {
+      if (error instanceof WorkOrderError && error.statusCode === 404) {
+        throw new WorkOrderFinancialError(404, "WORK_ORDER_NOT_FOUND", "work_order_not_found", "Work order was not found.");
+      }
+      throw error;
+    }
+  }
+}
+
+// due_date OPCIONAL no corpo: default = server now + 30 dias (UTC). Data inválida → 400 invalid_due_date.
+function parseInvoiceDueDate(value: unknown): Date {
+  if (value === undefined || value === null || value === "") {
+    const due = new Date();
+    due.setUTCDate(due.getUTCDate() + 30);
+    return due;
+  }
+  const date = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(date.getTime())) {
+    throw new WorkOrderFinancialError(400, "WORK_ORDER_FINANCIAL_INVALID", "invalid_due_date", "due_date must be a valid ISO date.");
+  }
+  return date;
+}
+
+// Duck-type do 409 vindo do titleService (evita import estático de FinancialTitleError — só dynamic).
+function isConflictError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "statusCode" in error && (error as { readonly statusCode?: unknown }).statusCode === 409;
+}
+
 const memoryRepository = new InMemoryWorkOrderFinancialItemRepository();
 let defaultServicePromise: Promise<WorkOrderFinancialService> | undefined;
+let defaultInvoicingServicePromise: Promise<WorkOrderInvoicingService> | undefined;
 
 export function createMemoryWorkOrderFinancialService(): WorkOrderFinancialService {
   return new WorkOrderFinancialService(memoryRepository, createMemoryWorkOrderService(), createMemoryApplicableTariffResolver());
@@ -280,9 +424,24 @@ export async function createDefaultWorkOrderFinancialService(): Promise<WorkOrde
   return defaultServicePromise;
 }
 
+// Ω4-3 — o serviço de faturamento COMPARTILHA o singleton InMemory de itens (mesma fonte que o
+// WorkOrderFinancialService), então itens criados/faturados são mutuamente visíveis nos testes memory.
+export function createMemoryWorkOrderInvoicingService(): WorkOrderInvoicingService {
+  return new WorkOrderInvoicingService(memoryRepository);
+}
+
+export async function createDefaultWorkOrderInvoicingService(): Promise<WorkOrderInvoicingService> {
+  if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
+    return createMemoryWorkOrderInvoicingService();
+  }
+  defaultInvoicingServicePromise ??= createPrismaWorkOrderInvoicingService();
+  return defaultInvoicingServicePromise;
+}
+
 export function resetWorkOrderFinancialRuntimeForTests(): void {
   memoryRepository.reset();
   defaultServicePromise = undefined;
+  defaultInvoicingServicePromise = undefined;
 }
 
 async function createPrismaWorkOrderFinancialService(): Promise<WorkOrderFinancialService> {
@@ -290,4 +449,10 @@ async function createPrismaWorkOrderFinancialService(): Promise<WorkOrderFinanci
   const repository = await createPrismaWorkOrderFinancialItemRepository();
   const workOrderService = await createDefaultWorkOrderService();
   return new WorkOrderFinancialService(repository, workOrderService, await createPrismaApplicableTariffResolver());
+}
+
+async function createPrismaWorkOrderInvoicingService(): Promise<WorkOrderInvoicingService> {
+  const { createPrismaWorkOrderFinancialItemRepository } = await import("./work-order-financial-prisma.repository.js");
+  const repository = await createPrismaWorkOrderFinancialItemRepository();
+  return new WorkOrderInvoicingService(repository);
 }

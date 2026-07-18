@@ -3,6 +3,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { withTenantRls } from "../../database/rls.js";
 import type {
   CreateWorkOrderFinancialItemInput,
+  MarkWorkOrderFinancialItemsInvoicedInput,
   UpdateWorkOrderFinancialItemInput,
   WorkOrderFinancialItem,
 } from "./work-order-financial.types.js";
@@ -43,6 +44,14 @@ export class PrismaWorkOrderFinancialItemRepository implements WorkOrderFinancia
   async listByWorkOrder(tenantId: string, workOrderId: string): Promise<readonly WorkOrderFinancialItem[]> {
     const items = await this.client.workOrderFinancialItem.findMany({
       where: { tenant_id: tenantId, work_order_id: workOrderId, deleted_at: null },
+      orderBy: [{ created_at: "asc" }],
+    });
+    return items.map(mapRecord);
+  }
+
+  async listInvoiceableByWorkOrder(tenantId: string, workOrderId: string): Promise<readonly WorkOrderFinancialItem[]> {
+    const items = await this.client.workOrderFinancialItem.findMany({
+      where: { tenant_id: tenantId, work_order_id: workOrderId, deleted_at: null, invoiced_at: null },
       orderBy: [{ created_at: "asc" }],
     });
     return items.map(mapRecord);
@@ -89,6 +98,23 @@ export class PrismaWorkOrderFinancialItemRepository implements WorkOrderFinancia
     });
     return updated[0] ? mapRecord(updated[0]) : undefined;
   }
+
+  async markInvoiced(input: MarkWorkOrderFinancialItemsInvoicedInput): Promise<number> {
+    if (input.itemIds.length === 0) return 0;
+    // Carimba SÓ itens ativos e ainda não-faturados (invoiced_at:null): idempotente no replay e não
+    // sobrescreve um faturamento anterior. tenant+work_order no where blindam o isolamento.
+    const result = await this.client.workOrderFinancialItem.updateMany({
+      where: {
+        tenant_id: input.tenantId,
+        work_order_id: input.workOrderId,
+        id: { in: [...input.itemIds] },
+        deleted_at: null,
+        invoiced_at: null,
+      },
+      data: compactRecord({ invoiced_at: input.invoicedAt, title_id: input.titleId, updated_by: input.updatedBy }),
+    });
+    return result.count;
+  }
 }
 
 export class RlsPrismaWorkOrderFinancialItemRepository implements WorkOrderFinancialItemRepository {
@@ -99,6 +125,9 @@ export class RlsPrismaWorkOrderFinancialItemRepository implements WorkOrderFinan
   }
   listByWorkOrder(tenantId: string, workOrderId: string): Promise<readonly WorkOrderFinancialItem[]> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaWorkOrderFinancialItemRepository(tx).listByWorkOrder(tenantId, workOrderId));
+  }
+  listInvoiceableByWorkOrder(tenantId: string, workOrderId: string): Promise<readonly WorkOrderFinancialItem[]> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaWorkOrderFinancialItemRepository(tx).listInvoiceableByWorkOrder(tenantId, workOrderId));
   }
   findById(tenantId: string, workOrderId: string, itemId: string): Promise<WorkOrderFinancialItem | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaWorkOrderFinancialItemRepository(tx).findById(tenantId, workOrderId, itemId));
@@ -111,6 +140,9 @@ export class RlsPrismaWorkOrderFinancialItemRepository implements WorkOrderFinan
   }
   softDelete(tenantId: string, workOrderId: string, itemId: string, deletedBy?: string): Promise<WorkOrderFinancialItem | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaWorkOrderFinancialItemRepository(tx).softDelete(tenantId, workOrderId, itemId, deletedBy));
+  }
+  markInvoiced(input: MarkWorkOrderFinancialItemsInvoicedInput): Promise<number> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderFinancialItemRepository(tx).markInvoiced(input));
   }
 }
 
@@ -133,6 +165,8 @@ function mapRecord(record: {
   readonly source: string;
   readonly notes: string | null;
   readonly client_action_id: string | null;
+  readonly invoiced_at: Date | null;
+  readonly title_id: string | null;
   readonly created_by: string | null;
   readonly updated_by: string | null;
   readonly created_at: Date;
@@ -153,6 +187,8 @@ function mapRecord(record: {
     source: record.source,
     notes: record.notes ?? undefined,
     clientActionId: record.client_action_id ?? undefined,
+    invoicedAt: record.invoiced_at ?? undefined,
+    titleId: record.title_id ?? undefined,
     createdBy: record.created_by ?? undefined,
     updatedBy: record.updated_by ?? undefined,
     createdAt: record.created_at,

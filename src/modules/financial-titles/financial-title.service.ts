@@ -10,6 +10,7 @@ import {
   type FinancialTitleRepository,
 } from "./financial-title.repository.js";
 import type {
+  CreateFinancialTitleForWorkOrderInput,
   FinancialTitle,
   FinancialTitleActorContext,
   ListFinancialTitleInput,
@@ -102,6 +103,44 @@ export class FinancialTitleService {
       createdBy: actor.userId,
       updatedBy: actor.userId,
     });
+  }
+
+  // Ω4-3 (D-Ω4-C1/C2) — FATURAMENTO OS→Título. Chamado (via dynamic import) pelo módulo de faturamento
+  // com o agregado JÁ CONGELADO (amount/currency somados lá; este caminho NUNCA relê tarifa). Grava
+  // work_order_id (proveniência + âncora do índice parcial). status nasce 'open'; competencia derivada de
+  // issueDate. Passa pelo CHOKEPOINT (competência fechada → 422 period_closed). A idempotência (2º título
+  // ativo da OS) é a rede do repositório: P2002 (Prisma) / índice simulado (InMemory) → 409
+  // work_order_already_invoiced, que o faturamento traduz para `already_invoiced`.
+  async createForWorkOrder(actor: FinancialTitleActorContext, input: CreateFinancialTitleForWorkOrderInput): Promise<FinancialTitle> {
+    const issueDate = input.issueDate;
+    const competencia = deriveCompetencia(issueDate);
+    await this.assertPeriodOpen(actor.tenantId, competencia);
+
+    return this.repository.create({
+      tenantId: actor.tenantId,
+      direction: parseDirection(input.direction),
+      partyType: parsePartyType(input.partyType),
+      partyId: input.partyId,
+      partyName: parsePartyName(input.partyName),
+      amount: parseAmount(input.amount),
+      currency: parseCurrency(input.currency),
+      issueDate,
+      dueDate: input.dueDate,
+      status: "open",
+      competencia,
+      workOrderId: input.workOrderId,
+      createdBy: actor.userId,
+      updatedBy: actor.userId,
+    });
+  }
+
+  // Pré-check de idempotência do faturamento: existe título ATIVO para (OS, direção)?
+  async findActiveByWorkOrder(
+    actor: FinancialTitleActorContext,
+    workOrderId: string,
+    direction: string,
+  ): Promise<FinancialTitle | undefined> {
+    return this.repository.findActiveByWorkOrder(actor.tenantId, workOrderId, direction);
   }
 
   async get(actor: FinancialTitleActorContext, financialTitleId: string): Promise<FinancialTitle> {

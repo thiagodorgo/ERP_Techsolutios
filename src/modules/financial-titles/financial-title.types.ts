@@ -57,8 +57,9 @@ export type FinancialTitle = {
   readonly deletedAt?: Date;
 };
 
-// paid_amount NÃO entra no create (nasce 0, dirigido por pagamentos no Ω4-4). work_order_id/
-// service_quote_id são proveniência populada no Ω4-3 — não aceitos por esta fatia.
+// paid_amount NÃO entra no create (nasce 0, dirigido por pagamentos no Ω4-4). service_quote_id segue
+// como proveniência não-aceita nesta fatia. Ω4-3: workOrderId É aceito, mas SÓ pelo caminho de
+// faturamento (createForWorkOrder) — o create público sempre o deixa undefined.
 export type CreateFinancialTitleInput = {
   readonly tenantId: string;
   readonly direction: string;
@@ -75,9 +76,25 @@ export type CreateFinancialTitleInput = {
   readonly status: string;
   readonly competencia: string;
   readonly accountId?: string;
+  readonly workOrderId?: string;
   readonly clientActionId?: string;
   readonly createdBy?: string;
   readonly updatedBy?: string;
+};
+
+// Ω4-3 (D-Ω4-C2) — payload do FATURAMENTO OS→Título. O agregado congelado (amount/currency) já vem
+// SOMADO pelo módulo de faturamento; este caminho NUNCA relê tarifa. Grava work_order_id (proveniência
+// + âncora da idempotência parcial). status nasce sempre 'open'; competencia é derivada de issueDate.
+export type CreateFinancialTitleForWorkOrderInput = {
+  readonly workOrderId: string;
+  readonly direction: string;
+  readonly partyType: string;
+  readonly partyId?: string;
+  readonly partyName: string;
+  readonly amount: number;
+  readonly currency: string;
+  readonly issueDate: Date;
+  readonly dueDate: Date;
 };
 
 // PATCH — editáveis nesta fatia: party_name/document/category/description/amount/due_date/account_id.
