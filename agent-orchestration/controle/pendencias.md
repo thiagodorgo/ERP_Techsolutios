@@ -861,3 +861,22 @@ O Ω4-5 entrega só o reconcile UNITÁRIO por lançamento (PATCH /financial-entr
 importadas e status de casamento) é fatia futura — não cria tabela/endpoint de lote nesta fatia. Quando priorizada,
 avaliar: modelo ReconciliationBatch + ReconciliationLine, parser de OFX/CSV, heurística de matching (valor+data+ref),
 e resolução manual de linhas não casadas.
+
+## P-Ω4-6-READINESS — O que o Ω4-6 (Fechamento) precisa construir + a exceção reconcile (GUIA CRÍTICO)
+- **M1 (SNAPSHOT):** reconcile é EXENTO do chokepoint (D-Ω4-5-RECONCILE-META) e MEXE em updated_at/updated_by +
+  reconciled/divergence_type/reconciliation_ref/reconciled_at/reconciled_by de lançamentos de competência FECHADA
+  (reconcile pós-fechamento é o caso de uso nº1). Logo o snapshot/checksum do fechamento DEVE ser computado SÓ sobre
+  colunas financeiramente materiais (amount, direction, deleted_at, competencia) e EXCLUIR explicitamente as colunas
+  de reconcile + updated_at/updated_by. Senão um reconcile pós-fechamento faria o snapshot divergir das linhas vivas.
+- **M2 (GUARD 'closing'):** o guard futuro de 'closing' (P-Ω4-4-CHOKEPOINT-CLOSING) deve nascer DENTRO de
+  assertPeriodOpen/isPeriodClosed (a cadeia que create/update/delete/reverse/payTitle atravessam) — assim reconcile
+  fica EXENTO automaticamente (nunca chama assertPeriodOpen), que é o comportamento desejado. NÃO fazer um check
+  separado de 'closing' que esqueça de excluir reconcile.
+- **Ω4-6 a construir:** endpoints close/reopen sobre financial_period_closes (status open|closing|closed|reopened já
+  existe, SEM service/endpoints); snapshot de pendências (RN-FIN-008 checklist); fechar atômico ($transaction: snapshot
+  + flip status); reabertura exige permissão dedicada + motivo + auditoria (RN-FIN-009/RN-AUD-005). ANTES: resolver P-Ω4-COMPETENCIA-TZ.
+
+## P-Ω4-5-CATEGORY-CASE — Filtro ?category= é case-sensitive (BAIXA, pré-existente Ω4-4)
+parseFilterToken faz toLowerCase() mas category é gravada preservando caixa → ?category=Servico não casa "Servico".
+Paridade InMemory×Prisma preservada (ambos iguais). direction/payment_method/divergence_type não sofrem (lowercase na escrita).
+Fix: lowercar category na escrita OU no filtro usar ILIKE/case-insensitive. Baixíssimo, herdado do Ω4-4.
