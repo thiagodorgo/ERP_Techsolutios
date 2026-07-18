@@ -810,3 +810,23 @@ genuína abre a janela.
 update/delete barram lançamento reconciled (422), mas reverse não. Não-explorável hoje (reconciled nasce false, sem
 endpoint que concilie até o Ω4-5). Quando o Ω4-5 introduzir reconciled=true, o reverse precisa também barrar
 (estornar um lançamento já conciliado deve exigir desconciliar antes). Guardar junto com a conciliação.
+
+## P-Ω4-4-REVERSE-IDEM — Idempotência do estorno é app-level sem rede no banco (MÉDIA)
+reverse faz check-then-act (findActiveReversalOf → create) SEM índice único em reversal_of (diferente da
+liquidação, que tem índice parcial). 2 reverse(A) concorrentes → 2 contra-lançamentos → saldo estornado em dobro.
+Fix: índice único parcial (tenant_id, reversal_of) WHERE reversal_of IS NOT NULL AND deleted_at IS NULL +
+$transaction. Casa com o tratamento de atomicidade do P-Ω4-4-LIQUID-ATOMIC.
+
+## P-Ω4-4-CHOKEPOINT-CLOSING — chokepoint só bloqueia 'closed', não 'closing' (para o Ω4-6)
+isPeriodClosed (financial-title.repository) só reconhece status='closed'; o enum tem open|closing|closed|reopened.
+Durante 'closing' (Ω4-6 calculando o snapshot), escritas passam → podem corromper o snapshot (agravado por occurred_at
+controlado pelo cliente → backdating para a competência que fecha). Ω4-6 precisa: (a) endpoints close/reopen; (b)
+isPeriodClosed tratar 'closing' como bloqueante (ou guard isPeriodLocked); (c) semântica reopened→open. Consolida
+P-Ω4-2A-NITS(closing). **M1 (liquidar título de período fechado) NÃO é bug** — é D-Ω4-POS-FECHAMENTO ratificada
+(pagamento é evento da competência corrente; paid_amount é acumulador vitalício; applyPayment gated só pelo período do caixa).
+
+## P-Ω4-5-DIVERGENCE — Ω4-5 Conciliação precisa de divergence_type + write-path de reconcile (GUIA)
+FinancialEntry tem reconciled:boolean mas NÃO divergence_type. Ω4-5 precisa: migration/typing divergence_type
+(value|date|missing|duplicate) + PATCH /financial-entries/:id/reconcile (ou bulk). assertMutable(reconciled) já
+congela lançamento reconciliado — MAS reverse pula esse guard (P-Ω4-4-REVERSE-MUTABLE, fechar no Ω4-5). Faltam
+testes: overpayment na borda de centavo + acúmulo (400+600→paid, 400+700→422); chokepoint bloqueando pay/reverse.

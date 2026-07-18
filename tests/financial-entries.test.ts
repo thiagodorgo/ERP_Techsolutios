@@ -365,6 +365,35 @@ test("ESTORNO idempotente: estornar o mesmo 2× → 409 already_reversed", async
   );
 });
 
+test("[pós-análise A1] DELETE de lançamento já ESTORNADO → 422 (não desbalança o saldo); saldo intacto", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx, { opening_balance: 0 });
+  const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 200, payment_method: "pix" });
+  await entries.reverse(ctx, entry.id); // saldo volta a 0 (in 200 + out 200)
+  await assert.rejects(
+    () => entries.delete(ctx, entry.id),
+    (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 422 && e.reason === "reversal_pair_immutable",
+  );
+  assert.equal((await entries.balance(ctx, account.id)).balance, 0); // NÃO virou −200
+});
+
+test("[pós-análise A1/B1] o contra-lançamento do estorno é imutável: DELETE e REVERSE dele → 422", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx, { opening_balance: 0 });
+  const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 200, payment_method: "pix" });
+  const contra = await entries.reverse(ctx, entry.id);
+  await assert.rejects(
+    () => entries.delete(ctx, contra.id),
+    (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 422 && e.reason === "reversal_pair_immutable",
+  );
+  await assert.rejects(
+    () => entries.reverse(ctx, contra.id), // não estorna um estorno
+    (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 422 && e.reason === "reversal_pair_immutable",
+  );
+});
+
 test("ESTORNO de lançamento inexistente/cross-tenant → 404", async () => {
   const { entries, accounts } = setup();
   const owner = actor();
