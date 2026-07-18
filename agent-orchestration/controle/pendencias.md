@@ -691,3 +691,26 @@ ausência com mensagem benigna e a corrida GET→PATCH cai em 409/terminal_dispa
   mesma classe, código divergente só em edge duplamente-inválido. Sem impacto de correção/segurança.
 - **(BAIXA) Campos opcionais não podem ser LIMPOS via PATCH** (document/category/account_id="" preserva o
   valor) — consistente entre os dois repos e com o Ω4-1; limitação conhecida, intencional no v1.
+
+## P-Ω4-COMPETENCIA-TZ — Competência derivada em UTC classifica no mês errado (MÉDIO — RESOLVER ANTES do Ω4-6)
+`deriveCompetencia` (financial-title.validators.ts) usa `getUTCMonth`. Um título emitido 31/07 23h BRT (UTC-3)
+= 01/08 02:00 UTC → competência "2026-08" (deveria ser "2026-07"). Isso ALIMENTA o chokepoint assertPeriodOpen
+(consulta financial_period_closes por competência) e o relatório financeiro — classificar no mês errado fura a
+trava retroativa do Ω4-6. Sutileza: date-only ("2026-07-01") parseado como UTC-midnight dá o mês CORRETO com
+getUTCMonth, mas converter naïve para BR-local daria June (errado); e o default `new Date()` (instante real) dá
+o mês errado com getUTCMonth. Nenhum dos dois (naïve-UTC / naïve-local) é correto p/ ambos os casos. Fix
+recomendado: decidir a semântica de issue_date (data contábil vs timestamp) + derivar competência no fuso de
+negócio (America/Sao_Paulo, possivelmente tenant-configurável), ancorando date-only ao meio-dia local para não
+cruzar a fronteira do dia. **Bloco dedicado com decisão + testes de fuso antes do Ω4-6.** Sintoma-irmão (BAIXA):
+`isTitleOverdue` compara `due_date.getTime() < now` (naïve UTC) → título "vencido" ~27h cedo no fim do dia BR.
+
+## P-Ω4-ACCOUNT-ACTIVE — Título pode referenciar conta financeira INATIVA (BAIXA — decidir no Ω4-4)
+O resolver de conta (InMemory findById não filtra is_active; Prisma FK aponta para a row que sobrevive ao
+soft-delete) aceita account_id de conta desativada. Agenda-se liquidação para conta inativa. Relevante ao Ω4-4
+(Caixa/pagamentos): decidir se a conta de liquidação precisa estar ativa (rejeitar → 400/422).
+
+## P-Ω4-2A-COBERTURA — Nits menores do Ω4-2a (BAIXA)
+- GET /:id de título soft-deletado → 200 (a list esconde; as mutações dão 404). Decidir se detalhe de excluído
+  deve aparecer; hoje inconsistente e não testado.
+- Sem índice `(tenant_id, created_at)` (ordenação default faz sort em memória) — perf quando o volume crescer.
+- `nullable()` no prisma-repo é dead code (service nunca passa null; campos opcionais não limpáveis — nit conhecido).

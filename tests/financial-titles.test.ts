@@ -469,3 +469,27 @@ test("chokepoint: período de OUTRA competência fechado NÃO bloqueia (guard é
   const title = await svc.create(ctx, receivable({ issue_date: "2026-07-10" }));
   assert.equal(title.competencia, "2026-07");
 });
+
+test("[pós-análise] chokepoint: fechamento do tenant A NÃO afeta o tenant B (guard tenant-scoped)", async () => {
+  const svc = service();
+  const tenantA = actor();
+  const tenantB = actor();
+  // Fecha 2026-07 SÓ no tenant A.
+  getMemoryFinancialPeriodCloseRepositoryForTests().setPeriodStatus(tenantA.tenantId, "2026-07", "closed");
+  // A é bloqueado…
+  await assert.rejects(
+    () => svc.create(tenantA, receivable({ issue_date: "2026-07-10" })),
+    (e: unknown) => e instanceof FinancialTitleError && e.statusCode === 422 && e.reason === "period_closed",
+  );
+  // …mas B, na mesma competência, escreve normalmente (isolamento por tenant).
+  const titleB = await svc.create(tenantB, receivable({ issue_date: "2026-07-10" }));
+  assert.equal(titleB.competencia, "2026-07");
+});
+
+test("[pós-análise] overdue: título PAGO não é overdue mesmo vencido; predicado direto", () => {
+  const past = new Date("2020-01-01T00:00:00.000Z");
+  const now = new Date("2026-07-17T00:00:00.000Z");
+  assert.equal(isTitleOverdue("open", past, now), true); // vencido + aberto
+  assert.equal(isTitleOverdue("paid", past, now), false); // pago não vence
+  assert.equal(isTitleOverdue("cancelled", past, now), false); // cancelado não vence
+});
