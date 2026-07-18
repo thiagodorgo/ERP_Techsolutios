@@ -12,6 +12,7 @@ import type {
 import { FinancialTitleError } from "./financial-title.types.js";
 import {
   invalidAccountReferenceError,
+  workOrderAlreadyInvoicedError,
   type FinancialPeriodCloseRepository,
   type FinancialTitleRepository,
 } from "./financial-title.repository.js";
@@ -44,6 +45,8 @@ export class PrismaFinancialTitleRepository implements FinancialTitleRepository 
           status: input.status,
           competencia: input.competencia,
           account_id: input.accountId ?? null,
+          // Ω4-3 — proveniência + âncora da idempotência parcial. Só o faturamento popula (create público: null).
+          work_order_id: input.workOrderId ?? null,
           client_action_id: input.clientActionId ?? null,
           created_by: input.createdBy ?? null,
           updated_by: input.updatedBy ?? null,
@@ -67,6 +70,13 @@ export class PrismaFinancialTitleRepository implements FinancialTitleRepository 
   async findById(tenantId: string, financialTitleId: string): Promise<FinancialTitle | undefined> {
     // Retorna mesmo deletado (GET e o pré-check do chokepoint decidem 404 no serviço).
     const record = await this.client.financialTitle.findFirst({ where: { tenant_id: tenantId, id: financialTitleId } });
+    return record ? mapRecord(record) : undefined;
+  }
+
+  async findActiveByWorkOrder(tenantId: string, workOrderId: string, direction: string): Promise<FinancialTitle | undefined> {
+    const record = await this.client.financialTitle.findFirst({
+      where: { tenant_id: tenantId, work_order_id: workOrderId, direction, deleted_at: null },
+    });
     return record ? mapRecord(record) : undefined;
   }
 
@@ -133,6 +143,9 @@ export class RlsPrismaFinancialTitleRepository implements FinancialTitleReposito
   }
   findById(tenantId: string, financialTitleId: string): Promise<FinancialTitle | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialTitleRepository(tx).findById(tenantId, financialTitleId));
+  }
+  findActiveByWorkOrder(tenantId: string, workOrderId: string, direction: string): Promise<FinancialTitle | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialTitleRepository(tx).findActiveByWorkOrder(tenantId, workOrderId, direction));
   }
   update(input: UpdateFinancialTitleInput): Promise<FinancialTitle | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialTitleRepository(tx).update(input));
@@ -241,6 +254,11 @@ function mapRecord(record: {
 // P2003 (FK composta inválida — conta/OS inexistente ou de outro tenant). Nesta fatia só account_id é
 // populado, então o alvo esperado é a conta; mapeia por target para robustez. O tenant sempre vem da claim.
 function translatePersistenceError(error: unknown): unknown {
+  // Ω4-3 (D-Ω4-C2) — o índice PARCIAL financial_titles_wo_direction_active_key (só existe no SQL da
+  // migration) dispara P2002 no 2º faturamento ativo da mesma OS+direção → 409 (rede da idempotência).
+  if (isPrismaError(error, "P2002")) {
+    return workOrderAlreadyInvoicedError();
+  }
   if (isPrismaError(error, "P2003")) {
     const target = foreignKeyTarget(error);
     if (target.includes("work_order")) {

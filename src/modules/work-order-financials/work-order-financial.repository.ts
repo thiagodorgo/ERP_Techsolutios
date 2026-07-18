@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type {
   CreateWorkOrderFinancialItemInput,
+  MarkWorkOrderFinancialItemsInvoicedInput,
   UpdateWorkOrderFinancialItemInput,
   WorkOrderFinancialItem,
 } from "./work-order-financial.types.js";
@@ -10,10 +11,16 @@ import { WorkOrderFinancialError } from "./work-order-financial.types.js";
 export interface WorkOrderFinancialItemRepository {
   create(input: CreateWorkOrderFinancialItemInput): Promise<WorkOrderFinancialItem>;
   listByWorkOrder(tenantId: string, workOrderId: string): Promise<readonly WorkOrderFinancialItem[]>;
+  // Ω4-3 — itens FATURÁVEIS: ativos (deleted_at NULL) E ainda não faturados (invoiced_at NULL). Fonte do
+  // agregado congelado que vira o Título (nunca relê tarifa).
+  listInvoiceableByWorkOrder(tenantId: string, workOrderId: string): Promise<readonly WorkOrderFinancialItem[]>;
   findById(tenantId: string, workOrderId: string, itemId: string): Promise<WorkOrderFinancialItem | undefined>;
   findActiveByClientActionId(tenantId: string, workOrderId: string, clientActionId: string): Promise<WorkOrderFinancialItem | undefined>;
   update(input: UpdateWorkOrderFinancialItemInput): Promise<WorkOrderFinancialItem | undefined>;
   softDelete(tenantId: string, workOrderId: string, itemId: string, deletedBy?: string): Promise<WorkOrderFinancialItem | undefined>;
+  // Ω4-3 (D-Ω4-C1) — carimba invoiced_at+title_id nos itens incluídos no faturamento (idempotente: só
+  // itens ainda não-faturados/não-deletados). Retorna a contagem carimbada.
+  markInvoiced(input: MarkWorkOrderFinancialItemsInvoicedInput): Promise<number>;
   reset?(): void;
 }
 
@@ -44,6 +51,10 @@ export class InMemoryWorkOrderFinancialItemRepository implements WorkOrderFinanc
     return [...this.items.values()]
       .filter((item) => item.tenantId === tenantId && item.workOrderId === workOrderId && !item.deletedAt)
       .sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime());
+  }
+
+  async listInvoiceableByWorkOrder(tenantId: string, workOrderId: string): Promise<readonly WorkOrderFinancialItem[]> {
+    return (await this.listByWorkOrder(tenantId, workOrderId)).filter((item) => item.invoicedAt == null);
   }
 
   async findById(tenantId: string, workOrderId: string, itemId: string): Promise<WorkOrderFinancialItem | undefined> {
@@ -93,6 +104,31 @@ export class InMemoryWorkOrderFinancialItemRepository implements WorkOrderFinanc
     };
     this.items.set(removed.id, removed);
     return removed;
+  }
+
+  async markInvoiced(input: MarkWorkOrderFinancialItemsInvoicedInput): Promise<number> {
+    const wanted = new Set(input.itemIds);
+    let stamped = 0;
+    for (const item of this.items.values()) {
+      if (
+        item.tenantId !== input.tenantId ||
+        item.workOrderId !== input.workOrderId ||
+        !wanted.has(item.id) ||
+        item.deletedAt != null ||
+        item.invoicedAt != null // idempotente: item já faturado não é re-carimbado
+      ) {
+        continue;
+      }
+      this.items.set(item.id, {
+        ...item,
+        invoicedAt: input.invoicedAt,
+        titleId: input.titleId,
+        ...(input.updatedBy !== undefined ? { updatedBy: input.updatedBy } : {}),
+        updatedAt: new Date(),
+      });
+      stamped += 1;
+    }
+    return stamped;
   }
 
   reset(): void {

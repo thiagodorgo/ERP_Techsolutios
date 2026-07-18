@@ -27,6 +27,10 @@ export type WorkOrderFinancialItem = {
   readonly source: string; // "tariff" | "manual"
   readonly notes?: string;
   readonly clientActionId?: string;
+  // Ω4-3 (D-Ω4-C1) — carimbo de faturamento. invoicedAt != null ⇒ item TRAVADO (PATCH/DELETE → 422
+  // item_invoiced); titleId aponta o Título gerado. Ambos undefined enquanto o item não foi faturado.
+  readonly invoicedAt?: Date;
+  readonly titleId?: string;
   readonly createdBy?: string;
   readonly updatedBy?: string;
   readonly createdAt: Date;
@@ -34,10 +38,22 @@ export type WorkOrderFinancialItem = {
   readonly deletedAt?: Date;
 };
 
+// invoicedAt/titleId NÃO entram no create (nascem null; só o faturamento os carimba via markInvoiced).
 export type CreateWorkOrderFinancialItemInput = Omit<
   WorkOrderFinancialItem,
-  "id" | "createdAt" | "updatedAt" | "deletedAt"
+  "id" | "createdAt" | "updatedAt" | "deletedAt" | "invoicedAt" | "titleId"
 >;
+
+// Ω4-3 — carimbo transacional-leve dos itens incluídos no faturamento. Só carimba itens ATIVOS e ainda
+// NÃO-faturados (idempotente no replay). Retorna quantos itens foram efetivamente carimbados.
+export type MarkWorkOrderFinancialItemsInvoicedInput = {
+  readonly tenantId: string;
+  readonly workOrderId: string;
+  readonly itemIds: readonly string[];
+  readonly titleId: string;
+  readonly invoicedAt: Date;
+  readonly updatedBy?: string;
+};
 
 // PATCH — edição inline de quantity/notes/description (+ unitAmount SÓ para source=manual). O
 // total_amount é recomputado no service a partir do unit_amount JÁ CONGELADO (nunca relê a

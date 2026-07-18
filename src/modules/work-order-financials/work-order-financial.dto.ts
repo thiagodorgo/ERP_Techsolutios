@@ -16,6 +16,10 @@ export function toWorkOrderFinancialItemDto(item: WorkOrderFinancialItem) {
     currency: item.currency,
     source: item.source,
     notes: item.notes ?? null,
+    // Ω4-3 — a UI usa `invoiced` para travar edição/remoção do item já faturado (a autoridade é o backend).
+    invoiced: item.invoicedAt != null,
+    invoicedAt: item.invoicedAt ? item.invoicedAt.toISOString() : null,
+    titleId: item.titleId ?? null,
     createdBy: item.createdBy ?? null,
     updatedBy: item.updatedBy ?? null,
     createdAt: item.createdAt.toISOString(),

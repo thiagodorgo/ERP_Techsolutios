@@ -7,6 +7,7 @@ import test from "node:test";
 
 import {
   createMemoryWorkOrderFinancialService,
+  getMemoryWorkOrderFinancialRepositoryForTests,
   resetWorkOrderFinancialRuntimeForTests,
 } from "../src/modules/work-order-financials/work-order-financial.service.js";
 import {
@@ -411,4 +412,69 @@ test("PATCH quantity acima do teto → 422 financial_total_overflow (não 500)",
     () => s.financials.update(ctx, wo.id, item.id, { quantity: 100000000000 }),
     (e: unknown) => e instanceof WorkOrderFinancialError && e.statusCode === 422 && e.reason === "financial_total_overflow",
   );
+});
+
+// ---------- Ω4-3 — trava anti-refaturamento do item faturado (D-Ω4-C1) ----------
+
+test("Ω4-3 trava: PATCH e DELETE de item FATURADO → 422 item_invoiced; item não faturado segue editável/removível", async () => {
+  const s = setup();
+  const ctx = actor();
+  const wo = await s.workOrders.create(ctx, { title: "OS" });
+  const invoiced = await s.financials.create(ctx, wo.id, { source: "manual", description: "Guincho", unit_amount: 100 });
+  const free = await s.financials.create(ctx, wo.id, { source: "manual", description: "Pedágio", unit_amount: 20 });
+  // Carimba SÓ o primeiro item como faturado (simula o markInvoiced do faturamento).
+  const stamped = await getMemoryWorkOrderFinancialRepositoryForTests().markInvoiced({
+    tenantId: ctx.tenantId,
+    workOrderId: wo.id,
+    itemIds: [invoiced.id],
+    titleId: randomUUID(),
+    invoicedAt: new Date(),
+    updatedBy: ctx.userId,
+  });
+  assert.equal(stamped, 1);
+
+  await assert.rejects(
+    () => s.financials.update(ctx, wo.id, invoiced.id, { quantity: 5 }),
+    (e: unknown) => e instanceof WorkOrderFinancialError && e.statusCode === 422 && e.reason === "item_invoiced",
+  );
+  await assert.rejects(
+    () => s.financials.delete(ctx, wo.id, invoiced.id),
+    (e: unknown) => e instanceof WorkOrderFinancialError && e.statusCode === 422 && e.reason === "item_invoiced",
+  );
+  // O item NÃO faturado permanece mutável.
+  const patched = await s.financials.update(ctx, wo.id, free.id, { quantity: 2 });
+  assert.equal(patched.totalAmount, 40);
+  const removed = await s.financials.delete(ctx, wo.id, free.id);
+  assert.ok(removed.deletedAt);
+});
+
+test("Ω4-3 markInvoiced é idempotente: não re-carimba item já faturado nem toca item deletado", async () => {
+  const s = setup();
+  const ctx = actor();
+  const wo = await s.workOrders.create(ctx, { title: "OS" });
+  const a = await s.financials.create(ctx, wo.id, { source: "manual", description: "A", unit_amount: 10 });
+  const b = await s.financials.create(ctx, wo.id, { source: "manual", description: "B", unit_amount: 20 });
+  const repo = getMemoryWorkOrderFinancialRepositoryForTests();
+  const firstTitle = randomUUID();
+  assert.equal(await repo.markInvoiced({ tenantId: ctx.tenantId, workOrderId: wo.id, itemIds: [a.id], titleId: firstTitle, invoicedAt: new Date(), updatedBy: ctx.userId }), 1);
+  // Re-carimbar A (já faturado) com outro título não conta e não sobrescreve o title_id original.
+  assert.equal(await repo.markInvoiced({ tenantId: ctx.tenantId, workOrderId: wo.id, itemIds: [a.id, b.id], titleId: randomUUID(), invoicedAt: new Date(), updatedBy: ctx.userId }), 1);
+  const listed = await s.financials.list(ctx, wo.id);
+  const stampedA = listed.items.find((item) => item.id === a.id)!;
+  assert.equal(stampedA.titleId, firstTitle);
+});
+
+test("Ω4-3 listInvoiceable exclui itens já faturados e deletados (fonte do agregado faturável)", async () => {
+  const s = setup();
+  const ctx = actor();
+  const wo = await s.workOrders.create(ctx, { title: "OS" });
+  const invoiced = await s.financials.create(ctx, wo.id, { source: "manual", description: "Faturado", unit_amount: 100 });
+  const deleted = await s.financials.create(ctx, wo.id, { source: "manual", description: "Deletado", unit_amount: 50 });
+  const open = await s.financials.create(ctx, wo.id, { source: "manual", description: "Aberto", unit_amount: 30 });
+  const repo = getMemoryWorkOrderFinancialRepositoryForTests();
+  await repo.markInvoiced({ tenantId: ctx.tenantId, workOrderId: wo.id, itemIds: [invoiced.id], titleId: randomUUID(), invoicedAt: new Date(), updatedBy: ctx.userId });
+  await s.financials.delete(ctx, wo.id, deleted.id);
+  const invoiceable = await repo.listInvoiceableByWorkOrder(ctx.tenantId, wo.id);
+  assert.equal(invoiceable.length, 1);
+  assert.equal(invoiceable[0]!.id, open.id);
 });
