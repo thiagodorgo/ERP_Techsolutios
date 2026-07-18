@@ -487,6 +487,21 @@ test("DESCONCILIAR (reconciled=false) limpa divergence/ref/at/by", async () => {
   assert.equal(undone.reconciledBy, undefined);
 });
 
+test("[pós-análise B4] re-reconcile SOBRESCREVE a divergência; e reafirmar sem divergência LIMPA-a (semântica PUT)", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
+  const v = await entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: "value", reconciliation_ref: "EXT-1" });
+  assert.equal(v.divergenceType, "value");
+  const d = await entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: "date" }); // sobrescreve
+  assert.equal(d.divergenceType, "date");
+  assert.equal(d.reconciliationRef, undefined); // não reenviado → limpo (write-path resolve os 5 campos)
+  const clean = await entries.reconcile(ctx, entry.id, { reconciled: true }); // reafirma sem divergência → limpa
+  assert.equal(clean.reconciled, true);
+  assert.equal(clean.divergenceType, undefined);
+});
+
 test("reconcile de lançamento DELETADO → 404", async () => {
   const { entries, accounts } = setup();
   const ctx = actor();

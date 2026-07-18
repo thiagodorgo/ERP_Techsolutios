@@ -93,7 +93,8 @@ export class FinancialEntryController {
   // extrato). Só a "forma" da conciliação: {reconciled, divergence_type}.
   private async auditReconcile(request: Request, item: FinancialEntry): Promise<void> {
     await recordRequestAuditBestEffort(request, {
-      action: "financial_entry.reconciled",
+      // pós-análise B2: a ação distingue conciliar de desconciliar (trilha de auditoria — RN-AUD-005).
+      action: item.reconciled ? "financial_entry.reconciled" : "financial_entry.unreconciled",
       resourceType: "financial_entry",
       resourceId: item.id,
       outcome: "success",
