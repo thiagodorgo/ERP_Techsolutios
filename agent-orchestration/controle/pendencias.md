@@ -738,3 +738,15 @@ A idempotência do faturamento é por (tenant_id, work_order_id, direction) — 
 lançado no Financeiro da OS APÓS o 1º faturamento fica "a faturar", mas o 2º POST /invoice dá 409 already_invoiced
 (não fatura o delta). Faturar o delta (2º título com Σ dos itens não-faturados, ou aditar o título) é fatia futura.
 Item novo pós-faturamento permanece editável (invoiced_at NULL); só os já carimbados travam (item_invoiced 422).
+
+## P-Ω4-3-TEST-HERMETIC — createMemoryWorkOrderInvoicingService não é puramente memory (BAIXA)
+O WorkOrderInvoicingService.invoke() alcança createDefaultWorkOrderService()/createDefaultFinancialTitleService()
+por dynamic import — que honram o env (congelado no import). Sob `.env` prisma, tests/work-order-invoicing.test.ts
+falha 15/16 (CI é verde porque roda com CORE_SAAS_PERSISTENCE=memory). Fix: injetar work-order/title services no
+construtor do invoicing service (como o WorkOrderFinancialService faz) para o factory memory ser hermético.
+
+## P-Ω4-3-INVOICE-ATOMIC — Título↔carimbo não-atômico (BAIXA)
+createForWorkOrder (título) e markInvoiced (itens) são 2 statements sem $transaction. Crash entre eles: título
+criado com itens não-travados (invoiced_at NULL → editáveis). A idempotência (índice parcial) preserva "1 título
+ativo/OS", mas a divergência amount↔itens fica possível nesse recorte raro. Ideal: envolver em $transaction.
+Distinto de P-Ω4-3-REFATURAR-DELTA (que é o delta de itens pós-faturamento).
