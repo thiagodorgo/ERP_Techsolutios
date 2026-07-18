@@ -47,6 +47,7 @@ import { createSupplierRouter } from "./modules/suppliers/index.js";
 import { createFinancialAccountRouter } from "./modules/financial-accounts/index.js";
 import { createFinancialTitleRouter } from "./modules/financial-titles/index.js";
 import { createFinancialEntryRouter } from "./modules/financial-entries/index.js";
+import { createFinancialPeriodCloseRouter } from "./modules/financial-period-closes/index.js";
 import { createTagRouter } from "./modules/tags/index.js";
 import { createPoiRouter } from "./modules/pois/index.js";
 import { createOperatorProfileRouter } from "./modules/operator-profiles/index.js";
@@ -125,6 +126,9 @@ export function createApp(service: ICoreSaasService): Express {
   // Ω4-4 — Caixa/Extrato + liquidação. Rotas próprias /financial-titles/:id/pay e
   // /financial-accounts/:id/balance não colidem com os routers de título/conta (3 segmentos). Vem DEPOIS.
   app.use("/api/v1", attachAuthenticatedActor(), createFinancialEntryRouter());
+  // Ω4-6 — Fechamento de período (/financial-periods/*). Rotas próprias (não colidem com título/lançamento);
+  // trava retroativa: fechar/reabrir a competência + snapshot congelado. Vem DEPOIS do financeiro.
+  app.use("/api/v1", attachAuthenticatedActor(), createFinancialPeriodCloseRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTagRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createPoiRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createOperatorProfileRouter());

@@ -81,6 +81,12 @@ export const PERMISSION_CATALOG = [
   "financial_accounts:update",
   "financial_titles:update",
   "financial_entries:update",
+  // Ω4-6 — Fechamento de período (trava retroativa). read {super,platform,tenant_admin,finance,manager,
+  // auditor,viewer}; close {…,finance}; reopen só admins (override administrativo — fora de finance,
+  // separação de funções RN-FIN-009).
+  "financial_period:read",
+  "financial_period:close",
+  "financial_period:reopen",
   "fuel_logs:read",
   "fuel_logs:create",
   "fuel_logs:update",
@@ -242,6 +248,8 @@ export const ROLE_PERMISSIONS = {
     "financial_accounts:read",
     "financial_titles:read",
     "financial_entries:read",
+    // Ω4-6 — manager LÊ o fechamento de período (não fecha/reabre).
+    "financial_period:read",
     "service_catalog:create",
     "price_tables:create",
     "branches:create",
@@ -419,6 +427,8 @@ export const ROLE_PERMISSIONS = {
     "financial_accounts:read",
     "financial_titles:read",
     "financial_entries:read",
+    // Ω4-6 — viewer LÊ o fechamento de período (read-only).
+    "financial_period:read",
     "fuel_logs:read",
     "maintenance_orders:read",
     "fines:read",
@@ -541,6 +551,9 @@ export const ROLE_PERMISSIONS = {
     "financial_accounts:read",
     "financial_titles:read",
     "financial_entries:read",
+    // Ω4-6 — a tesouraria LÊ e FECHA a competência; reopen (desfazer o controle) fica só com admins.
+    "financial_period:read",
+    "financial_period:close",
     "service_quotes:create",
     "work_order_financials:create",
     "financial_accounts:create",
@@ -632,6 +645,8 @@ export const ROLE_PERMISSIONS = {
     "financial_accounts:read",
     "financial_titles:read",
     "financial_entries:read",
+    // Ω4-6 — auditor LÊ o fechamento de período (read-only).
+    "financial_period:read",
     "fuel_logs:read",
     "maintenance_orders:read",
     "fines:read",

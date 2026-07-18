@@ -644,3 +644,23 @@ tomadas no ataque/implementação e RATIFICADAS pelo orquestrador:
 - **Fix P-Ω4-4-REVERSE-MUTABLE:** reverse passa a chamar assertMutable(original) → estornar lançamento CONCILIADO
   → 422 entry_reconciled (desconcilie antes); espelha delete(); NÃO regride A1/B1 (reversal_pair_immutable).
 - **P-Ω4-5-BATCH** aberta: conciliação em LOTE (CSV/OFX) adiada.
+
+## D-Ω4-6 — Fechamento de período / trava retroativa (2026-07-18, ratificado pós-junta workflow)
+Bloco central do financeiro, orquestrado por workflow (spec→ataque→implementa→drill+junta 3/3 APROVADO). Módulo novo
+`src/modules/financial-period-closes/` (orquestra título+lançamento p/ o snapshot; evita ciclo financial-titles↔entries).
+Decisões ratificadas:
+- **Guard M2:** isPeriodClosed passa a bloquear status ∈ {closing, closed} (era só closed); {open, reopened} liberam.
+  O guard é o chokepoint único → reconcile (que NUNCA chama assertPeriodOpen) fica EXENTO automaticamente (honra D-Ω4-5-RECONCILE-META).
+- **Snapshot MATERIAL (M1):** computado SÓ sobre colunas financeiramente materiais (amount/direction/deleted_at/competencia +
+  paid_amount/status do título) e EXCLUI reconciled/divergence_type/reconciliation_ref/reconciled_at/reconciled_by +
+  updated_at/updated_by — reconcile pós-fechamento é legítimo e NÃO altera o snapshot congelado. computeSnapshot é função PURA (paridade).
+- **Fechar ATÔMICO:** snapshot + flip status no MESMO write, sob pg_advisory_xact_lock(tenant:period) (serializa close-vs-close).
+  Fechar 2× → 409 period_already_closed; 'closing' em curso → 409. Pendências bloqueantes (RN-FIN-008) → 422 pending_items_block_close.
+- **force flag:** `{force:true}` sob a MESMA financial_period:close ignora só o gate bloqueante; snapshot grava forced:true + a lista
+  sobreposta; auditoria carrega forced:true (semântica "reconhecer e prosseguir").
+- **Reabrir:** POST /financial-periods/:period/reopen (perm financial_period:reopen — SÓ admins, finance EXCLUÍDO = separação de
+  funções, RN-FIN-009); reason OBRIGATÓRIO (400 reason_required) + auditoria (RN-AUD-005); closed→reopened (escrivível); não-fechado→422.
+  snapshot.history append-only preserva a trilha.
+- **Perms novas:** financial_period:read (amplo) | close (finance+admins) | reopen (só admins).
+- Residuais rastreados: P-Ω4-6-CLOSE-RACE (close-vs-writer read-skew — o mesmo lock deve ir ao guard-read do write-path Ω4-2..4,
+  fase de endurecimento; controle detetivo por re-derivação existe), P-Ω4-6-REOPEN-FOUR-EYES (sem segundo ator, MVP aceita).

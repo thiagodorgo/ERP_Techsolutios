@@ -135,8 +135,10 @@ export class PrismaFinancialPeriodCloseRepository implements FinancialPeriodClos
   constructor(private readonly client: PrismaExecutor) {}
 
   async isPeriodClosed(tenantId: string, period: string): Promise<boolean> {
+    // M2 (Ω4-6) — {closing, closed} bloqueiam a escrita; {open, reopened} liberam. reconcile não atravessa o
+    // chokepoint → exento por construção.
     const record = await this.client.financialPeriodClose.findFirst({
-      where: { tenant_id: tenantId, period, status: "closed" },
+      where: { tenant_id: tenantId, period, status: { in: ["closing", "closed"] } },
       select: { id: true },
     });
     return record != null;
