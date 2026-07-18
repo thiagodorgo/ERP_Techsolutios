@@ -95,6 +95,9 @@ const expectedPermissionCatalog = [
   "financial_accounts:update",
   "financial_titles:update",
   "financial_entries:update",
+  "financial_period:read",
+  "financial_period:close",
+  "financial_period:reopen",
   "fuel_logs:read",
   "fuel_logs:create",
   "fuel_logs:update",
@@ -251,6 +254,18 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("tenant.manage"), true);
   assert.equal(ROLE_PERMISSIONS.viewer.includes("users.manage"), false);
   assert.equal(ROLE_PERMISSIONS.technician.includes("finance.manage"), false);
+
+  // Ω4-6 — fechamento de período: read amplo; close só tesouraria/admins; reopen SÓ admins (fora de finance,
+  // separação de funções RN-FIN-009).
+  assert.equal(ROLE_PERMISSIONS.finance.includes("financial_period:read"), true);
+  assert.equal(ROLE_PERMISSIONS.finance.includes("financial_period:close"), true);
+  assert.equal(ROLE_PERMISSIONS.finance.includes("financial_period:reopen"), false);
+  assert.equal(ROLE_PERMISSIONS.manager.includes("financial_period:read"), true);
+  assert.equal(ROLE_PERMISSIONS.manager.includes("financial_period:close"), false);
+  assert.equal(ROLE_PERMISSIONS.auditor.includes("financial_period:read"), true);
+  assert.equal(ROLE_PERMISSIONS.viewer.includes("financial_period:read"), true);
+  assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("financial_period:reopen"), true);
+  assert.equal(ROLE_PERMISSIONS.operator.includes("financial_period:read"), false);
 });
 
 test("bloqueia criacao de usuario com papel invalido", () => {

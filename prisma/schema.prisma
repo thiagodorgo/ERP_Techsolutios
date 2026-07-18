@@ -1488,6 +1488,13 @@ model FinancialPeriodClose {
   status     String    @default("open") // open|closing|closed|reopened
   closed_at  DateTime? @db.Timestamptz(6)
   closed_by  String?   @db.Uuid
+  // Ω4-6 — reabertura (reopened_*), janela de fechamento (closing_started_at, reservada) e o SNAPSHOT
+  // financeiro congelado (JSONB: {latest, history} append-only — d/ataque). Todos nullable (ALTER aditivo).
+  reopened_at        DateTime? @db.Timestamptz(6)
+  reopened_by        String?   @db.Uuid
+  reopen_reason      String?
+  closing_started_at DateTime? @db.Timestamptz(6) // reservado p/ close assíncrono futuro (v1 não escreve)
+  snapshot           Json?     @db.JsonB          // resumo financeiro material congelado ao fechar (M1)
   created_at DateTime  @default(now()) @db.Timestamptz(6)
   updated_at DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
   tenant     Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)

@@ -820,13 +820,37 @@ liquidação, que tem índice parcial). 2 reverse(A) concorrentes → 2 contra-l
 Fix: índice único parcial (tenant_id, reversal_of) WHERE reversal_of IS NOT NULL AND deleted_at IS NULL +
 $transaction. Casa com o tratamento de atomicidade do P-Ω4-4-LIQUID-ATOMIC.
 
-## P-Ω4-4-CHOKEPOINT-CLOSING — chokepoint só bloqueia 'closed', não 'closing' (para o Ω4-6)
-isPeriodClosed (financial-title.repository) só reconhece status='closed'; o enum tem open|closing|closed|reopened.
-Durante 'closing' (Ω4-6 calculando o snapshot), escritas passam → podem corromper o snapshot (agravado por occurred_at
-controlado pelo cliente → backdating para a competência que fecha). Ω4-6 precisa: (a) endpoints close/reopen; (b)
-isPeriodClosed tratar 'closing' como bloqueante (ou guard isPeriodLocked); (c) semântica reopened→open. Consolida
-P-Ω4-2A-NITS(closing). **M1 (liquidar título de período fechado) NÃO é bug** — é D-Ω4-POS-FECHAMENTO ratificada
-(pagamento é evento da competência corrente; paid_amount é acumulador vitalício; applyPayment gated só pelo período do caixa).
+## P-Ω4-4-CHOKEPOINT-CLOSING — chokepoint só bloqueia 'closed', não 'closing' — ✅ RESOLVIDO no Ω4-6 (M2)
+isPeriodClosed (financial-title.repository) só reconhecia status='closed'; o enum tem open|closing|closed|reopened.
+**Fechado no bloco Ω4-6** (branch feat-omega4-6-period-close): `isPeriodClosed` (InMemory + Prisma) agora trata
+status ∈ {closing, closed} como bloqueante (M2) e {open, reopened} como escrivível. Endpoints close/reopen entregues
+(módulo financial-period-closes). `reconcile` NÃO chama assertPeriodOpen → segue exento por construção (extrato
+pós-fechamento; D-Ω4-5-RECONCILE-META) — confirmado por teste. O ramo 'closing' é DEFENSIVO/futuro: o close v1 é
+atômico open→closed e NUNCA escreve 'closing' (a coluna closing_started_at é reservada). **M1 (liquidar título de
+período fechado) NÃO é bug** — é D-Ω4-POS-FECHAMENTO ratificada (pagamento é evento da competência corrente;
+paid_amount é acumulador vitalício; applyPayment gated só pelo período do caixa).
+
+## P-Ω4-6-CLOSE-RACE — read-skew entre a leitura do snapshot e o commit do 'closed' (MÉDIA, v1 aceita)
+O close lê títulos+lançamentos da competência e grava a linha `closed` na MESMA withTenantRls tx (atômico
+INTERNAMENTE). O furo é o read-skew vs WRITERS concorrentes: o write-path (create de título/lançamento) checa o guard
+`isPeriodClosed` numa transação SEPARADA do INSERT (RlsPrisma…isPeriodClosed abre um withTenantRls próprio; o create
+abre OUTRO) e NÃO pega lock em (tenant,period). Um writer que leu 'open' mas cujo INSERT confirma logo APÓS o close
+vaza um título no período fechado, fora do snapshot. **Correção do texto (ataque emenda a):** SERIALIZABLE só no close
+NÃO aborta esse writer (o insert-tx do writer não lê a linha de close → sem dangerous structure para o SSI); e 'closing'
+como especificado é INERTE em v1 (nada o escreve, e não ajudaria writers que já leram 'open'). O fix REAL exige o
+guard-read do writer NA MESMA tx do write compartilhando lock em (tenant,period) — ex.: `pg_advisory_xact_lock(hashtext(
+tenant||':'||period))` pego por AMBOS os lados — escopo que toca os write-paths Ω4-2..4 (fora deste bloco). Mitigação
+parcial entregue: o close JÁ pega o advisory lock em (tenant,period) (serializa fechamentos concorrentes) e documenta que
+a proteção fica completa quando o writer também o pegar. **Controle compensatório REAL (D1):** a re-derivação MATERIAL
+(computeMaterialSnapshot, que exclui paid_amount/status/reconciled/updated_*) flagra a posteriori um título vazado por
+corrida (count/sumAmount extra vs o snapshot congelado), mantendo-se imune a pagamentos cross-mês/reconcile legítimos.
+Espelha o precedente P-Ω4-4-LIQUID-ATOMIC.
+
+## P-Ω4-6-REOPEN-FOUR-EYES — reopen sem segundo ator (risco residual conhecido, BAIXA)
+reopen ∈ {super_admin, platform_admin, tenant_admin} + reason obrigatório (RN-FIN-009). Risco residual (ataque emenda h,
+anotado, não bloqueia): um `tenant_admin` sozinho pode reopen→editar→reclose com auto-auditoria (sem four-eyes). Aceitável
+no MVP; eventual notificação/segundo ator no reopen. A trilha é preservada (snapshot.history append-only + AuditLog de
+cada close/reopen — d/ataque), então o ciclo fica AUDITÁVEL mesmo sem four-eyes.
 
 ## P-Ω4-5-DIVERGENCE — Ω4-5 Conciliação (divergence_type + write-path de reconcile) — ✅ RESOLVIDO
 **Entregue no bloco Ω4-5** (branch feat-omega4-5-reconciliation). Migration aditiva 20260813000000_add_reconciliation
@@ -896,3 +920,8 @@ título "vencido" ~24-27h cedo no fim do dia BR; o correto é vencer quando o DI
 (due_date + 1 dia, 00:00 America/Sao_Paulo). (2) parseDueDate ainda usa UTC-midnight enquanto issue_date/occurred_at
 viraram BR-anchored (parseBusinessDate) — inconsistência (caso h do critico). Fix bundle: parseDueDate usar
 parseBusinessDate + isTitleOverdue comparar contra fim-do-dia BR. Baixo impacto (borda de virada de dia).
+
+## P-Ω4-6-FRONT-RESOLVE-NAME — /financial-periods expõe closedBy/reopenedBy UUID (BAIXA, para a fatia de FRONT)
+O DTO/snapshot de fechamento expõe closedBy/reopenedBy como UUID cru (padrão backend, §2.8 OK — não vaza tenant/nome).
+A futura tela de Fechamento (front) DEVE resolver UUID→nome antes de renderizar (precedente R-Ω3F-5b §11.2: UUID cru na UI = veto)
+— reusar o UserNameResolver do Ω3F-5b.

@@ -203,6 +203,14 @@ export class InMemoryFinancialEntryRepository implements FinancialEntryRepositor
     );
   }
 
+  // Ω4-6 — leitura ESTREITA por competência (lançamentos ATIVOS do tenant) que alimenta o snapshot de
+  // fechamento. tenant_id filtrado EXPLICITAMENTE (g/ataque).
+  async findByCompetencia(tenantId: string, competencia: string): Promise<FinancialEntry[]> {
+    return [...this.entries.values()].filter(
+      (entry) => entry.tenantId === tenantId && entry.competencia === competencia && entry.deletedAt == null,
+    );
+  }
+
   async sumByAccount(tenantId: string, accountId: string): Promise<{ readonly inflow: number; readonly outflow: number }> {
     let inflow = 0;
     let outflow = 0;

@@ -27,12 +27,32 @@ export interface FinancialTitleRepository {
   reset?(): void;
 }
 
-// CHOKEPOINT (D-Ω4-A3) — fonte da verdade do fechamento de período. Nesta fatia NÃO há endpoint de
-// escrita (Ω4-6 povoa a tabela); a fiação já é REAL: toda escrita de título consulta isPeriodClosed.
+// CHOKEPOINT (D-Ω4-A3) — fonte da verdade do fechamento de período. Ω4-6 povoa a tabela (fechar/reabrir);
+// a fiação é REAL: toda escrita de título/lançamento consulta isPeriodClosed.
 export interface FinancialPeriodCloseRepository {
   isPeriodClosed(tenantId: string, period: string): Promise<boolean>;
   reset?(): void;
 }
+
+// Ω4-6 — LINHA COMPLETA do fechamento de período. O singleton InMemory (compartilhado pelo guard E pelo
+// endpoint de Ω4-6) guarda o record inteiro; a definição vive AQUI (financial-titles é importado PELO módulo
+// de fechamento, nunca o contrário → sem ciclo). `snapshot` é JSON opaco (o módulo de fechamento tipa como
+// StoredSnapshot). `closingStartedAt` é reservado (defensivo/futuro; v1 nunca o escreve).
+export type FinancialPeriodCloseRow = {
+  id: string;
+  tenantId: string;
+  period: string;
+  status: string;
+  closedAt?: Date;
+  closedBy?: string;
+  reopenedAt?: Date;
+  reopenedBy?: string;
+  reopenReason?: string;
+  closingStartedAt?: Date;
+  snapshot?: unknown;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export function titleNotFoundError(): FinancialTitleError {
   return new FinancialTitleError(404, "FINANCIAL_TITLE_NOT_FOUND", "title_not_found", "Financial title was not found.");
@@ -115,6 +135,14 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
         title.workOrderId === workOrderId &&
         title.direction === direction &&
         title.deletedAt == null,
+    );
+  }
+
+  // Ω4-6 — leitura ESTREITA por competência (títulos ATIVOS do tenant nessa competência) que alimenta o
+  // snapshot de fechamento. tenant_id filtrado EXPLICITAMENTE (g/ataque), não só por confiança em camada acima.
+  async findByCompetencia(tenantId: string, competencia: string): Promise<FinancialTitle[]> {
+    return [...this.titles.values()].filter(
+      (title) => title.tenantId === tenantId && title.competencia === competencia && title.deletedAt == null,
     );
   }
 
@@ -226,15 +254,49 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
 }
 
 export class InMemoryFinancialPeriodCloseRepository implements FinancialPeriodCloseRepository {
-  private readonly closes = new Map<string, string>();
+  // Ω4-6 — o Map guarda a LINHA COMPLETA (antes era só o status). setPeriodStatus segue fazendo upsert só do
+  // status → os testes existentes continuam válidos; e o guard passa a ler o record inteiro.
+  private readonly closes = new Map<string, FinancialPeriodCloseRow>();
 
+  // M2 (Ω4-6) — {closing, closed} bloqueiam a escrita; {open, reopened} liberam. reconcile NÃO chama o guard
+  // (financial-entry.service.ts) → fica exento por construção mesmo com o período fechado.
   async isPeriodClosed(tenantId: string, period: string): Promise<boolean> {
-    return this.closes.get(closeKey(tenantId, period)) === "closed";
+    const row = this.closes.get(closeKey(tenantId, period));
+    return row != null && (row.status === "closed" || row.status === "closing");
   }
 
-  // Helper (testes + futura fiação do Ω4-6): registra o status de fechamento de uma competência do tenant.
+  // Helper (testes + fiação do Ω4-6): registra SÓ o status de fechamento de uma competência do tenant (upsert).
   setPeriodStatus(tenantId: string, period: string, status: string): void {
-    this.closes.set(closeKey(tenantId, period), status);
+    const key = closeKey(tenantId, period);
+    const existing = this.closes.get(key);
+    const now = new Date();
+    if (existing) {
+      this.closes.set(key, { ...existing, status, updatedAt: now });
+      return;
+    }
+    this.closes.set(key, { id: randomUUID(), tenantId, period, status, createdAt: now, updatedAt: now });
+  }
+
+  // Ω4-6 STORE — find/create/update/list da linha de fechamento (o módulo financial-period-closes delega a
+  // este singleton para compartilhar UM estado com o guard).
+  findRow(tenantId: string, period: string): FinancialPeriodCloseRow | undefined {
+    return this.closes.get(closeKey(tenantId, period));
+  }
+
+  createRow(row: FinancialPeriodCloseRow): FinancialPeriodCloseRow {
+    this.closes.set(closeKey(row.tenantId, row.period), row);
+    return row;
+  }
+
+  updateRow(row: FinancialPeriodCloseRow): FinancialPeriodCloseRow {
+    this.closes.set(closeKey(row.tenantId, row.period), row);
+    return row;
+  }
+
+  listRows(tenantId: string): FinancialPeriodCloseRow[] {
+    return [...this.closes.values()]
+      .filter((row) => row.tenantId === tenantId)
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime() || (left.id < right.id ? 1 : left.id > right.id ? -1 : 0));
   }
 
   reset(): void {
