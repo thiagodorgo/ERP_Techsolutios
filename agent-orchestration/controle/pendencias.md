@@ -750,3 +750,32 @@ createForWorkOrder (título) e markInvoiced (itens) são 2 statements sem $trans
 criado com itens não-travados (invoiced_at NULL → editáveis). A idempotência (índice parcial) preserva "1 título
 ativo/OS", mas a divergência amount↔itens fica possível nesse recorte raro. Ideal: envolver em $transaction.
 Distinto de P-Ω4-3-REFATURAR-DELTA (que é o delta de itens pós-faturamento).
+
+## P-Ω4-3-CURRENCY-BRL — Item da OS aceita moeda ≠ BRL, mas faturar exige BRL (MÉDIA-BAIXA)
+work-order-financials (Ω3F) usa parseCurrency da shape compartilhada (aceita QUALQUER ISO de 3 letras) + trava
+só de homogeneidade ("todos iguais ao 1º"), então uma OS inteira em USD/EUR é construível. No faturamento (Ω4-3),
+o título só aceita BRL (v1) → 400 invalid_currency vindo de OUTRO módulo, beco sem saída. Fix: alinhar
+work-order-financials ao allowlist {BRL} v1 (ou o título aceitar a moeda congelada quando o multi-currency chegar).
+Reachable só via item manual não-BRL (baixa prob). Ω3F-module — mudar toca módulo mergeado + seus testes.
+
+## P-Ω4-3-INVOICE-TOCTOU-DELETE — DELETE de item durante o faturamento infla o título (BAIXA)
+Entre listInvoiceableByWorkOrder (lê o agregado) e markInvoiced, um item ainda-não-faturado pode ser soft-deleted
+(assertItemNotInvoiced passa: invoiced_at ainda null). O título nasce com a Σ que INCLUÍA o item, mas markInvoiced
+pula deletados → title.amount > Σ dos itens carimbados. TOCTOU no READ (distinto de P-Ω4-3-INVOICE-ATOMIC = crash
+título↔carimbo). Fix: ler o agregado + carimbar na MESMA $transaction com lock. Estreito, mas o dano é dinheiro.
+
+## P-Ω4-3-INVOICE-LEASTPRIV — Rota invoice não exige work_order_financials:read (BAIXA)
+POST /work-orders/:id/invoice gateia só financial_titles:create mas LÊ os itens financeiros da OS. finance tem
+ambas, impacto baixo; por least-privilege, considerar exigir também work_order_financials:read.
+
+## P-Ω4-4-READINESS — O que o Ω4-4 (Caixa/liquidação) precisa construir (GUIA, não bug)
+Notas de prontidão do título para a liquidação dirigir partially_paid/paid:
+- **paid_amount é IMUTÁVEL** hoje: não entra em UpdateFinancialTitleInput e o update o exclui. Ω4-4 precisa de um
+  WRITE-PATH NOVO no repo (ex. applyPayment) — NÃO reusar o update genérico.
+- **partially_paid/paid são INALCANÇÁVEIS** por mutador atual: FINANCIAL_TITLE_STATUS_TRANSITIONS não tem aresta
+  ENTRANDO neles e changeStatus os rejeita como destino manual. Ω4-4 precisa de um caminho de LIQUIDAÇÃO dedicado
+  (que seta status+paid_amount juntos, contornando assertStatusTransition), com invariante paid_amount<=amount.
+- **createForWorkOrder não seta accountId** (título faturado nasce accountId=null): a liquidação captura em qual
+  conta o dinheiro entrou (FinancialEntry → conta). A conta de liquidação deve estar ATIVA (P-Ω4-ACCOUNT-ACTIVE).
+- **Prontos:** ida-e-volta título↔OS exposto (workOrderId no DTO do título; titleId/invoiced no DTO do item);
+  título faturado nasce due_date hoje+30d, status open, competencia derivada, paid_amount 0. Estorno=contra-lançamento.
