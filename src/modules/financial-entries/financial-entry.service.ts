@@ -12,6 +12,7 @@ import {
   accountInactiveError,
   accountNotFoundError,
   alreadyReversedError,
+  reversalPairImmutableError,
   currencyMismatchError,
   entryNotFoundError,
   invalidAccountReferenceError,
@@ -134,6 +135,11 @@ export class FinancialEntryService {
   async delete(actor: FinancialEntryActorContext, financialEntryId: string): Promise<FinancialEntry> {
     const current = await this.getWritable(actor, financialEntryId);
     this.assertMutable(current);
+    // A1 (pós-análise): lançamento em PAR de estorno é imutável. Deletar o original já estornado deixaria o
+    // contra-lançamento ativo → saldo desbalanceado; deletar o próprio contra-lançamento desfaria o estorno.
+    if (current.reversalOf != null || (await this.repository.findActiveReversalOf(actor.tenantId, current.id))) {
+      throw reversalPairImmutableError();
+    }
     await this.assertPeriodOpen(actor.tenantId, current.competencia);
 
     const removed = await this.repository.softDelete(actor.tenantId, current.id, actor.userId);
@@ -150,6 +156,10 @@ export class FinancialEntryService {
   // (concern do Ω4-5+; registrado em P-Ω4-4-EDGES) — o contra-lançamento nasce sem title_id.
   async reverse(actor: FinancialEntryActorContext, financialEntryId: string): Promise<FinancialEntry> {
     const original = await this.getWritable(actor, financialEntryId);
+    // B1 (pós-análise): não se estorna um contra-lançamento (chain infinita de re-estorno flipando o saldo).
+    if (original.reversalOf != null) {
+      throw reversalPairImmutableError();
+    }
     if (await this.repository.findActiveReversalOf(actor.tenantId, original.id)) {
       throw alreadyReversedError();
     }
@@ -238,9 +248,11 @@ export class FinancialEntryService {
       accountId: account.id,
       currency: account.currency,
       openingBalance: account.openingBalance,
+      // B3 (pós-análise): arredonda os componentes ANTES e deriva o saldo deles → in/out/balance sempre
+      // reconciliam (opening + in − out == balance), sem drift de 1 centavo em casos float-adversariais.
       in: roundMoney(inflow),
       out: roundMoney(outflow),
-      balance: roundMoney(account.openingBalance + inflow - outflow),
+      balance: roundMoney(roundMoney(account.openingBalance) + roundMoney(inflow) - roundMoney(outflow)),
     };
   }
 

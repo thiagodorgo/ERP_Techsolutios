@@ -81,6 +81,13 @@ export function alreadyReversedError(): FinancialEntryError {
   return new FinancialEntryError(409, "FINANCIAL_ENTRY_CONFLICT", "already_reversed", "This financial entry has already been reversed.");
 }
 
+// Ω4-4 pós-análise (A1/B1) — um lançamento que faz parte de um PAR de estorno (o original já estornado OU o
+// próprio contra-lançamento) é IMUTÁVEL: deletá-lo ou re-estorná-lo desbalancearia o saldo (o outro lado do
+// par continua ativo). Para desfazer, estorna-se o par inteiro por um novo ajuste, nunca por delete.
+export function reversalPairImmutableError(): FinancialEntryError {
+  return new FinancialEntryError(422, "FINANCIAL_ENTRY_UNPROCESSABLE", "reversal_pair_immutable", "An entry that is part of a reversal pair cannot be deleted or reversed.");
+}
+
 export class InMemoryFinancialEntryRepository implements FinancialEntryRepository {
   private readonly entries = new Map<string, FinancialEntry>();
 
