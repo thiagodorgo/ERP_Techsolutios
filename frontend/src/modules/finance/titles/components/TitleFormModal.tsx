@@ -1,7 +1,8 @@
 import type { CSSProperties } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { ApiError } from "../../../../services/api/client";
+import { parseAmountInput, validateTitleForm } from "../financial-titles.adapter";
 import { createFinancialTitle } from "../financial-titles.service";
 import type { FinancialTitleDirection, FinancialTitlesApiContext } from "../financial-titles.types";
 
@@ -80,22 +81,18 @@ export function TitleFormModal({
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
-
-  const validate = (): string[] => {
-    const found: string[] = [];
-    if (!partyName.trim()) found.push(`${copy.partyLabel} é obrigatório.`);
-    const parsedAmount = Number(amount.replace(",", "."));
-    if (!amount.trim() || !Number.isFinite(parsedAmount) || parsedAmount <= 0) found.push("Informe um valor maior que zero.");
-    if (!dueDate.trim() || Number.isNaN(Date.parse(dueDate))) found.push("Informe uma data de vencimento válida.");
-    return found;
-  };
+  // Guarda SÍNCRONA contra duplo-submit: `submitting` (state) só chega ao DOM no re-render, então dois
+  // cliques rápidos passariam ambos com submitting=false e criariam DOIS títulos. O ref barra na hora.
+  const submittingRef = useRef(false);
 
   const handleSubmit = async () => {
-    const found = validate();
+    if (submittingRef.current) return; // já em voo — ignora o clique repetido
+    const found = validateTitleForm({ partyName, amount, dueDate, partyLabel: copy.partyLabel });
     if (found.length > 0) {
       setErrors(found);
       return;
     }
+    submittingRef.current = true;
     setSubmitting(true);
     setErrors([]);
     try {
@@ -106,7 +103,7 @@ export function TitleFormModal({
         document: documentValue.trim() || undefined,
         category: category.trim() || undefined,
         description: description.trim() || undefined,
-        amount: Number(amount.replace(",", ".")),
+        amount: parseAmountInput(amount),
         due_date: new Date(dueDate).toISOString(),
       });
       onSaved();
@@ -114,6 +111,7 @@ export function TitleFormModal({
       const message = error instanceof ApiError ? error.safeMessage : "Não foi possível salvar. Tente novamente.";
       setErrors([message]);
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };

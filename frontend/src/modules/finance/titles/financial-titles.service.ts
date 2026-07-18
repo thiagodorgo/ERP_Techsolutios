@@ -84,6 +84,7 @@ function buildQuery(filters: FinancialTitlesFilters): string {
   if (filters.overdue) query.set("overdue", "true");
   if (filters.from) query.set("from", filters.from);
   if (filters.to) query.set("to", filters.to);
+  if (filters.limit) query.set("limit", String(filters.limit));
   return `?${query.toString()}`;
 }
 

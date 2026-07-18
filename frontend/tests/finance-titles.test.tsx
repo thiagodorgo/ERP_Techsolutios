@@ -54,6 +54,8 @@ import {
   getStatusActionLabel,
   getTitleStatusLabel,
   overdueBadgeSeverity,
+  parseAmountInput,
+  validateTitleForm,
 } from "../src/modules/finance/titles/financial-titles.adapter";
 import type { FinancialTitle, FinancialTitleStatus } from "../src/modules/finance/titles/financial-titles.types";
 import { TitleOverdueBadge } from "../src/modules/finance/titles/components/TitleOverdueBadge";
@@ -367,4 +369,31 @@ test("[H3] Pagamentos: header + KPIs + coluna FORNECEDOR; 'Agendar pagamento' co
   assert.match(html, /Agendar pagamento/);
   assert.doesNotMatch(html, /\btenant\b/i);
   assert.doesNotMatch(html, /payable|supplier|party_type/);
+});
+
+// ── [pós-análise] validação PURA do formulário de criação (caminho de entrada de dinheiro) ──
+test("[pós-análise] validateTitleForm: campos obrigatórios e valor > 0", () => {
+  const ok = validateTitleForm({ partyName: "Cliente X", amount: "150,50", dueDate: "2026-08-10", partyLabel: "Cliente" });
+  assert.deepEqual(ok, []);
+
+  const semNome = validateTitleForm({ partyName: "  ", amount: "10", dueDate: "2026-08-10", partyLabel: "Cliente" });
+  assert.ok(semNome.some((m) => m.includes("Cliente é obrigatório")));
+
+  const valorZero = validateTitleForm({ partyName: "X", amount: "0", dueDate: "2026-08-10", partyLabel: "Cliente" });
+  assert.ok(valorZero.some((m) => m.includes("maior que zero")));
+
+  const valorNeg = validateTitleForm({ partyName: "X", amount: "-5", dueDate: "2026-08-10", partyLabel: "Fornecedor" });
+  assert.ok(valorNeg.some((m) => m.includes("maior que zero")));
+
+  const semVenc = validateTitleForm({ partyName: "X", amount: "10", dueDate: "", partyLabel: "Cliente" });
+  assert.ok(semVenc.some((m) => m.includes("vencimento")));
+
+  const vencInvalido = validateTitleForm({ partyName: "X", amount: "10", dueDate: "não-é-data", partyLabel: "Cliente" });
+  assert.ok(vencInvalido.some((m) => m.includes("vencimento")));
+});
+
+test("[pós-análise] parseAmountInput aceita vírgula decimal pt-BR", () => {
+  assert.equal(parseAmountInput("150,50"), 150.5); // vírgula decimal → ponto
+  assert.equal(parseAmountInput("1234.56"), 1234.56); // ponto decimal direto
+  assert.equal(parseAmountInput("42"), 42);
 });
