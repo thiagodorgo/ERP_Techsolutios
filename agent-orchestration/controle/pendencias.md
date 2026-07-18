@@ -692,7 +692,7 @@ ausência com mensagem benigna e a corrida GET→PATCH cai em 409/terminal_dispa
 - **(BAIXA) Campos opcionais não podem ser LIMPOS via PATCH** (document/category/account_id="" preserva o
   valor) — consistente entre os dois repos e com o Ω4-1; limitação conhecida, intencional no v1.
 
-## P-Ω4-COMPETENCIA-TZ — Competência derivada em UTC classifica no mês errado (MÉDIO — RESOLVER ANTES do Ω4-6)
+## P-Ω4-COMPETENCIA-TZ — RESOLVIDO (fix-omega4-competencia-tz, pré-Ω4-6)
 `deriveCompetencia` (financial-title.validators.ts) usa `getUTCMonth`. Um título emitido 31/07 23h BRT (UTC-3)
 = 01/08 02:00 UTC → competência "2026-08" (deveria ser "2026-07"). Isso ALIMENTA o chokepoint assertPeriodOpen
 (consulta financial_period_closes por competência) e o relatório financeiro — classificar no mês errado fura a
@@ -880,3 +880,19 @@ e resolução manual de linhas não casadas.
 parseFilterToken faz toLowerCase() mas category é gravada preservando caixa → ?category=Servico não casa "Servico".
 Paridade InMemory×Prisma preservada (ambos iguais). direction/payment_method/divergence_type não sofrem (lowercase na escrita).
 Fix: lowercar category na escrita OU no filtro usar ILIKE/case-insensitive. Baixíssimo, herdado do Ω4-4.
+
+## P-Ω4-COMPETENCIA-TZ — STATUS: RESOLVIDO (2026-07-18)
+deriveCompetencia agora formata em `America/Sao_Paulo` (Intl, IANA — acompanha DST se voltar) e parseBusinessDate
+(src/config/business-time.ts, compartilhado por título/lançamento) ANCORA date-only à MEIA-NOITE BR-local (-03:00,
+Brasil sem DST desde 2019) + datetime sem offset → BR-local + **round-trip que rejeita dia fora de range** (2026-06-31
+etc. → 400, não rola p/ o mês seguinte — furo ALTA do critico corrigido). Testes de fronteira de fuso (financial-titles
++ financial-entries). Escolha: meia-noite BR-local (não meio-dia) — funcionalmente correto (offset de verão histórico
+-02:00 < -03:00 em magnitude → âncora sempre no MESMO dia civil BR mesmo se DST voltar; provado pelo critico). Junta
+verify APROVADO (validador + critico), casos d/e cumpridos.
+
+## P-Ω4-OVERDUE-TZ — isTitleOverdue + parseDueDate no fuso de negócio (BAIXA, sintoma-irmão)
+Ainda pendente (fora do escopo do fix de competência): (1) isTitleOverdue compara due_date.getTime() < now (naïve) →
+título "vencido" ~24-27h cedo no fim do dia BR; o correto é vencer quando o DIA de due_date TERMINA no fuso de negócio
+(due_date + 1 dia, 00:00 America/Sao_Paulo). (2) parseDueDate ainda usa UTC-midnight enquanto issue_date/occurred_at
+viraram BR-anchored (parseBusinessDate) — inconsistência (caso h do critico). Fix bundle: parseDueDate usar
+parseBusinessDate + isTitleOverdue comparar contra fim-do-dia BR. Baixo impacto (borda de virada de dia).

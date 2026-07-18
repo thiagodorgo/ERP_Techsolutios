@@ -10,12 +10,14 @@ import {
 } from "../src/modules/financial-accounts/financial-account.service.js";
 import {
   createMemoryFinancialTitleService,
+  deriveCompetencia,
   getMemoryFinancialPeriodCloseRepositoryForTests,
   resetFinancialTitleRuntimeForTests,
 } from "../src/modules/financial-titles/index.js";
 import {
   FinancialEntryError,
   createMemoryFinancialEntryService,
+  parseOccurredAt,
   resetFinancialEntryRuntimeForTests,
   type FinancialEntryActorContext,
 } from "../src/modules/financial-entries/index.js";
@@ -102,6 +104,32 @@ test("lançamento IN avulso: happy path (conta ativa, competencia derivada, reco
   assert.equal(entry.reconciled, false);
   assert.equal(entry.category, "servico");
   assert.equal(entry.createdBy, ctx.userId);
+});
+
+// ---------- P-Ω4-COMPETENCIA-TZ — competência do LANÇAMENTO no fuso de negócio (UTC-3) ----------
+// occurred_at é a base da competência do lançamento (mesma máquina do título). Um lançamento de fim de
+// mês em horário BR precisa cair no mês BRASILEIRO — não no mês UTC — para respeitar o chokepoint por
+// competência do Ω4-6. parseOccurredAt ancora date-only à meia-noite BR-local (não UTC-midnight).
+test("parseOccurredAt + deriveCompetencia: fronteira de fuso do lançamento", () => {
+  // Instante UTC de agosto que é 31/07 23h BRT → julho.
+  assert.equal(deriveCompetencia(parseOccurredAt("2026-08-01T02:00:00Z")), "2026-07");
+  // date-only não cruza a fronteira do dia (BR-local).
+  assert.equal(deriveCompetencia(parseOccurredAt("2026-07-01")), "2026-07"); // 1º dia — jamais junho
+  assert.equal(deriveCompetencia(parseOccurredAt("2026-07-31")), "2026-07"); // último dia do mês
+});
+
+test("create: occurred_at date-only 2026-07-01 → competência 2026-07 (fim-a-fim, não junho)", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, {
+    account_id: account.id,
+    direction: "in",
+    amount: 10,
+    payment_method: "pix",
+    occurred_at: "2026-07-01",
+  });
+  assert.equal(entry.competencia, "2026-07");
 });
 
 test("lançamento OUT avulso: happy path", async () => {
