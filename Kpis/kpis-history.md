@@ -666,3 +666,48 @@ demoável/vendável da OS ponta a ponta. Percentuais **estimados**, sujeitos a r
 
 `mobile/flutter_app/Kpis/*` **não** foi tocado nesta reconciliação (Ω3F foi web/backend-only); segue no seu
 último valor oficial (Flutter 764/764, módulos 17/17).
+
+## 2026-07-18 — Ω4 (RODADA — PÓS-FASE 1) + reconciliação KPI D-Ω4-KPI-RELATORIO
+
+### Resultado
+
+A rodada **Ω4 (Financeiro do tenant ×1,5)** entregou **8 agregados** e deferiu a atualização de KPI de todos os
+seus PRs (**#206–#225**) para este snapshot único (D-Ω4-KPI-RELATORIO).
+
+| Agregado | PR (feature / pós) | Invariante central |
+|---|---|---|
+| Ω4-1 Contas financeiras | #206 / #207 | cadastro por tenant; RLS; soft-delete |
+| Ω4-2 Título AR/AP + telas | #208-#211 | Decimal(12,2); **CHOKEPOINT** de fechamento em toda escrita |
+| Ω4-3 Faturamento OS→Título | #212 / #213 | **anti-refaturamento** idempotente |
+| Ω4-4 Caixa/Extrato + liquidação | #214 / #215 | saldo somado no backend; estorno por contra-lançamento |
+| Ω4-5 Conciliação bancária | #216 / #217 | reconcile EXENTO do chokepoint (extrato pós-fechamento) |
+| Ω4-6 Fechamento/trava retroativa | #219 / #220 | close atômico + snapshot congelado; guard {closing,closed} |
+| Ω4-7 Cheque | #221 / #222 | mutex por flip condicional; compensa via chokepoint; bounce = contra-lançamento novo |
+| Ω4-8 Dashboard financeiro real | #223-#225 | agregado backend (resolve P-Ω4-2B-KPI-AGREGADO); front nunca soma |
+
+(+ #218 fix competência em America/Sao_Paulo, pré-Ω4-6.)
+
+### Métricas (execução real ao fim da PÓS-FASE 1)
+
+| Métrica | Valor |
+|---|---|
+| Backend | 1242/1242 (era 989; +253 no Ω4; 0 fail, 6 skip DB-gated que rodam no CI; 1248 total) |
+| Smoke web | 514/514 (era 486; +28: telas Cobranças/Pagamentos + adapter do dashboard) |
+| Flutter | 764/764 (inalterado — Ω4 web/backend-only) |
+| Módulos Flutter | 17/17 (inalterado) |
+| MVP demo | 99% (era 98%; +1 por escopo, estimado) |
+| MVP vendável | 88% (era 83%; +5 por escopo, estimado) |
+| Blocos entregues | 66 (58 + 8 agregados-feature Ω4-1..8; governança/pós-análise/fix não conta) |
+
+### Governança por juntas (bugs caçados ANTES do merge)
+
+Cada agregado passou por **junta adversarial** (2–3 vetos com verdito estruturado; nos de maior risco, **ataque de
+DESENHO em workflow ANTES de codar**) + **pós-análise efêmera**. Achados reais barrados: **3 ALTA no desenho do
+cheque** (dupla-postagem concorrente, bounce travado por conciliado, escalada de privilégio), **cashFlow ancorado no
+mês UTC** no Ω4-8a (virada de mês BR), **competência fora de faixa** no #218. Atas em
+`agent-orchestration/omega/juntas/`; relatório completo em `agent-orchestration/omega/RELATORIO-OMEGA4.md`.
+
+### Política dupla (mobile carrega)
+
+`mobile/flutter_app/Kpis/*` **não** foi tocado (Ω4 web/backend-only); segue no último valor oficial (Flutter 764/764,
+módulos 17/17).

@@ -26,6 +26,31 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo Ω4 PÓS-FASE 1">
+          <h2>Ω4 (RODADA — PÓS-FASE 1) — Financeiro do tenant completo + reconciliação KPI</h2>
+          <p>
+            <strong>Ω4 PÓS-FASE 1 (2026-07-18, reconciliação D-Ω4-KPI-RELATORIO):</strong> o
+            <strong>Financeiro do tenant ×1,5</strong> em <strong>8 agregados</strong> — Ω4-1 <strong>Contas</strong>,
+            Ω4-2 <strong>Título AR/AP</strong> (Decimal(12,2), <strong>CHOKEPOINT</strong> de fechamento em toda
+            escrita) + telas Cobranças/Pagamentos, Ω4-3 <strong>Faturamento OS→Título</strong> (anti-refaturamento
+            idempotente), Ω4-4 <strong>Caixa/Extrato + liquidação</strong> (saldo somado no backend, estorno por
+            contra-lançamento), Ω4-5 <strong>Conciliação bancária</strong> (reconcile EXENTO do chokepoint), Ω4-6
+            <strong>Fechamento de período/trava retroativa</strong> (close atômico + snapshot congelado), Ω4-7
+            <strong>Cheque</strong> (mutex por flip condicional; compensa via chokepoint; bounce = contra-lançamento
+            novo; gate de dinheiro), Ω4-8 <strong>Dashboard financeiro real</strong> (agregado backend
+            <code>GET /financial-summary</code> que RESOLVE P-Ω4-2B-KPI-AGREGADO + front que nunca soma). Cada
+            agregado por <strong>junta adversarial</strong> (ataque de DESENHO em workflow ANTES de codar nos de
+            maior risco) + pós-análise efêmera; as juntas caçaram <strong>3 ALTA no desenho do cheque</strong>,
+            cashFlow ancorado no mês UTC no Ω4-8a e competência fora de faixa no #218 <strong>antes do merge</strong>.
+            A rodada <strong>deferiu a atualização de KPI de todos os PRs #206–#225</strong> para esta reconciliação
+            única. Execução real ao fim da PÓS-FASE 1: <strong>backend 989→1242</strong> (0 fail / 6 skip DB-gated;
+            1248 total), <strong>smoke web 486→514</strong>, Flutter <strong>764/764</strong> e módulos
+            <strong>17/17</strong> <strong>inalterados</strong> (Ω4 web/backend-only), <strong>MVP demo 99%</strong>,
+            <strong>MVP vendável 88%</strong> (+1/+5 por escopo) e <strong>66 blocos entregues</strong> (+8
+            agregados-feature Ω4-1..8). <code>pr: 226</code>; <code>merge_commit</code>/<code>approved_head</code>
+            null na autoria (backfill pós-merge). Relatório: <code>agent-orchestration/omega/RELATORIO-OMEGA4.md</code>.
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo Ω3F Fase 1">
           <h2>Ω3F (RODADA — Fase 1) — hub operacional da OS ponta a ponta + reconciliação KPI</h2>
           <p>
