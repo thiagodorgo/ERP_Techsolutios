@@ -1,12 +1,17 @@
 const dashboardData = {
   "project": {
     "name": "ERP Techsolutions",
-    "version": "Ω3F-9",
-    "updatedAt": "2026-07-17",
-    "sourceBranch": "feat-omega3f-9-row-actions",
-    "summary": "Ω3F (RODADA — Fase 1, reconciliacao D-Ω3F-KPI-RELATORIO, 2026-07-17): do Ω3F-1 ao Ω3F-9 entregou o hub do Detalhe de OS com revelacao progressiva (C2) — abas Financeiro (x1,5, preco congelado anti-refaturamento), Orcamento (congela preco + aprovar->cria OS idempotente + compartilhar), Comentarios + Anexos (UserNameResolver, sem UUID cru), Cancelar/Duplicar/Imprimir (decisao financeira no cancel), Quilometragem (app preenche/base corrige, permissao dedicada), Mobile, Logs (auditoria por OS) e Mapa (haversine US$0, sem SKU pago) — e, fechando a Fase 1, as Acoes de linha na lista de OS (dar andamento forward-only, revogar via field_dispatch:cancel, badge de atraso). Cada bloco por junta adversarial (fid-avaliador + veto) + pos-analise efemera. Suite: backend 799->989 (0 fail, 6 skip DB-gated), smoke web 378->486. Flutter/mobile INALTERADOS (web/backend-only). D-Ω3F-KPI-RELATORIO reconciliou os PRs #184-#204 neste snapshot unico.",
+    "version": "Ω4-KPI-RELATORIO",
+    "updatedAt": "2026-07-18",
+    "sourceBranch": "feat-omega4-kpi-reconciliacao",
+    "summary": "Ω4 (RODADA — PÓS-FASE 1, reconciliacao D-Ω4-KPI-RELATORIO, 2026-07-18): o Financeiro do tenant x1,5 em 8 agregados — Ω4-1 Contas, Ω4-2 Titulo AR/AP (Decimal(12,2), CHOKEPOINT de fechamento em toda escrita) + telas Cobrancas/Pagamentos, Ω4-3 Faturamento OS->Titulo (anti-refaturamento idempotente), Ω4-4 Caixa/Extrato + liquidacao (saldo somado no backend, estorno por contra-lancamento), Ω4-5 Conciliacao bancaria (reconcile EXENTO do chokepoint), Ω4-6 Fechamento de periodo/trava retroativa (close atomico + snapshot congelado), Ω4-7 Cheque (mutex por flip condicional; compensa via chokepoint; bounce = contra-lancamento novo; gate de dinheiro), Ω4-8 Dashboard financeiro real (agregado backend GET /financial-summary que RESOLVE P-Ω4-2B-KPI-AGREGADO + front que nunca soma). Cada agregado por junta adversarial (ataque de DESENHO em workflow ANTES de codar nos de maior risco) + pos-analise efemera; juntas cacaram 3 ALTA no desenho do cheque, cashFlow ancorado no mes UTC no Ω4-8a e competencia fora de faixa no #218 ANTES do merge. Suite: backend 989->1242 (0 fail, 6 skip DB-gated), smoke web 486->514. Flutter/mobile INALTERADOS (web/backend-only). D-Ω4-KPI-RELATORIO reconciliou os PRs #206-#225 neste snapshot unico. Relatorio: agent-orchestration/omega/RELATORIO-OMEGA4.md.",
   },
   "kpis": [
+    {
+      "label": "Ω4 (PÓS-FASE 1)",
+      "value": "Financeiro do tenant completo (8 agregados)",
+      "note": "Contas, Titulo AR/AP com CHOKEPOINT de fechamento, Faturamento anti-refaturamento, Caixa/Extrato + liquidacao, Conciliacao bancaria, Fechamento/trava retroativa, Cheque (mutex + compensa via chokepoint), Dashboard real (agregado backend, front nunca soma). Junta adversarial + pos-analise por agregado; backend 989->1242 (0 fail, 6 skip), smoke 486->514; Flutter/mobile inalterados; D-Ω4-KPI-RELATORIO reconciliado (PRs #206-#225)."
+    },
     {
       "label": "Ω3F (Fase 1)",
       "value": "Hub operacional da OS ponta a ponta + ações de linha",

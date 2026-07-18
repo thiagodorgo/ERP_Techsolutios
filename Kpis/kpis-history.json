@@ -370,5 +370,37 @@
       { "pr": 190, "merge_commit": null, "note": "Ω3F-4b aprovar->OS + compartilhar" },
       { "pr": 189, "merge_commit": null, "note": "Ω3F-4a orcamento multi-item preco congelado" }
     ]
+  },
+  {
+    "snapshot_date": "2026-07-18",
+    "version": "Ω4-KPI-RELATORIO",
+    "backend_tests": "1242/1242",
+    "frontend_smoke_tests": "514/514",
+    "flutter_tests": "764/764",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 66,
+    "description": "Ω4 (PÓS-FASE 1) + reconciliacao KPI D-Ω4-KPI-RELATORIO: a rodada Ω4 (Financeiro do tenant x1,5) deferiu a atualizacao de KPI de todos os seus PRs (#206-#225) para este snapshot unico. 8 agregados: Ω4-1 Contas financeiras (RLS, soft-delete); Ω4-2 Titulo a pagar/receber (Decimal(12,2), CHOKEPOINT de fechamento em toda escrita) + telas Cobrancas/Pagamentos; Ω4-3 Faturamento OS->Titulo (anti-refaturamento idempotente); Ω4-4 Caixa/Extrato + liquidacao (saldo somado no backend, estorno por contra-lancamento, DELETE de estornado->422); Ω4-5 Conciliacao bancaria (reconcile EXENTO do chokepoint, D-Ω4-5-RECONCILE-META); Ω4-6 Fechamento de periodo/trava retroativa (close atomico + snapshot congelado, guard {closing,closed}); Ω4-7 Cheque (instrumento com ciclo proprio; mutex por flip condicional; compensa via chokepoint; bounce = contra-lancamento novo; gate financial_entries:create); Ω4-8 Dashboard financeiro real (agregado backend GET /financial-summary que RESOLVE P-Ω4-2B-KPI-AGREGADO + front que nunca soma). Cada agregado por junta adversarial (2-3 vetos com verdito estruturado; ataque de DESENHO em workflow ANTES de codar nos de maior risco) + pos-analise efemera; juntas cacaram bugs reais ANTES do merge (3 ALTA no desenho do cheque; cashFlow ancorado no mes UTC no Ω4-8a; competencia fora de faixa no #218). Contagens de execucao real ao fim da PÓS-FASE 1: backend 989->1242 (0 fail, 6 skip DB-gated que rodam no CI; 1248 total; +253 no Ω4), smoke web 486->514 (+28). Flutter 764/764 e modulos 17/17 INALTERADOS (Ω4 web/backend-only; politica dupla). blocks_completed 58->66 (+8 agregados-feature Ω4-1..8). mvp_demo 98->99 e mvp_vendavel 83->88 (+1/+5 por escopo: modulo Financeiro completo; estimados). Relatorio: agent-orchestration/omega/RELATORIO-OMEGA4.md. merge_commit/approved_head null na autoria (backfill pos-merge).",
+    "pr": 226,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr",
+    "related_prs": [
+      { "pr": 225, "merge_commit": null, "note": "Ω4-8 pos-analise — paridade currency + select" },
+      { "pr": 224, "merge_commit": null, "note": "Ω4-8b dashboard financeiro real" },
+      { "pr": 223, "merge_commit": null, "note": "Ω4-8a agregado backend GET /financial-summary" },
+      { "pr": 222, "merge_commit": null, "note": "Ω4-7 pos-analise — due_date=null limpa" },
+      { "pr": 221, "merge_commit": null, "note": "Ω4-7 Cheque (instrumento com ciclo proprio)" },
+      { "pr": 220, "merge_commit": null, "note": "Ω4-6 pos-analise — balance exclui cancelados" },
+      { "pr": 219, "merge_commit": null, "note": "Ω4-6 Fechamento de periodo (trava retroativa)" },
+      { "pr": 218, "merge_commit": null, "note": "P-Ω4-COMPETENCIA-TZ — America/Sao_Paulo" },
+      { "pr": 216, "merge_commit": null, "note": "Ω4-5 Conciliacao bancaria" },
+      { "pr": 214, "merge_commit": null, "note": "Ω4-4 Caixa/Extrato + liquidacao" },
+      { "pr": 212, "merge_commit": null, "note": "Ω4-3 Faturamento OS->Titulo (anti-refaturamento)" },
+      { "pr": 210, "merge_commit": null, "note": "Ω4-2b telas Cobrancas/Pagamentos" },
+      { "pr": 208, "merge_commit": null, "note": "Ω4-2a Titulo + chokepoint (backend)" },
+      { "pr": 206, "merge_commit": null, "note": "Ω4-1 Conta financeira" }
+    ]
   }
 ]
