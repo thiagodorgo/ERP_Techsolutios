@@ -79,7 +79,8 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
     const title: FinancialTitle = {
       ...input,
       id: randomUUID(),
-      // paid_amount nasce SEMPRE 0 (dirigido por pagamentos no Ω4-4); service_quote no Ω4-3+.
+      // paid_amount nasce SEMPRE 0 (dirigido por pagamentos no Ω4-4). work_order_id vem do faturamento
+      // (Ω4-3, createForWorkOrder); service_quote_id ainda NÃO tem caminho de escrita (sempre undefined).
       paidAmount: 0,
       workOrderId: input.workOrderId,
       serviceQuoteId: undefined,

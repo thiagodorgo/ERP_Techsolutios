@@ -40,7 +40,8 @@ export class PrismaFinancialTitleRepository implements FinancialTitleRepository 
           currency: input.currency,
           issue_date: input.issueDate,
           due_date: input.dueDate,
-          // paid_amount nasce 0 (dirigido por pagamentos no Ω4-4); work_order/service_quote no Ω4-3.
+          // paid_amount nasce 0 (dirigido por pagamentos no Ω4-4). work_order_id vem do faturamento (Ω4-3);
+          // service_quote_id ainda NÃO tem caminho de escrita (sempre null nesta fatia).
           paid_amount: 0,
           status: input.status,
           competencia: input.competencia,
