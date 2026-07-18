@@ -692,3 +692,13 @@ chokepoint · máquina-de-estados/reversão) ANTES de codar; 3 ALTA convergentes
   risco de PROCESSO — fora do escopo do backend deste bloco).
 KPI: PR NÃO toca Kpis/* (D-Ω4-KPI-RELATORIO). Migration aditiva 20260815000000_add_cheques (drill BEGIN/ROLLBACK: RLS
 enabled+forced, policy tenant_isolation, 2 FKs compostas RESTRICT, financial_accounts intocada).
+
+## D-Ω4-8a — Agregado financeiro backend (GET /financial-summary) (2026-07-18)
+Módulo read-only src/modules/financial-summary/ que RESOLVE P-Ω4-2B-KPI-AGREGADO: os KPIs do dashboard eram somados
+só sobre a página carregada (limit 100) no front; agora o BACKEND varre TODAS as linhas do tenant (título/lançamento/
+conta/cheque) e devolve somas/contagens já agregadas. Lógica de dinheiro PURA compartilhada (financial-summary.compute.ts)
+entre InMemory (lê os singletons) e Prisma (carrega projeções na RLS) → paridade. Money rules herdadas do Ω4-6:
+aberto = status ∉ {paid,cancelled} (openAmount = Σ amount−paidAmount); vencido = aberto E due_date<now; saldo de caixa =
+Σ(abertura + Σin − Σout) das contas ATIVAS; cheque pendente = registered+deposited; settledThisMonth/cashFlow por
+competência (fuso de negócio). Permissão: reusa financial_entries:read (mesmo conjunto de papéis dos demais reads
+financeiros; sem permissão nova). SEM migration (nenhuma tabela nova). Consumido pelo dashboard no Ω4-8b.
