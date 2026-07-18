@@ -18,7 +18,10 @@ export class PrismaFinancialSummaryRepository implements FinancialSummaryReposit
     const { tenantId, now } = input;
 
     const [titles, entries, cheques, accounts, entryBalances] = await Promise.all([
-      this.client.financialTitle.findMany({ where: { tenant_id: tenantId, deleted_at: null } }),
+      this.client.financialTitle.findMany({
+        where: { tenant_id: tenantId, deleted_at: null },
+        select: { id: true, direction: true, status: true, amount: true, paid_amount: true, due_date: true, party_name: true, created_at: true },
+      }),
       this.client.financialEntry.findMany({
         where: { tenant_id: tenantId, deleted_at: null },
         select: { direction: true, amount: true, competencia: true },
