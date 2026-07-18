@@ -37,6 +37,15 @@ function sumPaid(rows: readonly PeriodTitleRow[]): number {
   return roundMoney(rows.reduce((total, row) => total + row.paidAmount, 0));
 }
 
+// pós-análise M-1 — saldo EM ABERTO (cobrável/devido): Σ(amount − paidAmount) SÓ dos títulos não-cancelados.
+// Título cancelado NÃO é aberto (o checklist também o exclui). O `material` mantém TODOS (incl. cancelado) para
+// o checksum re-derivável; só o `balance.*` derivado exclui — senão o Dashboard (Ω4-8) superestima o A receber/A pagar.
+function sumOpen(rows: readonly PeriodTitleRow[]): number {
+  return roundMoney(
+    rows.filter((row) => row.status !== "cancelled").reduce((total, row) => total + (row.amount - row.paidAmount), 0),
+  );
+}
+
 function countStatuses(titles: readonly PeriodTitleRow[]): TitleStatusCounts {
   const counts: TitleStatusCounts = { open: 0, scheduled: 0, partiallyPaid: 0, paid: 0, inDispute: 0, cancelled: 0 };
   const mutable = counts as { -readonly [K in keyof TitleStatusCounts]: number };
@@ -91,8 +100,9 @@ export function computeSnapshotBody(
     },
     entries: material.entries,
     balance: {
-      receivableOpen: roundMoney(material.titles.receivable.sumAmount - receivablePaid),
-      payableOpen: roundMoney(material.titles.payable.sumAmount - payablePaid),
+      // pós-análise M-1: exclui cancelados (não são "abertos") — o Dashboard Ω4-8 consome estes campos.
+      receivableOpen: sumOpen(receivable),
+      payableOpen: sumOpen(payable),
     },
     pending: {
       blocking: { inDisputeTitles: checklist.blocking.inDisputeTitles },

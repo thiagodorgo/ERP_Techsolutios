@@ -276,7 +276,8 @@ export class FinancialTitleService {
   }
 
   // CHOKEPOINT reutilizável (D-Ω4-A3): consulta financial_period_closes por (tenant_id, period=competencia).
-  // period 'closed' → 422 period_closed. Sem endpoint de fechar nesta fatia, a tabela é vazia e nunca bloqueia.
+  // period ∈ {closing, closed} → 422 period_closed (guard M2, Ω4-6). Desde o Ω4-6 o endpoint de fechar POVOA a
+  // tabela e o guard BLOQUEIA de verdade (reconcile NÃO passa por aqui → fica exento, D-Ω4-5-RECONCILE-META).
   private async assertPeriodOpen(tenantId: string, competencia: string): Promise<void> {
     if (await this.periodCloseRepository.isPeriodClosed(tenantId, competencia)) {
       throw periodClosedError(competencia);
