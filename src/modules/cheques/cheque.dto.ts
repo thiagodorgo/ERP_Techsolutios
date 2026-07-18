@@ -3,7 +3,8 @@ import type { Cheque, ListChequeResult } from "./cheque.types.js";
 // §2.8 — a resposta OMITE tenant_id (resolvido pelo ator) e deleted_at (só expõe `active`). direction/status/
 // cheque_number/bank/currency/notes são dados de NEGÓCIO do instrumento (não segredo/token/path). cleared_entry_id/
 // bounce_entry_id são UUIDs de lançamento do PRÓPRIO tenant (paridade com createdBy/updatedBy já expostos —
-// não é nova classe de vazamento). due_date sai como date-only (competência nunca deriva dela).
+// não é nova classe de vazamento). due_date sai como date-only 'YYYY-MM-DD' (é uma DATA "bom para", sem hora;
+// competência nunca deriva dela) — o slice dá paridade InMemory (meia-noite BR→03:00Z) ↔ Prisma (@db.Date→UTC).
 export function toChequeDto(cheque: Cheque) {
   return {
     id: cheque.id,
@@ -13,7 +14,7 @@ export function toChequeDto(cheque: Cheque) {
     bank: cheque.bank,
     amount: cheque.amount,
     currency: cheque.currency,
-    dueDate: cheque.dueDate ? cheque.dueDate.toISOString() : null,
+    dueDate: cheque.dueDate ? cheque.dueDate.toISOString().slice(0, 10) : null,
     status: cheque.status,
     clearedEntryId: cheque.clearedEntryId ?? null,
     bounceEntryId: cheque.bounceEntryId ?? null,
@@ -37,7 +38,7 @@ export function toChequeListDto(result: ListChequeResult) {
       bank: cheque.bank,
       amount: cheque.amount,
       currency: cheque.currency,
-      dueDate: cheque.dueDate ? cheque.dueDate.toISOString() : null,
+      dueDate: cheque.dueDate ? cheque.dueDate.toISOString().slice(0, 10) : null,
       status: cheque.status,
       clearedEntryId: cheque.clearedEntryId ?? null,
       bounceEntryId: cheque.bounceEntryId ?? null,
