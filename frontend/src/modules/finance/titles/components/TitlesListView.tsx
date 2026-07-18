@@ -93,7 +93,7 @@ const th: CSSProperties = { fontSize: 11, fontWeight: 700, color: "#94A3B8", let
 export function TitlesListView({ direction }: { direction: FinancialTitleDirection }) {
   const copy = COPY[direction];
   const { permissions } = usePermissions();
-  const { items, loading, source, fallbackReason, refresh, context } = useFinancialTitles(direction);
+  const { items, pagination, loading, source, fallbackReason, refresh, context } = useFinancialTitles(direction);
 
   const [tab, setTab] = useState<TabKey>("all");
   const [showCreate, setShowCreate] = useState(false);
@@ -110,18 +110,20 @@ export function TitlesListView({ direction }: { direction: FinancialTitleDirecti
   const activeMatch = (tabs.find((t) => t.key === tab) ?? tabs[0]).match;
   const rows = items.filter(activeMatch);
 
+  // Retorna null no sucesso, ou a mensagem de erro (para quem chamou decidir ONDE mostrar — na linha ou no
+  // modal de cancelamento). Assim a razão real da falha não fica presa numa linha atrás do modal (pós-análise M4).
   const applyStatus = useCallback(
-    async (title: FinancialTitle, target: FinancialTitleStatusTarget, reason?: string) => {
+    async (title: FinancialTitle, target: FinancialTitleStatusTarget, reason?: string): Promise<string | null> => {
       setRowBusy((map) => ({ ...map, [title.id]: true }));
       setRowError((map) => ({ ...map, [title.id]: null }));
       try {
         await changeFinancialTitleStatus(context, title.id, reason ? { status: target, reason } : { status: target });
         await refresh();
-        return true;
+        return null;
       } catch (error) {
         const message = error instanceof ApiError ? error.safeMessage : "Não foi possível atualizar o status.";
         setRowError((map) => ({ ...map, [title.id]: message }));
-        return false;
+        return message;
       } finally {
         setRowBusy((map) => ({ ...map, [title.id]: false }));
       }
@@ -146,10 +148,10 @@ export function TitlesListView({ direction }: { direction: FinancialTitleDirecti
     if (!cancelTarget) return;
     setCancelBusy(true);
     setCancelError(null);
-    const ok = await applyStatus(cancelTarget, "cancelled", cancelReason.trim() || undefined);
+    const error = await applyStatus(cancelTarget, "cancelled", cancelReason.trim() || undefined);
     setCancelBusy(false);
-    if (ok) setCancelTarget(null);
-    else setCancelError("Não foi possível cancelar o título.");
+    if (error) setCancelError(error); // a razão REAL do backend, no modal que o usuário está olhando
+    else setCancelTarget(null);
   }, [applyStatus, cancelReason, cancelTarget]);
 
   return (
@@ -186,7 +188,15 @@ export function TitlesListView({ direction }: { direction: FinancialTitleDirecti
 
       {source === "fallback" ? (
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 9, marginBottom: 12, fontSize: 12.5, color: "#92400E" }}>
-          <AlertTriangle size={14} aria-hidden /> {fallbackReason ?? "Sem conexão com a API — exibindo lista local."}
+          <AlertTriangle size={14} aria-hidden /> {fallbackReason ?? "Sem conexão com a API."}
+        </div>
+      ) : null}
+
+      {/* Honestidade (pós-análise): os KPIs/tabs somam sobre as linhas carregadas. Se a base tem mais que o
+          carregado, avisa — o headline financeiro NUNCA se apresenta como total sem ressalva (P-Ω4-2B-KPI-AGREGADO). */}
+      {pagination.total > items.length ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 9, marginBottom: 12, fontSize: 12.5, color: "#1E40AF" }}>
+          <AlertTriangle size={14} aria-hidden /> Somando os {items.length} títulos carregados de {pagination.total}. Os totais podem não refletir toda a base.
         </div>
       ) : null}
 

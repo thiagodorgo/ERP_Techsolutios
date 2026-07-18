@@ -720,3 +720,15 @@ O Ω4-2b moveu as rotas-filhas /finance/charges e /finance/payments para a perm 
 o dashboard-pai /finance (FinanceiroPage, ainda MOCK) e o item de menu FINANCEIRO seguem na órfã finance:read/
 finance.read. Resolver no Ω4-8 (dashboard real): trocar o gate por uma perm real (financial_titles:read ou uma
 finance_dashboard:read dedicada) quando a FinanceiroPage consumir o backend.
+
+## P-Ω4-2B-KPI-AGREGADO — KPIs/tabs somam só as linhas carregadas (MÉDIO, Ω4-8 Dashboard)
+Os KPIs e as tabs de Cobranças/Pagamentos somam sobre as linhas carregadas (agora limit=100, antes 20) e
+apresentavam o headline como total da org. Mitigado no Ω4-2b pós-análise: limit=100 + faixa honesta "Somando
+os N de M" quando total>carregado. Cobertura COMPLETA (endpoint de agregados/summary no backend, ou paginação
+real) fica para o Ω4-8 (Dashboard financeiro real). Relacionado: "Recebidas/Pagos (mês)" usa competencia (mês
+contábil), não a data de baixa (que não existe no DTO — Ω4-4 introduz pagamento/baixa) — rótulo impreciso até lá.
+
+## P-Ω4-2B-A11Y — Menu ⋮ e modais sem dismiss por Escape/clique-fora + focus-trap (BAIXA)
+TitleRowActions (menu sem outside-click/Escape, dois menus podem ficar abertos) e TitleFormModal/TitleCancelPrompt
+(role=dialog/aria-modal sem focus-trap/foco inicial/Escape; backdrop fecha mesmo em submit). Padrão leve herdado
+do Ω3F-6; endurecer quando houver um componente de menu/modal compartilhado do DS.

@@ -97,6 +97,27 @@ export function getStatusActionLabel(target: FinancialTitleStatusTarget): string
   return STATUS_ACTION_LABEL[target];
 }
 
+// ── Validação do formulário de criação (PURA — testável sem DOM; espelha o backend) ─────────────
+// party_name obrigatório; amount > 0 (aceita vírgula decimal pt-BR); due_date válido. O backend é a
+// autoridade final (400/422), mas validar aqui dá feedback imediato e evita POST inútil.
+export function parseAmountInput(raw: string): number {
+  return Number(String(raw).replace(",", "."));
+}
+
+export function validateTitleForm(fields: {
+  readonly partyName: string;
+  readonly amount: string;
+  readonly dueDate: string;
+  readonly partyLabel: string;
+}): string[] {
+  const found: string[] = [];
+  if (!fields.partyName.trim()) found.push(`${fields.partyLabel} é obrigatório.`);
+  const amount = parseAmountInput(fields.amount);
+  if (!fields.amount.trim() || !Number.isFinite(amount) || amount <= 0) found.push("Informe um valor maior que zero.");
+  if (!fields.dueDate.trim() || Number.isNaN(Date.parse(fields.dueDate))) found.push("Informe uma data de vencimento válida.");
+  return found;
+}
+
 // ── Gate de escrita (predicado PURO, LIGADO ao JSX pelo componente — lição Ω3F-9) ────────────────
 export function canChangeTitleStatus(permissions: readonly string[]): boolean {
   return permissions.includes("financial_titles:update");

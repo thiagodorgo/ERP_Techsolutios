@@ -32,7 +32,9 @@ export function useFinancialTitles(direction: FinancialTitleDirection) {
   const refresh = useCallback(async () => {
     if (!activeContext) return;
     setLoading(true);
-    const nextData = await listFinancialTitlesFromApi(context, { direction });
+    // limit=100 (máximo do backend): mitiga a subcontagem dos KPIs/tabs, que somam sobre as linhas
+    // carregadas. Cobertura completa (agregados no backend / paginação real) é P-Ω4-2B-KPI-AGREGADO.
+    const nextData = await listFinancialTitlesFromApi(context, { direction, limit: 100 });
     setData(nextData);
     setLoading(false);
   }, [activeContext, context, direction]);

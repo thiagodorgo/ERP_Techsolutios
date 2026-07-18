@@ -70,6 +70,8 @@ export type FinancialTitlesFilters = {
   readonly overdue?: boolean;
   readonly from?: string;
   readonly to?: string;
+  // Janela de busca (parâmetro `limit` do backend, 1..100). Mitiga a subcontagem dos KPIs/tabs (P-Ω4-2B-KPI-AGREGADO).
+  readonly limit?: number;
 };
 
 // Payload de criação (snake_case do backend). party_type é derivado da direction pela tela; direction
