@@ -10,6 +10,7 @@ import {
   deriveCompetencia,
   getMemoryFinancialPeriodCloseRepositoryForTests,
   isTitleOverdue,
+  parseIssueDate,
   resetFinancialTitleRuntimeForTests,
   type FinancialTitleActorContext,
 } from "../src/modules/financial-titles/index.js";
@@ -69,6 +70,53 @@ test("competencia é DERIVADA do issue_date (2026-07-10 → 2026-07), nunca do c
   const title = await svc.create(actor(), receivable({ issue_date: "2026-07-10", competencia: "1999-12" }));
   assert.equal(title.competencia, "2026-07");
   assert.equal(deriveCompetencia(new Date("2026-12-31T00:00:00Z")), "2026-12");
+});
+
+// ---------- P-Ω4-COMPETENCIA-TZ — competência no FUSO DE NEGÓCIO (America/Sao_Paulo, UTC-3) ----------
+// A competência 'YYYY-MM' precisa refletir o mês BRASILEIRO do instante, não o mês UTC. Antes do fix,
+// deriveCompetencia usava getUTCMonth → um título de fim de mês em horário BR caía no mês seguinte,
+// furando a trava retroativa do Ω4-6 (chokepoint por competência). Fronteira de fuso travada aqui.
+test("deriveCompetencia: instante UTC de agosto que é 31/07 23h BRT → 2026-07 (não agosto)", () => {
+  assert.equal(deriveCompetencia(new Date("2026-08-01T02:00:00Z")), "2026-07");
+  // Mesmíssimo instante, agora escrito com o offset BR explícito → mesma competência.
+  assert.equal(deriveCompetencia(new Date("2026-07-31T23:00:00-03:00")), "2026-07");
+});
+
+test("deriveCompetencia: instante UTC de julho que é 30/06 23h BRT → 2026-06 (não julho)", () => {
+  assert.equal(deriveCompetencia(new Date("2026-07-01T02:00:00Z")), "2026-06");
+});
+
+test("parseIssueDate + deriveCompetencia: date-only NÃO cruza a fronteira do dia (BR-local, não UTC-midnight)", () => {
+  // date-only vira meia-noite BR-local → competência do PRÓPRIO mês, nunca do anterior.
+  assert.equal(deriveCompetencia(parseIssueDate("2026-07-01")), "2026-07"); // 1º dia — jamais junho
+  assert.equal(deriveCompetencia(parseIssueDate("2026-07-31")), "2026-07"); // último dia do mês
+  assert.equal(deriveCompetencia(parseIssueDate("2026-07-15")), "2026-07"); // meio do mês (sanidade, sem borda)
+});
+
+test("create: issue_date date-only 2026-07-01 → competência 2026-07 (fim-a-fim, não junho)", async () => {
+  const svc = service();
+  const title = await svc.create(actor(), receivable({ issue_date: "2026-07-01" }));
+  assert.equal(title.competencia, "2026-07");
+});
+
+test("[verify caso d] date-only com DIA fora de range → 400 (não rola silenciosamente p/ outro mês)", async () => {
+  const svc = service();
+  // 2026-06-31/2026-02-29(não-bissexto)/2026-02-30 passam no regex mas o JS rolaria p/ o mês seguinte →
+  // misclassificaria a competência. O round-trip do parseBusinessDate rejeita → 400.
+  for (const bad of ["2026-06-31", "2026-02-29", "2026-02-30", "2026-04-31", "2026-13-01"]) {
+    await assert.rejects(
+      () => svc.create(actor(), receivable({ issue_date: bad })),
+      (e: unknown) => e instanceof FinancialTitleError && e.statusCode === 400,
+      `esperado 400 para ${bad}`,
+    );
+  }
+});
+
+test("[verify caso e] datetime SEM offset é ancorado ao BR-local (determinístico, não fuso do servidor)", () => {
+  // "2026-08-01T01:00" sem Z/offset = 01:00 BRT = 04:00 UTC → competência agosto (BR). Determinístico.
+  assert.equal(deriveCompetencia(parseIssueDate("2026-08-01T01:00")), "2026-08");
+  // "2026-08-01T00:30" BRT ainda é agosto no BR (não vaza p/ julho como faria em UTC-midnight naïve).
+  assert.equal(deriveCompetencia(parseIssueDate("2026-08-01T00:30:00")), "2026-08");
 });
 
 test("amount = 0 → 400 invalid_amount; amount negativo → 400 invalid_amount", async () => {

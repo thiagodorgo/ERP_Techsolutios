@@ -1,3 +1,4 @@
+import { BUSINESS_TIMEZONE, deriveCompetencia, parseBusinessDate } from "../../config/business-time.js";
 import { createFinancialItemParsers, roundMoney } from "../tariffs/financial-item.shape.js";
 import {
   FINANCIAL_TITLE_DIRECTIONS,
@@ -142,9 +143,10 @@ export function parseAmount(value: unknown): number {
 }
 
 // issue_date OPCIONAL; default = server now. Serve de base para a competencia (nunca vem do corpo).
+// Ancorado ao fuso de negócio (parseBusinessDate): date-only vira meia-noite BR-local, não UTC-midnight —
+// senão fim-de-mês BR cairia no mês seguinte (P-Ω4-COMPETENCIA-TZ).
 export function parseIssueDate(value: unknown): Date {
-  if (value === undefined || value === null || value === "") return new Date();
-  const date = value instanceof Date ? value : new Date(String(value));
+  const date = parseBusinessDate(value);
   if (Number.isNaN(date.getTime())) {
     throw new FinancialTitleError(400, "FINANCIAL_TITLE_INVALID", "invalid_issue_date", "issue_date must be a valid ISO date.");
   }
@@ -163,12 +165,10 @@ export function parseDueDate(value: unknown): Date {
   return date;
 }
 
-// competencia = 'YYYY-MM' DERIVADA de issue_date no SERVIDOR (UTC, determinístico). Ex.: 2026-07-10 → "2026-07".
-export function deriveCompetencia(issueDate: Date): string {
-  const year = issueDate.getUTCFullYear();
-  const month = `${issueDate.getUTCMonth() + 1}`.padStart(2, "0");
-  return `${year}-${month}`;
-}
+// competencia = 'YYYY-MM' DERIVADA de issue_date no SERVIDOR, formatada no FUSO DE NEGÓCIO (BUSINESS_TIMEZONE,
+// não UTC — P-Ω4-COMPETENCIA-TZ). Definição única em src/config/business-time.ts; re-exportada aqui (e via
+// index) para os callers de Título/Lançamento e os testes que a importam deste módulo.
+export { BUSINESS_TIMEZONE, deriveCompetencia };
 
 // status inicial no create: default 'open'; 'scheduled' aceito; qualquer outro (paid/etc.) → 400 invalid_status
 // (paid/partially_paid são dirigidos por pagamentos, nunca nascem manualmente).

@@ -1,3 +1,4 @@
+import { parseBusinessDate } from "../../config/business-time.js";
 import { createFinancialItemParsers, roundMoney } from "../tariffs/financial-item.shape.js";
 import {
   FINANCIAL_ENTRY_DIRECTIONS,
@@ -103,9 +104,10 @@ export function resolveCurrency(value: unknown, accountCurrency: string): string
 }
 
 // occurred_at OPCIONAL; default = server now. Base da competencia (nunca vem do corpo).
+// Ancorado ao fuso de negócio (parseBusinessDate): date-only vira meia-noite BR-local, não UTC-midnight —
+// senão fim-de-mês BR cairia no mês seguinte (P-Ω4-COMPETENCIA-TZ).
 export function parseOccurredAt(value: unknown): Date {
-  if (value === undefined || value === null || value === "") return new Date();
-  const date = value instanceof Date ? value : new Date(String(value));
+  const date = parseBusinessDate(value);
   if (Number.isNaN(date.getTime())) {
     throw new FinancialEntryError(400, "FINANCIAL_ENTRY_INVALID", "invalid_occurred_at", "occurred_at must be a valid ISO date.");
   }
