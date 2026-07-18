@@ -45,7 +45,7 @@ export class PrismaFinancialAccountRepository implements FinancialAccountReposit
   async list(input: ListFinancialAccountInput): Promise<ListFinancialAccountResult> {
     const where = buildWhere(input);
     const [items, total] = await Promise.all([
-      this.client.financialAccount.findMany({ where, orderBy: [{ created_at: "desc" }], take: input.limit, skip: input.offset }),
+      this.client.financialAccount.findMany({ where, orderBy: [{ created_at: "desc" }, { id: "desc" }], take: input.limit, skip: input.offset }),
       this.client.financialAccount.count({ where }),
     ]);
     return { items: items.map(mapRecord), total, limit: input.limit, offset: input.offset };
@@ -59,7 +59,8 @@ export class PrismaFinancialAccountRepository implements FinancialAccountReposit
   async update(input: UpdateFinancialAccountInput): Promise<FinancialAccount | undefined> {
     try {
       const updated = await this.client.financialAccount.updateManyAndReturn({
-        where: { tenant_id: input.tenantId, id: input.financialAccountId },
+        // is_active:true → PATCH em conta arquivada casa 0 linhas → 404 (pós-análise M1, simétrico ao softDelete).
+        where: { tenant_id: input.tenantId, id: input.financialAccountId, is_active: true },
         data: compactRecord({
           name: input.name,
           kind: input.kind,
