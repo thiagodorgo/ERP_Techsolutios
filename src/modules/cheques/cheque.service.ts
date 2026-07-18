@@ -115,12 +115,15 @@ export class ChequeService {
   async update(actor: ChequeActorContext, chequeId: string, body: RawRecord): Promise<Cheque> {
     const current = await this.getWritable(actor, chequeId);
     this.assertEditable(current);
+    // due_date é NULÁVEL (null explícito limpa): escolher a chave por PRESENÇA, não por `??` — senão
+    // {due_date: null} colapsaria para o alias camel undefined e o "limpar" seria silenciosamente ignorado.
+    const dueDateRaw = body.due_date !== undefined ? body.due_date : body.dueDate;
     const updated = await this.repository.update({
       tenantId: actor.tenantId,
       chequeId: current.id,
       chequeNumber: body.cheque_number !== undefined || body.chequeNumber !== undefined ? parseChequeNumber(body.cheque_number ?? body.chequeNumber) : undefined,
       bank: body.bank !== undefined ? parseBank(body.bank) : undefined,
-      dueDate: parseNullableDueDate(body.due_date ?? body.dueDate),
+      dueDate: parseNullableDueDate(dueDateRaw),
       notes: parseNullableNotes(body.notes),
       updatedBy: actor.userId,
     });
@@ -165,13 +168,15 @@ export class ChequeService {
     });
     if (!reserved) throw transitionConflictError();
 
-    let entry;
+    let entry: { readonly id: string };
     try {
       const direction = reserved.direction === "received" ? "in" : "out";
       entry = await this.postEntry(actor, reserved, direction, "cheque_clearing", `Compensação de cheque ${reserved.chequeNumber}`);
     } catch (error) {
       // Compensação NÃO postou → devolve o cheque a 'deposited' (nada meio-postado). Recuperável e auditável.
-      await this.repository.transition({ tenantId: actor.tenantId, chequeId: current.id, fromStatus: "cleared", toStatus: "deposited", updatedBy: actor.userId });
+      // Rollback BEST-EFFORT: uma falha ao reverter o estado NÃO pode mascarar o erro de negócio original
+      // (period_closed/account_inactive/...) — sempre relança o erro que causou o rollback.
+      await this.repository.transition({ tenantId: actor.tenantId, chequeId: current.id, fromStatus: "cleared", toStatus: "deposited", updatedBy: actor.userId }).catch(() => {});
       throw error;
     }
 
@@ -212,12 +217,13 @@ export class ChequeService {
       });
       if (!reserved) throw transitionConflictError();
 
-      let counter;
+      let counter: { readonly id: string };
       try {
         const direction = reserved.direction === "received" ? "out" : "in";
         counter = await this.postEntry(actor, reserved, direction, "cheque_bounce", `Devolução de cheque ${reserved.chequeNumber}`);
       } catch (error) {
-        await this.repository.transition({ tenantId: actor.tenantId, chequeId: current.id, fromStatus: "bounced", toStatus: "cleared", updatedBy: actor.userId });
+        // Rollback BEST-EFFORT (idem ao clear): não mascara o erro de negócio original.
+        await this.repository.transition({ tenantId: actor.tenantId, chequeId: current.id, fromStatus: "bounced", toStatus: "cleared", updatedBy: actor.userId }).catch(() => {});
         throw error;
       }
 

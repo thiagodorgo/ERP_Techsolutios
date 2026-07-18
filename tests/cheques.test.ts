@@ -19,6 +19,7 @@ import {
   ChequeError,
   createMemoryChequeService,
   resetChequeRuntimeForTests,
+  toChequeDto,
   type ChequeActorContext,
 } from "../src/modules/cheques/index.js";
 
@@ -221,6 +222,21 @@ test("update: edita notes/due_date enquanto 'registered'", async () => {
   const updated = await cheques.update(ctx, cheque.id, { notes: "3ª via", due_date: "2026-10-01" });
   assert.equal(updated.notes, "3ª via");
   assert.equal(updated.dueDate?.getUTCFullYear(), 2026);
+});
+
+// pós-análise #1: limpar due_date via null explícito (campo canônico snake_case) — o `??` colapsava null.
+test("update: due_date=null (snake) LIMPA a data; ausente não mexe", async () => {
+  const { cheques, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const cheque = await cheques.create(ctx, chequeBody(account.id, { due_date: "2026-09-10" }));
+  assert.ok(cheque.dueDate instanceof Date);
+  const cleared = await cheques.update(ctx, cheque.id, { due_date: null });
+  assert.equal(cleared.dueDate, undefined, "null explícito limpa a due_date");
+  // ausente não mexe (só edita notes)
+  const set = await cheques.update(ctx, cheque.id, { due_date: "2026-11-01" });
+  const untouched = await cheques.update(ctx, cheque.id, { notes: "x" });
+  assert.equal(untouched.dueDate?.getTime(), set.dueDate?.getTime(), "due_date ausente no PATCH não é alterada");
 });
 
 test("update após depósito → 422 cheque_not_editable", async () => {
@@ -481,6 +497,19 @@ test("bounce deposited→bounced (sem caixa) NÃO exige gate financeiro (só che
   const weak = chequeOnlyActor(admin.tenantId);
   const bounced = await cheques.bounce(weak, cheque.id, { reason: "sem fundos" });
   assert.equal(bounced.status, "bounced");
+});
+
+// pós-análise #4: DTO emite due_date como date-only 'YYYY-MM-DD' (sem hora/ambiguidade de fuso) e omite tenant_id.
+test("DTO: due_date date-only, active, sem tenant_id (§2.8)", async () => {
+  const { cheques, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const cheque = await cheques.create(ctx, chequeBody(account.id, { due_date: "2026-09-10" }));
+  const dto = toChequeDto(cheque) as Record<string, unknown>;
+  assert.equal(dto.dueDate, "2026-09-10");
+  assert.equal(dto.active, true);
+  assert.equal("tenantId" in dto, false);
+  assert.equal("deletedAt" in dto, false);
 });
 
 test("ChequeError expõe statusCode/reason (contrato HTTP)", async () => {

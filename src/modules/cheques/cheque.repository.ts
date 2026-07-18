@@ -178,7 +178,9 @@ export class InMemoryChequeRepository implements ChequeRepository {
     updatedBy?: string,
   ): Cheque | undefined {
     const current = this.cheques.get(chequeId);
-    if (!current || current.tenantId !== tenantId || current.status !== expectedStatus) return undefined;
+    // deletedAt checado para paridade estrita com o Prisma (WHERE deleted_at IS NULL) — inalcançável hoje
+    // (cheque cleared/bounced não é soft-deletável) mas mantém o contrato dos dois repositórios idêntico.
+    if (!current || current.tenantId !== tenantId || current.status !== expectedStatus || current.deletedAt != null) return undefined;
     const updated: Cheque = {
       ...current,
       ...patch,
