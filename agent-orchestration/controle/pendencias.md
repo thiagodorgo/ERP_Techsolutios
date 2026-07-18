@@ -680,3 +680,14 @@ despacho só é confirmada no clique (descoberta lazy). Follow-up opcional: expo
 `activeDispatchId` no DTO da lista de OS para visibilidade exata sem o GET extra. Rejeitado no PR do -9 para
 manter 100% front (tocaria o serializer da lista + suíte de contrato). Baixo impacto (o clique já trata
 ausência com mensagem benigna e a corrida GET→PATCH cai em 409/terminal_dispatch).
+
+## P-Ω4-2A-NITS — Observações da junta do Ω4-2a (2026-07-17)
+- **Para Ω4-6 (informativo do validador-mestre):** o chokepoint `assertPeriodOpen` hoje bloqueia só
+  `financial_period_closes.status='closed'`. O estado intermediário `'closing'` (que o Ω4-6 introduz) NÃO
+  trava escritas. Decidir no Ω4-6 se `closing` também deve congelar a competência durante o fechamento em curso.
+- **(BAIXA) Ordem de erro em request duplamente-inválido:** create/update rodam o resolver de conta + chokepoint
+  ANTES da validação de campos (parseAmount etc. nos args do repository.*). Request com conta inválida + amount
+  inválido pode devolver `invalid_account_reference`/`period_closed` (InMemory) vs `invalid_amount` (Prisma) —
+  mesma classe, código divergente só em edge duplamente-inválido. Sem impacto de correção/segurança.
+- **(BAIXA) Campos opcionais não podem ser LIMPOS via PATCH** (document/category/account_id="" preserva o
+  valor) — consistente entre os dois repos e com o Ω4-1; limitação conhecida, intencional no v1.
