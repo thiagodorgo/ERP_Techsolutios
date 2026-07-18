@@ -49,9 +49,10 @@ export type FinancialEntryServiceResolver = () => Promise<FinancialEntryService>
 
 // Permissão FINANCEIRA forte exigida pelas transições que MOVEM dinheiro (compensar/devolver-após-compensar):
 // a chamada service→service a entryService.create NÃO reatravessa a rota /financial-entries, então o gate de
-// dinheiro é reafirmado aqui (defesa em profundidade — a rota /clear e /bounce também o exige). Sem ela, um
-// ator com só cheques:update movimentaria caixa pela porta dos fundos do cheque (achado ALTA do ataque).
-const FINANCIAL_WRITE_PERMISSION = "financial_entries:create" as const;
+// dinheiro é reafirmado aqui (defesa em profundidade). Sem ela, um ator com só cheques:update movimentaria caixa
+// pela porta dos fundos do cheque (achado ALTA do ataque). Fonte ÚNICA da constante — a rota importa daqui
+// (evita divergência rota↔serviço; condição BAIXA da junta).
+export const FINANCIAL_WRITE_PERMISSION = "financial_entries:create" as const;
 
 // Transições LEGAIS da máquina de estados. registered→{deposited,cancelled}; deposited→{cleared,bounced};
 // cleared→{bounced}. bounced/cancelled são TERMINAIS. Qualquer outra → 422 invalid_transition.

@@ -5,7 +5,7 @@ import { requirePermission } from "../core-saas/middleware/rbac.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
 import { ChequeController, type ChequeServiceResolver } from "./cheque.controller.js";
-import { createDefaultChequeService } from "./cheque.service.js";
+import { FINANCIAL_WRITE_PERMISSION, createDefaultChequeService } from "./cheque.service.js";
 
 type ControllerResult = {
   readonly status?: number;
@@ -19,11 +19,10 @@ export const CHEQUE_PERMISSIONS = {
   update: "cheques:update",
 } as const;
 
-// Transições que MOVEM DINHEIRO (compensar/devolver-após-compensar) exigem, ALÉM de cheques:update, a
-// permissão financeira forte financial_entries:create — a mesma que o POST /financial-entries exige. Fecha a
-// escalada de privilégio (achado ALTA): a chamada service→service a entryService.create não reatravessa a
-// rota de lançamentos, então o gate de dinheiro é declarado AQUI (cadeia de dois requirePermission).
-const FINANCIAL_WRITE_PERMISSION = "financial_entries:create" as const;
+// O gate financeiro forte (financial_entries:create) protege quem MOVE caixa. FINANCIAL_WRITE_PERMISSION vem do
+// serviço (fonte única). /clear SEMPRE move caixa → gate na rota. /bounce é POLIMÓRFICO (deposited→bounced NÃO
+// move caixa; cleared→bounced move) → a rota exige só cheques:update e o SERVIÇO aplica assertCanMoveMoney com
+// precisão só no caminho que posta (evita over-block do deposited→bounced; condição BAIXA da junta).
 
 export function createChequeRouter(resolveService: ChequeServiceResolver = createDefaultChequeService): Router {
   const router = Router();
@@ -100,10 +99,11 @@ export function createChequeRouter(resolveService: ChequeServiceResolver = creat
     }),
   );
 
+  // /bounce polimórfico: só cheques:update na rota; o serviço aplica assertCanMoveMoney (403) só quando
+  // cleared→bounced posta caixa. deposited→bounced (sem caixa) fica acessível a cheques:update.
   router.post(
     "/cheques/:chequeId/bounce",
     requirePermission(CHEQUE_PERMISSIONS.update),
-    requirePermission(FINANCIAL_WRITE_PERMISSION),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.bounce(request));
     }),
