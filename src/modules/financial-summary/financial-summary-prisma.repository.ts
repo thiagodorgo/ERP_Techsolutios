@@ -24,7 +24,11 @@ export class PrismaFinancialSummaryRepository implements FinancialSummaryReposit
         select: { direction: true, amount: true, competencia: true },
       }),
       this.client.cheque.findMany({ where: { tenant_id: tenantId, deleted_at: null }, select: { direction: true, status: true, amount: true } }),
-      this.client.financialAccount.findMany({ where: { tenant_id: tenantId, is_active: true }, select: { id: true, currency: true, opening_balance: true } }),
+      this.client.financialAccount.findMany({
+        where: { tenant_id: tenantId, is_active: true },
+        select: { id: true, currency: true, opening_balance: true },
+        orderBy: { created_at: "asc" }, // ordem estável → currency = a da 1ª conta é determinística
+      }),
       this.client.financialEntry.groupBy({
         by: ["account_id", "direction"],
         where: { tenant_id: tenantId, deleted_at: null },

@@ -71,16 +71,18 @@ function toRecentTitle(row: TitleRow, now: number): RecentTitle {
   };
 }
 
-// Janela de N competências terminando na competência CORRENTE (ordem cronológica), fuso de negócio.
+// Janela de N competências terminando na competência CORRENTE (ordem cronológica). A âncora é a competência de
+// NEGÓCIO de `now` (deriveCompetencia, fuso America/Sao_Paulo) — NÃO o mês UTC — e o retrocesso é aritmética de
+// calendário PURA sobre 'YYYY-MM' (fecha a ALTA da junta: numa virada de mês em horário BR o bucket terminal
+// batia 1 mês à frente do settledThisMonth, inclusive virando o ano).
 export function cashFlowCompetencias(now: Date, months: number): string[] {
+  const [year, month] = deriveCompetencia(now).split("-").map(Number); // month ∈ 1..12
   const out: string[] = [];
   for (let back = months - 1; back >= 0; back -= 1) {
-    // 1º dia do mês, back meses atrás — deriva a competência no fuso de negócio (mesma deriveCompetencia).
-    const ref = new Date(now.getTime());
-    ref.setUTCDate(1);
-    ref.setUTCHours(12, 0, 0, 0); // meio-dia UTC evita virar de mês na conversão de fuso
-    ref.setUTCMonth(ref.getUTCMonth() - back);
-    out.push(deriveCompetencia(ref));
+    const index = year * 12 + (month - 1) - back; // índice absoluto de mês (0-based no mês)
+    const bucketYear = Math.floor(index / 12);
+    const bucketMonth = (index % 12) + 1;
+    out.push(`${bucketYear}-${String(bucketMonth).padStart(2, "0")}`);
   }
   return out;
 }
@@ -126,7 +128,12 @@ export function computeFinancialSummary(input: {
     else if (entry.direction === "out") monthOutflow += entry.amount;
   }
 
-  const totalBalance = input.accounts.reduce((total, a) => total + (a.openingBalance + a.inflow - a.outflow), 0);
+  // Arredonda cada componente ANTES de agregar (paridade com balance() do Ω4-6 → reconcilia com o extrato
+  // por-conta sem drift de centavo em cenários float-adversariais).
+  const totalBalance = input.accounts.reduce(
+    (total, a) => total + (roundMoney(a.openingBalance) + roundMoney(a.inflow) - roundMoney(a.outflow)),
+    0,
+  );
 
   const chequePending = { pendingReceivedCount: 0, pendingReceivedAmount: 0, pendingIssuedCount: 0, pendingIssuedAmount: 0 };
   for (const cheque of input.cheques) {

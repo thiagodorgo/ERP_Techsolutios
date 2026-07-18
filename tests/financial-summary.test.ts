@@ -184,6 +184,19 @@ test("cashFlowCompetencias: N competências terminando na corrente (fuso de neg�
   assert.deepEqual(cashFlowCompetencias(new Date("2026-02-10T12:00:00-03:00"), 3), ["2025-12", "2026-01", "2026-02"]);
 });
 
+// REGRESSÃO da ALTA da junta: virada de mês em HORÁRIO BR (00:00–02:59Z do dia 1 = fim do mês anterior BRT). A
+// janela DEVE terminar na competência de NEGÓCIO (deriveCompetencia(now)), não no mês UTC — inclusive virando o ano.
+test("cashFlowCompetencias: âncora é a competência de NEGÓCIO na virada de mês BR (não o mês UTC)", () => {
+  // 2026-01-01T01:30Z = 2025-12-31 22:30 BRT → competência de negócio 2025-12 (não 2026-01).
+  const rollover = new Date("2026-01-01T01:30:00Z");
+  assert.equal(deriveCompetencia(rollover), "2025-12");
+  const window = cashFlowCompetencias(rollover, 6);
+  assert.equal(window.at(-1), "2025-12", "o bucket terminal bate com a competência corrente de negócio");
+  assert.deepEqual(window, ["2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12"]);
+  // 2026-03-01T02:00Z = 2026-02-28 23:00 BRT → negócio 2026-02.
+  assert.equal(cashFlowCompetencias(new Date("2026-03-01T02:00:00Z"), 2).at(-1), "2026-02");
+});
+
 // -------------------------------------------------------------- integração via serviço InMemory
 
 function resetAll(): void {
