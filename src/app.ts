@@ -45,6 +45,7 @@ import { createWorkOrderAuditLogRouter } from "./modules/work-order-audit-logs/i
 import { createBranchRouter } from "./modules/branches/index.js";
 import { createSupplierRouter } from "./modules/suppliers/index.js";
 import { createFinancialAccountRouter } from "./modules/financial-accounts/index.js";
+import { createFinancialTitleRouter } from "./modules/financial-titles/index.js";
 import { createTagRouter } from "./modules/tags/index.js";
 import { createPoiRouter } from "./modules/pois/index.js";
 import { createOperatorProfileRouter } from "./modules/operator-profiles/index.js";
@@ -119,6 +120,7 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createBranchRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createSupplierRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFinancialAccountRouter());
+  app.use("/api/v1", attachAuthenticatedActor(), createFinancialTitleRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTagRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createPoiRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createOperatorProfileRouter());

@@ -43,6 +43,8 @@ model Tenant {
   tariffs                       Tariff[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
+  financial_titles              FinancialTitle[]
+  financial_period_closes       FinancialPeriodClose[]
   tags                          Tag[]
   pois                          Poi[]
   operator_profiles             OperatorProfile[]
@@ -1406,11 +1408,77 @@ model FinancialAccount {
   created_at      DateTime @default(now()) @db.Timestamptz(6)
   updated_at      DateTime @default(now()) @updatedAt @db.Timestamptz(6)
   tenant          Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  financial_titles FinancialTitle[]
 
   @@unique([tenant_id, id])
   @@index([tenant_id, is_active])
   @@index([tenant_id, created_at])
   @@map("financial_accounts")
+}
+
+// Ω4-2a — Título financeiro (a pagar/receber): agregado-núcleo do financeiro do tenant. Dinheiro
+// DECIMAL(12,2). direction/party_type/status/currency são validados na aplicação (sem enum/CHECK, como
+// status/priority da OS). competencia ('YYYY-MM') é DERIVADA de issue_date no servidor. party_id é
+// polimórfico (customer/supplier/other) — SEM FK nativa ao alvo variável (integridade app-level, como
+// TagAssignment). account_id (conta de liquidação prevista) e work_order_id (proveniência, populado no
+// Ω4-3) usam FK composta (tenant_id, X) → (tenant_id, id) RESTRICT — nullable, então o Postgres só exige
+// a FK quando a coluna não é NULL. paid_amount é DIRIGIDO por pagamentos (Ω4-4): nasce 0 aqui. Delete
+// LÓGICO via deleted_at.
+model FinancialTitle {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String    @db.Uuid
+  direction        String // receivable|payable (app-level)
+  party_type       String // customer|supplier|other
+  party_id         String?   @db.Uuid // polimórfico: SEM FK nativa ao alvo variável
+  party_name       String // snapshot obrigatório
+  document         String? // rótulo NF-e/Fatura/Boleto (texto livre; NF-e não emitida no v1)
+  category         String?
+  description      String?
+  amount           Decimal   @db.Decimal(12, 2) // > 0
+  currency         String    @default("BRL") // allowlist {BRL} no v1
+  issue_date       DateTime  @default(now()) @db.Timestamptz(6)
+  due_date         DateTime  @db.Timestamptz(6) // obrigatório
+  paid_amount      Decimal   @default(0) @db.Decimal(12, 2) // <= amount; dirigido por pagamentos (Ω4-4)
+  status           String    @default("open") // open|scheduled|partially_paid|paid|in_dispute|cancelled
+  competencia      String // 'YYYY-MM' derivado do issue_date (server-side)
+  account_id       String?   @db.Uuid // conta de liquidação prevista (FK composta)
+  work_order_id    String?   @db.Uuid // proveniência (setado no Ω4-3; sem idempotência aqui)
+  service_quote_id String?   @db.Uuid // proveniência
+  client_action_id String?
+  created_by       String?   @db.Uuid
+  updated_by       String?   @db.Uuid
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at       DateTime? @db.Timestamptz(6)
+  tenant           Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  account          FinancialAccount? @relation(fields: [tenant_id, account_id], references: [tenant_id, id], onDelete: Restrict)
+  work_order       WorkOrder?        @relation(fields: [tenant_id, work_order_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, direction, status])
+  @@index([tenant_id, due_date])
+  @@index([tenant_id, deleted_at])
+  @@map("financial_titles")
+}
+
+// Ω4-2a — Fechamento de período financeiro (MÍNIMO). Só habilita o CHOKEPOINT assertPeriodOpen: toda
+// escrita de título consulta (tenant_id, period=competencia); period 'closed' bloqueia a escrita (422
+// period_closed). Nesta fatia NÃO há endpoint de escrita (fechar/reabrir vem no Ω4-6) — a tabela nasce
+// vazia e o guard nunca bloqueia, mas a fiação é REAL.
+model FinancialPeriodClose {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String    @db.Uuid
+  period     String // 'YYYY-MM'
+  status     String    @default("open") // open|closing|closed|reopened
+  closed_at  DateTime? @db.Timestamptz(6)
+  closed_by  String?   @db.Uuid
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant     Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, period])
+  @@map("financial_period_closes")
 }
 
 // Ω2-d — Tag (marcador/etiqueta). Chave natural [tenant_id, name]; desativação lógica via is_active.
@@ -1630,6 +1698,7 @@ model WorkOrder {
   field_dispatches      FieldDispatch[]
   expense_reports       ExpenseReport[]
   attachments           WorkOrderAttachment[]
+  financial_titles      FinancialTitle[]
   assigned_user         User?                 @relation("WorkOrderAssignedUser", fields: [tenant_id, assigned_user_id], references: [tenant_id, id], onDelete: Restrict)
   checklist             ChecklistTemplate?    @relation(fields: [tenant_id, checklist_id], references: [tenant_id, id], onDelete: Restrict)
   customer              Customer?             @relation("WorkOrderCustomer", fields: [tenant_id, customer_id], references: [tenant_id, id], onDelete: Restrict)
