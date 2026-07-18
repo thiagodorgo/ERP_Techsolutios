@@ -50,6 +50,8 @@
 | Pedidos `/purchase-orders` | `purchase_orders:read`* | F | E | E | R | R | E | — | R | — |
 | **Remunerações `/finance/commissions` (F8)** | `commissions:read` / `read_own` | F | F | R | own | F | — | own | R | — |
 | Financeiro `/finance` | `finance:read` | F | F | R | — | F | — | — | R | — |
+| Cobranças `/finance/charges` (Ω4-2b) | `financial_titles:read` (cria/edita: `:create`/`:update`) | F | F | R | — | F | — | — | R | — |
+| Pagamentos `/finance/payments` (Ω4-2b) | `financial_titles:read` (cria/edita: `:create`/`:update`) | F | F | R | — | F | — | — | R | — |
 | Relatórios `/reports` | `reports:read`* | F | F | F | R | R | R | — | R | — |
 | Usuários `/users` (F9) | `users.read`/`users.manage` | F | F(manage) | R | — | — | — | — | R | limited |
 | Notificações `/notifications` | `notifications:read` | F | F | F | R | R | R | M | R | R |

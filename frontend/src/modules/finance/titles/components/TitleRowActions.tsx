@@ -28,7 +28,8 @@ const menuItem: CSSProperties = {
   width: "100%",
   padding: "8px 12px",
   border: "none",
-  background: "transparent",
+  // SEM background inline: quem pinta repouso/hover/foco é a classe .ui-menu-item do DS (lição J-Ω3F-6B —
+  // background inline venceria o :hover e mataria o feedback do menu).
   borderRadius: 8,
   fontSize: 12.5,
   fontWeight: 600,
