@@ -1520,6 +1520,10 @@ model FinancialEntry {
   description      String?
   reversal_of      String?   @db.Uuid // estorno = contra-lançamento aponta o original (P-Ω4-ESTORNO)
   reconciled       Boolean   @default(false) // Ω4-5 (nasce false)
+  divergence_type    String?   // value|date — "conciliado com ressalva" (app-level; Ω4-5)
+  reconciliation_ref String?   // referência opaca do extrato bancário (Ω4-5)
+  reconciled_at      DateTime? @db.Timestamptz(6) // carimbo server-side ao conciliar (Ω4-5)
+  reconciled_by      String?   @db.Uuid // ator que conciliou (Ω4-5)
   client_action_id String?
   created_by       String?   @db.Uuid
   updated_by       String?   @db.Uuid
@@ -1537,6 +1541,7 @@ model FinancialEntry {
   @@index([tenant_id, account_id, occurred_at])
   @@index([tenant_id, title_id])
   @@index([tenant_id, deleted_at])
+  @@index([tenant_id, reconciled])
   @@map("financial_entries")
 }
 

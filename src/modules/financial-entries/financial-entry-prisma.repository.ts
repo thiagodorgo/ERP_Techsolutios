@@ -6,6 +6,7 @@ import type {
   FinancialEntry,
   ListFinancialEntryInput,
   ListFinancialEntryResult,
+  ReconcileFinancialEntryInput,
   UpdateFinancialEntryInput,
 } from "./financial-entry.types.js";
 import {
@@ -82,6 +83,22 @@ export class PrismaFinancialEntryRepository implements FinancialEntryRepository 
     return updated[0] ? mapRecord(updated[0]) : undefined;
   }
 
+  async reconcile(input: ReconcileFinancialEntryInput): Promise<FinancialEntry | undefined> {
+    // Objeto DIRETO (não compactRecord) para os nulos irem AO BANCO (desconciliar limpa divergence/ref/at/by).
+    const updated = await this.client.financialEntry.updateManyAndReturn({
+      where: { tenant_id: input.tenantId, id: input.financialEntryId, deleted_at: null },
+      data: {
+        reconciled: input.reconciled,
+        divergence_type: input.divergenceType,
+        reconciliation_ref: input.reconciliationRef,
+        reconciled_at: input.reconciledAt,
+        reconciled_by: input.reconciledBy,
+        ...(input.updatedBy !== undefined ? { updated_by: input.updatedBy } : {}),
+      },
+    });
+    return updated[0] ? mapRecord(updated[0]) : undefined;
+  }
+
   async findActiveReversalOf(tenantId: string, originalEntryId: string): Promise<FinancialEntry | undefined> {
     const record = await this.client.financialEntry.findFirst({
       where: { tenant_id: tenantId, reversal_of: originalEntryId, deleted_at: null },
@@ -135,6 +152,9 @@ export class RlsPrismaFinancialEntryRepository implements FinancialEntryReposito
   softDelete(tenantId: string, financialEntryId: string, deletedBy?: string): Promise<FinancialEntry | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialEntryRepository(tx).softDelete(tenantId, financialEntryId, deletedBy));
   }
+  reconcile(input: ReconcileFinancialEntryInput): Promise<FinancialEntry | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialEntryRepository(tx).reconcile(input));
+  }
   findActiveReversalOf(tenantId: string, originalEntryId: string): Promise<FinancialEntry | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialEntryRepository(tx).findActiveReversalOf(tenantId, originalEntryId));
   }
@@ -166,6 +186,8 @@ function buildWhere(input: ListFinancialEntryInput): Prisma.FinancialEntryWhereI
   if (input.accountId !== undefined) and.push({ account_id: input.accountId });
   if (input.direction !== undefined) and.push({ direction: input.direction });
   if (input.category !== undefined) and.push({ category: input.category });
+  if (input.reconciled !== undefined) and.push({ reconciled: input.reconciled });
+  if (input.divergenceType !== undefined) and.push({ divergence_type: input.divergenceType });
   if (input.occurredFrom !== undefined) and.push({ occurred_at: { gte: input.occurredFrom } });
   if (input.occurredTo !== undefined) and.push({ occurred_at: { lte: input.occurredTo } });
 
@@ -191,6 +213,10 @@ function mapRecord(record: {
   readonly description: string | null;
   readonly reversal_of: string | null;
   readonly reconciled: boolean;
+  readonly divergence_type: string | null;
+  readonly reconciliation_ref: string | null;
+  readonly reconciled_at: Date | null;
+  readonly reconciled_by: string | null;
   readonly client_action_id: string | null;
   readonly created_by: string | null;
   readonly updated_by: string | null;
@@ -213,6 +239,10 @@ function mapRecord(record: {
     description: record.description ?? undefined,
     reversalOf: record.reversal_of ?? undefined,
     reconciled: record.reconciled,
+    divergenceType: record.divergence_type ?? undefined,
+    reconciliationRef: record.reconciliation_ref ?? undefined,
+    reconciledAt: record.reconciled_at ?? undefined,
+    reconciledBy: record.reconciled_by ?? undefined,
     clientActionId: record.client_action_id ?? undefined,
     createdBy: record.created_by ?? undefined,
     updatedBy: record.updated_by ?? undefined,

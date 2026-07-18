@@ -78,6 +78,17 @@ export function createFinancialEntryRouter(
     }),
   );
 
+  // RECONCILE (Ω4-5) — conciliação bancária (mutação de estado do lançamento): reusa a permissão de update
+  // (não cria permissão nova). Path de 3 segmentos, PATCH → não colide com PATCH /financial-entries/:id
+  // (2 segmentos) nem com POST .../reverse.
+  router.patch(
+    "/financial-entries/:financialEntryId/reconcile",
+    requirePermission(FINANCIAL_ENTRY_PERMISSIONS.update),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.reconcile(request));
+    }),
+  );
+
   // LIQUIDAÇÃO — pagar/receber é LANÇAR caixa contra um título: permissão de create. Path próprio (não
   // colide com o router de financial-titles: /financial-titles/:id/pay tem 3 segmentos, POST).
   router.post(

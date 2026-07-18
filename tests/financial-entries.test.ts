@@ -405,6 +405,209 @@ test("ESTORNO de lançamento inexistente/cross-tenant → 404", async () => {
   );
 });
 
+// ---------------------------------------------------------------- conciliação (reconcile) [Ω4-5]
+// Paridade InMemory×Prisma é ESTRUTURAL (mesmo contrato de repo/DTO/erros); a suíte roda só em memory
+// (CORE_SAAS_PERSISTENCE=memory) — o caminho Prisma da conciliação não é exercido sem banco, idêntico a
+// P-Ω4-4-EDGES e aos vizinhos Ω4-1..4-4.
+
+test("reconcile happy: flag+divergence+ref e carimbo server-side (reconciledAt/By)", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 100, payment_method: "pix" });
+  const reconciled = await entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: "value", reconciliation_ref: "EXT-123" });
+  assert.equal(reconciled.reconciled, true);
+  assert.equal(reconciled.divergenceType, "value");
+  assert.equal(reconciled.reconciliationRef, "EXT-123");
+  assert.equal(reconciled.reconciledAt instanceof Date, true);
+  assert.equal(reconciled.reconciledBy, ctx.userId);
+  // [validador BAIXA] conciliar é META-DADO: NÃO muta amount/direction nem o saldo da conta (só marca).
+  assert.equal(reconciled.amount, 100);
+  assert.equal(reconciled.direction, "in");
+  assert.equal((await entries.balance(ctx, account.id)).balance, 100);
+});
+
+test("reconcile LIMPO (sem divergence) → ok, divergenceType undefined mas carimbado", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 100, payment_method: "pix" });
+  const reconciled = await entries.reconcile(ctx, entry.id, { reconciled: true });
+  assert.equal(reconciled.reconciled, true);
+  assert.equal(reconciled.divergenceType, undefined);
+  assert.equal(reconciled.reconciledAt instanceof Date, true);
+});
+
+test("cada divergence_type válido {value,date} é aceito", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  for (const v of ["value", "date"] as const) {
+    const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
+    const reconciled = await entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: v });
+    assert.equal(reconciled.divergenceType, v);
+  }
+});
+
+test("divergence_type FORA da allowlist → 400 (foo, e os removidos missing/duplicate)", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  for (const bad of ["foo", "missing", "duplicate"]) {
+    const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
+    await assert.rejects(
+      () => entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: bad }),
+      (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 400 && e.reason === "invalid_divergence_type",
+    );
+  }
+});
+
+test("reconciled AUSENTE (write-path estrito) → 400 invalid_reconciled", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
+  await assert.rejects(
+    () => entries.reconcile(ctx, entry.id, {}),
+    (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 400 && e.reason === "invalid_reconciled",
+  );
+});
+
+test("DESCONCILIAR (reconciled=false) limpa divergence/ref/at/by", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
+  await entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: "date", reconciliation_ref: "X" });
+  const undone = await entries.reconcile(ctx, entry.id, { reconciled: false });
+  assert.equal(undone.reconciled, false);
+  assert.equal(undone.divergenceType, undefined);
+  assert.equal(undone.reconciliationRef, undefined);
+  assert.equal(undone.reconciledAt, undefined);
+  assert.equal(undone.reconciledBy, undefined);
+});
+
+test("reconcile de lançamento DELETADO → 404", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
+  await entries.delete(ctx, entry.id);
+  await assert.rejects(
+    () => entries.reconcile(ctx, entry.id, { reconciled: true }),
+    (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 404,
+  );
+});
+
+test("reconcile inexistente/cross-tenant → 404 (isolamento)", async () => {
+  const { entries, accounts } = setup();
+  const owner = actor();
+  const account = await activeAccount(accounts, owner);
+  const entry = await entries.create(owner, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
+  await assert.rejects(
+    () => entries.reconcile(actor(), entry.id, { reconciled: true }),
+    (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 404,
+  );
+});
+
+// DECISÃO (endurecida pelo ataque, D-Ω4-5-RECONCILE-META): conciliação é META-DADO e ATRAVESSA período
+// fechado (não altera a soma da competência; o extrato chega DEPOIS do fechamento). Coerente com
+// D-Ω4-POS-FECHAMENTO. Inverte o teste-guia original que esperava 422 period_closed.
+test("reconcile em período FECHADO → SUCESSO (meta-dado; não gated pelo chokepoint)", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix", occurred_at: "2026-05-10T00:00:00.000Z" });
+  getMemoryFinancialPeriodCloseRepositoryForTests().setPeriodStatus(ctx.tenantId, "2026-05", "closed");
+  const reconciled = await entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: "value" });
+  assert.equal(reconciled.reconciled, true);
+  assert.equal(reconciled.reconciledAt instanceof Date, true);
+});
+
+test("[fix P-Ω4-4-REVERSE-MUTABLE] reverse de lançamento CONCILIADO → 422 entry_reconciled; nenhum contra criado", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 100, payment_method: "pix" });
+  await entries.reconcile(ctx, entry.id, { reconciled: true });
+  await assert.rejects(
+    () => entries.reverse(ctx, entry.id),
+    (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 422 && e.reason === "entry_reconciled",
+  );
+  assert.equal((await entries.list(ctx, {})).total, 1); // só o original; nenhum contra-lançamento
+});
+
+test("conciliar → desconciliar → reverse volta a funcionar (contra-lançamento out)", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 100, payment_method: "pix" });
+  await entries.reconcile(ctx, entry.id, { reconciled: true });
+  await entries.reconcile(ctx, entry.id, { reconciled: false });
+  const contra = await entries.reverse(ctx, entry.id);
+  assert.equal(contra.direction, "out");
+  assert.equal(contra.reversalOf, entry.id);
+});
+
+test("update e delete de lançamento CONCILIADO → 422 entry_reconciled (assertMutable)", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 100, payment_method: "pix" });
+  await entries.reconcile(ctx, entry.id, { reconciled: true });
+  await assert.rejects(
+    () => entries.update(ctx, entry.id, { category: "x" }),
+    (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 422 && e.reason === "entry_reconciled",
+  );
+  await assert.rejects(
+    () => entries.delete(ctx, entry.id),
+    (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 422 && e.reason === "entry_reconciled",
+  );
+});
+
+// DECISÃO (item 6): conciliar é sobre o EXTRATO bancário → um lançamento de par de estorno (o original
+// estornado E o próprio contra-lançamento) PODE ser conciliado (ambos aparecem no extrato).
+test("conciliar lançamento de par de estorno (original E contra) é PERMITIDO", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 100, payment_method: "pix" });
+  const contra = await entries.reverse(ctx, entry.id);
+  assert.equal((await entries.reconcile(ctx, entry.id, { reconciled: true })).reconciled, true);
+  assert.equal((await entries.reconcile(ctx, contra.id, { reconciled: true })).reconciled, true);
+});
+
+test("extrato: filtra por reconciled=true|false", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const a = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
+  await entries.create(ctx, { account_id: account.id, direction: "in", amount: 20, payment_method: "pix" });
+  await entries.reconcile(ctx, a.id, { reconciled: true });
+  assert.equal((await entries.list(ctx, { reconciled: true })).total, 1);
+  assert.equal((await entries.list(ctx, { reconciled: false })).total, 1);
+});
+
+test("extrato: filtra por divergence_type", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const a = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
+  const b = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 20, payment_method: "pix" });
+  await entries.reconcile(ctx, a.id, { reconciled: true, divergence_type: "value" });
+  await entries.reconcile(ctx, b.id, { reconciled: true, divergence_type: "date" });
+  assert.equal((await entries.list(ctx, { divergence_type: "value" })).total, 1);
+});
+
+test("extrato: filtro reconciled LENIENTE (valor inválido é ignorado, não 400)", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
+  await entries.create(ctx, { account_id: account.id, direction: "in", amount: 20, payment_method: "pix" });
+  assert.equal((await entries.list(ctx, { reconciled: "xyz" })).total, 2);
+});
+
 // ---------------------------------------------------------------- liquidação (pay)
 
 test("LIQUIDAÇÃO parcial: title → partially_paid, paid_amount incrementado; entry com title_id e direction 'in'", async () => {
@@ -581,6 +784,90 @@ test("[rota] estorno: POST /financial-entries/:id/reverse → 201 contra-lançam
     assert.equal(reversed.status, 201);
     assert.equal(reversed.body.data.direction, "out");
     assert.equal(reversed.body.data.reversalOf, entry.body.data.id);
+  });
+});
+
+test("[rota] PATCH /financial-entries/:id/reconcile finance → 200; DTO §2.8 (sem tenant_id)", async () => {
+  await withFinancialEntryApi(async ({ baseUrl, seed }) => {
+    const account = await createAccount(baseUrl, seed.tenantA);
+    const entry = await requestJson(baseUrl, "/api/v1/financial-entries", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, "finance"),
+      body: { account_id: account.id, direction: "in", amount: 50, payment_method: "pix" },
+    });
+    const reconciled = await requestJson(baseUrl, `/api/v1/financial-entries/${entry.body.data.id}/reconcile`, {
+      method: "PATCH",
+      headers: authHeaders(seed.tenantA, "finance"),
+      body: { reconciled: true, divergence_type: "value", reconciliation_ref: "EXT-9" },
+    });
+    assert.equal(reconciled.status, 200);
+    assert.equal(reconciled.body.data.reconciled, true);
+    assert.equal(reconciled.body.data.divergenceType, "value");
+    assert.equal(reconciled.body.data.reconciliationRef, "EXT-9");
+    assert.ok(reconciled.body.data.reconciledAt);
+    assert.equal(reconciled.body.data.tenantId, undefined);
+    assert.equal(reconciled.body.data.tenant_id, undefined);
+  });
+});
+
+test("[rota] reverse de lançamento CONCILIADO via API → 422 entry_reconciled (fix e2e)", async () => {
+  await withFinancialEntryApi(async ({ baseUrl, seed }) => {
+    const account = await createAccount(baseUrl, seed.tenantA);
+    const entry = await requestJson(baseUrl, "/api/v1/financial-entries", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, "finance"),
+      body: { account_id: account.id, direction: "in", amount: 100, payment_method: "pix" },
+    });
+    await requestJson(baseUrl, `/api/v1/financial-entries/${entry.body.data.id}/reconcile`, {
+      method: "PATCH",
+      headers: authHeaders(seed.tenantA, "finance"),
+      body: { reconciled: true },
+    });
+    const reversed = await requestJson(baseUrl, `/api/v1/financial-entries/${entry.body.data.id}/reverse`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, "finance"),
+    });
+    assert.equal(reversed.status, 422);
+    assert.equal(reversed.body.error.reason, "entry_reconciled");
+  });
+});
+
+test("[rota][RBAC] reconcile: finance/tenant_admin/super_admin → 200", async () => {
+  await withFinancialEntryApi(async ({ baseUrl, seed }) => {
+    const account = await createAccount(baseUrl, seed.tenantA);
+    const entry = await requestJson(baseUrl, "/api/v1/financial-entries", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, "finance"),
+      body: { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" },
+    });
+    for (const role of ["finance", "tenant_admin", "super_admin"] as const) {
+      const res = await requestJson(baseUrl, `/api/v1/financial-entries/${entry.body.data.id}/reconcile`, {
+        method: "PATCH",
+        headers: authHeaders(seed.tenantA, role),
+        body: { reconciled: true },
+      });
+      assert.equal(res.status, 200, `reconcile as ${role}`);
+    }
+  });
+});
+
+test("[rota][RBAC] reconcile: papéis sem update → 403", async () => {
+  await withFinancialEntryApi(async ({ baseUrl, seed }) => {
+    const account = await createAccount(baseUrl, seed.tenantA);
+    const entry = await requestJson(baseUrl, "/api/v1/financial-entries", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, "finance"),
+      body: { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" },
+    });
+    const id = entry.body.data.id;
+    for (const role of ["manager", "auditor", "viewer", "operator", "inventory", "field_technician", "support"] as const) {
+      const res = await requestJson(baseUrl, `/api/v1/financial-entries/${id}/reconcile`, {
+        method: "PATCH",
+        headers: authHeaders(seed.tenantA, role),
+        body: { reconciled: true },
+      });
+      assert.equal(res.status, 403, `reconcile as ${role}`);
+    }
   });
 });
 

@@ -626,3 +626,21 @@ Plano do planejador-mestre, 10 decisões ratificadas pelo orquestrador, atacado 
 Espelha D-Ω3F-KPI-RELATORIO (ratificada 5/5): os PRs das 8 fatias Ω4 NÃO tocam `Kpis/*`; a reconciliação de
 KPI é feita uma vez no relatório final do Ω4 (evita churn dos 5 arquivos de KPI a cada fatia pequena). A junta
 de cada PR valida as contagens de execução real no corpo do PR. Sujeita a ratificação pela junta do Ω4-1.
+
+## D-Ω4-5 — Conciliação bancária (2026-07-18, ratificado pós-junta)
+Bloco Ω4-5 orquestrado por workflow multiagente (spec→ataque→implementa→drill+junta 3/3). 2 decisões de design
+tomadas no ataque/implementação e RATIFICADAS pelo orquestrador:
+- **D-Ω4-5-RECONCILE-META:** o write-path de conciliação (`PATCH /financial-entries/:id/reconcile`) é EXENTO do
+  chokepoint assertPeriodOpen — ATRAVESSA período fechado. Fundamento: conciliação é META-DADO (não altera
+  amount/direction/deleted → não muda a soma da competência; validador confirmou estruturalmente); o extrato
+  bancário chega DEPOIS do fechamento (caso de uso nº1); gate-ar travaria permanentemente o estado de conciliação
+  no instante do fechamento. Coerente com D-Ω4-POS-FECHAMENTO (operar contra objeto de período fechado é permitido
+  quando o ato é evento da competência CORRENTE — reconciled_at = now). **IMPORTANTE p/ Ω4-6:** o guard de
+  fechamento (incl. o estado 'closing', P-Ω4-4-CHOKEPOINT-CLOSING) NÃO deve bloquear reconcile — é a exceção
+  documentada. Os demais movimentos (create/update/delete/reverse/pay) SEGUEM pelo chokepoint.
+- **D-Ω4-5-DIVERGENCE-NARROW:** divergence_type ∈ {value, date} (não {value,date,missing,duplicate}). missing/
+  duplicate são razões de NÃO-conciliação (reconciled=false), inalcançáveis num write-path que só grava divergence
+  com reconciled=true → 400 invalid_divergence_type. {value,date} = "conciliado com ressalva".
+- **Fix P-Ω4-4-REVERSE-MUTABLE:** reverse passa a chamar assertMutable(original) → estornar lançamento CONCILIADO
+  → 422 entry_reconciled (desconcilie antes); espelha delete(); NÃO regride A1/B1 (reversal_pair_immutable).
+- **P-Ω4-5-BATCH** aberta: conciliação em LOTE (CSV/OFX) adiada.
