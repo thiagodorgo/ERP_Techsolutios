@@ -595,3 +595,34 @@ smoke, 4 reprovações). Reconciliação KPI D-Ω3F-KPI-RELATORIO aplicada a `Kp
 **Agentes fid-analista/fid-planejador/fid-avaliador DESCOMISSIONADOS** (criados no Ω3F-0 para o fluxo de
 fidelidade da Fase 1; a fase encerrou). A Junta de Mapas (planejador/dev/avaliador-mapas) PERMANECE (norma
 permanente: nenhum código de mapa sem plano). Próximo: Ω4 Financeiro (×1,5).
+
+## D-Ω4 — Financeiro do tenant (×1,5): plano mestre ratificado + ataque adversarial (2026-07-17)
+Plano do planejador-mestre, 10 decisões ratificadas pelo orquestrador, atacado pelo critico-adversarial (1 rodada, sobreviveu com ajustes). Módulo financeiro do tenant é GREENFIELD (pricing já existe: price-tables/tariffs/service-quotes/work-order-financials).
+
+**Fatiamento (ordem por dependência/risco):** Ω4-1 Conta financeira → Ω4-2 Título (a pagar/receber) → Ω4-3 Faturamento OS→Título → Ω4-4 Caixa/Extrato → Ω4-5 Conciliação → Ω4-6 Fechamento (trava retroativa) → Ω4-7 Cheque (Baixa) → Ω4-8 Dashboard real. Cada fatia = 1 PR vertical. NF-e/Faturas FORA do v1 (D-Ω4-NFE).
+
+**Decisões ratificadas:**
+- **D-Ω4-PR1:** Conta-first (base, menor risco, espelho de suppliers).
+- **D-Ω4-GANCHO:** título a receber nasce por AÇÃO `POST /work-orders/:id/invoice` (não automático), lê agregado CONGELADO de work_order_financial_items (Σ frozen total_amount, nunca relê tarifa). Agregado ≤0 → 422.
+- **D-Ω4-C2 (correção do critico):** idempotência do faturamento = unique parcial `(tenant_id, work_order_id, direction) WHERE deleted_at IS NULL` — **SEM competencia na chave** (senão duplo-faturamento entre meses). `competencia` = ATRIBUTO do título (mês do faturamento, derivado do server now, nunca do corpo).
+- **D-Ω4-C1 (correção do critico — anti-refaturamento inter-fatia):** ao faturar, carimbar invoiced_at/title_id nos work_order_financial_items incluídos; o módulo work-order-financials passa a REJEITAR mutação/delete de item faturado (422 item_invoiced). Acoplamento inter-módulo reconhecido: a fatia Ω4-3 TOCA work-order-financials (não é vertical isolada) + migration aditiva (colunas invoiced_at/title_id).
+- **D-Ω4-A3 (correção do critico — chokepoint):** ponto ÚNICO de escrita financeira `assertPeriodOpen(tenantId, competencia)` estabelecido já na fatia Ω4-2 (Título); toda escrita de título/lançamento/cheque atravessa; Fechamento (Ω4-6) só POVOA FinancialPeriodClose. Cada fatia nova traz teste de regressão "escrita em período fechado → 422".
+- **D-Ω4-PERMS:** permissões dedicadas `financial_accounts:read|create|update` (e depois financial_titles:*, financial_entries:*, financial_period:close|reopen). Órfãs (invoices/payments/billing:read) intocadas. finance=full; tenant_admin/super/platform=full; manager/auditor/viewer=read.
+- **D-Ω4-FECHAMENTO:** guard dinâmico por competência (write em período fechado → 422 period_closed); fechar transacional (snapshot pendências + flip atômico); reabertura exige permissão + motivo + auditoria (RN-FIN-009/RN-AUD-005).
+- **D-Ω4-POS-FECHAMENTO:** liquidação de título de período fechado entra na competência ABERTA corrente (título fechado imutável no seu período).
+- **D-Ω4-ESTORNO:** contra-lançamento (FinancialEntry reverso + auditoria); sem UPDATE destrutivo de valor pago.
+- **D-Ω4-MOEDA:** single-currency por conta/título; agregados só somam mesma moeda (rejeita mistura); sem FX no v1. **allowlist {BRL}** no v1 (currency validado, não aceita 3-letras qualquer — correção M3 do critico).
+- **D-Ω4-BRANCH:** filial adiada (branches sem @@unique([tenant_id,id]); FK composta exigiria ALTER prévio).
+
+**Ajustes do PR1 (Ω4-1) exigidos pelo critico (blockers + médios incorporados):**
+- **A1:** unique de `name` PARCIAL `WHERE is_active = true` (precedente service_quotes migration) — permite recriar conta após soft-delete.
+- **A2:** `opening_balance >= 0` (saldo devedor é lançamento, não saldo de abertura) — reusa assertMoneyInRange (rejeita negativo com 400).
+- **M1:** catalog.ts + tests/core-saas.test.ts NO ESCOPO do PR1 (finance NÃO herda suppliers — mapear perms por papel explicitamente).
+- **M2:** auditoria das mutações via `recordRequestAuditBestEffort` na AuditLog GENÉRICA já existente (financial_account.created/updated/deleted) — não precisa mecanismo novo, reusa (correção da premissa falsa "financeiro precisa trilha própria").
+- **M3:** códigos coerentes: campo inválido/moeda fora da allowlist/negativo = 400; estouro de faixa Decimal = 422; duplicate = 409.
+- **B1:** DELETE lógico zera is_active=false E status='inactive'; lista filtra por is_active (não por status).
+
+## D-Ω4-KPI-RELATORIO — KPI por relatório final do Ω4 (2026-07-17)
+Espelha D-Ω3F-KPI-RELATORIO (ratificada 5/5): os PRs das 8 fatias Ω4 NÃO tocam `Kpis/*`; a reconciliação de
+KPI é feita uma vez no relatório final do Ω4 (evita churn dos 5 arquivos de KPI a cada fatia pequena). A junta
+de cada PR valida as contagens de execução real no corpo do PR. Sujeita a ratificação pela junta do Ω4-1.

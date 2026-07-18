@@ -42,6 +42,7 @@ model Tenant {
   price_tables                  PriceTable[]
   tariffs                       Tariff[]
   suppliers                     Supplier[]
+  financial_accounts            FinancialAccount[]
   tags                          Tag[]
   pois                          Poi[]
   operator_profiles             OperatorProfile[]
@@ -1379,6 +1380,37 @@ model Supplier {
   @@index([tenant_id, is_active])
   @@index([tenant_id, created_at])
   @@map("suppliers")
+}
+
+// Ω4-1 — Conta financeira (cadastro puro). kind ∈ {cash,bank,wallet} e currency ∈ {BRL} validados na
+// aplicação. opening_balance é Decimal(12,2) ≥ 0 (saldo de abertura; saldo devedor é lançamento).
+// A unicidade de NOME é PARCIAL (só entre contas ATIVAS) e vive SÓ no SQL da migration — o Prisma
+// não expressa índice único parcial (WHERE is_active=true); por isso NÃO há @@unique([tenant_id,name]).
+// Delete é LÓGICO: is_active=false + status='inactive'.
+model FinancialAccount {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id       String   @db.Uuid
+  name            String
+  kind            String   @default("cash")
+  currency        String   @default("BRL")
+  opening_balance Decimal  @default(0) @db.Decimal(12, 2)
+  bank_name       String?
+  agency          String?
+  account_number  String?
+  document        String?
+  notes           String?
+  status          String   @default("active")
+  is_active       Boolean  @default(true)
+  created_by      String?  @db.Uuid
+  updated_by      String?  @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant          Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, is_active])
+  @@index([tenant_id, created_at])
+  @@map("financial_accounts")
 }
 
 // Ω2-d — Tag (marcador/etiqueta). Chave natural [tenant_id, name]; desativação lógica via is_active.
