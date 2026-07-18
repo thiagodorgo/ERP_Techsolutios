@@ -2,6 +2,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
 import type {
+  ApplyTitlePaymentInput,
   ChangeFinancialTitleStatusInput,
   CreateFinancialTitleInput,
   FinancialTitle,
@@ -111,6 +112,15 @@ export class PrismaFinancialTitleRepository implements FinancialTitleRepository 
     return updated[0] ? mapRecord(updated[0]) : undefined;
   }
 
+  async applyPayment(input: ApplyTitlePaymentInput): Promise<FinancialTitle | undefined> {
+    // Ω4-4 — grava paid_amount ABSOLUTO + status juntos (o service já validou paid_amount <= amount).
+    const updated = await this.client.financialTitle.updateManyAndReturn({
+      where: { tenant_id: input.tenantId, id: input.financialTitleId, deleted_at: null },
+      data: compactRecord({ paid_amount: input.paidAmount, status: input.status, updated_by: input.updatedBy }),
+    });
+    return updated[0] ? mapRecord(updated[0]) : undefined;
+  }
+
   async softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<FinancialTitle | undefined> {
     // Delete LÓGICO: carimba deleted_at; a row persiste mas some dos reads (deleted_at:null → re-delete 404).
     const updated = await this.client.financialTitle.updateManyAndReturn({
@@ -153,6 +163,9 @@ export class RlsPrismaFinancialTitleRepository implements FinancialTitleReposito
   }
   changeStatus(input: ChangeFinancialTitleStatusInput): Promise<FinancialTitle | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialTitleRepository(tx).changeStatus(input));
+  }
+  applyPayment(input: ApplyTitlePaymentInput): Promise<FinancialTitle | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialTitleRepository(tx).applyPayment(input));
   }
   softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<FinancialTitle | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialTitleRepository(tx).softDelete(tenantId, financialTitleId, deletedBy));

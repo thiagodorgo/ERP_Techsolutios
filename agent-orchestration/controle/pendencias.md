@@ -779,3 +779,34 @@ Notas de prontidão do título para a liquidação dirigir partially_paid/paid:
   conta o dinheiro entrou (FinancialEntry → conta). A conta de liquidação deve estar ATIVA (P-Ω4-ACCOUNT-ACTIVE).
 - **Prontos:** ida-e-volta título↔OS exposto (workOrderId no DTO do título; titleId/invoiced no DTO do item);
   título faturado nasce due_date hoje+30d, status open, competencia derivada, paid_amount 0. Estorno=contra-lançamento.
+
+## P-Ω4-4-EDGES — Bordas do Ω4-4 (Caixa/Extrato + liquidação) — implementado, com decisões e limites
+Entregue no bloco Ω4-4 (branch feat-omega4-4-cash). Decisões e bordas que ficam como pendência de fatias futuras:
+- **Estorno de uma LIQUIDAÇÃO não reverte o título.** O contra-lançamento (POST /financial-entries/:id/reverse)
+  nasce SEM title_id (pura correção de caixa) e NÃO decrementa paid_amount / reabre o status do título. Reverter o
+  estado do título ao estornar seu pagamento é concern de fatia futura (Ω4-5+). O saldo da CONTA volta ao anterior.
+- **currency_mismatch é defensivo no v1.** Conta e título são BRL-only (allowlist), então a igualdade de moeda
+  (lançamento=conta=título) nunca dispara com entrada válida no create/pay a não ser moeda divergente no corpo do
+  create (ex.: currency=USD → 422). Novas moedas exigem decisão de escopo (câmbio/saldo multi-moeda).
+- **Editáveis do lançamento = category/description apenas.** amount/direction/account/occurred_at/competencia são
+  IMUTÁVEIS pós-create (mexer em occurred_at moveria a competência e furaria o chokepoint de período fechado).
+- **Erros da liquidação são bi-modais por origem** (mesmo shape HTTP): título (cancelado/pago/overpayment/404) →
+  FinancialTitleError; conta/moeda/idempotência/chokepoint → FinancialEntryError. reason/statusCode idênticos ao contrato.
+- **Reconciliação (reconciled=true) já trava mutação** (422 entry_reconciled), mas NÃO há endpoint que concilie nesta
+  fatia (reconciled nasce false; conciliação bancária é Ω4-5). A trava está fiada e testável por construção do repo.
+- **Paridade InMemory×Prisma** é estrutural (mesmo contrato de repo/DTO/erros); a suíte roda só em memory
+  (CORE_SAAS_PERSISTENCE=memory) — o caminho Prisma não é exercido sem banco, como nos vizinhos Ω4-1/4-2a.
+
+## P-Ω4-4-LIQUID-ATOMIC — Liquidação lançamento↔título não-atômica (MÉDIA)
+payTitle faz assertPayable → entry.create → applyPayment (3 statements, sem $transaction). Numa corrida REAL de 2
+pagamentos do MESMO título SEM client_action_id: ambos passam assertPayable, ambos criam lançamento (saldo da CONTA
++= ambos), e o 2º applyPayment recusa (422 overpayment) COM o lançamento já persistido → saldo inflado enquanto o
+título fica consistente (nunca sobre-pago — applyPayment re-valida guardPayable). Mitigação existente: com
+client_action_id o 2º entry.create dá 409 duplicate_payment ANTES do applyPayment. Fix: envolver entry.create +
+applyPayment em prisma.$transaction (documentar limitação InMemory). Só o cenário sem token idempotente + concorrência
+genuína abre a janela.
+
+## P-Ω4-4-REVERSE-MUTABLE — reverse() não chama assertMutable (BAIXA, guardar no Ω4-5)
+update/delete barram lançamento reconciled (422), mas reverse não. Não-explorável hoje (reconciled nasce false, sem
+endpoint que concilie até o Ω4-5). Quando o Ω4-5 introduzir reconciled=true, o reverse precisa também barrar
+(estornar um lançamento já conciliado deve exigir desconciliar antes). Guardar junto com a conciliação.
