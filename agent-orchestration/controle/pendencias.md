@@ -796,3 +796,17 @@ Entregue no bloco Ω4-4 (branch feat-omega4-4-cash). Decisões e bordas que fica
   fatia (reconciled nasce false; conciliação bancária é Ω4-5). A trava está fiada e testável por construção do repo.
 - **Paridade InMemory×Prisma** é estrutural (mesmo contrato de repo/DTO/erros); a suíte roda só em memory
   (CORE_SAAS_PERSISTENCE=memory) — o caminho Prisma não é exercido sem banco, como nos vizinhos Ω4-1/4-2a.
+
+## P-Ω4-4-LIQUID-ATOMIC — Liquidação lançamento↔título não-atômica (MÉDIA)
+payTitle faz assertPayable → entry.create → applyPayment (3 statements, sem $transaction). Numa corrida REAL de 2
+pagamentos do MESMO título SEM client_action_id: ambos passam assertPayable, ambos criam lançamento (saldo da CONTA
++= ambos), e o 2º applyPayment recusa (422 overpayment) COM o lançamento já persistido → saldo inflado enquanto o
+título fica consistente (nunca sobre-pago — applyPayment re-valida guardPayable). Mitigação existente: com
+client_action_id o 2º entry.create dá 409 duplicate_payment ANTES do applyPayment. Fix: envolver entry.create +
+applyPayment em prisma.$transaction (documentar limitação InMemory). Só o cenário sem token idempotente + concorrência
+genuína abre a janela.
+
+## P-Ω4-4-REVERSE-MUTABLE — reverse() não chama assertMutable (BAIXA, guardar no Ω4-5)
+update/delete barram lançamento reconciled (422), mas reverse não. Não-explorável hoje (reconciled nasce false, sem
+endpoint que concilie até o Ω4-5). Quando o Ω4-5 introduzir reconciled=true, o reverse precisa também barrar
+(estornar um lançamento já conciliado deve exigir desconciliar antes). Guardar junto com a conciliação.

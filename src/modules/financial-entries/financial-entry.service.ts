@@ -218,7 +218,11 @@ export class FinancialEntryService {
       updatedBy: actor.userId,
     });
 
-    // Só DEPOIS do lançamento criado (idempotência já resolvida) muta o título — pré-validado, não falha.
+    // Só DEPOIS do lançamento criado (idempotência já resolvida no create) muta o título. applyPayment
+    // RE-valida guardPayable antes de gravar (o título NUNCA é sobre-pago). Ressalva: numa corrida real de 2
+    // pagamentos SEM client_action_id, ambos criam lançamento e o 2º applyPayment recusa (422 overpayment)
+    // com o lançamento já persistido → saldo da CONTA inflado (título consistente). Ver P-Ω4-4-LIQUID-ATOMIC
+    // (ideal: entry.create + applyPayment na mesma $transaction). Com client_action_id o replay dá 409 antes.
     await titleService.applyPayment(titleActor, title.id, amount);
     return entry;
   }
