@@ -493,3 +493,107 @@ test("[pós-análise] overdue: título PAGO não é overdue mesmo vencido; predi
   assert.equal(isTitleOverdue("paid", past, now), false); // pago não vence
   assert.equal(isTitleOverdue("cancelled", past, now), false); // cancelado não vence
 });
+
+// ---------- Ω4-4 applyPayment / assertPayable (WRITE-PATH da liquidação) ----------
+
+test("applyPayment PARCIAL: incrementa paid_amount e seta partially_paid (alcança destino que a máquina manual não alcança)", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 1000 }));
+  const paid = await svc.applyPayment(ctx, title.id, 400);
+  assert.equal(paid.paidAmount, 400);
+  assert.equal(paid.status, "partially_paid");
+  assert.equal(paid.updatedBy, ctx.userId);
+  // segunda parcela acumula
+  const paid2 = await svc.applyPayment(ctx, title.id, 100);
+  assert.equal(paid2.paidAmount, 500);
+  assert.equal(paid2.status, "partially_paid");
+});
+
+test("applyPayment TOTAL: paid_amount == amount → status paid", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 250.5 }));
+  const paid = await svc.applyPayment(ctx, title.id, 250.5);
+  assert.equal(paid.paidAmount, 250.5);
+  assert.equal(paid.status, "paid");
+});
+
+test("applyPayment: soma das parcelas quita → paid (250 + 250 = 500)", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 500 }));
+  await svc.applyPayment(ctx, title.id, 250);
+  const paid = await svc.applyPayment(ctx, title.id, 250);
+  assert.equal(paid.status, "paid");
+  assert.equal(paid.paidAmount, 500);
+});
+
+test("applyPayment OVERPAYMENT: paid_amount + amount > amount → 422 overpayment", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 100 }));
+  await assert.rejects(
+    () => svc.applyPayment(ctx, title.id, 100.01),
+    (e: unknown) => e instanceof FinancialTitleError && e.statusCode === 422 && e.reason === "overpayment",
+  );
+});
+
+test("applyPayment em título CANCELADO → 422 title_cancelled", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 100 }));
+  await svc.changeStatus(ctx, title.id, { status: "cancelled" });
+  await assert.rejects(
+    () => svc.applyPayment(ctx, title.id, 10),
+    (e: unknown) => e instanceof FinancialTitleError && e.statusCode === 422 && e.reason === "title_cancelled",
+  );
+});
+
+test("applyPayment em título JÁ PAGO → 422 title_already_paid", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 100 }));
+  await svc.applyPayment(ctx, title.id, 100);
+  await assert.rejects(
+    () => svc.applyPayment(ctx, title.id, 1),
+    (e: unknown) => e instanceof FinancialTitleError && e.statusCode === 422 && e.reason === "title_already_paid",
+  );
+});
+
+test("assertPayable NÃO muta o título e retorna o registro escrevível", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 100 }));
+  const payable = await svc.assertPayable(ctx, title.id, 40);
+  assert.equal(payable.id, title.id);
+  // paid_amount/status permanecem intactos (assertPayable é guard-only).
+  const fetched = await svc.get(ctx, title.id);
+  assert.equal(fetched.paidAmount, 0);
+  assert.equal(fetched.status, "open");
+});
+
+test("assertPayable sinaliza overpayment ANTES de qualquer lançamento", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 100 }));
+  await assert.rejects(
+    () => svc.assertPayable(ctx, title.id, 150),
+    (e: unknown) => e instanceof FinancialTitleError && e.statusCode === 422 && e.reason === "overpayment",
+  );
+});
+
+test("applyPayment em título de OUTRO tenant → 404; título deletado → 404", async () => {
+  const svc = service();
+  const owner = actor();
+  const title = await svc.create(owner, receivable({ amount: 100 }));
+  await assert.rejects(
+    () => svc.applyPayment(actor(), title.id, 10),
+    (e: unknown) => e instanceof FinancialTitleError && e.statusCode === 404,
+  );
+  await svc.delete(owner, title.id);
+  await assert.rejects(
+    () => svc.applyPayment(owner, title.id, 10),
+    (e: unknown) => e instanceof FinancialTitleError && e.statusCode === 404,
+  );
+});

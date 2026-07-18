@@ -4,7 +4,10 @@ import {
   InMemoryFinancialPeriodCloseRepository,
   InMemoryFinancialTitleRepository,
   invalidAccountReferenceError,
+  overpaymentError,
   periodClosedError,
+  titleAlreadyPaidError,
+  titleCancelledError,
   titleNotFoundError,
   type FinancialPeriodCloseRepository,
   type FinancialTitleRepository,
@@ -39,6 +42,7 @@ import {
   parseRequiredUuid,
   parseTargetStatus,
   readOptionalBoolean,
+  roundMoney,
 } from "./financial-title.validators.js";
 
 type RawRecord = Record<string, unknown>;
@@ -204,6 +208,50 @@ export class FinancialTitleService {
       throw titleNotFoundError();
     }
     return updated;
+  }
+
+  // Ω4-4 — guard-only read usado pela LIQUIDAÇÃO (módulo financial-entries) ANTES de gravar o lançamento
+  // de caixa: 404 (inexistente/deletado); cancelado → 422 title_cancelled; já pago → 422 title_already_paid;
+  // paid_amount + amount > amount → 422 overpayment. NÃO muta (o lançamento é criado depois; se falhar,
+  // o título ainda não foi tocado). Retorna o título ESCREVÍVEL (direção/moeda que a liquidação lê).
+  async assertPayable(actor: FinancialTitleActorContext, financialTitleId: string, amount: number): Promise<FinancialTitle> {
+    const current = await this.getWritable(actor, financialTitleId);
+    this.guardPayable(current, amount);
+    return current;
+  }
+
+  // Ω4-4 — WRITE-PATH da liquidação: incrementa paid_amount e seta status ('paid' quando quita, senão
+  // 'partially_paid') JUNTOS, contornando assertStatusTransition — é o ÚNICO caminho que alcança
+  // partially_paid/paid. Re-valida a invariante (guardPayable) antes de gravar (defesa contra corrida).
+  async applyPayment(actor: FinancialTitleActorContext, financialTitleId: string, amount: number): Promise<FinancialTitle> {
+    const current = await this.getWritable(actor, financialTitleId);
+    this.guardPayable(current, amount);
+    const newPaid = roundMoney(current.paidAmount + amount);
+    const status = newPaid >= current.amount ? "paid" : "partially_paid";
+    const updated = await this.repository.applyPayment({
+      tenantId: actor.tenantId,
+      financialTitleId: current.id,
+      paidAmount: newPaid,
+      status,
+      updatedBy: actor.userId,
+    });
+    if (!updated) {
+      throw titleNotFoundError();
+    }
+    return updated;
+  }
+
+  // Invariante da liquidação: título liquidável e paid_amount + amount <= amount (sem overpayment).
+  private guardPayable(title: FinancialTitle, amount: number): void {
+    if (title.status === "cancelled") {
+      throw titleCancelledError();
+    }
+    if (title.status === "paid") {
+      throw titleAlreadyPaidError();
+    }
+    if (roundMoney(title.paidAmount + amount) > title.amount) {
+      throw overpaymentError();
+    }
   }
 
   async delete(actor: FinancialTitleActorContext, financialTitleId: string): Promise<FinancialTitle> {

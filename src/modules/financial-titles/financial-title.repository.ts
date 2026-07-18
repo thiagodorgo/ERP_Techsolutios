@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import type {
+  ApplyTitlePaymentInput,
   ChangeFinancialTitleStatusInput,
   CreateFinancialTitleInput,
   FinancialTitle,
@@ -20,6 +21,8 @@ export interface FinancialTitleRepository {
   findActiveByWorkOrder(tenantId: string, workOrderId: string, direction: string): Promise<FinancialTitle | undefined>;
   update(input: UpdateFinancialTitleInput): Promise<FinancialTitle | undefined>;
   changeStatus(input: ChangeFinancialTitleStatusInput): Promise<FinancialTitle | undefined>;
+  // Ω4-4 — WRITE-PATH da liquidação: paid_amount + status juntos (contorna a máquina de status).
+  applyPayment(input: ApplyTitlePaymentInput): Promise<FinancialTitle | undefined>;
   softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<FinancialTitle | undefined>;
   reset?(): void;
 }
@@ -51,6 +54,19 @@ export function periodClosedError(competencia: string): FinancialTitleError {
     "period_closed",
     `The financial period ${competencia} is closed for new entries.`,
   );
+}
+
+// Ω4-4 — guards da LIQUIDAÇÃO (dinheiro entra/sai contra um título).
+export function titleCancelledError(): FinancialTitleError {
+  return new FinancialTitleError(422, "FINANCIAL_TITLE_UNPROCESSABLE", "title_cancelled", "A cancelled financial title cannot be settled.");
+}
+
+export function titleAlreadyPaidError(): FinancialTitleError {
+  return new FinancialTitleError(422, "FINANCIAL_TITLE_UNPROCESSABLE", "title_already_paid", "This financial title is already fully paid.");
+}
+
+export function overpaymentError(): FinancialTitleError {
+  return new FinancialTitleError(422, "FINANCIAL_TITLE_UNPROCESSABLE", "overpayment", "Payment amount exceeds the outstanding balance of the title.");
 }
 
 // Ω4-3 (D-Ω4-C2) — rede do índice PARCIAL de idempotência: um 2º título ATIVO para a mesma OS+direção.
@@ -156,6 +172,23 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
 
     const updated: FinancialTitle = {
       ...current,
+      status: input.status,
+      ...(input.updatedBy !== undefined ? { updatedBy: input.updatedBy } : {}),
+      updatedAt: new Date(),
+    };
+    this.titles.set(updated.id, updated);
+    return updated;
+  }
+
+  async applyPayment(input: ApplyTitlePaymentInput): Promise<FinancialTitle | undefined> {
+    const current = await this.findById(input.tenantId, input.financialTitleId);
+    if (!current || current.deletedAt != null) return undefined;
+
+    // Ω4-4 — grava paid_amount ABSOLUTO + status juntos, contornando a máquina de status (o service já
+    // validou a invariante paid_amount <= amount). Único caminho a alcançar partially_paid/paid.
+    const updated: FinancialTitle = {
+      ...current,
+      paidAmount: input.paidAmount,
       status: input.status,
       ...(input.updatedBy !== undefined ? { updatedBy: input.updatedBy } : {}),
       updatedAt: new Date(),
