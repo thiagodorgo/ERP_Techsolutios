@@ -109,14 +109,15 @@ export function PlatformLayout() {
                 aria-label="Expandir menu"
                 onClick={() => setCollapsed(false)}
                 className="sidebar-logo-toggle"
-                style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid #33475B", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, padding: 0 }}
+                style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid #33475B", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, padding: 0 }}
               >
-                <svg className="ic-logo" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                {/* colapsado = cinza (#E2E8F0), como o protótipo (expandido é verde #7BE084) */}
+                <svg className="ic-logo" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E2E8F0" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 21V11" />
                   <path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6" />
                   <path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11" />
                 </svg>
-                <ChevronRight className="ic-back" size={18} style={{ color: "#9FB4CC" }} />
+                <ChevronRight className="ic-back" size={16} style={{ color: "#E2E8F0" }} />
               </button>
             ) : (
               <>
