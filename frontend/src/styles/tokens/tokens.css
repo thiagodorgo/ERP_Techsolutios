@@ -30,6 +30,13 @@
   --color-status-reconciled: #157347;
   --color-status-audit: #475569;
   --color-status-exception: #be123c;
+  /* WS-UI-CARDS+CHARTS (D-CHART-SERIE-TOKENS, junta cognicao ALTA) — data-viz NÃO reusa os tokens de STATUS:
+     `danger #DC2626` é a cor de AÇÃO DESTRUTIVA (J-002/Ω3F-6b acima), então pintar a barra de "saída" com ela a
+     faz "ler como erro". Per J-002 (o PROTÓTIPO vence: ERP Web.dc.html usa #10B981/#F87171 no gráfico de fluxo de
+     caixa), promovemos TOKENS DEDICADOS de série — nem hex solto no componente, nem remapeio nos tokens de status. */
+  --color-chart-inflow: #10b981;
+  --color-chart-outflow: #f87171;
+  --color-chart-neutral: #94a3b8;
   --surface-page: #e8edf2;
   --surface-shell: #f4f7fa;
   --surface-panel: #ffffff;

@@ -550,5 +550,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-19",
+    "version": "WS-UI-CARDS-CHARTS-F1",
+    "backend_tests": "1259/1265",
+    "frontend_smoke_tests": "524/524",
+    "flutter_tests": "764/764",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 66,
+    "description": "WS-UI-CARDS+CHARTS Fase 1 (mandato do dono: cards estaticos -> clicaveis com pop-up sobre o tema; KPIs -> graficos temporais). PD-004 (pesquisa web): grafico = SVG inline ZERO-DEP (nao adicionou lib). Novos primitivos: <TrendChart> (SVG viewBox unitless + non-scaling-stroke, line|area|bar, multi-serie, tooltip <title>, cor por token, aria da tendencia; suporta valores negativos apos fix da junta) + <Sparkline>; e a camada de pop-up de KPI: <KpiDetailModal> dialog A11Y-COMPLETO (focus trap/Esc/backdrop/retorno de foco/aria-labelledby — o Modal do DS era incompleto) + <ClickableKpiCard> (role=button, teclado, aria-haspopup) + KpiDetail (union chart|breakdown|explain — variante ditada pelo dado REAL, nunca fabrica serie; selo mock/fallback suprime o grafico, D-007). Flagship: FinanceiroPage migra o fluxo de caixa das divs manuais para <TrendChart type=bar> (D-CHART-SERIE-TOKENS: tokens dedicados --color-chart-inflow/outflow, preservando a cor do prototipo, nao os tokens de status/alarme) e os 4 cards viram clicaveis com breakdown REAL (aberto/vencido/em disputa). Junta 1 APROVADO + 2 APROVADO_CONDICIONADO (0 bloqueia); condicoes sanadas (cor, negativos, sub-layout, raio). Sem backend novo. KPI: frontend_smoke 516->524 (+8). backend 1259/flutter 764 carregados (nao tocados). mvp/blocks inalterados. merge_commit/approved_head null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

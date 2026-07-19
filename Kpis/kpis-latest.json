@@ -1,17 +1,17 @@
 {
  "snapshot_date": "2026-07-19",
- "version": "WS-RBAC-GATING-CHECKLISTS",
+ "version": "WS-UI-CARDS-CHARTS-F1",
  "source": "Kpis/kpis-latest.json",
  "scope": "root_project_kpis_reflecting_mobile_and_web",
  "release": {
-  "block": "WS-RBAC-GATING-CHECKLISTS (revisao RBAC — esconder escrita de papeis de leitura)",
-  "title": "WS-RBAC-GATING-CHECKLISTS: gating de escrita nas 2 telas de checklist",
+  "block": "WS-UI-CARDS+CHARTS Fase 1 (cards clicaveis + grafico temporal SVG zero-dep)",
+  "title": "WS-UI-CARDS+CHARTS F1: <TrendChart> SVG + pop-up a11y de KPI + flagship financeiro",
   "pr": null,
   "merge_commit": null,
   "approved_head": null,
   "status": "published_per_pr",
-  "summary": "WS-RBAC-GATING-CHECKLISTS (revisao RBAC ator-por-ator, mandato do dono: 'telas que tem todas as opcoes para perfis') — as 2 telas REAIS de checklist deixam de expor acoes de ESCRITA a papeis de leitura. TenantChecklistsPage gateia Novo checklist (tenant_checklists:create), Publicar (publish), Ativar/Inativar + Salvar builder (update); ChecklistRunsPage gateia Iniciar execucao (checklist_runs:create). Padrao usePermissions+can+render condicional (igual ClientesPage); backend ja e a autoridade (403 real, §2.4). +1 smoke de render (2 casos) provando botao oculto p/ leitura e visivel p/ create. As 3 cascas MOCK (DispatchConsole/TablePage/Pedidos) ficam para WS-SCALE-8TELAS (gate-on-wiring, P-RBAC-GATING-MOCKSHELLS). Junta coordenador-de-acessos APROVADO + validador APROVADO_COND (condicoes sanadas).",
-  "status_label": "Revisao RBAC: 2 telas de checklist gateiam escrita por permissao; smoke 514->516"
+  "summary": "WS-UI-CARDS+CHARTS Fase 1 (mandato do dono: cards estaticos -> clicaveis com pop-up sobre o tema; KPIs -> graficos temporais). PD-004 (pesquisa web): grafico = SVG inline ZERO-DEP (nao adicionou lib). Novos primitivos: <TrendChart> (SVG viewBox unitless + non-scaling-stroke, line|area|bar, multi-serie, tooltip <title>, cor por token, aria da tendencia; suporta valores negativos apos fix da junta) + <Sparkline>; e a camada de pop-up de KPI: <KpiDetailModal> dialog A11Y-COMPLETO (focus trap/Esc/backdrop/retorno de foco/aria-labelledby — o Modal do DS era incompleto) + <ClickableKpiCard> (role=button, teclado, aria-haspopup) + KpiDetail (union chart|breakdown|explain — variante ditada pelo dado REAL, nunca fabrica serie; selo mock/fallback suprime o grafico, D-007). Flagship: FinanceiroPage migra o fluxo de caixa das divs manuais para <TrendChart type=bar> (D-CHART-SERIE-TOKENS: tokens dedicados --color-chart-inflow/outflow, preservando a cor do prototipo, nao os tokens de status/alarme) e os 4 cards viram clicaveis com breakdown REAL (aberto/vencido/em disputa). Junta 1 APROVADO + 2 APROVADO_CONDICIONADO (0 bloqueia); condicoes sanadas (cor, negativos, sub-layout, raio). Sem backend novo.",
+  "status_label": "UI viva: cards clicaveis com pop-up + grafico temporal SVG zero-dep (flagship financeiro); smoke 516->524"
  },
  "metrics": {
   "flutter_tests": {
@@ -21,16 +21,16 @@
    "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
   },
   "frontend_smoke_tests": {
-   "value": 516,
-   "total": 516,
-   "display": "516/516",
-   "note": "+2 (frontend/tests/checklists-access-gating.smoke.test.tsx: render prova botao de escrita oculto p/ so-leitura, visivel p/ create). Adicionado ao script test:smoke."
+   "value": 524,
+   "total": 524,
+   "display": "524/524",
+   "note": "+8 (trend-chart.test.tsx no test:smoke: estrutura SVG do <TrendChart> — barras por ponto/serie, non-scaling-stroke, vazio honesto, valores iguais, NEGATIVOS; pop-up: ClickableKpiCard role=button, KpiDetailModal breakdown role=dialog, fonte mock suprime grafico)."
   },
   "backend_tests": {
    "value": 1259,
    "total": 1265,
    "display": "1259/1265",
-   "note": "carrega o ultimo valor oficial (1259) — WS-RBAC-GATING-CHECKLISTS e frontend-only."
+   "note": "carrega o ultimo valor oficial (1259) — WS-UI-CARDS+CHARTS F1 e frontend-only (sem backend novo; Fase 2 fara agregado de serie)."
   },
   "backend_contract_tests_focused": {
    "value": 21,

@@ -26,6 +26,24 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-UI-CARDS-CHARTS-F1">
+          <h2>WS-UI-CARDS+CHARTS Fase 1 — cards clicáveis + gráfico temporal SVG (zero-dep)</h2>
+          <p>
+            <strong>WS-UI-CARDS+CHARTS Fase 1 (2026-07-19):</strong> por ordem do dono (cards estáticos → clicáveis com
+            <strong>pop-up sobre o tema</strong>; telas de KPI → <strong>gráficos temporais</strong>). Decisão PD-004
+            (pesquisa web ≥5 fontes): gráfico = <strong>SVG inline zero-dependência</strong> — não adicionou lib (Recharts só
+            sob demanda futura). Novos primitivos: <code>&lt;TrendChart&gt;</code> (SVG viewBox unitless +
+            <code>non-scaling-stroke</code> = responsivo sem lib; linha/área/barra; multi-série; tooltip nativo; cor por token;
+            suporta valores negativos após fix da junta) e a camada de pop-up <code>&lt;KpiDetailModal&gt;</code>
+            <strong>a11y-completa</strong> (focus trap, Esc, backdrop, retorno de foco, aria-labelledby) +
+            <code>&lt;ClickableKpiCard&gt;</code>. O corpo do pop-up é ditado pelo <strong>dado REAL</strong>
+            (<code>chart | breakdown | explain</code>) — <strong>nunca fabrica série</strong>; fonte mock/fallback suprime o
+            gráfico (D-007). <strong>Flagship financeiro</strong>: fluxo de caixa migrado para <code>&lt;TrendChart&gt;</code>
+            (tokens dedicados de série, cor do protótipo preservada — D-CHART-SERIE-TOKENS) e os 4 cards viraram clicáveis com
+            breakdown real (aberto/vencido/em disputa). Junta <strong>1 APROVADO + 2 APROVADO_CONDICIONADO</strong>; condições
+            sanadas. <strong>smoke 516→524</strong> (+8). Backend/Flutter/MVP <strong>inalterados</strong> (sem backend novo).
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-RBAC-GATING-CHECKLISTS">
           <h2>WS-RBAC-GATING-CHECKLISTS — esconder ações de escrita de papéis de leitura</h2>
           <p>
