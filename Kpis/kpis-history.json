@@ -566,5 +566,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-19",
+    "version": "WS-MAPA-M1",
+    "backend_tests": "1259/1265",
+    "frontend_smoke_tests": "530/530",
+    "flutter_tests": "764/764",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 66,
+    "description": "WS-MAPA M-1 (redesign do Mapa Operacional, plano J-MAPAS-6 — Junta de Mapas planejador->dev->avaliador) — FUNDACAO de layout: grid de 3 colunas [chamados que chegam | mapa | tecnicos] substitui o layout de 2 colunas; altura do mapa DOBRADA (clamp(760px,82vh,960px)) nos DOIS canvases (MapLibre + Google, regra do espelho); coluna de tecnicos REUSA OperationsOperatorList (cartoes compactos); coluna de chamados = placeholder HONESTO (lista real e M-4, nao fabrica OS/prioridade/SLA); painel de detalhe preservado como faixa full-width. Header/pills/filtros/KPIs/polling+SSE/estados intactos. Sem provider novo, sem SKU pago, US$ 0 -> sem junta-5. Nao tocou marcadores/legenda/alerta/backend/migration (M-2..M-6). avaliador-mapas APROVADO (7/7 itens de veto; LGPD zero-coordenada; paridade do espelho; fidelidade §11). PD/KB datado em docs/maps/kb-mapas.md. KPI: frontend_smoke 524->530 (+6). backend 1259/flutter 764 carregados. mvp/blocks inalterados. merge_commit/approved_head null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

@@ -1,17 +1,17 @@
 {
  "snapshot_date": "2026-07-19",
- "version": "WS-UI-CARDS-CHARTS-F1",
+ "version": "WS-MAPA-M1",
  "source": "Kpis/kpis-latest.json",
  "scope": "root_project_kpis_reflecting_mobile_and_web",
  "release": {
-  "block": "WS-UI-CARDS+CHARTS Fase 1 (cards clicaveis + grafico temporal SVG zero-dep)",
-  "title": "WS-UI-CARDS+CHARTS F1: <TrendChart> SVG + pop-up a11y de KPI + flagship financeiro",
+  "block": "WS-MAPA M-1 (fundacao de layout do Mapa Operacional — grid 3 colunas + dobro de altura)",
+  "title": "WS-MAPA M-1: fundacao do console de alocacao (J-MAPAS-6)",
   "pr": null,
   "merge_commit": null,
   "approved_head": null,
   "status": "published_per_pr",
-  "summary": "WS-UI-CARDS+CHARTS Fase 1 (mandato do dono: cards estaticos -> clicaveis com pop-up sobre o tema; KPIs -> graficos temporais). PD-004 (pesquisa web): grafico = SVG inline ZERO-DEP (nao adicionou lib). Novos primitivos: <TrendChart> (SVG viewBox unitless + non-scaling-stroke, line|area|bar, multi-serie, tooltip <title>, cor por token, aria da tendencia; suporta valores negativos apos fix da junta) + <Sparkline>; e a camada de pop-up de KPI: <KpiDetailModal> dialog A11Y-COMPLETO (focus trap/Esc/backdrop/retorno de foco/aria-labelledby — o Modal do DS era incompleto) + <ClickableKpiCard> (role=button, teclado, aria-haspopup) + KpiDetail (union chart|breakdown|explain — variante ditada pelo dado REAL, nunca fabrica serie; selo mock/fallback suprime o grafico, D-007). Flagship: FinanceiroPage migra o fluxo de caixa das divs manuais para <TrendChart type=bar> (D-CHART-SERIE-TOKENS: tokens dedicados --color-chart-inflow/outflow, preservando a cor do prototipo, nao os tokens de status/alarme) e os 4 cards viram clicaveis com breakdown REAL (aberto/vencido/em disputa). Junta 1 APROVADO + 2 APROVADO_CONDICIONADO (0 bloqueia); condicoes sanadas (cor, negativos, sub-layout, raio). Sem backend novo.",
-  "status_label": "UI viva: cards clicaveis com pop-up + grafico temporal SVG zero-dep (flagship financeiro); smoke 516->524"
+  "summary": "WS-MAPA M-1 (redesign do Mapa Operacional, plano J-MAPAS-6 — Junta de Mapas planejador->dev->avaliador) — FUNDACAO de layout: grid de 3 colunas [chamados que chegam | mapa | tecnicos] substitui o layout de 2 colunas; altura do mapa DOBRADA (clamp(760px,82vh,960px)) nos DOIS canvases (MapLibre + Google, regra do espelho); coluna de tecnicos REUSA OperationsOperatorList (cartoes compactos); coluna de chamados = placeholder HONESTO (lista real e M-4, nao fabrica OS/prioridade/SLA); painel de detalhe preservado como faixa full-width. Header/pills/filtros/KPIs/polling+SSE/estados intactos. Sem provider novo, sem SKU pago, US$ 0 -> sem junta-5. Nao tocou marcadores/legenda/alerta/backend/migration (M-2..M-6). avaliador-mapas APROVADO (7/7 itens de veto; LGPD zero-coordenada; paridade do espelho; fidelidade §11). PD/KB datado em docs/maps/kb-mapas.md.",
+  "status_label": "Redesign do Mapa iniciado (J-MAPAS-6): M-1 fundacao (grid 3 col + 2x altura); avaliador-mapas APROVADO; smoke 524->530"
  },
  "metrics": {
   "flutter_tests": {
@@ -21,16 +21,16 @@
    "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
   },
   "frontend_smoke_tests": {
-   "value": 524,
-   "total": 524,
-   "display": "524/524",
-   "note": "+8 (trend-chart.test.tsx no test:smoke: estrutura SVG do <TrendChart> — barras por ponto/serie, non-scaling-stroke, vazio honesto, valores iguais, NEGATIVOS; pop-up: ClickableKpiCard role=button, KpiDetailModal breakdown role=dialog, fonte mock suprime grafico)."
+   "value": 530,
+   "total": 530,
+   "display": "530/530",
+   "note": "+6 (operations-map-layout.test.ts no test:smoke: grid 3 colunas, altura 2x nos dois canvases, coluna de tecnicos reusa OperationsOperatorList, placeholder de chamados honesto sem dado fabricado). Baseline de mapa 55->61."
   },
   "backend_tests": {
    "value": 1259,
    "total": 1265,
    "display": "1259/1265",
-   "note": "carrega o ultimo valor oficial (1259) — WS-UI-CARDS+CHARTS F1 e frontend-only (sem backend novo; Fase 2 fara agregado de serie)."
+   "note": "carrega o ultimo valor oficial (1259) — WS-MAPA M-1 e frontend-only (Fase 1 do redesign; Fase 2/M-7 fara migracao aditiva de SLA)."
   },
   "backend_contract_tests_focused": {
    "value": 21,

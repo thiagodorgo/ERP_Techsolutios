@@ -13,13 +13,13 @@
 > exige PD-xxx (≥3 fontes) + **junta de 5 unânime** antes de configurar billing. Este documento é
 > o dossiê técnico/custo que instrui essa decisão — ele **não** ativa nada.
 
-**Última revisão geral:** 2026-07-17 · **Responsável:** Junta de Mapas (J-MAPAS-5 · planejador-mapas — plano Ω3F-8b Mapa da OS)
+**Última revisão geral:** 2026-07-19 · **Responsável:** Junta de Mapas (J-MAPAS-6 · planejador-mapas — plano REDESIGN do Mapa Operacional web)
 
 ---
 
 ## (a) Preços, tiers e cotas grátis por SKU — Google Maps Platform
 
-**Última verificação:** 2026-07-17 (re-checada para J-MAPAS-5; sem mudança de valores desde 2026-07-13) · **Fonte primária:** [developers.google.com/maps/billing-and-pricing/pricing](https://developers.google.com/maps/billing-and-pricing/pricing) (página marcada "Last updated 2026-07-15 UTC"). Confirmado 2026-07-17: **Routes — Compute Routes (Essentials) US$ 5,00/1.000** e **Geocoding US$ 5,00/1.000**, **cota grátis 10.000/mês por SKU** (Essentials) — inalterados.
+**Última verificação:** 2026-07-19 (re-checada para J-MAPAS-6; sem mudança de valores desde 2026-07-13; página oficial ainda marcada "Last updated 2026-07-15 UTC": Dynamic Maps US$ 7,00/1.000, Geocoding US$ 5,00/1.000, Routes Compute Routes Essentials US$ 5,00/1.000, cota grátis 10.000/mês por SKU — inalterados) · **Fonte primária:** [developers.google.com/maps/billing-and-pricing/pricing](https://developers.google.com/maps/billing-and-pricing/pricing) (página marcada "Last updated 2026-07-15 UTC"). Confirmado 2026-07-17: **Routes — Compute Routes (Essentials) US$ 5,00/1.000** e **Geocoding US$ 5,00/1.000**, **cota grátis 10.000/mês por SKU** (Essentials) — inalterados.
 
 ### Mudança estrutural de 2025 (contexto que muda tudo)
 Desde **1º de março de 2025** o modelo de **US$ 200 de crédito mensal** foi **extinto** e
@@ -289,7 +289,60 @@ dados FUTUROS** (eventos passados ficam sem posicao). LGPD: coordenada NUNCA em 
 sao dado proprio do tenant (OS/POI/posicao do tecnico). Nao dispara "junta de 5 + PD". LGPD:
 minimizacao da posicao do tecnico + nenhuma coordenada em log.
 
+## (h) REDESIGN do Mapa Operacional web (J-MAPAS-6) — dossiê de custo/ToS/LGPD
+
+**Data:** 2026-07-19 · **Decisão de junta:** J-MAPAS-6 (planejador -> dev -> avaliador). **Escopo:** redesign
+completo da tela `frontend/src/modules/operations/map/` (lista de chamados + SLA · camada distinta de
+técnicos · alerta de OS nova · mapa com o dobro de altura · modo maximizado com lista translúcida no 4o
+quadrante · rodapé de legenda unificado). Pedido literal do dono.
+
+**(a) Provedor — regra de ouro mantida, SEM SKU novo:** a base de exibição segue **MapLibre GL +
+OpenFreeMap** (junta Ω1, custo zero, sem chave). O redesign é **100% apresentação + dados que JÁ existem**
+(`/field-locations/latest`, `/work-orders`, `/operations/dispatches`, badges de Frota). Marcadores de
+técnico e de OS, camadas por prioridade/SLA, alerta de OS nova, maximizar e legenda são **DOM/GeoJSON sobre
+o mesmo map load** — não geram chamada de SKU adicional. **Alternativa aberta (não ativada):** Google
+Dynamic Maps só se um dia trocar a base (não é o caso); Routes/ETA para "técnico mais próximo" fica como
+seam PAGO atrás de PD + junta-5 (ver §(a)/(c)/(g)).
+
+**(b) Custo no piloto:** **US$ 0/mês.** Nenhum SKU tocado; sem geocoding novo (o CTA "geocodificar" já
+existe e usa o `geocoder.factory` Noop-por-default); alerta de OS nova = **diff client-side** dos
+`workOrderPins` entre refreshes (zero rede); SLA visível = campos que já vêm da OS (Fase 1) ou coluna
+backend nova (Fase 2, ainda US$ 0 — dado próprio). Preços re-verificados 2026-07-19 (página marcada
+2026-07-15 UTC): inalterados.
+
+**(c) ToS de cache (place_id vs lat/lng):** **não se aplica** — nenhuma coordenada do Google é buscada ou
+persistida. Todas as coordenadas exibidas são **dado próprio do tenant** (posição do técnico via sync
+mobile; lat/lng da OS já geocodificada; POI). Sem `place_id`, sem trava de 30 dias.
+
+**(d) Chave/restrição por plataforma:** **N/A** — MapLibre+OpenFreeMap é keyless. Se algum dia o tenant
+piloto ligar `VITE_GOOGLE_MAPS_API_KEY` (canvas Google já existe como opção), a chave web precisa de
+**restrição por referrer HTTP** e vive em env do frontend (nunca versionada) — fora do escopo deste
+redesign.
+
+**(e) LGPD (reforço, item de veto do avaliador):** a **camada distinta de técnicos** e a **lista
+translúcida do 4o quadrante** exibem posição de técnico = dado pessoal → **minimização** (só o necessário
+para operar), **nenhuma coordenada em log/console/analytics**, e o alerta de OS nova **não** pode vazar
+endereço/coordenada em toast persistido. O read de posição continua gated por RBAC/RLS no backend.
+
+**GAPS mapeados (o que falta) e fase:**
+- **SLA (contagem/deadline) da OS — GAP de dado.** `WorkOrder` NÃO tem coluna de SLA/prazo
+  (`schema.prisma`; `WorkOrderListItem` só traz `priority`, `scheduledFor`, `createdAt`). **Fase 1:** SLA
+  como **proxy honesto** derivado de `scheduledFor`/`createdAt` + prioridade, rotulado "agendado para"/
+  "aberto há", NUNCA um "SLA vence em" fabricado. **Fase 2 (backend, aditivo tenant-scoped):** coluna
+  `sla_due_at`/política de SLA por prioridade → countdown real. US$ 0 (dado próprio).
+- **Posição/status de técnico — JÁ EXISTE.** `/field-locations/latest` devolve status
+  (`available/on_route/on_site/in_service/paused/offline/blocked`) + lat/lng + frescor. **Fase 1.** Falta
+  só uma **camada MapLibre distinta** dos pins de OS (hoje partilham lógica). Sem endpoint novo.
+- **Alerta de OS nova — GAP de UI, dado já existe.** **Fase 1:** diff dos ids de `workOrderPins`/OS entre
+  refreshes (poll 30s + SSE já entregam) → toast/badge/pulse; anti-spam por debounce e teto por ciclo.
+  Sem backend.
+
+**Conclusão:** redesign é **Fase 1 frontend-only, US$ 0, sem serviço pago novo** → **NÃO** dispara "junta
+de 5 + PD". Fase 2 (SLA real) é aditiva, tenant-scoped, também US$ 0. Custo/ToS/LGPD sem pendência de
+ativação externa.
+
 ## Historico de revisoes
+- **2026-07-19 (J-MAPAS-6 · planejador-mapas)** — Plano do **REDESIGN do Mapa Operacional web** (lista de chamados+SLA · camada de técnicos · alerta de OS nova · mapa 2x altura · maximizar com lista translúcida no 4o quadrante · rodapé de legenda unificado). **Custo US$ 0**, MapLibre+OpenFreeMap mantido (regra de ouro Ω1), **sem SKU novo, sem chave, sem serviço pago** → não dispara junta-5+PD. Gaps: **SLA sem coluna no schema** (Fase 1 = proxy honesto por `scheduledFor`/`createdAt`; Fase 2 = `sla_due_at` aditivo); camada distinta de técnico (Fase 1); alerta de OS nova por diff client-side (Fase 1). Preços re-verificados 2026-07-19 na tabela oficial (marcada 2026-07-15 UTC): Dynamic Maps US$ 7/1.000, Geocoding US$ 5/1.000, Routes Essentials US$ 5/1.000, cota 10K/mês — inalterados. Ver §(h). Próximo: dev-mapas.
 - **2026-07-17 (J-MAPAS-5 · planejador-mapas)** — Plano da aba **Mapa da OS (Omega3F-8b)**. Rota+km =
   **haversine em linha reta** sobre MapLibre (rotulo honesto "distancia aproximada em linha reta"),
   **custo US$ 0**, seam `RouteProvider` para futura rota rodoviaria (OSRM self-host) ou Google Routes

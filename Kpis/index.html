@@ -26,6 +26,21 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-MAPA M-1">
+          <h2>WS-MAPA M-1 — fundação do console de alocação (redesign do Mapa Operacional)</h2>
+          <p>
+            <strong>WS-MAPA M-1 (2026-07-19):</strong> início do redesign do <strong>Mapa Operacional</strong> (plano
+            <strong>J-MAPAS-6</strong>, Junta de Mapas: planejador → dev → avaliador). <strong>Fundação de layout</strong>:
+            grid de <strong>3 colunas</strong> [chamados que chegam | mapa | técnicos] no lugar do layout de 2 colunas; a
+            <strong>altura do mapa foi dobrada</strong> (<code>clamp(760px,82vh,960px)</code>) nos dois canvases (MapLibre +
+            Google — regra do espelho); a coluna de técnicos reusa <code>OperationsOperatorList</code>; a coluna de chamados é
+            um <strong>placeholder honesto</strong> (a lista real chega no M-4 — <strong>não fabrica</strong> OS/prioridade/SLA).
+            Sem provider novo, sem SKU pago (<strong>US$ 0</strong>) → sem junta-5. <strong>avaliador-mapas APROVADO</strong>
+            (7/7 itens de veto: LGPD zero-coordenada, paridade do espelho, fidelidade §11). <strong>smoke 524→530</strong>
+            (baseline de mapa 55→61). Próximos: M-2 legenda unificada → M-3 técnicos → M-4 chamados+SLA → M-5 alerta → M-6
+            maximizar; Fase 2 (M-7) = SLA real (migração aditiva). Backend/Flutter/MVP <strong>inalterados</strong>.
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-UI-CARDS-CHARTS-F1">
           <h2>WS-UI-CARDS+CHARTS Fase 1 — cards clicáveis + gráfico temporal SVG (zero-dep)</h2>
           <p>
