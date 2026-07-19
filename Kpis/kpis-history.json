@@ -582,5 +582,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-19",
+    "version": "WS-MAPA-M2",
+    "backend_tests": "1259/1265",
+    "frontend_smoke_tests": "536/536",
+    "flutter_tests": "764/764",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 66,
+    "description": "WS-MAPA M-2 (redesign do Mapa, plano J-MAPAS-6 — Junta de Mapas) — RODAPE DE LEGENDA UNIFICADO (requisito 6 do dono: 'as legendas se unam e fiquem no rodape do mapa'). Novo OperationsMapLegendFooter (fonte UNICA MAP_LEGEND_ITEMS, cor so de item.color, zero hex solto); removida a <ul> flutuante de DENTRO dos DOIS canvases (MapLibre + Google) — os dois consomem o mesmo footer ancorado a BASE do container (o mapa encolhe, nao sobrepoe; canvas absolute->flex). Paridade do espelho provada byte-a-byte. Clamp de altura 2x do M-1 intacto. Prepara o M-6 (footer acompanha o overlay maximizado). avaliador-mapas APROVADO (8/8 itens de veto). Sem provider/SKU/backend; LGPD zero-coordenada. KPI: frontend_smoke 530->536 (+6). backend 1259/flutter 764 carregados. mvp/blocks inalterados. merge_commit/approved_head null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

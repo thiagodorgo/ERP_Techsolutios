@@ -6,6 +6,22 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-19 - WS-MAPA M-2 Rodape de legenda unificado (redesign J-MAPAS-6)
+
+### Resultado
+
+- **Requisito 6 do dono** ("as legendas se unam e fiquem no rodape do mapa"): novo `OperationsMapLegendFooter` (fonte UNICA
+  `MAP_LEGEND_ITEMS`, cor so de `item.color`, zero hex solto); a `<ul>` flutuante foi removida dos DOIS canvases (MapLibre +
+  Google) e ambos consomem o mesmo rodape ancorado a base (o mapa encolhe, nao sobrepoe; canvas absolute->flex).
+- **Paridade do espelho byte-a-byte**; clamp de altura 2x do M-1 intacto; rodape ja acompanha o futuro overlay maximizado (M-6).
+  **avaliador-mapas APROVADO** (8/8 itens de veto). Sem provider/SKU/backend; LGPD zero-coordenada.
+
+### KPIs
+
+- `frontend_smoke_tests` **530 -> 536** (+6: `operations-map-legend-footer.test.ts`). Baseline de mapa 61 -> 67.
+- `backend_tests` 1259, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**.
+  Proximo: M-3 camada distinta de tecnicos. `pr`/`merge_commit`/`approved_head` null na autoria.
+
 ## 2026-07-19 - WS-MAPA M-1 Fundacao de layout do Mapa Operacional (redesign J-MAPAS-6)
 
 ### Resultado

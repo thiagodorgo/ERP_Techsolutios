@@ -1,17 +1,17 @@
 {
  "snapshot_date": "2026-07-19",
- "version": "WS-MAPA-M1",
+ "version": "WS-MAPA-M2",
  "source": "Kpis/kpis-latest.json",
  "scope": "root_project_kpis_reflecting_mobile_and_web",
  "release": {
-  "block": "WS-MAPA M-1 (fundacao de layout do Mapa Operacional — grid 3 colunas + dobro de altura)",
-  "title": "WS-MAPA M-1: fundacao do console de alocacao (J-MAPAS-6)",
+  "block": "WS-MAPA M-2 (rodape de legenda unificado do Mapa Operacional)",
+  "title": "WS-MAPA M-2: legenda unica no rodape (J-MAPAS-6)",
   "pr": null,
   "merge_commit": null,
   "approved_head": null,
   "status": "published_per_pr",
-  "summary": "WS-MAPA M-1 (redesign do Mapa Operacional, plano J-MAPAS-6 — Junta de Mapas planejador->dev->avaliador) — FUNDACAO de layout: grid de 3 colunas [chamados que chegam | mapa | tecnicos] substitui o layout de 2 colunas; altura do mapa DOBRADA (clamp(760px,82vh,960px)) nos DOIS canvases (MapLibre + Google, regra do espelho); coluna de tecnicos REUSA OperationsOperatorList (cartoes compactos); coluna de chamados = placeholder HONESTO (lista real e M-4, nao fabrica OS/prioridade/SLA); painel de detalhe preservado como faixa full-width. Header/pills/filtros/KPIs/polling+SSE/estados intactos. Sem provider novo, sem SKU pago, US$ 0 -> sem junta-5. Nao tocou marcadores/legenda/alerta/backend/migration (M-2..M-6). avaliador-mapas APROVADO (7/7 itens de veto; LGPD zero-coordenada; paridade do espelho; fidelidade §11). PD/KB datado em docs/maps/kb-mapas.md.",
-  "status_label": "Redesign do Mapa iniciado (J-MAPAS-6): M-1 fundacao (grid 3 col + 2x altura); avaliador-mapas APROVADO; smoke 524->530"
+  "summary": "WS-MAPA M-2 (redesign do Mapa, plano J-MAPAS-6 — Junta de Mapas) — RODAPE DE LEGENDA UNIFICADO (requisito 6 do dono: 'as legendas se unam e fiquem no rodape do mapa'). Novo OperationsMapLegendFooter (fonte UNICA MAP_LEGEND_ITEMS, cor so de item.color, zero hex solto); removida a <ul> flutuante de DENTRO dos DOIS canvases (MapLibre + Google) — os dois consomem o mesmo footer ancorado a BASE do container (o mapa encolhe, nao sobrepoe; canvas absolute->flex). Paridade do espelho provada byte-a-byte. Clamp de altura 2x do M-1 intacto. Prepara o M-6 (footer acompanha o overlay maximizado). avaliador-mapas APROVADO (8/8 itens de veto). Sem provider/SKU/backend; LGPD zero-coordenada.",
+  "status_label": "Mapa M-2: legenda unificada no rodape (fonte unica, paridade byte-a-byte); avaliador-mapas APROVADO; smoke 530->536"
  },
  "metrics": {
   "flutter_tests": {
@@ -21,16 +21,16 @@
    "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
   },
   "frontend_smoke_tests": {
-   "value": 530,
-   "total": 530,
-   "display": "530/530",
-   "note": "+6 (operations-map-layout.test.ts no test:smoke: grid 3 colunas, altura 2x nos dois canvases, coluna de tecnicos reusa OperationsOperatorList, placeholder de chamados honesto sem dado fabricado). Baseline de mapa 55->61."
+   "value": 536,
+   "total": 536,
+   "display": "536/536",
+   "note": "+6 (operations-map-legend-footer.test.ts no test:smoke: rodape com os itens de MAP_LEGEND_ITEMS, flutuante removida dos 2 canvases, PARIDADE byte-a-byte, sem hex solto). Baseline de mapa 61->67."
   },
   "backend_tests": {
    "value": 1259,
    "total": 1265,
    "display": "1259/1265",
-   "note": "carrega o ultimo valor oficial (1259) — WS-MAPA M-1 e frontend-only (Fase 1 do redesign; Fase 2/M-7 fara migracao aditiva de SLA)."
+   "note": "carrega o ultimo valor oficial (1259) — WS-MAPA M-2 e frontend-only (Fase 1 do redesign)."
   },
   "backend_contract_tests_focused": {
    "value": 21,
