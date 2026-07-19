@@ -1,5 +1,5 @@
-import { AlertTriangle, Map, Pause, Play, RefreshCw, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertTriangle, BellRing, Map, Pause, Play, RefreshCw, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { Alert, Button, Card, Chip, EmptyState, ErrorState, Skeleton } from "../../../../components/ui";
@@ -22,6 +22,9 @@ import {
   type OperationsMapFilters as OperationsMapFilterState,
 } from "../operations-map.types";
 import { useOperationsMap } from "../useOperationsMap";
+import { useNewWorkOrderAlert } from "../hooks/useNewWorkOrderAlert";
+import { getWorkOrderPriorityColor } from "../map/mapMarkers";
+import { getWorkOrderPriorityLabel } from "../../../work-orders/work-orders.adapter";
 import { OperationsMapCanvas } from "../components/OperationsMapCanvas";
 import { OperationsMapStage } from "../components/OperationsMapStage";
 import { OperationsIncomingCallsList } from "../components/OperationsIncomingCallsList";
@@ -154,13 +157,53 @@ export function OperationsMapPage() {
     [visibleWorkOrderPins, visibleWorkOrdersWithoutLocation],
   );
 
+  // M-5 — alerta visual de OS nova (requisito 3 do dono): diff client-side dos ids que chegam entre
+  // refreshes. NÃO alerta no mount (baseline), dedup por id, teto por ciclo, cada aviso some sozinho.
+  // `pulseIds` já vem zerado sob prefers-reduced-motion (sem pulso). LGPD §12: só código/prioridade.
+  const { toasts: newCallToasts, newIds: newCallIds, pulseIds: pulsingWorkOrderIds, dismissToast } =
+    useNewWorkOrderAlert({ calls: incomingCalls });
+
   return (
     <div className="page-stack operations-map-page">
+      {/* M-5 — região viva do alerta de OS nova. Existe SEMPRE no DOM (mesmo vazia) para o leitor de tela
+          anunciar de forma NÃO-agressiva (role=status → aria-live=polite); nunca rouba o foco. LGPD §12:
+          o toast mostra SÓ código + prioridade — NUNCA coordenada. Some sozinho (TTL do hook) e é
+          dispensável pelo botão. A animação de entrada é desligada por @media reduced-motion no CSS. */}
+      <div
+        className="operations-map-toasts"
+        role="status"
+        aria-live="polite"
+        aria-atomic="false"
+        aria-label="Avisos de novos chamados"
+      >
+        {newCallToasts.map((toast) => (
+          <div
+            key={toast.key}
+            className="operations-map-toast"
+            data-priority={toast.priority}
+            style={{ "--call-priority": getWorkOrderPriorityColor(toast.priority) } as CSSProperties}
+          >
+            <BellRing size={16} aria-hidden="true" className="operations-map-toast__icon" />
+            <span className="operations-map-toast__text">
+              Novo chamado: <strong>{toast.code}</strong> — {getWorkOrderPriorityLabel(toast.priority)}
+            </span>
+            <button
+              type="button"
+              className="operations-map-toast__dismiss"
+              onClick={() => dismissToast(toast.key)}
+              aria-label={`Dispensar aviso do chamado ${toast.code}`}
+            >
+              <X size={14} aria-hidden="true" />
+            </button>
+          </div>
+        ))}
+      </div>
+
       <header className="page-heading page-heading--row">
         <div>
           <span>Operação em campo</span>
           <h1>Mapa Operacional</h1>
-          <p>Acompanhe a última localização conhecida dos operadores em campo.</p>
+          <p>Acompanhe a última localização conhecida dos Técnicos de Campo.</p>
         </div>
         <div className="operations-map-actions">
           <Chip tone={source === "api" ? "success" : source === "fallback" ? "warning" : "info"}>
@@ -243,14 +286,14 @@ export function OperationsMapPage() {
       {loading && locations.length === 0 ? <Skeleton lines={4} /> : null}
       {!loading && locations.length === 0 && !hasMapContent && source !== "fallback" ? (
         <EmptyState
-          title="Nenhum operador ou chamado no mapa"
-          detail="Quando os operadores enviarem localização pelo aplicativo de campo, ou houver ordens de serviço abertas com endereço geolocalizado, os pontos aparecerão aqui automaticamente. Verifique se há despachos ativos — a tela se atualiza sozinha."
+          title="Nenhum técnico ou chamado no mapa"
+          detail="Quando os Técnicos de Campo enviarem localização pelo aplicativo de campo, ou houver ordens de serviço abertas com endereço geolocalizado, os pontos aparecerão aqui automaticamente. Verifique se há despachos ativos — a tela se atualiza sozinha."
         />
       ) : null}
       {!loading && locations.length > 0 && workOrderContextLocations.length === 0 && workOrderContextId ? (
         <section className="ui-state ui-state--error">
-          <strong>Nenhum operador ou despacho para esta OS</strong>
-          <p>O mapa não encontrou operadores ou despachos vinculados à OS informada no contexto atual.</p>
+          <strong>Nenhum técnico ou despacho para esta OS</strong>
+          <p>O mapa não encontrou Técnicos de Campo ou despachos vinculados à OS informada no contexto atual.</p>
           <Button type="button" variant="secondary" size="sm" onClick={clearWorkOrderContext}>
             <X size={16} /> Limpar contexto da OS
           </Button>
@@ -268,6 +311,7 @@ export function OperationsMapPage() {
           <OperationsMapStage
             callsCount={incomingCalls.length}
             techsCount={filteredLocations.length}
+            newCallsCount={newCallIds.size}
             map={({ resizeSignal, mapPadding }) => (
               <OperationsMapCanvas
                 locations={filteredLocations}
@@ -279,6 +323,7 @@ export function OperationsMapPage() {
                 workOrderPins={visibleWorkOrderPins}
                 selectedWorkOrderId={selectedWorkOrderPin?.id}
                 onSelectWorkOrder={setSelectedWorkOrderId}
+                pulsingWorkOrderIds={pulsingWorkOrderIds}
                 resizeSignal={resizeSignal}
                 mapPadding={mapPadding}
               />
@@ -288,6 +333,7 @@ export function OperationsMapPage() {
                 calls={incomingCalls}
                 selectedId={selectedWorkOrderPin?.id}
                 onSelect={(call) => setSelectedWorkOrderId(call.id)}
+                newIds={newCallIds}
               />
             }
             techs={

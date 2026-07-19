@@ -6,6 +6,24 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-19 - WS-MAPA M-5 Alerta de OS nova — FASE 1 do redesign do Mapa FECHADA
+
+### Resultado
+
+- **Requisito 3 do dono** (alerta visual ao chegar OS nova): hook `useNewWorkOrderAlert` (diff client-side dos ids entre
+  refreshes) → alerta em 3 camadas — toast (`role=status`/`aria-live`, sem coordenada), badge `--new` no rail, pulso no pin
+  novo (reusa wo-pulse; halo por priorityColor — urgente vermelho, novo nao-urgente na propria cor). ANTI-ALERT-FATIGUE
+  (nao alerta no mount; dedup; teto por ciclo; TTL) + prefers-reduced-motion. Terminologia reconciliada; selecao sem-GPS honesta.
+- **avaliador-mapas APROVADO_CONDICIONADO** (8/8 veto + lentes a-h PASS; condicao KB M-5 sanada). Sem provider/SKU/backend, US$ 0.
+- **FASE 1 do redesign do Mapa FECHADA** — 6 requisitos do dono: chamados+SLA-proxy (M-4), tecnicos (M-3), alerta (M-5), mapa
+  full-bleed (M-1+layout), maximizar+4o quadrante (OperationsMapStage), legenda no rodape (M-2). Resta so Fase 2 = M-7 (SLA real).
+
+### KPIs
+
+- `frontend_smoke_tests` **565 -> 581** (+16: operations-map-alert.test.ts). Baseline de mapa 96 -> 112 (meta >=110 atingida).
+- `backend_tests` 1259, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**.
+  `pr`/`merge_commit`/`approved_head` null na autoria.
+
 ## 2026-07-19 - WS-MAPA M-4 Lista de chamados que chegam (prioridade + SLA-proxy honesto)
 
 ### Resultado

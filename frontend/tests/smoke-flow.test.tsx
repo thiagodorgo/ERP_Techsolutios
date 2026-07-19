@@ -1492,13 +1492,15 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(protectedHtml, /Mapa Operacional/);
   assert.match(protectedHtml, /Atualização periódica/);
   // D-007 (F6): modo mock renderiza estado vazio orientado — zero pin fabricado no SSR.
-  assert.match(protectedHtml, /Nenhum operador ou chamado no mapa/);
+  // M-5 (J-MAPAS-6): terminologia §3 reconciliada — "técnico" (era "operador") no empty-state do mapa.
+  assert.match(protectedHtml, /Nenhum técnico ou chamado no mapa/);
+  assert.doesNotMatch(protectedHtml, /Nenhum operador ou chamado no mapa/);
   assert.doesNotMatch(protectedHtml, /Marina Costa|Roberto Lima|Ana Martins|Caio Nunes/);
   assert.match(operationsMapContextHtml, /OS filtrada:/);
   assert.match(operationsMapContextHtml, /Limpar contexto/);
-  assert.match(operationsMapContextHtml, /Nenhum operador ou chamado no mapa/);
+  assert.match(operationsMapContextHtml, /Nenhum técnico ou chamado no mapa/);
   assert.doesNotMatch(operationsMapContextHtml, /Roberto Lima|Ana Martins/);
-  assert.match(operationsMapEmptyContextHtml, /Nenhum operador ou chamado no mapa/);
+  assert.match(operationsMapEmptyContextHtml, /Nenhum técnico ou chamado no mapa/);
   assert.match(dispatchActionsHtml, /Acoes do despacho|Alterar status|Reatribuir/);
   assert.match(updateOnlyDispatchActionsHtml, /Alterar status/);
   assert.doesNotMatch(updateOnlyDispatchActionsHtml, /Reatribuir|Cancelar/);

@@ -1,17 +1,17 @@
 {
  "snapshot_date": "2026-07-19",
- "version": "WS-MAPA-M4",
+ "version": "WS-MAPA-M5-FASE1",
  "source": "Kpis/kpis-latest.json",
  "scope": "root_project_kpis_reflecting_mobile_and_web",
  "release": {
-  "block": "WS-MAPA M-4 (lista real de chamados que chegam — prioridade + SLA-proxy honesto)",
-  "title": "WS-MAPA M-4: fila de chamados no painel esquerdo (J-MAPAS-6)",
+  "block": "WS-MAPA M-5 (alerta de OS nova) — FECHA a Fase 1 do redesign do Mapa Operacional",
+  "title": "WS-MAPA M-5: alerta de OS nova + Fase 1 do redesign FECHADA (J-MAPAS-6)",
   "pr": null,
   "merge_commit": null,
   "approved_head": null,
   "status": "published_per_pr",
-  "summary": "WS-MAPA M-4 (redesign do Mapa, J-MAPAS-6) — LISTA REAL DE CHAMADOS QUE CHEGAM (req.1 do dono). O slot `calls` do OperationsMapStage deixou de ser placeholder: lista de OS abertas mapeaveis (selectMappableWorkOrders) com codigo/cliente + chip de PRIORIDADE (WORK_ORDER_PRIORITY_HEX/token) + SLA-PROXY HONESTO ('Agendado para {data}'/'Aberto ha {tempo}'/'Sem data' — NUNCA 'vence em'; SLA real = Fase 2/M-7). Ordenacao prioridade->(scheduledFor??createdAt)->abertura->id (helpers PUROS buildIncomingCalls/sortIncomingCalls/formatIncomingCallSlaProxy). Item = button (a11y, foco, >=44px); clique seleciona/pan; callsCount no badge do rail; chamado SEM GPS marcado honestamente (projecao sem lat/lng, LGPD). Painel de chamados REABERTO por default (master/triagem). Terminologia reconciliada nos 2 canvases (P-MAPA-TERM-OPERADORES resolvida). avaliador-mapas APROVADO_CONDICIONADO (3 lentes duras — SLA honesto/LGPD/ordenacao — PASS; condicao: KB M-4 sanada). M-6 (maximizar+4o quadrante) JA veio no redesign de layout -> so falta M-5 (alerta) p/ fechar a Fase 1. Sem provider/SKU/backend, US$0.",
-  "status_label": "Mapa M-4: fila real de chamados (prioridade+SLA-proxy honesto, ordenada, clicavel); avaliador-mapas APROVADO_COND; smoke 551->565. Falta so M-5 na Fase 1."
+  "summary": "WS-MAPA M-5 (redesign do Mapa, J-MAPAS-6) — ALERTA VISUAL DE OS NOVA (req.3 do dono) — FECHA A FASE 1. Novo hook useNewWorkOrderAlert: diff client-side dos ids de incomingCalls entre refreshes -> alerta em 3 camadas: TOAST (role=status/aria-live=polite, PT-BR, cor por prioridade/token, SEM coordenada), BADGE --new no rail de chamados, PULSO no pin novo (reusa wo-pulse; halo por priorityColor -> urgente=vermelho, novo nao-urgente na propria cor; parada garantida por cancelAnimationFrame). ANTI-ALERT-FATIGUE: baseline NAO alerta no mount; dedup por Set (marca ate o excedente do teto); teto por ciclo (maxPerCycle=3); toast TTL 6s dispensavel; prefers-reduced-motion zera pulso. Nucleo PURO (reduceNewWorkOrders/resolvePulseIds). Touch-up de terminologia (header/empty-states -> 'tecnicos'; P-MAPA-TERM-OPERADORES-HEADER fechada) + feedback honesto de selecao sem-GPS. avaliador-mapas APROVADO_CONDICIONADO (8/8 veto + lentes a-h PASS; condicao KB M-5 sanada). **FASE 1 do redesign FECHADA** — req.1-6 cobertos; resta so Fase 2 (M-7 SLA real, migration aditiva). Sem provider/SKU/backend, US$0.",
+  "status_label": "Mapa: FASE 1 do redesign FECHADA (6 requisitos do dono) — M-5 alerta de OS nova (anti-spam/a11y/LGPD); avaliador-mapas APROVADO_COND; smoke 565->581"
  },
  "metrics": {
   "flutter_tests": {
@@ -21,16 +21,16 @@
    "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
   },
   "frontend_smoke_tests": {
-   "value": 565,
-   "total": 565,
-   "display": "565/565",
-   "note": "+14 (operations-map-calls.test.ts 13 + guarda de terminologia no google-canvas: lista real, ordenacao 4 niveis, SLA-proxy honesto sem 'vence em', clique seleciona, callsCount, default reaberto, LGPD sem coordenada). Baseline de mapa 82->96."
+   "value": 581,
+   "total": 581,
+   "display": "581/581",
+   "note": "+16 (operations-map-alert.test.ts: diff detecta id novo, NAO alerta no mount/baseline, anti-spam dedup+teto, toast aria-live sem coordenada, pulso por prioridade com parada, reduced-motion desliga, terminologia, selecao sem-GPS). Baseline de mapa 96->112 (meta >=110 atingida)."
   },
   "backend_tests": {
    "value": 1259,
    "total": 1265,
    "display": "1259/1265",
-   "note": "carrega o ultimo valor oficial (1259) — WS-MAPA M-4 e frontend-only."
+   "note": "carrega o ultimo valor oficial (1259) — WS-MAPA M-5 e frontend-only (Fase 1 do redesign fechada; Fase 2/M-7 fara migration aditiva de SLA)."
   },
   "backend_contract_tests_focused": {
    "value": 21,

@@ -370,31 +370,43 @@ export type WorkOrderPinFeatureProps = {
   readonly urgent: boolean;
   readonly selected: boolean;
   readonly customerName: string | null;
+  // M-5 (J-MAPAS-6) — gatilho do pulso `wo-pulse`: urgente (comportamento herdado) OU id recém-chegado
+  // (alerta de OS nova, via `pulseIds`). Estende o pulso existente SEM criar camada nova.
+  readonly pulse: boolean;
 };
 
 export type WorkOrderPinFeatureCollection = FeatureCollection<Point, WorkOrderPinFeatureProps>;
 
-/** GeoJSON dos pins de chamado. Coordenada inválida (predicado único) é descartada — nunca 0,0. */
+/**
+ * GeoJSON dos pins de chamado. Coordenada inválida (predicado único) é descartada — nunca 0,0.
+ * M-5 — `pulseIds` (opcional) = ids que devem PULSAR por serem recém-chegados; combinam com o pulso
+ * herdado de urgente. Ausente/vazio → só urgentes pulsam (comportamento anterior preservado).
+ */
 export function buildWorkOrderPinsFeatureCollection(
   pins: readonly OperationsMapWorkOrderPin[],
   selectedId: string | undefined,
+  pulseIds?: ReadonlySet<string>,
 ): WorkOrderPinFeatureCollection {
   const features = pins
     .filter((pin) => isValidMapCoordinate(pin.latitude, pin.longitude))
-    .map<Feature<Point, WorkOrderPinFeatureProps>>((pin) => ({
-      type: "Feature",
-      geometry: { type: "Point", coordinates: [pin.longitude, pin.latitude] },
-      properties: {
-        id: pin.id,
-        code: pin.code,
-        title: pin.title,
-        priority: pin.priority,
-        priorityKey: getWorkOrderPriorityKey(pin.priority),
-        priorityColor: getWorkOrderPriorityColor(pin.priority),
-        urgent: pin.priority === "urgent",
-        selected: pin.id === selectedId,
-        customerName: pin.customerName ?? null,
-      },
-    }));
+    .map<Feature<Point, WorkOrderPinFeatureProps>>((pin) => {
+      const urgent = pin.priority === "urgent";
+      return {
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [pin.longitude, pin.latitude] },
+        properties: {
+          id: pin.id,
+          code: pin.code,
+          title: pin.title,
+          priority: pin.priority,
+          priorityKey: getWorkOrderPriorityKey(pin.priority),
+          priorityColor: getWorkOrderPriorityColor(pin.priority),
+          urgent,
+          selected: pin.id === selectedId,
+          customerName: pin.customerName ?? null,
+          pulse: urgent || (pulseIds?.has(pin.id) ?? false),
+        },
+      };
+    });
   return { type: "FeatureCollection", features };
 }

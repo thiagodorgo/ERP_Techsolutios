@@ -17,6 +17,7 @@ export function OperationsMapCanvas({
   workOrderPins,
   selectedWorkOrderId,
   onSelectWorkOrder,
+  pulsingWorkOrderIds,
   resizeSignal,
   mapPadding,
 }: {
@@ -31,6 +32,10 @@ export function OperationsMapCanvas({
   workOrderPins?: readonly OperationsMapWorkOrderPin[];
   selectedWorkOrderId?: string;
   onSelectWorkOrder?: (id: string) => void;
+  // M-5 (J-MAPAS-6) — ids de OS recém-chegadas que pulsam (alerta de OS nova). Repassado aos dois
+  // canvases reais (MapLibre = camada wo-pulse; Google = classe --pulse no marcador). Já filtrado por
+  // reduced-motion no hook. O esquemático de fallback ignora (sem coordenada real, sem pulso).
+  pulsingWorkOrderIds?: ReadonlySet<string>;
   // J-MAPAS-6 (redesign) — repassados aos canvases reais (MapLibre/Google) para o resize do
   // container e o padding dos rails de vidro; o esquemático de fallback os ignora.
   resizeSignal?: number;
@@ -52,6 +57,7 @@ export function OperationsMapCanvas({
         workOrderPins={workOrderPins}
         selectedWorkOrderId={selectedWorkOrderId}
         onSelectWorkOrder={onSelectWorkOrder}
+        pulsingWorkOrderIds={pulsingWorkOrderIds}
         resizeSignal={resizeSignal}
         mapPadding={mapPadding}
       />
@@ -69,6 +75,7 @@ export function OperationsMapCanvas({
         workOrderPins={workOrderPins}
         selectedWorkOrderId={selectedWorkOrderId}
         onSelectWorkOrder={onSelectWorkOrder}
+        pulsingWorkOrderIds={pulsingWorkOrderIds}
         resizeSignal={resizeSignal}
         mapPadding={mapPadding}
       />

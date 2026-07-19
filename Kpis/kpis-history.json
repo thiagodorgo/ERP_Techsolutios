@@ -646,5 +646,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-19",
+    "version": "WS-MAPA-M5-FASE1",
+    "backend_tests": "1259/1265",
+    "frontend_smoke_tests": "581/581",
+    "flutter_tests": "764/764",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 66,
+    "description": "WS-MAPA M-5 (redesign do Mapa, J-MAPAS-6) — ALERTA VISUAL DE OS NOVA (req.3 do dono) — FECHA A FASE 1. Novo hook useNewWorkOrderAlert: diff client-side dos ids de incomingCalls entre refreshes -> alerta em 3 camadas: TOAST (role=status/aria-live=polite, PT-BR, cor por prioridade/token, SEM coordenada), BADGE --new no rail de chamados, PULSO no pin novo (reusa wo-pulse; halo por priorityColor -> urgente=vermelho, novo nao-urgente na propria cor; parada garantida por cancelAnimationFrame). ANTI-ALERT-FATIGUE: baseline NAO alerta no mount; dedup por Set (marca ate o excedente do teto); teto por ciclo (maxPerCycle=3); toast TTL 6s dispensavel; prefers-reduced-motion zera pulso. Nucleo PURO (reduceNewWorkOrders/resolvePulseIds). Touch-up de terminologia (header/empty-states -> 'tecnicos'; P-MAPA-TERM-OPERADORES-HEADER fechada) + feedback honesto de selecao sem-GPS. avaliador-mapas APROVADO_CONDICIONADO (8/8 veto + lentes a-h PASS; condicao KB M-5 sanada). **FASE 1 do redesign FECHADA** — req.1-6 cobertos; resta so Fase 2 (M-7 SLA real, migration aditiva). Sem provider/SKU/backend, US$0. KPI: frontend_smoke 565->581 (+16). backend 1259/flutter 764 carregados. mvp/blocks inalterados. merge_commit/approved_head null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

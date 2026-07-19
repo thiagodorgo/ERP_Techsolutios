@@ -34,6 +34,7 @@ export function GoogleMapsCanvas({
   workOrderPins = [],
   selectedWorkOrderId,
   onSelectWorkOrder,
+  pulsingWorkOrderIds,
   resizeSignal,
   mapPadding,
 }: {
@@ -44,6 +45,10 @@ export function GoogleMapsCanvas({
   workOrderPins?: readonly OperationsMapWorkOrderPin[];
   selectedWorkOrderId?: string;
   onSelectWorkOrder?: (id: string) => void;
+  // M-5 (J-MAPAS-6) — espelho gracioso do pulso de OS nova: o marcador (DOM AdvancedMarker) ganha a
+  // classe `--pulse` quando seu id chega neste conjunto. Já filtrado por reduced-motion no hook; a
+  // animação CSS ainda respeita @media reduced-motion como cinto-e-suspensório. Vazio/ausente = sem pulso.
+  pulsingWorkOrderIds?: ReadonlySet<string>;
   // J-MAPAS-6 (redesign) — paridade do espelho com o MapLibre: aceita o sinal de resize e o
   // padding dos rails de vidro. O Google Maps também não redimensiona sozinho quando só o
   // container muda; disparamos o evento "resize" no innerMap ~220ms após a transição.
@@ -234,6 +239,7 @@ export function GoogleMapsCanvas({
                 key={pin.id}
                 pin={pin}
                 isSelected={pin.id === selectedWorkOrderId}
+                isNew={pulsingWorkOrderIds?.has(pin.id) ?? false}
                 onSelectWorkOrder={onSelectWorkOrder}
               />
             ))}
@@ -309,10 +315,12 @@ function OperatorMarker({
 function WorkOrderMarker({
   pin,
   isSelected,
+  isNew,
   onSelectWorkOrder,
 }: {
   pin: OperationsMapWorkOrderPin;
   isSelected: boolean;
+  isNew: boolean;
   onSelectWorkOrder?: (id: string) => void;
 }) {
   const markerRef = useRef<GmpAdvancedMarkerElement | null>(null);
@@ -334,8 +342,8 @@ function WorkOrderMarker({
   return (
     <gmp-advanced-marker ref={markerRef} title={`${pin.code} · ${pin.title}`}>
       <div
-        className={`gmp-workorder-pin${isSelected ? " gmp-workorder-pin--selected" : ""}`}
-        style={{ background: getWorkOrderPriorityColor(pin.priority) }}
+        className={`gmp-workorder-pin${isSelected ? " gmp-workorder-pin--selected" : ""}${isNew ? " gmp-workorder-pin--pulse" : ""}`}
+        style={{ background: getWorkOrderPriorityColor(pin.priority), "--call-priority": getWorkOrderPriorityColor(pin.priority) } as CSSProperties}
         aria-hidden
       />
     </gmp-advanced-marker>

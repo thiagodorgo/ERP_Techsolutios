@@ -26,6 +26,22 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-MAPA M-5 Fase 1 fechada">
+          <h2>WS-MAPA M-5 — alerta de OS nova · FASE 1 do redesign FECHADA</h2>
+          <p>
+            <strong>WS-MAPA M-5 (2026-07-19):</strong> requisito 3 do dono — <strong>alerta visual ao chegar OS nova</strong>.
+            O hook <code>useNewWorkOrderAlert</code> compara os chamados entre atualizações e, ao detectar um novo, dispara em
+            3 camadas: <strong>toast</strong> discreto (anunciado por leitor de tela, sem coordenada), <strong>realce no badge</strong>
+            do painel de chamados e <strong>pulso no pin novo</strong> no mapa (na cor da prioridade — urgente segue vermelho,
+            os demais na própria cor, sem "mentir urgência"). Com <strong>proteção contra "spam de alerta"</strong> (não alerta ao
+            abrir a tela; deduplica; teto por ciclo; toast some sozinho) e respeito a <em>reduce-motion</em>.
+            <strong>avaliador-mapas APROVADO_CONDICIONADO</strong> (8/8 itens de veto + anti-spam/LGPD/a11y todos verificados).
+            <strong>smoke 565→581</strong> (baseline de mapa 96→112, meta ≥110 atingida).
+            <strong>Fase 1 do redesign do Mapa FECHADA</strong> — os 6 requisitos do dono cobertos (chamados+SLA, técnicos,
+            alerta, mapa dominante, maximizar+4º quadrante, legenda no rodapé); resta só a Fase 2 (SLA real no backend).
+            Backend/Flutter/MVP <strong>inalterados</strong>.
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-MAPA M-4">
           <h2>WS-MAPA M-4 — fila de chamados que chegam (prioridade + SLA honesto)</h2>
           <p>

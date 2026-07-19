@@ -42,6 +42,10 @@ type Props = {
   readonly workOrderPins?: readonly OperationsMapWorkOrderPin[];
   readonly selectedWorkOrderId?: string;
   readonly onSelectWorkOrder?: (id: string) => void;
+  // M-5 (J-MAPAS-6) — ids de OS recém-chegadas que devem PULSAR (alerta de OS nova). Vem já filtrado
+  // por reduced-motion no hook `useNewWorkOrderAlert` (vazio = sem pulso de "novo"; urgentes seguem
+  // pulsando pelo gatilho herdado). O pulso para sozinho quando o id sai do conjunto (some após o TTL).
+  readonly pulsingWorkOrderIds?: ReadonlySet<string>;
   // J-MAPAS-6 (redesign) — o stage incrementa `resizeSignal` a cada colapso/maximização e o mapa
   // NÃO redimensiona sozinho quando o container muda sem resize de janela: reagimos chamando
   // `map.resize()` ~220ms após a transição. `mapPadding` reserva a área dos rails de vidro (setPadding).
@@ -79,6 +83,7 @@ export function OperationsMapLibreCanvas({
   workOrderPins,
   selectedWorkOrderId,
   onSelectWorkOrder,
+  pulsingWorkOrderIds,
   resizeSignal,
   mapPadding,
 }: Props) {
@@ -104,6 +109,8 @@ export function OperationsMapLibreCanvas({
   const onSelectWorkOrderRef = useRef(onSelectWorkOrder);
   const woReadyRef = useRef(false);
   const woPulseRafRef = useRef<number | null>(null);
+  // M-5 — ids que pulsam por serem recém-chegados (além dos urgentes herdados).
+  const pulsingWorkOrderIdsRef = useRef(pulsingWorkOrderIds);
 
   locationsRef.current = locations;
   selectedRef.current = selectedId;
@@ -111,6 +118,7 @@ export function OperationsMapLibreCanvas({
   workOrderPinsRef.current = workOrderPins;
   selectedWorkOrderRef.current = selectedWorkOrderId;
   onSelectWorkOrderRef.current = onSelectWorkOrder;
+  pulsingWorkOrderIdsRef.current = pulsingWorkOrderIds;
   onInitErrorRef.current = onInitError;
 
   // --- inicialização (uma vez) ---
@@ -186,12 +194,12 @@ export function OperationsMapLibreCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locations, selectedId]);
 
-  // --- reação a mudanças dos pins de chamado ---
+  // --- reação a mudanças dos pins de chamado (inclui o conjunto de pulso "novo" do M-5) ---
   useEffect(() => {
     if (!woReadyRef.current) return;
     applyWorkOrderData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workOrderPins, selectedWorkOrderId]);
+  }, [workOrderPins, selectedWorkOrderId, pulsingWorkOrderIds]);
 
   // --- J-MAPAS-6 (redesign) — resize quando o container muda de tamanho SEM resize de janela ---
   // O MapLibre não se ajusta sozinho ao colapsar um rail ou maximizar o stage: o stage bumpa
@@ -367,9 +375,12 @@ export function OperationsMapLibreCanvas({
       {
         id: "wo-pulse",
         type: "circle",
+        // M-5 — gatilho ampliado: pulsa quem é urgente (herdado) OU id recém-chegado (`pulse`).
+        filter: ["==", ["get", "pulse"], true],
         source: WORK_ORDERS_MAP_SOURCE_ID,
-        filter: ["==", ["get", "urgent"], true],
-        paint: { "circle-radius": 16, "circle-color": "#dc2626", "circle-opacity": 0.25 },
+        // Cor do halo = a MESMA prioridade do pin (WORK_ORDER_PRIORITY_HEX via `priorityColor`),
+        // então o pulso de uma OS nova não-urgente não mente "vermelho de urgência".
+        paint: { "circle-radius": 16, "circle-color": ["get", "priorityColor"], "circle-opacity": 0.25 },
       },
       beforeId,
     );
@@ -442,11 +453,17 @@ export function OperationsMapLibreCanvas({
   function applyWorkOrderData() {
     const map = mapRef.current;
     if (!map || !woReadyRef.current) return;
-    const fc = buildWorkOrderPinsFeatureCollection(workOrderPinsRef.current ?? [], selectedWorkOrderRef.current);
+    const fc = buildWorkOrderPinsFeatureCollection(
+      workOrderPinsRef.current ?? [],
+      selectedWorkOrderRef.current,
+      pulsingWorkOrderIdsRef.current,
+    );
     const source = map.getSource(WORK_ORDERS_MAP_SOURCE_ID) as GeoJSONSource | undefined;
     source?.setData(fc);
-    const hasUrgent = fc.features.some((feature) => feature.properties.urgent);
-    if (hasUrgent) startWorkOrderPulse(map);
+    // M-5 — pulsa se há qualquer pino com `pulse` (urgente herdado OU recém-chegado); quando o último
+    // sai (id expira do conjunto), o laço é parado (stopWorkOrderPulse) — parada garantida.
+    const hasPulse = fc.features.some((feature) => feature.properties.pulse);
+    if (hasPulse) startWorkOrderPulse(map);
     else stopWorkOrderPulse(map);
   }
 
