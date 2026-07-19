@@ -341,7 +341,9 @@ export const tenantNavigation: NavigationItem[] = [
     path: "/finance",
     scope: "finance",
     mode: "operation",
-    requiredPermissions: ["finance:read", "finance.read"],
+    // Gate REAL do dashboard (financial_entries:read, o mesmo do /financial-summary) + legados finance:read/
+    // finance.read como fallback de compat (eram órfãos p/ não-admins em produção).
+    requiredPermissions: ["financial_entries:read", "finance:read", "finance.read"],
     icon: "Receipt",
     status: "implemented",
   },

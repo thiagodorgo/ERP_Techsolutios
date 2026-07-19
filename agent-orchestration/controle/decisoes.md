@@ -714,3 +714,17 @@ do adapter de títulos. Rota/permissão/sidebar já existiam (/finance, finance:
 P-Ω4-6-FRONT-RESOLVE-NAME NÃO se aplica aqui: o dashboard mostra party_name (campo de negócio modelado), não UUID de
 usuário — a pendência de UUID→nome segue para a futura tela de FECHAMENTO de período (closedBy/reopenedBy). KPI: sem
 Kpis/* (D-Ω4-KPI-RELATORIO).
+
+## D-FINANCE-GATE-ALIGN — Alinhar o gate da tela /finance ao permission real do backend (2026-07-18)
+Achado ao auditar a RBAC a pedido do dono: a rota /finance (dashboard) e o item de nav "Financeiro" eram gateados por
+`finance:read` — uma permissão SÓ de UI que o catálogo NÃO concede a não-admins (papéis não-admin recebem `finance.read`
+COM PONTO, e admins recebem tudo). O bridge `frontendPermissionAliases` não liga `finance.read`→`finance:read`, então
+em PRODUÇÃO manager/finance/viewer/auditor ficavam TRANCADOS fora do dashboard (a rota exigia `finance:read` que só
+admins tinham). O modo demo mascarava (o contexto mock injeta `finance:read`, com comentário chamando-a de "órfã"). O
+dado do dashboard (GET /financial-summary) já é protegido de verdade por `financial_entries:read`.
+FIX (frontend-only, aditivo/não-quebra): o gate de /finance passa a aceitar `financial_entries:read` (o MESMO permission
+real do /financial-summary) além do legado `finance:read` (via hasAny); /finance/invoices passa a aceitar
+`financial_titles:read` (como Cobranças/Pagamentos) + legado; o item de nav tenant-finance idem. Agora reach==data:
+quem lê os lançamentos financeiros (o dado do dashboard) alcança a tela. `finance:read`/`finance.read` ficam como
+fallback de compat inócuo (seus únicos donos reais — admins — também têm financial_entries:read); limpeza futura pode
+removê-los do catálogo. Verificado: frontend check + test:smoke 514/514, backend navigation-menu/core-saas 35/35.

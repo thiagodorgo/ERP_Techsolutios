@@ -462,7 +462,9 @@ export function App() {
             <Route
               path="/finance"
               element={
-                <PermissionGuard permissions={["finance:read"]}>
+                // Dashboard financeiro: gate REAL do backend (o /financial-summary exige financial_entries:read).
+                // finance:read fica como fallback de compat (permissão só-de-UI/demo; era órfã p/ não-admins).
+                <PermissionGuard permissions={["financial_entries:read", "finance:read"]}>
                   <FinanceiroPage />
                 </PermissionGuard>
               }
@@ -478,7 +480,9 @@ export function App() {
             <Route
               path="/finance/invoices"
               element={
-                <PermissionGuard permissions={["finance:read"]}>
+                // Faturas ≈ títulos/faturamento → gate real financial_titles:read (como Cobranças/Pagamentos);
+                // finance:read fica como fallback de compat (era órfã p/ não-admins).
+                <PermissionGuard permissions={["financial_titles:read", "finance:read"]}>
                   <InvoicesPage />
                 </PermissionGuard>
               }
