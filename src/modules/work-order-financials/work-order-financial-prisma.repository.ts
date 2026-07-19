@@ -99,6 +99,16 @@ export class PrismaWorkOrderFinancialItemRepository implements WorkOrderFinancia
     return updated[0] ? mapRecord(updated[0]) : undefined;
   }
 
+  // P-Ω3F6-ZERO-ATOMICIDADE — UM updateMany atômico carimba deleted_at em TODOS os itens ATIVOS e
+  // NÃO-FATURADOS da OS (o `zero` do cancel). invoiced_at:null preserva o lastro de Título (D-Ω4-C1).
+  async softDeleteAllByWorkOrder(tenantId: string, workOrderId: string, deletedBy?: string): Promise<number> {
+    const result = await this.client.workOrderFinancialItem.updateMany({
+      where: { tenant_id: tenantId, work_order_id: workOrderId, deleted_at: null, invoiced_at: null },
+      data: compactRecord({ deleted_at: new Date(), updated_by: deletedBy }),
+    });
+    return result.count;
+  }
+
   async markInvoiced(input: MarkWorkOrderFinancialItemsInvoicedInput): Promise<number> {
     if (input.itemIds.length === 0) return 0;
     // Carimba SÓ itens ativos e ainda não-faturados (invoiced_at:null): idempotente no replay e não
@@ -140,6 +150,9 @@ export class RlsPrismaWorkOrderFinancialItemRepository implements WorkOrderFinan
   }
   softDelete(tenantId: string, workOrderId: string, itemId: string, deletedBy?: string): Promise<WorkOrderFinancialItem | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaWorkOrderFinancialItemRepository(tx).softDelete(tenantId, workOrderId, itemId, deletedBy));
+  }
+  softDeleteAllByWorkOrder(tenantId: string, workOrderId: string, deletedBy?: string): Promise<number> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaWorkOrderFinancialItemRepository(tx).softDeleteAllByWorkOrder(tenantId, workOrderId, deletedBy));
   }
   markInvoiced(input: MarkWorkOrderFinancialItemsInvoicedInput): Promise<number> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderFinancialItemRepository(tx).markInvoiced(input));

@@ -292,14 +292,15 @@ void main() {
   });
 
   group('WorkOrderStatus transitions', () {
-    test('12. scheduled → dispatched e cancelled sao validos', () {
+    test('12. scheduled → dispatched valido; cancelled NAO e iniciavel pelo campo (P-Ω3F6-STATUS-BYPASS)', () {
       expect(
         WorkOrderStatus.scheduled.canTransitionTo(WorkOrderStatus.dispatched),
         isTrue,
       );
+      // Cancelar exige decisao financeira (POST /cancel no console) — nao e transicao iniciavel pelo app.
       expect(
         WorkOrderStatus.scheduled.canTransitionTo(WorkOrderStatus.cancelled),
-        isTrue,
+        isFalse,
       );
     });
 

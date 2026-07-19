@@ -13,10 +13,7 @@ test("GET /dashboard/summary reflete total e byStatus da organizacao A (nao da B
     const assignedOs = await createWorkOrder(baseUrl, headersA, { title: "OS para atribuir" });
     const cancelledOs = await createWorkOrder(baseUrl, headersA, { title: "OS para cancelar" });
     await changeStatus(baseUrl, headersA, assignedOs.id, { status: "assigned" });
-    await changeStatus(baseUrl, headersA, cancelledOs.id, {
-      status: "cancelled",
-      cancellationReason: "Cliente desistiu.",
-    });
+    await cancelWorkOrder(baseUrl, headersA, cancelledOs.id);
 
     // Ruido da organizacao B — nunca deve entrar na contagem de A.
     await createWorkOrder(baseUrl, authHeaders(seed.tenantB, seed.managerB), { title: "OS B-1" });
@@ -75,10 +72,7 @@ test("GET /dashboard/summary conta em overdue apenas OS vencidas e nao terminais
       title: "Vencida cancelada",
       scheduledFor: daysAgo(3),
     });
-    await changeStatus(baseUrl, headersA, cancelledOverdue.id, {
-      status: "cancelled",
-      cancellationReason: "Encerrada.",
-    });
+    await cancelWorkOrder(baseUrl, headersA, cancelledOverdue.id);
 
     const summary = await getSummary(baseUrl, headersA);
 
@@ -358,6 +352,17 @@ async function changeStatus(
     body,
   });
   assert.equal(response.status, 200, `changeStatus failed: ${JSON.stringify(response.body)}`);
+}
+
+// P-Ω3F6-STATUS-BYPASS — cancelar é SÓ pelo POST /cancel (o /status legado recusa cancelled). Exige reason +
+// decisão financeira (keep = não mexe nos itens).
+async function cancelWorkOrder(baseUrl: string, headers: Record<string, string>, workOrderId: string): Promise<void> {
+  const response = await requestJson(baseUrl, `/api/v1/work-orders/${workOrderId}/cancel`, {
+    method: "POST",
+    headers,
+    body: { reason: "Cliente desistiu.", financial_decision: "keep" },
+  });
+  assert.equal(response.status, 200, `cancelWorkOrder failed: ${JSON.stringify(response.body)}`);
 }
 
 async function createCustomer(

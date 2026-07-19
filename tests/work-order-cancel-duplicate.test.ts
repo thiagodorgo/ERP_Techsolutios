@@ -526,18 +526,16 @@ test("duplicate: a fonte permanece intacta e a cópia é uma OS independente no 
   assert.equal(fonteAtual?.financialCancellationDecision, undefined);
 });
 
-// ---------- Porta dos fundos do cancelamento (condição BLOQUEANTE do coordenador-de-acessos, J-Ω3F-6A) ----------
-// O PATCH /status legado exige só `work_orders:status` — que operator/técnico têm. Antes deste bloco, eles
-// cancelavam por lá SEM decisão financeira, contornando o gate do POST /cancel e deixando NULL para o
-// consumidor de comissões. Agora o service exige `work_orders:cancel` para o destino `cancelled`: não é
-// política nova, é CUMPRIR o catálogo (que já não dava :cancel a esses papéis).
+// ---------- Bypass do cancelamento FECHADO (P-Ω3F6-STATUS-BYPASS) ----------
+// O PATCH /status legado NÃO cancela mais — cancelar exige a decisão financeira, que só o POST /cancel grava.
+// Antes: operator/técnico eram barrados (403), mas quem TINHA :cancel (manager/admin) ainda cancelava por lá
+// SEM decisão (NULL, itens intactos) — dívida irreparável. Agora status=cancelled no /status → 422 para TODOS.
 
-test("[J-Ω3F-6A] changeStatus→cancelled SEM work_orders:cancel → 403 (operator não cancela pelo legado)", async () => {
+test("[P-Ω3F6-BYPASS] changeStatus→cancelled → 422 cancel_via_status_forbidden (operator, SEM :cancel)", async () => {
   const s = setup();
   const manager = actor();
   const wo = await s.workOrders.create(manager, { title: "OS" });
 
-  // Mesmo tenant, mas papel de operador: tem :status, NÃO tem :cancel (espelha o catálogo real).
   const operator: WorkOrderActorContext = {
     ...manager,
     userId: randomUUID(),
@@ -547,12 +545,26 @@ test("[J-Ω3F-6A] changeStatus→cancelled SEM work_orders:cancel → 403 (opera
 
   await assert.rejects(
     () => s.workOrders.changeStatus(operator, wo.id, { status: "cancelled", cancellationReason: "tentativa pelo legado" }),
-    (e: unknown) => e instanceof WorkOrderError && e.statusCode === 403 && e.reason === "cancel_requires_permission",
+    (e: unknown) => e instanceof WorkOrderError && e.statusCode === 422 && e.reason === "cancel_via_status_forbidden",
   );
-
-  // A OS NÃO foi cancelada: a porta dos fundos está fechada para quem não pode cancelar.
   const after = await s.workOrders.get(manager, wo.id);
   assert.notEqual(after.status, "cancelled");
+});
+
+// A REGRESSÃO que o ataque de desenho flagou: mesmo COM :cancel, o /status legado não pode mais cancelar
+// (senão gravaria decisão NULL). O único caminho é POST /cancel.
+test("[P-Ω3F6-BYPASS] changeStatus→cancelled → 422 mesmo COM work_orders:cancel (fecha o resíduo do bypass)", async () => {
+  const s = setup();
+  const manager = actor(); // actor() tem :cancel (papel manager/admin)
+  const wo = await s.workOrders.create(manager, { title: "OS" });
+  assert.ok(manager.permissions.includes("work_orders:cancel"), "pré-condição: o ator tem :cancel");
+
+  await assert.rejects(
+    () => s.workOrders.changeStatus(manager, wo.id, { status: "cancelled", cancellationReason: "pelo legado com permissão" }),
+    (e: unknown) => e instanceof WorkOrderError && e.statusCode === 422 && e.reason === "cancel_via_status_forbidden",
+  );
+  const after = await s.workOrders.get(manager, wo.id);
+  assert.notEqual(after.status, "cancelled", "nem quem tem :cancel cancela pelo /status legado");
 });
 
 test("[J-Ω3F-6A] operator SEGUE podendo mudar status não-terminal pelo legado (o gate é só p/ cancelled)", async () => {

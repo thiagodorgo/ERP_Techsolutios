@@ -57,6 +57,7 @@ export class WorkOrderFinancialService {
 
   async create(actor: WorkOrderFinancialActorContext, workOrderId: string, body: RawRecord): Promise<WorkOrderFinancialItem> {
     const workOrder = await this.assertWorkOrder(actor, workOrderId);
+    assertWorkOrderNotCancelled(workOrder); // P-Ω3F6-TERMINAL-GUARD: sem item novo em OS cancelada.
     const source = parsePriceSource(body.source ?? body.price_source ?? body.priceSource);
     const quantity = assertMoneyInRange(parseQuantity(body.quantity), "quantity");
     const notes = parseOptionalNotes(body.notes);
@@ -166,6 +167,8 @@ export class WorkOrderFinancialService {
     itemId: string,
     body: RawRecord,
   ): Promise<WorkOrderFinancialItem> {
+    const workOrder = await this.assertWorkOrder(actor, workOrderId);
+    assertWorkOrderNotCancelled(workOrder); // P-Ω3F6-TERMINAL-GUARD: sem edição de item em OS cancelada.
     const current = await this.getItem(actor, workOrderId, itemId);
     // Ω4-3 (D-Ω4-C1) — trava anti-refaturamento: item já faturado é IMUTÁVEL (o valor já virou Título).
     assertItemNotInvoiced(current);
@@ -220,6 +223,8 @@ export class WorkOrderFinancialService {
 
   // DELETE lógico: carimba deleted_at; o item some da lista e do total agregado. Re-delete → 404.
   async delete(actor: WorkOrderFinancialActorContext, workOrderId: string, itemId: string): Promise<WorkOrderFinancialItem> {
+    const workOrder = await this.assertWorkOrder(actor, workOrderId);
+    assertWorkOrderNotCancelled(workOrder); // P-Ω3F6-TERMINAL-GUARD (o `zero` do cancel usa zeroActiveItems, não este).
     const current = await this.getItem(actor, workOrderId, itemId);
     // Ω4-3 (D-Ω4-C1) — trava anti-refaturamento: item já faturado não pode ser removido do extrato.
     assertItemNotInvoiced(current);
@@ -228,6 +233,21 @@ export class WorkOrderFinancialService {
       throw financialItemNotFoundError();
     }
     return removed;
+  }
+
+  // P-Ω3F6-STATUS-BYPASS (ataque, ALTA) — `zero` não pode destruir item FATURADO (lastro de Título, D-Ω4-C1).
+  // Consumido pelo cancel(decision='zero') do WorkOrderService: se true → 422 has_invoiced_items (usar `keep`).
+  async hasActiveInvoicedItems(actor: WorkOrderFinancialActorContext, workOrderId: string): Promise<boolean> {
+    const workOrder = await this.assertWorkOrder(actor, workOrderId);
+    const items = await this.repository.listByWorkOrder(actor.tenantId, workOrder.id);
+    return items.some((item) => item.invoicedAt != null);
+  }
+
+  // P-Ω3F6-ZERO-ATOMICIDADE — zera o financeiro da OS numa ÚNICA operação atômica (softDeleteAll), excluindo os
+  // FATURADOS (invoiced_at IS NULL). Substitui o loop de N deletes sequenciais sem transação (parcialidade + N+1).
+  async zeroActiveItems(actor: WorkOrderFinancialActorContext, workOrderId: string): Promise<number> {
+    const workOrder = await this.assertWorkOrder(actor, workOrderId);
+    return this.repository.softDeleteAllByWorkOrder(actor.tenantId, workOrder.id, actor.userId);
   }
 
   // OS in-tenant? senão 404 (não vaza cross-tenant). Reusa o WorkOrderService — padrão
@@ -264,6 +284,20 @@ function financialItemNotFoundError(): WorkOrderFinancialError {
     "financial_item_not_found",
     "Work order financial item was not found.",
   );
+}
+
+// P-Ω3F6-TERMINAL-GUARD — nenhuma OBRIGAÇÃO financeira nova numa OS em estado TERMINAL (cancelled): create/
+// update/delete de item e faturamento (invoice) recusam (422 work_order_cancelled). Sem isso, a invariante do
+// cancelamento (decision=zero ⇒ total=0; OS morta sem cobrança nova) era furada lançando/faturando item depois.
+function assertWorkOrderNotCancelled(workOrder: { readonly status: string }): void {
+  if (workOrder.status === "cancelled") {
+    throw new WorkOrderFinancialError(
+      422,
+      "WORK_ORDER_FINANCIAL_UNPROCESSABLE",
+      "work_order_cancelled",
+      "This work order is cancelled; financial items and invoicing are no longer allowed.",
+    );
+  }
 }
 
 // Ω4-3 (D-Ω4-C1) — item já faturado (invoiced_at != null) é imutável: PATCH/DELETE → 422 item_invoiced.
@@ -308,6 +342,9 @@ export class WorkOrderInvoicingService {
     body: RawRecord,
   ): Promise<WorkOrderInvoiceResult> {
     const workOrder = await this.resolveWorkOrder(actor, workOrderId);
+    // P-Ω3F6-TERMINAL-GUARD (ataque de desenho, MÉDIA) — faturar entrava por FORA do guard de create/update:
+    // uma OS cancelada não pode cunhar Título NOVO (obrigação financeira nova sobre OS morta). 422.
+    assertWorkOrderNotCancelled(workOrder);
 
     // DYNAMIC import — evita acoplar/ciclar com financial-titles (item 5 do comando / D-Ω3F-4B).
     const { createDefaultFinancialTitleService } = await import("../financial-titles/financial-title.service.js");

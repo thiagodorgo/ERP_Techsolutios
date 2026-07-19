@@ -992,3 +992,17 @@ Junta do Ω4-8b (cognicao-visual) apontou 2 reduções HONESTAS de composição 
 CORRIGIDO na junta (MÉDIA): o adapter agora NORMALIZA status/direction dos recentTitles contra o enum (fallback seguro) →
 o chip/label nunca recebe valor fora do mapa e quebra o render. Re-etiquetagem de KPI ("aberto" em vez de "30d"; "Saldo em
 caixa" em vez de "projetado"; subtítulo sem org hardcoded) é MAIS honesta aos agregados reais (D-007) — mantida de propósito.
+
+## P-Ω3F6 — cluster de cancelamento: STATUS-BYPASS/TERMINAL-GUARD/ZERO-ATOMICIDADE RESOLVIDOS (D-CANCEL-INTEGRITY, 2026-07-18)
+Os três (bypass legado sem decisão; item em OS cancelada; N deletes não-atômicos) foram FECHADOS. Residuais BAIXA abertos:
+- **P-Ω3F6-CANCEL-RACE:** cancel(zero) e financial.create não compartilham lock de linha — janela sub-ms em que um item
+  posto entre o zero e o flip sobrevive (OS cancelled + total>0). Mesma classe dos TOCTOU aceitos (P-Ω4-4-LIQUID-ATOMIC,
+  currency-mismatch). Fechar via SELECT ... FOR UPDATE da OS na tx do cancel + FOR SHARE no create (hardening futuro).
+- **P-Ω3F6-LEGACY-NULL:** OSs canceladas pelo bypass ANTES deste bloco ficam com financial_cancellation_decision NULL (o
+  CHECK é NOT VALID, não faz backfill). O consumidor de comissões (P-Ω3F6-COMISSAO) DEVE tratar NULL-em-cancelled como
+  "sem decisão — segurar para revisão humana", nunca honrar como keep. `VALIDATE CONSTRAINT` só após reconciliar as legadas.
+- **P-Ω3F6-CANCEL-IDEM:** cancel() não é idempotente por client_action_id — retry de rede após um /cancel efetivado cai em
+  422 (transição inválida). Sem dano de dado; só ruído de retry. Aceitar client_action_id → 200 idempotente (futuro).
+- **P-Ω3F6-MOBILE-DEADLETTER:** ações status=cancelled já enfileiradas OFFLINE (antes do update do app) recebem 422 no sync e
+  o replay marca failed+retry até maxRetry. Mapear cancel_via_status_forbidden para estado terminal não-retryable (dead-letter)
+  para drenar a fila. Não-bloqueante (sistema novo não tem fila legada com cancels).

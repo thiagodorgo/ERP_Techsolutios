@@ -189,6 +189,12 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   async changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
     const current = await this.findById(input.tenantId, input.workOrderId);
     if (!current) return undefined;
+    // Paridade InMemory↔Prisma da invariante do cancelamento (o Prisma tem o CHECK; aqui é a assertion
+    // equivalente): OS 'cancelled' EXIGE decisão financeira (o único caminho legítimo é cancel(), que sempre
+    // a grava; o /status legado passou a recusar cancelled). Um caminho rogue falha idêntico nos dois lados.
+    if (input.status === "cancelled" && input.financialCancellationDecision == null) {
+      throw new WorkOrderError(422, "WORK_ORDER_UNPROCESSABLE", "cancel_requires_decision", "A cancelled work order requires a financial decision.");
+    }
     const now = new Date();
     const updated: WorkOrder = {
       ...current,

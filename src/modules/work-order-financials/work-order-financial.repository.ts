@@ -18,6 +18,10 @@ export interface WorkOrderFinancialItemRepository {
   findActiveByClientActionId(tenantId: string, workOrderId: string, clientActionId: string): Promise<WorkOrderFinancialItem | undefined>;
   update(input: UpdateWorkOrderFinancialItemInput): Promise<WorkOrderFinancialItem | undefined>;
   softDelete(tenantId: string, workOrderId: string, itemId: string, deletedBy?: string): Promise<WorkOrderFinancialItem | undefined>;
+  // P-Ω3F6-ZERO-ATOMICIDADE — soft-delete ATÔMICO de TODOS os itens ATIVOS e NÃO-FATURADOS de uma OS (o `zero`
+  // do cancelamento). UMA operação (updateMany no Postgres) → sem parcialidade nem N+1. NÃO toca invoiced_at !=
+  // null (lastro de Título, D-Ω4-C1). Retorna a contagem removida.
+  softDeleteAllByWorkOrder(tenantId: string, workOrderId: string, deletedBy?: string): Promise<number>;
   // Ω4-3 (D-Ω4-C1) — carimba invoiced_at+title_id nos itens incluídos no faturamento (idempotente: só
   // itens ainda não-faturados/não-deletados). Retorna a contagem carimbada.
   markInvoiced(input: MarkWorkOrderFinancialItemsInvoicedInput): Promise<number>;
@@ -103,6 +107,26 @@ export class InMemoryWorkOrderFinancialItemRepository implements WorkOrderFinanc
       deletedAt: new Date(),
     };
     this.items.set(removed.id, removed);
+    return removed;
+  }
+
+  // Espelho síncrono do updateMany atômico do Postgres: carimba deleted_at em todos os itens ATIVOS e
+  // NÃO-FATURADOS da OS de uma vez (sem loop de service.delete → sem parcialidade/N+1; não toca faturados).
+  async softDeleteAllByWorkOrder(tenantId: string, workOrderId: string, deletedBy?: string): Promise<number> {
+    const now = new Date();
+    let removed = 0;
+    for (const item of this.items.values()) {
+      if (item.tenantId !== tenantId || item.workOrderId !== workOrderId || item.deletedAt != null || item.invoicedAt != null) {
+        continue;
+      }
+      this.items.set(item.id, {
+        ...item,
+        ...(deletedBy !== undefined ? { updatedBy: deletedBy } : {}),
+        updatedAt: now,
+        deletedAt: now,
+      });
+      removed += 1;
+    }
     return removed;
   }
 
