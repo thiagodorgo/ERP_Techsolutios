@@ -6,6 +6,29 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-19 - WS-UI-REFRESH Auto-refresh substitui o botao "Atualizar" em 30 telas
+
+### Resultado
+
+- **UI transversal** (mandato do dono: "que nao exista mais o botao de atualizar pois o sistema faz isso automatico"):
+  REMOVIDO o botao manual "Atualizar" de **30 telas** e ligado **auto-refresh em segundo plano**.
+- Novo hook `frontend/src/hooks/useAutoRefresh.ts` (setInterval 30s via ref — sem recriar timer / sem leak; pausa em
+  `document.hidden`; espelha o padrao-ouro `useOperationsMap`). ~28 hooks de dados ganharam **background mode**
+  (`refresh(background)` usa `isRefreshing` em vez de `loading` -> auto-refresh **sem flicker de skeleton**).
+- `OperationsMapPage` mantem o polling+SSE nativo (sem duplo polling). Trio WorkOrder (ActionBar/DetailPage) e
+  DashboardPage tratados a parte; `RefreshCw` mantido onde reusado no botao de erro "Tentar novamente".
+- Fan-out por 8 batches de modulo (workflow). Junta **2 APROVADO + 1 APROVADO_CONDICIONADO** (0 bloqueia); condicoes
+  sanadas (2 `<div>` de acoes vazios + guard `enabled` no Financeiro). Liveness/copia-de-erro deferidos
+  (P-UI-REFRESH-LIVENESS / P-UI-REFRESH-ERROR-COPY).
+
+### KPIs
+
+- `frontend_smoke_tests` **514/514** — inalterado: 3 smoke (commissions/inventory/tenant-settings) ajustados removendo a
+  assertiva do botao "Atualizar", sem enfraquecer as demais; nenhum teste novo/removido.
+- `backend_tests` **1259**, `flutter_tests` **764**, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 —
+  **INALTERADOS** (frontend-only; polish de UX, sem mover escopo).
+- tsc verde, build verde, `approval-frontend-contract` 1/1. `pr`/`merge_commit`/`approved_head` null na autoria.
+
 ## 2026-07-19 - WS-SCALE-COMISSAO Comissoes consomem a decisao de cancelamento da OS
 
 ### Resultado

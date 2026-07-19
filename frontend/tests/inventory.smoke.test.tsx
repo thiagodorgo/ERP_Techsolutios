@@ -103,7 +103,6 @@ test("estoque page renderiza cabeçalho, abas Itens|Movimentações, ações gat
   // Ações do cabeçalho (gated por criação).
   assert.match(html, /Novo item/);
   assert.match(html, /Movimento</);
-  assert.match(html, /Atualizar/);
   // Tira de totais reais sempre presente (renderiza mesmo vazio).
   assert.match(html, /Itens ativos/);
   assert.match(html, /Abaixo do mínimo/);

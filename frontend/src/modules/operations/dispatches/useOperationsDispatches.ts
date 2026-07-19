@@ -11,6 +11,7 @@ export function useOperationsDispatches(filters: DispatchesFilters) {
   const { activeContext } = useTenantContext();
   const [data, setData] = useState<DispatchesData>({ items: [], pagination: { limit: 20, offset: 0, total: 0 }, source: "api" });
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const context = useMemo(
@@ -24,15 +25,19 @@ export function useOperationsDispatches(filters: DispatchesFilters) {
     [activeContext, session?.accessToken],
   );
 
-  const refresh = useCallback(async () => {
+  // WS-UI-REFRESH — refresh(background): em segundo plano NÃO mostra o skeleton (mantém o dado atual
+  // visível, sem flicker no auto-refresh); só a 1ª carga / refresh explícito usa `loading`.
+  const refresh = useCallback(async (background = false) => {
     if (!activeContext) return;
 
-    setLoading(true);
+    if (background) setIsRefreshing(true);
+    else setLoading(true);
     setError(null);
     const nextData = await listDispatchesFromApi(context, filters);
     setData(nextData);
     if (nextData.source === "fallback") setError(nextData.fallbackReason ?? "Fallback local ativo.");
     setLoading(false);
+    setIsRefreshing(false);
   }, [activeContext, context, filters]);
 
   useEffect(() => {
@@ -44,6 +49,7 @@ export function useOperationsDispatches(filters: DispatchesFilters) {
     items: filterDispatches(data.items, filters),
     allItems: data.items,
     loading,
+    isRefreshing,
     error,
     refresh,
   };

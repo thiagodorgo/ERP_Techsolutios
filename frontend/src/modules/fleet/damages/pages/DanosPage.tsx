@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, CheckCircle2, ChevronDown, ClipboardList, Eye, Pencil, Plus, RefreshCw, Wrench, ShieldAlert } from "lucide-react";
+import { Archive, ArchiveRestore, CheckCircle2, ChevronDown, ClipboardList, Eye, Pencil, Plus, Wrench, ShieldAlert } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -6,6 +6,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import type { DenseColumn } from "../../../../components/dense-list";
 import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../../components/dense-list";
 import { Alert, Button, Card, Chip, EmptyState, SearchBar, Select, Skeleton } from "../../../../components/ui";
+import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
@@ -90,6 +91,8 @@ export function DanosPage() {
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
   const { items, pagination, loading, error, refresh } = useDamages(STABLE_FILTERS);
+  // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
+  useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
   const { items: vehicles } = useVehicles(STABLE_VEHICLE_FILTERS);
   const { items: workOrders } = useWorkOrders(STABLE_WORK_ORDER_FILTERS);
 
@@ -328,9 +331,6 @@ export function DanosPage() {
         </div>
         <div className="work-orders-actions">
           <SearchBar value={dense.search} onChange={dense.setSearch} placeholder="Buscar por descrição, viatura ou OS de origem…" />
-          <Button type="button" variant="secondary" onClick={() => void refresh()} disabled={loading}>
-            <RefreshCw size={16} aria-hidden /> Atualizar
-          </Button>
           {canCreate ? (
             <Button type="button" onClick={openCreate}>
               <Plus size={16} aria-hidden /> Registrar dano

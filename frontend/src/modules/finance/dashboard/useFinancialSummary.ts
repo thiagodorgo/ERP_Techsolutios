@@ -13,6 +13,7 @@ export function useFinancialSummary() {
   const { activeContext } = useTenantContext();
   const [data, setData] = useState<FinancialSummaryData>({ ...emptyFinancialSummary(), source: "api" });
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const context = useMemo(
     () => ({
@@ -25,16 +26,20 @@ export function useFinancialSummary() {
     [activeContext, session?.accessToken],
   );
 
-  const refresh = useCallback(async () => {
+  // WS-UI-REFRESH — refresh(background): em segundo plano NÃO mostra o skeleton (mantém o dado atual
+  // visível, sem flicker no auto-refresh); só a 1ª carga / refresh explícito usa `loading`.
+  const refresh = useCallback(async (background = false) => {
     if (!activeContext) return;
-    setLoading(true);
+    if (background) setIsRefreshing(true);
+    else setLoading(true);
     setData(await getFinancialSummaryFromApi(context));
     setLoading(false);
+    setIsRefreshing(false);
   }, [activeContext, context]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  return { data, loading, refresh };
+  return { data, loading, isRefreshing, refresh };
 }

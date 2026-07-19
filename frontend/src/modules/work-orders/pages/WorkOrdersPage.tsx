@@ -1,8 +1,9 @@
-import { AlertTriangle, Plus, RefreshCw, Search } from "lucide-react";
+import { AlertTriangle, Plus, Search } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { RevokeDispatchPrompt } from "../components/RevokeDispatchPrompt";
 import { WorkOrderDelayBadge } from "../components/WorkOrderDelayBadge";
@@ -73,6 +74,8 @@ function KpiCard({ n, label, badge, bg, color }: { n: number; label: string; bad
 export function WorkOrdersPage() {
   const navigate = useNavigate();
   const { items, loading, source, refresh, context } = useWorkOrders(STABLE_FILTERS);
+  // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
+  useAutoRefresh(refresh, { enabled: Boolean(context.tenantId) });
   const { permissions } = usePermissions();
   const [search, setSearch] = useState("");
   const [group, setGroup] = useState<Group>("all");
@@ -139,7 +142,6 @@ export function WorkOrdersPage() {
           <div style={{ fontSize: 13, color: "#64748B", marginTop: 3, fontWeight: 500 }}>atribuição, execução, SLA e rastreabilidade</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => void refresh()} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: "#475569", cursor: "pointer", fontFamily: "inherit" }}><RefreshCw size={14} />Atualizar</button>
           <button onClick={() => navigate("/work-orders/new")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#2563EB", border: "none", borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}><Plus size={14} />Nova OS</button>
         </div>
       </div>

@@ -1062,3 +1062,22 @@ NULL-em-cancelled como "segurar para revisão" (P-Ω3F6-LEGACY-NULL). Ver docs/g
 Readiness config-as-code = GO; ativação viva é fronteira humana. Gates que só existem no ambiente real: R1 (ratificar "dados no
 Brasil"), R2 (drill de restore cronometrado com app vivo + login + RPO no runbook), staging verde antes de prod, PROD_SMOKE_EMAIL/
 PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) + custo (~US$47-110/mês) em docs/go-live-readiness.md.
+
+## P-UI-REFRESH-LIVENESS — indicador sutil de auto-atualização nas telas (WS-UI-REFRESH, 2026-07-19)
+- descricao: WS-UI-REFRESH removeu o botão manual "Atualizar" e ligou auto-refresh silencioso em 30 telas (o dono pediu
+  explicitamente "o sistema faz isso automatico"). 29/30 telas NÃO exibem sinal visual de que a tela se atualiza sozinha —
+  só OperationsMapPage mostra chips "Atualizando…"/"Atualizado {data}". Os hooks já expõem `isRefreshing` (não consumido nas
+  páginas). Inclui a divergência cosmética de NotificationsPage (loadNotifications não expõe isRefreshing).
+- acao: OPCIONAL (não-bloqueante; comportamento silencioso é o que o dono pediu). Se desejado, adicionar um indicador sutil e
+  uniforme (chip/spinner via `isRefreshing` ou label "Atualizado às HH:MM") para paridade com o padrão-ouro do mapa e sensação
+  de "tela viva". Cruza com WS-UI-CARDS/WS-UI-CHARTS (mesma passada de vitalidade de UI).
+- status: aberto (não-bloqueante; sancionado pela junta como comportamento pedido).
+
+## P-UI-REFRESH-ERROR-COPY — cópia de erro referencia refresh manual que não existe mais (WS-UI-REFRESH, 2026-07-19)
+- descricao: alguns toasts/cópias de erro em ADAPTERS (fora do escopo do WS, não tocados) instruem recarregar manualmente,
+  agora que o botão sumiu e a tela atualiza sozinha a cada 30s: `users.adapter.ts` ("Atualize a lista e tente novamente"),
+  `damages`/`fines`/`maintenance`/`cycle-counts` adapters ("Recarregue a lista"), `DuplicateWorkOrderModal.tsx` ("Atualize a
+  lista de ordens para encontrá-la"). Levemente enganoso.
+- acao: passada de cópia futura — reescrever para refletir o auto-refresh (ex.: "a lista se atualiza automaticamente" / remover
+  a instrução manual). São mensagens de erro (não empty-states).
+- status: aberto (não-bloqueante; cosmético).

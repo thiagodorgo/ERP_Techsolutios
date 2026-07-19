@@ -1,8 +1,9 @@
-import { PlusCircle, RefreshCw } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { Alert, Button, Card, Chip, EmptyState, Skeleton } from "../../../../components/ui";
+import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
@@ -44,6 +45,8 @@ export function OperationsDispatchesPage() {
   const [reassignTarget, setReassignTarget] = useState<DispatchListItem | null>(null);
   const [showCreate, setShowCreate] = useState(Boolean(initialWorkOrderId && initialOperatorUserId));
   const { items, allItems, fallbackReason, loading, error, refresh } = useOperationsDispatches(filters);
+  // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
+  useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
   const summary = useMemo(() => calculateDispatchesSummary(allItems), [allItems]);
   const operatorOptions = useMemo(() => [...new Set(allItems.map((item) => item.operatorUserId))].sort(), [allItems]);
   const context = useMemo(
@@ -83,16 +86,13 @@ export function OperationsDispatchesPage() {
           </h1>
           <p>Envios em rota — origem, paradas e destino — acompanhados em tempo real.</p>
         </div>
-        <div className="work-orders-actions">
-          <Button type="button" variant="secondary" onClick={() => void refresh()} disabled={loading}>
-            <RefreshCw size={16} /> Atualizar
-          </Button>
-          {can("field_dispatch:create") ? (
+        {can("field_dispatch:create") ? (
+          <div className="work-orders-actions">
             <Button type="button" onClick={() => setShowCreate((value) => !value)}>
               <PlusCircle size={16} /> Novo despacho
             </Button>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </header>
 
       {fallbackReason || error ? (

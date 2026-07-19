@@ -6,6 +6,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import type { DenseColumn } from "../../../../components/dense-list";
 import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../../components/dense-list";
 import { Alert, Button, Card, EmptyState, ErrorState, Input, SearchBar, Select, Skeleton } from "../../../../components/ui";
+import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
@@ -69,6 +70,8 @@ export function RemuneracoesPage() {
   const [selected, setSelected] = useState<SelectedPayee | null>(null);
 
   const { summary, loading, error, refresh } = useCommissionsSummary(scope, from, to, canReadAll ? payeeId : "");
+  // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
+  useAutoRefresh(refresh, { enabled: Boolean(activeContext) && Boolean(scope) });
 
   const context = useMemo(
     () => ({
@@ -132,9 +135,6 @@ export function RemuneracoesPage() {
       <div style={{ minWidth: 150 }}>
         <Input label="Até" type="date" value={to} onChange={(event) => setParam("to", event.target.value)} aria-label="Fim do período" />
       </div>
-      <Button type="button" variant="secondary" onClick={() => void refresh()} disabled={loading}>
-        <RefreshCw size={16} aria-hidden /> Atualizar
-      </Button>
     </div>
   );
 

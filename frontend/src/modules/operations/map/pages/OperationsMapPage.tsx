@@ -173,9 +173,6 @@ export function OperationsMapPage() {
           >
             {autoRefresh ? <><Pause size={16} /> Pausar auto</> : <><Play size={16} /> Auto atualizar</>}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => void refresh()} disabled={loading || isRefreshing}>
-            <RefreshCw size={16} /> Atualizar
-          </Button>
         </div>
       </header>
 
@@ -238,7 +235,7 @@ export function OperationsMapPage() {
       {!loading && locations.length === 0 && !hasMapContent && source !== "fallback" ? (
         <EmptyState
           title="Nenhum operador ou chamado no mapa"
-          detail="Quando os operadores enviarem localização pelo aplicativo de campo, ou houver ordens de serviço abertas com endereço geolocalizado, os pontos aparecerão aqui automaticamente. Verifique se há despachos ativos ou use Atualizar para consultar novamente."
+          detail="Quando os operadores enviarem localização pelo aplicativo de campo, ou houver ordens de serviço abertas com endereço geolocalizado, os pontos aparecerão aqui automaticamente. Verifique se há despachos ativos — a tela se atualiza sozinha."
         />
       ) : null}
       {!loading && locations.length > 0 && workOrderContextLocations.length === 0 && workOrderContextId ? (

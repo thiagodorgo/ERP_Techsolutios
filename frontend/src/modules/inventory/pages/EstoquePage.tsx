@@ -1,4 +1,4 @@
-import { AlertTriangle, Archive, ArchiveRestore, ArrowLeftRight, CheckCircle2, ClipboardList, Layers, Package, Pencil, Plus, RefreshCw, ShoppingCart, X } from "lucide-react";
+import { AlertTriangle, Archive, ArchiveRestore, ArrowLeftRight, CheckCircle2, ClipboardList, Layers, Package, Pencil, Plus, ShoppingCart, X } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -6,6 +6,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import type { DenseColumn } from "../../../components/dense-list";
 import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../components/dense-list";
 import { Alert, Button, Card, Chip, EmptyState, Modal, SearchBar, Select, Skeleton } from "../../../components/ui";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
@@ -235,10 +236,16 @@ export function EstoquePage() {
     [tab, setSearchParams],
   );
 
-  const refreshAll = useCallback(() => {
-    void refresh();
-    void refreshMovements();
-  }, [refresh, refreshMovements]);
+  const refreshAll = useCallback(
+    (background = false) => {
+      void refresh(background);
+      void refreshMovements(background);
+    },
+    [refresh, refreshMovements],
+  );
+
+  // WS-UI-REFRESH — o sistema recarrega itens e movimentações sozinho em segundo plano (sem botão "Atualizar").
+  useAutoRefresh(refreshAll, { enabled: Boolean(activeContext) });
 
   function openCreateItem() {
     setEditingItem(null);
@@ -282,8 +289,6 @@ export function EstoquePage() {
   // Totais reais das janelas carregadas — renderizam mesmo vazio.
   const totals = useMemo(() => computeInventoryTotals(items, movements), [items, movements]);
 
-  const anyLoading = loading || movementsLoading;
-
   return (
     <div style={{ color: "#0F172A" }}>
       {/* page header — identidade da tela aprovada: título + subtítulo + ações à direita */}
@@ -310,9 +315,6 @@ export function EstoquePage() {
                   : "Buscar por situação ou classe…"
             }
           />
-          <Button type="button" variant="secondary" onClick={refreshAll} disabled={anyLoading}>
-            <RefreshCw size={16} aria-hidden /> Atualizar
-          </Button>
           {canCreateItem ? (
             <Button type="button" variant="secondary" onClick={openCreateItem}>
               <Plus size={16} aria-hidden /> Novo item

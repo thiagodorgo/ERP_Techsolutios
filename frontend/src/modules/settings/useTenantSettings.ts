@@ -12,6 +12,7 @@ export function useTenantSettings() {
   const { activeContext } = useTenantContext();
   const [data, setData] = useState<TenantSettingsData>({ items: [], source: "api" });
   const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const context = useMemo<TenantSettingsApiContext>(
@@ -25,15 +26,19 @@ export function useTenantSettings() {
     [activeContext, session?.accessToken],
   );
 
-  const refresh = useCallback(async () => {
+  // WS-UI-REFRESH — refresh(background): em segundo plano NÃO mostra o skeleton (mantém o valor atual
+  // visível, sem flicker no auto-refresh); só a 1ª carga / refresh explícito usa `loading`.
+  const refresh = useCallback(async (background = false) => {
     if (!activeContext) return;
 
-    setLoading(true);
+    if (background) setIsRefreshing(true);
+    else setLoading(true);
     setError(null);
     const next = await listTenantSettingsFromApi(context);
     setData(next);
     if (next.source === "fallback") setError(next.fallbackReason ?? "Fallback local ativo.");
     setLoading(false);
+    setIsRefreshing(false);
   }, [activeContext, context]);
 
   useEffect(() => {
@@ -44,6 +49,7 @@ export function useTenantSettings() {
     items: data.items,
     source: data.source,
     loading,
+    isRefreshing,
     error,
     refresh,
     context,

@@ -39,7 +39,8 @@ export type DashboardData = {
   readonly dispatchesSource: DispatchesSource;
   readonly locations: readonly FieldLocationItem[];
   readonly locationsSource: OperationsMapSource;
-  readonly refresh: () => Promise<void>;
+  readonly isRefreshing: boolean;
+  readonly refresh: (background?: boolean) => Promise<void>;
 };
 
 export function useDashboardData(): DashboardData {
@@ -54,6 +55,7 @@ export function useDashboardData(): DashboardData {
   const [locations, setLocations] = useState<readonly FieldLocationItem[]>([]);
   const [locationsSource, setLocationsSource] = useState<OperationsMapSource>("api");
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const context = useMemo(
     () => ({
@@ -66,9 +68,12 @@ export function useDashboardData(): DashboardData {
     [activeContext, session?.accessToken],
   );
 
-  const load = useCallback(async () => {
+  // WS-UI-REFRESH — load(background): em segundo plano NÃO mostra o skeleton (o auto-refresh atualiza os
+  // cards/painéis sem piscar), só a 1ª carga / refresh explícito usa `loading`.
+  const load = useCallback(async (background = false) => {
     if (!activeContext) return;
-    setLoading(true);
+    if (background) setIsRefreshing(true);
+    else setLoading(true);
 
     const [summaryResult, dispatchesResult, locationsResult] = await Promise.allSettled([
       getOperationalDashboard(context),
@@ -101,18 +106,20 @@ export function useDashboardData(): DashboardData {
     }
 
     setLoading(false);
+    setIsRefreshing(false);
   }, [activeContext, context]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const refresh = useCallback(async () => {
-    await load();
+  const refresh = useCallback(async (background = false) => {
+    await load(background);
   }, [load]);
 
   return {
     loading,
+    isRefreshing,
     kpis: summary.kpis,
     alerts: summary.alerts,
     criticalWorkOrders: summary.criticalWorkOrders,

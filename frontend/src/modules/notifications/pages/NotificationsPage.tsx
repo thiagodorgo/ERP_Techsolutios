@@ -1,8 +1,9 @@
-import { Bell, CheckCheck, RefreshCw, Sparkles } from "lucide-react";
+import { Bell, CheckCheck, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { Alert, Button, Card, ErrorState, Skeleton, Tabs } from "../../../components/ui";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
@@ -67,10 +68,12 @@ export function NotificationsPage() {
     [searchParams, setSearchParams],
   );
 
-  const loadNotifications = useCallback(async () => {
+  // WS-UI-REFRESH — loadNotifications(background): em segundo plano NÃO mostra o skeleton (mantém a
+  // lista atual visível, sem flicker no auto-refresh); só a 1ª carga usa `loading`.
+  const loadNotifications = useCallback(async (background = false) => {
     if (!context) return;
 
-    setLoading(true);
+    if (!background) setLoading(true);
     setError(null);
 
     try {
@@ -88,6 +91,9 @@ export function NotificationsPage() {
   useEffect(() => {
     void loadNotifications();
   }, [loadNotifications]);
+
+  // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
+  useAutoRefresh(loadNotifications, { enabled: Boolean(context) });
 
   // Categoria é filtrada client-side sobre a janela já carregada (a situação vai ao endpoint).
   const visibleNotifications = useMemo(
@@ -184,10 +190,6 @@ export function NotificationsPage() {
           <p>Avisos e eventos operacionais do seu usuário na organização.</p>
         </div>
         <div className="notification-page-actions">
-          <Button type="button" variant="secondary" onClick={loadNotifications} disabled={busy}>
-            <RefreshCw size={16} aria-hidden />
-            Atualizar
-          </Button>
           {canManage ? (
             <Button type="button" variant="secondary" onClick={handleRunAlerts} disabled={busy}>
               <Sparkles size={16} aria-hidden />

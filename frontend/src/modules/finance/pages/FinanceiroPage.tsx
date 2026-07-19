@@ -1,6 +1,8 @@
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, RefreshCw, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, Wallet } from "lucide-react";
 import type { CSSProperties, ComponentType } from "react";
 
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
+import { useTenantContext } from "../../../providers/TenantProvider";
 import {
   formatBRL,
   formatCompactBRL,
@@ -39,7 +41,10 @@ function percent(part: number, whole: number): string {
 }
 
 export function FinanceiroPage() {
+  const { activeContext } = useTenantContext();
   const { data, loading, refresh } = useFinancialSummary();
+  // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
+  useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
   const { receivable, payable, cash, cashFlow, recentTitles } = data;
 
   const kpis: Array<{ label: string; value: string; sub: string; Icon: IconType; tone: KpiTone }> = [
@@ -83,15 +88,6 @@ export function FinanceiroPage() {
           <div style={{ fontSize: 20, fontWeight: 800 }}>Financeiro</div>
           <div style={{ fontSize: 13, color: "#64748B", marginTop: 2 }}>Contas a pagar e receber · fluxo de caixa</div>
         </div>
-        <button
-          type="button"
-          onClick={() => void refresh()}
-          disabled={loading}
-          style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 14px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#334155", cursor: loading ? "default" : "pointer", fontFamily: "inherit", opacity: loading ? 0.6 : 1 }}
-        >
-          <RefreshCw size={15} />
-          Atualizar
-        </button>
       </div>
 
       {data.source === "fallback" && (

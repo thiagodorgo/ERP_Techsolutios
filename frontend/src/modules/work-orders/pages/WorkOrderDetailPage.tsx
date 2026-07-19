@@ -1,6 +1,7 @@
 import { ClipboardList } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useAuth } from "../../../providers/AuthProvider";
 import { WorkOrderActionBar } from "../components/WorkOrderActionBar";
@@ -26,6 +27,8 @@ export function WorkOrderDetailPage() {
   const { workOrderId } = useParams<{ workOrderId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { workOrder, timeline, loading, source, context, refresh } = useWorkOrderDetail(workOrderId);
+  // WS-UI-REFRESH — o hub recarrega sozinho em segundo plano (sem botão "Atualizar" na barra de ações).
+  useAutoRefresh(refresh, { enabled: Boolean(workOrderId) });
   const { permissions } = usePermissions();
   const { session } = useAuth();
   const currentUserId = session?.user.id;

@@ -1,4 +1,4 @@
-import { Ban, ClipboardList, Copy, CopyPlus, MoreVertical, Printer, RefreshCw, Share2 } from "lucide-react";
+import { Ban, ClipboardList, Copy, CopyPlus, MoreVertical, Printer, Share2 } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -113,8 +113,6 @@ export function WorkOrderActionBar({
     // `wo-print-anchor`: esta barra é position:relative e HOSPEDA o modal de impressão. Sem neutralizá-la
     // no @media print, o print-root (absolute) ancora NELA e o papel sai deslocado/cortado (cognicao J-Ω3F-6B).
     <div className="wo-print-anchor" style={{ display: "flex", gap: 8, position: "relative" }}>
-      <button type="button" onClick={onRefresh} style={btnGhost}><RefreshCw size={14} />Atualizar</button>
-
       {workOrder.checklistId ? (
         <button type="button" onClick={() => navigate(`/operations/checklists/${workOrder.checklistId}/run`)} style={{ ...btn, background: "#2563EB", border: "none", color: "#fff" }}><ClipboardList size={15} />Abrir checklist</button>
       ) : null}

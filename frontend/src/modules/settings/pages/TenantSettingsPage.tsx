@@ -2,6 +2,7 @@ import { RefreshCw } from "lucide-react";
 import type { CSSProperties } from "react";
 
 import { Alert, Badge, Button, EmptyState, Skeleton } from "../../../components/ui";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { TenantSettingsGroups } from "../components/TenantSettingsGroups";
 import { useTenantSettings } from "../useTenantSettings";
@@ -15,6 +16,8 @@ const retryRowStyle: CSSProperties = { display: "flex", justifyContent: "flex-st
 
 export function TenantSettingsPage() {
   const { items, loading, error, refresh, context } = useTenantSettings();
+  // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
+  useAutoRefresh(refresh, { enabled: Boolean(context.tenantId) });
   const { can } = usePermissions();
 
   const canUpdate = can("tenant_settings:update");
@@ -27,12 +30,11 @@ export function TenantSettingsPage() {
           <h1>Configurações</h1>
           <p>Parâmetros da organização — valores reais, agrupados por categoria.</p>
         </div>
-        <div className="work-orders-actions">
-          <Button type="button" variant="secondary" onClick={() => void refresh()} disabled={loading}>
-            <RefreshCw size={16} aria-hidden /> Atualizar
-          </Button>
-          {canUpdate ? null : <Badge tone="info">Somente leitura</Badge>}
-        </div>
+        {canUpdate ? null : (
+          <div className="work-orders-actions">
+            <Badge tone="info">Somente leitura</Badge>
+          </div>
+        )}
       </header>
 
       {error ? (
@@ -53,7 +55,7 @@ export function TenantSettingsPage() {
       {!loading && !error && items.length === 0 ? (
         <EmptyState
           title="Nenhum parâmetro configurado"
-          detail="Os parâmetros da organização aparecem aqui assim que forem provisionados. Use Atualizar para recarregar."
+          detail="Os parâmetros da organização aparecem aqui assim que forem provisionados. A tela atualiza automaticamente."
         />
       ) : null}
 

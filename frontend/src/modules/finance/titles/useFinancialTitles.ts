@@ -17,6 +17,7 @@ export function useFinancialTitles(direction: FinancialTitleDirection) {
     source: "api",
   });
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const context = useMemo(
     () => ({
@@ -29,14 +30,18 @@ export function useFinancialTitles(direction: FinancialTitleDirection) {
     [activeContext, session?.accessToken],
   );
 
-  const refresh = useCallback(async () => {
+  // WS-UI-REFRESH — refresh(background): em segundo plano NÃO mostra o skeleton (mantém o dado atual
+  // visível, sem flicker no auto-refresh); só a 1ª carga / refresh explícito usa `loading`.
+  const refresh = useCallback(async (background = false) => {
     if (!activeContext) return;
-    setLoading(true);
+    if (background) setIsRefreshing(true);
+    else setLoading(true);
     // limit=100 (máximo do backend): mitiga a subcontagem dos KPIs/tabs, que somam sobre as linhas
     // carregadas. Cobertura completa (agregados no backend / paginação real) é P-Ω4-2B-KPI-AGREGADO.
     const nextData = await listFinancialTitlesFromApi(context, { direction, limit: 100 });
     setData(nextData);
     setLoading(false);
+    setIsRefreshing(false);
   }, [activeContext, context, direction]);
 
   useEffect(() => {
@@ -49,6 +54,7 @@ export function useFinancialTitles(direction: FinancialTitleDirection) {
     source: data.source,
     fallbackReason: data.fallbackReason,
     loading,
+    isRefreshing,
     refresh,
     context,
   };
