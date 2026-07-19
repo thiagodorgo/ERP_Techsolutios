@@ -1504,7 +1504,9 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.doesNotMatch(updateOnlyDispatchActionsHtml, /Reatribuir|Cancelar/);
   assert.match(readOnlyDispatchActionsHtml, /Sem acoes disponiveis/);
   assert.match(terminalDispatchActionsHtml, /Despacho terminal/);
-  assert.match(protectedHtml, /Despachos Operacionais/);
+  // Fidelidade §11: o título da tela de despachos passou de "Despachos Operacionais" para "Despachos" + selo AO VIVO.
+  assert.match(protectedHtml, /Despachos/);
+  assert.match(protectedHtml, /AO VIVO/);
   assert.match(protectedHtml, /Notificações/);
   assert.match(runtimeHtml, /Executar checklist|Runtime operacional/);
   assert.match(workOrderDetailHtml, /OS-000101|Timeline|Alterar status/);

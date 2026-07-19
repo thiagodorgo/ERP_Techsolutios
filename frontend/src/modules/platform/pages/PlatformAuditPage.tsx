@@ -18,15 +18,35 @@ const cols = "1.2fr 1.2fr 2fr 1.4fr 1fr 0.8fr";
 const th: CSSProperties = { fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em" };
 const mono = "'JetBrains Mono', monospace";
 
+// §11 (auditoria de fidelidade): a tela precisa da linha de KPIs do protótipo (composição completa, regra 6).
+// Mock coerente com as demais telas de Plataforma (valor + rótulo + selo de risco na cor certa).
+type AuditKpi = { label: string; value: string; tone: string };
+const KPIS: AuditKpi[] = [
+  { label: "Eventos (24h)", value: "1.284", tone: "#2563EB" },
+  { label: "Organizações ativas", value: "48", tone: "#059669" },
+  { label: "Mudanças de plano", value: "3", tone: "#D97706" },
+  { label: "Incidentes", value: "0", tone: "#059669" },
+];
+const card: CSSProperties = { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: 18 };
+
 export function PlatformAuditPage() {
   return (
     <div style={{ color: "#0F172A" }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 10 }}>
         <div>
-          <div style={{ fontSize: 20, fontWeight: 800 }}>Auditoria Global</div>
-          <div style={{ fontSize: 13, color: "#64748B", marginTop: 2 }}>eventos críticos, trilhas de acesso e alterações sensíveis</div>
+          <div style={{ fontSize: 20, fontWeight: 800 }}>Auditoria da Plataforma</div>
+          <div style={{ fontSize: 13, color: "#64748B", marginTop: 2 }}>trilha global de eventos da plataforma</div>
         </div>
         <button style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 14px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#334155", cursor: "pointer", fontFamily: "inherit" }}><Download size={15} />Exportar logs</button>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+        {KPIS.map((k) => (
+          <div key={k.label} style={card}>
+            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-.5px", color: k.tone }}>{k.value}</div>
+            <div style={{ fontSize: 12.5, color: "#64748B", marginTop: 4 }}>{k.label}</div>
+          </div>
+        ))}
       </div>
 
       <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, overflow: "hidden" }}>
