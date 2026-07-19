@@ -174,6 +174,12 @@ export function getMemoryCommissionRepositoryForTests(): InMemoryCommissionRepos
   return memoryRepository;
 }
 
+// WS-SCALE-COMISSAO — expõe o dublê do estado de cancelamento da OS para os testes semearem OS
+// canceladas e provarem a supressão (`ineligible`) / hold (`pending_review`) do basis event.
+export function getMemoryWorkOrderCancellationGateForTests(): InMemoryCommissionRepository["workOrderGate"] {
+  return memoryRepository.workOrderGate;
+}
+
 export async function createDefaultCommissionService(): Promise<CommissionService> {
   if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
     return createMemoryCommissionService();

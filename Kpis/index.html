@@ -26,6 +26,28 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-SCALE-COMISSAO">
+          <h2>WS-SCALE-COMISSAO (Onda 1 Scale) — comissões honram a decisão de cancelamento da OS</h2>
+          <p>
+            <strong>WS-SCALE-COMISSAO (2026-07-19):</strong> as comissões passam a consumir
+            <code>work_orders.financial_cancellation_decision</code> (resolve parcial <strong>P-Ω3F6-COMISSAO</strong>).
+            Chokepoint de <strong>elegibilidade</strong> na criação do <em>basis event</em> de OS: o novo
+            <code>work-order-cancellation.gate.ts</code> lê o estado da OS <strong>dentro da tx <code>withTenantRls</code></strong>
+            (RLS satisfeito, atômico, idempotência-primeiro) e a regra <strong>pura</strong>
+            <code>evaluateWorkOrderCommissionEligibility</code> marca o evento —
+            <strong>zero/keep_unpaid → ineligible</strong> (suprime), <strong>NULL/ausente em OS cancelada → pending_review</strong>
+            (segura, J-Ω3F-6A), <strong>keep/não-cancelada → elegível</strong>. Contrato = <strong>201 + status persistido</strong>
+            (fila de revisão via <code>GET /commissions/basis-events?status=</code>), não 422 — retry-safe e auditável. O
+            <strong>ataque de desenho 3-lentes</strong> (idempotência/RLS/contrato) pegou <strong>3 furos críticos ANTES do código</strong>
+            (fail-open por RLS fora de contexto; flip 201↔422 no replay; null-vs-keep), todos fechados pela realocação do gate
+            para dentro do repositório. Resta o <strong>dual-gate</strong> na engine de cálculo (P-Ω3F6-COMISSAO-REVERSAL, latente —
+            nenhuma engine paga hoje). Execução real da branch: <strong>backend 1248→1259</strong> (0 fail no CI / 6 skip DB-gated;
+            1265 total; +11 desta fatia = 7 unidades da regra pura + 4 integração HTTP, 0 regressão provada por baseline em stash),
+            <strong>smoke 514</strong>, Flutter
+            <strong>764/764</strong> e <strong>MVP 99%/88%</strong> <strong>inalterados</strong> (backend-only; sem migration/schema/permissão).
+            <code>merge_commit</code>/<code>approved_head</code> null na autoria (backfill pós-merge).
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo Ω4 PÓS-FASE 1">
           <h2>Ω4 (RODADA — PÓS-FASE 1) — Financeiro do tenant completo + reconciliação KPI</h2>
           <p>

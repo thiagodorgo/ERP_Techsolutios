@@ -22,6 +22,12 @@ import type {
   SummarizeCalculationsByPayeeInput,
 } from "./commission.types.js";
 import type { CommissionRepository } from "./commission.repository.js";
+import {
+  evaluateWorkOrderCommissionEligibility,
+  isWorkOrderSourceType,
+  readWorkOrderCancellationPrisma,
+  resolveBasisEventStatusForVerdict,
+} from "./work-order-cancellation.gate.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -103,7 +109,14 @@ export class PrismaCommissionRepository implements CommissionRepository {
         },
       },
     });
+    // Idempotência PRIMEIRO: replay devolve o existente sem re-gatear (estado da OS pode ter mudado
+    // depois — o resultado do replay deve ser estável).
     if (existing) return mapBasisEventRecord(existing);
+
+    // WS-SCALE-COMISSAO — a supressão roda AQUI, dentro da tx `withTenantRls` (o RlsPrismaCommissionRepository
+    // embrulha esta chamada): `this.client` é a tx com `app.current_tenant_id` setado, então o read de
+    // `work_orders` respeita a policy FORCE RLS (fora dela, o read voltaria vazio → fail-open).
+    const status = await this.resolveBasisEventStatus(input);
 
     const event = await this.client.commissionBasisEvent.create({
       data: {
@@ -114,12 +127,25 @@ export class PrismaCommissionRepository implements CommissionRepository {
         idempotency_key: input.idempotencyKey,
         payload: toJsonObject(input.payload),
         occurred_at: input.occurredAt,
-        status: input.status,
+        status,
         policy_id: input.policyId ?? null,
       },
     });
 
     return mapBasisEventRecord(event);
+  }
+
+  // WS-SCALE-COMISSAO — para basis events de OS, honra a decisão de cancelamento: `ineligible` (suprime),
+  // `pending_review` (segura) ou mantém o status pedido (elegível). Roda dentro da tx RLS (this.client é a tx).
+  private async resolveBasisEventStatus(
+    input: CreateCommissionBasisEventInput,
+  ): Promise<CommissionBasisEvent["status"]> {
+    if (!isWorkOrderSourceType(input.sourceType)) return input.status;
+
+    const state = await readWorkOrderCancellationPrisma(this.client, input.tenantId, input.sourceId);
+    const verdict = evaluateWorkOrderCommissionEligibility(state);
+
+    return resolveBasisEventStatusForVerdict(input.status, verdict);
   }
 
   async listBasisEvents(input: ListCommissionBasisEventsInput): Promise<ListResult<CommissionBasisEvent>> {
