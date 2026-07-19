@@ -358,17 +358,61 @@
     "approved_head": null,
     "status": "published_per_pr",
     "related_prs": [
-      { "pr": 203, "merge_commit": null, "note": "Ω3F-9 acoes de linha (dar andamento/revogar/atraso) — FECHA A FASE 1" },
-      { "pr": 202, "merge_commit": null, "note": "Ω3F-8 pos-analise (mapa)" },
-      { "pr": 201, "merge_commit": null, "note": "Ω3F-8b aba Mapa (haversine US$0)" },
-      { "pr": 200, "merge_commit": null, "note": "Ω3F-8a aba Logs" },
-      { "pr": 199, "merge_commit": null, "note": "Ω3F-7 pos-analise" },
-      { "pr": 198, "merge_commit": null, "note": "Ω3F-7b Mobile+Quilometragem" },
-      { "pr": 197, "merge_commit": null, "note": "Ω3F-7a Quilometragem" },
-      { "pr": 192, "merge_commit": null, "note": "Ω3F-5a comentario + TagAssignment" },
-      { "pr": 191, "merge_commit": null, "note": "Ω3F-4c aba Orcamento" },
-      { "pr": 190, "merge_commit": null, "note": "Ω3F-4b aprovar->OS + compartilhar" },
-      { "pr": 189, "merge_commit": null, "note": "Ω3F-4a orcamento multi-item preco congelado" }
+      {
+        "pr": 203,
+        "merge_commit": null,
+        "note": "Ω3F-9 acoes de linha (dar andamento/revogar/atraso) — FECHA A FASE 1"
+      },
+      {
+        "pr": 202,
+        "merge_commit": null,
+        "note": "Ω3F-8 pos-analise (mapa)"
+      },
+      {
+        "pr": 201,
+        "merge_commit": null,
+        "note": "Ω3F-8b aba Mapa (haversine US$0)"
+      },
+      {
+        "pr": 200,
+        "merge_commit": null,
+        "note": "Ω3F-8a aba Logs"
+      },
+      {
+        "pr": 199,
+        "merge_commit": null,
+        "note": "Ω3F-7 pos-analise"
+      },
+      {
+        "pr": 198,
+        "merge_commit": null,
+        "note": "Ω3F-7b Mobile+Quilometragem"
+      },
+      {
+        "pr": 197,
+        "merge_commit": null,
+        "note": "Ω3F-7a Quilometragem"
+      },
+      {
+        "pr": 192,
+        "merge_commit": null,
+        "note": "Ω3F-5a comentario + TagAssignment"
+      },
+      {
+        "pr": 191,
+        "merge_commit": null,
+        "note": "Ω3F-4c aba Orcamento"
+      },
+      {
+        "pr": 190,
+        "merge_commit": null,
+        "note": "Ω3F-4b aprovar->OS + compartilhar"
+      },
+      {
+        "pr": 189,
+        "merge_commit": null,
+        "note": "Ω3F-4a orcamento multi-item preco congelado"
+      }
     ]
   },
   {
@@ -387,20 +431,92 @@
     "approved_head": null,
     "status": "published_per_pr",
     "related_prs": [
-      { "pr": 225, "merge_commit": null, "note": "Ω4-8 pos-analise — paridade currency + select" },
-      { "pr": 224, "merge_commit": null, "note": "Ω4-8b dashboard financeiro real" },
-      { "pr": 223, "merge_commit": null, "note": "Ω4-8a agregado backend GET /financial-summary" },
-      { "pr": 222, "merge_commit": null, "note": "Ω4-7 pos-analise — due_date=null limpa" },
-      { "pr": 221, "merge_commit": null, "note": "Ω4-7 Cheque (instrumento com ciclo proprio)" },
-      { "pr": 220, "merge_commit": null, "note": "Ω4-6 pos-analise — balance exclui cancelados" },
-      { "pr": 219, "merge_commit": null, "note": "Ω4-6 Fechamento de periodo (trava retroativa)" },
-      { "pr": 218, "merge_commit": null, "note": "P-Ω4-COMPETENCIA-TZ — America/Sao_Paulo" },
-      { "pr": 216, "merge_commit": null, "note": "Ω4-5 Conciliacao bancaria" },
-      { "pr": 214, "merge_commit": null, "note": "Ω4-4 Caixa/Extrato + liquidacao" },
-      { "pr": 212, "merge_commit": null, "note": "Ω4-3 Faturamento OS->Titulo (anti-refaturamento)" },
-      { "pr": 210, "merge_commit": null, "note": "Ω4-2b telas Cobrancas/Pagamentos" },
-      { "pr": 208, "merge_commit": null, "note": "Ω4-2a Titulo + chokepoint (backend)" },
-      { "pr": 206, "merge_commit": null, "note": "Ω4-1 Conta financeira" }
+      {
+        "pr": 225,
+        "merge_commit": null,
+        "note": "Ω4-8 pos-analise — paridade currency + select"
+      },
+      {
+        "pr": 224,
+        "merge_commit": null,
+        "note": "Ω4-8b dashboard financeiro real"
+      },
+      {
+        "pr": 223,
+        "merge_commit": null,
+        "note": "Ω4-8a agregado backend GET /financial-summary"
+      },
+      {
+        "pr": 222,
+        "merge_commit": null,
+        "note": "Ω4-7 pos-analise — due_date=null limpa"
+      },
+      {
+        "pr": 221,
+        "merge_commit": null,
+        "note": "Ω4-7 Cheque (instrumento com ciclo proprio)"
+      },
+      {
+        "pr": 220,
+        "merge_commit": null,
+        "note": "Ω4-6 pos-analise — balance exclui cancelados"
+      },
+      {
+        "pr": 219,
+        "merge_commit": null,
+        "note": "Ω4-6 Fechamento de periodo (trava retroativa)"
+      },
+      {
+        "pr": 218,
+        "merge_commit": null,
+        "note": "P-Ω4-COMPETENCIA-TZ — America/Sao_Paulo"
+      },
+      {
+        "pr": 216,
+        "merge_commit": null,
+        "note": "Ω4-5 Conciliacao bancaria"
+      },
+      {
+        "pr": 214,
+        "merge_commit": null,
+        "note": "Ω4-4 Caixa/Extrato + liquidacao"
+      },
+      {
+        "pr": 212,
+        "merge_commit": null,
+        "note": "Ω4-3 Faturamento OS->Titulo (anti-refaturamento)"
+      },
+      {
+        "pr": 210,
+        "merge_commit": null,
+        "note": "Ω4-2b telas Cobrancas/Pagamentos"
+      },
+      {
+        "pr": 208,
+        "merge_commit": null,
+        "note": "Ω4-2a Titulo + chokepoint (backend)"
+      },
+      {
+        "pr": 206,
+        "merge_commit": null,
+        "note": "Ω4-1 Conta financeira"
+      }
     ]
+  },
+  {
+    "snapshot_date": "2026-07-19",
+    "version": "WS-SCALE-COMISSAO",
+    "backend_tests": "1259/1265",
+    "frontend_smoke_tests": "514/514",
+    "flutter_tests": "764/764",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 66,
+    "description": "WS-SCALE-COMISSAO (Onda 1 do Scale roadmap) — as comissoes passam a consumir work_orders.financial_cancellation_decision (RESOLVE PARCIAL P-Ω3F6-COMISSAO). Chokepoint de ELEGIBILIDADE na criacao do basis event de OS: novo src/modules/commissions/work-order-cancellation.gate.ts le o estado da OS DENTRO da tx withTenantRls (RLS satisfeito, atomico, idempotencia-primeiro) e a regra PURA evaluateWorkOrderCommissionEligibility marca o evento — zero/keep_unpaid -> ineligible (suprime); NULL/ausente/desconhecida em OS cancelada -> pending_review (segura, J-Ω3F-6A); keep/nao-cancelada -> elegivel. Contrato = 201 + status persistido (fila de revisao via GET /commissions/basis-events?status=), nao 422 (retry-safe/auditavel). Ataque de desenho 3-lentes (idempotencia/RLS/contrato) pegou 3 furos criticos ANTES do codigo (fail-open por RLS fora de contexto; flip 201<->422 no replay; null-vs-keep) — todos fechados pela realocacao do gate para dentro do repo. Resta o dual-gate na engine de calculo (P-Ω3F6-COMISSAO-REVERSAL, latente — nenhuma engine paga hoje). Sem migration/schema/permissao nova. backend 1248->1259 (+11). Flutter/frontend INALTERADOS (backend-only). execucao real da branch: 1265 total / 6 skip DB-gated / 1259 pass no CI; +11 desta fatia (WS-SCALE-COMISSAO: 7 unidades da regra pura + 4 integracao HTTP). Sobre 1248 (que ja absorve #227-#231, nao reconciliados no KPI desde D-Ω4-KPI-RELATORIO). Localmente as 77 falhas sao DB-nao-migrado (cloud-usage/inventory/mobile/titulos/auth prisma) — verdes no CI; provado 0 regressao (baseline stash = mesmas 77). mvp_demo/mvp_vendavel/blocks INALTERADOS (hardening que resolve pendencia, sem mover escopo de dominio). merge_commit/approved_head null na autoria (backfill pos-merge); pr preenchido apos gh pr create.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

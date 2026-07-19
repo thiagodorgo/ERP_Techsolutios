@@ -561,7 +561,47 @@
   remuneração quando `keep_unpaid` (e quando `zero`, avaliar). Cruza com Ω4 (Financeiro do tenant).
 - REQUISITO (critico J-Ω3F-6A): decisão `NULL` NÃO pode ser lida como `keep` por default — OS cancelada pelo
   caminho legado (P-Ω3F6-STATUS-BYPASS) é AMBÍGUA e exige tratamento explícito, senão vira cobrança errada.
-- status: aberto (não-bloqueante; a decisão está persistida e auditável).
+- status: **RESOLVIDO PARCIAL (WS-SCALE-COMISSAO, Onda 1)** — o chokepoint de ELEGIBILIDADE (criação do basis event
+  de OS) passou a honrar a decisão: `src/modules/commissions/work-order-cancellation.gate.ts` lê o estado da OS
+  DENTRO da tx `withTenantRls` (no `createBasisEvent` do repo — RLS satisfeito, atômico, idempotência-primeiro) e a
+  regra pura `evaluateWorkOrderCommissionEligibility` marca o evento: `zero`/`keep_unpaid` → `ineligible` (suprime);
+  `NULL`/ausente/desconhecida em OS cancelada → `pending_review` (segura, J-Ω3F-6A); `keep`/não-cancelada → elegível.
+  Contrato = **201 + status persistido** (fila de revisão via `GET /commissions/basis-events?status=pending_review|ineligible`),
+  não 422 (retry-safe, auditável). Ataque de desenho 3-lentes (idempotência/RLS/contrato) + junta 3/3 APROVADO_CONDICIONADO.
+  Sem migration/schema/permissão nova.
+- ESCOPO COBERTO (explícito, achado MEDIA do crítico-adversarial): **APENAS a INGESTÃO** (o basis event nasce marcado
+  quando a OS JÁ está cancelada no momento do POST). A **supressão efetiva de remuneração continua 100% pendente** —
+  depende de (a) a engine de cálculo (que NÃO existe: só `seedCalculationForTests`) honrar o status, e (b) reverter OS
+  cancelada DEPOIS da conclusão (o fluxo comum: OS conclui → basis event `received` → OS cancelada depois mantém
+  `received`). NÃO ler esta pendência como "quase pronta": o mecanismo principal de pagamento é o dual-gate (abaixo).
+- COBERTURA DE TESTE (achado MEDIA CI-doutor/crítico → P-Ω3F6-COMISSAO-PRISMA-COV): o caminho Prisma real
+  (`readWorkOrderCancellationPrisma` no client real, dentro da tx `withTenantRls`) é coberto só por tsc + revisão; os
+  11 testes exercitam o dublê InMemory. Adicionar teste DB-gated quando houver lane de DB migrado (não-bloqueante;
+  alinhado a P-SAN-CORE-PRISMA-COV).
+- CONTRATO DO PRODUTOR (achado BAIXA crítico): a supressão só dispara se o produtor do basis event usar `sourceType`
+  canônico `work_order` e `sourceId` = **UUID da OS**. `sourceId` não-UUID (ex.: código `OS-100`) → no-op silencioso
+  (eligible). Premissa a validar contra qualquer produtor real de basis events.
+
+## P-Ω3F6-COMISSAO-REVERSAL - dual-gate na engine de cálculo + reversão de comissão de OS cancelada pós-conclusão (WS-SCALE-COMISSAO, 2026-07-19)
+- descricao: o gate de WS-SCALE-COMISSAO fecha só o chokepoint de ELEGIBILIDADE (basis event). Dois furos ficam para a
+  fatia da engine de cálculo (que HOJE não existe em produção — só `seedCalculationForTests`): (a) **cancel pós-conclusão**
+  — basis event criado com OS `completed` (elegível) e a OS cancelada DEPOIS: o evento sobrevive `eligible` e uma futura
+  engine pagaria; (b) a materialização do valor (calculation/statement) não re-resolve o estado FINAL da OS.
+- acao: quando a engine de cálculo for construída ela DEVE (dual-gate) re-resolver a decisão da OS via a MESMA regra pura
+  `evaluateWorkOrderCommissionEligibility` (reusar, não reescrever) antes de materializar valor, e refutar/reverter
+  calculations de basis events cujo estado virou `ineligible`/`pending_review`. Alternativa complementar: hook no
+  `work-order.service.cancel()` que marca os basis events `eligible` da OS como `superseded` (o enum já tem o status) —
+  via port injetado em app.ts (SEM import commissions→work-orders no runtime, evita ciclo).
+- status: aberto (não-bloqueante; nenhuma engine paga hoje — o furo é latente, não ativo).
+
+## P-Ω3F6-COMISSAO-PRISMA-COV - caminho Prisma do gate de supressão só coberto por tsc+revisão (WS-SCALE-COMISSAO, 2026-07-19)
+- descricao: `readWorkOrderCancellationPrisma` (findFirst em `work_orders` dentro da tx `withTenantRls`, guarda `isUuid`
+  contra P2023) NÃO é exercido por nenhum teste de regressão — os 11 testes da fatia batem no dublê `InMemoryWorkOrderCancellationGate`.
+  A alegação central (read dentro da tx RLS → FORCE RLS satisfeito → sem fail-open), que é o furo #1 do ataque de desenho,
+  fica travada só por tsc (valida model/coluna contra o client gerado) + revisão de código.
+- acao: adicionar teste prisma-mode DB-gated (na lane de DB migrado do CI) do shape da query e do comportamento RLS,
+  junto da fatia da engine/reversão (P-Ω3F6-COMISSAO-REVERSAL). Alinhado a P-SAN-CORE-PRISMA-COV.
+- status: aberto (não-bloqueante; chokepoint de supressão de remuneração — priorizar quando a engine for construída).
 
 ## P-Ω3F6-STATUS-BYPASS - Cancelamento legado por PATCH /status não grava decisão financeira (J-OMEGA3F-6A, 2026-07-17)
 - descricao: o `PATCH /work-orders/:id/status` (perm `work_orders:status`; usado também pela fila offline do

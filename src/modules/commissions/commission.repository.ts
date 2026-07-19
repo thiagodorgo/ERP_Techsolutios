@@ -18,6 +18,12 @@ import type {
   ListResult,
   SummarizeCalculationsByPayeeInput,
 } from "./commission.types.js";
+import {
+  evaluateWorkOrderCommissionEligibility,
+  InMemoryWorkOrderCancellationGate,
+  isWorkOrderSourceType,
+  resolveBasisEventStatusForVerdict,
+} from "./work-order-cancellation.gate.js";
 
 export interface CommissionRepository {
   createPolicy(input: CreateCommissionPolicyInput): Promise<CommissionPolicy>;
@@ -50,6 +56,9 @@ export class InMemoryCommissionRepository implements CommissionRepository {
   private readonly basisEvents = new Map<string, CommissionBasisEvent>();
   private readonly calculations = new Map<string, CommissionCalculation>();
   private readonly statements = new Map<string, CommissionStatement>();
+  // Dublê do estado de cancelamento da OS (WS-SCALE-COMISSAO). Semeável nos testes para provar a
+  // supressão; sem estado, `resolve` devolve null (OS não-encontrada → elegível).
+  readonly workOrderGate = new InMemoryWorkOrderCancellationGate();
 
   async createPolicy(input: CreateCommissionPolicyInput): Promise<CommissionPolicy> {
     const now = new Date();
@@ -102,7 +111,11 @@ export class InMemoryCommissionRepository implements CommissionRepository {
     const existing = [...this.basisEvents.values()].find(
       (event) => event.tenantId === input.tenantId && event.idempotencyKey === input.idempotencyKey,
     );
+    // Idempotência PRIMEIRO: replay devolve o existente sem re-gatear (estado da OS pode ter mudado
+    // depois — o resultado do replay deve ser estável).
     if (existing) return existing;
+
+    const status = await this.resolveBasisEventStatus(input);
 
     const event: CommissionBasisEvent = {
       id: randomUUID(),
@@ -113,7 +126,7 @@ export class InMemoryCommissionRepository implements CommissionRepository {
       idempotencyKey: input.idempotencyKey,
       payload: input.payload,
       occurredAt: input.occurredAt,
-      status: input.status,
+      status,
       policyId: input.policyId,
       createdAt: new Date(),
     };
@@ -121,6 +134,20 @@ export class InMemoryCommissionRepository implements CommissionRepository {
     this.basisEvents.set(event.id, event);
 
     return event;
+  }
+
+  // WS-SCALE-COMISSAO — para basis events de OS, honra a decisão de cancelamento da OS: `ineligible`
+  // (suprime) / `pending_review` (segura) / mantém o status pedido (elegível). Espelha exatamente o
+  // ramo do repositório Prisma (mesma regra pura).
+  private async resolveBasisEventStatus(
+    input: CreateCommissionBasisEventInput,
+  ): Promise<CommissionBasisEvent["status"]> {
+    if (!isWorkOrderSourceType(input.sourceType)) return input.status;
+
+    const state = await this.workOrderGate.resolve(input.tenantId, input.sourceId);
+    const verdict = evaluateWorkOrderCommissionEligibility(state);
+
+    return resolveBasisEventStatusForVerdict(input.status, verdict);
   }
 
   async listBasisEvents(input: ListCommissionBasisEventsInput): Promise<ListResult<CommissionBasisEvent>> {
@@ -217,6 +244,7 @@ export class InMemoryCommissionRepository implements CommissionRepository {
     this.basisEvents.clear();
     this.calculations.clear();
     this.statements.clear();
+    this.workOrderGate.reset();
   }
 
   private sortedPolicies(): CommissionPolicy[] {

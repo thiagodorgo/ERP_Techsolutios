@@ -6,6 +6,37 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-19 - WS-SCALE-COMISSAO Comissoes consomem a decisao de cancelamento da OS
+
+### Resultado
+
+- **Onda 1 do Scale roadmap** (resolve parcial P-Ω3F6-COMISSAO): as comissoes passam a honrar
+  `work_orders.financial_cancellation_decision`. Chokepoint de ELEGIBILIDADE na criacao do basis event de OS —
+  novo `src/modules/commissions/work-order-cancellation.gate.ts` le o estado da OS DENTRO da tx `withTenantRls`
+  (RLS satisfeito, atomico, idempotencia-primeiro) e a regra PURA `evaluateWorkOrderCommissionEligibility` marca o
+  evento: `zero`/`keep_unpaid` -> `ineligible` (suprime); `NULL`/ausente/desconhecida em OS cancelada ->
+  `pending_review` (segura, J-Ω3F-6A); `keep`/nao-cancelada -> elegivel.
+- **Contrato = 201 + status persistido** (fila de revisao via `GET /commissions/basis-events?status=pending_review|ineligible`),
+  nao 422 — retry-safe e auditavel.
+- **Ataque de desenho 3-lentes** (idempotencia/RLS/contrato) pegou 3 furos criticos ANTES do codigo: fail-open por
+  RLS fora de contexto (a supressao nunca dispararia em prod), flip 201<->422 no replay, e null-lido-como-keep —
+  todos fechados pela realocacao do gate para dentro do repositorio. Resta o dual-gate na engine de calculo
+  (P-Ω3F6-COMISSAO-REVERSAL, latente — nenhuma engine de calculo paga hoje).
+
+### KPIs
+
+- `backend_tests`: **1248 -> 1259** (+11: 7 unidades da regra pura + 4 integracao HTTP via router). Execucao real da
+  branch: 1265 total / 6 skip DB-gated / 1259 pass no CI. 0 regressao PROVADA (baseline em `git stash` = mesmas 77
+  falhas locais de DB-nao-migrado, byte-identico, em modulos nao tocados). Sobre 1248, que ja absorve #227-#231 (nao
+  reconciliados no KPI desde D-Ω4-KPI-RELATORIO).
+- RESSALVA de cobertura (junta): o caminho PRISMA real do gate (`readWorkOrderCancellationPrisma` no client real,
+  dentro da tx `withTenantRls`) so e coberto por tsc + revisao de codigo — os testes exercitam o dublê InMemory.
+  Registrado em P-Ω3F6-COMISSAO-PRISMA-COV (nao-bloqueante; alinhado a P-SAN-CORE-PRISMA-COV).
+- `frontend_smoke_tests` 514, `flutter_tests` 764, `flutter_modules` 17, `mvp_demo` 99%, `mvp_vendavel` 88%,
+  `blocks_completed` 66 — **INALTERADOS** (backend-only; hardening que resolve pendencia, sem mover escopo de dominio;
+  sem migration/schema/permissao nova).
+- `pr`/`merge_commit`/`approved_head` null na autoria (backfill pos-merge).
+
 ## 2026-07-05 - B-124 Dashboard web enriquecido com despachos e localizacoes
 
 ### Resultado

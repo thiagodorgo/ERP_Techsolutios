@@ -5,3 +5,4 @@ export * from "./commission.routes.js";
 export * from "./commission.service.js";
 export * from "./commission.types.js";
 export * from "./commission.validators.js";
+export * from "./work-order-cancellation.gate.js";
