@@ -32,9 +32,14 @@ type Props = {
   // Contagens honestas para o badge do rail colapsado; `undefined` = sem contagem (nada fabricado).
   readonly callsCount?: number;
   readonly techsCount?: number;
+  // M-5 (J-MAPAS-6) — quantos chamados estão em janela de "novo" (diff de useNewWorkOrderAlert). >0 realça
+  // o badge de chamados (mesmo colapsado o operador percebe a chegada). Realce estático; a pulsação do
+  // badge é desligada por @media reduced-motion no CSS.
+  readonly newCallsCount?: number;
 };
 
-export function OperationsMapStage({ map, calls, techs, callsCount, techsCount }: Props) {
+export function OperationsMapStage({ map, calls, techs, callsCount, techsCount, newCallsCount }: Props) {
+  const hasNewCalls = typeof newCallsCount === "number" && newCallsCount > 0;
   // M-4 entregou a fila REAL de chamados → voltamos ao default do plano: CHAMADOS ABERTO (master/triagem
   // do operador de despacho) e TÉCNICOS COLAPSADO (o status já vive nos marcadores do mapa; o rail abre sob
   // demanda). O badge do rail colapsado mostra a contagem real (callsCount/techsCount) quando disponível.
@@ -170,7 +175,16 @@ export function OperationsMapStage({ map, calls, techs, callsCount, techsCount }
           </div>
           {callsCollapsed ? (
             typeof callsCount === "number" ? (
-              <span className="operations-map-rail__badge">{callsCount}</span>
+              <span
+                className={`operations-map-rail__badge${hasNewCalls ? " operations-map-rail__badge--new" : ""}`}
+                aria-label={
+                  hasNewCalls
+                    ? `${callsCount} chamados, ${newCallsCount} novo${newCallsCount === 1 ? "" : "s"}`
+                    : undefined
+                }
+              >
+                {callsCount}
+              </span>
             ) : null
           ) : (
             <div id={callsBodyId} className="operations-map-rail__body">

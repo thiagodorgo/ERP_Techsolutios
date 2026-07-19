@@ -418,6 +418,25 @@ dados já carregados no useOperationsMap (`selectMappableWorkOrders`). Aprendiza
    coordenadas); a lista mostra código/cliente/prioridade/tempo, nunca posição. Chamado sem GPS entra na fila marcado
    honestamente ("Sem GPS no mapa"), sem inventar posição.
 
-RESÍDUO (M-5): clicar num chamado SEM GPS seta a seleção mas não há pin p/ pan (dead-end visual honesto) → refletir a seleção
-de item sem-GPS em M-5/M-6. E o header/empty-state da PÁGINA ainda diz "operadores em campo" → reconciliar p/ "técnicos" no
-touch-up do M-5 (P-MAPA-TERM-OPERADORES-HEADER).
+RESÍDUO (M-5) — RESOLVIDO em M-5: a seleção de chamado SEM GPS ganhou feedback honesto ("Sem localização — detalhes no painel abaixo", sem inventar posição) e o header/empty-states foram reconciliados p/ "técnicos" (P-MAPA-TERM-OPERADORES-HEADER fechada).
+
+---
+
+## Changelog 2026-07-19 — M-5 Alerta de OS nova (FECHA a Fase 1 do redesign)
+
+`useNewWorkOrderAlert` (hooks/) faz diff client-side dos ids de `incomingCalls` entre refreshes → alerta em 3 camadas (toast
+`role=status`/`aria-live=polite` + badge `--new` no rail + pulso no pin novo reusando `wo-pulse`). Aprendizados reutilizáveis:
+
+1. **Halo do pulso por prioridade (não hex fixo):** o `wo-pulse` deixou de usar `#dc2626` fixo → `["get","priorityColor"]`
+   (WORK_ORDER_PRIORITY_HEX). Honestidade: urgente segue vermelho (`.urgent === #dc2626`), OS nova NÃO-urgente pulsa na PRÓPRIA
+   cor de prioridade — não "mente urgência". Mesma família das regras "cor de status nunca em hex solto" (M-3) e "SLA-proxy
+   honesto" (M-4).
+2. **Padrão anti-alert-fatigue** (reusável p/ qualquer alerta de evento novo): (a) baseline NÃO alerta no mount (1ª carga
+   semeia tudo em `seen`); (b) dedup por `Set` marcando TODO id novo como visto, inclusive o excedente do teto (pico de OS não
+   vira enxurrada nem re-alerta depois); (c) teto por ciclo (`maxPerCycle`, default 3); (d) toast auto-expira (TTL, default 6s)
+   e é dispensável; (e) `prefers-reduced-motion` zera o conjunto de pulso e desliga as animações (realce estático permanece).
+   Núcleo PURO exportado (`reduceNewWorkOrders`/`resolvePulseIds`) → testável sem timers.
+
+**FASE 1 do redesign do Mapa FECHADA** (requisitos 1-6 do dono): 1 chamados+prioridade+SLA-proxy (M-4) · 2 técnicos posição+status
+(M-3) · 3 alerta de OS nova (M-5) · 4 mapa ≥2× / full-bleed (M-1+redesign de layout) · 5 maximizar + 4º quadrante translúcido
+(OperationsMapStage) · 6 rodapé de legenda unificado (M-2). Resta só a **Fase 2 = M-7 (SLA real, migration aditiva `sla_due_at`)**.

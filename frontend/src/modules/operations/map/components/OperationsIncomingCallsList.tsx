@@ -1,4 +1,4 @@
-import { CalendarClock, Clock, MapPinOff } from "lucide-react";
+import { CalendarClock, Clock, MapPinOff, Sparkles } from "lucide-react";
 import type { CSSProperties } from "react";
 
 import { Card, Chip, EmptyState } from "../../../../components/ui";
@@ -16,17 +16,24 @@ import type { OperationsIncomingCall } from "../operations-map.types";
  *   • SLA-PROXY HONESTO ("Agendado para {data}" ou "Aberto há {tempo}") — NUNCA "vence em"/prazo fabricado.
  * Clicar seleciona o chamado (pan no mapa via o mecanismo de seleção existente). LGPD §12: o item NUNCA
  * mostra latitude/longitude — só código/cliente/prioridade/tempo.
+ *
+ * M-5 (J-MAPAS-6) — realce "novo": ids em `newIds` (diff client-side de `useNewWorkOrderAlert`) ganham um
+ * selo "Novo" + borda destacada — reforço da mesma OS que dispara o toast e o pulso do pin (uma só verdade).
+ * Requisito 4 (junta M-4) — seleção SEM GPS: clicar um chamado sem coordenada NÃO tem pin para pan; o item
+ * dá o feedback honesto "Sem localização — detalhes no painel abaixo" (nunca inventa posição no mapa).
  */
 export function OperationsIncomingCallsList({
   calls,
   selectedId,
   onSelect,
   now,
+  newIds,
 }: {
   readonly calls: readonly OperationsIncomingCall[];
   readonly selectedId?: string;
   readonly onSelect: (call: OperationsIncomingCall) => void;
   readonly now?: Date;
+  readonly newIds?: ReadonlySet<string>;
 }) {
   if (calls.length === 0) {
     return (
@@ -47,21 +54,32 @@ export function OperationsIncomingCallsList({
         {calls.map((call) => {
           const sla = formatIncomingCallSlaProxy(call, reference);
           const isSelected = call.id === selectedId;
+          const isNew = newIds?.has(call.id) ?? false;
           const priorityLabel = getWorkOrderPriorityLabel(call.priority);
+          // Requisito 4 — sem GPS não há pin p/ pan; se estiver selecionado, damos o feedback honesto.
+          const noGpsSelected = !call.hasLocation && isSelected;
           return (
             <li key={call.id}>
               <button
                 type="button"
-                className={`operations-call${isSelected ? " is-selected" : ""}`}
+                className={`operations-call${isSelected ? " is-selected" : ""}${isNew ? " is-new" : ""}`}
                 data-priority={call.priority}
+                data-new={isNew ? "true" : undefined}
                 style={{ "--call-priority": getWorkOrderPriorityColor(call.priority) } as CSSProperties}
                 aria-current={isSelected ? "true" : undefined}
-                aria-label={`Chamado ${call.code}${call.customerName ? `, cliente ${call.customerName}` : ""}, prioridade ${priorityLabel}, ${sla.label}`}
+                aria-label={`${isNew ? "Novo chamado" : "Chamado"} ${call.code}${call.customerName ? `, cliente ${call.customerName}` : ""}, prioridade ${priorityLabel}, ${sla.label}${call.hasLocation ? "" : ", sem localização no mapa"}`}
                 onClick={() => onSelect(call)}
               >
                 <span className="operations-call__head">
                   <span className="operations-call__code">{call.code}</span>
-                  <Chip tone={getWorkOrderPriorityTone(call.priority)}>{priorityLabel}</Chip>
+                  <span className="operations-call__head-tags">
+                    {isNew ? (
+                      <span className="operations-call__new" data-testid="operations-call-new">
+                        <Sparkles size={12} aria-hidden="true" /> Novo
+                      </span>
+                    ) : null}
+                    <Chip tone={getWorkOrderPriorityTone(call.priority)}>{priorityLabel}</Chip>
+                  </span>
                 </span>
                 <span className="operations-call__customer">{call.customerName ?? "Cliente não informado"}</span>
                 <span className="operations-call__sla" data-kind={sla.kind}>
@@ -74,7 +92,8 @@ export function OperationsIncomingCallsList({
                 </span>
                 {!call.hasLocation ? (
                   <span className="operations-call__nogps">
-                    <MapPinOff size={12} aria-hidden="true" /> Sem GPS no mapa
+                    <MapPinOff size={12} aria-hidden="true" />{" "}
+                    {noGpsSelected ? "Sem localização — detalhes no painel abaixo" : "Sem GPS no mapa"}
                   </span>
                 ) : null}
               </button>
