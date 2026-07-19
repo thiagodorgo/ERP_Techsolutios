@@ -2,7 +2,7 @@ import { AlertTriangle, Map, Pause, Play, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { Alert, Button, Chip, EmptyState, ErrorState, Skeleton } from "../../../../components/ui";
+import { Alert, Button, Card, Chip, EmptyState, ErrorState, Skeleton } from "../../../../components/ui";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
@@ -22,6 +22,7 @@ import {
 } from "../operations-map.types";
 import { useOperationsMap } from "../useOperationsMap";
 import { OperationsMapCanvas } from "../components/OperationsMapCanvas";
+import { OperationsIncomingCallsList } from "../components/OperationsIncomingCallsList";
 import { OperationsMapFilters } from "../components/OperationsMapFilters";
 import { OperationsMapSummaryCards } from "../components/OperationsMapSummaryCards";
 import { OperationsOperatorDetailPanel } from "../components/OperationsOperatorDetailPanel";
@@ -252,31 +253,48 @@ export function OperationsMapPage() {
       ) : null}
 
       {hasMapContent ? (
-        <section className="operations-map-layout">
-          <div className="operations-map-main">
-            <OperationsMapCanvas
-              locations={filteredLocations}
-              selectedId={selectedLocation?.id}
-              onSelect={(location: FieldLocationItem) => setSelectedId(location.id)}
-              showDispatches={canReadDispatches}
-              maintenanceVehicleIds={maintenanceVehicleIds}
-              insuredVehicleIds={insuredVehicleIds}
-              workOrderPins={visibleWorkOrderPins}
-              selectedWorkOrderId={selectedWorkOrderPin?.id}
-              onSelectWorkOrder={setSelectedWorkOrderId}
-            />
-            {filteredLocations.length > 0 ? (
-              <OperationsOperatorList
+        <>
+          {/* M-1 (J-MAPAS-6) — grid de 3 colunas: chamados que chegam · mapa · Técnicos de Campo.
+              Empilha em 1 coluna (chamados → mapa → técnicos) abaixo de 1100px. */}
+          <section className="operations-map-layout">
+            <div className="operations-map-incoming">
+              <OperationsIncomingCallsList />
+            </div>
+            <div className="operations-map-main">
+              <OperationsMapCanvas
                 locations={filteredLocations}
                 selectedId={selectedLocation?.id}
-                onSelect={(location) => setSelectedId(location.id)}
-                showWorkOrders={canReadWorkOrders}
+                onSelect={(location: FieldLocationItem) => setSelectedId(location.id)}
                 showDispatches={canReadDispatches}
-                canCreateDispatch={canCreateDispatches}
+                maintenanceVehicleIds={maintenanceVehicleIds}
+                insuredVehicleIds={insuredVehicleIds}
+                workOrderPins={visibleWorkOrderPins}
+                selectedWorkOrderId={selectedWorkOrderPin?.id}
+                onSelectWorkOrder={setSelectedWorkOrderId}
               />
-            ) : null}
-          </div>
-          <aside className="operations-map-side">
+            </div>
+            <div className="operations-map-technicians">
+              {filteredLocations.length > 0 ? (
+                <OperationsOperatorList
+                  locations={filteredLocations}
+                  selectedId={selectedLocation?.id}
+                  onSelect={(location) => setSelectedId(location.id)}
+                  showWorkOrders={canReadWorkOrders}
+                  showDispatches={canReadDispatches}
+                  canCreateDispatch={canCreateDispatches}
+                />
+              ) : (
+                <Card title="Técnicos de Campo">
+                  <EmptyState
+                    title="Nenhum técnico neste filtro"
+                    detail="Ajuste os filtros acima ou aguarde os Técnicos de Campo enviarem posição pelo aplicativo de campo."
+                  />
+                </Card>
+              )}
+            </div>
+          </section>
+          {/* M-1 — painel de detalhe preservado como faixa abaixo do grid (sem perder nada da etapa Ω1). */}
+          <section className="operations-map-detail" aria-label="Detalhes da seleção">
             {selectedWorkOrderPin ? <OperationsWorkOrderPinPanel pin={selectedWorkOrderPin} /> : null}
             <OperationsWorkOrdersWithoutLocationPanel
               workOrders={visibleWorkOrdersWithoutLocation}
@@ -303,8 +321,8 @@ export function OperationsMapPage() {
             <Alert title="Limite desta etapa" tone="info">
               <span><Map size={16} /> Roteirização avançada e rastreamento em tempo real serão adicionados em etapas futuras.</span>
             </Alert>
-          </aside>
-        </section>
+          </section>
+        </>
       ) : null}
 
       {locations.some((location) => location.isStale) ? (

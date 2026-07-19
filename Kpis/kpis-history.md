@@ -6,6 +6,26 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-19 - WS-MAPA M-1 Fundacao de layout do Mapa Operacional (redesign J-MAPAS-6)
+
+### Resultado
+
+- **Inicio do redesign do Mapa Operacional** (mandato do dono — pedido mais detalhado; plano J-MAPAS-6, Junta de Mapas
+  planejador -> dev -> avaliador). **M-1 = fundacao de layout**: grid de 3 colunas [chamados | mapa | tecnicos] no lugar do
+  layout de 2 colunas; **altura do mapa dobrada** (`clamp(760px,82vh,960px)`) nos dois canvases (MapLibre + Google, regra do
+  espelho); coluna de tecnicos reusa `OperationsOperatorList`; coluna de chamados = **placeholder honesto** (lista real = M-4;
+  nao fabrica OS/prioridade/SLA). Header/pills/filtros/KPIs/polling+SSE/estados intactos.
+- Sem provider novo, sem SKU pago (**US$ 0**) -> sem junta-5. **avaliador-mapas APROVADO** (7/7 itens de veto; LGPD
+  zero-coordenada; paridade do espelho; fidelidade §11; escopo — nao tocou marcadores/legenda/alerta/backend/migration).
+
+### KPIs
+
+- `frontend_smoke_tests` **524 -> 530** (+6: `operations-map-layout.test.ts` no `test:smoke` — grid 3 colunas, altura 2x nos
+  dois canvases, coluna de tecnicos, placeholder honesto). Baseline de mapa 55 -> 61.
+- `backend_tests` 1259, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**
+  (frontend-only; Fase 1 do redesign). `pr`/`merge_commit`/`approved_head` null na autoria.
+- Proximos PRs: M-2 legenda unificada -> M-3 tecnicos -> M-4 chamados+SLA-proxy -> M-5 alerta -> M-6 maximizar; Fase 2 (M-7) = SLA real.
+
 ## 2026-07-19 - WS-UI-CARDS+CHARTS Fase 1 Cards clicaveis + grafico temporal SVG zero-dep
 
 ### Resultado

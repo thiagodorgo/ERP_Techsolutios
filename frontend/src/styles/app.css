@@ -1669,20 +1669,42 @@
   align-items: end;
 }
 
+/* M-1 (J-MAPAS-6) — console de alocação em 3 colunas: chamados que chegam · mapa · Técnicos de Campo. */
 .operations-map-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  grid-template-columns: minmax(300px, 340px) minmax(0, 1fr) minmax(300px, 340px);
   gap: var(--space-16);
   align-items: start;
 }
 
 .operations-map-main,
+.operations-map-incoming,
+.operations-map-technicians,
 .operations-map-side,
 .operations-operator-detail,
 .operations-operator-detail dl,
 .operations-operator-cards {
   display: grid;
   gap: var(--space-12);
+}
+
+/* M-1 — a coluna de técnicos é um rail estreito: usa a visão COMPACTA de cartões (não a tabela
+   larga). O componente OperationsOperatorList é reusado sem alteração; só a apresentação muda. */
+.operations-map-technicians .ui-table-wrap {
+  display: none;
+}
+
+.operations-map-technicians .operations-operator-cards {
+  display: grid;
+}
+
+/* M-1 — painel de detalhe preservado como faixa full-width abaixo do grid; flui em colunas
+   conforme a largura disponível (nada da etapa Ω1 foi perdido). */
+.operations-map-detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-12);
+  align-items: start;
 }
 
 .operations-map-canvas {
@@ -1743,8 +1765,10 @@
 .operations-map-canvas__gmaps {
   position: relative; /* contexto p/ a legenda absoluta sobreposta ao mapa (não vaza p/ o card) */
   width: 100%;
-  min-height: 380px;
-  height: 380px;
+  /* M-1 (J-MAPAS-6) — altura dobrada com teto por viewport. Regra do ESPELHO:
+     idêntica ao .operations-map-libre para paridade entre os dois canvases. */
+  min-height: clamp(760px, 82vh, 960px);
+  height: clamp(760px, 82vh, 960px);
   border-radius: var(--radius-8);
   overflow: hidden;
   background: var(--surface-panel-muted);
@@ -1805,8 +1829,9 @@
 /* Ω1 — Mapa Operacional real (MapLibre GL + OpenFreeMap) */
 .operations-map-libre {
   position: relative;
-  min-height: 480px;
-  height: 480px;
+  /* M-1 (J-MAPAS-6) — altura dobrada com teto por viewport; espelhada no gmaps. */
+  min-height: clamp(760px, 82vh, 960px);
+  height: clamp(760px, 82vh, 960px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-8);
   overflow: hidden;
@@ -2722,6 +2747,13 @@
   font-weight: 700;
 }
 
+/* M-1 (J-MAPAS-6) — abaixo de 1100px o console de 3 colunas empilha em 1 (chamados → mapa → técnicos). */
+@media (max-width: 1100px) {
+  .operations-map-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 1024px) {
   .dashboard-grid,
   .detail-grid,
@@ -2742,7 +2774,6 @@
     .checklist-runtime-evidence-grid,
     .checklist-runtime-comparison-grid,
     .cloud-billing-rules,
-    .operations-map-layout,
     .dispatches-layout,
     .work-order-detail-layout,
     .work-order-form-grid,
@@ -2911,9 +2942,8 @@
     min-height: 420px;
   }
 
-  .operations-map-canvas__gmaps {
-    min-height: 420px;
-  }
+  /* M-1 (J-MAPAS-6): o override mobile de 420px foi removido — os dois canvases reais
+     (gmaps + libre) usam a MESMA altura clamp(760px, 82vh, 960px) em todo breakpoint (espelho). */
 
   .operations-map-marker {
     min-width: 112px;
