@@ -43,7 +43,7 @@ export function OperationsDispatchesPage() {
   const [quickStatusDispatch, setQuickStatusDispatch] = useState<DispatchListItem | null>(null);
   const [reassignTarget, setReassignTarget] = useState<DispatchListItem | null>(null);
   const [showCreate, setShowCreate] = useState(Boolean(initialWorkOrderId && initialOperatorUserId));
-  const { items, allItems, source, fallbackReason, loading, error, refresh } = useOperationsDispatches(filters);
+  const { items, allItems, fallbackReason, loading, error, refresh } = useOperationsDispatches(filters);
   const summary = useMemo(() => calculateDispatchesSummary(allItems), [allItems]);
   const operatorOptions = useMemo(() => [...new Set(allItems.map((item) => item.operatorUserId))].sort(), [allItems]);
   const context = useMemo(
@@ -74,13 +74,16 @@ export function OperationsDispatchesPage() {
       <header className="page-heading page-heading--row">
         <div>
           <span>Operação</span>
-          <h1>Despachos Operacionais</h1>
-          <p>Acompanhe criação, status, reatribuição e cancelamento de despachos vinculados à OS.</p>
+          {/* Fidelidade §11 (auditoria): título "Despachos" + selo AO VIVO do protótipo; o chip técnico de
+              fonte de dados ("API real"/"Fallback local"/"Dados demonstrativos") foi REMOVIDO (andaime de dev
+              na UI, §11 regra 2). A honestidade de dados degradados segue no Alert de fallback abaixo (D-007). */}
+          <h1 style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+            Despachos
+            <Chip tone="success">AO VIVO</Chip>
+          </h1>
+          <p>Envios em rota — origem, paradas e destino — acompanhados em tempo real.</p>
         </div>
         <div className="work-orders-actions">
-          <Chip tone={source === "api" ? "success" : source === "fallback" ? "warning" : "info"}>
-            {source === "api" ? "API real" : source === "fallback" ? "Fallback local" : "Dados demonstrativos"}
-          </Chip>
           <Button type="button" variant="secondary" onClick={() => void refresh()} disabled={loading}>
             <RefreshCw size={16} /> Atualizar
           </Button>
