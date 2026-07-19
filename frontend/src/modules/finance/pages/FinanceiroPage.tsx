@@ -1,6 +1,8 @@
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, Wallet } from "lucide-react";
 import type { CSSProperties, ComponentType } from "react";
 
+import { TrendChart } from "../../../components/charts";
+import { ClickableKpiCard, type KpiDetail } from "../../../components/kpi";
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { useTenantContext } from "../../../providers/TenantProvider";
 import {
@@ -47,13 +49,28 @@ export function FinanceiroPage() {
   useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
   const { receivable, payable, cash, cashFlow, recentTitles } = data;
 
-  const kpis: Array<{ label: string; value: string; sub: string; Icon: IconType; tone: KpiTone }> = [
+  // WS-UI-CARDS+CHARTS — cada card abre um pop-up sobre o SEU tema. O corpo usa só dado REAL já carregado
+  // (breakdown de aberto/vencido/em disputa; snapshot explicado); nenhuma série é fabricada (D-007).
+  const directionParts = (dir: typeof receivable): KpiDetail["body"] => ({
+    kind: "breakdown",
+    parts: [
+      { label: "Em aberto", value: formatBRL(dir.openAmount), tone: "info", hint: `${dir.openCount} ${dir.openCount === 1 ? "título" : "títulos"}` },
+      { label: "Vencido", value: formatBRL(dir.overdueAmount), tone: "danger", hint: `${dir.overdueCount} ${dir.overdueCount === 1 ? "título" : "títulos"}` },
+      { label: "Em disputa", value: `${dir.inDisputeCount} ${dir.inDisputeCount === 1 ? "título" : "títulos"}`, tone: "warning" },
+    ],
+  });
+
+  const kpis: Array<{ label: string; value: string; sub: string; Icon: IconType; tone: KpiTone; detail: KpiDetail }> = [
     {
       label: "A receber (aberto)",
       value: formatCompactBRL(receivable.openAmount),
       sub: `${receivable.openCount} ${receivable.openCount === 1 ? "título" : "títulos"}`,
       Icon: ArrowUpRight,
       tone: TONE_RECEIVABLE,
+      detail: {
+        title: "A receber (aberto)", value: formatBRL(receivable.openAmount), caption: "Composição por situação", source: data.source,
+        body: directionParts(receivable), cta: { label: "Ver cobranças", to: "/finance/charges" },
+      },
     },
     {
       label: "A pagar (aberto)",
@@ -61,6 +78,10 @@ export function FinanceiroPage() {
       sub: `${payable.openCount} ${payable.openCount === 1 ? "título" : "títulos"}`,
       Icon: ArrowDownRight,
       tone: TONE_PAYABLE,
+      detail: {
+        title: "A pagar (aberto)", value: formatBRL(payable.openAmount), caption: "Composição por situação", source: data.source,
+        body: directionParts(payable), cta: { label: "Ver pagamentos", to: "/finance/payments" },
+      },
     },
     {
       label: "Saldo em caixa",
@@ -68,6 +89,13 @@ export function FinanceiroPage() {
       sub: `${cash.accountCount} ${cash.accountCount === 1 ? "conta" : "contas"}`,
       Icon: Wallet,
       tone: TONE_CASH,
+      detail: {
+        title: "Saldo em caixa", value: formatBRL(cash.totalBalance), caption: `${cash.accountCount} ${cash.accountCount === 1 ? "conta" : "contas"}`, source: data.source,
+        body: {
+          kind: "explain",
+          text: `Soma dos saldos das ${cash.accountCount} ${cash.accountCount === 1 ? "conta financeira" : "contas financeiras"} da organização neste momento. É uma fotografia do saldo atual — o histórico de caixa aparece no gráfico de fluxo de caixa abaixo (entradas × saídas por mês).`,
+        },
+      },
     },
     {
       label: "Inadimplência",
@@ -75,10 +103,19 @@ export function FinanceiroPage() {
       sub: `${formatCompactBRL(receivable.overdueAmount)} vencido`,
       Icon: AlertTriangle,
       tone: TONE_OVERDUE,
+      detail: {
+        title: "Inadimplência", value: percent(receivable.overdueAmount, receivable.openAmount), caption: "Vencido ÷ em aberto (a receber)", source: data.source,
+        body: {
+          kind: "breakdown",
+          parts: [
+            { label: "Vencido", value: formatBRL(receivable.overdueAmount), tone: "danger", hint: `${receivable.overdueCount} ${receivable.overdueCount === 1 ? "título" : "títulos"}` },
+            { label: "Em aberto (a receber)", value: formatBRL(receivable.openAmount), tone: "info" },
+          ],
+        },
+        cta: { label: "Ver cobranças", to: "/finance/charges" },
+      },
     },
   ];
-
-  const chartMax = Math.max(1, ...cashFlow.flatMap((point) => [point.inflow, point.outflow]));
 
   return (
     <div style={{ color: "#0F172A" }}>
@@ -100,14 +137,16 @@ export function FinanceiroPage() {
       {/* KPI cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
         {kpis.map((k) => (
-          <div key={k.label} style={{ ...card, padding: 18 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 10, background: k.tone.iconBg, color: k.tone.iconColor, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-              <k.Icon size={20} />
+          <ClickableKpiCard key={k.label} detail={k.detail}>
+            <div style={{ ...card, padding: 18 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: k.tone.iconBg, color: k.tone.iconColor, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+                <k.Icon size={20} />
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-.5px", whiteSpace: "nowrap" }}>{loading ? "—" : k.value}</div>
+              <div style={{ fontSize: 12.5, color: "#64748B", marginTop: 1 }}>{k.label}</div>
+              <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 5 }}>{loading ? "carregando…" : k.sub}</div>
             </div>
-            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-.5px", whiteSpace: "nowrap" }}>{loading ? "—" : k.value}</div>
-            <div style={{ fontSize: 12.5, color: "#64748B", marginTop: 1 }}>{k.label}</div>
-            <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 5 }}>{loading ? "carregando…" : k.sub}</div>
-          </div>
+          </ClickableKpiCard>
         ))}
       </div>
 
@@ -117,26 +156,31 @@ export function FinanceiroPage() {
         <div style={{ ...card, padding: 20 }}>
           <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 3 }}>Fluxo de caixa</div>
           <div style={{ fontSize: 12, color: "#94A3B8", marginBottom: 16 }}>Entradas vs saídas · 6 meses</div>
-          {cashFlow.length === 0 ? (
-            <div style={{ height: 150, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12.5, color: "#94A3B8" }}>
-              {loading ? "Carregando…" : "Sem lançamentos no período."}
-            </div>
-          ) : (
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, height: 150 }}>
+          {/* WS-UI-CARDS+CHARTS — gráfico temporal via <TrendChart> SVG (mesma série real cashFlow; cores por token do DS). */}
+          <TrendChart
+            type="bar"
+            height={150}
+            showLegend={false}
+            labels={cashFlow.map((point) => monthLabel(point.competencia))}
+            valueFormat={formatBRL}
+            emptyLabel={loading ? "Carregando…" : "Sem lançamentos no período."}
+            series={[
+              // D-CHART-SERIE-TOKENS — tokens dedicados de série (não os de status), preservando a cor do protótipo.
+              { id: "inflow", label: "Entradas", color: "var(--color-chart-inflow)", values: cashFlow.map((p) => p.inflow) },
+              { id: "outflow", label: "Saídas", color: "var(--color-chart-outflow)", values: cashFlow.map((p) => p.outflow) },
+            ]}
+          />
+          {cashFlow.length > 0 ? (
+            // Rótulos de mês COLADOS às barras (protótipo), depois a legenda centralizada.
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
               {cashFlow.map((point) => (
-                <div key={point.competencia} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 7, height: "100%", justifyContent: "flex-end" }}>
-                  <div style={{ width: "100%", display: "flex", gap: 3, alignItems: "flex-end", height: "100%", justifyContent: "center" }}>
-                    <div title={`Entradas ${formatBRL(point.inflow)}`} style={{ width: "40%", background: "#10B981", borderRadius: "3px 3px 0 0", height: `${(point.inflow / chartMax) * 100}%` }} />
-                    <div title={`Saídas ${formatBRL(point.outflow)}`} style={{ width: "40%", background: "#F87171", borderRadius: "3px 3px 0 0", height: `${(point.outflow / chartMax) * 100}%` }} />
-                  </div>
-                  <span style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>{monthLabel(point.competencia)}</span>
-                </div>
+                <span key={point.competencia} style={{ flex: 1, textAlign: "center", fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>{monthLabel(point.competencia)}</span>
               ))}
             </div>
-          )}
+          ) : null}
           <div style={{ display: "flex", gap: 16, marginTop: 14, justifyContent: "center" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#475569" }}><span style={{ width: 9, height: 9, borderRadius: 2, background: "#10B981" }} />Entradas</span>
-            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#475569" }}><span style={{ width: 9, height: 9, borderRadius: 2, background: "#F87171" }} />Saídas</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#475569" }}><span style={{ width: 9, height: 9, borderRadius: 2, background: "var(--color-chart-inflow)" }} />Entradas</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#475569" }}><span style={{ width: 9, height: 9, borderRadius: 2, background: "var(--color-chart-outflow)" }} />Saídas</span>
           </div>
         </div>
 

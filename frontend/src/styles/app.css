@@ -3168,3 +3168,18 @@
 .sidebar-logo-toggle:hover .ic-back {
   display: block;
 }
+
+/* WS-UI-CARDS+CHARTS — card de KPI clicável (abre pop-up sobre o tema). Affordance sutil + foco visível. */
+.kpi-card-clickable {
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  border-radius: 14px; /* casa com o raio do card interno (evita canto mais fechado no hover/foco) */
+}
+.kpi-card-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+}
+.kpi-card-clickable:focus-visible {
+  outline: 2px solid var(--color-core-accent, #0f8fbf);
+  outline-offset: 2px;
+}
+.kpi-detail-modal:focus { outline: none; }

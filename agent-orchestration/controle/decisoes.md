@@ -743,3 +743,14 @@ Fecha o cluster P-Ω3F6-STATUS-BYPASS + TERMINAL-GUARD + ZERO-ATOMICIDADE (pré-
   PASSAR em cancelled+NULL. Corrigido e re-drilado (rejeita cancelled+NULL, aceita cancelled+keep).
 - **MOBILE:** `cancelled` removido de todos os 5 conjuntos de allowedTransitions (não é transição iniciável no campo).
 - **Paridade InMemory:** assertion `cancelled ⇒ decisão` no repo (espelha o CHECK). Resíduo de concorrência: P-Ω3F6-CANCEL-RACE.
+
+## D-CHART-SERIE-TOKENS (2026-07-19, WS-UI-CARDS+CHARTS, junta cognicao-visual ALTA)
+- Contexto: o `<TrendChart>` SVG (PD-004) inicialmente pintou o fluxo de caixa com os tokens de STATUS
+  (`--color-status-success`/`--color-status-danger`). A junta (cognicao) vetou (ALTA): `danger #DC2626` é a cor de
+  AÇÃO DESTRUTIVA (promovida em J-002/Ω3F-6b), então a barra de "saída" passava a "ler como erro"; além disso a cor
+  exata do protótipo (`#10B981` entradas / `#F87171` saídas em ERP Web.dc.html) não foi preservada.
+- Decisão (per J-002 "o PROTÓTIPO vence" + regra "nunca hex solto"): data-viz NÃO reusa tokens de status. Promovidos
+  TOKENS DEDICADOS de série em `tokens.css`: `--color-chart-inflow: #10b981`, `--color-chart-outflow: #f87171`,
+  `--color-chart-neutral: #94a3b8`. O `<TrendChart>` consome via a prop `color` da série (escape-hatch de fidelidade).
+- Efeito: preserva a cor do protótipo E mantém tokens (nem hex solto no componente, nem alarme destrutivo em data-viz).
+  Resolve o achado ALTA sem consolidação silenciosa (A2).

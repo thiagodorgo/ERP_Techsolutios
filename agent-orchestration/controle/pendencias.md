@@ -1115,3 +1115,12 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - acao: mapear status → rótulo PT-BR (ex.: published→"Publicado") numa passada de cópia. Cruza com P-UI-REFRESH-ERROR-COPY
   (mesmo lote de polish de cópia).
 - status: aberto (não-bloqueante; cosmético).
+
+## P-FINANCE-HEADER-ACTIONS — page header do Financeiro sem ações à direita (§11 #4, pré-existente, 2026-07-19)
+- descricao: o header da FinanceiroPage tem só título+subtítulo, sem as ações à direita do protótipo ("Conciliar NF-e" +
+  "Novo lançamento", ERP Web.dc.html:904) — contraria §11 regra #4 ("página header = título+subtítulo+ações à direita").
+  PRÉ-EXISTENTE (não introduzido por WS-UI-CARDS+CHARTS; o botão "Atualizar" foi removido em WS-UI-REFRESH). Achado BAIXA
+  da cognicao-visual.
+- acao: restaurar ações significativas no header (Novo lançamento; Conciliar quando a trilha NF-e existir — cruza com a
+  parada NF-e do scale-roadmap). Passada de fidelidade §11.
+- status: aberto (não-bloqueante; cosmético/pré-existente).

@@ -6,6 +6,29 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-19 - WS-UI-CARDS+CHARTS Fase 1 Cards clicaveis + grafico temporal SVG zero-dep
+
+### Resultado
+
+- **UI viva** (mandato do dono: cards estaticos -> clicaveis com pop-up sobre o tema; KPIs -> graficos temporais). PD-004
+  (pesquisa web ≥5 fontes): grafico = **SVG inline ZERO-DEP** — nao adicionou lib (Recharts so sob demanda futura via lazy).
+- Novos primitivos: `<TrendChart>` (SVG viewBox unitless + `non-scaling-stroke` = responsivo sem lib; line|area|bar;
+  multi-serie; tooltip `<title>`; cor por token; suporta valores negativos apos fix da junta) + `<Sparkline>`; e a camada de
+  pop-up: `<KpiDetailModal>` **dialog a11y-completo** (focus trap, Esc, backdrop, retorno de foco, aria-labelledby) +
+  `<ClickableKpiCard>` (role=button, teclado, aria-haspopup) + `KpiDetail` (union `chart|breakdown|explain` — variante
+  ditada pelo dado REAL, **nunca fabrica serie**; selo mock/fallback suprime o grafico, D-007).
+- **Flagship financeiro**: fluxo de caixa migrado das divs manuais para `<TrendChart type=bar>` (D-CHART-SERIE-TOKENS:
+  tokens dedicados `--color-chart-inflow/outflow`, preservando a cor do prototipo, nao os tokens de status/alarme); os 4
+  cards viraram clicaveis com **breakdown REAL** (aberto/vencido/em disputa do DirectionSummary; saldo=explain).
+- Junta **1 APROVADO + 2 APROVADO_CONDICIONADO** (0 bloqueia); condicoes sanadas: cor (tokens de serie + decisao),
+  barras negativas (fix + teste), sub-layout (meses colados + legenda centralizada), raio 14px.
+
+### KPIs
+
+- `frontend_smoke_tests` **516 -> 524** (+8: `trend-chart.test.tsx` no `test:smoke` — estrutura SVG + pop-up + honestidade).
+- `backend_tests` 1259, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**
+  (frontend-only; sem backend novo — Fase 2 fara agregado de serie). `pr`/`merge_commit`/`approved_head` null na autoria.
+
 ## 2026-07-19 - WS-RBAC-GATING-CHECKLISTS Esconder acoes de escrita de checklist de papeis de leitura
 
 ### Resultado
