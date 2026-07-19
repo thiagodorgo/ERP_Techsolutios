@@ -3,6 +3,7 @@ import {
   Bell,
   Box,
   ChevronDown,
+  ChevronRight,
   Cloud,
   KeyRound,
   LayoutDashboard,
@@ -99,53 +100,74 @@ export function PlatformLayout() {
               borderBottom: "1px solid rgba(255,255,255,.06)",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-              <div
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
-                  border: "1px solid #33475B",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
+            {collapsed ? (
+              // Colapsada — o LOGO É o botão de expandir (padrão `.logo-toggle` do protótipo). Um único
+              // elemento, sem o botão de 28px sobreposto ao ícone (bug do "botão atrás do ícone").
+              <button
+                type="button"
+                title="Expandir menu"
+                aria-label="Expandir menu"
+                onClick={() => setCollapsed(false)}
+                className="sidebar-logo-toggle"
+                style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid #33475B", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, padding: 0 }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                {/* colapsado = cinza (#E2E8F0), como o protótipo (expandido é verde #7BE084) */}
+                <svg className="ic-logo" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E2E8F0" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 21V11" />
                   <path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6" />
                   <path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11" />
                 </svg>
-              </div>
-              {!collapsed ? (
-                <div style={{ lineHeight: 1.15, whiteSpace: "nowrap" }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>TechSolutions</div>
-                  <div style={{ fontSize: 10, color: "#5E8C86", fontWeight: 600, letterSpacing: ".12em" }}>PLATAFORMA ERP</div>
+                <ChevronRight className="ic-back" size={16} style={{ color: "#E2E8F0" }} />
+              </button>
+            ) : (
+              <>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                  <div
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 10,
+                      border: "1px solid #33475B",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 21V11" />
+                      <path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6" />
+                      <path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11" />
+                    </svg>
+                  </div>
+                  <div style={{ lineHeight: 1.15, whiteSpace: "nowrap" }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>TechSolutions</div>
+                    <div style={{ fontSize: 10, color: "#5E8C86", fontWeight: 600, letterSpacing: ".12em" }}>PLATAFORMA ERP</div>
+                  </div>
                 </div>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              title={collapsed ? "Expandir menu" : "Recolher menu"}
-              aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
-              onClick={() => setCollapsed((c) => !c)}
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                background: "rgba(255,255,255,.06)",
-                border: "none",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                flexShrink: 0,
-                color: NAV_IDLE,
-              }}
-            >
-              <ChevronDown size={15} style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(90deg)" }} />
-            </button>
+                <button
+                  type="button"
+                  title="Recolher menu"
+                  aria-label="Recolher menu"
+                  onClick={() => setCollapsed((c) => !c)}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 8,
+                    background: "rgba(255,255,255,.06)",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                    color: NAV_IDLE,
+                  }}
+                >
+                  <ChevronDown size={15} style={{ transform: "rotate(90deg)" }} />
+                </button>
+              </>
+            )}
           </div>
 
           <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12 }}>
