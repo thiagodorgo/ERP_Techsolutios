@@ -1,17 +1,17 @@
 {
  "snapshot_date": "2026-07-19",
- "version": "WS-MAPA-LAYOUT-REDESIGN",
+ "version": "WS-MAPA-M3",
  "source": "Kpis/kpis-latest.json",
  "scope": "root_project_kpis_reflecting_mobile_and_web",
  "release": {
-  "block": "WS-MAPA redesign de layout (mapa-heroi full-bleed + rails de vidro; supersede grid M-1)",
-  "title": "WS-MAPA layout: mapa dominante full-bleed + overlays de vidro (feedback do dono)",
+  "block": "WS-MAPA M-3 (camada de tecnicos + disponibilidade)",
+  "title": "WS-MAPA M-3: tecnicos com realce de disponibilidade (J-MAPAS-6)",
   "pr": null,
   "merge_commit": null,
   "approved_head": null,
   "status": "published_per_pr",
-  "summary": "WS-MAPA REDESIGN DE LAYOUT (URGENTE, feedback do dono: o grid de 3 colunas do M-1 ESPREMEU a largura do mapa) — junta de LAYOUT: 3 pesquisas web (PD-005: Samsara/Onfleet/ServiceTitan/Uber/fleet-UX 2024-2026) + sintese frontend-pixel-master. DECISAO: matar o grid; MAPA FULL-BLEED (100% da largura util x clamp(760,82vh,960) altura) + paineis viram OVERLAYS DE VIDRO NAVY (chamados esq. / tecnicos dir.), colapsaveis; MAXIMIZAR = stage fixed inset:0 + card de vidro no 4o QUADRANTE; resize() ~220ms + setPadding nos DOIS canvases (espelho; senao o mapa fica cinza). Novo OperationsMapStage (slots map/calls/techs; Esc+focus-trap; resizeSignal). Default abre TECNICOS (dado real) e colapsa CHAMADOS (placeholder) p/ nao exibir painel vazio na demo. Token --surface-glass-navy-rgb (nunca hex solto). Junta: avaliador-mapas + cognicao-visual APROVADO_CONDICIONADO (0 bloqueia); condicoes sanadas (defaults, KB-gotcha, token, 4o quad 82%; padding Google->M-3 P-MAPA-GOOGLE-PADDING-RESIZE). Supersede o grid do M-1. Sem provider/SKU/backend, US$0, LGPD zero-coordenada.",
-  "status_label": "Mapa redesenhado: full-bleed dominante + overlays de vidro navy + maximizar/4o quadrante; junta APROVADO_COND; smoke 536->540"
+  "summary": "WS-MAPA M-3 (redesign do Mapa, J-MAPAS-6) — CAMADA DISTINTA DE TECNICOS + DISPONIBILIDADE (req.2 do dono: onde/como estao os tecnicos). Realce de DISPONIBILIDADE nos DOIS canvases (fonte unica isRingAvailable): MapLibre op-ring do tecnico disponivel (raio maior+stroke), Google gmp-operator-pin--available+halo. Barra de disponibilidade por cartao no rail de tecnicos (--operator-accent=getStatusColor; contraste sobre vidro navy). isRingAvailable NAO realca posicao velha (available+envelhecido ->nao realca). Terminologia reconciliada ('Tecnicos de Campo'/'Tecnico'). Fecha a pendencia P-MAPA-GOOGLE-PADDING-RESIZE (Google re-fitBounds(mapPadding) no resize -> zero pin sob o vidro; MapLibre segue com setPadding+resize). Legenda-rodape M-2 byte-a-byte identica nos dois. avaliador-mapas APROVADO_CONDICIONADO (0 bloqueia; residual de terminologia no subtitulo -> P-MAPA-TERM-OPERADORES/M-4). Sem provider/SKU/backend, US$0, LGPD zero-coordenada.",
+  "status_label": "Mapa M-3: realce de disponibilidade dos tecnicos (mapa+rail) + fix padding Google; avaliador-mapas APROVADO_COND; smoke 540->551"
  },
  "metrics": {
   "flutter_tests": {
@@ -21,16 +21,16 @@
    "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
   },
   "frontend_smoke_tests": {
-   "value": 540,
-   "total": 540,
-   "display": "540/540",
-   "note": "+4 (operations-map-layout.test.ts reescrito 6->10: stage full-bleed sem grid-3-col, rails de vidro colapsaveis, maximizar+4o quadrante, resize/setPadding no espelho, Omega1 preservado). Baseline de mapa 63->67."
+   "value": 551,
+   "total": 551,
+   "display": "551/551",
+   "note": "+11 (operations-map-technicians.test.ts: realce de disponibilidade nos 2 canvases, barra por status no rail, isRingAvailable nao mente sobre posicao velha, fix padding Google re-fit, terminologia, paridade byte-a-byte, LGPD). Baseline de mapa 67->82."
   },
   "backend_tests": {
    "value": 1259,
    "total": 1265,
    "display": "1259/1265",
-   "note": "carrega o ultimo valor oficial (1259) — redesign de layout do mapa e frontend-only."
+   "note": "carrega o ultimo valor oficial (1259) — WS-MAPA M-3 e frontend-only."
   },
   "backend_contract_tests_focused": {
    "value": 21,

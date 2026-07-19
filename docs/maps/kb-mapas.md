@@ -387,7 +387,16 @@ modo maximizar. Plano: `agent-orchestration/omega/mapas/J-MAPAS-6-LAYOUT-redesig
 2. **NÃO REMONTAR o mapa** ao maximizar: manter o slot do canvas SEMPRE montado (fora do condicional) e só trocar a className
    do container (`--maximized{position:fixed;inset:0}`) — remontar re-inicializa o mapa e perde a câmera.
 3. **PADDING de câmera sob overlays:** com painéis de vidro sobre as bordas, aplicar `setPadding(mapPadding)` (MapLibre,
-   persistente) / `padding` no `fitBounds` (Google) para os pins não caírem escondidos sob os rails/quadrante. RESÍDUO
-   (P-MAPA-GOOGLE-PADDING-RESIZE → M-3): o GoogleMapsCanvas só aplica padding no fitBounds inicial; ao EXPANDIR um rail o Google
-   dispara resize mas não re-enquadra → pin de borda pode ficar sob o rail até a próxima interação. Só afeta o path Google
-   (secundário/pago); no MVP (MapLibre) está correto. Corrigir em M-3 re-executando fitBounds/panBy quando `mapPadding` mudar.
+   persistente) / `padding` no `fitBounds` (Google) para os pins não caírem escondidos sob os rails/quadrante. O MapLibre reaplica
+   `setPadding` no resize (persistente) → correto de graça. O Google **NÃO** tem padding persistente (padding é só parâmetro do
+   `fitBounds`): é preciso GUARDAR os pontos do enquadramento (ex.: cluster vencedor em `winnerPointsRef`) e **re-executar
+   `fitBounds(bounds, mapPadding)`** no resize com o padding ATUAL — senão, ao expandir um rail, um pin de borda fica sob o vidro
+   até a próxima interação. **RESOLVIDO em M-3** (`fitInnerMapToWinner(innerMap, mapPaddingRef.current)` no efeito de resize,
+   ~220ms após `trigger("resize")`; `resizeSignal` muda junto com `mapPadding`). Trade-off: re-`fitBounds` reenquadra o cluster
+   (pode resetar o zoom do usuário) — aceitável e sancionado pelo plano; alternativa `panBy(Δpadding/2)` preservaria o zoom mas
+   exige acertar o sinal do deslocamento. Fechou a pendência P-MAPA-GOOGLE-PADDING-RESIZE.
+4. **REALCE de disponibilidade sem trocar provider (M-3):** "técnico disponível AO VIVO" = `getRingColor === verde de available`
+   (status available E posição fresca) — helper único `isRingAvailable`, consumido pelos DOIS canvases (MapLibre: prop de feature
+   `available` → `op-ring` com raio/contorno maior; Google: classe `gmp-operator-pin--available` + halo via `--operator-ring`
+   vindo de `getStatusColor`). Cor de status NUNCA em hex solto no CSS: entra por CSS var inline (`--operator-accent` no cartão do
+   rail, `--operator-ring` no pin Google), a partir de `getStatusColor`. Assim o realce fica sincronizado com o anel do mapa.

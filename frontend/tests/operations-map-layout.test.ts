@@ -228,7 +228,10 @@ test("técnicos reusa OperationsOperatorList (cartões compactos) e a legenda do
     }),
   );
   assert.match(html, /Ana Souza/);
-  assert.match(html, /Operadores em campo/); // título do card reusado (componente inalterado)
+  // M-3 — terminologia §3 reconciliada: o card reusado agora diz "Técnicos de Campo" (era "Operadores
+  // em campo"), casando com o rótulo do rail direito e com a linguagem PT-BR de negócio.
+  assert.match(html, /Técnicos de Campo/);
+  assert.doesNotMatch(html, /Operadores em campo/);
   assert.match(html, /operations-operator-card/); // visão compacta usada no rail
   // Legenda unificada (M-2) segue verde: os dois canvases consomem o rodapé e a classe existe.
   assert.match(LIBRE, /<OperationsMapLegendFooter \/>/);

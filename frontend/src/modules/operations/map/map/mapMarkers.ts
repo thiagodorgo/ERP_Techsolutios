@@ -54,6 +54,17 @@ export function getRingColor(location: FieldLocationItem, nowMs: number = Date.n
   return getStatusColor(location.status);
 }
 
+/**
+ * M-3 (J-MAPAS-6) — técnico DISPONÍVEL AO VIVO: status `available` E posição fresca (não envelhecida).
+ * É exatamente a condição em que o anel do pin fica verde (getRingColor === verde de "available"),
+ * então o realce de disponibilidade no mapa nunca mente sobre uma posição velha. Fonte ÚNICA do
+ * realce usada pelos DOIS canvases (MapLibre via prop de feature `available`; Google via classe
+ * `gmp-operator-pin--available`) — regra do espelho.
+ */
+export function isRingAvailable(location: FieldLocationItem, nowMs: number = Date.now()): boolean {
+  return getRingColor(location, nowMs) === getStatusColor("available");
+}
+
 // Iniciais (1–2 letras) para o miolo do pin do técnico.
 export function getInitials(name: string): string {
   const parts = name
@@ -72,6 +83,8 @@ export type FieldLocationFeatureProps = {
   readonly staleLevel: StaleLevel;
   readonly selected: boolean;
   readonly displayName: string;
+  // M-3 — realce de disponibilidade na CAMADA de técnicos (anel maior + contorno) sem tocar o provider.
+  readonly available: boolean;
 };
 
 export type FieldLocationFeatureCollection = FeatureCollection<Point, FieldLocationFeatureProps>;
@@ -91,6 +104,7 @@ function toFeature(
       staleLevel: getStaleLevel(location.capturedAt, nowMs),
       selected: location.id === selectedId,
       displayName: location.displayName,
+      available: isRingAvailable(location, nowMs),
     },
   };
 }
