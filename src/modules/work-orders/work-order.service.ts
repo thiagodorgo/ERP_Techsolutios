@@ -840,15 +840,13 @@ export class WorkOrderService {
 
     this.assertCancellable(current.status);
 
-    // `zero` ANTES de persistir o cancelamento: assim a OS nunca fica cancelada com o financeiro por
-    // zerar — a direção que mais dói (cobrança viva numa OS morta) está fechada.
-    // HONESTIDADE (pós-análise Ω3F-6): a ordem NÃO garante o par (cancelado ↔ total 0) nas outras duas
-    // direções, e afirmar isso seria mentira: (a) `cancelled ∧ total>0` é alcançável lançando item numa
-    // OS já cancelada — o financeiro não tem guarda de estado terminal (P-Ω3F6-TERMINAL-GUARD); (b) a
-    // limpeza é um LOOP de N deletes SEM transação — se o 3º de 5 falhar, dois itens já foram
-    // soft-deletados e a OS não cancela (OS viva com itens destruídos + 500). Ver
-    // P-Ω3F6-ZERO-ATOMICIDADE: o conserto é um softDeleteAll no repositório de financials (mata o N+1 e a
-    // parcialidade de uma vez).
+    // `zero` ANTES de persistir o cancelamento: a OS nunca fica cancelada com o financeiro por zerar.
+    // Integridade (D-CANCEL-INTEGRITY, este bloco fechou o cluster P-Ω3F6): (a) o par cancelado↔total-0 é
+    // sustentado pelo TERMINAL-GUARD (create/update/delete/invoice recusam OS cancelada — 422 work_order_cancelled),
+    // então não se lança/fatura item depois; (b) zeroFinancialItems é ATÔMICO (softDeleteAll numa operação, exclui
+    // faturados) — sem a parcialidade/N+1 do loop antigo; item faturado bloqueia `zero` (422 has_invoiced_items,
+    // preserva o lastro do Título). Resíduo: a corrida sub-ms cancel×create-de-item (P-Ω3F6-CANCEL-RACE), da mesma
+    // classe dos TOCTOU aceitos — fecha com SELECT ... FOR UPDATE da OS (hardening futuro).
     if (decision === "zero") {
       await this.zeroFinancialItems(actor, current.id);
     }

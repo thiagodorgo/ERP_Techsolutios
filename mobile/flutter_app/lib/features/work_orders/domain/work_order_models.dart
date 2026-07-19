@@ -69,27 +69,17 @@ extension WorkOrderStatusX on WorkOrderStatus {
   // 'cancel_via_status_forbidden' no /status legado que a fila offline usava). O técnico de campo não arbitra
   // cobrança; o botão "Cancelar" some do app junto com o fechamento do bypass.
   Set<WorkOrderStatus> get allowedTransitions => switch (this) {
-    WorkOrderStatus.scheduled => {
-      WorkOrderStatus.dispatched,
-    },
-    WorkOrderStatus.dispatched => {
-      WorkOrderStatus.enRoute,
-    },
-    WorkOrderStatus.enRoute => {
-      WorkOrderStatus.arrived,
-    },
-    WorkOrderStatus.arrived => {
-      WorkOrderStatus.inService,
-    },
+    WorkOrderStatus.scheduled => {WorkOrderStatus.dispatched},
+    WorkOrderStatus.dispatched => {WorkOrderStatus.enRoute},
+    WorkOrderStatus.enRoute => {WorkOrderStatus.arrived},
+    WorkOrderStatus.arrived => {WorkOrderStatus.inService},
     WorkOrderStatus.inService => {
       WorkOrderStatus.paused,
       WorkOrderStatus.completed,
       WorkOrderStatus.pendingApproval,
       WorkOrderStatus.exception,
     },
-    WorkOrderStatus.paused => {
-      WorkOrderStatus.inService,
-    },
+    WorkOrderStatus.paused => {WorkOrderStatus.inService},
     WorkOrderStatus.pendingApproval => {
       WorkOrderStatus.approved,
       WorkOrderStatus.rejected,
