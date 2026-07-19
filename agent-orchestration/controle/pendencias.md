@@ -1131,4 +1131,17 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   dispara `trigger("resize")` mas NÃO re-enquadra → um pin de borda pode ficar sob o rail de vidro até a próxima interação.
 - acao: em M-3, re-executar `fitBounds(bounds, mapPadding)` (ou `panBy`) no GoogleMapsCanvas quando `mapPadding` mudar. Só
   afeta o path Google (secundário/pago, chave redigida no go-live); no MVP MapLibre está correto.
-- status: aberto (não-bloqueante; só o path Google).
+- status: RESOLVIDO em M-3 (WS-MAPA, 2026-07-19). O GoogleMapsCanvas passou a guardar os pontos do cluster vencedor
+  (`winnerPointsRef`) e re-executa `fitBounds(bounds, mapPadding)` via `fitInnerMapToWinner(innerMap, mapPaddingRef.current)`
+  no efeito de resize (após `trigger("resize")`, ~220ms) — `resizeSignal` incrementa no mesmo toggle em que `mapPadding` muda,
+  então o re-enquadramento usa sempre o padding atual. Espelha o `setPadding`+`resize()` persistente do MapLibre. Coberto por
+  teste (`operations-map-technicians.test.ts`: "Google re-enquadra com o padding atual no resize").
+
+## P-MAPA-TERM-OPERADORES — terminologia residual "operadores" no subtítulo/aria dos canvases (WS-MAPA M-3, 2026-07-19)
+- descricao: M-3 reconciliou o card do rail de técnicos ("Técnicos de Campo"/"Técnico"), mas o subtítulo visível dos canvases
+  ("X operadores e Y chamados no mapa", GoogleMapsCanvas.tsx:201/204) e os aria-label ("operadores em campo", GoogleMapsCanvas:218 /
+  OperationsMapLibreCanvas:580) ainda dizem "operadores". "Operador de campo" é PT-BR de negócio legítimo (§3), não é vazamento
+  técnico — por isso NÃO bloqueou o M-3; mas o dono pediu (req.3) consistência de terminologia nesta view.
+- acao: reconciliar subtítulo + aria-labels para "técnicos"/"Técnicos de Campo" num bloco seguinte (M-4 ou touch-up), atualizando
+  o teste operations-map-google-canvas que asserta o texto do subtítulo.
+- status: aberto (não-bloqueante; cosmético).

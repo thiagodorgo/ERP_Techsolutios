@@ -614,5 +614,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-19",
+    "version": "WS-MAPA-M3",
+    "backend_tests": "1259/1265",
+    "frontend_smoke_tests": "551/551",
+    "flutter_tests": "764/764",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 66,
+    "description": "WS-MAPA M-3 (redesign do Mapa, J-MAPAS-6) — CAMADA DISTINTA DE TECNICOS + DISPONIBILIDADE (req.2 do dono: onde/como estao os tecnicos). Realce de DISPONIBILIDADE nos DOIS canvases (fonte unica isRingAvailable): MapLibre op-ring do tecnico disponivel (raio maior+stroke), Google gmp-operator-pin--available+halo. Barra de disponibilidade por cartao no rail de tecnicos (--operator-accent=getStatusColor; contraste sobre vidro navy). isRingAvailable NAO realca posicao velha (available+envelhecido ->nao realca). Terminologia reconciliada ('Tecnicos de Campo'/'Tecnico'). Fecha a pendencia P-MAPA-GOOGLE-PADDING-RESIZE (Google re-fitBounds(mapPadding) no resize -> zero pin sob o vidro; MapLibre segue com setPadding+resize). Legenda-rodape M-2 byte-a-byte identica nos dois. avaliador-mapas APROVADO_CONDICIONADO (0 bloqueia; residual de terminologia no subtitulo -> P-MAPA-TERM-OPERADORES/M-4). Sem provider/SKU/backend, US$0, LGPD zero-coordenada. KPI: frontend_smoke 540->551 (+11). backend 1259/flutter 764 carregados. mvp/blocks inalterados. merge_commit/approved_head null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

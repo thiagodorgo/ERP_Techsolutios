@@ -26,6 +26,20 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-MAPA M-3">
+          <h2>WS-MAPA M-3 — técnicos com realce de disponibilidade</h2>
+          <p>
+            <strong>WS-MAPA M-3 (2026-07-19):</strong> requisito 2 do dono ("onde e como estão os técnicos"). Realce de
+            <strong>disponibilidade</strong> nos dois canvases (fonte única <code>isRingAvailable</code>): no mapa, o anel do
+            técnico disponível ganha destaque; no rail de técnicos, uma <strong>barra por status</strong>
+            (<code>getStatusColor</code>) — cara de console de alocação. <code>isRingAvailable</code> <strong>não realça posição
+            velha</strong> (available + envelhecido → não destaca — honestidade). Terminologia reconciliada para
+            <strong>"Técnicos de Campo"</strong>. Fecha a pendência do enquadramento do mapa Google (re-<code>fitBounds</code> no
+            resize → zero pin sob o vidro). Legenda-rodapé (M-2) segue byte-a-byte idêntica nos dois canvases.
+            <strong>avaliador-mapas APROVADO_CONDICIONADO</strong> (8/8 itens de veto; residual de terminologia no subtítulo →
+            follow-up). <strong>smoke 540→551</strong> (baseline de mapa 67→82). Backend/Flutter/MVP <strong>inalterados</strong>.
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-MAPA layout redesign">
           <h2>WS-MAPA — redesign de layout (mapa-herói full-bleed) · feedback do dono</h2>
           <p>

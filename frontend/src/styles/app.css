@@ -1861,6 +1861,9 @@
 
 .operations-map-rail .operations-operator-card {
   border-color: rgb(148 163 184 / 20%);
+  /* Mantém a barra de disponibilidade (getStatusColor) sobre o vidro navy — a regra do rail é mais
+     específica que a base, então re-declaramos a borda esquerda para o realce não ser sobrescrito. */
+  border-left: 4px solid var(--operator-accent, rgb(148 163 184 / 45%));
   background: rgb(30 41 59 / 70%);
   color: #cbd5e1;
 }
@@ -2035,6 +2038,15 @@
   font-size: 13px;
   outline: 2px solid #0f8fbf;
   outline-offset: 2px;
+}
+
+/* M-3 — espelho do realce de disponibilidade do MapLibre (anel maior + contorno no técnico livre).
+   Técnico DISPONÍVEL ao vivo ganha borda mais grossa + halo na cor do status (--operator-ring vindo de
+   getStatusColor inline, nunca hex de status solto no CSS). Compõe com --selected (só box-shadow/borda,
+   sem mexer no tamanho, para não brigar com o realce de seleção). */
+.gmp-operator-pin--available {
+  border-width: 3px;
+  box-shadow: 0 2px 6px rgb(15 23 42 / 35%), 0 0 0 4px var(--operator-ring, #fff);
 }
 
 /* Pin de CHAMADO (conteúdo custom do gmp-advanced-marker) — teardrop por prioridade; cor vem
@@ -2429,6 +2441,10 @@
   width: 100%;
   padding: var(--space-10);
   border: 1px solid var(--border-subtle);
+  /* M-3 — barra de disponibilidade: cor do STATUS (getStatusColor via --operator-accent inline, nunca
+     hex solto). Verde = disponível, azul = em rota, índigo = em atendimento, cinza = offline. Dá cara
+     de "console de alocação" ao rail de Técnicos de Campo. */
+  border-left: 4px solid var(--operator-accent, var(--border-subtle));
   border-radius: var(--radius-8);
   background: var(--surface-panel-muted);
   color: var(--text-primary);

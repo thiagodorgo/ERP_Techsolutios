@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { AlertTriangle, Map as MapIcon, MapPin } from "lucide-react";
 
 import { Chip } from "../../../../components/ui";
@@ -9,6 +9,7 @@ import {
   getInitials,
   getRingColor,
   getWorkOrderPriorityColor,
+  isRingAvailable,
   isValidMapCoordinate,
   pickFocusCluster,
 } from "../map/mapMarkers";
@@ -58,6 +59,31 @@ export function GoogleMapsCanvas({
   const initialViewRef = useRef<{ center: google.maps.LatLngLiteral; zoom: number } | null>(null);
   // Enquadramento roda UMA vez (na primeira vez que há dados) — depois respeita o pan do usuário.
   const fittedRef = useRef(false);
+  // M-3 (P-MAPA-GOOGLE-PADDING-RESIZE) — pontos do cluster vencedor guardados para RE-ENQUADRAR quando
+  // o padding dos rails mudar (expandir/colapsar/maximizar). Sem isto o Google só aplicava o padding no
+  // fitBounds inicial e um pin de borda podia ficar sob o vidro até a próxima interação (o MapLibre já
+  // reaplica setPadding no resize — este fix alinha o espelho Google).
+  const winnerPointsRef = useRef<google.maps.LatLngLiteral[] | null>(null);
+
+  // Enquadra os pontos do cluster vencedor com o padding ATUAL dos rails (área reservada dos overlays de
+  // vidro). Reutilizado no fitBounds inicial E no re-enquadramento de resize — fonte única do enquadramento.
+  const fitInnerMapToWinner = (innerMap: google.maps.Map, padding?: OperationsMapPadding) => {
+    const points = winnerPointsRef.current;
+    if (!points || points.length === 0) return;
+    if (points.length === 1) {
+      innerMap.setCenter(points[0]!);
+      innerMap.setZoom(14);
+      return;
+    }
+    const bounds = new google.maps.LatLngBounds();
+    for (const point of points) bounds.extend(point);
+    innerMap.fitBounds(
+      bounds,
+      padding
+        ? { top: padding.top, right: padding.right, bottom: padding.bottom, left: padding.left }
+        : 64,
+    );
+  };
 
   if (initialViewRef.current === null) {
     const first = locations[0];
@@ -111,6 +137,8 @@ export function GoogleMapsCanvas({
       lat: point.lat,
       lng: point.lng,
     }));
+    // Guarda os pontos para o re-enquadramento de resize (P-MAPA-GOOGLE-PADDING-RESIZE).
+    winnerPointsRef.current = points;
 
     let raf = 0;
     let attempts = 0;
@@ -123,21 +151,8 @@ export function GoogleMapsCanvas({
         }
         return;
       }
-      if (points.length === 1) {
-        innerMap.setCenter(points[0]);
-        innerMap.setZoom(14);
-      } else {
-        const bounds = new google.maps.LatLngBounds();
-        for (const point of points) bounds.extend(point);
-        // Padding = área dos rails de vidro (quando presente) para os pins não caírem sob eles.
-        const padding = mapPaddingRef.current;
-        innerMap.fitBounds(
-          bounds,
-          padding
-            ? { top: padding.top, right: padding.right, bottom: padding.bottom, left: padding.left }
-            : 64,
-        );
-      }
+      // Padding = área dos rails de vidro (quando presente) para os pins não caírem sob eles.
+      fitInnerMapToWinner(innerMap, mapPaddingRef.current);
       fittedRef.current = true;
     };
     tryFit();
@@ -149,12 +164,16 @@ export function GoogleMapsCanvas({
 
   // J-MAPAS-6 (redesign) — resize imperativo quando o container muda de tamanho sem resize de
   // janela (colapsar rail / maximizar). Regra do espelho com o MapLibre: ~220ms após a transição.
+  // M-3 (P-MAPA-GOOGLE-PADDING-RESIZE) — `resizeSignal` incrementa no MESMO toggle em que `mapPadding`
+  // muda; logo, após o `resize()`, RE-ENQUADRAMOS com o padding ATUAL (mapPaddingRef.current) para nenhum
+  // pin ficar escondido sob o rail de vidro recém-expandido. Antes só o fitBounds inicial via padding.
   useEffect(() => {
     if (resizeSignal === undefined) return;
     const timer = setTimeout(() => {
       const innerMap = mapRef.current?.innerMap;
       if (!innerMap) return;
       google.maps.event.trigger(innerMap, "resize");
+      if (fittedRef.current) fitInnerMapToWinner(innerMap, mapPaddingRef.current);
     }, 220);
     return () => clearTimeout(timer);
   }, [resizeSignal]);
@@ -268,12 +287,15 @@ function OperatorMarker({
   // cinza >10min. A seleção NUNCA sobrescreve a cor de status (senão vira UI mentirosa) —
   // só geometria + anel de destaque via classe --selected.
   const ringColor = getRingColor(location, nowMs);
+  // M-3 — espelho do realce de disponibilidade do MapLibre: técnico disponível ao vivo ganha halo.
+  // A cor do halo vem da MESMA fonte (getStatusColor via --operator-ring), nunca hex solto no CSS.
+  const available = isRingAvailable(location, nowMs);
 
   return (
     <gmp-advanced-marker ref={markerRef} title={location.displayName}>
       <div
-        className={`gmp-operator-pin${isSelected ? " gmp-operator-pin--selected" : ""}`}
-        style={{ background: ringColor }}
+        className={`gmp-operator-pin${available ? " gmp-operator-pin--available" : ""}${isSelected ? " gmp-operator-pin--selected" : ""}`}
+        style={{ background: ringColor, "--operator-ring": ringColor } as CSSProperties}
         aria-hidden
       >
         {getInitials(location.displayName)}

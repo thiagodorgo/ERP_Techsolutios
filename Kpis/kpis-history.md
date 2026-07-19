@@ -6,6 +6,23 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-19 - WS-MAPA M-3 Camada de tecnicos + disponibilidade (redesign J-MAPAS-6)
+
+### Resultado
+
+- **Requisito 2 do dono** (onde/como estao os tecnicos): realce de **disponibilidade** nos dois canvases (fonte unica
+  `isRingAvailable`) — anel do tecnico disponivel no mapa + barra por status no rail (`getStatusColor`). `isRingAvailable`
+  NAO realca posicao velha (available+envelhecido -> nao destaca; honestidade). Terminologia "Tecnicos de Campo".
+- Fecha `P-MAPA-GOOGLE-PADDING-RESIZE` (Google re-`fitBounds(mapPadding)` no resize). Legenda-rodape M-2 byte-a-byte identica
+  nos dois canvases. **avaliador-mapas APROVADO_CONDICIONADO** (8/8 veto; residual de terminologia no subtitulo -> P-MAPA-TERM-OPERADORES).
+  Sem provider/SKU/backend (US$ 0); LGPD zero-coordenada.
+
+### KPIs
+
+- `frontend_smoke_tests` **540 -> 551** (+11: operations-map-technicians.test.ts). Baseline de mapa 67 -> 82.
+- `backend_tests` 1259, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**.
+  Proximo: M-4 lista de chamados+SLA-proxy (troca o placeholder do slot calls). `pr`/`merge_commit`/`approved_head` null na autoria.
+
 ## 2026-07-19 - WS-MAPA redesign de layout (mapa-heroi full-bleed) — feedback URGENTE do dono
 
 ### Resultado

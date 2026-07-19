@@ -260,10 +260,21 @@ export function OperationsMapLibreCanvas({
       source: OPERATIONS_MAP_SOURCE_ID,
       filter: ["!", ["has", "point_count"]],
       paint: {
-        "circle-radius": 13,
+        // M-3 — técnico DISPONÍVEL ao vivo ganha anel maior + contorno claro: o operador de despacho
+        // enxerga "quem está livre" de relance (requisito 2 do dono). A cor do anel segue vindo de
+        // `ringColor` (getRingColor = verde de "available" só quando fresco) — nada de hex solto aqui;
+        // o contorno é chrome neutro, igual ao já usado no destaque de seleção.
+        "circle-radius": ["case", ["boolean", ["get", "available"], false], 14, 13],
         "circle-color": ["get", "ringColor"],
         "circle-stroke-color": "#f8fafc",
-        "circle-stroke-width": ["case", ["boolean", ["get", "selected"], false], 3, 0],
+        "circle-stroke-width": [
+          "case",
+          ["boolean", ["get", "selected"], false],
+          3,
+          ["boolean", ["get", "available"], false],
+          2,
+          0,
+        ],
       },
     });
     map.addLayer({

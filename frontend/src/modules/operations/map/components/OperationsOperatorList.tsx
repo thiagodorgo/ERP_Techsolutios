@@ -1,4 +1,5 @@
 import { Battery, Clock, LocateFixed } from "lucide-react";
+import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 
 import { Card, Table } from "../../../../components/ui";
@@ -8,6 +9,7 @@ import {
   formatBattery,
   formatFieldLocationDate,
 } from "../operations-map.adapter";
+import { getStatusColor } from "../map/mapMarkers";
 import type { FieldLocationItem } from "../operations-map.types";
 import { OperationsOperatorStatus } from "./OperationsMapStatusBadge";
 import { WorkOrderStatusBadge } from "../../../work-orders/components/WorkOrderStatusBadge";
@@ -30,7 +32,7 @@ export function OperationsOperatorList({
   const columns = [
     {
       key: "operator",
-      header: "Operador",
+      header: "Técnico",
       render: (location: FieldLocationItem) => (
         <strong className={selectedId === location.id ? "operations-map-selected-text" : undefined}>
           {location.displayName}
@@ -95,7 +97,7 @@ export function OperationsOperatorList({
   ];
 
   return (
-    <Card title="Operadores em campo">
+    <Card title="Técnicos de Campo">
       <Table
         rows={locations}
         keyForRow={(location) => location.id}
@@ -108,6 +110,8 @@ export function OperationsOperatorList({
             key={location.id}
             type="button"
             className={`operations-operator-card ${selectedId === location.id ? "is-selected" : ""}`}
+            data-status={location.status}
+            style={{ "--operator-accent": getStatusColor(location.status) } as CSSProperties}
             onClick={() => onSelect(location)}
           >
             <header>
