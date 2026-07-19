@@ -26,6 +26,19 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-MAPA M-2">
+          <h2>WS-MAPA M-2 — rodapé de legenda unificado</h2>
+          <p>
+            <strong>WS-MAPA M-2 (2026-07-19):</strong> segundo bloco do redesign do Mapa (J-MAPAS-6). Atende o
+            <strong>requisito 6 do dono</strong> ("as legendas se unam e fiquem no rodapé do mapa"): novo
+            <code>OperationsMapLegendFooter</code> (fonte <strong>única</strong> <code>MAP_LEGEND_ITEMS</code>, cor só de
+            <code>item.color</code>, zero hex solto); a <code>&lt;ul&gt;</code> flutuante foi <strong>removida dos dois
+            canvases</strong> (MapLibre + Google) e ambos consomem o mesmo rodapé ancorado à base (o mapa encolhe, não
+            sobrepõe). <strong>Paridade do espelho provada byte-a-byte</strong>; o clamp de altura 2× do M-1 permanece intacto;
+            o rodapé já acompanha o futuro modo maximizado (M-6). <strong>avaliador-mapas APROVADO</strong> (8/8 itens de veto).
+            <strong>smoke 530→536</strong> (baseline de mapa 61→67). Backend/Flutter/MVP <strong>inalterados</strong>.
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-MAPA M-1">
           <h2>WS-MAPA M-1 — fundação do console de alocação (redesign do Mapa Operacional)</h2>
           <p>

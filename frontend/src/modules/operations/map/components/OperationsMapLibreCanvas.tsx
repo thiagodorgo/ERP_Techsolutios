@@ -13,7 +13,6 @@ import {
   WORK_ORDERS_MAP_SOURCE_ID,
   WORK_ORDER_PRIORITY_HEX,
   WORK_ORDER_PRIORITY_KEY,
-  MAP_LEGEND_ITEMS,
   buildFieldLocationsFeatureCollection,
   buildWorkOrderPinsFeatureCollection,
   interpolateCoords,
@@ -23,6 +22,7 @@ import {
 } from "../map/mapMarkers";
 import type { FieldLocationItem, OperationsMapWorkOrderPin } from "../operations-map.types";
 import type { WorkOrderPriority } from "../../../work-orders/work-orders.types";
+import { OperationsMapLegendFooter } from "./OperationsMapLegendFooter";
 
 /**
  * Ω1 (J-002) — Canvas real do Mapa Operacional com MapLibre GL + OpenFreeMap.
@@ -535,23 +535,9 @@ export function OperationsMapLibreCanvas({
           Carregando mapa operacional…
         </div>
       ) : null}
-      {status === "ready" ? (
-        <ul className="operations-map-libre__legend" aria-label="Legenda do mapa">
-          {MAP_LEGEND_ITEMS.map((item, index) =>
-            item.kind === "sep" ? (
-              <li key={`sep-${index}`} className="operations-map-libre__legend-sep" aria-hidden="true" />
-            ) : (
-              <li key={item.label}>
-                <span
-                  className={item.kind === "pin" ? "operations-map-libre__pin" : "operations-map-libre__dot"}
-                  style={{ background: item.color }}
-                />{" "}
-                {item.label}
-              </li>
-            ),
-          )}
-        </ul>
-      ) : null}
+      {/* M-2 (J-MAPAS-6) — legenda unificada no RODAPÉ do container (não mais flutuando sobre o
+          canvas). Fonte única MAP_LEGEND_ITEMS; mesmo componente do canvas Google (paridade). */}
+      <OperationsMapLegendFooter />
     </section>
   );
 }

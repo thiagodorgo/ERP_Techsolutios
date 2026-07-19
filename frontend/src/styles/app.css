@@ -1763,7 +1763,11 @@
 }
 
 .operations-map-canvas__gmaps {
-  position: relative; /* contexto p/ a legenda absoluta sobreposta ao mapa (não vaza p/ o card) */
+  position: relative;
+  /* M-2 (J-MAPAS-6) — coluna flex: mapa cresce, rodapé de legenda unificado na BASE (regra do
+     espelho, idêntico ao .operations-map-libre — não flutua sobre o canvas). */
+  display: flex;
+  flex-direction: column;
   width: 100%;
   /* M-1 (J-MAPAS-6) — altura dobrada com teto por viewport. Regra do ESPELHO:
      idêntica ao .operations-map-libre para paridade entre os dois canvases. */
@@ -1774,11 +1778,13 @@
   background: var(--surface-panel-muted);
 }
 
-/* Web component gmp-map exige altura explícita (exemplo oficial: gmp-map { height: 100% }). */
+/* Web component gmp-map ocupa o espaço restante acima do rodapé (exemplo oficial usa height:100%;
+   aqui o flex:1 dá altura definida dentro da coluna de altura fixa). */
 .operations-map-canvas__gmaps gmp-map {
   display: block;
   width: 100%;
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* Pin de operador (conteúdo custom do gmp-advanced-marker) — cor vem INLINE (getRingColor),
@@ -1829,6 +1835,10 @@
 /* Ω1 — Mapa Operacional real (MapLibre GL + OpenFreeMap) */
 .operations-map-libre {
   position: relative;
+  /* M-2 (J-MAPAS-6) — coluna flex: o mapa cresce e o rodapé de legenda unificado fica na BASE
+     do container (não flutua sobre o canvas). */
+  display: flex;
+  flex-direction: column;
   /* M-1 (J-MAPAS-6) — altura dobrada com teto por viewport; espelhada no gmaps. */
   min-height: clamp(760px, 82vh, 960px);
   height: clamp(760px, 82vh, 960px);
@@ -1838,9 +1848,11 @@
   background: #0f1722;
 }
 
+/* M-2 — o canvas do mapa ocupa o espaço restante acima do rodapé (antes era absolute inset:0). */
 .operations-map-libre__canvas {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .operations-map-libre__overlay {
@@ -1869,31 +1881,33 @@
   to { transform: rotate(360deg); }
 }
 
-.operations-map-libre__legend {
-  position: absolute;
-  left: var(--space-10);
-  bottom: var(--space-10);
+/* M-2 (J-MAPAS-6) — Rodapé de legenda UNIFICADO, ancorado à BASE do container do mapa (NÃO
+   flutua sobre o canvas: é o último item da coluna flex, o mapa ocupa o resto). Consumido pelos
+   DOIS canvases (MapLibre e Google) via OperationsMapLegendFooter — fonte única MAP_LEGEND_ITEMS.
+   As cores dos swatches vêm INLINE de item.color (sem hex de status/prioridade solto no CSS);
+   aqui só o "chrome" navy do rodapé, os mesmos tons já usados no overlay/spinner do mapa. */
+.operations-map-legend-footer {
   z-index: 2;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-8);
   margin: 0;
-  padding: var(--space-6) var(--space-8);
+  padding: var(--space-6) var(--space-10);
   list-style: none;
-  border: 1px solid rgb(148 163 184 / 22%);
-  border-radius: var(--radius-8);
-  background: rgb(15 23 34 / 82%);
+  border-top: 1px solid rgb(148 163 184 / 22%);
+  background: rgb(15 23 34 / 92%);
   color: #cbd5e1;
   font-size: 11px;
 }
 
-.operations-map-libre__legend li {
+.operations-map-legend-footer__item {
   display: inline-flex;
   align-items: center;
   gap: var(--space-4);
 }
 
-.operations-map-libre__dot {
+.operations-map-legend-footer__dot {
   width: 10px;
   height: 10px;
   border-radius: 999px;
@@ -1901,7 +1915,7 @@
 }
 
 /* Ω1b — swatch teardrop (chamado) na legenda + separador */
-.operations-map-libre__pin {
+.operations-map-legend-footer__pin {
   width: 10px;
   height: 13px;
   border-radius: 50% 50% 50% 0;
@@ -1909,7 +1923,7 @@
   box-shadow: 0 0 0 1px rgb(11 20 32 / 90%);
 }
 
-.operations-map-libre__legend-sep {
+.operations-map-legend-footer__sep {
   width: 1px;
   align-self: stretch;
   padding: 0;

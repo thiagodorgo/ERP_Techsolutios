@@ -5,7 +5,6 @@ import { Chip } from "../../../../components/ui";
 import type { GoogleMapsLoadState } from "../hooks/useGoogleMapsLoader";
 import type { FieldLocationItem, OperationsMapWorkOrderPin } from "../operations-map.types";
 import {
-  MAP_LEGEND_ITEMS,
   clusterByProximity,
   getInitials,
   getRingColor,
@@ -13,12 +12,13 @@ import {
   isValidMapCoordinate,
   pickFocusCluster,
 } from "../map/mapMarkers";
+import { OperationsMapLegendFooter } from "./OperationsMapLegendFooter";
 
 // Web Components do Google Maps (gmp-map + gmp-advanced-marker, v=beta) no lugar da API JS
 // clássica. Markers são conteúdo custom (disco com inicial) estilizado com a paleta REAL de
 // status do DS — mesma do canvas MapLibre (getRingColor): status ao vivo · âmbar >3min ·
-// cinza >10min. Pins de CHAMADO (teardrop) por prioridade e a legenda circulada garantem
-// paridade total com a referência MapLibre.
+// cinza >10min. Pins de CHAMADO (teardrop) por prioridade e o rodapé de legenda UNIFICADO
+// (OperationsMapLegendFooter, mesmo componente do MapLibre) garantem paridade total.
 
 const DEFAULT_CENTER = { lat: -23.55052, lng: -46.633308 }; // São Paulo (fallback sem operador)
 const DEFAULT_ZOOM = 12;
@@ -169,51 +169,29 @@ export function GoogleMapsCanvas({
       <p>{subtitle}</p>
       <div className="operations-map-canvas__gmaps" aria-label="Mapa com localização dos operadores em campo">
         {loadState === "ready" ? (
-          <>
-            <gmp-map ref={attachMap} map-id={MAP_ID}>
-              {locations.map((location) => (
-                <OperatorMarker
-                  key={location.id}
-                  location={location}
-                  isSelected={location.id === selectedId}
-                  nowMs={nowMs}
-                  onSelect={onSelect}
-                />
-              ))}
-              {validWorkOrderPins.map((pin) => (
-                <WorkOrderMarker
-                  key={pin.id}
-                  pin={pin}
-                  isSelected={pin.id === selectedWorkOrderId}
-                  onSelectWorkOrder={onSelectWorkOrder}
-                />
-              ))}
-            </gmp-map>
-            <ul className="operations-map-libre__legend" aria-label="Legenda do mapa">
-              {MAP_LEGEND_ITEMS.map((item, index) =>
-                item.kind === "sep" ? (
-                  <li
-                    key={`sep-${index}`}
-                    className="operations-map-libre__legend-sep"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <li key={item.label}>
-                    <span
-                      className={
-                        item.kind === "pin"
-                          ? "operations-map-libre__pin"
-                          : "operations-map-libre__dot"
-                      }
-                      style={{ background: item.color }}
-                    />{" "}
-                    {item.label}
-                  </li>
-                ),
-              )}
-            </ul>
-          </>
+          <gmp-map ref={attachMap} map-id={MAP_ID}>
+            {locations.map((location) => (
+              <OperatorMarker
+                key={location.id}
+                location={location}
+                isSelected={location.id === selectedId}
+                nowMs={nowMs}
+                onSelect={onSelect}
+              />
+            ))}
+            {validWorkOrderPins.map((pin) => (
+              <WorkOrderMarker
+                key={pin.id}
+                pin={pin}
+                isSelected={pin.id === selectedWorkOrderId}
+                onSelectWorkOrder={onSelectWorkOrder}
+              />
+            ))}
+          </gmp-map>
         ) : null}
+        {/* M-2 (J-MAPAS-6) — mesmo rodapé de legenda unificado do MapLibre (regra do espelho:
+            paridade byte-a-byte). Ancorado à BASE do container do mapa, não flutuando sobre o canvas. */}
+        <OperationsMapLegendFooter />
       </div>
       <footer>
         <span>

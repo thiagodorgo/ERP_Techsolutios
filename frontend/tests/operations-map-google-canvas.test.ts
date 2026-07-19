@@ -140,9 +140,11 @@ test("legenda (MAP_LEGEND_ITEMS) bate 1:1 com a paleta de status e de prioridade
     WORK_ORDER_PRIORITY_HEX.medium,
   ]);
 
-  // A legenda renderiza no canvas Google com as mesmas classes do MapLibre.
+  // M-2 — a legenda renderiza no canvas Google no RODAPÉ unificado (mesmo componente do MapLibre);
+  // a antiga `<ul>` flutuante `operations-map-libre__legend` deixou de existir.
   const html = renderCanvas();
-  assert.match(html, /operations-map-libre__legend/);
+  assert.match(html, /operations-map-legend-footer/);
+  assert.doesNotMatch(html, /operations-map-libre__legend/);
   assert.match(html, /Disponível/);
   assert.match(html, /Chamado urgente/);
 });
