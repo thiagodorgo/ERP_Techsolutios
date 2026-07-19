@@ -26,6 +26,21 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-MAPA layout redesign">
+          <h2>WS-MAPA — redesign de layout (mapa-herói full-bleed) · feedback do dono</h2>
+          <p>
+            <strong>WS-MAPA layout (2026-07-19, URGENTE):</strong> o dono apontou que o grid de 3 colunas do M-1 <strong>espremeu
+            a largura do mapa</strong>. Junta de layout com <strong>3 pesquisas web</strong> (PD-005:
+            Samsara/Onfleet/ServiceTitan/Uber/fleet-UX 2024-2026) + síntese: sistemas reais <strong>não usam 3 colunas</strong>.
+            Decisão: <strong>mapa full-bleed</strong> (100% da largura útil × altura generosa) + painéis viram <strong>overlays de
+            vidro navy</strong> (chamados esq. / técnicos dir., colapsáveis) — não colunas que roubam largura;
+            <strong>Maximizar</strong> = mapa cheio + card de vidro no <strong>4º quadrante</strong>; <code>resize()</code> ~220ms +
+            <code>setPadding</code> nos dois canvases (senão o mapa fica cinza / pins sob os overlays). Default abre
+            <strong>técnicos (dado real)</strong> p/ a demo. Junta <strong>avaliador-mapas + cognição-visual APROVADO_CONDICIONADO</strong>
+            (mapa domina mais que o próprio protótipo; vidro navy coeso; contraste/a11y sólidos); condições sanadas. Supersede o
+            grid do M-1. <strong>smoke 536→540</strong>. Sem provider/SKU/backend (US$ 0). Backend/Flutter/MVP <strong>inalterados</strong>.
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-MAPA M-2">
           <h2>WS-MAPA M-2 — rodapé de legenda unificado</h2>
           <p>

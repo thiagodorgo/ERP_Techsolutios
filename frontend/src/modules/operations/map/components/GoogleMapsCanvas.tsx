@@ -3,7 +3,7 @@ import { AlertTriangle, Map as MapIcon, MapPin } from "lucide-react";
 
 import { Chip } from "../../../../components/ui";
 import type { GoogleMapsLoadState } from "../hooks/useGoogleMapsLoader";
-import type { FieldLocationItem, OperationsMapWorkOrderPin } from "../operations-map.types";
+import type { FieldLocationItem, OperationsMapPadding, OperationsMapWorkOrderPin } from "../operations-map.types";
 import {
   clusterByProximity,
   getInitials,
@@ -33,6 +33,8 @@ export function GoogleMapsCanvas({
   workOrderPins = [],
   selectedWorkOrderId,
   onSelectWorkOrder,
+  resizeSignal,
+  mapPadding,
 }: {
   loadState: GoogleMapsLoadState;
   locations: readonly FieldLocationItem[];
@@ -41,8 +43,16 @@ export function GoogleMapsCanvas({
   workOrderPins?: readonly OperationsMapWorkOrderPin[];
   selectedWorkOrderId?: string;
   onSelectWorkOrder?: (id: string) => void;
+  // J-MAPAS-6 (redesign) — paridade do espelho com o MapLibre: aceita o sinal de resize e o
+  // padding dos rails de vidro. O Google Maps também não redimensiona sozinho quando só o
+  // container muda; disparamos o evento "resize" no innerMap ~220ms após a transição.
+  resizeSignal?: number;
+  mapPadding?: OperationsMapPadding;
 }) {
   const mapRef = useRef<GmpMapElement | null>(null);
+  // Padding vivo (px dos rails) lido no fitBounds sem re-executar o enquadramento único.
+  const mapPaddingRef = useRef(mapPadding);
+  mapPaddingRef.current = mapPadding;
   // Centro/zoom INICIAIS (property-assign no mount) só para o mapa não nascer em (0,0) enquanto o
   // innerMap sobe; logo em seguida o fitBounds enquadra a cidade com mais técnicos (ver efeito abaixo).
   const initialViewRef = useRef<{ center: google.maps.LatLngLiteral; zoom: number } | null>(null);
@@ -119,7 +129,14 @@ export function GoogleMapsCanvas({
       } else {
         const bounds = new google.maps.LatLngBounds();
         for (const point of points) bounds.extend(point);
-        innerMap.fitBounds(bounds, 64);
+        // Padding = área dos rails de vidro (quando presente) para os pins não caírem sob eles.
+        const padding = mapPaddingRef.current;
+        innerMap.fitBounds(
+          bounds,
+          padding
+            ? { top: padding.top, right: padding.right, bottom: padding.bottom, left: padding.left }
+            : 64,
+        );
       }
       fittedRef.current = true;
     };
@@ -129,6 +146,18 @@ export function GoogleMapsCanvas({
       if (raf) cancelAnimationFrame(raf);
     };
   }, [loadState, locations]);
+
+  // J-MAPAS-6 (redesign) — resize imperativo quando o container muda de tamanho sem resize de
+  // janela (colapsar rail / maximizar). Regra do espelho com o MapLibre: ~220ms após a transição.
+  useEffect(() => {
+    if (resizeSignal === undefined) return;
+    const timer = setTimeout(() => {
+      const innerMap = mapRef.current?.innerMap;
+      if (!innerMap) return;
+      google.maps.event.trigger(innerMap, "resize");
+    }, 220);
+    return () => clearTimeout(timer);
+  }, [resizeSignal]);
 
   // Seleção centraliza o operador (pan imperativo via innerMap — não recria o mapa).
   useEffect(() => {

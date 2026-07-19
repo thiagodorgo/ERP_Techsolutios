@@ -6,6 +6,25 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-19 - WS-MAPA redesign de layout (mapa-heroi full-bleed) — feedback URGENTE do dono
+
+### Resultado
+
+- **Feedback do dono**: o grid de 3 colunas do M-1 ESPREMEU a largura do mapa. Junta de layout com **3 pesquisas web** (PD-005:
+  Samsara/Onfleet/ServiceTitan/Uber/fleet-UX 2024-2026) + sintese: sistemas reais NAO usam 3 colunas.
+- **Decisao**: mapa **FULL-BLEED** (100% da largura util x altura generosa) + paineis viram **overlays de vidro navy**
+  (chamados esq./tecnicos dir., colapsaveis) — nao colunas. **Maximizar** = mapa cheio + card de vidro no 4o quadrante.
+  `resize()` ~220ms + `setPadding` nos dois canvases (senao o mapa fica cinza). Novo OperationsMapStage (slots map/calls/techs).
+  Default abre TECNICOS (dado real) p/ nao exibir painel vazio na demo. Token `--surface-glass-navy-rgb`.
+- Junta **avaliador-mapas + cognicao-visual APROVADO_CONDICIONADO** (0 bloqueia; mapa domina, vidro coeso, contraste/a11y OK);
+  condicoes sanadas. **Supersede o grid do M-1.** Sem provider/SKU/backend (US$ 0); LGPD zero-coordenada.
+
+### KPIs
+
+- `frontend_smoke_tests` **536 -> 540** (+4: operations-map-layout.test.ts reescrito 6->10). Baseline de mapa 63 -> 67.
+- `backend_tests` 1259, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**.
+  Proximos: M-3 tecnicos, M-4 chamados+SLA (troca o placeholder), M-5 alerta — preenchem os rails sem retrabalho de layout.
+
 ## 2026-07-19 - WS-MAPA M-2 Rodape de legenda unificado (redesign J-MAPAS-6)
 
 ### Resultado

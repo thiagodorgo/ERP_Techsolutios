@@ -13,6 +13,16 @@ export type FieldLocationStatus =
 
 export type OperationsMapSource = "api" | "mock" | "fallback";
 
+// J-MAPAS-6 (redesign) — padding de câmera do mapa em px, para os pins não ficarem escondidos
+// sob os rails de vidro / o card do 4º quadrante. Aplicado via map.setPadding (MapLibre) e como
+// padding do fitBounds (Google). Compatível com maplibregl PaddingOptions e google.maps.Padding.
+export type OperationsMapPadding = {
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+  readonly left: number;
+};
+
 export type FieldLocationItem = {
   readonly id: string;
   readonly operatorId: string;

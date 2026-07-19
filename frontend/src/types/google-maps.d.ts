@@ -13,6 +13,12 @@ declare namespace google {
       fitBounds(bounds: LatLngBounds, padding?: number | Padding): void;
     }
 
+    // J-MAPAS-6 (redesign) — resize imperativo quando o container muda sem resize de janela
+    // (colapsar rail / maximizar): o mapa não se ajusta sozinho, então disparamos o evento.
+    namespace event {
+      function trigger(instance: object, eventName: string, ...args: unknown[]): void;
+    }
+
     interface Padding {
       top?: number;
       right?: number;
