@@ -3149,3 +3149,22 @@
   padding-top: var(--space-24);
   background: var(--surface-page);
 }
+
+/* Sidebar colapsada — o logo É o botão de expandir (espelha `.logo-toggle` do protótipo ERP Web.dc.html):
+   no hover o ícone-logo some e aparece a seta de expandir. Elimina o bug do botão de 28px sobreposto ao ícone. */
+.sidebar-logo-toggle {
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.sidebar-logo-toggle .ic-back {
+  display: none;
+}
+.sidebar-logo-toggle:hover {
+  border-color: #5b7a96;
+  background: rgba(255, 255, 255, 0.08);
+}
+.sidebar-logo-toggle:hover .ic-logo {
+  display: none;
+}
+.sidebar-logo-toggle:hover .ic-back {
+  display: block;
+}

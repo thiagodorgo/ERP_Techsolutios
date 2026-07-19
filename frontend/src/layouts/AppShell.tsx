@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, LogOut, Package, Search } from "lucide-react";
+import { Bell, ChevronDown, ChevronRight, LogOut, Package, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 
@@ -119,22 +119,41 @@ export function AppShell() {
       {/* SIDEBAR */}
       <aside style={{ width: sidebarWidth, flexShrink: 0, background: NAVY, display: "flex", flexDirection: "column", borderRight: "1px solid rgba(255,255,255,.06)", transition: "width .16s ease" }}>
         <div style={{ padding: "16px 14px", display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "space-between", gap: 12, borderBottom: "1px solid rgba(255,255,255,.06)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, border: "1px solid #33475B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          {collapsed ? (
+            // Colapsada — espelha `.logo-toggle` do protótipo (ERP Web.dc.html:37-41): o LOGO É o botão de
+            // expandir. Um ÚNICO elemento (não o ícone + um botão de 28px sobrepostos em 74px, que era o bug do
+            // "botão atrás do ícone"). No hover, o ícone-logo some e aparece a seta de expandir.
+            <button
+              type="button"
+              title="Expandir menu"
+              aria-label="Expandir menu"
+              onClick={() => setCollapsed(false)}
+              className="sidebar-logo-toggle"
+              style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid #33475B", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, padding: 0 }}
+            >
+              <svg className="ic-logo" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 21V11" /><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6" /><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11" />
               </svg>
-            </div>
-            {!collapsed ? (
-              <div style={{ lineHeight: 1.15, whiteSpace: "nowrap" }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>TechSolutions</div>
-                <div style={{ fontSize: 10, color: "#5E8C86", fontWeight: 600, letterSpacing: ".12em" }}>PLATAFORMA ERP</div>
+              <ChevronRight className="ic-back" size={18} style={{ color: "#9FB4CC" }} />
+            </button>
+          ) : (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, border: "1px solid #33475B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 21V11" /><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6" /><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11" />
+                  </svg>
+                </div>
+                <div style={{ lineHeight: 1.15, whiteSpace: "nowrap" }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>TechSolutions</div>
+                  <div style={{ fontSize: 10, color: "#5E8C86", fontWeight: 600, letterSpacing: ".12em" }}>PLATAFORMA ERP</div>
+                </div>
               </div>
-            ) : null}
-          </div>
-          <button type="button" title={collapsed ? "Expandir menu" : "Recolher menu"} aria-label={collapsed ? "Expandir menu" : "Recolher menu"} onClick={() => setCollapsed((c) => !c)} style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,.06)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, color: NAV_IDLE }}>
-            <ChevronDown size={15} style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(90deg)" }} />
-          </button>
+              <button type="button" title="Recolher menu" aria-label="Recolher menu" onClick={() => setCollapsed((c) => !c)} style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,.06)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, color: NAV_IDLE }}>
+                <ChevronDown size={15} style={{ transform: "rotate(90deg)" }} />
+              </button>
+            </>
+          )}
         </div>
 
         <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12 }}>
