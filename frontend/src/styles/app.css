@@ -1873,6 +1873,90 @@
   background: rgb(30 41 59 / 92%);
 }
 
+/* M-4 (J-MAPAS-6) — fila REAL de "chamados que chegam" no rail de vidro navy. Itens clicáveis (button)
+   com alvo ≥44px, foco visível e acento lateral na MESMA cor do pin (var --call-priority = WORK_ORDER_
+   PRIORITY_HEX). Texto recolorido p/ contraste ≥4.5:1 sobre o navy (título claro, apoio #cbd5e1). */
+.operations-calls-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.operations-call {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-8) var(--space-10);
+  border: 1px solid rgb(148 163 184 / 20%);
+  border-left: 4px solid var(--call-priority, rgb(148 163 184 / 45%));
+  border-radius: var(--radius-8);
+  background: rgb(30 41 59 / 70%);
+  color: #cbd5e1;
+  text-align: left;
+  cursor: pointer;
+}
+
+.operations-call:hover {
+  background: rgb(30 41 59 / 85%);
+}
+
+.operations-call.is-selected {
+  border-color: #7cc4e6;
+  background: rgb(30 41 59 / 92%);
+}
+
+.operations-call:focus-visible {
+  outline: 2px solid #7cc4e6;
+  outline-offset: 2px;
+}
+
+.operations-call__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.operations-calls-list .operations-call__code {
+  color: #f1f5f9;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.operations-calls-list .operations-call__customer {
+  overflow: hidden;
+  color: #cbd5e1;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.operations-call__sla {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #cbd5e1;
+  font-size: var(--text-xs);
+}
+
+.operations-call__sla svg {
+  flex: 0 0 auto;
+  opacity: 0.85;
+}
+
+.operations-call__nogps {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
 /* Maximizar — o STAGE vira tela cheia (mesma instância do mapa, NÃO remonta). */
 .operations-map-stage--maximized {
   position: fixed;

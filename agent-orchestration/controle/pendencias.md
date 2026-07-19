@@ -1144,4 +1144,8 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   técnico — por isso NÃO bloqueou o M-3; mas o dono pediu (req.3) consistência de terminologia nesta view.
 - acao: reconciliar subtítulo + aria-labels para "técnicos"/"Técnicos de Campo" num bloco seguinte (M-4 ou touch-up), atualizando
   o teste operations-map-google-canvas que asserta o texto do subtítulo.
-- status: aberto (não-bloqueante; cosmético).
+- status: RESOLVIDO (WS-MAPA M-4, 2026-07-19). Subtítulo do GoogleMapsCanvas → "N técnicos e M chamados no mapa"; aria-label do
+  gmaps → "Mapa com a posição dos Técnicos de Campo"; aria-label do MapLibre → "Mapa dos Técnicos de Campo". Teste
+  operations-map-google-canvas ganhou guarda de terminologia (subtítulo "técnicos" + aria "Técnicos de Campo" + doesNotMatch
+  /operador/i). Obs.: o subtítulo da PÁGINA (OperationsMapPage header "…dos operadores em campo") ficou FORA do escopo M-4
+  (canvases apenas) — segue como touch-up cosmético menor se o dono quiser.

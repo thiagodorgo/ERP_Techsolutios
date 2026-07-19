@@ -1,6 +1,7 @@
 import type {
   FieldLocationItem,
   FieldLocationStatus,
+  OperationsIncomingCall,
   OperationsMapFilters,
   OperationsMapDispatch,
   OperationsMapSummary,
@@ -10,7 +11,7 @@ import type {
 } from "./operations-map.types";
 import { isValidMapCoordinate } from "./map/mapMarkers";
 import type { DispatchListItem, DispatchStatus } from "../dispatches/dispatches.types";
-import type { WorkOrderListItem, WorkOrderStatus } from "../../work-orders/work-orders.types";
+import type { WorkOrderListItem, WorkOrderPriority, WorkOrderStatus } from "../../work-orders/work-orders.types";
 import type { MaintenanceOrder } from "../../fleet/maintenance/maintenance-orders.types";
 import type { InsurancePolicy } from "../../fleet/insurance/insurance.types";
 
@@ -122,6 +123,9 @@ export function selectMappableWorkOrders(workOrders: readonly WorkOrderListItem[
         serviceAddress: workOrder.serviceAddress ?? null,
         latitude: workOrder.serviceLatitude as number,
         longitude: workOrder.serviceLongitude as number,
+        // M-4 — datas do SLA-PROXY (nunca deadline fabricado).
+        scheduledFor: workOrder.scheduledFor ?? null,
+        createdAt: workOrder.createdAt ?? null,
       });
       continue;
     }
@@ -135,11 +139,119 @@ export function selectMappableWorkOrders(workOrders: readonly WorkOrderListItem[
         priority: workOrder.priority,
         customerName: workOrder.customerName ?? null,
         serviceAddress: workOrder.serviceAddress ?? null,
+        scheduledFor: workOrder.scheduledFor ?? null,
+        createdAt: workOrder.createdAt ?? null,
       });
     }
   }
 
   return { withLocation, withoutLocation };
+}
+
+// ————— M-4 (J-MAPAS-6) — fila de "chamados que chegam" (prioridade + SLA-PROXY honesto) —————
+// Núcleo PURO e testável da lista: projeta as OS mapeáveis num item enxuto (sem coordenada — LGPD §12),
+// deriva um rótulo de prazo SEMPRE honesto (Fase 1 não tem coluna de deadline) e ordena por triagem.
+
+// Peso de ordenação por prioridade (urgente primeiro). Mesma semântica das cores dos pins
+// (WORK_ORDER_PRIORITY_HEX), aqui só a ORDEM — sem duplicar hex.
+const INCOMING_CALL_PRIORITY_WEIGHT: Record<WorkOrderPriority, number> = {
+  urgent: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
+export type IncomingCallSlaProxy = {
+  readonly kind: "scheduled" | "opened" | "unknown";
+  readonly label: string;
+};
+
+/**
+ * Rótulo do SLA-PROXY — Fase 1 NÃO tem coluna de deadline (GAP registrado no plano), então o rótulo é
+ * SEMPRE derivado e honesto: "Agendado para {data}" quando há `scheduledFor`; senão "Aberto {tempo}" a
+ * partir de `createdAt`. NUNCA "vence em"/prazo fabricado — SLA real chega na Fase 2/M-7.
+ */
+export function formatIncomingCallSlaProxy(
+  call: Pick<OperationsIncomingCall, "scheduledFor" | "createdAt">,
+  now: Date = new Date(),
+): IncomingCallSlaProxy {
+  if (call.scheduledFor && !Number.isNaN(Date.parse(call.scheduledFor))) {
+    return { kind: "scheduled", label: `Agendado para ${formatFieldLocationDate(call.scheduledFor)}` };
+  }
+  if (call.createdAt && !Number.isNaN(Date.parse(call.createdAt))) {
+    return { kind: "opened", label: `Aberto ${formatLastSeen(call.createdAt, now)}` };
+  }
+  return { kind: "unknown", label: "Sem data de abertura" };
+}
+
+// Instante que MELHOR representa a espera/urgência: agenda quando marcada, senão abertura. Ascendente =
+// agenda mais próxima / esperando há mais tempo primeiro. Datas ausentes/inválidas afundam (Infinity).
+function incomingCallSlaProxyTime(call: OperationsIncomingCall): number {
+  const reference = call.scheduledFor ?? call.createdAt;
+  const ms = reference ? Date.parse(reference) : Number.NaN;
+  return Number.isNaN(ms) ? Number.POSITIVE_INFINITY : ms;
+}
+
+function incomingCallOpenedTime(call: OperationsIncomingCall): number {
+  const ms = call.createdAt ? Date.parse(call.createdAt) : Number.NaN;
+  return Number.isNaN(ms) ? Number.POSITIVE_INFINITY : ms;
+}
+
+function incomingCallPriorityWeight(priority: WorkOrderPriority): number {
+  return INCOMING_CALL_PRIORITY_WEIGHT[priority] ?? INCOMING_CALL_PRIORITY_WEIGHT.medium;
+}
+
+/**
+ * Ordenação da fila de triagem: PRIORIDADE (urgente→baixa) → SLA-PROXY (agenda/espera) → ABERTURA
+ * (createdAt) → id (desempate estável). Pura e determinística — sem `Date.now` dentro (compara timestamps
+ * absolutos), para o teste de ordenação ser reproduzível.
+ */
+export function sortIncomingCalls(calls: readonly OperationsIncomingCall[]): OperationsIncomingCall[] {
+  return [...calls].sort((left, right) => {
+    const priorityDelta = incomingCallPriorityWeight(left.priority) - incomingCallPriorityWeight(right.priority);
+    if (priorityDelta !== 0) return priorityDelta;
+
+    const slaDelta = incomingCallSlaProxyTime(left) - incomingCallSlaProxyTime(right);
+    if (slaDelta !== 0) return slaDelta;
+
+    const openedDelta = incomingCallOpenedTime(left) - incomingCallOpenedTime(right);
+    if (openedDelta !== 0) return openedDelta;
+
+    return left.id.localeCompare(right.id);
+  });
+}
+
+/**
+ * Projeta as OS mapeáveis (withLocation + withoutLocation) na fila de chamados e ORDENA. LGPD §12: a
+ * projeção DESCARTA latitude/longitude — a lista nunca trafega coordenada. `hasLocation` habilita o pan no
+ * mapa ao clicar (withLocation) e sinaliza "sem GPS" (withoutLocation). Recebe as MESMAS listas já lidas
+ * pelo mapa (nada de fetch novo, nada fabricado).
+ */
+export function buildIncomingCalls(
+  withLocation: readonly OperationsMapWorkOrderPin[],
+  withoutLocation: readonly OperationsMapWorkOrderWithoutLocation[],
+): OperationsIncomingCall[] {
+  const calls: OperationsIncomingCall[] = [
+    ...withLocation.map((pin) => toIncomingCall(pin, true)),
+    ...withoutLocation.map((workOrder) => toIncomingCall(workOrder, false)),
+  ];
+  return sortIncomingCalls(calls);
+}
+
+function toIncomingCall(
+  source: OperationsMapWorkOrderPin | OperationsMapWorkOrderWithoutLocation,
+  hasLocation: boolean,
+): OperationsIncomingCall {
+  return {
+    id: source.id,
+    code: source.code,
+    title: source.title,
+    priority: source.priority,
+    customerName: source.customerName ?? null,
+    scheduledFor: source.scheduledFor ?? null,
+    createdAt: source.createdAt ?? null,
+    hasLocation,
+  };
 }
 
 export function attachDispatchesToFieldLocations(

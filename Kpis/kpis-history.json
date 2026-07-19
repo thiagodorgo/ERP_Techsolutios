@@ -630,5 +630,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-19",
+    "version": "WS-MAPA-M4",
+    "backend_tests": "1259/1265",
+    "frontend_smoke_tests": "565/565",
+    "flutter_tests": "764/764",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 66,
+    "description": "WS-MAPA M-4 (redesign do Mapa, J-MAPAS-6) — LISTA REAL DE CHAMADOS QUE CHEGAM (req.1 do dono). O slot `calls` do OperationsMapStage deixou de ser placeholder: lista de OS abertas mapeaveis (selectMappableWorkOrders) com codigo/cliente + chip de PRIORIDADE (WORK_ORDER_PRIORITY_HEX/token) + SLA-PROXY HONESTO ('Agendado para {data}'/'Aberto ha {tempo}'/'Sem data' — NUNCA 'vence em'; SLA real = Fase 2/M-7). Ordenacao prioridade->(scheduledFor??createdAt)->abertura->id (helpers PUROS buildIncomingCalls/sortIncomingCalls/formatIncomingCallSlaProxy). Item = button (a11y, foco, >=44px); clique seleciona/pan; callsCount no badge do rail; chamado SEM GPS marcado honestamente (projecao sem lat/lng, LGPD). Painel de chamados REABERTO por default (master/triagem). Terminologia reconciliada nos 2 canvases (P-MAPA-TERM-OPERADORES resolvida). avaliador-mapas APROVADO_CONDICIONADO (3 lentes duras — SLA honesto/LGPD/ordenacao — PASS; condicao: KB M-4 sanada). M-6 (maximizar+4o quadrante) JA veio no redesign de layout -> so falta M-5 (alerta) p/ fechar a Fase 1. Sem provider/SKU/backend, US$0. KPI: frontend_smoke 551->565 (+14). backend 1259/flutter 764 carregados. mvp/blocks inalterados. merge_commit/approved_head null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]
