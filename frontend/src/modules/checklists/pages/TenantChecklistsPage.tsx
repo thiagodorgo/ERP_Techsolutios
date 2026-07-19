@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { Button, Card, EmptyState, ErrorState, SearchBar, Select, Skeleton, Table } from "../../../components/ui";
 import { useAuth } from "../../../providers/AuthProvider";
+import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
 import {
   addComponentToDraft,
@@ -42,6 +43,12 @@ type ChecklistFilter = TenantChecklistStatus | "all" | "pending_changes";
 export function TenantChecklistsPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
+  const { can } = usePermissions();
+  // RBAC (§2.4 — a UI só molda; o backend é a autoridade): esconde as ações de ESCRITA de checklist
+  // dos papéis somente-leitura (o backend já responde 403; a tela não deve oferecer o que não pode).
+  const canCreate = can("tenant_checklists:create");
+  const canUpdate = can("tenant_checklists:update");
+  const canPublish = can("tenant_checklists:publish");
   const apiContext = useMemo(() => buildChecklistApiContext(activeContext, session?.accessToken), [activeContext, session?.accessToken]);
   const [checklists, setChecklists] = useState<TenantChecklist[]>([]);
   const [components, setComponents] = useState<TenantChecklistComponentCatalogItem[]>([]);
@@ -242,10 +249,12 @@ export function TenantChecklistsPage() {
             <RefreshCcw size={16} />
             Tentar novamente
           </Button>
-          <Button onClick={openCreateBuilder} disabled={saving || !apiContext}>
-            <Plus size={16} />
-            Novo checklist
-          </Button>
+          {canCreate ? (
+            <Button onClick={openCreateBuilder} disabled={saving || !apiContext}>
+              <Plus size={16} />
+              Novo checklist
+            </Button>
+          ) : null}
         </div>
       </header>
 
@@ -307,14 +316,18 @@ export function TenantChecklistsPage() {
                         <Eye size={14} />
                         Visualizar
                       </Button>
-                      <Button size="sm" variant={row.status === "published" ? "secondary" : "primary"} onClick={() => handlePublish(row)} disabled={saving}>
-                        <Send size={14} />
-                        Publicar
-                      </Button>
-                      <Button size="sm" variant="secondary" onClick={() => toggleChecklistStatus(row)} disabled={saving}>
-                        <ToggleLeft size={14} />
-                        {row.status === "inactive" ? "Ativar" : "Inativar"}
-                      </Button>
+                      {canPublish ? (
+                        <Button size="sm" variant={row.status === "published" ? "secondary" : "primary"} onClick={() => handlePublish(row)} disabled={saving}>
+                          <Send size={14} />
+                          Publicar
+                        </Button>
+                      ) : null}
+                      {canUpdate ? (
+                        <Button size="sm" variant="secondary" onClick={() => toggleChecklistStatus(row)} disabled={saving}>
+                          <ToggleLeft size={14} />
+                          {row.status === "inactive" ? "Ativar" : "Inativar"}
+                        </Button>
+                      ) : null}
                     </div>
                   ),
                 },
@@ -364,18 +377,27 @@ export function TenantChecklistsPage() {
                 </section>
               </div>
 
-              <div className="checklist-builder-footer">
-                <p>Publicar gera uma nova versão do checklist para uso nos fluxos de campo.</p>
-                <div className="platform-actions">
-                  <Button onClick={handleSaveBuilder} disabled={saving || builderDraft.components.length === 0}>
-                    {saving ? "Salvando..." : "Salvar builder"}
-                  </Button>
-                  <Button variant="secondary" onClick={() => handlePublish(selectedChecklist)} disabled={saving}>
-                    <Send size={14} />
-                    Publicar checklist
-                  </Button>
+              {/* Rodapé de escrita — some INTEIRO (texto de ajuda + ações) p/ papel sem update nem publish,
+                  senão o <p> ficaria órfão descrevendo uma ação indisponível (cognicao §11). */}
+              {canUpdate || canPublish ? (
+                <div className="checklist-builder-footer">
+                  <p>Publicar gera uma nova versão do checklist para uso nos fluxos de campo.</p>
+                  <div className="platform-actions">
+                    {canUpdate ? (
+                      // "Salvar builder" só PATCHea (updateTenantChecklist) → gate exato = tenant_checklists:update.
+                      <Button onClick={handleSaveBuilder} disabled={saving || builderDraft.components.length === 0}>
+                        {saving ? "Salvando..." : "Salvar builder"}
+                      </Button>
+                    ) : null}
+                    {canPublish ? (
+                      <Button variant="secondary" onClick={() => handlePublish(selectedChecklist)} disabled={saving}>
+                        <Send size={14} />
+                        Publicar checklist
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </>
           ) : null}
         </Card>

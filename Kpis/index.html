@@ -26,6 +26,22 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-RBAC-GATING-CHECKLISTS">
+          <h2>WS-RBAC-GATING-CHECKLISTS — esconder ações de escrita de papéis de leitura</h2>
+          <p>
+            <strong>WS-RBAC-GATING-CHECKLISTS (2026-07-19):</strong> revisão RBAC ator-por-ator (mandato do dono: "existe telas
+            que tem todas as opções para perfis"). As <strong>2 telas reais de checklist</strong> deixam de expor botões de
+            <strong>escrita</strong> a papéis de leitura: <code>TenantChecklistsPage</code> gateia "Novo checklist"
+            (<code>tenant_checklists:create</code>), "Publicar" (<code>publish</code>), "Ativar/Inativar" + "Salvar builder"
+            (<code>update</code>); <code>ChecklistRunsPage</code> gateia "Iniciar execução" (<code>checklist_runs:create</code>).
+            Padrão <code>usePermissions</code> + <code>can()</code> + render condicional; o <strong>backend é a autoridade final</strong>
+            (403 real, §2.4) — a UI só molda. As 3 telas-casca <em>mock</em> ficam para WS-SCALE-8TELAS (gate-on-wiring). Junta
+            <strong>coordenador-de-acessos APROVADO + validador APROVADO_CONDICIONADO + cognição-visual APROVADO</strong>;
+            condições sanadas (gate de "Salvar builder" afinado p/ update, rodapé do builder some p/ leitura, 3 pendências
+            registradas). <strong>smoke 514→516</strong> (+2 de render provando o botão oculto p/ leitura e visível p/ create).
+            Backend/Flutter/MVP/blocos <strong>inalterados</strong>.
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-UI-REFRESH">
           <h2>WS-UI-REFRESH (UI transversal) — auto-refresh substitui o botão "Atualizar"</h2>
           <p>
