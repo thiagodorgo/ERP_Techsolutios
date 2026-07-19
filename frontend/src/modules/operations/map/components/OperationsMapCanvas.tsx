@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { readFrontendEnv } from "../../../../config/env";
-import type { FieldLocationItem, OperationsMapWorkOrderPin } from "../operations-map.types";
+import type { FieldLocationItem, OperationsMapPadding, OperationsMapWorkOrderPin } from "../operations-map.types";
 import { useGoogleMapsLoader } from "../hooks/useGoogleMapsLoader";
 import { GoogleMapsCanvas } from "./GoogleMapsCanvas";
 import { OperationsMapLibreCanvas } from "./OperationsMapLibreCanvas";
@@ -17,6 +17,8 @@ export function OperationsMapCanvas({
   workOrderPins,
   selectedWorkOrderId,
   onSelectWorkOrder,
+  resizeSignal,
+  mapPadding,
 }: {
   locations: readonly FieldLocationItem[];
   selectedId?: string;
@@ -29,6 +31,10 @@ export function OperationsMapCanvas({
   workOrderPins?: readonly OperationsMapWorkOrderPin[];
   selectedWorkOrderId?: string;
   onSelectWorkOrder?: (id: string) => void;
+  // J-MAPAS-6 (redesign) — repassados aos canvases reais (MapLibre/Google) para o resize do
+  // container e o padding dos rails de vidro; o esquemático de fallback os ignora.
+  resizeSignal?: number;
+  mapPadding?: OperationsMapPadding;
 }) {
   const apiKey = readFrontendEnv("VITE_GOOGLE_MAPS_API_KEY") || undefined;
   const mapsLoadState = useGoogleMapsLoader(apiKey);
@@ -46,6 +52,8 @@ export function OperationsMapCanvas({
         workOrderPins={workOrderPins}
         selectedWorkOrderId={selectedWorkOrderId}
         onSelectWorkOrder={onSelectWorkOrder}
+        resizeSignal={resizeSignal}
+        mapPadding={mapPadding}
       />
     );
   }
@@ -61,6 +69,8 @@ export function OperationsMapCanvas({
         workOrderPins={workOrderPins}
         selectedWorkOrderId={selectedWorkOrderId}
         onSelectWorkOrder={onSelectWorkOrder}
+        resizeSignal={resizeSignal}
+        mapPadding={mapPadding}
       />
     );
   }

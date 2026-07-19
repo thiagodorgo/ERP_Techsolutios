@@ -369,3 +369,25 @@ ativação externa.
   coordenadas vêm de dados próprios do tenant (sem cache Google, sem `place_id`). Não dispara
   "junta de 5 + PD". Bloco 100% frontend/apresentação (React + CSS + tipos JSX), fallback MapLibre
   sem chave preservado.
+
+---
+
+## Changelog 2026-07-19 — Redesign de layout (mapa-herói) supersede o grid do M-1
+
+**Supersede:** o grid de 3 colunas [chamados | mapa | técnicos] do M-1 ESPREMEU a largura do mapa (~524px / 45% a 1440px —
+o dono ganhou altura mas perdeu largura). Substituído por **mapa full-bleed** (100% da largura útil) + painéis como **overlays
+de vidro navy** (`position:absolute`, não colunas): chamados esq., técnicos dir., colapsáveis; card de vidro no 4º quadrante no
+modo maximizar. Plano: `agent-orchestration/omega/mapas/J-MAPAS-6-LAYOUT-redesign.md`; PD-005 em `docs/omega-pd.md`.
+
+### Gotchas reutilizáveis (aprendidos aqui — valem p/ qualquer tela de mapa)
+1. **RESIZE ao mudar o container:** MapLibre e Google **NÃO** redimensionam sozinhos quando o container muda de tamanho SEM
+   um resize de janela (colapsar rail, maximizar). É preciso chamar `map.resize()` (MapLibre) / `google.maps.event.trigger(map,"resize")`
+   (Google) **~220ms APÓS** a transição CSS (senão o mapa fica **cinza**/cortado). Padrão: um `resizeSignal` que incrementa a
+   cada toggle + `useEffect` com `setTimeout(220)` e `clearTimeout` no cleanup.
+2. **NÃO REMONTAR o mapa** ao maximizar: manter o slot do canvas SEMPRE montado (fora do condicional) e só trocar a className
+   do container (`--maximized{position:fixed;inset:0}`) — remontar re-inicializa o mapa e perde a câmera.
+3. **PADDING de câmera sob overlays:** com painéis de vidro sobre as bordas, aplicar `setPadding(mapPadding)` (MapLibre,
+   persistente) / `padding` no `fitBounds` (Google) para os pins não caírem escondidos sob os rails/quadrante. RESÍDUO
+   (P-MAPA-GOOGLE-PADDING-RESIZE → M-3): o GoogleMapsCanvas só aplica padding no fitBounds inicial; ao EXPANDIR um rail o Google
+   dispara resize mas não re-enquadra → pin de borda pode ficar sob o rail até a próxima interação. Só afeta o path Google
+   (secundário/pago); no MVP (MapLibre) está correto. Corrigir em M-3 re-executando fitBounds/panBy quando `mapPadding` mudar.

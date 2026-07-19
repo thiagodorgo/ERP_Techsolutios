@@ -1,17 +1,17 @@
 {
  "snapshot_date": "2026-07-19",
- "version": "WS-MAPA-M2",
+ "version": "WS-MAPA-LAYOUT-REDESIGN",
  "source": "Kpis/kpis-latest.json",
  "scope": "root_project_kpis_reflecting_mobile_and_web",
  "release": {
-  "block": "WS-MAPA M-2 (rodape de legenda unificado do Mapa Operacional)",
-  "title": "WS-MAPA M-2: legenda unica no rodape (J-MAPAS-6)",
+  "block": "WS-MAPA redesign de layout (mapa-heroi full-bleed + rails de vidro; supersede grid M-1)",
+  "title": "WS-MAPA layout: mapa dominante full-bleed + overlays de vidro (feedback do dono)",
   "pr": null,
   "merge_commit": null,
   "approved_head": null,
   "status": "published_per_pr",
-  "summary": "WS-MAPA M-2 (redesign do Mapa, plano J-MAPAS-6 — Junta de Mapas) — RODAPE DE LEGENDA UNIFICADO (requisito 6 do dono: 'as legendas se unam e fiquem no rodape do mapa'). Novo OperationsMapLegendFooter (fonte UNICA MAP_LEGEND_ITEMS, cor so de item.color, zero hex solto); removida a <ul> flutuante de DENTRO dos DOIS canvases (MapLibre + Google) — os dois consomem o mesmo footer ancorado a BASE do container (o mapa encolhe, nao sobrepoe; canvas absolute->flex). Paridade do espelho provada byte-a-byte. Clamp de altura 2x do M-1 intacto. Prepara o M-6 (footer acompanha o overlay maximizado). avaliador-mapas APROVADO (8/8 itens de veto). Sem provider/SKU/backend; LGPD zero-coordenada.",
-  "status_label": "Mapa M-2: legenda unificada no rodape (fonte unica, paridade byte-a-byte); avaliador-mapas APROVADO; smoke 530->536"
+  "summary": "WS-MAPA REDESIGN DE LAYOUT (URGENTE, feedback do dono: o grid de 3 colunas do M-1 ESPREMEU a largura do mapa) — junta de LAYOUT: 3 pesquisas web (PD-005: Samsara/Onfleet/ServiceTitan/Uber/fleet-UX 2024-2026) + sintese frontend-pixel-master. DECISAO: matar o grid; MAPA FULL-BLEED (100% da largura util x clamp(760,82vh,960) altura) + paineis viram OVERLAYS DE VIDRO NAVY (chamados esq. / tecnicos dir.), colapsaveis; MAXIMIZAR = stage fixed inset:0 + card de vidro no 4o QUADRANTE; resize() ~220ms + setPadding nos DOIS canvases (espelho; senao o mapa fica cinza). Novo OperationsMapStage (slots map/calls/techs; Esc+focus-trap; resizeSignal). Default abre TECNICOS (dado real) e colapsa CHAMADOS (placeholder) p/ nao exibir painel vazio na demo. Token --surface-glass-navy-rgb (nunca hex solto). Junta: avaliador-mapas + cognicao-visual APROVADO_CONDICIONADO (0 bloqueia); condicoes sanadas (defaults, KB-gotcha, token, 4o quad 82%; padding Google->M-3 P-MAPA-GOOGLE-PADDING-RESIZE). Supersede o grid do M-1. Sem provider/SKU/backend, US$0, LGPD zero-coordenada.",
+  "status_label": "Mapa redesenhado: full-bleed dominante + overlays de vidro navy + maximizar/4o quadrante; junta APROVADO_COND; smoke 536->540"
  },
  "metrics": {
   "flutter_tests": {
@@ -21,16 +21,16 @@
    "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
   },
   "frontend_smoke_tests": {
-   "value": 536,
-   "total": 536,
-   "display": "536/536",
-   "note": "+6 (operations-map-legend-footer.test.ts no test:smoke: rodape com os itens de MAP_LEGEND_ITEMS, flutuante removida dos 2 canvases, PARIDADE byte-a-byte, sem hex solto). Baseline de mapa 61->67."
+   "value": 540,
+   "total": 540,
+   "display": "540/540",
+   "note": "+4 (operations-map-layout.test.ts reescrito 6->10: stage full-bleed sem grid-3-col, rails de vidro colapsaveis, maximizar+4o quadrante, resize/setPadding no espelho, Omega1 preservado). Baseline de mapa 63->67."
   },
   "backend_tests": {
    "value": 1259,
    "total": 1265,
    "display": "1259/1265",
-   "note": "carrega o ultimo valor oficial (1259) — WS-MAPA M-2 e frontend-only (Fase 1 do redesign)."
+   "note": "carrega o ultimo valor oficial (1259) — redesign de layout do mapa e frontend-only."
   },
   "backend_contract_tests_focused": {
    "value": 21,

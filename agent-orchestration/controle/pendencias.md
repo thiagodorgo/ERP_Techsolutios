@@ -1124,3 +1124,11 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - acao: restaurar ações significativas no header (Novo lançamento; Conciliar quando a trilha NF-e existir — cruza com a
   parada NF-e do scale-roadmap). Passada de fidelidade §11.
 - status: aberto (não-bloqueante; cosmético/pré-existente).
+
+## P-MAPA-GOOGLE-PADDING-RESIZE — GoogleMapsCanvas não re-enquadra ao expandir rail (WS-MAPA layout, 2026-07-19)
+- descricao: no redesign de layout (overlays de vidro), o MapLibre reaplica `setPadding` (persistente) no resize, mas o
+  GoogleMapsCanvas só aplica `padding` no `fitBounds` inicial; ao EXPANDIR um rail (ex.: técnicos colapsado→aberto) o Google
+  dispara `trigger("resize")` mas NÃO re-enquadra → um pin de borda pode ficar sob o rail de vidro até a próxima interação.
+- acao: em M-3, re-executar `fitBounds(bounds, mapPadding)` (ou `panBy`) no GoogleMapsCanvas quando `mapPadding` mudar. Só
+  afeta o path Google (secundário/pago, chave redigida no go-live); no MVP MapLibre está correto.
+- status: aberto (não-bloqueante; só o path Google).

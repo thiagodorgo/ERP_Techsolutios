@@ -37,6 +37,9 @@
   --color-chart-inflow: #10b981;
   --color-chart-outflow: #f87171;
   --color-chart-neutral: #94a3b8;
+  /* WS-MAPA layout redesign (junta cognicao BAIXA) — base RGB do "vidro navy" dos overlays do mapa (rails +
+     4º quadrante). Token único (nunca hex solto §11/J-002); a opacidade varia por uso via rgb(var()/alpha). */
+  --surface-glass-navy-rgb: 15 23 34;
   --surface-page: #e8edf2;
   --surface-shell: #f4f7fa;
   --surface-panel: #ffffff;

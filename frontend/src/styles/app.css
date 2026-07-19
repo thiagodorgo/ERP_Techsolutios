@@ -1669,18 +1669,19 @@
   align-items: end;
 }
 
-/* M-1 (J-MAPAS-6) — console de alocação em 3 colunas: chamados que chegam · mapa · Técnicos de Campo. */
-.operations-map-layout {
-  display: grid;
-  grid-template-columns: minmax(300px, 340px) minmax(0, 1fr) minmax(300px, 340px);
-  gap: var(--space-16);
-  align-items: start;
+/* J-MAPAS-6 (redesign) — o MAPA é o herói: stage FULL-BLEED, sem grid. Os painéis viram overlays
+   de vidro navy ancorados às bordas do mapa (não colunas que roubam largura); setPadding mantém os
+   pins livres sob os overlays. Supersede o grid de 3 colunas do M-1 (feedback URGENTE do dono). */
+.operations-map-stage {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
 }
 
-.operations-map-main,
-.operations-map-incoming,
-.operations-map-technicians,
-.operations-map-side,
+.operations-map-stage__map {
+  width: 100%;
+}
+
 .operations-operator-detail,
 .operations-operator-detail dl,
 .operations-operator-cards {
@@ -1688,14 +1689,237 @@
   gap: var(--space-12);
 }
 
-/* M-1 — a coluna de técnicos é um rail estreito: usa a visão COMPACTA de cartões (não a tabela
-   larga). O componente OperationsOperatorList é reusado sem alteração; só a apresentação muda. */
-.operations-map-technicians .ui-table-wrap {
+/* Botão Maximizar — canto sup. dir. do mapa, vidro navy, alvo de toque ≥44px. */
+.operations-map-stage__maximize {
+  position: absolute;
+  top: var(--space-12);
+  right: var(--space-12);
+  z-index: 7;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-height: 44px;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid rgb(148 163 184 / 22%);
+  border-radius: var(--radius-8);
+  background: rgb(var(--surface-glass-navy-rgb) / 90%);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgb(2 6 23 / 45%);
+  color: #f1f5f9;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.operations-map-stage__maximize:focus-visible {
+  outline: 2px solid #7cc4e6;
+  outline-offset: 2px;
+}
+
+/* Rail de vidro navy — ancorado a UMA borda do mapa (não uma coluna). Colapsa para 56px. Fica
+   `bottom: space-12 + 40px` para não cobrir a legenda ancorada na base do mapa. */
+.operations-map-rail {
+  position: absolute;
+  top: var(--space-12);
+  bottom: calc(var(--space-12) + 40px);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  width: clamp(300px, 24vw, 358px);
+  overflow: hidden;
+  border: 1px solid rgb(148 163 184 / 22%);
+  border-radius: var(--radius-8);
+  background: rgb(var(--surface-glass-navy-rgb) / 90%);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 10px 30px rgb(2 6 23 / 45%);
+  color: #cbd5e1;
+  transition: width 0.18s ease;
+}
+
+/* Fallback sem backdrop-filter: navy quase opaco preserva a legibilidade sobre o mapa. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .operations-map-rail,
+  .operations-map-quadrant {
+    background: rgb(var(--surface-glass-navy-rgb) / 97%);
+  }
+}
+
+.operations-map-rail--calls {
+  left: var(--space-12);
+}
+
+/* Técnicos à direita, abaixo do botão Maximizar que ocupa o canto sup. dir. */
+.operations-map-rail--techs {
+  top: calc(var(--space-12) + 52px);
+  right: var(--space-12);
+}
+
+.operations-map-rail[data-collapsed="true"] {
+  width: 56px;
+}
+
+.operations-map-rail__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-10);
+  border-bottom: 1px solid rgb(148 163 184 / 18%);
+}
+
+.operations-map-rail[data-collapsed="true"] .operations-map-rail__header {
+  justify-content: center;
+  padding: var(--space-8) 0;
+  border-bottom: 0;
+}
+
+.operations-map-rail__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: #f1f5f9;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.operations-map-rail__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgb(148 163 184 / 22%);
+  border-radius: var(--radius-6);
+  background: rgb(30 41 59 / 70%);
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.operations-map-rail__toggle:focus-visible {
+  outline: 2px solid #7cc4e6;
+  outline-offset: 2px;
+}
+
+.operations-map-rail__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-10);
+}
+
+.operations-map-rail__badge {
+  margin: var(--space-8) auto 0;
+  min-width: 24px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgb(30 41 59 / 90%);
+  color: #f1f5f9;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Conteúdo do rail recolorido p/ contraste ≥4.5:1 sobre navy (o card do DS fica transparente). */
+.operations-map-rail .ui-card {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+.operations-map-rail .ui-card > header,
+.operations-map-rail h2,
+.operations-map-rail h3,
+.operations-map-rail strong {
+  color: #f1f5f9;
+}
+
+.operations-map-rail p,
+.operations-map-rail span,
+.operations-map-rail small,
+.operations-map-rail dd {
+  color: #cbd5e1;
+}
+
+.operations-map-rail a {
+  color: #7cc4e6;
+}
+
+/* Técnicos no rail = visão COMPACTA de cartões (não a tabela larga). Cartão sobre vidro navy. */
+.operations-map-rail--techs .ui-table-wrap {
   display: none;
 }
 
-.operations-map-technicians .operations-operator-cards {
+.operations-map-rail--techs .operations-operator-cards {
   display: grid;
+}
+
+.operations-map-rail .operations-operator-card {
+  border-color: rgb(148 163 184 / 20%);
+  background: rgb(30 41 59 / 70%);
+  color: #cbd5e1;
+}
+
+.operations-map-rail .operations-operator-card.is-selected {
+  border-color: #7cc4e6;
+  background: rgb(30 41 59 / 92%);
+}
+
+/* Maximizar — o STAGE vira tela cheia (mesma instância do mapa, NÃO remonta). */
+.operations-map-stage--maximized {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #0f1722;
+}
+
+.operations-map-stage--maximized .operations-map-stage__map {
+  width: 100%;
+  height: 100%;
+}
+
+.operations-map-stage--maximized .operations-map-libre,
+.operations-map-stage--maximized .operations-map-canvas__gmaps {
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+}
+
+/* 4º QUADRANTE — chamados que chegam como card de vidro no canto inf. dir. do mapa maximizado. */
+.operations-map-quadrant {
+  position: absolute;
+  right: 16px;
+  bottom: 56px;
+  z-index: 6;
+  width: clamp(320px, 26vw, 420px);
+  max-height: 46%;
+  overflow: auto;
+  padding: var(--space-12);
+  border: 1px solid rgb(148 163 184 / 22%);
+  border-radius: var(--radius-8);
+  background: rgb(var(--surface-glass-navy-rgb) / 82%);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 10px 30px rgb(2 6 23 / 45%);
+  color: #cbd5e1;
+}
+
+.operations-map-quadrant .ui-card {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+.operations-map-quadrant .ui-card > header,
+.operations-map-quadrant strong {
+  color: #f1f5f9;
 }
 
 /* M-1 — painel de detalhe preservado como faixa full-width abaixo do grid; flui em colunas
@@ -1865,7 +2089,7 @@
   gap: var(--space-8);
   color: #cbd5e1;
   font-size: var(--text-sm);
-  background: rgb(15 23 34 / 82%);
+  background: rgb(var(--surface-glass-navy-rgb) / 82%);
 }
 
 .operations-map-libre__spinner {
@@ -1896,7 +2120,7 @@
   padding: var(--space-6) var(--space-10);
   list-style: none;
   border-top: 1px solid rgb(148 163 184 / 22%);
-  background: rgb(15 23 34 / 92%);
+  background: rgb(var(--surface-glass-navy-rgb) / 92%);
   color: #cbd5e1;
   font-size: 11px;
 }
@@ -1911,7 +2135,7 @@
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  box-shadow: 0 0 0 2px rgb(15 23 34 / 90%);
+  box-shadow: 0 0 0 2px rgb(var(--surface-glass-navy-rgb) / 90%);
 }
 
 /* Ω1b — swatch teardrop (chamado) na legenda + separador */
@@ -2054,7 +2278,7 @@
 
 /* Atribuição/controles MapLibre sobre o basemap navy */
 .operations-map-libre .maplibregl-ctrl-attrib {
-  background: rgb(15 23 34 / 78%);
+  background: rgb(var(--surface-glass-navy-rgb) / 78%);
 }
 
 .operations-map-libre .maplibregl-ctrl-attrib a,
@@ -2761,10 +2985,47 @@
   font-weight: 700;
 }
 
-/* M-1 (J-MAPAS-6) — abaixo de 1100px o console de 3 colunas empilha em 1 (chamados → mapa → técnicos). */
+/* J-MAPAS-6 (redesign) — responsividade dos rails de vidro; o mapa NUNCA vira coluna estreita. */
+@media (max-width: 1400px) {
+  .operations-map-rail {
+    width: clamp(300px, 24vw, 340px);
+  }
+}
+
 @media (max-width: 1100px) {
-  .operations-map-layout {
-    grid-template-columns: 1fr;
+  /* Rails viram faixa/sheet SOBRE o mapa; expandido ocupa ~80% (mapa nunca perde largura). */
+  .operations-map-rail:not([data-collapsed="true"]) {
+    width: min(80%, 420px);
+    max-width: calc(100% - var(--space-24));
+  }
+}
+
+@media (max-width: 768px) {
+  /* Sidebar oculta: mapa full-width e rails empilhados abaixo como cards (fallback baixo risco). */
+  .operations-map-stage {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .operations-map-rail,
+  .operations-map-rail:not([data-collapsed="true"]) {
+    position: static;
+    width: 100%;
+    max-width: none;
+    margin-top: var(--space-12);
+  }
+
+  .operations-map-stage__maximize {
+    position: static;
+    align-self: flex-end;
+    margin-top: var(--space-8);
+  }
+}
+
+/* J-MAPAS-6 (redesign) — respeita quem pediu menos movimento: sem transição de largura do rail. */
+@media (prefers-reduced-motion: reduce) {
+  .operations-map-rail {
+    transition: none;
   }
 }
 
@@ -2895,7 +3156,6 @@
     .checklist-runtime-comparison-grid,
     .checklist-runtime-marker-form,
     .cloud-billing-rules,
-    .operations-map-layout,
     .dispatches-layout,
     .operations-map-kpis,
     .operations-map-filters,

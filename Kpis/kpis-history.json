@@ -598,5 +598,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-19",
+    "version": "WS-MAPA-LAYOUT-REDESIGN",
+    "backend_tests": "1259/1265",
+    "frontend_smoke_tests": "540/540",
+    "flutter_tests": "764/764",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 66,
+    "description": "WS-MAPA REDESIGN DE LAYOUT (URGENTE, feedback do dono: o grid de 3 colunas do M-1 ESPREMEU a largura do mapa) — junta de LAYOUT: 3 pesquisas web (PD-005: Samsara/Onfleet/ServiceTitan/Uber/fleet-UX 2024-2026) + sintese frontend-pixel-master. DECISAO: matar o grid; MAPA FULL-BLEED (100% da largura util x clamp(760,82vh,960) altura) + paineis viram OVERLAYS DE VIDRO NAVY (chamados esq. / tecnicos dir.), colapsaveis; MAXIMIZAR = stage fixed inset:0 + card de vidro no 4o QUADRANTE; resize() ~220ms + setPadding nos DOIS canvases (espelho; senao o mapa fica cinza). Novo OperationsMapStage (slots map/calls/techs; Esc+focus-trap; resizeSignal). Default abre TECNICOS (dado real) e colapsa CHAMADOS (placeholder) p/ nao exibir painel vazio na demo. Token --surface-glass-navy-rgb (nunca hex solto). Junta: avaliador-mapas + cognicao-visual APROVADO_CONDICIONADO (0 bloqueia); condicoes sanadas (defaults, KB-gotcha, token, 4o quad 82%; padding Google->M-3 P-MAPA-GOOGLE-PADDING-RESIZE). Supersede o grid do M-1. Sem provider/SKU/backend, US$0, LGPD zero-coordenada. KPI: frontend_smoke 536->540 (+4). backend 1259/flutter 764 carregados. mvp/blocks inalterados. merge_commit/approved_head null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

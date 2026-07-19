@@ -22,6 +22,7 @@ import {
 } from "../operations-map.types";
 import { useOperationsMap } from "../useOperationsMap";
 import { OperationsMapCanvas } from "../components/OperationsMapCanvas";
+import { OperationsMapStage } from "../components/OperationsMapStage";
 import { OperationsIncomingCallsList } from "../components/OperationsIncomingCallsList";
 import { OperationsMapFilters } from "../components/OperationsMapFilters";
 import { OperationsMapSummaryCards } from "../components/OperationsMapSummaryCards";
@@ -254,13 +255,12 @@ export function OperationsMapPage() {
 
       {hasMapContent ? (
         <>
-          {/* M-1 (J-MAPAS-6) — grid de 3 colunas: chamados que chegam · mapa · Técnicos de Campo.
-              Empilha em 1 coluna (chamados → mapa → técnicos) abaixo de 1100px. */}
-          <section className="operations-map-layout">
-            <div className="operations-map-incoming">
-              <OperationsIncomingCallsList />
-            </div>
-            <div className="operations-map-main">
+          {/* J-MAPAS-6 (redesign) — o MAPA é o herói: stage full-bleed (supersede o grid de 3 colunas
+              do M-1, que espremia a largura). "Chamados que chegam" e "Técnicos de Campo" viram rails
+              de vidro navy ancorados às bordas do mapa; Maximizar leva a tela cheia com o 4º quadrante. */}
+          <OperationsMapStage
+            techsCount={filteredLocations.length}
+            map={({ resizeSignal, mapPadding }) => (
               <OperationsMapCanvas
                 locations={filteredLocations}
                 selectedId={selectedLocation?.id}
@@ -271,10 +271,13 @@ export function OperationsMapPage() {
                 workOrderPins={visibleWorkOrderPins}
                 selectedWorkOrderId={selectedWorkOrderPin?.id}
                 onSelectWorkOrder={setSelectedWorkOrderId}
+                resizeSignal={resizeSignal}
+                mapPadding={mapPadding}
               />
-            </div>
-            <div className="operations-map-technicians">
-              {filteredLocations.length > 0 ? (
+            )}
+            calls={<OperationsIncomingCallsList />}
+            techs={
+              filteredLocations.length > 0 ? (
                 <OperationsOperatorList
                   locations={filteredLocations}
                   selectedId={selectedLocation?.id}
@@ -290,10 +293,10 @@ export function OperationsMapPage() {
                     detail="Ajuste os filtros acima ou aguarde os Técnicos de Campo enviarem posição pelo aplicativo de campo."
                   />
                 </Card>
-              )}
-            </div>
-          </section>
-          {/* M-1 — painel de detalhe preservado como faixa abaixo do grid (sem perder nada da etapa Ω1). */}
+              )
+            }
+          />
+          {/* Detalhe da seleção preservado como faixa ABAIXO do stage (sem perder nada da etapa Ω1). */}
           <section className="operations-map-detail" aria-label="Detalhes da seleção">
             {selectedWorkOrderPin ? <OperationsWorkOrderPinPanel pin={selectedWorkOrderPin} /> : null}
             <OperationsWorkOrdersWithoutLocationPanel

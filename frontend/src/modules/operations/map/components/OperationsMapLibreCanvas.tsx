@@ -20,7 +20,7 @@ import {
   type WorkOrderPinFeatureCollection,
   type LngLat,
 } from "../map/mapMarkers";
-import type { FieldLocationItem, OperationsMapWorkOrderPin } from "../operations-map.types";
+import type { FieldLocationItem, OperationsMapPadding, OperationsMapWorkOrderPin } from "../operations-map.types";
 import type { WorkOrderPriority } from "../../../work-orders/work-orders.types";
 import { OperationsMapLegendFooter } from "./OperationsMapLegendFooter";
 
@@ -42,6 +42,11 @@ type Props = {
   readonly workOrderPins?: readonly OperationsMapWorkOrderPin[];
   readonly selectedWorkOrderId?: string;
   readonly onSelectWorkOrder?: (id: string) => void;
+  // J-MAPAS-6 (redesign) — o stage incrementa `resizeSignal` a cada colapso/maximização e o mapa
+  // NÃO redimensiona sozinho quando o container muda sem resize de janela: reagimos chamando
+  // `map.resize()` ~220ms após a transição. `mapPadding` reserva a área dos rails de vidro (setPadding).
+  readonly resizeSignal?: number;
+  readonly mapPadding?: OperationsMapPadding;
 };
 
 const EMPTY_FC: FieldLocationFeatureCollection = { type: "FeatureCollection", features: [] };
@@ -74,10 +79,15 @@ export function OperationsMapLibreCanvas({
   workOrderPins,
   selectedWorkOrderId,
   onSelectWorkOrder,
+  resizeSignal,
+  mapPadding,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MlMap | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  // Padding de câmera vivo (px dos rails de vidro) — lido pelos ease/fit e reaplicado no resize.
+  const mapPaddingRef = useRef(mapPadding);
+  mapPaddingRef.current = mapPadding;
 
   // Estado mais recente exposto aos handlers do mapa sem re-inicializar o mapa.
   const locationsRef = useRef(locations);
@@ -124,7 +134,9 @@ export function OperationsMapLibreCanvas({
           pitchWithRotate: false,
         });
         mapRef.current = map;
-        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+        // J-MAPAS-6 (redesign) — controles no CANTO INFERIOR DIREITO: o topo passa a ser ocupado
+        // pelo botão Maximizar e pelos rails de vidro (chamados à esquerda, técnicos à direita).
+        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
         map.touchZoomRotate.disableRotation();
 
         map.on("load", () => {
@@ -134,6 +146,7 @@ export function OperationsMapLibreCanvas({
           registerInteractions(activeMap);
           readyRef.current = true;
           setStatus("ready");
+          applyMapPadding(activeMap);
           applyData(true);
           // Pins de chamado: rasteriza os teardrops (async), então adiciona fonte/camadas.
           void (async () => {
@@ -179,6 +192,31 @@ export function OperationsMapLibreCanvas({
     applyWorkOrderData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workOrderPins, selectedWorkOrderId]);
+
+  // --- J-MAPAS-6 (redesign) — resize quando o container muda de tamanho SEM resize de janela ---
+  // O MapLibre não se ajusta sozinho ao colapsar um rail ou maximizar o stage: o stage bumpa
+  // `resizeSignal` e nós chamamos `map.resize()` ~220ms depois (fim da transição CSS de largura),
+  // reaplicando o padding de câmera para os pins não caírem sob os rails de vidro.
+  useEffect(() => {
+    if (resizeSignal === undefined) return;
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    const timer = setTimeout(() => {
+      if (mapRef.current !== map) return;
+      applyMapPadding(map);
+      map.resize();
+    }, 220);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resizeSignal]);
+
+  // Padding de câmera persistente (setPadding) — desloca o "centro" para longe dos rails, então
+  // os fitBounds/easeTo seguintes já enquadram os pins na área visível do mapa.
+  function applyMapPadding(map: MlMap) {
+    const padding = mapPaddingRef.current;
+    if (!padding) return;
+    map.setPadding({ top: padding.top, bottom: padding.bottom, left: padding.left, right: padding.right });
+  }
 
   function registerLayers(map: MlMap) {
     const t = OPERATIONAL_MAP_TOKENS;
