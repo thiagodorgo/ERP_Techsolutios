@@ -12,6 +12,7 @@ export function usePois(filters: PoisFilters) {
   const { activeContext } = useTenantContext();
   const [data, setData] = useState<PoisData>({ items: [], pagination: { limit: 20, offset: 0, total: 0 }, source: "api" });
   const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const context = useMemo(
@@ -25,15 +26,19 @@ export function usePois(filters: PoisFilters) {
     [activeContext, session?.accessToken],
   );
 
-  const refresh = useCallback(async () => {
+  // WS-UI-REFRESH — refresh(background): em segundo plano NÃO mostra o skeleton (mantém o dado atual
+  // visível, sem flicker no auto-refresh); só a 1ª carga / refresh explícito usa `loading`.
+  const refresh = useCallback(async (background = false) => {
     if (!activeContext) return;
 
-    setLoading(true);
+    if (background) setIsRefreshing(true);
+    else setLoading(true);
     setError(null);
     const nextData = await listPoisFromApi(context, filters);
     setData(nextData);
     if (nextData.source === "fallback") setError(nextData.fallbackReason ?? "Fallback local ativo.");
     setLoading(false);
+    setIsRefreshing(false);
   }, [activeContext, context, filters]);
 
   useEffect(() => {
@@ -45,6 +50,7 @@ export function usePois(filters: PoisFilters) {
     pagination: data.pagination,
     source: data.source,
     loading,
+    isRefreshing,
     error,
     refresh,
   };

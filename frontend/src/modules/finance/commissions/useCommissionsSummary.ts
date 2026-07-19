@@ -20,6 +20,7 @@ export function useCommissionsSummary(
   const { activeContext } = useTenantContext();
   const [data, setData] = useState<CommissionSummaryData>(EMPTY);
   const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const context = useMemo(
@@ -33,10 +34,13 @@ export function useCommissionsSummary(
     [activeContext, session?.accessToken],
   );
 
-  const refresh = useCallback(async () => {
+  // WS-UI-REFRESH — refresh(background): em segundo plano NÃO mostra o skeleton (mantém o dado atual
+  // visível, sem flicker no auto-refresh); só a 1ª carga / refresh explícito usa `loading`.
+  const refresh = useCallback(async (background = false) => {
     if (!activeContext || !scope) return;
 
-    setLoading(true);
+    if (background) setIsRefreshing(true);
+    else setLoading(true);
     setError(null);
     const next = await fetchCommissionSummary(context, scope, {
       from: from || undefined,
@@ -46,6 +50,7 @@ export function useCommissionsSummary(
     setData(next);
     if (next.source === "fallback") setError(next.fallbackReason ?? "Fallback local ativo.");
     setLoading(false);
+    setIsRefreshing(false);
   }, [activeContext, context, scope, from, to, payeeId]);
 
   useEffect(() => {
@@ -56,6 +61,7 @@ export function useCommissionsSummary(
     summary: data.summary,
     source: data.source,
     loading,
+    isRefreshing,
     error,
     refresh,
   };

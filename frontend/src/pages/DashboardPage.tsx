@@ -1,4 +1,4 @@
-import { AlertTriangle, Bell, CheckCircle2, Clock, ListChecks, MapPin, Plus, RefreshCw, Send } from "lucide-react";
+import { AlertTriangle, Bell, CheckCircle2, Clock, ListChecks, MapPin, Plus, Send } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +9,7 @@ import {
   relativeTimeFrom,
   type DashboardTone,
 } from "../modules/dashboard/dashboard.adapter";
+import { useAutoRefresh } from "../hooks/useAutoRefresh";
 import { useDashboardData } from "../modules/dashboard/useDashboardData";
 import type { DashboardSource } from "../modules/dashboard/repository";
 import type { OperationalAlert, OperationalKpi } from "../modules/dashboard/types";
@@ -83,6 +84,8 @@ export function DashboardPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const data = useDashboardData();
+  // WS-UI-REFRESH — o painel recarrega sozinho em segundo plano (sem botão "Atualizar").
+  useAutoRefresh(data.refresh, { enabled: Boolean(activeContext) });
 
   const now = new Date();
   const dispatchRows = useMemo(() => deriveActiveDispatchRows(data.dispatches, 5), [data.dispatches]);
@@ -115,7 +118,6 @@ export function DashboardPage() {
           <div style={{ fontSize: 13, color: "#64748B", marginTop: 3, fontWeight: 500 }}>operação, SLA e cadastros · {orgName}</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => void data.refresh()} aria-label="Atualizar dados do painel" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: "#475569", cursor: "pointer", fontFamily: "inherit" }}><RefreshCw size={14} />Atualizar</button>
           <button onClick={() => navigate("/work-orders/new")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#2563EB", border: "none", borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>Nova OS</button>
         </div>
       </div>

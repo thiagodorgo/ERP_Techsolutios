@@ -87,13 +87,12 @@ async function renderRemuneracoes(permissions: readonly string[]): Promise<strin
   );
 }
 
-test("remunerações (commissions:read): cabeçalho, período De/Até + Atualizar, totais e estado vazio (D-007)", async () => {
+test("remunerações (commissions:read): cabeçalho, período De/Até, totais e estado vazio (D-007)", async () => {
   const html = await renderRemuneracoes(["commissions:read"]);
 
   assert.match(html, /Remunerações/);
-  // Controles de período (De/Até) e ação Atualizar.
+  // Controles de período (De/Até) — a tela atualiza automaticamente (sem botão manual).
   assert.match(html, /type="date"/);
-  assert.match(html, /Atualizar/);
   // Tira de totais do extrato de todos os operadores.
   assert.match(html, /Total geral/);
   assert.match(html, /Operadores/);

@@ -518,5 +518,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-19",
+    "version": "WS-UI-REFRESH",
+    "backend_tests": "1259/1265",
+    "frontend_smoke_tests": "514/514",
+    "flutter_tests": "764/764",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 66,
+    "description": "WS-UI-REFRESH (UI transversal, mandato do dono) — REMOVIDO o botao manual 'Atualizar' de 30 telas e ligado auto-refresh em segundo plano ('o sistema faz isso automatico'). Novo hook frontend/src/hooks/useAutoRefresh.ts (setInterval 30s via ref, pausa em document.hidden; espelha o padrao-ouro useOperationsMap); ~28 hooks de dados ganharam 'background mode' (refresh(background) usa isRefreshing em vez de loading -> auto-refresh SEM flicker de skeleton). OperationsMapPage mantem seu polling+SSE nativo (sem duplo polling). Fan-out por 8 batches de modulo + trio WorkOrder e DashboardPage tratados a parte. Junta 2 APROVADO + 1 APROVADO_CONDICIONADO (0 bloqueia); condicoes sanadas (2 divs de acoes vazios + guard enabled no Financeiro); liveness/copia-de-erro deferidos (P-UI-REFRESH-LIVENESS/ERROR-COPY). Frontend-only: tsc verde, build verde, test:smoke 514/514 (3 smoke ajustados sem enfraquecer assertivas), approval-frontend-contract 1/1. backend/flutter/mvp/blocks INALTERADOS. KPI: frontend_smoke 514/514 (3 smoke ajustados, 0 net); backend 1259 e flutter 764 carregados (nao tocados). mvp/blocks inalterados (polish de UX, sem mover escopo). merge_commit/approved_head null na autoria (backfill pos-merge).",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

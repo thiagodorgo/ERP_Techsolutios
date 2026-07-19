@@ -1,17 +1,17 @@
 {
  "snapshot_date": "2026-07-19",
- "version": "WS-SCALE-COMISSAO",
+ "version": "WS-UI-REFRESH",
  "source": "Kpis/kpis-latest.json",
  "scope": "root_project_kpis_reflecting_mobile_and_web",
  "release": {
-  "block": "WS-SCALE-COMISSAO (Onda 1 Scale — comissoes consomem a decisao de cancelamento da OS)",
-  "title": "WS-SCALE-COMISSAO: supressao de comissao em OS cancelada (gate de elegibilidade no basis event)",
+  "block": "WS-UI-REFRESH (UI transversal — auto-refresh substitui o botao Atualizar)",
+  "title": "WS-UI-REFRESH: remocao do botao 'Atualizar' + auto-refresh em 30 telas",
   "pr": null,
   "merge_commit": null,
   "approved_head": null,
   "status": "published_per_pr",
-  "summary": "WS-SCALE-COMISSAO (Onda 1 do Scale roadmap) — as comissoes passam a consumir work_orders.financial_cancellation_decision (RESOLVE PARCIAL P-Ω3F6-COMISSAO). Chokepoint de ELEGIBILIDADE na criacao do basis event de OS: novo src/modules/commissions/work-order-cancellation.gate.ts le o estado da OS DENTRO da tx withTenantRls (RLS satisfeito, atomico, idempotencia-primeiro) e a regra PURA evaluateWorkOrderCommissionEligibility marca o evento — zero/keep_unpaid -> ineligible (suprime); NULL/ausente/desconhecida em OS cancelada -> pending_review (segura, J-Ω3F-6A); keep/nao-cancelada -> elegivel. Contrato = 201 + status persistido (fila de revisao via GET /commissions/basis-events?status=), nao 422 (retry-safe/auditavel). Ataque de desenho 3-lentes (idempotencia/RLS/contrato) pegou 3 furos criticos ANTES do codigo (fail-open por RLS fora de contexto; flip 201<->422 no replay; null-vs-keep) — todos fechados pela realocacao do gate para dentro do repo. Resta o dual-gate na engine de calculo (P-Ω3F6-COMISSAO-REVERSAL, latente — nenhuma engine paga hoje). Sem migration/schema/permissao nova. backend 1248->1259 (+11). Flutter/frontend INALTERADOS (backend-only).",
-  "status_label": "Onda 1 Scale: comissoes honram financial_cancellation_decision (ineligible/pending_review); backend 1248->1259"
+  "summary": "WS-UI-REFRESH (UI transversal, mandato do dono) — REMOVIDO o botao manual 'Atualizar' de 30 telas e ligado auto-refresh em segundo plano ('o sistema faz isso automatico'). Novo hook frontend/src/hooks/useAutoRefresh.ts (setInterval 30s via ref, pausa em document.hidden; espelha o padrao-ouro useOperationsMap); ~28 hooks de dados ganharam 'background mode' (refresh(background) usa isRefreshing em vez de loading -> auto-refresh SEM flicker de skeleton). OperationsMapPage mantem seu polling+SSE nativo (sem duplo polling). Fan-out por 8 batches de modulo + trio WorkOrder e DashboardPage tratados a parte. Junta 2 APROVADO + 1 APROVADO_CONDICIONADO (0 bloqueia); condicoes sanadas (2 divs de acoes vazios + guard enabled no Financeiro); liveness/copia-de-erro deferidos (P-UI-REFRESH-LIVENESS/ERROR-COPY). Frontend-only: tsc verde, build verde, test:smoke 514/514 (3 smoke ajustados sem enfraquecer assertivas), approval-frontend-contract 1/1. backend/flutter/mvp/blocks INALTERADOS.",
+  "status_label": "UI transversal: 30 telas sem botao manual, auto-refresh em segundo plano; smoke 514/514"
  },
  "metrics": {
   "flutter_tests": {
@@ -24,13 +24,13 @@
    "value": 514,
    "total": 514,
    "display": "514/514",
-   "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO e backend-only (nao tocou frontend/smoke)."
+   "note": "test:smoke 514/514; WS-UI-REFRESH ajustou 3 smoke (commissions/inventory/tenant-settings) removendo a assertiva do botao 'Atualizar' sem enfraquecer as demais — contagem inalterada (nenhum teste novo/removido)."
   },
   "backend_tests": {
    "value": 1259,
    "total": 1265,
    "display": "1259/1265",
-   "note": "execucao real da branch: 1265 total / 6 skip DB-gated / 1259 pass no CI; +11 desta fatia (WS-SCALE-COMISSAO: 7 unidades da regra pura + 4 integracao HTTP via router). Sobre 1248 (que ja absorve #227-#231, nao reconciliados no KPI desde D-Ω4-KPI-RELATORIO). Localmente as 77 falhas sao DB-nao-migrado (cloud-usage/inventory/mobile/titulos/auth prisma) — verdes no CI; 0 regressao PROVADA (baseline em git stash = MESMAS 77, byte-identico). RESSALVA (junta): o caminho PRISMA real do gate so e coberto por tsc+revisao (o duble InMemory e exercitado nos testes) — P-Ω3F6-COMISSAO-PRISMA-COV."
+   "note": "carrega o ultimo valor oficial (1259) — WS-UI-REFRESH e frontend-only (nao tocou backend)."
   },
   "backend_contract_tests_focused": {
    "value": 21,

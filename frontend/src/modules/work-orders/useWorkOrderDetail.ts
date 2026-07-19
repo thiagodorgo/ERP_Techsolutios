@@ -13,6 +13,7 @@ export function useWorkOrderDetail(workOrderId: string | undefined) {
   const [source, setSource] = useState<WorkOrdersSource>("api");
   const [fallbackReason, setFallbackReason] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const context = useMemo(
     () => ({
@@ -25,10 +26,13 @@ export function useWorkOrderDetail(workOrderId: string | undefined) {
     [activeContext, session?.accessToken],
   );
 
-  const refresh = useCallback(async () => {
+  // WS-UI-REFRESH — refresh(background): em segundo plano NÃO mostra o skeleton de página inteira (o auto-refresh
+  // atualiza a OS e a timeline sem piscar a tela nem remontar as abas; drafts locais das abas sobrevivem).
+  const refresh = useCallback(async (background = false) => {
     if (!activeContext || !workOrderId) return;
 
-    setLoading(true);
+    if (background) setIsRefreshing(true);
+    else setLoading(true);
     const [detail, events] = await Promise.all([
       getWorkOrderFromApi(context, workOrderId),
       getWorkOrderTimeline(context, workOrderId),
@@ -38,6 +42,7 @@ export function useWorkOrderDetail(workOrderId: string | undefined) {
     setFallbackReason(detail.fallbackReason);
     setTimeline(events);
     setLoading(false);
+    setIsRefreshing(false);
   }, [activeContext, context, workOrderId]);
 
   useEffect(() => {
@@ -50,6 +55,7 @@ export function useWorkOrderDetail(workOrderId: string | undefined) {
     source,
     fallbackReason,
     loading,
+    isRefreshing,
     refresh,
     context,
   };

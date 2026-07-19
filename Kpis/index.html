@@ -26,6 +26,22 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-UI-REFRESH">
+          <h2>WS-UI-REFRESH (UI transversal) — auto-refresh substitui o botão "Atualizar"</h2>
+          <p>
+            <strong>WS-UI-REFRESH (2026-07-19):</strong> por ordem do dono ("que não exista mais o botão de atualizar
+            pois o sistema faz isso automático"), REMOVIDO o botão manual <strong>"Atualizar"</strong> de <strong>30 telas</strong>
+            e ligado <strong>auto-refresh em segundo plano</strong>. Novo hook <code>useAutoRefresh</code> (setInterval 30s via
+            ref — sem recriar timer/sem leak; pausa quando a aba está oculta; espelha o padrão-ouro do mapa operacional); ~28
+            hooks de dados ganharam <strong>"background mode"</strong> (<code>refresh(background)</code> usa <code>isRefreshing</code>
+            em vez de <code>loading</code> → auto-refresh <strong>sem flicker</strong> de skeleton). O mapa mantém seu polling+SSE
+            nativo (sem duplo polling). Fan-out por 8 batches de módulo (workflow) + trio da OS e Dashboard à parte;
+            <code>RefreshCw</code> preservado onde reusado no botão de erro "Tentar novamente". Junta <strong>2 APROVADO + 1
+            APROVADO_CONDICIONADO</strong> (0 bloqueia); condições sanadas. Frontend-only: <strong>tsc verde</strong>,
+            <strong>build verde</strong>, <strong>smoke 514/514</strong> (3 smoke ajustados sem enfraquecer assertivas),
+            <code>approval-frontend-contract</code> 1/1. Backend/Flutter/MVP/blocos <strong>inalterados</strong>.
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-SCALE-COMISSAO">
           <h2>WS-SCALE-COMISSAO (Onda 1 Scale) — comissões honram a decisão de cancelamento da OS</h2>
           <p>

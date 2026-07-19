@@ -1,10 +1,11 @@
-import { AlertTriangle, ArrowLeft, Package, Pencil, Plus, RefreshCw } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Package, Pencil, Plus } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { DENSE_LIST_FETCH_LIMIT } from "../../../components/dense-list";
 import { Alert, Button, Chip, EmptyState, Skeleton } from "../../../components/ui";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
@@ -96,6 +97,8 @@ export function EstoqueDetailPage() {
     error: movementsError,
     refresh: refreshMovements,
   } = useStockMovements(movementsFilters);
+  // WS-UI-REFRESH — as movimentações do item recarregam sozinhas em segundo plano (sem botão "Atualizar").
+  useAutoRefresh(refreshMovements, { enabled: Boolean(id && activeContext) });
   const { items: workOrders } = useWorkOrders(STABLE_WORK_ORDER_FILTERS);
   const { items: vehicles } = useVehicles(STABLE_VEHICLE_FILTERS);
 
@@ -233,15 +236,10 @@ export function EstoqueDetailPage() {
           <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "15px 18px", borderBottom: "1px solid #F1F5F9" }}>
               <div style={{ fontSize: 15, fontWeight: 800, color: "#0F172A" }}>Movimentações</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={mutedStyle}>
-                  {movements.length} movimento(s)
-                  {movementsPagination.total > movements.length ? ` · janela: primeiros ${movements.length} de ${movementsPagination.total}` : ""}
-                </span>
-                <Button type="button" size="sm" variant="ghost" onClick={() => void refreshMovements()} disabled={movementsLoading} aria-label="Atualizar movimentações">
-                  <RefreshCw size={14} aria-hidden /> Atualizar
-                </Button>
-              </div>
+              <span style={mutedStyle}>
+                {movements.length} movimento(s)
+                {movementsPagination.total > movements.length ? ` · janela: primeiros ${movements.length} de ${movementsPagination.total}` : ""}
+              </span>
             </div>
 
             {movementsError ? (

@@ -1,7 +1,8 @@
-import { AlertTriangle, Plus, RefreshCw } from "lucide-react";
+import { AlertTriangle, Plus } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useCallback, useMemo, useState } from "react";
 
+import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { ApiError } from "../../../../services/api/client";
 import {
@@ -94,6 +95,8 @@ export function TitlesListView({ direction }: { direction: FinancialTitleDirecti
   const copy = COPY[direction];
   const { permissions } = usePermissions();
   const { items, pagination, loading, source, fallbackReason, refresh, context } = useFinancialTitles(direction);
+  // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
+  useAutoRefresh(refresh, { enabled: Boolean(context.tenantId) });
 
   const [tab, setTab] = useState<TabKey>("all");
   const [showCreate, setShowCreate] = useState(false);
@@ -163,9 +166,6 @@ export function TitlesListView({ direction }: { direction: FinancialTitleDirecti
           <div style={{ fontSize: 13, color: "#64748B", marginTop: 3, fontWeight: 500 }}>{copy.subtitle}</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => void refresh()} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: "#475569", cursor: "pointer", fontFamily: "inherit" }}>
-            <RefreshCw size={14} aria-hidden /> Atualizar
-          </button>
           {canCreate ? (
             <button onClick={() => setShowCreate(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#2563EB", border: "none", borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
               <Plus size={14} aria-hidden /> {copy.primary}

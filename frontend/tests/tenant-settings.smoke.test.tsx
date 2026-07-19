@@ -101,12 +101,11 @@ async function renderGroups(canUpdate: boolean): Promise<string> {
   );
 }
 
-test("configuracoes: pagina renderiza cabecalho, acao de atualizar e estado vazio honesto (D-007) em modo mock", async () => {
+test("configuracoes: pagina renderiza cabecalho e estado vazio honesto (D-007) em modo mock", async () => {
   const html = await renderSettingsPage(["tenant_settings:read", "tenant_settings:update"]);
 
   assert.match(html, /Configurações/);
   assert.match(html, /Parâmetros da organização/);
-  assert.match(html, /Atualizar/);
   // D-007: modo mock não fabrica parâmetros → estado vazio.
   assert.match(html, /Nenhum parâmetro configurado/);
   // Linguagem de negócio: nunca o termo técnico "Tenant/Tenants" no texto visível.

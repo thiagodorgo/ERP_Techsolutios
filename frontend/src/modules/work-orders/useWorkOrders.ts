@@ -11,6 +11,7 @@ export function useWorkOrders(filters: WorkOrdersFilters) {
   const { activeContext } = useTenantContext();
   const [data, setData] = useState<WorkOrdersData>({ items: [], pagination: { limit: 20, offset: 0, total: 0 }, source: "api" });
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const context = useMemo(
@@ -24,15 +25,19 @@ export function useWorkOrders(filters: WorkOrdersFilters) {
     [activeContext, session?.accessToken],
   );
 
-  const refresh = useCallback(async () => {
+  // WS-UI-REFRESH — refresh(background): em segundo plano NÃO mostra o skeleton (mantém a lista atual
+  // visível, sem flicker no auto-refresh); só a 1ª carga / refresh explícito usa `loading`.
+  const refresh = useCallback(async (background = false) => {
     if (!activeContext) return;
 
-    setLoading(true);
+    if (background) setIsRefreshing(true);
+    else setLoading(true);
     setError(null);
     const nextData = await listWorkOrdersFromApi(context, filters);
     setData(nextData);
     if (nextData.source === "fallback") setError(nextData.fallbackReason ?? "Fallback local ativo.");
     setLoading(false);
+    setIsRefreshing(false);
   }, [activeContext, context, filters]);
 
   useEffect(() => {
@@ -44,6 +49,7 @@ export function useWorkOrders(filters: WorkOrdersFilters) {
     items: filterWorkOrders(data.items, filters),
     allItems: data.items,
     loading,
+    isRefreshing,
     error,
     refresh,
     // Ω3F-9 — o mesmo contexto que alimenta a lista serve às ações de linha (avançar status, revogar envio).
