@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { Badge, Button, Card, EmptyState, ErrorState, SearchBar, Skeleton } from "../../../components/ui";
 import { useAuth } from "../../../providers/AuthProvider";
+import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
 import { listAvailableChecklists } from "../checklist-runtime.service";
 import type { ChecklistApiContext, ChecklistAvailableItem, TenantChecklistType } from "../types";
@@ -19,6 +20,9 @@ export function ChecklistRunsPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
+  const { can } = usePermissions();
+  // RBAC (§2.4) — só quem pode INICIAR uma execução vê o botão (o backend valida checklist_runs:create).
+  const canStartRun = can("checklist_runs:create");
   const [items, setItems] = useState<ChecklistAvailableItem[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -102,10 +106,12 @@ export function ChecklistRunsPage() {
                     </span>
                   </div>
                 </div>
-                <Button type="button" onClick={() => navigate(`/operations/checklists/${item.id}/run`)}>
-                  <Play size={16} />
-                  Iniciar execução
-                </Button>
+                {canStartRun ? (
+                  <Button type="button" onClick={() => navigate(`/operations/checklists/${item.id}/run`)}>
+                    <Play size={16} />
+                    Iniciar execução
+                  </Button>
+                ) : null}
               </article>
             </Card>
           ))}

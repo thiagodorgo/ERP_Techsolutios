@@ -1081,3 +1081,37 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - acao: passada de cópia futura — reescrever para refletir o auto-refresh (ex.: "a lista se atualiza automaticamente" / remover
   a instrução manual). São mensagens de erro (não empty-states).
 - status: aberto (não-bloqueante; cosmético).
+
+## P-RBAC-GATING-MOCKSHELLS — gating RBAC das 3 telas-casca fica com a ligação a dados (WS-SCALE-8TELAS, 2026-07-19)
+- descricao: a auditoria RBAC listou 5 telas com botões de escrita expostos. WS-RBAC-GATING-CHECKLISTS gateou as 2 REAIS
+  (service-backed): TenantChecklistsPage + ChecklistRunsPage. As outras 3 — DispatchConsolePage, TablePage (purchase-orders),
+  PedidosPage — são CASCAS 100% mock (dados hardcoded, sem service/estado); seus botões não fazem nada.
+- acao: gatear essas 3 JUNTO da ligação a dados reais (gate-on-wiring) em WS-SCALE-8TELAS — quando ganharem hook + service +
+  usePermissions, aplicar o mesmo padrão (usePermissions + can + render condicional dos botões de escrita).
+- status: aberto (não-bloqueante; hoje são mocks sem efeito).
+
+## P-RBAC-CATALOG-MATRIZ — divergências pré-existentes catalog.ts × RBAC_MATRIX.md em checklists (2026-07-19)
+- descricao: a junta (coordenador-de-acessos) achou 2 divergências PRÉ-EXISTENTES (não introduzidas pelo gating): (1) matriz
+  linha 44 diz manager em execuções = 'read/complete-by-scope' (sem create), mas catalog.ts:328 concede `checklist_runs:create`
+  a manager → manager vê "Iniciar execução" e o backend aceita (a UI espelha o backend, correto por §2.4, mas o backend
+  over-concede vs a matriz); (2) matriz linha 43 diz finance/inventory = 'read' em templates, mas o catalog NÃO concede
+  `tenant_checklists:read` a esses papéis → bloqueados já na rota (under-grant vs matriz).
+- acao: reconciliar `catalog.ts` × `RBAC_MATRIX.md` (fonte de verdade da matriz) em WS-SCALE-8TELAS. Nenhuma das duas é
+  exposição de ESCRITA — não é risco imediato.
+- status: aberto (não-bloqueante; pré-existente).
+
+## P-CHECKLIST-BUILDER-READONLY — builder interativo no modo "Visualizar" para papel só-leitura (2026-07-19)
+- descricao: em TenantChecklistsPage, ao "Visualizar" um checklist, o builder interno (palette/canvas/inspector) permanece
+  interativo para papel só-leitura. SEM impacto de segurança: são mutações apenas do `builderDraft` LOCAL (sem caminho de
+  persistência — "Salvar builder"/"Publicar" já ocultos por canUpdate/canPublish). Comportamento PRÉ-EXISTENTE (view reusa o
+  builder), não introduzido por esta fatia.
+- acao: quando houver um modo somente-leitura real do builder, desabilitar as interações locais no view. Cosmético.
+- status: aberto (não-bloqueante; sem persistência).
+
+## P-CHECKLIST-RUNS-STATUS-COPY — status técnico cru na cópia da tela de execuções (2026-07-19)
+- descricao: ChecklistRunsPage.tsx (~linha 105) renderiza `{item.status}` cru dentro de frase PT-BR ("… componentes ·
+  {item.status}"), expondo valor técnico (ex.: "published") — roça §3/§11.2 (sem termo técnico na UI). PRÉ-EXISTENTE, fora do
+  diff do gating RBAC (achado da cognicao-visual).
+- acao: mapear status → rótulo PT-BR (ex.: published→"Publicado") numa passada de cópia. Cruza com P-UI-REFRESH-ERROR-COPY
+  (mesmo lote de polish de cópia).
+- status: aberto (não-bloqueante; cosmético).

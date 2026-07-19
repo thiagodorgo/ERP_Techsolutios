@@ -6,6 +6,28 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-19 - WS-RBAC-GATING-CHECKLISTS Esconder acoes de escrita de checklist de papeis de leitura
+
+### Resultado
+
+- **Revisao RBAC ator-por-ator** (mandato do dono: "existe telas que tem todas as opcoes para perfis"): as 2 telas REAIS de
+  checklist deixam de expor botoes de ESCRITA a papeis de leitura.
+  - `TenantChecklistsPage`: "Novo checklist" (tenant_checklists:create), "Publicar" (publish), "Ativar/Inativar" +
+    "Salvar builder" (update) gated; "Visualizar" (leitura) sempre visivel.
+  - `ChecklistRunsPage`: "Iniciar execucao" gated em checklist_runs:create.
+- Padrao `usePermissions` + `can()` + render condicional (identico ao ClientesPage). Backend e a autoridade final (403 real,
+  §2.4) — a UI so molda. As 3 telas-casca MOCK (DispatchConsole/TablePage/Pedidos) ficam para WS-SCALE-8TELAS (gate-on-wiring,
+  P-RBAC-GATING-MOCKSHELLS).
+- Junta: coordenador-de-acessos APROVADO + validador-mestre APROVADO_CONDICIONADO (condicoes sanadas: gate de "Salvar builder"
+  afinado p/ update; teste de render adicionado; 3 pendencias registradas).
+
+### KPIs
+
+- `frontend_smoke_tests` **514 -> 516** (+2: `checklists-access-gating.smoke.test.tsx` renderiza a tela e prova botao de escrita
+  OCULTO p/ so-leitura e VISIVEL p/ create; adicionado ao script `test:smoke`).
+- `backend_tests` 1259, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**
+  (frontend-only; hardening RBAC, sem mover escopo). `pr`/`merge_commit`/`approved_head` null na autoria.
+
 ## 2026-07-19 - WS-UI-REFRESH Auto-refresh substitui o botao "Atualizar" em 30 telas
 
 ### Resultado

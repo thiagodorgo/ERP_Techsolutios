@@ -534,5 +534,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-19",
+    "version": "WS-RBAC-GATING-CHECKLISTS",
+    "backend_tests": "1259/1265",
+    "frontend_smoke_tests": "516/516",
+    "flutter_tests": "764/764",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 66,
+    "description": "WS-RBAC-GATING-CHECKLISTS (revisao RBAC ator-por-ator, mandato do dono: 'telas que tem todas as opcoes para perfis') — as 2 telas REAIS de checklist deixam de expor acoes de ESCRITA a papeis de leitura. TenantChecklistsPage gateia Novo checklist (tenant_checklists:create), Publicar (publish), Ativar/Inativar + Salvar builder (update); ChecklistRunsPage gateia Iniciar execucao (checklist_runs:create). Padrao usePermissions+can+render condicional (igual ClientesPage); backend ja e a autoridade (403 real, §2.4). +1 smoke de render (2 casos) provando botao oculto p/ leitura e visivel p/ create. As 3 cascas MOCK (DispatchConsole/TablePage/Pedidos) ficam para WS-SCALE-8TELAS (gate-on-wiring, P-RBAC-GATING-MOCKSHELLS). Junta coordenador-de-acessos APROVADO + validador APROVADO_COND (condicoes sanadas). KPI: frontend_smoke 514->516 (+2 render de gating). backend 1259 e flutter 764 carregados. mvp/blocks inalterados (hardening RBAC). merge_commit/approved_head null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]
