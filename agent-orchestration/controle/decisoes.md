@@ -728,3 +728,18 @@ real do /financial-summary) além do legado `finance:read` (via hasAny); /financ
 quem lê os lançamentos financeiros (o dado do dashboard) alcança a tela. `finance:read`/`finance.read` ficam como
 fallback de compat inócuo (seus únicos donos reais — admins — também têm financial_entries:read); limpeza futura pode
 removê-los do catálogo. Verificado: frontend check + test:smoke 514/514, backend navigation-menu/core-saas 35/35.
+
+## D-CANCEL-INTEGRITY — Integridade atômica do cancelamento de OS (2026-07-18, ataque de desenho 3-lentes + drill vivo)
+Fecha o cluster P-Ω3F6-STATUS-BYPASS + TERMINAL-GUARD + ZERO-ATOMICIDADE (pré-requisito para ligar comissões/financeiro).
+- **BYPASS FECHADO:** `PATCH /work-orders/:id/status` com `status=cancelled` → 422 `cancel_via_status_forbidden` para
+  TODOS (removido o ramo por-permissão que deixava manager/admin cancelar sem decisão). Cancelar é SÓ pelo `POST /cancel`
+  (exige reason + decisão financeira). A fila offline do mobile chama o mesmo método → técnico de campo deixa de cancelar.
+- **TERMINAL-GUARD:** create/update/delete de item financeiro E `invoice` recusam OS `cancelled` (422 work_order_cancelled).
+- **ZERO ATÔMICO:** `softDeleteAllByWorkOrder` (UM updateMany, exclui faturados `invoiced_at IS NULL`) substitui o loop de
+  N deletes sem transação. `cancel(zero)` com item FATURADO → 422 `has_invoiced_items` (não destrói o lastro do Título, D-Ω4-C1).
+- **DB CHECK (NOT VALID):** `status <> 'cancelled' OR (decision IS NOT NULL AND decision IN {keep,keep_unpaid,zero})`.
+  SEM backfill (não fabricar decisão): legadas canceladas pelo bypass ficam NULL = "sem decisão" (comissões seguram).
+  **Drill vivo pegou a lógica de 3 valores do SQL** — sem o `IS NOT NULL` explícito, `false OR NULL = NULL` faria o CHECK
+  PASSAR em cancelled+NULL. Corrigido e re-drilado (rejeita cancelled+NULL, aceita cancelled+keep).
+- **MOBILE:** `cancelled` removido de todos os 5 conjuntos de allowedTransitions (não é transição iniciável no campo).
+- **Paridade InMemory:** assertion `cancelled ⇒ decisão` no repo (espelha o CHECK). Resíduo de concorrência: P-Ω3F6-CANCEL-RACE.

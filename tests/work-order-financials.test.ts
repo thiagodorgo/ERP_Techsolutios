@@ -7,6 +7,7 @@ import test from "node:test";
 
 import {
   createMemoryWorkOrderFinancialService,
+  createMemoryWorkOrderInvoicingService,
   getMemoryWorkOrderFinancialRepositoryForTests,
   resetWorkOrderFinancialRuntimeForTests,
 } from "../src/modules/work-order-financials/work-order-financial.service.js";
@@ -18,6 +19,7 @@ import {
   createMemoryWorkOrderService,
   resetWorkOrderRuntimeForTests,
 } from "../src/modules/work-orders/work-order.service.js";
+import { WorkOrderError } from "../src/modules/work-orders/work-order.types.js";
 import { getMemoryTariffRepositoryForTests, resetTariffRuntimeForTests } from "../src/modules/tariffs/tariff.service.js";
 import { getMemoryPriceTableRepositoryForTests, resetPriceTableRuntimeForTests } from "../src/modules/price-tables/price-table.service.js";
 
@@ -477,4 +479,94 @@ test("Ω4-3 listInvoiceable exclui itens já faturados e deletados (fonte do agr
   const invoiceable = await repo.listInvoiceableByWorkOrder(ctx.tenantId, wo.id);
   assert.equal(invoiceable.length, 1);
   assert.equal(invoiceable[0]!.id, open.id);
+});
+
+// ---------- P-Ω3F6 Integridade ATÔMICA do cancelamento (terminal-guard + zero atômico + has_invoiced) ----------
+
+// Helper: cancela pelo caminho legítimo (service.cancel não checa permissão — o gate é a rota).
+async function cancelWO(
+  workOrders: ReturnType<typeof createMemoryWorkOrderService>,
+  ctx: WorkOrderFinancialActorContext,
+  workOrderId: string,
+  financialDecision: "keep" | "keep_unpaid" | "zero",
+) {
+  return workOrders.cancel(ctx as never, workOrderId, { reason: "cancelado no teste", financial_decision: financialDecision });
+}
+
+test("P-Ω3F6-TERMINAL-GUARD: CREATE de item em OS cancelada → 422 work_order_cancelled", async () => {
+  const s = setup();
+  const ctx = actor();
+  const wo = await s.workOrders.create(ctx, { title: "OS" });
+  await cancelWO(s.workOrders, ctx, wo.id, "keep");
+  await assert.rejects(
+    () => s.financials.create(ctx, wo.id, { source: "manual", description: "tardio", unit_amount: 50 }),
+    (e: unknown) => e instanceof WorkOrderFinancialError && e.statusCode === 422 && e.reason === "work_order_cancelled",
+  );
+});
+
+test("P-Ω3F6-TERMINAL-GUARD: UPDATE de item em OS cancelada → 422 work_order_cancelled", async () => {
+  const s = setup();
+  const ctx = actor();
+  const wo = await s.workOrders.create(ctx, { title: "OS" });
+  const item = await s.financials.create(ctx, wo.id, { source: "manual", description: "item", unit_amount: 100 });
+  await cancelWO(s.workOrders, ctx, wo.id, "keep"); // keep preserva o item
+  await assert.rejects(
+    () => s.financials.update(ctx, wo.id, item.id, { quantity: 3 }),
+    (e: unknown) => e instanceof WorkOrderFinancialError && e.statusCode === 422 && e.reason === "work_order_cancelled",
+  );
+});
+
+test("P-Ω3F6-TERMINAL-GUARD: INVOICE de OS cancelada → 422 work_order_cancelled", async () => {
+  const s = setup();
+  const ctx = actor();
+  const invoicing = createMemoryWorkOrderInvoicingService();
+  const wo = await s.workOrders.create(ctx, { title: "OS" });
+  await s.financials.create(ctx, wo.id, { source: "manual", description: "item", unit_amount: 100 });
+  await cancelWO(s.workOrders, ctx, wo.id, "keep");
+  await assert.rejects(
+    () => invoicing.invoice(ctx, wo.id, {}),
+    (e: unknown) => e instanceof WorkOrderFinancialError && e.statusCode === 422 && e.reason === "work_order_cancelled",
+  );
+});
+
+test("P-Ω3F6-ZERO-ATOMICIDADE: cancel(zero) soft-deleta TODOS os itens ativos numa operação (total → 0)", async () => {
+  const s = setup();
+  const ctx = actor();
+  const wo = await s.workOrders.create(ctx, { title: "OS" });
+  await s.financials.create(ctx, wo.id, { source: "manual", description: "A", unit_amount: 100 });
+  await s.financials.create(ctx, wo.id, { source: "manual", description: "B", unit_amount: 250 });
+  const before = await s.financials.list(ctx, wo.id);
+  assert.equal(before.totalAmount, 350);
+  const cancelled = await cancelWO(s.workOrders, ctx, wo.id, "zero");
+  assert.equal(cancelled.status, "cancelled");
+  assert.equal(cancelled.financialCancellationDecision, "zero");
+  const after = await s.financials.list(ctx, wo.id);
+  assert.equal(after.items.length, 0, "todos os itens ativos foram zerados");
+  assert.equal(after.totalAmount, 0, "invariante decision=zero ⇒ total=0");
+});
+
+test("P-Ω3F6 (ataque ALTA): cancel(zero) com item FATURADO → 422 has_invoiced_items (não destrói o lastro do Título)", async () => {
+  const s = setup();
+  const ctx = actor();
+  const wo = await s.workOrders.create(ctx, { title: "OS" });
+  const invoiced = await s.financials.create(ctx, wo.id, { source: "manual", description: "faturado", unit_amount: 300 });
+  // Carimba o item como faturado (simula o markInvoiced do faturamento).
+  await getMemoryWorkOrderFinancialRepositoryForTests().markInvoiced({
+    tenantId: ctx.tenantId,
+    workOrderId: wo.id,
+    itemIds: [invoiced.id],
+    titleId: randomUUID(),
+    invoicedAt: new Date(),
+    updatedBy: ctx.userId,
+  });
+  await assert.rejects(
+    () => cancelWO(s.workOrders, ctx, wo.id, "zero"),
+    (e: unknown) => e instanceof WorkOrderError && e.statusCode === 422 && e.reason === "has_invoiced_items",
+  );
+  // A OS NÃO foi cancelada e o item faturado segue intacto (nada destruído).
+  const after = await s.workOrders.get(ctx, wo.id);
+  assert.notEqual(after.status, "cancelled");
+  const items = await s.financials.list(ctx, wo.id);
+  assert.equal(items.items.length, 1);
+  assert.ok(items.items[0]!.invoicedAt != null, "o lastro faturado do Título foi preservado");
 });

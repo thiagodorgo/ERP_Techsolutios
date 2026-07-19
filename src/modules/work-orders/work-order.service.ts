@@ -757,27 +757,24 @@ export class WorkOrderService {
     const message = optionalString(body.message) ?? defaultStatusMessage(nextStatus);
     const cancellationReason = optionalString(body.cancellationReason) ?? optionalString(body.reason);
 
-    // Ω3F-6a (condição BLOQUEANTE do coordenador-de-acessos, J-Ω3F-6A) — a porta dos fundos.
-    // Este endpoint legado exige só `work_orders:status`, que operator/technician/field_technician/
-    // field_dispatcher têm — e por ele qualquer um deles cancelava SEM decisão financeira, contornando
-    // todo o gate do POST /cancel e deixando `financial_cancellation_decision` NULL para o consumidor de
-    // comissões (P-Ω3F6-COMISSAO). Aqui não inventamos política: o CATÁLOGO já diz que esses papéis não
-    // têm `work_orders:cancel` — passamos a CUMPRIR isso também nesta rota (e, por tabela, na fila offline
-    // do mobile, que chama este mesmo método). Quem tem :cancel segue podendo usar o caminho legado, mas
-    // sem gravar decisão — dívida registrada em P-Ω3F6-STATUS-BYPASS (fechar antes de Ω4/comissões).
-    if (nextStatus === "cancelled" && !actor.permissions.includes("work_orders:cancel")) {
+    // P-Ω3F6-STATUS-BYPASS FECHADO — o cancelamento NÃO acontece mais por esta rota legada. Antes, quem tinha
+    // `work_orders:cancel` (manager/tenant_admin/super_admin) ainda cancelava por aqui SEM gravar a decisão
+    // financeira (coluna NULL, itens intactos), contornando o gate do POST /cancel — dívida IRREPARÁVEL via API
+    // (a OS já cancelada não aceita /cancel depois). Agora `status=cancelled` neste endpoint é RECUSADO para
+    // TODOS (422) e redireciona ao único caminho que exige a decisão. A fila offline do mobile chama este mesmo
+    // método → tecnico de campo deixa de cancelar por sync (defensável: campo não arbitra cobrança). O CHECK
+    // `cancelled ⇒ decisão ∈ {keep,keep_unpaid,zero}` (migration) e o assertion InMemory travam a invariante nos
+    // dois lados. Resíduo de concorrência cancel×create-de-item: P-Ω3F6-CANCEL-RACE.
+    if (nextStatus === "cancelled") {
       throw new WorkOrderError(
-        403,
-        "WORK_ORDER_FORBIDDEN",
-        "cancel_requires_permission",
-        "Cancelling a work order requires work_orders:cancel; use POST /work-orders/:id/cancel.",
+        422,
+        "WORK_ORDER_UNPROCESSABLE",
+        "cancel_via_status_forbidden",
+        "Cancelling a work order requires a financial decision; use POST /work-orders/:id/cancel.",
       );
     }
 
     assertStatusTransition(current.status, nextStatus);
-    if (nextStatus === "cancelled" && !cancellationReason) {
-      throw new WorkOrderError(400, "WORK_ORDER_INVALID", "cancellation_reason_required", "cancellationReason is required.");
-    }
 
     const updated = await this.repository.changeStatus({
       tenantId: actor.tenantId,
@@ -843,15 +840,13 @@ export class WorkOrderService {
 
     this.assertCancellable(current.status);
 
-    // `zero` ANTES de persistir o cancelamento: assim a OS nunca fica cancelada com o financeiro por
-    // zerar — a direção que mais dói (cobrança viva numa OS morta) está fechada.
-    // HONESTIDADE (pós-análise Ω3F-6): a ordem NÃO garante o par (cancelado ↔ total 0) nas outras duas
-    // direções, e afirmar isso seria mentira: (a) `cancelled ∧ total>0` é alcançável lançando item numa
-    // OS já cancelada — o financeiro não tem guarda de estado terminal (P-Ω3F6-TERMINAL-GUARD); (b) a
-    // limpeza é um LOOP de N deletes SEM transação — se o 3º de 5 falhar, dois itens já foram
-    // soft-deletados e a OS não cancela (OS viva com itens destruídos + 500). Ver
-    // P-Ω3F6-ZERO-ATOMICIDADE: o conserto é um softDeleteAll no repositório de financials (mata o N+1 e a
-    // parcialidade de uma vez).
+    // `zero` ANTES de persistir o cancelamento: a OS nunca fica cancelada com o financeiro por zerar.
+    // Integridade (D-CANCEL-INTEGRITY, este bloco fechou o cluster P-Ω3F6): (a) o par cancelado↔total-0 é
+    // sustentado pelo TERMINAL-GUARD (create/update/delete/invoice recusam OS cancelada — 422 work_order_cancelled),
+    // então não se lança/fatura item depois; (b) zeroFinancialItems é ATÔMICO (softDeleteAll numa operação, exclui
+    // faturados) — sem a parcialidade/N+1 do loop antigo; item faturado bloqueia `zero` (422 has_invoiced_items,
+    // preserva o lastro do Título). Resíduo: a corrida sub-ms cancel×create-de-item (P-Ω3F6-CANCEL-RACE), da mesma
+    // classe dos TOCTOU aceitos — fecha com SELECT ... FOR UPDATE da OS (hardening futuro).
     if (decision === "zero") {
       await this.zeroFinancialItems(actor, current.id);
     }
@@ -930,11 +925,20 @@ export class WorkOrderService {
       "../work-order-financials/work-order-financial.service.js"
     );
     const financials = await createDefaultWorkOrderFinancialService();
-    const { items } = await financials.list(actor, workOrderId);
-
-    for (const item of items) {
-      await financials.delete(actor, workOrderId, item.id);
+    // P-Ω3F6-STATUS-BYPASS (ataque de desenho, ALTA) — item JÁ FATURADO é lastro de um Título receivable
+    // (D-Ω4-C1, imutável): `zero` NÃO pode destruí-lo (deixaria o Título sem itens-fonte). Se há item faturado,
+    // `zero` é contraditório → 422 has_invoiced_items (o gestor deve usar `keep`; o Título já foi emitido).
+    if (await financials.hasActiveInvoicedItems(actor, workOrderId)) {
+      throw new WorkOrderError(
+        422,
+        "WORK_ORDER_UNPROCESSABLE",
+        "has_invoiced_items",
+        "Cannot zero the financials of a work order with invoiced items; the receivable title already exists. Use keep.",
+      );
     }
+    // P-Ω3F6-ZERO-ATOMICIDADE — UMA operação atômica (softDeleteAll) em vez de N deletes sequenciais sem
+    // transação (que deixavam OS viva + itens meio-destruídos numa falha parcial + N+1). Não toca faturados.
+    await financials.zeroActiveItems(actor, workOrderId);
   }
 
   /**
