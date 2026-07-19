@@ -9,7 +9,7 @@ import { renderToString } from "react-dom/server";
 import { OperationsIncomingCallsList } from "../src/modules/operations/map/components/OperationsIncomingCallsList";
 import { OperationsMapStage } from "../src/modules/operations/map/components/OperationsMapStage";
 import { OperationsOperatorList } from "../src/modules/operations/map/components/OperationsOperatorList";
-import type { FieldLocationItem } from "../src/modules/operations/map/operations-map.types";
+import type { FieldLocationItem, OperationsIncomingCall } from "../src/modules/operations/map/operations-map.types";
 
 // J-MAPAS-6 (redesign) — o MAPA é o herói. Este PR SUPERSEDE o grid de 3 colunas do M-1 (que
 // espremeu a largura do mapa). Os asserts do grid morreram POR DESIGN; aqui provamos o CONTAINER:
@@ -55,13 +55,42 @@ function makeLocation(overrides: Partial<FieldLocationItem> = {}): FieldLocation
   };
 }
 
+// M-4 — a fila real de "chamados que chegam" (o rail agora abre por default e renderiza esta lista).
+const SAMPLE_CALLS: OperationsIncomingCall[] = [
+  {
+    id: "wo-1",
+    code: "OS-1",
+    title: "Guincho",
+    priority: "urgent",
+    customerName: "Cliente A",
+    scheduledFor: null,
+    createdAt: "2026-07-19T11:00:00.000Z",
+    hasLocation: true,
+  },
+  {
+    id: "wo-2",
+    code: "OS-2",
+    title: "Reparo",
+    priority: "low",
+    customerName: "Cliente B",
+    scheduledFor: "2026-07-20T09:00:00.000Z",
+    createdAt: "2026-07-19T10:00:00.000Z",
+    hasLocation: false,
+  },
+];
+
 function renderStage(): string {
   return renderToString(
     createElement(OperationsMapStage, {
       map: ({ resizeSignal }): ReactNode =>
         createElement("div", { "data-map": "true" }, `signal:${resizeSignal}`),
-      calls: createElement(OperationsIncomingCallsList),
+      calls: createElement(OperationsIncomingCallsList, {
+        calls: SAMPLE_CALLS,
+        onSelect: () => undefined,
+        now: new Date("2026-07-19T12:00:00.000Z"),
+      }),
       techs: createElement("div", null, "TECHS_SLOT"),
+      callsCount: SAMPLE_CALLS.length,
       techsCount: 3,
     }),
   );
@@ -111,17 +140,20 @@ test("rails são overlays de vidro navy absolute (chamados à esquerda, técnico
   assert.match(ruleBody(".operations-map-rail--techs"), /right:/);
 });
 
-// 4 — colapso por data-collapsed → 56px. Enquanto a lista real de chamados (M-4) não chega, o default abre
-//     o rail de TÉCNICOS (dado real) e colapsa o de CHAMADOS (placeholder) — evita painel vazio na demo.
-test("colapso: [data-collapsed=true] encolhe p/ 56px; técnicos aberto (dado real), chamados colapsado, aria-expanded coerente", () => {
+// 4 — colapso por data-collapsed → 56px. M-4 entregou a lista REAL → default do plano restaurado: CHAMADOS
+//     ABERTO (master/triagem) e TÉCNICOS COLAPSADO (status já vive nos marcadores). O badge do rail
+//     colapsado mostra a contagem real (callsCount/techsCount).
+test("colapso: [data-collapsed=true] encolhe p/ 56px; CHAMADOS aberto (lista real), técnicos colapsado, aria-expanded coerente", () => {
   assert.match(ruleBody('.operations-map-rail[data-collapsed="true"]'), /width:\s*56px/);
   const html = renderStage();
-  assert.match(html, /operations-map-rail--calls[^>]*data-collapsed="true"/);
-  assert.match(html, /operations-map-rail--techs[^>]*data-collapsed="false"/);
-  assert.match(html, /aria-expanded="true"/); // um rail aberto (técnicos)
-  assert.match(html, /aria-expanded="false"/); // um rail colapsado (chamados)
-  // Feature de badge de contagem no rail colapsado (aparece quando há contagem real; M-5 liga no alerta).
+  assert.match(html, /operations-map-rail--calls[^>]*data-collapsed="false"/);
+  assert.match(html, /operations-map-rail--techs[^>]*data-collapsed="true"/);
+  assert.match(html, /aria-expanded="true"/); // um rail aberto (chamados)
+  assert.match(html, /aria-expanded="false"/); // um rail colapsado (técnicos)
+  // Badge de contagem no rail colapsado (técnicos): callsCount/techsCount reais alimentam o badge.
   assert.match(CSS, /operations-map-rail__badge/);
+  assert.match(html, /operations-map-rail__badge/); // técnicos colapsado → badge com a contagem
+  assert.match(html, />3</); // techsCount=3 renderizado no badge
   // Rótulos PT-BR (§11).
   assert.match(html, /Chamados que chegam/);
 });
@@ -174,13 +206,28 @@ test("resize do container: MapLibre resize()+setPadding e Google trigger('resize
   assert.match(CANVAS, /mapPadding=\{mapPadding\}/);
 });
 
-// 8 — o rail de chamados segue um PLACEHOLDER HONESTO (M-4 traz a lista real): sem inventar OS/SLA.
-test("placeholder de chamados é honesto (título + 'próxima entrega'), sem fabricar OS/prioridade/SLA", () => {
-  const html = renderToString(createElement(OperationsIncomingCallsList));
+// 8 — o rail de chamados agora é a LISTA REAL (M-4): itens com prioridade + SLA-PROXY honesto, sem
+//     "vence em"/prazo fabricado; e o estado vazio não inventa OS.
+test("chamados: lista real com prioridade + SLA-proxy honesto (sem 'vence em'); vazio não fabrica OS", () => {
+  const html = renderToString(
+    createElement(OperationsIncomingCallsList, {
+      calls: SAMPLE_CALLS,
+      onSelect: () => undefined,
+      now: new Date("2026-07-19T12:00:00.000Z"),
+    }),
+  );
   assert.match(html, /Chamados que chegam/);
-  assert.match(html, /próxima entrega/i);
-  assert.doesNotMatch(html, /OS-\d/);
-  assert.doesNotMatch(html, /vence em|SLA|prazo restante|\d+\s*min\b/i);
+  assert.match(html, /OS-1/);
+  assert.match(html, /Urgente/); // chip de prioridade PT-BR
+  assert.match(html, /Aberto|Agendado para/); // rótulo de prazo derivado (honesto)
+  assert.doesNotMatch(html, /vence em|prazo restante/i);
+  assert.doesNotMatch(html, /próxima entrega/i); // placeholder do M-1 morreu
+
+  const empty = renderToString(
+    createElement(OperationsIncomingCallsList, { calls: [], onSelect: () => undefined }),
+  );
+  assert.match(empty, /Nenhum chamado aberto/);
+  assert.doesNotMatch(empty, /OS-\d/);
 });
 
 // 9 — a página troca o grid pelo OperationsMapStage (slots map/calls/techs), sem duplicar a lista,
@@ -188,7 +235,10 @@ test("placeholder de chamados é honesto (título + 'próxima entrega'), sem fab
 test("página monta OperationsMapStage com slots, detalhe abaixo, lista não duplicada e Ω1 preservado", () => {
   assert.match(PAGE, /<OperationsMapStage/);
   assert.match(PAGE, /map=\{\(\{ resizeSignal, mapPadding \}\) =>/);
-  assert.match(PAGE, /calls=\{<OperationsIncomingCallsList \/>\}/);
+  // M-4 — o slot `calls` recebe a lista REAL com dados (buildIncomingCalls) + a contagem para o badge.
+  assert.match(PAGE, /calls=\{[\s\S]*?<OperationsIncomingCallsList/);
+  assert.match(PAGE, /buildIncomingCalls\(/);
+  assert.match(PAGE, /callsCount=\{incomingCalls\.length\}/);
   assert.match(PAGE, /techs=\{/);
 
   // A lista de técnicos aparece UMA vez (movida para o slot, não duplicada).

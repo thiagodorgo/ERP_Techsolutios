@@ -400,3 +400,24 @@ modo maximizar. Plano: `agent-orchestration/omega/mapas/J-MAPAS-6-LAYOUT-redesig
    `available` → `op-ring` com raio/contorno maior; Google: classe `gmp-operator-pin--available` + halo via `--operator-ring`
    vindo de `getStatusColor`). Cor de status NUNCA em hex solto no CSS: entra por CSS var inline (`--operator-accent` no cartão do
    rail, `--operator-ring` no pin Google), a partir de `getStatusColor`. Assim o realce fica sincronizado com o anel do mapa.
+
+---
+
+## Changelog 2026-07-19 — M-4 Lista de chamados que chegam (prioridade + SLA-proxy honesto)
+
+O slot `calls` do OperationsMapStage passou de placeholder para lista REAL de chamados (OS abertas mapeáveis), a partir dos
+dados já carregados no useOperationsMap (`selectMappableWorkOrders`). Aprendizados reutilizáveis (valem p/ qualquer fila de OS):
+
+1. **SLA-proxy HONESTO (não fabricar prazo):** enquanto NÃO existe coluna de deadline real (`sla_due_at` = Fase 2/M-7), a UI
+   NUNCA mostra "vence em"/"vencido"/"prazo restante". Rótulo derivado: `Agendado para {data}` (se `scheduledFor`) /
+   `Aberto há {tempo}` (de `createdAt` via `formatLastSeen`) / `Sem data de abertura`. M-7 troca o proxy por countdown real.
+2. **Ordenação de triagem determinística:** `priority (urgente→baixa) → (scheduledFor ?? createdAt) asc → createdAt asc →
+   id.localeCompare`. Puro (sem `Date.now` no comparador), testável; um chamado antigo sem agenda pode subir acima de um
+   agendado p/ mais tarde — comportamento de triagem defensável, os rótulos distinguem agendado×aberto.
+3. **LGPD — projeção sem coordenada:** o tipo `OperationsIncomingCall` NÃO carrega lat/lng (`toIncomingCall` remove as
+   coordenadas); a lista mostra código/cliente/prioridade/tempo, nunca posição. Chamado sem GPS entra na fila marcado
+   honestamente ("Sem GPS no mapa"), sem inventar posição.
+
+RESÍDUO (M-5): clicar num chamado SEM GPS seta a seleção mas não há pin p/ pan (dead-end visual honesto) → refletir a seleção
+de item sem-GPS em M-5/M-6. E o header/empty-state da PÁGINA ainda diz "operadores em campo" → reconciliar p/ "técnicos" no
+touch-up do M-5 (P-MAPA-TERM-OPERADORES-HEADER).

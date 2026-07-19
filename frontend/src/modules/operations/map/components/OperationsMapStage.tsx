@@ -35,11 +35,11 @@ type Props = {
 };
 
 export function OperationsMapStage({ map, calls, techs, callsCount, techsCount }: Props) {
-  // Enquanto a lista REAL de chamados não chega (M-4), o rail de chamados é placeholder honesto → abrimos o
-  // rail de TÉCNICOS por default (dado real, evita painel vazio na demo) e colapsamos o de chamados.
-  // Reverter para chamados-aberto quando M-4 entregar a fila real de chamados.
-  const [callsCollapsed, setCallsCollapsed] = useState(true);
-  const [techsCollapsed, setTechsCollapsed] = useState(false);
+  // M-4 entregou a fila REAL de chamados → voltamos ao default do plano: CHAMADOS ABERTO (master/triagem
+  // do operador de despacho) e TÉCNICOS COLAPSADO (o status já vive nos marcadores do mapa; o rail abre sob
+  // demanda). O badge do rail colapsado mostra a contagem real (callsCount/techsCount) quando disponível.
+  const [callsCollapsed, setCallsCollapsed] = useState(false);
+  const [techsCollapsed, setTechsCollapsed] = useState(true);
   const [maximized, setMaximized] = useState(false);
   // Incrementa a cada mudança de layout que altera o tamanho do container do mapa.
   const [resizeSignal, setResizeSignal] = useState(0);

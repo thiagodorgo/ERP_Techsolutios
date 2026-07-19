@@ -577,7 +577,7 @@ export function OperationsMapLibreCanvas({
 
   return (
     <section className="operations-map-libre" aria-label="Mapa operacional">
-      <div ref={containerRef} className="operations-map-libre__canvas" role="application" aria-label="Mapa dos operadores em campo" />
+      <div ref={containerRef} className="operations-map-libre__canvas" role="application" aria-label="Mapa dos Técnicos de Campo" />
       {status === "loading" ? (
         <div className="operations-map-libre__overlay" role="status">
           <span className="operations-map-libre__spinner" aria-hidden="true" />

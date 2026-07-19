@@ -198,10 +198,12 @@ export function GoogleMapsCanvas({
     }
   }, [loadState, validWorkOrderPins, selectedWorkOrderId]);
 
-  const operatorCount = `${locations.length} operador${locations.length !== 1 ? "es" : ""}`;
+  // M-4 (P-MAPA-TERM-OPERADORES) — terminologia §3: "técnicos" (era "operadores"), casando com o rail
+  // "Técnicos de Campo" e a linguagem PT-BR de negócio desta view.
+  const technicianCount = `${locations.length} técnico${locations.length !== 1 ? "s" : ""}`;
   const workOrderCount = `${validWorkOrderPins.length} chamado${validWorkOrderPins.length !== 1 ? "s" : ""}`;
   const subtitle =
-    loadState === "loading" ? "Carregando Google Maps..." : `${operatorCount} e ${workOrderCount} no mapa.`;
+    loadState === "loading" ? "Carregando Google Maps..." : `${technicianCount} e ${workOrderCount} no mapa.`;
 
   return (
     <section className="operations-map-canvas" aria-label="Mapa Operacional">
@@ -215,7 +217,7 @@ export function GoogleMapsCanvas({
         </Chip>
       </header>
       <p>{subtitle}</p>
-      <div className="operations-map-canvas__gmaps" aria-label="Mapa com localização dos operadores em campo">
+      <div className="operations-map-canvas__gmaps" aria-label="Mapa com a posição dos Técnicos de Campo">
         {loadState === "ready" ? (
           <gmp-map ref={attachMap} map-id={MAP_ID}>
             {locations.map((location) => (

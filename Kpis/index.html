@@ -26,6 +26,20 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-MAPA M-4">
+          <h2>WS-MAPA M-4 — fila de chamados que chegam (prioridade + SLA honesto)</h2>
+          <p>
+            <strong>WS-MAPA M-4 (2026-07-19):</strong> requisito 1 do dono. O painel esquerdo deixou de ser placeholder e mostra
+            a <strong>fila real de chamados</strong> (OS abertas): código/cliente + <strong>chip de prioridade</strong> + um
+            <strong>indicador de SLA honesto</strong> — "Agendado para {data}" ou "Aberto há {tempo}", <strong>nunca "vence em"</strong>
+            (o SLA real com prazo vem na Fase 2). Ordenada por prioridade → agenda/abertura; cada item é clicável (seleciona e
+            centra no mapa); contagem no badge do painel colapsado; chamado <strong>sem GPS</strong> entra marcado honestamente
+            (a projeção não carrega coordenada — LGPD). Painel de chamados reaberto por padrão. <strong>avaliador-mapas
+            APROVADO_CONDICIONADO</strong> (SLA honesto / LGPD / ordenação — tudo verificado). <strong>smoke 551→565</strong>
+            (baseline de mapa 82→96). O maximizar + 4º quadrante já veio no redesign de layout → <strong>falta só o alerta de OS
+            nova (M-5)</strong> para fechar a Fase 1. Backend/Flutter/MVP <strong>inalterados</strong>.
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-MAPA M-3">
           <h2>WS-MAPA M-3 — técnicos com realce de disponibilidade</h2>
           <p>

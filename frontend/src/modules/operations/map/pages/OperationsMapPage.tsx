@@ -7,6 +7,7 @@ import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
 import {
+  buildIncomingCalls,
   calculateOperationsMapSummary,
   FIELD_LOCATION_STALE_THRESHOLD_MS,
   filterFieldLocationsByWorkOrder,
@@ -146,6 +147,12 @@ export function OperationsMapPage() {
     : undefined;
   const hasMapContent =
     filteredLocations.length > 0 || visibleWorkOrderPins.length > 0 || visibleWorkOrdersWithoutLocation.length > 0;
+  // M-4 — fila REAL de "chamados que chegam" (prioridade + SLA-proxy honesto), a partir das MESMAS OS
+  // mapeáveis já lidas (nenhum fetch novo). Ordenada em `buildIncomingCalls` (prioridade→SLA→abertura).
+  const incomingCalls = useMemo(
+    () => buildIncomingCalls(visibleWorkOrderPins, visibleWorkOrdersWithoutLocation),
+    [visibleWorkOrderPins, visibleWorkOrdersWithoutLocation],
+  );
 
   return (
     <div className="page-stack operations-map-page">
@@ -259,6 +266,7 @@ export function OperationsMapPage() {
               do M-1, que espremia a largura). "Chamados que chegam" e "Técnicos de Campo" viram rails
               de vidro navy ancorados às bordas do mapa; Maximizar leva a tela cheia com o 4º quadrante. */}
           <OperationsMapStage
+            callsCount={incomingCalls.length}
             techsCount={filteredLocations.length}
             map={({ resizeSignal, mapPadding }) => (
               <OperationsMapCanvas
@@ -275,7 +283,13 @@ export function OperationsMapPage() {
                 mapPadding={mapPadding}
               />
             )}
-            calls={<OperationsIncomingCallsList />}
+            calls={
+              <OperationsIncomingCallsList
+                calls={incomingCalls}
+                selectedId={selectedWorkOrderPin?.id}
+                onSelect={(call) => setSelectedWorkOrderId(call.id)}
+              />
+            }
             techs={
               filteredLocations.length > 0 ? (
                 <OperationsOperatorList

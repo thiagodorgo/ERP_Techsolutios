@@ -148,3 +148,15 @@ test("legenda (MAP_LEGEND_ITEMS) bate 1:1 com a paleta de status e de prioridade
   assert.match(html, /Disponível/);
   assert.match(html, /Chamado urgente/);
 });
+
+// 7 — M-4 (fecha P-MAPA-TERM-OPERADORES): terminologia §3 reconciliada no canvas. O subtítulo conta
+//     "técnicos" (era "operadores") e o aria diz "Técnicos de Campo"; nada de "operador" no HTML renderizado.
+test("terminologia §3: subtítulo 'N técnicos e M chamados' + aria 'Técnicos de Campo' (sem 'operador')", () => {
+  const html = renderCanvas({
+    locations: [makeLocation({ status: "available" })],
+    workOrderPins: [makePin()],
+  });
+  assert.match(html, /1 técnico e 1 chamado no mapa/);
+  assert.match(html, /aria-label="Mapa com a posição dos Técnicos de Campo"/);
+  assert.doesNotMatch(html, /operador/i); // termo antigo eliminado do texto visível/aria
+});

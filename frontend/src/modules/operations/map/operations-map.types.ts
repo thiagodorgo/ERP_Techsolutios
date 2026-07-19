@@ -68,6 +68,10 @@ export type OperationsMapWorkOrderPin = {
   readonly serviceAddress?: string | null;
   readonly latitude: number;
   readonly longitude: number;
+  // M-4 (J-MAPAS-6) — datas honestas que alimentam o SLA-PROXY da lista de chamados ("Agendado para"/
+  // "Aberto há"). NUNCA um deadline fabricado; SLA real é Fase 2/M-7. Aditivo/opcional.
+  readonly scheduledFor?: string | null;
+  readonly createdAt?: string | null;
 };
 
 // Ω1b — OS aberta com endereço mas SEM coordenada válida (vai para o painel "Sem localização").
@@ -78,6 +82,24 @@ export type OperationsMapWorkOrderWithoutLocation = {
   readonly priority: WorkOrderPriority;
   readonly customerName?: string | null;
   readonly serviceAddress?: string | null;
+  // M-4 (J-MAPAS-6) — mesmas datas do pin para o SLA-PROXY (chamado sem GPS também entra na fila). Aditivo.
+  readonly scheduledFor?: string | null;
+  readonly createdAt?: string | null;
+};
+
+// M-4 (J-MAPAS-6) — item da LISTA de "chamados que chegam" (triagem do operador de despacho). É uma
+// PROJEÇÃO das OS mapeáveis (withLocation + withoutLocation) com SÓ o que a lista mostra: código, cliente,
+// prioridade e as datas do SLA-PROXY. LGPD §12: NUNCA carrega latitude/longitude — coordenada não trafega
+// para a lista nem para log. `hasLocation` diz se o chamado tem pin no mapa (clique → pan) ou é "sem GPS".
+export type OperationsIncomingCall = {
+  readonly id: string;
+  readonly code: string;
+  readonly title: string;
+  readonly priority: WorkOrderPriority;
+  readonly customerName?: string | null;
+  readonly scheduledFor?: string | null;
+  readonly createdAt?: string | null;
+  readonly hasLocation: boolean;
 };
 
 export type OperationsMapDispatch = {

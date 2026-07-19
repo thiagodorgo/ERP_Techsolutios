@@ -6,6 +6,24 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-19 - WS-MAPA M-4 Lista de chamados que chegam (prioridade + SLA-proxy honesto)
+
+### Resultado
+
+- **Requisito 1 do dono**: o slot `calls` deixou de ser placeholder → **fila real de chamados** (OS abertas mapeaveis):
+  codigo/cliente + **chip de prioridade** + **SLA-proxy HONESTO** ("Agendado para {data}"/"Aberto ha {tempo}"/"Sem data" —
+  NUNCA "vence em"; SLA real = Fase 2/M-7). Ordenacao prioridade->(scheduledFor??createdAt)->abertura->id (helpers PUROS).
+  Item = button (a11y/foco/>=44px); clique seleciona/pan; callsCount no badge; chamado SEM GPS honesto (projecao sem lat/lng,
+  LGPD). Painel de chamados reaberto por default. Terminologia reconciliada nos 2 canvases.
+- **avaliador-mapas APROVADO_CONDICIONADO** (3 lentes duras — SLA honesto/LGPD/ordenacao — PASS; condicao KB M-4 sanada).
+  **M-6 (maximizar+4o quadrante) JA veio no redesign de layout** → so falta M-5 (alerta) p/ fechar a Fase 1. Sem provider/SKU/backend.
+
+### KPIs
+
+- `frontend_smoke_tests` **551 -> 565** (+14: operations-map-calls.test.ts 13 + guarda de terminologia). Baseline de mapa 82 -> 96.
+- `backend_tests` 1259, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**.
+  Proximo: M-5 alerta de OS nova (fecha a Fase 1). `pr`/`merge_commit`/`approved_head` null na autoria.
+
 ## 2026-07-19 - WS-MAPA M-3 Camada de tecnicos + disponibilidade (redesign J-MAPAS-6)
 
 ### Resultado

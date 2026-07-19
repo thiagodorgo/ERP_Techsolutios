@@ -1,17 +1,17 @@
 {
  "snapshot_date": "2026-07-19",
- "version": "WS-MAPA-M3",
+ "version": "WS-MAPA-M4",
  "source": "Kpis/kpis-latest.json",
  "scope": "root_project_kpis_reflecting_mobile_and_web",
  "release": {
-  "block": "WS-MAPA M-3 (camada de tecnicos + disponibilidade)",
-  "title": "WS-MAPA M-3: tecnicos com realce de disponibilidade (J-MAPAS-6)",
+  "block": "WS-MAPA M-4 (lista real de chamados que chegam — prioridade + SLA-proxy honesto)",
+  "title": "WS-MAPA M-4: fila de chamados no painel esquerdo (J-MAPAS-6)",
   "pr": null,
   "merge_commit": null,
   "approved_head": null,
   "status": "published_per_pr",
-  "summary": "WS-MAPA M-3 (redesign do Mapa, J-MAPAS-6) — CAMADA DISTINTA DE TECNICOS + DISPONIBILIDADE (req.2 do dono: onde/como estao os tecnicos). Realce de DISPONIBILIDADE nos DOIS canvases (fonte unica isRingAvailable): MapLibre op-ring do tecnico disponivel (raio maior+stroke), Google gmp-operator-pin--available+halo. Barra de disponibilidade por cartao no rail de tecnicos (--operator-accent=getStatusColor; contraste sobre vidro navy). isRingAvailable NAO realca posicao velha (available+envelhecido ->nao realca). Terminologia reconciliada ('Tecnicos de Campo'/'Tecnico'). Fecha a pendencia P-MAPA-GOOGLE-PADDING-RESIZE (Google re-fitBounds(mapPadding) no resize -> zero pin sob o vidro; MapLibre segue com setPadding+resize). Legenda-rodape M-2 byte-a-byte identica nos dois. avaliador-mapas APROVADO_CONDICIONADO (0 bloqueia; residual de terminologia no subtitulo -> P-MAPA-TERM-OPERADORES/M-4). Sem provider/SKU/backend, US$0, LGPD zero-coordenada.",
-  "status_label": "Mapa M-3: realce de disponibilidade dos tecnicos (mapa+rail) + fix padding Google; avaliador-mapas APROVADO_COND; smoke 540->551"
+  "summary": "WS-MAPA M-4 (redesign do Mapa, J-MAPAS-6) — LISTA REAL DE CHAMADOS QUE CHEGAM (req.1 do dono). O slot `calls` do OperationsMapStage deixou de ser placeholder: lista de OS abertas mapeaveis (selectMappableWorkOrders) com codigo/cliente + chip de PRIORIDADE (WORK_ORDER_PRIORITY_HEX/token) + SLA-PROXY HONESTO ('Agendado para {data}'/'Aberto ha {tempo}'/'Sem data' — NUNCA 'vence em'; SLA real = Fase 2/M-7). Ordenacao prioridade->(scheduledFor??createdAt)->abertura->id (helpers PUROS buildIncomingCalls/sortIncomingCalls/formatIncomingCallSlaProxy). Item = button (a11y, foco, >=44px); clique seleciona/pan; callsCount no badge do rail; chamado SEM GPS marcado honestamente (projecao sem lat/lng, LGPD). Painel de chamados REABERTO por default (master/triagem). Terminologia reconciliada nos 2 canvases (P-MAPA-TERM-OPERADORES resolvida). avaliador-mapas APROVADO_CONDICIONADO (3 lentes duras — SLA honesto/LGPD/ordenacao — PASS; condicao: KB M-4 sanada). M-6 (maximizar+4o quadrante) JA veio no redesign de layout -> so falta M-5 (alerta) p/ fechar a Fase 1. Sem provider/SKU/backend, US$0.",
+  "status_label": "Mapa M-4: fila real de chamados (prioridade+SLA-proxy honesto, ordenada, clicavel); avaliador-mapas APROVADO_COND; smoke 551->565. Falta so M-5 na Fase 1."
  },
  "metrics": {
   "flutter_tests": {
@@ -21,16 +21,16 @@
    "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
   },
   "frontend_smoke_tests": {
-   "value": 551,
-   "total": 551,
-   "display": "551/551",
-   "note": "+11 (operations-map-technicians.test.ts: realce de disponibilidade nos 2 canvases, barra por status no rail, isRingAvailable nao mente sobre posicao velha, fix padding Google re-fit, terminologia, paridade byte-a-byte, LGPD). Baseline de mapa 67->82."
+   "value": 565,
+   "total": 565,
+   "display": "565/565",
+   "note": "+14 (operations-map-calls.test.ts 13 + guarda de terminologia no google-canvas: lista real, ordenacao 4 niveis, SLA-proxy honesto sem 'vence em', clique seleciona, callsCount, default reaberto, LGPD sem coordenada). Baseline de mapa 82->96."
   },
   "backend_tests": {
    "value": 1259,
    "total": 1265,
    "display": "1259/1265",
-   "note": "carrega o ultimo valor oficial (1259) — WS-MAPA M-3 e frontend-only."
+   "note": "carrega o ultimo valor oficial (1259) — WS-MAPA M-4 e frontend-only."
   },
   "backend_contract_tests_focused": {
    "value": 21,
