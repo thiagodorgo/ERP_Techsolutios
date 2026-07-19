@@ -1006,3 +1006,19 @@ Os três (bypass legado sem decisão; item em OS cancelada; N deletes não-atôm
 - **P-Ω3F6-MOBILE-DEADLETTER:** ações status=cancelled já enfileiradas OFFLINE (antes do update do app) recebem 422 no sync e
   o replay marca failed+retry até maxRetry. Mapear cancel_via_status_forbidden para estado terminal não-retryable (dead-letter)
   para drenar a fila. Não-bloqueante (sistema novo não tem fila legada com cancels).
+
+## P-GOLIVE-SECRET-ROTATE — Chave Google Maps exposta redigida do HEAD; ROTAÇÃO humana obrigatória (CRÍTICA, secops go-live junta 2026-07-19)
+Chave Google Maps API ativa estava hardcoded em docs/claude-code-handoff/ERP Web.dc.html:2670 (arquivo rastreado). REDIGIDA do
+HEAD neste bloco (placeholder). Como a chave SEGUE no histórico git, deve ser considerada COMPROMETIDA → o dono DEVE revogar/
+rotacionar no Google Cloud Console e restringir a nova chave (referer/HTTP + API + cota). Parada irredutível (exposição de segredo).
+
+## P-GOLIVE-VALIDATE-CONSTRAINT — Operacionalizar VALIDATE CONSTRAINT do CHECK do cancelamento (MÉDIA, go-live)
+O CHECK work_orders_cancelled_decision_check é NOT VALID (não valida linhas legadas). Hoje há 0 linhas cancelled+NULL no banco →
+o VALIDATE passaria de imediato. Após aplicar 13..16 em produção e confirmar zero cancelled+NULL, rodar `ALTER TABLE work_orders
+VALIDATE CONSTRAINT work_orders_cancelled_decision_check` (bloco de follow-up rastreado). Até lá, o consumidor de comissões trata
+NULL-em-cancelled como "segurar para revisão" (P-Ω3F6-LEGACY-NULL). Ver docs/go-live-readiness.md.
+
+## P-GOLIVE-GATES — Gates humanos de go-live (R1 provedor, R2 restore cronometrado, smoke autenticado) — docs/go-live-readiness.md
+Readiness config-as-code = GO; ativação viva é fronteira humana. Gates que só existem no ambiente real: R1 (ratificar "dados no
+Brasil"), R2 (drill de restore cronometrado com app vivo + login + RPO no runbook), staging verde antes de prod, PROD_SMOKE_EMAIL/
+PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) + custo (~US$47-110/mês) em docs/go-live-readiness.md.

@@ -2667,7 +2667,7 @@ class Component extends DCLogic {
     if (root) root.className = 'erpRoot' + (theme !== 'light' ? ' erp-' + theme : '');
   }
 
-  MAPS_KEY = 'AIzaSyAmpQmWxSpj3FgnUWy6xA7IuGzLozUMZFw';
+  MAPS_KEY = ''; /* SECRET REDACTED (secops go-live junta): chave Google Maps ativa removida do HEAD; ROTACIONAR no Google Cloud Console (segue no histórico git). */
   componentDidMount() { this._injectTheme(this.state.theme); this._maybeMap(); this._syncTick(); }
   componentDidUpdate() { this._injectTheme(this.state.theme); this._maybeMap(); this._syncTick(); }
   componentWillUnmount() { if (this._tick) clearInterval(this._tick); }
