@@ -20,8 +20,10 @@ cognicao-visual/frontend-pixel) deixou a maioria das telas alinhada ao protótip
 1. **`dispatches`** — removido o **chip de dev na UI** ("API real"/"Fallback local"/"Dados demonstrativos", §11 regra 2);
    título → "Despachos" + selo **AO VIVO**; subtítulo do protótipo. A honestidade de dados degradados fica no Alert de
    fallback (D-007). *(Resta a composição do stepper de rota origem→paradas→destino — ver backlog.)*
-2. **`auditPlatform`** — título corrigido ("Auditoria **da Plataforma**", não o rótulo da sidebar "Auditoria Global") +
-   adicionada a **linha de 4 KPIs** que faltava (§11 regra 6, composição completa).
+2. **`auditPlatform`** — **recriada 1:1** (a junta cognicao-visual reprovou a 1ª versão parcial e listou os resíduos):
+   título "Auditoria **da Plataforma**"; **4 KPIs** com "Mudanças de plano" em **roxo** (=receita, §11.5); header com
+   **ação primária azul** (Exportar) + Filtros (§11 regra 4); tabela **QUANDO/ORGANIZAÇÃO/EVENTO/SEVERIDADE** (removida
+   a coluna de **IP cru**; severidade **Info/Alta/OK** como o PNG).
 
 ## Backlog priorizado (fidelidade restante)
 
