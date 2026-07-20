@@ -1,5 +1,5 @@
 import { useEffect, useRef, type CSSProperties } from "react";
-import { AlertTriangle, Map as MapIcon, MapPin } from "lucide-react";
+import { Map as MapIcon } from "lucide-react";
 
 import { Chip } from "../../../../components/ui";
 import type { GoogleMapsLoadState } from "../hooks/useGoogleMapsLoader";
@@ -183,6 +183,34 @@ export function GoogleMapsCanvas({
     return () => clearTimeout(timer);
   }, [resizeSignal]);
 
+  // SPRINT POLISH (C) — fullscreen NATIVO do Google no canto INFERIOR DIREITO (espelho do
+  // FullscreenControl do MapLibre, também bottom-right). Substitui o antigo botão "Maximizar" do
+  // Stage (removido — caía numa tela tosca). Setado uma vez quando o innerMap sobe (mesmo padrão de
+  // retry por rAF do fitBounds), independente de haver técnicos no mapa.
+  useEffect(() => {
+    if (loadState !== "ready") return;
+    let raf = 0;
+    let attempts = 0;
+    const applyFullscreen = () => {
+      const innerMap = mapRef.current?.innerMap;
+      if (!innerMap) {
+        if (attempts < 40) {
+          attempts += 1;
+          raf = requestAnimationFrame(applyFullscreen);
+        }
+        return;
+      }
+      innerMap.setOptions({
+        fullscreenControl: true,
+        fullscreenControlOptions: { position: google.maps.ControlPosition.RIGHT_BOTTOM },
+      });
+    };
+    applyFullscreen();
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [loadState]);
+
   // Seleção centraliza o operador (pan imperativo via innerMap — não recria o mapa).
   useEffect(() => {
     if (loadState !== "ready" || !selectedId) return;
@@ -246,17 +274,11 @@ export function GoogleMapsCanvas({
           </gmp-map>
         ) : null}
         {/* M-2 (J-MAPAS-6) — mesmo rodapé de legenda unificado do MapLibre (regra do espelho:
-            paridade byte-a-byte). Ancorado à BASE do container do mapa, não flutuando sobre o canvas. */}
+            paridade byte-a-byte). Ancorado à BASE do container do mapa, não flutuando sobre o canvas.
+            SPRINT POLISH (A): esta é a ÚNICA legenda do canvas — o rodapé redundante de status (que
+            duplicava esta legenda) foi removido, junto dos ícones que só serviam a ele. */}
         <OperationsMapLegendFooter />
       </div>
-      <footer>
-        <span>
-          <MapPin size={14} /> Atual
-        </span>
-        <span>
-          <AlertTriangle size={14} /> Localização antiga
-        </span>
-      </footer>
     </section>
   );
 }

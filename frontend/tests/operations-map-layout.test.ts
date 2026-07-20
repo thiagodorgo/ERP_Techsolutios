@@ -15,7 +15,11 @@ import type { FieldLocationItem, OperationsIncomingCall } from "../src/modules/o
 // espremeu a largura do mapa). Os asserts do grid morreram POR DESIGN; aqui provamos o CONTAINER:
 //   • mapa FULL-BLEED (100% da largura útil — largura recuperada) com a altura do M-1 preservada;
 //   • rails de VIDRO NAVY absolute (overlays nas bordas, NÃO colunas), colapsáveis por data-collapsed;
-//   • Maximizar → stage fixed/inset:0/z60 + card de vidro no 4º QUADRANTE;
+//   • SPRINT POLISH (C): o modo "Maximizar" próprio do Stage MORREU (caía numa tela tosca) — o
+//     fullscreen agora é NATIVO do mapa (FullscreenControl no MapLibre / fullscreenControl no Google,
+//     ambos no canto inferior direito). Sem botão Maximizar, sem 4º quadrante, sem diálogo modal;
+//   • SPRINT POLISH (B): rail COLAPSADO deixa de ser faixa de 56px full-height e vira pílula fina
+//     top-anchored (width:auto/height:44px) que não interfere no mapa;
 //   • sinal de resize (regra do espelho MapLibre↔Google) + padding dos rails;
 //   • preservação de tudo da etapa Ω1 (markers/KPIs/filtros/detalhe/realtime/estados) e da legenda (M-2).
 
@@ -140,11 +144,17 @@ test("rails são overlays de vidro navy absolute (chamados à esquerda, técnico
   assert.match(ruleBody(".operations-map-rail--techs"), /right:/);
 });
 
-// 4 — colapso por data-collapsed → 56px. M-4 entregou a lista REAL → default do plano restaurado: CHAMADOS
-//     ABERTO (master/triagem) e TÉCNICOS COLAPSADO (status já vive nos marcadores). O badge do rail
-//     colapsado mostra a contagem real (callsCount/techsCount).
-test("colapso: [data-collapsed=true] encolhe p/ 56px; CHAMADOS aberto (lista real), técnicos colapsado, aria-expanded coerente", () => {
-  assert.match(ruleBody('.operations-map-rail[data-collapsed="true"]'), /width:\s*56px/);
+// 4 — SPRINT POLISH (B): colapsado NÃO é mais faixa de 56px full-height que interfere no mapa —
+//     vira PÍLULA fina top-anchored (width:auto/height:44px/bottom:auto). M-4 entregou a lista REAL →
+//     default do plano: CHAMADOS ABERTO (master/triagem) e TÉCNICOS COLAPSADO (status já vive nos
+//     marcadores). O badge do rail colapsado mostra a contagem real (callsCount/techsCount).
+test("colapso: [data-collapsed=true] vira pílula fina (width:auto/height:44px/bottom:auto, não 56px full-height); CHAMADOS aberto, técnicos colapsado, aria-expanded coerente", () => {
+  const collapsed = ruleBody('.operations-map-rail[data-collapsed="true"]');
+  assert.match(collapsed, /width:\s*auto/);
+  assert.match(collapsed, /height:\s*44px/);
+  assert.match(collapsed, /bottom:\s*auto/);
+  // A faixa de 56px full-height do modelo antigo (que cobria o mapa) não existe mais.
+  assert.doesNotMatch(collapsed, /width:\s*56px/);
   const html = renderStage();
   assert.match(html, /operations-map-rail--calls[^>]*data-collapsed="false"/);
   assert.match(html, /operations-map-rail--techs[^>]*data-collapsed="true"/);
@@ -158,48 +168,50 @@ test("colapso: [data-collapsed=true] encolhe p/ 56px; CHAMADOS aberto (lista rea
   assert.match(html, /Chamados que chegam/);
 });
 
-// 5 — Maximizar: stage fixed/inset:0/z60 + card de vidro no 4º QUADRANTE; botão presente e stage
-//     NÃO nasce maximizado (o quadrante só monta em tela cheia).
-test("Maximizar vira fixed/inset:0/z60 + card de vidro no 4º quadrante; botão existe e stage não nasce maximizado", () => {
-  const max = ruleBody(".operations-map-stage--maximized");
-  assert.match(max, /position:\s*fixed/);
-  assert.match(max, /inset:\s*0/);
-  assert.match(max, /z-index:\s*60/);
-  const quad = ruleBody(".operations-map-quadrant");
-  assert.match(quad, /position:\s*absolute/);
-  assert.match(quad, /right:\s*16px/);
-  assert.match(quad, /bottom:\s*56px/);
-  assert.match(quad, /backdrop-filter:\s*blur\(16px\)/);
-  // 82% (subido de 72% p/ legibilidade sobre basemap claro — junta cognicao); via token de vidro navy.
-  assert.match(quad, /background:\s*rgb\(var\(--surface-glass-navy-rgb\) ?\/ ?82%\)/);
-  assert.match(STAGE, /operations-map-quadrant/);
+// 5 — SPRINT POLISH (C): o modo "Maximizar" próprio do Stage (botão + fixed/inset:0/z60 + 4º
+//     quadrante de vidro) foi REMOVIDO — caía numa tela tosca. O fullscreen agora é NATIVO do mapa.
+//     Provamos a AUSÊNCIA no STAGE, no CSS e no HTML renderizado (nada de andaime do modo antigo).
+test("modo Maximizar próprio do Stage foi removido: sem botão/--maximized/quadrante no STAGE, no CSS nem no render", () => {
+  // As classes do modo antigo saíram do CSS (removê-las evita ruleBody lançar por regra inexistente).
+  assert.doesNotMatch(CSS, /\.operations-map-stage__maximize\b/);
+  assert.doesNotMatch(CSS, /\.operations-map-stage--maximized\b/);
+  assert.doesNotMatch(CSS, /\.operations-map-quadrant\b/);
+  // O componente do Stage não referencia mais nenhum artefato do modo maximizar (classes/quadrante).
+  // (A palavra "Maximizar" só sobrevive no comentário que DOCUMENTA a remoção — provamos a ausência
+  //  real no HTML renderizado abaixo, onde não há mais botão.)
+  assert.doesNotMatch(STAGE, /operations-map-stage__maximize/);
+  assert.doesNotMatch(STAGE, /operations-map-stage--maximized/);
+  assert.doesNotMatch(STAGE, /operations-map-quadrant/);
 
   const html = renderStage();
-  assert.match(html, /operations-map-stage__maximize/);
-  assert.match(html, /Maximizar/);
-  assert.match(html, /aria-pressed="false"/);
+  assert.doesNotMatch(html, /operations-map-stage__maximize/);
   assert.doesNotMatch(html, /operations-map-stage--maximized/);
-  assert.doesNotMatch(html, /operations-map-quadrant/); // 4º quadrante só no maximizado
+  assert.doesNotMatch(html, /operations-map-quadrant/);
+  assert.doesNotMatch(html, /Maximizar/);
 });
 
-// 6 — maximizado é um diálogo modal acessível: role=dialog + aria-modal + Esc + focus-trap; e a
-//     transição do rail respeita prefers-reduced-motion.
-test("maximizado é diálogo modal acessível (role=dialog/aria-modal/Esc/focus-trap) e respeita reduced-motion", () => {
-  assert.match(STAGE, /role: "dialog"/);
-  assert.match(STAGE, /"aria-modal": true/);
-  assert.match(STAGE, /"Escape"/);
-  assert.match(STAGE, /addEventListener\("keydown"/);
-  assert.match(STAGE, /previouslyFocused\?\.focus/);
+// 6 — SPRINT POLISH (C): sem modo maximizar próprio, o diálogo modal (role=dialog/aria-modal/Esc/
+//     focus-trap) foi REMOVIDO do Stage — a acessibilidade do fullscreen fica por conta do controle
+//     nativo do mapa. O que sobra válido: a transição do rail/toast respeita prefers-reduced-motion.
+test("o diálogo modal do maximizar saiu do Stage (sem role=dialog/aria-modal/Esc/focus-trap) e reduced-motion segue honrado", () => {
+  assert.doesNotMatch(STAGE, /role: "dialog"/);
+  assert.doesNotMatch(STAGE, /"aria-modal": true/);
+  assert.doesNotMatch(STAGE, /"Escape"/);
+  assert.doesNotMatch(STAGE, /addEventListener\("keydown"/);
+  assert.doesNotMatch(STAGE, /previouslyFocused/);
+  // A supressão de movimento continua no CSS (transição do rail + animações do toast/badge).
   assert.match(CSS, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
 // 7 — resize (CRÍTICO, regra do espelho): os 2 canvases aceitam resizeSignal+mapPadding e reagem
 //     ~220ms — MapLibre chama resize()+setPadding; Google dispara trigger("resize"); o wrapper repassa.
-test("resize do container: MapLibre resize()+setPadding e Google trigger('resize') ~220ms; wrapper repassa (espelho)", () => {
-  for (const marker of ["resizeSignal", "mapPadding", ".resize()", "setPadding", "220", '"bottom-right"']) {
+//     SPRINT POLISH (C): o espelho também cobre o fullscreen NATIVO — MapLibre adiciona
+//     FullscreenControl em "bottom-right"; Google seta fullscreenControl em RIGHT_BOTTOM.
+test("resize do container + fullscreen nativo (espelho): MapLibre resize()/setPadding/FullscreenControl e Google trigger('resize')/fullscreenControl RIGHT_BOTTOM ~220ms; wrapper repassa", () => {
+  for (const marker of ["resizeSignal", "mapPadding", ".resize()", "setPadding", "220", '"bottom-right"', "FullscreenControl"]) {
     assert.ok(LIBRE.includes(marker), `MapLibre sem: ${marker}`);
   }
-  for (const marker of ["resizeSignal", "mapPadding", "google.maps.event.trigger", '"resize"', "220"]) {
+  for (const marker of ["resizeSignal", "mapPadding", "google.maps.event.trigger", '"resize"', "220", "fullscreenControl", "RIGHT_BOTTOM"]) {
     assert.ok(GOOGLE.includes(marker), `Google sem: ${marker}`);
   }
   assert.match(CANVAS, /resizeSignal=\{resizeSignal\}/);

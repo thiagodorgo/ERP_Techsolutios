@@ -1,17 +1,17 @@
 {
  "snapshot_date": "2026-07-19",
- "version": "WS-MAPA-M5-FASE1",
+ "version": "WS-MAPA-POLISH",
  "source": "Kpis/kpis-latest.json",
  "scope": "root_project_kpis_reflecting_mobile_and_web",
  "release": {
-  "block": "WS-MAPA M-5 (alerta de OS nova) — FECHA a Fase 1 do redesign do Mapa Operacional",
-  "title": "WS-MAPA M-5: alerta de OS nova + Fase 1 do redesign FECHADA (J-MAPAS-6)",
+  "block": "WS-MAPA SPRINT POLISH (legenda unica + fullscreen nativo + rail-pilula)",
+  "title": "WS-MAPA polish: fullscreen nativo + legenda unica + rail colapsado fino (feedback do dono)",
   "pr": null,
   "merge_commit": null,
   "approved_head": null,
   "status": "published_per_pr",
-  "summary": "WS-MAPA M-5 (redesign do Mapa, J-MAPAS-6) — ALERTA VISUAL DE OS NOVA (req.3 do dono) — FECHA A FASE 1. Novo hook useNewWorkOrderAlert: diff client-side dos ids de incomingCalls entre refreshes -> alerta em 3 camadas: TOAST (role=status/aria-live=polite, PT-BR, cor por prioridade/token, SEM coordenada), BADGE --new no rail de chamados, PULSO no pin novo (reusa wo-pulse; halo por priorityColor -> urgente=vermelho, novo nao-urgente na propria cor; parada garantida por cancelAnimationFrame). ANTI-ALERT-FATIGUE: baseline NAO alerta no mount; dedup por Set (marca ate o excedente do teto); teto por ciclo (maxPerCycle=3); toast TTL 6s dispensavel; prefers-reduced-motion zera pulso. Nucleo PURO (reduceNewWorkOrders/resolvePulseIds). Touch-up de terminologia (header/empty-states -> 'tecnicos'; P-MAPA-TERM-OPERADORES-HEADER fechada) + feedback honesto de selecao sem-GPS. avaliador-mapas APROVADO_CONDICIONADO (8/8 veto + lentes a-h PASS; condicao KB M-5 sanada). **FASE 1 do redesign FECHADA** — req.1-6 cobertos; resta so Fase 2 (M-7 SLA real, migration aditiva). Sem provider/SKU/backend, US$0.",
-  "status_label": "Mapa: FASE 1 do redesign FECHADA (6 requisitos do dono) — M-5 alerta de OS nova (anti-spam/a11y/LGPD); avaliador-mapas APROVADO_COND; smoke 565->581"
+  "summary": "WS-MAPA SPRINT POLISH (feedback do dono, itens A+C+B) — (A) LEGENDA UNICA na base: removido o <footer> redundante do GoogleMapsCanvas ('Atual'/'Localizacao antiga', ja subsumido em MAP_LEGEND_ITEMS) -> OperationsMapLegendFooter e a unica legenda colada embaixo (paridade preservada). (C) FULLSCREEN NATIVO: removido o maximizar customizado tosco (estado/botao/focus-trap/4o quadrante) -> MapLibre FullscreenControl bottom-right + Google fullscreenControl RIGHT_BOTTOM (regra do espelho). (B) RAIL COLAPSADO = pilula fina top-anchored (44x64px) em vez de faixa 56px full-height que roubava o mapa; mapPadding colapsado 72->24. Time novo (planejador-senior-master-chefe + pesquisadores web PD-006): revisao dev -> analizador (APROVADO) -> aprovador (avaliador-mapas APROVADO_CONDICIONADO) + cognicao-visual (APROVADO); condicao ALTA (KB desatualizado) sanada. Sem provider/SKU/backend, US$0, LGPD zero-coordenada. Testes de layout reescritos (fullscreen nativo/legenda unica/pilula).",
+  "status_label": "Mapa polish: fullscreen NATIVO (bottom-right) + legenda unica na base + rail colapsado = pilula fina; time novo (analizador/aprovador) APROVADO; smoke 581 inalterado"
  },
  "metrics": {
   "flutter_tests": {
@@ -24,13 +24,13 @@
    "value": 581,
    "total": 581,
    "display": "581/581",
-   "note": "+16 (operations-map-alert.test.ts: diff detecta id novo, NAO alerta no mount/baseline, anti-spam dedup+teto, toast aria-live sem coordenada, pulso por prioridade com parada, reduced-motion desliga, terminologia, selecao sem-GPS). Baseline de mapa 96->112 (meta >=110 atingida)."
+   "note": "test:smoke 581/581 e mapa 112/112 INALTERADOS — o polish REESCREVEU os testes de layout (maximizar->fullscreen nativo; legenda unica; pilula colapsada), sem teste novo/removido."
   },
   "backend_tests": {
    "value": 1259,
    "total": 1265,
    "display": "1259/1265",
-   "note": "carrega o ultimo valor oficial (1259) — WS-MAPA M-5 e frontend-only (Fase 1 do redesign fechada; Fase 2/M-7 fara migration aditiva de SLA)."
+   "note": "carrega o ultimo valor oficial (1259) — SPRINT POLISH e frontend-only."
   },
   "backend_contract_tests_focused": {
    "value": 21,

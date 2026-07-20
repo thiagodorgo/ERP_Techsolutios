@@ -142,9 +142,13 @@ export function OperationsMapLibreCanvas({
           pitchWithRotate: false,
         });
         mapRef.current = map;
-        // J-MAPAS-6 (redesign) — controles no CANTO INFERIOR DIREITO: o topo passa a ser ocupado
-        // pelo botão Maximizar e pelos rails de vidro (chamados à esquerda, técnicos à direita).
+        // J-MAPAS-6 (redesign) — controles no CANTO INFERIOR DIREITO: o topo fica livre para os
+        // rails de vidro (chamados à esquerda, técnicos à direita).
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+        // SPRINT POLISH (C) — fullscreen NATIVO do mapa no canto inferior direito (substitui o antigo
+        // botão "Maximizar" do Stage, que caía numa tela tosca). Espelho: o Google usa
+        // fullscreenControl em RIGHT_BOTTOM. Acessível por padrão (botão nativo com foco/rótulo).
+        map.addControl(new maplibregl.FullscreenControl(), "bottom-right");
         map.touchZoomRotate.disableRotation();
 
         map.on("load", () => {

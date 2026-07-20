@@ -110,7 +110,9 @@ test("canvas MapLibre usa OperationsMapLegendFooter e removeu a <ul> flutuante",
 });
 
 // 4 — Google (espelho) passou a usar o mesmo rodapé e também removeu a <ul> flutuante.
-test("canvas Google usa OperationsMapLegendFooter e removeu a <ul> flutuante", () => {
+//     SPRINT POLISH (A): o <footer> REDUNDANTE ("Atual"/"Localização antiga") que duplicava a
+//     legenda foi REMOVIDO — a OperationsMapLegendFooter é a ÚNICA legenda do canvas Google.
+test("canvas Google usa OperationsMapLegendFooter (legenda ÚNICA) e removeu a <ul> flutuante e o <footer> redundante", () => {
   const html = renderToString(
     createElement(GoogleMapsCanvas, {
       loadState: "ready",
@@ -122,6 +124,15 @@ test("canvas Google usa OperationsMapLegendFooter e removeu a <ul> flutuante", (
   assert.doesNotMatch(html, /operations-map-libre__legend/);
   assert.doesNotMatch(GOOGLE_SRC, /operations-map-libre__legend/);
   assert.match(GOOGLE_SRC, /<OperationsMapLegendFooter \/>/);
+  // SPRINT POLISH (A) — o bloco de legenda "de baixo" saiu: sem <footer>, sem "Localização antiga"
+  // e sem os ícones órfãos (MapPin/AlertTriangle) que só serviam a ele.
+  assert.doesNotMatch(GOOGLE_SRC, /<footer>/);
+  assert.doesNotMatch(GOOGLE_SRC, /Localização antiga/);
+  assert.doesNotMatch(GOOGLE_SRC, /AlertTriangle/);
+  assert.doesNotMatch(GOOGLE_SRC, /MapPin/);
+  // Uma ÚNICA legenda renderizada (um só <ul class="operations-map-legend-footer">).
+  const legendBlocks = (html.match(/class="operations-map-legend-footer"/g) ?? []).length;
+  assert.equal(legendBlocks, 1);
 });
 
 // 5 — PARIDADE (regra do espelho): os dois canvases renderizam o MESMO rodapé, byte-a-byte.
