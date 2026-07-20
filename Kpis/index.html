@@ -26,6 +26,21 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-SCALE invoices NF-e honesto">
+          <h2>WS-SCALE · Faturas (NF-e) — parada fiscal honesta (correção de integridade)</h2>
+          <p>
+            <strong>Correção de integridade (2026-07-20):</strong> a tela <strong>Faturas</strong>
+            <strong>fabricava</strong> notas fiscais — empresas, valores ("R$ 24.800") e contadores ("128 emitidas")
+            <strong>todos inventados</strong>. Isso viola a regra do projeto de <strong>nunca fabricar dado</strong> (D-007/§2.8).
+            A tela foi reescrita como uma <strong>parada honesta</strong>: a emissão de NF-e exige integração fiscal externa
+            (certificado digital + SEFAZ) e fica disponível <strong>após a ativação cloud</strong>. Agora ela explica isso com
+            clareza, <strong>sem nenhum número inventado</strong>, com o botão "Emitir NF-e" desabilitado e um atalho para as
+            <strong>Cobranças reais</strong> (visível só para quem tem permissão). Aqui a regra de <strong>não fabricar vence a
+            fidelidade ao protótipo</strong>. Time (dev → junta): <strong>cognição-visual + coordenador-de-acessos APROVADO</strong>.
+            <strong>smoke 624→626</strong> (+2). <em>Obs.: a parte de RBAC (destravar Pedidos/Relatórios) aguarda autorização
+            explícita do dono — registrada como pendência.</em>
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-CARDS-CHARTS-F2 fan-out restante">
           <h2>WS-CARDS-CHARTS-F2 (fan-out · parte 2) — Estoque, Remunerações e Frota</h2>
           <p>
