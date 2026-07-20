@@ -6,6 +6,29 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-20 - WS-CARDS-CHARTS-F2 (frontend PR1) Grafico temporal real no Dashboard
+
+### Resultado
+
+- **Grafico temporal real no Dashboard Operacional** consumindo GET /api/v1/operations/work-orders-timeseries (#245). Novo
+  submodulo `frontend/src/modules/dashboard/` (types/adapter/service/hook) clonando o par financial-summary; card
+  `WorkOrderVolumeCard` no DashboardPage (apos o grid de KPIs) com TrendChart area 3 series (Abertas=info, Concluidas=success,
+  Canceladas=danger), labels dd/mm parseando o civil YYYY-MM-DD SEM new Date ingenuo (sem shift de fuso).
+- **Estados §7 completos (trata P-WOTS-FRONT-ACCESS):** pre-cheque `can('work_orders:read')` nao monta o fetch; 403 do backend
+  -> `forbidden` -> EmptyState "Acesso nao permitido"; erro nao-403 -> Alert honesto; vazio -> emptyLabel. D-007: normalizacao
+  defensiva, nunca fabrica/soma; so plota `points` do backend.
+- Time: dev frontend -> **junta UNANIME** analizador APROVADO + cognicao-visual APROVADO (§11 fiel aos paineis irmaos:
+  borda/raio 14/padding 20/tokens; cores semanticas certas) + coordenador-de-acessos APROVADO (cadeia papel->permissao->UI;
+  backend autoritativo; sem vazamento no caminho negado). So nits BAIXA (markup EmptyState duplicado; hex-vs-token do legado).
+- Backfill: #245 (backend) recebe `pr`/`merge_commit`/`approved_head` = 2ce3d5a.
+
+### KPIs
+
+- `frontend_smoke_tests` **597 -> 602** (+5: frontend/tests/work-order-timeseries.test.tsx — normalizacao/nao-array/mock/403/render
+  3 series). PR web-only.
+- `backend_tests` 1276/1282, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**
+  (carregados; PR web-only nao toca mobile — politica dupla). `pr`/`merge_commit`/`approved_head` null na autoria.
+
 ## 2026-07-19 - WS-CARDS-CHARTS-F2 (backend) Agregado de serie temporal de OS
 
 ### Resultado

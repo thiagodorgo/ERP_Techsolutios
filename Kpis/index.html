@@ -26,6 +26,22 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-CARDS-CHARTS-F2 frontend">
+          <h2>WS-CARDS-CHARTS-F2 (frontend) — gráfico temporal real no Dashboard</h2>
+          <p>
+            <strong>Gráfico temporal (2026-07-20):</strong> o Dashboard Operacional ganhou um card
+            <strong>"Volume de ordens de serviço"</strong> (últimos 30 dias) que consome o agregado real
+            <code>/operations/work-orders-timeseries</code> (#245) — três séries diárias: <strong>Abertas</strong> (azul),
+            <strong>Concluídas</strong> (verde) e <strong>Canceladas</strong> (vermelho), com o gráfico SVG de zero-dependência.
+            <strong>Honesto (D-007):</strong> o front nunca soma nem inventa ponto — só plota o que o backend devolve; período
+            vazio mostra "Sem ordens no período". <strong>Acesso (§7):</strong> quem não tem permissão de ver OS nem dispara a
+            busca (pré-cheque) e vê "Acesso não permitido"; um 403 do backend cai no mesmo estado honesto, sem quebrar o resto do
+            Dashboard. Rótulos de data <strong>dd/mm</strong> sem erro de fuso. Time (dev → junta): <strong>analizador APROVADO +
+            cognição-visual APROVADO</strong> (fiel aos painéis irmãos) <strong>+ coordenador-de-acessos APROVADO</strong> (cadeia
+            papel→permissão→UI, backend é a autoridade). <strong>smoke 597→602</strong> (+5). Backend/Flutter/MVP
+            <strong>inalterados</strong>. Próximo: fan-out dos cards clicáveis nas demais telas.
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-MAPA alocação">
           <h2>WS-MAPA alocação de técnico — FECHA o feedback do Mapa (D/E)</h2>
           <p>
