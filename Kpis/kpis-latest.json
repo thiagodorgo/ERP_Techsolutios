@@ -1,106 +1,106 @@
 {
- "snapshot_date": "2026-07-19",
- "version": "WS-CHARTS-F2-BACKEND",
- "source": "Kpis/kpis-latest.json",
- "scope": "root_project_kpis_reflecting_mobile_and_web",
- "release": {
-  "block": "WS-CARDS-CHARTS-F2 backend (série temporal de OS por dia)",
-  "title": "WS-CARDS-CHARTS-F2 backend: agregado de série temporal de OS (sem migração)",
-  "pr": null,
-  "merge_commit": null,
-  "approved_head": null,
-  "status": "published_per_pr",
-  "summary": "WS-CARDS-CHARTS-F2 (backend) — AGREGADO DE SÉRIE TEMPORAL DE OS (para gráficos temporais reais no Dashboard; diretriz do dono SEM pendência). Novo módulo src/modules/work-order-timeseries/ — GET /api/v1/operations/work-orders-timeseries?days=30 (ou from/to) -> por DIA: created/completed/cancelled, ZERO-FILL server-side (dias vazios=0, contíguos), bucketing por dia em America/Sao_Paulo via deriveBusinessDate (REUSO do Intl de deriveCompetencia — não TZ nova; P-Ω4-COMPETENCIA-TZ). Cada métrica no SEU timestamp (created_at/completed_at/cancelled_at); fallback honesto p/ created_at em linha legada (conta, não descarta). SEM MIGRAÇÃO (colunas já existem). compute PURO InMemory<->Prisma; Prisma withTenantRls + where.tenant_id. DTO omite tenant_id (§2.8). RBAC reusa work_orders:read (sem permissão nova). Time: dev backend -> analizador APROVADO + coordenador-de-acessos APROVADO + validador-mestre APROVADO_CONDICIONADO (MEDIA de KPI sanada). P-WOTS-SCALE (full-scan) + P-WOTS-FRONT-ACCESS (403 no gráfico) registrados. Sem provider/SKU novo.",
-  "status_label": "Charts F2 (backend): série temporal de OS por dia (created/completed/cancelled, zero-fill, TZ SP, READ-ONLY, work_orders:read); junta 2A+1AC; backend 1268->1276"
- },
- "metrics": {
-  "flutter_tests": {
-   "value": 764,
-   "total": 764,
-   "display": "764/764",
-   "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
+  "snapshot_date": "2026-07-20",
+  "version": "WS-CHARTS-F2-BACKEND",
+  "source": "Kpis/kpis-latest.json",
+  "scope": "root_project_kpis_reflecting_mobile_and_web",
+  "release": {
+    "block": "WS-CARDS-CHARTS-F2 backend (série temporal de OS por dia)",
+    "title": "WS-CARDS-CHARTS-F2 backend: agregado de série temporal de OS (sem migração)",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr",
+    "summary": "WS-CARDS-CHARTS-F2 (backend) — AGREGADO DE SÉRIE TEMPORAL DE OS (para gráficos temporais reais no Dashboard; diretriz do dono SEM pendência). Novo módulo src/modules/work-order-timeseries/ — GET /api/v1/operations/work-orders-timeseries?days=30 (ou from/to) -> por DIA: created/completed/cancelled, ZERO-FILL server-side (dias vazios=0, contíguos), bucketing por dia em America/Sao_Paulo via deriveBusinessDate (REUSO do Intl de deriveCompetencia — não TZ nova; P-Ω4-COMPETENCIA-TZ). Cada métrica no SEU timestamp (created_at/completed_at/cancelled_at); fallback honesto p/ created_at em linha legada (conta, não descarta). SEM MIGRAÇÃO (colunas já existem). compute PURO InMemory<->Prisma; Prisma withTenantRls + where.tenant_id. DTO omite tenant_id (§2.8). RBAC reusa work_orders:read (sem permissão nova). Time: dev backend -> analizador APROVADO + coordenador-de-acessos APROVADO + validador-mestre APROVADO_CONDICIONADO (MEDIA de KPI sanada). P-WOTS-SCALE (full-scan) + P-WOTS-FRONT-ACCESS (403 no gráfico) registrados. Sem provider/SKU novo.",
+    "status_label": "Charts F2 (backend): série temporal de OS por dia (created/completed/cancelled, zero-fill, TZ SP, READ-ONLY, work_orders:read); junta 2A+1AC; backend 1268->1276"
   },
-  "frontend_smoke_tests": {
-   "value": 597,
-   "total": 597,
-   "display": "597/597",
-   "note": "carrega o ultimo valor oficial (597) — o agregado work-order-timeseries e backend-only (o grafico consome no proximo PR)."
+  "metrics": {
+    "flutter_tests": {
+      "value": 764,
+      "total": 764,
+      "display": "764/764",
+      "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
+    },
+    "frontend_smoke_tests": {
+      "value": 602,
+      "total": 602,
+      "display": "602/602",
+      "note": "+5 (frontend/tests/work-order-timeseries.test.tsx: normalizacao defensiva D-007, nao-array->vazio, mock mode, 403->forbidden, render 3 series). Grafico temporal real no Dashboard consumindo GET /operations/work-orders-timeseries (#245). Sobre 597."
+    },
+    "backend_tests": {
+      "value": 1276,
+      "total": 1282,
+      "display": "1276/1282",
+      "note": "1276/1282 apos #245 (agregado work-order-timeseries) mergear. Local: 77 falhas de DB-nao-migrado/JWT-env seguem (0 nova, verificado por stash e pela junta)."
+    },
+    "backend_contract_tests_focused": {
+      "value": 21,
+      "total": 21,
+      "display": "21/21",
+      "note": "subset especifico carregado do ultimo valor oficial; pode ser maior (nao re-baseado nesta reconciliacao)."
+    },
+    "flutter_modules": {
+      "value": 17,
+      "total": 17,
+      "display": "17/17"
+    },
+    "mvp_demo": {
+      "value": 99,
+      "unit": "%",
+      "display": "99%",
+      "note": "Ω4 fechou o modulo Financeiro do tenant completo (Contas, Titulos AR/AP, Faturamento anti-refaturamento, Caixa/Extrato, Conciliacao, Fechamento com trava retroativa, Cheque, Dashboard real) sobre o hub da OS da Fase 1. +1 por escopo. Percentual estimado, sujeito a revisao humana."
+    },
+    "mvp_vendavel": {
+      "value": 88,
+      "unit": "%",
+      "display": "88%",
+      "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
+    },
+    "blocks_completed": {
+      "value": 66,
+      "display": "66",
+      "note": "reconciliacao D-Ω4-KPI-RELATORIO adiciona os 8 agregados-feature do Ω4 (1..8); blocos de governanca/pos-analise/fix nao contam como feature."
+    },
+    "mobile_backend_contracts": {
+      "value": 18,
+      "total": 18,
+      "display": "18/18"
+    },
+    "mobile_core_saas_contracts": {
+      "value": 21,
+      "total": 21,
+      "display": "21/21"
+    }
   },
-  "backend_tests": {
-   "value": 1276,
-   "total": 1282,
-   "display": "1276/1282",
-   "note": "+8 (tests/work-order-timeseries.test.ts: bucketing por dia TZ SP não-UTC, zero-fill contíguo cross-mês, métricas independentes por timestamp, fallback honesto, serviço InMemory cross-tenant, rota 200/403-finance/§2.8/400-janela). Sobre 1268 (#243). Local: 77 falhas de DB-não-migrado seguem (0 nova, verificado por stash)."
+  "policy": {
+    "dual_kpis": true,
+    "mobile_source": "mobile/flutter_app/Kpis/",
+    "root_reflection": "Kpis/",
+    "rules": [
+      "Mexeu no Flutter/mobile: atualizar mobile/flutter_app/Kpis/* e refletir percentuais mobile em Kpis/*.",
+      "Mexeu fora do mobile: atualizar Kpis/*.",
+      "Mexeu nos dois: atualizar os dois conjuntos.",
+      "Se existir index.html: atualizar tambem o HTML.",
+      "KPI por PR (D-KPI-PER-PR, 2026-07-13): todo PR que altere codigo/teste/escopo atualiza os KPIs no proprio PR com contagem de execucao real; a junta do PR valida (a politica pos-avaliacao humana foi REVOGADA)."
+    ]
   },
-  "backend_contract_tests_focused": {
-   "value": 21,
-   "total": 21,
-   "display": "21/21",
-   "note": "subset especifico carregado do ultimo valor oficial; pode ser maior (nao re-baseado nesta reconciliacao)."
-  },
-  "flutter_modules": {
-   "value": 17,
-   "total": 17,
-   "display": "17/17"
-  },
-  "mvp_demo": {
-   "value": 99,
-   "unit": "%",
-   "display": "99%",
-   "note": "Ω4 fechou o modulo Financeiro do tenant completo (Contas, Titulos AR/AP, Faturamento anti-refaturamento, Caixa/Extrato, Conciliacao, Fechamento com trava retroativa, Cheque, Dashboard real) sobre o hub da OS da Fase 1. +1 por escopo. Percentual estimado, sujeito a revisao humana."
-  },
-  "mvp_vendavel": {
-   "value": 88,
-   "unit": "%",
-   "display": "88%",
-   "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
-  },
-  "blocks_completed": {
-   "value": 66,
-   "display": "66",
-   "note": "reconciliacao D-Ω4-KPI-RELATORIO adiciona os 8 agregados-feature do Ω4 (1..8); blocos de governanca/pos-analise/fix nao contam como feature."
-  },
-  "mobile_backend_contracts": {
-   "value": 18,
-   "total": 18,
-   "display": "18/18"
-  },
-  "mobile_core_saas_contracts": {
-   "value": 21,
-   "total": 21,
-   "display": "21/21"
-  }
- },
- "policy": {
-  "dual_kpis": true,
-  "mobile_source": "mobile/flutter_app/Kpis/",
-  "root_reflection": "Kpis/",
-  "rules": [
-   "Mexeu no Flutter/mobile: atualizar mobile/flutter_app/Kpis/* e refletir percentuais mobile em Kpis/*.",
-   "Mexeu fora do mobile: atualizar Kpis/*.",
-   "Mexeu nos dois: atualizar os dois conjuntos.",
-   "Se existir index.html: atualizar tambem o HTML.",
-   "KPI por PR (D-KPI-PER-PR, 2026-07-13): todo PR que altere codigo/teste/escopo atualiza os KPIs no proprio PR com contagem de execucao real; a junta do PR valida (a politica pos-avaliacao humana foi REVOGADA)."
+  "notes": [
+    "D-Ω4-KPI-RELATORIO (reconciliação 2026-07-18): a rodada Ω4 (Financeiro do tenant ×1,5) deferiu a atualização de KPI de todos os seus PRs (#206–#225) para este snapshot único. Contagens de execução real ao fim da PÓS-FASE 1: backend 989→1242 (0 fail, 6 skip DB-gated que rodam no CI; 1248 total), smoke web 486→514. Flutter/mobile inalterados (Ω4 foi web/backend-only; política dupla). 8 agregados-feature (Ω4-1..8) → blocks_completed 58→66; mvp_demo 98→99 e mvp_vendavel 83→88 movidos por escopo (módulo Financeiro completo). Cada agregado por junta adversarial + pós-análise; relatório em agent-orchestration/omega/RELATORIO-OMEGA4.md. pr: 226; merge_commit/approved_head null na autoria (backfill pós-merge).",
+    "D-Ω3F-KPI-RELATORIO (reconciliação 2026-07-17): a rodada Ω3F deferiu a atualização de KPI de todos os seus PRs (#184–#204) para este snapshot único. Contagens de teste vêm de execução real ao fim da Fase 1: backend 989 (0 fail, 6 skip), smoke web 486. Flutter/mobile inalterados (Ω3F foi web/backend-only). mvp_demo/vendavel movidos (+2/+5) por escopo — hub operacional da OS completo.",
+    "JUNTA-MAPAS (2026-07-13): PR docs/agentes-only — cria 3 agentes (.claude/agents/planejador-mapas, dev-mapas, avaliador-mapas) + docs/maps/kb-mapas.md + D-JUNTA-MAPAS + ata J-JUNTA-MAPAS. NENHUM codigo de produto/teste tocado: TODAS as metricas de teste carregam o ultimo valor oficial (Ω-INFRA-1: backend 768/768, Flutter 764/764, smoke web 44/44). blocks_completed inalterado (49) — governanca/tooling nao conta como bloco de feature entregue, mesmo criterio de Ω-GOV/Ω-DOCS. mvp_demo/mvp_vendavel inalterados (nenhum escopo de produto movido). Nenhuma chave/billing/SKU do Google ativado.",
+    "Ω-GOV (2026-07-13): backend_tests corrigido de 15/15 (so core-saas) para 766/766 — a suite INTEIRA que o gate do CI passou a rodar no Ω-GATE (100 arquivos + Postgres+Redis). Primeira aplicacao da politica KPI-por-PR (D-KPI-PER-PR). Este PR e web/backend/docs-only: metrics de Flutter/mobile e frontend seguem os ultimos valores oficiais (B-124) ate serem re-baseadas em PRs das respectivas trilhas.",
+    "frontend_smoke_tests avancou de 33/33 para 44/44 na PR #125 (+10 testes unitarios do dashboard.adapter B-124 e +1 render smoke do dashboard); frontend check e build OK.",
+    "blocks_completed segue a regra de contagem de blocos entregues: 48 (ate B-123) + B-124 = 49.",
+    "mvp_demo e mvp_vendavel mantidos nos ultimos valores oficiais publicados (96%/78%, tipo estimado); nao houve decisao humana explicita para altera-los no B-124 — a revisao pode ajusta-los. B-123 fechou a fidelidade do fluxo de OS mobile e B-124 fechou o dashboard web enriquecido, mas os percentuais permanecem oficiais ate decisao humana.",
+    "flutter_tests e contratos mobile permanecem nos ultimos valores oficiais (B-124, web-only); backend_tests foi ATUALIZADO para 766/766 no Ω-GOV (suite backend inteira do gate do CI apos o Ω-GATE).",
+    "Na politica KPI-por-PR (D-KPI-PER-PR), um PR web/backend-only (como este Ω-GOV) atualiza so a raiz Kpis/*; a paridade de version/block com mobile/flutter_app/Kpis/ vale quando o PR toca ambos os conjuntos. Aqui a raiz avanca para Ω-GOV e o mobile segue em B-124 ate um PR que mexa em Flutter/mobile."
+  ],
+  "limitations": [
+    "S3/presigned real pendente",
+    "Persistencia duravel DB/Redis do receipt pendente",
+    "Antivirus real pendente",
+    "Download protegido final pendente",
+    "Retencao definitiva pendente",
+    "Settings web sem backend dedicado (lacuna documentada)",
+    "Piloto Android real ainda precisa validacao em dispositivo fisico"
   ]
- },
- "notes": [
-  "D-Ω4-KPI-RELATORIO (reconciliação 2026-07-18): a rodada Ω4 (Financeiro do tenant ×1,5) deferiu a atualização de KPI de todos os seus PRs (#206–#225) para este snapshot único. Contagens de execução real ao fim da PÓS-FASE 1: backend 989→1242 (0 fail, 6 skip DB-gated que rodam no CI; 1248 total), smoke web 486→514. Flutter/mobile inalterados (Ω4 foi web/backend-only; política dupla). 8 agregados-feature (Ω4-1..8) → blocks_completed 58→66; mvp_demo 98→99 e mvp_vendavel 83→88 movidos por escopo (módulo Financeiro completo). Cada agregado por junta adversarial + pós-análise; relatório em agent-orchestration/omega/RELATORIO-OMEGA4.md. pr: 226; merge_commit/approved_head null na autoria (backfill pós-merge).",
-  "D-Ω3F-KPI-RELATORIO (reconciliação 2026-07-17): a rodada Ω3F deferiu a atualização de KPI de todos os seus PRs (#184–#204) para este snapshot único. Contagens de teste vêm de execução real ao fim da Fase 1: backend 989 (0 fail, 6 skip), smoke web 486. Flutter/mobile inalterados (Ω3F foi web/backend-only). mvp_demo/vendavel movidos (+2/+5) por escopo — hub operacional da OS completo.",
-  "JUNTA-MAPAS (2026-07-13): PR docs/agentes-only — cria 3 agentes (.claude/agents/planejador-mapas, dev-mapas, avaliador-mapas) + docs/maps/kb-mapas.md + D-JUNTA-MAPAS + ata J-JUNTA-MAPAS. NENHUM codigo de produto/teste tocado: TODAS as metricas de teste carregam o ultimo valor oficial (Ω-INFRA-1: backend 768/768, Flutter 764/764, smoke web 44/44). blocks_completed inalterado (49) — governanca/tooling nao conta como bloco de feature entregue, mesmo criterio de Ω-GOV/Ω-DOCS. mvp_demo/mvp_vendavel inalterados (nenhum escopo de produto movido). Nenhuma chave/billing/SKU do Google ativado.",
-  "Ω-GOV (2026-07-13): backend_tests corrigido de 15/15 (so core-saas) para 766/766 — a suite INTEIRA que o gate do CI passou a rodar no Ω-GATE (100 arquivos + Postgres+Redis). Primeira aplicacao da politica KPI-por-PR (D-KPI-PER-PR). Este PR e web/backend/docs-only: metrics de Flutter/mobile e frontend seguem os ultimos valores oficiais (B-124) ate serem re-baseadas em PRs das respectivas trilhas.",
-  "frontend_smoke_tests avancou de 33/33 para 44/44 na PR #125 (+10 testes unitarios do dashboard.adapter B-124 e +1 render smoke do dashboard); frontend check e build OK.",
-  "blocks_completed segue a regra de contagem de blocos entregues: 48 (ate B-123) + B-124 = 49.",
-  "mvp_demo e mvp_vendavel mantidos nos ultimos valores oficiais publicados (96%/78%, tipo estimado); nao houve decisao humana explicita para altera-los no B-124 — a revisao pode ajusta-los. B-123 fechou a fidelidade do fluxo de OS mobile e B-124 fechou o dashboard web enriquecido, mas os percentuais permanecem oficiais ate decisao humana.",
-  "flutter_tests e contratos mobile permanecem nos ultimos valores oficiais (B-124, web-only); backend_tests foi ATUALIZADO para 766/766 no Ω-GOV (suite backend inteira do gate do CI apos o Ω-GATE).",
-  "Na politica KPI-por-PR (D-KPI-PER-PR), um PR web/backend-only (como este Ω-GOV) atualiza so a raiz Kpis/*; a paridade de version/block com mobile/flutter_app/Kpis/ vale quando o PR toca ambos os conjuntos. Aqui a raiz avanca para Ω-GOV e o mobile segue em B-124 ate um PR que mexa em Flutter/mobile."
- ],
- "limitations": [
-  "S3/presigned real pendente",
-  "Persistencia duravel DB/Redis do receipt pendente",
-  "Antivirus real pendente",
-  "Download protegido final pendente",
-  "Retencao definitiva pendente",
-  "Settings web sem backend dedicado (lacuna documentada)",
-  "Piloto Android real ainda precisa validacao em dispositivo fisico"
- ]
 }

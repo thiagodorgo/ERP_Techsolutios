@@ -9,11 +9,15 @@ import {
   relativeTimeFrom,
   type DashboardTone,
 } from "../modules/dashboard/dashboard.adapter";
+import { TrendChart } from "../components/charts";
+import { Alert, EmptyState, Skeleton } from "../components/ui";
 import { useAutoRefresh } from "../hooks/useAutoRefresh";
 import { useDashboardData } from "../modules/dashboard/useDashboardData";
+import { useWorkOrderTimeseries } from "../modules/dashboard/useWorkOrderTimeseries";
 import type { DashboardSource } from "../modules/dashboard/repository";
 import type { OperationalAlert, OperationalKpi } from "../modules/dashboard/types";
 import { useAuth } from "../providers/AuthProvider";
+import { usePermissions } from "../providers/PermissionProvider";
 import { useTenantContext } from "../providers/TenantProvider";
 
 // Dashboard Operacional (gestor) — C3: KPIs, OS críticas, eventos e alertas vêm
@@ -79,10 +83,64 @@ function criticalDescription(
   return parts.join(" · ");
 }
 
+// Formata o dia civil YYYY-MM-DD (America/Sao_Paulo, já resolvido pelo backend) como "dd/mm" SEM
+// `new Date(date)` — o parse ingênuo o interpretaria como UTC 00:00 e poderia recuar um dia no fuso local.
+function formatDiaMes(date: string): string {
+  const parts = date.split("-");
+  if (parts.length !== 3) return date;
+  const [, month, day] = parts;
+  return `${day}/${month}`;
+}
+
+// WS-CARDS-CHARTS-F2 — card do gráfico temporal de volume de OS. Só é montado quando o papel tem
+// `work_orders:read` (o pai gateia), então o hook/fetch nunca dispara para quem não pode ver. Auto-refresh
+// em segundo plano (sem botão "Atualizar"). D-007: só plota `points` do backend; vazio → emptyLabel honesto.
+function WorkOrderVolumeCard() {
+  const { activeContext } = useTenantContext();
+  const { data, loading, refresh } = useWorkOrderTimeseries();
+  useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
+
+  const points = data.points;
+
+  return (
+    <div style={{ ...card, padding: 20, marginBottom: 16 }}>
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 15, fontWeight: 800 }}>Volume de ordens de serviço</div>
+        <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 1 }}>Últimos 30 dias</div>
+      </div>
+      {loading ? (
+        <Skeleton lines={4} />
+      ) : data.forbidden ? (
+        <EmptyState title="Acesso não permitido" detail="Seu perfil não tem permissão para ver o volume de ordens de serviço." />
+      ) : data.source === "fallback" ? (
+        <Alert tone="warning" title="Não foi possível carregar o gráfico">
+          Tentaremos novamente na próxima atualização.
+        </Alert>
+      ) : (
+        <TrendChart
+          type="area"
+          height={160}
+          showLegend
+          series={[
+            { id: "created", label: "Abertas", tone: "info", values: points.map((p) => p.created) },
+            { id: "completed", label: "Concluídas", tone: "success", values: points.map((p) => p.completed) },
+            { id: "cancelled", label: "Canceladas", tone: "danger", values: points.map((p) => p.cancelled) },
+          ]}
+          labels={points.map((p) => formatDiaMes(p.date))}
+          valueFormat={(n) => String(Math.round(n))}
+          emptyLabel="Sem ordens no período."
+          ariaLabel="Volume diário de ordens de serviço nos últimos 30 dias"
+        />
+      )}
+    </div>
+  );
+}
+
 export function DashboardPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
+  const { can } = usePermissions();
   const data = useDashboardData();
   // WS-UI-REFRESH — o painel recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(data.refresh, { enabled: Boolean(activeContext) });
@@ -177,6 +235,18 @@ export function DashboardPage() {
           })
         )}
       </div>
+
+      {can("work_orders:read") ? (
+        <WorkOrderVolumeCard />
+      ) : (
+        <div style={{ ...card, padding: 20, marginBottom: 16 }}>
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 15, fontWeight: 800 }}>Volume de ordens de serviço</div>
+            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 1 }}>Últimos 30 dias</div>
+          </div>
+          <EmptyState title="Acesso não permitido" detail="Seu perfil não tem permissão para ver o volume de ordens de serviço." />
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
         <div style={{ ...card, padding: 20, flex: "1.7 1 360px", minWidth: 0 }}>
