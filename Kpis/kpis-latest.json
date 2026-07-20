@@ -1,17 +1,17 @@
 {
  "snapshot_date": "2026-07-19",
- "version": "WS-MAPA-ALLOC-FE",
+ "version": "WS-CHARTS-F2-BACKEND",
  "source": "Kpis/kpis-latest.json",
  "scope": "root_project_kpis_reflecting_mobile_and_web",
  "release": {
-  "block": "WS-MAPA alocação frontend (popups D/E de alocação de técnico) — FECHA o feedback do Mapa",
-  "title": "WS-MAPA alocação: popups de alocação com filtros + distância/ETA-estimado honesto (J-MAPAS-7)",
+  "block": "WS-CARDS-CHARTS-F2 backend (série temporal de OS por dia)",
+  "title": "WS-CARDS-CHARTS-F2 backend: agregado de série temporal de OS (sem migração)",
   "pr": null,
   "merge_commit": null,
   "approved_head": null,
   "status": "published_per_pr",
-  "summary": "WS-MAPA alocação (frontend D+E) — FEATURE DE ALOCAÇÃO DE TÉCNICO (feedback do dono, fecha o mapa). D (chamados): click -> popup de detalhe honesto + 'Alocar técnico' (gated canCreateDispatch) -> lista RANQUEADA + filtros (Disponível / Mais próximo=distância haversine asc / Maior índice de conclusão=completionRate desc) -> 'Alocar' = createDispatch. E (técnicos): linha+status; HOVER -> tooltip (status/frescor/equipe/OS, NUNCA lat/lng) + realça o pin; CLICK -> popup com dados + seletor de chamado -> distância '~X km (linha reta)' + tempo '~Y min (estimado, sem trânsito)' (÷28km/h, disclaimer) + 'Alocar'. HONESTO: nunca 'chega às'/ETA fabricado; completionRate null->'—'; sem coordenada->'indisponível'; LGPD zero-lat/lng no HTML. Novos: technician-performance.service + allocation.ts (helpers puros) + hooks (useTechnicianPerformance/useAllocateDispatch) + MapAllocationDialog (a11y glass) + 2 popups. Alocação REAL via createDispatch (404/409/422 traduzidos). ETA por rota real = Fase 2 (junta-5+PD). Time: dev-mapas -> analizador APROVADO + coordenador-de-acessos APROVADO + cognicao-visual APROVADO + avaliador-mapas APROVADO_CONDICIONADO (ALTAs de processo KB+KPI sanadas; BAIXA import morto + painel concorrente sanados). Sem provider/SKU (US$0).",
-  "status_label": "Mapa: FEEDBACK DO DONO COMPLETO (polish + alocação D/E + backend índice) — alocação real via createDispatch, distância/ETA honesto; junta 3A+1AC; smoke 581->597"
+  "summary": "WS-CARDS-CHARTS-F2 (backend) — AGREGADO DE SÉRIE TEMPORAL DE OS (para gráficos temporais reais no Dashboard; diretriz do dono SEM pendência). Novo módulo src/modules/work-order-timeseries/ — GET /api/v1/operations/work-orders-timeseries?days=30 (ou from/to) -> por DIA: created/completed/cancelled, ZERO-FILL server-side (dias vazios=0, contíguos), bucketing por dia em America/Sao_Paulo via deriveBusinessDate (REUSO do Intl de deriveCompetencia — não TZ nova; P-Ω4-COMPETENCIA-TZ). Cada métrica no SEU timestamp (created_at/completed_at/cancelled_at); fallback honesto p/ created_at em linha legada (conta, não descarta). SEM MIGRAÇÃO (colunas já existem). compute PURO InMemory<->Prisma; Prisma withTenantRls + where.tenant_id. DTO omite tenant_id (§2.8). RBAC reusa work_orders:read (sem permissão nova). Time: dev backend -> analizador APROVADO + coordenador-de-acessos APROVADO + validador-mestre APROVADO_CONDICIONADO (MEDIA de KPI sanada). P-WOTS-SCALE (full-scan) + P-WOTS-FRONT-ACCESS (403 no gráfico) registrados. Sem provider/SKU novo.",
+  "status_label": "Charts F2 (backend): série temporal de OS por dia (created/completed/cancelled, zero-fill, TZ SP, READ-ONLY, work_orders:read); junta 2A+1AC; backend 1268->1276"
  },
  "metrics": {
   "flutter_tests": {
@@ -24,13 +24,13 @@
    "value": 597,
    "total": 597,
    "display": "597/597",
-   "note": "+16 (operations-map-allocation.test.ts: honestidade distância haversine/ETA-estimado sem 'chega às', null->'—', alocação real via createDispatch com payload correta, filtros nearest/completion/disponível, gating canCreateDispatch, LGPD sem coordenada no HTML). Baseline de mapa 112->128."
+   "note": "carrega o ultimo valor oficial (597) — o agregado work-order-timeseries e backend-only (o grafico consome no proximo PR)."
   },
   "backend_tests": {
-   "value": 1268,
-   "total": 1274,
-   "display": "1268/1274",
-   "note": "carrega o ultimo valor oficial (1268) — a UI de alocação e frontend-only (o agregado backend foi #243)."
+   "value": 1276,
+   "total": 1282,
+   "display": "1276/1282",
+   "note": "+8 (tests/work-order-timeseries.test.ts: bucketing por dia TZ SP não-UTC, zero-fill contíguo cross-mês, métricas independentes por timestamp, fallback honesto, serviço InMemory cross-tenant, rota 200/403-finance/§2.8/400-janela). Sobre 1268 (#243). Local: 77 falhas de DB-não-migrado seguem (0 nova, verificado por stash)."
   },
   "backend_contract_tests_focused": {
    "value": 21,

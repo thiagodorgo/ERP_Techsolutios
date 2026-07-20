@@ -1157,3 +1157,17 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - acao: OTIMIZAÇÃO FUTURA (não-bloqueante; NÃO é pendência funcional — a feature entrega o índice correto agora). Trocar por
   `prisma.workOrder.groupBy` quando/se o volume exigir. Sem mudança de contrato.
 - status: aberto (otimização; feature funcionando).
+
+## P-WOTS-SCALE — otimização de agregação (full-scan) no work-order-timeseries (2026-07-19)
+- descricao: o agregado GET /operations/work-orders-timeseries varre as OS do tenant (só status+3 timestamps) e agrega no
+  compute puro. Correto e completo; em tenants com muita OS, filtrar por janela na query + GROUP BY seria mais eficiente.
+  Espelha a mesma escolha de technician-performance/financial-summary. NÃO é pendência funcional.
+- acao: OTIMIZAÇÃO FUTURA (filtro SQL por from/to + agregação no banco) quando o volume exigir. Sem mudança de contrato.
+- status: aberto (otimização; feature funcionando).
+
+## P-WOTS-FRONT-ACCESS — gráfico temporal deve tratar 403 (papel sem work_orders:read) no Dashboard (2026-07-19)
+- descricao: a série usa `work_orders:read` (mais restritiva que o `dashboard:read` do /dashboard/summary). Um papel com
+  dashboard:read mas SEM work_orders:read (ex.: support) veria o Dashboard mas o gráfico temporal 403. O backend 403 corretamente.
+- acao: no PR frontend do gráfico temporal, tratar o 403/erro com o estado obrigatório §7 ("acesso não permitido"/vazio honesto),
+  nunca card quebrado. (A ser feito no próprio PR frontend do gráfico.)
+- status: aberto (tratar no frontend do gráfico).

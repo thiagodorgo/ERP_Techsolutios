@@ -23,6 +23,7 @@ import { createDashboardRouter } from "./modules/dashboard/index.js";
 import { createExpenseManagementRouter } from "./modules/expense-management/index.js";
 import { createFieldDispatchRouter } from "./modules/field-dispatch/index.js";
 import { createTechnicianPerformanceRouter } from "./modules/technician-performance/index.js";
+import { createWorkOrderTimeseriesRouter } from "./modules/work-order-timeseries/index.js";
 import { createFieldLocationRouter } from "./modules/field-location/index.js";
 import { createFieldOpsRealtimeRouter } from "./modules/field-ops-realtime/index.js";
 import { createFuelLogRouter } from "./modules/fuel-logs/index.js";
@@ -149,6 +150,11 @@ export function createApp(service: ICoreSaasService): Express {
   // READ-ONLY (concluídas÷atribuídas por operador) sobre work_orders, computado NO BACKEND, tenant-scoped
   // (RLS). Alimenta o ranking de alocação do Mapa Operacional. Path não colide com /operations/dispatches.
   app.use("/api/v1", attachAuthenticatedActor(), createTechnicianPerformanceRouter());
+  // Série temporal de OS. GET /operations/work-orders-timeseries: agregado READ-ONLY sobre work_orders,
+  // por DIA (bucket em America/Sao_Paulo, mesmo fuso de negócio da competência) com ZERO-FILL server-side —
+  // criadas/concluídas/canceladas ao longo da janela (default 30 dias). Alimenta os gráficos temporais reais
+  // do Dashboard. Tenant-scoped (RLS). Path não colide com /operations/technician-performance nem /dispatches.
+  app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderTimeseriesRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createCommissionRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createExpenseManagementRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createCoreSaasRouter(service));

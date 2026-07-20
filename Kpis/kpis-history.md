@@ -6,6 +6,25 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-19 - WS-CARDS-CHARTS-F2 (backend) Agregado de serie temporal de OS
+
+### Resultado
+
+- **Diretriz do dono (SEM pendencia):** construido o backend da SERIE TEMPORAL p/ os graficos temporais reais. Novo modulo
+  `src/modules/work-order-timeseries/` — GET /api/v1/operations/work-orders-timeseries?days=30 -> por DIA created/completed/
+  cancelled, ZERO-FILL (dias vazios=0, contiguos), bucketing por dia em America/Sao_Paulo via deriveBusinessDate (reuso do Intl
+  de deriveCompetencia). Cada metrica no seu timestamp; fallback honesto p/ created_at em linha legada. **SEM MIGRACAO**. compute
+  PURO InMemory<->Prisma; Prisma withTenantRls. DTO omite tenant_id (§2.8). RBAC reusa work_orders:read.
+- Time: dev backend -> analizador APROVADO + coordenador-de-acessos APROVADO + validador-mestre APROVADO_CONDICIONADO (MEDIA de
+  KPI sanada). P-WOTS-SCALE (full-scan) + P-WOTS-FRONT-ACCESS (403 no grafico) registrados.
+
+### KPIs
+
+- `backend_tests` **1268 -> 1276** (+8: tests/work-order-timeseries.test.ts). Sobre 1268 (#243). Local: 77 falhas de
+  DB-nao-migrado seguem (0 nova, verificado por stash).
+- `frontend_smoke_tests` 597, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**.
+  Proximo: FRONTEND (grafico temporal real no Dashboard + fan-out cards). `pr`/`merge_commit`/`approved_head` null na autoria.
+
 ## 2026-07-19 - WS-MAPA alocacao (frontend D/E) FECHA o feedback do Mapa
 
 ### Resultado
