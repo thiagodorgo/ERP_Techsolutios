@@ -101,7 +101,7 @@ export function OperationsDispatchesPage() {
         </Alert>
       ) : null}
 
-      <DispatchesSummaryCards summary={summary} />
+      <DispatchesSummaryCards summary={summary} source={fallbackReason || error ? "fallback" : "api"} />
       <DispatchesFilters filters={filters} operatorOptions={operatorOptions} onChange={setFilters} />
 
       {showCreate && can("field_dispatch:create") ? (
