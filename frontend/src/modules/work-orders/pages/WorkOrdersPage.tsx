@@ -3,8 +3,10 @@ import type { CSSProperties } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { ClickableKpiCard } from "../../../components/kpi";
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { usePermissions } from "../../../providers/PermissionProvider";
+import { buildWorkOrdersKpiDetails } from "../work-orders-kpi-detail";
 import { RevokeDispatchPrompt } from "../components/RevokeDispatchPrompt";
 import { WorkOrderDelayBadge } from "../components/WorkOrderDelayBadge";
 import { WorkOrderRowActions } from "../components/WorkOrderRowActions";
@@ -127,6 +129,13 @@ export function WorkOrdersPage() {
     };
   }, [items]);
 
+  // WS-CARDS-CHARTS-F2 — pop-up de cada KPI: "participação no total" a partir das MESMAS contagens já
+  // exibidas nos cards (derivadas de `items`); nada é somado nem fabricado (D-007).
+  const kpiDetails = useMemo(
+    () => buildWorkOrdersKpiDetails({ ...kpis, total: items.length }, source),
+    [kpis, items.length, source],
+  );
+
   const groupMatch = (GROUPS.find((g) => g.key === group) ?? GROUPS[0]).match;
   const q = search.trim().toLowerCase();
   const visible = items
@@ -148,10 +157,10 @@ export function WorkOrdersPage() {
 
       {/* KPIs computados dos dados reais */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
-        <KpiCard n={kpis.abertas} label="OS abertas" badge="Todas" bg="#EFF6FF" color="#2563EB" />
-        <KpiCard n={kpis.andamento} label="Em andamento" badge="Agora" bg="#FFFBEB" color="#D97706" />
-        <KpiCard n={kpis.urgentes} label="Urgentes" badge="Prioridade" bg="#FEF2F2" color="#DC2626" />
-        <KpiCard n={kpis.concluidas} label="Concluídas" badge="Total" bg="#ECFDF5" color="#059669" />
+        <ClickableKpiCard detail={kpiDetails.abertas}><KpiCard n={kpis.abertas} label="OS abertas" badge="Todas" bg="#EFF6FF" color="#2563EB" /></ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.andamento}><KpiCard n={kpis.andamento} label="Em andamento" badge="Agora" bg="#FFFBEB" color="#D97706" /></ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.urgentes}><KpiCard n={kpis.urgentes} label="Urgentes" badge="Prioridade" bg="#FEF2F2" color="#DC2626" /></ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.concluidas}><KpiCard n={kpis.concluidas} label="Concluídas" badge="Total" bg="#ECFDF5" color="#059669" /></ClickableKpiCard>
       </div>
 
       {source === "fallback" ? (

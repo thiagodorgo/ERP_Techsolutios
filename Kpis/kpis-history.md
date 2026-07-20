@@ -6,6 +6,32 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-20 - WS-CARDS-CHARTS-F2 (frontend PR2a) Fan-out de cards clicaveis (3 superficies operacionais)
+
+### Resultado
+
+- **20 cards de KPI estaticos viram clicaveis** (ClickableKpiCard com pop-up tematico HONESTO — D-007, so dado ja carregado,
+  nunca fabrica/soma) em 3 superficies operacionais de maior valor:
+  - **Dashboard (9 KPIs):** Concluidas/OS-hoje com body **chart** da serie real (reusa useWorkOrderTimeseries; so quando
+    source=api & !forbidden & pontos>0, senao **explain** honesto); abertas/andamento/atrasadas/cadastro com explain + cta.
+  - **Ordens de Servico (4 cards inline do WorkOrdersPage):** breakdown "participacao no total" a partir de `items` ja contados.
+  - **Despachos (7 cards):** breakdown por status do `summary` ja calculado; card Total com remainder "Rascunho" rotulado.
+- **Achado:** `WorkOrdersSummaryCards` e ORFAO (nenhuma pagina o renderiza) -> tornados clicaveis os **4 cards REAIS** que o
+  usuario ve no WorkOrdersPage; o componente morto ficou intocado.
+- **Acesso (2 MEDIA da junta sanadas):** (1) o hook da serie ganhou `enabled=can("work_orders:read")` — papel sem a permissao
+  **NAO dispara 403** em mount nem auto-refresh (regressao do #246 evitada; teste prova fetchCount=0). (2) CTAs dos pop-ups
+  gated pela permissao **EXATA** do PermissionGuard da rota (work_orders/customers/vehicles/teams:read + `service_catalog:read`).
+- Time: dev -> junta **analizador APROVADO + cognicao-visual APROVADO** (§11: cards so ENVOLVIDOS, nao reescritos) **+
+  coordenador-de-acessos APROVADO** (2 MEDIA sanadas, 0 condicao). So nit BAIXA (border-radius 14vs12 cosmetico). Ata
+  `J-CHARTS-F2-fanout-2a-ata.md`.
+
+### KPIs
+
+- `frontend_smoke_tests` **602 -> 615** (+13: kpi-cards-clickable +9, dashboard-timeseries-permission-gate +4). PR web-only.
+- `backend_tests` 1276/1282, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**.
+  Backfill #246: `pr`/`merge_commit`/`approved_head` = 59ccf60. `pr`/`merge_commit`/`approved_head` deste PR null na autoria.
+  Proximo: **PR2b** — fan-out em Estoque/Remuneracoes/frota/plataforma.
+
 ## 2026-07-20 - WS-CARDS-CHARTS-F2 (frontend PR1) Grafico temporal real no Dashboard
 
 ### Resultado

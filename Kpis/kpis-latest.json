@@ -21,10 +21,10 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 602,
-      "total": 602,
-      "display": "602/602",
-      "note": "+5 (frontend/tests/work-order-timeseries.test.tsx: normalizacao defensiva D-007, nao-array->vazio, mock mode, 403->forbidden, render 3 series). Grafico temporal real no Dashboard consumindo GET /operations/work-orders-timeseries (#245). Sobre 597."
+      "value": 615,
+      "total": 615,
+      "display": "615/615",
+      "note": "+13 (fan-out de cards clicaveis PR2a: kpi-cards-clickable +9, dashboard-timeseries-permission-gate +4). 20 cards em 3 superficies (Dashboard 9, OS 4, Despachos 7) viram ClickableKpiCard com pop-up honesto (D-007). Sobre 602."
     },
     "backend_tests": {
       "value": 1276,

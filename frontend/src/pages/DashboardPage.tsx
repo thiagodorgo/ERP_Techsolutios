@@ -10,11 +10,14 @@ import {
   type DashboardTone,
 } from "../modules/dashboard/dashboard.adapter";
 import { TrendChart } from "../components/charts";
+import { ClickableKpiCard } from "../components/kpi";
 import { Alert, EmptyState, Skeleton } from "../components/ui";
 import { useAutoRefresh } from "../hooks/useAutoRefresh";
+import { buildDashboardKpiDetail, formatDiaMes, mapDashboardSource } from "../modules/dashboard/dashboard-kpi-detail";
 import { useDashboardData } from "../modules/dashboard/useDashboardData";
 import { useWorkOrderTimeseries } from "../modules/dashboard/useWorkOrderTimeseries";
 import type { DashboardSource } from "../modules/dashboard/repository";
+import type { WorkOrderTimeseriesData } from "../modules/dashboard/work-order-timeseries.types";
 import type { OperationalAlert, OperationalKpi } from "../modules/dashboard/types";
 import { useAuth } from "../providers/AuthProvider";
 import { usePermissions } from "../providers/PermissionProvider";
@@ -83,23 +86,11 @@ function criticalDescription(
   return parts.join(" · ");
 }
 
-// Formata o dia civil YYYY-MM-DD (America/Sao_Paulo, já resolvido pelo backend) como "dd/mm" SEM
-// `new Date(date)` — o parse ingênuo o interpretaria como UTC 00:00 e poderia recuar um dia no fuso local.
-function formatDiaMes(date: string): string {
-  const parts = date.split("-");
-  if (parts.length !== 3) return date;
-  const [, month, day] = parts;
-  return `${day}/${month}`;
-}
-
-// WS-CARDS-CHARTS-F2 — card do gráfico temporal de volume de OS. Só é montado quando o papel tem
-// `work_orders:read` (o pai gateia), então o hook/fetch nunca dispara para quem não pode ver. Auto-refresh
-// em segundo plano (sem botão "Atualizar"). D-007: só plota `points` do backend; vazio → emptyLabel honesto.
-function WorkOrderVolumeCard() {
-  const { activeContext } = useTenantContext();
-  const { data, loading, refresh } = useWorkOrderTimeseries();
-  useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
-
+// WS-CARDS-CHARTS-F2 — card do gráfico temporal de volume de OS. A série é carregada UMA vez no
+// DashboardPage (useWorkOrderTimeseries) e compartilhada com os pop-ups de "Concluídas"/"OS hoje" — este
+// card só a renderiza. Auto-refresh em segundo plano fica no pai (sem botão "Atualizar"). D-007: só plota
+// `points` do backend; vazio → emptyLabel honesto.
+function WorkOrderVolumeCard({ data, loading }: { data: WorkOrderTimeseriesData; loading: boolean }) {
   const points = data.points;
 
   return (
@@ -141,10 +132,18 @@ export function DashboardPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
+  const canReadWorkOrders = can("work_orders:read");
   const data = useDashboardData();
-  // WS-UI-REFRESH — o painel recarrega sozinho em segundo plano (sem botão "Atualizar").
+  // WS-CARDS-CHARTS-F2 — série diária de OS carregada no nível da página para alimentar TANTO o card grande
+  // de volume QUANTO os pop-ups de "Concluídas"/"OS hoje", sem um 2º fetch. Quem não tem work_orders:read NÃO
+  // dispara fetch algum (gate por `enabled`): o card mostra "Acesso não permitido" (forbidden) e os pop-ups
+  // desses dois cards degradam para explicação honesta.
+  const timeseries = useWorkOrderTimeseries(30, canReadWorkOrders);
+  // WS-UI-REFRESH — painel e série recarregam sozinhos em segundo plano (sem botão "Atualizar").
   useAutoRefresh(data.refresh, { enabled: Boolean(activeContext) });
+  useAutoRefresh(timeseries.refresh, { enabled: Boolean(activeContext) && canReadWorkOrders });
 
+  const summarySourceTag = mapDashboardSource(data.summarySource);
   const now = new Date();
   const dispatchRows = useMemo(() => deriveActiveDispatchRows(data.dispatches, 5), [data.dispatches]);
   const fieldRows = useMemo(() => deriveFieldStatusRows(data.locations, now, 5), [data.locations, now]);
@@ -222,22 +221,27 @@ export function DashboardPage() {
         ) : (
           data.kpis.map((kpi) => {
             const tone = KPI_TONE[kpi.tone];
+            // WS-CARDS-CHARTS-F2 — cada card vira alvo clicável (envolve o visual atual, sem reescrevê-lo) e
+            // abre o pop-up sobre o seu tema. O corpo usa só dado já carregado (D-007).
+            const detail = buildDashboardKpiDetail(kpi, summarySourceTag, timeseries.data, can);
             return (
-              <div key={kpi.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 15px", display: "flex", flexDirection: "column", gap: 7 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 3, background: tone.color, flexShrink: 0 }} aria-hidden="true" />
-                  <span style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-.5px", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{kpi.value}</span>
+              <ClickableKpiCard key={kpi.id} detail={detail}>
+                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 15px", display: "flex", flexDirection: "column", gap: 7 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 3, background: tone.color, flexShrink: 0 }} aria-hidden="true" />
+                    <span style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-.5px", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{kpi.value}</span>
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#475569", lineHeight: 1.3 }}>{kpi.label}</div>
+                  {kpi.delta ? <div style={{ fontSize: 10.5, color: "#94A3B8" }}>{kpi.delta}</div> : null}
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#475569", lineHeight: 1.3 }}>{kpi.label}</div>
-                {kpi.delta ? <div style={{ fontSize: 10.5, color: "#94A3B8" }}>{kpi.delta}</div> : null}
-              </div>
+              </ClickableKpiCard>
             );
           })
         )}
       </div>
 
       {can("work_orders:read") ? (
-        <WorkOrderVolumeCard />
+        <WorkOrderVolumeCard data={timeseries.data} loading={timeseries.loading} />
       ) : (
         <div style={{ ...card, padding: 20, marginBottom: 16 }}>
           <div style={{ marginBottom: 14 }}>
