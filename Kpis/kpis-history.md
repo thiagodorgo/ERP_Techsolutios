@@ -6,6 +6,29 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-20 - WS-SCALE-8TELAS PR-SCALE-3 (auditTenant) Auditoria ligada ao audit-log real
+
+### Resultado
+
+- **Tela "Auditoria da organizacao" LIGADA AO DADO REAL.** Antes FABRICAVA eventos ("Carla Mendes / Concluiu OS-2891") e
+  KPIs ("312 eventos / 84 logins"). Agora consome **`GET /api/v1/audit-events`** (endpoint JA existente, gate `audit.read`)
+  via service+hook+adapter clonando o padrao work-order-timeseries. **SEM backend novo, SEM migracao, SEM RBAC novo.**
+- **§2.8:** `AuditEventView` NAO inclui `tenant_id` (dropado na fronteira; teste prova nao-vazamento mesmo com tenant secreto
+  na entrada). **D-007:** KPIs so honestos derivados da lista (Eventos carregados / Atores distintos / Acoes distintas /
+  Evento mais recente); colunas QUANDO/ATOR/EVENTO (coluna "RESULTADO" fabricada removida); "Exportar CSV" so eventos reais
+  (desabilitado quando vazio).
+- **Estados §7:** loading(skeleton) / forbidden(**403 honesto** "Acesso nao permitido") / fallback(alerta) / vazio; auto-refresh
+  gated por `!forbidden` (nao martela o gate apos 403).
+- Junta: **analizador APROVADO + cognicao-visual APROVADO** (ALTA sanada: label "AÇÃO" colidia com RIGHT_ALIGNED -> renomeada
+  "EVENTO") **+ coordenador-de-acessos APROVADO** (tenant_id nao vaza, 403 honesto, guard /audit inalterado). Follow-ups nao
+  bloqueantes em `P-AUDIT-FOLLOWUPS` (nome do ator, DTO backend sem tenant_id, assimetria guard×backend).
+
+### KPIs
+
+- `frontend_smoke_tests` **626 -> 631** (+5: audit-events smoke). PR web-only.
+- `backend_tests` 1276/1282, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**.
+  Backfill #249: `pr`/`merge_commit`/`approved_head` = 20bcf45. Deste PR null na autoria.
+
 ## 2026-07-20 - WS-SCALE-8TELAS PR-SCALE-2 (invoices/NF-e) Parada fiscal honesta (correcao D-007)
 
 ### Resultado
