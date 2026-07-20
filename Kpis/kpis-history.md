@@ -6,6 +6,25 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-19 - WS-MAPA SPRINT POLISH Fullscreen nativo + legenda unica + rail-pilula (feedback do dono)
+
+### Resultado
+
+- Feedback do dono na tela: **(A)** legenda UNICA na base (removido o `<footer>` redundante "Atual"/"Localizacao antiga" do
+  canvas Google; ja subsumido em MAP_LEGEND_ITEMS). **(C)** removido o maximizar customizado (tosco) -> **fullscreen NATIVO**
+  no canto inf. direito nos 2 canvases (MapLibre FullscreenControl / Google fullscreenControl RIGHT_BOTTOM). **(B)** rail
+  COLAPSADO virou **pilula fina** top-anchored (44x64px) em vez de faixa 56px que roubava o mapa; mapPadding colapsado 72->24.
+- **Time novo** (planejador-senior-master-chefe + pesquisadores web PD-006 → dev → analizador → aprovador): analizador +
+  cognicao-visual **APROVADO**, aprovador (avaliador-mapas) **APROVADO_CONDICIONADO** (condicao ALTA do KB sanada). Sem
+  provider/SKU/backend (US$ 0); LGPD zero-coordenada.
+
+### KPIs
+
+- `frontend_smoke_tests` **581/581** e mapa **112/112** INALTERADOS — os testes de layout foram REESCRITOS (maximizar->fullscreen
+  nativo; legenda unica; pilula), sem teste novo/removido.
+- `backend_tests` 1259, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**.
+  Proximo: SPRINT ALOCACAO (D/E + agregado backend indice de conclusao). `pr`/`merge_commit`/`approved_head` null na autoria.
+
 ## 2026-07-19 - WS-MAPA M-5 Alerta de OS nova — FASE 1 do redesign do Mapa FECHADA
 
 ### Resultado

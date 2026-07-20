@@ -1689,36 +1689,12 @@
   gap: var(--space-12);
 }
 
-/* Botão Maximizar — canto sup. dir. do mapa, vidro navy, alvo de toque ≥44px. */
-.operations-map-stage__maximize {
-  position: absolute;
-  top: var(--space-12);
-  right: var(--space-12);
-  z-index: 7;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-6);
-  min-height: 44px;
-  padding: var(--space-8) var(--space-12);
-  border: 1px solid rgb(148 163 184 / 22%);
-  border-radius: var(--radius-8);
-  background: rgb(var(--surface-glass-navy-rgb) / 90%);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 10px 30px rgb(2 6 23 / 45%);
-  color: #f1f5f9;
-  font-size: var(--text-sm);
-  font-weight: 700;
-  cursor: pointer;
-}
+/* SPRINT POLISH (C) — o botão "Maximizar" do Stage foi REMOVIDO; o fullscreen é NATIVO do mapa
+   (FullscreenControl do MapLibre / fullscreenControl do Google, ambos no canto inferior direito). */
 
-.operations-map-stage__maximize:focus-visible {
-  outline: 2px solid #7cc4e6;
-  outline-offset: 2px;
-}
-
-/* Rail de vidro navy — ancorado a UMA borda do mapa (não uma coluna). Colapsa para 56px. Fica
-   `bottom: space-12 + 40px` para não cobrir a legenda ancorada na base do mapa. */
+/* Rail de vidro navy — ancorado a UMA borda do mapa (não uma coluna). Colapsado vira pílula fina
+   no topo (ver regra [data-collapsed]). Fica `bottom: space-12 + 40px` para não cobrir a legenda
+   ancorada na base do mapa. */
 .operations-map-rail {
   position: absolute;
   top: var(--space-12);
@@ -1740,8 +1716,7 @@
 
 /* Fallback sem backdrop-filter: navy quase opaco preserva a legibilidade sobre o mapa. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .operations-map-rail,
-  .operations-map-quadrant {
+  .operations-map-rail {
     background: rgb(var(--surface-glass-navy-rgb) / 97%);
   }
 }
@@ -1750,14 +1725,22 @@
   left: var(--space-12);
 }
 
-/* Técnicos à direita, abaixo do botão Maximizar que ocupa o canto sup. dir. */
+/* Técnicos à direita. SPRINT POLISH (C): sem o botão Maximizar no canto sup. dir., volta ao topo. */
 .operations-map-rail--techs {
-  top: calc(var(--space-12) + 52px);
+  top: var(--space-12);
   right: var(--space-12);
 }
 
+/* SPRINT POLISH (B) — colapsado NÃO é mais faixa de 56px full-height que interfere no mapa: vira
+   uma PÍLULA fina ancorada só no topo (ícone + badge lado a lado), footprint ~44×64px. */
 .operations-map-rail[data-collapsed="true"] {
-  width: 56px;
+  width: auto;
+  height: 44px;
+  bottom: auto;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-6);
+  padding-right: var(--space-8);
 }
 
 .operations-map-rail__header {
@@ -1770,8 +1753,13 @@
 
 .operations-map-rail[data-collapsed="true"] .operations-map-rail__header {
   justify-content: center;
-  padding: var(--space-8) 0;
+  padding: 0;
   border-bottom: 0;
+}
+
+/* Na pílula colapsada o badge fica ao LADO do ícone (não abaixo) — sem margem de empilhamento. */
+.operations-map-rail[data-collapsed="true"] .operations-map-rail__badge {
+  margin: 0;
 }
 
 .operations-map-rail__title {
@@ -2102,57 +2090,8 @@
   }
 }
 
-/* Maximizar — o STAGE vira tela cheia (mesma instância do mapa, NÃO remonta). */
-.operations-map-stage--maximized {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  background: #0f1722;
-}
-
-.operations-map-stage--maximized .operations-map-stage__map {
-  width: 100%;
-  height: 100%;
-}
-
-.operations-map-stage--maximized .operations-map-libre,
-.operations-map-stage--maximized .operations-map-canvas__gmaps {
-  height: 100%;
-  min-height: 0;
-  border-radius: 0;
-}
-
-/* 4º QUADRANTE — chamados que chegam como card de vidro no canto inf. dir. do mapa maximizado. */
-.operations-map-quadrant {
-  position: absolute;
-  right: 16px;
-  bottom: 56px;
-  z-index: 6;
-  width: clamp(320px, 26vw, 420px);
-  max-height: 46%;
-  overflow: auto;
-  padding: var(--space-12);
-  border: 1px solid rgb(148 163 184 / 22%);
-  border-radius: var(--radius-8);
-  background: rgb(var(--surface-glass-navy-rgb) / 82%);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 10px 30px rgb(2 6 23 / 45%);
-  color: #cbd5e1;
-}
-
-.operations-map-quadrant .ui-card {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  color: inherit;
-}
-
-.operations-map-quadrant .ui-card > header,
-.operations-map-quadrant strong {
-  color: #f1f5f9;
-}
+/* SPRINT POLISH (C) — o modo "Maximizar" próprio do Stage (fixed/inset:0 + 4º quadrante de vidro)
+   foi REMOVIDO por caírem numa tela tosca; o fullscreen agora é o NATIVO do mapa (bottom-right). */
 
 /* M-1 — painel de detalhe preservado como faixa full-width abaixo do grid; flui em colunas
    conforme a largura disponível (nada da etapa Ω1 foi perdido). */
@@ -3271,12 +3210,6 @@
     width: 100%;
     max-width: none;
     margin-top: var(--space-12);
-  }
-
-  .operations-map-stage__maximize {
-    position: static;
-    align-self: flex-end;
-    margin-top: var(--space-8);
   }
 }
 

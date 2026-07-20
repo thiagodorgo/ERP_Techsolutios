@@ -440,3 +440,24 @@ RESÍDUO (M-5) — RESOLVIDO em M-5: a seleção de chamado SEM GPS ganhou feedb
 **FASE 1 do redesign do Mapa FECHADA** (requisitos 1-6 do dono): 1 chamados+prioridade+SLA-proxy (M-4) · 2 técnicos posição+status
 (M-3) · 3 alerta de OS nova (M-5) · 4 mapa ≥2× / full-bleed (M-1+redesign de layout) · 5 maximizar + 4º quadrante translúcido
 (OperationsMapStage) · 6 rodapé de legenda unificado (M-2). Resta só a **Fase 2 = M-7 (SLA real, migration aditiva `sla_due_at`)**.
+
+---
+
+## Changelog 2026-07-19 — SPRINT POLISH (feedback do dono): fullscreen nativo, legenda única, rail-pílula
+
+**SUPERSEDE o maximizar customizado:** o dono achou o modo "Maximizar" próprio (overlay `--maximized{position:fixed;inset:0}`
++ card translúcido no 4º quadrante) **tosco** e mandou usar o fullscreen NATIVO do provedor. Portanto, os trechos anteriores
+deste KB que documentam "maximizar + 4º quadrante translúcido" e a lição "não remontar o mapa ao maximizar via `--maximized`"
+estão **REVOGADOS** — esse CSS/estado foi REMOVIDO do OperationsMapStage. Novo estado do mapa:
+
+1. **Fullscreen NATIVO** no canto inferior direito nos DOIS canvases (regra do espelho): MapLibre
+   `map.addControl(new maplibregl.FullscreenControl(), "bottom-right")`; Google
+   `innerMap.setOptions({ fullscreenControl:true, fullscreenControlOptions:{ position: RIGHT_BOTTOM } })` (mesmo retry-por-rAF do
+   fitBounds). GOTCHA: o fullscreen nativo captura só o CONTAINER do mapa — a legenda-rodapé e os rails de vidro (irmãos) NÃO
+   aparecem em tela cheia; é o comportamento esperado/aceito (o overlay custom foi rejeitado).
+2. **Legenda ÚNICA na base:** removido o `<footer>` redundante do GoogleMapsCanvas ("Atual"/"Localização antiga" — já subsumido
+   em `MAP_LEGEND_ITEMS`); `OperationsMapLegendFooter` (M-2) é a única legenda, colada à base, nos dois canvases.
+3. **Rail COLAPSADO = pílula fina top-anchored** (`width:auto; height:44px; bottom:auto`, ~44×64px) em vez da faixa 56px
+   full-height que roubava área do mapa. `mapPadding` do lado colapsado 72→24 (expandido 372). RESÍDUO cosmético (BAIXA): um pin
+   a 24-64px da borda colapsada pode espiar sob a pílula translúcida no enquadramento — subir o padding do lado colapsado p/ ~72
+   se quiser fidelidade fina. Fallback `OperationsMapSchematicCanvas` (sem provider) mantém sua legenda mínima própria (fora do espelho).

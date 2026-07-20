@@ -662,5 +662,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-19",
+    "version": "WS-MAPA-POLISH",
+    "backend_tests": "1259/1265",
+    "frontend_smoke_tests": "581/581",
+    "flutter_tests": "764/764",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 66,
+    "description": "WS-MAPA SPRINT POLISH (feedback do dono, itens A+C+B) — (A) LEGENDA UNICA na base: removido o <footer> redundante do GoogleMapsCanvas ('Atual'/'Localizacao antiga', ja subsumido em MAP_LEGEND_ITEMS) -> OperationsMapLegendFooter e a unica legenda colada embaixo (paridade preservada). (C) FULLSCREEN NATIVO: removido o maximizar customizado tosco (estado/botao/focus-trap/4o quadrante) -> MapLibre FullscreenControl bottom-right + Google fullscreenControl RIGHT_BOTTOM (regra do espelho). (B) RAIL COLAPSADO = pilula fina top-anchored (44x64px) em vez de faixa 56px full-height que roubava o mapa; mapPadding colapsado 72->24. Time novo (planejador-senior-master-chefe + pesquisadores web PD-006): revisao dev -> analizador (APROVADO) -> aprovador (avaliador-mapas APROVADO_CONDICIONADO) + cognicao-visual (APROVADO); condicao ALTA (KB desatualizado) sanada. Sem provider/SKU/backend, US$0, LGPD zero-coordenada. Testes de layout reescritos (fullscreen nativo/legenda unica/pilula). KPI: smoke 581/581 e mapa 112/112 inalterados (testes de layout REESCRITOS, 0 net). backend 1259/flutter 764 carregados. mvp/blocks inalterados. merge_commit/approved_head null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

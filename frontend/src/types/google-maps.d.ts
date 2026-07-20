@@ -11,6 +11,12 @@ declare namespace google {
       setCenter(latLng: LatLngLiteral): void;
       setZoom(zoom: number): void;
       fitBounds(bounds: LatLngBounds, padding?: number | Padding): void;
+      setOptions(options: MapOptions): void;
+    }
+
+    // SPRINT POLISH (C) — fullscreen NATIVO no canto inferior direito (espelho do MapLibre).
+    enum ControlPosition {
+      RIGHT_BOTTOM,
     }
 
     // J-MAPAS-6 (redesign) — resize imperativo quando o container muda sem resize de janela
@@ -47,8 +53,13 @@ declare namespace google {
       mapTypeControl?: boolean;
       streetViewControl?: boolean;
       fullscreenControl?: boolean;
+      fullscreenControlOptions?: FullscreenControlOptions;
       zoomControl?: boolean;
       gestureHandling?: string;
+    }
+
+    interface FullscreenControlOptions {
+      position?: ControlPosition;
     }
 
     interface MarkerOptions {
