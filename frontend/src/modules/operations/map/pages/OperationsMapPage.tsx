@@ -1,4 +1,4 @@
-import { AlertTriangle, BellRing, Map, Pause, Play, RefreshCw, X } from "lucide-react";
+import { AlertTriangle, BellRing, Map as MapIcon, Pause, Play, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -19,15 +19,20 @@ import {
   FIELD_LOCATION_STATUSES,
   type FieldLocationItem,
   type FieldLocationStatus,
+  type OperationsIncomingCall,
   type OperationsMapFilters as OperationsMapFilterState,
 } from "../operations-map.types";
 import { useOperationsMap } from "../useOperationsMap";
 import { useNewWorkOrderAlert } from "../hooks/useNewWorkOrderAlert";
-import { getWorkOrderPriorityColor } from "../map/mapMarkers";
+import { useTechnicianPerformance } from "../hooks/useTechnicianPerformance";
+import { getWorkOrderPriorityColor, isValidMapCoordinate } from "../map/mapMarkers";
+import { operatorUserIdOf, type Coordinate } from "../allocation";
 import { getWorkOrderPriorityLabel } from "../../../work-orders/work-orders.adapter";
 import { OperationsMapCanvas } from "../components/OperationsMapCanvas";
 import { OperationsMapStage } from "../components/OperationsMapStage";
 import { OperationsIncomingCallsList } from "../components/OperationsIncomingCallsList";
+import { OperationsCallAllocationPopup } from "../components/OperationsCallAllocationPopup";
+import { OperationsTechnicianAllocationPopup } from "../components/OperationsTechnicianAllocationPopup";
 import { OperationsMapFilters } from "../components/OperationsMapFilters";
 import { OperationsMapSummaryCards } from "../components/OperationsMapSummaryCards";
 import { OperationsOperatorDetailPanel } from "../components/OperationsOperatorDetailPanel";
@@ -60,6 +65,10 @@ export function OperationsMapPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [selectedWorkOrderId, setSelectedWorkOrderId] = useState<string | undefined>(undefined);
+  // J-MAPAS-7 (SPRINT ALOCAÇÃO) — popups de alocação: chamado clicado (D, esquerda) e técnico clicado (E,
+  // direita). Um por vez; abrir um fecha o outro. `null` = nenhum popup aberto.
+  const [allocCall, setAllocCall] = useState<OperationsIncomingCall | null>(null);
+  const [allocTech, setAllocTech] = useState<FieldLocationItem | null>(null);
 
   // Ω1 — filtros ficam na URL (?status=&team=&stale=&q=) para permitir link direto e refresh.
   const statusParam = searchParams.get("status") ?? "all";
@@ -156,6 +165,40 @@ export function OperationsMapPage() {
     () => buildIncomingCalls(visibleWorkOrderPins, visibleWorkOrdersWithoutLocation),
     [visibleWorkOrderPins, visibleWorkOrdersWithoutLocation],
   );
+
+  // J-MAPAS-7 — índice de conclusão de OS por técnico (endpoint gateado por field_dispatch:create; só
+  // busca quem PODE alocar). Alimenta a ordenação "Maior índice de conclusão" e o índice de cada linha.
+  const technicianPerformance = useTechnicianPerformance(dispatchContext, canCreateDispatches);
+  // Coordenada + endereço do CHAMADO para calcular distância/tempo (haversine) e mostrar o endereço no
+  // detalhe. Derivado dos pins (com coordenada) e das OS sem GPS (só endereço). LGPD §12: a coordenada
+  // fica NESTE mapa auxiliar só para o cálculo — nunca é renderizada crua nem logada.
+  const callInfoById = useMemo(() => {
+    const map = new Map<string, { coordinate: Coordinate | null; serviceAddress: string | null }>();
+    for (const pin of visibleWorkOrderPins) {
+      const coordinate = isValidMapCoordinate(pin.latitude, pin.longitude)
+        ? { lat: pin.latitude, lng: pin.longitude }
+        : null;
+      map.set(pin.id, { coordinate, serviceAddress: pin.serviceAddress ?? null });
+    }
+    for (const workOrder of visibleWorkOrdersWithoutLocation) {
+      if (!map.has(workOrder.id)) map.set(workOrder.id, { coordinate: null, serviceAddress: workOrder.serviceAddress ?? null });
+    }
+    return map;
+  }, [visibleWorkOrderPins, visibleWorkOrdersWithoutLocation]);
+  const resolveCallCoordinate = useCallback(
+    (callId: string): Coordinate | null => callInfoById.get(callId)?.coordinate ?? null,
+    [callInfoById],
+  );
+  const openCallAllocation = useCallback((call: OperationsIncomingCall) => {
+    setSelectedWorkOrderId(call.id);
+    setAllocTech(null);
+    setAllocCall(call);
+  }, []);
+  const openTechAllocation = useCallback((location: FieldLocationItem) => {
+    setSelectedId(location.id);
+    setAllocCall(null);
+    setAllocTech(location);
+  }, []);
 
   // M-5 — alerta visual de OS nova (requisito 3 do dono): diff client-side dos ids que chegam entre
   // refreshes. NÃO alerta no mount (baseline), dedup por id, teto por ciclo, cada aviso some sozinho.
@@ -332,7 +375,7 @@ export function OperationsMapPage() {
               <OperationsIncomingCallsList
                 calls={incomingCalls}
                 selectedId={selectedWorkOrderPin?.id}
-                onSelect={(call) => setSelectedWorkOrderId(call.id)}
+                onSelect={openCallAllocation}
                 newIds={newCallIds}
               />
             }
@@ -341,7 +384,8 @@ export function OperationsMapPage() {
                 <OperationsOperatorList
                   locations={filteredLocations}
                   selectedId={selectedLocation?.id}
-                  onSelect={(location) => setSelectedId(location.id)}
+                  onSelect={openTechAllocation}
+                  onHighlight={(location) => setSelectedId(location.id)}
                   showWorkOrders={canReadWorkOrders}
                   showDispatches={canReadDispatches}
                   canCreateDispatch={canCreateDispatches}
@@ -363,7 +407,9 @@ export function OperationsMapPage() {
               workOrders={visibleWorkOrdersWithoutLocation}
               onGeocode={handleGeocodeWorkOrder}
             />
-            {selectedLocation ? (
+            {selectedLocation && !allocTech && !allocCall ? (
+              // Evita superfícies concorrentes: com o popup de alocação aberto, o detalhe do técnico já vive no
+              // popup — não repetir o painel abaixo (achado BAIXA da junta).
               <OperationsOperatorDetailPanel
                 location={selectedLocation}
                 maintenanceVehicleIds={maintenanceVehicleIds}
@@ -382,9 +428,41 @@ export function OperationsMapPage() {
               Localização é dado sensível. O frontend não registra coordenadas em logs e o acesso real continua protegido por RBAC/RLS no backend.
             </Alert>
             <Alert title="Limite desta etapa" tone="info">
-              <span><Map size={16} /> Roteirização avançada e rastreamento em tempo real serão adicionados em etapas futuras.</span>
+              <span><MapIcon size={16} /> Roteirização avançada e rastreamento em tempo real serão adicionados em etapas futuras.</span>
             </Alert>
           </section>
+
+          {/* J-MAPAS-7 (D) — popup de alocação a partir do CHAMADO clicado: detalhe honesto + lista
+              ranqueada de técnicos (candidatos = TODOS os técnicos conhecidos, não só os filtrados no rail,
+              para a alocação não ser estreitada por um filtro de visualização). */}
+          {allocCall ? (
+            <OperationsCallAllocationPopup
+              call={allocCall}
+              serviceAddress={callInfoById.get(allocCall.id)?.serviceAddress ?? null}
+              callCoordinate={callInfoById.get(allocCall.id)?.coordinate ?? null}
+              technicians={locations}
+              completionByOperator={technicianPerformance.byOperator}
+              performanceUnavailable={technicianPerformance.source === "fallback"}
+              canCreateDispatch={canCreateDispatches}
+              context={dispatchContext}
+              onClose={() => setAllocCall(null)}
+              onAllocated={refresh}
+            />
+          ) : null}
+          {/* J-MAPAS-7 (E) — popup de alocação a partir do TÉCNICO clicado: dados + seletor de chamado +
+              distância/tempo estimado do par. Mesma payload de createDispatch de D (fluxo reverso). */}
+          {allocTech ? (
+            <OperationsTechnicianAllocationPopup
+              technician={allocTech}
+              calls={incomingCalls}
+              resolveCallCoordinate={resolveCallCoordinate}
+              completionRate={technicianPerformance.byOperator.get(operatorUserIdOf(allocTech)) ?? null}
+              canCreateDispatch={canCreateDispatches}
+              context={dispatchContext}
+              onClose={() => setAllocTech(null)}
+              onAllocated={refresh}
+            />
+          ) : null}
         </>
       ) : null}
 

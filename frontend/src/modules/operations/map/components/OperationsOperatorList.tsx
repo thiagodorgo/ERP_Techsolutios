@@ -1,5 +1,5 @@
 import { Battery, Clock, LocateFixed } from "lucide-react";
-import type { CSSProperties } from "react";
+import { useId, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 
 import { Card, Table } from "../../../../components/ui";
@@ -8,6 +8,8 @@ import {
   formatAccuracy,
   formatBattery,
   formatFieldLocationDate,
+  formatLastSeen,
+  getFieldLocationStatusLabel,
 } from "../operations-map.adapter";
 import { getStatusColor } from "../map/mapMarkers";
 import type { FieldLocationItem } from "../operations-map.types";
@@ -18,17 +20,25 @@ export function OperationsOperatorList({
   locations,
   selectedId,
   onSelect,
+  onHighlight,
   showWorkOrders = false,
   showDispatches = false,
   canCreateDispatch = false,
+  now,
 }: {
   locations: FieldLocationItem[];
   selectedId?: string;
   onSelect: (location: FieldLocationItem) => void;
+  // J-MAPAS-7 (E) — HOVER/FOCO na linha realça/centraliza o pin no mapa (sem abrir o popup). Opcional:
+  // sem handler, o hover só mostra o tooltip. CLICK segue em `onSelect` (a página abre o popup de alocação).
+  onHighlight?: (location: FieldLocationItem) => void;
   showWorkOrders?: boolean;
   showDispatches?: boolean;
   canCreateDispatch?: boolean;
+  now?: Date;
 }) {
+  const tooltipBaseId = useId();
+  const reference = now ?? new Date();
   const columns = [
     {
       key: "operator",
@@ -105,7 +115,16 @@ export function OperationsOperatorList({
         columns={columns}
       />
       <div className="operations-operator-cards">
-        {locations.map((location) => (
+        {locations.map((location) => {
+          const tooltipId = `${tooltipBaseId}-${location.id}`;
+          // Tooltip HONESTO e SEM coordenada (LGPD §12): status + frescor relativo + equipe + OS atual.
+          const tooltipText = [
+            location.isStale ? "Localização antiga" : getFieldLocationStatusLabel(location.status),
+            `Visto ${formatLastSeen(location.capturedAt, reference)}`,
+            location.teamName ?? "Sem equipe",
+            location.currentWorkOrder ? `OS ${location.currentWorkOrder.code}` : "Sem OS",
+          ].join(" · ");
+          return (
           <button
             key={location.id}
             type="button"
@@ -113,7 +132,13 @@ export function OperationsOperatorList({
             data-status={location.status}
             style={{ "--operator-accent": getStatusColor(location.status) } as CSSProperties}
             onClick={() => onSelect(location)}
+            onMouseEnter={() => onHighlight?.(location)}
+            onFocus={() => onHighlight?.(location)}
+            aria-describedby={tooltipId}
           >
+            <span className="operations-operator-card__tooltip" role="tooltip" id={tooltipId}>
+              {tooltipText}
+            </span>
             <header>
               <strong>{location.displayName}</strong>
               <OperationsOperatorStatus location={location} />
@@ -153,9 +178,10 @@ export function OperationsOperatorList({
               <small><LocateFixed size={14} /> {formatAccuracy(location.accuracyMeters)}</small>
               <small><Clock size={14} /> {formatFieldLocationDate(location.capturedAt)}</small>
             </footer>
-            <span className="operations-operator-card__action">Ver detalhes</span>
+            <span className="operations-operator-card__action">{canCreateDispatch ? "Ver e alocar" : "Ver detalhes"}</span>
           </button>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );

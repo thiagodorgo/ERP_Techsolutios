@@ -26,6 +26,22 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-MAPA alocação">
+          <h2>WS-MAPA alocação de técnico — FECHA o feedback do Mapa (D/E)</h2>
+          <p>
+            <strong>WS-MAPA alocação (2026-07-19):</strong> a feature que fecha o feedback do dono. No painel de
+            <strong>chamados</strong>, clicar abre o detalhe + <strong>"Alocar técnico"</strong> com a lista ranqueada e os
+            filtros (disponível / mais próximo por distância real / maior índice de conclusão, vindo do agregado backend). No
+            painel de <strong>técnicos</strong>, cada linha mostra o status, o <em>hover</em> traz status/frescor (sem vazar
+            coordenada) e realça o pin, e o clique abre o popup com o seletor de chamado, a <strong>distância "~X km (linha reta)"</strong>
+            e o <strong>tempo "~Y min (estimado, sem trânsito)"</strong> — honesto, com aviso, <strong>nunca um ETA de chegada
+            inventado</strong>. A alocação é <strong>real</strong> (via o endpoint de despacho existente). Índice sem OS → "—"
+            (nunca 0% falso); LGPD (zero lat/lng no HTML). Só quem tem permissão de despacho aloca (duplo-gate). Time (dev →
+            analizador → aprovador → coordenador-de-acessos → cognição-visual): <strong>3 APROVADO + 1 APROVADO_CONDICIONADO</strong>;
+            condições sanadas. <strong>smoke 581→597</strong> (baseline de mapa 112→128). Sem provider/SKU (US$ 0). ETA por rota real
+            fica para a Fase 2 (com PD). Backend/Flutter/MVP <strong>inalterados</strong>.
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-MAPA polish">
           <h2>WS-MAPA polish — fullscreen nativo + legenda única + rail-pílula (feedback do dono)</h2>
           <p>
