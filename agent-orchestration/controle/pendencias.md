@@ -1184,3 +1184,20 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   de servicos, MRR) antes de qualquer clicabilidade. Candidato a bloco proprio na trilha WS-SCALE-8TELAS / Onda
   de escala da Plataforma. So entao os cards viram clicaveis com dado REAL.
 - status: ABERTA (registrada; nao e pendencia funcional do PR2b — e um alvo futuro de dados reais).
+
+## P-SCALE-RBAC-OWNER-APPROVAL - Expansao de RBAC (purchase_orders/reports) requer o dono NOMEAR (2026-07-20, PR-SCALE-1)
+
+- descricao: as permissoes `purchase_orders:read`, `purchase_orders:create` e `reports:read` NAO existem no catalogo
+  (`src/modules/core-saas/permissions/catalog.ts`), mas os guards do frontend as exigem (/purchase-orders, /reports) —
+  hoje so platform_admin alcanca essas rotas. O plano de concessao (derivado do RBAC_MATRIX.md: reports:read amplo por L55;
+  purchase_orders espelha inventory_items) esta PRONTO no journal do workflow wf_0efa4abf-aff.
+- bloqueio: o guardrail de seguranca BLOQUEOU o dev de implementar — "expansao de concessao RBAC inferida por agente" nao e
+  coberta por autonomia geral; exige o DONO nomear explicitamente esta concessao. O dono, ao ser consultado, optou por nao
+  responder a pergunta (segue autonomo) — logo a expansao FICA PENDENTE ate ele nomear as permissoes/papeis.
+- impacto: /purchase-orders (Pedidos) e /reports (Relatorios) seguem acessiveis so a platform_admin para papeis de tenant.
+  NAO ha regressao (estado atual preservado). O gating de UI dos mock shells (DispatchConsole por field_dispatch:*, que JA
+  existem) tambem fica para quando destravar (evitou-se tocar half-way).
+- proximo: quando o dono autorizar explicitamente (ex.: "adicione purchase_orders/reports ao catalogo e conceda a X"),
+  retomar via `Workflow({scriptPath: '...ws-scale-1-rbac-wf_0efa4abf-aff.js', resumeFromRunId: 'wf_0efa4abf-aff'})` — o plano
+  ja esta cacheado; so o dev + junta re-executam.
+- status: ABERTA (bloqueada por autorizacao — nao e falha tecnica).

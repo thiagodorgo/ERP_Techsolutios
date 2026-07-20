@@ -21,10 +21,10 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 624,
-      "total": 624,
-      "display": "624/624",
-      "note": "+9 (fan-out PR2b: kpi-cards-clickable-f2b). 22 cards clicaveis em 6 telas de dado real (Estoque/Remuneracoes/Multas/Abastecimento/Seguros/Danos); plataforma+Manutencao PULADAS (100% mock/sem card — P-PLATFORM-MOCK-WIRING). +gating de cta do FinanceiroPage. Sobre 615."
+      "value": 626,
+      "total": 626,
+      "display": "626/626",
+      "note": "+2 (invoices-nfe-honest-stop: parada fiscal honesta prova estado + ausencia de NF-e fabricada + gating do atalho). InvoicesPage deixou de FABRICAR NF-e (D-007/§2.8). Sobre 624."
     },
     "backend_tests": {
       "value": 1276,

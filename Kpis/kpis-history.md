@@ -6,6 +6,30 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-20 - WS-SCALE-8TELAS PR-SCALE-2 (invoices/NF-e) Parada fiscal honesta (correcao D-007)
+
+### Resultado
+
+- **Correcao de INTEGRIDADE (D-007 / §2.8):** a tela **Faturas** FABRICAVA NF-e — empresas ("Industria Alfa"), valores
+  ("R$ 24.800") e contadores ("128 emitidas"/"121 autorizadas") TODOS inventados. Reescrita como **PARADA FISCAL HONESTA**:
+  a emissao de NF-e exige integracao externa (certificado A1/A3 + SEFAZ, docs/scale-roadmap.md Onda 2/9), disponivel so apos
+  a ativacao cloud. Card honesto (ShieldCheck + explicacao) **sem nenhum numero fabricado**; botao "Emitir NF-e" desabilitado
+  com motivo; atalho "Ver cobrancas" (dado financeiro REAL) gated por `financial_titles:read` (mesma perm do guard de
+  /finance/charges).
+- Hierarquia de fontes: a **regra D-007 (nao fabricar) VENCE a fidelidade de pixel** do prototipo (§A1/§A2) — divergir da
+  lista fabricada aqui e correto e obrigatorio.
+- Junta: **cognicao-visual APROVADO** (estado honesto profissional, nao andaime) + **coordenador-de-acessos APROVADO**
+  (atalho gated bate com o guard; guard de /finance/invoices inalterado). Ata inline.
+- **NOTA — PR-SCALE-1 (RBAC) BLOQUEADO:** adicionar purchase_orders/reports ao catalogo + conceder a papeis foi BARRADO pelo
+  guardrail de seguranca (expansao de RBAC inferida por agente exige o dono NOMEAR). Registrado `P-SCALE-RBAC-OWNER-APPROVAL`;
+  plano pronto no workflow p/ retomar quando autorizado.
+
+### KPIs
+
+- `frontend_smoke_tests` **624 -> 626** (+2: invoices-nfe-honest-stop). PR web-only.
+- `backend_tests` 1276/1282, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**.
+  Backfill #248: `pr`/`merge_commit`/`approved_head` = b1559d3. Deste PR null na autoria.
+
 ## 2026-07-20 - WS-CARDS-CHARTS-F2 (frontend PR2b) Fan-out de cards clicaveis (restante das telas)
 
 ### Resultado
