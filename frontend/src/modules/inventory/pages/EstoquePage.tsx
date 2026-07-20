@@ -5,6 +5,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import type { DenseColumn } from "../../../components/dense-list";
 import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../components/dense-list";
+import { ClickableKpiCard } from "../../../components/kpi";
 import { Alert, Button, Card, Chip, EmptyState, Modal, SearchBar, Select, Skeleton } from "../../../components/ui";
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../providers/AuthProvider";
@@ -44,6 +45,7 @@ import {
   getReplenishmentTone,
   isStockMovementType,
 } from "../inventory.adapter";
+import { buildInventoryKpiDetails } from "../inventory-kpi-detail";
 import { recalculateAbc, updateInventoryItem } from "../inventory.service";
 import type { InventoryItem, InventoryItemsFilters, InventoryStatusFilter, StockMovement, StockMovementsFilters } from "../inventory.types";
 import { useCycleCounts } from "../useCycleCounts";
@@ -169,10 +171,11 @@ export function EstoquePage() {
     [belowMinOnly, needsReorderOnly],
   );
 
-  const { items, pagination, loading, error, refresh } = useInventoryItems(itemsFilters);
+  const { items, pagination, source: itemsSource, loading, error, refresh } = useInventoryItems(itemsFilters);
   const {
     items: movements,
     pagination: movementsPagination,
+    source: movementsSource,
     loading: movementsLoading,
     error: movementsError,
     refresh: refreshMovements,
@@ -288,6 +291,12 @@ export function EstoquePage() {
 
   // Totais reais das janelas carregadas — renderizam mesmo vazio.
   const totals = useMemo(() => computeInventoryTotals(items, movements), [items, movements]);
+  // WS-CARDS-CHARTS-F2 — pop-ups dos indicadores, montados só de dado já carregado (D-007). itemsSource/
+  // movementsSource vêm vivos dos hooks; o cta de "Precisam repor" é gateado por purchase_orders:read.
+  const kpiDetails = useMemo(
+    () => buildInventoryKpiDetails(totals, items.length, movementsPagination.total, itemsSource, movementsSource, can),
+    [totals, items.length, movementsPagination.total, itemsSource, movementsSource, can],
+  );
 
   return (
     <div style={{ color: "#0F172A" }}>
@@ -385,48 +394,56 @@ export function EstoquePage() {
         </div>
       ) : null}
 
-      {/* indicadores reais — cartões no estilo da tela aprovada */}
+      {/* indicadores reais — cartões no estilo da tela aprovada, agora clicáveis (pop-up de detalhe) */}
       <div style={statGridStyle}>
-        <StatCard
-          icon={<Package size={16} aria-hidden />}
-          iconBg="#EFF6FF"
-          iconColor="#2563EB"
-          value={totals.activeItems.toLocaleString("pt-BR")}
-          label="Itens ativos"
-          tag={`${items.length.toLocaleString("pt-BR")} na janela`}
-          tagBg="#EFF6FF"
-          tagColor="#2563EB"
-        />
-        <StatCard
-          icon={<AlertTriangle size={16} aria-hidden />}
-          iconBg="#FFFBEB"
-          iconColor="#D97706"
-          value={totals.belowMinItems.toLocaleString("pt-BR")}
-          label="Abaixo do mínimo"
-          tag={totals.belowMinItems > 0 ? "Atenção" : "OK"}
-          tagBg={totals.belowMinItems > 0 ? "#FFFBEB" : "#ECFDF5"}
-          tagColor={totals.belowMinItems > 0 ? "#D97706" : "#059669"}
-        />
-        <StatCard
-          icon={<ShoppingCart size={16} aria-hidden />}
-          iconBg="#FEF2F2"
-          iconColor="#DC2626"
-          value={totals.needsReorderItems.toLocaleString("pt-BR")}
-          label="Precisam repor"
-          tag={totals.needsReorderItems > 0 ? "Repor" : "OK"}
-          tagBg={totals.needsReorderItems > 0 ? "#FEF2F2" : "#ECFDF5"}
-          tagColor={totals.needsReorderItems > 0 ? "#DC2626" : "#059669"}
-        />
-        <StatCard
-          icon={<ArrowLeftRight size={16} aria-hidden />}
-          iconBg="#F5F3FF"
-          iconColor="#7C3AED"
-          value={totals.movementsCount.toLocaleString("pt-BR")}
-          label="Movimentações no período"
-          tag={movementsPagination.total > movements.length ? `de ${movementsPagination.total.toLocaleString("pt-BR")}` : "Janela carregada"}
-          tagBg="#F5F3FF"
-          tagColor="#7C3AED"
-        />
+        <ClickableKpiCard detail={kpiDetails.activeItems}>
+          <StatCard
+            icon={<Package size={16} aria-hidden />}
+            iconBg="#EFF6FF"
+            iconColor="#2563EB"
+            value={totals.activeItems.toLocaleString("pt-BR")}
+            label="Itens ativos"
+            tag={`${items.length.toLocaleString("pt-BR")} na janela`}
+            tagBg="#EFF6FF"
+            tagColor="#2563EB"
+          />
+        </ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.belowMin}>
+          <StatCard
+            icon={<AlertTriangle size={16} aria-hidden />}
+            iconBg="#FFFBEB"
+            iconColor="#D97706"
+            value={totals.belowMinItems.toLocaleString("pt-BR")}
+            label="Abaixo do mínimo"
+            tag={totals.belowMinItems > 0 ? "Atenção" : "OK"}
+            tagBg={totals.belowMinItems > 0 ? "#FFFBEB" : "#ECFDF5"}
+            tagColor={totals.belowMinItems > 0 ? "#D97706" : "#059669"}
+          />
+        </ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.needsReorder}>
+          <StatCard
+            icon={<ShoppingCart size={16} aria-hidden />}
+            iconBg="#FEF2F2"
+            iconColor="#DC2626"
+            value={totals.needsReorderItems.toLocaleString("pt-BR")}
+            label="Precisam repor"
+            tag={totals.needsReorderItems > 0 ? "Repor" : "OK"}
+            tagBg={totals.needsReorderItems > 0 ? "#FEF2F2" : "#ECFDF5"}
+            tagColor={totals.needsReorderItems > 0 ? "#DC2626" : "#059669"}
+          />
+        </ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.movements}>
+          <StatCard
+            icon={<ArrowLeftRight size={16} aria-hidden />}
+            iconBg="#F5F3FF"
+            iconColor="#7C3AED"
+            value={totals.movementsCount.toLocaleString("pt-BR")}
+            label="Movimentações no período"
+            tag={movementsPagination.total > movements.length ? `de ${movementsPagination.total.toLocaleString("pt-BR")}` : "Janela carregada"}
+            tagBg="#F5F3FF"
+            tagColor="#7C3AED"
+          />
+        </ClickableKpiCard>
       </div>
 
       {tab === "itens" ? (

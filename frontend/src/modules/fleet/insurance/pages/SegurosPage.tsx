@@ -5,6 +5,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import type { DenseColumn } from "../../../../components/dense-list";
 import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../../components/dense-list";
+import { ClickableKpiCard } from "../../../../components/kpi";
 import { Alert, Button, Card, Chip, EmptyState, SearchBar, Select, Skeleton } from "../../../../components/ui";
 import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
@@ -26,6 +27,7 @@ import {
   EXPIRING_SOON_DAYS,
   INSURANCE_STATUS_OPTIONS,
 } from "../insurance.adapter";
+import { buildInsuranceKpiDetails } from "../insurance-kpi-detail";
 import { updateInsurancePolicy } from "../insurance.service";
 import type { InsurancePolicy, InsuranceFilters, InsuranceStatusFilter } from "../insurance.types";
 import { useInsurancePolicies } from "../useInsurance";
@@ -75,7 +77,7 @@ export function SegurosPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
-  const { items, pagination, loading, error, refresh } = useInsurancePolicies(STABLE_FILTERS);
+  const { items, pagination, source, loading, error, refresh } = useInsurancePolicies(STABLE_FILTERS);
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
   const { items: vehicles } = useVehicles(STABLE_VEHICLE_FILTERS);
@@ -305,6 +307,8 @@ export function SegurosPage() {
     [denseFilter, items, dense.search, dense.status],
   );
   const totals = useMemo(() => computeInsuranceTotals(totalsBase, now), [totalsBase, now]);
+  // WS-CARDS-CHARTS-F2 — pop-ups dos indicadores, montados só de dado já carregado (D-007); source vem vivo do hook.
+  const kpiDetails = useMemo(() => buildInsuranceKpiDetails(totals, source), [totals, source]);
 
   const hasExtraFilters = Boolean(statusFilter) || Boolean(vehicleFilter) || expiringActive;
 
@@ -339,31 +343,39 @@ export function SegurosPage() {
       ) : null}
 
       <div style={totalsGridStyle}>
-        <div className="work-orders-kpi">
-          <span>
-            <ShieldCheck size={16} aria-hidden /> Total de apólices
-          </span>
-          <strong style={tabularStyle}>{totals.count.toLocaleString("pt-BR")}</strong>
-        </div>
-        <div className="work-orders-kpi">
-          <span>
-            <CheckCircle2 size={16} aria-hidden /> Vigentes
-          </span>
-          <strong style={tabularStyle}>{totals.vigenteCount.toLocaleString("pt-BR")}</strong>
-        </div>
-        <div className="work-orders-kpi">
-          <span>
-            <CalendarClock size={16} aria-hidden /> A vencer (≤{EXPIRING_SOON_DAYS} dias)
-          </span>
-          <strong style={tabularStyle}>{totals.expiringSoonCount.toLocaleString("pt-BR")}</strong>
-          <small style={mutedStyle}>Apólices vigentes perto do fim da vigência.</small>
-        </div>
-        <div className="work-orders-kpi">
-          <span>
-            <ShieldAlert size={16} aria-hidden /> Vencidas
-          </span>
-          <strong style={tabularStyle}>{totals.vencidaCount.toLocaleString("pt-BR")}</strong>
-        </div>
+        <ClickableKpiCard detail={kpiDetails.total}>
+          <div className="work-orders-kpi">
+            <span>
+              <ShieldCheck size={16} aria-hidden /> Total de apólices
+            </span>
+            <strong style={tabularStyle}>{totals.count.toLocaleString("pt-BR")}</strong>
+          </div>
+        </ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.vigentes}>
+          <div className="work-orders-kpi">
+            <span>
+              <CheckCircle2 size={16} aria-hidden /> Vigentes
+            </span>
+            <strong style={tabularStyle}>{totals.vigenteCount.toLocaleString("pt-BR")}</strong>
+          </div>
+        </ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.aVencer}>
+          <div className="work-orders-kpi">
+            <span>
+              <CalendarClock size={16} aria-hidden /> A vencer (≤{EXPIRING_SOON_DAYS} dias)
+            </span>
+            <strong style={tabularStyle}>{totals.expiringSoonCount.toLocaleString("pt-BR")}</strong>
+            <small style={mutedStyle}>Apólices vigentes perto do fim da vigência.</small>
+          </div>
+        </ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.vencidas}>
+          <div className="work-orders-kpi">
+            <span>
+              <ShieldAlert size={16} aria-hidden /> Vencidas
+            </span>
+            <strong style={tabularStyle}>{totals.vencidaCount.toLocaleString("pt-BR")}</strong>
+          </div>
+        </ClickableKpiCard>
       </div>
 
       <div style={chipRowStyle} role="group" aria-label="Filtrar apólices por situação">

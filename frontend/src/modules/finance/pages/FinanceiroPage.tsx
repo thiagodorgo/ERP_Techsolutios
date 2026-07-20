@@ -4,6 +4,7 @@ import type { CSSProperties, ComponentType } from "react";
 import { TrendChart } from "../../../components/charts";
 import { ClickableKpiCard, type KpiDetail } from "../../../components/kpi";
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
+import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
 import {
   formatBRL,
@@ -44,10 +45,18 @@ function percent(part: number, whole: number): string {
 
 export function FinanceiroPage() {
   const { activeContext } = useTenantContext();
+  const { can } = usePermissions();
   const { data, loading, refresh } = useFinancialSummary();
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
   const { receivable, payable, cash, cashFlow, recentTitles } = data;
+
+  // WS-CARDS-CHARTS-F2 — os atalhos dos pop-ups (cobranças/pagamentos) só aparecem para quem pode abrir a
+  // rota-alvo (/finance/charges e /finance/payments são gated por financial_titles:read). Sem a permissão,
+  // o pop-up mostra só o detalhamento honesto, sem botão para uma tela que o perfil não acessa.
+  const canReadTitles = can("financial_titles:read");
+  const chargesCta = canReadTitles ? { label: "Ver cobranças", to: "/finance/charges" } : undefined;
+  const paymentsCta = canReadTitles ? { label: "Ver pagamentos", to: "/finance/payments" } : undefined;
 
   // WS-UI-CARDS+CHARTS — cada card abre um pop-up sobre o SEU tema. O corpo usa só dado REAL já carregado
   // (breakdown de aberto/vencido/em disputa; snapshot explicado); nenhuma série é fabricada (D-007).
@@ -69,7 +78,7 @@ export function FinanceiroPage() {
       tone: TONE_RECEIVABLE,
       detail: {
         title: "A receber (aberto)", value: formatBRL(receivable.openAmount), caption: "Composição por situação", source: data.source,
-        body: directionParts(receivable), cta: { label: "Ver cobranças", to: "/finance/charges" },
+        body: directionParts(receivable), cta: chargesCta,
       },
     },
     {
@@ -80,7 +89,7 @@ export function FinanceiroPage() {
       tone: TONE_PAYABLE,
       detail: {
         title: "A pagar (aberto)", value: formatBRL(payable.openAmount), caption: "Composição por situação", source: data.source,
-        body: directionParts(payable), cta: { label: "Ver pagamentos", to: "/finance/payments" },
+        body: directionParts(payable), cta: paymentsCta,
       },
     },
     {
@@ -112,7 +121,7 @@ export function FinanceiroPage() {
             { label: "Em aberto (a receber)", value: formatBRL(receivable.openAmount), tone: "info" },
           ],
         },
-        cta: { label: "Ver cobranças", to: "/finance/charges" },
+        cta: chargesCta,
       },
     },
   ];

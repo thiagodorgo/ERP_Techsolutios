@@ -5,6 +5,8 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import type { DenseColumn } from "../../../../components/dense-list";
 import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../../components/dense-list";
+import { ClickableKpiCard } from "../../../../components/kpi";
+import type { KpiSourceTag } from "../../../../components/kpi";
 import { Alert, Button, Card, EmptyState, ErrorState, Input, SearchBar, Select, Skeleton } from "../../../../components/ui";
 import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
@@ -17,6 +19,7 @@ import {
   formatCommissionCount,
   formatPeriodLabel,
 } from "../commissions.adapter";
+import { buildCommissionsKpiDetails } from "../commissions-kpi-detail";
 import type { CommissionSummaryItem, CommissionSummaryScope } from "../commissions.types";
 import { CommissionDetailDrawer } from "../components/CommissionDetailDrawer";
 import { useCommissionsSummary } from "../useCommissionsSummary";
@@ -69,7 +72,7 @@ export function RemuneracoesPage() {
   const [users, setUsers] = useState<TenantUser[]>([]);
   const [selected, setSelected] = useState<SelectedPayee | null>(null);
 
-  const { summary, loading, error, refresh } = useCommissionsSummary(scope, from, to, canReadAll ? payeeId : "");
+  const { summary, source, loading, error, refresh } = useCommissionsSummary(scope, from, to, canReadAll ? payeeId : "");
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(refresh, { enabled: Boolean(activeContext) && Boolean(scope) });
 
@@ -216,6 +219,7 @@ export function RemuneracoesPage() {
   return (
     <RemuneracoesAllView
       summary={summary}
+      source={source}
       loading={loading}
       errorBlock={errorBlock}
       resolveName={resolveName}
@@ -242,6 +246,7 @@ export function RemuneracoesPage() {
 
 function RemuneracoesAllView({
   summary,
+  source,
   loading,
   errorBlock,
   resolveName,
@@ -253,6 +258,7 @@ function RemuneracoesAllView({
   children,
 }: {
   readonly summary: { items: CommissionSummaryItem[]; total: number; from: string; to: string };
+  readonly source: KpiSourceTag;
   readonly loading: boolean;
   readonly errorBlock: ReactNode;
   readonly resolveName: (id: string) => string | undefined;
@@ -334,6 +340,13 @@ function RemuneracoesAllView({
   const operatorCount = summary.items.length;
   const commissionCount = useMemo(() => summary.items.reduce((sum, item) => sum + item.count, 0), [summary.items]);
 
+  // WS-CARDS-CHARTS-F2 — pop-ups dos 3 cards, montados só de dado já carregado (D-007). REUTILIZA
+  // operatorCount/commissionCount já computados acima — o pop-up nunca recalcula nem soma de novo.
+  const kpiDetails = useMemo(
+    () => buildCommissionsKpiDetails(summary, operatorCount, commissionCount, source),
+    [summary, operatorCount, commissionCount, source],
+  );
+
   return (
     <section className="page-stack">
       <header className="page-heading page-heading--row">
@@ -348,24 +361,30 @@ function RemuneracoesAllView({
       {errorBlock}
 
       <div style={totalsGridStyle}>
-        <div className="work-orders-kpi">
-          <span>
-            <Coins size={16} aria-hidden /> Total geral
-          </span>
-          <strong style={tabularStyle}>{formatBRL(summary.total)}</strong>
-        </div>
-        <div className="work-orders-kpi">
-          <span>
-            <Users size={16} aria-hidden /> Operadores
-          </span>
-          <strong style={tabularStyle}>{operatorCount.toLocaleString("pt-BR")}</strong>
-        </div>
-        <div className="work-orders-kpi">
-          <span>
-            <Receipt size={16} aria-hidden /> Comissões
-          </span>
-          <strong style={tabularStyle}>{formatCommissionCount(commissionCount)}</strong>
-        </div>
+        <ClickableKpiCard detail={kpiDetails.total}>
+          <div className="work-orders-kpi">
+            <span>
+              <Coins size={16} aria-hidden /> Total geral
+            </span>
+            <strong style={tabularStyle}>{formatBRL(summary.total)}</strong>
+          </div>
+        </ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.operators}>
+          <div className="work-orders-kpi">
+            <span>
+              <Users size={16} aria-hidden /> Operadores
+            </span>
+            <strong style={tabularStyle}>{operatorCount.toLocaleString("pt-BR")}</strong>
+          </div>
+        </ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.commissions}>
+          <div className="work-orders-kpi">
+            <span>
+              <Receipt size={16} aria-hidden /> Comissões
+            </span>
+            <strong style={tabularStyle}>{formatCommissionCount(commissionCount)}</strong>
+          </div>
+        </ClickableKpiCard>
       </div>
 
       <div style={filterRowStyle}>

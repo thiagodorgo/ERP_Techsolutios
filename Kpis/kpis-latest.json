@@ -21,10 +21,10 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 615,
-      "total": 615,
-      "display": "615/615",
-      "note": "+13 (fan-out de cards clicaveis PR2a: kpi-cards-clickable +9, dashboard-timeseries-permission-gate +4). 20 cards em 3 superficies (Dashboard 9, OS 4, Despachos 7) viram ClickableKpiCard com pop-up honesto (D-007). Sobre 602."
+      "value": 624,
+      "total": 624,
+      "display": "624/624",
+      "note": "+9 (fan-out PR2b: kpi-cards-clickable-f2b). 22 cards clicaveis em 6 telas de dado real (Estoque/Remuneracoes/Multas/Abastecimento/Seguros/Danos); plataforma+Manutencao PULADAS (100% mock/sem card — P-PLATFORM-MOCK-WIRING). +gating de cta do FinanceiroPage. Sobre 615."
     },
     "backend_tests": {
       "value": 1276,

@@ -6,6 +6,29 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-20 - WS-CARDS-CHARTS-F2 (frontend PR2b) Fan-out de cards clicaveis (restante das telas)
+
+### Resultado
+
+- **22 cards de KPI estaticos viram clicaveis** (ClickableKpiCard, pop-up honesto D-007) em **6 telas de DADO REAL**:
+  Estoque (4), Remuneracoes (3), Multas (3), Abastecimento (4), Seguros (4), Danos (4). **20 explain + 2 breakdown, ZERO
+  charts** — nenhuma serie real fora do Dashboard; telas mock NAO ganham chart enganoso; `source` do hook e threaded p/ o
+  selo honesto ("Dados de exemplo"). 6 builders puros (inventory/commissions/fines/fuel/insurance/damages-kpi-detail.ts).
+- **PLATAFORMA (Overview/Health/TenantDetail) e MANUTENCAO PULADAS HONESTAMENTE:** plataforma e 100% andaime hardcoded
+  (envolver criaria pop-up sobre numero decorativo fabricado — viola D-007); Manutencao nao tem card de numero. Registrado
+  **P-PLATFORM-MOCK-WIRING** (precisa wiring de backend real antes de clicabilidade).
+- **Acesso:** unico cta cross-route (Estoque -> /purchase-orders) gated por `purchase_orders:read`; **+dobrado** o gating das
+  3 ctas do **FinanceiroPage** (financial_titles:read) que a junta apontou como follow-up. Nenhum card dispara fetch (pop-up
+  puramente apresentacional; dados ja vem dos hooks atras do PermissionGuard da rota).
+- Time: dev -> junta **analizador APROVADO + cognicao-visual APROVADO + coordenador-de-acessos APROVADO** (so nits BAIXA;
+  caption km/L para 0 viaturas corrigida p/ bater com o card). Ata `J-CHARTS-F2-fanout-2b-ata.md`.
+
+### KPIs
+
+- `frontend_smoke_tests` **615 -> 624** (+9: kpi-cards-clickable-f2b). PR web-only.
+- `backend_tests` 1276/1282, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**.
+  Backfill #247: `pr`/`merge_commit`/`approved_head` = 308c9ef. Deste PR null na autoria.
+
 ## 2026-07-20 - WS-CARDS-CHARTS-F2 (frontend PR2a) Fan-out de cards clicaveis (3 superficies operacionais)
 
 ### Resultado

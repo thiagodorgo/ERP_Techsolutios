@@ -1171,3 +1171,16 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - acao: no PR frontend do gráfico temporal, tratar o 403/erro com o estado obrigatório §7 ("acesso não permitido"/vazio honesto),
   nunca card quebrado. (A ser feito no próprio PR frontend do gráfico.)
 - status: aberto (tratar no frontend do gráfico).
+
+## P-PLATFORM-MOCK-WIRING - Telas de Plataforma 100% mock hardcoded (2026-07-20, WS-CARDS-CHARTS-F2 PR2b)
+
+- descricao: `PlatformOverviewPage`, `PlatformHealthPage` e `PlatformTenantDetailPage` sao 100% andaime — KPIs,
+  graficos, timeline e tabelas sao constantes hardcoded (KPIS/MRR_BARS/ACTIVITY/ORG_ROWS/METRICS/SERVICES/STATS),
+  sem hook, sem service, sem `/api`. `PlatformTenantDetailPage` nem le o `:tenantId` da rota para buscar dados.
+- impacto: o fan-out de cards clicaveis (PR2b) PULOU essas telas honestamente — tornar clicavel so criaria pop-ups
+  sobre numeros decorativos fabricados (violaria D-007). `ManutencaoPage` tambem pulada (sem card de numero — so
+  abas de fluxo). Nao ha regressao; a feature de cards entrega nas 6 telas de dado real.
+- proximo: precisa de WIRING de backend real (agregados de plataforma: contagem de organizacoes/usuarios, saude
+  de servicos, MRR) antes de qualquer clicabilidade. Candidato a bloco proprio na trilha WS-SCALE-8TELAS / Onda
+  de escala da Plataforma. So entao os cards viram clicaveis com dado REAL.
+- status: ABERTA (registrada; nao e pendencia funcional do PR2b — e um alvo futuro de dados reais).
