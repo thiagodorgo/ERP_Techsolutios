@@ -30,8 +30,11 @@ export function deriveCompetencia(instant: Date): string {
   return `${value("year")}-${value("month")}`;
 }
 
-// Data civil (YYYY-MM-DD) de um instante NO FUSO DE NEGÓCIO — usada p/ o round-trip que barra dia fora de range.
-function formatBusinessCivilDate(instant: Date): string {
+// Data civil (YYYY-MM-DD) DERIVADA de um INSTANTE, formatada no FUSO DE NEGÓCIO (não em UTC) — irmã diária de
+// deriveCompetencia (mesmo Intl/BUSINESS_TIMEZONE, só com o dia). Usada p/ o bucketing diário do agregado de
+// série temporal de OS e p/ o round-trip que barra dia fora de range em parseBusinessDate.
+// Ex.: 2026-08-01T02:00:00Z (= 31/07 23h BRT) → "2026-07-31".
+export function deriveBusinessDate(instant: Date): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: BUSINESS_TIMEZONE,
     year: "numeric",
@@ -60,7 +63,7 @@ export function parseBusinessDate(value: unknown): Date {
     const anchored = new Date(`${raw}T00:00:00${BUSINESS_UTC_OFFSET}`);
     if (Number.isNaN(anchored.getTime())) return anchored;
     // dia fora de range rolou para outro mês/dia → rejeita (Invalid Date).
-    return formatBusinessCivilDate(anchored) === raw ? anchored : new Date(Number.NaN);
+    return deriveBusinessDate(anchored) === raw ? anchored : new Date(Number.NaN);
   }
   if (NAIVE_DATETIME_PATTERN.test(raw)) return new Date(`${raw}${BUSINESS_UTC_OFFSET}`);
   return new Date(raw);

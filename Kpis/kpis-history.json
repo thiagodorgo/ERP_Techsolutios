@@ -710,5 +710,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-19",
+    "version": "WS-CHARTS-F2-BACKEND",
+    "backend_tests": "1276/1282",
+    "frontend_smoke_tests": "597/597",
+    "flutter_tests": "764/764",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 66,
+    "description": "WS-CARDS-CHARTS-F2 (backend) — AGREGADO DE SÉRIE TEMPORAL DE OS (para gráficos temporais reais no Dashboard; diretriz do dono SEM pendência). Novo módulo src/modules/work-order-timeseries/ — GET /api/v1/operations/work-orders-timeseries?days=30 (ou from/to) -> por DIA: created/completed/cancelled, ZERO-FILL server-side (dias vazios=0, contíguos), bucketing por dia em America/Sao_Paulo via deriveBusinessDate (REUSO do Intl de deriveCompetencia — não TZ nova; P-Ω4-COMPETENCIA-TZ). Cada métrica no SEU timestamp (created_at/completed_at/cancelled_at); fallback honesto p/ created_at em linha legada (conta, não descarta). SEM MIGRAÇÃO (colunas já existem). compute PURO InMemory<->Prisma; Prisma withTenantRls + where.tenant_id. DTO omite tenant_id (§2.8). RBAC reusa work_orders:read (sem permissão nova). Time: dev backend -> analizador APROVADO + coordenador-de-acessos APROVADO + validador-mestre APROVADO_CONDICIONADO (MEDIA de KPI sanada). P-WOTS-SCALE (full-scan) + P-WOTS-FRONT-ACCESS (403 no gráfico) registrados. Sem provider/SKU novo. KPI: backend 1268->1276 (+8). frontend_smoke 597/flutter 764 carregados. mvp/blocks inalterados. merge_commit/approved_head null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]
