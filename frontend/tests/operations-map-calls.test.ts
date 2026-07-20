@@ -248,5 +248,8 @@ test("a página passa buildIncomingCalls ao slot, liga onSelect→setSelectedWor
   assert.match(PAGE, /buildIncomingCalls\(visibleWorkOrderPins, visibleWorkOrdersWithoutLocation\)/);
   assert.match(PAGE, /callsCount=\{incomingCalls\.length\}/);
   assert.match(PAGE, /calls=\{[\s\S]*?<OperationsIncomingCallsList/);
-  assert.match(PAGE, /onSelect=\{\(call\) => setSelectedWorkOrderId\(call\.id\)\}/);
+  // J-MAPAS-7 — o clique agora abre o popup de alocação (D) via `openCallAllocation`, que TAMBÉM seleciona
+  // o chamado (setSelectedWorkOrderId → pan). A seleção/pan foi preservada; só ganhou o popup.
+  assert.match(PAGE, /onSelect=\{openCallAllocation\}/);
+  assert.match(PAGE, /const openCallAllocation = useCallback\(\(call: OperationsIncomingCall\) => \{[\s\S]*?setSelectedWorkOrderId\(call\.id\)/);
 });

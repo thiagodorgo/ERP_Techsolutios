@@ -1,17 +1,17 @@
 {
  "snapshot_date": "2026-07-19",
- "version": "WS-MAPA-ALLOC-BACKEND",
+ "version": "WS-MAPA-ALLOC-FE",
  "source": "Kpis/kpis-latest.json",
  "scope": "root_project_kpis_reflecting_mobile_and_web",
  "release": {
-  "block": "WS-MAPA alocação backend (agregado índice de conclusão de OS por técnico)",
-  "title": "WS-MAPA alocação: agregado backend de índice de conclusão (sem migração, gate field_dispatch:create)",
+  "block": "WS-MAPA alocação frontend (popups D/E de alocação de técnico) — FECHA o feedback do Mapa",
+  "title": "WS-MAPA alocação: popups de alocação com filtros + distância/ETA-estimado honesto (J-MAPAS-7)",
   "pr": null,
   "merge_commit": null,
   "approved_head": null,
   "status": "published_per_pr",
-  "summary": "WS-MAPA alocação (backend) — AGREGADO 'índice de conclusão de OS por técnico' (diretriz do dono: SEM pendência, construir o backend). Novo módulo src/modules/technician-performance/ (GET /api/v1/operations/technician-performance) — agregado READ-ONLY sobre work_orders (assigned_user_id/status/created_at): completionRate = concluídas÷atribuídas por técnico (null quando 0 — NUNCA 0 fabricado; operador sem OS não vira linha falsa), ordenado por índice desc (ranking p/ alocação). compute PURO compartilhado InMemory<->Prisma (paridade); Prisma com withTenantRls + where.tenant_id (defesa em profundidade, só 3 colunas). SEM MIGRAÇÃO (leitura). DTO omite tenant_id (§2.8). Registrado em src/app.ts. Time: dev backend -> analizador (APROVADO) + coordenador-de-acessos + validador-mestre (APROVADO_CONDICIONADO). ACHADO ALTA da junta (coordenador): gatear por field_dispatch:read exporia o ranking tenant-wide ao TÉCNICO DE CAMPO -> CORRIGIDO: gate = field_dispatch:create (quem ALOCA), excluindo field_technician/operator/auditor/viewer, com teste provando o 403 do técnico de campo. P-JMAPAS7-PERF-SCALE (groupBy vs full-scan) = otimização futura, não pendência funcional. Sem provider/SKU novo.",
-  "status_label": "Alocação (backend): agregado índice de conclusão por técnico (READ-ONLY, RLS, gate field_dispatch:create); junta 1A+2AC (ALTA de RBAC corrigida); backend 1259->1268"
+  "summary": "WS-MAPA alocação (frontend D+E) — FEATURE DE ALOCAÇÃO DE TÉCNICO (feedback do dono, fecha o mapa). D (chamados): click -> popup de detalhe honesto + 'Alocar técnico' (gated canCreateDispatch) -> lista RANQUEADA + filtros (Disponível / Mais próximo=distância haversine asc / Maior índice de conclusão=completionRate desc) -> 'Alocar' = createDispatch. E (técnicos): linha+status; HOVER -> tooltip (status/frescor/equipe/OS, NUNCA lat/lng) + realça o pin; CLICK -> popup com dados + seletor de chamado -> distância '~X km (linha reta)' + tempo '~Y min (estimado, sem trânsito)' (÷28km/h, disclaimer) + 'Alocar'. HONESTO: nunca 'chega às'/ETA fabricado; completionRate null->'—'; sem coordenada->'indisponível'; LGPD zero-lat/lng no HTML. Novos: technician-performance.service + allocation.ts (helpers puros) + hooks (useTechnicianPerformance/useAllocateDispatch) + MapAllocationDialog (a11y glass) + 2 popups. Alocação REAL via createDispatch (404/409/422 traduzidos). ETA por rota real = Fase 2 (junta-5+PD). Time: dev-mapas -> analizador APROVADO + coordenador-de-acessos APROVADO + cognicao-visual APROVADO + avaliador-mapas APROVADO_CONDICIONADO (ALTAs de processo KB+KPI sanadas; BAIXA import morto + painel concorrente sanados). Sem provider/SKU (US$0).",
+  "status_label": "Mapa: FEEDBACK DO DONO COMPLETO (polish + alocação D/E + backend índice) — alocação real via createDispatch, distância/ETA honesto; junta 3A+1AC; smoke 581->597"
  },
  "metrics": {
   "flutter_tests": {
@@ -21,16 +21,16 @@
    "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
   },
   "frontend_smoke_tests": {
-   "value": 581,
-   "total": 581,
-   "display": "581/581",
-   "note": "carrega o ultimo valor oficial (581) — o agregado technician-performance e backend-only."
+   "value": 597,
+   "total": 597,
+   "display": "597/597",
+   "note": "+16 (operations-map-allocation.test.ts: honestidade distância haversine/ETA-estimado sem 'chega às', null->'—', alocação real via createDispatch com payload correta, filtros nearest/completion/disponível, gating canCreateDispatch, LGPD sem coordenada no HTML). Baseline de mapa 112->128."
   },
   "backend_tests": {
    "value": 1268,
    "total": 1274,
    "display": "1268/1274",
-   "note": "+9 (tests/technician-performance.test.ts: compute do índice + null-sem-OS + janela created_at + ordenação + serviço InMemory cross-tenant + 400 janela + rota 200/403-técnico-de-campo/§2.8-sem-tenant_id). Sobre 1259 (inalterado desde #232; os PRs do Mapa foram frontend-only). Local: as 77 falhas de DB-não-migrado seguem (não tocadas), verdes no CI."
+   "note": "carrega o ultimo valor oficial (1268) — a UI de alocação e frontend-only (o agregado backend foi #243)."
   },
   "backend_contract_tests_focused": {
    "value": 21,

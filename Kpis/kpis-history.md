@@ -6,6 +6,26 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-19 - WS-MAPA alocacao (frontend D/E) FECHA o feedback do Mapa
+
+### Resultado
+
+- **D (chamados):** click -> popup detalhe honesto + "Alocar tecnico" (gated canCreateDispatch) -> lista RANQUEADA + filtros
+  (Disponivel / Mais proximo=distancia haversine / Maior indice de conclusao=completionRate) -> "Alocar"=createDispatch.
+- **E (tecnicos):** linha+status; HOVER->tooltip (status/frescor/equipe/OS, NUNCA lat/lng)+realca o pin; CLICK->popup+seletor de
+  chamado-> distancia "~X km (linha reta)" + tempo "~Y min (estimado, sem transito)" (÷28km/h, disclaimer) + "Alocar".
+- HONESTO: nunca "chega as"/ETA fabricado; completionRate null->"—"; sem coordenada->"indisponivel"; LGPD zero-lat/lng no HTML.
+  Alocacao REAL via createDispatch (404/409/422 traduzidos). ETA por rota real = Fase 2 (junta-5+PD).
+- Time (dev -> analizador APROVADO + coordenador-de-acessos APROVADO + cognicao-visual APROVADO + avaliador-mapas
+  APROVADO_CONDICIONADO); ALTAs (KB+KPI) + BAIXA (import morto + painel concorrente) sanados. **FEEDBACK DO DONO SOBRE O MAPA
+  COMPLETO** (polish + alocacao D/E + backend indice). Resta so Fase 2 (SLA real / ETA por rota, ambos backend/PD).
+
+### KPIs
+
+- `frontend_smoke_tests` **581 -> 597** (+16: operations-map-allocation.test.ts). Baseline de mapa 112 -> 128.
+- `backend_tests` 1268, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**.
+  `pr`/`merge_commit`/`approved_head` null na autoria.
+
 ## 2026-07-19 - WS-MAPA alocacao (backend) Agregado indice de conclusao de OS por tecnico
 
 ### Resultado

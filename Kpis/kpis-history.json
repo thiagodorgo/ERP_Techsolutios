@@ -694,5 +694,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-19",
+    "version": "WS-MAPA-ALLOC-FE",
+    "backend_tests": "1268/1274",
+    "frontend_smoke_tests": "597/597",
+    "flutter_tests": "764/764",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 66,
+    "description": "WS-MAPA alocação (frontend D+E) — FEATURE DE ALOCAÇÃO DE TÉCNICO (feedback do dono, fecha o mapa). D (chamados): click -> popup de detalhe honesto + 'Alocar técnico' (gated canCreateDispatch) -> lista RANQUEADA + filtros (Disponível / Mais próximo=distância haversine asc / Maior índice de conclusão=completionRate desc) -> 'Alocar' = createDispatch. E (técnicos): linha+status; HOVER -> tooltip (status/frescor/equipe/OS, NUNCA lat/lng) + realça o pin; CLICK -> popup com dados + seletor de chamado -> distância '~X km (linha reta)' + tempo '~Y min (estimado, sem trânsito)' (÷28km/h, disclaimer) + 'Alocar'. HONESTO: nunca 'chega às'/ETA fabricado; completionRate null->'—'; sem coordenada->'indisponível'; LGPD zero-lat/lng no HTML. Novos: technician-performance.service + allocation.ts (helpers puros) + hooks (useTechnicianPerformance/useAllocateDispatch) + MapAllocationDialog (a11y glass) + 2 popups. Alocação REAL via createDispatch (404/409/422 traduzidos). ETA por rota real = Fase 2 (junta-5+PD). Time: dev-mapas -> analizador APROVADO + coordenador-de-acessos APROVADO + cognicao-visual APROVADO + avaliador-mapas APROVADO_CONDICIONADO (ALTAs de processo KB+KPI sanadas; BAIXA import morto + painel concorrente sanados). Sem provider/SKU (US$0). KPI: frontend_smoke 581->597 (+16). backend 1268/flutter 764 carregados. mvp/blocks inalterados. merge_commit/approved_head null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

@@ -2090,6 +2090,240 @@
   }
 }
 
+/* ── J-MAPAS-7 (SPRINT ALOCAÇÃO) — popups de alocação D/E: painel de VIDRO NAVY compacto ancorado a um
+   lado (não modal cheio que tapa o mapa). Backdrop leve mantém o mapa visível atrás; a11y (focus-trap/Esc/
+   retorno de foco) mora no MapAllocationDialog. Alvos ≥44px, foco visível cyan, texto ≥4.5:1 sobre navy. */
+.operations-alloc-overlay {
+  align-items: stretch;
+  padding: var(--space-16);
+  background: rgb(8 15 30 / 38%);
+}
+.operations-alloc-overlay--left { justify-content: flex-start; }
+.operations-alloc-overlay--right { justify-content: flex-end; }
+
+.operations-alloc-dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  width: min(400px, 94vw);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--space-16);
+  border: 1px solid rgb(148 163 184 / 24%);
+  border-radius: var(--radius-8);
+  background: rgb(var(--surface-glass-navy-rgb) / 94%);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 18px 48px rgb(2 6 23 / 55%);
+  color: #cbd5e1;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .operations-alloc-dialog { background: rgb(var(--surface-glass-navy-rgb) / 99%); }
+}
+.operations-alloc-dialog:focus { outline: none; }
+
+.operations-alloc-dialog__close {
+  position: absolute;
+  top: var(--space-10);
+  right: var(--space-10);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgb(148 163 184 / 22%);
+  border-radius: var(--radius-6);
+  background: rgb(30 41 59 / 70%);
+  color: #e2e8f0;
+  cursor: pointer;
+}
+.operations-alloc-dialog__close:focus-visible { outline: 2px solid #7cc4e6; outline-offset: 2px; }
+
+.operations-alloc__header { display: flex; flex-direction: column; gap: 4px; padding-right: 44px; }
+.operations-alloc__title-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-8); }
+.operations-alloc__title {
+  margin: 0;
+  padding-left: var(--space-8);
+  border-left: 4px solid var(--call-priority, transparent);
+  color: #f1f5f9;
+  font-size: var(--text-md);
+  font-weight: 800;
+}
+.operations-alloc__subtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  color: #cbd5e1;
+  font-size: var(--text-sm);
+}
+
+.operations-alloc__body { display: flex; flex-direction: column; gap: var(--space-12); }
+
+.operations-alloc__facts { display: flex; flex-direction: column; gap: var(--space-8); margin: 0; }
+.operations-alloc__facts > div { display: flex; flex-direction: column; gap: 2px; }
+.operations-alloc__facts dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.operations-alloc__facts dd { margin: 0; color: #e2e8f0; font-size: var(--text-sm); }
+
+.operations-alloc__primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 var(--space-16);
+  border: 0;
+  border-radius: var(--radius-6);
+  background: #206bc4;
+  color: #f8fafc;
+  font-weight: 700;
+  cursor: pointer;
+}
+.operations-alloc__primary:hover:not(:disabled) { background: #1d5fae; }
+.operations-alloc__primary:disabled { opacity: 0.55; cursor: not-allowed; }
+.operations-alloc__primary:focus-visible { outline: 2px solid #7cc4e6; outline-offset: 2px; }
+
+.operations-alloc__link {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #7cc4e6;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.operations-alloc__link:focus-visible { outline: 2px solid #7cc4e6; outline-offset: 2px; }
+
+.operations-alloc__note { margin: 0; color: #94a3b8; font-size: var(--text-xs); }
+.operations-alloc__disclaimer { margin: 2px 0 0; color: #94a3b8; font-size: 11px; line-height: 1.4; }
+
+.operations-alloc__filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-6); }
+.operations-alloc__sort { display: inline-flex; flex-wrap: wrap; gap: var(--space-6); }
+.operations-alloc__chip {
+  min-height: 44px;
+  padding: 4px var(--space-12);
+  border: 1px solid rgb(148 163 184 / 30%);
+  border-radius: 999px;
+  background: rgb(30 41 59 / 60%);
+  color: #cbd5e1;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+.operations-alloc__chip.is-active { border-color: #7cc4e6; background: rgb(32 107 196 / 30%); color: #f1f5f9; }
+.operations-alloc__chip:focus-visible { outline: 2px solid #7cc4e6; outline-offset: 2px; }
+
+.operations-alloc__list { display: flex; flex-direction: column; gap: var(--space-8); margin: 0; padding: 0; list-style: none; }
+.operations-alloc__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px var(--space-8);
+  align-items: center;
+  padding: var(--space-8) var(--space-10);
+  border: 1px solid rgb(148 163 184 / 20%);
+  border-radius: var(--radius-8);
+  background: rgb(30 41 59 / 70%);
+}
+.operations-alloc__row-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.operations-alloc__row-name { color: #f1f5f9; font-size: var(--text-sm); font-weight: 700; }
+.operations-alloc__row-tags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.operations-alloc__row-metrics { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--space-8); }
+.operations-alloc__metric { display: inline-flex; align-items: center; gap: 4px; color: #cbd5e1; font-size: var(--text-xs); }
+.operations-alloc__allocate {
+  grid-row: 1;
+  grid-column: 2;
+  min-width: 80px;
+  min-height: 44px;
+  padding: 0 var(--space-12);
+  border: 0;
+  border-radius: var(--radius-6);
+  background: #206bc4;
+  color: #f8fafc;
+  font-weight: 700;
+  cursor: pointer;
+}
+.operations-alloc__allocate:hover:not(:disabled) { background: #1d5fae; }
+.operations-alloc__allocate:disabled { opacity: 0.55; cursor: not-allowed; }
+.operations-alloc__allocate:focus-visible { outline: 2px solid #7cc4e6; outline-offset: 2px; }
+
+.operations-alloc__field { display: flex; flex-direction: column; gap: 4px; }
+.operations-alloc__field > span {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.operations-alloc__select {
+  min-height: 44px;
+  padding: 0 var(--space-10);
+  border: 1px solid rgb(148 163 184 / 30%);
+  border-radius: var(--radius-6);
+  background: rgb(15 23 34 / 85%);
+  color: #f1f5f9;
+  font-size: var(--text-sm);
+}
+.operations-alloc__select:focus-visible { outline: 2px solid #7cc4e6; outline-offset: 2px; }
+
+.operations-alloc__pair {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-10);
+  border: 1px solid rgb(148 163 184 / 20%);
+  border-radius: var(--radius-8);
+  background: rgb(30 41 59 / 60%);
+}
+
+.operations-alloc__feedback {
+  padding: var(--space-8) var(--space-10);
+  border-radius: var(--radius-6);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.operations-alloc__feedback--success { border: 1px solid rgb(34 197 94 / 45%); background: rgb(20 83 45 / 55%); color: #bbf7d0; }
+.operations-alloc__feedback--error { border: 1px solid rgb(239 68 68 / 45%); background: rgb(80 20 20 / 55%); color: #fecaca; }
+
+/* J-MAPAS-7 (E) — tooltip leve na linha do técnico (status/frescor/equipe/OS — NUNCA coordenada, LGPD §12).
+   Oculto por padrão; revelado no hover/foco do cartão. Complementar ao clique (não o substitui). */
+.operations-operator-card { position: relative; }
+.operations-operator-card__tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: var(--space-10);
+  right: var(--space-10);
+  z-index: 6;
+  padding: 6px var(--space-8);
+  border: 1px solid rgb(148 163 184 / 30%);
+  border-radius: var(--radius-6);
+  background: rgb(8 15 30 / 96%);
+  color: #e2e8f0;
+  font-size: 11px;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+.operations-operator-card:hover .operations-operator-card__tooltip,
+.operations-operator-card:focus-visible .operations-operator-card__tooltip,
+.operations-operator-card:focus-within .operations-operator-card__tooltip {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .operations-operator-card__tooltip { transition: none; }
+}
+
 /* SPRINT POLISH (C) — o modo "Maximizar" próprio do Stage (fixed/inset:0 + 4º quadrante de vidro)
    foi REMOVIDO por caírem numa tela tosca; o fullscreen agora é o NATIVO do mapa (bottom-right). */
 

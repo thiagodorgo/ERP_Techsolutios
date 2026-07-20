@@ -461,3 +461,26 @@ estão **REVOGADOS** — esse CSS/estado foi REMOVIDO do OperationsMapStage. Nov
    full-height que roubava área do mapa. `mapPadding` do lado colapsado 72→24 (expandido 372). RESÍDUO cosmético (BAIXA): um pin
    a 24-64px da borda colapsada pode espiar sob a pílula translúcida no enquadramento — subir o padding do lado colapsado p/ ~72
    se quiser fidelidade fina. Fallback `OperationsMapSchematicCanvas` (sem provider) mantém sua legenda mínima própria (fora do espelho).
+
+---
+
+## Changelog 2026-07-19 — J-MAPAS-7 SPRINT ALOCAÇÃO (popups D/E de alocação de técnico)
+
+Feature de alocação no Mapa (rail esq.=chamado→"Alocar técnico" com lista ranqueada+filtros; rail dir.=técnico→popup com
+seletor de chamado+distância/tempo+Alocar). Reusa `createDispatch` (POST /operations/dispatches) e `haversineKm`. Aprendizados
+reutilizáveis (valem p/ qualquer feature de distância/ETA/ranking no mapa):
+
+1. **ETA HONESTO sem serviço pago:** distância = `haversineKm` rotulada **"~X km (linha reta)"**; tempo = **"~Y min (estimado,
+   sem trânsito)"** = distância ÷ `AVERAGE_URBAN_SPEED_KMH` (28) com **disclaimer visível**. JAMAIS "chega às"/"ETA de chegada"/
+   prazo cravado. ETA por ROTA real (Google Routes/OSRM) = serviço pago/infra → **Fase 2, junta-5 + PD** (PD-006). Sem coordenada
+   → "indisponível" (nunca número inventado). LGPD: distância só client-side; NUNCA lat/lng no HTML/tooltip/log.
+2. **completionRate `null` → "—"** (nunca 0% fabricado; distingue "sem OS atribuída" de "0% de conclusão").
+3. **technician-performance** = agregado READ-ONLY tenant-scoped (concluídas÷atribuídas por técnico), consumido SÓ por quem tem
+   **`field_dispatch:create`** (quem aloca) — duplo-gate (endpoint `requirePermission` + hook `enabled`). Técnico de campo/operator/
+   auditor/viewer não veem o ranking gerencial.
+4. **Popup de vidro ancorado a um lado (não modal full que tapa o mapa):** `MapAllocationDialog` reusa a máquina a11y do
+   KpiDetailModal (focus-trap/Esc/backdrop/retorno de foco). Clique abre o popup + mantém pan; hover na linha do técnico só
+   realça o pin (onHighlight), sem abrir popup. Com o popup aberto, o painel de detalhe abaixo é SUPRIMIDO (evita superfícies concorrentes).
+
+**FEEDBACK DO DONO SOBRE O MAPA — COMPLETO** (polish A/B/C + alocação D/E + backend do índice). Resta só a Fase 2 (M-7 SLA real
++ ETA por rota se o dono quiser, ambos com backend/PD).
