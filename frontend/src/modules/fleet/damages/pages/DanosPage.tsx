@@ -5,6 +5,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import type { DenseColumn } from "../../../../components/dense-list";
 import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../../components/dense-list";
+import { ClickableKpiCard } from "../../../../components/kpi";
 import { Alert, Button, Card, Chip, EmptyState, SearchBar, Select, Skeleton } from "../../../../components/ui";
 import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
@@ -33,6 +34,7 @@ import {
   DAMAGE_STATUS_OPTIONS,
 } from "../damages.adapter";
 import type { DamageTransition } from "../damages.adapter";
+import { buildDamagesKpiDetails } from "../damages-kpi-detail";
 import { updateDamage } from "../damages.service";
 import type { Damage, DamageFilters, DamageStatusFilter } from "../damages.types";
 import { useDamages } from "../useDamages";
@@ -90,7 +92,7 @@ export function DanosPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
-  const { items, pagination, loading, error, refresh } = useDamages(STABLE_FILTERS);
+  const { items, pagination, source, loading, error, refresh } = useDamages(STABLE_FILTERS);
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
   const { items: vehicles } = useVehicles(STABLE_VEHICLE_FILTERS);
@@ -318,6 +320,8 @@ export function DanosPage() {
     [denseFilter, items, dense.search, dense.status],
   );
   const totals = useMemo(() => computeDamageTotals(totalsBase), [totalsBase]);
+  // WS-CARDS-CHARTS-F2 — pop-ups dos indicadores, montados só de dado já carregado (D-007); source vem vivo do hook.
+  const kpiDetails = useMemo(() => buildDamagesKpiDetails(totals, source), [totals, source]);
 
   const hasExtraFilters = Boolean(statusFilter) || Boolean(gravidadeFilter) || Boolean(vehicleFilter);
 
@@ -352,30 +356,38 @@ export function DanosPage() {
       ) : null}
 
       <div style={totalsGridStyle}>
-        <div className="work-orders-kpi">
-          <span>
-            <ShieldAlert size={16} aria-hidden /> Total de danos
-          </span>
-          <strong style={tabularStyle}>{totals.count.toLocaleString("pt-BR")}</strong>
-        </div>
-        <div className="work-orders-kpi">
-          <span>
-            <ClipboardList size={16} aria-hidden /> Registrados
-          </span>
-          <strong style={tabularStyle}>{totals.registradoCount.toLocaleString("pt-BR")}</strong>
-        </div>
-        <div className="work-orders-kpi">
-          <span>
-            <Wrench size={16} aria-hidden /> Em tratativa
-          </span>
-          <strong style={tabularStyle}>{totals.emTratativaCount.toLocaleString("pt-BR")}</strong>
-        </div>
-        <div className="work-orders-kpi">
-          <span>
-            <CheckCircle2 size={16} aria-hidden /> Resolvidos
-          </span>
-          <strong style={tabularStyle}>{totals.resolvidoCount.toLocaleString("pt-BR")}</strong>
-        </div>
+        <ClickableKpiCard detail={kpiDetails.total}>
+          <div className="work-orders-kpi">
+            <span>
+              <ShieldAlert size={16} aria-hidden /> Total de danos
+            </span>
+            <strong style={tabularStyle}>{totals.count.toLocaleString("pt-BR")}</strong>
+          </div>
+        </ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.registrados}>
+          <div className="work-orders-kpi">
+            <span>
+              <ClipboardList size={16} aria-hidden /> Registrados
+            </span>
+            <strong style={tabularStyle}>{totals.registradoCount.toLocaleString("pt-BR")}</strong>
+          </div>
+        </ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.emTratativa}>
+          <div className="work-orders-kpi">
+            <span>
+              <Wrench size={16} aria-hidden /> Em tratativa
+            </span>
+            <strong style={tabularStyle}>{totals.emTratativaCount.toLocaleString("pt-BR")}</strong>
+          </div>
+        </ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.resolvidos}>
+          <div className="work-orders-kpi">
+            <span>
+              <CheckCircle2 size={16} aria-hidden /> Resolvidos
+            </span>
+            <strong style={tabularStyle}>{totals.resolvidoCount.toLocaleString("pt-BR")}</strong>
+          </div>
+        </ClickableKpiCard>
       </div>
 
       <div style={chipRowStyle} role="group" aria-label="Filtrar danos por situação">

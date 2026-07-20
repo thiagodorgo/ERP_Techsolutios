@@ -5,6 +5,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import type { DenseColumn } from "../../../../components/dense-list";
 import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../../components/dense-list";
+import { ClickableKpiCard } from "../../../../components/kpi";
 import { Alert, Button, Card, Chip, EmptyState, Input, SearchBar, Select, Skeleton } from "../../../../components/ui";
 import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
@@ -25,6 +26,7 @@ import {
   getFuelStatusTone,
   getFuelTypeLabel,
 } from "../fuel-logs.adapter";
+import { buildFuelKpiDetails } from "../fuel-kpi-detail";
 import { updateFuelLog } from "../fuel-logs.service";
 import type { FuelLog, FuelLogsFilters, FuelLogsStatusFilter } from "../fuel-logs.types";
 import { useFuelLogs } from "../useFuelLogs";
@@ -52,7 +54,7 @@ export function AbastecimentoPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
-  const { items, pagination, loading, error, refresh } = useFuelLogs(STABLE_FILTERS);
+  const { items, pagination, source, loading, error, refresh } = useFuelLogs(STABLE_FILTERS);
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
   const { items: vehicles } = useVehicles(STABLE_VEHICLE_FILTERS);
@@ -251,6 +253,8 @@ export function AbastecimentoPage() {
     [denseFilter, items, dense.search, dense.status],
   );
   const totals = useMemo(() => computeFuelTotals(totalsBase), [totalsBase]);
+  // WS-CARDS-CHARTS-F2 — pop-ups dos indicadores, montados só de dado já carregado (D-007); source vem vivo do hook.
+  const kpiDetails = useMemo(() => buildFuelKpiDetails(totals, source), [totals, source]);
 
   return (
     <section className="page-stack work-orders-page">
@@ -283,35 +287,43 @@ export function AbastecimentoPage() {
       ) : null}
 
       <div style={totalsGridStyle}>
-        <div className="work-orders-kpi">
-          <span>
-            <Fuel size={16} aria-hidden /> Lançamentos na janela
-          </span>
-          <strong>{totals.count.toLocaleString("pt-BR")}</strong>
-        </div>
-        <div className="work-orders-kpi">
-          <span>
-            <Droplets size={16} aria-hidden /> Total de litros
-          </span>
-          <strong>{formatLiters(totals.totalLiters)}</strong>
-        </div>
-        <div className="work-orders-kpi">
-          <span>
-            <Receipt size={16} aria-hidden /> Total em R$
-          </span>
-          <strong>{formatBRL(totals.totalValue)}</strong>
-        </div>
-        <div className="work-orders-kpi">
-          <span>
-            <Gauge size={16} aria-hidden /> km/L médio da frota
-          </span>
-          <strong>{formatKmPerLiter(totals.fleetKmPerL)}</strong>
-          <small style={mutedStyle}>
-            {totals.vehiclesWithEfficiency > 0
-              ? `${totals.vehiclesWithEfficiency} viatura(s) com consumo derivado`
-              : "Sem consumo derivado na janela"}
-          </small>
-        </div>
+        <ClickableKpiCard detail={kpiDetails.lancamentos}>
+          <div className="work-orders-kpi">
+            <span>
+              <Fuel size={16} aria-hidden /> Lançamentos na janela
+            </span>
+            <strong>{totals.count.toLocaleString("pt-BR")}</strong>
+          </div>
+        </ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.litros}>
+          <div className="work-orders-kpi">
+            <span>
+              <Droplets size={16} aria-hidden /> Total de litros
+            </span>
+            <strong>{formatLiters(totals.totalLiters)}</strong>
+          </div>
+        </ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.total}>
+          <div className="work-orders-kpi">
+            <span>
+              <Receipt size={16} aria-hidden /> Total em R$
+            </span>
+            <strong>{formatBRL(totals.totalValue)}</strong>
+          </div>
+        </ClickableKpiCard>
+        <ClickableKpiCard detail={kpiDetails.kmL}>
+          <div className="work-orders-kpi">
+            <span>
+              <Gauge size={16} aria-hidden /> km/L médio da frota
+            </span>
+            <strong>{formatKmPerLiter(totals.fleetKmPerL)}</strong>
+            <small style={mutedStyle}>
+              {totals.vehiclesWithEfficiency > 0
+                ? `${totals.vehiclesWithEfficiency} viatura(s) com consumo derivado`
+                : "Sem consumo derivado na janela"}
+            </small>
+          </div>
+        </ClickableKpiCard>
       </div>
 
       <div style={filterRowStyle}>
