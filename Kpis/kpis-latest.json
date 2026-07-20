@@ -1,17 +1,17 @@
 {
  "snapshot_date": "2026-07-19",
- "version": "WS-MAPA-POLISH",
+ "version": "WS-MAPA-ALLOC-BACKEND",
  "source": "Kpis/kpis-latest.json",
  "scope": "root_project_kpis_reflecting_mobile_and_web",
  "release": {
-  "block": "WS-MAPA SPRINT POLISH (legenda unica + fullscreen nativo + rail-pilula)",
-  "title": "WS-MAPA polish: fullscreen nativo + legenda unica + rail colapsado fino (feedback do dono)",
+  "block": "WS-MAPA alocação backend (agregado índice de conclusão de OS por técnico)",
+  "title": "WS-MAPA alocação: agregado backend de índice de conclusão (sem migração, gate field_dispatch:create)",
   "pr": null,
   "merge_commit": null,
   "approved_head": null,
   "status": "published_per_pr",
-  "summary": "WS-MAPA SPRINT POLISH (feedback do dono, itens A+C+B) — (A) LEGENDA UNICA na base: removido o <footer> redundante do GoogleMapsCanvas ('Atual'/'Localizacao antiga', ja subsumido em MAP_LEGEND_ITEMS) -> OperationsMapLegendFooter e a unica legenda colada embaixo (paridade preservada). (C) FULLSCREEN NATIVO: removido o maximizar customizado tosco (estado/botao/focus-trap/4o quadrante) -> MapLibre FullscreenControl bottom-right + Google fullscreenControl RIGHT_BOTTOM (regra do espelho). (B) RAIL COLAPSADO = pilula fina top-anchored (44x64px) em vez de faixa 56px full-height que roubava o mapa; mapPadding colapsado 72->24. Time novo (planejador-senior-master-chefe + pesquisadores web PD-006): revisao dev -> analizador (APROVADO) -> aprovador (avaliador-mapas APROVADO_CONDICIONADO) + cognicao-visual (APROVADO); condicao ALTA (KB desatualizado) sanada. Sem provider/SKU/backend, US$0, LGPD zero-coordenada. Testes de layout reescritos (fullscreen nativo/legenda unica/pilula).",
-  "status_label": "Mapa polish: fullscreen NATIVO (bottom-right) + legenda unica na base + rail colapsado = pilula fina; time novo (analizador/aprovador) APROVADO; smoke 581 inalterado"
+  "summary": "WS-MAPA alocação (backend) — AGREGADO 'índice de conclusão de OS por técnico' (diretriz do dono: SEM pendência, construir o backend). Novo módulo src/modules/technician-performance/ (GET /api/v1/operations/technician-performance) — agregado READ-ONLY sobre work_orders (assigned_user_id/status/created_at): completionRate = concluídas÷atribuídas por técnico (null quando 0 — NUNCA 0 fabricado; operador sem OS não vira linha falsa), ordenado por índice desc (ranking p/ alocação). compute PURO compartilhado InMemory<->Prisma (paridade); Prisma com withTenantRls + where.tenant_id (defesa em profundidade, só 3 colunas). SEM MIGRAÇÃO (leitura). DTO omite tenant_id (§2.8). Registrado em src/app.ts. Time: dev backend -> analizador (APROVADO) + coordenador-de-acessos + validador-mestre (APROVADO_CONDICIONADO). ACHADO ALTA da junta (coordenador): gatear por field_dispatch:read exporia o ranking tenant-wide ao TÉCNICO DE CAMPO -> CORRIGIDO: gate = field_dispatch:create (quem ALOCA), excluindo field_technician/operator/auditor/viewer, com teste provando o 403 do técnico de campo. P-JMAPAS7-PERF-SCALE (groupBy vs full-scan) = otimização futura, não pendência funcional. Sem provider/SKU novo.",
+  "status_label": "Alocação (backend): agregado índice de conclusão por técnico (READ-ONLY, RLS, gate field_dispatch:create); junta 1A+2AC (ALTA de RBAC corrigida); backend 1259->1268"
  },
  "metrics": {
   "flutter_tests": {
@@ -24,13 +24,13 @@
    "value": 581,
    "total": 581,
    "display": "581/581",
-   "note": "test:smoke 581/581 e mapa 112/112 INALTERADOS — o polish REESCREVEU os testes de layout (maximizar->fullscreen nativo; legenda unica; pilula colapsada), sem teste novo/removido."
+   "note": "carrega o ultimo valor oficial (581) — o agregado technician-performance e backend-only."
   },
   "backend_tests": {
-   "value": 1259,
-   "total": 1265,
-   "display": "1259/1265",
-   "note": "carrega o ultimo valor oficial (1259) — SPRINT POLISH e frontend-only."
+   "value": 1268,
+   "total": 1274,
+   "display": "1268/1274",
+   "note": "+9 (tests/technician-performance.test.ts: compute do índice + null-sem-OS + janela created_at + ordenação + serviço InMemory cross-tenant + 400 janela + rota 200/403-técnico-de-campo/§2.8-sem-tenant_id). Sobre 1259 (inalterado desde #232; os PRs do Mapa foram frontend-only). Local: as 77 falhas de DB-não-migrado seguem (não tocadas), verdes no CI."
   },
   "backend_contract_tests_focused": {
    "value": 21,

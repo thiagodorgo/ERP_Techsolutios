@@ -1149,3 +1149,11 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   operations-map-google-canvas ganhou guarda de terminologia (subtítulo "técnicos" + aria "Técnicos de Campo" + doesNotMatch
   /operador/i). Obs.: o subtítulo da PÁGINA (OperationsMapPage header "…dos operadores em campo") ficou FORA do escopo M-4
   (canvases apenas) — segue como touch-up cosmético menor se o dono quiser.
+
+## P-JMAPAS7-PERF-SCALE — otimização de agregação (groupBy SQL vs full-scan) no technician-performance (2026-07-19)
+- descricao: o agregado GET /operations/technician-performance faz full-scan das OS ATRIBUÍDAS do tenant (3 colunas) e agrega no
+  compute puro. Funciona CORRETO (feature completa, testada); em tenants com MUITA OS, um `groupBy` SQL (assigned_user_id, status)
+  seria mais eficiente. Espelha a mesma escolha do financial-summary (agrega em memória sobre a leitura RLS).
+- acao: OTIMIZAÇÃO FUTURA (não-bloqueante; NÃO é pendência funcional — a feature entrega o índice correto agora). Trocar por
+  `prisma.workOrder.groupBy` quando/se o volume exigir. Sem mudança de contrato.
+- status: aberto (otimização; feature funcionando).
