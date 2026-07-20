@@ -22,6 +22,7 @@ import { createCustomerRouter } from "./modules/customers/index.js";
 import { createDashboardRouter } from "./modules/dashboard/index.js";
 import { createExpenseManagementRouter } from "./modules/expense-management/index.js";
 import { createFieldDispatchRouter } from "./modules/field-dispatch/index.js";
+import { createTechnicianPerformanceRouter } from "./modules/technician-performance/index.js";
 import { createFieldLocationRouter } from "./modules/field-location/index.js";
 import { createFieldOpsRealtimeRouter } from "./modules/field-ops-realtime/index.js";
 import { createFuelLogRouter } from "./modules/fuel-logs/index.js";
@@ -144,6 +145,10 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createTenantSettingsRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTeamRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFieldDispatchRouter(service));
+  // J-MAPAS-7 — Índice de conclusão de OS por técnico. GET /operations/technician-performance: agregado
+  // READ-ONLY (concluídas÷atribuídas por operador) sobre work_orders, computado NO BACKEND, tenant-scoped
+  // (RLS). Alimenta o ranking de alocação do Mapa Operacional. Path não colide com /operations/dispatches.
+  app.use("/api/v1", attachAuthenticatedActor(), createTechnicianPerformanceRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createCommissionRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createExpenseManagementRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createCoreSaasRouter(service));

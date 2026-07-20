@@ -6,6 +6,26 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-19 - WS-MAPA alocacao (backend) Agregado indice de conclusao de OS por tecnico
+
+### Resultado
+
+- **Diretriz do dono (SEM pendencia):** construido o BACKEND do indice de conclusao. Novo modulo
+  `src/modules/technician-performance/` — `GET /api/v1/operations/technician-performance`: agregado READ-ONLY sobre work_orders
+  (assigned_user_id/status/created_at) -> completionRate = concluidas÷atribuidas por tecnico (**null quando 0 — nunca 0
+  fabricado**), ordenado por indice desc (ranking p/ alocacao). compute PURO InMemory<->Prisma; Prisma withTenantRls +
+  where.tenant_id. **SEM MIGRACAO**. DTO omite tenant_id (§2.8). Registrado em src/app.ts.
+- Time: dev backend -> analizador **APROVADO** + coordenador-de-acessos + validador-mestre **APROVADO_CONDICIONADO**. ACHADO
+  **ALTA** (coordenador): gatear por field_dispatch:read exporia o ranking ao TECNICO DE CAMPO -> CORRIGIDO para
+  **field_dispatch:create** (quem ALOCA), com teste provando o 403 do tecnico de campo. P-JMAPAS7-PERF-SCALE = otimizacao futura.
+
+### KPIs
+
+- `backend_tests` **1259 -> 1268** (+9: tests/technician-performance.test.ts). Sobre 1259 (inalterado desde #232; PRs do Mapa
+  foram frontend-only).
+- `frontend_smoke_tests` 581, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**.
+  Proximo: FRONTEND da alocacao (D/E) consome este agregado. `pr`/`merge_commit`/`approved_head` null na autoria.
+
 ## 2026-07-19 - WS-MAPA SPRINT POLISH Fullscreen nativo + legenda unica + rail-pilula (feedback do dono)
 
 ### Resultado
