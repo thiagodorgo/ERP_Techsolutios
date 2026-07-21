@@ -423,6 +423,9 @@ export class WorkOrderService {
       teamId,
       serviceCatalogId,
       scheduledFor: parseOptionalDate(body.scheduledFor, "scheduledFor"),
+      // M-7 (J-MAPAS-8) — prazo de SLA opcional. parseOptionalDate reusado (400 invalid_date em malformado);
+      // sem regra de futuro/campo-cruzado — a OS pode ser lançada já vencida (espelho de scheduledFor).
+      slaDueAt: parseOptionalDate(body.slaDueAt, "slaDueAt"),
       createdBy: actor.userId,
       updatedBy: actor.userId,
       status: "open",
@@ -646,6 +649,8 @@ export class WorkOrderService {
       priority: body.priority === undefined ? undefined : parseWorkOrderPriority(body.priority),
       checklistId: parseOptionalUuid(body.checklistId, "checklistId"),
       scheduledFor: parseOptionalDate(body.scheduledFor, "scheduledFor"),
+      // M-7 (J-MAPAS-8) — prazo de SLA pela trilha de update padrão (espelho de scheduledFor).
+      slaDueAt: parseOptionalDate(body.slaDueAt, "slaDueAt"),
       updatedBy: actor.userId,
     };
     const updated = await this.repository.update(input);

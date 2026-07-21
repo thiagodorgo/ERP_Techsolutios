@@ -1777,6 +1777,10 @@ model WorkOrder {
   team_id                         String?               @db.Uuid
   service_catalog_id              String?               @db.Uuid
   scheduled_for                   DateTime?             @db.Timestamptz(6)
+  // M-7 (J-MAPAS-8 · SLA real do mapa) — instante-alvo do SLA da OS (prazo). Aditivo/nullable. Livre como
+  // scheduled_for (sem enum/CHECK): a OS PODE nascer já vencida — o serviço só valida data ISO
+  // (parseOptionalDate). SEM índice: a fila do mapa filtra/ordena o SLA client-side.
+  sla_due_at                      DateTime?             @db.Timestamptz(6)
   started_at                      DateTime?             @db.Timestamptz(6)
   arrived_at                      DateTime?             @db.Timestamptz(6)
   completed_at                    DateTime?             @db.Timestamptz(6)

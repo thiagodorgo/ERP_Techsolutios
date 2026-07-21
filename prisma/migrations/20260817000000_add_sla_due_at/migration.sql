@@ -1,0 +1,21 @@
+-- Block M-7 (J-MAPAS-8 · SLA real do mapa): 1 coluna aditiva de PRAZO de SLA em "work_orders".
+-- SOMENTE ADITIVO. Nenhuma coluna/linha existente é tocada; a coluna nasce NULL, então toda OS
+-- pré-existente valida sem reescrita (OS sem prazo fica NULL e a fila do mapa a trata como "sem SLA").
+-- Espelha o padrão aditivo dos blocos 20260807000000_add_work_order_mileage e
+-- 20260719000000_add_work_order_service_geocode.
+--
+--   - "sla_due_at" (TIMESTAMPTZ(6), NULL): instante-alvo do SLA da OS (prazo). Livre como scheduled_for
+--     (sem CHECK): uma OS PODE ser lançada já vencida, então NÃO se impõe futuro nem regra cruzada — a
+--     validação (data ISO válida) vive na aplicação (parseOptionalDate → 400 invalid_date).
+--
+-- SEM ÍNDICE: a fila do mapa filtra/ordena por SLA no cliente (client-side); nenhuma query SQL filtra
+-- ou ordena por sla_due_at, então um índice seria peso morto de escrita.
+--
+-- RLS: "work_orders" JÁ tem ROW LEVEL SECURITY ENABLE+FORCE + policy "work_orders_tenant_isolation"
+-- (app.current_tenant_id) desde a migration de origem. ADD COLUMN NÃO afeta a RLS e a coluna nova
+-- HERDA a policy da tabela — nenhuma re-policy é necessária e a RLS NÃO é recriada aqui.
+--
+-- Rollback:
+--   ALTER TABLE "work_orders" DROP COLUMN IF EXISTS "sla_due_at";
+
+ALTER TABLE "work_orders" ADD COLUMN "sla_due_at" TIMESTAMPTZ(6);

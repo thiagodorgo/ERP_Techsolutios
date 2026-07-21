@@ -108,6 +108,8 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
         team_id: input.teamId ?? null,
         service_catalog_id: input.serviceCatalogId ?? null,
         scheduled_for: input.scheduledFor ?? null,
+        // M-7 (J-MAPAS-8) — prazo de SLA (aditivo/nullable); null quando a OS nasce sem prazo.
+        sla_due_at: input.slaDueAt ?? null,
         // Ω3F-6 — só o duplicate carimba client_action_id; o create normal manda null e cai FORA do
         // unique parcial. financial_cancellation_decision nasce null (a OS nova nunca é cancelada).
         client_action_id: input.clientActionId ?? null,
@@ -195,6 +197,9 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
         priority: input.priority,
         checklist_id: nullable(input.checklistId),
         scheduled_for: nullable(input.scheduledFor),
+        // M-7 (J-MAPAS-8) — prazo de SLA; só tocado quando presente no corpo (nullable → undefined é
+        // descartado pelo compactRecord, espelho de scheduled_for).
+        sla_due_at: nullable(input.slaDueAt),
         // Ω3F-7a — km: só os campos fornecidos por setMileage chegam aqui; undefined é descartado pelo
         // compactRecord (o merge por-campo já foi resolvido no serviço).
         mileage_start: input.mileageStart,
@@ -488,6 +493,7 @@ function mapWorkOrderRecord(record: {
   readonly team_id: string | null;
   readonly service_catalog_id: string | null;
   readonly scheduled_for: Date | null;
+  readonly sla_due_at: Date | null;
   readonly started_at: Date | null;
   readonly arrived_at: Date | null;
   readonly completed_at: Date | null;
@@ -541,6 +547,8 @@ function mapWorkOrderRecord(record: {
     teamId: record.team_id ?? undefined,
     serviceCatalogId: record.service_catalog_id ?? undefined,
     scheduledFor: record.scheduled_for ?? undefined,
+    // M-7 (J-MAPAS-8) — prazo de SLA; undefined quando NULL (espelho de scheduledFor).
+    slaDueAt: record.sla_due_at ?? undefined,
     startedAt: record.started_at ?? undefined,
     arrivedAt: record.arrived_at ?? undefined,
     completedAt: record.completed_at ?? undefined,

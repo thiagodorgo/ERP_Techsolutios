@@ -56,6 +56,9 @@ export function toWorkOrderDto(workOrder: WorkOrder, links?: WorkOrderLinks) {
     teamId: workOrder.teamId ?? null,
     serviceCatalogId: workOrder.serviceCatalogId ?? null,
     scheduledFor: workOrder.scheduledFor?.toISOString() ?? null,
+    // M-7 (J-MAPAS-8 · SLA real do mapa) — prazo de SLA (ISO) ou null. §2.8: dado FUNCIONAL (prazo), não
+    // sensível → ok expor. O changedFields do evento de update lista só a CHAVE (sem valor).
+    slaDueAt: workOrder.slaDueAt?.toISOString() ?? null,
     startedAt: workOrder.startedAt?.toISOString() ?? null,
     arrivedAt: workOrder.arrivedAt?.toISOString() ?? null,
     completedAt: workOrder.completedAt?.toISOString() ?? null,
@@ -98,6 +101,9 @@ export function toWorkOrderListDto(result: ListWorkOrdersResult) {
       // F6 (Mapa real): badges de manutencao/seguro no pin precisam da viatura da OS
       vehicleId: workOrder.vehicleId ?? null,
       scheduledFor: workOrder.scheduledFor?.toISOString() ?? null,
+      // M-7 (J-MAPAS-8 · SLA real do mapa) — CHAVE: o Mapa Operacional lê o prazo de SLA da lista para
+      // colorir/ordenar a fila (client-side). null quando a OS não tem prazo. Dado funcional, não sensível.
+      slaDueAt: workOrder.slaDueAt?.toISOString() ?? null,
       createdAt: workOrder.createdAt.toISOString(),
     })),
     pagination: {
