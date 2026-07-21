@@ -24,6 +24,10 @@ export function toFinancialTitleDto(title: FinancialTitle) {
     accountId: title.accountId ?? null,
     workOrderId: title.workOrderId ?? null,
     serviceQuoteId: title.serviceQuoteId ?? null,
+    // Ω4C PR-02 — proveniência de frota. sourceType é valor de NEGÓCIO; sourceId é o id da fonte no PRÓPRIO
+    // tenant (mesma exposição que workOrderId — nunca vaza tenant/segredo). Sustenta o badge "lançado".
+    sourceType: title.sourceType ?? null,
+    sourceId: title.sourceId ?? null,
     overdue: isTitleOverdue(title.status, title.dueDate),
     active: title.deletedAt == null,
     createdBy: title.createdBy ?? null,

@@ -412,6 +412,8 @@ export function AbastecimentoPage() {
           log={editing}
           vehicles={vehicles}
           context={context}
+          canLaunchPayable={can("financial_titles:create")}
+          canRemovePayable={can("financial_titles:update")}
           onClose={closeModal}
           onSaved={() => {
             closeModal();

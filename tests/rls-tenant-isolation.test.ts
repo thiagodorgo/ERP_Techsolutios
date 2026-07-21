@@ -1059,6 +1059,99 @@ if (!connectionString) {
       );
       assert.equal(tenantCAttachment?.status, "stored", "tenant C attachment stays visible + untouched in-tenant");
 
+      // Ω4C PR-02 (RN-FIN-ORIGEM: multi-tenant) — Contas a Pagar por ORIGEM sobre financial_titles.source_type/
+      // source_id (colunas ADITIVAS desta fatia) com 3 tenants EFÊMEROS (A, B, C). source_id é um UUID qualquer
+      // (SEM FK nativa ao alvo — integridade app-level). Prova: invisível sem contexto + cross-tenant updateMany
+      // count=0 + visível/intocado in-tenant. A tabela já tem RLS ENABLE/FORCE + policy desde 20260810000000;
+      // as colunas herdam a política (mesma linha).
+      const insertSourceTitle = (tx: typeof client, tenantId: string) => tx.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO financial_titles (
+          tenant_id, direction, party_type, party_name, amount, currency, issue_date, due_date,
+          paid_amount, status, competencia, source_type, source_id
+        )
+        VALUES (
+          ${tenantId}::uuid, 'payable', 'supplier', 'RLS Fornecedor', 100.00, 'BRL', now(), now(),
+          0, 'open', '2026-07', 'fuel_log', gen_random_uuid()
+        )
+        RETURNING id
+      `;
+      const sourceTitleAId = await withTenantRls(client, tenantA.id, async (tx) => {
+        const [row] = await insertSourceTitle(tx as typeof client, tenantA.id);
+        return row.id;
+      });
+      const sourceTitleBId = await withTenantRls(client, tenantB.id, async (tx) => {
+        const [row] = await insertSourceTitle(tx as typeof client, tenantB.id);
+        return row.id;
+      });
+      const sourceTitleCId = await withTenantRls(client, tenantC.id, async (tx) => {
+        const [row] = await insertSourceTitle(tx as typeof client, tenantC.id);
+        return row.id;
+      });
+
+      const sourceTitlesWithoutContext = await client.financialTitle.findMany({
+        where: {
+          id: {
+            in: [sourceTitleAId, sourceTitleBId, sourceTitleCId],
+          },
+        },
+      });
+      assert.deepEqual(
+        sourceTitlesWithoutContext.map((title) => title.id),
+        [],
+        "tenant-scoped financial titles (by source) must not be visible without app.current_tenant_id",
+      );
+
+      const tenantASourceTitleView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.financialTitle.findMany({
+          where: {
+            id: {
+              in: [sourceTitleAId, sourceTitleBId, sourceTitleCId],
+            },
+          },
+        });
+        const crossTenantUpdate = await tx.financialTitle.updateMany({
+          where: {
+            id: {
+              in: [sourceTitleBId, sourceTitleCId],
+            },
+          },
+          data: {
+            source_type: "maintenance_order",
+          },
+        });
+        return {
+          visibleIds: visible.map((title) => title.id),
+          crossUpdatedRows: crossTenantUpdate.count,
+        };
+      });
+      assert.deepEqual(
+        tenantASourceTitleView.visibleIds,
+        [sourceTitleAId],
+        "tenant A must only see its own source-launched financial title (not tenant B/C)",
+      );
+      assert.equal(
+        tenantASourceTitleView.crossUpdatedRows,
+        0,
+        "tenant A must not update tenant B/C financial titles (by source)",
+      );
+
+      const tenantBSourceTitle = await withTenantRls(client, tenantB.id, (tx) =>
+        tx.financialTitle.findUnique({
+          where: {
+            id: sourceTitleBId,
+          },
+        }),
+      );
+      assert.equal(tenantBSourceTitle?.source_type, "fuel_log", "tenant B source title stays visible + untouched in-tenant");
+      const tenantCSourceTitle = await withTenantRls(client, tenantC.id, (tx) =>
+        tx.financialTitle.findUnique({
+          where: {
+            id: sourceTitleCId,
+          },
+        }),
+      );
+      assert.equal(tenantCSourceTitle?.source_type, "fuel_log", "tenant C source title stays visible + untouched in-tenant");
+
       const globalTenants = await client.tenant.findMany({
         where: {
           id: {
@@ -1505,6 +1598,12 @@ if (!connectionString) {
     } finally {
       for (const tenantId of tenantIds) {
         await withTenantRls(client, tenantId, async (tx) => {
+          // Ω4C PR-02 — títulos lançados por origem (cleanup antes do tenant; FK ao tenant é Restrict).
+          await tx.financialTitle.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
           await tx.attachment.deleteMany({
             where: {
               tenant_id: tenantId,

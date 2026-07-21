@@ -2,6 +2,7 @@ import type { CSSProperties, FormEvent } from "react";
 import { useState } from "react";
 
 import { Alert, Button, Chip, Input, Modal, Select } from "../../../../components/ui";
+import { PayableToggle, launchPayable } from "../../../finance/payable-source";
 import type { Vehicle } from "../../../registry/vehicles/vehicles.types";
 import {
   getPolicyStatusLabel,
@@ -50,16 +51,25 @@ export function InsurancePolicyFormModal({
   policy,
   vehicles,
   context,
+  canLaunchPayable = false,
+  canRemovePayable = false,
   onClose,
   onSaved,
 }: {
   readonly policy: InsurancePolicy | null;
   readonly vehicles: readonly Vehicle[];
   readonly context: InsuranceApiContext;
+  readonly canLaunchPayable?: boolean;
+  readonly canRemovePayable?: boolean;
   readonly onClose: () => void;
   readonly onSaved: (saved?: InsurancePolicy) => void;
 }) {
-  const isEdit = Boolean(policy);
+  // Ω4C PR-02 — "Gerar lançamento em contas a pagar" (AutEM): checkbox no cadastro; na edição, badge/ações.
+  // `savedPolicy` guarda a apólice recém-criada se o lançamento pós-create falhar, para retomar na edição.
+  const [payableChecked, setPayableChecked] = useState(false);
+  const [savedPolicy, setSavedPolicy] = useState<InsurancePolicy | null>(null);
+  const activePolicy = policy ?? savedPolicy;
+  const isEdit = Boolean(activePolicy);
   const [vehicleId, setVehicleId] = useState(policy?.vehicleId ?? "");
   const [seguradora, setSeguradora] = useState(policy?.seguradora ?? "");
   const [numeroApolice, setNumeroApolice] = useState(policy?.numeroApolice ?? "");
@@ -108,11 +118,26 @@ export function InsurancePolicyFormModal({
 
     setSaving(true);
     try {
-      if (isEdit && policy) {
-        const updated = await updateInsurancePolicy(context, policy.id, payload);
+      if (isEdit && activePolicy) {
+        const updated = await updateInsurancePolicy(context, activePolicy.id, payload);
         onSaved(updated ?? undefined);
       } else {
         const created = await createInsurancePolicy(context, payload);
+        // Após o create devolver o id, se marcado, dispara o lançamento em contas a pagar. Best-effort:
+        // falha NÃO desfaz a apólice — mantém o modal aberto para lançar pelo painel de edição.
+        if (created && payableChecked) {
+          try {
+            await launchPayable(context, "insurance-policies", created.id, {
+              partyName: draft.seguradora || "Seguradora",
+              amount: payload.valor,
+              dueDate: new Date(draft.vigenciaInicio).toISOString(),
+            });
+          } catch {
+            setSavedPolicy(created);
+            setServerError("Apólice salva, mas não foi possível gerar o título em contas a pagar. Use o painel abaixo para lançar.");
+            return;
+          }
+        }
         onSaved(created ?? undefined);
       }
     } catch (error) {
@@ -254,6 +279,21 @@ export function InsurancePolicyFormModal({
               </small>
             ) : null}
           </div>
+        </div>
+
+        <div style={{ marginTop: "var(--space-16)" }}>
+          {isEdit && activePolicy ? (
+            <PayableToggle
+              mode="edit"
+              module="insurance-policies"
+              id={activePolicy.id}
+              canLaunch={canLaunchPayable}
+              canRemove={canRemovePayable}
+              defaults={{ partyName: activePolicy.seguradora, amount: activePolicy.valor }}
+            />
+          ) : (
+            <PayableToggle mode="create" checked={payableChecked} onChange={setPayableChecked} disabled={saving} />
+          )}
         </div>
 
         <footer style={footerStyle}>

@@ -18,9 +18,16 @@ export const FINANCIAL_TITLE_STATUSES = [
   "cancelled",
 ] as const;
 
+// Ω4C PR-02 (D-Ω4C-FIN-SOURCE-ENUM) — enum-app das FONTES de frota que lançam contas a pagar por origem.
+// Inglês no código; label PT-BR na fronteira de apresentação. `fine` já reservado aqui, mas o consumidor de
+// Multa (condutor-responsável) fica para o PR-09 — nesta fatia só fuel_log/maintenance_order/insurance_policy
+// montam a route-factory.
+export const FINANCIAL_TITLE_SOURCE_TYPES = ["fuel_log", "maintenance_order", "fine", "insurance_policy"] as const;
+
 export type FinancialTitleDirection = (typeof FINANCIAL_TITLE_DIRECTIONS)[number];
 export type FinancialTitlePartyType = (typeof FINANCIAL_TITLE_PARTY_TYPES)[number];
 export type FinancialTitleStatus = (typeof FINANCIAL_TITLE_STATUSES)[number];
+export type FinancialTitleSourceType = (typeof FINANCIAL_TITLE_SOURCE_TYPES)[number];
 
 export type FinancialTitleActorContext = {
   readonly tenantId: string;
@@ -49,6 +56,9 @@ export type FinancialTitle = {
   readonly accountId?: string;
   readonly workOrderId?: string;
   readonly serviceQuoteId?: string;
+  // Ω4C PR-02 — proveniência GENÉRICA (frota). Coexiste com workOrderId/serviceQuoteId.
+  readonly sourceType?: string;
+  readonly sourceId?: string;
   readonly clientActionId?: string;
   readonly createdBy?: string;
   readonly updatedBy?: string;
@@ -77,6 +87,9 @@ export type CreateFinancialTitleInput = {
   readonly competencia: string;
   readonly accountId?: string;
   readonly workOrderId?: string;
+  // Ω4C PR-02 — par genérico de proveniência (frota); só o caminho createForSource os popula.
+  readonly sourceType?: string;
+  readonly sourceId?: string;
   readonly clientActionId?: string;
   readonly createdBy?: string;
   readonly updatedBy?: string;
@@ -95,6 +108,23 @@ export type CreateFinancialTitleForWorkOrderInput = {
   readonly currency: string;
   readonly issueDate: Date;
   readonly dueDate: Date;
+};
+
+// Ω4C PR-02 (D-Ω4C-FIN-ORIGEM) — payload do lançamento de conta a pagar POR ORIGEM (frota). Espelha o de
+// faturamento OS, mas com o par GENÉRICO source_type/source_id (nunca work_order_id). direction é 'payable'
+// nesta fatia; status nasce 'open'; competencia é derivada de issueDate (default = now). currency default BRL.
+export type CreateFinancialTitleForSourceInput = {
+  readonly sourceType: string;
+  readonly sourceId: string;
+  readonly direction: string;
+  readonly partyType: string;
+  readonly partyId?: string;
+  readonly partyName: string;
+  readonly amount: number;
+  readonly currency?: string;
+  readonly issueDate?: Date;
+  readonly dueDate: Date;
+  readonly description?: string;
 };
 
 // PATCH — editáveis nesta fatia: party_name/document/category/description/amount/due_date/account_id.

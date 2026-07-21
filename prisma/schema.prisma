@@ -1492,6 +1492,12 @@ model FinancialTitle {
   account_id        String?                  @db.Uuid // conta de liquidação prevista (FK composta)
   work_order_id     String?                  @db.Uuid // proveniência (setado no Ω4-3; sem idempotência aqui)
   service_quote_id  String?                  @db.Uuid // proveniência
+  // Ω4C PR-02 (Contas a Pagar por origem) — par GENÉRICO de proveniência para fontes de frota
+  // (fuel_log|maintenance_order|fine|insurance_policy). Coexiste com work_order_id/service_quote_id
+  // (INTOCADOS). SEM FK nativa ao alvo variável (integridade app-level, como party_id). Nullable: título
+  // avulso e faturamento OS não os populam. issue_date deriva a competência (chokepoint por período).
+  source_type       String?                  // fuel_log|maintenance_order|fine|insurance_policy (app-level)
+  source_id         String?                  @db.Uuid // id da entidade-fonte no MESMO tenant (sem FK nativa)
   client_action_id  String?
   created_by        String?                  @db.Uuid
   updated_by        String?                  @db.Uuid
@@ -1509,6 +1515,9 @@ model FinancialTitle {
   // Ω4-3 (D-Ω4-C2) — a idempotência anti-refaturamento (no MÁX. 1 título ATIVO por tenant+OS+direção) é
   // um índice PARCIAL (WHERE deleted_at IS NULL AND work_order_id IS NOT NULL) que o Prisma NÃO modela;
   // vive só na migration 20260811000000, como o unique parcial de idempotência dos vizinhos.
+  // Ω4C PR-02 — idempotência POR ORIGEM (no MÁX. 1 título ATIVO por tenant+source_type+source_id+direção):
+  // outro índice PARCIAL (WHERE deleted_at IS NULL AND source_id IS NOT NULL) que o Prisma também NÃO
+  // modela; vive só na migration 20260822000000 (financial_titles_source_direction_active_key).
   @@unique([tenant_id, id])
   @@index([tenant_id, direction, status])
   @@index([tenant_id, due_date])

@@ -6,6 +6,7 @@ import { requirePermission } from "../core-saas/middleware/rbac.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
+import { createPayableSourceRoutes } from "../financial-titles/payable-source.routes.js";
 import { InsurancePolicyController, type InsurancePolicyServiceResolver } from "./insurance-policy.controller.js";
 import { createDefaultInsurancePolicyService } from "./insurance-policy.service.js";
 
@@ -60,6 +61,18 @@ export function createInsurancePolicyRouter(
     requirePermission(INSURANCE_POLICY_PERMISSIONS.update),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.update(request));
+    }),
+  );
+
+  // Ω4C PR-02 — Contas a Pagar por origem: POST/DELETE/GET /insurance-policies/:id/payable. resolveOwnership
+  // usa o service.get() do PRÓPRIO módulo (404 cross-tenant nativo) antes de tocar título. Herda tenant+RBAC.
+  router.use(
+    "/insurance-policies",
+    createPayableSourceRoutes({
+      sourceType: "insurance_policy",
+      resolveOwnership: async (actor, sourceId) => {
+        await (await resolveService()).get(actor, sourceId);
+      },
     }),
   );
 

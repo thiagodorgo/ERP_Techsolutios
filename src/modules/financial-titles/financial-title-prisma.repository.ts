@@ -13,6 +13,7 @@ import type {
 import { FinancialTitleError } from "./financial-title.types.js";
 import {
   invalidAccountReferenceError,
+  sourceAlreadyLaunchedError,
   workOrderAlreadyInvoicedError,
   type FinancialPeriodCloseRepository,
   type FinancialTitleRepository,
@@ -49,6 +50,10 @@ export class PrismaFinancialTitleRepository implements FinancialTitleRepository 
           account_id: input.accountId ?? null,
           // Ω4-3 — proveniência + âncora da idempotência parcial. Só o faturamento popula (create público: null).
           work_order_id: input.workOrderId ?? null,
+          // Ω4C PR-02 — par genérico de proveniência (frota) + âncora da idempotência por origem. Só o
+          // caminho createForSource popula (create público / faturamento OS: null).
+          source_type: input.sourceType ?? null,
+          source_id: input.sourceId ?? null,
           client_action_id: input.clientActionId ?? null,
           created_by: input.createdBy ?? null,
           updated_by: input.updatedBy ?? null,
@@ -78,6 +83,18 @@ export class PrismaFinancialTitleRepository implements FinancialTitleRepository 
   async findActiveByWorkOrder(tenantId: string, workOrderId: string, direction: string): Promise<FinancialTitle | undefined> {
     const record = await this.client.financialTitle.findFirst({
       where: { tenant_id: tenantId, work_order_id: workOrderId, direction, deleted_at: null },
+    });
+    return record ? mapRecord(record) : undefined;
+  }
+
+  async findActiveBySource(
+    tenantId: string,
+    sourceType: string,
+    sourceId: string,
+    direction: string,
+  ): Promise<FinancialTitle | undefined> {
+    const record = await this.client.financialTitle.findFirst({
+      where: { tenant_id: tenantId, source_type: sourceType, source_id: sourceId, direction, deleted_at: null },
     });
     return record ? mapRecord(record) : undefined;
   }
@@ -160,6 +177,9 @@ export class RlsPrismaFinancialTitleRepository implements FinancialTitleReposito
   findActiveByWorkOrder(tenantId: string, workOrderId: string, direction: string): Promise<FinancialTitle | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialTitleRepository(tx).findActiveByWorkOrder(tenantId, workOrderId, direction));
   }
+  findActiveBySource(tenantId: string, sourceType: string, sourceId: string, direction: string): Promise<FinancialTitle | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialTitleRepository(tx).findActiveBySource(tenantId, sourceType, sourceId, direction));
+  }
   update(input: UpdateFinancialTitleInput): Promise<FinancialTitle | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialTitleRepository(tx).update(input));
   }
@@ -231,6 +251,8 @@ function mapRecord(record: {
   readonly account_id: string | null;
   readonly work_order_id: string | null;
   readonly service_quote_id: string | null;
+  readonly source_type: string | null;
+  readonly source_id: string | null;
   readonly client_action_id: string | null;
   readonly created_by: string | null;
   readonly updated_by: string | null;
@@ -258,6 +280,8 @@ function mapRecord(record: {
     accountId: record.account_id ?? undefined,
     workOrderId: record.work_order_id ?? undefined,
     serviceQuoteId: record.service_quote_id ?? undefined,
+    sourceType: record.source_type ?? undefined,
+    sourceId: record.source_id ?? undefined,
     clientActionId: record.client_action_id ?? undefined,
     createdBy: record.created_by ?? undefined,
     updatedBy: record.updated_by ?? undefined,
@@ -272,7 +296,12 @@ function mapRecord(record: {
 function translatePersistenceError(error: unknown): unknown {
   // Ω4-3 (D-Ω4-C2) — o índice PARCIAL financial_titles_wo_direction_active_key (só existe no SQL da
   // migration) dispara P2002 no 2º faturamento ativo da mesma OS+direção → 409 (rede da idempotência).
+  // Ω4C PR-02 — financial_titles_source_direction_active_key dispara P2002 no 2º lançamento por origem →
+  // 409 source_already_launched. Desambigua pelo alvo do índice (meta.target inclui "source").
   if (isPrismaError(error, "P2002")) {
+    if (foreignKeyTarget(error).includes("source")) {
+      return sourceAlreadyLaunchedError();
+    }
     return workOrderAlreadyInvoicedError();
   }
   if (isPrismaError(error, "P2003")) {

@@ -13,6 +13,7 @@ import {
   type FinancialTitleRepository,
 } from "./financial-title.repository.js";
 import type {
+  CreateFinancialTitleForSourceInput,
   CreateFinancialTitleForWorkOrderInput,
   FinancialTitle,
   FinancialTitleActorContext,
@@ -40,6 +41,7 @@ import {
   parsePartyName,
   parsePartyType,
   parseRequiredUuid,
+  parseSourceType,
   parseTargetStatus,
   readOptionalBoolean,
   roundMoney,
@@ -145,6 +147,64 @@ export class FinancialTitleService {
     direction: string,
   ): Promise<FinancialTitle | undefined> {
     return this.repository.findActiveByWorkOrder(actor.tenantId, workOrderId, direction);
+  }
+
+  // Ω4C PR-02 (D-Ω4C-FIN-ORIGEM) — CONTAS A PAGAR POR ORIGEM. Chamado pela route-factory dos módulos de
+  // frota (fuel-logs/maintenance-orders/insurance-policies) DEPOIS que o resolveOwnership provou a posse da
+  // fonte (get() do módulo → 404 cross-tenant). Espelha createForWorkOrder: direção 'payable', status nasce
+  // 'open', competencia derivada de issueDate (default = now), grava source_type/source_id, atravessa o
+  // CHOKEPOINT assertPeriodOpen (competência fechada → 422 period_closed). A idempotência (2º título ATIVO
+  // da mesma fonte+direção) é a rede do repositório: P2002 (Prisma) / índice simulado (InMemory) → 409
+  // source_already_launched. Revalida os campos defensivamente (mesmo padrão de createForWorkOrder).
+  async createForSource(actor: FinancialTitleActorContext, input: CreateFinancialTitleForSourceInput): Promise<FinancialTitle> {
+    const issueDate = input.issueDate ?? new Date();
+    const competencia = deriveCompetencia(issueDate);
+    await this.assertPeriodOpen(actor.tenantId, competencia);
+
+    return this.repository.create({
+      tenantId: actor.tenantId,
+      direction: parseDirection(input.direction),
+      partyType: parsePartyType(input.partyType),
+      partyId: input.partyId,
+      partyName: parsePartyName(input.partyName),
+      description: parseOptionalDescription(input.description),
+      amount: parseAmount(input.amount),
+      currency: parseCurrency(input.currency),
+      issueDate,
+      dueDate: input.dueDate,
+      status: "open",
+      competencia,
+      sourceType: parseSourceType(input.sourceType),
+      sourceId: parseRequiredUuid(input.sourceId, "sourceId"),
+      createdBy: actor.userId,
+      updatedBy: actor.userId,
+    });
+  }
+
+  // Ω4C PR-02 — pré-check de idempotência + badge derivado: existe título ATIVO para (fonte, direção)?
+  async findActiveBySource(
+    actor: FinancialTitleActorContext,
+    sourceType: string,
+    sourceId: string,
+    direction = "payable",
+  ): Promise<FinancialTitle | undefined> {
+    return this.repository.findActiveBySource(actor.tenantId, sourceType, sourceId, direction);
+  }
+
+  // Ω4C PR-02 (RN-FIN-ORIGEM-04) — RETIRAR o lançamento por origem = REUSA o soft-delete delete() (que já
+  // roda assertPeriodOpen → 422 se a competência fechou). Reversível: relançar depois volta a criar (o
+  // índice parcial só conta os ATIVOS). Sem título ativo → 404.
+  async removeForSource(
+    actor: FinancialTitleActorContext,
+    sourceType: string,
+    sourceId: string,
+    direction = "payable",
+  ): Promise<FinancialTitle> {
+    const active = await this.repository.findActiveBySource(actor.tenantId, sourceType, sourceId, direction);
+    if (!active) {
+      throw titleNotFoundError();
+    }
+    return this.delete(actor, active.id);
   }
 
   async get(actor: FinancialTitleActorContext, financialTitleId: string): Promise<FinancialTitle> {

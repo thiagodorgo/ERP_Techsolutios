@@ -2,6 +2,7 @@ import type { CSSProperties, FormEvent } from "react";
 import { useState } from "react";
 
 import { Alert, Button, Input, Modal, Select } from "../../../../components/ui";
+import { PayableToggle, launchPayable } from "../../../finance/payable-source";
 import type { Vehicle } from "../../../registry/vehicles/vehicles.types";
 import {
   FUEL_TYPE_OPTIONS,
@@ -54,16 +55,26 @@ export function FuelLogFormModal({
   log,
   vehicles,
   context,
+  canLaunchPayable = false,
+  canRemovePayable = false,
   onClose,
   onSaved,
 }: {
   readonly log: FuelLog | null;
   readonly vehicles: readonly Vehicle[];
   readonly context: FuelLogsApiContext;
+  readonly canLaunchPayable?: boolean;
+  readonly canRemovePayable?: boolean;
   readonly onClose: () => void;
   readonly onSaved: (saved?: FuelLog) => void;
 }) {
-  const isEdit = Boolean(log);
+  // Ω4C PR-02 — "Gerar lançamento em contas a pagar" (AutEM): checkbox no cadastro; na edição, o registro
+  // já criado mostra o badge/ações. `savedLog` guarda a fonte recém-criada quando o lançamento pós-create
+  // falha, para o usuário retomar pelo painel de edição (sem recriar o abastecimento).
+  const [payableChecked, setPayableChecked] = useState(false);
+  const [savedLog, setSavedLog] = useState<FuelLog | null>(null);
+  const activeLog = log ?? savedLog;
+  const isEdit = Boolean(activeLog);
   const [vehicleId, setVehicleId] = useState(log?.vehicleId ?? "");
   const [fueledAt, setFueledAt] = useState(toDateTimeLocalValue(log?.fueledAt));
   const [fuelType, setFuelType] = useState(log?.fuelType && FUEL_TYPE_OPTIONS.some((o) => o.value === log.fuelType) ? log.fuelType : "gasolina");
@@ -119,11 +130,26 @@ export function FuelLogFormModal({
 
     setSaving(true);
     try {
-      if (isEdit && log) {
-        const updated = await updateFuelLog(context, log.id, payload);
+      if (isEdit && activeLog) {
+        const updated = await updateFuelLog(context, activeLog.id, payload);
         onSaved(updated ?? undefined);
       } else {
         const created = await createFuelLog(context, payload);
+        // Após o create devolver o id, se marcado, dispara o lançamento em contas a pagar (o id só existe
+        // aqui). Best-effort: falha NÃO desfaz o abastecimento — mantém o modal aberto para lançar na edição.
+        if (created && payableChecked) {
+          try {
+            await launchPayable(context, "fuel-logs", created.id, {
+              partyName: draft.station || "Abastecimento",
+              amount: payload.totalValue,
+              dueDate: payload.fueledAt,
+            });
+          } catch {
+            setSavedLog(created);
+            setServerError("Abastecimento salvo, mas não foi possível gerar o título em contas a pagar. Use o painel abaixo para lançar.");
+            return;
+          }
+        }
         onSaved(created ?? undefined);
       }
     } catch (error) {
@@ -261,6 +287,21 @@ export function FuelLogFormModal({
               </small>
             ) : null}
           </label>
+        </div>
+
+        <div style={{ marginTop: "var(--space-16)" }}>
+          {isEdit && activeLog ? (
+            <PayableToggle
+              mode="edit"
+              module="fuel-logs"
+              id={activeLog.id}
+              canLaunch={canLaunchPayable}
+              canRemove={canRemovePayable}
+              defaults={{ partyName: activeLog.station ?? "Abastecimento", amount: activeLog.totalValue }}
+            />
+          ) : (
+            <PayableToggle mode="create" checked={payableChecked} onChange={setPayableChecked} disabled={saving} />
+          )}
         </div>
 
         <footer style={footerStyle}>
