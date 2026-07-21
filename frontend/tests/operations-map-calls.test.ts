@@ -7,8 +7,10 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 
 import {
+  SLA_DUE_SOON_THRESHOLD_MS,
   buildIncomingCalls,
   formatIncomingCallSlaProxy,
+  incomingCallSlaTone,
   sortIncomingCalls,
 } from "../src/modules/operations/map/operations-map.adapter";
 import { getWorkOrderPriorityColor } from "../src/modules/operations/map/map/mapMarkers";
@@ -43,6 +45,7 @@ function makeCall(overrides: Partial<OperationsIncomingCall> = {}): OperationsIn
     customerName: "Cliente A",
     scheduledFor: null,
     createdAt: iso(11),
+    slaDueAt: null,
     hasLocation: true,
     ...overrides,
   };
@@ -61,6 +64,7 @@ function makePin(overrides: Partial<OperationsMapWorkOrderPin> = {}): Operations
     longitude: -46.6,
     scheduledFor: null,
     createdAt: iso(10),
+    slaDueAt: null,
     ...overrides,
   };
 }
@@ -77,6 +81,7 @@ function makeWithout(
     serviceAddress: "Av. X",
     scheduledFor: null,
     createdAt: iso(9),
+    slaDueAt: null,
     ...overrides,
   };
 }
@@ -191,15 +196,20 @@ test("a ordem renderizada segue buildIncomingCalls (urgente antes de baixa)", ()
   assert.ok(html.indexOf("OS-URG") < html.indexOf("OS-LOW"), "urgente deve renderizar antes de baixa");
 });
 
-// 8 — SLA-PROXY honesto na UI: nenhum item exibe prazo FABRICADO (a Fase 1 não tem deadline real).
-//     Guarda nas frases proibidas — "vence em"/"prazo restante"/"prazo esgotado"/"vencido" — sem tropeçar
-//     no identificador interno da classe (__sla).
-test("a lista NUNCA exibe prazo fabricado ('vence em'/'prazo restante'/'vencido')", () => {
+// 8 — GUARD anti-fabricação (M-7): com TODOS os chamados SEM prazo real (`slaDueAt: null`), a lista
+//     JAMAIS exibe countdown ("vence em"/"vencido"/"prazo restante") — só o SLA-PROXY honesto. O countdown
+//     REAL só pode aparecer quando o backend derivou `sla_due_at` (provado pelos testes 14–15).
+test("guard anti-fabricação: TODOS slaDueAt null → a lista NUNCA exibe 'vence em'/'vencido' (só proxy)", () => {
   const html = renderList([
-    makeCall({ id: "a", scheduledFor: iso(15) }),
-    makeCall({ id: "b", scheduledFor: null, createdAt: iso(11, 30) }),
+    makeCall({ id: "a", slaDueAt: null, scheduledFor: iso(15) }),
+    makeCall({ id: "b", slaDueAt: null, scheduledFor: null, createdAt: iso(11, 30) }),
   ]);
   assert.doesNotMatch(html, /vence em|prazo restante|prazo esgotado|vencido/i);
+  // O proxy honesto segue presente e o tom fica NEUTRO (sem cor de urgência fabricada).
+  assert.match(html, /Agendado para /);
+  assert.match(html, /Aberto há 30 min/);
+  assert.match(html, /data-tone="neutral"/);
+  assert.doesNotMatch(html, /data-tone="danger"|data-tone="warning"|data-tone="info"/);
 });
 
 // 9 — estado vazio: EmptyState honesto, sem inventar OS.
@@ -252,4 +262,104 @@ test("a página passa buildIncomingCalls ao slot, liga onSelect→setSelectedWor
   // o chamado (setSelectedWorkOrderId → pan). A seleção/pan foi preservada; só ganhou o popup.
   assert.match(PAGE, /onSelect=\{openCallAllocation\}/);
   assert.match(PAGE, /const openCallAllocation = useCallback\(\(call: OperationsIncomingCall\) => \{[\s\S]*?setSelectedWorkOrderId\(call\.id\)/);
+});
+
+// ————— M-7 (J-MAPAS-8) — SLA REAL: countdown honesto quando `slaDueAt` existe; proxy quando null —————
+// Baseline da superfície SLA (M-4) ≈5 testes → M-7 adiciona ≥5 abaixo, mantendo a honestidade travada
+// (D-007): countdown SÓ com prazo real; sem `slaDueAt`, o SLA-PROXY de Fase 1 fica INTACTO.
+
+// 14 — slaDueAt FUTURO → kind `due_future`, "vence em {duração}". O prazo real VENCE o proxy (scheduledFor
+//      presente é ignorado quando há deadline derivado pelo backend).
+test("M-7: slaDueAt futuro → due_future 'vence em {duração}' (prazo real precede o proxy)", () => {
+  const sla = formatIncomingCallSlaProxy(
+    makeCall({ slaDueAt: iso(13), scheduledFor: iso(9), createdAt: iso(3) }),
+    NOW,
+  );
+  assert.equal(sla.kind, "due_future");
+  assert.ok(sla.label.startsWith("vence em "), sla.label);
+  assert.equal(sla.label, "vence em 1 h");
+});
+
+// 15 — slaDueAt PASSADO → kind `due_past`, "vencido há {duração}".
+test("M-7: slaDueAt passado → due_past 'vencido há {duração}'", () => {
+  const sla = formatIncomingCallSlaProxy(
+    makeCall({ slaDueAt: iso(10, 30), scheduledFor: null, createdAt: iso(3) }),
+    NOW,
+  );
+  assert.equal(sla.kind, "due_past");
+  assert.ok(sla.label.startsWith("vencido há "), sla.label);
+  assert.equal(sla.label, "vencido há 1 h 30 min");
+});
+
+// 16 — slaDueAt NULL → MANTÉM o SLA-PROXY (scheduled/opened). Prova do fallback honesto (nunca countdown).
+test("M-7: slaDueAt null → MANTÉM o proxy (scheduled/opened), sem countdown", () => {
+  const scheduled = formatIncomingCallSlaProxy(
+    makeCall({ slaDueAt: null, scheduledFor: iso(9), createdAt: iso(3) }),
+    NOW,
+  );
+  assert.equal(scheduled.kind, "scheduled");
+  assert.ok(scheduled.label.startsWith("Agendado para "), scheduled.label);
+
+  const opened = formatIncomingCallSlaProxy(
+    makeCall({ slaDueAt: null, scheduledFor: null, createdAt: iso(11, 30) }),
+    NOW,
+  );
+  assert.equal(opened.kind, "opened");
+  assert.equal(opened.label, "Aberto há 30 min");
+});
+
+// 17 — slaDueAt INVÁLIDO → cai no proxy (resiliência: string não-parseável nunca vira countdown).
+test("M-7: slaDueAt inválido → cai no SLA-PROXY (resiliência)", () => {
+  const sla = formatIncomingCallSlaProxy(
+    makeCall({ slaDueAt: "not-a-date", scheduledFor: null, createdAt: iso(11, 30) }),
+    NOW,
+  );
+  assert.equal(sla.kind, "opened");
+  assert.equal(sla.label, "Aberto há 30 min");
+});
+
+// 18 — ORDENAÇÃO: dentro da MESMA prioridade, o prazo real (slaDueAt) mais próximo sobe acima do só-proxy
+//      e acima de um prazo real mais distante. Determinístico (compara timestamps absolutos).
+test("M-7: dentro da prioridade, slaDueAt mais próximo sobe acima do só-proxy (determinístico)", () => {
+  const calls: OperationsIncomingCall[] = [
+    makeCall({ id: "sla-far", priority: "urgent", slaDueAt: iso(14), scheduledFor: null, createdAt: iso(3) }),
+    makeCall({ id: "proxy", priority: "urgent", slaDueAt: null, scheduledFor: iso(12, 40), createdAt: iso(4) }),
+    makeCall({ id: "sla-near", priority: "urgent", slaDueAt: iso(12, 10), scheduledFor: null, createdAt: iso(2) }),
+  ];
+  assert.deepEqual(sortIncomingCalls(calls).map((c) => c.id), ["sla-near", "proxy", "sla-far"]);
+});
+
+// 19 — URGÊNCIA (tom): SÓ com prazo real. Vencido → danger; vence em < 30min → warning; futuro folgado →
+//      info; sem prazo (proxy) → neutral; inválido → neutral. Cor de urgência nunca é fabricada.
+test("M-7: incomingCallSlaTone — vencido=danger, <30min=warning, futuro=info, sem/​inválido prazo=neutral", () => {
+  assert.equal(incomingCallSlaTone(makeCall({ slaDueAt: iso(11) }), NOW), "danger");
+  assert.equal(incomingCallSlaTone(makeCall({ slaDueAt: iso(12, 20) }), NOW), "warning");
+  assert.equal(incomingCallSlaTone(makeCall({ slaDueAt: iso(13) }), NOW), "info");
+  assert.equal(incomingCallSlaTone(makeCall({ slaDueAt: null }), NOW), "neutral");
+  assert.equal(incomingCallSlaTone(makeCall({ slaDueAt: "not-a-date" }), NOW), "neutral");
+});
+
+// 20 — LIMIAR exportado/testável: SLA_DUE_SOON_THRESHOLD_MS = 30 min define a fronteira warning↔info.
+//      No limiar exato = info (folga); 1 ms antes = warning (vence em breve).
+test("M-7: SLA_DUE_SOON_THRESHOLD_MS = 30 min é a fronteira warning↔info", () => {
+  assert.equal(SLA_DUE_SOON_THRESHOLD_MS, 30 * 60 * 1000);
+  const atThreshold = new Date(NOW.getTime() + SLA_DUE_SOON_THRESHOLD_MS).toISOString();
+  const justUnder = new Date(NOW.getTime() + SLA_DUE_SOON_THRESHOLD_MS - 1).toISOString();
+  assert.equal(incomingCallSlaTone({ slaDueAt: atThreshold }, NOW), "info");
+  assert.equal(incomingCallSlaTone({ slaDueAt: justUnder }, NOW), "warning");
+});
+
+// 21 — countdown REAL na UI SÓ com slaDueAt: a lista renderiza "vence em"/"vencido há" + o data-tone certo
+//      (warning âmbar p/ vence em breve; danger vermelho p/ vencido). Confirma que o countdown honesto chega
+//      ao DOM exatamente quando há prazo real.
+test("M-7: com slaDueAt real a lista renderiza countdown + data-tone (warning/danger)", () => {
+  const future = renderList([makeCall({ id: "f", slaDueAt: iso(12, 20) })]);
+  assert.match(future, /vence em 20 min/);
+  assert.match(future, /data-tone="warning"/);
+
+  const past = renderList([makeCall({ id: "p", slaDueAt: iso(11) })]);
+  assert.match(past, /vencido há 1 h/);
+  assert.match(past, /data-tone="danger"/);
+  // LGPD: mesmo com prazo real, nenhuma coordenada vaza para o HTML da lista.
+  assert.doesNotMatch(future + past, /-23\.5|-46\.6|latitude|longitude/i);
 });

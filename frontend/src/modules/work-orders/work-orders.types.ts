@@ -39,6 +39,11 @@ export type WorkOrderListItem = {
   readonly vehicleId?: string | null;
   readonly checklistId?: string | null;
   readonly scheduledFor?: string | null;
+  // M-7 (J-MAPAS-8) — prazo de SLA REAL derivado pelo backend (PR-A, aditivo tenant-scoped). ISO/TIMESTAMPTZ
+  // completo quando há política de SLA aplicável; `null`/ausente quando não há prazo. NUNCA fabricar: o mapa
+  // só troca o SLA-PROXY por countdown honesto ("vence em"/"vencido há") quando este campo vem preenchido.
+  // NÃO confundir com o `slaDueAt`/`slaState` MOCK de work-orders/types.ts (dado fabricado da tela estática).
+  readonly slaDueAt?: string | null;
   readonly startedAt?: string | null;
   readonly arrivedAt?: string | null;
   readonly completedAt?: string | null;

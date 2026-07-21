@@ -342,6 +342,13 @@ de 5 + PD". Fase 2 (SLA real) é aditiva, tenant-scoped, também US$ 0. Custo/To
 ativação externa.
 
 ## Historico de revisoes
+- **2026-07-21 (J-MAPAS-8 · dev-mapas)** — **M-7 SLA real (Fase 2 FECHADA).** PR-A (backend) expôs
+  `sla_due_at` aditivo no DTO de work-orders; PR-B (frontend) trocou o SLA-PROXY da fila de chamados por
+  **countdown honesto** ("vence em"/"vencido há") **só** quando o prazo existe — `null`/inválido mantém o
+  proxy de Fase 1 intacto (guard anti-fabricação reescrito). `formatDuration` extraído de `formatLastSeen`
+  (escala única); tom por proximidade (`incomingCallSlaTone` + `SLA_DUE_SOON_THRESHOLD_MS`=30min) via
+  `data-tone`+CSS dark-safe. **Custo US$ 0**, sem SKU/geo/chave; junta-5+PD NÃO dispararam. Canvas MapLibre/
+  Google e LGPD (lista sem coordenada) intactos. Ver §(h) e o changelog datado. Próximo: avaliador-mapas.
 - **2026-07-19 (J-MAPAS-6 · planejador-mapas)** — Plano do **REDESIGN do Mapa Operacional web** (lista de chamados+SLA · camada de técnicos · alerta de OS nova · mapa 2x altura · maximizar com lista translúcida no 4o quadrante · rodapé de legenda unificado). **Custo US$ 0**, MapLibre+OpenFreeMap mantido (regra de ouro Ω1), **sem SKU novo, sem chave, sem serviço pago** → não dispara junta-5+PD. Gaps: **SLA sem coluna no schema** (Fase 1 = proxy honesto por `scheduledFor`/`createdAt`; Fase 2 = `sla_due_at` aditivo); camada distinta de técnico (Fase 1); alerta de OS nova por diff client-side (Fase 1). Preços re-verificados 2026-07-19 na tabela oficial (marcada 2026-07-15 UTC): Dynamic Maps US$ 7/1.000, Geocoding US$ 5/1.000, Routes Essentials US$ 5/1.000, cota 10K/mês — inalterados. Ver §(h). Próximo: dev-mapas.
 - **2026-07-17 (J-MAPAS-5 · planejador-mapas)** — Plano da aba **Mapa da OS (Omega3F-8b)**. Rota+km =
   **haversine em linha reta** sobre MapLibre (rotulo honesto "distancia aproximada em linha reta"),
@@ -484,3 +491,40 @@ reutilizáveis (valem p/ qualquer feature de distância/ETA/ranking no mapa):
 
 **FEEDBACK DO DONO SOBRE O MAPA — COMPLETO** (polish A/B/C + alocação D/E + backend do índice). Resta só a Fase 2 (M-7 SLA real
 + ETA por rota se o dono quiser, ambos com backend/PD).
+
+---
+
+## Changelog 2026-07-21 — M-7 SLA real (Fase 2 FECHADA): countdown honesto sobre o SLA-PROXY
+
+**Data:** 2026-07-21 · **Decisão de junta:** J-MAPAS-8 (planejador → dev → avaliador). **Escopo:** PR-A
+(backend, já mergeado) expõe `sla_due_at` no DTO de work-orders (lista+detalhe); **PR-B (este, frontend)**
+troca o SLA-PROXY da fila "Chamados que chegam" por **countdown REAL** — porém **SOMENTE** quando o prazo
+existe.
+
+**M-7 SLA real (Fase 2 FECHADA): `sla_due_at` aditivo → countdown honesto ("vence em"/"vencido há") sobre o
+proxy; sem API geo/SKU; junta-5 não disparou.**
+
+Aprendizados reutilizáveis (valem p/ qualquer troca proxy→dado-real com honestidade travada, D-007):
+1. **Countdown SÓ com prazo real:** `formatIncomingCallSlaProxy` só emite `due_future`/`due_past` quando
+   `slaDueAt` vem preenchido E parseável (TIMESTAMPTZ completo → `Date.parse` seguro, sem `new Date` ingênuo
+   de date-only). `null`/inválido → **cai no SLA-PROXY de Fase 1 INTACTO** (`scheduled`/`opened`/`unknown`).
+   Guard de teste: lista com TODOS `slaDueAt: null` NUNCA renderiza "vence em"/"vencido" (o rótulo fabricado
+   continua proibido — só que agora o countdown VERDADEIRO é permitido quando há dado).
+2. **Escala PT-BR de duração = FONTE ÚNICA:** `formatDuration(ms)` (bare "N min"/"N h M min"/"N dia(s)")
+   extraído de `formatLastSeen` e reusado pelo countdown — sem duplicar a escala. `formatLastSeen` virou
+   `há ${formatDuration}` (comportamento preservado).
+3. **Tom por proximidade, também honesto:** `incomingCallSlaTone` colore SÓ com prazo real — vencido=vermelho,
+   vence em < `SLA_DUE_SOON_THRESHOLD_MS` (30 min, exportado/testável)=âmbar, futuro folgado=azul; proxy=neutro
+   (cinza padrão). Aplicado via `data-tone` + CSS dark-safe no navy do rail (nada de hex inline no TSX).
+4. **Ordenação:** `incomingCallSlaProxyTime` passou a usar o **primeiro timestamp parseável** em
+   `slaDueAt → scheduledFor → createdAt` (prazo real = chave primária de urgência dentro da prioridade). Puro/
+   determinístico (sem `Date.now` interno).
+5. **Regra do espelho / LGPD intactas:** mudança 100% em dados/adapter/lista (provider-agnóstica) → canvas
+   MapLibre/Google **não tocados** (paridade preservada); `OperationsIncomingCall` segue SEM coordenada; o
+   `slaDueAt` NÃO entra nas properties do pin GeoJSON (countdown é assunto da fila, não do marcador).
+
+**Custo:** **US$ 0** — `sla_due_at` é dado próprio do tenant derivado no backend (PR-A); zero SKU/geocoding/
+Places/Routes, zero chave, zero `place_id`. **Junta-5 + PD NÃO disparam** (sem serviço externo tarifado).
+
+**FASE 2 do redesign do Mapa FECHADA.** Resta como follow-up OPCIONAL só se o dono pedir: ETA por ROTA real
+(Google Routes/OSRM) — esse sim PAGO/infra → PD-006 + junta-5 (ver §(a)/(c)/(g) e changelog J-MAPAS-7).

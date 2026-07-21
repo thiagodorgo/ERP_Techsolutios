@@ -1,4 +1,4 @@
-import { CalendarClock, Clock, MapPin, Users } from "lucide-react";
+import { AlarmClock, CalendarClock, Clock, MapPin, Users } from "lucide-react";
 import { useId, useMemo, useState, type CSSProperties } from "react";
 
 import { Alert, Chip } from "../../../../components/ui";
@@ -12,7 +12,7 @@ import {
   type AllocationSort,
   type Coordinate,
 } from "../allocation";
-import { formatIncomingCallSlaProxy, getFieldLocationStatusLabel, getFieldLocationStatusTone } from "../operations-map.adapter";
+import { formatIncomingCallSlaProxy, getFieldLocationStatusLabel, getFieldLocationStatusTone, incomingCallSlaTone } from "../operations-map.adapter";
 import { getWorkOrderPriorityColor } from "../map/mapMarkers";
 import type { FieldLocationItem, OperationsIncomingCall } from "../operations-map.types";
 import { useAllocateDispatch } from "../hooks/useAllocateDispatch";
@@ -65,6 +65,8 @@ export function OperationsCallAllocationPopup({
   const { allocate, pendingOperatorUserId, feedback } = useAllocateDispatch(context, onAllocated);
 
   const sla = formatIncomingCallSlaProxy(call, reference);
+  // M-7 — tom da "Situação" SÓ com prazo real (slaDueAt): vencido=vermelho, vence<30min=âmbar, futuro=azul.
+  const slaTone = incomingCallSlaTone(call, reference);
   const priorityLabel = getWorkOrderPriorityLabel(call.priority);
 
   const candidates = useMemo(
@@ -104,8 +106,17 @@ export function OperationsCallAllocationPopup({
               <dd>{serviceAddress?.trim() ? serviceAddress : call.hasLocation ? "Endereço não informado" : "Sem localização no mapa"}</dd>
             </div>
             <div>
-              <dt>{sla.kind === "scheduled" ? <CalendarClock size={14} aria-hidden="true" /> : <Clock size={14} aria-hidden="true" />} Situação</dt>
-              <dd data-kind={sla.kind}>{sla.label}</dd>
+              <dt>
+                {sla.kind === "scheduled" ? (
+                  <CalendarClock size={14} aria-hidden="true" />
+                ) : sla.kind === "due_past" ? (
+                  <AlarmClock size={14} aria-hidden="true" />
+                ) : (
+                  <Clock size={14} aria-hidden="true" />
+                )}{" "}
+                Situação
+              </dt>
+              <dd data-kind={sla.kind} data-tone={slaTone}>{sla.label}</dd>
             </div>
           </dl>
 

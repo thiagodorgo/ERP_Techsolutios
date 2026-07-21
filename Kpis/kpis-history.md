@@ -6,6 +6,29 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-21 - M-7 SLA real PR-B (frontend countdown) FECHA a Fase 2 do Mapa
+
+### Resultado
+
+- **Countdown HONESTO no Mapa Operacional.** O `operations-map.adapter` troca o SLA-PROXY por **"vence em {X}"** / **"vencido há
+  {X}"** SOMENTE quando `slaDueAt` (do PR-A) é real e parseável; senão **mantém o proxy honesto de Fase 1 INTACTO** ("Agendado
+  para"/"Aberto há"). `formatDuration` extraído e reusado por `formatLastSeen` (fonte única). `incomingCallSlaProxyTime` =
+  `slaDueAt ?? scheduledFor ?? createdAt` (puro/determinístico; deadline real = chave primária de urgência dentro da prioridade).
+- Tom de urgência via `data-tone` (danger vencido / warning <30min / info futuro / neutral proxy) + CSS. Propagação de tipos
+  (pin/withoutLocation/incoming); consumidores: fila + popup de alocação. **Landmines respeitados** (mock legado
+  `work-orders/types.ts:25` e `DispatchConsole` NÃO tocados). **Espelho MapLibre↔Google intacto** (canvas não tocado;
+  `slaDueAt` fora das properties do pin); LGPD sem coordenada.
+- Junta: **avaliador-mapas APROVADO** (honestidade/espelho/LGPD) + **analizador APROVADO** + **cognicao-visual APROVADO** (só
+  BAIXA hex-vs-token seguindo a convenção do rail). +10 testes (superfície SLA 5→13, >2×). `kb-mapas.md` atualizada.
+- **M-7 SLA real COMPLETO — Fase 2 do Mapa FECHADA.** ETA por rota real NÃO foi feita (o dono dispensou o serviço pago;
+  distância/tempo seguem por **estimativa honesta**).
+
+### KPIs
+
+- `frontend_smoke_tests` **650 -> 660** (+10: M-7 countdown). PR web-only.
+- `backend_tests` 1296/1302, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 70 — **INALTERADOS**
+  (M-7 é 1 feature, contada no PR-A). Backfill #258: `pr`/`merge_commit`/`approved_head` = 046939f.
+
 ## 2026-07-21 - M-7 SLA real PR-A (migracao + backend) sla_due_at aditivo
 
 ### Resultado

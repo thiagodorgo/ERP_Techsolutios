@@ -21,10 +21,10 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 650,
-      "total": 650,
-      "display": "650/650",
-      "note": "+7 (platform-tenant-detail smoke: adapter/mock/404/render real). Detalhe da Organizacao ligado ao GET /platform/tenants/:id/detail REAL (le :tenantId). Sobre 643."
+      "value": 660,
+      "total": 660,
+      "display": "660/660",
+      "note": "+10 (M-7 PR-B countdown honesto: futuro/passado/null-fallback/invalido/ordenacao/tom/limiar/guard-anti-fabricacao/propagacao/no-leak). Mapa: vence em X/vencido ha X com sla_due_at real; proxy quando null. Sobre 650."
     },
     "backend_tests": {
       "value": 1296,

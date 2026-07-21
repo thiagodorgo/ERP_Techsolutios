@@ -242,6 +242,9 @@ function adaptWorkOrderItem(input: unknown): WorkOrderDetail | null {
     vehicleId: readNullableString(item, ["vehicleId", "vehicle_id"]),
     checklistId: readNullableString(item, ["checklistId", "checklist_id"]),
     scheduledFor: readNullableString(item, ["scheduledFor", "scheduled_for"]),
+    // M-7 (J-MAPAS-8) — prazo de SLA real do DTO (PR-A). Leitura defensiva camel/snake; ausência → null
+    // (o mapa cai no SLA-PROXY honesto). Nunca inventamos prazo que o backend não derivou.
+    slaDueAt: readNullableString(item, ["slaDueAt", "sla_due_at"]),
     startedAt: readNullableString(item, ["startedAt", "started_at"]),
     arrivedAt: readNullableString(item, ["arrivedAt", "arrived_at"]),
     completedAt: readNullableString(item, ["completedAt", "completed_at"]),

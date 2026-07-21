@@ -1937,6 +1937,24 @@
   opacity: 0.85;
 }
 
+/* M-7 (J-MAPAS-8) — countdown de SLA REAL: o tom colore o rótulo SÓ quando há prazo (sla_due_at) —
+   vermelho=vencido, âmbar=vence em breve (<30min), azul=futuro folgado. Sem prazo real (proxy honesto)
+   o data-tone="neutral" não casa nenhuma regra → mantém o cinza padrão. Cores dark-safe sobre o navy
+   do rail (não usar o vermelho puro do pin, que perde contraste). */
+.operations-call__sla[data-tone="danger"] {
+  color: #f87171;
+  font-weight: 700;
+}
+
+.operations-call__sla[data-tone="warning"] {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.operations-call__sla[data-tone="info"] {
+  color: #7cc4e6;
+}
+
 .operations-call__nogps {
   display: inline-flex;
   align-items: center;
@@ -2174,6 +2192,10 @@
   text-transform: uppercase;
 }
 .operations-alloc__facts dd { margin: 0; color: #e2e8f0; font-size: var(--text-sm); }
+/* M-7 (J-MAPAS-8) — "Situação" do popup herda o tom do countdown de SLA real (mesma semântica da fila). */
+.operations-alloc__facts dd[data-tone="danger"] { color: #f87171; font-weight: 700; }
+.operations-alloc__facts dd[data-tone="warning"] { color: #fbbf24; font-weight: 700; }
+.operations-alloc__facts dd[data-tone="info"] { color: #7cc4e6; }
 
 .operations-alloc__primary {
   display: inline-flex;
