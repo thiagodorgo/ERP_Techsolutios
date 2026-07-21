@@ -6,6 +6,30 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-20 - WS-SCALE-8TELAS PR-SCALE-4 (fieldOperators) Operadores de Campo ligado ao dado real
+
+### Resultado
+
+- **Tela "Operadores de Campo" LIGADA AO DADO REAL** de localizacao/status. Antes FABRICAVA operadores ("Carla Mendes /
+  8 em campo"). Agora **REUSA `getLatestFieldLocations`** (mesma fonte `/field-locations/latest` do Mapa) via service+hook+
+  adapter clonando `useAuditEvents`; reusa os helpers do Mapa (formatLastSeen / getFieldLocationStatusLabel / Tone).
+  **SEM backend novo, SEM migracao, SEM RBAC novo.**
+- **LGPD:** `FieldOperatorRow` montado por **selecao EXPLICITA de campos** — **ZERO lat/lng** no tipo/JSX/CSV/log (o teste
+  prova a ausencia mesmo com coordenada real na origem). So mostra frescor ("ha X min") + status.
+- **D-007:** KPIs por **4 baldes** que particionam EXAUSTIVAMENTE os 8 status reais do enum (Disponiveis / Em atendimento /
+  Em pausa / Fora de operacao; soma = total, nada inventado); colunas OPERADOR/EQUIPE/OS ATUAL/ULTIMA POSICAO/STATUS; botao
+  falso "Convidar operador" **REMOVIDO** (sem endpoint); Exportar CSV so dado real sem coordenada. Estados §7 (loading/fallback/
+  vazio); chip stale ambar.
+- Junta **UNANIME**: analizador APROVADO + **avaliador-mapas APROVADO (LGPD, 0 condicao)** + cognicao-visual APROVADO (so BAIXA
+  herdados do TablePage compartilhado).
+
+### KPIs
+
+- `frontend_smoke_tests` **631 -> 635** (+4: field-operators smoke). PR web-only.
+- `backend_tests` 1276/1282, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 66 — **INALTERADOS**.
+  Backfill #250: `pr`/`merge_commit`/`approved_head` = 47f0943. Deste PR null na autoria.
+- (Chore #251 politica de limpeza + #252 fix do script: docs/script, SEM entrada de KPI — nao alteram codigo/teste de app.)
+
 ## 2026-07-20 - WS-SCALE-8TELAS PR-SCALE-3 (auditTenant) Auditoria ligada ao audit-log real
 
 ### Resultado
