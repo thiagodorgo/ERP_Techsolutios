@@ -232,11 +232,27 @@ lockfiles JS, `pubspec.yaml/lock`, Figma. **KPIs deixaram de ser escopo proibido
 todo PR que altere código/teste/escopo **DEVE atualizar** `Kpis/*` (e `mobile/flutter_app/Kpis/*` quando tocar
 mobile) **no próprio PR** — ver §C3.
 
-## C5. Limpeza pós-validação (permanente)
+## C5. Limpeza pós-validação e **pós-merge** (permanente)
 
 Todo bloco que rodar testes/builds/Flutter/Node/Android/iOS/artefatos **limpa os temporários ao
 final**, sem apagar arquivos rastreados e preservando untracked explicitamente permitidos (ex.:
 os 3 PNGs de marca).
+
+**Limpeza pós-merge OBRIGATÓRIA (disco escasso — decisão do dono, 2026-07-20).** Toda vez que um PR
+**merga**, além de já usar `--delete-branch` (remoto), o agente **limpa o lixo local** que cada rodada
+deixa — o dono está com pouco espaço em disco e não quer varrer manualmente. Rotina mínima ao concluir
+cada merge (script pronto em `scripts/post-merge-cleanup.sh`):
+
+1. **Artefatos de build** (regeneráveis, quase todos gitignored): `frontend/dist/`, `dist/`,
+   `coverage/`, `*.tsbuildinfo`, `.vite/`, saídas de `flutter build`/`build/` do app quando houver.
+2. **Branches locais já mergeadas**: `git branch --merged main | grep -vE '^\*|(^|\s)main$' | xargs -r git branch -d`.
+3. **Referências remotas mortas**: `git remote prune origin` (as branches remotas já caem no `--delete-branch`).
+4. **Scratchpad da sessão** e temporários de teste soltos (nunca arquivos rastreados nem os untracked
+   permitidos — ex.: 3 PNGs de marca, `.env` local, `.claude/skills/*`).
+
+**Nunca** apagar: arquivos rastreados, `node_modules`/`.pnpm-store` (reinstalar custa caro), `.env`
+real, os untracked explicitamente permitidos. Em dúvida, `git status`/`git clean -nxd` (dry-run) antes.
+A limpeza é **reportada em 1 linha** no fechamento do bloco (o que foi removido), nunca silenciosa.
 
 ## C6. Rastreabilidade
 
@@ -283,7 +299,9 @@ O repositório oficial vive no **GitHub**. **GitHub Flow**, um **bloco por PR**:
    "feat(mobile): criação remota de OS (B-107)" --body "…"`. No corpo: objetivo, telas, DoD,
    como testar, **KPIs atualizados no próprio PR** (§C3, contagem real) e o ID do bloco.
 5. **Merge só com CI verde** + revisão quando exigida. Prefira **squash merge** e **delete a
-   branch**.
+   branch**. **Logo após o merge, rode a limpeza pós-merge (§C5):** `bash scripts/post-merge-cleanup.sh`
+   (ou o equivalente) — remove build artifacts, branches locais mergeadas e temporários. Disco é
+   escasso; não deixe lixo para o dono varrer.
 6. **Marco de fase → tag + GitHub Release** (`git tag -a mvp-mobile … && git push origin
    mvp-mobile`). Ex.: `mvp-mobile`, `mvp-web-gestor`.
 7. **Rails:** nunca segredo no git (chaves de CI via **GitHub Secrets**); nunca
@@ -321,7 +339,8 @@ ao PR corrente**.
 - [ ] Estados obrigatórios presentes (§7); offline/sync onde couber.
 - [ ] Permissão validada no **backend** conforme `RBAC_MATRIX.md`.
 - [ ] Sem termo técnico na UI (§3); sem segredo/PII em payload/auditoria (§2.8).
-- [ ] Artefatos temporários limpos (C5).
+- [ ] Artefatos temporários limpos (C5) **e, após o merge, limpeza pós-merge executada** (build
+      artifacts + branches locais mergeadas + temporários; disco escasso — §C5).
 - [ ] PR aberto no GitHub; **KPIs atualizados no próprio PR** com contagens reais (C3).
 - [ ] A11y: alvo de toque ≥44px (mobile), foco visível, aria em ícones-ação.
 - [ ] **Fidelidade visual (§11):** a tela bate com a referência renderizada em `screen-refs/` (quando existir) — sem simplificar, sem inventar abas, sem andaime de dev na UI.
