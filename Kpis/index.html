@@ -26,6 +26,19 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-SCALE auditoria real">
+          <h2>WS-SCALE · Auditoria da organização — ligada ao registro real</h2>
+          <p>
+            <strong>Dados reais (2026-07-20):</strong> a tela de <strong>Auditoria</strong> também <strong>fabricava</strong>
+            eventos ("Carla Mendes concluiu OS-2891") e números ("312 eventos"). Agora ela lê o <strong>registro de auditoria
+            real</strong> da organização (o backend já existia). Mostra só o que aconteceu de verdade, com contadores honestos
+            (eventos carregados, atores e ações distintas, evento mais recente) e os estados certos para
+            <strong>carregando</strong>, <strong>sem eventos</strong>, <strong>erro</strong> e <strong>acesso não permitido</strong>.
+            <strong>Privacidade:</strong> o identificador interno da organização nunca é exposto na tela (§2.8). Exportar CSV usa
+            só os eventos reais. Time (dev → junta): <strong>analizador + cognição-visual + coordenador-de-acessos APROVADO</strong>.
+            <strong>smoke 626→631</strong> (+5). Sem backend novo, sem migração.
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-SCALE invoices NF-e honesto">
           <h2>WS-SCALE · Faturas (NF-e) — parada fiscal honesta (correção de integridade)</h2>
           <p>

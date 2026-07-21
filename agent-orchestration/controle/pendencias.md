@@ -1201,3 +1201,19 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   retomar via `Workflow({scriptPath: '...ws-scale-1-rbac-wf_0efa4abf-aff.js', resumeFromRunId: 'wf_0efa4abf-aff'})` — o plano
   ja esta cacheado; so o dev + junta re-executam.
 - status: ABERTA (bloqueada por autorizacao — nao e falha tecnica).
+
+## P-AUDIT-FOLLOWUPS - Melhorias de Auditoria (2026-07-20, PR-SCALE-3, todas BAIXA/MEDIA)
+
+- descricao: a tela Auditoria foi ligada ao audit-log REAL (GET /api/v1/audit-events). Follow-ups NAO-bloqueantes:
+  1. (MEDIA) coluna ATOR exibe `actor_user_id` cru (possivel UUID). E HONESTO (D-007), mas melhoraria resolver para
+     nome/e-mail de exibicao — o backend tem `createUserNameResolver` mas o endpoint /audit-events nao o usa; resolver
+     exigiria mudanca backend (fora do escopo read-only deste PR).
+  2. (BAIXA) o backend audit.routes.ts:17 responde `AuditEvent[]` cru INCLUINDO `tenant_id` no corpo (§2.8). E o tenant do
+     proprio ator (resolvido server-side, risco baixo) e o front JA descarta na fronteira — mas o ideal e projetar a resposta
+     sem tenant_id no backend (DTO). Fora do escopo deste diff de front.
+  3. (BAIXA) assimetria guard×backend: PermissionGuard de /audit aceita `audit:read`/`audit.read`/`audit:view` mas o backend
+     exige `audit.read`. Hoje inofensivo (papeis com audit tem ambos) e o 403 e tratado honestamente; alinhar a lista evita
+     papel preso em 403 permanente no futuro.
+  4. (BAIXA) `PermissionGuard.tsx:29-31` usa copia SEM acento ("Acesso nao autorizado"/"usuario"/"permissao") — §11.3;
+     componente compartilhado pre-existente, fora deste PR.
+- status: ABERTA (melhorias; nenhuma e regressao — a tela entrega dado real honesto).
