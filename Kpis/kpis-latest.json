@@ -21,10 +21,10 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 631,
-      "total": 631,
-      "display": "631/631",
-      "note": "+5 (audit-events: adapter/mock/403/render honesto). Auditoria da organizacao ligada ao /audit-events REAL (deixou de fabricar Carla Mendes/312 eventos; D-007/§2.8 drop tenant_id). Sobre 626."
+      "value": 635,
+      "total": 635,
+      "display": "635/635",
+      "note": "+4 (field-operators: adapter/LGPD-sem-lat-lng/KPI-baldes/render honesto). Operadores de Campo ligado ao /field-locations/latest REAL (reusa getLatestFieldLocations do Mapa; deixou de fabricar). Sobre 631."
     },
     "backend_tests": {
       "value": 1276,
