@@ -21,10 +21,10 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 660,
-      "total": 660,
-      "display": "660/660",
-      "note": "+10 (M-7 PR-B countdown honesto: futuro/passado/null-fallback/invalido/ordenacao/tom/limiar/guard-anti-fabricacao/propagacao/no-leak). Mapa: vence em X/vencido ha X com sla_due_at real; proxy quando null. Sobre 650."
+      "value": 673,
+      "total": 673,
+      "display": "673/673",
+      "note": "+13 (approvals.smoke: honestidade/gating/§7/detalhe :approvalId/recusa-com-motivo/idade). Telas de Aprovacoes ligadas ao endpoint real (13 campos do DTO; zero valor/alcada/trilha fabricados). Sobre 660."
     },
     "backend_tests": {
       "value": 1296,
@@ -56,8 +56,8 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 70,
-      "display": "70",
+      "value": 71,
+      "display": "71",
       "note": "reconciliacao D-Ω4-KPI-RELATORIO adiciona os 8 agregados-feature do Ω4 (1..8); blocos de governanca/pos-analise/fix nao contam como feature."
     },
     "mobile_backend_contracts": {
