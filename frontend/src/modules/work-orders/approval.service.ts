@@ -31,6 +31,23 @@ export async function listAllPendingApprovals(context: ApprovalApiContext): Prom
   return approvalList(response);
 }
 
+/**
+ * Uma aprovação operacional pela sua id (GET /approvals/:approvalId) — usada pela tela de detalhe.
+ * Reusa `approvalFromResponse` (mesmo adapter defensivo). Em modo mock devolve UM approval honesto
+ * (só os campos reais do DTO — D-007) carregando a id pedida. 403/404 sobem como `ApiError` para a
+ * página tratar (§7: acesso não permitido / não encontrada).
+ */
+export async function getOperationalApproval(
+  context: ApprovalApiContext,
+  approvalId: string,
+): Promise<OperationalApproval> {
+  if (isMockMode()) {
+    return { ...mockApproval("mock-work-order"), id: approvalId };
+  }
+
+  return approvalFromResponse(await apiRequest<unknown>(`/approvals/${approvalId}`, context));
+}
+
 export async function approveOperationalApproval(
   context: ApprovalApiContext,
   approvalId: string,
@@ -44,7 +61,7 @@ export async function approveOperationalApproval(
       note: note?.trim() || null,
       decidedBy: "mock-manager",
       decidedAt: new Date().toISOString(),
-      safeMessage: "Aprovacao registrada.",
+      safeMessage: "Aprovação registrada.",
     };
   }
 
@@ -73,7 +90,7 @@ export async function rejectOperationalApproval(
       reason: normalizedReason,
       decidedBy: "mock-manager",
       decidedAt: new Date().toISOString(),
-      safeMessage: "Reprovacao registrada.",
+      safeMessage: "Reprovação registrada.",
     };
   }
 
@@ -147,8 +164,8 @@ function mockApproval(workOrderId: string): OperationalApproval {
     status: "pending_approval",
     requestedBy: "mock-operator",
     requestedAt: new Date().toISOString(),
-    pendingReason: "Ordem de servico concluida e pronta para validacao operacional.",
-    safeMessage: "Aprovacao pendente.",
+    pendingReason: "Ordem de serviço concluída e pronta para validação operacional.",
+    safeMessage: "Aprovação pendente.",
   };
 }
 

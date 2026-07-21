@@ -6,6 +6,29 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-21 - ONDA 1: Ligar Aprovacoes a dados reais (com pesquisa de concorrentes)
+
+### Resultado
+
+- **Método pedido pelo dono** (agentes temporários com pesquisa/concorrentes): `agente-pesquisador-web` (14 fontes — ServiceTitan
+  AP / SAP FSM / Salesforce / Jobber / Housecall / ServiceMax → **PD-007** em docs/omega-pd.md) + `planejador-mestre` (recon) →
+  dev → junta.
+- **Achado:** o backend E o `approval.service.ts` (frontend) JÁ existiam; só as 2 páginas eram casca. `ApprovalsPage` (fila) +
+  `ApprovalDetailPage` (detalhe) agora consomem `GET /approvals/pending` e `/approvals/:approvalId` (+1 função aditiva
+  `getOperationalApproval`; hook `useApprovalsQueue` clonando `useAuditEvents`).
+- **D-007:** SÓ os **13 campos reais** do DTO — **REMOVIDOS** valor R$ / APR-code / nome-solicitante / urgência / "acima da
+  alçada" / threshold / centro-de-custo / itens / trilha-3-passos / "Solicitar revisão" / tabs-histórico (o DTO não os tem;
+  `APPROVAL_LIMITS.md` é só principiológico). Idade **"Pendente há X"** = tempo REAL de `requested_at` (não deadline). **Recusa
+  exige motivo** (bloqueio client-side + 400 backend); approve `note` opcional. Gating `canDecide = cancel||approve` (paridade
+  `WorkOrderDetailPage`); backend é a autoridade (403 honesto). Contrato-texto preservado.
+- Junta: **analizador + coordenador-de-acessos + cognicao-visual APROVADO** (só BAIXA; acentuação de mock sanada). Gap RBAC
+  (UI usa `work_orders:approve` ausente do catálogo) registrado no PD-007 (fora do escopo). **SEM migração.**
+
+### KPIs
+
+- `frontend_smoke_tests` **660 -> 673** (+13: approvals.smoke). `blocks_completed` **70 -> 71**.
+- `backend_tests` 1296/1302, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88% — **INALTERADOS**. Backfill #259: `pr`/`merge_commit`/`approved_head` = ad4a9b5.
+
 ## 2026-07-21 - M-7 SLA real PR-B (frontend countdown) FECHA a Fase 2 do Mapa
 
 ### Resultado
