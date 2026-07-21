@@ -1217,3 +1217,22 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   4. (BAIXA) `PermissionGuard.tsx:29-31` usa copia SEM acento ("Acesso nao autorizado"/"usuario"/"permissao") — §11.3;
      componente compartilhado pre-existente, fora deste PR.
 - status: ABERTA (melhorias; nenhuma e regressao — a tela entrega dado real honesto).
+
+## P-PLATFORM-HEALTH-OBSERVABILITY - Saude da Plataforma = parada honesta ate observabilidade (2026-07-20, PR-SCALE-5b)
+
+- descricao: a tela "Saude do Sistema" da plataforma era 100% telemetria de infra FABRICADA (latencia p95 128ms, 0 erros 5xx,
+  fila sync 34, uptime 99,98%, status de 6 servicos incl. "Redis Degradado"). Nao ha stack de observabilidade (coleta de
+  metricas + healthchecks reais) nesta versao. Reescrita como PARADA HONESTA (§7): "Monitoramento em preparacao", sem numero/
+  status fabricado. Corrigido tambem o titulo "Health do Sistema" -> "Saude do Sistema" (§3, sem termo tecnico em ingles).
+- proximo: e trilha de INFRA/observabilidade (Onda 5-6 do docs/scale-roadmap.md) — healthchecks reais + ingestao de metricas
+  (agentes devops/observabilidade). So entao a tela ganha indicadores reais. Requer decisao de provedor/infra (possivel junta
+  + PD se envolver servico tarifado).
+- status: ABERTA (parada honesta entregue; monitoramento real e trabalho de infra futuro).
+
+## P-PLATFORM-TENANTDETAIL-REAL - Detalhe da Organizacao (plataforma) ainda mock (2026-07-20)
+
+- descricao: `PlatformTenantDetailPage` segue com consts hardcoded (STATS/CONTRACTED/HEALTH/USERS; nao le useParams tenantId).
+  O agregado real /platform/overview (PR-5a) ja da a lista; falta um endpoint de DETALHE por org (tenant + contagem/lista de
+  usuarios + modulos) real para wirar o detalhe. Backend: reusar listUsersForTenant(withTenantRls) + listTenantModules; sem
+  migracao. MRR/uptime/saude-do-sistema por org = sem fonte (omitir, como no overview).
+- status: ABERTA (follow-up do WS-SCALE; PR-5a entregou o overview; detalhe fica para PR proprio).

@@ -21,10 +21,10 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 641,
-      "total": 641,
-      "display": "641/641",
-      "note": "+6 (platform-overview smoke: adapter/mock/403/render honesto). Visao Geral da Plataforma ligada ao GET /platform/overview REAL. Sobre 635."
+      "value": 643,
+      "total": 643,
+      "display": "643/643",
+      "note": "+2 (platform-health-honest-stop: parada honesta + §3 sem \"Health\"). Saude da Plataforma deixou de fabricar telemetria (latencia/uptime/status). Sobre 641."
     },
     "backend_tests": {
       "value": 1282,

@@ -6,6 +6,25 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-20 - WS-SCALE-8TELAS PR-SCALE-5b (platform Health) Saude do Sistema = parada honesta
+
+### Resultado
+
+- **Correcao de integridade (D-007 / §2.8 / §3).** A tela "Saude do Sistema" era **100% telemetria de infra FABRICADA**
+  (latencia p95 128ms, 0 erros 5xx, fila 34, uptime 99,98%, status de 6 servicos incl. "Redis Degradado"). Nao ha stack de
+  **observabilidade** (coleta de metricas + healthchecks reais) nesta versao.
+- Reescrita como **PARADA HONESTA** (§7 "Monitoramento em preparacao") **sem numero/status fabricado** — explica que as metricas
+  de infra dependem de observabilidade, habilitada apos a ativacao cloud (Onda 5-6). Corrigido tambem o titulo **"Health do
+  Sistema" -> "Saude do Sistema"** (§3, sem termo tecnico em ingles na UI). Frontend-only, sem backend.
+- Registrado **P-PLATFORM-HEALTH-OBSERVABILITY** (monitoramento real = trilha de infra futura) e **P-PLATFORM-TENANTDETAIL-REAL**
+  (follow-up: detalhe por org ainda mock).
+
+### KPIs
+
+- `frontend_smoke_tests` **641 -> 643** (+2: platform-health-honest-stop). PR web-only.
+- `backend_tests` 1282/1288, `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88%, `blocks_completed` 67 — **INALTERADOS**.
+  Backfill #254: `pr`/`merge_commit`/`approved_head` = 0cbc70d. Deste PR null na autoria.
+
 ## 2026-07-20 - WS-SCALE-8TELAS PR-SCALE-5a (platform overview) Visao Geral da Plataforma com agregado real
 
 ### Resultado
