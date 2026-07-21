@@ -109,6 +109,46 @@ polimórfico `Attachment{entity_type,entity_id}`; RBAC herdada via `attachment-e
   aceita (equivalência comportamental — §11.2).
 - KPI: `docs/kpis/omega4c/KPI_PR-01.json`. `Kpis/*`: frontend_smoke 673→682 (+9); backend +11 (attachments-crud); blocks 71→72.
 
+### PR-02 — Contas a Pagar por origem — plano do omega4c-planejador (2026-07-21)
+ESTENDER `financial-titles`. **Decisão: par GENÉRICO `source_type/source_id`** (coexiste com `work_order_id`/`service_quote_id`
+intocados). Migração ADITIVA: 2 colunas nullable + índice UNIQUE parcial `(tenant_id, source_type, source_id, direction) WHERE
+deleted_at IS NULL AND source_id IS NOT NULL` (idempotência por fonte; espelha o de OS). Enum-app `fuel_log|maintenance_order|
+fine|insurance_policy` (D-Ω4C-FIN-SOURCE-ENUM).
+- Backend: `createForSource`/`findActiveBySource`/`removeForSource` (reusa soft-delete `delete()` + chokepoint `assertPeriodOpen`)
+  em financial-titles; **route-factory** `createPayableSourceRoutes({sourceType, resolveOwnership via service.get() do módulo})`
+  montado em fuel-logs/maintenance-orders/insurance-policies → `POST/DELETE/GET /:module/:id/payable`; perm `financial_titles:create/update`
+  (existentes); **Multa fica p/ PR-09** (condutor-responsável). D-Ω4C-FIN-SOURCE-REST (per-módulo, evita import reverso/ciclo).
+- Frontend: `PayableToggle` (checkbox "Gerar lançamento em contas a pagar" no create + badge "lançado" + Lançar/Retirar no edit,
+  derivado de findActiveBySource) montado em Abastecimento/Manutenção/Seguro.
+- RNs FIN-ORIGEM-01(posse 404)/02(idempotência 409)/03(chokepoint 422)/04(retirar=soft-delete reversível)/05(badge derivado)/
+  06(§2.8)/07(coexistência OS intocada). Testes: financial-title-source + rls 3-tenant + PayableToggle smoke.
+- D-refs: D-Ω4C-FIN-ORIGEM (ratificado) + FIN-SOURCE-ENUM + FIN-SOURCE-REST + FIN-MULTA-FRONTEIRA. **APROVADO para implementar.**
+
+#### PR-02 — Veredito da junta (2026-07-21) — **UNÂNIME 3/3 APROVADO**
+- **omega4c-avaliador** → `APROVADO_CONDICIONADO`: seção 10 verde em memória (backend **1324/1330** pass, 0 falha nova, 6 skip
+  DB-gated; `financial-title-source` **17/17**; faturamento OS `work-order-invoicing` 16/16 + `work-order-mileage` 24/24 = **ZERO
+  regressão**), frontend check/build 0 + smoke **694/694** (`payable-toggle` 12/12); 7 RNs cobertas por teste; migração aditiva
+  não-destrutiva; posse/idempotência/chokepoint/coexistência OK. **Divergência da Manutenção (só toggle de edição, sem checkbox de
+  create) ACEITA por D-007** — payload de create de manutenção não tem custo; `parseAmount` exige `amount>0`; checkbox de create
+  fabricaria valor. Condições: MEDIA (KPI §C3 — **sanada neste PR**, `Kpis/*` atualizados na autoria) + 3 BAIXA (RLS 3-tenant
+  DB-gated provada pelo dba-guardião; higiene de `git add` cirúrgico; wiring RBAC nas 3 pages via `can(...)` — registrado).
+- **agente-dba-guardião** → `APROVADO`: migração `20260822000000_add_financial_title_source` provada **UP/DOWN/RE-UP** em
+  `erp-postgres` (DB scratch isolada). Só `ADD COLUMN source_type TEXT`/`source_id UUID` (nullable, sem default) + `CREATE UNIQUE
+  INDEX` parcial; **zero DROP/ALTER destrutivo**. Índice de OS `financial_titles_wo_direction_active_key` (da 20260811000000)
+  **intacto** (coexistência); RLS `relrowsecurity=t`/`relforcerowsecurity=t` + policy preservadas; idempotência comprovada (2º ativo
+  → `ERROR 23505`; avulso `source_id NULL` e retirado `deleted_at NOT NULL` liberados). Condição BAIXA: DOWN é runbook manual no
+  cabeçalho da migration (forward-only P-007) — mantido no runbook de operação.
+- **coordenador-de-acessos** → `APROVADO`: cadeia papel→permissão→rota→backend→posse→UI íntegra. Rotas de payable exigem
+  `financial_titles:create` (lançar) / `:update` (retirar) / `read∪update` (GET), batendo com `RBAC_MATRIX` (l.122) e o precedente
+  `POST /work-orders/:id/invoice`; **sem permissão nova** (catálogo/seed/teste intocados). Posse via `service.get()` do módulo-fonte
+  → 404 cross-tenant (testado); backend autoridade final (manager sem `create` → **403** real, testado); UI PT-BR sem termo técnico,
+  `aria-label` nos ícones-ação. Observação informativa (não-bloqueante): payload gateia só em `financial_titles:*` sem exigir a read
+  do módulo-fonte — idêntico ao precedente de faturamento; sem vazamento (resolveOwnership faz o escopo de tenant).
+- **Decisão:** verde unânime → merge + KPI no próprio PR (§C3). **RN-FIN-ORIGEM-01..07 cobertas.** Divergência da Manutenção
+  registrada como **D-Ω4C-FIN-MANUT-SEM-CREATE** (edit-only por D-007).
+- KPI: `docs/kpis/omega4c/KPI_PR-02.json`. `Kpis/*`: backend 1307→**1324** (+17 financial-title-source); frontend_smoke 682→**694**
+  (+12 payable-toggle); blocks 72→**73**.
+
 ## 8. Encerramento (a fazer no fim)
 Ata final (entregas, KPIs consolidados, pendências→backlog Ω5); deletar **SOMENTE** os 5 agentes efêmeros (registrar cada
 deleção); confirmar que nenhum agente pré-existente foi tocado; marcar os D-records como vigentes.

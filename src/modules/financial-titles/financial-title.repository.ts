@@ -19,6 +19,10 @@ export interface FinancialTitleRepository {
   // Ω4-3 (D-Ω4-C2) — título ATIVO (deleted_at NULL) de uma OS+direção. Sustenta o PRE-CHECK de
   // idempotência do faturamento (a rede real é o índice parcial → P2002).
   findActiveByWorkOrder(tenantId: string, workOrderId: string, direction: string): Promise<FinancialTitle | undefined>;
+  // Ω4C PR-02 (D-Ω4C-FIN-ORIGEM) — título ATIVO (deleted_at NULL) de uma fonte de frota (source_type+
+  // source_id)+direção. Sustenta o PRE-CHECK de idempotência do lançamento por origem E o badge derivado
+  // (findActiveBySource no GET). A rede real é o índice parcial financial_titles_source_direction_active_key.
+  findActiveBySource(tenantId: string, sourceType: string, sourceId: string, direction: string): Promise<FinancialTitle | undefined>;
   update(input: UpdateFinancialTitleInput): Promise<FinancialTitle | undefined>;
   changeStatus(input: ChangeFinancialTitleStatusInput): Promise<FinancialTitle | undefined>;
   // Ω4-4 — WRITE-PATH da liquidação: paid_amount + status juntos (contorna a máquina de status).
@@ -100,6 +104,18 @@ export function workOrderAlreadyInvoicedError(): FinancialTitleError {
   );
 }
 
+// Ω4C PR-02 (D-Ω4C-FIN-ORIGEM) — rede do índice PARCIAL de idempotência por origem: um 2º título ATIVO
+// para a mesma fonte (source_type+source_id)+direção. Espelha workOrderAlreadyInvoicedError. 409 no nível
+// do título; a rota traduz para o badge "já lançado" (relançar exige retirar antes — delete lógico).
+export function sourceAlreadyLaunchedError(): FinancialTitleError {
+  return new FinancialTitleError(
+    409,
+    "FINANCIAL_TITLE_CONFLICT",
+    "source_already_launched",
+    "An active accounts-payable title already exists for this source and direction.",
+  );
+}
+
 export class InMemoryFinancialTitleRepository implements FinancialTitleRepository {
   private readonly titles = new Map<string, FinancialTitle>();
 
@@ -111,15 +127,30 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
       throw workOrderAlreadyInvoicedError();
     }
 
+    // Ω4C PR-02 (D-Ω4C-FIN-ORIGEM) — SIMULA o índice PARCIAL de idempotência por origem (unique tenant+
+    // source_type+source_id+direction WHERE deleted_at IS NULL AND source_id IS NOT NULL): rejeita um 2º
+    // título ATIVO da mesma fonte+direção. Só o caminho createForSource popula source_id (create público:
+    // undefined → fora do índice). Retirar (delete lógico) libera relançar.
+    if (
+      input.sourceId &&
+      input.sourceType &&
+      (await this.findActiveBySource(input.tenantId, input.sourceType, input.sourceId, input.direction))
+    ) {
+      throw sourceAlreadyLaunchedError();
+    }
+
     const now = new Date();
     const title: FinancialTitle = {
       ...input,
       id: randomUUID(),
       // paid_amount nasce SEMPRE 0 (dirigido por pagamentos no Ω4-4). work_order_id vem do faturamento
       // (Ω4-3, createForWorkOrder); service_quote_id ainda NÃO tem caminho de escrita (sempre undefined).
+      // source_type/source_id vêm do lançamento por origem (Ω4C PR-02, createForSource).
       paidAmount: 0,
       workOrderId: input.workOrderId,
       serviceQuoteId: undefined,
+      sourceType: input.sourceType,
+      sourceId: input.sourceId,
       createdAt: now,
       updatedAt: now,
       deletedAt: undefined,
@@ -133,6 +164,22 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
       (title) =>
         title.tenantId === tenantId &&
         title.workOrderId === workOrderId &&
+        title.direction === direction &&
+        title.deletedAt == null,
+    );
+  }
+
+  async findActiveBySource(
+    tenantId: string,
+    sourceType: string,
+    sourceId: string,
+    direction: string,
+  ): Promise<FinancialTitle | undefined> {
+    return [...this.titles.values()].find(
+      (title) =>
+        title.tenantId === tenantId &&
+        title.sourceType === sourceType &&
+        title.sourceId === sourceId &&
         title.direction === direction &&
         title.deletedAt == null,
     );

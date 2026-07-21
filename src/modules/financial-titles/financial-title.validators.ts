@@ -3,6 +3,7 @@ import { createFinancialItemParsers, roundMoney } from "../tariffs/financial-ite
 import {
   FINANCIAL_TITLE_DIRECTIONS,
   FINANCIAL_TITLE_PARTY_TYPES,
+  FINANCIAL_TITLE_SOURCE_TYPES,
   FINANCIAL_TITLE_STATUSES,
   FinancialTitleError,
   type FinancialTitleStatus,
@@ -12,6 +13,7 @@ const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}
 
 const DIRECTION_ALLOWLIST = new Set<string>(FINANCIAL_TITLE_DIRECTIONS);
 const PARTY_TYPE_ALLOWLIST = new Set<string>(FINANCIAL_TITLE_PARTY_TYPES);
+const SOURCE_TYPE_ALLOWLIST = new Set<string>(FINANCIAL_TITLE_SOURCE_TYPES);
 // v1 — moeda única (mesma regra da Conta financeira Ω4-1): só BRL. Outra moeda exige decisão de escopo.
 const CURRENCY_ALLOWLIST = new Set(["BRL"]);
 const STATUS_ALLOWLIST = new Set<string>(FINANCIAL_TITLE_STATUSES);
@@ -101,6 +103,22 @@ export function parseDirection(value: unknown): string {
   const normalized = optionalString(value)?.toLowerCase();
   if (normalized === undefined || !DIRECTION_ALLOWLIST.has(normalized)) {
     throw new FinancialTitleError(400, "FINANCIAL_TITLE_INVALID", "invalid_direction", "direction must be one of receivable, payable.");
+  }
+  return normalized;
+}
+
+// Ω4C PR-02 — source_type OBRIGATÓRIO ∈ {fuel_log,maintenance_order,fine,insurance_policy} no lançamento
+// por origem. Ausente/fora da allowlist → 400 invalid_source_type. (O sourceType real vem HARDCODED da
+// route-factory de cada módulo, não do corpo — mas o serviço revalida defensivamente, como parseDirection.)
+export function parseSourceType(value: unknown): string {
+  const normalized = optionalString(value)?.toLowerCase();
+  if (normalized === undefined || !SOURCE_TYPE_ALLOWLIST.has(normalized)) {
+    throw new FinancialTitleError(
+      400,
+      "FINANCIAL_TITLE_INVALID",
+      "invalid_source_type",
+      `source_type must be one of ${[...SOURCE_TYPE_ALLOWLIST].join(", ")}.`,
+    );
   }
   return normalized;
 }

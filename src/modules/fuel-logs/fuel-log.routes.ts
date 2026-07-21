@@ -4,6 +4,7 @@ import { createPersistentRbacContextMiddleware } from "../core-saas/middleware/p
 import { requirePermission } from "../core-saas/middleware/rbac.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
+import { createPayableSourceRoutes } from "../financial-titles/payable-source.routes.js";
 import { FuelLogController, type FuelLogServiceResolver } from "./fuel-log.controller.js";
 import { createDefaultFuelLogService } from "./fuel-log.service.js";
 
@@ -55,6 +56,18 @@ export function createFuelLogRouter(resolveService: FuelLogServiceResolver = cre
     requirePermission(FUEL_LOG_PERMISSIONS.update),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.update(request));
+    }),
+  );
+
+  // Ω4C PR-02 — Contas a Pagar por origem: POST/DELETE/GET /fuel-logs/:id/payable. resolveOwnership usa o
+  // service.get() do PRÓPRIO módulo (404 cross-tenant nativo) antes de tocar título. Herda tenant+RBAC daqui.
+  router.use(
+    "/fuel-logs",
+    createPayableSourceRoutes({
+      sourceType: "fuel_log",
+      resolveOwnership: async (actor, sourceId) => {
+        await (await resolveService()).get(actor, sourceId);
+      },
     }),
   );
 

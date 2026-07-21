@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-21",
-  "version": "WS-CHARTS-F2-BACKEND",
+  "version": "OMEGA4C-PR-02",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "WS-CARDS-CHARTS-F2 backend (série temporal de OS por dia)",
-    "title": "WS-CARDS-CHARTS-F2 backend: agregado de série temporal de OS (sem migração)",
+    "block": "Ω4C PR-02 — Contas a Pagar por origem (financial-titles ESTENDIDO)",
+    "title": "Ω4C PR-02: integração origem→título de contas a pagar (source_type/source_id, lançar/retirar/badge)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "WS-CARDS-CHARTS-F2 (backend) — AGREGADO DE SÉRIE TEMPORAL DE OS (para gráficos temporais reais no Dashboard; diretriz do dono SEM pendência). Novo módulo src/modules/work-order-timeseries/ — GET /api/v1/operations/work-orders-timeseries?days=30 (ou from/to) -> por DIA: created/completed/cancelled, ZERO-FILL server-side (dias vazios=0, contíguos), bucketing por dia em America/Sao_Paulo via deriveBusinessDate (REUSO do Intl de deriveCompetencia — não TZ nova; P-Ω4-COMPETENCIA-TZ). Cada métrica no SEU timestamp (created_at/completed_at/cancelled_at); fallback honesto p/ created_at em linha legada (conta, não descarta). SEM MIGRAÇÃO (colunas já existem). compute PURO InMemory<->Prisma; Prisma withTenantRls + where.tenant_id. DTO omite tenant_id (§2.8). RBAC reusa work_orders:read (sem permissão nova). Time: dev backend -> analizador APROVADO + coordenador-de-acessos APROVADO + validador-mestre APROVADO_CONDICIONADO (MEDIA de KPI sanada). P-WOTS-SCALE (full-scan) + P-WOTS-FRONT-ACCESS (403 no gráfico) registrados. Sem provider/SKU novo.",
-    "status_label": "Charts F2 (backend): série temporal de OS por dia (created/completed/cancelled, zero-fill, TZ SP, READ-ONLY, work_orders:read); junta 2A+1AC; backend 1268->1276"
+    "summary": "Ω4C PR-02 — CONTAS A PAGAR POR ORIGEM. ESTENDE src/modules/financial-titles com par GENÉRICO source_type/source_id (coexiste com work_order_id/service_quote_id INTOCADOS). Migração ADITIVA 20260822000000_add_financial_title_source: 2 colunas nullable + índice UNIQUE parcial (tenant_id, source_type, source_id, direction) WHERE deleted_at IS NULL AND source_id IS NOT NULL (idempotência por fonte; espelha o de OS), RLS herdada — provada up/down/re-up em erp-postgres pelo dba-guardião, coexistência do índice de OS confirmada. Backend: createForSource/findActiveBySource/removeForSource (reusa soft-delete + chokepoint assertPeriodOpen) + route-factory createPayableSourceRoutes({sourceType, resolveOwnership via service.get() do módulo-fonte → 404 cross-tenant}) montado em fuel-logs/maintenance-orders/insurance-policies → POST/DELETE/GET /:module/:id/payable, perm financial_titles:create/update/read (SEM permissão nova). Frontend: PayableToggle (checkbox no create + badge 'Lançado' + Lançar/Retirar no edit, DERIVADO de findActiveBySource) em Abastecimento/Seguros/Manutenção. Manutenção só toggle de edição (D-007: cadastro sem custo, amount>0). Multa fica p/ PR-09 (condutor responsável). RN-FIN-ORIGEM-01..07: posse 404 / idempotência 409 / chokepoint 422 / retirar=soft-delete reversível / badge derivado / §2.8 / coexistência OS. Junta UNÂNIME 3/3: omega4c-avaliador APROVADO_CONDICIONADO (KPI sanada no PR) + agente-dba-guardião APROVADO + coordenador-de-acessos APROVADO. Zero regressão faturamento OS (16/16 + 24/24). Sem provider/SKU novo.",
+    "status_label": "Ω4C PR-02: contas a pagar por origem (source_type/source_id, lançar/retirar/badge, migração aditiva provada); junta 3/3 unânime; backend 1307->1324, smoke 682->694, blocks 72->73"
   },
   "metrics": {
     "flutter_tests": {
@@ -21,16 +21,16 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 682,
-      "total": 682,
-      "display": "682/682",
-      "note": "+9 (entity-attachments-tab: render/§7/gating/§2.8). Ω4C PR-01 anexos genericos (EntityAttachmentsTab montado no modal de Manutencao). Sobre 673."
+      "value": 694,
+      "total": 694,
+      "display": "694/694",
+      "note": "+12 (payable-toggle: render/create-checkbox/badge/Lancar-Retirar/gating/§3). Ω4C PR-02 contas a pagar por origem (PayableToggle em Abastecimento/Seguros/Manutencao). Sobre 682."
     },
     "backend_tests": {
-      "value": 1307,
-      "total": 1313,
-      "display": "1307/1313",
-      "note": "+11 (tests/attachments-crud.test.ts: CRUD/cross-tenant-404/posse/RBAC-herdada/soft-delete/§2.8/idempotencia/download-gate/scan). Ω4C PR-01. Suite memoria (CI) 1307 pass/6 skip. Migracao 20260821000000_add_attachments provada up/down pelo dba-guardiao. Sobre 1296/1302. Local: 77 DB/JWT pre-existentes."
+      "value": 1324,
+      "total": 1330,
+      "display": "1324/1330",
+      "note": "+17 (tests/financial-title-source.test.ts: posse-404/idempotencia-409/chokepoint-422/retirar-relancar/§2.8/rbac-403). Ω4C PR-02. Suite memoria (CI) 1324 pass/6 skip. Migracao 20260822000000_add_financial_title_source provada up/down/re-up + coexistencia do indice de OS pelo dba-guardiao; faturamento OS 16/16 + 24/24 sem regressao. Sobre 1307/1313. Local: 77 DB/JWT pre-existentes."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 72,
-      "display": "72",
-      "note": "reconciliacao D-Ω4-KPI-RELATORIO adiciona os 8 agregados-feature do Ω4 (1..8); blocos de governanca/pos-analise/fix nao contam como feature."
+      "value": 73,
+      "display": "73",
+      "note": "Ω4C PR-02 (contas a pagar por origem) = feature entregue → +1 sobre 72 (Ω4C PR-01 anexos). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,

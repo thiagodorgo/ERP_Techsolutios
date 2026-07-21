@@ -4,6 +4,7 @@ import { createPersistentRbacContextMiddleware } from "../core-saas/middleware/p
 import { requirePermission } from "../core-saas/middleware/rbac.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
+import { createPayableSourceRoutes } from "../financial-titles/payable-source.routes.js";
 import {
   MaintenanceOrderController,
   type MaintenanceOrderServiceResolver,
@@ -60,6 +61,18 @@ export function createMaintenanceOrderRouter(
     requirePermission(MAINTENANCE_ORDER_PERMISSIONS.update),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.update(request));
+    }),
+  );
+
+  // Ω4C PR-02 — Contas a Pagar por origem: POST/DELETE/GET /maintenance-orders/:id/payable. resolveOwnership
+  // usa o service.get() do PRÓPRIO módulo (404 cross-tenant nativo) antes de tocar título. Herda tenant+RBAC.
+  router.use(
+    "/maintenance-orders",
+    createPayableSourceRoutes({
+      sourceType: "maintenance_order",
+      resolveOwnership: async (actor, sourceId) => {
+        await (await resolveService()).get(actor, sourceId);
+      },
     }),
   );
 

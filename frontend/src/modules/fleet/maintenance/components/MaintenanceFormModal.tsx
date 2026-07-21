@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { Alert, Button, Chip, Input, Modal, Select, Tabs } from "../../../../components/ui";
 import { EntityAttachmentsTab } from "../../../attachments";
+import { PayableToggle } from "../../../finance/payable-source";
 import type { Vehicle } from "../../../registry/vehicles/vehicles.types";
 import {
   MAINTENANCE_TYPE_OPTIONS,
@@ -54,6 +55,8 @@ export function MaintenanceFormModal({
   context,
   canUploadAttachments = false,
   canDeleteAttachments = false,
+  canLaunchPayable = false,
+  canRemovePayable = false,
   onClose,
   onSaved,
 }: {
@@ -62,6 +65,8 @@ export function MaintenanceFormModal({
   readonly context: MaintenanceOrdersApiContext;
   readonly canUploadAttachments?: boolean;
   readonly canDeleteAttachments?: boolean;
+  readonly canLaunchPayable?: boolean;
+  readonly canRemovePayable?: boolean;
   readonly onClose: () => void;
   readonly onSaved: (saved?: MaintenanceOrder) => void;
 }) {
@@ -290,6 +295,19 @@ export function MaintenanceFormModal({
             helper="Oficina/prestador (opcional)."
           />
         </div>
+
+        {isEdit && order ? (
+          <div style={{ marginTop: "var(--space-16)" }}>
+            <PayableToggle
+              mode="edit"
+              module="maintenance-orders"
+              id={order.id}
+              canLaunch={canLaunchPayable}
+              canRemove={canRemovePayable}
+              defaults={{ partyName: order.supplier ?? "Fornecedor", amount: order.cost ?? undefined }}
+            />
+          </div>
+        ) : null}
 
         <footer style={footerStyle}>
           <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>

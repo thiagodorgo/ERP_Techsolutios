@@ -424,6 +424,8 @@ export function ManutencaoPage() {
           context={context}
           canUploadAttachments={canCreate}
           canDeleteAttachments={canUpdate}
+          canLaunchPayable={can("financial_titles:create")}
+          canRemovePayable={can("financial_titles:update")}
           onClose={closeModal}
           onSaved={() => {
             closeModal();

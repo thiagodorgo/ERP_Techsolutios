@@ -5,3 +5,4 @@ export * from "./financial-title.routes.js";
 export * from "./financial-title.service.js";
 export * from "./financial-title.types.js";
 export * from "./financial-title.validators.js";
+export * from "./payable-source.routes.js";

@@ -1,0 +1,68 @@
+{
+  "pr": "PR-02",
+  "fase": "Fase 1 — Contas a Pagar por origem",
+  "snapshot_date": "2026-07-21",
+  "branch": "rodada/omega4c",
+  "tipo": "ESTENDER financial-titles (par genérico source_type/source_id, coexiste com work_order_id/service_quote_id)",
+  "models_alterados": [
+    "FinancialTitle (+source_type text nullable, +source_id uuid nullable)"
+  ],
+  "migrations": [
+    "20260822000000_add_financial_title_source (aditiva; 2 colunas nullable + índice UNIQUE parcial (tenant_id, source_type, source_id, direction) WHERE deleted_at IS NULL AND source_id IS NOT NULL; RLS herdada; up/down/re-up provada em erp-postgres pelo dba-guardião; coexistência do índice de OS confirmada)"
+  ],
+  "endpoints_novos": [
+    "POST /api/v1/fuel-logs/:id/payable (lançar) — financial_titles:create",
+    "DELETE /api/v1/fuel-logs/:id/payable (retirar=soft-delete) — financial_titles:update",
+    "GET /api/v1/fuel-logs/:id/payable (badge derivado) — financial_titles:read∪update",
+    "idem para /maintenance-orders/:id/payable e /insurance-policies/:id/payable (route-factory createPayableSourceRoutes)"
+  ],
+  "modulos_alterados": [
+    "src/modules/financial-titles (createForSource/findActiveBySource/removeForSource + payable-source.routes.ts route-factory)",
+    "src/modules/fuel-logs|maintenance-orders|insurance-policies (montagem da route-factory com resolveOwnership via service.get())",
+    "frontend/src/modules/finance/payable-source (PayableToggle + service + hook)"
+  ],
+  "consumidores_frontend": [
+    "FuelLogFormModal (Abastecimento — checkbox create + badge/Lançar/Retirar edit)",
+    "InsurancePolicyFormModal (Seguros — checkbox create + badge/Lançar/Retirar edit)",
+    "MaintenanceFormModal (Manutenção — SÓ toggle de edição; sem checkbox de create por D-007, manutenção não tem custo no cadastro)"
+  ],
+  "rns_cobertas": [
+    "RN-FIN-ORIGEM-01 (posse via service.get() do módulo-fonte → 404 cross-tenant)",
+    "RN-FIN-ORIGEM-02 (idempotência: índice UNIQUE parcial + 409 source_already_launched)",
+    "RN-FIN-ORIGEM-03 (chokepoint período fechado → 422 period_closed)",
+    "RN-FIN-ORIGEM-04 (retirar = soft-delete reversível/relançável)",
+    "RN-FIN-ORIGEM-05 (badge derivado de findActiveBySource, não flag fabricada)",
+    "RN-FIN-ORIGEM-06 (§2.8: DTO sem tenant_id; auditoria sem valor/source_id sensível)",
+    "RN-FIN-ORIGEM-07 (coexistência: caminho OS work_order_id/service_quote_id/createForWorkOrder INTOCADO — 16/16 faturamento OS verde)"
+  ],
+  "rns_total_pr": 7,
+  "cobertura_testes": {
+    "backend": "tests/financial-title-source.test.ts 17/17 (posse/idempotência/chokepoint/retirar-relançar/§2.8/rbac-403) + rls-tenant-isolation 3-tenant (DB-gated, provada pelo dba-guardião)",
+    "frontend": "frontend/tests/payable-toggle.test.tsx 12/12 (render/create-checkbox/badge/Lançar-Retirar/gating/§3)"
+  },
+  "d_records": [
+    "D-Ω4C-FIN-ORIGEM (ratificado)",
+    "D-Ω4C-FIN-SOURCE-ENUM (enum-app fuel_log|maintenance_order|fine|insurance_policy, sem CHECK)",
+    "D-Ω4C-FIN-SOURCE-REST (route-factory per-módulo, evita import reverso/ciclo)",
+    "D-Ω4C-FIN-MULTA-FRONTEIRA (Multa fica p/ PR-09 — condutor responsável)",
+    "D-Ω4C-FIN-MANUT-SEM-CREATE (Manutenção edit-only por D-007 — sem custo no cadastro)"
+  ],
+  "divergencias_vs_autem": [
+    "Manutenção monta só o toggle de edição (sem checkbox de create) — cadastro de manutenção não tem custo (amount>0 exigido); checkbox de create fabricaria valor/dispararia POST inválido (D-007). Junta ACEITOU."
+  ],
+  "junta": {
+    "omega4c-avaliador": "APROVADO_CONDICIONADO (KPI §C3 sanada no PR; 3 BAIXA)",
+    "agente-dba-guardiao": "APROVADO (up/down/re-up + coexistência índice OS + RLS + idempotência)",
+    "coordenador-de-acessos": "APROVADO (cadeia de acesso íntegra; sem permissão nova)",
+    "veredito": "UNÂNIME 3/3 APROVADO"
+  },
+  "kpi_repo_wide": {
+    "backend": "1307->1324 (+17)",
+    "frontend_smoke": "682->694 (+12)",
+    "blocks": "72->73"
+  },
+  "coexistencia_os": "faturamento OS (work_order_id/service_quote_id/createForWorkOrder/findActiveByWorkOrder) INTOCADO — work-order-invoicing 16/16, work-order-mileage 24/24, índice financial_titles_wo_direction_active_key intacto",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}
