@@ -1,0 +1,38 @@
+{
+  "pr": "PR-00",
+  "fase": "Fase 0 — Governança e reconhecimento",
+  "snapshot_date": "2026-07-21",
+  "branch": "rodada/omega4c",
+  "tipo": "documental (recon) — sem código",
+  "governanca": {
+    "junta_criada": "docs/juntas/J-OMEGA4C.md",
+    "agentes_efemeros_criados": 5,
+    "agentes_efemeros": ["omega4c-planejador", "omega4c-dev-backend", "omega4c-dev-frontend", "omega4c-dev-mobile", "omega4c-avaliador"],
+    "agentes_preexistentes_tocados": 0
+  },
+  "recon": {
+    "areas_mapeadas": 10,
+    "agentes_recon_paralelos": 11,
+    "linhas_gap_ratificadas": 13,
+    "veredicto_real": { "EXISTE_reusar": 0, "ESTENDER": 8, "CRIAR": 2, "misto": 1, "validar_no_PR": 2 },
+    "rebaixamentos_CRIAR_para_ESTENDER": 6,
+    "pontos_abertos_analise_s11_resolvidos": 7,
+    "d_records": 8,
+    "d_records_ids": ["D-Ω4C-RECON-01", "D-Ω4C-RECON-02", "D-Ω4C-RECON-03", "D-Ω4C-RECON-04", "D-Ω4C-RECON-05", "D-Ω4C-RECON-06", "D-Ω4C-RECON-07", "D-Ω4C-RECON-08"]
+  },
+  "achado_central": "Repo muito mais adiantado que o gap estimado: 5 modulos que o PLANO marcou 'Criar' JA EXISTEM (fuel-logs/maintenance-orders/fines/insurance-policies/damages). CRIAR real so em 2 (Extrato do Profissional, Telemetria).",
+  "endpoints_novos": 0,
+  "models_novos": 0,
+  "migrations": 0,
+  "cobertura_testes": "n/a (fatia documental)",
+  "tempo_suite_s": null,
+  "validacao": {
+    "escopo_limpo": true,
+    "codigo_ou_prisma_tocado": false,
+    "avaliador": "omega4c-avaliador APROVADO_CONDICIONADO -> APROVADO (condicoes sanadas)"
+  },
+  "kpis_repo_wide": "INALTERADOS (Kpis/* nao muda — fatia documental, sem code/test delta): backend 1296/1302, frontend_smoke 673/673, flutter 764/764, blocks 71",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}
