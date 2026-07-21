@@ -123,6 +123,8 @@ const expectedPermissionCatalog = [
   "stock_movements:create",
   "cycle_counts:read",
   "cycle_counts:create",
+  "purchase_orders:read",
+  "purchase_orders:create",
   "field_location:read",
   "field_location:send",
   "field_location:history",
@@ -138,6 +140,7 @@ const expectedPermissionCatalog = [
   "billing:read",
   "invoices:read",
   "payments:read",
+  "reports:read",
   "commissions:read",
   "commissions:read_own",
   "commissions:manage_policy",
@@ -269,6 +272,48 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   assert.equal(ROLE_PERMISSIONS.viewer.includes("financial_period:read"), true);
   assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("financial_period:reopen"), true);
   assert.equal(ROLE_PERMISSIONS.operator.includes("financial_period:read"), false);
+
+  // PR-SCALE-1 — Purchasing + Reports (autorização do dono; RBAC_MATRIX "Purchasing"/"Reports and analytics").
+  // reports:read é concedido a TODOS os papéis não-admin (a matriz dá escopo de relatório a todos).
+  for (const role of [
+    "manager",
+    "operator",
+    "finance",
+    "inventory",
+    "field_technician",
+    "auditor",
+    "support",
+    "field_dispatcher",
+    "technician",
+    "viewer",
+  ] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("reports:read"), true);
+  }
+  // super_admin/platform_admin recebem tudo via PERMISSION_CATALOG; tenant_admin via TENANT_ADMIN_PERMISSIONS.
+  assert.equal(ROLE_PERMISSIONS.super_admin.includes("reports:read"), true);
+  assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("reports:read"), true);
+  assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("purchase_orders:read"), true);
+  assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("purchase_orders:create"), true);
+
+  // purchase_orders:read conforme RBAC_MATRIX "Purchasing": todos com escopo de leitura+ →
+  // manager/operator/finance/inventory/auditor + support(support-view) + viewer(read-only do catálogo).
+  for (const role of ["manager", "operator", "finance", "inventory", "auditor", "support", "viewer"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("purchase_orders:read"), true);
+  }
+  // purchase_orders:create conforme RBAC_MATRIX "Purchasing"=request/approve → manager/operator/inventory
+  // (D-SCALE-RBAC-PURCHASING: "request" mapeia p/ create enquanto não houver perm dedicada requisição×aprovação).
+  assert.equal(ROLE_PERMISSIONS.manager.includes("purchase_orders:create"), true);
+  assert.equal(ROLE_PERMISSIONS.inventory.includes("purchase_orders:create"), true);
+  assert.equal(ROLE_PERMISSIONS.operator.includes("purchase_orders:create"), true);
+  // finance=budget-check e support=support-view e auditor=read → só leem (create=false).
+  assert.equal(ROLE_PERMISSIONS.finance.includes("purchase_orders:create"), false);
+  assert.equal(ROLE_PERMISSIONS.support.includes("purchase_orders:create"), false);
+  assert.equal(ROLE_PERMISSIONS.auditor.includes("purchase_orders:create"), false);
+  // Purchasing=none para campo/despacho: NÃO recebem purchase_orders (nem read).
+  assert.equal(ROLE_PERMISSIONS.field_technician.includes("purchase_orders:read"), false);
+  assert.equal(ROLE_PERMISSIONS.field_technician.includes("reports:read"), true);
+  assert.equal(ROLE_PERMISSIONS.field_dispatcher.includes("purchase_orders:read"), false);
+  assert.equal(ROLE_PERMISSIONS.technician.includes("purchase_orders:read"), false);
 });
 
 test("bloqueia criacao de usuario com papel invalido", () => {

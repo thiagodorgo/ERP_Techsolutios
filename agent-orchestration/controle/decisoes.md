@@ -754,3 +754,18 @@ Fecha o cluster P-Ω3F6-STATUS-BYPASS + TERMINAL-GUARD + ZERO-ATOMICIDADE (pré-
   `--color-chart-neutral: #94a3b8`. O `<TrendChart>` consome via a prop `color` da série (escape-hatch de fidelidade).
 - Efeito: preserva a cor do protótipo E mantém tokens (nem hex solto no componente, nem alarme destrutivo em data-viz).
   Resolve o achado ALTA sem consolidação silenciosa (A2).
+
+## D-SCALE-RBAC-PURCHASING (2026-07-21, PR-SCALE-1) — mapeamento "request" → purchase_orders:create
+
+- **Contexto:** o dono autorizou "adicionar purchase_orders/reports ao catálogo e conceder CONFORME A MATRIZ". O RBAC_MATRIX.md
+  linha 48 "Purchasing" dá: manager=request/approve-policy · operator=**request** · finance=budget-check · inventory=stock-driven-request ·
+  field_technician=**none** · auditor=**read** · support=**support-view**.
+- **Conflito resolvido (não em silêncio — §A2):** o plano inicial espelhou `inventory_items:*` (create só manager/inventory), o que
+  SUB-concedia vs a matriz. A junta (validador-mestre ALTA) pegou. Como o dono disse "conforme a matriz", a MATRIZ vence o espelho.
+- **Decisão:** o catálogo tem só `purchase_orders:read` e `:create` (sem perm dedicada de requisição×aprovação). Mapeamento fiel:
+  - **create** → manager, operator, inventory (todos com capacidade "request"/submeter) + admins automáticos. ("request" = criar/submeter
+    a requisição de compra, coerente com o mesmo "request" de Inventory movements/Workflow na matriz.)
+  - **read** → manager, operator, finance(budget-check), inventory, auditor(read), support(support-view), viewer(read-only) + admins.
+  - **none** → field_technician, field_dispatcher, technician (Purchasing=none p/ campo/despacho).
+- **Evolução futura:** quando o domínio separar REQUISIÇÃO (operator submete) de PEDIDO/APROVAÇÃO (manager aprova), criar perms
+  dedicadas (`purchase_orders:request` × `:approve`) e refinar; até lá, "request"→create é a leitura fiel do v1.
