@@ -53,6 +53,9 @@ export const PERMISSION_CATALOG = [
   "work_order_financials:read",
   "financial_accounts:read",
   "financial_titles:read",
+  // Ω4C PR-03 (D-Ω4C-EXTRATO-RBAC) — Extrato do profissional (folha do profissional, razão distinta da
+  // tesouraria do tenant). Distribuição espelha financial_titles:* (read amplo; create/update finance+admins).
+  "professional_statements:read",
   "financial_entries:read",
   "cheques:read",
   "service_catalog:create",
@@ -67,6 +70,7 @@ export const PERMISSION_CATALOG = [
   "work_order_financials:create",
   "financial_accounts:create",
   "financial_titles:create",
+  "professional_statements:create",
   "financial_entries:create",
   "cheques:create",
   "service_catalog:update",
@@ -82,6 +86,7 @@ export const PERMISSION_CATALOG = [
   "work_order_financials:update",
   "financial_accounts:update",
   "financial_titles:update",
+  "professional_statements:update",
   "financial_entries:update",
   // Ω4-7 — Cheque (instrumento de pagamento). read {…,finance,manager,auditor,viewer}; create/update {…,finance}.
   // As transições que MOVEM caixa (/clear,/bounce) exigem também financial_entries:create (gate na rota).
@@ -255,6 +260,8 @@ export const ROLE_PERMISSIONS = {
     "work_order_financials:read",
     "financial_accounts:read",
     "financial_titles:read",
+    // Ω4C PR-03 — manager LÊ o Extrato do profissional (não escreve; write = finance+admins).
+    "professional_statements:read",
     "financial_entries:read",
     "cheques:read",
     // Ω4-6 — manager LÊ o fechamento de período (não fecha/reabre).
@@ -444,6 +451,8 @@ export const ROLE_PERMISSIONS = {
     "work_order_financials:read",
     "financial_accounts:read",
     "financial_titles:read",
+    // Ω4C PR-03 — viewer LÊ o Extrato do profissional (read-only).
+    "professional_statements:read",
     "financial_entries:read",
     "cheques:read",
     // Ω4-6 — viewer LÊ o fechamento de período (read-only).
@@ -584,6 +593,8 @@ export const ROLE_PERMISSIONS = {
     "work_order_financials:read",
     "financial_accounts:read",
     "financial_titles:read",
+    // Ω4C PR-03 — a tesouraria LÊ e ESCREVE o Extrato do profissional (folha do profissional).
+    "professional_statements:read",
     "financial_entries:read",
     "cheques:read",
     // Ω4-6 — a tesouraria LÊ e FECHA a competência; reopen (desfazer o controle) fica só com admins.
@@ -593,6 +604,7 @@ export const ROLE_PERMISSIONS = {
     "work_order_financials:create",
     "financial_accounts:create",
     "financial_titles:create",
+    "professional_statements:create",
     "financial_entries:create",
     "cheques:create",
     "service_quotes:update",
@@ -600,6 +612,7 @@ export const ROLE_PERMISSIONS = {
     "work_order_financials:update",
     "financial_accounts:update",
     "financial_titles:update",
+    "professional_statements:update",
     "financial_entries:update",
     "cheques:update",
   ],
@@ -688,6 +701,8 @@ export const ROLE_PERMISSIONS = {
     "work_order_financials:read",
     "financial_accounts:read",
     "financial_titles:read",
+    // Ω4C PR-03 — auditor LÊ o Extrato do profissional (read-only).
+    "professional_statements:read",
     "financial_entries:read",
     "cheques:read",
     // Ω4-6 — auditor LÊ o fechamento de período (read-only).

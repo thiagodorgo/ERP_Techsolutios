@@ -67,6 +67,7 @@ const expectedPermissionCatalog = [
   "work_order_financials:read",
   "financial_accounts:read",
   "financial_titles:read",
+  "professional_statements:read",
   "financial_entries:read",
   "cheques:read",
   "service_catalog:create",
@@ -81,6 +82,7 @@ const expectedPermissionCatalog = [
   "work_order_financials:create",
   "financial_accounts:create",
   "financial_titles:create",
+  "professional_statements:create",
   "financial_entries:create",
   "cheques:create",
   "service_catalog:update",
@@ -96,6 +98,7 @@ const expectedPermissionCatalog = [
   "work_order_financials:update",
   "financial_accounts:update",
   "financial_titles:update",
+  "professional_statements:update",
   "financial_entries:update",
   "cheques:update",
   "financial_period:read",
@@ -272,6 +275,26 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   assert.equal(ROLE_PERMISSIONS.viewer.includes("financial_period:read"), true);
   assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("financial_period:reopen"), true);
   assert.equal(ROLE_PERMISSIONS.operator.includes("financial_period:read"), false);
+
+  // Ω4C PR-03 (D-Ω4C-EXTRATO-RBAC) — Extrato do profissional: read amplo (finance+manager+auditor+viewer+admins);
+  // create/update SÓ tesouraria+admins. Folha sensível → NÃO para operator/inventory/field/technician/support.
+  for (const role of ["finance", "manager", "auditor", "viewer", "tenant_admin"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("professional_statements:read"), true);
+  }
+  assert.equal(ROLE_PERMISSIONS.super_admin.includes("professional_statements:read"), true);
+  assert.equal(ROLE_PERMISSIONS.finance.includes("professional_statements:create"), true);
+  assert.equal(ROLE_PERMISSIONS.finance.includes("professional_statements:update"), true);
+  assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("professional_statements:create"), true);
+  assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("professional_statements:update"), true);
+  // read amplo, mas write SÓ finance+admins: manager/auditor/viewer NÃO escrevem.
+  for (const role of ["manager", "auditor", "viewer"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("professional_statements:create"), false);
+    assert.equal(ROLE_PERMISSIONS[role].includes("professional_statements:update"), false);
+  }
+  // Folha do profissional é sensível → operator/inventory/field_technician/support não veem (nem read).
+  for (const role of ["operator", "inventory", "field_technician", "field_dispatcher", "technician", "support"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("professional_statements:read"), false);
+  }
 
   // PR-SCALE-1 — Purchasing + Reports (autorização do dono; RBAC_MATRIX "Purchasing"/"Reports and analytics").
   // reports:read é concedido a TODOS os papéis não-admin (a matriz dá escopo de relatório a todos).

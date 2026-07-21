@@ -1152,6 +1152,97 @@ if (!connectionString) {
       );
       assert.equal(tenantCSourceTitle?.source_type, "fuel_log", "tenant C source title stays visible + untouched in-tenant");
 
+      // Ω4C PR-03 (RN-EXT-08) — professional_statement_entries (Extrato do profissional) com 3 tenants EFÊMEROS
+      // (A, B, C). A parcela referencia um operator_profile via FK composta (tenant_id, operator_profile_id) →
+      // 1 profissional por tenant (A/B reusam o user já criado; C ganha branch+user+profile próprios). Prova:
+      // invisível sem contexto + cross-tenant updateMany count=0 + visível/intocado in-tenant. RLS ENABLE/FORCE +
+      // policy da migration 20260823000000; tenant_id 1º de todo índice.
+      const createOperatorProfile = (tx: typeof client, tenantId: string, userId: string) => tx.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO operator_profiles (tenant_id, user_id) VALUES (${tenantId}::uuid, ${userId}::uuid)
+        RETURNING id
+      `;
+      const operatorProfileAId = await withTenantRls(client, tenantA.id, async (tx) => {
+        const [row] = await createOperatorProfile(tx as typeof client, tenantA.id, tenantAData.userId);
+        return row.id;
+      });
+      const operatorProfileBId = await withTenantRls(client, tenantB.id, async (tx) => {
+        const [row] = await createOperatorProfile(tx as typeof client, tenantB.id, tenantBData.userId);
+        return row.id;
+      });
+      const tenantCProfessional = await withTenantRls(client, tenantC.id, async (tx) => {
+        const branch = await tx.branch.create({
+          data: { tenant_id: tenantC.id, name: "RLS Branch C", code: `RLS-C-${suffix}` },
+        });
+        const user = await tx.user.create({
+          data: { tenant_id: tenantC.id, branch_id: branch.id, name: "RLS User C", email: `rls-c-${suffix}@example.com` },
+        });
+        const [profile] = await createOperatorProfile(tx as typeof client, tenantC.id, user.id);
+        return { operatorProfileId: profile.id };
+      });
+
+      const insertStatementEntry = (tx: typeof client, tenantId: string, operatorProfileId: string) => tx.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO professional_statement_entries (
+          tenant_id, operator_profile_id, group_id, entry_type, direction, description,
+          amount, currency, installment_number, installment_total, due_date, competencia, status
+        )
+        VALUES (
+          ${tenantId}::uuid, ${operatorProfileId}::uuid, gen_random_uuid(), 'adjustment', 'debit', 'RLS ajuste',
+          100.00, 'BRL', 1, 1, now(), '2026-07', 'pending'
+        )
+        RETURNING id
+      `;
+      const statementEntryAId = await withTenantRls(client, tenantA.id, async (tx) => {
+        const [row] = await insertStatementEntry(tx as typeof client, tenantA.id, operatorProfileAId);
+        return row.id;
+      });
+      const statementEntryBId = await withTenantRls(client, tenantB.id, async (tx) => {
+        const [row] = await insertStatementEntry(tx as typeof client, tenantB.id, operatorProfileBId);
+        return row.id;
+      });
+      const statementEntryCId = await withTenantRls(client, tenantC.id, async (tx) => {
+        const [row] = await insertStatementEntry(tx as typeof client, tenantC.id, tenantCProfessional.operatorProfileId);
+        return row.id;
+      });
+
+      const statementEntriesWithoutContext = await client.professionalStatementEntry.findMany({
+        where: { id: { in: [statementEntryAId, statementEntryBId, statementEntryCId] } },
+      });
+      assert.deepEqual(
+        statementEntriesWithoutContext.map((entry) => entry.id),
+        [],
+        "tenant-scoped professional statement entries must not be visible without app.current_tenant_id",
+      );
+
+      const tenantAStatementView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.professionalStatementEntry.findMany({
+          where: { id: { in: [statementEntryAId, statementEntryBId, statementEntryCId] } },
+        });
+        const crossTenantUpdate = await tx.professionalStatementEntry.updateMany({
+          where: { id: { in: [statementEntryBId, statementEntryCId] } },
+          data: { status: "settled" },
+        });
+        return { visibleIds: visible.map((entry) => entry.id), crossUpdatedRows: crossTenantUpdate.count };
+      });
+      assert.deepEqual(
+        tenantAStatementView.visibleIds,
+        [statementEntryAId],
+        "tenant A must only see its own professional statement entry (not tenant B/C)",
+      );
+      assert.equal(
+        tenantAStatementView.crossUpdatedRows,
+        0,
+        "tenant A must not update tenant B/C professional statement entries",
+      );
+
+      const tenantBStatementEntry = await withTenantRls(client, tenantB.id, (tx) =>
+        tx.professionalStatementEntry.findUnique({ where: { id: statementEntryBId } }),
+      );
+      assert.equal(tenantBStatementEntry?.status, "pending", "tenant B statement entry stays visible + untouched in-tenant");
+      const tenantCStatementEntry = await withTenantRls(client, tenantC.id, (tx) =>
+        tx.professionalStatementEntry.findUnique({ where: { id: statementEntryCId } }),
+      );
+      assert.equal(tenantCStatementEntry?.status, "pending", "tenant C statement entry stays visible + untouched in-tenant");
+
       const globalTenants = await client.tenant.findMany({
         where: {
           id: {
@@ -1598,6 +1689,18 @@ if (!connectionString) {
     } finally {
       for (const tenantId of tenantIds) {
         await withTenantRls(client, tenantId, async (tx) => {
+          // Ω4C PR-03 — parcelas do extrato ANTES dos perfis (FK operator_profile é Restrict) e dos perfis ANTES
+          // dos users (o cascade user→operator_profile falharia com parcela referenciando o perfil).
+          await tx.professionalStatementEntry.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          await tx.operatorProfile.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
           // Ω4C PR-02 — títulos lançados por origem (cleanup antes do tenant; FK ao tenant é Restrict).
           await tx.financialTitle.deleteMany({
             where: {

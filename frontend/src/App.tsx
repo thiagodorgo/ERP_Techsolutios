@@ -72,6 +72,7 @@ const ManutencaoPage = lazy(() => import("./modules/fleet/maintenance/pages/Manu
 const MultasPage = lazy(() => import("./modules/fleet/fines/pages/MultasPage").then((m) => ({ default: m.MultasPage })));
 const SegurosPage = lazy(() => import("./modules/fleet/insurance/pages/SegurosPage").then((m) => ({ default: m.SegurosPage })));
 const DanosPage = lazy(() => import("./modules/fleet/damages/pages/DanosPage").then((m) => ({ default: m.DanosPage })));
+const ExtratoProfissionalPage = lazy(() => import("./modules/fleet/statement/pages/ExtratoProfissionalPage").then((m) => ({ default: m.ExtratoProfissionalPage })));
 const EstoquePage = lazy(() => import("./modules/inventory/pages/EstoquePage").then((m) => ({ default: m.EstoquePage })));
 const EstoqueDetailPage = lazy(() => import("./modules/inventory/pages/EstoqueDetailPage").then((m) => ({ default: m.EstoqueDetailPage })));
 const PedidosPage = lazy(() => import("./modules/purchase-orders/pages/PedidosPage").then((m) => ({ default: m.PedidosPage })));
@@ -391,6 +392,22 @@ export function App() {
               element={
                 <PermissionGuard permissions={["damages:read"]}>
                   <DanosPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/fleet/statement"
+              element={
+                <PermissionGuard permissions={["professional_statements:read"]}>
+                  <ExtratoProfissionalPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/fleet/statement/:operatorProfileId"
+              element={
+                <PermissionGuard permissions={["professional_statements:read"]}>
+                  <ExtratoProfissionalPage />
                 </PermissionGuard>
               }
             />

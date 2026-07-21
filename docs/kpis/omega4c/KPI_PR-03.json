@@ -1,0 +1,74 @@
+{
+  "pr": "PR-03",
+  "fase": "Fase 1 — Extrato do Profissional (razão financeira)",
+  "snapshot_date": "2026-07-21",
+  "branch": "rodada/omega4c",
+  "tipo": "CRIAR (1 dos 2 CRIAR reais da rodada) — novo módulo professional-statements + model + migração aditiva + permissão nova + tela",
+  "models_novos": [
+    "ProfessionalStatementEntry (razão única do profissional; 1 linha por parcela agrupada por group_id; entry_type damage|fine|remuneration|adjustment; direction debit|credit; status pending|settled|cancelled; source_type/source_id foundation-ready)"
+  ],
+  "migrations": [
+    "20260823000000_add_professional_statements (aditiva up-only; CREATE TABLE + 5 índices tenant_id-1º + FK composta (tenant_id, operator_profile_id)→operator_profiles RESTRICT + índice UNIQUE parcial de idempotência de origem + RLS ENABLE/FORCE/POLICY USING+WITH CHECK; provada up/drop/re-up em erp-postgres pelo dba-guardião — FK cross-tenant 23503, colisão parcial 23505, RLS t/t, irmãs intactas)"
+  ],
+  "endpoints_novos": [
+    "GET /api/v1/professional-statements?operatorProfileId=... (extrato por profissional, saldo+runningBalance derivados, paginação) — professional_statements:read",
+    "GET /api/v1/professional-statements/:groupId — professional_statements:read",
+    "POST /api/v1/professional-statements (AJUSTE manual; direction explícito; parcelas) — professional_statements:create",
+    "PATCH /api/v1/professional-statements/:id (description-only; trava financeira 409) — professional_statements:update",
+    "DELETE /api/v1/professional-statements/:groupId (soft-delete; 409 se parcela settled) — professional_statements:update"
+  ],
+  "permissao_nova": {
+    "chaves": ["professional_statements:read", "professional_statements:create", "professional_statements:update"],
+    "distribuicao": "espelha financial_titles:* (read: super/platform/tenant_admin/finance/manager/auditor/viewer; create+update: super/platform/tenant_admin/finance). SEM acesso: operator/inventory/field_technician/field_dispatcher/technician/support (folha sensível).",
+    "pontos_registrados": ["src/modules/core-saas/permissions/catalog.ts", "tests/core-saas.test.ts (expectedPermissionCatalog, deepEqual sensível a ordem)", "prisma/seed.ts (3 descrições PT-BR)", "RBAC_MATRIX.md (linha Extrato do profissional)"]
+  },
+  "modulos_novos": [
+    "src/modules/professional-statements (9 arquivos, clone de operator-profiles)",
+    "frontend/src/modules/fleet/statement (types/service/adapter/useStatement/ExtratoProfissionalPage/StatementAdjustmentModal)"
+  ],
+  "rns_cobertas": [
+    "RN-EXT-01 (trava de integridade: PATCH financeiro→409 statement_entry_locked; DELETE com parcela settled→409; grupo all-pending→soft-delete atômico em tx) — FORTE, testada",
+    "RN-EXT-02 (saldo derivado server-side Σcredit−Σdebit + runningBalance; NUNCA persistido/fabricado)",
+    "RN-EXT-03 (posse: operatorProfileId obrigatório, 404 cross-tenant)",
+    "RN-EXT-04 (AJUSTE exige direction explícito; cada parcela >0 senão 422 installment_amount_too_small)",
+    "RN-EXT-05 (§2.8/LGPD: DTO sem tenant_id/source_id/client_action_id/CNH — só professionalName label)",
+    "RN-EXT-06 (RBAC: papel sem permissão → 403; backend autoridade, provado 12/12)",
+    "RN-EXT-07 (auditoria allowlist {operatorProfileId, entryType, direction, installmentTotal, amount} — sem PII/segredo)",
+    "RN-EXT-08 (RLS 3-tenant: tenants A/B/C efêmeros, invisível sem contexto, updateMany cross=0)"
+  ],
+  "rns_total_pr": 10,
+  "cobertura_testes": {
+    "backend": "tests/professional-statements.test.ts 12/12 (AJUSTE 201, saldo, trava RN-EXT-01, cross-tenant 404, §2.8, RBAC 403) + tests/core-saas.test.ts 26/26 (catálogo novo) + rls-tenant-isolation 3-tenant (DB-gated, provada pelo dba-guardião)",
+    "frontend": "frontend/tests/extrato-profissional.test.tsx 9/9 (render/saldo±/rótulos PT-BR/empty/gating/§2.8/trava 409)"
+  },
+  "d_records": [
+    "D-Ω4C-EXTRATO (decisão-mãe, PLANO §2, ratificada)",
+    "D-Ω4C-EXTRATO-MODEL (tabela única, 1 linha/parcela agrupada por group_id)",
+    "D-Ω4C-EXTRATO-DIRECTION (debit=desconto reduz saldo; credit=provento aumenta; saldo=Σcredit−Σdebit derivado)",
+    "D-Ω4C-EXTRATO-TRAVA (RN-EXT-01: lançamento com parcela é fato travado; só description editável; reversão só por AJUSTE compensatório)",
+    "D-Ω4C-EXTRATO-RBAC (namespace próprio professional_statements:*, não reusa financial_titles)",
+    "D-Ω4C-EXTRATO-ROUTE (/fleet/statement — irmãos de frota já sob /fleet; /controle é rótulo AutEM)",
+    "D-Ω4C-EXTRATO-CREATE-SCOPE (PR-03 = razão + AJUSTE + trava + tela básica; integrações damage/fine/remuneration POSTam depois)"
+  ],
+  "divergencias_vs_autem": [
+    "Impressão do extrato (com/sem parágrafo de ciência) e export Excel FORA do PR-03 (parada honesta D-007)",
+    "Liquidação em folha (settle/net-pay) reservada a PR-14/15 — PR-03 entrega o campo settled + guard como foundation",
+    "Filtro de período por data: backend expõe from/to (foundation), tela básica filtra client-side por janela (padrão dos irmãos de frota)",
+    "Self-service mobile (profissional vê o próprio extrato) deferido p/ Ω5"
+  ],
+  "junta": {
+    "omega4c-avaliador": "APROVADO (4 cond BAIXA)",
+    "agente-dba-guardiao": "APROVADO (0 cond)",
+    "coordenador-de-acessos": "APROVADO (1 cond BAIXA informativa)",
+    "veredito": "UNÂNIME 3/3 APROVADO"
+  },
+  "kpi_repo_wide": {
+    "backend": "1324->1336 (+12)",
+    "frontend_smoke": "694->703 (+9)",
+    "blocks": "73->74"
+  },
+  "coexistencia": "operator-profiles/financial-titles/faturamento OS INTOCADOS (131/131 nos módulos financeiros/OS/operator-profiles); nova FK RESTRICT em operator_profiles; RLS das irmãs t/t após a migração",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

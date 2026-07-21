@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-21",
-  "version": "OMEGA4C-PR-02",
+  "version": "OMEGA4C-PR-03",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω4C PR-02 — Contas a Pagar por origem (financial-titles ESTENDIDO)",
-    "title": "Ω4C PR-02: integração origem→título de contas a pagar (source_type/source_id, lançar/retirar/badge)",
+    "block": "Ω4C PR-03 — Extrato do Profissional (razão financeira; CRIAR)",
+    "title": "Ω4C PR-03: razão financeira do profissional (ProfessionalStatementEntry, trava RN-EXT-01, saldo derivado, permissão nova)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω4C PR-02 — CONTAS A PAGAR POR ORIGEM. ESTENDE src/modules/financial-titles com par GENÉRICO source_type/source_id (coexiste com work_order_id/service_quote_id INTOCADOS). Migração ADITIVA 20260822000000_add_financial_title_source: 2 colunas nullable + índice UNIQUE parcial (tenant_id, source_type, source_id, direction) WHERE deleted_at IS NULL AND source_id IS NOT NULL (idempotência por fonte; espelha o de OS), RLS herdada — provada up/down/re-up em erp-postgres pelo dba-guardião, coexistência do índice de OS confirmada. Backend: createForSource/findActiveBySource/removeForSource (reusa soft-delete + chokepoint assertPeriodOpen) + route-factory createPayableSourceRoutes({sourceType, resolveOwnership via service.get() do módulo-fonte → 404 cross-tenant}) montado em fuel-logs/maintenance-orders/insurance-policies → POST/DELETE/GET /:module/:id/payable, perm financial_titles:create/update/read (SEM permissão nova). Frontend: PayableToggle (checkbox no create + badge 'Lançado' + Lançar/Retirar no edit, DERIVADO de findActiveBySource) em Abastecimento/Seguros/Manutenção. Manutenção só toggle de edição (D-007: cadastro sem custo, amount>0). Multa fica p/ PR-09 (condutor responsável). RN-FIN-ORIGEM-01..07: posse 404 / idempotência 409 / chokepoint 422 / retirar=soft-delete reversível / badge derivado / §2.8 / coexistência OS. Junta UNÂNIME 3/3: omega4c-avaliador APROVADO_CONDICIONADO (KPI sanada no PR) + agente-dba-guardião APROVADO + coordenador-de-acessos APROVADO. Zero regressão faturamento OS (16/16 + 24/24). Sem provider/SKU novo.",
-    "status_label": "Ω4C PR-02: contas a pagar por origem (source_type/source_id, lançar/retirar/badge, migração aditiva provada); junta 3/3 unânime; backend 1307->1324, smoke 682->694, blocks 72->73"
+    "summary": "Ω4C PR-03 — EXTRATO DO PROFISSIONAL (1 dos 2 CRIAR reais da rodada). Novo módulo src/modules/professional-statements/ (9 arquivos, clone de operator-profiles) + model ProfessionalStatementEntry (razão única do profissional: 1 linha por parcela agrupada por group_id; entry_type damage|fine|remuneration|adjustment; direction debit|credit; status pending|settled|cancelled; source_type/source_id foundation-ready). Migração ADITIVA up-only 20260823000000_add_professional_statements: CREATE TABLE + 5 índices tenant_id-1º + FK composta (tenant_id, operator_profile_id)→operator_profiles RESTRICT + índice UNIQUE parcial de idempotência + RLS ENABLE/FORCE/POLICY USING+WITH CHECK — provada up/drop/re-up em erp-postgres pelo dba-guardião (FK cross-tenant 23503, colisão parcial 23505, RLS t/t, irmãs intactas). TRAVA RN-EXT-01 (alerta amarelo AutEM): PATCH de campo financeiro em lançamento com parcelas → 409 statement_entry_locked (só description editável); DELETE soft só se NENHUMA parcela settled; grupo all-pending → soft-delete atômico em withTenantRls tx. Saldo DERIVADO server-side (Σcredit−Σdebit + runningBalance; NUNCA persistido). PERMISSÃO NOVA professional_statements:read/create/update (namespace próprio, folha do profissional ≠ tesouraria; espelha financial_titles; SEM acesso p/ operator/inventory/field/support) registrada nos 4 pontos (catalog.ts + tests/core-saas.test.ts expectedPermissionCatalog byte-idêntico + seed.ts + RBAC_MATRIX.md). Endpoints GET extrato por profissional (saldo derivado, 404 cross-tenant) + POST AJUSTE (direction explícito, parcela>0 senão 422) + PATCH description-only + DELETE soft. Frontend: frontend/src/modules/fleet/statement/ tela ExtratoProfissionalPage (dense-list Data/Tipo/Descrição/Parcela/Valor±/Saldo/Situação; saldo semântico; Novo ajuste gated; §7 completo; §2.8 nunca CNH) sob /fleet/statement. D-007: impressão/Excel/liquidação-em-folha deferidos (PR-14/15), filtro de período foundation from/to. Junta UNÂNIME 3/3: omega4c-avaliador + agente-dba-guardião (0 cond) + coordenador-de-acessos. Zero regressão (131/131 financeiros/OS/operator-profiles). Sem provider/SKU novo.",
+    "status_label": "Ω4C PR-03: extrato do profissional (razão, trava RN-EXT-01, saldo derivado, permissão nova, migração aditiva provada); junta 3/3 unânime; backend 1324->1336, smoke 694->703, blocks 73->74"
   },
   "metrics": {
     "flutter_tests": {
@@ -21,16 +21,16 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 694,
-      "total": 694,
-      "display": "694/694",
-      "note": "+12 (payable-toggle: render/create-checkbox/badge/Lancar-Retirar/gating/§3). Ω4C PR-02 contas a pagar por origem (PayableToggle em Abastecimento/Seguros/Manutencao). Sobre 682."
+      "value": 703,
+      "total": 703,
+      "display": "703/703",
+      "note": "+9 (extrato-profissional: render/saldo±/rotulos-PT-BR/empty/gating/§2.8/trava-409). Ω4C PR-03 extrato do profissional (ExtratoProfissionalPage sob /fleet/statement). Sobre 694."
     },
     "backend_tests": {
-      "value": 1324,
-      "total": 1330,
-      "display": "1324/1330",
-      "note": "+17 (tests/financial-title-source.test.ts: posse-404/idempotencia-409/chokepoint-422/retirar-relancar/§2.8/rbac-403). Ω4C PR-02. Suite memoria (CI) 1324 pass/6 skip. Migracao 20260822000000_add_financial_title_source provada up/down/re-up + coexistencia do indice de OS pelo dba-guardiao; faturamento OS 16/16 + 24/24 sem regressao. Sobre 1307/1313. Local: 77 DB/JWT pre-existentes."
+      "value": 1336,
+      "total": 1342,
+      "display": "1336/1342",
+      "note": "+12 (tests/professional-statements.test.ts: AJUSTE-201/saldo-derivado/trava-RN-EXT-01-409/cross-tenant-404/§2.8-sem-CNH/RBAC-403). Ω4C PR-03. Suite memoria (CI) 1336 pass/6 skip. core-saas 26/26 (catalogo com permissao nova professional_statements:*). Migracao 20260823000000_add_professional_statements provada up/drop/re-up + FK cross-tenant 23503 + indice parcial 23505 + RLS t/t pelo dba-guardiao; zero regressao (131/131 financeiros/OS/operator-profiles). Sobre 1324/1330. Local: 77 DB/JWT pre-existentes."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 73,
-      "display": "73",
-      "note": "Ω4C PR-02 (contas a pagar por origem) = feature entregue → +1 sobre 72 (Ω4C PR-01 anexos). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
+      "value": 74,
+      "display": "74",
+      "note": "Ω4C PR-03 (extrato do profissional) = feature entregue → +1 sobre 73 (Ω4C PR-02 contas a pagar por origem). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,
