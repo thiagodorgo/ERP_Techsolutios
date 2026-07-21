@@ -26,6 +26,19 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-SCALE saude plataforma honesta">
+          <h2>WS-SCALE · Saúde do Sistema (plataforma) — parada honesta</h2>
+          <p>
+            <strong>Correção de integridade (2026-07-20):</strong> a tela de <strong>Saúde do Sistema</strong> mostrava
+            telemetria de infraestrutura <strong>toda inventada</strong> (latência 128 ms, 99,98% de uptime, "Redis Degradado" e
+            mais 5 serviços). Não existe camada de <strong>observabilidade</strong> medindo isso ainda, então a tela foi
+            reescrita como uma <strong>parada honesta</strong> ("Monitoramento em preparação"), <strong>sem número inventado</strong>,
+            explicando que os indicadores de infra chegam com a ativação da infraestrutura cloud. Também corrigimos o título de
+            "Health do Sistema" para <strong>"Saúde do Sistema"</strong> (interface sem termo técnico em inglês).
+            <strong>smoke 641→643</strong> (+2). Fecha o grupo de telas de Plataforma do WS-SCALE (Visão Geral já usa dado real;
+            monitoramento real fica para a trilha de infra).
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-SCALE plataforma real">
           <h2>WS-SCALE · Visão Geral da Plataforma — números reais (isolamento provado)</h2>
           <p>
