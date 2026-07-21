@@ -6,6 +6,30 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-21 - WS-SCALE-8TELAS PR-SCALE-5c (platform tenant detail) Detalhe da Organizacao real
+
+### Resultado
+
+- **Detalhe da Organizacao ligado a endpoint REAL por org.** Antes fabricava (nome fixo "Techsolutions BH", STATS/CONTRACTED/
+  HEALTH/USERS hardcoded) e **IGNORAVA o `:tenantId`** (mesmo mock p/ qualquer org).
+- **BACKEND novo:** `GET /api/v1/platform/tenants/:tenantId/detail` → `{id,name,status,createdAt,moduleCount,modules[],users[]}`.
+  Tenant por id + **usuarios via `listUsersForTenant` (withTenantRls do proprio tenant → isolamento por construcao)** + modulos do
+  catalogo; gated **platform-only**; `roleLabel` PT-BR na fronteira (§3); **404 honesto** p/ org inexistente; persistence-aware;
+  DTO §2.8 SEM mrr/uptime/health.
+- **FRONTEND:** le `useParams().tenantId`, consome via service+hook+adapter (clone do overview); header nome/status/criada em +
+  stats reais (usuarios / modulos habilitados = `filter(enabled)`) + secoes Modulos e Usuarios reais; **MRR/uptime/saude OMITIDOS**
+  (selo §7); **§3 "Organizacao" nunca "Tenant"**; id nunca exibido (§2.8); estados §7 (loading / 403 / **404 "Organizacao nao
+  encontrada"** / fallback).
+- Junta BACKEND: **coordenador-de-acessos APROVADO** (isolamento + §2.8 + PII by-design provados) + **analizador APROVADO**. Junta
+  FRONTEND: **analizador + cognicao-visual + coordenador-de-acessos APROVADO**. So BAIXA (moduleCount→filter sanado). **ZERO migracao.**
+
+### KPIs
+
+- `backend_tests` **1282 -> 1289** (+7: tests/platform-tenant-detail.test.ts; suite memoria 1295 testes 1289 pass 0 fail 6 skip).
+- `frontend_smoke_tests` **643 -> 650** (+7: platform-tenant-detail smoke).
+- `blocks_completed` **67 -> 68** (+1 agregado-feature real de detalhe de org).
+- `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88% — **INALTERADOS**. Backfill #255: `pr`/`merge_commit`/`approved_head` = 0e6a741.
+
 ## 2026-07-20 - WS-SCALE-8TELAS PR-SCALE-5b (platform Health) Saude do Sistema = parada honesta
 
 ### Resultado
