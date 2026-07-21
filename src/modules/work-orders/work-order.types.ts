@@ -95,6 +95,9 @@ export type WorkOrder = {
   readonly teamId?: string;
   readonly serviceCatalogId?: string;
   readonly scheduledFor?: Date;
+  // M-7 (J-MAPAS-8 · SLA real do mapa) — prazo-alvo do SLA da OS. undefined enquanto a OS não tem prazo.
+  // Livre como scheduledFor (a OS pode nascer já vencida); alimenta a fila/heatmap do Mapa Operacional.
+  readonly slaDueAt?: Date;
   readonly startedAt?: Date;
   readonly arrivedAt?: Date;
   readonly completedAt?: Date;
@@ -233,6 +236,8 @@ export type UpdateWorkOrderInput = Partial<
     | "priority"
     | "checklistId"
     | "scheduledFor"
+    // M-7 (J-MAPAS-8) — prazo de SLA editável pela trilha de update padrão (espelho de scheduledFor).
+    | "slaDueAt"
     // Ω3F-7a — km persistida pela mesma trilha de update (só os campos fornecidos; compactRecord/
     // definedFields descartam undefined). setMileage é o ÚNICO caminho que preenche estes campos.
     | "mileageStart"

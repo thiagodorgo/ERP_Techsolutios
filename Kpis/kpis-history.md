@@ -6,6 +6,29 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-21 - M-7 SLA real PR-A (migracao + backend) sla_due_at aditivo
+
+### Resultado
+
+- **DONO AUTORIZOU** a migração aditiva `sla_due_at` (up/down via dba-guardião). Plano J-MAPAS-8 (2 PRs: **PR-A** migração+backend,
+  depois **PR-B** frontend countdown).
+- **MIGRAÇÃO `20260817000000_add_sla_due_at`:** `ALTER TABLE work_orders ADD COLUMN sla_due_at TIMESTAMPTZ(6)` — **aditiva/nullable**,
+  sem backfill, sem índice, **RLS HERDADA** (coluna nova não re-policy). **dba-guardião PROVOU up/down/re-up no Postgres vivo**
+  (17 linhas + data_md5 intactos em todo o ciclo, RLS force+policy `work_orders_tenant_isolation` preservadas, idempotente).
+- **BACKEND:** `slaDueAt` setável no create/update (reusa `parseOptionalDate` → 400 `invalid_date`; **SEM regra de futuro/campo-
+  cruzado** — OS pode nascer vencida, evita fabricação) → prisma repo → **`toWorkOrderListDto` + `toWorkOrderDto` expõem
+  `slaDueAt: string|null`** (ISO — a CHAVE que alimenta o Mapa). §2.8 dado funcional, `changedFields` só a chave; **404 cross-tenant
+  provado**; nenhuma permissão nova (`work_orders:create/update`).
+- Junta: **agente-dba-guardião APROVADO** (migração provada) + **analizador APROVADO** + **coordenador-de-acessos APROVADO**.
+  Ata `J-MAPAS-8-sla-real.md`.
+
+### KPIs
+
+- `backend_tests` **1289 -> 1296** (+7: tests/work-order-sla.test.ts; suíte memória 1302 testes 1296 pass 0 fail 6 skip).
+- `blocks_completed` **69 -> 70** (+1 bloco-feature backend do M-7).
+- `frontend_smoke_tests` **650** (inalterado — PR-A backend-only; o countdown honesto é o PR-B).
+- `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88% — **INALTERADOS**. Backfill #257: `pr`/`merge_commit`/`approved_head` = 0450ae9.
+
 ## 2026-07-21 - PR-SCALE-1 (RBAC) purchase_orders/reports no catalogo + gating dos mock shells
 
 ### Resultado
