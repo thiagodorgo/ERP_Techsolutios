@@ -21,7 +21,8 @@ DEEP=0
 [ "${1:-}" = "--deep" ] && DEEP=1
 
 echo "== post-merge-cleanup =="
-before=$(du -sh . 2>/dev/null | cut -f1 || echo "?")
+# Só o tamanho do .git (rápido). NUNCA `du -sh .` — varrer node_modules trava em disco lento/Windows.
+before=$(du -sh .git 2>/dev/null | cut -f1 || echo "?")
 removed=()
 
 rm_if() { # rm_if <path> — remove se existir e registra
@@ -43,8 +44,8 @@ if [ "$DEEP" = "1" ]; then
   rm_if node_modules/.cache
 fi
 
-# 2) Branches locais já mergeadas na main (nunca a atual nem a própria main)
-git fetch --quiet --prune origin 2>/dev/null || true
+# 2) Branches locais já mergeadas na main (nunca a atual nem a própria main).
+# Sem `git fetch` aqui (rede pode travar); `git remote prune` no passo 3 basta.
 merged=$(git branch --merged main 2>/dev/null | grep -vE '^\*|(^|[[:space:]])main$' | tr -d ' ' | grep -v '^$' || true)
 if [ -n "$merged" ]; then
   echo "$merged" | while IFS= read -r b; do
@@ -58,7 +59,7 @@ fi
 git remote prune origin >/dev/null 2>&1 || true
 
 # 4) Relatório
-after=$(du -sh . 2>/dev/null | cut -f1 || echo "?")
+after=$(du -sh .git 2>/dev/null | cut -f1 || echo "?")
 echo "-- removidos: ${removed[*]:-(build artifacts ausentes)}"
-echo "-- tamanho do repo: $before -> $after"
+echo "-- tamanho do .git: $before -> $after"
 echo "== done. (git status para conferir; nada rastreado foi tocado) =="
