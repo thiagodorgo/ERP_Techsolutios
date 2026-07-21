@@ -1,159 +1,260 @@
-import { BarChart3, DollarSign, Server, ShieldCheck, Users, type LucideIcon } from "lucide-react";
+import { Building2, Info, Users, type LucideIcon } from "lucide-react";
 import type { CSSProperties } from "react";
+import { useNavigate } from "react-router-dom";
 
-// Tela "Visão Geral da Plataforma" (platformDashboard). Alvo:
-// screen-refs/web/visao-geral-plataforma.png + ERP Web.dc.html (sc_platformDashboard).
+import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
+import { usePlatformOverview } from "../usePlatformOverview";
+import type { PlatformOverviewData, PlatformOverviewOrg } from "../platform-overview.types";
 
-type Kpi = { icon: LucideIcon; iconBg: string; iconColor: string; risk: string; riskBg: string; riskColor: string; value: string; label: string; sub: string; subColor: string };
-type MrrBar = { label: string; val: string; h: string; color: string; solid: boolean };
-type Activity = { who: string; action: string; tag: string; dot: string; time: string };
-type OrgRow = { name: string; plan: string; users: string; mrr: string; health: string; healthColor: string; dot: string };
+// PR-SCALE-5a — "Visão Geral da Plataforma" (sc platformDashboard). Consome GET /api/v1/platform/overview
+// via usePlatformOverview. D-007: NENHUM número fabricado — KPIs e tabela vêm SÓ do endpoint real. O
+// backend não expõe receita/uptime/atividade, então esses blocos são OMITIDOS honestamente: no lugar do
+// par de cards de MRR/uptime entra um SELO §7 ("Receita e disponibilidade — após a ativação cloud"), e o
+// gráfico de receita + o feed de atividade fabricados foram REMOVIDOS. §2.8: o id da organização só
+// alimenta o link de rota, nunca é exibido. §3: "Organização", nunca "Tenant". Estados §7 tratados antes
+// da composição rica.
 
-const KPIS: Kpi[] = [
-  { icon: Server, iconBg: "#F1F5F9", iconColor: "#334155", risk: "Normal", riskBg: "#ECFDF5", riskColor: "#059669", value: "48", label: "Organizações ativas", sub: "+3 este mês", subColor: "#059669" },
-  { icon: Users, iconBg: "#ECFDF5", iconColor: "#059669", risk: "Saudável", riskBg: "#ECFDF5", riskColor: "#059669", value: "2.184", label: "Usuários totais", sub: "94% ativos agora", subColor: "#059669" },
-  { icon: DollarSign, iconBg: "#F5F3FF", iconColor: "#7C3AED", risk: "+9,2%", riskBg: "#F5F3FF", riskColor: "#7C3AED", value: "R$ 312k", label: "MRR consolidado", sub: "+9,2% vs maio", subColor: "#7C3AED" },
-  { icon: ShieldCheck, iconBg: "#FFFBEB", iconColor: "#D97706", risk: "SLA OK", riskBg: "#ECFDF5", riskColor: "#059669", value: "99,98%", label: "Uptime (30d)", sub: "SLA cumprido", subColor: "#D97706" },
-];
-
-const MRR_BARS: MrrBar[] = [
-  { label: "Dez", val: "260k", h: "83%", color: "#BFDBFE", solid: false },
-  { label: "Jan", val: "276k", h: "88%", color: "#BFDBFE", solid: false },
-  { label: "Fev", val: "285k", h: "91%", color: "#BFDBFE", solid: false },
-  { label: "Mar", val: "271k", h: "87%", color: "#BFDBFE", solid: false },
-  { label: "Abr", val: "296k", h: "95%", color: "#BFDBFE", solid: false },
-  { label: "Mai", val: "305k", h: "98%", color: "#BFDBFE", solid: false },
-  { label: "Jun", val: "312k", h: "100%", color: "#2563EB", solid: true },
-];
-
-const ACTIVITY: Activity[] = [
-  { who: "Techsolutions SP", action: "habilitou o módulo Analytics.", tag: "Info", dot: "#2563EB", time: "há 20 min" },
-  { who: "AgroMax Cooperativa", action: "teve pico de erros 5xx mitigado.", tag: "Alerta", dot: "#DC2626", time: "há 1 h" },
-  { who: "Logística Delta", action: "concluiu onboarding do plano Pro.", tag: "Sucesso", dot: "#059669", time: "há 3 h" },
-  { who: "Plataforma", action: "aplicou atualização de segurança 2026.06.", tag: "Sistema", dot: "#7C3AED", time: "ontem" },
-  { who: "Minas Norte Service", action: "solicitou aumento de limite de usuários.", tag: "Governança", dot: "#D97706", time: "ontem" },
-];
-
-const ORG_ROWS: OrgRow[] = [
-  { name: "Techsolutions SP", plan: "Enterprise", users: "684", mrr: "R$ 92k", health: "Saudável", healthColor: "#059669", dot: "#22C55E" },
-  { name: "AgroMax Cooperativa", plan: "Pro", users: "412", mrr: "R$ 58k", health: "Atenção", healthColor: "#D97706", dot: "#F59E0B" },
-  { name: "Logística Delta", plan: "Pro", users: "268", mrr: "R$ 41k", health: "Saudável", healthColor: "#059669", dot: "#22C55E" },
-  { name: "Minas Norte Service", plan: "Business", users: "196", mrr: "R$ 33k", health: "Saudável", healthColor: "#059669", dot: "#22C55E" },
-  { name: "Field Operations LATAM", plan: "Business", users: "158", mrr: "R$ 27k", health: "Crítico", healthColor: "#DC2626", dot: "#EF4444" },
-];
+const SUBTITLE = "governança e saúde das organizações da plataforma";
 
 const card: CSSProperties = { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 13 };
 const th: CSSProperties = { fontSize: 10.5, fontWeight: 700, color: "#94A3B8", letterSpacing: ".06em" };
 
-export function PlatformOverviewPage() {
+const NUMBER_FORMAT = new Intl.NumberFormat("pt-BR");
+const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Sao_Paulo" });
+
+function formatCount(value: number): string {
+  return NUMBER_FORMAT.format(value);
+}
+
+function formatCreatedAt(iso: string): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? "—" : DATE_FORMAT.format(date);
+}
+
+// Rótulo/cor PT-BR do status REAL da organização (active/suspended/pending do backend). Sem termo técnico
+// na UI (§3); status desconhecido → rótulo neutro (nunca exibe a string crua inglesa).
+type StatusView = { label: string; color: string; dot: string };
+function statusView(status: string): StatusView {
+  switch (status) {
+    case "active":
+      return { label: "Ativa", color: "#059669", dot: "#22C55E" };
+    case "suspended":
+      return { label: "Suspensa", color: "#DC2626", dot: "#EF4444" };
+    case "pending":
+      return { label: "Pendente", color: "#D97706", dot: "#F59E0B" };
+    default:
+      return { label: "Indefinida", color: "#64748B", dot: "#94A3B8" };
+  }
+}
+
+// Cabeçalho comum a todos os estados: título + subtítulo + ação primária (§11 rule 4). "Ver organizações"
+// navega ao console real (/platform/tenants) — ação honesta e funcional, sem botão fantasma.
+function PlatformHeader() {
+  const navigate = useNavigate();
   return (
-    <div style={{ color: "#0F172A" }}>
-      {/* PAGE HEADER */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, paddingBottom: 20, borderBottom: "1px solid #F1F5F9", flexWrap: "wrap", gap: 10 }}>
-        <div>
-          <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-.3px" }}>Visão Geral da Plataforma</div>
-          <div style={{ fontSize: 13, color: "#64748B", marginTop: 3, fontWeight: 500 }}>governança, receita, saúde das organizações e atividade operacional</div>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button style={{ padding: "8px 14px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: "#475569", cursor: "pointer", fontFamily: "inherit" }}>Exportar</button>
-          <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#2563EB", border: "none", borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}><BarChart3 size={14} />Ver relatório</button>
-        </div>
+    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, paddingBottom: 20, borderBottom: "1px solid #F1F5F9", flexWrap: "wrap", gap: 10 }}>
+      <div>
+        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-.3px" }}>Visão Geral da Plataforma</div>
+        <div style={{ fontSize: 13, color: "#64748B", marginTop: 3, fontWeight: 500 }}>{SUBTITLE}</div>
       </div>
-
-      {/* KPIs */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 16 }}>
-        {KPIS.map((k) => (
-          <div key={k.label} style={{ ...card, padding: 18 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 9, background: k.iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: k.iconColor }}>
-                <k.icon size={18} />
-              </div>
-              <span style={{ fontSize: 10.5, fontWeight: 700, padding: "3px 9px", borderRadius: 99, background: k.riskBg, color: k.riskColor }}>{k.risk}</span>
-            </div>
-            <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-.5px", marginBottom: 3 }}>{k.value}</div>
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: "#475569", marginBottom: 5 }}>{k.label}</div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: k.subColor }}>{k.sub}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* MRR + ATIVIDADE */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.65fr 1fr", gap: 14 }}>
-        <div style={{ ...card, padding: 20 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 800 }}>MRR consolidado</div>
-              <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 2 }}>Receita recorrente · últimos 7 meses · R$ mil</div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.4px" }}>R$ 312k</div>
-              <div style={{ fontSize: 11.5, fontWeight: 600, color: "#059669" }}>↑ +9,2% vs mai</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 130, paddingBottom: 24, position: "relative" }}>
-            {MRR_BARS.map((b) => (
-              <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", position: "relative" }}>
-                <div style={{ fontSize: 9.5, fontWeight: 700, color: b.solid ? "#2563EB" : "#94A3B8", marginBottom: 3, whiteSpace: "nowrap" }}>{b.val}</div>
-                <div style={{ width: "100%", background: b.color, borderRadius: "4px 4px 0 0", height: b.h }} />
-                <div style={{ position: "absolute", bottom: -20, fontSize: 10.5, fontWeight: 600, color: b.solid ? "#2563EB" : "#94A3B8" }}>{b.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ ...card, padding: 20, display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <div style={{ fontSize: 14, fontWeight: 800 }}>Atividade da plataforma</div>
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: "#2563EB", cursor: "pointer" }}>Ver todas</span>
-          </div>
-          {ACTIVITY.map((a, i) => (
-            <div key={a.who + a.time} style={{ display: "flex", gap: 11, paddingBottom: 14 }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
-                <div style={{ width: 9, height: 9, borderRadius: "50%", background: a.dot, marginTop: 4 }} />
-                {i < ACTIVITY.length - 1 ? <div style={{ flex: 1, width: 1.5, background: "#E2E8F0", marginTop: 4 }} /> : null}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, color: "#1E293B", lineHeight: 1.4 }}><strong style={{ fontWeight: 700 }}>{a.who}</strong> {a.action}</div>
-                <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3, display: "flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ fontSize: 10.5, fontWeight: 700, color: a.dot }}>{a.tag}</span><span>·</span><span>{a.time}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* SAÚDE DAS ORGANIZAÇÕES */}
-      <div style={{ ...card, overflow: "hidden", marginTop: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid #F1F5F9" }}>
-          <div style={{ fontSize: 14, fontWeight: 800 }}>Saúde das organizações</div>
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: "#2563EB", cursor: "pointer" }}>Ver todas</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", padding: "8px 18px", background: "#F8FAFC", borderBottom: "1px solid #F1F5F9", gap: 10 }}>
-          <span style={{ ...th, flex: 2.2 }}>ORGANIZAÇÃO</span>
-          <span style={{ ...th, flex: 1.2 }}>PLANO</span>
-          <span style={{ ...th, flex: 0.9 }}>USUÁRIOS</span>
-          <span style={{ ...th, flex: 1.3 }}>MRR</span>
-          <span style={{ ...th, flex: 1.2, textAlign: "right" }}>STATUS</span>
-        </div>
-        {ORG_ROWS.map((t, i) => (
-          <div key={t.name} style={{ display: "flex", alignItems: "center", padding: "12px 18px", borderBottom: i === ORG_ROWS.length - 1 ? "none" : "1px solid #F8FAFC", gap: 10 }}>
-            <div style={{ flex: 2.2, display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563EB", flexShrink: 0 }}><Server size={14} /></div>
-              <span style={{ fontSize: 13.5, fontWeight: 700 }}>{t.name}</span>
-            </div>
-            <span style={{ flex: 1.2, fontSize: 13, color: "#475569" }}>{t.plan}</span>
-            <span style={{ flex: 0.9, fontSize: 13, color: "#475569", fontVariantNumeric: "tabular-nums" }}>{t.users}</span>
-            <span style={{ flex: 1.3, fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{t.mrr}</span>
-            <div style={{ flex: 1.2, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6 }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: t.dot, flexShrink: 0 }} />
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: t.healthColor }}>{t.health}</span>
-            </div>
-          </div>
-        ))}
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          onClick={() => navigate("/platform/tenants")}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#2563EB", border: "none", borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}
+        >
+          <Building2 size={14} />
+          Ver organizações
+        </button>
       </div>
     </div>
   );
+}
+
+// Card de KPI REAL (mesmo visual da referência), alimentado só por dado do endpoint.
+type KpiCardProps = { icon: LucideIcon; iconBg: string; iconColor: string; risk: string; riskBg: string; riskColor: string; value: string; label: string; sub: string; subColor: string };
+function KpiCard({ icon: Icon, iconBg, iconColor, risk, riskBg, riskColor, value, label, sub, subColor }: KpiCardProps) {
+  return (
+    <div style={{ ...card, padding: 18 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 9, background: iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: iconColor }}>
+          <Icon size={18} />
+        </div>
+        <span style={{ fontSize: 10.5, fontWeight: 700, padding: "3px 9px", borderRadius: 99, background: riskBg, color: riskColor }}>{risk}</span>
+      </div>
+      <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-.5px", marginBottom: 3, fontVariantNumeric: "tabular-nums" }}>{value}</div>
+      <div style={{ fontSize: 12.5, fontWeight: 600, color: "#475569", marginBottom: 5 }}>{label}</div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: subColor }}>{sub}</div>
+    </div>
+  );
+}
+
+// Composição rica com DADO REAL (KPIs + selo honesto de omissão + tabela de organizações). Exportada para
+// teste direto (render síncrono com dado real, sem depender do fetch assíncrono do hook).
+export function PlatformOverviewView({ data }: { data: PlatformOverviewData }) {
+  const navigate = useNavigate();
+  const { activeOrgs, totalOrgs, totalUsers, orgs } = data;
+
+  return (
+    <div style={{ color: "#0F172A" }}>
+      <PlatformHeader />
+
+      {/* KPIs REAIS + SELO HONESTO (receita/uptime omitidos por não terem fonte — D-007) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 16 }}>
+        <KpiCard
+          icon={Building2}
+          iconBg="#F1F5F9"
+          iconColor="#334155"
+          risk="Ativas"
+          riskBg="#ECFDF5"
+          riskColor="#059669"
+          value={formatCount(activeOrgs)}
+          label="Organizações ativas"
+          sub={`de ${formatCount(totalOrgs)} organizações`}
+          subColor="#64748B"
+        />
+        <KpiCard
+          icon={Users}
+          iconBg="#ECFDF5"
+          iconColor="#059669"
+          risk="Total"
+          riskBg="#ECFDF5"
+          riskColor="#059669"
+          value={formatCount(totalUsers)}
+          label="Usuários totais"
+          sub="somando todas as organizações"
+          subColor="#64748B"
+        />
+        {/* Selo §7: receita e disponibilidade não têm fonte real ainda — dito com honestidade, sem número
+            fabricado no lugar. Ocupa as duas colunas do antigo par MRR/uptime. */}
+        <div style={{ ...card, gridColumn: "span 2", padding: 18, background: "#F8FAFC", borderStyle: "dashed", display: "flex", alignItems: "center", gap: 13 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 9, background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563EB", flexShrink: 0 }}>
+            <Info size={18} />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>Receita e disponibilidade</div>
+            <div style={{ fontSize: 12, color: "#64748B", marginTop: 3, lineHeight: 1.45 }}>
+              Métricas de receita recorrente e disponibilidade ficam disponíveis após a ativação da infraestrutura cloud — nenhuma estimativa é exibida enquanto não houver medição real.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ORGANIZAÇÕES (dado REAL do endpoint) */}
+      <div style={{ ...card, overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid #F1F5F9" }}>
+          <div style={{ fontSize: 14, fontWeight: 800 }}>Organizações</div>
+          <button
+            type="button"
+            onClick={() => navigate("/platform/tenants")}
+            style={{ fontSize: 12.5, fontWeight: 700, color: "#2563EB", cursor: "pointer", background: "none", border: "none", padding: 0, fontFamily: "inherit" }}
+          >
+            Ver todas
+          </button>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", padding: "8px 18px", background: "#F8FAFC", borderBottom: "1px solid #F1F5F9", gap: 10 }}>
+          <span style={{ ...th, flex: 2.4 }}>NOME</span>
+          <span style={{ ...th, flex: 1.2 }}>STATUS</span>
+          <span style={{ ...th, flex: 0.9, textAlign: "right" }}>USUÁRIOS</span>
+          <span style={{ ...th, flex: 0.9, textAlign: "right" }}>MÓDULOS</span>
+          <span style={{ ...th, flex: 1.1, textAlign: "right" }}>CRIADA EM</span>
+        </div>
+        {orgs.map((org: PlatformOverviewOrg, index) => {
+          const status = statusView(org.status);
+          return (
+            <div
+              key={org.id}
+              onClick={() => navigate(`/platform/tenants/${org.id}`)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  navigate(`/platform/tenants/${org.id}`);
+                }
+              }}
+              style={{ display: "flex", alignItems: "center", padding: "12px 18px", borderBottom: index === orgs.length - 1 ? "none" : "1px solid #F8FAFC", gap: 10, cursor: "pointer" }}
+            >
+              <div style={{ flex: 2.4, display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563EB", flexShrink: 0 }}>
+                  <Building2 size={14} />
+                </div>
+                <span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{org.name}</span>
+              </div>
+              <div style={{ flex: 1.2, display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: status.dot, flexShrink: 0 }} />
+                <span style={{ fontSize: 12.5, fontWeight: 600, color: status.color }}>{status.label}</span>
+              </div>
+              <span style={{ flex: 0.9, fontSize: 13, color: "#475569", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatCount(org.userCount)}</span>
+              <span style={{ flex: 0.9, fontSize: 13, color: "#475569", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatCount(org.moduleCount)}</span>
+              <span style={{ flex: 1.1, fontSize: 12.5, color: "#64748B", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatCreatedAt(org.createdAt)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export function PlatformOverviewPage() {
+  const { data, loading } = usePlatformOverview();
+  const { orgs, forbidden, source } = data;
+
+  // §7 — carregando: skeleton (sem inventar número enquanto a resposta não chega).
+  if (loading) {
+    return (
+      <div style={{ color: "#0F172A" }}>
+        <PlatformHeader />
+        <div style={{ ...card, padding: 20 }}>
+          <Skeleton lines={6} />
+        </div>
+      </div>
+    );
+  }
+
+  // §7 — acesso não permitido: gate `platform:tenants:read` respondeu 403. Não é erro de sistema.
+  if (forbidden) {
+    return (
+      <div style={{ color: "#0F172A" }}>
+        <PlatformHeader />
+        <ErrorState
+          title="Acesso não permitido"
+          detail="Seu perfil não tem permissão para consultar a visão geral da plataforma. Fale com um administrador se precisar deste acesso."
+        />
+      </div>
+    );
+  }
+
+  // §7 — falha de carregamento (5xx/rede): aviso honesto, sem dado fabricado. O auto-refresh tenta de novo.
+  if (source === "fallback") {
+    return (
+      <div style={{ color: "#0F172A" }}>
+        <PlatformHeader />
+        <Alert title="Não foi possível carregar a visão geral" tone="warning">
+          Houve uma falha ao buscar os dados da plataforma. A tela volta a tentar automaticamente em alguns instantes — nenhum número é exibido enquanto isso para não apresentar informação que ainda não existe.
+        </Alert>
+      </div>
+    );
+  }
+
+  // §7 — vazio: nenhuma organização (inclui o modo demonstração/mock, sem dado real de plataforma).
+  if (orgs.length === 0) {
+    return (
+      <div style={{ color: "#0F172A" }}>
+        <PlatformHeader />
+        <div style={{ ...card, padding: 8 }}>
+          <EmptyState
+            title="Nenhuma organização"
+            detail="Ainda não há organizações cadastradas na plataforma. Assim que uma for criada, ela aparecerá aqui com seus indicadores reais."
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Populado: dado REAL → composição rica (KPIs reais + selo honesto + tabela de organizações).
+  return <PlatformOverviewView data={data} />;
 }
 
 export default PlatformOverviewPage;
