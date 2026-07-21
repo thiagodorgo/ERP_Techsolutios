@@ -1,5 +1,5 @@
 {
-  "snapshot_date": "2026-07-20",
+  "snapshot_date": "2026-07-21",
   "version": "WS-CHARTS-F2-BACKEND",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
@@ -21,16 +21,16 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 643,
-      "total": 643,
-      "display": "643/643",
-      "note": "+2 (platform-health-honest-stop: parada honesta + §3 sem \"Health\"). Saude da Plataforma deixou de fabricar telemetria (latencia/uptime/status). Sobre 641."
+      "value": 650,
+      "total": 650,
+      "display": "650/650",
+      "note": "+7 (platform-tenant-detail smoke: adapter/mock/404/render real). Detalhe da Organizacao ligado ao GET /platform/tenants/:id/detail REAL (le :tenantId). Sobre 643."
     },
     "backend_tests": {
-      "value": 1282,
-      "total": 1288,
-      "display": "1282/1288",
-      "note": "+6 (tests/platform-overview.test.ts: agregado cross-tenant real gated platform-only, withTenantRls por org, 403 nao-platform, sem campo fabricado). Suite memoria 1288 testes 1282 pass 0 fail 6 skip. Sobre 1276/1282. Local: 77 falhas DB/JWT pre-existentes seguem."
+      "value": 1289,
+      "total": 1295,
+      "display": "1289/1295",
+      "note": "+7 (tests/platform-tenant-detail.test.ts: detalhe cross-tenant real gated platform-only, usuarios via withTenantRls, 403/401/404, sem campo fabricado). Suite memoria 1295 testes 1289 pass 0 fail 6 skip. Sobre 1282/1288. Local: 77 falhas DB/JWT pre-existentes seguem."
     },
     "backend_contract_tests_focused": {
       "value": 21,

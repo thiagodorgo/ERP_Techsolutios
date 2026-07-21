@@ -41,6 +41,25 @@ const modulesByPlan: Record<PlatformPlan, Set<string>> = {
   enterprise: new Set(moduleCatalog.map((item) => item.key)),
 };
 
+// Flag de módulo derivada da lista de módulos habilitados de uma organização (`Tenant.modules`).
+// Reusa o MESMO catálogo do painel de módulos (fonte única de key→label) — o detalhe da org expõe o
+// catálogo inteiro com `enabled` por módulo, sem inventar rótulo.
+export type TenantModuleFlag = {
+  readonly key: string;
+  readonly label: string;
+  readonly enabled: boolean;
+};
+
+export function mapTenantModuleFlags(enabledModules: readonly string[]): TenantModuleFlag[] {
+  const enabled = new Set(enabledModules.map((key) => key.trim()));
+
+  return moduleCatalog.map((module) => ({
+    key: module.key,
+    label: module.name,
+    enabled: enabled.has(module.key),
+  }));
+}
+
 export class PlatformModulesService {
   listForTenant(tenant: PlatformTenant): PlatformModule[] {
     const planModules = modulesByPlan[tenant.plan];

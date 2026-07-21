@@ -26,6 +26,20 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-SCALE detalhe organizacao real">
+          <h2>WS-SCALE · Detalhe da Organização — dados reais por organização</h2>
+          <p>
+            <strong>Dados reais (2026-07-21):</strong> o <strong>Detalhe da Organização</strong> mostrava sempre a mesma
+            organização fictícia ("Techsolutions BH") e <strong>ignorava qual organização você abriu</strong>. Agora ele lê a
+            organização da URL e busca os <strong>dados reais</strong> dela: nome, situação, data de criação, os
+            <strong>usuários</strong> (nome/e-mail/perfil) e os <strong>módulos</strong> contratados. <strong>Isolamento:</strong>
+            a lista de usuários de cada organização é lida no escopo daquela organização, a tela é exclusiva do Admin da
+            Plataforma, e organização inexistente mostra "Organização não encontrada". <strong>Honestidade:</strong> receita,
+            uptime e saúde do sistema por organização <strong>não têm fonte</strong> e foram omitidos (selo honesto no lugar).
+            Time (dev backend + dev frontend → juntas): <strong>analizador + coordenador de acessos + cognição-visual APROVADO</strong>.
+            <strong>backend +7 · smoke 643→650</strong>. Sem migração. <em>Fecha o grupo de telas de Plataforma do WS-SCALE.</em>
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-SCALE saude plataforma honesta">
           <h2>WS-SCALE · Saúde do Sistema (plataforma) — parada honesta</h2>
           <p>

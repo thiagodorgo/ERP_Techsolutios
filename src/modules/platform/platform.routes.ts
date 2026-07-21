@@ -12,6 +12,11 @@ import {
   createDefaultPlatformOverviewService,
   type PlatformOverviewServiceResolver,
 } from "./platform-overview.service.js";
+import { toPlatformTenantDetailDto } from "./platform-tenant-detail.dto.js";
+import {
+  createDefaultPlatformTenantDetailService,
+  type PlatformTenantDetailServiceResolver,
+} from "./platform-tenant-detail.service.js";
 import { PlatformTenantsService } from "./platform-tenants.service.js";
 import {
   parseCreatePlatformTenantDto,
@@ -29,6 +34,8 @@ export function createPlatformRouter(
   resolveOverviewService: PlatformOverviewServiceResolver = () =>
     createDefaultPlatformOverviewService(coreSaasService),
   service = new PlatformTenantsService(),
+  resolveTenantDetailService: PlatformTenantDetailServiceResolver = () =>
+    createDefaultPlatformTenantDetailService(coreSaasService),
 ): Router {
   const router = Router();
 
@@ -47,6 +54,33 @@ export function createPlatformRouter(
 
       response.status(200).json({
         data: toPlatformOverviewDto(await overviewService.getOverview()),
+      });
+    }),
+  );
+
+  // Detalhe REAL de UMA organização (cross-tenant). Path próprio /tenants/:tenantId/detail (3 segmentos)
+  // — não colide com GET /tenants/:tenantId. Gate platform-only. Usuários da org vêm sob withTenantRls
+  // (isolamento por construção); org inexistente → 404 (não confirma existência de recurso de terceiros).
+  router.get(
+    "/tenants/:tenantId/detail",
+    requirePlatformPermission("platform:tenants:read"),
+    handleAsyncRoute(async (request, response) => {
+      const detailService = await resolveTenantDetailService();
+      const detail = await detailService.getDetail(readRouteParam(request.params.tenantId));
+
+      if (!detail) {
+        response.status(404).json({
+          error: {
+            code: "NOT_FOUND",
+            reason: "platform_tenant_not_found",
+            message: "Platform tenant not found.",
+          },
+        });
+        return;
+      }
+
+      response.status(200).json({
+        data: toPlatformTenantDetailDto(detail),
       });
     }),
   );
