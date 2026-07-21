@@ -72,6 +72,9 @@ export type OperationsMapWorkOrderPin = {
   // "Aberto há"). NUNCA um deadline fabricado; SLA real é Fase 2/M-7. Aditivo/opcional.
   readonly scheduledFor?: string | null;
   readonly createdAt?: string | null;
+  // M-7 (J-MAPAS-8) — prazo de SLA REAL (backend PR-A). Quando presente, a fila troca o proxy por countdown
+  // honesto ("vence em"/"vencido há"); `null` mantém o proxy. Aditivo/opcional.
+  readonly slaDueAt?: string | null;
 };
 
 // Ω1b — OS aberta com endereço mas SEM coordenada válida (vai para o painel "Sem localização").
@@ -85,6 +88,8 @@ export type OperationsMapWorkOrderWithoutLocation = {
   // M-4 (J-MAPAS-6) — mesmas datas do pin para o SLA-PROXY (chamado sem GPS também entra na fila). Aditivo.
   readonly scheduledFor?: string | null;
   readonly createdAt?: string | null;
+  // M-7 (J-MAPAS-8) — prazo de SLA REAL (chamado sem GPS também ganha countdown honesto quando presente).
+  readonly slaDueAt?: string | null;
 };
 
 // M-4 (J-MAPAS-6) — item da LISTA de "chamados que chegam" (triagem do operador de despacho). É uma
@@ -99,6 +104,9 @@ export type OperationsIncomingCall = {
   readonly customerName?: string | null;
   readonly scheduledFor?: string | null;
   readonly createdAt?: string | null;
+  // M-7 (J-MAPAS-8) — prazo de SLA REAL (backend PR-A). Chave primária de urgência dentro da prioridade:
+  // presente → countdown honesto ("vence em"/"vencido há") + tom por proximidade; `null` → SLA-PROXY intacto.
+  readonly slaDueAt?: string | null;
   readonly hasLocation: boolean;
 };
 

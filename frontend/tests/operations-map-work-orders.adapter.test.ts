@@ -74,6 +74,19 @@ test("selectMappableWorkOrders preserva prioridade e código no pin", () => {
   assert.equal(withLocation[0]!.code, "OS-9");
 });
 
+// M-7 (J-MAPAS-8) — o prazo de SLA real (sla_due_at do DTO, PR-A) PROPAGA para o pin E para o item sem GPS;
+// ausência → null (mantém o proxy). É o que habilita o countdown honesto na fila sem tocar o canvas.
+test("selectMappableWorkOrders propaga slaDueAt para pin e sem-localização; ausência → null", () => {
+  const { withLocation, withoutLocation } = selectMappableWorkOrders([
+    makeWO({ id: "com-prazo", slaDueAt: "2026-07-19T13:00:00.000Z" }),
+    makeWO({ id: "sem-gps", serviceLatitude: null, serviceLongitude: null, serviceAddress: "Av. X", slaDueAt: "2026-07-19T14:00:00.000Z" }),
+    makeWO({ id: "sem-prazo" }),
+  ]);
+  assert.equal(withLocation.find((p) => p.id === "com-prazo")!.slaDueAt, "2026-07-19T13:00:00.000Z");
+  assert.equal(withLocation.find((p) => p.id === "sem-prazo")!.slaDueAt, null);
+  assert.equal(withoutLocation.find((w) => w.id === "sem-gps")!.slaDueAt, "2026-07-19T14:00:00.000Z");
+});
+
 // --- Painéis (SSR) ---
 
 test("OperationsWorkOrderPinPanel mostra código, prioridade e ação Abrir OS", () => {

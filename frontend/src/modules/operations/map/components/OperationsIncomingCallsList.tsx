@@ -1,9 +1,9 @@
-import { CalendarClock, Clock, MapPinOff, Sparkles } from "lucide-react";
+import { AlarmClock, CalendarClock, Clock, MapPinOff, Sparkles } from "lucide-react";
 import type { CSSProperties } from "react";
 
 import { Card, Chip, EmptyState } from "../../../../components/ui";
 import { getWorkOrderPriorityColor } from "../map/mapMarkers";
-import { formatIncomingCallSlaProxy } from "../operations-map.adapter";
+import { formatIncomingCallSlaProxy, incomingCallSlaTone } from "../operations-map.adapter";
 import { getWorkOrderPriorityLabel, getWorkOrderPriorityTone } from "../../../work-orders/work-orders.adapter";
 import type { OperationsIncomingCall } from "../operations-map.types";
 
@@ -53,6 +53,8 @@ export function OperationsIncomingCallsList({
       <ul className="operations-calls-list" aria-label="Fila de chamados que chegam">
         {calls.map((call) => {
           const sla = formatIncomingCallSlaProxy(call, reference);
+          // M-7 — tom SÓ com prazo real (slaDueAt): vencido=vermelho, vence<30min=âmbar, futuro=azul; proxy=neutro.
+          const slaTone = incomingCallSlaTone(call, reference);
           const isSelected = call.id === selectedId;
           const isNew = newIds?.has(call.id) ?? false;
           const priorityLabel = getWorkOrderPriorityLabel(call.priority);
@@ -82,9 +84,11 @@ export function OperationsIncomingCallsList({
                   </span>
                 </span>
                 <span className="operations-call__customer">{call.customerName ?? "Cliente não informado"}</span>
-                <span className="operations-call__sla" data-kind={sla.kind}>
+                <span className="operations-call__sla" data-kind={sla.kind} data-tone={slaTone}>
                   {sla.kind === "scheduled" ? (
                     <CalendarClock size={14} aria-hidden="true" />
+                  ) : sla.kind === "due_past" ? (
+                    <AlarmClock size={14} aria-hidden="true" />
                   ) : (
                     <Clock size={14} aria-hidden="true" />
                   )}

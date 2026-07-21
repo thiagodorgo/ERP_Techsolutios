@@ -91,3 +91,16 @@ test("buildWorkOrderPinsFeatureCollection vazio → FeatureCollection vazia", ()
   assert.equal(fc.type, "FeatureCollection");
   assert.equal(fc.features.length, 0);
 });
+
+// M-7 (J-MAPAS-8) — o pin ACEITA `slaDueAt` (propagado do DTO) mas o countdown de SLA é assunto da FILA,
+// não do marcador: as properties do GeoJSON permanecem enxutas (sem slaDueAt) e a coordenada segue [lng,lat].
+test("buildWorkOrderPinsFeatureCollection: pin com slaDueAt gera feature válida sem vazar slaDueAt nas properties", () => {
+  const fc = buildWorkOrderPinsFeatureCollection(
+    [makePin({ id: "com-prazo", slaDueAt: "2026-07-19T13:00:00.000Z" })],
+    undefined,
+  );
+  assert.equal(fc.features.length, 1);
+  const feature = fc.features[0]!;
+  assert.equal(feature.properties.id, "com-prazo");
+  assert.ok(!("slaDueAt" in feature.properties), "properties do pin não devem carregar slaDueAt");
+});

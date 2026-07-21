@@ -33,6 +33,36 @@ UP (`prisma migrate deploy`) → coluna `sla_due_at | timestamp with time zone |
 ### BAIXA (registrada, já coberta)
 - dba: "runbook de rollback no docs/deployment.md" → **já existe** (Runbook A forward-only, P-007, linhas 61-72) + o header da migração documenta o `DROP COLUMN`. Sem ação nova.
 
+## PR-B — countdown honesto no Mapa (frontend, dev-mapas)
+
+### Escopo
+`operations-map.adapter`: `formatIncomingCallSlaProxy` emite **"vence em {X}"** (futuro) / **"vencido há {X}"** (passado) SOMENTE
+quando `slaDueAt` real e parseável; senão cai no **proxy honesto de Fase 1 INTACTO** (Agendado/Aberto). `formatDuration` extraído
+e reusado por `formatLastSeen` (fonte única). `incomingCallSlaProxyTime` = `slaDueAt ?? scheduledFor ?? createdAt` (puro,
+determinístico). Tom de urgência via `data-tone` (danger vencido / warning <30min `SLA_DUE_SOON_THRESHOLD_MS` / info futuro /
+neutral proxy) + CSS. Propagação de tipos (pin/withoutLocation/incoming). Consumidores: lista + popup de alocação. +10 testes.
+`kb-mapas.md` changelog datado. **Landmines respeitados:** mock legado `work-orders/types.ts:25` e `DispatchConsolePage` NÃO tocados.
+
+### Votos
+| Papel | Veredito |
+|---|---|
+| dev-mapas | implementado; check/build/test:smoke verdes (650→660, +10) |
+| **avaliador-mapas** (veto — honestidade/espelho/LGPD) | **APROVADO** |
+| **analizador** (correção técnica) | **APROVADO** |
+| **cognicao-visual** (§11) | **APROVADO** |
+
+**Resultado: 3 APROVADO — 0 REPROVADO, 0 BLOQUEIA/ALTA/MEDIA. MERGE.**
+
+### Confirmações da junta
+- D-007: countdown SÓ com `slaDueAt` real e parseável; lista toda-null NUNCA mostra "vence em"/"vencido" (guard de teste #8
+  reescrito); null/inválido → proxy sem crash.
+- Espelho MapLibre↔Google: `mapMarkers.ts` (canvas/GeoJSON) NÃO tocado; `slaDueAt` fora das `properties` do pin (teste prova).
+  LGPD §12: `OperationsIncomingCall` sem lat/lng; `slaDueAt` fora de log.
+- Fuso: `slaDueAt` instante completo → `Date.parse` ok, sem `new Date` de date-only.
+- BAIXA (avaliador+cognicao-visual): tons em hex cru no `app.css` (rail navy) em vez de token — segue a convenção pervasiva do
+  módulo (o TSX não tem hex; aplica via `data-tone`); advisory, follow-up de tokenização se/quando o DS ganhar paleta de rail.
+
 ## Rastreabilidade
-ID: J-MAPAS-8 / PR-A · PR: (após `gh pr create`) · migração `20260817000000_add_sla_due_at`. backend 1289→1296 (+7 work-order-sla), blocks 69→70.
-**Próximo: PR-B (dev-mapas)** — countdown honesto no `operations-map.adapter` ("vence em X"/"vencido há X" com `sla_due_at`; proxy quando null) + propagação de tipos + consumidores (lista + popup) + testes + changelog em `kb-mapas.md`. Landmines: NÃO confundir com o mock legado `work-orders/types.ts:25` nem tocar o `DispatchConsolePage` estático ("vence em 28 min" mock, fora do escopo).
+ID: J-MAPAS-8 · **PR-A** migração+backend (backend 1289→1296, blocks 69→70) · **PR-B** frontend countdown (smoke 650→660).
+Migração `20260817000000_add_sla_due_at`. **M-7 SLA real COMPLETO — Fase 2 do Mapa FECHADA.** ETA por rota real (junta-5+PD)
+NÃO foi feita — o dono dispensou o serviço pago; distância/tempo seguem por estimativa honesta ("~X km linha reta / ~Y min sem trânsito").

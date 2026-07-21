@@ -24,22 +24,31 @@ export function isFieldLocationTimestampStale(capturedAtMs: number, nowMs: numbe
   return nowMs - capturedAtMs > FIELD_LOCATION_STALE_THRESHOLD_MS;
 }
 
-// R6.1 — "Último visto há X" (PT-BR, sem jargão técnico).
+// Escala de duração PT-BR (mesma do "Último visto"): minutos < 60 → "N min"; < 24 h → "N h [M min]";
+// senão "N dia(s)". Bare (sem prefixo "há"/"em") para servir tanto ao "Aberto há" quanto ao countdown de
+// SLA ("vence em"/"vencido há") — FONTE ÚNICA de escala, para não duplicar (M-7 é espelho do M-4).
+export function formatDuration(ms: number): string {
+  const totalMinutes = Math.floor(ms / 60_000);
+  if (totalMinutes < 1) return "menos de 1 min";
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours < 24) return minutes > 0 ? `${hours} h ${minutes} min` : `${hours} h`;
+
+  const days = Math.floor(hours / 24);
+  return `${days} dia${days > 1 ? "s" : ""}`;
+}
+
+// R6.1 — "Último visto há X" (PT-BR, sem jargão técnico). Reusa `formatDuration` (mesma escala).
 export function formatLastSeen(capturedAt: string | undefined, now: Date = new Date()): string {
   if (!capturedAt) return "sem registro";
   const capturedTime = Date.parse(capturedAt);
   if (Number.isNaN(capturedTime)) return "sem registro";
 
-  const diffMinutes = Math.floor((now.getTime() - capturedTime) / 60_000);
-  if (diffMinutes < 1) return "agora";
-  if (diffMinutes < 60) return `há ${diffMinutes} min`;
-
-  const hours = Math.floor(diffMinutes / 60);
-  const minutes = diffMinutes % 60;
-  if (hours < 24) return minutes > 0 ? `há ${hours} h ${minutes} min` : `há ${hours} h`;
-
-  const days = Math.floor(hours / 24);
-  return `há ${days} dia${days > 1 ? "s" : ""}`;
+  const diffMs = now.getTime() - capturedTime;
+  if (diffMs < 60_000) return "agora";
+  return `há ${formatDuration(diffMs)}`;
 }
 
 export function adaptFieldLocationsResponse(
@@ -123,9 +132,10 @@ export function selectMappableWorkOrders(workOrders: readonly WorkOrderListItem[
         serviceAddress: workOrder.serviceAddress ?? null,
         latitude: workOrder.serviceLatitude as number,
         longitude: workOrder.serviceLongitude as number,
-        // M-4 — datas do SLA-PROXY (nunca deadline fabricado).
+        // M-4 — datas do SLA-PROXY (nunca deadline fabricado). M-7 — prazo de SLA real (quando o backend derivou).
         scheduledFor: workOrder.scheduledFor ?? null,
         createdAt: workOrder.createdAt ?? null,
+        slaDueAt: workOrder.slaDueAt ?? null,
       });
       continue;
     }
@@ -141,6 +151,7 @@ export function selectMappableWorkOrders(workOrders: readonly WorkOrderListItem[
         serviceAddress: workOrder.serviceAddress ?? null,
         scheduledFor: workOrder.scheduledFor ?? null,
         createdAt: workOrder.createdAt ?? null,
+        slaDueAt: workOrder.slaDueAt ?? null,
       });
     }
   }
@@ -162,19 +173,36 @@ const INCOMING_CALL_PRIORITY_WEIGHT: Record<WorkOrderPriority, number> = {
 };
 
 export type IncomingCallSlaProxy = {
-  readonly kind: "scheduled" | "opened" | "unknown";
+  // M-7 (J-MAPAS-8) — `due_future`/`due_past` = countdown de SLA REAL (só com `slaDueAt`). Os demais
+  // (`scheduled`/`opened`/`unknown`) seguem sendo o SLA-PROXY honesto de Fase 1, intacto quando não há prazo.
+  readonly kind: "scheduled" | "opened" | "unknown" | "due_future" | "due_past";
   readonly label: string;
 };
 
+// M-7 (J-MAPAS-8) — horizonte "vence em breve": um prazo REAL futuro dentro deste intervalo vira alerta
+// âmbar na fila (abaixo dele = azul/futuro). Exportada e testável; ajuste = 1 linha.
+export const SLA_DUE_SOON_THRESHOLD_MS = 30 * 60 * 1000;
+
 /**
- * Rótulo do SLA-PROXY — Fase 1 NÃO tem coluna de deadline (GAP registrado no plano), então o rótulo é
- * SEMPRE derivado e honesto: "Agendado para {data}" quando há `scheduledFor`; senão "Aberto {tempo}" a
- * partir de `createdAt`. NUNCA "vence em"/prazo fabricado — SLA real chega na Fase 2/M-7.
+ * Rótulo do prazo do chamado — HONESTO em qualquer caso:
+ *  • M-7 (countdown REAL): SÓ quando `slaDueAt` (prazo derivado pelo backend, PR-A) existe e é parseável.
+ *    `delta = due - now`: futuro → "vence em {duração}" (`due_future`); passado → "vencido há {duração}"
+ *    (`due_past`). `slaDueAt` é instante completo (TIMESTAMPTZ) → `Date.parse` é seguro (sem date-only ingênuo).
+ *  • Fase 1 (SLA-PROXY intacto): sem prazo real (null/inválido) → "Agendado para {data}" (se `scheduledFor`);
+ *    senão "Aberto {tempo}" (de `createdAt`); senão "Sem data de abertura". NUNCA um prazo fabricado.
  */
 export function formatIncomingCallSlaProxy(
-  call: Pick<OperationsIncomingCall, "scheduledFor" | "createdAt">,
+  call: Pick<OperationsIncomingCall, "slaDueAt" | "scheduledFor" | "createdAt">,
   now: Date = new Date(),
 ): IncomingCallSlaProxy {
+  if (call.slaDueAt) {
+    const dueMs = Date.parse(call.slaDueAt);
+    if (!Number.isNaN(dueMs)) {
+      const delta = dueMs - now.getTime();
+      if (delta >= 0) return { kind: "due_future", label: `vence em ${formatDuration(delta)}` };
+      return { kind: "due_past", label: `vencido há ${formatDuration(-delta)}` };
+    }
+  }
   if (call.scheduledFor && !Number.isNaN(Date.parse(call.scheduledFor))) {
     return { kind: "scheduled", label: `Agendado para ${formatFieldLocationDate(call.scheduledFor)}` };
   }
@@ -184,12 +212,33 @@ export function formatIncomingCallSlaProxy(
   return { kind: "unknown", label: "Sem data de abertura" };
 }
 
-// Instante que MELHOR representa a espera/urgência: agenda quando marcada, senão abertura. Ascendente =
-// agenda mais próxima / esperando há mais tempo primeiro. Datas ausentes/inválidas afundam (Infinity).
+// M-7 (J-MAPAS-8) — tom do rótulo de prazo. SÓ colore com deadline REAL (`slaDueAt`): vencido → vermelho;
+// vence em < limiar → âmbar; futuro folgado → azul. Sem prazo real (proxy honesto) → neutro (cinza padrão).
+// Puro/determinístico — recebe `now`, sem `Date.now` interno.
+export type IncomingCallSlaTone = "danger" | "warning" | "info" | "neutral";
+
+export function incomingCallSlaTone(
+  call: Pick<OperationsIncomingCall, "slaDueAt">,
+  now: Date = new Date(),
+): IncomingCallSlaTone {
+  const dueMs = call.slaDueAt ? Date.parse(call.slaDueAt) : Number.NaN;
+  if (Number.isNaN(dueMs)) return "neutral";
+  const delta = dueMs - now.getTime();
+  if (delta < 0) return "danger";
+  if (delta < SLA_DUE_SOON_THRESHOLD_MS) return "warning";
+  return "info";
+}
+
+// Instante que MELHOR representa a urgência: PRAZO REAL primeiro (chave primária dentro da prioridade),
+// senão agenda, senão abertura — o primeiro timestamp PARSEÁVEL nessa ordem. Ascendente = mais urgente
+// primeiro. Nada parseável afunda (Infinity). Puro (compara timestamps absolutos, sem `Date.now` interno).
 function incomingCallSlaProxyTime(call: OperationsIncomingCall): number {
-  const reference = call.scheduledFor ?? call.createdAt;
-  const ms = reference ? Date.parse(reference) : Number.NaN;
-  return Number.isNaN(ms) ? Number.POSITIVE_INFINITY : ms;
+  for (const reference of [call.slaDueAt, call.scheduledFor, call.createdAt]) {
+    if (!reference) continue;
+    const ms = Date.parse(reference);
+    if (!Number.isNaN(ms)) return ms;
+  }
+  return Number.POSITIVE_INFINITY;
 }
 
 function incomingCallOpenedTime(call: OperationsIncomingCall): number {
@@ -250,6 +299,7 @@ function toIncomingCall(
     customerName: source.customerName ?? null,
     scheduledFor: source.scheduledFor ?? null,
     createdAt: source.createdAt ?? null,
+    slaDueAt: source.slaDueAt ?? null,
     hasLocation,
   };
 }
