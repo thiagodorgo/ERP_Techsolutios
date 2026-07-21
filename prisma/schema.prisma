@@ -34,6 +34,7 @@ model Tenant {
   damages                       Damage[]
   damage_attachments            DamageAttachment[]
   work_order_attachments        WorkOrderAttachment[]
+  attachments                   Attachment[]
   inventory_items               InventoryItem[]
   stock_movements               StockMovement[]
   cycle_counts                  CycleCount[]
@@ -986,6 +987,42 @@ model WorkOrderAttachment {
   @@index([tenant_id, work_order_id])
   @@index([tenant_id, status])
   @@map("work_order_attachments")
+}
+
+// Ω4C PR-01 — Anexo genérico POLIMÓRFICO (aba "Arquivos"). COEXISTÊNCIA ADITIVA: NÃO substitui
+// WorkOrderAttachment/DamageAttachment/ChecklistAttachment (que seguem vivos). Espelha
+// WorkOrderAttachment trocando a FK à OS pelo par polimórfico (entity_type app-enum em inglês +
+// entity_id). storage_key/provider/checksum/file_url são INTERNOS (nunca no DTO — §2.8). `status`
+// reserva o AV-assíncrono (default 'stored'); `client_action_id` = idempotência TENANT-SCOPED (§6);
+// `deleted_at` = delete lógico. Posse e RBAC são HERDADAS da entidade-alvo via resolver
+// (D-Ω4C-ANEXOS-RBAC) — o get() de cada módulo já dá 404 cross-tenant.
+model Attachment {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String    @db.Uuid
+  entity_type      String
+  entity_id        String    @db.Uuid
+  file_name        String?
+  extension        String?
+  content_type     String?
+  size_bytes       Int?
+  checksum_sha256  String?
+  storage_provider String?
+  storage_key      String?
+  file_url         String
+  status           String    @default("stored")
+  client_action_id String?
+  metadata         Json
+  uploaded_by      String?   @db.Uuid
+  created_by       String?   @db.Uuid
+  uploaded_at      DateTime  @default(now()) @db.Timestamptz(6)
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at       DateTime? @db.Timestamptz(6)
+  tenant           Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, entity_type, entity_id])
+  @@index([tenant_id, status])
+  @@map("attachments")
 }
 
 model DamageAttachment {

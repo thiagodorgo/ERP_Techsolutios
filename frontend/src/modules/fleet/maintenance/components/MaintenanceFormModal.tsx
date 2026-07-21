@@ -1,12 +1,15 @@
 import type { CSSProperties, FormEvent } from "react";
 import { useState } from "react";
 
-import { Alert, Button, Chip, Input, Modal, Select } from "../../../../components/ui";
+import { Alert, Button, Chip, Input, Modal, Select, Tabs } from "../../../../components/ui";
+import { EntityAttachmentsTab } from "../../../attachments";
 import type { Vehicle } from "../../../registry/vehicles/vehicles.types";
 import {
   MAINTENANCE_TYPE_OPTIONS,
+  formatMaintenanceDate,
   getMaintenanceStatusLabel,
   getMaintenanceStatusTone,
+  getMaintenanceTypeLabel,
   interpretMaintenanceSubmitError,
   parseIntStrict,
   validateMaintenanceOrder,
@@ -49,16 +52,23 @@ export function MaintenanceFormModal({
   order,
   vehicles,
   context,
+  canUploadAttachments = false,
+  canDeleteAttachments = false,
   onClose,
   onSaved,
 }: {
   readonly order: MaintenanceOrder | null;
   readonly vehicles: readonly Vehicle[];
   readonly context: MaintenanceOrdersApiContext;
+  readonly canUploadAttachments?: boolean;
+  readonly canDeleteAttachments?: boolean;
   readonly onClose: () => void;
   readonly onSaved: (saved?: MaintenanceOrder) => void;
 }) {
   const isEdit = Boolean(order);
+  // AutEM: no modo edição o registro ganha as abas "Editar" | "Arquivos" (a aba de anexos só existe
+  // depois que a ordem tem id). Na criação, só o formulário.
+  const [activeTab, setActiveTab] = useState<"form" | "arquivos">("form");
   const [vehicleId, setVehicleId] = useState(order?.vehicleId ?? "");
   const [type, setType] = useState<MaintenanceType>(order?.type ?? "preventiva");
   const [description, setDescription] = useState(order?.description ?? "");
@@ -125,9 +135,41 @@ export function MaintenanceFormModal({
     }
   }
 
+  const selectedVehicle = order ? vehicles.find((vehicle) => vehicle.id === order.vehicleId) : undefined;
+  const attachmentSummary = order
+    ? [
+        { label: "Data e Hora", value: formatMaintenanceDate(order.scheduledFor) },
+        { label: "Tipo", value: getMaintenanceTypeLabel(order.type) },
+        { label: "Objeto", value: selectedVehicle ? `${selectedVehicle.plate}${selectedVehicle.model ? ` — ${selectedVehicle.model}` : ""}` : "—" },
+        { label: "Situação", value: getMaintenanceStatusLabel(order.status) },
+      ]
+    : [];
+
   return (
     <Modal title={isEdit ? "Editar manutenção" : "Nova manutenção"} open onClose={onClose}>
-      <form onSubmit={handleSubmit} noValidate>
+      {isEdit ? (
+        <div style={{ marginBottom: "var(--space-16)" }}>
+          <Tabs
+            tabs={[
+              { id: "form", label: "Editar" },
+              { id: "arquivos", label: "Arquivos" },
+            ]}
+            active={activeTab}
+            onChange={(id) => setActiveTab(id as "form" | "arquivos")}
+          />
+        </div>
+      ) : null}
+
+      {isEdit && order && activeTab === "arquivos" ? (
+        <EntityAttachmentsTab
+          entityType="maintenance_order"
+          entityId={order.id}
+          summary={attachmentSummary}
+          canUpload={canUploadAttachments}
+          canDelete={canDeleteAttachments}
+        />
+      ) : (
+        <form onSubmit={handleSubmit} noValidate>
         {serverError ? (
           <Alert title="Não foi possível salvar" tone="danger">
             {serverError}
@@ -257,7 +299,8 @@ export function MaintenanceFormModal({
             {saving ? "Salvando…" : isEdit ? "Salvar alterações" : "Registrar manutenção"}
           </Button>
         </footer>
-      </form>
+        </form>
+      )}
     </Modal>
   );
 }

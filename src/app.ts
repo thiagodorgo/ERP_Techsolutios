@@ -55,6 +55,7 @@ import { createFinancialSummaryRouter } from "./modules/financial-summary/index.
 import { createTagRouter } from "./modules/tags/index.js";
 import { createPoiRouter } from "./modules/pois/index.js";
 import { createOperatorProfileRouter } from "./modules/operator-profiles/index.js";
+import { createAttachmentsRouter } from "./modules/attachments/index.js";
 import { createTenantSettingsRouter } from "./modules/tenant-settings/index.js";
 import { createTeamRouter } from "./modules/teams/index.js";
 import { createVehicleRouter } from "./modules/vehicles/index.js";
@@ -143,6 +144,7 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createTagRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createPoiRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createOperatorProfileRouter());
+  app.use("/api/v1", attachAuthenticatedActor(), createAttachmentsRouter(undefined, resolveUserName));
   app.use("/api/v1", attachAuthenticatedActor(), createTenantSettingsRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTeamRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFieldDispatchRouter(service));
