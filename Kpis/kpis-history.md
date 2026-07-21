@@ -6,6 +6,31 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-20 - WS-SCALE-8TELAS PR-SCALE-5a (platform overview) Visao Geral da Plataforma com agregado real
+
+### Resultado
+
+- **Visao Geral da Plataforma ligada a um AGREGADO CROSS-TENANT REAL.** Antes fabricava (48 orgs / 2.184 usuarios / R$ 312k MRR /
+  99,98% uptime / grafico MRR / feed de atividade) TANTO no front (consts) QUANTO no backend (repo in-memory).
+- **BACKEND novo:** `GET /api/v1/platform/overview` → `{activeOrgs, totalOrgs, totalUsers, orgs[]}`. Lista tenants reais (tabela
+  `tenants` sem RLS) + conta usuarios por org via **`withTenantRls(t.id)`** (a tabela `users` tem FORCE RLS → isolamento por
+  construcao, NUNCA um `groupBy` cross-tenant). Gated **platform-only** (`requirePlatformPermission`); **persistence-aware**
+  (memoria→vazio em teste, prisma→real); DTO **§2.8 allowlist** SEM `mrr`/`uptime`/`apiCalls`/`storageGb` (OMITIDOS, nao fabricados).
+- **FRONTEND:** consome via service+hook+adapter (clone do audit); KPIs reais (organizacoes ativas / usuarios totais) + tabela de
+  organizacoes real (nome/status/usuarios/modulos/criada em); **MRR/uptime/atividade OMITIDOS** com selo §7 honesto (nao empobrece
+  a tela bespoke); `id` so p/ link (§2.8); **§3 "Organizacao", nunca "Tenant"**; estados §7 completos; a11y (MEDIA do span
+  "Ver todas" → button).
+- Junta BACKEND: **coordenador-de-acessos APROVADO** (isolamento provado: gate platform-only + withTenantRls por org, tenant JWT→403)
+  + **analizador APROVADO**. Junta FRONTEND: **analizador + cognicao-visual + coordenador-de-acessos APROVADO**. **ZERO migracao.**
+- **Health = parada honesta** (telemetria de infra sem fonte, Onda 5-6) → PR-SCALE-5b.
+
+### KPIs
+
+- `backend_tests` **1276 -> 1282** (+6: tests/platform-overview.test.ts; suite memoria 1288 testes 1282 pass 0 fail 6 skip).
+- `frontend_smoke_tests` **635 -> 641** (+6: platform-overview smoke).
+- `blocks_completed` **66 -> 67** (+1 agregado-feature real de plataforma).
+- `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88% — **INALTERADOS**. Backfill #253: `pr`/`merge_commit`/`approved_head` = e0e0187.
+
 ## 2026-07-20 - WS-SCALE-8TELAS PR-SCALE-4 (fieldOperators) Operadores de Campo ligado ao dado real
 
 ### Resultado

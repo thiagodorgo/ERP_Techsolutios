@@ -21,16 +21,16 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 635,
-      "total": 635,
-      "display": "635/635",
-      "note": "+4 (field-operators: adapter/LGPD-sem-lat-lng/KPI-baldes/render honesto). Operadores de Campo ligado ao /field-locations/latest REAL (reusa getLatestFieldLocations do Mapa; deixou de fabricar). Sobre 631."
+      "value": 641,
+      "total": 641,
+      "display": "641/641",
+      "note": "+6 (platform-overview smoke: adapter/mock/403/render honesto). Visao Geral da Plataforma ligada ao GET /platform/overview REAL. Sobre 635."
     },
     "backend_tests": {
-      "value": 1276,
-      "total": 1282,
-      "display": "1276/1282",
-      "note": "1276/1282 apos #245 (agregado work-order-timeseries) mergear. Local: 77 falhas de DB-nao-migrado/JWT-env seguem (0 nova, verificado por stash e pela junta)."
+      "value": 1282,
+      "total": 1288,
+      "display": "1282/1288",
+      "note": "+6 (tests/platform-overview.test.ts: agregado cross-tenant real gated platform-only, withTenantRls por org, 403 nao-platform, sem campo fabricado). Suite memoria 1288 testes 1282 pass 0 fail 6 skip. Sobre 1276/1282. Local: 77 falhas DB/JWT pre-existentes seguem."
     },
     "backend_contract_tests_focused": {
       "value": 21,

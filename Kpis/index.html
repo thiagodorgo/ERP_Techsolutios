@@ -26,6 +26,21 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
+        <article class="panel panel--wide" aria-label="Resumo WS-SCALE plataforma real">
+          <h2>WS-SCALE · Visão Geral da Plataforma — números reais (isolamento provado)</h2>
+          <p>
+            <strong>Dados reais (2026-07-20):</strong> a <strong>Visão Geral da Plataforma</strong> fabricava tudo (48
+            organizações, 2.184 usuários, R$ 312k de MRR, 99,98% de uptime) — no front <em>e</em> no backend. Agora um
+            <strong>agregado real</strong> conta as organizações e os usuários de verdade. <strong>Isolamento (multi-tenant):</strong>
+            a contagem de usuários de cada organização roda dentro do escopo daquela organização (nunca uma consulta que cruza
+            organizações), o endpoint é <strong>exclusivo do Admin da Plataforma</strong>, e um usuário comum recebe "acesso não
+            permitido" — a junta de acessos aprovou sem ressalva. <strong>Honestidade:</strong> receita (MRR), uptime e o feed de
+            atividade <strong>não têm fonte real ainda</strong>, então foram <strong>omitidos</strong> (um selo honesto entra no
+            lugar), nunca um número inventado. Time (dev backend + dev frontend → juntas): <strong>analizador + coordenador de
+            acessos + cognição-visual APROVADO</strong>. <strong>backend +6 · smoke 635→641</strong>. Sem migração. (A tela de
+            "Saúde" da plataforma é o próximo passo — vira parada honesta, pois é telemetria de infra ainda inexistente.)
+          </p>
+        </article>
         <article class="panel panel--wide" aria-label="Resumo WS-SCALE operadores real">
           <h2>WS-SCALE · Operadores de Campo — lista real (sem coordenada exposta)</h2>
           <p>
