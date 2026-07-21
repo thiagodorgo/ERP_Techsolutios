@@ -1,0 +1,50 @@
+{
+  "pr": "PR-01",
+  "fase": "Fase 1 — Anexos genericos",
+  "snapshot_date": "2026-07-21",
+  "branch": "rodada/omega4c",
+  "models_novos": [
+    "Attachment (polimorfico entity_type/entity_id)"
+  ],
+  "migrations": [
+    "20260821000000_add_attachments (aditiva, RLS ENABLE/FORCE/POLICY, indice UNIQUE parcial idempotencia)"
+  ],
+  "endpoints_novos": [
+    "GET /attachments?entityType&entityId",
+    "POST /attachments (multipart)",
+    "GET /attachments/:id/download",
+    "DELETE /attachments/:id"
+  ],
+  "modulos_novos": [
+    "src/modules/attachments (11 arquivos)",
+    "frontend/src/modules/attachments (EntityAttachmentsTab)"
+  ],
+  "rns_cobertas": [
+    "RN-ANEXO-01..10"
+  ],
+  "rns_total_pr": 10,
+  "cobertura_testes": {
+    "backend": "tests/attachments-crud.test.ts 11/11 + rls-tenant-isolation 3-tenant",
+    "frontend": "entity-attachments-tab 9/9"
+  },
+  "d_records": [
+    "D-Ω4C-ANEXOS-RBAC",
+    "D-Ω4C-ANEXOS-ENTITYTYPES",
+    "D-Ω4C-ANEXOS-FRONT-LOC"
+  ],
+  "divergencias_vs_autem": [
+    "botao download da toolbar omitido (download por linha, gated status=stored) — equivalencia comportamental, evita botao morto §11.2"
+  ],
+  "junta": {
+    "agente-dba-guardiao": "APROVADO (0 cond)",
+    "omega4c-avaliador": "APROVADO"
+  },
+  "kpi_repo_wide": {
+    "backend": "1296->1307 (+11)",
+    "frontend_smoke": "673->682 (+9)",
+    "blocks": "71->72"
+  },
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_aguardando_merge"
+}

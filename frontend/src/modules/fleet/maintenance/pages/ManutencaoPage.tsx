@@ -422,6 +422,8 @@ export function ManutencaoPage() {
           order={editing}
           vehicles={vehicles}
           context={context}
+          canUploadAttachments={canCreate}
+          canDeleteAttachments={canUpdate}
           onClose={closeModal}
           onSaved={() => {
             closeModal();

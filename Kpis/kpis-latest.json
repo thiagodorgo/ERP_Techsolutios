@@ -21,16 +21,16 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 673,
-      "total": 673,
-      "display": "673/673",
-      "note": "+13 (approvals.smoke: honestidade/gating/§7/detalhe :approvalId/recusa-com-motivo/idade). Telas de Aprovacoes ligadas ao endpoint real (13 campos do DTO; zero valor/alcada/trilha fabricados). Sobre 660."
+      "value": 682,
+      "total": 682,
+      "display": "682/682",
+      "note": "+9 (entity-attachments-tab: render/§7/gating/§2.8). Ω4C PR-01 anexos genericos (EntityAttachmentsTab montado no modal de Manutencao). Sobre 673."
     },
     "backend_tests": {
-      "value": 1296,
-      "total": 1302,
-      "display": "1296/1302",
-      "note": "+7 (tests/work-order-sla.test.ts: M-7 SLA real — set/expose(lista+detalhe)/cross-tenant-404/400-invalid_date/null-safe). Migracao aditiva 20260817000000_add_sla_due_at provada up/down/re-up no Postgres vivo (dba-guardiao). Suite memoria 1302 testes 1296 pass 0 fail 6 skip. Sobre 1289/1295."
+      "value": 1307,
+      "total": 1313,
+      "display": "1307/1313",
+      "note": "+11 (tests/attachments-crud.test.ts: CRUD/cross-tenant-404/posse/RBAC-herdada/soft-delete/§2.8/idempotencia/download-gate/scan). Ω4C PR-01. Suite memoria (CI) 1307 pass/6 skip. Migracao 20260821000000_add_attachments provada up/down pelo dba-guardiao. Sobre 1296/1302. Local: 77 DB/JWT pre-existentes."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,8 +56,8 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 71,
-      "display": "71",
+      "value": 72,
+      "display": "72",
       "note": "reconciliacao D-Ω4-KPI-RELATORIO adiciona os 8 agregados-feature do Ω4 (1..8); blocos de governanca/pos-analise/fix nao contam como feature."
     },
     "mobile_backend_contracts": {

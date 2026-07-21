@@ -62,7 +62,15 @@ if (!connectionString) {
           slug: `rls-tenant-b-${suffix}`,
         },
       });
-      tenantIds.push(tenantA.id, tenantB.id);
+      // Ω4C PR-01 / D-Ω4C-RECON-07 — 3º tenant EFÊMERO (nunca seed) para provar isolamento de
+      // `attachments` (anexos genéricos polimórficos) com 3 tenants distintos.
+      const tenantC = await client.tenant.create({
+        data: {
+          name: `RLS Tenant C ${suffix}`,
+          slug: `rls-tenant-c-${suffix}`,
+        },
+      });
+      tenantIds.push(tenantA.id, tenantB.id, tenantC.id);
 
       const [allocationRun] = await client.$queryRaw<Array<{ id: string }>>`
         INSERT INTO cloud_cost_allocation_runs (
@@ -959,6 +967,98 @@ if (!connectionString) {
         };
       });
 
+      // Ω4C PR-01 (RN-ANEXO-08) — `attachments` (anexos genéricos polimórficos) com 3 tenants EFÊMEROS
+      // (A, B, C). entity_id é um UUID qualquer (a tabela só tem FK ao tenant); o par entity_type/entity_id
+      // é polimórfico. Prova: invisível sem contexto + cross-tenant updateMany count=0 + visível in-tenant.
+      const insertGenericAttachment = (tx: typeof client, tenantId: string) => tx.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO attachments (
+          tenant_id, entity_type, entity_id, file_name, extension, content_type, size_bytes,
+          storage_provider, storage_key, file_url, status, metadata
+        )
+        VALUES (
+          ${tenantId}::uuid, 'maintenance_order', gen_random_uuid(), 'evidence.pdf', 'pdf',
+          'application/pdf', 128, 'local', ${`maintenance_order/${tenantId}/evidence.pdf`},
+          ${`local://attachments/${tenantId}/evidence.pdf`}, 'stored', '{}'::jsonb
+        )
+        RETURNING id
+      `;
+      const genericAttachmentAId = await withTenantRls(client, tenantA.id, async (tx) => {
+        const [row] = await insertGenericAttachment(tx as typeof client, tenantA.id);
+        return row.id;
+      });
+      const genericAttachmentBId = await withTenantRls(client, tenantB.id, async (tx) => {
+        const [row] = await insertGenericAttachment(tx as typeof client, tenantB.id);
+        return row.id;
+      });
+      const genericAttachmentCId = await withTenantRls(client, tenantC.id, async (tx) => {
+        const [row] = await insertGenericAttachment(tx as typeof client, tenantC.id);
+        return row.id;
+      });
+
+      const genericAttachmentsWithoutContext = await client.attachment.findMany({
+        where: {
+          id: {
+            in: [genericAttachmentAId, genericAttachmentBId, genericAttachmentCId],
+          },
+        },
+      });
+      assert.deepEqual(
+        genericAttachmentsWithoutContext.map((attachment) => attachment.id),
+        [],
+        "tenant-scoped attachments must not be visible without app.current_tenant_id",
+      );
+
+      const tenantAAttachmentView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.attachment.findMany({
+          where: {
+            id: {
+              in: [genericAttachmentAId, genericAttachmentBId, genericAttachmentCId],
+            },
+          },
+        });
+        const crossTenantAttachmentUpdate = await tx.attachment.updateMany({
+          where: {
+            id: {
+              in: [genericAttachmentBId, genericAttachmentCId],
+            },
+          },
+          data: {
+            status: "rejected",
+          },
+        });
+        return {
+          visibleIds: visible.map((attachment) => attachment.id),
+          crossUpdatedRows: crossTenantAttachmentUpdate.count,
+        };
+      });
+      assert.deepEqual(
+        tenantAAttachmentView.visibleIds,
+        [genericAttachmentAId],
+        "tenant A must only see its own attachment (not tenant B/C)",
+      );
+      assert.equal(
+        tenantAAttachmentView.crossUpdatedRows,
+        0,
+        "tenant A must not update tenant B/C attachments",
+      );
+
+      const tenantBAttachment = await withTenantRls(client, tenantB.id, (tx) =>
+        tx.attachment.findUnique({
+          where: {
+            id: genericAttachmentBId,
+          },
+        }),
+      );
+      assert.equal(tenantBAttachment?.status, "stored", "tenant B attachment stays visible + untouched in-tenant");
+      const tenantCAttachment = await withTenantRls(client, tenantC.id, (tx) =>
+        tx.attachment.findUnique({
+          where: {
+            id: genericAttachmentCId,
+          },
+        }),
+      );
+      assert.equal(tenantCAttachment?.status, "stored", "tenant C attachment stays visible + untouched in-tenant");
+
       const globalTenants = await client.tenant.findMany({
         where: {
           id: {
@@ -966,7 +1066,7 @@ if (!connectionString) {
           },
         },
       });
-      assert.equal(globalTenants.length, 2, "tenants must remain a global platform table");
+      assert.equal(globalTenants.length, 3, "tenants must remain a global platform table");
 
       const usersWithoutContext = await client.user.findMany({
         where: {
@@ -1405,6 +1505,11 @@ if (!connectionString) {
     } finally {
       for (const tenantId of tenantIds) {
         await withTenantRls(client, tenantId, async (tx) => {
+          await tx.attachment.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
           await tx.fieldDispatchEvent.deleteMany({
             where: {
               tenant_id: tenantId,
