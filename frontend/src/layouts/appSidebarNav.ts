@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   BarChart3,
   Bell,
+  BookUser,
   Building2,
   Calculator,
   CheckCircle,
@@ -58,6 +59,7 @@ const MANUTENCAO: NavItem = { label: "Manutenção", path: "/fleet/maintenance",
 const MULTAS: NavItem = { label: "Multas", path: "/fleet/fines", icon: Gavel };
 const SEGUROS: NavItem = { label: "Seguros", path: "/fleet/insurance", icon: ShieldCheck };
 const DANOS: NavItem = { label: "Danos", path: "/fleet/damages", icon: AlertTriangle };
+const EXTRATO_PROFISSIONAL: NavItem = { label: "Extrato do Profissional", path: "/fleet/statement", icon: BookUser };
 
 const CLIENTES: NavItem = { label: "Clientes", path: "/cadastros/clientes", icon: Contact };
 const FILIAIS: NavItem = { label: "Filiais", path: "/cadastros/filiais", icon: Building2 };
@@ -88,6 +90,12 @@ const G_VISAO_GERAL: NavGroup = { label: "VISÃO GERAL", items: [DASHBOARD] };
 const G_OPERACAO_FULL: NavGroup = { label: "OPERAÇÃO", items: [OS, DESPACHOS, MAPA, ORCAMENTOS, APROVACOES, CHECKLISTS] };
 const G_FROTA_FULL: NavGroup = {
   label: "FROTA",
+  items: [VIATURAS, ABASTECIMENTO, MANUTENCAO, MULTAS, SEGUROS, DANOS, EXTRATO_PROFISSIONAL],
+};
+// FROTA operacional (dispatcher/operador de campo): SEM "Extrato do Profissional" — a folha do profissional
+// é sensível e o operador não tem professional_statements:read (D-Ω4C-EXTRATO-RBAC). O backend é a autoridade.
+const G_FROTA_OPERACIONAL: NavGroup = {
+  label: "FROTA",
   items: [VIATURAS, ABASTECIMENTO, MANUTENCAO, MULTAS, SEGUROS, DANOS],
 };
 const G_GESTAO_FULL: NavGroup = {
@@ -112,7 +120,7 @@ export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
   dispatcher: [
     G_VISAO_GERAL,
     G_OPERACAO_FULL,
-    G_FROTA_FULL,
+    G_FROTA_OPERACIONAL,
     { label: "GESTÃO", items: [CLIENTES, EQUIPES, SERVICOS, TABELAS_VALORES, TARIFAS, ESTOQUE] },
     { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES] },
   ],
@@ -121,7 +129,7 @@ export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
     G_VISAO_GERAL,
     // Ω3-a — finance tem service_quotes:read/create/update (matriz RBAC): vê "Orçamentos" (veto V2).
     { label: "OPERAÇÃO", items: [ORCAMENTOS, APROVACOES] },
-    { label: "FROTA", items: [ABASTECIMENTO, MANUTENCAO, MULTAS, SEGUROS, DANOS] },
+    { label: "FROTA", items: [ABASTECIMENTO, MANUTENCAO, MULTAS, SEGUROS, DANOS, EXTRATO_PROFISSIONAL] },
     { label: "GESTÃO", items: [ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO, COBRANCAS, PAGAMENTOS] },
     { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES, AUDITORIA] },
   ],
@@ -164,6 +172,7 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/fleet/fines",
   "/fleet/insurance",
   "/fleet/damages",
+  "/fleet/statement",
   "/inventory",
   "/purchase-orders",
   "/finance/commissions",

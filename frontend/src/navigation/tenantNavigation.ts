@@ -293,6 +293,19 @@ export const tenantNavigation: NavigationItem[] = [
     icon: "AlertTriangle",
     status: "implemented",
   },
+  {
+    // Ω4C PR-03 — Extrato do Profissional (razão financeiro por profissional). Gate por permissão real
+    // (professional_statements:read, D-Ω4C-EXTRATO-RBAC): read amplo (admins/finance/manager/auditor),
+    // NUNCA operador/field_technician — a folha é sensível. Sem allowedRoles: a permissão é a autoridade.
+    id: "tenant-fleet-statement",
+    label: "Extrato do Profissional",
+    path: "/fleet/statement",
+    scope: "fleet",
+    mode: "operation",
+    requiredPermissions: ["professional_statements:read"],
+    icon: "BookUser",
+    status: "implemented",
+  },
   // ── GESTÃO ──
   {
     id: "tenant-inventory",
