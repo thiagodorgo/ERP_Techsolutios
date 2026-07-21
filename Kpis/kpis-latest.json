@@ -30,7 +30,7 @@
       "value": 1289,
       "total": 1295,
       "display": "1289/1295",
-      "note": "+7 (tests/platform-tenant-detail.test.ts: detalhe cross-tenant real gated platform-only, usuarios via withTenantRls, 403/401/404, sem campo fabricado). Suite memoria 1295 testes 1289 pass 0 fail 6 skip. Sobre 1282/1288. Local: 77 falhas DB/JWT pre-existentes seguem."
+      "note": "1289/1295 (core-saas 26/26 com as 3 permissoes novas — asseroes de reforco em bloco existente, sem novo test()). PR-SCALE-1 RBAC autorizado pelo dono. Local: 77 falhas DB/JWT pre-existentes."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,8 +56,8 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 66,
-      "display": "66",
+      "value": 69,
+      "display": "69",
       "note": "reconciliacao D-Ω4-KPI-RELATORIO adiciona os 8 agregados-feature do Ω4 (1..8); blocos de governanca/pos-analise/fix nao contam como feature."
     },
     "mobile_backend_contracts": {

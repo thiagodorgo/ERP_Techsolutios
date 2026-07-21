@@ -6,6 +6,34 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-21 - PR-SCALE-1 (RBAC) purchase_orders/reports no catalogo + gating dos mock shells
+
+### Resultado
+
+- **DONO AUTORIZOU EXPLICITAMENTE:** "adicionar purchase_orders/reports ao catalogo e conceder conforme a matriz" (destravou o
+  guardrail de seguranca que bloqueava expansao de RBAC por inferencia).
+- Adicionadas ao catalogo: `purchase_orders:read`, `purchase_orders:create`, `reports:read`. **Concessoes CONFORME o RBAC_MATRIX
+  linha 48 "Purchasing"** (NAO o espelho inventory_items — a junta pegou o sub-provisionamento e reconciliei a matriz, §A2
+  **D-SCALE-RBAC-PURCHASING**):
+  - **create** → manager/operator/inventory (+admins) — "request" = submeter/criar a requisicao.
+  - **read** → manager/operator/finance/inventory/auditor/support/viewer (+admins).
+  - **NONE** → field_technician/field_dispatcher/technician (Purchasing=none p/ campo/despacho).
+  - `reports:read` **amplo** (linha 55, todos os papeis com escopo).
+- **Gating de UI dos mock shells:** DispatchConsole (Novo despacho/Despachar/Atribuir por `field_dispatch:create`; Alocar reforco
+  por `:reassign`) + Pedidos (Novo pedido por `purchase_orders:create`). `seed.ts`: 3 descricoes PT-BR. `core-saas.test.ts`:
+  `expectedPermissionCatalog` espelhado (deepEqual ordem-sensivel, NAO enfraquecido) + asseroes de reforco por papel.
+- Junta: **coordenador-de-acessos APROVADO** (grants = matriz exata, zero escalada) + **agente-ci-doutor APROVADO** (26/26,
+  0 falha nova) + **validador-mestre** (ALTA operator + MEDIA support **SANADAS** pela reconciliacao). Registrado
+  **P-PURCHASE-ORDERS-BACKEND-GATE** (gate server-side nasce com o endpoint de Pedidos/Relatorios). **SEM migracao de schema**
+  (so seed DATA + catalogo TS).
+
+### KPIs
+
+- `backend_tests` **1289/1295** (core-saas 26/26 com as 3 permissoes novas — asseroes em bloco existente, sem novo `test()`).
+- `frontend_smoke_tests` **650/650** (gating nao coberto por smoke — telas mock; inalterado).
+- `blocks_completed` **68 -> 69** (+1 bloco-feature de RBAC).
+- `flutter_tests` 764, `mvp_demo` 99%, `mvp_vendavel` 88% — **INALTERADOS**. Backfill #256: `pr`/`merge_commit`/`approved_head` = 179b52c.
+
 ## 2026-07-21 - WS-SCALE-8TELAS PR-SCALE-5c (platform tenant detail) Detalhe da Organizacao real
 
 ### Resultado

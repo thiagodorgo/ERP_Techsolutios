@@ -1,6 +1,8 @@
 import { Plus } from "lucide-react";
 import type { CSSProperties } from "react";
 
+import { usePermissions } from "../../../providers/PermissionProvider";
+
 // "Pedidos de Compra" (sc_pedidos). Alvo: screen-refs/web/pedidos-compra.png.
 
 type OrderRow = {
@@ -26,6 +28,9 @@ const GRID: CSSProperties = { display: "grid", gridTemplateColumns: "1fr 1.6fr 2
 const mono = "'JetBrains Mono', monospace";
 
 export function PedidosPage() {
+  const { can } = usePermissions();
+  // Backend continua a autoridade — o gate server-side real deve existir quando o endpoint de Pedidos existir; aqui só UX.
+  const canCreate = can("purchase_orders:create");
   return (
     <div style={{ color: "#0F172A" }}>
       {/* header */}
@@ -34,12 +39,14 @@ export function PedidosPage() {
           <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A" }}>Pedidos de Compra</div>
           <div style={{ fontSize: 13, color: "#64748B", marginTop: 2 }}>5 pedidos · 1 aguardando aprovação</div>
         </div>
-        <button
-          style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 14px", background: "#2563EB", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}
-        >
-          <Plus size={15} />
-          Novo pedido
-        </button>
+        {canCreate && (
+          <button
+            style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 14px", background: "#2563EB", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}
+          >
+            <Plus size={15} />
+            Novo pedido
+          </button>
+        )}
       </div>
 
       {/* card + table */}

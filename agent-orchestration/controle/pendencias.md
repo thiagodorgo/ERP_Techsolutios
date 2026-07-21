@@ -1236,3 +1236,14 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   usuarios + modulos) real para wirar o detalhe. Backend: reusar listUsersForTenant(withTenantRls) + listTenantModules; sem
   migracao. MRR/uptime/saude-do-sistema por org = sem fonte (omitir, como no overview).
 - status: ABERTA (follow-up do WS-SCALE; PR-5a entregou o overview; detalhe fica para PR proprio).
+
+## P-PURCHASE-ORDERS-BACKEND-GATE - Gate server-side de Pedidos/Relatórios pendente (2026-07-21, PR-SCALE-1)
+
+- descricao: o PR-SCALE-1 adicionou `purchase_orders:read/create` e `reports:read` ao catálogo RBAC + gateou as AÇÕES DE UI das
+  telas mock (DispatchConsole por field_dispatch:*; Pedidos "Novo pedido" por purchase_orders:create). Mas as rotas /purchase-orders
+  e /reports ainda são TELAS MOCK — não há endpoint de domínio no backend enforçando essas permissões (o gate atual é só UX).
+- impacto: nenhum dado protegido é exposto (as telas não têm dado real). CLAUDE.md §2.4/DoD: backend é a autoridade final.
+- proximo: quando os endpoints reais de Pedidos de Compra e Relatórios forem construídos (Onda 4/3 do scale-roadmap), eles DEVEM
+  aplicar `requirePermission("purchase_orders:*"/"reports:read")` server-side. O catálogo + gating de UI desta fatia já preparam o
+  terreno (fecha o gap pré-existente em que App.tsx/navegação referenciavam permissões ausentes do catálogo).
+- status: ABERTA (nasce junto com o endpoint; gating de UI isolado é cosmético mas correto).

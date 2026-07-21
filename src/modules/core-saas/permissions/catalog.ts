@@ -114,6 +114,8 @@ export const PERMISSION_CATALOG = [
   "stock_movements:create",
   "cycle_counts:read",
   "cycle_counts:create",
+  "purchase_orders:read",
+  "purchase_orders:create",
   "field_location:read",
   "field_location:send",
   "field_location:history",
@@ -129,6 +131,7 @@ export const PERMISSION_CATALOG = [
   "billing:read",
   "invoices:read",
   "payments:read",
+  "reports:read",
   "commissions:read",
   "commissions:read_own",
   "commissions:manage_policy",
@@ -301,6 +304,11 @@ export const ROLE_PERMISSIONS = {
     // F7b (Estoque avançado): manager conduz contagens cíclicas (quem conta).
     "cycle_counts:read",
     "cycle_counts:create",
+    // PR-SCALE-1 — Pedidos de Compra: manager pede/aprova (RBAC_MATRIX "Purchasing"=request/approve) → read+create;
+    // Reports (RBAC_MATRIX "Reports and analytics" dá escopo de relatório a todos os papéis).
+    "purchase_orders:read",
+    "purchase_orders:create",
+    "reports:read",
     "field_location:read",
     "field_location:history",
     "field_operator:read",
@@ -332,6 +340,8 @@ export const ROLE_PERMISSIONS = {
   ],
   technician: [
     "dashboard:read",
+    // PR-SCALE-1 — Reports (RBAC_MATRIX "Reports and analytics" dá escopo de relatório a todos os papéis).
+    "reports:read",
     "os.read",
     "inventory.read",
     "notifications:read",
@@ -374,6 +384,8 @@ export const ROLE_PERMISSIONS = {
   ],
   field_dispatcher: [
     "dashboard:read",
+    // PR-SCALE-1 — Reports (escopo de relatório a todos os papéis). NÃO recebe purchase_orders (Purchasing=none p/ despacho).
+    "reports:read",
     "os.read",
     "customers:read",
     "vehicles:read",
@@ -446,6 +458,10 @@ export const ROLE_PERMISSIONS = {
     "stock_movements:read",
     // F7b (Estoque avançado): viewer lê contagens cíclicas (read-only).
     "cycle_counts:read",
+    // PR-SCALE-1 — Pedidos de Compra: viewer consulta (espelha inventory_items:read) → só read;
+    // Reports (escopo de relatório a todos os papéis).
+    "purchase_orders:read",
+    "reports:read",
     "work_orders:read",
     "field_location:read",
     "field_operator:read",
@@ -497,6 +513,13 @@ export const ROLE_PERMISSIONS = {
     // F7b (Estoque avançado): operator conta (contagem cíclica), mas não recalcula ABC.
     "cycle_counts:read",
     "cycle_counts:create",
+    // PR-SCALE-1 — Pedidos de Compra: operator REQUISITA (cria) e consulta. RBAC_MATRIX "Purchasing"=request
+    // → capacidade de submeter/criar a requisição de compra (mesmo "request" de Inventory movements/Workflow).
+    // Decisão D-SCALE-RBAC-PURCHASING (controle/decisoes.md): request→create enquanto não houver perm dedicada
+    // de requisição×aprovação. Reports (escopo de relatório a todos os papéis).
+    "purchase_orders:read",
+    "purchase_orders:create",
+    "reports:read",
     "work_orders:read",
     "work_orders:comment",
     "work_orders:update",
@@ -540,6 +563,10 @@ export const ROLE_PERMISSIONS = {
     "stock_movements:read",
     // F7b (Estoque avançado): finance lê contagens cíclicas (read-only).
     "cycle_counts:read",
+    // PR-SCALE-1 — Pedidos de Compra: finance consulta (RBAC_MATRIX "Purchasing"=budget-check) → só read;
+    // Reports (finance-scoped).
+    "purchase_orders:read",
+    "reports:read",
     "commissions:read",
     "commissions:calculate",
     "commissions:approve",
@@ -589,12 +616,19 @@ export const ROLE_PERMISSIONS = {
     // F7b (Estoque avançado): inventory é DONO do estoque — conduz contagens cíclicas.
     "cycle_counts:read",
     "cycle_counts:create",
+    // PR-SCALE-1 — Pedidos de Compra: inventory é DONO do estoque (RBAC_MATRIX "Purchasing"=stock-driven-request)
+    // → read+create; Reports (inventory-scoped).
+    "purchase_orders:read",
+    "purchase_orders:create",
+    "reports:read",
     "os.read",
     "notifications:read",
     "notifications:update",
   ],
   field_technician: [
     "dashboard:read",
+    // PR-SCALE-1 — Reports (field-scoped na RBAC_MATRIX). NÃO recebe purchase_orders (Purchasing=none p/ campo).
+    "reports:read",
     "os.read",
     "inventory.read",
     "notifications:read",
@@ -668,6 +702,10 @@ export const ROLE_PERMISSIONS = {
     "stock_movements:read",
     // F7b (Estoque avançado): auditor lê contagens cíclicas (read-only).
     "cycle_counts:read",
+    // PR-SCALE-1 — Pedidos de Compra: auditor consulta (RBAC_MATRIX "Purchasing"=read) → só read;
+    // Reports (audit-full-read).
+    "purchase_orders:read",
+    "reports:read",
     "work_orders:read",
     "field_location:read",
     "field_location:history",
@@ -681,7 +719,9 @@ export const ROLE_PERMISSIONS = {
     "tenant_checklists:read",
     "checklist_runs:read",
   ],
-  support: ["dashboard:read", "users.read", "audit.read", "audit:read", "os.read", "notifications:read", "tenant_checklists:read", "checklist_runs:read"],
+  // PR-SCALE-1 — support: reports:read (support-scoped) + purchase_orders:read (RBAC_MATRIX "Purchasing"=support-view
+  // = leitura constrangida, só read). NÃO recebe purchase_orders:create.
+  support: ["dashboard:read", "reports:read", "purchase_orders:read", "users.read", "audit.read", "audit:read", "os.read", "notifications:read", "tenant_checklists:read", "checklist_runs:read"],
 } as const satisfies Record<Role, readonly Permission[]>;
 
 const permissionCatalog = new Set<string>(PERMISSION_CATALOG);

@@ -2,12 +2,14 @@ import { ClipboardList, MapPin, Send, SlidersHorizontal } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { usePermissions } from "../../../providers/PermissionProvider";
+
 // "Console Dispatcher" (sc_dispatchConsole). Alvo: screen-refs/web/console-tempo-real.png.
 
 const TENANT_NAME = "Techsolutions Industrial";
 
 type Kpi = { n: string; label: string; color: string; bg: string };
-type Alert = { dot: string; color: string; bg: string; border: string; tag: string; text: string; action: string };
+type Alert = { dot: string; color: string; bg: string; border: string; tag: string; text: string; action: string; requires?: "dispatch" | "reassign" };
 type QueueItem = {
   code: string;
   client: string;
@@ -40,9 +42,9 @@ const KPIS: Kpi[] = [
 ];
 
 const ALERTS: Alert[] = [
-  { dot: "#DC2626", color: "#DC2626", bg: "#FEF2F2", border: "#FECACA", tag: "SLA crítico", text: "OS-2901 · Indústria Alfa — vence em 28 min sem técnico atribuído", action: "Atribuir agora" },
+  { dot: "#DC2626", color: "#DC2626", bg: "#FEF2F2", border: "#FECACA", tag: "SLA crítico", text: "OS-2901 · Indústria Alfa — vence em 28 min sem técnico atribuído", action: "Atribuir agora", requires: "dispatch" },
   { dot: "#D97706", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", tag: "Técnico parado", text: "Pedro Anhaia — localização não atualizada há 7 min", action: "Verificar" },
-  { dot: "#7C3AED", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE", tag: "Reforço solicitado", text: "Equipe Sul — 4 OS abertas e 1 técnico disponível", action: "Alocar reforço" },
+  { dot: "#7C3AED", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE", tag: "Reforço solicitado", text: "Equipe Sul — 4 OS abertas e 1 técnico disponível", action: "Alocar reforço", requires: "reassign" },
 ];
 
 const QUEUE: QueueItem[] = [
@@ -66,6 +68,10 @@ const colLabel: CSSProperties = { fontSize: 10.5, fontWeight: 700, color: "#94A3
 
 export function DispatchConsolePage() {
   const navigate = useNavigate();
+  const { can } = usePermissions();
+  // Backend continua a autoridade (RBAC_MATRIX field_dispatch:*); aqui só moldamos a UX (esconde ação de escrita).
+  const canDispatch = can("field_dispatch:create");
+  const canReassign = can("field_dispatch:reassign");
 
   return (
     <div style={{ color: "#0F172A" }}>
@@ -78,7 +84,9 @@ export function DispatchConsolePage() {
         <div style={{ display: "flex", gap: 8 }}>
           <button style={headBtn}><SlidersHorizontal size={14} />Filtrar</button>
           <button onClick={() => navigate("/operations/map")} style={headBtn}><MapPin size={14} />Ver mapa</button>
-          <button style={{ ...headBtn, background: "#2563EB", border: "none", color: "#fff" }}><Send size={14} />Novo despacho</button>
+          {canDispatch && (
+            <button style={{ ...headBtn, background: "#2563EB", border: "none", color: "#fff" }}><Send size={14} />Novo despacho</button>
+          )}
         </div>
       </div>
 
@@ -101,7 +109,9 @@ export function DispatchConsolePage() {
               <span style={{ fontSize: 12, fontWeight: 700, color: a.color }}>{a.tag}</span>
               <span style={{ fontSize: 12, color: "#475569", marginLeft: 6 }}>{a.text}</span>
             </div>
-            <button style={{ padding: "4px 10px", background: "#fff", border: `1px solid ${a.border}`, borderRadius: 7, fontSize: 11.5, fontWeight: 700, color: a.color, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>{a.action}</button>
+            {(!a.requires || (a.requires === "dispatch" ? canDispatch : canReassign)) && (
+              <button style={{ padding: "4px 10px", background: "#fff", border: `1px solid ${a.border}`, borderRadius: 7, fontSize: 11.5, fontWeight: 700, color: a.color, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>{a.action}</button>
+            )}
           </div>
         ))}
       </div>
@@ -144,7 +154,9 @@ export function DispatchConsolePage() {
                 <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 99, background: q.statusBg, color: q.statusColor, whiteSpace: "nowrap" }}>{q.status}</span>
               </div>
               <div style={{ flex: 0.8, display: "flex", justifyContent: "flex-end", gap: 4 }}>
-                <button onClick={(e) => e.stopPropagation()} style={{ padding: "5px 10px", background: "#2563EB", border: "none", borderRadius: 7, fontSize: 11.5, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>Despachar</button>
+                {canDispatch && (
+                  <button onClick={(e) => e.stopPropagation()} style={{ padding: "5px 10px", background: "#2563EB", border: "none", borderRadius: 7, fontSize: 11.5, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>Despachar</button>
+                )}
               </div>
             </div>
           ))}
@@ -171,7 +183,9 @@ export function DispatchConsolePage() {
                 <span style={{ fontSize: 11.5, color: t.osColor, fontWeight: 600 }}>{t.os}</span>
               </div>
               <div style={{ display: "flex", gap: 6, marginTop: 8, paddingLeft: 44 }}>
-                <button style={{ flex: 1, padding: 6, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 11.5, fontWeight: 700, color: "#334155", cursor: "pointer", fontFamily: "inherit" }}>Atribuir OS</button>
+                {canDispatch && (
+                  <button style={{ flex: 1, padding: 6, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 11.5, fontWeight: 700, color: "#334155", cursor: "pointer", fontFamily: "inherit" }}>Atribuir OS</button>
+                )}
                 <button style={{ flex: 1, padding: 6, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 11.5, fontWeight: 700, color: "#334155", cursor: "pointer", fontFamily: "inherit" }}>Ver rota</button>
               </div>
             </div>
