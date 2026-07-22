@@ -5,6 +5,9 @@ export const JOB_NAMES = [
   "checklist-attachment-postprocess",
   "cloud-usage.aggregate-daily",
   "notification-dispatch",
+  // Ω4C PR-04 — varredura recorrente auto-reenfileirante do motor de notificações agendáveis (reuso do
+  // job.worker.ts; SEM node-cron). Só executa com o worker ligado (flag JOBS_WORKER_ENABLED, default OFF).
+  "notifications.scan-due",
   "audit-log-fanout",
   "field-ops-event-fanout",
 ] as const;

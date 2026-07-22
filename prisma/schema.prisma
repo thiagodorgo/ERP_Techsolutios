@@ -82,6 +82,7 @@ model Tenant {
   tenant_cloud_cost_allocations TenantCloudCostAllocation[]
   local_auth_credentials        LocalAuthCredential[]
   notifications                 Notification[]
+  scheduled_notifications       ScheduledNotification[]
   roles                         Role[]
   user_role_assignments         UserRoleAssignment[]
   users                         User[]
@@ -120,6 +121,7 @@ model User {
   branch                           Branch?                 @relation(fields: [branch_id], references: [id], onDelete: SetNull)
   local_auth_credentials           LocalAuthCredential[]
   notifications                    Notification[]
+  scheduled_notifications          ScheduledNotification[]
   field_operator_locations         FieldOperatorLocation[]
   field_dispatch_events            FieldDispatchEvent[]    @relation("FieldDispatchEventActor")
   field_dispatches_created         FieldDispatch[]         @relation("FieldDispatchCreatedBy")
@@ -305,6 +307,44 @@ model Notification {
   @@index([tenant_id, recipient_user_id, created_at])
   @@index([tenant_id, status, created_at])
   @@map("notifications")
+}
+
+// Ω4C PR-04 (D-Ω4C-NOTIF-MODEL) — motor único de notificações AGENDÁVEIS. Camada de DEFINIÇÃO (o "cadastro"
+// do AutEM), separada da tabela `notifications` (ENTREGA/inbox por destinatário, INTOCADA). O scheduler
+// (job `notifications.scan-due`, reuso do job.worker.ts:86 — SEM node-cron) dispara o fan-out por visibilidade
+// para a camada de entrega. Enums em INGLÊS validados na APP (SEM CHECK): visibility private|public|custom;
+// status pending|fired|cancelled; source_type maintenance_item|fine|insurance_policy|financial_title|manual.
+model ScheduledNotification {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String    @db.Uuid
+  title                 String
+  message               String
+  notify_at             DateTime  @db.Timestamptz(6) // instante-alvo (absoluto; POST ancora naïve no fuso de negócio)
+  remind_before_minutes Int? // antecedência (minutos) do LEMBRETE
+  reminder_at           DateTime? @db.Timestamptz(6) // DERIVADA server-side = notify_at − remind_before (scan indexável)
+  visibility            String // private|public|custom (app-level, SEM CHECK)
+  custom_recipient_ids  Json      @default("[]") // array de user_ids p/ CUSTOM; validado app-level (∩ ativos) no disparo
+  source_type           String? // maintenance_item|fine|insurance_policy|financial_title|manual (nullable; manual=avulsa)
+  source_id             String?   @db.Uuid // id da entidade-fonte no MESMO tenant (SEM FK nativa; foundation-ready)
+  status                String    @default("pending") // pending|fired|cancelled
+  reminder_fired_at     DateTime? @db.Timestamptz(6) // guarda de idempotência do LEMBRETE
+  fired_at              DateTime? @db.Timestamptz(6) // guarda de idempotência do disparo PRINCIPAL
+  created_by            String    @db.Uuid
+  client_action_id      String?
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at            DateTime? @db.Timestamptz(6) // soft = "excluir da central" (soft-cancel)
+  tenant                Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  created_by_user       User      @relation(fields: [tenant_id, created_by], references: [tenant_id, id], onDelete: Cascade, map: "scheduled_notifications_created_by_fkey")
+
+  // O índice UNIQUE PARCIAL de idempotência de create (tenant_id, client_action_id) WHERE client_action_id IS
+  // NOT NULL vive só na migration 20260824000000 (Prisma não modela índice parcial) — espelha attachments/WOFI.
+  @@unique([tenant_id, id])
+  @@index([tenant_id, status, notify_at], map: "scheduled_notifications_scan_main_idx")
+  @@index([tenant_id, status, reminder_at], map: "scheduled_notifications_scan_reminder_idx")
+  @@index([tenant_id, created_by, created_at], map: "scheduled_notifications_creator_idx")
+  @@index([tenant_id, source_type, source_id], map: "scheduled_notifications_source_idx")
+  @@map("scheduled_notifications")
 }
 
 model CloudUsageEvent {

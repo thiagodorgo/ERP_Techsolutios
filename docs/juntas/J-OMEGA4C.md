@@ -284,6 +284,175 @@ no veredito; persistir em controle/decisoes.md no PR. D-Ω4C-EXTRATO do PLANO §
 - KPI: `docs/kpis/omega4c/KPI_PR-03.json`. `Kpis/*`: backend 1324→**1336** (+12 professional-statements); frontend_smoke 694→**703**
   (+9 extrato-profissional); blocks 73→**74**.
 
+### PR-04 — Motor de Notificações (model agendável + scheduler idempotente + endpoints + sino + popup de criar) — plano do omega4c-planejador (2026-07-21)
+**Veredicto Fase 0 (recon REAL, FATO vs HIPÓTESE):** **ESTENDER via camada aditiva**, NÃO criar do zero. O repo já tem um motor de
+notificações **maduro e vivo** — o "motor único agendável" do AutEM é a **camada que falta por cima** dele.
+- **FATO (li no código):** (a) Model `Notification` (`prisma/schema.prisma:280`, tabela `notifications`) é um **inbox POR DESTINATÁRIO**
+  (`recipient_user_id` NOT NULL, `status` unread|read|archived, `idempotency_key`, unique `(tenant_id,recipient_user_id,idempotency_key)`)
+  — **dispara na criação, sem `notify_at`/`remind_before`/`visibility`.** (b) Módulo backend completo em `src/modules/notifications/`
+  (service/controller/routes/dto/prisma-repo/recipient-resolver/**fleet-alerts.runner**/jobs) já montado em `src/app.ts:96`
+  (`createNotificationRouter()`); endpoints vivos: GET `/notifications`, GET `/notifications/unread-count`, POST
+  `/notifications/fleet-alerts/run`, POST `/notifications/:id/read`, `/notifications/read-all`, `/notifications/:id/archive`. (c)
+  **Scheduler in-process = `src/infra/jobs/job.worker.ts:86`** — `setInterval(pollIntervalMs)` que chama `processNextJob()` -> dequeue da
+  fila Redis (`job.queue.ts`, com ZSET de atrasados via `delayMs`/`promoteDueJobs`) -> `registry.get(name)` (`job.registry.ts`). Registrar
+  um job = `registry.register(name, handler)` + nome em `JOB_NAMES` (`job.types.ts`); há **precedente** `notification-dispatch`
+  (event-driven, enfileirado por `domain-event.publisher.ts`). **`startWorker()` NÃO é chamado em lugar nenhum** (`grep` no repo inteiro:
+  só a definição; `server.ts` não inicia worker) -> o loop existe mas está **dormente** em produção. (d) Sino JÁ existe: `AppShell.tsx`
+  (`Bell` + badge de não-lidas via `getUnreadNotificationCount` -> GET unread-count; escuta evento `notifications:changed`) + página
+  `/notifications` (`NotificationsPage.tsx`). (e) Fuso de negócio pronto: `src/config/business-time.ts` (`parseBusinessDate` ancora
+  naïve->BR-local UTC-3, `America/Sao_Paulo` via Intl). (f) `GET /users` (`listUsersForTenant`, perm `users:read`) + adapter front
+  `modules/users` existem -> picker do CUSTOM reusa isso. (g) Permissões atuais: só `notifications:read`/`notifications:update` (catalog.ts
+  :170-171; **não há `notifications:create`**); RBAC_MATRIX l.86 exige limitar read/update ao inbox do próprio usuário "unless a future
+  admin endpoint is explicitly designed" -> é EXATAMENTE o endpoint que este PR desenha.
+- **HIPÓTESE:** contagem exata do fan-out PUBLIC em tenants grandes; formato exato do picker CUSTOM do AutEM (não visto em frame limpo).
+- **AutEM (comportamento a reproduzir, ANALISE:191/226/258/260-263/288):** modal "Cadastrar notificação (avulsa)" = **Data e Hora* |
+  Antecedência (quanto tempo antes)* | Título* | Mensagem* | Tipo*: PRIVADA (só meu usuário) / PÚBLICA (todos) / PERSONALIZADA (selecionar
+  usuários)**; Central lista TODAS as notificações cadastradas (Manutenção/Contas a Pagar/Multas/Seguros/avulsas) com editar+excluir.
+
+- **Model — D-Ω4C-NOTIF-MODEL: DUAS CAMADAS (a mais aditiva; NÃO reescrever a tabela `notifications` madura).** NOVO model
+  **`ScheduledNotification`** (tabela `scheduled_notifications`) = a **DEFINIÇÃO agendada** (o "cadastro" do AutEM); a tabela
+  `notifications` existente permanece a **ENTREGA/inbox** (o disparo fan-out cai nela -> sino/central já leem). Justificativa: `notifications`
+  é per-destinatário e dispara na criação; PUBLIC/CUSTOM precisam de fan-out no momento do disparo + estado de leitura por-usuário -> a
+  camada de definição por cima é **aditiva e sem risco** (rewrite da tabela viva seria destrutivo/§C7.5). Campos de `ScheduledNotification`:
+  id · **tenant_id (1º)** · title · message · **notify_at** Timestamptz (data-alvo) · **remind_before_minutes** Int? (antecedência) ·
+  **reminder_at** Timestamptz? (DERIVADA server-side = notify_at − remind_before; persistida p/ scan indexável) · **visibility** enum-app
+  `private|public|custom` (labels PRIVADA/PÚBLICA/PERSONALIZADA, **SEM CHECK** — validado na app, padrão extrato) · **custom_recipient_ids**
+  Json (array de user_ids p/ CUSTOM; validado app-level contra usuários ATIVOS do tenant no disparo — descarta stale/cross-tenant; espelha
+  `visibility_rules`/`metadata` Json, **sem join table**) · **source_type** enum-app? `maintenance_item|fine|insurance_policy|financial_title|manual`
+  (nullable; `manual`=avulsa) · **source_id** uuid? (mesmo tenant, **sem FK nativa** — app-level, como party_id) · **status** enum-app
+  `pending|fired|cancelled` (default pending) · **reminder_fired_at** Timestamptz? + **fired_at** Timestamptz? (guardas de idempotência) ·
+  created_by uuid (**FK composta (tenant_id,created_by)->users**, como `Notification.recipient_user`) · client_action_id? · created_at/updated_at ·
+  deleted_at? (soft = "excluir da central"). Índices: `@@unique([tenant_id,id])` · unique PARCIAL `(tenant_id,client_action_id) WHERE
+  client_action_id IS NOT NULL` (create idempotente) · `@@index([tenant_id,status,notify_at])` (scan principal) · `@@index([tenant_id,status,
+  reminder_at])` (scan do lembrete) · `@@index([tenant_id,created_by,created_at])` ("minhas agendadas") · `@@index([tenant_id,source_type,
+  source_id])` (lookup dos consumidores). **RLS ENABLE+FORCE+POLICY USING+WITH CHECK** (clona `20260726000000_add_operator_profiles` /
+  `20260823000000`). Migração ADITIVA up-only `20260824000000_add_scheduled_notifications` (rollback = DROP TABLE, tabela nova sem dependente) —
+  provada up/down/re-up pelo **agente-dba-guardião**. Toca `prisma/**` (schema + migration + 1 descrição no seed) -> **requer autorização
+  explícita de `prisma/**` no comando do PR-04** (como PR-01/03). **Camada de ENTREGA = tabela `notifications` INTOCADA** (zero ALTER).
+- **Disparo/scheduler — D-Ω4C-NOTIF-SCHEDULER: REUSA `job.worker.ts:86` (setInterval), SEM node-cron.** NOVO job recorrente
+  **`notifications.scan-due`** (add em `JOB_NAMES` + `registry.register`): o handler (a) para cada tenant ativo, chama
+  `fireDueScheduledNotifications({tenantId, now})` dentro de `withTenantRls`; (b) **re-enfileira a si mesmo** com `delayMs` fixo (**60s**) via
+  o ZSET de atrasados já existente -> recorrência **sem lib nova**. `fireDueScheduledNotifications` varre **duas ocorrências**: LEMBRETE
+  (`status=pending ∧ reminder_at<=now ∧ reminder_fired_at IS NULL` -> dispara + seta reminder_fired_at) e PRINCIPAL (`status=pending ∧
+  notify_at<=now ∧ fired_at IS NULL` -> dispara + seta fired_at + status=fired). O disparo resolve destinatários por **visibilidade** e cria as
+  entregas na tabela `notifications` via `createManyNotifications` (reusa `sanitizeNotificationMetadata`). **`notify_at` no fuso de negócio:**
+  o POST parseia a entrada naïve `YYYY-MM-DDTHH:mm` via **`parseBusinessDate` (business-time.ts, America/Sao_Paulo)** -> instante absoluto
+  Timestamptz; o scan compara **instantes** (correto em qualquer fuso). **Worker start:** NOVO flag env `JOBS_WORKER_ENABLED` (default **false**);
+  em `src/server.ts main()`, se flag=true ∧ persistence=prisma -> `startWorker()` + enfileira o 1º `notifications.scan-due`. Guardado p/ testes/CI
+  (que importam `app.ts`, não `server.main()`) **nunca** subirem loop vivo. **Imediato sem depender do worker:** o POST, se `notify_at<=now`,
+  chama `fireDueScheduledNotifications` inline (MESMO caminho idempotente) -> notificação imediata funciona com o flag OFF.
+- **Idempotência — D-Ω4C-NOTIF-IDEMPOTENCY (invariante testável, mapeia a mandato "notification_id+fired_at"):** cada definição tem **no
+  máx. 2 instantes de disparo** (reminder_at, notify_at). Cada ocorrência dispara **exatamente uma vez**: guardas `reminder_fired_at`/`fired_at`
+  na definição barram o re-scan, e o **backstop DURO** é a `idempotencyKey = "sched:<scheduledNotificationId>:<occurrence>"` (occurrence ∈
+  {reminder, main}) na unique EXISTENTE `(tenant_id,recipient_user_id,idempotency_key)` das entregas -> re-disparo por destinatário é
+  de-duplicado no banco. **Prova (avaliador): chamar `fireDueScheduledNotifications` DUAS vezes com o mesmo `now` -> contagem de entregas
+  idêntica** (independe do loop vivo; espelha o teste dos produtores de fleet-alerts).
+- **Visibilidade — D-Ω4C-NOTIF-VISIBILITY:** `private`->`[created_by]` (só o criador); `public`->**todos os usuários ATIVOS do tenant**
+  (reusa `listRecipientCandidates`); `custom`->`custom_recipient_ids ∩ ativos do tenant` (descarta stale/cross-tenant no disparo). Usuário fora
+  do alvo **NUNCA** recebe (RN-NOTIF-02, provado com 3 usuários).
+- **Endpoints** (no MESMO `createNotificationRouter`, sub-path `/notifications/scheduled` — módulo coeso, evita import reverso): **POST**
+  `/notifications/scheduled` (o popup — cria definição; body {title, message, notify_at, remind_before_minutes?, visibility, custom_recipient_ids?,
+  source_type?, source_id?, client_action_id?}; source_type default `manual`; **dispara inline se notify_at<=now**) · **GET** `/notifications/scheduled`
+  (lista as definições **do próprio criador** — foundation; a lista tenant-wide de gestão é PR-20) · **GET** `/notifications/scheduled/:id`
+  (404 cross-tenant via get tenant-scoped) · **DELETE** `/notifications/scheduled/:id` (soft-cancel: status=cancelled + deleted_at -> para
+  ocorrências FUTURAS; entregas já disparadas permanecem no inbox — fato entregue não se "des-entrega"). Endpoints do inbox
+  (GET/unread-count/read/read-all/archive) e do sino **INTOCADOS**. Sem endpoint REST de "disparar" (disparo é interno: scan + inline). O `firing`
+  usa `type` `scheduled.reminder`/`scheduled.notification`, carrega source_type/source_id/actionUrl da definição.
+- **Permissão — D-Ω4C-NOTIF-RBAC: permissão NOVA `notifications:create`** (separa "ler as minhas" de "criar/gerir/broadcast"). **Ler o próprio
+  inbox** continua em `notifications:read` (amplo) e **agir no próprio inbox** em `notifications:update` (amplo) — **INTOCADOS**. **Criar/cancelar
+  uma notificação AGENDADA** (que pode fazer broadcast PUBLIC/CUSTOM) exige `notifications:create`, concedida só a papéis de **gestão/operação**:
+  super_admin, platform_admin, tenant_admin, manager, operator, field_dispatcher. `field_technician`/inventory/finance/auditor/viewer/support **NÃO**
+  criam (um técnico não deve disparar broadcast pra org inteira; self-reminder privado p/ papéis de campo -> **Ω5**, D-007). Backend é a autoridade ->
+  papel sem `create` no POST -> **403 real testado**. **Exige explicitamente (4 pontos, espelha D-Ω4C-EXTRATO-RBAC):** (1)
+  `src/modules/core-saas/permissions/catalog.ts` — `notifications:create` no PERMISSION_CATALOG (junto de read/update, l.170) + nas listas dos 6
+  papéis; (2) `tests/core-saas.test.ts` — a nova na MESMA posição de `expectedPermissionCatalog` (o `deepEqual` é o gate); (3) `prisma/seed.ts` —
+  descrição PT-BR (opcional; fallback l.205); (4) `RBAC_MATRIX.md` — 1 linha (o "future admin endpoint explicitly designed" da l.86, agora desenhado).
+- **Frontend — D-Ω4C-NOTIF-CENTRAL-SPLIT (parada honesta):** PR-04 entrega a **fundação** — (i) **popup reutilizável**
+  `frontend/src/modules/notifications/components/CreateNotificationDialog.tsx` (campos AutEM: Data e Hora, Antecedência, Título, Mensagem, Tipo
+  PRIVADA/PÚBLICA/PERSONALIZADA + picker de usuários no CUSTOM reusando `GET /users`), o component que Manutenção (PR-06) e Multa/Seguro (PR-09)
+  vão invocar depois; (ii) montado como consumidor vivo na `NotificationsPage` existente (botão "Cadastrar notificação", **gate
+  `can("notifications:create")`**) + adapter `createScheduledNotification`/`cancelScheduledNotification` em `notification.service.ts`; (iii) **sino
+  confirmado** (já existe; o motor alimenta o inbox -> unread-count reflete automaticamente, zero mudança no contrato do sino). A **Central de
+  gestão tenant-wide** (listar TODAS as agendadas + editar/excluir de qualquer criador) = **PR-20** (mandato §6). §3 PT-BR ("Notificações",
+  nunca termo técnico), §7 estados (loading/empty/error/**acesso não permitido**/desatualizado), §2.8 (nunca vazar `custom_recipient_ids`/
+  tenant_id/client_action_id a não-criador; metadata sanitizada).
+- **RNs:** NOTIF-01 (idempotência de disparo — 2 ocorrências, cada uma 1x/destinatário; re-scan não duplica; guardas + unique de entrega) ·
+  NOTIF-02 (visibilidade — private/public/custom; fora-do-alvo nunca recebe; 3 usuários) · NOTIF-03 (agendamento no fuso de negócio — parseBusinessDate
+  BR-local; instante com Z respeitado; dispara só quando notify_at<=now) · NOTIF-04 (remind_before -> ocorrência de LEMBRETE em reminder_at, independente
+  e idempotente da PRINCIPAL) · NOTIF-05 (contrato source_type/source_id pronto p/ consumidores, nullable, `manual`=avulsa, sem FK nativa; PR-04 **NÃO
+  acopla** aos módulos — evita ciclo) · NOTIF-06 (multi-tenant 3 tenants efêmeros — scheduled_notifications e entregas tenant-scoped; cross 404; scan de
+  A nunca entrega em B; updateMany cross=0; tenant_id 1º índice) · NOTIF-07 (§2.8/LGPD — DTO allowlist; sem tenant_id/client_action_id/custom_recipient_ids
+  a não-criador; metadata sanitizada) · NOTIF-08 (RBAC — read-mine amplo vs create novo gestão/operação; POST sem create -> 403 real) · NOTIF-09
+  (ciclo de vida — DELETE=soft-cancel para futuras; entregues permanecem; fired não re-dispara; cancelar antes do disparo cancela ambas as ocorrências) ·
+  NOTIF-10 (sino alimentado pelo motor — entregas caem no inbox existente; contrato do sino inalterado).
+- **Divergências AutEM honestas (D-007):** (i) recorrência da "próxima manutenção **por Tempo OU Quilometragem**" (ANALISE:191) — a recorrência por
+  KM depende de hodômetro/telemetria (PR-06/16); PR-04 entrega `notify_at` **por tempo** + o popup reutilizável; a recorrência por KM é registrada pelo
+  **consumidor de Manutenção** depois. (ii) **schedule recorrente** (repetir a cada N dias) — o motor do PR-04 dispara uma definição **one-shot**
+  (lembrete + principal); a repetição é responsabilidade do consumidor (re-registra a próxima ocorrência) -> parada honesta. (iii) **Central de gestão
+  tenant-wide + editar** -> PR-20. (iv) **self-service** de lembrete privado p/ papéis de campo -> **Ω5** (create é gestão/operação; app de campo não faz
+  broadcast). (v) **worker dormente:** ligar `JOBS_WORKER_ENABLED` também drena a fila de jobs de evento pré-existente (`notification-dispatch` de
+  checklist) — comportamento LATENTE do worker compartilhado, ativado deliberadamente por flag, **não é regressão do PR-04**; nenhum produtor alterado.
+- **Bateria de validação (seção 10 — o avaliador roda):** `npx prisma validate` + `prisma migrate diff` (sem drift) + **dba-guardião prova up/down/re-up**
+  de `20260824000000_add_scheduled_notifications` (ADITIVA: CREATE TABLE + RLS ENABLE/FORCE/POLICY + índices + FK composta; rollback=DROP TABLE);
+  backend `npm run check` · `lint` · `test` · `build`; `node --test --import tsx tests/scheduled-notifications.test.ts` (NOVO — CRUD agendada + **fireDue
+  idempotência [2x mesmo now -> mesmas entregas]** + visibilidade private/public/custom com 3 usuários + remind_before (lembrete) + notify_at TZ
+  (parseBusinessDate) + cancel para-futuras/mantém-entregues + RBAC 403); `tests/rls-tenant-isolation.test.ts` estendido (3 tenants efêmeros; cross 404;
+  scan de A não entrega em B; updateMany cross=0); `tests/core-saas.test.ts` (expectedPermissionCatalog com `notifications:create`); **ZERO regressão** em
+  `notifications.test.ts` (4) · `notification-routes.test.ts` (2) · `fleet-alerts-notifications.test.ts` (10) · `job-queue.test.ts`; frontend `npm --prefix
+  frontend run check` · `build` · smoke (CreateNotificationDialog + montagem na NotificationsPage + guard `notifications:create` + estados §7); `git diff
+  --check` + `git status --short` limpo (schema/migration/seed/catalog/RBAC_MATRIX/server.ts/env.ts/testes incluídos por caminho; `app.ts` já monta o
+  router -> sem mudança). KPI `docs/kpis/omega4c/KPI_PR-04.json` + histórico + snapshot; Kpis/* backend +N (scheduled-notifications+core-saas), frontend_smoke
+  +M, blocks 74->**75**.
+- **Riscos + rollback:** (R1) **loop runaway / tempestade de notificações** -> mitigado: re-enqueue com delayMs fixo (60s), guardas fired_at/reminder_fired_at,
+  unique de entrega como backstop, flag default OFF; PUBLIC reusa `listRecipientCandidates` (cap de 20 já existente no resolver — reavaliar p/ broadcast).
+  (R2) **visibilidade vazando entre usuários** -> mitigado: resolução por visibility no disparo + RLS FORCE + teste 3-usuários + DTO não expõe
+  custom_recipient_ids a não-criador. (R3) **worker dormente ativado dispara jobs de evento pré-existentes** -> mitigado: flag deliberada, é o desenho do
+  worker compartilhado, nenhum produtor tocado, documentado (D-007 v). (R4) **scan O(tenants)** -> mitigado v1 (poucos tenants); índice
+  `(tenant_id,status,notify_at)`; futuro: cursor/fila por tenant. (R5) **prisma/**** -> só ADITIVO (CREATE TABLE + RLS + índices; +1 permissão catalog/seed;
+  +flag env); **rollback = DROP TABLE `scheduled_notifications`** (tabela nova, sem dependente) + revert do PR (catalog/seed/test/server/env/front). Sem
+  destrutivo (respeita parada §C7.5). **Sem dependência nova nem serviço externo pago -> junta normal, NÃO junta-5.**
+
+**APROVADO para implementar.** (D-records desta fatia: **D-Ω4C-NOTIF-MODEL · -SCHEDULER · -IDEMPOTENCY · -VISIBILITY · -RBAC · -CENTRAL-SPLIT** — a junta
+ratifica no veredito; persistir em controle/decisoes.md no PR. D-Ω4C-NOTIF do PLANO §2 permanece a decisão-mãe, aqui detalhada. Confirma FASE0_RECON §5:
+reuso do `job.worker.ts:86`, **node-cron proibido**.)
+
+#### PR-04 — Veredito da junta (2026-07-21) — **APROVADO (4 vetos, condição-BLOQUEIA descarregada em paralelo)**
+- **agente-dba-guardião** → `APROVADO` (0 condições): migração `20260824000000_add_scheduled_notifications` provada **UP/DROP/RE-UP** em DB
+  scratch isolada (cadeia completa das 60 migrações). Puramente aditiva (CREATE TABLE `scheduled_notifications` + 6 índices + FK composta
+  `(tenant_id, created_by)`→users CASCADE + FK tenant RESTRICT + RLS ENABLE/FORCE/POLICY USING+WITH CHECK + unique parcial de idempotência
+  `(tenant_id, client_action_id) WHERE client_action_id IS NOT NULL`); **ZERO ALTER/DROP na tabela `notifications` existente** (grep
+  confirmou; toda ocorrência é `scheduled_notifications`). `notify_at`/`fired_at`/`reminder_fired_at` timestamptz, `custom_recipient_ids`
+  jsonb, todo índice não-PK com `tenant_id` 1º. DROP preserva notifications/users (linhas/índices/RLS t/t); RE-UP idempotente. Integridade:
+  FK cross-tenant → **23503**; colisão de idempotência → **23505**. Base de dev nunca tocada.
+- **omega4c-avaliador** → `APROVADO_CONDICIONADO`→**descarregada**: seção 10 verde em modo CI/memória — frontend smoke **719/719**,
+  `scheduled-notifications` **14/14**, `core-saas` **26/26**, **zero regressão** (inbox/notification-routes/fleet-alerts-notifications
+  56/56), build/lint/check/prisma-validate/git-diff limpos, **worker NÃO sobe nos testes** (flag default false; `startWorker()` só em
+  server.main(); processo saiu limpo, sem timeout). RN-NOTIF-01..07 cobertas: **idempotência de disparo** provada por 2 testes (guarda
+  `fired_at`/`reminder_fired_at` + backstop duro `sched:<id>:<occurrence>` na unique de entrega), **visibilidade** PRIVATE/PUBLIC/CUSTOM
+  sem vazamento (3 usuários), posse 404 cross-tenant E cross-criador, §2.8 auditoria allowlist, remind_before, RBAC 403 real p/ 7 papéis,
+  disparo inline com flag OFF. Sua **única BLOQUEIA** ("dba-guardião aplicar a migração em Postgres vivo + provar up/down/re-up e RLS
+  3-tenant verde") foi **exatamente entregue pelo dba-guardião em paralelo** (o avaliador diagnosticou o único vermelho local como migração
+  pendente no dev DB e deferiu ao dba-guardião) → **condição descarregada**; o CI (roda `migrate deploy` + suíte completa incl.
+  rls-tenant-isolation) é o gate empírico final do teste RLS. 2 BAIXA (DTO expõe customRecipientIds/sourceId — seguro pois creator-scoped
+  100%, mas a Central tenant-wide do PR-20 NÃO pode reusar o DTO p/ não-criadores sem remover esses campos §2.8; git add por caminho).
+- **coordenador-de-acessos** → `APROVADO`: permissão nova `notifications:create` = gestão/operação (super/platform/tenant_admin/manager/
+  operator/field_dispatcher; admins herdam); **field_technician SEM broadcast** (correto). Catálogo↔`expectedPermissionCatalog`↔seed
+  coerentes (core-saas 26/26, deepEqual de ordem passa, `notifications:create` no índice 161 após read/update). 4 rotas `/notifications/
+  scheduled` sob `notifications:create` (403 real, scheduled 14/14); **inbox read/update INTOCADO** e sino gated por `notifications:read`
+  (não pela permissão nova) → sino visível a todo logado. Front↔back gateiam a MESMA permissão. UI PT-BR, §2.8. 1 MEDIA (operator/
+  field_dispatcher têm create mas não users.read → picker CUSTOM degrada p/ "Destinatários indisponíveis" com aviso honesto; broadcast
+  CUSTOM fica na prática manager/admin — alinhar com produto se despacho precisar) + 1 BAIXA (DTO customRecipientIds/sourceId, creator-scoped).
+- **agente-secops** → `APROVADO`: flag `JOBS_WORKER_ENABLED` **default false** com `booleanFlag` parse **estrito** (só true/1/yes/on; ""/"false"/
+  lixo→false — evita footgun do z.coerce); worker só sobe com `flag=true ∧ persistence=prisma`, chamado APENAS em `server.main()` (nunca
+  import/rota/teste); job `scan-due` RLS-scoped por tenant via `withTenantRls`; **zero segredo versionado**, nenhum gate de produção do
+  env.ts afrouxado (JWT/CORS-wildcard-ban/Nominatim-ban intactos), sem exec/eval/SSRF, auditoria/DTO na allowlist §2.8, nada de CORS/TLS/CI
+  tocado. 2 BAIXA (.docx untracked não incluir; opcional documentar a flag no .env.example).
+- **Decisão:** verde efetivo → merge (CI é o gate empírico do teste RLS DB-gated) + KPI no próprio PR (§C3). **RN-NOTIF-01..10 cobertas.**
+  D-records (D-Ω4C-NOTIF-MODEL/-SCHEDULER/-IDEMPOTENCY/-VISIBILITY/-RBAC/-CENTRAL-SPLIT) **ratificados**. **Nota p/ PR-20:** a Central
+  tenant-wide precisa de um DTO §2.8 sem `custom_recipient_ids`/`source_id` p/ não-criadores (D-Ω4C-NOTIF-DTO-CENTRAL).
+- KPI: `docs/kpis/omega4c/KPI_PR-04.json`. `Kpis/*`: backend 1336→**1350** (+14 scheduled-notifications); frontend_smoke 703→**719** (+16
+  scheduled-notification dialog); blocks 74→**75**.
+
 ## 8. Encerramento (a fazer no fim)
 Ata final (entregas, KPIs consolidados, pendências→backlog Ω5); deletar **SOMENTE** os 5 agentes efêmeros (registrar cada
 deleção); confirmar que nenhum agente pré-existente foi tocado; marcar os D-records como vigentes.

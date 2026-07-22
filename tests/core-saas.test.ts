@@ -176,6 +176,7 @@ const expectedPermissionCatalog = [
   "finance:read",
   "notifications:read",
   "notifications:update",
+  "notifications:create",
   "tenant_checklists:read",
   "tenant_checklists:create",
   "tenant_checklists:update",
@@ -294,6 +295,20 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   // Folha do profissional é sensível → operator/inventory/field_technician/support não veem (nem read).
   for (const role of ["operator", "inventory", "field_technician", "field_dispatcher", "technician", "support"] as const) {
     assert.equal(ROLE_PERMISSIONS[role].includes("professional_statements:read"), false);
+  }
+
+  // Ω4C PR-04 (D-Ω4C-NOTIF-RBAC) — `notifications:create` (criar/gerir/broadcast AGENDADAS) só a gestão/operação:
+  // super_admin, platform_admin, tenant_admin, manager, operator, field_dispatcher. Ler/agir no PRÓPRIO inbox
+  // (read/update) fica INTOCADO e amplo. Campo/finance/auditor/viewer/support/technician/inventory NÃO criam.
+  for (const role of ["manager", "operator", "field_dispatcher", "tenant_admin", "super_admin", "platform_admin"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("notifications:create"), true);
+  }
+  for (const role of ["finance", "inventory", "field_technician", "technician", "auditor", "viewer", "support"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("notifications:create"), false);
+  }
+  // read/update do inbox seguem AMPLOS e INTOCADOS (o create não os altera).
+  for (const role of ["manager", "operator", "field_dispatcher", "finance", "inventory", "field_technician", "technician", "auditor"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("notifications:read"), true);
   }
 
   // PR-SCALE-1 — Purchasing + Reports (autorização do dono; RBAC_MATRIX "Purchasing"/"Reports and analytics").

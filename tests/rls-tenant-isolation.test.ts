@@ -1177,7 +1177,7 @@ if (!connectionString) {
           data: { tenant_id: tenantC.id, branch_id: branch.id, name: "RLS User C", email: `rls-c-${suffix}@example.com` },
         });
         const [profile] = await createOperatorProfile(tx as typeof client, tenantC.id, user.id);
-        return { operatorProfileId: profile.id };
+        return { operatorProfileId: profile.id, userId: user.id };
       });
 
       const insertStatementEntry = (tx: typeof client, tenantId: string, operatorProfileId: string) => tx.$queryRaw<Array<{ id: string }>>`
@@ -1242,6 +1242,71 @@ if (!connectionString) {
         tx.professionalStatementEntry.findUnique({ where: { id: statementEntryCId } }),
       );
       assert.equal(tenantCStatementEntry?.status, "pending", "tenant C statement entry stays visible + untouched in-tenant");
+
+      // Ω4C PR-04 (RN-NOTIF-06) — scheduled_notifications (definição agendada do motor de notificações) com 3
+      // tenants EFÊMEROS (A, B, C). FK composta (tenant_id, created_by) → users (A/B reusam o user já criado; C
+      // usa o user criado no bloco do extrato). Prova: invisível sem contexto + cross-tenant updateMany count=0 +
+      // visível/intocado in-tenant. RLS ENABLE/FORCE + policy da migration 20260824000000; tenant_id 1º de todo índice.
+      const insertScheduledNotification = (tx: typeof client, tenantId: string, createdBy: string) => tx.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO scheduled_notifications (
+          tenant_id, title, message, notify_at, visibility, custom_recipient_ids, status, created_by
+        )
+        VALUES (
+          ${tenantId}::uuid, 'RLS agendada', 'RLS mensagem', now(), 'private', '[]'::jsonb, 'pending', ${createdBy}::uuid
+        )
+        RETURNING id
+      `;
+      const scheduledNotificationAId = await withTenantRls(client, tenantA.id, async (tx) => {
+        const [row] = await insertScheduledNotification(tx as typeof client, tenantA.id, tenantAData.userId);
+        return row.id;
+      });
+      const scheduledNotificationBId = await withTenantRls(client, tenantB.id, async (tx) => {
+        const [row] = await insertScheduledNotification(tx as typeof client, tenantB.id, tenantBData.userId);
+        return row.id;
+      });
+      const scheduledNotificationCId = await withTenantRls(client, tenantC.id, async (tx) => {
+        const [row] = await insertScheduledNotification(tx as typeof client, tenantC.id, tenantCProfessional.userId);
+        return row.id;
+      });
+
+      const scheduledWithoutContext = await client.scheduledNotification.findMany({
+        where: { id: { in: [scheduledNotificationAId, scheduledNotificationBId, scheduledNotificationCId] } },
+      });
+      assert.deepEqual(
+        scheduledWithoutContext.map((entry) => entry.id),
+        [],
+        "tenant-scoped scheduled notifications must not be visible without app.current_tenant_id",
+      );
+
+      const tenantAScheduledView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.scheduledNotification.findMany({
+          where: { id: { in: [scheduledNotificationAId, scheduledNotificationBId, scheduledNotificationCId] } },
+        });
+        const crossTenantUpdate = await tx.scheduledNotification.updateMany({
+          where: { id: { in: [scheduledNotificationBId, scheduledNotificationCId] } },
+          data: { status: "cancelled" },
+        });
+        return { visibleIds: visible.map((entry) => entry.id), crossUpdatedRows: crossTenantUpdate.count };
+      });
+      assert.deepEqual(
+        tenantAScheduledView.visibleIds,
+        [scheduledNotificationAId],
+        "tenant A must only see its own scheduled notification (not tenant B/C)",
+      );
+      assert.equal(
+        tenantAScheduledView.crossUpdatedRows,
+        0,
+        "tenant A must not update tenant B/C scheduled notifications",
+      );
+
+      const tenantBScheduled = await withTenantRls(client, tenantB.id, (tx) =>
+        tx.scheduledNotification.findUnique({ where: { id: scheduledNotificationBId } }),
+      );
+      assert.equal(tenantBScheduled?.status, "pending", "tenant B scheduled notification stays visible + untouched in-tenant");
+      const tenantCScheduled = await withTenantRls(client, tenantC.id, (tx) =>
+        tx.scheduledNotification.findUnique({ where: { id: scheduledNotificationCId } }),
+      );
+      assert.equal(tenantCScheduled?.status, "pending", "tenant C scheduled notification stays visible + untouched in-tenant");
 
       const globalTenants = await client.tenant.findMany({
         where: {
@@ -1689,6 +1754,12 @@ if (!connectionString) {
     } finally {
       for (const tenantId of tenantIds) {
         await withTenantRls(client, tenantId, async (tx) => {
+          // Ω4C PR-04 — definições agendadas ANTES dos users (FK created_by é Cascade, mas explícito é limpo).
+          await tx.scheduledNotification.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
           // Ω4C PR-03 — parcelas do extrato ANTES dos perfis (FK operator_profile é Restrict) e dos perfis ANTES
           // dos users (o cascade user→operator_profile falharia com parcela referenciando o perfil).
           await tx.professionalStatementEntry.deleteMany({
