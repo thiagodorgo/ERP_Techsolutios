@@ -13,6 +13,23 @@ export type FuelType = (typeof FUEL_TYPES)[number];
 
 export const DEFAULT_FUEL_TYPE: FuelType = "gasolina";
 
+/**
+ * Ω4C PR-05 — MARCAÇÃO do posto do abastecimento (enum-app, inglês no código). EXTERNAL = posto/rede
+ * de terceiro (exige fornecedor); INTERNAL = tanque próprio da base (fornecedor PROIBIDO; a baixa de
+ * estoque interno é DEFERIDA a PR-10/11 — aqui só se MARCA o log). Validado na app (SEM CHECK no banco).
+ */
+export const STATION_TYPES = ["internal", "external"] as const;
+
+export type StationType = (typeof STATION_TYPES)[number];
+
+export const DEFAULT_STATION_TYPE: StationType = "external";
+
+/** Labels PT-BR de apresentação — nunca vaze o termo técnico (internal/external) para a UI (§3). */
+export const STATION_TYPE_LABELS: Record<StationType, string> = {
+  internal: "INTERNO",
+  external: "EXTERNO",
+};
+
 export type FuelLogActorContext = {
   readonly tenantId: string;
   readonly userId: string;
@@ -32,6 +49,8 @@ export type FuelLog = {
   readonly totalValue: number;
   readonly odometer: number;
   readonly station?: string;
+  readonly stationType: StationType;
+  readonly supplierId?: string;
   readonly notes?: string;
   readonly isActive: boolean;
   readonly createdBy?: string;
@@ -52,6 +71,11 @@ export type FuelLogEfficiency = {
 
 export type FuelLogWithEfficiency = FuelLogEfficiency & {
   readonly fuelLog: FuelLog;
+  /**
+   * Ω4C PR-05 — nome do fornecedor como LABEL derivado (§2.8): resolvido do módulo suppliers do
+   * tenant no read; nunca persistido no fuel_log e nunca expõe dado sensível do fornecedor.
+   */
+  readonly supplierName?: string;
 };
 
 export type ListFuelLogsInput = {
@@ -96,6 +120,7 @@ export type UpdateFuelLogInput = Partial<
     | "totalValue"
     | "odometer"
     | "station"
+    | "stationType"
     | "notes"
     | "isActive"
     | "updatedBy"
@@ -103,6 +128,8 @@ export type UpdateFuelLogInput = Partial<
 > & {
   readonly tenantId: string;
   readonly fuelLogId: string;
+  // `null` = limpar o fornecedor (ex.: transição EXTERNO -> INTERNO); `undefined` = manter.
+  readonly supplierId?: string | null;
 };
 
 export class FuelLogError extends Error {

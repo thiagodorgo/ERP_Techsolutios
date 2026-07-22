@@ -13,6 +13,9 @@ function makeLog(partial: Partial<FuelLog> & Pick<FuelLog, "id" | "vehicleId">):
     totalValue: 60,
     odometer: 1000,
     station: null,
+    stationType: "external",
+    supplierId: null,
+    supplierName: null,
     notes: null,
     isActive: true,
     kmPerLiter: null,
@@ -126,7 +129,7 @@ test("fuel-logs adapter: validação de obrigatórios e 422 odometer_regressive"
     "../src/modules/fleet/fuel/fuel-logs.adapter"
   );
 
-  const errors = validateFuelLog({ vehicleId: "", fueledAt: "", fuelType: "invalido", liters: 0, totalValue: -1, odometer: 1.5 });
+  const errors = validateFuelLog({ vehicleId: "", fueledAt: "", fuelType: "invalido", liters: 0, totalValue: -1, odometer: 1.5, stationType: "internal" });
   const fields = errors.map((error) => error.field);
   assert.ok(fields.includes("vehicleId"));
   assert.ok(fields.includes("fueledAt"));
@@ -136,7 +139,16 @@ test("fuel-logs adapter: validação de obrigatórios e 422 odometer_regressive"
   assert.ok(fields.includes("odometer"));
 
   assert.equal(
-    validateFuelLog({ vehicleId: "veh-1", fueledAt: "2026-06-01T10:00:00.000Z", fuelType: "diesel", liters: 58.5, totalValue: 312.9, odometer: 120500 }).length,
+    validateFuelLog({
+      vehicleId: "veh-1",
+      fueledAt: "2026-06-01T10:00:00.000Z",
+      fuelType: "diesel",
+      liters: 58.5,
+      totalValue: 312.9,
+      odometer: 120500,
+      stationType: "external",
+      supplierId: "sup-1",
+    }).length,
     0,
   );
 

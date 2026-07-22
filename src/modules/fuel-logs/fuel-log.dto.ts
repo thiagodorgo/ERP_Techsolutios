@@ -4,7 +4,7 @@ import type {
 } from "./fuel-log.types.js";
 
 export function toFuelLogDto(entry: FuelLogWithEfficiency) {
-  const { fuelLog, kmPerLiter, distanceKm } = entry;
+  const { fuelLog, kmPerLiter, distanceKm, supplierName } = entry;
 
   return {
     id: fuelLog.id,
@@ -17,6 +17,10 @@ export function toFuelLogDto(entry: FuelLogWithEfficiency) {
     totalValue: fuelLog.totalValue,
     odometer: fuelLog.odometer,
     station: fuelLog.station ?? null,
+    // Ω4C PR-05 — posto interno/externo + fornecedor (§2.8: nunca tenant_id; supplierName = label).
+    stationType: fuelLog.stationType,
+    supplierId: fuelLog.supplierId ?? null,
+    supplierName: supplierName ?? null,
     notes: fuelLog.notes ?? null,
     // R1.1 — derived, never persisted; null for the vehicle's baseline log.
     kmPerLiter,
@@ -40,6 +44,9 @@ export function toFuelLogListDto(result: ListFuelLogsWithEfficiencyResult) {
       totalValue: entry.fuelLog.totalValue,
       odometer: entry.fuelLog.odometer,
       station: entry.fuelLog.station ?? null,
+      stationType: entry.fuelLog.stationType,
+      supplierId: entry.fuelLog.supplierId ?? null,
+      supplierName: entry.supplierName ?? null,
       kmPerLiter: entry.kmPerLiter,
       distanceKm: entry.distanceKm,
       isActive: entry.fuelLog.isActive,

@@ -34,6 +34,9 @@ export class FuelLogController {
         vehicleId: entry.fuelLog.vehicleId,
         fuelType: entry.fuelLog.fuelType,
         odometer: entry.fuelLog.odometer,
+        // Ω4C PR-05 — não-PII: marcação do posto + id do fornecedor (nunca nome/tenant externo).
+        stationType: entry.fuelLog.stationType,
+        supplierId: entry.fuelLog.supplierId ?? null,
       },
     });
 
@@ -72,6 +75,9 @@ export class FuelLogController {
           }
         : {
             vehicleId: entry.fuelLog.vehicleId,
+            // Ω4C PR-05 — não-PII (marcação do posto + id do fornecedor).
+            stationType: entry.fuelLog.stationType,
+            supplierId: entry.fuelLog.supplierId ?? null,
           },
     });
 

@@ -7,6 +7,7 @@ import type {
   FuelType,
   ListFuelLogsInput,
   ListFuelLogsResult,
+  StationType,
   UpdateFuelLogInput,
 } from "./fuel-log.types.js";
 import type { FuelLogRepository } from "./fuel-log.repository.js";
@@ -29,6 +30,8 @@ export class PrismaFuelLogRepository implements FuelLogRepository {
         total_value: input.totalValue,
         odometer: input.odometer,
         station: input.station ?? null,
+        station_type: input.stationType,
+        supplier_id: input.supplierId ?? null,
         notes: input.notes ?? null,
         is_active: input.isActive ?? true,
         created_by: input.createdBy ?? null,
@@ -84,6 +87,8 @@ export class PrismaFuelLogRepository implements FuelLogRepository {
         total_value: input.totalValue,
         odometer: input.odometer,
         station: nullable(input.station),
+        station_type: input.stationType,
+        supplier_id: nullable(input.supplierId),
         notes: nullable(input.notes),
         is_active: input.isActive,
         updated_by: nullable(input.updatedBy),
@@ -189,6 +194,8 @@ function mapFuelLogRecord(record: {
   readonly total_value: unknown;
   readonly odometer: number;
   readonly station: string | null;
+  readonly station_type: string;
+  readonly supplier_id: string | null;
   readonly notes: string | null;
   readonly is_active: boolean;
   readonly created_by: string | null;
@@ -208,6 +215,8 @@ function mapFuelLogRecord(record: {
     totalValue: decimalToNumber(record.total_value),
     odometer: record.odometer,
     station: record.station ?? undefined,
+    stationType: (record.station_type as StationType) ?? "external",
+    supplierId: record.supplier_id ?? undefined,
     notes: record.notes ?? undefined,
     isActive: record.is_active,
     createdBy: record.created_by ?? undefined,

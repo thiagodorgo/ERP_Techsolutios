@@ -1,6 +1,10 @@
 // F1 Abastecimento — tipos do módulo de Frota (FuelLog). DTO camelCase do backend /fuel-logs.
 // `kmPerLiter`/`distanceKm` são DERIVADOS (read-only) — nunca entram como campo de formulário.
 
+// Ω4C PR-05 — marcação do posto (enum-app, inglês no contrato; rótulo PT-BR na UI, §3).
+// EXTERNAL = posto/rede de terceiro (exige fornecedor); INTERNAL = tanque próprio da base.
+export type StationType = "internal" | "external";
+
 export type FuelLog = {
   readonly id: string;
   readonly vehicleId: string;
@@ -12,6 +16,11 @@ export type FuelLog = {
   readonly totalValue: number;
   readonly odometer: number;
   readonly station: string | null;
+  // Ω4C PR-05 — posto interno/externo + fornecedor. `supplierName` é LABEL derivado (§2.8): só o nome,
+  // nunca tenant_id nem dado sensível do fornecedor.
+  readonly stationType: StationType;
+  readonly supplierId: string | null;
+  readonly supplierName: string | null;
   readonly notes: string | null;
   readonly isActive: boolean;
   // Eficiência derivada entre abastecimentos consecutivos (R1.1). `null` no 1º lançamento (baseline).
@@ -66,6 +75,9 @@ export type FuelLogDraft = {
   readonly totalValue?: number;
   readonly odometer?: number;
   readonly station?: string;
+  // Ω4C PR-05 — posto interno/externo; `supplierId` obrigatório quando externo (espelha o backend).
+  readonly stationType: StationType;
+  readonly supplierId?: string;
   readonly notes?: string;
 };
 
@@ -77,6 +89,11 @@ export type FuelLogCreatePayload = {
   readonly totalValue: number;
   readonly odometer: number;
   readonly station?: string;
+  readonly stationType?: StationType;
+  readonly supplierId?: string;
+  // Ω4C PR-05 — "desconsiderar último KM": override TRANSIENTE (não persistido) que bypassa o guard
+  // de odômetro monotônico no backend (1º abastecimento / correção).
+  readonly ignorePreviousOdometer?: boolean;
   readonly notes?: string;
   readonly operatorId?: string;
   readonly workOrderId?: string;
