@@ -14,6 +14,9 @@ export interface ProfessionalStatementRepository {
   findLedger(query: ProfessionalStatementLedgerQuery): Promise<ProfessionalStatementEntry[]>;
   // Parcelas ATIVAS de um lançamento (grupo), ordenadas por installment_number. Vazio = grupo inexistente/retirado.
   findGroup(tenantId: string, groupId: string): Promise<ProfessionalStatementEntry[]>;
+  // Ω4C PR-07 — parcelas ATIVAS por ORIGEM (source_type,source_id), ordenadas por installment_number. Alimenta
+  // a idempotência de origem (pré-check de createForSource) e o desfazer (removeForSource). Vazio = sem débito ativo.
+  findActiveBySource(tenantId: string, sourceType: string, sourceId: string): Promise<ProfessionalStatementEntry[]>;
   // Edita SÓ a description em todas as parcelas ATIVAS do grupo (único campo editável — RN-EXT-01).
   updateGroupDescription(
     tenantId: string,
@@ -109,6 +112,18 @@ export class InMemoryProfessionalStatementRepository implements ProfessionalStat
   async findGroup(tenantId: string, groupId: string): Promise<ProfessionalStatementEntry[]> {
     return [...this.entries.values()]
       .filter((entry) => entry.tenantId === tenantId && entry.groupId === groupId && entry.deletedAt === undefined)
+      .sort((left, right) => left.installmentNumber - right.installmentNumber);
+  }
+
+  async findActiveBySource(tenantId: string, sourceType: string, sourceId: string): Promise<ProfessionalStatementEntry[]> {
+    return [...this.entries.values()]
+      .filter(
+        (entry) =>
+          entry.tenantId === tenantId &&
+          entry.sourceType === sourceType &&
+          entry.sourceId === sourceId &&
+          entry.deletedAt === undefined,
+      )
       .sort((left, right) => left.installmentNumber - right.installmentNumber);
   }
 

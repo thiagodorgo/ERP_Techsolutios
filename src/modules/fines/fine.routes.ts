@@ -6,6 +6,7 @@ import { requirePermission } from "../core-saas/middleware/rbac.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
+import { createPayableSourceRoutes } from "../financial-titles/payable-source.routes.js";
 import { FineController, type FineServiceResolver } from "./fine.controller.js";
 import { createDefaultFineService } from "./fine.service.js";
 
@@ -60,6 +61,21 @@ export function createFineRouter(
     requirePermission(FINE_PERMISSIONS.update),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.update(request));
+    }),
+  );
+
+  // Ω4C PR-07 (D-Ω4C-MULSEG-PAYABLE) — Contas a Pagar por origem: POST/DELETE/GET /fines/:id/payable
+  // (source_type='fine', já no FINANCIAL_TITLE_SOURCE_TYPES → SEM migração). O factory PR-02 permanece
+  // INTOCADO; a multa injeta um resolveOwnership mais rico: prova a posse (get → 404 cross-tenant) E o
+  // either/or genuíno (débito ativo no extrato → 409 fine_disposition_conflict). Herda tenant + RBAC
+  // (financial_titles:create/update) do próprio módulo. `:id` = fineId.
+  router.use(
+    "/fines",
+    createPayableSourceRoutes({
+      sourceType: "fine",
+      resolveOwnership: async (actor, sourceId) => {
+        await (await resolveService()).assertPayableDispositionAllowed(actor, sourceId);
+      },
     }),
   );
 

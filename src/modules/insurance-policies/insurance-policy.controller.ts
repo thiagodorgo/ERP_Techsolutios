@@ -36,6 +36,18 @@ export class InsurancePolicyController {
       },
     });
 
+    // Ω4C PR-07 (SEG-01) — trilha do agendamento do vencimento. metadata NÃO-PII: só notify_at (a data-alvo).
+    await recordRequestAuditBestEffort(request, {
+      action: "insurance_policy.expiry_scheduled",
+      resourceType: "insurance_policy",
+      resourceId: policy.id,
+      outcome: "success",
+      severity: "info",
+      metadata: {
+        notifyAt: policy.vigenciaFim.toISOString(),
+      },
+    });
+
     return {
       status: 201,
       data: toInsurancePolicyDto(policy),

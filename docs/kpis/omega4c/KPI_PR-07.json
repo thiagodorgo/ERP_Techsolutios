@@ -1,0 +1,77 @@
+{
+  "pr": "PR-07",
+  "fase": "Fase 1 (FECHAMENTO) — Multas + Seguros (condutor responsável, disposição, vencimento, impressão)",
+  "snapshot_date": "2026-07-22",
+  "branch": "rodada/omega4c",
+  "tipo": "ESTENDER fines + insurance-policies (módulos/models/telas já existiam). INTEGRA os trilhos PR-02 (payable) + PR-03 (extrato) + PR-04 (notificação). Fecha D-Ω4C-FIN-MULTA-FRONTEIRA.",
+  "models_alterados": [
+    "Fine (+responsible_operator_profile_id UUID nullable, FK composta (tenant_id, responsible_operator_profile_id)→operator_profiles RESTRICT)"
+  ],
+  "migrations": [
+    "20260827000000_add_fine_responsible_operator_profile (aditiva up-only; 1 ADD COLUMN + FK composta RESTRICT + índice tenant-first; valor Decimal(20,6) INTOCADO; RLS herdada — provada up/down/re-up + FK cross-tenant 23503 + RESTRICT em erp-postgres pelo dba-guardião). Insurance/statement/notifications = ZERO migração (fine/insurance_policy já nos allowlists)."
+  ],
+  "integracao_trilhos": {
+    "multa_extrato_PR03": "condutor responsável (responsible_operator_profile_id) → efeito de domínio cria 1 débito no professional-statement (entry_type='fine', direction='debit', amount = fine.valor REAL, idempotente por source_type='fine'/source_id). Adiciona createForSource/removeForSource/findActiveBySource ao professional-statement (INTERNO service→service, sem REST, sem migração — índice parcial da PR-03). Reversão respeita RN-EXT-01 (settled→409).",
+    "multa_payable_PR02": "createPayableSourceRoutes({sourceType:'fine'}) montado em fine.routes (fine já em FINANCIAL_TITLE_SOURCE_TYPES; factory PR-02 INTOCADO). Disposição EITHER/OR: extrato XOR payable → 409 fine_disposition_conflict nos dois sentidos.",
+    "seguro_vencimento_PR04": "efeito de domínio cria 1 ScheduledNotification source_type='insurance_policy', notify_at=vigencia_fim, visibility='private' HARDCODED no seam (contrato sem campo de visibilidade — lição PR-06), client_action_id determinístico 'insurance-expiry:<policyId>', dedupe idempotente. Motor + produtor fleet-alerts INTOCADOS."
+  },
+  "seguranca_efeitos_dominio": {
+    "SEG-esc": "insurance_policies:create SEM notifications:create → definição PRIVATE, só o criador recebe (3 usuários testados, outros 2 = 0). Sem broadcast (espelha MANUT-11).",
+    "MUL-esc": "fines:create SEM professional_statements:create → grava só o débito TIPADO constrangido (fine/debit, amount=fine.valor, single-profissional, zero fan-out); 403 na rota pública do razão. Efeito NÃO-AMPLIFICADOR.",
+    "conclusao": "ambos os efeitos cross-módulo aplicam proativamente a lição de escalada do PR-06; nenhuma escalada de privilégio."
+  },
+  "permissao": "REUSA fines:*, insurance_policies:*, financial_titles:* (SEM permissão nova; catalog.ts/core-saas.test.ts/RBAC_MATRIX.md diff VAZIO). Efeitos de domínio não exigem professional_statements:create/notifications:create do usuário (mas sempre private/typed/constrangido).",
+  "modulos_alterados": [
+    "src/modules/fines/* (types/validators/repository/prisma-repository/service/dto/controller/routes — condutor responsável + payable rail + disposição)",
+    "src/modules/insurance-policies/* (service/controller — vencimento PRIVATE)",
+    "src/modules/professional-statements/* (createForSource/removeForSource/findActiveBySource internos)",
+    "frontend/src/modules/fleet/fines/* (FineFormModal condutor+disposição+PayableToggle+PrintFineModal / MultasPage colunas Responsável/Disposição) + frontend/src/modules/fleet/insurance/* (aviso lembrete privado, SEM seletor público) + frontend/src/modules/finance/payable-source/payable-source.types.ts (+'fines')"
+  ],
+  "rns_cobertas": [
+    "RN-MUL-01 (condutor responsável → débito no extrato; amount=fine.valor real; dedupe idempotente 2×→1; reversão RN-EXT-01)",
+    "RN-MUL-02..07 (disposição either/or 409; cross-tenant responsável 400; payable rail; impressão; §2.8 nome no front)",
+    "MUL-esc (multa→extrato NÃO-amplificador; fines:create sem professional_statements:create grava só débito constrangido)",
+    "SEG-01/02 (vencimento → ScheduledNotification PRIVATE; dedupe idempotente)",
+    "SEG-esc (insurance_policies:create sem notifications:create → private, só criador; sem broadcast)",
+    "MUL-SEG-08/09 (motor/factory intocados; teardown FK-safe no rls)"
+  ],
+  "rns_total_pr": 11,
+  "cobertura_testes": {
+    "backend": "tests/fines.test.ts 9→17 (+8) + tests/fines-routes.test.ts 15→23 (+8) + tests/professional-statements.test.ts 12→16 (+4: createForSource/dedupe/reversão) + tests/insurance-policies.test.ts 10→12 (+2: SEG-esc/dedupe) + rls-tenant-isolation bloco fines 3-tenant + teardown FK-safe. Total +22.",
+    "frontend": "frontend/tests/multas-condutor.test.tsx 8/8 (select condutor, badge disposição, 409 honesto, impressão, rótulos PT-BR, §2.8 CNH nunca aparece; insurance aviso privado sem seletor público)"
+  },
+  "d_records": [
+    "D-Ω4C-MULSEG-RESPONSIBLE-MODEL (responsible_operator_profile_id FK composta)",
+    "D-Ω4C-MULSEG-STATEMENT-EFFECT (multa→débito no extrato, typed/constrangido, idempotente)",
+    "D-Ω4C-MULSEG-PAYABLE (multa→payable rail PR-02)",
+    "D-Ω4C-MULSEG-DISPOSITION (either/or extrato XOR payable → 409)",
+    "D-Ω4C-MULSEG-STATEMENT-API (createForSource/removeForSource/findActiveBySource internos — realiza D-Ω4C-EXTRATO-CREATE-SCOPE)",
+    "D-Ω4C-SEG-EXPIRY-NOTIF (seguro→vencimento PRIVATE, client_action_id determinístico)",
+    "D-Ω4C-MULSEG-PRINT (PrintFineModal client-side)",
+    "D-Ω4C-MULSEG-RBAC-REUSE (reusa fines:*/insurance_policies:*/financial_titles:*)",
+    "D-Ω4C-MULSEG-MONEY (valor Decimal(20,6) legado; débito parseado a 12,2)"
+  ],
+  "divergencias_vs_autem": [
+    "coluna Disposição na lista só statement/none (payable derivado no modal via GET /fines/:id/payable — evita N+1, nunca fabrica)",
+    "desambiguação do 409 pela intenção (ApiError esconde reason §2.8)",
+    "valor Decimal(20,6) legado mantido (ALTER seria destrutivo); débito parse 12,2",
+    "re-agendar-ao-mudar-vigência deferido (dedupe determinístico devolve existente; motor intocado)",
+    "nome do responsável fora do DTO (resolvido no front da lista de Profissionais — §2.8, evita lookup cross-módulo O(N))"
+  ],
+  "junta": {
+    "agente-dba-guardiao": "APROVADO (0 cond)",
+    "omega4c-avaliador": "APROVADO (2 BAIXA)",
+    "coordenador-de-acessos": "APROVADO (1 BAIXA informativa)",
+    "veredito": "UNÂNIME 3/3 APROVADO (1ª passada; lições PR-06 aplicadas proativamente)"
+  },
+  "kpi_repo_wide": {
+    "backend": "1382->1404 (+22)",
+    "frontend_smoke": "737->745 (+8)",
+    "blocks": "77->78"
+  },
+  "coexistencia": "motor scheduled-notification.*/factory payable-source.routes/produtores fleet-alerts/catalog/matriz INTOCADOS (diff vazio); payable/notifications/maintenance/fuel/OS/core-saas sem regressão; PayableToggle(PR-02) intocado (só +'fines' na união de módulos)",
+  "fase_1_fechada": "PR-01 Anexos + PR-02 Contas a Pagar por origem + PR-03 Extrato do Profissional + PR-04 Motor de Notificações + PR-05 Abastecimento + PR-06 Manutenção + PR-07 Multas+Seguros. Próximo: Fase 2 (Estoque custódia, Danos, Remunerações).",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

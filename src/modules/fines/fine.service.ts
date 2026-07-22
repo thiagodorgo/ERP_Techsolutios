@@ -1,5 +1,8 @@
 import { env } from "../../config/env.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
+import { createDefaultFinancialTitleService } from "../financial-titles/financial-title.service.js";
+import { createDefaultOperatorProfileService } from "../operator-profiles/operator-profile.service.js";
+import { createDefaultProfessionalStatementService } from "../professional-statements/professional-statement.service.js";
 import { createDefaultVehicleService } from "../vehicles/vehicle.service.js";
 import { InMemoryFineRepository, type FineRepository } from "./fine.repository.js";
 import type {
@@ -31,6 +34,7 @@ import {
   parsePontos,
   parseRequiredDate,
   parseRequiredUuid,
+  parseResponsibleInstallmentTotal,
   parseValor,
   readOptionalBoolean,
 } from "./fine.validators.js";
@@ -38,6 +42,18 @@ import {
 type RawRecord = Record<string, unknown>;
 
 const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Ω4C PR-07 — payload do efeito de domínio que lança o débito da multa no extrato do profissional
+ * (D-Ω4C-MULSEG-STATEMENT-EFFECT). O serviço fixa entryType='fine'/direction='debit'/sourceType='fine' na
+ * fronteira (a multa nunca escreve tipo/direção arbitrários — MUL-esc); amount = `fine.valor` REAL (nunca
+ * fabricado). É um efeito service→service (NÃO exige `professional_statements:create` do usuário).
+ */
+export type FineResponsibleStatementInput = {
+  readonly fine: Fine;
+  readonly operatorProfileId: string;
+  readonly installmentTotal: number;
+};
 
 /**
  * Tenant-scoped reads used to enforce cross-entity rules. Each resolver receives
@@ -50,6 +66,16 @@ const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
 export type FineReferenceResolvers = {
   readonly resolveVehicle?: (actor: FineActorContext, id: string) => Promise<boolean>;
   readonly resolveDriver?: (actor: FineActorContext, id: string) => Promise<boolean>;
+  // Ω4C PR-07 — `responsible_operator_profile_id` valida um operator_profile do tenant (404/400 cross-tenant).
+  readonly resolveResponsible?: (actor: FineActorContext, id: string) => Promise<boolean>;
+  // Efeito de domínio: cria o débito da multa no extrato do profissional (RN-MUL-01). Idempotente por origem.
+  readonly createResponsibleStatementDebit?: (actor: FineActorContext, input: FineResponsibleStatementInput) => Promise<void>;
+  // Efeito inverso: retira o débito do extrato (soft-delete do grupo). Respeita RN-EXT-01 (settled → 409).
+  readonly removeResponsibleStatementDebit?: (actor: FineActorContext, fineId: string) => Promise<void>;
+  // Guarda either/or (D-Ω4C-MULSEG-DISPOSITION): há débito ATIVO desta multa no extrato?
+  readonly hasActiveStatementDebit?: (actor: FineActorContext, fineId: string) => Promise<boolean>;
+  // Guarda either/or: há título de contas a pagar ATIVO desta multa?
+  readonly hasActivePayable?: (actor: FineActorContext, fineId: string) => Promise<boolean>;
 };
 
 export class FineService {
@@ -90,12 +116,25 @@ export class FineService {
       await this.assertDriverReference(actor, driverId);
     }
 
+    // RN-MUL-01 — condutor responsável (operator_profile). Setar no create → débito no extrato desse profissional.
+    const responsibleOperatorProfileId = parseOptionalUuid(
+      body.responsible_operator_profile_id ?? body.responsibleOperatorProfileId,
+      "responsibleOperatorProfileId",
+    );
+    if (responsibleOperatorProfileId !== undefined) {
+      await this.assertResponsibleReference(actor, responsibleOperatorProfileId);
+    }
+    const responsibleInstallmentTotal = parseResponsibleInstallmentTotal(
+      body.responsible_installment_total ?? body.responsibleInstallmentTotal,
+    );
+
     // A fine always starts on `recebida`; later status changes go through the
     // PATCH state machine (R3.1).
-    return this.repository.create({
+    const created = await this.repository.create({
       tenantId: actor.tenantId,
       vehicleId,
       driverId,
+      responsibleOperatorProfileId,
       numeroAuto: parseNumeroAuto(body.numero_auto ?? body.numeroAuto),
       dataInfracao: parseRequiredDate(body.data_infracao ?? body.dataInfracao, "dataInfracao"),
       orgao: parseOrgao(body.orgao),
@@ -109,6 +148,12 @@ export class FineService {
       createdBy: actor.userId,
       updatedBy: actor.userId,
     });
+
+    if (responsibleOperatorProfileId !== undefined) {
+      await this.applyResponsibleStatementEffect(actor, created, responsibleInstallmentTotal);
+    }
+
+    return created;
   }
 
   async get(actor: FineActorContext, fineId: string): Promise<Fine> {
@@ -137,10 +182,43 @@ export class FineService {
       }
     }
 
+    // RN-MUL-01/RN-MUL-02 — transição do condutor responsável (tri-estado):
+    //  - ausente no corpo  → não muda (undefined)
+    //  - null/""           → LIMPAR (retira o débito do extrato; RN-EXT-01: settled → 409)
+    //  - uuid              → SETAR/TROCAR (valida no tenant; either/or: com payable ativo → 409; cria débito)
+    const responsibleProvided =
+      body.responsible_operator_profile_id !== undefined || body.responsibleOperatorProfileId !== undefined;
+    const responsibleInstallmentTotal = parseResponsibleInstallmentTotal(
+      body.responsible_installment_total ?? body.responsibleInstallmentTotal,
+    );
+    let nextResponsible: string | null | undefined;
+    if (responsibleProvided) {
+      // NÃO usar `??` aqui: `null` (limpar) colapsaria para o RHS. Prefere a chave snake quando presente.
+      const raw =
+        body.responsible_operator_profile_id !== undefined
+          ? body.responsible_operator_profile_id
+          : body.responsibleOperatorProfileId;
+      nextResponsible = raw === null || raw === "" ? null : parseRequiredUuid(raw, "responsibleOperatorProfileId");
+    }
+
+    const isSetOrChange = nextResponsible != null && nextResponsible !== current.responsibleOperatorProfileId;
+    const isClear = nextResponsible === null && current.responsibleOperatorProfileId !== undefined;
+    // PRE-efeitos (antes de gravar a coluna): valida referência + either/or + retira débito anterior sob a trava.
+    if (isSetOrChange) {
+      await this.assertResponsibleReference(actor, nextResponsible as string);
+      await this.assertNoActivePayable(actor, current.id);
+      if (current.responsibleOperatorProfileId !== undefined) {
+        await this.removeResponsibleStatementEffect(actor, current.id);
+      }
+    } else if (isClear) {
+      await this.removeResponsibleStatementEffect(actor, current.id);
+    }
+
     const input: UpdateFineInput = {
       tenantId: actor.tenantId,
       fineId: parseRequiredUuid(fineId, "fineId"),
       driverId,
+      responsibleOperatorProfileId: nextResponsible,
       numeroAuto: parseOptionalNumeroAuto(body.numero_auto ?? body.numeroAuto),
       dataInfracao: parseOptionalDate(body.data_infracao ?? body.dataInfracao, "dataInfracao"),
       orgao: parseOptionalOrgao(body.orgao),
@@ -159,7 +237,23 @@ export class FineService {
       throw new FineError(404, "FINE_NOT_FOUND", "not_found", "Fine was not found.");
     }
 
+    // POST-efeito: cria o débito do NOVO responsável (idempotente por origem).
+    if (isSetOrChange) {
+      await this.applyResponsibleStatementEffect(actor, updated, responsibleInstallmentTotal);
+    }
+
     return updated;
+  }
+
+  // Ω4C PR-07 — posse + guarda de disposição para o rail de contas a pagar (injetado no factory PR-02, INTOCADO).
+  // Prova a posse tenant-scoped (404 cross-tenant) e assere ausência de débito ATIVO no extrato desta multa
+  // (either/or genuíno → 409 fine_disposition_conflict: retire do extrato antes de lançar em contas a pagar).
+  async assertPayableDispositionAllowed(actor: FineActorContext, fineId: string): Promise<void> {
+    await this.getEntity(actor, fineId);
+    const resolver = this.references.hasActiveStatementDebit;
+    if (resolver && (await resolver(actor, fineId))) {
+      throw dispositionConflict();
+    }
   }
 
   private async getEntity(actor: FineActorContext, fineId: string): Promise<Fine> {
@@ -200,6 +294,46 @@ export class FineService {
     }
   }
 
+  // MUL-03 — o condutor responsável (operator_profile) deve existir no tenant (a FK composta RESTRICT é o
+  // backstop do banco; aqui é o pré-check → 400 cross-tenant, espelhando driver/vehicle).
+  private async assertResponsibleReference(actor: FineActorContext, operatorProfileId: string): Promise<void> {
+    const resolver = this.references.resolveResponsible;
+    const exists = resolver ? await resolver(actor, operatorProfileId) : false;
+
+    if (!exists) {
+      throw new FineError(
+        400,
+        "FINE_INVALID",
+        "invalid_operator_profile_reference",
+        "responsibleOperatorProfileId does not reference a professional in this organization.",
+      );
+    }
+  }
+
+  // Either/or (D-Ω4C-MULSEG-DISPOSITION): setar responsável numa multa com payable ATIVO → 409.
+  private async assertNoActivePayable(actor: FineActorContext, fineId: string): Promise<void> {
+    const resolver = this.references.hasActivePayable;
+    if (resolver && (await resolver(actor, fineId))) {
+      throw dispositionConflict();
+    }
+  }
+
+  private async applyResponsibleStatementEffect(
+    actor: FineActorContext,
+    fine: Fine,
+    installmentTotal: number,
+  ): Promise<void> {
+    const resolver = this.references.createResponsibleStatementDebit;
+    if (!resolver || fine.responsibleOperatorProfileId === undefined) return;
+    await resolver(actor, { fine, operatorProfileId: fine.responsibleOperatorProfileId, installmentTotal });
+  }
+
+  private async removeResponsibleStatementEffect(actor: FineActorContext, fineId: string): Promise<void> {
+    const resolver = this.references.removeResponsibleStatementDebit;
+    if (!resolver) return;
+    await resolver(actor, fineId);
+  }
+
   // A transition to `cancelada` is reserved for organization administrators.
   private assertCancelPermission(actor: FineActorContext): void {
     const isAdmin = actor.roles.some((role) => (FINE_CANCEL_ROLES as readonly string[]).includes(role));
@@ -213,6 +347,17 @@ export class FineService {
       );
     }
   }
+}
+
+// D-Ω4C-MULSEG-DISPOSITION — either/or genuíno: a multa é lançada no extrato (condutor responsável) XOR em
+// contas a pagar (empresa paga), nunca as duas. A violação em qualquer direção é 409 fine_disposition_conflict.
+function dispositionConflict(): FineError {
+  return new FineError(
+    409,
+    "FINE_CONFLICT",
+    "fine_disposition_conflict",
+    "Esta multa já possui uma disposição ativa. Retire a atual (extrato do profissional ou contas a pagar) antes de aplicar a outra.",
+  );
 }
 
 const memoryRepository = new InMemoryFineRepository();
@@ -289,6 +434,51 @@ function createDefaultReferenceResolvers(coreService: ICoreSaasService): FineRef
       } catch {
         return false;
       }
+    },
+    // Ω4C PR-07 — o condutor responsável é um operator_profile: valida via o service de Profissionais (404
+    // cross-tenant nativo → false → 400 invalid_operator_profile_reference).
+    resolveResponsible: async (actor, id) => {
+      try {
+        const service = await createDefaultOperatorProfileService();
+        await service.get(actor, id);
+
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    // Efeito de domínio (service→service): lança o débito da multa no extrato do profissional pelo caminho
+    // interno reservado da PR-03 (typed fine/debit/fine; amount = fine.valor REAL). NÃO exige
+    // `professional_statements:create` do usuário (mandato §6). Idempotente por (source_type='fine', source_id).
+    createResponsibleStatementDebit: async (actor, input) => {
+      const service = await createDefaultProfessionalStatementService();
+      await service.createForSource(actor, {
+        operatorProfileId: input.operatorProfileId,
+        entryType: "fine",
+        direction: "debit",
+        sourceType: "fine",
+        sourceId: input.fine.id,
+        amount: input.fine.valor,
+        installmentTotal: input.installmentTotal,
+        firstDueDate: input.fine.prazoPagamento ?? new Date(),
+        description: `Multa ${input.fine.numeroAuto} (${input.fine.orgao})`,
+      });
+    },
+    // Efeito inverso: retira o débito do extrato (soft-delete do grupo). Respeita RN-EXT-01 (settled → 409).
+    removeResponsibleStatementDebit: async (actor, fineId) => {
+      const service = await createDefaultProfessionalStatementService();
+      await service.removeForSource(actor, "fine", fineId);
+    },
+    // Guardas either/or (leituras derivadas).
+    hasActiveStatementDebit: async (actor, fineId) => {
+      const service = await createDefaultProfessionalStatementService();
+      const active = await service.findActiveBySource(actor, "fine", fineId);
+      return active.length > 0;
+    },
+    hasActivePayable: async (actor, fineId) => {
+      const service = await createDefaultFinancialTitleService();
+      const active = await service.findActiveBySource(actor, "fine", fineId, "payable");
+      return active !== undefined;
     },
   };
 }

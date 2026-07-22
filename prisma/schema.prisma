@@ -958,6 +958,10 @@ model Fine {
   tenant_id       String    @db.Uuid
   vehicle_id      String    @db.Uuid
   driver_id       String?   @db.Uuid
+  // Ω4C PR-07 (D-Ω4C-MULSEG-RESPONSIBLE-MODEL) — CONDUTOR RESPONSÁVEL do CTB/extrato = um
+  // operator_profile (o profissional de campo que tem FOLHA), distinto de driver_id (User genérico,
+  // INTOCADO). NULL = disposição "empresa paga" (contas a pagar); setado = "lançado no extrato".
+  responsible_operator_profile_id String? @db.Uuid
   numero_auto     String
   data_infracao   DateTime  @db.Timestamptz(6)
   orgao           String
@@ -974,11 +978,14 @@ model Fine {
   updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
   tenant          Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   vehicle         Vehicle   @relation(fields: [tenant_id, vehicle_id], references: [tenant_id, id], onDelete: Restrict)
+  // FK composta (tenant_id, responsible_operator_profile_id) → operator_profiles(tenant_id, id) RESTRICT.
+  responsible_operator OperatorProfile? @relation(fields: [tenant_id, responsible_operator_profile_id], references: [tenant_id, id], onDelete: Restrict, map: "fines_responsible_operator_fkey")
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, numero_auto])
   @@index([tenant_id, status, prazo_pagamento])
   @@index([tenant_id, vehicle_id])
+  @@index([tenant_id, responsible_operator_profile_id], map: "fines_responsible_operator_idx")
   @@index([tenant_id, created_at])
   @@map("fines")
 }
@@ -1814,6 +1821,10 @@ model OperatorProfile {
   // Ω4C PR-03 — Extrato do profissional (razão financeiro POR profissional). onDelete Restrict: um perfil
   // com lançamentos no extrato não é apagado (a trilha financeira é imutável — RN-EXT-01).
   professional_statement_entries ProfessionalStatementEntry[]
+  // Ω4C PR-07 — Multas em que este profissional é o condutor responsável (D-Ω4C-MULSEG-RESPONSIBLE-MODEL).
+  // onDelete Restrict (na FK do lado Fine): perfil com multa atribuída não é apagado (a atribuição roteia
+  // a multa ao extrato do profissional — RN-MUL-01).
+  fines                          Fine[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, user_id])

@@ -14,6 +14,8 @@ import {
   type InsurancePolicyReferenceResolvers,
 } from "../src/modules/insurance-policies/insurance-policy.service.js";
 import type { InsuranceActorContext } from "../src/modules/insurance-policies/insurance-policy.types.js";
+import { InMemoryScheduledNotificationRepository } from "../src/modules/notifications/scheduled-notification.repository.js";
+import { ScheduledNotificationService } from "../src/modules/notifications/scheduled-notification.service.js";
 import {
   deriveInsuranceStatus,
   parseInsuranceWriteStatus,
@@ -295,3 +297,102 @@ function buildService(): InsurancePolicyService {
 
   return new InsurancePolicyService(repository, references);
 }
+
+// ---------- Ω4C PR-07 (D-Ω4C-SEG-EXPIRY-NOTIF): vencimento → ScheduledNotification PRIVADA ----------
+
+type ExpiryHarness = {
+  readonly service: InsurancePolicyService;
+  readonly schedService: ScheduledNotificationService;
+  readonly schedRepo: InMemoryScheduledNotificationRepository;
+  readonly expiryCalls: Record<string, unknown>[];
+};
+
+// Wire REAL do efeito (memory scheduled-notification service). ESPELHA createDefaultReferenceResolvers (a lição
+// PR-06): o payload NÃO carrega visibilidade e o seam FIXA `visibility: 'private'`. Registra a chamada p/ inspeção.
+function buildExpiryHarness(): ExpiryHarness {
+  resetNotificationRuntimeForTests();
+  const schedRepo = new InMemoryScheduledNotificationRepository();
+  const schedService = new ScheduledNotificationService(schedRepo, createMemoryNotificationService());
+  const expiryCalls: Record<string, unknown>[] = [];
+  const references: InsurancePolicyReferenceResolvers = {
+    resolveVehicle: async (_actor, id) => id === VEHICLE_V || id === VEHICLE_W,
+    scheduleExpiryNotification: async (actorCtx, input) => {
+      expiryCalls.push({ ...input });
+      await schedService.create(actorCtx, {
+        title: "Vencimento de seguro",
+        message: `A apólice ${input.numeroApolice} vence.`,
+        notify_at: input.vigenciaFim,
+        visibility: "private",
+        source_type: "insurance_policy",
+        source_id: input.policyId,
+        client_action_id: `insurance-expiry:${input.policyId}`,
+      });
+    },
+  };
+  return { service: new InsurancePolicyService(new InMemoryInsurancePolicyRepository(), references), schedService, schedRepo, expiryCalls };
+}
+
+test("[SEG-01] vencimento cria 1 ScheduledNotification PRIVADA (source_type/source_id/notify_at); dedupe ao editar (2× → 1)", async () => {
+  const { service, schedService } = buildExpiryHarness();
+  const created = await service.create(managerActor, baseBody({ vigencia_fim: "2030-01-01T00:00:00.000Z", numero_apolice: "SEG-01" }));
+
+  const defs = await schedService.list(managerActor, {});
+  assert.equal(defs.total, 1);
+  assert.equal(defs.items[0]?.visibility, "private");
+  assert.equal(defs.items[0]?.sourceType, "insurance_policy");
+  assert.equal(defs.items[0]?.sourceId, created.id);
+  assert.equal(defs.items[0]?.notifyAt.toISOString(), new Date("2030-01-01T00:00:00.000Z").toISOString());
+  assert.equal(defs.items[0]?.clientActionId, `insurance-expiry:${created.id}`);
+
+  // Editar a MESMA apólice re-registra com o client_action_id determinístico → dedupe (não cria definição nova).
+  await service.update(managerActor, created.id, { seguradora: "Outra Seguradora" });
+  const finalDefs = await schedService.list(managerActor, {});
+  assert.equal(finalDefs.total, 1, "editar não duplica a definição (dedupe determinístico)");
+});
+
+test("[SEG-esc] vencimento é lembrete PRIVADO: ator sem notifications:create NÃO escala (só o criador recebe)", async () => {
+  const { service, schedService, expiryCalls } = buildExpiryHarness();
+  const notifRepo = getMemoryNotificationRepositoryForTests();
+
+  // Ator porta `insurance_policies:create` mas NÃO `notifications:create` (não poderia broadcast via rota gated).
+  // Três usuários ATIVOS: se houvesse fan-out `public`, os três receberiam. Com a lição PR-06, é PRIVADO → só criador.
+  const CREATOR = randomUUID();
+  const OTHER_1 = randomUUID();
+  const OTHER_2 = randomUUID();
+  const notifLessActor: InsuranceActorContext = { tenantId: TENANT, userId: CREATOR, roles: [], permissions: ["insurance_policies:create"] };
+  notifRepo.setRecipientCandidatesForTests(TENANT, [
+    { userId: CREATOR, status: "active", roles: [], permissions: ["insurance_policies:create"] },
+    { userId: OTHER_1, status: "active", roles: [], permissions: [] },
+    { userId: OTHER_2, status: "active", roles: [], permissions: [] },
+  ]);
+
+  // vigencia_fim no passado → dispara INLINE (não depende do worker).
+  const created = await service.create(
+    notifLessActor,
+    baseBody({ vigencia_inicio: "2019-01-01T00:00:00.000Z", vigencia_fim: "2020-01-01T00:00:00.000Z", numero_apolice: "SEG-ESC" }),
+  );
+
+  // (1) o payload do efeito NÃO propaga escolha de visibilidade (o campo não existe no contrato de seguro).
+  assert.equal(expiryCalls.length, 1);
+  assert.equal(expiryCalls[0]?.visibility, undefined);
+
+  // (2) a definição criada é PRIVADA — o seam FIXA private, nunca public/custom.
+  const defs = await schedService.list(notifLessActor, {});
+  assert.equal(defs.total, 1);
+  assert.equal(defs.items[0]?.visibility, "private", "o seam de seguro FIXA private — nunca public/custom");
+
+  // (3) SEM fan-out tenant-wide: só o criador recebe; os demais ativos NÃO (escalada fechada).
+  const creatorInbox = await notifRepo.listByRecipient({ tenantId: TENANT, recipientUserId: CREATOR, filters: {} });
+  const other1Inbox = await notifRepo.listByRecipient({ tenantId: TENANT, recipientUserId: OTHER_1, filters: {} });
+  const other2Inbox = await notifRepo.listByRecipient({ tenantId: TENANT, recipientUserId: OTHER_2, filters: {} });
+  assert.equal(creatorInbox.length, 1, "o lembrete privado entrega só ao criador");
+  assert.equal(other1Inbox.length, 0, "NENHUM broadcast tenant-wide — escalada fechada");
+  assert.equal(other2Inbox.length, 0, "NENHUM broadcast tenant-wide — escalada fechada");
+
+  // (4) dedupe: editar a MESMA apólice não cria definição nova nem duplica a entrega.
+  await service.update(notifLessActor, created.id, { seguradora: "Editada" });
+  const finalDefs = await schedService.list(notifLessActor, {});
+  assert.equal(finalDefs.total, 1, "editar não cria definição nova (dedupe determinístico)");
+  const creatorAfter = await notifRepo.listByRecipient({ tenantId: TENANT, recipientUserId: CREATOR, filters: {} });
+  assert.equal(creatorAfter.length, 1, "editar não duplica a entrega");
+});

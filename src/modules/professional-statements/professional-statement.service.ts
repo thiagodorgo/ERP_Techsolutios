@@ -11,10 +11,17 @@ import {
   type ProfessionalStatementRepository,
 } from "./professional-statement.repository.js";
 import type {
+  CreateProfessionalStatementForSourceInput,
   OperatorProfileLookup,
   ProfessionalStatementActorContext,
   ProfessionalStatementEntry,
   ProfessionalStatementSummary,
+} from "./professional-statement.types.js";
+import {
+  PROFESSIONAL_STATEMENT_DIRECTIONS,
+  PROFESSIONAL_STATEMENT_ENTRY_TYPES,
+  PROFESSIONAL_STATEMENT_SOURCE_TYPES,
+  ProfessionalStatementError,
 } from "./professional-statement.types.js";
 import {
   buildInstallmentPlan,
@@ -64,6 +71,19 @@ const LOCKED_PATCH_FIELDS = [
   "settlement_ref",
   "settlementRef",
 ] as const;
+
+// Ω4C PR-07 — allowlists do caminho interno (constrange o efeito de origem: nunca tipo/direção/origem arbitrários).
+const ENTRY_TYPE_ALLOWLIST = new Set<string>(PROFESSIONAL_STATEMENT_ENTRY_TYPES);
+const DIRECTION_ALLOWLIST = new Set<string>(PROFESSIONAL_STATEMENT_DIRECTIONS);
+const SOURCE_TYPE_ALLOWLIST = new Set<string>(PROFESSIONAL_STATEMENT_SOURCE_TYPES);
+
+function assertAllowed(value: string, allowlist: ReadonlySet<string>, reason: string, field: string): string {
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (!allowlist.has(normalized)) {
+    throw new ProfessionalStatementError(400, "PROFESSIONAL_STATEMENT_INVALID", reason, `${field} is invalid.`);
+  }
+  return normalized;
+}
 
 export type ProfessionalStatementLedgerResult = {
   readonly operatorProfileId: string;
@@ -156,6 +176,90 @@ export class ProfessionalStatementService {
       updatedBy: actor.userId,
       installments,
     });
+  }
+
+  // Ω4C PR-07 (D-Ω4C-MULSEG-STATEMENT-API) — caminho INTERNO das integrações (realiza a reserva
+  // D-Ω4C-EXTRATO-CREATE-SCOPE). É um efeito de domínio service→service, NÃO a rota pública POST — logo NÃO
+  // exige `professional_statements:create` do usuário (mandato §6; espelha o next-due do PR-06 que não exige
+  // `notifications:create`). É TIPADO/CONSTRANGIDO: entryType/direction/sourceType vêm do allowlist (a multa
+  // passa fine/debit/fine), amount é o valor REAL da fonte (parseAmount → Decimal(12,2) > 0, nunca fabricado),
+  // e o efeito é single-profissional (zero fan-out). Idempotente por ORIGEM: reprocessar a MESMA fonte devolve o
+  // grupo existente (pré-check findActiveBySource — garante idempotência no InMemory E no Prisma; o índice
+  // parcial da 20260823000000 é o backstop DURO no Prisma → P2002 → 409 source_already_launched).
+  async createForSource(
+    actor: ProfessionalStatementActorContext,
+    input: CreateProfessionalStatementForSourceInput,
+  ): Promise<ProfessionalStatementEntry[]> {
+    const entryType = assertAllowed(input.entryType, ENTRY_TYPE_ALLOWLIST, "invalid_entry_type", "entry_type");
+    const direction = assertAllowed(input.direction, DIRECTION_ALLOWLIST, "invalid_direction", "direction");
+    const sourceType = assertAllowed(input.sourceType, SOURCE_TYPE_ALLOWLIST, "invalid_source_type", "source_type");
+    // AJUSTE (source_type='manual') não passa por aqui — é o POST público. Origem exige um alvo real.
+    if (sourceType === "manual") {
+      throw new ProfessionalStatementError(400, "PROFESSIONAL_STATEMENT_INVALID", "invalid_source_type", "createForSource requires a real source_type (not manual).");
+    }
+    const operatorProfileId = parseRequiredUuid(input.operatorProfileId, "operatorProfileId");
+    const sourceId = parseRequiredUuid(input.sourceId, "sourceId");
+
+    // Posse do profissional no tenant (defesa; o módulo-fonte já validou) → 404 cross-tenant.
+    const professional = await this.operatorProfileLookup(actor.tenantId, operatorProfileId);
+    if (!professional) {
+      throw operatorProfileNotFoundError();
+    }
+
+    // Idempotência de origem: já existe débito ATIVO desta fonte → devolve o grupo existente (não duplica).
+    const existing = await this.repository.findActiveBySource(actor.tenantId, sourceType, sourceId);
+    if (existing.length > 0) {
+      return existing;
+    }
+
+    const totalAmount = parseAmount(input.amount);
+    const installmentTotal = parseInstallmentTotal(input.installmentTotal);
+    const firstDueDate = parseFirstDueDate(input.firstDueDate);
+    const installments = buildInstallmentPlan(totalAmount, installmentTotal, firstDueDate);
+
+    return this.repository.createGroup({
+      tenantId: actor.tenantId,
+      operatorProfileId,
+      groupId: randomUUID(),
+      entryType,
+      direction,
+      description: input.description,
+      currency: "BRL",
+      sourceType,
+      sourceId,
+      createdBy: actor.userId,
+      updatedBy: actor.userId,
+      installments,
+    });
+  }
+
+  // Ω4C PR-07 — desfazer o lançamento por ORIGEM (RN-MUL-01/RN-EXT-01). Sem débito ativo da fonte → no-op
+  // idempotente ([]). Com ≥ 1 parcela liquidada (settled) → 409 statement_entry_locked (não se desfaz atribuição
+  // já liquidada; reversão só por AJUSTE compensatório). Caso contrário soft-deleta o grupo inteiro atomicamente.
+  async removeForSource(
+    actor: ProfessionalStatementActorContext,
+    sourceType: string,
+    sourceId: string,
+  ): Promise<ProfessionalStatementEntry[]> {
+    const normalizedSourceId = parseRequiredUuid(sourceId, "sourceId");
+    const group = await this.repository.findActiveBySource(actor.tenantId, sourceType, normalizedSourceId);
+    if (group.length === 0) {
+      return [];
+    }
+    if (group.some((entry) => entry.status === "settled")) {
+      throw statementEntryLockedError();
+    }
+    const removed = await this.repository.softDeleteGroup(actor.tenantId, group[0]!.groupId, actor.userId);
+    return removed ?? [];
+  }
+
+  // Ω4C PR-07 — parcelas ATIVAS por origem (badge/derivação de disposição + guarda either/or). Vazio = sem débito.
+  async findActiveBySource(
+    actor: ProfessionalStatementActorContext,
+    sourceType: string,
+    sourceId: string,
+  ): Promise<ProfessionalStatementEntry[]> {
+    return this.repository.findActiveBySource(actor.tenantId, sourceType, parseRequiredUuid(sourceId, "sourceId"));
   }
 
   // RN-EXT-01(a) — só description é editável. Qualquer campo financeiro no corpo → 409 statement_entry_locked.

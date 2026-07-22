@@ -7,8 +7,9 @@
 // o título ATIVO da fonte (ou null). `title != null` = lançado. A UI NUNCA fabrica esse estado por flag.
 // §2.8: o TitleDTO já OMITE tenant_id/deleted_at; aqui projetamos só o mínimo que o toggle exibe.
 
-// Os 3 módulos-fonte com endpoint de payable neste PR (Multa fica para o PR-09 — condutor responsável).
-export type PayableSourceModule = "fuel-logs" | "maintenance-orders" | "insurance-policies";
+// Módulos-fonte com endpoint de payable. Ω4C PR-07 acrescenta `fines` (a multa como fonte de contas a
+// pagar — o caminho "empresa paga", either/or com o extrato do condutor responsável).
+export type PayableSourceModule = "fuel-logs" | "maintenance-orders" | "insurance-policies" | "fines";
 
 // Projeção segura do TitleDTO para o toggle (§2.8): só id/status/amount/currency/dueDate/active.
 export type PayableTitleView = {

@@ -77,6 +77,22 @@ export type CreateProfessionalStatementGroupInput = {
   readonly installments: readonly ProfessionalStatementInstallmentInput[];
 };
 
+// Ω4C PR-07 (D-Ω4C-MULSEG-STATEMENT-API) — entrada TIPADA do caminho INTERNO das integrações (Multa PR-07;
+// destrava Dano PR-12/13 e Remuneração PR-14/15). NÃO é aceita no corpo REST (o POST público só cria AJUSTE).
+// O chamador (o módulo-fonte) fixa entryType/direction/sourceType — a multa passa fine/debit/fine. amount é o
+// valor REAL da fonte (nunca fabricado); o split em parcelas é feito no serviço (buildInstallmentPlan).
+export type CreateProfessionalStatementForSourceInput = {
+  readonly operatorProfileId: string;
+  readonly entryType: string;
+  readonly direction: string;
+  readonly sourceType: string;
+  readonly sourceId: string;
+  readonly amount: number;
+  readonly installmentTotal: number;
+  readonly firstDueDate: Date;
+  readonly description?: string;
+};
+
 // Consulta do razão de UM profissional (todas as parcelas ATIVAS; a paginação/saldo corrente é derivada no
 // serviço sobre o conjunto ordenado — ledger por profissional é pequeno, R1 do plano).
 export type ProfessionalStatementLedgerQuery = {

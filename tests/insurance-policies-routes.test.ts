@@ -402,6 +402,8 @@ async function withInsuranceApi(callback: (context: InsuranceApiContext) => Prom
     { createApp },
     { resetInsurancePolicyRuntimeForTests },
     { resetVehicleRuntimeForTests },
+    { resetScheduledNotificationRuntimeForTests },
+    { resetNotificationRuntimeForTests },
     { CoreSaasRegistry },
     { MemoryCoreSaasAdapter },
     { InMemoryCoreSaasStore },
@@ -409,13 +411,19 @@ async function withInsuranceApi(callback: (context: InsuranceApiContext) => Prom
     import("../src/app.js"),
     import("../src/modules/insurance-policies/index.js"),
     import("../src/modules/vehicles/index.js"),
+    import("../src/modules/notifications/scheduled-notification.service.js"),
+    import("../src/modules/notifications/notification.service.js"),
     import("../src/modules/core-saas/services/core-saas.service.js"),
     import("../src/modules/core-saas/services/memory-core-saas.adapter.js"),
     import("../src/modules/core-saas/store/core-saas.store.js"),
   ]);
 
+  // Ω4C PR-07 — criar/editar apólice agora emite um efeito de domínio (ScheduledNotification de vencimento). Resetar
+  // os runtimes de notificação entre casos evita vazamento nos singletons de memória compartilhados.
   resetInsurancePolicyRuntimeForTests();
   resetVehicleRuntimeForTests();
+  resetScheduledNotificationRuntimeForTests();
+  resetNotificationRuntimeForTests();
 
   const core = new CoreSaasRegistry(new InMemoryCoreSaasStore());
   const seed = seedCoreSaas(core);
@@ -429,6 +437,8 @@ async function withInsuranceApi(callback: (context: InsuranceApiContext) => Prom
     await closeServer(server);
     resetInsurancePolicyRuntimeForTests();
     resetVehicleRuntimeForTests();
+    resetScheduledNotificationRuntimeForTests();
+    resetNotificationRuntimeForTests();
   }
 }
 

@@ -248,13 +248,13 @@ export function InsurancePolicyFormModal({
 
           <Field
             id={FIELD_ID.vigenciaFim}
-            label="Vigência fim"
+            label="Vencimento (vigência fim)"
             required
             type="date"
             value={vigenciaFim}
             onChange={setVigenciaFim}
             error={fieldErrors.vigenciaFim}
-            helper="Data de término (posterior ao início)."
+            helper="Data de término da cobertura (posterior ao início)."
           />
 
           <div style={fullWidth}>
@@ -279,6 +279,15 @@ export function InsurancePolicyFormModal({
               </small>
             ) : null}
           </div>
+        </div>
+
+        {/* Ω4C PR-07 (D-Ω4C-SEG-EXPIRY-NOTIF, lição PR-06) — ao salvar, um lembrete PRIVADO de vencimento é
+            agendado para o próprio usuário. Aviso honesto, SEM seletor de visibilidade público (não vira
+            broadcast da organização). */}
+        <div style={{ marginTop: "var(--space-12)" }}>
+          <Alert title="Lembrete de vencimento" tone="info">
+            Ao salvar, agendamos um lembrete privado do vencimento desta apólice para você — visível apenas ao seu usuário.
+          </Alert>
         </div>
 
         <div style={{ marginTop: "var(--space-16)" }}>

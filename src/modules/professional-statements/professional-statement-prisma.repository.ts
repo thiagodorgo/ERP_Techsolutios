@@ -77,6 +77,14 @@ export class PrismaProfessionalStatementRepository implements ProfessionalStatem
     return items.map(mapRecord);
   }
 
+  async findActiveBySource(tenantId: string, sourceType: string, sourceId: string): Promise<ProfessionalStatementEntry[]> {
+    const items = await this.client.professionalStatementEntry.findMany({
+      where: { tenant_id: tenantId, source_type: sourceType, source_id: sourceId, deleted_at: null },
+      orderBy: [{ installment_number: "asc" }],
+    });
+    return items.map(mapRecord);
+  }
+
   async updateGroupDescription(
     tenantId: string,
     groupId: string,
@@ -114,6 +122,9 @@ export class RlsPrismaProfessionalStatementRepository implements ProfessionalSta
   }
   findGroup(tenantId: string, groupId: string): Promise<ProfessionalStatementEntry[]> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaProfessionalStatementRepository(tx).findGroup(tenantId, groupId));
+  }
+  findActiveBySource(tenantId: string, sourceType: string, sourceId: string): Promise<ProfessionalStatementEntry[]> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaProfessionalStatementRepository(tx).findActiveBySource(tenantId, sourceType, sourceId));
   }
   updateGroupDescription(tenantId: string, groupId: string, description: string, updatedBy?: string): Promise<ProfessionalStatementEntry[] | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaProfessionalStatementRepository(tx).updateGroupDescription(tenantId, groupId, description, updatedBy));

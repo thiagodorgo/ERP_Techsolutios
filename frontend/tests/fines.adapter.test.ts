@@ -6,6 +6,8 @@ import type { Fine } from "../src/modules/fleet/fines/fines.types";
 function makeFine(partial: Partial<Fine> & Pick<Fine, "id" | "vehicleId">): Fine {
   return {
     driverId: null,
+    responsibleOperatorProfileId: null,
+    disposition: "none",
     numeroAuto: "AUTO-0001",
     dataInfracao: "2026-06-10",
     orgao: "DETRAN-SP",

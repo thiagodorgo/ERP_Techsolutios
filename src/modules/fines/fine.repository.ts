@@ -84,9 +84,18 @@ export class InMemoryFineRepository implements FineRepository {
       throw duplicateNumeroAuto();
     }
 
+    // `responsibleOperatorProfileId` é tri-estado: undefined = não muda; null = LIMPAR (→ undefined);
+    // string = setar. É tratado à parte para não vazar `null` no tipo (Fine usa string | undefined).
+    const { responsibleOperatorProfileId, ...restInput } = input;
+    const nextResponsible =
+      responsibleOperatorProfileId === undefined
+        ? current.responsibleOperatorProfileId
+        : (responsibleOperatorProfileId ?? undefined);
+
     const updated: Fine = {
       ...current,
-      ...definedFields(input),
+      ...definedFields(restInput),
+      responsibleOperatorProfileId: nextResponsible,
       updatedAt: new Date(),
     };
     this.fines.set(updated.id, updated);

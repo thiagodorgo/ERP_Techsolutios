@@ -28,6 +28,13 @@ export type Fine = {
   readonly tenantId: string;
   readonly vehicleId: string;
   readonly driverId?: string;
+  /**
+   * Ω4C PR-07 — CONDUTOR RESPONSÁVEL (D-Ω4C-MULSEG-RESPONSIBLE-MODEL): um operator_profile (o
+   * profissional de campo que tem folha), distinto de `driverId` (User genérico). Quando setado, a
+   * multa é lançada como débito no extrato desse profissional (RN-MUL-01); quando ausente, a
+   * disposição fica livre para "empresa paga" (contas a pagar, PR-02).
+   */
+  readonly responsibleOperatorProfileId?: string;
   readonly numeroAuto: string;
   readonly dataInfracao: Date;
   readonly orgao: string;
@@ -88,7 +95,15 @@ export type UpdateFineInput = Partial<
 > & {
   readonly tenantId: string;
   readonly fineId: string;
+  // `null` = LIMPAR o condutor responsável (disposição volta a "empresa paga"); `undefined` = não muda.
+  readonly responsibleOperatorProfileId?: string | null;
 };
+
+// Ω4C PR-07 — "disposição" DERIVADA da própria multa (D-Ω4C-MULSEG-DISPOSITION): `statement` quando há
+// condutor responsável (débito no extrato); `none` caso contrário. O estado `payable` (empresa paga) é
+// DERIVADO à parte pelo badge do rail de contas a pagar (GET /fines/:id/payable), não pela coluna da multa.
+export const FINE_DISPOSITIONS = ["statement", "none"] as const;
+export type FineDisposition = (typeof FINE_DISPOSITIONS)[number];
 
 export class FineError extends Error {
   constructor(

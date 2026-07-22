@@ -1,6 +1,7 @@
 import { formatBRL } from "../../registry/service-catalog/service-catalog.adapter";
 import type {
   Fine,
+  FineDisposition,
   FineDraft,
   FineFieldError,
   FinesData,
@@ -41,6 +42,34 @@ export function isFinalStatus(status: FineStatus): boolean {
 
 export function isFineStatus(value: string | null | undefined): value is FineStatus {
   return typeof value === "string" && FINE_STATUS_VALUES.includes(value as FineStatus);
+}
+
+// ── Disposição (Ω4C PR-07) ───────────────────────────────────────────────────
+// A disposição do AutEM é either/or: a multa é descontada no EXTRATO do condutor responsável (statement) OU
+// paga pela empresa em CONTAS A PAGAR (payable), nunca as duas — ou nenhuma (none). O DTO da multa só carrega
+// `statement`/`none`; o estado `payable` (empresa paga) é DERIVADO à parte pelo badge de contas a pagar
+// (GET /fines/:id/payable). Este helper combina os dois em um rótulo/tom PT-BR único para a UI.
+export type FineDispositionView = "statement" | "payable" | "none";
+
+const FINE_DISPOSITION_META: Record<FineDispositionView, { label: string; tone: "success" | "warning" | "default" }> = {
+  statement: { label: "Lançado no extrato do condutor", tone: "success" },
+  payable: { label: "Lançado em contas a pagar", tone: "warning" },
+  none: { label: "—", tone: "default" },
+};
+
+// Resolve a disposição efetiva combinando a coluna da multa (statement/none) com o estado de payable
+// (derivado do badge de contas a pagar). `statement` tem precedência (either/or garantido no backend).
+export function resolveFineDisposition(disposition: FineDisposition, hasPayable: boolean): FineDispositionView {
+  if (disposition === "statement") return "statement";
+  return hasPayable ? "payable" : "none";
+}
+
+export function getFineDispositionLabel(view: FineDispositionView): string {
+  return FINE_DISPOSITION_META[view].label;
+}
+
+export function getFineDispositionTone(view: FineDispositionView): "success" | "warning" | "default" {
+  return FINE_DISPOSITION_META[view].tone;
 }
 
 export function adaptFinesResponse(response: unknown, source: FinesData["source"] = "api", fallbackReason?: string): FinesData {
@@ -123,6 +152,14 @@ export function validateFine(input: FineDraft): FineFieldError[] {
     errors.push({ field: "pontos", message: "Pontos devem ser um número inteiro (0 ou mais)." });
   }
 
+  // Ω4C PR-07 — parcelas do desconto no extrato: só valida quando há condutor responsável (inteiro 1..240).
+  if (input.responsibleOperatorProfileId && input.responsibleInstallmentTotal !== undefined) {
+    const total = input.responsibleInstallmentTotal;
+    if (!Number.isInteger(total) || total < 1 || total > 240) {
+      errors.push({ field: "responsibleInstallmentTotal", message: "Parcelas do desconto deve ser um inteiro entre 1 e 240." });
+    }
+  }
+
   const prazoRecurso = (input.prazoRecurso ?? "").trim();
   if (prazoRecurso && Number.isNaN(new Date(prazoRecurso).getTime())) {
     errors.push({ field: "prazoRecurso", message: "Prazo de recurso inválido." });
@@ -147,7 +184,7 @@ export type FineSubmitContext = "form" | "transition";
 export type FineSubmitFeedback = {
   readonly reason?: string;
   // Campo do formulário a marcar; ausente = mostrar só como Alerta.
-  readonly field?: "numeroAuto" | "driverId" | "vehicleId";
+  readonly field?: "numeroAuto" | "driverId" | "vehicleId" | "responsibleOperatorProfileId";
   readonly message: string;
 };
 
@@ -175,6 +212,25 @@ export const FINE_REASON_FEEDBACK: Record<string, FineSubmitFeedback> = {
     field: "vehicleId",
     message: "Viatura inválida para esta organização. Selecione outra viatura.",
   },
+  // Ω4C PR-07 — condutor responsável inválido/de outra organização (400 do backend).
+  invalid_operator_profile_reference: {
+    reason: "invalid_operator_profile_reference",
+    field: "responsibleOperatorProfileId",
+    message: "Condutor responsável inválido para esta organização. Selecione outro profissional.",
+  },
+  // Ω4C PR-07 — either/or da disposição (409): a multa não pode estar no extrato do condutor E em contas a
+  // pagar ao mesmo tempo. Mensagem honesta pedindo para retirar a disposição atual antes de aplicar a outra.
+  fine_disposition_conflict: {
+    reason: "fine_disposition_conflict",
+    message:
+      "Esta multa já está lançada no extrato do condutor ou em contas a pagar. Retire a disposição atual antes de escolher a outra.",
+  },
+  // Ω4C PR-07 — reversão barrada pela trava do extrato: parcela já liquidada em folha não se desfaz.
+  statement_entry_locked: {
+    reason: "statement_entry_locked",
+    message:
+      "Não é possível retirar o condutor responsável: há parcela já liquidada no extrato. A reversão só é possível por ajuste.",
+  },
 };
 
 const FALLBACK_MESSAGE: Record<FineSubmitContext, string> = {
@@ -182,19 +238,39 @@ const FALLBACK_MESSAGE: Record<FineSubmitContext, string> = {
   transition: "Não foi possível atualizar a situação da multa. Tente novamente.",
 };
 
-function resolveReason(explicitReason: string | undefined, status: number | undefined, context: FineSubmitContext): string | undefined {
+// Ω4C PR-07 — intenção da disposição no submit, usada só para DESAMBIGUAR um 409 quando o motivo não vem no
+// corpo (o ApiError esconde o body por design/§2.8). No backend, ao SETAR/TROCAR o responsável a guarda
+// either/or (assertNoActivePayable → 409 fine_disposition_conflict) roda ANTES da escrita que dispara o
+// duplicate; ao LIMPAR, a trava do extrato (RN-EXT-01 → 409 statement_entry_locked) é a única 409 possível.
+// Sem mudança de responsável, um 409 continua sendo duplicidade de nº do auto (comportamento legado).
+export type FineDispositionIntent = "set" | "clear";
+
+function resolveReason(
+  explicitReason: string | undefined,
+  status: number | undefined,
+  context: FineSubmitContext,
+  dispositionIntent?: FineDispositionIntent,
+): string | undefined {
   if (explicitReason) return explicitReason;
-  if (status === 409) return "duplicate_numero_auto";
+  if (status === 409) {
+    if (dispositionIntent === "clear") return "statement_entry_locked";
+    if (dispositionIntent === "set") return "fine_disposition_conflict";
+    return "duplicate_numero_auto";
+  }
   if (context === "transition") {
     if (status === 403) return "cancel_requires_admin";
     if (status === 422) return "invalid_status_transition";
   }
-  // 400 é ambíguo (condutor × viatura) sem o motivo do corpo → Alerta genérico.
+  // 400 é ambíguo (condutor × viatura × responsável) sem o motivo do corpo → Alerta genérico.
   return undefined;
 }
 
-export function interpretFineSubmitError(error: unknown, context: FineSubmitContext = "form"): FineSubmitFeedback {
-  const reason = resolveReason(readErrorReason(error), readErrorStatus(error), context);
+export function interpretFineSubmitError(
+  error: unknown,
+  context: FineSubmitContext = "form",
+  dispositionIntent?: FineDispositionIntent,
+): FineSubmitFeedback {
+  const reason = resolveReason(readErrorReason(error), readErrorStatus(error), context, dispositionIntent);
   if (reason && FINE_REASON_FEEDBACK[reason]) return FINE_REASON_FEEDBACK[reason];
 
   if (error instanceof Error && error.message) return { message: error.message };
@@ -357,6 +433,8 @@ function adaptFine(input: unknown): Fine | null {
     id,
     vehicleId,
     driverId: readNullableString(item, ["driverId", "driver_id"]),
+    responsibleOperatorProfileId: readNullableString(item, ["responsibleOperatorProfileId", "responsible_operator_profile_id"]),
+    disposition: coerceDisposition(readString(item, ["disposition"])),
     numeroAuto,
     dataInfracao: readString(item, ["dataInfracao", "data_infracao"]) ?? "",
     orgao: readString(item, ["orgao"]) ?? "",
@@ -374,6 +452,12 @@ function adaptFine(input: unknown): Fine | null {
 
 function coerceStatus(value: string | undefined): FineStatus {
   return isFineStatus(value) ? value : "recebida";
+}
+
+// Disposição derivada da multa: `statement` só quando o backend confirma o débito no extrato; senão `none`
+// (o estado `payable` NÃO vem aqui — é derivado à parte do badge de contas a pagar).
+function coerceDisposition(value: string | undefined): FineDisposition {
+  return value === "statement" ? "statement" : "none";
 }
 
 function adaptPagination(
