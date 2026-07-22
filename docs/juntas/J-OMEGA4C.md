@@ -776,6 +776,209 @@ allowlist PR-04 e o job.worker.ts:86 — **sem node-cron**.)
 - KPI: `docs/kpis/omega4c/KPI_PR-06.json`. `Kpis/*`: backend 1364→**1382** (+18 maintenance: 13 itens + 5 rota); frontend_smoke 726→**737**
   (+11 manutencao-itens); blocks 76→**77**.
 
+### PR-07 — Multas + Seguros (condutor responsável, vencimento, impressão) — plano do omega4c-planejador (2026-07-22)
+**Mapeia PR-09 do PLANO_OMEGA4C** (é o momento da fronteira D-Ω4C-FIN-MULTA-FRONTEIRA "Multa fica p/ PR-09"). **Última fatia da Fase 1
+— INTEGRA os trilhos PR-02/03/04/06.** **Veredicto Fase 0 (recon REAL, FATO vs HIPÓTESE):** **ESTENDER** — `src/modules/fines/` e
+`src/modules/insurance-policies/` são maduros e vivos; o gap é (a) o **condutor responsável** que roteia a multa ao **extrato** (RN-MUL-01),
+(b) a multa como **fonte de contas a pagar** (rail PR-02), (c) o **vencimento do seguro** como **consumidor privado do motor PR-04**, (d) a
+**impressão** da multa. Nenhum motor/foundation é reescrito; tudo é chamada de consumidor + 1 coluna aditiva.
+- **FATO (li no código):** (a) Model `Fine` (`schema.prisma:956`, `fines`): `vehicle_id` (FK composta RESTRICT), **`driver_id?` UUID que
+  referencia um USER** (validado via `coreService.getUserForTenant`, `fine.service.ts:284` — **NÃO** um operator_profile), `numero_auto`,
+  `data_infracao`, `orgao`, `valor` **Decimal(20,6)**, `pontos`, `prazo_recurso?`, `prazo_pagamento?`, `status` (máquina recebida→…→paga/
+  cancelada), auditoria. **NÃO tem** `responsible_operator_profile_id`, **NÃO tem** rail de payable montado (`fine.routes.ts` só GET/POST/GET/
+  PATCH), **NÃO tem** vínculo com extrato. (b) Model `InsurancePolicy` (`schema.prisma:986`, `insurance_policies`): `vigencia_inicio`/
+  **`vigencia_fim` (o vencimento, `Timestamptz`)**, `seguradora`, `numero_apolice`, `valor` Decimal(20,6), `cobertura?`, `status vigente|
+  cancelada` (`vencida` é DERIVADO, nunca persistido). **PayableToggle (PR-02) JÁ montado** — `createPayableSourceRoutes({sourceType:
+  "insurance_policy"})` em `insurance-policy.routes.ts:69` + `PayableToggle` em `InsurancePolicyFormModal.tsx:286` (create+edit). **NÃO tem**
+  integração com o motor `ScheduledNotification`. (c) **Rail PR-02 pronto p/ multa:** `FINANCIAL_TITLE_SOURCE_TYPES` **já inclui `fine`**
+  (`financial-title.types.ts:25` — `fuel_log|maintenance_order|fine|insurance_policy`) → **payable de multa NÃO exige migração** (só montar o
+  factory em `fine.routes.ts`, como fuel/manut/seguro). (d) **Extrato PR-03 pronto p/ multa (reserva):** `PROFESSIONAL_STATEMENT_ENTRY_TYPES`
+  inclui `fine`, `PROFESSIONAL_STATEMENT_SOURCE_TYPES` inclui `fine` (`professional-statement.types.ts:7,10`); a **idempotência de origem** é o
+  índice parcial `(tenant_id,source_type,source_id,installment_number) WHERE deleted_at IS NULL AND source_id IS NOT NULL` da migração PR-03
+  `20260823000000` (Prisma mapeia **P2002→409 `source_already_launched`**, `-prisma.repository.ts:203`). **MAS** o serviço só expõe
+  `createAdjustment` (público, só AJUSTE); o **caminho interno createForSource p/ fine NÃO existe ainda** — foi RESERVADO por
+  **D-Ω4C-EXTRATO-CREATE-SCOPE** ("damage/fine/remuneration entram só por caminhos internos das integrações, PR-09/12/13/14/15") — **PR-07 é
+  quem constrói esse caminho interno da multa.** (e) **Motor PR-04 pronto p/ seguro:** `SCHEDULED_NOTIFICATION_SOURCE_TYPES` **já inclui
+  `insurance_policy` e `fine`** (`scheduled-notification.types.ts:9-15`); `ScheduledNotificationService.create` dedupa por `client_action_id`
+  (findFirst-e-devolve-existente, InMemory+Prisma; unique parcial de corrida→409) e dispara INLINE se vencida; `notify_at` naïve→fuso de negócio
+  (`parseBusinessDate`). (f) **Padrão-ouro PR-06 do efeito de domínio PRIVADO** (a lição da escalada): `maintenance-order.service.ts:600` fixa
+  **`visibility: "private"` HARDCODED** ao chamar o motor; o contrato de manutenção **não tem** campo de visibilidade (validators l.260-263) →
+  portador de `maintenance_orders:create` SEM `notifications:create` **jamais** faz broadcast. **PR-07 aplica o MESMO padrão ao seguro.** (g)
+  **Produtores fleet-alerts (inbox) já existem e coexistem:** `runFineDueNotifications` (`fine.notifications.ts`, `fine_due:<id>`) e
+  `runInsuranceRenewalNotifications` (`insurance-policy.notifications.ts`, janelas 30/15/7, `insurance:<id>:30d…`) — mecanismo DISTINTO do motor
+  agendável (exatamente como o produtor R2.2 `maintenance_due` coexiste com o next-due do PR-06). **INTOCADOS** (zero regressão). (h) **Impressão
+  100% client-side** existe em 2 precedentes: `frontend/src/modules/work-orders/components/PrintWorkOrderModal.tsx` **e**
+  `frontend/src/modules/fleet/maintenance/components/PrintMaintenanceOrderModal.tsx` (`window.print()`, seções honestas, sem PDF no backend). (i)
+  `OperatorProfile` (`schema.prisma:1795`) tem `@@unique([tenant_id,id])` + já é alvo de FK composta RESTRICT (relação inversa
+  `professional_statement_entries`). Perm `fines:read/create/update` e `insurance_policies:read/create/update` já existem.
+- **HIPÓTESE:** pixel exato do modal AutEM (ordem de campos/impressão) → reproduzimos o **comportamento** (§11), não o visual; se a multa parcela
+  o desconto no extrato → resolvido: **parcelamento controlado (default 1), valor SEMPRE = `fine.valor` real, nunca fabricado**; se o vencimento
+  do seguro re-agenda ao editar a `vigencia_fim` → **parada honesta D-007** (dedupe por client_action_id devolve a definição existente, como no
+  PR-06; re-agendar ao mudar a data exige tocar o motor → deferido).
+
+- **Condutor responsável (modelo) — D-Ω4C-MULSEG-RESPONSIBLE-MODEL: +1 coluna aditiva `responsible_operator_profile_id` UUID NULL em `fines` +
+  FK COMPOSTA `(tenant_id, responsible_operator_profile_id) → operator_profiles(tenant_id, id) ON DELETE RESTRICT`** + relação inversa aditiva
+  `fines Fine[]` no model `OperatorProfile` + **`@@index([tenant_id, responsible_operator_profile_id])`**. **Por que NOVA coluna e não reusar
+  `driver_id`:** `driver_id` referencia um **User** genérico (qualquer usuário do tenant) — o extrato (PR-03) é keyed por **operator_profile_id**
+  (o profissional de campo que tem folha), e nem todo User é operator_profile. Conflatá-los seria semanticamente errado. O `driver_id` (User)
+  **permanece INTOCADO** (coexistência informativa, como `station` texto-livre do PR-05 ao lado de `supplier_id`). O **condutor responsável do
+  CTB/extrato** = o novo `responsible_operator_profile_id`. Migração ADITIVA up-only **`20260827000000_add_fine_responsible_operator_profile`**
+  (1× ADD COLUMN + FK composta + índice + relação inversa; rollback = **DROP COLUMN**, coluna nova sem dependente) — provada up/down/re-up pelo
+  **agente-dba-guardião**. Toca `prisma/**` (schema + migration; **seed/catalog INTOCADOS** — sem permissão nova) → **requer autorização
+  explícita de `prisma/**` no comando do PR-07** (como PR-01/03/04/05/06). **INSURANCE = ZERO migração** (vigencia_fim já existe; a notificação é
+  efeito de domínio com client_action_id determinístico).
+- **RN-MUL-01 (não-negociável §3) — a disposição SIM→extrato / NÃO→contas a pagar, ambas reversíveis:**
+  - **(a) SIM → extrato — D-Ω4C-MULSEG-STATEMENT-EFFECT (efeito de domínio service→service, padrão PR-06):** ao **SETAR**
+    `responsible_operator_profile_id` (no create ou no PATCH), o `FineService` valida o profissional no tenant (via `OperatorProfileService.get`
+    → **404/400 invalid_operator_profile_reference** cross-tenant) e emite **UM** lançamento no extrato desse profissional pelo **caminho interno
+    reservado** da PR-03: `entry_type='fine'`, `direction='debit'` (desconto — D-Ω4C-EXTRATO-DIRECTION), **`amount = fine.valor` REAL** (nunca
+    fabricado; roundMoney 2 casas), `source_type='fine'`, `source_id = fine.id`, `first_due_date = fine.prazo_pagamento ?? now`,
+    `installment_total` = campo **transiente controlado** `responsible_installment_total` (int ≥ 1, **default 1**, NÃO persistido na Fine —
+    override de plano, como `ignore_previous_odometer` do PR-05; split via `buildInstallmentPlan` da PR-03, resto de centavos na 1ª). **Idempotente
+    por (source_type='fine', source_id):** reprocessar a MESMA multa devolve o grupo existente (pré-check `findActiveBySource` + backstop DB do
+    índice parcial PR-03 → 409). É **efeito de domínio** (chamada interna, **NÃO** a rota `POST /professional-statements`) → **não exige
+    `professional_statements:create` do usuário** (mandato §6; espelha o next-due do PR-06 que não exige `notifications:create`).
+  - **(b) NÃO → contas a pagar — D-Ω4C-MULSEG-PAYABLE (rail PR-02, SEM migração):** monta `createPayableSourceRoutes({sourceType:'fine',
+    resolveOwnership})` em `fine.routes.ts` → `POST/DELETE/GET /fines/:id/payable` (perm `financial_titles:create/update`, existentes; chokepoint
+    `assertPeriodOpen` e idempotência `source_already_launched` herdados do factory). `fine` **já está** no `FINANCIAL_TITLE_SOURCE_TYPES` → **zero
+    migração/enum**. A empresa paga a multa ao órgão (`party` = órgão) — reversível via DELETE (soft-delete do título).
+  - **(c) Reversibilidade + exclusividade — D-Ω4C-MULSEG-DISPOSITION:** SIM reversível → **limpar** `responsible_operator_profile_id` (PATCH→null,
+    quando estava setado) dispara o efeito inverso `removeForSource(fine)` = **soft-delete do grupo** do extrato, **respeitando RN-EXT-01**: se ≥ 1
+    parcela `settled` → **409 `statement_entry_locked`** (não se desfaz atribuição já liquidada — reversão só por AJUSTE compensatório). NÃO
+    reversível → DELETE `/fines/:id/payable`. **Either/or genuíno (a disposição do AutEM):** a POSSE-hook `resolveOwnership` que a multa injeta no
+    factory de payable também **assere ausência de débito ativo no extrato** (→ **409 `fine_disposition_conflict`**: retire do extrato antes de
+    lançar em contas a pagar); e SETAR responsável numa multa com payable ATIVO → **409 `fine_disposition_conflict`** (retire o payable antes). O
+    factory genérico PR-02 **permanece intocado** — a multa só injeta um `resolveOwnership` mais rico (posse + guarda de disposição). Direção de
+    dependência: `fines → professional-statements` e `fines → financial-titles` (consumidor→foundation; **sem ciclo** — nenhum importa `fines`).
+- **API interna do extrato (aditiva, realiza a reserva PR-03) — D-Ω4C-MULSEG-STATEMENT-API:** +3 métodos no `professional-statements` **sem REST,
+  sem migração, sem permissão nova**: (1) `ProfessionalStatementService.createForSource(actor, {operatorProfileId, entryType, direction,
+  sourceType, sourceId, amount, installmentTotal, firstDueDate, description})` — **typed/constrained** (a multa só passa fine/debit/fine); pré-check
+  idempotente + `createGroup`; (2) `removeForSource(actor, sourceType, sourceId)` — acha o grupo ativo pela origem, aplica a **trava RN-EXT-01**
+  (settled→409), soft-delete atômico (espelha `financial-titles.removeForSource`); (3) **repo**: `findActiveBySource(tenantId, sourceType,
+  sourceId)` na interface + InMemory + Prisma + Rls (o InMemory `createGroup` **não** dedupa por origem → o pré-check garante idempotência nos DOIS
+  modos; o índice parcial PR-03 é o backstop no Prisma). **DTO §2.8 inalterado** (sem tenant_id/source_id/CNH). Isto **destrava** também Dano
+  (PR-12/13) e Remuneração (PR-14/15) — mas PR-07 só **usa** para fine (sem acoplar aos outros).
+- **Seguro → vencimento (consumidor privado do motor PR-04) — D-Ω4C-SEG-EXPIRY-NOTIF (aplica a LIÇÃO PR-06):** ao criar/editar a apólice
+  (a `vigencia_fim` é sempre presente/obrigatória), o `InsurancePolicyService` emite **UMA** `ScheduledNotification` via o motor: **efeito de
+  domínio service→service**, `source_type='insurance_policy'` (já no allowlist), `source_id = policy.id`, `notify_at = vigencia_fim`,
+  **`client_action_id = "insurance-expiry:<policyId>"` (DETERMINÍSTICO)** → dedupe (reprocessar/editar devolve a definição existente). **CONTRA a
+  escalada (padrão PR-06 HARDCODED):** o contrato de seguro **NÃO ganha campo de visibilidade** (nenhum `parseExpiryVisibility`); o seam **fixa
+  `visibility: 'private'` HARDCODED** na fronteira do motor → um portador de `insurance_policies:create` **SEM** `notifications:create` **jamais**
+  dispara broadcast tenant-wide (`resolveRecipients` → só `[createdBy]`). Título/mensagem honestos (nº da apólice + data). Motor **INTOCADO** (zero
+  migração em `scheduled_notifications`); disparo INLINE se `vigencia_fim<=now`. **Coexiste** com o produtor fleet-alerts `runInsuranceRenewal…`
+  (janelas 30/15/7, inbox) — semânticas distintas, ambos vivos, produtor **INTOCADO** (idêntico à coexistência next-due × R2.2 do PR-06). **Multa
+  → NÃO cria ScheduledNotification** (o produtor `runFineDueNotifications` já cobre o prazo; adicionar um 2º disparador duplicaria) — parada honesta.
+- **Impressão da multa — D-Ω4C-MULSEG-PRINT (client-side, reaproveitável):** novo `frontend/src/modules/fleet/fines/components/PrintFineModal.tsx`
+  clonando o padrão `PrintMaintenanceOrderModal`/`PrintWorkOrderModal` (`window.print()`, cabeçalho + dados do auto/órgão/valor/pontos/prazos +
+  condutor responsável, seções honestas, **sem PDF no backend**). Reaproveitável → sem parada honesta.
+- **Permissão — D-Ω4C-MULSEG-RBAC-REUSE (SEM permissão nova; diff VAZIO em catalog/core-saas/RBAC_MATRIX):** reusa `fines:read/create/update` e
+  `insurance_policies:read/create/update` (multa/seguro), `financial_titles:create/update` (payable, via factory). Os efeitos de domínio
+  (extrato, ScheduledNotification, título) **não exigem** `professional_statements:create`/`notifications:create` do usuário (mandato §6) — são
+  chamadas internas typed/controladas. Backend é a autoridade (papel sem `fines:create` → **403 real**, já testado). **NÃO** é escalada — ver
+  RN-MUL-esc/SEG-esc abaixo.
+- **RNs — MUL (multa):** **MUL-01** (disposição: SIM `responsible_operator_profile_id` → débito no extrato do profissional [fine/debit,
+  amount=valor real, idempotente por origem]; NÃO → contas a pagar [rail PR-02]; **either/or 409 `fine_disposition_conflict`**; ambas reversíveis) ·
+  **MUL-02** (reversão respeita RN-EXT-01: limpar responsável com parcela `settled` → 409 `statement_entry_locked`; todo-pending → soft-delete
+  atômico do grupo) · **MUL-03** (condutor responsável validado no tenant — FK composta `(tenant_id,responsible_operator_profile_id)` RESTRICT +
+  resolver → **404/400** cross-tenant; `driver_id`/User coexiste INTOCADO) · **MUL-04** (**não-fabricação**: amount = `fine.valor` real,
+  installment_total transiente default 1, `first_due_date = prazo_pagamento ?? now`; nunca valor/parcela inventados) · **MUL-05** (payable de multa
+  = `source_type='fine'` já no allowlist → sem migração; chokepoint/idempotência herdados) · **MUL-esc** (efeito de extrato é **efeito de domínio
+  NÃO-amplificador**: typed [só fine/debit], single-profissional [zero fan-out], amount travado ao fine.valor, idempotente → portador de `fines:*`
+  SEM `professional_statements:create` PODE atribuir [desenho], mas **não** consegue escrever débito arbitrário/tipo arbitrário/valor arbitrário —
+  contraste explícito com o broadcast bloqueado no PR-06; teste prova o efeito constrangido) · **MUL-06** (impressão client-side; sem PDF backend) ·
+  **MUL-07** (§2.8/§3 — DTO ganha `responsibleOperatorProfileId` + badge derivado "lançado no extrato"/"em contas a pagar"; nunca tenant_id/CNH;
+  labels PT-BR). **RNs — SEG (seguro):** **SEG-01** (vencimento → **1** `ScheduledNotification` `source_type='insurance_policy'`/`source_id`/
+  `notify_at=vigencia_fim`; **dedupe idempotente** por client_action_id determinístico — reprocessar/editar não duplica: motor devolve a existente;
+  prova 2× → 1 definição) · **SEG-esc** (**a lição PR-06 aplicada**: efeito de domínio **PRIVADO HARDCODED**; contrato sem campo de visibilidade;
+  `insurance_policies:create` SEM `notifications:create` + 3 usuários ativos → definição `private`, só o criador recebe [outros 2 = **0**]; broadcast
+  segue exigindo `notifications:create` via `POST /notifications/scheduled`) · **SEG-02** (motor + produtor R4.2 `runInsuranceRenewal…`
+  INTOCADOS; zero migração em `scheduled_notifications`; coexistência) · **MUL-SEG-08** (multi-tenant 3 tenants efêmeros em `rls-tenant-isolation`:
+  responsible FK cross-tenant rejeitado; débito de multa + notificação de seguro tenant-scoped; scan de A não entrega em B; cross 404; updateMany
+  cross=0; `tenant_id` 1º índice) · **MUL-SEG-09** (ZERO regressão: produtores fleet-alerts fine/insurance, PayableToggle do seguro, máquina de
+  estados da multa, cancel admin-only, motor PR-04, extrato PR-03, factory payable PR-02 — todos intocados/verdes).
+- **Divergências AutEM honestas (D-007):** (i) **re-agendar a notificação ao mudar `vigencia_fim`** → parada honesta (dedupe por client_action_id
+  devolve a definição existente, como no PR-06; re-agendar exigiria tocar o motor — deferido; a apólice renovada com nova data mantém a definição
+  original, documentado). (ii) **`fine.valor` Decimal(20,6)** legado (não 12,2 da invariante) — ALTER de tipo destrutivo/proibido §C7.5; o débito no
+  extrato é parseado a Decimal(12,2) via `parseAmount` (roundMoney) — divergência gêmea do PR-05/-06 -MONEY (D-Ω4C-MULSEG-MONEY). (iii)
+  **parcelamento do desconto** = campo transiente controlado default 1 (não persistido); planos avançados/edição de parcela = folha PR-14/15. (iv)
+  **`driver_id` (User)** coexiste como referência informativa — não é o condutor responsável do extrato (que é operator_profile). (v) **picker
+  CUSTOM** de destinatários do vencimento de seguro = honest-partial (motor suporta; UI reusa `CreateNotificationDialog`/PR-20). (vi) pixel exato do
+  modal/impressão AutEM não visto em frame limpo → reproduzimos o **comportamento** (§11), não o visual.
+- **Frontend — ESTENDER as telas vivas, PayableToggle do seguro INTOCADO:** (i) **`FineFormModal`** (`frontend/src/modules/fleet/fines/`): add
+  **select "Condutor responsável"** (lista operator_profiles ativos do tenant, reusa o service de Profissionais; "— Sem responsável —" = disposição
+  company-pays) + **campo "Parcelas do desconto"** (default 1, só quando há responsável) + **badge derivado** ("Lançado no extrato" verde /
+  "Em contas a pagar" âmbar / "—") + **`PayableToggle` (montar, mode create/edit)** para a disposição company-pays (respeitando o either/or 409) +
+  botão **Imprimir** abrindo `PrintFineModal`. (ii) **`MultasPage`**: add colunas **"Responsável"** (nome do profissional / "—"), **"Disposição"**
+  (badge extrato/payable). (iii) **Insurance** (`InsurancePolicyFormModal`/`SegurosPage`): o campo **Vencimento (`vigencia_fim`) já existe** — NÃO
+  adicionar seletor de visibilidade pública (**lição PR-06**: o vencimento é lembrete PRIVADO); nota sutil honesta "lembrete de vencimento
+  registrado" (sem andaime de dev §11.2). §3 PT-BR (Condutor responsável, Disposição, Vencimento — nunca termo técnico), §7 estados (loading/empty/
+  error/**acesso não permitido**/desatualizado), §2.8 DTO allowlist (nunca tenant_id/storage/CNH). Guard RBAC `fines:*`/`insurance_policies:*`.
+- **DTO/auditoria — §2.8:** DTO da multa ganha `responsibleOperatorProfileId` (+ `responsibleName` label derivado, jamais CNH) + `disposition`
+  derivado (`statement`|`payable`|`none`); **nunca** tenant_id/source_id/client_action_id. Auditoria: `fine.responsible_assigned`/
+  `fine.responsible_cleared` + `insurance_policy.expiry_scheduled` com metadata não-PII (operatorProfileId/installmentTotal/notify_at).
+- **Bateria de validação (seção 10 — o avaliador roda):** `npx prisma validate` + `prisma migrate diff` (sem drift) + **dba-guardião prova
+  up/down/re-up** de `20260827000000_add_fine_responsible_operator_profile` (ADITIVA: 1 ADD COLUMN + FK composta + índice + relação inversa;
+  rollback=DROP COLUMN); backend `npm run check` · lint · test · build; `node --test --import tsx tests/fines.test.ts` + `tests/fines-routes.test.ts`
+  (estendidos — responsável→débito no extrato [idempotente 2×→1]; limpar responsável→soft-delete [RN-EXT-01: settled→409]; payable de multa
+  201/409/404; either/or 409 `fine_disposition_conflict`; **[MUL-esc]** `fines:create` sem `professional_statements:create` atribui mas efeito
+  constrangido) + `tests/insurance-policies.test.ts`/`-routes.test.ts` (estendidos — vencimento→ScheduledNotification private [dedupe 2×→1];
+  **[SEG-esc]** 3 usuários → só criador recebe; motor/produtor R4.2 intocados) + `tests/professional-statement-crud.test.ts` (estendido —
+  createForSource/removeForSource/findActiveBySource internos: fine/debit typed, idempotente, reversível sob trava); `tests/rls-tenant-isolation.test.ts`
+  estendido (3 tenants efêmeros; responsible FK cross-tenant rejeitado; débito+notificação tenant-scoped; cross 404; updateMany cross=0);
+  **ZERO regressão** em `financial-title-source` (17) · `scheduled-notifications` (14) · `professional-statements` · `fleet-alerts-notifications`
+  (10) · `maintenance-*` · `work-order-*`; **`core-saas.test.ts` INALTERADO** (sem permissão nova); frontend `npm --prefix frontend run check` ·
+  build · smoke (FineFormModal responsável+badge+parcelas+PayableToggle+imprimir; MultasPage colunas Responsável/Disposição; Insurance sem seletor
+  público; estados §7 + guard); `git diff --check` + `git status --short` limpo (schema/migration/fines/**/insurance-policies/**/professional-statements/**/
+  financial-titles-mount/front por caminho; seed/catalog/RBAC_MATRIX/scheduled_notifications **intocados**). KPI `docs/kpis/omega4c/KPI_PR-07.json`
+  + histórico + snapshot; Kpis/* backend +N (fines+insurance+professional-statement), frontend_smoke +M, blocks 77→**78**.
+- **Riscos + rollback:** (R1) **escalada de visibilidade no seguro** (a lição PR-06) → mitigado: contrato sem campo de visibilidade + seam
+  `visibility:'private'` HARDCODED + teste [SEG-esc] 3 usuários. (R2) **escrita em ledger privilegiado via efeito de multa** → mitigado: efeito
+  typed/single-profissional/amount-travado/idempotente (não-amplificador) + teste [MUL-esc]; contraste documentado com o broadcast bloqueado. (R3)
+  **notificação/débito duplicado** → mitigado: client_action_id determinístico (seguro) + pré-check `findActiveBySource` + índice parcial PR-03
+  (extrato); provas 2×. (R4) **fabricação de valor/parcela** → mitigado: amount = fine.valor real, installment default 1, first_due honesto. (R5)
+  **acoplamento/ciclo** → mitigado: direção consumidor→foundation (fines→statement/financial-titles, insurance→scheduled-notifications; nenhum
+  importa de volta); factory PR-02 e motor PR-04 intocados. (R6) **`prisma/**`** → só ADITIVO (1 ADD COLUMN + FK + índice); **rollback = DROP COLUMN
+  `responsible_operator_profile_id`** (coluna nova sem dependente) + revert do PR (fines/insurance/professional-statements/front). Sem destrutivo
+  (respeita parada §C7.5). **Sem dependência nova nem serviço externo pago → junta normal, NÃO junta-5.**
+
+**APROVADO para implementar.** (D-records desta fatia: **D-Ω4C-MULSEG-RESPONSIBLE-MODEL · -STATEMENT-EFFECT · -PAYABLE · -DISPOSITION ·
+-STATEMENT-API · D-Ω4C-SEG-EXPIRY-NOTIF · D-Ω4C-MULSEG-PRINT · -RBAC-REUSE · -MONEY(D-007)** — a junta ratifica no veredito; persistir em
+controle/decisoes.md no PR. Fecha **D-Ω4C-FIN-MULTA-FRONTEIRA** [Multa era p/ PR-09] e realiza a reserva **D-Ω4C-EXTRATO-CREATE-SCOPE** [caminho
+interno da multa]. Confirma a lição **D-Ω4C-MANUT-NEXTDUE-PRIVATE**: efeito de domínio sempre PRIVATE/typed; broadcast só via rota gated. Reusa
+`fine`/`insurance_policy` dos allowlists PR-02/03/04 e o `job.worker.ts:86` — **sem node-cron, sem permissão nova, sem tocar os motores**.)
+
+#### PR-07 — Veredito da junta (2026-07-22) — **UNÂNIME 3/3 APROVADO (1ª passada; lições PR-06 aplicadas proativamente) — FECHA FASE 1**
+- **agente-dba-guardião** → `APROVADO` (0 condições): migração `20260827000000_add_fine_responsible_operator_profile` provada **UP/DOWN/
+  RE-UP** em DB scratch isolada. Puramente aditiva: `ADD COLUMN responsible_operator_profile_id UUID` nullable + FK composta
+  `(tenant_id, responsible_operator_profile_id)`→operator_profiles RESTRICT + índice tenant-first. `valor` NUMERIC(20,6) INTOCADO;
+  nenhuma outra tabela tocada. RLS de fines e operator_profiles t/t. Retrocompat NULL (MATCH SIMPLE). Integridade: FK cross-tenant →
+  **23503**; RESTRICT bloqueia DELETE de operator_profile referenciado → **23503**.
+- **omega4c-avaliador** → `APROVADO`: seção 10 verde (backend 1404 pass / 6 skip — a única falha é a rls-tenant-isolation DB-gated
+  ambiental, tabela scheduled_notifications ausente no DB local; skip no CI, não é regressão; frontend smoke **745/745**). **amount =
+  fine.valor REAL** via parseAmount/roundMoney (nunca fabricado); **dedupe idempotente** testado 2×→1 (professional-statements + fines);
+  either/or **409 fine_disposition_conflict** nos dois sentidos; reversão respeita **RN-EXT-01** (settled→409). Ambos os efeitos de domínio
+  não-escaláveis (ver coordenador). Motor/factory/produtores/catalog/seed/RBAC diff VAZIO; migração aditiva; **teardown FK-safe**
+  (fine.deleteMany antes de operatorProfile/vehicle — lição do CI-catch PR-06 aplicada). 2 BAIXA (rls ambiental; package.json registra
+  o novo smoke — convenção).
+- **coordenador-de-acessos** → `APROVADO`: **os DOIS efeitos de domínio cross-módulo são NÃO-ESCALADORES** (ao contrário da superfície do
+  PR-06). (a) **seguro→notificação:** `visibility:'private'` HARDCODED no seam; contrato de seguro sem campo de visibilidade; portador de
+  `insurance_policies:create` sem `notifications:create` NÃO faz broadcast (SEG-esc: 3 usuários → só o criador). (b) **multa→extrato:**
+  `createForSource` TIPADO (entry_type/direction/source_type por allowlist: fine/debit/fine), **amount travado ao fine.valor**,
+  single-profissional (responsável validado no tenant), zero fan-out, idempotente por origem — portador de `fines:create` sem
+  `professional_statements:create` grava só esse débito constrangido, não lançamento arbitrário (MUL-esc: 403 na rota pública do razão).
+  `createForSource/removeForSource/findActiveBySource` são INTERNOS (zero rota; `POST /professional-statements` segue gated por
+  `professional_statements:create` p/ AJUSTE manual). catalog/matriz/core-saas diff VAZIO; rails gated; posse cross-tenant dupla-camada +
+  FK composta RESTRICT; either/or 409; sem CNH em DTO/render (nome do responsável resolvido no front). 1 BAIXA informativa (professionalName
+  label pré-existente em endpoint gated, fora deste PR).
+- **Decisão:** verde unânime 3/3 → merge (CI = gate empírico do rls DB-gated) + KPI no PR (§C3). **RN-MUL-01..07 + MUL-esc + SEG-01/02 +
+  SEG-esc + MUL-SEG-08/09 cobertas.** Integra os 3 trilhos: **multa→extrato (PR-03)** + **multa→payable either/or (PR-02)** +
+  **seguro→vencimento PRIVATE (PR-04)**. D-records ratificados + **fecha D-Ω4C-FIN-MULTA-FRONTEIRA** e realiza **D-Ω4C-EXTRATO-CREATE-SCOPE**.
+- KPI: `docs/kpis/omega4c/KPI_PR-07.json`. `Kpis/*`: backend 1382→**1404** (+22 fines/insurance/professional-statements); frontend_smoke
+  737→**745** (+8 multas-condutor); blocks 77→**78**.
+- **★ FASE 1 (Fundações transversais + Frota financeira) FECHADA:** PR-01 Anexos · PR-02 Contas a Pagar por origem · PR-03 Extrato do
+  Profissional · PR-04 Motor de Notificações · PR-05 Abastecimento · PR-06 Manutenção · PR-07 Multas + Seguros. Próximo: **Fase 2** (Estoque
+  custódia, Danos, Remunerações).
+
 ## 8. Encerramento (a fazer no fim)
 Ata final (entregas, KPIs consolidados, pendências→backlog Ω5); deletar **SOMENTE** os 5 agentes efêmeros (registrar cada
 deleção); confirmar que nenhum agente pré-existente foi tocado; marcar os D-records como vigentes.

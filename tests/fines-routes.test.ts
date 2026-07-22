@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
@@ -402,6 +403,207 @@ test("[R3.2] filtro due_within_days retorna apenas multas a vencer na janela", a
   });
 });
 
+// ---------- Ω4C PR-07: condutor responsável → extrato · either/or · multa → contas a pagar · §2.8 · MUL-esc ----------
+
+test("[MUL-01] multa com condutor responsável lança débito (fine/debit, amount = valor real) no extrato", async () => {
+  await withFinesApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "RSP1A11");
+    const operatorProfileId = await createOperatorProfile(baseUrl, seed.tenantA);
+
+    const created = await requestJson(baseUrl, "/api/v1/fines", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: fineBody({ vehicle_id: vehicleId, numero_auto: "RSP-1", valor: 250.75, responsible_operator_profile_id: operatorProfileId }),
+    });
+    assert.equal(created.status, 201, JSON.stringify(created.body));
+    assert.equal(created.body.data.responsibleOperatorProfileId, operatorProfileId);
+    assert.equal(created.body.data.disposition, "statement");
+
+    // O extrato do profissional recebeu 1 débito fine com o valor REAL da multa.
+    const ledger = await requestJson(baseUrl, `/api/v1/professional-statements?operatorProfileId=${operatorProfileId}`, {
+      headers: authHeaders(seed.tenantA, seed.financeA, "finance"),
+    });
+    assert.equal(ledger.status, 200, JSON.stringify(ledger.body));
+    assert.equal(ledger.body.items.length, 1);
+    assert.equal(ledger.body.items[0].entryType, "fine");
+    assert.equal(ledger.body.items[0].direction, "debit");
+    assert.equal(ledger.body.items[0].amount, 250.75);
+  });
+});
+
+test("[MUL-02] limpar o condutor responsável retira o débito do extrato (reversível)", async () => {
+  await withFinesApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "RSP2A22");
+    const operatorProfileId = await createOperatorProfile(baseUrl, seed.tenantA);
+    const created = await requestJson(baseUrl, "/api/v1/fines", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: fineBody({ vehicle_id: vehicleId, numero_auto: "RSP-2", valor: 120, responsible_operator_profile_id: operatorProfileId }),
+    });
+    assert.equal(created.status, 201);
+
+    const cleared = await requestJson(baseUrl, `/api/v1/fines/${created.body.data.id}`, {
+      method: "PATCH",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { responsible_operator_profile_id: null },
+    });
+    assert.equal(cleared.status, 200);
+    assert.equal(cleared.body.data.responsibleOperatorProfileId, null);
+    assert.equal(cleared.body.data.disposition, "none");
+
+    const ledger = await requestJson(baseUrl, `/api/v1/professional-statements?operatorProfileId=${operatorProfileId}`, {
+      headers: authHeaders(seed.tenantA, seed.financeA, "finance"),
+    });
+    assert.equal(ledger.body.items.length, 0, "o débito foi retirado do extrato");
+  });
+});
+
+test("[MUL-05] multa → contas a pagar por origem: POST 201 · GET badge · DELETE reversível", async () => {
+  await withFinesApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "PAY1A11");
+    const fine = await createFine(baseUrl, seed.tenantA, seed.managerA, { vehicle_id: vehicleId, numero_auto: "PAY-1" });
+
+    const launched = await requestJson(baseUrl, `/api/v1/fines/${fine.id}/payable`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.financeA, "finance"),
+      body: { party_type: "supplier", party_name: "DETRAN-SP", amount: 100, due_date: "2026-08-01T00:00:00.000Z" },
+    });
+    assert.equal(launched.status, 201, JSON.stringify(launched.body));
+
+    const badge = await requestJson(baseUrl, `/api/v1/fines/${fine.id}/payable`, {
+      headers: authHeaders(seed.tenantA, seed.financeA, "finance"),
+    });
+    assert.equal(badge.status, 200);
+    assert.notEqual(badge.body.data, null);
+
+    // Idempotência: 2º lançamento da MESMA multa → 409 source_already_launched.
+    const dup = await requestJson(baseUrl, `/api/v1/fines/${fine.id}/payable`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.financeA, "finance"),
+      body: { party_type: "supplier", party_name: "DETRAN-SP", amount: 100, due_date: "2026-08-01T00:00:00.000Z" },
+    });
+    assert.equal(dup.status, 409);
+    assert.equal(dup.body.error.reason, "source_already_launched");
+
+    const retracted = await requestJson(baseUrl, `/api/v1/fines/${fine.id}/payable`, {
+      method: "DELETE",
+      headers: authHeaders(seed.tenantA, seed.financeA, "finance"),
+    });
+    assert.equal(retracted.status, 200, JSON.stringify(retracted.body));
+  });
+});
+
+test("[MUL-01] either/or: com débito no extrato, lançar em contas a pagar → 409 fine_disposition_conflict", async () => {
+  await withFinesApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "EOR1A11");
+    const operatorProfileId = await createOperatorProfile(baseUrl, seed.tenantA);
+    const created = await requestJson(baseUrl, "/api/v1/fines", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: fineBody({ vehicle_id: vehicleId, numero_auto: "EOR-1", responsible_operator_profile_id: operatorProfileId }),
+    });
+    assert.equal(created.status, 201);
+
+    const payable = await requestJson(baseUrl, `/api/v1/fines/${created.body.data.id}/payable`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.financeA, "finance"),
+      body: { party_type: "supplier", party_name: "DETRAN-SP", amount: 100, due_date: "2026-08-01T00:00:00.000Z" },
+    });
+    assert.equal(payable.status, 409, JSON.stringify(payable.body));
+    assert.equal(payable.body.error.reason, "fine_disposition_conflict");
+  });
+});
+
+test("[MUL-01] either/or reverso: com contas a pagar, atribuir responsável → 409 fine_disposition_conflict", async () => {
+  await withFinesApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "EOR2A22");
+    const operatorProfileId = await createOperatorProfile(baseUrl, seed.tenantA);
+    const fine = await createFine(baseUrl, seed.tenantA, seed.managerA, { vehicle_id: vehicleId, numero_auto: "EOR-2" });
+
+    const payable = await requestJson(baseUrl, `/api/v1/fines/${fine.id}/payable`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.financeA, "finance"),
+      body: { party_type: "supplier", party_name: "DETRAN-SP", amount: 100, due_date: "2026-08-01T00:00:00.000Z" },
+    });
+    assert.equal(payable.status, 201);
+
+    const assign = await requestJson(baseUrl, `/api/v1/fines/${fine.id}`, {
+      method: "PATCH",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { responsible_operator_profile_id: operatorProfileId },
+    });
+    assert.equal(assign.status, 409, JSON.stringify(assign.body));
+    assert.equal(assign.body.error.reason, "fine_disposition_conflict");
+  });
+});
+
+test("[MUL-03] condutor responsável de OUTRA organização → 400 invalid_operator_profile_reference", async () => {
+  await withFinesApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "XRP1A11");
+    const profileB = await createOperatorProfile(baseUrl, seed.tenantB); // pertence ao tenant B
+
+    const crossResponsible = await requestJson(baseUrl, "/api/v1/fines", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: fineBody({ vehicle_id: vehicleId, numero_auto: "XRP-1", responsible_operator_profile_id: profileB }),
+    });
+    assert.equal(crossResponsible.status, 400, JSON.stringify(crossResponsible.body));
+    assert.equal(crossResponsible.body.error.reason, "invalid_operator_profile_reference");
+  });
+});
+
+test("[MUL-07/§2.8] DTO expõe responsibleOperatorProfileId + disposition; nunca tenant_id/CNH", async () => {
+  await withFinesApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "S28A111");
+    const operatorProfileId = await createOperatorProfile(baseUrl, seed.tenantA);
+    const created = await requestJson(baseUrl, "/api/v1/fines", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: fineBody({ vehicle_id: vehicleId, numero_auto: "S28-1", responsible_operator_profile_id: operatorProfileId }),
+    });
+    assert.equal(created.status, 201);
+    const serialized = JSON.stringify(created.body);
+    assert.equal(created.body.data.tenant_id, undefined);
+    assert.equal(created.body.data.tenantId, undefined);
+    assert.equal(serialized.includes("tenant_id"), false);
+    assert.equal(serialized.includes("cnh"), false);
+    assert.equal(created.body.data.disposition, "statement");
+  });
+});
+
+test("[MUL-esc] manager (fines:create, SEM professional_statements:create) atribui mas o efeito é constrangido", async () => {
+  await withFinesApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "ESC1A11");
+    const operatorProfileId = await createOperatorProfile(baseUrl, seed.tenantA);
+
+    // (1) manager NÃO pode escrever no razão diretamente (POST público exige professional_statements:create) → 403.
+    const directWrite = await requestJson(baseUrl, "/api/v1/professional-statements", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { operator_profile_id: operatorProfileId, direction: "debit", description: "arbitrário", amount: 9999, first_due_date: "2026-08-10" },
+    });
+    assert.equal(directWrite.status, 403, "manager sem professional_statements:create não escreve débito arbitrário");
+
+    // (2) MAS pode atribuir o condutor responsável numa multa → o efeito de domínio (typed fine/debit, amount=valor)
+    //     grava o débito, sem escalada (nem tipo/valor arbitrários).
+    const created = await requestJson(baseUrl, "/api/v1/fines", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: fineBody({ vehicle_id: vehicleId, numero_auto: "ESC-1", valor: 77.7, responsible_operator_profile_id: operatorProfileId }),
+    });
+    assert.equal(created.status, 201);
+
+    const ledger = await requestJson(baseUrl, `/api/v1/professional-statements?operatorProfileId=${operatorProfileId}`, {
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"), // manager TEM read
+    });
+    assert.equal(ledger.status, 200);
+    assert.equal(ledger.body.items.length, 1);
+    assert.equal(ledger.body.items[0].entryType, "fine");
+    assert.equal(ledger.body.items[0].direction, "debit");
+    assert.equal(ledger.body.items[0].amount, 77.7, "efeito constrangido ao fine.valor real (não arbitrário)");
+  });
+});
+
 type SeedData = {
   readonly tenantA: Tenant;
   readonly tenantB: Tenant;
@@ -429,6 +631,9 @@ async function withFinesApi(callback: (context: FinesApiContext) => Promise<void
     { createApp },
     { resetFineRuntimeForTests },
     { resetVehicleRuntimeForTests },
+    { resetOperatorProfileRuntimeForTests },
+    { resetProfessionalStatementRuntimeForTests },
+    { resetFinancialTitleRuntimeForTests },
     { CoreSaasRegistry },
     { MemoryCoreSaasAdapter },
     { InMemoryCoreSaasStore },
@@ -436,13 +641,21 @@ async function withFinesApi(callback: (context: FinesApiContext) => Promise<void
     import("../src/app.js"),
     import("../src/modules/fines/index.js"),
     import("../src/modules/vehicles/index.js"),
+    import("../src/modules/operator-profiles/index.js"),
+    import("../src/modules/professional-statements/index.js"),
+    import("../src/modules/financial-titles/financial-title.service.js"),
     import("../src/modules/core-saas/services/core-saas.service.js"),
     import("../src/modules/core-saas/services/memory-core-saas.adapter.js"),
     import("../src/modules/core-saas/store/core-saas.store.js"),
   ]);
 
+  // Ω4C PR-07 — a multa agora aciona efeitos service→service (extrato + contas a pagar por origem). Resetar os
+  // runtimes desses módulos entre casos evita vazamento de estado nos singletons de memória compartilhados.
   resetFineRuntimeForTests();
   resetVehicleRuntimeForTests();
+  resetOperatorProfileRuntimeForTests();
+  resetProfessionalStatementRuntimeForTests();
+  resetFinancialTitleRuntimeForTests();
 
   const core = new CoreSaasRegistry(new InMemoryCoreSaasStore());
   const seed = seedCoreSaas(core);
@@ -456,7 +669,23 @@ async function withFinesApi(callback: (context: FinesApiContext) => Promise<void
     await closeServer(server);
     resetFineRuntimeForTests();
     resetVehicleRuntimeForTests();
+    resetOperatorProfileRuntimeForTests();
+    resetProfessionalStatementRuntimeForTests();
+    resetFinancialTitleRuntimeForTests();
   }
+}
+
+// Ω4C PR-07 — cria um Profissional (operator_profile) via API (tenant_admin tem operator_profiles:create). O
+// extrato/condutor responsável é keyed por operator_profile_id (não driver_id/User). Como o RBAC de memória é
+// dirigido pelo header de papel, basta um user id qualquer com papel tenant_admin.
+async function createOperatorProfile(baseUrl: string, tenant: Tenant): Promise<string> {
+  const created = await requestJson(baseUrl, "/api/v1/operator-profiles", {
+    method: "POST",
+    headers: { "x-tenant-id": tenant.id, "x-user-id": randomUUID(), "x-role": "tenant_admin" },
+    body: { user_id: randomUUID(), full_name: "Condutor Responsável" },
+  });
+  assert.equal(created.status, 201, `operator profile creation failed: ${JSON.stringify(created.body)}`);
+  return created.body.data.id as string;
 }
 
 function seedCoreSaas(service: {

@@ -1,10 +1,20 @@
-import type { Fine, ListFinesResult } from "./fine.types.js";
+import type { Fine, FineDisposition, ListFinesResult } from "./fine.types.js";
+
+// §2.8 — a resposta expõe `responsibleOperatorProfileId` (id do PRÓPRIO tenant, não sensível) + a disposição
+// DERIVADA da coluna da multa (`statement` = lançado no extrato / `none`). NUNCA tenant_id nem CNH/dado do
+// profissional (o rótulo/nome do responsável é resolvido no front a partir da lista de Profissionais). O estado
+// `payable` (empresa paga) é derivado à parte pelo badge do rail de contas a pagar (GET /fines/:id/payable).
+function deriveDisposition(fine: Fine): FineDisposition {
+  return fine.responsibleOperatorProfileId !== undefined ? "statement" : "none";
+}
 
 export function toFineDto(fine: Fine) {
   return {
     id: fine.id,
     vehicleId: fine.vehicleId,
     driverId: fine.driverId ?? null,
+    responsibleOperatorProfileId: fine.responsibleOperatorProfileId ?? null,
+    disposition: deriveDisposition(fine),
     numeroAuto: fine.numeroAuto,
     dataInfracao: fine.dataInfracao.toISOString(),
     orgao: fine.orgao,
@@ -28,6 +38,8 @@ export function toFineListDto(result: ListFinesResult) {
       id: fine.id,
       vehicleId: fine.vehicleId,
       driverId: fine.driverId ?? null,
+      responsibleOperatorProfileId: fine.responsibleOperatorProfileId ?? null,
+      disposition: deriveDisposition(fine),
       numeroAuto: fine.numeroAuto,
       dataInfracao: fine.dataInfracao.toISOString(),
       orgao: fine.orgao,

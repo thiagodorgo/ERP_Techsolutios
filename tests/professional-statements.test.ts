@@ -5,12 +5,192 @@ import type { AddressInfo } from "node:net";
 import test from "node:test";
 
 import type { Tenant } from "../src/modules/core-saas/types/core-saas.types.js";
+import {
+  createMemoryOperatorProfileService,
+  resetOperatorProfileRuntimeForTests,
+} from "../src/modules/operator-profiles/operator-profile.service.js";
+import {
+  ProfessionalStatementService,
+  createMemoryProfessionalStatementService,
+  getMemoryProfessionalStatementRepositoryForTests,
+  resetProfessionalStatementRuntimeForTests,
+} from "../src/modules/professional-statements/professional-statement.service.js";
+import type { ProfessionalStatementActorContext } from "../src/modules/professional-statements/professional-statement.types.js";
 
 // Ω4C PR-03 — rotas /api/v1/professional-statements (Extrato do profissional): AJUSTE (201), saldo DERIVADO
 // (Σcredit − Σdebit), parcelamento fiel, trava RN-EXT-01 (409 statement_entry_locked), isolamento 404,
 // §2.8/LGPD (DTO sem tenant_id/source_id/CNH), RBAC (professional_statements:* — read amplo / write finance+admins).
 
 const CNH_SECRET = "99887766554";
+
+// ---------- Ω4C PR-07 (D-Ω4C-MULSEG-STATEMENT-API): caminho INTERNO createForSource/removeForSource/findActiveBySource ----------
+
+type StatementServiceContext = {
+  readonly service: ProfessionalStatementService;
+  readonly actor: ProfessionalStatementActorContext;
+  readonly operatorProfileId: string;
+};
+
+async function withStatementService(callback: (context: StatementServiceContext) => Promise<void>): Promise<void> {
+  process.env.CORE_SAAS_PERSISTENCE = "memory";
+  resetProfessionalStatementRuntimeForTests();
+  resetOperatorProfileRuntimeForTests();
+  const actor: ProfessionalStatementActorContext = { tenantId: randomUUID(), userId: randomUUID(), roles: [], permissions: [] };
+  const profile = await createMemoryOperatorProfileService().create(actor, { user_id: randomUUID(), full_name: "Prof PR07" });
+  const service = createMemoryProfessionalStatementService();
+  try {
+    await callback({ service, actor, operatorProfileId: profile.id });
+  } finally {
+    resetProfessionalStatementRuntimeForTests();
+    resetOperatorProfileRuntimeForTests();
+  }
+}
+
+test("[MUL-01] createForSource lança fine/debit (amount REAL) e é idempotente por origem (2× → 1 grupo)", async () => {
+  await withStatementService(async ({ service, actor, operatorProfileId }) => {
+    const fineId = randomUUID();
+    const first = await service.createForSource(actor, {
+      operatorProfileId,
+      entryType: "fine",
+      direction: "debit",
+      sourceType: "fine",
+      sourceId: fineId,
+      amount: 150.5,
+      installmentTotal: 1,
+      firstDueDate: new Date("2026-08-05T00:00:00.000Z"),
+      description: "Multa AI-1",
+    });
+    assert.equal(first.length, 1);
+    assert.equal(first[0]?.entryType, "fine");
+    assert.equal(first[0]?.direction, "debit");
+    assert.equal(first[0]?.sourceType, "fine");
+    assert.equal(first[0]?.amount, 150.5);
+    const groupId = first[0]?.groupId;
+
+    // Reprocessar a MESMA origem → devolve o grupo existente (idempotente), sem duplicar.
+    const second = await service.createForSource(actor, {
+      operatorProfileId,
+      entryType: "fine",
+      direction: "debit",
+      sourceType: "fine",
+      sourceId: fineId,
+      amount: 150.5,
+      installmentTotal: 1,
+      firstDueDate: new Date("2026-08-05T00:00:00.000Z"),
+    });
+    assert.equal(second.length, 1);
+    assert.equal(second[0]?.groupId, groupId, "reprocessar não cria grupo novo");
+    assert.equal((await service.findActiveBySource(actor, "fine", fineId)).length, 1, "só 1 parcela ativa após 2 chamadas");
+  });
+});
+
+test("[MUL-02] removeForSource retira o grupo (reversível); parcela liquidada → 409 statement_entry_locked", async () => {
+  await withStatementService(async ({ service, actor, operatorProfileId }) => {
+    const fineId = randomUUID();
+    const group = await service.createForSource(actor, {
+      operatorProfileId,
+      entryType: "fine",
+      direction: "debit",
+      sourceType: "fine",
+      sourceId: fineId,
+      amount: 200,
+      installmentTotal: 2,
+      firstDueDate: new Date("2026-08-10T00:00:00.000Z"),
+    });
+    const groupId = group[0]!.groupId;
+
+    // Liquida a 1ª parcela → removeForSource trava (RN-EXT-01).
+    assert.equal(getMemoryProfessionalStatementRepositoryForTests().settleInstallmentForTests(actor.tenantId, groupId, 1), true);
+    await assert.rejects(
+      () => service.removeForSource(actor, "fine", fineId),
+      (error: unknown) => {
+        const err = error as { statusCode?: number; reason?: string };
+        assert.equal(err.statusCode, 409);
+        assert.equal(err.reason, "statement_entry_locked");
+        return true;
+      },
+    );
+  });
+});
+
+test("[MUL-02] removeForSource: sem débito ativo → no-op []; todo-pending retira e permite relançar", async () => {
+  await withStatementService(async ({ service, actor, operatorProfileId }) => {
+    // Sem débito ativo → no-op idempotente.
+    assert.equal((await service.removeForSource(actor, "fine", randomUUID())).length, 0);
+
+    const fineId = randomUUID();
+    await service.createForSource(actor, {
+      operatorProfileId,
+      entryType: "fine",
+      direction: "debit",
+      sourceType: "fine",
+      sourceId: fineId,
+      amount: 90,
+      installmentTotal: 1,
+      firstDueDate: new Date("2026-08-10T00:00:00.000Z"),
+    });
+    assert.equal((await service.removeForSource(actor, "fine", fineId)).length, 1);
+    assert.equal((await service.findActiveBySource(actor, "fine", fineId)).length, 0, "grupo retirado não aparece como ativo");
+
+    // Retirado → relançar a MESMA multa volta a criar (o índice parcial só conta os ATIVOS).
+    const relaunched = await service.createForSource(actor, {
+      operatorProfileId,
+      entryType: "fine",
+      direction: "debit",
+      sourceType: "fine",
+      sourceId: fineId,
+      amount: 90,
+      installmentTotal: 1,
+      firstDueDate: new Date("2026-09-10T00:00:00.000Z"),
+    });
+    assert.equal(relaunched.length, 1);
+  });
+});
+
+test("[MUL-esc] createForSource é CONSTRANGIDO: rejeita source_type='manual' e profissional cross-tenant", async () => {
+  await withStatementService(async ({ service, actor, operatorProfileId }) => {
+    await assert.rejects(
+      () =>
+        service.createForSource(actor, {
+          operatorProfileId,
+          entryType: "fine",
+          direction: "debit",
+          sourceType: "manual",
+          sourceId: randomUUID(),
+          amount: 10,
+          installmentTotal: 1,
+          firstDueDate: new Date(),
+        }),
+      (error: unknown) => {
+        const err = error as { statusCode?: number; reason?: string };
+        assert.equal(err.statusCode, 400);
+        assert.equal(err.reason, "invalid_source_type");
+        return true;
+      },
+    );
+
+    const otherTenantActor: ProfessionalStatementActorContext = { ...actor, tenantId: randomUUID() };
+    await assert.rejects(
+      () =>
+        service.createForSource(otherTenantActor, {
+          operatorProfileId,
+          entryType: "fine",
+          direction: "debit",
+          sourceType: "fine",
+          sourceId: randomUUID(),
+          amount: 10,
+          installmentTotal: 1,
+          firstDueDate: new Date(),
+        }),
+      (error: unknown) => {
+        const err = error as { statusCode?: number; reason?: string };
+        assert.equal(err.statusCode, 404);
+        assert.equal(err.reason, "operator_profile_not_found");
+        return true;
+      },
+    );
+  });
+});
 
 test("POST /professional-statements cria AJUSTE (201) — DTO §2.8: sem tenant_id/source_id/CNH; parcela > 0", async () => {
   await withStatementApi(async ({ baseUrl, seed, operatorProfileA }) => {

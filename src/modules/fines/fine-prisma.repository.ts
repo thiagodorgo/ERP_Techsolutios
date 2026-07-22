@@ -24,6 +24,7 @@ export class PrismaFineRepository implements FineRepository {
           tenant_id: input.tenantId,
           vehicle_id: input.vehicleId,
           driver_id: input.driverId ?? null,
+          responsible_operator_profile_id: input.responsibleOperatorProfileId ?? null,
           numero_auto: input.numeroAuto,
           data_infracao: input.dataInfracao,
           orgao: input.orgao,
@@ -43,6 +44,9 @@ export class PrismaFineRepository implements FineRepository {
     } catch (error) {
       if (isUniqueViolation(error)) {
         throw duplicateNumeroAuto();
+      }
+      if (isForeignKeyViolation(error)) {
+        throw invalidResponsibleReference();
       }
 
       throw error;
@@ -90,6 +94,7 @@ export class PrismaFineRepository implements FineRepository {
         data: compactRecord({
           vehicle_id: input.vehicleId,
           driver_id: nullable(input.driverId),
+          responsible_operator_profile_id: nullable(input.responsibleOperatorProfileId),
           numero_auto: input.numeroAuto,
           data_infracao: input.dataInfracao,
           orgao: input.orgao,
@@ -108,6 +113,9 @@ export class PrismaFineRepository implements FineRepository {
     } catch (error) {
       if (isUniqueViolation(error)) {
         throw duplicateNumeroAuto();
+      }
+      if (isForeignKeyViolation(error)) {
+        throw invalidResponsibleReference();
       }
 
       throw error;
@@ -205,6 +213,7 @@ function mapFineRecord(record: {
   readonly tenant_id: string;
   readonly vehicle_id: string;
   readonly driver_id: string | null;
+  readonly responsible_operator_profile_id: string | null;
   readonly numero_auto: string;
   readonly data_infracao: Date;
   readonly orgao: string;
@@ -225,6 +234,7 @@ function mapFineRecord(record: {
     tenantId: record.tenant_id,
     vehicleId: record.vehicle_id,
     driverId: record.driver_id ?? undefined,
+    responsibleOperatorProfileId: record.responsible_operator_profile_id ?? undefined,
     numeroAuto: record.numero_auto,
     dataInfracao: record.data_infracao,
     orgao: record.orgao,
@@ -249,16 +259,35 @@ function decimalToNumber(value: unknown): number {
 }
 
 function isUniqueViolation(error: unknown): boolean {
+  return isPrismaError(error, "P2002");
+}
+
+// P2003 — a FK composta (tenant_id, responsible_operator_profile_id) → operator_profiles falhou: o perfil
+// não existe / é de outro tenant. O serviço já pré-valida (400), então este é o backstop do banco.
+function isForeignKeyViolation(error: unknown): boolean {
+  return isPrismaError(error, "P2003");
+}
+
+function isPrismaError(error: unknown, code: string): boolean {
   return (
     typeof error === "object" &&
     error !== null &&
     "code" in error &&
-    (error as { readonly code?: unknown }).code === "P2002"
+    (error as { readonly code?: unknown }).code === code
   );
 }
 
 function duplicateNumeroAuto(): FineError {
   return new FineError(409, "FINE_CONFLICT", "duplicate_numero_auto", "A fine with this numeroAuto already exists in this organization.");
+}
+
+function invalidResponsibleReference(): FineError {
+  return new FineError(
+    400,
+    "FINE_INVALID",
+    "invalid_operator_profile_reference",
+    "responsibleOperatorProfileId does not reference a professional in this organization.",
+  );
 }
 
 function nullable<T>(value: T | undefined): T | null | undefined {

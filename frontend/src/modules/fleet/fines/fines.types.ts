@@ -3,10 +3,19 @@
 
 export type FineStatus = "recebida" | "em_recurso" | "deferida" | "indeferida" | "paga" | "cancelada";
 
+// Ω4C PR-07 — disposição DERIVADA do backend: `statement` = lançada no extrato do condutor responsável
+// (débito na folha do profissional); `none` = sem condutor responsável. O estado "empresa paga" (contas a
+// pagar) NÃO vem nesta coluna — é derivado à parte pelo badge do rail de contas a pagar (GET /fines/:id/payable).
+export type FineDisposition = "statement" | "none";
+
 export type Fine = {
   readonly id: string;
   readonly vehicleId: string;
   readonly driverId: string | null;
+  // Ω4C PR-07 — condutor responsável = um Profissional (operator_profile) que tem folha/extrato. Distinto de
+  // `driverId` (Usuário genérico). Setar → a multa é descontada no extrato desse profissional (RN-MUL-01).
+  readonly responsibleOperatorProfileId: string | null;
+  readonly disposition: FineDisposition;
   readonly numeroAuto: string;
   readonly dataInfracao: string;
   readonly orgao: string;
@@ -64,6 +73,9 @@ export type FinesApiContext = {
 export type FineDraft = {
   readonly vehicleId: string;
   readonly driverId?: string;
+  // Ω4C PR-07 — condutor responsável (Profissional) e parcelas do desconto no extrato (default 1).
+  readonly responsibleOperatorProfileId?: string;
+  readonly responsibleInstallmentTotal?: number;
   readonly numeroAuto: string;
   readonly dataInfracao: string;
   readonly orgao: string;
@@ -77,6 +89,10 @@ export type FineDraft = {
 export type FineCreatePayload = {
   readonly vehicleId: string;
   readonly driverId?: string;
+  // Ω4C PR-07 — o backend aceita camelCase (`responsibleOperatorProfileId`/`responsibleInstallmentTotal`).
+  // Setar o responsável no create dispara o débito no extrato; parcelas controla o plano do desconto (default 1).
+  readonly responsibleOperatorProfileId?: string;
+  readonly responsibleInstallmentTotal?: number;
   readonly numeroAuto: string;
   readonly dataInfracao: string;
   readonly orgao: string;
@@ -89,8 +105,10 @@ export type FineCreatePayload = {
 };
 
 export type FineUpdatePayload = Partial<
-  FineCreatePayload & {
+  Omit<FineCreatePayload, "responsibleOperatorProfileId"> & {
     readonly status: FineStatus;
+    // `null` LIMPA o condutor responsável (retira o débito do extrato); string SETA/TROCA; omitido = não muda.
+    readonly responsibleOperatorProfileId: string | null;
   }
 >;
 

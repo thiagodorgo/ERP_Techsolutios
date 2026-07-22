@@ -1,5 +1,6 @@
 import { env } from "../../config/env.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
+import { createDefaultScheduledNotificationService } from "../notifications/scheduled-notification.service.js";
 import { createDefaultVehicleService } from "../vehicles/vehicle.service.js";
 import {
   InMemoryInsurancePolicyRepository,
@@ -39,11 +40,30 @@ type RawRecord = Record<string, unknown>;
 const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
+ * Ω4C PR-07 (D-Ω4C-SEG-EXPIRY-NOTIF) — payload do efeito de domínio que agenda a notificação de VENCIMENTO
+ * da apólice. SEGURANÇA (a lição do PR-06): este payload NÃO carrega escolha de visibilidade — o seam FIXA
+ * `visibility: 'private'` na fronteira do motor. Um portador de `insurance_policies:create` SEM
+ * `notifications:create` JAMAIS dispara broadcast tenant-wide. O client_action_id é DETERMINÍSTICO
+ * (`insurance-expiry:<policyId>`) → dedupe (reprocessar/editar devolve a definição existente).
+ */
+export type InsuranceExpiryNotificationInput = {
+  readonly policyId: string;
+  readonly vigenciaFim: Date;
+  readonly numeroApolice: string;
+};
+
+/**
  * Tenant-scoped read used to enforce the REQUIRED `vehicle_id`. A cross-tenant /
  * missing id resolves to "not found" and is rejected as a 400 invalid reference.
+ * `scheduleExpiryNotification` is the DOMAIN EFFECT (service→service) that registers the expiry reminder
+ * via the notifications engine — it does NOT require `notifications:create` from the user.
  */
 export type InsurancePolicyReferenceResolvers = {
   readonly resolveVehicle?: (actor: InsuranceActorContext, id: string) => Promise<boolean>;
+  readonly scheduleExpiryNotification?: (
+    actor: InsuranceActorContext,
+    input: InsuranceExpiryNotificationInput,
+  ) => Promise<void>;
 };
 
 export class InsurancePolicyService {
@@ -109,7 +129,7 @@ export class InsurancePolicyService {
     // `vencida` is rejected (422) instead of being silently ignored.
     const status = parseOptionalInsuranceWriteStatus(body.status) ?? DEFAULT_INSURANCE_STATUS;
 
-    return this.repository.create({
+    const created = await this.repository.create({
       tenantId: actor.tenantId,
       vehicleId,
       seguradora: parseSeguradora(body.seguradora),
@@ -123,6 +143,11 @@ export class InsurancePolicyService {
       createdBy: actor.userId,
       updatedBy: actor.userId,
     });
+
+    // SEG-01 — o vencimento vira UMA notificação agendada PRIVADA (dedupe determinístico por client_action_id).
+    await this.emitExpiryNotification(actor, created);
+
+    return created;
   }
 
   async get(actor: InsuranceActorContext, insurancePolicyId: string): Promise<InsurancePolicy> {
@@ -173,7 +198,23 @@ export class InsurancePolicyService {
       throw new InsurancePolicyError(404, "INSURANCE_NOT_FOUND", "not_found", "Insurance policy was not found.");
     }
 
+    // SEG-01 — editar a apólice re-registra o vencimento (dedupe determinístico: reprocessar/editar devolve a
+    // definição existente; a re-programação ao mudar `vigencia_fim` é parada honesta D-007 — o motor é INTOCADO).
+    await this.emitExpiryNotification(actor, updated);
+
     return updated;
+  }
+
+  // D-Ω4C-SEG-EXPIRY-NOTIF — efeito de domínio: o `vigencia_fim` vira UMA ScheduledNotification. O seam FIXA a
+  // visibilidade PRIVATE (a lição do PR-06); o contrato de seguro NÃO tem campo de visibilidade → sem escalada.
+  private async emitExpiryNotification(actor: InsuranceActorContext, policy: InsurancePolicy): Promise<void> {
+    const resolver = this.references.scheduleExpiryNotification;
+    if (!resolver) return;
+    await resolver(actor, {
+      policyId: policy.id,
+      vigenciaFim: policy.vigenciaFim,
+      numeroApolice: policy.numeroApolice,
+    });
   }
 
   /**
@@ -290,6 +331,23 @@ function createDefaultReferenceResolvers(): InsurancePolicyReferenceResolvers {
       } catch {
         return false;
       }
+    },
+    // Efeito de domínio (service→service): cria a ScheduledNotification de vencimento via o motor PR-04. O ator
+    // de seguro casa com ScheduledNotificationActorContext e é repassado direto — NÃO exige `notifications:create`
+    // do usuário. `visibility: 'private'` é FIXADO aqui (a lição do PR-06): um portador de
+    // `insurance_policies:create` SEM `notifications:create` jamais dispara broadcast tenant-wide. Disparo INLINE
+    // se `vigencia_fim <= now`. client_action_id DETERMINÍSTICO → dedupe (reprocessar/editar não duplica).
+    scheduleExpiryNotification: async (actor, input) => {
+      const service = await createDefaultScheduledNotificationService();
+      await service.create(actor, {
+        title: "Vencimento de seguro",
+        message: `A apólice ${input.numeroApolice} vence em ${input.vigenciaFim.toISOString()}.`,
+        notify_at: input.vigenciaFim,
+        visibility: "private",
+        source_type: "insurance_policy",
+        source_id: input.policyId,
+        client_action_id: `insurance-expiry:${input.policyId}`,
+      });
     },
   };
 }

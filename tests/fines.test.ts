@@ -12,6 +12,15 @@ import { InMemoryFineRepository } from "../src/modules/fines/fine.repository.js"
 import { FineService, type FineReferenceResolvers } from "../src/modules/fines/fine.service.js";
 import type { FineActorContext } from "../src/modules/fines/fine.types.js";
 import {
+  createMemoryOperatorProfileService,
+  resetOperatorProfileRuntimeForTests,
+} from "../src/modules/operator-profiles/operator-profile.service.js";
+import {
+  createMemoryProfessionalStatementService,
+  resetProfessionalStatementRuntimeForTests,
+  type ProfessionalStatementService,
+} from "../src/modules/professional-statements/professional-statement.service.js";
+import {
   FINE_STATUS_TRANSITIONS,
   assertFineStatusTransition,
   parseFineStatus,
@@ -268,3 +277,142 @@ function buildService(): FineService {
 
   return new FineService(repository, references);
 }
+
+// ---------- Ω4C PR-07: condutor responsável → extrato + either/or (D-Ω4C-MULSEG-*) ----------
+
+type ResponsibleHarness = {
+  readonly service: FineService;
+  readonly statementService: ProfessionalStatementService;
+  readonly profileId: string;
+  readonly payableFines: Set<string>;
+};
+
+// Wire REAL do efeito de extrato (memory statement service) + spy do payable (either/or). O efeito
+// service→service NÃO exige `professional_statements:create` do ator (é chamada interna typed).
+async function buildResponsibleHarness(): Promise<ResponsibleHarness> {
+  resetProfessionalStatementRuntimeForTests();
+  resetOperatorProfileRuntimeForTests();
+  const profile = await createMemoryOperatorProfileService().create(managerActor, {
+    user_id: randomUUID(),
+    full_name: "Condutor Responsável",
+  });
+  const statementService = createMemoryProfessionalStatementService();
+  const payableFines = new Set<string>();
+  const references: FineReferenceResolvers = {
+    resolveVehicle: async (_actor, id) => id === VEHICLE_V || id === VEHICLE_W,
+    resolveDriver: async (_actor, id) => id === DRIVER_OK,
+    resolveResponsible: async (_actor, id) => id === profile.id,
+    createResponsibleStatementDebit: async (actorCtx, input) => {
+      await statementService.createForSource(actorCtx, {
+        operatorProfileId: input.operatorProfileId,
+        entryType: "fine",
+        direction: "debit",
+        sourceType: "fine",
+        sourceId: input.fine.id,
+        amount: input.fine.valor,
+        installmentTotal: input.installmentTotal,
+        firstDueDate: input.fine.prazoPagamento ?? new Date(),
+        description: `Multa ${input.fine.numeroAuto}`,
+      });
+    },
+    removeResponsibleStatementDebit: async (actorCtx, fineId) => {
+      await statementService.removeForSource(actorCtx, "fine", fineId);
+    },
+    hasActiveStatementDebit: async (actorCtx, fineId) =>
+      (await statementService.findActiveBySource(actorCtx, "fine", fineId)).length > 0,
+    hasActivePayable: async (_actorCtx, fineId) => payableFines.has(fineId),
+  };
+  return { service: new FineService(new InMemoryFineRepository(), references), statementService, profileId: profile.id, payableFines };
+}
+
+test("[MUL-01] responsável no create gera débito no extrato (amount = valor REAL, 1 parcela default)", async () => {
+  const { service, statementService, profileId } = await buildResponsibleHarness();
+  const created = await service.create(managerActor, baseBody({ valor: 321.5, responsible_operator_profile_id: profileId }));
+  assert.equal(created.responsibleOperatorProfileId, profileId);
+
+  const entries = await statementService.findActiveBySource(managerActor, "fine", created.id);
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0]?.entryType, "fine");
+  assert.equal(entries[0]?.direction, "debit");
+  assert.equal(entries[0]?.amount, 321.5, "amount = fine.valor real (nunca fabricado)");
+  assert.equal(entries[0]?.installmentTotal, 1);
+});
+
+test("[MUL-01] parcelas do desconto: responsible_installment_total=3 → 3 parcelas do valor", async () => {
+  const { service, statementService, profileId } = await buildResponsibleHarness();
+  const created = await service.create(
+    managerActor,
+    baseBody({ valor: 300, responsible_operator_profile_id: profileId, responsible_installment_total: 3 }),
+  );
+  const entries = await statementService.findActiveBySource(managerActor, "fine", created.id);
+  assert.equal(entries.length, 3);
+  assert.equal(entries.reduce((sum, e) => Math.round((sum + e.amount) * 100) / 100, 0), 300);
+});
+
+test("[MUL-01] reprocessar a MESMA multa não duplica o débito (idempotente por origem)", async () => {
+  const { service, statementService, profileId } = await buildResponsibleHarness();
+  const created = await service.create(managerActor, baseBody({ valor: 100, responsible_operator_profile_id: profileId }));
+  // PATCH re-atribuindo o MESMO responsável é no-op (não recria).
+  await service.update(managerActor, created.id, { responsible_operator_profile_id: profileId });
+  assert.equal((await statementService.findActiveBySource(managerActor, "fine", created.id)).length, 1);
+});
+
+test("[MUL-02] limpar o responsável retira o débito do extrato (reversível)", async () => {
+  const { service, statementService, profileId } = await buildResponsibleHarness();
+  const created = await service.create(managerActor, baseBody({ responsible_operator_profile_id: profileId }));
+  assert.equal((await statementService.findActiveBySource(managerActor, "fine", created.id)).length, 1);
+
+  const cleared = await service.update(managerActor, created.id, { responsible_operator_profile_id: null });
+  assert.equal(cleared.responsibleOperatorProfileId, undefined);
+  assert.equal((await statementService.findActiveBySource(managerActor, "fine", created.id)).length, 0);
+});
+
+test("[MUL-01] either/or: SETAR responsável com payable ATIVO → 409 fine_disposition_conflict", async () => {
+  const { service, payableFines, profileId } = await buildResponsibleHarness();
+  const created = await service.create(managerActor, baseBody());
+  payableFines.add(created.id); // simula contas a pagar ativo
+
+  await assert.rejects(
+    () => service.update(managerActor, created.id, { responsible_operator_profile_id: profileId }),
+    (error: unknown) => {
+      const err = error as { statusCode?: number; reason?: string };
+      assert.equal(err.statusCode, 409);
+      assert.equal(err.reason, "fine_disposition_conflict");
+      return true;
+    },
+  );
+});
+
+test("[MUL-01] either/or: assertPayableDispositionAllowed rejeita quando há débito no extrato (409)", async () => {
+  const { service, profileId } = await buildResponsibleHarness();
+  const created = await service.create(managerActor, baseBody({ responsible_operator_profile_id: profileId }));
+
+  await assert.rejects(
+    () => service.assertPayableDispositionAllowed(managerActor, created.id),
+    (error: unknown) => {
+      const err = error as { statusCode?: number; reason?: string };
+      assert.equal(err.statusCode, 409);
+      assert.equal(err.reason, "fine_disposition_conflict");
+      return true;
+    },
+  );
+});
+
+test("[MUL-01] assertPayableDispositionAllowed permite quando NÃO há débito (empresa paga)", async () => {
+  const { service } = await buildResponsibleHarness();
+  const created = await service.create(managerActor, baseBody());
+  await assert.doesNotReject(() => service.assertPayableDispositionAllowed(managerActor, created.id));
+});
+
+test("[MUL-03] responsável cross-tenant/inexistente → 400 invalid_operator_profile_reference", async () => {
+  const { service } = await buildResponsibleHarness();
+  await assert.rejects(
+    () => service.create(managerActor, baseBody({ responsible_operator_profile_id: randomUUID() })),
+    (error: unknown) => {
+      const err = error as { statusCode?: number; reason?: string };
+      assert.equal(err.statusCode, 400);
+      assert.equal(err.reason, "invalid_operator_profile_reference");
+      return true;
+    },
+  );
+});

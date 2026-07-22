@@ -1373,6 +1373,89 @@ if (!connectionString) {
       );
       assert.equal(tenantCMaintenanceItem?.description, "RLS item", "tenant C maintenance item stays visible + untouched in-tenant");
 
+      // Ω4C PR-07 (MUL-SEG-08) — fines.responsible_operator_profile_id (condutor responsável) com 3 tenants
+      // EFÊMEROS (A, B, C). A multa referencia um vehicle (FK composta) e um operator_profile (FK composta
+      // RESTRICT, a coluna ADITIVA desta fatia — 20260827000000). Reusa os operator_profiles do bloco PR-03.
+      // Prova: (a) FK cross-tenant REJEITADA (multa de A com perfil de B → violação de FK); (b) invisível sem
+      // contexto; (c) cross-tenant updateMany count=0; (d) visível/intocada in-tenant. tenant_id 1º de todo índice.
+      const createFineWithResponsible = (
+        tx: typeof client,
+        tenantId: string,
+        operatorProfileId: string,
+        numeroAuto: string,
+      ) => (async () => {
+        const [vehicle] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO vehicles (tenant_id, plate, model)
+          VALUES (${tenantId}::uuid, ${`RLS-FINE-${tenantId.slice(0, 8)}`}, 'RLS Truck')
+          RETURNING id
+        `;
+        const [fine] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO fines (
+            tenant_id, vehicle_id, responsible_operator_profile_id, numero_auto, data_infracao, orgao, valor, status
+          )
+          VALUES (
+            ${tenantId}::uuid, ${vehicle.id}::uuid, ${operatorProfileId}::uuid, ${numeroAuto}, now(), 'DETRAN-RLS', 150.00, 'recebida'
+          )
+          RETURNING id
+        `;
+        return fine.id;
+      })();
+      const fineAId = await withTenantRls(client, tenantA.id, (tx) => createFineWithResponsible(tx as typeof client, tenantA.id, operatorProfileAId, "RLS-FINE-A"));
+      const fineBId = await withTenantRls(client, tenantB.id, (tx) => createFineWithResponsible(tx as typeof client, tenantB.id, operatorProfileBId, "RLS-FINE-B"));
+      const fineCId = await withTenantRls(client, tenantC.id, (tx) => createFineWithResponsible(tx as typeof client, tenantC.id, tenantCProfessional.operatorProfileId, "RLS-FINE-C"));
+
+      // (a) FK COMPOSTA cross-tenant REJEITADA: uma multa de A referenciando o perfil de B viola a FK (não existe
+      // (tenant_id=A, operator_profile_id=perfilB) em operator_profiles). A tx inteira faz rollback (sem órfão).
+      await assert.rejects(
+        () =>
+          withTenantRls(client, tenantA.id, async (tx) => {
+            const [vehicle] = await tx.$queryRaw<Array<{ id: string }>>`
+              INSERT INTO vehicles (tenant_id, plate, model)
+              VALUES (${tenantA.id}::uuid, ${`RLS-XFK-${tenantA.id.slice(0, 8)}`}, 'RLS Truck')
+              RETURNING id
+            `;
+            await tx.$executeRaw`
+              INSERT INTO fines (tenant_id, vehicle_id, responsible_operator_profile_id, numero_auto, data_infracao, orgao, valor, status)
+              VALUES (${tenantA.id}::uuid, ${vehicle.id}::uuid, ${operatorProfileBId}::uuid, 'RLS-XFK', now(), 'DETRAN', 10.00, 'recebida')
+            `;
+          }),
+        "responsible_operator_profile_id cross-tenant deve violar a FK composta RESTRICT",
+      );
+
+      const finesWithoutContext = await client.fine.findMany({
+        where: { id: { in: [fineAId, fineBId, fineCId] } },
+      });
+      assert.deepEqual(
+        finesWithoutContext.map((entry) => entry.id),
+        [],
+        "tenant-scoped fines must not be visible without app.current_tenant_id",
+      );
+
+      const tenantAFineView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.fine.findMany({ where: { id: { in: [fineAId, fineBId, fineCId] } } });
+        const crossTenantUpdate = await tx.fine.updateMany({
+          where: { id: { in: [fineBId, fineCId] } },
+          data: { orgao: "RLS cross-tenant update should not apply" },
+        });
+        return { visibleIds: visible.map((entry) => entry.id), crossUpdatedRows: crossTenantUpdate.count };
+      });
+      assert.deepEqual(
+        tenantAFineView.visibleIds,
+        [fineAId],
+        "tenant A must only see its own fine (not tenant B/C)",
+      );
+      assert.equal(
+        tenantAFineView.crossUpdatedRows,
+        0,
+        "tenant A must not update tenant B/C fines",
+      );
+
+      const tenantBFine = await withTenantRls(client, tenantB.id, (tx) => tx.fine.findUnique({ where: { id: fineBId } }));
+      assert.equal(tenantBFine?.responsible_operator_profile_id, operatorProfileBId, "tenant B fine keeps its responsible in-tenant");
+      assert.equal(tenantBFine?.orgao, "DETRAN-RLS", "tenant B fine orgao untouched in-tenant");
+      const tenantCFine = await withTenantRls(client, tenantC.id, (tx) => tx.fine.findUnique({ where: { id: fineCId } }));
+      assert.equal(tenantCFine?.responsible_operator_profile_id, tenantCProfessional.operatorProfileId, "tenant C fine keeps its responsible in-tenant");
+
       const globalTenants = await client.tenant.findMany({
         where: {
           id: {
@@ -1828,6 +1911,14 @@ if (!connectionString) {
           // Ω4C PR-03 — parcelas do extrato ANTES dos perfis (FK operator_profile é Restrict) e dos perfis ANTES
           // dos users (o cascade user→operator_profile falharia com parcela referenciando o perfil).
           await tx.professionalStatementEntry.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          // Ω4C PR-07 — multas ANTES dos perfis (FK responsible_operator_profile_id → operator_profiles é
+          // Restrict) E ANTES das viaturas (FK fines.vehicle_id → vehicles é Restrict); senão o cleanup quebra
+          // na FK (lição do CI-catch do PR-06).
+          await tx.fine.deleteMany({
             where: {
               tenant_id: tenantId,
             },

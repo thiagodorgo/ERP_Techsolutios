@@ -11,6 +11,8 @@ import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
+import { listOperatorProfilesFromApi } from "../../../registry/operator-profiles/operator-profiles.service";
+import type { OperatorProfileItem } from "../../../registry/operator-profiles/operator-profiles.types";
 import { listTenantUsers } from "../../../registry/teams/teams.service";
 import type { TenantUser } from "../../../registry/teams/teams.types";
 import { useVehicles } from "../../../registry/vehicles/useVehicles";
@@ -23,11 +25,14 @@ import {
   formatFineDate,
   formatPontos,
   formatValor,
+  getFineDispositionLabel,
+  getFineDispositionTone,
   getFineStatusLabel,
   getFineStatusTone,
   getValidFineTransitions,
   interpretFineSubmitError,
   isFineStatus,
+  resolveFineDisposition,
   FINE_STATUS_OPTIONS,
 } from "../fines.adapter";
 import type { FineTransition } from "../fines.adapter";
@@ -98,6 +103,7 @@ export function MultasPage() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [drivers, setDrivers] = useState<TenantUser[]>([]);
+  const [operatorProfiles, setOperatorProfiles] = useState<OperatorProfileItem[]>([]);
   const [editing, setEditing] = useState<Fine | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -149,8 +155,25 @@ export function MultasPage() {
     };
   }, [activeContext, context]);
 
+  // Ω4C PR-07 — carrega os Profissionais ATIVOS para o select de condutor responsável e para resolver o
+  // NOME na coluna (§2.8: o DTO da multa NÃO traz o nome; resolvemos aqui pela lista, nunca expondo CNH).
+  useEffect(() => {
+    if (!activeContext) return;
+    let active = true;
+    void listOperatorProfilesFromApi(context, { isActive: "active", limit: DENSE_LIST_FETCH_LIMIT }).then((loaded) => {
+      if (active) setOperatorProfiles(loaded.items);
+    });
+    return () => {
+      active = false;
+    };
+  }, [activeContext, context]);
+
   const vehicleById = useMemo(() => new Map(vehicles.map((vehicle) => [vehicle.id, vehicle])), [vehicles]);
   const driverById = useMemo(() => new Map(drivers.map((driver) => [driver.id, driver.name])), [drivers]);
+  const responsibleById = useMemo(
+    () => new Map(operatorProfiles.map((profile) => [profile.id, profile.fullName?.trim() || null])),
+    [operatorProfiles],
+  );
   const resolveVehicleName = useCallback(
     (id: string) => {
       const vehicle = vehicleById.get(id);
@@ -249,6 +272,34 @@ export function MultasPage() {
             {name ?? "Condutor"}
           </Link>
         );
+      },
+    },
+    {
+      key: "responsible",
+      header: "Responsável",
+      sortable: true,
+      sortValue: (fine) => (fine.responsibleOperatorProfileId ? responsibleById.get(fine.responsibleOperatorProfileId) ?? "" : ""),
+      render: (fine) => {
+        if (!fine.responsibleOperatorProfileId) return <span style={mutedStyle}>—</span>;
+        const name = responsibleById.get(fine.responsibleOperatorProfileId);
+        return (
+          <Link to="/cadastros/profissionais" aria-label={`Ver profissional ${name ?? "responsável"} em Cadastros`}>
+            {name ?? "Profissional"}
+          </Link>
+        );
+      },
+    },
+    {
+      key: "disposition",
+      header: "Disposição",
+      sortable: true,
+      sortValue: (fine) => fine.disposition,
+      // A lista só carrega a disposição do EXTRATO (statement/none); o estado "empresa paga" (contas a pagar)
+      // é derivado por multa no modal (evita N+1 na dense-list — D-007). "—" = sem responsável.
+      render: (fine) => {
+        const view = resolveFineDisposition(fine.disposition, false);
+        if (view === "none") return <span style={mutedStyle}>—</span>;
+        return <Chip tone={getFineDispositionTone(view)}>{getFineDispositionLabel(view)}</Chip>;
       },
     },
     {
@@ -527,7 +578,10 @@ export function MultasPage() {
           fine={editing}
           vehicles={vehicles}
           drivers={drivers}
+          operatorProfiles={operatorProfiles}
           context={context}
+          canLaunchPayable={can("financial_titles:create")}
+          canRemovePayable={can("financial_titles:update")}
           onClose={closeModal}
           onSaved={() => {
             closeModal();

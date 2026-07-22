@@ -127,6 +127,24 @@ export function parseOptionalPontos(value: unknown): number | undefined {
   return parsePontos(value);
 }
 
+// Ω4C PR-07 — parcelas do DESCONTO no extrato quando há condutor responsável. Campo TRANSIENTE (não
+// persistido na Fine — override de plano, como `ignore_previous_odometer` do PR-05). int ≥ 1, default 1;
+// fora de 1..240 → 400 invalid_responsible_installment_total.
+const MAX_RESPONSIBLE_INSTALLMENTS = 240;
+export function parseResponsibleInstallmentTotal(value: unknown): number {
+  if (value === undefined || value === null || value === "") return 1;
+  const parsed = typeof value === "number" ? value : Number.parseInt(String(value), 10);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > MAX_RESPONSIBLE_INSTALLMENTS) {
+    throw new FineError(
+      400,
+      "FINE_INVALID",
+      "invalid_responsible_installment_total",
+      `responsible_installment_total must be an integer between 1 and ${MAX_RESPONSIBLE_INSTALLMENTS}.`,
+    );
+  }
+  return parsed;
+}
+
 export function parseFineStatus(value: unknown, fallback?: FineStatus): FineStatus {
   if (value === undefined || value === null || value === "") {
     if (fallback === undefined) {
