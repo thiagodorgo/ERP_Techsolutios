@@ -453,6 +453,151 @@ reuso do `job.worker.ts:86`, **node-cron proibido**.)
 - KPI: `docs/kpis/omega4c/KPI_PR-04.json`. `Kpis/*`: backend 1336→**1350** (+14 scheduled-notifications); frontend_smoke 703→**719** (+16
   scheduled-notification dialog); blocks 74→**75**.
 
+### PR-05 — Abastecimento (KM/L, interno/externo, fornecedor, baixa de combustível) — plano do omega4c-planejador (2026-07-21)
+**Veredicto Fase 0 (recon REAL, FATO vs HIPÓTESE):** **ESTENDER** (rebaixado CRIAR→ESTENDER na Fase 0 — FASE0_RECON §40). O módulo
+`src/modules/fuel-logs/` já é **maduro e vivo**; grande parte do comportamento AutEM **já existe**. PR-05 fecha o **gap real** (posto
+interno/externo + fornecedor + honestidade do KM/L), e **DEFERE** a baixa de estoque interno a PR-10/11 (parada honesta) — abaixo.
+- **FATO (li no código):** (a) Model `FuelLog` (`prisma/schema.prisma:862`, tabela `fuel_logs`): tem `vehicle_id` (FK composta
+  `(tenant_id,vehicle_id)→vehicles` RESTRICT `:881`), `operator_id?`, `work_order_id?`, `fueled_at`, `fuel_type` (default gasolina),
+  `liters` **Decimal(20,6)**, `total_value` **Decimal(20,6)**, `odometer` **Int**, `station?` (posto texto-livre), `notes?`, `is_active`,
+  auditoria. **NÃO tem** `supplier_id` nem marcação interno/externo. (b) **KM/L JÁ é calculado** — `fuel-log.efficiency.ts:computeEfficiency`
+  deriva `kmPerLiter`/`distanceKm` (`= Δodômetro / litros`) do **histórico ordenado da MESMA viatura**, **NUNCA persistido** (DTO `:21`
+  "derived, never persisted"), **null (honesto) no 1º abastecimento** (baseline sem predecessor). (c) **Odômetro monotônico JÁ é travado** —
+  `service.assertOdometerMonotonic` (`fuel-log.service.ts:173`) → **422 `odometer_regressive`** se leitura < máx. da viatura. (d) **Contas a
+  pagar por origem JÁ ligado** — `createPayableSourceRoutes({sourceType:"fuel_log"})` em `fuel-log.routes.ts:64` (PR-02); `PayableToggle` já no
+  `FuelLogFormModal.tsx:294` (create + edit). (e) **Front vivo:** `AbastecimentoPage.tsx` (listagem com coluna **km/L** honesta
+  `formatKmPerLiter(null)→"—"` `:203`, KPI de frota) + `FuelLogFormModal.tsx`. (f) **Fornecedor existe** — `src/modules/suppliers/`
+  (`SupplierService.get(actor,id)` tenant-scoped, **sem gate de permissão próprio** — igual ao `VehicleService.get`) + front
+  `frontend/src/modules/registry/suppliers/`. (g) **Estoque existe MAS sem custódia nem flag combustível** — `inventory.types.ts` já tem
+  `STOCK_MOVEMENT_TYPES=[entrada,saida,consumo,ajuste]`, ledger imutável assinado, `insufficientBalanceError` (409, saldo nunca negativo) e
+  `vehicleId` no movimento; **porém NÃO tem** custódia BASE/PROFESSIONAL/VEHICLE nem flag "combustível" no item — ambas são **PR-10/11**
+  (cronograma §6, Fase 2). (h) Permissão: `fuel_logs:read/create/update` já existem (`fuel-log.routes.ts:17`).
+- **HIPÓTESE:** pixel exato do modal AutEM (fração/ordem) — reproduzimos o **comportamento** (§11), não o visual; formato do select "Estoque"
+  (itens flag-combustível) — **deferido** com a baixa (PR-10/11). Motorista/Profissional (`operator_id`) é backend-suportado mas não exposto no
+  modal — extensão frontend **opcional-barata** (não bloqueia o core).
+
+- **Model — D-Ω4C-FUEL-STATION-TYPE + D-Ω4C-FUEL-SUPPLIER (extensão ADITIVA de `FuelLog`, nunca destrutiva):** **+2 colunas** em `fuel_logs`:
+  (1) **`station_type`** TEXT **NOT NULL DEFAULT `'external'`** — enum-app `internal|external` (labels **INTERNO/EXTERNO**, **SEM CHECK**,
+  validado na app; padrão de enum-app da rodada, §3 invariante). Default `'external'` faz **backfill semanticamente correto** das linhas legadas
+  (que têm `station` texto = posto externo; "interno" era inexpressável antes). (2) **`supplier_id`** UUID **NULL** + **FK composta
+  `(tenant_id,supplier_id)→suppliers(tenant_id,id)` ON DELETE RESTRICT** (espelha a FK de `vehicle` `:881`) + relação inversa aditiva
+  `fuelLogs FuelLog[]` no model `Supplier` (virtual; a coluna FK vive só em `fuel_logs`) + **`@@index([tenant_id,supplier_id])`**. `station`
+  (texto-livre) **permanece** (coexistência: snapshot/nome do posto). **`total_value`/`liters` permanecem Decimal(20,6)** (pré-existente; ALTER de
+  tipo seria destrutivo → **proibido §C7.5** — divergência aceita da invariante Decimal(12,2), ver D-Ω4C-FUEL-MONEY-PRECISION/D-007). **Valor
+  Unitário (R$)** do AutEM = **DERIVADO** (`total/liters`) exibido no front, **não persistido** (mesma disciplina do KM/L — não fabricar derivado).
+  Migração ADITIVA up-only **`20260825000000_add_fuel_log_supplier_station_type`** (2× ADD COLUMN + FK composta + índice + relação inversa;
+  rollback = DROP COLUMN — colunas novas sem dependente) — provada up/down/re-up pelo **agente-dba-guardião**. Toca `prisma/**` (schema +
+  migration; **seed INTOCADO** — sem permissão nova) → **requer autorização explícita de `prisma/**` no comando do PR-05** (como PR-01/03/04).
+- **Interno vs externo — D-Ω4C-FUEL-STATION-TYPE (regras testáveis, ANALISE:50-52/66):** **EXTERNO** = posto/fornecedor → **`supplier_id`
+  OBRIGATÓRIO** validado no tenant via resolver `resolveSupplier` (`SupplierService.get(actor,id)`; espelha `resolveVehicle`
+  `fuel-log.service.ts:254`) → cross-tenant/inexistente = **400 `invalid_supplier_reference`**; gera título em contas a pagar pelo rail já
+  existente (PR-02). **INTERNO** = tanque próprio da base → **`supplier_id` PROIBIDO** (supplier em interno = **422
+  `supplier_not_allowed_for_internal`**) e **marca** o log para a baixa futura; a **baixa é deferida (abaixo)**. Sem `station_type` no body →
+  default `external` (compat). `parseStationType` novo em `.validators.ts` (SEM CHECK, app-level) + `resolveSupplier` novo em
+  `FuelLogReferenceResolvers`.
+- **Baixa de combustível (estoque) — D-Ω4C-FUEL-STOCK-DEFER (parada honesta D-007; recomendação que NÃO fabrica e NÃO acopla):** a **baixa de
+  estoque do abastecimento interno é DEFERIDA integralmente a PR-10/11**. PR-05 entrega **só a MARCAÇÃO** (`station_type=internal`), **NENHUM**
+  movimento de estoque, **NENHUM** import de `inventory` no `fuel-logs` (zero acoplamento). **Justificativa (3 razões):** (i) a baixa AutEM é
+  *"consome do estoque **da base** (item marcado como combustível)"* (ANALISE:66) — depende de **custódia BASE/PROFESSIONAL/VEHICLE** + **flag
+  combustível no item**, e **nenhuma das duas existe** hoje (são PR-10/11, Fase 2; o cronograma §6 sequencia custódia **depois** de abastecimento
+  → a baixa **não pode** existir no PR-05 sem forward-reference a PR-10/11). (ii) Baixar contra o ledger **flat** atual (sem custódia)
+  **fabricaria** semântica que PR-10/11 teria de **reworkar/reconciliar** (o EXIT sai da custódia BASE, não do saldo global). (iii) Exigir a baixa
+  agora criaria **acoplamento transacional cross-módulo prematuro** (`fuel_log` create + `stock_movement` EXIT na mesma tx → `fuel-logs`
+  importando `inventory`). **Contrato foundation-ready:** PR-10/11, ao introduzir custódia + flag combustível + o select "Estoque", lê os fuel
+  logs `station_type=internal` e **posta o EXIT idempotente** da custódia BASE — consumidor puramente aditivo. O charter §3 ("Abastecimento
+  interno gera EXIT de estoque") é satisfeito **pela rodada** em Fase 2, não pelo PR-05. **NÃO** adicionamos `stock_item_id` agora (seria coluna
+  morta sem a flag/custódia/select — capturá-la junto do mecanismo em PR-10/11 é coeso e não-especulativo).
+- **KM/L — D-Ω4C-FUEL-KML-HONESTY (RN-ABA-04; invariante testável, endurecimento in-scope de `fuel-logs`):** `consumo = (odômetro_atual −
+  odômetro_anterior)/litros`, **derivado server-side, NUNCA persistido** (já é). **Endurecer** `computeEfficiency`: KM/L/distância são honestos
+  **"—"/null** quando (a) **1º abastecimento** (sem predecessor real — já coberto) **OU** (b) **Δodômetro ≤ 0** (hoje `computeEfficiency:50-51`
+  devolve KM/L **negativo** quando o odômetro regride via "desconsiderar último KM" — isso **fabrica** consumo sem sentido). Regra nova: se
+  `distanceKm ≤ 0` → `NO_EFFICIENCY` (null/null). Predecessor = último log **estritamente anterior** na ordem cronológica da MESMA viatura (já é).
+  É endurecimento **dentro do módulo em escopo** (fuel-logs), não refactor oportunista de terceiros.
+- **"Desconsiderar último KM" — D-Ω4C-FUEL-IGNORE-ODOMETER (ANALISE:61):** flag de request **transiente** `ignore_previous_odometer` (bool,
+  parse via `readOptionalBoolean`, **NÃO persistida** — é override de validação, não fato do log) que **bypassa** o guard
+  `assertOdometerMonotonic` (usado no 1º abastecimento da viatura / correção). Coerência com KM/L: se o odômetro entrar menor, a nova guarda Δ≤0
+  devolve **"—"** (não fabrica). Sem a flag, odômetro regressivo continua **422 `odometer_regressive`** (comportamento atual preservado).
+- **Permissão — reusa `fuel_logs:read/create/update` (SEM permissão nova):** confirmado — as rotas já gateiam por `FUEL_LOG_PERMISSIONS`
+  (`fuel-log.routes.ts:17`). `supplier_id` é validado por **resolver server-side** (`SupplierService.get`, sem gate próprio, igual ao vehicle
+  resolver) → **NÃO exige `suppliers:read` do ator**. Nada em `catalog.ts`/`core-saas.test.ts`/`RBAC_MATRIX.md` muda. Backend é a autoridade
+  (papel sem `fuel_logs:create` → **403 real**, já testado). D-Ω4C-FUEL-RBAC-REUSE.
+- **Frontend — ESTENDER a tela viva (`frontend/src/modules/fleet/fuel/`):** (i) **`FuelLogFormModal`** — add **select "Posto"** INTERNO/EXTERNO
+  (`station_type`; controla condicionais, ANALISE:50); **quando EXTERNO** → mostra **select "Fornecedor"** (`supplier_id`, reusa
+  `registry/suppliers` service listando fornecedores **ativos** do tenant); **quando INTERNO** → **não fabrica** o select "Estoque" (deferido —
+  sem andaime de dev §11.2; opcional: nota sutil "baixa de estoque na custódia — em breve"); add checkbox **"Desconsiderar último KM"**
+  (`ignore_previous_odometer`) + **Valor Unitário (R$)** derivado exibido (total/litros, read-only). `station` texto-livre coexiste (posto quando
+  sem fornecedor). PayableToggle **intocado** (já ligado); `partyName` do título pode default ao nome do fornecedor. (ii) **`AbastecimentoPage`** —
+  add coluna **"Posto"** (badge INTERNO/EXTERNO) + **"Fornecedor"** (nome do fornecedor/posto); coluna **km/L já existe** (confirmar "—" honesto
+  para baseline/Δ≤0). §3 PT-BR (INTERNO/EXTERNO, Posto/Fornecedor — nunca termo técnico), §7 estados (loading/empty/error/**acesso não
+  permitido**/desatualizado), §2.8 DTO allowlist (nunca tenant_id/storage). Guard RBAC `fuel_logs:*` (existente).
+- **DTO/auditoria — D-Ω4C-FUEL-DTO (§2.8):** DTO de fuel-log ganha `stationType` + `supplierId` (+ `supplierName` como **label** derivado, jamais
+  dado sensível do fornecedor); **nunca** tenant_id/storage/client_action_id. Auditoria já existe (`fuel_log.created/updated`) — estender metadata
+  com `stationType`/`supplierId` (não-PII).
+- **RNs:** **ABA-01** (interno/externo — enum-app `station_type`; EXTERNO exige `supplier_id` válido no tenant, cross-tenant→400
+  `invalid_supplier_reference`; INTERNO proíbe supplier→422 `supplier_not_allowed_for_internal`; `station` texto-livre coexiste) · **ABA-02**
+  (fornecedor reusa `suppliers`; FK composta `(tenant_id,supplier_id)` RESTRICT; resolver server-side; **sem permissão nova**) · **ABA-03**
+  (externo → contas a pagar pelo rail PR-02 já vivo; coexistência intocada) · **ABA-04** (KM/L derivado server-side, nunca persistido; honesto
+  "—"/null no 1º abastecimento **e** quando Δodômetro≤0 — guarda Δ>0) · **ABA-05** ("desconsiderar último KM" = flag transiente
+  `ignore_previous_odometer` não-persistida que bypassa o guard 422; sem a flag, regressivo→422) · **ABA-06** (baixa de estoque interno
+  **DEFERIDA a PR-10/11** — PR-05 só marca `station_type=internal`, zero movimento/zero import de inventory; parada honesta D-007) · **ABA-07**
+  (§2.8/§3 — DTO allowlist com `stationType`/`supplierId`/`supplierName` label; UI PT-BR; auditoria não-PII) · **ABA-08** (multi-tenant 3 tenants
+  efêmeros — `fuel_logs` + `supplier_id` tenant-scoped; supplier cross-tenant rejeitado; `tenant_id` 1º índice; cross 404; updateMany cross=0).
+- **Divergências AutEM honestas (D-007):** (i) **baixa de combustível do estoque interno** (select "Estoque" + EXIT da custódia BASE) →
+  **PR-10/11** (custódia + flag combustível não existem; ver D-Ω4C-FUEL-STOCK-DEFER). (ii) **`total_value`/`liters` Decimal(20,6)** pré-existente
+  (não Decimal(12,2) da invariante) — ALTER de tipo é destrutivo/proibido §C7.5; divergência aceita (D-Ω4C-FUEL-MONEY-PRECISION). (iii) **Valor
+  Unitário** exibido derivado (total/litros), não persistido — AutEM edita o total; total é a fonte de verdade. (iv) **Motorista/Profissional**
+  (`operator_id`) backend-suportado mas exposição no modal é **opcional-barata** (não core do PR-05). (v) pixel do modal/ordem exata AutEM não
+  vistos em frame limpo → reproduzimos o **comportamento** (§11), não o visual.
+- **Bateria de validação (seção 10 — o avaliador roda):** `npx prisma validate` + `prisma migrate diff` (sem drift) + **dba-guardião prova
+  up/down/re-up** de `20260825000000_add_fuel_log_supplier_station_type` (ADITIVA: 2× ADD COLUMN + FK composta + índice + relação inversa;
+  rollback=DROP COLUMN); backend `npm run check` · `lint` · `test` · `build`; `node --test --import tsx tests/fuel-logs.test.ts` +
+  `tests/fuel-logs-routes.test.ts` (estendidos — **novos casos:** station_type interno/externo; EXTERNO sem supplier→422 e com supplier
+  cross-tenant→400; INTERNO com supplier→422; **KM/L Δ≤0→"—"**; `ignore_previous_odometer` bypassa 422; **nenhum stock_movement escrito**); ZERO
+  regressão nos casos **existentes** de KM/L/monotônico/payable (`financial-title-source`) e `work-order-*`; `tests/rls-tenant-isolation.test.ts`
+  estendido (3 tenants efêmeros; supplier cross-tenant rejeitado; cross 404; updateMany cross=0); frontend `npm --prefix frontend run check` ·
+  `build` · smoke (modal INTERNO/EXTERNO + fornecedor select + "desconsiderar" + colunas Posto/Fornecedor + km/L honesto + estados §7 + guard);
+  `git diff --check` + `git status --short` limpo (schema/migration/fuel-logs/**/front por caminho; seed/catalog/RBAC_MATRIX **intocados**). KPI
+  `docs/kpis/omega4c/KPI_PR-05.json` + histórico + snapshot; Kpis/* backend +N (fuel-logs), frontend_smoke +M, blocks 75→**76**.
+- **Riscos + rollback:** (R1) **FK de fornecedor cross-tenant** → mitigado FK composta `(tenant_id,supplier_id)` RESTRICT + resolver 400 + RLS
+  FORCE + teste 3-tenant. (R2) **KM/L fabricado (negativo) com "desconsiderar"** → mitigado guarda Δ>0 (honesto "—"), teste. (R3) **acoplamento
+  prematuro com estoque** → mitigado deferindo a baixa a PR-10/11 (zero import de `inventory` no `fuel-logs`; contrato foundation-ready). (R4)
+  **default `'external'` reclassifica logs internos legados** → aceito (legado tinha `station`=posto externo; interno era inexpressável;
+  reclassificável por update). (R5) **`prisma/**`** → só ADITIVO (2 ADD COLUMN + FK + índice + relação inversa; **sem** permissão/seed);
+  **rollback = DROP COLUMN `station_type`/`supplier_id`** (colunas novas, sem dependente) + revert do PR (fuel-logs/**/front). Sem destrutivo
+  (respeita parada §C7.5). **Sem dependência nova nem serviço externo pago → junta normal, NÃO junta-5.**
+
+**APROVADO para implementar.** (D-records desta fatia: **D-Ω4C-FUEL-STATION-TYPE · -SUPPLIER · -STOCK-DEFER · -KML-HONESTY · -IGNORE-ODOMETER ·
+-RBAC-REUSE · -MONEY-PRECISION(D-007)** — a junta ratifica no veredito; persistir em controle/decisoes.md no PR. Confirma FASE0_RECON §40:
+gap = `supplier_id` + baixa de combustível [deferida] + KM/L [endurecido] + marcação interno/externo.)
+
+#### PR-05 — Veredito da junta (2026-07-22) — **APROVADO (3 vetos; 1 ciclo de reprovação resolvido)**
+- **agente-dba-guardião** → `APROVADO` (0 condições): migração `20260825000000_add_fuel_log_supplier_station_type` provada **UP/DOWN/RE-UP** em
+  DB scratch isolada. Puramente aditiva: `ADD COLUMN station_type TEXT NOT NULL DEFAULT 'external'` + `ADD COLUMN supplier_id UUID`
+  nullable + FK composta `(tenant_id, supplier_id)`→suppliers RESTRICT + índice `(tenant_id, supplier_id)`. `total_value`/`liters`
+  seguem `numeric(20,6)` INTOCADOS (ALTER de tipo seria destrutivo); nenhuma outra tabela tocada. RLS de fuel_logs e suppliers t/t
+  antes/depois. **Backfill legado provado** (linha antiga → station_type='external', supplier_id=NULL). Integridade: FK cross-tenant →
+  **23503**; RESTRICT bloqueia DELETE de supplier referenciado → **23503**.
+- **coordenador-de-acessos** → `APROVADO`: **permissão REUSADA** — `catalog.ts`/`tests/core-saas.test.ts`/`RBAC_MATRIX.md` com diff
+  VAZIO (reusa `fuel_logs:read/create/update`; nenhuma permissão nova). Posse do fornecedor resolvida server-side via suppliers service
+  tenant-scoped (cross-tenant → **400 invalid_supplier_reference**); rotas seguem gated por `fuel_logs:create/update` (nada afrouxado);
+  UI PT-BR ("Interno (posto próprio)"/"Externo"/"Fornecedor") sem PII/tenant_id; DTO só `supplierId`+`supplierName` label. 1 BAIXA
+  (picker de fornecedor não surfa fallbackReason — inofensivo: todo papel com `fuel_logs:create` tem `suppliers:read`).
+- **omega4c-avaliador** → `APROVADO_CONDICIONADO`→**re-verificado APROVADO**: 1ª passada seção 10 verde (fuel-logs 31/31, regressão
+  167/167 zero, smoke 726/726, build/prisma/git limpos) mas emitiu **1 BLOQUEIA** — RN-ABA-08: o omega4c-dev-backend foi **cortado por
+  erro de API** e deixou andaime morto (`createSupplier/tenantC/managerC` sem `test()` consumindo); a rejeição cross-tenant do fornecedor
+  só estava provada por resolver MOCKADO no service. **Reprovação-ciclo-1** (R-Ω4C-PR05-ciclo1): dev retomado fechou os testes de rota na
+  **stack HTTP REAL** — supplier do tenant A e C referenciados por ator do tenant B em `POST /fuel-logs` → **ambos 400
+  invalid_supplier_reference** (SupplierService.get real, 3 tenants); EXTERNO+supplier same-tenant→201 com supplierId/supplierName +
+  §2.8 (sem tenant_id); EXTERNO sem supplier→422; INTERNO+supplier→422; RN-ABA-05 ignore_previous_odometer na rota. Andaime consumido
+  11× por 5 testes novos; fuel-logs **36/36**, tsc/git limpos. **Avaliador re-rodou os testes por conta própria e descarregou a
+  BLOQUEIA.** Residuais não-bloqueantes: 1 MEDIA (rls-tenant-isolation "users and checklists" DB-gated/ambiental, arquivo intocado, sobre
+  users/checklists não fuel_logs — CI + dba-guardião são o gate empírico) + 1 BAIXA (untracked omega5p/.docx/.claude/skills — não commitar).
+- **Decisão:** verde (3 vetos APROVADO após 1 ciclo de reprovação resolvido) → merge (CI = gate empírico do rls DB-gated) + KPI no PR
+  (§C3). **RN-ABA-01/02/04/05/06/07/08 cobertas.** **Baixa de estoque deferida a PR-10/11** (D-Ω4C-FUEL-STOCK-DEFER). D-records
+  (D-Ω4C-FUEL-STATION-TYPE/-SUPPLIER/-STOCK-DEFER/-KML-HONESTY/-IGNORE-ODOMETER/-RBAC-REUSE/-MONEY-PRECISION) **ratificados**.
+- KPI: `docs/kpis/omega4c/KPI_PR-05.json`. `Kpis/*`: backend 1350→**1364** (+14 fuel-logs: 9 unit + 5 rota); frontend_smoke 719→**726**
+  (+7 abastecimento-station-type); blocks 75→**76**.
+
 ## 8. Encerramento (a fazer no fim)
 Ata final (entregas, KPIs consolidados, pendências→backlog Ω5); deletar **SOMENTE** os 5 agentes efêmeros (registrar cada
 deleção); confirmar que nenhum agente pré-existente foi tocado; marcar os D-records como vigentes.

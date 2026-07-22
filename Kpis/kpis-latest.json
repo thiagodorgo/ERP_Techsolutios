@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-21",
-  "version": "OMEGA4C-PR-04",
+  "version": "OMEGA4C-PR-05",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω4C PR-04 — Motor de Notificações (ScheduledNotification; ESTENDER)",
-    "title": "Ω4C PR-04: motor de notificações agendáveis (notify_at/remind_before, visibilidade, disparo idempotente, sino+popup)",
+    "block": "Ω4C PR-05 — Abastecimento (interno/externo + fornecedor + KM/L honesto; ESTENDER)",
+    "title": "Ω4C PR-05: abastecimento interno/externo, fornecedor (FK composta), KM/L honesto; baixa de estoque deferida a PR-10/11",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω4C PR-04 — MOTOR DE NOTIFICAÇÕES (ESTENDER: motor parcial + scheduler in-process job.worker.ts:86 já existiam; startWorker() estava dormente). Novo model ScheduledNotification (definição agendada: notify_at/remind_before, visibility PRIVATE|PUBLIC|CUSTOM, custom_recipient_ids, source_type/source_id foundation, status pending|fired|cancelled, guards reminder_fired_at/fired_at) SOBRE a tabela notifications (inbox/sino) INTOCADA. Migração ADITIVA up-only 20260824000000_add_scheduled_notifications: CREATE TABLE + 6 índices tenant_id-1º + FK composta (tenant_id, created_by)→users CASCADE + FK tenant RESTRICT + índice UNIQUE parcial de idempotência + RLS ENABLE/FORCE/POLICY — provada up/drop/re-up em erp-postgres pelo dba-guardião (notifications ZERO ALTER/DROP; FK cross-tenant 23503, idempotência 23505, RLS t/t). Scheduler REUSA job.worker.ts via job auto-reenfileirante notifications.scan-due (~60s), SEM node-cron, atrás da flag JOBS_WORKER_ENABLED (env, default FALSE, parse estrito) — worker só sobe com flag=true ∧ persistence=prisma em server.main(); CI/testes NÃO sobem o loop; POST com notify_at<=now dispara INLINE mesmo com a flag OFF. Idempotência de disparo com guarda dupla (fired_at/reminder_fired_at + backstop sched:<id>:<occurrence> na unique de entrega): fireDue 2× mesmo now → mesmas entregas. Visibilidade sem vazamento entre usuários/tenants (3-usuários testado). PERMISSÃO NOVA notifications:create (gestão+operação: super/platform/tenant_admin/manager/operator/field_dispatcher; SEM field_technician/finance/etc; ler-as-minhas read/update AMPLO intocado; sino visível a todo logado) nos 4 pontos. Endpoints POST/GET/GET:id/DELETE /notifications/scheduled (creator-scoped, 404 cross-criador). Frontend: CreateNotificationDialog reutilizável + montagem na NotificationsPage (lista do criador + status PT-BR + Cancelar gated). D-007: central de gestão tenant-wide + editar deferidos p/ PR-20 (D-Ω4C-NOTIF-CENTRAL-SPLIT); Antecedência por presets; sem toast (Alert inline). Junta 4 vetos: agente-dba-guardião APROVADO (0 cond) + omega4c-avaliador APROVADO (BLOQUEIA descarregada pelo dba-guardião) + coordenador-de-acessos APROVADO + agente-secops APROVADO. Zero regressão (inbox/notification-routes/fleet-alerts 56/56). Sem provider/SKU novo.",
-    "status_label": "Ω4C PR-04: motor de notificações (ScheduledNotification, disparo idempotente, scheduler reusado sem node-cron, flag default OFF, permissão nova, migração aditiva provada); junta 4 vetos APROVADO; backend 1336->1350, smoke 703->719, blocks 74->75"
+    "summary": "Ω4C PR-05 — ABASTECIMENTO (ESTENDER fuel-logs: módulo/model/tela já existiam). FuelLog +station_type (enum-app internal|external, default external) +supplier_id (nullable, FK composta (tenant_id, supplier_id)→suppliers RESTRICT). Migração ADITIVA up-only 20260825000000_add_fuel_log_supplier_station_type: 2× ADD COLUMN + FK composta + índice; total_value/liters Decimal(20,6) INTOCADOS (ALTER de tipo seria destrutivo — D-Ω4C-FUEL-MONEY-PRECISION); RLS de fuel_logs herdada — provada up/down/re-up + backfill legado + FK cross-tenant 23503 + RESTRICT em erp-postgres pelo dba-guardião. EXTERNO exige supplier válido do tenant (422 supplier_required_for_external; cross-tenant 400 invalid_supplier_reference via SupplierService.get real); INTERNO proíbe supplier (422 supplier_not_allowed_for_internal), só marca o log. KM/L endurecido (RN-ABA-04): consumo=(Δodômetro)/litros DERIVADO server-side, NUNCA persistido; Δ≤0 → null/'—' (nunca negativo/fabricado); null no 1º abastecimento. Baixa de combustível do estoque DEFERIDA a PR-10/11 (D-Ω4C-FUEL-STOCK-DEFER — custódia+flag combustível não existem; ZERO import de inventory, sem stock_item_id, sem seletor de estoque). REUSA fuel_logs:* (SEM permissão nova). Frontend: FuelLogFormModal (select Posto + Fornecedor condicional + Desconsiderar-último-KM + Valor-Unitário-derivado) + AbastecimentoPage (colunas Posto/Fornecedor); PayableToggle do PR-02 intocado. RN-ABA-01/02/04/05/06/07/08. Junta 3 vetos (1 ciclo de reprovação resolvido): agente-dba-guardião APROVADO (0 cond) + coordenador-de-acessos APROVADO + omega4c-avaliador APROVADO (BLOQUEIA RN-ABA-08 do corte de API fechada com teste de rota 3-tenant real, re-verificado). Zero regressão (167/167 nas suítes nomeadas). Sem provider/SKU novo.",
+    "status_label": "Ω4C PR-05: abastecimento interno/externo + fornecedor (FK composta) + KM/L honesto (baixa de estoque deferida); junta 3 vetos APROVADO (1 reprovação resolvida); backend 1350->1364, smoke 719->726, blocks 75->76"
   },
   "metrics": {
     "flutter_tests": {
@@ -21,16 +21,16 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 719,
-      "total": 719,
-      "display": "719/719",
-      "note": "+16 (scheduled-notification: dialog render/validacao/troca-de-Tipo-picker/rotulos-PT-BR-status/gating/§2.8). Ω4C PR-04 motor de notificacoes (CreateNotificationDialog + NotificationsPage). Sino/inbox intocados. Sobre 703."
+      "value": 726,
+      "total": 726,
+      "display": "726/726",
+      "note": "+7 (abastecimento-station-type: select Posto/Fornecedor-so-EXTERNO/validacao/km-L-'—'-honesto/rotulos-PT-BR/§2.8). Ω4C PR-05 abastecimento (FuelLogFormModal + AbastecimentoPage). PayableToggle do PR-02 intocado. Sobre 719."
     },
     "backend_tests": {
-      "value": 1350,
-      "total": 1356,
-      "display": "1350/1356",
-      "note": "+14 (tests/scheduled-notifications.test.ts: criar-201/idempotencia-de-disparo-x2/visibilidade-3-usuarios/cross-tenant-cross-criador-404/remind_before/§2.8/RBAC-403-7-papeis). Ω4C PR-04. Suite memoria (CI) 1350 pass/6 skip. core-saas 26/26 (catalogo com permissao nova notifications:create). Migracao 20260824000000_add_scheduled_notifications provada up/drop/re-up (tabela notifications INTOCADA; FK cross-tenant 23503; idempotencia 23505; RLS t/t) pelo dba-guardiao; worker atras da flag JOBS_WORKER_ENABLED default OFF (nao sobe nos testes); zero regressao (inbox/notification-routes/fleet-alerts 56/56). Sobre 1336/1342. Local: 77 DB/JWT pre-existentes."
+      "value": 1364,
+      "total": 1370,
+      "display": "1364/1370",
+      "note": "+14 (fuel-logs: tests/fuel-logs.test.ts 8->17 +9 [parseStationType/RN-ABA-01/02/04/05/label/compat] + tests/fuel-logs-routes.test.ts 14->19 +5 [RN-ABA-08 cross-tenant 3-tenant HTTP real via SupplierService.get, INTERNO/EXTERNO 422, EXTERNO same-tenant 201 §2.8, ignore_previous_odometer]). Ω4C PR-05. Suite memoria (CI) 1364 pass/6 skip. Migracao 20260825000000_add_fuel_log_supplier_station_type provada up/down/re-up + backfill legado + FK composta cross-tenant 23503 + RESTRICT pelo dba-guardiao (total_value/liters Decimal(20,6) INTOCADOS). Reusa fuel_logs:* (sem permissao nova). Baixa de estoque deferida a PR-10/11. Zero regressao (167/167 nomeadas). Sobre 1350/1356. Local: rls-tenant-isolation 'users and checklists' DB-gated ambiental (arquivo intocado)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 75,
-      "display": "75",
-      "note": "Ω4C PR-04 (motor de notificacoes) = feature entregue → +1 sobre 74 (Ω4C PR-03 extrato do profissional). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
+      "value": 76,
+      "display": "76",
+      "note": "Ω4C PR-05 (abastecimento interno/externo + fornecedor + KM/L honesto) = feature entregue → +1 sobre 75 (Ω4C PR-04 motor de notificacoes). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,

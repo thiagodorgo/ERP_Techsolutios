@@ -65,9 +65,12 @@ export class InMemoryFuelLogRepository implements FuelLogRepository {
     const current = await this.findById(input.tenantId, input.fuelLogId);
     if (!current) return undefined;
 
+    // supplierId é tratado à parte: `null` limpa o fornecedor, `undefined` mantém o valor atual.
+    const { supplierId, ...rest } = input;
     const updated: FuelLog = {
       ...current,
-      ...definedFields(input),
+      ...definedFields(rest),
+      ...(supplierId !== undefined ? { supplierId: supplierId ?? undefined } : {}),
       updatedAt: new Date(),
     };
     this.fuelLogs.set(updated.id, updated);

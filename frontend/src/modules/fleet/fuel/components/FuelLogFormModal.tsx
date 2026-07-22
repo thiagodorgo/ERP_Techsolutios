@@ -1,18 +1,22 @@
 import type { CSSProperties, FormEvent } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-import { Alert, Button, Input, Modal, Select } from "../../../../components/ui";
+import { Alert, Button, Checkbox, Input, Modal, Select } from "../../../../components/ui";
 import { PayableToggle, launchPayable } from "../../../finance/payable-source";
+import { useSuppliers } from "../../../registry/suppliers/useSuppliers";
+import type { SuppliersFilters } from "../../../registry/suppliers/suppliers.types";
 import type { Vehicle } from "../../../registry/vehicles/vehicles.types";
 import {
   FUEL_TYPE_OPTIONS,
+  STATION_TYPE_OPTIONS,
+  formatUnitValue,
   interpretFuelLogSubmitError,
   parseIntStrict,
   parsePtBrNumber,
   validateFuelLog,
 } from "../fuel-logs.adapter";
 import { createFuelLog, updateFuelLog } from "../fuel-logs.service";
-import type { FuelLog, FuelLogCreatePayload, FuelLogDraft, FuelLogField, FuelLogsApiContext } from "../fuel-logs.types";
+import type { FuelLog, FuelLogCreatePayload, FuelLogDraft, FuelLogField, FuelLogsApiContext, StationType } from "../fuel-logs.types";
 
 const FIELD_ID: Record<string, string> = {
   vehicleId: "fuel-field-vehicle",
@@ -22,8 +26,13 @@ const FIELD_ID: Record<string, string> = {
   totalValue: "fuel-field-total-value",
   odometer: "fuel-field-odometer",
   station: "fuel-field-station",
+  stationType: "fuel-field-station-type",
+  supplierId: "fuel-field-supplier",
   notes: "fuel-field-notes",
 };
+
+// Janela estável de fornecedores ATIVOS para o seletor (evita refetch a cada render do modal).
+const SUPPLIER_FILTERS: SuppliersFilters = { search: "", isActive: "active", limit: 100 };
 
 const gridStyle: CSSProperties = {
   display: "grid",
@@ -33,6 +42,17 @@ const gridStyle: CSSProperties = {
 
 const fullWidth: CSSProperties = { gridColumn: "1 / -1" };
 const footerStyle: CSSProperties = { display: "flex", justifyContent: "flex-end", gap: "var(--space-8)", marginTop: "var(--space-16)" };
+const mutedNoteStyle: CSSProperties = { display: "block", marginTop: "var(--space-4)", fontSize: "var(--text-sm)", color: "var(--text-secondary)" };
+const unitValueStyle: CSSProperties = { ...fullWidth, margin: 0, fontSize: "var(--text-sm)", color: "var(--text-secondary)" };
+const sectionTitleStyle: CSSProperties = {
+  ...fullWidth,
+  margin: "var(--space-8) 0 0",
+  paddingTop: "var(--space-8)",
+  borderTop: "1px solid var(--border-subtle)",
+  fontSize: "var(--text-sm)",
+  fontWeight: 700,
+  color: "var(--text-secondary)",
+};
 
 // ISO -> valor de <input type="datetime-local"> (YYYY-MM-DDTHH:mm) na hora local.
 function toDateTimeLocalValue(iso: string | null | undefined): string {
@@ -84,10 +104,38 @@ export function FuelLogFormModal({
   );
   const [odometer, setOdometer] = useState(log?.odometer != null ? String(log.odometer) : "");
   const [station, setStation] = useState(log?.station ?? "");
+  // Ω4C PR-05 — Posto (interno/externo) + fornecedor condicional + "desconsiderar último KM".
+  const [stationType, setStationType] = useState<StationType>(log?.stationType ?? "external");
+  const [supplierId, setSupplierId] = useState(log?.supplierId ?? "");
+  const [ignorePreviousOdometer, setIgnorePreviousOdometer] = useState(false);
   const [notes, setNotes] = useState(log?.notes ?? "");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FuelLogField, string>>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const { items: suppliers } = useSuppliers(SUPPLIER_FILTERS);
+  // Opções do seletor de fornecedor: ativos do tenant + o fornecedor já vinculado (se estiver inativo/fora
+  // da janela, ainda assim aparece para não perder o vínculo na edição). Só o NOME como label (§2.8).
+  const supplierOptions = useMemo(() => {
+    const options = suppliers.map((supplier) => ({ id: supplier.id, name: supplier.name }));
+    const currentId = log?.supplierId;
+    if (currentId && !options.some((option) => option.id === currentId)) {
+      options.unshift({ id: currentId, name: log?.supplierName ?? "Fornecedor vinculado" });
+    }
+    return options;
+  }, [suppliers, log?.supplierId, log?.supplierName]);
+
+  const isExternal = stationType === "external";
+  const unitValue = formatUnitValue(parsePtBrNumber(totalValue), parsePtBrNumber(liters));
+
+  function handleStationTypeChange(next: StationType) {
+    setStationType(next);
+    // INTERNO nunca leva fornecedor — limpa o campo e o erro ao alternar (espelho do backend 422).
+    if (next === "internal") {
+      setSupplierId("");
+      setFieldErrors((prev) => ({ ...prev, supplierId: undefined }));
+    }
+  }
 
   function buildDraft(): FuelLogDraft {
     return {
@@ -99,6 +147,8 @@ export function FuelLogFormModal({
       totalValue: parsePtBrNumber(totalValue),
       odometer: parseIntStrict(odometer),
       station: station.trim() || undefined,
+      stationType,
+      supplierId: isExternal ? supplierId.trim() || undefined : undefined,
       notes: notes.trim() || undefined,
     };
   }
@@ -125,6 +175,11 @@ export function FuelLogFormModal({
       totalValue: draft.totalValue as number,
       odometer: draft.odometer as number,
       station: draft.station,
+      // Ω4C PR-05 — posto/fornecedor; INTERNO não envia supplier (o backend rejeita com 422).
+      stationType: draft.stationType,
+      supplierId: draft.supplierId,
+      // Flag transiente: só vai ao backend quando marcada (override do guard de odômetro).
+      ignorePreviousOdometer: ignorePreviousOdometer || undefined,
       notes: draft.notes,
     };
 
@@ -139,8 +194,11 @@ export function FuelLogFormModal({
         // aqui). Best-effort: falha NÃO desfaz o abastecimento — mantém o modal aberto para lançar na edição.
         if (created && payableChecked) {
           try {
+            // Fornecedor do abastecimento externo é o favorecido natural do título; posto/observação
+            // são fallback quando não há fornecedor (interno / legado).
+            const supplierName = supplierOptions.find((option) => option.id === draft.supplierId)?.name;
             await launchPayable(context, "fuel-logs", created.id, {
-              partyName: draft.station || "Abastecimento",
+              partyName: supplierName || draft.station || "Abastecimento",
               amount: payload.totalValue,
               dueDate: payload.fueledAt,
             });
@@ -255,18 +313,97 @@ export function FuelLogFormModal({
             inputMode="decimal"
             helper="Em reais (R$). Ex.: 312,90"
           />
+
+          {/* Valor Unitário (R$/L) — derivado de valor ÷ litros, read-only; nunca persistido (como o km/L). */}
+          <p style={unitValueStyle} aria-live="polite">
+            Valor unitário: <strong>{unitValue}</strong>
+          </p>
+
+          <div>
+            <Field
+              id={FIELD_ID.odometer}
+              label="Odômetro"
+              required
+              value={odometer}
+              onChange={setOdometer}
+              error={fieldErrors.odometer}
+              maxLength={9}
+              inputMode="numeric"
+              helper="Leitura em km, número inteiro."
+            />
+            <Checkbox
+              label="Desconsiderar último KM"
+              checked={ignorePreviousOdometer}
+              onChange={(event) => setIgnorePreviousOdometer(event.target.checked)}
+              disabled={saving}
+              aria-describedby={`${FIELD_ID.odometer}-ignore-help`}
+            />
+            <small id={`${FIELD_ID.odometer}-ignore-help`} style={mutedNoteStyle}>
+              Aceita uma leitura menor que a anterior (1º abastecimento ou correção); o consumo (km/L) fica em “—”.
+            </small>
+          </div>
+
+          {/* Seção: Posto e fornecedor. */}
+          <h3 style={sectionTitleStyle}>Posto e fornecedor</h3>
+
+          <div>
+            <Select
+              id={FIELD_ID.stationType}
+              label="Posto *"
+              value={stationType}
+              aria-required
+              onChange={(event) => handleStationTypeChange(event.target.value as StationType)}
+            >
+              {STATION_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {isExternal ? (
+            <div>
+              <Select
+                id={FIELD_ID.supplierId}
+                label="Fornecedor *"
+                value={supplierId}
+                aria-required
+                aria-invalid={fieldErrors.supplierId ? true : undefined}
+                aria-describedby={fieldErrors.supplierId ? `${FIELD_ID.supplierId}-error` : undefined}
+                onChange={(event) => setSupplierId(event.target.value)}
+              >
+                <option value="">Selecione o fornecedor…</option>
+                {supplierOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </Select>
+              {fieldErrors.supplierId ? (
+                <small className="form-error" id={`${FIELD_ID.supplierId}-error`}>
+                  {fieldErrors.supplierId}
+                </small>
+              ) : (
+                <small style={mutedNoteStyle}>Abastecimento externo gera um título em contas a pagar para o fornecedor.</small>
+              )}
+            </div>
+          ) : (
+            <p style={{ ...mutedNoteStyle, alignSelf: "center" }}>
+              Posto próprio da base. A baixa de combustível do estoque entra na etapa de custódia de estoque.
+            </p>
+          )}
+
           <Field
-            id={FIELD_ID.odometer}
-            label="Odômetro"
-            required
-            value={odometer}
-            onChange={setOdometer}
-            error={fieldErrors.odometer}
-            maxLength={9}
-            inputMode="numeric"
-            helper="Leitura em km, número inteiro."
+            id={FIELD_ID.station}
+            label="Identificação do posto"
+            value={station}
+            onChange={setStation}
+            error={fieldErrors.station}
+            maxLength={120}
+            autoComplete="off"
+            helper="Opcional: nome/rede do posto."
           />
-          <Field id={FIELD_ID.station} label="Posto" value={station} onChange={setStation} error={fieldErrors.station} maxLength={120} autoComplete="off" />
 
           <label className="ui-field" style={fullWidth}>
             <span>Observações</span>
@@ -297,7 +434,7 @@ export function FuelLogFormModal({
               id={activeLog.id}
               canLaunch={canLaunchPayable}
               canRemove={canRemovePayable}
-              defaults={{ partyName: activeLog.station ?? "Abastecimento", amount: activeLog.totalValue }}
+              defaults={{ partyName: activeLog.supplierName ?? activeLog.station ?? "Abastecimento", amount: activeLog.totalValue }}
             />
           ) : (
             <PayableToggle mode="create" checked={payableChecked} onChange={setPayableChecked} disabled={saving} />

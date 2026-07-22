@@ -1,0 +1,68 @@
+{
+  "pr": "PR-05",
+  "fase": "Fase 1 — Abastecimento (interno/externo, fornecedor, KM/L honesto)",
+  "snapshot_date": "2026-07-22",
+  "branch": "rodada/omega4c",
+  "tipo": "ESTENDER fuel-logs (módulo, model, tela já existiam — rebaixado CRIAR→ESTENDER na Fase 0)",
+  "models_alterados": [
+    "FuelLog (+station_type text NOT NULL DEFAULT 'external' enum-app internal|external; +supplier_id uuid nullable FK composta (tenant_id, supplier_id)→suppliers RESTRICT)"
+  ],
+  "migrations": [
+    "20260825000000_add_fuel_log_supplier_station_type (aditiva up-only; 2× ADD COLUMN + FK composta RESTRICT + índice (tenant_id, supplier_id); total_value/liters Decimal(20,6) INTOCADOS (ALTER de tipo seria destrutivo); RLS de fuel_logs herdada; provada up/down/re-up + backfill legado + FK cross-tenant 23503 + RESTRICT em erp-postgres pelo dba-guardião)"
+  ],
+  "comportamento": {
+    "station_type": "internal|external (enum-app SEM CHECK). EXTERNO exige supplier_id válido do tenant (422 supplier_required_for_external se ausente); INTERNO proíbe supplier (422 supplier_not_allowed_for_internal), só marca o log. Default external (retrocompat).",
+    "km_l_honesto": "consumo = (odometer_atual − odometer_anterior)/litros, DERIVADO server-side, NUNCA persistido. Δ≤0 → null/'—' (endurecimento RN-ABA-04; nunca negativo/fabricado); null no 1º abastecimento (sem anterior).",
+    "fornecedor": "supplier_id resolvido de posse via suppliers service do tenant (cross-tenant → 400 invalid_supplier_reference). DTO expõe supplierId + supplierName (label), nunca tenant_id.",
+    "baixa_estoque_DEFERIDA": "baixa de combustível do estoque = PR-10/11 (custódia BASE/PROFESSIONAL/VEHICLE + flag combustível não existem hoje). PR-05 NÃO importa inventory, NÃO adiciona stock_item_id, NÃO fabrica movimento nem seletor de estoque (D-Ω4C-FUEL-STOCK-DEFER)."
+  },
+  "permissao": "REUSA fuel_logs:read/create/update (SEM permissão nova; catalog.ts/tests/core-saas.test.ts/RBAC_MATRIX.md INTOCADOS — verificado pelo coordenador-de-acessos)",
+  "modulos_alterados": [
+    "src/modules/fuel-logs/* (types/validators/dto/repository/prisma-repository/service/controller/efficiency)",
+    "frontend/src/modules/fleet/fuel/* (types/adapter/FuelLogFormModal +select Posto +Fornecedor condicional +Desconsiderar-último-KM +Valor-Unitário-derivado / AbastecimentoPage +colunas Posto/Fornecedor; PayableToggle do PR-02 INTOCADO)"
+  ],
+  "rns_cobertas": [
+    "RN-ABA-01 (externo exige fornecedor 422 / interno proíbe fornecedor 422)",
+    "RN-ABA-02 (fornecedor cross-tenant → 400 invalid_supplier_reference; posse via suppliers service)",
+    "RN-ABA-04 (KM/L honesto: Δ≤0 → null/'—', 1º abastecimento → null; derivado, nunca persistido/negativo)",
+    "RN-ABA-05 (ignore_previous_odometer transiente bypassa 422 monotônico, não persistido)",
+    "RN-ABA-06 (baixa de estoque DEFERIDA a PR-10/11 — zero acoplamento a inventory)",
+    "RN-ABA-07 (§2.8: DTO sem tenant_id; supplierName só label; auditoria não-PII)",
+    "RN-ABA-08 (rejeição de fornecedor cross-tenant provada na STACK HTTP REAL com 3 tenants — SupplierService.get real, não mock)"
+  ],
+  "rns_total_pr": 8,
+  "cobertura_testes": {
+    "backend": "tests/fuel-logs.test.ts 8→17 (+9: parseStationType, RN-ABA-01/02/04/05, label, compat) + tests/fuel-logs-routes.test.ts 14→19 (+5: RN-ABA-08 cross-tenant 3-tenant HTTP real, INTERNO/EXTERNO 422, EXTERNO same-tenant 201 §2.8, ignore_previous_odometer). Combinado 36/0.",
+    "frontend": "frontend/tests/abastecimento-station-type.test.tsx 7/7 (select Posto, Fornecedor só EXTERNO, validação, km/L '—' honesto, rótulos PT-BR, §2.8) + fuel-logs.adapter.test.ts atualizado"
+  },
+  "d_records": [
+    "D-Ω4C-FUEL-STATION-TYPE (enum-app internal|external, default external)",
+    "D-Ω4C-FUEL-SUPPLIER (supplier_id nullable, FK composta RESTRICT, posse server-side)",
+    "D-Ω4C-FUEL-STOCK-DEFER (baixa de estoque → PR-10/11; só marcação agora)",
+    "D-Ω4C-FUEL-KML-HONESTY (Δ≤0 → null; derivado, nunca persistido/negativo)",
+    "D-Ω4C-FUEL-IGNORE-ODOMETER (ignore_previous_odometer transiente)",
+    "D-Ω4C-FUEL-RBAC-REUSE (reusa fuel_logs:*; sem permissão nova)",
+    "D-Ω4C-FUEL-MONEY-PRECISION (total_value/liters Decimal(20,6) pré-existente mantido; ALTER seria destrutivo)"
+  ],
+  "divergencias_vs_autem": [
+    "baixa de estoque do abastecimento interno deferida a PR-10/11 (parada honesta — custódia+flag combustível não existem)",
+    "Valor Unitário (R$/L) exibido derivado, nunca persistido (mesma disciplina do KM/L)",
+    "km/L '—' honesto quando null/0/negativo (nunca 0 fabricado)"
+  ],
+  "junta": {
+    "agente-dba-guardiao": "APROVADO (0 cond)",
+    "coordenador-de-acessos": "APROVADO (1 BAIXA picker sem fallbackReason)",
+    "omega4c-avaliador": "APROVADO_CONDICIONADO (BLOQUEIA RN-ABA-08) → re-verificado APROVADO após fix (reprovação-ciclo-1: andaime morto do corte de API fechado)",
+    "reprovacao": "R-Ω4C-PR05-ciclo1 (agent-orchestration/omega/reprovacoes/) — causa: corte de API deixou andaime de teste morto; ação: dev retomado fechou o teste de rota 3-tenant real, sem criar especialista (conclusão de trabalho interrompido, não bloqueio técnico)",
+    "veredito": "APROVADO"
+  },
+  "kpi_repo_wide": {
+    "backend": "1350->1364 (+14)",
+    "frontend_smoke": "719->726 (+7)",
+    "blocks": "75->76"
+  },
+  "coexistencia": "faturamento OS/financial-title-source/payable/notifications/professional-statements sem regressão (167/167 nas suítes nomeadas); suppliers/RLS intactos; PayableToggle do PR-02 intocado",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

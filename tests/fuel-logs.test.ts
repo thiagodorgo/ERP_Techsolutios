@@ -13,12 +13,14 @@ import {
   parseFuelType,
   parseLiters,
   parseOdometer,
+  parseStationType,
 } from "../src/modules/fuel-logs/fuel-log.validators.js";
 
 const TENANT = randomUUID();
 const USER = randomUUID();
 const VEHICLE_V = randomUUID();
 const VEHICLE_W = randomUUID();
+const SUPPLIER_S = randomUUID();
 
 const actor: FuelLogActorContext = {
   tenantId: TENANT,
@@ -35,6 +37,8 @@ function makeLog(overrides: Partial<FuelLog> & Pick<FuelLog, "id" | "vehicleId" 
     fuelType: "gasolina",
     totalValue: 0,
     station: undefined,
+    stationType: "external",
+    supplierId: undefined,
     notes: undefined,
     isActive: true,
     createdBy: undefined,
@@ -70,6 +74,152 @@ test("[R1.1] computeEfficiency: predecessor inativo (fora do conjunto filtrado) 
 
   // Full history (active + inactive) yields the true previous odometer.
   assert.deepEqual(computeEfficiency(target, [previous, target]), { kmPerLiter: 30, distanceKm: 300 });
+});
+
+test("[RN-ABA-04] computeEfficiency: Delta<=0 devolve '—' (null), nunca KM/L negativo/fabricado", () => {
+  const first = makeLog({ id: "a", vehicleId: VEHICLE_V, fueledAt: new Date("2026-07-01T00:00:00Z"), odometer: 1400, liters: 40 });
+  // Odometro REGREDIU (Delta < 0, ex.: correcao via "desconsiderar ultimo KM"): honesto null/null.
+  const regressed = makeLog({ id: "b", vehicleId: VEHICLE_V, fueledAt: new Date("2026-07-05T00:00:00Z"), odometer: 1000, liters: 40 });
+  // Odometro IGUAL (Delta = 0): tambem sem consumo derivavel.
+  const flat = makeLog({ id: "c", vehicleId: VEHICLE_V, fueledAt: new Date("2026-07-10T00:00:00Z"), odometer: 1400, liters: 40 });
+
+  assert.deepEqual(computeEfficiency(regressed, [first, regressed]), { kmPerLiter: null, distanceKm: null });
+  assert.deepEqual(computeEfficiency(flat, [first, flat]), { kmPerLiter: null, distanceKm: null });
+});
+
+test("[validacao] parseStationType normaliza caixa, default external e rejeita invalido", () => {
+  assert.equal(parseStationType(undefined, "external"), "external");
+  assert.equal(parseStationType("INTERNAL", "external"), "internal");
+  assert.equal(parseStationType("external", undefined), "external");
+  assert.throws(() => parseStationType("posto", "external"), /station_type must be one of/);
+  assert.throws(() => parseStationType(undefined, undefined), /station_type is required/);
+});
+
+test("[RN-ABA-01] EXTERNO explicito sem fornecedor retorna 422 supplier_required_for_external", async () => {
+  const service = buildService();
+
+  await assert.rejects(
+    () => service.create(actor, { vehicle_id: VEHICLE_V, station_type: "external", liters: 40, total_value: 200, odometer: 100 }),
+    (error: unknown) => {
+      const err = error as { statusCode?: number; reason?: string };
+      assert.equal(err.statusCode, 422);
+      assert.equal(err.reason, "supplier_required_for_external");
+      return true;
+    },
+  );
+});
+
+test("[RN-ABA-01] INTERNO com fornecedor retorna 422 supplier_not_allowed_for_internal", async () => {
+  const service = buildService();
+
+  await assert.rejects(
+    () =>
+      service.create(actor, {
+        vehicle_id: VEHICLE_V,
+        station_type: "internal",
+        supplier_id: SUPPLIER_S,
+        liters: 40,
+        total_value: 200,
+        odometer: 100,
+      }),
+    (error: unknown) => {
+      const err = error as { statusCode?: number; reason?: string };
+      assert.equal(err.statusCode, 422);
+      assert.equal(err.reason, "supplier_not_allowed_for_internal");
+      return true;
+    },
+  );
+});
+
+test("[RN-ABA-02] EXTERNO com fornecedor de outro tenant retorna 400 invalid_supplier_reference", async () => {
+  const service = buildService();
+
+  await assert.rejects(
+    () =>
+      service.create(actor, {
+        vehicle_id: VEHICLE_V,
+        station_type: "external",
+        supplier_id: randomUUID(),
+        liters: 40,
+        total_value: 200,
+        odometer: 100,
+      }),
+    (error: unknown) => {
+      const err = error as { statusCode?: number; reason?: string };
+      assert.equal(err.statusCode, 400);
+      assert.equal(err.reason, "invalid_supplier_reference");
+      return true;
+    },
+  );
+});
+
+test("[RN-ABA-01/02] EXTERNO com fornecedor valido cria e expoe supplierId + supplierName (label)", async () => {
+  const service = buildService();
+  const entry = await service.create(actor, {
+    vehicle_id: VEHICLE_V,
+    station_type: "external",
+    supplier_id: SUPPLIER_S,
+    liters: 40,
+    total_value: 200,
+    odometer: 100,
+  });
+
+  assert.equal(entry.fuelLog.stationType, "external");
+  assert.equal(entry.fuelLog.supplierId, SUPPLIER_S);
+  assert.equal(entry.supplierName, "Posto Rede S");
+});
+
+test("[RN-ABA-01] INTERNO cria sem fornecedor e apenas marca o log (sem movimento de estoque)", async () => {
+  const service = buildService();
+  const entry = await service.create(actor, {
+    vehicle_id: VEHICLE_V,
+    station_type: "internal",
+    liters: 40,
+    total_value: 200,
+    odometer: 100,
+  });
+
+  assert.equal(entry.fuelLog.stationType, "internal");
+  assert.equal(entry.fuelLog.supplierId, undefined);
+  assert.equal(entry.supplierName, undefined);
+});
+
+test("[compat] sem station_type no corpo cai em external e NAO exige fornecedor", async () => {
+  const service = buildService();
+  const entry = await service.create(actor, { vehicle_id: VEHICLE_V, liters: 40, total_value: 200, odometer: 100 });
+
+  assert.equal(entry.fuelLog.stationType, "external");
+  assert.equal(entry.fuelLog.supplierId, undefined);
+});
+
+test("[RN-ABA-05] ignore_previous_odometer bypassa o guard monotonico; KM/L fica honesto '—' se Delta<=0", async () => {
+  const service = buildService();
+  await service.create(actor, { vehicle_id: VEHICLE_V, fueled_at: "2026-07-01T00:00:00Z", liters: 40, total_value: 200, odometer: 1400 });
+
+  // Sem a flag, odometro regressivo -> 422 (comportamento preservado).
+  await assert.rejects(
+    () => service.create(actor, { vehicle_id: VEHICLE_V, liters: 40, total_value: 200, odometer: 1000 }),
+    (error: unknown) => {
+      const err = error as { statusCode?: number; reason?: string };
+      assert.equal(err.statusCode, 422);
+      assert.equal(err.reason, "odometer_regressive");
+      return true;
+    },
+  );
+
+  // Com a flag, cria; e o KM/L nao e fabricado (Delta = 1000-1400 <= 0 -> null).
+  const bypassed = await service.create(actor, {
+    vehicle_id: VEHICLE_V,
+    fueled_at: "2026-07-05T00:00:00Z",
+    ignore_previous_odometer: true,
+    liters: 40,
+    total_value: 200,
+    odometer: 1000,
+  });
+
+  assert.equal(bypassed.fuelLog.odometer, 1000);
+  assert.equal(bypassed.kmPerLiter, null);
+  assert.equal(bypassed.distanceKm, null);
 });
 
 test("[validacao] parseFuelType default gasolina, normaliza caixa e rejeita invalido", () => {
@@ -137,6 +287,7 @@ function buildService(): FuelLogService {
   const repository = new InMemoryFuelLogRepository();
   const references: FuelLogReferenceResolvers = {
     resolveVehicle: async (_actor, id) => id === VEHICLE_V || id === VEHICLE_W,
+    resolveSupplier: async (_actor, id) => (id === SUPPLIER_S ? { id, name: "Posto Rede S" } : null),
   };
 
   return new FuelLogService(repository, references);

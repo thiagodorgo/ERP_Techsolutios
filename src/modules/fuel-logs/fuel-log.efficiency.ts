@@ -48,6 +48,10 @@ export function computeEfficiency(target: FuelLog, history: readonly FuelLog[]):
   if (!predecessor) return NO_EFFICIENCY;
 
   const distanceKm = target.odometer - predecessor.odometer;
+  // RN-ABA-04 / D-Ω4C-FUEL-KML-HONESTY — Δ ≤ 0 (odômetro igual ou regredido, ex.: via "desconsiderar
+  // último KM") NÃO deriva consumo: devolve "—"/null. Nunca KM/L negativo ou fabricado.
+  if (distanceKm <= 0) return NO_EFFICIENCY;
+
   const kmPerLiter = target.liters > 0 ? roundTo(distanceKm / target.liters, 2) : null;
 
   return { distanceKm, kmPerLiter };

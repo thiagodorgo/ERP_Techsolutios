@@ -6,6 +6,7 @@ import type {
   FuelLogsData,
   FuelLogsPagination,
   FuelLogsStatusFilter,
+  StationType,
 } from "./fuel-logs.types";
 
 const STATION_MAX = 120;
@@ -22,6 +23,31 @@ export const FUEL_TYPE_OPTIONS = [
 ] as const;
 
 const FUEL_TYPE_VALUES = FUEL_TYPE_OPTIONS.map((option) => option.value);
+
+// Ω4C PR-05 — Posto: enum-app interno/externo (contrato) -> rótulo PT-BR (§3, nunca o token cru).
+export const STATION_TYPE_OPTIONS: readonly { value: StationType; label: string }[] = [
+  { value: "external", label: "Externo" },
+  { value: "internal", label: "Interno (posto próprio)" },
+];
+
+export function getStationTypeLabel(value: string | null | undefined): string {
+  if (value === "internal") return "Interno";
+  if (value === "external") return "Externo";
+  return "—";
+}
+
+export function getStationTypeTone(value: string | null | undefined) {
+  return value === "internal" ? ("info" as const) : ("default" as const);
+}
+
+// Valor Unitário (R$/L) do AutEM: DERIVADO de total/litros, exibido read-only, jamais persistido
+// (mesma disciplina do km/L — nunca fabricar). "—" quando não há litros válidos (evita divisão por zero).
+export function formatUnitValue(totalValue: number | null | undefined, liters: number | null | undefined): string {
+  if (totalValue == null || liters == null || !Number.isFinite(totalValue) || !Number.isFinite(liters) || liters <= 0) {
+    return "—";
+  }
+  return `${formatBRL(totalValue / liters)}/L`;
+}
 
 // Reexport do formatador de moeda do repo (fonte única — Catálogo de Serviço).
 export { formatBRL };
@@ -74,7 +100,7 @@ export function filterFuelLogs(items: readonly FuelLog[], criteria: FuelLogFilte
 
     if (!search) return true;
     const vehicleName = criteria.resolveVehicleName?.(log.vehicleId) ?? "";
-    return [vehicleName, log.station, log.notes, getFuelTypeLabel(log.fuelType)]
+    return [vehicleName, log.station, log.supplierName, log.notes, getFuelTypeLabel(log.fuelType)]
       .filter(Boolean)
       .some((value) => normalize(String(value)).includes(search));
   });
@@ -106,7 +132,14 @@ export function validateFuelLog(input: FuelLogDraft): FuelLogFieldError[] {
   }
 
   const station = (input.station ?? "").trim();
-  if (station && station.length > STATION_MAX) errors.push({ field: "station", message: `Posto deve ter no máximo ${STATION_MAX} caracteres.` });
+  if (station && station.length > STATION_MAX) errors.push({ field: "station", message: `Identificação do posto deve ter no máximo ${STATION_MAX} caracteres.` });
+
+  // Ω4C PR-05 — RN-ABA-01/02 (espelho client do backend): EXTERNO exige fornecedor; INTERNO nunca leva
+  // fornecedor (a UI já limpa o campo ao trocar para interno, então aqui só barramos o caso externo sem
+  // fornecedor). O backend é a autoridade final (422 supplier_required_for_external / _not_allowed).
+  if (input.stationType === "external" && !input.supplierId?.trim()) {
+    errors.push({ field: "supplierId", message: "Selecione o fornecedor do abastecimento externo." });
+  }
 
   const notes = input.notes ?? "";
   if (notes.length > NOTES_MAX) errors.push({ field: "notes", message: `Observações devem ter no máximo ${NOTES_MAX} caracteres.` });
@@ -202,9 +235,11 @@ export function formatLiters(value: number | null | undefined): string {
   return `${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L`;
 }
 
-// km/L derivado: "—" para o lançamento baseline (sem odômetro anterior) ou valor ausente.
+// km/L derivado: "—" honesto para o baseline (sem odômetro anterior), valor ausente OU Δodômetro≤0.
+// RN-ABA-04 — o backend já devolve null quando Δ≤0; a guarda `<= 0` aqui garante que nenhum consumo
+// zerado/negativo fabricado apareça na UI mesmo diante de payload legado.
 export function formatKmPerLiter(value: number | null | undefined): string {
-  if (value === null || value === undefined || !Number.isFinite(value)) return "—";
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) return "—";
   return value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
@@ -250,6 +285,10 @@ function adaptFuelLog(input: unknown): FuelLog | null {
     totalValue,
     odometer,
     station: readNullableString(item, ["station"]),
+    // Ω4C PR-05 — posto interno/externo (default external, compat) + fornecedor (id + nome como label §2.8).
+    stationType: readStationType(item),
+    supplierId: readNullableString(item, ["supplierId", "supplier_id"]),
+    supplierName: readNullableString(item, ["supplierName", "supplier_name"]),
     notes: readNullableString(item, ["notes"]),
     isActive: readBoolean(item, ["isActive", "is_active"]) ?? true,
     // Derivados read-only: passam direto do DTO; `null` preservado (baseline).
@@ -314,6 +353,13 @@ function readNumber(input: Record<string, unknown> | undefined, keys: readonly s
 
 function readNullableNumber(input: Record<string, unknown>, keys: readonly string[]): number | null {
   return readNumber(input, keys) ?? null;
+}
+
+// Posto interno/externo: só aceita os termos do contrato; qualquer outra coisa cai no default `external`
+// (compat com logs legados que só tinham `station` texto-livre).
+function readStationType(input: Record<string, unknown>): StationType {
+  const raw = readString(input, ["stationType", "station_type"]);
+  return raw === "internal" ? "internal" : "external";
 }
 
 function readBoolean(input: Record<string, unknown>, keys: readonly string[]): boolean | undefined {

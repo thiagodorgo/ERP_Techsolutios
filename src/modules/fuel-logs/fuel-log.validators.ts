@@ -1,4 +1,10 @@
-import { FUEL_TYPES, FuelLogError, type FuelType } from "./fuel-log.types.js";
+import {
+  FUEL_TYPES,
+  FuelLogError,
+  STATION_TYPES,
+  type FuelType,
+  type StationType,
+} from "./fuel-log.types.js";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -67,6 +73,38 @@ export function parseOptionalFuelType(value: unknown): FuelType | undefined {
   if (value === undefined || value === null || value === "") return undefined;
 
   return parseFuelType(value, undefined);
+}
+
+/**
+ * Ω4C PR-05 — enum-app do posto (internal|external), SEM CHECK no banco (validado aqui). Sem valor no
+ * corpo → cai no `fallback` (default external, compat). Termo inválido → 400 invalid_station_type.
+ */
+export function parseStationType(value: unknown, fallback: StationType | undefined): StationType {
+  if (value === undefined || value === null || value === "") {
+    if (fallback === undefined) {
+      throw new FuelLogError(400, "FUEL_LOG_INVALID", "required_field", "station_type is required.");
+    }
+    return fallback;
+  }
+
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
+
+  if (STATION_TYPES.includes(normalized as StationType)) {
+    return normalized as StationType;
+  }
+
+  throw new FuelLogError(
+    400,
+    "FUEL_LOG_INVALID",
+    "invalid_station_type",
+    `station_type must be one of: ${STATION_TYPES.join(", ")}.`,
+  );
+}
+
+export function parseOptionalStationType(value: unknown): StationType | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+
+  return parseStationType(value, undefined);
 }
 
 function parseNumber(value: unknown, field: string): number {

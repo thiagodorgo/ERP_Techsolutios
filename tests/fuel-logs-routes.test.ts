@@ -362,11 +362,154 @@ test("[validacao] vehicle_id inexistente retorna 400 invalid_vehicle_reference",
   });
 });
 
+test("[RN-ABA-01] EXTERNO com fornecedor do MESMO tenant retorna 201 com supplierId + supplierName, sem tenant_id", async () => {
+  await withFuelLogApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "SUP1A11");
+    const supplierId = await createSupplier(baseUrl, seed.tenantA, seed.managerA, "Rede Posto Alpha");
+
+    const created = await requestJson(baseUrl, "/api/v1/fuel-logs", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: {
+        vehicle_id: vehicleId,
+        station_type: "external",
+        supplier_id: supplierId,
+        liters: 40,
+        total_value: 320,
+        odometer: 1000,
+      },
+    });
+
+    assert.equal(created.status, 201);
+    assert.equal(created.body.data.stationType, "external");
+    assert.equal(created.body.data.supplierId, supplierId);
+    // supplierName é label derivado do módulo suppliers do tenant (§2.8) — nunca dado sensível.
+    assert.equal(created.body.data.supplierName, "Rede Posto Alpha");
+    // §2.8 — nunca vaza tenant_id (nem em camel/snake).
+    assert.equal(created.body.data.tenant_id, undefined);
+    assert.equal(created.body.data.tenantId, undefined);
+  });
+});
+
+test("[RN-ABA-01] EXTERNO explicito sem fornecedor retorna 422 supplier_required_for_external", async () => {
+  await withFuelLogApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "SUP2A22");
+
+    const missingSupplier = await requestJson(baseUrl, "/api/v1/fuel-logs", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { vehicle_id: vehicleId, station_type: "external", liters: 40, total_value: 200, odometer: 100 },
+    });
+
+    assert.equal(missingSupplier.status, 422);
+    assert.equal(missingSupplier.body.error.reason, "supplier_required_for_external");
+  });
+});
+
+test("[RN-ABA-01] INTERNO com fornecedor retorna 422 supplier_not_allowed_for_internal (so marca o log)", async () => {
+  await withFuelLogApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "SUP3A33");
+    const supplierId = await createSupplier(baseUrl, seed.tenantA, seed.managerA, "Rede Posto Beta");
+
+    const internalWithSupplier = await requestJson(baseUrl, "/api/v1/fuel-logs", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: {
+        vehicle_id: vehicleId,
+        station_type: "internal",
+        supplier_id: supplierId,
+        liters: 40,
+        total_value: 200,
+        odometer: 100,
+      },
+    });
+    // INTERNO válido (sem fornecedor) só MARCA o log — sem movimento de estoque (baixa deferida a PR-10/11).
+    const internalOk = await requestJson(baseUrl, "/api/v1/fuel-logs", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { vehicle_id: vehicleId, station_type: "internal", liters: 40, total_value: 200, odometer: 200 },
+    });
+
+    assert.equal(internalWithSupplier.status, 422);
+    assert.equal(internalWithSupplier.body.error.reason, "supplier_not_allowed_for_internal");
+    assert.equal(internalOk.status, 201);
+    assert.equal(internalOk.body.data.stationType, "internal");
+    assert.equal(internalOk.body.data.supplierId, null);
+    assert.equal(internalOk.body.data.supplierName, null);
+  });
+});
+
+test("[RN-ABA-08] fornecedor de OUTRA organizacao retorna 400 invalid_supplier_reference (SupplierService.get real, 3 tenants)", async () => {
+  await withFuelLogApi(async ({ baseUrl, seed }) => {
+    // Fornecedores em A e C; ator do tenant B tenta referenciá-los no seu próprio POST.
+    const supplierA = await createSupplier(baseUrl, seed.tenantA, seed.managerA, "Posto do Tenant A");
+    const supplierC = await createSupplier(baseUrl, seed.tenantC, seed.managerC, "Posto do Tenant C");
+    const vehicleB = await createVehicle(baseUrl, seed.tenantB, seed.managerB, "SUP4B44");
+
+    const crossFromA = await requestJson(baseUrl, "/api/v1/fuel-logs", {
+      method: "POST",
+      headers: authHeaders(seed.tenantB, seed.managerB, "manager"),
+      body: { vehicle_id: vehicleB, station_type: "external", supplier_id: supplierA, liters: 10, total_value: 50, odometer: 100 },
+    });
+    const crossFromC = await requestJson(baseUrl, "/api/v1/fuel-logs", {
+      method: "POST",
+      headers: authHeaders(seed.tenantB, seed.managerB, "manager"),
+      body: { vehicle_id: vehicleB, station_type: "external", supplier_id: supplierC, liters: 10, total_value: 50, odometer: 110 },
+    });
+
+    assert.equal(crossFromA.status, 400);
+    assert.equal(crossFromA.body.error.reason, "invalid_supplier_reference");
+    assert.equal(crossFromC.status, 400);
+    assert.equal(crossFromC.body.error.reason, "invalid_supplier_reference");
+  });
+});
+
+test("[RN-ABA-05] ignore_previous_odometer bypassa 422 na stack HTTP; KM/L fica honesto null se Delta<=0", async () => {
+  await withFuelLogApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "SUP5A55");
+    await createFuelLog(baseUrl, seed.tenantA, seed.managerA, {
+      vehicle_id: vehicleId,
+      fueled_at: "2026-07-01T00:00:00.000Z",
+      liters: 40,
+      total_value: 200,
+      odometer: 1400,
+    });
+
+    const regressiveBlocked = await requestJson(baseUrl, "/api/v1/fuel-logs", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { vehicle_id: vehicleId, liters: 40, total_value: 200, odometer: 1000 },
+    });
+    const bypassed = await requestJson(baseUrl, "/api/v1/fuel-logs", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: {
+        vehicle_id: vehicleId,
+        fueled_at: "2026-07-05T00:00:00.000Z",
+        ignore_previous_odometer: true,
+        liters: 40,
+        total_value: 200,
+        odometer: 1000,
+      },
+    });
+
+    assert.equal(regressiveBlocked.status, 422);
+    assert.equal(regressiveBlocked.body.error.reason, "odometer_regressive");
+    assert.equal(bypassed.status, 201);
+    assert.equal(bypassed.body.data.odometer, 1000);
+    // Delta = 1000 - 1400 <= 0 → KM/L honesto "—"/null (nunca negativo/fabricado).
+    assert.equal(bypassed.body.data.kmPerLiter, null);
+    assert.equal(bypassed.body.data.distanceKm, null);
+  });
+});
+
 type SeedData = {
   readonly tenantA: Tenant;
   readonly tenantB: Tenant;
+  readonly tenantC: Tenant;
   readonly managerA: User;
   readonly managerB: User;
+  readonly managerC: User;
   readonly operatorA: User;
   readonly viewerA: User;
 };
@@ -384,6 +527,7 @@ async function withFuelLogApi(callback: (context: FuelLogApiContext) => Promise<
     { createApp },
     { resetFuelLogRuntimeForTests },
     { resetVehicleRuntimeForTests },
+    { resetSupplierRuntimeForTests },
     { CoreSaasRegistry },
     { MemoryCoreSaasAdapter },
     { InMemoryCoreSaasStore },
@@ -391,6 +535,7 @@ async function withFuelLogApi(callback: (context: FuelLogApiContext) => Promise<
     import("../src/app.js"),
     import("../src/modules/fuel-logs/index.js"),
     import("../src/modules/vehicles/index.js"),
+    import("../src/modules/suppliers/index.js"),
     import("../src/modules/core-saas/services/core-saas.service.js"),
     import("../src/modules/core-saas/services/memory-core-saas.adapter.js"),
     import("../src/modules/core-saas/store/core-saas.store.js"),
@@ -398,6 +543,7 @@ async function withFuelLogApi(callback: (context: FuelLogApiContext) => Promise<
 
   resetFuelLogRuntimeForTests();
   resetVehicleRuntimeForTests();
+  resetSupplierRuntimeForTests();
 
   const core = new CoreSaasRegistry(new InMemoryCoreSaasStore());
   const seed = seedCoreSaas(core);
@@ -411,6 +557,7 @@ async function withFuelLogApi(callback: (context: FuelLogApiContext) => Promise<
     await closeServer(server);
     resetFuelLogRuntimeForTests();
     resetVehicleRuntimeForTests();
+    resetSupplierRuntimeForTests();
   }
 }
 
@@ -420,6 +567,8 @@ function seedCoreSaas(service: {
 }): SeedData {
   const tenantA = service.createTenant({ name: "Tenant FuelLogs A", modules: ["dashboard", "work_orders"] });
   const tenantB = service.createTenant({ name: "Tenant FuelLogs B", modules: ["dashboard", "work_orders"] });
+  // 3º tenant EFÊMERO (nunca seed) — prova o isolamento multi-tenant do fornecedor com 3 organizações.
+  const tenantC = service.createTenant({ name: "Tenant FuelLogs C", modules: ["dashboard", "work_orders"] });
   const managerA = service.createUser({
     tenantId: tenantA.id,
     name: "Manager A",
@@ -430,6 +579,12 @@ function seedCoreSaas(service: {
     tenantId: tenantB.id,
     name: "Manager B",
     email: "fuel-manager-b@example.com",
+    roles: ["manager"],
+  });
+  const managerC = service.createUser({
+    tenantId: tenantC.id,
+    name: "Manager C",
+    email: "fuel-manager-c@example.com",
     roles: ["manager"],
   });
   const operatorA = service.createUser({
@@ -445,7 +600,19 @@ function seedCoreSaas(service: {
     roles: ["viewer"],
   });
 
-  return { tenantA, tenantB, managerA, managerB, operatorA, viewerA };
+  return { tenantA, tenantB, tenantC, managerA, managerB, managerC, operatorA, viewerA };
+}
+
+async function createSupplier(baseUrl: string, tenant: Tenant, user: User, name: string): Promise<string> {
+  const created = await requestJson(baseUrl, "/api/v1/suppliers", {
+    method: "POST",
+    headers: authHeaders(tenant, user, "manager"),
+    body: { name },
+  });
+
+  assert.equal(created.status, 201, `supplier creation failed: ${JSON.stringify(created.body)}`);
+
+  return created.body.data.id as string;
 }
 
 async function createVehicle(baseUrl: string, tenant: Tenant, user: User, plate: string): Promise<string> {

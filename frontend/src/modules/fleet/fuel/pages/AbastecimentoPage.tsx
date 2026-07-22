@@ -25,6 +25,8 @@ import {
   getFuelStatusLabel,
   getFuelStatusTone,
   getFuelTypeLabel,
+  getStationTypeLabel,
+  getStationTypeTone,
 } from "../fuel-logs.adapter";
 import { buildFuelKpiDetails } from "../fuel-kpi-detail";
 import { updateFuelLog } from "../fuel-logs.service";
@@ -165,6 +167,21 @@ export function AbastecimentoPage() {
       sortable: true,
       sortValue: (log) => getFuelTypeLabel(log.fuelType),
       render: (log) => getFuelTypeLabel(log.fuelType),
+    },
+    {
+      key: "stationType",
+      header: "Posto",
+      sortable: true,
+      sortValue: (log) => getStationTypeLabel(log.stationType),
+      render: (log) => <Chip tone={getStationTypeTone(log.stationType)}>{getStationTypeLabel(log.stationType)}</Chip>,
+    },
+    {
+      key: "supplier",
+      header: "Fornecedor",
+      sortable: true,
+      sortValue: (log) => log.supplierName ?? "",
+      // Externo → nome do fornecedor (label §2.8); interno → "—" honesto (sem fornecedor).
+      render: (log) => (log.supplierName ? log.supplierName : <span style={mutedStyle}>—</span>),
     },
     {
       key: "liters",
