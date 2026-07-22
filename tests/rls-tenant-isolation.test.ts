@@ -1456,6 +1456,90 @@ if (!connectionString) {
       const tenantCFine = await withTenantRls(client, tenantC.id, (tx) => tx.fine.findUnique({ where: { id: fineCId } }));
       assert.equal(tenantCFine?.responsible_operator_profile_id, tenantCProfessional.operatorProfileId, "tenant C fine keeps its responsible in-tenant");
 
+      // Ω4C PR-08 (EST-12) — stock_movements com CUSTÓDIA: custody_type=professional + FK COMPOSTA RESTRICT
+      // (tenant_id, custody_operator_profile_id) → operator_profiles (coluna ADITIVA da 20260828000000) com 3
+      // tenants EFÊMEROS (A, B, C). Cada movimento referencia um inventory_item (FK composta) e reusa o
+      // operator_profile do bloco PR-03. Prova: (a) FK cross-tenant REJEITADA (movimento de A com custódia do
+      // perfil de B viola a FK); (b) invisível sem contexto; (c) cross-tenant updateMany count=0; (d) visível/
+      // intocado in-tenant. tenant_id 1º de todo índice novo. TEARDOWN FK-SAFE abaixo (movimentos ANTES de
+      // operator_profiles/vehicles/inventory_items — lição do CI-catch do PR-06).
+      const createItemWithCustody = (tx: typeof client, tenantId: string, operatorProfileId: string, sku: string) => (async () => {
+        const [item] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO inventory_items (tenant_id, sku, name, unit, is_fuel, item_type)
+          VALUES (${tenantId}::uuid, ${sku}, 'RLS Item', 'un', true, 'product')
+          RETURNING id
+        `;
+        const [movement] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO stock_movements (
+            tenant_id, item_id, type, quantidade_sinalizada, custody_type, custody_operator_profile_id
+          )
+          VALUES (${tenantId}::uuid, ${item.id}::uuid, 'link', 3.000000, 'professional', ${operatorProfileId}::uuid)
+          RETURNING id
+        `;
+        return { itemId: item.id, movementId: movement.id };
+      })();
+      const custodyA = await withTenantRls(client, tenantA.id, (tx) => createItemWithCustody(tx as typeof client, tenantA.id, operatorProfileAId, "RLS-STK-A"));
+      const custodyB = await withTenantRls(client, tenantB.id, (tx) => createItemWithCustody(tx as typeof client, tenantB.id, operatorProfileBId, "RLS-STK-B"));
+      const custodyC = await withTenantRls(client, tenantC.id, (tx) => createItemWithCustody(tx as typeof client, tenantC.id, tenantCProfessional.operatorProfileId, "RLS-STK-C"));
+
+      // (a) FK COMPOSTA cross-tenant REJEITADA: um movimento de A com custódia do perfil de B viola a FK (não
+      // existe (tenant_id=A, custody_operator_profile_id=perfilB) em operator_profiles). A tx inteira faz rollback.
+      await assert.rejects(
+        () =>
+          withTenantRls(client, tenantA.id, async (tx) => {
+            const [item] = await tx.$queryRaw<Array<{ id: string }>>`
+              INSERT INTO inventory_items (tenant_id, sku, name, unit)
+              VALUES (${tenantA.id}::uuid, 'RLS-STK-XFK', 'RLS Item', 'un')
+              RETURNING id
+            `;
+            await tx.$executeRaw`
+              INSERT INTO stock_movements (tenant_id, item_id, type, quantidade_sinalizada, custody_type, custody_operator_profile_id)
+              VALUES (${tenantA.id}::uuid, ${item.id}::uuid, 'link', 1.000000, 'professional', ${operatorProfileBId}::uuid)
+            `;
+          }),
+        "custody_operator_profile_id cross-tenant deve violar a FK composta RESTRICT",
+      );
+
+      const custodyMovementsWithoutContext = await client.stockMovement.findMany({
+        where: { id: { in: [custodyA.movementId, custodyB.movementId, custodyC.movementId] } },
+      });
+      assert.deepEqual(
+        custodyMovementsWithoutContext.map((entry) => entry.id),
+        [],
+        "tenant-scoped stock movements (with custody) must not be visible without app.current_tenant_id",
+      );
+
+      const tenantACustodyView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.stockMovement.findMany({
+          where: { id: { in: [custodyA.movementId, custodyB.movementId, custodyC.movementId] } },
+        });
+        const crossTenantUpdate = await tx.stockMovement.updateMany({
+          where: { id: { in: [custodyB.movementId, custodyC.movementId] } },
+          data: { reason: "RLS cross-tenant update should not apply" },
+        });
+        return { visibleIds: visible.map((entry) => entry.id), crossUpdatedRows: crossTenantUpdate.count };
+      });
+      assert.deepEqual(
+        tenantACustodyView.visibleIds,
+        [custodyA.movementId],
+        "tenant A must only see its own custody movement (not tenant B/C)",
+      );
+      assert.equal(
+        tenantACustodyView.crossUpdatedRows,
+        0,
+        "tenant A must not update tenant B/C custody movements",
+      );
+
+      const tenantBCustody = await withTenantRls(client, tenantB.id, (tx) =>
+        tx.stockMovement.findUnique({ where: { id: custodyB.movementId } }),
+      );
+      assert.equal(tenantBCustody?.custody_operator_profile_id, operatorProfileBId, "tenant B custody movement keeps its professional in-tenant");
+      assert.equal(tenantBCustody?.custody_type, "professional", "tenant B custody movement type untouched in-tenant");
+      const tenantCCustody = await withTenantRls(client, tenantC.id, (tx) =>
+        tx.stockMovement.findUnique({ where: { id: custodyC.movementId } }),
+      );
+      assert.equal(tenantCCustody?.custody_operator_profile_id, tenantCProfessional.operatorProfileId, "tenant C custody movement keeps its professional in-tenant");
+
       const globalTenants = await client.tenant.findMany({
         where: {
           id: {
@@ -1902,6 +1986,19 @@ if (!connectionString) {
     } finally {
       for (const tenantId of tenantIds) {
         await withTenantRls(client, tenantId, async (tx) => {
+          // Ω4C PR-08 — movimentos de estoque ANTES de operator_profiles/vehicles/inventory_items (as FK
+          // compostas RESTRICT custody_operator_profile_id/custody_vehicle_id e item_id) — senão o cleanup
+          // quebra na FK (lição do CI-catch do PR-06). inventory_items depois dos movimentos que os referenciam.
+          await tx.stockMovement.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          await tx.inventoryItem.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
           // Ω4C PR-04 — definições agendadas ANTES dos users (FK created_by é Cascade, mas explícito é limpo).
           await tx.scheduledNotification.deleteMany({
             where: {

@@ -1,19 +1,27 @@
 import { formatBRL } from "../registry/service-catalog/service-catalog.adapter";
 import type {
   AbcRecalculateSummary,
+  CustodyMovementFieldError,
+  CustodySummary,
   InventoryAbcClass,
   InventoryItem,
   InventoryItemDraft,
   InventoryItemFieldError,
+  InventoryItemType,
   InventoryItemsData,
   InventoryPagination,
   InventorySource,
   InventoryStatusFilter,
+  StockCustodyType,
+  StockEntryPayload,
+  StockExitPayload,
+  StockExitReason,
   StockMovement,
   StockMovementCreatePayload,
   StockMovementDraft,
   StockMovementFieldError,
   StockMovementType,
+  StockTransferPayload,
   StockMovementsData,
 } from "./inventory.types";
 
@@ -26,15 +34,20 @@ const REASON_MAX = 500;
 export { formatBRL };
 
 // ── Tipo de movimento: token técnico -> rótulo PT-BR + tom do Chip ───────────
-// entrada=sucesso, saída=perigo, consumo=aviso, ajuste=neutro.
-const STOCK_MOVEMENT_TYPE_META: Record<StockMovementType, { label: string; tone: "default" | "warning" | "success" | "danger" }> = {
+// entrada=sucesso, saída=perigo, consumo=aviso, ajuste=neutro. Ω4C PR-08: vincular=azul, desvincular=verde.
+type MovementTone = "default" | "warning" | "success" | "danger" | "info";
+const STOCK_MOVEMENT_TYPE_META: Record<StockMovementType, { label: string; tone: MovementTone }> = {
   entrada: { label: "Entrada", tone: "success" },
   saida: { label: "Saída", tone: "danger" },
   consumo: { label: "Consumo", tone: "warning" },
   ajuste: { label: "Ajuste", tone: "default" },
+  link: { label: "Vincular", tone: "info" },
+  unlink: { label: "Desvincular", tone: "success" },
 };
 
 const STOCK_MOVEMENT_TYPE_VALUES = Object.keys(STOCK_MOVEMENT_TYPE_META) as StockMovementType[];
+// Só os 4 tipos base entram no filtro/seletor de tipo da aba Movimentações; link/unlink têm sub-modais próprios.
+const STOCK_MOVEMENT_FILTER_TYPES: readonly StockMovementType[] = ["entrada", "saida", "consumo", "ajuste"];
 const ABC_CLASS_VALUES: readonly InventoryAbcClass[] = ["A", "B", "C"];
 
 export function isStockMovementType(value: string | null | undefined): value is StockMovementType {
@@ -53,10 +66,72 @@ export function getMovementTypeTone(type: StockMovementType) {
   return STOCK_MOVEMENT_TYPE_META[type]?.tone ?? ("default" as const);
 }
 
-export const STOCK_MOVEMENT_TYPE_OPTIONS = STOCK_MOVEMENT_TYPE_VALUES.map((value) => ({
+export const STOCK_MOVEMENT_TYPE_OPTIONS = STOCK_MOVEMENT_FILTER_TYPES.map((value) => ({
   value,
   label: STOCK_MOVEMENT_TYPE_META[value].label,
 }));
+
+// ── Ω4C PR-08 — custódia: rótulos PT-BR + opções de destino/origem/tipo/saída ────────────────
+const STOCK_CUSTODY_TYPE_LABEL: Record<StockCustodyType, string> = {
+  base: "Base",
+  professional: "Profissional",
+  vehicle: "Viatura",
+};
+
+export function getCustodyTypeLabel(custodyType: StockCustodyType): string {
+  return STOCK_CUSTODY_TYPE_LABEL[custodyType] ?? "Base";
+}
+
+const CUSTODY_TYPE_VALUES: readonly StockCustodyType[] = ["base", "professional", "vehicle"];
+
+export function isCustodyType(value: string | null | undefined): value is StockCustodyType {
+  return typeof value === "string" && CUSTODY_TYPE_VALUES.includes(value as StockCustodyType);
+}
+
+// Destino de Vincular/Desvincular — só Profissional ou Viatura (a BASE é a contraparte fixa).
+export const CUSTODY_TARGET_OPTIONS: readonly { value: "professional" | "vehicle"; label: string }[] = [
+  { value: "professional", label: "Profissional" },
+  { value: "vehicle", label: "Viatura" },
+];
+
+// Origem de Saída — Base, Profissional ou Viatura.
+export const CUSTODY_ORIGIN_OPTIONS: readonly { value: StockCustodyType; label: string }[] = [
+  { value: "base", label: "Base" },
+  { value: "professional", label: "Profissional" },
+  { value: "vehicle", label: "Viatura" },
+];
+
+// Tipo do item (AutEM): Produto / Equipamento (EQUIPAMENTO oculta Compra/Venda no front).
+const INVENTORY_ITEM_TYPE_LABEL: Record<InventoryItemType, string> = {
+  product: "Produto",
+  equipment: "Equipamento",
+};
+
+export function getItemTypeLabel(itemType: InventoryItemType): string {
+  return INVENTORY_ITEM_TYPE_LABEL[itemType] ?? "Produto";
+}
+
+export function isInventoryItemType(value: string | null | undefined): value is InventoryItemType {
+  return value === "product" || value === "equipment";
+}
+
+export const INVENTORY_ITEM_TYPE_OPTIONS: readonly { value: InventoryItemType; label: string }[] = [
+  { value: "product", label: "Produto" },
+  { value: "equipment", label: "Equipamento" },
+];
+
+// "Tipo de Saída" (allowlist v1) — só "Venda direta" visto em frame limpo (não fabricar taxonomia).
+const STOCK_EXIT_REASON_LABEL: Record<StockExitReason, string> = {
+  direct_sale: "Venda direta",
+};
+
+export function getExitReasonLabel(reason: StockExitReason): string {
+  return STOCK_EXIT_REASON_LABEL[reason] ?? "Venda direta";
+}
+
+export const STOCK_EXIT_REASON_OPTIONS: readonly { value: StockExitReason; label: string }[] = [
+  { value: "direct_sale", label: "Venda direta" },
+];
 
 // ── Situação de reposição (Chip real a partir do `belowMin` do servidor) ─────
 export function getReplenishmentLabel(belowMin: boolean): string {
@@ -165,6 +240,7 @@ function adaptInventoryItem(input: unknown): InventoryItem | null {
   const saldo = readNumber(item, ["saldo"]) ?? 0;
   const abcRaw = readString(item, ["abcClass", "abc_class"]);
   const reorderPoint = readNullableNumber(item, ["reorderPoint", "reorder_point"]);
+  const itemTypeRaw = readString(item, ["itemType", "item_type"]);
 
   return {
     id,
@@ -183,6 +259,12 @@ function adaptInventoryItem(input: unknown): InventoryItem | null {
     saldo,
     // O servidor computa `belowMin`; se a flag faltar, deriva do saldo × mínimo.
     belowMin: readBoolean(item, ["belowMin", "below_min"]) ?? saldo < minQuantity,
+    // Ω4C PR-08 — campos AutEM do item (defaults resilientes quando o backend antigo não os manda).
+    isFuel: readBoolean(item, ["isFuel", "is_fuel"]) ?? false,
+    itemType: isInventoryItemType(itemTypeRaw) ? itemTypeRaw : "product",
+    purchasePrice: readNullableNumber(item, ["purchasePrice", "purchase_price"]),
+    salePrice: readNullableNumber(item, ["salePrice", "sale_price"]),
+    description: readNullableString(item, ["description", "descricao"]),
     isActive: readBoolean(item, ["isActive", "is_active"]) ?? true,
     createdAt: readString(item, ["createdAt", "created_at"]) ?? new Date().toISOString(),
     updatedAt: readString(item, ["updatedAt", "updated_at"]) ?? readString(item, ["createdAt", "created_at"]) ?? new Date().toISOString(),
@@ -198,6 +280,8 @@ function adaptStockMovement(input: unknown): StockMovement | null {
   const typeRaw = readString(item, ["type", "tipo"]);
   if (!id || !itemId || !isStockMovementType(typeRaw)) return null;
 
+  const custodyRaw = readString(item, ["custodyType", "custody_type"]);
+
   return {
     id,
     itemId,
@@ -207,9 +291,62 @@ function adaptStockMovement(input: unknown): StockMovement | null {
     workOrderId: readNullableString(item, ["workOrderId", "work_order_id"]),
     vehicleId: readNullableString(item, ["vehicleId", "vehicle_id"]),
     reason: readNullableString(item, ["reason", "motivo"]),
+    // Ω4C PR-08 — custódia + par de transferência + vínculo de estorno (default "base" p/ movimento legado).
+    custodyType: isCustodyType(custodyRaw) ? custodyRaw : "base",
+    custodyOperatorProfileId: readNullableString(item, ["custodyOperatorProfileId", "custody_operator_profile_id"]),
+    custodyVehicleId: readNullableString(item, ["custodyVehicleId", "custody_vehicle_id"]),
+    transferGroupId: readNullableString(item, ["transferGroupId", "transfer_group_id"]),
+    reversesMovementId: readNullableString(item, ["reversesMovementId", "reverses_movement_id"]),
     createdAt: readString(item, ["createdAt", "created_at"]) ?? new Date().toISOString(),
     createdBy: readNullableString(item, ["createdBy", "created_by"]),
   };
+}
+
+// ── Ω4C PR-08 — Resumo por custódia (GET /inventory-items/:id/custody-summary) ───────────────
+export function adaptCustodySummaryResponse(response: unknown, itemId: string): CustodySummary {
+  const payload = readRecord(response);
+  const data = readRecord(payload?.data) ?? payload ?? {};
+  const professionalsRaw = readArray(data.professionals) ?? [];
+  const vehiclesRaw = readArray(data.vehicles) ?? [];
+
+  const professionals = professionalsRaw
+    .map((entry) => readRecord(entry))
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry))
+    .map((entry) => ({
+      operatorProfileId: readString(entry, ["operatorProfileId", "operator_profile_id"]) ?? "",
+      // §2.8/LGPD: só o nome como rótulo — NUNCA CNH.
+      name: readNullableString(entry, ["name", "nome"]),
+      qty: readNumber(entry, ["qty", "quantidade", "quantity"]) ?? 0,
+    }))
+    .filter((entry) => entry.operatorProfileId);
+
+  const vehicles = vehiclesRaw
+    .map((entry) => readRecord(entry))
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry))
+    .map((entry) => ({
+      vehicleId: readString(entry, ["vehicleId", "vehicle_id"]) ?? "",
+      plate: readNullableString(entry, ["plate", "placa"]),
+      qty: readNumber(entry, ["qty", "quantidade", "quantity"]) ?? 0,
+    }))
+    .filter((entry) => entry.vehicleId);
+
+  return {
+    itemId: readString(data, ["itemId", "item_id"]) ?? itemId,
+    baseQty: readNumber(data, ["baseQty", "base_qty"]) ?? 0,
+    professionalTotalQty: readNumber(data, ["professionalTotalQty", "professional_total_qty"]) ?? 0,
+    vehicleTotalQty: readNumber(data, ["vehicleTotalQty", "vehicle_total_qty"]) ?? 0,
+    total: readNumber(data, ["total"]) ?? 0,
+    professionals,
+    vehicles,
+  };
+}
+
+// Estorno / transferência devolvem { movements: [...] } — projeta a lista de movimentos gerados.
+export function adaptStockMovementsListResponse(response: unknown): StockMovement[] {
+  const payload = readRecord(response);
+  const data = readRecord(payload?.data) ?? payload;
+  const rows = readArray(data?.movements) ?? readArray(payload?.movements) ?? [];
+  return rows.map((row) => adaptStockMovement(row)).filter((row): row is StockMovement => Boolean(row));
 }
 
 // ── Filtros (client-side sobre a janela carregada) ───────────────────────────
@@ -300,8 +437,204 @@ export function validateInventoryItem(input: InventoryItemDraft): InventoryItemF
   if (input.safetyStock !== undefined && (!Number.isFinite(input.safetyStock) || input.safetyStock < 0)) {
     errors.push({ field: "safetyStock", message: "Estoque de segurança inválido (use um número ≥ 0)." });
   }
+  // Ω4C PR-08 — preços de compra/venda (Decimal(12,2)); só validados quando informados (opcionais).
+  if (input.purchasePrice !== undefined && (!Number.isFinite(input.purchasePrice) || input.purchasePrice < 0)) {
+    errors.push({ field: "purchasePrice", message: "Preço de compra inválido (use um valor em R$ ≥ 0)." });
+  }
+  if (input.salePrice !== undefined && (!Number.isFinite(input.salePrice) || input.salePrice < 0)) {
+    errors.push({ field: "salePrice", message: "Preço de venda inválido (use um valor em R$ ≥ 0)." });
+  }
 
   return errors;
+}
+
+// ── Ω4C PR-08 — validação dos sub-modais de custódia (espelha o backend) ──────────────────────
+// Quantidade SEMPRE positiva (magnitude); o backend aplica o sinal pelo tipo.
+
+export function validateStockEntry(input: { quantidade?: number; unitCost?: number }): CustodyMovementFieldError[] {
+  const errors: CustodyMovementFieldError[] = [];
+  if (input.quantidade === undefined || !Number.isFinite(input.quantidade) || input.quantidade <= 0) {
+    errors.push({ field: "quantidade", message: "Informe uma quantidade maior que zero." });
+  }
+  if (input.unitCost === undefined || !Number.isFinite(input.unitCost) || input.unitCost < 0) {
+    errors.push({ field: "unitCost", message: "Entrada exige o custo unitário (R$) — ele atualiza o custo médio." });
+  }
+  return errors;
+}
+
+export function validateStockTransfer(input: {
+  quantidade?: number;
+  custodyType?: "professional" | "vehicle" | "";
+  custodyOperatorProfileId?: string;
+  custodyVehicleId?: string;
+}): CustodyMovementFieldError[] {
+  const errors: CustodyMovementFieldError[] = [];
+  if (input.quantidade === undefined || !Number.isFinite(input.quantidade) || input.quantidade <= 0) {
+    errors.push({ field: "quantidade", message: "Informe uma quantidade maior que zero." });
+  }
+  if (input.custodyType !== "professional" && input.custodyType !== "vehicle") {
+    errors.push({ field: "custodyType", message: "Escolha a custódia: Profissional ou Viatura." });
+  } else if (input.custodyType === "professional" && !input.custodyOperatorProfileId?.trim()) {
+    errors.push({ field: "custodyOperatorProfileId", message: "Selecione o profissional." });
+  } else if (input.custodyType === "vehicle" && !input.custodyVehicleId?.trim()) {
+    errors.push({ field: "custodyVehicleId", message: "Selecione a viatura." });
+  }
+  return errors;
+}
+
+export function validateStockExit(input: {
+  quantidade?: number;
+  custodyType?: StockCustodyType | "";
+  custodyOperatorProfileId?: string;
+  custodyVehicleId?: string;
+  unitCost?: number;
+}): CustodyMovementFieldError[] {
+  const errors: CustodyMovementFieldError[] = [];
+  if (input.quantidade === undefined || !Number.isFinite(input.quantidade) || input.quantidade <= 0) {
+    errors.push({ field: "quantidade", message: "Informe uma quantidade maior que zero." });
+  }
+  if (input.custodyType !== "base" && input.custodyType !== "professional" && input.custodyType !== "vehicle") {
+    errors.push({ field: "custodyType", message: "Escolha a origem: Base, Profissional ou Viatura." });
+  } else if (input.custodyType === "professional" && !input.custodyOperatorProfileId?.trim()) {
+    errors.push({ field: "custodyOperatorProfileId", message: "Selecione o profissional de origem." });
+  } else if (input.custodyType === "vehicle" && !input.custodyVehicleId?.trim()) {
+    errors.push({ field: "custodyVehicleId", message: "Selecione a viatura de origem." });
+  }
+  if (input.unitCost !== undefined && (!Number.isFinite(input.unitCost) || input.unitCost < 0)) {
+    errors.push({ field: "unitCost", message: "Custo unitário inválido (use um valor em R$ ≥ 0)." });
+  }
+  return errors;
+}
+
+// ── Ω4C PR-08 — interpretação dos erros de custódia/estorno (mensagens honestas) ──────────────
+export type CustodyMovementSubmitFeedback = {
+  readonly reason?: string;
+  readonly field?: CustodyMovementFieldError["field"];
+  readonly message: string;
+};
+
+const CUSTODY_MOVEMENT_REASON_FEEDBACK: Record<string, { field?: CustodyMovementFieldError["field"]; message: string }> = {
+  invalid_custody: { field: "custodyType", message: "Custódia inválida. Base não aceita profissional/viatura; Profissional exige um profissional; Viatura exige uma viatura." },
+  invalid_custody_reference: { field: "custodyType", message: "A custódia informada não pertence a esta organização. Selecione outro profissional ou viatura." },
+  entrada_requires_unit_cost: { field: "unitCost", message: "Entrada exige o custo unitário (R$) — ele atualiza o custo médio do item." },
+};
+
+export function interpretCustodyMovementError(error: unknown, context: StockMovementErrorContext = {}): CustodyMovementSubmitFeedback {
+  const status = readErrorStatus(error);
+  const reason = readErrorReason(error) ?? (status === 409 ? "insufficient_balance" : undefined);
+
+  if (reason === "insufficient_balance") {
+    const saldoInfo =
+      context.currentSaldo !== undefined && Number.isFinite(context.currentSaldo)
+        ? ` Saldo disponível na custódia de origem: ${formatQuantity(context.currentSaldo, context.unit)}.`
+        : "";
+    return { reason, field: "quantidade", message: `Saldo insuficiente na custódia de origem para esta quantidade.${saldoInfo}` };
+  }
+
+  if (reason && CUSTODY_MOVEMENT_REASON_FEEDBACK[reason]) {
+    return { reason, ...CUSTODY_MOVEMENT_REASON_FEEDBACK[reason] };
+  }
+
+  if (error instanceof Error && error.message) return { message: error.message };
+  return { message: "Não foi possível registrar o movimento de custódia. Tente novamente." };
+}
+
+// Estorno: 409 movement_already_reversed → mensagem honesta do razão imutável.
+export function interpretStockReverseError(error: unknown): { reason?: string; message: string } {
+  const status = readErrorStatus(error);
+  const reason = readErrorReason(error) ?? (status === 409 ? "movement_already_reversed" : undefined);
+
+  if (reason === "movement_already_reversed") {
+    return { reason, message: "Este movimento já foi estornado — o razão é imutável, não estorne duas vezes." };
+  }
+  if (reason === "insufficient_balance") {
+    return { reason, message: "O estorno deixaria a custódia negativa (o saldo já saiu ou foi vinculado). Corrija com um novo movimento." };
+  }
+  if (status === 404) {
+    return { message: "Movimento não encontrado — pode ter sido removido. Recarregue a lista." };
+  }
+  if (error instanceof Error && error.message) return { message: error.message };
+  return { message: "Não foi possível estornar o movimento. Tente novamente." };
+}
+
+// ── Ω4C PR-08 — exibição do razão: pareia o par de transferência (transfer_group_id) numa linha ──
+// Cada movimento vira uma "linha de razão"; um par LINK/UNLINK (2 legs, mesmo transfer_group_id)
+// colapsa numa única linha Origem→Destino. Detecta estornos pelo `reversesMovementId`.
+export type MovementLedgerRow = {
+  readonly id: string; // id do movimento-alvo do estorno (o leg "to" no par)
+  readonly type: StockMovementType;
+  readonly transferGroupId: string | null;
+  readonly fromCustodyType: StockCustodyType | null; // preenchido só em transferências
+  readonly toCustodyType: StockCustodyType;
+  readonly custodyOperatorProfileId: string | null;
+  readonly custodyVehicleId: string | null;
+  readonly quantidadeSinalizada: number; // magnitude com sinal do leg de destino (ou do movimento simples)
+  readonly reason: string | null;
+  readonly createdAt: string;
+  readonly isReversal: boolean; // esta linha É um movimento compensatório (estorno de outro)
+  readonly reversed: boolean; // esta linha JÁ foi estornada
+};
+
+export function buildMovementLedgerRows(movements: readonly StockMovement[]): MovementLedgerRow[] {
+  // Conjunto de alvos já estornados (existe uma linha compensatória apontando para eles).
+  const reversedTargets = new Set<string>();
+  const reversedGroups = new Set<string>();
+  for (const movement of movements) {
+    if (movement.reversesMovementId) {
+      reversedTargets.add(movement.reversesMovementId);
+      if (movement.transferGroupId) reversedGroups.add(movement.transferGroupId);
+    }
+  }
+
+  const rows: MovementLedgerRow[] = [];
+  const consumedTransferGroups = new Set<string>();
+
+  for (const movement of movements) {
+    if ((movement.type === "link" || movement.type === "unlink") && movement.transferGroupId) {
+      if (consumedTransferGroups.has(movement.transferGroupId)) continue;
+      consumedTransferGroups.add(movement.transferGroupId);
+
+      const legs = movements.filter((m) => m.transferGroupId === movement.transferGroupId);
+      // Destino = a perna que NÃO é a base (o crédito na custódia alvo).
+      const destination = legs.find((m) => m.custodyType !== "base") ?? movement;
+      const origin = legs.find((m) => m.custodyType === "base");
+      const isReversal = legs.some((m) => Boolean(m.reversesMovementId));
+      const reversed = reversedGroups.has(movement.transferGroupId) && !isReversal;
+
+      rows.push({
+        id: destination.id,
+        type: movement.type,
+        transferGroupId: movement.transferGroupId,
+        fromCustodyType: origin?.custodyType ?? "base",
+        toCustodyType: destination.custodyType,
+        custodyOperatorProfileId: destination.custodyOperatorProfileId,
+        custodyVehicleId: destination.custodyVehicleId,
+        quantidadeSinalizada: destination.quantidadeSinalizada,
+        reason: destination.reason,
+        createdAt: destination.createdAt,
+        isReversal,
+        reversed,
+      });
+      continue;
+    }
+
+    rows.push({
+      id: movement.id,
+      type: movement.type,
+      transferGroupId: movement.transferGroupId,
+      fromCustodyType: null,
+      toCustodyType: movement.custodyType,
+      custodyOperatorProfileId: movement.custodyOperatorProfileId,
+      custodyVehicleId: movement.custodyVehicleId,
+      quantidadeSinalizada: movement.quantidadeSinalizada,
+      reason: movement.reason,
+      createdAt: movement.createdAt,
+      isReversal: Boolean(movement.reversesMovementId),
+      reversed: reversedTargets.has(movement.id),
+    });
+  }
+
+  return rows;
 }
 
 // ── Validação condicional do movimento por tipo ──────────────────────────────

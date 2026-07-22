@@ -62,6 +62,16 @@ export function createInventoryItemRouter(
     }),
   );
 
+  // Ω4C PR-08 (D-Ω4C-INV-CUSTODY-SUMMARY) — per-custody quantities + labelled professionals/vehicles.
+  // Registered before the bare `:itemId` GET so the extra segment is never read as an id (literal-first).
+  router.get(
+    "/inventory-items/:itemId/custody-summary",
+    requirePermission(INVENTORY_ITEM_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.custodySummary(request));
+    }),
+  );
+
   router.get(
     "/inventory-items/:itemId",
     requirePermission(INVENTORY_ITEM_PERMISSIONS.read),
@@ -82,9 +92,9 @@ export function createInventoryItemRouter(
 }
 
 /**
- * Movements are an IMMUTABLE ledger (R7.1): the router deliberately exposes
- * NO PATCH and NO DELETE — corrections happen through a compensating `ajuste`
- * movement, never by rewriting history.
+ * Movements are an IMMUTABLE ledger (R7.1 + D-Ω4C-INV-LEDGER-IMMUTABLE): the router deliberately exposes
+ * NO PATCH and NO DELETE — corrections happen through a compensating movement. Ω4C PR-08 adds the explicit
+ * estorno endpoint `POST /:movementId/reverse` (posts the opposite movement; the original stays intact).
  */
 export function createStockMovementRouter(
   coreService: ICoreSaasService,
@@ -109,6 +119,16 @@ export function createStockMovementRouter(
     requirePermission(STOCK_MOVEMENT_PERMISSIONS.create),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.createMovement(request));
+    }),
+  );
+
+  // Ω4C PR-08 — estorno = movimento compensatório (perm stock_movements:create). Registered before the bare
+  // `:movementId` GET so the extra segment is never read as an id.
+  router.post(
+    "/stock-movements/:movementId/reverse",
+    requirePermission(STOCK_MOVEMENT_PERMISSIONS.create),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.reverseMovement(request));
     }),
   );
 

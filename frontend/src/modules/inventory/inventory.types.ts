@@ -6,7 +6,18 @@
 
 export type InventoryAbcClass = "A" | "B" | "C";
 
-export type StockMovementType = "entrada" | "saida" | "consumo" | "ajuste";
+// Ω4C PR-08 — o razão ganha os movimentos de custódia LINK/UNLINK (par irmão de transferência
+// BASE↔custódia). Continua imutável: só POST (sem edição/exclusão); correção = estorno compensatório.
+export type StockMovementType = "entrada" | "saida" | "consumo" | "ajuste" | "link" | "unlink";
+
+// Ω4C PR-08 — custódia de um movimento (enum-app; rótulos Base/Profissional/Viatura na fronteira PT-BR).
+export type StockCustodyType = "base" | "professional" | "vehicle";
+
+// Ω4C PR-08 — tipo do item (rótulos Produto/Equipamento). EQUIPAMENTO oculta Compra/Venda no front.
+export type InventoryItemType = "product" | "equipment";
+
+// Ω4C PR-08 — "Tipo de Saída" de uma saída (allowlist v1; só "Venda direta" visto em frame limpo).
+export type StockExitReason = "direct_sale";
 
 export type InventoryItem = {
   readonly id: string;
@@ -26,6 +37,13 @@ export type InventoryItem = {
   // Computados no servidor a cada listagem (Σ quantidade_sinalizada / saldo < mínimo).
   readonly saldo: number;
   readonly belowMin: boolean;
+  // Ω4C PR-08 — campos AutEM do item (aditivos). `isFuel` habilita o item no Abastecimento interno;
+  // `itemType` EQUIPAMENTO oculta compra/venda; preços em Decimal(12,2) (null quando não informados).
+  readonly isFuel: boolean;
+  readonly itemType: InventoryItemType;
+  readonly purchasePrice: number | null;
+  readonly salePrice: number | null;
+  readonly description: string | null;
   readonly isActive: boolean;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -49,6 +67,13 @@ export type StockMovement = {
   readonly workOrderId: string | null;
   readonly vehicleId: string | null;
   readonly reason: string | null;
+  // Ω4C PR-08 — custódia do movimento (default "base"), par de transferência e vínculo do estorno.
+  // Só ID do custodiante (§2.8/LGPD: nome/placa vêm do custody-summary como rótulo — nunca CNH).
+  readonly custodyType: StockCustodyType;
+  readonly custodyOperatorProfileId: string | null;
+  readonly custodyVehicleId: string | null;
+  readonly transferGroupId: string | null;
+  readonly reversesMovementId: string | null;
   readonly createdAt: string;
   readonly createdBy: string | null;
 };
@@ -117,6 +142,12 @@ export type InventoryItemDraft = {
   readonly maxQuantity?: number;
   readonly leadTimeDays?: number;
   readonly safetyStock?: number;
+  // Ω4C PR-08 — campos AutEM do item.
+  readonly isFuel?: boolean;
+  readonly itemType?: InventoryItemType;
+  readonly purchasePrice?: number;
+  readonly salePrice?: number;
+  readonly description?: string;
 };
 
 export type InventoryItemCreatePayload = {
@@ -128,6 +159,12 @@ export type InventoryItemCreatePayload = {
   readonly leadTimeDays?: number;
   readonly safetyStock?: number;
   readonly isActive?: boolean;
+  // Ω4C PR-08 — campos AutEM do item (preços aceitam null p/ limpar).
+  readonly isFuel?: boolean;
+  readonly itemType?: InventoryItemType;
+  readonly purchasePrice?: number | null;
+  readonly salePrice?: number | null;
+  readonly description?: string | null;
 };
 
 // PATCH único: edição de campos + desativação/reativação lógica.
@@ -170,4 +207,83 @@ export type StockMovementField = keyof StockMovementDraft;
 export type StockMovementFieldError = {
   readonly field: StockMovementField;
   readonly message: string;
+};
+
+// ── Ω4C PR-08 — custódia: Entrada / Vincular-Desvincular / Saída (quantidade sempre positiva) ──
+// A quantidade digitada é SEMPRE positiva (magnitude); o backend aplica o sinal pelo tipo.
+
+// Entrada (ENTRY) — SEMPRE para a BASE; exige custo unitário (custo médio móvel).
+export type StockEntryPayload = {
+  readonly itemId: string;
+  readonly quantidade: number;
+  readonly unitCost: number;
+  readonly reason?: string;
+};
+
+// Vincular (LINK, BASE→custódia) / Desvincular (UNLINK, custódia→BASE): destino Profissional ou Viatura.
+export type StockTransferPayload = {
+  readonly itemId: string;
+  readonly type: "link" | "unlink";
+  readonly quantidade: number;
+  readonly custodyType: "professional" | "vehicle";
+  readonly custodyOperatorProfileId?: string;
+  readonly custodyVehicleId?: string;
+  readonly reason?: string;
+};
+
+// Saída (EXIT) — origem por custódia (Base/Profissional/Viatura) + Tipo de Saída (exit_reason).
+export type StockExitPayload = {
+  readonly itemId: string;
+  readonly quantidade: number;
+  readonly custodyType: StockCustodyType;
+  readonly custodyOperatorProfileId?: string;
+  readonly custodyVehicleId?: string;
+  readonly exitReason?: StockExitReason;
+  readonly unitCost?: number;
+  readonly reason?: string;
+};
+
+// Rascunho compartilhado dos sub-modais de custódia (campos-alvo do erro de validação/servidor).
+export type CustodyMovementField =
+  | "quantidade"
+  | "unitCost"
+  | "custodyType"
+  | "custodyOperatorProfileId"
+  | "custodyVehicleId"
+  | "exitReason"
+  | "reason";
+
+export type CustodyMovementFieldError = {
+  readonly field: CustodyMovementField;
+  readonly message: string;
+};
+
+// Resumo por custódia (GET /inventory-items/:id/custody-summary) — rótulos: nome do profissional /
+// placa da viatura (§2.8/LGPD — NUNCA CNH). Qtd. Base/Profissional/Viatura são DERIVADAS no servidor.
+export type CustodySummaryProfessional = {
+  readonly operatorProfileId: string;
+  readonly name: string | null;
+  readonly qty: number;
+};
+
+export type CustodySummaryVehicle = {
+  readonly vehicleId: string;
+  readonly plate: string | null;
+  readonly qty: number;
+};
+
+export type CustodySummary = {
+  readonly itemId: string;
+  readonly baseQty: number;
+  readonly professionalTotalQty: number;
+  readonly vehicleTotalQty: number;
+  readonly total: number;
+  readonly professionals: readonly CustodySummaryProfessional[];
+  readonly vehicles: readonly CustodySummaryVehicle[];
+};
+
+// Opção de custodiante para os selects dos sub-modais (rótulo = nome/placa — NUNCA CNH).
+export type CustodyOption = {
+  readonly id: string;
+  readonly label: string;
 };

@@ -46,6 +46,60 @@ test("POST /inventory-items cria item (201) sem vazar tenant; saldo derivado com
   });
 });
 
+test("[Ω4C PR-08] campos AutEM do item: default is_fuel=false/item_type=product; aceita e ecoa compra/venda/descrição", async () => {
+  await withInventoryApi(async ({ baseUrl, seed }) => {
+    const defaults = await requestJson(baseUrl, "/api/v1/inventory-items", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: itemBody({ sku: "AUTEM-DEF" }),
+    });
+    assert.equal(defaults.status, 201, JSON.stringify(defaults.body));
+    assert.equal(defaults.body.data.isFuel, false);
+    assert.equal(defaults.body.data.itemType, "product");
+    assert.equal(defaults.body.data.purchasePrice, null);
+    assert.equal(defaults.body.data.salePrice, null);
+    assert.equal(defaults.body.data.description, null);
+
+    const filled = await requestJson(baseUrl, "/api/v1/inventory-items", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: itemBody({
+        sku: "AUTEM-FULL",
+        is_fuel: true,
+        item_type: "equipment",
+        purchase_price: 12.34,
+        sale_price: 56.78,
+        description: "Item completo",
+      }),
+    });
+    assert.equal(filled.status, 201, JSON.stringify(filled.body));
+    assert.equal(filled.body.data.isFuel, true);
+    assert.equal(filled.body.data.itemType, "equipment");
+    assert.equal(filled.body.data.purchasePrice, 12.34);
+    assert.equal(filled.body.data.salePrice, 56.78);
+    assert.equal(filled.body.data.description, "Item completo");
+
+    // PATCH atualiza os campos AutEM.
+    const patched = await patchItem(baseUrl, seed.tenantA, seed.managerA, "manager", filled.body.data.id, {
+      is_fuel: false,
+      sale_price: 99.9,
+    });
+    assert.equal(patched.status, 200, JSON.stringify(patched.body));
+    assert.equal(patched.body.data.isFuel, false);
+    assert.equal(patched.body.data.salePrice, 99.9);
+    assert.equal(patched.body.data.purchasePrice, 12.34); // inalterado
+
+    // preço negativo → 400.
+    const negative = await requestJson(baseUrl, "/api/v1/inventory-items", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: itemBody({ sku: "AUTEM-NEG", sale_price: -1 }),
+    });
+    assert.equal(negative.status, 400);
+    assert.equal(negative.body.error.reason, "invalid_salePrice");
+  });
+});
+
 test("[P6] sku duplicado no MESMO tenant → 409 duplicate_sku; mesmo sku em OUTRO tenant → 201", async () => {
   await withInventoryApi(async ({ baseUrl, seed }) => {
     const first = await createItem(baseUrl, seed.tenantA, seed.managerA, { sku: "SKU-P6" });

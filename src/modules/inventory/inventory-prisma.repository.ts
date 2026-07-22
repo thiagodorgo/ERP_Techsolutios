@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
@@ -14,16 +16,24 @@ import {
   type AbcClassAssignment,
   type CreateInventoryItemInput,
   type CreateStockMovementInput,
+  type CreateTransferInput,
+  type CustodySummaryRaw,
   type InventoryAbcClass,
   type InventoryItem,
+  type InventoryItemType,
   type InventoryItemView,
   type ItemConsumptionValue,
   type ListInventoryItemsInput,
   type ListInventoryItemsResult,
   type ListStockMovementsInput,
   type ListStockMovementsResult,
+  type ReverseStockMovementInput,
+  type ReverseStockMovementResult,
+  type StockCustody,
+  type StockCustodyType,
   type StockMovement,
   type StockMovementType,
+  type StockTransferResult,
   type UpdateInventoryItemInput,
 } from "./inventory.types.js";
 import type { InventoryRepository } from "./inventory.repository.js";
@@ -34,6 +44,9 @@ const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /** Movement types that count as OUTFLOW for the R7.5 usage window (saida + consumo). */
 const OUTFLOW_TYPES = ["saida", "consumo"] as const;
+
+/** Ω4C PR-08 — the default custody bucket (BASE): both typed refs empty. */
+const BASE_CUSTODY: StockCustody = { custodyType: "base" };
 
 export class PrismaInventoryRepository implements InventoryRepository {
   constructor(private readonly client: PrismaExecutor) {}
@@ -51,6 +64,11 @@ export class PrismaInventoryRepository implements InventoryRepository {
           lead_time_days: input.leadTimeDays ?? null,
           safety_stock: input.safetyStock ?? null,
           is_active: input.isActive ?? true,
+          is_fuel: input.isFuel ?? false,
+          item_type: input.itemType ?? "product",
+          purchase_price: input.purchasePrice ?? null,
+          sale_price: input.salePrice ?? null,
+          description: input.description ?? null,
           created_by: input.createdBy ?? null,
           updated_by: input.updatedBy ?? null,
         },
@@ -156,6 +174,11 @@ export class PrismaInventoryRepository implements InventoryRepository {
           lead_time_days: nullable(input.leadTimeDays),
           safety_stock: nullable(input.safetyStock),
           is_active: input.isActive,
+          is_fuel: input.isFuel,
+          item_type: input.itemType,
+          purchase_price: input.purchasePrice,
+          sale_price: input.salePrice,
+          description: input.description,
           updated_by: nullable(input.updatedBy),
         }),
       });
@@ -181,14 +204,19 @@ export class PrismaInventoryRepository implements InventoryRepository {
     const item = await this.findItemById(input.tenantId, input.itemId);
     if (!item) return undefined;
 
-    const saldoBefore = await this.saldoOf(input.tenantId, input.itemId);
+    const custody = input.custody ?? BASE_CUSTODY;
 
-    if (wouldOverdraw(saldoBefore, input.quantidadeSinalizada)) {
-      throw insufficientBalanceError(saldoBefore);
+    // Ω4C PR-08 — the non-negative guard runs against THIS custody's balance (stricter than the legacy global
+    // guard). Runs inside the RLS `$transaction`; the aggregate sees the transaction's own writes.
+    const custodySaldoBefore = await this.saldoOfCustody(input.tenantId, input.itemId, custody);
+
+    if (wouldOverdraw(custodySaldoBefore, input.quantidadeSinalizada)) {
+      throw insufficientBalanceError(custodySaldoBefore);
     }
 
     if (input.type === "entrada" && input.unitCost !== undefined) {
-      const avgCost = computeMovingAverage(saldoBefore, item.avgCost, input.quantidadeSinalizada, input.unitCost);
+      const globalSaldoBefore = await this.saldoOf(input.tenantId, input.itemId);
+      const avgCost = computeMovingAverage(globalSaldoBefore, item.avgCost, input.quantidadeSinalizada, input.unitCost);
 
       await this.client.inventoryItem.updateMany({
         where: {
@@ -202,6 +230,128 @@ export class PrismaInventoryRepository implements InventoryRepository {
       });
     }
 
+    return this.insertMovement({ ...input, custody });
+  }
+
+  async createTransfer(input: CreateTransferInput): Promise<StockTransferResult | undefined> {
+    const item = await this.findItemById(input.tenantId, input.itemId);
+    if (!item) return undefined;
+
+    const origin = input.type === "link" ? BASE_CUSTODY : input.custody;
+    const destination = input.type === "link" ? input.custody : BASE_CUSTODY;
+    const quantity = roundToDecimalPrecision(Math.abs(input.quantity));
+
+    const originSaldo = await this.saldoOfCustody(input.tenantId, input.itemId, origin);
+    if (wouldOverdraw(originSaldo, -quantity)) {
+      throw insufficientBalanceError(originSaldo);
+    }
+
+    const transferGroupId = randomUUID();
+    const from = await this.insertMovement({
+      tenantId: input.tenantId,
+      itemId: input.itemId,
+      type: input.type,
+      quantidadeSinalizada: -quantity,
+      reason: input.reason,
+      custody: origin,
+      transferGroupId,
+      createdBy: input.createdBy,
+    });
+    const to = await this.insertMovement({
+      tenantId: input.tenantId,
+      itemId: input.itemId,
+      type: input.type,
+      quantidadeSinalizada: quantity,
+      reason: input.reason,
+      custody: destination,
+      transferGroupId,
+      createdBy: input.createdBy,
+    });
+
+    return { from, to };
+  }
+
+  async reverseMovement(input: ReverseStockMovementInput): Promise<ReverseStockMovementResult> {
+    const original = await this.findMovementById(input.tenantId, input.movementId);
+    if (!original) return { status: "not_found" };
+
+    const siblings = original.transferGroupId
+      ? await this.movementsInGroup(input.tenantId, original.transferGroupId)
+      : [original];
+    const siblingIds = siblings.map((movement) => movement.id);
+
+    if (await this.hasReversalOf(input.tenantId, siblingIds)) {
+      return { status: "already_reversed" };
+    }
+
+    // Credits (positive legs) before debits (negative legs): a legitimate reversal never trips the per-custody
+    // guard on ordering; a genuine overdraw (stock already left the custody) still raises 409.
+    const legs = [...siblings].sort((left, right) => right.quantidadeSinalizada - left.quantidadeSinalizada);
+    const transferGroupId = legs.length > 1 ? randomUUID() : undefined;
+    const movements: StockMovement[] = [];
+
+    for (const leg of legs) {
+      const signed = roundToDecimalPrecision(-leg.quantidadeSinalizada);
+      const custody: StockCustody = {
+        custodyType: leg.custodyType,
+        custodyOperatorProfileId: leg.custodyOperatorProfileId,
+        custodyVehicleId: leg.custodyVehicleId,
+      };
+      const custodySaldoBefore = await this.saldoOfCustody(input.tenantId, leg.itemId, custody);
+      if (wouldOverdraw(custodySaldoBefore, signed)) {
+        throw insufficientBalanceError(custodySaldoBefore);
+      }
+
+      movements.push(
+        await this.insertMovement({
+          tenantId: input.tenantId,
+          itemId: leg.itemId,
+          type: leg.type,
+          quantidadeSinalizada: signed,
+          reason: input.reason,
+          custody,
+          transferGroupId,
+          reversesMovementId: leg.id,
+          createdBy: input.createdBy,
+        }),
+      );
+    }
+
+    return { status: "ok", movements };
+  }
+
+  async getCustodySummary(tenantId: string, itemId: string): Promise<CustodySummaryRaw> {
+    const grouped = await this.client.stockMovement.groupBy({
+      by: ["custody_type", "custody_operator_profile_id", "custody_vehicle_id"],
+      where: { tenant_id: tenantId, item_id: itemId },
+      _sum: { quantidade_sinalizada: true },
+    });
+
+    let baseQty = 0;
+    const professionals: { operatorProfileId: string; qty: number }[] = [];
+    const vehicles: { vehicleId: string; qty: number }[] = [];
+
+    for (const row of grouped) {
+      const qty = roundToDecimalPrecision(decimalToNumber(row._sum.quantidade_sinalizada));
+      if (row.custody_type === "professional" && row.custody_operator_profile_id) {
+        if (qty !== 0) professionals.push({ operatorProfileId: row.custody_operator_profile_id, qty });
+      } else if (row.custody_type === "vehicle" && row.custody_vehicle_id) {
+        if (qty !== 0) vehicles.push({ vehicleId: row.custody_vehicle_id, qty });
+      } else {
+        baseQty += qty;
+      }
+    }
+
+    return { baseQty: roundToDecimalPrecision(baseQty), professionals, vehicles };
+  }
+
+  private async insertMovement(
+    input: CreateStockMovementInput & {
+      readonly custody: StockCustody;
+      readonly transferGroupId?: string;
+      readonly reversesMovementId?: string;
+    },
+  ): Promise<StockMovement> {
     const movement = await this.client.stockMovement.create({
       data: {
         tenant_id: input.tenantId,
@@ -213,11 +363,49 @@ export class PrismaInventoryRepository implements InventoryRepository {
         vehicle_id: input.vehicleId ?? null,
         reason: input.reason ?? null,
         cycle_count_id: input.cycleCountId ?? null,
+        custody_type: input.custody.custodyType,
+        custody_operator_profile_id: input.custody.custodyOperatorProfileId ?? null,
+        custody_vehicle_id: input.custody.custodyVehicleId ?? null,
+        transfer_group_id: input.transferGroupId ?? null,
+        reverses_movement_id: input.reversesMovementId ?? null,
         created_by: input.createdBy ?? null,
       },
     });
 
     return mapMovementRecord(movement);
+  }
+
+  private async movementsInGroup(tenantId: string, transferGroupId: string): Promise<StockMovement[]> {
+    const rows = await this.client.stockMovement.findMany({
+      where: { tenant_id: tenantId, transfer_group_id: transferGroupId },
+    });
+
+    return rows.map(mapMovementRecord);
+  }
+
+  private async hasReversalOf(tenantId: string, movementIds: readonly string[]): Promise<boolean> {
+    if (movementIds.length === 0) return false;
+
+    const count = await this.client.stockMovement.count({
+      where: { tenant_id: tenantId, reverses_movement_id: { in: [...movementIds] } },
+    });
+
+    return count > 0;
+  }
+
+  private async saldoOfCustody(tenantId: string, itemId: string, custody: StockCustody): Promise<number> {
+    const aggregate = await this.client.stockMovement.aggregate({
+      where: {
+        tenant_id: tenantId,
+        item_id: itemId,
+        custody_type: custody.custodyType,
+        custody_operator_profile_id: custody.custodyOperatorProfileId ?? null,
+        custody_vehicle_id: custody.custodyVehicleId ?? null,
+      },
+      _sum: { quantidade_sinalizada: true },
+    });
+
+    return roundToDecimalPrecision(decimalToNumber(aggregate._sum.quantidade_sinalizada));
   }
 
   async listMovements(input: ListStockMovementsInput): Promise<ListStockMovementsResult> {
@@ -422,6 +610,20 @@ export class RlsPrismaInventoryRepository implements InventoryRepository {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).createMovement(input));
   }
 
+  /** Ω4C PR-08 — the transfer pair is written in ONE `$transaction` (guard + two inserts commit or roll back together). */
+  createTransfer(input: CreateTransferInput): Promise<StockTransferResult | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).createTransfer(input));
+  }
+
+  /** Ω4C PR-08 — the compensating movement(s) are written in ONE `$transaction`. */
+  reverseMovement(input: ReverseStockMovementInput): Promise<ReverseStockMovementResult> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).reverseMovement(input));
+  }
+
+  getCustodySummary(tenantId: string, itemId: string): Promise<CustodySummaryRaw> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaInventoryRepository(tx).getCustodySummary(tenantId, itemId));
+  }
+
   listMovements(input: ListStockMovementsInput): Promise<ListStockMovementsResult> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).listMovements(input));
   }
@@ -498,6 +700,11 @@ function mapItemRecord(record: {
   readonly lead_time_days: number | null;
   readonly safety_stock: unknown;
   readonly is_active: boolean;
+  readonly is_fuel: boolean;
+  readonly item_type: string;
+  readonly purchase_price: unknown;
+  readonly sale_price: unknown;
+  readonly description: string | null;
   readonly created_by: string | null;
   readonly updated_by: string | null;
   readonly created_at: Date;
@@ -516,6 +723,11 @@ function mapItemRecord(record: {
     leadTimeDays: record.lead_time_days ?? undefined,
     safetyStock: optionalDecimal(record.safety_stock),
     isActive: record.is_active,
+    isFuel: record.is_fuel,
+    itemType: (record.item_type as InventoryItemType | null) ?? "product",
+    purchasePrice: optionalDecimal(record.purchase_price),
+    salePrice: optionalDecimal(record.sale_price),
+    description: record.description ?? undefined,
     createdBy: record.created_by ?? undefined,
     updatedBy: record.updated_by ?? undefined,
     createdAt: record.created_at,
@@ -534,6 +746,11 @@ function mapMovementRecord(record: {
   readonly vehicle_id: string | null;
   readonly reason: string | null;
   readonly cycle_count_id: string | null;
+  readonly custody_type: string;
+  readonly custody_operator_profile_id: string | null;
+  readonly custody_vehicle_id: string | null;
+  readonly transfer_group_id: string | null;
+  readonly reverses_movement_id: string | null;
   readonly created_by: string | null;
   readonly created_at: Date;
 }): StockMovement {
@@ -548,6 +765,11 @@ function mapMovementRecord(record: {
     vehicleId: record.vehicle_id ?? undefined,
     reason: record.reason ?? undefined,
     cycleCountId: record.cycle_count_id ?? undefined,
+    custodyType: (record.custody_type as StockCustodyType | null) ?? "base",
+    custodyOperatorProfileId: record.custody_operator_profile_id ?? undefined,
+    custodyVehicleId: record.custody_vehicle_id ?? undefined,
+    transferGroupId: record.transfer_group_id ?? undefined,
+    reversesMovementId: record.reverses_movement_id ?? undefined,
     createdBy: record.created_by ?? undefined,
     createdAt: record.created_at,
   };

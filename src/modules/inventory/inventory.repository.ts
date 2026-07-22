@@ -14,6 +14,8 @@ import {
   type AbcClassAssignment,
   type CreateInventoryItemInput,
   type CreateStockMovementInput,
+  type CreateTransferInput,
+  type CustodySummaryRaw,
   type InventoryItem,
   type InventoryItemView,
   type InventoryItemWithSaldo,
@@ -22,7 +24,11 @@ import {
   type ListInventoryItemsResult,
   type ListStockMovementsInput,
   type ListStockMovementsResult,
+  type ReverseStockMovementInput,
+  type ReverseStockMovementResult,
+  type StockCustody,
   type StockMovement,
+  type StockTransferResult,
   type UpdateInventoryItemInput,
 } from "./inventory.types.js";
 
@@ -30,6 +36,18 @@ const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /** Movement types that count as OUTFLOW for the R7.5 usage window (saida + consumo). */
 const OUTFLOW_TYPES = new Set(["saida", "consumo"]);
+
+/** Ω4C PR-08 — the default custody bucket (BASE): both typed refs empty. */
+const BASE_CUSTODY: StockCustody = { custodyType: "base" };
+
+/** Ω4C PR-08 — a movement belongs to `custody` when type + both typed refs match exactly (null-normalized). */
+function custodyMatches(movement: StockMovement, custody: StockCustody): boolean {
+  return (
+    movement.custodyType === custody.custodyType &&
+    (movement.custodyOperatorProfileId ?? undefined) === (custody.custodyOperatorProfileId ?? undefined) &&
+    (movement.custodyVehicleId ?? undefined) === (custody.custodyVehicleId ?? undefined)
+  );
+}
 
 export interface InventoryRepository {
   createItem(input: CreateInventoryItemInput): Promise<InventoryItem>;
@@ -44,6 +62,18 @@ export interface InventoryRepository {
    * atomically. Returns `undefined` when the item is missing in-tenant.
    */
   createMovement(input: CreateStockMovementInput): Promise<StockMovement | undefined>;
+  /**
+   * Ω4C PR-08 — a BASE↔custody transfer (LINK/UNLINK). Writes the sibling pair atomically with the
+   * per-custody non-negative guard on the ORIGIN. Returns `undefined` when the item is missing in-tenant.
+   */
+  createTransfer(input: CreateTransferInput): Promise<StockTransferResult | undefined>;
+  /**
+   * Ω4C PR-08 — post the compensating movement(s) for a movement (or its whole transfer group). The original
+   * stays intact (imutabilidade); a second reverse is rejected (`already_reversed`).
+   */
+  reverseMovement(input: ReverseStockMovementInput): Promise<ReverseStockMovementResult>;
+  /** Ω4C PR-08 — per-custody aggregation (baseQty + professionals/vehicles), derived from the ledger. */
+  getCustodySummary(tenantId: string, itemId: string): Promise<CustodySummaryRaw>;
   listMovements(input: ListStockMovementsInput): Promise<ListStockMovementsResult>;
   findMovementById(tenantId: string, movementId: string): Promise<StockMovement | undefined>;
   /** R7.4 — consumption value (Σ |qty| × cost) over the ABC window, per ACTIVE item. */
@@ -73,6 +103,8 @@ export class InMemoryInventoryRepository implements InventoryRepository {
       abcClass: undefined,
       avgCost: 0,
       isActive: input.isActive ?? true,
+      isFuel: input.isFuel ?? false,
+      itemType: input.itemType ?? "product",
       createdAt: now,
       updatedAt: now,
     };
@@ -137,21 +169,152 @@ export class InMemoryInventoryRepository implements InventoryRepository {
     const item = await this.findItemById(input.tenantId, input.itemId);
     if (!item) return undefined;
 
-    // R7.1 — saldo derived from the ledger BEFORE inserting; a negative movement
-    // that would overdraw is rejected (409) and nothing is written. The in-memory
-    // check-then-write runs synchronously, mirroring the Prisma transaction.
-    const saldoBefore = this.saldoOf(input.tenantId, input.itemId);
+    const custody = input.custody ?? BASE_CUSTODY;
 
-    if (wouldOverdraw(saldoBefore, input.quantidadeSinalizada)) {
-      throw insufficientBalanceError(saldoBefore);
+    // R7.1 + Ω4C PR-08 — the non-negative guard runs against THIS custody's balance (stricter than the
+    // legacy global guard: custody base ⊆ global). A negative movement that would overdraw the custody is
+    // rejected (409) and nothing is written. The synchronous check-then-write mirrors the Prisma transaction.
+    const custodySaldoBefore = this.saldoOfCustody(input.tenantId, input.itemId, custody);
+
+    if (wouldOverdraw(custodySaldoBefore, input.quantidadeSinalizada)) {
+      throw insufficientBalanceError(custodySaldoBefore);
     }
 
-    // R7.3 — moving average recalculated on `entrada`, atomically with the insert.
+    // R7.3 — moving average recalculated on `entrada`, atomically with the insert. Uses the GLOBAL on-hand
+    // (avg cost is an item-wide attribute); entrada always lands in BASE (D-Ω4C-INV-MOVEMENT-TYPES).
     if (input.type === "entrada" && input.unitCost !== undefined) {
-      const avgCost = computeMovingAverage(saldoBefore, item.avgCost, input.quantidadeSinalizada, input.unitCost);
+      const globalSaldoBefore = this.saldoOf(input.tenantId, input.itemId);
+      const avgCost = computeMovingAverage(globalSaldoBefore, item.avgCost, input.quantidadeSinalizada, input.unitCost);
       this.items.set(item.id, { ...item, avgCost, updatedBy: input.createdBy ?? item.updatedBy, updatedAt: new Date() });
     }
 
+    return this.insertMovement({ ...input, custody });
+  }
+
+  async createTransfer(input: CreateTransferInput): Promise<StockTransferResult | undefined> {
+    const item = await this.findItemById(input.tenantId, input.itemId);
+    if (!item) return undefined;
+
+    // Ω4C PR-08 — LINK = BASE→custody; UNLINK = custody→BASE. The pair nets to zero globally; guard the ORIGIN.
+    const origin = input.type === "link" ? BASE_CUSTODY : input.custody;
+    const destination = input.type === "link" ? input.custody : BASE_CUSTODY;
+    const quantity = roundToDecimalPrecision(Math.abs(input.quantity));
+
+    const originSaldo = this.saldoOfCustody(input.tenantId, input.itemId, origin);
+    if (wouldOverdraw(originSaldo, -quantity)) {
+      throw insufficientBalanceError(originSaldo);
+    }
+
+    const transferGroupId = randomUUID();
+    const from = this.insertMovement({
+      tenantId: input.tenantId,
+      itemId: input.itemId,
+      type: input.type,
+      quantidadeSinalizada: -quantity,
+      reason: input.reason,
+      custody: origin,
+      transferGroupId,
+      createdBy: input.createdBy,
+    });
+    const to = this.insertMovement({
+      tenantId: input.tenantId,
+      itemId: input.itemId,
+      type: input.type,
+      quantidadeSinalizada: quantity,
+      reason: input.reason,
+      custody: destination,
+      transferGroupId,
+      createdBy: input.createdBy,
+    });
+
+    return { from, to };
+  }
+
+  async reverseMovement(input: ReverseStockMovementInput): Promise<ReverseStockMovementResult> {
+    const original = await this.findMovementById(input.tenantId, input.movementId);
+    if (!original) return { status: "not_found" };
+
+    const siblings = original.transferGroupId
+      ? this.movementsInGroup(input.tenantId, original.transferGroupId)
+      : [original];
+    const siblingIds = new Set(siblings.map((movement) => movement.id));
+
+    if (this.hasReversalOf(input.tenantId, siblingIds)) {
+      return { status: "already_reversed" };
+    }
+
+    // Insert credits (positive legs) before debits (negative legs) so a legitimate reversal never trips the
+    // per-custody guard on ordering. A genuine overdraw (stock already left the custody) still raises 409.
+    const legs = [...siblings].sort((left, right) => right.quantidadeSinalizada - left.quantidadeSinalizada);
+    const transferGroupId = legs.length > 1 ? randomUUID() : undefined;
+    const movements: StockMovement[] = [];
+
+    for (const leg of legs) {
+      const signed = roundToDecimalPrecision(-leg.quantidadeSinalizada);
+      const custody: StockCustody = {
+        custodyType: leg.custodyType,
+        custodyOperatorProfileId: leg.custodyOperatorProfileId,
+        custodyVehicleId: leg.custodyVehicleId,
+      };
+      const custodySaldoBefore = this.saldoOfCustody(input.tenantId, leg.itemId, custody);
+      if (wouldOverdraw(custodySaldoBefore, signed)) {
+        throw insufficientBalanceError(custodySaldoBefore);
+      }
+
+      movements.push(
+        this.insertMovement({
+          tenantId: input.tenantId,
+          itemId: leg.itemId,
+          type: leg.type,
+          quantidadeSinalizada: signed,
+          reason: input.reason,
+          custody,
+          transferGroupId,
+          reversesMovementId: leg.id,
+          createdBy: input.createdBy,
+        }),
+      );
+    }
+
+    return { status: "ok", movements };
+  }
+
+  async getCustodySummary(tenantId: string, itemId: string): Promise<CustodySummaryRaw> {
+    const rows = [...this.movements.values()].filter(
+      (movement) => movement.tenantId === tenantId && movement.itemId === itemId,
+    );
+
+    let baseQty = 0;
+    const professionalById = new Map<string, number>();
+    const vehicleById = new Map<string, number>();
+
+    for (const movement of rows) {
+      if (movement.custodyType === "professional" && movement.custodyOperatorProfileId) {
+        professionalById.set(
+          movement.custodyOperatorProfileId,
+          (professionalById.get(movement.custodyOperatorProfileId) ?? 0) + movement.quantidadeSinalizada,
+        );
+      } else if (movement.custodyType === "vehicle" && movement.custodyVehicleId) {
+        vehicleById.set(movement.custodyVehicleId, (vehicleById.get(movement.custodyVehicleId) ?? 0) + movement.quantidadeSinalizada);
+      } else {
+        baseQty += movement.quantidadeSinalizada;
+      }
+    }
+
+    return {
+      baseQty: roundToDecimalPrecision(baseQty),
+      professionals: [...professionalById.entries()]
+        .map(([operatorProfileId, qty]) => ({ operatorProfileId, qty: roundToDecimalPrecision(qty) }))
+        .filter((entry) => entry.qty !== 0),
+      vehicles: [...vehicleById.entries()]
+        .map(([vehicleId, qty]) => ({ vehicleId, qty: roundToDecimalPrecision(qty) }))
+        .filter((entry) => entry.qty !== 0),
+    };
+  }
+
+  private insertMovement(
+    input: CreateStockMovementInput & { readonly custody: StockCustody; readonly transferGroupId?: string; readonly reversesMovementId?: string },
+  ): StockMovement {
     const movement: StockMovement = {
       id: randomUUID(),
       tenantId: input.tenantId,
@@ -163,6 +326,11 @@ export class InMemoryInventoryRepository implements InventoryRepository {
       vehicleId: input.vehicleId,
       reason: input.reason,
       cycleCountId: input.cycleCountId,
+      custodyType: input.custody.custodyType,
+      custodyOperatorProfileId: input.custody.custodyOperatorProfileId,
+      custodyVehicleId: input.custody.custodyVehicleId,
+      transferGroupId: input.transferGroupId,
+      reversesMovementId: input.reversesMovementId,
       createdBy: input.createdBy,
       createdAt: new Date(),
     };
@@ -172,6 +340,32 @@ export class InMemoryInventoryRepository implements InventoryRepository {
     this.movementOrder.set(movement.id, this.movementSequence);
 
     return movement;
+  }
+
+  private movementsInGroup(tenantId: string, transferGroupId: string): StockMovement[] {
+    return [...this.movements.values()].filter(
+      (movement) => movement.tenantId === tenantId && movement.transferGroupId === transferGroupId,
+    );
+  }
+
+  private hasReversalOf(tenantId: string, movementIds: ReadonlySet<string>): boolean {
+    return [...this.movements.values()].some(
+      (movement) =>
+        movement.tenantId === tenantId &&
+        movement.reversesMovementId !== undefined &&
+        movementIds.has(movement.reversesMovementId),
+    );
+  }
+
+  private saldoOfCustody(tenantId: string, itemId: string, custody: StockCustody): number {
+    return sumSignedQuantities(
+      [...this.movements.values()]
+        .filter(
+          (movement) =>
+            movement.tenantId === tenantId && movement.itemId === itemId && custodyMatches(movement, custody),
+        )
+        .map((movement) => movement.quantidadeSinalizada),
+    );
   }
 
   async listMovements(input: ListStockMovementsInput): Promise<ListStockMovementsResult> {

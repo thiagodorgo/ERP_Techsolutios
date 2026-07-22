@@ -1,13 +1,20 @@
 import { env } from "../../config/env.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
+import { createDefaultOperatorProfileService } from "../operator-profiles/operator-profile.service.js";
 import { createDefaultVehicleService } from "../vehicles/vehicle.service.js";
 import { createDefaultWorkOrderService } from "../work-orders/work-order.service.js";
 import { classifyAbc, summarizeAbc, type AbcSummary } from "./inventory.abc.js";
-import { deriveReorder, signQuantity } from "./inventory.calculations.js";
+import { deriveReorder, roundToDecimalPrecision, signQuantity } from "./inventory.calculations.js";
 import { InMemoryInventoryRepository, type InventoryRepository } from "./inventory.repository.js";
 import {
+  invalidCustodyError,
+  invalidCustodyReferenceError,
   InventoryError,
+  movementAlreadyReversedError,
   type AbcClassAssignment,
+  type CreateMovementOutcome,
+  type CustodyReferenceInfo,
+  type CustodySummary,
   type InventoryActorContext,
   type InventoryItem,
   type InventoryItemView,
@@ -15,6 +22,7 @@ import {
   type ListInventoryItemsResult,
   type ListStockMovementsInput,
   type ListStockMovementsResult,
+  type StockCustody,
   type StockMovement,
   type UpdateInventoryItemInput,
 } from "./inventory.types.js";
@@ -34,10 +42,15 @@ import {
   parseName,
   parseNonNegativeNumber,
   parseOffset,
+  parseOptionalCustodyType,
   parseOptionalDate,
+  parseOptionalDescription,
+  parseOptionalExitReason,
+  parseOptionalItemType,
   parseOptionalLeadTimeDays,
   parseOptionalMovementType,
   parseOptionalName,
+  parseOptionalPrice,
   parseOptionalReason,
   parseOptionalSearch,
   parseOptionalSku,
@@ -63,6 +76,13 @@ type RawRecord = Record<string, unknown>;
 export type InventoryReferenceResolvers = {
   readonly resolveWorkOrder?: (actor: InventoryActorContext, id: string) => Promise<boolean>;
   readonly resolveVehicle?: (actor: InventoryActorContext, id: string) => Promise<boolean>;
+  /**
+   * Ω4C PR-08 — resolve the CUSTODY operator-profile / vehicle in-tenant. `undefined` = cross-tenant/missing
+   * (→ 400 invalid_custody_reference); otherwise the LABEL (professional name / vehicle plate — NEVER CNH),
+   * reused by the custody-summary. The composite FK RESTRICT is the DB backstop (23503).
+   */
+  readonly resolveCustodyOperatorProfile?: (actor: InventoryActorContext, id: string) => Promise<CustodyReferenceInfo | undefined>;
+  readonly resolveCustodyVehicle?: (actor: InventoryActorContext, id: string) => Promise<CustodyReferenceInfo | undefined>;
 };
 
 export class InventoryService {
@@ -99,6 +119,12 @@ export class InventoryService {
       leadTimeDays: parseOptionalLeadTimeDays(body.lead_time_days ?? body.leadTimeDays),
       safetyStock: parseNonNegativeNumber(body.safety_stock ?? body.safetyStock, "safetyStock"),
       isActive: readOptionalBoolean(body.is_active ?? body.isActive) ?? true,
+      // Ω4C PR-08 — AutEM item fields (aditivos). "Cadastrar não cria saldo" continua invariante (saldo só via ENTRY).
+      isFuel: readOptionalBoolean(body.is_fuel ?? body.isFuel, "isFuel") ?? false,
+      itemType: parseOptionalItemType(body.item_type ?? body.itemType) ?? "product",
+      purchasePrice: parseOptionalPrice(body.purchase_price ?? body.purchasePrice, "purchasePrice"),
+      salePrice: parseOptionalPrice(body.sale_price ?? body.salePrice, "salePrice"),
+      description: parseOptionalDescription(body.description),
       createdBy: actor.userId,
       updatedBy: actor.userId,
     });
@@ -157,6 +183,12 @@ export class InventoryService {
       leadTimeDays: parseOptionalLeadTimeDays(body.lead_time_days ?? body.leadTimeDays),
       safetyStock: parseNonNegativeNumber(body.safety_stock ?? body.safetyStock, "safetyStock"),
       isActive: readOptionalBoolean(body.is_active ?? body.isActive),
+      // Ω4C PR-08 — AutEM item fields. Inativar (is_active=false) preserva o histórico do ledger (sem hard delete).
+      isFuel: readOptionalBoolean(body.is_fuel ?? body.isFuel, "isFuel"),
+      itemType: parseOptionalItemType(body.item_type ?? body.itemType),
+      purchasePrice: parseOptionalPrice(body.purchase_price ?? body.purchasePrice, "purchasePrice"),
+      salePrice: parseOptionalPrice(body.sale_price ?? body.salePrice, "salePrice"),
+      description: parseOptionalDescription(body.description),
       updatedBy: actor.userId,
     };
     const updated = await this.repository.updateItem(input);
@@ -185,13 +217,20 @@ export class InventoryService {
   }
 
   /**
-   * The movement flow. Domain rules validated here (R7.2), then the repository
-   * runs the TRANSACTIONAL part (R7.1 saldo check + R7.3 moving average) so the
-   * ledger insert and the avg_cost update commit or fail together.
+   * The movement flow. Domain rules validated here (R7.2), then the repository runs the TRANSACTIONAL part
+   * (R7.1 per-custody saldo check + R7.3 moving average) so the ledger insert(s) and the avg_cost update commit
+   * or fail together. LINK/UNLINK produce the sibling PAIR (D-Ω4C-INV-MOVEMENT-TYPES); the rest a single row.
    */
-  async createMovement(actor: InventoryActorContext, body: RawRecord): Promise<StockMovement> {
+  async createMovement(actor: InventoryActorContext, body: RawRecord): Promise<CreateMovementOutcome> {
     const itemId = parseRequiredUuid(body.item_id ?? body.itemId, "itemId");
     const type = parseMovementType(body.type);
+
+    if (type === "link" || type === "unlink") {
+      const transfer = await this.createTransferMovement(actor, itemId, type, body);
+
+      return { kind: "transfer", transfer };
+    }
+
     const quantidade = parseQuantidade(body.quantidade ?? body.quantidade_sinalizada ?? body.quantidadeSinalizada, type);
     const unitCost = parseOptionalUnitCost(body.unit_cost ?? body.unitCost);
     const workOrderId = parseOptionalUuid(body.work_order_id ?? body.workOrderId, "workOrderId");
@@ -228,6 +267,21 @@ export class InventoryService {
       );
     }
 
+    // Ω4C PR-08 — custody of the single-row movement. `entrada` is ALWAYS BASE (D-Ω4C-INV-MOVEMENT-TYPES);
+    // saida/consumo/ajuste accept the chosen custody (default BASE). The non-negative guard runs on THIS custody.
+    let custody: StockCustody;
+    let finalReason = reason;
+    if (type === "entrada") {
+      custody = { custodyType: "base" };
+    } else {
+      custody = await this.resolveCustody(actor, body);
+      if (type === "saida") {
+        // "Tipo de Saída" (allowlist v1). No dedicated column this slice → persisted into the free-text `reason`.
+        const exitReason = parseOptionalExitReason(body.exit_reason ?? body.exitReason);
+        finalReason = reason ?? exitReason;
+      }
+    }
+
     if (workOrderId !== undefined) {
       await this.assertWorkOrderReference(actor, workOrderId);
     }
@@ -244,20 +298,167 @@ export class InventoryService {
       unitCost,
       workOrderId,
       vehicleId,
-      reason,
+      reason: finalReason,
+      custody,
       createdBy: actor.userId,
     });
 
     if (!movement) {
-      throw new InventoryError(
-        400,
-        "STOCK_INVALID",
-        "invalid_item_reference",
-        "itemId does not reference an inventory item in this organization.",
+      throw invalidItemReferenceError();
+    }
+
+    return { kind: "single", movement };
+  }
+
+  /**
+   * Ω4C PR-08 — LINK (BASE→custody) / UNLINK (custody→BASE). The custody must be a NON-BASE bucket; the
+   * repository writes the sibling pair atomically and guards the ORIGIN balance (409 insufficient_balance).
+   */
+  private async createTransferMovement(
+    actor: InventoryActorContext,
+    itemId: string,
+    type: "link" | "unlink",
+    body: RawRecord,
+  ): Promise<{ readonly from: StockMovement; readonly to: StockMovement }> {
+    const quantity = parseQuantidade(body.quantidade ?? body.quantidade_sinalizada ?? body.quantidadeSinalizada, type);
+    const reason = parseOptionalReason(body.reason);
+    const custody = await this.resolveCustody(actor, body);
+
+    if (custody.custodyType === "base") {
+      throw invalidCustodyError(
+        "Uma transferência (vincular/desvincular) exige uma custódia PROFISSIONAL ou VIATURA (não a BASE).",
       );
     }
 
-    return movement;
+    const transfer = await this.repository.createTransfer({
+      tenantId: actor.tenantId,
+      itemId,
+      type,
+      quantity,
+      custody,
+      reason,
+      createdBy: actor.userId,
+    });
+
+    if (!transfer) {
+      throw invalidItemReferenceError();
+    }
+
+    return transfer;
+  }
+
+  /**
+   * Ω4C PR-08 (D-Ω4C-INV-LEDGER-IMMUTABLE) — estorno por movimento COMPENSATÓRIO. The original stays intact;
+   * a compensating movement (opposite sign, same custody) is posted. 404 when missing; 409 when already reversed.
+   */
+  async reverseMovement(actor: InventoryActorContext, movementId: string, body: RawRecord): Promise<readonly StockMovement[]> {
+    const reason = parseOptionalReason(body.reason);
+    const result = await this.repository.reverseMovement({
+      tenantId: actor.tenantId,
+      movementId: parseRequiredUuid(movementId, "movementId"),
+      reason,
+      createdBy: actor.userId,
+    });
+
+    if (result.status === "not_found") {
+      throw new InventoryError(404, "STOCK_MOVEMENT_NOT_FOUND", "not_found", "Stock movement was not found.");
+    }
+    if (result.status === "already_reversed") {
+      throw movementAlreadyReversedError();
+    }
+
+    return result.movements;
+  }
+
+  /**
+   * Ω4C PR-08 (D-Ω4C-INV-CUSTODY-SUMMARY) — per-custody quantities + labelled professionals/vehicles. Item is
+   * validated in-tenant (404 cross-tenant); labels are the professional name / vehicle plate (NEVER CNH).
+   */
+  async custodySummary(actor: InventoryActorContext, itemId: string): Promise<CustodySummary> {
+    const item = await this.getItem(actor, itemId);
+    const raw = await this.repository.getCustodySummary(actor.tenantId, item.id);
+
+    const professionals = await Promise.all(
+      raw.professionals.map(async (entry) => ({
+        operatorProfileId: entry.operatorProfileId,
+        name: (await this.resolveCustodyOperatorProfileInfo(actor, entry.operatorProfileId))?.label ?? null,
+        qty: entry.qty,
+      })),
+    );
+    const vehicles = await Promise.all(
+      raw.vehicles.map(async (entry) => ({
+        vehicleId: entry.vehicleId,
+        plate: (await this.resolveCustodyVehicleInfo(actor, entry.vehicleId))?.label ?? null,
+        qty: entry.qty,
+      })),
+    );
+
+    const professionalTotalQty = roundToDecimalPrecision(professionals.reduce((sum, entry) => sum + entry.qty, 0));
+    const vehicleTotalQty = roundToDecimalPrecision(vehicles.reduce((sum, entry) => sum + entry.qty, 0));
+
+    return {
+      baseQty: raw.baseQty,
+      professionalTotalQty,
+      vehicleTotalQty,
+      total: roundToDecimalPrecision(raw.baseQty + professionalTotalQty + vehicleTotalQty),
+      professionals,
+      vehicles,
+    };
+  }
+
+  /**
+   * Ω4C PR-08 — resolve + validate the custody triple from the body. App-rule (SEM CHECK, → 422 invalid_custody):
+   * base → both refs empty; professional → operator profile set; vehicle → vehicle set. Dupla-camada de posse:
+   * the resolver (→ 400 invalid_custody_reference cross-tenant) + the composite FK RESTRICT (23503) as backstop.
+   */
+  private async resolveCustody(actor: InventoryActorContext, body: RawRecord): Promise<StockCustody> {
+    const custodyType = parseOptionalCustodyType(body.custody_type ?? body.custodyType) ?? "base";
+    const operatorProfileId = parseOptionalUuid(body.custody_operator_profile_id ?? body.custodyOperatorProfileId, "custodyOperatorProfileId");
+    const vehicleId = parseOptionalUuid(body.custody_vehicle_id ?? body.custodyVehicleId, "custodyVehicleId");
+
+    if (custodyType === "base") {
+      if (operatorProfileId !== undefined || vehicleId !== undefined) {
+        throw invalidCustodyError("Custódia BASE não aceita profissional nem viatura.");
+      }
+
+      return { custodyType: "base" };
+    }
+
+    if (custodyType === "professional") {
+      if (operatorProfileId === undefined || vehicleId !== undefined) {
+        throw invalidCustodyError("Custódia PROFISSIONAL exige custodyOperatorProfileId (e nenhuma viatura).");
+      }
+      if (!(await this.resolveCustodyOperatorProfileInfo(actor, operatorProfileId))) {
+        throw invalidCustodyReferenceError("custodyOperatorProfileId não referencia um profissional desta organização.");
+      }
+
+      return { custodyType: "professional", custodyOperatorProfileId: operatorProfileId };
+    }
+
+    // custodyType === "vehicle"
+    if (vehicleId === undefined || operatorProfileId !== undefined) {
+      throw invalidCustodyError("Custódia VIATURA exige custodyVehicleId (e nenhum profissional).");
+    }
+    if (!(await this.resolveCustodyVehicleInfo(actor, vehicleId))) {
+      throw invalidCustodyReferenceError("custodyVehicleId não referencia uma viatura desta organização.");
+    }
+
+    return { custodyType: "vehicle", custodyVehicleId: vehicleId };
+  }
+
+  private async resolveCustodyOperatorProfileInfo(
+    actor: InventoryActorContext,
+    id: string,
+  ): Promise<CustodyReferenceInfo | undefined> {
+    const resolver = this.references.resolveCustodyOperatorProfile;
+
+    return resolver ? resolver(actor, id) : undefined;
+  }
+
+  private async resolveCustodyVehicleInfo(actor: InventoryActorContext, id: string): Promise<CustodyReferenceInfo | undefined> {
+    const resolver = this.references.resolveCustodyVehicle;
+
+    return resolver ? resolver(actor, id) : undefined;
   }
 
   async getMovement(actor: InventoryActorContext, movementId: string): Promise<StockMovement> {
@@ -314,6 +515,15 @@ export class InventoryService {
 
 function itemNotFound(): InventoryError {
   return new InventoryError(404, "INVENTORY_ITEM_NOT_FOUND", "not_found", "Inventory item was not found.");
+}
+
+function invalidItemReferenceError(): InventoryError {
+  return new InventoryError(
+    400,
+    "STOCK_INVALID",
+    "invalid_item_reference",
+    "itemId does not reference an inventory item in this organization.",
+  );
 }
 
 const memoryRepository = new InMemoryInventoryRepository();
@@ -391,6 +601,29 @@ function createDefaultReferenceResolvers(): InventoryReferenceResolvers {
         return true;
       } catch {
         return false;
+      }
+    },
+    // Ω4C PR-08 — custody refs resolved tenant-scoped over the operator-profiles / vehicles default services.
+    // A cross-tenant/missing id → undefined → 400 invalid_custody_reference. The LABEL is the professional name
+    // / vehicle plate (NEVER CNH — §2.8/LGPD).
+    resolveCustodyOperatorProfile: async (actor, id) => {
+      try {
+        const service = await createDefaultOperatorProfileService();
+        const profile = await service.get(actor, id);
+
+        return { label: profile.fullName ?? null };
+      } catch {
+        return undefined;
+      }
+    },
+    resolveCustodyVehicle: async (actor, id) => {
+      try {
+        const service = await createDefaultVehicleService();
+        const vehicle = await service.get(actor, id);
+
+        return { label: vehicle.plate };
+      } catch {
+        return undefined;
       }
     },
   };

@@ -1,6 +1,12 @@
 import {
+  INVENTORY_ITEM_TYPES,
   InventoryError,
+  STOCK_CUSTODY_TYPES,
+  STOCK_EXIT_REASONS,
   STOCK_MOVEMENT_TYPES,
+  type InventoryItemType,
+  type StockCustodyType,
+  type StockExitReason,
   type StockMovementType,
 } from "./inventory.types.js";
 
@@ -146,6 +152,79 @@ export function parseQuantidade(value: unknown, type: StockMovementType): number
   }
 
   return parsed;
+}
+
+/** Ω4C PR-08 — custody bucket (enum-app). Defaults to `base` when absent (backward compatible). */
+export function parseOptionalCustodyType(value: unknown): StockCustodyType | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
+
+  if ((STOCK_CUSTODY_TYPES as readonly string[]).includes(normalized)) {
+    return normalized as StockCustodyType;
+  }
+
+  throw new InventoryError(
+    400,
+    "STOCK_INVALID",
+    "invalid_custody_type",
+    `custodyType must be one of: ${STOCK_CUSTODY_TYPES.join(", ")}.`,
+  );
+}
+
+/** Ω4C PR-08 — item kind (enum-app PRODUTO/EQUIPAMENTO). */
+export function parseOptionalItemType(value: unknown): InventoryItemType | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
+
+  if ((INVENTORY_ITEM_TYPES as readonly string[]).includes(normalized)) {
+    return normalized as InventoryItemType;
+  }
+
+  throw new InventoryError(
+    400,
+    "INVENTORY_INVALID",
+    "invalid_item_type",
+    `itemType must be one of: ${INVENTORY_ITEM_TYPES.join(", ")}.`,
+  );
+}
+
+/** Ω4C PR-08 — "Tipo de Saída" allowlist v1 (enum-app, extensível). Only valid on `saida`. */
+export function parseOptionalExitReason(value: unknown): StockExitReason | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
+
+  if ((STOCK_EXIT_REASONS as readonly string[]).includes(normalized)) {
+    return normalized as StockExitReason;
+  }
+
+  throw new InventoryError(
+    400,
+    "STOCK_INVALID",
+    "invalid_exit_reason",
+    `exitReason must be one of: ${STOCK_EXIT_REASONS.join(", ")}.`,
+  );
+}
+
+/** Ω4C PR-08 — Decimal(12,2) money attribute of an item (purchase/sale price). Optional, must be >= 0. */
+export function parseOptionalPrice(value: unknown, field: string): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const parsed = typeof value === "number" ? value : Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    throw new InventoryError(400, "INVENTORY_INVALID", `invalid_${field}`, `${field} must be a number.`);
+  }
+  if (parsed < 0) {
+    throw new InventoryError(400, "INVENTORY_INVALID", `invalid_${field}`, `${field} must be greater than or equal to zero.`);
+  }
+
+  return Math.round(parsed * 100) / 100;
+}
+
+/** Ω4C PR-08 — free-text description of an item (optional; absent/empty leaves the value unchanged). */
+export function parseOptionalDescription(value: unknown): string | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+
+  return assertNonEmptyString(value, "description", 2000);
 }
 
 export function parseOptionalUnitCost(value: unknown): number | undefined {

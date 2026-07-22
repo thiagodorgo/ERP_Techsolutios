@@ -2,23 +2,29 @@ import { isMockMode } from "../../config/env";
 import { apiRequest } from "../../services/api/client";
 import {
   adaptAbcRecalculateResponse,
+  adaptCustodySummaryResponse,
   adaptInventoryItemResponse,
   adaptInventoryItemsResponse,
   adaptStockMovementResponse,
+  adaptStockMovementsListResponse,
   adaptStockMovementsResponse,
 } from "./inventory.adapter";
 import type {
   AbcRecalculateSummary,
+  CustodySummary,
   InventoryApiContext,
   InventoryItem,
   InventoryItemCreatePayload,
   InventoryItemUpdatePayload,
   InventoryItemsData,
   InventoryItemsFilters,
+  StockEntryPayload,
+  StockExitPayload,
   StockMovement,
   StockMovementCreatePayload,
   StockMovementsData,
   StockMovementsFilters,
+  StockTransferPayload,
 } from "./inventory.types";
 
 const EMPTY_PAGINATION = { limit: 20, offset: 0, total: 0 } as const;
@@ -106,6 +112,81 @@ export async function createStockMovement(context: InventoryApiContext, payload:
     body: payload,
   });
   return adaptStockMovementResponse(response);
+}
+
+// Ω4C PR-08 — Resumo por custódia: Qtd. Base/Profissional/Viatura + tabelas (nome/placa, NUNCA CNH).
+export async function getCustodySummary(context: InventoryApiContext, itemId: string): Promise<CustodySummary> {
+  const response = await apiRequest<unknown>(`/inventory-items/${itemId}/custody-summary`, context);
+  return adaptCustodySummaryResponse(response, itemId);
+}
+
+// Ω4C PR-08 — Entrada (ENTRY): sempre para a BASE; quantidade positiva (o backend aplica o sinal).
+export async function createStockEntry(context: InventoryApiContext, payload: StockEntryPayload): Promise<StockMovement | null> {
+  const response = await apiRequest<unknown>("/stock-movements", {
+    ...context,
+    method: "POST",
+    body: {
+      itemId: payload.itemId,
+      type: "entrada",
+      quantidade: Math.abs(payload.quantidade),
+      unitCost: payload.unitCost,
+      ...(payload.reason ? { reason: payload.reason } : {}),
+    },
+  });
+  return adaptStockMovementResponse(response);
+}
+
+// Ω4C PR-08 — Vincular (LINK, BASE→custódia) / Desvincular (UNLINK, custódia→BASE): par irmão.
+export async function createStockTransfer(context: InventoryApiContext, payload: StockTransferPayload): Promise<StockMovement[]> {
+  const response = await apiRequest<unknown>("/stock-movements", {
+    ...context,
+    method: "POST",
+    body: {
+      itemId: payload.itemId,
+      type: payload.type,
+      quantidade: Math.abs(payload.quantidade),
+      custodyType: payload.custodyType,
+      ...(payload.custodyOperatorProfileId ? { custodyOperatorProfileId: payload.custodyOperatorProfileId } : {}),
+      ...(payload.custodyVehicleId ? { custodyVehicleId: payload.custodyVehicleId } : {}),
+      ...(payload.reason ? { reason: payload.reason } : {}),
+    },
+  });
+  return adaptStockMovementsListResponse(response);
+}
+
+// Ω4C PR-08 — Saída (EXIT): origem por custódia + Tipo de Saída (persistido no campo reason no backend).
+export async function createStockExit(context: InventoryApiContext, payload: StockExitPayload): Promise<StockMovement | null> {
+  const response = await apiRequest<unknown>("/stock-movements", {
+    ...context,
+    method: "POST",
+    body: {
+      itemId: payload.itemId,
+      type: "saida",
+      quantidade: Math.abs(payload.quantidade),
+      custodyType: payload.custodyType,
+      ...(payload.custodyOperatorProfileId ? { custodyOperatorProfileId: payload.custodyOperatorProfileId } : {}),
+      ...(payload.custodyVehicleId ? { custodyVehicleId: payload.custodyVehicleId } : {}),
+      ...(payload.exitReason ? { exitReason: payload.exitReason } : {}),
+      ...(payload.unitCost !== undefined ? { unitCost: payload.unitCost } : {}),
+      ...(payload.reason ? { reason: payload.reason } : {}),
+    },
+  });
+  return adaptStockMovementResponse(response);
+}
+
+// Ω4C PR-08 — Estorno = movimento compensatório (o original permanece intacto — razão imutável).
+// 409 movement_already_reversed quando já houver estorno; 409 insufficient_balance se ficaria negativo.
+export async function reverseStockMovement(
+  context: InventoryApiContext,
+  movementId: string,
+  reason?: string,
+): Promise<StockMovement[]> {
+  const response = await apiRequest<unknown>(`/stock-movements/${movementId}/reverse`, {
+    ...context,
+    method: "POST",
+    body: reason ? { reason } : {},
+  });
+  return adaptStockMovementsListResponse(response);
 }
 
 function buildItemsQuery(params: Partial<InventoryItemsFilters>): string {

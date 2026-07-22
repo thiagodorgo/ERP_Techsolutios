@@ -979,6 +979,226 @@ interno da multa]. Confirma a lição **D-Ω4C-MANUT-NEXTDUE-PRIVATE**: efeito d
   Profissional · PR-04 Motor de Notificações · PR-05 Abastecimento · PR-06 Manutenção · PR-07 Multas + Seguros. Próximo: **Fase 2** (Estoque
   custódia, Danos, Remunerações).
 
+### PR-08 — Estoque com custódia e movimentos (ledger imutável) — plano do omega4c-planejador (2026-07-22)
+**Mapeia PR-10+PR-11 do PLANO_OMEGA4C** (estoque custódia back+front) numa fatia vertical, padrão da rodada. **ABRE A FASE 2.** **Veredicto
+Fase 0 (recon REAL, FATO vs HIPÓTESE):** **ESTENDER** — `src/modules/inventory/` (F7a/F7b) e `frontend/src/modules/inventory/` são
+**maduros e vivos**, com o **ledger imutável e o saldo derivado JÁ implementados**; o gap é a **custódia BASE/PROFISSIONAL/VIATURA**
+(LINK/UNLINK/EXIT + saldos por custódia + Resumo segmentado) e os **campos AutEM do item** (combustível, tipo, compra/venda, descrição,
+inativar). Nenhum recálculo de saldo/avg é reescrito; tudo é **coluna aditiva + agregado por custódia + novos fluxos de movimento**.
+- **FATO (li no código):** (a) Model `InventoryItem` (`schema.prisma:1142`, `inventory_items`): `sku` (**@@unique([tenant_id,sku])**), `name`,
+  `unit`, `min_quantity`/`max_quantity`/`avg_cost`/`safety_stock` **Decimal(20,6)**, `abc_class?`, `lead_time_days?`, `is_active`, auditoria;
+  **@@unique([tenant_id,id])**. **NÃO tem** custódia, **NÃO tem** flag combustível, **NÃO tem** tipo PRODUTO/EQUIPAMENTO / compra / venda /
+  descrição. (b) Model `StockMovement` (`schema.prisma:1175`, `stock_movements`): `type` **String SEM CHECK** (validado na app — enum-app
+  `entrada|saida|consumo|ajuste`, `inventory.types.ts:4`), `quantidade_sinalizada` **Decimal(20,6) SINALIZADA** (+entrada/+ajuste>=0,
+  -saida/-consumo/-ajuste<0), `unit_cost?`, `work_order_id?`, `vehicle_id?` (**plain columns, sem FK nativa** — resolver-validated in-tenant,
+  400 invalid ref; comentário do schema :1173 confirma "no hard FK"), `reason?`, `cycle_count_id?` (FK composta), `created_by`, `created_at`; FK
+  composta `(tenant_id,item_id)->inventory_items` RESTRICT; **@@unique([tenant_id,id])** + índices `[tenant_id,item_id,created_at]` /
+  `[tenant_id,work_order_id]` / `[tenant_id,created_at]`. (c) **LEDGER JÁ É IMUTÁVEL** — `inventory.routes.ts:84-88` documenta e materializa:
+  o `createStockMovementRouter` expõe **só GET/POST/GET:id, ZERO PATCH e ZERO DELETE** ("corrections happen through a compensating `ajuste`
+  movement, never by rewriting history") -> **D-Ω4C-RECON-08 já satisfeito na estrutura**; PR-08 **confirma e testa** a invariante e adiciona o
+  estorno explícito. (d) **SALDO JÁ É DERIVADO** — `saldo = Σ quantidade_sinalizada` (`inventory.calculations.ts:48-51`; nunca coluna;
+  `saldoOf`/`sumByItem` via `groupBy`), **nunca negativo** (`wouldOverdraw`->**409 `insufficient_balance`**, `inventory.types.ts:187`), tudo
+  **dentro de UM `$transaction`** aberto por `withTenantRls` (`-prisma.repository.ts:180/420`). (e) **Regras de movimento vivas:** `entrada`
+  exige `unitCost` (custo médio móvel R7.3), `consumo` exige `workOrderId` (R7.2), `ajuste` exige `reason`; `signQuantity` aplica o sinal
+  (`calculations.ts:36`). (f) **Referências resolver-validated** (`service.ts:374`): `resolveWorkOrder`/`resolveVehicle` via os services default
+  tenant-scoped (cross-tenant->false->400) — **o padrão do módulo é resolver + coluna sem FK nativa** (custódia herda essa disciplina, ver
+  D-record abaixo). (g) **Permissões existentes:** `inventory_items:read/create/update` + `stock_movements:read/create` (`routes.ts:18-27`;
+  `catalog.ts:115-119`), distribuídas a gestão/inventory/operator (create) e viewer/finance/support (read); RBAC_MATRIX l.47 "Inventory
+  movements" já cobre. **Sem `:delete`** (coerente com ledger imutável). (h) **Front vivo:** `EstoquePage.tsx` (abas Itens|Movimentações|
+  Contagem) + `InventoryItemFormModal` + `StockMovementFormModal` + `EstoqueDetailPage` — **sem custódia, sem Resumo segmentado, sem
+  sub-modais Vincular/Saída-por-origem, sem flag combustível**. (i) Baseline testes backend: `inventory.test.ts` (7) + `inventory-abc` (10) +
+  `inventory-items-routes` (8) + `stock-movements-routes` (10) + `inventory-cycle-counts-routes` (6) = **41**; frontend `inventory.adapter` +
+  `inventory.smoke`. (j) `OperatorProfile` (`schema.prisma:1802`) e `Vehicle` (`:834`) têm **@@unique([tenant_id,id])** -> **alvos válidos de FK
+  composta**.
+- **HIPÓTESE:** taxonomia exata de "Tipo de Saída" do AutEM (só "venda direta" visto em frame limpo) -> **v1 = enum-app allowlist `{direct_sale}`
+  extensível SEM CHECK** (não fabricar taxonomia). Pixel do modal/sub-modais/ícones não visto em frame limpo -> reproduzimos o **comportamento**
+  (§11), não o visual. "Qtd. Base/Profissional/Viatura" da aba Resumo = agregados por custódia (derivados).
+
+- **Custódia (modelo) — D-Ω4C-INV-CUSTODY-MODEL: `StockMovement` carrega a custódia; saldo por (item,custódia) = Σ quantidade_sinalizada
+  filtrada por custódia (a mais simples e derivável; NÃO tabela de posição).** **+4 colunas aditivas** em `stock_movements`: (1) **`custody_type`**
+  TEXT **NOT NULL DEFAULT `'base'`** — enum-app `base|professional|vehicle` (labels **BASE/PROFISSIONAL/VIATURA**, **SEM CHECK**, validado na app,
+  padrão da rodada). Default `'base'` **backfilla semanticamente correto** todo movimento legado (era estoque da base — igual ao default
+  `'external'` do PR-05). (2) **`custody_operator_profile_id`** UUID NULL + **FK COMPOSTA `(tenant_id,custody_operator_profile_id)->
+  operator_profiles(tenant_id,id) ON DELETE RESTRICT`**. (3) **`custody_vehicle_id`** UUID NULL + **FK COMPOSTA `(tenant_id,custody_vehicle_id)->
+  vehicles(tenant_id,id) ON DELETE RESTRICT`**. (4) **`transfer_group_id`** UUID NULL (par de LINK/UNLINK; ver -MOVEMENT-TYPES). **Por que DUAS
+  colunas de ref tipadas (não um `custody_ref_id` polimórfico) — D-Ω4C-INV-CUSTODY-REF-TYPED (divergência registrada da sugestão "FK composta se
+  referenciar", resolvida a favor de FK real):** um único `custody_ref_id` polimórfico (profissional OU viatura) **não pode** ter FK nativa — cairia
+  no padrão resolver-sem-FK do `vehicle_id` existente; optamos por **duas FK compostas RESTRICT tipadas** porque (i) dá **integridade referencial
+  real** (cross-tenant->**23503** no DB, não só na app), disciplina não-negociável da rodada (PR-03/05/06/07 provaram 23503 via dba-guardião);
+  (ii) **RESTRICT protege o saldo em custódia** — não se apaga um profissional/viatura que **ainda detém itens** (fiel ao AutEM "desvincular
+  devolve à base" **antes** de remover). App-rule (SEM CHECK): `base`->ambos NULL; `professional`->operator_profile set, vehicle NULL;
+  `vehicle`->vehicle set, operator NULL (senão **422 `invalid_custody`**). **Dupla-camada de posse** (padrão PR-07): resolver `OperatorProfileService.get`/
+  `VehicleService.get` tenant-scoped **antes** (-> **400 `invalid_custody_reference`** cross-tenant, erro amigável) + a FK RESTRICT como backstop DB.
+  **Coexistência explícita (evitar confusão):** o `vehicle_id` LEGADO (movimento *atribuído a* uma viatura, ex. consumo de OS) **permanece
+  INTOCADO**; o **novo `custody_vehicle_id`** = *custódia detida por* aquela viatura — semânticas distintas, colunas distintas (nota D-007).
+- **Saldo por custódia (derivado) — D-Ω4C-INV-BALANCE-NONNEG (invariante testável FORTE, §3 não-negociável):** `saldo(item,custódia) = Σ
+  quantidade_sinalizada WHERE (custody_type,custody_operator_profile_id,custody_vehicle_id) = alvo` (groupBy — MESMO padrão do `sumByItem`
+  existente, só acrescenta a custódia ao `by`). O **saldo GLOBAL existente permanece `Σ tudo`** e **inalterado em significado** (LINK/UNLINK
+  **netam a zero** globalmente -> total on-hand não muda ao mover de local; EXIT/ENTRY mudam) -> **`saldoOf`/`sumByItem`/avg-cost/reorder legados
+  ficam INTOCADOS** (zero regressão em ABC/reorder/reposição). **Nunca negativo POR CUSTÓDIA:** antes de gravar um delta negativo, valida o
+  saldo da custódia-**origem** (BASE no LINK; custódia-fonte no UNLINK; origem escolhida no EXIT/consumo) >= qtd -> senão **409
+  `insufficient_balance`** (reusa `wouldOverdraw` por custódia). Não-negativo por custódia => global não-negativo (mais estrito). O guard global
+  legado é mantido (redundante e inofensivo).
+- **Movimentos LINK/UNLINK/EXIT — D-Ω4C-INV-MOVEMENT-TYPES: estende `STOCK_MOVEMENT_TYPES` com `link|unlink` (enum-app SEM CHECK); `saida` ganha
+  origem-por-custódia + Tipo de Saída.** (a) **`entrada`** (ENTRY, laranja) — SEMPRE para a BASE (`custody_type` forçado a `base`; supplier/nota =
+  `reason`/campos existentes); soma ao saldo BASE. Já existe — só fixa custódia. (b) **`link`** (VINCULAR, azul) — **transferência BASE->custódia**
+  (profissional/viatura): guarda BASE>=qtd; grava **DUAS linhas irmãs numa MESMA tx** (`withTenantRls` já abre o `$transaction`) — `-qtd` em
+  `custody=base` e `+qtd` na custódia-destino — compartilhando `transfer_group_id`. Global neta a zero (correto). (c) **`unlink`** (DESVINCULAR,
+  verde) — **custódia->BASE**: guarda custódia-fonte>=qtd; par inverso `-qtd` na fonte + `+qtd` base, mesmo `transfer_group_id`. "Desvincular
+  devolve à base" (ANALISE:174). (d) **`saida`** (EXIT, vermelho, ESTENDIDO) — origem = **custódia escolhida** (BASE/PROFISSIONAL/VIATURA;
+  `custody_type` default `base` p/ compat) + **`exit_reason`** enum-app allowlist v1 `{direct_sale}` (label "Venda direta", SEM CHECK, extensível);
+  guarda origem>=qtd; linha única `-qtd` na origem. (e) **`consumo`** (existente, OS) — origem-custódia default BASE, aceita custódia; `workOrderId`
+  segue obrigatório. (f) **`ajuste`** (existente) — custódia única, sinalizado, `reason` obrigatório. **A LISTA final de `type` ratificada aqui:**
+  `entrada · saida · consumo · ajuste · link · unlink` (enum-app, SEM CHECK — validado por `parseMovementType`). `signQuantity` estendido / o
+  **construtor de transferência** monta o par (link/unlink não passam por `signQuantity` de linha única).
+- **Ledger imutável + estorno — D-Ω4C-INV-LEDGER-IMMUTABLE (invariante testável FORTE, realiza D-Ω4C-RECON-08):** **NENHUM** endpoint deleta ou
+  edita movimento (confirmado: `createStockMovementRouter` sem PATCH/DELETE — PR-08 **mantém e TESTA** [assert de rota 404/405]). O "x excluir
+  movimento" do AutEM = **estorno por movimento compensatório** via **`POST /stock-movements/:id/reverse`** (perm `stock_movements:create`): posta
+  a(s) linha(s) inversa(s) — para movimento simples (entrada/saida/consumo/ajuste), 1 linha oposta na MESMA custódia; para transferência
+  (link/unlink, por `transfer_group_id`), o **par inverso** — com **`reverses_movement_id`** (UUID NULL, app-level, mesmo tenant, sem FK nativa —
+  como `source_id`) apontando ao original, e `reason` de estorno. **Guardas:** (i) estornar 2x o mesmo movimento -> **409 `movement_already_reversed`**
+  (existe linha com `reverses_movement_id = alvo`); (ii) o estorno **respeita o não-negativo por custódia** (estornar uma ENTRADA cujo saldo já saiu/
+  vinculou -> 409 `insufficient_balance` — íntegro, não fabrica). Saldo sempre **derivado** dos movimentos (o estorno é +1 movimento, o original
+  fica **intacto** — imutabilidade). Correção = novo movimento inverso, **nunca** DELETE/PATCH.
+- **Baixa automática (fuel/manutenção) — D-Ω4C-INV-STOCK-DEFER-CONSUMER: DEFERIR a baixa a uma sub-fatia CONSUMIDORA `PR-08b` (recomendação que
+  NÃO fabrica e é testável).** PR-08 entrega a **FUNDAÇÃO** (custódia + LINK/UNLINK/EXIT + flag combustível no item + o EXIT idempotente disponível);
+  a **baixa automática** — (a) abastecimento **interno** -> EXIT da BASE (PR-05 `station_type=internal`, D-Ω4C-FUEL-STOCK-DEFER); (b) item de
+  manutenção **Tipo=ESTOQUE** -> EXIT da BASE (PR-06 D-Ω4C-MANUT-STOCK-ITEM-DEFER); (c) **venda em serviço vinculada ao profissional -> baixa
+  automática na custódia dele** (ANALISE:173) — vai para **PR-08b**. **Justificativa (não-fabricação):** a baixa exige *saber QUAL item de estoque*
+  dar baixa, e **esse dado não existe**: `fuel_logs` **não tem `stock_item_id`** (PR-05 deliberadamente não o adicionou — "capturar junto do
+  mecanismo em PR-10/11"); `maintenance_order_items` tem `description` **texto-livre**, sem vínculo a `inventory_item`. Ligar agora **fabricaria**
+  qual item baixar. PR-08b é uma sub-fatia coesa: **+`stock_item_id` (FK composta) em `fuel_logs` e em `maintenance_order_items`** (migrações
+  próprias, aditivas) + o efeito de domínio **idempotente** (fuel/manut -> EXIT/consumo na BASE; chave de idempotência determinística por
+  origem, ex. `fuel-exit:<fuelLogId>`) **sem duplicar** ao reprocessar. **O charter §3 ("Abastecimento interno gera EXIT de estoque") é
+  satisfeito PELA RODADA em Fase 2 (PR-08b), não pelo PR-08** — mesma disciplina fundação->consumidor dos PR-05/06. **PR-08 NÃO importa
+  fuel-logs/maintenance** (zero acoplamento reverso; direção consumidor->fundação preservada).
+- **Campos AutEM do item — D-Ω4C-INV-ITEM-FIELDS (aditivo, completa a aba Editar):** **+5 colunas aditivas** em `inventory_items`: (1)
+  **`is_fuel`** BOOLEAN NOT NULL DEFAULT `false` (o checkbox "Combustível" — habilita o item no Abastecimento interno; é o **contrato que PR-08b
+  lê**). (2) **`item_type`** TEXT NOT NULL DEFAULT `'product'` — enum-app `product|equipment` (labels **PRODUTO/EQUIPAMENTO**, SEM CHECK;
+  **EQUIPAMENTO oculta Compra/Venda no front** §11). (3) **`purchase_price`** Decimal(12,2) NULL + (4) **`sale_price`** Decimal(12,2) NULL (colunas
+  NOVAS -> seguem a invariante **Decimal(12,2)**, diferentes do `avg_cost` legado 20,6; derivado nenhum — são atributos do item, só PRODUTO). (5)
+  **`description`** TEXT NULL. **"Código"** do AutEM = o `sku` existente (sem coluna nova). **Inativar** (ANALISE:175 "some das seleções, preserva
+  histórico") = reusa `is_active`/`updateItem` (soft, ledger preservado — nunca apaga movimento). "Cadastrar não cria saldo" (ANALISE:172) já é
+  invariante (saldo só via ENTRY) — **RN-EST reforçada**.
+- **Resumo por custódia (endpoint novo) — D-Ω4C-INV-CUSTODY-SUMMARY:** **`GET /inventory-items/:id/custody-summary`** (perm `inventory_items:read`;
+  literal declarado ANTES/coerente com `:itemId`) -> `{ baseQty, professionalTotalQty, vehicleTotalQty, total, professionals:[{operatorProfileId,
+  name, qty}], vehicles:[{vehicleId, plate, qty}] }` — os "Qtd. Base/Profissional/Viatura" + as tabelas Profissionais|Viaturas (Nome|Qtd) da aba
+  Resumo. Agregado por custódia (derivado, nunca coluna); nomes resolvidos via operator_profiles/vehicles (label, **nunca CNH**). Item validado no
+  tenant via `getItem` (**404 cross-tenant**).
+- **Permissão — D-Ω4C-INV-RBAC-REUSE (SEM permissão nova; diff VAZIO em catalog/core-saas/RBAC_MATRIX):** LINK/UNLINK/EXIT/consumo/estorno ->
+  `stock_movements:create`; custody-summary/leitura -> `stock_movements:read`/`inventory_items:read`; flag/tipo/preços/descrição/inativar ->
+  `inventory_items:update`. Todas **já existem** e já distribuídas (gestão/inventory/operator create; viewer/finance/support read; RBAC_MATRIX l.47
+  cobre movimentos). `catalog.ts`/`tests/core-saas.test.ts`/`RBAC_MATRIX.md` **intocados**. Backend é a autoridade (papel sem `stock_movements:create`
+  -> **403 real**, já testado).
+- **Migração — ADITIVA up-only `20260828000000_add_stock_custody_ledger`** (autorizada, nunca destrutiva; declarada): (1) `ALTER stock_movements`
+  ADD `custody_type TEXT NOT NULL DEFAULT 'base'` + `custody_operator_profile_id UUID` + `custody_vehicle_id UUID` + `transfer_group_id UUID` +
+  `reverses_movement_id UUID` + 2 FK compostas RESTRICT (operator_profiles, vehicles) + relações inversas aditivas (`stockCustody StockMovement[]`
+  em OperatorProfile e Vehicle, nomeadas p/ evitar ambiguidade Prisma) + índices `[tenant_id,item_id,custody_type,custody_operator_profile_id,
+  custody_vehicle_id]` (groupBy por custódia) / `[tenant_id,transfer_group_id]` / `[tenant_id,reverses_movement_id]`; (2) `ALTER inventory_items`
+  ADD `is_fuel BOOLEAN NOT NULL DEFAULT false` + `item_type TEXT NOT NULL DEFAULT 'product'` + `purchase_price NUMERIC(12,2)` +
+  `sale_price NUMERIC(12,2)` + `description TEXT`. **ZERO** DROP/ALTER de tipo; `quantidade_sinalizada`/`avg_cost` (20,6) **INTOCADOS** (ALTER de
+  tipo é destrutivo §C7.5). **Rollback = DROP COLUMN** (todas novas, sem dependente) — provado up/down/re-up pelo **agente-dba-guardião**. Toca
+  `prisma/**` (schema + migration; **seed/catalog INTOCADOS** — sem permissão nova) -> **requer autorização explícita de `prisma/**` no comando do
+  PR-08** (como PR-01/03/04/05/06/07).
+- **Frontend — ESTENDER a tela viva (`frontend/src/modules/inventory/`), abas do modal Item = AutEM:** (i) **Modal "Item"** com sidebar
+  **Editar | Resumo | Movimentação** + badge status ATIVO. **Editar** (estende `InventoryItemFormModal`): Código(sku) | Tipo (PRODUTO/EQUIPAMENTO —
+  EQUIPAMENTO oculta Compra/Venda) | Nome | Unidade | Mínimo | Máximo | Compra(R$)/Venda(R$) só PRODUTO | Descrição | **checkbox Combustível**;
+  rodapé EXCLUIR(honesto: soft/inativar — sem hard delete) · **ATIVO/INATIVAR** · SALVAR. **Resumo**: cards Qtd. Base | Qtd. Profissional | Qtd.
+  Viatura (do custody-summary) + tabelas Profissionais / Viaturas (Nome|Qtd) com toolbar §7. **Movimentação**: histórico (Data | ícone do tipo |
+  **Origem/Destino** BASE/PROFISSIONAL/VIATURA — o front **pareia `transfer_group_id`** p/ renderizar uma linha BASE->PROF | Qtd | **x estornar** ->
+  chama `/reverse`) + toolbar 4 botões coloridos: **laranja Entrada · azul Vincular · vermelho Saída · verde Desvincular** abrindo **sub-modais
+  laranja** (diferenciação registro-principal-azul x filho-laranja, ANALISE:31): **Entrada** (Data|Nota|Fornecedor|Qtd|Valor Unit.|Total) ·
+  **Vincular** (Data|Nota|Vincular por PROFISSIONAL/VIATURA|destino|Qtd) · **Saída** (Data|Nota|Origem custódia|Tipo de Saída|Qtd|Valor Unit.|
+  Total). §3 PT-BR (BASE/PROFISSIONAL/VIATURA, Combustível, Vincular/Desvincular — nunca termo técnico), §7 estados (loading/empty/error/**acesso
+  não permitido**/desatualizado; offline N/A web), §2.8 DTO allowlist (nunca tenant_id/storage/CNH). Guard RBAC `inventory_items:*`/
+  `stock_movements:*` (existentes).
+- **DTO/auditoria — D-Ω4C-INV-DTO (§2.8):** DTO do movimento ganha `custodyType` + `custodyOperatorProfileId`/`custodyVehicleId` (+ `custodyName`
+  label) + `transferGroupId` + `reversesMovementId`; DTO do item ganha `isFuel`/`itemType`/`purchasePrice`/`salePrice`/`description`. **Nunca**
+  tenant_id/storage/CNH. Auditoria estende metadata (`custody_type`, `transfer`/`reverse`, item flags) não-PII; ações registram
+  `stock_movement.linked/unlinked/exited/reversed` e `inventory_item.updated`.
+- **RNs — EST/INV:** **EST-01** (custódia no movimento; saldo(item,custódia)=Σ sinalizada por custódia; global=Σ tudo INTOCADO; LINK/UNLINK netam
+  a zero globalmente) · **EST-02** (**saldo nunca negativo POR CUSTÓDIA** — guard da origem [BASE no link, fonte no unlink, origem no exit/consumo]
+  -> 409 `insufficient_balance`; não-negativo por custódia => global) · **EST-03** (LINK BASE->custódia = par irmão `transfer_group_id` na MESMA tx;
+  UNLINK custódia->BASE = par inverso; "desvincular devolve à base") · **EST-04** (EXIT origem-por-custódia + `exit_reason` allowlist v1
+  `{direct_sale}`; consumo mantém workOrderId obrigatório) · **EST-05** (**ledger imutável** — zero PATCH/DELETE de movimento [assert de rota];
+  estorno = compensatório via `/reverse` com `reverses_movement_id`; original intacto) · **EST-06** (estorno idempotente-guardado: 2x -> **409
+  `movement_already_reversed`**; estorno respeita não-negativo por custódia) · **EST-07** (custódia ref válida no tenant — dupla-camada: resolver
+  400 `invalid_custody_reference` + FK composta RESTRICT 23503; `base`<->ambos-null / `professional`<->operator / `vehicle`<->vehicle senão 422
+  `invalid_custody`; RESTRICT protege profissional/viatura com saldo) · **EST-08** (Resumo por custódia derivado — Qtd Base/Profissional/Viatura +
+  tabelas; nomes label, nunca CNH; 404 cross-tenant) · **EST-09** (item AutEM: `is_fuel`/`item_type`/compra/venda/descrição aditivos; EQUIPAMENTO
+  oculta compra/venda; **cadastrar NÃO cria saldo** [só ENTRY]; inativar preserva histórico) · **EST-10** (**baixa automática DEFERIDA a PR-08b** —
+  PR-08 só entrega a fundação + flag combustível; **zero movimento fabricado, zero import de fuel-logs/maintenance**; parada honesta D-007) ·
+  **EST-11** (§2.8/§3 — DTO allowlist, labels PT-BR, sem tenant_id/storage/CNH; auditoria não-PII) · **EST-12** (multi-tenant 3 tenants efêmeros em
+  `rls-tenant-isolation`: custódia + custody ref tenant-scoped; custody de A invisível a B; custody ref cross-tenant rejeitado [400/23503]; cross
+  404; updateMany cross=0; **`tenant_id` 1º índice** em todos os novos; **TEARDOWN FK-SAFE** — `stockMovement.deleteMany` **antes** de
+  operator_profiles/vehicles [as novas FK RESTRICT], lição do CI-catch PR-06).
+- **Divergências AutEM honestas (D-007):** (i) **baixa automática** (fuel interno / item ESTOQUE / venda-em-serviço no profissional) -> **PR-08b**
+  (falta `stock_item_id` em fuel_logs/maintenance_order_items; ligar agora fabricaria qual item baixar; ver D-Ω4C-INV-STOCK-DEFER-CONSUMER). (ii)
+  **`avg_cost`/`quantidade_sinalizada` Decimal(20,6)** legados (não 12,2 da invariante) — ALTER de tipo destrutivo/proibido §C7.5; colunas NOVAS de
+  preço seguem 12,2 (divergência gêmea PR-05/06/07 -MONEY). (iii) **`vehicle_id` legado x `custody_vehicle_id` novo** = colunas/semânticas distintas
+  (atribuição x custódia) — coexistência documentada. (iv) **Tipo de Saída** = enum-app v1 `{direct_sale}` extensível (só "venda direta" visto). (v)
+  **par de transferência = 2 linhas** no ledger (preserva o modelo sinalizado existente e o global-Σ); o front pareia por `transfer_group_id` p/
+  exibir 1 linha Origem->Destino (concern de exibição). (vi) pixel do modal/sub-modais/ícones AutEM não visto em frame limpo -> reproduzimos o
+  **comportamento** (§11), não o visual.
+- **Bateria de validação (seção 10 — o avaliador roda):** `npx prisma validate` + `prisma migrate diff` (sem drift) + **dba-guardião prova
+  up/down/re-up** de `20260828000000_add_stock_custody_ledger` (ADITIVA: 5+5 ADD COLUMN + 2 FK compostas RESTRICT + índices + relações inversas;
+  rollback=DROP COLUMN; backfill legado provado custody_type='base'/item_type='product'/is_fuel=false); backend `npm run check` · lint · test ·
+  build; `node --test --import tsx tests/stock-custody.test.ts` (NOVO — LINK/UNLINK/EXIT + **saldo por custódia derivado** + **não-negativo por
+  custódia** [409 insufficient_balance na origem] + **imutabilidade** [sem PATCH/DELETE; estorno compensatório; original intacto] + **estorno
+  idempotente** [2x->409 movement_already_reversed] + custody ref cross-tenant [400/RESTRICT] + custody-summary + item is_fuel/item_type/preços/
+  inativar + **cadastrar não cria saldo**) + `tests/stock-movements-routes.test.ts`/`inventory-items-routes.test.ts` **estendidos**;
+  `tests/rls-tenant-isolation.test.ts` estendido (3 tenants efêmeros; custody tenant-scoped; teardown FK-safe); **ZERO regressão** em `inventory`
+  (7) · `inventory-abc` (10) · `inventory-cycle-counts-routes` (6) · `stock-movements-routes` (10) · `inventory-items-routes` (8) · fuel-logs/
+  maintenance/work-order-* (nada importado); frontend `npm --prefix frontend run check` · build · smoke (modal Item 3 abas + sub-modais laranja
+  Entrada/Vincular/Saída + Resumo por custódia + x estornar + flag combustível + tipo EQUIPAMENTO oculta compra/venda + estados §7 + guard); `git
+  diff --check` + `git status --short` limpo (schema/migration/inventory/**/front por caminho; seed/catalog/RBAC_MATRIX **intocados**). KPI
+  `docs/kpis/omega4c/KPI_PR-08.json` + histórico + snapshot; Kpis/* backend +N (stock-custody + rotas), frontend_smoke +M, blocks 78->**79**.
+- **Riscos + rollback:** (R1) **saldo negativo por custódia / concorrência de saldo** -> mitigado: guard por custódia dentro do `$transaction` de
+  `withTenantRls` (mesmo isolamento do fluxo existente); risco teórico de corrida herdado do módulo (dois writes concorrentes lendo o mesmo
+  saldoBefore) — documentado; endurecimento opcional (advisory-lock por (tenant,item) / SELECT FOR UPDATE) fica p/ Ω5 se surgir contenção real,
+  **não** regride o comportamento atual. (R2) **quebrar imutabilidade** -> mitigado: zero rota PATCH/DELETE (assert de rota); estorno é +movimento,
+  original intacto; teste de imutabilidade. (R3) **fabricar baixa automática sem dado real** -> mitigado deferindo a PR-08b (zero import de fuel/
+  maintenance; contrato foundation-ready via is_fuel). (R4) **regressão em avg-cost/ABC/reorder** -> mitigado: saldo GLOBAL e agregados legados
+  INTOCADOS (LINK/UNLINK netam a zero; custódia só ADICIONA agregado); cobertos por regressão. (R5) **FK de custódia cross-tenant / apagar
+  profissional-viatura com saldo** -> mitigado: FK composta RESTRICT (23503) + resolver 400 + RLS FORCE + teste 3-tenant. (R6) **teardown do rls
+  quebra por RESTRICT** (CI-catch PR-06) -> mitigado: `stockMovement.deleteMany` **antes** de operator_profiles/vehicles no teardown efêmero. (R7)
+  **`prisma/**`** -> só ADITIVO (10 ADD COLUMN + 2 FK + índices + relações inversas; **sem** permissão/seed); **rollback = DROP COLUMN** (todas
+  novas, sem dependente) + revert do PR (inventory/**/front). Sem destrutivo (respeita parada §C7.5). **Sem dependência nova nem serviço externo
+  pago -> junta normal, NÃO junta-5.**
+
+**APROVADO para implementar.** (D-records desta fatia: **D-Ω4C-INV-CUSTODY-MODEL · -CUSTODY-REF-TYPED · -BALANCE-NONNEG · -MOVEMENT-TYPES ·
+-LEDGER-IMMUTABLE · -STOCK-DEFER-CONSUMER(PR-08b) · -ITEM-FIELDS · -CUSTODY-SUMMARY · -RBAC-REUSE · -DTO · -MONEY(D-007)** — a junta ratifica no
+veredito; persistir em controle/decisoes.md no PR. Realiza **D-Ω4C-RECON-08** [ledger imutável] e **D-Ω4C-RECON-03** [tipos LINK/UNLINK+saída
+enum-app SEM CHECK]. **Abre PR-08b** [baixa automática consumidora] que realiza **D-Ω4C-FUEL-STOCK-DEFER** [PR-05] e **D-Ω4C-MANUT-STOCK-ITEM-DEFER**
+[PR-06]. Reusa o ledger imutável e o saldo derivado existentes; **sem permissão nova, sem tocar avg-cost/ABC/reorder**.)
+
+#### PR-08 — Veredito da junta (2026-07-22) — **UNÂNIME 3/3 APROVADO — ABRE FASE 2**
+- **agente-dba-guardião** → `APROVADO` (2 BAIXA op): migração `20260828000000_add_stock_custody_ledger` provada **UP/DOWN/RE-UP** em DB scratch
+  isolada. Puramente aditiva (5 ADD COLUMN em stock_movements: custody_type default 'base' + custody_operator_profile_id/custody_vehicle_id/
+  transfer_group_id/reverses_movement_id; 5 em inventory_items: is_fuel/item_type/purchase_price/sale_price NUMERIC(12,2)/description) + 2 FK
+  compostas RESTRICT →operator_profiles e →vehicles + 3 índices tenant-first. **Backfill provado** (linha legada → custody_type='base'/
+  is_fuel=false/item_type='product'). Tipos legados (avg_cost/quantidade_sinalizada 20,6) INTACTOS. RLS t/t nas 4 tabelas. Integridade:
+  FK cross-tenant → **23503** (ambas); RESTRICT bloqueia DELETE de operator_profile/vehicle referenciado → **23503**.
+- **omega4c-avaliador** → `APROVADO`: seção 10 verde (backend 1420 pass / 6 skip — única falha ambiental rls-tenant-isolation DB-gated;
+  stock-custody **14/14**; frontend smoke **760/760**). **RN-EST-01..12 todas testadas:** saldo por custódia **DERIVADO** (Σ groupBy, nenhuma
+  coluna de saldo); LINK/UNLINK = par irmão transfer_group_id na mesma tx (global neta a zero); EXIT reduz custódia; **saldo nunca negativo
+  por custódia → 409 insufficient_balance** (guard dentro do $transaction); **ledger IMUTÁVEL** (router sem PATCH/DELETE → 404; estorno
+  compensatório via POST /:id/reverse; 2º estorno → 409 movement_already_reversed; original intacto); posse dupla-camada (422 invalid_custody
+  + 400 invalid_custody_reference cross-tenant + FK RESTRICT 23503); §2.8 (custodiante só nome, nunca CNH); **baixa automática DEFERIDA**
+  (is_fuel só flag, marcar combustível NÃO gera movimento, zero import de fuel/maintenance). **Confirmou o achado PRÉ-EXISTENTE
+  P-INV-LEGACY-QTY-CONTRACT** (buildStockMovementPayload byte-idêntico à main → descasamento de quantidade legado NÃO é regressão do PR-08).
+  Condições: MEDIA (git add por caminho — processo) + 3 BAIXA (dba-proof/KPI/backlog P-INV-LEGACY-QTY-FIX). Zero condição BLOQUEIA.
+- **coordenador-de-acessos** → `APROVADO`: permissão REUSADA (catalog/RBAC_MATRIX/core-saas diff VAZIO); rotas gated (LINK/UNLINK/EXIT/estorno
+  = stock_movements:create; custody-summary/leitura = read; flag/inativar = inventory_items:update); posse cross-módulo validada in-tenant
+  (resolveCustody via services tenant-scoped → 400; FK composta RESTRICT backstop 23503); **NENHUM efeito de domínio novo** (sem notificação/
+  extrato — baixa deferida → sem superfície de escalada PR-06/07); front↔back gating coerente; UI PT-BR sem CNH. 1 BAIXA (catch amplo do
+  resolver mascara erro transitório como 400 — observabilidade, não segurança).
+- **Decisão:** verde unânime 3/3 → merge (CI = gate empírico do rls DB-gated) + KPI no PR (§C3). **Ledger imutável + saldo nunca negativo por
+  custódia** confirmados. Realiza D-Ω4C-RECON-08 (imutável) e -03 (LINK/UNLINK). **Baixa automática → PR-08b** (realiza os deferrals de
+  PR-05/06). Achado pré-existente P-INV-LEGACY-QTY-CONTRACT registrado (fix em fatia própria). D-records ratificados.
+- KPI: `docs/kpis/omega4c/KPI_PR-08.json`. `Kpis/*`: backend 1404→**1420** (+16 stock-custody 14 + 2 rota); frontend_smoke 745→**760**
+  (+15 estoque-custodia); blocks 78→**79**. **★ Abre a FASE 2** (Estoque custódia · Danos · Remunerações).
+
 ## 8. Encerramento (a fazer no fim)
 Ata final (entregas, KPIs consolidados, pendências→backlog Ω5); deletar **SOMENTE** os 5 agentes efêmeros (registrar cada
 deleção); confirmar que nenhum agente pré-existente foi tocado; marcar os D-records como vigentes.

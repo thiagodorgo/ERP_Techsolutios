@@ -852,6 +852,9 @@ model Vehicle {
   fines              Fine[]
   insurance_policies InsurancePolicy[]
   damages            Damage[]
+  // Ω4C PR-08 — movimentos de estoque em CUSTÓDIA desta viatura (custody_type=vehicle). onDelete Restrict:
+  // viatura com itens em custódia não é apagada. DISTINTO das FKs legadas (custódia detida ≠ atribuição).
+  stock_custody      StockMovement[]    @relation("StockMovementCustodyVehicle")
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, plate])
@@ -1152,6 +1155,16 @@ model InventoryItem {
   lead_time_days      Int?
   safety_stock        Decimal?          @db.Decimal(20, 6)
   is_active           Boolean           @default(true)
+  // Ω4C PR-08 (D-Ω4C-INV-ITEM-FIELDS) — campos AutEM do item (aditivos, completam a aba Editar). `is_fuel` = o
+  // checkbox "Combustível" (habilita o item no Abastecimento interno; é o contrato que PR-08b lê para a baixa
+  // automática). `item_type` enum-app product|equipment (labels PRODUTO/EQUIPAMENTO, SEM CHECK; EQUIPAMENTO
+  // oculta Compra/Venda no front). `purchase_price`/`sale_price` são atributos do item (só PRODUTO) e seguem a
+  // invariante Decimal(12,2) — distintos do `avg_cost` legado (20,6), cuja precisão não é alterada (§C7.5).
+  is_fuel             Boolean           @default(false)
+  item_type           String            @default("product")
+  purchase_price      Decimal?          @db.Decimal(12, 2)
+  sale_price          Decimal?          @db.Decimal(12, 2)
+  description         String?
   created_by          String?           @db.Uuid
   updated_by          String?           @db.Uuid
   created_at          DateTime          @default(now()) @db.Timestamptz(6)
@@ -1183,16 +1196,37 @@ model StockMovement {
   vehicle_id            String?       @db.Uuid
   reason                String?
   cycle_count_id        String?       @db.Uuid
+  // Ω4C PR-08 (D-Ω4C-INV-CUSTODY-MODEL) — a custódia BASE/PROFISSIONAL/VIATURA viaja no próprio movimento;
+  // saldo(item,custódia) = Σ quantidade_sinalizada filtrada por custódia (DERIVADO, nunca coluna). Enum-app
+  // custody_type base|professional|vehicle (labels BASE/PROFISSIONAL/VIATURA, SEM CHECK — validado na app).
+  // Default 'base' backfilla o legado semanticamente (era estoque da base). LINK/UNLINK = par irmão via
+  // `transfer_group_id`; estorno = movimento compensatório via `reverses_movement_id` (app-level, SEM FK
+  // nativa — como source_id). custody_vehicle_id (custódia DETIDA por viatura) é DISTINTO do vehicle_id legado
+  // (movimento ATRIBUÍDO a viatura) — colunas/semânticas distintas, coexistência documentada (D-007).
+  custody_type          String        @default("base")
+  custody_operator_profile_id String? @db.Uuid
+  custody_vehicle_id    String?       @db.Uuid
+  transfer_group_id     String?       @db.Uuid
+  reverses_movement_id  String?       @db.Uuid
   created_by            String?       @db.Uuid
   created_at            DateTime      @default(now()) @db.Timestamptz(6)
   tenant                Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   item                  InventoryItem @relation(fields: [tenant_id, item_id], references: [tenant_id, id], onDelete: Restrict)
   cycle_count           CycleCount?   @relation(fields: [tenant_id, cycle_count_id], references: [tenant_id, id], onDelete: Restrict)
+  // Ω4C PR-08 — FK COMPOSTAS RESTRICT tipadas da custódia (D-Ω4C-INV-CUSTODY-REF-TYPED): integridade real
+  // (cross-tenant → 23503) + RESTRICT protege profissional/viatura que AINDA detém saldo (desvincular devolve
+  // à base antes de remover). Duas colunas de ref tipadas em vez de um custody_ref_id polimórfico (que não
+  // poderia ter FK nativa). Ambas nullable; base → ambas NULL (FK não checada com MATCH SIMPLE).
+  custody_operator_profile OperatorProfile? @relation("StockMovementCustodyOperator", fields: [tenant_id, custody_operator_profile_id], references: [tenant_id, id], onDelete: Restrict, map: "stock_movements_custody_operator_fkey")
+  custody_vehicle       Vehicle?      @relation("StockMovementCustodyVehicle", fields: [tenant_id, custody_vehicle_id], references: [tenant_id, id], onDelete: Restrict, map: "stock_movements_custody_vehicle_fkey")
 
   @@unique([tenant_id, id])
   @@index([tenant_id, item_id, created_at])
   @@index([tenant_id, work_order_id])
   @@index([tenant_id, created_at])
+  @@index([tenant_id, item_id, custody_type, custody_operator_profile_id, custody_vehicle_id], map: "stock_movements_custody_lookup_idx")
+  @@index([tenant_id, transfer_group_id], map: "stock_movements_tenant_id_transfer_group_id_idx")
+  @@index([tenant_id, reverses_movement_id], map: "stock_movements_tenant_id_reverses_movement_id_idx")
   @@map("stock_movements")
 }
 
@@ -1825,6 +1859,10 @@ model OperatorProfile {
   // onDelete Restrict (na FK do lado Fine): perfil com multa atribuída não é apagado (a atribuição roteia
   // a multa ao extrato do profissional — RN-MUL-01).
   fines                          Fine[]
+  // Ω4C PR-08 — movimentos de estoque em CUSTÓDIA deste profissional (custody_type=professional). onDelete
+  // Restrict (na FK do lado StockMovement): um profissional que AINDA detém itens não é apagado — "desvincular
+  // devolve à base" antes de remover (D-Ω4C-INV-CUSTODY-REF-TYPED).
+  stock_custody                  StockMovement[] @relation("StockMovementCustodyOperator")
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, user_id])
