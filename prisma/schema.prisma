@@ -1025,10 +1025,23 @@ model Damage {
   tenant_id      String             @db.Uuid
   vehicle_id     String             @db.Uuid
   work_order_id  String?            @db.Uuid
+  // Ω4C PR-09 (D-Ω4C-DANO-MODEL) — PROFISSIONAL RESPONSÁVEL (quem sofreu/causou o dano) = um
+  // operator_profile (o profissional de campo que tem FOLHA). Quando setado E há valor a cobrar, o
+  // desconto vira débito PARCELADO no extrato desse profissional (rail interno da PR-03; RN-EXT-01).
+  // NULL = sem responsável. Espelha fines.responsible_operator_profile_id (20260827000000).
+  responsible_operator_profile_id String? @db.Uuid
   data           DateTime           @db.Timestamptz(6)
   gravidade      String
   descricao      String
   status         String             @default("registrado")
+  // Ω4C PR-09 — campos DESCRITIVOS do dano (display/impressão; sem regra além do parseamento). tipo =
+  // enum-app internal|external|both (labels INTERNO/EXTERNO/AMBOS, SEM CHECK). origem = classificação
+  // string (MULTA entre os valores, SEM FK — D-Ω4C-RECON-04). analise_interna NUNCA é impressa (ANALISE:126).
+  tipo                 String?
+  origem               String?
+  objeto               String?
+  identificacao_objeto String?
+  analise_interna      String?
   custo_estimado Decimal?           @db.Decimal(20, 6)
   custo_real     Decimal?           @db.Decimal(20, 6)
   is_active      Boolean            @default(true)
@@ -1038,12 +1051,15 @@ model Damage {
   updated_at     DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
   tenant         Tenant             @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   vehicle        Vehicle            @relation(fields: [tenant_id, vehicle_id], references: [tenant_id, id], onDelete: Restrict)
+  // FK composta (tenant_id, responsible_operator_profile_id) → operator_profiles(tenant_id, id) RESTRICT.
+  responsible_operator OperatorProfile? @relation(fields: [tenant_id, responsible_operator_profile_id], references: [tenant_id, id], onDelete: Restrict, map: "damages_responsible_operator_fkey")
   attachments    DamageAttachment[]
 
   @@unique([tenant_id, id])
   @@index([tenant_id, status])
   @@index([tenant_id, vehicle_id])
   @@index([tenant_id, work_order_id])
+  @@index([tenant_id, responsible_operator_profile_id], map: "damages_responsible_operator_idx")
   @@index([tenant_id, created_at])
   @@map("damages")
 }
@@ -1859,6 +1875,9 @@ model OperatorProfile {
   // onDelete Restrict (na FK do lado Fine): perfil com multa atribuída não é apagado (a atribuição roteia
   // a multa ao extrato do profissional — RN-MUL-01).
   fines                          Fine[]
+  // Ω4C PR-09 — Danos em que este profissional é o responsável (D-Ω4C-DANO-MODEL). onDelete Restrict (na
+  // FK do lado Damage): perfil com dano atribuído não é apagado (o desconto roteia ao extrato do profissional).
+  damages                        Damage[]
   // Ω4C PR-08 — movimentos de estoque em CUSTÓDIA deste profissional (custody_type=professional). onDelete
   // Restrict (na FK do lado StockMovement): um profissional que AINDA detém itens não é apagado — "desvincular
   // devolve à base" antes de remover (D-Ω4C-INV-CUSTODY-REF-TYPED).

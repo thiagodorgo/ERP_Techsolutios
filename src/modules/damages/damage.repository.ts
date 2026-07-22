@@ -68,9 +68,18 @@ export class InMemoryDamageRepository implements DamageRepository {
     const current = await this.findById(input.tenantId, input.damageId);
     if (!current) return undefined;
 
+    // `responsibleOperatorProfileId` é tri-estado: undefined = não muda; null = LIMPAR (→ undefined);
+    // string = setar. Tratado à parte para não vazar `null` no tipo (Damage usa string | undefined).
+    const { responsibleOperatorProfileId, ...restInput } = input;
+    const nextResponsible =
+      responsibleOperatorProfileId === undefined
+        ? current.responsibleOperatorProfileId
+        : (responsibleOperatorProfileId ?? undefined);
+
     const updated: Damage = {
       ...current,
-      ...definedFields(input),
+      ...definedFields(restInput),
+      responsibleOperatorProfileId: nextResponsible,
       updatedAt: new Date(),
     };
     this.damages.set(updated.id, updated);

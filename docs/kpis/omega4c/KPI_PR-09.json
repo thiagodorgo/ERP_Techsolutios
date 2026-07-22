@@ -1,0 +1,71 @@
+{
+  "pr": "PR-09",
+  "fase": "Fase 2 — Danos (parcelas→extrato, trava, termo de ciência, vínculo)",
+  "snapshot_date": "2026-07-22",
+  "branch": "rodada/omega4c",
+  "tipo": "ESTENDER damages (módulo/tela já existiam). REUSA o rail createForSource do extrato do PR-07/03 (4º agregado a lançar no extrato do profissional).",
+  "models_alterados": [
+    "Damage (+responsible_operator_profile_id UUID nullable FK composta →operator_profiles RESTRICT; +tipo/origem/objeto/identificacao_objeto/analise_interna TEXT nullable)"
+  ],
+  "migrations": [
+    "20260829000000_add_damage_responsible_and_fields (aditiva up-only; 6 ADD COLUMN nullable + FK composta RESTRICT + índice tenant-first; custo_estimado/custo_real Decimal(20,6) INTOCADOS — provada up/down/re-up + FK cross-tenant 23503 + RESTRICT em erp-postgres pelo dba-guardião)"
+  ],
+  "comportamento": {
+    "dano_extrato": "responsible_operator_profile_id + responsible_amount → efeito de domínio cria débito(s) parcelado(s) no professional-statement via createForSource entry_type='damage' direction='debit', amount = valor real (≤ custo_real, nunca fabricado), idempotente por (source_type='damage', source_id=damageId). NÃO-amplificador (typed/travado/single-profissional/zero fan-out). Reversão via removeForSource respeita RN-EXT-01.",
+    "desconto_parcial": "responsible_amount < custo_real permitido (ANALISE:124). Guards 422: amount>0, custo_real obrigatório ao cobrar, amount≤custo_real.",
+    "trava": "com débito ativo: is_active=false → 409 damage_statement_locked; editar custo_real → 409; trocar/limpar desconto → removeForSource, parcela settled → 409 statement_entry_locked. Campos descritivos seguem editáveis.",
+    "termo_ciencia": "SEM campo persistido, SEM assinatura fabricada — parágrafo-padrão incluído/omitido no PrintDamageModal client-side (com/sem). Análise Interna NUNCA impressa.",
+    "money_honesty": "Valor Total=custo_real; Profissional R$=responsible_amount transiente (não persiste money duplicado; statementDebit derivado do extrato — single source of truth).",
+    "origem_multa": "classificação string (sem FK Dano→Multa na v1 — D-Ω4C-RECON-04).",
+    "sem_notificacao": "Danos NÃO cria notificação (grep vazio) → sem superfície de escalada PR-06/07."
+  },
+  "permissao": "REUSA damages:read/create/update (SEM permissão nova; catalog/matriz/core-saas.test/seed diff VAZIO). Efeito no extrato é interno (não exige professional_statements:create).",
+  "modulos_alterados": [
+    "src/modules/damages/* (types/validators/repository/prisma-repository/service/dto/controller — responsável, dano→extrato, trava, descritivos)",
+    "src/modules/professional-statements/* (só CHAMA createForSource/removeForSource — NÃO reescrito)",
+    "frontend/src/modules/fleet/damages/* (DamageFormModal 4 seções + alerta amarelo + PrintDamageModal com/sem termo / DamageDetailModal / DanosPage colunas Responsável/Disposição); aba Arquivos(PR-01) intocada"
+  ],
+  "rns_cobertas": [
+    "RN-DANO-01 (dano→extrato: débito parcelado, amount=valor real, dedupe idempotente 2×→1)",
+    "RN-DANO-02..05 (desconto parcial; guards 422; trava is_active/custo_real/settled 409; reversão RN-EXT-01)",
+    "RN-DANO-06..08 (§2.8: nome do responsável no front, nunca CNH; analise_interna nunca impressa; money não duplicado)",
+    "RN-DANO-09 (efeito NÃO-amplificador; ator damages:create sem professional_statements:create grava só débito constrangido)",
+    "RN-DANO-10 (posse cross-tenant defesa tripla 400/404/23503)",
+    "RN-DANO-11 (zero notificação; termo de ciência client-side sem assinatura)"
+  ],
+  "rns_total_pr": 11,
+  "cobertura_testes": {
+    "backend": "tests/damages-statement.test.ts 20/20 (dano→extrato/dedupe/desconto-parcial/guards-422/trava-409/reversão-RN-EXT-01/cross-tenant/§2.8) + rls-tenant-isolation bloco damages 3-tenant + teardown FK-safe. damages 7 + damages-routes 12 verdes.",
+    "frontend": "frontend/tests/danos-responsavel.test.tsx 9/9 (4 seções, select responsável, desconto parcial, badge lançado, alerta amarelo, 409 honestos, impressão com/sem termo, análise interna nunca impressa, PT-BR, §2.8 sem CNH)"
+  },
+  "d_records": [
+    "D-Ω4C-DANO-MODEL (responsible + 5 descritivos)",
+    "D-Ω4C-DANO-STATEMENT-EFFECT (dano→extrato via rail PR-07, não-amplificador)",
+    "D-Ω4C-DANO-MONEY (responsible_amount transiente; desconto parcial; statementDebit derivado)",
+    "D-Ω4C-DANO-TRAVA (débito ativo trava is_active/custo_real; RN-EXT-01)",
+    "D-Ω4C-DANO-TERMO (termo de ciência client-side com/sem; sem assinatura; análise interna nunca impressa)",
+    "D-Ω4C-DANO-RBAC (reusa damages:*; sem permissão nova)"
+  ],
+  "divergencias_vs_autem": [
+    "Valor Total = custo_real (custo_estimado coexiste; sem fabricar)",
+    "responsible_amount/parcelas/1º venc transientes (money vive só no extrato)",
+    "tipo/objeto/identificacao/origem/analise descritivos; origem MULTA = string sem FK",
+    "impressão client-side window.print() (sem PDF de backend)",
+    "deep-link 'Ver no extrato' não cabeado no DamageDetailModal (comportamento equivalente; follow-up)"
+  ],
+  "junta": {
+    "agente-dba-guardiao": "APROVADO (0 cond)",
+    "omega4c-avaliador": "APROVADO (2 BAIXA)",
+    "coordenador-de-acessos": "APROVADO (1 BAIXA informativa)",
+    "veredito": "UNÂNIME 3/3 APROVADO (1ª passada)"
+  },
+  "kpi_repo_wide": {
+    "backend": "1420->1440 (+20)",
+    "frontend_smoke": "760->769 (+9)",
+    "blocks": "79->80"
+  },
+  "coexistencia": "rail professional-statement.service INTOCADO (só chamado); catalog/matriz diff vazio; fines/insurance/estoque/OS/financial/notifications/core-saas sem regressão; aba Arquivos(PR-01) intocada",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

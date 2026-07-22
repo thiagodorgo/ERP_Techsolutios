@@ -8,6 +8,8 @@ import {
   formatDamageDate,
   formatFileSize,
   formatValor,
+  getDamageDispositionLabel,
+  getDamageDispositionTone,
   getDamageStatusLabel,
   getDamageStatusTone,
   getGravidadeLabel,
@@ -59,6 +61,7 @@ export function DamageDetailModal({
   damage,
   vehicleLabel,
   workOrderCode,
+  responsibleName,
   canUpload,
   canDelete,
   context,
@@ -68,6 +71,8 @@ export function DamageDetailModal({
   readonly damage: Damage;
   readonly vehicleLabel?: string;
   readonly workOrderCode?: string;
+  // §2.8 — nome do responsável resolvido pela lista de Profissionais (nunca vem no DTO/CNH).
+  readonly responsibleName?: string | null;
   readonly canUpload: boolean;
   readonly canDelete: boolean;
   readonly context: DamageApiContext;
@@ -76,6 +81,8 @@ export function DamageDetailModal({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [attachments, setAttachments] = useState<DamageAttachment[]>(damage.attachments ?? []);
+  // Ω4C PR-09 — snapshot do detalhe (traz statementDebit derivado do extrato; a lista não o carrega).
+  const [snapshot, setSnapshot] = useState<Damage>(damage);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -83,12 +90,13 @@ export function DamageDetailModal({
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyAttachmentId, setBusyAttachmentId] = useState<string | null>(null);
 
-  // Recarrega o dano (GET /:id inclui os anexos) ao abrir — a lista não traz as fotos.
+  // Recarrega o dano (GET /:id inclui os anexos + o débito ativo) ao abrir — a lista não traz as fotos.
   const reload = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
       const fresh = await getDamage(context, damage.id);
+      if (fresh) setSnapshot(fresh);
       setAttachments(fresh?.attachments ?? []);
     } catch {
       setLoadError("Não foi possível carregar as fotos deste dano.");
@@ -181,10 +189,30 @@ export function DamageDetailModal({
           <span style={fieldValueStyle}>{formatValor(damage.custoEstimado)}</span>
         </div>
         <div style={fieldStyle}>
-          <span style={fieldLabelStyle}>Custo real</span>
-          <span style={fieldValueStyle}>{formatValor(damage.custoReal)}</span>
+          <span style={fieldLabelStyle}>Valor Total</span>
+          <span style={fieldValueStyle}>{formatValor(snapshot.custoReal ?? damage.custoReal)}</span>
+        </div>
+        <div style={fieldStyle}>
+          <span style={fieldLabelStyle}>Responsável</span>
+          <span style={fieldValueStyle}>{responsibleName ?? "—"}</span>
+        </div>
+        <div style={fieldStyle}>
+          <span style={fieldLabelStyle}>Disposição</span>
+          <span>
+            {snapshot.statementDebit || snapshot.disposition === "statement" ? (
+              <Chip tone={getDamageDispositionTone("statement")}>{getDamageDispositionLabel("statement")}</Chip>
+            ) : (
+              <span style={mutedStyle}>—</span>
+            )}
+          </span>
         </div>
       </div>
+
+      {snapshot.statementDebit ? (
+        <p style={{ ...mutedStyle, marginTop: "var(--space-8)" }}>
+          Desconto no extrato do profissional: {formatValor(snapshot.statementDebit.totalAmount)} em {snapshot.statementDebit.installmentTotal}x.
+        </p>
+      ) : null}
 
       <div style={{ marginTop: "var(--space-12)" }}>
         <span style={fieldLabelStyle}>Descrição</span>

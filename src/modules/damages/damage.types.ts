@@ -10,6 +10,21 @@ export type DamageStatus = (typeof DAMAGE_STATUSES)[number];
 
 export const DEFAULT_DAMAGE_STATUS: DamageStatus = "registrado";
 
+/**
+ * Ω4C PR-09 (D-Ω4C-DANO-MODEL) — "Tipo de Dano" do AutEM (Informações Gerais): enum-app em INGLÊS com
+ * labels PT-BR na fronteira (INTERNO/EXTERNO/AMBOS). SEM CHECK no banco — validado na app.
+ */
+export const DAMAGE_TIPOS = ["internal", "external", "both"] as const;
+export type DamageTipo = (typeof DAMAGE_TIPOS)[number];
+
+/**
+ * Ω4C PR-09 — "disposição" DERIVADA do próprio dano (espelha a Multa): `statement` quando há profissional
+ * responsável atribuído; `none` caso contrário. O valor efetivamente descontado (parcelas/settled) vive no
+ * extrato e aparece no bloco `statementDebit` do DETALHE (não na lista, que só carrega a coluna).
+ */
+export const DAMAGE_DISPOSITIONS = ["statement", "none"] as const;
+export type DamageDisposition = (typeof DAMAGE_DISPOSITIONS)[number];
+
 export type JsonRecord = Record<string, unknown>;
 
 export type DamageActorContext = {
@@ -31,10 +46,21 @@ export type Damage = {
   readonly tenantId: string;
   readonly vehicleId: string;
   readonly workOrderId?: string;
+  /**
+   * Ω4C PR-09 — PROFISSIONAL RESPONSÁVEL (um operator_profile). Quando setado E há valor a cobrar, o
+   * desconto vira débito parcelado no extrato desse profissional (RN-EXT-01). Ausente = sem responsável.
+   */
+  readonly responsibleOperatorProfileId?: string;
   readonly data: Date;
   readonly gravidade: DamageGravidade;
   readonly descricao: string;
   readonly status: DamageStatus;
+  // Ω4C PR-09 — campos descritivos (display/impressão). `analiseInterna` NUNCA é impressa (ANALISE:126).
+  readonly tipo?: DamageTipo;
+  readonly origem?: string;
+  readonly objeto?: string;
+  readonly identificacaoObjeto?: string;
+  readonly analiseInterna?: string;
   readonly custoEstimado?: number;
   readonly custoReal?: number;
   readonly isActive: boolean;
@@ -42,6 +68,19 @@ export type Damage = {
   readonly updatedBy?: string;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+};
+
+/**
+ * Ω4C PR-09 (D-Ω4C-DANO-MONEY) — resumo DERIVADO do débito ativo do dano no extrato (§2.8: agregado, sem
+ * parcela individual/CNH). É montado a partir de `findActiveBySource(damage, damageId)` — NUNCA persistido
+ * (o dinheiro cobrado é single-source-of-truth no extrato). `null` = sem débito ativo (identificação-só/
+ * empresa absorve). Alimenta o badge "lançado no extrato" e a trava do front.
+ */
+export type DamageStatementDebit = {
+  readonly totalAmount: number;
+  readonly installmentTotal: number;
+  readonly firstDueDate: Date;
+  readonly hasSettled: boolean;
 };
 
 /**
@@ -100,6 +139,11 @@ export type UpdateDamageInput = Partial<
     | "gravidade"
     | "descricao"
     | "status"
+    | "tipo"
+    | "origem"
+    | "objeto"
+    | "identificacaoObjeto"
+    | "analiseInterna"
     | "custoEstimado"
     | "custoReal"
     | "isActive"
@@ -108,6 +152,8 @@ export type UpdateDamageInput = Partial<
 > & {
   readonly tenantId: string;
   readonly damageId: string;
+  // `null` = LIMPAR o profissional responsável (retira o débito do extrato); `undefined` = não muda.
+  readonly responsibleOperatorProfileId?: string | null;
 };
 
 export type CreateDamageAttachmentInput = {
