@@ -4,12 +4,15 @@ import type {
   DamageAttachment,
   DamageAttachmentMarker,
   DamageData,
+  DamageDisposition,
   DamageDraft,
   DamageFieldError,
   DamageGravidade,
   DamagePagination,
+  DamageStatementDebit,
   DamageStatus,
   DamageStatusFilter,
+  DamageTipo,
 } from "./damages.types";
 
 const DESCRICAO_MAX = 2000;
@@ -31,8 +34,23 @@ const DAMAGE_GRAVIDADE_META: Record<DamageGravidade, { label: string; tone: "def
   grave: { label: "Grave", tone: "danger" },
 };
 
+// Ω4C PR-09 — "Tipo de Dano": token técnico -> rótulo PT-BR (Interno/Externo/Ambos). Descritivo, sem regra.
+const DAMAGE_TIPO_META: Record<DamageTipo, { label: string }> = {
+  internal: { label: "Interno" },
+  external: { label: "Externo" },
+  both: { label: "Ambos" },
+};
+
+// Ω4C PR-09 — disposição do dano no extrato: `statement` = há responsável (desconto lançado) -> badge verde
+// "Lançado no extrato"; `none` = sem responsável -> "—".
+const DAMAGE_DISPOSITION_META: Record<DamageDisposition, { label: string; tone: "success" | "default" }> = {
+  statement: { label: "Lançado no extrato", tone: "success" },
+  none: { label: "—", tone: "default" },
+};
+
 const DAMAGE_STATUS_VALUES = Object.keys(DAMAGE_STATUS_META) as DamageStatus[];
 const DAMAGE_GRAVIDADE_VALUES = Object.keys(DAMAGE_GRAVIDADE_META) as DamageGravidade[];
+const DAMAGE_TIPO_VALUES = Object.keys(DAMAGE_TIPO_META) as DamageTipo[];
 
 export function isDamageStatus(value: string | null | undefined): value is DamageStatus {
   return typeof value === "string" && DAMAGE_STATUS_VALUES.includes(value as DamageStatus);
@@ -41,6 +59,24 @@ export function isDamageStatus(value: string | null | undefined): value is Damag
 export function isDamageGravidade(value: string | null | undefined): value is DamageGravidade {
   return typeof value === "string" && DAMAGE_GRAVIDADE_VALUES.includes(value as DamageGravidade);
 }
+
+export function isDamageTipo(value: string | null | undefined): value is DamageTipo {
+  return typeof value === "string" && DAMAGE_TIPO_VALUES.includes(value as DamageTipo);
+}
+
+export function getDamageTipoLabel(tipo: DamageTipo | null | undefined): string {
+  return tipo ? DAMAGE_TIPO_META[tipo]?.label ?? "—" : "—";
+}
+
+export function getDamageDispositionLabel(disposition: DamageDisposition): string {
+  return DAMAGE_DISPOSITION_META[disposition]?.label ?? "—";
+}
+
+export function getDamageDispositionTone(disposition: DamageDisposition): "success" | "default" {
+  return DAMAGE_DISPOSITION_META[disposition]?.tone ?? ("default" as const);
+}
+
+export const DAMAGE_TIPO_OPTIONS = DAMAGE_TIPO_VALUES.map((value) => ({ value, label: DAMAGE_TIPO_META[value].label }));
 
 export function adaptDamagesResponse(response: unknown, source: DamageData["source"] = "api", fallbackReason?: string): DamageData {
   const payload = readRecord(response);
@@ -155,7 +191,30 @@ export function validateDamage(input: DamageDraft): DamageFieldError[] {
     errors.push({ field: "custoEstimado", message: "Custo estimado inválido (use um valor em R$ ≥ 0)." });
   }
   if (input.custoReal !== undefined && (!Number.isFinite(input.custoReal) || input.custoReal < 0)) {
-    errors.push({ field: "custoReal", message: "Custo real inválido (use um valor em R$ ≥ 0)." });
+    errors.push({ field: "custoReal", message: "Valor Total do dano inválido (use um valor em R$ ≥ 0)." });
+  }
+
+  // Ω4C PR-09 (D-Ω4C-DANO-MONEY) — desconto do profissional no extrato. Só valida quando há responsável
+  // atribuído E um valor de desconto informado (o profissional pode ser identificação-só, sem cobrança).
+  if (input.responsibleOperatorProfileId && input.responsibleAmount !== undefined) {
+    const amount = input.responsibleAmount;
+    if (!Number.isFinite(amount) || amount <= 0) {
+      errors.push({ field: "responsibleAmount", message: "O valor do profissional (R$) deve ser maior que zero." });
+    } else if (input.custoReal === undefined) {
+      // Cobrar exige o Valor Total do dano (a base do desconto).
+      errors.push({ field: "custoReal", message: "Informe o Valor Total do dano para lançar o desconto do profissional." });
+    } else if (amount - input.custoReal > 1e-9) {
+      // Desconto parcial é permitido; exceder o total, não.
+      errors.push({ field: "responsibleAmount", message: "O valor do profissional (R$) não pode exceder o Valor Total do dano." });
+    }
+  }
+
+  // Parcelas do desconto: só entram com responsável (inteiro 1..240).
+  if (input.responsibleOperatorProfileId && input.responsibleInstallmentTotal !== undefined) {
+    const total = input.responsibleInstallmentTotal;
+    if (!Number.isInteger(total) || total < 1 || total > 240) {
+      errors.push({ field: "responsibleInstallmentTotal", message: "Parcelas do desconto deve ser um inteiro entre 1 e 240." });
+    }
   }
 
   return errors;
@@ -163,13 +222,19 @@ export function validateDamage(input: DamageDraft): DamageFieldError[] {
 
 // ── Interpretação dos erros de domínio ({error:{reason}}) ────────────────────
 // A ApiError não expõe o corpo cru; quando o motivo não vier explícito, inferimos pelo
-// status HTTP + contexto da operação (form × transição).
-export type DamageSubmitContext = "form" | "transition";
+// status HTTP + contexto da operação (form × transição × desativação).
+export type DamageSubmitContext = "form" | "transition" | "toggle-active";
+
+// Ω4C PR-09 — intenção da disposição no submit, só para DESAMBIGUAR um 409 sem corpo (o ApiError esconde o
+// motivo). Ao SETAR/TROCAR/LIMPAR o responsável com débito ativo a trava do extrato (RN-EXT-01 → 409
+// statement_entry_locked) é a única 409 possível; sem mudança de responsável, um 409 é a trava do dano
+// (custo total / desativação com débito ativo → damage_statement_locked).
+export type DamageDispositionIntent = "set" | "clear";
 
 export type DamageSubmitFeedback = {
   readonly reason?: string;
   // Campo do formulário a marcar; ausente = mostrar só como Alerta.
-  readonly field?: "vehicleId" | "workOrderId";
+  readonly field?: "vehicleId" | "workOrderId" | "responsibleOperatorProfileId" | "custoReal" | "responsibleAmount";
   readonly message: string;
 };
 
@@ -188,22 +253,79 @@ export const DAMAGE_REASON_FEEDBACK: Record<string, DamageSubmitFeedback> = {
     field: "workOrderId",
     message: "OS de origem inválida para esta organização. Selecione outra OS ou deixe em branco.",
   },
+  // Ω4C PR-09 — Profissional responsável inválido/de outra organização (400 do backend).
+  invalid_operator_profile_reference: {
+    reason: "invalid_operator_profile_reference",
+    field: "responsibleOperatorProfileId",
+    message: "Profissional inválido para esta organização. Selecione outro profissional.",
+  },
+  // Ω4C PR-09 (D-Ω4C-DANO-TRAVA / alerta amarelo AutEM) — dano com desconto ativo no extrato: Valor Total e
+  // desativação travados até todas as parcelas serem removidas do extrato.
+  damage_statement_locked: {
+    reason: "damage_statement_locked",
+    message:
+      "O valor do dano já se encontra no extrato do profissional. A exclusão e algumas alterações não podem ser feitas até que todas as parcelas sejam removidas do mesmo.",
+  },
+  // Ω4C PR-09 — reversão barrada pela trava do extrato (RN-EXT-01): parcela já liquidada não se desfaz.
+  statement_entry_locked: {
+    reason: "statement_entry_locked",
+    message:
+      "Não é possível alterar o responsável: há parcela já liquidada no extrato. A reversão só é possível por ajuste.",
+  },
+  // Ω4C PR-09 (D-Ω4C-DANO-MONEY / 422) — cobrar exige o Valor Total do dano (a base do desconto).
+  damage_total_required: {
+    reason: "damage_total_required",
+    field: "custoReal",
+    message: "Informe o Valor Total do dano para lançar o desconto do profissional.",
+  },
+  // Ω4C PR-09 (422) — desconto parcial é permitido; exceder o Valor Total, não.
+  responsible_amount_exceeds_total: {
+    reason: "responsible_amount_exceeds_total",
+    field: "responsibleAmount",
+    message: "O valor do profissional (R$) não pode exceder o Valor Total do dano.",
+  },
+  invalid_responsible_amount: {
+    reason: "invalid_responsible_amount",
+    field: "responsibleAmount",
+    message: "O valor do profissional (R$) deve ser maior que zero.",
+  },
 };
 
 const FALLBACK_MESSAGE: Record<DamageSubmitContext, string> = {
   form: "Não foi possível salvar o dano. Tente novamente.",
   transition: "Não foi possível atualizar a situação do dano. Tente novamente.",
+  "toggle-active": "Não foi possível atualizar o registro do dano. Tente novamente.",
 };
 
-function resolveReason(explicitReason: string | undefined, status: number | undefined, context: DamageSubmitContext): string | undefined {
+function resolveReason(
+  explicitReason: string | undefined,
+  status: number | undefined,
+  context: DamageSubmitContext,
+  dispositionIntent?: DamageDispositionIntent,
+): string | undefined {
   if (explicitReason) return explicitReason;
-  if (status === 422) return "invalid_status_transition";
-  if (status === 400) return context === "form" ? "invalid_vehicle_reference" : undefined;
+  if (status === 409) {
+    // Desativar com débito ativo → trava do dano.
+    if (context === "toggle-active") return "damage_statement_locked";
+    // Mudou o responsável (setar/trocar/limpar) → trava do extrato (parcela liquidada).
+    if (dispositionIntent === "set" || dispositionIntent === "clear") return "statement_entry_locked";
+    // Sem mudança de responsável (ex.: editar Valor Total com débito ativo) → trava do dano.
+    return "damage_statement_locked";
+  }
+  if (status === 422) {
+    // Transição inválida só faz sentido no fluxo de transição de situação.
+    return context === "transition" ? "invalid_status_transition" : undefined;
+  }
+  // 400 é ambíguo (viatura × OS × responsável) sem o motivo do corpo → Alerta genérico.
   return undefined;
 }
 
-export function interpretDamageSubmitError(error: unknown, context: DamageSubmitContext = "form"): DamageSubmitFeedback {
-  const reason = resolveReason(readErrorReason(error), readErrorStatus(error), context);
+export function interpretDamageSubmitError(
+  error: unknown,
+  context: DamageSubmitContext = "form",
+  dispositionIntent?: DamageDispositionIntent,
+): DamageSubmitFeedback {
+  const reason = resolveReason(readErrorReason(error), readErrorStatus(error), context, dispositionIntent);
   if (reason && DAMAGE_REASON_FEEDBACK[reason]) return DAMAGE_REASON_FEEDBACK[reason];
 
   if (error instanceof Error && error.message) return { message: error.message };
@@ -285,6 +407,13 @@ export function parsePtBrNumber(value: string | null | undefined): number | unde
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+export function parseIntStrict(value: string | null | undefined): number | undefined {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed || !/^-?\d+$/.test(trimmed)) return undefined;
+  const parsed = Number(trimmed);
+  return Number.isInteger(parsed) ? parsed : undefined;
+}
+
 export function formatValor(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return "—";
   return formatBRL(value);
@@ -328,12 +457,20 @@ function adaptDamage(input: unknown): Damage | null {
     id,
     vehicleId,
     workOrderId: readNullableString(item, ["workOrderId", "work_order_id"]),
+    responsibleOperatorProfileId: readNullableString(item, ["responsibleOperatorProfileId", "responsible_operator_profile_id"]),
+    disposition: coerceDisposition(readString(item, ["disposition"])),
     data: readString(item, ["data"]) ?? "",
     gravidade: coerceGravidade(readString(item, ["gravidade"])),
     descricao,
     status: coerceStatus(readString(item, ["status"])),
+    tipo: coerceTipo(readString(item, ["tipo"])),
+    origem: readNullableString(item, ["origem"]),
+    objeto: readNullableString(item, ["objeto"]),
+    identificacaoObjeto: readNullableString(item, ["identificacaoObjeto", "identificacao_objeto"]),
+    analiseInterna: readNullableString(item, ["analiseInterna", "analise_interna"]),
     custoEstimado: readNullableNumber(item, ["custoEstimado", "custo_estimado"]),
     custoReal: readNullableNumber(item, ["custoReal", "custo_real"]),
+    statementDebit: adaptStatementDebit(item.statementDebit ?? item.statement_debit),
     isActive: readBoolean(item, ["isActive", "is_active"]) ?? true,
     attachments,
     createdAt: readString(item, ["createdAt", "created_at"]) ?? new Date().toISOString(),
@@ -347,6 +484,32 @@ function coerceStatus(value: string | undefined): DamageStatus {
 
 function coerceGravidade(value: string | undefined): DamageGravidade {
   return isDamageGravidade(value) ? value : "leve";
+}
+
+// Disposição derivada: `statement` só quando o backend confirma o responsável; senão `none`.
+function coerceDisposition(value: string | undefined): DamageDisposition {
+  return value === "statement" ? "statement" : "none";
+}
+
+function coerceTipo(value: string | undefined): DamageTipo | null {
+  return isDamageTipo(value) ? value : null;
+}
+
+// Ω4C PR-09 — bloco DERIVADO do débito ativo no extrato (§2.8: agregado; nunca parcela individual/CNH).
+// Ausente/incompleto → null (sem débito ativo).
+function adaptStatementDebit(input: unknown): DamageStatementDebit | null {
+  const record = readRecord(input);
+  if (!record) return null;
+  const totalAmount = readNumber(record, ["totalAmount", "total_amount"]);
+  const installmentTotal = readNumber(record, ["installmentTotal", "installment_total"]);
+  const firstDueDate = readString(record, ["firstDueDate", "first_due_date"]);
+  if (totalAmount === undefined || installmentTotal === undefined || !firstDueDate) return null;
+  return {
+    totalAmount,
+    installmentTotal,
+    firstDueDate,
+    hasSettled: readBoolean(record, ["hasSettled", "has_settled"]) ?? false,
+  };
 }
 
 function adaptPagination(

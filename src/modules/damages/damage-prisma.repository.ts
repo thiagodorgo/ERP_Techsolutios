@@ -9,11 +9,13 @@ import type {
   DamageGravidade,
   DamageMarker,
   DamageStatus,
+  DamageTipo,
   JsonRecord,
   ListDamagesInput,
   ListDamagesResult,
   UpdateDamageInput,
 } from "./damage.types.js";
+import { DamageError } from "./damage.types.js";
 import type { DamageRepository } from "./damage.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
@@ -22,24 +24,38 @@ export class PrismaDamageRepository implements DamageRepository {
   constructor(private readonly client: PrismaExecutor) {}
 
   async create(input: CreateDamageInput): Promise<Damage> {
-    const damage = await this.client.damage.create({
-      data: {
-        tenant_id: input.tenantId,
-        vehicle_id: input.vehicleId,
-        work_order_id: input.workOrderId ?? null,
-        data: input.data,
-        gravidade: input.gravidade,
-        descricao: input.descricao,
-        status: input.status,
-        custo_estimado: input.custoEstimado ?? null,
-        custo_real: input.custoReal ?? null,
-        is_active: input.isActive ?? true,
-        created_by: input.createdBy ?? null,
-        updated_by: input.updatedBy ?? null,
-      },
-    });
+    try {
+      const damage = await this.client.damage.create({
+        data: {
+          tenant_id: input.tenantId,
+          vehicle_id: input.vehicleId,
+          work_order_id: input.workOrderId ?? null,
+          responsible_operator_profile_id: input.responsibleOperatorProfileId ?? null,
+          data: input.data,
+          gravidade: input.gravidade,
+          descricao: input.descricao,
+          status: input.status,
+          tipo: input.tipo ?? null,
+          origem: input.origem ?? null,
+          objeto: input.objeto ?? null,
+          identificacao_objeto: input.identificacaoObjeto ?? null,
+          analise_interna: input.analiseInterna ?? null,
+          custo_estimado: input.custoEstimado ?? null,
+          custo_real: input.custoReal ?? null,
+          is_active: input.isActive ?? true,
+          created_by: input.createdBy ?? null,
+          updated_by: input.updatedBy ?? null,
+        },
+      });
 
-    return mapDamageRecord(damage);
+      return mapDamageRecord(damage);
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw invalidResponsibleReference();
+      }
+
+      throw error;
+    }
   }
 
   async list(input: ListDamagesInput): Promise<ListDamagesResult> {
@@ -74,26 +90,40 @@ export class PrismaDamageRepository implements DamageRepository {
   }
 
   async update(input: UpdateDamageInput): Promise<Damage | undefined> {
-    const updated = await this.client.damage.updateManyAndReturn({
-      where: {
-        tenant_id: input.tenantId,
-        id: input.damageId,
-      },
-      data: compactRecord({
-        vehicle_id: input.vehicleId,
-        work_order_id: nullable(input.workOrderId),
-        data: input.data,
-        gravidade: input.gravidade,
-        descricao: input.descricao,
-        status: input.status,
-        custo_estimado: nullable(input.custoEstimado),
-        custo_real: nullable(input.custoReal),
-        is_active: input.isActive,
-        updated_by: nullable(input.updatedBy),
-      }),
-    });
+    try {
+      const updated = await this.client.damage.updateManyAndReturn({
+        where: {
+          tenant_id: input.tenantId,
+          id: input.damageId,
+        },
+        data: compactRecord({
+          vehicle_id: input.vehicleId,
+          work_order_id: nullable(input.workOrderId),
+          responsible_operator_profile_id: nullable(input.responsibleOperatorProfileId),
+          data: input.data,
+          gravidade: input.gravidade,
+          descricao: input.descricao,
+          status: input.status,
+          tipo: nullable(input.tipo),
+          origem: nullable(input.origem),
+          objeto: nullable(input.objeto),
+          identificacao_objeto: nullable(input.identificacaoObjeto),
+          analise_interna: nullable(input.analiseInterna),
+          custo_estimado: nullable(input.custoEstimado),
+          custo_real: nullable(input.custoReal),
+          is_active: input.isActive,
+          updated_by: nullable(input.updatedBy),
+        }),
+      });
 
-    return updated[0] ? mapDamageRecord(updated[0]) : undefined;
+      return updated[0] ? mapDamageRecord(updated[0]) : undefined;
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw invalidResponsibleReference();
+      }
+
+      throw error;
+    }
   }
 
   async createAttachment(input: CreateDamageAttachmentInput): Promise<DamageAttachment | undefined> {
@@ -231,10 +261,16 @@ function mapDamageRecord(record: {
   readonly tenant_id: string;
   readonly vehicle_id: string;
   readonly work_order_id: string | null;
+  readonly responsible_operator_profile_id: string | null;
   readonly data: Date;
   readonly gravidade: string;
   readonly descricao: string;
   readonly status: string;
+  readonly tipo: string | null;
+  readonly origem: string | null;
+  readonly objeto: string | null;
+  readonly identificacao_objeto: string | null;
+  readonly analise_interna: string | null;
   readonly custo_estimado: unknown;
   readonly custo_real: unknown;
   readonly is_active: boolean;
@@ -248,10 +284,16 @@ function mapDamageRecord(record: {
     tenantId: record.tenant_id,
     vehicleId: record.vehicle_id,
     workOrderId: record.work_order_id ?? undefined,
+    responsibleOperatorProfileId: record.responsible_operator_profile_id ?? undefined,
     data: record.data,
     gravidade: record.gravidade as DamageGravidade,
     descricao: record.descricao,
     status: record.status as DamageStatus,
+    tipo: (record.tipo as DamageTipo | null) ?? undefined,
+    origem: record.origem ?? undefined,
+    objeto: record.objeto ?? undefined,
+    identificacaoObjeto: record.identificacao_objeto ?? undefined,
+    analiseInterna: record.analise_interna ?? undefined,
     custoEstimado: optionalDecimal(record.custo_estimado),
     custoReal: optionalDecimal(record.custo_real),
     isActive: record.is_active,
@@ -260,6 +302,26 @@ function mapDamageRecord(record: {
     createdAt: record.created_at,
     updatedAt: record.updated_at,
   };
+}
+
+// P2003 — a FK composta (tenant_id, responsible_operator_profile_id) → operator_profiles falhou: o perfil
+// não existe / é de outro tenant. O serviço já pré-valida (400); este é o backstop do banco (espelha a Multa).
+function isForeignKeyViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { readonly code?: unknown }).code === "P2003"
+  );
+}
+
+function invalidResponsibleReference(): DamageError {
+  return new DamageError(
+    400,
+    "DAMAGE_INVALID",
+    "invalid_operator_profile_reference",
+    "responsibleOperatorProfileId does not reference a professional in this organization.",
+  );
 }
 
 function mapAttachmentRecord(record: {

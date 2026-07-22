@@ -1456,6 +1456,89 @@ if (!connectionString) {
       const tenantCFine = await withTenantRls(client, tenantC.id, (tx) => tx.fine.findUnique({ where: { id: fineCId } }));
       assert.equal(tenantCFine?.responsible_operator_profile_id, tenantCProfessional.operatorProfileId, "tenant C fine keeps its responsible in-tenant");
 
+      // Ω4C PR-09 (DANO-08) — damages.responsible_operator_profile_id (profissional responsável) com 3 tenants
+      // EFÊMEROS (A, B, C). O dano referencia um vehicle (FK composta) e um operator_profile (FK composta
+      // RESTRICT, a coluna ADITIVA desta fatia — 20260829000000). Reusa os operator_profiles do bloco PR-03.
+      // Prova: (a) FK cross-tenant REJEITADA (dano de A com perfil de B → violação de FK); (b) invisível sem
+      // contexto; (c) cross-tenant updateMany count=0; (d) visível/intocado in-tenant. tenant_id 1º de todo índice.
+      // TEARDOWN FK-SAFE abaixo (damages ANTES de operator_profiles/vehicles — lição do CI-catch do PR-06).
+      const createDamageWithResponsible = (
+        tx: typeof client,
+        tenantId: string,
+        operatorProfileId: string,
+      ) => (async () => {
+        const [vehicle] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO vehicles (tenant_id, plate, model)
+          VALUES (${tenantId}::uuid, ${`RLS-DMG-${tenantId.slice(0, 8)}`}, 'RLS Truck')
+          RETURNING id
+        `;
+        const [damage] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO damages (
+            tenant_id, vehicle_id, responsible_operator_profile_id, data, gravidade, descricao, status, tipo, origem
+          )
+          VALUES (
+            ${tenantId}::uuid, ${vehicle.id}::uuid, ${operatorProfileId}::uuid, now(), 'moderada', 'RLS damage', 'registrado', 'internal', 'multa'
+          )
+          RETURNING id
+        `;
+        return damage.id;
+      })();
+      const damageAId = await withTenantRls(client, tenantA.id, (tx) => createDamageWithResponsible(tx as typeof client, tenantA.id, operatorProfileAId));
+      const damageBId = await withTenantRls(client, tenantB.id, (tx) => createDamageWithResponsible(tx as typeof client, tenantB.id, operatorProfileBId));
+      const damageCId = await withTenantRls(client, tenantC.id, (tx) => createDamageWithResponsible(tx as typeof client, tenantC.id, tenantCProfessional.operatorProfileId));
+
+      // (a) FK COMPOSTA cross-tenant REJEITADA: um dano de A referenciando o perfil de B viola a FK (não existe
+      // (tenant_id=A, operator_profile_id=perfilB) em operator_profiles). A tx inteira faz rollback (sem órfão).
+      await assert.rejects(
+        () =>
+          withTenantRls(client, tenantA.id, async (tx) => {
+            const [vehicle] = await tx.$queryRaw<Array<{ id: string }>>`
+              INSERT INTO vehicles (tenant_id, plate, model)
+              VALUES (${tenantA.id}::uuid, ${`RLS-DXFK-${tenantA.id.slice(0, 8)}`}, 'RLS Truck')
+              RETURNING id
+            `;
+            await tx.$executeRaw`
+              INSERT INTO damages (tenant_id, vehicle_id, responsible_operator_profile_id, data, gravidade, descricao, status)
+              VALUES (${tenantA.id}::uuid, ${vehicle.id}::uuid, ${operatorProfileBId}::uuid, now(), 'leve', 'RLS xfk', 'registrado')
+            `;
+          }),
+        "damages.responsible_operator_profile_id cross-tenant deve violar a FK composta RESTRICT",
+      );
+
+      const damagesWithoutContext = await client.damage.findMany({
+        where: { id: { in: [damageAId, damageBId, damageCId] } },
+      });
+      assert.deepEqual(
+        damagesWithoutContext.map((entry) => entry.id),
+        [],
+        "tenant-scoped damages must not be visible without app.current_tenant_id",
+      );
+
+      const tenantADamageView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.damage.findMany({ where: { id: { in: [damageAId, damageBId, damageCId] } } });
+        const crossTenantUpdate = await tx.damage.updateMany({
+          where: { id: { in: [damageBId, damageCId] } },
+          data: { descricao: "RLS cross-tenant update should not apply" },
+        });
+        return { visibleIds: visible.map((entry) => entry.id), crossUpdatedRows: crossTenantUpdate.count };
+      });
+      assert.deepEqual(
+        tenantADamageView.visibleIds,
+        [damageAId],
+        "tenant A must only see its own damage (not tenant B/C)",
+      );
+      assert.equal(
+        tenantADamageView.crossUpdatedRows,
+        0,
+        "tenant A must not update tenant B/C damages",
+      );
+
+      const tenantBDamage = await withTenantRls(client, tenantB.id, (tx) => tx.damage.findUnique({ where: { id: damageBId } }));
+      assert.equal(tenantBDamage?.responsible_operator_profile_id, operatorProfileBId, "tenant B damage keeps its responsible in-tenant");
+      assert.equal(tenantBDamage?.descricao, "RLS damage", "tenant B damage descricao untouched in-tenant");
+      const tenantCDamage = await withTenantRls(client, tenantC.id, (tx) => tx.damage.findUnique({ where: { id: damageCId } }));
+      assert.equal(tenantCDamage?.responsible_operator_profile_id, tenantCProfessional.operatorProfileId, "tenant C damage keeps its responsible in-tenant");
+
       // Ω4C PR-08 (EST-12) — stock_movements com CUSTÓDIA: custody_type=professional + FK COMPOSTA RESTRICT
       // (tenant_id, custody_operator_profile_id) → operator_profiles (coluna ADITIVA da 20260828000000) com 3
       // tenants EFÊMEROS (A, B, C). Cada movimento referencia um inventory_item (FK composta) e reusa o
@@ -2016,6 +2099,15 @@ if (!connectionString) {
           // Restrict) E ANTES das viaturas (FK fines.vehicle_id → vehicles é Restrict); senão o cleanup quebra
           // na FK (lição do CI-catch do PR-06).
           await tx.fine.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          // Ω4C PR-09 — danos ANTES dos perfis (FK responsible_operator_profile_id → operator_profiles é
+          // Restrict, a coluna ADITIVA da 20260829000000) E ANTES das viaturas (FK damages.vehicle_id →
+          // vehicles é Restrict). TEARDOWN FK-SAFE (lição do CI-catch do PR-06). damage_attachments caem por
+          // Cascade da própria FK ao dano.
+          await tx.damage.deleteMany({
             where: {
               tenant_id: tenantId,
             },

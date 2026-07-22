@@ -11,6 +11,8 @@ import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
+import { listOperatorProfilesFromApi } from "../../../registry/operator-profiles/operator-profiles.service";
+import type { OperatorProfileItem } from "../../../registry/operator-profiles/operator-profiles.types";
 import { useVehicles } from "../../../registry/vehicles/useVehicles";
 import type { VehiclesFilters } from "../../../registry/vehicles/vehicles.types";
 import { useWorkOrders } from "../../../work-orders/useWorkOrders";
@@ -22,6 +24,8 @@ import {
   filterDamages,
   formatDamageDate,
   formatValor,
+  getDamageDispositionLabel,
+  getDamageDispositionTone,
   getDamageStatusLabel,
   getDamageStatusTone,
   getGravidadeLabel,
@@ -35,7 +39,7 @@ import {
 } from "../damages.adapter";
 import type { DamageTransition } from "../damages.adapter";
 import { buildDamagesKpiDetails } from "../damages-kpi-detail";
-import { updateDamage } from "../damages.service";
+import { getDamage, updateDamage } from "../damages.service";
 import type { Damage, DamageFilters, DamageStatusFilter } from "../damages.types";
 import { useDamages } from "../useDamages";
 
@@ -99,8 +103,10 @@ export function DanosPage() {
   const { items: workOrders } = useWorkOrders(STABLE_WORK_ORDER_FILTERS);
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const [operatorProfiles, setOperatorProfiles] = useState<OperatorProfileItem[]>([]);
   const [editing, setEditing] = useState<Damage | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [openingEditId, setOpeningEditId] = useState<string | null>(null);
   const [detail, setDetail] = useState<Damage | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -135,8 +141,25 @@ export function DanosPage() {
     [activeContext, session?.accessToken],
   );
 
+  // Ω4C PR-09 — carrega os Profissionais ATIVOS para o select de responsável e para resolver o NOME na coluna
+  // (§2.8: o DTO do dano NÃO traz o nome; resolvemos aqui pela lista, nunca expondo CNH).
+  useEffect(() => {
+    if (!activeContext) return;
+    let active = true;
+    void listOperatorProfilesFromApi(context, { isActive: "active", limit: DENSE_LIST_FETCH_LIMIT }).then((loaded) => {
+      if (active) setOperatorProfiles(loaded.items);
+    });
+    return () => {
+      active = false;
+    };
+  }, [activeContext, context]);
+
   const vehicleById = useMemo(() => new Map(vehicles.map((vehicle) => [vehicle.id, vehicle])), [vehicles]);
   const workOrderById = useMemo(() => new Map(workOrders.map((workOrder) => [workOrder.id, workOrder])), [workOrders]);
+  const responsibleById = useMemo(
+    () => new Map(operatorProfiles.map((profile) => [profile.id, profile.fullName?.trim() || null])),
+    [operatorProfiles],
+  );
   const resolveVehicleName = useCallback(
     (id: string) => {
       const vehicle = vehicleById.get(id);
@@ -151,9 +174,20 @@ export function DanosPage() {
     setFormOpen(true);
   }
 
-  function openEdit(damage: Damage) {
-    setEditing(damage);
-    setFormOpen(true);
+  // Busca o DETALHE (GET /:id) antes de editar — a lista não traz statementDebit/análise interna/objeto/origem,
+  // necessários para o alerta amarelo e a trava dos campos financeiros. Em falha, abre com o item da lista.
+  async function openEdit(damage: Damage) {
+    setOpeningEditId(damage.id);
+    setActionError(null);
+    try {
+      const fresh = await getDamage(context, damage.id);
+      setEditing(fresh ?? damage);
+    } catch {
+      setEditing(damage);
+    } finally {
+      setOpeningEditId(null);
+      setFormOpen(true);
+    }
   }
 
   function closeForm() {
@@ -182,8 +216,14 @@ export function DanosPage() {
     try {
       await updateDamage(context, damage.id, { isActive: !damage.isActive });
       await refresh();
-    } catch {
-      setActionError(`Não foi possível ${damage.isActive ? "desativar" : "reativar"} o dano. Tente novamente.`);
+    } catch (submitError) {
+      // 409 damage_statement_locked: desativar um dano com desconto ativo no extrato → mensagem honesta do AutEM.
+      const feedback = interpretDamageSubmitError(submitError, "toggle-active");
+      setActionError(
+        feedback.reason === "damage_statement_locked"
+          ? feedback.message
+          : `Não foi possível ${damage.isActive ? "desativar" : "reativar"} o dano. Tente novamente.`,
+      );
     } finally {
       setBusyId(null);
     }
@@ -238,6 +278,32 @@ export function DanosPage() {
       },
     },
     {
+      key: "responsible",
+      header: "Responsável",
+      sortable: true,
+      sortValue: (damage) => (damage.responsibleOperatorProfileId ? responsibleById.get(damage.responsibleOperatorProfileId) ?? "" : ""),
+      render: (damage) => {
+        if (!damage.responsibleOperatorProfileId) return <span style={mutedStyle}>—</span>;
+        const name = responsibleById.get(damage.responsibleOperatorProfileId);
+        return (
+          <Link to="/cadastros/profissionais" aria-label={`Ver profissional ${name ?? "responsável"} em Cadastros`}>
+            {name ?? "Profissional"}
+          </Link>
+        );
+      },
+    },
+    {
+      key: "disposition",
+      header: "Disposição",
+      sortable: true,
+      sortValue: (damage) => damage.disposition,
+      // A lista só carrega a disposição do EXTRATO (statement/none). "—" = sem responsável.
+      render: (damage) => {
+        if (damage.disposition !== "statement") return <span style={mutedStyle}>—</span>;
+        return <Chip tone={getDamageDispositionTone("statement")}>{getDamageDispositionLabel("statement")}</Chip>;
+      },
+    },
+    {
       key: "data",
       header: "Data",
       sortable: true,
@@ -276,8 +342,15 @@ export function DanosPage() {
             </Button>
             {canUpdate ? (
               <>
-                <Button type="button" size="sm" variant="secondary" aria-label={`Editar dano ${ref}`} onClick={() => openEdit(damage)}>
-                  <Pencil size={14} aria-hidden /> Editar
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={openingEditId === damage.id}
+                  aria-label={`Editar dano ${ref}`}
+                  onClick={() => void openEdit(damage)}
+                >
+                  <Pencil size={14} aria-hidden /> {openingEditId === damage.id ? "Abrindo…" : "Editar"}
                 </Button>
                 <StatusTransitionMenu damage={damage} disabled={busyId === damage.id} onPick={(transition) => void applyTransition(damage, transition)} />
                 <Button
@@ -500,6 +573,7 @@ export function DanosPage() {
           damage={editing}
           vehicles={vehicles}
           workOrders={workOrders}
+          operatorProfiles={operatorProfiles}
           context={context}
           onClose={closeForm}
           onSaved={() => {
@@ -515,6 +589,7 @@ export function DanosPage() {
           damage={detail}
           vehicleLabel={resolveVehicleName(detail.vehicleId)}
           workOrderCode={detail.workOrderId ? resolveWorkOrderCode(detail.workOrderId) : undefined}
+          responsibleName={detail.responsibleOperatorProfileId ? responsibleById.get(detail.responsibleOperatorProfileId) ?? null : null}
           canUpload={canCreate || canUpdate}
           canDelete={canUpdate}
           context={context}

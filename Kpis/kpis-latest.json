@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-21",
-  "version": "OMEGA4C-PR-08",
+  "version": "OMEGA4C-PR-09",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω4C PR-08 — Estoque com custódia e movimentos (ledger imutável; ESTENDER) — ABRE FASE 2",
-    "title": "Ω4C PR-08: estoque com custódia BASE/PROFISSIONAL/VIATURA, LINK/UNLINK/EXIT, saldo nunca negativo por custódia, ledger imutável (estorno compensatório)",
+    "block": "Ω4C PR-09 — Danos (parcelas→extrato, trava, termo de ciência; ESTENDER)",
+    "title": "Ω4C PR-09: danos com responsável→desconto parcelado no extrato (reusa rail PR-07), trava de exclusão, termo de ciência na impressão",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω4C PR-08 — ESTOQUE COM CUSTÓDIA (ESTENDER inventory: ledger imutável+saldo derivado já existiam; ABRE a FASE 2). StockMovement +custody_type (base|professional|vehicle) +custody_operator_profile_id/custody_vehicle_id (2 FK compostas RESTRICT) +transfer_group_id +reverses_movement_id; InventoryItem +is_fuel/item_type/purchase_price/sale_price(12,2)/description. Migração ADITIVA up-only 20260828000000_add_stock_custody_ledger (10 ADD COLUMN + 2 FK compostas RESTRICT + 3 índices; avg_cost/quantidade_sinalizada 20,6 INTOCADOS — provada up/down/re-up + backfill base/false/product + FK cross-tenant 23503 + RESTRICT pelo dba-guardião). SALDO POR CUSTÓDIA DERIVADO (Σ groupBy, nunca coluna; saldo global legado intocado, LINK/UNLINK netam a zero). LINK/UNLINK = par de linhas irmãs (transfer_group_id) na MESMA tx; EXIT reduz custódia origem. SALDO NUNCA NEGATIVO POR CUSTÓDIA → 409 insufficient_balance (guard no $transaction). LEDGER IMUTÁVEL: zero PATCH/DELETE de movimento (404); estorno = movimento compensatório via POST /:id/reverse (reverses_movement_id, original intacto); 2º estorno → 409 movement_already_reversed. Posse da custódia dupla-camada (422 invalid_custody + 400 invalid_custody_reference cross-tenant + FK RESTRICT 23503). §2.8 custodiante só nome, nunca CNH. BAIXA AUTOMÁTICA fuel/manutenção DEFERIDA a PR-08b (só flag is_fuel; marcar combustível NÃO gera movimento; ZERO import de fuel/maintenance). REUSA inventory_items:*/stock_movements:* (SEM permissão nova; catalog/matriz/core-saas diff vazio; SEM efeito de domínio novo → sem superfície de escalada PR-06/07). Teardown FK-safe no rls (lição CI-catch PR-06). Frontend: modal Item abas Editar/Resumo/Movimentação + CustodySummaryPanel + ItemMovementsPanel imutável (só Estornar) + sub-modais laranja Entrada/Vincular/Saída. Achado PRÉ-EXISTENTE P-INV-LEGACY-QTY-CONTRACT (fluxo legado; confirmado não-regressão, fix em fatia própria). RN-EST-01..12. Junta UNÂNIME 3/3: agente-dba-guardião APROVADO + omega4c-avaliador APROVADO + coordenador-de-acessos APROVADO. Zero regressão. Sem provider/SKU novo.",
-    "status_label": "Ω4C PR-08: estoque custódia BASE/PROFISSIONAL/VIATURA + LINK/UNLINK/EXIT + saldo nunca negativo por custódia + ledger imutável (estorno compensatório); baixa automática→PR-08b; junta 3/3; ABRE FASE 2; backend 1404->1420, smoke 745->760, blocks 78->79"
+    "summary": "Ω4C PR-09 — DANOS (ESTENDER damages; REUSA o rail createForSource do extrato do PR-07/03 — 4º agregado a lançar no extrato do profissional após a multa). Damage +responsible_operator_profile_id (FK composta →operator_profiles RESTRICT) +5 colunas descritivas (tipo/origem/objeto/identificacao_objeto/analise_interna). Migração ADITIVA up-only 20260829000000_add_damage_responsible_and_fields (6 ADD COLUMN nullable + FK composta RESTRICT + índice; custo_estimado/custo_real Decimal(20,6) INTOCADOS — provada up/down/re-up + FK cross-tenant 23503 + RESTRICT pelo dba-guardião). DANO→EXTRATO: responsável + valor → efeito de domínio cria débito(s) parcelado(s) via createForSource entry_type='damage' direction='debit', amount=valor real (≤custo_real, nunca fabricado), idempotente por origem (2×→1); NÃO-amplificador (typed/travado/single-profissional/zero fan-out); reversão via removeForSource respeita RN-EXT-01. DESCONTO PARCIAL permitido; guards 422 (amount>0/custo_real obrigatório/amount≤total). TRAVA: com débito ativo is_active=false→409 damage_statement_locked, editar custo_real→409, parcela settled→409 statement_entry_locked; descritivos editáveis. TERMO DE CIÊNCIA: parágrafo no PrintDamageModal client-side com/sem (SEM assinatura fabricada; Análise Interna NUNCA impressa). Money honesty: responsible_amount transiente (money só no extrato, statementDebit derivado). Origem MULTA = classificação string sem FK (D-Ω4C-RECON-04). ZERO notificação (sem escalada). REUSA damages:* (SEM permissão nova; catalog/matriz/core-saas/seed diff vazio; rail professional-statement NÃO reescrito). Teardown FK-safe no rls. Frontend: DamageFormModal 4 seções + alerta amarelo + PrintDamageModal + DanosPage colunas Responsável/Disposição (nome resolvido no front, §2.8 nunca CNH); aba Arquivos(PR-01) intocada. RN-DANO-01..11. Junta UNÂNIME 3/3 de 1ª passada: agente-dba-guardião APROVADO (0 cond) + omega4c-avaliador APROVADO + coordenador-de-acessos APROVADO (defesa tripla de posse). Zero regressão. Sem provider/SKU novo.",
+    "status_label": "Ω4C PR-09: danos responsável→desconto parcelado no extrato (reusa rail PR-07, não-amplificador) + trava + termo de ciência (análise interna nunca impressa); junta 3/3; backend 1420->1440, smoke 760->769, blocks 79->80"
   },
   "metrics": {
     "flutter_tests": {
@@ -21,16 +21,16 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 760,
-      "total": 760,
-      "display": "760/760",
-      "note": "+15 (estoque-custodia: abas Editar/Resumo/Movimentacao/saldos-por-custodia/sub-modal-Vincular/movimento-imutavel-so-Estornar/409-honestos/rotulos-PT-BR/§2.8-sem-CNH). Ω4C PR-08 estoque custodia (modal Item + CustodySummaryPanel + ItemMovementsPanel + StockEntry/Transfer/ExitModal). Saldo global legado intocado. Sobre 745."
+      "value": 769,
+      "total": 769,
+      "display": "769/769",
+      "note": "+9 (danos-responsavel: 4 secoes/select-responsavel/desconto-parcial/badge-lancado/alerta-amarelo/409-honestos/impressao-com-sem-termo/analise-interna-nunca-impressa/PT-BR/§2.8-sem-CNH). Ω4C PR-09 danos (DamageFormModal 4 secoes + PrintDamageModal + DanosPage). Aba Arquivos(PR-01) intocada. Sobre 760."
     },
     "backend_tests": {
-      "value": 1420,
-      "total": 1426,
-      "display": "1420/1426",
-      "note": "+16 (estoque: tests/stock-custody.test.ts +14 [LINK/UNLINK/EXIT/estorno/custodia/saldo-nunca-negativo-409/imutabilidade-2o-estorno-409/§2.8/baixa-deferida] + stock-movements-routes +1 + inventory-items-routes +1). Ω4C PR-08 ABRE FASE 2. Suite memoria (CI) 1420 pass/6 skip. Migracao 20260828000000_add_stock_custody_ledger provada up/down/re-up + backfill base/false/product + 2 FK compostas cross-tenant 23503 + RESTRICT pelo dba-guardiao (avg_cost/quantidade_sinalizada 20,6 INTOCADOS). Reusa inventory_items:*/stock_movements:* (sem permissao nova). Ledger imutavel + saldo nunca negativo por custodia. Baixa automatica deferida a PR-08b. SEM efeito de dominio novo (sem escalada). Zero regressao. Sobre 1404/1410. Local: rls-tenant-isolation DB-gated ambiental (falta scheduled_notifications no DB local)."
+      "value": 1440,
+      "total": 1446,
+      "display": "1440/1446",
+      "note": "+20 (danos: tests/damages-statement.test.ts [dano->extrato via createForSource entry_type='damage'/dedupe-2x1/desconto-parcial/guards-422/trava-409-damage_statement_locked+statement_entry_locked/reversao-RN-EXT-01/cross-tenant/§2.8]). Ω4C PR-09. Suite memoria (CI) 1440 pass/6 skip. Migracao 20260829000000_add_damage_responsible_and_fields provada up/down/re-up + FK composta cross-tenant 23503 + RESTRICT pelo dba-guardiao (custo_estimado/custo_real 20,6 INTOCADOS). Reusa damages:* (sem permissao nova; rail professional-statement NAO reescrito). Efeito dano->extrato NAO-amplificador (typed/travado/single-profissional); ZERO notificacao (sem escalada). Zero regressao. Sobre 1420/1426. Local: rls-tenant-isolation DB-gated ambiental (falta scheduled_notifications no DB local)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 79,
-      "display": "79",
-      "note": "Ω4C PR-08 (estoque com custodia BASE/PROFISSIONAL/VIATURA + LINK/UNLINK/EXIT + ledger imutavel) = feature entregue → +1 sobre 78 (Ω4C PR-07 multas+seguros, fecha Fase 1). ABRE Fase 2. PR-00 (recon) e blocos de governanca/fix nao contam como feature."
+      "value": 80,
+      "display": "80",
+      "note": "Ω4C PR-09 (danos: responsavel->desconto parcelado no extrato, trava, termo de ciencia) = feature entregue → +1 sobre 79 (Ω4C PR-08 estoque custodia). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,

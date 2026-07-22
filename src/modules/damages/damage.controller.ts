@@ -33,7 +33,8 @@ export class DamageController {
 
   async create(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
-    const damage = await service.create(actor, request.body ?? {});
+    const body = (request.body ?? {}) as Record<string, unknown>;
+    const damage = await service.create(actor, body);
 
     await recordRequestAuditBestEffort(request, {
       action: "damage.created",
@@ -47,6 +48,14 @@ export class DamageController {
         gravidade: damage.gravidade,
       },
     });
+
+    // Ω4C PR-09 — trilha da atribuição de responsável (metadata NÃO-PII: só id + parcelas; NUNCA valor/CNH).
+    if (damage.responsibleOperatorProfileId !== undefined) {
+      await this.auditResponsible(request, "damage.responsible_assigned", damage.id, {
+        operatorProfileId: damage.responsibleOperatorProfileId,
+        installmentTotal: readInstallmentTotal(body),
+      });
+    }
 
     return {
       status: 201,
@@ -85,9 +94,40 @@ export class DamageController {
       },
     });
 
+    // Ω4C PR-09 — trilha da transição do responsável (assigned/cleared) quando o corpo a toca.
+    const responsibleRaw = body.responsible_operator_profile_id ?? body.responsibleOperatorProfileId;
+    if (responsibleRaw !== undefined) {
+      const cleared = responsibleRaw === null || responsibleRaw === "";
+      await this.auditResponsible(
+        request,
+        cleared ? "damage.responsible_cleared" : "damage.responsible_assigned",
+        damage.id,
+        cleared
+          ? { operatorProfileId: null }
+          : { operatorProfileId: damage.responsibleOperatorProfileId ?? null, installmentTotal: readInstallmentTotal(body) },
+      );
+    }
+
     return {
       data: toDamageDto(damage),
     };
+  }
+
+  // §2.8 — allowlist da trilha do responsável: só {operatorProfileId, installmentTotal}. NUNCA tenant_id/CNH/valor.
+  private async auditResponsible(
+    request: Request,
+    action: string,
+    damageId: string,
+    metadata: Record<string, unknown>,
+  ): Promise<void> {
+    await recordRequestAuditBestEffort(request, {
+      action,
+      resourceType: "damage",
+      resourceId: damageId,
+      outcome: "success",
+      severity: "info",
+      metadata,
+    });
   }
 
   async listAttachments(request: Request) {
@@ -175,4 +215,11 @@ export class DamageController {
   private async resolveServiceWithActor(request: Request) {
     return [await this.resolveService(), requireTenantContext(request)] as const;
   }
+}
+
+function readInstallmentTotal(body: Record<string, unknown>): number | undefined {
+  const raw = body.responsible_installment_total ?? body.responsibleInstallmentTotal;
+  if (raw === undefined || raw === null || raw === "") return undefined;
+  const parsed = typeof raw === "number" ? raw : Number.parseInt(String(raw), 10);
+  return Number.isInteger(parsed) ? parsed : undefined;
 }
