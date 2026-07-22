@@ -1,0 +1,88 @@
+{
+  "pr": "PR-04",
+  "fase": "Fase 1 — Motor de Notificações",
+  "snapshot_date": "2026-07-21",
+  "branch": "rodada/omega4c",
+  "tipo": "ESTENDER (motor de notificações parcial + scheduler in-process já existiam) — novo model ScheduledNotification (definição agendada) sobre a tabela notifications (inbox/sino) INTOCADA",
+  "models_novos": [
+    "ScheduledNotification (definição agendada: notify_at/remind_before, visibility PRIVATE|PUBLIC|CUSTOM, custom_recipient_ids, source_type/source_id foundation, status pending|fired|cancelled, reminder_fired_at/fired_at guards de idempotência)"
+  ],
+  "migrations": [
+    "20260824000000_add_scheduled_notifications (aditiva up-only; CREATE TABLE + 6 índices tenant_id-1º + FK composta (tenant_id, created_by)→users CASCADE + FK tenant RESTRICT + índice UNIQUE parcial de idempotência (tenant_id, client_action_id) + RLS ENABLE/FORCE/POLICY USING+WITH CHECK; tabela notifications existente INTOCADA — provada up/drop/re-up em erp-postgres pelo dba-guardião: FK cross-tenant 23503, idempotência 23505, RLS t/t, coexistência)"
+  ],
+  "endpoints_novos": [
+    "POST /api/v1/notifications/scheduled (criar definição agendada) — notifications:create",
+    "GET /api/v1/notifications/scheduled (listar do criador) — notifications:create",
+    "GET /api/v1/notifications/scheduled/:id (creator-scoped, 404 cross-criador) — notifications:create",
+    "DELETE /api/v1/notifications/scheduled/:id (soft/cancelar) — notifications:create"
+  ],
+  "endpoints_intocados": [
+    "GET /notifications (inbox), unread-count (sino), mark-read/read-all/archive — permissões read/update AMPLAS intocadas; sino visível a todo logado"
+  ],
+  "scheduler": {
+    "mecanismo": "reusa job.worker.ts (setInterval→ZSET de atrasados); job auto-reenfileirante notifications.scan-due (~60s). SEM node-cron (dependência nova evitada — §C7).",
+    "flag": "JOBS_WORKER_ENABLED (env, default FALSE, booleanFlag parse estrito). Worker só sobe com flag=true ∧ persistence=prisma, chamado só em server.main(). CI/testes NÃO sobem o loop.",
+    "disparo_inline": "POST com notify_at<=now dispara inline mesmo com a flag OFF (a fundação funciona sem o loop)",
+    "idempotencia": "guarda dupla — fired_at/reminder_fired_at na definição + backstop duro sched:<id>:<occurrence> na unique de entrega (tenant_id, recipient_user_id, idempotency_key) da tabela notifications. 2 chamadas fireDue mesmo now → mesmas entregas."
+  },
+  "permissao_nova": {
+    "chaves": ["notifications:create"],
+    "distribuicao": "super/platform/tenant_admin/manager/operator/field_dispatcher (gestão+operação). SEM: finance/inventory/field_technician/technician/auditor/viewer/support. Separa 'criar/broadcast agendada' de 'ler as minhas' (read/update amplas, intocadas).",
+    "pontos_registrados": ["src/modules/core-saas/permissions/catalog.ts (índice 161, após read/update)", "tests/core-saas.test.ts (expectedPermissionCatalog deepEqual + asserts)", "prisma/seed.ts (descrição PT-BR)", "RBAC_MATRIX.md (linha notificações)"]
+  },
+  "modulos": [
+    "src/modules/notifications/scheduled-notification.* (9 arquivos, clone canônico) + 4 rotas em notification.routes.ts (mesmo createNotificationRouter → app.ts intocado)",
+    "src/infra/jobs (job notifications.scan-due) + src/config/env.ts (flag) + src/server.ts (startJobWorkerIfEnabled)",
+    "frontend/src/modules/notifications/scheduled-notification.* + components/CreateNotificationDialog.tsx (reutilizável) + pages/NotificationsPage.tsx (montagem)"
+  ],
+  "rns_cobertas": [
+    "RN-NOTIF-01 (idempotência de disparo: fireDue 2× mesmo now → sem duplicar; guarda + backstop) — 2 testes",
+    "RN-NOTIF-02 (visibilidade PRIVATE só created_by / PUBLIC todos do tenant / CUSTOM só recipients; sem vazamento entre usuários/tenants)",
+    "RN-NOTIF-03 (posse: 404 cross-tenant E cross-criador)",
+    "RN-NOTIF-04 (§2.8: DTO/auditoria sem tenant_id/título/mensagem/recipients crus na auditoria)",
+    "RN-NOTIF-05 (remind_before gera lembrete independente)",
+    "RN-NOTIF-06 (RLS 3-tenant: invisível sem contexto, updateMany cross=0)",
+    "RN-NOTIF-07 (RBAC 403 real p/ 7 papéis sem notifications:create; ler inbox próprio amplo/intocado)",
+    "RN-NOTIF-08 (disparo inline com flag OFF)"
+  ],
+  "rns_total_pr": 10,
+  "cobertura_testes": {
+    "backend": "tests/scheduled-notifications.test.ts 14/14 (criar 201, idempotência ×2, visibilidade 3-usuários, cross-tenant/cross-criador 404, remind_before, §2.8, RBAC 403 7-papéis) + core-saas 26/26 (catálogo novo) + rls-tenant-isolation 3-tenant (DB-gated, provada pelo dba-guardião)",
+    "frontend": "frontend/tests/scheduled-notification.test.tsx 16/16 (dialog render, validação, troca de Tipo mostra/esconde picker, rótulos PT-BR de status, gating, §2.8)"
+  },
+  "d_records": [
+    "D-Ω4C-NOTIF (decisão-mãe, PLANO §2, ratificada)",
+    "D-Ω4C-NOTIF-MODEL (ScheduledNotification separado da notifications inbox; sem rewrite destrutivo)",
+    "D-Ω4C-NOTIF-SCHEDULER (reusa job.worker.ts scan-due auto-reenfileirante; node-cron proibido; flag JOBS_WORKER_ENABLED default OFF)",
+    "D-Ω4C-NOTIF-IDEMPOTENCY (guarda dupla: fired_at/reminder_fired_at + backstop na unique de entrega)",
+    "D-Ω4C-NOTIF-VISIBILITY (PRIVATE/PUBLIC/CUSTOM; CUSTOM via custom_recipient_ids)",
+    "D-Ω4C-NOTIF-RBAC (permissão nova notifications:create; ler-as-minhas amplo intocado)",
+    "D-Ω4C-NOTIF-CENTRAL-SPLIT (popup de criar agora; central de gestão tenant-wide + editar → PR-20)",
+    "D-Ω4C-NOTIF-DTO-CENTRAL (nota p/ PR-20: Central tenant-wide precisa de DTO §2.8 sem custom_recipient_ids/source_id p/ não-criadores)"
+  ],
+  "divergencias_vs_autem": [
+    "status pending|fired|cancelled (3 estados; definição pending É o estado agendado) — seguiu o plano",
+    "GET/:id e DELETE creator-scoped (mais estrito que tenant-404, honra §2.8; central tenant-wide → PR-20)",
+    "sem action_url (não inventou coluna fora do model do plano)",
+    "Antecedência por presets (sem/15min/30min/1h/2h/1dia) vs picker livre — equivalência comportamental §11",
+    "sem toast (design system não tem) — feedback por Alert inline, padrão dos irmãos",
+    "recorrência por KM (próxima manutenção) e schedule recorrente → consumidores futuros (PR-06/16); PR-04 dispara one-shot por tempo",
+    "central de gestão tenant-wide + editar → PR-20 (parada honesta)"
+  ],
+  "junta": {
+    "agente-dba-guardiao": "APROVADO (0 cond)",
+    "omega4c-avaliador": "APROVADO_CONDICIONADO → BLOQUEIA descarregada pelo dba-guardião em paralelo (2 BAIXA)",
+    "coordenador-de-acessos": "APROVADO (1 MEDIA + 1 BAIXA)",
+    "agente-secops": "APROVADO (2 BAIXA)",
+    "veredito": "APROVADO (CI = gate empírico do teste RLS DB-gated)"
+  },
+  "kpi_repo_wide": {
+    "backend": "1336->1350 (+14)",
+    "frontend_smoke": "703->719 (+16)",
+    "blocks": "74->75"
+  },
+  "coexistencia": "tabela notifications (inbox/sino) INTOCADA (zero ALTER/DROP); notification/notification-routes/fleet-alerts-notifications 56/56 sem regressão; RLS das irmãs t/t após a migração; sino visível a todo logado (não gated pela permissão nova)",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

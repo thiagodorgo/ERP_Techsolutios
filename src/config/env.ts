@@ -26,6 +26,11 @@ export const envSchema = z.object({
   // requisição) em dev/test; em PRODUÇÃO o gate abaixo exige allowlist explícita sem curinga.
   CORS_ORIGIN: z.string().trim().default(""),
   CORE_SAAS_PERSISTENCE: z.enum(["memory", "prisma"]).default("memory"),
+  // Ω4C PR-04 (D-Ω4C-NOTIF-SCHEDULER) — liga o worker in-process (job.worker.ts). Default DESLIGADO: com false o
+  // loop de jobs NÃO sobe (CI/testes que importam app.ts nunca disparam o scheduler). Só com true ∧
+  // persistence=prisma o server.ts inicia o worker + enfileira o 1º `notifications.scan-due`. Usa booleanFlag
+  // (parse ESTRITO: só true/1/yes/on → verdadeiro; "false" continua false, sem o footgun do z.coerce.boolean).
+  JOBS_WORKER_ENABLED: booleanFlag(false),
   REDIS_URL: z.string().trim().url().default("redis://localhost:6379"),
   JWT_SECRET: z.string().trim().min(1).optional(),
   JWT_EXPIRES_IN: z

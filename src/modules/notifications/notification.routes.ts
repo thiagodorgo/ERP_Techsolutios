@@ -6,6 +6,11 @@ import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
 import { NotificationController, type NotificationServiceResolver } from "./notification.controller.js";
 import { createDefaultNotificationService } from "./notification.service.js";
+import {
+  ScheduledNotificationController,
+  type ScheduledNotificationServiceResolver,
+} from "./scheduled-notification.controller.js";
+import { createDefaultScheduledNotificationService } from "./scheduled-notification.service.js";
 
 type ControllerResult = {
   readonly status?: number;
@@ -13,19 +18,62 @@ type ControllerResult = {
   readonly data?: unknown;
 };
 
+// Ω4C PR-04 (D-Ω4C-NOTIF-RBAC) — `notifications:create` separa "ler as minhas" (read, INTOCADO) de "criar/gerir/
+// broadcast" (create). Ler/agir no PRÓPRIO inbox segue em read/update (amplos). A camada AGENDADA
+// (/notifications/scheduled) — que pode fazer broadcast PUBLIC/CUSTOM — fica inteira atrás de create.
 export const NOTIFICATION_PERMISSIONS = {
   read: "notifications:read",
   update: "notifications:update",
+  create: "notifications:create",
 } as const;
 
 export function createNotificationRouter(
   resolveService: NotificationServiceResolver = createDefaultNotificationService,
+  resolveScheduledService: ScheduledNotificationServiceResolver = createDefaultScheduledNotificationService,
 ): Router {
   const router = Router();
   const controller = new NotificationController(resolveService);
+  const scheduledController = new ScheduledNotificationController(resolveScheduledService);
 
   router.use(tenantContextMiddleware);
   router.use(createPersistentRbacContextMiddleware());
+
+  // -------------------------------------------------------------------------
+  // Ω4C PR-04 — Motor de notificações AGENDÁVEIS (/notifications/scheduled). MONTADO ANTES das rotas do inbox
+  // com :notificationId para não colidir (o path "scheduled" nunca é um id). Sub-recurso 100% atrás de
+  // `notifications:create` (gestão/broadcast). Endpoints do inbox/sino abaixo seguem INTOCADOS.
+  // -------------------------------------------------------------------------
+  router.post(
+    "/notifications/scheduled",
+    requirePermission(NOTIFICATION_PERMISSIONS.create),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await scheduledController.create(request));
+    }),
+  );
+
+  router.get(
+    "/notifications/scheduled",
+    requirePermission(NOTIFICATION_PERMISSIONS.create),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await scheduledController.list(request));
+    }),
+  );
+
+  router.get(
+    "/notifications/scheduled/:scheduledNotificationId",
+    requirePermission(NOTIFICATION_PERMISSIONS.create),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await scheduledController.get(request));
+    }),
+  );
+
+  router.delete(
+    "/notifications/scheduled/:scheduledNotificationId",
+    requirePermission(NOTIFICATION_PERMISSIONS.create),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await scheduledController.cancel(request));
+    }),
+  );
 
   router.get(
     "/notifications",

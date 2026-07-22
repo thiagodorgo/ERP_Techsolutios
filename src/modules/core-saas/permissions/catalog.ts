@@ -169,6 +169,10 @@ export const PERMISSION_CATALOG = [
   "finance:read",
   "notifications:read",
   "notifications:update",
+  // Ω4C PR-04 (D-Ω4C-NOTIF-RBAC) — criar/gerir/broadcast notificações AGENDADAS (PRIVADA/PÚBLICA/PERSONALIZADA).
+  // Separada de read/update (que ficam no PRÓPRIO inbox, amplas). Concedida só a gestão/operação: super_admin,
+  // platform_admin, tenant_admin, manager, operator, field_dispatcher (NÃO campo/finance/auditor/viewer/support).
+  "notifications:create",
   "tenant_checklists:read",
   "tenant_checklists:create",
   "tenant_checklists:update",
@@ -231,6 +235,8 @@ export const ROLE_PERMISSIONS = {
     "finance.read",
     "notifications:read",
     "notifications:update",
+    // Ω4C PR-04 — manager cria/gere notificações agendadas (gestão).
+    "notifications:create",
     "work_orders:read",
     "work_orders:comment",
     "work_orders:create",
@@ -428,6 +434,8 @@ export const ROLE_PERMISSIONS = {
     "field_dispatch:reassign",
     "notifications:read",
     "notifications:update",
+    // Ω4C PR-04 — o operador de despacho cria/gere notificações agendadas (operação).
+    "notifications:create",
   ],
   viewer: [
     "dashboard:read",
@@ -486,6 +494,8 @@ export const ROLE_PERMISSIONS = {
     "inventory.read",
     "notifications:read",
     "notifications:update",
+    // Ω4C PR-04 — o operador (despacho web) cria/gere notificações agendadas (operação).
+    "notifications:create",
     "customers:read",
     "vehicles:read",
     "teams:read",

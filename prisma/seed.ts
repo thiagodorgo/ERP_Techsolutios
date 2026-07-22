@@ -110,6 +110,7 @@ const permissionDescriptions = {
   "finance:read": "Consultar informacoes financeiras no padrao RBAC namespace.",
   "notifications:read": "Consultar a propria caixa de notificacoes internas.",
   "notifications:update": "Marcar notificacoes proprias como lidas ou arquivadas.",
+  "notifications:create": "Criar e cancelar notificacoes agendadas (privada, publica ou personalizada) do tenant.",
   "tenant_checklists:read": "Consultar checklists configuraveis do tenant.",
   "tenant_checklists:create": "Criar checklists configuraveis do tenant.",
   "tenant_checklists:update": "Editar, ativar e inativar checklists configuraveis do tenant.",

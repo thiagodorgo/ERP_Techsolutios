@@ -1,12 +1,14 @@
-import { Bell, CheckCheck, Sparkles } from "lucide-react";
+import { Bell, CalendarClock, CheckCheck, Plus, Sparkles, Trash2 } from "lucide-react";
+import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { Alert, Button, Card, ErrorState, Skeleton, Tabs } from "../../../components/ui";
+import { Alert, Badge, Button, Card, EmptyState, ErrorState, Skeleton, Tabs } from "../../../components/ui";
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
+import { CreateNotificationDialog } from "../components/CreateNotificationDialog";
 import { NotificationList } from "../components/NotificationList";
 import {
   filterNotificationsByCategory,
@@ -23,6 +25,15 @@ import {
   runFleetAlerts,
 } from "../notification.service";
 import type { NotificationApiContext, NotificationItem, NotificationStatus } from "../notification.types";
+import {
+  formatNotifyAt,
+  getScheduledStatusLabel,
+  getScheduledStatusTone,
+  getVisibilityLabel,
+  interpretCancelError,
+} from "../scheduled-notification.adapter";
+import { cancelScheduledNotification, listScheduledNotifications } from "../scheduled-notification.service";
+import type { ScheduledNotificationView } from "../scheduled-notification.types";
 
 type FilterTab = "all" | NotificationStatus;
 type CategoryFilter = "all" | NotificationCategory;
@@ -38,6 +49,22 @@ function isFilterTab(value: string | null): value is FilterTab {
   return value === "all" || value === "unread" || value === "read" || value === "archived";
 }
 
+// Estilos inline da lista de agendadas (sem depender de CSS ainda não presente no design system).
+const scheduledListStyle: CSSProperties = { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "var(--space-8)" };
+const scheduledItemStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "var(--space-12)",
+  flexWrap: "wrap",
+  padding: "var(--space-10) 0",
+  borderBottom: "1px solid var(--border-subtle)",
+};
+const scheduledInfoStyle: CSSProperties = { display: "flex", flexDirection: "column", gap: "var(--space-4)" };
+const scheduledMetaStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: "var(--space-6)", fontSize: "var(--text-xs)", color: "var(--text-secondary)" };
+const scheduledActionsStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: "var(--space-8)", flexWrap: "wrap" };
+const scheduledStatusStyle: CSSProperties = { fontSize: "var(--text-sm)", color: "var(--text-secondary)", margin: 0 };
+
 export function NotificationsPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
@@ -51,6 +78,17 @@ export function NotificationsPage() {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const context = useMemo(() => buildNotificationContext(session?.accessToken, activeContext), [activeContext, session?.accessToken]);
   const canManage = can("notifications:update");
+  // Backend é a autoridade: `notifications:create` separa "criar/gerir/broadcast" de "ler as minhas".
+  const canCreate = can("notifications:create");
+
+  // ── Notificações agendadas (motor Ω4C PR-04) — fundação do criador; central tenant-wide é PR-20 ──
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [scheduled, setScheduled] = useState<ScheduledNotificationView[]>([]);
+  const [scheduledLoading, setScheduledLoading] = useState(false);
+  const [scheduledForbidden, setScheduledForbidden] = useState(false);
+  const [scheduledError, setScheduledError] = useState<string | null>(null);
+  const [scheduledFeedback, setScheduledFeedback] = useState<string | null>(null);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
 
   // Filtros (situação + categoria) persistidos na URL — compartilháveis e estáveis no recarregamento.
   const statusParam = searchParams.get("status");
@@ -94,6 +132,57 @@ export function NotificationsPage() {
 
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(loadNotifications, { enabled: Boolean(context) });
+
+  // Carrega as notificações agendadas do próprio criador (só quem tem `notifications:create`).
+  const loadScheduled = useCallback(async () => {
+    if (!context || !canCreate) return;
+
+    setScheduledLoading(true);
+    setScheduledError(null);
+    try {
+      const result = await listScheduledNotifications(context);
+      setScheduled(result.items);
+      setScheduledForbidden(result.forbidden);
+      if (result.source === "fallback" && !result.forbidden) {
+        setScheduledError("Não foi possível carregar as notificações agendadas.");
+      }
+    } catch {
+      setScheduled([]);
+      setScheduledError("Não foi possível carregar as notificações agendadas.");
+    } finally {
+      setScheduledLoading(false);
+    }
+  }, [context, canCreate]);
+
+  useEffect(() => {
+    void loadScheduled();
+  }, [loadScheduled]);
+
+  function handleScheduledCreated() {
+    setScheduledFeedback("Notificação agendada com sucesso.");
+    setScheduledError(null);
+    void loadScheduled();
+  }
+
+  async function handleCancelScheduled(item: ScheduledNotificationView) {
+    if (!context) return;
+    if (typeof window !== "undefined" && typeof window.confirm === "function" && !window.confirm("Cancelar esta notificação agendada?")) {
+      return;
+    }
+
+    setCancelingId(item.id);
+    setScheduledFeedback(null);
+    setScheduledError(null);
+    try {
+      await cancelScheduledNotification(context, item.id);
+      setScheduledFeedback("Notificação cancelada.");
+      await loadScheduled();
+    } catch (err) {
+      setScheduledError(interpretCancelError(err));
+    } finally {
+      setCancelingId(null);
+    }
+  }
 
   // Categoria é filtrada client-side sobre a janela já carregada (a situação vai ao endpoint).
   const visibleNotifications = useMemo(
@@ -190,13 +279,19 @@ export function NotificationsPage() {
           <p>Avisos e eventos operacionais do seu usuário na organização.</p>
         </div>
         <div className="notification-page-actions">
+          {canCreate ? (
+            <Button type="button" onClick={() => setDialogOpen(true)}>
+              <Plus size={16} aria-hidden />
+              Nova notificação
+            </Button>
+          ) : null}
           {canManage ? (
             <Button type="button" variant="secondary" onClick={handleRunAlerts} disabled={busy}>
               <Sparkles size={16} aria-hidden />
               Gerar alertas
             </Button>
           ) : null}
-          <Button type="button" onClick={handleMarkAllRead} disabled={loadedUnread === 0 || Boolean(actionLoading)}>
+          <Button type="button" variant="secondary" onClick={handleMarkAllRead} disabled={loadedUnread === 0 || Boolean(actionLoading)}>
             <CheckCheck size={16} aria-hidden />
             Marcar todas como lidas
           </Button>
@@ -212,6 +307,62 @@ export function NotificationsPage() {
           </div>
         </div>
       </Card>
+
+      {canCreate ? (
+        <Card title="Notificações agendadas">
+          {scheduledFeedback ? (
+            <Alert title="Tudo certo" tone="info">
+              {scheduledFeedback}
+            </Alert>
+          ) : null}
+          {scheduledError ? (
+            <Alert title="Falha nas notificações agendadas" tone="warning">
+              {scheduledError}
+            </Alert>
+          ) : null}
+
+          {scheduledForbidden ? (
+            <p style={scheduledStatusStyle} role="status">
+              Acesso não permitido: você não tem permissão para ver as notificações agendadas.
+            </p>
+          ) : scheduledLoading && scheduled.length === 0 ? (
+            <Skeleton lines={3} />
+          ) : scheduled.length === 0 ? (
+            <EmptyState
+              title="Sem notificações agendadas"
+              detail="Use “Nova notificação” para avisar você mesmo ou a organização em uma data e hora."
+            />
+          ) : (
+            <ul style={scheduledListStyle}>
+              {scheduled.map((item) => (
+                <li key={item.id} style={scheduledItemStyle}>
+                  <div style={scheduledInfoStyle}>
+                    <strong>{item.title}</strong>
+                    <span style={scheduledMetaStyle}>
+                      <CalendarClock size={13} aria-hidden /> {formatNotifyAt(item.notifyAt)} · {getVisibilityLabel(item.visibility)}
+                    </span>
+                  </div>
+                  <div style={scheduledActionsStyle}>
+                    <Badge tone={getScheduledStatusTone(item.status)}>{getScheduledStatusLabel(item.status)}</Badge>
+                    {item.status === "pending" ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={cancelingId === item.id}
+                        onClick={() => void handleCancelScheduled(item)}
+                        aria-label={`Cancelar notificação agendada: ${item.title}`}
+                      >
+                        <Trash2 size={14} aria-hidden /> Cancelar
+                      </Button>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      ) : null}
 
       <div className="notification-category-filter" role="group" aria-label="Filtrar notificações por categoria">
         <Button
@@ -256,6 +407,15 @@ export function NotificationsPage() {
           onArchive={handleArchive}
           onMarkRead={handleMarkRead}
           onOpen={handleOpen}
+        />
+      ) : null}
+
+      {canCreate && context ? (
+        <CreateNotificationDialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          context={context}
+          onCreated={handleScheduledCreated}
         />
       ) : null}
     </div>

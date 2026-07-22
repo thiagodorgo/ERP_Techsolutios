@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-21",
-  "version": "OMEGA4C-PR-03",
+  "version": "OMEGA4C-PR-04",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω4C PR-03 — Extrato do Profissional (razão financeira; CRIAR)",
-    "title": "Ω4C PR-03: razão financeira do profissional (ProfessionalStatementEntry, trava RN-EXT-01, saldo derivado, permissão nova)",
+    "block": "Ω4C PR-04 — Motor de Notificações (ScheduledNotification; ESTENDER)",
+    "title": "Ω4C PR-04: motor de notificações agendáveis (notify_at/remind_before, visibilidade, disparo idempotente, sino+popup)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω4C PR-03 — EXTRATO DO PROFISSIONAL (1 dos 2 CRIAR reais da rodada). Novo módulo src/modules/professional-statements/ (9 arquivos, clone de operator-profiles) + model ProfessionalStatementEntry (razão única do profissional: 1 linha por parcela agrupada por group_id; entry_type damage|fine|remuneration|adjustment; direction debit|credit; status pending|settled|cancelled; source_type/source_id foundation-ready). Migração ADITIVA up-only 20260823000000_add_professional_statements: CREATE TABLE + 5 índices tenant_id-1º + FK composta (tenant_id, operator_profile_id)→operator_profiles RESTRICT + índice UNIQUE parcial de idempotência + RLS ENABLE/FORCE/POLICY USING+WITH CHECK — provada up/drop/re-up em erp-postgres pelo dba-guardião (FK cross-tenant 23503, colisão parcial 23505, RLS t/t, irmãs intactas). TRAVA RN-EXT-01 (alerta amarelo AutEM): PATCH de campo financeiro em lançamento com parcelas → 409 statement_entry_locked (só description editável); DELETE soft só se NENHUMA parcela settled; grupo all-pending → soft-delete atômico em withTenantRls tx. Saldo DERIVADO server-side (Σcredit−Σdebit + runningBalance; NUNCA persistido). PERMISSÃO NOVA professional_statements:read/create/update (namespace próprio, folha do profissional ≠ tesouraria; espelha financial_titles; SEM acesso p/ operator/inventory/field/support) registrada nos 4 pontos (catalog.ts + tests/core-saas.test.ts expectedPermissionCatalog byte-idêntico + seed.ts + RBAC_MATRIX.md). Endpoints GET extrato por profissional (saldo derivado, 404 cross-tenant) + POST AJUSTE (direction explícito, parcela>0 senão 422) + PATCH description-only + DELETE soft. Frontend: frontend/src/modules/fleet/statement/ tela ExtratoProfissionalPage (dense-list Data/Tipo/Descrição/Parcela/Valor±/Saldo/Situação; saldo semântico; Novo ajuste gated; §7 completo; §2.8 nunca CNH) sob /fleet/statement. D-007: impressão/Excel/liquidação-em-folha deferidos (PR-14/15), filtro de período foundation from/to. Junta UNÂNIME 3/3: omega4c-avaliador + agente-dba-guardião (0 cond) + coordenador-de-acessos. Zero regressão (131/131 financeiros/OS/operator-profiles). Sem provider/SKU novo.",
-    "status_label": "Ω4C PR-03: extrato do profissional (razão, trava RN-EXT-01, saldo derivado, permissão nova, migração aditiva provada); junta 3/3 unânime; backend 1324->1336, smoke 694->703, blocks 73->74"
+    "summary": "Ω4C PR-04 — MOTOR DE NOTIFICAÇÕES (ESTENDER: motor parcial + scheduler in-process job.worker.ts:86 já existiam; startWorker() estava dormente). Novo model ScheduledNotification (definição agendada: notify_at/remind_before, visibility PRIVATE|PUBLIC|CUSTOM, custom_recipient_ids, source_type/source_id foundation, status pending|fired|cancelled, guards reminder_fired_at/fired_at) SOBRE a tabela notifications (inbox/sino) INTOCADA. Migração ADITIVA up-only 20260824000000_add_scheduled_notifications: CREATE TABLE + 6 índices tenant_id-1º + FK composta (tenant_id, created_by)→users CASCADE + FK tenant RESTRICT + índice UNIQUE parcial de idempotência + RLS ENABLE/FORCE/POLICY — provada up/drop/re-up em erp-postgres pelo dba-guardião (notifications ZERO ALTER/DROP; FK cross-tenant 23503, idempotência 23505, RLS t/t). Scheduler REUSA job.worker.ts via job auto-reenfileirante notifications.scan-due (~60s), SEM node-cron, atrás da flag JOBS_WORKER_ENABLED (env, default FALSE, parse estrito) — worker só sobe com flag=true ∧ persistence=prisma em server.main(); CI/testes NÃO sobem o loop; POST com notify_at<=now dispara INLINE mesmo com a flag OFF. Idempotência de disparo com guarda dupla (fired_at/reminder_fired_at + backstop sched:<id>:<occurrence> na unique de entrega): fireDue 2× mesmo now → mesmas entregas. Visibilidade sem vazamento entre usuários/tenants (3-usuários testado). PERMISSÃO NOVA notifications:create (gestão+operação: super/platform/tenant_admin/manager/operator/field_dispatcher; SEM field_technician/finance/etc; ler-as-minhas read/update AMPLO intocado; sino visível a todo logado) nos 4 pontos. Endpoints POST/GET/GET:id/DELETE /notifications/scheduled (creator-scoped, 404 cross-criador). Frontend: CreateNotificationDialog reutilizável + montagem na NotificationsPage (lista do criador + status PT-BR + Cancelar gated). D-007: central de gestão tenant-wide + editar deferidos p/ PR-20 (D-Ω4C-NOTIF-CENTRAL-SPLIT); Antecedência por presets; sem toast (Alert inline). Junta 4 vetos: agente-dba-guardião APROVADO (0 cond) + omega4c-avaliador APROVADO (BLOQUEIA descarregada pelo dba-guardião) + coordenador-de-acessos APROVADO + agente-secops APROVADO. Zero regressão (inbox/notification-routes/fleet-alerts 56/56). Sem provider/SKU novo.",
+    "status_label": "Ω4C PR-04: motor de notificações (ScheduledNotification, disparo idempotente, scheduler reusado sem node-cron, flag default OFF, permissão nova, migração aditiva provada); junta 4 vetos APROVADO; backend 1336->1350, smoke 703->719, blocks 74->75"
   },
   "metrics": {
     "flutter_tests": {
@@ -21,16 +21,16 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 703,
-      "total": 703,
-      "display": "703/703",
-      "note": "+9 (extrato-profissional: render/saldo±/rotulos-PT-BR/empty/gating/§2.8/trava-409). Ω4C PR-03 extrato do profissional (ExtratoProfissionalPage sob /fleet/statement). Sobre 694."
+      "value": 719,
+      "total": 719,
+      "display": "719/719",
+      "note": "+16 (scheduled-notification: dialog render/validacao/troca-de-Tipo-picker/rotulos-PT-BR-status/gating/§2.8). Ω4C PR-04 motor de notificacoes (CreateNotificationDialog + NotificationsPage). Sino/inbox intocados. Sobre 703."
     },
     "backend_tests": {
-      "value": 1336,
-      "total": 1342,
-      "display": "1336/1342",
-      "note": "+12 (tests/professional-statements.test.ts: AJUSTE-201/saldo-derivado/trava-RN-EXT-01-409/cross-tenant-404/§2.8-sem-CNH/RBAC-403). Ω4C PR-03. Suite memoria (CI) 1336 pass/6 skip. core-saas 26/26 (catalogo com permissao nova professional_statements:*). Migracao 20260823000000_add_professional_statements provada up/drop/re-up + FK cross-tenant 23503 + indice parcial 23505 + RLS t/t pelo dba-guardiao; zero regressao (131/131 financeiros/OS/operator-profiles). Sobre 1324/1330. Local: 77 DB/JWT pre-existentes."
+      "value": 1350,
+      "total": 1356,
+      "display": "1350/1356",
+      "note": "+14 (tests/scheduled-notifications.test.ts: criar-201/idempotencia-de-disparo-x2/visibilidade-3-usuarios/cross-tenant-cross-criador-404/remind_before/§2.8/RBAC-403-7-papeis). Ω4C PR-04. Suite memoria (CI) 1350 pass/6 skip. core-saas 26/26 (catalogo com permissao nova notifications:create). Migracao 20260824000000_add_scheduled_notifications provada up/drop/re-up (tabela notifications INTOCADA; FK cross-tenant 23503; idempotencia 23505; RLS t/t) pelo dba-guardiao; worker atras da flag JOBS_WORKER_ENABLED default OFF (nao sobe nos testes); zero regressao (inbox/notification-routes/fleet-alerts 56/56). Sobre 1336/1342. Local: 77 DB/JWT pre-existentes."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 74,
-      "display": "74",
-      "note": "Ω4C PR-03 (extrato do profissional) = feature entregue → +1 sobre 73 (Ω4C PR-02 contas a pagar por origem). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
+      "value": 75,
+      "display": "75",
+      "note": "Ω4C PR-04 (motor de notificacoes) = feature entregue → +1 sobre 74 (Ω4C PR-03 extrato do profissional). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,
