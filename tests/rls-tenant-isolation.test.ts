@@ -1873,6 +1873,25 @@ if (!connectionString) {
               tenant_id: tenantId,
             },
           });
+          // Ω4C PR-06 — itens da manutenção ANTES das ordens (FK maintenance_order_items→maintenance_orders é
+          // Restrict), ordens ANTES das viaturas (maintenance_orders.vehicle_id→vehicles), e viaturas ANTES do
+          // tenant (vehicles.tenant_id→tenants, o que quebrava a deleção do tenant com FK vehicles_tenant_id_fkey).
+          // workOrder já foi removido acima (também referencia vehicle).
+          await tx.maintenanceOrderItem.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          await tx.maintenanceOrder.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          await tx.vehicle.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
           await tx.fieldOperatorLocation.deleteMany({
             where: {
               tenant_id: tenantId,
