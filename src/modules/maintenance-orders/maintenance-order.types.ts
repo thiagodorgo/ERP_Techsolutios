@@ -33,6 +33,8 @@ export type MaintenanceOrder = {
   readonly cost?: number;
   readonly supplier?: string;
   readonly odometer?: number;
+  // Ω4C PR-06 — data prevista da PRÓXIMA manutenção, por TEMPO (D-Ω4C-MANUT-NEXTDUE-NOTIF).
+  readonly nextDueAt?: Date;
   readonly description: string;
   readonly isActive: boolean;
   readonly createdBy?: string;
@@ -78,6 +80,7 @@ export type UpdateMaintenanceOrderInput = Partial<
     | "cost"
     | "supplier"
     | "odometer"
+    | "nextDueAt"
     | "description"
     | "isActive"
     | "updatedBy"

@@ -29,6 +29,7 @@ export class PrismaMaintenanceOrderRepository implements MaintenanceOrderReposit
         cost: input.cost ?? null,
         supplier: input.supplier ?? null,
         odometer: input.odometer ?? null,
+        next_due_at: input.nextDueAt ?? null,
         description: input.description,
         is_active: input.isActive ?? true,
         created_by: input.createdBy ?? null,
@@ -84,6 +85,7 @@ export class PrismaMaintenanceOrderRepository implements MaintenanceOrderReposit
         cost: nullable(input.cost),
         supplier: nullable(input.supplier),
         odometer: nullable(input.odometer),
+        next_due_at: nullable(input.nextDueAt),
         description: input.description,
         is_active: input.isActive,
         updated_by: nullable(input.updatedBy),
@@ -220,6 +222,7 @@ function mapMaintenanceOrderRecord(record: {
   readonly cost: unknown;
   readonly supplier: string | null;
   readonly odometer: number | null;
+  readonly next_due_at: Date | null;
   readonly description: string;
   readonly is_active: boolean;
   readonly created_by: string | null;
@@ -238,6 +241,7 @@ function mapMaintenanceOrderRecord(record: {
     cost: record.cost === null || record.cost === undefined ? undefined : decimalToNumber(record.cost),
     supplier: record.supplier ?? undefined,
     odometer: record.odometer ?? undefined,
+    nextDueAt: record.next_due_at ?? undefined,
     description: record.description,
     isActive: record.is_active,
     createdBy: record.created_by ?? undefined,

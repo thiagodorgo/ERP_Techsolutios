@@ -5,6 +5,9 @@ export type MaintenanceType = "preventiva" | "corretiva";
 
 export type MaintenanceStatus = "agendada" | "em_execucao" | "concluida" | "cancelada";
 
+// Ω4C PR-06 — tipo do item (token backend em inglês → rótulo PT-BR SERVIÇO/PRODUTO/ESTOQUE só na apresentação).
+export type MaintenanceItemType = "service" | "product" | "stock";
+
 export type MaintenanceOrder = {
   readonly id: string;
   readonly vehicleId: string;
@@ -15,10 +18,47 @@ export type MaintenanceOrder = {
   readonly cost: number | null;
   readonly supplier: string | null;
   readonly odometer: number | null;
+  // Ω4C PR-06 — data prevista da PRÓXIMA manutenção (por tempo; por-KM é PR-16). Dispara a notificação no backend.
+  readonly nextDueAt: string | null;
   readonly description: string;
   readonly isActive: boolean;
+  // Ω4C PR-06 — do header da LISTA (Σ itens DERIVADO server-side; nunca fabricado no cliente).
+  readonly itemCount: number;
+  readonly itemsTotal: number;
   readonly createdAt: string;
   readonly updatedAt: string;
+};
+
+// Ω4C PR-06 — linha de item do DTO do backend. `lineTotal` é DERIVADO server-side (unit × qty), NUNCA fabricado.
+export type MaintenanceOrderItem = {
+  readonly id: string;
+  readonly itemType: MaintenanceItemType;
+  readonly description: string;
+  readonly unitValue: number;
+  readonly quantity: number;
+  readonly lineTotal: number;
+  readonly notes: string | null;
+};
+
+// Ω4C PR-06 — totalizadores do cabeçalho, DERIVADOS server-side (D-Ω4C-MANUT-TOTALS-DERIVED). Exibidos como vêm.
+export type MaintenanceOrderTotals = {
+  readonly totalServices: number;
+  readonly totalProducts: number;
+  readonly total: number;
+  readonly itemCount: number;
+};
+
+// Detalhe (GET /:id): cabeçalho + itens + totais derivados.
+export type MaintenanceOrderDetail = {
+  readonly order: MaintenanceOrder;
+  readonly items: readonly MaintenanceOrderItem[];
+  readonly totals: MaintenanceOrderTotals;
+};
+
+// Sugestão de hodômetro (GET /odometer-suggestion) — null honesto sem histórico (D-007, nunca inventa).
+export type OdometerSuggestion = {
+  readonly suggestedOdometer: number;
+  readonly source: "fuel_log" | "maintenance_order";
 };
 
 export type MaintenanceOrdersPagination = {
@@ -72,6 +112,7 @@ export type MaintenanceOrderDraft = {
   readonly scheduledFor?: string;
   readonly odometer?: number;
   readonly supplier?: string;
+  readonly nextDueAt?: string;
 };
 
 export type MaintenanceOrderCreatePayload = {
@@ -82,6 +123,33 @@ export type MaintenanceOrderCreatePayload = {
   readonly odometer?: number;
   readonly supplier?: string;
   readonly isActive?: boolean;
+  // Ω4C PR-06 — próxima manutenção (por tempo). Com data, o backend cria a notificação agendada (sempre PRIVADA;
+  // não há visibilidade no contrato — broadcast tenant-wide exige notifications:create pela rota do motor).
+  readonly nextDueAt?: string;
+};
+
+// Ω4C PR-06 — rascunho do item validado no cliente (números podem faltar durante a digitação).
+export type MaintenanceItemDraft = {
+  readonly itemType: MaintenanceItemType;
+  readonly description: string;
+  readonly unitValue?: number;
+  readonly quantity?: number;
+  readonly notes?: string;
+};
+
+export type MaintenanceItemPayload = {
+  readonly itemType: MaintenanceItemType;
+  readonly description: string;
+  readonly unitValue: number;
+  readonly quantity: number;
+  readonly notes?: string;
+};
+
+export type MaintenanceItemField = "itemType" | "description" | "unitValue" | "quantity";
+
+export type MaintenanceItemFieldError = {
+  readonly field: MaintenanceItemField;
+  readonly message: string;
 };
 
 export type MaintenanceOrderUpdatePayload = Partial<

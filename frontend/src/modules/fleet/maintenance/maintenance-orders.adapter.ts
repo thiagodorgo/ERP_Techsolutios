@@ -3,19 +3,28 @@ import type {
   MaintenanceCompletionDraft,
   MaintenanceCompletionField,
   MaintenanceCompletionFieldError,
+  MaintenanceItemDraft,
+  MaintenanceItemFieldError,
+  MaintenanceItemType,
   MaintenanceOrder,
+  MaintenanceOrderDetail,
   MaintenanceOrderDraft,
   MaintenanceOrderFieldError,
+  MaintenanceOrderItem,
   MaintenanceOrdersData,
   MaintenanceOrdersPagination,
+  MaintenanceOrderTotals,
   MaintenanceStatus,
   MaintenanceStatusFilter,
   MaintenanceTab,
   MaintenanceType,
+  OdometerSuggestion,
 } from "./maintenance-orders.types";
 
 const DESCRIPTION_MAX = 2000;
 const SUPPLIER_MAX = 160;
+const ITEM_DESCRIPTION_MAX = 2000;
+const ITEM_NOTES_MAX = 2000;
 
 // Reexport do formatador de moeda do repo (fonte única — Catálogo de Serviço).
 export { formatBRL };
@@ -27,6 +36,29 @@ export const MAINTENANCE_TYPE_OPTIONS = [
 ] as const;
 
 const MAINTENANCE_TYPE_VALUES = MAINTENANCE_TYPE_OPTIONS.map((option) => option.value);
+
+// Ω4C PR-06 — Tipo do item: token técnico (inglês) -> rótulo PT-BR. ESTOQUE só MARCA (baixa de custódia = PR-10/11).
+export const MAINTENANCE_ITEM_TYPE_OPTIONS = [
+  { value: "service", label: "Serviço" },
+  { value: "product", label: "Produto" },
+  { value: "stock", label: "Estoque" },
+] as const;
+
+const MAINTENANCE_ITEM_TYPE_META: Record<MaintenanceItemType, { label: string; tone: "info" | "pending" | "audit" }> = {
+  service: { label: "Serviço", tone: "info" },
+  product: { label: "Produto", tone: "pending" },
+  stock: { label: "Estoque", tone: "audit" },
+};
+
+const MAINTENANCE_ITEM_TYPE_VALUES = MAINTENANCE_ITEM_TYPE_OPTIONS.map((option) => option.value) as readonly MaintenanceItemType[];
+
+export function getMaintenanceItemTypeLabel(type: MaintenanceItemType): string {
+  return MAINTENANCE_ITEM_TYPE_META[type]?.label ?? "—";
+}
+
+export function getMaintenanceItemTypeTone(type: MaintenanceItemType) {
+  return MAINTENANCE_ITEM_TYPE_META[type]?.tone ?? ("info" as const);
+}
 
 // Situação: token técnico -> rótulo PT-BR + tom do Chip (cor com semântica de fluxo).
 const MAINTENANCE_STATUS_META: Record<MaintenanceStatus, { label: string; tone: "default" | "warning" | "success" | "audit" }> = {
@@ -130,6 +162,11 @@ export function validateMaintenanceOrder(input: MaintenanceOrderDraft): Maintena
     errors.push({ field: "scheduledFor", message: "Data agendada inválida." });
   }
 
+  const nextDueAt = (input.nextDueAt ?? "").trim();
+  if (nextDueAt && Number.isNaN(new Date(nextDueAt).getTime())) {
+    errors.push({ field: "nextDueAt", message: "Data da próxima manutenção inválida." });
+  }
+
   if (input.odometer !== undefined && (!Number.isInteger(input.odometer) || input.odometer < 0)) {
     errors.push({ field: "odometer", message: "Odômetro deve ser um número inteiro (0 ou mais)." });
   }
@@ -138,6 +175,52 @@ export function validateMaintenanceOrder(input: MaintenanceOrderDraft): Maintena
   if (supplier && supplier.length > SUPPLIER_MAX) errors.push({ field: "supplier", message: `Fornecedor deve ter no máximo ${SUPPLIER_MAX} caracteres.` });
 
   return errors;
+}
+
+// Ω4C PR-06 — validação do item (espelha o backend: unit_value>0 e quantity>0 → 422; descrição obrigatória).
+export function validateMaintenanceItem(input: MaintenanceItemDraft): MaintenanceItemFieldError[] {
+  const errors: MaintenanceItemFieldError[] = [];
+
+  if (!input.itemType || !MAINTENANCE_ITEM_TYPE_VALUES.includes(input.itemType)) {
+    errors.push({ field: "itemType", message: "Selecione o tipo do item." });
+  }
+
+  const description = (input.description ?? "").trim();
+  if (!description) errors.push({ field: "description", message: "Descreva o item." });
+  else if (description.length > ITEM_DESCRIPTION_MAX) {
+    errors.push({ field: "description", message: `Item deve ter no máximo ${ITEM_DESCRIPTION_MAX} caracteres.` });
+  }
+
+  if (input.unitValue === undefined || !Number.isFinite(input.unitValue) || input.unitValue <= 0) {
+    errors.push({ field: "unitValue", message: "Valor unitário deve ser maior que zero." });
+  }
+
+  if (input.quantity === undefined || !Number.isFinite(input.quantity) || input.quantity <= 0) {
+    errors.push({ field: "quantity", message: "Quantidade deve ser maior que zero." });
+  }
+
+  const notes = (input.notes ?? "").trim();
+  if (notes && notes.length > ITEM_NOTES_MAX) {
+    errors.push({ field: "description", message: `Observação deve ter no máximo ${ITEM_NOTES_MAX} caracteres.` });
+  }
+
+  return errors;
+}
+
+// Total da linha para PREVIEW no cliente (unit × qty, 2 casas). O backend deriva e confirma o valor autoritativo —
+// no grid de itens persistidos exibimos o `lineTotal` que veio do backend, nunca este cálculo.
+export function computeLineTotalPreview(unitValue: number | undefined, quantity: number | undefined): number | undefined {
+  if (unitValue === undefined || quantity === undefined || !Number.isFinite(unitValue) || !Number.isFinite(quantity)) {
+    return undefined;
+  }
+  if (unitValue <= 0 || quantity <= 0) return undefined;
+  return Math.round((unitValue * quantity + Number.EPSILON) * 100) / 100;
+}
+
+// Quantidade em pt-BR (Decimal(10,3) no backend): sem casas para inteiros, até 3 casas quando fracionária.
+export function formatQuantity(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return "—";
+  return new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(value);
 }
 
 // Conclusão exige custo + data (R2 — o backend responde 422 completion_requires_cost_and_date).
@@ -288,11 +371,92 @@ function adaptMaintenanceOrder(input: unknown): MaintenanceOrder | null {
     cost: readNullableNumber(item, ["cost"]),
     supplier: readNullableString(item, ["supplier"]),
     odometer: readNullableNumber(item, ["odometer"]),
+    nextDueAt: readNullableString(item, ["nextDueAt", "next_due_at"]),
     description: readString(item, ["description"]) ?? "",
     isActive: readBoolean(item, ["isActive", "is_active"]) ?? true,
+    // Header da lista: Σ itens DERIVADOS server-side (0 quando ausente; nunca fabricado no cliente).
+    itemCount: readNumber(item, ["itemCount", "item_count"]) ?? 0,
+    itemsTotal: readNumber(item, ["itemsTotal", "items_total"]) ?? 0,
     createdAt: readString(item, ["createdAt", "created_at"]) ?? new Date().toISOString(),
     updatedAt: readString(item, ["updatedAt", "updated_at"]) ?? readString(item, ["createdAt", "created_at"]) ?? new Date().toISOString(),
   };
+}
+
+// Ω4C PR-06 — item do backend -> view. `lineTotal` vem DERIVADO do backend (unit×qty); §2.8: só a projeção mínima
+// (nunca tenant_id/maintenance_order_id crus). Linha sem id é descartada (D-007, nunca fabrica item).
+function adaptMaintenanceOrderItem(input: unknown): MaintenanceOrderItem | null {
+  const item = readRecord(input);
+  if (!item) return null;
+
+  const id = readString(item, ["id"]);
+  if (!id) return null;
+
+  const itemType = coerceItemType(readString(item, ["itemType", "item_type"]));
+  return {
+    id,
+    itemType,
+    description: readString(item, ["description"]) ?? "",
+    unitValue: readNumber(item, ["unitValue", "unit_value"]) ?? 0,
+    quantity: readNumber(item, ["quantity"]) ?? 0,
+    lineTotal: readNumber(item, ["lineTotal", "line_total"]) ?? 0,
+    notes: readNullableString(item, ["notes"]),
+  };
+}
+
+// POST/PATCH de item retornam { data: item } — desembrulha e adapta a linha única (null se sem identidade).
+export function adaptMaintenanceOrderItemResponse(response: unknown): MaintenanceOrderItem | null {
+  const payload = readRecord(response);
+  return adaptMaintenanceOrderItem(readRecord(payload?.data) ?? response);
+}
+
+export function adaptMaintenanceOrderItems(response: unknown): MaintenanceOrderItem[] {
+  const payload = readRecord(response);
+  const dataRecord = readRecord(payload?.data);
+  const source = Array.isArray(response)
+    ? response
+    : readArray(dataRecord?.items) ?? readArray(dataRecord) ?? readArray(payload?.items) ?? readArray(payload?.data) ?? [];
+  return source.map((item) => adaptMaintenanceOrderItem(item)).filter((item): item is MaintenanceOrderItem => Boolean(item));
+}
+
+// Totais DERIVADOS do backend — exibidos como vêm (D-Ω4C-MANUT-TOTALS-DERIVED), NUNCA recalculados no cliente.
+export function adaptMaintenanceOrderTotals(input: unknown): MaintenanceOrderTotals {
+  const totals = readRecord(input);
+  return {
+    totalServices: readNumber(totals, ["totalServices", "total_services"]) ?? 0,
+    totalProducts: readNumber(totals, ["totalProducts", "total_products"]) ?? 0,
+    total: readNumber(totals, ["total"]) ?? 0,
+    itemCount: readNumber(totals, ["itemCount", "item_count"]) ?? 0,
+  };
+}
+
+// GET /:id -> cabeçalho + itens + totais (todos derivados server-side). null se o cabeçalho não tiver identidade.
+export function adaptMaintenanceOrderDetail(response: unknown): MaintenanceOrderDetail | null {
+  const payload = readRecord(response);
+  const dataRecord = readRecord(payload?.data) ?? payload;
+  const order = adaptMaintenanceOrder(dataRecord ?? response);
+  if (!order) return null;
+  return {
+    order,
+    items: adaptMaintenanceOrderItems(dataRecord?.items ?? []),
+    totals: adaptMaintenanceOrderTotals(dataRecord?.totals),
+  };
+}
+
+// GET /odometer-suggestion -> { data: {...} | null }. null honesto sem histórico (D-007, nunca inventa leitura).
+export function adaptOdometerSuggestion(response: unknown): OdometerSuggestion | null {
+  const payload = readRecord(response);
+  const data = readRecord(payload?.data ?? response);
+  if (!data) return null;
+  const suggestedOdometer = readNumber(data, ["suggestedOdometer", "suggested_odometer"]);
+  if (suggestedOdometer === undefined || !Number.isFinite(suggestedOdometer)) return null;
+  const rawSource = readString(data, ["source"]);
+  const source: OdometerSuggestion["source"] = rawSource === "maintenance_order" ? "maintenance_order" : "fuel_log";
+  return { suggestedOdometer, source };
+}
+
+function coerceItemType(value: string | undefined): MaintenanceItemType {
+  if (value === "product" || value === "stock") return value;
+  return "service";
 }
 
 function coerceType(value: string | undefined): MaintenanceType {

@@ -256,3 +256,8 @@ export function parseOptionalSearch(value: unknown): string | undefined {
 
   return search.slice(0, 120);
 }
+
+// Ω4C PR-06 (R-Ω4C-PR06) — o lembrete de PRÓXIMA manutenção é INTRINSECAMENTE PRIVADO: não há campo de
+// visibilidade no contrato de manutenção. O efeito de domínio fixa `visibility: 'private'` na fronteira do
+// motor de notificações. Broadcast deliberado (public/custom) só via POST /notifications/scheduled
+// (`notifications:create`). Por isso NÃO existe aqui um `parseNextDueVisibility`.

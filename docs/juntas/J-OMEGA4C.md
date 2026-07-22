@@ -598,6 +598,184 @@ gap = `supplier_id` + baixa de combustível [deferida] + KM/L [endurecido] + mar
 - KPI: `docs/kpis/omega4c/KPI_PR-05.json`. `Kpis/*`: backend 1350→**1364** (+14 fuel-logs: 9 unit + 5 rota); frontend_smoke 719→**726**
   (+7 abastecimento-station-type); blocks 75→**76**.
 
+### PR-06 — Manutenção de Frota (cabeçalho+itens, totais derivados, sugestão de hodômetro, notificação de próxima manutenção) — plano do omega4c-planejador (2026-07-22)
+**Mapeia PR-07+PR-08 do PLANO_OMEGA4C** numa fatia vertical (back+front, padrão da rodada). **Veredicto Fase 0 (recon REAL, FATO vs
+HIPÓTESE):** **ESTENDER** — `src/modules/maintenance-orders/` e `frontend/src/modules/fleet/maintenance/` são **maduros e vivos**; o gap
+é a **grade de itens + totais derivados + sugestão de hodômetro + a próxima-manutenção como 1º CONSUMIDOR do motor PR-04**.
+- **FATO (li no código):** (a) Model `MaintenanceOrder` (`schema.prisma:898`, `maintenance_orders`) é **CABEÇALHO-SÓ**: `vehicle_id`
+  (FK composta `(tenant_id,vehicle_id)→vehicles` RESTRICT), `type` (preventiva|corretiva), `status` (agendada|em_execucao|concluida|
+  cancelada — máquina de estados viva), `scheduled_for`, `completed_at`, **`cost` Decimal(20,6) ÚNICO manual**, `supplier` texto-livre,
+  `odometer` Int?, `description`, auditoria. **NÃO tem itens/linhas, NÃO tem total derivado, NÃO tem next_due_at.** (b) **Odômetro
+  monotônico JÁ travado** — `assertOdometerMonotonic` (`service.ts:196`) → **422 `odometer_regressive`** se leitura < máx. da viatura
+  (max **cross-fonte** de manutenção **+** fuel_logs via resolver `maxFuelLogOdometer`). (c) **Conclusão** exige custo>=0 + data
+  (`assertCompletionRequirements`). (d) **PayableToggle (PR-02) JÁ ligado** — `createPayableSourceRoutes({sourceType:maintenance_order})`
+  em `routes.ts:69`; `PayableToggle mode=edit` em `MaintenanceFormModal.tsx:301` (amount default = `order.cost`) — **INTOCÁVEL**. (e)
+  **Anexos (PR-01) JÁ montados** — abas `Editar|Arquivos` + `EntityAttachmentsTab entityType=maintenance_order`. (f) **JÁ existe um
+  produtor de notificação de manutenção** — `runMaintenanceDueNotifications` (R2.2, `maintenance-order.notifications.ts`): produtor
+  fleet-alerts que varre preventiva+agendada com `scheduled_for` na janela de 7 dias → cria **inbox `Notification`** (idempotencyKey
+  `maintenance_due:<id>`), disparado por `POST /notifications/fleet-alerts/run`. **É o lembrete da manutenção JÁ AGENDADA, mecanismo
+  DISTINTO** do motor `ScheduledNotification` do PR-04 (a "próxima manutenção" do AutEM = a **recorrência futura**). Coexistem — **não
+  tocar o produtor R2.2** (zero regressão). (g) **Motor PR-04 pronto p/ consumo:** `SCHEDULED_NOTIFICATION_SOURCE_TYPES` **já inclui
+  `maintenance_item`** (`scheduled-notification.types.ts:10` — provisionado pelo PR-04); `ScheduledNotificationService.create(actor,body)`
+  aceita source_type/source_id/notify_at/visibility/**client_action_id** e **dispara INLINE** se vencida; `notify_at` naïve é ancorada ao
+  **fuso de negócio** (`parseNotifyAt`→`parseBusinessDate`, America/Sao_Paulo). **DEDUPE CONFIRMADO no código:** `create` com
+  `client_action_id` faz `findFirst`-por-client_action_id e **RETORNA A DEFINIÇÃO EXISTENTE** (InMemory :42-47 **e** Prisma :20-25);
+  colisão de corrida → P2002 vira **409 `duplicate_client_action_id`**. (h) **Sugestão de hodômetro** — as leituras existem
+  (`maxFuelLogOdometer` + `maxOdometerForVehicle`) mas **NÃO há endpoint de leitura**. (i) **Precedente de impressão 100% client-side**
+  existe (`work-orders/components/PrintWorkOrderModal.tsx` — `window.print()`, sem PDF no backend, seções honestas). (j) Perm
+  `maintenance_orders:read/create/update` já existem (`routes.ts:20`). (k) **Front:** `MaintenanceFormModal`+`MaintenanceCompletionModal`+
+  `ManutencaoPage` (lista densa: Situação|Tipo|Viatura|Descrição|Agendada|Concluída|Custo|Ações) vivos — **sem grade de itens, sem totais,
+  sem próxima, sem impressão**. Baseline testes: `maintenance-orders.test.ts` (10) + `maintenance-orders-routes.test.ts` (16) = **26**.
+- **HIPÓTESE:** o `Tipo` do item AutEM (SERVIÇO / PRODUTO / ESTOQUE ~ — ESTOQUE atado à custódia PR-10/11, marcado ~); se o popup de
+  próxima manutenção dispara **por item ou por manutenção** (ANALISE:302, "áudio sugere por item") → **resolvido por D-Ω4C-RECON-05:
+  disparo por item COM dedupe idempotente pelo sourceId DA MANUTENÇÃO** (adicionar N itens = **1** notificação); pixel exato do modal/grade
+  não visto em frame limpo → reproduzimos o **comportamento** (§11), não o visual do AutEM.
+
+- **Itens (linhas) — D-Ω4C-MANUT-ITEMS: tabela filha nova `MaintenanceOrderItem` (`maintenance_order_items`), NÃO embutidos** (query por
+  linha, RLS própria, total honesto e saldo verificável exigem tabela filha; JSON embutido quebraria isso). Campos: id · **tenant_id (1º)**
+  · **maintenance_order_id** · `item_type` enum-app service|product|stock (labels **SERVIÇO/PRODUTO/ESTOQUE**, **SEM CHECK** — validado na
+  app, padrão da rodada) · description (req) · **unit_value Decimal(12,2) > 0** (coluna NOVA → segue a invariante Decimal(12,2), diferente do
+  `cost` legado 20,6) · **quantity Decimal(10,3) > 0** · notes? · is_active + deleted_at (soft-delete = "excluir item") · created_by/
+  updated_by · created_at/updated_at. **FK COMPOSTA (tenant_id, maintenance_order_id) → maintenance_orders(tenant_id,id) ON DELETE
+  RESTRICT** + relação inversa aditiva `items MaintenanceOrderItem[]` no model `MaintenanceOrder`. Índices: @@unique([tenant_id,id]) ·
+  @@index([tenant_id,maintenance_order_id]) (grade da ordem) · @@index([tenant_id,maintenance_order_id,item_type]) (buckets de total).
+  RLS ENABLE+FORCE+POLICY USING+WITH CHECK (clona 20260823000000). **`total_value` da linha NÃO é coluna — é DERIVADO** (unit_value ×
+  quantity, arredondado 2 casas) server-side, **nunca persistido** (mesma disciplina KM/L do PR-05 e saldo do PR-03). Endpoints (literal
+  ANTES do `:maintenanceOrderId` param p/ não colidir): GET `/maintenance-orders/:id/items` · POST `/maintenance-orders/:id/items` · PATCH
+  `/maintenance-orders/:id/items/:itemId` · DELETE `/maintenance-orders/:id/items/:itemId` (soft) — cada um resolve a **posse do pai** via
+  `maintenanceOrderService.get(actor,id)` (**404 cross-tenant nativo**) antes de tocar a linha.
+- **Totais — D-Ω4C-MANUT-TOTALS-DERIVED (total do cabeçalho = Σ itens, DERIVADO server-side; NÃO fabricar):** o DTO do cabeçalho ganha
+  `totals { totalServices (Σ service), totalProducts (Σ product+stock), total = totalServices+totalProducts, itemCount }` **computados no
+  service a cada leitura, nunca persistidos**. O AutEM mostra Total Produtos | Total Serviços | Total (ANALISE:187) → ESTOQUE cai no bucket
+  **Produtos** (é peça física). **Coexistência com o `cost` legado:** o `cost` manual do cabeçalho **permanece** (backward-compat: os 26
+  testes + a regra de conclusão custo>=0 + o default do PayableToggle) — **a lógica de conclusão fica INTOCADA** (zero regressão). Quando há
+  itens, o front exibe o total derivado; o **amount default do PayableToggle passa a ser o total derivado** (fallback ao `cost` quando não há
+  item) → "lançar o valor total no contas a pagar" (ANALISE:193) fica honesto. `cost` (20,6) **não** é alterado de tipo (ALTER destrutivo,
+  §C7.5) — divergência aceita registrada (D-Ω4C-MANUT-MONEY, gêmea do PR-05 -MONEY-PRECISION).
+- **Sugestão de hodômetro — D-Ω4C-MANUT-ODOMETER-SUGGEST (derivado honesto):** endpoint novo **GET `/maintenance-orders/odometer-suggestion?vehicleId=`**
+  (perm `maintenance_orders:read`; literal declarado ANTES de `:maintenanceOrderId`) que devolve { suggestedOdometer, source:
+  fuel_log|maintenance_order, recordedAt } | null = o **maior odômetro conhecido** da viatura (reusa `maxFuelLogOdometer` +
+  `maxOdometerForVehicle` já existentes). **Sem histórico → null (sem sugestão, não inventa)** — invariante testável, espelha o toast AutEM
+  ("Encontramos um abastecimento onde o hodômetro era 15.500 Km. Deseja preencher?", ANALISE:183). O guard monotônico (422) **permanece**;
+  a sugestão só **pré-preenche** o campo, o usuário confirma.
+- **Próxima manutenção (1º CONSUMIDOR do motor PR-04) — D-Ω4C-MANUT-NEXTDUE-NOTIF:** **+1 coluna aditiva `next_due_at` Timestamptz? em
+  `maintenance_orders`** (a data prevista da PRÓXIMA manutenção, **por TEMPO**). Quando `next_due_at` é informado no create/update, o service
+  cria **UMA** `ScheduledNotification` via o motor: source_type=maintenance_item (já no allowlist do PR-04), source_id = maintenanceOrderId
+  (a chave de dedupe = a manutenção), notify_at = next_due_at, visibility (default **private**; aceita `next_due_visibility` private|public|
+  custom — o motor já suporta), **client_action_id = "maintenance-next-due:<maintenanceOrderId>" (DETERMINÍSTICO)**. **Dedupe idempotente
+  SEM tocar o motor e SEM migração em scheduled_notifications:** reprocessar a mesma manutenção (adicionar itens, editar) reusa o MESMO
+  client_action_id → o motor faz findFirst-por-client_action_id e **devolve a definição existente** (a unique parcial (tenant_id,
+  client_action_id) WHERE client_action_id IS NOT NULL do PR-04 é o backstop de corrida → 409) → **nunca N notificações redundantes**
+  (D-Ω4C-RECON-05). A criação é um **EFEITO DE DOMÍNIO** (chamada service→service interna, NÃO a rota POST `/notifications/scheduled`) →
+  **não exige `notifications:create` do usuário** — o ator (tenantId/userId/roles/permissions de `requireTenantContext`) casa com
+  `ScheduledNotificationActorContext` e é repassado direto. O disparo INLINE do motor faz a notificação imediata funcionar mesmo com o worker
+  desligado. **Por KM/hodômetro** (target-odometer + disparo por telemetria) = **PARADA HONESTA D-007 → PR-16** (telemetria não existe; coluna
+  next_due_odometer sem mecanismo de disparo seria coluna morta — mesmo raciocínio do stock-defer PR-05). **Coexiste** com o produtor R2.2
+  maintenance_due (lembrete da agendada) — semânticas distintas, ambos vivos, produtor R2.2 intocado.
+- **Permissão — D-Ω4C-MANUT-RBAC-REUSE (reusa `maintenance_orders:read/create/update`, SEM permissão nova):** itens e sugestão de hodômetro
+  são parte do **agregado manutenção** → mesmas permissões (GET→read, POST/PATCH/DELETE→create/update). catalog.ts/core-saas.test.ts/
+  RBAC_MATRIX.md com diff VAZIO. A ScheduledNotification é efeito de domínio (não a rota gated por `notifications:create`) → nenhuma
+  permissão de notificação exigida do usuário. Backend é a autoridade (papel sem `maintenance_orders:create` → **403 real**, já testado).
+- **Migração — ADITIVA up-only `20260826000000_add_maintenance_order_items_next_due`** (autorizada, nunca destrutiva; declarada): (1) CREATE
+  TABLE maintenance_order_items (+ RLS ENABLE/FORCE/POLICY + 3 índices + FK composta); (2) ALTER TABLE maintenance_orders ADD COLUMN
+  next_due_at TIMESTAMPTZ (nullable, sem default). **Rollback = DROP TABLE maintenance_order_items + DROP COLUMN next_due_at** (tabela nova
+  sem dependente + coluna nova) — provada up/down/re-up pelo **agente-dba-guardião**. **ZERO** ALTER/DROP destrutivo; **ZERO** mudança em
+  scheduled_notifications (dedupe via client_action_id existente), em catalog.ts/seed (sem permissão nova) e no allowlist do motor
+  (maintenance_item já presente). Toca `prisma/**` → **requer autorização explícita de `prisma/**` no comando do PR-06** (como PR-01/03/04/05).
+- **Frontend — ESTENDER a tela viva (`frontend/src/modules/fleet/maintenance/`), PayableToggle INTOCADO:** (i) **`MaintenanceFormModal`** (modo
+  edição, após criar o cabeçalho — fiel ao AutEM que só libera a grade após +CADASTRAR): **grade de itens** Descrição | Valor Unit. | Qtd |
+  Valor Total + toolbar [impressora] [+ azul] + linha vazia honesta "Nenhum item…" + **totalizadores** Total Produtos (R$) | Total Serviços
+  (R$) | Total (R$); **sub-modal "Cadastrar Item"** (header laranja, diferenciação registro-principal-azul × filho-laranja, ANALISE:31/189):
+  Tipo* (SERVIÇO/PRODUTO/ESTOQUE) | Item* | Valor Unitário | Quantidade | Valor Total (calc no cliente, confirmado no server) | OBS | checkbox
+  Continuar cadastrando → + ADICIONAR; editar item = clicar na linha → salvar; **campo "Próxima manutenção (data)"** + select de visibilidade
+  (PRIVADA/PÚBLICA — CUSTOM/picker de usuários = honest-partial, o motor suporta mas o picker fica p/ reuso do CreateNotificationDialog/PR-20);
+  **sugestão de hodômetro** — ao selecionar a viatura, busca odometer-suggestion e mostra toast/hint "Deseja preencher?" (null → sem toast);
+  **impressão** = client-side reusando o padrão `PrintWorkOrderModal` (window.print() de cabeçalho+itens+totais, seções honestas, sem PDF no
+  backend). (ii) **`ManutencaoPage`** — add colunas **"Itens" (qtd)**, **"Valor Total"** (derivado) e **"Próxima"** (next_due_at, "—" honesto
+  quando ausente). §3 PT-BR (SERVIÇO/PRODUTO/ESTOQUE, Total Produtos/Serviços, Próxima manutenção — nunca termo técnico), §7 estados (loading/
+  empty/error/**acesso não permitido**/desatualizado), §2.8 DTO allowlist (nunca tenant_id/storage/client_action_id). Guard RBAC
+  `maintenance_orders:*` (existente).
+- **DTO/auditoria — D-Ω4C-MANUT-DTO (§2.8):** DTO do cabeçalho ganha totals{...} + nextDueAt; DTO do item = {id, itemType, description,
+  unitValue, quantity, lineTotal(derivado), notes} — **nunca** tenant_id/maintenance_order_id-cross/client_action_id. Auditoria estende
+  metadata (itemCount, total agregado não-PII); as ações de item registram maintenance_order_item.created/updated/deleted.
+- **RNs:** **MANUT-01** (tabela filha maintenance_order_items, FK composta (tenant_id,maintenance_order_id) RESTRICT, posse do pai via
+  service.get → **404 cross-tenant**, tenant_id 1º índice) · **MANUT-02** (linha: unit_value>0 e quantity>0 senão 422; **lineTotal e
+  totais do cabeçalho DERIVADOS server-side (unit×qty), NUNCA persistidos**; cliente nunca envia total) · **MANUT-03** (buckets: SERVIÇO→
+  totalServices, PRODUTO+ESTOQUE→totalProducts, total=soma; itemCount) · **MANUT-04** (sugestão de hodômetro = max(fuel,maintenance) derivado;
+  **null honesto** sem histórico; guard monotônico 422 preservado) · **MANUT-05** (próxima manutenção → **1** ScheduledNotification
+  source_type=maintenance_item/source_id=orderId/notify_at=next_due_at; **dedupe idempotente por client_action_id determinístico** —
+  reprocessar a MESMA manutenção NÃO duplica: motor devolve a existente; prova = 2 chamadas → 1 definição, 1 entrega) · **MANUT-06** (a
+  notificação é **efeito de domínio** — chamada interna, **sem `notifications:create` do usuário**; permissão reusada `maintenance_orders:*`;
+  papel sem create → 403 real) · **MANUT-07** (paradas honestas D-007: **por-KM → PR-16**; **baixa de estoque do item ESTOQUE → PR-10/11** —
+  PR-06 aceita o item_type=stock mas **zero movimento/zero import de inventory**, como o stock-defer do PR-05) · **MANUT-08** (§2.8/§3 —
+  DTO allowlist, labels PT-BR, sem tenant_id/storage; auditoria não-PII) · **MANUT-09** (multi-tenant 3 tenants efêmeros em rls-tenant-isolation:
+  itens + next_due tenant-scoped; item de ordem do tenant A invisível a B; cross 404; updateMany cross=0; tenant_id 1º índice) · **MANUT-10**
+  (ZERO regressão: PayableToggle amount=total derivado com fallback a cost; conclusão custo>=0, máquina de estados, anexos PR-01, produtor R2.2
+  maintenance_due — todos intocados/verdes).
+- **Divergências AutEM honestas (D-007):** (i) **recorrência por Quilometragem** (ANALISE:191) → **PR-16** (telemetria/target-odometer não
+  existem; sem coluna morta agora). (ii) **item Tipo=ESTOQUE** dá baixa na custódia BASE → **PR-10/11** (custódia BASE/PROFISSIONAL/VIATURA +
+  flag combustível/estoque não existem; PR-06 só aceita o tipo, sem baixa). (iii) **picker CUSTOM de destinatários** da próxima-manutenção →
+  honest-partial (motor suporta; UI reusa CreateNotificationDialog/PR-20). (iv) o cost legado Decimal(20,6) (não 12,2 da invariante) —
+  ALTER de tipo destrutivo/proibido §C7.5 (D-Ω4C-MANUT-MONEY). (v) pixel exato do modal/grade/toast AutEM não visto em frame limpo →
+  reproduzimos o **comportamento** (§11), não o visual.
+- **Bateria de validação (seção 10 — o avaliador roda):** `npx prisma validate` + prisma migrate diff (sem drift) + **dba-guardião prova
+  up/down/re-up** de 20260826000000_add_maintenance_order_items_next_due (ADITIVA: CREATE TABLE + RLS + índices + FK composta + ADD COLUMN;
+  rollback=DROP TABLE+DROP COLUMN); backend `npm run check` · lint · test · build; `node --test --import tsx tests/maintenance-order-items.test.ts`
+  (NOVO — CRUD de item + unit_value/quantity>0→422 + **totais derivados** (buckets service/product/stock; total=Σ; nunca persistido) +
+  **odometer-suggestion** (max fuel/maintenance; null honesto) + **próxima-manutenção dedupe** [2× reprocesso → 1 ScheduledNotification, 1
+  entrega] + posse 404 cross-tenant) + tests/maintenance-orders.test.ts/-routes.test.ts **estendidos** (next_due_at + PayableToggle
+  amount=total); tests/rls-tenant-isolation.test.ts estendido (3 tenants efêmeros; item cross 404; updateMany cross=0); **ZERO regressão** em
+  maintenance-orders (26) · scheduled-notifications (14) · financial-title-source (17) · fleet-alerts-notifications (10) · work-order-*;
+  frontend `npm --prefix frontend run check` · build · smoke (grade de itens + sub-modal laranja + totais + campo próxima + toast de sugestão
+  + impressão + colunas Itens/Total/Próxima + **PayableToggle intacto** + estados §7 + guard); `git diff --check` + `git status --short` limpo
+  (schema/migration/maintenance-orders/**/front por caminho; seed/catalog/RBAC_MATRIX/scheduled_notifications **intocados**). KPI
+  `docs/kpis/omega4c/KPI_PR-06.json` + histórico + snapshot; Kpis/* backend +N (maintenance-order-items), frontend_smoke +M, blocks 76→**77**.
+- **Riscos + rollback:** (R1) **notificação duplicada** → mitigado pelo client_action_id determinístico + o motor devolver a existente (prova
+  2×) + unique parcial de corrida. (R2) **total fabricado** → mitigado derivando server-side (unit×qty), nunca persistindo, cliente nunca envia
+  total. (R3) **acoplamento ao motor** → mitigado por chamada interna com source_type já no allowlist, **zero mudança no motor** e zero migração
+  em scheduled_notifications. (R4) **quebrar conclusão/PayableToggle/estado/anexos/produtor R2.2** → mitigado mantendo cost/conclusão
+  intocados, PayableToggle com fallback a cost, R2.2 não tocado, cobertos por regressão. (R5) **colisão de rota** (odometer-suggestion ×
+  :maintenanceOrderId) → mitigado declarando o literal ANTES do param. (R6) **`prisma/**`** → só ADITIVO (CREATE TABLE + ADD COLUMN);
+  **rollback = DROP TABLE maintenance_order_items + DROP COLUMN next_due_at** + revert do PR. Sem destrutivo (respeita parada §C7.5). **Sem
+  dependência nova nem serviço externo pago → junta normal, NÃO junta-5.**
+
+**APROVADO para implementar.** (D-records desta fatia: **D-Ω4C-MANUT-ITEMS · -TOTALS-DERIVED · -ODOMETER-SUGGEST · -NEXTDUE-NOTIF ·
+-RBAC-REUSE · -DTO · -MONEY(D-007) · -KM-DEFER(D-007) · -STOCK-ITEM-DEFER(D-007)** — a junta ratifica no veredito; persistir em
+controle/decisoes.md no PR. Confirma D-Ω4C-RECON-05: disparo por item com dedupe pelo sourceId da manutenção; reusa maintenance_item do
+allowlist PR-04 e o job.worker.ts:86 — **sem node-cron**.)
+
+#### PR-06 — Veredito da junta (2026-07-22) — **APROVADO (3 vetos; 1 ciclo de reprovação — ESCALADA DE PRIVILÉGIO — resolvido)**
+- **agente-dba-guardião** → `APROVADO` (0 condições): migração `20260826000000_add_maintenance_order_items_next_due` provada **UP/DOWN/
+  RE-UP** em DB scratch isolada. Puramente aditiva: `CREATE TABLE maintenance_order_items` (FK composta `(tenant_id, maintenance_order_id)`
+  →maintenance_orders RESTRICT + RLS ENABLE/FORCE/POLICY USING+WITH CHECK, `unit_value NUMERIC(12,2)`, `quantity NUMERIC(10,3)`) +
+  `ALTER maintenance_orders ADD COLUMN next_due_at TIMESTAMPTZ` nullable. `cost` NUMERIC(20,6) INTOCADO; scheduled_notifications/fuel_logs
+  não referenciados. RLS t/t em todas as irmãs antes/depois. Integridade: FK cross-tenant → **23503**; RESTRICT bloqueia DELETE do pai
+  com itens → **23503**.
+- **omega4c-avaliador** → 1ª passada **REPROVADO (BLOQUEIA)** → após fix **APROVADO**; **coordenador-de-acessos** → 1ª passada
+  **REPROVADO (BLOQUEIA+ALTA)** → após fix **APROVADO**. **A junta adversarial caçou uma ESCALADA DE PRIVILÉGIO real** (2 vetos
+  independentes): o efeito de domínio da próxima manutenção repassava `next_due_visibility` (incl. `public`) direto ao motor de
+  notificações sob autoridade só de `maintenance_orders:create`, permitindo que um portador SEM `notifications:create` disparasse
+  broadcast tenant-wide — contornando o gate que o PR-04 criou para broadcast (RBAC_MATRIX l.124 nega notifications:create a técnico/
+  auditor justamente para isso). Só não escalava nos papéis-semente por sobreposição coincidental; papéis customizados quebrariam.
+  **Reprovação-ciclo-1** (R-Ω4C-PR06-ciclo1): correção pequena e bem-especificada (não exigiu especialista §C7.4) — o lembrete de
+  próxima manutenção é intrinsecamente PRIVADO. Backend: `next_due_visibility` **removido do contrato** (validators+type, compile-enforced
+  — o corpo não expressa public/custom) e o seam `scheduleNextDueNotification` **fixa `visibility:'private'` HARDCODED** ao chamar o motor
+  → `resolveRecipients` retorna só `[createdBy]`, sem fan-out. Frontend: seletor "Pública (toda a organização)" removido; `nextDueVisibility`
+  fora do payload/types. Teste **[MANUT-11]** prova o ataque falhando: ator `maintenance_orders:create` SEM `notifications:create` + 3
+  usuários ativos + `next_due_visibility:"public"` no corpo → definição **private**, só o criador recebe (outros 2 = **0**). **Ambos os
+  reprovadores re-verificaram por conta própria e descarregaram a BLOQUEIA.**
+- **Seção 10 (re-verificada, memória=CI):** backend 1382 pass (1 fail ambiental rls-tenant-isolation DB-gated) / 6 skip; targeted
+  maintenance+notifications **58/58** (maintenance-order-items 13 + maintenance-orders 10 + maintenance-orders-routes 21 +
+  scheduled-notifications 14); frontend check/build + smoke **737/737**; build/prisma/git limpos. **ZERO regressão** (motor intocado,
+  sem acoplamento a inventory, total DERIVADO server-side, PayableToggle/Anexos intactos, migração aditiva). RN-MANUT-01..10 cobertas.
+- **Decisão:** verde (3 vetos APROVADO após 1 ciclo de reprovação de segurança resolvido) → merge (CI = gate empírico do rls DB-gated) +
+  KPI no PR (§C3). **Dedupe idempotente** (client_action_id determinístico `maintenance-next-due:<orderId>` → reprocessar = 1 definição)
+  e **total derivado** (nunca persistido) confirmados. **Próxima manutenção por KM → PR-16** (só por tempo agora); **item stock →
+  PR-10/11**. D-records (D-Ω4C-MANUT-ITEMS/-TOTALS-DERIVED/-ODOMETER-SUGGEST/-NEXTDUE-NOTIF/-RBAC-REUSE/-DTO/-MONEY/-KM-DEFER/
+  -STOCK-ITEM-DEFER) **ratificados**; adiciona **D-Ω4C-MANUT-NEXTDUE-PRIVATE** (efeito de domínio sempre private; broadcast só via rota gated).
+- KPI: `docs/kpis/omega4c/KPI_PR-06.json`. `Kpis/*`: backend 1364→**1382** (+18 maintenance: 13 itens + 5 rota); frontend_smoke 726→**737**
+  (+11 manutencao-itens); blocks 76→**77**.
+
 ## 8. Encerramento (a fazer no fim)
 Ata final (entregas, KPIs consolidados, pendências→backlog Ω5); deletar **SOMENTE** os 5 agentes efêmeros (registrar cada
 deleção); confirmar que nenhum agente pré-existente foi tocado; marcar os D-records como vigentes.

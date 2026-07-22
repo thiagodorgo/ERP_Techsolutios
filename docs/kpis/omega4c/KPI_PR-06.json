@@ -1,0 +1,78 @@
+{
+  "pr": "PR-06",
+  "fase": "Fase 1 — Manutenção de Frota (itens+totais, sugestão de hodômetro, próxima manutenção)",
+  "snapshot_date": "2026-07-22",
+  "branch": "rodada/omega4c",
+  "tipo": "ESTENDER maintenance-orders (módulo/model/tela já existiam; cabeçalho-só → itens+totais). 1º CONSUMIDOR do motor de notificações do PR-04.",
+  "models": [
+    "MaintenanceOrderItem (NOVA tabela filha: id, tenant_id, maintenance_order_id FK composta RESTRICT, description, item_type service|product|stock, quantity Decimal(10,3), unit_value Decimal(12,2); line total DERIVADO)",
+    "MaintenanceOrder (+next_due_at TIMESTAMPTZ nullable)"
+  ],
+  "migrations": [
+    "20260826000000_add_maintenance_order_items_next_due (aditiva up-only; CREATE TABLE maintenance_order_items + FK composta RESTRICT + RLS ENABLE/FORCE/POLICY + ALTER maintenance_orders ADD next_due_at; cost Decimal(20,6) INTOCADO; provada up/down/re-up + FK cross-tenant 23503 + RESTRICT em erp-postgres pelo dba-guardião — 0 cond)"
+  ],
+  "comportamento": {
+    "totais_derivados": "line total = unit_value × quantity; header total = Σ itens (totalServices/totalProducts/total/itemCount). DERIVADO server-side em todo read, NUNCA persistido (sem coluna total). Front exibe o derivado do backend, não recalcula.",
+    "sugestao_hodometro": "GET /maintenance-orders/odometer-suggestion?vehicleId= = max(último fuel_log.odometer, última maintenance_order.odometer); null honesto sem histórico; não persistido.",
+    "proxima_manutencao_notif": "1º consumidor do motor PR-04: ao criar/atualizar com next_due_at, o service (efeito de domínio service→service) cria 1 ScheduledNotification source_type='maintenance_item' source_id=orderId notify_at=next_due_at, client_action_id DETERMINÍSTICO 'maintenance-next-due:<orderId>'. Dedupe idempotente: reprocessar a MESMA ordem → findFirst-por-client_action_id retorna a existente (1 definição/1 entrega). Motor INTOCADO.",
+    "visibilidade_sempre_private": "D-Ω4C-MANUT-NEXTDUE-PRIVATE (reprovação-ciclo-1): o efeito de domínio FIXA visibility='private' (só o criador recebe); next_due_visibility removido do contrato. Broadcast PUBLIC/CUSTOM deliberado SÓ via rota gated POST /notifications/scheduled (notifications:create). Fecha a escalada de privilégio.",
+    "estoque_item_marca": "item_type='stock' só MARCA (bucket produtos); ZERO movimento/import de inventory (baixa de custódia → PR-10/11)."
+  },
+  "permissao": "REUSA maintenance_orders:read/create/update (SEM permissão nova; catalog/matriz/core-saas.test INTOCADOS). A criação da notificação é efeito de domínio (não exige notifications:create do usuário; mas SEMPRE private — sem escalada).",
+  "modulos_alterados": [
+    "src/modules/maintenance-orders/* (maintenance-order-item.* novos: types/validators/repository/prisma-repository; service/controller/routes/dto/types/validators estendidos)",
+    "frontend/src/modules/fleet/maintenance/* (types/adapter/service/MaintenanceFormModal/ManutençãoPage + MaintenanceItemModal/MaintenanceItemsSection/PrintMaintenanceOrderModal); PayableToggle(PR-02)+Anexos(PR-01) INTOCADOS"
+  ],
+  "rns_cobertas": [
+    "RN-MANUT-01 (total DERIVADO server-side, nunca persistido)",
+    "RN-MANUT-02 (quantity/unit_value ≤0 → 422)",
+    "RN-MANUT-03 (dedupe idempotente da notificação: client_action_id determinístico; reprocessar não duplica)",
+    "RN-MANUT-04 (sugestão de hodômetro = max histórico; null honesto sem histórico)",
+    "RN-MANUT-05 (§2.8: DTO sem tenant_id/maintenance_order_id crus)",
+    "RN-MANUT-06 (posse/404 cross-tenant nos itens)",
+    "RN-MANUT-07 (motor de notificações INTOCADO)",
+    "RN-MANUT-08 (item stock só marca; zero acoplamento a inventory)",
+    "RN-MANUT-11/R-Ω4C-PR06 (efeito de domínio SEMPRE private: ator sem notifications:create + body public → definição private, só criador recebe, 0 aos outros; escalada fechada)"
+  ],
+  "rns_total_pr": 11,
+  "cobertura_testes": {
+    "backend": "tests/maintenance-order-items.test.ts 13/13 (CRUD item, total derivado, ≤0→422, cross-tenant, §2.8, dedupe idempotente, MANUT-11 private) + tests/maintenance-orders-routes.test.ts 16→21 (+5 HTTP) + rls-tenant-isolation 3-tenant maintenance_order_items (DB-gated, dba-guardião). scheduled-notifications segue 14/14.",
+    "frontend": "frontend/tests/manutencao-itens.test.tsx 11/11 (grade, total derivado do backend, rótulos PT-BR, sub-modal validação, sugestão hodômetro, §2.8, seletor de visibilidade removido)"
+  },
+  "d_records": [
+    "D-Ω4C-MANUT-ITEMS (tabela filha MaintenanceOrderItem)",
+    "D-Ω4C-MANUT-TOTALS-DERIVED (total derivado server-side, nunca persistido)",
+    "D-Ω4C-MANUT-ODOMETER-SUGGEST (max histórico, null honesto)",
+    "D-Ω4C-MANUT-NEXTDUE-NOTIF (consumidor do motor PR-04, client_action_id determinístico)",
+    "D-Ω4C-MANUT-NEXTDUE-PRIVATE (efeito de domínio SEMPRE private; broadcast só via rota gated — fecha escalada, reprovação-ciclo-1)",
+    "D-Ω4C-MANUT-RBAC-REUSE (reusa maintenance_orders:*; sem permissão nova)",
+    "D-Ω4C-MANUT-DTO (§2.8)",
+    "D-Ω4C-MANUT-MONEY (cost legado Decimal(20,6) mantido; total derivado nas colunas novas 12,2)",
+    "D-Ω4C-MANUT-KM-DEFER (por-KM da próxima manutenção → PR-16; só por tempo agora)",
+    "D-Ω4C-MANUT-STOCK-ITEM-DEFER (item stock só marca; baixa → PR-10/11)"
+  ],
+  "divergencias_vs_autem": [
+    "próxima manutenção por KM (hodômetro-alvo) → PR-16 (telemetria não existe; só por tempo next_due_at)",
+    "baixa de custódia do item ESTOQUE → PR-10/11 (só marca o tipo)",
+    "cost legado Decimal(20,6) mantido (ALTER de tipo seria destrutivo)",
+    "odometer-suggestion recordedAt null (timestamp exigiria tocar fuel-logs/telemetria — deferido honesto)",
+    "picker CUSTOM de destinatários → removido (efeito de domínio sempre private; broadcast via rota gated)",
+    "impressão client-side window.print() (sem PDF de backend fabricado)"
+  ],
+  "junta": {
+    "agente-dba-guardiao": "APROVADO (0 cond)",
+    "omega4c-avaliador": "REPROVADO (BLOQUEIA escalada) → APROVADO após fix",
+    "coordenador-de-acessos": "REPROVADO (BLOQUEIA+ALTA escalada) → APROVADO após fix",
+    "reprovacao": "R-Ω4C-PR06-ciclo1 (agent-orchestration/omega/reprovacoes/) — ESCALADA DE PRIVILÉGIO: efeito de domínio permitia broadcast PUBLIC sob maintenance_orders:create sem notifications:create. Fix: visibility sempre private (contrato removido + hardcode no seam) + seletor removido da UI + teste MANUT-11. 2 reprovadores re-verificaram e descarregaram.",
+    "veredito": "APROVADO (3 vetos; 1 ciclo de reprovação de segurança resolvido)"
+  },
+  "kpi_repo_wide": {
+    "backend": "1364->1382 (+18)",
+    "frontend_smoke": "726->737 (+11)",
+    "blocks": "76->77"
+  },
+  "coexistencia": "motor de notificações (scheduled-notification.*)/catalog/matriz/migração de scheduled_notifications INTOCADOS; fuel-logs/faturamento OS/financial/notifications/fleet-alerts sem regressão (147/147 nomeadas); PayableToggle(PR-02)+Anexos(PR-01) intactos; produtor fleet-alerts runMaintenanceDueNotifications coexiste (distinto)",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

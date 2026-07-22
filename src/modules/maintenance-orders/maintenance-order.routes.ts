@@ -48,6 +48,16 @@ export function createMaintenanceOrderRouter(
     }),
   );
 
+  // Ω4C PR-06 — sugestão de hodômetro (D-Ω4C-MANUT-ODOMETER-SUGGEST). LITERAL declarado ANTES de
+  // `:maintenanceOrderId` para não colidir (odometer-suggestion cairia no param). Perm read.
+  router.get(
+    "/maintenance-orders/odometer-suggestion",
+    requirePermission(MAINTENANCE_ORDER_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.odometerSuggestion(request));
+    }),
+  );
+
   router.get(
     "/maintenance-orders/:maintenanceOrderId",
     requirePermission(MAINTENANCE_ORDER_PERMISSIONS.read),
@@ -61,6 +71,40 @@ export function createMaintenanceOrderRouter(
     requirePermission(MAINTENANCE_ORDER_PERMISSIONS.update),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.update(request));
+    }),
+  );
+
+  // Ω4C PR-06 — itens da manutenção (D-Ω4C-MANUT-ITEMS). Sub-recurso nested; reusa maintenance_orders:* (RBAC).
+  // A posse do pai é resolvida via service.get() (404 cross-tenant nativo) antes de tocar a linha.
+  router.get(
+    "/maintenance-orders/:maintenanceOrderId/items",
+    requirePermission(MAINTENANCE_ORDER_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.listItems(request));
+    }),
+  );
+
+  router.post(
+    "/maintenance-orders/:maintenanceOrderId/items",
+    requirePermission(MAINTENANCE_ORDER_PERMISSIONS.create),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.addItem(request));
+    }),
+  );
+
+  router.patch(
+    "/maintenance-orders/:maintenanceOrderId/items/:itemId",
+    requirePermission(MAINTENANCE_ORDER_PERMISSIONS.update),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.updateItem(request));
+    }),
+  );
+
+  router.delete(
+    "/maintenance-orders/:maintenanceOrderId/items/:itemId",
+    requirePermission(MAINTENANCE_ORDER_PERMISSIONS.update),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.removeItem(request));
     }),
   );
 

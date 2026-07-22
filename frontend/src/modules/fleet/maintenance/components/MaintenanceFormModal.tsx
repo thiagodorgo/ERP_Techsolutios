@@ -1,5 +1,5 @@
 import type { CSSProperties, FormEvent } from "react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Alert, Button, Chip, Input, Modal, Select, Tabs } from "../../../../components/ui";
 import { EntityAttachmentsTab } from "../../../attachments";
@@ -15,15 +15,30 @@ import {
   parseIntStrict,
   validateMaintenanceOrder,
 } from "../maintenance-orders.adapter";
-import { createMaintenanceOrder, updateMaintenanceOrder } from "../maintenance-orders.service";
+import {
+  addMaintenanceOrderItem,
+  createMaintenanceOrder,
+  getMaintenanceOrderDetail,
+  getOdometerSuggestion,
+  removeMaintenanceOrderItem,
+  updateMaintenanceOrder,
+  updateMaintenanceOrderItem,
+} from "../maintenance-orders.service";
 import type {
+  MaintenanceItemPayload,
   MaintenanceOrder,
   MaintenanceOrderCreatePayload,
   MaintenanceOrderDraft,
   MaintenanceOrderField,
+  MaintenanceOrderItem,
+  MaintenanceOrderTotals,
   MaintenanceOrdersApiContext,
   MaintenanceType,
+  OdometerSuggestion,
 } from "../maintenance-orders.types";
+import { MaintenanceItemModal } from "./MaintenanceItemModal";
+import { MaintenanceItemsSection } from "./MaintenanceItemsSection";
+import { PrintMaintenanceOrderModal } from "./PrintMaintenanceOrderModal";
 
 const FIELD_ID: Record<string, string> = {
   vehicleId: "maintenance-field-vehicle",
@@ -32,13 +47,36 @@ const FIELD_ID: Record<string, string> = {
   scheduledFor: "maintenance-field-scheduled-for",
   odometer: "maintenance-field-odometer",
   supplier: "maintenance-field-supplier",
+  nextDueAt: "maintenance-field-next-due-at",
 };
+
+const EMPTY_TOTALS: MaintenanceOrderTotals = { totalServices: 0, totalProducts: 0, total: 0, itemCount: 0 };
 
 const gridStyle: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--space-12)" };
 const fullWidth: CSSProperties = { gridColumn: "1 / -1" };
 const footerStyle: CSSProperties = { display: "flex", justifyContent: "flex-end", gap: "var(--space-8)", marginTop: "var(--space-16)" };
 const readOnlyRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: "var(--space-8)" };
 const mutedStyle: CSSProperties = { fontSize: "var(--text-sm)", color: "var(--text-secondary)" };
+const sectionTitleStyle: CSSProperties = {
+  ...fullWidth,
+  margin: "var(--space-8) 0 0",
+  paddingTop: "var(--space-8)",
+  borderTop: "1px solid var(--border-subtle)",
+  fontSize: "var(--text-sm)",
+  fontWeight: 700,
+  color: "var(--text-secondary)",
+};
+const suggestionStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "var(--space-8)",
+  marginTop: "var(--space-6)",
+  padding: "var(--space-6) var(--space-8)",
+  borderRadius: "var(--radius-4)",
+  background: "var(--surface-panel-muted)",
+  fontSize: "var(--text-sm)",
+  color: "var(--text-secondary)",
+};
 
 // ISO -> valor de <input type="datetime-local"> (YYYY-MM-DDTHH:mm) na hora local.
 function toDateTimeLocalValue(iso: string | null | undefined): string {
@@ -47,6 +85,23 @@ function toDateTimeLocalValue(iso: string | null | undefined): string {
   if (Number.isNaN(date.getTime())) return "";
   const pad = (value: number) => String(value).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+// ISO -> valor de <input type="date"> (YYYY-MM-DD) na hora local.
+function toDateValue(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function formatOdometer(value: number): string {
+  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(value);
+}
+
+function suggestionSourceLabel(source: OdometerSuggestion["source"]): string {
+  return source === "fuel_log" ? "em um abastecimento" : "em uma manutenção anterior";
 }
 
 export function MaintenanceFormModal({
@@ -80,9 +135,70 @@ export function MaintenanceFormModal({
   const [scheduledFor, setScheduledFor] = useState(toDateTimeLocalValue(order?.scheduledFor));
   const [odometer, setOdometer] = useState(order?.odometer != null ? String(order.odometer) : "");
   const [supplier, setSupplier] = useState(order?.supplier ?? "");
+  // Ω4C PR-06 — próxima manutenção (por tempo → nextDueAt). A notificação agendada é SEMPRE privada (decidido no
+  // backend): não há seletor de visibilidade — broadcast tenant-wide exige notifications:create pela rota do motor.
+  const [nextDueAt, setNextDueAt] = useState(toDateValue(order?.nextDueAt));
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<MaintenanceOrderField, string>>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Ω4C PR-06 — sugestão de hodômetro (maior leitura conhecida). Buscada ao escolher a viatura; null → sem sugestão.
+  const [odometerSuggestion, setOdometerSuggestion] = useState<OdometerSuggestion | null>(null);
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false);
+
+  // Ω4C PR-06 — itens + totais DERIVADOS do backend (só no modo edição, após o cabeçalho existir).
+  const [items, setItems] = useState<readonly MaintenanceOrderItem[]>([]);
+  const [totals, setTotals] = useState<MaintenanceOrderTotals>(EMPTY_TOTALS);
+  const [itemsLoading, setItemsLoading] = useState(false);
+  const [itemsError, setItemsError] = useState<string | null>(null);
+  const [itemModalOpen, setItemModalOpen] = useState(false);
+  const [itemModalKey, setItemModalKey] = useState(0);
+  const [editingItem, setEditingItem] = useState<MaintenanceOrderItem | null>(null);
+  const [itemSaving, setItemSaving] = useState(false);
+  const [itemError, setItemError] = useState<string | null>(null);
+  const [busyItemId, setBusyItemId] = useState<string | null>(null);
+  const [printOpen, setPrintOpen] = useState(false);
+
+  const canEditItems = canUploadAttachments; // reusa a permissão de criar/editar manutenção (RBAC do agregado)
+
+  const reloadDetail = useCallback(async () => {
+    if (!order) return;
+    setItemsLoading(true);
+    setItemsError(null);
+    try {
+      const detail = await getMaintenanceOrderDetail(context, order.id);
+      if (detail) {
+        setItems(detail.items);
+        setTotals(detail.totals);
+      } else {
+        setItems([]);
+        setTotals(EMPTY_TOTALS);
+      }
+    } catch {
+      setItemsError("Não foi possível carregar os itens desta manutenção.");
+    } finally {
+      setItemsLoading(false);
+    }
+  }, [context, order]);
+
+  // Modo edição: carrega itens + totais ao abrir.
+  useEffect(() => {
+    void reloadDetail();
+  }, [reloadDetail]);
+
+  // Sugestão de hodômetro ao escolher a viatura (null → nenhum hint). Só quando há viatura selecionada.
+  useEffect(() => {
+    let alive = true;
+    setOdometerSuggestion(null);
+    setSuggestionDismissed(false);
+    if (!vehicleId) return;
+    void getOdometerSuggestion(context, vehicleId).then((suggestion) => {
+      if (alive) setOdometerSuggestion(suggestion);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [context, vehicleId]);
 
   function buildDraft(): MaintenanceOrderDraft {
     return {
@@ -93,6 +209,7 @@ export function MaintenanceFormModal({
       scheduledFor: scheduledFor.trim() ? new Date(scheduledFor).toISOString() : undefined,
       odometer: parseIntStrict(odometer),
       supplier: supplier.trim() || undefined,
+      nextDueAt: nextDueAt.trim() ? new Date(nextDueAt).toISOString() : undefined,
     };
   }
 
@@ -116,6 +233,8 @@ export function MaintenanceFormModal({
       scheduledFor: draft.scheduledFor,
       odometer: draft.odometer,
       supplier: draft.supplier,
+      // Próxima manutenção: com data, o backend cria a notificação agendada (sempre PRIVADA — sem visibilidade no payload).
+      nextDueAt: draft.nextDueAt,
     };
 
     setSaving(true);
@@ -140,15 +259,77 @@ export function MaintenanceFormModal({
     }
   }
 
+  function openAddItem() {
+    setEditingItem(null);
+    setItemError(null);
+    setItemModalOpen(true);
+  }
+
+  function openEditItem(item: MaintenanceOrderItem) {
+    setEditingItem(item);
+    setItemError(null);
+    setItemModalOpen(true);
+  }
+
+  function closeItemModal() {
+    setItemModalOpen(false);
+    setEditingItem(null);
+    setItemError(null);
+  }
+
+  async function handleItemSubmit(payload: MaintenanceItemPayload, continueAdding: boolean) {
+    if (!order) return;
+    setItemSaving(true);
+    setItemError(null);
+    try {
+      if (editingItem) {
+        await updateMaintenanceOrderItem(context, order.id, editingItem.id, payload);
+      } else {
+        await addMaintenanceOrderItem(context, order.id, payload);
+      }
+      await reloadDetail();
+      if (continueAdding && !editingItem) {
+        // "Continuar cadastrando": mantém o sub-modal aberto e o reinicia (remonta com key nova).
+        setItemModalKey((key) => key + 1);
+      } else {
+        closeItemModal();
+      }
+    } catch (error) {
+      const feedback = interpretMaintenanceSubmitError(error, "form");
+      setItemError(feedback.message);
+    } finally {
+      setItemSaving(false);
+    }
+  }
+
+  async function handleRemoveItem(item: MaintenanceOrderItem) {
+    if (!order) return;
+    setBusyItemId(item.id);
+    setItemsError(null);
+    try {
+      await removeMaintenanceOrderItem(context, order.id, item.id);
+      await reloadDetail();
+    } catch {
+      setItemsError("Não foi possível excluir o item. Tente novamente.");
+    } finally {
+      setBusyItemId(null);
+    }
+  }
+
   const selectedVehicle = order ? vehicles.find((vehicle) => vehicle.id === order.vehicleId) : undefined;
+  const vehicleLabel = selectedVehicle ? `${selectedVehicle.plate}${selectedVehicle.model ? ` — ${selectedVehicle.model}` : ""}` : "—";
   const attachmentSummary = order
     ? [
         { label: "Data e Hora", value: formatMaintenanceDate(order.scheduledFor) },
         { label: "Tipo", value: getMaintenanceTypeLabel(order.type) },
-        { label: "Objeto", value: selectedVehicle ? `${selectedVehicle.plate}${selectedVehicle.model ? ` — ${selectedVehicle.model}` : ""}` : "—" },
+        { label: "Objeto", value: vehicleLabel },
         { label: "Situação", value: getMaintenanceStatusLabel(order.status) },
       ]
     : [];
+
+  // PayableToggle: amount default = total derivado (Σ itens); fallback ao custo legado quando não há item.
+  const payableAmount = totals.total > 0 ? totals.total : order?.cost ?? undefined;
+  const showSuggestion = odometerSuggestion !== null && !suggestionDismissed && !odometer.trim();
 
   return (
     <Modal title={isEdit ? "Editar manutenção" : "Nova manutenção"} open onClose={onClose}>
@@ -274,16 +455,40 @@ export function MaintenanceFormModal({
             ) : null}
           </div>
 
-          <Field
-            id={FIELD_ID.odometer}
-            label="Odômetro"
-            value={odometer}
-            onChange={setOdometer}
-            error={fieldErrors.odometer}
-            maxLength={9}
-            inputMode="numeric"
-            helper="Leitura em km, número inteiro (opcional)."
-          />
+          <div>
+            <Field
+              id={FIELD_ID.odometer}
+              label="Odômetro"
+              value={odometer}
+              onChange={setOdometer}
+              error={fieldErrors.odometer}
+              maxLength={9}
+              inputMode="numeric"
+              helper="Leitura em km, número inteiro (opcional)."
+            />
+            {showSuggestion && odometerSuggestion ? (
+              <div style={suggestionStyle} aria-live="polite">
+                <span>
+                  Encontramos uma leitura de <strong>{formatOdometer(odometerSuggestion.suggestedOdometer)} km</strong>{" "}
+                  {suggestionSourceLabel(odometerSuggestion.source)}. Deseja preencher?
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setOdometer(String(odometerSuggestion.suggestedOdometer));
+                    setSuggestionDismissed(true);
+                  }}
+                >
+                  Preencher
+                </Button>
+                <Button type="button" size="sm" variant="ghost" aria-label="Dispensar sugestão de hodômetro" onClick={() => setSuggestionDismissed(true)}>
+                  Dispensar
+                </Button>
+              </div>
+            ) : null}
+          </div>
           <Field
             id={FIELD_ID.supplier}
             label="Fornecedor"
@@ -294,7 +499,35 @@ export function MaintenanceFormModal({
             autoComplete="off"
             helper="Oficina/prestador (opcional)."
           />
+
+          {/* Seção: Próxima manutenção (por tempo). Por-KM (hodômetro-alvo) é PR-16 — não há campo de KM aqui. */}
+          <h3 style={sectionTitleStyle}>Próxima manutenção</h3>
+
+          <Field
+            id={FIELD_ID.nextDueAt}
+            label="Data da próxima manutenção"
+            type="date"
+            value={nextDueAt}
+            onChange={setNextDueAt}
+            error={fieldErrors.nextDueAt}
+            helper="Ao salvar com data, um lembrete privado é agendado para a próxima manutenção."
+          />
         </div>
+
+        {isEdit && order ? (
+          <MaintenanceItemsSection
+            items={items}
+            totals={totals}
+            loading={itemsLoading}
+            error={itemsError}
+            canEdit={canEditItems}
+            busyItemId={busyItemId}
+            onAdd={openAddItem}
+            onEditItem={openEditItem}
+            onRemoveItem={(item) => void handleRemoveItem(item)}
+            onPrint={() => setPrintOpen(true)}
+          />
+        ) : null}
 
         {isEdit && order ? (
           <div style={{ marginTop: "var(--space-16)" }}>
@@ -304,7 +537,7 @@ export function MaintenanceFormModal({
               id={order.id}
               canLaunch={canLaunchPayable}
               canRemove={canRemovePayable}
-              defaults={{ partyName: order.supplier ?? "Fornecedor", amount: order.cost ?? undefined }}
+              defaults={{ partyName: order.supplier ?? "Fornecedor", amount: payableAmount }}
             />
           </div>
         ) : null}
@@ -319,6 +552,27 @@ export function MaintenanceFormModal({
         </footer>
         </form>
       )}
+
+      {itemModalOpen && order ? (
+        <MaintenanceItemModal
+          key={editingItem?.id ?? `new-${itemModalKey}`}
+          item={editingItem}
+          saving={itemSaving}
+          serverError={itemError}
+          onSubmit={(payload, continueAdding) => void handleItemSubmit(payload, continueAdding)}
+          onClose={closeItemModal}
+        />
+      ) : null}
+
+      {printOpen && order ? (
+        <PrintMaintenanceOrderModal
+          order={order}
+          items={items}
+          totals={totals}
+          vehicleLabel={vehicleLabel}
+          onClose={() => setPrintOpen(false)}
+        />
+      ) : null}
     </Modal>
   );
 }

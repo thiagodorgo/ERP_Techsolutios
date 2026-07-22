@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-21",
-  "version": "OMEGA4C-PR-05",
+  "version": "OMEGA4C-PR-06",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω4C PR-05 — Abastecimento (interno/externo + fornecedor + KM/L honesto; ESTENDER)",
-    "title": "Ω4C PR-05: abastecimento interno/externo, fornecedor (FK composta), KM/L honesto; baixa de estoque deferida a PR-10/11",
+    "block": "Ω4C PR-06 — Manutenção (itens+totais derivados, sugestão de hodômetro, próxima manutenção; ESTENDER)",
+    "title": "Ω4C PR-06: manutenção com itens, totais derivados, sugestão de hodômetro e notificação de próxima manutenção (1º consumidor do motor PR-04)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω4C PR-05 — ABASTECIMENTO (ESTENDER fuel-logs: módulo/model/tela já existiam). FuelLog +station_type (enum-app internal|external, default external) +supplier_id (nullable, FK composta (tenant_id, supplier_id)→suppliers RESTRICT). Migração ADITIVA up-only 20260825000000_add_fuel_log_supplier_station_type: 2× ADD COLUMN + FK composta + índice; total_value/liters Decimal(20,6) INTOCADOS (ALTER de tipo seria destrutivo — D-Ω4C-FUEL-MONEY-PRECISION); RLS de fuel_logs herdada — provada up/down/re-up + backfill legado + FK cross-tenant 23503 + RESTRICT em erp-postgres pelo dba-guardião. EXTERNO exige supplier válido do tenant (422 supplier_required_for_external; cross-tenant 400 invalid_supplier_reference via SupplierService.get real); INTERNO proíbe supplier (422 supplier_not_allowed_for_internal), só marca o log. KM/L endurecido (RN-ABA-04): consumo=(Δodômetro)/litros DERIVADO server-side, NUNCA persistido; Δ≤0 → null/'—' (nunca negativo/fabricado); null no 1º abastecimento. Baixa de combustível do estoque DEFERIDA a PR-10/11 (D-Ω4C-FUEL-STOCK-DEFER — custódia+flag combustível não existem; ZERO import de inventory, sem stock_item_id, sem seletor de estoque). REUSA fuel_logs:* (SEM permissão nova). Frontend: FuelLogFormModal (select Posto + Fornecedor condicional + Desconsiderar-último-KM + Valor-Unitário-derivado) + AbastecimentoPage (colunas Posto/Fornecedor); PayableToggle do PR-02 intocado. RN-ABA-01/02/04/05/06/07/08. Junta 3 vetos (1 ciclo de reprovação resolvido): agente-dba-guardião APROVADO (0 cond) + coordenador-de-acessos APROVADO + omega4c-avaliador APROVADO (BLOQUEIA RN-ABA-08 do corte de API fechada com teste de rota 3-tenant real, re-verificado). Zero regressão (167/167 nas suítes nomeadas). Sem provider/SKU novo.",
-    "status_label": "Ω4C PR-05: abastecimento interno/externo + fornecedor (FK composta) + KM/L honesto (baixa de estoque deferida); junta 3 vetos APROVADO (1 reprovação resolvida); backend 1350->1364, smoke 719->726, blocks 75->76"
+    "summary": "Ω4C PR-06 — MANUTENÇÃO (ESTENDER maintenance-orders: cabeçalho-só → itens+totais; 1º CONSUMIDOR do motor de notificações do PR-04). Nova tabela filha MaintenanceOrderItem (FK composta (tenant_id, maintenance_order_id)→maintenance_orders RESTRICT + RLS; item_type service|product|stock; quantity Decimal(10,3)/unit_value Decimal(12,2)); +next_due_at em MaintenanceOrder. Migração ADITIVA up-only 20260826000000_add_maintenance_order_items_next_due: CREATE TABLE + ALTER ADD next_due_at; cost Decimal(20,6) INTOCADO — provada up/down/re-up + FK cross-tenant 23503 + RESTRICT em erp-postgres pelo dba-guardião. TOTAIS DERIVADOS server-side (line=unit×qty; header=Σ; NUNCA persistidos). Sugestão de hodômetro = max(último fuel_log, última manutenção); null honesto. Próxima manutenção = 1 ScheduledNotification via motor PR-04 (source_type='maintenance_item', client_action_id DETERMINÍSTICO 'maintenance-next-due:<orderId>') → dedupe idempotente (reprocessar=1 definição), motor INTOCADO. A JUNTA ADVERSARIAL CAÇOU UMA ESCALADA DE PRIVILÉGIO (2 vetos): o efeito de domínio repassava next_due_visibility=public sob maintenance_orders:create sem notifications:create → broadcast tenant-wide. FIX (reprovação-ciclo-1, D-Ω4C-MANUT-NEXTDUE-PRIVATE): next_due_visibility removido do contrato + seam fixa visibility='private' HARDCODED + seletor removido da UI + teste MANUT-11 (ator sem notifications:create + body public → definição private, só o criador recebe, 0 aos outros). Broadcast deliberado SÓ via rota gated. REUSA maintenance_orders:* (SEM permissão nova). Item stock só marca (baixa → PR-10/11); por-KM → PR-16. Frontend: MaintenanceFormModal (grade de itens + sub-modal + totalizadores + próxima manutenção + sugestão hodômetro + impressão client-side) + ManutençãoPage (colunas Itens/Total/Próxima); PayableToggle(PR-02)+Anexos(PR-01) intocados. RN-MANUT-01..11. Junta 3 vetos (1 ciclo de reprovação de SEGURANÇA resolvido): agente-dba-guardião APROVADO (0 cond) + omega4c-avaliador REPROVADO→APROVADO + coordenador-de-acessos REPROVADO→APROVADO. Zero regressão (147/147 nomeadas). Sem provider/SKU novo.",
+    "status_label": "Ω4C PR-06: manutenção itens+totais derivados + próxima manutenção (1º consumidor motor PR-04, dedupe idempotente); junta pegou e fechou 1 ESCALADA DE PRIVILÉGIO; backend 1364->1382, smoke 726->737, blocks 76->77"
   },
   "metrics": {
     "flutter_tests": {
@@ -21,16 +21,16 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 726,
-      "total": 726,
-      "display": "726/726",
-      "note": "+7 (abastecimento-station-type: select Posto/Fornecedor-so-EXTERNO/validacao/km-L-'—'-honesto/rotulos-PT-BR/§2.8). Ω4C PR-05 abastecimento (FuelLogFormModal + AbastecimentoPage). PayableToggle do PR-02 intocado. Sobre 719."
+      "value": 737,
+      "total": 737,
+      "display": "737/737",
+      "note": "+11 (manutencao-itens: grade de itens/total-derivado-do-backend/rotulos-PT-BR/sub-modal-validacao/sugestao-hodometro/§2.8/seletor-de-visibilidade-removido). Ω4C PR-06 manutencao (MaintenanceFormModal + ManutencaoPage + MaintenanceItemModal/ItemsSection/PrintModal). PayableToggle(PR-02)+Anexos(PR-01) intocados. Sobre 726."
     },
     "backend_tests": {
-      "value": 1364,
-      "total": 1370,
-      "display": "1364/1370",
-      "note": "+14 (fuel-logs: tests/fuel-logs.test.ts 8->17 +9 [parseStationType/RN-ABA-01/02/04/05/label/compat] + tests/fuel-logs-routes.test.ts 14->19 +5 [RN-ABA-08 cross-tenant 3-tenant HTTP real via SupplierService.get, INTERNO/EXTERNO 422, EXTERNO same-tenant 201 §2.8, ignore_previous_odometer]). Ω4C PR-05. Suite memoria (CI) 1364 pass/6 skip. Migracao 20260825000000_add_fuel_log_supplier_station_type provada up/down/re-up + backfill legado + FK composta cross-tenant 23503 + RESTRICT pelo dba-guardiao (total_value/liters Decimal(20,6) INTOCADOS). Reusa fuel_logs:* (sem permissao nova). Baixa de estoque deferida a PR-10/11. Zero regressao (167/167 nomeadas). Sobre 1350/1356. Local: rls-tenant-isolation 'users and checklists' DB-gated ambiental (arquivo intocado)."
+      "value": 1382,
+      "total": 1388,
+      "display": "1382/1388",
+      "note": "+18 (maintenance: tests/maintenance-order-items.test.ts +13 [CRUD item/total-derivado/≤0->422/cross-tenant/§2.8/dedupe-idempotente/MANUT-11-escalada-fechada] + tests/maintenance-orders-routes.test.ts 16->21 +5 HTTP). Ω4C PR-06. Suite memoria (CI) 1382 pass/6 skip. Migracao 20260826000000_add_maintenance_order_items_next_due provada up/down/re-up + FK composta cross-tenant 23503 + RESTRICT pelo dba-guardiao (cost Decimal(20,6) INTOCADO). Reusa maintenance_orders:* (sem permissao nova). 1o consumidor do motor de notificacoes PR-04 (dedupe idempotente por client_action_id deterministico; motor INTOCADO). Junta pegou e fechou 1 ESCALADA DE PRIVILEGIO (efeito de dominio agora sempre private). Zero regressao (147/147 nomeadas). Sobre 1364/1370. Local: rls-tenant-isolation DB-gated ambiental (arquivo intocado)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 76,
-      "display": "76",
-      "note": "Ω4C PR-05 (abastecimento interno/externo + fornecedor + KM/L honesto) = feature entregue → +1 sobre 75 (Ω4C PR-04 motor de notificacoes). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
+      "value": 77,
+      "display": "77",
+      "note": "Ω4C PR-06 (manutencao: itens+totais derivados+sugestao hodometro+proxima manutencao) = feature entregue → +1 sobre 76 (Ω4C PR-05 abastecimento). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,

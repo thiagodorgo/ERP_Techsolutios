@@ -1308,6 +1308,71 @@ if (!connectionString) {
       );
       assert.equal(tenantCScheduled?.status, "pending", "tenant C scheduled notification stays visible + untouched in-tenant");
 
+      // Ω4C PR-06 (RN-MANUT-09) — maintenance_order_items (itens da manutenção) com 3 tenants EFÊMEROS (A, B, C).
+      // Cada item referencia uma maintenance_order via FK composta (tenant_id, maintenance_order_id); a ordem
+      // referencia um vehicle (FK composta). Prova: invisível sem contexto + cross-tenant updateMany count=0 +
+      // visível/intocado in-tenant. RLS ENABLE/FORCE + policy da migration 20260826000000; tenant_id 1º de todo índice.
+      const createMaintenanceItem = (tx: typeof client, tenantId: string) => (async () => {
+        const [vehicle] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO vehicles (tenant_id, plate, model)
+          VALUES (${tenantId}::uuid, ${`RLS-${tenantId.slice(0, 8)}`}, 'RLS Truck')
+          RETURNING id
+        `;
+        const [order] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO maintenance_orders (tenant_id, vehicle_id, type, status, description, next_due_at)
+          VALUES (${tenantId}::uuid, ${vehicle.id}::uuid, 'corretiva', 'agendada', 'RLS manutenção', now() + INTERVAL '30 day')
+          RETURNING id
+        `;
+        const [item] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO maintenance_order_items (tenant_id, maintenance_order_id, item_type, description, unit_value, quantity)
+          VALUES (${tenantId}::uuid, ${order.id}::uuid, 'service', 'RLS item', 100.00, 1.000)
+          RETURNING id
+        `;
+        return item.id;
+      })();
+      const maintenanceItemAId = await withTenantRls(client, tenantA.id, (tx) => createMaintenanceItem(tx as typeof client, tenantA.id));
+      const maintenanceItemBId = await withTenantRls(client, tenantB.id, (tx) => createMaintenanceItem(tx as typeof client, tenantB.id));
+      const maintenanceItemCId = await withTenantRls(client, tenantC.id, (tx) => createMaintenanceItem(tx as typeof client, tenantC.id));
+
+      const maintenanceItemsWithoutContext = await client.maintenanceOrderItem.findMany({
+        where: { id: { in: [maintenanceItemAId, maintenanceItemBId, maintenanceItemCId] } },
+      });
+      assert.deepEqual(
+        maintenanceItemsWithoutContext.map((entry) => entry.id),
+        [],
+        "tenant-scoped maintenance order items must not be visible without app.current_tenant_id",
+      );
+
+      const tenantAMaintenanceItemView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.maintenanceOrderItem.findMany({
+          where: { id: { in: [maintenanceItemAId, maintenanceItemBId, maintenanceItemCId] } },
+        });
+        const crossTenantUpdate = await tx.maintenanceOrderItem.updateMany({
+          where: { id: { in: [maintenanceItemBId, maintenanceItemCId] } },
+          data: { description: "RLS cross-tenant update should not apply" },
+        });
+        return { visibleIds: visible.map((entry) => entry.id), crossUpdatedRows: crossTenantUpdate.count };
+      });
+      assert.deepEqual(
+        tenantAMaintenanceItemView.visibleIds,
+        [maintenanceItemAId],
+        "tenant A must only see its own maintenance order item (not tenant B/C)",
+      );
+      assert.equal(
+        tenantAMaintenanceItemView.crossUpdatedRows,
+        0,
+        "tenant A must not update tenant B/C maintenance order items",
+      );
+
+      const tenantBMaintenanceItem = await withTenantRls(client, tenantB.id, (tx) =>
+        tx.maintenanceOrderItem.findUnique({ where: { id: maintenanceItemBId } }),
+      );
+      assert.equal(tenantBMaintenanceItem?.description, "RLS item", "tenant B maintenance item stays visible + untouched in-tenant");
+      const tenantCMaintenanceItem = await withTenantRls(client, tenantC.id, (tx) =>
+        tx.maintenanceOrderItem.findUnique({ where: { id: maintenanceItemCId } }),
+      );
+      assert.equal(tenantCMaintenanceItem?.description, "RLS item", "tenant C maintenance item stays visible + untouched in-tenant");
+
       const globalTenants = await client.tenant.findMany({
         where: {
           id: {

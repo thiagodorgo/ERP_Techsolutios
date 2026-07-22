@@ -263,6 +263,35 @@ export function ManutencaoPage() {
       render: (order) => formatCost(order.cost),
     },
     {
+      // Ω4C PR-06 — Σ itens DERIVADO server-side (itemCount). "—" honesto quando não há item.
+      key: "itemCount",
+      header: "Itens",
+      sortable: true,
+      align: "right",
+      tabular: true,
+      sortValue: (order) => order.itemCount,
+      render: (order) => (order.itemCount > 0 ? order.itemCount : <span style={mutedStyle}>—</span>),
+    },
+    {
+      // Ω4C PR-06 — total dos itens DERIVADO server-side (itemsTotal). "—" honesto quando não há item.
+      key: "itemsTotal",
+      header: "Valor Total",
+      sortable: true,
+      align: "right",
+      tabular: true,
+      sortValue: (order) => order.itemsTotal,
+      render: (order) => (order.itemsTotal > 0 ? formatCost(order.itemsTotal) : <span style={mutedStyle}>—</span>),
+    },
+    {
+      // Ω4C PR-06 — próxima manutenção (nextDueAt, por tempo). "—" honesto quando ausente.
+      key: "nextDueAt",
+      header: "Próxima",
+      sortable: true,
+      tabular: true,
+      sortValue: (order) => order.nextDueAt,
+      render: (order) => formatMaintenanceDate(order.nextDueAt),
+    },
+    {
       key: "actions",
       header: "Ações",
       render: (order) => {
