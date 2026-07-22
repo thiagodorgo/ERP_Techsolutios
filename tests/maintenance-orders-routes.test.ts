@@ -393,6 +393,122 @@ test("[validacao] tipo invalido e descricao ausente retornam 400", async () => {
   });
 });
 
+test("[MANUT-06] POST /maintenance-orders com next_due_at persiste a próxima; reusa maintenance_orders:*", async () => {
+  await withMaintenanceApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "NDU1E11");
+    const created = await requestJson(baseUrl, "/api/v1/maintenance-orders", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: {
+        vehicle_id: vehicleId,
+        type: "preventiva",
+        description: "Com próxima manutenção.",
+        next_due_at: "2027-01-10T12:00:00.000Z",
+      },
+    });
+
+    assert.equal(created.status, 201, JSON.stringify(created.body));
+    assert.equal(created.body.data.nextDueAt, "2027-01-10T12:00:00.000Z");
+    // Efeito de domínio: sem exigir notifications:create do usuário (manager não tem essa permissão).
+  });
+});
+
+test("[MANUT-01/02/03] itens: POST/GET/DELETE + totais DERIVADOS no GET do cabeçalho", async () => {
+  await withMaintenanceApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "ITM1E11");
+    const order = await createMaintenance(baseUrl, seed.tenantA, seed.managerA, { vehicle_id: vehicleId, description: "Com itens." });
+
+    const svc = await addItem(baseUrl, seed.tenantA, seed.managerA, order.id, { item_type: "service", description: "Mão de obra", unit_value: 150, quantity: 2 });
+    await addItem(baseUrl, seed.tenantA, seed.managerA, order.id, { item_type: "product", description: "Peça", unit_value: 50, quantity: 3 });
+    await addItem(baseUrl, seed.tenantA, seed.managerA, order.id, { item_type: "stock", description: "Óleo", unit_value: 20, quantity: 1 });
+
+    assert.equal(svc.status, 201, JSON.stringify(svc.body));
+    assert.equal(svc.body.data.lineTotal, 300);
+    assert.equal(svc.body.data.tenant_id, undefined);
+    assert.equal(svc.body.data.maintenanceOrderId, undefined);
+
+    const detail = await requestJson(baseUrl, `/api/v1/maintenance-orders/${order.id}`, {
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    assert.equal(detail.body.data.totals.totalServices, 300);
+    assert.equal(detail.body.data.totals.totalProducts, 170); // 150 + 20
+    assert.equal(detail.body.data.totals.total, 470);
+    assert.equal(detail.body.data.totals.itemCount, 3);
+    assert.equal(detail.body.data.items.length, 3);
+
+    // Lista de cabeçalhos expõe itemCount + itemsTotal derivados.
+    const list = await requestJson(baseUrl, `/api/v1/maintenance-orders?vehicle_id=${vehicleId}`, {
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    assert.equal(list.body.items[0].itemCount, 3);
+    assert.equal(list.body.items[0].itemsTotal, 470);
+
+    // DELETE (soft) remove da soma.
+    const deleted = await requestJson(baseUrl, `/api/v1/maintenance-orders/${order.id}/items/${svc.body.data.id}`, {
+      method: "DELETE",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    assert.equal(deleted.status, 200);
+    const after = await requestJson(baseUrl, `/api/v1/maintenance-orders/${order.id}`, {
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    assert.equal(after.body.data.totals.itemCount, 2);
+    assert.equal(after.body.data.totals.total, 170);
+  });
+});
+
+test("[MANUT-02] item com unit_value/quantity <= 0 retorna 422", async () => {
+  await withMaintenanceApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "ITM2E22");
+    const order = await createMaintenance(baseUrl, seed.tenantA, seed.managerA, { vehicle_id: vehicleId, description: "Itens 422." });
+
+    const badValue = await addItem(baseUrl, seed.tenantA, seed.managerA, order.id, { item_type: "service", description: "X", unit_value: 0, quantity: 1 });
+    const badQty = await addItem(baseUrl, seed.tenantA, seed.managerA, order.id, { item_type: "service", description: "X", unit_value: 10, quantity: 0 });
+
+    assert.equal(badValue.status, 422);
+    assert.equal(badValue.body.error.reason, "invalid_unit_value");
+    assert.equal(badQty.status, 422);
+    assert.equal(badQty.body.error.reason, "invalid_quantity");
+  });
+});
+
+test("[MANUT-09] item de manutenção de outra organização retorna 404", async () => {
+  await withMaintenanceApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "ITM3E33");
+    const order = await createMaintenance(baseUrl, seed.tenantA, seed.managerA, { vehicle_id: vehicleId, description: "Privada A." });
+
+    const cross = await addItem(baseUrl, seed.tenantB, seed.managerB, order.id, { item_type: "service", description: "X", unit_value: 10, quantity: 1 });
+    assert.equal(cross.status, 404);
+    assert.equal(cross.body.error.reason, "not_found");
+  });
+});
+
+test("[MANUT-04] GET /maintenance-orders/odometer-suggestion = max(fuel, maintenance); null sem histórico", async () => {
+  await withMaintenanceApi(async ({ baseUrl, seed }) => {
+    const vehicleId = await createVehicle(baseUrl, seed.tenantA, seed.managerA, "ODO1E11");
+
+    const empty = await requestJson(baseUrl, `/api/v1/maintenance-orders/odometer-suggestion?vehicleId=${vehicleId}`, {
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    assert.equal(empty.status, 200);
+    assert.equal(empty.body.data, null);
+
+    const fuel = await requestJson(baseUrl, "/api/v1/fuel-logs", {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+      body: { vehicle_id: vehicleId, liters: 40, total_value: 300, odometer: 15500 },
+    });
+    assert.equal(fuel.status, 201, JSON.stringify(fuel.body));
+
+    const suggested = await requestJson(baseUrl, `/api/v1/maintenance-orders/odometer-suggestion?vehicleId=${vehicleId}`, {
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    assert.equal(suggested.status, 200);
+    assert.equal(suggested.body.data.suggestedOdometer, 15500);
+    assert.equal(suggested.body.data.source, "fuel_log");
+  });
+});
+
 type SeedData = {
   readonly tenantA: Tenant;
   readonly tenantB: Tenant;
@@ -509,6 +625,20 @@ async function patchStatus(
 ) {
   return requestJson(baseUrl, `/api/v1/maintenance-orders/${id}`, {
     method: "PATCH",
+    headers: authHeaders(tenant, user, "manager"),
+    body,
+  });
+}
+
+async function addItem(
+  baseUrl: string,
+  tenant: Tenant,
+  user: User,
+  orderId: string,
+  body: Record<string, unknown>,
+) {
+  return requestJson(baseUrl, `/api/v1/maintenance-orders/${orderId}/items`, {
+    method: "POST",
     headers: authHeaders(tenant, user, "manager"),
     body,
   });

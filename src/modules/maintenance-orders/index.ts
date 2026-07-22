@@ -6,3 +6,6 @@ export * from "./maintenance-order.routes.js";
 export * from "./maintenance-order.service.js";
 export * from "./maintenance-order.types.js";
 export * from "./maintenance-order.validators.js";
+export * from "./maintenance-order-item.types.js";
+export * from "./maintenance-order-item.repository.js";
+export * from "./maintenance-order-item.validators.js";
