@@ -1,0 +1,76 @@
+{
+  "pr": "PR-08",
+  "fase": "Fase 2 (ABERTURA) — Estoque com custódia e movimentos (ledger imutável)",
+  "snapshot_date": "2026-07-22",
+  "branch": "rodada/omega4c",
+  "tipo": "ESTENDER inventory (módulo/ledger imutável/saldo derivado já existiam). Realiza D-Ω4C-RECON-08 (imutável) + -03 (LINK/UNLINK). Abre PR-08b (baixa automática).",
+  "models_alterados": [
+    "StockMovement (+custody_type base|professional|vehicle default base, +custody_operator_profile_id/custody_vehicle_id UUID nullable FK compostas RESTRICT, +transfer_group_id, +reverses_movement_id)",
+    "InventoryItem (+is_fuel bool, +item_type, +purchase_price/sale_price Decimal(12,2), +description)"
+  ],
+  "migrations": [
+    "20260828000000_add_stock_custody_ledger (aditiva up-only; 10 ADD COLUMN + 2 FK compostas RESTRICT (→operator_profiles, →vehicles) + 3 índices tenant-first; avg_cost/quantidade_sinalizada Decimal(20,6) INTOCADOS; provada up/down/re-up + backfill base/false/product + FK cross-tenant 23503 + RESTRICT em erp-postgres pelo dba-guardião)"
+  ],
+  "comportamento": {
+    "custodia": "base|professional|vehicle. saldo(item, custódia) = Σ quantidade sinalizada por custódia (groupBy DERIVADO, nunca coluna). Saldo global legado INTOCADO (LINK/UNLINK netam a zero).",
+    "movimentos": "LINK = par de 2 linhas irmãs (transfer_group_id) na MESMA tx (−BASE/+custódia); UNLINK = inverso; EXIT = −custódia origem. Guard SALDO NUNCA NEGATIVO por custódia dentro do $transaction → 409 insufficient_balance.",
+    "ledger_imutavel": "zero endpoint PATCH/DELETE de movimento (404). Estorno = movimento compensatório via POST /stock-movements/:id/reverse (reverses_movement_id → original; sinal invertido; original INTACTO). 2º estorno → 409 movement_already_reversed.",
+    "posse_custodia": "resolveCustody valida operator_profile/vehicle no tenant do ator (400 invalid_custody_reference cross-tenant; 422 invalid_custody app-level base↔ref/professional↔operator/vehicle↔vehicle; FK composta RESTRICT backstop 23503).",
+    "baixa_automatica_DEFERIDA": "só flag is_fuel (marcação); marcar combustível NÃO gera movimento; ZERO import de fuel-logs/maintenance. A baixa (fuel PR-05 / manutenção PR-06) = PR-08b (falta stock_item_id — não fabricar)."
+  },
+  "permissao": "REUSA inventory_items:*/stock_movements:* (SEM permissão nova; catalog/RBAC_MATRIX/core-saas.test diff VAZIO). NENHUM efeito de domínio novo (sem superfície de escalada PR-06/07).",
+  "modulos_alterados": [
+    "src/modules/inventory/* (types/validators/repository/prisma-repository/service/dto/controller/routes — custódia, LINK/UNLINK/EXIT, estorno, custody-summary)",
+    "frontend/src/modules/inventory/* (InventoryItemFormModal abas Editar/Resumo/Movimentação + CustodySummaryPanel + ItemMovementsPanel imutável + StockEntry/Transfer/ExitModal sub-modais laranja + useCustodySummary)"
+  ],
+  "rns_cobertas": [
+    "RN-EST-01..02 (saldo derivado por custódia; nunca negativo → 409 insufficient_balance no $transaction)",
+    "RN-EST-03 (LINK/UNLINK par irmão transfer_group_id; global neta a zero)",
+    "RN-EST-04 (EXIT reduz custódia; exit_reason no campo reason existente)",
+    "RN-EST-05/06 (ledger imutável: sem PATCH/DELETE; estorno compensatório; 2º estorno 409)",
+    "RN-EST-07/08 (posse custódia dupla-camada 422/400/23503; §2.8 custodiante só nome)",
+    "RN-EST-10 (baixa automática DEFERIDA; is_fuel só marca, sem movimento)",
+    "RN-EST-11/12 (§2.8 nunca CNH; RLS 3-tenant custódia + teardown FK-safe)"
+  ],
+  "rns_total_pr": 12,
+  "cobertura_testes": {
+    "backend": "tests/stock-custody.test.ts 14/14 (LINK/UNLINK/EXIT/estorno/custódia/não-negativo/imutabilidade/§2.8/baixa-deferida) + stock-movements-routes +1 + inventory-items-routes +1 + rls-tenant-isolation bloco custódia 3-tenant com teardown FK-safe. Total +16.",
+    "frontend": "frontend/tests/estoque-custodia.test.tsx 15/15 (abas Editar/Resumo/Movimentação, saldos por custódia, sub-modal Vincular, movimento imutável só Estornar, 409 honestos, PT-BR, §2.8 sem CNH)"
+  },
+  "d_records": [
+    "D-Ω4C-INV-CUSTODY-MODEL (custódia no StockMovement; saldo por custódia = Σ groupBy)",
+    "D-Ω4C-INV-CUSTODY-REF-TYPED (2 FK compostas tipadas RESTRICT em vez de polimórfico)",
+    "D-Ω4C-INV-BALANCE-NONNEG (guard 409 insufficient_balance no $transaction)",
+    "D-Ω4C-INV-MOVEMENT-TYPES (LINK/UNLINK/EXIT + exit_reason enum-app sem CHECK)",
+    "D-Ω4C-INV-LEDGER-IMMUTABLE (sem PATCH/DELETE; estorno compensatório)",
+    "D-Ω4C-INV-STOCK-DEFER-CONSUMER (baixa automática → PR-08b; realiza deferrals PR-05/06)",
+    "D-Ω4C-INV-ITEM-FIELDS (campos AutEM do item)",
+    "D-Ω4C-INV-CUSTODY-SUMMARY (GET custody-summary)",
+    "D-Ω4C-INV-RBAC-REUSE (reusa inventory_items:*/stock_movements:*)",
+    "D-Ω4C-INV-DTO (§2.8)",
+    "D-Ω4C-INV-MONEY (purchase/sale_price 12,2; legados 20,6 intocados)"
+  ],
+  "divergencias_vs_autem": [
+    "exit_reason (Tipo de Saída) persistido no campo reason existente (allowlist v1 direct_sale; sem coluna nova)",
+    "custodyName omitido do DTO do movimento (label vem do custody-summary; evita N+1)",
+    "purchase_price/sale_price Decimal(12,2) vs avg_cost/quantidade_sinalizada legados (20,6) intocados (ALTER seria destrutivo)",
+    "limpeza de campos AutEM para null (clear) deferida a v1 (aceita set-only)"
+  ],
+  "achado_pre_existente": "P-INV-LEGACY-QTY-CONTRACT (agent-orchestration/omega/reprovacoes/) — modal genérico legado StockMovementFormModal envia quantidadeSinalizada negativo p/ saida/consumo e o backend rejeita (parseQuantidade ≤0); IDÊNTICO à main (não regressão do PR-08; confirmado pelo avaliador). Fix em fatia própria P-INV-LEGACY-QTY-FIX (distinguir ajuste-sinalizado vs magnitude).",
+  "junta": {
+    "agente-dba-guardiao": "APROVADO (2 BAIXA op)",
+    "omega4c-avaliador": "APROVADO (1 MEDIA processo + 3 BAIXA)",
+    "coordenador-de-acessos": "APROVADO (1 BAIXA observabilidade)",
+    "veredito": "UNÂNIME 3/3 APROVADO"
+  },
+  "kpi_repo_wide": {
+    "backend": "1404->1420 (+16)",
+    "frontend_smoke": "745->760 (+15)",
+    "blocks": "78->79"
+  },
+  "coexistencia": "saldo global/avg-cost/ABC/reorder legados INTOCADOS; fuel/manutenção/multas/OS/financial/notifications/core-saas sem regressão; sem permissão nova; sem efeito de domínio novo",
+  "abre_fase_2": "PR-08 abre a Fase 2 (Estoque custódia · Danos · Remunerações). Próximo: PR-09/10 Danos.",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

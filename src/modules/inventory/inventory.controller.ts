@@ -5,10 +5,13 @@ import { requireTenantContext } from "../core-saas/middleware/rbac.middleware.js
 import { readRouteParam } from "../core-saas/routes/http.js";
 import {
   toAbcRecalculateDto,
+  toCustodySummaryDto,
   toInventoryItemDto,
   toInventoryItemListDto,
   toStockMovementDto,
   toStockMovementListDto,
+  toStockReverseDto,
+  toStockTransferDto,
 } from "./inventory.dto.js";
 import type { InventoryService } from "./inventory.service.js";
 
@@ -114,10 +117,37 @@ export class InventoryController {
 
   async createMovement(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
-    const movement = await service.createMovement(actor, request.body ?? {});
+    const outcome = await service.createMovement(actor, request.body ?? {});
 
+    if (outcome.kind === "transfer") {
+      const { from, to } = outcome.transfer;
+
+      // Auditoria não-PII (§2.8): custody_type + transfer marker + item; NUNCA CNH/tenant_id externo.
+      await recordRequestAuditBestEffort(request, {
+        action: from.type === "link" ? "stock_movement.linked" : "stock_movement.unlinked",
+        resourceType: "stock_movement",
+        resourceId: to.id,
+        outcome: "success",
+        severity: "info",
+        metadata: {
+          itemId: to.itemId,
+          type: to.type,
+          transferGroupId: to.transferGroupId ?? null,
+          fromCustodyType: from.custodyType,
+          toCustodyType: to.custodyType,
+          quantidadeSinalizada: to.quantidadeSinalizada,
+        },
+      });
+
+      return {
+        status: 201,
+        data: toStockTransferDto(outcome.transfer),
+      };
+    }
+
+    const movement = outcome.movement;
     await recordRequestAuditBestEffort(request, {
-      action: "stock_movement.created",
+      action: movement.type === "saida" ? "stock_movement.exited" : "stock_movement.created",
       resourceType: "stock_movement",
       resourceId: movement.id,
       outcome: "success",
@@ -126,6 +156,7 @@ export class InventoryController {
         itemId: movement.itemId,
         type: movement.type,
         quantidadeSinalizada: movement.quantidadeSinalizada,
+        custodyType: movement.custodyType,
         ...(movement.workOrderId ? { workOrderId: movement.workOrderId } : {}),
       },
     });
@@ -136,12 +167,48 @@ export class InventoryController {
     };
   }
 
+  async reverseMovement(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const movements = await service.reverseMovement(
+      actor,
+      readRouteParam(request.params.movementId),
+      request.body ?? {},
+    );
+
+    await recordRequestAuditBestEffort(request, {
+      action: "stock_movement.reversed",
+      resourceType: "stock_movement",
+      resourceId: readRouteParam(request.params.movementId),
+      outcome: "success",
+      severity: "info",
+      metadata: {
+        reversalCount: movements.length,
+        ...(movements[0] ? { itemId: movements[0].itemId } : {}),
+      },
+    });
+
+    return {
+      status: 201,
+      data: toStockReverseDto(movements),
+    };
+  }
+
   async getMovement(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const movement = await service.getMovement(actor, readRouteParam(request.params.movementId));
 
     return {
       data: toStockMovementDto(movement),
+    };
+  }
+
+  async custodySummary(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const itemId = readRouteParam(request.params.itemId);
+    const summary = await service.custodySummary(actor, itemId);
+
+    return {
+      data: toCustodySummaryDto(itemId, summary),
     };
   }
 

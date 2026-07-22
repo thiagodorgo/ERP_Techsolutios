@@ -40,6 +40,28 @@ test("[R7.3] entrada sobe o saldo e recalcula avg_cost pela média móvel exata 
   });
 });
 
+test("[Ω4C PR-08] movimento legado ganha custódia BASE por default; DTO expõe custody sem vazar tenant_id", async () => {
+  await withInventoryApi(async ({ baseUrl, seed }) => {
+    const item = await createItem(baseUrl, seed.tenantA, seed.managerA, { sku: "CUST-DEFAULT" });
+    const entrada = await createMovementRaw(baseUrl, seed.tenantA, seed.managerA, {
+      item_id: item.id,
+      type: "entrada",
+      quantidade: 5,
+      unit_cost: 2,
+    });
+
+    assert.equal(entrada.status, 201, JSON.stringify(entrada.body));
+    // Custódia default = BASE, refs nulas (backfill semântico do legado).
+    assert.equal(entrada.body.data.custodyType, "base");
+    assert.equal(entrada.body.data.custodyOperatorProfileId, null);
+    assert.equal(entrada.body.data.custodyVehicleId, null);
+    assert.equal(entrada.body.data.transferGroupId, null);
+    assert.equal(entrada.body.data.reversesMovementId, null);
+    assert.equal(entrada.body.data.tenantId, undefined);
+    assert.equal(entrada.body.data.tenant_id, undefined);
+  });
+});
+
 test("[R7.1] saida consome até o saldo (sinal −); além do saldo → 409 insufficient_balance; avg intocado na saída", async () => {
   await withInventoryApi(async ({ baseUrl, seed }) => {
     const item = await createItem(baseUrl, seed.tenantA, seed.managerA, { sku: "BAL-1" });

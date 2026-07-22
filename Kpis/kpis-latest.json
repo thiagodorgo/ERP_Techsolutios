@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-21",
-  "version": "OMEGA4C-PR-07",
+  "version": "OMEGA4C-PR-08",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω4C PR-07 — Multas + Seguros (condutor responsável, disposição, vencimento; ESTENDER) — FECHA FASE 1",
-    "title": "Ω4C PR-07: multas com condutor responsável→extrato + payable either/or, seguros com vencimento→notificação PRIVATE; integra PR-02/03/04; FECHA Fase 1",
+    "block": "Ω4C PR-08 — Estoque com custódia e movimentos (ledger imutável; ESTENDER) — ABRE FASE 2",
+    "title": "Ω4C PR-08: estoque com custódia BASE/PROFISSIONAL/VIATURA, LINK/UNLINK/EXIT, saldo nunca negativo por custódia, ledger imutável (estorno compensatório)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω4C PR-07 — MULTAS + SEGUROS (ESTENDER fines+insurance-policies; INTEGRA os 3 trilhos PR-02/03/04; FECHA D-Ω4C-FIN-MULTA-FRONTEIRA e a Fase 1). Fine +responsible_operator_profile_id (FK composta →operator_profiles RESTRICT). Migração ADITIVA up-only 20260827000000_add_fine_responsible_operator_profile (1 ADD COLUMN + FK composta + índice; valor Decimal(20,6) INTOCADO — provada up/down/re-up + FK cross-tenant 23503 + RESTRICT pelo dba-guardião). Insurance/statement/notifications = ZERO migração. MULTA→EXTRATO (PR-03): condutor responsável → efeito de domínio cria 1 débito no professional-statement (entry_type='fine', direction='debit', amount=fine.valor REAL, idempotente por origem; createForSource/removeForSource/findActiveBySource INTERNOS sem REST; reversão respeita RN-EXT-01 settled→409). MULTA→PAYABLE (PR-02): createPayableSourceRoutes({sourceType:'fine'}) (fine já no allowlist; factory INTOCADA); disposição EITHER/OR extrato XOR payable → 409 fine_disposition_conflict. SEGURO→VENCIMENTO (PR-04): 1 ScheduledNotification visibility='private' HARDCODED no seam (contrato sem campo de visibilidade — LIÇÃO PR-06 aplicada PROATIVAMENTE), client_action_id determinístico, dedupe idempotente; motor+produtor fleet-alerts INTOCADOS. SEGURANÇA: ambos os efeitos de domínio NÃO-ESCALÁVEIS — SEG-esc (insurance_policies:create sem notifications:create → private, só criador, 0 aos outros) + MUL-esc (fines:create sem professional_statements:create → só débito typed constrangido, 403 na rota pública). Também aplicou a lição do CI-catch PR-06 (teardown FK-safe no rls-tenant-isolation). REUSA fines:*/insurance_policies:*/financial_titles:* (SEM permissão nova; catalog/matriz/core-saas diff vazio). Frontend: FineFormModal (condutor responsável + disposição + PayableToggle + PrintFineModal) + MultasPage (colunas Responsável/Disposição; nome resolvido no front, §2.8 nunca CNH) + Insurance (aviso lembrete privado, SEM seletor público). RN-MUL-01..07+MUL-esc+SEG-01/02+SEG-esc+MUL-SEG-08/09. Junta UNÂNIME 3/3 de 1ª passada: agente-dba-guardião APROVADO (0 cond) + omega4c-avaliador APROVADO + coordenador-de-acessos APROVADO. Zero regressão. Sem provider/SKU novo.",
-    "status_label": "Ω4C PR-07: multas condutor→extrato+payable either/or + seguros vencimento→notif PRIVATE (integra PR-02/03/04); lições PR-06 aplicadas proativamente; junta 3/3; FECHA FASE 1; backend 1382->1404, smoke 737->745, blocks 77->78"
+    "summary": "Ω4C PR-08 — ESTOQUE COM CUSTÓDIA (ESTENDER inventory: ledger imutável+saldo derivado já existiam; ABRE a FASE 2). StockMovement +custody_type (base|professional|vehicle) +custody_operator_profile_id/custody_vehicle_id (2 FK compostas RESTRICT) +transfer_group_id +reverses_movement_id; InventoryItem +is_fuel/item_type/purchase_price/sale_price(12,2)/description. Migração ADITIVA up-only 20260828000000_add_stock_custody_ledger (10 ADD COLUMN + 2 FK compostas RESTRICT + 3 índices; avg_cost/quantidade_sinalizada 20,6 INTOCADOS — provada up/down/re-up + backfill base/false/product + FK cross-tenant 23503 + RESTRICT pelo dba-guardião). SALDO POR CUSTÓDIA DERIVADO (Σ groupBy, nunca coluna; saldo global legado intocado, LINK/UNLINK netam a zero). LINK/UNLINK = par de linhas irmãs (transfer_group_id) na MESMA tx; EXIT reduz custódia origem. SALDO NUNCA NEGATIVO POR CUSTÓDIA → 409 insufficient_balance (guard no $transaction). LEDGER IMUTÁVEL: zero PATCH/DELETE de movimento (404); estorno = movimento compensatório via POST /:id/reverse (reverses_movement_id, original intacto); 2º estorno → 409 movement_already_reversed. Posse da custódia dupla-camada (422 invalid_custody + 400 invalid_custody_reference cross-tenant + FK RESTRICT 23503). §2.8 custodiante só nome, nunca CNH. BAIXA AUTOMÁTICA fuel/manutenção DEFERIDA a PR-08b (só flag is_fuel; marcar combustível NÃO gera movimento; ZERO import de fuel/maintenance). REUSA inventory_items:*/stock_movements:* (SEM permissão nova; catalog/matriz/core-saas diff vazio; SEM efeito de domínio novo → sem superfície de escalada PR-06/07). Teardown FK-safe no rls (lição CI-catch PR-06). Frontend: modal Item abas Editar/Resumo/Movimentação + CustodySummaryPanel + ItemMovementsPanel imutável (só Estornar) + sub-modais laranja Entrada/Vincular/Saída. Achado PRÉ-EXISTENTE P-INV-LEGACY-QTY-CONTRACT (fluxo legado; confirmado não-regressão, fix em fatia própria). RN-EST-01..12. Junta UNÂNIME 3/3: agente-dba-guardião APROVADO + omega4c-avaliador APROVADO + coordenador-de-acessos APROVADO. Zero regressão. Sem provider/SKU novo.",
+    "status_label": "Ω4C PR-08: estoque custódia BASE/PROFISSIONAL/VIATURA + LINK/UNLINK/EXIT + saldo nunca negativo por custódia + ledger imutável (estorno compensatório); baixa automática→PR-08b; junta 3/3; ABRE FASE 2; backend 1404->1420, smoke 745->760, blocks 78->79"
   },
   "metrics": {
     "flutter_tests": {
@@ -21,16 +21,16 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 745,
-      "total": 745,
-      "display": "745/745",
-      "note": "+8 (multas-condutor: select condutor responsavel/badge disposicao/409-honesto/impressao/rotulos-PT-BR/§2.8-CNH-nunca-aparece/insurance-aviso-privado-sem-seletor-publico). Ω4C PR-07 multas+seguros (FineFormModal+MultasPage+PrintFineModal; Insurance aviso privado). PayableToggle(PR-02) intocado. Sobre 737."
+      "value": 760,
+      "total": 760,
+      "display": "760/760",
+      "note": "+15 (estoque-custodia: abas Editar/Resumo/Movimentacao/saldos-por-custodia/sub-modal-Vincular/movimento-imutavel-so-Estornar/409-honestos/rotulos-PT-BR/§2.8-sem-CNH). Ω4C PR-08 estoque custodia (modal Item + CustodySummaryPanel + ItemMovementsPanel + StockEntry/Transfer/ExitModal). Saldo global legado intocado. Sobre 745."
     },
     "backend_tests": {
-      "value": 1404,
-      "total": 1410,
-      "display": "1404/1410",
-      "note": "+22 (fines/insurance/professional-statements: tests/fines.test.ts 9->17 +8 + tests/fines-routes.test.ts 15->23 +8 + tests/professional-statements.test.ts 12->16 +4 [createForSource/dedupe/reversao-RN-EXT-01] + tests/insurance-policies.test.ts 10->12 +2 [SEG-esc/dedupe] + rls-tenant-isolation bloco fines 3-tenant + teardown FK-safe). Ω4C PR-07 FECHA FASE 1. Suite memoria (CI) 1404 pass/6 skip. Migracao 20260827000000_add_fine_responsible_operator_profile provada up/down/re-up + FK composta cross-tenant 23503 + RESTRICT pelo dba-guardiao (valor Decimal(20,6) INTOCADO). Reusa fines:*/insurance_policies:*/financial_titles:* (sem permissao nova). Integra os 3 trilhos PR-02/03/04; ambos os efeitos de dominio NAO-escalaveis (SEG-esc private + MUL-esc typed constrangido — licoes PR-06 aplicadas proativamente). Zero regressao. Sobre 1382/1388. Local: rls-tenant-isolation DB-gated ambiental (falta scheduled_notifications no DB local)."
+      "value": 1420,
+      "total": 1426,
+      "display": "1420/1426",
+      "note": "+16 (estoque: tests/stock-custody.test.ts +14 [LINK/UNLINK/EXIT/estorno/custodia/saldo-nunca-negativo-409/imutabilidade-2o-estorno-409/§2.8/baixa-deferida] + stock-movements-routes +1 + inventory-items-routes +1). Ω4C PR-08 ABRE FASE 2. Suite memoria (CI) 1420 pass/6 skip. Migracao 20260828000000_add_stock_custody_ledger provada up/down/re-up + backfill base/false/product + 2 FK compostas cross-tenant 23503 + RESTRICT pelo dba-guardiao (avg_cost/quantidade_sinalizada 20,6 INTOCADOS). Reusa inventory_items:*/stock_movements:* (sem permissao nova). Ledger imutavel + saldo nunca negativo por custodia. Baixa automatica deferida a PR-08b. SEM efeito de dominio novo (sem escalada). Zero regressao. Sobre 1404/1410. Local: rls-tenant-isolation DB-gated ambiental (falta scheduled_notifications no DB local)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 78,
-      "display": "78",
-      "note": "Ω4C PR-07 (multas+seguros: condutor responsavel→extrato, payable either/or, vencimento→notif privada) = feature entregue → +1 sobre 77 (Ω4C PR-06 manutencao). FECHA Fase 1 (PR-01..07). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
+      "value": 79,
+      "display": "79",
+      "note": "Ω4C PR-08 (estoque com custodia BASE/PROFISSIONAL/VIATURA + LINK/UNLINK/EXIT + ledger imutavel) = feature entregue → +1 sobre 78 (Ω4C PR-07 multas+seguros, fecha Fase 1). ABRE Fase 2. PR-00 (recon) e blocos de governanca/fix nao contam como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,
