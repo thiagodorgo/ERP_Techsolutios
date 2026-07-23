@@ -111,6 +111,8 @@ const permissionDescriptions = {
   "notifications:read": "Consultar a propria caixa de notificacoes internas.",
   "notifications:update": "Marcar notificacoes proprias como lidas ou arquivadas.",
   "notifications:create": "Criar e cancelar notificacoes agendadas (privada, publica ou personalizada) do tenant.",
+  "sessions:read": "Consultar sessoes ativas e o historico de acessos dos usuarios do tenant.",
+  "sessions:revoke": "Encerrar (revogar) a sessao de um usuario do tenant, forcando novo login.",
   "tenant_checklists:read": "Consultar checklists configuraveis do tenant.",
   "tenant_checklists:create": "Criar checklists configuraveis do tenant.",
   "tenant_checklists:update": "Editar, ativar e inativar checklists configuraveis do tenant.",

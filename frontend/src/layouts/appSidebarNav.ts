@@ -18,7 +18,9 @@ import {
   IdCard,
   LayoutDashboard,
   ListChecks,
+  LogIn,
   MapPin,
+  MonitorSmartphone,
   Package,
   Receipt,
   ScrollText,
@@ -83,6 +85,9 @@ const USUARIOS: NavItem = { label: "Usuários", path: "/users", icon: Users };
 const NOTIFICACOES: NavItem = { label: "Notificações", path: "/notifications", icon: Bell };
 const CONFIGURACOES: NavItem = { label: "Configurações", path: "/administrator/settings", icon: Settings };
 const AUDITORIA: NavItem = { label: "Auditoria", path: "/audit", icon: ScrollText };
+// Ω4C PR-11 — Controle > Usuários: Acessos (último login) + Sessões ativas (revogação REAL).
+const ACESSOS: NavItem = { label: "Acessos", path: "/controle/usuarios/acessos", icon: LogIn };
+const SESSOES: NavItem = { label: "Sessões", path: "/controle/usuarios/sessoes", icon: MonitorSmartphone };
 
 const G_VISAO_GERAL: NavGroup = { label: "VISÃO GERAL", items: [DASHBOARD] };
 
@@ -104,7 +109,7 @@ const G_GESTAO_FULL: NavGroup = {
 };
 const G_ADMIN_FULL: NavGroup = {
   label: "ADMINISTRAÇÃO",
-  items: [USUARIOS, NOTIFICACOES, CONFIGURACOES, AUDITORIA],
+  items: [USUARIOS, ACESSOS, SESSOES, NOTIFICACOES, CONFIGURACOES, AUDITORIA],
 };
 
 // Navegação por papel (5 grupos da IA aprovada). Distribuição por RoleKind
@@ -182,6 +187,8 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/finance/payments",
   "/users",
   "/audit",
+  "/controle/usuarios/acessos",
+  "/controle/usuarios/sessoes",
   "/notifications",
   "/administrator/checklists",
   "/administrator/settings",

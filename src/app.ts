@@ -8,6 +8,7 @@ import {
   attachAuthenticatedActor,
   createAuthRouter,
   createMeRouter,
+  createSessionAdminRouter,
 } from "./modules/auth/index.js";
 import {
   coreSaasService,
@@ -91,6 +92,9 @@ export function createApp(service: ICoreSaasService): Express {
   // plataforma emitir "platform_legacy_headers_disabled". Plataforma primeiro preserva o motivo.
   app.use("/api/v1/platform", attachAuthenticatedActor(), createPlatformRouter(service));
   app.use("/api/v1", attachAuthenticatedActor(), createMeRouter(service));
+  // Ω4C PR-11 — Sessões administrativas (listar ativas / revogar / histórico de acessos). Router NOVO
+  // sob /api/v1 (git add src/app.ts, senão CI route_not_found). O serviço resolve o Prisma lazy.
+  app.use("/api/v1", attachAuthenticatedActor(), createSessionAdminRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createMobileRouter(service));
   app.use("/api/v1/navigation", attachAuthenticatedActor(), createNavigationRouter(service));
   app.use("/api/v1", attachAuthenticatedActor(), createNotificationRouter());

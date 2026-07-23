@@ -1,0 +1,72 @@
+{
+  "pr": "PR-11",
+  "fase": "Fase 3 (ABERTURA web) — Auditoria global + Sessões com revogação",
+  "snapshot_date": "2026-07-23",
+  "branch": "rodada/omega4c",
+  "tipo": "ESTENDER (auth_sessions + audit_logs já existem com RLS). ZERO migração. Parte web-only da Fase 3 (Telemetria mobile/mapa vem depois).",
+  "models_alterados": [],
+  "migrations": [],
+  "comportamento": {
+    "revogacao_real": "revokeByIdForTenant marca revoked_at=now → o refreshSession EXISTENTE já rejeita sessão com revoked_at != null → o próximo refresh da vítima FALHA. NÃO é botão cosmético. Caveat honesto: access token JWT stateless segue válido até expirar (≤15min) → re-login forçado; comunicado ao usuário (SESSION_REVOKE_CAVEAT), não escondido.",
+    "isolamento_tenant": "findByIdForTenant/revokeByIdForTenant filtram tenant_id dentro de withTenantRls → revogar sessão de OUTRO tenant → 404 (sem vazar existência). tenant_id sempre do ator autenticado.",
+    "auditoria_filtros": "GET /audit-events + filtros server-side (action/actorId/from/to/limit/offset) + paginação (nextOffset). audit-events agora STRIPA metadata (aperto §2.8).",
+    "acessos": "histórico derivado de auth_sessions.created_at (sem tabela nova — UserAccessLog do PROMPT NÃO criada).",
+    "s28_allowlist": "SessionView {id, userLabel, deviceLabel (user_agent grosseiro), loginAt, lastActivityAt, status}; AuditEventView {id, action, actor_user_id, tenant_id (do próprio ator), timestamp}. NUNCA refresh_token_hash/ip cru/token/user_agent cru/CNH."
+  },
+  "permissao_nova": {
+    "chaves": ["sessions:read", "sessions:revoke"],
+    "distribuicao": "sessions:read → super/platform/tenant_admin + auditor; sessions:revoke → SÓ super/platform/tenant_admin (SEGREGAÇÃO DE FUNÇÕES: auditor LÊ mas NÃO revoga; nenhum papel operacional/campo tem qualquer das duas). Logs/Acessos reusam audit.read (existente).",
+    "pontos_registrados": ["src/modules/core-saas/permissions/catalog.ts (após notifications:create) + ROLE_PERMISSIONS", "tests/core-saas.test.ts (expectedPermissionCatalog + asserts de segregação)", "prisma/seed.ts (2 descrições PT-BR)", "RBAC_MATRIX.md (linha Sessões)"]
+  },
+  "modulos": [
+    "src/modules/auth/services/session-admin.service.ts + routes/session-admin.routes.ts (novos) + repositories/auth-session.repository.ts (revokeByIdForTenant) + index.ts",
+    "src/modules/core-saas/routes/audit.routes.ts (filtros + paginação) + store/core-saas.store.ts (+clearAuditEvents test-support) + permissions/catalog.ts + src/app.ts",
+    "frontend/src/modules/sessions/* (SessoesPage/AcessosPage + RevokeSessionDialog + service/adapter/hooks) + frontend/src/modules/audit/* (AuditTenantPage filtros/paginação/CSV) + App.tsx/navegação"
+  ],
+  "rns_cobertas": [
+    "RN-SESS-02 (revogação invalida DE VERDADE — refresh bloqueado; provado ao vivo teste 5)",
+    "RN-SESS-03 (isolamento por tenant: revogar cross-tenant → 404; 3 tenants)",
+    "RN-SESS-04 (segregação de funções: auditor read mas 403 em revoke; revoke só admin)",
+    "RN-AUD-01 (filtros server-side + paginação nextOffset)",
+    "RN-AUD/SESS §2.8 (SessionView/AuditEventView só allowlist; nunca refresh_token_hash/ip/token)",
+    "RN-SESS-05 (caveat honesto JWT 15m; não promete instantâneo)"
+  ],
+  "rns_total_pr": 8,
+  "cobertura_testes": {
+    "backend": "tests/sessions-admin.test.ts 5/5 (§2.8 SessionView / deviceLabel / GET 403 sem read / POST revoke 403 auditor [segregação] / revogação-real invalida + isola por tenant) + tests/audit-events-filters.test.ts 3/3 (filtros+paginação+§2.8 / 422 malformado / 403 sem audit.read) + core-saas 26/26 (2 perms novas + segregação)",
+    "frontend": "frontend/tests/auditoria-sessoes.test.tsx (logs filtro/paginação/CSV; sessões + botão Revogar gated [auditor sem botão]; §2.8 nunca refresh_token_hash/ip; caveat 15min; empty honesto)"
+  },
+  "d_records": [
+    "D-Ω4C-SESS-NOMIG (zero migração — auth_sessions/audit_logs existentes)",
+    "D-Ω4C-SESS-REVOKE-REAL (revokeByIdForTenant → revoked_at → refreshSession bloqueia; caveat JWT 15m honesto)",
+    "D-Ω4C-SESS-RBAC (2 perms novas; segregação auditor-read × admin-revoke)",
+    "D-Ω4C-AUD-FILTERS (filtros server-side + paginação)",
+    "D-Ω4C-AUD-ALLOWLIST-2.8 (SessionView/AuditEventView allowlist; metadata stripada)",
+    "D-Ω4C-AUD-TENANT-ID (AuditEventView expõe tenant_id do próprio ator — contrato estável PR-SCALE-3, dentro §2.8)",
+    "D-Ω4C-AUD-ROUTE (logs = AuditTenantPage estendida + alias /controle/usuarios/logs)"
+  ],
+  "divergencias_vs_autem": [
+    "Logs = AuditTenantPage estendida (não tela nova) + alias /controle/usuarios/logs",
+    "Acessos derivado de auth_sessions.created_at (sem tabela UserAccessLog nova)",
+    "paginação por janela crescente ('Carregar mais' via nextOffset/limit)",
+    "toasts → banners Alert (DS não tem toast)",
+    "revogação não é logout instantâneo (caveat JWT 15m honesto)"
+  ],
+  "junta": {
+    "omega4c-avaliador": "APROVADO (2 BAIXA; clearAuditEvents fix são)",
+    "coordenador-de-acessos": "APROVADO (0 cond; segregação de funções íntegra)",
+    "agente-secops": "APROVADO (1 BAIXA; revogação real + zero vazamento + gate não afrouxado)",
+    "veredito": "UNÂNIME 3/3 APROVADO (2 revisores de segurança independentes)"
+  },
+  "nota_processo": "dev-backend cortado por limite de sessão no ajuste final; orquestrador fechou o teste audit-events-filters (ruído de auditoria de createTenant/createUser) com clearAuditEvents (test-support no InMemory store) — confirmado são pela junta (avaliador+secops).",
+  "kpi_repo_wide": {
+    "backend": "1454->1462 (+8)",
+    "frontend_smoke": "783->801 (+18)",
+    "blocks": "81->82"
+  },
+  "coexistencia": "auth_sessions/audit_logs/refreshSession existentes reusados (revogação plugada no caminho de refresh existente); catalog byte-consistente; commissions/damages/fines/estoque/OS/notifications sem regressão; gate de produção env/CORS/TLS/JWT intocado",
+  "abre_fase_3": "PR-11 abre a Fase 3 (parte web de Auditoria/Sessões). Próximo: Telemetria (backend heartbeat/km + Flutter + web/mapa via Junta de Mapas) + PR-08b + Central de Notificações tela.",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

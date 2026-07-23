@@ -19,6 +19,18 @@ export type AuditEventsData = {
   readonly events: readonly AuditEventView[];
   readonly source: AuditEventsSource;
   readonly forbidden: boolean;
+  // Ω4C PR-11 (D-Ω4C-AUD-FILTERS) — offset do backend quando há MAIS eventos além da janela carregada
+  // (undefined = não há mais). A tela usa isto para o "Carregar mais" honesto (server-side).
+  readonly nextOffset?: number;
+};
+
+// Filtros server-side (D-Ω4C-AUD-FILTERS): ação/ator exatos + período; `limit` cresce no "Carregar mais".
+export type AuditEventsQuery = {
+  readonly action?: string;
+  readonly actorId?: string;
+  readonly from?: string;
+  readonly to?: string;
+  readonly limit?: number;
 };
 
 export type AuditEventsApiContext = {
