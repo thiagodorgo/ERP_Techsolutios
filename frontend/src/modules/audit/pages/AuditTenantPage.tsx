@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 
 import { TablePage, type TableKpi, type TableRow } from "../../../components/TablePage";
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
+import { downloadCsv } from "../../../lib/csv";
 import { useAuditEvents } from "../useAuditEvents";
 import type { AuditEventView } from "../audit-events.types";
 
@@ -35,23 +36,12 @@ function AuditHeader({ exportDisabledReason }: { exportDisabledReason: string })
   );
 }
 
-function csvCell(value: string): string {
-  return /[";\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
-}
-
-// Exporta SOMENTE os eventos reais carregados (nunca dado fabricado). Trivial: monta o CSV a partir da
-// lista já em memória e dispara o download com BOM UTF-8 (acentuação correta no Excel).
+// Exporta SOMENTE os eventos reais carregados (nunca dado fabricado). Monta o CSV a partir da lista já em
+// memória e delega ao util compartilhado (BOM UTF-8, `;`, `\r\n` — D-Ω4C-REM-CSV). Comportamento inalterado.
 function exportAuditCsv(events: readonly AuditEventView[]): void {
   const header = ["Quando", "Ator", "Evento"];
-  const lines = [header, ...events.map((event) => [event.when, event.actor, event.action])];
-  const csv = lines.map((cells) => cells.map(csvCell).join(";")).join("\r\n");
-  const blob = new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = "auditoria.csv";
-  anchor.click();
-  URL.revokeObjectURL(url);
+  const rows = events.map((event) => [event.when, event.actor, event.action]);
+  downloadCsv("auditoria.csv", header, rows);
 }
 
 // KPIs HONESTOS: derivados só da lista carregada. Sem categorias inventadas (não há campo de resultado/

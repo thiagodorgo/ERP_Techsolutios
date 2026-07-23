@@ -2279,6 +2279,12 @@ model CommissionCalculation {
   status               String               @default("pending")
   calculation_snapshot Json
   idempotency_key      String
+  // Ω4C PR-10 (D-Ω4C-REM-MODEL) — marcador de liquidação (aditivo, up-only 20260830000000). settled_at = a
+  // "bolinha" (VERDE = IS NOT NULL / VERMELHA = NULL); settlement_ref = o group_id do crédito no extrato do
+  // profissional (deep-link "Ver no extrato", SEM FK nativa — app-level, como source_id do extrato). ZERO
+  // dinheiro aqui (o crédito vive só no extrato — lição PR-09); o status legado permanece ortogonal (intocado).
+  settled_at           DateTime?            @db.Timestamptz(6)
+  settlement_ref       String?              @db.Uuid
   created_at           DateTime             @default(now()) @db.Timestamptz(6)
   updated_at           DateTime             @default(now()) @updatedAt @db.Timestamptz(6)
   basis_event          CommissionBasisEvent @relation(fields: [tenant_id, basis_event_id], references: [tenant_id, id], onDelete: Cascade)
@@ -2294,6 +2300,8 @@ model CommissionCalculation {
   @@index([tenant_id, policy_id])
   @@index([tenant_id, payee_id])
   @@index([tenant_id, status])
+  // Ω4C PR-10 — grid de conferência filtra liquidado/não-liquidado; tenant_id 1º (isolamento multi-tenant).
+  @@index([tenant_id, settled_at])
   @@map("commission_calculations")
 }
 

@@ -88,6 +88,11 @@ export type CommissionCalculation = {
   readonly status: CommissionCalculationStatus;
   readonly calculationSnapshot: CommissionJsonRecord;
   readonly idempotencyKey: string;
+  // Ω4C PR-10 (D-Ω4C-REM-MODEL) — marcador de liquidação. settledAt = a "bolinha" (definida → liquidada);
+  // settlementRef = o group_id do crédito no extrato do profissional (deep-link "Ver no extrato"). SEM
+  // dinheiro (o crédito vive só no extrato); status legado permanece ortogonal.
+  readonly settledAt?: Date;
+  readonly settlementRef?: string;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   // Basis origin resolved for the drill-down from the linked CommissionBasisEvent
@@ -203,6 +208,65 @@ export type CreateCommissionBasisEventInput = {
   readonly occurredAt: Date;
   readonly status: CommissionBasisEventStatus;
   readonly policyId?: string;
+};
+
+// Ω4C PR-10 (D-Ω4C-REM-SETTLE-RAIL) — liquidação em lote das linhas de remuneração já existentes. PR-10 NÃO
+// computa/fabrica percentual (parada honesta D-Ω4C-REM-COMPUTE-DEFER): o valor de cada linha É
+// `CommissionCalculation.amount` (NUNCA a tarifa de venda). O settle apenas CONFERE + CREDITA no extrato do
+// profissional + marca o calculation como liquidado.
+export type SettleCalculationsInput = {
+  readonly calculationIds: readonly string[];
+  readonly settlementDate: Date;
+  readonly description?: string;
+};
+
+// Disposição por linha da liquidação. `settled` = crédito lançado + marcado; `already_settled` = idempotente
+// (settled_at já definido, nada re-lançado); `skipped_zero` = amount ≤ 0 (não cria crédito vazio).
+export const SETTLEMENT_OUTCOMES = ["settled", "already_settled", "skipped_zero"] as const;
+export type SettlementOutcome = (typeof SETTLEMENT_OUTCOMES)[number];
+
+export type SettlementLineResult = {
+  readonly calculationId: string;
+  readonly outcome: SettlementOutcome;
+  // group_id do lançamento de crédito no extrato (deep-link "Ver no extrato"); presente em settled/already_settled.
+  readonly statementGroupId?: string;
+  // operator_profile creditado (para o deep-link /fleet/statement/:operatorProfileId no front).
+  readonly operatorProfileId?: string;
+};
+
+export type SettleCalculationsResult = {
+  readonly lines: readonly SettlementLineResult[];
+  readonly settledCount: number;
+  readonly settledTotal: number;
+  readonly settlementDate: Date;
+};
+
+// D-Ω4C-REM-SETTLE-RAIL — seam de colaboradores (forward, sem ciclo: commissions → professional-statements /
+// operator-profiles). Injetados via factory: nunca importados invertidamente pelos módulos-fonte.
+export type CommissionStatementCreditInput = {
+  readonly operatorProfileId: string;
+  readonly sourceId: string; // = o calculationId (idempotência de origem do extrato)
+  readonly amount: number; // já arredondado a Decimal(12,2) no seam
+  readonly firstDueDate: Date;
+  readonly description?: string;
+};
+
+// Posta o CRÉDITO no extrato (createForSource — entry_type/direction/source_type TIPADOS e FIXADOS; amount
+// travado ao calc.amount; single-profissional; installmentTotal=1). Devolve o group_id do lançamento.
+export type CommissionStatementCreditPoster = (
+  actor: CommissionActorContext,
+  input: CommissionStatementCreditInput,
+) => Promise<{ readonly groupId: string }>;
+
+// Resolve payee (User) → operator_profile (a folha). undefined → payee não é profissional de campo.
+export type CommissionOperatorProfileByUserResolver = (
+  tenantId: string,
+  userId: string,
+) => Promise<{ readonly operatorProfileId: string } | undefined>;
+
+export type CommissionSettlementCollaborators = {
+  readonly postStatementCredit: CommissionStatementCreditPoster;
+  readonly resolveOperatorProfileByUser: CommissionOperatorProfileByUserResolver;
 };
 
 export class CommissionError extends Error {

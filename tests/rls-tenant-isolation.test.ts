@@ -1623,6 +1623,87 @@ if (!connectionString) {
       );
       assert.equal(tenantCCustody?.custody_operator_profile_id, tenantCProfessional.operatorProfileId, "tenant C custody movement keeps its professional in-tenant");
 
+      // Ω4C PR-10 (RN-REM-10) — commission_calculations.settled_at (marcador de liquidação) com 3 tenants
+      // EFÊMEROS (A, B, C). A calculation referencia policy + basis_event (FK compostas) + payee (User, FK
+      // composta RESTRICT); as colunas ADITIVAS desta fatia são settled_at/settlement_ref (20260830000000). O
+      // payee reusa o user de cada tenant (A/B o já criado; C o do bloco do extrato). Prova: invisível sem
+      // contexto + cross-tenant updateMany de settled_at count=0 + visível/intocado in-tenant. RLS ENABLE/FORCE
+      // + policy; tenant_id 1º de todo índice. TEARDOWN FK-SAFE abaixo (commission_calculations + basis/policy
+      // ANTES de users — lição do CI-catch do PR-06).
+      const seedCommissionCalculation = async (tx: typeof client, tenantId: string, payeeId: string, tag: string) => {
+        const policy = await tx.commissionPolicy.create({
+          data: { tenant_id: tenantId, name: `RLS Policy ${tag}`, scope: "tenant", vertical: "field_services", effective_from: new Date() },
+        });
+        const basisEvent = await tx.commissionBasisEvent.create({
+          data: {
+            tenant_id: tenantId,
+            source_type: "work_order",
+            source_id: `RLS-WO-${tag}-${suffix}`,
+            source_event_name: "work_order.completed",
+            idempotency_key: `RLS-CALC-BE-${tag}-${suffix}`,
+            payload: {},
+            occurred_at: new Date(),
+            policy_id: policy.id,
+          },
+        });
+        const calculation = await tx.commissionCalculation.create({
+          data: {
+            tenant_id: tenantId,
+            basis_event_id: basisEvent.id,
+            policy_id: policy.id,
+            payee_id: payeeId,
+            amount: 100,
+            calculation_snapshot: {},
+            idempotency_key: `RLS-CALC-${tag}-${suffix}`,
+          },
+        });
+        return calculation.id;
+      };
+      const calculationAId = await withTenantRls(client, tenantA.id, (tx) => seedCommissionCalculation(tx as typeof client, tenantA.id, tenantAData.userId, "A"));
+      const calculationBId = await withTenantRls(client, tenantB.id, (tx) => seedCommissionCalculation(tx as typeof client, tenantB.id, tenantBData.userId, "B"));
+      const calculationCId = await withTenantRls(client, tenantC.id, (tx) => seedCommissionCalculation(tx as typeof client, tenantC.id, tenantCProfessional.userId, "C"));
+
+      const calculationsWithoutContext = await client.commissionCalculation.findMany({
+        where: { id: { in: [calculationAId, calculationBId, calculationCId] } },
+      });
+      assert.deepEqual(
+        calculationsWithoutContext.map((calculation) => calculation.id),
+        [],
+        "tenant-scoped commission calculations must not be visible without app.current_tenant_id",
+      );
+
+      const settlementRef = "00000000-0000-4000-8000-000000000010";
+      const tenantACalculationView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.commissionCalculation.findMany({
+          where: { id: { in: [calculationAId, calculationBId, calculationCId] } },
+        });
+        // Cross-tenant: tenta liquidar (settled_at/settlement_ref) as calculations de B/C → count=0.
+        const crossTenantUpdate = await tx.commissionCalculation.updateMany({
+          where: { id: { in: [calculationBId, calculationCId] } },
+          data: { settled_at: new Date(), settlement_ref: settlementRef },
+        });
+        return { visibleIds: visible.map((calculation) => calculation.id), crossUpdatedRows: crossTenantUpdate.count };
+      });
+      assert.deepEqual(
+        tenantACalculationView.visibleIds,
+        [calculationAId],
+        "tenant A must only see its own commission calculation (not tenant B/C)",
+      );
+      assert.equal(
+        tenantACalculationView.crossUpdatedRows,
+        0,
+        "tenant A must not settle tenant B/C commission calculations",
+      );
+
+      const tenantBCalculation = await withTenantRls(client, tenantB.id, (tx) =>
+        tx.commissionCalculation.findUnique({ where: { id: calculationBId } }),
+      );
+      assert.equal(tenantBCalculation?.settled_at, null, "tenant B calculation stays unsettled (settled_at NULL) in-tenant");
+      const tenantCCalculation = await withTenantRls(client, tenantC.id, (tx) =>
+        tx.commissionCalculation.findUnique({ where: { id: calculationCId } }),
+      );
+      assert.equal(tenantCCalculation?.settled_at, null, "tenant C calculation stays unsettled (settled_at NULL) in-tenant");
+
       const globalTenants = await client.tenant.findMany({
         where: {
           id: {
@@ -2091,6 +2172,24 @@ if (!connectionString) {
           // Ω4C PR-03 — parcelas do extrato ANTES dos perfis (FK operator_profile é Restrict) e dos perfis ANTES
           // dos users (o cascade user→operator_profile falharia com parcela referenciando o perfil).
           await tx.professionalStatementEntry.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          // Ω4C PR-10 — commission_calculations ANTES dos users (FK payee_id → users é Restrict), basis_events e
+          // policies DEPOIS (calc → basis Cascade + calc/basis → policy Restrict), tudo ANTES do tenant. TEARDOWN
+          // FK-SAFE (lição do CI-catch do PR-06).
+          await tx.commissionCalculation.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          await tx.commissionBasisEvent.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          await tx.commissionPolicy.deleteMany({
             where: {
               tenant_id: tenantId,
             },

@@ -76,6 +76,49 @@ export function parseOptionalDate(value: unknown, field: string): Date | undefin
   return date;
 }
 
+// Ω4C PR-10 — array NÃO-vazio de UUIDs (dedupe). 422 (validação) para forma inválida/vazia/excessiva.
+export function parseCalculationIds(value: unknown): string[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new CommissionError(
+      422,
+      "COMMISSION_SETTLEMENT_INVALID",
+      "invalid_calculation_ids",
+      "calculationIds must be a non-empty array of UUIDs.",
+    );
+  }
+  if (value.length > 500) {
+    throw new CommissionError(
+      422,
+      "COMMISSION_SETTLEMENT_INVALID",
+      "too_many_calculation_ids",
+      "calculationIds must not exceed 500 entries per settlement.",
+    );
+  }
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const entry of value) {
+    const normalized = typeof entry === "string" ? entry.trim() : "";
+    if (!uuidPattern.test(normalized)) {
+      throw new CommissionError(
+        422,
+        "COMMISSION_SETTLEMENT_INVALID",
+        "invalid_calculation_id",
+        "Each calculationId must be a valid UUID.",
+      );
+    }
+    if (!seen.has(normalized)) {
+      seen.add(normalized);
+      ids.push(normalized);
+    }
+  }
+  return ids;
+}
+
+// Data da liquidação (vencimento da 1ª parcela do crédito); default = hoje quando ausente.
+export function parseSettlementDate(value: unknown): Date {
+  return parseOptionalDate(value, "settlementDate") ?? new Date();
+}
+
 export function parseDateRange(fromValue: unknown, toValue: unknown): { from?: Date; to?: Date } {
   const from = parseOptionalDate(fromValue, "from");
   const to = parseOptionalDate(toValue, "to");

@@ -6,6 +6,7 @@ import type {
   CommissionStatement,
   CommissionSummaryResult,
   ListResult,
+  SettleCalculationsResult,
 } from "./commission.types.js";
 
 export function toCommissionPolicyDto(policy: CommissionPolicy) {
@@ -70,8 +71,27 @@ export function toCommissionCalculationDto(calculation: CommissionCalculation) {
     status: calculation.status,
     calculationSnapshot: calculation.calculationSnapshot,
     idempotencyKey: calculation.idempotencyKey,
+    // Ω4C PR-10 (REM-01/REM-09) — a "bolinha" de liquidação + deep-link ao extrato. §2.8: nunca tenant_id/CNH.
+    settledAt: calculation.settledAt ? calculation.settledAt.toISOString() : null,
+    settlementRef: calculation.settlementRef ?? null,
     createdAt: calculation.createdAt.toISOString(),
     updatedAt: calculation.updatedAt.toISOString(),
+  };
+}
+
+// Ω4C PR-10 — sumário da liquidação em lote (por linha + agregados). §2.8: só ids internos + agregado (sem
+// tenant_id, sem payee cru, sem CNH).
+export function toCommissionSettlementDto(result: SettleCalculationsResult) {
+  return {
+    settlementDate: dateOnly(result.settlementDate),
+    settledCount: result.settledCount,
+    settledTotal: result.settledTotal,
+    lines: result.lines.map((line) => ({
+      calculationId: line.calculationId,
+      outcome: line.outcome,
+      statementGroupId: line.statementGroupId ?? null,
+      operatorProfileId: line.operatorProfileId ?? null,
+    })),
   };
 }
 

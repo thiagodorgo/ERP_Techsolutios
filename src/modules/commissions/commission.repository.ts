@@ -33,6 +33,17 @@ export interface CommissionRepository {
   listCalculations(input: ListCommissionCalculationsInput): Promise<ListResult<CommissionCalculation>>;
   summarizeCalculationsByPayee(input: SummarizeCalculationsByPayeeInput): Promise<CommissionPayeeSummary>;
   listStatements(input: ListCommissionStatementsInput): Promise<ListResult<CommissionStatement>>;
+  // Ω4C PR-10 — carrega as calculations tenant-scoped por id (para a conferência/liquidação em lote). O que
+  // não pertence ao tenant simplesmente não volta → 404 no serviço (isolamento multi-tenant).
+  findCalculationsByIds(tenantId: string, ids: readonly string[]): Promise<CommissionCalculation[]>;
+  // Ω4C PR-10 — marca o calculation como liquidado (settled_at/settlement_ref). Guarda `settled_at IS NULL`
+  // (dupla-guarda de idempotência): já liquidada → undefined (0 linhas), nunca re-marca.
+  markSettled(
+    tenantId: string,
+    calculationId: string,
+    settledAt: Date,
+    settlementRef: string,
+  ): Promise<CommissionCalculation | undefined>;
   reset?(): void;
 }
 
@@ -49,6 +60,9 @@ export type SeedCommissionCalculationInput = {
   readonly calculationSnapshot?: CommissionJsonRecord;
   readonly idempotencyKey?: string;
   readonly createdAt?: Date;
+  // Ω4C PR-10 — semear linha JÁ liquidada (prova do skip idempotente `already_settled`). O compute é test-only.
+  readonly settledAt?: Date;
+  readonly settlementRef?: string;
 };
 
 export class InMemoryCommissionRepository implements CommissionRepository {
@@ -221,6 +235,8 @@ export class InMemoryCommissionRepository implements CommissionRepository {
       status: input.status ?? "calculated",
       calculationSnapshot: input.calculationSnapshot ?? {},
       idempotencyKey: input.idempotencyKey ?? randomUUID(),
+      settledAt: input.settledAt,
+      settlementRef: input.settlementRef,
       createdAt: now,
       updatedAt: now,
     };
@@ -228,6 +244,29 @@ export class InMemoryCommissionRepository implements CommissionRepository {
     this.calculations.set(calculation.id, calculation);
 
     return calculation;
+  }
+
+  // Ω4C PR-10 — carrega calculations tenant-scoped por id (dedupe já feito no validator). Não enriquece
+  // basis origin (a liquidação não precisa de source_type — usa amount + payee).
+  async findCalculationsByIds(tenantId: string, ids: readonly string[]): Promise<CommissionCalculation[]> {
+    const idSet = new Set(ids);
+    return [...this.calculations.values()].filter(
+      (calculation) => calculation.tenantId === tenantId && idSet.has(calculation.id),
+    );
+  }
+
+  // Ω4C PR-10 — marca liquidado só se ainda não liquidado (dupla-guarda). Já liquidado → undefined (no-op).
+  async markSettled(
+    tenantId: string,
+    calculationId: string,
+    settledAt: Date,
+    settlementRef: string,
+  ): Promise<CommissionCalculation | undefined> {
+    const current = this.calculations.get(calculationId);
+    if (!current || current.tenantId !== tenantId || current.settledAt) return undefined;
+    const updated: CommissionCalculation = { ...current, settledAt, settlementRef, updatedAt: new Date() };
+    this.calculations.set(calculationId, updated);
+    return updated;
   }
 
   async listStatements(input: ListCommissionStatementsInput): Promise<ListResult<CommissionStatement>> {
