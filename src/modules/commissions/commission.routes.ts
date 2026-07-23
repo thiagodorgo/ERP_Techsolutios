@@ -106,6 +106,16 @@ export function createCommissionRouter(resolveService: CommissionServiceResolver
     }),
   );
 
+  // Ω4C PR-10 (REM-02/REM-11) — liquidação em lote das remunerações (perm existente `commissions:settle`,
+  // finance + admins). Reusa o rail do extrato do PR-07 (service→service). SEM permissão nova.
+  router.post(
+    "/commissions/settlements",
+    requirePermission(COMMISSION_PERMISSIONS.settle),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.settleCalculations(request));
+    }),
+  );
+
   return router;
 }
 

@@ -9,6 +9,9 @@ import type {
   CommissionSummaryFilters,
   CommissionSummaryItem,
   CommissionSummaryScope,
+  SettlementLine,
+  SettlementOutcome,
+  SettlementResult,
 } from "./commissions.types";
 
 // Reexport do formatador de moeda do repo (fonte única — Catálogo de Serviço).
@@ -212,9 +215,91 @@ function adaptCommissionCalculation(input: unknown): CommissionCalculation | nul
     sourceType,
     sourceId,
     workOrderId,
+    // Ω4C PR-10 — marcador de liquidação (§2.8: só estado/link, nunca dado sensível).
+    settledAt: readNullableString(item, ["settledAt", "settled_at"]),
+    settlementRef: readNullableString(item, ["settlementRef", "settlement_ref"]),
     createdAt:
       readString(item, ["createdAt", "created_at", "calculatedAt", "calculated_at"]) ?? new Date().toISOString(),
   };
+}
+
+// ── Ω4C PR-10 — Liquidação: adapter do resultado + rótulos/bolinha + CSV da conferência ──────
+
+// Bolinha de status: liquidado (settledAt definido) = verde; pendente = âmbar (espera, não erro).
+export function isCalculationSettled(calc: Pick<CommissionCalculation, "settledAt">): boolean {
+  return Boolean(calc.settledAt && calc.settledAt.trim());
+}
+
+export function getSettlementLabel(settled: boolean): string {
+  return settled ? "Liquidado" : "Pendente";
+}
+
+export function getSettlementTone(settled: boolean): "success" | "pending" {
+  return settled ? "success" : "pending";
+}
+
+// Resposta do POST /commissions/settlements → resultado tipado (envelope { data } desembrulhado).
+export function adaptSettlementResult(response: unknown): SettlementResult {
+  const payload = readRecord(response);
+  const data = readRecord(payload?.data) ?? payload;
+  const lines = (readArray(data?.lines) ?? [])
+    .map((line) => adaptSettlementLine(line))
+    .filter((line): line is SettlementLine => Boolean(line));
+  return {
+    settlementDate: readString(data, ["settlementDate", "settlement_date"]) ?? "",
+    settledCount: readNumber(data, ["settledCount", "settled_count"]) ?? lines.filter((l) => l.outcome === "settled").length,
+    settledTotal: readNumber(data, ["settledTotal", "settled_total"]) ?? 0,
+    lines,
+  };
+}
+
+const SETTLEMENT_OUTCOME_SET: ReadonlySet<string> = new Set(["settled", "already_settled", "skipped_zero"]);
+
+function adaptSettlementLine(input: unknown): SettlementLine | null {
+  const item = readRecord(input);
+  if (!item) return null;
+  const calculationId = readString(item, ["calculationId", "calculation_id"]);
+  const rawOutcome = readString(item, ["outcome"]);
+  if (!calculationId || !rawOutcome || !SETTLEMENT_OUTCOME_SET.has(rawOutcome)) return null;
+  return {
+    calculationId,
+    outcome: rawOutcome as SettlementOutcome,
+    statementGroupId: readNullableString(item, ["statementGroupId", "statement_group_id"]),
+    operatorProfileId: readNullableString(item, ["operatorProfileId", "operator_profile_id"]),
+  };
+}
+
+// Mensagem de feedback honesta a partir do resultado (para o Alert de sucesso). Reflete os 3 desfechos:
+// liquidadas / já-liquidadas / valor-zero — sem inventar contagem.
+export function describeSettlementResult(result: SettlementResult): string {
+  const already = result.lines.filter((line) => line.outcome === "already_settled").length;
+  const zero = result.lines.filter((line) => line.outcome === "skipped_zero").length;
+  const parts: string[] = [];
+  parts.push(
+    result.settledCount === 1
+      ? "1 remuneração liquidada"
+      : `${result.settledCount.toLocaleString("pt-BR")} remunerações liquidadas`,
+  );
+  if (result.settledCount > 0) parts.push(`total ${formatBRL(result.settledTotal)}`);
+  if (already > 0) parts.push(`${already} já estava(m) liquidada(s)`);
+  if (zero > 0) parts.push(`${zero} sem valor a liquidar`);
+  return `${parts.join(" · ")}.`;
+}
+
+// CSV da conferência — SOMENTE as linhas reais carregadas (D-007). Cabeçalho PT-BR; §2.8: nome como label.
+export function buildRemuneracoesCsv(
+  professionalName: string,
+  calcs: readonly CommissionCalculation[],
+): { header: string[]; rows: string[][] } {
+  const header = ["Profissional", "Data", "Origem", "Valor da remuneração", "Situação"];
+  const rows = calcs.map((calc) => [
+    professionalName,
+    formatCommissionDate(calc.createdAt),
+    getCommissionSourceLabel(calc.sourceType),
+    formatBRL(calc.amount),
+    getSettlementLabel(isCalculationSettled(calc)),
+  ]);
+  return { header, rows };
 }
 
 function adaptPagination(

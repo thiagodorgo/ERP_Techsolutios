@@ -43,6 +43,11 @@ export type CommissionCalculation = {
   readonly sourceId: string | null;
   // Legado: só preenchido se o DTO ainda enviar work_order_id direto (fallback de origem OS).
   readonly workOrderId: string | null;
+  // Ω4C PR-10 — marcador de liquidação (a "bolinha" da conferência): `settledAt` definido → liquidado
+  // (verde); `null` → pendente (vermelho/âmbar). `settlementRef` = group_id do crédito no extrato do
+  // profissional (deep-link "Ver no extrato"). §2.8: nunca tenant_id/CNH/payee cru.
+  readonly settledAt: string | null;
+  readonly settlementRef: string | null;
   readonly createdAt: string;
 };
 
@@ -93,3 +98,45 @@ export type MyCommissionCalculationsFilters = CommissionDateRange & {
   readonly limit?: number;
   readonly offset?: number;
 };
+
+// ── Ω4C PR-10 — Liquidação em lote (conferência das remunerações) ─────────────────────────
+// Profissional escolhido no filtro-modal-ao-entrar (D-Ω4C-REM-MODAL). §3 PT-BR "Profissional".
+// A conferência lista as linhas de comissão do profissional (payee_id = userId) no período; o settle
+// credita cada uma no extrato (D-Ω4C-REM-SETTLE-RAIL). §2.8: só nome como label, nunca CNH.
+export type ConferenceProfessional = {
+  readonly profileId: string;
+  readonly userId: string;
+  readonly name: string;
+};
+
+// Disposição por linha da liquidação (no sucesso 200). `settled` = crédito lançado + marcado;
+// `already_settled` = idempotente; `skipped_zero` = amount ≤ 0 (não cria crédito vazio).
+export type SettlementOutcome = "settled" | "already_settled" | "skipped_zero";
+
+export type SettlementLine = {
+  readonly calculationId: string;
+  readonly outcome: SettlementOutcome;
+  readonly statementGroupId: string | null;
+  readonly operatorProfileId: string | null;
+};
+
+export type SettlementResult = {
+  readonly settlementDate: string;
+  readonly settledCount: number;
+  readonly settledTotal: number;
+  readonly lines: SettlementLine[];
+};
+
+// Corpo do POST /commissions/settlements — a UI só envia os ids selecionados + data/descrição opcionais;
+// o backend é a autoridade (valor travado a calc.amount, tipos fixados no seam).
+export type SettleCommissionsInput = {
+  readonly calculationIds: readonly string[];
+  readonly settlementDate?: string;
+  readonly description?: string;
+};
+
+// Resultado tipado do serviço de settle — sucesso (result) ou falha honesta com mensagem PT-BR segura.
+// `not_found` (404) e `not_a_professional` (422) são erros de requisição inteira (a tx aborta no backend).
+export type SettleCommissionsResult =
+  | { readonly kind: "ok"; readonly result: SettlementResult }
+  | { readonly kind: "not_found" | "not_a_professional" | "forbidden" | "error"; readonly message: string };

@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-21",
-  "version": "OMEGA4C-PR-09",
+  "version": "OMEGA4C-PR-10",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω4C PR-09 — Danos (parcelas→extrato, trava, termo de ciência; ESTENDER)",
-    "title": "Ω4C PR-09: danos com responsável→desconto parcelado no extrato (reusa rail PR-07), trava de exclusão, termo de ciência na impressão",
+    "block": "Ω4C PR-10 — Remunerações (liquidação em lote→extrato, CSV, filtro-modal; MISTO) — FECHA FASE 2",
+    "title": "Ω4C PR-10: remunerações com liquidação em lote→crédito no extrato (reusa rail PR-07), CSV-BOM, filtro-modal-ao-entrar; compute deferido honesto; FECHA Fase 2",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω4C PR-09 — DANOS (ESTENDER damages; REUSA o rail createForSource do extrato do PR-07/03 — 4º agregado a lançar no extrato do profissional após a multa). Damage +responsible_operator_profile_id (FK composta →operator_profiles RESTRICT) +5 colunas descritivas (tipo/origem/objeto/identificacao_objeto/analise_interna). Migração ADITIVA up-only 20260829000000_add_damage_responsible_and_fields (6 ADD COLUMN nullable + FK composta RESTRICT + índice; custo_estimado/custo_real Decimal(20,6) INTOCADOS — provada up/down/re-up + FK cross-tenant 23503 + RESTRICT pelo dba-guardião). DANO→EXTRATO: responsável + valor → efeito de domínio cria débito(s) parcelado(s) via createForSource entry_type='damage' direction='debit', amount=valor real (≤custo_real, nunca fabricado), idempotente por origem (2×→1); NÃO-amplificador (typed/travado/single-profissional/zero fan-out); reversão via removeForSource respeita RN-EXT-01. DESCONTO PARCIAL permitido; guards 422 (amount>0/custo_real obrigatório/amount≤total). TRAVA: com débito ativo is_active=false→409 damage_statement_locked, editar custo_real→409, parcela settled→409 statement_entry_locked; descritivos editáveis. TERMO DE CIÊNCIA: parágrafo no PrintDamageModal client-side com/sem (SEM assinatura fabricada; Análise Interna NUNCA impressa). Money honesty: responsible_amount transiente (money só no extrato, statementDebit derivado). Origem MULTA = classificação string sem FK (D-Ω4C-RECON-04). ZERO notificação (sem escalada). REUSA damages:* (SEM permissão nova; catalog/matriz/core-saas/seed diff vazio; rail professional-statement NÃO reescrito). Teardown FK-safe no rls. Frontend: DamageFormModal 4 seções + alerta amarelo + PrintDamageModal + DanosPage colunas Responsável/Disposição (nome resolvido no front, §2.8 nunca CNH); aba Arquivos(PR-01) intocada. RN-DANO-01..11. Junta UNÂNIME 3/3 de 1ª passada: agente-dba-guardião APROVADO (0 cond) + omega4c-avaliador APROVADO + coordenador-de-acessos APROVADO (defesa tripla de posse). Zero regressão. Sem provider/SKU novo.",
-    "status_label": "Ω4C PR-09: danos responsável→desconto parcelado no extrato (reusa rail PR-07, não-amplificador) + trava + termo de ciência (análise interna nunca impressa); junta 3/3; backend 1420->1440, smoke 760->769, blocks 79->80"
+    "summary": "Ω4C PR-10 — REMUNERAÇÕES (MISTO: ESTENDER commissions + fluxo de conferência/liquidação; REUSA o rail createForSource do extrato do PR-07 — 5º agregado a lançar no extrato após multa e dano; FECHA a Fase 2). CommissionCalculation +settled_at (marcador de liquidação) +settlement_ref (group_id do extrato). Migração ADITIVA up-only 20260830000000_add_commission_settlement (2 ADD COLUMN nullable + índice (tenant_id, settled_at); ZERO dinheiro nas colunas novas; amount Decimal(20,6)/status INTOCADOS — provada up/down/re-up pelo dba-guardião). LIQUIDAÇÃO EM LOTE: POST /commissions/settlements liquida N calculations → cada uma vira CRÉDITO no extrato via createForSource entry_type='remuneration' direction='credit' amount=calc.amount (NUNCA a tarifa de venda — D-Ω4C-RECON-01; body sem preço). DEDUPE DUPLA-GUARDA (settled_at guard IS NULL + source-idempotency índice parcial): liquidar 2× a mesma NÃO duplica o crédito. RECONCILIAÇÃO NÃO-ATÔMICA verificada SEGURA/idempotente (retry: source-idempotency impede duplicar, markSettled converge — [REM-03]). Payee(User)→operator_profile via findByUserId (sem perfil → 422 payee_not_a_professional). PARADA HONESTA do COMPUTE por regra do profissional (não existe no repo → confere/liquida linhas existentes, não fabrica percentual; grid vazio real; compute → Ω5/PR-10b). Efeito NÃO-amplificador (typed/travado/single-profissional; commissions:settle sem professional_statements:create grava só o crédito constrangido). ZERO notificação. REUSA commissions:settle/read/read_own (SEM permissão nova; catalog/matriz/core-saas diff vazio; rail professional-statement NÃO reescrito). CSV-BOM promovido a util compartilhado frontend/src/lib/csv.ts (AuditTenantPage refatorado behavior-preserving; SEM exceljs). Filtro-modal-ao-entrar SÓ em Remunerações (D-Ω4C-MODAL-PESQUISA). Frontend: RemuneracoesFilterModal + ConferenciaRemuneracoesView (grid bolinhas + seletor de colunas + engrenagem liquidar em lote + totalizadores + CSV + PrintRemuneracoesModal); §2.8 nunca CNH. Teardown FK-safe no rls. RN-REM-01..13. Junta UNÂNIME 3/3: agente-dba-guardião APROVADO + omega4c-avaliador APROVADO (reconciliação verificada) + coordenador-de-acessos APROVADO (0 cond). Zero regressão. Sem provider/SKU novo.",
+    "status_label": "Ω4C PR-10: remunerações liquidação em lote→crédito no extrato (reusa rail PR-07, não-amplificador, dedupe dupla-guarda) + CSV-BOM + filtro-modal; compute deferido honesto; junta 3/3; FECHA FASE 2; backend 1440->1454, smoke 769->783, blocks 80->81"
   },
   "metrics": {
     "flutter_tests": {
@@ -21,16 +21,16 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 769,
-      "total": 769,
-      "display": "769/769",
-      "note": "+9 (danos-responsavel: 4 secoes/select-responsavel/desconto-parcial/badge-lancado/alerta-amarelo/409-honestos/impressao-com-sem-termo/analise-interna-nunca-impressa/PT-BR/§2.8-sem-CNH). Ω4C PR-09 danos (DamageFormModal 4 secoes + PrintDamageModal + DanosPage). Aba Arquivos(PR-01) intocada. Sobre 760."
+      "value": 783,
+      "total": 783,
+      "display": "783/783",
+      "note": "+14 (remuneracoes-liquidar: filtro-modal-ao-entrar/grid-bolinhas/selecao-multipla+engrenagem-liquidar/totalizadores/export-CSV-util/empty-honesto/PT-BR/§2.8-sem-CNH). Ω4C PR-10 remuneracoes (RemuneracoesFilterModal + ConferenciaRemuneracoesView + PrintRemuneracoesModal + csv.ts util). AuditTenantPage verde apos extracao do CSV util. Sobre 769."
     },
     "backend_tests": {
-      "value": 1440,
-      "total": 1446,
-      "display": "1440/1446",
-      "note": "+20 (danos: tests/damages-statement.test.ts [dano->extrato via createForSource entry_type='damage'/dedupe-2x1/desconto-parcial/guards-422/trava-409-damage_statement_locked+statement_entry_locked/reversao-RN-EXT-01/cross-tenant/§2.8]). Ω4C PR-09. Suite memoria (CI) 1440 pass/6 skip. Migracao 20260829000000_add_damage_responsible_and_fields provada up/down/re-up + FK composta cross-tenant 23503 + RESTRICT pelo dba-guardiao (custo_estimado/custo_real 20,6 INTOCADOS). Reusa damages:* (sem permissao nova; rail professional-statement NAO reescrito). Efeito dano->extrato NAO-amplificador (typed/travado/single-profissional); ZERO notificacao (sem escalada). Zero regressao. Sobre 1420/1426. Local: rls-tenant-isolation DB-gated ambiental (falta scheduled_notifications no DB local)."
+      "value": 1454,
+      "total": 1460,
+      "display": "1454/1460",
+      "note": "+14 (remuneracoes: tests/commission-settlement.test.ts [liquidar-N->creditos-no-extrato/dedupe-2x1/[REM-03]-retry-nao-duplica/payee-sem-perfil-422/cross-tenant-404/§2.8/valor-de-calc.amount-nao-tarifa]). Ω4C PR-10 FECHA FASE 2. Suite memoria (CI) 1454 pass/6 skip. Migracao 20260830000000_add_commission_settlement provada up/down/re-up pelo dba-guardiao (2 colunas nullable + indice; amount 20,6/status INTOCADOS; ZERO dinheiro nas colunas novas). Reusa commissions:settle (sem permissao nova; rail professional-statement NAO reescrito). Liquidacao->credito no extrato NAO-amplificador (amount=calc.amount NUNCA tarifa de venda); dedupe dupla-guarda; reconciliacao nao-atomica verificada segura. Compute deferido honesto (Ω5/PR-10b). Zero regressao. Sobre 1440/1446. Local: rls-tenant-isolation DB-gated ambiental (falta scheduled_notifications no DB local)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 80,
-      "display": "80",
-      "note": "Ω4C PR-09 (danos: responsavel->desconto parcelado no extrato, trava, termo de ciencia) = feature entregue → +1 sobre 79 (Ω4C PR-08 estoque custodia). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
+      "value": 81,
+      "display": "81",
+      "note": "Ω4C PR-10 (remuneracoes: liquidacao em lote->credito no extrato, CSV, filtro-modal) = feature entregue → +1 sobre 80 (Ω4C PR-09 danos). FECHA a Fase 2 (PR-08 custodia + PR-09 danos + PR-10 remuneracoes). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,

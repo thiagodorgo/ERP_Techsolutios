@@ -220,6 +220,31 @@ export class PrismaCommissionRepository implements CommissionRepository {
     });
   }
 
+  // Ω4C PR-10 — carrega calculations tenant-scoped por id para a conferência/liquidação. O que não é do tenant
+  // não volta (a policy RLS + o filtro tenant_id o garantem) → 404 no serviço.
+  async findCalculationsByIds(tenantId: string, ids: readonly string[]): Promise<CommissionCalculation[]> {
+    if (ids.length === 0) return [];
+    const items = await this.client.commissionCalculation.findMany({
+      where: { tenant_id: tenantId, id: { in: [...ids] } },
+    });
+    return items.map(mapCalculationRecord);
+  }
+
+  // Ω4C PR-10 — marca liquidado com guarda DURO `settled_at: null` (idempotência no banco): re-liquidar não
+  // re-marca (0 linhas → undefined). settlement_ref = o group_id do crédito no extrato (deep-link).
+  async markSettled(
+    tenantId: string,
+    calculationId: string,
+    settledAt: Date,
+    settlementRef: string,
+  ): Promise<CommissionCalculation | undefined> {
+    const updated = await this.client.commissionCalculation.updateManyAndReturn({
+      where: { tenant_id: tenantId, id: calculationId, settled_at: null },
+      data: { settled_at: settledAt, settlement_ref: settlementRef },
+    });
+    return updated[0] ? mapCalculationRecord(updated[0]) : undefined;
+  }
+
   async summarizeCalculationsByPayee(input: SummarizeCalculationsByPayeeInput): Promise<CommissionPayeeSummary> {
     const grouped = await this.client.commissionCalculation.groupBy({
       by: ["payee_id"],
@@ -286,6 +311,21 @@ export class RlsPrismaCommissionRepository implements CommissionRepository {
 
   listCalculations(input: ListCommissionCalculationsInput): Promise<ListResult<CommissionCalculation>> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaCommissionRepository(tx).listCalculations(input));
+  }
+
+  findCalculationsByIds(tenantId: string, ids: readonly string[]): Promise<CommissionCalculation[]> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaCommissionRepository(tx).findCalculationsByIds(tenantId, ids));
+  }
+
+  markSettled(
+    tenantId: string,
+    calculationId: string,
+    settledAt: Date,
+    settlementRef: string,
+  ): Promise<CommissionCalculation | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaCommissionRepository(tx).markSettled(tenantId, calculationId, settledAt, settlementRef),
+    );
   }
 
   summarizeCalculationsByPayee(input: SummarizeCalculationsByPayeeInput): Promise<CommissionPayeeSummary> {
@@ -429,6 +469,8 @@ function mapCalculationRecord(record: CalculationRecord): CommissionCalculation 
     status: record.status as CommissionCalculationStatus,
     calculationSnapshot: isRecord(record.calculation_snapshot) ? record.calculation_snapshot : {},
     idempotencyKey: record.idempotency_key,
+    settledAt: record.settled_at ?? undefined,
+    settlementRef: record.settlement_ref ?? undefined,
     createdAt: record.created_at,
     updatedAt: record.updated_at,
   };
@@ -520,6 +562,8 @@ type CalculationRecord = {
   readonly status: string;
   readonly calculation_snapshot: unknown;
   readonly idempotency_key: string;
+  readonly settled_at: Date | null;
+  readonly settlement_ref: string | null;
   readonly created_at: Date;
   readonly updated_at: Date;
 };

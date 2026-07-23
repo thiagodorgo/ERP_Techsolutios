@@ -1246,6 +1246,163 @@ enum-app SEM CHECK]. **Abre PR-08b** [baixa automática consumidora] que realiza
 - KPI: `docs/kpis/omega4c/KPI_PR-09.json`. `Kpis/*`: backend 1420→**1440** (+20 damages-statement); frontend_smoke 760→**769**
   (+9 danos-responsavel); blocks 79→**80**.
 
+### PR-10 — Remunerações (conferência + liquidação em lote, CSV, filtro-modal-ao-entrar) — plano do omega4c-planejador (2026-07-22)
+**Mapa:** realiza **PR-14 (back) + PR-15 (front)** do PLANO_OMEGA4C Fase-2 (l.57-58) numa fatia vertical. **ÚLTIMA fatia da Fase 2.**
+**Veredicto Fase 0 (recon REAL, FATO vs HIPÓTESE):** **MISTO — ESTENDER o motor + CRIAR o fluxo de conferência/liquidação.** O módulo
+`src/modules/commissions/` (motor: policies/basis-events/calculations/statements) **existe e está montado** (router vivo, gate de cancelamento
+WS-SCALE-COMISSAO), e a tela `frontend/src/modules/finance/commissions/pages/RemuneracoesPage.tsx` (F8) **já existe como extrato-resumo por
+operador** — falta **a rota `settle`, o link ao extrato do profissional, o marcador de liquidação e a tela de conferência (grid c/ bolinhas +
+seletor de colunas + liquidar em lote + totalizadores + CSV + impressão + filtro-modal-ao-entrar).**
+
+- **FATO (li no código):** (a) **NÃO existe COMPUTE em produção** — nem `commission.repository.ts` (InMemory) nem `commission-prisma.repository.ts`
+  têm `commissionCalculation.create`/writer (grep de `commissionCalculation.create|calculateCommission|computeCommission` no `src/` inteiro = **VAZIO**);
+  calculations só nascem via `seedCalculationForTests` (test-only). O motor **lê/agrega/gateia**, mas **não materializa linha de remuneração por regra**.
+  (b) **NÃO existe "regra do profissional" (percentual/valor por serviço)** — `CommissionPolicyRule` (rate_type/rate_value) é **tenant/vertical-scoped**, não
+  per-profissional, e não está ligada a compute; `OperatorProfile` (schema:1852) **não tem** campo de comissão/taxa. (c) **`commissions:settle` JÁ EXISTE**
+  (`catalog.ts:146`) e **já distribuída a finance** (`catalog.ts:593`) + admins — mas **sem endpoint** (`commission.routes.ts` só GET + POST policies/basis-events).
+  (d) **`CommissionCalculation`** (schema:2270): `payee_id`/`eligible_user_id` **→ FK `User`** (não operator_profile!), `amount` Decimal(20,6), `status` default
+  `pending` (**sem `settled`**), **sem** settled_at/settlement_ref/link ao extrato. (e) **`OperatorProfile.user_id`** com **`@@unique([tenant_id, user_id])`**
+  (schema:1855/1887) → **ponte 1:1 user→operator_profile** (resolve o gap payee(User)→folha(operator_profile)).
+  (f) **Rail do extrato PRONTO (PR-07):** `professional-statement.service.ts` `createForSource(actor,{operatorProfileId, entryType, direction, sourceType,
+  sourceId, amount, installmentTotal, firstDueDate, description})` — INTERNO (não aceito no corpo REST), TIPADO por allowlist, **idempotente por
+  (source_type, source_id)** (pré-check `findActiveBySource` + índice parcial DURO da `20260823000000`), split em parcelas no serviço; `removeForSource`
+  respeita RN-EXT-01 (settled→409). **`remuneration` já está nas 3 allowlists** (`professional-statement.types.ts:7,10`: ENTRY_TYPES + SOURCE_TYPES;
+  DIRECTIONS tem `credit`) → **ZERO migração de enum no extrato**. (g) **CSV util existe:** `AuditTenantPage.tsx` tem `csvCell` + `exportAuditCsv` (Blob
+  **BOM UTF-8**, delimitador `;`, `\r\n`) — **sem exceljs no repo**. (h) **Front vivo:** `RemuneracoesPage` (resumo por operador, escopos `commissions:read`/
+  `read_own`), `commissions.adapter.ts`/`.service.ts` (calculations endpoint, `describeCommissionOrigin`, `formatBRL`), `CommissionDetailDrawer` (drill por OS).
+  (i) Baseline: backend **1440** (pós-PR-09), frontend_smoke **769**, blocks **80**.
+- **HIPÓTESE:** rótulos exatos do modal de filtro AutEM (áudio ruidoso: "KM, empresa, nº documento, filial" — ANALISE:234/297); o "painel de conferência"
+  (valor da saída/KM/etapas/repassado — ANALISE:246) e o totalizador de **KM rodados** (ANALISE:241) — dado por-serviço/telemetria não modelado por linha.
+  Pixel do grid/engrenagem/modal AutEM não visto em frame limpo → reproduzimos o **comportamento** (§11), não o visual.
+
+- **Fonte real do valor — D-Ω4C-REM-VALUE-SOURCE (CRÍTICO; realiza D-Ω4C-RECON-01):** o valor de uma linha = **`CommissionCalculation.amount`** (a linha de
+  comissão já existente), **NUNCA a tarifa de venda** (`tariffs`/price-tables é preço de VENDA por serviceCatalogId/customerId — NÃO acoplar, D-Ω4C-RECON-01).
+  **O COMPUTE por regra do profissional + os overrides da engrenagem (`Comissão % | Valor fixo | Não remunerar | Remuneração padrão`, ANALISE:244) NÃO EXISTEM**
+  (sem writer de calculation, sem rate per-profissional, sem compute path) → **PARADA HONESTA: PR-10 NÃO computa e NÃO fabrica percentual** (§11 / mandato). PR-10
+  entrega a **conferência + a liquidação em lote sobre as linhas existentes**; o motor de compute é **deferido a fatia consumidora** (Ω5/PR-10b, disciplina
+  fundação→consumidor de PR-08b) — **D-Ω4C-REM-COMPUTE-DEFER**. Consequência honesta: tenant sem linhas → grid **vazio real** (estado §7), nunca linha fabricada (D-007).
+- **Liquidação → extrato — D-Ω4C-REM-SETTLE-RAIL (reusa o rail PR-07, NÃO recria):** **`POST /commissions/settlements`** (perm `commissions:settle`), body
+  `{ calculationIds: string[], settlementDate?: ISO-date (default hoje), description? }`. Para cada calculation (dentro de UMA `withTenantRls` tx atômica):
+  (1) carrega tenant-scoped (**404 cross-tenant**); já liquidada (`settled_at != null`) → **skip idempotente** (`already_settled`); amount ≤ 0 → skip
+  (`skipped_zero`, não cria crédito vazio); (2) **mapeia payee (User) → operator_profile** (ver -PAYEE-MAP); (3) chama `createForSource(actor,{ operatorProfileId,
+  entryType:remuneration, direction:credit, sourceType:remuneration, sourceId: calculationId, amount: Number(calc.amount) [20,6→12,2 no seam], installmentTotal:1,
+  firstDueDate: settlementDate, description })` — **service→service** (NÃO exige `professional_statements:create` do ator — mandato §6, idêntico a Multa PR-07/Dano
+  PR-09), **idempotente por (remuneration, calculationId)**; (4) marca `settled_at = now`, `settlement_ref = group_id`. **Invariante REM-03 (liquidar 2× não
+  duplica o crédito):** garantida pela **source-idempotency do extrato** (índice parcial `20260823000000` → P2002→no-op) **+** o guard `settled_at`. Retorna sumário
+  por linha `{ calculationId, statementGroupId, outcome: settled|already_settled|skipped_zero }`.
+- **Mapeamento payee→profissional — D-Ω4C-REM-PAYEE-MAP:** `payee_id` é **User**; o extrato é por **operator_profile**. Resolve via **`OperatorProfileService.findByUserId(tenantId, payee_id)`**
+  (aditivo, tenant-scoped, 1:1 pelo `@@unique([tenant_id,user_id])` — método de leitura novo, clona `get()`). Payee **sem** operator_profile (usuário que não é
+  profissional de campo) → **422 `payee_not_a_professional`** (não credita folha inexistente — honesto, sem fabricar perfil). Dupla-camada: resolver tenant-scoped **+**
+  FK composta RESTRICT do extrato (23503) como backstop.
+- **Marcador de liquidação — D-Ω4C-REM-MODEL (migração ADITIVA up-only `20260830000000_add_commission_settlement`, latest+1):** em `commission_calculations`, **2
+  colunas nullable, aditivo puro (nenhum ALTER/DROP):** (1) **`settled_at`** Timestamptz? (o marcador — **bolinha VERDE = settled_at IS NOT NULL** / VERMELHA = null,
+  ANALISE:237/248); (2) **`settlement_ref`** Uuid? (= o `group_id` do lançamento no extrato; NULL no tenant, **sem FK nativa** — app-level, como `source_id`; habilita
+  deep-link "Ver no extrato"). **+ índice `[tenant_id, settled_at]`** (grid filtra liquidado/não-liquidado). O `status` legado **intocado** (settled_at ortogonal — NÃO
+  se adiciona `settled` ao enum). **NÃO há dinheiro nas colunas novas** (o valor do crédito vive **só no extrato** — lição PR-09 "não duplicar money"; são estado+link).
+  `amount` 20,6 legado **intocado** (coexistência D-007; crédito no extrato é 12,2). RLS herdada. **Rollback = DROP COLUMN** (novas, sem dependente) — provado
+  up/down/re-up pelo **agente-dba-guardião**. Toca `prisma/**` (schema + migration; **seed/catalog INTOCADOS**) → **requer autorização explícita de `prisma/**` no
+  comando do PR-10** (como PR-01/03/04/05/06/07/08/09). **Sem dep nova, sem serviço externo pago → junta normal, NÃO junta-5.**
+- **Não-amplificador — D-Ω4C-REM-SETTLE-RAIL (seam constrangido, padrão PR-07/09):** `entry_type/direction/source_type` **TIPADOS e FIXADOS pelo serviço de settle**
+  (remuneration/credit/remuneration — `createForSource` **re-valida por allowlist**); `amount` **travado a `calculation.amount`** (valor REAL, nunca do corpo);
+  **single-profissional**; `installmentTotal=1`; **zero fan-out**. Ator com `commissions:settle` **sem** `professional_statements:create` grava **só** o crédito
+  constrangido. **Zero notificação criada** → a lição PR-06/07 (visibility private hardcoded) **não se aplica** (sem superfície de escalada).
+- **CSV (não xlsx) — D-Ω4C-REM-CSV:** o "export Excel" do AutEM é **CSV** (recon). **PROMOVER** `csvCell`+`exportAuditCsv` a util compartilhado **`frontend/src/lib/csv.ts`**
+  (`csvCell` + `exportCsv(filename, header, rows)`, Blob **BOM UTF-8**, `;`, `\r\n`) e **refatorar `AuditTenantPage.tsx` para importá-lo** (zero mudança de comportamento).
+  Remunerações exporta **só o grid REAL carregado** (D-007). **PROIBIDO `exceljs`/dependência nova** (§C7.1 + mandato).
+- **Filtro-modal-ao-entrar — D-Ω4C-REM-MODAL (realiza D-Ω4C-MODAL-PESQUISA; SÓ em Remunerações):** ao entrar, abre **modal de filtro** `Período (De/Até)* | Profissional*`
+  (mínimo período + profissional → carrega os serviços do profissional no período; ANALISE:234). **APENAS nesta tela** (as demais mantêm o filtro padrão do ERP —
+  fidelidade de comportamento ≠ copiar fricção). O select "Profissional" lista **operator_profiles** (adapter de operator-profiles, como Multas/Danos) e a query usa o
+  **`user_id`** do profissional como `payee_id` (alinha filtro↔alvo do settle). §3 PT-BR "Profissional" (nunca "Operador/Usuário/Tenant").
+- **Permissão — D-Ω4C-REM-RBAC-REUSE (SEM permissão nova; diff VAZIO em catalog/core-saas/RBAC_MATRIX):** settle → **`commissions:settle`** (finance + admins,
+  `catalog.ts:593`); grid → **`commissions:read`**; escopo próprio → **`commissions:read_own`** (preserva o adaptativo do RemuneracoesPage). `catalog.ts`/
+  `tests/core-saas.test.ts`/`RBAC_MATRIX.md` **INTOCADOS**. Backend é a autoridade (ator sem `commissions:settle` → **403 real**).
+- **Backend (ESTENDER `src/modules/commissions/`):** `.types.ts` (+`settledAt`/`settlementRef`; `SettleCalculationsInput`; `SettlementLineResult`) · `.validators.ts`
+  (+`parseCalculationIds` [array uuid não-vazio], `parseSettlementDate`) · `.service.ts` (+`settleCalculations(actor, body)`; **seam de colaboradores** via factory —
+  `ProfessionalStatementCreditPoster` [= `createForSource`] + `OperatorProfileByUserResolver` [= `findByUserId`], wired em `createDefaultCommissionService`, **direção
+  commissions→professional-statements/operator-profiles = forward, sem ciclo**) · `.repository.ts` + `-prisma.repository.ts` (+`findCalculationsByIds`, `markSettled`;
+  mapeia settled_at/settlement_ref; InMemory espelha) · `.controller.ts` (+handler settle + auditoria `commission.settled`) · `.routes.ts` (+`POST /commissions/settlements`
+  `requirePermission(settle)`) · `.dto.ts` (+`settledAt`/`settlementRef` §2.8). **Sem nova rota em `src/app.ts`** (router já montado — evita gotcha route_not_found).
+  **+ `operator-profiles`: método aditivo `findByUserId`.**
+- **Frontend (ESTENDER):** `frontend/src/lib/csv.ts` (NOVO — util CSV-BOM promovido) · `AuditTenantPage.tsx` (importa o util) · `commissions.types.ts` (+settledAt/
+  settlementRef, tipos de settle) · `commissions.adapter.ts` (+adapt settledAt, build do body/URL de settle) · `commissions.service.ts` (+`settleCommissions(context,
+  {calculationIds, settlementDate})` + fetch das linhas de conferência) · `RemuneracoesPage.tsx` + subcomponentes novos (`RemuneracoesFilterModal` [modal-ao-entrar],
+  `ConferenciaRemuneracoesView` [grid: **bolinha** vermelha/verde por `settledAt` | Data | Origem/Serviço (`describeCommissionOrigin`) | Valor do serviço | Valor de
+  remuneração aplicado; **checkbox por linha + selecionar todos**; **seletor de colunas visíveis**; **engrenagem "LIQUIDAR" em lote** [seleção → POST settle → bolinhas
+  verdes + toast]; **totalizadores** total a pagar + qtd serviços; **badge "lançado no extrato"** + deep-link `/fleet/statement/:operatorProfileId`; **Exportar CSV**],
+  `PrintRemuneracoesModal` [`window.print()` client-side, clona PrintFineModal/PrintDamageModal]). Preserva o escopo `read_own`. §3 PT-BR, §7 estados (loading/empty/
+  error/**acesso não permitido**/desatualizado), §2.8 DTO allowlist (nunca CNH/tenant_id/payee cru), a11y (checkbox ≥44px, aria nas ações). **KM/painel de conferência/
+  "não remunerar"** = deferidos (parada honesta, ver Divergências).
+- **DTO/auditoria — §2.8:** DTO da calculation ganha `settledAt`/`settlementRef` (+ nome do profissional só como **label**); **NUNCA** tenant_id/CNH/payee interno cru.
+  Auditoria `commission.settled` com metadata allowlist **{ count, operatorProfileId, amount (agregado) }** — não-PII.
+- **RNs — REM:** **REM-01** (conferência: linha=calculation; **bolinha** derivada de `settledAt`; filtro período+profissional; totalizadores total a pagar + qtd serviços;
+  §7) · **REM-02** (liquidação em lote → N créditos no extrato via `createForSource` remuneration/credit/remuneration; amount=`calc.amount` REAL; installmentTotal=1;
+  firstDueDate=settlementDate; tx `withTenantRls` atômica) · **REM-03** (**idempotência — liquidar 2× NÃO duplica o crédito**: source-idempotency + índice parcial
+  `20260823000000` + guard `settled_at` → `already_settled`) · **REM-04** (mapeamento payee(User)→operator_profile; sem profile → **422 `payee_not_a_professional`**) ·
+  **REM-05** (**não-amplificador** — tipos fixados no seam; amount travado; single-profissional; zero fan-out; ator `commissions:settle` sem `professional_statements:create`
+  grava só o crédito) · **REM-06** (**fonte do valor honesta** — amount=commission calculation; **NÃO** tarifa de venda; **compute por regra = PARADA HONESTA**, zero
+  percentual fabricado) · **REM-07** (**CSV não xlsx** — util CSV-BOM promovido; sem exceljs; só dado real) · **REM-08** (**filtro-modal-ao-entrar SÓ em Remunerações**) ·
+  **REM-09** (§2.8/LGPD — settledAt/settlementRef/amount/status/source; nome só label; nunca CNH/tenant_id; auditoria allowlist) · **REM-10** (multi-tenant 3 tenants
+  efêmeros — settle/calculation/extrato tenant-scoped; cross 404; updateMany cross=0; **tenant_id 1º índice**; **TEARDOWN FK-SAFE** — `professionalStatementEntry.deleteMany`
+  + `commissionCalculation.deleteMany` **ANTES** de users/operator_profiles [FK RESTRICT], lição CI-catch PR-06) · **REM-11** (RBAC reusada — settle=commissions:settle,
+  grid=read, own=read_own; sem-perm→403; diff VAZIO) · **REM-12** (crédito respeita **RN-EXT-01**; reversão da liquidação deferida Ω5 [AutEM só red→green]; correção via
+  AJUSTE compensatório; impressão client-side) · **REM-13** (**coexistência** — RemuneracoesPage resumo/read_own + GET de commissions + gate WS-SCALE-COMISSAO **intactos**).
+- **Divergências AutEM honestas (D-007):** (i) **COMPUTE por regra do profissional + overrides da engrenagem** (Comissão %/Valor fixo/Não remunerar/Remuneração padrão)
+  = **PARADA HONESTA** (sem rule model per-profissional, sem writer de calculation; ligar fabricaria percentual — D-Ω4C-RECON-01) → **deferido a fatia consumidora**
+  (D-Ω4C-REM-COMPUTE-DEFER). (ii) **"painel de conferência"** (valor da saída/KM/etapas/repassado, ANALISE:246) e **totalizador de KM rodados** (ANALISE:241) = dado
+  por-serviço/telemetria não modelado por linha → parada honesta (grid mostra amount + origem via `CommissionDetailDrawer` existente). (iii) **indicador "não remunerar"**
+  por linha (ANALISE:238) = requer override inexistente → parada honesta. (iv) **export "Excel"** = na verdade **CSV** → CSV-BOM, sem exceljs. (v) **impressão** = client-side
+  `window.print()` (como Multa/Dano/Manutenção), sem rota/PDF. (vi) **amount Decimal(20,6) legado** vs 12,2 do extrato → arredondado no seam (gêmea das divergências -MONEY
+  de PR-05/06/07/08). (vii) pixel do grid/engrenagem/modal AutEM não visto em frame limpo → **comportamento** (§11), não o visual.
+- **Bateria de validação (seção 10 — o avaliador roda):** `npx prisma validate` + `prisma migrate diff` (sem drift) + **dba-guardião prova up/down/re-up** de
+  `20260830000000_add_commission_settlement` (ADITIVA: 2 ADD COLUMN nullable + 1 índice tenant-first; rollback=DROP COLUMN; backfill provado settled_at=NULL em linha
+  legada); backend `npm run check`·`lint`·`test`·`build`; `node --test --import tsx tests/commission-settlement.test.ts` (NOVO — settle→crédito no extrato; **idempotência
+  2×→1** [source-idempotency + settled_at]; **payee→operator_profile** [422 sem profile]; **não-amplificador** [ator sem professional_statements:create grava só o crédito];
+  amount travado a calc.amount; skip already_settled/zero; **403 sem commissions:settle**; auditoria allowlist) + `tests/rls-tenant-isolation.test.ts` estendido (3 tenants
+  efêmeros; settle/calculation/extrato tenant-scoped; cross 404; updateMany cross=0; **teardown FK-safe** professional_statement_entries + commission_calculations antes de
+  users/operator_profiles); **ZERO regressão** em `professional-statement-crud`/`fines`/`damages-statement`/commission existentes/`core-saas` (catálogo intocado); frontend
+  `npm --prefix frontend run check`·`build`·smoke (filtro-modal-ao-entrar + grid bolinhas + seletor de colunas + selecionar-todos + LIQUIDAR em lote + totalizadores + CSV +
+  PrintRemuneracoesModal + deep-link extrato + estados §7 + guard); `git diff --check` + `git status --short` limpo (schema/migration/commissions/operator-profiles/front por
+  caminho; seed/catalog/RBAC_MATRIX/core-saas **intocados**). KPI `docs/kpis/omega4c/KPI_PR-10.json` + histórico + snapshot; `Kpis/*` backend +N (commission-settlement),
+  frontend_smoke +M, blocks 80→**81**.
+- **Riscos + rollback:** (R1) **crédito duplicado** → dupla-guarda (source-idempotency do extrato + `settled_at`), tx atômica. (R2) **fabricar percentual/compute** →
+  **evitado** (parada honesta; PR-10 só liquida linhas existentes; zero writer de calculation adicionado). (R3) **payee sem operator_profile** → 422 explícito. (R4) **money
+  duplicado** → evitado (settled_at/settlement_ref = estado+link, sem dinheiro; crédito só no extrato). (R5) **teardown do rls por RESTRICT** → mitigado (delete de
+  statement_entries + calculations ANTES de users/operator_profiles). (R6) **`prisma/**`** → só ADITIVO (2 ADD COLUMN + 1 índice; **sem** permissão/seed); **rollback = DROP
+  COLUMN** + revert do PR. Sem destrutivo (respeita parada §C7.5). **Sem dep nova nem serviço externo pago → junta normal, NÃO junta-5.**
+
+**APROVADO para implementar.** (D-records desta fatia: **D-Ω4C-REM-VALUE-SOURCE · -SETTLE-RAIL · -PAYEE-MAP · -MODEL · -RBAC-REUSE · -CSV · -MODAL · -COMPUTE-DEFER** — a
+junta ratifica no veredito; persistir em controle/decisoes.md no PR. Realiza **D-Ω4C-RECON-01** [remuneração ≠ tarifa de venda] e **D-Ω4C-MODAL-PESQUISA** [modal-ao-entrar
+só em Remunerações]. **Reusa o rail do extrato do PR-07** (`createForSource` entry_type='remuneration') — **5º agregado a lançar no extrato** (após multa e dano); **reusa o
+CSV-BOM** promovido de `AuditTenantPage`; **sem permissão nova** [`commissions:settle` existente]. **Compute por regra do profissional = parada honesta deferida**
+[D-Ω4C-REM-COMPUTE-DEFER, Ω5/PR-10b].)
+
+#### PR-10 — Veredito da junta (2026-07-23) — **UNÂNIME 3/3 APROVADO — FECHA FASE 2**
+- **agente-dba-guardião** → `APROVADO` (1 BAIXA): migração `20260830000000_add_commission_settlement` provada **UP/DOWN/RE-UP** em DB scratch
+  isolada (cadeia de 66 migrações). Puramente aditiva: `ADD COLUMN settled_at TIMESTAMPTZ` + `settlement_ref UUID` (nullables) + índice
+  `(tenant_id, settled_at)` tenant-first. **ZERO dinheiro nas colunas novas** (só timestamp + uuid do group do extrato). `amount`
+  NUMERIC(20,6)/`status` INTOCADOS. RLS de commission_calculations t/t. Retrocompat (linhas legadas → NULL). BAIXA: EXPLAIN preferiu índice
+  pré-existente por a tabela de teste ter 1 linha (o novo índice é válido, usado sob volume).
+- **omega4c-avaliador** → `APROVADO`: seção 10 verde (backend 1454 pass / 6 skip — única falha ambiental rls-tenant-isolation DB-gated;
+  commission-settlement **14/14**; frontend check/build + smoke **783/783** incl. **audit-events verde após a extração do CSV util**).
+  **RN-REM cobertas:** valor = **CommissionCalculation.amount** (NUNCA tarifa de venda; body do settle sem preço); liquidação → crédito no
+  extrato via createForSource entry_type='remuneration' credit; **dedupe DUPLA-GUARDA** (settled_at + source-idempotency); payee→
+  operator_profile via findByUserId (sem perfil → 422 payee_not_a_professional); **parada honesta do COMPUTE** (nenhum percentual/writer
+  fabricado — linhas só via seedCalculationForTests); §2.8 (nunca CNH); grid vazio honesto. **RECONCILIAÇÃO NÃO-ATÔMICA VERIFICADA SEGURA:**
+  em retry (createForSource sucede, markSettled falha) o findActiveBySource/source-idempotency IMPEDE duplicar o crédito e o markSettled
+  (guard `settled_at IS NULL`) converge para settled — provado por [REM-03] (crédito pré-existente com settled_at nulo → não duplica).
+  Rail professional-statement NÃO reescrito; catalog/core-saas/RBAC_MATRIX/seed diff VAZIO; migração aditiva; teardown FK-safe. 2 BAIXA.
+- **coordenador-de-acessos** → `APROVADO` (0 condições): efeito commission→extrato **NÃO-AMPLIFICADOR** — `creditAmount = roundToCents(calc.amount)`
+  (**de calc.amount, NUNCA da tarifa de venda** — D-Ω4C-RECON-01); entry_type/direction/source_type travados no seam; single-profissional;
+  zero fan-out; createForSource re-valida por allowlist (rejeita manual). Ator `commissions:settle` sem `professional_statements:create`
+  grava só o crédito constrangido. Payee→operator_profile tenant-scoped (422/404). `createForSource` INTERNO intocado (POST /professional-
+  statements segue AJUSTE gated). catalog/matriz diff VAZIO (`commissions:settle` já existia). Zero notificação (grep vazio). Front gated
+  (`can("commissions:settle")`); §2.8 nunca CNH (DTO/types/print/auditoria allowlist).
+- **Decisão:** verde unânime 3/3 → merge (CI = gate empírico do rls DB-gated) + KPI no PR (§C3). **5º agregado a lançar no extrato** (após
+  multa e dano) via o rail PR-07. **Compute por regra do profissional = parada honesta** (D-Ω4C-REM-COMPUTE-DEFER → Ω5/PR-10b). CSV-BOM
+  promovido a util compartilhado (AuditTenantPage refatorado behavior-preserving). D-records ratificados; realiza D-Ω4C-RECON-01 + -MODAL-PESQUISA.
+- KPI: `docs/kpis/omega4c/KPI_PR-10.json`. `Kpis/*`: backend 1440→**1454** (+14 commission-settlement); frontend_smoke 769→**783**
+  (+14 remuneracoes-liquidar); blocks 80→**81**. **★ FECHA a FASE 2** (Estoque custódia · Danos · Remunerações). Próximo: Fase 3 (Telemetria + Auditoria/Sessões) + PR-08b.
+
 ## 8. Encerramento (a fazer no fim)
 Ata final (entregas, KPIs consolidados, pendências→backlog Ω5); deletar **SOMENTE** os 5 agentes efêmeros (registrar cada
 deleção); confirmar que nenhum agente pré-existente foi tocado; marcar os D-records como vigentes.

@@ -71,6 +71,12 @@ export class OperatorProfileService {
     return profile;
   }
 
+  // Ω4C PR-10 — ponte payee(User) → operator_profile tenant-scoped (1:1). Leitura pura: undefined quando o
+  // usuário não tem perfil profissional (o chamador — a liquidação de Remunerações — traduz p/ 422).
+  async findByUserId(tenantId: string, userId: string): Promise<OperatorProfile | undefined> {
+    return this.repository.findByUserId(tenantId, parseRequiredUuid(userId, "userId"));
+  }
+
   async update(actor: OperatorProfileActorContext, profileId: string, body: RawRecord): Promise<OperatorProfile> {
     // Carrega o atual (isolamento cross-tenant → 404) para resolver a transição de consentimento LGPD.
     const current = await this.get(actor, profileId);

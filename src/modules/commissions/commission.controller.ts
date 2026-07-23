@@ -6,6 +6,7 @@ import {
   toCommissionBasisEventDto,
   toCommissionCalculationDto,
   toCommissionPolicyDto,
+  toCommissionSettlementDto,
   toCommissionStatementDto,
   toCommissionSummaryDto,
   toListDto,
@@ -122,6 +123,36 @@ export class CommissionController {
 
     return {
       data: toCommissionSummaryDto(result),
+    };
+  }
+
+  // Ω4C PR-10 (REM-02) — liquidação em lote → crédito no extrato + marcador. Auditoria allowlist
+  // (D-Ω4C-REM-SETTLE-RAIL §2.8): { count, amount (agregado), operatorProfileId quando único } — NUNCA
+  // tenant_id/CNH/payee cru.
+  async settleCalculations(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.settleCalculations(actor, request.body ?? {});
+
+    const settledLines = result.lines.filter((line) => line.outcome === "settled");
+    const operatorProfileIds = [
+      ...new Set(settledLines.map((line) => line.operatorProfileId).filter((id): id is string => Boolean(id))),
+    ];
+
+    await recordRequestAuditBestEffort(request, {
+      action: "commission.settled",
+      resourceType: "commission_calculation",
+      resourceId: settledLines[0]?.calculationId,
+      outcome: "success",
+      severity: "info",
+      metadata: {
+        count: result.settledCount,
+        amount: result.settledTotal,
+        ...(operatorProfileIds.length === 1 ? { operatorProfileId: operatorProfileIds[0] } : {}),
+      },
+    });
+
+    return {
+      data: toCommissionSettlementDto(result),
     };
   }
 

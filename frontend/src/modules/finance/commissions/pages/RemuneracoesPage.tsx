@@ -1,4 +1,4 @@
-import { Coins, Receipt, RefreshCw, Users } from "lucide-react";
+import { ClipboardCheck, Coins, Receipt, RefreshCw, Users } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -12,6 +12,8 @@ import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
+import { listOperatorProfilesFromApi } from "../../../registry/operator-profiles/operator-profiles.service";
+import type { OperatorProfileItem } from "../../../registry/operator-profiles/operator-profiles.types";
 import { listTenantUsers } from "../../../registry/teams/teams.service";
 import type { TenantUser } from "../../../registry/teams/teams.types";
 import {
@@ -20,8 +22,10 @@ import {
   formatPeriodLabel,
 } from "../commissions.adapter";
 import { buildCommissionsKpiDetails } from "../commissions-kpi-detail";
-import type { CommissionSummaryItem, CommissionSummaryScope } from "../commissions.types";
+import type { CommissionSummaryItem, CommissionSummaryScope, ConferenceProfessional } from "../commissions.types";
 import { CommissionDetailDrawer } from "../components/CommissionDetailDrawer";
+import { ConferenciaRemuneracoesView } from "../components/ConferenciaRemuneracoesView";
+import { RemuneracoesFilterModal } from "../components/RemuneracoesFilterModal";
 import { useCommissionsSummary } from "../useCommissionsSummary";
 
 // F8 Remunerações — extrato de comissões por operador/período, com detalhamento por OS.
@@ -62,6 +66,7 @@ export function RemuneracoesPage() {
 
   const canReadAll = can("commissions:read");
   const canReadOwn = can("commissions:read_own");
+  const canSettle = can("commissions:settle");
   const scope: CommissionSummaryScope | null = canReadAll ? "all" : canReadOwn ? "own" : null;
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -71,6 +76,11 @@ export function RemuneracoesPage() {
 
   const [users, setUsers] = useState<TenantUser[]>([]);
   const [selected, setSelected] = useState<SelectedPayee | null>(null);
+  // Ω4C PR-10 — conferência/liquidação: Profissionais para o filtro-modal-ao-entrar + estado da conferência.
+  const [operatorProfiles, setOperatorProfiles] = useState<OperatorProfileItem[]>([]);
+  const [conferenceProfile, setConferenceProfile] = useState<ConferenceProfessional | null>(null);
+  // D-Ω4C-REM-MODAL — SÓ em Remunerações: o filtro abre AO ENTRAR (aberto no 1º render do escopo total).
+  const [filterOpen, setFilterOpen] = useState(true);
 
   const { summary, source, loading, error, refresh } = useCommissionsSummary(scope, from, to, canReadAll ? payeeId : "");
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
@@ -94,6 +104,19 @@ export function RemuneracoesPage() {
     let active = true;
     void listTenantUsers(context).then((loaded) => {
       if (active) setUsers(loaded);
+    });
+    return () => {
+      active = false;
+    };
+  }, [activeContext, context, scope]);
+
+  // Ω4C PR-10 — Profissionais ATIVOS para o select do filtro-modal (§2.8: só nome, nunca CNH). O select
+  // usa o `userId` do Profissional como payee_id da conferência (alinha filtro↔alvo do settle).
+  useEffect(() => {
+    if (!activeContext || scope !== "all") return;
+    let active = true;
+    void listOperatorProfilesFromApi(context, { isActive: "active", limit: DENSE_LIST_FETCH_LIMIT }).then((loaded) => {
+      if (active) setOperatorProfiles(loaded.items);
     });
     return () => {
       active = false;
@@ -215,32 +238,79 @@ export function RemuneracoesPage() {
     );
   }
 
-  // ── Escopo total (finance/tenant_admin): extrato de todos os operadores ───────────────
+  // ── Escopo total (finance/tenant_admin) ───────────────────────────────────────────────
+  // Filtro-modal-ao-entrar (D-Ω4C-REM-MODAL): ao confirmar Período + Profissional, entra na CONFERÊNCIA
+  // (grid + liquidação em lote). Sem confirmação, fica o resumo por operador (coexistência D-013/read_own).
+  const openConference = (selection: { from: string; to: string; professional: ConferenceProfessional }) => {
+    setParam("from", selection.from);
+    setParam("to", selection.to);
+    setConferenceProfile(selection.professional);
+    setFilterOpen(false);
+  };
+
   return (
-    <RemuneracoesAllView
-      summary={summary}
-      source={source}
-      loading={loading}
-      errorBlock={errorBlock}
-      resolveName={resolveName}
-      users={users}
-      payeeId={payeeId}
-      onSelectPayee={(value) => setParam("payee_id", value)}
-      onOpenDetail={setSelected}
-      periodControls={periodControls}
-    >
-      {selected ? (
-        <CommissionDetailDrawer
-          scope="all"
-          payeeId={selected.id}
-          payeeName={selected.name}
-          from={from}
-          to={to}
-          context={context}
-          onClose={() => setSelected(null)}
-        />
-      ) : null}
-    </RemuneracoesAllView>
+    <>
+      <RemuneracoesFilterModal
+        open={filterOpen}
+        operatorProfiles={operatorProfiles}
+        initialFrom={from}
+        initialTo={to}
+        initialProfileId={conferenceProfile?.profileId ?? ""}
+        onClose={() => setFilterOpen(false)}
+        onConfirm={openConference}
+      />
+
+      {conferenceProfile ? (
+        <section className="page-stack">
+          <header className="page-heading page-heading--row">
+            <div>
+              <span>Financeiro</span>
+              <h1>Remunerações</h1>
+              <p>Conferência e liquidação em lote das remunerações do profissional.</p>
+            </div>
+            <div className="work-orders-actions">{periodControls}</div>
+          </header>
+
+          {errorBlock}
+
+          <ConferenciaRemuneracoesView
+            professional={conferenceProfile}
+            from={from}
+            to={to}
+            context={context}
+            canSettle={canSettle}
+            onReopenFilter={() => setFilterOpen(true)}
+            onBackToSummary={() => setConferenceProfile(null)}
+          />
+        </section>
+      ) : (
+        <RemuneracoesAllView
+          summary={summary}
+          source={source}
+          loading={loading}
+          errorBlock={errorBlock}
+          resolveName={resolveName}
+          users={users}
+          payeeId={payeeId}
+          onSelectPayee={(value) => setParam("payee_id", value)}
+          onOpenDetail={setSelected}
+          periodControls={periodControls}
+          onOpenConference={() => setFilterOpen(true)}
+        >
+          {selected ? (
+            <CommissionDetailDrawer
+              scope="all"
+              payeeId={selected.id}
+              payeeName={selected.name}
+              from={from}
+              to={to}
+              context={context}
+              onClose={() => setSelected(null)}
+            />
+          ) : null}
+        </RemuneracoesAllView>
+      )}
+    </>
   );
 }
 
@@ -255,6 +325,7 @@ function RemuneracoesAllView({
   onSelectPayee,
   onOpenDetail,
   periodControls,
+  onOpenConference,
   children,
 }: {
   readonly summary: { items: CommissionSummaryItem[]; total: number; from: string; to: string };
@@ -267,6 +338,7 @@ function RemuneracoesAllView({
   readonly onSelectPayee: (value: string) => void;
   readonly onOpenDetail: (payee: SelectedPayee) => void;
   readonly periodControls: ReactNode;
+  readonly onOpenConference: () => void;
   readonly children: ReactNode;
 }) {
   const displayName = useCallback((id: string) => resolveName(id) ?? "Operador", [resolveName]);
@@ -355,7 +427,12 @@ function RemuneracoesAllView({
           <h1>Remunerações</h1>
           <p>Comissões por operador e período, com detalhamento por OS. Período: {formatPeriodLabel(summary.from, summary.to)}.</p>
         </div>
-        <div className="work-orders-actions">{periodControls}</div>
+        <div className="work-orders-actions">
+          {periodControls}
+          <Button type="button" variant="secondary" onClick={onOpenConference}>
+            <ClipboardCheck size={16} aria-hidden /> Conferir remunerações
+          </Button>
+        </div>
       </header>
 
       {errorBlock}

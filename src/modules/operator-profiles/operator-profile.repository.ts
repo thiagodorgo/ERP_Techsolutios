@@ -13,6 +13,9 @@ export interface OperatorProfileRepository {
   create(input: CreateOperatorProfileInput): Promise<OperatorProfile>;
   list(input: ListOperatorProfileInput): Promise<ListOperatorProfileResult>;
   findById(tenantId: string, profileId: string): Promise<OperatorProfile | undefined>;
+  // Ω4C PR-10 — ponte payee(User) → operator_profile (a folha). 1:1 pela unique (tenant_id, user_id). Leitura
+  // tenant-scoped; undefined = usuário sem perfil profissional (usado pela liquidação de Remunerações).
+  findByUserId(tenantId: string, userId: string): Promise<OperatorProfile | undefined>;
   update(input: UpdateOperatorProfileInput): Promise<OperatorProfile | undefined>;
   reset?(): void;
 }
@@ -57,6 +60,12 @@ export class InMemoryOperatorProfileRepository implements OperatorProfileReposit
   async findById(tenantId: string, profileId: string): Promise<OperatorProfile | undefined> {
     const profile = this.profiles.get(profileId);
     return profile?.tenantId === tenantId ? profile : undefined;
+  }
+
+  async findByUserId(tenantId: string, userId: string): Promise<OperatorProfile | undefined> {
+    return [...this.profiles.values()].find(
+      (profile) => profile.tenantId === tenantId && profile.userId === userId,
+    );
   }
 
   async update(input: UpdateOperatorProfileInput): Promise<OperatorProfile | undefined> {

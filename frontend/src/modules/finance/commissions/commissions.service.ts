@@ -1,8 +1,9 @@
 import { isMockMode } from "../../../config/env";
-import { apiRequest } from "../../../services/api/client";
+import { ApiError, apiRequest } from "../../../services/api/client";
 import {
   adaptCommissionCalculationsResponse,
   adaptCommissionSummaryResponse,
+  adaptSettlementResult,
   buildCalculationsPath,
   buildCommissionsQuery,
 } from "./commissions.adapter";
@@ -14,6 +15,8 @@ import type {
   CommissionSummaryScope,
   CommissionsApiContext,
   MyCommissionCalculationsFilters,
+  SettleCommissionsInput,
+  SettleCommissionsResult,
 } from "./commissions.types";
 
 const EMPTY_PAGINATION = { limit: 20, offset: 0, total: 0 } as const;
@@ -88,4 +91,49 @@ export async function fetchMyCommissionCalculations(
   } catch {
     return emptyCalculations("fallback", CALCULATIONS_FALLBACK);
   }
+}
+
+// Ω4C PR-10 (D-Ω4C-REM-SETTLE-RAIL) — liquidação em lote (perm `commissions:settle`). Envia só os ids
+// selecionados + data/descrição opcionais; o backend trava o valor a calc.amount e credita no extrato.
+// Trata os desfechos de requisição inteira honestamente: 404 (linha inexistente/desatualizada) e 422 (payee
+// não-profissional) abortam a tx no backend → mensagem PT-BR segura, sem vazar corpo cru.
+export async function settleCommissions(
+  context: CommissionsApiContext,
+  input: SettleCommissionsInput,
+): Promise<SettleCommissionsResult> {
+  if (isMockMode()) {
+    return { kind: "error", message: "A liquidação não está disponível no modo de demonstração." };
+  }
+  if (input.calculationIds.length === 0) {
+    return { kind: "error", message: "Selecione ao menos uma remuneração para liquidar." };
+  }
+
+  try {
+    const response = await apiRequest<unknown>("/commissions/settlements", {
+      ...context,
+      method: "POST",
+      body: {
+        calculationIds: input.calculationIds,
+        ...(input.settlementDate ? { settlementDate: input.settlementDate } : {}),
+        ...(input.description ? { description: input.description } : {}),
+      },
+    });
+    return { kind: "ok", result: adaptSettlementResult(response) };
+  } catch (error) {
+    return interpretSettleError(error);
+  }
+}
+
+function interpretSettleError(error: unknown): SettleCommissionsResult {
+  const status = error instanceof ApiError ? error.status : undefined;
+  if (status === 404) {
+    return { kind: "not_found", message: "Uma ou mais remunerações não foram encontradas. Atualize a lista e tente novamente." };
+  }
+  if (status === 422) {
+    return { kind: "not_a_professional", message: "Um dos selecionados não é um profissional de campo e não pode ser liquidado no extrato." };
+  }
+  if (status === 401 || status === 403) {
+    return { kind: "forbidden", message: "Você não tem permissão para liquidar remunerações." };
+  }
+  return { kind: "error", message: "Não foi possível liquidar as remunerações. Tente novamente." };
 }

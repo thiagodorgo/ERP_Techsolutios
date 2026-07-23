@@ -1,0 +1,74 @@
+{
+  "pr": "PR-10",
+  "fase": "Fase 2 (FECHAMENTO) — Remunerações (conferência + liquidação em lote, CSV, filtro-modal)",
+  "snapshot_date": "2026-07-23",
+  "branch": "rodada/omega4c",
+  "tipo": "MISTO (ESTENDER commissions + fluxo de conferência/liquidação). REUSA o rail createForSource do extrato do PR-07 (5º agregado a lançar no extrato após multa e dano). FECHA a Fase 2.",
+  "models_alterados": [
+    "CommissionCalculation (+settled_at TIMESTAMPTZ nullable = marcador de liquidação; +settlement_ref UUID nullable = group_id do extrato p/ deep-link). ZERO dinheiro nas colunas novas."
+  ],
+  "migrations": [
+    "20260830000000_add_commission_settlement (aditiva up-only; 2 ADD COLUMN nullable + índice (tenant_id, settled_at) tenant-first; amount Decimal(20,6)/status INTOCADOS — provada up/down/re-up + retrocompat em erp-postgres pelo dba-guardião)"
+  ],
+  "comportamento": {
+    "valor_fonte": "linha = CommissionCalculation.amount (NUNCA a tarifa de venda — D-Ω4C-RECON-01; body do settle sem preço, só calculationIds/date/description).",
+    "liquidacao_lote": "POST /commissions/settlements liquida N calculations; cada uma → crédito no extrato via createForSource entry_type='remuneration' direction='credit' amount=calc.amount installmentTotal=1; marca settled_at=now + settlement_ref=group_id.",
+    "dedupe_dupla_guarda": "settled_at (markSettled com guard settled_at IS NULL) + source-idempotency do extrato (findActiveBySource + índice parcial 20260823000000). Liquidar 2× a MESMA calculation NÃO duplica o crédito.",
+    "reconciliacao_nao_atomica": "createForSource + markSettled rodam withTenantRls por colaborador (não 1 tx compartilhada). Retry SEGURO/idempotente: source-idempotency impede duplicar crédito, markSettled(settled_at IS NULL) converge para settled. Provado por [REM-03].",
+    "payee_map": "payee(User)→operator_profile via findByUserId (tenant-scoped, @@unique[tenant_id,user_id]); sem perfil → 422 payee_not_a_professional; calc cross-tenant → 404.",
+    "compute_deferido": "PARADA HONESTA (D-Ω4C-REM-COMPUTE-DEFER): compute por regra do profissional + overrides da engrenagem NÃO existem no repo → PR-10 confere/liquida linhas existentes, não fabrica percentual. Grid vazio real. Compute → Ω5/PR-10b."
+  },
+  "permissao": "REUSA commissions:settle (liquidar) / :read (grid) / :read_own (próprio) — já no catálogo (SEM permissão nova; catalog/core-saas.test/RBAC_MATRIX diff VAZIO). Efeito no extrato é interno (não exige professional_statements:create).",
+  "modulos_alterados": [
+    "src/modules/commissions/* (types/validators/repository/prisma-repository/service settleCalculations/controller/routes/dto — liquidação em lote + marcador)",
+    "src/modules/operator-profiles/* (findByUserId aditivo — ponte payee→profissional)",
+    "src/modules/professional-statements/* (só CHAMA createForSource — NÃO reescrito)",
+    "frontend/src/lib/csv.ts (NOVO util CSV-BOM compartilhado) + frontend/src/modules/audit/pages/AuditTenantPage.tsx (refac behavior-preserving p/ importar o util)",
+    "frontend/src/modules/finance/commissions/* (RemuneracoesPage + RemuneracoesFilterModal filtro-ao-entrar + ConferenciaRemuneracoesView grid bolinhas/seletor-colunas/engrenagem-liquidar/totalizadores/CSV + PrintRemuneracoesModal)"
+  ],
+  "rns_cobertas": [
+    "RN-REM-01 (valor = calc.amount, nunca tarifa de venda)",
+    "RN-REM-02..05 (liquidação → crédito no extrato; dedupe dupla-guarda 2×→1; reconciliação não-atômica segura/idempotente [REM-03]; payee→profissional 422)",
+    "RN-REM-06..08 (parada honesta compute; grid vazio real; §2.8 nunca CNH)",
+    "RN-REM-09 (efeito NÃO-amplificador; commissions:settle sem professional_statements:create grava só crédito constrangido)",
+    "RN-REM-10..13 (CSV-BOM não xlsx; filtro-modal-ao-entrar só aqui; totalizadores derivados; teardown FK-safe)"
+  ],
+  "rns_total_pr": 13,
+  "cobertura_testes": {
+    "backend": "tests/commission-settlement.test.ts 14/14 (liquidar N→créditos; liquidar 2×→não duplica [dedupe]; [REM-03] crédito pré-existente settled_at nulo→não duplica; payee sem operator_profile→422; cross-tenant 404; §2.8; valor de calc.amount não da tarifa) + rls-tenant-isolation bloco commission_calculations 3-tenant + teardown FK-safe.",
+    "frontend": "frontend/tests/remuneracoes-liquidar.test.tsx 14/14 (filtro-modal-ao-entrar, grid bolinhas, seleção múltipla+engrenagem liquidar, totalizadores, export CSV util, empty honesto, PT-BR, §2.8 sem CNH); AuditTenantPage segue verde após CSV util"
+  },
+  "d_records": [
+    "D-Ω4C-REM-VALUE-SOURCE (valor = CommissionCalculation.amount, nunca tarifa de venda — realiza D-Ω4C-RECON-01)",
+    "D-Ω4C-REM-SETTLE-RAIL (liquidação → crédito no extrato via createForSource; não recria; dupla-guarda)",
+    "D-Ω4C-REM-PAYEE-MAP (payee User→operator_profile via findByUserId; 422 se não-profissional)",
+    "D-Ω4C-REM-MODEL (settled_at + settlement_ref; zero dinheiro nas colunas novas)",
+    "D-Ω4C-REM-RBAC-REUSE (reusa commissions:settle/read/read_own)",
+    "D-Ω4C-REM-CSV (CSV-BOM promovido a util compartilhado; sem exceljs)",
+    "D-Ω4C-REM-MODAL (filtro-modal-ao-entrar só em Remunerações — realiza D-Ω4C-MODAL-PESQUISA)",
+    "D-Ω4C-REM-COMPUTE-DEFER (compute por regra do profissional = parada honesta → Ω5/PR-10b)"
+  ],
+  "divergencias_vs_autem": [
+    "compute por regra + overrides da engrenagem (Comissão %/Valor fixo/Não remunerar) = parada honesta deferida (não fabrica percentual)",
+    "sem toast (DS não tem) — feedback banner inline role=status",
+    "liquidação withTenantRls por colaborador (não 1 tx compartilhada) — não-duplicação pela dupla-guarda (verificado seguro)",
+    "impressão client-side window.print()",
+    "amount 20,6 → parse 12,2 no seam do crédito"
+  ],
+  "junta": {
+    "agente-dba-guardiao": "APROVADO (1 BAIXA)",
+    "omega4c-avaliador": "APROVADO (2 BAIXA; reconciliação não-atômica verificada segura)",
+    "coordenador-de-acessos": "APROVADO (0 cond)",
+    "veredito": "UNÂNIME 3/3 APROVADO"
+  },
+  "kpi_repo_wide": {
+    "backend": "1440->1454 (+14)",
+    "frontend_smoke": "769->783 (+14)",
+    "blocks": "80->81"
+  },
+  "coexistencia": "rail professional-statement INTOCADO (só chamado); catalog/matriz diff vazio; damages/fines/estoque/OS/financial/notifications/core-saas sem regressão (268/268 nomeadas); AuditTenantPage verde após CSV util",
+  "fecha_fase_2": "PR-10 FECHA a Fase 2 (PR-08 Estoque custódia + PR-09 Danos + PR-10 Remunerações). Próximo: Fase 3 (Telemetria + Auditoria/Sessões) + PR-08b (baixa automática de estoque).",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

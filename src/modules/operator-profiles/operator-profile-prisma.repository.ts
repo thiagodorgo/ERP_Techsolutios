@@ -55,6 +55,11 @@ export class PrismaOperatorProfileRepository implements OperatorProfileRepositor
     return profile ? mapOperatorProfileRecord(profile) : undefined;
   }
 
+  async findByUserId(tenantId: string, userId: string): Promise<OperatorProfile | undefined> {
+    const profile = await this.client.operatorProfile.findFirst({ where: { tenant_id: tenantId, user_id: userId } });
+    return profile ? mapOperatorProfileRecord(profile) : undefined;
+  }
+
   async update(input: UpdateOperatorProfileInput): Promise<OperatorProfile | undefined> {
     try {
       // user_id NÃO é atualizado — vínculo imutável (referência estável 1-1).
@@ -93,6 +98,10 @@ export class RlsPrismaOperatorProfileRepository implements OperatorProfileReposi
 
   findById(tenantId: string, profileId: string): Promise<OperatorProfile | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaOperatorProfileRepository(tx).findById(tenantId, profileId));
+  }
+
+  findByUserId(tenantId: string, userId: string): Promise<OperatorProfile | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaOperatorProfileRepository(tx).findByUserId(tenantId, userId));
   }
 
   update(input: UpdateOperatorProfileInput): Promise<OperatorProfile | undefined> {
