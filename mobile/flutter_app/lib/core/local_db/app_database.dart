@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -31,6 +31,7 @@ class AppDatabase extends GeneratedDatabase {
       await m.database.customStatement(_kChecklistAcknowledgements);
       await m.database.customStatement(_kFieldLocationEvents);
       await m.database.customStatement(_kWorkOrderMaterials);
+      await m.database.customStatement(_kTelemetryEvents);
     },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
@@ -130,6 +131,12 @@ class AppDatabase extends GeneratedDatabase {
             'ALTER TABLE work_orders ADD COLUMN team_name TEXT',
           );
         }
+      }
+      if (from < 12) {
+        // Ω4C PR-13 (D-Ω4C-TELE-FLUTTER-BUFFER): buffer DEDICADO de telemetria.
+        // Migração ADITIVA — só CREATE TABLE IF NOT EXISTS, nenhuma tabela
+        // existente é alterada. NÃO reusa `sync_actions`.
+        await m.database.customStatement(_kTelemetryEvents);
       }
     },
   );
@@ -369,6 +376,34 @@ CREATE TABLE IF NOT EXISTS field_location_events (
   speed_meters_per_second REAL,
   battery_level INTEGER,
   recorded_at INTEGER NOT NULL,
+  sync_status TEXT NOT NULL,
+  retry_count INTEGER NOT NULL DEFAULT 0,
+  last_error_code TEXT,
+  last_safe_error TEXT,
+  created_at INTEGER NOT NULL,
+  synced_at INTEGER
+)''';
+
+// Ω4C PR-13 — buffer DEDICADO da telemetria do app (heartbeat/acessos/recusas),
+// mobile-local, espelha `field_location_events`. Coexiste com ele
+// (D-007): `field_location_events` = ponto vivo do mapa Ω1 (1 ponto/OS);
+// `telemetry_events` = fila de telemetria. NÃO se fundem. Colunas
+// battery_pct/device_model/sdk_int OMITIDAS (D-NODEPS — pacotes ausentes).
+const _kTelemetryEvents = '''
+CREATE TABLE IF NOT EXISTS telemetry_events (
+  local_id TEXT NOT NULL PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
+  client_action_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  captured_at INTEGER NOT NULL,
+  latitude REAL,
+  longitude REAL,
+  accuracy_meters REAL,
+  speed_kmh REAL,
+  signal_type TEXT,
+  app_version TEXT,
+  work_order_id TEXT,
+  refusal_reason TEXT,
   sync_status TEXT NOT NULL,
   retry_count INTEGER NOT NULL DEFAULT 0,
   last_error_code TEXT,

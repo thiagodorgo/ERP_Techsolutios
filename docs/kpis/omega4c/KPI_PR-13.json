@@ -1,0 +1,69 @@
+{
+  "pr": "PR-13",
+  "fase": "Fase 3 — Telemetria Flutter (app de campo: captura GPS foreground + buffer Drift + flush)",
+  "snapshot_date": "2026-07-24",
+  "branch": "rodada/omega4c",
+  "tipo": "Flutter-only (mobile/flutter_app). PRODUTOR do que o backend PR-12 ingere. Parte Flutter de PR-17 do PLANO. KPI DUPLA (política §C3).",
+  "dependencia_nova": "ZERO (D-NODEPS): reusa geolocator/connectivity_plus/uuid/drift/dio; pubspec.yaml/lock INTOCADOS.",
+  "comportamento": {
+    "consent_gate_cliente_LGPD": "captureHeartbeat curto-circuita ANTES de ler o GPS se faltar field_location:send (claims) OU consentimento de dispositivo (LocationConsentStore.hasAcceptedManualCapture) → skippedNoConsent, coordenada NUNCA solicitada (NÃO CAPTURA, não só 'não envia'). Eventos sem-GPS (connect/disconnect/refusal) fluem. Servidor (PR-12) autoritativo no tracking_consent do perfil (fail-closed); rejected tracking_consent_required → descarte terminal sem loop.",
+    "buffer_drift_dedicado": "tabela Drift dedicada telemetry_events (schemaVersion 11→12, migração ADITIVA CREATE TABLE IF NOT EXISTS; NÃO a sync_actions compartilhada). Precedente field-location.",
+    "flush_idempotente": "flush plugado no AutoSyncCoordinator (try/catch isolado, ≤50/lote, retry/backoff cap 5); clientActionId determinístico → already_applied/rejected purga terminal; offline→fila→replay.",
+    "foreground_only": "WidgetsBindingObserver: resumed→start+APP_CONNECT; paused/detached→APP_DISCONNECT+stop. SEM WorkManager/isolate/getPositionStream persistente (paridade AutEM + privacidade).",
+    "eventos": "APP_CONNECT (login+resumed), APP_DISCONNECT (logout+paused), SERVICE_REFUSAL emitido no reportUnableToStart (workOrderId só se UUID real de servidor; de-dup).",
+    "consent_copy_honesta": "manualLocationConsentText + doc do consent-screen atualizados (fix da MEDIA da junta): divulga HONESTAMENTE as 2 formas de captura (on-tap E heartbeat periódico em primeiro plano quando rastreamento de frota ativo no perfil), mantendo 'sem background tracking' verdadeiro."
+  },
+  "permissao": "REUSA field_location:send (backend PR-12 gateia; app não cria RBAC). Sem permissão nova.",
+  "modulos": [
+    "mobile/flutter_app/lib/core/telemetry/* (novo: telemetry_event/local_store/codec/api/signal_source/capture_service/sync_service/providers)",
+    "lib/core/local_db/app_database.dart (schemaVersion 11→12 + telemetry_events aditiva) + api_contracts.dart + app_config.dart (kAppVersion) + auth_notifier.dart (connect/disconnect) + work_order_repository.dart (SERVICE_REFUSAL) + app.dart (WidgetsBindingObserver) + auto_sync_coordinator.dart (flush) + location_consent_store.dart + location_consent_screen.dart (copy honesta)"
+  ],
+  "rns_cobertas": [
+    "RN-TELE-MOBILE-01 (consent-gate cliente: sem consentimento não captura GPS; buffer vazio)",
+    "RN-TELE-MOBILE-02 (buffer/flush idempotente: clientActionId determinístico; already_applied não re-enfileira)",
+    "RN-TELE-MOBILE-03 (offline→fila→replay)",
+    "RN-TELE-MOBILE-04 (foreground-only: stop em paused/detached; sem background)",
+    "RN-TELE-MOBILE-05 (eventos connect/disconnect/refusal; SERVICE_REFUSAL no reportUnableToStart)",
+    "RN-TELE-MOBILE-06 (§2.8: não loga coordenada crua; payload sem tenant/token)",
+    "RN-TELE-MOBILE-07 (migração Drift 11→12 aditiva)",
+    "RN-TELE-MOBILE-08 (rejeição terminal do servidor descartada sem loop)"
+  ],
+  "rns_total_pr": 8,
+  "cobertura_testes": {
+    "flutter": "mobile/flutter_app/test/features/telemetry/telemetry_test.dart 25/25 (consent-gate/buffer-flush≤50/idempotência/offline-replay/foreground-only/eventos/§2.8/migração-11-12/contrato-wire). Suíte completa 807 tests / 0 falhas / 0 skip. dart format 0-changed; analyze No issues.",
+    "backend": "n/a (Flutter-only)",
+    "frontend_web": "n/a"
+  },
+  "d_records": [
+    "D-Ω4C-TELE-FLUTTER-BUFFER (tabela Drift dedicada telemetry_events)",
+    "D-Ω4C-TELE-FLUTTER-NODEPS (zero dependência nova; battery/device deferidos)",
+    "D-Ω4C-TELE-FLUTTER-CONSENT (consent-gate cliente; copy honesta; servidor autoridade)",
+    "D-Ω4C-TELE-FLUTTER-FOREGROUND (sem background; WidgetsBindingObserver)",
+    "D-Ω4C-TELE-FLUTTER-EVENTS (connect/disconnect/refusal)",
+    "D-Ω4C-TELE-FLUTTER-IDEMP (clientActionId determinístico)",
+    "D-Ω4C-TELE-FLUTTER-2.8 (payload/log sem coordenada crua/token)"
+  ],
+  "divergencias_vs_autem": [
+    "batteryPct/deviceModel/sdkInt deferidos (backend-opcionais; pacotes battery_plus/device_info_plus/package_info_plus não estão no pubspec; adicionar = junta-5+PD → Ω5)",
+    "appVersion via const kAppVersion (sync manual com pubspec version)",
+    "consentimento de telemetria reusa (com copy atualizada) o consentimento de dispositivo do B-121 (não um consent dedicado — fast-follow Ω5)"
+  ],
+  "junta": {
+    "omega4c-avaliador": "APROVADO (ALTA de KPI sanada; 1 BAIXA D-007)",
+    "agente-secops": "APROVADO (2 BAIXA)",
+    "coordenador-de-acessos": "APROVADO_CONDICIONADO → APROVADO (MEDIA de fidelidade de consentimento LGPD resolvida com copy honesta)",
+    "reprovacao": "MEDIA (não REPROVADO): heartbeat periódico reusava copy de captura-manual → corrigido o texto de consentimento (2 formas honestas, sem-background preservado); coordenador re-verificou e descarregou.",
+    "veredito": "APROVADO (3 vetos; 1 MEDIA de consentimento LGPD resolvida)"
+  },
+  "kpi_repo_wide": {
+    "flutter_tests": "764->807 (+25 telemetry-test deste PR + reconciliação da suíte real)",
+    "backend": "1479 (inalterado — Flutter-only)",
+    "frontend_smoke": "801 (inalterado — Flutter-only)",
+    "blocks": "83->84"
+  },
+  "kpi_dupla": "PR toca Flutter → política dupla §C3: atualiza mobile/flutter_app/Kpis/* E Kpis/* (raiz).",
+  "backfill": "PR-12 #273=fc7f6be backfill neste PR.",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

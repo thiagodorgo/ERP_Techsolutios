@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../bootstrap/bootstrap_repository.dart';
 import '../network/api_error.dart';
 import '../network/connectivity_repository.dart';
+import '../telemetry/telemetry_providers.dart';
 import 'sync_providers.dart';
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -76,6 +77,13 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
         await ref.read(fieldLocationSyncServiceProvider).syncTenant(tenantId);
       } catch (_) {
         // Field Location falha isolada nao deve bloquear os demais dominios.
+      }
+      // Ω4C PR-13 — flush da telemetria (buffer Drift dedicado). Try/catch
+      // ISOLADO: falha aqui nunca entanga OS/checklist/RDV.
+      try {
+        await ref.read(telemetrySyncServiceProvider).flushTenant(tenantId);
+      } catch (_) {
+        // Telemetria falha isolada nao deve bloquear os demais dominios.
       }
       // Work order status sync
       await ref.read(workOrderSyncReplayServiceProvider).replayTenant(tenantId);

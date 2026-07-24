@@ -7,11 +7,13 @@ import '../../../core/sync/sync_providers.dart';
 import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
 
-/// Consentimento e status de localização (LGPD — captura manual).
+/// Consentimento e status de localização (LGPD).
 ///
-/// Sem rastreamento em segundo plano: a localização só é capturada quando o
-/// usuário toca em "Enviar localização agora" nas telas de OS. Aqui ele
-/// concede ou revoga o consentimento e vê o status do GPS.
+/// Sem rastreamento em segundo plano: a localização é capturada ao tocar em
+/// "Enviar localização agora" nas telas de OS e, quando o rastreamento de frota
+/// está ativo para o perfil, periodicamente enquanto o app está aberto (em
+/// primeiro plano). Aqui o usuário concede ou revoga o consentimento e vê o
+/// status do GPS.
 class LocationConsentScreen extends ConsumerStatefulWidget {
   const LocationConsentScreen({super.key});
 

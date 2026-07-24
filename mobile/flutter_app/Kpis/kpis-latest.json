@@ -1,18 +1,18 @@
 {
-  "snapshot_date": "2026-07-05",
-  "version": "B-124",
-  "branch": "fix/b124-kpis-post-human-approval",
-  "description": "B-124 Dashboard web enriquecido com despachos e localizacoes (web-only). O ultimo bloco mobile permanece B-123 (fidelidade visual do fluxo de OS): nenhum arquivo mobile foi alterado no B-124. version/release travados em B-124 para manter (version, block, status) identicos entre os dois conjuntos de KPI (politica de KPIs duplos + teste-guarda).",
+  "snapshot_date": "2026-07-24",
+  "version": "OMEGA4C-PR-13",
+  "branch": "rodada/omega4c",
+  "description": "Ω4C PR-13 Telemetria Flutter (captura GPS foreground consent-aware + buffer Drift dedicado + flush em lote idempotente p/ o backend PR-12). 1o PR a tocar o app Flutter desde B-123/B-124 -> flutter_tests reconciliado a suite REAL (764 carregado -> 807 executado, +25 telemetry_test). KPI DUPLA (§C3): version/block em paridade com Kpis/ raiz (OMEGA4C-PR-13).",
   "release": {
-    "block": "B-124",
-    "title": "Dashboard web enriquecido com despachos e localizacoes",
-    "pr": 125,
-    "mergeCommit": "dcfa25063111532f8cc1c77d7af8ec4519406bb0",
-    "approvedHead": "6605b13630e3f29f98670aabf9ee32e274f40d47",
-    "branch": "feat/web-b124-dashboard-dispatches-field-locations",
-    "status": "published_after_human_approval",
-    "status_label": "Publicado apos avaliacao humana e merge da PR #125 (B-124K)",
-    "summary": "B-124 (web-only) enriqueceu o Dashboard web: composicao paralela de GET /work-orders + GET /operations/dispatches + GET /field-locations/latest + GET /notifications/unread-count (+ GET /approvals/pending), 8 KPIs derivados, fila critica combinada (SLA vencido > prioridade > operador sem sinal > aprovacao pendente > OS sem operador), despachos ativos, status de campo real (regra stale de 15 min reutilizada do operations-map.adapter), alertas acionaveis e eventos derivados das listas (sem timeline por OS); fallback por fonte. frontend check/build OK e test:smoke 44/44 (33 -> 44). Nenhum arquivo mobile alterado — as metricas Flutter/mobile (764/764, modulos 17/17, contratos 18/18 e 21/21, MVP 96%/78%) permanecem nos valores oficiais do B-123.",
+    "block": "OMEGA4C-PR-13",
+    "title": "Telemetria Flutter — captura GPS foreground + buffer Drift + flush em lote (Flutter-only)",
+    "pr": null,
+    "mergeCommit": null,
+    "approvedHead": null,
+    "branch": "rodada/omega4c",
+    "status": "published_per_pr",
+    "status_label": "Ω4C PR-13 telemetria Flutter — junta 3/3 (secops; 1 MEDIA de consentimento LGPD resolvida); merge_commit null na autoria (backfill pos-merge)",
+    "summary": "Ω4C PR-13 (Flutter-only; PRODUTOR do que o backend PR-12 ingere). Novo modulo lib/core/telemetry/*. ZERO dependencia nova (reusa geolocator/connectivity_plus/uuid/drift/dio; pubspec INTOCADO). CONSENT-GATE CLIENTE LGPD: captureHeartbeat curto-circuita ANTES de ler o GPS se faltar field_location:send OU consentimento de dispositivo -> coordenada NUNCA solicitada (NAO CAPTURA); servidor PR-12 autoritativo no tracking_consent do perfil (fail-closed). Buffer Drift DEDICADO telemetry_events (schemaVersion 11->12 aditiva). Flush no AutoSyncCoordinator (<=50/lote); clientActionId deterministico -> already_applied/rejected purga terminal; offline->fila->replay. FOREGROUND-ONLY (WidgetsBindingObserver; SEM WorkManager/isolate — paridade AutEM + privacidade). SERVICE_REFUSAL no reportUnableToStart existente. §2.8: nao loga coordenada crua. A junta pegou 1 MEDIA de fidelidade de consentimento (heartbeat periodico reusava copy de captura-manual) -> copy de consentimento atualizada honestamente (2 formas; 'sem background' preservado); coordenador re-verificou e descarregou. batteryPct/deviceModel/sdkInt deferidos (pacotes ausentes; junta-5+PD -> Ω5). flutter_tests 764->807 (+25 telemetry + reconciliacao suite real; 807/0-falha/0-skip); backend 1479 e frontend_smoke 801 inalterados (Flutter-only); blocks 83->84. Junta 3 vetos: omega4c-avaliador + agente-secops + coordenador-de-acessos APROVADO.",
     "commits": [
       {
         "hash": "dcfa25063111532f8cc1c77d7af8ec4519406bb0",
@@ -101,12 +101,12 @@
         {
           "id": "flutter_tests",
           "label": "Flutter Tests",
-          "value": 764,
-          "total": 764,
+          "value": 807,
+          "total": 807,
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "764/764 no full Flutter revalidado na PR #123 (apos cada uma das 7 telas)"
+          "detail": "807/807 na suite Flutter REAL (Flutter 3.41.6) apos Ω4C PR-13 telemetria (+25 telemetry_test: consent-gate cliente/buffer-flush/idempotencia/foreground-only/§2.8/migracao-Drift-11-12). O 764 era carregado nao re-executado desde B-124 (nenhum PR tocou Flutter ate agora) -> reconciliado a suite real. dart format 0-changed; analyze No issues; pubspec INTOCADO (zero-dep)."
         },
         {
           "id": "npm_tests",

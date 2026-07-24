@@ -5,6 +5,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../features/auth/auth_models.dart';
 import '../config/app_config.dart';
 import '../network/http_client.dart';
+import '../telemetry/telemetry_capture_service.dart';
+import '../telemetry/telemetry_event.dart';
+import '../telemetry/telemetry_providers.dart';
 import 'auth_repository.dart';
 import 'auth_token_storage.dart';
 
@@ -73,17 +76,42 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       state = AsyncValue.data(
         AuthState(status: AuthStatus.authenticated, session: session),
       );
+      // Ω4C PR-13 — hook de ciclo: login → APP_CONNECT (de-dup por estado no
+      // serviço). Best-effort: telemetria nunca derruba o login.
+      _recordTelemetry((service) {
+        return service.recordAppConnect(tenantId: session.user.tenantId);
+      });
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
 
   Future<void> logout() async {
+    // Ω4C PR-13 — hook de ciclo: logout → APP_DISCONNECT (antes de limpar a
+    // sessao, para ainda conhecer o tenant). Best-effort.
+    final tenantId = state.asData?.value.session?.user.tenantId;
+    if (tenantId != null && tenantId.isNotEmpty) {
+      _recordTelemetry(
+        (service) => service.recordAppDisconnect(tenantId: tenantId),
+      );
+    }
     final repo = ref.read(authRepositoryProvider);
     await repo.logout();
     state = const AsyncValue.data(
       AuthState(status: AuthStatus.unauthenticated),
     );
+  }
+
+  void _recordTelemetry(
+    Future<TelemetryEvent?> Function(TelemetryCaptureService service) action,
+  ) {
+    try {
+      final service = ref.read(telemetryCaptureServiceProvider);
+      // Fire-and-forget: nao aguarda nem propaga erro para o fluxo de auth.
+      action(service).catchError((_) => null);
+    } catch (_) {
+      // Provider indisponivel (ex.: escopo de teste sem telemetria) — no-op.
+    }
   }
 
   Future<void> tryRefresh() async {

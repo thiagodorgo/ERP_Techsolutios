@@ -148,6 +148,14 @@ class FieldLocationApiEndpoints {
   static const mobileFieldLocations = '/api/v1/mobile/field-locations';
 }
 
+class TelemetryApiEndpoints {
+  const TelemetryApiEndpoints._();
+
+  // Ω4C PR-13 — ingestão em lote de telemetria (heartbeat GPS consent-gated +
+  // acessos + recusas). Produtor do que o backend PR-12 ingere.
+  static const mobileTelemetry = '/api/v1/mobile/telemetry';
+}
+
 class EvidenceSyncActionTypes {
   const EvidenceSyncActionTypes._();
 
