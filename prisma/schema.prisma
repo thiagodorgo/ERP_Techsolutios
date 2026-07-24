@@ -53,6 +53,7 @@ model Tenant {
   pois                          Poi[]
   operator_profiles             OperatorProfile[]
   professional_statement_entries ProfessionalStatementEntry[]
+  telemetry_events              TelemetryEvent[]
   tenant_settings               TenantSetting[]
   teams                         Team[]
   team_members                  TeamMember[]
@@ -1882,12 +1883,53 @@ model OperatorProfile {
   // Restrict (na FK do lado StockMovement): um profissional que AINDA detém itens não é apagado — "desvincular
   // devolve à base" antes de remover (D-Ω4C-INV-CUSTODY-REF-TYPED).
   stock_custody                  StockMovement[] @relation("StockMovementCustodyOperator")
+  // Ω4C PR-12 — Telemetria do app deste profissional (heartbeat/acessos/recusas). onDelete Cascade (na FK
+  // do lado TelemetryEvent): apagar o perfil apaga a sua telemetria (direito ao esquecimento LGPD).
+  telemetry_events               TelemetryEvent[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, user_id])
   @@index([tenant_id, is_active])
   @@index([tenant_id, created_at])
   @@map("operator_profiles")
+}
+
+// Ω4C PR-12 (D-Ω4C-TELE-MODEL) — Telemetria do app AutEM Mobile: fonte de verdade de acessos, heartbeat
+// GPS, km diário (DERIVADO on-read via haversine), recusas e dispositivos. Model NOVO (não estende
+// field_operator_locations, que é a "última posição viva" do Mapa Ω1 — coexistência D-007). Enums em
+// INGLÊS (labels PT-BR no DTO), SEM CHECK de enum no banco: event_type heartbeat|app_connect|
+// app_disconnect|service_refusal; signal_type wifi|mobile|none. lat/lng NULL — só o heartbeat CONSENTIDO
+// grava coordenada (consent-gate LGPD D-Ω4C-TELE-CONSENT, checado ANTES de persistir). Idempotência
+// persistente por UNIQUE (tenant_id, operator_profile_id, client_action_id) — D-Ω4C-TELE-IDEMP. km NÃO
+// tem coluna (Decimal(10,1) derivado). O índice/constraints extra vivem na migration 20260831000000.
+model TelemetryEvent {
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id           String          @db.Uuid
+  operator_profile_id String          @db.Uuid
+  event_type          String // heartbeat|app_connect|app_disconnect|service_refusal (app-level)
+  captured_at         DateTime        @db.Timestamptz(6)
+  received_at         DateTime        @default(now()) @db.Timestamptz(6)
+  lat                 Float? // só heartbeat consentido (CHECK ±90 na migration)
+  lng                 Float? // só heartbeat consentido (CHECK ±180 na migration)
+  accuracy_m          Float? // precisão do fix (CHECK ≥ 0)
+  speed_kmh           Float? // velocidade instantânea reportada (CHECK ≥ 0)
+  battery_pct         Int? // 0..100 (CHECK na migration)
+  signal_type         String? // wifi|mobile|none (app-level)
+  app_version         String?
+  device_model        String?
+  sdk_int             Int?
+  client_action_id    String
+  refusal_reason      String? // só service_refusal
+  work_order_id       String?         @db.Uuid // contexto da recusa (SEM FK dura em v1)
+  created_at          DateTime        @default(now()) @db.Timestamptz(6)
+  tenant              Tenant          @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  operator_profile    OperatorProfile @relation(fields: [tenant_id, operator_profile_id], references: [tenant_id, id], onDelete: Cascade, map: "telemetry_events_operator_fkey")
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, operator_profile_id, client_action_id], map: "telemetry_events_idem_key")
+  @@index([tenant_id, operator_profile_id, captured_at], map: "telemetry_events_profile_captured_idx")
+  @@index([tenant_id, event_type, captured_at], map: "telemetry_events_type_captured_idx")
+  @@map("telemetry_events")
 }
 
 // Ω4C PR-03 (D-Ω4C-EXTRATO-MODEL) — Extrato do profissional: razão financeiro POR profissional. TABELA ÚNICA,

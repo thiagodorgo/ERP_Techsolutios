@@ -1373,6 +1373,82 @@ if (!connectionString) {
       );
       assert.equal(tenantCMaintenanceItem?.description, "RLS item", "tenant C maintenance item stays visible + untouched in-tenant");
 
+      // Ω4C PR-12 (RN-TELE-04) — telemetry_events (telemetria do app) com 3 tenants EFÊMEROS (A, B, C). Cada
+      // evento referencia um operator_profile via FK composta (tenant_id, operator_profile_id) → reusa os
+      // perfis do bloco PR-03 (A/B) e o profissional de C. Prova: (a) FK cross-tenant REJEITADA (evento de A
+      // com perfil de B → violação de FK); (b) invisível sem contexto; (c) cross-tenant updateMany count=0;
+      // (d) visível/intocado in-tenant. RLS ENABLE/FORCE + policy da migration 20260831000000; tenant_id 1º
+      // de todo índice. TEARDOWN FK-SAFE: telemetry_events ANTES de operator_profiles (lição do CI-catch PR-06).
+      const insertTelemetryEvent = (tx: typeof client, tenantId: string, operatorProfileId: string) => tx.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO telemetry_events (
+          tenant_id, operator_profile_id, event_type, captured_at, lat, lng, accuracy_m, client_action_id
+        )
+        VALUES (
+          ${tenantId}::uuid, ${operatorProfileId}::uuid, 'heartbeat', now(), -23.55, -46.63, 8.0, ${`rls-${tenantId}`}
+        )
+        RETURNING id
+      `;
+
+      // (a) FK composta cross-tenant: evento do tenant A apontando para o perfil do tenant B → violação de FK
+      // (não existe (tenant_id=A, operator_profile_id=perfilB) em operator_profiles). A tx faz rollback.
+      await assert.rejects(
+        withTenantRls(client, tenantA.id, async (tx) => insertTelemetryEvent(tx as typeof client, tenantA.id, operatorProfileBId)),
+        /foreign key|violates|constraint/i,
+        "telemetry_events must reject a cross-tenant operator_profile via the composite FK",
+      );
+
+      const telemetryEventAId = await withTenantRls(client, tenantA.id, async (tx) => {
+        const [row] = await insertTelemetryEvent(tx as typeof client, tenantA.id, operatorProfileAId);
+        return row.id;
+      });
+      const telemetryEventBId = await withTenantRls(client, tenantB.id, async (tx) => {
+        const [row] = await insertTelemetryEvent(tx as typeof client, tenantB.id, operatorProfileBId);
+        return row.id;
+      });
+      const telemetryEventCId = await withTenantRls(client, tenantC.id, async (tx) => {
+        const [row] = await insertTelemetryEvent(tx as typeof client, tenantC.id, tenantCProfessional.operatorProfileId);
+        return row.id;
+      });
+
+      const telemetryWithoutContext = await client.telemetryEvent.findMany({
+        where: { id: { in: [telemetryEventAId, telemetryEventBId, telemetryEventCId] } },
+      });
+      assert.deepEqual(
+        telemetryWithoutContext.map((event) => event.id),
+        [],
+        "tenant-scoped telemetry events must not be visible without app.current_tenant_id",
+      );
+
+      const tenantATelemetryView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.telemetryEvent.findMany({
+          where: { id: { in: [telemetryEventAId, telemetryEventBId, telemetryEventCId] } },
+        });
+        const crossTenantUpdate = await tx.telemetryEvent.updateMany({
+          where: { id: { in: [telemetryEventBId, telemetryEventCId] } },
+          data: { event_type: "app_disconnect" },
+        });
+        return { visibleIds: visible.map((event) => event.id), crossUpdatedRows: crossTenantUpdate.count };
+      });
+      assert.deepEqual(
+        tenantATelemetryView.visibleIds,
+        [telemetryEventAId],
+        "tenant A must only see its own telemetry event (not tenant B/C)",
+      );
+      assert.equal(
+        tenantATelemetryView.crossUpdatedRows,
+        0,
+        "tenant A must not update tenant B/C telemetry events",
+      );
+
+      const tenantBTelemetry = await withTenantRls(client, tenantB.id, (tx) =>
+        tx.telemetryEvent.findUnique({ where: { id: telemetryEventBId } }),
+      );
+      assert.equal(tenantBTelemetry?.event_type, "heartbeat", "tenant B telemetry event stays visible + untouched in-tenant");
+      const tenantCTelemetry = await withTenantRls(client, tenantC.id, (tx) =>
+        tx.telemetryEvent.findUnique({ where: { id: telemetryEventCId } }),
+      );
+      assert.equal(tenantCTelemetry?.event_type, "heartbeat", "tenant C telemetry event stays visible + untouched in-tenant");
+
       // Ω4C PR-07 (MUL-SEG-08) — fines.responsible_operator_profile_id (condutor responsável) com 3 tenants
       // EFÊMEROS (A, B, C). A multa referencia um vehicle (FK composta) e um operator_profile (FK composta
       // RESTRICT, a coluna ADITIVA desta fatia — 20260827000000). Reusa os operator_profiles do bloco PR-03.
@@ -2207,6 +2283,14 @@ if (!connectionString) {
           // vehicles é Restrict). TEARDOWN FK-SAFE (lição do CI-catch do PR-06). damage_attachments caem por
           // Cascade da própria FK ao dano.
           await tx.damage.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          // Ω4C PR-12 — telemetria ANTES dos perfis. A FK composta (tenant_id, operator_profile_id) →
+          // operator_profiles é CASCADE, mas o delete explícito antecipa a limpeza (TEARDOWN FK-SAFE, lição
+          // do CI-catch do PR-06 — telemetry_events antes de operator_profiles/users/tenants).
+          await tx.telemetryEvent.deleteMany({
             where: {
               tenant_id: tenantId,
             },

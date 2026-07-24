@@ -1,0 +1,76 @@
+{
+  "pr": "PR-12",
+  "fase": "Fase 3 — Telemetria (BACKEND: ingestão heartbeat/km/recusas)",
+  "snapshot_date": "2026-07-24",
+  "branch": "rodada/omega4c",
+  "tipo": "CRIAR (novo módulo telemetry). Backend-only (Flutter=PR-13, web/mapa=PR-14 via Junta de Mapas). Parte backend de PR-16 do PLANO.",
+  "models_novos": [
+    "TelemetryEvent (id, tenant_id, operator_profile_id, captured_at timestamptz, event_type heartbeat|app_connect|app_disconnect|service_refusal, lat/lng DOUBLE nullable, accuracy_m/speed_kmh/battery_pct/signal_type/app_version/device_model/sdk_int nullable, client_action_id, created_at). FK composta CASCADE (esquecimento LGPD); CHECKs lat/lng/battery; RLS."
+  ],
+  "migrations": [
+    "20260831000000_add_telemetry_events (aditiva up-only; CREATE TABLE + 4 índices + 5 CHECKs + FK composta (tenant_id, operator_profile_id)→operator_profiles ON DELETE CASCADE + FK tenant RESTRICT + RLS ENABLE/FORCE/POLICY + UNIQUE (tenant_id, operator_profile_id, client_action_id) idempotência — provada up/down/re-up + CASCADE-esquecimento + cross-tenant 23503 + idempotência 23505 pelo dba-guardião; operator_profiles/field_operator_locations INTACTAS)"
+  ],
+  "comportamento": {
+    "consent_gate_LGPD": "invariante crítica: ingestOne rejeita (tracking_consent_required) quando hasGps && trackingConsent !== true ANTES de qualquer insert (fail-closed — !== true barra undefined/null/false). GPS NUNCA gravado sem consentimento; eventos sem-GPS (connect/disconnect/refusal) prosseguem. tracking_consent via OperatorProfileService.findByUserId (ator, não body). Provado por 2 revisores (secops+avaliador): getTrack vazio sem consentimento.",
+    "km_haversine_onread": "util haversine backend zero-dep; km do dia = Σ segmentos consecutivos (America/Sao_Paulo) com filtro de precisão (accuracy>100m excluída) + velocidade (>200km/h descartada). Sem pontos → {kmTotal:0} honesto (NUNCA fabrica km). Materialização/scheduler deferidos a PR-16b.",
+    "idempotencia_batch": "POST /mobile/telemetry batch; UNIQUE (tenant, operator, client_action_id); reprocessar mesmo client_action_id → already_applied, não duplica (memória dedup + P2002 no prisma repo).",
+    "esquecimento_lgpd": "FK ON DELETE CASCADE: deletar operator_profile → telemetria dele removida em cascata (base do direito ao esquecimento; provado).",
+    "recusas": "SERVICE_REFUSAL como event_type; backend só RECEBE/lista (emissor = Flutter PR-13)."
+  },
+  "permissao": {
+    "ingestao": "REUSA field_location:send (o próprio profissional envia; consent-gate é o controle LGPD real; assertTelemetryActor → 403).",
+    "leitura_nova": "telemetry:read → super/platform/tenant_admin + manager + field_dispatcher + auditor. field_technician EXCLUÍDO (o técnico é o RASTREADO, não vê o rastreamento) + technician/operator/finance/inventory/viewer/support sem acesso. 4 pontos (catalog + core-saas.test expectedPermissionCatalog + seed + RBAC_MATRIX)."
+  },
+  "modulos": [
+    "src/modules/telemetry/* (11 arquivos: types/validators/dto/haversine/km/repository/prisma-repository/service/controller/routes/index)",
+    "src/modules/mobile/mobile-telemetry-sync.ts + mobile.routes.ts (POST /mobile/telemetry)"
+  ],
+  "views_28": "TrackView (coord crua — SÓ aqui, gated telemetry:read); KmView/RefusalView/AccessView/DeviceView (allowlist — nunca lat/lng/IP/tenant_id/operator_profile_id/client_action_id/sdk_int). DeviceView anti-fingerprint (sdk_int removido). Auditoria só contagens agregadas.",
+  "rns_cobertas": [
+    "RN-TELE-01 (consent-gate: GPS sem tracking_consent → NÃO persistido; getTrack vazio)",
+    "RN-TELE-02 (idempotência batch: reprocessar client_action_id → already_applied, não duplica)",
+    "RN-TELE-03 (km haversine on-read: Σ segmentos com filtro; sem pontos → 0; nunca fabrica)",
+    "RN-TELE-04..06 (filtro de precisão/velocidade; recusas recebidas; §2.8 views)",
+    "RN-TELE-08 (haversine correto vs distância conhecida)",
+    "RN-TELE-09 (RBAC: telemetry:read 403 field_technician; ingestão field_location:send 403 sem permissão)"
+  ],
+  "rns_total_pr": 9,
+  "rn_gap_fast_follow": "RN-TELE-07 (janela > teto → 422 window_too_large): lógica correta em resolveWindow mas SEM assert HTTP explícito no telemetry.test.ts — fast-follow (BAIXA, não bloqueia).",
+  "cobertura_testes": {
+    "backend": "tests/telemetry.test.ts 17/17 (consent-gate/idempotência/km-haversine/filtro-precisão/recusas/§2.8/RBAC) + core-saas 26/26 (telemetry:read + segregação) + rls-tenant-isolation bloco telemetry_events 3-tenant + teardown FK-safe. NOTA: 7 fails locais = artefato do .env local (prisma+ESM hoisting); em memória/CI 17/17 (confirmado por 2 revisores).",
+    "frontend": "n/a (backend-only)"
+  },
+  "d_records": [
+    "D-Ω4C-TELE-MODEL (TelemetryEvent novo; field_operator_locations/mapa Ω1 intocados)",
+    "D-Ω4C-TELE-CONSENT (consent-gate fail-closed; GPS só com tracking_consent)",
+    "D-Ω4C-TELE-KM-ONREAD (km haversine on-read; sem scheduler; sem km fabricado)",
+    "D-Ω4C-TELE-IDEMP (UNIQUE client_action_id; already_applied)",
+    "D-Ω4C-TELE-PERM (ingestão field_location:send; leitura telemetry:read nova)",
+    "D-Ω4C-TELE-2.8 (5 views allowlist; coord crua só /track; anti-fingerprint)",
+    "D-Ω4C-TELE-REFUSAL-RECEIVER (SERVICE_REFUSAL só recebida; emissor Flutter)",
+    "D-Ω4C-TELE-PRECISION (filtro accuracy/velocidade)"
+  ],
+  "divergencias_vs_autem": [
+    "TelemetryEvent novo (não estende field_operator_locations — coexistência D-007, mapa Ω1 intocado)",
+    "agregados on-read (km/devices/access sem tabela/scheduler; materialização → PR-16b)",
+    "SERVICE_REFUSAL só recebida (emissor = Flutter PR-13; backend não fabrica recusa)",
+    "lat/lng DOUBLE PRECISION (espelha field_operator_locations; range por CHECK)"
+  ],
+  "junta": {
+    "agente-dba-guardiao": "APROVADO (2 BAIXA; FK CASCADE-esquecimento provada)",
+    "agente-secops": "APROVADO (2 BAIXA; consent-gate fail-closed + zero vazamento de coordenada)",
+    "coordenador-de-acessos": "APROVADO (2 BAIXA; field_technician excluído de telemetry:read)",
+    "omega4c-avaliador": "APROVADO (1 ALTA higiene + 3 BAIXA)",
+    "veredito": "UNÂNIME 4/4 APROVADO (2 revisores de segurança/LGPD)"
+  },
+  "kpi_repo_wide": {
+    "backend": "1462->1479 (+17)",
+    "frontend_smoke": "801 (inalterado — backend-only)",
+    "blocks": "82->83"
+  },
+  "coexistencia": "field_operator_locations/mapa Ω1 INTOCADOS (só relações inversas + comentário); sessions/audit/commissions/estoque/OS/notifications/field-location/operator-profiles/mobile-sync sem regressão (116/116)",
+  "backend_only": "Flutter (GPS-foreground/Drift/flush) = PR-13; web (Acessos/KM/Rastreamento-mapa via Junta de Mapas/Recusas) = PR-14",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

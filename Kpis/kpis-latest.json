@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-21",
-  "version": "OMEGA4C-PR-11",
+  "version": "OMEGA4C-PR-12",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω4C PR-11 — Auditoria global + Sessões com revogação (ESTENDER; ZERO migração) — ABRE FASE 3",
-    "title": "Ω4C PR-11: auditoria com filtros/paginação + Sessões com revogação REAL (invalida refresh token) + Acessos; segregação auditor×admin; zero migração",
+    "block": "Ω4C PR-12 — Telemetria BACKEND (ingestão heartbeat/km/recusas; consent-gate LGPD; CRIAR)",
+    "title": "Ω4C PR-12: telemetria backend com consent-gate LGPD (GPS só com consentimento), km haversine on-read, ingestão batch idempotente; FK CASCADE=esquecimento",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω4C PR-11 — AUDITORIA GLOBAL + SESSÕES COM REVOGAÇÃO (ESTENDER: auth_sessions + audit_logs já existiam com RLS; ZERO migração; ABRE a FASE 3 parte web). REVOGAÇÃO REAL: revokeByIdForTenant marca revoked_at=now → o refreshSession EXISTENTE já rejeita sessão revogada → o próximo refresh da vítima FALHA (NÃO é botão cosmético; provado ao vivo contra Postgres — teste 5). Caveat honesto: access token JWT stateless segue válido até expirar (≤15min) → re-login forçado; comunicado ao usuário (SESSION_REVOKE_CAVEAT), não escondido. ISOLAMENTO por tenant: revogar sessão de OUTRO tenant → 404 (findByIdForTenant/revokeByIdForTenant filtram tenant_id em withTenantRls). AUDITORIA: GET /audit-events + filtros server-side (action/actorId/from/to/limit/offset) + paginação (nextOffset); metadata agora STRIPADA (aperto §2.8). ACESSOS: derivado de auth_sessions.created_at (sem tabela nova). §2.8 ALLOWLIST: SessionView/AuditEventView projeções estritas — NUNCA refresh_token_hash/ip cru/token/user_agent cru/CNH. 2 PERMISSÕES NOVAS sessions:read (super/platform/tenant_admin + auditor) + sessions:revoke (SÓ super/platform/tenant_admin — SEGREGAÇÃO DE FUNÇÕES: auditor LÊ mas NÃO revoga; nenhum papel operacional/campo tem qualquer das duas) nos 4 pontos (catalog+ROLE_PERMISSIONS + core-saas.test expectedPermissionCatalog + seed + RBAC_MATRIX). Logs/Acessos reusam audit.read. Frontend: SessoesPage/AcessosPage + RevokeSessionDialog (botão Revogar gated por can(sessions:revoke); auditor vê lista não botão; caveat 15min no diálogo) + AuditTenantPage estendida (filtros/paginação/CSV reusa frontend/src/lib/csv.ts). Fix do orquestrador clearAuditEvents (dev cortado por limite de sessão no ajuste do ruído de auditoria) confirmado são (só InMemory store, test-only). RN-SESS/AUD. Junta UNÂNIME 3/3 (2 revisores de segurança independentes): omega4c-avaliador APROVADO + coordenador-de-acessos APROVADO (0 cond, segregação íntegra) + agente-secops APROVADO (revogação real, zero vazamento, gate não afrouxado). Zero regressão. Sem provider/SKU novo.",
-    "status_label": "Ω4C PR-11: auditoria filtros/paginação + Sessões com revogação REAL (invalida refresh token, tenant-scoped) + Acessos; segregação auditor(read)×admin(revoke); ZERO migração; junta 3/3 (secops); ABRE FASE 3; backend 1454->1462, smoke 783->801, blocks 81->82"
+    "summary": "Ω4C PR-12 — TELEMETRIA BACKEND (CRIAR módulo telemetry; parte backend de PR-16 do PLANO; Flutter=PR-13, web/mapa=PR-14 via Junta de Mapas). Novo model TelemetryEvent (event_type heartbeat|app_connect|app_disconnect|service_refusal; lat/lng DOUBLE nullable; accuracy/speed/battery/signal/app_version/device_model/sdk_int; client_action_id). Migração ADITIVA up-only 20260831000000_add_telemetry_events: CREATE TABLE + 4 índices + 5 CHECKs (lat/lng ±90/±180, battery 0-100) + FK composta (tenant_id, operator_profile_id)→operator_profiles ON DELETE CASCADE + FK tenant RESTRICT + RLS ENABLE/FORCE/POLICY + UNIQUE (tenant_id, operator_profile_id, client_action_id) idempotência — provada up/down/re-up + CASCADE-esquecimento + cross-tenant 23503 + idempotência 23505 pelo dba-guardião (operator_profiles/field_operator_locations/mapa Ω1 INTOCADOS). CONSENT-GATE LGPD (invariante crítica, fail-closed): ingestOne rejeita tracking_consent_required quando hasGps && trackingConsent !== true ANTES de qualquer insert → GPS NUNCA gravado sem consentimento (tracking_consent via OperatorProfileService.findByUserId do ator); eventos sem-GPS prosseguem. Confirmado por 2 revisores (secops+avaliador): getTrack vazio sem consentimento. FK CASCADE = direito ao esquecimento (deletar operator_profile → telemetria em cascata; provado). KM HAVERSINE ON-READ (util zero-dep): km do dia = Σ segmentos consecutivos com filtro de precisão (accuracy>100m) + velocidade (>200km/h); sem pontos → 0 honesto (NUNCA fabrica km); materialização/scheduler deferidos a PR-16b. IDEMPOTÊNCIA BATCH (POST /mobile/telemetry): UNIQUE client_action_id → already_applied, não duplica. §2.8/LGPD: 5 views allowlist — coordenada crua SÓ no TrackView (gated telemetry:read); Km/Refusal/Access/Device sem lat/lng/IP/tenant_id/client_action_id/sdk_int; DeviceView anti-fingerprint; auditoria só contagens. SERVICE_REFUSAL só recebida (emissor Flutter PR-13). Ingestão REUSA field_location:send (assertTelemetryActor 403); leitura NOVA telemetry:read (super/platform/tenant_admin+manager+field_dispatcher+auditor; field_technician EXCLUÍDO — o técnico é o RASTREADO) nos 4 pontos. Junta UNÂNIME 4/4 (2 revisores de segurança/LGPD): agente-dba-guardião APROVADO + agente-secops APROVADO + coordenador-de-acessos APROVADO + omega4c-avaliador APROVADO. Zero regressão. Sem provider/SKU novo.",
+    "status_label": "Ω4C PR-12: telemetria backend com consent-gate LGPD (GPS só com consentimento, fail-closed) + km haversine on-read (sem fabricar) + batch idempotente + FK CASCADE=esquecimento; junta 4/4 (secops+dba); backend 1462->1479, smoke 801 (backend-only), blocks 82->83"
   },
   "metrics": {
     "flutter_tests": {
@@ -27,10 +27,10 @@
       "note": "+18 (auditoria-sessoes: logs-filtro/paginacao/CSV + sessoes-render + botao-Revogar-gated-auditor-sem-botao + §2.8-nunca-refresh_token_hash/ip + caveat-15min + empty-honesto). Ω4C PR-11 auditoria/sessoes (SessoesPage/AcessosPage/RevokeSessionDialog + AuditTenantPage filtros/CSV). Sobre 783."
     },
     "backend_tests": {
-      "value": 1462,
-      "total": 1468,
-      "display": "1462/1468",
-      "note": "+8 (auditoria/sessoes: tests/sessions-admin.test.ts 5 [§2.8-SessionView/deviceLabel/GET-403-sem-read/POST-revoke-403-auditor-segregacao/revogacao-REAL-invalida-refresh+isola-por-tenant] + tests/audit-events-filters.test.ts 3 [filtros-server-side+paginacao+§2.8/422-malformado/403-sem-audit.read]). Ω4C PR-11 ABRE FASE 3. Suite memoria (CI) 1462 pass/6 skip. ZERO migracao (auth_sessions/audit_logs existentes). 2 permissoes novas sessions:read/revoke nos 4 pontos (core-saas 26/26; segregacao auditor-read x admin-revoke). Revogacao invalida DE VERDADE (revoked_at->refreshSession bloqueia; 2 revisores de seguranca confirmaram). Fix clearAuditEvents test-only (InMemory). Zero regressao. Sobre 1454/1460. Local: rls-tenant-isolation DB-gated ambiental (falta scheduled_notifications no DB local)."
+      "value": 1479,
+      "total": 1485,
+      "display": "1479/1485",
+      "note": "+17 (telemetria: tests/telemetry.test.ts [consent-gate-LGPD-GPS-sem-consentimento-nao-persiste/idempotencia-batch-already_applied/km-haversine-on-read-sem-pontos-0/filtro-precisao-velocidade/recusas/§2.8-coord-crua-so-track/RBAC-telemetry:read-403-field_technician]). Ω4C PR-12. Suite memoria (CI) 1479 pass/6 skip. Migracao 20260831000000_add_telemetry_events provada up/down/re-up + FK composta CASCADE-esquecimento-LGPD + cross-tenant 23503 + idempotencia 23505 + CHECKs lat/lng/battery pelo dba-guardiao (operator_profiles/field_operator_locations/mapa Ω1 INTOCADOS). Consent-gate fail-closed (2 revisores secops+avaliador). km on-read sem fabricar. Ingestao reusa field_location:send; leitura telemetry:read nova (field_technician EXCLUIDO). Zero regressao (116/116). Sobre 1462/1468. NOTA: 7 fails locais de telemetry.test = artefato do .env local (prisma+ESM hoisting); memoria/CI 17/17. Local: rls-tenant-isolation DB-gated ambiental."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 82,
-      "display": "82",
-      "note": "Ω4C PR-11 (auditoria global + sessoes com revogacao real) = feature entregue → +1 sobre 81 (Ω4C PR-10 remuneracoes). ABRE Fase 3 (parte web). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
+      "value": 83,
+      "display": "83",
+      "note": "Ω4C PR-12 (telemetria backend: ingestao heartbeat/km/recusas, consent-gate LGPD) = feature entregue → +1 sobre 82 (Ω4C PR-11 auditoria/sessoes). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,

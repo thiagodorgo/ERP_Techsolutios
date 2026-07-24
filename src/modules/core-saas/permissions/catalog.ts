@@ -188,6 +188,12 @@ export const PERMISSION_CATALOG = [
   "checklist_runs:update",
   "checklist_runs:complete",
   "checklist_runs:acknowledge",
+  // Ω4C PR-12 (D-Ω4C-TELE-PERM) — LEITURA do console de Telemetria (Acessos/Quilometragem/Rastreamento/
+  // Recusas/Dispositivos do AutEM Mobile). Concedida a gestão/despacho/auditoria: tenant_admin [auto, filtro
+  // não-`platform:`], manager, field_dispatcher, auditor (+ super/platform admins). NÃO field_technician
+  // (o campo ENVIA telemetria via field_location:send, não LÊ o console). A INGESTÃO reusa field_location:send
+  // — o consent-gate LGPD é o controle real, não uma permissão nova.
+  "telemetry:read",
 ] as const;
 
 export type Permission = (typeof PERMISSION_CATALOG)[number];
@@ -336,6 +342,8 @@ export const ROLE_PERMISSIONS = {
     "field_dispatch:update",
     "field_dispatch:cancel",
     "field_dispatch:reassign",
+    // Ω4C PR-12 — manager LÊ o console de Telemetria (gestão).
+    "telemetry:read",
     "commissions:read",
     "commissions:manage_policy",
     "commissions:calculate",
@@ -438,6 +446,8 @@ export const ROLE_PERMISSIONS = {
     "field_dispatch:update",
     "field_dispatch:cancel",
     "field_dispatch:reassign",
+    // Ω4C PR-12 — o operador de despacho LÊ o console de Telemetria (opera o campo).
+    "telemetry:read",
     "notifications:read",
     "notifications:update",
     // Ω4C PR-04 — o operador de despacho cria/gere notificações agendadas (operação).
@@ -745,6 +755,8 @@ export const ROLE_PERMISSIONS = {
     "field_location:history",
     "field_operator:read",
     "field_dispatch:read",
+    // Ω4C PR-12 — auditor LÊ o console de Telemetria (investigação/read-only).
+    "telemetry:read",
     "commissions:read",
     "commissions:audit",
     "expense_report:read",
