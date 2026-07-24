@@ -295,5 +295,17 @@
     "mergeCommit": "dcfa25063111532f8cc1c77d7af8ec4519406bb0",
     "approvedHead": "6605b13630e3f29f98670aabf9ee32e274f40d47",
     "status": "published_after_human_approval"
+  },
+  {
+    "snapshot_date": "2026-07-24",
+    "version": "OMEGA4C-PR-13",
+    "flutter_tests": "807/807",
+    "flutter_modules": "17/17",
+    "blocks_completed": 84,
+    "description": "Ω4C PR-13 (Telemetria FLUTTER — captura GPS foreground consent-aware + buffer Drift dedicado + flush em lote idempotente p/ o backend PR-12) — 1o PR a tocar o app Flutter desde B-123/B-124. Novo modulo lib/core/telemetry/*. ZERO dependencia nova (reusa geolocator/connectivity_plus/uuid/drift/dio; pubspec INTOCADO). CONSENT-GATE CLIENTE LGPD (captureHeartbeat curto-circuita ANTES de ler o GPS sem field_location:send OU consentimento de dispositivo -> NAO CAPTURA; servidor PR-12 fail-closed no tracking_consent do perfil). Buffer Drift DEDICADO telemetry_events (schemaVersion 11->12 aditiva). Flush no AutoSyncCoordinator (<=50/lote); clientActionId deterministico -> already_applied/rejected purga terminal; offline->fila->replay. FOREGROUND-ONLY (WidgetsBindingObserver; SEM WorkManager/isolate). SERVICE_REFUSAL no reportUnableToStart. §2.8 (nao loga coordenada crua). Junta pegou 1 MEDIA de fidelidade de consentimento (heartbeat periodico reusava copy de captura-manual do B-121) -> copy atualizada honestamente (2 formas; sem-background preservado); coordenador re-verificou e descarregou. batteryPct/deviceModel/sdkInt deferidos (pacotes ausentes; junta-5+PD). flutter_tests reconciliado 764->807 (+25 telemetry_test; suite REAL Flutter 3.41.6 807/0-falha/0-skip; 764 era carregado nao re-executado desde B-124). dart format 0-changed; analyze No issues. blocks 83->84. Junta 3 vetos: omega4c-avaliador + agente-secops + coordenador-de-acessos APROVADO. KPI DUPLA (§C3): paridade version/block com Kpis/ raiz. merge_commit null na autoria (backfill pos-merge).",
+    "pr": null,
+    "mergeCommit": null,
+    "approvedHead": null,
+    "status": "published_per_pr"
   }
 ]

@@ -1,9 +1,11 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 const manualLocationConsentText =
-    'A localização será capturada somente quando você tocar em Enviar '
-    'localização agora. Não há rastreamento em segundo plano. '
-    'Sem background tracking.';
+    'Sua localização é capturada de duas formas: quando você toca em Enviar '
+    'localização agora e, quando o rastreamento de frota está ativo para o seu '
+    'perfil, periodicamente enquanto o app está aberto (em primeiro plano). '
+    'Não há rastreamento em segundo plano: nada é capturado com o app fechado '
+    'ou minimizado. Sem background tracking.';
 
 abstract class LocationConsentStore {
   Future<bool> hasAcceptedManualCapture();

@@ -10,3 +10,11 @@ const kIsRemoteAuth = kAuthMode == 'remote';
 // Production builds must NOT include dev features (diagnostics, quick-access, etc).
 const kEnvMode = String.fromEnvironment('ERP_ENV', defaultValue: 'production');
 const kIsDevMode = kEnvMode == 'dev';
+
+// Versão do app usada no `appVersion` da telemetria (Ω4C PR-13,
+// D-Ω4C-TELE-FLUTTER-NODEPS). Zero-dep: NÃO usa `package_info_plus`; precisa ser
+// mantida em sincronia MANUAL com o `version:` do pubspec (hoje 1.0.0+1).
+const kAppVersion = String.fromEnvironment(
+  'ERP_APP_VERSION',
+  defaultValue: '1.0.0',
+);

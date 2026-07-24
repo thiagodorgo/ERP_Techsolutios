@@ -1,24 +1,24 @@
 {
   "snapshot_date": "2026-07-21",
-  "version": "OMEGA4C-PR-12",
+  "version": "OMEGA4C-PR-13",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω4C PR-12 — Telemetria BACKEND (ingestão heartbeat/km/recusas; consent-gate LGPD; CRIAR)",
-    "title": "Ω4C PR-12: telemetria backend com consent-gate LGPD (GPS só com consentimento), km haversine on-read, ingestão batch idempotente; FK CASCADE=esquecimento",
+    "block": "Ω4C PR-13 — Telemetria FLUTTER (captura GPS foreground + buffer Drift + flush; Flutter-only)",
+    "title": "Ω4C PR-13: app de campo captura telemetria (GPS foreground consent-aware + buffer Drift + flush em lote idempotente p/ o backend PR-12); zero-dep, sem background",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω4C PR-12 — TELEMETRIA BACKEND (CRIAR módulo telemetry; parte backend de PR-16 do PLANO; Flutter=PR-13, web/mapa=PR-14 via Junta de Mapas). Novo model TelemetryEvent (event_type heartbeat|app_connect|app_disconnect|service_refusal; lat/lng DOUBLE nullable; accuracy/speed/battery/signal/app_version/device_model/sdk_int; client_action_id). Migração ADITIVA up-only 20260831000000_add_telemetry_events: CREATE TABLE + 4 índices + 5 CHECKs (lat/lng ±90/±180, battery 0-100) + FK composta (tenant_id, operator_profile_id)→operator_profiles ON DELETE CASCADE + FK tenant RESTRICT + RLS ENABLE/FORCE/POLICY + UNIQUE (tenant_id, operator_profile_id, client_action_id) idempotência — provada up/down/re-up + CASCADE-esquecimento + cross-tenant 23503 + idempotência 23505 pelo dba-guardião (operator_profiles/field_operator_locations/mapa Ω1 INTOCADOS). CONSENT-GATE LGPD (invariante crítica, fail-closed): ingestOne rejeita tracking_consent_required quando hasGps && trackingConsent !== true ANTES de qualquer insert → GPS NUNCA gravado sem consentimento (tracking_consent via OperatorProfileService.findByUserId do ator); eventos sem-GPS prosseguem. Confirmado por 2 revisores (secops+avaliador): getTrack vazio sem consentimento. FK CASCADE = direito ao esquecimento (deletar operator_profile → telemetria em cascata; provado). KM HAVERSINE ON-READ (util zero-dep): km do dia = Σ segmentos consecutivos com filtro de precisão (accuracy>100m) + velocidade (>200km/h); sem pontos → 0 honesto (NUNCA fabrica km); materialização/scheduler deferidos a PR-16b. IDEMPOTÊNCIA BATCH (POST /mobile/telemetry): UNIQUE client_action_id → already_applied, não duplica. §2.8/LGPD: 5 views allowlist — coordenada crua SÓ no TrackView (gated telemetry:read); Km/Refusal/Access/Device sem lat/lng/IP/tenant_id/client_action_id/sdk_int; DeviceView anti-fingerprint; auditoria só contagens. SERVICE_REFUSAL só recebida (emissor Flutter PR-13). Ingestão REUSA field_location:send (assertTelemetryActor 403); leitura NOVA telemetry:read (super/platform/tenant_admin+manager+field_dispatcher+auditor; field_technician EXCLUÍDO — o técnico é o RASTREADO) nos 4 pontos. Junta UNÂNIME 4/4 (2 revisores de segurança/LGPD): agente-dba-guardião APROVADO + agente-secops APROVADO + coordenador-de-acessos APROVADO + omega4c-avaliador APROVADO. Zero regressão. Sem provider/SKU novo.",
-    "status_label": "Ω4C PR-12: telemetria backend com consent-gate LGPD (GPS só com consentimento, fail-closed) + km haversine on-read (sem fabricar) + batch idempotente + FK CASCADE=esquecimento; junta 4/4 (secops+dba); backend 1462->1479, smoke 801 (backend-only), blocks 82->83"
+    "summary": "Ω4C PR-13 — TELEMETRIA FLUTTER (Flutter-only; PRODUTOR do que o backend PR-12 ingere; parte Flutter de PR-17 do PLANO; KPI DUPLA §C3). Novo módulo mobile/flutter_app/lib/core/telemetry/*. ZERO dependência nova (D-NODEPS): reusa geolocator/connectivity_plus/uuid/drift/dio; pubspec INTOCADO. CONSENT-GATE CLIENTE (LGPD): captureHeartbeat curto-circuita ANTES de ler o GPS se faltar field_location:send OU consentimento de dispositivo (LocationConsentStore) → coordenada NUNCA solicitada (NÃO CAPTURA); eventos sem-GPS (connect/disconnect/refusal) fluem; servidor PR-12 autoritativo no tracking_consent do perfil (fail-closed; rejected → descarte terminal sem loop). Buffer Drift DEDICADO telemetry_events (schemaVersion 11→12 aditiva; NÃO a sync_actions). Flush no AutoSyncCoordinator (≤50/lote, retry cap 5); clientActionId determinístico → already_applied/rejected purga terminal; offline→fila→replay. FOREGROUND-ONLY (WidgetsBindingObserver: resumed→start+APP_CONNECT / paused/detached→APP_DISCONNECT+stop; SEM WorkManager/isolate/stream persistente — paridade AutEM + privacidade). SERVICE_REFUSAL emitido no reportUnableToStart existente (workOrderId só se UUID real; de-dup). §2.8: não loga coordenada crua; payload sem tenant/token; lat/lng só no heartbeat consentido. REUSA field_location:send (sem RBAC novo no app). Junta pegou 1 MEDIA de FIDELIDADE DE CONSENTIMENTO LGPD (o heartbeat periódico reusava a copy B-121 'somente ao tocar em Enviar / sem background') → CORRIGIDA: manualLocationConsentText + doc atualizados p/ divulgar HONESTAMENTE as 2 formas de captura (on-tap E heartbeat periódico em primeiro plano quando rastreamento de frota ativo), mantendo 'sem background' verdadeiro; coordenador re-verificou e descarregou. batteryPct/deviceModel/sdkInt DEFERIDOS (backend-opcionais; pacotes ausentes; adicionar = junta-5+PD → Ω5). RN-TELE-MOBILE-01..08. Junta 3 vetos (1 MEDIA de consentimento resolvida): omega4c-avaliador APROVADO (bateria Flutter 807 tests 0 falhas; pubspec intocado; analyze limpo) + agente-secops APROVADO (consent-gate curto-circuita antes do GPS; foreground-only; zero log de coordenada) + coordenador-de-acessos APROVADO (copy honesta; sem RBAC novo). Zero regressão. Sem provider/SKU/pacote novo.",
+    "status_label": "Ω4C PR-13: telemetria Flutter (GPS foreground consent-aware + buffer Drift + flush idempotente; zero-dep; sem background; copy de consentimento honesta) — Flutter-only; junta 3/3 (secops; 1 MEDIA LGPD resolvida); flutter_tests 764->807, backend 1479/smoke 801 inalterados, blocks 83->84"
   },
   "metrics": {
     "flutter_tests": {
-      "value": 764,
-      "total": 764,
-      "display": "764/764",
-      "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
+      "value": 807,
+      "total": 807,
+      "display": "807/807",
+      "note": "Ω4C PR-13 telemetria Flutter (+25 telemetry_test: consent-gate cliente/buffer-flush≤50/idempotencia/offline-replay/foreground-only/eventos/§2.8/migracao-Drift-11-12). Execucao REAL da suite Flutter 807 pass/0 falha/0 skip (Flutter 3.41.6); o 764 anterior era valor carregado nao re-executado desde B-124 → reconciliado a suite real. dart format 0-changed; analyze No issues; pubspec INTOCADO (zero-dep). Sobre 764."
     },
     "frontend_smoke_tests": {
       "value": 801,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 83,
-      "display": "83",
-      "note": "Ω4C PR-12 (telemetria backend: ingestao heartbeat/km/recusas, consent-gate LGPD) = feature entregue → +1 sobre 82 (Ω4C PR-11 auditoria/sessoes). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
+      "value": 84,
+      "display": "84",
+      "note": "Ω4C PR-13 (telemetria Flutter: captura GPS foreground consent-aware + buffer Drift + flush idempotente) = feature entregue → +1 sobre 83 (Ω4C PR-12 telemetria backend). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,

@@ -16,6 +16,7 @@ import '../../../core/sync/sync_action_factory.dart';
 import '../../../core/sync/sync_models.dart';
 import '../../../core/sync/sync_providers.dart';
 import '../../../core/sync/sync_queue_repository.dart';
+import '../../../core/telemetry/telemetry_providers.dart';
 import '../domain/work_order_models.dart';
 import 'work_order_local_store.dart';
 import 'work_order_remote_api.dart';
@@ -30,6 +31,17 @@ class WorkOrderMutationResult {
   final SyncAction action;
 }
 
+/// Ω4C PR-13 — hook de telemetria de recusa de serviço. Recebe o `serverId` REAL
+/// da OS (nunca id local) + o motivo. Mantido como callback opcional para o
+/// repositório não depender do módulo de telemetria (e não quebrar os testes que
+/// o constroem sem telemetria).
+typedef ServiceRefusalTelemetryHook =
+    Future<void> Function({
+      required String tenantId,
+      required String? workOrderServerId,
+      required String reason,
+    });
+
 enum WorkOrderPullOutcome { success, cached, error, pulling }
 
 class WorkOrderRepository extends ChangeNotifier {
@@ -41,12 +53,14 @@ class WorkOrderRepository extends ChangeNotifier {
     List<WorkOrder> seedWorkOrders = const [],
     WorkOrderRemoteApi? remoteApi,
     EvidenceBlobStore? evidenceBlobStore,
+    ServiceRefusalTelemetryHook? onServiceRefusalTelemetry,
   }) : _session = session,
        _syncQueue = syncQueue,
        _actionFactory = actionFactory,
        _localStore = localStore,
        _remoteApi = remoteApi,
        _evidenceBlobStore = evidenceBlobStore,
+       _onServiceRefusalTelemetry = onServiceRefusalTelemetry,
        _orders = seedWorkOrders;
 
   final BootstrapSession _session;
@@ -55,6 +69,7 @@ class WorkOrderRepository extends ChangeNotifier {
   final WorkOrderLocalStore _localStore;
   final WorkOrderRemoteApi? _remoteApi;
   final EvidenceBlobStore? _evidenceBlobStore;
+  final ServiceRefusalTelemetryHook? _onServiceRefusalTelemetry;
   final Uuid _uuid = const Uuid();
 
   List<WorkOrder> _orders;
@@ -630,6 +645,24 @@ class WorkOrderRepository extends ChangeNotifier {
 
     await _localStore.saveTimelineEvent(timelineEvent);
     await _syncQueue.enqueue(action);
+
+    // Ω4C PR-13 — trilha de telemetria: SERVICE_REFUSAL no ponto EXATO da recusa
+    // (D-Ω4C-TELE-FLUTTER-EVENTS). Best-effort e ISOLADO: uma falha de telemetria
+    // nunca derruba a recusa. `workOrderId` = serverId REAL (nunca id local) —
+    // a validação de UUID fica no serviço de telemetria.
+    final hook = _onServiceRefusalTelemetry;
+    if (hook != null) {
+      try {
+        await hook(
+          tenantId: _session.activeTenant.tenantId,
+          workOrderServerId: wo.serverId,
+          reason: reason,
+        );
+      } catch (_) {
+        // Telemetria de recusa nunca bloqueia o fluxo de OS.
+      }
+    }
+
     notifyListeners();
     return action;
   }
@@ -662,6 +695,21 @@ final workOrderRepositoryProvider = Provider<WorkOrderRepository>((ref) {
     localStore: ref.watch(workOrderLocalStoreProvider),
     remoteApi: ref.watch(workOrderRemoteApiProvider),
     evidenceBlobStore: ref.watch(evidenceBlobStoreProvider),
+    // Ω4C PR-13 — a recusa de serviço alimenta a trilha de telemetria.
+    onServiceRefusalTelemetry:
+        ({
+          required String tenantId,
+          required String? workOrderServerId,
+          required String reason,
+        }) async {
+          await ref
+              .read(telemetryCaptureServiceProvider)
+              .recordServiceRefusal(
+                tenantId: tenantId,
+                workOrderServerId: workOrderServerId,
+                reason: reason,
+              );
+        },
   );
 });
 
