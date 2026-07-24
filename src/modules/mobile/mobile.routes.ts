@@ -9,6 +9,7 @@ import { syncMobileChecklistActions } from "./mobile-checklist-sync.js";
 import { syncMobileEvidenceActions } from "./mobile-evidence-sync.js";
 import { uploadMobileEvidenceFile } from "./mobile-evidence-upload.js";
 import { getMobileInventoryAvailability, syncMobileInventoryActions } from "./mobile-inventory-sync.js";
+import { syncMobileTelemetry } from "./mobile-telemetry-sync.js";
 import { syncMobileWorkOrderActions } from "./mobile-work-order-sync.js";
 
 type ExpenseCategoryDto = {
@@ -181,6 +182,17 @@ export function createMobileRouter(service: ICoreSaasService): Router {
     handleAsyncRoute(async (request, response) => {
       response.status(201).json({
         data: await uploadMobileEvidenceFile(request.tenantContext, request),
+      });
+    }),
+  );
+
+  // Ω4C PR-12 — ingestão de telemetria em lote (heartbeat GPS consent-gated + acessos + recusas). Reusa
+  // field_location:send; consent-gate + idempotência (client_action_id) no serviço de telemetria.
+  router.post(
+    "/mobile/telemetry",
+    handleAsyncRoute(async (request, response) => {
+      response.json({
+        data: await syncMobileTelemetry(request),
       });
     }),
   );

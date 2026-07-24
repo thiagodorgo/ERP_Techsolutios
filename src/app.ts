@@ -57,6 +57,7 @@ import { createTagRouter } from "./modules/tags/index.js";
 import { createPoiRouter } from "./modules/pois/index.js";
 import { createOperatorProfileRouter } from "./modules/operator-profiles/index.js";
 import { createProfessionalStatementRouter } from "./modules/professional-statements/index.js";
+import { createTelemetryRouter } from "./modules/telemetry/index.js";
 import { createAttachmentsRouter } from "./modules/attachments/index.js";
 import { createTenantSettingsRouter } from "./modules/tenant-settings/index.js";
 import { createTeamRouter } from "./modules/teams/index.js";
@@ -150,6 +151,10 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createPoiRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createOperatorProfileRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createProfessionalStatementRouter());
+  // Ω4C PR-12 — console de Telemetria (Quilometragem/Rastreamento/Recusas/Acessos/Dispositivos). Router NOVO
+  // sob /api/v1 (git add src/app.ts, senão CI route_not_found). telemetry:read; km/rastreamento on-read via
+  // haversine (sem materialização). A INGESTÃO entra pela rota do mobile (/mobile/telemetry).
+  app.use("/api/v1", attachAuthenticatedActor(), createTelemetryRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createAttachmentsRouter(undefined, resolveUserName));
   app.use("/api/v1", attachAuthenticatedActor(), createTenantSettingsRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTeamRouter());

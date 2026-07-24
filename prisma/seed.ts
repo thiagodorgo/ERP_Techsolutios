@@ -113,6 +113,7 @@ const permissionDescriptions = {
   "notifications:create": "Criar e cancelar notificacoes agendadas (privada, publica ou personalizada) do tenant.",
   "sessions:read": "Consultar sessoes ativas e o historico de acessos dos usuarios do tenant.",
   "sessions:revoke": "Encerrar (revogar) a sessao de um usuario do tenant, forcando novo login.",
+  "telemetry:read": "Consultar o console de Telemetria (acessos, quilometragem, rastreamento, recusas e dispositivos) dos profissionais do tenant.",
   "tenant_checklists:read": "Consultar checklists configuraveis do tenant.",
   "tenant_checklists:create": "Criar checklists configuraveis do tenant.",
   "tenant_checklists:update": "Editar, ativar e inativar checklists configuraveis do tenant.",

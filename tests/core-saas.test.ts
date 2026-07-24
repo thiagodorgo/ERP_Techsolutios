@@ -188,6 +188,7 @@ const expectedPermissionCatalog = [
   "checklist_runs:update",
   "checklist_runs:complete",
   "checklist_runs:acknowledge",
+  "telemetry:read",
 ] as const;
 
 test("cria usuario vinculado a tenant ativo com papel validado", () => {
@@ -338,6 +339,16 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   ] as const) {
     assert.equal(ROLE_PERMISSIONS[role].includes("sessions:read"), false);
     assert.equal(ROLE_PERMISSIONS[role].includes("sessions:revoke"), false);
+  }
+
+  // Ω4C PR-12 (D-Ω4C-TELE-PERM) — `telemetry:read` (console de Telemetria: acessos/km/rastreamento/recusas/
+  // dispositivos) = gestão/despacho/auditoria: tenant_admin [auto] + manager + field_dispatcher + auditor +
+  // admins. field_technician ENVIA telemetria (field_location:send) mas NÃO lê o console (backend autoridade).
+  for (const role of ["manager", "field_dispatcher", "auditor", "tenant_admin", "super_admin", "platform_admin"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("telemetry:read"), true);
+  }
+  for (const role of ["field_technician", "technician", "operator", "finance", "inventory", "viewer", "support"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("telemetry:read"), false);
   }
 
   // PR-SCALE-1 — Purchasing + Reports (autorização do dono; RBAC_MATRIX "Purchasing"/"Reports and analytics").
