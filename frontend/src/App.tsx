@@ -79,6 +79,8 @@ const PedidosPage = lazy(() => import("./modules/purchase-orders/pages/PedidosPa
 const ReportsPage = lazy(() => import("./modules/reports/pages/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const UsersPage = lazy(() => import("./modules/users/pages/UsersPage").then((m) => ({ default: m.UsersPage })));
 const AuditTenantPage = lazy(() => import("./modules/audit/pages/AuditTenantPage").then((m) => ({ default: m.AuditTenantPage })));
+const AcessosPage = lazy(() => import("./modules/sessions/pages/AcessosPage").then((m) => ({ default: m.AcessosPage })));
+const SessoesPage = lazy(() => import("./modules/sessions/pages/SessoesPage").then((m) => ({ default: m.SessoesPage })));
 const FieldOperatorsPage = lazy(() => import("./modules/dispatch/pages/FieldOperatorsPage").then((m) => ({ default: m.FieldOperatorsPage })));
 const DispatchConsolePage = lazy(() => import("./modules/dispatch/pages/DispatchConsolePage").then((m) => ({ default: m.DispatchConsolePage })));
 const FinanceiroPage = lazy(() => import("./modules/finance/pages/FinanceiroPage").then((m) => ({ default: m.FinanceiroPage })));
@@ -457,6 +459,32 @@ export function App() {
               element={
                 <PermissionGuard permissions={["audit:read", "audit.read", "audit:view"]}>
                   <AuditTenantPage />
+                </PermissionGuard>
+              }
+            />
+            {/* Ω4C PR-11 — Controle > Usuários: Acessos / Logs / Sessões. Logs reusa a Auditoria; gate por
+                permissão real (audit.read p/ logs/acessos; sessions:read p/ sessões). Backend é a autoridade. */}
+            <Route
+              path="/controle/usuarios/logs"
+              element={
+                <PermissionGuard permissions={["audit:read", "audit.read", "audit:view"]}>
+                  <AuditTenantPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/controle/usuarios/acessos"
+              element={
+                <PermissionGuard permissions={["audit:read", "audit.read", "audit:view"]}>
+                  <AcessosPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/controle/usuarios/sessoes"
+              element={
+                <PermissionGuard permissions={["sessions:read"]}>
+                  <SessoesPage />
                 </PermissionGuard>
               }
             />

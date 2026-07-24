@@ -1,144 +1,178 @@
+import { Download, Filter, RefreshCw } from "lucide-react";
 import type { CSSProperties } from "react";
 
-import { TablePage, type TableKpi, type TableRow } from "../../../components/TablePage";
-import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
+import { Alert, Button, Card, EmptyState, ErrorState, Input, Skeleton } from "../../../components/ui";
 import { downloadCsv } from "../../../lib/csv";
 import { useAuditEvents } from "../useAuditEvents";
 import type { AuditEventView } from "../audit-events.types";
 
-// PR-SCALE-3 — "Auditoria" da organização (sc auditTenant). Consome GET /api/v1/audit-events via
-// useAuditEvents. D-007: NENHUM número/linha fabricado — os KPIs e as linhas são computados só da lista
-// REAL carregada; sem eventos → estado honesto. §2.8: o view não carrega tenant_id. Estados §7 tratados
-// ANTES do TablePage (loading/acesso-negado/fallback/vazio); o TablePage entra só quando há dado real.
+// PR-SCALE-3 + Ω4C PR-11 — "Auditoria" da organização (Logs globais). Consome GET /api/v1/audit-events com
+// filtros server-side (ação/ator/período) + paginação por janela crescente (D-Ω4C-AUD-FILTERS). D-007:
+// NENHUMA linha fabricada — as linhas e o CSV vêm só da lista REAL carregada. §2.8: o view não carrega
+// tenant_id/ip/token (o DTO já não traz). Estados §7 tratados explicitamente.
 
 const SUBTITLE = "trilha de eventos e auditoria da organização";
 
-const card: CSSProperties = { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14 };
+const filterRowStyle: CSSProperties = { display: "flex", alignItems: "flex-end", gap: "var(--space-8)", flexWrap: "wrap" };
+const filterFieldStyle: CSSProperties = { minWidth: 180 };
+const countStyle: CSSProperties = { fontSize: "var(--text-sm)", color: "var(--text-secondary)", fontWeight: 700 };
+const tableWrapStyle: CSSProperties = { overflowX: "auto" };
+const thStyle: CSSProperties = { textAlign: "left", fontSize: 11, fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", padding: "8px 12px", borderBottom: "1px solid #F1F5F9", textTransform: "uppercase" };
+const tdStyle: CSSProperties = { fontSize: 13, color: "#475569", padding: "11px 12px", borderBottom: "1px solid #F1F5F9" };
+const monoStyle: CSSProperties = { fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: "#2563EB" };
 
-// Cabeçalho comum aos estados honestos (o TablePage traz o seu próprio). Botão "Exportar CSV"
-// desabilitado enquanto não há evento real carregado — nunca exporta dado fabricado (D-007).
-function AuditHeader({ exportDisabledReason }: { exportDisabledReason: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18, gap: 12, flexWrap: "wrap" }}>
-      <div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A" }}>Auditoria</div>
-        <div style={{ fontSize: 13, color: "#64748B", marginTop: 2 }}>{SUBTITLE}</div>
-      </div>
-      <button
-        type="button"
-        disabled
-        title={exportDisabledReason}
-        style={{ padding: "9px 14px", background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#94A3B8", cursor: "not-allowed", fontFamily: "inherit" }}
-      >
-        Exportar CSV
-      </button>
-    </div>
-  );
-}
-
-// Exporta SOMENTE os eventos reais carregados (nunca dado fabricado). Monta o CSV a partir da lista já em
-// memória e delega ao util compartilhado (BOM UTF-8, `;`, `\r\n` — D-Ω4C-REM-CSV). Comportamento inalterado.
+// Exporta SOMENTE os eventos reais carregados (nunca dado fabricado). Delega ao util compartilhado
+// (BOM UTF-8, `;`, `\r\n` — D-Ω4C-REM-CSV). §2.8: o CSV só carrega o que o view já expõe.
 function exportAuditCsv(events: readonly AuditEventView[]): void {
   const header = ["Quando", "Ator", "Evento"];
   const rows = events.map((event) => [event.when, event.actor, event.action]);
   downloadCsv("auditoria.csv", header, rows);
 }
 
-// KPIs HONESTOS: derivados só da lista carregada. Sem categorias inventadas (não há campo de resultado/
-// login/negado no AuditEvent) — apenas contagens verificáveis sobre os eventos reais.
-function honestKpis(events: readonly AuditEventView[]): TableKpi[] {
-  const actors = new Set(events.map((event) => event.actor));
-  const actions = new Set(events.map((event) => event.action));
-  return [
-    { label: "Eventos carregados", value: String(events.length), color: "#2563EB" },
-    { label: "Atores distintos", value: String(actors.size), color: "#059669" },
-    { label: "Ações distintas", value: String(actions.size), color: "#7C3AED" },
-    { label: "Evento mais recente", value: events[0]?.when ?? "—", color: "#334155" },
-  ];
-}
-
-function eventToRow(event: AuditEventView): TableRow {
-  return {
-    cells: [
-      { kind: "mono", text: event.when, flex: 1.2 },
-      { kind: "text", text: event.actor, flex: 1.8 },
-      { kind: "text", text: event.action, flex: 2.4 },
-    ],
-  };
-}
-
 export function AuditTenantPage() {
-  const { data, loading } = useAuditEvents();
+  const { data, loading, isRefreshing, refresh, filters, setFilter, clearFilters, loadMore, hasMore, hasActiveFilters } = useAuditEvents();
   const { events, forbidden, source } = data;
-
-  // §7 — carregando: skeleton (sem inventar linha enquanto a resposta não chega).
-  if (loading) {
-    return (
-      <div style={{ color: "#0F172A" }}>
-        <AuditHeader exportDisabledReason="Carregando eventos de auditoria…" />
-        <div style={{ ...card, padding: 20 }}>
-          <Skeleton lines={6} />
-        </div>
-      </div>
-    );
-  }
 
   // §7 — acesso não permitido: gate `audit.read` respondeu 403. Não é erro de sistema.
   if (forbidden) {
     return (
-      <div style={{ color: "#0F172A" }}>
-        <AuditHeader exportDisabledReason="Sem permissão para a auditoria desta organização." />
+      <section className="page-stack">
+        <header className="page-heading">
+          <span>Controle · Usuários</span>
+          <h1>Auditoria</h1>
+        </header>
         <ErrorState
           title="Acesso não permitido"
           detail="Seu perfil não tem permissão para consultar a trilha de auditoria desta organização. Fale com um administrador se precisar deste acesso."
         />
-      </div>
+      </section>
     );
   }
 
-  // §7 — falha de carregamento (5xx/rede): aviso honesto, sem dado fabricado. O auto-refresh tenta de novo.
-  if (source === "fallback") {
-    return (
-      <div style={{ color: "#0F172A" }}>
-        <AuditHeader exportDisabledReason="Nenhum evento carregado para exportar." />
+  const canExport = events.length > 0;
+
+  return (
+    <section className="page-stack work-orders-page">
+      <header className="page-heading page-heading--row">
+        <div>
+          <span>Controle · Usuários</span>
+          <h1>Auditoria</h1>
+          <p>{SUBTITLE}.</p>
+        </div>
+        <div className="work-orders-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!canExport}
+            title={canExport ? "Exportar os eventos carregados" : "Nenhum evento carregado para exportar."}
+            onClick={() => exportAuditCsv(events)}
+          >
+            <Download size={16} aria-hidden /> Exportar CSV
+          </Button>
+        </div>
+      </header>
+
+      <Card title="Filtros">
+        <div style={filterRowStyle}>
+          <div style={filterFieldStyle}>
+            <Input
+              label="Ação"
+              placeholder="ex.: auth.login.success"
+              value={filters.action}
+              onChange={(event) => setFilter("action", event.target.value)}
+              aria-label="Filtrar por ação"
+            />
+          </div>
+          <div style={filterFieldStyle}>
+            <Input
+              label="Ator"
+              placeholder="identificador do usuário"
+              value={filters.actorId}
+              onChange={(event) => setFilter("actorId", event.target.value)}
+              aria-label="Filtrar por ator"
+            />
+          </div>
+          <div style={{ minWidth: 150 }}>
+            <Input label="De" type="date" value={filters.from} onChange={(event) => setFilter("from", event.target.value)} aria-label="Início do período" />
+          </div>
+          <div style={{ minWidth: 150 }}>
+            <Input label="Até" type="date" value={filters.to} onChange={(event) => setFilter("to", event.target.value)} aria-label="Fim do período" />
+          </div>
+          {hasActiveFilters ? (
+            <Button type="button" variant="ghost" onClick={clearFilters}>
+              <Filter size={14} aria-hidden /> Limpar filtros
+            </Button>
+          ) : null}
+        </div>
+      </Card>
+
+      {source === "fallback" ? (
         <Alert title="Não foi possível carregar a auditoria" tone="warning">
           Houve uma falha ao buscar os eventos de auditoria. A tela volta a tentar automaticamente em alguns instantes — nenhum dado é exibido enquanto isso para não apresentar informação que ainda não existe.
         </Alert>
-      </div>
-    );
-  }
+      ) : null}
 
-  // §7 — vazio: sem eventos (inclui o modo demonstração/mock, que não tem auditoria real).
-  if (events.length === 0) {
-    return (
-      <div style={{ color: "#0F172A" }}>
-        <AuditHeader exportDisabledReason="Nenhum evento carregado para exportar." />
-        <div style={{ ...card, padding: 8 }}>
+      <Card
+        title="Eventos"
+        action={
+          <span style={countStyle}>
+            {events.length} evento(s){hasMore ? "+" : ""}{isRefreshing ? " · atualizando…" : ""}
+          </span>
+        }
+      >
+        {loading && events.length === 0 ? <Skeleton lines={6} /> : null}
+
+        {!loading && source !== "fallback" && events.length === 0 ? (
           <EmptyState
-            title="Sem eventos de auditoria"
-            detail="Ainda não há registros de auditoria para esta organização. Assim que ações auditáveis acontecerem, elas aparecerão aqui."
+            title={hasActiveFilters ? "Nenhum evento para o filtro" : "Sem eventos de auditoria"}
+            detail={
+              hasActiveFilters
+                ? "Nenhum evento de auditoria corresponde aos filtros. Ajuste a ação, o ator ou o período."
+                : "Ainda não há registros de auditoria para esta organização. Assim que ações auditáveis acontecerem, elas aparecerão aqui."
+            }
           />
-        </div>
-      </div>
-    );
-  }
+        ) : null}
 
-  // Populado: dado REAL → TablePage. KPIs e linhas computados da lista carregada (nada fabricado).
-  return (
-    <TablePage
-      title="Auditoria"
-      subtitle={SUBTITLE}
-      actionLabel="Exportar CSV"
-      onAction={() => exportAuditCsv(events)}
-      searchPlaceholder="Buscar evento…"
-      kpis={honestKpis(events)}
-      columns={[
-        { label: "QUANDO", flex: 1.2 },
-        { label: "ATOR", flex: 1.8 },
-        { label: "EVENTO", flex: 2.4 },
-      ]}
-      rows={events.map(eventToRow)}
-    />
+        {events.length > 0 ? (
+          <div style={tableWrapStyle}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Quando</th>
+                  <th style={thStyle}>Ator</th>
+                  <th style={thStyle}>Evento</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.map((event) => (
+                  <tr key={event.id}>
+                    <td style={{ ...tdStyle, ...monoStyle }}>{event.when}</td>
+                    <td style={tdStyle}>{event.actor}</td>
+                    <td style={tdStyle}>{event.action}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+
+        {hasMore ? (
+          <div style={{ marginTop: "var(--space-12)", display: "flex", justifyContent: "center" }}>
+            <Button type="button" variant="secondary" onClick={loadMore}>
+              Carregar mais eventos
+            </Button>
+          </div>
+        ) : null}
+
+        {source === "fallback" ? (
+          <div style={{ marginTop: "var(--space-10)" }}>
+            <Button type="button" size="sm" variant="secondary" onClick={() => void refresh()}>
+              <RefreshCw size={14} aria-hidden /> Tentar novamente
+            </Button>
+          </div>
+        ) : null}
+      </Card>
+    </section>
   );
 }
 

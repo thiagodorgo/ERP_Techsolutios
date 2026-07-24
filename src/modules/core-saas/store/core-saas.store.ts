@@ -84,6 +84,12 @@ export class InMemoryCoreSaasStore implements CoreSaasStore {
     this.users.clear();
     this.auditEvents.clear();
   }
+
+  // Suporte a teste: limpa só o ledger de auditoria (preserva tenants/users semeados),
+  // p/ isolar asserções determinísticas do ruído de auditoria de createTenant/createUser.
+  clearAuditEvents(): void {
+    this.auditEvents.clear();
+  }
 }
 
 function cloneTenant(tenant: Tenant): Tenant {

@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-21",
-  "version": "OMEGA4C-PR-10",
+  "version": "OMEGA4C-PR-11",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω4C PR-10 — Remunerações (liquidação em lote→extrato, CSV, filtro-modal; MISTO) — FECHA FASE 2",
-    "title": "Ω4C PR-10: remunerações com liquidação em lote→crédito no extrato (reusa rail PR-07), CSV-BOM, filtro-modal-ao-entrar; compute deferido honesto; FECHA Fase 2",
+    "block": "Ω4C PR-11 — Auditoria global + Sessões com revogação (ESTENDER; ZERO migração) — ABRE FASE 3",
+    "title": "Ω4C PR-11: auditoria com filtros/paginação + Sessões com revogação REAL (invalida refresh token) + Acessos; segregação auditor×admin; zero migração",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω4C PR-10 — REMUNERAÇÕES (MISTO: ESTENDER commissions + fluxo de conferência/liquidação; REUSA o rail createForSource do extrato do PR-07 — 5º agregado a lançar no extrato após multa e dano; FECHA a Fase 2). CommissionCalculation +settled_at (marcador de liquidação) +settlement_ref (group_id do extrato). Migração ADITIVA up-only 20260830000000_add_commission_settlement (2 ADD COLUMN nullable + índice (tenant_id, settled_at); ZERO dinheiro nas colunas novas; amount Decimal(20,6)/status INTOCADOS — provada up/down/re-up pelo dba-guardião). LIQUIDAÇÃO EM LOTE: POST /commissions/settlements liquida N calculations → cada uma vira CRÉDITO no extrato via createForSource entry_type='remuneration' direction='credit' amount=calc.amount (NUNCA a tarifa de venda — D-Ω4C-RECON-01; body sem preço). DEDUPE DUPLA-GUARDA (settled_at guard IS NULL + source-idempotency índice parcial): liquidar 2× a mesma NÃO duplica o crédito. RECONCILIAÇÃO NÃO-ATÔMICA verificada SEGURA/idempotente (retry: source-idempotency impede duplicar, markSettled converge — [REM-03]). Payee(User)→operator_profile via findByUserId (sem perfil → 422 payee_not_a_professional). PARADA HONESTA do COMPUTE por regra do profissional (não existe no repo → confere/liquida linhas existentes, não fabrica percentual; grid vazio real; compute → Ω5/PR-10b). Efeito NÃO-amplificador (typed/travado/single-profissional; commissions:settle sem professional_statements:create grava só o crédito constrangido). ZERO notificação. REUSA commissions:settle/read/read_own (SEM permissão nova; catalog/matriz/core-saas diff vazio; rail professional-statement NÃO reescrito). CSV-BOM promovido a util compartilhado frontend/src/lib/csv.ts (AuditTenantPage refatorado behavior-preserving; SEM exceljs). Filtro-modal-ao-entrar SÓ em Remunerações (D-Ω4C-MODAL-PESQUISA). Frontend: RemuneracoesFilterModal + ConferenciaRemuneracoesView (grid bolinhas + seletor de colunas + engrenagem liquidar em lote + totalizadores + CSV + PrintRemuneracoesModal); §2.8 nunca CNH. Teardown FK-safe no rls. RN-REM-01..13. Junta UNÂNIME 3/3: agente-dba-guardião APROVADO + omega4c-avaliador APROVADO (reconciliação verificada) + coordenador-de-acessos APROVADO (0 cond). Zero regressão. Sem provider/SKU novo.",
-    "status_label": "Ω4C PR-10: remunerações liquidação em lote→crédito no extrato (reusa rail PR-07, não-amplificador, dedupe dupla-guarda) + CSV-BOM + filtro-modal; compute deferido honesto; junta 3/3; FECHA FASE 2; backend 1440->1454, smoke 769->783, blocks 80->81"
+    "summary": "Ω4C PR-11 — AUDITORIA GLOBAL + SESSÕES COM REVOGAÇÃO (ESTENDER: auth_sessions + audit_logs já existiam com RLS; ZERO migração; ABRE a FASE 3 parte web). REVOGAÇÃO REAL: revokeByIdForTenant marca revoked_at=now → o refreshSession EXISTENTE já rejeita sessão revogada → o próximo refresh da vítima FALHA (NÃO é botão cosmético; provado ao vivo contra Postgres — teste 5). Caveat honesto: access token JWT stateless segue válido até expirar (≤15min) → re-login forçado; comunicado ao usuário (SESSION_REVOKE_CAVEAT), não escondido. ISOLAMENTO por tenant: revogar sessão de OUTRO tenant → 404 (findByIdForTenant/revokeByIdForTenant filtram tenant_id em withTenantRls). AUDITORIA: GET /audit-events + filtros server-side (action/actorId/from/to/limit/offset) + paginação (nextOffset); metadata agora STRIPADA (aperto §2.8). ACESSOS: derivado de auth_sessions.created_at (sem tabela nova). §2.8 ALLOWLIST: SessionView/AuditEventView projeções estritas — NUNCA refresh_token_hash/ip cru/token/user_agent cru/CNH. 2 PERMISSÕES NOVAS sessions:read (super/platform/tenant_admin + auditor) + sessions:revoke (SÓ super/platform/tenant_admin — SEGREGAÇÃO DE FUNÇÕES: auditor LÊ mas NÃO revoga; nenhum papel operacional/campo tem qualquer das duas) nos 4 pontos (catalog+ROLE_PERMISSIONS + core-saas.test expectedPermissionCatalog + seed + RBAC_MATRIX). Logs/Acessos reusam audit.read. Frontend: SessoesPage/AcessosPage + RevokeSessionDialog (botão Revogar gated por can(sessions:revoke); auditor vê lista não botão; caveat 15min no diálogo) + AuditTenantPage estendida (filtros/paginação/CSV reusa frontend/src/lib/csv.ts). Fix do orquestrador clearAuditEvents (dev cortado por limite de sessão no ajuste do ruído de auditoria) confirmado são (só InMemory store, test-only). RN-SESS/AUD. Junta UNÂNIME 3/3 (2 revisores de segurança independentes): omega4c-avaliador APROVADO + coordenador-de-acessos APROVADO (0 cond, segregação íntegra) + agente-secops APROVADO (revogação real, zero vazamento, gate não afrouxado). Zero regressão. Sem provider/SKU novo.",
+    "status_label": "Ω4C PR-11: auditoria filtros/paginação + Sessões com revogação REAL (invalida refresh token, tenant-scoped) + Acessos; segregação auditor(read)×admin(revoke); ZERO migração; junta 3/3 (secops); ABRE FASE 3; backend 1454->1462, smoke 783->801, blocks 81->82"
   },
   "metrics": {
     "flutter_tests": {
@@ -21,16 +21,16 @@
       "note": "carrega o ultimo valor oficial — WS-SCALE-COMISSAO nao tocou Flutter/mobile (politica dupla)."
     },
     "frontend_smoke_tests": {
-      "value": 783,
-      "total": 783,
-      "display": "783/783",
-      "note": "+14 (remuneracoes-liquidar: filtro-modal-ao-entrar/grid-bolinhas/selecao-multipla+engrenagem-liquidar/totalizadores/export-CSV-util/empty-honesto/PT-BR/§2.8-sem-CNH). Ω4C PR-10 remuneracoes (RemuneracoesFilterModal + ConferenciaRemuneracoesView + PrintRemuneracoesModal + csv.ts util). AuditTenantPage verde apos extracao do CSV util. Sobre 769."
+      "value": 801,
+      "total": 801,
+      "display": "801/801",
+      "note": "+18 (auditoria-sessoes: logs-filtro/paginacao/CSV + sessoes-render + botao-Revogar-gated-auditor-sem-botao + §2.8-nunca-refresh_token_hash/ip + caveat-15min + empty-honesto). Ω4C PR-11 auditoria/sessoes (SessoesPage/AcessosPage/RevokeSessionDialog + AuditTenantPage filtros/CSV). Sobre 783."
     },
     "backend_tests": {
-      "value": 1454,
-      "total": 1460,
-      "display": "1454/1460",
-      "note": "+14 (remuneracoes: tests/commission-settlement.test.ts [liquidar-N->creditos-no-extrato/dedupe-2x1/[REM-03]-retry-nao-duplica/payee-sem-perfil-422/cross-tenant-404/§2.8/valor-de-calc.amount-nao-tarifa]). Ω4C PR-10 FECHA FASE 2. Suite memoria (CI) 1454 pass/6 skip. Migracao 20260830000000_add_commission_settlement provada up/down/re-up pelo dba-guardiao (2 colunas nullable + indice; amount 20,6/status INTOCADOS; ZERO dinheiro nas colunas novas). Reusa commissions:settle (sem permissao nova; rail professional-statement NAO reescrito). Liquidacao->credito no extrato NAO-amplificador (amount=calc.amount NUNCA tarifa de venda); dedupe dupla-guarda; reconciliacao nao-atomica verificada segura. Compute deferido honesto (Ω5/PR-10b). Zero regressao. Sobre 1440/1446. Local: rls-tenant-isolation DB-gated ambiental (falta scheduled_notifications no DB local)."
+      "value": 1462,
+      "total": 1468,
+      "display": "1462/1468",
+      "note": "+8 (auditoria/sessoes: tests/sessions-admin.test.ts 5 [§2.8-SessionView/deviceLabel/GET-403-sem-read/POST-revoke-403-auditor-segregacao/revogacao-REAL-invalida-refresh+isola-por-tenant] + tests/audit-events-filters.test.ts 3 [filtros-server-side+paginacao+§2.8/422-malformado/403-sem-audit.read]). Ω4C PR-11 ABRE FASE 3. Suite memoria (CI) 1462 pass/6 skip. ZERO migracao (auth_sessions/audit_logs existentes). 2 permissoes novas sessions:read/revoke nos 4 pontos (core-saas 26/26; segregacao auditor-read x admin-revoke). Revogacao invalida DE VERDADE (revoked_at->refreshSession bloqueia; 2 revisores de seguranca confirmaram). Fix clearAuditEvents test-only (InMemory). Zero regressao. Sobre 1454/1460. Local: rls-tenant-isolation DB-gated ambiental (falta scheduled_notifications no DB local)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 81,
-      "display": "81",
-      "note": "Ω4C PR-10 (remuneracoes: liquidacao em lote->credito no extrato, CSV, filtro-modal) = feature entregue → +1 sobre 80 (Ω4C PR-09 danos). FECHA a Fase 2 (PR-08 custodia + PR-09 danos + PR-10 remuneracoes). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
+      "value": 82,
+      "display": "82",
+      "note": "Ω4C PR-11 (auditoria global + sessoes com revogacao real) = feature entregue → +1 sobre 81 (Ω4C PR-10 remuneracoes). ABRE Fase 3 (parte web). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,

@@ -395,6 +395,30 @@ export const tenantNavigation: NavigationItem[] = [
     status: "implemented",
   },
   {
+    // Ω4C PR-11 — Controle > Usuários: Acessos (último login por usuário, derivado das sessões). Reusa a
+    // permissão audit.read (D-Ω4C-ACESSO-SOURCE). A permissão é a autoridade; sem allowedRoles.
+    id: "tenant-usuarios-acessos",
+    label: "Acessos",
+    path: "/controle/usuarios/acessos",
+    scope: "tenant",
+    mode: "operation",
+    requiredPermissions: ["audit:read", "audit.read"],
+    icon: "users",
+    status: "implemented",
+  },
+  {
+    // Ω4C PR-11 — Controle > Usuários: Sessões ativas + revogação. Gate por permissão NOVA sessions:read
+    // (D-Ω4C-SESS-PERM: tenant_admin + auditor). A revogação (sessions:revoke) é gated na própria tela.
+    id: "tenant-usuarios-sessoes",
+    label: "Sessões",
+    path: "/controle/usuarios/sessoes",
+    scope: "tenant",
+    mode: "operation",
+    requiredPermissions: ["sessions:read"],
+    icon: "ShieldCheck",
+    status: "implemented",
+  },
+  {
     id: "tenant-admin",
     label: "Administrador",
     path: "/administrator",

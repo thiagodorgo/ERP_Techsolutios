@@ -177,6 +177,8 @@ const expectedPermissionCatalog = [
   "notifications:read",
   "notifications:update",
   "notifications:create",
+  "sessions:read",
+  "sessions:revoke",
   "tenant_checklists:read",
   "tenant_checklists:create",
   "tenant_checklists:update",
@@ -309,6 +311,33 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   // read/update do inbox seguem AMPLOS e INTOCADOS (o create não os altera).
   for (const role of ["manager", "operator", "field_dispatcher", "finance", "inventory", "field_technician", "technician", "auditor"] as const) {
     assert.equal(ROLE_PERMISSIONS[role].includes("notifications:read"), true);
+  }
+
+  // Ω4C PR-11 (D-Ω4C-SESS-PERM) — Sessões: `sessions:read` = tenant_admin + auditor + admins;
+  // `sessions:revoke` = ADMINISTRATIVA forte, SÓ tenant_admin/super_admin/platform_admin (auditor NÃO revoga).
+  assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("sessions:read"), true);
+  assert.equal(ROLE_PERMISSIONS.tenant_admin.includes("sessions:revoke"), true);
+  assert.equal(ROLE_PERMISSIONS.super_admin.includes("sessions:read"), true);
+  assert.equal(ROLE_PERMISSIONS.super_admin.includes("sessions:revoke"), true);
+  assert.equal(ROLE_PERMISSIONS.platform_admin.includes("sessions:read"), true);
+  assert.equal(ROLE_PERMISSIONS.platform_admin.includes("sessions:revoke"), true);
+  // auditor LÊ sessões, mas NÃO revoga (segregação de funções — não escala).
+  assert.equal(ROLE_PERMISSIONS.auditor.includes("sessions:read"), true);
+  assert.equal(ROLE_PERMISSIONS.auditor.includes("sessions:revoke"), false);
+  // Ninguém mais lê nem revoga sessões (manager/operator/finance/inventory/campo/viewer/support/technician).
+  for (const role of [
+    "manager",
+    "operator",
+    "finance",
+    "inventory",
+    "field_technician",
+    "field_dispatcher",
+    "technician",
+    "viewer",
+    "support",
+  ] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("sessions:read"), false);
+    assert.equal(ROLE_PERMISSIONS[role].includes("sessions:revoke"), false);
   }
 
   // PR-SCALE-1 — Purchasing + Reports (autorização do dono; RBAC_MATRIX "Purchasing"/"Reports and analytics").

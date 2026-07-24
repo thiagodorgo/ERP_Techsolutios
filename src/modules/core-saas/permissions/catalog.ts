@@ -173,6 +173,12 @@ export const PERMISSION_CATALOG = [
   // Separada de read/update (que ficam no PRÓPRIO inbox, amplas). Concedida só a gestão/operação: super_admin,
   // platform_admin, tenant_admin, manager, operator, field_dispatcher (NÃO campo/finance/auditor/viewer/support).
   "notifications:create",
+  // Ω4C PR-11 (D-Ω4C-SESS-PERM) — Sessões de usuário (Controle > Usuários). `sessions:read` = listar
+  // sessões ativas / histórico de acessos (tenant_admin + auditor + admins). `sessions:revoke` =
+  // ADMINISTRATIVA forte (encerrar a sessão de outro usuário): SÓ tenant_admin/super_admin/platform_admin —
+  // auditor lê mas NÃO revoga (não escala). Ambas herdadas por tenant_admin (filtro não-`platform:`).
+  "sessions:read",
+  "sessions:revoke",
   "tenant_checklists:read",
   "tenant_checklists:create",
   "tenant_checklists:update",
@@ -690,6 +696,9 @@ export const ROLE_PERMISSIONS = {
     "users.read",
     "audit.read",
     "audit:read",
+    // Ω4C PR-11 (D-Ω4C-SESS-PERM) — auditor LÊ sessões ativas/acessos (investigação), mas NÃO revoga
+    // (sessions:revoke fica só com tenant_admin/super_admin/platform_admin — não escala).
+    "sessions:read",
     // Ω2-e (Parâmetros): auditor lê as Configurações do tenant (somente leitura).
     "tenant_settings:read",
     "os.read",

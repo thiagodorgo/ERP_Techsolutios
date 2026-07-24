@@ -1403,6 +1403,103 @@ CSV-BOM** promovido de `AuditTenantPage`; **sem permissão nova** [`commissions:
 - KPI: `docs/kpis/omega4c/KPI_PR-10.json`. `Kpis/*`: backend 1440→**1454** (+14 commission-settlement); frontend_smoke 769→**783**
   (+14 remuneracoes-liquidar); blocks 80→**81**. **★ FECHA a FASE 2** (Estoque custódia · Danos · Remunerações). Próximo: Fase 3 (Telemetria + Auditoria/Sessões) + PR-08b.
 
+### PR-11 — Auditoria global + Sessões com revogação (Acessos · Logs · Sessões) — plano do omega4c-planejador (2026-07-23)
+
+**Mapeia a parte WEB-ONLY de PR-19 do PLANO_OMEGA4C** (Controle > Usuários: Acessos/Logs/Sessões). **ABRE A FASE 3.**
+A Telemetria mobile + Rastreamento/mapa (PR-16..PR-18 do PLANO) vêm depois — **fora desta fatia**. **Veredito antecipado: ESTENDER, não criar.**
+
+**Objetivo.** Entregar as 3 telas de Controle > Usuários do AutEM (ANALISE §9.1/9.2/9.3) sobre a infra REAL já existente:
+(a) **Acessos** — último login por usuário; (b) **Logs globais** — trilha de auditoria tenant-wide com filtros; (c) **Sessões ativas + revogação REAL**
+(encerrar sessão de um usuário = invalidar o refresh token → força novo login). Ator/papel: `auditor`/`tenant_admin` leem; **só `tenant_admin`/`super_admin` revogam**.
+
+#### RECON — FATO vs HIPÓTESE (a espinha da fatia; muda o veredito do PROMPT §6.13)
+- **FATO — infra de sessão/refresh token EXISTE e a revogação FUNCIONA DE VERDADE.** Tabela `auth_sessions` (migração `20260609000000_add_auth_sessions`): `refresh_token_hash` (unique, HMAC-SHA256), `revoked_at`, `expires_at`, `user_agent`, `ip_address`, `created_at`, RLS `ENABLE/FORCE` + policy tenant-isolation, índices tenant-first `(tenant_id)`, `(tenant_id,user_id)`, `(tenant_id,revoked_at)`. **`AuthSessionService.refreshSession()` CHECA `session.revoked_at` e retorna `{ok:false, reason:"revoked"}`** (`src/modules/auth/services/auth-session.service.ts:137`) → **marcar `revoked_at` REALMENTE mata a sessão no próximo refresh.** `logout()` já revoga por `id+refresh_token_hash`. ∴ **NÃO é parada honesta: a revogação é real** — o único gap é um método de revogação **administrativa** (sem o token da vítima).
+- **FATO — auditoria global EXISTE.** Tabela `audit_logs` (model `AuditLog`), escrita real por ~45 controllers via `recordRequestAuditBestEffort` + fluxos de auth (`auth.login.success/failed`, `auth.session.created/revoked`, `auth.refresh.*`). `EnterpriseAuditLogService` **já redige** chave sensível (`sensitiveKeyPattern`: authorization/access_token/refresh_token/password/secret/api_key/token_hash → `[REDACTED]`). **`GET /api/v1/audit-events`** (`audit.routes.ts`, `requirePermission("audit.read")`) **já devolve a lista tenant-wide** via `getAuditEventsForTenant`→`listByTenant` (order `created_at DESC`). Frontend **`AuditTenantPage`** já consome (estados §7 honestos, CSV via `frontend/src/lib/csv.ts` do PR-10, view sem `tenant_id`).
+- **FATO — login = criação de sessão.** Cada login web cria uma `auth_sessions` (com `created_at`, `ip_address`, `user_agent`) e um evento `auth.login.success`. ⇒ **"Acessos"/"último acesso" é derivável de `auth_sessions.created_at` — sem tabela nova.**
+- **GAP real (o que esta fatia entrega):** (a) **Logs globais** — endpoint sem **filtros server-side** (ator/ação/período) nem **paginação**; (b) **Acessos** — sem view de último login por usuário; (c) **Sessões** — sem endpoint admin de **listar ativas** nem **revogar por id sem o token da vítima** (`revokeById` atual exige `refresh_token_hash`, que só o dono tem).
+
+#### D-records novos (registrar em controle/decisoes.md no PR)
+- **D-Ω4C-SESS-REVOKE-REAL** — revogação é REAL (não fabricada): `refreshSession()` já barra `revoked_at`. Admin revoke via **novo método aditivo** `revokeByIdForTenant(sessionId, tenantId)` (set `revoked_at=now` WHERE `id=? AND tenant_id=? AND revoked_at IS NULL`, **sem** exigir o token da vítima). **Caveat honesto (declarado, NÃO parada):** o access token é JWT stateless com TTL `JWT_EXPIRES_IN=15m` (default `env.ts`) — permanece válido até expirar; o **refresh** é bloqueado imediatamente → re-login forçado em ≤15 min. A UI comunica isso ("a sessão será encerrada no próximo ciclo, em até 15 min") — **não** prometemos "logout instantâneo" que o desenho stateless não entrega. Fidelidade comportamental honesta ao "derruba a sessão" do AutEM sob JWT.
+- **D-Ω4C-SESS-NOMIG** — **ZERO migração.** `auth_sessions` e `audit_logs` já existem com RLS. A fatia é **puramente aditiva em código** (métodos de repo + serviço + rotas + projeção + telas). **Sem tocar `prisma/**`.** ↳ *Nota condicional:* se o `agente-dba-guardião`/EXPLAIN mostrar varredura do `audit_logs` **sob volume** na listagem global ordenada por `created_at` (índice atual `(tenant_id,entity,entity_id,created_at)`), um índice aditivo `(tenant_id, created_at)` up-only fica **deferido a sub-fatia** (PR-11b) — **não** entra aqui para manter a fatia migration-free. Sob dado de teste (poucas linhas) o prefixo `tenant_id` + sort basta.
+- **D-Ω4C-SESS-PERM** — **permissões NOVAS** `sessions:read` + `sessions:revoke` (o catálogo não tinha nada de sessão). **`sessions:revoke` = administrativa forte: `tenant_admin` + `super_admin` SOMENTE** (NÃO `auditor`, NÃO `manager`). `sessions:read` = `tenant_admin` + `auditor`. **Logs globais + Acessos REUSAM `audit.read`** (já existe; auditor/tenant_admin/manager/support). **4 pontos:** (1) `catalog.ts` `PERMISSION_CATALOG` (`tenant_admin` herda automático via filtro não-`platform:`; adicionar `sessions:read` a `auditor`; `sessions:revoke` só em `super_admin`/`tenant_admin`); (2) **seed** consome `ROLE_PERMISSIONS` automático (sem edição extra); (3) `tests/core-saas.test.ts` (asserção de catálogo + atribuição por papel); (4) `RBAC_MATRIX.md` (linhas "Sessões de usuário" + "Revogação de sessão"). **Toca `catalog.ts` → requer autorização explícita no comando do PR-11.**
+- **D-Ω4C-AUD-FILTERS** — `GET /api/v1/audit-events` ganha **filtros server-side** (`action`, `actorId`, `from`, `to`) + **paginação** (`limit`≤200 default 50, `offset` ou cursor `created_at`). Reusa `audit_logs`/`listByTenant` estendido — **sem novo store, sem novo model.** 422 para filtro malformado; RLS + tenant do ator (404 cross-tenant).
+- **D-Ω4C-AUD-ALLOWLIST-2.8** — projeção externa de Logs/Sessões/Acessos por **allowlist estrita** (abaixo). **Nunca** `ip_address` cru, `refresh_token_hash`, `tenant_id`, token, CNH ou corpo de payload.
+- **D-Ω4C-ACESSO-SOURCE** — **Acessos derivado de `auth_sessions.created_at`** (último login por usuário = `MAX(created_at)` group by `user_id`; opcional lista de logins recentes). **A tabela `UserAccessLog` sugerida no PROMPT §6.13 NÃO é criada** — `auth_sessions` já é o histórico de login. Reusa `audit.read`.
+
+#### Divergência com o PROMPT_EXECUCAO §6.13 (correção recon-driven — registrar)
+O PROMPT §6.13 previa **criar** 3 tabelas (`UserAccessLog`, `UserSession`, `AuditLog`) e "estender o mecanismo p/ middleware global". **A RECON prova que as três já existem** (`audit_logs` + `auth_sessions`, com RLS e escrita viva) e que o middleware global de auditoria **já roda** (`recordRequestAuditBestEffort` em ~45 controllers). ∴ **premissa do PROMPT (criar) → realidade (reusar); zero migração; a fatia é telas + filtros + admin-revoke.** Realiza **D-Ω4C-SESS-NOMIG/-ACESSO-SOURCE** e NÃO reabre o desenho de auditoria do Ω3F. Também é onde D-007 (nada fabricado) manda: sem eventos/sessões reais → estado honesto §7, nunca linha inventada.
+
+#### Contrato (backend)
+- **Logs globais:** `GET /api/v1/audit-events?action=&actorId=&from=&to=&limit=&offset=` — `audit.read`. 200 `{data:[AuditEventView], nextOffset?}`. 422 filtro inválido. RLS + tenant do ator (nunca `X-Tenant-Id` de fora). Cross-tenant → lista vazia/404 honesto.
+- **Acessos:** `GET /api/v1/sessions/access-history?userId=&from=&to=` — `audit.read` (ou `sessions:read`). 200 `{data:[{userLabel, lastAccessAt}]}` derivado de `auth_sessions`.
+- **Sessões ativas:** `GET /api/v1/sessions?userId=` — `sessions:read`. 200 `{data:[SessionView]}` (WHERE `revoked_at IS NULL AND expires_at>now`, tenant-scoped).
+- **Revogar:** `POST /api/v1/sessions/:id/revoke` — `sessions:revoke`. 200 idempotente (`{revoked:true}`); id inexistente/já-revogado/**de outro tenant** → **404** (RLS + `updateMany` count=0 nunca vaza existência cross-tenant). Escreve auditoria `auth.session.revoked` (ator=admin, alvo=user/session). **Sem 409** (revogar 2× é estado terminal idempotente, não conflito).
+
+#### §2.8 — allowlists de projeção (LGPD, crítico desta fatia)
+- **AuditEventView (Logs):** `{ id, when(dd/mm HH:mm America/Sao_Paulo), whenIso, actorLabel(email ou "sistema"), action(rótulo PT-BR), entity, entityId, outcome, severity }`. **Proibido:** `tenant_id`, `ip_address` cru, `refresh_token_hash`, token, `user_agent` cru, CNH, corpo. (O `AuditEventView` do front já não carrega `tenant_id` — manter.)
+- **SessionView (Sessões):** `{ id, userLabel(email/nome), loginAt(created_at), lastActivityAt(updated_at), deviceLabel(rótulo grosseiro do user_agent — ex. "Chrome · Windows", nunca UA cru), status }`. **Proibido:** `refresh_token_hash`, `ip_address` cru, `tenant_id`, `user_id` externo.
+- **AccessView (Acessos):** `{ userLabel, lastAccessAt, when }`. **Proibido:** ip cru, tenant_id.
+
+#### Modelagem
+**Nenhuma** (D-Ω4C-SESS-NOMIG). Só métodos de repositório aditivos: `AuthSessionRepository.listActiveByTenant(tenantId,{userId?})` + `revokeByIdForTenant(sessionId,tenantId)`; `AuditLogRepository.listByTenant` estendido com filtros/paginação. Money/km: N/A. Enums: reuso `outcome/severity` existentes (inglês interno + rótulo PT-BR na UI).
+
+#### Arquivos exatos
+- **Backend (ESTENDER):** `src/modules/auth/repositories/auth-session.repository.ts` (+`listActiveByTenant`,+`revokeByIdForTenant`) · **NOVO** `src/modules/auth/services/session-admin.service.ts` (listActive/adminRevoke/accessHistory + projeção §2.8 + auditoria da revogação) · **NOVO** `src/modules/auth/routes/session-admin.routes.ts` (GET /sessions · POST /sessions/:id/revoke · GET /sessions/access-history) · `src/app.ts` (**montar o router — incluir `src/app.ts` no `git add`**, senão CI 404 route_not_found [lição de memória]) · `src/modules/core-saas/routes/audit.routes.ts` + `services/*core-saas*.ts`/interface + `repositories/audit-log.repository.ts` (filtros+paginação) · `src/modules/core-saas/permissions/catalog.ts` (+`sessions:read`/`sessions:revoke` + ROLE_PERMISSIONS) · projeção/DTO §2.8.
+- **Frontend (NOVO/ESTENDER):** `frontend/src/modules/audit/pages/AuditTenantPage.tsx` (+ barra de filtros ator/ação/período; reusa CSV) · **NOVO** telas Acessos + Sessões sob **Usuários** (`frontend/src/modules/users/…` ou `administration`) com `TablePage`+filtros+CSV (reusa `frontend/src/lib/csv.ts`) + **botão "Revogar" gated por `can("sessions:revoke")`** (backend é a autoridade) · rotas `/controle/usuarios/{acessos,logs,sessoes}` + `navigation.registry` (gating por `audit:read`/`sessions:read`). §3 PT-BR ("Sessões","Acessos","Auditoria","Revogar","Encerrar sessão" — nunca "session/token/tenant"), §7 estados, §2.8.
+- **Docs:** `RBAC_MATRIX.md` (linhas Sessões/Revogação) · `controle/decisoes.md` (D-records).
+
+#### RNs e critérios de aceite
+- **RN-AUD-01** — Logs = leitura tenant-scoped de `audit_logs`; filtros ator/ação/período; paginação; RLS + tenant do ator (404 cross-tenant).
+- **RN-AUD-02 (§2.8)** — projeção só pela allowlist; **teste prova** ausência de `ip_address`/`refresh_token_hash`/`tenant_id`/token no corpo.
+- **RN-AUD-03 (D-007)** — CSV exporta **só** linhas reais carregadas (util compartilhado); vazio → estado honesto §7, export desabilitado.
+- **RN-ACC-01** — Acessos = último login por usuário derivado de `auth_sessions.created_at`; busca período/usuário; **sem tabela nova**.
+- **RN-SESS-01** — Sessões ativas = `revoked_at IS NULL AND expires_at>now`, tenant-scoped.
+- **RN-SESS-02** — revogação admin marca `revoked_at` (sem token da vítima); **idempotente** (2× → sem erro); **revogada → `refreshSession` retorna `revoked`** (teste prova o efeito real).
+- **RN-SESS-03 (isolamento)** — revogar/listar cross-tenant impossível: RLS + `tenant_id` no `where`; sessão de outro tenant → **404**, `updateMany` count=0 (3 tenants efêmeros no teste RLS).
+- **RN-SESS-04 (honestidade)** — access token (15m) segue válido até expirar; refresh bloqueado imediato → re-login. UI comunica a janela; **não fabrica logout instantâneo**.
+- **RN-SESS-05 (segregação)** — `auditor` tem `sessions:read` mas **NÃO** `sessions:revoke` (403); só `tenant_admin`/`super_admin` revogam. A própria revogação é auditada (`auth.session.revoked`, ator=admin).
+
+#### Fronteira de escopo
+- **Permitido:** os arquivos acima; permissões novas no `catalog.ts` (requer autorização de `catalog.ts` no comando); RBAC_MATRIX.
+- **Proibido:** `prisma/**` (ZERO migração — D-Ω4C-SESS-NOMIG; o índice `(tenant_id,created_at)` é PR-11b **se** o dba exigir); telemetria mobile/heartbeat/GPS/rastreamento/mapa (PR-16..18); reescrever o desenho de auditoria do Ω3F; `logout`/`refreshSession`/`createSession` (só **adicionar** métodos, não reescrever o fluxo do dono da sessão).
+- **Sem dependência nova, sem serviço externo pago, sem migração destrutiva, sem deploy de prod → junta NORMAL (≥3), NÃO junta-5.** Como toca sessão/token, **`agente-secops` é OBRIGATÓRIO na junta** (revisa allowlist §2.8, isolamento cross-tenant da revogação, segregação auditor×admin, janela do access token).
+
+#### Riscos + rollback
+- **Revogação cross-tenant** → RLS + `tenant_id` no where + 404; teste 3 tenants. **Vazamento token/IP** → allowlist projection + `sensitiveKeyPattern` já redige; IP **omitido** da view (não mascarado). **"Revogação que não invalida"** → mitigado por desenho: `refreshSession` já checa `revoked_at` (teste prova); janela de 15 min do access token declarada, não escondida. **Auditor escalando p/ revogar** → `sessions:revoke` fora do papel auditor (403 no backend). **Admin se auto-derruba** → permitido, UI avisa; não bloqueante. **Scan do audit_logs sob volume** → índice aditivo deferido a PR-11b (condicional dba/EXPLAIN). **Rollback:** rotas/serviço/telas são aditivos → reverter o PR remove tudo sem tocar dado; nenhuma migração para desfazer.
+
+#### Bateria (seção 10 — o avaliador roda)
+`npx prisma validate` (prova **zero drift** — nenhuma migração nova) · backend `npm run check`·`lint`·`test`·`build` · **NOVO** `node --test --import tsx tests/sessions-admin.test.ts` (listar ativas; admin revoke → **refresh subsequente bloqueado** [efeito real]; idempotência; cross-tenant 404; `auditor` sem revoke=403; auditoria da revogação; §2.8 sem token/ip/tenant no corpo) · **NOVO** `tests/audit-events-filters.test.ts` (filtros action/actor/período + paginação + §2.8) · `tests/rls-tenant-isolation.test.ts` estendido (3 tenants efêmeros: revoke cross count=0, list cross vazio; **teardown FK-safe** `auth_sessions` antes de `users`/`tenants`) · `tests/core-saas.test.ts` (novas permissões no catálogo + atribuição por papel) · **zero regressão** em auth refresh/logout/login + audit-events + navigation-provisioning · frontend `check`·`build`·smoke (3 telas + filtros + Revogar gated + CSV real + estados §7) · `git diff --check` + `git status --short` limpo. **KPI:** `docs/kpis/omega4c/KPI_PR-11.json` + histórico + snapshot; `Kpis/*` backend **1454→+N** (sessions-admin + audit-filters), frontend_smoke **783→+M** (acessos/logs-filtros/sessoes), blocks **81→82**. **Backfill** `merge_commit`/`approved_head` pós-merge.
+
+**APROVADO para implementar** — íntegro: infra de sessão/refresh e auditoria **existem e a revogação funciona de verdade** (não é parada honesta); **zero migração**; permissões novas com os 4 pontos declarados; §2.8 com allowlist; divergência do PROMPT §6.13 corrigida por recon. Próximo = **dev correspondente** (backend → frontend) sob junta normal **com `agente-secops` obrigatório**.
+
+#### PR-11 — Veredito da junta (2026-07-23) — **UNÂNIME 3/3 APROVADO — ABRE FASE 3 (web)**
+- **omega4c-avaliador** → `APROVADO`: seção 10 verde (backend 1462 pass / 6 skip — única falha ambiental rls-tenant-isolation DB-gated;
+  **sessions-admin 5/5** [teste 5 rodou AO VIVO contra Postgres: revogação carimba revoked_at → refreshSession bloqueia, cross-tenant
+  404, 3 tenants A/B/C, idempotência], **audit-events-filters 3/3**, core-saas 26/26; frontend check/build + smoke **801/801**). RN-SESS
+  cobertas: **revogação invalida DE VERDADE** (não cosmética), isolamento por tenant, §2.8 (SessionView só allowlist — nunca
+  refresh_token_hash/ip/tenant_id/user_id), auditoria filtros server-side + paginação, **caveat honesto do JWT 15m** (não promete
+  instantâneo). **ZERO migração.** Fix do orquestrador `clearAuditEvents` (o dev-backend foi cortado por limite de sessão no ajuste do
+  ruído de auditoria) confirmado SÃO — só no InMemory store, sem caminho de produção. 2 BAIXA (AuditEventView mantém tenant_id do PRÓPRIO
+  ator — contrato estável PR-SCALE-3, dentro da §2.8; higiene de staging).
+- **coordenador-de-acessos** → `APROVADO` (0 condições): **SEGREGAÇÃO DE FUNÇÕES ÍNTEGRA** — `sessions:read` → super/platform/tenant_admin +
+  **auditor**; `sessions:revoke` → **SÓ super/platform/tenant_admin** (auditor LÊ mas NÃO revoga; nenhum papel operacional/campo tem
+  qualquer das duas). Catálogo↔`expectedPermissionCatalog`↔seed↔RBAC_MATRIX coerentes (core-saas 26/26; sessions:read/revoke após
+  notifications:create). Rotas gated (GET /sessions→read; POST /sessions/:id/revoke→revoke; audit-events→audit.read); backend autoridade
+  (403 real). Front `can("sessions:revoke")` (auditor vê a lista, não o botão). §2.8 sem token/CNH.
+- **agente-secops** → `APROVADO` (1 BAIXA): **revogação REAL** (revokeByIdForTenant marca revoked_at → refreshSession retorna revoked →
+  próximo refresh da vítima FALHA); **tenant-scoped** (findByIdForTenant/revokeByIdForTenant filtram tenant_id dentro de withTenantRls →
+  cross-tenant 404, sem vazar existência); **gate backend forte** (sessions:revoke só admin); **ZERO vazamento** (SessionView/AccessView/
+  AuditEventView projeções estritas de allowlist — refresh_token_hash/ip cru/user_agent cru/token nunca saem; auditoria da revogação só
+  {targetUserId interno, administrative:true}); **nenhum gate de produção afrouxado** (env/CORS/TLS/JWT-config intocados); **nenhum segredo
+  versionado**; `clearAuditEvents` test-only inócuo. Caveat JWT 15m comunicado honestamente (SESSION_REVOKE_CAVEAT). Nota: audit-events
+  agora STRIPA metadata (aperto, não afrouxamento).
+- **Decisão:** verde unânime 3/3 → merge (CI = gate empírico) + KPI no PR (§C3). **Sem migração** (auth_sessions/audit_logs existentes).
+  Revogação administrativa de sessão funciona de verdade (2 revisores de segurança independentes confirmaram). D-records ratificados +
+  **D-Ω4C-AUD-TENANT-ID** (AuditEventView expõe tenant_id do próprio ator — contrato estável, dentro da §2.8). **ABRE a FASE 3** (parte
+  web-only de Auditoria/Sessões; Telemetria mobile/mapa vem depois).
+- KPI: `docs/kpis/omega4c/KPI_PR-11.json`. `Kpis/*`: backend 1454→**1462** (+8: sessions-admin 5 + audit-events-filters 3); frontend_smoke
+  783→**801** (+18 auditoria-sessoes); blocks 81→**82**.
+
 ## 8. Encerramento (a fazer no fim)
 Ata final (entregas, KPIs consolidados, pendências→backlog Ω5); deletar **SOMENTE** os 5 agentes efêmeros (registrar cada
 deleção); confirmar que nenhum agente pré-existente foi tocado; marcar os D-records como vigentes.
