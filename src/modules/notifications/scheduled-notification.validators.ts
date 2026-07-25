@@ -1,14 +1,17 @@
 import { parseBusinessDate } from "../../config/business-time.js";
 import {
   SCHEDULED_NOTIFICATION_SOURCE_TYPES,
+  SCHEDULED_NOTIFICATION_STATUSES,
   SCHEDULED_NOTIFICATION_VISIBILITIES,
   ScheduledNotificationError,
+  type ScheduledNotificationStatus,
 } from "./scheduled-notification.types.js";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const VISIBILITY_ALLOWLIST = new Set<string>(SCHEDULED_NOTIFICATION_VISIBILITIES);
 const SOURCE_TYPE_ALLOWLIST = new Set<string>(SCHEDULED_NOTIFICATION_SOURCE_TYPES);
+const STATUS_ALLOWLIST = new Set<string>(SCHEDULED_NOTIFICATION_STATUSES);
 // Antecedência do lembrete: 1 minuto .. 1 ano (guarda contra valor absurdo). remind_before é OPCIONAL.
 const MAX_REMIND_BEFORE_MINUTES = 525_600;
 // Teto de destinatários CUSTOM por definição (guarda contra broadcast disfarçado de "personalizada").
@@ -150,6 +153,27 @@ export function parseOffset(value: unknown): number {
     throw new ScheduledNotificationError(400, "SCHEDULED_NOTIFICATION_FILTER_INVALID", "invalid_offset", "offset must be greater than or equal to zero.");
   }
   return parsed;
+}
+
+// Ω4C PR-20 — filtro de SITUAÇÃO da central: ausente → undefined (Todas). ∈ {pending,fired,cancelled}. Fora → 400.
+export function parseOptionalStatus(value: unknown): ScheduledNotificationStatus | undefined {
+  const normalized = optionalString(value)?.toLowerCase();
+  if (normalized === undefined) return undefined;
+  if (!STATUS_ALLOWLIST.has(normalized)) {
+    throw new ScheduledNotificationError(400, "SCHEDULED_NOTIFICATION_FILTER_INVALID", "invalid_status", "status must be one of pending, fired, cancelled.");
+  }
+  return normalized as ScheduledNotificationStatus;
+}
+
+// Ω4C PR-20 — filtro de PERÍODO (from/to) sobre notify_at. Ausente → undefined. Entrada naïve ancorada ao fuso
+// de negócio (mesmo tratamento de notify_at). Inválida → 400 com o nome do campo.
+export function parseOptionalFilterDate(value: unknown, field: string): Date | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const date = value instanceof Date ? value : parseBusinessDate(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new ScheduledNotificationError(400, "SCHEDULED_NOTIFICATION_FILTER_INVALID", `invalid_${field}`, `${field} must be a valid date.`);
+  }
+  return date;
 }
 
 // reminder_at DERIVADO server-side = notify_at − remind_before (RN-NOTIF-04). Sem antecedência → sem lembrete.

@@ -106,3 +106,24 @@ for (const role of Object.keys(MAP_VISIBLE_BY_ROLE) as Role[]) {
     }
   });
 }
+
+// Ω4C PR-20 (Central de Notificações): a rota tenant-wide /controle/notificacoes é governada por
+// notifications:create (esconde-fino, lição PR-14). Quem NÃO tem create (ex.: field_technician, que só
+// tem o inbox notifications:read) NÃO vê o item — o backend é a autoridade (403 real).
+const CENTRAL_NOTIFICACOES_PATH = "/controle/notificacoes";
+
+test("Ω4C PR-20: getGovernedNavigationPaths governa /controle/notificacoes (notifications:create)", () => {
+  const governed = getGovernedNavigationPaths();
+  assert.equal(governed.includes(CENTRAL_NOTIFICACOES_PATH), true);
+});
+
+for (const role of Object.keys(MAP_VISIBLE_BY_ROLE) as Role[]) {
+  const hasCreate = ROLE_PERMISSIONS[role].includes("notifications:create");
+  test(`Ω4C PR-20: papel ${role} ${hasCreate ? "VÊ" : "NÃO vê"} a Central de Notificações (gate notifications:create)`, () => {
+    assert.equal(
+      menuPathsForRole(role).includes(CENTRAL_NOTIFICACOES_PATH),
+      hasCreate,
+      `${role} → ${CENTRAL_NOTIFICACOES_PATH} deveria ${hasCreate ? "aparecer" : "sumir"} no menu`,
+    );
+  });
+}

@@ -1,6 +1,8 @@
 import { ApiError } from "../../services/api/client";
 import type {
+  CentralScheduledNotificationView,
   CreateScheduledNotificationInput,
+  ScheduledNotificationSourceType,
   ScheduledNotificationStatus,
   ScheduledNotificationView,
   ScheduledNotificationVisibility,
@@ -45,6 +47,21 @@ export function getScheduledStatusTone(status: ScheduledNotificationStatus): "wa
   return STATUS_META[status]?.tone ?? "default";
 }
 
+// ── Origem (source_type): token técnico → rótulo PT-BR de NEGÓCIO (§3, nunca o enum cru) ──────────
+const SOURCE_TYPE_LABELS: Record<ScheduledNotificationSourceType, string> = {
+  maintenance_item: "Manutenção",
+  fine: "Multa",
+  insurance_policy: "Seguro",
+  financial_title: "Contas a Pagar",
+  manual: "Avulsa",
+};
+
+// Sem origem (avulsa criada na Central) → "Avulsa" (honesto; nunca inventa uma origem).
+export function getSourceTypeLabel(value: ScheduledNotificationSourceType | null | undefined): string {
+  if (!value) return "Avulsa";
+  return SOURCE_TYPE_LABELS[value] ?? "Avulsa";
+}
+
 // ── Antecedência (remind_before, OPCIONAL): presets → minutos (string p/ <select>; "" = sem lembrete) ──
 export const REMIND_BEFORE_OPTIONS: readonly { readonly value: string; readonly label: string }[] = [
   { value: "", label: "Sem lembrete" },
@@ -54,6 +71,17 @@ export const REMIND_BEFORE_OPTIONS: readonly { readonly value: string; readonly 
   { value: "120", label: "2 horas antes" },
   { value: "1440", label: "1 dia antes" },
 ];
+
+// Rótulo da coluna "Antecedência" da Central: minutos → texto legível; sem lembrete → "—" (convenção
+// de célula vazia das listas densas — honesto, nunca fabrica).
+export function getRemindBeforeLabel(minutes: number | null | undefined): string {
+  if (minutes == null || !Number.isFinite(minutes) || minutes <= 0) return "—";
+  const preset = REMIND_BEFORE_OPTIONS.find((option) => option.value === String(minutes));
+  if (preset?.value) return preset.label;
+  if (minutes % 1440 === 0) return `${minutes / 1440} dia(s) antes`;
+  if (minutes % 60 === 0) return `${minutes / 60} h antes`;
+  return `${minutes} min antes`;
+}
 
 // ── Adaptação §2.8 do DTO → view mínima ──────────────────────────────────────────
 // Descarta DEFENSIVAMENTE qualquer campo sensível (tenant_id/client_action_id/custom_recipient_ids/source_id),
@@ -81,6 +109,37 @@ export function adaptScheduledNotifications(raw: unknown): ScheduledNotification
   return readList(raw)
     .map(adaptScheduledNotification)
     .filter((entry): entry is ScheduledNotificationView => entry !== null);
+}
+
+// ── Ω4C PR-20 — Adaptação §2.8 do DTO-central → view da Central ──────────────────────────────────
+// Defesa em 2 camadas (padrão PR-14): mesmo que o backend envie tenant_id/client_action_id/createdBy/
+// customRecipientIds/sourceId, lemos SÓ o allowlist — esses campos NUNCA são lidos e nunca chegam à view
+// (logo, nunca ao DOM). `mine` (booleano) sustenta o chip "Você"; `sourceType` vira rótulo PT-BR de negócio.
+export function adaptCentral(raw: unknown): CentralScheduledNotificationView | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+
+  const id = readString(row.id);
+  if (!id) return null; // D-007: sem identidade honesta → descartado
+
+  return {
+    id,
+    title: readString(row.title) ?? "",
+    message: readString(row.message) ?? "",
+    notifyAt: readString(row.notifyAt ?? row.notify_at) ?? "",
+    remindBeforeMinutes: readNumber(row.remindBeforeMinutes ?? row.remind_before_minutes),
+    visibility: coerceVisibility(readString(row.visibility)),
+    status: coerceStatus(readString(row.status)),
+    sourceType: coerceSourceType(readString(row.sourceType ?? row.source_type)),
+    createdAt: readString(row.createdAt ?? row.created_at) ?? "",
+    mine: row.mine === true,
+  };
+}
+
+export function adaptCentralList(raw: unknown): CentralScheduledNotificationView[] {
+  return readList(raw)
+    .map(adaptCentral)
+    .filter((entry): entry is CentralScheduledNotificationView => entry !== null);
 }
 
 // ── Validação client (espelha o backend; feedback imediato antes do POST) ─────────
@@ -161,6 +220,19 @@ function coerceVisibility(value: string | undefined): ScheduledNotificationVisib
 
 function coerceStatus(value: string | undefined): ScheduledNotificationStatus {
   return value === "fired" || value === "cancelled" ? value : "pending";
+}
+
+function coerceSourceType(value: string | undefined): ScheduledNotificationSourceType | null {
+  switch (value) {
+    case "maintenance_item":
+    case "fine":
+    case "insurance_policy":
+    case "financial_title":
+    case "manual":
+      return value;
+    default:
+      return null;
+  }
 }
 
 function readString(value: unknown): string | undefined {

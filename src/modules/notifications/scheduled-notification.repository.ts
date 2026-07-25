@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type {
   CreateScheduledNotificationInput,
   ScheduledNotification,
+  ScheduledNotificationCentralFilters,
   ScheduledNotificationListFilters,
 } from "./scheduled-notification.types.js";
 import { ScheduledNotificationError } from "./scheduled-notification.types.js";
@@ -15,6 +16,14 @@ export interface ScheduledNotificationRepository {
   listByCreator(tenantId: string, createdBy: string, filters?: ScheduledNotificationListFilters): Promise<ScheduledNotification[]>;
   // Total ATIVO do criador (paginação).
   countByCreator(tenantId: string, createdBy: string): Promise<number>;
+  // Ω4C PR-20 — CENTRAL tenant-wide: definições de QUALQUER criador do tenant, INCLUINDO canceladas (histórico),
+  // desc por created_at. Filtros de situação + período sobre notify_at. Isolamento por tenant (claim + RLS).
+  listByTenant(tenantId: string, filters?: ScheduledNotificationCentralFilters): Promise<ScheduledNotification[]>;
+  // Total tenant-wide sob os MESMOS filtros de situação/período (sem limit/offset) — paginação da central.
+  countByTenant(tenantId: string, filters?: ScheduledNotificationCentralFilters): Promise<number>;
+  // Soft-cancel tenant-wide de QUALQUER pendente do tenant (não só do criador). Atômico: só status=pending
+  // vira cancelled. null = inexistente/já-disparada/já-cancelada/cross-tenant (→ 404 no service).
+  cancelCentral(tenantId: string, id: string): Promise<ScheduledNotification | null>;
   // Soft-cancel: status=cancelled + deleted_at (para ocorrências FUTURAS). null = nada a cancelar.
   softCancel(tenantId: string, id: string): Promise<ScheduledNotification | null>;
   // Ocorrência de LEMBRETE devida: status=pending ∧ reminder_at<=now ∧ reminder_fired_at IS NULL (∧ ativa).
@@ -95,6 +104,37 @@ export class InMemoryScheduledNotificationRepository implements ScheduledNotific
     ).length;
   }
 
+  // CENTRAL tenant-wide (PR-20): qualquer criador do tenant, INCLUINDO canceladas (sem filtro de deleted_at →
+  // histórico). Filtros de situação + período sobre notify_at. Ordenação desc por created_at (mesma da lista do
+  // criador). Paginação por limit/offset.
+  async listByTenant(tenantId: string, filters?: ScheduledNotificationCentralFilters): Promise<ScheduledNotification[]> {
+    const all = [...this.entries.values()]
+      .filter((entry) => entry.tenantId === tenantId && matchesCentralFilters(entry, filters))
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
+    const offset = filters?.offset ?? 0;
+    const limit = filters?.limit ?? 20;
+    return all.slice(offset, offset + limit);
+  }
+
+  // total tenant-wide sob os MESMOS filtros (sem paginação).
+  async countByTenant(tenantId: string, filters?: ScheduledNotificationCentralFilters): Promise<number> {
+    return [...this.entries.values()].filter(
+      (entry) => entry.tenantId === tenantId && matchesCentralFilters(entry, filters),
+    ).length;
+  }
+
+  // soft-cancel tenant-wide: SÓ pendente (deleted_at NULL ∧ status=pending) vira cancelled. Qualquer outra
+  // situação → null (→ 404). Não checa criador (a central gere a org inteira).
+  async cancelCentral(tenantId: string, id: string): Promise<ScheduledNotification | null> {
+    const entry = this.entries.get(id);
+    if (!entry || entry.tenantId !== tenantId || entry.deletedAt !== undefined || entry.status !== "pending") {
+      return null;
+    }
+    const updated: ScheduledNotification = { ...entry, status: "cancelled", deletedAt: new Date(), updatedAt: new Date() };
+    this.entries.set(updated.id, updated);
+    return updated;
+  }
+
   async softCancel(tenantId: string, id: string): Promise<ScheduledNotification | null> {
     const entry = await this.findById(tenantId, id);
     if (!entry) return null;
@@ -151,4 +191,15 @@ export class InMemoryScheduledNotificationRepository implements ScheduledNotific
     this.entries.set(id, { ...entry, reminderFiredAt: undefined, firedAt: undefined, status: "pending" });
     return true;
   }
+}
+
+// Aplica os filtros da CENTRAL (situação + período sobre notify_at) — INCLUI canceladas (sem gate de deleted_at).
+function matchesCentralFilters(
+  entry: ScheduledNotification,
+  filters: ScheduledNotificationCentralFilters | undefined,
+): boolean {
+  if (filters?.status !== undefined && entry.status !== filters.status) return false;
+  if (filters?.notifyAtFrom !== undefined && entry.notifyAt.getTime() < filters.notifyAtFrom.getTime()) return false;
+  if (filters?.notifyAtTo !== undefined && entry.notifyAt.getTime() > filters.notifyAtTo.getTime()) return false;
+  return true;
 }

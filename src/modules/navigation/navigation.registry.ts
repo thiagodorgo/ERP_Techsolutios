@@ -150,6 +150,28 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     ],
   },
   {
+    // Ω4C PR-20 — Central de Notificações (tenant-wide): path GOVERNADO (esconde-fino, lição do PR-14). Gate
+    // ÚNICO `notifications:create` (gestão/broadcast; SEM permissão nova) e SEM requiredModules — sem provisão
+    // de módulo novo; getGovernedNavigationPaths o inclui, então o gating dinâmico ESCONDE o item de quem NÃO
+    // tem notifications:create (ex.: field_technician/finance/auditor), que segue barrado no 403 do backend.
+    // Distinto de tenant.notifications (inbox/sino, notifications:read amplo).
+    id: "tenant.notificationsCentral",
+    label: "Central de Notificações",
+    description: "Gestão tenant-wide das notificações agendadas da organização (qualquer criador).",
+    path: "/controle/notificacoes",
+    icon: "BellRing",
+    group: "tenant",
+    order: 155,
+    status: "implemented",
+    requiredPermissions: ["notifications:create"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/notifications/scheduled/central",
+      "DELETE /api/v1/notifications/scheduled/central/:scheduledNotificationId",
+      "POST /api/v1/notifications/scheduled",
+    ],
+  },
+  {
     id: "operations.checklists",
     label: "Checklists Operacionais",
     description: "Execucao de checklists publicados.",

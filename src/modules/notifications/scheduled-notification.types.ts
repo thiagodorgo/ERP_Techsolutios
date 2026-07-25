@@ -71,6 +71,17 @@ export type ScheduledNotificationListFilters = {
   readonly offset?: number;
 };
 
+// Ω4C PR-20 — filtros da CENTRAL tenant-wide (D-Ω4C-NOTIF-CENTRAL-SPLIT). Situação (Todas quando ausente /
+// Pendentes / Disparadas / Canceladas) + período sobre notify_at. limit/offset paginam; a lista INCLUI as
+// canceladas (histórico) — o motor (findDue*) tem consultas próprias e NÃO reusa este filtro.
+export type ScheduledNotificationCentralFilters = {
+  readonly status?: ScheduledNotificationStatus;
+  readonly notifyAtFrom?: Date;
+  readonly notifyAtTo?: Date;
+  readonly limit?: number;
+  readonly offset?: number;
+};
+
 // Resultado do disparo de uma janela (fireDue). deliveries = entregas efetivas criadas na inbox (deduped por
 // idempotencyKey) — a invariante RN-NOTIF-01 exige que 2 chamadas com o MESMO now devolvam o mesmo total.
 export type FireDueResult = {

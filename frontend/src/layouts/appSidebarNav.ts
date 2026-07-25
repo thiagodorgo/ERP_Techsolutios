@@ -3,6 +3,7 @@ import {
   Ban,
   BarChart3,
   Bell,
+  BellRing,
   BookUser,
   Building2,
   Calculator,
@@ -88,6 +89,9 @@ const PAGAMENTOS: NavItem = { label: "Pagamentos", path: "/finance/payments", ic
 
 const USUARIOS: NavItem = { label: "Usuários", path: "/users", icon: Users };
 const NOTIFICACOES: NavItem = { label: "Notificações", path: "/notifications", icon: Bell };
+// Ω4C PR-20 — Central de Notificações (tenant-wide, gestão). Distinta do inbox (Notificações/Bell):
+// governada por notifications:create; o esconde-fino (governed path) a oculta de quem não tem a permissão.
+const CENTRAL_NOTIFICACOES: NavItem = { label: "Central de Notificações", path: "/controle/notificacoes", icon: BellRing };
 const CONFIGURACOES: NavItem = { label: "Configurações", path: "/administrator/settings", icon: Settings };
 const AUDITORIA: NavItem = { label: "Auditoria", path: "/audit", icon: ScrollText };
 // Ω4C PR-11 — Controle > Usuários: Acessos (último login) + Sessões ativas (revogação REAL).
@@ -125,7 +129,7 @@ const G_GESTAO_FULL: NavGroup = {
 };
 const G_ADMIN_FULL: NavGroup = {
   label: "ADMINISTRAÇÃO",
-  items: [USUARIOS, ACESSOS, SESSOES, NOTIFICACOES, CONFIGURACOES, AUDITORIA],
+  items: [USUARIOS, ACESSOS, SESSOES, NOTIFICACOES, CENTRAL_NOTIFICACOES, CONFIGURACOES, AUDITORIA],
 };
 // Ω4C PR-14 — grupo TELEMETRIA (papéis com telemetry:read: tenant_admin/manager/field_dispatcher/auditor).
 // Visível para os roleKind admin/gestor/dispatcher; o backend é a autoridade final (rota PermissionGuard
@@ -152,7 +156,7 @@ export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
     G_FROTA_OPERACIONAL,
     { label: "GESTÃO", items: [CLIENTES, EQUIPES, SERVICOS, TABELAS_VALORES, TARIFAS, ESTOQUE] },
     G_TELEMETRIA,
-    { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES] },
+    { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES, CENTRAL_NOTIFICACOES] },
   ],
   // finance — recupera o grupo (multas/seguros/remunerações/financeiro/relatórios/aprovações).
   finance: [
@@ -220,6 +224,7 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/telemetria/dispositivos",
   "/telemetria/rastreamento",
   "/notifications",
+  "/controle/notificacoes",
   "/administrator/checklists",
   "/administrator/settings",
 ]);

@@ -23,6 +23,8 @@ import {
   parseNotifyAt,
   parseOffset,
   parseOptionalClientActionId,
+  parseOptionalFilterDate,
+  parseOptionalStatus,
   parseOptionalUuid,
   parseRemindBeforeMinutes,
   parseRequiredText,
@@ -100,6 +102,36 @@ export class ScheduledNotificationService {
       this.repository.countByCreator(actor.tenantId, actor.userId),
     ]);
     return { items, limit, offset, total };
+  }
+
+  // Ω4C PR-20 — CENTRAL tenant-wide (D-Ω4C-NOTIF-CENTRAL-SPLIT): lista as definições de QUALQUER criador do
+  // tenant (não só as do ator), incluindo canceladas (histórico), com filtros de situação + período sobre
+  // notify_at. Isolamento pelo tenant do ATOR autenticado (+ RLS no caminho Prisma). O §2.8 condicional (o que
+  // volta ao não-criador) é aplicado no DTO-central pelo controller.
+  async listCentral(actor: ScheduledNotificationActorContext, query: RawRecord): Promise<ScheduledNotificationListResult> {
+    const limit = parseLimit(query.limit);
+    const offset = parseOffset(query.offset);
+    const status = parseOptionalStatus(query.status);
+    const notifyAtFrom = parseOptionalFilterDate(query.from ?? query.notifyAtFrom, "from");
+    const notifyAtTo = parseOptionalFilterDate(query.to ?? query.notifyAtTo, "to");
+    const filters = { status, notifyAtFrom, notifyAtTo, limit, offset };
+    const [items, total] = await Promise.all([
+      this.repository.listByTenant(actor.tenantId, filters),
+      this.repository.countByTenant(actor.tenantId, filters),
+    ]);
+    return { items, limit, offset, total };
+  }
+
+  // Excluir da central = soft-cancel tenant-wide (RN-NOTIFCEN-04): cancela QUALQUER PENDENTE do tenant, não só
+  // do criador. fired/cancelada/inexistente/cross-tenant → 404 (o repo casa só deleted_at NULL ∧ status=pending).
+  // As entregas já disparadas permanecem no inbox (RN-NOTIF-09 herdada).
+  async cancelCentral(actor: ScheduledNotificationActorContext, id: string): Promise<ScheduledNotification> {
+    const normalizedId = parseRequiredUuid(id, "id");
+    const cancelled = await this.repository.cancelCentral(actor.tenantId, normalizedId);
+    if (!cancelled) {
+      throw scheduledNotificationNotFoundError();
+    }
+    return cancelled;
   }
 
   // GET/:id e DELETE são CREATOR-scoped (foundation; a central tenant-wide é PR-20). Cross-tenant → 404 pelo

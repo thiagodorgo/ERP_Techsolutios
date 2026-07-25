@@ -4,6 +4,7 @@ import { withTenantRls } from "../../database/rls.js";
 import type {
   CreateScheduledNotificationInput,
   ScheduledNotification,
+  ScheduledNotificationCentralFilters,
   ScheduledNotificationListFilters,
 } from "./scheduled-notification.types.js";
 import {
@@ -78,6 +79,35 @@ export class PrismaScheduledNotificationRepository implements ScheduledNotificat
     });
   }
 
+  // CENTRAL tenant-wide (PR-20): qualquer criador, INCLUINDO canceladas (sem gate de deleted_at → histórico).
+  async listByTenant(
+    tenantId: string,
+    filters?: ScheduledNotificationCentralFilters,
+  ): Promise<ScheduledNotification[]> {
+    const records = await this.client.scheduledNotification.findMany({
+      where: centralWhere(tenantId, filters),
+      orderBy: [{ created_at: "desc" }, { id: "desc" }],
+      take: filters?.limit ?? 20,
+      skip: filters?.offset ?? 0,
+    });
+    return records.map(mapRecord);
+  }
+
+  countByTenant(tenantId: string, filters?: ScheduledNotificationCentralFilters): Promise<number> {
+    return this.client.scheduledNotification.count({ where: centralWhere(tenantId, filters) });
+  }
+
+  // soft-cancel tenant-wide ATÔMICO: um único UPDATE que só casa deleted_at NULL ∧ status=pending → nunca
+  // cancela uma já-disparada/já-cancelada nem cross-tenant (RLS + where). null quando 0 linhas.
+  async cancelCentral(tenantId: string, id: string): Promise<ScheduledNotification | null> {
+    const result = await this.client.scheduledNotification.updateManyAndReturn({
+      where: { tenant_id: tenantId, id, deleted_at: null, status: "pending" },
+      data: { status: "cancelled", deleted_at: new Date() },
+      limit: 1,
+    });
+    return result[0] ? mapRecord(result[0]) : null;
+  }
+
   async softCancel(tenantId: string, id: string): Promise<ScheduledNotification | null> {
     const result = await this.client.scheduledNotification.updateManyAndReturn({
       where: { tenant_id: tenantId, id, deleted_at: null },
@@ -147,6 +177,15 @@ export class RlsPrismaScheduledNotificationRepository implements ScheduledNotifi
   countByCreator(tenantId: string, createdBy: string): Promise<number> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaScheduledNotificationRepository(tx).countByCreator(tenantId, createdBy));
   }
+  listByTenant(tenantId: string, filters?: ScheduledNotificationCentralFilters): Promise<ScheduledNotification[]> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaScheduledNotificationRepository(tx).listByTenant(tenantId, filters));
+  }
+  countByTenant(tenantId: string, filters?: ScheduledNotificationCentralFilters): Promise<number> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaScheduledNotificationRepository(tx).countByTenant(tenantId, filters));
+  }
+  cancelCentral(tenantId: string, id: string): Promise<ScheduledNotification | null> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaScheduledNotificationRepository(tx).cancelCentral(tenantId, id));
+  }
   softCancel(tenantId: string, id: string): Promise<ScheduledNotification | null> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaScheduledNotificationRepository(tx).softCancel(tenantId, id));
   }
@@ -167,6 +206,22 @@ export class RlsPrismaScheduledNotificationRepository implements ScheduledNotifi
 export async function createPrismaScheduledNotificationRepository(): Promise<RlsPrismaScheduledNotificationRepository> {
   const { prisma } = await import("../../database/prisma.js");
   return new RlsPrismaScheduledNotificationRepository(prisma);
+}
+
+// WHERE da CENTRAL: tenant + (situação) + (período sobre notify_at). SEM gate de deleted_at → inclui canceladas
+// (histórico). A RLS é a autoridade de isolamento; o tenant_id explícito é defesa-em-camadas.
+function centralWhere(
+  tenantId: string,
+  filters?: ScheduledNotificationCentralFilters,
+): Prisma.ScheduledNotificationWhereInput {
+  const notifyAt: Prisma.DateTimeFilter = {};
+  if (filters?.notifyAtFrom !== undefined) notifyAt.gte = filters.notifyAtFrom;
+  if (filters?.notifyAtTo !== undefined) notifyAt.lte = filters.notifyAtTo;
+  return {
+    tenant_id: tenantId,
+    ...(filters?.status !== undefined ? { status: filters.status } : {}),
+    ...(notifyAt.gte !== undefined || notifyAt.lte !== undefined ? { notify_at: notifyAt } : {}),
+  };
 }
 
 function mapRecord(record: {
