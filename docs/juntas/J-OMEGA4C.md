@@ -1986,9 +1986,81 @@ Reusa **`telemetry:read`** (PR-12). Rota sob `PermissionGuard telemetry:read`; i
 - **Decisão:** verde (3 APROVADO, 0 CRÍTICO, 0 `R-<entrega>`) → merge + KPI no próprio PR (§C3 — backend-only: `Kpis/*` + `KPI_PR-08b.json`; mobile carrega com nota).
   backend **1481→1504** (+23), frontend_smoke **839** e flutter **807** inalterados (backend-only), blocks **86→87**. BAIXAs → **backlog Ω5**.
 
-## 8. Encerramento (a fazer no fim)
-Ata final (entregas, KPIs consolidados, pendências→backlog Ω5); deletar **SOMENTE** os 5 agentes efêmeros (registrar cada
-deleção); confirmar que nenhum agente pré-existente foi tocado; marcar os D-records como vigentes.
+## 8. Encerramento — ATA FINAL (2026-07-25)
+
+**Rodada Ω4C "Alinhamento Controle & Frota" (fidelidade comportamental ao AutEM) — CONCLUÍDA.** Mandato PR-00→PR-20
+do `PLANO_OMEGA4C.md` cumprido; numeração comprimida na execução (fatias combinadas/split), todas as fatias funcionais do
+cronograma §6 entregues, testes verdes, KPI por PR, ata final. Autonomia por juntas (D-SAN-AUTONOMIA); nenhum serviço
+pago/credencial externa acionado (nenhuma junta-5 disparada).
+
+### 8.1 Entregas mergeadas (17 PRs de feature, #262–#278)
+| PR | Entrega | # | merge |
+|---|---|---|---|
+| PR-00 | Fase 0 recon (governança + `FASE0_RECON.md` + D-records) | #261 | — |
+| PR-01 | Anexos genéricos polimórficos | #262 | — |
+| PR-02 | Contas a Pagar por origem | #263 | `6f88f8a` |
+| PR-03 | Extrato do Profissional (razão + trava RN-EXT-01 + perm. `professional_statements:*`) | #264 | `7a42d09` |
+| PR-04 | Motor de Notificações (ScheduledNotification, scheduler in-process, sem node-cron, perm. `notifications:create`) | #265 | `ee15fd3` |
+| PR-05 | Abastecimento interno/externo + fornecedor + KM/L | #266 | `479b92b` |
+| PR-06 | Manutenção (itens + totais derivados + próxima manutenção) | #267 | `955d12c` |
+| PR-07 | Multas + Seguros (integra os 3 trilhos) | #268 | `a029f46` |
+| PR-08 | Estoque custódia (ledger imutável BASE/PROFISSIONAL/VIATURA) | #269 | `0fd5443` |
+| PR-09 | Danos (responsável→desconto parcelado no extrato) | #270 | `f7219ab` |
+| PR-10 | Remunerações (liquidação em lote→crédito no extrato, CSV) | #271 | `aa67e3d` |
+| PR-11 | Auditoria global + Sessões com revogação REAL (perm. `sessions:read/revoke`) — ABRE Fase 3 | #272 | `88f0a48` |
+| PR-12 | Telemetria backend (ingestão heartbeat/km/recusas, consent-gate LGPD, perm. `telemetry:read`) | #273 | `fc7f6be` |
+| PR-13 | Telemetria Flutter (GPS foreground consent-aware + buffer Drift + flush; sem background) | #274 | `2c91622` |
+| PR-14 | Telemetria WEB (4 telas Quilometragem/Acessos/Recusas/Dispositivos; §2.8 sem coordenada) | #275 | `b152ebd` |
+| PR-15 | Rastreamento (mapa da telemetria; MapLibre US$0; Junta de Mapas J-MAPAS-9) — FECHA a telemetria | #276 | `ecb5004` |
+| PR-08b | Baixa automática de estoque (fuel interno/itens de manutenção → EXIT idempotente; complemento do PR-08) | #277 | `acc7f75` |
+| PR-20 | Central de Notificações (console tenant-wide; DTO-central §2.8; reusa `notifications:create`) | #278 | `263436f` |
+
+Mapeamento cronograma §6 → execução: Fase 1 (PR-01..07) · Fase 2 (PR-08/08b/09/10) · Fase 3 (PR-11 usuários/acessos/logs/
+sessões · PR-12/13/14/15 telemetria+mapa · PR-20 central de notificações). A "varredura cruzada" (§6 Fase 3) = a suíte inteira
+verde na main pós-encerramento (8.4).
+
+### 8.2 KPIs consolidados (execução real, CI-memória)
+- **backend_tests:** 1296 (abertura) → **1521** (+225 na rodada; 6 skip DB-gated que rodam no CI com Postgres).
+- **frontend_smoke_tests:** 673 → **850** (+177).
+- **flutter_tests:** 764 → **807** (+43; reconciliado à suíte real no PR-13).
+- **blocks_completed:** 71 → **88** (+17 features).
+- **Migrações aditivas:** 20260821..20260832 — todas provadas up/down/re-up em `erp-postgres`, drift zero, RLS forced preservada.
+Snapshot em `Kpis/kpis-latest.json`; série por PR em `docs/kpis/omega4c/KPI_PR-*.json` + `Kpis/kpis-history.json`.
+
+### 8.3 Pendências → backlog Ω5 (não bloqueiam; fast-follow)
+- **PATCH "Editar" da Central de Notificações** (pending-only; edição §2.8 cross-criador) — deferido honest-partial D-007 (PR-20).
+- **ABC/consumo infla em par baixa+estorno** (`getConsumptionValues` soma `abs(qty)` — pré-existente module-wide) (PR-08b).
+- **Overdraw concorrente de fontes DISTINTAS** no guard de saldo read-then-insert sob READ COMMITTED (padrão pré-existente
+  `createMovement`/`createTransfer`; o índice parcial já barra dupla-baixa da MESMA fonte) (PR-08b).
+- **Picker de `stock_item` nas telas de abastecimento/manutenção** (PR-08b foi backend-only).
+- **Cor-por-velocidade no mapa de Rastreamento** (TrackView não projeta `speed`; seria backend + reavaliar §2.8) (PR-15).
+- **RN-TELE-07 teste HTTP `window_too_large`; bucketizar `device_label`; OS-ref amigável no RefusalView** (PR-12).
+- **P-INV-LEGACY-QTY-FIX** (modal legado envia quantidade negativa; idêntico à main) — achado pré-existente do PR-08.
+- **battery/device Flutter packages** (batteryPct/deviceModel/sdkInt deferidos; pacote ausente → junta-5+PD) (PR-13).
+- **Breadcrumb da disambiguação de "Acessos"** (telemetria × Usuários) (PR-14).
+
+### 8.4 Varredura cruzada (suíte inteira na main pós-merge #278)
+- **backend** 1521 pass / 0 fail / 6 skip (CI-memória) · **frontend_smoke** 850/850 / 0 fail · migrações aplicadas. Tudo integra.
+
+### 8.5 D-records vigentes
+Todos os D-records da rodada (`D-OMEGA4C-RECON.*`, D-Ω4C-* de cada PR — incluindo o padrão de **efeito de domínio
+não-amplificador** [lição da escalada do PR-06], `D-Ω4C-NOTIF-CENTRAL-SPLIT/-DTO-CENTRAL/-NOTIFCEN-RBAC`, `D-Ω4C-BAIXA-*`,
+`D-Ω4C-TELE-*`, `D-Ω4C-TELE-MAP-*`) ficam **VIGENTES**.
+
+### 8.6 Deleção dos agentes efêmeros (§1)
+Conforme o charter (§1), no encerramento deletam-se **APENAS** os 5 agentes efêmeros da rodada. Registro de cada deleção:
+| Agente | Papel | Deleção |
+|---|---|---|
+| `omega4c-planejador` | plano/recon | DELETADO no encerramento (2026-07-25) |
+| `omega4c-dev-backend` | backend/migrações | DELETADO no encerramento (2026-07-25) |
+| `omega4c-dev-frontend` | telas `/controle` | DELETADO no encerramento (2026-07-25) |
+| `omega4c-dev-mobile` | Flutter telemetria | DELETADO no encerramento (2026-07-25) |
+| `omega4c-avaliador` | veto bloqueante | DELETADO no encerramento (2026-07-25) |
+
+**Nenhum agente pré-existente foi criado/tocado/renomeado/deletado.** A Junta de Mapas (`planejador-mapas`/`dev-mapas`/
+`avaliador-mapas`) e demais agentes do repo permanecem intactos — o PR-15 os **consumiu** (não os alterou). As juntas de PR
+usaram agentes pré-existentes de revisão (`agente-secops`, `agente-dba-guardiao`, `coordenador-de-acessos`) como revisores,
+sem modificá-los. **Rodada Ω4C encerrada.**
 
 <!-- VOTO omega4c-avaliador PR-14 (2026-07-25) -->
 ### Voto do omega4c-avaliador — PR-14 (Telemetria WEB) — APROVADO
