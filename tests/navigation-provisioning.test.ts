@@ -69,3 +69,34 @@ test("Ω-ACESSO: getGovernedNavigationPaths inclui o Mapa e paths-chave (para o 
   assert.equal(governed.includes("/work-orders"), true);
   assert.ok(governed.length >= 15);
 });
+
+// Ω4C PR-14 — Telemetria: os 4 paths do console do app de campo são GOVERNADOS pelo registry (gate
+// telemetry:read). Sem isso, o gating dinâmico do sidebar não esconde o grupo TELEMETRIA de quem não tem
+// a permissão (mesma classe do veto V1 de Orçamentos).
+const TELEMETRY_NAV_PATHS = [
+  "/telemetria/quilometragem",
+  "/telemetria/acessos",
+  "/telemetria/recusas",
+  "/telemetria/dispositivos",
+] as const;
+
+test("Ω4C PR-14: getGovernedNavigationPaths governa os 4 paths de telemetria", () => {
+  const governed = getGovernedNavigationPaths();
+  for (const path of TELEMETRY_NAV_PATHS) {
+    assert.equal(governed.includes(path), true, `governed deveria incluir ${path}`);
+  }
+});
+
+for (const role of Object.keys(MAP_VISIBLE_BY_ROLE) as Role[]) {
+  const hasTelemetry = ROLE_PERMISSIONS[role].includes("telemetry:read");
+  test(`Ω4C PR-14: papel ${role} ${hasTelemetry ? "VÊ" : "NÃO vê"} o grupo Telemetria (gate telemetry:read)`, () => {
+    const paths = menuPathsForRole(role);
+    for (const telemetryPath of TELEMETRY_NAV_PATHS) {
+      assert.equal(
+        paths.includes(telemetryPath),
+        hasTelemetry,
+        `${role} → ${telemetryPath} deveria ${hasTelemetry ? "aparecer" : "sumir"} no menu`,
+      );
+    }
+  });
+}

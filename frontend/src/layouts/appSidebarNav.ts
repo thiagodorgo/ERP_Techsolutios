@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Ban,
   BarChart3,
   Bell,
   BookUser,
@@ -13,6 +14,7 @@ import {
   CreditCard,
   Factory,
   Fuel,
+  Gauge,
   Gavel,
   HandCoins,
   IdCard,
@@ -28,6 +30,8 @@ import {
   Settings,
   ShieldCheck,
   ShoppingCart,
+  Smartphone,
+  Tablet,
   Tag,
   Tags,
   Truck,
@@ -89,6 +93,14 @@ const AUDITORIA: NavItem = { label: "Auditoria", path: "/audit", icon: ScrollTex
 const ACESSOS: NavItem = { label: "Acessos", path: "/controle/usuarios/acessos", icon: LogIn };
 const SESSOES: NavItem = { label: "Sessões", path: "/controle/usuarios/sessoes", icon: MonitorSmartphone };
 
+// Ω4C PR-14 — Controle > Telemetria (app de campo). "Acessos" aqui é o conectou/desconectou do app —
+// distinto de Controle·Usuários·Acessos (login web) — desambiguado pelo grupo TELEMETRIA + breadcrumb.
+// O Rastreamento/mapa fica FORA (PR-15, Junta de Mapas).
+const TELE_QUILOMETRAGEM: NavItem = { label: "Quilometragem", path: "/telemetria/quilometragem", icon: Gauge };
+const TELE_ACESSOS: NavItem = { label: "Acessos", path: "/telemetria/acessos", icon: Smartphone };
+const TELE_RECUSAS: NavItem = { label: "Recusas", path: "/telemetria/recusas", icon: Ban };
+const TELE_DISPOSITIVOS: NavItem = { label: "Dispositivos", path: "/telemetria/dispositivos", icon: Tablet };
+
 const G_VISAO_GERAL: NavGroup = { label: "VISÃO GERAL", items: [DASHBOARD] };
 
 // Grupos completos (gestor/admin) — os demais papéis recebem subconjuntos.
@@ -111,6 +123,13 @@ const G_ADMIN_FULL: NavGroup = {
   label: "ADMINISTRAÇÃO",
   items: [USUARIOS, ACESSOS, SESSOES, NOTIFICACOES, CONFIGURACOES, AUDITORIA],
 };
+// Ω4C PR-14 — grupo TELEMETRIA (papéis com telemetry:read: tenant_admin/manager/field_dispatcher/auditor).
+// Visível para os roleKind admin/gestor/dispatcher; o backend é a autoridade final (rota PermissionGuard
+// telemetry:read → 403 real p/ quem não tem, ex. field_technician).
+const G_TELEMETRIA: NavGroup = {
+  label: "TELEMETRIA",
+  items: [TELE_QUILOMETRAGEM, TELE_ACESSOS, TELE_RECUSAS, TELE_DISPOSITIVOS],
+};
 
 // Navegação por papel (5 grupos da IA aprovada). Distribuição por RoleKind
 // segundo a tabela "Visibilidade por papel" (sidebar-ia.md) + navigation-matrix.md.
@@ -118,15 +137,17 @@ const G_ADMIN_FULL: NavGroup = {
 // esta camada apenas molda o menu visível.
 export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
   // tenant_admin — menu completo.
-  admin: [G_VISAO_GERAL, G_OPERACAO_FULL, G_FROTA_FULL, G_GESTAO_FULL, G_ADMIN_FULL],
+  admin: [G_VISAO_GERAL, G_OPERACAO_FULL, G_FROTA_FULL, G_GESTAO_FULL, G_TELEMETRIA, G_ADMIN_FULL],
   // manager (+ fallback: platform_admin/auditor operam com leitura ampla).
-  gestor: [G_VISAO_GERAL, G_OPERACAO_FULL, G_FROTA_FULL, G_GESTAO_FULL, G_ADMIN_FULL],
+  gestor: [G_VISAO_GERAL, G_OPERACAO_FULL, G_FROTA_FULL, G_GESTAO_FULL, G_TELEMETRIA, G_ADMIN_FULL],
   // operator / field_technician / field_dispatcher — operação + frota + cadastros (sem administração).
+  // TELEMETRIA para o field_dispatcher (tem telemetry:read); field_technician cai no 403 do backend.
   dispatcher: [
     G_VISAO_GERAL,
     G_OPERACAO_FULL,
     G_FROTA_OPERACIONAL,
     { label: "GESTÃO", items: [CLIENTES, EQUIPES, SERVICOS, TABELAS_VALORES, TARIFAS, ESTOQUE] },
+    G_TELEMETRIA,
     { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES] },
   ],
   // finance — recupera o grupo (multas/seguros/remunerações/financeiro/relatórios/aprovações).
@@ -189,6 +210,10 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/audit",
   "/controle/usuarios/acessos",
   "/controle/usuarios/sessoes",
+  "/telemetria/quilometragem",
+  "/telemetria/acessos",
+  "/telemetria/recusas",
+  "/telemetria/dispositivos",
   "/notifications",
   "/administrator/checklists",
   "/administrator/settings",

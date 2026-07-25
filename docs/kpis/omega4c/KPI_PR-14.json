@@ -1,0 +1,65 @@
+{
+  "pr": "PR-14",
+  "fase": "Fase 3 — Telemetria WEB (telas Acessos/Quilometragem/Recusas/Dispositivos, SEM mapa)",
+  "snapshot_date": "2026-07-25",
+  "branch": "rodada/omega4c",
+  "tipo": "Frontend-aditivo (+ pequeno fix backend de esconde-fino no nav registry). Consome os endpoints telemetry:read do PR-12. Mapa/Rastreamento = PR-15 (Junta de Mapas).",
+  "models_alterados": [],
+  "migrations": [],
+  "telas": {
+    "quilometragem": "/telemetry/km — seletor de profissional (operator-profiles) + período De/Até default 24h + totalizadores (Σ km/pontos); km 0 honesto sem pontos; 422 professional_required/window_too_large/invalid_window tratados honestos.",
+    "acessos": "/telemetry/access — connect/disconnect por usuário/dispositivo com badge. Disambiguado da 'Acessos' de Usuários (login web PR-11) por grupo TELEMETRIA + breadcrumb.",
+    "recusas": "/telemetry/refusals — SERVICE_REFUSAL com badges (motivo/OS-ref).",
+    "dispositivos": "/telemetry/devices — label grosseiro anti-fingerprint; sem seletor de profissional."
+  },
+  "s28_confirmado": "NENHUMA das 4 telas exibe coordenada crua (lat/lng), IP, tenant_id, sdk_int cru, client_action_id — adapter projeta SÓ o allowlist do DTO e DESCARTA defensivamente campos sensíveis; teste injeta lat/lng/ip/tenant_id/sdk_int e prova ausência no DOM E no CSV. ZERO consumo de /telemetry/track (coordenada crua = só o mapa/PR-15). Confirmado por 2 revisores (secops+avaliador).",
+  "permissao": "REUSA telemetry:read (PR-12; admins+manager+field_dispatcher+auditor; field_technician EXCLUÍDO). SEM permissão nova (catalog.ts/RBAC_MATRIX/core-saas.test diff VAZIO). 4 rotas sob PermissionGuard telemetry:read; command-palette gated via tenantNavigation.",
+  "esconde_fino_fix": "MEDIA da junta (coordenador): sidebar coarse exibia TELEMETRIA a papéis sem telemetry:read porque /telemetria/* não estava no NAVIGATION_REGISTRY do backend. CORRIGIDO: registrados os 4 paths governados telemetry.{quilometragem,acessos,recusas,dispositivos} em navigation.registry.ts com requiredPermissions:['telemetry:read'] (paridade V1 Orçamentos) → getGovernedNavigationPaths 24→28 → computeHiddenNavPaths oculta o grupo p/ quem não tem a permissão. navigation-provisioning.test +2 (matriz por papel).",
+  "modulos": [
+    "frontend/src/modules/telemetry/* (14 arquivos: types/service/adapter/hooks + 4 pages + ProfessionalPicker/TelemetryPeriodFilter)",
+    "frontend/src/App.tsx (4 rotas lazy sob PermissionGuard telemetry:read) + appSidebarNav.ts (grupo TELEMETRIA) + tenantNavigation.ts (command-palette gating)",
+    "src/modules/navigation/navigation.registry.ts (4 paths governados telemetry:read — fix de esconde-fino) + tests/navigation-provisioning.test.ts (+2 matriz por papel)"
+  ],
+  "rns_cobertas": [
+    "RN-TELE-WEB §2.8 (nenhuma coordenada crua/IP nas 4 telas nem no CSV; zero /track)",
+    "RN-TELE-WEB Quilometragem (seletor profissional + período 24h + totalizadores; km 0 honesto)",
+    "RN-TELE-WEB janela (default 24h; 422 professional_required/window_too_large/invalid_window honestos)",
+    "RN-TELE-WEB gating (telemetry:read em rota/paleta/provisionamento; field_technician não vê após o fix de esconde-fino)",
+    "RN-TELE-WEB disambiguação (Acessos de telemetria ≠ Acessos de Usuários PR-11)"
+  ],
+  "rns_total_pr": 10,
+  "cobertura_testes": {
+    "frontend": "frontend/tests/telemetria-web.test.tsx 18 subtests (4 telas render/seletor-profissional/período-24h/km-0-honesto/empty/403/422/§2.8-DOM+CSV/gating/PT-BR/disambiguação/nunca-/track) + sidebar-nav.test (grupo TELEMETRIA). smoke 801→819.",
+    "backend": "tests/navigation-provisioning.test.ts 23/23 (+2: getGovernedNavigationPaths governa os 4 telemetria + matriz por papel derivada de ROLE_PERMISSIONS)."
+  },
+  "d_records": [
+    "D-Ω4C-TELE-WEB-SPLIT (4 telas web aqui; mapa/Rastreamento = PR-15 Junta de Mapas)",
+    "D-Ω4C-TELE-WEB-MODULE (módulo frontend telemetry novo)",
+    "D-Ω4C-TELE-WEB-NAV (grupo TELEMETRIA + governança no nav registry — esconde-fino)",
+    "D-Ω4C-TELE-WEB-ACESSOS-DISAMBIG (Acessos telemetria ≠ Acessos Usuários PR-11)",
+    "D-Ω4C-TELE-WEB-PROF-SELECTOR (km/access/refusals exigem professionalId — 422)",
+    "D-Ω4C-TELE-WEB-WINDOW (período default 24h; window_too_large honesto)",
+    "D-Ω4C-TELE-WEB-CSV (reusa frontend/src/lib/csv.ts)"
+  ],
+  "divergencias_vs_autem": [
+    "Rastreamento/mapa deferido a PR-15 (Junta de Mapas; único consumidor de /telemetry/track)",
+    "tenantNavigation.ts + navigation.registry.ts tocados (esconde-fino; precedente PR-11/V1 Orçamentos)",
+    "rótulo Acessos aparece 2× (disambiguado por grupo+breadcrumb; breadcrumb a confirmar — fast-follow)"
+  ],
+  "junta": {
+    "agente-secops": "APROVADO (0 cond; §2.8 sem coordenada; zero /track; anti-fingerprint)",
+    "omega4c-avaliador": "APROVADO (2 BAIXA; smoke 819; sem regressão backend)",
+    "coordenador-de-acessos": "APROVADO_CONDICIONADO → APROVADO (MEDIA de esconde-fino resolvida com registro no nav registry)",
+    "veredito": "UNÂNIME 3/3 APROVADO (1 MEDIA de esconde-fino resolvida)"
+  },
+  "kpi_repo_wide": {
+    "frontend_smoke": "801->819 (+18)",
+    "backend": "1479->1481 (+2 navigation-provisioning do fix de esconde-fino)",
+    "blocks": "84->85"
+  },
+  "coexistencia": "telemetry:read/catalog INTOCADO; §2.8 sem coordenada; mapa deferido a PR-15; sem regressão (approval-frontend-contract passa; backend frontend-only)",
+  "mapa_deferido": "PR-15 Rastreamento (Junta de Mapas: planejador-mapas → dev-mapas → avaliador-mapas; consome /telemetry/track do PR-12)",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}
