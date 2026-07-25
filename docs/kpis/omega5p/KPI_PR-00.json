@@ -1,0 +1,43 @@
+{
+  "pr": "PR-00",
+  "fase": "Fase 0 — Governança + Reconhecimento (Módulo Pátios de Recolhimento / SIGPRV)",
+  "snapshot_date": "2026-07-25",
+  "branch": "rodada/omega5p",
+  "tipo": "Governança/docs-only. Charter da junta + 5 agentes efêmeros + reconhecimento do repo (tabela existe/estende/cria) + ratificação de D-records. ZERO código de produto, ZERO schema, ZERO migração, ZERO teste.",
+  "artefatos": [
+    "docs/juntas/J-OMEGA5P.md (charter: composição, mandato, critérios, D-records da visão do dono, cronograma PR-00..21)",
+    ".claude/agents/omega5p-{planejador,dev-backend,dev-frontend,dev-portal,avaliador}.md (5 agentes efêmeros com bloco de expiração)",
+    "docs/rodadas/omega5p/FASE0_RECON.md (tabela existe/estende/cria ancorada em arquivo:linha; ratificação D-Ω5P-01..13; §11 parametrizado/deferido; correções do gate §8)"
+  ],
+  "recon_conclusoes": {
+    "cria_net_new": "yard, jurisdiction, impound(+CustodyEvent hash-chain), charging, release, auction, authority-portal(PWA+BFF), owner-portal(PWA+BFF), interop(outbox)",
+    "estende": "tariffs (Tariff:1385 já tem vigência/price-table/cliente → +categoria-de-veículo via ServiceCatalog-por-categoria +escopo público/privado; D-Ω5P-10); checklists (type=impound_reception especializado)",
+    "reusa": "WorkOrder/FieldDispatch/Attachment/ScheduledNotification+scan-due/FinancialTitle(createPayableSourceRoutes)/ProfessionalStatementEntry/FinancialEntry:1727/AuditLog/withTenantRls/scheduler in-process(job.worker, sem node-cron)",
+    "branches_nao_serve": "Branch:95 é organizacional (users/RBAC), não pátio físico → yard é CRIAR",
+    "vehicle_nao_reusa": "Vehicle.plate NOT NULL + @@unique → identidade do bem custodiado vive no ImpoundProcess (nullable + flag unidentified) — D-Ω5P-RECON-A, fecha D-Ω5P-09"
+  },
+  "d_records_ratificados": "D-Ω5P-01..13 (hash-chain; diária rolling-24h+calendário; teto intertemporal; portal placa+Renavam plugável; Sivec adapter/outbox; leilão prepara/documenta/liquida; quitação manual PIX-ready; retenção 5 anos+anonimização; veículo não identificado 1ª classe; tariffs estende; dois PWAs isolados; autoridade persona ativa; dois reparos distintos)",
+  "d_records_novos": [
+    "D-Ω5P-RECON-A: identidade do veículo no ImpoundProcess sem FK ao Vehicle da frota",
+    "D-Ω5P-RECON-B: gatilho OS→custódia por evento de domínio dedicado (impound.trigger_evaluated) + idempotência por unique (tenant_id, work_order_id) + durabilidade (transacional/sweep)",
+    "PD-Ω5P-SIGN: assinatura eletrônica da nota de leilão (ICP-Brasil) — possível gatilho junta-5, bloqueante de PR-13/14"
+  ],
+  "pontos_abertos_estudo_11": {
+    "deferido_omega6": "Sivec (spec federal); guarda monitorada (hardware homologado); SNE (envio real — só registra trilha no MVP; canal exclusivo em 01/01/2027 = risco de timing reconhecido)",
+    "parametrizado": "classificação conservado/sucata (enum por perfil; critérios automáticos deferidos); categorias de veículo (eixo tarifa/perfil); veículo sem identificação (1ª classe)"
+  },
+  "junta": {
+    "critico-adversarial": "APROVADO_CONDICIONADO → APROVADO (5 condições aplicadas: âncora FinancialEntry :1727; durabilidade do gatilho PR-06; PD-Ω5P-SIGN assinatura×PDF bloqueante PR-13/14; tariffs via ServiceCatalog-por-categoria; precisões de dependência). Nada CRÍTICO; nada bloqueia a Fase 1.",
+    "omega5p-avaliador": "ativa na próxima sessão (ratificação oficial registrada); PR-00 é docs-only",
+    "veredito": "APROVADO (gate adversarial + condições sanadas)"
+  },
+  "kpi_repo_wide": {
+    "backend": "1521 (INALTERADO — PR-00 docs-only, sem código/teste; carrega o último valor oficial Ω4C PR-20)",
+    "frontend_smoke": "850 (INALTERADO)",
+    "flutter_tests": "807 (INALTERADO)",
+    "blocks": "88 (INALTERADO — recon/governança não conta como feature entregue, mesmo critério do PR-00 da Ω4C)"
+  },
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}
