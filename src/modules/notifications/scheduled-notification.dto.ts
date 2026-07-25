@@ -39,3 +39,53 @@ export function toScheduledNotificationListDto(input: {
     },
   };
 }
+
+// Ω4C PR-20 — DTO da CENTRAL tenant-wide (D-Ω4C-NOTIF-DTO-CENTRAL, o coração da fatia). A lista mostra as
+// definições de QUALQUER criador do tenant, então §2.8 fica CONDICIONAL ao viewer: campos "para quem" (destino)
+// só voltam ao PRÓPRIO criador (mine=true). Sempre expõe metadados de NEGÓCIO (visibility/status/sourceType são
+// enums, não segredo/UUID) + o booleano `mine` (chip "Você" na UI). NUNCA vaza:
+//  - tenant_id / client_action_id / deleted_at (allowlist §2.8, como o DTO base);
+//  - createdBy CRU (só o derivado `mine` — sem revelar UUID de usuário de terceiros);
+//  - customRecipientIds / sourceId a NÃO-criador (a "lista de destinatários"/origem de uma definição de outro).
+// Defesa em 2 camadas: este DTO condicional no backend + descarte defensivo no adapter do front (padrão PR-14).
+export function toCentralScheduledNotificationDto(entry: ScheduledNotification, viewerUserId: string) {
+  const mine = entry.createdBy === viewerUserId;
+  const base = {
+    id: entry.id,
+    title: entry.title,
+    message: entry.message,
+    notifyAt: entry.notifyAt.toISOString(),
+    remindBeforeMinutes: entry.remindBeforeMinutes ?? null,
+    visibility: entry.visibility,
+    status: entry.status,
+    sourceType: entry.sourceType ?? null,
+    createdAt: entry.createdAt.toISOString(),
+    mine,
+  };
+  if (!mine) {
+    return base;
+  }
+  // Só o próprio criador vê a quem enviou (destinatários custom) e a origem (sourceId) do agendamento.
+  return {
+    ...base,
+    customRecipientIds: [...entry.customRecipientIds],
+    sourceId: entry.sourceId ?? null,
+  };
+}
+
+export function toCentralScheduledNotificationListDto(input: {
+  readonly items: readonly ScheduledNotification[];
+  readonly limit: number;
+  readonly offset: number;
+  readonly total: number;
+  readonly viewerUserId: string;
+}) {
+  return {
+    data: input.items.map((entry) => toCentralScheduledNotificationDto(entry, input.viewerUserId)),
+    pagination: {
+      limit: input.limit,
+      offset: input.offset,
+      total: input.total,
+    },
+  };
+}

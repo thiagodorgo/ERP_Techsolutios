@@ -3,11 +3,16 @@ import { ApiError, apiRequest } from "../../services/api/client";
 import { listUsersFromApi } from "../users/users.service";
 import type { NotificationApiContext } from "./notification.types";
 import {
+  adaptCentral,
+  adaptCentralList,
   adaptScheduledNotification,
   adaptScheduledNotifications,
   toCreateBody,
 } from "./scheduled-notification.adapter";
 import type {
+  CentralScheduledNotificationFilters,
+  CentralScheduledNotificationListResult,
+  CentralScheduledNotificationView,
   CreateScheduledNotificationInput,
   RecipientCandidatesResult,
   ScheduledNotificationListResult,
@@ -45,6 +50,47 @@ export async function listScheduledNotifications(context: NotificationApiContext
     }
     return { items: [], source: "fallback", forbidden: false };
   }
+}
+
+// Ω4C PR-20 — GET /notifications/scheduled/central → { data: [...DTO-central §2.8], pagination }. Lista
+// TENANT-WIDE (todas as definições da org, qualquer criador; inclui canceladas p/ histórico), gated
+// notifications:create no backend. Filtros: situação + período (De/Até) sobre notify_at. D-007: mock →
+// vazio honesto; 403 → forbidden; erro → fallback (a tela degrada sem fabricar linhas).
+export async function listCentralScheduledNotifications(
+  context: NotificationApiContext,
+  filters: CentralScheduledNotificationFilters = {},
+): Promise<CentralScheduledNotificationListResult> {
+  if (isMockMode()) return { items: [], source: "mock", forbidden: false };
+
+  const query = new URLSearchParams();
+  if (filters.status) query.set("status", filters.status);
+  if (filters.from) query.set("from", filters.from);
+  if (filters.to) query.set("to", filters.to);
+  const suffix = query.toString();
+  const path = suffix ? `/notifications/scheduled/central?${suffix}` : "/notifications/scheduled/central";
+
+  try {
+    const raw = await apiRequest<unknown>(path, toRequestOptions(context));
+    return { items: adaptCentralList(raw), source: "api", forbidden: false };
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 403) {
+      return { items: [], source: "fallback", forbidden: true };
+    }
+    return { items: [], source: "fallback", forbidden: false };
+  }
+}
+
+// Ω4C PR-20 — DELETE /notifications/scheduled/central/:id → 200 { data } (soft-cancel TENANT-WIDE de
+// QUALQUER pendente; fired/cancelled/cross-tenant → 404). Erros propagam — a tela traduz para feedback.
+export async function cancelCentralScheduledNotification(
+  context: NotificationApiContext,
+  id: string,
+): Promise<CentralScheduledNotificationView | null> {
+  const raw = await apiRequest<unknown>(`/notifications/scheduled/central/${encodeURIComponent(id)}`, {
+    ...toRequestOptions(context),
+    method: "DELETE",
+  });
+  return adaptCentral(readData(raw));
 }
 
 // DELETE /notifications/scheduled/:id → 200 { data } (soft-cancel: para ocorrências FUTURAS; entregas já

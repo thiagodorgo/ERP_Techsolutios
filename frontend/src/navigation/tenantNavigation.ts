@@ -372,6 +372,20 @@ export const tenantNavigation: NavigationItem[] = [
     moduleKey: "notifications",
   },
   {
+    // Ω4C PR-20 — Central de Notificações (tenant-wide, gestão). Gate por permissão real notifications:create
+    // (NÃO read: o read é o inbox amplo de todo usuário; gatear a central por read vazaria as agendadas da
+    // org). Sem allowedRoles: a permissão é a autoridade — a paleta de comandos e o provisionamento escondem
+    // o destino de quem não tem create. Distinta de tenant-notifications (inbox/sino, notifications:read).
+    id: "tenant-notifications-central",
+    label: "Central de Notificações",
+    path: "/controle/notificacoes",
+    scope: "tenant",
+    mode: "operation",
+    requiredPermissions: ["notifications:create"],
+    icon: "BellRing",
+    status: "implemented",
+  },
+  {
     id: "tenant-users",
     label: "Usuarios",
     path: "/users",

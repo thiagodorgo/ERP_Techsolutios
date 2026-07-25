@@ -54,3 +54,35 @@ export type RecipientCandidatesResult = {
   readonly items: RecipientOption[];
   readonly unavailable: boolean;
 };
+
+// ── Ω4C PR-20 — Central de Notificações (tenant-wide, D-Ω4C-NOTIF-DTO-CENTRAL) ────
+// View da CENTRAL: projeção §2.8 do DTO-central. Acrescenta `sourceType` (origem de NEGÓCIO) e o
+// booleano `mine` (chip "Você") à projeção mínima. NUNCA carrega customRecipientIds/sourceId/tenant_id/
+// client_action_id/createdBy — o adapter os descarta defensivamente (defesa em 2 camadas, padrão PR-14).
+export type CentralScheduledNotificationView = {
+  readonly id: string;
+  readonly title: string;
+  readonly message: string;
+  readonly notifyAt: string;
+  readonly remindBeforeMinutes: number | null;
+  readonly visibility: ScheduledNotificationVisibility;
+  readonly status: ScheduledNotificationStatus;
+  readonly sourceType: ScheduledNotificationSourceType | null;
+  readonly createdAt: string;
+  readonly mine: boolean;
+};
+
+// Filtro de situação da Central (inclui "todas"). Período (De/Até) em YYYY-MM-DD sobre notify_at.
+export type CentralScheduledNotificationStatusFilter = "all" | ScheduledNotificationStatus;
+
+export type CentralScheduledNotificationFilters = {
+  readonly status?: ScheduledNotificationStatus;
+  readonly from?: string;
+  readonly to?: string;
+};
+
+export type CentralScheduledNotificationListResult = {
+  readonly items: CentralScheduledNotificationView[];
+  readonly source: ScheduledNotificationSource;
+  readonly forbidden: boolean;
+};

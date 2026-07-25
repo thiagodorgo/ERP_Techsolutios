@@ -55,6 +55,7 @@
 | Relatórios `/reports` | `reports:read`* | F | F | F | R | R | R | — | R | — |
 | Usuários `/users` (F9) | `users.read`/`users.manage` | F | F(manage) | R | — | — | — | — | R | limited |
 | Notificações `/notifications` | `notifications:read` | F | F | F | R | R | R | M | R | R |
+| Central de Notificações `/controle/notificacoes` (Ω4C PR-20) | `notifications:create` | F | F | E | E | — | — | — | — | — |
 | Configurações `/administrator/settings` (Ω2-e) | `tenant_settings:read` (edita: `tenant_settings:update`) | F | E | R | — | — | — | — | R | — |
 | Auditoria `/audit` | `audit:read` | F | F | R | — | R | R | — | F | R |
 

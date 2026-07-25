@@ -1308,6 +1308,31 @@ if (!connectionString) {
       );
       assert.equal(tenantCScheduled?.status, "pending", "tenant C scheduled notification stays visible + untouched in-tenant");
 
+      // Ω4C PR-20 (RN-NOTIFCEN-01/-04) — Central tenant-wide sobre scheduled_notifications, via os métodos REAIS
+      // do repositório (listByTenant/cancelCentral) sob withTenantRls, reusando as 3 linhas A/B/C acima. Prova:
+      // a central de A LISTA só a de A (não a de B/C) e CANCELA só pendentes do próprio tenant (cross-tenant → null,
+      // a de B segue pendente). tenant_id 1º da cláusula + RLS como autoridade de isolamento.
+      const { RlsPrismaScheduledNotificationRepository } = await import(
+        "../src/modules/notifications/scheduled-notification-prisma.repository.js"
+      );
+      const centralScheduledRepo = new RlsPrismaScheduledNotificationRepository(client);
+
+      const centralListForTenantA = await centralScheduledRepo.listByTenant(tenantA.id);
+      const centralIdsForTenantA = centralListForTenantA.map((entry) => entry.id);
+      assert.equal(centralIdsForTenantA.includes(scheduledNotificationAId), true, "central de A lista a agendada de A");
+      assert.equal(centralIdsForTenantA.includes(scheduledNotificationBId), false, "central de A NÃO lista a agendada de B");
+      assert.equal(centralIdsForTenantA.includes(scheduledNotificationCId), false, "central de A NÃO lista a agendada de C");
+
+      const crossTenantCentralCancel = await centralScheduledRepo.cancelCentral(tenantA.id, scheduledNotificationBId);
+      assert.equal(crossTenantCentralCancel, null, "central de A não cancela a agendada de B (cross-tenant → null)");
+      const tenantBScheduledAfterCentral = await withTenantRls(client, tenantB.id, (tx) =>
+        tx.scheduledNotification.findUnique({ where: { id: scheduledNotificationBId } }),
+      );
+      assert.equal(tenantBScheduledAfterCentral?.status, "pending", "tenant B scheduled notification untouched by tenant A central cancel");
+
+      const inTenantCentralCancel = await centralScheduledRepo.cancelCentral(tenantA.id, scheduledNotificationAId);
+      assert.equal(inTenantCentralCancel?.status, "cancelled", "central de A cancela a agendada PENDENTE de A (tenant-wide)");
+
       // Ω4C PR-06 (RN-MANUT-09) — maintenance_order_items (itens da manutenção) com 3 tenants EFÊMEROS (A, B, C).
       // Cada item referencia uma maintenance_order via FK composta (tenant_id, maintenance_order_id); a ordem
       // referencia um vehicle (FK composta). Prova: invisível sem contexto + cross-tenant updateMany count=0 +

@@ -1,0 +1,67 @@
+{
+  "pr": "PR-20",
+  "fase": "Fase 3 (fecha o backlog de feature Ω4C) — Central de Notificações (tela tenant-wide; fatia deferida do motor PR-04)",
+  "snapshot_date": "2026-07-25",
+  "branch": "rodada/omega4c",
+  "tipo": "Backend-aditivo (leitura+cancel tenant-wide + DTO-central §2.8 + 2 rotas + governed path) + Frontend (tela /controle/notificacoes). ZERO migração, ZERO permissão nova (reusa notifications:create). Consome/estende o motor de notificações do PR-04 (#265) sem tocar o scheduler/fireDue.",
+  "models_alterados": [],
+  "migrations": [],
+  "comportamento": {
+    "central_tenant_wide": "GET /notifications/scheduled/central lista as agendadas de TODOS os criadores da organização (o GET /scheduled legado é creator-scoped). Filtros: situação (Todas/Pendentes/Disparadas/Canceladas — inclui canceladas p/ histórico) + período De/Até sobre notifyAt. DELETE /notifications/scheduled/central/:id = soft-cancel tenant-wide de QUALQUER pendente (UPDATE atômico WHERE deleted_at IS NULL AND status='pending'; fired/cancelled/inexistente/cross-tenant → 404).",
+    "dto_central_2.8": "toCentralScheduledNotificationDto(entry, viewerUserId): expõe SEMPRE id,title,message,notifyAt,remindBeforeMinutes,visibility,status,sourceType,createdAt + derivado mine=(createdBy===viewer); para NÃO-criador (mine=false) OMITE customRecipientIds e sourceId (chaves genuinamente ausentes do objeto, não undefined serializável); NUNCA tenant_id/client_action_id/deletedAt/createdBy cru (só o booleano mine). Defesa em 2 camadas: DTO condicional no backend + adaptCentral no front lê só o allowlist (padrão PR-14).",
+    "rotas_literais_antes_do_param": "as rotas literais .../central e .../central/:id são montadas ANTES de .../:scheduledNotificationId (senão o param captura 'central' e muda o gate).",
+    "cancel_atomico": "cancelCentral é UPDATE único casando deleted_at:null ∧ status:'pending' → fecha a corrida cancel×fire (não cancela uma já-disparada). Motor PR-04 (fireDue/idempotência/job.worker) INTOCADO.",
+    "auditoria_sem_pii": "cancelCentral audita via allowlist {visibility,sourceType,hasReminder,customRecipientCount,status} — nunca título/mensagem/lista de destinatários/tenant_id.",
+    "editar_deferido": "Editar (AutEM §8.2 'editar e excluir') DEFERIDO como honest-partial (D-007): entrega a defining behavior (listar-tudo) + cadastrar avulsa + excluir tenant-wide. PATCH pending-only fica documentado como fast-follow (introduziria edição §2.8 cross-criador)."
+  },
+  "permissao": "REUSA notifications:create (PR-04; super/platform/tenant_admin/manager/operator/field_dispatcher). NÃO gateia por notifications:read (é o inbox amplo que todo logado tem, incl. field_technician — vazaria as agendadas da org). SEM permissão nova — catalog.ts/tests/core-saas.test.ts (expectedPermissionCatalog deepEqual)/prisma/seed.ts INTOCADOS (custo 0). Rota /controle/notificacoes sob PermissionGuard notifications:create + GOVERNED PATH tenant.notificationsCentral no NAVIGATION_REGISTRY (esconde-fino: field_technician NÃO vê o item).",
+  "modulos": [
+    "src/modules/notifications/scheduled-notification.{types,repository,prisma.repository,validators,dto,service,controller}.ts (listByTenant/countByTenant/cancelCentral tenant-wide via withTenantRls + DTO-central §2.8 condicional; motor/scheduler INTOCADO)",
+    "src/modules/notifications/notification.routes.ts (GET + DELETE .../central gated notifications:create, literais antes do :id)",
+    "src/modules/navigation/navigation.registry.ts (governed path tenant.notificationsCentral notifications:create)",
+    "frontend/src/modules/notifications/pages/CentralNotificacoesPage.tsx (novo) + scheduled-notification.{service,adapter,types}.ts (getCentral/adaptCentral/CentralView, descarte defensivo §2.8)",
+    "frontend/src/App.tsx (rota lazy sob PermissionGuard) + appSidebarNav.ts + config/icons.tsx (BellRing) + navigation/tenantNavigation.ts + modules/navigation/navigation.adapter.ts",
+    "RBAC_MATRIX.md + docs/navigation-matrix.md (+1 linha da Central) + tests/navigation-provisioning.test.ts (matriz por papel do path central — condição C1 da junta)"
+  ],
+  "rns_cobertas": [
+    "RN-NOTIFCEN §2.8 (não-criador não vê customRecipientIds/sourceId; nunca tenant_id/createdBy cru)",
+    "RN-NOTIFCEN tenant-wide (lista todas as agendadas da organização, não só do criador)",
+    "RN-NOTIFCEN cancel tenant-wide atômico (só pendente; fired/cancelled/cross-tenant → 404)",
+    "RN-NOTIFCEN gating (notifications:create em rota+PermissionGuard+governed path; field_technician barrado)",
+    "RN-NOTIFCEN isolamento (central de A nunca lista/cancela B — RLS + 3 tenants)",
+    "RN-NOTIFCEN estados honestos §7 + PT-BR + §11 (empty D-007; acesso-negado; PageHeader ações à direita)",
+    "RN-NOTIFCEN disambiguação (Central /controle/notificacoes grupo ADMINISTRAÇÃO ≠ inbox /notifications sino)"
+  ],
+  "rns_total_pr": 7,
+  "cobertura_testes": {
+    "backend": "tests/scheduled-notifications.test.ts 21/21 (+7 NOTIFCEN: tenant-wide 2 criadores, §2.8 condicional [B vê a de A sem customRecipientIds/sourceId — injeção provada ausente no JSON], cancel cross-criador, fired/cancelled→404, filtros situação/período, RBAC 403 sem create, cross-tenant 404). tests/navigation-provisioning.test.ts 23→33 (+10: governed path tenant.notificationsCentral + matriz por papel — VÊ plat_admin/tenant_admin/manager/operator; NÃO vê field_technician/finance/inventory/auditor/support). tests/rls-tenant-isolation.test.ts bloco PR-20 (3 tenants A/B/C, métodos reais do repo sob Postgres). Execução CI-memória: 1504→1521 (+17), 0 fail, 6 skip.",
+    "frontend": "frontend/tests/central-notificacoes.smoke.test.tsx (render/filtros situação+período/empty-honesto/403-acesso-negado/§2.8-injeção-ausente-no-DOM/Excluir-só-pendente+confirmação/dialog-cadastrar/PT-BR/gating). smoke 839→850 (+11)."
+  },
+  "d_records": [
+    "D-Ω4C-NOTIF-CENTRAL-SPLIT (a Central tenant-wide é a fatia deferida do motor PR-04)",
+    "D-Ω4C-NOTIF-DTO-CENTRAL (DTO-central omite customRecipientIds/sourceId p/ não-criador; §2.8)",
+    "D-Ω4C-NOTIF-CENTRAL-RBAC-REUSE (reusa notifications:create; não gateia por notifications:read; sem permissão nova)",
+    "D-Ω4C-NOTIF-CENTRAL-CANCEL (cancel tenant-wide atômico só-pendente; motor intocado)",
+    "D-Ω4C-NOTIF-CENTRAL-EDIT-DEFER (Editar deferido honest-partial D-007; PATCH pending-only fast-follow)"
+  ],
+  "divergencias_vs_autem": [
+    "Editar deferido (entrega listar-tudo + cadastrar + excluir tenant-wide; PATCH pending-only = fast-follow)",
+    "title/message de outros criadores visíveis ao gestor por desenho (console tenant-wide de gestão; a regra §2.8 protege destinatários/sourceId, corretamente omitidos) — registrado por secops como aceito"
+  ],
+  "junta": {
+    "agente-secops": "APROVADO (0 cond; §2.8 omissão real de destinatários a não-criador provada no DTO+DOM; isolamento withTenantRls 3 tenants; gate notifications:create não escala; zero env/secret/CORS/TLS; 1 MÉDIA aceita por desenho: title/message tenant-wide)",
+    "omega4c-avaliador": "APROVADO_CONDICIONADO → APROVADO (todas as RN verdes; §2.8/RBAC/isolamento/cancel-atômico/estados-§7 verificados; sem regressão provada por HEAD stashed; única condição = artefatos de KPI → SANADA; números confirmados 1521/850/88)",
+    "coordenador-de-acessos": "APROVADO_CONDICIONADO → APROVADO (cadeia papel→permissão→nav→rota→backend íntegra por login real; matriz efetiva 1:1 com RBAC_MATRIX; field_technician não vê; 403 real; C1 teste de matriz por papel + C2 doc de navegação → SANADAS)",
+    "veredito": "UNÂNIME 3/3 APROVADO (0 CRÍTICO; C1[MÉDIA]/C2[BAIXA] de acessos + KPI sanadas; sem R-<entrega>)"
+  },
+  "kpi_repo_wide": {
+    "backend": "1504->1521 (+17; 7 scheduled-notifications + 10 navigation-provisioning [C1]; CI-memória 6 skip)",
+    "frontend_smoke": "839->850 (+11 central-notificacoes)",
+    "flutter_tests": "807 (inalterado — web/backend-only)",
+    "blocks": "87->88"
+  },
+  "coexistencia": "inbox/sino NotificationsPage INTOCADO; motor/scheduler PR-04 (fireDue/idempotência/job.worker) INTOCADO; catalog INTOCADO; sem migração; sem regressão (1521 pass/0 fail; smoke 850/850).",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

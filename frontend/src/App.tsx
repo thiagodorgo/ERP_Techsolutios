@@ -79,6 +79,9 @@ const PedidosPage = lazy(() => import("./modules/purchase-orders/pages/PedidosPa
 const ReportsPage = lazy(() => import("./modules/reports/pages/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const UsersPage = lazy(() => import("./modules/users/pages/UsersPage").then((m) => ({ default: m.UsersPage })));
 const AuditTenantPage = lazy(() => import("./modules/audit/pages/AuditTenantPage").then((m) => ({ default: m.AuditTenantPage })));
+const CentralNotificacoesPage = lazy(() =>
+  import("./modules/notifications/pages/CentralNotificacoesPage").then((m) => ({ default: m.CentralNotificacoesPage })),
+);
 const AcessosPage = lazy(() => import("./modules/sessions/pages/AcessosPage").then((m) => ({ default: m.AcessosPage })));
 const SessoesPage = lazy(() => import("./modules/sessions/pages/SessoesPage").then((m) => ({ default: m.SessoesPage })));
 const QuilometragemPage = lazy(() => import("./modules/telemetry/pages/QuilometragemPage").then((m) => ({ default: m.QuilometragemPage })));
@@ -693,6 +696,17 @@ export function App() {
               element={
                 <PermissionGuard permissions={["notifications:read"]}>
                   <NotificationsPage />
+                </PermissionGuard>
+              }
+            />
+            {/* Ω4C PR-20 — Central de Notificações (tenant-wide, gestão). Gate notifications:create (NÃO read:
+                read é o inbox amplo de todo usuário; gatear a central por read vazaria as agendadas da org).
+                Backend é a autoridade → 403 real p/ quem não tem create. */}
+            <Route
+              path="/controle/notificacoes"
+              element={
+                <PermissionGuard permissions={["notifications:create"]}>
+                  <CentralNotificacoesPage />
                 </PermissionGuard>
               }
             />

@@ -59,6 +59,26 @@ export function createNotificationRouter(
     }),
   );
 
+  // Ω4C PR-20 — CENTRAL tenant-wide (gestão): lista TODAS as agendadas do tenant (qualquer criador) + exclui
+  // (soft-cancel) qualquer pendente. Literais `.../central` e `.../central/:id` MONTADOS ANTES de
+  // `.../:scheduledNotificationId` (mesmo padrão do bloco `/scheduled`): "central" nunca é capturado como id.
+  // Sub-recurso 100% atrás de `notifications:create` (gestão/broadcast) — read é o inbox amplo e vazaria.
+  router.get(
+    "/notifications/scheduled/central",
+    requirePermission(NOTIFICATION_PERMISSIONS.create),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await scheduledController.listCentral(request));
+    }),
+  );
+
+  router.delete(
+    "/notifications/scheduled/central/:scheduledNotificationId",
+    requirePermission(NOTIFICATION_PERMISSIONS.create),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await scheduledController.cancelCentral(request));
+    }),
+  );
+
   router.get(
     "/notifications/scheduled/:scheduledNotificationId",
     requirePermission(NOTIFICATION_PERMISSIONS.create),

@@ -3,7 +3,12 @@ import type { Request } from "express";
 import { recordRequestAuditBestEffort } from "../core-saas/audit/audit-request-context.js";
 import { requireTenantContext } from "../core-saas/middleware/rbac.middleware.js";
 import { readRouteParam } from "../core-saas/routes/http.js";
-import { toScheduledNotificationDto, toScheduledNotificationListDto } from "./scheduled-notification.dto.js";
+import {
+  toCentralScheduledNotificationDto,
+  toCentralScheduledNotificationListDto,
+  toScheduledNotificationDto,
+  toScheduledNotificationListDto,
+} from "./scheduled-notification.dto.js";
 import type { ScheduledNotificationService } from "./scheduled-notification.service.js";
 import type { ScheduledNotification } from "./scheduled-notification.types.js";
 
@@ -22,6 +27,21 @@ export class ScheduledNotificationController {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const entry = await service.get(actor, readRouteParam(request.params.scheduledNotificationId));
     return { data: toScheduledNotificationDto(entry) };
+  }
+
+  // Ω4C PR-20 — CENTRAL tenant-wide: o DTO-central recebe o viewer (actor.userId) para o §2.8 condicional
+  // (mine + omissão de custom_recipient_ids/source_id a não-criador).
+  async listCentral(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.listCentral(actor, request.query as Record<string, unknown>);
+    return { body: toCentralScheduledNotificationListDto({ ...result, viewerUserId: actor.userId }) };
+  }
+
+  async cancelCentral(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const entry = await service.cancelCentral(actor, readRouteParam(request.params.scheduledNotificationId));
+    await this.audit(request, "scheduled_notification.cancelled", entry);
+    return { data: toCentralScheduledNotificationDto(entry, actor.userId) };
   }
 
   async create(request: Request) {

@@ -410,6 +410,317 @@ test("validação — notify_at ausente/inválido, visibility inválida, custom 
 });
 
 // ---------------------------------------------------------------------------
+// Ω4C PR-20 — Central de Notificações (tenant-wide). Lista TODAS as agendadas da org (qualquer criador) +
+// exclui (soft-cancel) qualquer pendente. §2.8 CONDICIONAL ao viewer (mine). Gate REUSA notifications:create.
+// ---------------------------------------------------------------------------
+
+test("[NOTIFCEN-01] GET central lista tenant-wide — 2 criadores no mesmo tenant (B vê as definições de A)", async () => {
+  await withScheduledApi(async ({ baseUrl }) => {
+    const tenant = randomUUID();
+    const creatorA = randomUUID();
+    const creatorB = randomUUID();
+    for (let i = 0; i < 2; i += 1) {
+      await requestJson(baseUrl, "/api/v1/notifications/scheduled", {
+        method: "POST",
+        headers: authHeaders(tenant, creatorA, "manager"),
+        body: { title: `De A ${i}`, message: "M", notify_at: "2999-01-01T09:00", visibility: "private" },
+      });
+    }
+    await requestJson(baseUrl, "/api/v1/notifications/scheduled", {
+      method: "POST",
+      headers: authHeaders(tenant, creatorB, "manager"),
+      body: { title: "De B", message: "M", notify_at: "2999-01-01T09:00", visibility: "private" },
+    });
+
+    // B (criador diferente) lista a CENTRAL → vê as 3 (as 2 de A + a dele). A lista do criador via /scheduled
+    // veria só a dele — a central é tenant-wide.
+    const central = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central", {
+      headers: authHeaders(tenant, creatorB, "manager"),
+    });
+    assert.equal(central.status, 200);
+    assert.equal(central.body.data.length, 3);
+    assert.equal(central.body.pagination.total, 3);
+    const titles = new Set(central.body.data.map((entry: { title: string }) => entry.title));
+    assert.ok(titles.has("De A 0") && titles.has("De A 1") && titles.has("De B"));
+
+    // Sanidade: a lista CREATOR-scoped de B segue mostrando SÓ a dele (foundation intocada).
+    const creatorScoped = await requestJson(baseUrl, "/api/v1/notifications/scheduled", {
+      headers: authHeaders(tenant, creatorB, "manager"),
+    });
+    assert.equal(creatorScoped.body.data.length, 1);
+  });
+});
+
+test("[NOTIFCEN-02] §2.8 CONDICIONAL — B lista a def. de A SEM custom_recipient_ids/source_id; nunca tenant_id/createdBy", async () => {
+  await withScheduledApi(async ({ baseUrl }) => {
+    const tenant = randomUUID();
+    const creatorA = randomUUID();
+    const creatorB = randomUUID();
+    const recipient1 = randomUUID();
+    const recipient2 = randomUUID();
+    const sourceId = randomUUID();
+
+    await requestJson(baseUrl, "/api/v1/notifications/scheduled", {
+      method: "POST",
+      headers: authHeaders(tenant, creatorA, "manager"),
+      body: {
+        title: "Custom de A",
+        message: "Destinatários de A",
+        notify_at: "2999-01-01T09:00",
+        visibility: "custom",
+        custom_recipient_ids: [recipient1, recipient2],
+        source_type: "maintenance_item",
+        source_id: sourceId,
+      },
+    });
+    await requestJson(baseUrl, "/api/v1/notifications/scheduled", {
+      method: "POST",
+      headers: authHeaders(tenant, creatorB, "manager"),
+      body: { title: "Minha de B", message: "M", notify_at: "2999-01-01T09:00", visibility: "private" },
+    });
+
+    const central = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central", {
+      headers: authHeaders(tenant, creatorB, "manager"),
+    });
+    assert.equal(central.status, 200);
+
+    const fromA = central.body.data.find((entry: { title: string }) => entry.title === "Custom de A");
+    const fromB = central.body.data.find((entry: { title: string }) => entry.title === "Minha de B");
+    assert.ok(fromA && fromB);
+
+    // A def. de A vista por B: NÃO-criador → OMITE custom_recipient_ids e source_id; mine=false; sourceType OK.
+    assert.equal(fromA.mine, false);
+    assert.equal("customRecipientIds" in fromA, false, "custom_recipient_ids não pode voltar a não-criador");
+    assert.equal("sourceId" in fromA, false, "source_id não pode voltar a não-criador");
+    assert.equal(fromA.sourceType, "maintenance_item");
+    assert.equal(fromA.visibility, "custom");
+
+    // A def. do PRÓPRIO B (mine=true) → carrega os campos de destino.
+    assert.equal(fromB.mine, true);
+    assert.equal("customRecipientIds" in fromB, true);
+    assert.equal("sourceId" in fromB, true);
+
+    // Nunca vaza (nenhuma linha): tenant_id, createdBy cru, client_action_id, deleted_at. E o UUID dos
+    // destinatários/origem de A não pode aparecer em lugar nenhum da resposta.
+    const serialized = JSON.stringify(central.body);
+    assert.equal(serialized.includes("tenant_id"), false);
+    assert.equal(serialized.includes("tenantId"), false);
+    assert.equal(serialized.includes("createdBy"), false);
+    assert.equal(serialized.includes("client_action_id"), false);
+    assert.equal(serialized.includes("clientActionId"), false);
+    assert.equal(serialized.includes("deletedAt"), false);
+    assert.equal(serialized.includes("deleted_at"), false);
+    assert.equal(serialized.includes(recipient1), false, "UUID de destinatário de A não pode vazar a B");
+    assert.equal(serialized.includes(recipient2), false);
+    assert.equal(serialized.includes(sourceId), false, "source_id de A não pode vazar a B");
+  });
+});
+
+test("[NOTIFCEN-04] DELETE central = soft-cancel tenant-wide de OUTRO criador (não só do próprio)", async () => {
+  await withScheduledApi(async ({ baseUrl }) => {
+    const tenant = randomUUID();
+    const creatorA = randomUUID();
+    const creatorB = randomUUID();
+    const created = await requestJson(baseUrl, "/api/v1/notifications/scheduled", {
+      method: "POST",
+      headers: authHeaders(tenant, creatorA, "manager"),
+      body: { title: "Pendente de A", message: "M", notify_at: "2999-01-01T09:00", visibility: "private" },
+    });
+    const id = created.body.data.id as string;
+
+    // B cancela a de A pela central (tenant-wide) → 200, status cancelled, mine=false (§2.8 — sem campos de A).
+    const cancelled = await requestJson(baseUrl, `/api/v1/notifications/scheduled/central/${id}`, {
+      method: "DELETE",
+      headers: authHeaders(tenant, creatorB, "manager"),
+    });
+    assert.equal(cancelled.status, 200);
+    assert.equal(cancelled.body.data.status, "cancelled");
+    assert.equal(cancelled.body.data.mine, false);
+    assert.equal("customRecipientIds" in cancelled.body.data, false);
+
+    // Some das PENDENTES; segue no histórico (status=cancelled).
+    const pending = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central?status=pending", {
+      headers: authHeaders(tenant, creatorB, "manager"),
+    });
+    assert.equal(pending.body.data.length, 0);
+    const cancelledList = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central?status=cancelled", {
+      headers: authHeaders(tenant, creatorB, "manager"),
+    });
+    assert.equal(cancelledList.body.data.length, 1);
+
+    // A def. já cancelada da FOUNDATION creator-scoped continua invisível ao GET/:id do criador (deleted_at).
+    const goneForCreator = await requestJson(baseUrl, `/api/v1/notifications/scheduled/${id}`, {
+      headers: authHeaders(tenant, creatorA, "manager"),
+    });
+    assert.equal(goneForCreator.status, 404);
+  });
+});
+
+test("[NOTIFCEN-04] DELETE central de fired/cancelled/inexistente → 404 (só pendente cancela)", async () => {
+  await withScheduledApi(async ({ baseUrl }) => {
+    const tenant = randomUUID();
+    const creator = randomUUID();
+
+    // Inexistente → 404.
+    const ghost = await requestJson(baseUrl, `/api/v1/notifications/scheduled/central/${randomUUID()}`, {
+      method: "DELETE",
+      headers: authHeaders(tenant, creator, "manager"),
+    });
+    assert.equal(ghost.status, 404);
+
+    // Já DISPARADA (notify_at no passado → fire inline) → 404 no cancel central.
+    const past = new Date(Date.now() - 60_000).toISOString();
+    const firedCreated = await requestJson(baseUrl, "/api/v1/notifications/scheduled", {
+      method: "POST",
+      headers: authHeaders(tenant, creator, "manager"),
+      body: { title: "Disparada", message: "M", notify_at: past, visibility: "private" },
+    });
+    assert.equal(firedCreated.body.data.status, "fired");
+    const cancelFired = await requestJson(baseUrl, `/api/v1/notifications/scheduled/central/${firedCreated.body.data.id}`, {
+      method: "DELETE",
+      headers: authHeaders(tenant, creator, "manager"),
+    });
+    assert.equal(cancelFired.status, 404);
+
+    // Cancela uma pendente e tenta de novo → 404 (idempotência do 404, não re-cancela).
+    const pendingCreated = await requestJson(baseUrl, "/api/v1/notifications/scheduled", {
+      method: "POST",
+      headers: authHeaders(tenant, creator, "manager"),
+      body: { title: "Pendente", message: "M", notify_at: "2999-01-01T09:00", visibility: "private" },
+    });
+    const pid = pendingCreated.body.data.id as string;
+    const firstCancel = await requestJson(baseUrl, `/api/v1/notifications/scheduled/central/${pid}`, {
+      method: "DELETE",
+      headers: authHeaders(tenant, creator, "manager"),
+    });
+    assert.equal(firstCancel.status, 200);
+    const secondCancel = await requestJson(baseUrl, `/api/v1/notifications/scheduled/central/${pid}`, {
+      method: "DELETE",
+      headers: authHeaders(tenant, creator, "manager"),
+    });
+    assert.equal(secondCancel.status, 404);
+  });
+});
+
+test("[NOTIFCEN-06] GET central — filtros de situação + período sobre notify_at", async () => {
+  await withScheduledApi(async ({ baseUrl }) => {
+    const tenant = randomUUID();
+    const creator = randomUUID();
+    const headers = authHeaders(tenant, creator, "manager");
+
+    // Uma PENDENTE futura (2999) e uma FIRED (passado, dispara inline).
+    await requestJson(baseUrl, "/api/v1/notifications/scheduled", {
+      method: "POST",
+      headers,
+      body: { title: "Pend", message: "M", notify_at: "2999-01-01T09:00", visibility: "private" },
+    });
+    await requestJson(baseUrl, "/api/v1/notifications/scheduled", {
+      method: "POST",
+      headers,
+      body: { title: "Fired", message: "M", notify_at: new Date(Date.now() - 60_000).toISOString(), visibility: "private" },
+    });
+
+    const all = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central", { headers });
+    assert.equal(all.body.data.length, 2, "Todas → pendente + disparada");
+
+    const pending = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central?status=pending", { headers });
+    assert.equal(pending.body.data.length, 1);
+    assert.equal(pending.body.data[0].title, "Pend");
+
+    const fired = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central?status=fired", { headers });
+    assert.equal(fired.body.data.length, 1);
+    assert.equal(fired.body.data[0].title, "Fired");
+
+    // Período: from=2100 corta a fired (2026), mantém a pendente (2999); to=2100 faz o inverso.
+    const fromFuture = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central?from=2100-01-01T00:00", { headers });
+    assert.equal(fromFuture.body.data.length, 1);
+    assert.equal(fromFuture.body.data[0].title, "Pend");
+    const toPast = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central?to=2100-01-01T00:00", { headers });
+    assert.equal(toPast.body.data.length, 1);
+    assert.equal(toPast.body.data[0].title, "Fired");
+
+    // Filtro inválido → 400.
+    const badStatus = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central?status=whatever", { headers });
+    assert.equal(badStatus.status, 400);
+    assert.equal(badStatus.body.error.reason, "invalid_status");
+    const badFrom = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central?from=not-a-date", { headers });
+    assert.equal(badFrom.status, 400);
+    assert.equal(badFrom.body.error.reason, "invalid_from");
+  });
+});
+
+test("[NOTIFCEN-03] RBAC — central REUSA notifications:create; sem ela → 403 (GET e DELETE); anônimo → 403", async () => {
+  await withScheduledApi(async ({ baseUrl }) => {
+    const tenant = randomUUID();
+    const creator = randomUUID();
+    const created = await requestJson(baseUrl, "/api/v1/notifications/scheduled", {
+      method: "POST",
+      headers: authHeaders(tenant, creator, "manager"),
+      body: { title: "Alvo", message: "M", notify_at: "2999-01-01T09:00", visibility: "private" },
+    });
+    const id = created.body.data.id as string;
+
+    // Papéis COM create veem a central.
+    for (const role of ["manager", "operator", "field_dispatcher", "tenant_admin"] as const) {
+      const ok = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central", {
+        headers: authHeaders(tenant, randomUUID(), role),
+      });
+      assert.equal(ok.status, 200, `GET central as ${role} must be 200`);
+    }
+
+    // Papéis SEM create (inbox amplo notifications:read não basta) → 403 no GET e no DELETE.
+    for (const role of ["viewer", "finance", "field_technician", "auditor", "support", "inventory"] as const) {
+      const listDenied = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central", {
+        headers: authHeaders(tenant, randomUUID(), role),
+      });
+      assert.equal(listDenied.status, 403, `GET central as ${role} must be 403`);
+      assert.equal(listDenied.body.error.reason, "permission_required");
+      const cancelDenied = await requestJson(baseUrl, `/api/v1/notifications/scheduled/central/${id}`, {
+        method: "DELETE",
+        headers: authHeaders(tenant, randomUUID(), role),
+      });
+      assert.equal(cancelDenied.status, 403, `DELETE central as ${role} must be 403`);
+    }
+
+    const anon = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central");
+    assert.equal(anon.status, 403);
+  });
+});
+
+test("[NOTIFCEN-01] cross-tenant — central de B nunca lista nem cancela a definição de A (404)", async () => {
+  await withScheduledApi(async ({ baseUrl }) => {
+    const tenantA = randomUUID();
+    const tenantB = randomUUID();
+    const created = await requestJson(baseUrl, "/api/v1/notifications/scheduled", {
+      method: "POST",
+      headers: authHeaders(tenantA, randomUUID(), "manager"),
+      body: { title: "Do A", message: "M", notify_at: "2999-01-01T09:00", visibility: "private" },
+    });
+    const id = created.body.data.id as string;
+
+    // Central do tenant B NÃO enxerga a definição do tenant A.
+    const centralB = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central", {
+      headers: authHeaders(tenantB, randomUUID(), "manager"),
+    });
+    assert.equal(centralB.status, 200);
+    assert.equal(centralB.body.data.length, 0);
+
+    // E não consegue cancelá-la → 404 (nunca vaza existência cross-tenant).
+    const crossCancel = await requestJson(baseUrl, `/api/v1/notifications/scheduled/central/${id}`, {
+      method: "DELETE",
+      headers: authHeaders(tenantB, randomUUID(), "manager"),
+    });
+    assert.equal(crossCancel.status, 404);
+
+    // Sanidade: no tenant A a def. segue pendente e cancelável.
+    const centralA = await requestJson(baseUrl, "/api/v1/notifications/scheduled/central?status=pending", {
+      headers: authHeaders(tenantA, randomUUID(), "manager"),
+    });
+    assert.equal(centralA.body.data.length, 1);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Harness (espelho de tests/fleet-alerts-notifications.test.ts)
 // ---------------------------------------------------------------------------
 

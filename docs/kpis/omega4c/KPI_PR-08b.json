@@ -73,7 +73,8 @@
     "blocks": "86->87"
   },
   "coexistencia": "ledger de estoque imutável do PR-08 PRESERVADO (EXIT via movimento, estorno compensatório); mapa/telemetria/operations INTOCADOS; catalog INTOCADO; sem rota nova; sem regressão (1504 pass/0 fail).",
-  "merge_commit": null,
-  "approved_head": null,
-  "status": "aprovado_pela_junta_aguardando_merge"
+  "pr": 277,
+  "merge_commit": "acc7f75",
+  "approved_head": "acc7f75",
+  "status": "published_per_pr"
 }
