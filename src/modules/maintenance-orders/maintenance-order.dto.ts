@@ -18,6 +18,8 @@ export function toMaintenanceOrderItemDto(item: MaintenanceOrderItem) {
     unitValue: item.unitValue,
     quantity: item.quantity,
     lineTotal: computeLineTotal(item.unitValue, item.quantity),
+    // Ω4C PR-08b — item de estoque baixado no item Tipo=ESTOQUE (id no MESMO tenant; §2.8: sem tenant externo).
+    stockItemId: item.stockItemId ?? null,
     notes: item.notes ?? null,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),

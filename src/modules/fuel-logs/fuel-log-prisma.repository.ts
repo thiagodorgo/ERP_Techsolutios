@@ -20,6 +20,8 @@ export class PrismaFuelLogRepository implements FuelLogRepository {
   async create(input: CreateFuelLogInput): Promise<FuelLog> {
     const fuelLog = await this.client.fuelLog.create({
       data: {
+        // Ω4C PR-08b — id PRÉ-GERADO (EXIT-first) quando informado; senão o default gen_random_uuid() do banco.
+        ...(input.id ? { id: input.id } : {}),
         tenant_id: input.tenantId,
         vehicle_id: input.vehicleId,
         operator_id: input.operatorId ?? null,
@@ -32,6 +34,7 @@ export class PrismaFuelLogRepository implements FuelLogRepository {
         station: input.station ?? null,
         station_type: input.stationType,
         supplier_id: input.supplierId ?? null,
+        stock_item_id: input.stockItemId ?? null,
         notes: input.notes ?? null,
         is_active: input.isActive ?? true,
         created_by: input.createdBy ?? null,
@@ -89,6 +92,7 @@ export class PrismaFuelLogRepository implements FuelLogRepository {
         station: nullable(input.station),
         station_type: input.stationType,
         supplier_id: nullable(input.supplierId),
+        stock_item_id: nullable(input.stockItemId),
         notes: nullable(input.notes),
         is_active: input.isActive,
         updated_by: nullable(input.updatedBy),
@@ -196,6 +200,7 @@ function mapFuelLogRecord(record: {
   readonly station: string | null;
   readonly station_type: string;
   readonly supplier_id: string | null;
+  readonly stock_item_id: string | null;
   readonly notes: string | null;
   readonly is_active: boolean;
   readonly created_by: string | null;
@@ -217,6 +222,7 @@ function mapFuelLogRecord(record: {
     station: record.station ?? undefined,
     stationType: (record.station_type as StationType) ?? "external",
     supplierId: record.supplier_id ?? undefined,
+    stockItemId: record.stock_item_id ?? undefined,
     notes: record.notes ?? undefined,
     isActive: record.is_active,
     createdBy: record.created_by ?? undefined,

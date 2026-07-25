@@ -9,9 +9,13 @@ import { InMemoryInventoryRepository, type InventoryRepository } from "./invento
 import {
   invalidCustodyError,
   invalidCustodyReferenceError,
+  invalidStockItemReferenceError,
+  itemNotFuelError,
   InventoryError,
   movementAlreadyReversedError,
+  STOCK_EXIT_REASON_BY_SOURCE,
   type AbcClassAssignment,
+  type CreateExitForSourceInput,
   type CreateMovementOutcome,
   type CustodyReferenceInfo,
   type CustodySummary,
@@ -23,6 +27,7 @@ import {
   type ListStockMovementsInput,
   type ListStockMovementsResult,
   type StockCustody,
+  type StockExitSourceType,
   type StockMovement,
   type UpdateInventoryItemInput,
 } from "./inventory.types.js";
@@ -407,6 +412,88 @@ export class InventoryService {
   }
 
   /**
+   * Ω4C PR-08b (D-Ω4C-INV-STOCK-DECREMENT) — the NON-AMPLIFIER seam consumed service→service by the fuel-log /
+   * maintenance-item flows (NEVER the public movement API). The consumer passes ONLY which item + the LOCKED
+   * quantity (liters / line quantity); the seam FIXES type=`saida`, custody BASE, source_type/source_id and the
+   * machine reason. Idempotent by source (findExitBySource pre-check + the partial unique index backstop). The
+   * BASE non-negative guard runs inside the tx → 409 insufficient_balance. Fuel (source_type=`fuel_log`) also
+   * requires is_fuel=true → 422 item_not_fuel. NO permission of its own (like scheduleNextDueNotification, PR-06).
+   */
+  async createExitForSource(actor: InventoryActorContext, input: CreateExitForSourceInput): Promise<StockMovement> {
+    const sourceType = input.sourceType;
+    const sourceId = parseRequiredUuid(input.sourceId, "sourceId");
+    const itemId = parseRequiredUuid(input.itemId, "itemId");
+    const quantity = assertPositiveQuantity(input.quantity);
+    const vehicleId = input.vehicleId === undefined ? undefined : parseRequiredUuid(input.vehicleId, "vehicleId");
+
+    // Posse do item no tenant (404/422 cross-tenant) + regra de combustível (só para abastecimento interno).
+    const item = await this.repository.findItemById(actor.tenantId, itemId);
+    if (!item) {
+      throw invalidStockItemReferenceError();
+    }
+    if (sourceType === "fuel_log" && !item.isFuel) {
+      throw itemNotFuelError();
+    }
+
+    // Fast-path de idempotência (InMemory E Prisma): EXIT ATIVO da fonte → devolve-o (não posta 2º).
+    const active = await this.findExitBySource(actor, sourceType, sourceId);
+    if (active) {
+      return active;
+    }
+
+    const movement = await this.repository.createExitForSource({
+      tenantId: actor.tenantId,
+      itemId,
+      sourceType,
+      sourceId,
+      quantity,
+      vehicleId,
+      reason: STOCK_EXIT_REASON_BY_SOURCE[sourceType],
+      createdBy: actor.userId,
+    });
+
+    if (!movement) {
+      throw invalidStockItemReferenceError();
+    }
+
+    return movement;
+  }
+
+  /**
+   * Ω4C PR-08b — undo the baixa of a source (deactivating an internal fuel log / soft-deleting a stock item). Posts
+   * the compensating movement (ledger imutável). Missing / already reversed → no-op idempotente (`undefined`).
+   */
+  async removeExitForSource(
+    actor: InventoryActorContext,
+    sourceType: StockExitSourceType,
+    sourceId: string,
+  ): Promise<StockMovement | undefined> {
+    return this.repository.removeExitForSource({
+      tenantId: actor.tenantId,
+      sourceType,
+      sourceId: parseRequiredUuid(sourceId, "sourceId"),
+      createdBy: actor.userId,
+    });
+  }
+
+  /**
+   * Ω4C PR-08b — the ACTIVE (not-yet-reversed) EXIT of a source, or `undefined`. Used for idempotency, for the
+   * consumer's edit lock (an active baixa freezes the stock fields) and for the badge/derivation.
+   */
+  async findExitBySource(
+    actor: InventoryActorContext,
+    sourceType: StockExitSourceType,
+    sourceId: string,
+  ): Promise<StockMovement | undefined> {
+    const exit = await this.repository.findExitBySource(actor.tenantId, sourceType, parseRequiredUuid(sourceId, "sourceId"));
+    if (!exit) {
+      return undefined;
+    }
+
+    return (await this.repository.isExitReversed(actor.tenantId, exit.id)) ? undefined : exit;
+  }
+
+  /**
    * Ω4C PR-08 — resolve + validate the custody triple from the body. App-rule (SEM CHECK, → 422 invalid_custody):
    * base → both refs empty; professional → operator profile set; vehicle → vehicle set. Dupla-camada de posse:
    * the resolver (→ 400 invalid_custody_reference cross-tenant) + the composite FK RESTRICT (23503) as backstop.
@@ -526,10 +613,27 @@ function invalidItemReferenceError(): InventoryError {
   );
 }
 
+/**
+ * Ω4C PR-08b — the LOCKED quantity of the baixa (liters / line quantity) must be a finite value > 0. The consumer
+ * already validated it; this is the seam's defensive guard (422 invalid_stock_exit_quantity).
+ */
+function assertPositiveQuantity(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new InventoryError(
+      422,
+      "STOCK_INVALID",
+      "invalid_stock_exit_quantity",
+      "A quantidade da baixa deve ser um número maior que zero.",
+    );
+  }
+
+  return value;
+}
+
 const memoryRepository = new InMemoryInventoryRepository();
 let defaultServicePromise: Promise<InventoryService> | undefined;
 
-export function createMemoryInventoryService(_coreService: ICoreSaasService): InventoryService {
+export function createMemoryInventoryService(_coreService?: ICoreSaasService): InventoryService {
   return new InventoryService(memoryRepository, createDefaultReferenceResolvers());
 }
 
@@ -537,7 +641,12 @@ export function getMemoryInventoryRepositoryForTests(): InMemoryInventoryReposit
   return memoryRepository;
 }
 
-export async function createDefaultInventoryService(coreService: ICoreSaasService): Promise<InventoryService> {
+/**
+ * `coreService` is optional: the inventory service never reads it (custody/reference resolvers are self-contained),
+ * so the Ω4C PR-08b consumer resolvers (fuel-logs / maintenance-orders) can obtain the DEFAULT inventory service
+ * — sharing the same singleton the inventory routes use in memory mode — without threading a core service.
+ */
+export async function createDefaultInventoryService(coreService?: ICoreSaasService): Promise<InventoryService> {
   if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
     return createMemoryInventoryService(coreService);
   }

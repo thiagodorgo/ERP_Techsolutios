@@ -118,6 +118,13 @@ export type StockMovement = {
   readonly custodyVehicleId?: string;
   readonly transferGroupId?: string;
   readonly reversesMovementId?: string;
+  /**
+   * Ω4C PR-08b (D-Ω4C-INV-MOVEMENT-SOURCE) — proveniência da baixa automática (fuel_log|maintenance_item). Only
+   * the EXIT (`saida`) posted by the seam carries them; the compensating reversal (and every manual/legacy row)
+   * keeps them undefined. `sourceType` is a machine token, `sourceId` the fonte id in the SAME tenant (no PII).
+   */
+  readonly sourceType?: string;
+  readonly sourceId?: string;
   readonly createdBy?: string;
   readonly createdAt: Date;
 };
@@ -227,6 +234,12 @@ export type CreateStockMovementInput = {
    */
   readonly cycleCountId?: string;
   readonly custody?: StockCustody;
+  /**
+   * Ω4C PR-08b — proveniência da baixa automática. NUNCA settable pelo movimento público (o parser da rota não os
+   * lê); só o seam `createExitForSource` os fixa, junto com o índice parcial único de idempotência de origem.
+   */
+  readonly sourceType?: string;
+  readonly sourceId?: string;
   readonly createdBy?: string;
 };
 
@@ -299,6 +312,50 @@ export type CreateMovementOutcome =
   | { readonly kind: "single"; readonly movement: StockMovement }
   | { readonly kind: "transfer"; readonly transfer: StockTransferResult };
 
+/**
+ * Ω4C PR-08b (D-Ω4C-INV-STOCK-DECREMENT) — the CONSUMER sources that trigger an automatic stock EXIT (baixa). The
+ * seam FIXES the whole movement (type=`saida`, custody BASE, source_type/source_id, machine reason) — the consumer
+ * only says WHICH item; the quantity is LOCKED at the origin (liters / line quantity). Non-amplifier by design.
+ */
+export const STOCK_EXIT_SOURCE_TYPES = ["fuel_log", "maintenance_item"] as const;
+export type StockExitSourceType = (typeof STOCK_EXIT_SOURCE_TYPES)[number];
+
+/** Ω4C PR-08b — the machine `reason` token of the baixa, per source (NOT PII, §2.8 — a máquina, não texto livre). */
+export const STOCK_EXIT_REASON_BY_SOURCE: Record<StockExitSourceType, string> = {
+  fuel_log: "baixa_abastecimento_interno",
+  maintenance_item: "baixa_manutencao",
+};
+
+/** Ω4C PR-08b — the non-amplifier contract the consumer passes to `createExitForSource` (service→service). */
+export type CreateExitForSourceInput = {
+  readonly sourceType: StockExitSourceType;
+  readonly sourceId: string;
+  readonly itemId: string;
+  readonly quantity: number;
+  readonly vehicleId?: string;
+};
+
+/** Ω4C PR-08b — repository-level EXIT create (guard + idempotent insert inside ONE tx). */
+export type CreateStockExitForSourceInput = {
+  readonly tenantId: string;
+  readonly itemId: string;
+  readonly sourceType: string;
+  readonly sourceId: string;
+  readonly quantity: number;
+  readonly vehicleId?: string;
+  readonly reason: string;
+  readonly createdBy?: string;
+};
+
+/** Ω4C PR-08b — repository-level compensating reversal of a source's EXIT (no-op when missing/already reversed). */
+export type RemoveStockExitForSourceInput = {
+  readonly tenantId: string;
+  readonly sourceType: string;
+  readonly sourceId: string;
+  readonly reason?: string;
+  readonly createdBy?: string;
+};
+
 export class InventoryError extends Error {
   constructor(
     readonly statusCode: number,
@@ -351,5 +408,38 @@ export function movementAlreadyReversedError(): InventoryError {
     "STOCK_MOVEMENT_CONFLICT",
     "movement_already_reversed",
     "Este movimento já foi estornado — o razão é imutável, não estorne duas vezes.",
+  );
+}
+
+/** Ω4C PR-08b — the automatic EXIT (baixa) points at an item that does not resolve in this tenant. */
+export function invalidStockItemReferenceError(): InventoryError {
+  return new InventoryError(
+    422,
+    "STOCK_INVALID",
+    "invalid_stock_item_reference",
+    "stockItemId não referencia um item de estoque desta organização.",
+  );
+}
+
+/** Ω4C PR-08b — internal fueling only decrements a FUEL item (is_fuel=true). */
+export function itemNotFuelError(): InventoryError {
+  return new InventoryError(
+    422,
+    "STOCK_INVALID",
+    "item_not_fuel",
+    "O item de estoque informado não é combustível (is_fuel=false) — só combustível baixa no abastecimento interno.",
+  );
+}
+
+/**
+ * Ω4C PR-08b — a baixa desta origem já foi ESTORNADA; re-baixar exige uma nova entidade-fonte. O ledger é imutável
+ * (efeito ONE-SHOT por entidade — parada honesta D-007). Backstop do índice parcial único ao tentar re-postar.
+ */
+export function stockBaixaReversedError(): InventoryError {
+  return new InventoryError(
+    409,
+    "STOCK_MOVEMENT_CONFLICT",
+    "stock_baixa_reversed",
+    "A baixa desta origem já foi estornada — re-baixar exige uma nova entidade (efeito one-shot, ledger imutável).",
   );
 }

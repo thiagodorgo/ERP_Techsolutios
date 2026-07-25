@@ -1,0 +1,79 @@
+{
+  "pr": "PR-08b",
+  "fase": "Fase 2 (complemento) — Baixa automática de estoque (peça deferida do PR-08 Estoque custódia)",
+  "snapshot_date": "2026-07-25",
+  "branch": "rodada/omega4c",
+  "tipo": "Backend-only (seam consumidor→inventory NÃO-amplificador, service→service). Sem rota nova, sem permissão nova. Migração ADITIVA. Abastecimento interno e itens de manutenção com stock_item_id passam a baixar o estoque automaticamente (movimento saida/EXIT no ledger imutável).",
+  "models_alterados": [
+    "FuelLog (+stock_item_id UUID? + FK composta (tenant_id,stock_item_id)→inventory_items RESTRICT + idx tenant-first)",
+    "MaintenanceOrderItem (+stock_item_id UUID? + FK composta RESTRICT + idx tenant-first)",
+    "StockMovement (+source_type TEXT? +source_id UUID? + idx parcial UNIQUE (tenant_id,source_type,source_id) WHERE source_id IS NOT NULL)"
+  ],
+  "migrations": [
+    "20260832000000_add_consumer_stock_item_and_movement_source — ADITIVA up-only (3x ADD COLUMN nullable + 2x FK RESTRICT + 3x CREATE INDEX). Zero DROP/ALTER destrutivo. RLS herdada (forced) nas 3 tabelas. Provada up→down(reverso manual)→re-up em erp-postgres pelo dba-guardião, drift ZERO nas tabelas tocadas."
+  ],
+  "comportamento": {
+    "seam": "Trio InventoryService.createExitForSource/removeExitForSource/findExitBySource (service→service, fiado via import() DINÂMICO consumidor→inventory — sem ciclo; inventory NUNCA importa fuel/maintenance). EXIT = type='saida' (não 'consumo', que exige work_order_id), custody_type='base' HARDCODED (item sai do estoque da BASE; a viatura entra só em vehicle_id informativo, NUNCA como custódia), unit_cost NULL, reason=token de máquina (baixa_abastecimento_interno/baixa_manutencao).",
+    "trava_quantidade": "quantidade do EXIT TRAVADA na origem (liters do abastecimento / quantity da linha de manutenção) — o contrato do consumidor NÃO aceita override. source_type/source_id FIXADOS no seam (não vêm do cliente; source_id = randomUUID server-side pré-gerado).",
+    "idempotencia": "1 EXIT ativo por origem: pré-check findExitBySource + índice parcial UNIQUE como backstop duro (P2002 na corrida → devolve o EXIT vencedor). Re-baixa após estorno → 409 stock_baixa_reversed (one-shot, D-007).",
+    "saldo_insuficiente": "EXIT-FIRST: consumidor pré-gera o id, posta o EXIT (guard atômico de saldo na tx → 409 insufficient_balance) ANTES de persistir a linha → NENHUM consumo órfão; falha do insert pós-EXIT → compensação (removeExitForSource) no catch (saga).",
+    "so_dispara_quando_aplicavel": "fuel: station_type='internal' E stock_item_id presente E is_fuel (senão 422 stock_item_not_allowed_for_external / item_not_fuel). manutenção: item_type='stock' E stock_item_id presente (service/product não baixam).",
+    "reversao": "desativar/soft-delete do consumidor (is_active=false / deleted_at) → removeExitForSource = estorno compensatório (movimento de sinal oposto, source_id NULL, reverses_movement_id; ledger IMUTÁVEL, sem DELETE). Editar campo de estoque (liters/stock_item_id/station_type; quantity/stock_item_id/item_type) com EXIT ativo → 409 stock_baixa_locked.",
+    "nao_amplificacao": "CONFIRMADA pela junta (lição da escalada do PR-06): o consumidor não escreve no ledger nada além do EXIT tipado/travado/single-entity; type/custody/reason/unit_cost/source_* fixados no seam; item cross-tenant → 422."
+  },
+  "permissao": "SEM permissão nova. O EXIT é efeito de domínio disparado por fuel_logs:create / maintenance_orders:create (:update no remove), sem exigir stock_movements:create do usuário — idêntico ao PR-06 (sem notifications:create) e ao createForSource do extrato (PR-07). catalog.ts / prisma/seed.ts INTOCADOS.",
+  "modulos": [
+    "prisma/schema.prisma + prisma/migrations/20260832000000_add_consumer_stock_item_and_movement_source/migration.sql",
+    "src/modules/inventory/{inventory.types.ts, inventory.repository.ts, inventory-prisma.repository.ts, inventory.service.ts, inventory.dto.ts} (trio createExitForSource/removeExitForSource/findExitBySource + withTenantRls no caminho do EXIT)",
+    "src/modules/fuel-logs/{fuel-log.types.ts, fuel-log.repository.ts, fuel-log-prisma.repository.ts, fuel-log.service.ts, fuel-log.dto.ts} (resolver dispara/reverte o EXIT; DTO +stockItemId)",
+    "src/modules/maintenance-orders/{maintenance-order-item.types.ts, maintenance-order-item.repository.ts, maintenance-order-item-prisma.repository.ts, maintenance-order.service.ts, maintenance-order.dto.ts} (idem para item_type='stock'; DTO +stockItemId)"
+  ],
+  "rns_cobertas": [
+    "RN-BAIXA-01 saldo nunca negativo (guard atômico na tx + EXIT-first, 409 insufficient_balance sem consumo órfão)",
+    "RN-BAIXA-02 idempotência 1 EXIT/origem (pré-check + índice parcial UNIQUE + handler P2002)",
+    "RN-BAIXA-03 quantidade travada na origem (sem override do contrato)",
+    "RN-BAIXA-04 custódia FIXADA base (nunca viatura/profissional do payload)",
+    "RN-BAIXA-05 estorno compensatório imutável (sem DELETE; no-op idempotente)",
+    "RN-BAIXA-06 só interno+is_fuel / item_type=stock (422 honestos; externo/serviço não baixam)",
+    "RN-BAIXA-07 trava de edição 409 stock_baixa_locked com EXIT ativo",
+    "RN-BAIXA-08 sem permissão nova (efeito service→service; catalog/seed intocados)",
+    "RN-BAIXA-09 isolamento 3 tenants (FK composta cross-tenant 23503; índice parcial com tenant_id; updateMany cross-tenant count=0)"
+  ],
+  "rns_total_pr": 9,
+  "cobertura_testes": {
+    "backend": "tests/inventory-stock-decrement.test.ts (NOVO, 10 test() top-level): idempotência por source, 409 insufficient_balance EXIT-first sem órfão, custódia BASE (custodyVehicleId=undefined), source_type/source_id corretos, estorno no soft-delete, fuel externo não baixa, maintenance service não baixa, 3 tenants isolados. Reforços: fuel-logs (+3), maintenance-order-items (+2, incl. chaves-exatas do DTO +stockItemId). tests/rls-tenant-isolation.test.ts: bloco PR-08b (FK cross-tenant 23503, índice parcial idempotência, updateMany cross-tenant 0) + TEARDOWN FK-SAFE reordenado (stockMovement→fuelLog→…→maintenanceOrderItem→inventoryItem→maintenanceOrder→vehicle). Execução CI-memória: 1481→1504 pass (+23 medidos: 15 test() top-level + subtests), 0 fail, 6 skip."
+  },
+  "d_records": [
+    "D-Ω4C-BAIXA-SEAM (trio createExitForSource/removeExitForSource/findExitBySource; import() dinâmico consumidor→inventory, acíclico)",
+    "D-Ω4C-BAIXA-SAIDA (EXIT=type 'saida', não 'consumo'; custody 'base' hardcoded)",
+    "D-Ω4C-BAIXA-SOURCE (source_type/source_id em stock_movements + índice parcial UNIQUE tenant-scoped p/ idempotência)",
+    "D-Ω4C-BAIXA-EXIT-FIRST (saldo insuficiente rejeita antes de criar consumo órfão; saga de compensação)",
+    "D-Ω4C-BAIXA-LOCK (edição de campo de estoque com EXIT ativo → 409; stock_item_id é create-only/one-shot — anexar item pós-create intencionalmente não suportado)",
+    "D-Ω4C-BAIXA-NO-PERM (efeito de domínio service→service; sem stock_movements:create do usuário; não-amplificador — lição PR-06)"
+  ],
+  "divergencias_vs_autem": [
+    "Baixa só automática quando o consumidor referencia um stock_item_id (abastecimento interno de tanque próprio / peça de estoque); abastecimento externo em posto e serviço de mão-de-obra não baixam (não saem do estoque)",
+    "custódia do EXIT sempre BASE (a viatura é o destino informativo, não um bucket de custódia) — decisão de desenho para não abrir escrita arbitrária de custódia"
+  ],
+  "junta": {
+    "agente-secops": "APROVADO (0 cond; 5 vetores de escalada/isolamento fechados: tipo/custódia/source/quantidade travados no seam; FK composta cross-tenant 23503; withTenantRls no caminho do EXIT; índice parcial tenant-scoped; §2.8 sem campo proibido; zero env/secret/CORS/TLS)",
+    "agente-dba-guardiao": "APROVADO (migração aditiva up-only; up→down→re-up provado em erp-postgres com drift ZERO; FK RESTRICT tenant-safe; índice parcial de idempotência correto; RLS forced preservado; teardown FK-safe validado empiricamente)",
+    "omega4c-avaliador": "APROVADO_CONDICIONADO → APROVADO (9 RN-BAIXA verdes; não-amplificação confirmada; sem regressão provada por baseline stashed; única condição = artefatos de KPI ausentes + reconciliar contagem → SANADA: KPI trio criado, contagem real 1504/6-skip reconciliada por medição independente)",
+    "veredito": "UNÂNIME 3/3 APROVADO (0 CRÍTICO; sem R-<entrega>; BAIXAs → backlog Ω5)"
+  },
+  "backlog_omega5": [
+    "BAIXA (pré-existente module-wide): par baixa+estorno infla getConsumptionValues/ABC (OUTFLOW_TYPES soma abs(qty) apesar do saldo líquido zero) — excluir pares estornados ou tipo neutro",
+    "BAIXA (secops, pré-existente): guard de saldo read-then-insert sob READ COMMITTED — dois EXITs de fontes DIFERENTES concorrentes no mesmo item poderiam ambos passar (mesmo padrão de createMovement/createTransfer; índice parcial já barra dupla-baixa da MESMA fonte)",
+    "picker de stock_item nas telas de abastecimento/manutenção (fatia UI posterior — este PR é backend-only)"
+  ],
+  "kpi_repo_wide": {
+    "backend": "1481->1504 (+23; CI-memória 6 skip)",
+    "frontend_smoke": "839 (inalterado — backend-only)",
+    "flutter_tests": "807 (inalterado — backend-only)",
+    "blocks": "86->87"
+  },
+  "coexistencia": "ledger de estoque imutável do PR-08 PRESERVADO (EXIT via movimento, estorno compensatório); mapa/telemetria/operations INTOCADOS; catalog INTOCADO; sem rota nova; sem regressão (1504 pass/0 fail).",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { env } from "../../config/env.js";
 import { createDefaultSupplierService } from "../suppliers/supplier.service.js";
 import { createDefaultVehicleService } from "../vehicles/vehicle.service.js";
@@ -51,6 +53,18 @@ type RawRecord = Record<string, unknown>;
  * tenant context, so a cross-tenant / missing id resolves to "not found" and is
  * rejected as an invalid reference (400).
  */
+/**
+ * Ω4C PR-08b — o contrato NÃO-AMPLIFICADOR da baixa: o abastecimento só informa QUAL item e a quantidade TRAVADA
+ * (liters). O seam do inventory FIXA tipo/custódia/reason/source (o consumidor nunca escolhe). `sourceId` = o id
+ * PRÉ-GERADO do fuel_log (EXIT-first).
+ */
+export type FuelLogStockExitInput = {
+  readonly sourceId: string;
+  readonly stockItemId: string;
+  readonly quantity: number;
+  readonly vehicleId?: string;
+};
+
 export type FuelLogReferenceResolvers = {
   readonly resolveVehicle?: (actor: FuelLogActorContext, id: string) => Promise<boolean>;
   /**
@@ -58,6 +72,16 @@ export type FuelLogReferenceResolvers = {
    * (id+nome) quando existe no tenant, ou `null` (cross-tenant / inexistente) → 400 na fronteira.
    */
   readonly resolveSupplier?: (actor: FuelLogActorContext, id: string) => Promise<ResolvedSupplier | null>;
+  /**
+   * Ω4C PR-08b — EFEITO DE DOMÍNIO service→service (como scheduleNextDueNotification do PR-06): posta a baixa de
+   * estoque do abastecimento INTERNO no InventoryService. NÃO exige `stock_movements:create` do usuário (o gate é
+   * `fuel_logs:create`). O erro do seam (409 insufficient_balance / 422 item_not_fuel) PROPAGA (não é engolido).
+   */
+  readonly postStockExit?: (actor: FuelLogActorContext, input: FuelLogStockExitInput) => Promise<void>;
+  /** Ω4C PR-08b — estorno compensatório da baixa (desativar o abastecimento). No-op idempotente. */
+  readonly reverseStockExit?: (actor: FuelLogActorContext, fuelLogId: string) => Promise<void>;
+  /** Ω4C PR-08b — existe baixa ATIVA (não estornada) desta fonte? (trava de edição RN-BAIXA-07 + badge). */
+  readonly hasActiveStockExit?: (actor: FuelLogActorContext, fuelLogId: string) => Promise<boolean>;
 };
 
 export class FuelLogService {
@@ -106,6 +130,19 @@ export class FuelLogService {
     // proíbe supplier (422); supplier cross-tenant/inexistente → 400 (resolver server-side).
     const stationTypeProvided = hasBodyValue(body, "station_type", "stationType");
     const stationType = parseStationType(body.station_type ?? body.stationType, DEFAULT_STATION_TYPE);
+
+    // Ω4C PR-08b (RN-BAIXA-06) — a baixa só existe no abastecimento INTERNO. EXTERNO + stock_item_id → 422
+    // (verificado ANTES de resolver o fornecedor: a incompatibilidade de escopo não depende do supplier).
+    const stockItemId = parseOptionalUuid(body.stock_item_id ?? body.stockItemId, "stockItemId");
+    if (stockItemId !== undefined && stationType !== "internal") {
+      throw new FuelLogError(
+        422,
+        "FUEL_LOG_INVALID",
+        "stock_item_not_allowed_for_external",
+        "Abastecimento EXTERNO não baixa estoque (stock_item_id só no INTERNO).",
+      );
+    }
+
     const supplierId = parseOptionalUuid(body.supplier_id ?? body.supplierId, "supplierId");
     const resolved = await this.resolveStationAndSupplier(actor, {
       stationType,
@@ -113,24 +150,45 @@ export class FuelLogService {
       supplierId,
     });
 
-    const fuelLog = await this.repository.create({
-      tenantId: actor.tenantId,
-      vehicleId,
-      operatorId: parseOptionalUuid(body.operator_id ?? body.operatorId, "operatorId"),
-      workOrderId: parseOptionalUuid(body.work_order_id ?? body.workOrderId, "workOrderId"),
-      fueledAt: parseFueledAt(body.fueled_at ?? body.fueledAt),
-      fuelType: parseFuelType(body.fuel_type ?? body.fuelType, DEFAULT_FUEL_TYPE),
-      liters: parseLiters(body.liters),
-      totalValue: parseTotalValue(body.total_value ?? body.totalValue),
-      odometer,
-      station: parseOptionalStation(body.station),
-      stationType: resolved.stationType,
-      supplierId: resolved.supplierId ?? undefined,
-      notes: parseOptionalNotes(body.notes),
-      isActive: readOptionalBoolean(body.is_active ?? body.isActive) ?? true,
-      createdBy: actor.userId,
-      updatedBy: actor.userId,
-    });
+    const liters = parseLiters(body.liters);
+
+    // Ω4C PR-08b (RN-BAIXA-01) — EXIT-FIRST: pré-gera o id e posta a baixa (guard atômico → 409
+    // insufficient_balance / 422 item_not_fuel) ANTES de persistir a linha → nunca deixa consumo órfão.
+    const fuelLogId = randomUUID();
+    const shouldDecrement = resolved.stationType === "internal" && stockItemId !== undefined;
+    if (shouldDecrement) {
+      await this.postStockExit(actor, { sourceId: fuelLogId, stockItemId, quantity: liters, vehicleId });
+    }
+
+    let fuelLog: FuelLog;
+    try {
+      fuelLog = await this.repository.create({
+        id: fuelLogId,
+        tenantId: actor.tenantId,
+        vehicleId,
+        operatorId: parseOptionalUuid(body.operator_id ?? body.operatorId, "operatorId"),
+        workOrderId: parseOptionalUuid(body.work_order_id ?? body.workOrderId, "workOrderId"),
+        fueledAt: parseFueledAt(body.fueled_at ?? body.fueledAt),
+        fuelType: parseFuelType(body.fuel_type ?? body.fuelType, DEFAULT_FUEL_TYPE),
+        liters,
+        totalValue: parseTotalValue(body.total_value ?? body.totalValue),
+        odometer,
+        station: parseOptionalStation(body.station),
+        stationType: resolved.stationType,
+        supplierId: resolved.supplierId ?? undefined,
+        stockItemId,
+        notes: parseOptionalNotes(body.notes),
+        isActive: readOptionalBoolean(body.is_active ?? body.isActive) ?? true,
+        createdBy: actor.userId,
+        updatedBy: actor.userId,
+      });
+    } catch (error) {
+      // Saga com compensação (R1): o EXIT já foi postado mas o insert do consumidor falhou → estorna e re-lança.
+      if (shouldDecrement) {
+        await this.reverseStockExit(actor, fuelLogId);
+      }
+      throw error;
+    }
 
     return this.withEfficiency(actor, fuelLog);
   }
@@ -152,6 +210,22 @@ export class FuelLogService {
 
   async update(actor: FuelLogActorContext, fuelLogId: string, body: RawRecord): Promise<FuelLogWithEfficiency> {
     const existing = await this.getEntity(actor, fuelLogId);
+
+    // Ω4C PR-08b (RN-BAIXA-07) — com uma baixa ATIVA, os campos que a determinam (liters/stock_item_id/station_type)
+    // ficam TRAVADOS (409 stock_baixa_locked). Desativar o abastecimento (is_active=false) DESTRAVA revertendo a
+    // baixa (estorno compensatório). Editar só notes/odometer/etc. permanece livre.
+    const deactivating = existing.isActive && (body.is_active === false || body.isActive === false);
+    const editsStockField = bodyHasField(body, "liters", "stock_item_id", "stockItemId", "station_type", "stationType");
+    const activeExit = await this.hasActiveStockExit(actor, existing.id);
+    if (activeExit && editsStockField && !deactivating) {
+      throw new FuelLogError(
+        409,
+        "FUEL_LOG_CONFLICT",
+        "stock_baixa_locked",
+        "Existe uma baixa de estoque ATIVA — desative o abastecimento (reverte a baixa) antes de editar litros/item/posto.",
+      );
+    }
+
     const { stationType, supplierId } = await this.resolveStationAndSupplierForUpdate(actor, existing, body);
     const input: UpdateFuelLogInput = {
       tenantId: actor.tenantId,
@@ -175,7 +249,32 @@ export class FuelLogService {
       throw new FuelLogError(404, "FUEL_LOG_NOT_FOUND", "not_found", "Fuel log was not found.");
     }
 
+    // Ω4C PR-08b (RN-BAIXA-05) — desativar reverte a baixa (idempotente; no-op se não houver EXIT ativo).
+    if (deactivating && activeExit) {
+      await this.reverseStockExit(actor, existing.id);
+    }
+
     return this.withEfficiency(actor, updated);
+  }
+
+  private async postStockExit(actor: FuelLogActorContext, input: FuelLogStockExitInput): Promise<void> {
+    const resolver = this.references.postStockExit;
+    if (resolver) {
+      await resolver(actor, input);
+    }
+  }
+
+  private async reverseStockExit(actor: FuelLogActorContext, fuelLogId: string): Promise<void> {
+    const resolver = this.references.reverseStockExit;
+    if (resolver) {
+      await resolver(actor, fuelLogId);
+    }
+  }
+
+  private async hasActiveStockExit(actor: FuelLogActorContext, fuelLogId: string): Promise<boolean> {
+    const resolver = this.references.hasActiveStockExit;
+
+    return resolver ? resolver(actor, fuelLogId) : false;
   }
 
   private async getEntity(actor: FuelLogActorContext, fuelLogId: string): Promise<FuelLog> {
@@ -384,6 +483,14 @@ function hasBodyValue(body: RawRecord, snakeKey: string, camelKey: string): bool
   return false;
 }
 
+/**
+ * Ω4C PR-08b — a chave está PRESENTE no corpo (mesmo `null`, p.ex. limpar stock_item_id). Distinto de hasBodyValue:
+ * a trava da baixa dispara em QUALQUER tentativa de mexer no campo (setar OU limpar), não só em valor não-vazio.
+ */
+function bodyHasField(body: RawRecord, ...keys: string[]): boolean {
+  return keys.some((key) => Object.prototype.hasOwnProperty.call(body, key) && body[key] !== undefined);
+}
+
 const memoryRepository = new InMemoryFuelLogRepository();
 let defaultServicePromise: Promise<FuelLogService> | undefined;
 
@@ -445,6 +552,33 @@ function createDefaultReferenceResolvers(): FuelLogReferenceResolvers {
       } catch {
         return null;
       }
+    },
+    // Ω4C PR-08b — baixa de estoque do abastecimento INTERNO via InventoryService.createExitForSource
+    // (service→service, sem `stock_movements:create` do usuário — como scheduleNextDueNotification do PR-06). O
+    // sourceType é FIXADO em `fuel_log` aqui (o consumidor não escolhe) e o erro do seam (409/422) PROPAGA — NÃO
+    // é engolido como os resolvers de existência (a rejeição precisa abortar o create). `import()` DINÂMICO:
+    // direção consumidor→inventory sem aresta estática (inventory→work-orders→maintenance→fuel já é ciclo lazy).
+    postStockExit: async (actor, input) => {
+      const { createDefaultInventoryService } = await import("../inventory/inventory.service.js");
+      const service = await createDefaultInventoryService();
+      await service.createExitForSource(actor, {
+        sourceType: "fuel_log",
+        sourceId: input.sourceId,
+        itemId: input.stockItemId,
+        quantity: input.quantity,
+        vehicleId: input.vehicleId,
+      });
+    },
+    reverseStockExit: async (actor, fuelLogId) => {
+      const { createDefaultInventoryService } = await import("../inventory/inventory.service.js");
+      const service = await createDefaultInventoryService();
+      await service.removeExitForSource(actor, "fuel_log", fuelLogId);
+    },
+    hasActiveStockExit: async (actor, fuelLogId) => {
+      const { createDefaultInventoryService } = await import("../inventory/inventory.service.js");
+      const service = await createDefaultInventoryService();
+
+      return (await service.findExitBySource(actor, "fuel_log", fuelLogId)) !== undefined;
     },
   };
 }

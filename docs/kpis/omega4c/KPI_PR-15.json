@@ -60,7 +60,8 @@
   },
   "fecha_telemetria": "PR-15 FECHA a telemetria da rodada: PR-12 backend (#273) + PR-13 Flutter (#274) + PR-14 web 4 telas (#275) + PR-15 Rastreamento mapa. FALTA: PR-08b baixa automática de estoque + Central de Notificações tela + encerramento.",
   "coexistencia": "operations/map (flagship) INTOCADO; catalog INTOCADO; sem dep de mapa nova; sem regressão (839/839 smoke; nav-provisioning 23/23)",
-  "merge_commit": null,
-  "approved_head": null,
-  "status": "aprovado_pela_junta_aguardando_merge"
+  "pr": 276,
+  "merge_commit": "ecb5004",
+  "approved_head": "ecb5004",
+  "status": "published_per_pr"
 }

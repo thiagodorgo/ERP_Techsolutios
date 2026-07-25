@@ -51,6 +51,11 @@ export type FuelLog = {
   readonly station?: string;
   readonly stationType: StationType;
   readonly supplierId?: string;
+  /**
+   * Ω4C PR-08b — item de estoque baixado no abastecimento INTERNO (nullable; externo/legado ficam NULL). A baixa
+   * em si é EFEITO DE DOMÍNIO (stock_movements type=`saida`, custódia BASE) disparado pelo seam — não há saldo aqui.
+   */
+  readonly stockItemId?: string;
   readonly notes?: string;
   readonly isActive: boolean;
   readonly createdBy?: string;
@@ -108,6 +113,11 @@ export type CreateFuelLogInput = Omit<
   "id" | "isActive" | "createdAt" | "updatedAt"
 > & {
   readonly isActive?: boolean;
+  /**
+   * Ω4C PR-08b — id PRÉ-GERADO pelo service (EXIT-first): o abastecimento INTERNO posta a baixa de estoque
+   * (source_id = este id) ANTES de persistir a linha, para nunca deixar consumo órfão. Ausente → id do repositório.
+   */
+  readonly id?: string;
 };
 
 export type UpdateFuelLogInput = Partial<
@@ -130,6 +140,8 @@ export type UpdateFuelLogInput = Partial<
   readonly fuelLogId: string;
   // `null` = limpar o fornecedor (ex.: transição EXTERNO -> INTERNO); `undefined` = manter.
   readonly supplierId?: string | null;
+  // Ω4C PR-08b — `null` = limpar o item de estoque; `undefined` = manter (a baixa só é editável desbloqueando).
+  readonly stockItemId?: string | null;
 };
 
 export class FuelLogError extends Error {

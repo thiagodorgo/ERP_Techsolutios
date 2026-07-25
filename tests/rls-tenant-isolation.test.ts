@@ -1780,6 +1780,125 @@ if (!connectionString) {
       );
       assert.equal(tenantCCalculation?.settled_at, null, "tenant C calculation stays unsettled (settled_at NULL) in-tenant");
 
+      // Ω4C PR-08b (RN-BAIXA-09) — baixa automática de estoque: fuel_logs.stock_item_id +
+      // maintenance_order_items.stock_item_id (novas FK compostas RESTRICT → inventory_items) +
+      // stock_movements.source_type/source_id + índice PARCIAL UNIQUE de idempotência de origem
+      // (stock_movements_source_active_key), com 3 tenants EFÊMEROS (A, B, C). Reusa os inventory_items do bloco
+      // PR-08 (custodyA/B/C, is_fuel=true). Prova: (a) FK cross-tenant REJEITADA (fuel_log de A com stock_item de
+      // B → 23503); (b) idempotência de origem (2º EXIT da MESMA fonte viola o índice parcial); (c) invisível sem
+      // contexto; (d) cross-tenant updateMany count=0; (e) visível/intocado in-tenant. Inserts RAW (sem guard de
+      // saldo do app — o balance-guard é provado em inventory-stock-decrement.test.ts). TEARDOWN FK-SAFE já
+      // reordenado no finally (fuel_logs antes de inventory_items/vehicles; inventory_items após os itens).
+      const createConsumerBaixa = (tx: typeof client, tenantId: string, stockItemId: string) => (async () => {
+        const [vehicle] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO vehicles (tenant_id, plate, model)
+          VALUES (${tenantId}::uuid, ${`RLS-BX-${tenantId.slice(0, 8)}`}, 'RLS Truck')
+          RETURNING id
+        `;
+        const [fuelLog] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO fuel_logs (tenant_id, vehicle_id, fueled_at, fuel_type, liters, total_value, odometer, station_type, stock_item_id)
+          VALUES (${tenantId}::uuid, ${vehicle.id}::uuid, now(), 'diesel', 40.0, 200.0, 1000, 'internal', ${stockItemId}::uuid)
+          RETURNING id
+        `;
+        const [order] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO maintenance_orders (tenant_id, vehicle_id, type, status, description)
+          VALUES (${tenantId}::uuid, ${vehicle.id}::uuid, 'corretiva', 'agendada', 'RLS baixa')
+          RETURNING id
+        `;
+        const [item] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO maintenance_order_items (tenant_id, maintenance_order_id, item_type, description, unit_value, quantity, stock_item_id)
+          VALUES (${tenantId}::uuid, ${order.id}::uuid, 'stock', 'RLS peça', 30.00, 5.000, ${stockItemId}::uuid)
+          RETURNING id
+        `;
+        const [exit] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO stock_movements (tenant_id, item_id, type, quantidade_sinalizada, custody_type, source_type, source_id)
+          VALUES (${tenantId}::uuid, ${stockItemId}::uuid, 'saida', -40.0, 'base', 'fuel_log', ${fuelLog.id}::uuid)
+          RETURNING id
+        `;
+        return { vehicleId: vehicle.id, fuelLogId: fuelLog.id, maintenanceItemId: item.id, exitId: exit.id };
+      })();
+      const baixaA = await withTenantRls(client, tenantA.id, (tx) => createConsumerBaixa(tx as typeof client, tenantA.id, custodyA.itemId));
+      const baixaB = await withTenantRls(client, tenantB.id, (tx) => createConsumerBaixa(tx as typeof client, tenantB.id, custodyB.itemId));
+      const baixaC = await withTenantRls(client, tenantC.id, (tx) => createConsumerBaixa(tx as typeof client, tenantC.id, custodyC.itemId));
+
+      // (a) FK COMPOSTA cross-tenant REJEITADA: um fuel_log de A apontando o inventory_item de B viola a FK
+      // (não existe (tenant_id=A, stock_item_id=itemB) em inventory_items). A tx inteira faz rollback (sem órfão).
+      await assert.rejects(
+        () =>
+          withTenantRls(client, tenantA.id, async (tx) => {
+            const [vehicle] = await tx.$queryRaw<Array<{ id: string }>>`
+              INSERT INTO vehicles (tenant_id, plate, model)
+              VALUES (${tenantA.id}::uuid, ${`RLS-BXFK-${tenantA.id.slice(0, 8)}`}, 'RLS Truck')
+              RETURNING id
+            `;
+            await tx.$executeRaw`
+              INSERT INTO fuel_logs (tenant_id, vehicle_id, fueled_at, fuel_type, liters, total_value, odometer, station_type, stock_item_id)
+              VALUES (${tenantA.id}::uuid, ${vehicle.id}::uuid, now(), 'diesel', 10.0, 50.0, 1, 'internal', ${custodyB.itemId}::uuid)
+            `;
+          }),
+        "fuel_logs.stock_item_id cross-tenant deve violar a FK composta RESTRICT",
+      );
+
+      // (b) Idempotência de origem: um 2º EXIT da MESMA fonte (tenant A, fuel_log:baixaA) viola o índice parcial
+      // único stock_movements_source_active_key (a baixa é one-shot por entidade-fonte).
+      await assert.rejects(
+        () =>
+          withTenantRls(client, tenantA.id, async (tx) => {
+            await tx.$executeRaw`
+              INSERT INTO stock_movements (tenant_id, item_id, type, quantidade_sinalizada, custody_type, source_type, source_id)
+              VALUES (${tenantA.id}::uuid, ${custodyA.itemId}::uuid, 'saida', -1.0, 'base', 'fuel_log', ${baixaA.fuelLogId}::uuid)
+            `;
+          }),
+        "2º EXIT da mesma fonte deve violar o índice parcial único (idempotência de origem)",
+      );
+
+      // (c) invisível sem contexto (fuel_logs / maintenance_order_items / stock_movements por origem).
+      const fuelLogsWithoutContext = await client.fuelLog.findMany({
+        where: { id: { in: [baixaA.fuelLogId, baixaB.fuelLogId, baixaC.fuelLogId] } },
+      });
+      assert.deepEqual(
+        fuelLogsWithoutContext.map((entry) => entry.id),
+        [],
+        "tenant-scoped fuel logs must not be visible without app.current_tenant_id",
+      );
+
+      // (d) cross-tenant updateMany count=0 + (e) visível/intocado in-tenant.
+      const tenantABaixaView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visibleFuel = await tx.fuelLog.findMany({
+          where: { id: { in: [baixaA.fuelLogId, baixaB.fuelLogId, baixaC.fuelLogId] } },
+        });
+        const crossFuelUpdate = await tx.fuelLog.updateMany({
+          where: { id: { in: [baixaB.fuelLogId, baixaC.fuelLogId] } },
+          data: { station: "RLS cross-tenant update should not apply" },
+        });
+        const crossExitUpdate = await tx.stockMovement.updateMany({
+          where: { id: { in: [baixaB.exitId, baixaC.exitId] } },
+          data: { reason: "RLS cross-tenant update should not apply" },
+        });
+        return {
+          visibleFuelIds: visibleFuel.map((entry) => entry.id),
+          crossFuelRows: crossFuelUpdate.count,
+          crossExitRows: crossExitUpdate.count,
+        };
+      });
+      assert.deepEqual(
+        tenantABaixaView.visibleFuelIds,
+        [baixaA.fuelLogId],
+        "tenant A must only see its own fuel log with stock_item_id (not tenant B/C)",
+      );
+      assert.equal(tenantABaixaView.crossFuelRows, 0, "tenant A must not update tenant B/C fuel logs");
+      assert.equal(tenantABaixaView.crossExitRows, 0, "tenant A must not update tenant B/C stock exit movements");
+
+      const tenantBFuelLog = await withTenantRls(client, tenantB.id, (tx) => tx.fuelLog.findUnique({ where: { id: baixaB.fuelLogId } }));
+      assert.equal(tenantBFuelLog?.stock_item_id, custodyB.itemId, "tenant B fuel log keeps its stock_item_id in-tenant");
+      const tenantBExit = await withTenantRls(client, tenantB.id, (tx) => tx.stockMovement.findUnique({ where: { id: baixaB.exitId } }));
+      assert.equal(tenantBExit?.source_type, "fuel_log", "tenant B stock exit keeps its source_type in-tenant");
+      assert.equal(tenantBExit?.source_id, baixaB.fuelLogId, "tenant B stock exit keeps its source_id in-tenant");
+      const tenantCMaintenanceStockItem = await withTenantRls(client, tenantC.id, (tx) =>
+        tx.maintenanceOrderItem.findUnique({ where: { id: baixaC.maintenanceItemId } }),
+      );
+      assert.equal(tenantCMaintenanceStockItem?.stock_item_id, custodyC.itemId, "tenant C maintenance item keeps its stock_item_id in-tenant");
+
       const globalTenants = await client.tenant.findMany({
         where: {
           id: {
@@ -2234,7 +2353,10 @@ if (!connectionString) {
               tenant_id: tenantId,
             },
           });
-          await tx.inventoryItem.deleteMany({
+          // Ω4C PR-08b — fuel_logs ANTES de inventory_items (nova FK RESTRICT fuel_logs.stock_item_id) E ANTES de
+          // vehicles (FK vehicle_id). inventory_items foi MOVIDO para DEPOIS de maintenance_order_items (que também
+          // referencia stock_item_id) — senão o cleanup quebra na FK RESTRICT (23503; lição do CI-catch do PR-06).
+          await tx.fuelLog.deleteMany({
             where: {
               tenant_id: tenantId,
             },
@@ -2341,6 +2463,14 @@ if (!connectionString) {
           // tenant (vehicles.tenant_id→tenants, o que quebrava a deleção do tenant com FK vehicles_tenant_id_fkey).
           // workOrder já foi removido acima (também referencia vehicle).
           await tx.maintenanceOrderItem.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          // Ω4C PR-08b — inventory_items DEPOIS de stock_movements/fuel_logs/maintenance_order_items (as três
+          // referenciam inventory_items via FK RESTRICT: item_id / stock_item_id). Ordem-alvo do teardown:
+          // stockMovement → fuelLog → … → maintenanceOrderItem → inventoryItem → maintenanceOrder → vehicle.
+          await tx.inventoryItem.deleteMany({
             where: {
               tenant_id: tenantId,
             },

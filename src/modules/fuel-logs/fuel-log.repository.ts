@@ -26,9 +26,11 @@ export class InMemoryFuelLogRepository implements FuelLogRepository {
 
   async create(input: CreateFuelLogInput): Promise<FuelLog> {
     const now = new Date();
+    const { id, ...rest } = input;
     const fuelLog: FuelLog = {
-      ...input,
-      id: randomUUID(),
+      ...rest,
+      // Ω4C PR-08b — usa o id PRÉ-GERADO (EXIT-first) quando informado; senão gera aqui.
+      id: id ?? randomUUID(),
       isActive: input.isActive ?? true,
       createdAt: now,
       updatedAt: now,
@@ -65,12 +67,13 @@ export class InMemoryFuelLogRepository implements FuelLogRepository {
     const current = await this.findById(input.tenantId, input.fuelLogId);
     if (!current) return undefined;
 
-    // supplierId é tratado à parte: `null` limpa o fornecedor, `undefined` mantém o valor atual.
-    const { supplierId, ...rest } = input;
+    // supplierId/stockItemId são tratados à parte: `null` limpa, `undefined` mantém o valor atual.
+    const { supplierId, stockItemId, ...rest } = input;
     const updated: FuelLog = {
       ...current,
       ...definedFields(rest),
       ...(supplierId !== undefined ? { supplierId: supplierId ?? undefined } : {}),
+      ...(stockItemId !== undefined ? { stockItemId: stockItemId ?? undefined } : {}),
       updatedAt: new Date(),
     };
     this.fuelLogs.set(updated.id, updated);

@@ -21,6 +21,8 @@ export function toFuelLogDto(entry: FuelLogWithEfficiency) {
     stationType: fuelLog.stationType,
     supplierId: fuelLog.supplierId ?? null,
     supplierName: supplierName ?? null,
+    // Ω4C PR-08b — item de estoque baixado no abastecimento INTERNO (id no MESMO tenant; §2.8: sem tenant externo).
+    stockItemId: fuelLog.stockItemId ?? null,
     notes: fuelLog.notes ?? null,
     // R1.1 — derived, never persisted; null for the vehicle's baseline log.
     kmPerLiter,

@@ -8,7 +8,10 @@ import {
   FuelLogService,
   type FuelLogReferenceResolvers,
 } from "../src/modules/fuel-logs/fuel-log.service.js";
+import { toFuelLogDto } from "../src/modules/fuel-logs/fuel-log.dto.js";
 import type { FuelLog, FuelLogActorContext } from "../src/modules/fuel-logs/fuel-log.types.js";
+import { InventoryService } from "../src/modules/inventory/inventory.service.js";
+import { InMemoryInventoryRepository } from "../src/modules/inventory/inventory.repository.js";
 import {
   parseFuelType,
   parseLiters,
@@ -292,3 +295,102 @@ function buildService(): FuelLogService {
 
   return new FuelLogService(repository, references);
 }
+
+// Ω4C PR-08b — reforço da BAIXA de estoque (seam consumidor→inventory) no fluxo de abastecimento INTERNO.
+function buildStockService(): { readonly service: FuelLogService; readonly inventory: InventoryService } {
+  const inventory = new InventoryService(new InMemoryInventoryRepository(), {});
+  const references: FuelLogReferenceResolvers = {
+    resolveVehicle: async (_actor, id) => id === VEHICLE_V || id === VEHICLE_W,
+    resolveSupplier: async (_actor, id) => (id === SUPPLIER_S ? { id, name: "Posto Rede S" } : null),
+    postStockExit: async (callActor, input) => {
+      await inventory.createExitForSource(callActor, {
+        sourceType: "fuel_log",
+        sourceId: input.sourceId,
+        itemId: input.stockItemId,
+        quantity: input.quantity,
+        vehicleId: input.vehicleId,
+      });
+    },
+    reverseStockExit: async (callActor, fuelLogId) => {
+      await inventory.removeExitForSource(callActor, "fuel_log", fuelLogId);
+    },
+    hasActiveStockExit: async (callActor, fuelLogId) =>
+      (await inventory.findExitBySource(callActor, "fuel_log", fuelLogId)) !== undefined,
+  };
+  return { service: new FuelLogService(new InMemoryFuelLogRepository(), references), inventory };
+}
+
+async function seedFuelStock(inventory: InventoryService, saldo: number): Promise<string> {
+  const item = await inventory.createItem(actor, { sku: `DIESEL-${randomUUID().slice(0, 8)}`, name: "Diesel", unit: "L", is_fuel: true });
+  await inventory.createMovement(actor, { item_id: item.id, type: "entrada", quantidade: saldo, unit_cost: 5 });
+  return item.id;
+}
+
+test("[RN-BAIXA-06] abastecimento INTERNO+combustível baixa; DTO expõe stockItemId; desativar reverte", async () => {
+  const { service, inventory } = buildStockService();
+  const itemId = await seedFuelStock(inventory, 100);
+
+  const created = await service.create(actor, {
+    vehicle_id: VEHICLE_V,
+    station_type: "internal",
+    stock_item_id: itemId,
+    liters: 40,
+    total_value: 200,
+    odometer: 1000,
+  });
+  assert.equal((await inventory.getItem(actor, itemId)).saldo, 60, "interno+combustível baixa 40");
+  assert.equal(toFuelLogDto(created).stockItemId, itemId, "o DTO expõe o stockItemId");
+
+  await service.update(actor, created.fuelLog.id, { is_active: false });
+  assert.equal((await inventory.getItem(actor, itemId)).saldo, 100, "desativar reverteu a baixa");
+});
+
+test("[RN-BAIXA-06] EXTERNO+stock → 422; INTERNO+item não-combustível → 422 item_not_fuel (nada gravado)", async () => {
+  const { service, inventory } = buildStockService();
+  const fuelItem = await seedFuelStock(inventory, 100);
+  const partItem = await inventory.createItem(actor, { sku: `PECA-${randomUUID().slice(0, 8)}`, name: "Peça", unit: "un" });
+  await inventory.createMovement(actor, { item_id: partItem.id, type: "entrada", quantidade: 50, unit_cost: 3 });
+
+  await assert.rejects(
+    () => service.create(actor, { vehicle_id: VEHICLE_V, station_type: "external", supplier_id: SUPPLIER_S, stock_item_id: fuelItem, liters: 10, total_value: 80, odometer: 5 }),
+    (error: unknown) => {
+      assert.equal((error as { statusCode?: number }).statusCode, 422);
+      assert.equal((error as { reason?: string }).reason, "stock_item_not_allowed_for_external");
+      return true;
+    },
+  );
+  await assert.rejects(
+    () => service.create(actor, { vehicle_id: VEHICLE_V, station_type: "internal", stock_item_id: partItem.id, liters: 10, total_value: 80, odometer: 5 }),
+    (error: unknown) => {
+      assert.equal((error as { statusCode?: number }).statusCode, 422);
+      assert.equal((error as { reason?: string }).reason, "item_not_fuel");
+      return true;
+    },
+  );
+  assert.equal((await service.list(actor, {})).total, 0, "nenhum abastecimento criado");
+});
+
+test("[RN-BAIXA-01/07] saldo insuficiente → 409 sem consumo órfão; editar litros com EXIT ativo → 409 lock", async () => {
+  const { service, inventory } = buildStockService();
+  const itemId = await seedFuelStock(inventory, 30);
+
+  await assert.rejects(
+    () => service.create(actor, { vehicle_id: VEHICLE_V, station_type: "internal", stock_item_id: itemId, liters: 40, total_value: 200, odometer: 5 }),
+    (error: unknown) => {
+      assert.equal((error as { statusCode?: number }).statusCode, 409);
+      assert.equal((error as { reason?: string }).reason, "insufficient_balance");
+      return true;
+    },
+  );
+  assert.equal((await service.list(actor, {})).total, 0, "EXIT-first: nada persistido");
+
+  const created = await service.create(actor, { vehicle_id: VEHICLE_V, station_type: "internal", stock_item_id: itemId, liters: 20, total_value: 100, odometer: 5 });
+  await assert.rejects(
+    () => service.update(actor, created.fuelLog.id, { liters: 25 }),
+    (error: unknown) => {
+      assert.equal((error as { statusCode?: number }).statusCode, 409);
+      assert.equal((error as { reason?: string }).reason, "stock_baixa_locked");
+      return true;
+    },
+  );
+});
