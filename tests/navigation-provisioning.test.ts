@@ -73,18 +73,24 @@ test("Ω-ACESSO: getGovernedNavigationPaths inclui o Mapa e paths-chave (para o 
 // Ω4C PR-14 — Telemetria: os 4 paths do console do app de campo são GOVERNADOS pelo registry (gate
 // telemetry:read). Sem isso, o gating dinâmico do sidebar não esconde o grupo TELEMETRIA de quem não tem
 // a permissão (mesma classe do veto V1 de Orçamentos).
+// Ω4C PR-15 (Junta de Mapas J-MAPAS-9) — o 5º path "Rastreamento" (mapa do trajeto, GET /telemetry/track) é
+// GOVERNADO pelo mesmo gate telemetry:read: sem o registry, o gating dinâmico não esconde o item de quem não
+// tem a permissão (lição de esconde-fino do PR-14).
 const TELEMETRY_NAV_PATHS = [
   "/telemetria/quilometragem",
   "/telemetria/acessos",
   "/telemetria/recusas",
   "/telemetria/dispositivos",
+  "/telemetria/rastreamento",
 ] as const;
 
-test("Ω4C PR-14: getGovernedNavigationPaths governa os 4 paths de telemetria", () => {
+test("Ω4C PR-14/PR-15: getGovernedNavigationPaths governa os 5 paths de telemetria (inclui Rastreamento)", () => {
   const governed = getGovernedNavigationPaths();
   for (const path of TELEMETRY_NAV_PATHS) {
     assert.equal(governed.includes(path), true, `governed deveria incluir ${path}`);
   }
+  // O Rastreamento entra como path governado adicional (28→29 no registry).
+  assert.equal(governed.includes("/telemetria/rastreamento"), true);
 });
 
 for (const role of Object.keys(MAP_VISIBLE_BY_ROLE) as Role[]) {

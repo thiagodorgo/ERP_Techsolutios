@@ -85,6 +85,7 @@ const QuilometragemPage = lazy(() => import("./modules/telemetry/pages/Quilometr
 const AcessosTelemetriaPage = lazy(() => import("./modules/telemetry/pages/AcessosTelemetriaPage").then((m) => ({ default: m.AcessosTelemetriaPage })));
 const RecusasPage = lazy(() => import("./modules/telemetry/pages/RecusasPage").then((m) => ({ default: m.RecusasPage })));
 const DispositivosPage = lazy(() => import("./modules/telemetry/pages/DispositivosPage").then((m) => ({ default: m.DispositivosPage })));
+const RastreamentoPage = lazy(() => import("./modules/telemetry/pages/RastreamentoPage").then((m) => ({ default: m.RastreamentoPage })));
 const FieldOperatorsPage = lazy(() => import("./modules/dispatch/pages/FieldOperatorsPage").then((m) => ({ default: m.FieldOperatorsPage })));
 const DispatchConsolePage = lazy(() => import("./modules/dispatch/pages/DispatchConsolePage").then((m) => ({ default: m.DispatchConsolePage })));
 const FinanceiroPage = lazy(() => import("./modules/finance/pages/FinanceiroPage").then((m) => ({ default: m.FinanceiroPage })));
@@ -524,6 +525,17 @@ export function App() {
               element={
                 <PermissionGuard permissions={["telemetry:read"]}>
                   <DispositivosPage />
+                </PermissionGuard>
+              }
+            />
+            {/* Ω4C PR-15 (Junta de Mapas J-MAPAS-9) — Rastreamento: mapa do trajeto (GET /telemetry/track,
+                ÚNICO endpoint com coordenada crua). Gate único telemetry:read (PR-12); backend é a autoridade
+                (403 real, field_technician barrado). Coordenada crua exibida SÓ aqui, consentida na origem. */}
+            <Route
+              path="/telemetria/rastreamento"
+              element={
+                <PermissionGuard permissions={["telemetry:read"]}>
+                  <RastreamentoPage />
                 </PermissionGuard>
               }
             />

@@ -1,6 +1,6 @@
 import { isMockMode } from "../../config/env";
 import { ApiError, apiRequest } from "../../services/api/client";
-import { adaptAccess, adaptDevices, adaptKm, adaptRefusals } from "./telemetry.adapter";
+import { adaptAccess, adaptDevices, adaptKm, adaptRefusals, adaptTrack } from "./telemetry.adapter";
 import type {
   TelemetryAccessView,
   TelemetryApiContext,
@@ -9,6 +9,7 @@ import type {
   TelemetryKmView,
   TelemetryPeriod,
   TelemetryRefusalView,
+  TrackView,
 } from "./telemetry.types";
 import { emptyTelemetry } from "./telemetry.types";
 
@@ -84,6 +85,21 @@ export async function getTelemetryDevices(context: TelemetryApiContext, query: T
   try {
     const payload = await apiRequest<{ data: unknown }>(`/telemetry/devices${buildTelemetryQuery(query)}`, context);
     return { items: adaptDevices(payload.data), source: "api" };
+  } catch (error) {
+    return mapTelemetryError(error);
+  }
+}
+
+// Ω4C PR-15 (Junta de Mapas J-MAPAS-9) — Rastreamento (GET /telemetry/track) — ÚNICO endpoint com coordenada
+// crua (gated forte telemetry:read + consent-gate na origem). EXIGE professionalId (o chamador só invoca com
+// um selecionado; sem seleção o hook para no needs_professional e NÃO chama). Backend ordena por captured_at
+// ASC e projeta o allowlist §2.8; o adapter reforça a projeção. 403 → forbidden; 422 (from>to / janela >
+// teto) → invalid_window honesto. NUNCA loga coordenada.
+export async function getTelemetryTrack(context: TelemetryApiContext, query: TelemetryQuery): Promise<TelemetryData<TrackView>> {
+  if (isMockMode()) return emptyTelemetry("mock");
+  try {
+    const payload = await apiRequest<{ data: unknown }>(`/telemetry/track${buildTelemetryQuery(query)}`, context);
+    return { items: adaptTrack(payload.data), source: "api" };
   } catch (error) {
     return mapTelemetryError(error);
   }

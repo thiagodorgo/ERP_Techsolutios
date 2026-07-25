@@ -428,4 +428,22 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     tenantOnly: true,
     relatedEndpoints: ["GET /api/v1/telemetry/devices"],
   },
+  {
+    // Ω4C PR-15 (Junta de Mapas J-MAPAS-9) — Rastreamento (mapa do trajeto): path GOVERNADO (lição de
+    // esconde-fino do PR-14). Gate ÚNICO telemetry:read (SEM permissão nova) e SEM requiredModules — sem
+    // provisão de módulo novo; getGovernedNavigationPaths o inclui (28→29), então o gating dinâmico ESCONDE o
+    // item de quem não tem telemetry:read (ex.: field_technician), que segue barrado no 403 do backend. É a
+    // ÚNICA superfície que consome /telemetry/track (coordenada crua, gated forte + consent na origem).
+    id: "telemetry.rastreamento",
+    label: "Rastreamento",
+    description: "Trajeto (mapa) do profissional a partir da telemetria consentida do app de campo.",
+    path: "/telemetria/rastreamento",
+    icon: "Route",
+    group: "tenant",
+    order: 195,
+    status: "implemented",
+    requiredPermissions: ["telemetry:read"],
+    tenantOnly: true,
+    relatedEndpoints: ["GET /api/v1/telemetry/track"],
+  },
 ];

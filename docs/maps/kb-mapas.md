@@ -13,7 +13,7 @@
 > exige PD-xxx (≥3 fontes) + **junta de 5 unânime** antes de configurar billing. Este documento é
 > o dossiê técnico/custo que instrui essa decisão — ele **não** ativa nada.
 
-**Última revisão geral:** 2026-07-19 · **Responsável:** Junta de Mapas (J-MAPAS-6 · planejador-mapas — plano REDESIGN do Mapa Operacional web)
+**Última revisão geral:** 2026-07-25 · **Responsável:** Junta de Mapas (J-MAPAS-9 · planejador-mapas — plano do Rastreamento da Telemetria web, Ω4C PR-15)
 
 ---
 
@@ -341,7 +341,24 @@ endereço/coordenada em toast persistido. O read de posição continua gated por
 de 5 + PD". Fase 2 (SLA real) é aditiva, tenant-scoped, também US$ 0. Custo/ToS/LGPD sem pendência de
 ativação externa.
 
+## (i) Rastreamento da Telemetria web (J-MAPAS-9 / Ω4C PR-15) — dossiê provedor/custo/ToS/chave/LGPD
+
+**Data:** 2026-07-25 · **Decisão de junta:** J-MAPAS-9 (planejador-mapas -> dev-mapas -> avaliador-mapas). **Escopo:** tela **Rastreamento** (`/telemetria/rastreamento`) — trajeto (polyline) dos pontos brutos de um profissional num período, consumindo `GET /telemetry/track` (PR-12 #273; **único** endpoint com coordenada crua, gated `telemetry:read` + consent-gate LGPD na origem). ÚLTIMA fatia de telemetria; ÚNICO consumidor de lat/lng cru.
+
+**(a) Provedor — regra de ouro mantida, SEM SKU novo:** base de exibição = **MapLibre GL + OpenFreeMap** (junta Ω1, keyless, US$ 0). Reusa o **style module** `operations/map/map/mapStyle.ts` (`OPERATIONAL_MAP_STYLE` + tiles OpenFreeMap + tokens navy) e o **padrão de montagem** SSR-safe do `OperationsMapLibreCanvas` (dynamic import + fallback). A polyline do trajeto = **camada `line` MapLibre nativa** sobre GeoJSON LineString — DOM/GeoJSON sobre o mesmo map load, **zero chamada de SKU**. **Alternativa aberta (NÃO ativada):** Google Dynamic Maps (só se trocasse a base — não é o caso); rota rodoviária/ETA (Google Routes / OSRM / Valhalla) **não se aplica** — o trajeto são pontos GPS reais do técnico, não roteamento. Qualquer troca = PD + junta-5.
+
+**(b) Custo no piloto:** **US$ 0/mês.** Nenhum SKU tocado; sem geocoding/Places/Routes; sem chave. OpenFreeMap **re-confirmado keyless/sem-limite/gratuito em 2026-07-25** na fonte oficial (openfreemap.org: "Using our public instance is completely free: there are no limits on the number of map views or requests. There's no registration, no user database, no API keys, and no cookies"). Tabela de preços Google (para a alternativa deferida) inalterada desde 2026-07-19 (§(a)) — **não** cotada porque **nada** do Google é ativado.
+
+**(c) ToS de cache (place_id vs lat/lng):** **não se aplica** — nenhuma coordenada do Google é buscada. As coordenadas são **dado próprio do tenant** (heartbeat GPS consentido do app de campo, PR-12/13). Sem `place_id`, sem trava de 30 dias. A retenção do ponto é governada pelo backend de telemetria (PR-12), não por ToS de terceiro.
+
+**(d) Chave/restrição por plataforma:** **N/A** — MapLibre+OpenFreeMap é keyless; não há segredo neste plano. (Se um dia o tenant ligar `VITE_GOOGLE_MAPS_API_KEY`, a chave web exige **restrição por referrer HTTP** e vive em env do frontend, nunca versionada — fora do escopo.)
+
+**(e) LGPD (item de veto do avaliador):** aqui a coordenada crua **É exibida** (é o propósito do Rastreamento) — mas **gated forte** por `telemetry:read` (backend autoridade, 403 real; field_technician barrado) **e** só existe se o profissional **consentiu** (consent-gate no ingresso, PR-12). Minimização: a tela projeta SÓ `{capturedAt, lat, lng, accuracyM}` (allowlist do TrackView); **nunca** IP, `tenant_id`, `sdk_int`, `client_action_id`, `operator_profile_id` externo nem device. **Nenhuma coordenada em log/console/analytics.** **SEM export CSV de coordenada crua** (evita superfície de export em massa de posição). Sem pontos -> mapa vazio honesto (não distingue "sem consentimento" de "sem movimento"; não vaza status de consentimento; nunca trajeto fabricado).
+
+**Custo deste bloco:** **US$ 0** — sem SKU, sem chave, sem billing, sem `place_id`. **Junta-5 + PD NÃO disparam** (sem serviço externo tarifado; MapLibre US$ 0 reusado). Junta NORMAL (>=3), `agente-secops` recomendado. Cor por velocidade **DIFERIDA** (TrackView não projeta `speedKmh` — exigiria backend + reavaliar o allowlist §2.8).
+
 ## Historico de revisoes
+- **2026-07-25 (J-MAPAS-9 · planejador-mapas)** — Plano do **Rastreamento da Telemetria web (Ω4C PR-15)**: trajeto/polyline dos pontos de `GET /telemetry/track` (único endpoint com coordenada crua). **Reusa MapLibre+OpenFreeMap US$ 0** (style + padrão de montagem do mapa operacional; polyline = camada `line` nativa), **sem SKU/chave/billing/dep nova**. OpenFreeMap re-confirmado keyless/gratuito em 2026-07-25 na fonte. §2.8: coordenada crua exibida SÓ aqui, gated telemetry:read + consent na origem; allowlist {capturedAt,lat,lng,accuracyM}; sem coordenada em log; sem CSV de coordenada. Cor por velocidade DIFERIDA (TrackView não projeta speedKmh). Não dispara junta-5+PD -> junta normal. Ver §(i). Próximo: dev-mapas.
 - **2026-07-21 (J-MAPAS-8 · dev-mapas)** — **M-7 SLA real (Fase 2 FECHADA).** PR-A (backend) expôs
   `sla_due_at` aditivo no DTO de work-orders; PR-B (frontend) trocou o SLA-PROXY da fila de chamados por
   **countdown honesto** ("vence em"/"vencido há") **só** quando o prazo existe — `null`/inválido mantém o

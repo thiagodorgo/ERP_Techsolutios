@@ -3,6 +3,7 @@ import type {
   TelemetryDeviceView,
   TelemetryKmView,
   TelemetryRefusalView,
+  TrackView,
 } from "./telemetry.types";
 
 // Ω4C PR-14 — normalização DEFENSIVA das 4 views de Telemetria. NUNCA fabrica linha (D-007): só reconstrói o
@@ -166,4 +167,46 @@ export function adaptDevices(raw: unknown): TelemetryDeviceView[] {
     if (row) rows.push(row);
   }
   return rows;
+}
+
+// ── Rastreamento (Track) — Ω4C PR-15 (Junta de Mapas J-MAPAS-9) ─────────────────────────────────────────────
+// ÚNICA view com coordenada crua. §2.8/LGPD (crítico): o adapter reconstrói SÓ o allowlist
+// {capturedAt, lat, lng, accuracyM}. Se ip/tenant_id/sdk_int/client_action_id/speedKmh/device vierem no corpo
+// por acidente, NÃO entram no objeto (o literal só tem as 4 chaves). Ponto sem coordenada finita/dentro do
+// globo ou sem capturedAt é DESCARTADO — a coordenada é o propósito, então nunca se fabrica um ponto (D-007).
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function toCoordinate(value: unknown): number | null {
+  // ESTRITO: só número finito ou string numérica não-vazia. null/""/boolean NÃO viram 0 (Number(null)===0) —
+  // isso fabricaria um ponto (0,0) inexistente (§2.8/D-007). Coordenada inválida → null → ponto descartado.
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function adaptTrackPoint(raw: unknown): TrackView | null {
+  if (!isRecord(raw)) return null;
+  const capturedAt = nonEmptyString(raw.capturedAt);
+  const lat = toCoordinate(raw.lat);
+  const lng = toCoordinate(raw.lng);
+  if (!capturedAt || lat === null || lng === null) return null;
+  // Fora do globo → coordenada inválida, descarta (não desenha ponto impossível).
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  const accuracyM = isFiniteNumber(raw.accuracyM) ? raw.accuracyM : null;
+  return { capturedAt, lat, lng, accuracyM };
+}
+
+export function adaptTrack(raw: unknown): TrackView[] {
+  if (!Array.isArray(raw)) return [];
+  const points: TrackView[] = [];
+  for (const entry of raw) {
+    const point = adaptTrackPoint(entry);
+    if (point) points.push(point);
+  }
+  return points;
 }
