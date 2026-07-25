@@ -1,17 +1,17 @@
 {
-  "snapshot_date": "2026-07-21",
-  "version": "OMEGA4C-PR-15",
+  "snapshot_date": "2026-07-25",
+  "version": "OMEGA4C-PR-08b",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω4C PR-15 — Rastreamento (mapa da telemetria; MapLibre US$0) — FECHA A TELEMETRIA",
-    "title": "Ω4C PR-15: tela de Rastreamento (polyline dos pontos do profissional em MapLibre keyless US$0) consumindo /telemetry/track; coordenada só no mapa gated+minimizada; FECHA a telemetria",
+    "block": "Ω4C PR-08b — Baixa automática de estoque (abastecimento interno / itens de manutenção → EXIT no ledger)",
+    "title": "Ω4C PR-08b: consumidores com stock_item_id baixam o estoque automaticamente (movimento saida idempotente por origem, não-amplificador); migração aditiva; peça deferida do PR-08",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω4C PR-15 — RASTREAMENTO (tela de mapa da telemetria; Junta de Mapas J-MAPAS-9; FECHA a telemetria: PR-12 backend #273 + PR-13 Flutter #274 + PR-14 web #275 + PR-15 mapa). Frontend-aditivo + 1 governed path no nav registry. Consome GET /telemetry/track do PR-12 (ÚNICO consumidor de coordenada crua; gated telemetry:read + consentida na origem). PROVEDOR: reusa MapLibre GL + OpenFreeMap KEYLESS (US$0; maplibre-gl já-dep; re-confirmado gratuito na fonte 2026-07-25) — ZERO dep/chave/SKU/billing de mapa novo → NÃO dispara junta-5+PD. Polyline: trackGeometry.ts (geometria PURA testável sem WebGL) → GeoJSON LineString ordenado por capturedAt ASC + markers início/fim; camada 'line' nativa; 0 pontos → vazio, 1 ponto → só marker; toCoordinate ESTRITO (Number(null)/''/bool → descartado; fora-do-globo → descartado) — NUNCA (0,0)/trajeto fabricado. TrackMapCanvas NOVO mínimo (reusa OPERATIONAL_MAP_STYLE read-only, SSR-safe, dispose no unmount; NÃO estende o flagship OperationsMapLibreCanvas — operations/map INTOCADO, sem regressão). §2.8/LGPD: coordenada crua exibida SÓ nesta tela (propósito, gated+consentida); adaptTrack projeta allowlist ESTRITO {capturedAt,lat,lng,accuracyM} (descarta IP/tenant_id/sdk_int/client_action_id/device/speedKmh); coordenada só na polyline/markers (summarizeTrack só count+averageAccuracy); SEM CSV de coordenada (minimização — distinto das 4 telas PR-14); ZERO coordenada em log; MapLibre keyless client-side → coordenada NÃO enviada a provedor terceiro (sem exfiltração). Empty honesto ('Sem pontos de localização no período') não vaza consentimento. Cor-por-velocidade DEFERIDA (TrackView não projeta speed). REUSA telemetry:read (SEM permissão nova; catalog INTOCADO); rota /telemetria/rastreamento sob PermissionGuard telemetry:read + governed path telemetry.rastreamento no NAVIGATION_REGISTRY (getGovernedNavigationPaths 28→29; field_technician barrado — o campo ENVIA via field_location:send, não LÊ). RN-TELE-MAP. Junta UNÂNIME 3/3 (2 revisores de segurança/mapa): avaliador-mapas APROVADO (0 cond; MapLibre US$0; geometria honesta) + agente-secops APROVADO (0 cond; coordenada minimizada; sem CSV/log/exfiltração) + omega4c-avaliador APROVADO (smoke 839/839; nav governed 28→29). Zero regressão. Sem provider/SKU novo.",
-    "status_label": "Ω4C PR-15: Rastreamento (polyline MapLibre keyless US$0) consumindo /telemetry/track; coordenada só no mapa gated+minimizada (sem CSV/log/exfiltração); junta 3/3 (mapas+secops); FECHA A TELEMETRIA; frontend_smoke 819->839, backend 1481, blocks 85->86"
+    "summary": "Ω4C PR-08b — BAIXA AUTOMÁTICA DE ESTOQUE (complemento do PR-08 Estoque custódia #269; peça que fora deferida). Backend-only, sem rota nova, sem permissão nova; catalog.ts/prisma/seed.ts/src/app.ts INTOCADOS. Migração ADITIVA 20260832000000 (3x ADD COLUMN nullable + 2x FK composta RESTRICT + 3x CREATE INDEX incl. índice parcial UNIQUE): fuel_logs.stock_item_id + maintenance_order_items.stock_item_id (FK (tenant_id,stock_item_id)→inventory_items RESTRICT + idx tenant-first) e stock_movements.source_type/source_id + idx parcial UNIQUE (tenant_id,source_type,source_id) WHERE source_id IS NOT NULL. Zero DROP/ALTER destrutivo; RLS forced herdada; provada up→down→re-up em erp-postgres pelo dba-guardião com drift ZERO. SEAM não-amplificador (lição da escalada do PR-06): trio InventoryService.createExitForSource/removeExitForSource/findExitBySource (service→service via import() dinâmico consumidor→inventory, acíclico). EXIT = type='saida' (não 'consumo' que exige work_order_id), custody_type='base' HARDCODED (viatura só em vehicle_id informativo, NUNCA como custódia), quantidade TRAVADA na origem (liters/quantity, sem override do contrato), source_type/source_id FIXADOS no seam (source_id=randomUUID server-side, não forjável). Idempotência: 1 EXIT ativo por origem (pré-check + índice parcial UNIQUE backstop + handler P2002). Saldo insuficiente = EXIT-FIRST (409 insufficient_balance ANTES de persistir o consumidor → nenhum consumo órfão; falha pós-EXIT → saga de compensação). Só dispara quando aplicável: fuel station_type='internal'+stock_item_id+is_fuel (senão 422 stock_item_not_allowed_for_external/item_not_fuel); manutenção item_type='stock'+stock_item_id (service/product não baixam). Reversão: desativar/soft-delete → removeExitForSource (estorno compensatório, ledger IMUTÁVEL sem DELETE); editar campo de estoque com EXIT ativo → 409 stock_baixa_locked; re-baixa após estorno → 409 stock_baixa_reversed (one-shot D-007). RN-BAIXA-01..09. Testes: tests/inventory-stock-decrement.test.ts (NOVO 10 test()) + reforços fuel (+3)/maintenance (+2) + rls-tenant-isolation (bloco PR-08b: FK cross-tenant 23503, índice parcial idempotência, updateMany cross-tenant 0) com TEARDOWN FK-SAFE reordenado (stockMovement→fuelLog→…→maintenanceOrderItem→inventoryItem→maintenanceOrder→vehicle). Junta UNÂNIME 3/3: agente-secops APROVADO (0 cond; 5 vetores de escalada/isolamento fechados) + agente-dba-guardiao APROVADO (aditiva reversível provada, drift zero, FK RESTRICT tenant-safe, RLS forced, teardown FK-safe empírico) + omega4c-avaliador APROVADO (9 RN-BAIXA verdes; não-amplificação confirmada; sem regressão por baseline stashed). Backend 1481→1504 (+23 CI-memória, 0 fail, 6 skip; medição independente reconciliou o número). Zero regressão. Sem provider/SKU novo. BAIXAs (ABC infla em par baixa+estorno; overdraw concorrente de fontes distintas — ambos pré-existentes module-wide) → backlog Ω5.",
+    "status_label": "Ω4C PR-08b: baixa automática de estoque (fuel interno/itens de manutenção → EXIT 'saida' idempotente por origem, não-amplificador; custódia base travada); migração aditiva provada; junta 3/3 (secops+dba); backend 1481->1504, blocks 86->87"
   },
   "metrics": {
     "flutter_tests": {
@@ -27,10 +27,10 @@
       "note": "+20 (track-geometry: N pontos→LineString ordenado ASC / 0 ponto→vazio / 1 ponto→só marker / sem (0,0) fabricado; telemetria-rastreamento: render/seletor-profissional/periodo-24h/empty-honesto/403/422/§2.8-injeção-lat-lng-ip-ausente-no-DOM/gating-field_technician-barrado/PT-BR). Ω4C PR-15 Rastreamento (mapa da telemetria; MapLibre keyless US$0 consumindo /telemetry/track — ÚNICO consumidor de coordenada crua; coordenada só na polyline gated+minimizada, sem CSV/log/exfiltração). FECHA a telemetria. Sobre 819."
     },
     "backend_tests": {
-      "value": 1481,
-      "total": 1487,
-      "display": "1481/1487",
-      "note": "INALTERADO (Ω4C PR-15 é frontend-aditivo). tests/navigation-provisioning.test.ts ATUALIZADO IN-PLACE (não +N): +1 governed path telemetry.rastreamento no NAVIGATION_REGISTRY → getGovernedNavigationPaths 28→29; matriz por papel derivada de ROLE_PERMISSIONS (field_technician NÃO vê Telemetria — o campo ENVIA via field_location:send, não LÊ) segue 23/23. Suite memoria (CI) 1481 pass/6 skip. catalog.ts INTOCADO (sem permissao nova; REUSA telemetry:read). Zero regressao. Local: rls-tenant-isolation DB-gated ambiental."
+      "value": 1504,
+      "total": 1510,
+      "display": "1504/1510",
+      "note": "+23 (Ω4C PR-08b baixa automatica de estoque): tests/inventory-stock-decrement.test.ts NOVO (10 test() top-level: idempotencia por source, 409 insufficient_balance EXIT-first sem orfao, custodia BASE, source_type/source_id, estorno no soft-delete, fuel externo nao baixa, maintenance service nao baixa, 3 tenants) + reforcos fuel-logs (+3)/maintenance-order-items (+2) + rls-tenant-isolation bloco PR-08b (FK cross-tenant 23503, indice parcial idempotencia, updateMany cross-tenant 0) — os 15 test() top-level + subtests = +23 medidos. Execucao CI-memoria (CORE_SAAS_PERSISTENCE=memory, sem DATABASE_URL): 1510 tests / 1504 pass / 0 fail / 6 skip (os 6 skip = baseline DB-gated auth/prisma; rls-tenant-isolation roda no CI com Postgres e passou — provado up/down/re-up pelo dba-guardiao). Numero reconciliado por medicao independente do orquestrador. Sobre 1481. Sem permissao/rota nova; catalog.ts INTOCADO."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 86,
-      "display": "86",
-      "note": "Ω4C PR-15 (Rastreamento: mapa da telemetria em MapLibre keyless US$0 consumindo /telemetry/track; FECHA a telemetria PR-12 backend + PR-13 Flutter + PR-14 web + PR-15 mapa) = feature entregue → +1 sobre 85 (Ω4C PR-14 telemetria web). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
+      "value": 87,
+      "display": "87",
+      "note": "Ω4C PR-08b (baixa automatica de estoque: abastecimento interno / itens de manutencao com stock_item_id disparam EXIT 'saida' idempotente no ledger; complemento do PR-08 Estoque custodia) = feature entregue → +1 sobre 86 (Ω4C PR-15 Rastreamento). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,

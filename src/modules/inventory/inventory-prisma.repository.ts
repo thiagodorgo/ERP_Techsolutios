@@ -12,9 +12,11 @@ import {
 } from "./inventory.calculations.js";
 import {
   duplicateSkuError,
+  stockBaixaReversedError,
   insufficientBalanceError,
   type AbcClassAssignment,
   type CreateInventoryItemInput,
+  type CreateStockExitForSourceInput,
   type CreateStockMovementInput,
   type CreateTransferInput,
   type CustodySummaryRaw,
@@ -27,6 +29,7 @@ import {
   type ListInventoryItemsResult,
   type ListStockMovementsInput,
   type ListStockMovementsResult,
+  type RemoveStockExitForSourceInput,
   type ReverseStockMovementInput,
   type ReverseStockMovementResult,
   type StockCustody,
@@ -345,6 +348,84 @@ export class PrismaInventoryRepository implements InventoryRepository {
     return { baseQty: roundToDecimalPrecision(baseQty), professionals, vehicles };
   }
 
+  async findExitBySource(tenantId: string, sourceType: string, sourceId: string): Promise<StockMovement | undefined> {
+    // At most one EXIT row per (tenant, source_type, source_id) thanks to stock_movements_source_active_key.
+    const movement = await this.client.stockMovement.findFirst({
+      where: { tenant_id: tenantId, source_type: sourceType, source_id: sourceId },
+    });
+
+    return movement ? mapMovementRecord(movement) : undefined;
+  }
+
+  async isExitReversed(tenantId: string, movementId: string): Promise<boolean> {
+    return this.hasReversalOf(tenantId, [movementId]);
+  }
+
+  async createExitForSource(input: CreateStockExitForSourceInput): Promise<StockMovement | undefined> {
+    const item = await this.findItemById(input.tenantId, input.itemId);
+    if (!item) return undefined;
+
+    // Idempotência ABSOLUTA por origem (backstop = stock_movements_source_active_key → P2002 numa corrida): no
+    // MÁX. 1 EXIT por fonte. Já estornada → 409 (re-baixa one-shot, ledger imutável).
+    const existing = await this.findExitBySource(input.tenantId, input.sourceType, input.sourceId);
+    if (existing) {
+      if (await this.isExitReversed(input.tenantId, existing.id)) {
+        throw stockBaixaReversedError();
+      }
+      return existing;
+    }
+
+    // RN-BAIXA-01 — guard de saldo por custódia BASE dentro da tx (EXIT-first no consumidor). BASE fixada.
+    const signed = -roundToDecimalPrecision(Math.abs(input.quantity));
+    const custodySaldoBefore = await this.saldoOfCustody(input.tenantId, input.itemId, BASE_CUSTODY);
+    if (wouldOverdraw(custodySaldoBefore, signed)) {
+      throw insufficientBalanceError(custodySaldoBefore);
+    }
+
+    try {
+      return await this.insertMovement({
+        tenantId: input.tenantId,
+        itemId: input.itemId,
+        type: "saida",
+        quantidadeSinalizada: signed,
+        vehicleId: input.vehicleId,
+        reason: input.reason,
+        custody: BASE_CUSTODY,
+        sourceType: input.sourceType,
+        sourceId: input.sourceId,
+        createdBy: input.createdBy,
+      });
+    } catch (error) {
+      // Corrida: outro request postou o EXIT da MESMA fonte primeiro → o índice parcial único cravou (P2002).
+      // Devolve o EXIT vencedor (idempotente) em vez de vazar o erro do banco.
+      if (isUniqueViolation(error)) {
+        const raced = await this.findExitBySource(input.tenantId, input.sourceType, input.sourceId);
+        if (raced) return raced;
+      }
+
+      throw error;
+    }
+  }
+
+  async removeExitForSource(input: RemoveStockExitForSourceInput): Promise<StockMovement | undefined> {
+    const exit = await this.findExitBySource(input.tenantId, input.sourceType, input.sourceId);
+    if (!exit) return undefined; // no-op: nunca houve baixa desta fonte.
+    if (await this.isExitReversed(input.tenantId, exit.id)) return undefined; // no-op idempotente.
+
+    // Estorno compensatório: sinal oposto, custódia BASE, source_id NULL (fora do índice parcial) + reverses.
+    return this.insertMovement({
+      tenantId: input.tenantId,
+      itemId: exit.itemId,
+      type: exit.type,
+      quantidadeSinalizada: roundToDecimalPrecision(-exit.quantidadeSinalizada),
+      vehicleId: exit.vehicleId,
+      reason: input.reason ?? exit.reason,
+      custody: BASE_CUSTODY,
+      reversesMovementId: exit.id,
+      createdBy: input.createdBy ?? exit.createdBy,
+    });
+  }
+
   private async insertMovement(
     input: CreateStockMovementInput & {
       readonly custody: StockCustody;
@@ -368,6 +449,8 @@ export class PrismaInventoryRepository implements InventoryRepository {
         custody_vehicle_id: input.custody.custodyVehicleId ?? null,
         transfer_group_id: input.transferGroupId ?? null,
         reverses_movement_id: input.reversesMovementId ?? null,
+        source_type: input.sourceType ?? null,
+        source_id: input.sourceId ?? null,
         created_by: input.createdBy ?? null,
       },
     });
@@ -624,6 +707,26 @@ export class RlsPrismaInventoryRepository implements InventoryRepository {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaInventoryRepository(tx).getCustodySummary(tenantId, itemId));
   }
 
+  findExitBySource(tenantId: string, sourceType: string, sourceId: string): Promise<StockMovement | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaInventoryRepository(tx).findExitBySource(tenantId, sourceType, sourceId),
+    );
+  }
+
+  isExitReversed(tenantId: string, movementId: string): Promise<boolean> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaInventoryRepository(tx).isExitReversed(tenantId, movementId));
+  }
+
+  /** Ω4C PR-08b — guard + idempotent EXIT insert commit-or-roll-back in ONE `$transaction`. */
+  createExitForSource(input: CreateStockExitForSourceInput): Promise<StockMovement | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).createExitForSource(input));
+  }
+
+  /** Ω4C PR-08b — the compensating reversal is written in ONE `$transaction`. */
+  removeExitForSource(input: RemoveStockExitForSourceInput): Promise<StockMovement | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).removeExitForSource(input));
+  }
+
   listMovements(input: ListStockMovementsInput): Promise<ListStockMovementsResult> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).listMovements(input));
   }
@@ -751,6 +854,8 @@ function mapMovementRecord(record: {
   readonly custody_vehicle_id: string | null;
   readonly transfer_group_id: string | null;
   readonly reverses_movement_id: string | null;
+  readonly source_type: string | null;
+  readonly source_id: string | null;
   readonly created_by: string | null;
   readonly created_at: Date;
 }): StockMovement {
@@ -770,6 +875,8 @@ function mapMovementRecord(record: {
     custodyVehicleId: record.custody_vehicle_id ?? undefined,
     transferGroupId: record.transfer_group_id ?? undefined,
     reversesMovementId: record.reverses_movement_id ?? undefined,
+    sourceType: record.source_type ?? undefined,
+    sourceId: record.source_id ?? undefined,
     createdBy: record.created_by ?? undefined,
     createdAt: record.created_at,
   };

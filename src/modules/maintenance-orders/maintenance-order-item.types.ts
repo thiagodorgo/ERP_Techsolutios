@@ -14,6 +14,9 @@ export type MaintenanceOrderItem = {
   readonly description: string;
   readonly unitValue: number;
   readonly quantity: number;
+  // Ω4C PR-08b — item de estoque baixado quando item_type='stock' (nullable; service/product/legado ficam NULL).
+  // A baixa é EFEITO DE DOMÍNIO (stock_movements type=`saida`, custódia BASE) disparado pelo seam — sem saldo aqui.
+  readonly stockItemId?: string;
   readonly notes?: string;
   readonly isActive: boolean;
   readonly createdBy?: string;
@@ -24,12 +27,15 @@ export type MaintenanceOrderItem = {
 };
 
 export type CreateMaintenanceOrderItemInput = {
+  // Ω4C PR-08b — id PRÉ-GERADO (EXIT-first): a baixa (source_id = este id) é postada ANTES de persistir a linha.
+  readonly id?: string;
   readonly tenantId: string;
   readonly maintenanceOrderId: string;
   readonly itemType: MaintenanceItemType;
   readonly description: string;
   readonly unitValue: number;
   readonly quantity: number;
+  readonly stockItemId?: string;
   readonly notes?: string;
   readonly createdBy?: string;
   readonly updatedBy?: string;
@@ -42,6 +48,8 @@ export type UpdateMaintenanceOrderItemInput = {
   readonly description?: string;
   readonly unitValue?: number;
   readonly quantity?: number;
+  // Ω4C PR-08b — `null` = limpar o item de estoque; `undefined` = manter.
+  readonly stockItemId?: string | null;
   readonly notes?: string;
   readonly updatedBy?: string;
 };

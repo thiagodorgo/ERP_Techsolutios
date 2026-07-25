@@ -10,9 +10,11 @@ import {
 } from "./inventory.calculations.js";
 import {
   duplicateSkuError,
+  stockBaixaReversedError,
   insufficientBalanceError,
   type AbcClassAssignment,
   type CreateInventoryItemInput,
+  type CreateStockExitForSourceInput,
   type CreateStockMovementInput,
   type CreateTransferInput,
   type CustodySummaryRaw,
@@ -24,6 +26,7 @@ import {
   type ListInventoryItemsResult,
   type ListStockMovementsInput,
   type ListStockMovementsResult,
+  type RemoveStockExitForSourceInput,
   type ReverseStockMovementInput,
   type ReverseStockMovementResult,
   type StockCustody,
@@ -74,6 +77,24 @@ export interface InventoryRepository {
   reverseMovement(input: ReverseStockMovementInput): Promise<ReverseStockMovementResult>;
   /** Ω4C PR-08 — per-custody aggregation (baseQty + professionals/vehicles), derived from the ledger. */
   getCustodySummary(tenantId: string, itemId: string): Promise<CustodySummaryRaw>;
+  /**
+   * Ω4C PR-08b — the EXIT movement (`saida`) posted for a source (fuel_log/maintenance_item), if any. At most one
+   * row per (tenant, source_type, source_id) thanks to the partial unique index. Returned RAW (reversed or not).
+   */
+  findExitBySource(tenantId: string, sourceType: string, sourceId: string): Promise<StockMovement | undefined>;
+  /** Ω4C PR-08b — true when a compensating movement already points at the given movement (reversed EXIT). */
+  isExitReversed(tenantId: string, movementId: string): Promise<boolean>;
+  /**
+   * Ω4C PR-08b — idempotent EXIT for a source inside ONE tx: reuse the existing EXIT (409 when it was already
+   * reversed — re-baixa one-shot), else guard the BASE balance (409 insufficient_balance) and insert a single
+   * `saida` carrying source_type/source_id. Returns `undefined` when the item is missing in-tenant.
+   */
+  createExitForSource(input: CreateStockExitForSourceInput): Promise<StockMovement | undefined>;
+  /**
+   * Ω4C PR-08b — compensating reversal of a source's EXIT (opposite sign, source_id NULL). Missing / already
+   * reversed → no-op (`undefined`). The original EXIT stays intact (ledger imutável).
+   */
+  removeExitForSource(input: RemoveStockExitForSourceInput): Promise<StockMovement | undefined>;
   listMovements(input: ListStockMovementsInput): Promise<ListStockMovementsResult>;
   findMovementById(tenantId: string, movementId: string): Promise<StockMovement | undefined>;
   /** R7.4 — consumption value (Σ |qty| × cost) over the ABC window, per ACTIVE item. */
@@ -312,6 +333,73 @@ export class InMemoryInventoryRepository implements InventoryRepository {
     };
   }
 
+  async findExitBySource(tenantId: string, sourceType: string, sourceId: string): Promise<StockMovement | undefined> {
+    // At most one EXIT row per (tenant, source_type, source_id) — the partial unique index in Prisma; here a scan.
+    return [...this.movements.values()].find(
+      (movement) =>
+        movement.tenantId === tenantId && movement.sourceType === sourceType && movement.sourceId === sourceId,
+    );
+  }
+
+  async isExitReversed(tenantId: string, movementId: string): Promise<boolean> {
+    return this.hasReversalOf(tenantId, new Set([movementId]));
+  }
+
+  async createExitForSource(input: CreateStockExitForSourceInput): Promise<StockMovement | undefined> {
+    const item = await this.findItemById(input.tenantId, input.itemId);
+    if (!item) return undefined;
+
+    // Idempotência ABSOLUTA por origem (backstop do índice parcial único): no MÁX. 1 EXIT por fonte.
+    const existing = await this.findExitBySource(input.tenantId, input.sourceType, input.sourceId);
+    if (existing) {
+      if (await this.isExitReversed(input.tenantId, existing.id)) {
+        throw stockBaixaReversedError();
+      }
+      return existing;
+    }
+
+    // RN-BAIXA-01 — o guard de saldo por custódia BASE roda ANTES de gravar (EXIT-first no consumidor garante que
+    // nada do consumidor é persistido antes desta checagem passar). BASE fixada (D-Ω4C-INV-STOCK-DECREMENT).
+    const signed = -roundToDecimalPrecision(Math.abs(input.quantity));
+    const custodySaldoBefore = this.saldoOfCustody(input.tenantId, input.itemId, BASE_CUSTODY);
+    if (wouldOverdraw(custodySaldoBefore, signed)) {
+      throw insufficientBalanceError(custodySaldoBefore);
+    }
+
+    return this.insertMovement({
+      tenantId: input.tenantId,
+      itemId: input.itemId,
+      type: "saida",
+      quantidadeSinalizada: signed,
+      vehicleId: input.vehicleId,
+      reason: input.reason,
+      custody: BASE_CUSTODY,
+      sourceType: input.sourceType,
+      sourceId: input.sourceId,
+      createdBy: input.createdBy,
+    });
+  }
+
+  async removeExitForSource(input: RemoveStockExitForSourceInput): Promise<StockMovement | undefined> {
+    const exit = await this.findExitBySource(input.tenantId, input.sourceType, input.sourceId);
+    if (!exit) return undefined; // no-op: nunca houve baixa desta fonte.
+    if (await this.isExitReversed(input.tenantId, exit.id)) return undefined; // no-op idempotente.
+
+    // Estorno compensatório (D-Ω4C-INV-LEDGER-IMMUTABLE): sinal oposto, mesma custódia BASE, source_id NULL (fora
+    // do índice parcial) e reverses_movement_id apontando ao EXIT. O crédito nunca provoca overdraw.
+    return this.insertMovement({
+      tenantId: input.tenantId,
+      itemId: exit.itemId,
+      type: exit.type,
+      quantidadeSinalizada: roundToDecimalPrecision(-exit.quantidadeSinalizada),
+      vehicleId: exit.vehicleId,
+      reason: input.reason ?? exit.reason,
+      custody: { custodyType: "base" },
+      reversesMovementId: exit.id,
+      createdBy: input.createdBy ?? exit.createdBy,
+    });
+  }
+
   private insertMovement(
     input: CreateStockMovementInput & { readonly custody: StockCustody; readonly transferGroupId?: string; readonly reversesMovementId?: string },
   ): StockMovement {
@@ -331,6 +419,8 @@ export class InMemoryInventoryRepository implements InventoryRepository {
       custodyVehicleId: input.custody.custodyVehicleId,
       transferGroupId: input.transferGroupId,
       reversesMovementId: input.reversesMovementId,
+      sourceType: input.sourceType,
+      sourceId: input.sourceId,
       createdBy: input.createdBy,
       createdAt: new Date(),
     };

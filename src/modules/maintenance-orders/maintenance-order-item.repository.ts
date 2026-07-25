@@ -25,13 +25,15 @@ export class InMemoryMaintenanceOrderItemRepository implements MaintenanceOrderI
   async create(input: CreateMaintenanceOrderItemInput): Promise<MaintenanceOrderItem> {
     const now = new Date();
     const item: MaintenanceOrderItem = {
-      id: randomUUID(),
+      // Ω4C PR-08b — usa o id PRÉ-GERADO (EXIT-first) quando informado; senão gera aqui.
+      id: input.id ?? randomUUID(),
       tenantId: input.tenantId,
       maintenanceOrderId: input.maintenanceOrderId,
       itemType: input.itemType,
       description: input.description,
       unitValue: input.unitValue,
       quantity: input.quantity,
+      stockItemId: input.stockItemId,
       notes: input.notes,
       isActive: true,
       createdBy: input.createdBy,
@@ -69,6 +71,8 @@ export class InMemoryMaintenanceOrderItemRepository implements MaintenanceOrderI
       description: input.description ?? current.description,
       unitValue: input.unitValue ?? current.unitValue,
       quantity: input.quantity ?? current.quantity,
+      // Ω4C PR-08b — `null` limpa o item de estoque, `undefined` mantém.
+      stockItemId: input.stockItemId !== undefined ? (input.stockItemId ?? undefined) : current.stockItemId,
       notes: input.notes !== undefined ? input.notes : current.notes,
       updatedBy: input.updatedBy ?? current.updatedBy,
       updatedAt: new Date(),

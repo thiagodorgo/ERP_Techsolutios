@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { env } from "../../config/env.js";
 import { createDefaultFuelLogService } from "../fuel-logs/fuel-log.service.js";
 import { createDefaultScheduledNotificationService } from "../notifications/scheduled-notification.service.js";
@@ -85,6 +87,18 @@ export type MaintenanceNextDueNotificationInput = {
  * - `scheduleNextDueNotification` is the DOMAIN EFFECT that creates the ScheduledNotification via the engine
  *   (service→service; NÃO exige `notifications:create` do usuário).
  */
+/**
+ * Ω4C PR-08b — o contrato NÃO-AMPLIFICADOR da baixa do item Tipo=ESTOQUE: o item informa QUAL item de estoque e a
+ * quantidade TRAVADA (a quantity da linha). O seam do inventory FIXA tipo/custódia/reason/source. `sourceId` = o id
+ * PRÉ-GERADO do maintenance_order_item (EXIT-first).
+ */
+export type MaintenanceStockExitInput = {
+  readonly sourceId: string;
+  readonly stockItemId: string;
+  readonly quantity: number;
+  readonly vehicleId?: string;
+};
+
 export type MaintenanceOrderReferenceResolvers = {
   readonly resolveVehicle?: (actor: MaintenanceOrderActorContext, id: string) => Promise<boolean>;
   readonly maxFuelLogOdometer?: (
@@ -95,6 +109,15 @@ export type MaintenanceOrderReferenceResolvers = {
     actor: MaintenanceOrderActorContext,
     input: MaintenanceNextDueNotificationInput,
   ) => Promise<void>;
+  /**
+   * Ω4C PR-08b — EFEITO DE DOMÍNIO service→service: posta a baixa de estoque do item Tipo=ESTOQUE no
+   * InventoryService (sem `stock_movements:create` do usuário). O erro do seam (409 insufficient_balance) PROPAGA.
+   */
+  readonly postStockExit?: (actor: MaintenanceOrderActorContext, input: MaintenanceStockExitInput) => Promise<void>;
+  /** Ω4C PR-08b — estorno compensatório da baixa (soft-delete do item). No-op idempotente. */
+  readonly reverseStockExit?: (actor: MaintenanceOrderActorContext, itemId: string) => Promise<void>;
+  /** Ω4C PR-08b — existe baixa ATIVA (não estornada) deste item? (trava de edição RN-BAIXA-07 + badge). */
+  readonly hasActiveStockExit?: (actor: MaintenanceOrderActorContext, itemId: string) => Promise<boolean>;
 };
 
 export type MaintenanceOrderDetailResult = {
@@ -291,18 +314,39 @@ export class MaintenanceOrderService {
     const unitValue = parseUnitValue(body.unit_value ?? body.unitValue);
     const quantity = parseQuantity(body.quantity);
     const notes = parseOptionalItemNotes(body.notes);
+    // Ω4C PR-08b (RN-BAIXA-06) — só o item ESTOQUE baixa; service/product ignoram stock_item_id (sem efeito).
+    const stockItemId = itemType === "stock" ? parseOptionalUuid(body.stock_item_id ?? body.stockItemId, "stockItemId") : undefined;
 
-    return this.itemRepository.create({
-      tenantId: actor.tenantId,
-      maintenanceOrderId: order.id,
-      itemType,
-      description,
-      unitValue,
-      quantity,
-      notes,
-      createdBy: actor.userId,
-      updatedBy: actor.userId,
-    });
+    // Ω4C PR-08b (RN-BAIXA-01) — EXIT-FIRST: pré-gera o id e posta a baixa (guard atômico → 409
+    // insufficient_balance) ANTES de persistir a linha → nunca deixa consumo órfão. A viatura entra só como
+    // vehicle_id ATRIBUÍDO do movimento (custódia continua BASE — não amplifica).
+    const itemId = randomUUID();
+    const shouldDecrement = itemType === "stock" && stockItemId !== undefined;
+    if (shouldDecrement) {
+      await this.postStockExit(actor, { sourceId: itemId, stockItemId, quantity, vehicleId: order.vehicleId });
+    }
+
+    try {
+      return await this.itemRepository.create({
+        id: itemId,
+        tenantId: actor.tenantId,
+        maintenanceOrderId: order.id,
+        itemType,
+        description,
+        unitValue,
+        quantity,
+        stockItemId,
+        notes,
+        createdBy: actor.userId,
+        updatedBy: actor.userId,
+      });
+    } catch (error) {
+      // Saga com compensação (R1): o EXIT já foi postado mas o insert do item falhou → estorna e re-lança.
+      if (shouldDecrement) {
+        await this.reverseStockExit(actor, itemId);
+      }
+      throw error;
+    }
   }
 
   async updateItem(
@@ -314,6 +358,13 @@ export class MaintenanceOrderService {
     await this.getEntity(actor, maintenanceOrderId);
     const normalizedItemId = parseRequiredUuid(itemId, "itemId");
     await this.assertItemBelongsToOrder(actor, maintenanceOrderId, normalizedItemId);
+
+    // Ω4C PR-08b (RN-BAIXA-07) — com uma baixa ATIVA, os campos que a determinam (quantity/stock_item_id/item_type)
+    // ficam TRAVADOS (409 stock_baixa_locked). Excluir o item (removeItem) reverte a baixa e destrava.
+    const editsStockField = bodyHasField(body, "quantity", "stock_item_id", "stockItemId", "item_type", "itemType");
+    if (editsStockField && (await this.hasActiveStockExit(actor, normalizedItemId))) {
+      throw stockBaixaLockedError();
+    }
 
     const updated = await this.itemRepository.update({
       tenantId: actor.tenantId,
@@ -345,7 +396,31 @@ export class MaintenanceOrderService {
     if (!deleted) {
       throw itemNotFoundError();
     }
+
+    // Ω4C PR-08b (RN-BAIXA-05) — excluir o item reverte a baixa (estorno compensatório; no-op se não houver EXIT).
+    await this.reverseStockExit(actor, normalizedItemId);
+
     return deleted;
+  }
+
+  private async postStockExit(actor: MaintenanceOrderActorContext, input: MaintenanceStockExitInput): Promise<void> {
+    const resolver = this.references.postStockExit;
+    if (resolver) {
+      await resolver(actor, input);
+    }
+  }
+
+  private async reverseStockExit(actor: MaintenanceOrderActorContext, itemId: string): Promise<void> {
+    const resolver = this.references.reverseStockExit;
+    if (resolver) {
+      await resolver(actor, itemId);
+    }
+  }
+
+  private async hasActiveStockExit(actor: MaintenanceOrderActorContext, itemId: string): Promise<boolean> {
+    const resolver = this.references.hasActiveStockExit;
+
+    return resolver ? resolver(actor, itemId) : false;
   }
 
   // GET /maintenance-orders/odometer-suggestion — maior odômetro conhecido da viatura (max fuel/maintenance),
@@ -482,6 +557,21 @@ function itemNotFoundError(): MaintenanceOrderError {
   return new MaintenanceOrderError(404, "MAINTENANCE_ITEM_NOT_FOUND", "not_found", "Maintenance order item was not found.");
 }
 
+/** Ω4C PR-08b (RN-BAIXA-07) — o item tem uma baixa de estoque ATIVA; exclua-o (reverte a baixa) antes de editar. */
+function stockBaixaLockedError(): MaintenanceOrderError {
+  return new MaintenanceOrderError(
+    409,
+    "MAINTENANCE_ITEM_CONFLICT",
+    "stock_baixa_locked",
+    "Existe uma baixa de estoque ATIVA neste item — exclua o item (reverte a baixa) antes de editar quantidade/item/tipo.",
+  );
+}
+
+/** Ω4C PR-08b — a chave está PRESENTE no corpo (mesmo `null`): a trava dispara em setar OU limpar o campo. */
+function bodyHasField(body: RawRecord, ...keys: string[]): boolean {
+  return keys.some((key) => Object.prototype.hasOwnProperty.call(body, key) && body[key] !== undefined);
+}
+
 // Totais DERIVADOS server-side (D-Ω4C-MANUT-TOTALS-DERIVED): SERVIÇO→totalServices, PRODUTO+ESTOQUE→totalProducts
 // (ESTOQUE é peça física), total=soma. lineTotal por item = unit_value × quantity (arredondado 2 casas). Nunca
 // persistidos; o cliente nunca envia total.
@@ -608,6 +698,32 @@ function createDefaultReferenceResolvers(): MaintenanceOrderReferenceResolvers {
         source_id: input.maintenanceOrderId,
         client_action_id: input.clientActionId,
       });
+    },
+    // Ω4C PR-08b — baixa de estoque do item Tipo=ESTOQUE via InventoryService (service→service, sem
+    // `stock_movements:create` do usuário — espelha scheduleNextDueNotification acima). O sourceType é FIXADO em
+    // `maintenance_item` e o erro do seam (409 insufficient_balance) PROPAGA. `import()` DINÂMICO evita aresta
+    // estática de ciclo (inventory→work-orders→maintenance já é ciclo lazy).
+    postStockExit: async (actor, input) => {
+      const { createDefaultInventoryService } = await import("../inventory/inventory.service.js");
+      const service = await createDefaultInventoryService();
+      await service.createExitForSource(actor, {
+        sourceType: "maintenance_item",
+        sourceId: input.sourceId,
+        itemId: input.stockItemId,
+        quantity: input.quantity,
+        vehicleId: input.vehicleId,
+      });
+    },
+    reverseStockExit: async (actor, itemId) => {
+      const { createDefaultInventoryService } = await import("../inventory/inventory.service.js");
+      const service = await createDefaultInventoryService();
+      await service.removeExitForSource(actor, "maintenance_item", itemId);
+    },
+    hasActiveStockExit: async (actor, itemId) => {
+      const { createDefaultInventoryService } = await import("../inventory/inventory.service.js");
+      const service = await createDefaultInventoryService();
+
+      return (await service.findExitBySource(actor, "maintenance_item", itemId)) !== undefined;
     },
   };
 }

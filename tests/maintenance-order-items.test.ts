@@ -9,6 +9,8 @@ import {
 } from "../src/modules/notifications/notification.service.js";
 import { InMemoryScheduledNotificationRepository } from "../src/modules/notifications/scheduled-notification.repository.js";
 import { ScheduledNotificationService } from "../src/modules/notifications/scheduled-notification.service.js";
+import { InventoryService } from "../src/modules/inventory/inventory.service.js";
+import { InMemoryInventoryRepository } from "../src/modules/inventory/inventory.repository.js";
 import { InMemoryMaintenanceOrderItemRepository } from "../src/modules/maintenance-orders/maintenance-order-item.repository.js";
 import { InMemoryMaintenanceOrderRepository } from "../src/modules/maintenance-orders/maintenance-order.repository.js";
 import {
@@ -123,6 +125,8 @@ test("[MANUT-01/02] CRUD de item + lineTotal e totais DERIVADOS (unit×qty, Σ) 
     "lineTotal",
     "notes",
     "quantity",
+    // Ω4C PR-08b — item de estoque baixado (null quando não é item ESTOQUE); §2.8: id no MESMO tenant.
+    "stockItemId",
     "unitValue",
     "updatedAt",
   ]);
@@ -403,4 +407,85 @@ test("[MANUT-10] criar SEM next_due_at NÃO dispara notificação (zero efeito c
   assert.equal(nextDueCalls.length, 0);
   const defs = await schedService.list(actor, {});
   assert.equal(defs.total, 0);
+});
+
+// Ω4C PR-08b — reforço da BAIXA de estoque (seam consumidor→inventory) no fluxo de itens da manutenção.
+type StockHarness = { readonly service: MaintenanceOrderService; readonly inventory: InventoryService };
+
+function buildStockHarness(): StockHarness {
+  const inventory = new InventoryService(new InMemoryInventoryRepository(), {});
+  const references: MaintenanceOrderReferenceResolvers = {
+    resolveVehicle: async () => true,
+    postStockExit: async (callActor, input) => {
+      await inventory.createExitForSource(callActor, {
+        sourceType: "maintenance_item",
+        sourceId: input.sourceId,
+        itemId: input.stockItemId,
+        quantity: input.quantity,
+        vehicleId: input.vehicleId,
+      });
+    },
+    reverseStockExit: async (callActor, itemId) => {
+      await inventory.removeExitForSource(callActor, "maintenance_item", itemId);
+    },
+    hasActiveStockExit: async (callActor, itemId) =>
+      (await inventory.findExitBySource(callActor, "maintenance_item", itemId)) !== undefined,
+  };
+  const service = new MaintenanceOrderService(
+    new InMemoryMaintenanceOrderRepository(),
+    references,
+    new InMemoryMaintenanceOrderItemRepository(),
+  );
+  return { service, inventory };
+}
+
+async function seedStockItem(inventory: InventoryService, saldo: number): Promise<string> {
+  const item = await inventory.createItem(actor, { sku: `PECA-${randomUUID().slice(0, 8)}`, name: "Peça", unit: "un" });
+  await inventory.createMovement(actor, { item_id: item.id, type: "entrada", quantidade: saldo, unit_cost: 4 });
+  return item.id;
+}
+
+test("[MANUT/RN-BAIXA-06] item ESTOQUE baixa; service/product NÃO baixam; excluir reverte; DTO expõe stockItemId", async () => {
+  const { service, inventory } = buildStockHarness();
+  const itemId = await seedStockItem(inventory, 20);
+  const order = await service.create(actor, { vehicle_id: VEHICLE_V, type: "corretiva", description: "Peça." });
+
+  await service.addItem(actor, order.id, { item_type: "product", description: "Filtro (compra)", unit_value: 10, quantity: 2, stock_item_id: itemId });
+  assert.equal((await inventory.getItem(actor, itemId)).saldo, 20, "PRODUTO não baixa estoque");
+
+  const stockLine = await service.addItem(actor, order.id, { item_type: "stock", description: "Óleo (estoque)", unit_value: 30, quantity: 5, stock_item_id: itemId });
+  assert.equal((await inventory.getItem(actor, itemId)).saldo, 15, "item ESTOQUE baixou 5");
+  assert.equal(toMaintenanceOrderItemDto(stockLine).stockItemId, itemId, "o DTO da linha expõe o stockItemId");
+
+  await service.removeItem(actor, order.id, stockLine.id);
+  assert.equal((await inventory.getItem(actor, itemId)).saldo, 20, "excluir o item reverteu a baixa");
+});
+
+test("[MANUT/RN-BAIXA-01/07] saldo insuficiente → 409 sem item órfão; editar item ESTOQUE com EXIT ativo → 409 lock", async () => {
+  const { service, inventory } = buildStockHarness();
+  const itemId = await seedStockItem(inventory, 3);
+  const order = await service.create(actor, { vehicle_id: VEHICLE_V, type: "corretiva", description: "Peça." });
+
+  // Saldo 3, tenta baixar 5 → 409 insufficient_balance ANTES de gravar a linha (sem item órfão).
+  await assert.rejects(
+    () => service.addItem(actor, order.id, { item_type: "stock", description: "Correia", unit_value: 40, quantity: 5, stock_item_id: itemId }),
+    (error: unknown) => {
+      assert.equal((error as { statusCode?: number }).statusCode, 409);
+      assert.equal((error as { reason?: string }).reason, "insufficient_balance");
+      return true;
+    },
+  );
+  const detail = await service.getWithDetail(actor, order.id);
+  assert.equal(detail.items.length, 0, "nenhum item foi persistido (sem consumo órfão)");
+
+  // Baixa válida (2) e então a quantity trava com EXIT ativo.
+  const line = await service.addItem(actor, order.id, { item_type: "stock", description: "Correia", unit_value: 40, quantity: 2, stock_item_id: itemId });
+  await assert.rejects(
+    () => service.updateItem(actor, order.id, line.id, { quantity: 3 }),
+    (error: unknown) => {
+      assert.equal((error as { statusCode?: number }).statusCode, 409);
+      assert.equal((error as { reason?: string }).reason, "stock_baixa_locked");
+      return true;
+    },
+  );
 });

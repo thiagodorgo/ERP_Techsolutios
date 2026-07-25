@@ -114,6 +114,9 @@ export function toStockMovementDto(movement: StockMovement) {
     custodyVehicleId: movement.custodyVehicleId ?? null,
     transferGroupId: movement.transferGroupId ?? null,
     reversesMovementId: movement.reversesMovementId ?? null,
+    // Ω4C PR-08b — proveniência da baixa automática (machine token + id no MESMO tenant; §2.8: sem tenant externo).
+    sourceType: movement.sourceType ?? null,
+    sourceId: movement.sourceId ?? null,
     createdBy: movement.createdBy ?? null,
     createdAt: movement.createdAt.toISOString(),
   };

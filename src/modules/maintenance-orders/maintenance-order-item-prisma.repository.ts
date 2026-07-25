@@ -17,12 +17,15 @@ export class PrismaMaintenanceOrderItemRepository implements MaintenanceOrderIte
   async create(input: CreateMaintenanceOrderItemInput): Promise<MaintenanceOrderItem> {
     const record = await this.client.maintenanceOrderItem.create({
       data: {
+        // Ω4C PR-08b — id PRÉ-GERADO (EXIT-first) quando informado; senão o default gen_random_uuid() do banco.
+        ...(input.id ? { id: input.id } : {}),
         tenant_id: input.tenantId,
         maintenance_order_id: input.maintenanceOrderId,
         item_type: input.itemType,
         description: input.description,
         unit_value: input.unitValue,
         quantity: input.quantity,
+        stock_item_id: input.stockItemId ?? null,
         notes: input.notes ?? null,
         created_by: input.createdBy ?? null,
         updated_by: input.updatedBy ?? null,
@@ -63,6 +66,8 @@ export class PrismaMaintenanceOrderItemRepository implements MaintenanceOrderIte
         description: input.description,
         unit_value: input.unitValue,
         quantity: input.quantity,
+        // Ω4C PR-08b — `null` limpa (nullable(null) → null), `undefined` mantém (compactRecord remove).
+        stock_item_id: nullable(input.stockItemId),
         notes: input.notes,
         updated_by: input.updatedBy,
       }),
@@ -133,6 +138,7 @@ function mapItemRecord(record: {
   readonly description: string;
   readonly unit_value: unknown;
   readonly quantity: unknown;
+  readonly stock_item_id: string | null;
   readonly notes: string | null;
   readonly is_active: boolean;
   readonly created_by: string | null;
@@ -149,6 +155,7 @@ function mapItemRecord(record: {
     description: record.description,
     unitValue: decimalToNumber(record.unit_value),
     quantity: decimalToNumber(record.quantity),
+    stockItemId: record.stock_item_id ?? undefined,
     notes: record.notes ?? undefined,
     isActive: record.is_active,
     createdBy: record.created_by ?? undefined,
@@ -162,6 +169,11 @@ function mapItemRecord(record: {
 function decimalToNumber(value: unknown): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/** Ω4C PR-08b — `undefined` mantém (compactRecord remove); `null` limpa; valor define. */
+function nullable<T>(value: T | undefined | null): T | null | undefined {
+  return value === undefined ? undefined : value ?? null;
 }
 
 function compactRecord<T extends Record<string, unknown>>(input: T): Partial<T> {
