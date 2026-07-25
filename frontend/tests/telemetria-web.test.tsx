@@ -224,17 +224,18 @@ test("service: 403 → forbidden (acesso não permitido); 422 → invalid_window
 });
 
 // ── (e) gating por telemetry:read — sidebar + paleta de comandos ───────────────────────────────────────────
-test("nav: o grupo TELEMETRIA (4 itens PT-BR) aparece para o gestor", () => {
+test("nav: o grupo TELEMETRIA (5 itens PT-BR, inclui Rastreamento/PR-15) aparece para o gestor", () => {
   const nav = buildSidebarNav(["Gestor Operacional"]);
   const group = nav.find((g) => g.label === "TELEMETRIA");
   assert.ok(group, "grupo TELEMETRIA presente");
+  // Ω4C PR-15 (Junta de Mapas) somou o 5º item "Rastreamento" (mapa do trajeto, GET /telemetry/track).
   assert.deepEqual(
     group?.items.map((i) => i.label),
-    ["Quilometragem", "Acessos", "Recusas", "Dispositivos"],
+    ["Quilometragem", "Acessos", "Recusas", "Dispositivos", "Rastreamento"],
   );
   assert.deepEqual(
     group?.items.map((i) => i.path),
-    ["/telemetria/quilometragem", "/telemetria/acessos", "/telemetria/recusas", "/telemetria/dispositivos"],
+    ["/telemetria/quilometragem", "/telemetria/acessos", "/telemetria/recusas", "/telemetria/dispositivos", "/telemetria/rastreamento"],
   );
 });
 

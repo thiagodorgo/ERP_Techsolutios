@@ -1,0 +1,66 @@
+{
+  "pr": "PR-15",
+  "fase": "Fase 3 (FECHA TELEMETRIA) — Rastreamento (tela de mapa da telemetria)",
+  "snapshot_date": "2026-07-25",
+  "branch": "rodada/omega4c",
+  "junta_de_mapas": "J-MAPAS-9",
+  "tipo": "Frontend-aditivo (+ 1 governed path no nav registry backend). Delegado à Junta de Mapas. Consome GET /telemetry/track do PR-12 (ÚNICO consumidor de coordenada crua). FECHA a telemetria (PR-12 backend + PR-13 Flutter + PR-14 web + PR-15 mapa).",
+  "models_alterados": [],
+  "migrations": [],
+  "provedor_mapa": "MapLibre GL + OpenFreeMap KEYLESS (US$0; tiles.openfreemap.org/planet; re-confirmado gratuito na fonte 2026-07-25). maplibre-gl@^5.24.0 JÁ era dep. ZERO dep/chave/SKU/billing de mapa novo → NÃO dispara junta-5+PD. Google fica como alternativa atrás de PD+junta-5, não ativada.",
+  "comportamento": {
+    "polyline": "trackGeometry.ts (geometria PURA, testável sem WebGL): pontos ordenados por capturedAt ASC → GeoJSON LineString + markers início(verde)/fim(laranja); camada 'line' nativa MapLibre. 0 pontos → features vazias; 1 ponto → só marker (sem linha). toCoordinate ESTRITO (Number(null)/''/bool → descartado; fora-do-globo → descartado) — NUNCA (0,0)/trajeto fabricado.",
+    "canvas": "TrackMapCanvas NOVO mínimo (D-Ω4C-TELE-MAP-CANVAS/A2): reusa OPERATIONAL_MAP_STYLE read-only, monta SSR-safe (import dinâmico + renderToString), dispose no unmount (mapRef.remove()). NÃO estende o OperationsMapLibreCanvas (clustering/teardrop/pulse) — evita regressão do flagship (operations/map INTOCADO).",
+    "empty_honesto": "sem pontos → 'Sem pontos de localização no período' (nunca trajeto inventado); needs_professional → não chama o endpoint; 422 window_too_large → 'reduza o intervalo'; computeTrackBounds([]) → null sem crash.",
+    "s28_LGPD": "coordenada crua exibida SÓ nesta tela (é o propósito, gated telemetry:read + consentida no backend PR-12). adaptTrack projeta allowlist ESTRITO {capturedAt,lat,lng,accuracyM} — descarta IP/tenant_id/sdk_int/client_action_id/device/speedKmh. Coordenada só na polyline/markers; summarizeTrack só count+averageAccuracy (sem lat/lng em texto). ZERO CSV de coordenada (minimização — distinto das 4 telas PR-14). ZERO coordenada em log. Empty não vaza consentimento. MapLibre keyless client-side → coordenada NÃO enviada a provedor terceiro (sem exfiltração).",
+    "cor_velocidade_deferida": "cor-por-velocidade DEFERIDA (TrackView não projeta speedKmh — seria backend + reavaliar §2.8). Fast-follow."
+  },
+  "permissao": "REUSA telemetry:read (PR-12; field_technician EXCLUÍDO — o campo ENVIA via field_location:send, não LÊ). SEM permissão nova (catalog INTOCADO). Rota /telemetria/rastreamento sob PermissionGuard telemetry:read + item nav gated + GOVERNED PATH telemetry.rastreamento no NAVIGATION_REGISTRY (getGovernedNavigationPaths 28→29 — lição esconde-fino PR-14).",
+  "modulos": [
+    "frontend/src/modules/telemetry/map/trackGeometry.ts (novo, geometria pura) + components/TrackMapCanvas.tsx (novo, MapLibre) + pages/RastreamentoPage.tsx (novo) + useTelemetryTrack.ts (novo) + telemetry.{service,adapter,types}.ts (+getTelemetryTrack/adaptTrack/TrackView)",
+    "frontend/src/App.tsx (rota lazy) + appSidebarNav.ts (5º item Rastreamento no grupo TELEMETRIA) + tenantNavigation.ts",
+    "src/modules/navigation/navigation.registry.ts (governed path telemetry.rastreamento telemetry:read) + tests/navigation-provisioning.test.ts (atualizado in-place p/ o 5º path)",
+    "docs/maps/kb-mapas.md (dossiê Junta de Mapas §(i) J-MAPAS-9)"
+  ],
+  "rns_cobertas": [
+    "RN-TELE-MAP §2.8 (coordenada só no mapa gated; allowlist estrito; sem CSV/log; sem exfiltração)",
+    "RN-TELE-MAP polyline honesta (0/1/N pontos; sem (0,0)/trajeto fabricado; ordenação ASC)",
+    "RN-TELE-MAP provedor keyless (MapLibre US$0; zero dep/chave/billing novo)",
+    "RN-TELE-MAP empty honesto (sem pontos; não vaza consentimento)",
+    "RN-TELE-MAP gating (telemetry:read rota+governed path; field_technician barrado)"
+  ],
+  "rns_total_pr": 10,
+  "cobertura_testes": {
+    "frontend": "frontend/tests/track-geometry.test.ts (geometria pura: N pontos→LineString; 0/1 ponto; ordenação; sem (0,0)) + frontend/tests/telemetria-rastreamento.test.tsx (render/seletor/período-24h/empty-honesto/403/422/§2.8-injeção-ausente/gating/PT-BR). smoke 819→839 (+20).",
+    "backend": "tests/navigation-provisioning.test.ts 23/23 (governed path telemetry.rastreamento; getGovernedNavigationPaths 28→29; field_technician NÃO vê Telemetria)."
+  },
+  "d_records": [
+    "D-Ω4C-TELE-MAP-PROVIDER (MapLibre US$0 keyless; sem provedor/billing novo)",
+    "D-Ω4C-TELE-MAP-CANVAS (TrackMapCanvas novo mínimo; não estende o flagship — A2)",
+    "D-Ω4C-TELE-MAP-POLYLINE (LineString ordenado; sem (0,0)/fabricado)",
+    "D-Ω4C-TELE-MAP-2.8 (allowlist estrito; coordenada só no mapa; sem CSV/log/exfiltração)",
+    "D-Ω4C-TELE-MAP-EMPTY (sem pontos → honesto; não vaza consentimento)",
+    "D-Ω4C-TELE-MAP-NAV (governed path telemetry.rastreamento; esconde-fino)"
+  ],
+  "divergencias_vs_autem": [
+    "cor-por-velocidade DEFERIDA (TrackView não projeta speed; seria backend + reavaliar §2.8 — fast-follow)",
+    "TrackMapCanvas novo (não espelho literal do OperationsMapLibreCanvas — A2; regra do espelho honrada no provedor/style)",
+    "sem CSV de coordenada no Rastreamento (minimização LGPD; só as 4 telas PR-14 têm CSV)"
+  ],
+  "junta": {
+    "avaliador-mapas": "APROVADO (0 cond; MapLibre US$0; geometria honesta; flagship intocado)",
+    "agente-secops": "APROVADO (0 cond; coordenada só no mapa minimizada; sem CSV/log/exfiltração; consent respeitado)",
+    "omega4c-avaliador": "APROVADO_CONDICIONADO → APROVADO (MEDIA de KPI sanada; smoke 839; nav governed 28→29)",
+    "veredito": "UNÂNIME 3/3 APROVADO (J-MAPAS-9 fechado, sem R-MAPAS)"
+  },
+  "kpi_repo_wide": {
+    "frontend_smoke": "819->839 (+20)",
+    "backend": "1481 (inalterado — navigation-provisioning atualizado in-place, ainda 23; getGovernedNavigationPaths 28->29)",
+    "blocks": "85->86"
+  },
+  "fecha_telemetria": "PR-15 FECHA a telemetria da rodada: PR-12 backend (#273) + PR-13 Flutter (#274) + PR-14 web 4 telas (#275) + PR-15 Rastreamento mapa. FALTA: PR-08b baixa automática de estoque + Central de Notificações tela + encerramento.",
+  "coexistencia": "operations/map (flagship) INTOCADO; catalog INTOCADO; sem dep de mapa nova; sem regressão (839/839 smoke; nav-provisioning 23/23)",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

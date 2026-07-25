@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-21",
-  "version": "OMEGA4C-PR-14",
+  "version": "OMEGA4C-PR-15",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω4C PR-14 — Telemetria WEB (telas Acessos/Quilometragem/Recusas/Dispositivos, SEM mapa; frontend)",
-    "title": "Ω4C PR-14: 4 telas web de telemetria consumindo telemetry:read do PR-12 (janela 24h, §2.8 sem coordenada crua); mapa/Rastreamento deferido a PR-15",
+    "block": "Ω4C PR-15 — Rastreamento (mapa da telemetria; MapLibre US$0) — FECHA A TELEMETRIA",
+    "title": "Ω4C PR-15: tela de Rastreamento (polyline dos pontos do profissional em MapLibre keyless US$0) consumindo /telemetry/track; coordenada só no mapa gated+minimizada; FECHA a telemetria",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω4C PR-14 — TELEMETRIA WEB (frontend-aditivo + pequeno fix backend de esconde-fino). 4 telas consumindo os endpoints telemetry:read do PR-12 (#273): Quilometragem (/telemetry/km — seletor de profissional + período De/Até default 24h + totalizadores Σ km/pontos; km 0 honesto sem pontos; 422 professional_required/window_too_large/invalid_window tratados honestos), Acessos (/telemetry/access — connect/disconnect; disambiguado da 'Acessos' de Usuários login web PR-11 por grupo TELEMETRIA+breadcrumb), Recusas (/telemetry/refusals — SERVICE_REFUSAL badges motivo/OS-ref), Dispositivos (/telemetry/devices — label grosseiro anti-fingerprint). §2.8 CRÍTICO: NENHUMA tela exibe coordenada crua (lat/lng)/IP/tenant_id/sdk_int cru — adapter projeta SÓ o allowlist e DESCARTA defensivamente; teste injeta lat/lng/ip e prova ausência no DOM E no CSV; ZERO consumo de /telemetry/track (coordenada crua = só o mapa/PR-15). REUSA telemetry:read (SEM permissão nova; catalog INTOCADO). 4 rotas sob PermissionGuard telemetry:read; command-palette gated. A junta pegou 1 MEDIA de ESCONDE-FINO (sidebar coarse exibia TELEMETRIA a papéis sem telemetry:read porque /telemetria/* não estava no NAVIGATION_REGISTRY do backend) → CORRIGIDA (paridade V1 Orçamentos): 4 paths governados telemetry.* em navigation.registry.ts com requiredPermissions:['telemetry:read'] → getGovernedNavigationPaths 24→28 → computeHiddenNavPaths oculta o grupo p/ quem não tem; navigation-provisioning.test +2 (matriz por papel: VÊ super/tenant_admin/manager/auditor, NÃO vê operator/finance/inventory/support/field_technician); coordenador re-verificou e descarregou. Mapa/Rastreamento = PR-15 (Junta de Mapas; único consumidor de /telemetry/track). RN-TELE-WEB. Junta 3 vetos (1 MEDIA resolvida): agente-secops APROVADO (0 cond; §2.8 sem coordenada; zero /track; anti-fingerprint) + omega4c-avaliador APROVADO (smoke 819; sem regressão backend) + coordenador-de-acessos APROVADO (esconde-fino restaurado). Zero regressão. Sem provider/SKU novo.",
-    "status_label": "Ω4C PR-14: 4 telas web de telemetria (Quilometragem/Acessos/Recusas/Dispositivos) consumindo telemetry:read do PR-12; §2.8 sem coordenada crua (só o mapa/PR-15); junta 3/3 (secops; 1 MEDIA de esconde-fino resolvida); frontend_smoke 801->819, backend 1479->1481, blocks 84->85"
+    "summary": "Ω4C PR-15 — RASTREAMENTO (tela de mapa da telemetria; Junta de Mapas J-MAPAS-9; FECHA a telemetria: PR-12 backend #273 + PR-13 Flutter #274 + PR-14 web #275 + PR-15 mapa). Frontend-aditivo + 1 governed path no nav registry. Consome GET /telemetry/track do PR-12 (ÚNICO consumidor de coordenada crua; gated telemetry:read + consentida na origem). PROVEDOR: reusa MapLibre GL + OpenFreeMap KEYLESS (US$0; maplibre-gl já-dep; re-confirmado gratuito na fonte 2026-07-25) — ZERO dep/chave/SKU/billing de mapa novo → NÃO dispara junta-5+PD. Polyline: trackGeometry.ts (geometria PURA testável sem WebGL) → GeoJSON LineString ordenado por capturedAt ASC + markers início/fim; camada 'line' nativa; 0 pontos → vazio, 1 ponto → só marker; toCoordinate ESTRITO (Number(null)/''/bool → descartado; fora-do-globo → descartado) — NUNCA (0,0)/trajeto fabricado. TrackMapCanvas NOVO mínimo (reusa OPERATIONAL_MAP_STYLE read-only, SSR-safe, dispose no unmount; NÃO estende o flagship OperationsMapLibreCanvas — operations/map INTOCADO, sem regressão). §2.8/LGPD: coordenada crua exibida SÓ nesta tela (propósito, gated+consentida); adaptTrack projeta allowlist ESTRITO {capturedAt,lat,lng,accuracyM} (descarta IP/tenant_id/sdk_int/client_action_id/device/speedKmh); coordenada só na polyline/markers (summarizeTrack só count+averageAccuracy); SEM CSV de coordenada (minimização — distinto das 4 telas PR-14); ZERO coordenada em log; MapLibre keyless client-side → coordenada NÃO enviada a provedor terceiro (sem exfiltração). Empty honesto ('Sem pontos de localização no período') não vaza consentimento. Cor-por-velocidade DEFERIDA (TrackView não projeta speed). REUSA telemetry:read (SEM permissão nova; catalog INTOCADO); rota /telemetria/rastreamento sob PermissionGuard telemetry:read + governed path telemetry.rastreamento no NAVIGATION_REGISTRY (getGovernedNavigationPaths 28→29; field_technician barrado — o campo ENVIA via field_location:send, não LÊ). RN-TELE-MAP. Junta UNÂNIME 3/3 (2 revisores de segurança/mapa): avaliador-mapas APROVADO (0 cond; MapLibre US$0; geometria honesta) + agente-secops APROVADO (0 cond; coordenada minimizada; sem CSV/log/exfiltração) + omega4c-avaliador APROVADO (smoke 839/839; nav governed 28→29). Zero regressão. Sem provider/SKU novo.",
+    "status_label": "Ω4C PR-15: Rastreamento (polyline MapLibre keyless US$0) consumindo /telemetry/track; coordenada só no mapa gated+minimizada (sem CSV/log/exfiltração); junta 3/3 (mapas+secops); FECHA A TELEMETRIA; frontend_smoke 819->839, backend 1481, blocks 85->86"
   },
   "metrics": {
     "flutter_tests": {
@@ -21,16 +21,16 @@
       "note": "Ω4C PR-13 telemetria Flutter (+25 telemetry_test: consent-gate cliente/buffer-flush≤50/idempotencia/offline-replay/foreground-only/eventos/§2.8/migracao-Drift-11-12). Execucao REAL da suite Flutter 807 pass/0 falha/0 skip (Flutter 3.41.6); o 764 anterior era valor carregado nao re-executado desde B-124 → reconciliado a suite real. dart format 0-changed; analyze No issues; pubspec INTOCADO (zero-dep). Sobre 764."
     },
     "frontend_smoke_tests": {
-      "value": 819,
-      "total": 819,
-      "display": "819/819",
-      "note": "+18 (telemetria-web: 4 telas Quilometragem/Acessos/Recusas/Dispositivos render + seletor-profissional + periodo-24h + km-0-honesto/empty + 403/422-honestos + §2.8-nunca-lat/lng/ip-no-DOM-nem-CSV + gating + PT-BR + disambiguacao-Acessos + nunca-/track). Ω4C PR-14 telemetria web (modulo frontend/src/modules/telemetry consumindo telemetry:read do PR-12). Mapa/Rastreamento = PR-15 (Junta de Mapas). Sobre 801."
+      "value": 839,
+      "total": 839,
+      "display": "839/839",
+      "note": "+20 (track-geometry: N pontos→LineString ordenado ASC / 0 ponto→vazio / 1 ponto→só marker / sem (0,0) fabricado; telemetria-rastreamento: render/seletor-profissional/periodo-24h/empty-honesto/403/422/§2.8-injeção-lat-lng-ip-ausente-no-DOM/gating-field_technician-barrado/PT-BR). Ω4C PR-15 Rastreamento (mapa da telemetria; MapLibre keyless US$0 consumindo /telemetry/track — ÚNICO consumidor de coordenada crua; coordenada só na polyline gated+minimizada, sem CSV/log/exfiltração). FECHA a telemetria. Sobre 819."
     },
     "backend_tests": {
       "value": 1481,
       "total": 1487,
       "display": "1481/1487",
-      "note": "+2 (tests/navigation-provisioning.test.ts: getGovernedNavigationPaths governa os 4 paths /telemetria/* + matriz por papel derivada de ROLE_PERMISSIONS [VE super/tenant_admin/manager/auditor; NAO ve operator/finance/inventory/support/field_technician]). Ω4C PR-14 — fix de esconde-fino da sidebar (registrar /telemetria/* no NAVIGATION_REGISTRY com telemetry:read; paridade V1 Orcamentos; getGovernedNavigationPaths 24->28). Suite memoria (CI) 1481 pass/6 skip. Frontend-only exceto este fix de navegacao; catalog.ts INTOCADO (sem permissao nova). Zero regressao. Sobre 1479/1485. Local: rls-tenant-isolation DB-gated ambiental."
+      "note": "INALTERADO (Ω4C PR-15 é frontend-aditivo). tests/navigation-provisioning.test.ts ATUALIZADO IN-PLACE (não +N): +1 governed path telemetry.rastreamento no NAVIGATION_REGISTRY → getGovernedNavigationPaths 28→29; matriz por papel derivada de ROLE_PERMISSIONS (field_technician NÃO vê Telemetria — o campo ENVIA via field_location:send, não LÊ) segue 23/23. Suite memoria (CI) 1481 pass/6 skip. catalog.ts INTOCADO (sem permissao nova; REUSA telemetry:read). Zero regressao. Local: rls-tenant-isolation DB-gated ambiental."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 85,
-      "display": "85",
-      "note": "Ω4C PR-14 (telemetria web: 4 telas Quilometragem/Acessos/Recusas/Dispositivos consumindo telemetry:read do PR-12) = feature entregue → +1 sobre 84 (Ω4C PR-13 telemetria Flutter). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
+      "value": 86,
+      "display": "86",
+      "note": "Ω4C PR-15 (Rastreamento: mapa da telemetria em MapLibre keyless US$0 consumindo /telemetry/track; FECHA a telemetria PR-12 backend + PR-13 Flutter + PR-14 web + PR-15 mapa) = feature entregue → +1 sobre 85 (Ω4C PR-14 telemetria web). PR-00 (recon) e blocos de governanca/fix nao contam como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,

@@ -463,6 +463,19 @@ export const tenantNavigation: NavigationItem[] = [
     status: "implemented",
   },
   {
+    // Ω4C PR-15 (Junta de Mapas J-MAPAS-9) — Rastreamento (mapa do trajeto, GET /telemetry/track). Mesmo gate
+    // telemetry:read (a paleta de comandos gera este destino a partir da sidebar e o esconde de quem não tem
+    // a permissão). ÚNICA superfície com coordenada crua — gated forte, consentida na origem.
+    id: "tenant-telemetria-rastreamento",
+    label: "Rastreamento",
+    path: "/telemetria/rastreamento",
+    scope: "tenant",
+    mode: "operation",
+    requiredPermissions: ["telemetry:read"],
+    icon: "Route",
+    status: "implemented",
+  },
+  {
     id: "tenant-admin",
     label: "Administrador",
     path: "/administrator",

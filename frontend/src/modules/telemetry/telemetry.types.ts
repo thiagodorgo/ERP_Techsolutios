@@ -44,6 +44,19 @@ export type TelemetryDeviceView = {
   readonly lastSeenAt: string;
 };
 
+// Ω4C PR-15 (Junta de Mapas J-MAPAS-9) — Rastreamento. ESTA é a ÚNICA view de Telemetria com coordenada crua
+// (o propósito é desenhar o trajeto no mapa), gated forte por telemetry:read (backend autoridade) e só existe
+// se o profissional CONSENTIU na origem (consent-gate PR-12). §2.8/LGPD: allowlist ESTRITO
+// {capturedAt, lat, lng, accuracyM} — NUNCA IP, tenant_id, sdk_int, client_action_id, operator_profile_id
+// externo nem device. `speedKmh` NÃO entra (cor por velocidade DIFERIDA). A coordenada só é consumida pela
+// geometria/mapa; nunca vai para log/console/CSV.
+export type TrackView = {
+  readonly capturedAt: string;
+  readonly lat: number;
+  readonly lng: number;
+  readonly accuracyM: number | null;
+};
+
 // Origem/estado §7 de cada carga:
 //  · api            → dados reais carregados
 //  · mock           → modo mock: lista VAZIA honesta (D-007, nunca fabrica)

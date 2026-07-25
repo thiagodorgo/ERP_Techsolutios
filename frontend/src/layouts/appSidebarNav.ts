@@ -25,6 +25,7 @@ import {
   MonitorSmartphone,
   Package,
   Receipt,
+  Route,
   ScrollText,
   Send,
   Settings,
@@ -100,6 +101,9 @@ const TELE_QUILOMETRAGEM: NavItem = { label: "Quilometragem", path: "/telemetria
 const TELE_ACESSOS: NavItem = { label: "Acessos", path: "/telemetria/acessos", icon: Smartphone };
 const TELE_RECUSAS: NavItem = { label: "Recusas", path: "/telemetria/recusas", icon: Ban };
 const TELE_DISPOSITIVOS: NavItem = { label: "Dispositivos", path: "/telemetria/dispositivos", icon: Tablet };
+// Ω4C PR-15 (Junta de Mapas J-MAPAS-9) — Rastreamento (mapa do trajeto, GET /telemetry/track). Mesmo gate
+// telemetry:read; o backend é a autoridade (403 real p/ field_technician).
+const TELE_RASTREAMENTO: NavItem = { label: "Rastreamento", path: "/telemetria/rastreamento", icon: Route };
 
 const G_VISAO_GERAL: NavGroup = { label: "VISÃO GERAL", items: [DASHBOARD] };
 
@@ -128,7 +132,7 @@ const G_ADMIN_FULL: NavGroup = {
 // telemetry:read → 403 real p/ quem não tem, ex. field_technician).
 const G_TELEMETRIA: NavGroup = {
   label: "TELEMETRIA",
-  items: [TELE_QUILOMETRAGEM, TELE_ACESSOS, TELE_RECUSAS, TELE_DISPOSITIVOS],
+  items: [TELE_QUILOMETRAGEM, TELE_ACESSOS, TELE_RECUSAS, TELE_DISPOSITIVOS, TELE_RASTREAMENTO],
 };
 
 // Navegação por papel (5 grupos da IA aprovada). Distribuição por RoleKind
@@ -214,6 +218,7 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/telemetria/acessos",
   "/telemetria/recusas",
   "/telemetria/dispositivos",
+  "/telemetria/rastreamento",
   "/notifications",
   "/administrator/checklists",
   "/administrator/settings",
