@@ -418,6 +418,50 @@ export const tenantNavigation: NavigationItem[] = [
     icon: "ShieldCheck",
     status: "implemented",
   },
+  // ── Ω4C PR-14 — Controle > Telemetria (app de campo). Gate ÚNICO telemetry:read (PR-12; SEM permissão
+  // nova). A permissão é a autoridade (sem allowedRoles) — a paleta de comandos e o provisionamento
+  // escondem os itens de quem não tem telemetry:read (ex.: field_technician). O Rastreamento/mapa fica FORA
+  // (PR-15, Junta de Mapas) — nenhum item aqui consome /telemetry/track (coordenada crua). ──
+  {
+    id: "tenant-telemetria-quilometragem",
+    label: "Quilometragem",
+    path: "/telemetria/quilometragem",
+    scope: "tenant",
+    mode: "operation",
+    requiredPermissions: ["telemetry:read"],
+    icon: "Gauge",
+    status: "implemented",
+  },
+  {
+    id: "tenant-telemetria-acessos",
+    label: "Acessos",
+    path: "/telemetria/acessos",
+    scope: "tenant",
+    mode: "operation",
+    requiredPermissions: ["telemetry:read"],
+    icon: "Smartphone",
+    status: "implemented",
+  },
+  {
+    id: "tenant-telemetria-recusas",
+    label: "Recusas",
+    path: "/telemetria/recusas",
+    scope: "tenant",
+    mode: "operation",
+    requiredPermissions: ["telemetry:read"],
+    icon: "Ban",
+    status: "implemented",
+  },
+  {
+    id: "tenant-telemetria-dispositivos",
+    label: "Dispositivos",
+    path: "/telemetria/dispositivos",
+    scope: "tenant",
+    mode: "operation",
+    requiredPermissions: ["telemetry:read"],
+    icon: "Tablet",
+    status: "implemented",
+  },
   {
     id: "tenant-admin",
     label: "Administrador",

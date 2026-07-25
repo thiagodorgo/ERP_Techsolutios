@@ -81,6 +81,10 @@ const UsersPage = lazy(() => import("./modules/users/pages/UsersPage").then((m) 
 const AuditTenantPage = lazy(() => import("./modules/audit/pages/AuditTenantPage").then((m) => ({ default: m.AuditTenantPage })));
 const AcessosPage = lazy(() => import("./modules/sessions/pages/AcessosPage").then((m) => ({ default: m.AcessosPage })));
 const SessoesPage = lazy(() => import("./modules/sessions/pages/SessoesPage").then((m) => ({ default: m.SessoesPage })));
+const QuilometragemPage = lazy(() => import("./modules/telemetry/pages/QuilometragemPage").then((m) => ({ default: m.QuilometragemPage })));
+const AcessosTelemetriaPage = lazy(() => import("./modules/telemetry/pages/AcessosTelemetriaPage").then((m) => ({ default: m.AcessosTelemetriaPage })));
+const RecusasPage = lazy(() => import("./modules/telemetry/pages/RecusasPage").then((m) => ({ default: m.RecusasPage })));
+const DispositivosPage = lazy(() => import("./modules/telemetry/pages/DispositivosPage").then((m) => ({ default: m.DispositivosPage })));
 const FieldOperatorsPage = lazy(() => import("./modules/dispatch/pages/FieldOperatorsPage").then((m) => ({ default: m.FieldOperatorsPage })));
 const DispatchConsolePage = lazy(() => import("./modules/dispatch/pages/DispatchConsolePage").then((m) => ({ default: m.DispatchConsolePage })));
 const FinanceiroPage = lazy(() => import("./modules/finance/pages/FinanceiroPage").then((m) => ({ default: m.FinanceiroPage })));
@@ -485,6 +489,41 @@ export function App() {
               element={
                 <PermissionGuard permissions={["sessions:read"]}>
                   <SessoesPage />
+                </PermissionGuard>
+              }
+            />
+            {/* Ω4C PR-14 — Telemetria WEB (Controle > Telemetria): Quilometragem / Acessos / Recusas /
+                Dispositivos. Gate único telemetry:read (PR-12); backend é a autoridade (403 real). O
+                Rastreamento/mapa (/telemetry/track, coordenada crua) fica FORA — PR-15 via Junta de Mapas. */}
+            <Route
+              path="/telemetria/quilometragem"
+              element={
+                <PermissionGuard permissions={["telemetry:read"]}>
+                  <QuilometragemPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/telemetria/acessos"
+              element={
+                <PermissionGuard permissions={["telemetry:read"]}>
+                  <AcessosTelemetriaPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/telemetria/recusas"
+              element={
+                <PermissionGuard permissions={["telemetry:read"]}>
+                  <RecusasPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/telemetria/dispositivos"
+              element={
+                <PermissionGuard permissions={["telemetry:read"]}>
+                  <DispositivosPage />
                 </PermissionGuard>
               }
             />

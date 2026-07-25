@@ -327,9 +327,11 @@ test("sidebar RBAC: support e inventory nunca alcancam o nucleo de ADMINISTRACAO
   assert.equal(includesAny(inventoryPaths, ADMIN_CORE_PATHS), false);
 });
 
-// ── Camada VISUAL da sidebar (AppShell) — restauracao dos 5 grupos da IA por RoleKind ──
+// ── Camada VISUAL da sidebar (AppShell) — grupos aprovados da IA por RoleKind ──
+// Ω4C PR-14 acrescenta o grupo TELEMETRIA (Quilometragem/Acessos/Recusas/Dispositivos), antes de
+// ADMINISTRAÇÃO, para os roleKind admin/gestor/dispatcher (papéis com telemetry:read).
 
-const IA_GROUP_LABELS = ["VISÃO GERAL", "OPERAÇÃO", "FROTA", "GESTÃO", "ADMINISTRAÇÃO"];
+const IA_GROUP_LABELS = ["VISÃO GERAL", "OPERAÇÃO", "FROTA", "GESTÃO", "TELEMETRIA", "ADMINISTRAÇÃO"];
 
 test("sidebar visual: roleKindFor mapeia os rotulos para o RoleKind correto", async () => {
   const { roleKindFor } = await import("../src/layouts/appSidebarNav");
@@ -345,7 +347,7 @@ test("sidebar visual: roleKindFor mapeia os rotulos para o RoleKind correto", as
   assert.equal(roleKindFor([]), "gestor");
 });
 
-test("sidebar visual: cada RoleKind so usa os 5 rotulos de grupo da IA aprovada", async () => {
+test("sidebar visual: cada RoleKind so usa os rotulos de grupo aprovados (IA + TELEMETRIA)", async () => {
   const { NAV_BY_ROLE } = await import("../src/layouts/appSidebarNav");
 
   for (const groups of Object.values(NAV_BY_ROLE)) {
@@ -375,7 +377,7 @@ test("sidebar visual: support nao ve FROTA/GESTAO/OPERACAO; finance recupera FRO
   assert.equal(financePaths.includes("/cadastros/viaturas"), false, "finance NAO gerencia Viaturas");
 });
 
-test("sidebar visual: gestor/admin recebem os 5 grupos; dispatcher tem FROTA e GESTAO sem admin restrito", async () => {
+test("sidebar visual: gestor/admin recebem os grupos aprovados; dispatcher tem FROTA/GESTAO/TELEMETRIA sem admin restrito", async () => {
   const { buildSidebarNav } = await import("../src/layouts/appSidebarNav");
 
   const gestor = buildSidebarNav(["Gestor Operacional"]).map((group) => group.label);

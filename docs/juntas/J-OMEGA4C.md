@@ -1718,6 +1718,134 @@ Tabela `telemetry_events` (mobile-local; espelha `_kFieldLocationEvents`): `loca
   reconciliação da suíte Flutter real, antes carregada em 764); backend **1479** e frontend_smoke **801** INALTERADOS (Flutter-only);
   blocks 83→**84**.
 
+### PR-14 — Telemetria WEB (telas Acessos · Quilometragem · Recusas · Dispositivos — SEM o mapa) — plano do omega4c-planejador (2026-07-24)
+
+**Mapeia a parte NÃO-mapa de PR-18 do PLANO_OMEGA4C** ("Telas web AutEM Mobile"). **Só frontend** — o backend (PR-12 #273) já provê os 5 endpoints gated por `telemetry:read`, o Flutter (PR-13 #274) já emite os eventos. **O Rastreamento/mapa fica FORA desta fatia** → **PR-15 via Junta de Mapas** (planejador-mapas/dev-mapas/avaliador-mapas), único consumidor do `/telemetry/track` (coordenada crua). **Veredito: CONSUMIR o que já existe** — zero backend novo, zero permissão nova, zero migração.
+
+#### RECON — FATO vs HIPÓTESE (a espinha da fatia)
+- **FATO — os 4 endpoints de leitura EXISTEM e estão gated (`telemetry:read`).** `src/modules/telemetry/telemetry.routes.ts`: `GET /telemetry/km`, `/telemetry/access`, `/telemetry/refusals`, `/telemetry/devices` (+ `/telemetry/track` = **mapa/PR-15, NÃO usar aqui**), todos sob `requirePermission("telemetry:read")` + `tenantContextMiddleware`. Contrato `{data:[...]}`.
+- **FATO — os DTOs §2.8 que cada tela LÊ estão fixados** (`telemetry.dto.ts`): **TelemetryKmView** `{professionalLabel, day, kmTotal(1 casa), pointsUsed}` · **AccessView** `{professionalLabel, event(conectou/desconectou), when(dd/mm HH:mm SP)}` · **RefusalView** `{id, when, professionalLabel, workOrderRef|null, reason|null}` · **DeviceView** `{professionalLabel, deviceLabel(modelo grosseiro), appVersion|null, lastSeenAt(ISO)}`. **NENHUMA carrega lat/lng/IP/tenant_id/operator_profile_id externo/client_action_id/sdk_int cru** — o allowlist já foi aplicado no backend; a tela só renderiza.
+- **FATO — CRÍTICO — km/access/refusals EXIGEM `professionalId` (UUID) na query.** `telemetry.service.ts` chama `parseProfessionalId(query.professionalId)` que **lança 422 `professional_required`** se ausente (`telemetry.validators.ts:101`). ⇒ **as 3 telas precisam de um SELETOR de profissional antes de consultar.** **Só `/devices` NÃO exige** profissional (itera os `app_connect` do tenant, agrupa por profissional). Profissional de outro tenant → **404** (RLS + `resolveLabel`).
+- **FATO — janela período-livre default 24h + teto já validada no backend** (`telemetry.km.ts`: `TELEMETRY_WINDOW_DEFAULT_HOURS`=24, `TELEMETRY_WINDOW_MAX_HOURS`=168). `resolveWindow` aceita `from`/`to` ISO; ausência → últimas 24h; `from>to` → 422 `invalid_window`; span > teto → **422 `window_too_large`**. ⇒ o front só oferece o seletor `De`/`Até` (default 24h) e trata o 422 honesto.
+- **FATO — os padrões reusáveis do ERP existem, prontos:** util CSV `frontend/src/lib/csv.ts` (`downloadCsv`, BOM+`;`, D-007 só linha real — do PR-10) · filtro de período `De`/`Até` via `Input type="date"` (padrão vivo em `AuditTenantPage.tsx:96/99`, PR-11) · tabela densa `DenseTable`/`useDenseList`/`DenseListPagination` + estados §7 (`Skeleton`/`EmptyState`/`ErrorState`/`Alert`) — modelo em `sessions/pages/AcessosPage.tsx` · gate de UI `usePermissions().can("...")` (`SessoesPage.tsx:33`) · lista de profissionais para o seletor via `operator-profiles.service.ts` `listOperatorProfilesFromApi` (id + `fullName`) · cliente HTTP `apiRequest(path+query, context)` (`services/api/client`) com `source: api|mock|forbidden|fallback` (D-007). Nav em `layouts/appSidebarNav.ts` (grupos `NavGroup` + `NAV_BY_ROLE` + `MVP_NAV_PATHS`); rotas lazy em `App.tsx` sob `PermissionGuard`.
+- **GAP (o que esta fatia entrega):** (a) **não existe módulo frontend `telemetry`** (grep: só backend + sessions/audit) — skeleton novo (types/adapter/service/hooks/4 pages) espelhando `sessions/`; (b) **não há tela** que consuma os 4 endpoints; (c) **não há grupo de nav "Telemetria"** nem seletor de profissional reutilizável para telemetria; (d) **não há tratamento de UI** para o 422 `window_too_large`. **Nada disso é backend** — a fatia é puramente telas + nav + adapters.
+
+#### Divergência de numeração a registrar (recon-driven — corrige os vereditos PR-12/PR-13)
+Os vereditos de PR-12/PR-13 referiam "web/mapa=**PR-14** via Junta de Mapas" (conflatando telas web **e** mapa numa única PR-14). **A RECON e o mandato do dono separam:** **PR-14 = as 4 telas web SEM mapa (ESTA fatia, junta normal Ω4C)** + **PR-15 = Rastreamento/mapa (Junta de Mapas, consome `/telemetry/track`)**. A referência do PLANO_OMEGA4C era "PR-18" (telas web AutEM Mobile) — a sequência comprimida da junta mapeia PR-18(PLANO) → **PR-14 (web não-mapa) + PR-15 (mapa)**. Registrar como **D-Ω4C-TELE-WEB-SPLIT**; nenhuma tela deste PR toca `/telemetry/track`.
+
+#### D-records novos (registrar em controle/decisoes.md no PR)
+- **D-Ω4C-TELE-WEB-SPLIT** — a fatia "telas web AutEM Mobile" é dividida em **PR-14 (4 telas SEM mapa, esta)** + **PR-15 (Rastreamento/mapa, Junta de Mapas)**. Corrige a referência "web/mapa=PR-14" dos vereditos PR-12/13. O mapa e o `/telemetry/track` (única view com coordenada crua) são **explicitamente deferidos** e **proibidos** nesta fatia.
+- **D-Ω4C-TELE-WEB-MODULE** — novo módulo frontend `frontend/src/modules/telemetry/` (types/adapter/service/hooks/pages), espelhando o template `sessions/`+`fleet/`. **ZERO backend novo** (PR-12 já provê), **ZERO permissão nova** (reusa `telemetry:read`), **ZERO migração**. Aditivo puro em código de front.
+- **D-Ω4C-TELE-WEB-NAV** — novo grupo de navegação **TELEMETRIA** (rótulo PT-BR §3) com 4 itens: **Quilometragem · Acessos · Recusas · Dispositivos** (o item **Rastreamento** entra no PR-15). Rotas `/telemetria/{quilometragem,acessos,recusas,dispositivos}`. Visível para os roleKind **admin · gestor · dispatcher** (papéis com `telemetry:read`: tenant_admin/manager/field_dispatcher/auditor — auditor cai no fallback `gestor`); gating dinâmico final pelo backend (rota `PermissionGuard telemetry:read` + provisionamento). Itens somados a `MVP_NAV_PATHS`.
+- **D-Ω4C-TELE-WEB-ACESSOS-DISAMBIG** — a **"Acessos"** da Telemetria (eventos `app_connect`/`app_disconnect` do app de campo) é conceito **DIFERENTE** da **"Acessos"** de Controle·Usuários (último login **web**, `/controle/usuarios/acessos`, PR-11, derivada de `auth_sessions`). **NÃO reusar** a `sessions/pages/AcessosPage.tsx`: tela nova, breadcrumb **"Controle · Telemetria"** (vs "Controle · Usuários"), subtítulo deixando claro ser acesso do **app**. (Opção considerada e recusada: renomear o item para "Acessos do App" — mantida a fidelidade AutEM "Acessos"; grupo + breadcrumb resolvem a ambiguidade.)
+- **D-Ω4C-TELE-WEB-PROF-SELECTOR** — **Quilometragem · Acessos · Recusas** exigem `professionalId` (backend 422 `professional_required` sem ele) → seletor de profissional reusando `operator-profiles` (id + `fullName`). **Sem seleção = estado honesto** "Selecione um profissional" — a tela **NÃO chama** o endpoint e **NÃO fabrica** linha (D-007). **Dispositivos dispensa** o seletor (lista do tenant inteiro).
+- **D-Ω4C-TELE-WEB-WINDOW** — janela **período-livre default 24h + teto (168h no backend)**; reusa o par `De`/`Até` (`Input type="date"`) da `AuditTenantPage`. Ausência → 24h; `from>to` → 422 `invalid_window`; span > teto → 422 `window_too_large` → **UI honesta** ("período muito longo; reduza o intervalo"), nunca truncar/fabricar.
+- **D-Ω4C-TELE-WEB-CSV** — export CSV reusa `frontend/src/lib/csv.ts` (`downloadCsv`; D-007: só as linhas reais carregadas). Aplicado a Quilometragem/Acessos/Recusas/Dispositivos; vazio → botão desabilitado.
+
+#### As 4 telas (SEM mapa) — comportamento fiel ao AutEM Controle>Mobile
+1. **Quilometragem** (`/telemetria/quilometragem`) — consome `GET /telemetry/km?professionalId=&from=&to=`. **Seletor de profissional** (obrigatório) + **período livre default 24h**. Grid: `professionalLabel · dia · km (1 casa) · pontos usados`. **Totalizador** do período (Σ km, Σ pontos). Sem pontos → **km 0 honesto**/empty (nunca fabricado — o backend já devolve 0). Export CSV. Estados §7.
+2. **Acessos** (`/telemetria/acessos`) — consome `GET /telemetry/access?professionalId=&from=&to=`. **Seletor de profissional** + período. Histórico conectou/desconectou por profissional/dispositivo, **badge** (verde conectou / cinza desconectou) + `when`. Export CSV. (Distinta de Controle·Usuários·Acessos — D-Ω4C-TELE-WEB-ACESSOS-DISAMBIG.)
+3. **Recusas** (`/telemetria/recusas`) — consome `GET /telemetry/refusals?professionalId=&from=&to=`. **Seletor de profissional** + período. `SERVICE_REFUSAL` com **badges**: motivo (`reason`, badge âmbar/atenção) e referência de OS (`workOrderRef`, chip) quando houver — `null` → "—" (honesto). Export CSV.
+4. **Dispositivos** (`/telemetria/dispositivos`) — consome `GET /telemetry/devices` (**sem** seletor de profissional; lista do tenant). Colunas: `professionalLabel · deviceLabel (rótulo grosseiro, anti-fingerprint) · appVersion · lastSeenAt`. **Nunca** sdk_int cru/IP (o DTO já não traz). Export CSV. Estados §7.
+
+#### §2.8 / LGPD (crítico desta fatia — mesmo rigor do PR-12)
+- **NENHUMA das 4 telas exibe coordenada crua (lat/lng), IP, `tenant_id`, `client_action_id`, `sdk_int` cru nem device fingerprint** — isso é exclusivo do **mapa/PR-15** (`/telemetry/track`), aqui **deferido e proibido**. As telas só renderizam o allowlist de cada DTO (km/access/refusals/devices), que o backend já projetou.
+- **Adapter defensivo** (espelha `sessions.adapter.ts`): normaliza SÓ os campos do allowlist; se por acidente `lat`/`lng`/`ip`/`tenant_id` vierem no corpo, **não entram** no objeto renderizado. **Teste de fidelidade prova ausência** de coordenada/IP no DOM/CSV das 4 telas.
+- **D-007** em toda tela: modo mock / sem seleção / sem dado / erro → estado honesto §7, **nunca** linha inventada; CSV exporta só o carregado.
+
+#### Permissão (reusa — SEM permissão nova)
+- **Reusa `telemetry:read`** (já criada no PR-12): super/platform/tenant_admin + manager + field_dispatcher + auditor; **field_technician EXCLUÍDO** (o técnico é o rastreado, não vê o console). As 4 rotas sob `PermissionGuard permissions={["telemetry:read"]}`. **Backend é a autoridade** (403 real); a UI só molda. Item de menu **gated** (grupo TELEMETRIA aparece só para quem tem a permissão; provisionamento dinâmico esconde o resto). **Zero toque em `catalog.ts`.**
+
+#### Rota + navegação
+- **Rotas lazy** em `App.tsx` (incluir `App.tsx` no `git add` — lição de memória: router novo sem `App.tsx`/`app.ts` no add → CI route/404): `/telemetria/quilometragem`, `/telemetria/acessos`, `/telemetria/recusas`, `/telemetria/dispositivos`, cada uma sob `PermissionGuard permissions={["telemetry:read"]}` dentro do `AppShell`.
+- **Nav** em `appSidebarNav.ts`: 4 `NavItem` + grupo `G_TELEMETRIA` (ícones lucide: `Route`/`Gauge` p/ Quilometragem, `LogIn`/`Smartphone` p/ Acessos, `Ban`/`ShieldX` p/ Recusas, `MonitorSmartphone`/`Tablet` p/ Dispositivos) somado a `NAV_BY_ROLE` (**admin · gestor · dispatcher**) e a `MVP_NAV_PATHS` (senão os itens não renderizam). `currentNavTitle` cobre `/telemetria/*` automaticamente.
+
+#### Arquivos exatos
+- **Frontend (NOVO módulo `telemetry`):** `frontend/src/modules/telemetry/telemetry.types.ts` (KmView/AccessView/RefusalView/DeviceView + `TelemetryApiContext` + `*Data` com `source: api|mock|forbidden|fallback`) · `telemetry.adapter.ts` (normalização defensiva §2.8, `adaptKm/adaptAccess/adaptRefusals/adaptDevices`, formatação de km/badges/labels PT-BR) · `telemetry.service.ts` (`getKm/getAccess/getRefusals/getDevices` via `apiRequest` com querystring `professionalId/from/to`; mock→vazio; 403→forbidden; erro→fallback) · `useTelemetryKm.ts`/`useTelemetryAccess.ts`/`useTelemetryRefusals.ts`/`useTelemetryDevices.ts` · `components/ProfessionalPicker.tsx` (seletor reusando operator-profiles) + `components/TelemetryPeriodFilter.tsx` (De/Até default 24h) · `pages/QuilometragemPage.tsx`, `pages/AcessosTelemetriaPage.tsx`, `pages/RecusasPage.tsx`, `pages/DispositivosPage.tsx`.
+- **Frontend (ESTENDER):** `frontend/src/App.tsx` (+4 rotas lazy sob `PermissionGuard telemetry:read` — **incluir no git add**) · `frontend/src/layouts/appSidebarNav.ts` (+4 `NavItem` + `G_TELEMETRIA` + `NAV_BY_ROLE` admin/gestor/dispatcher + `MVP_NAV_PATHS`).
+- **Docs:** `controle/decisoes.md` (D-records acima) · KPI `docs/kpis/omega4c/KPI_PR-14.json`.
+
+#### RNs e critérios de aceite (espelho cliente das RN-TELE do PR-12)
+- **RN-TELE-WEB-01 (consumo fiel)** — cada tela consome SÓ o endpoint respectivo via `telemetry:read` e renderiza SÓ o allowlist do DTO; **nenhuma** consome `/telemetry/track`.
+- **RN-TELE-WEB-02 (seletor de profissional)** — Quilometragem/Acessos/Recusas EXIGEM `professionalId`; **sem seleção → estado honesto** (não chama o endpoint, não fabrica); Dispositivos dispensa. Profissional de outro tenant → 404 tratado honesto.
+- **RN-TELE-WEB-03 (janela período livre default 24h)** — seletor De/Até default 24h; `from>to` → 422 `invalid_window`; span > teto → 422 `window_too_large` → UI honesta (reduzir intervalo); **nunca** truncar/fabricar.
+- **RN-TELE-WEB-04 (§2.8/LGPD — sem coordenada)** — nenhuma tela exibe lat/lng/IP/device-cru/`tenant_id`/`sdk_int`; **teste de fidelidade prova ausência** no DOM e no CSV. Coordenada crua = exclusiva do mapa/PR-15.
+- **RN-TELE-WEB-05 (Quilometragem + totalizadores)** — km por profissional/dia (1 casa) + `pointsUsed`; totalizador Σ do período; sem pontos → 0/empty honesto; CSV só linhas reais.
+- **RN-TELE-WEB-06 (Recusas com badges)** — `SERVICE_REFUSAL` com badge de motivo (`reason`) e chip de OS (`workOrderRef`); `null` → "—".
+- **RN-TELE-WEB-07 (Acessos)** — histórico conectou/desconectou por profissional com badge + `when`; distinto de Controle·Usuários·Acessos (breadcrumb/grupo).
+- **RN-TELE-WEB-08 (Dispositivos anti-fingerprint)** — `deviceLabel` grosseiro + `appVersion` + `lastSeenAt`; sem sdk_int cru/IP.
+- **RN-TELE-WEB-09 (permissão)** — rotas sob `PermissionGuard telemetry:read`; item de menu gated; field_technician **não vê** (backend autoridade, 403 real → estado "acesso não permitido").
+- **RN-TELE-WEB-10 (D-007 / estados §7)** — loading/skeleton · empty honesto (sem seleção / sem dado) · error/fallback (retry) · acesso-não-permitido (403); export CSV desabilitado quando vazio.
+
+#### Fronteira de escopo
+- **Permitido:** `frontend/src/modules/telemetry/**` (módulo novo) · `frontend/src/App.tsx` (+4 rotas) · `frontend/src/layouts/appSidebarNav.ts` (+grupo/itens/MVP paths) · `Kpis/*` + `docs/kpis/omega4c/KPI_PR-14.json` · `docs/juntas/J-OMEGA4C.md` · `controle/decisoes.md`.
+- **Proibido:** **`src/**` do backend** (PR-12 mergeado #273 — NÃO tocar) · `prisma/**` · `mobile/flutter_app/**` (PR-13 mergeado #274) · **`/telemetry/track`, o mapa/Rastreamento e qualquer lib de mapa (MapLibre etc.)** → **PR-15 Junta de Mapas** · `catalog.ts`/permissão nova (reusa `telemetry:read`) · reescrever `sessions`/`audit` pages · dependência nova (`exceljs`/lib de mapa/date-picker externo — reusa `Input type=date` e `csv.ts`).
+- **Sem dependência nova, sem serviço externo pago, sem migração, sem deploy de prod → junta NORMAL (≥3), NÃO junta-5.** Como é superfície de **telemetria/LGPD (§2.8)**, **`agente-secops` recomendado na junta** (confirma ausência de coordenada/IP/fingerprint na UI e no CSV das 4 telas).
+
+#### Riscos + rollback
+- **Vazamento de coordenada** → NÃO deve haver: nenhuma tela consome `/track`; adapter defensivo + teste de fidelidade provam ausência de lat/lng/IP no DOM/CSV. **Janela grande** → backend 422 `window_too_large`; UI trata honesto (reduzir). **Empty desonesto** → sem seleção de profissional / sem dado → estado §7, **nunca** linha fabricada (D-007). **Colisão "Acessos"** → disambig por grupo TELEMETRIA + breadcrumb (D-Ω4C-TELE-WEB-ACESSOS-DISAMBIG). **Item de menu vazando p/ quem não tem `telemetry:read`** → gating por papel + provisionamento; backend é a autoridade (403). **Rollback:** aditivo puro (módulo novo + 4 rotas + 1 grupo de nav) → reverter o PR remove tudo; **sem migração para desfazer**, sem toque em backend/prisma.
+
+#### Bateria (seção 10 — o avaliador roda)
+- **Frontend:** `npm --prefix frontend run check` · `npm --prefix frontend run build` · `npm --prefix frontend run test:smoke` — **NOVOS** smokes das 4 telas: seletor de profissional (sem seleção → empty honesto, endpoint não chamado), período default 24h + tratamento de `window_too_large`, totalizadores da Quilometragem, badges de Recusas, DeviceView sem fingerprint, CSV só linha real, estados §7, **acesso-não-permitido** (403), **teste de fidelidade §2.8** (ausência de lat/lng/IP no DOM e no CSV das 4 telas), item de menu gated.
+- **Backend (guarda de regressão — memória "contratos front na suíte backend"):** `npm test` (se algum `tests/*.test.ts` ler um `.tsx`/`csv.ts`/`appSidebarNav.ts` tocado, o job backend precisa ficar verde) · **zero regressão** em navigation-provisioning / sidebar / audit / sessions.
+- `git diff --check` + `git status --short` limpo. **KPI:** `docs/kpis/omega4c/KPI_PR-14.json` + histórico + snapshot; `Kpis/*`: **frontend_smoke 801→+M** (4 telas de telemetria + fidelidade §2.8), **backend 1479 INALTERADO** (frontend-only), **blocks 84→85**. **Backfill** `merge_commit`/`approved_head` pós-merge.
+
+**APROVADO para implementar** — íntegro: os 4 endpoints e seus DTOs §2.8 **JÁ EXISTEM** (PR-12 #273), **`telemetry:read` já existe** (sem permissão nova, sem `catalog.ts`), **CSV + período De/Até + dense-list + `can()` + operator-profiles list** todos reusáveis; a fatia é **puramente frontend aditivo** (módulo novo + 4 rotas + 1 grupo de nav), **zero migração/backend/Flutter**; **o Rastreamento/mapa e o `/telemetry/track` ficam FORA — PR-15 via Junta de Mapas**; §2.8 garantido por telas que só renderizam allowlist + adapter defensivo + teste de fidelidade; o gap real (seletor de profissional obrigatório em km/access/refusals + tratamento de `window_too_large` + disambiguação de "Acessos") está declarado nos D-records. Próximo = **omega4c-dev-frontend** sob **junta normal (≥3) com `agente-secops` recomendado**.
+
+#### PR-14 — Veredito da junta (2026-07-25) — **UNÂNIME 3/3 APROVADO (1 MEDIA de esconde-fino resolvida)**
+- **agente-secops** → `APROVADO` (0 condições): as 4 telas (Quilometragem/Acessos/Recusas/Dispositivos) e o `telemetry.adapter.ts` projetam SÓ o allowlist §2.8 —
+  lat/lng/IP/tenant_id/sdk_int/client_action_id aparecem **apenas em comentários**, nunca em render (teste injeta -23.5/-46.6/203.0.113.7/
+  ten-secreto/sdk_int e prova ausência no DOM **E** no CSV das 4 telas). **ZERO consumo de `/telemetry/track`** (grep confirma; nenhuma lib de
+  mapa importada). DeviceView anti-fingerprint (só deviceLabel grosseiro; sem device_model+sdk_int cru). Rotas gated por telemetry:read
+  (backend autoridade 403); service só chama /telemetry/* mesmo-origem autenticado; sem endpoint/segredo externo.
+- **omega4c-avaliador** → `APROVADO` (2 BAIXA): check/build verdes; **test:smoke 819/819** (0 skip); guarda de regressão backend — o único
+  teste que lê `.tsx` (approval-frontend-contract) passa e lê arquivos não-tocados; **backend frontend-only sem regressão NOVA** (as 8 falhas
+  de telemetry.test são DB-gated ambientais). §2.8 comprovado (adapter defensivo + teste DOM+CSV), zero /track, gating em rota/paleta/
+  provisionamento, catalog.ts INTOCADO. Km 0 honesto; 422 professional_required/window_too_large tratados honestos; "Acessos" de telemetria
+  disambiguada da de Usuários (PR-11) por grupo TELEMETRIA. BAIXA: fallback coarse da sidebar (idêntico a Auditoria/Sessões PR-11); KPI orquestrador.
+- **coordenador-de-acessos** → `APROVADO_CONDICIONADO`→**re-verificado APROVADO** (MEDIA descarregada): reusa `telemetry:read` (catalog/RBAC_MATRIX/
+  core-saas.test diff VAZIO — sem permissão nova); 4 rotas `/telemetria/*` sob PermissionGuard telemetry:read; command-palette gated via
+  tenantNavigation (requiredPermissions telemetry:read, sem allowedRoles); backend autoridade (403 real). **MEDIA (esconde-fino):** a sidebar
+  COARSE (NAV_BY_ROLE) exibia o grupo TELEMETRIA a papéis sem telemetry:read porque `/telemetria/*` NÃO estava no NAVIGATION_REGISTRY do
+  backend → `computeHiddenNavPaths` não conseguia ocultar (mesma classe do veto V1 Orçamentos). **CORRIGIDO:** registrados os 4 paths
+  governados `telemetry.{quilometragem,acessos,recusas,dispositivos}` em `navigation.registry.ts` com `requiredPermissions:['telemetry:read']`
+  (shape do V1; relatedEndpoints = os GET /telemetry/*) → getGovernedNavigationPaths 24→28 → o grupo TELEMETRIA agora é OCULTADO para quem
+  não tem a permissão; teste `navigation-provisioning` +2 (matriz por papel derivada de ROLE_PERMISSIONS: VÊ super/tenant_admin/manager/
+  auditor; NÃO vê operator/finance/inventory/support/field_technician; 23/23). Coordenador re-verificou → **MEDIA descarregada, 0 resíduo.**
+  BAIXA: rótulo "Acessos" 2× (Usuários login web × Telemetria connect/disconnect) — disambiguado por grupo+breadcrumb.
+- **Decisão:** verde unânime 3/3 (após 1 MEDIA de esconde-fino resolvida) → merge + KPI no PR (§C3). **§2.8 confirmado por 2 revisores
+  (secops+avaliador): NENHUMA coordenada crua nas telas web** (só o mapa/PR-15 via /track). D-records (D-Ω4C-TELE-WEB-SPLIT/-MODULE/-NAV/
+  -ACESSOS-DISAMBIG/-PROF-SELECTOR/-WINDOW/-CSV) ratificados. **O mapa/Rastreamento = PR-15 (Junta de Mapas).** Fast-follow: breadcrumb da
+  disambiguação de Acessos.
+- KPI: `docs/kpis/omega4c/KPI_PR-14.json`. `Kpis/*`: frontend_smoke 801→**819** (+18 telemetria-web); backend 1479→**1481** (+2
+  navigation-provisioning do fix de esconde-fino); blocks 84→**85**.
+
 ## 8. Encerramento (a fazer no fim)
 Ata final (entregas, KPIs consolidados, pendências→backlog Ω5); deletar **SOMENTE** os 5 agentes efêmeros (registrar cada
 deleção); confirmar que nenhum agente pré-existente foi tocado; marcar os D-records como vigentes.
+
+<!-- VOTO omega4c-avaliador PR-14 (2026-07-25) -->
+### Voto do omega4c-avaliador — PR-14 (Telemetria WEB) — APROVADO
+
+**Bloco 1 (bateria, execucao real):**
+- Prisma/migracoes: N/A (frontend-only; prisma/** INTOCADO — git status).
+- Frontend `check`: VERDE (tsc -b --noEmit, zero erro).
+- Frontend `build`: VERDE (vite build em ~10.7s).
+- Frontend `test:smoke`: **819/819 pass, 0 fail, 0 skipped** (esperado 819).
+- Backend `npm test` (guarda de regressao): unico teste backend que le .tsx = `approval-frontend-contract` → **1/1 pass**, e le WorkOrderDetailPage/GeneralInfoTab/approval.service (INTOCADOS por PR-14). Backend source byte-identico (git status so frontend/**) → **zero regressao NOVA possivel**; falhas DB-gated (telemetry.test.ts) sao ambientais (sem Postgres).
+- Higiene: `git diff --check` limpo; escopo so frontend/** + J-OMEGA4C.md (permitido); catalog.ts INTOCADO; sem segredo/PII.
+
+**Bloco 2 (RN-TELE-WEB):**
+- §2.8 CRITICO: adapter reconstroi SO allowlist; teste injeta lat/lng/ip/tenant_id/sdk_int e prova ausencia no DOM E no CSV das 4 telas. VERDE.
+- Zero consumo de /telemetry/track (so em comentarios); sem lib de mapa.
+- Quilometragem: seletor obrigatorio + default 24h + totalizadores; km 0 honesto.
+- 422 professional_required → needs_professional (endpoint NAO chamado); window_too_large/invalid_window → honesto, sem truncar/fabricar.
+- Acessos-telemetria desambiguado (breadcrumb Controle·Telemetria; doesNotMatch Usuarios); empty honesto; CSV reusa lib/csv.ts; gating por telemetry:read.
+
+**Bloco 3 (UI/RBAC):**
+- Sem rastreamento background (frontend-only); PT-BR sem termo tecnico; acentuacao correta; §7 completo (skeleton/empty/error-fallback/acesso-nao-permitido).
+- RBAC no backend (PermissionGuard telemetry:read + 403 autoridade); paleta gated por can() (provado). KPI = orquestrador.
+
+**D-007 ratificados:** tenantNavigation.ts (precedente PR-11, gating da paleta) OK; field_technician 403 na rota (backend autoridade, mesmo modelo de Auditoria/Sessoes) OK; sidebar-nav.test atualizado como contrato (nao skip) OK.
+
+**Veredito: APROVADO.**
