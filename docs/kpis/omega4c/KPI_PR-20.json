@@ -61,7 +61,8 @@
     "blocks": "87->88"
   },
   "coexistencia": "inbox/sino NotificationsPage INTOCADO; motor/scheduler PR-04 (fireDue/idempotência/job.worker) INTOCADO; catalog INTOCADO; sem migração; sem regressão (1521 pass/0 fail; smoke 850/850).",
-  "merge_commit": null,
-  "approved_head": null,
-  "status": "aprovado_pela_junta_aguardando_merge"
+  "pr": 278,
+  "merge_commit": "263436f",
+  "approved_head": "263436f",
+  "status": "published_per_pr"
 }
