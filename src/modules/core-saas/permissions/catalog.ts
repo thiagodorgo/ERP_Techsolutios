@@ -99,6 +99,10 @@ export const PERMISSION_CATALOG = [
   "impound:update",
   // impound:transition logo após update (eixo próprio da FSM — D-Ω5P-IMP-05).
   "impound:transition",
+  // Ω5P PR-06 (D-Ω5P-REC-06) — impound:inspect (vistoria de recepção I3 — operador de recepção) + impound:allocate
+  // (allocate/vacate/move de vaga I1 — operador de pátio). Distribuição espelha impound:transition (gestão+admins).
+  "impound:inspect",
+  "impound:allocate",
   "service_quotes:update",
   "service_quotes:approve",
   "work_order_financials:update",
@@ -330,6 +334,8 @@ export const ROLE_PERMISSIONS = {
     "jurisdiction:update",
     "impound:update",
     "impound:transition",
+    "impound:inspect",
+    "impound:allocate",
     "service_quotes:update",
     "service_quotes:approve",
     "work_order_financials:update",

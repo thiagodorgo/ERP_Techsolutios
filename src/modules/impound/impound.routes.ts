@@ -17,11 +17,15 @@ type ControllerResult = {
 // probatório (muda o estado de custódia, gera evento imutável), distinto de corrigir metadado do veículo. Os PRs
 // futuros SOMAM portões por-transição (aprovação da autoridade na liberação PR-10, leilão PR-12). assignSpot/
 // recepção/vistoria/transferência = superfície HTTP de PR-06.
+// PR-06 (D-Ω5P-REC-06) — 2 permissões NOVAS: impound:inspect (vistoria de recepção — operador de recepção) e
+// impound:allocate (allocate/vacate/move de vaga — operador de pátio). impound:transition/:read REUSADAS.
 export const IMPOUND_PERMISSIONS = {
   read: "impound:read",
   create: "impound:create",
   update: "impound:update",
   transition: "impound:transition",
+  inspect: "impound:inspect",
+  allocate: "impound:allocate",
 } as const;
 
 export function createImpoundRouter(
@@ -84,6 +88,59 @@ export function createImpoundRouter(
     requirePermission(IMPOUND_PERMISSIONS.transition),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.transition(request));
+    }),
+  );
+
+  // ── Vistoria de recepção (I3) — impound:inspect ─────────────────────────────────────────────────────────
+  router.get(
+    "/impound-processes/:processId/inspection",
+    requirePermission(IMPOUND_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.getInspection(request));
+    }),
+  );
+  router.put(
+    "/impound-processes/:processId/inspection",
+    requirePermission(IMPOUND_PERMISSIONS.inspect),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.saveInspection(request));
+    }),
+  );
+  router.post(
+    "/impound-processes/:processId/inspection/photos",
+    requirePermission(IMPOUND_PERMISSIONS.inspect),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.addInspectionPhoto(request));
+    }),
+  );
+  router.post(
+    "/impound-processes/:processId/inspection/complete",
+    requirePermission(IMPOUND_PERMISSIONS.inspect),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.completeInspection(request));
+    }),
+  );
+
+  // ── Ocupação atômica da vaga (I1) — impound:allocate ────────────────────────────────────────────────────
+  router.post(
+    "/impound-processes/:processId/spot",
+    requirePermission(IMPOUND_PERMISSIONS.allocate),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.assignSpot(request));
+    }),
+  );
+  router.delete(
+    "/impound-processes/:processId/spot",
+    requirePermission(IMPOUND_PERMISSIONS.allocate),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.vacateSpot(request));
+    }),
+  );
+  router.post(
+    "/impound-processes/:processId/spot/move",
+    requirePermission(IMPOUND_PERMISSIONS.allocate),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.moveSpot(request));
     }),
   );
 

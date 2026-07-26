@@ -14,6 +14,7 @@ import {
 } from "../src/modules/impound/impound.hashchain.js";
 import {
   createMemoryImpoundService,
+  getMemoryImpoundRepositoryForTests,
   resetImpoundRuntimeForTests,
 } from "../src/modules/impound/impound.service.js";
 import { ImpoundError, type ImpoundActorContext } from "../src/modules/impound/impound.types.js";
@@ -233,13 +234,26 @@ test("serviço: create + transições reais → verify.valid=true e seq/head coe
   assert.equal(process.custodySeqHead, 1); // evento de abertura
 
   await service.transition(a, process.id, { to: "RECEPTION" });
-  const active = await service.transition(a, process.id, { to: "ACTIVE_CUSTODY", inspection_complete: true });
+  // F2 (I3 REAL) — ACTIVE_CUSTODY exige vistoria de recepção completa (não mais um flag do cliente). A vistoria
+  // acrescenta PHOTO_SET + INSPECTION à cadeia; a integridade (verify.valid) é o que este teste garante.
+  getMemoryImpoundRepositoryForTests().setProfileRequiredSetsForTests(a.tenantId, process.profileId, ["FRONT"]);
+  await service.saveInspection(a, process.id, {
+    inspected_at: OCCURRED.toISOString(),
+    bodywork_state: "Bom",
+    paint_state: "Regular",
+    tires_state: "Bom",
+    internal_objects: "nenhum",
+    missing_equipment: "nenhum",
+    signature_status: "SIGNED",
+  });
+  await service.addInspectionPhoto(a, process.id, { set: "FRONT", file_url: "https://patio.example/front.jpg" });
+  await service.completeInspection(a, process.id);
+  const active = await service.transition(a, process.id, { to: "ACTIVE_CUSTODY" });
   assert.equal(active.status, "ACTIVE_CUSTODY");
-  assert.equal(active.custodySeqHead, 3);
 
   const verify = await service.verify(a, process.id);
   assert.equal(verify.valid, true);
-  assert.equal(verify.eventCount, 3);
+  assert.equal(verify.eventCount, active.custodySeqHead);
   assert.equal(verify.headHash, active.custodyHashHead);
 });
 

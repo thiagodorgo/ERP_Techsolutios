@@ -39,6 +39,27 @@ function forceStatus(processId: string, status: ImpoundStatus): void {
   if (process) process.status = status;
 }
 
+// F2 (I3 REAL) — completa a vistoria de recepção do processo (dados mínimos + 1 foto do único conjunto exigido)
+// para que a guarda RECEPTION→ACTIVE_CUSTODY passe. Conjuntos parametrizados por perfil (aqui = ["FRONT"]).
+async function completeInspectionFor(
+  service: ReturnType<typeof setup>,
+  a: ImpoundActorContext,
+  process: { id: string; profileId: string },
+): Promise<void> {
+  getMemoryImpoundRepositoryForTests().setProfileRequiredSetsForTests(a.tenantId, process.profileId, ["FRONT"]);
+  await service.saveInspection(a, process.id, {
+    inspected_at: new Date().toISOString(),
+    bodywork_state: "Bom",
+    paint_state: "Regular",
+    tires_state: "Bom",
+    internal_objects: "nenhum",
+    missing_equipment: "nenhum",
+    signature_status: "SIGNED",
+  });
+  await service.addInspectionPhoto(a, process.id, { set: "FRONT", file_url: "https://patio.example/front.jpg" });
+  await service.completeInspection(a, process.id);
+}
+
 // ── arestas HABILITADAS (custódia-nativas) sucedem e emitem 1 STATUS_CHANGE ──────────────────────────────────
 
 test("IN_REMOVAL→RECEPTION: sucede, seta entered_at (t0) e emite 1 STATUS_CHANGE (seq avança)", async () => {
@@ -58,18 +79,26 @@ test("IN_REMOVAL→RECEPTION: sucede, seta entered_at (t0) e emite 1 STATUS_CHAN
   assert.deepEqual(events[1].payload, { from: "IN_REMOVAL", to: "RECEPTION", reason: null });
 });
 
-test("RECEPTION→ACTIVE_CUSTODY: guarda I3 — sem inspection_complete → 409; com marcador → sucede", async () => {
+test("RECEPTION→ACTIVE_CUSTODY: guarda I3 REAL — sem vistoria → 409; flag forjado NÃO burla; vistoria completa → sucede", async () => {
   const service = setup();
   const a = actor();
   const process = await openProcess(service, a);
   await service.transition(a, process.id, { to: "RECEPTION" });
 
+  // Sem vistoria → bloqueia.
   await assert.rejects(
     () => service.transition(a, process.id, { to: "ACTIVE_CUSTODY" }),
     (e: unknown) => e instanceof ImpoundError && e.statusCode === 409 && e.reason === "reception_inspection_incomplete",
   );
+  // F2 — body.inspection_complete FORJADO com vistoria ainda incompleta → AINDA bloqueia (o flag do cliente
+  // não vale; a guarda lê o estado REAL da vistoria).
+  await assert.rejects(
+    () => service.transition(a, process.id, { to: "ACTIVE_CUSTODY", inspection_complete: true }),
+    (e: unknown) => e instanceof ImpoundError && e.statusCode === 409 && e.reason === "reception_inspection_incomplete",
+  );
 
-  const active = await service.transition(a, process.id, { to: "ACTIVE_CUSTODY", inspection_complete: true });
+  await completeInspectionFor(service, a, process);
+  const active = await service.transition(a, process.id, { to: "ACTIVE_CUSTODY" });
   assert.equal(active.status, "ACTIVE_CUSTODY");
 });
 
@@ -77,8 +106,8 @@ test("ACTIVE_CUSTODY⇄JUDICIAL_HOLD: exige reason; ida-e-volta OK", async () =>
   const service = setup();
   const a = actor();
   const process = await openProcess(service, a);
-  await service.transition(a, process.id, { to: "RECEPTION" });
-  await service.transition(a, process.id, { to: "ACTIVE_CUSTODY", inspection_complete: true });
+  // A guarda I3 é de RECEPTION→ACTIVE_CUSTODY; aqui interessa só o par ⇄JUDICIAL_HOLD → posiciona via forceStatus.
+  forceStatus(process.id, "ACTIVE_CUSTODY");
 
   await assert.rejects(
     () => service.transition(a, process.id, { to: "JUDICIAL_HOLD" }),
@@ -159,10 +188,16 @@ test("cada transição emite EXATAMENTE 1 STATUS_CHANGE e avança seq contíguo"
   const a = actor();
   const process = await openProcess(service, a);
   await service.transition(a, process.id, { to: "RECEPTION" });
-  await service.transition(a, process.id, { to: "ACTIVE_CUSTODY", inspection_complete: true });
+  await completeInspectionFor(service, a, process); // acrescenta PHOTO_SET + INSPECTION na cadeia
+  await service.transition(a, process.id, { to: "ACTIVE_CUSTODY" });
   const events = await service.listEvents(a, process.id);
-  assert.deepEqual(events.map((e) => e.seq), [1, 2, 3]);
-  assert.deepEqual(events.map((e) => e.type), ["STATUS_CHANGE", "STATUS_CHANGE", "STATUS_CHANGE"]);
+  // seq contíguo por construção (append-only), independentemente dos tipos.
+  assert.deepEqual(
+    events.map((e) => e.seq),
+    events.map((_, index) => index + 1),
+  );
+  // Exatamente 3 STATUS_CHANGE (abertura + RECEPÇÃO + CUSTÓDIA_ATIVA); a vistoria acrescenta PHOTO_SET+INSPECTION.
+  assert.equal(events.filter((e) => e.type === "STATUS_CHANGE").length, 3);
   const verify = await service.verify(a, process.id);
   assert.equal(verify.valid, true);
 });

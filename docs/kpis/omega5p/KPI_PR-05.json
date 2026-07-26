@@ -58,7 +58,8 @@
     "blocks": "92->93"
   },
   "coexistencia": "Vehicle da frota INTOCADO (identidade própria no ImpoundProcess); yard/jurisdiction/tariffs consumidos por FK/serviço; audit_logs reusado como cross-anchor (só seq/hash); OccupancyService do PR-01 chamável (assignSpot em 2 tx com compensação — atomicidade cross-módulo = PR-06). Sem regressão (1657 pass/0 fail).",
-  "merge_commit": null,
-  "approved_head": null,
-  "status": "aprovado_pela_junta_aguardando_merge"
+  "pr": 285,
+  "merge_commit": "574a1d2",
+  "approved_head": "574a1d2",
+  "status": "published_per_pr"
 }

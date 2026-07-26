@@ -103,6 +103,8 @@ const expectedPermissionCatalog = [
   "jurisdiction:update",
   "impound:update",
   "impound:transition",
+  "impound:inspect",
+  "impound:allocate",
   "service_quotes:update",
   "service_quotes:approve",
   "work_order_financials:update",
@@ -472,10 +474,13 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
     assert.equal(ROLE_PERMISSIONS[role].includes("impound:read"), false);
   }
   // create/update/transition = gestão+admins (manager + tenant_admin/super_admin/platform_admin), NUNCA os demais.
+  // Ω5P PR-06 — impound:inspect (vistoria I3) + impound:allocate (vaga I1) espelham a MESMA distribuição.
   for (const role of ["manager", "tenant_admin", "super_admin", "platform_admin"] as const) {
     assert.equal(ROLE_PERMISSIONS[role].includes("impound:create"), true);
     assert.equal(ROLE_PERMISSIONS[role].includes("impound:update"), true);
     assert.equal(ROLE_PERMISSIONS[role].includes("impound:transition"), true);
+    assert.equal(ROLE_PERMISSIONS[role].includes("impound:inspect"), true);
+    assert.equal(ROLE_PERMISSIONS[role].includes("impound:allocate"), true);
   }
   for (const role of [
     "operator",
@@ -491,6 +496,8 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
     assert.equal(ROLE_PERMISSIONS[role].includes("impound:create"), false);
     assert.equal(ROLE_PERMISSIONS[role].includes("impound:update"), false);
     assert.equal(ROLE_PERMISSIONS[role].includes("impound:transition"), false);
+    assert.equal(ROLE_PERMISSIONS[role].includes("impound:inspect"), false);
+    assert.equal(ROLE_PERMISSIONS[role].includes("impound:allocate"), false);
   }
   // impound:manage NÃO existe (sem guard/rota = permissão morta — mesma disciplina do yard:manage diferido).
   assert.equal(PERMISSION_CATALOG.includes("impound:manage" as (typeof PERMISSION_CATALOG)[number]), false);

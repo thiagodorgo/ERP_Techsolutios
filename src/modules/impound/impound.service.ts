@@ -1,12 +1,28 @@
 import { env } from "../../config/env.js";
 import type { OccupancyService } from "../yard/yard.service.js";
+import { getMemoryYardRepositoryForTests } from "../yard/yard.service.js";
 import { verifyChain, type VerifyChainResult } from "./impound.hashchain.js";
+import {
+  intakeCompletenessGaps,
+  isIntakeComplete,
+  resolveRequiredPhotoSets,
+} from "./impound.intake.js";
+import type { InspectionPhoto, IntakeInspection } from "./impound.intake.types.js";
+import {
+  parseFileUrl,
+  parseInspectedAt,
+  parseNullableDate,
+  parseNullableOdometer,
+  parsePhotoSetCode,
+  parseSignatureStatus,
+} from "./impound.intake.validators.js";
 import { InMemoryImpoundRepository, type ImpoundRepository } from "./impound.repository.js";
 import { resolveTransition } from "./impound.transitions.js";
 import type {
   CustodyEvent,
   ImpoundActorContext,
   ImpoundProcess,
+  ImpoundStatus,
   ListImpoundProcessResult,
 } from "./impound.types.js";
 import { ImpoundError } from "./impound.types.js";
@@ -26,6 +42,13 @@ import {
   parseStatus,
   readOptionalBoolean,
 } from "./impound.validators.js";
+
+export type InspectionView = {
+  readonly inspection: IntakeInspection;
+  readonly photos: readonly InspectionPhoto[];
+  readonly requiredSets: readonly string[];
+  readonly complete: boolean;
+};
 
 type RawRecord = Record<string, unknown>;
 
@@ -99,6 +122,84 @@ export class ImpoundService {
     return process;
   }
 
+  // PR-06 (D-Ω5P-REC-03) — abertura de custódia pelo SWEEP (ator = SISTEMA, fora do RBAC HTTP). Cria o processo
+  // (IN_REMOVAL, identidade a confirmar pela vistoria — D-Ω5P-REC-10) e transiciona a RECEPÇÃO com occurredAt =
+  // OS.completed_at ⇒ entered_at = t0 = chegada (art. 21 §1º). IDEMPOTENTE: 409 duplicate_service_order (índice
+  // PARCIAL único) é ENGOLIDO — 2º tick / criação-manual concorrente não duplicam.
+  async openFromRemoval(input: {
+    readonly tenantId: string;
+    readonly serviceOrderId: string;
+    readonly profileId: string;
+    readonly originAuthority: string;
+    readonly completedAt: Date;
+  }): Promise<{ readonly opened: boolean; readonly processId?: string }> {
+    // F-1 — abertura ATÔMICA (create + abertura + RECEPTION numa ÚNICA tx): nenhum half-open pode nascer.
+    try {
+      const process = await this.repository.openFromRemovalAtomic({
+        tenantId: input.tenantId,
+        serviceOrderId: input.serviceOrderId,
+        profileId: input.profileId,
+        originAuthority: input.originAuthority,
+        unidentifiedReason: "Aguardando vistoria de recepção",
+        completedAt: input.completedAt,
+        actorId: undefined,
+      });
+      return { opened: true, processId: process.id };
+    } catch (error) {
+      if (error instanceof ImpoundError && error.reason === "duplicate_service_order") {
+        return { opened: false };
+      }
+      throw error;
+    }
+  }
+
+  // F-1(b) — CURA de half-open pré-existente: processo preso em IN_REMOVAL sem entered_at (herança do gatilho
+  // não-atômico anterior) → transiciona a RECEPÇÃO com entered_at=OS.completed_at (t0). Idempotente/race-safe:
+  // se já saiu de IN_REMOVAL ou já tem entered_at, no-op; corrida concorrente é engolida.
+  async cureHalfOpenRemoval(tenantId: string, processId: string, completedAt: Date): Promise<boolean> {
+    const process = await this.repository.findProcessById(tenantId, processId);
+    if (!process || process.status !== "IN_REMOVAL" || process.enteredAt !== undefined) {
+      return false;
+    }
+    try {
+      await this.transitionSystem(tenantId, processId, "RECEPTION", completedAt);
+      return true;
+    } catch (error) {
+      if (
+        error instanceof ImpoundError &&
+        (error.reason === "concurrent_custody_append" || error.reason === "invalid_transition")
+      ) {
+        return false; // outra passada/ator já curou — não é erro
+      }
+      throw error;
+    }
+  }
+
+  // Transição dirigida pelo SISTEMA (sem actor de usuário) com occurredAt explícito (t0 = completed_at). Passa
+  // pela MESMA legalidade/guarda da FSM (resolveTransition) — RECEPTION não tem guarda I3 (essa é de ACTIVE_CUSTODY).
+  private async transitionSystem(tenantId: string, processId: string, to: ImpoundStatus, occurredAt: Date): Promise<ImpoundProcess> {
+    const process = await this.repository.findProcessById(tenantId, processId);
+    if (!process) {
+      throw new ImpoundError(404, "IMPOUND_NOT_FOUND", "not_found", "Custody process was not found.");
+    }
+    if (process.status === to) return process; // no-op idempotente (já em RECEPÇÃO+)
+    const decision = resolveTransition(process, to);
+    return this.repository.applyTransition({
+      tenantId,
+      processId,
+      expectedFrom: decision.from,
+      to: decision.to,
+      setEnteredAt: decision.setEnteredAt,
+      setFrozenAt: decision.setFrozenAt,
+      event: {
+        type: "STATUS_CHANGE",
+        payload: { from: decision.from, to: decision.to, reason: decision.reason ?? null },
+        occurredAt,
+        actorId: undefined,
+      },
+    });
+  }
+
   async update(actor: ImpoundActorContext, processId: string, body: RawRecord): Promise<ImpoundProcess> {
     await this.get(actor, processId);
     // Metadado do bem/origem — NUNCA status (a FSM é o único caminho de status).
@@ -135,7 +236,11 @@ export class ImpoundService {
     const process = await this.get(actor, processId);
     const to = parseStatus(body.to);
     const reason = parseOptionalReason(body.reason);
-    const inspectionComplete = readOptionalBoolean(body.inspection_complete ?? body.inspectionComplete);
+
+    // F2 (I3 REAL) — a guarda RECEPTION→ACTIVE_CUSTODY lê a VISTORIA de recepção REAL do processo, NÃO um flag do
+    // cliente. `body.inspection_complete` foi REMOVIDO/ignorado: forjá-lo NÃO burla a guarda. Para as demais
+    // arestas o valor é irrelevante (só a guarda I3 o consulta).
+    const inspectionComplete = to === "ACTIVE_CUSTODY" ? await this.resolveInspectionComplete(process) : undefined;
 
     const decision = resolveTransition(process, to, { reason, inspectionComplete });
     const now = new Date();
@@ -155,48 +260,162 @@ export class ImpoundService {
     });
   }
 
-  // assignSpot — prova que o processo REAL aloca a vaga via o OccupancyService de PR-01, emitindo SPOT_ASSIGNED.
-  // PR-05: exercitado por teste (memória); o wire HTTP é PR-06. NÃO-amplificador: se o append falhar após a
-  // alocação, desfaz a alocação (vacate best-effort) — a atomicidade cross-módulo real (uma tx) é PR-06.
-  async assignSpot(actor: ImpoundActorContext, processId: string, body: RawRecord): Promise<ImpoundProcess> {
-    const process = await this.get(actor, processId);
-    if (!this.occupancy) {
-      throw new ImpoundError(501, "IMPOUND_NOT_ENABLED", "occupancy_not_wired", "Spot assignment HTTP wiring is delivered in PR-06.");
-    }
-    const spotId = parseRequiredUuid(body.spot_id ?? body.spotId, "spotId");
-    await this.occupancy.allocate(actor, { spotId, processId: process.id });
-    try {
-      const { process: withEvent } = await this.repository.appendEvent({
-        tenantId: actor.tenantId,
-        processId: process.id,
-        event: {
-          type: "SPOT_ASSIGNED",
-          payload: { spotId },
-          occurredAt: new Date(),
-          actorId: actor.userId,
-        },
-      });
-      return withEvent;
-    } catch (error) {
-      // Compensa a alocação órfã (não-amplificador). PR-06 fecha isto numa única tx.
-      await this.occupancy.vacate(actor, { spotId }).catch(() => undefined);
-      throw error;
-    }
+  // ── PR-06: vistoria de recepção (I3 / art. 9º I / art. 14) ────────────────────────────────────────────────
+  // I3 REAL: computa a completude da vistoria do processo (dados mínimos + completed_at marcado + todos os
+  // conjuntos obrigatórios do PERFIL com ≥1 foto). Fonte única da guarda RECEPTION→ACTIVE_CUSTODY.
+  private async resolveInspectionComplete(process: ImpoundProcess): Promise<boolean> {
+    const state = await this.repository.getIntakeState(process.tenantId, process.id);
+    if (!state) return false;
+    const requiredSets = resolveRequiredPhotoSets(state.profileRequiredSets);
+    return isIntakeComplete(state.inspection, state.storedSets, requiredSets);
   }
 
-  // Verificação da cadeia (I2) — GET /impound-processes/:id/verify. Recomputa do GENESIS, confronta a âncora do
-  // agregado E reconcilia o cross-anchor do audit_logs (store independente) — pega tip-truncation-com-âncora-
-  // ajustada, que a âncora do agregado sozinha não pega. §allowlist: só seq/hash cruzam a fronteira.
-  async verify(actor: ImpoundActorContext, processId: string): Promise<VerifyChainResult> {
+  async getInspection(actor: ImpoundActorContext, processId: string): Promise<InspectionView> {
     const process = await this.get(actor, processId);
-    const events = await this.repository.listEvents(actor.tenantId, process.id);
-    const crossAnchors = await this.repository.listAuditAnchors(actor.tenantId, process.id);
-    return verifyChain({
+    const state = await this.repository.getIntakeState(actor.tenantId, process.id);
+    if (!state?.inspection) {
+      throw new ImpoundError(404, "IMPOUND_INSPECTION_NOT_FOUND", "inspection_not_found", "No intake inspection registered for this process.");
+    }
+    const photos = await this.repository.listInspectionPhotos(actor.tenantId, state.inspection.id);
+    const requiredSets = resolveRequiredPhotoSets(state.profileRequiredSets);
+    return {
+      inspection: state.inspection,
+      photos,
+      requiredSets,
+      complete: isIntakeComplete(state.inspection, state.storedSets, requiredSets),
+    };
+  }
+
+  // Registra/atualiza a vistoria (dados mínimos art. 14 §1º). Idempotente por processo (@@unique tenant+process).
+  async saveInspection(actor: ImpoundActorContext, processId: string, body: RawRecord): Promise<IntakeInspection> {
+    const process = await this.get(actor, processId);
+    const inspectedAtRaw = body.inspected_at ?? body.inspectedAt;
+    const inspectedAt =
+      inspectedAtRaw === undefined || inspectedAtRaw === null || inspectedAtRaw === "" ? undefined : parseInspectedAt(inspectedAtRaw);
+    return this.repository.upsertInspection({
       tenantId: actor.tenantId,
       processId: process.id,
-      events,
-      head: { seq: process.custodySeqHead, hash: process.custodyHashHead ?? null },
-      crossAnchors,
+      inspectedAt,
+      agentName: nullableString(body.agent_name ?? body.agentName, 160),
+      bodyworkState: nullableString(body.bodywork_state ?? body.bodyworkState, 500),
+      paintState: nullableString(body.paint_state ?? body.paintState, 500),
+      tiresState: nullableString(body.tires_state ?? body.tiresState, 500),
+      internalObjects: nullableString(body.internal_objects ?? body.internalObjects, 2000),
+      missingEquipment: nullableString(body.missing_equipment ?? body.missingEquipment, 2000),
+      odometerKm: parseNullableOdometer(body.odometer_km ?? body.odometerKm),
+      observations: nullableString(body.observations, 2000),
+      signerName: nullableString(body.signer_name ?? body.signerName, 160),
+      signatureStatus: parseSignatureStatus(body.signature_status ?? body.signatureStatus),
+      signedAt: parseNullableDate(body.signed_at ?? body.signedAt, "signed_at"),
+      actorId: actor.userId,
+    });
+  }
+
+  // Anexa 1 foto (conjunto SET) à vistoria → cria Attachment (status=stored) + encadeia PHOTO_SET (prova hash).
+  async addInspectionPhoto(actor: ImpoundActorContext, processId: string, body: RawRecord): Promise<InspectionPhoto> {
+    const process = await this.get(actor, processId);
+    const inspection = await this.repository.findInspectionByProcess(actor.tenantId, process.id);
+    if (!inspection) {
+      throw new ImpoundError(409, "IMPOUND_INSPECTION_REQUIRED", "inspection_required", "Register the intake inspection before attaching photos.");
+    }
+    const { photo } = await this.repository.addInspectionPhoto({
+      tenantId: actor.tenantId,
+      processId: process.id,
+      inspectionId: inspection.id,
+      set: parsePhotoSetCode(body.set),
+      fileUrl: parseFileUrl(body.file_url ?? body.fileUrl),
+      fileName: optionalString(body.file_name ?? body.fileName, 260),
+      contentType: optionalString(body.content_type ?? body.contentType, 160),
+      checksumSha256: optionalString(body.checksum_sha256 ?? body.checksumSha256, 128),
+      storageProvider: optionalString(body.storage_provider ?? body.storageProvider, 80),
+      storageKey: optionalString(body.storage_key ?? body.storageKey, 512),
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+    return photo;
+  }
+
+  // Marca a vistoria completa → valida completude (dados mínimos + conjuntos obrigatórios) ANTES + encadeia
+  // INSPECTION. Depois disto a guarda I3 (RECEPTION→ACTIVE_CUSTODY) passa (defense-in-depth: a guarda re-checa).
+  async completeInspection(actor: ImpoundActorContext, processId: string): Promise<IntakeInspection> {
+    const process = await this.get(actor, processId);
+    const state = await this.repository.getIntakeState(actor.tenantId, process.id);
+    if (!state?.inspection) {
+      throw new ImpoundError(404, "IMPOUND_INSPECTION_NOT_FOUND", "inspection_not_found", "No intake inspection registered for this process.");
+    }
+    const requiredSets = resolveRequiredPhotoSets(state.profileRequiredSets);
+    const gaps = intakeCompletenessGaps(state.inspection, state.storedSets, requiredSets);
+    if (gaps.length > 0) {
+      throw new ImpoundError(
+        409,
+        "IMPOUND_GUARD_FAILED",
+        "reception_inspection_incomplete",
+        `Reception inspection is incomplete: ${gaps.join(", ")}.`,
+      );
+    }
+    const { inspection } = await this.repository.completeInspection({
+      tenantId: actor.tenantId,
+      processId: process.id,
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+    return inspection;
+  }
+
+  // ── PR-06: ocupação ATÔMICA (I1 real, 1 tx cross-módulo) ──────────────────────────────────────────────────
+  // assignSpot — aloca a vaga + seta yard_id + encadeia SPOT_ASSIGNED numa ÚNICA tx (repositório). Falha de
+  // qualquer passo → rollback de tudo (sem vaga órfã; elimina o vacate compensatório do PR-05).
+  async assignSpot(actor: ImpoundActorContext, processId: string, body: RawRecord): Promise<ImpoundProcess> {
+    const process = await this.get(actor, processId);
+    const spotId = parseRequiredUuid(body.spot_id ?? body.spotId, "spotId");
+    return this.repository.assignSpotAtomic({
+      tenantId: actor.tenantId,
+      processId: process.id,
+      spotId,
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+  }
+
+  async vacateSpot(actor: ImpoundActorContext, processId: string, body: RawRecord): Promise<ImpoundProcess> {
+    const process = await this.get(actor, processId);
+    const spotId = parseRequiredUuid(body.spot_id ?? body.spotId, "spotId");
+    return this.repository.vacateSpotAtomic({
+      tenantId: actor.tenantId,
+      processId: process.id,
+      spotId,
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+  }
+
+  async moveSpot(actor: ImpoundActorContext, processId: string, body: RawRecord): Promise<ImpoundProcess> {
+    const process = await this.get(actor, processId);
+    return this.repository.moveSpotAtomic({
+      tenantId: actor.tenantId,
+      processId: process.id,
+      fromSpotId: parseRequiredUuid(body.from_spot_id ?? body.fromSpotId, "fromSpotId"),
+      toSpotId: parseRequiredUuid(body.to_spot_id ?? body.toSpotId, "toSpotId"),
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+  }
+
+  // Verificação da cadeia (I2) — GET /impound-processes/:id/verify. Lê head/events/anchors num ÚNICO snapshot
+  // REPEATABLE READ (verify-snapshot D-Ω5P-REC-07) → sem count_/cross_anchor_mismatch transitório sob append
+  // concorrente. Recomputa do GENESIS, confronta a âncora do agregado E reconcilia o cross-anchor do audit_logs.
+  async verify(actor: ImpoundActorContext, processId: string): Promise<VerifyChainResult> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const snapshot = await this.repository.readChainSnapshot(actor.tenantId, normalizedId);
+    if (!snapshot) {
+      throw new ImpoundError(404, "IMPOUND_NOT_FOUND", "not_found", "Custody process was not found.");
+    }
+    return verifyChain({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      events: snapshot.events,
+      head: snapshot.head,
+      crossAnchors: snapshot.crossAnchors,
     });
   }
 }
@@ -209,7 +428,9 @@ function normalizePlatePatch(value: unknown): string | null | undefined {
 }
 
 // ── runtime (env-gate memory×prisma), espelha yard/jurisdiction ─────────────────────────────────────────────
-const memoryRepository = new InMemoryImpoundRepository();
+// O repo de memória recebe o repo de PÁTIO de memória (mesmo singleton do OccupancyService de memória) → a
+// alocação atômica (assignSpotAtomic) compõe yard+impound de forma consistente nos testes InMemory.
+const memoryRepository = new InMemoryImpoundRepository(getMemoryYardRepositoryForTests());
 let defaultImpoundServicePromise: Promise<ImpoundService> | undefined;
 
 export function createMemoryImpoundService(occupancy?: OccupancyService): ImpoundService {

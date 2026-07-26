@@ -133,6 +133,114 @@ if (!connectionString) {
       await teardown(client, ctx.tenantId);
     }
   });
+
+  // ── PR-06: ocupação ATÔMICA (I1 real, 1 tx cross-módulo) + FK dura + verify-snapshot ──────────────────────
+  test("assignSpotAtomic: aloca a vaga (OCCUPIED + current_process_id) + seta yard_id + emite SPOT_ASSIGNED em 1 tx", async () => {
+    const { client, repo } = await bootstrap(connectionString);
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const ctx = await seedProcess(client, repo, suffix);
+    const spot = await seedSpot(client, ctx.tenantId, suffix);
+    try {
+      const proc = await repo.assignSpotAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, spotId: spot.spotId, occurredAt: new Date() });
+      assert.equal(proc.yardId, spot.yardId, "o processo passa a apontar para o pátio da vaga");
+      const events = await repo.listEvents(ctx.tenantId, ctx.processId);
+      assert.equal(events[events.length - 1].type, "SPOT_ASSIGNED");
+      const row = await selectSpot(client, ctx.tenantId, spot.spotId);
+      assert.equal(row.status, "OCCUPIED");
+      assert.equal(row.current_process_id, ctx.processId);
+    } finally {
+      await teardown(client, ctx.tenantId);
+    }
+  });
+
+  test("FK dura: current_process_id de processo INEXISTENTE → rollback (vaga não fica OCCUPIED órfã)", async () => {
+    const { client, repo } = await bootstrap(connectionString);
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const ctx = await seedProcess(client, repo, suffix);
+    const spot = await seedSpot(client, ctx.tenantId, suffix);
+    const ghost = randomUUID();
+    try {
+      await assert.rejects(() => repo.assignSpotAtomic({ tenantId: ctx.tenantId, processId: ghost, spotId: spot.spotId, occurredAt: new Date() }));
+      const row = await selectSpot(client, ctx.tenantId, spot.spotId);
+      assert.equal(row.status, "FREE", "a FK dura + rollback impedem vaga OCCUPIED órfã");
+      assert.equal(row.current_process_id, null);
+    } finally {
+      await teardown(client, ctx.tenantId);
+    }
+  });
+
+  test("assignSpotAtomic: falha do append (seq colidido) rola back a alocação (sem vaga órfã, sem SPOT_ASSIGNED)", async () => {
+    const { client, repo } = await bootstrap(connectionString);
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const ctx = await seedProcess(client, repo, suffix); // head=1 (abertura)
+    const spot = await seedSpot(client, ctx.tenantId, suffix);
+    // Pré-planta um evento no seq=2 SEM tocar a âncora → o insertEventTx do assign colide (23505) e a tx inteira
+    // (allocate + yard_id + append) faz ROLLBACK.
+    await insertGhostEvent(client, ctx.tenantId, ctx.processId, 2);
+    try {
+      await assert.rejects(
+        () => repo.assignSpotAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, spotId: spot.spotId, occurredAt: new Date() }),
+        (e: unknown) => (e as { statusCode?: number }).statusCode === 409,
+      );
+      const row = await selectSpot(client, ctx.tenantId, spot.spotId);
+      assert.equal(row.status, "FREE", "a alocação é revertida pelo rollback do append");
+      assert.equal(row.current_process_id, null);
+      const spotAssigned = (await repo.listEvents(ctx.tenantId, ctx.processId)).filter((e) => e.type === "SPOT_ASSIGNED");
+      assert.equal(spotAssigned.length, 0, "nenhum SPOT_ASSIGNED órfão");
+    } finally {
+      await teardown(client, ctx.tenantId);
+    }
+  });
+
+  test("move/vacate: 1 tx + 1 CustodyEvent (SPOT_MOVED)", async () => {
+    const { client, repo } = await bootstrap(connectionString);
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const ctx = await seedProcess(client, repo, suffix);
+    const spotA = await seedSpot(client, ctx.tenantId, `${suffix}-a`);
+    const spotB = await seedSpot(client, ctx.tenantId, `${suffix}-b`, spotA.yardId, spotA.areaId);
+    try {
+      await repo.assignSpotAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, spotId: spotA.spotId, occurredAt: new Date() });
+      await repo.moveSpotAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, fromSpotId: spotA.spotId, toSpotId: spotB.spotId, occurredAt: new Date() });
+      const afterMove = await selectSpot(client, ctx.tenantId, spotB.spotId);
+      assert.equal(afterMove.current_process_id, ctx.processId);
+      assert.equal((await selectSpot(client, ctx.tenantId, spotA.spotId)).status, "FREE");
+      let events = await repo.listEvents(ctx.tenantId, ctx.processId);
+      assert.equal(events[events.length - 1].type, "SPOT_MOVED");
+
+      await repo.vacateSpotAtomic({ tenantId: ctx.tenantId, processId: ctx.processId, spotId: spotB.spotId, occurredAt: new Date() });
+      assert.equal((await selectSpot(client, ctx.tenantId, spotB.spotId)).status, "FREE");
+      events = await repo.listEvents(ctx.tenantId, ctx.processId);
+      assert.equal(events[events.length - 1].type, "SPOT_MOVED");
+    } finally {
+      await teardown(client, ctx.tenantId);
+    }
+  });
+
+  test("verify-snapshot (REPEATABLE READ): appends concorrentes durante verify NÃO geram count_/cross_anchor_mismatch transitório", async () => {
+    const { client, repo } = await bootstrap(connectionString);
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const ctx = await seedProcess(client, repo, suffix);
+    const { verifyChain } = await import("../src/modules/impound/impound.hashchain.js");
+    try {
+      const doAppends = (async () => {
+        for (let index = 0; index < 12; index += 1) {
+          await repo.appendEvent({ tenantId: ctx.tenantId, processId: ctx.processId, event: { type: "ADJUSTMENT", payload: { index }, occurredAt: new Date() } });
+        }
+      })();
+      const doVerifies = Promise.all(
+        Array.from({ length: 24 }, async () => {
+          const snap = await repo.readChainSnapshot(ctx.tenantId, ctx.processId);
+          return verifyChain({ tenantId: ctx.tenantId, processId: ctx.processId, events: snap!.events, head: snap!.head, crossAnchors: snap!.crossAnchors });
+        }),
+      );
+      const [, results] = await Promise.all([doAppends, doVerifies]);
+      for (const result of results) {
+        assert.equal(result.valid, true, `verify sob append concorrente deve permanecer válido (got brokenAt=${result.brokenAt?.reason})`);
+      }
+    } finally {
+      await teardown(client, ctx.tenantId);
+    }
+  });
 }
 
 type BootstrapClient = Awaited<ReturnType<typeof bootstrap>>["client"];
@@ -189,6 +297,55 @@ async function seedProcess(client: BootstrapClient, repo: ImpoundRepo, suffix: s
   return { tenantId: tenant.id, profileId: profile.id, processId: process.id };
 }
 
+// Cria pátio→área→vaga (PR-01) para a ocupação atômica. Opcionalmente reusa yard/area (2ª vaga no mesmo pátio).
+async function seedSpot(client: BootstrapClient, tenantId: string, suffix: string, reuseYardId?: string, reuseAreaId?: string) {
+  const { withTenantRls } = await import("../src/database/rls.js");
+  return withTenantRls(client, tenantId, async (tx) => {
+    let yardId = reuseYardId;
+    let areaId = reuseAreaId;
+    if (!yardId) {
+      const [yard] = await tx.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO yards (tenant_id, name, address) VALUES (${tenantId}::uuid, ${`Pátio ${suffix}`}, 'Rua X, 1') RETURNING id
+      `;
+      yardId = yard.id;
+    }
+    if (!areaId) {
+      const [area] = await tx.$queryRaw<Array<{ id: string }>>`
+        INSERT INTO yard_areas (tenant_id, yard_id, kind, name) VALUES (${tenantId}::uuid, ${yardId}::uuid, 'BLOCK', ${`Q-${suffix}`}) RETURNING id
+      `;
+      areaId = area.id;
+    }
+    const [spot] = await tx.$queryRaw<Array<{ id: string }>>`
+      INSERT INTO yard_spots (tenant_id, area_id, code) VALUES (${tenantId}::uuid, ${areaId}::uuid, ${`S-${suffix}`}) RETURNING id
+    `;
+    return { yardId: yardId as string, areaId: areaId as string, spotId: spot.id };
+  });
+}
+
+async function selectSpot(client: BootstrapClient, tenantId: string, spotId: string): Promise<{ status: string; current_process_id: string | null }> {
+  const { withTenantRls } = await import("../src/database/rls.js");
+  const rows = await withTenantRls(client, tenantId, (tx) =>
+    tx.$queryRaw<Array<{ status: string; current_process_id: string | null }>>`
+      SELECT status, current_process_id FROM yard_spots WHERE tenant_id = ${tenantId}::uuid AND id = ${spotId}::uuid
+    `,
+  );
+  return rows[0];
+}
+
+// Planta um evento no seq alvo (hashes 64-hex satisfazem o CHECK; a âncora NÃO é tocada) → o append seguinte
+// colide no @@unique(tenant,process,seq) e a tx inteira faz rollback.
+async function insertGhostEvent(client: BootstrapClient, tenantId: string, processId: string, seq: number): Promise<void> {
+  const { withTenantRls } = await import("../src/database/rls.js");
+  const prev = "c".repeat(64);
+  const hash = "d".repeat(64);
+  await withTenantRls(client, tenantId, (tx) =>
+    tx.$queryRaw`
+      INSERT INTO custody_events (tenant_id, process_id, seq, type, payload, occurred_at, prev_hash, hash)
+      VALUES (${tenantId}::uuid, ${processId}::uuid, ${seq}, 'ADJUSTMENT', ${"{}"}::jsonb, now(), ${prev}, ${hash})
+    `,
+  );
+}
+
 // Teardown FK-safe: custody_events → impound_processes ANTES de jurisdiction_profile/tenant. custody_events tem
 // TRIGGER append-only (BEFORE UPDATE OR DELETE) — a DELEÇÃO usa session_replication_role=replica (só superuser),
 // o caminho de manutenção padrão do Postgres em que o trigger não dispara. Prova, de quebra, que o append-only
@@ -198,7 +355,13 @@ async function teardown(client: BootstrapClient, tenantId: string): Promise<void
     await client.$transaction(async (tx) => {
       await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
       await tx.$executeRawUnsafe(`DELETE FROM custody_events WHERE tenant_id = '${tenantId}'::uuid`);
+      // PR-06 — yard_spots.current_process_id → impound_processes é FK dura RESTRICT: purga as vagas ANTES do
+      // processo. intake_inspections idem (RESTRICT). Depois yard_areas/yards.
+      await tx.$executeRawUnsafe(`DELETE FROM yard_spots WHERE tenant_id = '${tenantId}'::uuid`);
+      await tx.$executeRawUnsafe(`DELETE FROM impound_intake_inspections WHERE tenant_id = '${tenantId}'::uuid`);
       await tx.$executeRawUnsafe(`DELETE FROM impound_processes WHERE tenant_id = '${tenantId}'::uuid`);
+      await tx.$executeRawUnsafe(`DELETE FROM yard_areas WHERE tenant_id = '${tenantId}'::uuid`);
+      await tx.$executeRawUnsafe(`DELETE FROM yards WHERE tenant_id = '${tenantId}'::uuid`);
       await tx.$executeRawUnsafe(`DELETE FROM jurisdiction_profiles WHERE tenant_id = '${tenantId}'::uuid`);
       // Cross-anchor do append (I2) vive em audit_logs → limpar antes do tenant (FK RESTRICT).
       await tx.$executeRawUnsafe(`DELETE FROM audit_logs WHERE tenant_id = '${tenantId}'::uuid`);

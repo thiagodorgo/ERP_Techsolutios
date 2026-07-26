@@ -6,6 +6,7 @@ import { createCloudUsageAggregateDailyJobHandler } from "../../modules/cloud-us
 import { createNotificationDispatchJobHandler } from "../../modules/notifications/notification.jobs.js";
 import { createNotificationsScanDueJobHandler } from "../../modules/notifications/scheduled-notification.jobs.js";
 import { createFieldOpsEventFanoutJobHandler } from "../../modules/field-dispatch/field-ops-event-fanout.jobs.js";
+import { createImpoundReconcileRemovalsJobHandler } from "../../modules/impound/impound.jobs.js";
 
 export type JobHandler<TPayload extends JobPayload = JobPayload> = (
   payload: TPayload,
@@ -51,6 +52,7 @@ function createDefaultJobRegistry(): JobRegistry {
     // Placeholder for future audit fanout/export.
   });
   registry.register("field-ops-event-fanout", createFieldOpsEventFanoutJobHandler());
+  registry.register("impound.reconcile-removals", createImpoundReconcileRemovalsJobHandler());
 
   return registry;
 }

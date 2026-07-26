@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-26",
-  "version": "OMEGA5P-PR-05",
+  "version": "OMEGA5P-PR-06",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω5P PR-05 — Fase 2 (o NÚCLEO): módulo impound (ImpoundProcess + CustodyEvent hash-chain I2 + máquina de estados)",
-    "title": "Ω5P PR-05: o agregado-raiz da custódia jurídica + a cadeia de hashes append-only (I2, prova de integridade tamper-evident com reconciliação cross-anchor) + a máquina de 14 estados; o PR mais crítico do round",
+    "block": "Ω5P PR-06 — Fase 2: Recepção/Vistoria (I3 real) + gatilho OS→custódia durável (sweep) + alocação atômica (I1) + FK dura",
+    "title": "Ω5P PR-06: liga a custódia à operação — vistoria de recepção (art.9º/14) com guarda I3 REAL (fecha F2 do PR-05), gatilho durável por sweep, alocação de vaga atômica; junta pesada 3/3 (3 durabilidades sanadas)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω5P PR-05 — MÓDULO IMPOUND (Fase 2, o NÚCLEO). Backend núcleo + migração aditiva. 2 models: ImpoundProcess (agregado-raiz; identidade do veículo NULLABLE sem FK ao Vehicle — D-Ω5P-RECON-A/09; status 14 estados; origem NEUTRA white-label authority_case_number/incident_report_number, NÃO police; custody_hash_head; partial-unique idempotência OS) + CustodyEvent (APPEND-ONLY I2; FK process RESTRICT I9). Migração 20260836000000_add_impound ADITIVA: RLS forced nas 2 + 4 CHECKs + TRIGGER BEFORE UPDATE/DELETE (append-only ESTRUTURAL); provada up→down→re-up pelo dba-guardião fingerprint-idêntico, trigger provado vivo. CADEIA DE HASH (I2): canonicalJson próprio (ZERO lib) + preimage SEP=\u001e (fecha canonical-json injection) + GENESIS tenant+process (anti-enxerto) + âncora custody_hash_head + CROSS-ANCHOR em audit_logs RECONCILIADO (F1); verifyChain classifica a quebra (hash/seq_gap/prev_hash/count/head/cross_anchor_mismatch). Modelo TAMPER-EVIDENT declarado (fronteira superuser-dois-stores = Ω6). MÁQUINA DE ESTADOS: tabela ÚNICA → 409 invalid_transition (14×14) + 2º portão 409 transition_not_enabled_yet; habilita custódia-nativas, defere release/leilão; cada transição = 1 CustodyEvent na mesma tx; sucata nunca volta a circular. 4 perms novas impound:read/create/update/transition. JUNTA PESADA APROVADO 3/3 (critico-adversarial obrigatório): dba-guardiao (aditiva reversível fingerprint-idêntico; trigger vivo; FK RESTRICT I9; backend :3000 saudável) + omega5p-avaliador (I2/FSM provados; §allowlist sem tenant_id; auditoria sem placa/origem/BO; white-label; sem regressão) + critico-adversarial (NENHUM CRÍTICO — canonical-injection/enxerto/corrida/FSM-14×14 SEGURARAM; F1 [cross-anchor dormente] sanado por RECONCILIAÇÃO ativa, re-verificado: pega tip-deletion+head-adjust + toda escrita de store único, sem §allowlist leak/falso-positivo). D-Ω5P-IMP-01..07. Requisitos herdados: F2 (guarda I3 à vistoria REAL)=PR-06; F3 (gate NOSUPERUSER deploy); F4/F5/verify-snapshot=backlog. Nota de processo: subagente rodou mass-delete ad-hoc na base viva ao limpar test-debris (harness sinalizou) — impacto NULO (só impound-conc-%; demo+200 usuários intactos; código commitável limpo). backend 1613→1657 (+44), frontend_smoke 861 e flutter 807 inalterados (backend-only), blocks 92→93. Zero regressão (Vehicle intocado). Inclui backfill do PR-04 (#284 11a1f53).",
-    "status_label": "Ω5P PR-05: módulo impound (agregado-raiz + CustodyEvent hash-chain append-only I2 + máquina de 14 estados) — o NÚCLEO probatório; cadeia tamper-evident com reconciliação cross-anchor (F1); trigger append-only estrutural; junta 3/3 (dba+critico-adversarial); backend 1613->1657, blocks 92->93"
+    "summary": "Ω5P PR-06 — RECEPÇÃO/VISTORIA + GATILHO DURÁVEL + ALOCAÇÃO ATÔMICA (Fase 2). Backend + migração aditiva. Fecha os requisitos herdados do PR-05 (F2 guarda I3 real; verify-snapshot) e liga a custódia à operação. IntakeInspection DEDICADO (art.9º/14; fotos via Attachment polimórfico; conjuntos obrigatórios parametrizados por JurisdictionProfile.required_photo_sets [D-REC-09]). F2 FECHADO: guarda RECEPTION→ACTIVE_CUSTODY lê isIntakeComplete REAL (dados mínimos + TODOS os conjuntos do perfil com ≥1 foto stored); body.inspection_complete REMOVIDO (flag forjado + vistoria incompleta → AINDA 409). Gatilho DURÁVEL: job impound.reconcile-removals (sweep gated JOBS_WORKER_ENABLED, espelha scan-due) abre OS de remoção concluídas [service_catalog.custody_profile_id NOT NULL, origem-agnóstico D-REC-04] sem processo em RECEPTION com entered_at=completed_at, idempotente pelo partial-unique. openFromRemovalAtomic (create+RECEPTION+t0 em 1 tx → sem half-open) + sweep CURA half-open pré-existente (candidato IN_REMOVAL+entered_at NULL → cureHalfOpenRemoval). F-2: sem sinal independente de remoção → custody_profile_id é o único marcador → abertura 100% contingente à config; alegação registra-a-lacuna RISCADA (não afirmar observabilidade que não entrega). Alocação I1 atômica: assignSpotAtomic (allocate+UPDATE+SPOT_ASSIGNED em 1 tx, elimina vacate compensatório do PR-05) + FK DURA yard_spots.current_process_id→impound_processes NOT VALID+VALIDATE (0 órfãos). verify-snapshot RepeatableRead (elimina falso-alarme transitório sem falso-negativo). 2 perms novas impound:inspect+impound:allocate; sweep=ator sistema. Migração 20260837000000. JUNTA PESADA APROVADO 3/3: agente-dba-guardiao (aditiva up/down/re-up drift-zero; FK dura convalidated 0-órfãos) + omega5p-avaliador (I3/F2 fechado; durável; I1 atômico; verify-snapshot; §allowlist; white-label; sem regressão) + critico-adversarial (0 CRÍTICO — I3/I1/idempotência/verify-snapshot RESISTIRAM; 3 MÉDIOS de durabilidade F-1[openFromRemovalAtomic+cura]/F-2[Opção 2 honesta]/F-3[gate go-live] sanados+re-verificados; F-4 isolamento feito). D-Ω5P-REC-01..11. Requisitos: F-3 gate de go-live JOBS_WORKER_ENABLED=true+liveness (junta-se ao NOSUPERUSER do PR-05); F-5/F-6/F-7 backlog. Nota de processo: 2 mass-deletes na base viva sinalizados (PR-05 dev não-autorizado; PR-06 dba autorizado+escopado a test-debris; demo intacto) → orquestrador parou de autorizar deletes de DB a agentes. backend 1657→1676 (+19), frontend_smoke 861 e flutter 807 inalterados (backend-only), blocks 93→94. Zero regressão (Vehicle/work-order.service intocados; I1 do PR-01 e I2 do PR-05 re-provados). Inclui backfill do PR-05 (#285 574a1d2).",
+    "status_label": "Ω5P PR-06: recepção/vistoria (I3 real, fecha F2) + gatilho OS→custódia durável (sweep openFromRemovalAtomic+cura) + alocação de vaga atômica (I1) + FK dura + verify-snapshot; junta pesada 3/3 (dba+critico, 3 durabilidades sanadas); backend 1657->1676, blocks 93->94"
   },
   "metrics": {
     "flutter_tests": {
@@ -27,10 +27,10 @@
       "note": "+11 (Ω5P PR-04 UI /patios): patios-yards (render/CRUD/'Novo pátio' gated yard:create/EmptyState D-007/§allowlist sem tenant_id/PT-BR sem 'tenant' nem 'polícia') + patios-perfis (PerfisPage+FormModal/labels escopo-diária-teto/release_requirements editor/jurisdiction-defaults prefill/gating) + price-tables-scope-category (2 Selects Escopo/Categoria com 'Todas'=NULL + breadcrumb route-aware Pátios×Cadastros). Primeiro frontend do round Pátios de Recolhimento. Sobre 850."
     },
     "backend_tests": {
-      "value": 1657,
-      "total": 1663,
-      "display": "1657/1663",
-      "note": "+44 (Ω5P PR-05 módulo impound o NÚCLEO): impound-hashchain 20 (cadeia+adulteração-detectada-6-vetores incl. 4 cross-anchor F1; canonicalJson determinístico; append-only) + impound-fsm 8 (14×14→409; deferidas→409 distinto; I3) + impound 12 (CRUD/§allowlist/veículo-não-identificado) + impound-concurrency 4 DB-gated (corrida seq 1-vence; trigger UPDATE/DELETE→erro; ATAQUE real tip-deletion+head-adjust via replica→cross_anchor_mismatch) + rls bloco impound + core-saas 26. CI-memória: 1663 tests / 1657 pass / 0 fail / 6 skip. Sobre 1613. Migração 20260836000000_add_impound aditiva (RLS forced + trigger append-only + 4 CHECKs + FK RESTRICT I9) provada up/down/re-up fingerprint-idêntico. Vehicle da frota INTOCADO."
+      "value": 1676,
+      "total": 1682,
+      "display": "1676/1682",
+      "note": "+19 (Ω5P PR-06 recepção/vistoria/gatilho durável/alocação atômica): impound-reception 7 (I3 REAL bloqueia sem vistoria + flag forjado ainda bloqueia) + impound-trigger-durability 7 DB-gated (sweep abre com t0; idempotente; durável; pula sem custody_profile_id; CURA half-open F-1b; tenant-escopado) + impound-concurrency +5 (assignSpotAtomic sem vaga órfã; FK dura; verify-snapshot RR). CI-memória: 1682 tests / 1676 pass / 0 fail / 6 skip. Sobre 1657. Migração 20260837000000 aditiva (FK dura NOT VALID+VALIDATE + RLS forced) provada pelo dba-guardião. impound-fsm/hashchain/yard-occupancy editados por regressão real (F2 removeu flag; FK dura exige processos reais) seguem verdes."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 93,
-      "display": "93",
-      "note": "Ω5P PR-05 (modulo impound: ImpoundProcess agregado-raiz + CustodyEvent cadeia de hash append-only I2 + maquina de 14 estados — o NUCLEO probatorio da custodia juridica) = 5o bloco de feature da rodada Patios de Recolhimento → +1 sobre 92 (Ω5P PR-04 UI). PR-00 (recon) nao conta como feature."
+      "value": 94,
+      "display": "94",
+      "note": "Ω5P PR-06 (recepção/vistoria de entrada I3-real + gatilho OS→custódia durável por sweep + alocação de vaga atômica I1 + FK dura + verify-snapshot — liga a custódia à operação) = 6o bloco de feature da rodada Patios de Recolhimento → +1 sobre 93 (Ω5P PR-05 impound núcleo). PR-00 (recon) nao conta como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,
