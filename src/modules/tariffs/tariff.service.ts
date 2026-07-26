@@ -30,8 +30,39 @@ import {
 
 type RawRecord = Record<string, unknown>;
 
+// Ω5P PR-03 (RN-TAR-01 ponto ii) — guarda de não-sobreposição ao inserir/alterar Tarifa numa tabela já
+// PUBLICADA (a tabela publicada segue editável, D-OMEGA2A). OPCIONAL: `new TariffService(repo)` (usos de teste
+// legados) segue sem guarda; as factories injetam. Read-only/só-recusa → não-amplificador.
+export type TariffMutationOverlapCheck = (input: {
+  readonly tenantId: string;
+  readonly priceTableId: string;
+  readonly incomingServiceCatalogId?: string;
+  readonly incomingCustomerId?: string;
+}) => Promise<boolean>;
+
 export class TariffService {
-  constructor(private readonly repository: TariffRepository) {}
+  constructor(
+    private readonly repository: TariffRepository,
+    private readonly overlapCheck?: TariffMutationOverlapCheck,
+  ) {}
+
+  private async assertNoOverlap(
+    tenantId: string,
+    priceTableId: string,
+    incomingServiceCatalogId?: string,
+    incomingCustomerId?: string,
+  ): Promise<void> {
+    if (!this.overlapCheck) return;
+    const overlap = await this.overlapCheck({ tenantId, priceTableId, incomingServiceCatalogId, incomingCustomerId });
+    if (overlap) {
+      throw new TariffError(
+        409,
+        "TARIFF_OVERLAP",
+        "tariff_overlap",
+        "Another published price table with the same scope and vehicle category has an overlapping validity window and shares this service.",
+      );
+    }
+  }
 
   async list(actor: TariffActorContext, query: RawRecord): Promise<ListTariffResult> {
     const input: ListTariffInput = {
@@ -46,11 +77,17 @@ export class TariffService {
   }
 
   async create(actor: TariffActorContext, body: RawRecord): Promise<Tariff> {
+    const priceTableId = parseRequiredUuid(body.price_table_id ?? body.priceTableId, "priceTableId");
+    const serviceCatalogId = parseOptionalUuid(body.service_catalog_id ?? body.serviceCatalogId, "serviceCatalogId");
+    const customerId = parseOptionalUuid(body.customer_id ?? body.customerId, "customerId");
+    // RN-TAR-01 ponto (ii) — antes de persistir: inserir este (serviço,cliente) na tabela (se publicada) não pode
+    // criar sobreposição com outra tabela publicada do mesmo bucket. Inerte se a tabela é rascunho/inexistente.
+    await this.assertNoOverlap(actor.tenantId, priceTableId, serviceCatalogId, customerId);
     return this.repository.create({
       tenantId: actor.tenantId,
-      priceTableId: parseRequiredUuid(body.price_table_id ?? body.priceTableId, "priceTableId"),
-      serviceCatalogId: parseOptionalUuid(body.service_catalog_id ?? body.serviceCatalogId, "serviceCatalogId"),
-      customerId: parseOptionalUuid(body.customer_id ?? body.customerId, "customerId"),
+      priceTableId,
+      serviceCatalogId,
+      customerId,
       name: parseOptionalName(body.name),
       unitPrice: parseUnitPrice(body.unit_price ?? body.unitPrice),
       currency: parseCurrency(body.currency),
@@ -75,7 +112,11 @@ export class TariffService {
   }
 
   async update(actor: TariffActorContext, tariffId: string, body: RawRecord): Promise<Tariff> {
-    await this.get(actor, tariffId);
+    const current = await this.get(actor, tariffId);
+
+    // RN-TAR-01 ponto (ii) — reativar/ajustar uma tarifa numa tabela publicada revalida a não-sobreposição
+    // (serviço/cliente são imutáveis no update, então usa os da tarifa atual). Inerte se a tabela não publicada.
+    await this.assertNoOverlap(actor.tenantId, current.priceTableId, current.serviceCatalogId, current.customerId);
 
     const input: UpdateTariffInput = {
       tenantId: actor.tenantId,
@@ -102,8 +143,20 @@ export class TariffService {
 const memoryRepository = new InMemoryTariffRepository();
 let defaultServicePromise: Promise<TariffService> | undefined;
 
+// Checker de mutação composto com import DINÂMICO do price-tables → sem import estático (evita ciclo
+// tariff.service ⇄ price-table.service). Inerte quando a tabela-alvo não está publicada.
+function createMemoryTariffMutationOverlapCheck(): TariffMutationOverlapCheck {
+  return async (input) => {
+    const [{ buildTariffMutationOverlapChecker }, { getMemoryPriceTableRepositoryForTests }] = await Promise.all([
+      import("../price-tables/price-table-resolution.js"),
+      import("../price-tables/price-table.service.js"),
+    ]);
+    return buildTariffMutationOverlapChecker(getMemoryPriceTableRepositoryForTests(), memoryRepository)(input);
+  };
+}
+
 export function createMemoryTariffService(): TariffService {
-  return new TariffService(memoryRepository);
+  return new TariffService(memoryRepository, createMemoryTariffMutationOverlapCheck());
 }
 
 export function getMemoryTariffRepositoryForTests(): InMemoryTariffRepository {
@@ -125,6 +178,10 @@ export function resetTariffRuntimeForTests(): void {
 
 async function createPrismaTariffService(): Promise<TariffService> {
   const { createPrismaTariffRepository } = await import("./tariff-prisma.repository.js");
+  const { createPrismaPriceTableRepository } = await import("../price-tables/price-table-prisma.repository.js");
+  const { buildTariffMutationOverlapChecker } = await import("../price-tables/price-table-resolution.js");
   const repository = await createPrismaTariffRepository();
-  return new TariffService(repository);
+  const priceRepository = await createPrismaPriceTableRepository();
+  const overlapCheck = buildTariffMutationOverlapChecker(priceRepository, repository);
+  return new TariffService(repository, overlapCheck);
 }

@@ -14,7 +14,28 @@ export interface PriceTableRepository {
   list(input: ListPriceTableInput): Promise<ListPriceTableResult>;
   findById(tenantId: string, priceTableId: string): Promise<PriceTable | undefined>;
   update(input: UpdatePriceTableInput): Promise<PriceTable | undefined>;
+  // Ω5P PR-03 (F4) — busca SERVIDOR-SIDE das tabelas PUBLICADAS+ativas do BUCKET EXATO (scope/vehicle_category,
+  // NULL casa NULL) cuja janela [valid_from, valid_to] SE SOBREPÕE a [from, to] (NULL = aberto ±∞). SEM teto de
+  // página: o invariante de cobrança (resolveTariff + RN-TAR-01) NÃO pode depender do limit:100. Para "cobre a
+  // data D" use from=to=D. Aditivo/inerte.
+  findPublishedInBucket(input: FindPublishedInBucketInput): Promise<PriceTable[]>;
   reset?(): void;
+}
+
+export type FindPublishedInBucketInput = {
+  readonly tenantId: string;
+  readonly scope: string | null;
+  readonly vehicleCategory: string | null;
+  readonly from: Date | null;
+  readonly to: Date | null;
+};
+
+export function rangesOverlap(aFrom: Date | null, aTo: Date | null, bFrom: Date | null, bTo: Date | null): boolean {
+  const af = aFrom ? aFrom.getTime() : Number.NEGATIVE_INFINITY;
+  const at = aTo ? aTo.getTime() : Number.POSITIVE_INFINITY;
+  const bf = bFrom ? bFrom.getTime() : Number.NEGATIVE_INFINITY;
+  const bt = bTo ? bTo.getTime() : Number.POSITIVE_INFINITY;
+  return af <= bt && bf <= at; // intervalos fechados sobrepõem-se.
 }
 
 export class InMemoryPriceTableRepository implements PriceTableRepository {
@@ -56,6 +77,19 @@ export class InMemoryPriceTableRepository implements PriceTableRepository {
   async findById(tenantId: string, priceTableId: string): Promise<PriceTable | undefined> {
     const table = this.tables.get(priceTableId);
     return table?.tenantId === tenantId ? table : undefined;
+  }
+
+  async findPublishedInBucket(input: FindPublishedInBucketInput): Promise<PriceTable[]> {
+    // Varre TODA a coleção do tenant (InMemory não pagina → sem teto). Paridade com o WHERE server-side do Prisma.
+    return [...this.tables.values()].filter(
+      (table) =>
+        table.tenantId === input.tenantId &&
+        table.status === "published" &&
+        table.isActive &&
+        (table.scope ?? null) === input.scope &&
+        (table.vehicleCategory ?? null) === input.vehicleCategory &&
+        rangesOverlap(table.validFrom ?? null, table.validTo ?? null, input.from, input.to),
+    );
   }
 
   async update(input: UpdatePriceTableInput): Promise<PriceTable | undefined> {

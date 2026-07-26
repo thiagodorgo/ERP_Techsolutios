@@ -1373,6 +1373,13 @@ model PriceTable {
   valid_to    DateTime? @db.Timestamptz(6)
   status      String    @default("draft")
   is_active   Boolean   @default(true)
+  // Ω5P PR-03 (D-Ω5P-TAR-01/02) — dupla natureza tarifária (ESTUDO §9) + eixo categoria-de-veículo (FASE0 §5e).
+  // Ambos NULLABLE, sem default. scope reusa o MESMO enum de JurisdictionProfile.scope (PUBLIC_AGREEMENT|
+  // PRIVATE_CONTRACT), app-validado — NULL = vale para os dois. vehicle_category = app-code parametrizado
+  // por perfil (MOTORCYCLE|CAR|TRUCK|...), app-validado — NULL = vale para todas as categorias. Legado (NULL,
+  // NULL) = curinga vale-para-todos → resolveTariff resolve idêntico (retrocompat total, regressão ZERO).
+  scope            String?
+  vehicle_category String?
   created_by  String?   @db.Uuid
   updated_by  String?   @db.Uuid
   created_at  DateTime  @default(now()) @db.Timestamptz(6)
@@ -1386,6 +1393,8 @@ model PriceTable {
   @@index([tenant_id, is_active])
   @@index([tenant_id, status])
   @@index([tenant_id, created_at])
+  // Ω5P PR-03 — suporta a resolução escopada publicada×escopo×categoria (equality-prefix); tenant_id 1º.
+  @@index([tenant_id, status, scope, vehicle_category])
   @@map("price_tables")
 }
 

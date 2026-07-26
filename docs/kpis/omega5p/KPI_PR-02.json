@@ -54,7 +54,8 @@
     "blocks": "89->90"
   },
   "coexistencia": "yard (PR-01)/branches/Vehicle INTOCADOS; catalog cresce +3 perms; jurisdiction_profiles nasce vazia (seed só descreve as perms); sem regressão (1560 pass/0 fail).",
-  "merge_commit": null,
-  "approved_head": null,
-  "status": "aprovado_pela_junta_aguardando_merge"
+  "pr": 282,
+  "merge_commit": "d0be90d",
+  "approved_head": "d0be90d",
+  "status": "published_per_pr"
 }

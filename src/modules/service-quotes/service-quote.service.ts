@@ -354,9 +354,18 @@ export class ServiceQuoteService {
 
 // Resolve as tabelas de valores PUBLICADAS do tenant (só destas se congela preço). Baseado em list()
 // para InMemory e Prisma seguirem o MESMO caminho lógico (paridade).
+//
+// Ω5P PR-03 (F3) — o orçamento resolve SÓ o BUCKET LEGADO (scope/vehicle_category NULL). As tabelas escopadas
+// Ω5P (convênio/categoria) NÃO existiam quando esta lógica nasceu → filtrá-las é byte-idêntico ao comportamento
+// anterior E impede que uma tabela escopada (destinada ao motor de diárias do pátio) altere um preço de
+// orçamento VIVO. A resolução escopada tem caminho próprio (tariff-resolution.resolveTariff, PR-07).
 async function resolvePublishedPriceTableIds(repo: PriceTableRepository, tenantId: string): Promise<Set<string>> {
   const result = await repo.list({ tenantId, status: "published", isActive: true, limit: 100, offset: 0 });
-  return new Set(result.items.map((table) => table.id));
+  return new Set(
+    result.items
+      .filter((table) => (table.scope ?? null) === null && (table.vehicleCategory ?? null) === null)
+      .map((table) => table.id),
+  );
 }
 
 // Ω3F-3a (C3) — factories do resolver EXPORTADAS: o módulo work-order-financials congela preço pela

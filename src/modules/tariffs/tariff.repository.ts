@@ -17,11 +17,14 @@ export interface TariffRepository {
   // Ω3-a — resolve a Tarifa aplicável para congelar num orçamento. Recebe o conjunto de tabelas
   // PUBLICADAS (resolvido pelo consumidor) para não acoplar este repo ao de PriceTable. Método
   // aditivo e inerte sem consumidor. Retorna a MELHOR tarifa por ordem determinística (A2 do crítico).
+  // Ω5P PR-03 (F1) — `asOf` OPCIONAL avalia a janela PRÓPRIA da Tariff (valid_from/valid_to) NA DATA dada
+  // (regra vigente na DATA DE ENTRADA, I4/D-Ω5P-TAR-03); omitido = `now` → freeze Ω3-a byte-idêntico.
   findApplicable(
     tenantId: string,
     serviceCatalogId: string,
     customerId: string | undefined,
     publishedPriceTableIds: ReadonlySet<string>,
+    asOf?: Date,
   ): Promise<Tariff | undefined>;
   reset?(): void;
 }
@@ -72,8 +75,9 @@ export class InMemoryTariffRepository implements TariffRepository {
     serviceCatalogId: string,
     customerId: string | undefined,
     publishedPriceTableIds: ReadonlySet<string>,
+    asOf?: Date,
   ): Promise<Tariff | undefined> {
-    const now = new Date();
+    const now = asOf ?? new Date();
     const candidates = [...this.tariffs.values()].filter((tariff) =>
       isApplicableCandidate(tariff, tenantId, serviceCatalogId, customerId, publishedPriceTableIds, now),
     );

@@ -63,9 +63,10 @@ export class PrismaTariffRepository implements TariffRepository {
     serviceCatalogId: string,
     customerId: string | undefined,
     publishedPriceTableIds: ReadonlySet<string>,
+    asOf?: Date,
   ): Promise<Tariff | undefined> {
     if (publishedPriceTableIds.size === 0) return undefined;
-    const now = new Date();
+    const now = asOf ?? new Date();
     // Busca o conjunto de candidatos e aplica o MESMO desempate em JS (pickApplicableTariff), para
     // paridade exata com o InMemory — a ordem determinística não pode depender do banco (A2).
     const rows = await this.client.tariff.findMany({
@@ -128,9 +129,10 @@ export class RlsPrismaTariffRepository implements TariffRepository {
     serviceCatalogId: string,
     customerId: string | undefined,
     publishedPriceTableIds: ReadonlySet<string>,
+    asOf?: Date,
   ): Promise<Tariff | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) =>
-      new PrismaTariffRepository(tx).findApplicable(tenantId, serviceCatalogId, customerId, publishedPriceTableIds),
+      new PrismaTariffRepository(tx).findApplicable(tenantId, serviceCatalogId, customerId, publishedPriceTableIds, asOf),
     );
   }
 
