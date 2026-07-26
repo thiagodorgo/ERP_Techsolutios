@@ -50,7 +50,8 @@
   },
   "coexistencia": "registry/tariffs INTOCADO; catalog/prisma/deps intocados; ocupação por processo deferida (PR-06/08); sem regressão (861/861 smoke; 61/61 nav-provisioning; composição de tarifas verde).",
   "fecha_fase1": "PR-04 FECHA a Fase 1 (fundações): PR-01 yard + PR-02 jurisdiction + PR-03 tariffs + PR-04 UI admin. Próximo: Fase 2 PR-05 impound (ImpoundProcess + CustodyEvent hash-chain + máquina de estados I1-I3).",
-  "merge_commit": null,
-  "approved_head": null,
-  "status": "aprovado_pela_junta_aguardando_merge"
+  "pr": 284,
+  "merge_commit": "11a1f53",
+  "approved_head": "11a1f53",
+  "status": "published_per_pr"
 }
