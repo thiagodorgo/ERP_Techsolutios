@@ -127,3 +127,36 @@ for (const role of Object.keys(MAP_VISIBLE_BY_ROLE) as Role[]) {
     );
   });
 }
+
+// Ω5P PR-04 (Pátios — console do operador): os 3 paths de administração são GOVERNADOS pelo registry, cada um
+// com gate ÚNICO por permissão pura (SEM requiredModules, como operations.quotes/telemetria/central). Sem o
+// registry, o gating dinâmico do sidebar não esconde o grupo PÁTIOS de quem não tem a permissão (esconde-fino).
+// A matriz por papel é DERIVADA de ROLE_PERMISSIONS (não hardcoded): quem tem a permissão VÊ o path; quem não
+// tem (finance/inventory/support) NÃO vê. O drilldown /patios/patios/:yardId NÃO é governed (não é item de menu).
+const PATIOS_NAV: readonly { readonly path: string; readonly permission: string }[] = [
+  { path: "/patios/patios", permission: "yard:read" },
+  { path: "/patios/perfis", permission: "jurisdiction:read" },
+  { path: "/patios/tarifas", permission: "price_tables:read" },
+];
+
+test("Ω5P PR-04: getGovernedNavigationPaths governa os 3 paths de Pátios (yards/perfis/tarifas)", () => {
+  const governed = getGovernedNavigationPaths();
+  for (const { path } of PATIOS_NAV) {
+    assert.equal(governed.includes(path), true, `governed deveria incluir ${path}`);
+  }
+  // O drilldown por :yardId NÃO é item de sidebar → não é governed.
+  assert.equal(governed.includes("/patios/patios/:yardId"), false);
+});
+
+for (const { path, permission } of PATIOS_NAV) {
+  for (const role of Object.keys(MAP_VISIBLE_BY_ROLE) as Role[]) {
+    const hasPermission = ROLE_PERMISSIONS[role].includes(permission);
+    test(`Ω5P PR-04: papel ${role} ${hasPermission ? "VÊ" : "NÃO vê"} ${path} (gate ${permission})`, () => {
+      assert.equal(
+        menuPathsForRole(role).includes(path),
+        hasPermission,
+        `${role} → ${path} deveria ${hasPermission ? "aparecer" : "sumir"} no menu`,
+      );
+    });
+  }
+}

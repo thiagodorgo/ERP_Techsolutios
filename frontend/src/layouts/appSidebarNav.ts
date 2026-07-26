@@ -27,6 +27,7 @@ import {
   Package,
   Receipt,
   Route,
+  Scale,
   ScrollText,
   Send,
   Settings,
@@ -40,6 +41,7 @@ import {
   Users,
   UsersRound,
   Wallet,
+  Warehouse,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -109,6 +111,13 @@ const TELE_DISPOSITIVOS: NavItem = { label: "Dispositivos", path: "/telemetria/d
 // telemetry:read; o backend é a autoridade (403 real p/ field_technician).
 const TELE_RASTREAMENTO: NavItem = { label: "Rastreamento", path: "/telemetria/rastreamento", icon: Route };
 
+// Ω5P PR-04 — grupo PÁTIOS (console do operador do módulo Pátios de recolhimento). Itens governados pelo
+// registry backend (yard:read / jurisdiction:read / price_tables:read) — o esconde-fino oculta de quem não tem
+// a permissão; o backend é a autoridade (403 real). Tabela de Valores aqui reusa a tela estendida (/patios/tarifas).
+const PATIOS: NavItem = { label: "Pátios", path: "/patios/patios", icon: Warehouse };
+const PERFIS_NORMATIVOS: NavItem = { label: "Perfis Normativos", path: "/patios/perfis", icon: Scale };
+const TABELA_VALORES_PATIO: NavItem = { label: "Tabela de Valores", path: "/patios/tarifas", icon: Coins };
+
 const G_VISAO_GERAL: NavGroup = { label: "VISÃO GERAL", items: [DASHBOARD] };
 
 // Grupos completos (gestor/admin) — os demais papéis recebem subconjuntos.
@@ -138,6 +147,9 @@ const G_TELEMETRIA: NavGroup = {
   label: "TELEMETRIA",
   items: [TELE_QUILOMETRAGEM, TELE_ACESSOS, TELE_RECUSAS, TELE_DISPOSITIVOS, TELE_RASTREAMENTO],
 };
+// Ω5P PR-04 — grupo PÁTIOS (admin/gestor completo; dispatcher/campo tem os 3 reads → vê a leitura; ações
+// Novo/Editar são gated por :create/:update na tela). finance/support não têm as permissões → o esconde-fino oculta.
+const G_PATIOS: NavGroup = { label: "PÁTIOS", items: [PATIOS, PERFIS_NORMATIVOS, TABELA_VALORES_PATIO] };
 
 // Navegação por papel (5 grupos da IA aprovada). Distribuição por RoleKind
 // segundo a tabela "Visibilidade por papel" (sidebar-ia.md) + navigation-matrix.md.
@@ -145,16 +157,18 @@ const G_TELEMETRIA: NavGroup = {
 // esta camada apenas molda o menu visível.
 export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
   // tenant_admin — menu completo.
-  admin: [G_VISAO_GERAL, G_OPERACAO_FULL, G_FROTA_FULL, G_GESTAO_FULL, G_TELEMETRIA, G_ADMIN_FULL],
+  admin: [G_VISAO_GERAL, G_OPERACAO_FULL, G_FROTA_FULL, G_GESTAO_FULL, G_PATIOS, G_TELEMETRIA, G_ADMIN_FULL],
   // manager (+ fallback: platform_admin/auditor operam com leitura ampla).
-  gestor: [G_VISAO_GERAL, G_OPERACAO_FULL, G_FROTA_FULL, G_GESTAO_FULL, G_TELEMETRIA, G_ADMIN_FULL],
+  gestor: [G_VISAO_GERAL, G_OPERACAO_FULL, G_FROTA_FULL, G_GESTAO_FULL, G_PATIOS, G_TELEMETRIA, G_ADMIN_FULL],
   // operator / field_technician / field_dispatcher — operação + frota + cadastros (sem administração).
   // TELEMETRIA para o field_dispatcher (tem telemetry:read); field_technician cai no 403 do backend.
+  // PÁTIOS: papéis de campo têm yard/jurisdiction/price_tables:read → veem a leitura; ações gated na tela.
   dispatcher: [
     G_VISAO_GERAL,
     G_OPERACAO_FULL,
     G_FROTA_OPERACIONAL,
     { label: "GESTÃO", items: [CLIENTES, EQUIPES, SERVICOS, TABELAS_VALORES, TARIFAS, ESTOQUE] },
+    G_PATIOS,
     G_TELEMETRIA,
     { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES, CENTRAL_NOTIFICACOES] },
   ],
@@ -201,6 +215,9 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/cadastros/tarifas",
   "/cadastros/tags",
   "/cadastros/pontos-interesse",
+  "/patios/patios",
+  "/patios/perfis",
+  "/patios/tarifas",
   "/fleet/fuel",
   "/fleet/maintenance",
   "/fleet/fines",

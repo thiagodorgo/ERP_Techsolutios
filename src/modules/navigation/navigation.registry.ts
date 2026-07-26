@@ -468,4 +468,72 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     tenantOnly: true,
     relatedEndpoints: ["GET /api/v1/telemetry/track"],
   },
+  // Ω5P PR-04 — Pátios (console do operador): 3 paths GOVERNADOS (esconde-fino, lição Ω4C PR-14/15/20). Cada um
+  // com gate ÚNICO por permissão (yard:read / jurisdiction:read / price_tables:read; SEM permissão nova) e SEM
+  // requiredModules — sem provisão de módulo novo (igual a operations.quotes/telemetria/central). Assim
+  // getGovernedNavigationPaths os inclui e o gating dinâmico OCULTA de quem não tem a permissão (finance/inventory/
+  // support), que segue barrado no 403 do backend. O drilldown /patios/patios/:yardId NÃO é item de sidebar (não é
+  // governed; gate pelo route-guard). Nenhuma migração — dado, não DDL.
+  {
+    id: "patios.yards",
+    label: "Pátios",
+    description: "Cadastro físico dos pátios de recolhimento: áreas hierárquicas e vagas.",
+    path: "/patios/patios",
+    icon: "Warehouse",
+    group: "tenant",
+    order: 260,
+    status: "implemented",
+    requiredPermissions: ["yard:read"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/yards",
+      "POST /api/v1/yards",
+      "GET /api/v1/yards/:yardId",
+      "PATCH /api/v1/yards/:yardId",
+      "GET /api/v1/yards/:yardId/occupancy",
+      "GET /api/v1/yards/:yardId/areas",
+      "POST /api/v1/yards/:yardId/areas",
+      "PATCH /api/v1/yard-areas/:areaId",
+      "GET /api/v1/yard-areas/:areaId/spots",
+      "POST /api/v1/yard-areas/:areaId/spots",
+      "PATCH /api/v1/yard-spots/:spotId",
+    ],
+  },
+  {
+    id: "patios.profiles",
+    label: "Perfis Normativos",
+    description: "Parametrização nacional por convênio público / contrato privado: prazos, diária, teto e exigências.",
+    path: "/patios/perfis",
+    icon: "Scale",
+    group: "tenant",
+    order: 270,
+    status: "implemented",
+    requiredPermissions: ["jurisdiction:read"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/jurisdiction-profiles",
+      "POST /api/v1/jurisdiction-profiles",
+      "GET /api/v1/jurisdiction-profiles/:profileId",
+      "PATCH /api/v1/jurisdiction-profiles/:profileId",
+      "GET /api/v1/jurisdiction-defaults",
+    ],
+  },
+  {
+    id: "patios.tariffs",
+    label: "Tabela de Valores",
+    description: "Tabelas de valores por escopo (público/privado) e categoria de veículo para o pátio.",
+    path: "/patios/tarifas",
+    icon: "Coins",
+    group: "tenant",
+    order: 280,
+    status: "implemented",
+    requiredPermissions: ["price_tables:read"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/price-tables",
+      "POST /api/v1/price-tables",
+      "GET /api/v1/price-tables/:priceTableId",
+      "PATCH /api/v1/price-tables/:priceTableId",
+    ],
+  },
 ];

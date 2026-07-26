@@ -1,10 +1,18 @@
 import type { CSSProperties, FormEvent } from "react";
 import { useState } from "react";
 
-import { Alert, Button, Checkbox, Input, Modal } from "../../../../components/ui";
+import { Alert, Button, Checkbox, Input, Modal, Select } from "../../../../components/ui";
 import { validatePriceTable } from "../price-tables.adapter";
 import { createPriceTable, updatePriceTable } from "../price-tables.service";
-import type { PriceTableCreatePayload, PriceTableField, PriceTableItem, PriceTablesApiContext } from "../price-tables.types";
+import type { PriceTableCreatePayload, PriceTableField, PriceTableItem, PriceTableScope, PriceTablesApiContext } from "../price-tables.types";
+
+// Ω5P PR-04 — Categoria de veículo: Select CURADO (conveniência PT-BR, NÃO enum de domínio; o backend aceita
+// qualquer app-code [A-Z0-9_], catálogo por perfil deferido — D-Ω5P-TAR-05/UI-05). "Todas" ("") = NULL curinga.
+const VEHICLE_CATEGORY_OPTIONS: readonly { readonly value: string; readonly label: string }[] = [
+  { value: "MOTORCYCLE", label: "Motocicleta" },
+  { value: "CAR", label: "Automóvel" },
+  { value: "TRUCK", label: "Caminhão / Pesado" },
+];
 
 const FIELD_ID: Record<string, string> = {
   name: "price-table-field-name",
@@ -51,6 +59,8 @@ export function PriceTableFormModal({
   const [validTo, setValidTo] = useState(toDateInput(priceTable?.validTo));
   const [description, setDescription] = useState(priceTable?.description ?? "");
   const [isActive, setIsActive] = useState(priceTable?.isActive ?? true);
+  const [scope, setScope] = useState<string>(priceTable?.scope ?? "");
+  const [vehicleCategory, setVehicleCategory] = useState<string>(priceTable?.vehicleCategory ?? "");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<PriceTableField, string>>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -63,8 +73,17 @@ export function PriceTableFormModal({
       validFrom: validFrom.trim() || undefined,
       validTo: validTo.trim() || undefined,
       description: description.trim() || undefined,
+      // Escopo/categoria omitidos ("") = NULL curinga no backend (vale para os dois / todas as categorias).
+      scope: scope ? (scope as PriceTableScope) : undefined,
+      vehicleCategory: vehicleCategory.trim() ? vehicleCategory.trim().toUpperCase() : undefined,
     };
   }
+
+  // Preserva a categoria atual na edição mesmo que fora do conjunto curado (o backend aceita app-code livre).
+  const categoryOptions =
+    vehicleCategory && !VEHICLE_CATEGORY_OPTIONS.some((option) => option.value === vehicleCategory)
+      ? [{ value: vehicleCategory, label: vehicleCategory }, ...VEHICLE_CATEGORY_OPTIONS]
+      : VEHICLE_CATEGORY_OPTIONS;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -135,6 +154,19 @@ export function PriceTableFormModal({
           />
           <Field id={FIELD_ID.validFrom} label="Início da vigência" type="date" value={validFrom} onChange={setValidFrom} error={fieldErrors.validFrom} />
           <Field id={FIELD_ID.validTo} label="Fim da vigência" type="date" value={validTo} onChange={setValidTo} error={fieldErrors.validTo} />
+          <Select id="price-table-field-scope" label="Escopo" value={scope} onChange={(event) => setScope(event.target.value)}>
+            <option value="">Todos (público e privado)</option>
+            <option value="PUBLIC_AGREEMENT">Convênio público</option>
+            <option value="PRIVATE_CONTRACT">Contrato privado</option>
+          </Select>
+          <Select id="price-table-field-category" label="Categoria de veículo" value={vehicleCategory} onChange={(event) => setVehicleCategory(event.target.value)}>
+            <option value="">Todas as categorias</option>
+            {categoryOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
           {isEdit ? (
             <div style={fullWidth}>
               <Checkbox label="Tabela ativa" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />

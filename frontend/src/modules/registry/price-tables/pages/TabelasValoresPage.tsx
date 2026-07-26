@@ -1,6 +1,7 @@
 import { Archive, Pencil, Plus, RefreshCw, Send } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import type { DenseColumn } from "../../../../components/dense-list";
 import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../../components/dense-list";
@@ -14,15 +15,18 @@ import {
   filterPriceTables,
   formatCurrency,
   formatValidity,
+  formatVehicleCategory,
   formatVersion,
   getPriceTableActiveLabel,
   getPriceTableActiveTone,
+  getPriceTableScopeLabel,
+  getPriceTableScopeTone,
   getPriceTableStatusActions,
   getPriceTableStatusLabel,
   getPriceTableStatusTone,
 } from "../price-tables.adapter";
 import { updatePriceTable } from "../price-tables.service";
-import type { PriceTableActiveFilter, PriceTableItem, PriceTablePublishFilter, PriceTableStatus, PriceTablesFilters } from "../price-tables.types";
+import type { PriceTableActiveFilter, PriceTableItem, PriceTablePublishFilter, PriceTableScopeFilter, PriceTableStatus, PriceTablesFilters } from "../price-tables.types";
 import { usePriceTables } from "../usePriceTables";
 
 // Lista de "Tabela de Valores" (Ω2-a.1) — ligada ao endpoint real /api/v1/price-tables.
@@ -44,6 +48,21 @@ const PUBLISH_TABS: readonly { value: PriceTablePublishFilter; label: string }[]
   { value: "archived", label: "Arquivada" },
 ];
 
+// Ω5P PR-04 — Escopo (dupla natureza tarifária, ESTUDO §9). Filtro client-side sobre a janela carregada.
+const SCOPE_TABS: readonly { value: PriceTableScopeFilter; label: string }[] = [
+  { value: "all", label: "Todos" },
+  { value: "PUBLIC_AGREEMENT", label: "Convênio público" },
+  { value: "PRIVATE_CONTRACT", label: "Contrato privado" },
+];
+
+// Categoria de veículo — filtro por app-code curado ("" = Todas). Conveniência PT-BR (D-Ω5P-UI-05).
+const CATEGORY_TABS: readonly { value: string; label: string }[] = [
+  { value: "all", label: "Todas" },
+  { value: "MOTORCYCLE", label: "Motocicleta" },
+  { value: "CAR", label: "Automóvel" },
+  { value: "TRUCK", label: "Caminhão / Pesado" },
+];
+
 const filterRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: "var(--space-8)", flexWrap: "wrap" };
 const filterLabelStyle: CSSProperties = { fontSize: "var(--text-xs)", color: "var(--text-secondary)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em" };
 const dividerStyle: CSSProperties = { width: 1, alignSelf: "stretch", background: "var(--border-subtle, #E2E8F0)", margin: "0 var(--space-4)" };
@@ -53,6 +72,14 @@ export function TabelasValoresPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
+  // Ω5P PR-04 — a mesma tela é exposta em dois caminhos (GESTÃO→/cadastros/tabelas-valores e PÁTIOS→/patios/tarifas).
+  // Só o cabeçalho é sensível à rota (breadcrumb/subtítulo coerentes com o grupo de origem) — sem duplicar a página.
+  const { pathname } = useLocation();
+  const inPatios = pathname.startsWith("/patios");
+  const breadcrumb = inPatios ? "Pátios" : "Cadastros";
+  const subtitle = inPatios
+    ? "Tabelas de valores do pátio — escopo (público/privado), categoria de veículo, vigência e status de publicação."
+    : "Tabelas de valores da organização — moeda, versão, vigência e status de publicação.";
   const { items, pagination, loading, error, refresh } = usePriceTables(STABLE_FILTERS);
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
@@ -62,6 +89,8 @@ export function TabelasValoresPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [publishFilter, setPublishFilter] = useState<PriceTablePublishFilter>("all");
+  const [scopeFilter, setScopeFilter] = useState<PriceTableScopeFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   const canCreate = can("price_tables:create");
   const canUpdate = can("price_tables:update");
@@ -77,10 +106,16 @@ export function TabelasValoresPage() {
     [activeContext, session?.accessToken],
   );
 
-  // Filtro de publicação é pré-aplicado; a dense-list cuida de busca/situação/ordenação/paginação.
+  // Filtros de publicação/escopo/categoria são pré-aplicados; a dense-list cuida de busca/situação/ordenação/paginação.
   const publishedFiltered = useMemo(
-    () => (publishFilter === "all" ? items : items.filter((table) => table.status === publishFilter)),
-    [items, publishFilter],
+    () =>
+      items.filter((table) => {
+        if (publishFilter !== "all" && table.status !== publishFilter) return false;
+        if (scopeFilter !== "all" && table.scope !== scopeFilter) return false;
+        if (categoryFilter !== "all" && (table.vehicleCategory ?? "") !== categoryFilter) return false;
+        return true;
+      }),
+    [items, publishFilter, scopeFilter, categoryFilter],
   );
 
   function openCreate() {
@@ -139,6 +174,20 @@ export function TabelasValoresPage() {
       render: (table) => <Chip tone={getPriceTableStatusTone(table.status)}>{getPriceTableStatusLabel(table.status)}</Chip>,
     },
     {
+      key: "scope",
+      header: "Escopo",
+      sortable: true,
+      sortValue: (table) => getPriceTableScopeLabel(table.scope),
+      render: (table) => <Chip tone={getPriceTableScopeTone(table.scope)}>{getPriceTableScopeLabel(table.scope)}</Chip>,
+    },
+    {
+      key: "vehicleCategory",
+      header: "Categoria",
+      sortable: true,
+      sortValue: (table) => formatVehicleCategory(table.vehicleCategory),
+      render: (table) => formatVehicleCategory(table.vehicleCategory),
+    },
+    {
       key: "isActive",
       header: "Ativa",
       sortable: true,
@@ -177,15 +226,15 @@ export function TabelasValoresPage() {
 
   const dense = useDenseList<PriceTableItem>({ items: publishedFiltered, columns, filter: filterPriceTables, defaultSort: { key: "name", dir: "asc" } });
 
-  const hasAnyFilter = dense.hasActiveFilters || publishFilter !== "all";
+  const hasAnyFilter = dense.hasActiveFilters || publishFilter !== "all" || scopeFilter !== "all" || categoryFilter !== "all";
 
   return (
     <section className="page-stack work-orders-page">
       <header className="page-heading page-heading--row">
         <div>
-          <span>Cadastros</span>
+          <span>{breadcrumb}</span>
           <h1>Tabela de Valores</h1>
-          <p>Tabelas de valores da organização — moeda, versão, vigência e status de publicação.</p>
+          <p>{subtitle}</p>
         </div>
         <div className="work-orders-actions">
           <SearchBar value={dense.search} onChange={dense.setSearch} placeholder="Buscar por nome, descrição ou moeda…" />
@@ -233,6 +282,34 @@ export function TabelasValoresPage() {
             variant={publishFilter === tab.value ? "primary" : "ghost"}
             aria-pressed={publishFilter === tab.value}
             onClick={() => setPublishFilter(tab.value)}
+          >
+            {tab.label}
+          </Button>
+        ))}
+        <span style={dividerStyle} aria-hidden />
+        <span style={filterLabelStyle}>Escopo</span>
+        {SCOPE_TABS.map((tab) => (
+          <Button
+            key={tab.value}
+            type="button"
+            size="sm"
+            variant={scopeFilter === tab.value ? "primary" : "ghost"}
+            aria-pressed={scopeFilter === tab.value}
+            onClick={() => setScopeFilter(tab.value)}
+          >
+            {tab.label}
+          </Button>
+        ))}
+        <span style={dividerStyle} aria-hidden />
+        <span style={filterLabelStyle}>Categoria</span>
+        {CATEGORY_TABS.map((tab) => (
+          <Button
+            key={tab.value}
+            type="button"
+            size="sm"
+            variant={categoryFilter === tab.value ? "primary" : "ghost"}
+            aria-pressed={categoryFilter === tab.value}
+            onClick={() => setCategoryFilter(tab.value)}
           >
             {tab.label}
           </Button>
