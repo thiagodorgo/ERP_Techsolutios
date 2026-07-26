@@ -189,6 +189,47 @@ export type AppendEventInput = {
   readonly event: CustodyEventDraft;
 };
 
+// Ω5P PR-06 (F-1) — abertura de custódia pelo SWEEP em UMA ÚNICA tx: INSERT do processo (IN_REMOVAL) + evento de
+// abertura + STATUS_CHANGE→RECEPTION (entered_at = completedAt = t0) + âncora. Atômico ⇒ nenhum half-open
+// (IN_REMOVAL sem entered_at) pode nascer. occurredAt de AMBOS os eventos = completedAt (t0 = chegada, art. 21 §1º).
+export type OpenFromRemovalInput = {
+  readonly tenantId: string;
+  readonly serviceOrderId: string;
+  readonly profileId: string;
+  readonly originAuthority: string;
+  readonly unidentifiedReason: string;
+  readonly completedAt: Date;
+  readonly actorId?: string;
+};
+
+// Ω5P PR-06 (I1 real) — alocação/vacância/movimentação ATÔMICA cross-módulo (yard+impound) numa ÚNICA tx:
+// compõe a ocupação da vaga + o UPDATE de yard_id + o append do CustodyEvent. Falha de qualquer passo → rollback
+// de tudo (elimina o vacate compensatório do PR-05). occurredAt = instante do evento na cadeia.
+export type AssignSpotAtomicInput = {
+  readonly tenantId: string;
+  readonly processId: string;
+  readonly spotId: string;
+  readonly actorId?: string;
+  readonly occurredAt: Date;
+};
+
+export type VacateSpotAtomicInput = {
+  readonly tenantId: string;
+  readonly processId: string;
+  readonly spotId: string;
+  readonly actorId?: string;
+  readonly occurredAt: Date;
+};
+
+export type MoveSpotAtomicInput = {
+  readonly tenantId: string;
+  readonly processId: string;
+  readonly fromSpotId: string;
+  readonly toSpotId: string;
+  readonly actorId?: string;
+  readonly occurredAt: Date;
+};
+
 export type AppendEventResult = {
   readonly process: ImpoundProcess;
   readonly event: CustodyEvent;

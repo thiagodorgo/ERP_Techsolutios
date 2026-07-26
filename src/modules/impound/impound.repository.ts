@@ -1,19 +1,50 @@
 import { randomUUID } from "node:crypto";
 
+import type { YardRepository } from "../yard/yard.repository.js";
 import { computeEventHash, genesisHash, type CrossAnchor } from "./impound.hashchain.js";
+import type {
+  AddInspectionPhotoInput,
+  CompleteInspectionInput,
+  InspectionPhoto,
+  IntakeInspection,
+  IntakeState,
+  UpsertIntakeInspectionInput,
+} from "./impound.intake.types.js";
 import type {
   AppendEventInput,
   AppendEventResult,
   ApplyTransitionInput,
+  AssignSpotAtomicInput,
   CreateImpoundProcessInput,
   CustodyEvent,
   CustodyEventDraft,
   ImpoundProcess,
   ListImpoundProcessInput,
   ListImpoundProcessResult,
+  MoveSpotAtomicInput,
+  OpenFromRemovalInput,
   UpdateImpoundProcessInput,
+  VacateSpotAtomicInput,
 } from "./impound.types.js";
 import { ImpoundError } from "./impound.types.js";
+
+// Snapshot íntegro da cadeia (I2) lido num ÚNICO ponto consistente (Prisma: REPEATABLE READ) → o verifyChain
+// nunca vê head/events/anchors de instantes diferentes sob append concorrente (verify-snapshot, D-Ω5P-REC-07).
+export type ChainSnapshot = {
+  readonly head: { readonly seq: number; readonly hash: string | null };
+  readonly events: readonly CustodyEvent[];
+  readonly crossAnchors: readonly CrossAnchor[];
+};
+
+// Resultado de uma escrita de vistoria que TAMBÉM encadeia um CustodyEvent (PHOTO_SET / INSPECTION).
+export type AddInspectionPhotoResult = {
+  readonly photo: InspectionPhoto;
+  readonly process: ImpoundProcess;
+};
+export type CompleteInspectionResult = {
+  readonly inspection: IntakeInspection;
+  readonly process: ImpoundProcess;
+};
 
 // Cross-anchor (I2): registro em store INDEPENDENTE na MESMA operação do append (no Prisma = audit_logs). No
 // InMemory é uma lista própria — exposta p/ teste, sem PII (só tenantId/processId/seq/hash).
@@ -38,14 +69,42 @@ export interface ImpoundRepository {
   applyTransition(input: ApplyTransitionInput): Promise<ImpoundProcess>;
   // Append de evento não-transição (ex. SPOT_ASSIGNED), atômico com o head e o cross-anchor.
   appendEvent(input: AppendEventInput): Promise<AppendEventResult>;
+  // PR-06 (F-1) — abertura do SWEEP em UMA tx: create + abertura + RECEPTION (entered_at=completedAt). Sem half-open.
+  openFromRemovalAtomic(input: OpenFromRemovalInput): Promise<ImpoundProcess>;
+
+  // ── PR-06: vistoria de recepção (I3) ──────────────────────────────────────────────────────────────────────
+  findInspectionByProcess(tenantId: string, processId: string): Promise<IntakeInspection | undefined>;
+  upsertInspection(input: UpsertIntakeInspectionInput): Promise<IntakeInspection>;
+  addInspectionPhoto(input: AddInspectionPhotoInput): Promise<AddInspectionPhotoResult>;
+  listInspectionPhotos(tenantId: string, inspectionId: string): Promise<readonly InspectionPhoto[]>;
+  completeInspection(input: CompleteInspectionInput): Promise<CompleteInspectionResult>;
+  // Estado bruto para a guarda I3 (inspeção + conjuntos armazenados + conjuntos obrigatórios configurados).
+  getIntakeState(tenantId: string, processId: string): Promise<IntakeState | undefined>;
+
+  // ── PR-06: ocupação ATÔMICA (I1 real, 1 tx cross-módulo) ──────────────────────────────────────────────────
+  assignSpotAtomic(input: AssignSpotAtomicInput): Promise<ImpoundProcess>;
+  vacateSpotAtomic(input: VacateSpotAtomicInput): Promise<ImpoundProcess>;
+  moveSpotAtomic(input: MoveSpotAtomicInput): Promise<ImpoundProcess>;
+
+  // ── PR-06: verify-snapshot (I2, leitura consistente num só ponto) ─────────────────────────────────────────
+  readChainSnapshot(tenantId: string, processId: string): Promise<ChainSnapshot | undefined>;
 
   reset?(): void;
 }
+
+type StoredInspectionPhoto = InspectionPhoto & { readonly tenantId: string; readonly inspectionId: string };
 
 export class InMemoryImpoundRepository implements ImpoundRepository {
   private readonly processes = new Map<string, ImpoundProcess>();
   private readonly events: CustodyEvent[] = [];
   private readonly anchors: CustodyAuditAnchor[] = [];
+  private readonly inspections = new Map<string, IntakeInspection>(); // keyed by processId (1 por processo)
+  private readonly photos: StoredInspectionPhoto[] = [];
+  private readonly profileRequiredSets = new Map<string, readonly string[] | null>();
+
+  // yardRepository OPCIONAL: habilita a alocação atômica cross-módulo (I1). Em memória a "atomicidade" é
+  // single-thread; a corrida/rollback REAL (1 tx Postgres) roda no teste DB-gated.
+  constructor(private readonly yardRepository?: YardRepository) {}
 
   async createProcess(input: CreateImpoundProcessInput): Promise<ImpoundProcess> {
     // Idempotência OS→custódia (D-Ω5P-RECON-B) — espelha o índice PARCIAL único (tenant, service_order).
@@ -93,6 +152,54 @@ export class InMemoryImpoundRepository implements ImpoundRepository {
     // Evento de abertura (seq=1) na MESMA operação.
     const { process } = this.appendInternal(base, input.openingEvent);
     return process;
+  }
+
+  // PR-06 (F-1) — abertura ATÔMICA do sweep: create (IN_REMOVAL) + abertura + RECEPTION (entered_at=completedAt),
+  // tudo numa operação (single-thread InMemory / 1 tx no Prisma). Nenhum half-open pode nascer.
+  async openFromRemovalAtomic(input: OpenFromRemovalInput): Promise<ImpoundProcess> {
+    if (input.serviceOrderId) {
+      const clash = [...this.processes.values()].some(
+        (process) => process.tenantId === input.tenantId && process.serviceOrderId === input.serviceOrderId,
+      );
+      if (clash) {
+        throw new ImpoundError(409, "IMPOUND_CONFLICT", "duplicate_service_order", "A custody process already exists for this service order.");
+      }
+    }
+    const now = new Date();
+    const base: ImpoundProcess = {
+      id: randomUUID(),
+      tenantId: input.tenantId,
+      vehicleUnidentified: true,
+      unidentifiedReason: input.unidentifiedReason,
+      profileId: input.profileId,
+      status: "IN_REMOVAL",
+      enteredAt: undefined,
+      frozenAt: undefined,
+      originAuthority: input.originAuthority,
+      serviceOrderId: input.serviceOrderId,
+      custodySeqHead: 0,
+      custodyHashHead: undefined,
+      createdBy: input.actorId,
+      updatedBy: input.actorId,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.processes.set(base.id, base);
+    const opened = this.appendInternal(base, {
+      type: "STATUS_CHANGE",
+      payload: { from: null, to: "IN_REMOVAL", reason: "process_opened" },
+      occurredAt: input.completedAt,
+      actorId: input.actorId,
+    });
+    const receiving: ImpoundProcess = { ...opened.process, status: "RECEPTION", enteredAt: input.completedAt };
+    this.processes.set(receiving.id, receiving);
+    const received = this.appendInternal(receiving, {
+      type: "STATUS_CHANGE",
+      payload: { from: "IN_REMOVAL", to: "RECEPTION", reason: "removal_reconciled" },
+      occurredAt: input.completedAt,
+      actorId: input.actorId,
+    });
+    return received.process;
   }
 
   async listProcesses(input: ListImpoundProcessInput): Promise<ListImpoundProcessResult> {
@@ -181,10 +288,239 @@ export class InMemoryImpoundRepository implements ImpoundRepository {
     return this.appendInternal(process, input.event);
   }
 
+  // ── PR-06: vistoria (I3) ────────────────────────────────────────────────────────────────────────────────
+  async findInspectionByProcess(tenantId: string, processId: string): Promise<IntakeInspection | undefined> {
+    const inspection = this.inspections.get(processId);
+    return inspection?.tenantId === tenantId ? inspection : undefined;
+  }
+
+  async upsertInspection(input: UpsertIntakeInspectionInput): Promise<IntakeInspection> {
+    const process = await this.findProcessById(input.tenantId, input.processId);
+    if (!process) {
+      throw new ImpoundError(404, "IMPOUND_NOT_FOUND", "not_found", "Custody process was not found.");
+    }
+    const now = new Date();
+    const current = await this.findInspectionByProcess(input.tenantId, input.processId);
+    const apply = (field: string | undefined, patch: string | null | undefined): string | undefined =>
+      patch === undefined ? field : patch ?? undefined;
+    const applyDate = (field: Date | undefined, patch: Date | null | undefined): Date | undefined =>
+      patch === undefined ? field : patch ?? undefined;
+    const base: IntakeInspection = current ?? {
+      id: randomUUID(),
+      tenantId: input.tenantId,
+      processId: input.processId,
+      inspectedAt: input.inspectedAt ?? now,
+      signatureStatus: "ABSENT",
+      completedAt: undefined,
+      createdBy: input.actorId,
+      updatedBy: input.actorId,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const updated: IntakeInspection = {
+      ...base,
+      inspectedAt: input.inspectedAt ?? base.inspectedAt,
+      agentName: apply(base.agentName, input.agentName),
+      bodyworkState: apply(base.bodyworkState, input.bodyworkState),
+      paintState: apply(base.paintState, input.paintState),
+      tiresState: apply(base.tiresState, input.tiresState),
+      internalObjects: apply(base.internalObjects, input.internalObjects),
+      missingEquipment: apply(base.missingEquipment, input.missingEquipment),
+      odometerKm: apply(base.odometerKm, input.odometerKm),
+      observations: apply(base.observations, input.observations),
+      signerName: apply(base.signerName, input.signerName),
+      signatureStatus: input.signatureStatus ?? base.signatureStatus,
+      signedAt: applyDate(base.signedAt, input.signedAt),
+      updatedBy: input.actorId ?? base.updatedBy,
+      updatedAt: now,
+    };
+    this.inspections.set(input.processId, updated);
+    return updated;
+  }
+
+  async addInspectionPhoto(input: AddInspectionPhotoInput): Promise<AddInspectionPhotoResult> {
+    const process = await this.findProcessById(input.tenantId, input.processId);
+    if (!process) {
+      throw new ImpoundError(404, "IMPOUND_NOT_FOUND", "not_found", "Custody process was not found.");
+    }
+    const inspection = await this.findInspectionByProcess(input.tenantId, input.processId);
+    if (!inspection || inspection.id !== input.inspectionId) {
+      throw new ImpoundError(404, "IMPOUND_INSPECTION_NOT_FOUND", "inspection_not_found", "Intake inspection was not found for this process.");
+    }
+    const photo: StoredInspectionPhoto = {
+      id: randomUUID(),
+      tenantId: input.tenantId,
+      inspectionId: input.inspectionId,
+      set: input.set,
+      fileUrl: input.fileUrl,
+      status: "stored",
+      createdAt: new Date(),
+    };
+    this.photos.push(photo);
+    // PHOTO_SET encadeado (prova hash) — {set, attachmentId}.
+    const { process: withEvent } = this.appendInternal(process, {
+      type: "PHOTO_SET",
+      payload: { set: input.set, attachmentId: photo.id },
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+    });
+    const { tenantId: _t, inspectionId: _i, ...publicPhoto } = photo;
+    void _t;
+    void _i;
+    return { photo: publicPhoto, process: withEvent };
+  }
+
+  async listInspectionPhotos(tenantId: string, inspectionId: string): Promise<readonly InspectionPhoto[]> {
+    return this.photos
+      .filter((photo) => photo.tenantId === tenantId && photo.inspectionId === inspectionId && photo.status === "stored")
+      .map(({ tenantId: _t, inspectionId: _i, ...publicPhoto }) => {
+        void _t;
+        void _i;
+        return publicPhoto;
+      });
+  }
+
+  async completeInspection(input: CompleteInspectionInput): Promise<CompleteInspectionResult> {
+    const process = await this.findProcessById(input.tenantId, input.processId);
+    if (!process) {
+      throw new ImpoundError(404, "IMPOUND_NOT_FOUND", "not_found", "Custody process was not found.");
+    }
+    const inspection = await this.findInspectionByProcess(input.tenantId, input.processId);
+    if (!inspection) {
+      throw new ImpoundError(404, "IMPOUND_INSPECTION_NOT_FOUND", "inspection_not_found", "Intake inspection was not found for this process.");
+    }
+    const completed: IntakeInspection = {
+      ...inspection,
+      completedAt: input.occurredAt,
+      completedBy: input.actorId,
+      updatedBy: input.actorId ?? inspection.updatedBy,
+      updatedAt: new Date(),
+    };
+    this.inspections.set(input.processId, completed);
+    // INSPECTION encadeado (marcação de vistoria concluída).
+    const { process: withEvent } = this.appendInternal(process, {
+      type: "INSPECTION",
+      payload: { inspectionId: inspection.id },
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+    });
+    return { inspection: completed, process: withEvent };
+  }
+
+  async getIntakeState(tenantId: string, processId: string): Promise<IntakeState | undefined> {
+    const process = await this.findProcessById(tenantId, processId);
+    if (!process) return undefined;
+    const inspection = await this.findInspectionByProcess(tenantId, processId);
+    const storedSets = inspection
+      ? [...new Set((await this.listInspectionPhotos(tenantId, inspection.id)).map((photo) => photo.set))]
+      : [];
+    const profileRequiredSets = this.profileRequiredSets.get(`${tenantId}:${process.profileId}`) ?? null;
+    return { inspection, storedSets, profileRequiredSets };
+  }
+
+  // ── PR-06: ocupação atômica (I1) ────────────────────────────────────────────────────────────────────────
+  async assignSpotAtomic(input: AssignSpotAtomicInput): Promise<ImpoundProcess> {
+    const yard = this.requireYardRepository();
+    const process = await this.findProcessById(input.tenantId, input.processId);
+    if (!process) {
+      throw new ImpoundError(404, "IMPOUND_NOT_FOUND", "not_found", "Custody process was not found.");
+    }
+    const yardId = await this.resolveSpotYardId(input.tenantId, input.spotId);
+    // Alocação PRIMEIRO (I1a/I1b): erro aqui NÃO deixa evento órfão (nem entra no append).
+    await yard.allocate({ tenantId: input.tenantId, spotId: input.spotId, processId: input.processId, actorId: input.actorId });
+    try {
+      const withYard: ImpoundProcess = { ...process, yardId, updatedAt: new Date() };
+      this.processes.set(withYard.id, withYard);
+      const { process: withEvent } = this.appendInternal(withYard, {
+        type: "SPOT_ASSIGNED",
+        payload: { spotId: input.spotId },
+        occurredAt: input.occurredAt,
+        actorId: input.actorId,
+      });
+      return withEvent;
+    } catch (error) {
+      // Compensa (memória não tem tx real; a atomicidade REAL = 1 tx Postgres no teste DB-gated).
+      await yard.vacate({ tenantId: input.tenantId, spotId: input.spotId, actorId: input.actorId }).catch(() => undefined);
+      throw error;
+    }
+  }
+
+  async vacateSpotAtomic(input: VacateSpotAtomicInput): Promise<ImpoundProcess> {
+    const yard = this.requireYardRepository();
+    const process = await this.findProcessById(input.tenantId, input.processId);
+    if (!process) {
+      throw new ImpoundError(404, "IMPOUND_NOT_FOUND", "not_found", "Custody process was not found.");
+    }
+    await yard.vacate({ tenantId: input.tenantId, spotId: input.spotId, actorId: input.actorId });
+    const { process: withEvent } = this.appendInternal(process, {
+      type: "SPOT_MOVED",
+      payload: { from: input.spotId, to: null },
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+    });
+    return withEvent;
+  }
+
+  async moveSpotAtomic(input: MoveSpotAtomicInput): Promise<ImpoundProcess> {
+    const yard = this.requireYardRepository();
+    const process = await this.findProcessById(input.tenantId, input.processId);
+    if (!process) {
+      throw new ImpoundError(404, "IMPOUND_NOT_FOUND", "not_found", "Custody process was not found.");
+    }
+    const fromYardId = await this.resolveSpotYardId(input.tenantId, input.fromSpotId);
+    const toYardId = await this.resolveSpotYardId(input.tenantId, input.toSpotId);
+    await yard.move({ tenantId: input.tenantId, fromSpotId: input.fromSpotId, toSpotId: input.toSpotId, actorId: input.actorId });
+    const crossYard = fromYardId !== undefined && toYardId !== undefined && fromYardId !== toYardId;
+    const moved: ImpoundProcess = crossYard ? { ...process, yardId: toYardId, updatedAt: new Date() } : process;
+    if (crossYard) this.processes.set(moved.id, moved);
+    const { process: withEvent } = this.appendInternal(moved, {
+      type: crossYard ? "YARD_TRANSFER" : "SPOT_MOVED",
+      payload: { from: input.fromSpotId, to: input.toSpotId },
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+    });
+    return withEvent;
+  }
+
+  async readChainSnapshot(tenantId: string, processId: string): Promise<ChainSnapshot | undefined> {
+    const process = await this.findProcessById(tenantId, processId);
+    if (!process) return undefined;
+    const events = await this.listEvents(tenantId, processId);
+    const crossAnchors = await this.listAuditAnchors(tenantId, processId);
+    return { head: { seq: process.custodySeqHead, hash: process.custodyHashHead ?? null }, events, crossAnchors };
+  }
+
+  private requireYardRepository(): YardRepository {
+    if (!this.yardRepository) {
+      throw new ImpoundError(501, "IMPOUND_NOT_ENABLED", "occupancy_not_wired", "Spot occupancy is not wired in this runtime.");
+    }
+    return this.yardRepository;
+  }
+
+  private async resolveSpotYardId(tenantId: string, spotId: string): Promise<string | undefined> {
+    const yard = this.requireYardRepository();
+    const spot = await yard.findSpotById(tenantId, spotId);
+    if (!spot) return undefined;
+    const area = await yard.findAreaById(tenantId, spot.areaId);
+    return area?.yardId;
+  }
+
+  // Registro de conjuntos obrigatórios por perfil (espelha JurisdictionProfile.required_photo_sets no Prisma).
+  setProfileRequiredSetsForTests(tenantId: string, profileId: string, sets: readonly string[] | null): void {
+    this.profileRequiredSets.set(`${tenantId}:${profileId}`, sets);
+  }
+
+  async findProfileRequiredSets(tenantId: string, profileId: string): Promise<readonly string[] | null> {
+    return this.profileRequiredSets.get(`${tenantId}:${profileId}`) ?? null;
+  }
+
   reset(): void {
     this.processes.clear();
     this.events.length = 0;
     this.anchors.length = 0;
+    this.inspections.clear();
+    this.photos.length = 0;
+    this.profileRequiredSets.clear();
   }
 
   getAuditAnchorsForTests(): readonly CustodyAuditAnchor[] {

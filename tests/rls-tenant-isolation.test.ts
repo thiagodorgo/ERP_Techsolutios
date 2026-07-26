@@ -1482,6 +1482,36 @@ if (!connectionString) {
       const crossVerify = await withTenantRls(client, tenantB.id, (tx) => tx.impoundProcess.findUnique({ where: { id: impA.process_id } }));
       assert.equal(crossVerify, null, "tenant B cannot see tenant A's process (verify would be not_found)");
 
+      // Ω5P PR-06 (D-Ω5P-REC-*) — impound_intake_inspections nos 3 tenants EFÊMEROS (A, B, C). 1 vistoria por
+      // processo (@@unique tenant+process); process→RESTRICT (I9). RLS ENABLE/FORCE + policy (migration
+      // 20260837000000). Prova: invisível sem contexto + cross-tenant updateMany count=0 + visível/intocada in-tenant.
+      const insertInspection = async (tx: typeof client, tenantId: string, processId: string) => {
+        const [insp] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO impound_intake_inspections (tenant_id, process_id, inspected_at, signature_status)
+          VALUES (${tenantId}::uuid, ${processId}::uuid, now(), 'ABSENT')
+          RETURNING id
+        `;
+        return insp.id;
+      };
+      const inspA = await withTenantRls(client, tenantA.id, (tx) => insertInspection(tx as typeof client, tenantA.id, impA.process_id));
+      const inspB = await withTenantRls(client, tenantB.id, (tx) => insertInspection(tx as typeof client, tenantB.id, impB.process_id));
+      const inspC = await withTenantRls(client, tenantC.id, (tx) => insertInspection(tx as typeof client, tenantC.id, impC.process_id));
+
+      const inspWithoutContext = await client.intakeInspection.findMany({ where: { id: { in: [inspA, inspB, inspC] } } });
+      assert.deepEqual(inspWithoutContext.map((i) => i.id), [], "intake inspections must not be visible without app.current_tenant_id");
+
+      const tenantAInspView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.intakeInspection.findMany({ where: { id: { in: [inspA, inspB, inspC] } } });
+        const crossUpdate = await tx.intakeInspection.updateMany({ where: { id: { in: [inspB, inspC] } }, data: { agent_name: "cross-tenant" } });
+        return { visibleIds: visible.map((i) => i.id).sort(), crossUpdatedRows: crossUpdate.count };
+      });
+      assert.deepEqual(tenantAInspView.visibleIds, [inspA], "tenant A must only see its own intake inspection (not tenant B/C)");
+      assert.equal(tenantAInspView.crossUpdatedRows, 0, "tenant A must not update tenant B/C intake inspections");
+
+      const tenantBInsp = await withTenantRls(client, tenantB.id, (tx) => tx.intakeInspection.findUnique({ where: { id: inspB } }));
+      assert.equal(tenantBInsp?.signature_status, "ABSENT", "tenant B intake inspection stays visible + untouched in-tenant");
+      assert.equal(tenantBInsp?.agent_name, null, "tenant B intake inspection agent_name untouched by tenant A cross-update");
+
       // Ω5P PR-03 (D-Ω5P-TAR-*) — price_tables ESCOPADAS (scope PUBLIC_AGREEMENT/PRIVATE_CONTRACT + vehicle_category)
       // nos 3 tenants EFÊMEROS. As 2 colunas novas são NULLABLE aditivas; a RLS (ENABLE/FORCE + policy
       // price_tables_tenant_isolation, migration 20260723000000) é HERDADA — o ADD COLUMN não a altera. Prova:
@@ -2603,6 +2633,8 @@ if (!connectionString) {
         await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
         for (const tenantId of tenantIds) {
           await tx.$executeRawUnsafe(`DELETE FROM custody_events WHERE tenant_id = '${tenantId}'::uuid`);
+          // Ω5P PR-06 — intake_inspections → impound_processes é RESTRICT: purga a vistoria ANTES do processo.
+          await tx.$executeRawUnsafe(`DELETE FROM impound_intake_inspections WHERE tenant_id = '${tenantId}'::uuid`);
           await tx.$executeRawUnsafe(`DELETE FROM impound_processes WHERE tenant_id = '${tenantId}'::uuid`);
         }
       });

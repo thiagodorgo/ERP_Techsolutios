@@ -15,12 +15,16 @@ async function startJobWorkerIfEnabled(): Promise<void> {
   if (!env.JOBS_WORKER_ENABLED || env.CORE_SAAS_PERSISTENCE !== "prisma") {
     return;
   }
-  const [{ startWorker }, { enqueueInitialScheduledNotificationScan }] = await Promise.all([
-    import("./infra/jobs/job.worker.js"),
-    import("./modules/notifications/scheduled-notification.jobs.js"),
-  ]);
+  const [{ startWorker }, { enqueueInitialScheduledNotificationScan }, { enqueueInitialImpoundReconcileScan }] =
+    await Promise.all([
+      import("./infra/jobs/job.worker.js"),
+      import("./modules/notifications/scheduled-notification.jobs.js"),
+      import("./modules/impound/impound.jobs.js"),
+    ]);
   startWorker();
   await enqueueInitialScheduledNotificationScan();
+  // Ω5P PR-06 — 1º tick do SWEEP de reconciliação OS→custódia (auto-reenfileirante 60s). Gated pela mesma flag.
+  await enqueueInitialImpoundReconcileScan();
   logger.info({ pollIntervalMs: 1000 }, "In-process job worker started (JOBS_WORKER_ENABLED).");
 }
 

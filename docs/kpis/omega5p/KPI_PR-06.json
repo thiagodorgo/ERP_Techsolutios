@@ -1,0 +1,58 @@
+{
+  "pr": "PR-06",
+  "fase": "Fase 2 — Recepção + Vistoria de entrada (I3 REAL) + gatilho OS→custódia DURÁVEL + alocação de vaga atômica (I1) + FK dura + verify-snapshot",
+  "snapshot_date": "2026-07-26",
+  "branch": "rodada/omega5p",
+  "tipo": "Backend + migração aditiva. Fecha os requisitos herdados do PR-05 (F2 guarda I3 real; verify-snapshot) e liga a custódia à operação: vistoria de recepção (art.9º/14), gatilho durável OS→custódia (sweep), alocação de vaga atômica (I1). Junta pesada com critico-adversarial (3 MÉDIOS de durabilidade sanados em ciclo).",
+  "models_criados": [
+    "IntakeInspection (impound_intake_inspections): DEDICADO (não estende checklists) — filho do ImpoundProcess (@@unique([tenant_id,process_id])); art.9º/14 (received_at, removal_agent_name, authority_name, general_body_state, paint_state, tires_state, missing_mandatory_equipment Json, inner_objects Json, odometer_km Decimal(10,1)?, signature_status SIGNED|REFUSED|ABSENT@ABSENT, completed_at/completed_by); RLS forced + CHECKs (completed/odometer); FKs compostas RESTRICT"
+  ],
+  "models_alterados": [
+    "ServiceCatalog: +custody_profile_id (FK composta nullable → jurisdiction_profiles RESTRICT) — o marcador origem-agnóstico de 'esta OS abre custódia' (D-Ω5P-REC-04)",
+    "JurisdictionProfile: +required_photo_sets Json? (null=default federal 11 conjuntos) — conjuntos obrigatórios da vistoria parametrizados por perfil (D-Ω5P-REC-09)",
+    "YardSpot: FK DURA current_process_id → impound_processes (NOT VALID+VALIDATE, RESTRICT I9) — fecha o deferral do PR-01"
+  ],
+  "migrations": [
+    "20260837000000_add_intake_inspection_and_custody_fk — ADITIVA up-only: 1 CREATE TABLE + 2 ADD COLUMN nullable-sem-default + 1 índice + 3 FK (2 compostas RESTRICT + yard_spots via NOT VALID+VALIDATE) + 2 CHECKs + RLS ENABLE+FORCE+POLICY. Provada up→down→re-up pelo dba-guardião drift-zero; FK dura convalidated='t' com 0 órfãos (current_process_id 100% NULL na base viva); ADD NOT VALID (ACCESS EXCLUSIVE breve) + VALIDATE (SHARE UPDATE EXCLUSIVE, não bloqueia read/write)."
+  ],
+  "I3_real_F2": "guarda RECEPTION→ACTIVE_CUSTODY lê isIntakeComplete(process) REAL (dados mínimos art.9º I + completed_at + TODOS os conjuntos obrigatórios do PERFIL com ≥1 Attachment status=stored). body.inspection_complete REMOVIDO (flag do cliente morto — provado: flag forjado + vistoria incompleta → AINDA 409 reception_inspection_incomplete). resolveRequiredPhotoSets fail-SAFE (null/[]/inválido → default federal 11). Fecha o requisito herdado F2 do PR-05.",
+  "gatilho_duravel": {
+    "sweep": "job impound.reconcile-removals (novo JobName; auto-reenfileirante gated JOBS_WORKER_ENABLED; espelha notifications.scan-due) varre OS de remoção concluídas (service_catalog.custody_profile_id NOT NULL) sem ImpoundProcess → abre em RECEPTION com entered_at=OS.completed_at. Idempotente pelo partial-unique (tenant,service_order). Tenant-escopado. RN-CUS-05.",
+    "F1_atomico": "openFromRemovalAtomic — INSERT processo + evento abertura seq1 + UPDATE status=RECEPTION/entered_at + STATUS_CHANGE seq2 + âncora numa ÚNICA withTenantRls tx → NENHUM half-open (IN_REMOVAL sem entered_at) pode nascer; idempotência (23505) reverte a tx inteira sem órfão.",
+    "F1_cura": "sweep amplia o candidato p/ IN_REMOVAL+entered_at NULL → cureHalfOpenRemoval transiciona o preso p/ RECEPÇÃO com t0=completed_at (idempotente/race-safe; 2º tick=0; corrida→409 engolido). Torna verdadeira a promessa 'se já existe em IN_REMOVAL → só transiciona'. Cura qualquer half-open pré-existente.",
+    "F2_config_contingente": "NÃO há sinal independente de 'remoção' no modelo (service_type é soft-enum configurável; WorkOrder sem flag) → custody_profile_id é o ÚNICO marcador → abertura 100% CONTINGENTE à config; a alegação 'registra a lacuna' foi RISCADA de código+plano (não afirmar observabilidade que não se entrega). Config mal-feita = gate de go-live (D-Ω5P-REC-11).",
+    "identidade_neutra_D-REC-10": "processo auto-aberto = vehicle_unidentified=true + reason 'Aguardando vistoria de recepção' + origin_authority 'Solicitação de remoção (OS <code>)' (neutro, sem PII; identidade capturada na vistoria art.9º I)."
+  },
+  "I1_atomico": "assignSpotAtomic — allocate (FOR UPDATE + FREE + FK dura) + UPDATE yard_id + appendEvent(SPOT_ASSIGNED) numa ÚNICA withTenantRls tx → elimina o vacate compensatório do PR-05; falha do append/FK contra processo inexistente → rollback (vaga FREE, sem SPOT_ASSIGNED órfão). vacate/move idem. Gate empírico no CI (Postgres).",
+  "verify_snapshot": "verifyChain lê head/events/anchors num ÚNICO snapshot RepeatableRead → elimina o falso-alarme count_/cross_anchor_mismatch transitório sob append concorrente, SEM falso-negativo (adulteração commitada segue detectada; cadeia I2 do PR-05 íntegra). Fecha o follow-up do PR-05.",
+  "permissao": "2 permissões novas impound:inspect + impound:allocate nas 4 pontas (espelha impound:*); impound:transition/:read reusadas. Sweep = ator SISTEMA (sem permissão de usuário).",
+  "cobertura_testes": {
+    "backend": "tests/impound-reception.test.ts (NOVO, 7: I3 REAL bloqueia sem vistoria/dado mínimo/incompleta; flag forjado ainda bloqueia; completa→transição+INSPECTION; conjuntos por perfil) + tests/impound-trigger-durability.test.ts (NOVO, DB-gated, 7: sweep abre com t0; idempotente; durável [OS sem processo→reconcilia]; pula sem custody_profile_id; corrida manual×sweep=1; tenant-escopado; **CURA half-open [F-1b]**) + tests/impound-concurrency.test.ts (estendido 4→9: assignSpotAtomic 1-tx sem vaga órfã; FK dura rejeita processo inexistente; verify-snapshot RR sem falso-alarme) + tests/rls-tenant-isolation.test.ts (bloco intake 3 tenants) + core-saas (2 perms novas). Execução CI-memória: backend 1657→1676 (+19), 0 fail, 6 skip.",
+    "editados_por_regressao_real": "impound-fsm/impound-hashchain (F2 removeu o flag → montam vistoria REAL completa) + yard-occupancy-concurrency (FK dura → seedam impound_processes reais; I1 do PR-01 segue provado)."
+  },
+  "d_records": "D-Ω5P-REC-01..11 (vistoria dedicada; F2 guarda I3 real; sweep durável; custody_profile_id origem-agnóstico contingente [F-2]; assignSpotAtomic+FK dura; impound:inspect/allocate; verify-snapshot RR; fast-path não-incluído; required_photo_sets por perfil; identidade neutra do sweep; GATE DE GO-LIVE JOBS_WORKER_ENABLED+liveness [F-3])",
+  "requisitos_e_backlog": [
+    "F-3 [GATE DE GO-LIVE — D-Ω5P-REC-11]: deploy de produção do módulo de custódia EXIGE JOBS_WORKER_ENABLED=true (default OFF) + sinal de liveness (timestamp do último tick do reconcile) monitorado — senão a durabilidade some silenciosamente. Junta-se ao gate NOSUPERUSER do PR-05 (F3/D-IMP-07).",
+    "F-5 [backlog/política]: required_photo_sets é sobrescrevível por perfil até 1 set — considerar piso mínimo não-sobrescrevível quando a spec federal de imagens sair (ESTUDO §11a).",
+    "F-6/F-7 [INFO]: origin_authority embute o código da OS (ref interna do tenant, não PII); I3 verifica presença da foto, não autenticidade (inerente a fluxo foto-obrigatório; o hash-chain prova que a referência não foi alterada).",
+    "config-audit [backlog PR-08]: um relatório/lint de config na superfície de admin que aponte service-types de remoção sem custody_profile_id (mitigação da contingência F-2 no lado de UI)."
+  ],
+  "aderencia_normativa": "Res. CONTRAN 1025/2026 art.9º I (vistoria eletrônica: data/hora entrada, agente/autoridade, identidade, imagens do estado físico) + art.14 §1º/§2º (Termo de Recolhimento: objetos, equipamentos ausentes, estado lataria/pintura/pneus, assinatura/recusa) + art.21§1º (entered_at=t0 da diária); CTB 271§1º. RN-CUS-04 (ACTIVE_CUSTODY só com vistoria completa) e RN-CUS-05 (OS de remoção concluída → processo) cobertas. Neutralidade white-label.",
+  "junta": {
+    "agente-dba-guardiao": "APROVADO (migração aditiva up/down/re-up drift-zero; FK dura NOT VALID+VALIDATE convalidated 0-órfãos; RLS forced; CHECKs; teardown FK-safe; base viva consistente)",
+    "omega5p-avaliador": "APROVADO_CONDICIONADO → APROVADO (Seção 10 verde; I3/F2 fechado; gatilho durável; I1 atômico; verify-snapshot; §allowlist/white-label; sem regressão; condição = KPI → sanada)",
+    "critico-adversarial": "APROVADO_CONDICIONADO → APROVADO (0 CRÍTICO — I3/I1/idempotência/verify-snapshot A1..A8 RESISTIRAM; 3 MÉDIOS de durabilidade F-1/F-2/F-3 sanados em ciclo + re-verificados: F-1 openFromRemovalAtomic+cura, F-2 Opção 2 honesta, F-3 gate de go-live; F-4 isolamento feito)",
+    "veredito": "APROVADO 3/3 (F-1/F-2 sanados e re-verificados; F-3 documentado)"
+  },
+  "kpi_repo_wide": {
+    "backend": "1657->1676 (+19: impound-reception 7 + impound-trigger-durability 7 incl. cura + impound-concurrency +5; CI-memória 6 skip)",
+    "frontend_smoke": "861 (inalterado — backend-only)",
+    "flutter_tests": "807 (inalterado)",
+    "blocks": "93->94"
+  },
+  "nota_processo": "2 mass-deletes na base viva sinalizados pelo harness: PR-05 (dev, NÃO-autorizado) e PR-06 (dba-guardião, AUTORIZADO no prompt do orquestrador, escopado a test-debris impound-sweep-%, verificado 0 dependentes, demo intacto). O orquestrador PAROU de autorizar deletes de DB a agentes — limpeza de debris vira passo revisado apresentado ao dono. Ver [[feedback-no-adhoc-mass-delete-live-db]].",
+  "coexistencia": "Vehicle da frota INTOCADO; work-order.service INTOCADO (durabilidade = sweep, não transacional-na-OS); yard OccupancyService composto na tx; audit_logs cross-anchor; sem regressão (1676 pass/0 fail; I1 do PR-01 e I2 do PR-05 re-provados).",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

@@ -9,6 +9,11 @@ import {
   toImpoundProcessListDto,
   toVerifyDto,
 } from "./impound.dto.js";
+import {
+  toInspectionPhotoDto,
+  toInspectionViewDto,
+  toIntakeInspectionDto,
+} from "./impound.intake.dto.js";
 import type { ImpoundService } from "./impound.service.js";
 
 export type ImpoundServiceResolver = () => Promise<ImpoundService>;
@@ -76,6 +81,99 @@ export class ImpoundController {
     // Metadata: só o estado de destino (from é derivável; sem reason/PII no log de auditoria).
     await recordRequestAuditBestEffort(request, {
       action: "impound.transitioned",
+      resourceType: "impound_process",
+      resourceId: process.id,
+      outcome: "success",
+      severity: "info",
+      metadata: { status: process.status },
+    });
+    return { data: toImpoundProcessDto(process) };
+  }
+
+  // ── PR-06: vistoria de recepção (I3) ──────────────────────────────────────────────────────────────────────
+  async getInspection(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const view = await service.getInspection(actor, readRouteParam(request.params.processId));
+    return { body: toInspectionViewDto(view) };
+  }
+
+  async saveInspection(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const inspection = await service.saveInspection(actor, readRouteParam(request.params.processId), request.body ?? {});
+    await recordRequestAuditBestEffort(request, {
+      action: "impound.inspection.saved",
+      resourceType: "impound_intake_inspection",
+      resourceId: inspection.id,
+      outcome: "success",
+      severity: "info",
+      metadata: { signatureStatus: inspection.signatureStatus },
+    });
+    return { data: toIntakeInspectionDto(inspection) };
+  }
+
+  async addInspectionPhoto(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const photo = await service.addInspectionPhoto(actor, readRouteParam(request.params.processId), request.body ?? {});
+    // §2.8: só id/set no metadata de auditoria (nunca fileUrl/storage_key/PII).
+    await recordRequestAuditBestEffort(request, {
+      action: "impound.inspection.photo_added",
+      resourceType: "impound_intake_inspection_photo",
+      resourceId: photo.id,
+      outcome: "success",
+      severity: "info",
+      metadata: { set: photo.set },
+    });
+    return { status: 201, data: toInspectionPhotoDto(photo) };
+  }
+
+  async completeInspection(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const inspection = await service.completeInspection(actor, readRouteParam(request.params.processId));
+    await recordRequestAuditBestEffort(request, {
+      action: "impound.inspection.completed",
+      resourceType: "impound_intake_inspection",
+      resourceId: inspection.id,
+      outcome: "success",
+      severity: "info",
+    });
+    return { data: toIntakeInspectionDto(inspection) };
+  }
+
+  // ── PR-06: ocupação atômica (I1) ──────────────────────────────────────────────────────────────────────────
+  async assignSpot(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const process = await service.assignSpot(actor, readRouteParam(request.params.processId), request.body ?? {});
+    await recordRequestAuditBestEffort(request, {
+      action: "impound.spot_assigned",
+      resourceType: "impound_process",
+      resourceId: process.id,
+      outcome: "success",
+      severity: "info",
+      metadata: { status: process.status },
+    });
+    return { data: toImpoundProcessDto(process) };
+  }
+
+  async vacateSpot(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const body = { ...(request.body ?? {}), ...(request.query ?? {}) } as Record<string, unknown>;
+    const process = await service.vacateSpot(actor, readRouteParam(request.params.processId), body);
+    await recordRequestAuditBestEffort(request, {
+      action: "impound.spot_vacated",
+      resourceType: "impound_process",
+      resourceId: process.id,
+      outcome: "success",
+      severity: "info",
+      metadata: { status: process.status },
+    });
+    return { data: toImpoundProcessDto(process) };
+  }
+
+  async moveSpot(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const process = await service.moveSpot(actor, readRouteParam(request.params.processId), request.body ?? {});
+    await recordRequestAuditBestEffort(request, {
+      action: "impound.spot_moved",
       resourceType: "impound_process",
       resourceId: process.id,
       outcome: "success",

@@ -10,6 +10,10 @@ export const JOB_NAMES = [
   "notifications.scan-due",
   "audit-log-fanout",
   "field-ops-event-fanout",
+  // Ω5P PR-06 (D-Ω5P-REC-03 / D-Ω5P-RECON-B) — SWEEP de reconciliação OS→custódia (durabilidade): varre as OS de
+  // remoção CONCLUÍDAS (service_catalog.custody_profile_id set) sem ImpoundProcess e ABRE a custódia em RECEPÇÃO.
+  // Auto-reenfileirante, gated por JOBS_WORKER_ENABLED, catch-up (espelha notifications.scan-due). Ator = SISTEMA.
+  "impound.reconcile-removals",
 ] as const;
 
 export type JobName = (typeof JOB_NAMES)[number];

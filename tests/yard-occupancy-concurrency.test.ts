@@ -25,8 +25,12 @@ if (!connectionString) {
       const area = await repo.createArea({ tenantId, yardId: yard.id, kind: "BLOCK", name: `Quadra ${suffix}` });
       const spot = await repo.createSpot({ tenantId, areaId: area.id, code: `A-${suffix}` });
 
+      // PR-06 — a FK dura yard_spots.current_process_id → impound_processes exige processos REAIS (não mais UUIDs
+      // sintéticos): N processos distintos disputam a MESMA vaga.
+      const profileId = await createProfile(client, tenantId, suffix);
+      const processIds = await Promise.all(Array.from({ length: CONCURRENCY }, () => createProcess(client, tenantId, profileId)));
       const results = await Promise.allSettled(
-        Array.from({ length: CONCURRENCY }, () => occupancy.allocate(actor, { spotId: spot.id, processId: randomUUID() })),
+        processIds.map((processId) => occupancy.allocate(actor, { spotId: spot.id, processId })),
       );
       const fulfilled = results.filter((r) => r.status === "fulfilled");
       const rejected = results.filter((r) => r.status === "rejected");
@@ -57,7 +61,8 @@ if (!connectionString) {
         Array.from({ length: CONCURRENCY }, (_, index) => repo.createSpot({ tenantId, areaId: area.id, code: `A-${index}-${suffix}` })),
       );
 
-      const processId = randomUUID();
+      const profileId = await createProfile(client, tenantId, suffix);
+      const processId = await createProcess(client, tenantId, profileId); // processo REAL (FK dura PR-06)
       const results = await Promise.allSettled(
         spots.map((spot) => occupancy.allocate(actor, { spotId: spot.id, processId })),
       );
@@ -90,7 +95,8 @@ if (!connectionString) {
       const from = await repo.createSpot({ tenantId, areaId: area.id, code: `FROM-${suffix}` });
       const to = await repo.createSpot({ tenantId, areaId: area.id, code: `TO-${suffix}` });
 
-      const processId = randomUUID();
+      const profileId = await createProfile(client, tenantId, suffix);
+      const processId = await createProcess(client, tenantId, profileId); // processo REAL (FK dura PR-06)
       await occupancy.allocate(actor, { spotId: from.id, processId });
       const moved = await occupancy.move(actor, { fromSpotId: from.id, toSpotId: to.id });
       assert.equal(moved.id, to.id);
@@ -141,8 +147,33 @@ async function createTenant(client: BootstrapClient, suffix: string): Promise<st
   return tenant.id;
 }
 
-// Teardown FK-safe: yard_spots → yard_areas → yards ANTES do tenant (as FKs de área/vaga são CASCADE, mas a
-// deleção explícita antecipa a limpeza; yards→tenants é RESTRICT).
+// PR-06 — a FK dura da ocupação exige processos REAIS. Perfil (1x) + processo (identidade a confirmar → satisfaz
+// o CHECK identity com vehicle_unidentified + reason). Inserção crua (o custody_events não é necessário para a FK).
+async function createProfile(client: BootstrapClient, tenantId: string, suffix: string): Promise<string> {
+  const { withTenantRls } = await import("../src/database/rls.js");
+  const name = `Perfil ${suffix}`;
+  return withTenantRls(client, tenantId, async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ id: string }>>`
+      INSERT INTO jurisdiction_profiles (tenant_id, name, scope) VALUES (${tenantId}::uuid, ${name}, 'PUBLIC_AGREEMENT') RETURNING id
+    `;
+    return rows[0].id;
+  });
+}
+
+async function createProcess(client: BootstrapClient, tenantId: string, profileId: string): Promise<string> {
+  const { withTenantRls } = await import("../src/database/rls.js");
+  return withTenantRls(client, tenantId, async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ id: string }>>`
+      INSERT INTO impound_processes (tenant_id, profile_id, origin_authority, vehicle_unidentified, unidentified_reason)
+      VALUES (${tenantId}::uuid, ${profileId}::uuid, 'Autoridade', true, 'Aguardando vistoria de recepção')
+      RETURNING id
+    `;
+    return rows[0].id;
+  });
+}
+
+// Teardown FK-safe: yard_spots (FK dura → impound_processes RESTRICT) → yard_areas → yards ANTES do processo;
+// impound_processes → jurisdiction_profiles ANTES do tenant. Sem custody_events (inserção crua) = sem trigger.
 async function teardown(client: BootstrapClient, tenantId: string): Promise<void> {
   const { withTenantRls } = await import("../src/database/rls.js");
   try {
@@ -150,6 +181,8 @@ async function teardown(client: BootstrapClient, tenantId: string): Promise<void
       await tx.yardSpot.deleteMany({ where: { tenant_id: tenantId } });
       await tx.yardArea.deleteMany({ where: { tenant_id: tenantId } });
       await tx.yard.deleteMany({ where: { tenant_id: tenantId } });
+      await tx.impoundProcess.deleteMany({ where: { tenant_id: tenantId } });
+      await tx.jurisdictionProfile.deleteMany({ where: { tenant_id: tenantId } });
     });
     await client.tenant.deleteMany({ where: { id: tenantId } });
   } finally {

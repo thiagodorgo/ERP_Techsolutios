@@ -139,6 +139,8 @@ const permissionDescriptions = {
   "impound:create": "Abrir Processos de custodia (registro-prova da entrada do bem) do tenant.",
   "impound:update": "Corrigir metadados do bem/origem do Processo de custodia do tenant.",
   "impound:transition": "Movimentar o estado do Processo de custodia (recepcao, liberacao, leilao) do tenant.",
+  "impound:inspect": "Registrar e completar a vistoria de recepcao (dados minimos + fotos obrigatorias) do Processo de custodia do tenant.",
+  "impound:allocate": "Alocar, liberar e mover a vaga do patio para o Processo de custodia do tenant.",
   "service_quotes:read": "Consultar Orcamentos (precos congelados) do tenant.",
   "service_quotes:create": "Criar Orcamentos congelando o preco da Tarifa vigente.",
   "service_quotes:update": "Editar (quantidade/notas em rascunho) e mudar situacao de Orcamentos.",
