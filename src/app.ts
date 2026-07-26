@@ -40,6 +40,7 @@ import { createPlatformRouter } from "./modules/platform/index.js";
 import { createServiceCatalogRouter } from "./modules/service-catalog/index.js";
 import { createPriceTableRouter } from "./modules/price-tables/index.js";
 import { createTariffRouter } from "./modules/tariffs/index.js";
+import { createYardRouter } from "./modules/yard/index.js";
 import { createServiceQuoteRouter } from "./modules/service-quotes/index.js";
 import { createServiceQuoteItemRouter } from "./modules/service-quote-items/index.js";
 import { createWorkOrderFinancialRouter } from "./modules/work-order-financials/index.js";
@@ -117,6 +118,10 @@ export function createApp(service: ICoreSaasService): Express {
   app.use("/api/v1", attachAuthenticatedActor(), createServiceCatalogRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createPriceTableRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createTariffRouter());
+  // Ω5P PR-01 — Pátios de recolhimento (pátio físico + áreas hierárquicas + vagas + ocupação I1). Router NOVO
+  // sob /api/v1 (git add src/app.ts, senão CI route_not_found). CRUD sob yard:read/create/update; a ocupação
+  // (allocate/vacate/move) é serviço interno em PR-01 (superfície HTTP dirigida pela autoridade = PR-06).
+  app.use("/api/v1", attachAuthenticatedActor(), createYardRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createServiceQuoteRouter());
   // Ω3F-4a — Itens do Orçamento (/service-quotes/:id/items) em router próprio: o path não colide
   // com nenhuma rota do service-quotes router (que segue intocado neste bloco).

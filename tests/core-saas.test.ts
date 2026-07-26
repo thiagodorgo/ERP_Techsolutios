@@ -63,6 +63,7 @@ const expectedPermissionCatalog = [
   "tags:read",
   "pois:read",
   "tariffs:read",
+  "yard:read",
   "service_quotes:read",
   "work_order_financials:read",
   "financial_accounts:read",
@@ -78,6 +79,7 @@ const expectedPermissionCatalog = [
   "tags:create",
   "pois:create",
   "tariffs:create",
+  "yard:create",
   "service_quotes:create",
   "work_order_financials:create",
   "financial_accounts:create",
@@ -93,6 +95,7 @@ const expectedPermissionCatalog = [
   "tags:update",
   "pois:update",
   "tariffs:update",
+  "yard:update",
   "service_quotes:update",
   "service_quotes:approve",
   "work_order_financials:update",
@@ -350,6 +353,50 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   for (const role of ["field_technician", "technician", "operator", "finance", "inventory", "viewer", "support"] as const) {
     assert.equal(ROLE_PERMISSIONS[role].includes("telemetry:read"), false);
   }
+
+  // Ω5P PR-01 (D-Ω5P-YARD-03) — Pátios/áreas/vagas: `yard:read` = MESMO conjunto de `branches:read`
+  // (manager+operator+field_dispatcher+technician+field_technician+viewer+auditor+admins); `yard:create`/
+  // `yard:update` = SÓ manager+admins (espelha branches:create/update). `yard:manage` NÃO existe (PR-06).
+  for (const role of [
+    "manager",
+    "operator",
+    "field_dispatcher",
+    "technician",
+    "field_technician",
+    "viewer",
+    "auditor",
+    "tenant_admin",
+    "super_admin",
+    "platform_admin",
+  ] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("yard:read"), true);
+    assert.equal(ROLE_PERMISSIONS[role].includes("branches:read"), true);
+  }
+  // Folha física NÃO sensível, mas espelha branches: finance/inventory/support NÃO leem Pátios (nem branches).
+  for (const role of ["finance", "inventory", "support"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("yard:read"), false);
+  }
+  // create/update = gestão+admins (manager + tenant_admin/super_admin/platform_admin), NUNCA os demais.
+  for (const role of ["manager", "tenant_admin", "super_admin", "platform_admin"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("yard:create"), true);
+    assert.equal(ROLE_PERMISSIONS[role].includes("yard:update"), true);
+  }
+  for (const role of [
+    "operator",
+    "field_dispatcher",
+    "technician",
+    "field_technician",
+    "viewer",
+    "auditor",
+    "finance",
+    "inventory",
+    "support",
+  ] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("yard:create"), false);
+    assert.equal(ROLE_PERMISSIONS[role].includes("yard:update"), false);
+  }
+  // yard:manage DEFERIDO ao PR-06 — não pode existir no catálogo ainda (permissão sem guard/rota = permissão morta).
+  assert.equal(PERMISSION_CATALOG.includes("yard:manage" as (typeof PERMISSION_CATALOG)[number]), false);
 
   // PR-SCALE-1 — Purchasing + Reports (autorização do dono; RBAC_MATRIX "Purchasing"/"Reports and analytics").
   // reports:read é concedido a TODOS os papéis não-admin (a matriz dá escopo de relatório a todos).

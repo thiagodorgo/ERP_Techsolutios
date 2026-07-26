@@ -1,0 +1,63 @@
+{
+  "pr": "PR-01",
+  "fase": "Fase 1 — Fundações físicas (módulo yard: pátio + áreas hierárquicas + vagas + ocupação I1)",
+  "snapshot_date": "2026-07-25",
+  "branch": "rodada/omega5p",
+  "tipo": "Backend + migração aditiva. Módulo yard CRIA net-new (Branch é organizacional, não pátio físico). Serviço de ocupação transacional que PROVA o invariante I1. Sem superfície HTTP de allocate/vacate/move (deferida ao PR-06, quando o ImpoundProcess existir).",
+  "models_criados": [
+    "Yard (yards): id, tenant_id, branch_id? (FK composta RESTRICT), name, address, capacity_hint?, timezone (default America/Sao_Paulo), active, audit, timestamps",
+    "YardArea (yard_areas): árvore quadra→corredor→fileira (parent self-ref NoAction), kind (BLOCK|CORRIDOR|ROW), covered, vehicle_class (ANY|MOTORCYCLE|HEAVY)",
+    "YardSpot (yard_spots): area_id (FK CASCADE), code, covered, vehicle_class, status (FREE|OCCUPIED|BLOCKED), current_process_id? (SEM FK dura — ImpoundProcess é PR-05); @@unique([tenant_id,area_id,code])"
+  ],
+  "migrations": [
+    "20260833000000_add_yard — ADITIVA up-only: +índice branches_tenant_id_id_key (habilita FK composta), CREATE TABLE das 3, RLS ENABLE+FORCE+POLICY (clone de 20260831000000:75-80), índice PARCIAL ÚNICO yard_spots(tenant_id,current_process_id) WHERE current_process_id IS NOT NULL (I1b), CHECK yard_spots_status_process_coherence_chk (status⇄current_process_id). Provada up→down→re-up em erp-postgres pelo dba-guardião, drift ZERO nas tabelas do PR."
+  ],
+  "invariante_I1": {
+    "I1a_uma_vaga_um_processo": "SELECT ... FOR UPDATE na linha da vaga dentro de withTenantRls→$transaction + guarda status='FREE' → concorrente serializa → 409 SPOT_NOT_FREE. Provado: yard-occupancy-concurrency Promise.all(N=5) na MESMA vaga → exatamente 1 sucesso.",
+    "I1b_um_processo_uma_vaga": "índice parcial ÚNICO (tenant_id, current_process_id) WHERE NOT NULL → 2ª tentativa de estacionar o mesmo processId → P2002 → 409 PROCESS_ALREADY_PARKED. Provado: mesmo processId em N=5 vagas → exatamente 1 sucesso.",
+    "check_coerencia": "CHECK (OCCUPIED ⇒ current_process_id NOT NULL) ∧ (≠OCCUPIED ⇒ NULL) — impede OCCUPIED sem processo e processo em FREE/BLOCKED. Provado funcionalmente pelo dba-guardião (tx ROLLBACK)."
+  },
+  "permissao": "3 permissões novas yard:read/create/update nas 4 pontas (catalog.ts + tests/core-saas.test.ts expectedPermissionCatalog posicional + prisma/seed.ts + RBAC_MATRIX.md), distribuição ESPELHA branches:* nos 13 papéis (read amplo exceto finance/inventory/support; create/update só super_admin/platform_admin/tenant_admin/manager; field_technician/technician/operator/field_dispatcher só read). yard:manage NÃO criado (deferido ao PR-06 — sem rota/guard = permissão morta). tenant_admin herda (não é platform:).",
+  "modulos": [
+    "src/modules/yard/{types,validators,dto,repository,yard-prisma.repository,service,controller,routes,index} (skeleton canônico; OccupancyService com FOR UPDATE) + registro em src/app.ts",
+    "prisma/schema.prisma (3 models + Branch @@unique([tenant_id,id]) + back-relations) + prisma/migrations/20260833000000_add_yard/migration.sql",
+    "src/modules/core-saas/permissions/catalog.ts + prisma/seed.ts + RBAC_MATRIX.md + tests/core-saas.test.ts"
+  ],
+  "rns_cobertas": [
+    "RN-PAT-01 (I1) ocupação transacional 1-para-1 vaga×processo (allocate/vacate/move como serviço; provado sob concorrência real)",
+    "RN-PAT-02 (parcial) primitivo move de realocação de vaga preservando o processo (transferência ENTRE pátios completa = PR-06)"
+  ],
+  "rns_total_pr": 2,
+  "deferido": [
+    "FK dura em current_process_id → PR-05 (quando ImpoundProcess existir)",
+    "match vehicle_class vaga×veículo na alocação → PR-06 (precisa do veículo do processo)",
+    "superfície HTTP allocate/vacate/move → PR-06",
+    "RN-PAT-02 transferência entre pátios completa (evento TRANSFERIDO_PATIO + CustodyEvent) → PR-06",
+    "yard:manage → PR-06"
+  ],
+  "cobertura_testes": {
+    "backend": "tests/yard.test.ts (NOVO, InMemory 18: CRUD pátio/área/vaga; guards de ocupação; unique (tenant,area,code); coerência status⇄process; duplicate_area no topo NULL-parent) + tests/yard-occupancy-concurrency.test.ts (NOVO, DB-gated 3: I1a FOR UPDATE, I1b partial-unique, move preserva processo) + tests/rls-tenant-isolation.test.ts (bloco PR-01: 3 tenants, cross-tenant invisível/updateMany 0, teardown FK-safe yard_spots→yard_areas→yards). Execução real: backend 1521→1542 (+21: 18 InMemory + 3 concorrência DB-gated), 0 fail, 6 skip. core-saas 26/26 (catálogo posicional + distribuição por papel)."
+  },
+  "d_records": [
+    "D-Ω5P-YARD-01 (Yard→Branch FK composta RESTRICT + índice aditivo branches_tenant_id_id_key)",
+    "D-Ω5P-YARD-02 (I1 = índice parcial único [I1b] + SELECT FOR UPDATE [I1a] + CHECK de coerência)",
+    "D-Ω5P-YARD-03 (yard:manage deferido ao PR-06 — sem permissão morta)",
+    "D-Ω5P-YARD-04 (self-ref NoAction; guard de nome-único-no-topo [parent NULL] elevado ao service compartilhado — InMemory e Prisma rejeitam homônimos de topo com 409 duplicate_area)"
+  ],
+  "junta": {
+    "agente-dba-guardiao": "APROVADO (migração aditiva up-only; up→down→re-up provado com drift ZERO; FKs compostas tenant-first RESTRICT/CASCADE; índice parcial único inclui tenant_id + predicado; CHECK coerente [prova funcional viva]; RLS forced nas 3; teardown FK-safe; base deixada intacta)",
+    "coordenador-de-acessos": "APROVADO (0 cond; yard:* espelha branches:* nos 13 papéis; 4 pontas; core-saas 26/26 deepEqual posicional; yard:manage ausente [sem permissão morta]; rotas verbo×permissão corretas + registradas em app.ts; papéis de campo não escrevem)",
+    "omega5p-avaliador": "APROVADO_CONDICIONADO → APROVADO (Seção 10 verde; I1 PROVADO sob corrida real no Postgres; §allowlist sem tenant_id; sem regressão nas suítes sensíveis; única condição = artefato de KPI ausente → SANADA por este arquivo)",
+    "veredito": "APROVADO 3/3 (0 CRÍTICO; I1 provado; condição de KPI sanada)"
+  },
+  "kpi_repo_wide": {
+    "backend": "1521->1542 (+21; 18 InMemory + 3 concorrência DB-gated; CI-memória 6 skip)",
+    "frontend_smoke": "850 (inalterado — backend-only)",
+    "flutter_tests": "807 (inalterado — backend-only)",
+    "blocks": "88->89"
+  },
+  "coexistencia": "domínio de frota (Vehicle) e branches INTOCADOS (branches só ganha índice aditivo); catalog cresce +3 perms; sem rota HTTP de ocupação (deferida); sem regressão (1542 pass/0 fail nas suítes sensíveis).",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}
