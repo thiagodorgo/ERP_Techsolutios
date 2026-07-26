@@ -1366,6 +1366,62 @@ if (!connectionString) {
       const tenantCArea = await withTenantRls(client, tenantC.id, (tx) => tx.yardArea.findUnique({ where: { id: yardC.area_id } }));
       assert.equal(tenantCArea?.name, "Quadra RLS", "tenant C yard area stays visible + untouched in-tenant");
 
+      // Ω5P PR-02 (D-Ω5P-JUR-*) — jurisdiction_profiles nos 3 tenants EFÊMEROS (A, B, C), cada um com OS 2 PERFIS
+      // (1 PUBLIC_AGREEMENT + 1 PRIVATE_CONTRACT — cumpre J §2.4 "3 tenants + 2 perfis"). Prova: invisível sem
+      // contexto + cross-tenant updateMany count=0 + visível/intocado in-tenant. RLS ENABLE/FORCE + policy da
+      // migration 20260834000000; tenant_id 1º de todo índice. FK única = tenant (RESTRICT).
+      const insertJurisdictionPair = async (tx: typeof client, tenantId: string) => {
+        const [pub] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO jurisdiction_profiles (tenant_id, name, scope)
+          VALUES (${tenantId}::uuid, 'RLS Convênio Público', 'PUBLIC_AGREEMENT') RETURNING id
+        `;
+        const [priv] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO jurisdiction_profiles (tenant_id, name, scope, daily_cap)
+          VALUES (${tenantId}::uuid, 'RLS Contrato Privado', 'PRIVATE_CONTRACT', 'UNLIMITED') RETURNING id
+        `;
+        return { public_id: pub.id, private_id: priv.id };
+      };
+      const jurA = await withTenantRls(client, tenantA.id, (tx) => insertJurisdictionPair(tx as typeof client, tenantA.id));
+      const jurB = await withTenantRls(client, tenantB.id, (tx) => insertJurisdictionPair(tx as typeof client, tenantB.id));
+      const jurC = await withTenantRls(client, tenantC.id, (tx) => insertJurisdictionPair(tx as typeof client, tenantC.id));
+
+      // perfis invisíveis sem app.current_tenant_id.
+      const jurWithoutContext = await client.jurisdictionProfile.findMany({
+        where: { id: { in: [jurA.public_id, jurA.private_id, jurB.public_id, jurC.private_id] } },
+      });
+      assert.deepEqual(
+        jurWithoutContext.map((profile) => profile.id),
+        [],
+        "tenant-scoped jurisdiction profiles must not be visible without app.current_tenant_id",
+      );
+
+      // A vê só os seus 2 perfis; cross-tenant updateMany (B/C) count=0.
+      const tenantAJurView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.jurisdictionProfile.findMany({
+          where: { id: { in: [jurA.public_id, jurA.private_id, jurB.public_id, jurC.private_id] } },
+        });
+        const crossTenantUpdate = await tx.jurisdictionProfile.updateMany({
+          where: { id: { in: [jurB.public_id, jurC.private_id] } },
+          data: { active: false },
+        });
+        return { visibleIds: visible.map((profile) => profile.id).sort(), crossUpdatedRows: crossTenantUpdate.count };
+      });
+      assert.deepEqual(
+        tenantAJurView.visibleIds,
+        [jurA.public_id, jurA.private_id].sort(),
+        "tenant A must only see its own jurisdiction profiles (not tenant B/C)",
+      );
+      assert.equal(
+        tenantAJurView.crossUpdatedRows,
+        0,
+        "tenant A must not update tenant B/C jurisdiction profiles",
+      );
+
+      const tenantBProfile = await withTenantRls(client, tenantB.id, (tx) => tx.jurisdictionProfile.findUnique({ where: { id: jurB.public_id } }));
+      assert.equal(tenantBProfile?.active, true, "tenant B jurisdiction profile stays visible + untouched in-tenant");
+      const tenantCProfile = await withTenantRls(client, tenantC.id, (tx) => tx.jurisdictionProfile.findUnique({ where: { id: jurC.private_id } }));
+      assert.equal(tenantCProfile?.daily_cap, "UNLIMITED", "tenant C private jurisdiction profile stays visible + untouched in-tenant");
+
       // Ω4C PR-20 (RN-NOTIFCEN-01/-04) — Central tenant-wide sobre scheduled_notifications, via os métodos REAIS
       // do repositório (listByTenant/cancelCentral) sob withTenantRls, reusando as 3 linhas A/B/C acima. Prova:
       // a central de A LISTA só a de A (não a de B/C) e CANCELA só pendentes do próprio tenant (cross-tenant → null,
@@ -2599,6 +2655,13 @@ if (!connectionString) {
             },
           });
           await tx.checklistTemplate.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          // Ω5P PR-02 — jurisdiction_profiles ANTES do tenant (FK única = tenant, RESTRICT). Sem dependentes ainda
+          // (ImpoundProcess = PR-05), então cai isolado — só precede o tenant. TEARDOWN FK-SAFE.
+          await tx.jurisdictionProfile.deleteMany({
             where: {
               tenant_id: tenantId,
             },

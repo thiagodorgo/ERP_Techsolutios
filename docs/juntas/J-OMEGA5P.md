@@ -197,5 +197,123 @@ Junta (≥3): `omega5p-avaliador` (VETO) + `agente-dba-guardiao` (migração + t
 - **coordenador-de-acessos** → `APROVADO` (0 cond): `yard:read/create/update` nas 4 pontas; distribuição **espelha `branches:*` exatamente nos 13 papéis** (read amplo exceto finance/inventory/support; create/update só admins+manager; papéis de campo só read → POST/PATCH 403); `core-saas.test` 26/26 (deepEqual posicional + asserts por papel); **`yard:manage` ausente** (sem permissão morta); rotas verbo×permissão corretas + registradas em `src/app.ts:124`; backend é a autoridade. Sem nav/frontend (UI = PR-04), como esperado.
 - **Decisão:** verde (3 APROVADO, 0 CRÍTICO; I1 provado sob concorrência real; condição de KPI sanada) → PR-01 mergeia. backend **1521→1542** (+21), smoke 850 e flutter 807 inalterados (backend-only), blocks **88→89**. D-records **D-Ω5P-YARD-01..04** ratificados. Deferido ao PR-05/06: FK dura em `current_process_id`, match `vehicle_class`, superfície HTTP de ocupação, transferência entre pátios completa, `yard:manage`. Próximo: **PR-02 `jurisdiction`**.
 
+### PR-02 — PLANO (planejador, 2026-07-25) — módulo `jurisdiction` (perfis normativos por UF/órgão/contrato)
+> **Escopo:** SÓ backend + migração aditiva. **UI é PR-04** (nada de frontend aqui). Fonte: `FASE0_RECON.md` §2 (`jurisdiction`=CRIA, net-new) + §5 (a/d/e/f parametrizados) + ESTUDO §9 (parametrização nacional) + §2.2/§2.3 (prazos federais + regime intertemporal) + prompt PR-02. Fatia = **fundação normativa**: o CRUD do perfil + o **serviço de resolução de defaults federais**, única fonte de verdade para o motor de diárias (I4, `charging` PR-07) e os relógios do leilão (I6, `auction`/notificações PR-09/12). **RN-JUR-01** (todo processo referencia um perfil): aqui só o perfil + `@@unique([tenant_id, id])` forward-compat; **NÃO** crio FK a partir de `ImpoundProcess` (PR-05) nem de qualquer entidade inexistente.
+
+#### (a) Schema Prisma (1 model CRIA) + índices tenant-first + migração `20260834000000_add_jurisdiction`
+Convenção confirmada por leitura (`Yard:2607`, `custom_recipient_ids Json @default("[]"):335`, migração `20260833000000_add_yard`): PascalCase model, colunas snake_case, `@db.Uuid` PK `dbgenerated("gen_random_uuid()")`, `@db.Timestamptz(6)`, `@@map` plural, `tenant_id` 1º em todo índice, enums em **inglês validados na APP** (SEM enum-CHECK no banco — padrão FASE0 §3.5), labels PT-BR no DTO. **Sem dinheiro/km nesta fatia** (só prazos Int e enums; valores tarifários vivem em `tariffs`/PR-03). Última migração = `20260833000000` ⇒ próxima = **`20260834000000_add_jurisdiction`** (aditiva, R6). **Confirmado latest+1.**
+
+```prisma
+model JurisdictionProfile {                    // tabela "jurisdiction_profiles"
+  id                          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                   String   @db.Uuid
+  name                        String
+  scope                       String                          // PUBLIC_AGREEMENT | PRIVATE_CONTRACT (app-validado)
+  owner_notif_days            Int      @default(10)            // Res. 1025 art. 15 (notificacao <=10 dias)
+  notice_edict_day            Int      @default(30)            // Res. 1025 art. 26 (edital complementar >=30 dias)
+  auction_eligible_day        Int      @default(60)            // CTB 328 (Lei 13.160/2015) / Res. 1025 art. 25 (nao reclamado 60d)
+  auction_edict_business_days Int      @default(15)            // Lei 14.133/2021 (edital do leilao >=15 dias uteis)
+  daily_model                 String   @default("ROLLING_24H") // ROLLING_24H | CALENDAR — Res. 1025 art. 21 par.1
+  daily_cap                   String   @default("SIX_MONTHS")  // SIX_MONTHS | THIRTY_DAYS_LEGACY | UNLIMITED — CTB 271 par.10 / Tema 124
+  release_requirements        Json     @default("[]")          // checklist [{code,label,required}] — CTB 271 par.1 / Res. 1025 art. 23-24
+  notes                       String?
+  active                      Boolean  @default(true)
+  created_by                  String?  @db.Uuid
+  updated_by                  String?  @db.Uuid
+  created_at                  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant                      Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])                     // forward-compat: FK composta de ImpoundProcess (PR-05, RN-JUR-01)
+  @@unique([tenant_id, name])                   // chave natural (D-Ω5P-JUR-01) — nome unico por tenant, independe do scope
+  @@index([tenant_id])
+  @@index([tenant_id, scope])                   // filtrar por natureza (publico-credenciado x privado-contratual)
+  @@index([tenant_id, active])
+  @@map("jurisdiction_profiles")
+}
+```
+Toque **relação-only** em model existente: `Tenant` ganha `jurisdiction_profiles JurisdictionProfile[]` (back-relation; **zero DDL** em `tenants` — mais simples que o PR-01, que precisou do índice em `branches`). **Nenhuma** coluna nova/DROP/ALTER em tabela existente; **nenhuma** FK a partir de entidades inexistentes.
+
+**Migração `20260834000000_add_jurisdiction` (aditiva pura, up-only, clona o padrão de `20260833000000_add_yard`):**
+1. `CREATE TABLE "jurisdiction_profiles"` campo a campo acima; PK uuid; `release_requirements` JSONB NOT NULL DEFAULT array-vazio (Prisma `Json`->`jsonb`, precedente `custom_recipient_ids:335`).
+2. Índices: `jurisdiction_profiles_tenant_id_id_key` (UNIQUE, forward-compat FK composta do PR-05), `..._tenant_id_name_key` (UNIQUE, chave natural), `..._tenant_id_idx`, `..._tenant_id_scope_idx`, `..._tenant_id_active_idx` — todos `tenant_id` 1º.
+3. FK: `tenant_id` -> `tenants(id)` ON DELETE RESTRICT ON UPDATE CASCADE.
+4. **CHECK estrutural de integridade** (NÃO enum-CHECK; mesmo espírito do `yard_spots_status_process_coherence_chk` do PR-01 — belt-and-suspenders sobre a validação app-level): `CONSTRAINT "jurisdiction_profiles_positive_deadlines_chk" CHECK (owner_notif_days > 0 AND notice_edict_day > 0 AND auction_eligible_day > 0 AND auction_edict_business_days > 0)` — prazo <= 0 é impossível no domínio; a `agente-dba-guardiao` revisa (D-Ω5P-JUR-05). **Os enums (scope/daily_model/daily_cap) NÃO têm CHECK** (validados na APP, padrão da casa).
+5. **RLS por tabela** — `ENABLE` + `FORCE ROW LEVEL SECURITY` + `DROP POLICY IF EXISTS` + `CREATE POLICY jurisdiction_profiles_tenant_isolation` USING/WITH CHECK comparando `tenant_id` ao `app.current_tenant_id` via `NULLIF(current_setting(...))::uuid` — **idêntica** à policy das 3 tabelas do yard (migração `20260833000000:138-157`, que clona `20260831000000:75-80`).
+6. Rollback runbook (comentado): `DROP TABLE IF EXISTS "jurisdiction_profiles" CASCADE;` (tabela NOVA; reverter o PR remove tudo sem afetar dado existente — não há toque DDL em tabela pré-existente a desfazer).
+
+#### (b) Serviço de resolução de defaults federais (foundation p/ charging I4 e auction I6)
+Arquivo dedicado `jurisdiction.defaults.ts` (puro, zero dependência — `charging`/`auction` importam depois sem acoplar ao service). Uma **única constante canônica** espelha os `@default` das colunas (norma federal escrita uma vez):
+```ts
+export const FEDERAL_DEFAULTS = {
+  ownerNotifDays: 10,           // Res. 1025 art. 15
+  noticeEdictDay: 30,           // Res. 1025 art. 26
+  auctionEligibleDay: 60,       // CTB 328 / Res. 1025 art. 25
+  auctionEdictBusinessDays: 15, // Lei 14.133/2021
+  dailyModel: "ROLLING_24H",    // Res. 1025 art. 21 par.1
+  dailyCap: "SIX_MONTHS",       // CTB 271 par.10 (Lei 13.281/2016) + 328 par.5
+} as const;
+export const TEMA_124_LEGACY_CAP = "THIRTY_DAYS_LEGACY" as const; // Tema 124/STJ — estada 30 dias no regime anterior
+```
+`resolveDefaults(scope)` devolve os defaults para pré-preencher um perfil NOVO daquele scope (o que o `create` aplica quando o cliente omite um campo):
+- **PUBLIC_AGREEMENT** -> `FEDERAL_DEFAULTS` inalterado (regime estrito: teto 6 meses, rolling-24h, 10/30/60/15 d.u.).
+- **PRIVATE_CONTRACT** -> `{ ...FEDERAL_DEFAULTS, dailyCap: "UNLIMITED" }` (custódia privada não tem o teto de estada do CTB; os prazos federais seguem como referência, mas o pátio privado tipicamente não roda o leilão administrativo do art. 328 — decisão D-Ω5P-JUR-02).
+- **Teto intertemporal (I4):** `THIRTY_DAYS_LEGACY` (Tema 124) NÃO é escolha de scope — é escolha por **data de entrada**, aplicada pelo `charging` (PR-07) lendo `profile.dailyCap`. PR-02 só expõe o enum + a constante para o PR-07 ter uma fonte única.
+- Exposto via **`GET /jurisdiction-defaults?scope=`** (read-only, `jurisdiction:read`) — endpoint que a UI (PR-04) chama para pré-preencher o formulário; exercita o `resolveDefaults` por HTTP. Path **separado** de `/jurisdiction-profiles/:profileId` (zero colisão de rota, estilo dos paths distintos `/yard-areas`,`/yard-spots` do PR-01).
+- (Opcional, sem forçar) `FEDERAL_RELEASE_REQUIREMENTS` = baseline sugerido de checklist de liberação que a UI pode ofertar; a coluna nasce vazia (D-Ω5P-JUR-04).
+
+#### (c) Validações + chave natural
+`jurisdiction.validators.ts` (espelha `yard.validators.ts`, `JurisdictionError(statusCode,code,reason,msg)`):
+- `parseScope` em {PUBLIC_AGREEMENT, PRIVATE_CONTRACT}; `parseDailyModel` em {ROLLING_24H, CALENDAR}; `parseDailyCap` em {SIX_MONTHS, THIRTY_DAYS_LEGACY, UNLIMITED} (uppercase+trim; inválido -> 400).
+- `parsePositiveDeadline(field)`: Int > 0 e <= 3650 (10 anos, sanity) — **prazos > 0** exigidos (400 `invalid_deadline`). Belt-and-suspenders com o CHECK (a).
+- `parseName`: não-vazio, <= 160 (mirror yard); `notes?` <= 500.
+- `parseReleaseRequirements`: array de objetos `{ code:string(<=60), label:string(<=160), required?:boolean }`; máx. 50 itens; qualquer outro shape -> 400 `invalid_release_requirements`. Default vazio.
+- **Chave natural = `@@unique([tenant_id, name])` (D-Ω5P-JUR-01):** o `scope` é atributo de dado, **não** de identidade. Um tenant pode operar público E privado, mas o **nome** é como humanos e o futuro convênio/contrato (FK do PR-05) referenciam o perfil; nome único por tenant evita referência ambígua. Colisão de nome -> **409 `JURISDICTION_CONFLICT`** (P2002 traduzido no `-prisma.repository` + guard app-level no InMemory p/ paridade). Não uso `(tenant_id, name, scope)` (permitiria dois "Tabela X" homônimos confusos).
+
+#### (d) Permissões novas — as 4 pontas (espelha `yard:*`/`branches:*`)
+Distribuição **idêntica a `yard:*`** (confirmada no catálogo: read amplo; create/update = gestão+admins). Entram só as **3** (`jurisdiction:read/create/update`); **`jurisdiction:manage` NÃO existe** (sem guard/rota = permissão morta — mesma disciplina do `yard:manage` diferido).
+- **`src/modules/core-saas/permissions/catalog.ts`:** +`jurisdiction:read` (logo após `yard:read`), +`jurisdiction:create` (após `yard:create`), +`jurisdiction:update` (após `yard:update`) — preserva os 3 blocos read/create/update do catálogo; em `manager` (read+create+update, ao lado de `yard:*`); `jurisdiction:read` também em `operator`,`field_dispatcher`,`technician`,`field_technician`,`viewer`,`auditor` (**mesmo conjunto de `branches:read`/`yard:read`** — NÃO finance/inventory/support). `tenant_admin`/`super_admin`/`platform_admin` herdam via filtro não-`platform:`.
+- **`tests/core-saas.test.ts`:** as 3 no `expectedPermissionCatalog` na **mesma ordem/posição** (deepEqual posicional) + asserts de distribuição por papel (espelha o bloco `yard:*` linhas 357-399) + assert de que `jurisdiction:manage` NÃO está no catálogo.
+- **`prisma/seed.ts`:** 3 descrições PT-BR em `permissionDescriptions` (ex.: `jurisdiction:read` = Consultar perfis normativos — prazos, diaria, teto, exigencias — do tenant; create/update análogos).
+- **`RBAC_MATRIX.md`:** 3 linhas de Perfis Normativos (read/create/update) com a mesma matriz de `yard`.
+
+#### (e) Skeleton canônico (espelha `src/modules/yard/*`) + registro em `src/app.ts`
+`src/modules/jurisdiction/`: `jurisdiction.types.ts` (JurisdictionProfile + inputs Create/Update/List + enums-const `PROFILE_SCOPES`/`DAILY_MODELS`/`DAILY_CAPS` + `JurisdictionError`) · `jurisdiction.defaults.ts` (FEDERAL_DEFAULTS + resolveDefaults, ver (b)) · `jurisdiction.validators.ts` (parsers de (c)) · `jurisdiction.dto.ts` (`toJurisdictionProfileDto`/list + labels PT-BR: scope Convênio público/Contrato privado, daily_model 24h corridas/Dia-calendário, daily_cap 6 meses (art. 271 par.10)/30 diárias (Tema 124)/Ilimitado (contratual); **§allowlist NUNCA expõe `tenant_id`**) · `jurisdiction.repository.ts` (interface + `InMemoryJurisdictionRepository`) · `jurisdiction-prisma.repository.ts` (`PrismaJurisdictionRepository` sobre `Prisma.TransactionClient` + `RlsPrismaJurisdictionRepository` com **`withTenantRls`** + `createPrismaJurisdictionRepository()`) · `jurisdiction.service.ts` (`JurisdictionService`; `createDefaultJurisdictionService()` com env-gate `env.CORE_SAAS_PERSISTENCE!=="prisma"`->memory, senão import dinâmico do `-prisma.repository`; `resetJurisdictionRuntimeForTests`) · `jurisdiction.controller.ts` (`recordRequestAuditBestEffort` em toda escrita — metadados sem PII/valores: só `{scope, active}`) · `jurisdiction.routes.ts` (`JURISDICTION_PERMISSIONS`, `tenantContextMiddleware`+`createPersistentRbacContextMiddleware`, `requirePermission`) · `index.ts` (barrel). **Registro em `src/app.ts`:** `app.use("/api/v1", attachAuthenticatedActor(), createJurisdictionRouter());` — **incluir `src/app.ts` no `git add`** (senão CI `route_not_found`). Rotas sem colisão: `GET /jurisdiction-defaults` (declarada antes de qualquer `:param`), `GET/POST /jurisdiction-profiles`, `GET/PATCH /jurisdiction-profiles/:profileId`.
+
+#### (f) Escopo PERMITIDO x PROIBIDO (caminhos exatos)
+**PERMITIDO:** `prisma/schema.prisma` (1 model novo + back-relation `jurisdiction_profiles` em Tenant) · `prisma/migrations/20260834000000_add_jurisdiction/migration.sql` · `src/modules/jurisdiction/**` (novo) · `src/app.ts` (1 linha) · `src/modules/core-saas/permissions/catalog.ts` · `tests/core-saas.test.ts` · `tests/rls-tenant-isolation.test.ts` · `tests/jurisdiction.test.ts` (novo) · `prisma/seed.ts` (só `permissionDescriptions`) · `RBAC_MATRIX.md` · `docs/kpis/omega5p/KPI_PR-02.*` · `docs/juntas/J-OMEGA5P.md`.
+**PROIBIDO:** `frontend/**` (UI = PR-04) · criar `impound`/`ImpoundProcess`/qualquer FK a partir de entidade inexistente (PR-05) · alterar coluna/DROP/ALTER em model existente (só back-relation em Tenant) · `yard`/`tariffs` (PR-01 mergeado / PR-03) · adicionar `notification_channels`/`vehicle_categories` (deferidos, ver decisões) · PWA/BFF público · enum-CHECK no banco · `.env`/infra/CI · `git add .` (stage por caminho) · push/PR antes do voto registrado da junta.
+
+#### (g) Bateria (Seção 10) + testes-alvo
+**Bateria:** `npx prisma validate` + `prisma migrate diff` sem drift · `npm run lint` · `npm run build` · `npm test` (inclui `core-saas`+`jurisdiction`+rls) · `npm --prefix frontend run lint/build` (confirmar **zero regressão**; PR-02 não toca front) · `node --check` dos `app.js` de KPI · `git status --short` sem nada fora de (f) · `git diff --check`.
+**Testes-alvo:**
+1. **`tests/jurisdiction.test.ts` (InMemory, sempre roda):** (i) **CRUD** completo (create com defaults aplicados / get / list com filtro `scope` / patch); (ii) **defaults federais corretos** — `resolveDefaults("PUBLIC_AGREEMENT")` = {10,30,60,15,ROLLING_24H,SIX_MONTHS} e `resolveDefaults("PRIVATE_CONTRACT").dailyCap === "UNLIMITED"`; create omitindo campos herda o default do scope; `TEMA_124_LEGACY_CAP === "THIRTY_DAYS_LEGACY"`; (iii) **scope público x privado** — ambos criáveis, filtro por scope isola; (iv) **validação de prazos** — `owner_notif_days` 0/negativo/`>3650` -> 400; enum inválido de scope/daily_model/daily_cap -> 400; (v) **chave natural** — 2º perfil com mesmo `name` no mesmo tenant -> 409 `JURISDICTION_CONFLICT`; (vi) `release_requirements` shape inválido -> 400; array válido persiste; (vii) escopo por tenant.
+2. **`tests/rls-tenant-isolation.test.ts` (3 tenants A/B/C, DB-gated):** inserir `jurisdiction_profiles` nos 3 tenants efêmeros com **os 2 perfis** (1 PUBLIC_AGREEMENT + 1 PRIVATE_CONTRACT — cumpre J §2.4 "3 tenants + 2 perfis"); provar invisível sem `app.current_tenant_id` + cross-tenant `updateMany` count=0 + visível/intocado in-tenant. **Teardown FK-safe:** `jurisdiction_profiles` (só FK = tenant, RESTRICT) deletado **ANTES** de `tenant` — inserir o `deleteMany` de `jurisdictionProfile` junto do bloco yard->branch->tenant (linha ~2609).
+3. **`tests/core-saas.test.ts`:** catálogo íntegro (deepEqual posicional com as 3 novas) + distribuição `jurisdiction:*` por papel + `jurisdiction:manage` ausente.
+**KPI por PR:** `docs/kpis/omega5p/KPI_PR-02.json` + histórico + snapshot (D-KPI-PER-PR). Contagem de testes vem de **execução real no PR** (não copiar do PR-01); blocks 89->90 (novo módulo). backend cresce pelos testes novos (InMemory sempre + rls DB-gated) — número final = execução real do dev.
+
+#### (h) Aderência normativa (artigo citado por parâmetro)
+- `owner_notif_days=10` -> **Res. CONTRAN 1025/2026 art. 15** (notificação ao proprietário em <=10 dias; preferencialmente SNE — art. 282-A CTB).
+- `notice_edict_day=30` -> **Res. 1025 art. 26** (edital complementar após 30 dias sem regularização+retirada, acessível >=10 dias).
+- `auction_eligible_day=60` -> **CTB art. 328** (Lei 13.160/2015, veículo não reclamado em 60 dias) + **Res. 1025 art. 25**.
+- `auction_edict_business_days=15` -> **Lei 14.133/2021** (edital do leilão com antecedência mínima de 15 dias úteis).
+- `daily_model=ROLLING_24H` -> **Res. 1025 art. 21 par.1** (diária = período de 24h contado da entrada; nova diária só após transcorrido cada período).
+- `daily_cap=SIX_MONTHS` -> **CTB art. 271 par.10** (Lei 13.281/2016; espelhado no art. 328 par.5) — teto de 6 meses de estada.
+- `daily_cap=THIRTY_DAYS_LEGACY` -> **Tema Repetitivo 124/STJ** (REsp 1.104.775/RS) — estada limitada a 30 dias no regime anterior (regime intertemporal por data de entrada, ESTUDO §2.3).
+- `daily_cap=UNLIMITED` -> **contratual** (custódia privada — o teto do CTB não incide fora da remoção por autoridade).
+- `release_requirements` -> **CTB art. 271 par.1** (restituição exige quitação prévia de multas/taxas/remoção/estada) + **Res. 1025 arts. 23-24** (checklist documental de liberação, configurável por perfil).
+- **Neutralidade white-label:** domínio/labels só perfil normativo / convênio público / contrato privado / autoridade solicitante — nenhum termo de público-alvo.
+- **Junta do PR-02 (>=3):** `omega5p-avaliador` (VETO) + **`agente-dba-guardiao` OBRIGATÓRIO** (migração + CHECK estrutural) + `coordenador-de-acessos` (RBAC `jurisdiction:*`). `agente-secops` **não** requerido (não toca superfície pública/PWA).
+
+**Decisões da fatia (registrar):** **D-Ω5P-JUR-01** chave natural = `@@unique([tenant_id, name])` (scope é atributo, não identidade) + `@@unique([tenant_id, id])` forward-compat p/ a FK composta do `ImpoundProcess` (PR-05). **D-Ω5P-JUR-02** defaults federais = constante canônica única (`jurisdiction.defaults.ts`) espelhando os `@default` das colunas; `resolveDefaults(scope)` é a foundation de charging I4 / auction I6; `PRIVATE_CONTRACT` default cap = `UNLIMITED`; `THIRTY_DAYS_LEGACY` (Tema 124) é intertemporal por data de entrada (charging PR-07), não por scope. **D-Ω5P-JUR-03** `notification_channels` (SNE/POSTAL/EDICT, SNE-only >=2027) e `vehicle_categories` **DEFERIDOS** — sem consumidor em PR-02 (canais -> PR-09/I6 trilha de notificação; categorias -> eixo da tarifa PR-03, FASE0 §5(e)); ambos aditivos quando o PR consumidor chegar (mesma disciplina do `yard:manage`; evita campo morto). **D-Ω5P-JUR-04** `release_requirements Json @default("[]")`, shape app-validado `[{code,label,required}]`; coluna nasce vazia (documentos variam por órgão), a UI/PR-04 oferta um baseline federal sugerido. **D-Ω5P-JUR-05** prazos>0 no app (primário) **E** CHECK estrutural na migração (belt-and-suspenders; NÃO enum-CHECK; `dba-guardiao` revisa).
+
+### PR-02 — `jurisdiction` — VOTO DA JUNTA (2026-07-25) — **APROVADO 3/3** (condição de KPI sanada)
+Junta (≥3): `omega5p-avaliador` (VETO) + `agente-dba-guardiao` (migração + CHECK estrutural) + `coordenador-de-acessos` (RBAC `jurisdiction:*`). `agente-secops` não requerido (sem superfície pública nesta fatia).
+- **omega5p-avaliador** → **APROVADO_CONDICIONADO** (execução real): `npx prisma validate`=**valid**; `npm run check`/`build`/`git diff --check`=**limpos**; `tests/jurisdiction.test.ts` **18/18 pass**; `tests/core-saas.test.ts` **26/26 pass** (deepEqual posicional das 3 novas + distribuição por papel + `jurisdiction:manage` ausente). Suíte cheia: **34 not-ok = 100% ambientais** (`.env CORE_SAAS_PERSISTENCE=prisma` sem Postgres no sandbox: financial-entries/inventory/mobile-contracts/JWT-boot/persistence-defaults) — **ZERO jurisdiction**, não-regressão por construção (PR-02 só adiciona; o app sobe com o router novo — provado pelo boot do core-saas). Delta **+18** confirmado sobre baseline 1542 (KPI_PR-01) ⇒ **1560** (total exato a reconciliar no CI com Postgres — a full-suite trava no sandbox por retries de conexão). `migrate diff --from-migrations` NÃO executável aqui (repo sem `migration_lock.toml` + sem shadow-DB) → drift verificado por inspeção campo-a-campo (migração reproduz o schema 1:1; nomes = convenção Prisma → drift ZERO por construção; CHECK raw = mesmo padrão do yard, drift-ZERO provado em base viva no PR-01). §allowlist OK (DTO/list/defaults/auditoria NUNCA expõem tenant_id; metadado = `{scope,active}`). White-label neutro (0 termo de público-alvo/polícia). Defaults federais corretos (PUBLIC=10/30/60/15·ROLLING_24H·SIX_MONTHS; PRIVATE→dailyCap UNLIMITED; THIRTY_DAYS_LEGACY intertemporal, NÃO por scope; @default das colunas batem com FEDERAL_DEFAULTS). Status 400/409 = consistente com o padrão da casa (yard) — **aceito**. **CONDIÇÃO (MÉDIA, docs-only, idêntica à do PR-01):** `docs/kpis/omega5p/KPI_PR-02.*` **AUSENTE** (só KPI_PR-00/01 existem) → criar com números reais; sanável sem re-review de código.
+- **agente-dba-guardiao** (base viva) → **APROVADO**: reproduziu up→down→re-up em `erp-postgres` com **`\d jurisdiction_profiles` byte-idêntico pós-re-up** e `_prisma_migrations` íntegro; 100% aditiva up-only (`CREATE TABLE` + 6 índices tenant-first + FK tenant→RESTRICT + CHECK `positive_deadlines` **provado vivo** [23514 em prazo=0/negativo, tx ROLLBACK] + RLS ENABLE/FORCE/policy clonada de `20260833000000:138-157`); ZERO DDL em `tenants`; `@@unique([tenant_id,id])` + `@@unique([tenant_id,name])`; nenhum DROP/ALTER destrutivo; teardown FK-safe (teste rls 1/1 vivo). Base deixada intacta (0 linhas, up-to-date). Drift repo-wide pré-existente (JSON `@default`) não toca `jurisdiction_profiles`.
+- **coordenador-de-acessos** (LOGIN REAL) → **APROVADO** (0 cond): subiu o app e autenticou os **13 papéis** — matriz papel×rota×status idêntica a `yard:*`/`branches:*` (create/update só super/platform/tenant_admin/manager → 201/200; operator/field_dispatcher/technician/field_technician/viewer/auditor → 403; finance/inventory/support → 403 até no read); `jurisdiction:manage` ausente (0 permissão morta); `GET /jurisdiction-defaults` read-gated + declarado antes de `:param` (resolve ao handler, não a invalid_uuid); §allowlist sem `tenant_id` (confirmado no corpo do create). `core-saas` 26/26, `jurisdiction` 18/18. Sem nav/frontend (UI = PR-04), como esperado.
+- **Decisão:** verde 3/3 (**0 CRÍTICO, 0 MÉDIA de código**; condição de KPI **SANADA** — `KPI_PR-02.json` criado + histórico + snapshot com números reais) → PR-02 mergeia. backend **1542→1560** (+18; medição independente do orquestrador CI-memória: 1566 tests / 1560 pass / 0 fail / 6 skip), smoke 850 e flutter 807 inalterados (backend-only), blocks 89→90. D-Ω5P-JUR-01..05 ratificados. Inclui backfill do PR-01 (#281 `aae8026`). Próximo: **PR-03 `tariffs` (ESTENDER)**.
+
+
 ## 8. Encerramento (a fazer no fim)
 Ata final (entregas, KPIs consolidados, matriz RN×norma, pendências → backlog Ω6: PSP/PIX, SNE, Sivec real, GOV.BR, guarda monitorada, IA); deletar **SOMENTE** os 5 agentes efêmeros (registrar cada deleção); confirmar que nenhum agente pré-existente foi tocado; marcar os D-records como vigentes.

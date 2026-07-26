@@ -41,6 +41,7 @@ import { createServiceCatalogRouter } from "./modules/service-catalog/index.js";
 import { createPriceTableRouter } from "./modules/price-tables/index.js";
 import { createTariffRouter } from "./modules/tariffs/index.js";
 import { createYardRouter } from "./modules/yard/index.js";
+import { createJurisdictionRouter } from "./modules/jurisdiction/index.js";
 import { createServiceQuoteRouter } from "./modules/service-quotes/index.js";
 import { createServiceQuoteItemRouter } from "./modules/service-quote-items/index.js";
 import { createWorkOrderFinancialRouter } from "./modules/work-order-financials/index.js";
@@ -122,6 +123,10 @@ export function createApp(service: ICoreSaasService): Express {
   // sob /api/v1 (git add src/app.ts, senão CI route_not_found). CRUD sob yard:read/create/update; a ocupação
   // (allocate/vacate/move) é serviço interno em PR-01 (superfície HTTP dirigida pela autoridade = PR-06).
   app.use("/api/v1", attachAuthenticatedActor(), createYardRouter());
+  // Ω5P PR-02 — Perfis normativos (parametrização nacional: prazos legais, diária, teto, checklist de liberação).
+  // Router NOVO sob /api/v1 (git add src/app.ts, senão CI route_not_found). CRUD sob jurisdiction:read/create/
+  // update + GET /jurisdiction-defaults (foundation dos defaults federais que charging PR-07/auction PR-09 leem).
+  app.use("/api/v1", attachAuthenticatedActor(), createJurisdictionRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createServiceQuoteRouter());
   // Ω3F-4a — Itens do Orçamento (/service-quotes/:id/items) em router próprio: o path não colide
   // com nenhuma rota do service-quotes router (que segue intocado neste bloco).
