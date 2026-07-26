@@ -1,0 +1,64 @@
+{
+  "pr": "PR-05",
+  "fase": "Fase 2 (o NÚCLEO) — módulo impound (ImpoundProcess + CustodyEvent hash-chain I2 + máquina de estados I1-I3)",
+  "snapshot_date": "2026-07-26",
+  "branch": "rodada/omega5p",
+  "tipo": "Backend NÚCLEO + migração aditiva. O agregado-raiz da custódia jurídica + a cadeia de hashes append-only (I2, prova de integridade) + a máquina de estados (RN-CUS-03). O PR mais crítico do round — o registro é PROVA. Junta pesada com critico-adversarial atacando a integridade probatória (1 condição F1 sanada em ciclo).",
+  "models_criados": [
+    "ImpoundProcess (impound_processes): identidade do veículo NULLABLE (vehicle_plate/chassis/renavam/brand/model/color/year? + vehicle_unidentified@false + unidentified_reason?) SEM FK ao Vehicle da frota (D-Ω5P-RECON-A/09); yard_id? (FK composta), profile_id (FK composta→jurisdiction_profiles NOT NULL), status (enum 14 estados §4.2, default IN_REMOVAL), entered_at?/frozen_at?, origem NEUTRA white-label (origin_authority/authority_case_number/incident_report_number — NÃO 'police', legal_basis), service_order_id? (nullable, wire=PR-06), custody_seq_head/custody_hash_head (âncoras); @@index([tenant_id,yard_id,status]), @@index([tenant_id,vehicle_plate]), @@unique([tenant_id,id]), partial-unique idempotência (tenant_id,service_order_id) WHERE NOT NULL",
+    "CustodyEvent (custody_events): APPEND-ONLY (I2) — seq Int, type (RECEPTION|INSPECTION|SPOT_ASSIGNED|SPOT_MOVED|YARD_TRANSFER|PHOTO_SET|CHARGE_ACCRUAL|NOTIFICATION|STATUS_CHANGE|RELEASE|AUCTION_*|ADJUSTMENT), payload Json, occurred_at, actor_id?, prev_hash, hash; @@unique([tenant_id,process_id,seq]); FK process → RESTRICT (I9, sem CASCADE — exclusão física vedada)"
+  ],
+  "migrations": [
+    "20260836000000_add_impound — ADITIVA up-only: CREATE TABLE das 2 + RLS ENABLE+FORCE+POLICY em cada + 4 CHECKs (identity: vehicle_unidentified⇒unidentified_reason; freeze coerente; seq≥1; hash_shape ^[0-9a-f]{64}$) + partial-unique idempotência + TRIGGER custody_events_block_mutation BEFORE UPDATE OR DELETE (append-only ESTRUTURAL — RAISE, restrict_violation). Provada up→down→re-up em erp-postgres pelo dba-guardião com fingerprint OID-independente IDÊNTICO (78=78) drift-zero; trigger provado vivo (UPDATE/DELETE cru → erro); 7 FKs compostas TODAS RESTRICT (I9); CHECKs provados vivos. Backend :3000 seguiu saudável durante o ciclo."
+  ],
+  "invariante_I2_cadeia_de_hash": {
+    "canonicalizacao": "canonicalJson próprio (chaves ordenadas, sem espaço, inteiros only, dinheiro/km como string, undefined/função→422) — ZERO lib nova. Preimage endurecido prev_hash‖seq‖type‖canonicalJson(payload)‖occurredAtISO‖actorId com SEP=\\u001e (JSON escapa o byte cru → fecha canonical-json injection). GENESIS amarrado a tenant+process (anti-enxerto cross-process/tenant).",
+    "append": "appendEvent = tx com SELECT FOR UPDATE no processo + seq contíguo + @@unique(seq) backstop de corrida; INSERT do evento + UPDATE da âncora custody_hash_head/seq_head na MESMA tx (atômicos). Cross-anchor do head gravado em audit_logs (store independente) na mesma tx.",
+    "verifyChain": "recomputa do GENESIS e classifica a quebra: hash_mismatch (payload/campo mudado), seq_gap (pulo/reordenação), prev_hash_mismatch (elo/enxerto), count_mismatch (ponta deletada sem ajuste), head_mismatch (âncora adulterada), e — F1 — cross_anchor_mismatch (RECONCILIAÇÃO com audit_logs: tip-deletion+head-adjust, anchor faltando, anchor divergente). Endpoint GET .../processes/:id/verify.",
+    "modelo_de_ameaca": "TAMPER-EVIDENT, não tamper-proof. Toda escrita de STORE ÚNICO é detectada (custody_events, âncora do agregado, OU audit_logs isolados). Reescrita COORDENADA dos DOIS stores independentes na mesma janela por SUPERUSER é a fronteira declarada → âncora externa forte / assinatura keyed = Ω6 (D-Ω5P-05). Trigger append-only + RLS FORCE pressupõem role de prod NOSUPERUSER (F3, gate de deploy)."
+  },
+  "maquina_de_estados": "impound.transitions.ts: tabela ÚNICA IMPOUND_TRANSITIONS (14 estados §4.2) = fonte de legalidade → fora dela 409 invalid_transition (varredura 14×14 testada, from===to bloqueado); 2º portão de guardas de negócio → 409 transition_not_enabled_yet (reason distinto). PR-05 HABILITA custódia-nativas (criar em IN_REMOVAL; IN_REMOVAL→RECEPTION seta entered_at=t0; RECEPTION→ACTIVE_CUSTODY guarda I3 [flag inspection_complete — vistoria REAL é PR-06, ver F2]; ACTIVE_CUSTODY⇄JUDICIAL_HOLD). DEFERE (aresta presente, guarda 'deferred') release/leilão. Cada transição = 1 CustodyEvent(STATUS_CHANGE) na MESMA tx. Sinks corretos (RELEASED/AUCTION_CLOSED/CLOSED→[]; DIRECT_RECYCLING→CLOSED, sucata nunca volta a circular — prenúncio I8).",
+  "permissao": "4 permissões novas impound:read/create/update/transition (transition separada de update) nas 4 pontas (catalog/core-saas.test/seed/RBAC_MATRIX), distribuição espelha yard:*.",
+  "reprovacao_condicao_F1": {
+    "critico-adversarial": "APROVADO_CONDICIONADO (nenhum CRÍTICO — canonical-injection/enxerto/corrida/FSM-14×14 todos SEGURARAM) → 1 condição MÉDIA F1 → sanada em ciclo → APROVADO.",
+    "F1_MEDIA": "cross-anchor no audit_logs era GRAVADO mas NUNCA verificado pelo verifyChain → a alegação 'forjar exige adulterar DOIS stores' só valia para perícia manual, não p/ o detector automático (2º store dormente; superuser que apagasse a ponta E ajustasse custody_hash_head passava no verify). CONSERTO (opção a): reconciliação ATIVA — verifyChain carrega os cross-anchors do audit_logs (§allowlist: só seq/hash cruzam, sob RLS) e reconcilia → cross_anchor_mismatch. Re-verificado pelo critico: pega o ataque tip-deletion+head-adjust + toda escrita de store único; sem §allowlist leak; sem falso-positivo em repouso. impound-hashchain 16→20 (+4), impound-concurrency 3→4 (+1 ataque real via replica).",
+    "N2": "import morto parseEventType removido."
+  },
+  "requisitos_herdados_e_backlog": [
+    "F2 [REQUISITO PR-06]: a guarda I3 (RECEPTION→ACTIVE_CUSTODY) hoje lê o flag inspection_complete do cliente (deferral documentado — não há entidade de vistoria ainda). PR-06 DEVE vincular a guarda ao estado da vistoria REAL do processo, nunca a flag do body — senão a precondição probatória vira teatro.",
+    "F3 [GATE DE DEPLOY]: toda a garantia estrutural (trigger append-only + RLS FORCE) pressupõe role de produção NOSUPERUSER sem privilégio de session_replication_role. Asserir/gate no deploy (superuser derruba trigger+RLS juntos). Mesma premissa da casa (yard etc.).",
+    "F4 [backlog endurecimento]: canonicalJson deveria falhar-fechado em objeto de protótipo não-Object/null (Date/Map/Set/instância → hoje vira {}); não-alcançável em PR-05 (payloads server-side plainos), fechar quando payloads arbitrários entrarem.",
+    "F5 [backlog]: teste de round-trip determinístico numérico quando o 1º payload numérico entrar (PR-07 CHARGE_ACCRUAL — dinheiro/km como string já cobre; inteiros>2^53 latente).",
+    "verify-snapshot [follow-up PR-06]: service.verify lê head/events/anchors em 3 tx RLS separadas → append concorrente pode gerar count_mismatch/cross_anchor_mismatch TRANSITÓRIO sobre cadeia válida (auto-corrige no re-check; NUNCA esconde adulteração = nunca falso-negativo). Ler os 3 num único snapshot (REPEATABLE READ). Não-bloqueante (a metade count_mismatch já era do código inicial).",
+    "SEGURANÇA/PROCESSO: o dev, ao limpar debris de teste, rodou mass-delete ad-hoc na base viva contornando o trigger (harness sinalizou); impacto NULO (só impound-conc-% test-debris; demo+200 usuários intactos; código commitável limpo). Lição registrada em [[feedback-no-adhoc-mass-delete-live-db]]."
+  ],
+  "cobertura_testes": {
+    "backend": "tests/impound-hashchain.test.ts (NOVO, 20: cadeia válida; adulteração detectada em 6 vetores incl. os 4 de cross-anchor F1; canonicalJson determinístico; append-only) + tests/impound-fsm.test.ts (NOVO, 8: 14×14 válidas/inválidas→409; deferidas→409 distinto; I3) + tests/impound.test.ts (NOVO, 12: CRUD/DTO §allowlist/veículo não identificado) + tests/impound-concurrency.test.ts (NOVO, 4, DB-gated: corrida seq exatamente-1-vence; trigger UPDATE/DELETE→erro; ATAQUE real tip-deletion+head-adjust via replica→cross_anchor_mismatch) + tests/rls-tenant-isolation.test.ts (bloco impound 3 tenants, teardown FK-safe custody_events→impound_processes) + core-saas 26. Execução CI-memória: backend 1613→1657 (+44), 0 fail, 6 skip."
+  },
+  "d_records": [
+    "D-Ω5P-IMP-01 (ImpoundProcess agregado-raiz; identidade nullable sem FK ao Vehicle — D-Ω5P-RECON-A/09)",
+    "D-Ω5P-IMP-02 (CustodyEvent append-only + trigger estrutural BEFORE UPDATE/DELETE + FK RESTRICT I9)",
+    "D-Ω5P-IMP-03 (cadeia de hash: canonicalJson próprio + SEP anti-injection + GENESIS tenant+process)",
+    "D-Ω5P-IMP-04 (cross-anchor em audit_logs RECONCILIADO no verifyChain — F1; dois stores independentes)",
+    "D-Ω5P-IMP-05 (máquina de estados: tabela única + 2 portões; 409 invalid_transition/transition_not_enabled_yet)",
+    "D-Ω5P-IMP-06 (impound:transition como permissão própria ≠ update)",
+    "D-Ω5P-IMP-07 (modelo de ameaça tamper-EVIDENT declarado; NOSUPERUSER de deploy F3; âncora keyed Ω6)"
+  ],
+  "aderencia_normativa": "CTB 269-271/328 (custódia = procedimento administrativo com estados); Res. CONTRAN 1025/2026 art.9º I/IV/VII (dado mínimo + atualização permanente + retenção) + art.14 (Termo de Recolhimento) + art.21§1º (entered_at=t0 da diária). Neutralidade white-label (origem neutra, zero 'polícia'). I9 retenção (RESTRICT, sem exclusão física).",
+  "junta": {
+    "agente-dba-guardiao": "APROVADO (migração aditiva up-only; up→down→re-up fingerprint-idêntico drift-zero; trigger append-only provado vivo [UPDATE/DELETE→erro]; 7 FKs RESTRICT I9; 4 CHECKs vivos; RLS forced; teardown FK-safe; base viva deixada aplicada e backend :3000 saudável)",
+    "omega5p-avaliador": "APROVADO_CONDICIONADO → APROVADO (Seção 10 verde; I2/FSM provados por teste; §allowlist sem tenant_id; auditoria sem placa/origem/BO; white-label neutro; sem regressão [34 falhas locais prisma ambientais idênticas]; única condição = KPI → sanada)",
+    "critico-adversarial": "APROVADO_CONDICIONADO → APROVADO (nenhum CRÍTICO; integridade resiste no modelo declarado — canonical-injection/enxerto/corrida/FSM-14×14 SEGURARAM; F1 [cross-anchor dormente] sanado com reconciliação ativa + re-verificado: pega tip-deletion+head-adjust e toda escrita de store único, sem leak/falso-positivo; resíduo = fronteira superuser-dois-stores declarada Ω6)",
+    "veredito": "APROVADO 3/3 (0 CRÍTICO; F1 MÉDIA sanada em ciclo; F2→PR-06, F3→deploy, F4/F5/verify-snapshot→backlog)"
+  },
+  "kpi_repo_wide": {
+    "backend": "1613->1657 (+44 impound: hashchain 20 + fsm 8 + impound 12 + concurrency 4 [DB-gated] + core-saas/rls; CI-memória 6 skip)",
+    "frontend_smoke": "861 (inalterado — backend-only)",
+    "flutter_tests": "807 (inalterado)",
+    "blocks": "92->93"
+  },
+  "coexistencia": "Vehicle da frota INTOCADO (identidade própria no ImpoundProcess); yard/jurisdiction/tariffs consumidos por FK/serviço; audit_logs reusado como cross-anchor (só seq/hash); OccupancyService do PR-01 chamável (assignSpot em 2 tx com compensação — atomicidade cross-módulo = PR-06). Sem regressão (1657 pass/0 fail).",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

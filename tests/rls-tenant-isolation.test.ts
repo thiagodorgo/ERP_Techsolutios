@@ -1422,6 +1422,66 @@ if (!connectionString) {
       const tenantCProfile = await withTenantRls(client, tenantC.id, (tx) => tx.jurisdictionProfile.findUnique({ where: { id: jurC.private_id } }));
       assert.equal(tenantCProfile?.daily_cap, "UNLIMITED", "tenant C private jurisdiction profile stays visible + untouched in-tenant");
 
+      // Ω5P PR-05 (D-Ω5P-IMP-*) — impound_processes + custody_events nos 3 tenants EFÊMEROS (A, B, C). O processo
+      // referencia o jurisdiction_profile (FK composta tenant-first, RESTRICT) do bloco PR-02; o evento é
+      // APPEND-ONLY (hash/prev_hash 64-hex satisfazem o CHECK de formato; seq≥1). Veículo NÃO identificado é caso
+      // VÁLIDO (D-Ω5P-09): unidentified_reason preenchido, sem placa (satisfaz o CHECK identity). Prova: invisível
+      // sem contexto + cross-tenant updateMany count=0 + visível/intocado in-tenant. RLS ENABLE/FORCE + policy da
+      // migration 20260836000000; tenant_id 1º de todo índice.
+      const custodyHash = "a".repeat(64);
+      const custodyPrev = "b".repeat(64);
+      const insertImpound = async (tx: typeof client, tenantId: string, profileId: string) => {
+        const [proc] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO impound_processes (tenant_id, profile_id, origin_authority, vehicle_unidentified, unidentified_reason, custody_seq_head, custody_hash_head)
+          VALUES (${tenantId}::uuid, ${profileId}::uuid, 'RLS Autoridade', true, 'Placa adulterada', 1, ${custodyHash})
+          RETURNING id
+        `;
+        const [ev] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO custody_events (tenant_id, process_id, seq, type, payload, occurred_at, prev_hash, hash)
+          VALUES (${tenantId}::uuid, ${proc.id}::uuid, 1, 'STATUS_CHANGE', ${'{"from":null,"to":"IN_REMOVAL"}'}::jsonb, now(), ${custodyPrev}, ${custodyHash})
+          RETURNING id
+        `;
+        return { process_id: proc.id, event_id: ev.id };
+      };
+      const impA = await withTenantRls(client, tenantA.id, (tx) => insertImpound(tx as typeof client, tenantA.id, jurA.public_id));
+      const impB = await withTenantRls(client, tenantB.id, (tx) => insertImpound(tx as typeof client, tenantB.id, jurB.public_id));
+      const impC = await withTenantRls(client, tenantC.id, (tx) => insertImpound(tx as typeof client, tenantC.id, jurC.public_id));
+
+      // processos invisíveis sem app.current_tenant_id.
+      const impWithoutContext = await client.impoundProcess.findMany({
+        where: { id: { in: [impA.process_id, impB.process_id, impC.process_id] } },
+      });
+      assert.deepEqual(
+        impWithoutContext.map((process) => process.id),
+        [],
+        "tenant-scoped impound processes must not be visible without app.current_tenant_id",
+      );
+
+      // A vê só o seu processo; cross-tenant updateMany (B/C) count=0.
+      const tenantAImpView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.impoundProcess.findMany({ where: { id: { in: [impA.process_id, impB.process_id, impC.process_id] } } });
+        const crossTenantUpdate = await tx.impoundProcess.updateMany({
+          where: { id: { in: [impB.process_id, impC.process_id] } },
+          data: { origin_agent_name: "cross-tenant" },
+        });
+        return { visibleIds: visible.map((process) => process.id).sort(), crossUpdatedRows: crossTenantUpdate.count };
+      });
+      assert.deepEqual(tenantAImpView.visibleIds, [impA.process_id], "tenant A must only see its own impound process (not tenant B/C)");
+      assert.equal(tenantAImpView.crossUpdatedRows, 0, "tenant A must not update tenant B/C impound processes");
+
+      // custody_events: A vê só o seu evento; cross-tenant invisível.
+      const tenantAEventView = await withTenantRls(client, tenantA.id, (tx) =>
+        tx.custodyEvent.findMany({ where: { id: { in: [impA.event_id, impB.event_id, impC.event_id] } } }),
+      );
+      assert.deepEqual(tenantAEventView.map((e) => e.id), [impA.event_id], "tenant A must only see its own custody event (not tenant B/C)");
+
+      const tenantBImp = await withTenantRls(client, tenantB.id, (tx) => tx.impoundProcess.findUnique({ where: { id: impB.process_id } }));
+      assert.equal(tenantBImp?.status, "IN_REMOVAL", "tenant B impound process stays visible + untouched in-tenant");
+      assert.equal(tenantBImp?.origin_agent_name, null, "tenant B impound process origin_agent_name untouched by tenant A cross-update");
+      // verify de A sob tenant B → not_found (o processo de A é invisível no contexto de B).
+      const crossVerify = await withTenantRls(client, tenantB.id, (tx) => tx.impoundProcess.findUnique({ where: { id: impA.process_id } }));
+      assert.equal(crossVerify, null, "tenant B cannot see tenant A's process (verify would be not_found)");
+
       // Ω5P PR-03 (D-Ω5P-TAR-*) — price_tables ESCOPADAS (scope PUBLIC_AGREEMENT/PRIVATE_CONTRACT + vehicle_category)
       // nos 3 tenants EFÊMEROS. As 2 colunas novas são NULLABLE aditivas; a RLS (ENABLE/FORCE + policy
       // price_tables_tenant_isolation, migration 20260723000000) é HERDADA — o ADD COLUMN não a altera. Prova:
@@ -2533,6 +2593,19 @@ if (!connectionString) {
       );
       assert.equal(tenantBFieldDispatch?.observation, "RLS field dispatch B");
     } finally {
+      // Ω5P PR-05 — purga a CUSTÓDIA ANTES do loop low-priv (custody_events → impound_processes). custody_events
+      // tem TRIGGER append-only (BEFORE UPDATE OR DELETE) que a ROLE DA APP (low-priv, NOSUPERUSER) NÃO contorna;
+      // o teardown usa o adminClient (superuser) com session_replication_role=replica (só superuser), o caminho de
+      // manutenção padrão do Postgres (o trigger não dispara em modo replica). O superuser também bypassa RLS, então
+      // varre os 3 tenants. impound_processes → jurisdiction_profiles/yards/tenant são RESTRICT, então a custódia
+      // cai ANTES do loop que apaga perfis/pátios/tenant. TEARDOWN FK-SAFE (custody_events → impound_processes).
+      await adminClient.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
+        for (const tenantId of tenantIds) {
+          await tx.$executeRawUnsafe(`DELETE FROM custody_events WHERE tenant_id = '${tenantId}'::uuid`);
+          await tx.$executeRawUnsafe(`DELETE FROM impound_processes WHERE tenant_id = '${tenantId}'::uuid`);
+        }
+      });
       for (const tenantId of tenantIds) {
         await withTenantRls(client, tenantId, async (tx) => {
           // Ω4C PR-08 — movimentos de estoque ANTES de operator_profiles/vehicles/inventory_items (as FK

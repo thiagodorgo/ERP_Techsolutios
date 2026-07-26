@@ -65,6 +65,7 @@ const expectedPermissionCatalog = [
   "tariffs:read",
   "yard:read",
   "jurisdiction:read",
+  "impound:read",
   "service_quotes:read",
   "work_order_financials:read",
   "financial_accounts:read",
@@ -82,6 +83,7 @@ const expectedPermissionCatalog = [
   "tariffs:create",
   "yard:create",
   "jurisdiction:create",
+  "impound:create",
   "service_quotes:create",
   "work_order_financials:create",
   "financial_accounts:create",
@@ -99,6 +101,8 @@ const expectedPermissionCatalog = [
   "tariffs:update",
   "yard:update",
   "jurisdiction:update",
+  "impound:update",
+  "impound:transition",
   "service_quotes:update",
   "service_quotes:approve",
   "work_order_financials:update",
@@ -444,6 +448,52 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   }
   // jurisdiction:manage NÃO existe (sem guard/rota = permissão morta — mesma disciplina do yard:manage diferido).
   assert.equal(PERMISSION_CATALOG.includes("jurisdiction:manage" as (typeof PERMISSION_CATALOG)[number]), false);
+
+  // Ω5P PR-05 (D-Ω5P-IMP-05) — Custódia: `impound:read` = MESMO conjunto de `yard:read`/`jurisdiction:read`
+  // (manager+operator+field_dispatcher+technician+field_technician+viewer+auditor+admins); `impound:create`/
+  // `impound:update`/`impound:transition` = SÓ manager+admins. `impound:manage` NÃO existe (sem guard/rota).
+  for (const role of [
+    "manager",
+    "operator",
+    "field_dispatcher",
+    "technician",
+    "field_technician",
+    "viewer",
+    "auditor",
+    "tenant_admin",
+    "super_admin",
+    "platform_admin",
+  ] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("impound:read"), true);
+    assert.equal(ROLE_PERMISSIONS[role].includes("yard:read"), true);
+  }
+  // Espelha yard/jurisdiction: finance/inventory/support NÃO leem Custódia.
+  for (const role of ["finance", "inventory", "support"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("impound:read"), false);
+  }
+  // create/update/transition = gestão+admins (manager + tenant_admin/super_admin/platform_admin), NUNCA os demais.
+  for (const role of ["manager", "tenant_admin", "super_admin", "platform_admin"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("impound:create"), true);
+    assert.equal(ROLE_PERMISSIONS[role].includes("impound:update"), true);
+    assert.equal(ROLE_PERMISSIONS[role].includes("impound:transition"), true);
+  }
+  for (const role of [
+    "operator",
+    "field_dispatcher",
+    "technician",
+    "field_technician",
+    "viewer",
+    "auditor",
+    "finance",
+    "inventory",
+    "support",
+  ] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("impound:create"), false);
+    assert.equal(ROLE_PERMISSIONS[role].includes("impound:update"), false);
+    assert.equal(ROLE_PERMISSIONS[role].includes("impound:transition"), false);
+  }
+  // impound:manage NÃO existe (sem guard/rota = permissão morta — mesma disciplina do yard:manage diferido).
+  assert.equal(PERMISSION_CATALOG.includes("impound:manage" as (typeof PERMISSION_CATALOG)[number]), false);
 
   // PR-SCALE-1 — Purchasing + Reports (autorização do dono; RBAC_MATRIX "Purchasing"/"Reports and analytics").
   // reports:read é concedido a TODOS os papéis não-admin (a matriz dá escopo de relatório a todos).

@@ -47,6 +47,8 @@ model Tenant {
   yard_areas                    YardArea[]
   yard_spots                    YardSpot[]
   jurisdiction_profiles         JurisdictionProfile[]
+  impound_processes             ImpoundProcess[]
+  custody_events                CustodyEvent[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
   financial_titles              FinancialTitle[]
@@ -152,6 +154,7 @@ model User {
   updated_work_orders              WorkOrder[]             @relation("WorkOrderUpdatedBy")
   work_order_assignments           WorkOrderAssignment[]   @relation("WorkOrderAssignmentUser")
   work_order_events                WorkOrderEvent[]        @relation("WorkOrderEventActor")
+  custody_events                   CustodyEvent[]          @relation("CustodyEventActor")
   role_assignments                 UserRoleAssignment[]
   led_teams                        Team[]                  @relation("TeamLeader")
   team_memberships                 TeamMember[]            @relation("TeamMemberUser")
@@ -2149,6 +2152,11 @@ model WorkOrder {
   service_catalog                 ServiceCatalog?       @relation("WorkOrderServiceCatalog", fields: [tenant_id, service_catalog_id], references: [tenant_id, id], onDelete: Restrict)
   created_by_user                 User?                 @relation("WorkOrderCreatedBy", fields: [tenant_id, created_by], references: [tenant_id, id], onDelete: Restrict)
   events                          WorkOrderEvent[]
+  // Ω5P PR-05 — back-relation one-to-MANY (não 1:1): a idempotência "≤ 1 processo por OS" (D-Ω5P-RECON-B) é
+  // enforçada pelo índice PARCIAL único (tenant_id, service_order_id) WHERE NOT NULL (raw-only na migração,
+  // como yard_spots_current_process_key), NÃO por cardinalidade Prisma — um @@unique cheio exigiria declarar
+  // a coluna e mudaria a semântica de NULL. Prisma vê one-to-many; o DB garante o "no máx. 1".
+  impound_processes               ImpoundProcess[]
   tenant                          Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   updated_by_user                 User?                 @relation("WorkOrderUpdatedBy", fields: [tenant_id, updated_by], references: [tenant_id, id], onDelete: Restrict)
 
@@ -2630,6 +2638,7 @@ model Yard {
   tenant        Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   branch        Branch?    @relation(fields: [tenant_id, branch_id], references: [tenant_id, id], onDelete: Restrict)
   areas         YardArea[]
+  impound_processes ImpoundProcess[]
 
   @@unique([tenant_id, id])
   @@index([tenant_id])
@@ -2722,6 +2731,7 @@ model JurisdictionProfile {
   created_at                  DateTime @default(now()) @db.Timestamptz(6)
   updated_at                  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
   tenant                      Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  impound_processes           ImpoundProcess[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, name])
@@ -2729,4 +2739,82 @@ model JurisdictionProfile {
   @@index([tenant_id, scope])
   @@index([tenant_id, active])
   @@map("jurisdiction_profiles")
+}
+
+// Ω5P PR-05 — Processo de custódia: agregado-raiz do domínio (ESTUDO §4.1). Identidade do bem de TERCEIRO
+// NULLABLE e SEM FK ao Vehicle da frota (D-Ω5P-RECON-A / D-Ω5P-09: Vehicle.plate é NOT NULL+unique, impróprio
+// para placa adulterada/ausente — a identidade vive AQUI). Origem NEUTRA white-label (autoridade/órgão/ato,
+// NUNCA "polícia"). status = FSM §4.2 (14 estados) validada na APP (SEM enum-CHECK). entered_at = t0 do motor
+// de diárias (I4); frozen_at = T_stop (PR-07/10/14). custody_seq_head/custody_hash_head = âncora da cadeia
+// hash (I2). yard_id/service_order_id NULLABLE (wire real da alocação e do gatilho OS→custódia = PR-06);
+// profile_id NOT NULL (perfil normativo PR-02 → teto/modelo de diária + prazos). Labels PT-BR no DTO.
+model ImpoundProcess {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id              String    @db.Uuid
+  vehicle_plate          String?
+  vehicle_chassis        String?
+  vehicle_renavam        String?
+  vehicle_brand          String?
+  vehicle_model          String?
+  vehicle_color          String?
+  vehicle_year           Int?
+  vehicle_unidentified   Boolean   @default(false)
+  unidentified_reason    String?
+  yard_id                String?   @db.Uuid
+  profile_id             String    @db.Uuid
+  status                 String    @default("IN_REMOVAL")
+  entered_at             DateTime? @db.Timestamptz(6)
+  frozen_at              DateTime? @db.Timestamptz(6)
+  origin_authority       String
+  origin_agent_name      String?
+  authority_case_number  String?
+  incident_report_number String?
+  legal_basis            String?
+  service_order_id       String?   @db.Uuid
+  custody_seq_head       Int       @default(0)
+  custody_hash_head      String?
+  created_by             String?   @db.Uuid
+  updated_by             String?   @db.Uuid
+  created_at             DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant                 Tenant              @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  yard                   Yard?               @relation(fields: [tenant_id, yard_id], references: [tenant_id, id], onDelete: Restrict)
+  profile                JurisdictionProfile @relation(fields: [tenant_id, profile_id], references: [tenant_id, id], onDelete: Restrict)
+  service_order          WorkOrder?          @relation(fields: [tenant_id, service_order_id], references: [tenant_id, id], onDelete: Restrict)
+  events                 CustodyEvent[]
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, yard_id, status])
+  @@index([tenant_id, vehicle_plate])
+  @@index([tenant_id, status])
+  @@map("impound_processes")
+}
+
+// Ω5P PR-05 — Evento de custódia: timeline APPEND-ONLY hash-encadeada (I2). hash = sha256 do preimage endurecido
+// (prev_hash ‖ seq ‖ type ‖ canonicalJson(payload) ‖ occurred_at ‖ actor_id, SEP=0x1E; GENESIS amarrado a
+// tenant+process — impound.hashchain.ts). Correção retroativa = novo evento ADJUSTMENT (NUNCA UPDATE/DELETE —
+// I2/I9). process→RESTRICT (evento nunca cascateia; retenção ≥5 anos). @@unique(tenant,process,seq) = ordem
+// contígua + backstop de corrida. A migração 20260836000000 adiciona TRIGGER BEFORE UPDATE OR DELETE
+// (append-only ESTRUTURAL) + CHECKs (seq≥1, formato hex de hash/prev_hash) — belt-and-suspenders sobre a app.
+model CustodyEvent {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String   @db.Uuid
+  process_id  String   @db.Uuid
+  seq         Int
+  type        String
+  payload     Json
+  occurred_at DateTime @db.Timestamptz(6)
+  actor_id    String?  @db.Uuid
+  prev_hash   String
+  hash        String
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  tenant      Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  process     ImpoundProcess @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
+  actor_user  User?          @relation("CustodyEventActor", fields: [tenant_id, actor_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, process_id, seq])
+  @@index([tenant_id, process_id, occurred_at])
+  @@index([tenant_id, type])
+  @@map("custody_events")
 }
