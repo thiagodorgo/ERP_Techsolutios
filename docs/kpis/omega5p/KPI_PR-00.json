@@ -37,7 +37,8 @@
     "flutter_tests": "807 (INALTERADO)",
     "blocks": "88 (INALTERADO — recon/governança não conta como feature entregue, mesmo critério do PR-00 da Ω4C)"
   },
-  "merge_commit": null,
-  "approved_head": null,
-  "status": "aprovado_pela_junta_aguardando_merge"
+  "pr": 280,
+  "merge_commit": "3938a80",
+  "approved_head": "3938a80",
+  "status": "published_per_pr"
 }

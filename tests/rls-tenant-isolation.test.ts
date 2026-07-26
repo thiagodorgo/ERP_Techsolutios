@@ -1308,6 +1308,64 @@ if (!connectionString) {
       );
       assert.equal(tenantCScheduled?.status, "pending", "tenant C scheduled notification stays visible + untouched in-tenant");
 
+      // Ω5P PR-01 (D-Ω5P-YARD-*) — yards → yard_areas → yard_spots (pátio físico + árvore + vaga) com 3 tenants
+      // EFÊMEROS (A, B, C). O par público-credenciado × privado-contratual entra como dado do tenant (perfil real
+      // = PR-02). Prova: invisível sem contexto + cross-tenant updateMany count=0 + visível/intocado in-tenant.
+      // RLS ENABLE/FORCE + policy da migration 20260833000000; tenant_id 1º de todo índice.
+      const insertYardTriple = async (tx: typeof client, tenantId: string) => {
+        const [yard] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO yards (tenant_id, name, address) VALUES (${tenantId}::uuid, 'RLS Pátio', 'Rua RLS, 1') RETURNING id
+        `;
+        const [area] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO yard_areas (tenant_id, yard_id, kind, name)
+          VALUES (${tenantId}::uuid, ${yard.id}::uuid, 'BLOCK', 'Quadra RLS') RETURNING id
+        `;
+        const [spot] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO yard_spots (tenant_id, area_id, code)
+          VALUES (${tenantId}::uuid, ${area.id}::uuid, 'A-01') RETURNING id
+        `;
+        return { yard_id: yard.id, area_id: area.id, spot_id: spot.id };
+      };
+      const yardA = await withTenantRls(client, tenantA.id, (tx) => insertYardTriple(tx as typeof client, tenantA.id));
+      const yardB = await withTenantRls(client, tenantB.id, (tx) => insertYardTriple(tx as typeof client, tenantB.id));
+      const yardC = await withTenantRls(client, tenantC.id, (tx) => insertYardTriple(tx as typeof client, tenantC.id));
+
+      // yards invisíveis sem app.current_tenant_id.
+      const yardsWithoutContext = await client.yard.findMany({
+        where: { id: { in: [yardA.yard_id, yardB.yard_id, yardC.yard_id] } },
+      });
+      assert.deepEqual(
+        yardsWithoutContext.map((yard) => yard.id),
+        [],
+        "tenant-scoped yards must not be visible without app.current_tenant_id",
+      );
+
+      // A vê só a sua vaga; cross-tenant updateMany (B/C) count=0. Setar BLOCKED preserva current_process_id NULL
+      // (satisfaz o CHECK de coerência) — mas RLS barra as linhas de B/C, então nada é tocado.
+      const tenantAYardView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.yardSpot.findMany({ where: { id: { in: [yardA.spot_id, yardB.spot_id, yardC.spot_id] } } });
+        const crossTenantUpdate = await tx.yardSpot.updateMany({
+          where: { id: { in: [yardB.spot_id, yardC.spot_id] } },
+          data: { status: "BLOCKED" },
+        });
+        return { visibleIds: visible.map((spot) => spot.id), crossUpdatedRows: crossTenantUpdate.count };
+      });
+      assert.deepEqual(
+        tenantAYardView.visibleIds,
+        [yardA.spot_id],
+        "tenant A must only see its own yard spot (not tenant B/C)",
+      );
+      assert.equal(
+        tenantAYardView.crossUpdatedRows,
+        0,
+        "tenant A must not update tenant B/C yard spots",
+      );
+
+      const tenantBSpot = await withTenantRls(client, tenantB.id, (tx) => tx.yardSpot.findUnique({ where: { id: yardB.spot_id } }));
+      assert.equal(tenantBSpot?.status, "FREE", "tenant B yard spot stays visible + untouched in-tenant");
+      const tenantCArea = await withTenantRls(client, tenantC.id, (tx) => tx.yardArea.findUnique({ where: { id: yardC.area_id } }));
+      assert.equal(tenantCArea?.name, "Quadra RLS", "tenant C yard area stays visible + untouched in-tenant");
+
       // Ω4C PR-20 (RN-NOTIFCEN-01/-04) — Central tenant-wide sobre scheduled_notifications, via os métodos REAIS
       // do repositório (listByTenant/cancelCentral) sob withTenantRls, reusando as 3 linhas A/B/C acima. Prova:
       // a central de A LISTA só a de A (não a de B/C) e CANCELA só pendentes do próprio tenant (cross-tenant → null,
@@ -2541,6 +2599,24 @@ if (!connectionString) {
             },
           });
           await tx.checklistTemplate.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          // Ω5P PR-01 — yard_spots → yard_areas → yards ANTES de branch/user/tenant. As FK de vaga/área são
+          // CASCADE, mas o delete explícito antecipa a limpeza (TEARDOWN FK-SAFE, lição do CI-catch do PR-06);
+          // yards→branches e yards→tenants são RESTRICT, então yards têm de cair antes de branch e do tenant.
+          await tx.yardSpot.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          await tx.yardArea.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          await tx.yard.deleteMany({
             where: {
               tenant_id: tenantId,
             },

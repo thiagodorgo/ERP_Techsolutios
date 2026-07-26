@@ -43,6 +43,9 @@ model Tenant {
   service_catalog_items         ServiceCatalog[]
   price_tables                  PriceTable[]
   tariffs                       Tariff[]
+  yards                         Yard[]
+  yard_areas                    YardArea[]
+  yard_spots                    YardSpot[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
   financial_titles              FinancialTitle[]
@@ -103,7 +106,11 @@ model Branch {
   tenant                Tenant               @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   user_role_assignments UserRoleAssignment[]
   users                 User[]
+  yards                 Yard[]
 
+  // Ω5P PR-01 (D-Ω5P-YARD-01) — habilita a FK composta tenant-first Yard.branch → branches(tenant_id, id).
+  // Índice ADITIVO puro (nenhuma coluna nova/DROP em branches); mesma razão do users.@@unique([tenant_id, id]).
+  @@unique([tenant_id, id])
   @@unique([tenant_id, code])
   @@index([tenant_id])
   @@map("branches")
@@ -2590,4 +2597,90 @@ model MobileActionReceipt {
   @@index([tenant_id, action_type])
   @@index([tenant_id, status])
   @@map("mobile_action_receipts")
+}
+
+// Ω5P PR-01 — Pátio de recolhimento (local de guarda físico, Res. CONTRAN 1025/2026 art. 9º/14). Domínio
+// FÍSICO net-new (Branch é organizacional, não físico — FASE0 §3-Alvo3). `branch_id` OPCIONAL herda o
+// recorte organizacional. `timezone` é fundação DST-safe do motor de diárias (charging PR-07 lê daqui).
+// `capacity_hint` é advisory — a capacidade REAL é COUNT(spots). Enums validados na APP (sem CHECK de enum
+// no banco). tenant_id 1º em todo índice; RLS ENABLE+FORCE+policy na migração.
+model Yard {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String     @db.Uuid
+  branch_id     String?    @db.Uuid
+  name          String
+  address       String
+  capacity_hint Int?
+  timezone      String     @default("America/Sao_Paulo")
+  active        Boolean    @default(true)
+  created_by    String?    @db.Uuid
+  updated_by    String?    @db.Uuid
+  created_at    DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant        Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  branch        Branch?    @relation(fields: [tenant_id, branch_id], references: [tenant_id, id], onDelete: Restrict)
+  areas         YardArea[]
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id])
+  @@index([tenant_id, active])
+  @@index([tenant_id, branch_id])
+  @@map("yards")
+}
+
+// Ω5P PR-01 — Área hierárquica do pátio (árvore quadra→corredor→fileira). Self-ref via parent_id (onDelete
+// NoAction para o CASCADE do yard varrer a árvore num só statement). `kind` BLOCK|CORRIDOR|ROW e
+// `vehicle_class` ANY|MOTORCYCLE|HEAVY validados na APP. A @@unique(tenant,yard,parent,name) é natural-key
+// soft (NULLs distintos no Postgres — unicidade de nome no topo fica no guard app-level do validator).
+model YardArea {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String     @db.Uuid
+  yard_id       String     @db.Uuid
+  parent_id     String?    @db.Uuid
+  kind          String
+  name          String
+  covered       Boolean    @default(false)
+  vehicle_class String     @default("ANY")
+  created_by    String?    @db.Uuid
+  updated_by    String?    @db.Uuid
+  created_at    DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant        Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  yard          Yard       @relation(fields: [tenant_id, yard_id], references: [tenant_id, id], onDelete: Cascade)
+  parent        YardArea?  @relation("YardAreaTree", fields: [tenant_id, parent_id], references: [tenant_id, id], onDelete: NoAction)
+  children      YardArea[] @relation("YardAreaTree")
+  spots         YardSpot[]
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, yard_id, parent_id, name])
+  @@index([tenant_id, yard_id])
+  @@index([tenant_id, parent_id])
+  @@map("yard_areas")
+}
+
+// Ω5P PR-01 — Vaga: a UNIDADE de ocupação (invariante I1). `current_process_id` SEM FK dura (o ImpoundProcess
+// é PR-05; wire real no PR-06). I1 provado pela migração (índice PARCIAL único em (tenant,current_process_id)
+// WHERE NOT NULL = I1b; + CHECK de coerência status⇄ocupação) + serviço transacional (SELECT ... FOR UPDATE +
+// guarda de status = I1a). `code` único por área. Enums (status FREE|OCCUPIED|BLOCKED; vehicle_class) na APP.
+model YardSpot {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String   @db.Uuid
+  area_id            String   @db.Uuid
+  code               String
+  covered            Boolean  @default(false)
+  vehicle_class      String   @default("ANY")
+  status             String   @default("FREE")
+  current_process_id String?  @db.Uuid
+  created_by         String?  @db.Uuid
+  updated_by         String?  @db.Uuid
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant             Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  area               YardArea @relation(fields: [tenant_id, area_id], references: [tenant_id, id], onDelete: Cascade)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, area_id, code])
+  @@index([tenant_id, status])
+  @@index([tenant_id, area_id])
+  @@map("yard_spots")
 }
