@@ -10,7 +10,7 @@ import type {
   UpdatePriceTableInput,
 } from "./price-table.types.js";
 import { PriceTableError } from "./price-table.types.js";
-import type { PriceTableRepository } from "./price-table.repository.js";
+import type { FindPublishedInBucketInput, PriceTableRepository } from "./price-table.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -30,6 +30,8 @@ export class PrismaPriceTableRepository implements PriceTableRepository {
           valid_to: input.validTo ?? null,
           status: input.status,
           is_active: input.isActive ?? true,
+          scope: input.scope ?? null,
+          vehicle_category: input.vehicleCategory ?? null,
           created_by: input.createdBy ?? null,
           updated_by: input.updatedBy ?? null,
         },
@@ -57,6 +59,25 @@ export class PrismaPriceTableRepository implements PriceTableRepository {
     return table ? mapPriceTableRecord(table) : undefined;
   }
 
+  async findPublishedInBucket(input: FindPublishedInBucketInput): Promise<PriceTable[]> {
+    // F4 — filtro no SERVIDOR por bucket exato (scope/vehicle_category null→IS NULL) + sobreposição de janela
+    // (valid_from <= to E valid_to >= from, com bordas NULL abertas). SEM take/skip → sem teto de página.
+    const and: Prisma.PriceTableWhereInput[] = [];
+    if (input.to !== null) and.push({ OR: [{ valid_from: null }, { valid_from: { lte: input.to } }] });
+    if (input.from !== null) and.push({ OR: [{ valid_to: null }, { valid_to: { gte: input.from } }] });
+    const items = await this.client.priceTable.findMany({
+      where: {
+        tenant_id: input.tenantId,
+        status: "published",
+        is_active: true,
+        scope: input.scope,
+        vehicle_category: input.vehicleCategory,
+        ...(and.length ? { AND: and } : {}),
+      },
+    });
+    return items.map(mapPriceTableRecord);
+  }
+
   async update(input: UpdatePriceTableInput): Promise<PriceTable | undefined> {
     try {
       const updated = await this.client.priceTable.updateManyAndReturn({
@@ -70,6 +91,8 @@ export class PrismaPriceTableRepository implements PriceTableRepository {
           valid_to: nullable(input.validTo),
           status: input.status,
           is_active: input.isActive,
+          scope: input.scope,
+          vehicle_category: input.vehicleCategory,
           updated_by: nullable(input.updatedBy),
         }),
       });
@@ -96,6 +119,10 @@ export class RlsPrismaPriceTableRepository implements PriceTableRepository {
 
   findById(tenantId: string, priceTableId: string): Promise<PriceTable | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaPriceTableRepository(tx).findById(tenantId, priceTableId));
+  }
+
+  findPublishedInBucket(input: FindPublishedInBucketInput): Promise<PriceTable[]> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaPriceTableRepository(tx).findPublishedInBucket(input));
   }
 
   update(input: UpdatePriceTableInput): Promise<PriceTable | undefined> {
@@ -135,6 +162,8 @@ function mapPriceTableRecord(record: {
   readonly valid_to: Date | null;
   readonly status: string;
   readonly is_active: boolean;
+  readonly scope: string | null;
+  readonly vehicle_category: string | null;
   readonly created_by: string | null;
   readonly updated_by: string | null;
   readonly created_at: Date;
@@ -151,6 +180,8 @@ function mapPriceTableRecord(record: {
     validTo: record.valid_to ?? undefined,
     status: record.status as PriceTableStatus,
     isActive: record.is_active,
+    scope: (record.scope ?? undefined) as PriceTable["scope"],
+    vehicleCategory: record.vehicle_category ?? undefined,
     createdBy: record.created_by ?? undefined,
     updatedBy: record.updated_by ?? undefined,
     createdAt: record.created_at,

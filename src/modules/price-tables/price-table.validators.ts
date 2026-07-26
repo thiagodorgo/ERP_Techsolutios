@@ -1,4 +1,4 @@
-import { PriceTableError, type PriceTableStatus } from "./price-table.types.js";
+import { PriceTableError, type PriceTableStatus, TARIFF_SCOPES, type TariffScope } from "./price-table.types.js";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const STATUSES: readonly PriceTableStatus[] = ["draft", "published", "archived"];
@@ -66,6 +66,32 @@ export function parseOptionalStatus(value: unknown): PriceTableStatus | undefine
     throw new PriceTableError(400, "PRICE_TABLE_INVALID", "invalid_status", `status must be one of: ${STATUSES.join(", ")}.`);
   }
   return normalized as PriceTableStatus;
+}
+
+// Ω5P PR-03 (D-Ω5P-TAR-02) — scope app-validado no MESMO enum de JurisdictionProfile.scope. Ausente = NULL
+// (curinga). Inválido → 400. Belt-and-suspenders com a coluna nullable (sem enum-CHECK no banco, padrão FASE0).
+export function parseOptionalScope(value: unknown): TariffScope | undefined {
+  const normalized = typeof value === "string" ? value.trim().toUpperCase() : "";
+  if (!normalized) return undefined;
+  if (!TARIFF_SCOPES.includes(normalized as TariffScope)) {
+    throw new PriceTableError(400, "PRICE_TABLE_INVALID", "invalid_scope", `scope must be one of: ${TARIFF_SCOPES.join(", ")}.`);
+  }
+  return normalized as TariffScope;
+}
+
+// Ω5P PR-03 (D-Ω5P-TAR-05) — vehicle_category é app-code parametrizado por perfil (o catálogo por
+// JurisdictionProfile é deferido, FASE0 §5e): validado app-level SEM hardcode/enum-CHECK. Normaliza para
+// app-code (letras/dígitos/_), máx. 40. Ausente = NULL (curinga vale-para-todas-as-categorias).
+export function parseOptionalVehicleCategory(value: unknown): string | undefined {
+  const normalized = typeof value === "string" ? value.trim().toUpperCase() : "";
+  if (!normalized) return undefined;
+  if (normalized.length > 40) {
+    throw new PriceTableError(400, "PRICE_TABLE_INVALID", "invalid_vehicle_category", "vehicleCategory must be at most 40 characters.");
+  }
+  if (!/^[A-Z0-9_]+$/.test(normalized)) {
+    throw new PriceTableError(400, "PRICE_TABLE_INVALID", "invalid_vehicle_category", "vehicleCategory must contain only letters, digits and underscore.");
+  }
+  return normalized;
 }
 
 export function readOptionalBoolean(value: unknown): boolean | undefined {

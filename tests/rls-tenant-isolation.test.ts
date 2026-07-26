@@ -1422,6 +1422,57 @@ if (!connectionString) {
       const tenantCProfile = await withTenantRls(client, tenantC.id, (tx) => tx.jurisdictionProfile.findUnique({ where: { id: jurC.private_id } }));
       assert.equal(tenantCProfile?.daily_cap, "UNLIMITED", "tenant C private jurisdiction profile stays visible + untouched in-tenant");
 
+      // Ω5P PR-03 (D-Ω5P-TAR-*) — price_tables ESCOPADAS (scope PUBLIC_AGREEMENT/PRIVATE_CONTRACT + vehicle_category)
+      // nos 3 tenants EFÊMEROS. As 2 colunas novas são NULLABLE aditivas; a RLS (ENABLE/FORCE + policy
+      // price_tables_tenant_isolation, migration 20260723000000) é HERDADA — o ADD COLUMN não a altera. Prova:
+      // invisível sem contexto + cross-tenant updateMany count=0 + visível/intocado in-tenant. tenant_id 1º.
+      const insertPriceTablePair = async (tx: typeof client, tenantId: string) => {
+        const [pub] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO price_tables (tenant_id, name, status, scope, vehicle_category)
+          VALUES (${tenantId}::uuid, 'RLS Diárias Convênio Motos', 'published', 'PUBLIC_AGREEMENT', 'MOTORCYCLE') RETURNING id
+        `;
+        const [priv] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO price_tables (tenant_id, name, status, scope, vehicle_category)
+          VALUES (${tenantId}::uuid, 'RLS Diárias Contrato Carros', 'published', 'PRIVATE_CONTRACT', 'CAR') RETURNING id
+        `;
+        return { public_id: pub.id, private_id: priv.id };
+      };
+      const ptA = await withTenantRls(client, tenantA.id, (tx) => insertPriceTablePair(tx as typeof client, tenantA.id));
+      const ptB = await withTenantRls(client, tenantB.id, (tx) => insertPriceTablePair(tx as typeof client, tenantB.id));
+      const ptC = await withTenantRls(client, tenantC.id, (tx) => insertPriceTablePair(tx as typeof client, tenantC.id));
+
+      const ptWithoutContext = await client.priceTable.findMany({
+        where: { id: { in: [ptA.public_id, ptA.private_id, ptB.public_id, ptC.private_id] } },
+      });
+      assert.deepEqual(
+        ptWithoutContext.map((table) => table.id),
+        [],
+        "tenant-scoped price tables must not be visible without app.current_tenant_id",
+      );
+
+      const tenantAPtView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.priceTable.findMany({
+          where: { id: { in: [ptA.public_id, ptA.private_id, ptB.public_id, ptC.private_id] } },
+        });
+        const crossTenantUpdate = await tx.priceTable.updateMany({
+          where: { id: { in: [ptB.public_id, ptC.private_id] } },
+          data: { is_active: false },
+        });
+        return { visibleIds: visible.map((table) => table.id).sort(), crossUpdatedRows: crossTenantUpdate.count };
+      });
+      assert.deepEqual(
+        tenantAPtView.visibleIds,
+        [ptA.public_id, ptA.private_id].sort(),
+        "tenant A must only see its own price tables (not tenant B/C)",
+      );
+      assert.equal(tenantAPtView.crossUpdatedRows, 0, "tenant A must not update tenant B/C price tables");
+
+      const tenantBPt = await withTenantRls(client, tenantB.id, (tx) => tx.priceTable.findUnique({ where: { id: ptB.public_id } }));
+      assert.equal(tenantBPt?.scope, "PUBLIC_AGREEMENT", "tenant B public price table stays visible + untouched in-tenant");
+      assert.equal(tenantBPt?.vehicle_category, "MOTORCYCLE", "tenant B price table scoped category preserved in-tenant");
+      const tenantCPt = await withTenantRls(client, tenantC.id, (tx) => tx.priceTable.findUnique({ where: { id: ptC.private_id } }));
+      assert.equal(tenantCPt?.scope, "PRIVATE_CONTRACT", "tenant C private price table stays visible + untouched in-tenant");
+
       // Ω4C PR-20 (RN-NOTIFCEN-01/-04) — Central tenant-wide sobre scheduled_notifications, via os métodos REAIS
       // do repositório (listByTenant/cancelCentral) sob withTenantRls, reusando as 3 linhas A/B/C acima. Prova:
       // a central de A LISTA só a de A (não a de B/C) e CANCELA só pendentes do próprio tenant (cross-tenant → null,
@@ -2655,6 +2706,13 @@ if (!connectionString) {
             },
           });
           await tx.checklistTemplate.deleteMany({
+            where: {
+              tenant_id: tenantId,
+            },
+          });
+          // Ω5P PR-03 — price_tables ANTES do tenant (FK única em price_tables = tenant, RESTRICT). tariffs→price_tables
+          // é CASCADE, mas nenhuma tarifa é inserida aqui; o delete explícito antecede o tenant. TEARDOWN FK-SAFE.
+          await tx.priceTable.deleteMany({
             where: {
               tenant_id: tenantId,
             },

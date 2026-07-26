@@ -18,17 +18,27 @@ import {
   parseOffset,
   parseOptionalDate,
   parseOptionalDescription,
+  parseOptionalScope,
   parseOptionalSearch,
   parseOptionalStatus,
+  parseOptionalVehicleCategory,
   parseOptionalVersion,
   parseRequiredUuid,
   readOptionalBoolean,
 } from "./price-table.validators.js";
+import { buildTariffOverlapChecker, type TariffOverlapChecker } from "./price-table-resolution.js";
+import { getMemoryTariffRepositoryForTests } from "../tariffs/tariff.service.js";
 
 type RawRecord = Record<string, unknown>;
 
 export class PriceTableService {
-  constructor(private readonly repository: PriceTableRepository) {}
+  // Ω5P PR-03 (RN-TAR-01) — o overlapChecker é OPCIONAL: `new PriceTableService(repo)` (usos de teste legados)
+  // segue sem guarda; as factories (memory/prisma) injetam o checker → a guarda de não-sobreposição só dispara
+  // na transição draft→published. Não-amplificador (guarda read-only; só recusa com 409).
+  constructor(
+    private readonly repository: PriceTableRepository,
+    private readonly overlapChecker?: TariffOverlapChecker,
+  ) {}
 
   async list(actor: PriceTableActorContext, query: RawRecord): Promise<ListPriceTableResult> {
     const input: ListPriceTableInput = {
@@ -51,6 +61,9 @@ export class PriceTableService {
       version: parseOptionalVersion(body.version) ?? 1,
       validFrom: parseOptionalDate(body.valid_from ?? body.validFrom, "validFrom"),
       validTo: parseOptionalDate(body.valid_to ?? body.validTo, "validTo"),
+      // Ω5P PR-03 — eixos NULLABLE app-validados (ausente = NULL = curinga).
+      scope: parseOptionalScope(body.scope),
+      vehicleCategory: parseOptionalVehicleCategory(body.vehicle_category ?? body.vehicleCategory),
       // Nova tabela sempre nasce em rascunho (RN-CAD-008); publica-se depois via PATCH status.
       status: "draft",
       isActive: readOptionalBoolean(body.is_active ?? body.isActive) ?? true,
@@ -83,6 +96,55 @@ export class PriceTableService {
       }
     }
 
+    const nextScope = parseOptionalScope(body.scope);
+    const nextVehicleCategory = parseOptionalVehicleCategory(body.vehicle_category ?? body.vehicleCategory);
+    const nextValidFrom = parseOptionalDate(body.valid_from ?? body.validFrom, "validFrom");
+    const nextValidTo = parseOptionalDate(body.valid_to ?? body.validTo, "validTo");
+
+    // RN-TAR-01 (F2, D-Ω5P-TAR-04) — a guarda de NÃO-sobreposição roda sempre que a tabela RESULTAR APLICÁVEL
+    // (status `published` E is_active=true) E algum eixo de aplicabilidade tiver mudado: transição de publicação,
+    // REATIVAÇÃO (is_active false→true — ciclo-2: reativar recria a sobreposição, pois `findPublishedInBucket`
+    // exige is_active), OU o PATCH mexeu no BUCKET/janela (scope, vehicle_category, valid_from, valid_to).
+    // Fecha o bypass: tabela publicada segue editável (D-OMEGA2A). DESATIVAR segue livre (resultingIsActive=false
+    // → sem guarda). Confronta o BUCKET efetivo (pós-patch) com as demais publicadas+ativas do mesmo bucket +
+    // janela sobreposta → 409.
+    const nextIsActive = readOptionalBoolean(body.is_active ?? body.isActive);
+    const resultingStatus = nextStatus ?? current.status;
+    const resultingIsActive = nextIsActive ?? current.isActive;
+    const isBecomingPublished = nextStatus === "published" && current.status !== "published";
+    const isBecomingActive = nextIsActive === true && current.isActive === false;
+    const touchesBucketOrWindow =
+      body.scope !== undefined ||
+      body.vehicle_category !== undefined ||
+      body.vehicleCategory !== undefined ||
+      body.valid_from !== undefined ||
+      body.validFrom !== undefined ||
+      body.valid_to !== undefined ||
+      body.validTo !== undefined;
+    if (
+      resultingStatus === "published" &&
+      resultingIsActive === true &&
+      (isBecomingPublished || isBecomingActive || touchesBucketOrWindow) &&
+      this.overlapChecker
+    ) {
+      const overlap = await this.overlapChecker({
+        tenantId: actor.tenantId,
+        priceTableId: current.id,
+        scope: (nextScope ?? current.scope) ?? null,
+        vehicleCategory: (nextVehicleCategory ?? current.vehicleCategory) ?? null,
+        validFrom: (nextValidFrom ?? current.validFrom) ?? null,
+        validTo: (nextValidTo ?? current.validTo) ?? null,
+      });
+      if (overlap) {
+        throw new PriceTableError(
+          409,
+          "TARIFF_OVERLAP",
+          "tariff_overlap",
+          "Another published price table with the same scope and vehicle category has an overlapping validity window and a shared service.",
+        );
+      }
+    }
+
     const input: UpdatePriceTableInput = {
       tenantId: actor.tenantId,
       priceTableId: parseRequiredUuid(priceTableId, "priceTableId"),
@@ -90,10 +152,12 @@ export class PriceTableService {
       description: parseOptionalDescription(body.description),
       currency: body.currency === undefined ? undefined : parseCurrency(body.currency),
       version: parseOptionalVersion(body.version),
-      validFrom: parseOptionalDate(body.valid_from ?? body.validFrom, "validFrom"),
-      validTo: parseOptionalDate(body.valid_to ?? body.validTo, "validTo"),
+      validFrom: nextValidFrom,
+      validTo: nextValidTo,
       status: nextStatus,
       isActive: readOptionalBoolean(body.is_active ?? body.isActive),
+      scope: nextScope,
+      vehicleCategory: nextVehicleCategory,
       updatedBy: actor.userId,
     };
     const updated = await this.repository.update(input);
@@ -108,7 +172,9 @@ const memoryRepository = new InMemoryPriceTableRepository();
 let defaultServicePromise: Promise<PriceTableService> | undefined;
 
 export function createMemoryPriceTableService(): PriceTableService {
-  return new PriceTableService(memoryRepository);
+  // RN-TAR-01 — no modo memória a guarda usa os MESMOS singletons dos módulos (paridade com o Prisma).
+  const overlapChecker = buildTariffOverlapChecker(memoryRepository, getMemoryTariffRepositoryForTests());
+  return new PriceTableService(memoryRepository, overlapChecker);
 }
 
 export function getMemoryPriceTableRepositoryForTests(): InMemoryPriceTableRepository {
@@ -130,6 +196,9 @@ export function resetPriceTableRuntimeForTests(): void {
 
 async function createPrismaPriceTableService(): Promise<PriceTableService> {
   const { createPrismaPriceTableRepository } = await import("./price-table-prisma.repository.js");
+  const { createPrismaTariffRepository } = await import("../tariffs/tariff-prisma.repository.js");
   const repository = await createPrismaPriceTableRepository();
-  return new PriceTableService(repository);
+  const tariffRepository = await createPrismaTariffRepository();
+  const overlapChecker = buildTariffOverlapChecker(repository, tariffRepository);
+  return new PriceTableService(repository, overlapChecker);
 }

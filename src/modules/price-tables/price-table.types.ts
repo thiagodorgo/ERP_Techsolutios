@@ -1,4 +1,5 @@
 import type { Permission, Role } from "../core-saas/permissions/catalog.js";
+import { PROFILE_SCOPES, type ProfileScope } from "../jurisdiction/jurisdiction.types.js";
 
 export type PriceTableActorContext = {
   readonly tenantId: string;
@@ -6,6 +7,12 @@ export type PriceTableActorContext = {
   readonly roles: readonly Role[];
   readonly permissions: readonly Permission[];
 };
+
+// Ω5P PR-03 (D-Ω5P-TAR-02) — o escopo da tabela tarifária REUSA o MESMO enum de JurisdictionProfile.scope
+// (coerência com PR-02): PUBLIC_AGREEMENT (convênio público) | PRIVATE_CONTRACT (contrato privado). O perfil
+// normativo dá prazos/teto; a tabela tarifária dá preço. scope NULL = curinga vale-para-os-dois.
+export const TARIFF_SCOPES = PROFILE_SCOPES;
+export type TariffScope = ProfileScope;
 
 // Ω2-a.1 — status de publicação (RN-CAD-008). Máquina de estado: draft→published, published→archived,
 // draft→archived; qualquer outra transição = 422. Tabela "published" PERMANECE editável nesta fatia
@@ -23,6 +30,9 @@ export type PriceTable = {
   readonly validTo?: Date;
   readonly status: PriceTableStatus;
   readonly isActive: boolean;
+  // Ω5P PR-03 — eixos NULLABLE (curinga quando ausentes; retrocompat total com o legado).
+  readonly scope?: TariffScope;
+  readonly vehicleCategory?: string;
   readonly createdBy?: string;
   readonly updatedBy?: string;
   readonly createdAt: Date;
@@ -63,6 +73,8 @@ export type UpdatePriceTableInput = Partial<
     | "validTo"
     | "status"
     | "isActive"
+    | "scope"
+    | "vehicleCategory"
     | "updatedBy"
   >
 > & {
