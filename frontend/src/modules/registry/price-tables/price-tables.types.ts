@@ -4,6 +4,10 @@
 // Status de publicação (RN-CAD-008). Token técnico nunca exibido cru na UI (ver adapter).
 export type PriceTableStatus = "draft" | "published" | "archived";
 
+// Ω5P PR-04 — Escopo da tabela (dupla natureza tarifária, ESTUDO §9): mesmo enum de JurisdictionProfile.scope.
+// NULL = curinga (vale para os dois). Token técnico nunca sai cru (rótulo PT-BR no adapter/scopeLabel do backend).
+export type PriceTableScope = "PUBLIC_AGREEMENT" | "PRIVATE_CONTRACT";
+
 export type PriceTableItem = {
   readonly id: string;
   readonly name: string;
@@ -14,6 +18,9 @@ export type PriceTableItem = {
   readonly validTo: string | null;
   readonly status: PriceTableStatus;
   readonly isActive: boolean;
+  // Ω5P PR-04 — escopo público/privado + categoria de veículo (delta PR-03 no CONTÊINER PriceTable). NULL = curinga.
+  readonly scope: PriceTableScope | null;
+  readonly vehicleCategory: string | null;
   readonly createdAt: string;
 };
 
@@ -37,6 +44,9 @@ export type PriceTableActiveFilter = "all" | "active" | "inactive";
 
 // Filtro de publicação — inclui rascunho/publicada/arquivada, além de "todos".
 export type PriceTablePublishFilter = "all" | PriceTableStatus;
+
+// Filtro de escopo — inclui os dois enums + "todos" (curinga).
+export type PriceTableScopeFilter = "all" | PriceTableScope;
 
 export type PriceTablesFilters = {
   readonly search: string;
@@ -63,6 +73,9 @@ export type PriceTableCreatePayload = {
   readonly validFrom?: string;
   readonly validTo?: string;
   readonly isActive?: boolean;
+  // Ω5P PR-04 — escopo/categoria opcionais (omitidos = NULL curinga no backend).
+  readonly scope?: PriceTableScope;
+  readonly vehicleCategory?: string;
 };
 
 // Atualização aceita transição de status (validada pela máquina de estado no backend → 422 se inválida).

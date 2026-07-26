@@ -1,0 +1,56 @@
+{
+  "pr": "PR-04",
+  "fase": "Fase 1 (FECHA) — UI de administração /patios (console do operador)",
+  "snapshot_date": "2026-07-26",
+  "branch": "rodada/omega5p",
+  "tipo": "Frontend do console (React) + 1 toque backend no navigation.registry.ts (governed paths/esconde-fino). PRIMEIRO PR de frontend do round; torna visível o que PR-01/02/03 construíram. SEM permissão nova, SEM migração, SEM dep nova.",
+  "models_alterados": [],
+  "migrations": [],
+  "telas": {
+    "patios": "/patios/patios — dense-list de Yard (Nome/Endereço/Fuso/Situação) + YardFormModal; /patios/patios/:yardId drilldown das áreas (árvore quadra→corredor→fileira, indentação por profundidade) + vagas (config code/coberta/vehicleClass) + resumo de ocupação read-only (Vagas/Livres/Ocupadas/Bloqueadas). Status de vaga na UI só FREE⇄BLOCKED; OCCUPIED read-only (alocação por processo = PR-06/08; UI NÃO expõe allocate/vacate/move).",
+    "perfis": "/patios/perfis — dense-list de JurisdictionProfile + PerfilFormModal com defaults federais pré-preenchidos (baseline local + GET /jurisdiction-defaults?scope= na troca de escopo); release_requirements = editor de lista [{code,label,required}]; nome disabled na edição (chave natural, veto-B2).",
+    "tarifas": "/patios/tarifas — ESTENDE registry/price-tables (registry/tariffs INTOCADO): +2 Selects (Escopo público/privado; Categoria com 'Todas'=NULL curinga) no PriceTableFormModal + colunas/filtros de scope/categoria; breadcrumb SENSÍVEL À ROTA (Pátios em /patios/tarifas, Cadastros em /cadastros/tabelas-valores — condição C2 da junta)."
+  },
+  "governanca_nav": "3 governed paths patios.yards/patios.profiles/patios.tariffs em navigation.registry.ts (group:tenant, tenantOnly, SEM requiredModules = pure-permission esconde-fino). getGovernedNavigationPaths os inclui; computeHiddenNavPaths oculta o grupo PÁTIOS de quem não tem yard:read/jurisdiction:read/price_tables:read. O :yardId NÃO é registrado (não é item de sidebar). navigation-provisioning.test 33→61 (+28: 1 governança dos 3 paths + matriz 3 paths × 9 papéis derivada de ROLE_PERMISSIONS).",
+  "permissao": "ZERO permissão nova — reusa yard:*/jurisdiction:*/price_tables:* (PR-01/02 + price_tables legado). catalog.ts/prisma/seed.ts/RBAC_MATRIX.md/core-saas.test.ts INTOCADOS. Rotas sob PermissionGuard (read p/ ver; can(create/update) molda ações); backend é a autoridade (403 real — as APIs yard/jurisdiction/price_tables já são gated).",
+  "modulos": [
+    "frontend/src/modules/patios/{yards: types/adapter/service/useYards + pages/PatiosPage + pages/PatioDetailPage + components/Yard|YardArea|YardSpotFormModal; profiles: types/adapter/service/useProfiles + pages/PerfisPage + components/PerfilFormModal}",
+    "frontend/src/modules/registry/price-tables/* ESTENDIDO (+scope/vehicleCategory: types/adapter/FormModal/TabelasValoresPage; breadcrump route-aware)",
+    "frontend/src/App.tsx (5 rotas lazy sob PermissionGuard) + layouts/appSidebarNav.ts (grupo PÁTIOS + ícones Warehouse/Scale/Coins + MVP_NAV_PATHS) + frontend/tests/sidebar-nav.test.ts (grupo novo, precedente Ω4C PR-14)",
+    "src/modules/navigation/navigation.registry.ts (3 governed paths) + tests/navigation-provisioning.test.ts (matriz por papel) + docs/navigation-matrix.md (3 linhas Pátios — condição C1)",
+    "frontend/tests/{patios-yards,patios-perfis,price-tables-scope-category}.smoke.test.tsx + frontend/package.json (script test:smoke)"
+  ],
+  "rns_cobertas": [
+    "RN-UI-PAT admin física do pátio (cadastro de áreas/vagas; ocupação read-only até PR-06/08)",
+    "RN-UI-JUR admin de perfis normativos (defaults federais pré-preenchidos)",
+    "RN-UI-TAR tarifa de dupla natureza visível (scope/categoria; breadcrumb route-aware)",
+    "RN-UI esconde-fino (governed paths ocultam PÁTIOS de quem não tem permissão; backend 403)"
+  ],
+  "rns_total_pr": 4,
+  "estados_obrigatorios": "loading/skeleton · empty HONESTO (D-007: isMockMode→dataset vazio, mensagem PT-BR, diferencia filtro-vs-vazio) · error+Tentar novamente · acesso-negado (PermissionGuard). §11: PageHeader título+subtítulo+ações à direita; sem andaime de dev. §allowlist: nenhum tenant_id renderizado (testado doesNotMatch). PT-BR white-label: 'Pátio/Área/Vaga/Perfil/Escopo/Organização', NUNCA 'Tenant' nem 'polícia' (testado).",
+  "d_records": [
+    "D-Ω5P-UI-01 (módulos coesos modules/patios/{yards,profiles})",
+    "D-Ω5P-UI-02 (tarifas = ESTENDE price-tables; registry/tariffs intocado)",
+    "D-Ω5P-UI-03 (ocupação read-only no PR-04; allocate/vacate/move = PR-06/08)",
+    "D-Ω5P-UI-04 (governed paths sem requiredModules = pure-permission esconde-fino)",
+    "D-Ω5P-UI-05 (vehicle_category = Select curado PT-BR, não enum de domínio; valor fora do curado preservado)",
+    "D-Ω5P-UI-06 (breadcrumb da TabelasValoresPage sensível à rota — Pátios × Cadastros; condição C2)"
+  ],
+  "junta": {
+    "cognicao-visual": "APROVADO (0 cond; 4 telas VIVAS e fiéis ao padrão registry da casa; drilldown master-detail legível não-JSON; cores semânticas FREE/OCCUPIED/BLOCKED + escopo público/privado; PT-BR white-label; estados completos; sem tela morta/andaime. 4 nits advisórios não-bloqueantes: acentos do PermissionGuard [pré-existente repo-wide]; contagem some p/ criador; app-code de categoria não-curado; hex solto consistente com detail pages existentes)",
+    "coordenador-de-acessos": "APROVADO_CONDICIONADO → APROVADO (cadeia papel→permissão→menu→rota→backend íntegra; matriz efetiva por papel derivada de ROLE_PERMISSIONS 61/61; esconde-fino dos 3 governed paths sem requiredModules; backend é a autoridade [403]; zero permissão nova. C1 [MÉDIA] 3 linhas em navigation-matrix.md → SANADA; C2 [MÉDIA §11] breadcrumb duplicado Cadastros×Pátios → SANADA por breadcrumb route-aware + teste reforçado)",
+    "omega5p-avaliador": "APROVADO_CONDICIONADO → APROVADO (Seção 10 verde; estados/§allowlist/white-label/ocupação-read-only/tarifas-estende/chave-natural-imutável/§11 verificados; sem permissão/migração/dep nova; regressão zero [as 2 falhas de navigation-menu-routes são ambientais idênticas com stash]; única condição = KPI → sanada)",
+    "veredito": "APROVADO 3/3 (0 CRÍTICO; C1/C2/KPI sanadas)"
+  },
+  "kpi_repo_wide": {
+    "backend": "1585->1613 (+28 navigation-provisioning: 3 governed paths /patios/* + matriz por papel; CI-memória 6 skip)",
+    "frontend_smoke": "850->861 (+11: patios-yards + patios-perfis + price-tables-scope-category)",
+    "flutter_tests": "807 (inalterado)",
+    "blocks": "91->92"
+  },
+  "coexistencia": "registry/tariffs INTOCADO; catalog/prisma/deps intocados; ocupação por processo deferida (PR-06/08); sem regressão (861/861 smoke; 61/61 nav-provisioning; composição de tarifas verde).",
+  "fecha_fase1": "PR-04 FECHA a Fase 1 (fundações): PR-01 yard + PR-02 jurisdiction + PR-03 tariffs + PR-04 UI admin. Próximo: Fase 2 PR-05 impound (ImpoundProcess + CustodyEvent hash-chain + máquina de estados I1-I3).",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

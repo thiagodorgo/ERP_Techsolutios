@@ -330,8 +330,10 @@ test("sidebar RBAC: support e inventory nunca alcancam o nucleo de ADMINISTRACAO
 // ── Camada VISUAL da sidebar (AppShell) — grupos aprovados da IA por RoleKind ──
 // Ω4C PR-14 acrescenta o grupo TELEMETRIA (Quilometragem/Acessos/Recusas/Dispositivos), antes de
 // ADMINISTRAÇÃO, para os roleKind admin/gestor/dispatcher (papéis com telemetry:read).
+// Ω5P PR-04 acrescenta o grupo PÁTIOS (Pátios/Perfis Normativos/Tabela de Valores) entre GESTÃO e TELEMETRIA,
+// para admin/gestor/dispatcher (papéis com yard:read/jurisdiction:read/price_tables:read).
 
-const IA_GROUP_LABELS = ["VISÃO GERAL", "OPERAÇÃO", "FROTA", "GESTÃO", "TELEMETRIA", "ADMINISTRAÇÃO"];
+const IA_GROUP_LABELS = ["VISÃO GERAL", "OPERAÇÃO", "FROTA", "GESTÃO", "PÁTIOS", "TELEMETRIA", "ADMINISTRAÇÃO"];
 
 test("sidebar visual: roleKindFor mapeia os rotulos para o RoleKind correto", async () => {
   const { roleKindFor } = await import("../src/layouts/appSidebarNav");

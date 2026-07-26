@@ -50,7 +50,8 @@
     "blocks": "90->91"
   },
   "coexistencia": "Tariff/tariffs_natural_key/ServiceCatalog INTOCADOS; findApplicable/pickApplicableTariff só ganharam asOf? opcional (freeze legado byte-idêntico); service-quote resolve só bucket legado (orçamento vivo intocado); zero permissão nova; zero regressão (190/190 composição).",
-  "merge_commit": null,
-  "approved_head": null,
-  "status": "aprovado_pela_junta_aguardando_merge"
+  "pr": 283,
+  "merge_commit": "7c5ea1c",
+  "approved_head": "7c5ea1c",
+  "status": "published_per_pr"
 }

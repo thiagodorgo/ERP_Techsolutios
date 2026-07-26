@@ -2,6 +2,7 @@ import type {
   PriceTableFieldError,
   PriceTableItem,
   PriceTableCreatePayload,
+  PriceTableScope,
   PriceTableStatus,
   PriceTablesData,
   PriceTablesFilters,
@@ -16,6 +17,7 @@ const VERSION_MAX = 100000;
 const DESCRIPTION_MAX = 2000;
 
 const STATUSES: readonly PriceTableStatus[] = ["draft", "published", "archived"];
+const SCOPES: readonly PriceTableScope[] = ["PUBLIC_AGREEMENT", "PRIVATE_CONTRACT"];
 
 export function adaptPriceTablesResponse(
   response: unknown,
@@ -50,7 +52,7 @@ export function filterPriceTables(items: readonly PriceTableItem[], filters: { s
     if (filters.isActive === "inactive" && item.isActive) return false;
     if (!search) return true;
 
-    return [item.name, item.description, item.currency, getPriceTableStatusLabel(item.status)]
+    return [item.name, item.description, item.currency, getPriceTableStatusLabel(item.status), getPriceTableScopeLabel(item.scope), formatVehicleCategory(item.vehicleCategory)]
       .filter(Boolean)
       .some((value) => normalize(String(value)).includes(search));
   });
@@ -115,6 +117,38 @@ export function getPriceTableActiveTone(isActive: boolean) {
   return isActive ? ("success" as const) : ("default" as const);
 }
 
+// Ω5P PR-04 — Escopo (dupla natureza tarifária). NULL/ausente = curinga ("Todos"). Rótulo PT-BR de negócio
+// (nunca "tenant" nem termo de público-alvo). O backend já devolve `scopeLabel`; a UI reusa este mapa como fallback.
+const SCOPE_LABEL: Record<PriceTableScope, string> = {
+  PUBLIC_AGREEMENT: "Convênio público",
+  PRIVATE_CONTRACT: "Contrato privado",
+};
+
+export function getPriceTableScopeLabel(scope: PriceTableScope | string | null | undefined): string {
+  if (!scope) return "Todos";
+  return SCOPE_LABEL[scope as PriceTableScope] ?? "Todos";
+}
+
+export function getPriceTableScopeTone(scope: PriceTableScope | string | null | undefined) {
+  if (scope === "PUBLIC_AGREEMENT") return "info" as const;
+  if (scope === "PRIVATE_CONTRACT") return "audit" as const;
+  return "default" as const;
+}
+
+// Categoria de veículo — app-code curado (conveniência PT-BR, NÃO enum de domínio; catálogo por perfil deferido,
+// D-Ω5P-TAR-05/UI-05). NULL/ausente = curinga ("Todas"). Rótulos das categorias mais comuns; app-code livre exibido
+// cru como fallback (ainda PT-BR-safe: só letras/dígitos/_).
+const VEHICLE_CATEGORY_LABEL: Record<string, string> = {
+  MOTORCYCLE: "Motocicleta",
+  CAR: "Automóvel",
+  TRUCK: "Caminhão / Pesado",
+};
+
+export function formatVehicleCategory(category: string | null | undefined): string {
+  if (!category) return "Todas";
+  return VEHICLE_CATEGORY_LABEL[category] ?? category;
+}
+
 // Ação de transição de status válida para a linha (só o que a máquina de estado do backend aceita).
 export type PriceTableStatusAction = {
   readonly target: PriceTableStatus;
@@ -172,6 +206,9 @@ function adaptPriceTable(input: unknown): PriceTableItem | null {
   const rawStatus = readString(item, ["status"]) ?? "draft";
   const status = (STATUSES.includes(rawStatus as PriceTableStatus) ? rawStatus : "draft") as PriceTableStatus;
 
+  const rawScope = readString(item, ["scope"]);
+  const scope = (rawScope && SCOPES.includes(rawScope as PriceTableScope) ? rawScope : null) as PriceTableScope | null;
+
   return {
     id,
     name,
@@ -182,6 +219,8 @@ function adaptPriceTable(input: unknown): PriceTableItem | null {
     validTo: readNullableString(item, ["validTo", "valid_to"]),
     status,
     isActive: readBoolean(item, ["isActive", "is_active"]) ?? true,
+    scope,
+    vehicleCategory: readNullableString(item, ["vehicleCategory", "vehicle_category"]),
     createdAt: readString(item, ["createdAt", "created_at"]) ?? new Date().toISOString(),
   };
 }

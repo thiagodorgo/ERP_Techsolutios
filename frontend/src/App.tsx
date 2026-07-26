@@ -67,6 +67,11 @@ const FornecedoresPage = lazy(() => import("./modules/registry/suppliers/pages/F
 const TagsPage = lazy(() => import("./modules/registry/tags/pages/TagsPage").then((m) => ({ default: m.TagsPage })));
 const PontosInteressePage = lazy(() => import("./modules/registry/pois/pages/PontosInteressePage").then((m) => ({ default: m.PontosInteressePage })));
 const ProfissionaisPage = lazy(() => import("./modules/registry/operator-profiles/pages/ProfissionaisPage").then((m) => ({ default: m.ProfissionaisPage })));
+// Ω5P PR-04 — módulo Pátios (console do operador): pátios/áreas/vagas + perfis normativos. Tarifas reusa a
+// TabelasValoresPage estendida (alias /patios/tarifas, sem fork).
+const PatiosPage = lazy(() => import("./modules/patios/yards/pages/PatiosPage").then((m) => ({ default: m.PatiosPage })));
+const PatioDetailPage = lazy(() => import("./modules/patios/yards/pages/PatioDetailPage").then((m) => ({ default: m.PatioDetailPage })));
+const PerfisPage = lazy(() => import("./modules/patios/profiles/pages/PerfisPage").then((m) => ({ default: m.PerfisPage })));
 const AbastecimentoPage = lazy(() => import("./modules/fleet/fuel/pages/AbastecimentoPage").then((m) => ({ default: m.AbastecimentoPage })));
 const ManutencaoPage = lazy(() => import("./modules/fleet/maintenance/pages/ManutencaoPage").then((m) => ({ default: m.ManutencaoPage })));
 const MultasPage = lazy(() => import("./modules/fleet/fines/pages/MultasPage").then((m) => ({ default: m.MultasPage })));
@@ -362,6 +367,42 @@ export function App() {
               element={
                 <PermissionGuard permissions={["operator_profiles:read"]}>
                   <ProfissionaisPage />
+                </PermissionGuard>
+              }
+            />
+            {/* Ω5P PR-04 — Pátios (console do operador): administração de pátios/áreas/vagas + perfis normativos +
+                tarifas (alias da Tabela de Valores estendida). Backend é a autoridade de RBAC (403 real); os
+                governed paths (navigation.registry) fazem o esconde-fino no sidebar por permissão pura. */}
+            <Route path="/patios" element={<Navigate to="/patios/patios" replace />} />
+            <Route
+              path="/patios/patios"
+              element={
+                <PermissionGuard permissions={["yard:read"]}>
+                  <PatiosPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/patios/patios/:yardId"
+              element={
+                <PermissionGuard permissions={["yard:read"]}>
+                  <PatioDetailPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/patios/perfis"
+              element={
+                <PermissionGuard permissions={["jurisdiction:read"]}>
+                  <PerfisPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/patios/tarifas"
+              element={
+                <PermissionGuard permissions={["price_tables:read"]}>
+                  <TabelasValoresPage />
                 </PermissionGuard>
               }
             />
