@@ -46,6 +46,7 @@ model Tenant {
   yards                         Yard[]
   yard_areas                    YardArea[]
   yard_spots                    YardSpot[]
+  jurisdiction_profiles         JurisdictionProfile[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
   financial_titles              FinancialTitle[]
@@ -2683,4 +2684,40 @@ model YardSpot {
   @@index([tenant_id, status])
   @@index([tenant_id, area_id])
   @@map("yard_spots")
+}
+
+// Ω5P PR-02 — Perfil normativo (parametrização nacional white-label): prazos legais, modelo/teto de diária e
+// checklist de liberação por natureza (convênio público × contrato privado). Fonte de verdade dos defaults
+// federais (jurisdiction.defaults.ts) que o motor de diárias (charging PR-07, I4) e os relógios do leilão
+// (auction/notificações PR-09/12, I6) leem. Enums em INGLÊS validados na APP (scope PUBLIC_AGREEMENT|
+// PRIVATE_CONTRACT; daily_model ROLLING_24H|CALENDAR; daily_cap SIX_MONTHS|THIRTY_DAYS_LEGACY|UNLIMITED) —
+// SEM CHECK de enum no banco; labels PT-BR no DTO. Prazos > 0 no app E CHECK estrutural na migração
+// (D-Ω5P-JUR-05, belt-and-suspenders). release_requirements = checklist [{code,label,required}] app-validado.
+// current: sem FK a partir do ImpoundProcess (PR-05, RN-JUR-01) — só forward-compat via @@unique([tenant_id,id]).
+model JurisdictionProfile {
+  id                          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                   String   @db.Uuid
+  name                        String
+  scope                       String
+  owner_notif_days            Int      @default(10)
+  notice_edict_day            Int      @default(30)
+  auction_eligible_day        Int      @default(60)
+  auction_edict_business_days Int      @default(15)
+  daily_model                 String   @default("ROLLING_24H")
+  daily_cap                   String   @default("SIX_MONTHS")
+  release_requirements        Json     @default("[]")
+  notes                       String?
+  active                      Boolean  @default(true)
+  created_by                  String?  @db.Uuid
+  updated_by                  String?  @db.Uuid
+  created_at                  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant                      Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, name])
+  @@index([tenant_id])
+  @@index([tenant_id, scope])
+  @@index([tenant_id, active])
+  @@map("jurisdiction_profiles")
 }

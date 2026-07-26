@@ -57,7 +57,8 @@
     "blocks": "88->89"
   },
   "coexistencia": "domínio de frota (Vehicle) e branches INTOCADOS (branches só ganha índice aditivo); catalog cresce +3 perms; sem rota HTTP de ocupação (deferida); sem regressão (1542 pass/0 fail nas suítes sensíveis).",
-  "merge_commit": null,
-  "approved_head": null,
-  "status": "aprovado_pela_junta_aguardando_merge"
+  "pr": 281,
+  "merge_commit": "aae8026",
+  "approved_head": "aae8026",
+  "status": "published_per_pr"
 }

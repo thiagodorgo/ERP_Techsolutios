@@ -1,0 +1,60 @@
+{
+  "pr": "PR-02",
+  "fase": "Fase 1 — Perfis normativos (módulo jurisdiction: parametrização por UF/órgão/contrato)",
+  "snapshot_date": "2026-07-25",
+  "branch": "rodada/omega5p",
+  "tipo": "Backend + migração aditiva. Módulo jurisdiction CRIA net-new. JurisdictionProfile = a fonte de parametrização normativa (prazos, modelo/teto de diária, exigências de liberação) + FEDERAL_DEFAULTS como fonte única de verdade federal (foundation p/ o motor de diárias I4 e o leilão I6). Sem consumidor ainda (ImpoundProcess é PR-05) — só o CRUD + resolveDefaults.",
+  "models_criados": [
+    "JurisdictionProfile (jurisdiction_profiles): id, tenant_id, name, scope (PUBLIC_AGREEMENT|PRIVATE_CONTRACT), owner_notif_days@10, notice_edict_day@30, auction_eligible_day@60, auction_edict_business_days@15, daily_model (ROLLING_24H|CALENDAR)@ROLLING_24H, daily_cap (SIX_MONTHS|THIRTY_DAYS_LEGACY|UNLIMITED)@SIX_MONTHS, release_requirements Json@[], notes?, active, audit, timestamps; @@unique([tenant_id,name]) natural + @@unique([tenant_id,id]) forward-compat FK PR-05"
+  ],
+  "migrations": [
+    "20260834000000_add_jurisdiction — ADITIVA up-only: CREATE TABLE jurisdiction_profiles + 6 índices tenant-first + FK (tenant_id)→tenants RESTRICT + CHECK jurisdiction_profiles_positive_deadlines_chk (prazos>0) + RLS ENABLE+FORCE+POLICY (clone de 20260833000000:138-157). ZERO DDL em tenants (só back-relation). Provada up→down→re-up em erp-postgres pelo dba-guardião com \\d byte-idêntico pós-re-up; CHECK provado vivo (23514 em prazo=0/negativo)."
+  ],
+  "defaults_federais": {
+    "fonte_unica": "src/modules/jurisdiction/jurisdiction.defaults.ts — FEDERAL_DEFAULTS (10/30/60/15, ROLLING_24H, SIX_MONTHS) + TEMA_124_LEGACY_CAP + FEDERAL_RELEASE_REQUIREMENTS; puro, importável por charging/auction sem acoplar ao service.",
+    "resolveDefaults": "PUBLIC_AGREEMENT → federal estrito; PRIVATE_CONTRACT → dailyCap UNLIMITED (custódia privada sem teto do CTB). THIRTY_DAYS_LEGACY (Tema 124/STJ) NÃO é aplicado por scope — é intertemporal por DATA DE ENTRADA, aplicado pelo charging (PR-07).",
+    "endpoint": "GET /jurisdiction-defaults?scope= (read-gated jurisdiction:read; foundation de I4/I6)"
+  },
+  "permissao": "3 permissões novas jurisdiction:read/create/update nas 4 pontas (catalog.ts posicional após yard:* + tests/core-saas.test.ts deepEqual + prisma/seed.ts + RBAC_MATRIX.md), distribuição IDÊNTICA a yard:*/branches:* (read amplo exceto finance/inventory/support; create/update só super_admin/platform_admin/tenant_admin/manager — provado por LOGIN REAL dos 13 papéis pelo coordenador-de-acessos). jurisdiction:manage NÃO criado (sem permissão morta).",
+  "modulos": [
+    "src/modules/jurisdiction/{types,defaults,validators,dto,repository,jurisdiction-prisma.repository,service,controller,routes,index} + registro em src/app.ts:129",
+    "prisma/schema.prisma (model JurisdictionProfile + back-relation em Tenant) + prisma/migrations/20260834000000_add_jurisdiction/migration.sql",
+    "src/modules/core-saas/permissions/catalog.ts + prisma/seed.ts + RBAC_MATRIX.md + tests/core-saas.test.ts"
+  ],
+  "rns_cobertas": [
+    "RN-JUR-01 (foundation) todo processo referenciará um perfil — CRUD + resolveDefaults prontos; a FK a partir do ImpoundProcess é PR-05",
+    "RN-TAR-01 (foundation) vigência já no tariffs; o perfil dá o scope público/privado que o tariffs (PR-03) amarra"
+  ],
+  "rns_total_pr": 2,
+  "parametrizado_vs_deferido": {
+    "parametrizado_agora": "4 prazos (colunas), daily_model, daily_cap, release_requirements ([{code,label,required}], nasce vazio), scope público×privado",
+    "deferido_D-Ω5P-JUR-03": "notification_channels (SNE/POSTAL/EDICT, SNE-only ≥2027) → PR-09/I6; vehicle_categories → eixo da tarifa PR-03. Ambos aditivos quando o consumidor chegar (evita campo morto)."
+  },
+  "aderencia_normativa": "Res. CONTRAN 1025/2026 art.15 (10d), art.26 (30d edital), art.25 (60d elegível); Lei 14.133/2021 (15 d.u.); art.21§1º (ROLLING_24H); CTB art.271§10 + 328§5º (SIX_MONTHS); Tema 124/STJ REsp 1.104.775/RS (THIRTY_DAYS_LEGACY); CTB art.271§1º + Res.1025 arts.23-24 (release_requirements). Neutralidade white-label preservada.",
+  "cobertura_testes": {
+    "backend": "tests/jurisdiction.test.ts (NOVO, InMemory 18: CRUD; resolveDefaults PUBLIC 10/30/60/15·rolling·6meses; PRIVATE→UNLIMITED; TEMA_124→THIRTY_DAYS_LEGACY; herança por scope; prazos>0 (400); enums (400); unique (tenant,name) (409); release_requirements) + tests/rls-tenant-isolation.test.ts (bloco PR-02: 3 tenants × 2 perfis público+privado, cross-tenant invisível/updateMany 0, teardown FK-safe) + tests/core-saas.test.ts (deepEqual posicional + distribuição + manage ausente; 26/26). Execução CI-memória: backend 1542→1560 (+18), 0 fail, 6 skip."
+  },
+  "d_records": [
+    "D-Ω5P-JUR-01 (JurisdictionProfile scope público/privado; defaults federais como @default)",
+    "D-Ω5P-JUR-02 (FEDERAL_DEFAULTS/resolveDefaults como fonte única federal, módulo puro importável)",
+    "D-Ω5P-JUR-03 (notification_channels e vehicle_categories deferidos aos PRs consumidores — evita campo morto)",
+    "D-Ω5P-JUR-04 (THIRTY_DAYS_LEGACY é intertemporal por data de entrada, aplicado pelo charging PR-07 — não por scope)",
+    "D-Ω5P-JUR-05 (status 400 validação / 409 conflito de chave natural — espelha o padrão da casa yard/branches)"
+  ],
+  "junta": {
+    "agente-dba-guardiao": "APROVADO (aditiva up-only; up→down→re-up provado com \\d byte-idêntico; CHECK prazos>0 provado vivo [23514]; FK tenant-first RESTRICT; @@unique(tenant,name)+(tenant,id); RLS forced; teardown FK-safe [teste 1/1 vivo]; base intacta)",
+    "coordenador-de-acessos": "APROVADO (0 cond; matriz por LOGIN REAL dos 13 papéis idêntica a yard:*/branches:*; 4 pontas; core-saas 26/26; jurisdiction:manage ausente; GET /jurisdiction-defaults read-gated + antes de :param; papéis de campo não escrevem)",
+    "omega5p-avaliador": "APROVADO_CONDICIONADO → APROVADO (Seção 10 verde; defaults federais corretos + aderência por artigo; migração aditiva; §allowlist sem tenant_id; status 400/409 aceitável [padrão da casa]; sem regressão [34 falhas locais ambientais idênticas com PR stashed]; única condição = KPI_PR-02 ausente → SANADA por este arquivo)",
+    "veredito": "APROVADO 3/3 (0 CRÍTICO; defaults federais provados; condição de KPI sanada)"
+  },
+  "kpi_repo_wide": {
+    "backend": "1542->1560 (+18; jurisdiction.test InMemory; CI-memória 6 skip)",
+    "frontend_smoke": "850 (inalterado — backend-only)",
+    "flutter_tests": "807 (inalterado — backend-only)",
+    "blocks": "89->90"
+  },
+  "coexistencia": "yard (PR-01)/branches/Vehicle INTOCADOS; catalog cresce +3 perms; jurisdiction_profiles nasce vazia (seed só descreve as perms); sem regressão (1560 pass/0 fail).",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}
