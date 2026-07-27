@@ -1550,6 +1550,37 @@ if (!connectionString) {
       const tenantBChg = await withTenantRls(client, tenantB.id, (tx) => tx.processCharge.findUnique({ where: { id: chgB.charge_id } }));
       assert.equal(tenantBChg?.settlement_note, null, "tenant B process charge settlement_note untouched by tenant A cross-update");
 
+      // Ω5P PR-09 (D-Ω5P-NOTIF-*) — process_notifications (trilha de notificações legais I6) nos 3 tenants EFÊMEROS.
+      // A notificação referencia o impound_process (FK composta tenant-first, RESTRICT — I9). RLS ENABLE/FORCE +
+      // policy (migration 20260839000000). Prova: invisível sem contexto + cross-tenant updateMany count=0 +
+      // visível/intocada in-tenant. tenant_id 1º de todo índice.
+      const insertNotification = async (tx: typeof client, tenantId: string, processId: string) => {
+        const [notification] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO process_notifications (tenant_id, process_id, kind, status, due_at)
+          VALUES (${tenantId}::uuid, ${processId}::uuid, 'OWNER_INITIAL', 'DUE', now())
+          RETURNING id
+        `;
+        return notification.id;
+      };
+      const notifA = await withTenantRls(client, tenantA.id, (tx) => insertNotification(tx as typeof client, tenantA.id, impA.process_id));
+      const notifB = await withTenantRls(client, tenantB.id, (tx) => insertNotification(tx as typeof client, tenantB.id, impB.process_id));
+      const notifC = await withTenantRls(client, tenantC.id, (tx) => insertNotification(tx as typeof client, tenantC.id, impC.process_id));
+
+      const notifWithoutContext = await client.processNotification.findMany({ where: { id: { in: [notifA, notifB, notifC] } } });
+      assert.deepEqual(notifWithoutContext.map((n) => n.id), [], "process notifications must not be visible without app.current_tenant_id");
+
+      const tenantANotifView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.processNotification.findMany({ where: { id: { in: [notifA, notifB, notifC] } } });
+        const crossUpdate = await tx.processNotification.updateMany({ where: { id: { in: [notifB, notifC] } }, data: { reason: "cross-tenant" } });
+        return { visibleIds: visible.map((n) => n.id).sort(), crossUpdatedRows: crossUpdate.count };
+      });
+      assert.deepEqual(tenantANotifView.visibleIds, [notifA], "tenant A must only see its own process notification (not tenant B/C)");
+      assert.equal(tenantANotifView.crossUpdatedRows, 0, "tenant A must not update tenant B/C process notifications");
+
+      const tenantBNotif = await withTenantRls(client, tenantB.id, (tx) => tx.processNotification.findUnique({ where: { id: notifB } }));
+      assert.equal(tenantBNotif?.status, "DUE", "tenant B process notification stays visible + untouched in-tenant");
+      assert.equal(tenantBNotif?.reason, null, "tenant B process notification reason untouched by tenant A cross-update");
+
       // Ω5P PR-03 (D-Ω5P-TAR-*) — price_tables ESCOPADAS (scope PUBLIC_AGREEMENT/PRIVATE_CONTRACT + vehicle_category)
       // nos 3 tenants EFÊMEROS. As 2 colunas novas são NULLABLE aditivas; a RLS (ENABLE/FORCE + policy
       // price_tables_tenant_isolation, migration 20260723000000) é HERDADA — o ADD COLUMN não a altera. Prova:
@@ -2677,6 +2708,8 @@ if (!connectionString) {
           // e os runs ANTES do processo (TEARDOWN FK-SAFE).
           await tx.$executeRawUnsafe(`DELETE FROM process_charges WHERE tenant_id = '${tenantId}'::uuid`);
           await tx.$executeRawUnsafe(`DELETE FROM daily_accrual_runs WHERE tenant_id = '${tenantId}'::uuid`);
+          // Ω5P PR-09 — process_notifications → impound_processes é RESTRICT: purga a trilha ANTES do processo.
+          await tx.$executeRawUnsafe(`DELETE FROM process_notifications WHERE tenant_id = '${tenantId}'::uuid`);
           await tx.$executeRawUnsafe(`DELETE FROM impound_processes WHERE tenant_id = '${tenantId}'::uuid`);
         }
       });

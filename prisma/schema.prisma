@@ -52,6 +52,7 @@ model Tenant {
   intake_inspections            IntakeInspection[]
   process_charges               ProcessCharge[]
   daily_accrual_runs            DailyAccrualRun[]
+  process_notifications         ProcessNotification[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
   financial_titles              FinancialTitle[]
@@ -2816,6 +2817,7 @@ model ImpoundProcess {
   intake_inspection      IntakeInspection?   // Ω5P PR-06 — 1 vistoria de recepção por processo (I3)
   parked_spots           YardSpot[]          @relation("YardSpotCurrentProcess") // Ω5P PR-06 — FK dura da ocupação (I1)
   charges                ProcessCharge[]     // Ω5P PR-07 — ledger de encargos (diárias I4 + remoção/adicional/ajuste)
+  notifications          ProcessNotification[] // Ω5P PR-09 — trilha de notificações legais (I6)
 
   @@unique([tenant_id, id])
   @@index([tenant_id, yard_id, status])
@@ -2948,4 +2950,40 @@ model DailyAccrualRun {
   @@unique([tenant_id, id])
   @@index([tenant_id, run_date])
   @@map("daily_accrual_runs")
+}
+
+// Ω5P PR-09 — Trilha de NOTIFICAÇÕES LEGAIS (I6): projeção consultável MUTÁVEL do rito administrativo do art. 328.
+// Cada marco (notificação inicial ao proprietário, edital complementar) é MARCADO como DEVIDO (status=DUE) pelo
+// SISTEMA no vencimento (t0 + prazo do JurisdictionProfile) e depois carimbado ISSUED/WAIVED por ato registrado
+// (impound:notify). DUE→ISSUED carimba issued_at/channel — MESMO padrão de ProcessCharge.settled_* (metadado
+// mutável). A PROVA de integridade vive no CustodyEvent NOTIFICATION (append-only, trigger-protegido), escrito na
+// MESMA tx. kind/status/channel validados na APP (SEM enum-CHECK); labels PT-BR no DTO. process→RESTRICT (I9:
+// notificação nunca cascateia; retenção ≥5 anos). recipient_ref = destinatário MINIMIZADO (§2.8: rótulo/máscara,
+// NUNCA PII/endereço) e JAMAIS entra no payload do evento nem no audit. tenant_id 1º; RLS forced. Idempotência
+// = índice único raw-only (tenant,process,kind) na migração (no máx. 1 notificação por kind por processo). CHECK
+// estrutural: status ISSUED ⇒ issued_at E channel NOT NULL. AUCTION_EDICT é declarado no enum p/ o gate de leilão
+// (PR-13), mas NÃO é agendado por PR-09 (relativo à data do certame, não ao t0).
+model ProcessNotification {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String    @db.Uuid
+  process_id    String    @db.Uuid
+  kind          String                                  // OWNER_INITIAL|COMPLEMENTARY_EDICT|AUCTION_EDICT (app-validado)
+  status        String    @default("DUE")               // DUE|ISSUED|WAIVED|FAILED (app-validado)
+  due_at        DateTime  @db.Timestamptz(6)            // instante em que passou a ser DEVIDA (t0 + prazo do perfil) — determinístico
+  issued_at     DateTime? @db.Timestamptz(6)            // registro MANUAL de emissão efetiva (envio real = Ω6)
+  channel       String?                                 // POSTAL|SNE|EDICT|IN_PERSON (app-validado) — só em ISSUED
+  recipient_ref String?                                 // destinatário MINIMIZADO (allowlist §2.8: rótulo/máscara, NUNCA PII/endereço)
+  reason        String?                                 // WAIVED/FAILED: fundamento (texto livre, sem PII)
+  created_by    String?   @db.Uuid
+  updated_by    String?   @db.Uuid
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant        Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  process       ImpoundProcess @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, process_id])
+  @@index([tenant_id, process_id, kind])
+  @@index([tenant_id, status])
+  @@map("process_notifications")
 }

@@ -18,6 +18,11 @@ export const JOB_NAMES = [
   // (frozen_at NULL) e cria as ProcessCharge DAILY faltantes + CustodyEvent CHARGE_ACCRUAL (I2). Idempotente
   // (period_seq)/DST-safe/catch-up. Auto-reenfileirante 1h, gated por JOBS_WORKER_ENABLED. Ator = SISTEMA.
   "charging.accrue-daily",
+  // Ω5P PR-09 (D-Ω5P-NOTIF-02) — SWEEP da TRILHA DE NOTIFICAÇÕES LEGAIS (I6): varre os processos PÚBLICOS com t0,
+  // AINDA correndo o rito (frozen_at NULL, status != JUDICIAL_HOLD) e MARCA como DEVIDAS (status=DUE) as
+  // notificações vencidas (t0 + prazo do perfil) + CustodyEvent NOTIFICATION (I2). Idempotente ((tenant,process,
+  // kind))/DST-imune/catch-up/fail-closed. Auto-reenfileirante 1h, gated por JOBS_WORKER_ENABLED. Ator = SISTEMA.
+  "impound.notify-due",
 ] as const;
 
 export type JobName = (typeof JOB_NAMES)[number];

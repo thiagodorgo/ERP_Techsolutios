@@ -109,6 +109,9 @@ export const PERMISSION_CATALOG = [
   // (allocate/vacate/move de vaga I1 — operador de pátio). Distribuição espelha impound:transition (gestão+admins).
   "impound:inspect",
   "impound:allocate",
+  // Ω5P PR-09 (D-Ω5P-NOTIF-03) — registrar EMISSÃO/DISPENSA de notificações legais (ato probatório do rito do
+  // art. 328). Distribuição espelha impound:transition/inspect (gestão+admins). A DUE-marking é do SISTEMA (job).
+  "impound:notify",
   "service_quotes:update",
   "service_quotes:approve",
   "work_order_financials:update",
@@ -344,6 +347,7 @@ export const ROLE_PERMISSIONS = {
     "impound:transition",
     "impound:inspect",
     "impound:allocate",
+    "impound:notify",
     "service_quotes:update",
     "service_quotes:approve",
     "work_order_financials:update",

@@ -20,11 +20,13 @@ async function startJobWorkerIfEnabled(): Promise<void> {
     { enqueueInitialScheduledNotificationScan },
     { enqueueInitialImpoundReconcileScan },
     { enqueueInitialChargingAccrueScan },
+    { enqueueInitialImpoundNotifyDueScan },
   ] = await Promise.all([
     import("./infra/jobs/job.worker.js"),
     import("./modules/notifications/scheduled-notification.jobs.js"),
     import("./modules/impound/impound.jobs.js"),
     import("./modules/charging/charge.jobs.js"),
+    import("./modules/impound/impound.notifications.jobs.js"),
   ]);
   startWorker();
   await enqueueInitialScheduledNotificationScan();
@@ -32,6 +34,8 @@ async function startJobWorkerIfEnabled(): Promise<void> {
   await enqueueInitialImpoundReconcileScan();
   // Ω5P PR-07 — 1º tick do SWEEP do motor de diárias I4 (auto-reenfileirante 1h). Gated pela mesma flag.
   await enqueueInitialChargingAccrueScan();
+  // Ω5P PR-09 — 1º tick do SWEEP da trilha de notificações legais I6 (auto-reenfileirante 1h). Gated pela mesma flag.
+  await enqueueInitialImpoundNotifyDueScan();
   logger.info({ pollIntervalMs: 1000 }, "In-process job worker started (JOBS_WORKER_ENABLED).");
 }
 

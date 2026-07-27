@@ -48,9 +48,9 @@
     "critico-adversarial": "APROVADO (0 CRÍTICO; V1-V7 de dinheiro/escrita RESISTIRAM — F4 periodSeq, BRL sem perda de centavo, ADJUSTMENT assinado, FSM espelha ENABLED_EDGES, DAILY barrada 422, sem overclaim/vazamento. M1 MÉDIO — fetch paralelo do fsm.ts sem refresh-retry de 401 num write path — FECHADO pelo caminho arquitetural: ApiError evoluído + transição via apiRequest, fetch bespoke deletado)",
     "veredito": "APROVADO 3/3 (1 condição MÉDIA M1 sanada em ciclo + B1/B2 endurecimentos)"
   },
-  "pr": null,
-  "merge_commit": null,
-  "approved_head": null,
+  "pr": 289,
+  "merge_commit": "dfc5299",
+  "approved_head": "dfc5299",
   "status": "published_per_pr",
   "follow_up_junta": "M1 (critico, MÉDIO — condição): transitionProcess fazia fetch paralelo (fora do apiRequest) só p/ ler o corpo do erro 409 e distinguir os reason — perdia o auto-refresh de 401 + clearStoredAuthSession num ato jurídico (transição de custódia). SANADO pelo caminho CERTO (elimina a divergência): frontend/src/services/api/client.ts evoluiu ApiError (+code?/+reason? OPCIONAIS; buildApiError/readErrorEnvelope leem {error:{code,reason}} de sendRouteError num try/catch — corpo vazio/não-JSON = comportamento idêntico ao anterior; safeMessage exibível segue genérica, §2.8 não vaza corpo cru) e os 3 sites de erro (apiRequest/apiFormDataRequest/apiBlobRequest) passaram a throw await buildApiError(response); fsm.ts roteia a transição por apiRequest (herda refresh-retry+session-clear) e o fetch bespoke/buildHeaders/extractReason foram DELETADOS. Mudança ADITIVA e backward-compatible (nenhum caller lê os campos novos; único new ApiError é interno) — provada por node --test tests/api-client.test.ts 3/3 + test:smoke INTEIRO 892/892 + tsc limpo. B2 (honestidade): sob reconciliationPending/overAccruedDailies>0 o total vira \"Total apurado (memória de cálculo)\" (não \"Total devido\" — o ledger append-only inclui diárias que o PR-10 estornará). B1 (endurecimento): guarda de reentrância no topo de handleSubmit (LancamentoChargeModal) e submit (TransicaoFsmPanel). Resíduo BAIXO opcional (não bloqueia): assert unitário positivo de {error:{code,reason}}→ApiError.code/reason (o data-path está verificado por leitura + backward-compat/mapping testados) → backlog."
 }
