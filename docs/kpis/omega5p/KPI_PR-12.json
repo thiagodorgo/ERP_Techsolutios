@@ -95,9 +95,9 @@
     "omega5p-avaliador": "APROVADO (VETO; I8 ledger + gate + 2 pisos; §2.8; white-label; impound.hashchain/types git-diff vazio; IMPOUND_TRANSITIONS intacta; catalog intocado; D-AUC-01/02 coerentes; condição de KPI de raiz sanada pelo orquestrador)",
     "veredito": "APROVADO 3/3 (MÉDIO-A sucata sanado por diferimento seguro ao PR-13; R-omega5p-pr12-ciclo1)"
   },
-  "pr": null,
-  "merge_commit": null,
-  "approved_head": null,
+  "pr": 294,
+  "merge_commit": "2486157",
+  "approved_head": "2486157",
   "status": "published_per_pr",
   "riscos_residuais": "(1) markEligible é MANUAL (operador dispara), NÃO sweep — o salto é consequencial (alienação de bem de 3º). (2) A RECICLAGEM a sucata (AUCTION_ELIGIBLE→DIRECT_RECYCLING, 2º strike) é DIFERIDA ao PR-13, gated no AUCTION_EDICT (>=15 d.u.) por rodada — PR-12 SÓ acumula o ledger. (3) A aresta 'rodada deserta→volta a AUCTION_ELIGIBLE' e as internas AUCTION_PREP/LOTTED/AUCTIONED seguem DEFERIDAS (PR-13). (4) O retorno-por-reclamado LOTTED→ACTIVE_CUSTODY (art. 26 §1º) é de PR-13. (5) recordAttempt hoje só grava DESERTED; SOLD/NO_PAYMENT declarados no enum p/ o PR-13. (6) A cascata do art. 328 §6º (I7) e o saldo ao ex-proprietário são de PR-14. (7) PD-Ω5P-SIGN (assinatura) NÃO bloqueia PR-12, mas BLOQUEIA PR-13/14. (8) auction:* dedicada (em vez de reusar impound:transition) fica como opção da junta.",
   "requisito_pr13": "A transição a DIRECT_RECYCLING (sucata, IRREVERSÍVEL) foi DIFERIDA ao PR-13, onde deve vir gated no AUCTION_EDICT emitido por rodada (≥15 d.u., espelhando o PISO OWNER_INITIAL) + intervalo/sequencialidade entre rodadas. PR-12 entrega o gate de elegibilidade (blindado) + o ledger de strikes (auction_attempts, contador derivado, evento AUCTION_CLOSED, idempotência); a aresta AUCTION_ELIGIBLE→DIRECT_RECYCLING está deferred."

@@ -115,6 +115,8 @@ if (!connectionString) {
   test("(6b) N strikes concorrentes na mesma round_number → exatamente 1 registrado, strikeCount=1, sem reciclagem", async () => {
     const { client, auction } = await bootstrap(connectionString);
     const ctx = await seedProcess(client, `strike-${stamp()}`, "AUCTION_ELIGIBLE");
+    // Ω5P PR-13a — o recordAttempt é EDICT-GATED: registra o edital da rodada 1 (senão 409 auction_edict_missing).
+    await seedEdict(client, ctx.tenantId, ctx.processId, 1);
     try {
       const results = await Promise.allSettled(
         Array.from({ length: CONCURRENCY }, () =>
@@ -185,6 +187,17 @@ async function selectProcess(client: BootstrapClient, tenantId: string, processI
   return rows[0];
 }
 
+// Ω5P PR-13a — semeia o edital de uma rodada (auction_edicts) sob RLS, para habilitar o strike edict-gated.
+async function seedEdict(client: BootstrapClient, tenantId: string, processId: string, round: number): Promise<void> {
+  const { withTenantRls } = await import("../src/database/rls.js");
+  await withTenantRls(client, tenantId, (tx) =>
+    tx.$executeRaw`
+      INSERT INTO auction_edicts (tenant_id, process_id, round_number, edict_reference, business_days, status)
+      VALUES (${tenantId}::uuid, ${processId}::uuid, ${round}, ${`EDITAL-CONC-${round}`}, 15, 'DESIGNATED')
+    `,
+  );
+}
+
 async function countAttempts(client: BootstrapClient, tenantId: string, processId: string): Promise<number> {
   const { withTenantRls } = await import("../src/database/rls.js");
   const rows = await withTenantRls(client, tenantId, (tx) =>
@@ -193,12 +206,13 @@ async function countAttempts(client: BootstrapClient, tenantId: string, processI
   return rows[0].n;
 }
 
-// Teardown FK-safe de UM tenant (sem disconnect): auction_attempts ANTES de custody_events/impound_processes (FK
-// composta RESTRICT filha→mãe — I9) e impound_releases (do teste 6a). custody_events tem TRIGGER append-only → replica.
-// Escopado por tenant (NUNCA wildcard).
+// Teardown FK-safe de UM tenant (sem disconnect): auction_edicts/auction_attempts ANTES de custody_events/
+// impound_processes (FK composta RESTRICT filha→mãe — I9) e impound_releases (do teste 6a). custody_events tem
+// TRIGGER append-only → replica. Escopado por tenant (NUNCA wildcard).
 async function teardownTenant(client: BootstrapClient, tenantId: string): Promise<void> {
   await client.$transaction(async (tx) => {
     await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
+    await tx.$executeRawUnsafe(`DELETE FROM auction_edicts WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM auction_attempts WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM release_requirement_checks WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM impound_releases WHERE tenant_id = '${tenantId}'::uuid`);

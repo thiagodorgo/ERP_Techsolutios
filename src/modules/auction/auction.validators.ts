@@ -1,4 +1,8 @@
-import { AuctionError } from "./auction.types.js";
+import {
+  AUCTION_CLASSIFICATIONS,
+  AuctionError,
+  type AuctionClassification,
+} from "./auction.types.js";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -34,4 +38,68 @@ export function parseNotes(value: unknown): string | undefined {
     throw new AuctionError(400, "AUCTION_INVALID", "notes_too_long", "notes must be at most 1000 characters.");
   }
   return normalized;
+}
+
+// ── Ω5P PR-13a — validadores do edital + reciclagem ───────────────────────────────────────────────────────────
+// edict_reference OBRIGATÓRIA no registro do edital (piso mínimo de designação REAL — barra o "edital vazio"/round nu).
+// Ausente/vazia/só-espaços ⇒ 400 edict_reference_required. §2.8: referência PÚBLICA do edital, minimizada (não PII).
+export function parseRequiredEdictReference(value: unknown): string {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  if (!normalized) {
+    throw new AuctionError(400, "AUCTION_INVALID", "edict_reference_required", "edict_reference is required (a real edict designation, not an empty round marker).");
+  }
+  if (normalized.length > 200) {
+    throw new AuctionError(400, "AUCTION_INVALID", "edict_reference_too_long", "edict_reference must be at most 200 characters.");
+  }
+  return normalized;
+}
+
+// Texto curto OPCIONAL (§2.8: sem PII; auctioneerRef/edictReference minimizados). Vazio ⇒ undefined; teto defensivo.
+export function parseOptionalLabel(value: unknown, field: string, maxLength = 200): string | undefined {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  if (!normalized) return undefined;
+  if (normalized.length > maxLength) {
+    throw new AuctionError(400, "AUCTION_INVALID", `${field}_too_long`, `${field} must be at most ${maxLength} characters (use a masked label, not full PII).`);
+  }
+  return normalized;
+}
+
+// classification = CONSERVED|SCRAP|UNRECOVERABLE (app-validada; enum INGLÊS). OPCIONAL no registro do edital.
+export function parseClassification(value: unknown): AuctionClassification | undefined {
+  const normalized = typeof value === "string" ? value.trim().toUpperCase() : "";
+  if (!normalized) return undefined;
+  if (!AUCTION_CLASSIFICATIONS.includes(normalized as AuctionClassification)) {
+    throw new AuctionError(422, "AUCTION_INVALID", "classification_invalid", "classification must be one of CONSERVED, SCRAP or UNRECOVERABLE.");
+  }
+  return normalized as AuctionClassification;
+}
+
+// business_days = prazo do edital em dias úteis. OPCIONAL; inteiro >= 1 quando presente (o PISO >=15 da venda é 13b).
+export function parseBusinessDays(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const numeric = typeof value === "number" ? value : Number(String(value).trim());
+  if (!Number.isInteger(numeric) || numeric < 1 || numeric > 3650) {
+    throw new AuctionError(422, "AUCTION_INVALID", "business_days_invalid", "business_days must be a positive integer.");
+  }
+  return numeric;
+}
+
+// published_at = data de publicação do edital externo. OPCIONAL; ISO/parseável quando presente.
+export function parsePublishedAt(value: unknown): Date | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const date = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(date.getTime())) {
+    throw new AuctionError(422, "AUCTION_INVALID", "published_at_invalid", "published_at must be a valid date.");
+  }
+  return date;
+}
+
+// Máscara §2.8 da referência do edital p/ o payload da cadeia (NUNCA o valor bruto). Mostra só o sufixo curto —
+// suficiente p/ correlacionar o strike ao seu edital sem vazar o identificador completo (espelha maskAuthorityReference).
+export function maskEdictReference(reference: string | undefined): string | null {
+  if (!reference) return null;
+  const trimmed = reference.trim();
+  if (!trimmed) return null;
+  if (trimmed.length <= 4) return "…";
+  return `…${trimmed.slice(-4)}`;
 }

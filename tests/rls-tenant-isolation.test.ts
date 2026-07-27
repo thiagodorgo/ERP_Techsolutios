@@ -1657,6 +1657,37 @@ if (!connectionString) {
       assert.equal(tenantBAuc?.outcome, "DESERTED", "tenant B auction attempt stays visible + untouched in-tenant");
       assert.equal(tenantBAuc?.notes, null, "tenant B auction attempt notes untouched by tenant A cross-update");
 
+      // Ω5P PR-13a (D-Ω5P-AUC-*) — auction_edicts (designação de leilão POR RODADA I8) nos 3 tenants EFÊMEROS. O edital
+      // referencia o impound_process (FK composta tenant-first, RESTRICT — I9). RLS ENABLE/FORCE + policy (migration
+      // 20260842000000). Prova: invisível sem contexto + cross-tenant updateMany count=0 + visível/intocado in-tenant.
+      // tenant_id 1º de todo índice; partial-unique de round_number raw-only.
+      const insertEdict = async (tx: typeof client, tenantId: string, processId: string) => {
+        const [edict] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO auction_edicts (tenant_id, process_id, round_number, edict_reference, business_days, status)
+          VALUES (${tenantId}::uuid, ${processId}::uuid, 1, 'EDITAL-RLS-001', 15, 'DESIGNATED')
+          RETURNING id
+        `;
+        return edict.id;
+      };
+      const edA = await withTenantRls(client, tenantA.id, (tx) => insertEdict(tx as typeof client, tenantA.id, impA.process_id));
+      const edB = await withTenantRls(client, tenantB.id, (tx) => insertEdict(tx as typeof client, tenantB.id, impB.process_id));
+      const edC = await withTenantRls(client, tenantC.id, (tx) => insertEdict(tx as typeof client, tenantC.id, impC.process_id));
+
+      const edWithoutContext = await client.auctionEdict.findMany({ where: { id: { in: [edA, edB, edC] } } });
+      assert.deepEqual(edWithoutContext.map((e) => e.id), [], "auction edicts must not be visible without app.current_tenant_id");
+
+      const tenantAEdView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.auctionEdict.findMany({ where: { id: { in: [edA, edB, edC] } } });
+        const crossUpdate = await tx.auctionEdict.updateMany({ where: { id: { in: [edB, edC] } }, data: { notes: "cross-tenant" } });
+        return { visibleIds: visible.map((e) => e.id).sort(), crossUpdatedRows: crossUpdate.count };
+      });
+      assert.deepEqual(tenantAEdView.visibleIds, [edA], "tenant A must only see its own auction edict (not tenant B/C)");
+      assert.equal(tenantAEdView.crossUpdatedRows, 0, "tenant A must not update tenant B/C auction edicts");
+
+      const tenantBEd = await withTenantRls(client, tenantB.id, (tx) => tx.auctionEdict.findUnique({ where: { id: edB } }));
+      assert.equal(tenantBEd?.status, "DESIGNATED", "tenant B auction edict stays visible + untouched in-tenant");
+      assert.equal(tenantBEd?.notes, null, "tenant B auction edict notes untouched by tenant A cross-update");
+
       // Ω5P PR-03 (D-Ω5P-TAR-*) — price_tables ESCOPADAS (scope PUBLIC_AGREEMENT/PRIVATE_CONTRACT + vehicle_category)
       // nos 3 tenants EFÊMEROS. As 2 colunas novas são NULLABLE aditivas; a RLS (ENABLE/FORCE + policy
       // price_tables_tenant_isolation, migration 20260723000000) é HERDADA — o ADD COLUMN não a altera. Prova:
@@ -2778,6 +2809,9 @@ if (!connectionString) {
         await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
         for (const tenantId of tenantIds) {
           await tx.$executeRawUnsafe(`DELETE FROM custody_events WHERE tenant_id = '${tenantId}'::uuid`);
+          // Ω5P PR-13a — auction_edicts → impound_processes é RESTRICT: purga a designação de leilão ANTES do processo
+          // (TEARDOWN FK-SAFE; auction_edicts ANTES de custody_events/impound_processes).
+          await tx.$executeRawUnsafe(`DELETE FROM auction_edicts WHERE tenant_id = '${tenantId}'::uuid`);
           // Ω5P PR-12 — auction_attempts → impound_processes é RESTRICT: purga o contador de leilão ANTES do processo
           // (TEARDOWN FK-SAFE; auction_attempts ANTES de custody_events/impound_processes).
           await tx.$executeRawUnsafe(`DELETE FROM auction_attempts WHERE tenant_id = '${tenantId}'::uuid`);

@@ -1,10 +1,10 @@
 const dashboardData = {
   "project": {
     "name": "ERP Techsolutions",
-    "version": "Ω4-KPI-RELATORIO",
-    "updatedAt": "2026-07-18",
-    "sourceBranch": "feat-omega4-kpi-reconciliacao",
-    "summary": "Ω4 (RODADA — PÓS-FASE 1, reconciliacao D-Ω4-KPI-RELATORIO, 2026-07-18): o Financeiro do tenant x1,5 em 8 agregados — Ω4-1 Contas, Ω4-2 Titulo AR/AP (Decimal(12,2), CHOKEPOINT de fechamento em toda escrita) + telas Cobrancas/Pagamentos, Ω4-3 Faturamento OS->Titulo (anti-refaturamento idempotente), Ω4-4 Caixa/Extrato + liquidacao (saldo somado no backend, estorno por contra-lancamento), Ω4-5 Conciliacao bancaria (reconcile EXENTO do chokepoint), Ω4-6 Fechamento de periodo/trava retroativa (close atomico + snapshot congelado), Ω4-7 Cheque (mutex por flip condicional; compensa via chokepoint; bounce = contra-lancamento novo; gate de dinheiro), Ω4-8 Dashboard financeiro real (agregado backend GET /financial-summary que RESOLVE P-Ω4-2B-KPI-AGREGADO + front que nunca soma). Cada agregado por junta adversarial (ataque de DESENHO em workflow ANTES de codar nos de maior risco) + pos-analise efemera; juntas cacaram 3 ALTA no desenho do cheque, cashFlow ancorado no mes UTC no Ω4-8a e competencia fora de faixa no #218 ANTES do merge. Suite: backend 989->1242 (0 fail, 6 skip DB-gated), smoke web 486->514. Flutter/mobile INALTERADOS (web/backend-only). D-Ω4-KPI-RELATORIO reconciliou os PRs #206-#225 neste snapshot unico. Relatorio: agent-orchestration/omega/RELATORIO-OMEGA4.md.",
+    "version": "OMEGA5P (em curso)",
+    "updatedAt": "2026-07-27",
+    "sourceBranch": "rodada/omega5p",
+    "summary": "Os números de topo (Backend/Frontend smoke/Flutter/Blocos), a versão e o histórico deste painel são HIDRATADOS em tempo de execução a partir de Kpis/kpis-latest.json e Kpis/kpis-history.json (a fonte de verdade atualizada por PR, com contagem real de execução). Se o painel for aberto direto do disco (file://) sem servidor, o navegador bloqueia a leitura do JSON e o painel cai para os valores embutidos abaixo (mantidos honestos no último merge). Sirva a pasta Kpis/ por HTTP (ex.: `python -m http.server` na raiz do repo) para ver sempre o estado corrente. RODADA Ω5P — Pátios de Recolhimento (SIGPRV, Res. CONTRAN 1025/2026): custódia jurídica de veículo de terceiro (hash-chain probatória I2, motor de diárias reguladas I4, trilha de notificações legais I6, gate de liberação I5 com o dono-paga→autoridade-aprova, elegibilidade ao leilão I8 com 2 pisos que impedem leilão sem notificar o proprietário). Fases 0-3 completas + Fase 4 aberta.",
   },
   "kpis": [
     {
@@ -59,18 +59,23 @@ const dashboardData = {
     },
     {
       "label": "Flutter",
-      "value": "764/764",
-      "note": "Total real revalidado na PR #123 (apos cada uma das 7 telas)."
+      "value": "807/807",
+      "note": "Fallback embutido (último merge). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.flutter_tests). Ω4C encerrou a trilha mobile em 807; Ω5P é backend/web (Flutter inalterado)."
     },
     {
       "label": "Frontend smoke",
-      "value": "378/378",
-      "note": "test:smoke real do frontend (execucao no PR); substitui o 44/44 congelado no B-124. Google Maps (J-MAPAS-3/4) +16. 0 fail."
+      "value": "908/908",
+      "note": "Fallback embutido (último merge). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.frontend_smoke_tests). test:smoke real do frontend, contagem de execução no PR, 0 fail."
     },
     {
       "label": "Backend tests",
-      "value": "799/799",
-      "note": "Suite backend INTEIRA no gate do CI (Postgres+Redis). Ω-INFRA-4 +16 (backup-database.test) sobre 783. Local 0 fail (6 skip pre-existentes DB-gated). Total real confirmado pelo gate do CI. KPI-por-PR."
+      "value": "1767/1773",
+      "note": "Fallback embutido (último merge Ω5P PR-12 #294). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.backend_tests). Suíte backend INTEIRA no gate do CI (Postgres+Redis); contagem de execução real por PR; 6 skip DB-gated pré-existentes. KPI-por-PR (D-KPI-PER-PR)."
+    },
+    {
+      "label": "Blocos concluídos",
+      "value": "102",
+      "note": "Fallback embutido (último merge). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.blocks_completed). Blocos de feature acumulados ao longo das rodadas."
     },
     {
       "label": "Mobile contracts",
@@ -527,4 +532,68 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+// Render síncrono do fallback embutido (honesto no último merge; usado quando file:// bloqueia o fetch).
 renderDashboard(dashboardData);
+
+// Hidratação HONESTA em runtime: sobrescreve versão/data/resumo, os cards de métrica e o histórico
+// a partir de Kpis/kpis-latest.json e Kpis/kpis-history.json — a fonte de verdade atualizada por PR
+// com contagem de execução REAL. Se aberto via file:// (sem servidor), o fetch falha e o fallback
+// embutido permanece. Servir a pasta por HTTP mostra sempre o estado corrente.
+function metricCard(label, metric) {
+  if (!metric) return null;
+  const value = metric.display || (metric.value != null ? String(metric.value) : "");
+  return { label, value, note: metric.note || "" };
+}
+async function hydrateFromLatest() {
+  if (typeof fetch !== "function") return;
+  let latest = null;
+  let history = null;
+  try {
+    const [lr, hr] = await Promise.all([
+      fetch("./kpis-latest.json", { cache: "no-store" }),
+      fetch("./kpis-history.json", { cache: "no-store" }),
+    ]);
+    if (lr && lr.ok) latest = await lr.json();
+    if (hr && hr.ok) history = await hr.json();
+  } catch (_) {
+    return; // file:// ou offline → mantém o fallback embutido honesto
+  }
+  if (latest && latest.metrics) {
+    const m = latest.metrics;
+    const rel = latest.release || {};
+    if (latest.version) setText("dashboard-version", latest.version);
+    if (rel.summary) setText("project-summary", rel.summary);
+    if (Array.isArray(history) && history.length) {
+      const last = history[history.length - 1];
+      if (last && last.snapshot_date) setText("last-updated", last.snapshot_date);
+    }
+    const liveCards = [];
+    if (rel.status_label || rel.summary) {
+      const prTag = rel.pr ? ` (#${rel.pr})` : (rel.status === "published_per_pr" ? " (aguardando merge)" : "");
+      liveCards.push({ label: (latest.version || "Rodada atual") + prTag, value: rel.title || rel.status_label || "", note: rel.summary || rel.status_label || "" });
+    }
+    [
+      metricCard("Backend tests", m.backend_tests),
+      metricCard("Frontend smoke", m.frontend_smoke_tests),
+      metricCard("Flutter", m.flutter_tests),
+      metricCard("Blocos concluídos", m.blocks_completed),
+      metricCard("MVP demo", m.mvp_demo),
+      metricCard("MVP vendável", m.mvp_vendavel),
+    ].forEach((c) => { if (c) liveCards.push(c); });
+    // Preserva as narrativas históricas de rodadas anteriores após as métricas correntes vivas.
+    const narrative = (dashboardData.kpis || []).filter((k) => !["Backend tests", "Frontend smoke", "Flutter", "Blocos concluídos", "MVP demo", "MVP vendável"].includes(k.label));
+    renderKpis(liveCards.concat(narrative));
+  }
+  if (Array.isArray(history) && history.length) {
+    const hist = history
+      .slice()
+      .reverse()
+      .map((h) => ({
+        date: h.snapshot_date || "",
+        title: h.version + (h.pr ? ` · #${h.pr}` : "") + (h.merge_commit ? ` · ${h.merge_commit}` : ""),
+        detail: h.description || `backend ${h.backend_tests || "?"} · smoke ${h.frontend_smoke || "?"} · flutter ${h.flutter_tests || "?"} · blocos ${h.blocks_completed ?? "?"}`,
+      }));
+    renderHistory(hist);
+  }
+}
+hydrateFromLatest();

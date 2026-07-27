@@ -60,6 +60,12 @@ export type TransitionInputs = {
   // gate de edital por rodada (AUCTION_EDICT >= 15 d.u., relativo à data do certame) = PR-13. PR-12 SÓ mantém o
   // ledger de strikes (auction_attempts); NÃO auto-sucateia (a sucata destrói patrimônio de 3º — tolerância-zero).
   readonly auctionEligible?: AuctionEligibleGateInput;
+  // Ω5P PR-13a (CTB art. 328 / Lei 13.160/2015 — I8) — insumos SINTÉTICOS das guardas de RECICLAGEM (sucata
+  // IRREVERSÍVEL). O auction.service resolve as precondições REAIS (COUNT strikes / edital-por-rodada / cadeia I2 /
+  // classificação / liberação-em-curso) e injeta AQUI; as guardas são PURAS e só leem estas flags. A reciclagem é
+  // um ATO EXPLÍCITO permissionado/auditado (R-omega5p-pr12-ciclo1: nunca efeito colateral do recordAttempt).
+  readonly auctionReclassify?: AuctionReclassifyGateInput;   // AUCTION_ELIGIBLE→DIRECT_RECYCLING (2 strikes edict-backed)
+  readonly unrecoverable?: UnrecoverableRecycleGateInput;    // ACTIVE_CUSTODY→DIRECT_RECYCLING (inservível §§16-18)
 };
 
 // Salto A (ACTIVE_CUSTODY→RELEASE_IN_PROGRESS): abrir a liberação (freeze T_stop). alreadyInProgress = já há
@@ -106,6 +112,27 @@ export type AuctionEligibleGateInput = {
   readonly ownerInitialMissing: boolean;   // OWNER_INITIAL não ISSUED/WAIVED (PISO independente do perfil)
   readonly chainBroken: boolean;           // verifyChain().valid === false (I2)
   readonly releaseInProgress: boolean;     // hasActiveRelease === true (não-reclamado ⇔ sem liberação em curso)
+};
+
+// Ω5P PR-13a — RECICLAGEM por 2 strikes edict-backed (AUCTION_ELIGIBLE→DIRECT_RECYCLING, I8). CONGELA (setFrozenAt=
+// true — T_stop §5: a sucata encerra a acumulação de diárias). Cada flag = uma pré-condição, com reason 409 DISTINTO.
+// O gate de EDITAL POR RODADA (edictMissingForRound) fecha R-omega5p-pr12-ciclo1: só recicla quando houve 2 certames
+// REAIS designados (edital registrado em cada rodada deserta).
+export type AuctionReclassifyGateInput = {
+  readonly strikesInsufficient: boolean;      // rodadas 1..maxAttempts NÃO todas com strike DESERTED (sequencial a partir de 1)
+  readonly edictMissingForRound: boolean;     // alguma rodada 1..maxAttempts SEM auction_edicts (certame não-designado)
+  readonly edictIncompleteForRound: boolean;  // alguma rodada 1..maxAttempts com edital INCOMPLETO (ref/published_at/business_days>=15)
+  readonly chainBroken: boolean;              // verifyChain().valid === false (I2)
+};
+
+// Ω5P PR-13a — RECICLAGEM por INSERVIBILIDADE (ACTIVE_CUSTODY→DIRECT_RECYCLING, §§16-18). CONGELA. classificationMissing
+// = classification NÃO ∈ {SCRAP, UNRECOVERABLE}; reason (fundamento) exigido via inputs.reason; releaseInProgress =
+// hasActiveRelease === true; chainBroken = verifyChain().valid === false (I2 — o bem inservível também precisa da cadeia
+// probatória íntegra antes da destruição). Reasons 409 DISTINTOS.
+export type UnrecoverableRecycleGateInput = {
+  readonly classificationMissing: boolean; // classification não-registrada ∈ {SCRAP, UNRECOVERABLE}
+  readonly releaseInProgress: boolean;     // hasActiveRelease === true (não reciclar com liberação em curso)
+  readonly chainBroken: boolean;           // verifyChain().valid === false (I2)
 };
 
 // Efeitos temporais decididos pelo destino (aplicados na MESMA tx do append pelo repositório).
@@ -281,6 +308,63 @@ function guardAuctionEligible(_process: ImpoundProcess, inputs: TransitionInputs
   }
 }
 
+// Ω5P PR-13a — RECICLAGEM por 2 strikes edict-backed (AUCTION_ELIGIBLE→DIRECT_RECYCLING, I8). PURA: só lê as 3 flags
+// que o auction.service computa (COUNT strikes / edital-por-rodada / cadeia I2) e RE-VERIFICA sob FOR UPDATE. É o ATO
+// EXPLÍCITO que encerra R-omega5p-pr12-ciclo1: reintroduzida AGORA com a pré-condição REAL do EDITAL (no PR-12 fora
+// removida). Reasons 409 DISTINTOS (o adversarial ataca cada furo: sucata sem 2 strikes / sem 2 certames REAIS
+// designados / com a cadeia probatória quebrada). Ausência do gate ⇒ auction_gate_unresolved (a aresta EXIGE o
+// auction.service — não é dirigível pelo endpoint genérico de transição).
+function guardAuctionReclassify(_process: ImpoundProcess, inputs: TransitionInputs): void {
+  const gate = inputs.auctionReclassify;
+  if (!gate) {
+    throw new ImpoundError(
+      409,
+      "IMPOUND_GUARD_FAILED",
+      "auction_gate_unresolved",
+      "Auction transitions must be driven by the auction service (gate not resolved).",
+    );
+  }
+  if (gate.strikesInsufficient) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "scrap_strikes_insufficient", "Scrap reclassification requires deserted rounds 1..maxAttempts (sequential, art. 328).");
+  }
+  if (gate.edictMissingForRound) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "scrap_edict_missing_for_round", "Every deserted round (1..maxAttempts) must have a registered auction edict before scrap reclassification.");
+  }
+  if (gate.edictIncompleteForRound) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "scrap_edict_incomplete_for_round", "Every edict backing the scrap must be complete (reference + published_at + business_days >= 15) — proof of a real auction (Lei 14.133).");
+  }
+  if (gate.chainBroken) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "auction_chain_broken", "The custody hash chain must verify before scrap reclassification (I2).");
+  }
+}
+
+// Ω5P PR-13a — RECICLAGEM por INSERVIBILIDADE (ACTIVE_CUSTODY→DIRECT_RECYCLING, §§16-18). PURA: lê classificationMissing/
+// releaseInProgress (injetadas pelo auction.service) + o reason (fundamento) via inputs.reason. Reasons 409 DISTINTOS
+// na ORDEM classificação → reason → liberação. Ausência do gate ⇒ auction_gate_unresolved.
+function guardUnrecoverableRecycle(_process: ImpoundProcess, inputs: TransitionInputs): void {
+  const gate = inputs.unrecoverable;
+  if (!gate) {
+    throw new ImpoundError(
+      409,
+      "IMPOUND_GUARD_FAILED",
+      "auction_gate_unresolved",
+      "Auction transitions must be driven by the auction service (gate not resolved).",
+    );
+  }
+  if (gate.classificationMissing) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "scrap_classification_required", "Direct recycling requires a SCRAP or UNRECOVERABLE classification (art. §§16-18).");
+  }
+  if (!inputs.reason || !inputs.reason.trim()) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "reason_required", "Direct recycling by unrecoverability requires a reason (fundamento do ato).");
+  }
+  if (gate.releaseInProgress) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "recycling_release_in_progress", "A release is in progress; the vehicle cannot be sent to direct recycling.");
+  }
+  if (gate.chainBroken) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "auction_chain_broken", "The custody hash chain must verify before direct recycling (I2).");
+  }
+}
+
 // Registro de guardas. Ausência de chave para uma aresta LEGAL = deferida por padrão (segurança: nada release/
 // leilão fica habilitado por esquecimento). Só as custódia-nativas são explicitamente `enabled` em PR-05.
 // Ω5P PR-10a SOMA (aditivo puro; IMPOUND_TRANSITIONS INTACTA) as 2 arestas do caminho padrão de liberação (I5).
@@ -302,11 +386,16 @@ const GUARDS: Readonly<Record<string, GuardSpec>> = {
   [edgeKey("RELEASED_FOR_REPAIR", "ACTIVE_CUSTODY")]: { kind: "enabled", setFrozenAt: false, guard: guardReleaseForRepairReturn },
   // Ω5P PR-12 — ELEGIBILIDADE ao leilão. setFrozenAt=false EXPLÍCITO (a elegibilidade NÃO é T_stop — as diárias
   // correm até a reciclagem/venda). O gate real (6 pré-condições) é resolvido pelo auction.service e re-verificado
-  // sob FOR UPDATE. As arestas internas AUCTION_PREP/LOTTED/AUCTIONED, a reclassificação AUCTION_ELIGIBLE→
-  // DIRECT_RECYCLING (2º strike + gate de edital por rodada) e CUSTODIA_ATIVA→DIRECT_RECYCLING seguem DEFERIDAS
-  // (D-Ω5P-AUC / R-omega5p-pr12-ciclo1: a sucata destrói patrimônio de 3º ⇒ tolerância-zero; PR-13 a habilita gated
-  // no AUCTION_EDICT >= 15 d.u.). PR-12 SÓ mantém o ledger de strikes (auction_attempts).
+  // sob FOR UPDATE. As arestas internas AUCTION_PREP/LOTTED/AUCTIONED seguem DEFERIDAS (13b). PR-12 SÓ mantém o
+  // ledger de strikes (auction_attempts).
   [edgeKey("ACTIVE_CUSTODY", "AUCTION_ELIGIBLE")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionEligible },
+  // Ω5P PR-13a — RECICLAGEM por 2 strikes edict-backed (I8, sucata IRREVERSÍVEL). setFrozenAt=true EXPLÍCITO (T_stop
+  // §5: a sucata encerra a acumulação). Gated no EDITAL POR RODADA (guardAuctionReclassify re-verificada sob FOR
+  // UPDATE) — encerra R-omega5p-pr12-ciclo1. É um ATO EXPLÍCITO (endpoint próprio), NUNCA efeito do recordAttempt.
+  [edgeKey("AUCTION_ELIGIBLE", "DIRECT_RECYCLING")]: { kind: "enabled", setFrozenAt: true, guard: guardAuctionReclassify },
+  // Ω5P PR-13a — RECICLAGEM por INSERVIBILIDADE (§§16-18). setFrozenAt=true. Guarda: classification ∈ {SCRAP,
+  // UNRECOVERABLE} + reason (fundamento) + sem liberação em curso. AUCTION_PREP/LOTTED/AUCTIONED continuam DEFERIDAS (13b).
+  [edgeKey("ACTIVE_CUSTODY", "DIRECT_RECYCLING")]: { kind: "enabled", setFrozenAt: true, guard: guardUnrecoverableRecycle },
 };
 
 // resolveTransition — portão 1 (legalidade) + portão 2 (guarda). PURA; lança ImpoundError(409). O serviço
@@ -362,10 +451,14 @@ export const ENABLED_EDGES: readonly (readonly [ImpoundStatus, ImpoundStatus])[]
   // Ω5P PR-10b — saída/retorno do reparo (art. 271 §2º) habilitados. RELEASED_FOR_REPAIR→RELEASED segue DEFERIDA.
   ["ACTIVE_CUSTODY", "RELEASED_FOR_REPAIR"],
   ["RELEASED_FOR_REPAIR", "ACTIVE_CUSTODY"],
-  // Ω5P PR-12 — SÓ a elegibilidade ao leilão (I6/I2 + 2 PISOS) habilitada. A reclassificação a sucata
-  // AUCTION_ELIGIBLE→DIRECT_RECYCLING + AUCTION_PREP/LOTTED/AUCTIONED + CUSTODIA_ATIVA→DIRECT_RECYCLING seguem
-  // DEFERIDAS (D-Ω5P-AUC / R-omega5p-pr12-ciclo1: sucata = PR-13, gated no edital por rodada).
+  // Ω5P PR-12 — a elegibilidade ao leilão (I6/I2 + 2 PISOS) habilitada.
   ["ACTIVE_CUSTODY", "AUCTION_ELIGIBLE"],
+  // Ω5P PR-13a — as 2 arestas de RECICLAGEM (sucata IRREVERSÍVEL, I8) habilitadas, GATED: AUCTION_ELIGIBLE→
+  // DIRECT_RECYCLING (2 strikes edict-backed) e ACTIVE_CUSTODY→DIRECT_RECYCLING (inservível §§16-18). AUCTION_PREP/
+  // LOTTED/AUCTIONED (a máquina de VENDA) seguem DEFERIDAS (13b). DIRECT_RECYCLING→CLOSED segue DEFERIDA (não há
+  // aresta de retorno à circulação — I8 estrutural).
+  ["AUCTION_ELIGIBLE", "DIRECT_RECYCLING"],
+  ["ACTIVE_CUSTODY", "DIRECT_RECYCLING"],
 ];
 
 export function isEnabledEdge(from: ImpoundStatus, to: ImpoundStatus): boolean {
