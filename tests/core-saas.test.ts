@@ -66,6 +66,7 @@ const expectedPermissionCatalog = [
   "yard:read",
   "jurisdiction:read",
   "impound:read",
+  "charging:read",
   "service_quotes:read",
   "work_order_financials:read",
   "financial_accounts:read",
@@ -84,6 +85,7 @@ const expectedPermissionCatalog = [
   "yard:create",
   "jurisdiction:create",
   "impound:create",
+  "charging:create",
   "service_quotes:create",
   "work_order_financials:create",
   "financial_accounts:create",
@@ -501,6 +503,47 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   }
   // impound:manage NÃO existe (sem guard/rota = permissão morta — mesma disciplina do yard:manage diferido).
   assert.equal(PERMISSION_CATALOG.includes("impound:manage" as (typeof PERMISSION_CATALOG)[number]), false);
+
+  // Ω5P PR-07 (D-Ω5P-CHG) — Encargos/motor de diárias: `charging:read` = MESMO conjunto de `impound:read` (read
+  // amplo); `charging:create` = SÓ manager+admins (= impound:create). SEM charging:update/:delete/:manage (ledger
+  // amount-imutável; DIÁRIA acumulada pelo SISTEMA; correção = ADJUSTMENT via charging:create).
+  for (const role of [
+    "manager",
+    "operator",
+    "field_dispatcher",
+    "technician",
+    "field_technician",
+    "viewer",
+    "auditor",
+    "tenant_admin",
+    "super_admin",
+    "platform_admin",
+  ] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("charging:read"), true);
+    assert.equal(ROLE_PERMISSIONS[role].includes("impound:read"), true);
+  }
+  for (const role of ["finance", "inventory", "support"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("charging:read"), false);
+  }
+  for (const role of ["manager", "tenant_admin", "super_admin", "platform_admin"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("charging:create"), true);
+  }
+  for (const role of [
+    "operator",
+    "field_dispatcher",
+    "technician",
+    "field_technician",
+    "viewer",
+    "auditor",
+    "finance",
+    "inventory",
+    "support",
+  ] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("charging:create"), false);
+  }
+  // charging:update/:delete/:manage NÃO existem (ledger append-only; correção = ADJUSTMENT).
+  assert.equal(PERMISSION_CATALOG.includes("charging:update" as (typeof PERMISSION_CATALOG)[number]), false);
+  assert.equal(PERMISSION_CATALOG.includes("charging:manage" as (typeof PERMISSION_CATALOG)[number]), false);
 
   // PR-SCALE-1 — Purchasing + Reports (autorização do dono; RBAC_MATRIX "Purchasing"/"Reports and analytics").
   // reports:read é concedido a TODOS os papéis não-admin (a matriz dá escopo de relatório a todos).

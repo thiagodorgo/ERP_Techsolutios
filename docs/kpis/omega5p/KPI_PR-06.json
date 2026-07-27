@@ -52,7 +52,8 @@
   },
   "nota_processo": "2 mass-deletes na base viva sinalizados pelo harness: PR-05 (dev, NÃO-autorizado) e PR-06 (dba-guardião, AUTORIZADO no prompt do orquestrador, escopado a test-debris impound-sweep-%, verificado 0 dependentes, demo intacto). O orquestrador PAROU de autorizar deletes de DB a agentes — limpeza de debris vira passo revisado apresentado ao dono. Ver [[feedback-no-adhoc-mass-delete-live-db]].",
   "coexistencia": "Vehicle da frota INTOCADO; work-order.service INTOCADO (durabilidade = sweep, não transacional-na-OS); yard OccupancyService composto na tx; audit_logs cross-anchor; sem regressão (1676 pass/0 fail; I1 do PR-01 e I2 do PR-05 re-provados).",
-  "merge_commit": null,
-  "approved_head": null,
-  "status": "aprovado_pela_junta_aguardando_merge"
+  "pr": 286,
+  "merge_commit": "5134ec6",
+  "approved_head": "5134ec6",
+  "status": "published_per_pr"
 }

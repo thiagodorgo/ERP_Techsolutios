@@ -1,0 +1,62 @@
+{
+  "pr": "PR-07",
+  "fase": "Fase 2 — charging (motor de diárias I4: rolling-24h/calendário, teto intertemporal, job idempotente, congelamento, fail-closed)",
+  "snapshot_date": "2026-07-26",
+  "branch": "rodada/omega5p",
+  "tipo": "Backend + migração aditiva. O motor de cobrança de diárias — dinheiro regulado (Res.1025 art.21). Consome resolveTariff do PR-03 (FAIL-CLOSED). Junta pesada com critico-adversarial (5 condições sanadas em ciclo, incl. 1 bug REAL de lógica-3-valores no CHECK pego pelo dba).",
+  "models_criados": [
+    "ProcessCharge (process_charges): ledger de encargos — kind REMOVAL|DAILY|ADDITIONAL|ADJUSTMENT; ref_date @db.Date; period_seq Int? (ordinal DST-imune, chave da idempotência DAILY); description; quantity/unit_amount Decimal(12,2) (magnitude ≥0); total_amount Decimal(12,2) (sinal só em ADJUSTMENT); settled_at?/settlement_note?; adjustment_of_charge_id? (validado same-process/tenant); tariff_ref?",
+    "DailyAccrualRun (daily_accrual_runs): bookkeeping do sweep — run_date/processed_count/error_count/started_at/finished_at"
+  ],
+  "models_alterados": ["JurisdictionProfile: +daily_service_catalog_id (FK composta nullable → service_catalog, NOT VALID+VALIDATE) + @@index([tenant_id,daily_service_catalog_id]) — o serviço-tarifa da diária (NULL ⇒ fail-closed)"],
+  "migrations": [
+    "20260838000000_add_charging — ADITIVA up-only: 2 CREATE TABLE + 1 ADD COLUMN nullable + RLS ENABLE+FORCE+POLICY + partial-uniques [process_charges_daily_idem_key (tenant,process,period_seq) WHERE kind='DAILY' + process_charges_removal_once_key WHERE kind='REMOVAL'] + CHECKs [quantity/unit_amount≥0; total_amount≥0 relaxado só p/ ADJUSTMENT; **daily_shape_chk ENDURECIDO (C1): kind<>'DAILY' OR (period_seq IS NOT NULL AND period_seq>=1 AND ref_date IS NOT NULL)**] + FK compostas RESTRICT (I9). Provada up→down→re-up pelo dba-guardião; drift-zero; CHECK C1 provado vivo (DAILY+period_seq NULL → 23514)."
+  ],
+  "motor_de_diarias_I4": {
+    "formula": "charge.accrual.ts PURO (ESTUDO §5): n_diárias = min(⌈(min(t,T_stop)−t₀)/24h⌉, cap(perfil,t₀)). Convenção-piso: 1ª diária vence em t0+24h (nada em [t0,t0+24h)).",
+    "rolling_vs_calendar": "ROLLING_24H = tempo FÍSICO absoluto (imune a DST) | CALENDAR = dias LOCAIS via Intl.DateTimeFormat(yard.timezone) — ZERO dep nova. Modelo pelo perfil.",
+    "teto_intertemporal": "resolveDefaults(profile) pela DATA DE ENTRADA: SIX_MONTHS = 6 meses-CALENDÁRIO (ex. Jan1 SP→182 dias, não 180 fixo; clamp de mês) | THIRTY_DAYS_LEGACY (Tema 124, para em 30) | UNLIMITED. Acumulação PARA no teto (nunca cria a cap+1).",
+    "congelamento": "asOf = min(now, frozen_at); runs pós-freeze são no-op; sweep exclui frozen_at NOT NULL.",
+    "fail_closed_F7": "resolveTariff({date:refDate})→undefined OU daily_service_catalog_id NULL ⇒ NÃO cria charge de valor 0; error_count++ + logger.warn POR PROCESSO sem PII (C4); PARA preservando a contiguidade do period_seq (catch-up preenche quando a tarifa for publicada).",
+    "append_only_I2": "cada acumulação = INSERT process_charge + CustodyEvent CHARGE_ACCRUAL na MESMA tx (reusa só as funções PURAS computeEventHash/genesisHash do impound.hashchain — NÃO edita código probatório; verifyChain segue valid). Correção retroativa = ADJUSTMENT (novo lançamento), NUNCA update/delete (RN-DIA-05)."
+  },
+  "job": "charging.accrue-daily (novo JobName + handler; auto-reenfileirante gated JOBS_WORKER_ENABLED; roda como SISTEMA). Idempotência TRIPLA: motor só cria refDates ausentes + re-check sob FOR UPDATE + partial-unique period_seq backstop. Catch-up preenche dias perdidos sem duplicar.",
+  "permissao": "charging:read + charging:create nas 4 pontas (sem update/delete/manage). DAILY é engine-only (createManual → 422 daily_is_engine_only). Job = sistema.",
+  "reprovacao_condicoes": {
+    "resumo": "Junta APROVADO 3/3 com 5 condições sanadas em ciclo (0 CRÍTICO de fórmula — o motor resistiu a todos os vetores diretos do critico).",
+    "C1_dba_MEDIA": "bug REAL de lógica-3-valores no daily_shape_chk (DAILY+period_seq NULL passava → false OR (NULL AND true) = NULL → CHECK não reprovava → partial-unique trata NULLs como distintos → dupla cobrança). FECHADO: period_seq IS NOT NULL explícito; provado vivo 23514.",
+    "C2_avaliador_MEDIA": "drift — migração criava o índice mas o model não declarava. FECHADO: @@index([tenant_id,daily_service_catalog_id]) no schema; migrate diff drift-zero.",
+    "C3_critico_F1": "freeze retroativo não estorna diárias já acumuladas → /statement autoinconsistente (overcharge). FECHADO (parte PR-07): getStatement sinaliza overAccruedDailies + reconciliationPending (só sinal, append-only). O ESTORNO real (ADJUSTMENT / recusa de frozen_at retroativo) = REQUISITO PR-10.",
+    "C4_critico_F2": "fail-closed só gravava error_count. FECHADO: logger.warn por processo sem PII (no_daily_service_catalog / no_tariff_for_ref_date).",
+    "C5_critico_F7": "adjustment_of_charge_id sem validação. FECHADO: 422 adjustment_target_not_found (inexistente/cross-process) + 422 adjustment_of_adjustment."
+  },
+  "requisitos_e_backlog": [
+    "PR-10 [REQUISITO — critico F1]: reconciliação REAL do over-acúmulo de diárias no freeze — estorno via ADJUSTMENT OU recusa de frozen_at retroativo anterior à última diária acumulada. O PR-07 já SINALIZA (reconciliationPending); falta o estorno.",
+    "PR-08 [F4]: a guia de débitos deve exibir period_seq (não só refDate — a legenda refDate do ROLLING é não-injetiva no DST) e rotular a janela de 24h.",
+    "backlog [F6]: flag firstDailyAtEntry (cobrar a diária do dia da entrada) ANTES de onboardar pátio cuja tabela local cobra o dia da entrada (senão subcobra 1 diária); hoje convenção-piso (art.21§1 literal).",
+    "backlog [F8]: tratar yard.timezone como IMUTÁVEL em custódia ativa (mutação desloca nAccrue do CALENDAR — mesma família do freeze retroativo).",
+    "F5/F9/F10 [desprezível]: SIX_MONTHS ±1 sob DST (irrelevante BR/SP sem DST); float em multiplyMoney (limitado por Decimal(12,2), DAILY qty=1); normalização de hora morta."
+  ],
+  "cobertura_testes": {
+    "backend": "tests/charging-daily-engine.test.ts (NOVO, 19 property-based: rolling×calendar+fronteira-piso; DST spring/fall sem duplicar/pular; teto 30-legado/6-meses-182/ilimitado parando no teto; determinismo; congelamento; fail-closed 0-diárias; idempotência+cadeia I2 valid; ADJUSTMENT append-only; C3 statement freeze-retroativo pending/over=4 + consistente false/0; C5 adjustment target inexistente/cross-process/ajuste-de-ajuste→422) + tests/charging-job-idempotency.test.ts (NOVO, DB-gated: job 2×/3-ticks-paralelos→sem duplicata; catch-up; verifyChain valid; C1 raw DAILY+period_seq NULL→23514) + tests/rls-tenant-isolation.test.ts (bloco charging 3 tenants) + core-saas (2 perms). Execução CI-memória: backend 1676→1696 (+20), 0 fail, 6 skip.",
+    "regressao": "adjacentes impound/yard/jurisdiction/tariffs/price-tables verdes; I1 (yard)/I2 (impound)/I3 (recepção) re-provados; motor puro charge.accrual.ts inalterado pelas correções C1-C5."
+  },
+  "d_records": "D-Ω5P-CHG-01 (daily_service_catalog_id; NULL⇒fail-closed) · CHG-02 (idempotência por period_seq WHERE kind='DAILY', não a chave chapada — não bloqueia ADJUSTMENT no mesmo dia) · CHG-03 (charging reusa só PURAS do impound.hashchain, não edita código probatório) · CHG-04 (sinal só em total_amount de ADJUSTMENT) · CHG-05 (ProcessCharge=ledger; conta a pagar/quitação=PR-10) · CHG-06 (convenção-piso 1ª diária em t0+24h) · CHG-07 (DST via Intl, ROLLING físico/CALENDAR local)",
+  "aderencia_normativa": "Res. CONTRAN 1025/2026 art.21 §1º (diária = período de 24h rolante) + §2º (teto 6 meses, pago por quem retira — materialização PR-10); CTB art.271§10 + 328§5º (teto 6 meses); Tema 124/STJ (30 diárias legado, por data de entrada §2.3). Neutralidade white-label.",
+  "junta": {
+    "agente-dba-guardiao": "APROVADO_CONDICIONADO → APROVADO (migração aditiva up/down/re-up drift-zero; partial-unique period_seq + REMOVAL-once; FK RESTRICT; RLS forced; C1 CHECK 3-valores ENDURECIDO e provado vivo 23514)",
+    "omega5p-avaliador": "APROVADO_CONDICIONADO → APROVADO (I4 correto [rolling/calendar/teto-intertemporal/congelamento/fail-closed/determinismo]; §allowlist; aderência por artigo; C2 drift-zero sanado; sem regressão; KPI sanado)",
+    "critico-adversarial": "APROVADO_CONDICIONADO → APROVADO (0 CRÍTICO de fórmula — 8 vetores de ataque RESISTIRAM; C1 idempotência à prova [period_seq NULL impossível]; C3 statement sinaliza over-acúmulo [estorno=PR-10]; C4 log por-processo; C5 validação do ADJUSTMENT; regressão zero)",
+    "veredito": "APROVADO 3/3 (5 condições sanadas em ciclo, incl. bug de constraint 3-valores)"
+  },
+  "kpi_repo_wide": {
+    "backend": "1676->1696 (+20: charging-daily-engine 19 property-based [incl. C3×2/C5] + charging-job-idempotency [incl. C1]; CI-memória 6 skip)",
+    "frontend_smoke": "861 (inalterado — backend-only)",
+    "flutter_tests": "807 (inalterado)",
+    "blocks": "94->95"
+  },
+  "coexistencia": "Vehicle/work-order INTOCADOS; consome resolveTariff (PR-03) fail-closed + resolveDefaults (PR-02) + ImpoundProcess.entered_at/frozen_at (PR-05) + a cadeia hash (I2); ProcessCharge é ledger (conta a pagar=PR-10). Sem regressão (1696 pass/0 fail).",
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "aprovado_pela_junta_aguardando_merge"
+}

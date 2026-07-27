@@ -141,6 +141,8 @@ const permissionDescriptions = {
   "impound:transition": "Movimentar o estado do Processo de custodia (recepcao, liberacao, leilao) do tenant.",
   "impound:inspect": "Registrar e completar a vistoria de recepcao (dados minimos + fotos obrigatorias) do Processo de custodia do tenant.",
   "impound:allocate": "Alocar, liberar e mover a vaga do patio para o Processo de custodia do tenant.",
+  "charging:read": "Consultar encargos (remocao, diarias, adicionais, ajustes) e a memoria de calculo do Processo de custodia do tenant.",
+  "charging:create": "Lancar encargos adicionais e ajustes (append-only) no Processo de custodia do tenant; a diaria e acumulada pelo SISTEMA.",
   "service_quotes:read": "Consultar Orcamentos (precos congelados) do tenant.",
   "service_quotes:create": "Criar Orcamentos congelando o preco da Tarifa vigente.",
   "service_quotes:update": "Editar (quantidade/notas em rascunho) e mudar situacao de Orcamentos.",
