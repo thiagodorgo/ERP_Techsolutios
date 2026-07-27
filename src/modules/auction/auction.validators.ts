@@ -94,6 +94,36 @@ export function parsePublishedAt(value: unknown): Date | undefined {
   return date;
 }
 
+// Ω5P PR-13b — dinheiro Decimal(12,2) NÃO-negativo, normalizado à string canônica "0.00". OPCIONAL (undefined quando
+// ausente — o gate PURO trata "ausente" como falha de negócio 409, não como 400). Malformado ⇒ 400 amount_invalid.
+const moneyPattern = /^\d{1,10}(\.\d{1,2})?$/;
+export function parseOptionalMoney(value: unknown, field: string): string | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const raw = typeof value === "number" ? String(value) : typeof value === "string" ? value.trim() : "";
+  if (!moneyPattern.test(raw)) {
+    throw new AuctionError(400, "AUCTION_INVALID", `${field}_invalid`, `${field} must be a non-negative decimal with up to 2 places.`);
+  }
+  const numeric = Number(raw);
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    throw new AuctionError(400, "AUCTION_INVALID", `${field}_invalid`, `${field} must be a finite non-negative decimal.`);
+  }
+  const fixed = numeric.toFixed(2);
+  return fixed === "-0.00" ? "0.00" : fixed;
+}
+
+// Comparação Decimal-exata em centavos (o float é intermediário e imediatamente arredondado — espelha moneyToCents da
+// charging). undefined ⇒ trata como abaixo (o arremate sem valor NUNCA supera o mínimo). ambos "0.00" canônicos.
+export function isBelowMinBid(sold: string | undefined, minBid: string | undefined): boolean {
+  if (sold === undefined || minBid === undefined) return true;
+  return Math.round(Number(sold) * 100) < Math.round(Number(minBid) * 100);
+}
+
+// Um valor "> 0" (avaliação/min_bid presentes e positivos). undefined/"0.00" ⇒ false (ausente/nulo).
+export function isPositiveMoney(value: string | undefined): boolean {
+  if (value === undefined) return false;
+  return Math.round(Number(value) * 100) > 0;
+}
+
 // Máscara §2.8 da referência do edital p/ o payload da cadeia (NUNCA o valor bruto). Mostra só o sufixo curto —
 // suficiente p/ correlacionar o strike ao seu edital sem vazar o identificador completo (espelha maskAuthorityReference).
 export function maskEdictReference(reference: string | undefined): string | null {

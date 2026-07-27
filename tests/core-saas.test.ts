@@ -111,6 +111,7 @@ const expectedPermissionCatalog = [
   "impound:notify",
   "release:process",
   "release:approve",
+  "auction:appraise",
   "service_quotes:update",
   "service_quotes:approve",
   "work_order_financials:update",
@@ -579,6 +580,31 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   // Sem permissão morta: release:read/:manage NÃO existem (a leitura da liberação reusa impound:read).
   assert.equal(PERMISSION_CATALOG.includes("release:read" as (typeof PERMISSION_CATALOG)[number]), false);
   assert.equal(PERMISSION_CATALOG.includes("release:manage" as (typeof PERMISSION_CATALOG)[number]), false);
+
+  // Ω5P PR-13b (D-Ω5P-AUC-APPRAISE) — Máquina de VENDA: `auction:appraise` (SIGILO da avaliação art. 28 — registrar/
+  // ler appraisal+min_bid) = SÓ manager+admins (gestão+admins = impound:transition). As transições da FSM (prep/lot/
+  // sale/close/default/reclaim) REUSAM impound:transition. `auction:appraise` NÃO vai a finance/inventory/support/campo.
+  for (const role of ["manager", "tenant_admin", "super_admin", "platform_admin"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("auction:appraise"), true);
+  }
+  for (const role of [
+    "operator",
+    "field_dispatcher",
+    "technician",
+    "field_technician",
+    "viewer",
+    "auditor",
+    "finance",
+    "inventory",
+    "support",
+  ] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("auction:appraise"), false);
+  }
+  // Sem permissão morta: auction:read/:manage/:transition NÃO existem (a leitura reusa impound:read; a FSM reusa
+  // impound:transition — só o SIGILO da avaliação ganhou eixo próprio).
+  assert.equal(PERMISSION_CATALOG.includes("auction:read" as (typeof PERMISSION_CATALOG)[number]), false);
+  assert.equal(PERMISSION_CATALOG.includes("auction:transition" as (typeof PERMISSION_CATALOG)[number]), false);
+  assert.equal(PERMISSION_CATALOG.includes("auction:manage" as (typeof PERMISSION_CATALOG)[number]), false);
 
   // PR-SCALE-1 — Purchasing + Reports (autorização do dono; RBAC_MATRIX "Purchasing"/"Reports and analytics").
   // reports:read é concedido a TODOS os papéis não-admin (a matriz dá escopo de relatório a todos).

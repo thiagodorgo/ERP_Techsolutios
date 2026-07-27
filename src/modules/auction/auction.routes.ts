@@ -20,6 +20,9 @@ type ControllerResult = {
 export const AUCTION_PERMISSIONS = {
   read: "impound:read",
   transition: "impound:transition",
+  // Ω5P PR-13b — SIGILO da avaliação (art. 28): registrar/ler avaliação+min_bid. Mais estreita que impound:read
+  // (gestão+admins = impound:transition; NÃO finance/inventory/support/campo). As transições da FSM reusam transition.
+  appraise: "auction:appraise",
 } as const;
 
 export function createAuctionRouter(resolveService: AuctionServiceResolver = createDefaultAuctionService): Router {
@@ -77,6 +80,60 @@ export function createAuctionRouter(resolveService: AuctionServiceResolver = cre
     requirePermission(AUCTION_PERMISSIONS.transition),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.reclassifyUnrecoverable(request));
+    }),
+  );
+  // Ω5P PR-13b — AVALIAÇÃO SIGILOSA (auction:appraise, art. 28): registra appraisal_amount + min_bid_amount na
+  // designação da rodada (UPDATE do edital; NUNCA na cadeia). Permissão NOVA, mais estreita que impound:read.
+  router.post(
+    "/impound-processes/:processId/auction/appraisal",
+    requirePermission(AUCTION_PERMISSIONS.appraise),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.setAppraisal(request));
+    }),
+  );
+  // Ω5P PR-13b — máquina de VENDA (impound:transition; o auction.service resolve o gate + dispara a transição via
+  // resolveTransition, guardas PURAS em impound.transitions). PREPARO → LOTE → ARREMATE → CONSUMAÇÃO.
+  router.post(
+    "/impound-processes/:processId/auction/prep",
+    requirePermission(AUCTION_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.prepareForAuction(request));
+    }),
+  );
+  router.post(
+    "/impound-processes/:processId/auction/lot",
+    requirePermission(AUCTION_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.lotForAuction(request));
+    }),
+  );
+  router.post(
+    "/impound-processes/:processId/auction/sale",
+    requirePermission(AUCTION_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.recordSale(request));
+    }),
+  );
+  router.post(
+    "/impound-processes/:processId/auction/close",
+    requirePermission(AUCTION_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.closeAuction(request));
+    }),
+  );
+  // Ω5P PR-13b — INADIMPLÊNCIA (art. 42; reintegra o lote) + RECLAMADO antes da venda (art. 26 §1º; reabre a liberação).
+  router.post(
+    "/impound-processes/:processId/auction/default",
+    requirePermission(AUCTION_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.defaultAuction(request));
+    }),
+  );
+  router.post(
+    "/impound-processes/:processId/auction/reclaim",
+    requirePermission(AUCTION_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.reclaim(request));
     }),
   );
 

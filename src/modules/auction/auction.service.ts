@@ -9,22 +9,27 @@ import { resolveTransition } from "../impound/impound.transitions.js";
 import { AUCTION_MAX_ATTEMPTS } from "../jurisdiction/jurisdiction.defaults.js";
 import { getMemoryReleaseRepositoryForTests } from "../release/release.service.js";
 import { isAuctionDeadlineReached, isOwnerInitialSatisfied } from "./auction.eligibility.js";
-import { evaluateScrapEdictGate, InMemoryAuctionRepository, type AuctionRepository } from "./auction.repository.js";
+import { evaluateScrapEdictGate, findActiveSoldRound, isEdictComplete, InMemoryAuctionRepository, type AuctionRepository } from "./auction.repository.js";
 import {
   AuctionError,
   RECYCLABLE_CLASSIFICATIONS,
   type AuctionClassification,
+  type AuctionEdict,
   type AuctionProfile,
   type AuctionStateSnapshot,
   type AuctionView,
   type RecordAttemptResult,
+  type RecordSaleResult,
   type RegisterEdictResult,
 } from "./auction.types.js";
 import {
+  isBelowMinBid,
+  isPositiveMoney,
   parseBusinessDays,
   parseClassification,
   parseNotes,
   parseOptionalLabel,
+  parseOptionalMoney,
   parsePublishedAt,
   parseRequiredEdictReference,
   parseRequiredUuid,
@@ -248,6 +253,202 @@ export class AuctionService {
       actorId: actor.userId,
       occurredAt: new Date(),
     });
+  }
+
+  // ── Ω5P PR-13b — máquina de VENDA ────────────────────────────────────────────────────────────────────────────
+  // POST /impound-processes/:id/auction/appraisal (auction:appraise — SIGILO art. 28). Registra a AVALIAÇÃO +
+  // min_bid na designação da rodada (UPDATE do edital; NUNCA na cadeia). Exige o edital registrado (404). Os valores
+  // sigilosos só são LIDOS/gravados por quem tem auction:appraise (o guard da rota); o DTO os OMITE aos demais.
+  async setAppraisal(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<AuctionEdict> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
+    if (!process) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    return this.repository.setAppraisalAtomic({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      roundNumber: parseRoundNumber(body.round_number ?? body.roundNumber),
+      appraisalAmount: parseOptionalMoney(body.appraisal_amount ?? body.appraisalAmount, "appraisal_amount"),
+      minBidAmount: parseOptionalMoney(body.min_bid_amount ?? body.minBidAmount, "min_bid_amount"),
+      actorId: actor.userId,
+    });
+  }
+
+  // POST .../auction/prep (impound:transition). AUCTION_ELIGIBLE→AUCTION_PREP. Gate: classification=CONSERVED E
+  // appraisal>0 (sigilosa, lida do edital da rodada). O serviço computa as flags e chama resolveTransition (guardAuctionPrep).
+  async prepareForAuction(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<AuctionView> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
+    if (!process) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    const roundNumber = parseRoundNumber(body.round_number ?? body.roundNumber);
+    const edict = await this.readRoundEdict(actor.tenantId, normalizedId, roundNumber);
+    const gate = {
+      classificationNotConserved: edict?.classification !== "CONSERVED",
+      appraisalMissing: !isPositiveMoney(edict?.appraisalAmount),
+    };
+    const decision = resolveTransition(process, "AUCTION_PREP", { auctionPrep: gate });
+    const snapshot = await this.repository.prepareAuctionAtomic({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      expectedFrom: decision.from,
+      roundNumber,
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+    return this.toView(snapshot);
+  }
+
+  // POST .../auction/lot (impound:transition). AUCTION_PREP→LOTTED. Gate: edital COMPLETO da rodada (ref+published_at+
+  // business_days>=15) E min_bid>0 (sigiloso).
+  async lotForAuction(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<AuctionView> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
+    if (!process) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    const roundNumber = parseRoundNumber(body.round_number ?? body.roundNumber);
+    const edict = await this.readRoundEdict(actor.tenantId, normalizedId, roundNumber);
+    const gate = {
+      edictIncomplete: edict === undefined || !isEdictComplete(edict),
+      minBidMissing: !isPositiveMoney(edict?.minBidAmount),
+    };
+    const decision = resolveTransition(process, "LOTTED", { auctionLot: gate });
+    const snapshot = await this.repository.lotAuctionAtomic({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      expectedFrom: decision.from,
+      roundNumber,
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+    return this.toView(snapshot);
+  }
+
+  // POST .../auction/sale (impound:transition). LOTTED→AUCTIONED (ARREMATE — congela, T_stop §5). Gate: winner_ref
+  // presente E sold_amount>=min_bid (piso r1>=avaliação/r2>=50% encodado no min_bid pelo avaliador) E nota presente.
+  // Grava a linha SOLD (winner/soldAmount/noteRef) + AUCTION_SOLD na cadeia (soldAmount string). Idempotente por round.
+  async recordSale(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<RecordSaleResult> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
+    if (!process) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    const roundNumber = parseRoundNumber(body.round_number ?? body.roundNumber);
+    // Idempotência (evita o self-loop AUCTIONED→AUCTIONED numa reentrega): se a rodada já arrematou, devolve-a.
+    if (process.status !== "LOTTED") {
+      const state = await this.repository.getState(actor.tenantId, normalizedId);
+      const existing = state?.attempts.find((attempt) => attempt.roundNumber === roundNumber);
+      if (existing?.outcome === "SOLD") {
+        return { attempt: existing, created: false, status: state?.status ?? process.status };
+      }
+    }
+    const winnerRef = parseOptionalLabel(body.winner_ref ?? body.winnerRef, "winner_ref");
+    const soldAmount = parseOptionalMoney(body.sold_amount ?? body.soldAmount, "sold_amount");
+    const saleNoteReference = parseOptionalLabel(body.sale_note_reference ?? body.saleNoteReference, "sale_note_reference");
+    const edict = await this.readRoundEdict(actor.tenantId, normalizedId, roundNumber);
+    // CRÍTICO-1: as flags amarram a venda à rodada LOTADA e repetem PREP+LOT dessa rodada (o repo RE-VERIFICA sob lock).
+    const gate = {
+      winnerMissing: winnerRef === undefined,
+      roundNotLotted: edict?.status !== "LOTTED",
+      roundNotConserved: edict?.classification !== "CONSERVED",
+      roundEdictIncomplete: edict === undefined || !isEdictComplete(edict),
+      belowMinBid: isBelowMinBid(soldAmount, edict?.minBidAmount),
+      noteMissing: saleNoteReference === undefined,
+    };
+    const decision = resolveTransition(process, "AUCTIONED", { auctionSale: gate });
+    return this.repository.recordSaleAtomic({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      expectedFrom: decision.from,
+      roundNumber,
+      winnerRef,
+      soldAmount,
+      saleNoteReference,
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+  }
+
+  // POST .../auction/close (impound:transition). AUCTIONED→AUCTION_CLOSED (consumação: pagamento ≤3d + nota, art. 34).
+  // A confirmação de pagamento é uma asserção do operador (payment_confirmed) — o pagamento é manual/externo (PD-SIGN).
+  async closeAuction(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<AuctionView> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
+    if (!process) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    const roundNumber = parseRoundNumber(body.round_number ?? body.roundNumber);
+    const paymentConfirmed = body.payment_confirmed === true || body.paymentConfirmed === true;
+    const decision = resolveTransition(process, "AUCTION_CLOSED", { auctionClose: { paymentUnconfirmed: !paymentConfirmed } });
+    const snapshot = await this.repository.closeAuctionAtomic({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      expectedFrom: decision.from,
+      roundNumber,
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+    return this.toView(snapshot);
+  }
+
+  // POST .../auction/default (impound:transition). AUCTIONED→LOTTED (inadimplência art. 42). NÃO descongela. Registra
+  // NO_PAYMENT (rodada de reintegração; a linha SOLD original permanece imutável) + STATUS_CHANGE default_reintegrated.
+  async defaultAuction(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<RecordSaleResult> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
+    if (!process) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    const roundNumber = parseRoundNumber(body.round_number ?? body.roundNumber);
+    // Idempotência: se a rodada de reintegração já tem NO_PAYMENT, devolve-a (evita o self-loop numa reentrega).
+    if (process.status !== "AUCTIONED") {
+      const state = await this.repository.getState(actor.tenantId, normalizedId);
+      const existing = state?.attempts.find((attempt) => attempt.roundNumber === roundNumber);
+      if (existing?.outcome === "NO_PAYMENT") {
+        return { attempt: existing, created: false, status: state?.status ?? process.status };
+      }
+    }
+    // MÉDIO-3: só inadimple se há uma SOLD EFETIVA (não já superada). O repo re-computa/vincula sob o lock.
+    const state = await this.repository.getState(actor.tenantId, normalizedId);
+    const gate = { saleMissing: findActiveSoldRound(state?.attempts ?? []) === undefined };
+    const decision = resolveTransition(process, "LOTTED", { auctionDefault: gate });
+    return this.repository.defaultAuctionAtomic({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      expectedFrom: decision.from,
+      roundNumber,
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+  }
+
+  // POST .../auction/reclaim (impound:transition). LOTTED→ACTIVE_CUSTODY (reclamado art. 26 §1º, antes da consumação).
+  // reason (fundamento) obrigatório; reabre a liberação (PR-10). O reason livre vai ao audit; a cadeia leva o CODIFICADO.
+  async reclaim(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<AuctionView> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
+    if (!process) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    const reason = parseNotes(body.reason);
+    const decision = resolveTransition(process, "ACTIVE_CUSTODY", { auctionReclaim: { reasonMissing: reason === undefined }, reason });
+    const snapshot = await this.repository.reclaimAtomic({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      expectedFrom: decision.from,
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+    return this.toView(snapshot);
+  }
+
+  // O edital de uma rodada (metadados + SIGILOSOS appraisal/min_bid) p/ o gate da venda. undefined se ausente.
+  private async readRoundEdict(tenantId: string, processId: string, roundNumber: number): Promise<AuctionEdict | undefined> {
+    const edicts = await this.repository.listEdicts(tenantId, processId);
+    return edicts.find((edict) => edict.roundNumber === roundNumber);
   }
 
   private toView(snapshot: AuctionStateSnapshot): AuctionView {

@@ -120,6 +120,11 @@ export const PERMISSION_CATALOG = [
   // authority-portal Fase 5). Os SALTOS da FSM reusam impound:transition. Distribuição gestão+admins.
   "release:process",
   "release:approve",
+  // Ω5P PR-13b (D-Ω5P-AUC-APPRAISE) — SIGILO da avaliação do leilão (art. 28): registrar/ler appraisal_amount +
+  // min_bid_amount. EIXO PRÓPRIO mais ESTREITO que impound:read (o valor sigiloso não vaza a quem só lê o processo);
+  // distribuição gestão+admins = impound:transition (NÃO finance/inventory/support/campo). As transições da máquina de
+  // venda (prep/lot/sale/close/default/reclaim) REUSAM impound:transition; só o registro/leitura da avaliação exige esta.
+  "auction:appraise",
   "service_quotes:update",
   "service_quotes:approve",
   "work_order_financials:update",
@@ -343,6 +348,8 @@ export const ROLE_PERMISSIONS = {
     "charging:settle",
     "release:process",
     "release:approve",
+    // Ω5P PR-13b — gestão registra/lê a avaliação sigilosa do leilão (art. 28; = impound:transition).
+    "auction:appraise",
     "service_quotes:create",
     "work_order_financials:create",
     "service_catalog:update",
