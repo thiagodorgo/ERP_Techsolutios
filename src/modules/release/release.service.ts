@@ -21,6 +21,7 @@ import {
   parseRecipientDocument,
   parseRecipientName,
   parseRecipientRelationship,
+  parseRepairDeadline,
   parseRequiredUuid,
   parseRequirementCode,
   parseSatisfied,
@@ -175,6 +176,93 @@ export class ReleaseService {
       eventPayload,
       actorId: actor.userId,
       occurredAt,
+    });
+  }
+
+  // POST /impound-processes/:id/release/for-repair/start (impound:transition) — SAÍDA p/ reparo (CTB art. 271 §2º /
+  // Res. 1025 art. 23 §1º / D-Ω5P-13). Idempotente-para-frente: (1) sem dossiê FOR_REPAIR ativo → MONTA o dossiê
+  // (IN_PROGRESS, sem transição/congelamento) e devolve 201 p/ o operador registrar recipient (release/recipient) e a
+  // aprovação da autoridade (release/approve, release:approve); (2) com o dossiê FOR_REPAIR ativo → dispara a SAÍDA
+  // (ACTIVE_CUSTODY→RELEASED_FOR_REPAIR) via resolveTransition (guardReleaseForRepairStart PURA) + vacate. NÃO congela
+  // (D-Ω5P-REL-07: a diária SEGUE correndo) e NÃO exige quitação (art. 271 §2º ≠ §1º — débitos ficam ABERTOS).
+  async startForRepair(
+    actor: { tenantId: string; userId?: string },
+    processId: string,
+    body: RawRecord,
+  ): Promise<{ readonly view: ReleaseView; readonly transitioned: boolean }> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
+    if (!process) {
+      throw new ReleaseError(404, "RELEASE_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    const existing = await this.repository.getActiveReleaseView(actor.tenantId, normalizedId);
+
+    // (1) MONTAR: sem liberação em curso ⇒ cria o dossiê FOR_REPAIR (deadline validado ≤60d) SEM transicionar.
+    if (!existing) {
+      // Só a partir de ACTIVE_CUSTODY se pode preparar a saída — evita dossiê órfão (reason FSM invalid_transition).
+      if (process.status !== "ACTIVE_CUSTODY") {
+        throw new ReleaseError(409, "RELEASE_TRANSITION_INVALID", "invalid_transition", `Cannot start a repair release from status ${process.status}.`);
+      }
+      const repairDeadline = parseRepairDeadline(body.repair_deadline ?? body.repairDeadline);
+      const view = await this.repository.startForRepairDossier({
+        tenantId: actor.tenantId,
+        processId: normalizedId,
+        expectedStatus: "ACTIVE_CUSTODY",
+        repairDeadline,
+        recipientName: parseRecipientName(body.recipient_name ?? body.recipientName),
+        recipientDocument: parseRecipientDocument(body.recipient_document ?? body.recipientDocument),
+        recipientRelationship: parseRecipientRelationship(body.recipient_relationship ?? body.recipientRelationship),
+        actorId: actor.userId,
+      });
+      return { view, transitioned: false };
+    }
+
+    // Há liberação em curso: só a FOR_REPAIR habilita a SAÍDA. Uma STANDARD em curso ⇒ 409 (fluxo distinto).
+    if (existing.release.kind !== "FOR_REPAIR") {
+      throw new ReleaseError(409, "RELEASE_CONFLICT", "release_already_in_progress", "A standard release is already in progress for this process.");
+    }
+
+    // (2) SAÍDA: gate PURO (deadline presente + autoridade + quem-transporta). resolveTransition barra a dupla-saída
+    // (processo já RELEASED_FOR_REPAIR ⇒ from===to ⇒ 409 invalid_transition).
+    const repairDeadlineValid = existing.release.repairDeadline !== undefined;
+    const authorityMissing = existing.release.authorityApprovedAt === undefined;
+    const recipientMissing = !existing.release.recipientName;
+    const decision = resolveTransition(process, "RELEASED_FOR_REPAIR", {
+      releaseForRepair: { repairDeadlineValid, authorityMissing, recipientMissing },
+    });
+    const view = await this.repository.exitForRepairAtomic({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      releaseId: existing.release.id,
+      expectedFrom: decision.from,
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+    return { view, transitioned: true };
+  }
+
+  // POST /impound-processes/:id/release/for-repair/return (impound:transition) — RETORNO do reparo
+  // (RELEASED_FOR_REPAIR→ACTIVE_CUSTODY). Guarda LEVE (só legalidade + dossiê FOR_REPAIR ativo). Marca o dossiê
+  // RETURNED (libera o partial-unique p/ a restituição definitiva pelo caminho padrão do PR-10a). NÃO congela.
+  async returnFromRepair(actor: { tenantId: string; userId?: string }, processId: string): Promise<ReleaseView> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
+    if (!process) {
+      throw new ReleaseError(404, "RELEASE_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    const existing = await this.repository.getActiveReleaseView(actor.tenantId, normalizedId);
+    const forRepairActive = existing !== undefined && existing.release.kind === "FOR_REPAIR";
+    // resolveTransition: portão 1 (RELEASED_FOR_REPAIR→ACTIVE_CUSTODY) + guardReleaseForRepairReturn (forRepairActive).
+    const decision = resolveTransition(process, "ACTIVE_CUSTODY", {
+      releaseForRepairReturn: { forRepairActive },
+    });
+    return this.repository.returnFromRepairAtomic({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      releaseId: existing!.release.id,
+      expectedFrom: decision.from,
+      actorId: actor.userId,
+      occurredAt: new Date(),
     });
   }
 }

@@ -47,6 +47,9 @@ export function toImpoundReleaseDto(release: ImpoundRelease) {
     recipientRelationshipLabel: release.recipientRelationship ? RELATIONSHIP_LABELS[release.recipientRelationship] : null,
     releasedAt: release.releasedAt ? release.releasedAt.toISOString() : null,
     repairDeadline: release.repairDeadline ? release.repairDeadline.toISOString() : null,
+    // Ω5P PR-10b — observabilidade do estouro do prazo (art. 23 §1º): now > repair_deadline. NÃO muda o estado
+    // (o veículo permanece RELEASED_FOR_REPAIR); a coerção (reapreensão/leilão) é Fase 4. Calculado no ato.
+    repairOverdue: release.repairDeadline ? Date.now() > release.repairDeadline.getTime() : false,
     settledTotal: release.settledTotal ?? null,
     createdBy: release.createdBy ?? null,
     updatedBy: release.updatedBy ?? null,

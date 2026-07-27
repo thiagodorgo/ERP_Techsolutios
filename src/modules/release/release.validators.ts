@@ -56,6 +56,34 @@ export function parseAuthorityReference(value: unknown): string | undefined {
   return optionalString(value, 120);
 }
 
+// Ω5P PR-10b (CTB art. 271 §2º / Res. 1025 art. 23 §1º) — prazo para o veículo reapresentar-se após a saída p/
+// reparo. LIMITE LEGAL = 60 dias a partir de agora. Ausente/malformado → 400; > 60d → 422. O perfil não tem campo
+// de override (exigiria migração — fora desta fatia). O reason é ÚNICO (repair_deadline_invalid), diferenciado
+// pelo statusCode (400 vs 422); o guard re-checa a presença como 409 defensivo.
+export const REPAIR_REPRESENTATION_MAX_DAYS = 60;
+const MS_PER_DAY = 86_400_000;
+
+export function parseRepairDeadline(value: unknown, now: Date = new Date()): Date {
+  if (value === undefined || value === null || value === "") {
+    throw new ReleaseError(400, "RELEASE_INVALID", "repair_deadline_invalid", "A repair deadline is required to release the vehicle for repair.");
+  }
+  const raw = typeof value === "string" ? value.trim() : value;
+  const parsed = raw instanceof Date ? raw : new Date(raw as string);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new ReleaseError(400, "RELEASE_INVALID", "repair_deadline_invalid", "repair_deadline must be a valid ISO date.");
+  }
+  // LOW-3 (critico): um prazo de reapresentação NO PASSADO é dado inválido (repairOverdue já no ato) — 400 (mesma
+  // classe do ausente/malformado), antes de checar o teto legal.
+  if (parsed.getTime() <= now.getTime()) {
+    throw new ReleaseError(400, "RELEASE_INVALID", "repair_deadline_invalid", "repair_deadline must be a future date.");
+  }
+  const maxDeadline = now.getTime() + REPAIR_REPRESENTATION_MAX_DAYS * MS_PER_DAY;
+  if (parsed.getTime() > maxDeadline) {
+    throw new ReleaseError(422, "RELEASE_INVALID", "repair_deadline_invalid", `repair_deadline must be within ${REPAIR_REPRESENTATION_MAX_DAYS} days (art. 23 §1º).`);
+  }
+  return parsed;
+}
+
 // Código do requisito do checklist (SNAPSHOT). Alfanumérico + underscore, curto.
 export function parseRequirementCode(value: unknown): string {
   const normalized = typeof value === "string" ? value.trim().toUpperCase() : "";

@@ -9,6 +9,7 @@ import {
   ReleaseError,
   type ApproveReleaseInput,
   type ConsumeReleaseInput,
+  type ExitForRepairInput,
   type ImpoundRelease,
   type RecipientRelationship,
   type ReleaseKind,
@@ -16,8 +17,10 @@ import {
   type ReleaseStatus,
   type ReleaseView,
   type RequirementSnapshot,
+  type ReturnFromRepairInput,
   type SetRecipientInput,
   type SetRequirementCheckInput,
+  type StartForRepairInput,
   type StartReleaseInput,
 } from "./release.types.js";
 
@@ -275,6 +278,131 @@ export class PrismaReleaseRepository implements ReleaseRepository {
     return { release: mapRelease(completed), checks: checks.map(mapCheck) };
   }
 
+  // Ω5P PR-10b — MONTAR o dossiê FOR_REPAIR (IN_PROGRESS) sob lock do processo (defensivo: só a partir de
+  // ACTIVE_CUSTODY, evita dossiê órfão) SEM transicionar/congelar. Sem checklist. O partial-unique
+  // impound_releases_active_release_key barra a 2ª liberação em curso (23505 → 409).
+  async startForRepairDossier(input: StartForRepairInput): Promise<ReleaseView> {
+    const locked = await this.lockProcess(input.tenantId, input.processId);
+    if (!locked) {
+      throw new ReleaseError(404, "RELEASE_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    if (locked.status !== input.expectedStatus) {
+      throw new ReleaseError(409, "RELEASE_TRANSITION_INVALID", "invalid_transition", `Cannot start a repair release from status ${locked.status}.`);
+    }
+    let releaseRow;
+    try {
+      releaseRow = await this.client.impoundRelease.create({
+        data: {
+          tenant_id: input.tenantId,
+          process_id: input.processId,
+          kind: "FOR_REPAIR",
+          status: "IN_PROGRESS",
+          recipient_name: input.recipientName ?? null,
+          recipient_document: input.recipientDocument ?? null,
+          recipient_relationship: input.recipientRelationship ?? null,
+          repair_deadline: input.repairDeadline,
+          created_by: input.actorId ?? null,
+          updated_by: input.actorId ?? null,
+        },
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ReleaseError(409, "RELEASE_CONFLICT", "release_already_in_progress", "A release is already in progress for this process.");
+      }
+      throw error;
+    }
+    return { release: mapRelease(releaseRow), checks: [] };
+  }
+
+  // Ω5P PR-10b — SAÍDA atômica p/ reparo (art. 271 §2º). FOR UPDATE do processo (expectedFrom ACTIVE_CUSTODY) +
+  // FOR UPDATE do dossiê + re-verifica aprovação+recipient+deadline sob lock (anti-TOCTOU) + status=RELEASED_FOR_REPAIR
+  // SEM tocar frozen_at (D-Ω5P-REL-07: a diária segue correndo) + STATUS_CHANGE na cadeia + vacate — tudo na MESMA tx.
+  async exitForRepairAtomic(input: ExitForRepairInput): Promise<ReleaseView> {
+    const locked = await this.lockProcess(input.tenantId, input.processId);
+    if (!locked) {
+      throw new ReleaseError(404, "RELEASE_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    if (locked.status !== input.expectedFrom) {
+      throw new ReleaseError(409, "RELEASE_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    }
+    const releaseRows = await this.client.$queryRaw<Array<{ status: string; kind: string; recipient_name: string | null; authority_approved_at: Date | null; repair_deadline: Date | null }>>`
+      SELECT status, kind, recipient_name, authority_approved_at, repair_deadline FROM impound_releases
+      WHERE tenant_id = ${input.tenantId}::uuid AND id = ${input.releaseId}::uuid
+      FOR UPDATE
+    `;
+    const release = releaseRows[0];
+    if (!release || !ACTIVE_STATUSES.includes(release.status)) {
+      throw new ReleaseError(409, "RELEASE_CONFLICT", "release_not_active", "The release is no longer in progress.");
+    }
+    if (release.kind !== "FOR_REPAIR") {
+      throw new ReleaseError(409, "RELEASE_CONFLICT", "release_kind_mismatch", "This release is not a for-repair release.");
+    }
+    if (release.repair_deadline === null) {
+      throw new ReleaseError(409, "RELEASE_GUARD_FAILED", "repair_deadline_invalid", "A valid repair deadline is required to release the vehicle for repair.");
+    }
+    if (release.authority_approved_at === null) {
+      throw new ReleaseError(409, "RELEASE_GUARD_FAILED", "release_authority_missing", "The authority release must be registered before releasing the vehicle for repair.");
+    }
+    if (release.recipient_name === null) {
+      throw new ReleaseError(409, "RELEASE_GUARD_FAILED", "release_recipient_missing", "The person transporting the vehicle must be identified before releasing it for repair.");
+    }
+    // status=RELEASED_FOR_REPAIR SEM tocar frozen_at (custódia jurídica ativa; T_stop só no RELEASED final).
+    await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "RELEASED_FOR_REPAIR" } });
+    await this.appendEventTx(input.tenantId, input.processId, locked, {
+      type: "STATUS_CHANGE",
+      payload: { from: input.expectedFrom, to: "RELEASED_FOR_REPAIR", reason: "released_for_repair" },
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+    });
+    const updated = await this.client.impoundRelease.update({
+      where: { id: input.releaseId },
+      data: { updated_by: input.actorId ?? null },
+    });
+    await this.vacateProcessSpot(input.tenantId, input.processId, locked.yard_id, input.actorId);
+    const checks = await this.client.releaseRequirementCheck.findMany({
+      where: { tenant_id: input.tenantId, release_id: input.releaseId },
+      orderBy: [{ code: "asc" }],
+    });
+    return { release: mapRelease(updated), checks: checks.map(mapCheck) };
+  }
+
+  // Ω5P PR-10b — RETORNO atômico do reparo. FOR UPDATE (expectedFrom RELEASED_FOR_REPAIR) + status=ACTIVE_CUSTODY
+  // (NÃO congela) + STATUS_CHANGE + dossiê→RETURNED (libera o partial-unique). Realocação de vaga = endpoint EXISTENTE.
+  async returnFromRepairAtomic(input: ReturnFromRepairInput): Promise<ReleaseView> {
+    const locked = await this.lockProcess(input.tenantId, input.processId);
+    if (!locked) {
+      throw new ReleaseError(404, "RELEASE_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    if (locked.status !== input.expectedFrom) {
+      throw new ReleaseError(409, "RELEASE_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    }
+    const releaseRows = await this.client.$queryRaw<Array<{ status: string; kind: string }>>`
+      SELECT status, kind FROM impound_releases
+      WHERE tenant_id = ${input.tenantId}::uuid AND id = ${input.releaseId}::uuid
+      FOR UPDATE
+    `;
+    const release = releaseRows[0];
+    if (!release || !ACTIVE_STATUSES.includes(release.status) || release.kind !== "FOR_REPAIR") {
+      throw new ReleaseError(409, "RELEASE_CONFLICT", "release_for_repair_not_active", "No active for-repair release exists for this process.");
+    }
+    await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "ACTIVE_CUSTODY" } });
+    await this.appendEventTx(input.tenantId, input.processId, locked, {
+      type: "STATUS_CHANGE",
+      payload: { from: input.expectedFrom, to: "ACTIVE_CUSTODY", reason: "returned_from_repair" },
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+    });
+    const returned = await this.client.impoundRelease.update({
+      where: { id: input.releaseId },
+      data: { status: "RETURNED", updated_by: input.actorId ?? null },
+    });
+    const checks = await this.client.releaseRequirementCheck.findMany({
+      where: { tenant_id: input.tenantId, release_id: input.releaseId },
+      orderBy: [{ code: "asc" }],
+    });
+    return { release: mapRelease(returned), checks: checks.map(mapCheck) };
+  }
+
   // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────────
   private async lockProcess(tenantId: string, processId: string): Promise<LockedProcessRow | undefined> {
     const rows = await this.client.$queryRaw<LockedProcessRow[]>`
@@ -400,6 +528,18 @@ export class RlsPrismaReleaseRepository implements ReleaseRepository {
 
   consumeReleaseAtomic(input: ConsumeReleaseInput): Promise<ReleaseView> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaReleaseRepository(tx).consumeReleaseAtomic(input));
+  }
+
+  startForRepairDossier(input: StartForRepairInput): Promise<ReleaseView> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaReleaseRepository(tx).startForRepairDossier(input));
+  }
+
+  exitForRepairAtomic(input: ExitForRepairInput): Promise<ReleaseView> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaReleaseRepository(tx).exitForRepairAtomic(input));
+  }
+
+  returnFromRepairAtomic(input: ReturnFromRepairInput): Promise<ReleaseView> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaReleaseRepository(tx).returnFromRepairAtomic(input));
   }
 }
 

@@ -46,6 +46,11 @@ export type TransitionInputs = {
   // aresta EXIGE o release.service — não é dirigível pelo endpoint genérico de transição sem o gate resolvido).
   readonly releaseStart?: ReleaseStartGateInput;
   readonly releaseGate?: ReleaseConsumeGateInput;
+  // Ω5P PR-10b (CTB art. 271 §2º / Res. 1025 art. 23 §1º) — insumos SINTÉTICOS das guardas de saída-para-reparo
+  // (mesmo padrão dos de release). O release.service resolve as precondições REAIS (dossiê FOR_REPAIR) e injeta
+  // AQUI; as guardas são PURAS e só leem estas flags.
+  readonly releaseForRepair?: ReleaseForRepairStartGateInput;
+  readonly releaseForRepairReturn?: ReleaseForRepairReturnGateInput;
 };
 
 // Salto A (ACTIVE_CUSTODY→RELEASE_IN_PROGRESS): abrir a liberação (freeze T_stop). alreadyInProgress = já há
@@ -63,6 +68,21 @@ export type ReleaseConsumeGateInput = {
   readonly requirementUnmet: boolean;
   readonly authorityMissing: boolean;
   readonly recipientMissing: boolean;
+};
+
+// Ω5P PR-10b — SAÍDA p/ reparo (ACTIVE_CUSTODY→RELEASED_FOR_REPAIR, art. 271 §2º). NÃO exige quitação/reconciliação/
+// checklist (diferidos à restituição definitiva §1º): só autorização da autoridade + quem-transporta identificado +
+// repair_deadline presente/≤60d (art. 23 §1º). O congelamento NÃO ocorre aqui (D-Ω5P-REL-07: a diária SEGUE correndo).
+export type ReleaseForRepairStartGateInput = {
+  readonly repairDeadlineValid: boolean; // deadline presente (≤60d re-checado no validador — 409 defensivo aqui)
+  readonly authorityMissing: boolean;
+  readonly recipientMissing: boolean;
+};
+
+// Ω5P PR-10b — RETORNO do reparo (RELEASED_FOR_REPAIR→ACTIVE_CUSTODY). Guarda LEVE: só a legalidade (portão 1) + o
+// dossiê FOR_REPAIR ativo. Sem reconciliação/quitação. NÃO congela.
+export type ReleaseForRepairReturnGateInput = {
+  readonly forRepairActive: boolean;
 };
 
 // Efeitos temporais decididos pelo destino (aplicados na MESMA tx do append pelo repositório).
@@ -162,6 +182,48 @@ function guardReleaseGate(_process: ImpoundProcess, inputs: TransitionInputs): v
   }
 }
 
+// Ω5P PR-10b — SAÍDA p/ reparo (I5 parcial, art. 271 §2º). PURA: só lê as flags que o release.service injeta a
+// partir do dossiê FOR_REPAIR. NÃO exige débitos/reconciliação/checklist (§2º autoriza SAIR ≠ §1º restituir). Reasons
+// 409 DISTINTOS; release_authority_missing/release_recipient_missing REUSAM os reasons do gate padrão (mesma norma:
+// autorização + quem-retira, art. 24). Efeito setFrozenAt=false (D-Ω5P-REL-07: a diária segue correndo).
+function guardReleaseForRepairStart(_process: ImpoundProcess, inputs: TransitionInputs): void {
+  const gate = inputs.releaseForRepair;
+  if (!gate) {
+    throw new ImpoundError(
+      409,
+      "IMPOUND_GUARD_FAILED",
+      "release_gate_unresolved",
+      "Release transitions must be driven by the release service (gate not resolved).",
+    );
+  }
+  if (!gate.repairDeadlineValid) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "repair_deadline_invalid", "A valid repair deadline (<= 60 days, art. 23 §1º) is required to release the vehicle for repair.");
+  }
+  if (gate.authorityMissing) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "release_authority_missing", "The authority release must be registered before releasing the vehicle for repair.");
+  }
+  if (gate.recipientMissing) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "release_recipient_missing", "The person transporting the vehicle must be identified before releasing it for repair.");
+  }
+}
+
+// Ω5P PR-10b — RETORNO do reparo (RELEASED_FOR_REPAIR→ACTIVE_CUSTODY). PURA e LEVE: a legalidade é do portão 1; a
+// guarda só confirma que há um dossiê FOR_REPAIR ativo. NÃO congela nem descongela (applyTransition é set-only).
+function guardReleaseForRepairReturn(_process: ImpoundProcess, inputs: TransitionInputs): void {
+  const gate = inputs.releaseForRepairReturn;
+  if (!gate) {
+    throw new ImpoundError(
+      409,
+      "IMPOUND_GUARD_FAILED",
+      "release_gate_unresolved",
+      "Release transitions must be driven by the release service (gate not resolved).",
+    );
+  }
+  if (!gate.forRepairActive) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "release_for_repair_not_active", "No active for-repair release exists for this process.");
+  }
+}
+
 // Registro de guardas. Ausência de chave para uma aresta LEGAL = deferida por padrão (segurança: nada release/
 // leilão fica habilitado por esquecimento). Só as custódia-nativas são explicitamente `enabled` em PR-05.
 // Ω5P PR-10a SOMA (aditivo puro; IMPOUND_TRANSITIONS INTACTA) as 2 arestas do caminho padrão de liberação (I5).
@@ -174,6 +236,13 @@ const GUARDS: Readonly<Record<string, GuardSpec>> = {
   [edgeKey("ACTIVE_CUSTODY", "RELEASE_IN_PROGRESS")]: { kind: "enabled", setFrozenAt: true, guard: guardReleaseStart },
   // Salto B: consumação (I5). Sem setFrozenAt (já congelado em A). Efeito atômico (RELEASE + release + vacate) no repo.
   [edgeKey("RELEASE_IN_PROGRESS", "RELEASED")]: { kind: "enabled", guard: guardReleaseGate },
+  // Ω5P PR-10b — SAÍDA p/ reparo (art. 271 §2º). setFrozenAt=false EXPLÍCITO (D-Ω5P-REL-07: NÃO congela; a diária
+  // segue correndo — o veículo continua sob custódia jurídica, só fisicamente fora). Efeito: vacate + STATUS_CHANGE.
+  [edgeKey("ACTIVE_CUSTODY", "RELEASED_FOR_REPAIR")]: { kind: "enabled", setFrozenAt: false, guard: guardReleaseForRepairStart },
+  // Ω5P PR-10b — RETORNO do reparo. setFrozenAt=false (não congela; a realocação de vaga é endpoint EXISTENTE, não
+  // desta transição). A aresta direta RELEASED_FOR_REPAIR→RELEASED fica DEFERIDA (D-Ω5P-REL-08): a restituição
+  // definitiva é via reapresentação (retorno→ACTIVE_CUSTODY) e então o caminho padrão de liberação do PR-10a.
+  [edgeKey("RELEASED_FOR_REPAIR", "ACTIVE_CUSTODY")]: { kind: "enabled", setFrozenAt: false, guard: guardReleaseForRepairReturn },
 };
 
 // resolveTransition — portão 1 (legalidade) + portão 2 (guarda). PURA; lança ImpoundError(409). O serviço
@@ -226,6 +295,9 @@ export const ENABLED_EDGES: readonly (readonly [ImpoundStatus, ImpoundStatus])[]
   // Ω5P PR-10a — caminho padrão de liberação (I5) habilitado.
   ["ACTIVE_CUSTODY", "RELEASE_IN_PROGRESS"],
   ["RELEASE_IN_PROGRESS", "RELEASED"],
+  // Ω5P PR-10b — saída/retorno do reparo (art. 271 §2º) habilitados. RELEASED_FOR_REPAIR→RELEASED segue DEFERIDA.
+  ["ACTIVE_CUSTODY", "RELEASED_FOR_REPAIR"],
+  ["RELEASED_FOR_REPAIR", "ACTIVE_CUSTODY"],
 ];
 
 export function isEnabledEdge(from: ImpoundStatus, to: ImpoundStatus): boolean {

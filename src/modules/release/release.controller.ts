@@ -93,6 +93,37 @@ export class ReleaseController {
     return { body: toReleaseViewDto(view) };
   }
 
+  // Ω5P PR-10b — SAÍDA p/ reparo (art. 271 §2º). 1ª chamada (sem dossiê ativo) MONTA (201); 2ª (dossiê pronto)
+  // dispara a SAÍDA (200). §2.8: só id/kind/status + transitioned no audit (NUNCA recipient/authority_reference).
+  async startForRepair(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.startForRepair(actor, readRouteParam(request.params.processId), request.body ?? {});
+    await recordRequestAuditBestEffort(request, {
+      action: result.transitioned ? "release.for_repair_started" : "release.for_repair_setup",
+      resourceType: "impound_release",
+      resourceId: result.view.release.id,
+      outcome: "success",
+      severity: "info",
+      metadata: { kind: result.view.release.kind, status: result.view.release.status, transitioned: result.transitioned },
+    });
+    return { status: result.transitioned ? 200 : 201, body: toReleaseViewDto(result.view) };
+  }
+
+  // Ω5P PR-10b — RETORNO do reparo (RELEASED_FOR_REPAIR→ACTIVE_CUSTODY). §2.8: só id/kind/status.
+  async returnFromRepair(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const view = await service.returnFromRepair(actor, readRouteParam(request.params.processId));
+    await recordRequestAuditBestEffort(request, {
+      action: "release.for_repair_returned",
+      resourceType: "impound_release",
+      resourceId: view.release.id,
+      outcome: "success",
+      severity: "info",
+      metadata: { kind: view.release.kind, status: view.release.status },
+    });
+    return { body: toReleaseViewDto(view) };
+  }
+
   private async resolveServiceWithActor(request: Request) {
     return [await this.resolveService(), requireTenantContext(request)] as const;
   }

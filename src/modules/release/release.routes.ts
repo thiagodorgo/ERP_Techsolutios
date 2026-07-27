@@ -82,6 +82,24 @@ export function createReleaseRouter(resolveService: ReleaseServiceResolver = cre
       sendResult(response, await controller.consume(request));
     }),
   );
+  // Ω5P PR-10b — SAÍDA p/ reparo (art. 271 §2º / D-Ω5P-13). 4 segmentos (release/for-repair/start) — sem colisão com
+  // release/start (3 segmentos) nem os demais literais. impound:transition dirige a FSM; o dossiê FOR_REPAIR é montado
+  // aqui e a aprovação/recipiente reusam release/approve (release:approve) / release/recipient (release:process).
+  router.post(
+    "/impound-processes/:processId/release/for-repair/start",
+    requirePermission(RELEASE_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.startForRepair(request));
+    }),
+  );
+  // Ω5P PR-10b — RETORNO do reparo (impound:transition). A realocação de vaga usa o endpoint EXISTENTE de vaga.
+  router.post(
+    "/impound-processes/:processId/release/for-repair/return",
+    requirePermission(RELEASE_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.returnFromRepair(request));
+    }),
+  );
 
   return router;
 }
