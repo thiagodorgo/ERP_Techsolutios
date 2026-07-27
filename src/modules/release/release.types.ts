@@ -88,6 +88,40 @@ export type StartReleaseInput = {
   readonly occurredAt: Date;
 };
 
+// Ω5P PR-10b — cria o dossiê FOR_REPAIR (IN_PROGRESS) SEM transicionar o processo (montar). Sem checklist (o
+// FOR_REPAIR não exige requisitos — art. 271 §2º ≠ §1º). O partial-unique barra 2 liberações em curso.
+export type StartForRepairInput = {
+  readonly tenantId: string;
+  readonly processId: string;
+  readonly expectedStatus: ImpoundStatus; // ACTIVE_CUSTODY (defensivo, evita dossiê órfão)
+  readonly repairDeadline: Date;
+  readonly recipientName?: string;
+  readonly recipientDocument?: string;
+  readonly recipientRelationship?: RecipientRelationship;
+  readonly actorId?: string;
+};
+
+// Ω5P PR-10b — SAÍDA atômica: lock do processo (expectedFrom ACTIVE_CUSTODY) + re-verifica dossiê FOR_REPAIR
+// aprovado+recipient+deadline sob lock + transição→RELEASED_FOR_REPAIR (setFrozenAt=false) + STATUS_CHANGE + vacate.
+export type ExitForRepairInput = {
+  readonly tenantId: string;
+  readonly processId: string;
+  readonly releaseId: string;
+  readonly expectedFrom: ImpoundStatus; // ACTIVE_CUSTODY
+  readonly actorId?: string;
+  readonly occurredAt: Date;
+};
+
+// Ω5P PR-10b — RETORNO atômico: lock (expectedFrom RELEASED_FOR_REPAIR) + dossiê→RETURNED + STATUS_CHANGE (não congela).
+export type ReturnFromRepairInput = {
+  readonly tenantId: string;
+  readonly processId: string;
+  readonly releaseId: string;
+  readonly expectedFrom: ImpoundStatus; // RELEASED_FOR_REPAIR
+  readonly actorId?: string;
+  readonly occurredAt: Date;
+};
+
 export type SetRecipientInput = {
   readonly tenantId: string;
   readonly releaseId: string;

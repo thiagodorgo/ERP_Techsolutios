@@ -99,9 +99,9 @@
     "BAIXO-3_defesa_sob_lock_testada": "NOVO teste DB-gated (release-gate-concurrency.test.ts) semeia 3 processos com UMA pré-condição violada cada (débito não-quitado / DAILY líquido≠0 / requisito required aberto) e prova que consumeReleaseAtomic bate no ramo sob FOR UPDATE → 409 (reason certo) e NÃO libera. Cobre os re-checks release_debts_unsettled/release_reconciliation_pending/release_requirement_unmet.",
     "BAIXO-2_backlog": "recusar encargo em status terminal = BACKLOG (não feito neste PR, por instrução da junta)."
   },
-  "pr": null,
-  "merge_commit": null,
-  "approved_head": null,
+  "pr": 291,
+  "merge_commit": "4fec570",
+  "approved_head": "4fec570",
   "status": "published_per_pr",
   "riscos_residuais": "(1) charging:settle sem finance na distribuição — decisão default (coerência família charging:*); coordenador-de-acessos pode incluir finance (1 linha). (2) reconciliação computada no release.service (não em getStatement) — se um PR futuro consumir statement.reconciliationPending como gate, precisa alinhar; documentado em D-Ω5P-REL-02. (3) RELEASED_FOR_REPAIR + reparo-do-dono (art.271§2) DIFERIDOS a PR-10b (kind FOR_REPAIR já no enum/coluna). (4) bloqueio de leilão I6/I7/I8 = Fase 4 (não deste PR). (5) release:approve é stand-in tenant_admin+manager até o authority-portal (Fase 5) mapear credencial real da autoridade."
 }

@@ -6,12 +6,15 @@ import {
   ReleaseError,
   type ApproveReleaseInput,
   type ConsumeReleaseInput,
+  type ExitForRepairInput,
   type ImpoundRelease,
   type ReleaseRequirementCheck,
   type ReleaseView,
   type RequirementSnapshot,
+  type ReturnFromRepairInput,
   type SetRecipientInput,
   type SetRequirementCheckInput,
+  type StartForRepairInput,
   type StartReleaseInput,
 } from "./release.types.js";
 
@@ -34,6 +37,13 @@ export interface ReleaseRepository {
   approve(input: ApproveReleaseInput): Promise<ImpoundRelease>;
   // Salto B ATÔMICO: RE-VERIFICA o gate I5 sob lock + append RELEASE + status=RELEASED + release COMPLETED + vacate.
   consumeReleaseAtomic(input: ConsumeReleaseInput): Promise<ReleaseView>;
+  // Ω5P PR-10b — SAÍDA p/ reparo (art. 271 §2º). Cria o dossiê FOR_REPAIR (IN_PROGRESS) SEM transicionar (montar).
+  startForRepairDossier(input: StartForRepairInput): Promise<ReleaseView>;
+  // Ω5P PR-10b — SAÍDA atômica: lock + re-verifica (aprovação+recipient+deadline) + status=RELEASED_FOR_REPAIR
+  // (frozen_at INTACTO — D-Ω5P-REL-07) + STATUS_CHANGE + vacate. Dossiê permanece AUTHORIZED (ativo até o retorno).
+  exitForRepairAtomic(input: ExitForRepairInput): Promise<ReleaseView>;
+  // Ω5P PR-10b — RETORNO atômico: lock + status=ACTIVE_CUSTODY (não congela) + STATUS_CHANGE + dossiê→RETURNED.
+  returnFromRepairAtomic(input: ReturnFromRepairInput): Promise<ReleaseView>;
   reset?(): void;
 }
 
@@ -228,6 +238,103 @@ export class InMemoryReleaseRepository implements ReleaseRepository {
     this.releases[index] = completed;
     await this.vacateProcessSpot(input.tenantId, input.processId, input.actorId);
     return { release: completed, checks: this.checksFor(input.tenantId, release.id) };
+  }
+
+  // Ω5P PR-10b — MONTAR o dossiê FOR_REPAIR (IN_PROGRESS) sem transicionar. Sem checklist (FOR_REPAIR não exige
+  // requisitos). O partial-unique (Prisma) barra 2 liberações em curso; aqui o backstop app é hasActiveRelease.
+  async startForRepairDossier(input: StartForRepairInput): Promise<ReleaseView> {
+    const process = await this.impound.findProcessById(input.tenantId, input.processId);
+    if (!process) {
+      throw new ReleaseError(404, "RELEASE_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    if (await this.hasActiveRelease(input.tenantId, input.processId)) {
+      throw new ReleaseError(409, "RELEASE_CONFLICT", "release_already_in_progress", "A release is already in progress for this process.");
+    }
+    const now = new Date();
+    const release: ImpoundRelease = {
+      id: randomUUID(),
+      tenantId: input.tenantId,
+      processId: input.processId,
+      kind: "FOR_REPAIR",
+      status: "IN_PROGRESS",
+      recipientName: input.recipientName,
+      recipientDocument: input.recipientDocument,
+      recipientRelationship: input.recipientRelationship,
+      repairDeadline: input.repairDeadline,
+      createdBy: input.actorId,
+      updatedBy: input.actorId,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.releases.push(release);
+    return { release, checks: [] };
+  }
+
+  // Ω5P PR-10b — SAÍDA p/ reparo (I5 parcial, art. 271 §2º). RE-VERIFICA (aprovação+recipient+deadline) sob "lock"
+  // single-thread + transiciona ACTIVE_CUSTODY→RELEASED_FOR_REPAIR SEM congelar (setFrozenAt=false — D-Ω5P-REL-07:
+  // a diária SEGUE correndo) + STATUS_CHANGE + vacate. NÃO exige débitos/reconciliação/checklist (diferidos ao §1º).
+  async exitForRepairAtomic(input: ExitForRepairInput): Promise<ReleaseView> {
+    const index = this.requireActiveIndex(input.tenantId, input.releaseId);
+    const release = this.releases[index];
+    if (release.kind !== "FOR_REPAIR") {
+      throw new ReleaseError(409, "RELEASE_CONFLICT", "release_kind_mismatch", "This release is not a for-repair release.");
+    }
+    if (!release.repairDeadline) {
+      throw new ReleaseError(409, "RELEASE_GUARD_FAILED", "repair_deadline_invalid", "A valid repair deadline is required to release the vehicle for repair.");
+    }
+    if (!release.authorityApprovedAt) {
+      throw new ReleaseError(409, "RELEASE_GUARD_FAILED", "release_authority_missing", "The authority release must be registered before releasing the vehicle for repair.");
+    }
+    if (!release.recipientName) {
+      throw new ReleaseError(409, "RELEASE_GUARD_FAILED", "release_recipient_missing", "The person transporting the vehicle must be identified before releasing it for repair.");
+    }
+    // Transição SEM congelamento (setFrozenAt=false). O dossiê permanece AUTHORIZED (ativo até o retorno).
+    await this.impound.applyTransition({
+      tenantId: input.tenantId,
+      processId: input.processId,
+      expectedFrom: input.expectedFrom,
+      to: "RELEASED_FOR_REPAIR",
+      setEnteredAt: false,
+      setFrozenAt: false,
+      event: {
+        type: "STATUS_CHANGE",
+        payload: { from: input.expectedFrom, to: "RELEASED_FOR_REPAIR", reason: "released_for_repair" },
+        occurredAt: input.occurredAt,
+        actorId: input.actorId,
+      },
+    });
+    const updated: ImpoundRelease = { ...release, updatedBy: input.actorId ?? release.updatedBy, updatedAt: new Date() };
+    this.releases[index] = updated;
+    await this.vacateProcessSpot(input.tenantId, input.processId, input.actorId);
+    return { release: updated, checks: this.checksFor(input.tenantId, release.id) };
+  }
+
+  // Ω5P PR-10b — RETORNO do reparo. Transiciona RELEASED_FOR_REPAIR→ACTIVE_CUSTODY SEM congelar + STATUS_CHANGE +
+  // dossiê→RETURNED (libera o partial-unique p/ a restituição definitiva via caminho padrão). Realocação de vaga =
+  // endpoint EXISTENTE (não é desta transição).
+  async returnFromRepairAtomic(input: ReturnFromRepairInput): Promise<ReleaseView> {
+    const index = this.requireActiveIndex(input.tenantId, input.releaseId);
+    const release = this.releases[index];
+    if (release.kind !== "FOR_REPAIR") {
+      throw new ReleaseError(409, "RELEASE_CONFLICT", "release_kind_mismatch", "This release is not a for-repair release.");
+    }
+    await this.impound.applyTransition({
+      tenantId: input.tenantId,
+      processId: input.processId,
+      expectedFrom: input.expectedFrom,
+      to: "ACTIVE_CUSTODY",
+      setEnteredAt: false,
+      setFrozenAt: false,
+      event: {
+        type: "STATUS_CHANGE",
+        payload: { from: input.expectedFrom, to: "ACTIVE_CUSTODY", reason: "returned_from_repair" },
+        occurredAt: input.occurredAt,
+        actorId: input.actorId,
+      },
+    });
+    const returned: ImpoundRelease = { ...release, status: "RETURNED", updatedBy: input.actorId ?? release.updatedBy, updatedAt: new Date() };
+    this.releases[index] = returned;
+    return { release: returned, checks: this.checksFor(input.tenantId, release.id) };
   }
 
   // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────────

@@ -114,6 +114,50 @@ if (!connectionString) {
       await client.$disconnect();
     }
   });
+
+  // Ω5P PR-10b (x) — N saídas p/ reparo concorrentes no MESMO processo → exatamente 1 RELEASED_FOR_REPAIR, resto 409.
+  // Anti-dupla-saída sob corrida real (FOR UPDATE do processo + expectedFrom ACTIVE_CUSTODY). Prova ainda que a saída
+  // NÃO congela (frozen_at permanece NULL — D-Ω5P-REL-07) e que o dossiê FOR_REPAIR segue AUTHORIZED (ativo).
+  test("N saídas p/ reparo concorrentes no MESMO processo → exatamente 1 RELEASED_FOR_REPAIR, resto 409; frozen_at NULL", async () => {
+    const { client, repo } = await bootstrap(connectionString);
+    const ctx = await seedReadyForRepair(client, `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    try {
+      const results = await Promise.allSettled(
+        Array.from({ length: CONCURRENCY }, () =>
+          repo.exitForRepairAtomic({
+            tenantId: ctx.tenantId,
+            processId: ctx.processId,
+            releaseId: ctx.releaseId,
+            expectedFrom: "ACTIVE_CUSTODY",
+            actorId: undefined,
+            occurredAt: new Date(),
+          }),
+        ),
+      );
+      const fulfilled = results.filter((r) => r.status === "fulfilled");
+      const rejected = results.filter((r) => r.status === "rejected");
+      assert.equal(fulfilled.length, 1, "exatamente 1 saída deve vencer a corrida");
+      assert.equal(rejected.length, CONCURRENCY - 1);
+      for (const rejection of rejected) {
+        const error = (rejection as PromiseRejectedResult).reason as { statusCode?: number; reason?: string };
+        assert.equal(error.statusCode, 409);
+        assert.ok(
+          ["concurrent_custody_append", "release_not_active"].includes(error.reason ?? ""),
+          `reason inesperado: ${error.reason}`,
+        );
+      }
+      // Estado final: processo RELEASED_FOR_REPAIR + frozen_at NULL + dossiê AUTHORIZED + exatamente 1 STATUS_CHANGE.
+      const process = await selectProcessRow(client, ctx.tenantId, ctx.processId);
+      assert.equal(process.status, "RELEASED_FOR_REPAIR");
+      assert.equal(process.frozen_at, null, "saída p/ reparo NÃO congela (D-Ω5P-REL-07)");
+      const release = await selectRelease(client, ctx.tenantId, ctx.releaseId);
+      assert.equal(release.status, "AUTHORIZED", "dossiê FOR_REPAIR permanece AUTHORIZED (ativo até o retorno)");
+      const exits = await countStatusChange(client, ctx.tenantId, ctx.processId, "released_for_repair");
+      assert.equal(exits, 1, "exatamente 1 STATUS_CHANGE released_for_repair (sem dupla saída)");
+    } finally {
+      await teardown(client, ctx.tenantId);
+    }
+  });
 }
 
 type BootstrapClient = Awaited<ReturnType<typeof bootstrap>>["client"];
@@ -179,6 +223,53 @@ async function seedReadyRelease(client: BootstrapClient, suffix: string, opts: S
     return { profileId: profile.id, processId: proc.id, releaseId: release.id, dailyId };
   });
   return { tenantId: tenant.id, ...seeded };
+}
+
+// Ω5P PR-10b — semeia um processo pronto p/ a SAÍDA p/ reparo: ACTIVE_CUSTODY (NÃO congelado — frozen_at NULL) +
+// dossiê FOR_REPAIR AUTHORIZED (recipiente + aprovação da autoridade + repair_deadline <=60d). Sem débitos/checklist
+// (art. 271 §2º não exige). A corrida testa o anti-dupla-saída.
+async function seedReadyForRepair(client: BootstrapClient, suffix: string) {
+  const { withTenantRls } = await import("../src/database/rls.js");
+  const tenant = await client.tenant.create({ data: { name: `Repair Conc ${suffix}`, slug: `repair-conc-${suffix}` } });
+  const custodyHash = "c".repeat(64);
+  const custodyPrev = "d".repeat(64);
+  const seeded = await withTenantRls(client, tenant.id, async (tx) => {
+    const [profile] = await tx.$queryRaw<Array<{ id: string }>>`
+      INSERT INTO jurisdiction_profiles (tenant_id, name, scope) VALUES (${tenant.id}::uuid, 'Perfil', 'PUBLIC_AGREEMENT') RETURNING id
+    `;
+    const [proc] = await tx.$queryRaw<Array<{ id: string }>>`
+      INSERT INTO impound_processes (tenant_id, profile_id, origin_authority, vehicle_unidentified, unidentified_reason, status, entered_at, frozen_at, custody_seq_head, custody_hash_head)
+      VALUES (${tenant.id}::uuid, ${profile.id}::uuid, 'Autoridade', true, 'Placa adulterada', 'ACTIVE_CUSTODY', now(), NULL, 1, ${custodyHash})
+      RETURNING id
+    `;
+    await tx.$queryRaw`
+      INSERT INTO custody_events (tenant_id, process_id, seq, type, payload, occurred_at, prev_hash, hash)
+      VALUES (${tenant.id}::uuid, ${proc.id}::uuid, 1, 'STATUS_CHANGE', ${'{"from":null,"to":"IN_REMOVAL"}'}::jsonb, now(), ${custodyPrev}, ${custodyHash})
+    `;
+    const [release] = await tx.$queryRaw<Array<{ id: string }>>`
+      INSERT INTO impound_releases (tenant_id, process_id, kind, status, recipient_name, authority_approved_by, authority_approved_at, repair_deadline)
+      VALUES (${tenant.id}::uuid, ${proc.id}::uuid, 'FOR_REPAIR', 'AUTHORIZED', 'Quem Transporta', gen_random_uuid(), now(), now() + interval '30 days')
+      RETURNING id
+    `;
+    return { profileId: profile.id, processId: proc.id, releaseId: release.id };
+  });
+  return { tenantId: tenant.id, ...seeded };
+}
+
+async function selectProcessRow(client: BootstrapClient, tenantId: string, processId: string): Promise<{ status: string; frozen_at: Date | null }> {
+  const { withTenantRls } = await import("../src/database/rls.js");
+  const rows = await withTenantRls(client, tenantId, (tx) =>
+    tx.$queryRaw<Array<{ status: string; frozen_at: Date | null }>>`SELECT status, frozen_at FROM impound_processes WHERE tenant_id = ${tenantId}::uuid AND id = ${processId}::uuid`,
+  );
+  return rows[0];
+}
+
+async function countStatusChange(client: BootstrapClient, tenantId: string, processId: string, reason: string): Promise<number> {
+  const { withTenantRls } = await import("../src/database/rls.js");
+  const rows = await withTenantRls(client, tenantId, (tx) =>
+    tx.$queryRaw<Array<{ n: number }>>`SELECT count(*)::int AS n FROM custody_events WHERE tenant_id = ${tenantId}::uuid AND process_id = ${processId}::uuid AND type = 'STATUS_CHANGE' AND payload->>'reason' = ${reason}`,
+  );
+  return rows[0].n;
 }
 
 async function selectProcess(client: BootstrapClient, tenantId: string, processId: string): Promise<{ status: string }> {
