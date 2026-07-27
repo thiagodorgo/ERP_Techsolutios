@@ -1,0 +1,56 @@
+{
+  "id": "PR-08a",
+  "fase": "Fase 2 — UI de operação do pátio (console autenticado /patios): ocupação REAL + Processos + Dossiê + movimentação de vaga",
+  "snapshot_date": "2026-07-27",
+  "branch": "rodada/omega5p",
+  "tipo": "Frontend do console (React) + 1 toque backend no navigation.registry.ts (governed path patios.processes / esconde-fino) + testes de nav. Consome impound (PR-05 #285), recepção/vistoria (PR-06 #286), charging (PR-07 #287 — só leitura de contrato no 08b), yard (PR-01). SEM permissão nova, SEM migração, SEM dep nova.",
+  "models_alterados": [],
+  "migrations": [],
+  "telas": {
+    "processos": "/patios/processos — dense-list de ImpoundProcess (Identificação placa|'Não identificado' com link ao dossiê, Chip semântico de situação, Pátio via join, Entrada, Autoridade solicitante) + filtros situação(14 estados)/pátio/placa + criação manual MÍNIMA (NovoProcessoModal: perfil_id+origin_authority req, placa|não-identificado+justificativa, pátio opcional) gated por impound:create. EmptyState honesto D-007.",
+    "dossie": "/patios/processos/:processId — header (identidade + Chip statusLabel + autoridade/origem/fundamento + datas entrada/congelamento); Card identificação/origem; Card local de guarda (pátio+vaga via join); selo de integridade I2 (GET /verify: verde 'Cadeia íntegra (N eventos)' / vermelho 'Adulteração detectada no evento #brokenAt'); timeline vertical densa de CustodyEvent (GET /events, ordena por seq, typeLabel + payload amigável, hashes truncados = PROVA); vistoria LEITURA (art.14 §1º + galeria de fotos agrupada por set + selo de completude requiredSets/complete; sem vistoria → EmptyState honesto). useAutoRefresh (dados desatualizados). NÃO é item de sidebar (gate por route-guard).",
+    "mapa": "/patios/patios/:yardId — Card 'Vagas' vira mapa de ocupação REAL (D-Ω5P-UI-07): grade colorida FREE(verde)/OCCUPIED(âmbar)/BLOCKED(vermelho); vaga OCUPADA linka ao dossiê com placa resolvida por join client-side (occupancy.items × GET /impound-processes?yard_id=); resumo Vagas/Livres/Ocupadas/Bloqueadas do summary REAL.",
+    "movimentacao": "allocate (POST /:id/spot) / vacate (DELETE /:id/spot, confirmação destrutiva) / move (POST /:id/spot/move — cobre intra e cross-pátio, backend classifica YARD_TRANSFER×SPOT_MOVED) — gated por impound:allocate, a partir do MAPA (ProcessPickerModal p/ vaga livre; Mover/Liberar em vaga ocupada) e do DOSSIÊ (SpotPickerModal allocate/move; VacateSpotModal). A UI só molda; atomicidade I1 + estado válido (409/422) vivem no backend."
+  },
+  "governanca_nav": "1 governed path patios.processes em navigation.registry.ts (path /patios/processos, requiredPermissions impound:read, group tenant, tenantOnly, status implemented, SEM requiredModules = pure-permission esconde-fino; relatedEndpoints = os read de impound-processes/events/verify/inspection). O dossiê /patios/processos/:processId NÃO é registrado (não é item de sidebar; gate por route-guard). Sidebar: item 'Processos' (FileStack) em G_PATIOS + /patios/processos em MVP_NAV_PATHS. navigation-provisioning.test 61→72 (+11: 1 governança + 9 matriz por papel derivada de ROLE_PERMISSIONS + 1 assert explícito finance/inventory).",
+  "permissao": "ZERO permissão nova — reusa impound:read/create/allocate + yard:read (todas distribuídas em PR-05/06). Rotas /patios/processos e :processId sob PermissionGuard impound:read; can(impound:create) molda 'Novo processo'; can(impound:allocate) molda allocate/vacate/move. Backend é a autoridade (403/409/422 reais). catalog.ts/prisma/seed/RBAC_MATRIX/core-saas.test INTOCADOS.",
+  "modulos": [
+    "frontend/src/modules/patios/processes/{processes.types.ts, processes.adapter.ts, processes.service.ts, useProcesses.ts, pages/ProcessosPage.tsx, pages/ProcessoDossiePage.tsx, components/(ProcessStatusChip, ProcessTimeline, IntegritySeal, InspectionSection, OccupancyMap, NovoProcessoModal, SpotPickerModal, ProcessPickerModal, VacateSpotModal)}",
+    "frontend/src/modules/patios/yards/* ESTENDIDO: yards.types.ts (+currentProcessId no YardSpotItem + tipo YardOccupancy), yards.adapter.ts (adapta items+currentProcessId), yards.service.ts (getYardOccupancy retorna {summary,items}), pages/PatioDetailPage.tsx (Card Vagas→OccupancyMap + join + ações allocate/move/vacate)",
+    "frontend/src/App.tsx (2 rotas lazy /patios/processos e :processId sob PermissionGuard impound:read) + layouts/appSidebarNav.ts (item Processos FileStack em G_PATIOS + MVP_NAV_PATHS) + frontend/package.json (script test:smoke)",
+    "src/modules/navigation/navigation.registry.ts (+1 governed path patios.processes) + tests/navigation-provisioning.test.ts (matriz por papel + governança + finance/inventory)",
+    "frontend/tests/{patios-processos,patios-dossie,patios-mapa}.smoke.test.tsx"
+  ],
+  "rns_cobertas": [
+    "RN-UI-PROC lista de processos de custódia (situação/pátio/entrada/autoridade + criação manual mínima R3)",
+    "RN-UI-DOSSIE dossiê probatório (timeline I2 por seq + selo de verificação valid/brokenAt + vistoria art.14 leitura + galeria por conjunto)",
+    "RN-UI-OCUP mapa de ocupação REAL (D-Ω5P-UI-07: currentProcessId → link ao dossiê + placa por join; art. 9º informações permanentemente atualizadas)",
+    "RN-PAT-02 movimentação/transferência de vaga (allocate/vacate/move; /spot/move cobre intra e cross-pátio — D-Ω5P-UI-10)",
+    "RN-UI esconde-fino (governed path patios.processes oculta Processos de quem não tem impound:read; backend 403)"
+  ],
+  "rns_total_pr": 5,
+  "estados_obrigatorios": "loading/skeleton · empty HONESTO (D-007: isMockMode→dataset vazio; 'Nenhum processo de custódia'; dossiê sem vistoria → 'Vistoria de recepção ainda não registrada'; timeline vazia → EmptyState) · error+Tentar novamente · acesso-negado (PermissionGuard + ações gated) · dados desatualizados (useAutoRefresh no dossiê e no mapa). Offline/sync = N/A (web). §11: PageHeader título+subtítulo+ações à direita; Chips semânticos por estado (custódia ativa=verde, recepção=azul, bloqueio judicial=vermelho, elegível-leilão=âmbar); timeline vertical densa; A11y (aria em ícones-ação, labels de link/botão); sem andaime de dev. §2.8/allowlist: tenant_id NUNCA renderizado; currentProcessId NUNCA cru (só no href do dossiê — testado); prevHash/hash/headHash truncados = PROVA; fileUrl é o único link de mídia. PT-BR white-label: 'Processo de custódia/Autoridade solicitante/Órgão/Pátio/Vaga/Vistoria/Bloqueio judicial', NUNCA 'Tenant' nem 'polícia' (testado doesNotMatch).",
+  "d_records": [
+    "D-Ω5P-UI-07 (ocupação passa a REAL: YardSpotItem/adapter carregam currentProcessId; vaga OCUPADA linka ao dossiê; allocate/vacate/move via impound:allocate — encerra o read-only do PR-04/D-Ω5P-UI-03)",
+    "D-Ω5P-UI-10 (transferência entre pátios = MESMO /spot/move; backend classifica YARD_TRANSFER; sem endpoint/tela dedicada)",
+    "D-Ω5P-UI-11 (subdivisão 08a ocupação+processos+dossiê / 08b débitos+FSM / 08c edição-vistoria — este PR entrega 08a)"
+  ],
+  "escopo_08a_vs_08bc": "08a: lista + dossiê (timeline/verify/vistoria-leitura) + mapa REAL + movimentação. NÃO inclui (deferido): guia de débitos (08b), painel de transições da FSM (08b), edição de vistoria/entrada guiada (08c). R4 aceito/nomeado: graduação RECEPTION→ACTIVE_CUSTODY não acionável neste PR (depende de inspection.complete = 08c).",
+  "kpi_repo_wide": {
+    "backend": "1696->1707 (+11 navigation-provisioning: 1 governança patios.processes + 9 matriz por papel /patios/processos derivada de ROLE_PERMISSIONS + 1 assert finance/inventory; frontend-only PR + 1 registry path; medição node --test)",
+    "frontend_smoke": "861->875 (+14: patios-processos 4 + patios-dossie 6 + patios-mapa 4)",
+    "flutter_tests": "807 (inalterado — sem toque mobile)",
+    "blocks": "95->96 (+1 módulo frontend processes)"
+  },
+  "coexistencia": "impound/charging/yard backend INTOCADOS (só a UI consome; delega ao 403/409/422). PR-04 (ocupação read-only) evoluído para REAL sem quebrar cadastros. Sem regressão (875/875 smoke; 72/72 nav-provisioning). package.json só +3 test files no script test:smoke (sem dep nova). 08b tocará o mesmo ProcessoDossiePage só ACRESCENTANDO seções (merge-safe).",
+  "junta": {
+    "cognicao-visual": "APROVADO (após ciclo 1: REPROVOU o achado C-VIS-1 — describeEventPayload vazava enum interno/código-motivo/UUID cru na timeline; dev sanou com getStatusLabel + supressão de UUID por formato + REASON_CODE_LABELS PT-BR preservando reason de texto livre + JSON.stringify removido; smoke endurecido com payloads reais + doesNotMatch UUID/enum; re-review sem resíduo)",
+    "coordenador-de-acessos": "APROVADO (cadeia papel→permissão→provisionamento→menu→rota→gate→backend íntegra; governed patios.processes impound:read sem requiredModules; matriz derivada de ROLE_PERMISSIONS com assert finance/inventory; gates de ação com a permissão certa; 72/72 nav; achado doc não-bloqueante — linha /patios/processos em navigation-matrix.md — sanado no ciclo 1)",
+    "omega5p-avaliador": "APROVADO (VETO; após ciclo 0: A1 regressão da edição/bloqueio de vaga yard:update + A2 chave pr duplicada — dev sanou botão Editar gated + KPI id; reavaliação empírica patios-mapa 4/4 + patios-yards 8/8; resíduo KPI 874→875 sincronizado)",
+    "veredito": "APROVADO 3/3 (1 ciclo de reprovação da cognição — C-VIS-1 sanado; R-omega5p-pr08a-ciclo1)"
+  },
+  "pr": null,
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "published_per_pr"
+}

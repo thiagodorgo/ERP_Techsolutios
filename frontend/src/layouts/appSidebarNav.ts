@@ -14,6 +14,7 @@ import {
   Contact,
   CreditCard,
   Factory,
+  FileStack,
   Fuel,
   Gauge,
   Gavel,
@@ -115,6 +116,8 @@ const TELE_RASTREAMENTO: NavItem = { label: "Rastreamento", path: "/telemetria/r
 // registry backend (yard:read / jurisdiction:read / price_tables:read) — o esconde-fino oculta de quem não tem
 // a permissão; o backend é a autoridade (403 real). Tabela de Valores aqui reusa a tela estendida (/patios/tarifas).
 const PATIOS: NavItem = { label: "Pátios", path: "/patios/patios", icon: Warehouse };
+// Ω5P PR-08a — console de operação: Processos de custódia (governado por impound:read; esconde-fino no registry).
+const PROCESSOS_CUSTODIA: NavItem = { label: "Processos", path: "/patios/processos", icon: FileStack };
 const PERFIS_NORMATIVOS: NavItem = { label: "Perfis Normativos", path: "/patios/perfis", icon: Scale };
 const TABELA_VALORES_PATIO: NavItem = { label: "Tabela de Valores", path: "/patios/tarifas", icon: Coins };
 
@@ -149,7 +152,7 @@ const G_TELEMETRIA: NavGroup = {
 };
 // Ω5P PR-04 — grupo PÁTIOS (admin/gestor completo; dispatcher/campo tem os 3 reads → vê a leitura; ações
 // Novo/Editar são gated por :create/:update na tela). finance/support não têm as permissões → o esconde-fino oculta.
-const G_PATIOS: NavGroup = { label: "PÁTIOS", items: [PATIOS, PERFIS_NORMATIVOS, TABELA_VALORES_PATIO] };
+const G_PATIOS: NavGroup = { label: "PÁTIOS", items: [PATIOS, PROCESSOS_CUSTODIA, PERFIS_NORMATIVOS, TABELA_VALORES_PATIO] };
 
 // Navegação por papel (5 grupos da IA aprovada). Distribuição por RoleKind
 // segundo a tabela "Visibilidade por papel" (sidebar-ia.md) + navigation-matrix.md.
@@ -216,6 +219,7 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/cadastros/tags",
   "/cadastros/pontos-interesse",
   "/patios/patios",
+  "/patios/processos",
   "/patios/perfis",
   "/patios/tarifas",
   "/fleet/fuel",

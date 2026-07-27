@@ -15,7 +15,7 @@ import type {
   YardAreaUpdatePayload,
   YardCreatePayload,
   YardItem,
-  YardOccupancySummary,
+  YardOccupancy,
   YardSpotCreatePayload,
   YardSpotItem,
   YardSpotUpdatePayload,
@@ -26,7 +26,7 @@ import type {
 } from "./yards.types";
 
 const EMPTY_PAGINATION = { limit: 20, offset: 0, total: 0 } as const;
-const EMPTY_OCCUPANCY: YardOccupancySummary = { total: 0, free: 0, occupied: 0, blocked: 0 };
+const EMPTY_OCCUPANCY: YardOccupancy = { summary: { total: 0, free: 0, occupied: 0, blocked: 0 }, items: [] };
 
 // D-007: nunca fabricar linhas. Modo mock → dataset vazio (mock honesto); erro real → fallback vazio.
 export async function listYardsFromApi(context: YardsApiContext, params: Partial<YardsFilters> = {}): Promise<YardsData> {
@@ -97,9 +97,9 @@ export async function updateYardSpot(context: YardsApiContext, spotId: string, p
   return adaptYardSpotResponse(response);
 }
 
-// Resumo de ocupação (read-only). Mock → zeros (D-007, sem fabricar).
-export async function getYardOccupancy(context: YardsApiContext, yardId: string): Promise<YardOccupancySummary> {
-  if (isMockMode()) return { ...EMPTY_OCCUPANCY };
+// Ocupação REAL (PR-08a): resumo + vagas com o processo que as ocupa (mapa de ocupação). Mock → vazio (D-007).
+export async function getYardOccupancy(context: YardsApiContext, yardId: string): Promise<YardOccupancy> {
+  if (isMockMode()) return { summary: { ...EMPTY_OCCUPANCY.summary }, items: [] };
   const response = await apiRequest<unknown>(`/yards/${yardId}/occupancy`, context);
   return adaptYardOccupancyResponse(response);
 }

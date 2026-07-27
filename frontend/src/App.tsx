@@ -72,6 +72,10 @@ const ProfissionaisPage = lazy(() => import("./modules/registry/operator-profile
 const PatiosPage = lazy(() => import("./modules/patios/yards/pages/PatiosPage").then((m) => ({ default: m.PatiosPage })));
 const PatioDetailPage = lazy(() => import("./modules/patios/yards/pages/PatioDetailPage").then((m) => ({ default: m.PatioDetailPage })));
 const PerfisPage = lazy(() => import("./modules/patios/profiles/pages/PerfisPage").then((m) => ({ default: m.PerfisPage })));
+// Ω5P PR-08a — console de operação: Processos de custódia (lista + dossiê). Gate impound:read (rota); dossiê é
+// gated pelo route-guard (não é item de menu → não é governed).
+const ProcessosPage = lazy(() => import("./modules/patios/processes/pages/ProcessosPage").then((m) => ({ default: m.ProcessosPage })));
+const ProcessoDossiePage = lazy(() => import("./modules/patios/processes/pages/ProcessoDossiePage").then((m) => ({ default: m.ProcessoDossiePage })));
 const AbastecimentoPage = lazy(() => import("./modules/fleet/fuel/pages/AbastecimentoPage").then((m) => ({ default: m.AbastecimentoPage })));
 const ManutencaoPage = lazy(() => import("./modules/fleet/maintenance/pages/ManutencaoPage").then((m) => ({ default: m.ManutencaoPage })));
 const MultasPage = lazy(() => import("./modules/fleet/fines/pages/MultasPage").then((m) => ({ default: m.MultasPage })));
@@ -387,6 +391,22 @@ export function App() {
               element={
                 <PermissionGuard permissions={["yard:read"]}>
                   <PatioDetailPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/patios/processos"
+              element={
+                <PermissionGuard permissions={["impound:read"]}>
+                  <ProcessosPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/patios/processos/:processId"
+              element={
+                <PermissionGuard permissions={["impound:read"]}>
+                  <ProcessoDossiePage />
                 </PermissionGuard>
               }
             />
