@@ -1,0 +1,91 @@
+{
+  "id": "PR-09",
+  "fase": "Fase 2 (FECHA) — Trilha de notificações legais (I6): motor de prazos DEVIDO + registro probatório encadeado (CustodyEvent NOTIFICATION, hash-chain I2) + registro manual de EMISSÃO/DISPENSA + predicado de trilha completa que o leilão (PR-12/13) consome como pré-condição.",
+  "snapshot_date": "2026-07-27",
+  "branch": "rodada/omega5p",
+  "tipo": "Backend + 1 migração aditiva (1 tabela nova + back-relation). SEM frontend. SEM integração externa (envio real SNE/postal/edital/DJE = Ω6, PD-Ω5P-NOTIF-SEND). Sub-namespace do módulo impound (NÃO módulo novo). 1 permissão nova impound:notify. 1 JobName novo impound.notify-due.",
+  "models_alterados": [
+    "ProcessNotification (NOVO model, tabela process_notifications)",
+    "ImpoundProcess (+back-relation notifications ProcessNotification[] — aditivo)",
+    "Tenant (+back-relation process_notifications ProcessNotification[] — aditivo)"
+  ],
+  "migrations": [
+    "20260839000000_add_process_notifications (aditiva up-only: CREATE TABLE process_notifications + índice único raw-only de idempotência (tenant,process,kind) WHERE kind IS NOT NULL + CHECK estrutural status ISSUED⇒issued_at E channel NOT NULL (IS NOT NULL explícito) + FK compostas tenant-first RESTRICT (tenant/process, I9) + RLS ENABLE+FORCE+policy. up→down→re-up PROVADO na base viva com drift-ZERO em process_notifications)"
+  ],
+  "modulos": [
+    "src/modules/impound/impound.notifications.ts (MOTOR PURO — computeNotificationSchedule/requiredNotificationKinds/isNotificationTrailComplete; zero I/O)",
+    "src/modules/impound/impound.notifications.types.ts (enums OWNER_INITIAL|COMPLEMENTARY_EDICT|AUCTION_EDICT · DUE|ISSUED|WAIVED|FAILED · POSTAL|SNE|EDICT|IN_PERSON + NotificationError)",
+    "src/modules/impound/impound.notifications.validators.ts (parseNotificationChannel/parseRequiredReason/parseOptionalRecipientRef minimizado/parseOptionalAttachment)",
+    "src/modules/impound/impound.notifications.dto.ts (§allowlist §2.8; labels PT-BR; NUNCA expõe tenant_id)",
+    "src/modules/impound/impound.notifications.repository.ts (interface + InMemory + buildNotificationEventPayload — allowlist estrita)",
+    "src/modules/impound/impound.notifications-prisma.repository.ts (Prisma + RLS + appendNotificationEventTx — RÉPLICA FIEL de appendChargeEventTx reusando as PURAS do impound.hashchain)",
+    "src/modules/impound/impound.notifications.service.ts (list/issue/waive/markDueProcess/markDueTenantScan + runtime env-gate memory×prisma)",
+    "src/modules/impound/impound.notifications.sweep.service.ts (runImpoundNotifyDueScan — por tenant ativo, try/catch por tenant)",
+    "src/modules/impound/impound.notifications.jobs.ts (job impound.notify-due auto-reenfileirante 1h, gated JOBS_WORKER_ENABLED, ator SISTEMA)",
+    "src/modules/impound/impound.notifications.controller.ts (NotificationController — auditoria best-effort sem PII)",
+    "src/modules/impound/impound.routes.ts (rotas ADITIVAS: GET /notifications impound:read · POST /notifications/:id/issue|/waive impound:notify)",
+    "src/modules/impound/index.ts (barrel — 8 reexports; validators internos NÃO reexportados p/ evitar colisão optionalString/parseRequiredUuid com impound.validators)",
+    "src/infra/jobs/job.types.ts (+JobName impound.notify-due) · src/infra/jobs/job.registry.ts (+register handler) · src/server.ts (+enqueue inicial sob gate)",
+    "src/modules/core-saas/permissions/catalog.ts (+impound:notify no PERMISSION_CATALOG + no papel manager)",
+    "prisma/seed.ts (+permissionDescriptions impound:notify) · RBAC_MATRIX.md (+1 linha)"
+  ],
+  "invariante": "I6 — nenhum lote consumado sem trilha de notificação íntegra. PR-09 MATERIALIZA a trilha de forma AUDITÁVEL: (i) ProcessNotification (quando DEVIDA, quando/como emitida, destinatário minimizado, status); (ii) cada marco/emissão é um CustodyEvent NOTIFICATION hash-encadeado + cross-anchor (tamper-EVIDENT — adulteração quebra verifyChain); (iii) isNotificationTrailComplete = predicado puro da pré-condição do leilão. A APLICAÇÃO do bloqueio (arestas AUCTION_PREP→LOTTED→AUCTIONED) é da FASE 4 (PR-12/13 trocam a guarda deferred pela guarda REAL). PR-09 entrega os dados + o predicado.",
+  "prazos_normativos": "OWNER_INITIAL @ t0 + ownerNotifDays·24h (Res. 1025 art. 15, <=10 dias) · COMPLEMENTARY_EDICT @ t0 + noticeEdictDay·24h (Res. 1025 art. 26, 30 dias) — prazos VÊM do JurisdictionProfile (NUNCA hardcode; PR-09 NÃO estende o perfil). AUCTION_EDICT declarado no enum p/ o gate de leilão (Lei 14.133/2021, >=15 d.u.) mas NÃO agendado (relativo à DATA do certame — PR-13). Tempo ABSOLUTO DST-imune (t0 + dias·24h em ms).",
+  "rns_cobertas": [
+    "I6 trilha materializada + predicado isNotificationTrailComplete (pré-condição do leilão PR-12/13)",
+    "I2 cada marcação DEVIDA/emissão encadeia CustodyEvent NOTIFICATION (hash + cross-anchor); verifyChain valid com NOTIFICATION intercalado a STATUS_CHANGE + CHARGE_ACCRUAL; tamper → hash_mismatch",
+    "I9 process→RESTRICT (notificação nunca cascateia; retenção >=5 anos, Res. 1025 art. 9º VII)",
+    "Idempotência (D-Ω5P-NOTIF-01): índice único raw-only (tenant,process,kind) + FOR UPDATE do processo — sweep nunca dupla-marca; catch-up após queda",
+    "Fail-closed (D-Ω5P-NOTIF-02): scope != PUBLIC_AGREEMENT ⇒ não roda o rito; prazo ausente/<=0 ⇒ pula o marco + logger.warn (sem PII); JAMAIS fabrica data",
+    "Congelamento/suspensão: frozen_at set ⇒ sem novo DUE; JUDICIAL_HOLD suspende; marcos já materializados PERSISTEM (append-only)",
+    "§allowlist §2.8: payload/audit {event,kind,notificationId,dueAt,status,channel?} — ZERO recipient_ref/PII/endereço/tenant_id/process UUID cru"
+  ],
+  "rns_total_pr": 7,
+  "permissao": "1 permissão NOVA impound:notify (EMISSÃO/DISPENSA = ato jurídico/probatório) nas 4 pontas: catalog.ts (posição espelhando impound:allocate + distribuição = impound:transition/inspect: manager+tenant_admin+super_admin+platform_admin; campo/finance/inventory/support NÃO), tests/core-saas.test.ts (expectedPermissionCatalog posicional + asserts de distribuição), prisma/seed.ts (descrição PT-BR), RBAC_MATRIX.md (1 linha). GET da trilha REUSA impound:read (distribuição ampla). A DUE-marking é SISTEMA (job, sem ponta HTTP). SEM impound:notify:manage/update (permissão morta).",
+  "estados_obrigatorios": "Backend-only ⇒ contratos: 200 (list) · empty-list (sem marcos) · 404 (cross-tenant / notificação inexistente) · 403 (sem impound:notify) · 409 (issue/waive de algo não-DUE = not_due) · 422 (waive sem reason). A renderização (timeline do dossiê + estados §7 de UI) é DIFERIDA a PR de frontend — o payload é desenhado p/ o describeEventPayload (PR-08a) renderizar PT-BR sem vazar enum/UUID/PII (lição C-VIS-1).",
+  "d_records": [
+    "D-Ω5P-NOTIF-01 ProcessNotification = projeção mutável (DUE→ISSUED como settled_*) + prova nos CustodyEvent NOTIFICATION append-only; idempotência índice único raw-only (tenant,process,kind)",
+    "D-Ω5P-NOTIF-02 motor puro relativo ao t0 (tempo absoluto DST-imune), sweep impound.notify-due gated PUBLIC_AGREEMENT + frozen_at NULL + !=JUDICIAL_HOLD, fail-closed sem fabricar data",
+    "D-Ω5P-NOTIF-03 eixo impound:notify p/ EMISSÃO/DISPENSA (ato probatório); DUE-marking = SISTEMA",
+    "D-Ω5P-NOTIF-04 I6 = trilha materializada + predicado isNotificationTrailComplete; APLICAÇÃO do bloqueio na guarda de leilão (PR-12/13)",
+    "PD-Ω5P-NOTIF-SEND envio real (SNE/postal/edital/DJE) diferido Ω6 (informativo, NÃO dispara junta-5)"
+  ],
+  "testes_alvo": {
+    "tests/impound-notifications.test.ts": "InMemory, sempre roda — 8 casos i-viii: (i) computeNotificationSchedule ordenado + AUCTION_EDICT ausente; (ii) DEVIDO no vencimento; (iii) idempotência; (iv) fail-closed (privado zero / prazo<=0 pula sem fabricar, errors>0); (v) congelamento (frozen_at sem novo DUE; JUDICIAL_HOLD suspende; materializados persistem); (vi) ordenação; (vii) issue/waive (carimba ISSUED; 409 reemitir; 422 sem reason; 404 inexistente; cadeia valid); (viii) isNotificationTrailComplete. 8/8 pass (isolado).",
+    "tests/impound-notifications-chain.test.ts": "DB-gated DATABASE_URL — 5 alvos: (i) NOTIFICATION intercalado a STATUS_CHANGE + CHARGE_ACCRUAL, verifyChain valid (paridade da 3ª réplica); (ii) cross-anchor reconciliado; (iii) tamper → hash_mismatch; (iv) concorrência 3 ticks paralelos → 1 linha/1 evento por kind (FOR UPDATE + índice único); (v) allowlist §2.8 (payload/audit sem recipient/PII/tenant_id/process UUID). 2/2 pass (base viva).",
+    "tests/rls-tenant-isolation.test.ts": "process_notifications nos 3 tenants A/B/C: invisível sem app.current_tenant_id + cross-tenant updateMany count=0 + visível/intocada in-tenant. Teardown FK-safe (process_notifications ANTES de impound_processes). 1/1 pass (base viva).",
+    "tests/core-saas.test.ts": "catálogo íntegro (deepEqual posicional c/ impound:notify) + distribuição impound:notify por papel (espelha impound:transition/inspect). 26/26 pass (isolado)."
+  },
+  "bateria": {
+    "prisma_validate": "valid",
+    "migrate_diff": "drift-ZERO em process_notifications (só RenameIndex/metadata-default/FK-representation PRÉ-EXISTENTES, idênticos ao noto em PR-01/07); índice parcial WHERE kind IS NOT NULL invisível ao Prisma (raw-only, sem drift)",
+    "migrate_up_down_reup": "PROVADO na base viva localhost:5432 — deploy (aplicada) → migrate diff drift-zero → DROP TABLE CASCADE + DELETE _prisma_migrations (down) → status pending → deploy (re-up) → aplicada. _prisma_migrations íntegro.",
+    "npm_run_lint": "verde (tsc --noEmit)",
+    "npm_run_build": "verde (tsc)",
+    "npm_test": "isolados dos arquivos tocados VERDES (impound-notifications 8/8, impound-notifications-chain 2/2 base viva, rls 1/1 base viva, core-saas 26/26, regressão charging-daily-engine/impound/impound-hashchain/impound-fsm 85/85). Suíte completa NÃO fecha local (timeout — conflito de porta :3000/:5173 com dev-servers, cenário conhecido; NÃO matei os dev-servers) → confia no CI.",
+    "frontend": "npm --prefix frontend run check + build VERDES (zero regressão; PR-09 não toca frontend)",
+    "node_check_kpi": "Kpis/app.js OK · mobile/flutter_app/Kpis/app.js OK",
+    "git_diff_check": "limpo"
+  },
+  "kpi_repo_wide": {
+    "backend": "1707->1717 (+10: 8 InMemory impound-notifications SEMPRE + 2 DB-gated impound-notifications-chain; core-saas/rls +asserts sem novo bloco. Medido com DATABASE_URL presente, como o CI; suíte completa não fechou local por conflito de porta — delta contado nos arquivos tocados + baseline)",
+    "frontend_smoke": "892 (inalterado — PR-09 não toca frontend; check+build verdes)",
+    "flutter_tests": "807 (inalterado — sem toque mobile)",
+    "blocks": "97->98 (+1 sub-namespace backend impound.notifications.*)",
+    "mvp_demo": "inalterado (PR-09 não move escopo de demo)",
+    "mvp_vendavel": "inalterado"
+  },
+  "coexistencia": "impound.hashchain.ts/impound.transitions.ts/impound.types.ts INTOCADOS (só REUSA — o type NOTIFICATION já existia; a guarda real das arestas de leilão é PR-12/13). jurisdiction/charging/yard/release/auction INTOCADOS (os prazos já existiam no JurisdictionProfile). appendNotificationEventTx é RÉPLICA FIEL de appendChargeEventTx (3ª réplica do append probatório — precedente D-Ω5P-CHG aprovado); verifyChain segue valid com NOTIFICATION intercalado. Migração 100% aditiva (1 tabela nova + 2 back-relations; ZERO coluna/DROP em tabela existente). app.ts INTOCADO (o router impound já estava registrado; rotas aditivas no impound.routes.ts). Nenhum agente pré-existente tocado.",
+  "junta": {
+    "agente-dba-guardiao": "APROVADO (migração 20260839000000 aditiva pura up-only; up→down→re-up na base viva DRIFT-ZERO verificado [índice parcial WHERE kind IS NOT NULL invisível ao Prisma; diffs remanescentes pré-existentes]; idempotência 23505 + CHECK issued_shape 23514 com IS NOT NULL explícito + RLS forced+policy + FK process→RESTRICT I9 provados VIVOS; base 0-debris, sem wildcard)",
+    "critico-adversarial": "APROVADO (0 CRÍTICO/0 MÉDIO; 8 vetores resistiram — V1 appendNotificationEventTx byte-fiel a insertEventTx/appendChargeEventTx [verifyChain valid com NOTIFICATION intercalado, provado vivo], V2 payload §2.8 sem PII, V3 due_at puro fail-closed, V4 idempotência 3-ticks→1 linha/1 evento, V5 gate scope+congelamento, V6 predicado sem false-positive, V7 issue/waive 409/422, V8 tamper→hash_mismatch. Follow-up BAIXO fora de escopo: piso de prazo no perfil PR-02 + cross-check no gate de leilão PR-12/13 → backlog Fase 4)",
+    "omega5p-avaliador": "APROVADO (VETO liberado; Seção 10 verde por execução própria; I6 auditável + I2 provado vivo; os 3 arquivos probatórios hashchain/transitions/types INTACTOS [só REUSA]; bloqueio de leilão NÃO fingido; impound:notify 4 pontas; backend 1707→1717 +10 confirmado por execução real)",
+    "coordenador-de-acessos": "APROVADO (impound:notify 4 pontas — catalog posição+distribuição espelho de impound:transition/inspect; core-saas.test 26/26; seed PT-BR; RBAC 1 linha; GET sob impound:read, issue/waive sob impound:notify; DUE-marking SISTEMA; 403 real/404 cross-tenant/RLS forced; sem regressão de acesso)",
+    "veredito": "APROVADO 4/4 unânime (0 achado bloqueante; follow-up BAIXO do critico → backlog Fase 4). FECHA a Fase 2."
+  },
+  "pr": null,
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "published_per_pr",
+  "follow_up_backlog": "BAIXO (critico, fora do escopo PR-09, → backlog Fase 4): isNotificationTrailComplete confia no perfil ATUAL — se um admin com jurisdiction:update zerar um prazo legalmente obrigatório (ex. ownerNotifDays=0), esse kind cai do agendamento E do conjunto exigível → nenhum DUE bloqueia e o predicado considera a trilha completa sem a notificação. Mitigação: (a) piso >0 nos prazos obrigatórios em PR-02/jurisdiction; (b) o gate de leilão (PR-12/13) fazer isNotificationTrailComplete && verifyChain.valid com cross-check de emissão do OWNER_INITIAL. PR-09 age corretamente dado o input (fail-closed, sem fabricar)."
+}

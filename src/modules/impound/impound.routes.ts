@@ -6,6 +6,8 @@ import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
 import { ImpoundController, type ImpoundServiceResolver } from "./impound.controller.js";
 import { createDefaultImpoundService } from "./impound.service.js";
+import { NotificationController, type NotificationServiceResolver } from "./impound.notifications.controller.js";
+import { createDefaultNotificationService } from "./impound.notifications.service.js";
 
 type ControllerResult = {
   readonly status?: number;
@@ -19,6 +21,9 @@ type ControllerResult = {
 // recepção/vistoria/transferência = superfície HTTP de PR-06.
 // PR-06 (D-Ω5P-REC-06) — 2 permissões NOVAS: impound:inspect (vistoria de recepção — operador de recepção) e
 // impound:allocate (allocate/vacate/move de vaga — operador de pátio). impound:transition/:read REUSADAS.
+// PR-09 (D-Ω5P-NOTIF-03) — impound:notify é EIXO PRÓPRIO: registrar a EMISSÃO efetiva (DUE→ISSUED) e a DISPENSA
+// (WAIVED) de notificações legais é ato jurídico/probatório (≠ editar metadado). A DUE-marking é do SISTEMA (job),
+// sem ponta HTTP. Distribuição espelha impound:transition/inspect (gestão+admins).
 export const IMPOUND_PERMISSIONS = {
   read: "impound:read",
   create: "impound:create",
@@ -26,13 +31,16 @@ export const IMPOUND_PERMISSIONS = {
   transition: "impound:transition",
   inspect: "impound:inspect",
   allocate: "impound:allocate",
+  notify: "impound:notify",
 } as const;
 
 export function createImpoundRouter(
   resolveService: ImpoundServiceResolver = createDefaultImpoundService,
+  resolveNotificationService: NotificationServiceResolver = createDefaultNotificationService,
 ): Router {
   const router = Router();
   const controller = new ImpoundController(resolveService);
+  const notificationController = new NotificationController(resolveNotificationService);
 
   router.use(tenantContextMiddleware);
   router.use(createPersistentRbacContextMiddleware());
@@ -141,6 +149,32 @@ export function createImpoundRouter(
     requirePermission(IMPOUND_PERMISSIONS.allocate),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.moveSpot(request));
+    }),
+  );
+
+  // ── PR-09: trilha de notificações legais (I6) ───────────────────────────────────────────────────────────────
+  // Leitura da trilha sob impound:read (distribuição ampla, = charging:read cobrindo o ledger). A EMISSÃO/DISPENSA
+  // sob impound:notify (ato probatório). SEM POST de criação manual (o marco DEVIDO é do SISTEMA — job). Paths de
+  // 3/5 segmentos — sem colisão com :processId, .../events, .../verify, .../inspection, .../spot, .../charges.
+  router.get(
+    "/impound-processes/:processId/notifications",
+    requirePermission(IMPOUND_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await notificationController.list(request));
+    }),
+  );
+  router.post(
+    "/impound-processes/:processId/notifications/:notificationId/issue",
+    requirePermission(IMPOUND_PERMISSIONS.notify),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await notificationController.issue(request));
+    }),
+  );
+  router.post(
+    "/impound-processes/:processId/notifications/:notificationId/waive",
+    requirePermission(IMPOUND_PERMISSIONS.notify),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await notificationController.waive(request));
     }),
   );
 

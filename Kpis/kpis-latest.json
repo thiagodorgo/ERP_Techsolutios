@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-26",
-  "version": "OMEGA5P-PR-08b",
+  "version": "OMEGA5P-PR-09",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω5P PR-08b — Fase 2: guia de débitos (memória de cálculo I4, com F4 periodSeq) + painel de transições da FSM (4 arestas) — ACRESCENTA 2 seções ao dossiê do 08a",
-    "title": "Ω5P PR-08b: a guia de débitos regulada (linhas/subtotais/teto/reconciliação-pendente, F4=Diária #periodSeq+janela 24h) e o painel de transições defensivo (espelho de ENABLED_EDGES, 409→PT-BR); junta 3/3 com 1 condição do critico sanada (fetch paralelo eliminado — ApiError evoluído, transição via apiRequest)",
+    "block": "Ω5P PR-09 — Fase 2 (FECHA): trilha de notificações legais (I6) — motor de prazos DEVIDO + registro probatório na cadeia hash + predicado isNotificationTrailComplete",
+    "title": "Ω5P PR-09: a trilha de notificações legais (I6) — motor de prazos que MARCA cada notificação como DEVIDA no vencimento (D+10 owner / D+30 edital, prazos do perfil) + evento NOTIFICATION hash-encadeado (tamper-evident) + predicado que o leilão consome; junta 4/4 unânime",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω5P PR-08b — GUIA DE DÉBITOS + TRANSIÇÕES DA FSM (Fase 2). Frontend do console /patios — SEM toque backend (o governed path é do 08a; navigation/App/sidebar INTOCADOS). Consome charging (PR-07 #287: GET /impound-processes/:id/charges/statement [4 segmentos] + POST /charges) e impound (POST /transitions), delega ao 403/409/422. SEM permissão/migração/dep/PWA. Guia de débitos (seção no dossiê): linhas por kindLabel + F4 (herdado do PR-07: DAILY identificada por periodSeq \"Diária #N\" + janela de 24h, refDate só legenda secundária — nunca chave visual, não-injetiva no DST) + subtotais por kind + total (rótulo \"Total apurado (memória de cálculo)\" sob reconciliationPending, \"Total devido\" no caso normal — B2 honestidade) + painel do teto (cap.model/capCount/nAccrue + selo âmbar capReached) + banner read-only de reconciliação pendente (estorno=PR-10); dinheiro Decimal→BRL; useAutoRefresh; EmptyState D-007. Lançamento manual ADDITIONAL|ADJUSTMENT (charging:create; DAILY engine-only barrada → 422; ADJUSTMENT delta assinado + alvo obrigatório, append-only RN-DIA-05). Painel de transições: fsm.ts com descritor estático FSM_ACTIONS ESPELHO de ENABLED_EDGES (4 arestas custódia-nativas; só a habilitada vira botão); IN_REMOVAL→RECEPTION, RECEPTION→ACTIVE_CUSTODY (desabilitada até inspection.complete — I3; edição de vistoria=08c/R4), ACTIVE_CUSTODY⇄JUDICIAL_HOLD (fundamento obrigatório §§14-15); POST /transitions {to,reason?} (impound:transition); 409 defensivo→PT-BR. §2.8/allowlist: tenant_id nunca; tariffId/adjustmentOfChargeId nunca crus; zero polícia/tenant. JUNTA APROVADO 3/3: omega5p-avaliador (VETO; M1 fechado sem regressão) + cognicao-visual + critico-adversarial (0 CRÍTICO; V1-V7 resistiram; M1 MÉDIO do fetch paralelo sem refresh-retry de 401 SANADO pelo caminho arquitetural — ApiError +code?/+reason? aditivo, transição via apiRequest, fetch bespoke deletado; provado api-client 3/3 + smoke 892/892; B1 reentrância + B2 rótulo honesto). D-Ω5P-UI-08/11. Aderência Res.1025 art.21§1º(diária 24h→periodSeq)/§2º(teto, pago por quem retira=PR-10); CTB 271§1º/§10; Tema 124; §§14-15. frontend_smoke 875→892 (+17), backend 1707 e flutter 807 inalterados, blocks 96→97. Zero regressão. Inclui backfill do PR-08a (#288 a342fe7).",
-    "status_label": "Ω5P PR-08b: guia de débitos regulada (F4 Diária #periodSeq + teto + reconciliação-pendente read-only) + transições defensivas (espelho ENABLED_EDGES); junta 3/3, condição M1 do critico sanada (fetch paralelo eliminado); frontend_smoke 875->892, blocks 96->97"
+    "summary": "Ω5P PR-09 — TRILHA DE NOTIFICAÇÕES LEGAIS (Fase 2, FECHA; invariante I6). Backend + 1 migração aditiva. SEM frontend (renderização = PR posterior), SEM integração externa (envio real SNE/postal/edital/DJE = Ω6, PD-Ω5P-NOTIF-SEND). Modelo: ProcessNotification (projeção MUTÁVEL DUE→ISSUED como settled_*; kind OWNER_INITIAL|COMPLEMENTARY_EDICT|AUCTION_EDICT; status DUE|ISSUED|WAIVED|FAILED; due_at determinístico; recipient_ref MINIMIZADO §2.8) — a PROVA vive nos CustodyEvent NOTIFICATION append-only trigger-protegidos. Migração 20260839000000 aditiva up-only (partial-unique idempotência (tenant,process,kind) + CHECK issued_shape com IS NOT NULL + RLS forced + FK process→RESTRICT I9). Motor PURO impound.notifications.ts: computeNotificationSchedule(t0,profile) (OWNER_INITIAL@ownerNotifDays, COMPLEMENTARY_EDICT@noticeEdictDay — prazos do JurisdictionProfile, tempo ABSOLUTO DST-imune, ordenados; AUCTION_EDICT declarado mas não agendado do t0 = Fase 4) + isNotificationTrailComplete (predicado I6 que PR-12/13 consomem). Sweep impound.notify-due (JobName novo, ator SISTEMA, gated JOBS_WORKER_ENABLED; espelha charging.accrue-daily): marca DEVIDO no vencimento, idempotente (FOR UPDATE + partial-unique + P2002→409), FAIL-CLOSED (scope PUBLIC_AGREEMENT; prazo ausente/≤0 pula sem fabricar data + logger.warn), congelamento (frozen_at NULL + !=JUDICIAL_HOLD; materializados persistem append-only). appendNotificationEventTx = 3ª réplica BYTE-FIEL do append de cadeia (reusa PURAS computeEventHash/genesisHash de impound.hashchain — NÃO edita código probatório; cross-anchor em audit_logs; verifyChain reconcilia e segue valid). Permissão NOVA impound:notify (emissão/dispensa = ato probatório; DUE-marking SISTEMA) nas 4 pontas. Rotas: GET notifications (impound:read), POST issue/waive (impound:notify). JUNTA APROVADO 4/4 UNÂNIME: dba-guardiao (aditiva up/down/re-up drift-zero; 23505/23514-IS-NOT-NULL/RLS/I9 provados vivos; 0-debris) + critico-adversarial (0 CRÍTICO/0 MÉDIO; 8 vetores resistiram; 3ª réplica byte-fiel provada viva) + omega5p-avaliador (VETO; 3 arquivos probatórios intactos; bloqueio de leilão não fingido; +10 real) + coordenador-de-acessos (impound:notify 4 pontas; 403/404/RLS). Aderência Res.1025 art.15(OWNER≤10d)/art.26(EDITAL≥30d)/art.9º VII(retenção≥5a=I9); CTB 328(D+60 elegibilidade=Fase 4); Lei 14.133(edital leilão≥15du=Fase 4); Lei 14.440(SNE≥2027 parametrizado). Follow-up BAIXO (critico, backlog Fase 4): piso de prazo no perfil + cross-check no gate de leilão. backend 1707→1717 (+10), frontend_smoke 892 e flutter 807 inalterados, blocks 97→98. Zero regressão (3 arquivos probatórios intactos; I1/I2/I3/I4 re-provados). Inclui backfill do PR-08b (#289 dfc5299).",
+    "status_label": "Ω5P PR-09: trilha de notificações legais I6 (motor de prazos DEVIDO fail-closed + evento NOTIFICATION hash-encadeado tamper-evident + predicado do leilão); junta 4/4 unânime; FECHA a Fase 2; backend 1707->1717, blocks 97->98"
   },
   "metrics": {
     "flutter_tests": {
@@ -24,13 +24,13 @@
       "value": 892,
       "total": 892,
       "display": "892/892",
-      "note": "+17 (Ω5P PR-08b guia de débitos + transições FSM): patios-debitos 9 (F4 Diária #periodSeq precede ref.data + ISO cru ausente; subtotais/total/teto/capReached/banner reconciliação; seletor sem DAILY; gate charging:create; Total apurado×devido; BRL; sem UUID/tenant) + patios-transicoes 8 (FSM_ACTIONS espelha ENABLED_EDGES; só aresta habilitada vira botão; JUDICIAL_HOLD exige fundamento; graduação desabilitada sem inspection.complete; 409 transition_not_enabled_yet→PT-BR). Sobre 875. Estável após follow-up M1 (fetch paralelo→apiRequest) sem novo teste."
+      "note": "892 inalterado no Ω5P PR-09 (backend-only; frontend não tocado). Último valor oficial do Ω5P PR-08b (+17)."
     },
     "backend_tests": {
-      "value": 1707,
-      "total": 1713,
-      "display": "1707/1713",
-      "note": "1707 inalterado no Ω5P PR-08b (frontend-only, sem toque no backend nem no registry). Último valor oficial do Ω5P PR-08a (+11 navigation-provisioning). CI-memória 6 skip."
+      "value": 1717,
+      "total": 1723,
+      "display": "1717/1723",
+      "note": "+10 (Ω5P PR-09 trilha de notificações I6): impound-notifications 8 InMemory (schedule ordenado + AUCTION_EDICT não-agendado; DEVIDO no vencimento; idempotência; fail-closed privado/prazo≤0; congelamento/JUDICIAL_HOLD; ordenação; issue/waive 409/422/404; isNotificationTrailComplete) + impound-notifications-chain 2 DB-gated (NOTIFICATION intercalado→verifyChain valid + cross-anchor; tamper→hash_mismatch; concorrência 3-ticks→1 linha/1 evento; allowlist §2.8) + core-saas/rls somam asserts. CI-memória 6 skip. Sobre 1707. Migração 20260839000000 aditiva provada up/down/re-up drift-zero pelo dba."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 97,
-      "display": "97",
-      "note": "Ω5P PR-08b (guia de débitos regulada com F4 + painel de transições da FSM defensivo — novo módulo frontend charges + fsm.ts) → +1 sobre 96 (Ω5P PR-08a). PR-00 (recon) e 08c (edição de vistoria, diferido) não contam aqui."
+      "value": 98,
+      "display": "98",
+      "note": "Ω5P PR-09 (trilha de notificações legais I6: motor de prazos DEVIDO fail-closed + registro probatório na cadeia hash + predicado isNotificationTrailComplete — sub-namespace impound.notifications) → +1 sobre 97 (Ω5P PR-08b). FECHA a Fase 2 (PR-05..09). PR-00 (recon) e a subdivisão 08c (diferida) não contam."
     },
     "mobile_backend_contracts": {
       "value": 18,
