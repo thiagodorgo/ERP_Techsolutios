@@ -55,6 +55,30 @@ export function createAuctionRouter(resolveService: AuctionServiceResolver = cre
       sendResult(response, await controller.recordAttempt(request));
     }),
   );
+  // Ω5P PR-13a — REGISTRO do edital da rodada (impound:transition). Path de 4 segmentos, sem colisão com os demais.
+  router.post(
+    "/impound-processes/:processId/auction/edicts",
+    requirePermission(AUCTION_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.registerEdict(request));
+    }),
+  );
+  // Ω5P PR-13a — RECICLAGEM por 2 strikes edict-backed (impound:transition; sucata IRREVERSÍVEL — I8).
+  router.post(
+    "/impound-processes/:processId/auction/reclassify-scrap",
+    requirePermission(AUCTION_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.reclassifyScrap(request));
+    }),
+  );
+  // Ω5P PR-13a — RECICLAGEM por INSERVIBILIDADE (impound:transition, §§16-18).
+  router.post(
+    "/impound-processes/:processId/auction/reclassify-unrecoverable",
+    requirePermission(AUCTION_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.reclassifyUnrecoverable(request));
+    }),
+  );
 
   return router;
 }

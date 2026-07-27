@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-26",
-  "version": "OMEGA5P-PR-12",
+  "version": "OMEGA5P-PR-13a",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω5P PR-12 — Fase 4 (ABRE): elegibilidade ao leilão (gate real, consome I6+verifyChain, fecha o furo do PR-09 com 2 pisos) + ledger de strikes 2-strikes (I8; reclassificação a sucata diferida ao PR-13)",
-    "title": "Ω5P PR-12: o gate de elegibilidade ao leilão — só vai a leilão o não-reclamado após D+60 (piso legal), com a trilha de notificação completa (I6), o dono comprovadamente notificado (piso OWNER_INITIAL) e a cadeia íntegra (verifyChain); + o ledger de rodadas desertas (2-strikes, I8); junta 3/3",
+    "block": "Ω5P PR-13a — Fase 4: edital de leilão (designação por rodada) + reciclagem gated no edital (fecha o requisito herdado do PR-12; sucata IRREVERSÍVEL protegida)",
+    "title": "Ω5P PR-13a: o registro do edital de leilão (referência externa por rodada, sem serviço de assinatura pago — PD-SIGN) + a reciclagem a sucata gated em 2 certames REAIS (editais completos ≥15 d.u. sequenciais) + cadeia I2 íntegra; junta 3/3, tolerância-zero na sucata",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω5P PR-12 — ELEGIBILIDADE AO LEILÃO + 2-STRIKES (Fase 4, ABRE; invariante I8). Backend + migração aditiva. O gate de leilão consome FINALMENTE o isNotificationTrailComplete (I6, do PR-09) + verifyChain (I2). Módulo auction novo. GATE de elegibilidade (ACTIVE_CUSTODY→AUCTION_ELIGIBLE, MANUAL — o salto aliena bem de 3º; SOMA GuardSpec a GUARDS, IMPOUND_TRANSITIONS+impound.hashchain INTACTOS) com 6 pré-condições + 2 PISOS que fecham o furo herdado do PR-09: (1) scope PUBLIC_AGREEMENT; (2) PISO de prazo now≥enteredAt+max(auctionEligibleDay,60)·24h (NUNCA encurta abaixo de 60, CTB art.328 — fecha \"admin zera auctionEligibleDay\"); (3) isNotificationTrailComplete (I6); (4) PISO OWNER_INITIAL — a trilha DEVE ter OWNER_INITIAL ISSUED/WAIVED-com-reason INDEPENDENTE do perfil (fecha \"admin zera ownerNotifDays → leilão sem notificar o dono\"); (5) verifyChain.valid (I2); (6) sem release em curso (recheck sob FOR UPDATE, TOCTOU do for-repair-montar fechado); cada reason 409 distinto. LEDGER de 2-strikes (I8): tabela auction_attempts (append-only; contador DERIVADO COUNT(DESERTED), não escalar mutável; idempotência por round_number partial-unique); recordAttempt registra a rodada DESERTED + evento AUCTION_CLOSED na cadeia. Migração 20260841000000 aditiva (RLS forced + FK RESTRICT I9 + partial-unique + CHECK IS-NOT-NULL). REUSA impound:transition (SEM permissão nova). JUNTA APROVADO 3/3 (1 ciclo): dba-guardiao (migração drift-zero; 23505/23514/RLS/I9 vivos) + critico-adversarial (0 CRÍTICO; leilão-sem-notificação BLINDADO pelos 2 pisos; MÉDIO-A sucata-sem-pré-condição SANADO por diferimento — a reclassificação a DIRECT_RECYCLING foi RETIRADA do PR-12 [aresta de volta a deferred] e vai ao PR-13 gated no edital por rodada; BAIXO-C concorrência) + omega5p-avaliador (VETO; escopo/§2.8/aderência). D-Ω5P-AUC-01/02 + R-omega5p-pr12-ciclo1. REQUISITO PR-13: sucata gated no AUCTION_EDICT emitido por rodada (≥15 d.u.). Aderência CTB art.328/Lei 13.160 (60d; 2× sem arremate→sucata; vedado retorno de sucata à circulação); Res.1025 art.25-26. backend 1749→1767 (+18), smoke 908 e flutter 807 inalterados, blocks 101→102. Zero regressão (impound.hashchain/types/IMPOUND_TRANSITIONS intactos; I1-I6 re-provados). Inclui backfill do PR-11 (#293 35c47f2).",
-    "status_label": "Ω5P PR-12: gate de elegibilidade ao leilão (D+60-piso + trilha I6 + PISO OWNER_INITIAL fecha o furo do PR-09 + verifyChain) + ledger 2-strikes I8 (sucata diferida ao PR-13); junta 3/3; backend 1749->1767, blocks 101->102"
+    "summary": "Ω5P PR-13a — EDITAL + RECICLAGEM GATED (Fase 4). Backend + migração aditiva. Núcleo probatório que FECHA o requisito herdado do PR-12 (R-omega5p-pr12-ciclo1): a sucata (DIRECT_RECYCLING, IRREVERSÍVEL) agora gated no edital por rodada. Tabela nova auction_edicts (designação por rodada; projeção mutável, a prova vive na cadeia; migração 20260842000000 aditiva, RLS forced/FK RESTRICT I9/partial-unique 1-edital-por-rodada/CHECK IS-NOT-NULL). PD-Ω5P-SIGN Opção A: registra a REFERÊNCIA do edital externo (edict_reference/plataforma homologada/published_at/pncp_url guard-rail) — assinatura/publicação = leiloeiro/órgão, SEM serviço pago. Edict-gate no recordAttempt: um strike DESERTED só conta com edital da rodada (409 auction_edict_missing, re-check FOR UPDATE; edictRef mascarado no AUCTION_CLOSED). Reciclagem = ATO EXPLÍCITO permissionado (reclassify-scrap: COUNT(DESERTED)≥2 E cada rodada 1..maxAttempts SEQUENCIAL com edital COMPLETO [edict_reference + published_at + business_days≥15] E verifyChain.valid → 409 scrap_strikes_insufficient/scrap_edict_missing_for_round/scrap_edict_incomplete_for_round/auction_chain_broken; reclassify-unrecoverable inservível §§16-18: classification∈{SCRAP,UNRECOVERABLE} E reason E sem-release E verifyChain.valid). Ambas setFrozenAt:true (T_stop §5). SOMA GuardSpecs a GUARDS (IMPOUND_TRANSITIONS+impound.hashchain INTACTOS). I8 estrutural: DIRECT_RECYCLING só →CLOSED (deferida) — sucata terminal, sem retorno à circulação. §2.8: payloads da cadeia só refs/mascarados, money string, sem PII/tenant_id; labels PT-BR. REUSA impound:transition (sem permissão nova). JUNTA APROVADO 3/3 (1 ciclo, sucata tolerância-ZERO): dba-guardiao (migração drift-zero; 23505/23514/RLS/I9 vivos) + omega5p-avaliador (VETO; escopo/§2.8/I8) + critico-adversarial (0 CRÍTICO; 2 MÉDIO de sucata SANADOS — editais vazios destravavam a sucata [MÉDIO-A: edict substantivo ref+published+≥15 d.u. sequencial] + inservível sem verifyChain [MÉDIO-B: chainBroken] + BAIXO-C status; edital vazio/incompleto/não-sequencial NÃO sucateia, cadeia quebrada bloqueia o inservível). R-omega5p-pr13a-ciclo1. Aderência CTB art.328/§§16-18/Lei 13.160/13.281; Res.1025 arts.25-34; PD-Ω5P-SIGN. Inclui o Kpis/app.js honesto/auto-hidratável (instrução do dono: dashboard lê os números reais de kpis-latest/history em runtime, nunca mais defasa). backend 1767→1784 (+17), smoke 908 e flutter 807 inalterados, blocks 102→103. Zero regressão. Inclui backfill do PR-12 (#294 2486157).",
+    "status_label": "Ω5P PR-13a: edital (referência externa por rodada, PD-SIGN sem serviço pago) + reciclagem a sucata gated em 2 certames reais completos+sequenciais + cadeia I2; junta 3/3 tolerância-zero; backend 1767->1784, blocks 102->103"
   },
   "metrics": {
     "flutter_tests": {
@@ -24,13 +24,13 @@
       "value": 908,
       "total": 908,
       "display": "908/908",
-      "note": "908 inalterado no Ω5P PR-12 (backend-only). Último valor oficial do Ω5P PR-11 (+16)."
+      "note": "908 inalterado no Ω5P PR-13a (backend-only). Último valor oficial do Ω5P PR-11 (+16)."
     },
     "backend_tests": {
-      "value": 1767,
-      "total": 1773,
-      "display": "1767/1773",
-      "note": "+18 (Ω5P PR-12 elegibilidade ao leilão + ledger 2-strikes I8): auction-eligibility 10 InMemory (elegível só com scope-público+D≥max(prazo,60)+trilha+OWNER_INITIAL-ISSUED+cadeia-válida+sem-release; 8 bloqueios com reason 409 distinto, incl. auctionEligibleDay=0 barrado pelo piso 60 e ownerNotifDays=0 barrado pelo piso OWNER_INITIAL — o furo do PR-09 fechado) + auction-strikes 4 (1 strike segue elegível; 2 strikes strikeCount=2 SEM sucatear [reclassificação=PR-13]; idempotência round_number; verifyChain valid) + auction-concurrency 4 DB-gated (cross-tenant RLS; eligibility×release/start; eligibility×for-repair; N-strikes-mesma-round→1). CI-memória 6 skip. Sobre 1749. Migração 20260841000000 aditiva provada up/down/re-up pelo dba."
+      "value": 1784,
+      "total": 1790,
+      "display": "1784/1790",
+      "note": "+17 (Ω5P PR-13a edital + reciclagem gated I8): auction-edict-gate 3 (strike DESERTED só com edital da rodada) + auction-recycling 11 (2 strikes edict-completos-sequenciais→sucata; editais vazios/incompletos/não-sequenciais NÃO sucateiam; cadeia quebrada bloqueia o inservível; sucata terminal sem circulação; registerEdict sem ref→400; estado errado→409) + auction-scrap-concurrency 3 DB-gated (corrida reclassify×recordAttempt sob lock; idempotência edital; cross-tenant RLS). CI-memória 6 skip. Sobre 1767. Migração 20260842000000 aditiva provada up/down/re-up pelo dba."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 102,
-      "display": "102",
-      "note": "Ω5P PR-12 (elegibilidade ao leilão: gate real consumindo I6+verifyChain+2 pisos que fecham o furo do PR-09 + ledger de 2-strikes I8 — módulo auction novo; reclassificação a sucata diferida ao PR-13) → +1 sobre 101 (Ω5P PR-11). ABRE a Fase 4."
+      "value": 103,
+      "display": "103",
+      "note": "Ω5P PR-13a (edital de leilão por rodada + reciclagem a sucata gated no edital completo+sequencial + verifyChain — estende o módulo auction; fecha o requisito herdado do PR-12) → +1 sobre 102 (Ω5P PR-12). PR-13b (máquina de venda) segue."
     },
     "mobile_backend_contracts": {
       "value": 18,

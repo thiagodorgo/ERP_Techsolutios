@@ -68,6 +68,11 @@ async function makeEligibleProcess(tenantId: string): Promise<Ctx> {
     event: { type: "STATUS_CHANGE", payload: { from: "ACTIVE_CUSTODY", to: "AUCTION_ELIGIBLE", reason: "auction_eligible" }, occurredAt: new Date(), actorId: undefined },
   });
   getMemoryAuctionRepositoryForTests().setAuctionProfileForTests(tenantId, profileId, { scope: "PUBLIC_AGREEMENT", ownerNotifDays: 10, noticeEdictDay: 30, auctionEligibleDay: 60 });
+  // Ω5P PR-13a — o recordAttempt agora é EDICT-GATED: um strike só conta com o edital da rodada registrado. O setup
+  // ADICIONA os editais das rodadas 1 e 2 (AUCTION_LOTTED na cadeia; PURO — não transiciona) — NÃO enfraquece a prova.
+  const auctionRepo = getMemoryAuctionRepositoryForTests();
+  await auctionRepo.registerEdictAtomic({ tenantId, processId: process.id, roundNumber: 1, edictReference: "EDITAL-2026/001", businessDays: 15, occurredAt: new Date() });
+  await auctionRepo.registerEdictAtomic({ tenantId, processId: process.id, roundNumber: 2, edictReference: "EDITAL-2026/002", businessDays: 15, occurredAt: new Date() });
   return { tenantId, processId: process.id, profileId };
 }
 
@@ -157,17 +162,28 @@ test("(7) cadeia permanece valid após 2 AUCTION_CLOSED + STATUS_CHANGE de recic
   }
 });
 
-// ── (deferred) a reciclagem a sucata voltou a DEFERIDA (PR-13); só a elegibilidade fica enabled ────────────────────
-test("(deferred) AUCTION_ELIGIBLE→DIRECT_RECYCLING é DEFERIDA em PR-12 (sucata = PR-13) ⇒ transition_not_enabled_yet; ACTIVE_CUSTODY→AUCTION_ELIGIBLE segue enabled (auction_gate_unresolved sem gate)", async () => {
+// ── (gated) Ω5P PR-13a — as 2 arestas de RECICLAGEM ficam ENABLED (gated); a máquina de VENDA (13b) segue DEFERIDA ───
+test("(gated) DIRECT_RECYCLING (as 2 arestas) ENABLED sem gate ⇒ auction_gate_unresolved; AUCTION_PREP (13b) DEFERIDA ⇒ transition_not_enabled_yet", async () => {
   const { resolveTransition } = await import("../src/modules/impound/impound.transitions.js");
-  // A reciclagem a sucata é legal em §4.2 mas DEFERIDA (dona = PR-13): sem GuardSpec enabled ⇒ transition_not_enabled_yet.
+  // Ω5P PR-13a — a reciclagem a sucata é ENABLED mas GATED (guardAuctionReclassify): dirigi-la sem o gate resolvido
+  // ⇒ auction_gate_unresolved (não mais transition_not_enabled_yet).
   assert.throws(
     () => resolveTransition({ status: "AUCTION_ELIGIBLE" } as never, "DIRECT_RECYCLING"),
-    (error: unknown) => (error as { reason?: string }).reason === "transition_not_enabled_yet",
+    (error: unknown) => (error as { reason?: string }).reason === "auction_gate_unresolved",
+  );
+  // A reciclagem por inservibilidade (ACTIVE_CUSTODY→DIRECT_RECYCLING) idem: ENABLED gated ⇒ auction_gate_unresolved.
+  assert.throws(
+    () => resolveTransition({ status: "ACTIVE_CUSTODY" } as never, "DIRECT_RECYCLING"),
+    (error: unknown) => (error as { reason?: string }).reason === "auction_gate_unresolved",
   );
   // A ELEGIBILIDADE segue ENABLED (guardAuctionEligible): dirigi-la sem o gate resolvido ⇒ auction_gate_unresolved.
   assert.throws(
     () => resolveTransition({ status: "ACTIVE_CUSTODY" } as never, "AUCTION_ELIGIBLE"),
     (error: unknown) => (error as { reason?: string }).reason === "auction_gate_unresolved",
+  );
+  // A máquina de VENDA (AUCTION_ELIGIBLE→AUCTION_PREP) segue DEFERIDA (13b): sem GuardSpec enabled ⇒ transition_not_enabled_yet.
+  assert.throws(
+    () => resolveTransition({ status: "AUCTION_ELIGIBLE" } as never, "AUCTION_PREP"),
+    (error: unknown) => (error as { reason?: string }).reason === "transition_not_enabled_yet",
   );
 });

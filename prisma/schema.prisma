@@ -56,6 +56,7 @@ model Tenant {
   impound_releases              ImpoundRelease[]
   release_requirement_checks    ReleaseRequirementCheck[]
   auction_attempts              AuctionAttempt[]
+  auction_edicts                AuctionEdict[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
   financial_titles              FinancialTitle[]
@@ -2823,6 +2824,7 @@ model ImpoundProcess {
   notifications          ProcessNotification[] // Ω5P PR-09 — trilha de notificações legais (I6)
   releases               ImpoundRelease[]    // Ω5P PR-10a — liberações do veículo (I5)
   auction_attempts       AuctionAttempt[]    // Ω5P PR-12 — contador append-only de rodadas de leilão desertas (I8)
+  auction_edicts         AuctionEdict[]      // Ω5P PR-13a — designação de leilão por rodada (projeção mutável; a prova vive na cadeia)
 
   @@unique([tenant_id, id])
   @@index([tenant_id, yard_id, status])
@@ -3089,4 +3091,46 @@ model AuctionAttempt {
   @@index([tenant_id, process_id])
   @@index([tenant_id, process_id, outcome])
   @@map("auction_attempts")
+}
+
+// Ω5P PR-13a — DESIGNAÇÃO de leilão POR RODADA (edital do certame administrativo, CTB art. 328 / Lei 13.160/2015 /
+// Res. CONTRAN 1025 arts. 25-34 / Lei 14.133 edital >=15 d.u.). Esta tabela é a PROJEÇÃO MUTÁVEL da designação —
+// a PROVA de integridade vive na cadeia hash (CustodyEvents AUCTION_LOTTED/AUCTION_CLOSED, append-only I2). É o
+// GATE probatório da sucata (I8): um strike DESERTED só conta se houve um certame REAL designado (edital registrado)
+// para aquela rodada; a reciclagem AUCTION_ELIGIBLE→DIRECT_RECYCLING exige 2 strikes edict-backed (fecha
+// R-omega5p-pr12-ciclo1). Enums em INGLÊS validados na APP (classification CONSERVED|SCRAP|UNRECOVERABLE; status
+// DESIGNATED|CLOSED — SEM CHECK de enum no banco; labels PT-BR no DTO). appraisal_amount/min_bid_amount = avaliação
+// SIGILOSA (art. 28) — NÃO povoadas em 13a (só emergem em 13b sob auction:appraise). Dinheiro Decimal(12,2).
+// auctioneer_ref/notes minimizados (§2.8: sem PII; NUNCA no payload da cadeia). pncp_url = guard-rail p/ o adapter
+// Ω6. process→RESTRICT (I9: designação nunca cascateia; retenção >=5 anos). tenant_id 1º em todo índice. RLS forced.
+// Idempotência = índice PARCIAL único raw-only (tenant,process,round_number) WHERE round_number IS NOT NULL — 1
+// edital/rodada (migração 20260842000000). CHECKs estruturais (IS NOT NULL explícito — lição PR-07 C1) belt-and-
+// suspenders sobre o validator.
+model AuctionEdict {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String    @db.Uuid
+  process_id       String    @db.Uuid
+  round_number     Int                                        // rodada 1-based (chave de idempotência: 1 edital/rodada)
+  classification   String?                                    // CONSERVED|SCRAP|UNRECOVERABLE (app-validado)
+  appraisal_amount Decimal?  @db.Decimal(12, 2)               // avaliação SIGILOSA art. 28 (13b sob auction:appraise)
+  min_bid_amount   Decimal?  @db.Decimal(12, 2)               // lance mínimo (13b)
+  edict_reference  String?                                    // referência pública do edital externo
+  edict_platform   String?                                    // plataforma homologada do certame
+  published_at     DateTime? @db.Timestamptz(6)
+  auctioneer_ref   String?                                    // referência do leiloeiro (minimizado §2.8; nunca CPF/nome)
+  pncp_url         String?                                    // guard-rail p/ o adapter PNCP (Ω6)
+  business_days    Int?                                       // prazo do edital em dias úteis (>=15, Lei 14.133)
+  status           String    @default("DESIGNATED")           // DESIGNATED|CLOSED (app-validado)
+  notes            String?                                    // texto de domínio (§2.8: sem PII; nunca na cadeia)
+  created_by       String?   @db.Uuid
+  updated_by       String?   @db.Uuid
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant           Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  process          ImpoundProcess @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, process_id])
+  @@index([tenant_id, process_id, round_number])
+  @@map("auction_edicts")
 }

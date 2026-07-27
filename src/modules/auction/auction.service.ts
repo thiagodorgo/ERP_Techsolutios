@@ -9,14 +9,27 @@ import { resolveTransition } from "../impound/impound.transitions.js";
 import { AUCTION_MAX_ATTEMPTS } from "../jurisdiction/jurisdiction.defaults.js";
 import { getMemoryReleaseRepositoryForTests } from "../release/release.service.js";
 import { isAuctionDeadlineReached, isOwnerInitialSatisfied } from "./auction.eligibility.js";
-import { InMemoryAuctionRepository, type AuctionRepository } from "./auction.repository.js";
+import { evaluateScrapEdictGate, InMemoryAuctionRepository, type AuctionRepository } from "./auction.repository.js";
 import {
   AuctionError,
+  RECYCLABLE_CLASSIFICATIONS,
+  type AuctionClassification,
   type AuctionProfile,
+  type AuctionStateSnapshot,
   type AuctionView,
   type RecordAttemptResult,
+  type RegisterEdictResult,
 } from "./auction.types.js";
-import { parseNotes, parseRequiredUuid, parseRoundNumber } from "./auction.validators.js";
+import {
+  parseBusinessDays,
+  parseClassification,
+  parseNotes,
+  parseOptionalLabel,
+  parsePublishedAt,
+  parseRequiredEdictReference,
+  parseRequiredUuid,
+  parseRoundNumber,
+} from "./auction.validators.js";
 
 type RawRecord = Record<string, unknown>;
 
@@ -38,14 +51,14 @@ export class AuctionService {
     private readonly hasActiveRelease: AuctionActiveReleasePort,
   ) {}
 
-  // GET /impound-processes/:id/auction — tentativas + strikeCount derivado (impound:read).
+  // GET /impound-processes/:id/auction — tentativas + strikeCount derivado + editais designados (impound:read).
   async get(actor: { tenantId: string }, processId: string): Promise<AuctionView> {
     const normalizedId = parseRequiredUuid(processId, "processId");
     const snapshot = await this.repository.getState(actor.tenantId, normalizedId);
     if (!snapshot) {
       throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
     }
-    return this.toView(snapshot.status, snapshot.attempts);
+    return this.toView(snapshot);
   }
 
   // POST /impound-processes/:id/auction/eligibility — GATE de elegibilidade (impound:transition). O serviço computa as
@@ -86,7 +99,122 @@ export class AuctionService {
       actorId: actor.userId,
       occurredAt: now,
     });
-    return this.toView(snapshot.status, snapshot.attempts);
+    return this.toView(snapshot);
+  }
+
+  // POST /impound-processes/:id/auction/edicts — REGISTRO do edital da rodada (impound:transition). INSERT
+  // auction_edicts + AUCTION_LOTTED na cadeia (PURO: NÃO transiciona; o edital é registrado com o processo em
+  // AUCTION_ELIGIBLE). Idempotente por round_number. Em 13a NÃO aceita appraisal/min_bid (sigilosos art. 28 — 13b).
+  async registerEdict(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<RegisterEdictResult> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
+    if (!process) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    return this.repository.registerEdictAtomic({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      roundNumber: parseRoundNumber(body.round_number ?? body.roundNumber),
+      classification: parseClassification(body.classification),
+      // MÉDIO-A: edict_reference OBRIGATÓRIA (piso mínimo de designação REAL — barra o edital vazio/round nu).
+      edictReference: parseRequiredEdictReference(body.edict_reference ?? body.edictReference),
+      edictPlatform: parseOptionalLabel(body.edict_platform ?? body.edictPlatform, "edict_platform"),
+      publishedAt: parsePublishedAt(body.published_at ?? body.publishedAt),
+      auctioneerRef: parseOptionalLabel(body.auctioneer_ref ?? body.auctioneerRef, "auctioneer_ref"),
+      pncpUrl: parseOptionalLabel(body.pncp_url ?? body.pncpUrl, "pncp_url", 500),
+      businessDays: parseBusinessDays(body.business_days ?? body.businessDays),
+      notes: parseNotes(body.notes),
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+  }
+
+  // POST /impound-processes/:id/auction/reclassify-scrap — RECICLAGEM por 2 strikes edict-backed (impound:transition).
+  // ATO EXPLÍCITO (nunca efeito colateral do recordAttempt — R-omega5p-pr12-ciclo1; a sucata é IRREVERSÍVEL). O serviço
+  // computa as 3 flags REAIS (COUNT strikes / edital-por-rodada / cadeia I2), chama resolveTransition (guardAuction
+  // Reclassify PURA, 3 reasons 409 DISTINTOS) e, se passam, aciona reclassifyScrapAtomic (re-verifica sob FOR UPDATE,
+  // expectedFrom=AUCTION_ELIGIBLE). setFrozenAt=true (T_stop §5). AUCTION_ELIGIBLE→DIRECT_RECYCLING.
+  async reclassifyScrap(actor: { tenantId: string; userId?: string }, processId: string): Promise<AuctionView> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
+    if (!process) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    const [state, chain] = await Promise.all([
+      this.repository.getState(actor.tenantId, normalizedId),
+      this.verifyChainPort(actor.tenantId, normalizedId),
+    ]);
+    const desertedRounds = (state?.attempts ?? [])
+      .filter((attempt) => attempt.outcome === "DESERTED")
+      .map((attempt) => attempt.roundNumber);
+    // MÉDIO-A: rodadas 1..maxAttempts SEQUENCIAIS com strike DESERTED + edital COMPLETO (ref+published_at+business_days>=15).
+    const scrap = evaluateScrapEdictGate(desertedRounds, state?.edicts ?? [], AUCTION_MAX_ATTEMPTS);
+    const gate = {
+      strikesInsufficient: scrap.strikesInsufficient,
+      edictMissingForRound: scrap.edictMissingForRound,
+      edictIncompleteForRound: scrap.edictIncompleteForRound,
+      chainBroken: !(chain?.valid === true),
+    };
+    const now = new Date();
+    const decision = resolveTransition(process, "DIRECT_RECYCLING", { auctionReclassify: gate });
+    const snapshot = await this.repository.reclassifyScrapAtomic({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      expectedFrom: decision.from,
+      maxAttempts: AUCTION_MAX_ATTEMPTS,
+      actorId: actor.userId,
+      occurredAt: now,
+    });
+    return this.toView(snapshot);
+  }
+
+  // POST /impound-processes/:id/auction/reclassify-unrecoverable — RECICLAGEM por INSERVIBILIDADE (impound:transition,
+  // §§16-18). ATO EXPLÍCITO. Guarda: classification ∈ {SCRAP, UNRECOVERABLE} (do body OU de um edital registrado) +
+  // reason (fundamento) + sem liberação em curso. ACTIVE_CUSTODY→DIRECT_RECYCLING; setFrozenAt=true. O reason
+  // (fundamento) é EXIGIDO pela guarda (reason_required) mas NÃO entra no payload da cadeia (§2.8 — a cadeia carrega
+  // só o reason CODIFICADO unrecoverable_direct); vai ao audit best-effort (trilha interna do ato).
+  async reclassifyUnrecoverable(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<AuctionView> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const process = await this.impound.findProcessById(actor.tenantId, normalizedId);
+    if (!process) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    // Classificação: do body OU de um edital registrado (art. §§16-18: "registrada"). reason parseado leniente (a
+    // ORDEM dos 409 — classificação antes de reason — é decidida pela guarda PURA, não pelo parse).
+    const bodyClassification = parseClassification(body.classification);
+    const [classification, releaseInProgress, chain] = await Promise.all([
+      bodyClassification !== undefined
+        ? Promise.resolve(bodyClassification)
+        : this.resolveRecyclableEdictClassification(actor.tenantId, normalizedId),
+      this.hasActiveRelease(actor.tenantId, normalizedId),
+      this.verifyChainPort(actor.tenantId, normalizedId),
+    ]);
+    const reason = parseNotes(body.reason);
+    // MÉDIO-B: o inservível TAMBÉM re-verifica a cadeia I2 (o bem destruído precisa da prova íntegra, como a sucata).
+    const gate = {
+      classificationMissing: classification === undefined || !RECYCLABLE_CLASSIFICATIONS.includes(classification),
+      releaseInProgress,
+      chainBroken: !(chain?.valid === true),
+    };
+    const now = new Date();
+    const decision = resolveTransition(process, "DIRECT_RECYCLING", { unrecoverable: gate, reason });
+    const snapshot = await this.repository.reclassifyUnrecoverableAtomic({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      expectedFrom: decision.from,
+      actorId: actor.userId,
+      occurredAt: now,
+    });
+    return this.toView(snapshot);
+  }
+
+  // Classificação recyclável (SCRAP/UNRECOVERABLE) resolvida a partir de um edital registrado (fallback quando não
+  // vem no body). Devolve a primeira classificação recyclável encontrada, senão undefined.
+  private async resolveRecyclableEdictClassification(tenantId: string, processId: string): Promise<AuctionClassification | undefined> {
+    const edicts = await this.repository.listEdicts(tenantId, processId);
+    return edicts
+      .map((edict) => edict.classification)
+      .find((classification): classification is AuctionClassification => classification !== undefined && RECYCLABLE_CLASSIFICATIONS.includes(classification));
   }
 
   // POST /impound-processes/:id/auction/attempts — REGISTRO de rodada deserta (impound:transition). O processo deve
@@ -104,23 +232,31 @@ export class AuctionService {
     if (process.status !== "AUCTION_ELIGIBLE") {
       throw new AuctionError(409, "AUCTION_CONFLICT", "auction_not_eligible", "Only an auction-eligible process can record an auction attempt.");
     }
+    const roundNumber = parseRoundNumber(body.round_number ?? body.roundNumber);
+    // Ω5P PR-13a — EDICT-GATE (fecha R-omega5p-pr12-ciclo1): um strike só conta com um certame REAL designado (edital
+    // registrado) p/ a rodada. Pré-check early (409 claro p/ a UI); o repo RE-VERIFICA sob FOR UPDATE antes do INSERT.
+    const edicts = await this.repository.listEdicts(actor.tenantId, normalizedId);
+    if (!edicts.some((edict) => edict.roundNumber === roundNumber)) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "auction_edict_missing", "An auction edict must be registered for this round before recording a deserted attempt.");
+    }
     return this.repository.recordAttemptAtomic({
       tenantId: actor.tenantId,
       processId: normalizedId,
       expectedFrom: "AUCTION_ELIGIBLE",
-      roundNumber: parseRoundNumber(body.round_number ?? body.roundNumber),
+      roundNumber,
       notes: parseNotes(body.notes),
       actorId: actor.userId,
       occurredAt: new Date(),
     });
   }
 
-  private toView(status: AuctionView["status"], attempts: AuctionView["attempts"]): AuctionView {
+  private toView(snapshot: AuctionStateSnapshot): AuctionView {
     return {
-      attempts,
-      strikeCount: attempts.filter((attempt) => attempt.outcome === "DESERTED").length,
+      attempts: snapshot.attempts,
+      edicts: snapshot.edicts,
+      strikeCount: snapshot.attempts.filter((attempt) => attempt.outcome === "DESERTED").length,
       maxAttempts: AUCTION_MAX_ATTEMPTS,
-      status,
+      status: snapshot.status,
     };
   }
 }
