@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-26",
-  "version": "OMEGA5P-PR-13a",
+  "version": "OMEGA5P-PR-13b",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω5P PR-13a — Fase 4: edital de leilão (designação por rodada) + reciclagem gated no edital (fecha o requisito herdado do PR-12; sucata IRREVERSÍVEL protegida)",
-    "title": "Ω5P PR-13a: o registro do edital de leilão (referência externa por rodada, sem serviço de assinatura pago — PD-SIGN) + a reciclagem a sucata gated em 2 certames REAIS (editais completos ≥15 d.u. sequenciais) + cadeia I2 íntegra; junta 3/3, tolerância-zero na sucata",
+    "block": "Ω5P PR-13b — Fase 4: máquina de venda do leilão (AUCTION_PREP→LOTTED→AUCTIONED→AUCTION_CLOSED + inadimplência art.42 + reclamado art.26§1º; registra o resultado do certame — base do I7) — FECHA a realização do leilão",
+    "title": "Ω5P PR-13b: a máquina de estados da venda do leilão — prepara/loteia (edital completo ≥15 d.u.)/registra o arremate (arrematante+valor≥reserva+nota) amarrado à rodada LOTADA/consuma; inadimplência e reclamado; sold_amount = base imutável do I7; junta 4/4 (1 CRÍTICO de alienação sanado)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω5P PR-13a — EDITAL + RECICLAGEM GATED (Fase 4). Backend + migração aditiva. Núcleo probatório que FECHA o requisito herdado do PR-12 (R-omega5p-pr12-ciclo1): a sucata (DIRECT_RECYCLING, IRREVERSÍVEL) agora gated no edital por rodada. Tabela nova auction_edicts (designação por rodada; projeção mutável, a prova vive na cadeia; migração 20260842000000 aditiva, RLS forced/FK RESTRICT I9/partial-unique 1-edital-por-rodada/CHECK IS-NOT-NULL). PD-Ω5P-SIGN Opção A: registra a REFERÊNCIA do edital externo (edict_reference/plataforma homologada/published_at/pncp_url guard-rail) — assinatura/publicação = leiloeiro/órgão, SEM serviço pago. Edict-gate no recordAttempt: um strike DESERTED só conta com edital da rodada (409 auction_edict_missing, re-check FOR UPDATE; edictRef mascarado no AUCTION_CLOSED). Reciclagem = ATO EXPLÍCITO permissionado (reclassify-scrap: COUNT(DESERTED)≥2 E cada rodada 1..maxAttempts SEQUENCIAL com edital COMPLETO [edict_reference + published_at + business_days≥15] E verifyChain.valid → 409 scrap_strikes_insufficient/scrap_edict_missing_for_round/scrap_edict_incomplete_for_round/auction_chain_broken; reclassify-unrecoverable inservível §§16-18: classification∈{SCRAP,UNRECOVERABLE} E reason E sem-release E verifyChain.valid). Ambas setFrozenAt:true (T_stop §5). SOMA GuardSpecs a GUARDS (IMPOUND_TRANSITIONS+impound.hashchain INTACTOS). I8 estrutural: DIRECT_RECYCLING só →CLOSED (deferida) — sucata terminal, sem retorno à circulação. §2.8: payloads da cadeia só refs/mascarados, money string, sem PII/tenant_id; labels PT-BR. REUSA impound:transition (sem permissão nova). JUNTA APROVADO 3/3 (1 ciclo, sucata tolerância-ZERO): dba-guardiao (migração drift-zero; 23505/23514/RLS/I9 vivos) + omega5p-avaliador (VETO; escopo/§2.8/I8) + critico-adversarial (0 CRÍTICO; 2 MÉDIO de sucata SANADOS — editais vazios destravavam a sucata [MÉDIO-A: edict substantivo ref+published+≥15 d.u. sequencial] + inservível sem verifyChain [MÉDIO-B: chainBroken] + BAIXO-C status; edital vazio/incompleto/não-sequencial NÃO sucateia, cadeia quebrada bloqueia o inservível). R-omega5p-pr13a-ciclo1. Aderência CTB art.328/§§16-18/Lei 13.160/13.281; Res.1025 arts.25-34; PD-Ω5P-SIGN. Inclui o Kpis/app.js honesto/auto-hidratável (instrução do dono: dashboard lê os números reais de kpis-latest/history em runtime, nunca mais defasa). backend 1767→1784 (+17), smoke 908 e flutter 807 inalterados, blocks 102→103. Zero regressão. Inclui backfill do PR-12 (#294 2486157).",
-    "status_label": "Ω5P PR-13a: edital (referência externa por rodada, PD-SIGN sem serviço pago) + reciclagem a sucata gated em 2 certames reais completos+sequenciais + cadeia I2; junta 3/3 tolerância-zero; backend 1767->1784, blocks 102->103"
+    "summary": "Ω5P PR-13b — MÁQUINA DE VENDA DO LEILÃO (Fase 4, FECHA a realização do leilão). Backend + 2 migrações aditivas (ADD-COLUMN). O sistema REGISTRA o resultado do certame externo homologado (D-Ω5P-06), não hospeda lances. SOMA 6 GuardSpecs a GUARDS (IMPOUND_TRANSITIONS+impound.hashchain INTACTOS): AUCTION_ELIGIBLE→AUCTION_PREP (CONSERVED + avaliação sigilosa art.28) · AUCTION_PREP→LOTTED (edital COMPLETO da rodada ref+published_at+business_days≥15 + min_bid>0; marca edict.status=LOTTED, no máx.1/processo) · LOTTED→AUCTIONED (arrematante + sold_amount≥min_bid[do edital] + nota; AMARRADO à rodada LOTADA re-verificado sob FOR UPDATE — CONSERVED+completo+reserva da rodada realmente lotada) · AUCTIONED→AUCTION_CLOSED · AUCTIONED→LOTTED (inadimplência art.42, NO_PAYMENT, frozen mantido) · LOTTED→ACTIVE_CUSTODY (reclamado art.26§1º, reabre a liberação). AUCTIONED seta frozen_at (T_stop §5). Migração 20260843000000 (winner_ref/sold_amount Decimal/sale_note_reference — MINIMIZADOS §2.8) + 20260844000000 (defaulted_sale_round — vínculo da inadimplência à SOLD superada). sold_amount na cadeia (AUCTION_SOLD) como string = BASE IMUTÁVEL do I7 do PR-14 (NÃO distribui — §6º=PR-14). Permissão NOVA auction:appraise (sigilo da avaliação/lance mínimo art.28; DTO omite sem a permissão) 4 pontas. JUNTA APROVADO 4/4 (1 ciclo, dinheiro/alienação tolerância-ZERO): dba-guardiao (2 migrações drift-zero tx-ROLLBACK) + coordenador-de-acessos (auction:appraise; sigilo art.28) + omega5p-avaliador (VETO; escopo/§2.8/I7-base) + critico-adversarial (1 CRÍTICO de ALIENAÇÃO SANADO — recordSale validava a rodada do BODY não a LOTADA [vender bem como outra rodada abaixo da reserva ou vender bem-sucata]; amarração em 3 camadas edict.status=LOTTED + re-check sob FOR UPDATE + min_bid do edital; MÉDIO-2 avaliação congela no lote; MÉDIO-3 SOLD efetiva determinística; PROBEs todos falham-fechado). R-omega5p-pr13b-ciclo1. REQUISITO PR-14: I7 base = SOLD que atinge AUCTION_CLOSED OU não-referenciada por NO_PAYMENT.defaulted_sale_round. Aderência CTB art.328/art.42/art.26§1º; Res.1025 arts.29-34. backend 1784→1802 (+18), smoke 908 e flutter 807 inalterados, blocks 103→104. Zero regressão. Inclui backfill do PR-13a (#295 3eb6d49).",
+    "status_label": "Ω5P PR-13b: máquina de venda (prep/lote edital≥15du/arremate amarrado à rodada lotada≥reserva/inadimplência/reclamado; sold_amount=base I7); junta 4/4 (1 CRÍTICO de alienação sanado); backend 1784->1802, blocks 103->104"
   },
   "metrics": {
     "flutter_tests": {
@@ -24,13 +24,13 @@
       "value": 908,
       "total": 908,
       "display": "908/908",
-      "note": "908 inalterado no Ω5P PR-13a (backend-only). Último valor oficial do Ω5P PR-11 (+16)."
+      "note": "908 inalterado no Ω5P PR-13b (backend-only). Último valor oficial do Ω5P PR-11 (+16)."
     },
     "backend_tests": {
-      "value": 1784,
-      "total": 1790,
-      "display": "1784/1790",
-      "note": "+17 (Ω5P PR-13a edital + reciclagem gated I8): auction-edict-gate 3 (strike DESERTED só com edital da rodada) + auction-recycling 11 (2 strikes edict-completos-sequenciais→sucata; editais vazios/incompletos/não-sequenciais NÃO sucateiam; cadeia quebrada bloqueia o inservível; sucata terminal sem circulação; registerEdict sem ref→400; estado errado→409) + auction-scrap-concurrency 3 DB-gated (corrida reclassify×recordAttempt sob lock; idempotência edital; cross-tenant RLS). CI-memória 6 skip. Sobre 1767. Migração 20260842000000 aditiva provada up/down/re-up pelo dba."
+      "value": 1802,
+      "total": 1808,
+      "display": "1802/1808",
+      "note": "+18 (Ω5P PR-13b máquina de venda): auction-sale-fsm 14 InMemory (não LOTTED sem edital completo/min_bid; não PREP sem CONSERVED/avaliação; não AUCTIONED sem arrematante/nota; sold<reserva→409; venda amarrada à rodada LOTADA — vender outra rodada/rodada-SCRAP/edital-adulterado→409; reclamar-após-arremate ilegal; inadimplência mantém frozen + defaulted_sale_round; reclamado reabre; sold_amount na cadeia string) + auction-sale-concurrency 4 DB-gated (corrida na venda sob lock; idempotência round_number; cross-tenant; vender rodada não-lotada bloqueada). CI-memória 6 skip. Sobre 1784. 2 migrações aditivas (20260843000000+20260844000000) provadas por tx-ROLLBACK pelo dba."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 103,
-      "display": "103",
-      "note": "Ω5P PR-13a (edital de leilão por rodada + reciclagem a sucata gated no edital completo+sequencial + verifyChain — estende o módulo auction; fecha o requisito herdado do PR-12) → +1 sobre 102 (Ω5P PR-12). PR-13b (máquina de venda) segue."
+      "value": 104,
+      "display": "104",
+      "note": "Ω5P PR-13b (máquina de venda do leilão: prep/lote/arremate amarrado à rodada lotada/consumação + inadimplência + reclamado; sold_amount = base do I7 — estende o módulo auction) → +1 sobre 103 (Ω5P PR-13a). FECHA a realização do leilão (13a+13b). PR-14 (cascata §6º I7) segue."
     },
     "mobile_backend_contracts": {
       "value": 18,

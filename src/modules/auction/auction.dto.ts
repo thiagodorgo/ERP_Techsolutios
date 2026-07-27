@@ -9,6 +9,7 @@ import type {
   AuctionOutcome,
   AuctionView,
   RecordAttemptResult,
+  RecordSaleResult,
   RegisterEdictResult,
 } from "./auction.types.js";
 
@@ -27,14 +28,15 @@ const CLASSIFICATION_LABELS: Record<AuctionClassification, string> = {
 
 const EDICT_STATUS_LABELS: Record<AuctionEdictStatus, string> = {
   DESIGNATED: "Designado",
+  LOTTED: "Lotado",
   CLOSED: "Encerrado",
 };
 
-// §allowlist: tenant_id NUNCA exposto. appraisal_amount/min_bid_amount são SIGILOSOS (art. 28) — OMITIDOS no 13a
-// (não povoados; sua exposição é 13b sob auction:appraise). auctioneer_ref MASCARADO (§2.8: pode ser leiloeiro
-// pessoa). edict_reference é a referência PÚBLICA do edital (visível ao operador autorizado). Superfície do CONSOLE
-// AUTENTICADO (impound:read/transition).
-export function toAuctionEdictDto(edict: AuctionEdict) {
+// §allowlist: tenant_id NUNCA exposto. appraisal_amount/min_bid_amount são SIGILOSOS (art. 28) — só emergem quando
+// `canAppraise` (o ator tem auction:appraise); o DTO os OMITE aos demais (não vaza a avaliação sigilosa). auctioneer_ref
+// MASCARADO (§2.8: pode ser leiloeiro pessoa). edict_reference é a referência PÚBLICA do edital (visível ao operador
+// autorizado). Superfície do CONSOLE AUTENTICADO (impound:read/transition).
+export function toAuctionEdictDto(edict: AuctionEdict, canAppraise = false) {
   return {
     id: edict.id,
     processId: edict.processId,
@@ -47,6 +49,10 @@ export function toAuctionEdictDto(edict: AuctionEdict) {
     auctioneerRef: maskEdictReference(edict.auctioneerRef),
     pncpUrl: edict.pncpUrl ?? null,
     businessDays: edict.businessDays ?? null,
+    // SIGILO art. 28: os valores da avaliação só entram no payload de quem tem auction:appraise.
+    ...(canAppraise
+      ? { appraisalAmount: edict.appraisalAmount ?? null, minBidAmount: edict.minBidAmount ?? null }
+      : {}),
     status: edict.status,
     statusLabel: EDICT_STATUS_LABELS[edict.status],
     notes: edict.notes ?? null,
@@ -66,13 +72,20 @@ export function toAuctionAttemptDto(attempt: AuctionAttempt) {
     outcome: attempt.outcome,
     outcomeLabel: OUTCOME_LABELS[attempt.outcome],
     notes: attempt.notes ?? null,
+    // Ω5P PR-13b — RESULTADO do certame ARREMATADO (só a linha SOLD carrega). winnerRef MASCARADO (BAIXO-4, §2.8 —
+    // como auctioneerRef: nunca o rótulo bruto, que pode ser pessoa); soldAmount é o valor PÚBLICO arrematado (base de
+    // I7); saleNoteReference é a ref da nota (art. 34). defaultedSaleRound (só na NO_PAYMENT) amarra a SOLD superada (I7).
+    winnerRef: maskEdictReference(attempt.winnerRef),
+    soldAmount: attempt.soldAmount ?? null,
+    saleNoteReference: attempt.saleNoteReference ?? null,
+    defaultedSaleRound: attempt.defaultedSaleRound ?? null,
     recordedBy: attempt.recordedBy ?? null,
     createdAt: attempt.createdAt.toISOString(),
     updatedAt: attempt.updatedAt.toISOString(),
   };
 }
 
-export function toAuctionViewDto(view: AuctionView) {
+export function toAuctionViewDto(view: AuctionView, canAppraise = false) {
   return {
     data: {
       strikeCount: view.strikeCount,
@@ -82,7 +95,7 @@ export function toAuctionViewDto(view: AuctionView) {
       strikesRemaining: Math.max(view.maxAttempts - view.strikeCount, 0),
     },
     attempts: view.attempts.map(toAuctionAttemptDto),
-    edicts: view.edicts.map(toAuctionEdictDto),
+    edicts: view.edicts.map((edict) => toAuctionEdictDto(edict, canAppraise)),
   };
 }
 
@@ -107,4 +120,20 @@ export function toRecordAttemptDto(result: RecordAttemptResult) {
       status: result.status,
     },
   };
+}
+
+// Ω5P PR-13b — registro do resultado (arremate SOLD / inadimplência NO_PAYMENT): a linha + created (idempotência).
+export function toRecordSaleDto(result: RecordSaleResult) {
+  return {
+    data: {
+      attempt: toAuctionAttemptDto(result.attempt),
+      created: result.created,
+      status: result.status,
+    },
+  };
+}
+
+// Ω5P PR-13b — registro da AVALIAÇÃO sigilosa (auction:appraise): o edital com os valores expostos (canAppraise=true).
+export function toSetAppraisalDto(edict: AuctionEdict) {
+  return { data: { edict: toAuctionEdictDto(edict, true) } };
 }

@@ -66,6 +66,16 @@ export type TransitionInputs = {
   // um ATO EXPLÍCITO permissionado/auditado (R-omega5p-pr12-ciclo1: nunca efeito colateral do recordAttempt).
   readonly auctionReclassify?: AuctionReclassifyGateInput;   // AUCTION_ELIGIBLE→DIRECT_RECYCLING (2 strikes edict-backed)
   readonly unrecoverable?: UnrecoverableRecycleGateInput;    // ACTIVE_CUSTODY→DIRECT_RECYCLING (inservível §§16-18)
+  // Ω5P PR-13b (CTB art. 328 / Res. 1025 arts. 25-34 — máquina de VENDA, I7 BASE) — insumos SINTÉTICOS das guardas
+  // do certame ARREMATADO. O auction.service resolve as precondições REAIS (classificação/avaliação sigilosa /
+  // edital completo / min_bid / resultado do arremate) e injeta AQUI; as guardas são PURAS e só leem estas flags,
+  // RE-VERIFICADAS sob FOR UPDATE. Ausência ⇒ 409 auction_gate_unresolved (a aresta EXIGE o auction.service).
+  readonly auctionPrep?: AuctionPrepGateInput;      // AUCTION_ELIGIBLE→AUCTION_PREP (CONSERVED + avaliação art. 28)
+  readonly auctionLot?: AuctionLotGateInput;        // AUCTION_PREP→LOTTED (edital completo da rodada + min_bid)
+  readonly auctionSale?: AuctionSaleGateInput;      // LOTTED→AUCTIONED (arremate: winner + sold>=min_bid + nota)
+  readonly auctionClose?: AuctionCloseGateInput;    // AUCTIONED→AUCTION_CLOSED (consumação: pagamento + nota)
+  readonly auctionDefault?: AuctionDefaultGateInput; // AUCTIONED→LOTTED (inadimplência art. 42; reintegração)
+  readonly auctionReclaim?: AuctionReclaimGateInput; // LOTTED→ACTIVE_CUSTODY (reclamado art. 26 §1º)
 };
 
 // Salto A (ACTIVE_CUSTODY→RELEASE_IN_PROGRESS): abrir a liberação (freeze T_stop). alreadyInProgress = já há
@@ -133,6 +143,55 @@ export type UnrecoverableRecycleGateInput = {
   readonly classificationMissing: boolean; // classification não-registrada ∈ {SCRAP, UNRECOVERABLE}
   readonly releaseInProgress: boolean;     // hasActiveRelease === true (não reciclar com liberação em curso)
   readonly chainBroken: boolean;           // verifyChain().valid === false (I2)
+};
+
+// Ω5P PR-13b — PREPARO do certame (AUCTION_ELIGIBLE→AUCTION_PREP, art. 328). NÃO congela (a venda ainda não ocorreu).
+// classificationNotConserved = classification do edital != CONSERVED; appraisalMissing = appraisal_amount não > 0
+// (avaliação SIGILOSA art. 28). Reasons 409 DISTINTOS.
+export type AuctionPrepGateInput = {
+  readonly classificationNotConserved: boolean; // edital da rodada não registra CONSERVED
+  readonly appraisalMissing: boolean;           // appraisal_amount ausente/<=0 (sigilosa art. 28)
+};
+
+// Ω5P PR-13b — LOTE do certame (AUCTION_PREP→LOTTED). NÃO congela. edictIncomplete = edital da rodada NÃO completo
+// (ref + published_at + business_days >= 15, Lei 14.133); minBidMissing = min_bid_amount ausente/<=0. Reasons DISTINTOS.
+export type AuctionLotGateInput = {
+  readonly edictIncomplete: boolean;  // edital da rodada incompleto (mesmo piso 15 d.u. da sucata — venda >= sucata em rigor)
+  readonly minBidMissing: boolean;    // min_bid_amount ausente/<=0 (sigiloso art. 28)
+};
+
+// Ω5P PR-13b — ARREMATE (LOTTED→AUCTIONED). CONGELA (setFrozenAt=true — T_stop §5: a arrematação encerra a diária).
+// CRÍTICO-1 (amarração probatória rodada-vendida × rodada-LOTADA): roundNotLotted = a rodada vendida NÃO é a rodada
+// cujo edital está LOTTED (status===LOTTED, no máx. 1/processo); roundNotConserved = o edital dessa rodada não é
+// CONSERVED; roundEdictIncomplete = o edital dessa rodada não é completo (ref+published_at+business_days>=15). O gate
+// da venda REPETE PREP+LOT para a rodada realmente lotada. winnerMissing = winner_ref ausente; belowMinBid =
+// sold_amount ausente OU < min_bid DESSA rodada (piso r1>=avaliação/r2>=50% art. 328 encodado no min_bid pelo
+// avaliador); noteMissing = sale_note_reference ausente (nota art. 34). Reasons 409 DISTINTOS.
+export type AuctionSaleGateInput = {
+  readonly winnerMissing: boolean;
+  readonly roundNotLotted: boolean;
+  readonly roundNotConserved: boolean;
+  readonly roundEdictIncomplete: boolean;
+  readonly belowMinBid: boolean;
+  readonly noteMissing: boolean;
+};
+
+// Ω5P PR-13b — CONSUMAÇÃO (AUCTIONED→AUCTION_CLOSED). Já frozen. paymentUnconfirmed = pagamento/nota não confirmados
+// (consumação ≤3d + nota, art. 34). Reason 409 DISTINTO.
+export type AuctionCloseGateInput = {
+  readonly paymentUnconfirmed: boolean;
+};
+
+// Ω5P PR-13b — INADIMPLÊNCIA (AUCTIONED→LOTTED, art. 42). NÃO descongela (set-only; PD-Ω5P-AUC-FROZEN). saleMissing =
+// não há arremate (SOLD) para inadimplir (belt-and-suspenders; a legalidade FSM já garante from=AUCTIONED). Reason DISTINTO.
+export type AuctionDefaultGateInput = {
+  readonly saleMissing: boolean;
+};
+
+// Ω5P PR-13b — RECLAMADO antes da venda (LOTTED→ACTIVE_CUSTODY, art. 26 §1º). setFrozenAt=false (nunca congelou).
+// reasonMissing = reason (fundamento do resgate) ausente — computado pelo service a partir de inputs.reason. Reason DISTINTO.
+export type AuctionReclaimGateInput = {
+  readonly reasonMissing: boolean;
 };
 
 // Efeitos temporais decididos pelo destino (aplicados na MESMA tx do append pelo repositório).
@@ -365,6 +424,94 @@ function guardUnrecoverableRecycle(_process: ImpoundProcess, inputs: TransitionI
   }
 }
 
+// ── Ω5P PR-13b — máquina de VENDA (PURAS; só leem as flags injetadas pelo auction.service, RE-VERIFICADAS sob FOR
+// UPDATE). Cada aresta = 1 guarda; reasons 409 DISTINTOS (o adversarial ataca cada furo: PREP sem CONSERVED/avaliação;
+// LOTE sem edital completo/min_bid; ARREMATE forjado sem winner/nota ou abaixo do mínimo; CONSUMAÇÃO sem pagamento;
+// INADIMPLÊNCIA sem arremate; RECLAMADO sem fundamento). Ausência do gate ⇒ auction_gate_unresolved (a aresta EXIGE
+// o auction.service — não é dirigível pelo endpoint genérico de transição).
+function guardAuctionPrep(_process: ImpoundProcess, inputs: TransitionInputs): void {
+  const gate = inputs.auctionPrep;
+  if (!gate) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "auction_gate_unresolved", "Auction transitions must be driven by the auction service (gate not resolved).");
+  }
+  if (gate.classificationNotConserved) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "prep_classification_not_conserved", "Auction preparation requires a CONSERVED classification registered in the round edict (art. 328).");
+  }
+  if (gate.appraisalMissing) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "prep_appraisal_missing", "Auction preparation requires the confidential appraisal amount (> 0, art. 28).");
+  }
+}
+
+function guardAuctionLot(_process: ImpoundProcess, inputs: TransitionInputs): void {
+  const gate = inputs.auctionLot;
+  if (!gate) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "auction_gate_unresolved", "Auction transitions must be driven by the auction service (gate not resolved).");
+  }
+  if (gate.edictIncomplete) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "lot_edict_incomplete", "Lotting requires a complete round edict (reference + published_at + business_days >= 15, Lei 14.133).");
+  }
+  if (gate.minBidMissing) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "lot_min_bid_missing", "Lotting requires the minimum bid amount (> 0, art. 28).");
+  }
+}
+
+function guardAuctionSale(_process: ImpoundProcess, inputs: TransitionInputs): void {
+  const gate = inputs.auctionSale;
+  if (!gate) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "auction_gate_unresolved", "Auction transitions must be driven by the auction service (gate not resolved).");
+  }
+  if (gate.winnerMissing) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "sale_winner_missing", "The sale requires the winning bidder reference (winner_ref).");
+  }
+  // CRÍTICO-1: só se arremata a rodada realmente LOTADA (edital LOTTED), e ela tem de ser CONSERVED + edital completo
+  // (repete PREP+LOT) — barra vender uma rodada não-lotada / SCRAP / com edital incompleto por rebaixar a reserva.
+  if (gate.roundNotLotted) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "sale_round_not_lotted", "Only the currently lotted round can be sold (bind the sale to the lotted round).");
+  }
+  if (gate.roundNotConserved) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "sale_round_not_conserved", "The sold round must be CONSERVED (a SCRAP/UNRECOVERABLE lot is never sold — art. §§16-18).");
+  }
+  if (gate.roundEdictIncomplete) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "sale_round_edict_incomplete", "The sold round edict must be complete (reference + published_at + business_days >= 15).");
+  }
+  if (gate.belowMinBid) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "sale_below_min_bid", "The sold amount must be at least the minimum bid of the lotted round (art. 328).");
+  }
+  if (gate.noteMissing) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "sale_note_missing", "The sale requires the auction note reference (art. 34).");
+  }
+}
+
+function guardAuctionClose(_process: ImpoundProcess, inputs: TransitionInputs): void {
+  const gate = inputs.auctionClose;
+  if (!gate) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "auction_gate_unresolved", "Auction transitions must be driven by the auction service (gate not resolved).");
+  }
+  if (gate.paymentUnconfirmed) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "close_payment_unconfirmed", "Closing the auction requires confirmed payment and note (art. 34).");
+  }
+}
+
+function guardAuctionDefault(_process: ImpoundProcess, inputs: TransitionInputs): void {
+  const gate = inputs.auctionDefault;
+  if (!gate) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "auction_gate_unresolved", "Auction transitions must be driven by the auction service (gate not resolved).");
+  }
+  if (gate.saleMissing) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "default_sale_missing", "Reintegration by default requires a recorded sale (SOLD) to default on (art. 42).");
+  }
+}
+
+function guardAuctionReclaim(_process: ImpoundProcess, inputs: TransitionInputs): void {
+  const gate = inputs.auctionReclaim;
+  if (!gate) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "auction_gate_unresolved", "Auction transitions must be driven by the auction service (gate not resolved).");
+  }
+  if (gate.reasonMissing) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "reason_required", "Reclaiming the vehicle before sale requires a reason (fundamento do resgate, art. 26 §1º).");
+  }
+}
+
 // Registro de guardas. Ausência de chave para uma aresta LEGAL = deferida por padrão (segurança: nada release/
 // leilão fica habilitado por esquecimento). Só as custódia-nativas são explicitamente `enabled` em PR-05.
 // Ω5P PR-10a SOMA (aditivo puro; IMPOUND_TRANSITIONS INTACTA) as 2 arestas do caminho padrão de liberação (I5).
@@ -386,16 +533,30 @@ const GUARDS: Readonly<Record<string, GuardSpec>> = {
   [edgeKey("RELEASED_FOR_REPAIR", "ACTIVE_CUSTODY")]: { kind: "enabled", setFrozenAt: false, guard: guardReleaseForRepairReturn },
   // Ω5P PR-12 — ELEGIBILIDADE ao leilão. setFrozenAt=false EXPLÍCITO (a elegibilidade NÃO é T_stop — as diárias
   // correm até a reciclagem/venda). O gate real (6 pré-condições) é resolvido pelo auction.service e re-verificado
-  // sob FOR UPDATE. As arestas internas AUCTION_PREP/LOTTED/AUCTIONED seguem DEFERIDAS (13b). PR-12 SÓ mantém o
-  // ledger de strikes (auction_attempts).
+  // sob FOR UPDATE. As arestas internas AUCTION_PREP/LOTTED/AUCTIONED foram HABILITADAS gated em PR-13b (abaixo).
   [edgeKey("ACTIVE_CUSTODY", "AUCTION_ELIGIBLE")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionEligible },
   // Ω5P PR-13a — RECICLAGEM por 2 strikes edict-backed (I8, sucata IRREVERSÍVEL). setFrozenAt=true EXPLÍCITO (T_stop
   // §5: a sucata encerra a acumulação). Gated no EDITAL POR RODADA (guardAuctionReclassify re-verificada sob FOR
   // UPDATE) — encerra R-omega5p-pr12-ciclo1. É um ATO EXPLÍCITO (endpoint próprio), NUNCA efeito do recordAttempt.
   [edgeKey("AUCTION_ELIGIBLE", "DIRECT_RECYCLING")]: { kind: "enabled", setFrozenAt: true, guard: guardAuctionReclassify },
   // Ω5P PR-13a — RECICLAGEM por INSERVIBILIDADE (§§16-18). setFrozenAt=true. Guarda: classification ∈ {SCRAP,
-  // UNRECOVERABLE} + reason (fundamento) + sem liberação em curso. AUCTION_PREP/LOTTED/AUCTIONED continuam DEFERIDAS (13b).
+  // UNRECOVERABLE} + reason (fundamento) + sem liberação em curso.
   [edgeKey("ACTIVE_CUSTODY", "DIRECT_RECYCLING")]: { kind: "enabled", setFrozenAt: true, guard: guardUnrecoverableRecycle },
+  // Ω5P PR-13b — máquina de VENDA (SOMA aditiva; IMPOUND_TRANSITIONS/impound.hashchain INTACTOS). O gate real de cada
+  // aresta é resolvido pelo auction.service e RE-VERIFICADO sob FOR UPDATE.
+  // PREPARO (CONSERVED + avaliação sigilosa art. 28): NÃO congela (a venda ainda não ocorreu).
+  [edgeKey("AUCTION_ELIGIBLE", "AUCTION_PREP")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionPrep },
+  // LOTE (edital completo da rodada + min_bid): NÃO congela.
+  [edgeKey("AUCTION_PREP", "LOTTED")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionLot },
+  // ARREMATE (winner + sold>=min_bid + nota): setFrozenAt=TRUE EXPLÍCITO (T_stop §5 — a arrematação encerra a diária).
+  [edgeKey("LOTTED", "AUCTIONED")]: { kind: "enabled", setFrozenAt: true, guard: guardAuctionSale },
+  // CONSUMAÇÃO (pagamento + nota): já frozen (setFrozenAt não seta ⇒ mantém).
+  [edgeKey("AUCTIONED", "AUCTION_CLOSED")]: { kind: "enabled", guard: guardAuctionClose },
+  // INADIMPLÊNCIA (art. 42 → reintegra o lote): setFrozenAt=false EXPLÍCITO — NÃO descongela (set-only; PD-Ω5P-AUC-
+  // FROZEN: a diária permanece congelada; a penalidade recai sobre o arrematante inadimplente).
+  [edgeKey("AUCTIONED", "LOTTED")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionDefault },
+  // RECLAMADO antes da venda (art. 26 §1º → reabre a liberação PR-10): setFrozenAt=false EXPLÍCITO (nunca congelou).
+  [edgeKey("LOTTED", "ACTIVE_CUSTODY")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionReclaim },
 };
 
 // resolveTransition — portão 1 (legalidade) + portão 2 (guarda). PURA; lança ImpoundError(409). O serviço
@@ -454,11 +615,18 @@ export const ENABLED_EDGES: readonly (readonly [ImpoundStatus, ImpoundStatus])[]
   // Ω5P PR-12 — a elegibilidade ao leilão (I6/I2 + 2 PISOS) habilitada.
   ["ACTIVE_CUSTODY", "AUCTION_ELIGIBLE"],
   // Ω5P PR-13a — as 2 arestas de RECICLAGEM (sucata IRREVERSÍVEL, I8) habilitadas, GATED: AUCTION_ELIGIBLE→
-  // DIRECT_RECYCLING (2 strikes edict-backed) e ACTIVE_CUSTODY→DIRECT_RECYCLING (inservível §§16-18). AUCTION_PREP/
-  // LOTTED/AUCTIONED (a máquina de VENDA) seguem DEFERIDAS (13b). DIRECT_RECYCLING→CLOSED segue DEFERIDA (não há
-  // aresta de retorno à circulação — I8 estrutural).
+  // DIRECT_RECYCLING (2 strikes edict-backed) e ACTIVE_CUSTODY→DIRECT_RECYCLING (inservível §§16-18).
   ["AUCTION_ELIGIBLE", "DIRECT_RECYCLING"],
   ["ACTIVE_CUSTODY", "DIRECT_RECYCLING"],
+  // Ω5P PR-13b — a máquina de VENDA habilitada (GATED pelo auction.service): PREPARO → LOTE → ARREMATE → CONSUMAÇÃO,
+  // + INADIMPLÊNCIA (AUCTIONED→LOTTED, art. 42) e RECLAMADO (LOTTED→ACTIVE_CUSTODY, art. 26 §1º). DIRECT_RECYCLING→
+  // CLOSED e a distribuição do §6º (I7) seguem em PR-14/encerramento.
+  ["AUCTION_ELIGIBLE", "AUCTION_PREP"],
+  ["AUCTION_PREP", "LOTTED"],
+  ["LOTTED", "AUCTIONED"],
+  ["AUCTIONED", "AUCTION_CLOSED"],
+  ["AUCTIONED", "LOTTED"],
+  ["LOTTED", "ACTIVE_CUSTODY"],
 ];
 
 export function isEnabledEdge(from: ImpoundStatus, to: ImpoundStatus): boolean {

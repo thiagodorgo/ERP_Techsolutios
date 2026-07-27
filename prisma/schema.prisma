@@ -3079,8 +3079,18 @@ model AuctionAttempt {
   tenant_id    String   @db.Uuid
   process_id   String   @db.Uuid
   round_number Int                                       // rodada 1-based (chave de idempotência do fecho de rodada)
-  outcome      String   @default("DESERTED")             // DESERTED|SOLD|NO_PAYMENT (app-validado; PR-12 só DESERTED)
+  outcome      String   @default("DESERTED")             // DESERTED|SOLD|NO_PAYMENT (app-validado; 13b grava SOLD/NO_PAYMENT)
   notes        String?                                   // texto de domínio (§2.8: sem PII; nunca no payload da cadeia)
+  // Ω5P PR-13b — RESULTADO do certame ARREMATADO (nullable; só a linha SOLD carrega). winner_ref MINIMIZADO
+  // (§2.8: rótulo/máscara, NUNCA CPF/nome). sold_amount = valor arrematado (BASE de I7 no PR-14, art. 328 §6º);
+  // Decimal(12,2); auditável/imutável na cadeia (AUCTION_SOLD, string). sale_note_reference = ref da nota (art. 34;
+  // assinatura ICP = Ω6). CHECK sold_amount IS NULL OR >= 0 (migração 20260843000000).
+  winner_ref          String?                            // arrematante minimizado (§2.8; nunca CPF/nome)
+  sold_amount         Decimal? @db.Decimal(12, 2)        // valor arrematado (base de I7 no PR-14)
+  sale_note_reference String?                            // referência da nota de leilão (art. 34)
+  // Ω5P PR-13b (MÉDIO-3) — só na linha NO_PAYMENT: a rodada da SOLD superada pela inadimplência (art. 42). Determina
+  // a SOLD efetiva p/ o I7 do PR-14 (migração 20260844000000). CHECK defaulted_sale_round IS NULL OR >= 1.
+  defaulted_sale_round Int?
   recorded_by  String?  @db.Uuid
   created_at   DateTime @default(now()) @db.Timestamptz(6)
   updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz(6)

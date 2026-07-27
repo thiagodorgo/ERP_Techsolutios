@@ -6,8 +6,15 @@ import type { CanonicalValue, CustodyEventType, ImpoundStatus } from "../impound
 import type { ProfileScope } from "../jurisdiction/jurisdiction.types.js";
 import {
   buildAuctionClosedEventPayload,
+  buildAuctionLotEventPayload,
   buildAuctionLottedEventPayload,
+  buildAuctionPrepEventPayload,
+  buildAuctionSaleClosedEventPayload,
+  buildAuctionSoldEventPayload,
   evaluateScrapEdictGate,
+  findActiveSoldRound,
+  isEdictComplete,
+  APPRAISAL_EDITABLE_STATES,
   EDICT_REGISTRABLE_STATES,
   type AuctionRepository,
 } from "./auction.repository.js";
@@ -20,15 +27,24 @@ import {
   type AuctionOutcome,
   type AuctionProfile,
   type AuctionStateSnapshot,
+  type CloseAuctionInput,
+  type DefaultAuctionInput,
+  type DefaultAuctionResult,
+  type LotAuctionInput,
   type MarkEligibleInput,
+  type PrepareAuctionInput,
+  type ReclaimAuctionInput,
   type RecordAttemptInput,
   type RecordAttemptResult,
+  type RecordSaleInput,
+  type RecordSaleResult,
   type RegisterEdictInput,
   type RegisterEdictResult,
   type ReclassifyScrapInput,
   type ReclassifyUnrecoverableInput,
+  type SetAppraisalInput,
 } from "./auction.types.js";
-import { maskEdictReference } from "./auction.validators.js";
+import { isBelowMinBid, isPositiveMoney, maskEdictReference } from "./auction.validators.js";
 import type {
   AuctionActiveReleasePort,
   AuctionNotificationsPort,
@@ -186,12 +202,7 @@ export class PrismaAuctionRepository implements AuctionRepository {
     // uma 2ª chamada da MESMA rodada JÁ enxerga a linha commitada). Devolve o estado atual sem append/transição — não
     // dupla-conta nem dupla-transiciona. O partial-unique auction_attempts_round_idem_key é o BACKSTOP de DB (nunca
     // ALCANÇADO sob o lock — um 23505 aqui ABORTARIA a tx, impedindo qualquer query de leitura; por isso pré-checamos).
-    const existingRows = await this.client.$queryRaw<AttemptRecord[]>`
-      SELECT id, tenant_id, process_id, round_number, outcome, notes, recorded_by, created_at, updated_at
-      FROM auction_attempts
-      WHERE tenant_id = ${input.tenantId}::uuid AND process_id = ${input.processId}::uuid AND round_number = ${input.roundNumber}
-      LIMIT 1
-    `;
+    const existingRows = await this.readAttemptForRound(input.tenantId, input.processId, input.roundNumber);
     if (existingRows.length > 0) {
       return {
         attempt: mapAttempt(existingRows[0]),
@@ -309,7 +320,291 @@ export class PrismaAuctionRepository implements AuctionRepository {
     return { status: "DIRECT_RECYCLING", attempts: await this.listAttempts(input.tenantId, input.processId), edicts: await this.listEdicts(input.tenantId, input.processId) };
   }
 
+  // ── Ω5P PR-13b — máquina de VENDA ATÔMICA (FOR UPDATE + re-verifica a guarda PURA sob o lock + transição + append) ─
+  // setAppraisal (auction:appraise, art. 28): UPDATE do edital da rodada (appraisal_amount + min_bid_amount SIGILOSOS).
+  // NÃO encadeia CustodyEvent (a avaliação NUNCA entra na cadeia). Exige o edital registrado.
+  async setAppraisalAtomic(input: SetAppraisalInput): Promise<AuctionEdict> {
+    // MÉDIO-2: a reserva CONGELA no lote — appraisal/min_bid imutáveis a partir de LOTTED (FOR UPDATE do processo).
+    const locked = await this.lockProcess(input.tenantId, input.processId);
+    if (!locked) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    if (!APPRAISAL_EDITABLE_STATES.includes(locked.status as ImpoundStatus)) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "appraisal_locked_after_lot", "The appraisal/minimum bid is frozen once the round is lotted; it can only be set before LOTTED.");
+    }
+    const existing = await this.readEdictForRound(input.tenantId, input.processId, input.roundNumber);
+    if (!existing) {
+      throw new AuctionError(404, "AUCTION_EDICT_NOT_FOUND", "auction_edict_not_found", "No auction edict is registered for this round; register the edict before the appraisal.");
+    }
+    const updated = await this.client.auctionEdict.update({
+      where: { id: existing.id },
+      data: {
+        appraisal_amount: input.appraisalAmount ?? existing.appraisalAmount ?? null,
+        min_bid_amount: input.minBidAmount ?? existing.minBidAmount ?? null,
+        updated_by: input.actorId ?? existing.updatedBy ?? null,
+      },
+    });
+    return mapEdict(updated);
+  }
+
+  // PREPARO (AUCTION_ELIGIBLE→AUCTION_PREP): re-verifica sob FOR UPDATE (classification=CONSERVED + appraisal>0) + AUCTION_PREP.
+  async prepareAuctionAtomic(input: PrepareAuctionInput): Promise<AuctionStateSnapshot> {
+    const locked = await this.lockProcess(input.tenantId, input.processId);
+    if (!locked) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    if (locked.status !== input.expectedFrom) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    }
+    const edict = await this.readEdictForRound(input.tenantId, input.processId, input.roundNumber);
+    if (edict?.classification !== "CONSERVED") {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_classification_not_conserved", "Auction preparation requires a CONSERVED classification in the round edict.");
+    }
+    if (!isPositiveMoney(edict.appraisalAmount)) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_appraisal_missing", "Auction preparation requires the confidential appraisal amount (> 0, art. 28).");
+    }
+    await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "AUCTION_PREP" } });
+    await this.appendEventTx(input.tenantId, input.processId, locked, {
+      type: "AUCTION_PREP",
+      payload: buildAuctionPrepEventPayload(input.roundNumber),
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+    });
+    return { status: "AUCTION_PREP", attempts: await this.listAttempts(input.tenantId, input.processId), edicts: await this.listEdicts(input.tenantId, input.processId) };
+  }
+
+  // LOTE (AUCTION_PREP→LOTTED): re-verifica sob FOR UPDATE (edital COMPLETO + min_bid>0) + AUCTION_LOTTED.
+  async lotAuctionAtomic(input: LotAuctionInput): Promise<AuctionStateSnapshot> {
+    const locked = await this.lockProcess(input.tenantId, input.processId);
+    if (!locked) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    if (locked.status !== input.expectedFrom) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    }
+    const edict = await this.readEdictForRound(input.tenantId, input.processId, input.roundNumber);
+    if (!edict || !isEdictComplete(edict)) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "lot_edict_incomplete", "Lotting requires a complete round edict (reference + published_at + business_days >= 15).");
+    }
+    if (edict.classification !== "CONSERVED") {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "prep_classification_not_conserved", "Lotting requires a CONSERVED classification in the round edict.");
+    }
+    if (!isPositiveMoney(edict.minBidAmount)) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "lot_min_bid_missing", "Lotting requires the minimum bid amount (> 0, art. 28).");
+    }
+    // CRÍTICO-1: demota qualquer OUTRA rodada LOTTED do processo → CLOSED e marca ESTA como LOTTED (no máx. 1/processo).
+    await this.client.$executeRaw`
+      UPDATE auction_edicts SET status = 'CLOSED', updated_at = now()
+      WHERE tenant_id = ${input.tenantId}::uuid AND process_id = ${input.processId}::uuid AND status = 'LOTTED' AND round_number <> ${input.roundNumber}
+    `;
+    await this.client.auctionEdict.update({ where: { id: edict.id }, data: { status: "LOTTED" } });
+    await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "LOTTED" } });
+    await this.appendEventTx(input.tenantId, input.processId, locked, {
+      type: "AUCTION_LOTTED",
+      payload: buildAuctionLotEventPayload(edict),
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+    });
+    return { status: "LOTTED", attempts: await this.listAttempts(input.tenantId, input.processId), edicts: await this.listEdicts(input.tenantId, input.processId) };
+  }
+
+  // ARREMATE (LOTTED→AUCTIONED): idempotente por round_number (partial-unique). Re-verifica sob FOR UPDATE (winner +
+  // sold>=min_bid + nota) + INSERT SOLD (winner/sold_amount/sale_note_reference) + AUCTION_SOLD + frozen_at SET-ONLY (T_stop §5).
+  async recordSaleAtomic(input: RecordSaleInput): Promise<RecordSaleResult> {
+    const locked = await this.lockProcess(input.tenantId, input.processId);
+    if (!locked) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    const existingRows = await this.readAttemptForRound(input.tenantId, input.processId, input.roundNumber);
+    if (existingRows.length > 0) {
+      const existing = mapAttempt(existingRows[0]);
+      if (existing.outcome === "SOLD") {
+        return { attempt: existing, created: false, status: locked.status as ImpoundStatus };
+      }
+      throw new AuctionError(409, "AUCTION_CONFLICT", "auction_round_conflict", "This round already has a recorded outcome; the sale cannot overwrite it.");
+    }
+    if (locked.status !== input.expectedFrom) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    }
+    if (!input.winnerRef) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "sale_winner_missing", "The sale requires the winning bidder reference (winner_ref).");
+    }
+    // CRÍTICO-1: a rodada vendida TEM de ser a LOTADA (status===LOTTED) E CONSERVED E edital completo — lido sob o lock
+    // (autoritativo; a reserva vem do edital DESSA rodada, nunca do input). Barra vender rodada≠lotada/SCRAP/incompleta.
+    const edict = await this.readEdictForRound(input.tenantId, input.processId, input.roundNumber);
+    if (edict?.status !== "LOTTED") {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "sale_round_not_lotted", "Only the currently lotted round can be sold.");
+    }
+    if (edict.classification !== "CONSERVED") {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "sale_round_not_conserved", "The sold round must be CONSERVED (art. §§16-18).");
+    }
+    if (!isEdictComplete(edict)) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "sale_round_edict_incomplete", "The sold round edict must be complete (reference + published_at + business_days >= 15).");
+    }
+    const soldAmount = input.soldAmount;
+    if (soldAmount === undefined || isBelowMinBid(soldAmount, edict.minBidAmount)) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "sale_below_min_bid", "The sold amount must be at least the minimum bid of the lotted round (art. 328).");
+    }
+    if (!input.saleNoteReference) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "sale_note_missing", "The sale requires the auction note reference (art. 34).");
+    }
+    let attemptRow;
+    try {
+      attemptRow = await this.client.auctionAttempt.create({
+        data: {
+          tenant_id: input.tenantId,
+          process_id: input.processId,
+          round_number: input.roundNumber,
+          outcome: "SOLD",
+          winner_ref: input.winnerRef,
+          sold_amount: soldAmount,
+          sale_note_reference: input.saleNoteReference,
+          recorded_by: input.actorId ?? null,
+        },
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "A concurrent auction sale raced this one; retry.");
+      }
+      throw error;
+    }
+    const attempt = mapAttempt(attemptRow);
+    await this.client.impoundProcess.update({
+      where: { id: input.processId },
+      data: { status: "AUCTIONED", frozen_at: locked.frozen_at ?? input.occurredAt },
+    });
+    await this.appendEventTx(input.tenantId, input.processId, locked, {
+      type: "AUCTION_SOLD",
+      payload: buildAuctionSoldEventPayload(attempt, soldAmount, maskEdictReference(input.saleNoteReference)),
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+    });
+    return { attempt, created: true, status: "AUCTIONED" };
+  }
+
+  // CONSUMAÇÃO (AUCTIONED→AUCTION_CLOSED): a confirmação de pagamento/nota é validada no serviço (sem fonte persistida
+  // em 13b — pagamento manual/externo). Re-verifica expectedFrom sob FOR UPDATE + AUCTION_CLOSED (outcome SOLD).
+  async closeAuctionAtomic(input: CloseAuctionInput): Promise<AuctionStateSnapshot> {
+    const locked = await this.lockProcess(input.tenantId, input.processId);
+    if (!locked) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    if (locked.status !== input.expectedFrom) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    }
+    await this.closeLottedEdicts(input.tenantId, input.processId);
+    await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "AUCTION_CLOSED" } });
+    await this.appendEventTx(input.tenantId, input.processId, locked, {
+      type: "AUCTION_CLOSED",
+      payload: buildAuctionSaleClosedEventPayload(input.roundNumber),
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+    });
+    return { status: "AUCTION_CLOSED", attempts: await this.listAttempts(input.tenantId, input.processId), edicts: await this.listEdicts(input.tenantId, input.processId) };
+  }
+
+  // INADIMPLÊNCIA (AUCTIONED→LOTTED, art. 42): idempotente por round_number (NO_PAYMENT da rodada de reintegração).
+  // Re-verifica a existência de um SOLD sob FOR UPDATE + INSERT NO_PAYMENT (a linha SOLD original permanece imutável) +
+  // STATUS_CHANGE default_reintegrated. frozen_at SET-ONLY (NÃO descongela — PD-Ω5P-AUC-FROZEN).
+  async defaultAuctionAtomic(input: DefaultAuctionInput): Promise<DefaultAuctionResult> {
+    const locked = await this.lockProcess(input.tenantId, input.processId);
+    if (!locked) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    const existingRows = await this.readAttemptForRound(input.tenantId, input.processId, input.roundNumber);
+    if (existingRows.length > 0) {
+      const existing = mapAttempt(existingRows[0]);
+      if (existing.outcome === "NO_PAYMENT") {
+        return { attempt: existing, created: false, status: locked.status as ImpoundStatus };
+      }
+      throw new AuctionError(409, "AUCTION_CONFLICT", "auction_round_conflict", "This round already has a recorded outcome; the default cannot overwrite it.");
+    }
+    if (locked.status !== input.expectedFrom) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    }
+    // MÉDIO-3: a SOLD EFETIVA superada (não já inadimplida). NO_PAYMENT amarra-se a ela via defaulted_sale_round.
+    const defaultedSaleRound = findActiveSoldRound(await this.listAttempts(input.tenantId, input.processId));
+    if (defaultedSaleRound === undefined) {
+      throw new AuctionError(409, "AUCTION_GUARD_FAILED", "default_sale_missing", "Reintegration by default requires a recorded sale (SOLD) to default on (art. 42).");
+    }
+    let attemptRow;
+    try {
+      attemptRow = await this.client.auctionAttempt.create({
+        data: {
+          tenant_id: input.tenantId,
+          process_id: input.processId,
+          round_number: input.roundNumber,
+          outcome: "NO_PAYMENT",
+          defaulted_sale_round: defaultedSaleRound,
+          recorded_by: input.actorId ?? null,
+        },
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "A concurrent default raced this one; retry.");
+      }
+      throw error;
+    }
+    const attempt = mapAttempt(attemptRow);
+    await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "LOTTED" } });
+    await this.appendEventTx(input.tenantId, input.processId, locked, {
+      type: "STATUS_CHANGE",
+      payload: { from: input.expectedFrom, to: "LOTTED", reason: "default_reintegrated" },
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+    });
+    return { attempt, created: true, status: "LOTTED" };
+  }
+
+  // RECLAMADO antes da venda (LOTTED→ACTIVE_CUSTODY, art. 26 §1º): reason validado no serviço. Re-verifica expectedFrom
+  // sob FOR UPDATE + STATUS_CHANGE reclaimed_before_sale. NÃO congela (nunca congelou).
+  async reclaimAtomic(input: ReclaimAuctionInput): Promise<AuctionStateSnapshot> {
+    const locked = await this.lockProcess(input.tenantId, input.processId);
+    if (!locked) {
+      throw new AuctionError(404, "AUCTION_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    if (locked.status !== input.expectedFrom) {
+      throw new AuctionError(409, "AUCTION_CONFLICT", "concurrent_custody_append", "The custody process changed concurrently; retry.");
+    }
+    await this.closeLottedEdicts(input.tenantId, input.processId);
+    await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "ACTIVE_CUSTODY" } });
+    await this.appendEventTx(input.tenantId, input.processId, locked, {
+      type: "STATUS_CHANGE",
+      payload: { from: input.expectedFrom, to: "ACTIVE_CUSTODY", reason: "reclaimed_before_sale" },
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+    });
+    return { status: "ACTIVE_CUSTODY", attempts: await this.listAttempts(input.tenantId, input.processId), edicts: await this.listEdicts(input.tenantId, input.processId) };
+  }
+
+  // Encerra a(s) rodada(s) LOTADA(s) do processo (consumação / reclamado) — status honesto, no máx. 1 LOTTED/processo.
+  private async closeLottedEdicts(tenantId: string, processId: string): Promise<void> {
+    await this.client.$executeRaw`
+      UPDATE auction_edicts SET status = 'CLOSED', updated_at = now()
+      WHERE tenant_id = ${tenantId}::uuid AND process_id = ${processId}::uuid AND status = 'LOTTED'
+    `;
+  }
+
   // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────────
+  // Um edital da rodada (metadados + SIGILOSOS appraisal/min_bid) — leitura pontual do gate da venda.
+  private async readEdictForRound(tenantId: string, processId: string, roundNumber: number): Promise<AuctionEdict | undefined> {
+    const rows = await this.client.auctionEdict.findMany({
+      where: { tenant_id: tenantId, process_id: processId, round_number: roundNumber },
+      take: 1,
+    });
+    return rows[0] ? mapEdict(rows[0]) : undefined;
+  }
+
+  // A linha da rodada (com os 3 campos do RESULTADO) — leitura pontual da idempotência (venda/inadimplência).
+  private async readAttemptForRound(tenantId: string, processId: string, roundNumber: number): Promise<AttemptRecord[]> {
+    return this.client.$queryRaw<AttemptRecord[]>`
+      SELECT id, tenant_id, process_id, round_number, outcome, notes, winner_ref, sold_amount, sale_note_reference, defaulted_sale_round, recorded_by, created_at, updated_at
+      FROM auction_attempts
+      WHERE tenant_id = ${tenantId}::uuid AND process_id = ${processId}::uuid AND round_number = ${roundNumber}
+      LIMIT 1
+    `;
+  }
+
   private async listAttempts(tenantId: string, processId: string): Promise<readonly AuctionAttempt[]> {
     const rows = await this.client.auctionAttempt.findMany({
       where: { tenant_id: tenantId, process_id: processId },
@@ -424,6 +719,35 @@ export class RlsPrismaAuctionRepository implements AuctionRepository {
   reclassifyUnrecoverableAtomic(input: ReclassifyUnrecoverableInput): Promise<AuctionStateSnapshot> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionRepository(tx).reclassifyUnrecoverableAtomic(input));
   }
+
+  // ── Ω5P PR-13b — máquina de VENDA (cada fluxo numa só tx RLS-scoped) ──
+  setAppraisalAtomic(input: SetAppraisalInput): Promise<AuctionEdict> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionRepository(tx).setAppraisalAtomic(input));
+  }
+
+  prepareAuctionAtomic(input: PrepareAuctionInput): Promise<AuctionStateSnapshot> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionRepository(tx).prepareAuctionAtomic(input));
+  }
+
+  lotAuctionAtomic(input: LotAuctionInput): Promise<AuctionStateSnapshot> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionRepository(tx).lotAuctionAtomic(input));
+  }
+
+  recordSaleAtomic(input: RecordSaleInput): Promise<RecordSaleResult> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionRepository(tx).recordSaleAtomic(input));
+  }
+
+  closeAuctionAtomic(input: CloseAuctionInput): Promise<AuctionStateSnapshot> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionRepository(tx).closeAuctionAtomic(input));
+  }
+
+  defaultAuctionAtomic(input: DefaultAuctionInput): Promise<DefaultAuctionResult> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionRepository(tx).defaultAuctionAtomic(input));
+  }
+
+  reclaimAtomic(input: ReclaimAuctionInput): Promise<AuctionStateSnapshot> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionRepository(tx).reclaimAtomic(input));
+  }
 }
 
 export async function createPrismaAuctionRepository(): Promise<RlsPrismaAuctionRepository> {
@@ -489,6 +813,10 @@ type AttemptRecord = {
   readonly round_number: number;
   readonly outcome: string;
   readonly notes: string | null;
+  readonly winner_ref?: string | null;
+  readonly sold_amount?: Prisma.Decimal | string | null;
+  readonly sale_note_reference?: string | null;
+  readonly defaulted_sale_round?: number | null;
   readonly recorded_by: string | null;
   readonly created_at: Date;
   readonly updated_at: Date;
@@ -502,6 +830,11 @@ function mapAttempt(record: AttemptRecord): AuctionAttempt {
     roundNumber: Number(record.round_number),
     outcome: record.outcome as AuctionOutcome,
     notes: record.notes ?? undefined,
+    winnerRef: record.winner_ref ?? undefined,
+    // Dinheiro canônico "0.00" (Decimal(12,2)) — Prisma.Decimal.toString() dropa zeros à direita; toFixed(2) normaliza.
+    soldAmount: record.sold_amount === null || record.sold_amount === undefined ? undefined : Number(record.sold_amount).toFixed(2),
+    saleNoteReference: record.sale_note_reference ?? undefined,
+    defaultedSaleRound: record.defaulted_sale_round === null || record.defaulted_sale_round === undefined ? undefined : Number(record.defaulted_sale_round),
     recordedBy: record.recorded_by ?? undefined,
     createdAt: record.created_at,
     updatedAt: record.updated_at,

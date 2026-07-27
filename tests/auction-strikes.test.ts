@@ -162,8 +162,8 @@ test("(7) cadeia permanece valid após 2 AUCTION_CLOSED + STATUS_CHANGE de recic
   }
 });
 
-// ── (gated) Ω5P PR-13a — as 2 arestas de RECICLAGEM ficam ENABLED (gated); a máquina de VENDA (13b) segue DEFERIDA ───
-test("(gated) DIRECT_RECYCLING (as 2 arestas) ENABLED sem gate ⇒ auction_gate_unresolved; AUCTION_PREP (13b) DEFERIDA ⇒ transition_not_enabled_yet", async () => {
+// ── (gated) Ω5P PR-13a RECICLAGEM + PR-13b máquina de VENDA: todas ENABLED (gated pelo auction.service) ─────────────
+test("(gated) reciclagem + máquina de VENDA ENABLED sem gate ⇒ auction_gate_unresolved (13a+13b)", async () => {
   const { resolveTransition } = await import("../src/modules/impound/impound.transitions.js");
   // Ω5P PR-13a — a reciclagem a sucata é ENABLED mas GATED (guardAuctionReclassify): dirigi-la sem o gate resolvido
   // ⇒ auction_gate_unresolved (não mais transition_not_enabled_yet).
@@ -181,9 +181,20 @@ test("(gated) DIRECT_RECYCLING (as 2 arestas) ENABLED sem gate ⇒ auction_gate_
     () => resolveTransition({ status: "ACTIVE_CUSTODY" } as never, "AUCTION_ELIGIBLE"),
     (error: unknown) => (error as { reason?: string }).reason === "auction_gate_unresolved",
   );
-  // A máquina de VENDA (AUCTION_ELIGIBLE→AUCTION_PREP) segue DEFERIDA (13b): sem GuardSpec enabled ⇒ transition_not_enabled_yet.
-  assert.throws(
-    () => resolveTransition({ status: "AUCTION_ELIGIBLE" } as never, "AUCTION_PREP"),
-    (error: unknown) => (error as { reason?: string }).reason === "transition_not_enabled_yet",
-  );
+  // Ω5P PR-13b — a máquina de VENDA (todas as arestas) é ENABLED gated (guardAuction*): sem o gate resolvido ⇒
+  // auction_gate_unresolved (não mais transition_not_enabled_yet).
+  for (const [from, to] of [
+    ["AUCTION_ELIGIBLE", "AUCTION_PREP"],
+    ["AUCTION_PREP", "LOTTED"],
+    ["LOTTED", "AUCTIONED"],
+    ["AUCTIONED", "AUCTION_CLOSED"],
+    ["AUCTIONED", "LOTTED"],
+    ["LOTTED", "ACTIVE_CUSTODY"],
+  ] as const) {
+    assert.throws(
+      () => resolveTransition({ status: from } as never, to),
+      (error: unknown) => (error as { reason?: string }).reason === "auction_gate_unresolved",
+      `${from}->${to} ENABLED gated ⇒ auction_gate_unresolved`,
+    );
+  }
 });
