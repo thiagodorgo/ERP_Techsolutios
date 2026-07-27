@@ -499,6 +499,29 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
       "PATCH /api/v1/yard-spots/:spotId",
     ],
   },
+  // Ω5P PR-08a — Processos de custódia (console de operação): path GOVERNADO por impound:read (esconde-fino).
+  // SEM requiredModules (permissão pura, igual a operations.quotes/telemetria/patios.*). Quem não tem impound:read
+  // (finance/inventory/support) NÃO vê o item e segue barrado no 403 do backend. O dossiê /patios/processos/:id
+  // NÃO é item de menu (gate por route-guard), portanto não é governed.
+  {
+    id: "patios.processes",
+    label: "Processos",
+    description: "Processos de custódia: situação, dossiê (linha do tempo, integridade, vistoria) e movimentação de vaga.",
+    path: "/patios/processos",
+    icon: "FileStack",
+    group: "tenant",
+    order: 265,
+    status: "implemented",
+    requiredPermissions: ["impound:read"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/impound-processes",
+      "GET /api/v1/impound-processes/:processId",
+      "GET /api/v1/impound-processes/:processId/events",
+      "GET /api/v1/impound-processes/:processId/verify",
+      "GET /api/v1/impound-processes/:processId/inspection",
+    ],
+  },
   {
     id: "patios.profiles",
     label: "Perfis Normativos",

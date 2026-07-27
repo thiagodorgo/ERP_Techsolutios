@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-26",
-  "version": "OMEGA5P-PR-07",
+  "version": "OMEGA5P-PR-08a",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω5P PR-07 — Fase 2: charging (motor de diárias I4 — rolling-24h/calendário, teto intertemporal, job idempotente, congelamento, fail-closed)",
-    "title": "Ω5P PR-07: o motor de cobrança de diárias reguladas (Res.1025 art.21) — fórmula §5, DST via Intl zero-dep, teto pela data de entrada, idempotência period_seq, fail-closed no resolveTariff; junta pesada 3/3 (5 condições sanadas, incl. bug de constraint 3-valores)",
+    "block": "Ω5P PR-08a — Fase 2: UI de operação do pátio (console autenticado /patios) — ocupação REAL + Processos + Dossiê probatório + movimentação de vaga",
+    "title": "Ω5P PR-08a: o console operacional do pátio — mapa de ocupação REAL (vaga↔processo), dossiê probatório (timeline I2 + selo de verificação da cadeia hash + vistoria art.14/galeria) e movimentação/transferência de vaga; junta 3/3 com 1 ciclo de reprovação (anti-vazamento de dado cru na timeline)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω5P PR-07 — MOTOR DE DIÁRIAS (Fase 2, I4). Backend + migração aditiva. Dinheiro regulado. ProcessCharge (ledger: REMOVAL|DAILY|ADDITIONAL|ADJUSTMENT; period_seq ordinal DST-imune) + DailyAccrualRun. JurisdictionProfile +daily_service_catalog_id (NULL⇒fail-closed). Migração 20260838000000 (RLS forced + partial-unique period_seq WHERE kind=DAILY + REMOVAL-once + CHECKs [daily_shape_chk ENDURECIDO period_seq IS NOT NULL — C1] + FK RESTRICT). Motor charge.accrual.ts PURO (fórmula ESTUDO §5; convenção-piso 1ª diária em t0+24h): ROLLING físico (imune DST) × CALENDAR local via Intl.DateTimeFormat(yard.timezone) ZERO-dep; teto pela DATA DE ENTRADA (SIX_MONTHS=6meses-calendário/THIRTY_DAYS_LEGACY-Tema124/UNLIMITED, PARA no teto); congelamento asOf=min(now,frozen_at); valor via resolveTariff(PR-03) FAIL-CLOSED (undefined→NÃO cobra 0, error++ + logger.warn por-processo, PARA preservando period_seq). Cada acumulação = CHARGE_ACCRUAL na cadeia hash (reusa só PURAS do impound.hashchain, verifyChain valid). ADJUSTMENT append-only (RN-DIA-05, nunca update/delete; alvo validado same-process/tenant). Job charging.accrue-daily (sistema; idempotência tripla). ProcessCharge=ledger (conta a pagar/quitação=PR-10). /statement sinaliza overAccruedDailies+reconciliationPending (freeze retroativo — estorno real=PR-10). 2 perms charging:read+create. JUNTA PESADA APROVADO 3/3: agente-dba-guardiao (aditiva up/down/re-up drift-zero; C1 CHECK 3-valores endurecido+provado vivo 23514) + omega5p-avaliador (I4 correto; §allowlist; C2 drift-zero; sem regressão) + critico-adversarial (0 CRÍTICO de fórmula — 8 vetores RESISTIRAM; C1 idempotência à prova; C3 statement sinaliza over-acúmulo; C4 log por-processo; C5 validação ADJUSTMENT). 5 condições sanadas em ciclo. D-Ω5P-CHG-01..07. Requisitos: PR-10 reconciliação de freeze (estorno); PR-08 exibir period_seq; backlog firstDailyAtEntry/yard.timezone-imutável. backend 1676→1696 (+20), frontend_smoke 861 e flutter 807 inalterados (backend-only), blocks 94→95. Zero regressão (Vehicle/work-order intocados; I1/I2/I3 re-provados). Inclui backfill do PR-06 (#286 5134ec6).",
-    "status_label": "Ω5P PR-07: motor de diárias I4 (rolling/calendário, teto intertemporal pela data de entrada, DST via Intl zero-dep, idempotência period_seq, fail-closed no resolveTariff, ADJUSTMENT append-only); junta pesada 3/3 (dba+critico; bug de constraint 3-valores + 4 condições sanadas); backend 1676->1696, blocks 94->95"
+    "summary": "Ω5P PR-08a — UI DE OPERAÇÃO DO PÁTIO (Fase 2). Frontend React do console autenticado /patios + 1 toque backend (governed path). Consome impound (PR-05 #285)/recepção-vistoria (PR-06 #286)/charging leitura (PR-07 #287)/yard (PR-01) — NÃO reimplementa regra; delega ao 403/409/422. SEM permissão nova, SEM migração, SEM dep nova. (1) /patios/processos: dense-list de ImpoundProcess (placa|não-identificado, Chip semântico de situação, pátio via join, entrada, autoridade) + filtros situação(14 estados)/pátio/placa + criação manual MÍNIMA gated por impound:create; EmptyState D-007. (2) /patios/processos/:processId DOSSIÊ PROBATÓRIO: header identidade+situação+origem+datas; selo de integridade I2 (GET /verify: verde íntegra / vermelho adulteração no evento #brokenAt); timeline vertical densa de CustodyEvent (GET /events, por seq, typeLabel+payload amigável, hashes truncados=PROVA); vistoria LEITURA art.14 + galeria de fotos por conjunto + completude. (3) Mapa de ocupação REAL (D-UI-07): grade FREE/OCCUPIED/BLOCKED colorida, vaga OCUPADA linka ao dossiê com placa por join, botão Editar/bloquear vaga gated por yard:update. (4) Movimentação: allocate/vacate/move (impound:allocate; /spot/move cobre intra e cross-pátio, backend classifica). Governed path patios.processes (impound:read, sem requiredModules, esconde-fino) + item sidebar Processos. §2.8/allowlist: tenant_id NUNCA renderizado; currentProcessId só no href; hashes truncados=PROVA. White-label PT-BR (Processo de custódia/Autoridade/Órgão/Pátio/Vaga/Vistoria/Bloqueio judicial; nunca tenant/polícia). JUNTA APROVADO 3/3 (1 CICLO DE REPROVAÇÃO): cognicao-visual REPROVOU C-VIS-1 (a timeline vazava enum interno/código-motivo/UUID cru — describeEventPayload imprimia valores verbatim; SANADO: getStatusLabel + supressão de UUID por regex + REASON_CODE_LABELS PT-BR preservando texto livre + JSON.stringify removido + smoke endurecido com payloads reais) → re-review APROVADO; omega5p-avaliador APROVADO (A1 regressão da edição/bloqueio de vaga yard:update + A2 KPI sanados); coordenador-de-acessos APROVADO (cadeia de acesso íntegra, matriz derivada de ROLE_PERMISSIONS, finance/inventory não veem; achado doc navigation-matrix sanado). R-omega5p-pr08a-ciclo1. D-Ω5P-UI-07/10/11. Aderência Res.1025 art.9º(informações permanentemente atualizadas)/art.9º VII(integridade I2)/art.14(vistoria+galeria); CTB 271§1º. frontend_smoke 861→875 (+14), backend 1696→1707 (+11 nav-provisioning), flutter 807 inalterado, blocks 95→96. Zero regressão. Inclui backfill do PR-07 (#287 1872fc9).",
+    "status_label": "Ω5P PR-08a: console operacional do pátio (ocupação real vaga↔processo + dossiê probatório timeline/verify/vistoria + movimentação); junta 3/3 com 1 ciclo de reprovação (anti-vazamento de dado cru na timeline); frontend_smoke 861->875, backend 1696->1707, blocks 95->96"
   },
   "metrics": {
     "flutter_tests": {
@@ -21,16 +21,16 @@
       "note": "Ω4C PR-13 telemetria Flutter (+25 telemetry_test: consent-gate cliente/buffer-flush≤50/idempotencia/offline-replay/foreground-only/eventos/§2.8/migracao-Drift-11-12). Execucao REAL da suite Flutter 807 pass/0 falha/0 skip (Flutter 3.41.6); o 764 anterior era valor carregado nao re-executado desde B-124 → reconciliado a suite real. dart format 0-changed; analyze No issues; pubspec INTOCADO (zero-dep). Sobre 764."
     },
     "frontend_smoke_tests": {
-      "value": 861,
-      "total": 861,
-      "display": "861/861",
-      "note": "+11 (Ω5P PR-04 UI /patios): patios-yards (render/CRUD/'Novo pátio' gated yard:create/EmptyState D-007/§allowlist sem tenant_id/PT-BR sem 'tenant' nem 'polícia') + patios-perfis (PerfisPage+FormModal/labels escopo-diária-teto/release_requirements editor/jurisdiction-defaults prefill/gating) + price-tables-scope-category (2 Selects Escopo/Categoria com 'Todas'=NULL + breadcrumb route-aware Pátios×Cadastros). Primeiro frontend do round Pátios de Recolhimento. Sobre 850."
+      "value": 875,
+      "total": 875,
+      "display": "875/875",
+      "note": "+14 (Ω5P PR-08a UI operação do pátio): patios-processos 4 (cabeçalho+filtros+EmptyState D-007+gate impound:read/create; sem tenant/polícia) + patios-dossie 6 (timeline por seq + selo verify valid/brokenAt + galeria por conjunto + NÃO vaza enum interno/UUID/código-motivo — payloads reais + doesNotMatch) + patios-mapa 4 (vaga OCCUPIED linka ao dossiê + currentProcessId só no href + botão Editar gated por yard:update). Sobre 861."
     },
     "backend_tests": {
-      "value": 1696,
-      "total": 1702,
-      "display": "1696/1702",
-      "note": "+20 (Ω5P PR-07 motor de diárias): charging-daily-engine 19 property-based (rolling×calendar+fronteira-piso; DST spring/fall sem duplicar/pular; teto 30-legado/6-meses-182/ilimitado parando; determinismo; congelamento; fail-closed 0-diárias; idempotência+cadeia I2 valid; ADJUSTMENT append-only; C3 statement freeze-retroativo pending/over=4; C5 adjustment target inexistente/cross-process/ajuste-de-ajuste→422) + charging-job-idempotency DB-gated (job 2×/3-ticks→sem duplicata; catch-up; verifyChain valid; C1 raw DAILY+period_seq NULL→23514) + rls bloco charging + core-saas 2 perms. CI-memória: 1702 tests / 1696 pass / 0 fail / 6 skip. Sobre 1676. Migração 20260838000000 aditiva (CHECK daily_shape_chk endurecido C1; partial-unique period_seq) provada pelo dba-guardião."
+      "value": 1707,
+      "total": 1713,
+      "display": "1707/1713",
+      "note": "+11 (Ω5P PR-08a, navigation-provisioning): 1 governança patios.processes + 9 matriz por papel /patios/processos derivada de ROLE_PERMISSIONS + 1 assert explícito finance/inventory. Frontend-only PR + 1 governed path no navigation.registry.ts. CI-memória 6 skip. Sobre 1696 (Ω5P PR-07)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 95,
-      "display": "95",
-      "note": "Ω5P PR-07 (motor de diárias I4: rolling-24h/calendário + teto intertemporal pela data de entrada + job idempotente + congelamento + fail-closed no resolveTariff + ADJUSTMENT append-only — cobrança regulada Res.1025 art.21) = 7o bloco de feature da rodada Patios de Recolhimento → +1 sobre 94 (Ω5P PR-06). PR-00 (recon) nao conta como feature."
+      "value": 96,
+      "display": "96",
+      "note": "Ω5P PR-08a (UI de operação do pátio: mapa de ocupação REAL vaga↔processo + dossiê probatório [timeline I2/selo de verificação da cadeia hash/vistoria art.14+galeria] + movimentação/transferência de vaga — novo módulo frontend processes) → +1 sobre 95 (Ω5P PR-07). PR-00 (recon) e a subdivisão 08b/08c não contam aqui."
     },
     "mobile_backend_contracts": {
       "value": 18,

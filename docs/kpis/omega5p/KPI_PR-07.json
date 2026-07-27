@@ -1,5 +1,5 @@
 {
-  "pr": "PR-07",
+  "pr": 287,
   "fase": "Fase 2 — charging (motor de diárias I4: rolling-24h/calendário, teto intertemporal, job idempotente, congelamento, fail-closed)",
   "snapshot_date": "2026-07-26",
   "branch": "rodada/omega5p",
@@ -8,7 +8,9 @@
     "ProcessCharge (process_charges): ledger de encargos — kind REMOVAL|DAILY|ADDITIONAL|ADJUSTMENT; ref_date @db.Date; period_seq Int? (ordinal DST-imune, chave da idempotência DAILY); description; quantity/unit_amount Decimal(12,2) (magnitude ≥0); total_amount Decimal(12,2) (sinal só em ADJUSTMENT); settled_at?/settlement_note?; adjustment_of_charge_id? (validado same-process/tenant); tariff_ref?",
     "DailyAccrualRun (daily_accrual_runs): bookkeeping do sweep — run_date/processed_count/error_count/started_at/finished_at"
   ],
-  "models_alterados": ["JurisdictionProfile: +daily_service_catalog_id (FK composta nullable → service_catalog, NOT VALID+VALIDATE) + @@index([tenant_id,daily_service_catalog_id]) — o serviço-tarifa da diária (NULL ⇒ fail-closed)"],
+  "models_alterados": [
+    "JurisdictionProfile: +daily_service_catalog_id (FK composta nullable → service_catalog, NOT VALID+VALIDATE) + @@index([tenant_id,daily_service_catalog_id]) — o serviço-tarifa da diária (NULL ⇒ fail-closed)"
+  ],
   "migrations": [
     "20260838000000_add_charging — ADITIVA up-only: 2 CREATE TABLE + 1 ADD COLUMN nullable + RLS ENABLE+FORCE+POLICY + partial-uniques [process_charges_daily_idem_key (tenant,process,period_seq) WHERE kind='DAILY' + process_charges_removal_once_key WHERE kind='REMOVAL'] + CHECKs [quantity/unit_amount≥0; total_amount≥0 relaxado só p/ ADJUSTMENT; **daily_shape_chk ENDURECIDO (C1): kind<>'DAILY' OR (period_seq IS NOT NULL AND period_seq>=1 AND ref_date IS NOT NULL)**] + FK compostas RESTRICT (I9). Provada up→down→re-up pelo dba-guardião; drift-zero; CHECK C1 provado vivo (DAILY+period_seq NULL → 23514)."
   ],
@@ -56,7 +58,7 @@
     "blocks": "94->95"
   },
   "coexistencia": "Vehicle/work-order INTOCADOS; consome resolveTariff (PR-03) fail-closed + resolveDefaults (PR-02) + ImpoundProcess.entered_at/frozen_at (PR-05) + a cadeia hash (I2); ProcessCharge é ledger (conta a pagar=PR-10). Sem regressão (1696 pass/0 fail).",
-  "merge_commit": null,
-  "approved_head": null,
-  "status": "aprovado_pela_junta_aguardando_merge"
+  "merge_commit": "1872fc9",
+  "approved_head": "1872fc9",
+  "status": "published_per_pr"
 }

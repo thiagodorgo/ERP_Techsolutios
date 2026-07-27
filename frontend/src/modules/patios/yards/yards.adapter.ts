@@ -4,7 +4,7 @@ import type {
   YardCreatePayload,
   YardFieldError,
   YardItem,
-  YardOccupancySummary,
+  YardOccupancy,
   YardSpotItem,
   YardSpotStatus,
   YardsData,
@@ -94,15 +94,22 @@ export function adaptYardSpotResponse(response: unknown): YardSpotItem | null {
   return adaptSpot(readRecord(payload?.data) ?? response);
 }
 
-export function adaptYardOccupancyResponse(response: unknown): YardOccupancySummary {
+// Ω5P PR-08a — ocupação REAL: além do resumo, adapta os `items` (vagas com currentProcessId) para o mapa. O
+// backend (GET /yards/:yardId/occupancy) já devolve items; o PR-04 os descartava.
+export function adaptYardOccupancyResponse(response: unknown): YardOccupancy {
   const payload = readRecord(response);
   const dataRecord = readRecord(payload?.data) ?? payload;
   const summary = readRecord(dataRecord?.summary);
+  const itemsSource = readArray(dataRecord?.items) ?? [];
+  const items = itemsSource.map((item) => adaptSpot(item)).filter((item): item is YardSpotItem => Boolean(item));
   return {
-    total: readNumber(summary, ["total"]) ?? 0,
-    free: readNumber(summary, ["free"]) ?? 0,
-    occupied: readNumber(summary, ["occupied"]) ?? 0,
-    blocked: readNumber(summary, ["blocked"]) ?? 0,
+    summary: {
+      total: readNumber(summary, ["total"]) ?? items.length,
+      free: readNumber(summary, ["free"]) ?? 0,
+      occupied: readNumber(summary, ["occupied"]) ?? 0,
+      blocked: readNumber(summary, ["blocked"]) ?? 0,
+    },
+    items,
   };
 }
 
@@ -225,6 +232,7 @@ function adaptSpot(input: unknown): YardSpotItem | null {
     vehicleClassLabel: readString(item, ["vehicleClassLabel"]) ?? getVehicleClassLabel(vehicleClass),
     status,
     statusLabel: readString(item, ["statusLabel"]) ?? getSpotStatusLabel(status),
+    currentProcessId: readString(item, ["currentProcessId", "current_process_id"]) ?? null,
   };
 }
 

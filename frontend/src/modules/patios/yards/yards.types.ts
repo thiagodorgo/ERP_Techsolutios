@@ -42,14 +42,24 @@ export type YardSpotItem = {
   readonly vehicleClassLabel: string;
   readonly status: YardSpotStatus;
   readonly statusLabel: string;
+  // Ω5P PR-08a (D-Ω5P-UI-07) — ocupação passa a REAL: a vaga OCUPADA carrega o processo de custódia que a ocupa
+  // (join client-side com a lista de processos para exibir a placa e linkar ao dossiê). §allowlist: NUNCA
+  // renderizado cru como texto — só usado no href do dossiê e no join.
+  readonly currentProcessId: string | null;
 };
 
-// Resumo de ocupação (read-only): total/livres/ocupadas/bloqueadas. Mapa por processo = PR-08 (proibido aqui).
+// Resumo de ocupação (contagens por status).
 export type YardOccupancySummary = {
   readonly total: number;
   readonly free: number;
   readonly occupied: number;
   readonly blocked: number;
+};
+
+// Ocupação REAL (PR-08a): resumo + as vagas com o processo que as ocupa (mapa de ocupação por status/processo).
+export type YardOccupancy = {
+  readonly summary: YardOccupancySummary;
+  readonly items: YardSpotItem[];
 };
 
 export type YardsPagination = {

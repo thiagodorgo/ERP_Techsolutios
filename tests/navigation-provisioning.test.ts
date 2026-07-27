@@ -160,3 +160,35 @@ for (const { path, permission } of PATIOS_NAV) {
     });
   }
 }
+
+// Ω5P PR-08a (Processos de custódia — console de operação): o item /patios/processos é GOVERNADO pelo registry
+// com gate ÚNICO impound:read (esconde-fino, SEM requiredModules — igual a patios.*). A matriz por papel é
+// DERIVADA de ROLE_PERMISSIONS: quem tem impound:read VÊ; finance/inventory (e support) NÃO. O dossiê
+// /patios/processos/:processId NÃO é item de menu → não é governed (gate por route-guard).
+const PATIOS_PROCESSES_PATH = "/patios/processos";
+const PATIOS_PROCESSES_PERMISSION = "impound:read";
+
+test("Ω5P PR-08a: getGovernedNavigationPaths governa /patios/processos (impound:read); o dossiê :processId não", () => {
+  const governed = getGovernedNavigationPaths();
+  assert.equal(governed.includes(PATIOS_PROCESSES_PATH), true);
+  assert.equal(governed.includes("/patios/processos/:processId"), false);
+});
+
+for (const role of Object.keys(MAP_VISIBLE_BY_ROLE) as Role[]) {
+  const hasPermission = ROLE_PERMISSIONS[role].includes(PATIOS_PROCESSES_PERMISSION);
+  test(`Ω5P PR-08a: papel ${role} ${hasPermission ? "VÊ" : "NÃO vê"} os Processos de custódia (gate ${PATIOS_PROCESSES_PERMISSION})`, () => {
+    assert.equal(
+      menuPathsForRole(role).includes(PATIOS_PROCESSES_PATH),
+      hasPermission,
+      `${role} → ${PATIOS_PROCESSES_PATH} deveria ${hasPermission ? "aparecer" : "sumir"} no menu`,
+    );
+  });
+}
+
+// A junta pediu a asserção explícita de que finance e inventory NÃO veem o console (esconde-fino + 403 backend).
+test("Ω5P PR-08a: finance e inventory NÃO veem os Processos de custódia (sem impound:read)", () => {
+  assert.equal(ROLE_PERMISSIONS.finance.includes(PATIOS_PROCESSES_PERMISSION), false);
+  assert.equal(ROLE_PERMISSIONS.inventory.includes(PATIOS_PROCESSES_PERMISSION), false);
+  assert.equal(menuPathsForRole("finance").includes(PATIOS_PROCESSES_PATH), false);
+  assert.equal(menuPathsForRole("inventory").includes(PATIOS_PROCESSES_PATH), false);
+});
