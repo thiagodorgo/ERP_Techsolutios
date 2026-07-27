@@ -121,19 +121,35 @@ test("ACTIVE_CUSTODY⇄JUDICIAL_HOLD: exige reason; ida-e-volta OK", async () =>
 
 // ── arestas DEFERIDAS: legais em §4.2, guarda deferida → 409 transition_not_enabled_yet ──────────────────────
 
-test("arestas de leilão são DEFERIDAS → 409 transition_not_enabled_yet; liberação/reparo exigem o release.service (gate)", async () => {
+test("arestas de leilão: PR-12 HABILITOU só a elegibilidade (gate); reciclagem/preparação DEFERIDAS (PR-13); liberação/reparo exigem o release.service (gate)", async () => {
   const service = setup();
   const a = actor();
   const process = await openProcess(service, a);
   forceStatus(process.id, "ACTIVE_CUSTODY");
-  // Leilão/reciclagem seguem DEFERIDOS (donos de PRs futuros) → transition_not_enabled_yet.
-  for (const to of ["AUCTION_ELIGIBLE", "DIRECT_RECYCLING"] as const) {
+  // Ω5P PR-12 HABILITOU ACTIVE_CUSTODY→AUCTION_ELIGIBLE (guardAuctionEligible): dirigi-la pelo endpoint genérico (sem
+  // o gate resolvido pelo auction.service) → 409 auction_gate_unresolved.
+  await assert.rejects(
+    () => service.transition(a, process.id, { to: "AUCTION_ELIGIBLE" }),
+    (e: unknown) => e instanceof ImpoundError && e.statusCode === 409 && e.reason === "auction_gate_unresolved",
+    "AUCTION_ELIGIBLE exige o auction.service (gate)",
+  );
+  // ACTIVE_CUSTODY→DIRECT_RECYCLING (§§16-18 inservível) segue DEFERIDA (dono = PR-13) → transition_not_enabled_yet.
+  await assert.rejects(
+    () => service.transition(a, process.id, { to: "DIRECT_RECYCLING" }),
+    (e: unknown) => e instanceof ImpoundError && e.statusCode === 409 && e.reason === "transition_not_enabled_yet",
+    "ACTIVE_CUSTODY->DIRECT_RECYCLING deve seguir deferida (PR-13)",
+  );
+  // A partir de AUCTION_ELIGIBLE: →DIRECT_RECYCLING (reciclagem a sucata) e →AUCTION_PREP seguem DEFERIDAS (donas de
+  // PR-13; D-Ω5P-AUC / R-omega5p-pr12-ciclo1: a sucata destrói patrimônio de 3º ⇒ só PR-13, gated no edital por rodada).
+  forceStatus(process.id, "AUCTION_ELIGIBLE");
+  for (const to of ["DIRECT_RECYCLING", "AUCTION_PREP"] as const) {
     await assert.rejects(
       () => service.transition(a, process.id, { to }),
       (e: unknown) => e instanceof ImpoundError && e.statusCode === 409 && e.reason === "transition_not_enabled_yet",
-      `${to} deve ser deferida`,
+      `AUCTION_ELIGIBLE->${to} deve seguir deferida (PR-13)`,
     );
   }
+  forceStatus(process.id, "ACTIVE_CUSTODY");
   // Ω5P PR-10a HABILITOU RELEASE_IN_PROGRESS (guarda I5) e Ω5P PR-10b HABILITOU RELEASED_FOR_REPAIR (saída p/ reparo):
   // dirigi-las pelo endpoint genérico (sem o gate resolvido pelo release.service) → 409 release_gate_unresolved.
   for (const to of ["RELEASE_IN_PROGRESS", "RELEASED_FOR_REPAIR"] as const) {
@@ -164,6 +180,9 @@ test("varredura: TODA aresta deferida da tabela → 409 transition_not_enabled_y
   // Ω5P PR-10a SOMOU as 2 arestas do caminho padrão de liberação; Ω5P PR-10b SOMOU as 2 do reparo (saída/retorno).
   // Estas arestas são ENABLED (guarda real): dirigi-las sem o gate do release.service dá release_gate_unresolved
   // (não transition_not_enabled_yet) — por isso saem da varredura de deferidas.
+  // Ω5P PR-12 SOMOU SÓ a aresta de ELEGIBILIDADE ao leilão: ENABLED (guarda real) → dirigi-la sem o gate do
+  // auction.service dá auction_gate_unresolved (não transition_not_enabled_yet) — por isso sai da varredura. A
+  // reciclagem a sucata AUCTION_ELIGIBLE→DIRECT_RECYCLING segue DEFERIDA (PR-13) e permanece na varredura de deferidas.
   const enabled = new Set([
     "IN_REMOVAL->RECEPTION",
     "RECEPTION->ACTIVE_CUSTODY",
@@ -173,6 +192,7 @@ test("varredura: TODA aresta deferida da tabela → 409 transition_not_enabled_y
     "RELEASE_IN_PROGRESS->RELEASED",
     "ACTIVE_CUSTODY->RELEASED_FOR_REPAIR",
     "RELEASED_FOR_REPAIR->ACTIVE_CUSTODY",
+    "ACTIVE_CUSTODY->AUCTION_ELIGIBLE",
   ]);
   for (const from of IMPOUND_STATUSES) {
     for (const to of IMPOUND_TRANSITIONS[from]) {

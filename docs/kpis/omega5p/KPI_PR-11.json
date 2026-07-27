@@ -81,9 +81,9 @@
     "critico-adversarial": "APROVADO leve (0 CRÍTICO; sem falso-positivo no gate [client verde ⟹ backend concorda], sem mentira de dinheiro, sem vazamento de PII. Achados não-bloqueantes→backlog: MÉDIO direção-SEGURA hint de reconciliação por CONTAGEM vs líquido-zero M1 [super-bloqueio no edge queda-de-teto pós-estorno; conserto=backend charging getStatement]; BAIXO reload no 409; BAIXO checks vazio vacuamente satisfeito)",
     "veredito": "APROVADO 4/4 (0 bloqueante; 3 achados do critico não-bloqueantes → backlog)"
   },
-  "pr": null,
-  "merge_commit": null,
-  "approved_head": null,
+  "pr": 293,
+  "merge_commit": "35c47f2",
+  "approved_head": "35c47f2",
   "status": "published_per_pr",
   "riscos_residuais": "(1) O gate client-side é HINT (espelho); se divergir do backend, a UI só oferece/desabilita um botão que o backend recusa com 409 defensivo (releaseActionErrorMessage traduz + recarrega) — nunca decide. (2) Sem statement carregado (guia indisponível/sem charging:read), o gate mantém débitos/reconciliação PENDENTES (não afirma quitação) — conservador por design (honestidade de dinheiro); um ator com impound:transition sem charging:read veria o gate travado, mas quem quita (charging:settle) tem charging:read. (3) for-repair/start em 2 fases: o painel orienta prepare→effect; se a autoridade nunca conceder, o dossiê FOR_REPAIR fica ativo (backlog Fase 5 MEDIUM-1 do PR-10b: endpoint de cancelamento). (4) Comprovante window.print client-side (sem motor de impressão Ω3F reusado nesta fatia — escopo de impressão via @media print); reuso do motor Ω3F fica para refino. (5) SEM PSP/PIX (D-Ω5P-07) — quitação é registro de pagamento presencial; a cobrança online é backlog Ω6.",
   "backlog_fase5_ou_omega6": "Reuso do motor de impressão do Ω3F para o comprovante art. 24 (hoje window.print + @media print). Portal público de liberação (DTO minimizado, Fase 5). Cancelamento do dossiê FOR_REPAIR órfão (MEDIUM-1 PR-10b). PSP/PIX na quitação (Ω6). Agendamento de slots de retirada (fora do MVP).",

@@ -51,6 +51,15 @@ export type TransitionInputs = {
   // AQUI; as guardas são PURAS e só leem estas flags.
   readonly releaseForRepair?: ReleaseForRepairStartGateInput;
   readonly releaseForRepairReturn?: ReleaseForRepairReturnGateInput;
+  // Ω5P PR-12 (CTB art. 328 / Lei 13.160/2015 / Res. 1025 art. 25-26 — I8) — insumo SINTÉTICO da guarda de
+  // ELEGIBILIDADE ao leilão (mesmo padrão dos de release). O auction.service resolve as precondições REAIS (scope/
+  // prazo/trilha I6/OWNER_INITIAL/cadeia I2/liberação-em-curso) e injeta AQUI; a guarda é PURA e só lê estas flags.
+  // Ausência do gate ⇒ 409 auction_gate_unresolved (a aresta EXIGE o auction.service — não é dirigível pelo endpoint
+  // genérico de transição sem o gate resolvido).
+  // NOTA (D-Ω5P-AUC / R-omega5p-pr12-ciclo1): a RECLASSIFICAÇÃO a sucata (AUCTION_ELIGIBLE→DIRECT_RECYCLING) + o
+  // gate de edital por rodada (AUCTION_EDICT >= 15 d.u., relativo à data do certame) = PR-13. PR-12 SÓ mantém o
+  // ledger de strikes (auction_attempts); NÃO auto-sucateia (a sucata destrói patrimônio de 3º — tolerância-zero).
+  readonly auctionEligible?: AuctionEligibleGateInput;
 };
 
 // Salto A (ACTIVE_CUSTODY→RELEASE_IN_PROGRESS): abrir a liberação (freeze T_stop). alreadyInProgress = já há
@@ -83,6 +92,20 @@ export type ReleaseForRepairStartGateInput = {
 // dossiê FOR_REPAIR ativo. Sem reconciliação/quitação. NÃO congela.
 export type ReleaseForRepairReturnGateInput = {
   readonly forRepairActive: boolean;
+};
+
+// Ω5P PR-12 — ELEGIBILIDADE ao leilão (ACTIVE_CUSTODY→AUCTION_ELIGIBLE, I8/I6/I2). NÃO congela (a elegibilidade não é
+// T_stop — as diárias correm até a reciclagem/venda). Cada flag = uma pré-condição do rito do art. 328, com reason
+// 409 DISTINTO. Os DOIS PISOS (deadline >= max(perfil,60) e OWNER_INITIAL emitido INDEPENDENTE do perfil) fecham os
+// furos "admin zera auctionEligibleDay" / "admin zera ownerNotifDays" — computados no auction.service e injetados
+// como flags já-resolvidas.
+export type AuctionEligibleGateInput = {
+  readonly scopeNotPublic: boolean;        // scope != PUBLIC_AGREEMENT (pátio privado não roda o leilão do art. 328)
+  readonly deadlineNotReached: boolean;    // now < enteredAt + max(auctionEligibleDay, 60)·24h (PISO 60d, fail-closed)
+  readonly trailIncomplete: boolean;       // isNotificationTrailComplete === false (I6)
+  readonly ownerInitialMissing: boolean;   // OWNER_INITIAL não ISSUED/WAIVED (PISO independente do perfil)
+  readonly chainBroken: boolean;           // verifyChain().valid === false (I2)
+  readonly releaseInProgress: boolean;     // hasActiveRelease === true (não-reclamado ⇔ sem liberação em curso)
 };
 
 // Efeitos temporais decididos pelo destino (aplicados na MESMA tx do append pelo repositório).
@@ -224,6 +247,40 @@ function guardReleaseForRepairReturn(_process: ImpoundProcess, inputs: Transitio
   }
 }
 
+// Ω5P PR-12 — ELEGIBILIDADE ao leilão (I8/I6/I2). PURA: só lê as 6 flags que o auction.service computa (scope/prazo/
+// trilha/OWNER_INITIAL/cadeia/liberação) e RE-VERIFICA sob FOR UPDATE no repositório (expectedFrom). Reasons 409
+// DISTINTOS (o adversarial ataca cada furo: leilão sem notificar / com prazo zerado / antes de D+60 / cadeia quebrada
+// / release em curso / pátio privado). Ausência do gate ⇒ auction_gate_unresolved (a aresta EXIGE o auction.service).
+function guardAuctionEligible(_process: ImpoundProcess, inputs: TransitionInputs): void {
+  const gate = inputs.auctionEligible;
+  if (!gate) {
+    throw new ImpoundError(
+      409,
+      "IMPOUND_GUARD_FAILED",
+      "auction_gate_unresolved",
+      "Auction transitions must be driven by the auction service (gate not resolved).",
+    );
+  }
+  if (gate.scopeNotPublic) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "auction_scope_not_public", "Only public-agreement yards run the administrative auction (art. 328).");
+  }
+  if (gate.deadlineNotReached) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "auction_deadline_not_reached", "The auction eligibility deadline (>= 60 days from entry, art. 328) has not been reached.");
+  }
+  if (gate.trailIncomplete) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "auction_notification_trail_incomplete", "The legal notification trail must be complete before the auction (I6).");
+  }
+  if (gate.ownerInitialMissing) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "auction_owner_initial_missing", "The owner's initial notification must be issued (or waived) before the auction.");
+  }
+  if (gate.chainBroken) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "auction_chain_broken", "The custody hash chain must verify before the auction (I2).");
+  }
+  if (gate.releaseInProgress) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "auction_release_in_progress", "A release is in progress; the vehicle cannot become auction-eligible.");
+  }
+}
+
 // Registro de guardas. Ausência de chave para uma aresta LEGAL = deferida por padrão (segurança: nada release/
 // leilão fica habilitado por esquecimento). Só as custódia-nativas são explicitamente `enabled` em PR-05.
 // Ω5P PR-10a SOMA (aditivo puro; IMPOUND_TRANSITIONS INTACTA) as 2 arestas do caminho padrão de liberação (I5).
@@ -243,6 +300,13 @@ const GUARDS: Readonly<Record<string, GuardSpec>> = {
   // desta transição). A aresta direta RELEASED_FOR_REPAIR→RELEASED fica DEFERIDA (D-Ω5P-REL-08): a restituição
   // definitiva é via reapresentação (retorno→ACTIVE_CUSTODY) e então o caminho padrão de liberação do PR-10a.
   [edgeKey("RELEASED_FOR_REPAIR", "ACTIVE_CUSTODY")]: { kind: "enabled", setFrozenAt: false, guard: guardReleaseForRepairReturn },
+  // Ω5P PR-12 — ELEGIBILIDADE ao leilão. setFrozenAt=false EXPLÍCITO (a elegibilidade NÃO é T_stop — as diárias
+  // correm até a reciclagem/venda). O gate real (6 pré-condições) é resolvido pelo auction.service e re-verificado
+  // sob FOR UPDATE. As arestas internas AUCTION_PREP/LOTTED/AUCTIONED, a reclassificação AUCTION_ELIGIBLE→
+  // DIRECT_RECYCLING (2º strike + gate de edital por rodada) e CUSTODIA_ATIVA→DIRECT_RECYCLING seguem DEFERIDAS
+  // (D-Ω5P-AUC / R-omega5p-pr12-ciclo1: a sucata destrói patrimônio de 3º ⇒ tolerância-zero; PR-13 a habilita gated
+  // no AUCTION_EDICT >= 15 d.u.). PR-12 SÓ mantém o ledger de strikes (auction_attempts).
+  [edgeKey("ACTIVE_CUSTODY", "AUCTION_ELIGIBLE")]: { kind: "enabled", setFrozenAt: false, guard: guardAuctionEligible },
 };
 
 // resolveTransition — portão 1 (legalidade) + portão 2 (guarda). PURA; lança ImpoundError(409). O serviço
@@ -298,6 +362,10 @@ export const ENABLED_EDGES: readonly (readonly [ImpoundStatus, ImpoundStatus])[]
   // Ω5P PR-10b — saída/retorno do reparo (art. 271 §2º) habilitados. RELEASED_FOR_REPAIR→RELEASED segue DEFERIDA.
   ["ACTIVE_CUSTODY", "RELEASED_FOR_REPAIR"],
   ["RELEASED_FOR_REPAIR", "ACTIVE_CUSTODY"],
+  // Ω5P PR-12 — SÓ a elegibilidade ao leilão (I6/I2 + 2 PISOS) habilitada. A reclassificação a sucata
+  // AUCTION_ELIGIBLE→DIRECT_RECYCLING + AUCTION_PREP/LOTTED/AUCTIONED + CUSTODIA_ATIVA→DIRECT_RECYCLING seguem
+  // DEFERIDAS (D-Ω5P-AUC / R-omega5p-pr12-ciclo1: sucata = PR-13, gated no edital por rodada).
+  ["ACTIVE_CUSTODY", "AUCTION_ELIGIBLE"],
 ];
 
 export function isEnabledEdge(from: ImpoundStatus, to: ImpoundStatus): boolean {

@@ -32,6 +32,12 @@ export const FEDERAL_DEFAULTS = {
 // expõe o enum + esta constante para o PR-07 ter uma fonte única (ESTUDO §2.3).
 export const TEMA_124_LEGACY_CAP = "THIRTY_DAYS_LEGACY" as const;
 
+// Ω5P PR-12 (CTB art. 328 §... / Lei 13.160/2015 / Res. CONTRAN 1025/2026 art. 25-26; ESTUDO §4.3 I8) — nº MÁXIMO
+// de rodadas de leilão. Ao 2º leilão DESERTO (sem arremate) o bem CONSERVADO vai a sucata/reciclagem
+// (AUCTION_ELIGIBLE→DIRECT_RECYCLING), sem retorno à circulação (I8). Constante federal ÚNICA (o auction PR-12 lê
+// daqui SEM acoplar ao service — mesma disciplina de FEDERAL_DEFAULTS).
+export const AUCTION_MAX_ATTEMPTS = 2 as const;
+
 // Baseline SUGERIDO de checklist de liberação (CTB art. 271 §1º / Res. 1025 arts. 23-24). A coluna
 // release_requirements NASCE VAZIA (D-Ω5P-JUR-04: documentos variam por órgão) — este baseline é o que a UI
 // (PR-04) pode OFERTAR ao operador; o create NÃO o aplica automaticamente.
