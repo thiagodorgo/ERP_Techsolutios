@@ -1581,6 +1581,51 @@ if (!connectionString) {
       assert.equal(tenantBNotif?.status, "DUE", "tenant B process notification stays visible + untouched in-tenant");
       assert.equal(tenantBNotif?.reason, null, "tenant B process notification reason untouched by tenant A cross-update");
 
+      // Ω5P PR-10a (D-Ω5P-REL-*) — impound_releases (dossiê da liberação I5) + release_requirement_checks (checklist
+      // SNAPSHOT) nos 3 tenants EFÊMEROS. A liberação referencia o impound_process (FK composta tenant-first,
+      // RESTRICT — I9) e o check referencia a liberação (RESTRICT). RLS ENABLE/FORCE + policy (migration
+      // 20260840000000). Prova: invisível sem contexto + cross-tenant updateMany count=0 + visível/intocado in-tenant.
+      const insertRelease = async (tx: typeof client, tenantId: string, processId: string) => {
+        const [release] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO impound_releases (tenant_id, process_id, kind, status, recipient_name)
+          VALUES (${tenantId}::uuid, ${processId}::uuid, 'STANDARD', 'IN_PROGRESS', 'Quem Retira')
+          RETURNING id
+        `;
+        const [check] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO release_requirement_checks (tenant_id, release_id, code, label, required, satisfied)
+          VALUES (${tenantId}::uuid, ${release.id}::uuid, 'AUTHORITY_RELEASE', 'Autorizacao do orgao', true, false)
+          RETURNING id
+        `;
+        return { release_id: release.id, check_id: check.id };
+      };
+      const relA = await withTenantRls(client, tenantA.id, (tx) => insertRelease(tx as typeof client, tenantA.id, impA.process_id));
+      const relB = await withTenantRls(client, tenantB.id, (tx) => insertRelease(tx as typeof client, tenantB.id, impB.process_id));
+      const relC = await withTenantRls(client, tenantC.id, (tx) => insertRelease(tx as typeof client, tenantC.id, impC.process_id));
+
+      const relWithoutContext = await client.impoundRelease.findMany({ where: { id: { in: [relA.release_id, relB.release_id, relC.release_id] } } });
+      assert.deepEqual(relWithoutContext.map((r) => r.id), [], "impound releases must not be visible without app.current_tenant_id");
+
+      const tenantARelView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.impoundRelease.findMany({ where: { id: { in: [relA.release_id, relB.release_id, relC.release_id] } } });
+        const crossUpdate = await tx.impoundRelease.updateMany({ where: { id: { in: [relB.release_id, relC.release_id] } }, data: { recipient_name: "cross-tenant" } });
+        return { visibleIds: visible.map((r) => r.id).sort(), crossUpdatedRows: crossUpdate.count };
+      });
+      assert.deepEqual(tenantARelView.visibleIds, [relA.release_id], "tenant A must only see its own impound release (not tenant B/C)");
+      assert.equal(tenantARelView.crossUpdatedRows, 0, "tenant A must not update tenant B/C impound releases");
+
+      const checkWithoutContext = await client.releaseRequirementCheck.findMany({ where: { id: { in: [relA.check_id, relB.check_id, relC.check_id] } } });
+      assert.deepEqual(checkWithoutContext.map((c) => c.id), [], "release requirement checks must not be visible without app.current_tenant_id");
+      const tenantACheckView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.releaseRequirementCheck.findMany({ where: { id: { in: [relA.check_id, relB.check_id, relC.check_id] } } });
+        const crossUpdate = await tx.releaseRequirementCheck.updateMany({ where: { id: { in: [relB.check_id, relC.check_id] } }, data: { note: "cross-tenant" } });
+        return { visibleIds: visible.map((c) => c.id).sort(), crossUpdatedRows: crossUpdate.count };
+      });
+      assert.deepEqual(tenantACheckView.visibleIds, [relA.check_id], "tenant A must only see its own release requirement check (not tenant B/C)");
+      assert.equal(tenantACheckView.crossUpdatedRows, 0, "tenant A must not update tenant B/C release requirement checks");
+
+      const tenantBRel = await withTenantRls(client, tenantB.id, (tx) => tx.impoundRelease.findUnique({ where: { id: relB.release_id } }));
+      assert.equal(tenantBRel?.recipient_name, "Quem Retira", "tenant B impound release stays visible + untouched in-tenant");
+
       // Ω5P PR-03 (D-Ω5P-TAR-*) — price_tables ESCOPADAS (scope PUBLIC_AGREEMENT/PRIVATE_CONTRACT + vehicle_category)
       // nos 3 tenants EFÊMEROS. As 2 colunas novas são NULLABLE aditivas; a RLS (ENABLE/FORCE + policy
       // price_tables_tenant_isolation, migration 20260723000000) é HERDADA — o ADD COLUMN não a altera. Prova:
@@ -2710,6 +2755,10 @@ if (!connectionString) {
           await tx.$executeRawUnsafe(`DELETE FROM daily_accrual_runs WHERE tenant_id = '${tenantId}'::uuid`);
           // Ω5P PR-09 — process_notifications → impound_processes é RESTRICT: purga a trilha ANTES do processo.
           await tx.$executeRawUnsafe(`DELETE FROM process_notifications WHERE tenant_id = '${tenantId}'::uuid`);
+          // Ω5P PR-10a — release_requirement_checks → impound_releases → impound_processes (RESTRICT em cadeia):
+          // purga os checks ANTES das liberações ANTES do processo (TEARDOWN FK-SAFE).
+          await tx.$executeRawUnsafe(`DELETE FROM release_requirement_checks WHERE tenant_id = '${tenantId}'::uuid`);
+          await tx.$executeRawUnsafe(`DELETE FROM impound_releases WHERE tenant_id = '${tenantId}'::uuid`);
           await tx.$executeRawUnsafe(`DELETE FROM impound_processes WHERE tenant_id = '${tenantId}'::uuid`);
         }
       });

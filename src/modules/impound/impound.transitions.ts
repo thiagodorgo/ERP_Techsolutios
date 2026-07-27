@@ -40,6 +40,29 @@ export const IMPOUND_TRANSITIONS: Readonly<Record<ImpoundStatus, readonly Impoun
 export type TransitionInputs = {
   readonly reason?: string;
   readonly inspectionComplete?: boolean;
+  // Ω5P PR-10a (I5) — insumos SINTÉTICOS das guardas de liberação (mesmo padrão do inspectionComplete/F2). O
+  // release.service computa as precondições REAIS via repositório (charging + release) e injeta AQUI; as guardas
+  // são PURAS e só leem estas flags. Ausência numa aresta de release ⇒ 409 defensivo release_gate_unresolved (a
+  // aresta EXIGE o release.service — não é dirigível pelo endpoint genérico de transição sem o gate resolvido).
+  readonly releaseStart?: ReleaseStartGateInput;
+  readonly releaseGate?: ReleaseConsumeGateInput;
+};
+
+// Salto A (ACTIVE_CUSTODY→RELEASE_IN_PROGRESS): abrir a liberação (freeze T_stop). alreadyInProgress = já há
+// liberação em curso (partial-unique DB + checagem app); freezeRetroactive = now < fim do último período DAILY.
+export type ReleaseStartGateInput = {
+  readonly alreadyInProgress: boolean;
+  readonly freezeRetroactive: boolean;
+};
+
+// Salto B (RELEASE_IN_PROGRESS→RELEASED): consumar (I5 real). Cada flag = uma pré-condição do art. 271 §1º /
+// Res. 1025 art. 24, com reason 409 DISTINTO.
+export type ReleaseConsumeGateInput = {
+  readonly debtsUnsettled: boolean;
+  readonly reconciliationPending: boolean;
+  readonly requirementUnmet: boolean;
+  readonly authorityMissing: boolean;
+  readonly recipientMissing: boolean;
 };
 
 // Efeitos temporais decididos pelo destino (aplicados na MESMA tx do append pelo repositório).
@@ -87,13 +110,70 @@ function guardReasonRequired(_process: ImpoundProcess, inputs: TransitionInputs)
   }
 }
 
+// Ω5P PR-10a — Salto A (I5): abrir a liberação. PURA: só lê as flags que o release.service injeta (padrão F2/I3).
+// (i) não há liberação em curso; (ii) freeze NÃO-retroativo. Efeito setFrozenAt=true (T_stop — congela o total
+// ANTES da quitação, mata a corrida acumulação×quitação). Reasons 409 DISTINTOS.
+function guardReleaseStart(_process: ImpoundProcess, inputs: TransitionInputs): void {
+  const gate = inputs.releaseStart;
+  if (!gate) {
+    throw new ImpoundError(
+      409,
+      "IMPOUND_GUARD_FAILED",
+      "release_gate_unresolved",
+      "Release transitions must be driven by the release service (gate not resolved).",
+    );
+  }
+  if (gate.alreadyInProgress) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "release_already_in_progress", "A release is already in progress for this process.");
+  }
+  if (gate.freezeRetroactive) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "release_freeze_retroactive", "Cannot freeze before the end of the last accrued daily period.");
+  }
+}
+
+// Ω5P PR-10a — Salto B (I5 real): consumar a liberação. PURA: só lê as 5 flags que o release.service injeta
+// (computadas via repositório e RE-VERIFICADAS atomicamente sob FOR UPDATE na consumação). Reasons 409 DISTINTOS.
+function guardReleaseGate(_process: ImpoundProcess, inputs: TransitionInputs): void {
+  const gate = inputs.releaseGate;
+  if (!gate) {
+    throw new ImpoundError(
+      409,
+      "IMPOUND_GUARD_FAILED",
+      "release_gate_unresolved",
+      "Release transitions must be driven by the release service (gate not resolved).",
+    );
+  }
+  // Ordem: reconciliar o VALOR (estorno das sobre-acumuladas) ANTES de exigir a quitação — depois checklist,
+  // autoridade e quem-retira. Cada reason é DISTINTO (o adversarial ataca a confusão entre eles).
+  if (gate.reconciliationPending) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "release_reconciliation_pending", "Over-accrued daily charges must be reconciled before release.");
+  }
+  if (gate.debtsUnsettled) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "release_debts_unsettled", "All chargeable debts must be settled (or waived) before release.");
+  }
+  if (gate.requirementUnmet) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "release_requirement_unmet", "All required release checklist items must be satisfied.");
+  }
+  if (gate.authorityMissing) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "release_authority_missing", "The authority release must be registered before release.");
+  }
+  if (gate.recipientMissing) {
+    throw new ImpoundError(409, "IMPOUND_GUARD_FAILED", "release_recipient_missing", "The person receiving the vehicle must be identified before release.");
+  }
+}
+
 // Registro de guardas. Ausência de chave para uma aresta LEGAL = deferida por padrão (segurança: nada release/
 // leilão fica habilitado por esquecimento). Só as custódia-nativas são explicitamente `enabled` em PR-05.
+// Ω5P PR-10a SOMA (aditivo puro; IMPOUND_TRANSITIONS INTACTA) as 2 arestas do caminho padrão de liberação (I5).
 const GUARDS: Readonly<Record<string, GuardSpec>> = {
   [edgeKey("IN_REMOVAL", "RECEPTION")]: { kind: "enabled", setEnteredAt: true },
   [edgeKey("RECEPTION", "ACTIVE_CUSTODY")]: { kind: "enabled", guard: guardReceptionInspection },
   [edgeKey("ACTIVE_CUSTODY", "JUDICIAL_HOLD")]: { kind: "enabled", guard: guardReasonRequired },
   [edgeKey("JUDICIAL_HOLD", "ACTIVE_CUSTODY")]: { kind: "enabled", guard: guardReasonRequired },
+  // Salto A: freeze T_stop na abertura da liberação (RELEASE_IN_PROGRESS não tem aresta de volta ⇒ total estável).
+  [edgeKey("ACTIVE_CUSTODY", "RELEASE_IN_PROGRESS")]: { kind: "enabled", setFrozenAt: true, guard: guardReleaseStart },
+  // Salto B: consumação (I5). Sem setFrozenAt (já congelado em A). Efeito atômico (RELEASE + release + vacate) no repo.
+  [edgeKey("RELEASE_IN_PROGRESS", "RELEASED")]: { kind: "enabled", guard: guardReleaseGate },
 };
 
 // resolveTransition — portão 1 (legalidade) + portão 2 (guarda). PURA; lança ImpoundError(409). O serviço
@@ -143,6 +223,9 @@ export const ENABLED_EDGES: readonly (readonly [ImpoundStatus, ImpoundStatus])[]
   ["RECEPTION", "ACTIVE_CUSTODY"],
   ["ACTIVE_CUSTODY", "JUDICIAL_HOLD"],
   ["JUDICIAL_HOLD", "ACTIVE_CUSTODY"],
+  // Ω5P PR-10a — caminho padrão de liberação (I5) habilitado.
+  ["ACTIVE_CUSTODY", "RELEASE_IN_PROGRESS"],
+  ["RELEASE_IN_PROGRESS", "RELEASED"],
 ];
 
 export function isEnabledEdge(from: ImpoundStatus, to: ImpoundStatus): boolean {

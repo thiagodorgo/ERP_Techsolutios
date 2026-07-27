@@ -53,6 +53,8 @@ model Tenant {
   process_charges               ProcessCharge[]
   daily_accrual_runs            DailyAccrualRun[]
   process_notifications         ProcessNotification[]
+  impound_releases              ImpoundRelease[]
+  release_requirement_checks    ReleaseRequirementCheck[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
   financial_titles              FinancialTitle[]
@@ -2818,6 +2820,7 @@ model ImpoundProcess {
   parked_spots           YardSpot[]          @relation("YardSpotCurrentProcess") // Ω5P PR-06 — FK dura da ocupação (I1)
   charges                ProcessCharge[]     // Ω5P PR-07 — ledger de encargos (diárias I4 + remoção/adicional/ajuste)
   notifications          ProcessNotification[] // Ω5P PR-09 — trilha de notificações legais (I6)
+  releases               ImpoundRelease[]    // Ω5P PR-10a — liberações do veículo (I5)
 
   @@unique([tenant_id, id])
   @@index([tenant_id, yard_id, status])
@@ -2986,4 +2989,72 @@ model ProcessNotification {
   @@index([tenant_id, process_id, kind])
   @@index([tenant_id, status])
   @@map("process_notifications")
+}
+
+// Ω5P PR-10a — Liberação do veículo (CTB art. 271 §1º / Res. 1025 arts. 21 §2º/24; ESTUDO §4.3 I5): dossiê da
+// restituição do bem ao proprietário/quem retira. É a materialização consultável do ato de liberação; a PROVA
+// de integridade vive no CustodyEvent RELEASE (append-only, hash-encadeado I2), escrito na MESMA tx da consumação
+// (RELEASE_IN_PROGRESS→RELEASED). recipient_* + authority_* são DADOS DE DOMÍNIO (RLS + permissão) e NUNCA entram
+// no payload do evento nem no audit_logs (§2.8: o payload carrega só refs/hashes/settledTotal-string). settled_total
+// = snapshot do total quitado na consumação. kind FOR_REPAIR (art. 271 §2º) é declarado AGORA p/ o PR-10b USÁ-LO —
+// aditivo-friendly; PR-10a só produz STANDARD. Enums (kind/status/recipient_relationship) validados na APP (SEM
+// enum-CHECK); labels PT-BR no DTO. process→RESTRICT (I9: liberação nunca cascateia; retenção >=5 anos). tenant_id
+// 1º; RLS forced. Anti-dupla-liberação = índice PARCIAL único (tenant,process) WHERE status EM CURSO (raw-only na
+// migração — D-Ω5P-REL-01). CHECK estrutural: COMPLETED ⇒ released_at E settled_total NOT NULL; aprovação ⇒ approver.
+model ImpoundRelease {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id              String    @db.Uuid
+  process_id             String    @db.Uuid
+  kind                   String    @default("STANDARD")   // STANDARD|FOR_REPAIR (app-validado; PR-10a só STANDARD)
+  status                 String    @default("IN_PROGRESS") // IN_PROGRESS|AUTHORIZED|COMPLETED|RETURNED (app-validado)
+  authority_approved_by  String?   @db.Uuid               // ator do ato da autoridade (D-Ω5P-12); NUNCA no payload da cadeia
+  authority_approved_at  DateTime? @db.Timestamptz(6)
+  authority_reference    String?                          // nº do ato/decisão (white-label; mascarado no payload da cadeia)
+  authority_note         String?
+  recipient_name         String?                          // quem retira (§2.8: só na tabela de domínio, nunca no evento/audit)
+  recipient_document     String?                          // idem — PII, jamais na cadeia hash nem no audit
+  recipient_relationship String?                          // OWNER|ATTORNEY|THIRD_PARTY (app-validado)
+  released_at            DateTime? @db.Timestamptz(6)      // saída/comprovante (art. 24) — carimbado na consumação
+  repair_deadline        DateTime? @db.Timestamptz(6)     // art. 23 §1º <=60d — só FOR_REPAIR (PR-10b); NULL em PR-10a
+  settled_total          Decimal?  @db.Decimal(12, 2)      // snapshot do total quitado (Decimal(12,2) — invariante)
+  created_by             String?   @db.Uuid
+  updated_by             String?   @db.Uuid
+  created_at             DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant                 Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  process                ImpoundProcess @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
+  requirement_checks     ReleaseRequirementCheck[]
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, process_id])
+  @@index([tenant_id, status])
+  @@map("impound_releases")
+}
+
+// Ω5P PR-10a — Checklist de liberação (CTB art. 271 §1º / Res. 1025 arts. 23-24), SNAPSHOT do
+// JurisdictionProfile.releaseRequirements no ATO de abertura da liberação (I9: a história congela mesmo se o
+// perfil mudar depois). Cada requisito é marcado satisfied com quem/quando (+ nota/anexo opcional). A guarda I5
+// da consumação exige que TODO requisito required=true esteja satisfied. release→RESTRICT (I9). tenant_id 1º; RLS
+// forced. CHECK estrutural: satisfied=true ⇒ checked_at NOT NULL (IS NOT NULL explícito — lição PR-07 C1).
+model ReleaseRequirementCheck {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String    @db.Uuid
+  release_id    String    @db.Uuid
+  code          String
+  label         String
+  required      Boolean   @default(true)
+  satisfied     Boolean   @default(false)
+  note          String?
+  attachment_id String?   @db.Uuid                          // evidência via Attachment soft-link (entity_type=impound_release_requirement)
+  checked_by    String?   @db.Uuid
+  checked_at    DateTime? @db.Timestamptz(6)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant        Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  release       ImpoundRelease @relation(fields: [tenant_id, release_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, release_id, code])
+  @@index([tenant_id, release_id])
+  @@map("release_requirement_checks")
 }

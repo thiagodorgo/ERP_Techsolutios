@@ -4,9 +4,10 @@ import { withTenantRls } from "../../database/rls.js";
 import { computeEventHash, genesisHash } from "../impound/impound.hashchain.js";
 import type { CanonicalValue, CustodyEventType } from "../impound/impound.types.js";
 import type { DailyCap, DailyModel, ProfileScope } from "../jurisdiction/jurisdiction.types.js";
-import { toMoneyString } from "./charge.validators.js";
+import { centsToMoney, moneyToCents, toMoneyString } from "./charge.validators.js";
 import {
   buildChargeEventPayload,
+  buildSettlementEventPayload,
   chargeEventType,
   type ChargeRepository,
   type FinishRunInput,
@@ -21,6 +22,8 @@ import {
   type DailyAccrualRun,
   type ListChargesInput,
   type ProcessCharge,
+  type SettleProcessInput,
+  type SettleResult,
 } from "./charge.types.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
@@ -92,6 +95,79 @@ export class PrismaChargeRepository implements ChargeRepository {
       actorId: input.actorId,
     });
     return charge;
+  }
+
+  // Ω5P PR-10a (charging:settle) — QUITAÇÃO + reconciliação ATÔMICA sob FOR UPDATE (fecha TOCTOU do invariante
+  // financeiro): (1) estorna as DAILYs sobre-acumuladas (ADJUSTMENT negativo append-only, idempotente por
+  // adjustment_of_charge_id) + append ADJUSTMENT na cadeia; (2) carimba settled_* nas exigíveis não quitadas (UPDATE
+  // restrito a settled_*/updated_* — NUNCA amount; process_charges não tem trigger append-only); (3) emite 1
+  // SETTLEMENT na cadeia. Cada append re-lê o head sob o MESMO lock (reentrante) — serializa a cadeia.
+  async settleProcess(input: SettleProcessInput): Promise<SettleResult> {
+    const locked = await this.lockProcess(input.tenantId, input.processId);
+    if (!locked) {
+      throw new ChargeError(404, "CHARGE_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    let estornoCount = 0;
+    for (const estorno of input.estornos) {
+      // M1: LÍQUIDO da DAILY = total_da_DAILY + Σ(ADJUSTMENTs que a apontam), somado em Decimal EXATO no Postgres
+      // (SUM de DECIMAL(12,2)). O estorno a postar é o RESÍDUO −líquido (o que falta p/ zerar). Idempotente POR
+      // VALOR sob o MESMO lock: líquido já 0 ⇒ não posta (nunca estorna 2×); −0,01 pré-existente ⇒ posta o resíduo.
+      const netRows = await this.client.$queryRaw<Array<{ net: string }>>`
+        SELECT COALESCE(SUM(total_amount), 0)::text AS net FROM process_charges
+        WHERE tenant_id = ${input.tenantId}::uuid AND process_id = ${input.processId}::uuid
+          AND (id = ${estorno.dailyChargeId}::uuid OR (kind = 'ADJUSTMENT' AND adjustment_of_charge_id = ${estorno.dailyChargeId}::uuid))
+      `;
+      const residualCents = -moneyToCents(netRows[0]?.net ?? "0");
+      if (residualCents === 0) continue;
+      const chargeRow = await this.client.processCharge.create({
+        data: {
+          tenant_id: input.tenantId,
+          process_id: input.processId,
+          kind: "ADJUSTMENT",
+          description: "Estorno de diária sobre-acumulada (reconciliação de liberação)",
+          quantity: "1.00",
+          unit_amount: centsToMoney(Math.abs(residualCents)),
+          total_amount: centsToMoney(residualCents),
+          currency: estorno.currency,
+          adjustment_of_charge_id: estorno.dailyChargeId,
+          created_by: input.actorId ?? null,
+          updated_by: input.actorId ?? null,
+        },
+      });
+      const charge = mapCharge(chargeRow);
+      const head = await this.lockProcess(input.tenantId, input.processId); // head atual sob o MESMO lock
+      await this.appendChargeEventTx(input.tenantId, input.processId, head!, {
+        type: "ADJUSTMENT",
+        payload: buildChargeEventPayload(charge),
+        occurredAt: input.occurredAt,
+        actorId: input.actorId,
+      });
+      estornoCount += 1;
+    }
+    // QUITAÇÃO: settled_* nas EXIGÍVEIS não quitadas — UPDATE restrito a settled_*/updated_* (NUNCA amount).
+    const settled = await this.client.$queryRaw<Array<{ id: string }>>`
+      UPDATE process_charges
+      SET settled_at = ${input.occurredAt}, settlement_note = ${input.note ?? null}, updated_by = ${input.actorId ?? null}::uuid, updated_at = now()
+      WHERE tenant_id = ${input.tenantId}::uuid AND process_id = ${input.processId}::uuid
+        AND kind <> 'ADJUSTMENT' AND settled_at IS NULL
+      RETURNING id
+    `;
+    const chargeIds = settled.map((row) => row.id);
+    const totals = await this.client.$queryRaw<Array<{ sum: string | null }>>`
+      SELECT COALESCE(SUM(total_amount), 0)::text AS sum FROM process_charges
+      WHERE tenant_id = ${input.tenantId}::uuid AND process_id = ${input.processId}::uuid
+    `;
+    const settledTotal = toMoneyString(Number(totals[0]?.sum ?? "0"));
+    if (chargeIds.length > 0 || estornoCount > 0) {
+      const head = await this.lockProcess(input.tenantId, input.processId);
+      await this.appendChargeEventTx(input.tenantId, input.processId, head!, {
+        type: "SETTLEMENT",
+        payload: buildSettlementEventPayload(settledTotal, chargeIds),
+        occurredAt: input.occurredAt,
+        actorId: input.actorId,
+      });
+    }
+    return { settledTotal, settledCount: chargeIds.length, estornoCount, chargeIds };
   }
 
   async accrueDailyCharge(input: AccrueDailyChargeInput): Promise<AccrueDailyChargeResult> {
@@ -277,6 +353,10 @@ export class RlsPrismaChargeRepository implements ChargeRepository {
 
   createManualCharge(input: CreateManualChargeInput): Promise<ProcessCharge> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaChargeRepository(tx).createManualCharge(input));
+  }
+
+  settleProcess(input: SettleProcessInput): Promise<SettleResult> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaChargeRepository(tx).settleProcess(input));
   }
 
   accrueDailyCharge(input: AccrueDailyChargeInput): Promise<AccrueDailyChargeResult> {

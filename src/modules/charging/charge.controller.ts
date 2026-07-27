@@ -3,7 +3,7 @@ import type { Request } from "express";
 import { recordRequestAuditBestEffort } from "../core-saas/audit/audit-request-context.js";
 import { requireTenantContext } from "../core-saas/middleware/rbac.middleware.js";
 import { readRouteParam } from "../core-saas/routes/http.js";
-import { toChargeStatementDto, toProcessChargeDto, toProcessChargeListDto } from "./charge.dto.js";
+import { toChargeStatementDto, toProcessChargeDto, toProcessChargeListDto, toSettleResultDto } from "./charge.dto.js";
 import type { ChargeService } from "./charge.service.js";
 
 export type ChargeServiceResolver = () => Promise<ChargeService>;
@@ -36,6 +36,22 @@ export class ChargeController {
       metadata: { kind: charge.kind },
     });
     return { status: 201, data: toProcessChargeDto(charge) };
+  }
+
+  // POST /impound-processes/:id/charges/settle — QUITAÇÃO manual (charging:settle). Auditoria §2.8: só contagens/
+  // total agregado (nunca placa/origem/PII).
+  async settle(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.settle(actor, readRouteParam(request.params.processId), request.body ?? {});
+    await recordRequestAuditBestEffort(request, {
+      action: "charging.settled",
+      resourceType: "process_charge_settlement",
+      resourceId: readRouteParam(request.params.processId),
+      outcome: "success",
+      severity: "info",
+      metadata: { settledCount: result.settledCount, estornoCount: result.estornoCount },
+    });
+    return { body: { data: toSettleResultDto(result) } };
   }
 
   private async resolveServiceWithActor(request: Request) {

@@ -44,6 +44,7 @@ import { createYardRouter } from "./modules/yard/index.js";
 import { createJurisdictionRouter } from "./modules/jurisdiction/index.js";
 import { createImpoundRouter } from "./modules/impound/index.js";
 import { createChargeRouter } from "./modules/charging/index.js";
+import { createReleaseRouter } from "./modules/release/index.js";
 import { createServiceQuoteRouter } from "./modules/service-quotes/index.js";
 import { createServiceQuoteItemRouter } from "./modules/service-quote-items/index.js";
 import { createWorkOrderFinancialRouter } from "./modules/work-order-financials/index.js";
@@ -139,6 +140,11 @@ export function createApp(service: ICoreSaasService): Express {
   // POST .../charges (REMOVAL/ADDITIONAL/ADJUSTMENT manual) sob charging:create. A DIÁRIA é acumulada pelo job
   // (SISTEMA). Montado APÓS o impound router (paths .../charges não colidem com os do impound).
   app.use("/api/v1", attachAuthenticatedActor(), createChargeRouter());
+  // Ω5P PR-10a — Liberação do veículo (I5). Router NOVO sob /api/v1 (git add src/app.ts, senão CI route_not_found).
+  // GET .../release (impound:read) · POST .../release/start|consume (impound:transition, os saltos da FSM) ·
+  // .../release/recipient|checks (release:process) · .../release/approve (release:approve). QUITAÇÃO fica no
+  // charging (.../charges/settle, charging:settle). Montado APÓS impound/charging (paths .../release não colidem).
+  app.use("/api/v1", attachAuthenticatedActor(), createReleaseRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createServiceQuoteRouter());
   // Ω3F-4a — Itens do Orçamento (/service-quotes/:id/items) em router próprio: o path não colide
   // com nenhuma rota do service-quotes router (que segue intocado neste bloco).

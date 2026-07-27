@@ -13,13 +13,16 @@ type ControllerResult = {
   readonly data?: unknown;
 };
 
-// Ω5P PR-07 (D-Ω5P-CHG) — 2 permissões: charging:read (ver ledger + memória de cálculo; distribuição ampla =
-// impound:read) e charging:create (registrar REMOVAL/ADDITIONAL/ADJUSTMENT manual; gestão+admins). SEM
-// charging:update/:delete (ledger AMOUNT-IMUTÁVEL — correção = ADJUSTMENT) e SEM charging:manage (permissão morta).
-// A acumulação de DIÁRIA roda como SISTEMA (job, fora do RBAC HTTP). O settlement (settled_*) é PR-10.
+// Ω5P PR-07 (D-Ω5P-CHG) — charging:read (ver ledger + memória de cálculo; distribuição ampla = impound:read) e
+// charging:create (registrar REMOVAL/ADDITIONAL/ADJUSTMENT manual; gestão+admins). SEM charging:update/:delete
+// (ledger AMOUNT-IMUTÁVEL — correção = ADJUSTMENT) e SEM charging:manage (permissão morta). A acumulação de DIÁRIA
+// roda como SISTEMA (job, fora do RBAC HTTP).
+// Ω5P PR-10a (D-Ω5P-07) — charging:settle: registrar a QUITAÇÃO (settled_* — ATO DE DINHEIRO; reconcilia por
+// estorno + emite SETTLEMENT). Distribuição gestão+admins (= charging:create); NUNCA altera amount.
 export const CHARGING_PERMISSIONS = {
   read: "charging:read",
   create: "charging:create",
+  settle: "charging:settle",
 } as const;
 
 export function createChargeRouter(resolveService: ChargeServiceResolver = createDefaultChargeService): Router {
@@ -51,6 +54,15 @@ export function createChargeRouter(resolveService: ChargeServiceResolver = creat
     requirePermission(CHARGING_PERMISSIONS.create),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.create(request));
+    }),
+  );
+  // Ω5P PR-10a — QUITAÇÃO manual (charging:settle). Path de 4 segmentos — sem colisão com /charges (POST create),
+  // /charges/statement (GET) nem com o router de release.
+  router.post(
+    "/impound-processes/:processId/charges/settle",
+    requirePermission(CHARGING_PERMISSIONS.settle),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.settle(request));
     }),
   );
 

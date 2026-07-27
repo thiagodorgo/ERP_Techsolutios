@@ -121,24 +121,46 @@ test("ACTIVE_CUSTODY⇄JUDICIAL_HOLD: exige reason; ida-e-volta OK", async () =>
 
 // ── arestas DEFERIDAS: legais em §4.2, guarda deferida → 409 transition_not_enabled_yet ──────────────────────
 
-test("arestas de release/leilão são DEFERIDAS → 409 transition_not_enabled_yet (reason distinto de invalid)", async () => {
+test("arestas de leilão/reparo são DEFERIDAS → 409 transition_not_enabled_yet (reason distinto de invalid)", async () => {
   const service = setup();
   const a = actor();
   const process = await openProcess(service, a);
   forceStatus(process.id, "ACTIVE_CUSTODY");
-  for (const to of ["RELEASE_IN_PROGRESS", "RELEASED_FOR_REPAIR", "AUCTION_ELIGIBLE", "DIRECT_RECYCLING"] as const) {
+  // Ω5P PR-10a HABILITOU o caminho padrão de liberação (RELEASE_IN_PROGRESS); reparo/leilão seguem DEFERIDOS.
+  for (const to of ["RELEASED_FOR_REPAIR", "AUCTION_ELIGIBLE", "DIRECT_RECYCLING"] as const) {
     await assert.rejects(
       () => service.transition(a, process.id, { to }),
       (e: unknown) => e instanceof ImpoundError && e.statusCode === 409 && e.reason === "transition_not_enabled_yet",
       `${to} deve ser deferida`,
     );
   }
+  // RELEASE_IN_PROGRESS agora é ENABLED (guarda I5): dirigi-la pelo endpoint genérico (sem o gate resolvido pelo
+  // release.service) → 409 release_gate_unresolved (não transition_not_enabled_yet). Idem RELEASE_IN_PROGRESS→RELEASED.
+  await assert.rejects(
+    () => service.transition(a, process.id, { to: "RELEASE_IN_PROGRESS" }),
+    (e: unknown) => e instanceof ImpoundError && e.statusCode === 409 && e.reason === "release_gate_unresolved",
+    "RELEASE_IN_PROGRESS exige o release.service (gate)",
+  );
+  forceStatus(process.id, "RELEASE_IN_PROGRESS");
+  await assert.rejects(
+    () => service.transition(a, process.id, { to: "RELEASED" }),
+    (e: unknown) => e instanceof ImpoundError && e.statusCode === 409 && e.reason === "release_gate_unresolved",
+    "RELEASED (consumação) exige o release.service (gate)",
+  );
 });
 
 test("varredura: TODA aresta deferida da tabela → 409 transition_not_enabled_yet (nunca invalid_transition)", async () => {
   const service = setup();
   const a = actor();
-  const enabled = new Set(["IN_REMOVAL->RECEPTION", "RECEPTION->ACTIVE_CUSTODY", "ACTIVE_CUSTODY->JUDICIAL_HOLD", "JUDICIAL_HOLD->ACTIVE_CUSTODY"]);
+  // Ω5P PR-10a SOMOU as 2 arestas do caminho padrão de liberação ao conjunto habilitado (guarda I5 real).
+  const enabled = new Set([
+    "IN_REMOVAL->RECEPTION",
+    "RECEPTION->ACTIVE_CUSTODY",
+    "ACTIVE_CUSTODY->JUDICIAL_HOLD",
+    "JUDICIAL_HOLD->ACTIVE_CUSTODY",
+    "ACTIVE_CUSTODY->RELEASE_IN_PROGRESS",
+    "RELEASE_IN_PROGRESS->RELEASED",
+  ]);
   for (const from of IMPOUND_STATUSES) {
     for (const to of IMPOUND_TRANSITIONS[from]) {
       if (enabled.has(`${from}->${to}`)) continue;

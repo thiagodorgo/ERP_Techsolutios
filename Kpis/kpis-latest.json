@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-26",
-  "version": "OMEGA5P-PR-09",
+  "version": "OMEGA5P-PR-10a",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω5P PR-09 — Fase 2 (FECHA): trilha de notificações legais (I6) — motor de prazos DEVIDO + registro probatório na cadeia hash + predicado isNotificationTrailComplete",
-    "title": "Ω5P PR-09: a trilha de notificações legais (I6) — motor de prazos que MARCA cada notificação como DEVIDA no vencimento (D+10 owner / D+30 edital, prazos do perfil) + evento NOTIFICATION hash-encadeado (tamper-evident) + predicado que o leilão consome; junta 4/4 unânime",
+    "block": "Ω5P PR-10a — Fase 3 (ABRE): liberação do veículo (núcleo I5) — gate de liberação (débitos quitados + reconciliação por VALOR + requisitos do perfil + aprovação in-system da autoridade) + estorno do freeze (fecha F1 do PR-07)",
+    "title": "Ω5P PR-10a: o gate de liberação I5 — o dono paga → a autoridade aprova in-system → o veículo é liberado; freeze no início (mata a corrida), estorno das diárias sobre-acumuladas por VALOR (Σ ledger = teto CTB §10), recheck atômico sob FOR UPDATE (anti-dupla-liberação); junta 4/4 (M1 financeiro sanado)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω5P PR-09 — TRILHA DE NOTIFICAÇÕES LEGAIS (Fase 2, FECHA; invariante I6). Backend + 1 migração aditiva. SEM frontend (renderização = PR posterior), SEM integração externa (envio real SNE/postal/edital/DJE = Ω6, PD-Ω5P-NOTIF-SEND). Modelo: ProcessNotification (projeção MUTÁVEL DUE→ISSUED como settled_*; kind OWNER_INITIAL|COMPLEMENTARY_EDICT|AUCTION_EDICT; status DUE|ISSUED|WAIVED|FAILED; due_at determinístico; recipient_ref MINIMIZADO §2.8) — a PROVA vive nos CustodyEvent NOTIFICATION append-only trigger-protegidos. Migração 20260839000000 aditiva up-only (partial-unique idempotência (tenant,process,kind) + CHECK issued_shape com IS NOT NULL + RLS forced + FK process→RESTRICT I9). Motor PURO impound.notifications.ts: computeNotificationSchedule(t0,profile) (OWNER_INITIAL@ownerNotifDays, COMPLEMENTARY_EDICT@noticeEdictDay — prazos do JurisdictionProfile, tempo ABSOLUTO DST-imune, ordenados; AUCTION_EDICT declarado mas não agendado do t0 = Fase 4) + isNotificationTrailComplete (predicado I6 que PR-12/13 consomem). Sweep impound.notify-due (JobName novo, ator SISTEMA, gated JOBS_WORKER_ENABLED; espelha charging.accrue-daily): marca DEVIDO no vencimento, idempotente (FOR UPDATE + partial-unique + P2002→409), FAIL-CLOSED (scope PUBLIC_AGREEMENT; prazo ausente/≤0 pula sem fabricar data + logger.warn), congelamento (frozen_at NULL + !=JUDICIAL_HOLD; materializados persistem append-only). appendNotificationEventTx = 3ª réplica BYTE-FIEL do append de cadeia (reusa PURAS computeEventHash/genesisHash de impound.hashchain — NÃO edita código probatório; cross-anchor em audit_logs; verifyChain reconcilia e segue valid). Permissão NOVA impound:notify (emissão/dispensa = ato probatório; DUE-marking SISTEMA) nas 4 pontas. Rotas: GET notifications (impound:read), POST issue/waive (impound:notify). JUNTA APROVADO 4/4 UNÂNIME: dba-guardiao (aditiva up/down/re-up drift-zero; 23505/23514-IS-NOT-NULL/RLS/I9 provados vivos; 0-debris) + critico-adversarial (0 CRÍTICO/0 MÉDIO; 8 vetores resistiram; 3ª réplica byte-fiel provada viva) + omega5p-avaliador (VETO; 3 arquivos probatórios intactos; bloqueio de leilão não fingido; +10 real) + coordenador-de-acessos (impound:notify 4 pontas; 403/404/RLS). Aderência Res.1025 art.15(OWNER≤10d)/art.26(EDITAL≥30d)/art.9º VII(retenção≥5a=I9); CTB 328(D+60 elegibilidade=Fase 4); Lei 14.133(edital leilão≥15du=Fase 4); Lei 14.440(SNE≥2027 parametrizado). Follow-up BAIXO (critico, backlog Fase 4): piso de prazo no perfil + cross-check no gate de leilão. backend 1707→1717 (+10), frontend_smoke 892 e flutter 807 inalterados, blocks 97→98. Zero regressão (3 arquivos probatórios intactos; I1/I2/I3/I4 re-provados). Inclui backfill do PR-08b (#289 dfc5299).",
-    "status_label": "Ω5P PR-09: trilha de notificações legais I6 (motor de prazos DEVIDO fail-closed + evento NOTIFICATION hash-encadeado tamper-evident + predicado do leilão); junta 4/4 unânime; FECHA a Fase 2; backend 1707->1717, blocks 97->98"
+    "summary": "Ω5P PR-10a — LIBERAÇÃO DO VEÍCULO (Fase 3, ABRE; invariante I5). Backend + migração aditiva. Materializa a visão do dono: a autoridade solicita a remoção e APÓS O DONO PAGAR os débitos aprova a liberação in-system. UI = PR-11; reparo-do-dono art.271§2 = PR-10b. 2 tabelas novas (ImpoundRelease: aprovação da autoridade + quem-retira + comprovante + settled_total + partial-unique anti-dupla-liberação; ReleaseRequirementCheck: snapshot dos requisitos do perfil no ato, I9). Migração 20260840000000 aditiva up-only (RLS forced + FK RESTRICT I9 + 3 CHECKs IS-NOT-NULL + partial-unique WHERE status IN IN_PROGRESS/AUTHORIZED). GATE I5 em 2 saltos (SOMA GuardSpecs a GUARDS — IMPOUND_TRANSITIONS e impound.hashchain INTACTOS): Salto A ACTIVE_CUSTODY→RELEASE_IN_PROGRESS congela o total (setFrozenAt, mata a corrida diária-entre-pagar-e-liberar; recusa freeze retroativo); Salto B RELEASE_IN_PROGRESS→RELEASED com 5 pré-condições (débitos quitados / reconciliação consistente / requisitos do perfil / aprovação da autoridade / quem-retira) RE-VERIFICADAS ATOMICAMENTE sob SELECT FOR UPDATE (anti-TOCTOU). Efeito atômico: RELEASE CustodyEvent (snapshot §2.8 sem PII) + status COMPLETED + vacate da vaga na mesma tx. Quitação manual (charging:settle, registro SEM PSP; UPDATE só settled_*/updated_*, nunca amount; emite SETTLEMENT na cadeia). ESTORNO DO FREEZE (fecha F1 herdado do PR-07): para cada DAILY sobre-acumulada posta ADJUSTMENT negativo até LÍQUIDO=0 (total_DAILY + Σ ADJUSTMENTs, centavos inteiros exatos) — Σ ledger = teto CTB §10; append-only na cadeia. 3 permissões novas (charging:settle/release:approve[ato da autoridade]/release:process) 4 pontas; saltos reusam impound:transition. JUNTA APROVADO 4/4 (junta pesada, 1 ciclo): dba-guardiao (migração drift-zero; 23505/23514/RLS/I9 vivos; settle não toca amount) + omega5p-avaliador (VETO; probatório intacto; I5; sem regressão) + critico-adversarial (0 CRÍTICO; dupla-liberação/TOCTOU resistiram em Postgres real; M1 MÉDIO — gate de reconciliação por EXISTÊNCIA cobrava acima do teto via ADJUSTMENT −0,01 — SANADO por VALOR/líquido=0 + resíduo sob lock; BAIXO-1 note fora da cadeia LGPD; BAIXO-3 teste anti-TOCTOU) + coordenador-de-acessos (3 permissões 4 pontas; finance fora de charging:settle). Aderência CTB 271§1º(restituição só após quitação)/§10(teto/congelamento); Res.1025 art.24(comprovante entrada+saída+quem retira)/art.21§2º(devido por quem retira). backend 1717→1728 (+11), frontend_smoke 892 e flutter 807 inalterados, blocks 98→99. Zero regressão (impound.hashchain/IMPOUND_TRANSITIONS/charge.accrual intactos; I1/I2/I3/I4 re-provados). Inclui backfill do PR-09 (#290 398a19d). Backlog: BAIXO-2 (encargo em terminal); SoD/authority-portal (Fase 5); piso de prazo do perfil (Fase 4).",
+    "status_label": "Ω5P PR-10a: gate de liberação I5 (dono paga→autoridade aprova in-system→libera; freeze no início; estorno por VALOR Σ=teto CTB §10; recheck atômico anti-dupla-liberação); junta 4/4 (M1 financeiro sanado); backend 1717->1728, blocks 98->99"
   },
   "metrics": {
     "flutter_tests": {
@@ -24,13 +24,13 @@
       "value": 892,
       "total": 892,
       "display": "892/892",
-      "note": "892 inalterado no Ω5P PR-09 (backend-only; frontend não tocado). Último valor oficial do Ω5P PR-08b (+17)."
+      "note": "892 inalterado no Ω5P PR-10a (backend-only; UI de liberação = PR-11). Último valor oficial do Ω5P PR-08b (+17)."
     },
     "backend_tests": {
-      "value": 1717,
-      "total": 1723,
-      "display": "1717/1723",
-      "note": "+10 (Ω5P PR-09 trilha de notificações I6): impound-notifications 8 InMemory (schedule ordenado + AUCTION_EDICT não-agendado; DEVIDO no vencimento; idempotência; fail-closed privado/prazo≤0; congelamento/JUDICIAL_HOLD; ordenação; issue/waive 409/422/404; isNotificationTrailComplete) + impound-notifications-chain 2 DB-gated (NOTIFICATION intercalado→verifyChain valid + cross-anchor; tamper→hash_mismatch; concorrência 3-ticks→1 linha/1 evento; allowlist §2.8) + core-saas/rls somam asserts. CI-memória 6 skip. Sobre 1707. Migração 20260839000000 aditiva provada up/down/re-up drift-zero pelo dba."
+      "value": 1728,
+      "total": 1734,
+      "display": "1728/1734",
+      "note": "+11 (Ω5P PR-10a liberação I5): release 9 InMemory (libera só com tudo cumprido → RELEASE na cadeia + vaga liberada; 5×409 reasons distintos + release_already_in_progress + release_freeze_retroactive; estorno DAILY sobre-acumulada → Σledger=teto; iii-M1 ADJUSTMENT parcial −0,01 → reconciliação por VALOR bloqueia → resíduo → líquido=0; recipient/comprovante; verify valid; aprovação idempotente) + release-gate-concurrency 2 DB-gated (N=6 → exatamente 1 RELEASED + BAIXO-3: 3 reasons sob FOR UPDATE bloqueiam). CI-memória 6 skip. Sobre 1717. Migração 20260840000000 aditiva provada up/down/re-up pelo dba."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 98,
-      "display": "98",
-      "note": "Ω5P PR-09 (trilha de notificações legais I6: motor de prazos DEVIDO fail-closed + registro probatório na cadeia hash + predicado isNotificationTrailComplete — sub-namespace impound.notifications) → +1 sobre 97 (Ω5P PR-08b). FECHA a Fase 2 (PR-05..09). PR-00 (recon) e a subdivisão 08c (diferida) não contam."
+      "value": 99,
+      "display": "99",
+      "note": "Ω5P PR-10a (liberação I5: gate débitos+reconciliação-por-valor+requisitos+aprovação-da-autoridade + estorno do freeze fecha F1 do PR-07 + recheck atômico anti-dupla-liberação — módulo release novo) → +1 sobre 98 (Ω5P PR-09). PR-10b (reparo-do-dono) e 08c/PR-11 (UI) seguem, não contam aqui."
     },
     "mobile_backend_contracts": {
       "value": 18,

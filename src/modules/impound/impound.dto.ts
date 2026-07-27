@@ -36,6 +36,7 @@ const EVENT_TYPE_LABELS: Record<CustodyEventType, string> = {
   NOTIFICATION: "Notificação",
   STATUS_CHANGE: "Mudança de estado",
   RELEASE: "Liberação",
+  SETTLEMENT: "Quitação",
   AUCTION_PREP: "Preparação de leilão",
   AUCTION_LOTTED: "Loteamento",
   AUCTION_SOLD: "Arrematação",
