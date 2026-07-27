@@ -55,6 +55,7 @@ model Tenant {
   process_notifications         ProcessNotification[]
   impound_releases              ImpoundRelease[]
   release_requirement_checks    ReleaseRequirementCheck[]
+  auction_attempts              AuctionAttempt[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
   financial_titles              FinancialTitle[]
@@ -2821,6 +2822,7 @@ model ImpoundProcess {
   charges                ProcessCharge[]     // Ω5P PR-07 — ledger de encargos (diárias I4 + remoção/adicional/ajuste)
   notifications          ProcessNotification[] // Ω5P PR-09 — trilha de notificações legais (I6)
   releases               ImpoundRelease[]    // Ω5P PR-10a — liberações do veículo (I5)
+  auction_attempts       AuctionAttempt[]    // Ω5P PR-12 — contador append-only de rodadas de leilão desertas (I8)
 
   @@unique([tenant_id, id])
   @@index([tenant_id, yard_id, status])
@@ -3057,4 +3059,34 @@ model ReleaseRequirementCheck {
   @@unique([tenant_id, release_id, code])
   @@index([tenant_id, release_id])
   @@map("release_requirement_checks")
+}
+
+// Ω5P PR-12 — CONTADOR de rodadas de leilão desertas (CTB art. 328 / Lei 13.160/2015 / Res. 1025 art. 25-26;
+// ESTUDO §4.3 I8): registro APPEND-ONLY do resultado de cada rodada de certame externo homologado. O strikeCount é
+// DERIVADO (COUNT(outcome='DESERTED')) — NUNCA uma coluna mutável em impound_processes. Na 2ª rodada deserta o
+// processo é reclassificado AUCTION_ELIGIBLE→DIRECT_RECYCLING (sucata/reciclagem, sem retorno à circulação — I8). A
+// PROVA de integridade de cada strike vive no CustodyEvent AUCTION_CLOSED (append-only, hash-encadeado I2), escrito
+// na MESMA tx do INSERT; a reclassificação encadeia um STATUS_CHANGE na MESMA tx (frozen_at = T_stop, casa com o
+// motor de diárias I4). outcome validado na APP (DESERTED|SOLD|NO_PAYMENT; PR-12 só grava DESERTED — SOLD/NO_PAYMENT
+// declarados p/ o PR-13); SEM enum-CHECK; labels PT-BR no DTO. process→RESTRICT (I9: contador nunca cascateia;
+// retenção >=5 anos). notes = texto de domínio (§2.8: sem PII; JAMAIS entra no payload da cadeia). tenant_id 1º; RLS
+// forced. Idempotência = índice PARCIAL único raw-only (tenant,process,round_number) na migração (no máx. 1 registro
+// por rodada). CHECK estrutural: round_number >= 1 (IS NOT NULL explícito — lição PR-07 C1).
+model AuctionAttempt {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id    String   @db.Uuid
+  process_id   String   @db.Uuid
+  round_number Int                                       // rodada 1-based (chave de idempotência do fecho de rodada)
+  outcome      String   @default("DESERTED")             // DESERTED|SOLD|NO_PAYMENT (app-validado; PR-12 só DESERTED)
+  notes        String?                                   // texto de domínio (§2.8: sem PII; nunca no payload da cadeia)
+  recorded_by  String?  @db.Uuid
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant       Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  process      ImpoundProcess @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, process_id])
+  @@index([tenant_id, process_id, outcome])
+  @@map("auction_attempts")
 }

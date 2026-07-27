@@ -45,6 +45,7 @@ import { createJurisdictionRouter } from "./modules/jurisdiction/index.js";
 import { createImpoundRouter } from "./modules/impound/index.js";
 import { createChargeRouter } from "./modules/charging/index.js";
 import { createReleaseRouter } from "./modules/release/index.js";
+import { createAuctionRouter } from "./modules/auction/index.js";
 import { createServiceQuoteRouter } from "./modules/service-quotes/index.js";
 import { createServiceQuoteItemRouter } from "./modules/service-quote-items/index.js";
 import { createWorkOrderFinancialRouter } from "./modules/work-order-financials/index.js";
@@ -145,6 +146,11 @@ export function createApp(service: ICoreSaasService): Express {
   // .../release/recipient|checks (release:process) · .../release/approve (release:approve). QUITAÇÃO fica no
   // charging (.../charges/settle, charging:settle). Montado APÓS impound/charging (paths .../release não colidem).
   app.use("/api/v1", attachAuthenticatedActor(), createReleaseRouter());
+  // Ω5P PR-12 — Elegibilidade ao leilão + regra dos 2-strikes (I8). Router NOVO sob /api/v1 (git add src/app.ts, senão
+  // CI route_not_found). GET .../auction (impound:read) · POST .../auction/eligibility|/attempts (impound:transition,
+  // os saltos da FSM de leilão). ZERO permissão nova. Montado APÓS impound/charging/release (paths .../auction não
+  // colidem com nenhum literal existente).
+  app.use("/api/v1", attachAuthenticatedActor(), createAuctionRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createServiceQuoteRouter());
   // Ω3F-4a — Itens do Orçamento (/service-quotes/:id/items) em router próprio: o path não colide
   // com nenhuma rota do service-quotes router (que segue intocado neste bloco).

@@ -1626,6 +1626,37 @@ if (!connectionString) {
       const tenantBRel = await withTenantRls(client, tenantB.id, (tx) => tx.impoundRelease.findUnique({ where: { id: relB.release_id } }));
       assert.equal(tenantBRel?.recipient_name, "Quem Retira", "tenant B impound release stays visible + untouched in-tenant");
 
+      // Ω5P PR-12 (D-Ω5P-AUC-*) — auction_attempts (contador append-only de rodadas de leilão desertas I8) nos 3
+      // tenants EFÊMEROS. A tentativa referencia o impound_process (FK composta tenant-first, RESTRICT — I9). RLS
+      // ENABLE/FORCE + policy (migration 20260841000000). Prova: invisível sem contexto + cross-tenant updateMany
+      // count=0 + visível/intocado in-tenant. tenant_id 1º de todo índice; partial-unique de round_number raw-only.
+      const insertAttempt = async (tx: typeof client, tenantId: string, processId: string) => {
+        const [attempt] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO auction_attempts (tenant_id, process_id, round_number, outcome)
+          VALUES (${tenantId}::uuid, ${processId}::uuid, 1, 'DESERTED')
+          RETURNING id
+        `;
+        return attempt.id;
+      };
+      const aucA = await withTenantRls(client, tenantA.id, (tx) => insertAttempt(tx as typeof client, tenantA.id, impA.process_id));
+      const aucB = await withTenantRls(client, tenantB.id, (tx) => insertAttempt(tx as typeof client, tenantB.id, impB.process_id));
+      const aucC = await withTenantRls(client, tenantC.id, (tx) => insertAttempt(tx as typeof client, tenantC.id, impC.process_id));
+
+      const aucWithoutContext = await client.auctionAttempt.findMany({ where: { id: { in: [aucA, aucB, aucC] } } });
+      assert.deepEqual(aucWithoutContext.map((a) => a.id), [], "auction attempts must not be visible without app.current_tenant_id");
+
+      const tenantAAucView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.auctionAttempt.findMany({ where: { id: { in: [aucA, aucB, aucC] } } });
+        const crossUpdate = await tx.auctionAttempt.updateMany({ where: { id: { in: [aucB, aucC] } }, data: { notes: "cross-tenant" } });
+        return { visibleIds: visible.map((a) => a.id).sort(), crossUpdatedRows: crossUpdate.count };
+      });
+      assert.deepEqual(tenantAAucView.visibleIds, [aucA], "tenant A must only see its own auction attempt (not tenant B/C)");
+      assert.equal(tenantAAucView.crossUpdatedRows, 0, "tenant A must not update tenant B/C auction attempts");
+
+      const tenantBAuc = await withTenantRls(client, tenantB.id, (tx) => tx.auctionAttempt.findUnique({ where: { id: aucB } }));
+      assert.equal(tenantBAuc?.outcome, "DESERTED", "tenant B auction attempt stays visible + untouched in-tenant");
+      assert.equal(tenantBAuc?.notes, null, "tenant B auction attempt notes untouched by tenant A cross-update");
+
       // Ω5P PR-03 (D-Ω5P-TAR-*) — price_tables ESCOPADAS (scope PUBLIC_AGREEMENT/PRIVATE_CONTRACT + vehicle_category)
       // nos 3 tenants EFÊMEROS. As 2 colunas novas são NULLABLE aditivas; a RLS (ENABLE/FORCE + policy
       // price_tables_tenant_isolation, migration 20260723000000) é HERDADA — o ADD COLUMN não a altera. Prova:
@@ -2747,6 +2778,9 @@ if (!connectionString) {
         await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
         for (const tenantId of tenantIds) {
           await tx.$executeRawUnsafe(`DELETE FROM custody_events WHERE tenant_id = '${tenantId}'::uuid`);
+          // Ω5P PR-12 — auction_attempts → impound_processes é RESTRICT: purga o contador de leilão ANTES do processo
+          // (TEARDOWN FK-SAFE; auction_attempts ANTES de custody_events/impound_processes).
+          await tx.$executeRawUnsafe(`DELETE FROM auction_attempts WHERE tenant_id = '${tenantId}'::uuid`);
           // Ω5P PR-06 — intake_inspections → impound_processes é RESTRICT: purga a vistoria ANTES do processo.
           await tx.$executeRawUnsafe(`DELETE FROM impound_intake_inspections WHERE tenant_id = '${tenantId}'::uuid`);
           // Ω5P PR-07 — process_charges/daily_accrual_runs → impound_processes/tenant é RESTRICT: purga os encargos

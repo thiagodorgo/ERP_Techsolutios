@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-26",
-  "version": "OMEGA5P-PR-11",
+  "version": "OMEGA5P-PR-12",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω5P PR-11 — Fase 3 (FECHA): UI de liberação I5 no console /patios — dossiê de liberação + quitação + aprovação da autoridade + gate visível + reparo/retorno + comprovante art.24 + fila /patios/liberacoes",
-    "title": "Ω5P PR-11: o console de liberação — o operador monta o dossiê (quem retira + requisitos), registra a quitação, a autoridade aprova in-system, o gate mostra o que falta das 5 pré-condições, consuma a liberação e imprime o comprovante (art.24); + saída/retorno para reparo (art.271§2); junta 4/4; FECHA a Fase 3",
+    "block": "Ω5P PR-12 — Fase 4 (ABRE): elegibilidade ao leilão (gate real, consome I6+verifyChain, fecha o furo do PR-09 com 2 pisos) + ledger de strikes 2-strikes (I8; reclassificação a sucata diferida ao PR-13)",
+    "title": "Ω5P PR-12: o gate de elegibilidade ao leilão — só vai a leilão o não-reclamado após D+60 (piso legal), com a trilha de notificação completa (I6), o dono comprovadamente notificado (piso OWNER_INITIAL) e a cadeia íntegra (verifyChain); + o ledger de rodadas desertas (2-strikes, I8); junta 3/3",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω5P PR-11 — UI DE LIBERAÇÃO I5 (Fase 3, FECHA). Frontend do console autenticado /patios. ZERO backend novo, ZERO migração, ZERO permissão nova — CONSOME o release (PR-10a #291 / PR-10b #292) + charging:settle e MOLDA por can(...); o backend é a autoridade (gate I5, freeze, hash-chain, reconciliação). LiberacaoPanel ACRESCENTADO ao dossiê do processo (aditivo, merge-safe; painéis 08a/08b intactos): orquestra por status — CUSTODIA_ATIVA→\"Iniciar liberação\"; RELEASE_IN_PROGRESS→quem-retira (release:process) + checklist de requisitos + quitação (\"Registrar quitação\"→charging:settle, mostra Total→settledTotal/estornoCount, SEM PSP) + aprovação da autoridade (release:approve, selo \"Autorizada por…em…\") + GATE VISÍVEL (GateLiberacaoChecklist: as 5 pré-condições como ESPELHO do backend, \"Consumar\" desabilitado até as 5, 409 IMPOUND_GUARD_FAILED→reason PT-BR+recarrega); reparo art.271§2 (saída for-repair/start com repair_deadline≤60d + retorno; selo repairOverdue âmbar + aviso \"a diária segue correndo\"); comprovante art.24 (window.print client-side, entrada+saída+quem-retira+kindLabel+settledTotal). Fila /patios/liberacoes (reuso useProcesses+dense-list filtro multi-status; governed path patios.releases impound:read; sem endpoint/permissão nova). §2.8: recipientDocument/authorityReference só no comprovante (console autenticado), nunca em log/telemetria; authorityApprovedBy nunca cru. White-label PT-BR (autoridade solicitante/proprietário/quem retira/comprovante; nunca polícia/tenant). JUNTA APROVADO 4/4: omega5p-avaliador (VETO; backend intocado; gate=hint/backend impõe; §2.8; honestidade de dinheiro) + cognicao-visual (fluxo vivo; gate=checklist visual; comprovante @media print isolado; §11) + coordenador-de-acessos (governed patios.releases; gates com a permissão certa; 83/83 nav) + critico-adversarial leve (0 CRÍTICO; sem falso-positivo no gate, sem mentira de dinheiro, sem PII; 3 achados não-bloqueantes→backlog: hint de reconciliação por contagem vs líquido-zero M1 [super-bloqueio seguro no edge raro], reload no 409, checks vazio). D-Ω5P-REL-UI-01/02/03. Aderência I5 §4.3; CTB 271§1º/§2º; Res.1025 art.21§2/23/24. frontend_smoke 892→908 (+16), backend 1738→1749 (+11 nav-provisioning), flutter 807 inalterado, blocks 100→101. Zero regressão. Inclui backfill do PR-10b (#292 62d806d).",
-    "status_label": "Ω5P PR-11: console de liberação I5 (dossiê+quitação+aprovação da autoridade+gate visível+reparo+comprovante art.24+fila); junta 4/4; FECHA a Fase 3; frontend_smoke 892->908, backend 1738->1749, blocks 100->101"
+    "summary": "Ω5P PR-12 — ELEGIBILIDADE AO LEILÃO + 2-STRIKES (Fase 4, ABRE; invariante I8). Backend + migração aditiva. O gate de leilão consome FINALMENTE o isNotificationTrailComplete (I6, do PR-09) + verifyChain (I2). Módulo auction novo. GATE de elegibilidade (ACTIVE_CUSTODY→AUCTION_ELIGIBLE, MANUAL — o salto aliena bem de 3º; SOMA GuardSpec a GUARDS, IMPOUND_TRANSITIONS+impound.hashchain INTACTOS) com 6 pré-condições + 2 PISOS que fecham o furo herdado do PR-09: (1) scope PUBLIC_AGREEMENT; (2) PISO de prazo now≥enteredAt+max(auctionEligibleDay,60)·24h (NUNCA encurta abaixo de 60, CTB art.328 — fecha \"admin zera auctionEligibleDay\"); (3) isNotificationTrailComplete (I6); (4) PISO OWNER_INITIAL — a trilha DEVE ter OWNER_INITIAL ISSUED/WAIVED-com-reason INDEPENDENTE do perfil (fecha \"admin zera ownerNotifDays → leilão sem notificar o dono\"); (5) verifyChain.valid (I2); (6) sem release em curso (recheck sob FOR UPDATE, TOCTOU do for-repair-montar fechado); cada reason 409 distinto. LEDGER de 2-strikes (I8): tabela auction_attempts (append-only; contador DERIVADO COUNT(DESERTED), não escalar mutável; idempotência por round_number partial-unique); recordAttempt registra a rodada DESERTED + evento AUCTION_CLOSED na cadeia. Migração 20260841000000 aditiva (RLS forced + FK RESTRICT I9 + partial-unique + CHECK IS-NOT-NULL). REUSA impound:transition (SEM permissão nova). JUNTA APROVADO 3/3 (1 ciclo): dba-guardiao (migração drift-zero; 23505/23514/RLS/I9 vivos) + critico-adversarial (0 CRÍTICO; leilão-sem-notificação BLINDADO pelos 2 pisos; MÉDIO-A sucata-sem-pré-condição SANADO por diferimento — a reclassificação a DIRECT_RECYCLING foi RETIRADA do PR-12 [aresta de volta a deferred] e vai ao PR-13 gated no edital por rodada; BAIXO-C concorrência) + omega5p-avaliador (VETO; escopo/§2.8/aderência). D-Ω5P-AUC-01/02 + R-omega5p-pr12-ciclo1. REQUISITO PR-13: sucata gated no AUCTION_EDICT emitido por rodada (≥15 d.u.). Aderência CTB art.328/Lei 13.160 (60d; 2× sem arremate→sucata; vedado retorno de sucata à circulação); Res.1025 art.25-26. backend 1749→1767 (+18), smoke 908 e flutter 807 inalterados, blocks 101→102. Zero regressão (impound.hashchain/types/IMPOUND_TRANSITIONS intactos; I1-I6 re-provados). Inclui backfill do PR-11 (#293 35c47f2).",
+    "status_label": "Ω5P PR-12: gate de elegibilidade ao leilão (D+60-piso + trilha I6 + PISO OWNER_INITIAL fecha o furo do PR-09 + verifyChain) + ledger 2-strikes I8 (sucata diferida ao PR-13); junta 3/3; backend 1749->1767, blocks 101->102"
   },
   "metrics": {
     "flutter_tests": {
@@ -24,13 +24,13 @@
       "value": 908,
       "total": 908,
       "display": "908/908",
-      "note": "+16 (Ω5P PR-11 UI de liberação I5): patios-liberacao 13 (gate PURO só habilita com as 5 pré-condições; reason→PT-BR dos 5 do consume + repair_deadline_invalid + release_already_in_progress; honestidade de dinheiro não afirma \"quitado\" com débito aberto; §2.8 sem UUID/documento cru no comprovante; estados empty/denied/error; sem tenant/polícia) + patios-liberacoes-fila 3 (filtra só liberáveis; governed). Sobre 892."
+      "note": "908 inalterado no Ω5P PR-12 (backend-only). Último valor oficial do Ω5P PR-11 (+16)."
     },
     "backend_tests": {
-      "value": 1749,
-      "total": 1755,
-      "display": "1749/1755",
-      "note": "+11 (Ω5P PR-11, navigation-provisioning): governed path patios.releases /patios/liberacoes (impound:read) — matriz por papel derivada de ROLE_PERMISSIONS + assert finable/inventory NÃO. Frontend PR + 1 governed path no navigation.registry.ts. CI-memória 6 skip. Sobre 1738 (Ω5P PR-10b)."
+      "value": 1767,
+      "total": 1773,
+      "display": "1767/1773",
+      "note": "+18 (Ω5P PR-12 elegibilidade ao leilão + ledger 2-strikes I8): auction-eligibility 10 InMemory (elegível só com scope-público+D≥max(prazo,60)+trilha+OWNER_INITIAL-ISSUED+cadeia-válida+sem-release; 8 bloqueios com reason 409 distinto, incl. auctionEligibleDay=0 barrado pelo piso 60 e ownerNotifDays=0 barrado pelo piso OWNER_INITIAL — o furo do PR-09 fechado) + auction-strikes 4 (1 strike segue elegível; 2 strikes strikeCount=2 SEM sucatear [reclassificação=PR-13]; idempotência round_number; verifyChain valid) + auction-concurrency 4 DB-gated (cross-tenant RLS; eligibility×release/start; eligibility×for-repair; N-strikes-mesma-round→1). CI-memória 6 skip. Sobre 1749. Migração 20260841000000 aditiva provada up/down/re-up pelo dba."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 101,
-      "display": "101",
-      "note": "Ω5P PR-11 (UI de liberação I5: dossiê de liberação + quitação + aprovação da autoridade + gate visível + reparo/retorno + comprovante art.24 + fila /patios/liberacoes — novo módulo frontend patios/release) → +1 sobre 100 (Ω5P PR-10b). FECHA a Fase 3 (PR-10a/10b/11)."
+      "value": 102,
+      "display": "102",
+      "note": "Ω5P PR-12 (elegibilidade ao leilão: gate real consumindo I6+verifyChain+2 pisos que fecham o furo do PR-09 + ledger de 2-strikes I8 — módulo auction novo; reclassificação a sucata diferida ao PR-13) → +1 sobre 101 (Ω5P PR-11). ABRE a Fase 4."
     },
     "mobile_backend_contracts": {
       "value": 18,
