@@ -49,8 +49,8 @@
     "omega5p-avaliador": "APROVADO (VETO; após ciclo 0: A1 regressão da edição/bloqueio de vaga yard:update + A2 chave pr duplicada — dev sanou botão Editar gated + KPI id; reavaliação empírica patios-mapa 4/4 + patios-yards 8/8; resíduo KPI 874→875 sincronizado)",
     "veredito": "APROVADO 3/3 (1 ciclo de reprovação da cognição — C-VIS-1 sanado; R-omega5p-pr08a-ciclo1)"
   },
-  "pr": null,
-  "merge_commit": null,
-  "approved_head": null,
+  "pr": 288,
+  "merge_commit": "a342fe7",
+  "approved_head": "a342fe7",
   "status": "published_per_pr"
 }
