@@ -4,14 +4,17 @@ import { env } from "../../config/env.js";
 import { getMemoryImpoundRepositoryForTests } from "../impound/impound.service.js";
 import { createMemoryResolveTariff, type TariffResolver } from "../tariffs/tariff-resolution.js";
 import { computeDuePeriods, summarizeAccrual, type AccrualParams } from "./charge.accrual.js";
-import { InMemoryChargeRepository, type ChargeRepository } from "./charge.repository.js";
+import { dailyNetCents, InMemoryChargeRepository, type ChargeRepository } from "./charge.repository.js";
 import {
   ChargeError,
   type AccrueProcessResult,
   type ChargeActorContext,
   type ChargeStatement,
   type ChargeStatementCap,
+  type EstornoInstruction,
   type ProcessCharge,
+  type ReleaseChargeState,
+  type SettleResult,
 } from "./charge.types.js";
 import {
   multiplyMoney,
@@ -139,6 +142,65 @@ export class ChargeService {
       reconciliationPending: overAccruedDailies > 0,
       overAccruedDailies,
     };
+  }
+
+  // POST /impound-processes/:id/charges/settle — QUITAÇÃO manual (charging:settle, D-Ω5P-07). Registra o
+  // pagamento SEM PSP: reconcilia (estorna as DAILYs sobre-acumuladas — F1), carimba settled_* nas exigíveis
+  // (NUNCA amount) e emite 1 SETTLEMENT na cadeia. Idempotente (re-run sem pendência = no-op).
+  async settle(actor: ChargeActorContext, processId: string, body: RawRecord): Promise<SettleResult> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const note = optionalString(body.note ?? body.settlement_note ?? body.settlementNote);
+    const state = await this.getReleaseChargeState(actor.tenantId, normalizedId);
+    if (!state) {
+      throw new ChargeError(404, "CHARGE_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    const lines = await this.repository.listCharges({ tenantId: actor.tenantId, processId: normalizedId });
+    const byId = new Map(lines.map((line) => [line.id, line]));
+    // Reconcilia EXATAMENTE as DAILYs sobre-acumuladas (M1: o repo posta o RESÍDUO que zera o líquido, computado
+    // sob lock; aqui só indicamos QUAIS DAILY + a moeda). Σ ledger = teto é garantido pelo líquido-zero, não pela
+    // magnitude da DAILY.
+    const estornos: EstornoInstruction[] = state.overAccruedDailyIds
+      .map((id) => byId.get(id))
+      .filter((charge): charge is ProcessCharge => charge !== undefined)
+      .map((charge) => ({ dailyChargeId: charge.id, currency: charge.currency }));
+    return this.repository.settleProcess({
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      estornos,
+      note,
+      actorId: actor.userId,
+      occurredAt: new Date(),
+    });
+  }
+
+  // Estado do ledger para o GATE DE LIBERAÇÃO (I5) — consumido pelo release.service. Computa débitos quitados,
+  // reconciliação (estorno das sobre-acumuladas), total quitado, e os sinais do freeze-retroactive (salto A).
+  async getReleaseChargeState(tenantId: string, processId: string, now: Date = new Date()): Promise<ReleaseChargeState | undefined> {
+    const ctx = await this.repository.loadAccrualContext(tenantId, processId);
+    if (!ctx) return undefined;
+    const lines = await this.repository.listCharges({ tenantId, processId });
+    const exigible = lines.filter((line) => line.kind !== "ADJUSTMENT");
+    const debtsSettled = exigible.every((line) => line.settledAt !== undefined);
+    const dailies = lines.filter((line) => line.kind === "DAILY").sort((left, right) => (left.periodSeq ?? 0) - (right.periodSeq ?? 0));
+    const persistedDailyCount = dailies.length;
+    let overAccruedDailyIds: string[] = [];
+    let nDueNow = 0;
+    if (ctx.enteredAt) {
+      // freeze-retroactive (salto A): nDue (uncapped, time-based) AT now. Se < persistedDailyCount, congelar em now
+      // estranharia DAILYs já acumuladas (period termina depois de now) — MODEL-CORRECT p/ ROLLING e CALENDAR.
+      nDueNow = summarizeAccrual({ t0: ctx.enteredAt, asOf: now, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap }).nDue;
+      // over-accrual (reconciliação): DAILYs além do teto AT asOf=min(now, frozen_at). frozen ⇒ estável.
+      const asOf = ctx.frozenAt ? new Date(Math.min(now.getTime(), ctx.frozenAt.getTime())) : now;
+      const nAccrue = summarizeAccrual({ t0: ctx.enteredAt, asOf, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap }).nAccrue;
+      overAccruedDailyIds = dailies.slice(nAccrue).map((daily) => daily.id);
+    }
+    // M1 (invariante financeiro) — consistente ⟺ o LÍQUIDO de TODA DAILY sobre-acumulada é 0 (centavo EXATO):
+    // total_da_DAILY + Σ(ADJUSTMENTs que a apontam) == 0. Um ADJUSTMENT PARCIAL pré-existente (ex. −0,01 postado por
+    // um insider com charging:create) deixa líquido≠0 → NÃO consistente → 409 na consumação. Fecha o furo do gate
+    // por-existência (que liberaria o cidadão cobrado acima do teto CTB §10, imutável na cadeia).
+    const reconciliationConsistent = overAccruedDailyIds.every((id) => dailyNetCents(id, lines) === 0);
+    const settledTotal = sumMoney(lines.map((line) => line.totalAmount));
+    return { debtsSettled, reconciliationConsistent, settledTotal, overAccruedDailyIds, persistedDailyCount, nDueNow };
   }
 
   // ── Motor de diárias (I4) — acumulação de UM processo. Usado pelo SWEEP e (futuro PR-10/14) pelo congelamento

@@ -41,6 +41,9 @@ export const CUSTODY_EVENT_TYPES = [
   "NOTIFICATION",
   "STATUS_CHANGE",
   "RELEASE",
+  // Ω5P PR-10a — SETTLEMENT: registro do ATO DE QUITAÇÃO (settled_*) na cadeia hash (I2). type é TEXT livre no
+  // banco; a union é a allowlist da APP. RELEASE já existia (consumação da liberação).
+  "SETTLEMENT",
   "AUCTION_PREP",
   "AUCTION_LOTTED",
   "AUCTION_SOLD",

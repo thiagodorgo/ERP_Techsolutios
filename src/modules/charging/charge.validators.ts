@@ -66,6 +66,18 @@ export function toMoneyString(value: number): string {
   return fixed === "-0.00" ? "0.00" : fixed;
 }
 
+// "0.00" (COM SINAL) → centavos INTEIROS assinados (aritmética Decimal-exata da casa; o float é só intermediário e
+// imediatamente arredondado ao inteiro de centavos — mesmo padrão de sumMoney/multiplyMoney). Fecha M1: a
+// reconciliação compara LÍQUIDO=0 por centavo exato, nunca por existência nem por float acumulado.
+export function moneyToCents(value: string): number {
+  return Math.round(Number(value) * 100);
+}
+
+// centavos INTEIROS assinados → "0.00" canônico.
+export function centsToMoney(cents: number): string {
+  return toMoneyString(cents / 100);
+}
+
 // quantity × unitAmount em aritmética de centavos (evita float). Ambos canônicos "0.00".
 export function multiplyMoney(quantity: string, unitAmount: string): string {
   const q = Math.round(Number(quantity) * 100);

@@ -85,6 +85,9 @@ export const PERMISSION_CATALOG = [
   "impound:create",
   // Ω5P PR-07 — registrar REMOVAL/ADDITIONAL/ADJUSTMENT manual (gestão+admins, = impound:create).
   "charging:create",
+  // Ω5P PR-10a (D-Ω5P-07) — registrar QUITAÇÃO (settled_* — ATO DE DINHEIRO; reconcilia por estorno + SETTLEMENT).
+  // Distribuição gestão+admins (= charging:create); NUNCA altera amount (ledger amount-imutável).
+  "charging:settle",
   "service_quotes:create",
   "work_order_financials:create",
   "financial_accounts:create",
@@ -112,6 +115,11 @@ export const PERMISSION_CATALOG = [
   // Ω5P PR-09 (D-Ω5P-NOTIF-03) — registrar EMISSÃO/DISPENSA de notificações legais (ato probatório do rito do
   // art. 328). Distribuição espelha impound:transition/inspect (gestão+admins). A DUE-marking é do SISTEMA (job).
   "impound:notify",
+  // Ω5P PR-10a (D-Ω5P-REL) — Liberação I5 (sibling do impound). release:process = montar o dossiê (recipient +
+  // requirement checks). release:approve = ATO DA AUTORIDADE (D-Ω5P-12; stand-in tenant_admin+manager até o
+  // authority-portal Fase 5). Os SALTOS da FSM reusam impound:transition. Distribuição gestão+admins.
+  "release:process",
+  "release:approve",
   "service_quotes:update",
   "service_quotes:approve",
   "work_order_financials:update",
@@ -331,6 +339,10 @@ export const ROLE_PERMISSIONS = {
     "jurisdiction:create",
     "impound:create",
     "charging:create",
+    // Ω5P PR-10a — gestão registra a quitação (dinheiro) e conduz o dossiê/ato de liberação I5.
+    "charging:settle",
+    "release:process",
+    "release:approve",
     "service_quotes:create",
     "work_order_financials:create",
     "service_catalog:update",

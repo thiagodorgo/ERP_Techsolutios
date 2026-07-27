@@ -83,9 +83,9 @@
     "coordenador-de-acessos": "APROVADO (impound:notify 4 pontas — catalog posição+distribuição espelho de impound:transition/inspect; core-saas.test 26/26; seed PT-BR; RBAC 1 linha; GET sob impound:read, issue/waive sob impound:notify; DUE-marking SISTEMA; 403 real/404 cross-tenant/RLS forced; sem regressão de acesso)",
     "veredito": "APROVADO 4/4 unânime (0 achado bloqueante; follow-up BAIXO do critico → backlog Fase 4). FECHA a Fase 2."
   },
-  "pr": null,
-  "merge_commit": null,
-  "approved_head": null,
+  "pr": 290,
+  "merge_commit": "398a19d",
+  "approved_head": "398a19d",
   "status": "published_per_pr",
   "follow_up_backlog": "BAIXO (critico, fora do escopo PR-09, → backlog Fase 4): isNotificationTrailComplete confia no perfil ATUAL — se um admin com jurisdiction:update zerar um prazo legalmente obrigatório (ex. ownerNotifDays=0), esse kind cai do agendamento E do conjunto exigível → nenhum DUE bloqueia e o predicado considera a trilha completa sem a notificação. Mitigação: (a) piso >0 nos prazos obrigatórios em PR-02/jurisdiction; (b) o gate de leilão (PR-12/13) fazer isNotificationTrailComplete && verifyChain.valid com cross-check de emissão do OWNER_INITIAL. PR-09 age corretamente dado o input (fail-closed, sem fabricar)."
 }

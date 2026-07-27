@@ -1,4 +1,4 @@
-import type { ChargeKind, ChargeStatement, DailyAccrualRun, ProcessCharge } from "./charge.types.js";
+import type { ChargeKind, ChargeStatement, DailyAccrualRun, ProcessCharge, SettleResult } from "./charge.types.js";
 
 // Labels PT-BR (neutralidade white-label: "pátio/autoridade/órgão", NUNCA termo de público-alvo/"polícia").
 const KIND_LABELS: Record<ChargeKind, string> = {
@@ -64,6 +64,17 @@ export function toChargeStatementDto(statement: ChargeStatement) {
     asOf: statement.asOf,
     reconciliationPending: statement.reconciliationPending,
     overAccruedDailies: statement.overAccruedDailies,
+  };
+}
+
+// Ω5P PR-10a — resultado da QUITAÇÃO (charging:settle). §allowlist: só agregados/refs (settledTotal string,
+// contagens, ids quitados) — sem tenant_id/PII/valor-float.
+export function toSettleResultDto(result: SettleResult) {
+  return {
+    settledTotal: result.settledTotal,
+    settledCount: result.settledCount,
+    estornoCount: result.estornoCount,
+    chargeIds: [...result.chargeIds],
   };
 }
 

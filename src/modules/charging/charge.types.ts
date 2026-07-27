@@ -139,6 +139,42 @@ export type ChargeStatement = {
   readonly overAccruedDailies: number; // #DAILY persistidas − nAccrue (0 quando consistente)
 };
 
+// Ω5P PR-10a (D-Ω5P-07 / F1) — QUITAÇÃO manual (registro SEM PSP) + reconciliação por ESTORNO. O settle carimba
+// settled_* nas linhas exigíveis (NUNCA amount — o ledger é amount-imutável) e, na MESMA operação, ESTORNA as
+// DAILYs sobre-acumuladas (ADJUSTMENT negativo append-only) e emite 1 CustodyEvent SETTLEMENT (§2.8: sem PII).
+export type EstornoInstruction = {
+  readonly dailyChargeId: string; // a DAILY sobre-acumulada a reconciliar (o RESÍDUO p/ zerar o líquido é computado sob lock)
+  readonly currency: string; // moeda do ADJUSTMENT de estorno a postar (= a da DAILY)
+};
+
+export type SettleProcessInput = {
+  readonly tenantId: string;
+  readonly processId: string;
+  readonly estornos: readonly EstornoInstruction[]; // DAILYs a estornar (service-computed; idempotente no repo)
+  readonly note?: string;
+  readonly actorId?: string;
+  readonly occurredAt: Date;
+};
+
+export type SettleResult = {
+  readonly settledTotal: string; // Σ net do ledger APÓS o estorno (canônico "0.00")
+  readonly settledCount: number; // linhas exigíveis carimbadas settled_* neste passe
+  readonly estornoCount: number; // ADJUSTMENTs de estorno criados neste passe (0 = já reconciliado)
+  readonly chargeIds: readonly string[]; // ids exigíveis quitados (referências §2.8 no payload SETTLEMENT)
+};
+
+// Estado do ledger para o GATE DE LIBERAÇÃO (I5) — computado pelo charging (dono de process_charges) e consumido
+// pelo release.service. debtsSettled/reconciliationConsistent alimentam as guardas I5; overAccruedDailyIds guia o
+// estorno do settle; persistedDailyCount/nDueNow alimentam o freeze-retroactive do salto A.
+export type ReleaseChargeState = {
+  readonly debtsSettled: boolean; // nenhuma linha exigível (REMOVAL/DAILY/ADDITIONAL) com settled_at NULL
+  readonly reconciliationConsistent: boolean; // toda DAILY sobre-acumulada tem estorno ADJUSTMENT
+  readonly settledTotal: string; // Σ net do ledger (canônico "0.00")
+  readonly overAccruedDailyIds: readonly string[]; // DAILYs além do teto (asOf=min(now,frozen_at)) que EXIGEM estorno
+  readonly persistedDailyCount: number; // nº de DAILY no ledger
+  readonly nDueNow: number; // nDue (uncapped, time-based) AT now — freeze-retroactive se < persistedDailyCount
+};
+
 export class ChargeError extends Error {
   constructor(
     readonly statusCode: number,
