@@ -11,6 +11,7 @@ import { useTenantContext } from "../../../../providers/TenantProvider";
 import { GuiaDebitos } from "../../charges/components/GuiaDebitos";
 import { LancamentoChargeModal } from "../../charges/components/LancamentoChargeModal";
 import { useStatement } from "../../charges/useStatement";
+import { LiberacaoPanel } from "../../release/components/LiberacaoPanel";
 import { getYardOccupancy, listYardsFromApi } from "../../yards/yards.service";
 import { IntegritySeal } from "../components/IntegritySeal";
 import { InspectionSection } from "../components/InspectionSection";
@@ -238,6 +239,18 @@ export function ProcessoDossiePage() {
             canCreate={canCreateCharge}
             onRetry={() => void reloadStatement()}
             onLaunch={() => setChargeModalOpen(true)}
+          />
+
+          {/* Ω5P PR-11 — Liberação I5 (aditivo/merge-safe: os painéis acima ficam intactos). O painel orquestra por
+              process.status × liberação em curso e consome os módulos backend release/charging:settle. */}
+          <LiberacaoPanel
+            process={process}
+            statement={statement}
+            context={context}
+            onDone={() => {
+              void load();
+              void reloadStatement();
+            }}
           />
         </>
       ) : null}

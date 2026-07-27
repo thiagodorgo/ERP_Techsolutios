@@ -39,6 +39,7 @@ import {
   Tag,
   Tags,
   Truck,
+  Unlock,
   Users,
   UsersRound,
   Wallet,
@@ -118,6 +119,8 @@ const TELE_RASTREAMENTO: NavItem = { label: "Rastreamento", path: "/telemetria/r
 const PATIOS: NavItem = { label: "Pátios", path: "/patios/patios", icon: Warehouse };
 // Ω5P PR-08a — console de operação: Processos de custódia (governado por impound:read; esconde-fino no registry).
 const PROCESSOS_CUSTODIA: NavItem = { label: "Processos", path: "/patios/processos", icon: FileStack };
+// Ω5P PR-11 — Liberações (fila de restituições/saídas para reparo em andamento; governado por impound:read).
+const LIBERACOES: NavItem = { label: "Liberações", path: "/patios/liberacoes", icon: Unlock };
 const PERFIS_NORMATIVOS: NavItem = { label: "Perfis Normativos", path: "/patios/perfis", icon: Scale };
 const TABELA_VALORES_PATIO: NavItem = { label: "Tabela de Valores", path: "/patios/tarifas", icon: Coins };
 
@@ -152,7 +155,7 @@ const G_TELEMETRIA: NavGroup = {
 };
 // Ω5P PR-04 — grupo PÁTIOS (admin/gestor completo; dispatcher/campo tem os 3 reads → vê a leitura; ações
 // Novo/Editar são gated por :create/:update na tela). finance/support não têm as permissões → o esconde-fino oculta.
-const G_PATIOS: NavGroup = { label: "PÁTIOS", items: [PATIOS, PROCESSOS_CUSTODIA, PERFIS_NORMATIVOS, TABELA_VALORES_PATIO] };
+const G_PATIOS: NavGroup = { label: "PÁTIOS", items: [PATIOS, PROCESSOS_CUSTODIA, LIBERACOES, PERFIS_NORMATIVOS, TABELA_VALORES_PATIO] };
 
 // Navegação por papel (5 grupos da IA aprovada). Distribuição por RoleKind
 // segundo a tabela "Visibilidade por papel" (sidebar-ia.md) + navigation-matrix.md.
@@ -220,6 +223,7 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/cadastros/pontos-interesse",
   "/patios/patios",
   "/patios/processos",
+  "/patios/liberacoes",
   "/patios/perfis",
   "/patios/tarifas",
   "/fleet/fuel",

@@ -84,9 +84,9 @@
     "omega5p-avaliador": "APROVADO (VETO; escopo schema/hashchain/charge.accrual/catalog vazios; drift-zero; I5/débitos-diferidos; freeze só no final; §2.8; aderência art.271§2º/§1º/Res.1025 art.23§1º/24; regressão verde. 2 condições de higiene de KPI sanadas. Opinião: DEFERIR a aresta direta)",
     "veredito": "APROVADO 3/3 (LOW-3 sanado; aresta direta RELEASED_FOR_REPAIR→RELEASED mantida deferida por consenso — D-Ω5P-REL-08)"
   },
-  "pr": null,
-  "merge_commit": null,
-  "approved_head": null,
+  "pr": 292,
+  "merge_commit": "62d806d",
+  "approved_head": "62d806d",
   "status": "published_per_pr",
   "riscos_residuais": "(1) Sai 'p/ reparo' e some sem pagar (PRINCIPAL) — mitigado em camadas: autorização da autoridade + quem-transporta identificado com documento (não-repúdio); débitos NUNCA dispensados (ficam ABERTOS, restituição definitiva travada até quitar; I9 retém ≥5a); repairOverdue sinaliza; a coerção (reapreensão/leilão por não-retorno em 60d) = Fase 4 (backlog, aresta FSM nova). (2) Estouro do prazo (não-retorno em 60d) NÃO inventa estado — fica em RELEASED_FOR_REPAIR; PR-10b só EXPÕE repairOverdue. (3) Perfil sem override de prazo de reparo (60d fixo; por-perfil exigiria migração = fora). (4) aresta direta RELEASED_FOR_REPAIR→RELEASED deferred (restituição definitiva via reapresentação) — se a junta preferir habilitá-la: reusar guardReleaseGate + setFrozenAt:true + aprovação definitiva FRESCA (D-Ω5P-REL-08). (5) endpoint for-repair/start em 2 fases (montar/saída) — a UI (PR-11) deve orientar o operador entre as fases; o campo transitioned na resposta distingue.",
   "backlog_fase5": "MEDIUM-1 (critico): dossiê FOR_REPAIR órfão (fase-1 monta IN_PROGRESS sem transicionar; se a autoridade nunca conceder, trava a liberação padrão via partial-unique) → endpoint de cancelamento/abort (trivial pois a fase-1 não move a FSM). MEDIUM-2 (critico): SoD real — manager concentra release:process+approve+transition; mover release:approve p/ persona de autoridade separada quando o authority-portal chegar (herdado do PR-10a, D-Ω5P-12). LOW-4: alinhar que o re-check do deadline no guard é presença, não ≤60d (o ≤60d só no parse; não explorável)."

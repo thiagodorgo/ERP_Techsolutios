@@ -522,6 +522,35 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
       "GET /api/v1/impound-processes/:processId/inspection",
     ],
   },
+  // Ω5P PR-11 — Liberações (console de operação): path GOVERNADO por impound:read (esconde-fino, ESPELHA
+  // patios.processes). SEM requiredModules (permissão pura). Quem não tem impound:read (finance/inventory/support)
+  // NÃO vê o item e segue barrado no 403 do backend. As AÇÕES de liberação (start/consume/for-repair) exigem
+  // impound:transition; recipient/checks exigem release:process; approve exige release:approve; a quitação exige
+  // charging:settle — a UI molda por can(...), o backend é a autoridade. A fila reusa GET /impound-processes.
+  {
+    id: "patios.releases",
+    label: "Liberações",
+    description: "Restituições e saídas para reparo em andamento: quem retira, quitação, autorização da autoridade, gate e comprovante.",
+    path: "/patios/liberacoes",
+    icon: "Unlock",
+    group: "tenant",
+    order: 267,
+    status: "implemented",
+    requiredPermissions: ["impound:read"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/impound-processes",
+      "GET /api/v1/impound-processes/:processId/release",
+      "POST /api/v1/impound-processes/:processId/release/start",
+      "POST /api/v1/impound-processes/:processId/release/recipient",
+      "POST /api/v1/impound-processes/:processId/release/checks",
+      "POST /api/v1/impound-processes/:processId/release/approve",
+      "POST /api/v1/impound-processes/:processId/release/consume",
+      "POST /api/v1/impound-processes/:processId/release/for-repair/start",
+      "POST /api/v1/impound-processes/:processId/release/for-repair/return",
+      "POST /api/v1/impound-processes/:processId/charges/settle",
+    ],
+  },
   {
     id: "patios.profiles",
     label: "Perfis Normativos",

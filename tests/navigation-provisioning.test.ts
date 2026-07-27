@@ -192,3 +192,34 @@ test("Ω5P PR-08a: finance e inventory NÃO veem os Processos de custódia (sem 
   assert.equal(menuPathsForRole("finance").includes(PATIOS_PROCESSES_PATH), false);
   assert.equal(menuPathsForRole("inventory").includes(PATIOS_PROCESSES_PATH), false);
 });
+
+// Ω5P PR-11 (Liberações — fila da liberação I5): o item /patios/liberacoes é GOVERNADO pelo registry com gate
+// ÚNICO impound:read (esconde-fino, ESPELHA patios.processes — SEM requiredModules). A matriz por papel é
+// DERIVADA de ROLE_PERMISSIONS: quem tem impound:read VÊ; finance/inventory (e support) NÃO. As AÇÕES de
+// liberação (transition/process/approve/settle) são gated NA TELA + 403 do backend — o item da fila só exige a
+// leitura, igual aos Processos.
+const PATIOS_RELEASES_PATH = "/patios/liberacoes";
+const PATIOS_RELEASES_PERMISSION = "impound:read";
+
+test("Ω5P PR-11: getGovernedNavigationPaths governa /patios/liberacoes (impound:read)", () => {
+  const governed = getGovernedNavigationPaths();
+  assert.equal(governed.includes(PATIOS_RELEASES_PATH), true);
+});
+
+for (const role of Object.keys(MAP_VISIBLE_BY_ROLE) as Role[]) {
+  const hasPermission = ROLE_PERMISSIONS[role].includes(PATIOS_RELEASES_PERMISSION);
+  test(`Ω5P PR-11: papel ${role} ${hasPermission ? "VÊ" : "NÃO vê"} as Liberações (gate ${PATIOS_RELEASES_PERMISSION})`, () => {
+    assert.equal(
+      menuPathsForRole(role).includes(PATIOS_RELEASES_PATH),
+      hasPermission,
+      `${role} → ${PATIOS_RELEASES_PATH} deveria ${hasPermission ? "aparecer" : "sumir"} no menu`,
+    );
+  });
+}
+
+test("Ω5P PR-11: finance e inventory NÃO veem as Liberações (sem impound:read)", () => {
+  assert.equal(ROLE_PERMISSIONS.finance.includes(PATIOS_RELEASES_PERMISSION), false);
+  assert.equal(ROLE_PERMISSIONS.inventory.includes(PATIOS_RELEASES_PERMISSION), false);
+  assert.equal(menuPathsForRole("finance").includes(PATIOS_RELEASES_PATH), false);
+  assert.equal(menuPathsForRole("inventory").includes(PATIOS_RELEASES_PATH), false);
+});
