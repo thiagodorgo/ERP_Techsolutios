@@ -2,11 +2,17 @@ import { isMockMode, readFrontendEnv } from "../../config/env";
 import { clearStoredAuthSession, getStoredToken } from "../../modules/auth/auth.storage";
 import { refreshSession } from "../../modules/auth/auth.service";
 
-/** Erro de API com mensagem segura para a UI (não vaza corpo cru). */
+/**
+ * Erro de API com mensagem segura para a UI (não vaza corpo cru). `code`/`reason` são o discriminador
+ * ESTÁVEL do backend ({ error: { code, reason, message } } — core-saas/routes/http.ts sendRouteError),
+ * extraídos de forma ADITIVA: opcionais, a `safeMessage` genérica permanece para todos os callers.
+ */
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly safeMessage: string,
+    readonly code?: string,
+    readonly reason?: string,
   ) {
     super(safeMessage);
     this.name = "ApiError";
@@ -19,6 +25,36 @@ function safeMessageFor(status: number): string {
   if (status === 409) return "Conflito de dados. Recarregue e tente novamente.";
   if (status >= 500) return "Falha no servidor. Tente novamente em instantes.";
   return "Não foi possível concluir a operação.";
+}
+
+/**
+ * Monta o ApiError lendo o corpo de erro do backend para carregar `code`/`reason` (discriminadores estáveis)
+ * SEM vazar corpo cru: a `safeMessage` exibível continua genérica por status. Corpo não-JSON/ausente → sem
+ * code/reason (comportamento idêntico ao anterior). Consome o body só no caminho de erro (já vamos lançar).
+ */
+async function buildApiError(response: Response): Promise<ApiError> {
+  const { code, reason } = await readErrorEnvelope(response);
+  return new ApiError(response.status, safeMessageFor(response.status), code, reason);
+}
+
+async function readErrorEnvelope(response: Response): Promise<{ code?: string; reason?: string }> {
+  try {
+    const body: unknown = await response.json();
+    if (body && typeof body === "object" && "error" in body) {
+      const error = (body as { error?: unknown }).error;
+      if (error && typeof error === "object") {
+        const code = (error as { code?: unknown }).code;
+        const reason = (error as { reason?: unknown }).reason;
+        return {
+          code: typeof code === "string" ? code : undefined,
+          reason: typeof reason === "string" ? reason : undefined,
+        };
+      }
+    }
+  } catch {
+    // corpo não-JSON, vazio ou já consumido — mantém o erro genérico (backward-compatible).
+  }
+  return {};
 }
 
 type RequestOptions = {
@@ -41,7 +77,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     body: options.body ? JSON.stringify(options.body) : undefined,
   }));
 
-  if (!response.ok) throw new ApiError(response.status, safeMessageFor(response.status));
+  if (!response.ok) throw await buildApiError(response);
 
   return response.json() as Promise<T>;
 }
@@ -59,7 +95,7 @@ export async function apiFormDataRequest<T>(path: string, options: Omit<RequestO
     body: options.body,
   }));
 
-  if (!response.ok) throw new ApiError(response.status, safeMessageFor(response.status));
+  if (!response.ok) throw await buildApiError(response);
 
   return response.json() as Promise<T>;
 }
@@ -70,7 +106,7 @@ export async function apiBlobRequest(path: string, options: RequestOptions = {})
     headers: buildAuthHeaders(options, forceStoredToken),
   }));
 
-  if (!response.ok) throw new ApiError(response.status, safeMessageFor(response.status));
+  if (!response.ok) throw await buildApiError(response);
 
   return {
     blob: await response.blob(),

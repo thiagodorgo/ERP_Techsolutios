@@ -8,12 +8,16 @@ import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
+import { GuiaDebitos } from "../../charges/components/GuiaDebitos";
+import { LancamentoChargeModal } from "../../charges/components/LancamentoChargeModal";
+import { useStatement } from "../../charges/useStatement";
 import { getYardOccupancy, listYardsFromApi } from "../../yards/yards.service";
 import { IntegritySeal } from "../components/IntegritySeal";
 import { InspectionSection } from "../components/InspectionSection";
 import { ProcessStatusChip } from "../components/ProcessStatusChip";
 import { ProcessTimeline } from "../components/ProcessTimeline";
 import { SpotPickerModal } from "../components/SpotPickerModal";
+import { TransicaoFsmPanel } from "../components/TransicaoFsmPanel";
 import { VacateSpotModal } from "../components/VacateSpotModal";
 import { formatDateTime, getVehicleLabel } from "../processes.adapter";
 import { getInspection, getProcess, listEvents, verifyChain } from "../processes.service";
@@ -35,6 +39,8 @@ export function ProcessoDossiePage() {
   const { can } = usePermissions();
 
   const canAllocate = can("impound:allocate");
+  const canTransition = can("impound:transition");
+  const canCreateCharge = can("charging:create");
 
   const [process, setProcess] = useState<ProcessDetail | null>(null);
   const [events, setEvents] = useState<CustodyEventItem[]>([]);
@@ -46,6 +52,16 @@ export function ProcessoDossiePage() {
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [moveState, setMoveState] = useState<MoveState>(null);
+  const [chargeModalOpen, setChargeModalOpen] = useState(false);
+
+  // Guia de débitos (PR-08b) — hook próprio (auto-refresh; o motor de diárias acumula por job). D-007: mock → vazio.
+  const {
+    statement,
+    loading: statementLoading,
+    error: statementError,
+    denied: statementDenied,
+    reload: reloadStatement,
+  } = useStatement(processId);
 
   const context = useMemo(
     () => ({
@@ -201,7 +217,43 @@ export function ProcessoDossiePage() {
           <Card title="Vistoria de recepção">
             <InspectionSection view={inspection} />
           </Card>
+
+          <TransicaoFsmPanel
+            processId={process.id}
+            status={process.status}
+            inspectionComplete={inspection?.complete ?? false}
+            canTransition={canTransition}
+            context={context}
+            onDone={() => {
+              void load();
+              void reloadStatement();
+            }}
+          />
+
+          <GuiaDebitos
+            statement={statement}
+            loading={statementLoading}
+            error={statementError}
+            denied={statementDenied}
+            canCreate={canCreateCharge}
+            onRetry={() => void reloadStatement()}
+            onLaunch={() => setChargeModalOpen(true)}
+          />
         </>
+      ) : null}
+
+      {chargeModalOpen && process ? (
+        <LancamentoChargeModal
+          processId={process.id}
+          lines={statement?.lines ?? []}
+          currency={statement?.currency ?? "BRL"}
+          context={context}
+          onClose={() => setChargeModalOpen(false)}
+          onDone={() => {
+            setChargeModalOpen(false);
+            void reloadStatement();
+          }}
+        />
       ) : null}
 
       {moveState && process && moveState.kind !== "vacate" ? (

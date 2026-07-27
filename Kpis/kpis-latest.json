@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-26",
-  "version": "OMEGA5P-PR-08a",
+  "version": "OMEGA5P-PR-08b",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω5P PR-08a — Fase 2: UI de operação do pátio (console autenticado /patios) — ocupação REAL + Processos + Dossiê probatório + movimentação de vaga",
-    "title": "Ω5P PR-08a: o console operacional do pátio — mapa de ocupação REAL (vaga↔processo), dossiê probatório (timeline I2 + selo de verificação da cadeia hash + vistoria art.14/galeria) e movimentação/transferência de vaga; junta 3/3 com 1 ciclo de reprovação (anti-vazamento de dado cru na timeline)",
+    "block": "Ω5P PR-08b — Fase 2: guia de débitos (memória de cálculo I4, com F4 periodSeq) + painel de transições da FSM (4 arestas) — ACRESCENTA 2 seções ao dossiê do 08a",
+    "title": "Ω5P PR-08b: a guia de débitos regulada (linhas/subtotais/teto/reconciliação-pendente, F4=Diária #periodSeq+janela 24h) e o painel de transições defensivo (espelho de ENABLED_EDGES, 409→PT-BR); junta 3/3 com 1 condição do critico sanada (fetch paralelo eliminado — ApiError evoluído, transição via apiRequest)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω5P PR-08a — UI DE OPERAÇÃO DO PÁTIO (Fase 2). Frontend React do console autenticado /patios + 1 toque backend (governed path). Consome impound (PR-05 #285)/recepção-vistoria (PR-06 #286)/charging leitura (PR-07 #287)/yard (PR-01) — NÃO reimplementa regra; delega ao 403/409/422. SEM permissão nova, SEM migração, SEM dep nova. (1) /patios/processos: dense-list de ImpoundProcess (placa|não-identificado, Chip semântico de situação, pátio via join, entrada, autoridade) + filtros situação(14 estados)/pátio/placa + criação manual MÍNIMA gated por impound:create; EmptyState D-007. (2) /patios/processos/:processId DOSSIÊ PROBATÓRIO: header identidade+situação+origem+datas; selo de integridade I2 (GET /verify: verde íntegra / vermelho adulteração no evento #brokenAt); timeline vertical densa de CustodyEvent (GET /events, por seq, typeLabel+payload amigável, hashes truncados=PROVA); vistoria LEITURA art.14 + galeria de fotos por conjunto + completude. (3) Mapa de ocupação REAL (D-UI-07): grade FREE/OCCUPIED/BLOCKED colorida, vaga OCUPADA linka ao dossiê com placa por join, botão Editar/bloquear vaga gated por yard:update. (4) Movimentação: allocate/vacate/move (impound:allocate; /spot/move cobre intra e cross-pátio, backend classifica). Governed path patios.processes (impound:read, sem requiredModules, esconde-fino) + item sidebar Processos. §2.8/allowlist: tenant_id NUNCA renderizado; currentProcessId só no href; hashes truncados=PROVA. White-label PT-BR (Processo de custódia/Autoridade/Órgão/Pátio/Vaga/Vistoria/Bloqueio judicial; nunca tenant/polícia). JUNTA APROVADO 3/3 (1 CICLO DE REPROVAÇÃO): cognicao-visual REPROVOU C-VIS-1 (a timeline vazava enum interno/código-motivo/UUID cru — describeEventPayload imprimia valores verbatim; SANADO: getStatusLabel + supressão de UUID por regex + REASON_CODE_LABELS PT-BR preservando texto livre + JSON.stringify removido + smoke endurecido com payloads reais) → re-review APROVADO; omega5p-avaliador APROVADO (A1 regressão da edição/bloqueio de vaga yard:update + A2 KPI sanados); coordenador-de-acessos APROVADO (cadeia de acesso íntegra, matriz derivada de ROLE_PERMISSIONS, finance/inventory não veem; achado doc navigation-matrix sanado). R-omega5p-pr08a-ciclo1. D-Ω5P-UI-07/10/11. Aderência Res.1025 art.9º(informações permanentemente atualizadas)/art.9º VII(integridade I2)/art.14(vistoria+galeria); CTB 271§1º. frontend_smoke 861→875 (+14), backend 1696→1707 (+11 nav-provisioning), flutter 807 inalterado, blocks 95→96. Zero regressão. Inclui backfill do PR-07 (#287 1872fc9).",
-    "status_label": "Ω5P PR-08a: console operacional do pátio (ocupação real vaga↔processo + dossiê probatório timeline/verify/vistoria + movimentação); junta 3/3 com 1 ciclo de reprovação (anti-vazamento de dado cru na timeline); frontend_smoke 861->875, backend 1696->1707, blocks 95->96"
+    "summary": "Ω5P PR-08b — GUIA DE DÉBITOS + TRANSIÇÕES DA FSM (Fase 2). Frontend do console /patios — SEM toque backend (o governed path é do 08a; navigation/App/sidebar INTOCADOS). Consome charging (PR-07 #287: GET /impound-processes/:id/charges/statement [4 segmentos] + POST /charges) e impound (POST /transitions), delega ao 403/409/422. SEM permissão/migração/dep/PWA. Guia de débitos (seção no dossiê): linhas por kindLabel + F4 (herdado do PR-07: DAILY identificada por periodSeq \"Diária #N\" + janela de 24h, refDate só legenda secundária — nunca chave visual, não-injetiva no DST) + subtotais por kind + total (rótulo \"Total apurado (memória de cálculo)\" sob reconciliationPending, \"Total devido\" no caso normal — B2 honestidade) + painel do teto (cap.model/capCount/nAccrue + selo âmbar capReached) + banner read-only de reconciliação pendente (estorno=PR-10); dinheiro Decimal→BRL; useAutoRefresh; EmptyState D-007. Lançamento manual ADDITIONAL|ADJUSTMENT (charging:create; DAILY engine-only barrada → 422; ADJUSTMENT delta assinado + alvo obrigatório, append-only RN-DIA-05). Painel de transições: fsm.ts com descritor estático FSM_ACTIONS ESPELHO de ENABLED_EDGES (4 arestas custódia-nativas; só a habilitada vira botão); IN_REMOVAL→RECEPTION, RECEPTION→ACTIVE_CUSTODY (desabilitada até inspection.complete — I3; edição de vistoria=08c/R4), ACTIVE_CUSTODY⇄JUDICIAL_HOLD (fundamento obrigatório §§14-15); POST /transitions {to,reason?} (impound:transition); 409 defensivo→PT-BR. §2.8/allowlist: tenant_id nunca; tariffId/adjustmentOfChargeId nunca crus; zero polícia/tenant. JUNTA APROVADO 3/3: omega5p-avaliador (VETO; M1 fechado sem regressão) + cognicao-visual + critico-adversarial (0 CRÍTICO; V1-V7 resistiram; M1 MÉDIO do fetch paralelo sem refresh-retry de 401 SANADO pelo caminho arquitetural — ApiError +code?/+reason? aditivo, transição via apiRequest, fetch bespoke deletado; provado api-client 3/3 + smoke 892/892; B1 reentrância + B2 rótulo honesto). D-Ω5P-UI-08/11. Aderência Res.1025 art.21§1º(diária 24h→periodSeq)/§2º(teto, pago por quem retira=PR-10); CTB 271§1º/§10; Tema 124; §§14-15. frontend_smoke 875→892 (+17), backend 1707 e flutter 807 inalterados, blocks 96→97. Zero regressão. Inclui backfill do PR-08a (#288 a342fe7).",
+    "status_label": "Ω5P PR-08b: guia de débitos regulada (F4 Diária #periodSeq + teto + reconciliação-pendente read-only) + transições defensivas (espelho ENABLED_EDGES); junta 3/3, condição M1 do critico sanada (fetch paralelo eliminado); frontend_smoke 875->892, blocks 96->97"
   },
   "metrics": {
     "flutter_tests": {
@@ -21,16 +21,16 @@
       "note": "Ω4C PR-13 telemetria Flutter (+25 telemetry_test: consent-gate cliente/buffer-flush≤50/idempotencia/offline-replay/foreground-only/eventos/§2.8/migracao-Drift-11-12). Execucao REAL da suite Flutter 807 pass/0 falha/0 skip (Flutter 3.41.6); o 764 anterior era valor carregado nao re-executado desde B-124 → reconciliado a suite real. dart format 0-changed; analyze No issues; pubspec INTOCADO (zero-dep). Sobre 764."
     },
     "frontend_smoke_tests": {
-      "value": 875,
-      "total": 875,
-      "display": "875/875",
-      "note": "+14 (Ω5P PR-08a UI operação do pátio): patios-processos 4 (cabeçalho+filtros+EmptyState D-007+gate impound:read/create; sem tenant/polícia) + patios-dossie 6 (timeline por seq + selo verify valid/brokenAt + galeria por conjunto + NÃO vaza enum interno/UUID/código-motivo — payloads reais + doesNotMatch) + patios-mapa 4 (vaga OCCUPIED linka ao dossiê + currentProcessId só no href + botão Editar gated por yard:update). Sobre 861."
+      "value": 892,
+      "total": 892,
+      "display": "892/892",
+      "note": "+17 (Ω5P PR-08b guia de débitos + transições FSM): patios-debitos 9 (F4 Diária #periodSeq precede ref.data + ISO cru ausente; subtotais/total/teto/capReached/banner reconciliação; seletor sem DAILY; gate charging:create; Total apurado×devido; BRL; sem UUID/tenant) + patios-transicoes 8 (FSM_ACTIONS espelha ENABLED_EDGES; só aresta habilitada vira botão; JUDICIAL_HOLD exige fundamento; graduação desabilitada sem inspection.complete; 409 transition_not_enabled_yet→PT-BR). Sobre 875. Estável após follow-up M1 (fetch paralelo→apiRequest) sem novo teste."
     },
     "backend_tests": {
       "value": 1707,
       "total": 1713,
       "display": "1707/1713",
-      "note": "+11 (Ω5P PR-08a, navigation-provisioning): 1 governança patios.processes + 9 matriz por papel /patios/processos derivada de ROLE_PERMISSIONS + 1 assert explícito finance/inventory. Frontend-only PR + 1 governed path no navigation.registry.ts. CI-memória 6 skip. Sobre 1696 (Ω5P PR-07)."
+      "note": "1707 inalterado no Ω5P PR-08b (frontend-only, sem toque no backend nem no registry). Último valor oficial do Ω5P PR-08a (+11 navigation-provisioning). CI-memória 6 skip."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 96,
-      "display": "96",
-      "note": "Ω5P PR-08a (UI de operação do pátio: mapa de ocupação REAL vaga↔processo + dossiê probatório [timeline I2/selo de verificação da cadeia hash/vistoria art.14+galeria] + movimentação/transferência de vaga — novo módulo frontend processes) → +1 sobre 95 (Ω5P PR-07). PR-00 (recon) e a subdivisão 08b/08c não contam aqui."
+      "value": 97,
+      "display": "97",
+      "note": "Ω5P PR-08b (guia de débitos regulada com F4 + painel de transições da FSM defensivo — novo módulo frontend charges + fsm.ts) → +1 sobre 96 (Ω5P PR-08a). PR-00 (recon) e 08c (edição de vistoria, diferido) não contam aqui."
     },
     "mobile_backend_contracts": {
       "value": 18,
