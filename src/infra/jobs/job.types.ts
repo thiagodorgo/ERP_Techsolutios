@@ -14,6 +14,10 @@ export const JOB_NAMES = [
   // remoção CONCLUÍDAS (service_catalog.custody_profile_id set) sem ImpoundProcess e ABRE a custódia em RECEPÇÃO.
   // Auto-reenfileirante, gated por JOBS_WORKER_ENABLED, catch-up (espelha notifications.scan-due). Ator = SISTEMA.
   "impound.reconcile-removals",
+  // Ω5P PR-07 (D-Ω5P-CHG) — SWEEP do MOTOR DE DIÁRIAS (I4): varre os processos com t0 e AINDA acumulando
+  // (frozen_at NULL) e cria as ProcessCharge DAILY faltantes + CustodyEvent CHARGE_ACCRUAL (I2). Idempotente
+  // (period_seq)/DST-safe/catch-up. Auto-reenfileirante 1h, gated por JOBS_WORKER_ENABLED. Ator = SISTEMA.
+  "charging.accrue-daily",
 ] as const;
 
 export type JobName = (typeof JOB_NAMES)[number];

@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-26",
-  "version": "OMEGA5P-PR-06",
+  "version": "OMEGA5P-PR-07",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω5P PR-06 — Fase 2: Recepção/Vistoria (I3 real) + gatilho OS→custódia durável (sweep) + alocação atômica (I1) + FK dura",
-    "title": "Ω5P PR-06: liga a custódia à operação — vistoria de recepção (art.9º/14) com guarda I3 REAL (fecha F2 do PR-05), gatilho durável por sweep, alocação de vaga atômica; junta pesada 3/3 (3 durabilidades sanadas)",
+    "block": "Ω5P PR-07 — Fase 2: charging (motor de diárias I4 — rolling-24h/calendário, teto intertemporal, job idempotente, congelamento, fail-closed)",
+    "title": "Ω5P PR-07: o motor de cobrança de diárias reguladas (Res.1025 art.21) — fórmula §5, DST via Intl zero-dep, teto pela data de entrada, idempotência period_seq, fail-closed no resolveTariff; junta pesada 3/3 (5 condições sanadas, incl. bug de constraint 3-valores)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω5P PR-06 — RECEPÇÃO/VISTORIA + GATILHO DURÁVEL + ALOCAÇÃO ATÔMICA (Fase 2). Backend + migração aditiva. Fecha os requisitos herdados do PR-05 (F2 guarda I3 real; verify-snapshot) e liga a custódia à operação. IntakeInspection DEDICADO (art.9º/14; fotos via Attachment polimórfico; conjuntos obrigatórios parametrizados por JurisdictionProfile.required_photo_sets [D-REC-09]). F2 FECHADO: guarda RECEPTION→ACTIVE_CUSTODY lê isIntakeComplete REAL (dados mínimos + TODOS os conjuntos do perfil com ≥1 foto stored); body.inspection_complete REMOVIDO (flag forjado + vistoria incompleta → AINDA 409). Gatilho DURÁVEL: job impound.reconcile-removals (sweep gated JOBS_WORKER_ENABLED, espelha scan-due) abre OS de remoção concluídas [service_catalog.custody_profile_id NOT NULL, origem-agnóstico D-REC-04] sem processo em RECEPTION com entered_at=completed_at, idempotente pelo partial-unique. openFromRemovalAtomic (create+RECEPTION+t0 em 1 tx → sem half-open) + sweep CURA half-open pré-existente (candidato IN_REMOVAL+entered_at NULL → cureHalfOpenRemoval). F-2: sem sinal independente de remoção → custody_profile_id é o único marcador → abertura 100% contingente à config; alegação registra-a-lacuna RISCADA (não afirmar observabilidade que não entrega). Alocação I1 atômica: assignSpotAtomic (allocate+UPDATE+SPOT_ASSIGNED em 1 tx, elimina vacate compensatório do PR-05) + FK DURA yard_spots.current_process_id→impound_processes NOT VALID+VALIDATE (0 órfãos). verify-snapshot RepeatableRead (elimina falso-alarme transitório sem falso-negativo). 2 perms novas impound:inspect+impound:allocate; sweep=ator sistema. Migração 20260837000000. JUNTA PESADA APROVADO 3/3: agente-dba-guardiao (aditiva up/down/re-up drift-zero; FK dura convalidated 0-órfãos) + omega5p-avaliador (I3/F2 fechado; durável; I1 atômico; verify-snapshot; §allowlist; white-label; sem regressão) + critico-adversarial (0 CRÍTICO — I3/I1/idempotência/verify-snapshot RESISTIRAM; 3 MÉDIOS de durabilidade F-1[openFromRemovalAtomic+cura]/F-2[Opção 2 honesta]/F-3[gate go-live] sanados+re-verificados; F-4 isolamento feito). D-Ω5P-REC-01..11. Requisitos: F-3 gate de go-live JOBS_WORKER_ENABLED=true+liveness (junta-se ao NOSUPERUSER do PR-05); F-5/F-6/F-7 backlog. Nota de processo: 2 mass-deletes na base viva sinalizados (PR-05 dev não-autorizado; PR-06 dba autorizado+escopado a test-debris; demo intacto) → orquestrador parou de autorizar deletes de DB a agentes. backend 1657→1676 (+19), frontend_smoke 861 e flutter 807 inalterados (backend-only), blocks 93→94. Zero regressão (Vehicle/work-order.service intocados; I1 do PR-01 e I2 do PR-05 re-provados). Inclui backfill do PR-05 (#285 574a1d2).",
-    "status_label": "Ω5P PR-06: recepção/vistoria (I3 real, fecha F2) + gatilho OS→custódia durável (sweep openFromRemovalAtomic+cura) + alocação de vaga atômica (I1) + FK dura + verify-snapshot; junta pesada 3/3 (dba+critico, 3 durabilidades sanadas); backend 1657->1676, blocks 93->94"
+    "summary": "Ω5P PR-07 — MOTOR DE DIÁRIAS (Fase 2, I4). Backend + migração aditiva. Dinheiro regulado. ProcessCharge (ledger: REMOVAL|DAILY|ADDITIONAL|ADJUSTMENT; period_seq ordinal DST-imune) + DailyAccrualRun. JurisdictionProfile +daily_service_catalog_id (NULL⇒fail-closed). Migração 20260838000000 (RLS forced + partial-unique period_seq WHERE kind=DAILY + REMOVAL-once + CHECKs [daily_shape_chk ENDURECIDO period_seq IS NOT NULL — C1] + FK RESTRICT). Motor charge.accrual.ts PURO (fórmula ESTUDO §5; convenção-piso 1ª diária em t0+24h): ROLLING físico (imune DST) × CALENDAR local via Intl.DateTimeFormat(yard.timezone) ZERO-dep; teto pela DATA DE ENTRADA (SIX_MONTHS=6meses-calendário/THIRTY_DAYS_LEGACY-Tema124/UNLIMITED, PARA no teto); congelamento asOf=min(now,frozen_at); valor via resolveTariff(PR-03) FAIL-CLOSED (undefined→NÃO cobra 0, error++ + logger.warn por-processo, PARA preservando period_seq). Cada acumulação = CHARGE_ACCRUAL na cadeia hash (reusa só PURAS do impound.hashchain, verifyChain valid). ADJUSTMENT append-only (RN-DIA-05, nunca update/delete; alvo validado same-process/tenant). Job charging.accrue-daily (sistema; idempotência tripla). ProcessCharge=ledger (conta a pagar/quitação=PR-10). /statement sinaliza overAccruedDailies+reconciliationPending (freeze retroativo — estorno real=PR-10). 2 perms charging:read+create. JUNTA PESADA APROVADO 3/3: agente-dba-guardiao (aditiva up/down/re-up drift-zero; C1 CHECK 3-valores endurecido+provado vivo 23514) + omega5p-avaliador (I4 correto; §allowlist; C2 drift-zero; sem regressão) + critico-adversarial (0 CRÍTICO de fórmula — 8 vetores RESISTIRAM; C1 idempotência à prova; C3 statement sinaliza over-acúmulo; C4 log por-processo; C5 validação ADJUSTMENT). 5 condições sanadas em ciclo. D-Ω5P-CHG-01..07. Requisitos: PR-10 reconciliação de freeze (estorno); PR-08 exibir period_seq; backlog firstDailyAtEntry/yard.timezone-imutável. backend 1676→1696 (+20), frontend_smoke 861 e flutter 807 inalterados (backend-only), blocks 94→95. Zero regressão (Vehicle/work-order intocados; I1/I2/I3 re-provados). Inclui backfill do PR-06 (#286 5134ec6).",
+    "status_label": "Ω5P PR-07: motor de diárias I4 (rolling/calendário, teto intertemporal pela data de entrada, DST via Intl zero-dep, idempotência period_seq, fail-closed no resolveTariff, ADJUSTMENT append-only); junta pesada 3/3 (dba+critico; bug de constraint 3-valores + 4 condições sanadas); backend 1676->1696, blocks 94->95"
   },
   "metrics": {
     "flutter_tests": {
@@ -27,10 +27,10 @@
       "note": "+11 (Ω5P PR-04 UI /patios): patios-yards (render/CRUD/'Novo pátio' gated yard:create/EmptyState D-007/§allowlist sem tenant_id/PT-BR sem 'tenant' nem 'polícia') + patios-perfis (PerfisPage+FormModal/labels escopo-diária-teto/release_requirements editor/jurisdiction-defaults prefill/gating) + price-tables-scope-category (2 Selects Escopo/Categoria com 'Todas'=NULL + breadcrumb route-aware Pátios×Cadastros). Primeiro frontend do round Pátios de Recolhimento. Sobre 850."
     },
     "backend_tests": {
-      "value": 1676,
-      "total": 1682,
-      "display": "1676/1682",
-      "note": "+19 (Ω5P PR-06 recepção/vistoria/gatilho durável/alocação atômica): impound-reception 7 (I3 REAL bloqueia sem vistoria + flag forjado ainda bloqueia) + impound-trigger-durability 7 DB-gated (sweep abre com t0; idempotente; durável; pula sem custody_profile_id; CURA half-open F-1b; tenant-escopado) + impound-concurrency +5 (assignSpotAtomic sem vaga órfã; FK dura; verify-snapshot RR). CI-memória: 1682 tests / 1676 pass / 0 fail / 6 skip. Sobre 1657. Migração 20260837000000 aditiva (FK dura NOT VALID+VALIDATE + RLS forced) provada pelo dba-guardião. impound-fsm/hashchain/yard-occupancy editados por regressão real (F2 removeu flag; FK dura exige processos reais) seguem verdes."
+      "value": 1696,
+      "total": 1702,
+      "display": "1696/1702",
+      "note": "+20 (Ω5P PR-07 motor de diárias): charging-daily-engine 19 property-based (rolling×calendar+fronteira-piso; DST spring/fall sem duplicar/pular; teto 30-legado/6-meses-182/ilimitado parando; determinismo; congelamento; fail-closed 0-diárias; idempotência+cadeia I2 valid; ADJUSTMENT append-only; C3 statement freeze-retroativo pending/over=4; C5 adjustment target inexistente/cross-process/ajuste-de-ajuste→422) + charging-job-idempotency DB-gated (job 2×/3-ticks→sem duplicata; catch-up; verifyChain valid; C1 raw DAILY+period_seq NULL→23514) + rls bloco charging + core-saas 2 perms. CI-memória: 1702 tests / 1696 pass / 0 fail / 6 skip. Sobre 1676. Migração 20260838000000 aditiva (CHECK daily_shape_chk endurecido C1; partial-unique period_seq) provada pelo dba-guardião."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 94,
-      "display": "94",
-      "note": "Ω5P PR-06 (recepção/vistoria de entrada I3-real + gatilho OS→custódia durável por sweep + alocação de vaga atômica I1 + FK dura + verify-snapshot — liga a custódia à operação) = 6o bloco de feature da rodada Patios de Recolhimento → +1 sobre 93 (Ω5P PR-05 impound núcleo). PR-00 (recon) nao conta como feature."
+      "value": 95,
+      "display": "95",
+      "note": "Ω5P PR-07 (motor de diárias I4: rolling-24h/calendário + teto intertemporal pela data de entrada + job idempotente + congelamento + fail-closed no resolveTariff + ADJUSTMENT append-only — cobrança regulada Res.1025 art.21) = 7o bloco de feature da rodada Patios de Recolhimento → +1 sobre 94 (Ω5P PR-06). PR-00 (recon) nao conta como feature."
     },
     "mobile_backend_contracts": {
       "value": 18,

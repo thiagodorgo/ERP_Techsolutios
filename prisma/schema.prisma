@@ -50,6 +50,8 @@ model Tenant {
   impound_processes             ImpoundProcess[]
   custody_events                CustodyEvent[]
   intake_inspections            IntakeInspection[]
+  process_charges               ProcessCharge[]
+  daily_accrual_runs            DailyAccrualRun[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
   financial_titles              FinancialTitle[]
@@ -1366,6 +1368,7 @@ model ServiceCatalog {
   work_orders                WorkOrder[] @relation("WorkOrderServiceCatalog")
   tariffs                    Tariff[]    @relation("TariffService")
   custody_profile            JurisdictionProfile? @relation("ServiceCatalogCustodyProfile", fields: [tenant_id, custody_profile_id], references: [tenant_id, id], onDelete: Restrict)
+  daily_jurisdiction_profiles JurisdictionProfile[] @relation("JurisdictionProfileDailyService") // Ω5P PR-07 — serviço-tarifa "diária" de perfis
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, name])
@@ -2744,6 +2747,11 @@ model JurisdictionProfile {
   // ENGINE|CHASSIS_ID|ODOMETER|INNER_OBJECTS|DAMAGES), app-validado. NULL = default federal completo (a spec
   // federal de imagens ainda não saiu — ESTUDO §11a). Aditivo/nullable, sem default (retrocompat total).
   required_photo_sets         Json?
+  // Ω5P PR-07 (D-Ω5P-CHG-01) — ponteiro ADITIVO/nullable ao serviço-tarifa "diária" que o motor de diárias I4
+  // (charging) resolve por vigência×categoria×escopo. O PERFIL É o regime tarifário; NULL ⇒ fail-closed (não
+  // cobra 0 em silêncio). FK composta tenant-first → service_catalog(tenant_id,id) RESTRICT. Mesmo trilho
+  // ADD-COLUMN-nullable abençoado no PR-06 (required_photo_sets/custody_profile_id).
+  daily_service_catalog_id    String?  @db.Uuid
   notes                       String?
   active                      Boolean  @default(true)
   created_by                  String?  @db.Uuid
@@ -2753,12 +2761,14 @@ model JurisdictionProfile {
   tenant                      Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   impound_processes           ImpoundProcess[]
   service_catalogs            ServiceCatalog[] @relation("ServiceCatalogCustodyProfile")
+  daily_service_catalog       ServiceCatalog?  @relation("JurisdictionProfileDailyService", fields: [tenant_id, daily_service_catalog_id], references: [tenant_id, id], onDelete: Restrict)
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, name])
   @@index([tenant_id])
   @@index([tenant_id, scope])
   @@index([tenant_id, active])
+  @@index([tenant_id, daily_service_catalog_id]) // Ω5P PR-07 — declara o índice que a migração cria (drift-zero, C2)
   @@map("jurisdiction_profiles")
 }
 
@@ -2805,6 +2815,7 @@ model ImpoundProcess {
   events                 CustodyEvent[]
   intake_inspection      IntakeInspection?   // Ω5P PR-06 — 1 vistoria de recepção por processo (I3)
   parked_spots           YardSpot[]          @relation("YardSpotCurrentProcess") // Ω5P PR-06 — FK dura da ocupação (I1)
+  charges                ProcessCharge[]     // Ω5P PR-07 — ledger de encargos (diárias I4 + remoção/adicional/ajuste)
 
   @@unique([tenant_id, id])
   @@index([tenant_id, yard_id, status])
@@ -2879,4 +2890,62 @@ model IntakeInspection {
   @@unique([tenant_id, process_id])
   @@index([tenant_id, process_id])
   @@map("impound_intake_inspections")
+}
+
+// Ω5P PR-07 — LEDGER de encargos do processo de custódia (base de cálculo da guia + da quitação PR-10). É a
+// materialização consultável do motor de diárias (I4); a PROVA de integridade vive no CustodyEvent CHARGE_ACCRUAL
+// (append-only, trigger-protegido), escrito na MESMA tx do INSERT deste ledger. AMOUNT-IMUTÁVEL (RN-DIA-05 / I2):
+// correção = novo ProcessCharge kind=ADJUSTMENT (delta com sinal), NUNCA UPDATE/DELETE de valor. settled_* só é
+// carimbado na LIBERAÇÃO (PR-10) — NÃO escrito em PR-07. Dinheiro Decimal(12,2). kind/currency validados na APP
+// (SEM enum-CHECK). process→RESTRICT (I9: encargo nunca cascateia; retenção ≥5 anos). tenant_id 1º; RLS forced.
+// Idempotência da diária = índice PARCIAL único (tenant,process,period_seq) WHERE kind='DAILY' (raw-only na
+// migração — D-Ω5P-CHG-02); a REMOVAL tem partial-unique próprio (no máx. 1 encargo-base por processo).
+model ProcessCharge {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id               String    @db.Uuid
+  process_id              String    @db.Uuid
+  kind                    String                                     // REMOVAL|DAILY|ADDITIONAL|ADJUSTMENT (app-validado)
+  period_seq              Int?                                       // só DAILY: ordinal N da diária (1-based) — chave de idempotência DST-imune
+  ref_date                DateTime? @db.Date                         // data-local-do-pátio (DAILY: data do período; ADJUSTMENT: data corrigida)
+  description             String?
+  quantity                Decimal   @default(1) @db.Decimal(12, 2)   // §6.5 (DAILY=1)
+  unit_amount             Decimal   @db.Decimal(12, 2)
+  total_amount            Decimal   @db.Decimal(12, 2)               // = quantity × unit_amount (CHECK estrutural, relaxado p/ ADJUSTMENT)
+  currency                String    @default("BRL")
+  tariff_id               String?   @db.Uuid                         // proveniência SOFT (sem FK dura — padrão source_id da casa; tarifa arquiva)
+  adjustment_of_charge_id String?   @db.Uuid                         // ADJUSTMENT: encargo corrigido (linkage append-only, soft)
+  settled_at              DateTime? @db.Timestamptz(6)               // carimbo da LIBERAÇÃO (PR-10) — NÃO escrito em PR-07
+  settlement_note         String?                                   // idem PR-10
+  created_by              String?   @db.Uuid
+  updated_by              String?   @db.Uuid
+  created_at              DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant                  Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  process                 ImpoundProcess @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, process_id])
+  @@index([tenant_id, process_id, kind])
+  @@index([tenant_id, kind])
+  @@map("process_charges")
+}
+
+// Ω5P PR-07 — bookkeeping do SWEEP de diárias (durabilidade/observabilidade, NÃO a fonte de idempotência — essa
+// é o partial-unique de period_seq). Um run por tick por tenant. tenant_id 1º; RLS forced.
+model DailyAccrualRun {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id       String    @db.Uuid
+  run_date        DateTime  @db.Date                    // data LÓGICA do sweep (≠ refDate por processo, que usa o TZ do pátio)
+  status          String    @default("running")         // running|completed|failed (app-validado)
+  processed_count Int       @default(0)                 // processos examinados
+  accrued_count   Int       @default(0)                 // diárias criadas
+  error_count     Int       @default(0)                 // fail-closed (sem tarifa / sem serviço-diária)
+  started_at      DateTime  @default(now()) @db.Timestamptz(6)
+  finished_at     DateTime? @db.Timestamptz(6)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  tenant          Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, run_date])
+  @@map("daily_accrual_runs")
 }

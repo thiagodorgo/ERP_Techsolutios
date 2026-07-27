@@ -59,6 +59,10 @@ export const PERMISSION_CATALOG = [
   // create/update/transition = gestão+admins. impound:transition é EIXO PRÓPRIO (dirigir a FSM = ato jurídico/
   // probatório, ≠ corrigir metadado). impound:manage NÃO existe (sem rota/guard = permissão morta).
   "impound:read",
+  // Ω5P PR-07 (D-Ω5P-CHG) — Encargos/motor de diárias (ledger amount-imutável). charging:read = MESMA distribuição
+  // ampla de impound:read (ver ledger + memória de cálculo). charging:update/:delete/:manage NÃO existem (ledger
+  // append-only; DIÁRIA é acumulada pelo SISTEMA/job; correção = ADJUSTMENT via charging:create).
+  "charging:read",
   "service_quotes:read",
   "work_order_financials:read",
   "financial_accounts:read",
@@ -79,6 +83,8 @@ export const PERMISSION_CATALOG = [
   "yard:create",
   "jurisdiction:create",
   "impound:create",
+  // Ω5P PR-07 — registrar REMOVAL/ADDITIONAL/ADJUSTMENT manual (gestão+admins, = impound:create).
+  "charging:create",
   "service_quotes:create",
   "work_order_financials:create",
   "financial_accounts:create",
@@ -299,6 +305,7 @@ export const ROLE_PERMISSIONS = {
     "yard:read",
     "jurisdiction:read",
     "impound:read",
+    "charging:read",
     "service_quotes:read",
     "work_order_financials:read",
     "financial_accounts:read",
@@ -320,6 +327,7 @@ export const ROLE_PERMISSIONS = {
     "yard:create",
     "jurisdiction:create",
     "impound:create",
+    "charging:create",
     "service_quotes:create",
     "work_order_financials:create",
     "service_catalog:update",
@@ -421,6 +429,7 @@ export const ROLE_PERMISSIONS = {
     "yard:read",
     "jurisdiction:read",
     "impound:read",
+    "charging:read",
     "service_quotes:read",
     "work_order_financials:read",
     "fuel_logs:read",
@@ -465,6 +474,7 @@ export const ROLE_PERMISSIONS = {
     "yard:read",
     "jurisdiction:read",
     "impound:read",
+    "charging:read",
     "service_quotes:read",
     "work_order_financials:read",
     "fuel_logs:read",
@@ -514,6 +524,7 @@ export const ROLE_PERMISSIONS = {
     "yard:read",
     "jurisdiction:read",
     "impound:read",
+    "charging:read",
     "service_quotes:read",
     "work_order_financials:read",
     "financial_accounts:read",
@@ -569,6 +580,7 @@ export const ROLE_PERMISSIONS = {
     "yard:read",
     "jurisdiction:read",
     "impound:read",
+    "charging:read",
     "service_quotes:read",
     "work_order_financials:read",
     "service_quotes:create",
@@ -732,6 +744,7 @@ export const ROLE_PERMISSIONS = {
     "yard:read",
     "jurisdiction:read",
     "impound:read",
+    "charging:read",
     "service_quotes:read",
     "work_order_financials:read",
     "fuel_logs:read",
@@ -778,6 +791,7 @@ export const ROLE_PERMISSIONS = {
     "yard:read",
     "jurisdiction:read",
     "impound:read",
+    "charging:read",
     "service_quotes:read",
     "work_order_financials:read",
     "financial_accounts:read",

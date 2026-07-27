@@ -1512,6 +1512,44 @@ if (!connectionString) {
       assert.equal(tenantBInsp?.signature_status, "ABSENT", "tenant B intake inspection stays visible + untouched in-tenant");
       assert.equal(tenantBInsp?.agent_name, null, "tenant B intake inspection agent_name untouched by tenant A cross-update");
 
+      // Ω5P PR-07 (D-Ω5P-CHG-*) — process_charges (ledger de encargos) + daily_accrual_runs nos 3 tenants EFÊMEROS.
+      // O encargo referencia o impound_process (FK composta tenant-first, RESTRICT — I9). RLS ENABLE/FORCE + policy
+      // (migration 20260838000000). Prova: invisível sem contexto + cross-tenant updateMany count=0 + visível/intocado
+      // in-tenant. tenant_id 1º de todo índice.
+      const insertCharge = async (tx: typeof client, tenantId: string, processId: string) => {
+        const [charge] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO process_charges (tenant_id, process_id, kind, quantity, unit_amount, total_amount)
+          VALUES (${tenantId}::uuid, ${processId}::uuid, 'REMOVAL', 1, 150.00, 150.00)
+          RETURNING id
+        `;
+        const [run] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO daily_accrual_runs (tenant_id, run_date, status) VALUES (${tenantId}::uuid, CURRENT_DATE, 'completed') RETURNING id
+        `;
+        return { charge_id: charge.id, run_id: run.id };
+      };
+      const chgA = await withTenantRls(client, tenantA.id, (tx) => insertCharge(tx as typeof client, tenantA.id, impA.process_id));
+      const chgB = await withTenantRls(client, tenantB.id, (tx) => insertCharge(tx as typeof client, tenantB.id, impB.process_id));
+      const chgC = await withTenantRls(client, tenantC.id, (tx) => insertCharge(tx as typeof client, tenantC.id, impC.process_id));
+
+      const chgWithoutContext = await client.processCharge.findMany({ where: { id: { in: [chgA.charge_id, chgB.charge_id, chgC.charge_id] } } });
+      assert.deepEqual(chgWithoutContext.map((c) => c.id), [], "process charges must not be visible without app.current_tenant_id");
+
+      const tenantAChgView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.processCharge.findMany({ where: { id: { in: [chgA.charge_id, chgB.charge_id, chgC.charge_id] } } });
+        const crossUpdate = await tx.processCharge.updateMany({ where: { id: { in: [chgB.charge_id, chgC.charge_id] } }, data: { settlement_note: "cross-tenant" } });
+        return { visibleIds: visible.map((c) => c.id).sort(), crossUpdatedRows: crossUpdate.count };
+      });
+      assert.deepEqual(tenantAChgView.visibleIds, [chgA.charge_id], "tenant A must only see its own process charge (not tenant B/C)");
+      assert.equal(tenantAChgView.crossUpdatedRows, 0, "tenant A must not update tenant B/C process charges");
+
+      const runWithoutContext = await client.dailyAccrualRun.findMany({ where: { id: { in: [chgA.run_id, chgB.run_id, chgC.run_id] } } });
+      assert.deepEqual(runWithoutContext.map((r) => r.id), [], "daily accrual runs must not be visible without app.current_tenant_id");
+      const tenantARunView = await withTenantRls(client, tenantA.id, (tx) => tx.dailyAccrualRun.findMany({ where: { id: { in: [chgA.run_id, chgB.run_id, chgC.run_id] } } }));
+      assert.deepEqual(tenantARunView.map((r) => r.id), [chgA.run_id], "tenant A must only see its own daily accrual run (not tenant B/C)");
+
+      const tenantBChg = await withTenantRls(client, tenantB.id, (tx) => tx.processCharge.findUnique({ where: { id: chgB.charge_id } }));
+      assert.equal(tenantBChg?.settlement_note, null, "tenant B process charge settlement_note untouched by tenant A cross-update");
+
       // Ω5P PR-03 (D-Ω5P-TAR-*) — price_tables ESCOPADAS (scope PUBLIC_AGREEMENT/PRIVATE_CONTRACT + vehicle_category)
       // nos 3 tenants EFÊMEROS. As 2 colunas novas são NULLABLE aditivas; a RLS (ENABLE/FORCE + policy
       // price_tables_tenant_isolation, migration 20260723000000) é HERDADA — o ADD COLUMN não a altera. Prova:
@@ -2635,6 +2673,10 @@ if (!connectionString) {
           await tx.$executeRawUnsafe(`DELETE FROM custody_events WHERE tenant_id = '${tenantId}'::uuid`);
           // Ω5P PR-06 — intake_inspections → impound_processes é RESTRICT: purga a vistoria ANTES do processo.
           await tx.$executeRawUnsafe(`DELETE FROM impound_intake_inspections WHERE tenant_id = '${tenantId}'::uuid`);
+          // Ω5P PR-07 — process_charges/daily_accrual_runs → impound_processes/tenant é RESTRICT: purga os encargos
+          // e os runs ANTES do processo (TEARDOWN FK-SAFE).
+          await tx.$executeRawUnsafe(`DELETE FROM process_charges WHERE tenant_id = '${tenantId}'::uuid`);
+          await tx.$executeRawUnsafe(`DELETE FROM daily_accrual_runs WHERE tenant_id = '${tenantId}'::uuid`);
           await tx.$executeRawUnsafe(`DELETE FROM impound_processes WHERE tenant_id = '${tenantId}'::uuid`);
         }
       });

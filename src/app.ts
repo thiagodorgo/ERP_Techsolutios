@@ -43,6 +43,7 @@ import { createTariffRouter } from "./modules/tariffs/index.js";
 import { createYardRouter } from "./modules/yard/index.js";
 import { createJurisdictionRouter } from "./modules/jurisdiction/index.js";
 import { createImpoundRouter } from "./modules/impound/index.js";
+import { createChargeRouter } from "./modules/charging/index.js";
 import { createServiceQuoteRouter } from "./modules/service-quotes/index.js";
 import { createServiceQuoteItemRouter } from "./modules/service-quote-items/index.js";
 import { createWorkOrderFinancialRouter } from "./modules/work-order-financials/index.js";
@@ -133,6 +134,11 @@ export function createApp(service: ICoreSaasService): Express {
   // create/update; a FSM sob impound:transition; GET .../verify recomputa a cadeia. assignSpot/recepção/vistoria
   // = superfície HTTP de PR-06.
   app.use("/api/v1", attachAuthenticatedActor(), createImpoundRouter());
+  // Ω5P PR-07 — Motor de diárias (I4) + ledger de encargos. Router NOVO sob /api/v1 (git add src/app.ts, senão CI
+  // route_not_found). GET .../charges (ledger) + .../charges/statement (memória de cálculo) sob charging:read;
+  // POST .../charges (REMOVAL/ADDITIONAL/ADJUSTMENT manual) sob charging:create. A DIÁRIA é acumulada pelo job
+  // (SISTEMA). Montado APÓS o impound router (paths .../charges não colidem com os do impound).
+  app.use("/api/v1", attachAuthenticatedActor(), createChargeRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createServiceQuoteRouter());
   // Ω3F-4a — Itens do Orçamento (/service-quotes/:id/items) em router próprio: o path não colide
   // com nenhuma rota do service-quotes router (que segue intocado neste bloco).

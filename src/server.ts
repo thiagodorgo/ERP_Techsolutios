@@ -15,16 +15,23 @@ async function startJobWorkerIfEnabled(): Promise<void> {
   if (!env.JOBS_WORKER_ENABLED || env.CORE_SAAS_PERSISTENCE !== "prisma") {
     return;
   }
-  const [{ startWorker }, { enqueueInitialScheduledNotificationScan }, { enqueueInitialImpoundReconcileScan }] =
-    await Promise.all([
-      import("./infra/jobs/job.worker.js"),
-      import("./modules/notifications/scheduled-notification.jobs.js"),
-      import("./modules/impound/impound.jobs.js"),
-    ]);
+  const [
+    { startWorker },
+    { enqueueInitialScheduledNotificationScan },
+    { enqueueInitialImpoundReconcileScan },
+    { enqueueInitialChargingAccrueScan },
+  ] = await Promise.all([
+    import("./infra/jobs/job.worker.js"),
+    import("./modules/notifications/scheduled-notification.jobs.js"),
+    import("./modules/impound/impound.jobs.js"),
+    import("./modules/charging/charge.jobs.js"),
+  ]);
   startWorker();
   await enqueueInitialScheduledNotificationScan();
   // Ω5P PR-06 — 1º tick do SWEEP de reconciliação OS→custódia (auto-reenfileirante 60s). Gated pela mesma flag.
   await enqueueInitialImpoundReconcileScan();
+  // Ω5P PR-07 — 1º tick do SWEEP do motor de diárias I4 (auto-reenfileirante 1h). Gated pela mesma flag.
+  await enqueueInitialChargingAccrueScan();
   logger.info({ pollIntervalMs: 1000 }, "In-process job worker started (JOBS_WORKER_ENABLED).");
 }
 
