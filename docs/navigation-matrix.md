@@ -40,6 +40,7 @@
 | **Perfis Normativos `/patios/perfis` (Ω5P PR-04)** | `jurisdiction:read` (edita: `:create`/`:update`) | F | F | E | R | — | — | R | R | — |
 | **Tabela de Valores `/patios/tarifas` (Ω5P PR-04)** | `price_tables:read` (mesma tela de `/cadastros/tabelas-valores`, breadcrumb sensível à rota) | F | F | E | R | — | — | R | R | — |
 | **Processos `/patios/processos` (Ω5P PR-08a)** | `impound:read` (aloca/move: `impound:allocate`; cria: `impound:create`) — dossiê `/patios/processos/:id` gated por route-guard, não é item de menu | F | F | F | R | — | — | R | R | — |
+| **Liberações `/patios/liberacoes` (Ω5P PR-11)** | `impound:read` (fila; espelha Processos) — ações no dossiê: `impound:transition` (start/consume/for-repair), `release:process` (quem retira/checklist), `release:approve` (autoridade), `charging:settle` (quitação) | F | F | F | R | — | — | R | R | — |
 | Filiais `/cadastros/filiais` (Ω2-b) | `branches:read` | F | F | E | R | — | — | R | R | — |
 | Fornecedores `/cadastros/fornecedores` (Ω2-b) | `suppliers:read` | F | F | E | R | — | — | R | R | — |
 | Profissionais `/cadastros/profissionais` (Ω2-c) | `operator_profiles:read` | F | F | E | R | — | — | R | R | — |

@@ -1,0 +1,91 @@
+{
+  "id": "PR-11",
+  "fase": "Fase 3 (FECHA a Fase 3) — UI de liberação I5 no console React /patios: dossiê de liberação (quem retira + checklist) + quitação (charging:settle, SEM PSP) + autorização da autoridade + GATE VISÍVEL (5 pré-condições espelho de guardReleaseGate) + saída/retorno para reparo (art. 271 §2º) + comprovante art. 24 + fila /patios/liberacoes. Consome release (#291/#292) e charging:settle (#291); a UI é HINT, o backend é a autoridade (gate I5, freeze, hash-chain, reconciliação).",
+  "snapshot_date": "2026-07-27",
+  "branch": "rodada/omega5p",
+  "tipo": "Frontend puro (console autenticado). ZERO backend novo, ZERO migração, ZERO permissão nova. CRIA o módulo frontend patios/release (types/adapter/service/hook + 7 componentes + página da fila). ESTENDE (aditivo/merge-safe) ProcessoDossiePage (insere <LiberacaoPanel> após a Guia de débitos, sem tocar os painéis existentes) + a navegação (registry/sidebar/App/matriz/teste). REUSA impound:read/transition, release:process/approve, charging:settle. SEM PSP/PIX, SEM PWAs, SEM infra.",
+  "models_alterados": [
+    "NENHUM — prisma/** INTOCADO (frontend puro; git diff prisma vazio)."
+  ],
+  "migrations": [
+    "NENHUMA. Sem DDL."
+  ],
+  "modulos": [
+    "frontend/src/modules/patios/release/release.types.ts (CRIA — espelha ReleaseDto/CheckDto/SettleResult reais de src/modules/release/release.dto.ts + charge.dto.ts; enums em inglês, labels PT-BR do backend)",
+    "frontend/src/modules/patios/release/release.adapter.ts (CRIA — reason→PT-BR white-label [5 reasons do gate + start + reparo], deriveReleaseGate (ESPELHO client-side das 5 pré-condições, mesma ordem de guardReleaseGate), isConsumeEnabled (predicado PURO), filterReleasableProcesses (fila), resolveReleaseStage (PURO), adapters de resposta)",
+    "frontend/src/modules/patios/release/release.service.ts (CRIA — via o apiRequest COMPARTILHADO + ReleaseActionError lendo ApiError.reason do client.ts, MESMO padrão do TransitionError/fsm.ts; getRelease 404→null + start/recipient/checks/approve/consume/for-repair/settle)",
+    "frontend/src/modules/patios/release/useRelease.ts (CRIA — GET .../release, 404→null, useAutoRefresh, denied/error, D-007 mock→null)",
+    "frontend/src/modules/patios/release/components/{LiberacaoPanel,DossieLiberacao,QuitacaoPanel,AprovacaoAutoridade,GateLiberacaoChecklist,ReparoPanel,ComprovanteLiberacao}.tsx (CRIA — presentational + orquestrador)",
+    "frontend/src/modules/patios/release/pages/LiberacoesPage.tsx (CRIA — fila: reuso useProcesses + dense-list + filtro multi-status client-side)",
+    "frontend/src/modules/patios/processes/pages/ProcessoDossiePage.tsx (ESTENDE aditivo — insere <LiberacaoPanel> após a Guia de débitos; painéis existentes header/timeline/selo/vistoria/FSM/débitos INTACTOS)",
+    "src/modules/navigation/navigation.registry.ts (SOMA patios.releases governado por impound:read, order 267; espelha patios.processes — SEM requiredModules, SEM permissão nova)",
+    "frontend/src/layouts/appSidebarNav.ts (SOMA NavItem Liberações + item no G_PATIOS + /patios/liberacoes em MVP_NAV_PATHS)",
+    "frontend/src/App.tsx (SOMA lazy LiberacoesPage + rota /patios/liberacoes com PermissionGuard impound:read)",
+    "tests/navigation-provisioning.test.ts (SOMA a matriz de patios.releases: governado + por-papel derivada de ROLE_PERMISSIONS + finance/inventory NÃO veem)",
+    "docs/navigation-matrix.md (SOMA a linha Liberações /patios/liberacoes)"
+  ],
+  "invariante": "I5 (materializado na UI como HINT, NÃO como enforcement) — o gate visível (GateLiberacaoChecklist) espelha guardReleaseGate: as 5 pré-condições derivadas no cliente (reconciliation_pending=statement.reconciliationPending||overAccruedDailies>0 · debts_unsettled=lines.some(kind≠ADJUSTMENT&&!settledAt) · requirement_unmet=checks.some(required&&!satisfied) · authority_missing=!authorityApprovedAt · recipient_missing=!recipientName) na MESMA ordem do backend; o botão 'Consumar liberação' só habilita com as 5 satisfeitas (isConsumeEnabled PURO). No 409 IMPOUND_GUARD_FAILED a UI mapeia o reason real→PT-BR e RECARREGA — o backend RE-VERIFICA sob lock (anti-TOCTOU) e é a AUTORIDADE. Honestidade de dinheiro: exibe settledTotal/total do backend, NUNCA afirma 'quitado' com débito em aberto (o rótulo do total segue a reconciliação, igual à Guia de débitos). §2.8: tenant_id NUNCA renderizado; recipientDocument/authorityReference renderizam SÓ no comprovante art. 24 (console autenticado).",
+  "rns_cobertas": [
+    "Gate I5 VISÍVEL: checklist verde/pendente por pré-condição (mostra o que falta, não erro genérico); botão 'Consumar liberação' desabilitado até as 5 (predicado PURO isConsumeEnabled) — espelho de guardReleaseGate, backend enforça",
+    "Fluxo padrão (art. 271 §1º / Res. 1025 art. 24): CUSTODIA_ATIVA→'Iniciar liberação' (start, freeze T_stop) → quem retira (recipient) + checklist (checks) + quitação (settle) + autorização (approve) → 'Consumar liberação' (consume)",
+    "Quitação (charging:settle, D-Ω5P-07, SEM PSP): exibe Total apurado→settledTotal/estornoCount REAIS; pagamento presencial fora do sistema; NÃO recalcula regra (aritmética/reconciliação no backend)",
+    "Saída para reparo (art. 271 §2º / art. 23 §1º): for-repair/start (2 fases: montar dossiê FOR_REPAIR → efetivar saída) com repair_deadline ≤60d + retorno for-repair/return; selo repairOverdue âmbar + aviso 'a diária segue correndo durante o reparo'",
+    "Comprovante art. 24 (window.print CLIENT-SIDE, SEM PSP): veículo/entrada/saída/quem retira/kindLabel/settledTotal + documento+referência do ato (única superfície §2.8); container com escopo de impressão (@media print oculta o chrome do app)",
+    "Fila /patios/liberacoes: reuso useProcesses + dense-list, filtro multi-status client-side (RELEASE_IN_PROGRESS+RELEASED_FOR_REPAIR; ACTIVE_CUSTODY quando 'incluir elegíveis'); SEM endpoint/permissão nova; cada linha linka ao dossiê; empty honesto 'Nenhuma liberação em andamento' (D-007)",
+    "409→PT-BR white-label: os 5 reasons do consume + repair_deadline_invalid + release_already_in_progress + release_freeze_retroactive + release_for_repair_not_active DISTINTOS (nunca corpo cru; nunca genérico)",
+    "§2.8/allowlist: tenant_id NUNCA renderizado; recipientDocument/authorityReference SÓ no comprovante; ids internos (attachmentId/authorityApprovedBy) NÃO crus; hashes não expostos"
+  ],
+  "rns_total_pr": 8,
+  "permissao": "ZERO permissão nova. A UI molda por can(...); o backend é a autoridade (403 real). Leitura/fila: impound:read. Saltos start/consume/for-repair: impound:transition. Quem retira/checklist: release:process. Ato da autoridade: release:approve. Quitação: charging:settle. 1 governed path SOMADO: /patios/liberacoes=impound:read (espelha patios.processes; esconde-fino no registry). catalog.ts/RBAC/seed INTOCADOS.",
+  "estados_obrigatorios": "Por painel/fila: loading/skeleton · empty honesto (D-007: mock→vazio; 'Nenhuma liberação em andamento') · error+retry (Alert 'Tentar novamente') · acesso-negado (ações gated por can(...) somem; painel/fila somente-leitura sem botão morto) · dados-desatualizados (useAutoRefresh no useRelease/useProcesses; 409 recarrega o dossiê). Gate como checklist visual (verde/pendente âmbar por pré-condição).",
+  "d_records": [
+    "D-Ω5P-REL-UI-01: a Liberação I5 entra no dossiê como painel ADITIVO (após a Guia de débitos); o TransicaoFsmPanel/fsm.ts NÃO se estendem (release usa endpoints dedicados → seção própria; ZERO edge de release em FSM_ACTIONS/transitionProcess). Painéis existentes INTACTOS.",
+    "D-Ω5P-REL-UI-02: o gate client-side é HINT (espelho de guardReleaseGate); o botão só habilita com as 5 pré-condições (isConsumeEnabled PURO); no 409 IMPOUND_GUARD_FAILED a UI mapeia o reason real→PT-BR e RECARREGA — o backend enforça sob lock.",
+    "D-Ω5P-REL-UI-03: a fila /patios/liberacoes reusa useProcesses + dense-list com filtro multi-status client-side (SEM endpoint/permissão nova; governa por impound:read); ACTIVE_CUSTODY entra só via 'incluir elegíveis' (empty padrão = 'em andamento')."
+  ],
+  "desvios_do_plano": [
+    "A fila (corte 11b opcional) ENTROU: /patios/liberacoes com governed path patios.releases (impound:read) + rota + item de sidebar + matriz de teste — como previsto no plano (b/e) quando viável. Empty padrão = liberações EM ANDAMENTO (RELEASE_IN_PROGRESS+RELEASED_FOR_REPAIR); ACTIVE_CUSTODY 'elegíveis' via toggle 'incluir elegíveis' — reconcilia o texto 'Nenhuma liberação em andamento' do plano (c) com a inclusão de ACTIVE_CUSTODY (b).",
+    "for-repair/start em 2 fases (montar dossiê FOR_REPAIR → efetivar saída) refletido no <ReparoPanel> por modo (prepare/effect/return); o estágio 'for_repair_prep' (ACTIVE_CUSTODY com dossiê FOR_REPAIR) reusa DossieLiberacao/AprovacaoAutoridade e o botão 'Efetivar saída para reparo' (2ª chamada) — como o campo transitioned do backend PR-10b distingue.",
+    "authorityApprovedBy (userId) NÃO é renderizado no selo (§2.8: id interno não cru) — o selo mostra SÓ 'Autorizada pela autoridade solicitante em {data}'. A referência/nota do ato renderizam SÓ no comprovante art. 24.",
+    "Prazo de reparo digitado (input date YYYY-MM-DD) é convertido para ISO no FIM do dia selecionado (evita 'no passado' por meia-noite, LOW-3 do PR-10b); o backend re-valida ≤60d/não-passado e é a autoridade."
+  ],
+  "testes_alvo": {
+    "frontend/tests/patios-liberacao.smoke.test.tsx": "NOVO — 13 casos: (1) predicado PURO do gate (isConsumeEnabled só true com as 5; cada uma quebrada isoladamente desabilita; ordem espelha guardReleaseGate; statement null → desabilitado) + botão nasce disabled com pendência; (2) mapa reason→PT-BR cobre os 5 do consume + repair_deadline_invalid + release_already_in_progress DISTINTOS e não-genéricos; (3) honestidade de dinheiro (Total apurado/devido sem afirmar 'quitado' com débito aberto; após settle exibe settledTotal/estornoCount BRL); (4) estados denied/empty/error (gate somente-leitura sem canConsume; settle sem canSettle/sem guia; Alert de erro); §2.8 (documento/referência só no comprovante; selo sem id do aprovador; comprovante sem UUID cru/tenant); (5) fila filterReleasableProcesses só liberáveis (+ elegíveis quando pedido); resolveReleaseStage PURO. white-label doesNotMatch tenant/polícia.",
+    "frontend/tests/patios-liberacoes-fila.smoke.test.tsx": "NOVO — 3 casos: cabeçalho+subtítulo+busca+toggle (§11 page-header); empty honesto D-007 (mock→'Nenhuma liberação em andamento', sem fabricar linhas); white-label (sem tenant/polícia; §allowlist não vaza tenant_id/branchId).",
+    "tests/navigation-provisioning.test.ts": "SOMA a matriz de patios.releases (+11 casos): getGovernedNavigationPaths governa /patios/liberacoes (impound:read); por-papel DERIVADA de ROLE_PERMISSIONS (quem tem impound:read VÊ, inclusive field_technician; finance/inventory/support NÃO); finance e inventory NÃO veem. 83/83 pass isolado."
+  },
+  "bateria": {
+    "frontend_check": "verde (tsc -b --noEmit)",
+    "frontend_build": "verde (tsc -b && vite build; chunk-warning maplibre pré-existente)",
+    "frontend_test_smoke": "908/908 pass (892→908, +16: patios-liberacao 13 + patios-liberacoes-fila 3). Isolado dos 2 novos: 16/16.",
+    "npm_run_lint": "verde (tsc -p tsconfig.json --noEmit) — toca o registry backend",
+    "npm_run_build": "verde (tsc -p tsconfig.json)",
+    "npm_test": "navigation-provisioning 83/83 pass isolado (inclui os 11 casos novos de PR-11). Suíte COMPLETA em execução (dev-servers :3000/:5173 vivos ⇒ not-ok pré-existentes de rota HTTP/porta, NÃO relacionados; nenhum toque em release/impound/charging backend). Registry é aditivo (nenhuma asserção de contagem exata quebra; governed.length>=15 mantido).",
+    "node_check_kpi": "Kpis/app.js OK · mobile/flutter_app/Kpis/app.js OK",
+    "git_diff_check": "limpo",
+    "git_status_short": "só arquivos do escopo PERMITIDO: frontend/src/modules/patios/release/** (CRIA) · ProcessoDossiePage.tsx (ESTENDE) · App.tsx · appSidebarNav.ts · frontend/package.json (test:smoke) · frontend/tests/patios-liberacao*.smoke.test.tsx (NOVOS) · src/modules/navigation/navigation.registry.ts · tests/navigation-provisioning.test.ts · docs/navigation-matrix.md · docs/kpis/omega5p/KPI_PR-11.json. prisma/** NÃO aparece. src/modules/release|charging|impound/** NÃO aparecem. untracked .claude/skills/* e docs/planejamento*.docx pré-existentes (nunca apagar)."
+  },
+  "kpi_repo_wide": {
+    "backend": "1738->1749 (+11: navigation-provisioning SOMA a matriz de patios.releases — test-only espelhando o governed path; ZERO backend de feature novo. Medido isolado 72->83)",
+    "frontend_smoke": "892->908 (+16: patios-liberacao 13 + patios-liberacoes-fila 3; medido real na suíte completa 908/908)",
+    "flutter_tests": "807 (inalterado — sem toque mobile; carrega o último oficial)",
+    "blocks": "100->101 (+1 bloco/PR; CRIA o módulo frontend patios/release)",
+    "mvp_demo": "inalterado (não move escopo de demo)",
+    "mvp_vendavel": "inalterado"
+  },
+  "coexistencia": "ProcessoDossiePage: painéis existentes (Identificação/Local/Integridade/Timeline/Vistoria/Transição FSM/Guia de débitos) INTACTOS — só inserido <LiberacaoPanel> após a Guia. fsm.ts/FSM_ACTIONS/transitionProcess INTOCADOS (release usa endpoints dedicados — ZERO edge de release na FSM). TransicaoFsmPanel INTOCADO. Módulos backend release/charging/impound INTOCADOS (a UI só consome). catalog.ts/RBAC/seed INTOCADOS. prisma/** INTOCADO. Nenhum agente pré-existente tocado.",
+  "junta": {
+    "omega5p-avaliador": "APROVADO (VETO; escopo backend intocado [release/charging/impound git-diff vazio; fsm.ts intocado]; contratos reais; gate=hint/backend impõe; §2.8; honestidade de dinheiro; 908/908 smoke + 83/83 nav)",
+    "cognicao-visual": "APROVADO (fluxo VIVO 6 estágios; gate=checklist visual claro verde/âmbar; comprovante imprimível @media print isolado; chips semânticos; PT-BR; estados §7; reparo com aviso diária-corre; A11y; zero andaime)",
+    "coordenador-de-acessos": "APROVADO (governed patios.releases impound:read sem requiredModules; matriz derivada de ROLE_PERMISSIONS finance/inventory/support NÃO; 83/83; gates de ação com a permissão certa batendo com as rotas backend; read-only sem botões de escrita)",
+    "critico-adversarial": "APROVADO leve (0 CRÍTICO; sem falso-positivo no gate [client verde ⟹ backend concorda], sem mentira de dinheiro, sem vazamento de PII. Achados não-bloqueantes→backlog: MÉDIO direção-SEGURA hint de reconciliação por CONTAGEM vs líquido-zero M1 [super-bloqueio no edge queda-de-teto pós-estorno; conserto=backend charging getStatement]; BAIXO reload no 409; BAIXO checks vazio vacuamente satisfeito)",
+    "veredito": "APROVADO 4/4 (0 bloqueante; 3 achados do critico não-bloqueantes → backlog)"
+  },
+  "pr": null,
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "published_per_pr",
+  "riscos_residuais": "(1) O gate client-side é HINT (espelho); se divergir do backend, a UI só oferece/desabilita um botão que o backend recusa com 409 defensivo (releaseActionErrorMessage traduz + recarrega) — nunca decide. (2) Sem statement carregado (guia indisponível/sem charging:read), o gate mantém débitos/reconciliação PENDENTES (não afirma quitação) — conservador por design (honestidade de dinheiro); um ator com impound:transition sem charging:read veria o gate travado, mas quem quita (charging:settle) tem charging:read. (3) for-repair/start em 2 fases: o painel orienta prepare→effect; se a autoridade nunca conceder, o dossiê FOR_REPAIR fica ativo (backlog Fase 5 MEDIUM-1 do PR-10b: endpoint de cancelamento). (4) Comprovante window.print client-side (sem motor de impressão Ω3F reusado nesta fatia — escopo de impressão via @media print); reuso do motor Ω3F fica para refino. (5) SEM PSP/PIX (D-Ω5P-07) — quitação é registro de pagamento presencial; a cobrança online é backlog Ω6.",
+  "backlog_fase5_ou_omega6": "Reuso do motor de impressão do Ω3F para o comprovante art. 24 (hoje window.print + @media print). Portal público de liberação (DTO minimizado, Fase 5). Cancelamento do dossiê FOR_REPAIR órfão (MEDIUM-1 PR-10b). PSP/PIX na quitação (Ω6). Agendamento de slots de retirada (fora do MVP).",
+  "backlog": "Fase 4/follow-up: (a) alinhar o hint de reconciliação client-side ao líquido-zero M1 do backend — expor reconciliationConsistent no getStatement do charging + fiar na UI (hoje usa overAccruedDailies count-based, super-bloqueia no edge raro de queda-de-teto pós-estorno; direção SEGURA); (b) reload(true) no catch do 409 do consume (hoje auto-corrige no próximo useAutoRefresh); (c) tratar checks vazio como indeterminado/pendente (hoje vacuamente satisfeito; backend re-checa). Herdado: comprovante usa window.print/@media print (não o motor de impressão Ω3F)."
+}

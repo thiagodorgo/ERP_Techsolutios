@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-26",
-  "version": "OMEGA5P-PR-10b",
+  "version": "OMEGA5P-PR-11",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω5P PR-10b — Fase 3: RELEASED_FOR_REPAIR (reparo-do-dono, CTB art.271§2º / Res.1025 art.23§1º) — saída p/ reparo com débitos DIFERIDOS e sem congelar; FECHA o núcleo backend da Fase 3",
-    "title": "Ω5P PR-10b: o reparo-do-dono (art.271§2) — o veículo SAI do pátio p/ o reparo com autorização da autoridade + quem-transporta + prazo ≤60d, SEM quitar (débitos ficam ABERTOS, a restituição definitiva é que exige quitação); NÃO congela (a diária continua); junta 3/3",
+    "block": "Ω5P PR-11 — Fase 3 (FECHA): UI de liberação I5 no console /patios — dossiê de liberação + quitação + aprovação da autoridade + gate visível + reparo/retorno + comprovante art.24 + fila /patios/liberacoes",
+    "title": "Ω5P PR-11: o console de liberação — o operador monta o dossiê (quem retira + requisitos), registra a quitação, a autoridade aprova in-system, o gate mostra o que falta das 5 pré-condições, consuma a liberação e imprime o comprovante (art.24); + saída/retorno para reparo (art.271§2); junta 4/4; FECHA a Fase 3",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω5P PR-10b — RELEASED_FOR_REPAIR (Fase 3, FECHA o núcleo backend; reparo-do-dono CTB art.271§2º). Backend, SEM migração (reusa kind/repair_deadline do impound_releases migrado no PR-10a), SEM permissão nova. Materializa o 2o dos 2 reparos da visão do dono (D-Ω5P-13): o reparo do guincheiro HABILITA a remoção (recepção) × o reparo do DONO LIBERA sob art.271§2 (este PR). SOMA 2 GuardSpecs a GUARDS (IMPOUND_TRANSITIONS e impound.hashchain INTACTOS): ACTIVE_CUSTODY→RELEASED_FOR_REPAIR (saída) exige SÓ autorização da autoridade + quem-transporta identificado + repair_deadline≤60d (NÃO débitos/reconciliação/checklist — art.271§2º difere a quitação à restituição definitiva §1º); os DÉBITOS FICAM ABERTOS (não dispensados; crédito do pátio persiste, I9 ≥5a). RELEASED_FOR_REPAIR→ACTIVE_CUSTODY (retorno) marca o dossiê RETURNED. NÃO CONGELA (setFrozenAt:false na saída e no retorno; a diária CONTINUA acumulando enquanto o veículo está fora — custódia jurídica ativa; T_stop só no RELEASED final; D-Ω5P-REL-07). Vaga LIBERADA na saída (vacate; realocação no retorno via endpoint existente). A restituição DEFINITIVA reusa o gate I5 COMPLETO do PR-10a via reapresentação→liberação padrão (a aresta direta RELEASED_FOR_REPAIR→RELEASED fica DEFERIDA — separa os 2 atos de autoridade, preserva freeze-antes-de-quitar; D-Ω5P-REL-08). repairOverdue calculado (now>repair_deadline). ZERO permissão nova (reusa impound:transition/release:approve/release:process/impound:allocate). JUNTA APROVADO 3/3: dba-guardiao (SEM migração + CHECKs/I1 provados vivos) + critico-adversarial (0 CRÍTICO; 8 vetores resistiram; \"sai e some sem pagar\" mitigado — débitos ABERTOS + restituição travada; LOW-3 data-passada sanado; DEFERIR a aresta direta) + omega5p-avaliador (VETO; escopo/drift-zero/I5/freeze/§2.8/aderência; DEFERIR). Backlog Fase 5: MEDIUM-1 (endpoint de cancelamento de dossiê FOR_REPAIR órfão) + MEDIUM-2 (SoD via authority-portal). Aderência CTB 271§2º(Lei 13.160)/§1º/§10; Res.1025 art.23§1º(≤60d)/art.24. backend 1728→1738 (+10), frontend_smoke 892 e flutter 807 inalterados, blocks 99→100. Zero regressão (schema/hashchain/IMPOUND_TRANSITIONS/charge.accrual intactos). Inclui backfill do PR-10a (#291 4fec570).",
-    "status_label": "Ω5P PR-10b: reparo-do-dono art.271§2 (sai p/ reparo com débitos DIFERIDOS e sem congelar — a diária continua; restituição definitiva reusa o gate I5); junta 3/3; FECHA o núcleo backend da Fase 3; backend 1728->1738, blocks 99->100"
+    "summary": "Ω5P PR-11 — UI DE LIBERAÇÃO I5 (Fase 3, FECHA). Frontend do console autenticado /patios. ZERO backend novo, ZERO migração, ZERO permissão nova — CONSOME o release (PR-10a #291 / PR-10b #292) + charging:settle e MOLDA por can(...); o backend é a autoridade (gate I5, freeze, hash-chain, reconciliação). LiberacaoPanel ACRESCENTADO ao dossiê do processo (aditivo, merge-safe; painéis 08a/08b intactos): orquestra por status — CUSTODIA_ATIVA→\"Iniciar liberação\"; RELEASE_IN_PROGRESS→quem-retira (release:process) + checklist de requisitos + quitação (\"Registrar quitação\"→charging:settle, mostra Total→settledTotal/estornoCount, SEM PSP) + aprovação da autoridade (release:approve, selo \"Autorizada por…em…\") + GATE VISÍVEL (GateLiberacaoChecklist: as 5 pré-condições como ESPELHO do backend, \"Consumar\" desabilitado até as 5, 409 IMPOUND_GUARD_FAILED→reason PT-BR+recarrega); reparo art.271§2 (saída for-repair/start com repair_deadline≤60d + retorno; selo repairOverdue âmbar + aviso \"a diária segue correndo\"); comprovante art.24 (window.print client-side, entrada+saída+quem-retira+kindLabel+settledTotal). Fila /patios/liberacoes (reuso useProcesses+dense-list filtro multi-status; governed path patios.releases impound:read; sem endpoint/permissão nova). §2.8: recipientDocument/authorityReference só no comprovante (console autenticado), nunca em log/telemetria; authorityApprovedBy nunca cru. White-label PT-BR (autoridade solicitante/proprietário/quem retira/comprovante; nunca polícia/tenant). JUNTA APROVADO 4/4: omega5p-avaliador (VETO; backend intocado; gate=hint/backend impõe; §2.8; honestidade de dinheiro) + cognicao-visual (fluxo vivo; gate=checklist visual; comprovante @media print isolado; §11) + coordenador-de-acessos (governed patios.releases; gates com a permissão certa; 83/83 nav) + critico-adversarial leve (0 CRÍTICO; sem falso-positivo no gate, sem mentira de dinheiro, sem PII; 3 achados não-bloqueantes→backlog: hint de reconciliação por contagem vs líquido-zero M1 [super-bloqueio seguro no edge raro], reload no 409, checks vazio). D-Ω5P-REL-UI-01/02/03. Aderência I5 §4.3; CTB 271§1º/§2º; Res.1025 art.21§2/23/24. frontend_smoke 892→908 (+16), backend 1738→1749 (+11 nav-provisioning), flutter 807 inalterado, blocks 100→101. Zero regressão. Inclui backfill do PR-10b (#292 62d806d).",
+    "status_label": "Ω5P PR-11: console de liberação I5 (dossiê+quitação+aprovação da autoridade+gate visível+reparo+comprovante art.24+fila); junta 4/4; FECHA a Fase 3; frontend_smoke 892->908, backend 1738->1749, blocks 100->101"
   },
   "metrics": {
     "flutter_tests": {
@@ -21,16 +21,16 @@
       "note": "Ω4C PR-13 telemetria Flutter (+25 telemetry_test: consent-gate cliente/buffer-flush≤50/idempotencia/offline-replay/foreground-only/eventos/§2.8/migracao-Drift-11-12). Execucao REAL da suite Flutter 807 pass/0 falha/0 skip (Flutter 3.41.6); o 764 anterior era valor carregado nao re-executado desde B-124 → reconciliado a suite real. dart format 0-changed; analyze No issues; pubspec INTOCADO (zero-dep). Sobre 764."
     },
     "frontend_smoke_tests": {
-      "value": 892,
-      "total": 892,
-      "display": "892/892",
-      "note": "892 inalterado no Ω5P PR-10b (backend-only; UI de liberação = PR-11). Último valor oficial do Ω5P PR-08b (+17)."
+      "value": 908,
+      "total": 908,
+      "display": "908/908",
+      "note": "+16 (Ω5P PR-11 UI de liberação I5): patios-liberacao 13 (gate PURO só habilita com as 5 pré-condições; reason→PT-BR dos 5 do consume + repair_deadline_invalid + release_already_in_progress; honestidade de dinheiro não afirma \"quitado\" com débito aberto; §2.8 sem UUID/documento cru no comprovante; estados empty/denied/error; sem tenant/polícia) + patios-liberacoes-fila 3 (filtra só liberáveis; governed). Sobre 892."
     },
     "backend_tests": {
-      "value": 1738,
-      "total": 1744,
-      "display": "1738/1744",
-      "note": "+10 (Ω5P PR-10b RELEASED_FOR_REPAIR): release-for-repair 9 InMemory (saída c/ autoridade+recipient+deadline≤60d → vaga liberada + frozen_at NULL + diária SEGUE acumulando +1 DAILY; saída bloqueada sem autoridade/recipient/deadline-inválido incl. data-passada→400 [LOW-3]; retorno→RETURNED+realocação; débitos DIFERIDOS [saída sucede com débito aberto, restituição definitiva bloqueia até quitar]; freeze só no final; consumação definitiva gate completo; verifyChain valid; sem dupla saída) + release-gate-concurrency +1 DB-gated (N saídas paralelas → exatamente 1). CI-memória 6 skip. Sobre 1728. SEM migração (drift-zero provado pelo dba)."
+      "value": 1749,
+      "total": 1755,
+      "display": "1749/1755",
+      "note": "+11 (Ω5P PR-11, navigation-provisioning): governed path patios.releases /patios/liberacoes (impound:read) — matriz por papel derivada de ROLE_PERMISSIONS + assert finable/inventory NÃO. Frontend PR + 1 governed path no navigation.registry.ts. CI-memória 6 skip. Sobre 1738 (Ω5P PR-10b)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 100,
-      "display": "100",
-      "note": "Ω5P PR-10b (RELEASED_FOR_REPAIR: saída p/ reparo art.271§2 com débitos diferidos e sem congelar + restituição definitiva via reapresentação→gate I5 — estende src/modules/release, SEM módulo/migração/permissão nova) → +1 sobre 99 (Ω5P PR-10a). FECHA o núcleo backend da Fase 3. PR-11 (UI) e 08c seguem."
+      "value": 101,
+      "display": "101",
+      "note": "Ω5P PR-11 (UI de liberação I5: dossiê de liberação + quitação + aprovação da autoridade + gate visível + reparo/retorno + comprovante art.24 + fila /patios/liberacoes — novo módulo frontend patios/release) → +1 sobre 100 (Ω5P PR-10b). FECHA a Fase 3 (PR-10a/10b/11)."
     },
     "mobile_backend_contracts": {
       "value": 18,

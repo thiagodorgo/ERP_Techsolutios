@@ -76,6 +76,8 @@ const PerfisPage = lazy(() => import("./modules/patios/profiles/pages/PerfisPage
 // gated pelo route-guard (não é item de menu → não é governed).
 const ProcessosPage = lazy(() => import("./modules/patios/processes/pages/ProcessosPage").then((m) => ({ default: m.ProcessosPage })));
 const ProcessoDossiePage = lazy(() => import("./modules/patios/processes/pages/ProcessoDossiePage").then((m) => ({ default: m.ProcessoDossiePage })));
+// Ω5P PR-11 — fila de Liberações (governada por impound:read; o dossiê /patios/processos/:id hospeda o painel).
+const LiberacoesPage = lazy(() => import("./modules/patios/release/pages/LiberacoesPage").then((m) => ({ default: m.LiberacoesPage })));
 const AbastecimentoPage = lazy(() => import("./modules/fleet/fuel/pages/AbastecimentoPage").then((m) => ({ default: m.AbastecimentoPage })));
 const ManutencaoPage = lazy(() => import("./modules/fleet/maintenance/pages/ManutencaoPage").then((m) => ({ default: m.ManutencaoPage })));
 const MultasPage = lazy(() => import("./modules/fleet/fines/pages/MultasPage").then((m) => ({ default: m.MultasPage })));
@@ -407,6 +409,14 @@ export function App() {
               element={
                 <PermissionGuard permissions={["impound:read"]}>
                   <ProcessoDossiePage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/patios/liberacoes"
+              element={
+                <PermissionGuard permissions={["impound:read"]}>
+                  <LiberacoesPage />
                 </PermissionGuard>
               }
             />
