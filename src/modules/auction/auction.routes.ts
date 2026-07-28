@@ -5,7 +5,9 @@ import { requirePermission } from "../core-saas/middleware/rbac.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
 import { AuctionController, type AuctionServiceResolver } from "./auction.controller.js";
+import { AuctionSettlementController, type AuctionSettlementServiceResolver } from "./auction.settlement.controller.js";
 import { createDefaultAuctionService } from "./auction.service.js";
+import { createDefaultAuctionSettlementService } from "./auction.settlement.service.js";
 
 type ControllerResult = {
   readonly status?: number;
@@ -25,9 +27,13 @@ export const AUCTION_PERMISSIONS = {
   appraise: "auction:appraise",
 } as const;
 
-export function createAuctionRouter(resolveService: AuctionServiceResolver = createDefaultAuctionService): Router {
+export function createAuctionRouter(
+  resolveService: AuctionServiceResolver = createDefaultAuctionService,
+  resolveSettlementService: AuctionSettlementServiceResolver = createDefaultAuctionSettlementService,
+): Router {
   const router = Router();
   const controller = new AuctionController(resolveService);
+  const settlementController = new AuctionSettlementController(resolveSettlementService);
 
   router.use(tenantContextMiddleware);
   router.use(createPersistentRbacContextMiddleware());
@@ -134,6 +140,23 @@ export function createAuctionRouter(resolveService: AuctionServiceResolver = cre
     requirePermission(AUCTION_PERMISSIONS.transition),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.reclaim(request));
+    }),
+  );
+  // Ω5P PR-14a — LIQUIDAÇÃO em cascata §6º (I7). ZERO permissão nova: a distribuição é a consumação financeira do
+  // AUCTION_CLOSED (mesmo cohort da máquina de leilão) → reusa impound:transition (escrita) / impound:read (leitura).
+  // Path de 4 segmentos, sem colisão com os demais .../auction/*.
+  router.get(
+    "/impound-processes/:processId/auction/settlement",
+    requirePermission(AUCTION_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await settlementController.get(request));
+    }),
+  );
+  router.post(
+    "/impound-processes/:processId/auction/settlement",
+    requirePermission(AUCTION_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await settlementController.distribute(request));
     }),
   );
 

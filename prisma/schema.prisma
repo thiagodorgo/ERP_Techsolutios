@@ -57,6 +57,8 @@ model Tenant {
   release_requirement_checks    ReleaseRequirementCheck[]
   auction_attempts              AuctionAttempt[]
   auction_edicts                AuctionEdict[]
+  settlements                   Settlement[]
+  settlement_allocations        SettlementAllocation[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
   financial_titles              FinancialTitle[]
@@ -2825,6 +2827,8 @@ model ImpoundProcess {
   releases               ImpoundRelease[]    // Ω5P PR-10a — liberações do veículo (I5)
   auction_attempts       AuctionAttempt[]    // Ω5P PR-12 — contador append-only de rodadas de leilão desertas (I8)
   auction_edicts         AuctionEdict[]      // Ω5P PR-13a — designação de leilão por rodada (projeção mutável; a prova vive na cadeia)
+  settlements            Settlement[]        // Ω5P PR-14a — liquidação em cascata §6º (1 por processo; I7)
+  settlement_allocations SettlementAllocation[] // Ω5P PR-14a — rateio append-only por beneficiário na ordem §6º
 
   @@unique([tenant_id, id])
   @@index([tenant_id, yard_id, status])
@@ -3143,4 +3147,66 @@ model AuctionEdict {
   @@index([tenant_id, process_id])
   @@index([tenant_id, process_id, round_number])
   @@map("auction_edicts")
+}
+
+// Ω5P PR-14a — LIQUIDAÇÃO em cascata §6º (núcleo I7): distribuição do PRODUTO do leilão (hammer_amount = base
+// findActiveSoldRound, NUNCA Σ sold_amount) na ORDEM LEGAL (CTB art. 328 §6º / Lei 13.160/2015 / Res. CONTRAN 1025
+// arts. 25-39) + SALDO ao ex-dono (§12). 1 liquidação por processo (índice PARCIAL único raw-only tenant,process —
+// migração 20260845000000). A PROVA da distribuição vive na cadeia hash (CustodyEvent AUCTION_SETTLEMENT, append-only
+// I2), escrito na MESMA tx do INSERT. I7: Σ settlement_allocations.amount == hammer_amount (OWNER_BALANCE incluído).
+// Dinheiro CENTAVOS INTEIROS EXATOS na app (nunca float); Decimal(12,2) no banco. status DISTRIBUTED|BALANCE_CLAIMED|
+// BALANCE_REVERTED_FUNSET app-validado (14a só grava DISTRIBUTED; o ciclo do saldo é 14b). owner_notify_due_at
+// (+30d) / owner_claim_expires_at (+5a) = janela do saldo ao ex-dono (§12). process→RESTRICT (I9). tenant_id 1º; RLS
+// forced. CHECK estrutural hammer_amount >= 0 (IS NOT NULL explícito — lição PR-07 C1).
+model Settlement {
+  id                     String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id              String                 @db.Uuid
+  process_id             String                 @db.Uuid
+  sold_round             Int?                                        // rodada da SOLD efetiva (findActiveSoldRound; base de I7)
+  hammer_amount          Decimal                @db.Decimal(12, 2)   // produto do leilão (base I7; soldAmount da SOLD efetiva)
+  auction_cost_amount    Decimal?               @db.Decimal(12, 2)   // custeio do leilão declarado (tier topo §6º)
+  removal_storage_claim  Decimal?               @db.Decimal(12, 2)   // item I remoção/estada COMPUTADO (charging capado I4)
+  owner_balance_amount   Decimal?               @db.Decimal(12, 2)   // saldo ao ex-dono = resíduo (§12)
+  shortfall_amount       Decimal?               @db.Decimal(12, 2)   // Σclaims − hammer (informativo; não é allocation)
+  currency               String                 @default("BRL")
+  status                 String                 @default("DISTRIBUTED") // DISTRIBUTED|BALANCE_CLAIMED|BALANCE_REVERTED_FUNSET
+  owner_notify_due_at    DateTime?              @db.Timestamptz(6)   // notificar o ex-dono do saldo <=30d (§12)
+  owner_claim_expires_at DateTime?              @db.Timestamptz(6)   // saldo disponível 5 anos; depois Funset (§12; 14b)
+  distributed_by         String?                @db.Uuid
+  created_at             DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime               @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant                 Tenant                 @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  process                ImpoundProcess         @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
+  allocations            SettlementAllocation[]
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, process_id])
+  @@map("settlements")
+}
+
+// Ω5P PR-14a — RATEIO append-only da liquidação por beneficiário na ordem §6º (order_seq 1-based). beneficiary_kind
+// (app-validado; INGLÊS, labels PT-BR no DTO): AUCTION_COST/REMOVAL_STORAGE/VEHICLE_TAXES/PRIORITY_CREDITORS/
+// REALIZING_AGENCY_FINES/OTHER_SNT_FINES/OTHER_DEBITS/OWNER_BALANCE/FUNSET. amount = valor ALOCADO (min(remaining,
+// claim), centavo exato); claim_amount = valor RECLAMADO do tier (nullable; OWNER_BALANCE não tem claim). reference
+// = rótulo MASCARADO (§2.8: NUNCA CPF/nome de credor/arrematante). I7: Σ amount == settlement.hammer_amount. 1 linha
+// por (settlement, order_seq) — índice PARCIAL único raw-only (migração 20260845000000). settlement/process→RESTRICT
+// (I9). tenant_id 1º; RLS forced. CHECK estrutural order_seq >= 1 / amount >= 0 (IS NOT NULL explícito).
+model SettlementAllocation {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String         @db.Uuid
+  settlement_id    String         @db.Uuid
+  process_id       String         @db.Uuid
+  order_seq        Int                                            // posição 1-based na cascata §6º
+  beneficiary_kind String                                         // tier do §6º (app-validado; OWNER_BALANCE = resíduo)
+  amount           Decimal        @db.Decimal(12, 2)              // valor ALOCADO (centavo exato; Σ == hammer_amount)
+  claim_amount     Decimal?       @db.Decimal(12, 2)              // valor RECLAMADO do tier (OWNER_BALANCE = NULL)
+  reference        String?                                        // rótulo mascarado (§2.8: nunca PII de credor/arrematante)
+  created_at       DateTime       @default(now()) @db.Timestamptz(6)
+  tenant           Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  settlement       Settlement     @relation(fields: [tenant_id, settlement_id], references: [tenant_id, id], onDelete: Restrict)
+  process          ImpoundProcess @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, settlement_id, order_seq])
+  @@map("settlement_allocations")
 }

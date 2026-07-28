@@ -32,7 +32,7 @@ function setup() {
 
 // ── Defaults federais (constante canônica + resolveDefaults) ────────────────────
 
-test("FEDERAL_DEFAULTS espelha a norma federal (10/30/60/15, ROLLING_24H, SIX_MONTHS)", () => {
+test("FEDERAL_DEFAULTS espelha a norma federal (10/30/60/15, ROLLING_24H, SIX_MONTHS; janela do saldo 30d/5a §12)", () => {
   assert.deepEqual(FEDERAL_DEFAULTS, {
     ownerNotifDays: 10,
     noticeEdictDay: 30,
@@ -40,6 +40,9 @@ test("FEDERAL_DEFAULTS espelha a norma federal (10/30/60/15, ROLLING_24H, SIX_MO
     auctionEdictBusinessDays: 15,
     dailyModel: "ROLLING_24H",
     dailyCap: "SIX_MONTHS",
+    // Ω5P PR-14a — janela do saldo ao ex-dono (CTB art. 328 §12): notificar <=30d; disponível 5 anos, depois Funset.
+    ownerBalanceNotifyDays: 30,
+    ownerBalanceClaimYears: 5,
   });
 });
 

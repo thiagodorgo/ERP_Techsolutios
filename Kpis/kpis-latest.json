@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-26",
-  "version": "OMEGA5P-PR-13b",
+  "version": "OMEGA5P-PR-14a",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω5P PR-13b — Fase 4: máquina de venda do leilão (AUCTION_PREP→LOTTED→AUCTIONED→AUCTION_CLOSED + inadimplência art.42 + reclamado art.26§1º; registra o resultado do certame — base do I7) — FECHA a realização do leilão",
-    "title": "Ω5P PR-13b: a máquina de estados da venda do leilão — prepara/loteia (edital completo ≥15 d.u.)/registra o arremate (arrematante+valor≥reserva+nota) amarrado à rodada LOTADA/consuma; inadimplência e reclamado; sold_amount = base imutável do I7; junta 4/4 (1 CRÍTICO de alienação sanado)",
+    "block": "Ω5P PR-14a — Fase 4: liquidação em cascata §6º (núcleo I7) — distribuição do produto do leilão na ordem legal (custeio→remoção/estada→tributos→credores→multas→demais) + saldo ao ex-proprietário",
+    "title": "Ω5P PR-14a: a distribuição do produto do leilão — Σ das alocações = valor arrematado (centavos exatos, por construção); cascata na ordem do art.328 §6º; base = a venda EFETIVA (não dupla-conta a revenda); despesa capada ao teto; junta 3/3 unânime",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω5P PR-13b — MÁQUINA DE VENDA DO LEILÃO (Fase 4, FECHA a realização do leilão). Backend + 2 migrações aditivas (ADD-COLUMN). O sistema REGISTRA o resultado do certame externo homologado (D-Ω5P-06), não hospeda lances. SOMA 6 GuardSpecs a GUARDS (IMPOUND_TRANSITIONS+impound.hashchain INTACTOS): AUCTION_ELIGIBLE→AUCTION_PREP (CONSERVED + avaliação sigilosa art.28) · AUCTION_PREP→LOTTED (edital COMPLETO da rodada ref+published_at+business_days≥15 + min_bid>0; marca edict.status=LOTTED, no máx.1/processo) · LOTTED→AUCTIONED (arrematante + sold_amount≥min_bid[do edital] + nota; AMARRADO à rodada LOTADA re-verificado sob FOR UPDATE — CONSERVED+completo+reserva da rodada realmente lotada) · AUCTIONED→AUCTION_CLOSED · AUCTIONED→LOTTED (inadimplência art.42, NO_PAYMENT, frozen mantido) · LOTTED→ACTIVE_CUSTODY (reclamado art.26§1º, reabre a liberação). AUCTIONED seta frozen_at (T_stop §5). Migração 20260843000000 (winner_ref/sold_amount Decimal/sale_note_reference — MINIMIZADOS §2.8) + 20260844000000 (defaulted_sale_round — vínculo da inadimplência à SOLD superada). sold_amount na cadeia (AUCTION_SOLD) como string = BASE IMUTÁVEL do I7 do PR-14 (NÃO distribui — §6º=PR-14). Permissão NOVA auction:appraise (sigilo da avaliação/lance mínimo art.28; DTO omite sem a permissão) 4 pontas. JUNTA APROVADO 4/4 (1 ciclo, dinheiro/alienação tolerância-ZERO): dba-guardiao (2 migrações drift-zero tx-ROLLBACK) + coordenador-de-acessos (auction:appraise; sigilo art.28) + omega5p-avaliador (VETO; escopo/§2.8/I7-base) + critico-adversarial (1 CRÍTICO de ALIENAÇÃO SANADO — recordSale validava a rodada do BODY não a LOTADA [vender bem como outra rodada abaixo da reserva ou vender bem-sucata]; amarração em 3 camadas edict.status=LOTTED + re-check sob FOR UPDATE + min_bid do edital; MÉDIO-2 avaliação congela no lote; MÉDIO-3 SOLD efetiva determinística; PROBEs todos falham-fechado). R-omega5p-pr13b-ciclo1. REQUISITO PR-14: I7 base = SOLD que atinge AUCTION_CLOSED OU não-referenciada por NO_PAYMENT.defaulted_sale_round. Aderência CTB art.328/art.42/art.26§1º; Res.1025 arts.29-34. backend 1784→1802 (+18), smoke 908 e flutter 807 inalterados, blocks 103→104. Zero regressão. Inclui backfill do PR-13a (#295 3eb6d49).",
-    "status_label": "Ω5P PR-13b: máquina de venda (prep/lote edital≥15du/arremate amarrado à rodada lotada≥reserva/inadimplência/reclamado; sold_amount=base I7); junta 4/4 (1 CRÍTICO de alienação sanado); backend 1784->1802, blocks 103->104"
+    "summary": "Ω5P PR-14a — LIQUIDAÇÃO EM CASCATA §6º (Fase 4, núcleo I7). Backend + migração aditiva (2 tabelas). O ÁPICE do risco financeiro: a distribuição do produto do leilão (dinheiro de terceiro) na ORDEM LEGAL do art.328 §6º. Motor PURO distributeCascade (aritmética de CENTAVOS inteiros, ZERO float): remaining=hammer; para cada tier na ordem AUCTION_COST→REMOVAL_STORAGE→VEHICLE_TAXES→PRIORITY_CREDITORS→REALIZING_AGENCY_FINES→OTHER_SNT_FINES→OTHER_DEBITS: alloc=min(remaining,claim); ownerBalance=resíduo. **I7: Σ allocations + ownerBalance == hammer POR CONSTRUÇÃO** (+ assertSettlementSum na tx → rollback). Base = findActiveSoldRound (a SOLD EFETIVA, re-derivada sob FOR UPDATE com guarda settlement_base_changed; NUNCA Σ sold_amount — fecha o requisito do PR-13b, não dupla-conta a revenda pós-inadimplência). Claim item I (REMOVAL_STORAGE) CAPADO ao teto I4/CTB §10 (getCascadeExpenseClaim read-only = settledTotal − Σ over-accrued; dailies sobre-acumuladas NÃO inflam contra o ex-dono; process_charges INTOCADO — AUCTION_CLOSED e RELEASED terminais mutuamente exclusivos). Migração 20260845000000 (settlements + settlement_allocations; partial-unique idempotência 1/processo; RLS forced; FK RESTRICT I9; CHECK IS-NOT-NULL). Endpoint POST /auction/settlement gated AUCTION_CLOSED; INSERT + N allocations + AUCTION_SETTLEMENT na cadeia + cross-anchor numa tx; idempotente. REUSA impound:transition (sem permissão nova). §2.8: payload só rótulos+dinheiro-string, sem PII. JUNTA APROVADO 3/3 UNÂNIME (0 ciclo — o ápice financeiro sólido por construção): dba-guardiao (migração drift-zero tx-ROLLBACK; 23505/23514/RLS/I9 vivos) + critico-adversarial (0 CRÍTICO/0 MÉDIO; Σ=arremate por construção provado property-based 2000 casos; base re-derivada sob lock; claim capado; idempotência; §2.8; 3 BAIXO informativos→backlog) + omega5p-avaliador (VETO; escopo intacto; I7; aderência). PD-Ω5P-CASCADE-ORDER (3 fontes; divergência do ESTUDO no tier II tributos registrada). Aderência CTB art.328§6º/§12 (Lei 13.160); Res.1025 arts.25-39. Ciclo do saldo (claim/revert-funset) = PR-14b. backend 1802→1813 (+11), smoke 908 e flutter 807 inalterados, blocks 104→105. Zero regressão. Inclui backfill do PR-13b (#296 1847b5c).",
+    "status_label": "Ω5P PR-14a: cascata §6º I7 (Σ alocações=arremate por construção, centavos exatos; base=venda efetiva; despesa capada; §2.8); junta 3/3 unânime; backend 1802->1813, blocks 104->105"
   },
   "metrics": {
     "flutter_tests": {
@@ -24,13 +24,13 @@
       "value": 908,
       "total": 908,
       "display": "908/908",
-      "note": "908 inalterado no Ω5P PR-13b (backend-only). Último valor oficial do Ω5P PR-11 (+16)."
+      "note": "908 inalterado no Ω5P PR-14a (backend-only). Último valor oficial do Ω5P PR-11 (+16)."
     },
     "backend_tests": {
-      "value": 1802,
-      "total": 1808,
-      "display": "1802/1808",
-      "note": "+18 (Ω5P PR-13b máquina de venda): auction-sale-fsm 14 InMemory (não LOTTED sem edital completo/min_bid; não PREP sem CONSERVED/avaliação; não AUCTIONED sem arrematante/nota; sold<reserva→409; venda amarrada à rodada LOTADA — vender outra rodada/rodada-SCRAP/edital-adulterado→409; reclamar-após-arremate ilegal; inadimplência mantém frozen + defaulted_sale_round; reclamado reabre; sold_amount na cadeia string) + auction-sale-concurrency 4 DB-gated (corrida na venda sob lock; idempotência round_number; cross-tenant; vender rodada não-lotada bloqueada). CI-memória 6 skip. Sobre 1784. 2 migrações aditivas (20260843000000+20260844000000) provadas por tx-ROLLBACK pelo dba."
+      "value": 1813,
+      "total": 1819,
+      "display": "1813/1819",
+      "note": "+11 (Ω5P PR-14a cascata §6º I7): auction-settlement 8 InMemory (Σ=arremate property-based 2000 casos+bordas; cascata ordem legal waterfall; base=SOLD efetiva não-dupla-conta revenda; saldo=resíduo/insuficiência; despesa item I capada sem tocar process_charges; idempotência não-distribui-2×; cadeia valid sem PII; gate AUCTION_CLOSED) + auction-settlement-concurrency 3 DB-gated (N=6→1 settlement; atomicidade Σ≠hammer→rollback; cross-tenant RLS). CI-memória 6 skip. Sobre 1802. Migração 20260845000000 aditiva (2 tabelas) provada tx-ROLLBACK pelo dba."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 104,
-      "display": "104",
-      "note": "Ω5P PR-13b (máquina de venda do leilão: prep/lote/arremate amarrado à rodada lotada/consumação + inadimplência + reclamado; sold_amount = base do I7 — estende o módulo auction) → +1 sobre 103 (Ω5P PR-13a). FECHA a realização do leilão (13a+13b). PR-14 (cascata §6º I7) segue."
+      "value": 105,
+      "display": "105",
+      "note": "Ω5P PR-14a (liquidação em cascata §6º núcleo I7: distributeCascade puro Σ=arremate + base=venda-efetiva + despesa capada + cadeia — módulo auction.settlement) → +1 sobre 104 (Ω5P PR-13b). PR-14b (ciclo do saldo) e PR-15 (UI) seguem."
     },
     "mobile_backend_contracts": {
       "value": 18,

@@ -41,6 +41,7 @@ const EVENT_TYPE_LABELS: Record<CustodyEventType, string> = {
   AUCTION_LOTTED: "Loteamento",
   AUCTION_SOLD: "Arrematação",
   AUCTION_CLOSED: "Leilão encerrado",
+  AUCTION_SETTLEMENT: "Liquidação do leilão",
   ADJUSTMENT: "Ajuste (correção retroativa)",
 };
 
