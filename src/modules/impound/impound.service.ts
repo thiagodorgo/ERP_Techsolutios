@@ -124,6 +124,21 @@ export class ImpoundService {
     return this.repository.findLatestByPlate(tenantId, normalized);
   }
 
+  // Ω5P PR-17 — READ-PORT do owner-portal (dossiê): resolve o processo pelo ID que veio da SESSÃO JWE verificada
+  // (nunca do corpo). Escopado ao tenant VINCULADO ao deploy — o RLS garante que uma sessão de A jamais lê B
+  // (findProcessById filtra tenant_id). undefined = processo inexistente NAQUELE tenant (cross-tenant ou removido).
+  async findByIdForPortal(tenantId: string, processId: string): Promise<ImpoundProcess | undefined> {
+    return this.repository.findProcessById(tenantId, processId);
+  }
+
+  // Ω5P PR-17 — READ-PORT do owner-portal (dossiê, card de fotos): SÓ a CONTAGEM de conjuntos de fotos com ≥1
+  // imagem armazenada — NENHUM byte de foto, NENHUM storage_key/fileUrl (§2.8). É o "placeholder honesto"
+  // (PD-Ω5P-FOTOS / CORTE PR-17b): o proprietário vê QUANTOS conjuntos existem, não as imagens. 0 se não há vistoria.
+  async countAvailablePhotoSets(tenantId: string, processId: string): Promise<number> {
+    const state = await this.repository.getIntakeState(tenantId, processId);
+    return state?.storedSets.length ?? 0;
+  }
+
   async get(actor: ImpoundActorContext, processId: string): Promise<ImpoundProcess> {
     const process = await this.repository.findProcessById(actor.tenantId, parseRequiredUuid(processId, "processId"));
     if (!process) {

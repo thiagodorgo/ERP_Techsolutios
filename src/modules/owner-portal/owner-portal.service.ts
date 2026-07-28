@@ -7,13 +7,16 @@ import {
   normalizeRenavamKey,
   plateRateKey,
   queryFingerprint,
+  sessionRateKey,
   signOwnerSession,
   verifySolution,
   type ChallengeStore,
   type PortalAccessLogRepository,
   type PowChallenge,
 } from "../portal-shared/index.js";
-import { toOwnerPortalProcessDto, type OwnerPortalProcessDto } from "./owner-portal.dto.js";
+import { toOwnerDossierDto, toOwnerPortalProcessDto, type OwnerDossierDto, type OwnerPortalProcessDto } from "./owner-portal.dto.js";
+import { resolveOwnerSession } from "./owner-portal.session.js";
+import type { PortalReleaseRequestRepository } from "./portal-release-request.types.js";
 import type { LookupRequest } from "./owner-portal.validators.js";
 
 // Ω5P PR-16 — read-ports ESTREITOS que o BFF consome IN-PROCESS (D-Ω5P-PORTAL-03) — nunca loopback HTTP, nunca
@@ -21,12 +24,41 @@ import type { LookupRequest } from "./owner-portal.validators.js";
 // garante que o portal jamais lê o processo de OUTRO tenant.
 export interface OwnerPortalImpoundPort {
   findByIdentity(tenantId: string, plate: string): Promise<ImpoundProcess | undefined>;
+  // Ω5P PR-17 — resolve o processo pelo ID da SESSÃO JWE (nunca do corpo); RLS garante isolamento cross-tenant.
+  findByIdForPortal(tenantId: string, processId: string): Promise<ImpoundProcess | undefined>;
+  // Ω5P PR-17 — contagem de conjuntos de foto (placeholder honesto; NENHUM byte de foto — CORTE PR-17b).
+  countAvailablePhotoSets(tenantId: string, processId: string): Promise<number>;
 }
 export interface OwnerPortalChargePort {
   getPublicSummary(tenantId: string, processId: string): Promise<{ totalDueCents: number; currency: string }>;
+  // Ω5P PR-17 — débitos ITEMIZADOS por kind (§2.8: sem tariffId/unitAmount/periodSeq/id de linha).
+  getPublicItemizedSummary(
+    tenantId: string,
+    processId: string,
+  ): Promise<{
+    readonly currency: string;
+    readonly items: ReadonlyArray<{ readonly kind: "REMOVAL" | "DAILY" | "ADDITIONAL"; readonly subtotalCents: number; readonly count: number }>;
+    readonly capReached: boolean;
+    readonly totalDueCents: number;
+  }>;
 }
 export interface OwnerPortalYardPort {
   getPublicYard(tenantId: string, yardId: string): Promise<{ name: string; address: string } | undefined>;
+}
+// Ω5P PR-17 — prazos legais (offsets do t0) + exigências de liberação (§2.8: só {label, required}; nunca satisfied).
+export interface OwnerPortalJurisdictionPort {
+  getPortalProfile(
+    tenantId: string,
+    profileId: string,
+  ): Promise<
+    | {
+        readonly ownerNotifDays: number;
+        readonly noticeEdictDay: number;
+        readonly auctionEligibleDay: number;
+        readonly requirements: ReadonlyArray<{ readonly label: string; readonly required: boolean }>;
+      }
+    | undefined
+  >;
 }
 
 export type OwnerPortalDeps = {
@@ -34,6 +66,8 @@ export type OwnerPortalDeps = {
   readonly impound: OwnerPortalImpoundPort;
   readonly charge: OwnerPortalChargePort;
   readonly yard: OwnerPortalYardPort;
+  readonly jurisdiction: OwnerPortalJurisdictionPort; // Ω5P PR-17 — prazos/exigências do dossiê
+  readonly releaseRequests: PortalReleaseRequestRepository; // Ω5P PR-17 — intenção de liberação
   readonly accessLog: PortalAccessLogRepository;
   readonly antiAbuse: AntiAbuse;
   readonly challengeStore: ChallengeStore;
@@ -56,6 +90,21 @@ export type OwnerLookupResult =
 // crescer o challenge store nem a trilha de log sem teto — o balde por IP corta ANTES de emitir/logar.
 export type OwnerChallengeResult =
   | { readonly kind: "issued"; readonly challenge: PowChallenge }
+  | { readonly kind: "rate_limited" };
+
+// Ω5P PR-17 — desfecho do /dossier. `session_invalid` (401) é UNIFORME p/ ausente/expirada/forjada/audience-errada
+// (sem oráculo). `not_found` (cross-tenant/removido) NÃO devolve o processo. Só `ok` traz o agregado minimizado.
+export type OwnerDossierResult =
+  | { readonly kind: "ok"; readonly dossier: OwnerDossierDto }
+  | { readonly kind: "session_invalid" }
+  | { readonly kind: "not_found" }
+  | { readonly kind: "rate_limited" };
+
+// Ω5P PR-17 — desfecho do /release-request. `ok` = intenção REGISTRADA (ou já havia uma aberta — idempotente); a
+// resposta ao cliente é SEMPRE genérica ({received:true}) — não confirma/nega existência do processo (anti-oráculo).
+export type OwnerReleaseRequestResult =
+  | { readonly kind: "ok" }
+  | { readonly kind: "session_invalid" }
   | { readonly kind: "rate_limited" };
 
 function truncateUa(userAgent: string | undefined): string | undefined {
@@ -193,9 +242,114 @@ export class OwnerPortalService {
     return this.settle(startMs, { kind: "found", process: dto, session });
   }
 
-  // Atraso mínimo CONSTANTE — normaliza a latência (a via FOUND faz mais trabalho; a via negativa "espera" até o
-  // piso). Aplicado a TODOS os desfechos de lookup → nenhuma via é um oráculo de timing.
-  private async settle(startMs: number, result: OwnerLookupResult): Promise<OwnerLookupResult> {
+  // GET /portal/v1/owner/dossier — dossiê detalhado MINIMIZADO (§2.8). A SESSÃO É A AUTORIZAÇÃO: o processId vem
+  // SEMPRE da JWE verificada (nunca do corpo). Rejeição uniforme p/ sessão ausente/expirada/forjada/audience-errada.
+  async dossier(ctx: { authorization?: string; ip: string; userAgent?: string }): Promise<OwnerDossierResult> {
+    const startMs = this.clock();
+    const ip = ipHash(this.deps.logSecret, ctx.ip);
+    const ua = truncateUa(ctx.userAgent);
+    const nowMs = this.clock();
+
+    const session = await resolveOwnerSession(ctx.authorization, this.deps.sessionSecret);
+    if (!session) {
+      // Sessão inválida = vetor de DoS BARATO (JWE forjada). Rate-limit por IP ANTES de logar → o flood de tokens
+      // ruins não cresce a trilha sem teto (mesmo espírito do /challenge). Barrado → 429 SEM log.
+      if (this.deps.antiAbuse.checkReadRate("anon", ip, nowMs).limited) {
+        return this.settle(startMs, { kind: "rate_limited" });
+      }
+      await this.logPortal("DOSSIER_VIEWED", "SESSION_INVALID", { ip, ua });
+      return this.settle(startMs, { kind: "session_invalid" });
+    }
+
+    // Sessão VÁLIDA (já custou um PoW no lookup) → rate-limit por sessão+IP (balde dedicado; sem PoW nos reads).
+    const readKey = sessionRateKey(this.deps.logSecret, session.processId);
+    if (this.deps.antiAbuse.checkReadRate(readKey, ip, nowMs).limited) {
+      await this.logPortal("DOSSIER_VIEWED", "RATE_LIMITED", { ip, ua });
+      return this.settle(startMs, { kind: "rate_limited" });
+    }
+
+    // processId DA SESSÃO — RLS garante que uma sessão de A jamais lê B (findByIdForPortal filtra tenant vinculado).
+    const process = await this.deps.impound.findByIdForPortal(this.deps.tenantId, session.processId);
+    if (!process) {
+      await this.logPortal("DOSSIER_VIEWED", "NOT_FOUND", { ip, ua });
+      return this.settle(startMs, { kind: "not_found" });
+    }
+
+    const [charges, plan, photoSetsCount] = await Promise.all([
+      this.deps.charge.getPublicItemizedSummary(this.deps.tenantId, process.id),
+      this.deps.jurisdiction.getPortalProfile(this.deps.tenantId, process.profileId),
+      this.deps.impound.countAvailablePhotoSets(this.deps.tenantId, process.id),
+    ]);
+    const yard = process.yardId ? await this.deps.yard.getPublicYard(this.deps.tenantId, process.yardId) : undefined;
+    const dossier = toOwnerDossierDto({ process, yard, charges, plan, photoSetsCount, now: new Date() });
+    await this.logPortal("DOSSIER_VIEWED", "AUTHORIZED", { ip, ua, processId: process.id });
+    return this.settle(startMs, { kind: "ok", dossier });
+  }
+
+  // POST /portal/v1/owner/release-request — registra a INTENÇÃO de liberação (nota curta opcional; SEM upload). O
+  // processId vem da SESSÃO. Idempotente (1 aberta por processo via partial-unique). Resposta SEMPRE genérica.
+  async releaseRequest(ctx: { authorization?: string; note?: string; ip: string; userAgent?: string }): Promise<OwnerReleaseRequestResult> {
+    const startMs = this.clock();
+    const ip = ipHash(this.deps.logSecret, ctx.ip);
+    const ua = truncateUa(ctx.userAgent);
+    const nowMs = this.clock();
+
+    const session = await resolveOwnerSession(ctx.authorization, this.deps.sessionSecret);
+    if (!session) {
+      if (this.deps.antiAbuse.checkReadRate("anon", ip, nowMs).limited) {
+        return this.settle(startMs, { kind: "rate_limited" });
+      }
+      await this.logPortal("RELEASE_REQUESTED", "SESSION_INVALID", { ip, ua });
+      return this.settle(startMs, { kind: "session_invalid" });
+    }
+
+    const readKey = sessionRateKey(this.deps.logSecret, session.processId);
+    if (this.deps.antiAbuse.checkReadRate(readKey, ip, nowMs).limited) {
+      await this.logPortal("RELEASE_REQUESTED", "RATE_LIMITED", { ip, ua });
+      return this.settle(startMs, { kind: "rate_limited" });
+    }
+
+    // Resolve o processo pelo id da sessão ANTES de inserir (evita FK-violation cross-tenant; resposta genérica).
+    const process = await this.deps.impound.findByIdForPortal(this.deps.tenantId, session.processId);
+    if (!process) {
+      await this.logPortal("RELEASE_REQUESTED", "NOT_FOUND", { ip, ua });
+      return this.settle(startMs, { kind: "ok" }); // genérica: não revela que o processo não existe neste tenant
+    }
+
+    await this.deps.releaseRequests.createIfNoneOpen({
+      tenantId: this.deps.tenantId,
+      processId: process.id,
+      note: ctx.note,
+      sessionRef: sessionRateKey(this.deps.logSecret, process.id).slice(0, 24), // ref OPACA (HMAC truncado); nunca a JWE
+      requestedAt: new Date(),
+    });
+    // `created` é interno (idempotência); a resposta é genérica em ambos os casos → sem oráculo.
+    await this.logPortal("RELEASE_REQUESTED", "AUTHORIZED", { ip, ua, processId: process.id });
+    return this.settle(startMs, { kind: "ok" });
+  }
+
+  // 1 linha no PortalAccessLog (I10) para as ações autorizadas por sessão. Sem PII (só ip_hash/ua truncada;
+  // processId só quando o desfecho amarra o bem — AUTHORIZED, coerente com o CHECK process_found alargado).
+  private async logPortal(
+    action: "DOSSIER_VIEWED" | "RELEASE_REQUESTED",
+    outcome: "AUTHORIZED" | "SESSION_INVALID" | "RATE_LIMITED" | "NOT_FOUND",
+    ctx: { ip: string; ua?: string; processId?: string },
+  ): Promise<void> {
+    await this.deps.accessLog.append({
+      tenantId: this.deps.tenantId,
+      portal: "OWNER",
+      action,
+      outcome,
+      processId: ctx.processId,
+      ipHash: ctx.ip,
+      userAgent: ctx.ua,
+      occurredAt: new Date(),
+    });
+  }
+
+  // Atraso mínimo CONSTANTE — normaliza a latência (a via com mais trabalho vs a via curta; a curta "espera" até o
+  // piso). Aplicado a TODOS os desfechos → nenhuma via é um oráculo de timing. Genérico (lookup/dossier/release).
+  private async settle<T>(startMs: number, result: T): Promise<T> {
     const elapsed = this.clock() - startMs;
     if (elapsed < this.deps.minLatencyMs) {
       await sleep(this.deps.minLatencyMs - elapsed);

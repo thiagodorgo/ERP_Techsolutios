@@ -56,3 +56,141 @@ export function toOwnerPortalProcessDto(
     totalDueLabel: formatMoneyLabel(due.totalDueCents, due.currency),
   };
 }
+
+// ── Ω5P PR-17 — DOSSIÊ DETALHADO MINIMIZADO (§2.8 / RN-POR-02) ──────────────────────────────────────────────────
+// Agregado numa chamada: situação + pátio + descritor do veículo (posse já provada; SEM placa/Renavam/chassi) +
+// débitos ITEMIZADOS por kind + prazos derivados do t0 + exigências de liberação + placeholder honesto de fotos.
+// JAMAIS: id/tenant_id/profile_id/serviceOrderId · origem/autoridade/agente/nº do auto/BO/base legal · Renavam/
+// chassi/proprietário · tariffId/unitAmount/periodSeq/id de linha/settled_* · storage_key/fileUrl/token/hash.
+
+// Rótulos PT-BR white-label dos encargos (o kind interno NUNCA vai na resposta — só o label).
+const CHARGE_KIND_LABELS: Record<"REMOVAL" | "DAILY" | "ADDITIONAL", string> = {
+  REMOVAL: "Remoção",
+  DAILY: "Diárias de estada",
+  ADDITIONAL: "Encargos adicionais",
+};
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+export type OwnerDossierChargeItem = {
+  readonly kindLabel: string;
+  readonly subtotalLabel: string;
+  readonly dailyCount?: number;
+  readonly capReachedLabel?: string;
+};
+
+export type OwnerDossierDeadline = {
+  readonly label: string;
+  readonly dueDate: string; // ISO — data derivada de enteredAt + offset em dias do perfil
+  readonly elapsedLabel: string; // "Faltam N dias" / "Vence hoje" / "Prazo encerrado"
+};
+
+export type OwnerDossierRequirement = {
+  readonly label: string;
+  readonly required: boolean;
+};
+
+export type OwnerDossierPhotos = {
+  readonly setsAvailableCount: number; // contagem de conjuntos com foto (NENHUM byte de foto sai nesta fatia)
+  readonly availabilityLabel: string;
+};
+
+export type OwnerDossierDto = {
+  readonly status: ImpoundStatus;
+  readonly statusLabel: string;
+  readonly yardPublicName: string | null;
+  readonly yardPublicAddress: string | null;
+  readonly enteredAt: string | null;
+  readonly vehicle: {
+    readonly brand: string | null;
+    readonly model: string | null;
+    readonly color: string | null;
+    readonly year: number | null;
+  };
+  readonly charges: {
+    readonly items: readonly OwnerDossierChargeItem[];
+    readonly totalDueLabel: string;
+  };
+  readonly deadlines: readonly OwnerDossierDeadline[];
+  readonly requirements: readonly OwnerDossierRequirement[];
+  readonly photos: OwnerDossierPhotos;
+};
+
+// "Faltam N dias" / "Falta 1 dia" / "Vence hoje" / "Prazo encerrado" — legível para o cidadão, sem expor cálculo.
+function elapsedLabel(dueDate: Date, now: Date): string {
+  const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / MS_PER_DAY);
+  if (diffDays > 1) return `Faltam ${diffDays} dias`;
+  if (diffDays === 1) return "Falta 1 dia";
+  if (diffDays === 0) return "Vence hoje";
+  return "Prazo encerrado";
+}
+
+function addDays(base: Date, days: number): Date {
+  return new Date(base.getTime() + days * MS_PER_DAY);
+}
+
+// Prazos legais derivados do t0 (enteredAt) + offsets do perfil. Sem t0 (processo ainda não entrou) ⇒ lista vazia.
+export function buildOwnerDossierDeadlines(
+  enteredAt: Date | undefined,
+  plan: { ownerNotifDays: number; noticeEdictDay: number; auctionEligibleDay: number },
+  now: Date,
+): readonly OwnerDossierDeadline[] {
+  if (!enteredAt) return [];
+  const marks: ReadonlyArray<{ label: string; days: number }> = [
+    { label: "Prazo de notificação ao proprietário", days: plan.ownerNotifDays },
+    { label: "Prazo para edital de notificação", days: plan.noticeEdictDay },
+    { label: "Elegível a leilão a partir de", days: plan.auctionEligibleDay },
+  ];
+  return marks.map(({ label, days }) => {
+    const dueDate = addDays(enteredAt, days);
+    return { label, dueDate: dueDate.toISOString(), elapsedLabel: elapsedLabel(dueDate, now) };
+  });
+}
+
+export function toOwnerDossierDto(input: {
+  process: ImpoundProcess;
+  yard: { name: string; address: string } | undefined;
+  charges: {
+    currency: string;
+    items: ReadonlyArray<{ kind: "REMOVAL" | "DAILY" | "ADDITIONAL"; subtotalCents: number; count: number }>;
+    capReached: boolean;
+    totalDueCents: number;
+  };
+  plan: { ownerNotifDays: number; noticeEdictDay: number; auctionEligibleDay: number; requirements: ReadonlyArray<{ label: string; required: boolean }> } | undefined;
+  photoSetsCount: number;
+  now: Date;
+}): OwnerDossierDto {
+  const { process, yard, charges, plan, photoSetsCount, now } = input;
+  const items: OwnerDossierChargeItem[] = charges.items.map((item) => ({
+    kindLabel: CHARGE_KIND_LABELS[item.kind],
+    subtotalLabel: formatMoneyLabel(item.subtotalCents, charges.currency),
+    ...(item.kind === "DAILY" ? { dailyCount: item.count } : {}),
+    ...(item.kind === "DAILY" && charges.capReached ? { capReachedLabel: "Teto de diárias atingido" } : {}),
+  }));
+  return {
+    status: process.status,
+    statusLabel: STATUS_LABELS[process.status],
+    yardPublicName: yard?.name ?? null,
+    yardPublicAddress: yard?.address ?? null,
+    enteredAt: process.enteredAt ? process.enteredAt.toISOString() : null,
+    vehicle: {
+      brand: process.vehicleBrand ?? null,
+      model: process.vehicleModel ?? null,
+      color: process.vehicleColor ?? null,
+      year: process.vehicleYear ?? null,
+    },
+    charges: {
+      items,
+      totalDueLabel: formatMoneyLabel(charges.totalDueCents, charges.currency),
+    },
+    deadlines: plan ? buildOwnerDossierDeadlines(process.enteredAt, plan, now) : [],
+    requirements: (plan?.requirements ?? []).map((requirement) => ({ label: requirement.label, required: requirement.required })),
+    photos: {
+      setsAvailableCount: photoSetsCount,
+      availabilityLabel:
+        photoSetsCount > 0
+          ? "Fotos da vistoria disponíveis mediante solicitação ao órgão/pátio responsável, conforme a LGPD."
+          : "Nenhuma foto de vistoria registrada até o momento.",
+    },
+  };
+}
