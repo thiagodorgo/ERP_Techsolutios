@@ -78,6 +78,8 @@ const ProcessosPage = lazy(() => import("./modules/patios/processes/pages/Proces
 const ProcessoDossiePage = lazy(() => import("./modules/patios/processes/pages/ProcessoDossiePage").then((m) => ({ default: m.ProcessoDossiePage })));
 // Ω5P PR-11 — fila de Liberações (governada por impound:read; o dossiê /patios/processos/:id hospeda o painel).
 const LiberacoesPage = lazy(() => import("./modules/patios/release/pages/LiberacoesPage").then((m) => ({ default: m.LiberacoesPage })));
+// Ω5P PR-15a — funil de Leilões (governado por impound:read; o dossiê hospeda o painel de leilão).
+const LeiloesPage = lazy(() => import("./modules/patios/auction/pages/LeiloesPage").then((m) => ({ default: m.LeiloesPage })));
 const AbastecimentoPage = lazy(() => import("./modules/fleet/fuel/pages/AbastecimentoPage").then((m) => ({ default: m.AbastecimentoPage })));
 const ManutencaoPage = lazy(() => import("./modules/fleet/maintenance/pages/ManutencaoPage").then((m) => ({ default: m.ManutencaoPage })));
 const MultasPage = lazy(() => import("./modules/fleet/fines/pages/MultasPage").then((m) => ({ default: m.MultasPage })));
@@ -417,6 +419,14 @@ export function App() {
               element={
                 <PermissionGuard permissions={["impound:read"]}>
                   <LiberacoesPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="/patios/leiloes"
+              element={
+                <PermissionGuard permissions={["impound:read"]}>
+                  <LeiloesPage />
                 </PermissionGuard>
               }
             />

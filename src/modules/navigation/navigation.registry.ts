@@ -551,6 +551,39 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
       "POST /api/v1/impound-processes/:processId/charges/settle",
     ],
   },
+  // Ω5P PR-15a — Leilões (funil do leilão administrativo): path GOVERNADO por impound:read (esconde-fino, ESPELHA
+  // patios.processes/patios.releases). SEM requiredModules (permissão pura). Quem não tem impound:read (finance/
+  // inventory/support) NÃO vê o item e segue barrado no 403 do backend. As AÇÕES do leilão exigem impound:transition;
+  // a avaliação sigilosa exige auction:appraise (art. 28) — a UI molda por can(...), o backend é a autoridade. O funil
+  // reusa GET /impound-processes (sem N+1); o dossiê /patios/processos/:id hospeda o painel de leilão.
+  {
+    id: "patios.auctions",
+    label: "Leilões",
+    description: "Funil do leilão administrativo: elegibilidade, edital, avaliação sigilosa, arremate, encerramento e reciclagem.",
+    path: "/patios/leiloes",
+    icon: "Gavel",
+    group: "tenant",
+    order: 268,
+    status: "implemented",
+    requiredPermissions: ["impound:read"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/impound-processes",
+      "GET /api/v1/impound-processes/:processId/auction",
+      "POST /api/v1/impound-processes/:processId/auction/eligibility",
+      "POST /api/v1/impound-processes/:processId/auction/edicts",
+      "POST /api/v1/impound-processes/:processId/auction/attempts",
+      "POST /api/v1/impound-processes/:processId/auction/appraisal",
+      "POST /api/v1/impound-processes/:processId/auction/reclassify-scrap",
+      "POST /api/v1/impound-processes/:processId/auction/reclassify-unrecoverable",
+      "POST /api/v1/impound-processes/:processId/auction/prep",
+      "POST /api/v1/impound-processes/:processId/auction/lot",
+      "POST /api/v1/impound-processes/:processId/auction/sale",
+      "POST /api/v1/impound-processes/:processId/auction/close",
+      "POST /api/v1/impound-processes/:processId/auction/default",
+      "POST /api/v1/impound-processes/:processId/auction/reclaim",
+    ],
+  },
   {
     id: "patios.profiles",
     label: "Perfis Normativos",

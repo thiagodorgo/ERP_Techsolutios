@@ -8,6 +8,7 @@ import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
+import { AuctionPanel } from "../../auction/components/AuctionPanel";
 import { GuiaDebitos } from "../../charges/components/GuiaDebitos";
 import { LancamentoChargeModal } from "../../charges/components/LancamentoChargeModal";
 import { useStatement } from "../../charges/useStatement";
@@ -246,6 +247,18 @@ export function ProcessoDossiePage() {
           <LiberacaoPanel
             process={process}
             statement={statement}
+            context={context}
+            onDone={() => {
+              void load();
+              void reloadStatement();
+            }}
+          />
+
+          {/* Ω5P PR-15a — Leilão administrativo (aditivo/merge-safe: os painéis acima ficam intactos). O painel
+              orquestra por process.status e consome o módulo backend auction (FSM de leilão, gate I8, sigilo art. 28).
+              A liquidação em cascata (§6º) é a seção 15b, ainda não implementada. */}
+          <AuctionPanel
+            process={process}
             context={context}
             onDone={() => {
               void load();

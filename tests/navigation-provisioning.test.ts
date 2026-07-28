@@ -223,3 +223,34 @@ test("Ω5P PR-11: finance e inventory NÃO veem as Liberações (sem impound:rea
   assert.equal(menuPathsForRole("finance").includes(PATIOS_RELEASES_PATH), false);
   assert.equal(menuPathsForRole("inventory").includes(PATIOS_RELEASES_PATH), false);
 });
+
+// Ω5P PR-15a (Leilões — funil do leilão administrativo): o item /patios/leiloes é GOVERNADO pelo registry com gate
+// ÚNICO impound:read (esconde-fino, ESPELHA patios.processes/patios.releases — SEM requiredModules). A matriz por
+// papel é DERIVADA de ROLE_PERMISSIONS: quem tem impound:read VÊ; finance/inventory (e support) NÃO. As AÇÕES do
+// leilão (transition/appraise) são gated NA TELA + 403 do backend — o item do funil só exige a leitura. A avaliação
+// SIGILOSA (art. 28) usa auction:appraise, mais estreita — mas o funil NÃO a exige (só molda os valores no dossiê).
+const PATIOS_AUCTIONS_PATH = "/patios/leiloes";
+const PATIOS_AUCTIONS_PERMISSION = "impound:read";
+
+test("Ω5P PR-15a: getGovernedNavigationPaths governa /patios/leiloes (impound:read)", () => {
+  const governed = getGovernedNavigationPaths();
+  assert.equal(governed.includes(PATIOS_AUCTIONS_PATH), true);
+});
+
+for (const role of Object.keys(MAP_VISIBLE_BY_ROLE) as Role[]) {
+  const hasPermission = ROLE_PERMISSIONS[role].includes(PATIOS_AUCTIONS_PERMISSION);
+  test(`Ω5P PR-15a: papel ${role} ${hasPermission ? "VÊ" : "NÃO vê"} os Leilões (gate ${PATIOS_AUCTIONS_PERMISSION})`, () => {
+    assert.equal(
+      menuPathsForRole(role).includes(PATIOS_AUCTIONS_PATH),
+      hasPermission,
+      `${role} → ${PATIOS_AUCTIONS_PATH} deveria ${hasPermission ? "aparecer" : "sumir"} no menu`,
+    );
+  });
+}
+
+test("Ω5P PR-15a: finance e inventory NÃO veem os Leilões (sem impound:read)", () => {
+  assert.equal(ROLE_PERMISSIONS.finance.includes(PATIOS_AUCTIONS_PERMISSION), false);
+  assert.equal(ROLE_PERMISSIONS.inventory.includes(PATIOS_AUCTIONS_PERMISSION), false);
+  assert.equal(menuPathsForRole("finance").includes(PATIOS_AUCTIONS_PATH), false);
+  assert.equal(menuPathsForRole("inventory").includes(PATIOS_AUCTIONS_PATH), false);
+});
