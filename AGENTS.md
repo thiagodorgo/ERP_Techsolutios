@@ -147,11 +147,15 @@ Para **ler a lógica**: abra o `.dc.html` como texto. Cada tela é um bloco
   especializadas (multi-tenant, RBAC, frontend, Flutter, UI/UX, auditoria de código) devem ser
   usadas em vez de improvisar (§A6). Manter os dois diretórios idênticos via
   `scripts/sync-agent-skills.mjs`.
-- **Subagentes:** o Codex usa **subagentes do Codex** com a **mesma FUNÇÃO** dos subagentes do
-  Claude Code — planejador (plano obrigatório antes do código), dev (implementação), avaliador/
-  juntas (revisão e voto), pesquisador (dúvida → pesquisa), crítico-adversarial, especialistas de
-  domínio (mapas, DBA, secops, CI etc.). **Só o mecanismo muda; o papel e as regras de junta são os
-  mesmos** (§C7).
+- **Subagentes / papéis de junta:** os **24 papéis** que o Claude Code roda como subagentes isolados
+  (`.claude/agents/*.md`) estão espelhados para o Codex em **`.agents/agents/*.md`** — **corpo verbatim**
+  (as instruções e os poderes de **VETO** não sofrem drift), com um preâmbulo de orientação Codex no topo.
+  O índice e o **protocolo de emulação da junta** estão em **`.agents/agents/README.md`**: se o seu Codex
+  puder criar subagentes isolados, invoque cada arquivo como a definição do subagente; se **não** puder,
+  **EMULE** a junta adotando um papel de cada vez (planejador → crítico-adversarial → dev → cada revisor de
+  veto num **passe adversarial independente**) e registre os votos na ata (`docs/juntas/`). **A junta é
+  OBRIGATÓRIA (§C7); só o mecanismo muda — o papel, os poderes e as regras são os mesmos.** Mantenha
+  `.claude/agents/` ↔ `.agents/agents/` em dia via `scripts/sync-agent-agents.mjs`.
 
 ## 2. Regras de ouro (não violar)
 
@@ -446,7 +450,8 @@ divergência entre os dois contratos, **prevalece o `CLAUDE.md`**.
 | **Descoberta de skills** | `.claude/skills/` | `.agents/skills/` (mesmo conteúdo `SKILL.md`) |
 | **Invocação de skill** | `/nome-da-skill` (slash) ou ativação automática | `$nome-da-skill` ou ativação automática pela descrição |
 | **Sincronização de skills** | — | `scripts/sync-agent-skills.mjs` mantém os dois diretórios idênticos |
-| **Subagentes especializados** | subagentes do Claude Code (`.claude/agents/`) | subagentes do Codex — **mesma FUNÇÃO** (planejador · dev · avaliador/juntas · pesquisador · crítico · especialistas de domínio) |
+| **Subagentes / papéis de junta** | 24 agentes em `.claude/agents/*.md` (subagentes isolados) | **24 papéis espelhados em `.agents/agents/*.md`** (corpo verbatim + preâmbulo Codex); protocolo de emulação em `.agents/agents/README.md` — invocar como subagente OU emular a junta (§C7) |
+| **Sincronização de agentes** | — | `scripts/sync-agent-agents.mjs` mantém `.claude/agents/` ↔ `.agents/agents/` |
 | **Comandos de bloco** | `agent-orchestration/codex/comandos/` (formato `comando-template.md`) — pode isolar em `agent-orchestration/claude/` | `agent-orchestration/codex/comandos/` (mesmo formato) |
 | **Companheiros (valem p/ ambos)** | `EXECUTION_MODEL.md` · `comando-template.md` · `API_CONTRACTS.md` · `BUILD_ORDER.md` · `PROJECT_MEMORY.md` | idênticos |
 | **Modelo de execução** | blocos B-NNN (Parte C) · KPI-por-PR (§C3) · autonomia por juntas (§C7) · GitHub Flow (§8) · baterias (§9) · DoD (§10) · fidelidade (§11) | **idênticos** |
