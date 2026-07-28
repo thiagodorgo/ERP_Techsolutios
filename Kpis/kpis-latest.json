@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-26",
-  "version": "OMEGA5P-PR-14a",
+  "version": "OMEGA5P-PR-14b",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Ω5P PR-14a — Fase 4: liquidação em cascata §6º (núcleo I7) — distribuição do produto do leilão na ordem legal (custeio→remoção/estada→tributos→credores→multas→demais) + saldo ao ex-proprietário",
-    "title": "Ω5P PR-14a: a distribuição do produto do leilão — Σ das alocações = valor arrematado (centavos exatos, por construção); cascata na ordem do art.328 §6º; base = a venda EFETIVA (não dupla-conta a revenda); despesa capada ao teto; junta 3/3 unânime",
+    "block": "Ω5P PR-14b — Fase 4: ciclo do saldo do ex-proprietário (claim-balance ≤5 anos + revert-funset após o prazo) — completa o I7 (cascata + saldo)",
+    "title": "Ω5P PR-14b: o ciclo do saldo remanescente do leilão — o ex-proprietário retira o saldo em até 5 anos (registro manual, sem PSP), ou após o prazo o saldo reverte ao Funset (art.320); state-change gated, NÃO redistribui (Σ=arremate preservado); junta 3/3 unânime",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Ω5P PR-14a — LIQUIDAÇÃO EM CASCATA §6º (Fase 4, núcleo I7). Backend + migração aditiva (2 tabelas). O ÁPICE do risco financeiro: a distribuição do produto do leilão (dinheiro de terceiro) na ORDEM LEGAL do art.328 §6º. Motor PURO distributeCascade (aritmética de CENTAVOS inteiros, ZERO float): remaining=hammer; para cada tier na ordem AUCTION_COST→REMOVAL_STORAGE→VEHICLE_TAXES→PRIORITY_CREDITORS→REALIZING_AGENCY_FINES→OTHER_SNT_FINES→OTHER_DEBITS: alloc=min(remaining,claim); ownerBalance=resíduo. **I7: Σ allocations + ownerBalance == hammer POR CONSTRUÇÃO** (+ assertSettlementSum na tx → rollback). Base = findActiveSoldRound (a SOLD EFETIVA, re-derivada sob FOR UPDATE com guarda settlement_base_changed; NUNCA Σ sold_amount — fecha o requisito do PR-13b, não dupla-conta a revenda pós-inadimplência). Claim item I (REMOVAL_STORAGE) CAPADO ao teto I4/CTB §10 (getCascadeExpenseClaim read-only = settledTotal − Σ over-accrued; dailies sobre-acumuladas NÃO inflam contra o ex-dono; process_charges INTOCADO — AUCTION_CLOSED e RELEASED terminais mutuamente exclusivos). Migração 20260845000000 (settlements + settlement_allocations; partial-unique idempotência 1/processo; RLS forced; FK RESTRICT I9; CHECK IS-NOT-NULL). Endpoint POST /auction/settlement gated AUCTION_CLOSED; INSERT + N allocations + AUCTION_SETTLEMENT na cadeia + cross-anchor numa tx; idempotente. REUSA impound:transition (sem permissão nova). §2.8: payload só rótulos+dinheiro-string, sem PII. JUNTA APROVADO 3/3 UNÂNIME (0 ciclo — o ápice financeiro sólido por construção): dba-guardiao (migração drift-zero tx-ROLLBACK; 23505/23514/RLS/I9 vivos) + critico-adversarial (0 CRÍTICO/0 MÉDIO; Σ=arremate por construção provado property-based 2000 casos; base re-derivada sob lock; claim capado; idempotência; §2.8; 3 BAIXO informativos→backlog) + omega5p-avaliador (VETO; escopo intacto; I7; aderência). PD-Ω5P-CASCADE-ORDER (3 fontes; divergência do ESTUDO no tier II tributos registrada). Aderência CTB art.328§6º/§12 (Lei 13.160); Res.1025 arts.25-39. Ciclo do saldo (claim/revert-funset) = PR-14b. backend 1802→1813 (+11), smoke 908 e flutter 807 inalterados, blocks 104→105. Zero regressão. Inclui backfill do PR-13b (#296 1847b5c).",
-    "status_label": "Ω5P PR-14a: cascata §6º I7 (Σ alocações=arremate por construção, centavos exatos; base=venda efetiva; despesa capada; §2.8); junta 3/3 unânime; backend 1802->1813, blocks 104->105"
+    "summary": "Ω5P PR-14b — CICLO DO SALDO DO EX-PROPRIETÁRIO (Fase 4, completa o I7). Backend + migração aditiva (ADD-COLUMN). O saldo remanescente do leilão (owner_balance, alocado no 14a) tem seu ciclo de vida: POST /auction/settlement/claim-balance (impound:transition; DISTRIBUTED+saldo>0+now<owner_claim_expires_at → BALANCE_CLAIMED; registro MANUAL da retirada pelo ex-dono, SEM PSP — D-Ω5P-07) e POST /auction/settlement/revert-funset (DISTRIBUTED+saldo>0+now>=expires → BALANCE_REVERTED_FUNSET; reversão ao Funset art.320 após o prazo de 5 anos). MUTUAMENTE EXCLUSIVOS (um settlement DISTRIBUTED vai OU para claimed OU para funset, nunca ambos; gate de estado + FOR UPDATE processo+settlement). NÃO REDISTRIBUI (não toca settlement_allocations/owner_balance; Σ==hammer do 14a PRESERVADO). Cada transição = evento AUCTION_SETTLEMENT{phase:CLAIM|FUNSET_REVERSION} na cadeia I2 (payload §2.8 só {event,phase,settlementId}; recipient minimizado só na tabela RLS-forced, NUNCA na cadeia/audit). Migração 20260846000000 (4 ADD-COLUMN nullable: claimed_by/claimed_at/claim_recipient_ref/reverted_at). Reasons 409 distintos (balance_claim_wrong_state/balance_zero/balance_claim_expired/funset_wrong_state/funset_not_yet_due). Idempotente. REUSA impound:transition (sem permissão nova). JUNTA APROVADO 3/3 UNÂNIME (0 ciclo): dba-guardiao (ADD-COLUMN nullable tx-ROLLBACK; drift-zero; RLS herdada) + critico-adversarial (0 CRÍTICO/0 MÉDIO; 8 vetores resistiram na base viva — os 3 CRÍTICOS de prazo [reverter-antes/reclamar-depois/dupla-transição] BLOQUEADOS; Σ intacto; §2.8 CPF-falso não vaza na cadeia persistida; 3 BAIXO→backlog) + omega5p-avaliador (VETO; escopo intacto; Σ preservado; aderência). O sweep automático D+5a = Ω6. Aderência CTB art.328§12/art.320 (Funset); Res.1025. backend 1813→1825 (+12), frontend_smoke 908 e flutter 807 inalterados, blocks 105→106. Zero regressão. Inclui backfill do PR-14a (#297 d36df33).",
+    "status_label": "Ω5P PR-14b: ciclo do saldo (dono retira ≤5a manual, ou reverte ao Funset após o prazo; NÃO redistribui, Σ=arremate preservado); junta 3/3 unânime; FECHA o I7; backend 1813->1825, blocks 105->106"
   },
   "metrics": {
     "flutter_tests": {
@@ -24,13 +24,13 @@
       "value": 908,
       "total": 908,
       "display": "908/908",
-      "note": "908 inalterado no Ω5P PR-14a (backend-only). Último valor oficial do Ω5P PR-11 (+16)."
+      "note": "908 inalterado no Ω5P PR-14b (backend-only). Último valor oficial do Ω5P PR-11 (#293, +16 sobre 892). Nota: os snapshots per-PR KPI_PR-14a/14b traziam 861 stale (era PR-04) — corrigido para 908."
     },
     "backend_tests": {
-      "value": 1813,
-      "total": 1819,
-      "display": "1813/1819",
-      "note": "+11 (Ω5P PR-14a cascata §6º I7): auction-settlement 8 InMemory (Σ=arremate property-based 2000 casos+bordas; cascata ordem legal waterfall; base=SOLD efetiva não-dupla-conta revenda; saldo=resíduo/insuficiência; despesa item I capada sem tocar process_charges; idempotência não-distribui-2×; cadeia valid sem PII; gate AUCTION_CLOSED) + auction-settlement-concurrency 3 DB-gated (N=6→1 settlement; atomicidade Σ≠hammer→rollback; cross-tenant RLS). CI-memória 6 skip. Sobre 1802. Migração 20260845000000 aditiva (2 tabelas) provada tx-ROLLBACK pelo dba."
+      "value": 1825,
+      "total": 1831,
+      "display": "1825/1831",
+      "note": "+12 (Ω5P PR-14b ciclo do saldo I7): auction-settlement-balance 9 InMemory (claim-balance DISTRIBUTED+saldo+prazo→BALANCE_CLAIMED; revert-funset após prazo→BALANCE_REVERTED_FUNSET; mutuamente exclusivo claim×funset; prazos balance_claim_expired/funset_not_yet_due; saldo-zero; idempotência não-duplica-evento; Σ allocations INTACTO após o ciclo; verifyChain valid; §2.8 sem PII) + auction-settlement-balance-concurrency 3 DB-gated (claim×revert paralelos→1 vence; N=6→1 comuta; cross-tenant 404). CI-memória 6 skip. Sobre 1813. Migração 20260846000000 ADD-COLUMN provada tx-ROLLBACK pelo dba."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 105,
-      "display": "105",
-      "note": "Ω5P PR-14a (liquidação em cascata §6º núcleo I7: distributeCascade puro Σ=arremate + base=venda-efetiva + despesa capada + cadeia — módulo auction.settlement) → +1 sobre 104 (Ω5P PR-13b). PR-14b (ciclo do saldo) e PR-15 (UI) seguem."
+      "value": 106,
+      "display": "106",
+      "note": "Ω5P PR-14b (ciclo do saldo do ex-proprietário: claim-balance ≤5a + revert-funset; state-change gated no Settlement, não redistribui — estende auction.settlement) → +1 sobre 105 (Ω5P PR-14a). FECHA o I7 (cascata + saldo). PR-15 (UI funil) segue."
     },
     "mobile_backend_contracts": {
       "value": 18,

@@ -10,9 +10,10 @@ import {
   AuctionSettlementError,
   type CascadeClaim,
   type DistributeSettlementResult,
+  type SettlementCycleResult,
   type SettlementView,
 } from "./auction.settlement.types.js";
-import { parseClaimCents } from "./auction.settlement.validators.js";
+import { parseClaimCents, parseRecipientRef } from "./auction.settlement.validators.js";
 import { parseRequiredUuid } from "./auction.validators.js";
 
 type RawRecord = Record<string, unknown>;
@@ -111,6 +112,41 @@ export class AuctionSettlementService {
       ownerNotifyDueAt: addDays(now, FEDERAL_DEFAULTS.ownerBalanceNotifyDays),
       ownerClaimExpiresAt: addYears(now, FEDERAL_DEFAULTS.ownerBalanceClaimYears),
       actorId: actor.userId,
+      occurredAt: now,
+    });
+  }
+
+  // POST /impound-processes/:id/auction/settlement/claim-balance (impound:transition) — Ω5P PR-14b. REGISTRO manual da
+  // RETIRADA do saldo pelo ex-proprietário (pagamento presencial, SEM PSP — D-Ω5P-07). Gate REAL sob FOR UPDATE no
+  // repositório: status==DISTRIBUTED + owner_balance>0 + now<owner_claim_expires_at → BALANCE_CLAIMED + AUCTION_SETTLEMENT
+  // {phase:CLAIM}. NÃO redistribui (allocations do 14a intocadas — o saldo já foi alocado como OWNER_BALANCE). O corpo só
+  // traz o recebedor MASCARADO (§2.8) — o gate não consome mais nada (o saldo é o resíduo já apurado).
+  async claimBalance(actor: { tenantId: string; userId?: string }, processId: string, body: RawRecord): Promise<SettlementCycleResult> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const recipientRef = parseRecipientRef(body.claim_recipient_ref ?? body.claimRecipientRef ?? body.recipient_ref);
+    const now = new Date();
+    return this.repository.transitionBalanceAtomic("CLAIM", {
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      recipientRef,
+      actorId: actor.userId,
+      now,
+      occurredAt: now,
+    });
+  }
+
+  // POST /impound-processes/:id/auction/settlement/revert-funset (impound:transition) — Ω5P PR-14b. REVERSÃO do saldo
+  // NÃO reclamado ao Funset (art. 320/§12) após o prazo. Gate REAL sob FOR UPDATE: status==DISTRIBUTED + owner_balance>0
+  // + now>=owner_claim_expires_at → BALANCE_REVERTED_FUNSET + AUCTION_SETTLEMENT{phase:FUNSET_REVERSION}. É o ATO gated
+  // (o disparo AUTOMÁTICO em D+5a — sweep — é Ω6). NÃO redistribui. MUTUAMENTE EXCLUSIVO com o claim (o gate garante).
+  async revertToFunset(actor: { tenantId: string; userId?: string }, processId: string): Promise<SettlementCycleResult> {
+    const normalizedId = parseRequiredUuid(processId, "processId");
+    const now = new Date();
+    return this.repository.transitionBalanceAtomic("FUNSET_REVERSION", {
+      tenantId: actor.tenantId,
+      processId: normalizedId,
+      actorId: actor.userId,
+      now,
       occurredAt: now,
     });
   }

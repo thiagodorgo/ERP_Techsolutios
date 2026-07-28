@@ -39,9 +39,16 @@ export const CASCADE_TIER_ORDER: readonly SettlementBeneficiaryKind[] = [
 ];
 
 // status da liquidação (app-validado). 14a só grava DISTRIBUTED; o ciclo do saldo (BALANCE_CLAIMED/
-// BALANCE_REVERTED_FUNSET) é 14b.
+// BALANCE_REVERTED_FUNSET) é 14b. As duas transições são MUTUAMENTE EXCLUSIVAS a partir de DISTRIBUTED (o gate de
+// estado garante: um saldo OU é reclamado pelo ex-dono OU reverte ao Funset, nunca ambos).
 export const SETTLEMENT_STATUSES = ["DISTRIBUTED", "BALANCE_CLAIMED", "BALANCE_REVERTED_FUNSET"] as const;
 export type SettlementStatus = (typeof SETTLEMENT_STATUSES)[number];
+
+// Ω5P PR-14b — a FASE do ciclo do saldo, gravada no payload do CustodyEvent AUCTION_SETTLEMENT (I2). CLAIM = retirada
+// pelo ex-dono; FUNSET_REVERSION = reversão do não reclamado ao Funset (§12). Distingue o evento do ciclo do evento de
+// DISTRIBUIÇÃO do 14a (que NÃO tem `phase` — só { event, soldRound, hammer, breakdown, ownerBalance }).
+export const SETTLEMENT_CYCLE_PHASES = ["CLAIM", "FUNSET_REVERSION"] as const;
+export type SettlementCyclePhase = (typeof SETTLEMENT_CYCLE_PHASES)[number];
 
 // Uma liquidação (1 por processo). Dinheiro como string canônica "0.00" (Decimal(12,2)). soldRound = a rodada da
 // SOLD efetiva (findActiveSoldRound; base de I7). shortfallAmount = Σclaims − hammer (informativo, não é allocation).
@@ -60,6 +67,12 @@ export type Settlement = {
   readonly ownerNotifyDueAt?: Date;
   readonly ownerClaimExpiresAt?: Date;
   readonly distributedBy?: string;
+  // Ω5P PR-14b — ciclo do saldo (§12): quem/quando retirou (CLAIM) ou quando reverteu ao Funset (FUNSET_REVERSION).
+  // claimRecipientRef é MASCARADO (§2.8: nunca PII crua; vive só na tabela RLS'd — jamais na cadeia).
+  readonly claimedBy?: string;
+  readonly claimedAt?: Date;
+  readonly claimRecipientRef?: string;
+  readonly revertedAt?: Date;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 };
@@ -132,6 +145,27 @@ export type DistributeSettlementInput = {
   readonly ownerClaimExpiresAt: Date;
   readonly actorId?: string;
   readonly occurredAt: Date;
+};
+
+// ── Ω5P PR-14b — ciclo do saldo ────────────────────────────────────────────────────────────────────────────────
+// transitionBalanceAtomic: sob FOR UPDATE do processo + do settlement — re-checa o GATE (status==DISTRIBUTED +
+// owner_balance>0 + prazo) + UPDATE do status/timestamps + appendEventTx(AUCTION_SETTLEMENT{phase}) — 1 tx. NÃO toca
+// as allocations (Σ==hammer do 14a intacto; o ciclo é state-change, não redistribuição). now = instante do gate de
+// prazo (claim exige now<expires; funset exige now>=expires). recipientRef só no CLAIM (mascarado §2.8, na tabela).
+export type SettlementCycleInput = {
+  readonly tenantId: string;
+  readonly processId: string;
+  readonly recipientRef?: string; // só CLAIM; §2.8 mascarado — NUNCA na cadeia
+  readonly actorId?: string;
+  readonly now: Date;             // gate de prazo (claim: now<expires; funset: now>=expires)
+  readonly occurredAt: Date;      // occurredAt do CustodyEvent
+};
+
+// Resultado das transições do ciclo: a view atualizada + a fase consumada (para o audit best-effort do controller).
+export type SettlementCycleResult = {
+  readonly settlement: Settlement;
+  readonly allocations: readonly SettlementAllocation[];
+  readonly phase: SettlementCyclePhase;
 };
 
 export class AuctionSettlementError extends Error {

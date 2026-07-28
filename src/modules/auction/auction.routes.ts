@@ -159,6 +159,22 @@ export function createAuctionRouter(
       sendResult(response, await settlementController.distribute(request));
     }),
   );
+  // Ω5P PR-14b — CICLO do saldo ao ex-proprietário (§12; completa o I7). ZERO permissão nova (reusa impound:transition).
+  // Paths de 5 segmentos — sub-rotas de .../settlement, sem colisão (Express casa exato). NÃO redistribui (state-change).
+  router.post(
+    "/impound-processes/:processId/auction/settlement/claim-balance",
+    requirePermission(AUCTION_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await settlementController.claimBalance(request));
+    }),
+  );
+  router.post(
+    "/impound-processes/:processId/auction/settlement/revert-funset",
+    requirePermission(AUCTION_PERMISSIONS.transition),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await settlementController.revertToFunset(request));
+    }),
+  );
 
   return router;
 }
