@@ -82,9 +82,9 @@
     "omega5p-avaliador": "APROVADO (VETO; escopo distributeCascade/assertSettlementSum/transitions/hashchain/charge intactos; ciclo não-redistribui Σ preservado; §2.8; aderência CTB §12/art.320; sem permissão nova; +12 real. Linhagem frontend_smoke 861→908 corrigida pelo orquestrador)",
     "veredito": "APROVADO 3/3 unânime (0 ciclo). FECHA o I7 (cascata 14a + ciclo do saldo 14b)"
   },
-  "pr": null,
-  "merge_commit": null,
-  "approved_head": null,
+  "pr": 298,
+  "merge_commit": "742a57f",
+  "approved_head": "742a57f",
   "status": "published_per_pr",
   "riscos_residuais": "(1) o sweep AUTOMÁTICO em D+5a (revert-funset em lote dos saldos vencidos) fica para Ω6 — o 14b entrega o ATO gated (o revert-funset manual/por-processo; a UI/PR-15 consome). (2) o pagamento ao ex-dono é MANUAL/presencial (D-Ω5P-07); o sistema REGISTRA a retirada (claimed_by/claimed_at/claim_recipient_ref), não movimenta dinheiro real. (3) o claim_recipient_ref é um rótulo MINIMIZADO que o operador informa — cabe orientação de processo para não inserir PII completa (o backend capa o tamanho e mantém o campo fora da cadeia e da auditoria). (4) NÃO há UPDATE de correção do ciclo além das transições gated (a correção retroativa segue I2/ADJUSTMENT no futuro, se necessária — fora do 14b). (5) UI = PR-15.",
   "backlog": "L1 (critico): máscara/normalização server-side do claim_recipient_ref (hoje só capa 200 chars; nunca na cadeia/audit, mas visível no DTO autenticado — política de processo). L2 (critico, informativo): o kind FUNSET nunca gera allocation — a reversão é status-only (BALANCE_REVERTED_FUNSET), por desenho (14b não redistribui; sweep=Ω6). L3 (cosmético): fallback refreshed??settlement. Sweep automático D+5a (revert em lote) = Ω6."

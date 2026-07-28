@@ -1,0 +1,93 @@
+{
+  "id": "PR-15a",
+  "fase": "Fase 4 (UI do funil de leilao — console React autenticado /patios). A maquina de leilao (PR-12/13a/13b) e a liquidacao (PR-14a/14b) ja vivem no backend, que e a AUTORIDADE (FSM, gate I8, sigilo art.28 da avaliacao, cascata I7, hash-chain). O 15a entrega a superficie do operador para OPERAR o funil: funil /patios/leiloes (elegiveis->preparados->loteados->arrematados->reciclagem) + a secao de leilao no dossie do processo (AuctionPanel: elegibilidade, edital, rodada deserta/strike, checklist do gate de sucata, preparar/lotear/registrar arremate/consumar/inadimplencia/reclamar, avaliacao sigilosa gated). A UI so MOLDA e CONSOME — nenhuma regra de negocio reimplementada. A fatia 15b (dossie de liquidacao/cascata + ciclo do saldo) e PR seguinte.",
+  "snapshot_date": "2026-07-28",
+  "branch": "rodada/omega5p",
+  "tipo": "SO frontend (frontend/**) + 1 governed path no registry backend (patios.auctions) + docs/testes de navegacao. ZERO backend novo de dominio, ZERO migracao, ZERO permissao nova (reusa impound:read leitura / impound:transition transicoes / auction:appraise avaliacao sigilosa). NAO toca src/modules/auction/** (backend), src/modules/impound/**, prisma/**. NAO estende o FSM (fsm.ts/FSM_ACTIONS — leilao usa endpoints dedicados, como release). NAO refatora os paineis existentes (LiberacaoPanel/TransicaoFsmPanel/GuiaDebitos). NAO implementa a fatia 15b (cascata/liquidacao — placeholder honesto no estado AUCTION_CLOSED). Sem PSP/PIX. Sem git add .",
+  "models_novos": [],
+  "migrations": [],
+  "modulos": [
+    "frontend/src/modules/patios/auction/auction.types.ts (tipos da view de leilao — sem recordedBy/UUID de ator)",
+    "frontend/src/modules/patios/auction/auction.adapter.ts (labels PT-BR reusados do backend + mapa reason->PT-BR dos 29 reasons 409 de impound.transitions + deriveScrapGate PURO [2 strikes + edital completo >=15 d.u.] + countAuctionStages/filterAuctionProcesses [funil client-side sem N+1] + canSeeAppraisal por PRESENCA da chave omitida pelo backend [sigilo art.28])",
+    "frontend/src/modules/patios/auction/auction.service.ts (cliente via apiRequest + AuctionActionError 409->PT-BR)",
+    "frontend/src/modules/patios/auction/useAuction.ts (GET .../auction, 404->null, denied em 403/401, auto-refresh)",
+    "frontend/src/modules/patios/auction/pages/LeiloesPage.tsx (funil /patios/leiloes: 6 cards de contagem clicaveis por estado + dense-list, 1 so GET /impound-processes)",
+    "frontend/src/modules/patios/auction/components/AuctionPanel.tsx (orquestrado por process.status)",
+    "frontend/src/modules/patios/auction/components/AuctionStatePanel.tsx (chips de estado + strikeCount + tabela de rodadas; coluna de avaliacao so com canAppraise)",
+    "frontend/src/modules/patios/auction/components/EligibilityPanel.tsx (marcar elegivel + reciclar por inservibilidade, IRREVERSIVEL com confirmacao)",
+    "frontend/src/modules/patios/auction/components/EditalModal.tsx (registrar edital por rodada)",
+    "frontend/src/modules/patios/auction/components/AppraisalForm.tsx (avaliacao sigilosa — so monta com can auction:appraise)",
+    "frontend/src/modules/patios/auction/components/DesertedAttemptForm.tsx (registrar rodada deserta = strike)",
+    "frontend/src/modules/patios/auction/components/ScrapGateChecklist.tsx (checklist visual do gate de sucata, espelho do GateLiberacaoChecklist; botao Reciclar so habilita com o gate satisfeito, IRREVERSIVEL)",
+    "frontend/src/modules/patios/auction/components/SaleForm.tsx (registrar arremate: winner_ref/sold_amount/sale_note_reference; NAO compara sold>=min_bid no cliente — min_bid e sigiloso, delega ao 409)",
+    "frontend/src/modules/patios/processes/pages/ProcessoDossiePage.tsx (COMPARTILHADO — insere <AuctionPanel> DEPOIS de <LiberacaoPanel>, aditivo)",
+    "frontend/src/App.tsx (rota lazy /patios/leiloes sob PermissionGuard impound:read)",
+    "frontend/src/layouts/appSidebarNav.ts (NavItem Leiloes icone Gavel no grupo PATIOS + MVP_NAV_PATHS)",
+    "frontend/package.json (2 smoke tests no test:smoke)",
+    "src/modules/navigation/navigation.registry.ts (governed path novo patios.auctions = impound:read, SEM requiredModules — espelha patios.processes/patios.releases)",
+    "tests/navigation-provisioning.test.ts (bloco PR-15a: matriz por papel do path patios.auctions)",
+    "docs/navigation-matrix.md (linha Leiloes)"
+  ],
+  "app_ts": "NAO tocado no backend (o governed path e no navigation.registry.ts; a rota do frontend e no App.tsx do frontend). src/app.ts INTOCADO.",
+  "invariante": "I7/I8 sao do BACKEND (ja provados). A UI apenas MATERIALIZA o funil e os gates fielmente e delega a autorizacao/validacao ao 403/409/422. SIGILO art.28 (avaliacao): a UI le appraisalAmount/minBidAmount APENAS do DTO (que o backend omite sem auction:appraise) — nunca fabrica/infere/exibe placeholder; a acao de avaliacao e as colunas de valor so montam com can auction:appraise; defesa em profundidade (omissao de chave no DTO + can no cliente). §2.8: nenhum tenant_id renderizado; winnerRef/auctioneerRef renderizados como mascara (do backend); recordedBy (UUID de ator) suprimido/nao-lido. GATES client-side (scrap/prep/lot) sao HINTS espelho — o backend re-verifica sob lock (cadeia I2 nao-derivavel no cliente); 409 recarrega.",
+  "rns_cobertas": [
+    "FUNIL /patios/leiloes (impound:read): 6 cards de contagem por estado de leilao (Elegiveis/Em preparacao/Loteados/Arrematados/Encerrados/Reciclagem) clicaveis que filtram a dense-list client-side; 1 so GET /impound-processes (sem N+1 — nunca GET .../auction nem .../settlement por linha). saldo pendente defer ao painel gerencial PR-19.",
+    "SECAO DE LEILAO NO DOSSIE (AuctionPanel, orquestrado por process.status): ACTIVE_CUSTODY -> marcar elegivel + reciclar por inservibilidade (IRREVERSIVEL, confirm); AUCTION_ELIGIBLE -> registrar edital + avaliacao sigilosa (so canAppraise) + rodada deserta (strike) + ScrapGateChecklist (2 strikes + edital completo, IRREVERSIVEL) + preparar; AUCTION_PREP -> lotear; LOTTED -> registrar arremate + reclamado antes da venda; AUCTIONED -> consumar (pagamento confirmado) + inadimplencia; AUCTION_CLOSED -> chip + nota (liquidacao = 15b, placeholder honesto); DIRECT_RECYCLING -> chip terminal + nota (sucata, baixa no Renavam).",
+    "AuctionStatePanel: chips do estado + strikeCount/strikesRemaining + tabela de rodadas (edital/outcome por rodada); coluna avaliacao/lance minimo so com canAppraise.",
+    "Cada 409 do backend mapeado para PT-BR de negocio (29 reasons de impound.transitions + auction.service) — nenhum cai no generico.",
+    "Estados obrigatorios: loading (Skeleton) / empty (Nenhum processo em leilao) / error+retry / acesso-negado (denied, sem botao morto) / dados-desatualizados (useAutoRefresh).",
+    "SIGILO art.28: sem auction:appraise a UI nao expoe appraisalAmount/minBidAmount e a acao de avaliacao some (provado no smoke)."
+  ],
+  "rns_total_pr": 6,
+  "permissao": "ZERO permissao NOVA. O funil e as acoes reusam impound:read (leitura) e impound:transition (transicoes); a avaliacao reusa auction:appraise. Governed path novo patios.auctions = impound:read (sem requiredModules), espelha patios.processes/patios.releases. catalog.ts/core-saas/seed/RBAC_MATRIX NAO tocados. Aprovado pelo coordenador-de-acessos (cadeia casa exato; sigilo art.28 duplamente travado).",
+  "estados_obrigatorios": "Frontend: loading/skeleton (funil e painel) · empty (funil e sub-listas) · error+retry · acesso-negado (PermissionGuard + denied no hook) · dados-desatualizados (auto-refresh + 409 recarrega).",
+  "d_records": [
+    "D-Omega5P-AUC-UI-01: a secao de leilao (e depois a de liquidacao 15b) vive no dossie do processo; FSM-panel/LiberacaoPanel/GuiaDebitos existentes INTACTOS (AuctionPanel e aditivo).",
+    "D-Omega5P-AUC-UI-02: os gates client-side (scrap/prep/lot) sao HINTS espelho da regra do backend; o backend re-verifica sob lock; 409 recarrega com a razao em PT-BR.",
+    "D-Omega5P-AUC-UI-03: o funil e status-driven (1 GET /impound-processes, agrupamento/contagem/filtro client-side PUROS, sem N+1); a lista de saldo pendente fica no painel gerencial (PR-19).",
+    "D-Omega5P-AUC-UI-04: sigilo art.28 = a UI so reflete a OMISSAO da chave pelo DTO (canSeeAppraisal por presenca de chave) + can auction:appraise nas colunas/form; a UI nunca fabrica/infere o valor sigiloso."
+  ],
+  "desvios_do_plano": [
+    "Corte a/b confirmado: 15a entrega o funil + AuctionPanel (consome auction); 15b entrega o dossie de liquidacao/cascata + ciclo do saldo (consome auction.settlement) e FECHA a Fase 4. Justificativa: a cascata §6º e invariante financeiro forte (I7) e merece review adversarial isolado.",
+    "O frontend nao tem script lint; o equivalente do contrato (CLAUDE.md §9 Frontend) e npm run check (tsc -b --noEmit) — verde.",
+    "Achado pre-existente (NAO do 15a) registrado no backlog: tests/navigation-menu-routes.test.ts tests 2/7 falham por bug no serializador do menu scope=platform sob JWT ([0] em undefined); reproduz com git stash do diff; o item novo patios.auctions e group:tenant (menu tenant 200). Fix dedicado NAV-MENU-PLATFORM."
+  ],
+  "testes_alvo": {
+    "frontend/tests/patios-leiloes.smoke.test.tsx": "11 testes: sigilo art.28 (sem auction:appraise a UI nao expoe appraisal/min_bid e a acao de avaliacao some) · §2.8 (sem tenant_id, winnerRef mascarado, sem UUID de ator no HTML) · mapa reason->PT-BR cobre os 409 reais sem generico · scrap-gate desabilita em 1-strike/edital-incompleto · acoes irreversiveis com confirmacao · estados empty/denied/error.",
+    "frontend/tests/patios-leiloes-funil.smoke.test.tsx": "5 testes: o funil agrupa/conta/filtra por estado (countAuctionStages/filterAuctionProcesses PUROS) sem N+1 · cards clicaveis filtram a lista · empty state honesto.",
+    "tests/navigation-provisioning.test.ts": "+11 (83->94): governed path patios.auctions = impound:read; matriz por papel (auditor/operator/field_technician VEEM; finance/inventory/support NAO veem)."
+  },
+  "bateria": {
+    "frontend_check": "verde (tsc -b --noEmit, sem erros)",
+    "frontend_build": "verde (built em ~24s; bundle ProcessoDossiePage reconstruido com o painel)",
+    "frontend_test_smoke": "924/924 (908->924 = +16; todos verdes)",
+    "npm_run_lint": "verde (tsc -p tsconfig.json --noEmit) na raiz",
+    "npm_run_build": "verde (tsc -p tsconfig.json) na raiz",
+    "navigation_provisioning": "94/94 (83->94 = +11; inclui a matriz por papel do patios.auctions)",
+    "due_diligence_backend": "grep -rl modules/patios tests/ -> NENHUM tests/*.test.ts le paginas de patios (o job backend do CI nao e afetado pelo frontend). navigation-menu.test.ts passa isolado.",
+    "git_diff_check": "limpo",
+    "git_status_short": "so arquivos do escopo PERMITIDO: frontend/src/modules/patios/auction/** (novo) + 2 smoke tests (novos) + ProcessoDossiePage/App.tsx/appSidebarNav/package.json (frontend, alterados) + navigation.registry.ts (governed path) + navigation-provisioning.test.ts + navigation-matrix.md + KPI_PR-15a.json. src/modules/auction/**, src/modules/impound/**, prisma/** git-diff VAZIO. untracked .claude/skills/* + .docx pre-existentes (nunca apagar)."
+  },
+  "kpi_repo_wide": {
+    "backend": "1825->1836 (+11: tests/navigation-provisioning.test.ts +11 pela matriz por papel do governed path patios.auctions. Base 1825 = pos-PR-14b)",
+    "frontend_smoke": "908->924 (+16: patios-leiloes.smoke 11 + patios-leiloes-funil.smoke 5)",
+    "flutter_tests": "807 (inalterado — sem toque mobile; ultimo valor oficial carregado com nota)",
+    "blocks": "106->107 (+1 — PR-15a de feature)",
+    "mvp_demo": "inalterado (o funil de leilao entra no demo, mas o escopo de demo ja contemplava o modulo Patios; sem mover a metrica sem 1 linha de justificativa)",
+    "mvp_vendavel": "inalterado"
+  },
+  "coexistencia": "src/modules/auction/** e src/modules/impound/** git-diff VAZIO (a UI so consome). prisma/** INTOCADO (zero migracao). fsm.ts/FSM_ACTIONS INTOCADO (leilao usa endpoints dedicados). LiberacaoPanel/TransicaoFsmPanel/GuiaDebitos INTOCADOS (AuctionPanel aditivo). catalog.ts/core-saas/seed/RBAC INTOCADOS (reuso de permissao). Nenhum agente pre-existente tocado.",
+  "junta": {
+    "omega5p-avaliador": "APROVADO (VETO; condicionado ao rollup de KPI do orquestrador). Rodou as baterias: frontend test:smoke 924/924 e navigation-provisioning 94/94 (nao copiou). Escopo VETO passa (auction/impound/prisma intocados; zero permissao nova; governed path unico patios.auctions; sem edge de FSM; paineis existentes intactos). Sigilo art.28 passa (canSeeAppraisal por presenca de chave; form/coluna so com can). §2.8 passa. Estados obrigatorios passa. White-label passa.",
+    "cognicao-visual": "APROVADO (irmao fiel do modulo de liberacao; funil VIVO com 6 cards semanticos; ScrapGateChecklist espelho 1:1 do GateLiberacaoChecklist + confirmacao IRREVERSIVEL; chips casam 1:1 com STATUS_TONES; A11y >=44px/foco/aria. Achados so LOW cosmeticos -> backlog).",
+    "coordenador-de-acessos": "APROVADO (VETO; cadeia casa EXATO registry=App.tsx=NavItem; matriz por papel DERIVADA de ROLE_PERMISSIONS; navigation-provisioning 94/94. SIGILO art.28 duplamente travado. §2.8 OK. Nota fora-de-escopo: recordedBy UUID no toAuctionAttemptDto do backend -> backlog).",
+    "critico-adversarial": "APROVADO (LEVE advisory, 0 CRITICO/0 MEDIO). 6 vetores resistiram: a UI nao calcula dinheiro (formatMoney sobre string do DTO); 29 reasons 409 mapeados PT-BR; scrap-gate desabilita corretamente; irreversiveis com confirmacao; sigilo art.28 nao vaza; sucesso recarrega. 2 LOW opcionais -> backlog (maxAttempts>0 no isScrapGateSatisfied; reload no catch de 409).",
+    "veredito": "APROVADO 4/4 (0 ciclo). Proximo: PR-15b (dossie de liquidacao + cascata + ciclo do saldo) -> FECHA a Fase 4."
+  },
+  "pr": null,
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "published_per_pr",
+  "riscos_residuais": "(1) 15b (dossie de liquidacao/cascata + ciclo do saldo) e o PR seguinte — no estado AUCTION_CLOSED o 15a deixa placeholder honesto. (2) achado pre-existente NAV-MENU-PLATFORM (serializador do menu platform sob JWT) no backlog — nao e do 15a, CI e a autoridade. (3) LOW cosmeticos (hover no FunnelCard; 3 dialogos a mao vs <Modal>; ambar hardcoded = divida do modulo; maxAttempts>0 no gate; reload no catch de 409) -> backlog.",
+  "backlog": "NAV-MENU-PLATFORM (bug pre-existente do serializador do menu scope=platform sob JWT — fix dedicado). LOW: hover no FunnelCard; migrar 3 dialogos do AuctionPanel para <Modal>; migrar a paleta ambar hardcoded do modulo patios para tokens; isScrapGateSatisfied exigir maxAttempts>0 (enable vacuoso so com resposta malformada); reload(true) no catch de 409 do AuctionPanel.run. Backend hardening: suprimir recordedBy (UUID de ator) do toAuctionAttemptDto."
+}
