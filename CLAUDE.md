@@ -33,6 +33,10 @@
 > - **Skills nos dois ambientes:** o Claude Code descobre skills em `.claude/skills/`; o Codex, em
 >   `.agents/skills/` (espelho em formato portátil `SKILL.md`, mesmo conteúdo). Ambos operam a partir
 >   deste contrato canônico. Ver `AGENTS.md` (adaptador Codex) e `scripts/sync-agent-skills.mjs`.
+> - **Agentes de junta nos dois ambientes:** os agentes especializados que dirigem as juntas (§C7)
+>   vivem em `.claude/agents/` (Claude Code) e são espelhados em `.agents/agents/` (papéis Codex, corpo
+>   verbatim + protocolo de emulação em `.agents/agents/README.md`). Sincronizados por
+>   `scripts/sync-agent-agents.mjs`. A junta é obrigatória nos dois; só o mecanismo muda.
 
 ---
 

@@ -1590,5 +1590,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-28",
+    "version": "GOV-CODEX-AGENT-PERSONAS",
+    "backend_tests": "1871/1877",
+    "frontend_smoke": "937/937",
+    "flutter_tests": "807/807",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 110,
+    "description": "GOV-CODEX-AGENT-PERSONAS (governanca/tooling — continua D-INTEROP-CLAUDE-CODEX) — NAO e bloco de feature. Porta os 24 agentes de junta do Claude Code (.claude/agents) para o Codex (.agents/agents): corpo VERBATIM + frontmatter portatil + preambulo Codex; .agents/agents/README.md com indice + PROTOCOLO DE EMULACAO da junta (§C7) + composicao por tipo de PR; scripts/sync-agent-agents.mjs (copia + --check, preserva README). AGENTS.md e CLAUDE.md (SO-INSERCAO, +4/0) atualizados. Fecha o gap da interop (contrato+skills ja iam; faltava a maquina de juntas). PR de governanca: metricas de teste carregam o ultimo valor (backend 1871/1877, smoke 937, flutter 807), blocks INALTERADO em 110. merge_commit null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

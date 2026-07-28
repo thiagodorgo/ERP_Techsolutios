@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-28",
-  "version": "GOV-INTEROP-CLAUDE-CODEX",
+  "version": "GOV-CODEX-AGENT-PERSONAS",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Governanca/tooling — interoperabilidade Claude Code <-> Codex: CLAUDE.md canonico (so-insercao) + AGENTS.md espelho-Codex + 11 skills em .agents/skills + 6 docs companheiros criados. NAO e bloco de feature",
-    "title": "Interop Claude Code <-> Codex: CLAUDE.md e a fonte da verdade, AGENTS.md o espelho adaptado ao Codex (mesmas regras), skills nos dois ambientes; PR docs/governanca (metricas de teste inalteradas, precedente Omega-GOV/JUNTA-MAPAS)",
+    "block": "Governanca/tooling — portar os 24 agentes de junta do Claude Code (.claude/agents) para o Codex (.agents/agents) como papeis portateis + protocolo de emulacao da junta. Continua D-INTEROP-CLAUDE-CODEX. NAO e bloco de feature",
+    "title": "Codex ganha os 24 papeis de junta: espelho .agents/agents (corpo verbatim + preambulo Codex) + README com protocolo de emulacao (§C7) + sync-agent-agents.mjs; PR de governanca (metricas inalteradas)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "GOV-INTEROP — INTEROPERABILIDADE Claude Code <-> Codex (governanca, D-INTEROP-CLAUDE-CODEX). O dono usa as duas ferramentas alternadamente e quer o mesmo nivel alto. (1) CLAUDE.md CANONICO por SO-INSERCAO: nova secao \"Regra de espelhamento e interoperabilidade Claude Code <-> Codex\" (21 linhas add, 0 del — git diff --numstat 21 0; nenhum caractere apagado). (2) AGENTS.md reescrito como ESPELHO-CODEX completo (48->453 linhas): porta Partes A/B/C, KPI-por-PR §C3, autonomia por juntas §C7, GitHub Flow §8, baterias §9, DoD §10, fidelidade visual §11 — mesmas regras do ERP; traduz so o que e especifico da ferramenta (.claude/skills->.agents/skills; /skill->$skill; subagentes Claude->subagentes Codex; §A4 na perspectiva Codex); corrige o guia velho (Postgres/Redis = ATIVOS; divergencia backend-C = RESOLVIDA Node.js+TS). Manda o Codex ler o CLAUDE.md inteiro; em divergencia prevalece o CLAUDE.md. (3) As 11 SKILLS de .claude/skills espelhadas em .agents/skills (formato portatil SKILL.md, 28 arquivos) + scripts/sync-agent-skills.mjs (copia + --check, sem symlink, sem gate CI). (4) Os 6 ARQUIVOS COMPANHEIROS que o CLAUDE.md referenciava mas nao existiam foram CRIADOS como docs completos fundados no repo real: PROJECT_MEMORY.md, EXECUTION_MODEL.md, comando-template.md, API_CONTRACTS.md, BUILD_ORDER.md, screen-refs/README.md (este ultimo aponta os renders reais em docs/claude-code-handoff/screen-refs — 35 web + 39 mobile). Pendencias registradas (P-SCREEN-REFS-PATH, P-ERP-MOBILE-DC-HTML, P-CLAUDE-COMPANIONS-DRAFTS). E PR de GOVERNANCA/TOOLING: nao toca codigo/teste de produto -> metricas de teste carregam o ultimo valor oficial e blocks_completed INALTERADO (precedente Omega-GOV/Omega-DOCS/JUNTA-MAPAS). Decisao explicita do dono = maior fonte de verdade (§A1.1); nao exigiu junta. backend 1871/1877 / smoke 937 / flutter 807 / blocks 110 inalterados.",
-    "status_label": "Interop Claude<->Codex: CLAUDE.md canonico (so-insercao) + AGENTS.md espelho-Codex + 11 skills em .agents/skills + 6 docs companheiros; PR de governanca (metricas inalteradas)"
+    "summary": "GOV-CODEX-AGENT-PERSONAS (governanca, continua D-INTEROP-CLAUDE-CODEX). Fecha o gap real da interop: o nivel alto vem da JUNTA de agentes (§C7), e os 24 agentes eram so do Claude Code (.claude/agents). Agora espelhados para o Codex em .agents/agents/*.md via scripts/sync-agent-agents.mjs: CORPO VERBATIM de cada papel (instrucoes e poderes de VETO sem drift) + frontmatter portatil (name/description; tools/model do Claude removidos) + preambulo de orientacao Codex no topo. .agents/agents/README.md traz o INDICE dos 24 por funcao (planejar/dev/veto/seguranca-infra/pesquisa) + o PROTOCOLO DE EMULACAO da junta (se o Codex nao criar subagentes isolados, EMULA adotando um papel de cada vez: planejador -> critico-adversarial -> dev -> cada revisor de veto num passe adversarial independente; registra votos em docs/juntas; ciclos de reprovacao §C7.4) + a composicao tipica por tipo de PR (dinheiro->critico obrigatorio; superficie publica->secops VETO; migracao->dba VETO; decisao critica->junta-5). AGENTS.md e CLAUDE.md atualizados (CLAUDE.md por SO-INSERCAO: +4 linhas, 0 del; bullet paralelo ao de skills). PR de GOVERNANCA/TOOLING: nao toca codigo/teste de produto -> metricas de teste carregam o ultimo valor oficial (backend 1871/1877, smoke 937, flutter 807) e blocks_completed INALTERADO em 110 (precedente Omega-GOV/JUNTA-MAPAS). Decisao explicita do dono (opcao 1) = maior fonte de verdade; nao exigiu junta.",
+    "status_label": "Codex ganha os 24 papeis de junta (.agents/agents, corpo verbatim + protocolo de emulacao §C7 + sync script); AGENTS.md/CLAUDE.md atualizados; PR de governanca (metricas inalteradas)"
   },
   "metrics": {
     "flutter_tests": {
@@ -30,7 +30,7 @@
       "value": 1871,
       "total": 1877,
       "display": "1871/1877",
-      "note": "Carrega o ultimo valor oficial 1871/1877 (GOV-INTEROP Claude<->Codex NAO toca codigo/teste de produto; e docs/governanca/tooling — precedente Omega-GOV/JUNTA-MAPAS). O scripts/sync-agent-skills.mjs e tooling zero-dep, fora da suite de produto. Ultimo valor de teste: Omega5P PR-17."
+      "note": "Carrega o ultimo valor oficial 1871/1877 (GOV-CODEX-AGENT-PERSONAS NAO toca codigo/teste de produto; e docs/tooling — precedente Omega-GOV/JUNTA-MAPAS). Ultimo valor de teste: Omega5P PR-17."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -58,7 +58,7 @@
     "blocks_completed": {
       "value": 110,
       "display": "110",
-      "note": "INALTERADO em 110 (GOV-INTEROP e governanca/tooling — nao conta como bloco de feature entregue; mesmo criterio de Omega-GOV/Omega-DOCS/JUNTA-MAPAS). Ultimo bloco de feature: Omega5P PR-17."
+      "note": "INALTERADO em 110 (GOV-CODEX-AGENT-PERSONAS e governanca/tooling — nao conta como bloco de feature). Ultimo bloco de feature: Omega5P PR-17."
     },
     "mobile_backend_contracts": {
       "value": 18,
