@@ -1574,5 +1574,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-28",
+    "version": "GOV-INTEROP-CLAUDE-CODEX",
+    "backend_tests": "1871/1877",
+    "frontend_smoke": "937/937",
+    "flutter_tests": "807/807",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 110,
+    "description": "GOV-INTEROP-CLAUDE-CODEX (governanca/tooling — D-INTEROP-CLAUDE-CODEX) — NAO e bloco de feature. Interoperabilidade Claude Code <-> Codex para o dono usar as duas ferramentas no mesmo nivel: (1) CLAUDE.md CANONICO por SO-INSERCAO (secao de espelhamento/interop; 21 add/0 del); (2) AGENTS.md reescrito como espelho-Codex completo (48->453 linhas; porta Partes A/B/C + KPI + juntas + GitHub Flow + baterias + DoD + §11; traduz .claude/skills->.agents/skills, /skill->$skill, subagentes; corrige Postgres/Redis=ativos e backend-C=resolvido); (3) 11 skills espelhadas em .agents/skills + scripts/sync-agent-skills.mjs (--check, sem symlink); (4) 6 docs companheiros criados fundados no repo real (PROJECT_MEMORY/EXECUTION_MODEL/comando-template/API_CONTRACTS/BUILD_ORDER/screen-refs/README). Pendencias P-SCREEN-REFS-PATH/P-ERP-MOBILE-DC-HTML/P-CLAUDE-COMPANIONS-DRAFTS. PR de governanca: metricas de teste carregam o ultimo valor oficial (backend 1871/1877, smoke 937, flutter 807), blocks_completed INALTERADO em 110 (precedente Omega-GOV/Omega-DOCS/JUNTA-MAPAS). Decisao explicita do dono (§A1.1) = nao exigiu junta. merge_commit null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

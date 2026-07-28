@@ -1247,3 +1247,24 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   aplicar `requirePermission("purchase_orders:*"/"reports:read")` server-side. O catálogo + gating de UI desta fatia já preparam o
   terreno (fecha o gap pré-existente em que App.tsx/navegação referenciavam permissões ausentes do catálogo).
 - status: ABERTA (nasce junto com o endpoint; gating de UI isolado é cosmético mas correto).
+
+## P-SCREEN-REFS-PATH — screen-refs/ na raiz × docs/claude-code-handoff/screen-refs/ (2026-07-28, D-INTEROP-CLAUDE-CODEX)
+
+- descricao: o CLAUDE.md §11 aponta a fidelidade visual para `screen-refs/` na RAIZ (35 PNGs web + 39 PNGs mobile + `Cloud Billing.reference.html` + README). Recon (2026-07-28) achou esses renders REAIS versionados, porém sob **`docs/claude-code-handoff/screen-refs/`** (76 arquivos git-tracked), NÃO na raiz. Criamos `screen-refs/README.md` (raiz) HONESTO apontando para os renders reais e mantendo os `.dc.html` como fonte de grade/tokens/cópia.
+- impacto: nenhum bloqueio — os assets existem; é questão de CAMINHO/espelhamento. Enquanto não resolvido, use `docs/claude-code-handoff/screen-refs/` + os `.dc.html` + DESIGN_SYSTEM.md/COMPONENT_LIBRARY.md.
+- proximo (decisao futura): OU mover/copiar os renders para a raiz `screen-refs/web|mobile/`, OU atualizar a referência do §11 para `docs/claude-code-handoff/screen-refs/`. Como o CLAUDE.md é só-inserção, a correção da referência entra num PR próprio (ou os assets migram para a raiz).
+- status: ABERTA.
+
+## P-ERP-MOBILE-DC-HTML — protótipo `ERP Mobile.dc.html` ausente (2026-07-28)
+
+- descricao: o CLAUDE.md Parte B §1 lista `ERP Mobile.dc.html` (app de campo, 37 telas) como fonte de UX/lógica mobile. Recon achou só 4 `.dc.html` em `docs/claude-code-handoff/` (`ERP Web.dc.html`, `Login.dc.html`, `Handoff MVP Mobile.dc.html`, `Catálogo de Telas e Endpoints.dc.html`) — o `ERP Mobile.dc.html` NÃO está no repo.
+- impacto: para o mobile, a fidelidade se apoia nos 39 PNGs de `screen-refs/mobile/` + `Handoff MVP Mobile.dc.html`. Baixo — há substitutos.
+- proximo: adicionar o `ERP Mobile.dc.html` ao repo OU ajustar a referência do §1. Decisao futura.
+- status: ABERTA.
+
+## P-CLAUDE-COMPANIONS-DRAFTS — arquivos companheiros criados como drafts fundados (2026-07-28, D-INTEROP-CLAUDE-CODEX)
+
+- descricao: `PROJECT_MEMORY.md`, `EXECUTION_MODEL.md`, `comando-template.md`, `API_CONTRACTS.md`, `BUILD_ORDER.md` foram criados agora (antes só referenciados pelo CLAUDE.md, inexistentes). São documentos COMPLETOS e fundados no repo real (KPIs/rotas/schema/comandos/juntas), mas por definição resumem uma trilha VIVA — podem defasar.
+- impacto: baixo — cada um declara "em divergência vale a trilha viva (agent-orchestration/, docs/juntas/, o código) e o CLAUDE.md". `API_CONTRACTS.md` marca `(a mapear)`/`(+ CRUD padrão)` onde não foi exaustivo.
+- proximo: manter em dia por PR quando o domínio referenciado mudar (mesma disciplina do PROJECT_MEMORY.md). A fonte canônica de contratos segue sendo `src/modules/**/*.routes.ts`.
+- status: ABERTA (manutenção contínua).

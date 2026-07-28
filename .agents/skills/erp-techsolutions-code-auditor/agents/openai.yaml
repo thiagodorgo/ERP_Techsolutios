@@ -1,0 +1,4 @@
+interface:
+  display_name: "ERP Techsolutions Code Auditor"
+  short_description: "Revisão sênior de código, testes, segurança, performance e UI/UX para ERP SaaS."
+  icon: "🛡️"
