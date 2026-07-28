@@ -1618,7 +1618,7 @@
     "mvp_vendavel": "88%",
     "blocks_completed": 110,
     "description": "GOV-CODEX-SKILLS-ADAPTERS (governanca/tooling — D-INTEROP-CLAUDE-CODEX) — NAO e bloco de feature. Cria agents/openai.yaml para as 8 skills sem adapter (blockchain-developer, cloud-architect, cloud-devops, flutter-expert, payment-integration, saas-multi-tenant, skill-creator e ui-ux-pro-max), com metadata derivada do SKILL.md. Reconcilia no versionamento as 5 skills que estavam apenas no checkout local e preserva risk/source/date_added/category sob a chave portatil metadata; as 11 passam no quick_validate.py. sync-agent-skills.mjs reconstruiu o espelho .agents e --check confirmou 11 skills/36 arquivos byte-identicos. Nao toca codigo/teste de produto: backend 1871/1877, smoke 937/937, flutter 807/807 e blocks_completed 110 carregados sem alteracao (precedente Omega-GOV/JUNTA-MAPAS).",
-    "pr": null,
+    "pr": 305,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"

@@ -4,6 +4,8 @@
 
 **Branch:** `chore/codex-skills-adapters`
 
+**PR:** #305
+
 **Natureza:** governança/tooling; decisão normal (§C7, maioria simples)
 
 **Resultado:** **APROVADO 3/3 — unânime**

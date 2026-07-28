@@ -31,8 +31,8 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
   frontend smoke **937/937** e Flutter **807/807** carregados do último valor oficial.
 - `blocks_completed`: **110**, inalterado pelo precedente Ω-GOV/JUNTA-MAPAS.
 - `mvp_demo`: **99%**; `mvp_vendavel`: **88%**, inalterados.
-- `pr`, `merge_commit` e `approved_head`: `null` na autoria; `pr` será preenchido
-  após a abertura e os hashes recebem backfill pós-merge.
+- `pr`: **305**; `merge_commit` e `approved_head`: `null` na autoria e recebem
+  backfill pós-merge.
 
 ## 2026-07-21 - ONDA 1: Ligar Aprovacoes a dados reais (com pesquisa de concorrentes)
 

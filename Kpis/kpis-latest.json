@@ -6,7 +6,7 @@
   "release": {
     "block": "Governanca/tooling — completar D-INTEROP-CLAUDE-CODEX com adapters agents/openai.yaml nas 8 skills que ainda tinham apenas SKILL.md. NAO e bloco de feature",
     "title": "As 11 skills Claude/Codex passam a ter metadata portatil: 8 adapters OpenAI adicionados e espelho validado; PR de governanca (metricas inalteradas)",
-    "pr": null,
+    "pr": 305,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
