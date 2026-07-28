@@ -84,9 +84,9 @@
     "critico-adversarial": "APROVADO (LEVE advisory, 0 CRITICO/0 MEDIO). 6 vetores resistiram: a UI nao calcula dinheiro (formatMoney sobre string do DTO); 29 reasons 409 mapeados PT-BR; scrap-gate desabilita corretamente; irreversiveis com confirmacao; sigilo art.28 nao vaza; sucesso recarrega. 2 LOW opcionais -> backlog (maxAttempts>0 no isScrapGateSatisfied; reload no catch de 409).",
     "veredito": "APROVADO 4/4 (0 ciclo). Proximo: PR-15b (dossie de liquidacao + cascata + ciclo do saldo) -> FECHA a Fase 4."
   },
-  "pr": null,
-  "merge_commit": null,
-  "approved_head": null,
+  "pr": 299,
+  "merge_commit": "b7b4950",
+  "approved_head": "b7b4950",
   "status": "published_per_pr",
   "riscos_residuais": "(1) 15b (dossie de liquidacao/cascata + ciclo do saldo) e o PR seguinte — no estado AUCTION_CLOSED o 15a deixa placeholder honesto. (2) achado pre-existente NAV-MENU-PLATFORM (serializador do menu platform sob JWT) no backlog — nao e do 15a, CI e a autoridade. (3) LOW cosmeticos (hover no FunnelCard; 3 dialogos a mao vs <Modal>; ambar hardcoded = divida do modulo; maxAttempts>0 no gate; reload no catch de 409) -> backlog.",
   "backlog": "NAV-MENU-PLATFORM (bug pre-existente do serializador do menu scope=platform sob JWT — fix dedicado). LOW: hover no FunnelCard; migrar 3 dialogos do AuctionPanel para <Modal>; migrar a paleta ambar hardcoded do modulo patios para tokens; isScrapGateSatisfied exigir maxAttempts>0 (enable vacuoso so com resposta malformada); reload(true) no catch de 409 do AuctionPanel.run. Backend hardening: suprimir recordedBy (UUID de ator) do toAuctionAttemptDto."

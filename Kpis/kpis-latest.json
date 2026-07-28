@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-26",
-  "version": "OMEGA5P-PR-15a",
+  "version": "OMEGA5P-PR-15b",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Omega5P PR-15a — Fase 4: UI do funil de leilao (console React /patios) — funil /patios/leiloes + secao de leilao no dossie (AuctionPanel). A UI so consome a maquina de leilao do backend",
-    "title": "Omega5P PR-15a: a superficie do operador para OPERAR o leilao — funil elegiveis->preparados->loteados->arrematados->reciclagem + o painel de acoes gated no dossie (elegibilidade, edital, strike, checklist do gate de sucata, preparar/lotear/arrematar/consumar/inadimplencia, avaliacao sigilosa art.28 travada); a UI so molda, o backend impoe I7/I8; junta 4/4",
+    "block": "Omega5P PR-15b — Fase 4 (FECHA): dossie de liquidacao no console /patios — a cascata §6º (I7) + o ciclo do saldo (§12) + o comprovante imprimivel. A UI so exibe; o backend e a autoridade",
+    "title": "Omega5P PR-15b: o dossie de liquidacao do leilao — a cascata §6º com Sigma das alocacoes = arremate (exibido cru do backend, prova visual do I7), o ciclo do saldo ao ex-proprietario (retirada manual ate 5 anos ou reversao ao Funset), e o comprovante imprimivel; junta 3/3; FECHA a Fase 4",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Omega5P PR-15a — UI DO FUNIL DE LEILAO (Fase 4, frontend). O console do operador (/patios) ganha a superficie para OPERAR o leilao que o backend (PR-12/13a/13b/14a/14b) ja impoe. Duas entregas: (1) funil /patios/leiloes = 6 cards de contagem clicaveis por estado (Elegiveis/Em preparacao/Loteados/Arrematados/Encerrados/Reciclagem) sobre 1 so GET /impound-processes (agrupamento/filtro client-side PUROS, sem N+1); (2) <AuctionPanel> no dossie do processo, orquestrado por process.status: marcar elegivel, registrar edital, rodada deserta (strike), <ScrapGateChecklist> (2 strikes + edital completo >=15 d.u., IRREVERSIVEL com confirmacao), preparar, lotear, registrar arremate, consumar, inadimplencia, reclamar, reciclar por inservibilidade, e a avaliacao sigilosa (art.28) travada. A UI SO MOLDA e CONSOME — ZERO backend novo, ZERO migracao, ZERO permissao nova (reusa impound:read/transition + auction:appraise). SIGILO art.28 duplamente travado (o backend omite appraisalAmount/minBidAmount do DTO sem auction:appraise + a UI detecta a presenca da chave e so monta a coluna/form com can auction:appraise — nunca fabrica o valor). §2.8 (sem tenant_id; winnerRef/auctioneerRef como mascara; recordedBy UUID suprimido). Os gates client-side sao HINTS espelho; o backend re-verifica sob lock (409 recarrega, todos os 29 reasons mapeados para PT-BR). Governed path novo patios.auctions = impound:read (sem requiredModules; espelha patios.processes/releases). JUNTA APROVADO 4/4 (0 ciclo): omega5p-avaliador (VETO; escopo auction/impound/prisma intocados; sigilo art.28; baterias rodadas 924/94) + cognicao-visual (irmao fiel do modulo de liberacao; funil VIVO; ScrapGateChecklist espelho do GateLiberacaoChecklist) + coordenador-de-acessos (VETO; cadeia casa exato; sigilo art.28 duplamente travado; navigation-provisioning 94/94) + critico-adversarial (LEVE; 0 CRITICO/0 MEDIO; a UI nao mente sobre dinheiro, nao dispara acao enganosa). A fatia 15b (dossie de liquidacao/cascata + ciclo do saldo) FECHA a Fase 4. Achado pre-existente NAV-MENU-PLATFORM (menu scope=platform sob JWT) no backlog (nao e do 15a; CI e a autoridade). backend 1825->1836 (+11 navigation-provisioning), frontend_smoke 908->924 (+16), flutter 807 inalterado, blocks 106->107. Zero regressao. Inclui backfill do PR-14b (#298 742a57f).",
-    "status_label": "Omega5P PR-15a: UI do funil de leilao (funil /patios/leiloes + AuctionPanel no dossie; sigilo art.28 travado; a UI so molda, backend impoe I7/I8); junta 4/4; backend 1825->1836, smoke 908->924, blocks 106->107"
+    "summary": "Omega5P PR-15b — DOSSIE DE LIQUIDACAO (Fase 4, frontend — FECHA a Fase 4). ESTENDE o dossie do processo com a secao de liquidacao, substituindo o placeholder honesto que o 15a deixou no AUCTION_CLOSED. Tres partes: (1) <CascataTable> = a distribuicao do produto do leilao na ordem legal §6º (tiers por orderSeq: custeio->remocao/estada->tributos->credores preferenciais->multas do orgao realizador->demais multas SNT->demais debitos), com rodape \"Sigma das alocacoes = arremate\" exibindo o hammerAmount CRU do DTO (rotulado \"Soma garantida pelo backend (invariante I7)\" — a UI NUNCA soma as linhas para afirmar o total), owner_balance como residuo, shortfall honesto (arremate<despesas -> tiers inferiores e saldo 0,00 com nota, sem implicar pagamento integral); (2) <SaldoCiclo> = o ciclo do saldo ao ex-proprietario (§12): DISTRIBUTED+saldo>0+dentro do prazo -> registrar a retirada (claim-balance, manual/presencial D-Omega5P-07 — o sistema REGISTRA, nao movimenta dinheiro), apos o prazo -> reverter ao Funset (revert-funset); MUTUAMENTE EXCLUSIVOS, gated por estado+prazo (HINT espelho; o backend re-verifica, 409 recarrega); (3) <ComprovanteLeilao> = comprovante imprimivel (window.print client-side, sem PSP). A UI SO CONSOME e EXIBE — ZERO backend, ZERO migracao, ZERO permissao nova, ZERO governed path (reusa impound:read/transition). HONESTIDADE DE DINHEIRO integral (cada valor cru do DTO via formatMoney, zero aritmetica de total). §2.8 (tenant_id nunca lido; refs mascaradas; distributedBy/claimedBy UUID suprimidos — prova UUID_RE). JUNTA APROVADO 3/3 (0 ciclo): omega5p-avaliador (VETO; backend/prisma/permissao intocados; Sigma=hammerAmount cru; §2.8; baterias rodadas 937) + cognicao-visual (irmao fiel; CascataTable = prova visual do I7 viva; ComprovanteLeilao espelha o ComprovanteLiberacao) + critico-adversarial PESADO (0 CRITICO/0 MEDIO; os 7 vetores de honestidade de dinheiro/ciclo resistiram). FECHA a Fase 4 (funil 15a + dossie de liquidacao 15b — toda a maquina de leilao+liquidacao operavel na UI). backend 1836 inalterado (frontend-only), frontend_smoke 924->937 (+13), flutter 807 inalterado, blocks 107->108. Zero regressao. Inclui backfill do PR-15a (#299 b7b4950). Proximo: Fase 5 (2 PWAs isolados owner+authority, secops OBRIGATORIO).",
+    "status_label": "Omega5P PR-15b: dossie de liquidacao (cascata §6º Sigma=arremate cru do backend + ciclo do saldo ao ex-dono + comprovante; a UI so exibe o I7); junta 3/3; FECHA a Fase 4; frontend_smoke 924->937, blocks 107->108"
   },
   "metrics": {
     "flutter_tests": {
@@ -21,16 +21,16 @@
       "note": "Ω4C PR-13 telemetria Flutter (+25 telemetry_test: consent-gate cliente/buffer-flush≤50/idempotencia/offline-replay/foreground-only/eventos/§2.8/migracao-Drift-11-12). Execucao REAL da suite Flutter 807 pass/0 falha/0 skip (Flutter 3.41.6); o 764 anterior era valor carregado nao re-executado desde B-124 → reconciliado a suite real. dart format 0-changed; analyze No issues; pubspec INTOCADO (zero-dep). Sobre 764."
     },
     "frontend_smoke_tests": {
-      "value": 924,
-      "total": 924,
-      "display": "924/924",
-      "note": "+16 (Omega5P PR-15a): patios-leiloes.smoke 11 (sigilo art.28 sem vazamento; §2.8; reason->PT-BR; scrap-gate desabilita; irreversiveis com confirm; empty/denied/error) + patios-leiloes-funil.smoke 5 (agrupa/conta/filtra por estado sem N+1; cards clicaveis). Sobre 908 (Omega5P PR-11)."
+      "value": 937,
+      "total": 937,
+      "display": "937/937",
+      "note": "+13 (Omega5P PR-15b dossie de liquidacao): patios-liquidacao.smoke 13 (honestidade Sigma=hammerAmount cru; shortfall honesto; ciclo do saldo §12 mutuamente exclusivo gated por estado+prazo; §2.8 UUID suprimido/ref mascarada; reason->PT-BR dos 7 reasons 409+400; empty/denied/error). Sobre 924 (Omega5P PR-15a)."
     },
     "backend_tests": {
       "value": 1836,
       "total": 1842,
       "display": "1836/1842",
-      "note": "+11 (Omega5P PR-15a UI do funil de leilao): tests/navigation-provisioning.test.ts +11 pela matriz por papel do governed path novo patios.auctions = impound:read (auditor/operator/field_technician VEEM; finance/inventory/support NAO veem). CI-memoria 6 skip. Sobre 1825 (pos-PR-14b). Nota: o job backend do CI nao roda o frontend; grep confirma que nenhum tests/*.test.ts le paginas de patios."
+      "note": "+11 (Omega5P PR-15a UI do funil de leilao): tests/navigation-provisioning.test.ts +11 pela matriz por papel do governed path novo patios.auctions = impound:read (auditor/operator/field_technician VEEM; finance/inventory/support NAO veem). CI-memoria 6 skip. Sobre 1825 (pos-PR-14b). Nota: o job backend do CI nao roda o frontend; grep confirma que nenhum tests/*.test.ts le paginas de patios. [Omega5P PR-15b frontend-only: backend 1836 inalterado.]"
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 107,
-      "display": "107",
-      "note": "Omega5P PR-15a (UI do funil de leilao: funil /patios/leiloes + AuctionPanel no dossie — consome auction, zero backend novo) -> +1 sobre 106 (Omega5P PR-14b). PR-15b (dossie de liquidacao/cascata + ciclo do saldo) FECHA a Fase 4."
+      "value": 108,
+      "display": "108",
+      "note": "Omega5P PR-15b (dossie de liquidacao: cascata §6º I7 + ciclo do saldo §12 + comprovante — consome auction.settlement, zero backend novo) -> +1 sobre 107 (Omega5P PR-15a). FECHA a Fase 4. Proximo: Fase 5 (2 PWAs isolados)."
     },
     "mobile_backend_contracts": {
       "value": 18,

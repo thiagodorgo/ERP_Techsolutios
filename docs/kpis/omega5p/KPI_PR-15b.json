@@ -1,0 +1,78 @@
+{
+  "id": "PR-15b",
+  "fase": "Fase 4 (dossie de liquidacao — FECHA a Fase 4). ESTENDE o dossie do processo com a secao de liquidacao: a cascata §6º (I7) + o ciclo do saldo (§12) + o comprovante imprimivel. Substitui o placeholder honesto que o 15a deixou no estado AUCTION_CLOSED. A UI so CONSOME e EXIBE — o backend (PR-14a/14b) e a autoridade (I7 Sigma=arremate por construcao; ciclo do saldo).",
+  "snapshot_date": "2026-07-28",
+  "branch": "rodada/omega5p",
+  "tipo": "SO frontend (frontend/**). ZERO backend, ZERO migracao, ZERO permissao nova, ZERO governed path novo (o painel vive no dossie existente; reusa impound:read leitura / impound:transition distribuir+claim+revert). NAO toca src/modules/auction/auction.settlement.* (backend), prisma/**. NAO refatora os paineis existentes (LiberacaoPanel/AuctionPanel/TransicaoFsmPanel/GuiaDebitos — LiquidacaoPanel e aditivo). Sem PSP/PIX (D-Omega5P-07: comprovante window.print client-side). Sem git add .",
+  "models_novos": [],
+  "migrations": [],
+  "modulos": [
+    "frontend/src/modules/patios/settlement/settlement.types.ts (DTOs espelhando o backend camelCase; distributedBy/claimedBy UUID NAO tipados = suprimidos §2.8)",
+    "frontend/src/modules/patios/settlement/settlement.service.ts (getSettlement 404->null · distributeSettlement · claimBalance · revertToFunset + SettlementActionError 409/400->PT-BR, via apiRequest)",
+    "frontend/src/modules/patios/settlement/settlement.adapter.ts (settlementActionErrorMessage [8 reasons 409 + tier_invalid 400] · splitCascade · gates canClaimBalance/canRevertToFunset/isClaimWindowExpired [espelho de resolveBalanceCycleTransition] · adaptSettlementView [suprime UUID de ator] · getSettlementStatusTone)",
+    "frontend/src/modules/patios/settlement/useSettlement.ts (GET .../settlement gated por AUCTION_CLOSED [evita 404 em todo dossie], 404->null, denied em 403/401, auto-refresh)",
+    "frontend/src/modules/patios/settlement/components/LiquidacaoPanel.tsx (orquestra por process.status x liquidacao; form de distribuicao inline [6 tiers declarados; arremate read-only da venda efetiva via useAuction; remocao/estada computada]; silencioso fora de AUCTION_CLOSED)",
+    "frontend/src/modules/patios/settlement/components/CascataTable.tsx (tabela ordenada por orderSeq; rodape Sigma das alocacoes = arremate = hammerAmount CRU do DTO, rotulado \"Soma garantida pelo backend (invariante I7)\"; owner_balance residuo; nota de shortfall honesta)",
+    "frontend/src/modules/patios/settlement/components/SaldoCiclo.tsx (prazos ownerNotifyDueAt/ownerClaimExpiresAt + claim-balance/revert-funset gated por estado+prazo, mutuamente exclusivos, confirmacao em ambos; pagamento MANUAL D-Omega5P-07 explicito; desfechos terminais)",
+    "frontend/src/modules/patios/settlement/components/ComprovanteLeilao.tsx (window.print client-side sem PSP: identificacao + resultado do certame + CascataTable + saldo)",
+    "frontend/src/modules/patios/processes/pages/ProcessoDossiePage.tsx (COMPARTILHADO — insere <LiquidacaoPanel> DEPOIS de <AuctionPanel>, aditivo)",
+    "frontend/package.json (patios-liquidacao.smoke no test:smoke)"
+  ],
+  "app_ts": "NAO tocado (nem backend nem frontend routing — o painel vive no dossie existente).",
+  "invariante": "I7 e do BACKEND (Sigma allocations + ownerBalance == hammer por construcao, PR-14a). A UI so EXIBE: o rodape \"Sigma = arremate\" mostra o hammerAmount CRU do DTO (nunca soma as linhas para AFIRMAR o total), atribuindo a soma ao backend. HONESTIDADE DE DINHEIRO: cada amount/claimAmount/ownerBalanceAmount/shortfallAmount vem cru do DTO via formatMoney (Intl.NumberFormat de 1 valor, zero aritmetica entre linhas). Shortfall (arremate<despesas) mostra tiers inferiores e saldo 0,00 com nota honesta (nao implica pagamento integral). CICLO DO SALDO (§12): claim-balance/revert-funset gated por estado (DISTRIBUTED) + prazo (ownerClaimExpiresAt), MUTUAMENTE EXCLUSIVOS (claim exige !expired, revert exige expired), gate client=HINT, backend re-verifica (409 recarrega). §2.8: tenant_id nunca lido; claimRecipientRef/reference como mascara; distributedBy/claimedBy UUID suprimidos.",
+  "rns_cobertas": [
+    "DOSSIE DE LIQUIDACAO (LiquidacaoPanel, impound:read/transition): sem settlement -> CTA distribuir cascata §6º (form dos 6 tiers declarados; hammer read-only da venda efetiva; remocao/estada computada item I); com settlement -> CascataTable + SaldoCiclo + comprovante.",
+    "CASCATA (CascataTable): tiers na ordem legal orderSeq; rodape Sigma = hammerAmount CRU (prova visual do I7, atribuida ao backend); owner_balance residuo; shortfall honesto.",
+    "CICLO DO SALDO (SaldoCiclo, §12): DISTRIBUTED+saldo>0+now<expires -> claim-balance (registrar retirada pelo ex-dono, claim_recipient_ref opcional mascarado); +now>=expires -> revert-funset (reverter ao Funset); mutuamente exclusivos; terminais BALANCE_CLAIMED/BALANCE_REVERTED_FUNSET sem acao; pagamento MANUAL/presencial (o sistema REGISTRA, nao movimenta dinheiro).",
+    "COMPROVANTE (ComprovanteLeilao): window.print client-side (sem PSP); identificacao + certame + cascata + saldo; sem tenant_id/UUID/PII.",
+    "Cada 409/400 do backend (settlement_wrong_state/settlement_sale_missing/balance_claim_wrong_state/balance_zero/balance_claim_expired/funset_wrong_state/funset_not_yet_due + claim_recipient_ref_too_long + tier_invalid) mapeado para PT-BR de negocio (nenhum generico).",
+    "Estados obrigatorios: loading (Skeleton) / empty (sem saldo / somente leitura) / error+retry / acesso-negado (denied) / dados-desatualizados (auto-refresh + 409 recarrega)."
+  ],
+  "rns_total_pr": 6,
+  "permissao": "ZERO permissao NOVA, ZERO governed path novo. Reusa impound:read (ler a liquidacao) e impound:transition (distribuir cascata / claim-balance / revert-funset). O painel vive no dossie existente (ja guardado por impound:read). catalog.ts/core-saas/seed/RBAC/navigation.registry NAO tocados. Sem coordenador-de-acessos (reuso puro, sem nova superficie de rota/nav).",
+  "estados_obrigatorios": "Frontend: loading/skeleton · empty (Sem saldo ao proprietario / Somente leitura) · error+retry · acesso-negado (denied no hook) · dados-desatualizados (auto-refresh + 409 recarrega).",
+  "d_records": [
+    "D-Omega5P-AUC-UI-05 (15b): o dossie de liquidacao (cascata + ciclo do saldo + comprovante) vive no dossie do processo, aditivo apos o AuctionPanel; a UI EXIBE o I7 (Sigma=hammerAmount cru), nunca recalcula o total.",
+    "D-Omega5P-07 (reafirmado): o pagamento ao ex-dono e MANUAL/presencial, sem PSP; o claim-balance REGISTRA a retirada; o comprovante e window.print client-side.",
+    "D-Omega5P-AUC-UI-06 (15b): os gates do ciclo do saldo (claim/revert) sao HINTS espelho de resolveBalanceCycleTransition (estado+prazo, mutuamente exclusivos); o backend re-verifica sob lock; 409 recarrega."
+  ],
+  "desvios_do_plano": [
+    "O LiquidacaoPanel reusa useAuction (gated em AUCTION_CLOSED) para o arremate read-only do form de distribuicao e o arrematante mascarado do comprovante — 1 GET extra na PAGINA DE DETALHE (nao N+1; o \"sem N+1\" do plano e do funil/lista).",
+    "O frontend nao tem script lint; o equivalente do contrato (CLAUDE.md §9) e npm run check (tsc -b --noEmit) — verde.",
+    "FECHA a Fase 4 (a fatia 15a entregou o funil + AuctionPanel #299; a 15b entrega o dossie de liquidacao)."
+  ],
+  "testes_alvo": {
+    "frontend/tests/patios-liquidacao.smoke.test.tsx": "13 testes: (1) honestidade de dinheiro — Sigma exibido = hammerAmount; caso com shortfall mostra tiers inferiores 0,00 e owner_balance 0,00 com nota, sem implicar pagamento integral; (2) claim/revert habilitam SO em DISTRIBUTED+prazo certo (predicados + render disabled); (3) mutuamente exclusivo (BALANCE_CLAIMED/BALANCE_REVERTED_FUNSET terminais sem acao da outra); (4) mapa reason->PT-BR cobre os 7 reasons 409 reais (distintos, sem generico) + 400; (5) §2.8 (adaptSettlementView suprime UUID de ator; refs mascaradas; comprovante sem tenant_id/UUID); (6) empty/denied/error + resolveSettlementStage."
+  },
+  "bateria": {
+    "frontend_check": "verde (tsc -b --noEmit, EXIT 0)",
+    "frontend_build": "verde (tsc -b && vite build; built em ~8s; ProcessoDossiePage chunk 112.41 kB)",
+    "frontend_test_smoke": "937/937 (924->937 = +13; todos verdes)",
+    "npm_run_lint": "verde (tsc -p tsconfig.json --noEmit) na raiz",
+    "npm_run_build": "verde (tsc -p tsconfig.json) na raiz",
+    "due_diligence_backend": "grep -rl modules/patios tests/ -> NENHUM tests/*.test.ts le paginas de patios (o job backend do CI nao e afetado; zero arquivo backend tocado).",
+    "git_diff_check": "limpo",
+    "git_status_short": "so arquivos do escopo PERMITIDO: frontend/src/modules/patios/settlement/** (novo) + patios-liquidacao.smoke.test.tsx (novo) + ProcessoDossiePage/package.json (frontend, alterados) + KPI_PR-15b.json. src/modules/auction/**, prisma/** git-diff VAZIO. untracked .claude/skills/* + .docx pre-existentes (nunca apagar)."
+  },
+  "kpi_repo_wide": {
+    "backend": "1836 (inalterado — 15b e frontend-only; sem toque em tests/*.ts do backend)",
+    "frontend_smoke": "924->937 (+13: patios-liquidacao.smoke 13)",
+    "flutter_tests": "807 (inalterado — sem toque mobile)",
+    "blocks": "107->108 (+1 — PR-15b de feature)",
+    "mvp_demo": "inalterado",
+    "mvp_vendavel": "inalterado"
+  },
+  "coexistencia": "src/modules/auction/auction.settlement.* git-diff VAZIO (a UI so consome). prisma/** INTOCADO. LiberacaoPanel/AuctionPanel/TransicaoFsmPanel/GuiaDebitos INTOCADOS (LiquidacaoPanel aditivo apos AuctionPanel). catalog.ts/core-saas/seed/RBAC/navigation.registry INTOCADOS (reuso de permissao, sem governed path). Nenhum agente pre-existente tocado.",
+  "junta": {
+    "omega5p-avaliador": "APROVADO (VETO; condicionado ao rollup de KPI do orquestrador). Rodou test:smoke 937/937 (nao copiou). Escopo VETO passa (backend/prisma/catalog/permissao/governed path git-diff VAZIO; LiquidacaoPanel aditivo). Honestidade de dinheiro/I7 passa (Sigma = hammerAmount CRU, rotulado garantido-pelo-backend; shortfall honesto). Ciclo mutuamente exclusivo + pagamento MANUAL explicito. §2.8 passa (UUID suprimido, prova UUID_RE). Aderencia de contrato 1:1.",
+    "cognicao-visual": "APROVADO (parece do mesmo autor das irmas; CascataTable = prova visual do I7 viva com Sigma em destaque; SaldoCiclo legivel com confirmacao; ComprovanteLeilao espelha o ComprovanteLiberacao. Sem tela morta/mock/dado-cru. 3 LOW a11y -> backlog).",
+    "critico-adversarial": "APROVADO (PESADO, 0 CRITICO/0 MEDIO). Os 7 vetores resistiram: a UI nao mente sobre a cascata (hammerAmount cru, zero aritmetica de total); shortfall honesto; ciclo espelha resolveBalanceCycleTransition (4 cenarios provados, mutuamente exclusivos); confirmacao + disclaimer pagamento manual; 100% dos 409/400 PT-BR; §2.8 (UUID/tenant_id/PII suprimidos); sucesso recarrega. 3 nits informativos -> backlog.",
+    "veredito": "APROVADO 3/3 (0 ciclo). FECHA a Fase 4 (funil 15a + dossie de liquidacao 15b). Proximo: Fase 5 (2 PWAs isolados, secops OBRIGATORIO)."
+  },
+  "pr": null,
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "published_per_pr",
+  "riscos_residuais": "(1) LOW a11y (th sem scope=col — padrao do codebase; cursor pointer em linha read-only — igual a irma; tom info no Alert terminal — limite do DS) -> backlog. (2) nits do critico (now unico nas 3 funcoes de gate — probabilidade astronomica, backend rejeita; \"Reclamavel ate\" no comprovante quando saldo=0 — cosmetico; comentario \"ja vem mascarado\" impreciso [e minimizado pelo operador]) -> backlog. (3) o sweep automatico D+5a (revert-funset em lote) = Omega6.",
+  "backlog": "LOW a11y: th scope=col na CascataTable (+ propagar ao AuctionStatePanel/Table compartilhado); opt-out do cursor pointer em tabelas read-only; tom do Alert terminal (limite do DS sem tom success). NITS: computar um unico now e passar as 3 funcoes de gate do SaldoCiclo; suprimir \"Reclamavel ate\" no comprovante quando saldo=0; corrigir o comentario \"ja vem MASCARADO do backend\" (e minimizado pelo operador). Sweep automatico D+5a = Omega6."
+}
