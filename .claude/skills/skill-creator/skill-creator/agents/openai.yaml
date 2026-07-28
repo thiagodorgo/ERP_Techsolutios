@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Creator"
+  short_description: "Create and improve reusable AgentSkills"
+  default_prompt: "Use $skill-creator to create, review, or improve a reusable AgentSkill and its SKILL.md."

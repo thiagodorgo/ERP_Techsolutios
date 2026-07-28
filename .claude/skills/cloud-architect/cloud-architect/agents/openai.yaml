@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cloud Architect"
+  short_description: "Design secure, resilient multi-cloud systems"
+  default_prompt: "Use $cloud-architect to design a secure, resilient, and cost-aware cloud architecture."

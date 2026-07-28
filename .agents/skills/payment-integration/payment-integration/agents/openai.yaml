@@ -1,0 +1,4 @@
+interface:
+  display_name: "Payment Integration"
+  short_description: "Integrate secure payments, subscriptions, and webhooks"
+  default_prompt: "Use $payment-integration to implement secure payments, subscriptions, and verified webhook processing."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Flutter Expert"
+  short_description: "Build high-performance multi-platform Flutter apps"
+  default_prompt: "Use $flutter-expert to build and validate a high-performance multi-platform Flutter application."
