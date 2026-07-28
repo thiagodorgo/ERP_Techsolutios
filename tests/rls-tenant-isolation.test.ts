@@ -1688,6 +1688,57 @@ if (!connectionString) {
       assert.equal(tenantBEd?.status, "DESIGNATED", "tenant B auction edict stays visible + untouched in-tenant");
       assert.equal(tenantBEd?.notes, null, "tenant B auction edict notes untouched by tenant A cross-update");
 
+      // Ω5P PR-14a (D-Ω5P-*) — settlements (liquidação em cascata §6º I7) + settlement_allocations (rateio append-only)
+      // nos 3 tenants EFÊMEROS. Referenciam o impound_process (FK composta tenant-first, RESTRICT — I9); a allocation
+      // referencia o settlement (FK composta tenant-first, RESTRICT). RLS ENABLE/FORCE + policy (migration
+      // 20260845000000). Prova: invisível sem contexto + cross-tenant updateMany count=0 + visível/intocado in-tenant.
+      // tenant_id 1º de todo índice; partial-unique de (tenant,process) + (tenant,settlement,order_seq) raw-only.
+      const insertSettlement = async (tx: typeof client, tenantId: string, processId: string) => {
+        const [settlement] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO settlements (tenant_id, process_id, sold_round, hammer_amount, owner_balance_amount, currency, status)
+          VALUES (${tenantId}::uuid, ${processId}::uuid, 1, '9500.00'::numeric, '9500.00'::numeric, 'BRL', 'DISTRIBUTED')
+          RETURNING id
+        `;
+        const [allocation] = await tx.$queryRaw<Array<{ id: string }>>`
+          INSERT INTO settlement_allocations (tenant_id, settlement_id, process_id, order_seq, beneficiary_kind, amount)
+          VALUES (${tenantId}::uuid, ${settlement.id}::uuid, ${processId}::uuid, 1, 'OWNER_BALANCE', '9500.00'::numeric)
+          RETURNING id
+        `;
+        return { settlement_id: settlement.id, allocation_id: allocation.id };
+      };
+      const setA = await withTenantRls(client, tenantA.id, (tx) => insertSettlement(tx as typeof client, tenantA.id, impA.process_id));
+      const setB = await withTenantRls(client, tenantB.id, (tx) => insertSettlement(tx as typeof client, tenantB.id, impB.process_id));
+      const setC = await withTenantRls(client, tenantC.id, (tx) => insertSettlement(tx as typeof client, tenantC.id, impC.process_id));
+
+      const setWithoutContext = await client.settlement.findMany({ where: { id: { in: [setA.settlement_id, setB.settlement_id, setC.settlement_id] } } });
+      assert.deepEqual(setWithoutContext.map((s) => s.id), [], "settlements must not be visible without app.current_tenant_id");
+
+      const tenantASetView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.settlement.findMany({ where: { id: { in: [setA.settlement_id, setB.settlement_id, setC.settlement_id] } } });
+        const crossUpdate = await tx.settlement.updateMany({ where: { id: { in: [setB.settlement_id, setC.settlement_id] } }, data: { status: "BALANCE_CLAIMED" } });
+        return { visibleIds: visible.map((s) => s.id).sort(), crossUpdatedRows: crossUpdate.count };
+      });
+      assert.deepEqual(tenantASetView.visibleIds, [setA.settlement_id], "tenant A must only see its own settlement (not tenant B/C)");
+      assert.equal(tenantASetView.crossUpdatedRows, 0, "tenant A must not update tenant B/C settlements");
+
+      const tenantBSet = await withTenantRls(client, tenantB.id, (tx) => tx.settlement.findUnique({ where: { id: setB.settlement_id } }));
+      assert.equal(tenantBSet?.status, "DISTRIBUTED", "tenant B settlement stays visible + untouched in-tenant (status not cross-updated)");
+
+      const allocWithoutContext = await client.settlementAllocation.findMany({ where: { id: { in: [setA.allocation_id, setB.allocation_id, setC.allocation_id] } } });
+      assert.deepEqual(allocWithoutContext.map((a) => a.id), [], "settlement allocations must not be visible without app.current_tenant_id");
+
+      const tenantAAllocView = await withTenantRls(client, tenantA.id, async (tx) => {
+        const visible = await tx.settlementAllocation.findMany({ where: { id: { in: [setA.allocation_id, setB.allocation_id, setC.allocation_id] } } });
+        const crossUpdate = await tx.settlementAllocation.updateMany({ where: { id: { in: [setB.allocation_id, setC.allocation_id] } }, data: { reference: "cross-tenant" } });
+        return { visibleIds: visible.map((a) => a.id).sort(), crossUpdatedRows: crossUpdate.count };
+      });
+      assert.deepEqual(tenantAAllocView.visibleIds, [setA.allocation_id], "tenant A must only see its own settlement allocation (not tenant B/C)");
+      assert.equal(tenantAAllocView.crossUpdatedRows, 0, "tenant A must not update tenant B/C settlement allocations");
+
+      const tenantBAlloc = await withTenantRls(client, tenantB.id, (tx) => tx.settlementAllocation.findUnique({ where: { id: setB.allocation_id } }));
+      assert.equal(tenantBAlloc?.beneficiary_kind, "OWNER_BALANCE", "tenant B settlement allocation stays visible + untouched in-tenant");
+      assert.equal(tenantBAlloc?.reference, null, "tenant B settlement allocation reference untouched by tenant A cross-update");
+
       // Ω5P PR-03 (D-Ω5P-TAR-*) — price_tables ESCOPADAS (scope PUBLIC_AGREEMENT/PRIVATE_CONTRACT + vehicle_category)
       // nos 3 tenants EFÊMEROS. As 2 colunas novas são NULLABLE aditivas; a RLS (ENABLE/FORCE + policy
       // price_tables_tenant_isolation, migration 20260723000000) é HERDADA — o ADD COLUMN não a altera. Prova:
@@ -2809,6 +2860,10 @@ if (!connectionString) {
         await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
         for (const tenantId of tenantIds) {
           await tx.$executeRawUnsafe(`DELETE FROM custody_events WHERE tenant_id = '${tenantId}'::uuid`);
+          // Ω5P PR-14a — settlement_allocations → settlements → impound_processes (RESTRICT em cadeia): purga o rateio
+          // ANTES da liquidação ANTES do processo (TEARDOWN FK-SAFE; settlement_allocations ANTES de settlements).
+          await tx.$executeRawUnsafe(`DELETE FROM settlement_allocations WHERE tenant_id = '${tenantId}'::uuid`);
+          await tx.$executeRawUnsafe(`DELETE FROM settlements WHERE tenant_id = '${tenantId}'::uuid`);
           // Ω5P PR-13a — auction_edicts → impound_processes é RESTRICT: purga a designação de leilão ANTES do processo
           // (TEARDOWN FK-SAFE; auction_edicts ANTES de custody_events/impound_processes).
           await tx.$executeRawUnsafe(`DELETE FROM auction_edicts WHERE tenant_id = '${tenantId}'::uuid`);

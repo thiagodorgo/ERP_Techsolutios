@@ -98,9 +98,9 @@
     "critico-adversarial": "APROVADO (após 1 ciclo; núcleo resistiu. 1 CRÍTICO de ALIENAÇÃO sanado: recordSale validava a rodada do BODY não a LOTADA → vender bem como outra rodada abaixo da reserva/vender bem-SUCATA [PROBE-1/5] → amarração em 3 camadas [edict.status=LOTTED + re-check CONSERVED/completo/min_bid da rodada lotada sob FOR UPDATE, min_bid do edital]. MÉDIO-2 setAppraisal congelado no lote; MÉDIO-3 defaulted_sale_round→SOLD efetiva determinística p/ I7; BAIXO-4 winner mascarado. Todos os PROBEs falham-fechado. Tolerância ZERO atendida)",
     "veredito": "APROVADO 4/4 (1 CRÍTICO de alienação sanado; R-omega5p-pr13b-ciclo1)"
   },
-  "pr": null,
-  "merge_commit": null,
-  "approved_head": null,
+  "pr": 296,
+  "merge_commit": "1847b5c",
+  "approved_head": "1847b5c",
   "status": "published_per_pr",
   "riscos_residuais": "(1) a confirmação de pagamento do close é asserção do operador (payment_confirmed), sem fonte persistida (pagamento manual/externo, PD-SIGN) — o PSP/quitação real é Ω6. (2) o piso r1>=avaliação/r2>=50% (art. 328) é encodado no min_bid pelo avaliador; a derivação automática a partir da avaliação é diferida (Ω6, D-Ω5P-AUC-12). (3) NO_PAYMENT usa a rodada de reintegração do body (não a rodada SOLD) — append-only respeitado, mas exige o operador informar um round distinto; a linha SOLD original permanece imutável. (4) a distribuição do §6º (I7 Σ SettlementAllocation=hammerAmount) + o saldo ao ex-proprietário + DIRECT_RECYCLING→CLOSED/encerramento = PR-14 — o 13b só REGISTRA sold_amount. (5) UPDATE de winner/sold/nota após gravado NÃO existe (append-only; correção = ADJUSTMENT/futuro). (6) UI = PR-15. (7) assinatura ICP da nota (art. 34 §2) = Ω6 (o sistema REGISTRA a sale_note_reference; PD-Ω5P-SIGN Opção A, sem serviço pago).",
   "requisito_pr14": "I7 (cascata §6º) base = a SOLD que atinge AUCTION_CLOSED OU a SOLD cuja rodada NÃO é referenciada por nenhum NO_PAYMENT.defaulted_sale_round (reusar findActiveSoldRound do módulo auction). NÃO usar Σ(sold_amount WHERE outcome=SOLD) — dupla-conta na revenda pós-inadimplência.",

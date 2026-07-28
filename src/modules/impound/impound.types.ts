@@ -48,6 +48,9 @@ export const CUSTODY_EVENT_TYPES = [
   "AUCTION_LOTTED",
   "AUCTION_SOLD",
   "AUCTION_CLOSED",
+  // Ω5P PR-14a — AUCTION_SETTLEMENT: registro da LIQUIDAÇÃO em cascata §6º (I7) na cadeia hash. type é TEXT livre
+  // no banco; a union é a allowlist da APP. Aditivo (mesmo padrão dos AUCTION_* acima); PR-14a é o único que EMITE.
+  "AUCTION_SETTLEMENT",
   "ADJUSTMENT",
 ] as const;
 export type CustodyEventType = (typeof CUSTODY_EVENT_TYPES)[number];

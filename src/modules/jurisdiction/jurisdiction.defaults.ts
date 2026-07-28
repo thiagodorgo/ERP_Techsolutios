@@ -11,6 +11,8 @@ import type { DailyCap, DailyModel, ProfileScope, ReleaseRequirement } from "./j
 //   auctionEdictBusinessDays=15 — Lei 14.133/2021 (edital do leilão >=15 dias úteis)
 //   dailyModel=ROLLING_24H      — Res. 1025 art. 21 §1º (diária = período de 24h contado da entrada)
 //   dailyCap=SIX_MONTHS         — CTB art. 271 §10 (Lei 13.281/2016) / art. 328 §5º (teto de 6 meses de estada)
+//   ownerBalanceNotifyDays=30   — CTB art. 328 §12 (Lei 13.160/2015): notificar o ex-dono do SALDO do leilão <=30d
+//   ownerBalanceClaimYears=5    — CTB art. 328 §12: saldo disponível ao ex-dono por 5 anos; depois reverte ao Funset
 export const FEDERAL_DEFAULTS = {
   ownerNotifDays: 10,
   noticeEdictDay: 30,
@@ -18,6 +20,8 @@ export const FEDERAL_DEFAULTS = {
   auctionEdictBusinessDays: 15,
   dailyModel: "ROLLING_24H",
   dailyCap: "SIX_MONTHS",
+  ownerBalanceNotifyDays: 30,
+  ownerBalanceClaimYears: 5,
 } as const satisfies {
   readonly ownerNotifDays: number;
   readonly noticeEdictDay: number;
@@ -25,6 +29,8 @@ export const FEDERAL_DEFAULTS = {
   readonly auctionEdictBusinessDays: number;
   readonly dailyModel: DailyModel;
   readonly dailyCap: DailyCap;
+  readonly ownerBalanceNotifyDays: number;
+  readonly ownerBalanceClaimYears: number;
 };
 
 // Tema Repetitivo 124/STJ (REsp 1.104.775/RS) — estada limitada a 30 diárias no regime ANTERIOR. NÃO é escolha de

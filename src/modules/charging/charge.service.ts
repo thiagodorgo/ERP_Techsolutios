@@ -17,6 +17,7 @@ import {
   type SettleResult,
 } from "./charge.types.js";
 import {
+  moneyToCents,
   multiplyMoney,
   optionalString,
   parseCurrency,
@@ -201,6 +202,24 @@ export class ChargeService {
     const reconciliationConsistent = overAccruedDailyIds.every((id) => dailyNetCents(id, lines) === 0);
     const settledTotal = sumMoney(lines.map((line) => line.totalAmount));
     return { debtsSettled, reconciliationConsistent, settledTotal, overAccruedDailyIds, persistedDailyCount, nDueNow };
+  }
+
+  // Ω5P PR-14a — CLAIM item I (REMOVAL_STORAGE) da liquidação em cascata §6º, CAPADO ao teto I4/CTB §10. READ-ONLY:
+  // NÃO escreve no ledger, NÃO carimba settled_at, NÃO posta ADJUSTMENT — só LÊ. O capping mora AQUI (o charging é o
+  // dono do teto de estada): claim = Σ net do ledger (settledTotal) − Σ líquido das DAILYs SOBRE-ACUMULADAS (as que
+  // excedem o teto AT frozen_at). As diárias sobre-acumuladas NÃO inflam o claim contra o ex-dono na cascata (o saldo
+  // ao ex-dono, art. 328 §12, não é comido por uma cobrança acima do teto CTB §10, imutável na cadeia). Centavo EXATO.
+  async getCascadeExpenseClaim(tenantId: string, processId: string, now: Date = new Date()): Promise<{ claimCents: number; currency: string } | undefined> {
+    const state = await this.getReleaseChargeState(tenantId, processId, now);
+    if (!state) return undefined;
+    const lines = await this.repository.listCharges({ tenantId, processId });
+    // Moeda do claim = a das linhas EXIGÍVEIS (REMOVAL/DAILY/ADDITIONAL); fallback à 1ª linha ou BRL (ledger vazio).
+    const currency = lines.find((line) => line.kind !== "ADJUSTMENT")?.currency ?? lines[0]?.currency ?? "BRL";
+    // Σ líquido das sobre-acumuladas (cada dailyNetCents já soma os ADJUSTMENTs que a apontam; sem settle, = a própria
+    // DAILY). Subtrai do total → o ledger CAPADO ao teto. Math.max(0,·) defensivo (nunca negativo por construção).
+    const overAccruedCents = state.overAccruedDailyIds.reduce((acc, id) => acc + dailyNetCents(id, lines), 0);
+    const claimCents = Math.max(0, moneyToCents(state.settledTotal) - overAccruedCents);
+    return { claimCents, currency };
   }
 
   // ── Motor de diárias (I4) — acumulação de UM processo. Usado pelo SWEEP e (futuro PR-10/14) pelo congelamento
