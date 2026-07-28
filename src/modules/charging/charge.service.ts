@@ -9,6 +9,7 @@ import {
   ChargeError,
   type AccrueProcessResult,
   type ChargeActorContext,
+  type ChargeKind,
   type ChargeStatement,
   type ChargeStatementCap,
   type EstornoInstruction,
@@ -218,6 +219,52 @@ export class ChargeService {
       cents += dailyNetCents(line.id, lines);
     }
     return { totalDueCents: Math.max(0, cents), currency };
+  }
+
+  // Ω5P PR-17 — READ-PORT do owner-portal (dossiê, débitos ITEMIZADOS §2.8 / RN-POR-02). A "memória de cálculo
+  // resumida": agrupa o ledger EXIGÍVEL por kind (REMOVAL/DAILY/ADDITIONAL — ADJUSTMENT é dobrado no líquido da
+  // linha que aponta, nunca uma linha própria), somando o LÍQUIDO das linhas AINDA NÃO quitadas (settled_at NULL).
+  // O `totalDueCents` é BYTE-IDÊNTICO ao da CONSULTA (getPublicSummary, clamp GLOBAL) — REUSA getPublicSummary p/ o
+  // total; JAMAIS soma os subtotais clampados por-kind (MÉDIA-1/R-omega5p-pr17: divergiria com um kind de líquido
+  // negativo). Um único valor monetário público p/ o mesmo débito (dinheiro em superfície pública = tolerância zero).
+  // Centavo EXATO (sem float). JAMAIS expõe tariffId/unitAmount/periodSeq/id de linha/settled_* — só {kind,
+  // subtotalCents, count} + capReached + totalDueCents; os LABELS PT-BR ficam no DTO. capReached vem do motor
+  // (summarizeAccrual sobre o contexto do processo, asOf=min(now,frozen_at)) — "teto de diárias atingido" é honesto.
+  async getPublicItemizedSummary(
+    tenantId: string,
+    processId: string,
+    now: Date = new Date(),
+  ): Promise<{
+    readonly currency: string;
+    readonly items: ReadonlyArray<{ readonly kind: Exclude<ChargeKind, "ADJUSTMENT">; readonly subtotalCents: number; readonly count: number }>;
+    readonly capReached: boolean;
+    readonly totalDueCents: number;
+  }> {
+    const lines = await this.repository.listCharges({ tenantId, processId });
+    const currency = lines.find((line) => line.kind !== "ADJUSTMENT")?.currency ?? lines[0]?.currency ?? "BRL";
+    const kinds: ReadonlyArray<Exclude<ChargeKind, "ADJUSTMENT">> = ["REMOVAL", "DAILY", "ADDITIONAL"];
+    const items: Array<{ kind: Exclude<ChargeKind, "ADJUSTMENT">; subtotalCents: number; count: number }> = [];
+    for (const kind of kinds) {
+      const dueLines = lines.filter((line) => line.kind === kind && !line.settledAt);
+      if (dueLines.length === 0) continue;
+      // Subtotal = LÍQUIDO REAL do kind (net COM sinal — cada linha somada aos ADJUSTMENTs que a apontam). NÃO
+      // clampamos por-kind: o total é a autoridade; deixar o líquido negativo de um over-crédito insider VISÍVEL como
+      // crédito é honesto e faz Σ subtotais == total (quando o global ≥ 0), sem mentir na tela do cidadão.
+      const subtotalCents = dueLines.reduce((acc, line) => acc + dailyNetCents(line.id, lines), 0);
+      items.push({ kind, subtotalCents, count: dueLines.length });
+    }
+    // TOTAL DEVIDO byte-idêntico ao da CONSULTA (getPublicSummary): MESMO clamp GLOBAL — max(0, Σ líquido de TODAS as
+    // exigíveis). REUSA getPublicSummary; NUNCA soma subtotais clampados por-kind (com um kind de líquido negativo daria
+    // REMOVAL +150,00 · ADDITIONAL −0,20 → 150,00 no dossiê × 149,80 na consulta — MÉDIA-1/R-omega5p-pr17).
+    const { totalDueCents } = await this.getPublicSummary(tenantId, processId);
+    // capReached: reusa o motor de acumulação (mesma projeção do getStatement) — asOf congelado quando frozen.
+    let capReached = false;
+    const ctx = await this.repository.loadAccrualContext(tenantId, processId);
+    if (ctx?.enteredAt) {
+      const asOf = ctx.frozenAt ? new Date(Math.min(now.getTime(), ctx.frozenAt.getTime())) : now;
+      capReached = summarizeAccrual({ t0: ctx.enteredAt, asOf, timezone: ctx.timezone, model: ctx.model, cap: ctx.cap }).capReached;
+    }
+    return { currency, items, capReached, totalDueCents };
   }
 
   // Ω5P PR-14a — CLAIM item I (REMOVAL_STORAGE) da liquidação em cascata §6º, CAPADO ao teto I4/CTB §10. READ-ONLY:

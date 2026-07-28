@@ -20,6 +20,16 @@ export function createOwnerPortalRouter(
     "/lookup",
     handle((request) => controller.lookup(request)),
   );
+  // Ω5P PR-17 — rotas AUTORIZADAS POR SESSÃO (Authorization: Bearer <jwe>). O processId vem da sessão, nunca do
+  // corpo/query. GET dossiê detalhado + POST intenção de liberação. Mesmo isolamento (sem /api/v1, sem RBAC do ERP).
+  router.get(
+    "/dossier",
+    handle((request) => controller.dossier(request)),
+  );
+  router.post(
+    "/release-request",
+    handle((request) => controller.releaseRequest(request)),
+  );
 
   return router;
 }

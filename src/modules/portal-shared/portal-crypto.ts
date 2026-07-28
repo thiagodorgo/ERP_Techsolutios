@@ -39,6 +39,13 @@ export function ipHash(secret: string, ip: string): string {
   return hmacHex(secret, `ip${ip.trim()}`);
 }
 
+// Ω5P PR-17 — chave de RATE-LIMIT dos reads AUTORIZADOS (dossiê / solicitar liberação), derivada do processId da
+// SESSÃO (nunca do corpo). Toda ação sob a mesma sessão/processo consome o MESMO balde (anti-spam por processo);
+// combinada com o ip_hash no serviço → limite por sessão+IP. O processId nunca vaza (só o HMAC entra no balde/log).
+export function sessionRateKey(secret: string, processId: string): string {
+  return hmacHex(secret, `s${processId}`);
+}
+
 // Comparação em TEMPO CONSTANTE de dois segredos de comprimento arbitrário: HMAC(a) vs HMAC(b) → 32 bytes cada
 // (comprimento fixo, pré-requisito do timingSafeEqual) → sem oráculo de timing por diferença de comprimento nem
 // por posição do 1º byte divergente. Usada no 2º fator (Renavam).

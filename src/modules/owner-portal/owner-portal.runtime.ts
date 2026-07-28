@@ -1,6 +1,7 @@
 import { env } from "../../config/env.js";
 import { createDefaultChargeService } from "../charging/charge.service.js";
 import { createDefaultImpoundService } from "../impound/impound.service.js";
+import { createDefaultJurisdictionService } from "../jurisdiction/jurisdiction.service.js";
 import {
   AntiAbuse,
   InMemoryChallengeStore,
@@ -12,6 +13,11 @@ import {
 } from "../portal-shared/index.js";
 import { createDefaultYardService } from "../yard/yard.service.js";
 import { OwnerPortalService } from "./owner-portal.service.js";
+import {
+  InMemoryPortalReleaseRequestRepository,
+  createPrismaPortalReleaseRequestRepository,
+} from "./portal-release-request.repository.js";
+import type { PortalReleaseRequestRepository } from "./portal-release-request.types.js";
 
 // Ω5P PR-16 — wiring DEFAULT do owner-portal (memory×prisma pelo mesmo env-gate das demais fatias). O tenant vem
 // do BINDING de deploy (env.PORTAL_TENANT_ID); anti-abuso + challenge store são in-process (singleton do processo,
@@ -29,19 +35,30 @@ async function buildAccessLog(): Promise<PortalAccessLogRepository> {
   return new InMemoryPortalAccessLogRepository();
 }
 
+async function buildReleaseRequests(): Promise<PortalReleaseRequestRepository> {
+  if (env.CORE_SAAS_PERSISTENCE === "prisma") {
+    return createPrismaPortalReleaseRequestRepository();
+  }
+  return new InMemoryPortalReleaseRequestRepository();
+}
+
 export async function createDefaultOwnerPortalService(): Promise<OwnerPortalService> {
   singleton ??= (async () => {
-    const [impound, charge, yard, accessLog] = await Promise.all([
+    const [impound, charge, yard, jurisdiction, accessLog, releaseRequests] = await Promise.all([
       createDefaultImpoundService(),
       createDefaultChargeService(),
       createDefaultYardService(),
+      createDefaultJurisdictionService(),
       buildAccessLog(),
+      buildReleaseRequests(),
     ]);
     return new OwnerPortalService({
       tenantId: env.PORTAL_TENANT_ID,
       impound,
       charge,
       yard,
+      jurisdiction,
+      releaseRequests,
       accessLog,
       antiAbuse: new AntiAbuse(OWNER_ANTI_ABUSE_DEFAULTS),
       challengeStore: new InMemoryChallengeStore(),

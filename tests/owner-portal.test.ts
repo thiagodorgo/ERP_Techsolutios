@@ -31,6 +31,11 @@ import {
   createMemoryYardService,
   resetYardRuntimeForTests,
 } from "../src/modules/yard/yard.service.js";
+import {
+  createMemoryJurisdictionService,
+  resetJurisdictionRuntimeForTests,
+} from "../src/modules/jurisdiction/jurisdiction.service.js";
+import { InMemoryPortalReleaseRequestRepository } from "../src/modules/owner-portal/index.js";
 import type { ImpoundActorContext } from "../src/modules/impound/impound.types.js";
 
 const TENANT = randomUUID();
@@ -67,6 +72,7 @@ function buildHarness(overrides: { antiAbuse?: Partial<AntiAbuseConfig>; minLate
   resetImpoundRuntimeForTests();
   resetChargeRuntimeForTests();
   resetYardRuntimeForTests();
+  resetJurisdictionRuntimeForTests();
   const accessLog = new InMemoryPortalAccessLogRepository();
   const antiAbuse = new AntiAbuse({ ...BASE_ANTI_ABUSE, ...overrides.antiAbuse });
   const challengeStore = new InMemoryChallengeStore();
@@ -75,6 +81,8 @@ function buildHarness(overrides: { antiAbuse?: Partial<AntiAbuseConfig>; minLate
     impound: createMemoryImpoundService(),
     charge: createMemoryChargeService(),
     yard: createMemoryYardService(),
+    jurisdiction: createMemoryJurisdictionService(),
+    releaseRequests: new InMemoryPortalReleaseRequestRepository(),
     accessLog,
     antiAbuse,
     challengeStore,

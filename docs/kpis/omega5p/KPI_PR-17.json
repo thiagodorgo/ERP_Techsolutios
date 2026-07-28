@@ -1,0 +1,86 @@
+{
+  "id": "PR-17",
+  "fase": "Fase 5 — owner-PWA completo: dossie detalhado (status/patio/debitos itemizados/prazos/documentos exigidos) + solicitar liberacao, CONSUMINDO a sessao JWE do PR-16. As fotos ficam para PR-17b (dependencia nova de imagem = junta-5; PD-Omega5P-FOTOS / D-Omega5P-PR17-SPLIT) — aqui = placeholder honesto.",
+  "snapshot_date": "2026-07-28",
+  "branch": "rodada/omega5p",
+  "tipo": "Backend (BFF + read-ports aditivos + middleware de sessao) + 1 migracao ADITIVA (PortalReleaseRequest + widening dos CHECKs do PortalAccessLog) + PWA (telas do dossie). ZERO dependencia nova (nem backend nem PWA; sem lib de imagem). O portal segue ISOLADO (sem /api/v1, sem attachAuthenticatedActor). Read-ports ADITIVOS em impound/charge/jurisdiction. Deploy de producao = fronteira de ativacao humana.",
+  "models_novos": [
+    "PortalReleaseRequest (portal_release_requests) — a solicitacao de liberacao registrada pelo proprietario via portal (fila interna; o console do operador consumira num PR futuro sob /api/v1+RBAC). tenant_id 1o em todo indice; process_id FK composta tenant-first RESTRICT (I9); status PENDING|IN_REVIEW|SCHEDULED|DISMISSED (CHECK IN); note? sanitizada/minimizada; origin PORTAL_OWNER; session_ref? (HMAC opaco, nunca a JWE nem placa/Renavam); partial-unique (tenant_id,process_id) WHERE status IN (PENDING,IN_REVIEW) = 1 solicitacao viva/processo (anti-spam); RLS FORCE."
+  ],
+  "migrations": [
+    "20260848000000_add_portal_release_request (ADITIVA up-only: CREATE TABLE portal_release_requests + RLS ENABLE+FORCE+POLICY + FK compostas tenant-first RESTRICT + partial-unique anti-spam + CHECK IN(status/origin) + indices tenant-first; e WIDENING dos 2 CHECKs de portal_access_logs [action += DOSSIER_VIEWED/RELEASE_REQUESTED; process_found_chk += outcome AUTHORIZED] via DROP+re-ADD com allowlist MAIS LARGA = superset provado, nao-destrutivo. NENHUM ALTER/DROP de coluna existente. Provada VIVA por tx-ROLLBACK sem DROP (12 probes por SAVEPOINT: widening aceita as combos novas + CONTROL/GUARD provam que linhas existentes nao quebram; partial-unique bloqueia 2a aberta; FK cross-tenant/orfao bloqueada; status/origin CHECK). migrate deploy oficial (84 migracoes, up-to-date) + generate. Drift-zero nos objetos do PR (nomes canonicos)."
+  ],
+  "modulos": [
+    "src/modules/owner-portal/owner-portal.session.ts (NOVO — middleware de sessao do BFF: Authorization Bearer JWE -> verifyOwnerSession -> extrai processId; rejeicao UNIFORME 401 SESSION_INVALID; o processId vem SO da sessao, NUNCA do corpo/query)",
+    "src/modules/owner-portal/portal-release-request.{types,repository}.ts (NOVO — InMemory + Prisma raw insert sob withTenantRls, 23505->created:false idempotente)",
+    "src/modules/owner-portal/owner-portal.service.ts (SOMA dossier/releaseRequest + ports + settle generico)",
+    "src/modules/owner-portal/owner-portal.controller.ts (SOMA GET /dossier + POST /release-request; le SO Authorization + body.note; NUNCA processId do request)",
+    "src/modules/owner-portal/owner-portal.dto.ts (SOMA toOwnerDossierDto + buildOwnerDossierDeadlines; subtotais por-kind com SINAL real, totalDue byte-identico a getPublicSummary)",
+    "src/modules/owner-portal/{owner-portal.routes,owner-portal.runtime,owner-portal.validators,index}.ts (rotas + wire jurisdiction/releaseRequests + parseReleaseRequestNote)",
+    "src/modules/impound/impound.service.ts (read-ports ADITIVOS findByIdForPortal + countAvailablePhotoSets [so a contagem de conjuntos, NENHUM byte de foto])",
+    "src/modules/charging/charge.service.ts (read-port ADITIVO getPublicItemizedSummary — itemizado por kind; o totalDueCents REUSA getPublicSummary [clamp GLOBAL] = byte-identico a consulta; getPublicSummary canonica INTOCADA)",
+    "src/modules/jurisdiction/jurisdiction.service.ts (read-port ADITIVO getPortalProfile — releaseRequirements label/required, SEM o satisfied interno)",
+    "src/modules/portal-shared/{portal-access-log.types (allowlist +DOSSIER_VIEWED/RELEASE_REQUESTED/AUTHORIZED/SESSION_INVALID), portal-crypto (sessionRateKey), anti-abuse (readBucket/checkReadRate)}.ts",
+    "prisma/schema.prisma (model PortalReleaseRequest + back-relations)",
+    "portals/owner-portal/src/{api,main}.ts + styles.css (telas: dossie situacao/debitos itemizados/prazos/documentos/fotos-placeholder/solicitar-liberacao; estados loading/vazio/erro/sessao-expirada/offline)"
+  ],
+  "app_ts": "src/app.ts INTOCADO. A rota vive so em createPortalApp (/portal/v1/owner). Cadeia paralela isolada.",
+  "invariante": "A SESSAO E A AUTORIZACAO: o processId vem SEMPRE da JWE verificada (verifyOwnerSession, secret proprio != ERP), NUNCA do corpo/query/header — provado (GET ?processId=B + body {processId:B} + sessao A -> le/escreve so A). Rejeicao 401 SESSION_INVALID byte-identica (ausente/forjada/expirada/audience-errada). ANTI-ENUMERACAO preservada: rotas detalhadas so com sessao valida (que so nasce de lookup FOUND); sem sessao -> 401 uniforme; release-request resposta generica {received:true}; 404 cross-tenant inalcancavel em deploy isolado. §2.8: dossie/charges/deadlines/requirements sem tenant_id/storage_key/fileUrl/token/origem/BO/proprietario/tariffId/id-de-linha/recipientRef; fotos = so contagem. I10: DOSSIER_VIEWED/RELEASE_REQUESTED registrados (sessao invalida barrada por rate-limit por IP ANTES de logar). HONESTIDADE DE DINHEIRO: o total do dossie e byte-identico ao da consulta (reusa getPublicSummary, clamp global); subtotais por-kind com sinal real (Sigma == total) — MEDIA-1 do ciclo 1.",
+  "rns_cobertas": [
+    "GET /portal/v1/owner/dossier (sessao): agregado minimizado numa chamada — status/patio/descritor do veiculo (posse provada) + charges itemizado por kind (subtotais com sinal, total = getPublicSummary) + deadlines (Notificacao/Edital/Prazo de retirada de enteredAt+JurisdictionProfile) + requirements (label/required) + photos (setsAvailableCount + rotulo placeholder). Loga DOSSIER_VIEWED/AUTHORIZED.",
+    "POST /portal/v1/owner/release-request (sessao): registra a intencao (nota curta opcional sanitizada; SEM upload publico); cria PortalReleaseRequest PENDING se nao houver aberta (partial-unique idempotente); resposta generica; loga RELEASE_REQUESTED.",
+    "A sessao autoriza SO o process_id que carrega (nao vira credencial ampla).",
+    "Rate-limit por sessao+IP nas rotas novas (429 generico); sessao invalida barrada por rate-limit por IP antes de logar.",
+    "Estados obrigatorios do PWA: loading/vazio/erro/sessao-expirada/offline."
+  ],
+  "rns_total_pr": 5,
+  "permissao": "ZERO permissao NOVA, ZERO governed path no ERP. Reusa a sessao de portal (posse). catalog.ts/RBAC/navigation.registry INTOCADOS. Observacao da junta: quando o console do operador consumir a fila PortalReleaseRequest (PR futuro), a leitura DEVE viver sob /api/v1 + attachAuthenticatedActor + RBAC.",
+  "estados_obrigatorios": "PWA: loading/skeleton · vazio (empty-note em charges/deadlines/requirements) · erro+retry · sessao expirada (refaca a consulta) · offline. Backend: 200 · 401 SESSION_INVALID uniforme · 404 DOSSIER_NOT_FOUND generico · 429 rate-limit generico · resposta generica do release-request.",
+  "d_records": [
+    "D-Omega5P-PR17-SPLIT: as fotos+upload publico saem do PR-17 (nao ha thumbnail no storage; minimizacao client-side vaza full-res; server-side = dependencia nova) -> PR-17b via junta-5 + PD-Omega5P-FOTOS. Divergencia do PLANO registrada (A2).",
+    "D-Omega5P-DOSSIER-AUTZ (17): a sessao JWE e a autorizacao — processId SO da sessao, nunca do corpo (fecha o vetor previsto pelo coordenador no PR-16).",
+    "D-Omega5P-DOSSIER-MONEY (17, MEDIA-1): o total publico do dossie e byte-identico ao da consulta (reusa getPublicSummary, clamp global); subtotais por-kind com sinal real."
+  ],
+  "desvios_do_plano": [
+    "CORTE: fotos+upload -> PR-17b (D-Omega5P-PR17-SPLIT + PD-Omega5P-FOTOS).",
+    "Widening tambem do process_found_chk (process_id IS NULL OR outcome IN FOUND,AUTHORIZED) alem do texto literal do plano — para o I10 amarrar process_id em DOSSIER_VIEWED/RELEASE_REQUESTED com desfecho AUTHORIZED. Aditivo/superset (avaliador+dba: aceitavel).",
+    "404 cross-tenant generico (nunca o processo alheio) — inalcancavel em deploy isolado (secret proprio), so no pior caso de secret compartilhado do teste RLS. Nao e oraculo (atras de sessao valida). Aceitavel (secops+critico+avaliador).",
+    "CICLO 1 (MEDIA-1): o total do dossie divergia da consulta quando um kind tem liquido negativo (clamp por-kind x global). Consertado: totalDueCents reusa getPublicSummary (byte-identico); subtotais com sinal real; +1 teste com kind negativo."
+  ],
+  "testes_alvo": {
+    "tests/owner-portal-dossier.test.ts": "8 (InMemory): (1) processId do corpo/query IGNORADO (so a sessao autoriza; trocar id nao le/escreve processo alheio); (2) sessao ausente/forjada/expirada/audience-errada -> 401 SESSION_INVALID byte-identico + sem amarrar process_id; (3) §2.8 (dossie/charges/deadlines/requirements sem tenant_id/storage_key/fileUrl/tariffId/periodSeq/profileId/origem/placa/Renavam — regex UUID + allowlist); (4) rate-limit por sessao+IP -> 429 generico; (6) release-request idempotente (partial-unique 1-aberta) + resposta generica; (7) PortalAccessLog DOSSIER_VIEWED/RELEASE_REQUESTED 1 linha/acao sem PII crua; (8/MEDIA-1) PARIDADE: total do dossie == getPublicSummary (consulta) com kind de liquido NEGATIVO [149,80, jamais 150,00] + caso positivo intacto [190,00] + subtotais com sinal real.",
+    "tests/owner-portal-dossier-rls.test.ts": "1 (DB-gated, vivo): cross-tenant sessao de A nunca le B via RLS FORCE + partial-unique + widening dos CHECKs aceito ao vivo + DOSSIER_VIEWED/RELEASE_REQUESTED logados sob RLS."
+  },
+  "bateria": {
+    "npm_run_check": "verde (tsc --noEmit)",
+    "npm_run_build": "verde",
+    "testes_portal": "owner-portal-dossier 8/8 + owner-portal-dossier-rls 1/1 (vivo) + owner-portal 13/13 + owner-portal-rls 1/1 + portal-env 12/12 + charging/release/auction-settlement 58/58 = verdes; zero regressao",
+    "migracao": "tx-ROLLBACK vivo sem DROP (12 probes por SAVEPOINT) + migrate deploy (84, up-to-date) + validate verde; drift-zero nos objetos do PR",
+    "pwa": "npm --prefix portals/owner-portal run check + build verdes",
+    "git_diff_check": "limpo",
+    "dependencia_nova": "NENHUMA (backend e PWA; package.json/lock intocados)"
+  },
+  "kpi_repo_wide": {
+    "backend": "1862->1871 (+9: owner-portal-dossier 8 + owner-portal-dossier-rls 1 DB-gated; o +1 sobre o +8 do ciclo0 e o teste de paridade da MEDIA-1)",
+    "frontend_smoke": "937 (inalterado — o PWA e app separado com job CI proprio)",
+    "flutter_tests": "807 (inalterado)",
+    "blocks": "109->110 (+1 — PR-17 de feature)",
+    "mvp_demo": "inalterado",
+    "mvp_vendavel": "inalterado"
+  },
+  "coexistencia": "src/app.ts/navigation.registry/catalog INTOCADOS. getPublicSummary (a funcao canonica da consulta) byte-INTOCADA (o dossie so a REUSA). Migracao aditiva (widening = superset). Nenhum modulo existente teve regra reescrita (so read-ports aditivos). Nenhuma dependencia nova. Nenhum agente pre-existente tocado.",
+  "junta": {
+    "agente-secops": "APROVADO (VETO). Sessao-como-autz blindada (processId so da JWE; corpo/query inertes provado); rejeicao 401 uniforme; §2.8 (fotos so contagem, toInspectionPhotoDto nao reusado); rate-limit sessao+IP; sessao invalida barrada antes de logar; zero dep/segredo; gates de prod intactos.",
+    "critico-adversarial": "APROVADO (0 CRITICO). Os 7 vetores resistiram (troca de processId; replay de sessao=posse por design TTL 15min dano read-only+idempotente; enumeracao 401 uniforme; spam partial-unique+rate-limit; §2.8; oraculo de release generico; flood de token barrado por IP). 2 recomendacoes defense-in-depth p/ Omega6 (pinar algs no jwtDecrypt; trust-proxy no deploy).",
+    "coordenador-de-acessos": "APROVADO. O vetor previsto no PR-16 (autorizar so pelo process_id da sessao, nunca do corpo) RESPEITADO e blindado com teste. Sessao do portal != ERP provado nos 2 sentidos. Nota: consumidor da fila PortalReleaseRequest no console futuro DEVE ser sob /api/v1+RBAC.",
+    "agente-dba-guardiao": "APROVADO. Migracao 20260848000000 provada VIVA por tx-ROLLBACK (12 probes SAVEPOINT, sem DROP): widening superset (CONTROL/GUARD), RLS FORCE, FK tenant-first RESTRICT (I9), partial-unique anti-spam, CHECK. migrate status up-to-date (84), validate verde, drift-zero nos objetos do PR.",
+    "omega5p-avaliador": "APROVADO (VETO) apos ciclo 1. Escopo/CORTE/I10/§2.8/aderencia (Res.1025 art.22/art.25§2/arts.23-24 + LGPD art.6/11)/estados-UX. MEDIA-1 (paridade do total publico dossie==consulta) CONSERTADA e provada (teste com kind negativo 149,80==149,80; getPublicSummary byte-intocada; apresentacao com sinal real = superior). Delta +9 -> 1871.",
+    "veredito": "APROVADO 5/5 (1 ciclo de reprovacao — MEDIA-1 de honestidade de dinheiro pega pelo avaliador). Proximo: PR-17b (fotos minimizadas+marca-dagua server-side via junta-5+PD-Omega5P-FOTOS) OU PR-18 (authority-portal). O orquestrador decide a ordem."
+  },
+  "pr": null,
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "published_per_pr",
+  "riscos_residuais": "(1) fotos+upload publico = PR-17b (junta-5 + PD-Omega5P-FOTOS). (2) Defense-in-depth p/ Omega6: pinar keyManagementAlgorithms/contentEncryptionAlgorithms no jwtDecrypt; trust-proxy por saltos + TLS/HSTS no ingress (fronteira de ativacao humana). (3) o consumidor da fila PortalReleaseRequest no console do operador (PR futuro) deve ser sob /api/v1+RBAC. (4) replay de sessao dentro do TTL de 15min = modelo de posse por design (dano read-only+idempotente).",
+  "backlog": "PR-17b: fotos minimizadas+marca-dagua server-side (jimp JS-puro) via proxy-stream por ref opaca da sessao — junta-5 + PD-Omega5P-FOTOS. Omega6: pinar algs no jwtDecrypt; trust-proxy no runbook de deploy; consumidor da fila PortalReleaseRequest no console sob RBAC. Backlog do console (fora do escopo): toInspectionPhotoDto expoe fileUrl=s3://bucket/key."
+}

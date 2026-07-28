@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-28",
-  "version": "OMEGA5P-PR-16",
+  "version": "OMEGA5P-PR-17",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Omega5P PR-16 — Fase 5 (ABRE): owner-portal BFF publico ISOLADO + esqueleto PWA + consulta placa+Renavam (anti-enumeracao/rate-limit/antibot PoW/PortalAccessLog I10). Superficie PUBLICA; fundacao de seguranca da Fase 5",
-    "title": "Omega5P PR-16: owner-portal — app Express DISTINTO (portal-app), BFF publico isolado (sem attachAuthenticatedActor, sem JWT do ERP), consulta por posse placa+Renavam com resposta UNIFORME/tempo-constante + PoW SHA-256 hand-rolled + rate-limit token-bucket (IP+placa) + PortalAccessLog append-only (I10). ABRE a Fase 5",
+    "block": "Omega5P PR-17 — Fase 5: owner-PWA completo (dossie detalhado + solicitar liberacao) consumindo a sessao JWE do PR-16. Fotos = PR-17b (junta-5)",
+    "title": "Omega5P PR-17: o dossie publico do proprietario — situacao/patio/debitos itemizados/prazos/documentos exigidos + solicitar liberacao; a sessao JWE e a autorizacao (processId da sessao, nunca do corpo); total do dossie byte-identico a consulta; junta 5/5",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Omega5P PR-16 — OWNER-PORTAL: BFF PUBLICO ISOLADO + esqueleto PWA + consulta placa+Renavam (ABRE a Fase 5). Fundacao de seguranca da superficie EXTERNA do modulo Patios, zero-dep, zero segredo versionado. (1) ISOLAMENTO (D-Omega5P-PORTAL-01): src/portal-app.ts createPortalApp() = app Express DISTINTO (helmet/CORS proprios, X-Robots-Tag noindex, porta propria PORTAL_PORT), NUNCA sob /api/v1, NUNCA attachAuthenticatedActor, NUNCA reusa AuthSession/User/JWT do ERP. server.ts sobe TAMBEM o portal (aditivo). Tenant por BINDING de deploy (PORTAL_TENANT_ID) -> withTenantRls + ator de SISTEMA -> mata a enumeracao cross-tenant. (2) ANTI-ABUSO SEM credencial externa (PD-Omega5P-ANTIBOT): PoW SHA-256 estilo Altcha reimplementado com node:crypto (challenge stateful, uso unico, dificuldade progressiva pelas falhas do IP) + rate-limit token-bucket in-process (IP E placa, o mais restritivo vence) + PoW resolvido em Web Worker no PWA. (3) ANTI-ENUMERACAO: 2 fatores obrigatorios; Renavam em crypto.timingSafeEqual (HMAC dos dois lados, comprimento fixo); RESPOSTA UNIFORME nao-encontrado x Renavam-errado x nao-autorizado (found:false byte-identico) atras de piso de latencia constante; o outcome interno NOT_FOUND x FACTOR_MISMATCH fica SO no PortalAccessLog. (4) MINIMIZACAO §2.8: process publico = {status,statusLabel,yardPublicName,yardPublicAddress,enteredAt,totalDueLabel} — NUNCA origem/auto/BO/agente/proprietario/tenant_id/storage_key/token; sessao = jose JWE (secret PROPRIO, opaca). (5) PortalAccessLog (I10): migracao 20260847000000 aditiva (RLS ENABLE+FORCE+POLICY + trigger append-only + CHECKs portal/action IN + process_id so em FOUND + FK composta tenant-first RESTRICT + indices tenant-first); guarda HMAC (query_fingerprint/ip_hash), NUNCA placa/Renavam/IP crus. Read-ports NOVOS in-process (nao HTTP): impound.findByIdentity, charge.getPublicSummary, yard.getPublicYard. PWA Vite mobile-first ISOLADO (portals/owner-portal/, fora de frontend/) — shell + consulta + resultado minimizado + manifest/service-worker a mao (sem vite-plugin-pwa). ZERO dependencia nova no backend (jose+node:crypto ja existiam). Migracao provada por tx-ROLLBACK na base viva (nada persistido) + migrate deploy oficial + drift-zero. Testes-alvo (10): enumeracao byte-identica, timing-floor, rate-limit IP+placa, PoW invalida/expirada/reusada+dificuldade-sobe, RLS cross-tenant (DB-gated), §2.8 allowlist+UUID_RE, PortalAccessLog 1-linha/tentativa sem PII crua + append-only. backend 1836->1846 (+10; 6 skip DB-gated no CI-memoria), frontend_smoke 937 inalterado (o PWA e app separado com build proprio no novo job CI owner-portal), flutter 807 inalterado, blocks 108->109. Zero regressao (226 testes de impound/charging/yard/release/auction re-rodados verdes). Junta secops-VETO OBRIGATORIA. Proximo: PR-17 (owner-PWA completo + fotos marca-d'agua).",
-    "status_label": "Omega5P PR-16: owner-portal BFF publico ISOLADO + PWA + consulta placa+Renavam (anti-enumeracao/tempo-constante + PoW SHA-256 hand-rolled + token-bucket IP+placa + PortalAccessLog I10 append-only); zero-dep; ABRE a Fase 5; backend 1836->1846, blocks 108->109"
+    "summary": "Omega5P PR-17 — OWNER-PWA COMPLETO (Fase 5). Apos a consulta (PR-16), o proprietario ve o dossie publico do veiculo — status detalhado, patio (endereco), DEBITOS ITEMIZADOS por kind (com o total byte-identico ao da consulta), PRAZOS (notificacao/edital/retirada) e DOCUMENTOS EXIGIDOS para liberacao — e SOLICITA a liberacao (registra a intencao, sem upload). CONSOME pela 1a vez a sessao JWE emitida no PR-16: A SESSAO E A AUTORIZACAO — o processId vem SEMPRE da JWE verificada (verifyOwnerSession, secret proprio != ERP), NUNCA do corpo/query (fecha o vetor previsto pelo coordenador no PR-16; provado por teste). Rejeicao 401 SESSION_INVALID byte-identica; anti-enumeracao preservada (rotas detalhadas so com sessao valida); release-request idempotente (partial-unique 1-aberta/processo) + resposta generica; §2.8 (sem tenant_id/storage_key/fileUrl/tariffId/origem/proprietario; NAO reusa o DTO do console que vaza fileUrl); I10 (DOSSIER_VIEWED/RELEASE_REQUESTED, sessao invalida barrada por rate-limit antes de logar). Migracao aditiva 20260848000000 (PortalReleaseRequest RLS FORCE + FK tenant-first RESTRICT + partial-unique anti-spam; widening dos CHECKs do PortalAccessLog — superset provado tx-ROLLBACK). ZERO dependencia nova. CORTE (D-Omega5P-PR17-SPLIT + PD-Omega5P-FOTOS): as FOTOS+upload saem para PR-17b (nao ha thumbnail no storage; client-side vaza full-res; server-side = dependencia de imagem = junta-5) — aqui as fotos sao placeholder honesto (so a contagem). JUNTA PESADA APROVADO 5/5 (1 ciclo de reprovacao): secops (VETO) + critico-adversarial (7 vetores resistiram) + coordenador-de-acessos (o vetor que ele previu fechado) + dba-guardiao (migracao aditiva provada) + avaliador (VETO). CICLO 1: MEDIA-1 de honestidade de dinheiro — o total do dossie divergia da consulta quando um kind tem liquido negativo (clamp por-kind x global) -> FECHADO (totalDueCents reusa getPublicSummary = byte-identico; subtotais com sinal real; +1 teste com kind negativo). LICAO reforcada: dinheiro em superficie publica = tolerancia zero (o avaliador pegou a divergencia). backend 1862->1871 (+9), frontend_smoke 937 e flutter 807 inalterados, blocks 109->110. Aderencia Res.1025 art.22/art.25§2/arts.23-24 + LGPD art.6/11. Deploy = fronteira de ativacao humana. Inclui backfill do PR-16 (#301 cb3db08).",
+    "status_label": "Omega5P PR-17: owner-PWA dossie (situacao/debitos itemizados/prazos/documentos + solicitar liberacao; a sessao JWE autoriza, processId nunca do corpo; total byte-identico a consulta); junta 5/5; backend 1862->1871, blocks 109->110"
   },
   "metrics": {
     "flutter_tests": {
@@ -24,13 +24,13 @@
       "value": 937,
       "total": 937,
       "display": "937/937",
-      "note": "Carrega o ultimo valor oficial 937 (Omega5P PR-16 NAO tocou frontend/): o owner-portal e um PWA SEPARADO em portals/owner-portal/ com build/typecheck proprios (novo job CI owner-portal), fora da suite frontend/. Valor anterior: +13 (Omega5P PR-15b dossie de liquidacao) sobre 924 (Omega5P PR-15a)."
+      "note": "937 inalterado no Omega5P PR-17 (o owner-PWA e app separado com job CI proprio; nao entra no smoke do frontend do ERP). Ultimo valor do Omega5P PR-15b."
     },
     "backend_tests": {
-      "value": 1862,
-      "total": 1868,
-      "display": "1862/1868",
-      "note": "+26 (Omega5P PR-16 owner-portal publico, pos-ciclo1): tests/owner-portal.test.ts 13 (enumeracao byte-identica placa-existe+Renavam-errado = placa-inexistente; timing-floor; rate-limit IP e placa -> 429; PoW wrong/expired/reused+dificuldade-sobe; §2.8 allowlist 6 campos + UUID_RE; PortalAccessLog 1-linha/tentativa so HMAC; CRITICO-1 bypass do 2o fator por Renavam vazio FECHADO [guarda stored.length>0 && provided.length>0, tempo-constante]; HIGH-1 /challenge throttled 429 + challenge-store cap/eviction FIFO) + tests/owner-portal-rls.test.ts 1 (DB-gated CI: binding tenant A nunca le B via RLS + append-only trigger) + tests/portal-env.test.ts 12 (MEDIA-1: gates fail-closed do portal prod sem PORTAL_SESSION_SECRET/PORTAL_LOG_SECRET/PORTAL_TENANT_ID -> REJEITA; PORTAL_CORS_ORIGIN vazio/* -> REJEITA; PORTAL_*===JWT_* -> REJEITA). CI-memoria 6 skip. Sobre 1836. As fixtures PROD_BASE de cors-env/env-geocoding foram restauradas (os novos gates de prod exigiam os 4 PORTAL_* — 3 assercoes de prod voltaram ao verde, ja contadas no baseline 1836). O job backend do CI compila tambem o portal-app.ts. Nenhuma dependencia nova no backend."
+      "value": 1871,
+      "total": 1877,
+      "display": "1871/1877",
+      "note": "+9 (Omega5P PR-17 owner-PWA dossie): tests/owner-portal-dossier.test.ts 8 (sessao-como-autz processId nunca do corpo; 401 SESSION_INVALID uniforme; §2.8; rate-limit sessao+IP; release-request idempotente+generico; PortalAccessLog DOSSIER_VIEWED/RELEASE_REQUESTED; MEDIA-1 paridade total dossie==consulta com kind negativo) + tests/owner-portal-dossier-rls.test.ts 1 (DB-gated: cross-tenant RLS FORCE + partial-unique + widening dos CHECKs vivo). CI-memoria 6 skip. Sobre 1862 (pos-PR-16). Migracao 20260848000000 provada tx-ROLLBACK. Nenhuma dependencia nova."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 109,
-      "display": "109",
-      "note": "Omega5P PR-16 (owner-portal: BFF publico isolado + esqueleto PWA + consulta placa+Renavam; anti-enumeracao/rate-limit/antibot PoW/PortalAccessLog I10 append-only) -> +1 sobre 108 (Omega5P PR-15b). ABRE a Fase 5 (2 PWAs isolados; secops OBRIGATORIO). Proximo: PR-17 (owner-PWA completo + fotos marca-d'agua)."
+      "value": 110,
+      "display": "110",
+      "note": "Omega5P PR-17 (owner-PWA dossie completo + solicitar liberacao — consome a sessao JWE do PR-16; migracao PortalReleaseRequest) -> +1 sobre 109 (Omega5P PR-16). Proximo: PR-17b (fotos, junta-5) ou PR-18 (authority-portal)."
     },
     "mobile_backend_contracts": {
       "value": 18,

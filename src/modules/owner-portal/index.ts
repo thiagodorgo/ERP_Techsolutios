@@ -6,10 +6,36 @@ export {
   OwnerPortalService,
   type OwnerPortalDeps,
   type OwnerLookupResult,
+  type OwnerDossierResult,
+  type OwnerReleaseRequestResult,
   type OwnerPortalImpoundPort,
   type OwnerPortalChargePort,
   type OwnerPortalYardPort,
+  type OwnerPortalJurisdictionPort,
 } from "./owner-portal.service.js";
 export { createDefaultOwnerPortalService, resetOwnerPortalRuntimeForTests } from "./owner-portal.runtime.js";
-export { toOwnerPortalProcessDto, formatMoneyLabel, type OwnerPortalProcessDto } from "./owner-portal.dto.js";
-export { parseLookupRequest, OwnerPortalBadRequestError, type LookupRequest } from "./owner-portal.validators.js";
+export {
+  toOwnerPortalProcessDto,
+  toOwnerDossierDto,
+  buildOwnerDossierDeadlines,
+  formatMoneyLabel,
+  type OwnerPortalProcessDto,
+  type OwnerDossierDto,
+} from "./owner-portal.dto.js";
+export {
+  parseLookupRequest,
+  parseReleaseRequestNote,
+  OwnerPortalBadRequestError,
+  type LookupRequest,
+} from "./owner-portal.validators.js";
+export { readBearerToken, resolveOwnerSession } from "./owner-portal.session.js";
+export {
+  InMemoryPortalReleaseRequestRepository,
+  PrismaPortalReleaseRequestRepository,
+  createPrismaPortalReleaseRequestRepository,
+} from "./portal-release-request.repository.js";
+export {
+  type PortalReleaseRequestRepository,
+  type PortalReleaseRequestStatus,
+  PORTAL_RELEASE_REQUEST_STATUSES,
+} from "./portal-release-request.types.js";

@@ -60,6 +60,7 @@ model Tenant {
   settlements                   Settlement[]
   settlement_allocations        SettlementAllocation[]
   portal_access_logs            PortalAccessLog[]
+  portal_release_requests       PortalReleaseRequest[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
   financial_titles              FinancialTitle[]
@@ -2831,6 +2832,7 @@ model ImpoundProcess {
   settlements            Settlement[]        // Ω5P PR-14a — liquidação em cascata §6º (1 por processo; I7)
   settlement_allocations SettlementAllocation[] // Ω5P PR-14a — rateio append-only por beneficiário na ordem §6º
   portal_access_logs     PortalAccessLog[]   // Ω5P PR-16 — acessos do owner-portal que RESOLVERAM neste processo (I10)
+  portal_release_requests PortalReleaseRequest[] // Ω5P PR-17 — intenções de liberação originadas pelo proprietário
 
   @@unique([tenant_id, id])
   @@index([tenant_id, yard_id, status])
@@ -2867,6 +2869,35 @@ model PortalAccessLog {
   @@index([tenant_id, query_fingerprint, occurred_at])
   @@index([tenant_id, ip_hash, occurred_at])
   @@map("portal_access_logs")
+}
+
+// Ω5P PR-17 — PortalReleaseRequest: INTENÇÃO de liberação originada pelo PROPRIETÁRIO no owner-portal (posse
+// provada por placa+Renavam → sessão JWE). NÃO é a liberação (I5 = ImpoundRelease, com aprovação da autoridade
+// in-system): é o PEDIDO — uma fila para o operador/autoridade tratar no console. SEM upload de binário público
+// (CORTE PR-17; fotos/upload = PR-17b). status/origin validados na APP (SEM enum-CHECK amplo; padrão FASE0 §3.5) —
+// mas com CHECK ESTRUTURAL de domínio pequeno/estável (espelha portal_access_logs_portal_chk). process→RESTRICT (I9:
+// nada de custódia cascateia). Anti-spam = índice PARCIAL único raw-only (tenant,process) WHERE status IN
+// (PENDING,IN_REVIEW): no máx. 1 pedido ABERTO por processo (não declarado no Prisma model — como todos os
+// partial-unique da casa). RLS ENABLE+FORCE+POLICY. tenant_id 1º em todo índice. note = texto curto sanitizado
+// (§2.8: sem PII exigida); session_ref = ref OPACA (HMAC truncado, nunca a JWE crua).
+model PortalReleaseRequest {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String   @db.Uuid
+  process_id  String   @db.Uuid
+  status      String   @default("PENDING") // PENDING | IN_REVIEW | SCHEDULED | DISMISSED (app-validado)
+  note        String? // nota curta sanitizada/limitada (§2.8: sem PII exigida)
+  origin      String   @default("PORTAL_OWNER") // canal de origem (app-validado; hoje só PORTAL_OWNER)
+  session_ref String? // referência OPACA da sessão (HMAC truncado; NUNCA a JWE crua nem PII)
+  requested_at DateTime @default(now()) @db.Timestamptz(6)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant      Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  process     ImpoundProcess @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, process_id])
+  @@index([tenant_id, status])
+  @@map("portal_release_requests")
 }
 
 // Ω5P PR-05 — Evento de custódia: timeline APPEND-ONLY hash-encadeada (I2). hash = sha256 do preimage endurecido

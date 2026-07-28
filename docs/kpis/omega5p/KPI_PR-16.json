@@ -78,9 +78,9 @@
     "critico-adversarial": "APROVADO apos ciclo 1. CICLO 1: CRITICO-1 bypass do 2o fator por Renavam vazio FECHADO (guarda de comprimento tempo-constante, PoC re-rodado -> not_found) + HIGH-1 /challenge throttled + store cap/eviction FECHADO. Defericao da validacao no create (backlog) aceita — a guarda do servico fecha o furo independentemente do dado gravado.",
     "veredito": "APROVADO 5/5 (1 ciclo de reprovacao — o critico-adversarial pegou o bypass do 2o fator que os outros 4 nao viram). ABRE a Fase 5. Proximo: PR-17 (owner-PWA completo + fotos minimizadas/marca-d agua)."
   },
-  "pr": null,
-  "merge_commit": null,
-  "approved_head": null,
+  "pr": 301,
+  "merge_commit": "cb3db08",
+  "approved_head": "cb3db08",
   "status": "published_per_pr",
   "riscos_residuais": "(1) Deploy de producao (dominios publicos + TLS + hosting + trust proxy por saltos) = fronteira de ativacao humana (D-Omega5P-PORTAL-07). (2) Multi-instancia: baldes/challenge-store in-process multiplicam os limites por replica -> NAO escalar out antes de store compartilhado (Redis = Omega6). (3) parte 3 do CRITICO-1 (validacao canonica de Renavam 9-11 digitos no create do impound) deferida ao backlog (higiene de dado; a guarda do servico ja defende). (4) provedor de CAPTCHA gerenciado + portal nacional multi-tenant = Omega6.",
   "backlog": "Deploy: trust-proxy por saltos no runbook; Redis compartilhado para baldes/challenge-store (multi-instancia) = Omega6. Higiene de dado: validacao canonica de Renavam 9-11 digitos no create do impound.service. UX: normalizacao de placa no match (parsePlate so uppercase x rate-key strip separadores). Ops: log server-side no catch do routes (sem PII). Omega6: provedor de CAPTCHA gerenciado; portal nacional multi-tenant; sweep automatico."

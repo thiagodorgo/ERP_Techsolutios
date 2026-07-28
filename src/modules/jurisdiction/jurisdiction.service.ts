@@ -97,6 +97,35 @@ export class JurisdictionService {
     return updated;
   }
 
+  // Ω5P PR-17 — READ-PORT do owner-portal (dossiê): os prazos legais (offsets em dias a partir do t0) + o checklist
+  // de exigências para liberação. §2.8/RN-POR-02: expõe SÓ ownerNotifDays/noticeEdictDay/auctionEligibleDay (para
+  // o portal derivar as DATAS a partir do enteredAt) e os requisitos {label, required} — NUNCA o `code` interno, o
+  // `satisfied` (estado interno do checklist) nem qualquer id/scope/tarifa. undefined = perfil inexistente no tenant.
+  async getPortalProfile(
+    tenantId: string,
+    profileId: string,
+  ): Promise<
+    | {
+        readonly ownerNotifDays: number;
+        readonly noticeEdictDay: number;
+        readonly auctionEligibleDay: number;
+        readonly requirements: ReadonlyArray<{ readonly label: string; readonly required: boolean }>;
+      }
+    | undefined
+  > {
+    const profile = await this.repository.findProfileById(tenantId, profileId);
+    if (!profile) return undefined;
+    return {
+      ownerNotifDays: profile.ownerNotifDays,
+      noticeEdictDay: profile.noticeEdictDay,
+      auctionEligibleDay: profile.auctionEligibleDay,
+      requirements: profile.releaseRequirements.map((requirement) => ({
+        label: requirement.label,
+        required: requirement.required,
+      })),
+    };
+  }
+
   // GET /jurisdiction-defaults?scope= — exercita resolveDefaults por HTTP (foundation do form da UI/PR-04). Não
   // toca o repositório; valida o scope e devolve os defaults federais daquela natureza.
   defaults(query: RawRecord): { readonly scope: ProfileScope; readonly defaults: ResolvedDefaults } {

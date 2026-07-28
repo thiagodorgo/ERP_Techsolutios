@@ -28,6 +28,30 @@ export type LookupRequest = {
   readonly solution: string;
 };
 
+// Ω5P PR-17 — nota OPCIONAL da solicitação de liberação. Sanitiza (descarta caracteres de controle), colapsa
+// espaços em branco em um só espaço e LIMITA a 500 chars. NUNCA exige/aceita dado pessoal — é texto livre curto.
+// Ausente/vazia → undefined (a nota é opcional). O corpo NUNCA carrega processId (o backend o ignora — o processId
+// vem SEMPRE da sessão JWE). Comprimento excedido → 400 genérico (não é oráculo: independe da existência do processo).
+export function parseReleaseRequestNote(value: unknown): string | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (typeof value !== "string") {
+    throw new OwnerPortalBadRequestError("invalid_field", "Nota é inválida.");
+  }
+  // Descarta caracteres de controle (0x00–0x1F e 0x7F) sem regex de control-char; depois colapsa espaços.
+  const stripped = Array.from(value)
+    .filter((char) => {
+      const code = char.charCodeAt(0);
+      return code >= 32 && code !== 127;
+    })
+    .join("");
+  const sanitized = stripped.replace(/\s+/g, " ").trim();
+  if (sanitized.length === 0) return undefined;
+  if (sanitized.length > 500) {
+    throw new OwnerPortalBadRequestError("invalid_field", "Nota é inválida.");
+  }
+  return sanitized;
+}
+
 export function parseLookupRequest(body: RawRecord): LookupRequest {
   const plate = requireString(body.plate ?? body.vehicle_plate, "placa", 16);
   const renavam = requireString(body.renavam ?? body.vehicle_renavam, "Renavam", 20);

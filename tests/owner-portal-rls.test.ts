@@ -89,8 +89,13 @@ async function bootstrap(connection: string) {
       tenantId,
       impound,
       // stubs — o teste foca no isolamento do read de custódia + no log (a fronteira cross-tenant é o impound).
-      charge: { getPublicSummary: async () => ({ totalDueCents: 0, currency: "BRL" }) },
+      charge: {
+        getPublicSummary: async () => ({ totalDueCents: 0, currency: "BRL" }),
+        getPublicItemizedSummary: async () => ({ currency: "BRL", items: [], capReached: false, totalDueCents: 0 }),
+      },
       yard: { getPublicYard: async () => undefined },
+      jurisdiction: { getPortalProfile: async () => undefined },
+      releaseRequests: { createIfNoneOpen: async () => ({ created: true }) },
       accessLog: new PrismaPortalAccessLogRepository(client),
       antiAbuse: new AntiAbuse({
         ipBucket: { capacity: 1000, refillTokens: 1000, refillIntervalMs: 60_000 },

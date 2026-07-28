@@ -275,32 +275,6 @@ body {
   text-align: right;
 }
 
-.due-box {
-  margin-top: 14px;
-  padding: 14px;
-  border-radius: 10px;
-  background: #f4f7fb;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.due-label {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.due-value {
-  font-size: 24px;
-  color: var(--ink);
-}
-
-.due-note {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.4;
-}
-
 .message {
   text-align: center;
   padding: 28px 18px;
@@ -316,4 +290,277 @@ body {
   font-size: 14.5px;
   line-height: 1.5;
   margin: 0;
+}
+
+/* ── Ω5P PR-17 — dossiê detalhado ────────────────────────────────────────────────────────────────────────────── */
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: var(--ink);
+}
+
+.empty-note {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* débitos itemizados */
+.charge-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.charge-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.charge-item:first-child {
+  border-top: none;
+}
+
+.charge-item-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.charge-kind {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.charge-subtotal {
+  font-size: 15px;
+}
+
+.charge-meta {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.charge-cap {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--warn);
+}
+
+.due-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f4f7fb;
+}
+
+.due-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.due-value {
+  font-size: 22px;
+  color: var(--ink);
+}
+
+.due-note {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+  margin: 10px 0 0;
+}
+
+/* prazos — linha do tempo */
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.timeline-item {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 0 0 16px 4px;
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline-dot {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 3px var(--info-bg);
+}
+
+.timeline-item:not(:last-child) .timeline-dot::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 18px;
+  bottom: 2px;
+  width: 2px;
+  background: var(--line);
+}
+
+.timeline-item-past .timeline-dot {
+  background: var(--muted);
+  box-shadow: 0 0 0 3px var(--bg);
+}
+
+.timeline-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline-label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.timeline-date {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.timeline-elapsed {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.timeline-elapsed.is-past {
+  color: var(--muted);
+}
+
+/* documentos exigidos */
+.req-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.req-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 0;
+  border-top: 1px solid var(--line);
+}
+
+.req-item:first-child {
+  border-top: none;
+}
+
+.req-check {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--info-bg);
+  color: var(--brand);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.req-label {
+  flex: 1 1 auto;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.req-tag {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--bg);
+}
+
+.req-required {
+  color: var(--brand);
+  background: var(--info-bg);
+}
+
+/* fotos — placeholder honesto */
+.photos-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: #fbfcfe;
+}
+
+.photos-icon {
+  font-size: 26px;
+  color: var(--muted);
+}
+
+.photos-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* solicitar liberação */
+.field-textarea {
+  width: 100%;
+  min-height: 96px;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-family: inherit;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fbfcfe;
+  color: var(--ink);
+  resize: vertical;
+}
+
+.field-textarea:focus {
+  outline: 3px solid rgba(47, 107, 255, 0.35);
+  border-color: var(--brand);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.confirm-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 8px;
+  border-radius: 50%;
+  background: var(--ok-bg);
+  color: var(--ok);
+  font-size: 24px;
+  font-weight: 700;
 }

@@ -7,11 +7,15 @@ export const PORTAL_NAMES = ["OWNER", "AUTHORITY"] as const;
 export type PortalName = (typeof PORTAL_NAMES)[number];
 
 // Qual operação. CHALLENGE_ISSUED = emissão de PoW; LOOKUP = tentativa de consulta.
-export const PORTAL_ACTIONS = ["CHALLENGE_ISSUED", "LOOKUP"] as const;
+// Ω5P PR-17 (aditivo): DOSSIER_VIEWED = leitura do dossiê detalhado (exige sessão JWE); RELEASE_REQUESTED =
+// registro da intenção de liberação. A migração 20260848000000 alarga o CHECK de action da tabela (aditivo).
+export const PORTAL_ACTIONS = ["CHALLENGE_ISSUED", "LOOKUP", "DOSSIER_VIEWED", "RELEASE_REQUESTED"] as const;
 export type PortalAction = (typeof PORTAL_ACTIONS)[number];
 
 // Desfecho INTERNO (NUNCA exposto). ISSUED = desafio emitido; FOUND/NOT_FOUND/FACTOR_MISMATCH = resultado da
 // consulta (os dois últimos são UNIFORMES na resposta); RATE_LIMITED/CHALLENGE_FAILED = barreiras anti-abuso.
+// Ω5P PR-17 (aditivo): AUTHORIZED = ação autorizada pela sessão JWE (dossiê lido / liberação registrada);
+// SESSION_INVALID = sessão ausente/expirada/forjada/audience-errada (rejeição uniforme 401, sem oráculo).
 export const PORTAL_OUTCOMES = [
   "ISSUED",
   "FOUND",
@@ -19,6 +23,8 @@ export const PORTAL_OUTCOMES = [
   "FACTOR_MISMATCH",
   "RATE_LIMITED",
   "CHALLENGE_FAILED",
+  "AUTHORIZED",
+  "SESSION_INVALID",
 ] as const;
 export type PortalOutcome = (typeof PORTAL_OUTCOMES)[number];
 

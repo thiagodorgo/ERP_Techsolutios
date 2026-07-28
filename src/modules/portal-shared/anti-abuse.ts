@@ -15,6 +15,9 @@ export type AntiAbuseConfig = {
   // HIGH-1 — rate-limit BARATO do /challenge por IP (independente do balde de lookup). OPCIONAL: default aplicado
   // no construtor, para não quebrar construções pré-existentes de AntiAbuseConfig.
   readonly challengeBucket?: TokenBucketConfig;
+  // Ω5P PR-17 — rate-limit dos reads AUTORIZADOS (dossiê / solicitar liberação), por chave sessão+IP. OPCIONAL
+  // (default no construtor) — não quebra construções pré-existentes. Sem PoW aqui (a sessão já custou um PoW).
+  readonly readBucket?: TokenBucketConfig;
   readonly baseDifficulty: number; // nibbles hex exigidos sem histórico de falha
   readonly maxDifficulty: number; // teto (evita travar cliente legítimo lento)
   readonly failuresPerStep: number; // nº de falhas do IP que sobe 1 nibble de dificuldade
@@ -24,6 +27,10 @@ export type AntiAbuseConfig = {
 // Default do balde do /challenge: rajada de 60 desafios por IP, reposição de 60 a cada 5 min. Folgado para o
 // cliente legítimo (que resolve 1 PoW por consulta), apertado o bastante para conter flood de emissão/log.
 const DEFAULT_CHALLENGE_BUCKET: TokenBucketConfig = { capacity: 60, refillTokens: 60, refillIntervalMs: 5 * 60 * 1000 };
+// Ω5P PR-17 — balde dos reads autorizados: rajada de 60 ações por sessão+IP, reposição de 60 a cada 5 min.
+// Folgado para o dono legítimo (abre o dossiê, navega, solicita liberação), apertado o bastante para conter
+// scraping/spam sob uma sessão comprometida (que já custou um PoW e conhece placa+Renavam).
+const DEFAULT_READ_BUCKET: TokenBucketConfig = { capacity: 60, refillTokens: 60, refillIntervalMs: 5 * 60 * 1000 };
 
 export const OWNER_ANTI_ABUSE_DEFAULTS: AntiAbuseConfig = {
   // 30 tentativas/IP com reposição de 30 a cada 5 min (rajada 30).
@@ -31,6 +38,7 @@ export const OWNER_ANTI_ABUSE_DEFAULTS: AntiAbuseConfig = {
   // 6 tentativas/placa com reposição de 6 a cada 10 min — brute-force de Renavach numa placa fica inviável.
   plateBucket: { capacity: 6, refillTokens: 6, refillIntervalMs: 10 * 60 * 1000 },
   challengeBucket: DEFAULT_CHALLENGE_BUCKET,
+  readBucket: DEFAULT_READ_BUCKET,
   baseDifficulty: 4,
   maxDifficulty: 6,
   failuresPerStep: 3,
@@ -43,21 +51,25 @@ export class AntiAbuse {
   private readonly ipBucket: TokenBucket;
   private readonly plateBucket: TokenBucket;
   private readonly challengeBucket: TokenBucket;
+  private readonly readBucket: TokenBucket;
   private readonly failures = new Map<string, FailureState>();
   private readonly ipStore: TokenBucketStore;
   private readonly plateStore: TokenBucketStore;
   private readonly challengeStore: TokenBucketStore;
+  private readonly readStore: TokenBucketStore;
 
   constructor(
     private readonly config: AntiAbuseConfig,
-    stores?: { ip?: TokenBucketStore; plate?: TokenBucketStore; challenge?: TokenBucketStore },
+    stores?: { ip?: TokenBucketStore; plate?: TokenBucketStore; challenge?: TokenBucketStore; read?: TokenBucketStore },
   ) {
     this.ipStore = stores?.ip ?? new InMemoryTokenBucketStore();
     this.plateStore = stores?.plate ?? new InMemoryTokenBucketStore();
     this.challengeStore = stores?.challenge ?? new InMemoryTokenBucketStore();
+    this.readStore = stores?.read ?? new InMemoryTokenBucketStore();
     this.ipBucket = new TokenBucket(this.ipStore, config.ipBucket);
     this.plateBucket = new TokenBucket(this.plateStore, config.plateBucket);
     this.challengeBucket = new TokenBucket(this.challengeStore, config.challengeBucket ?? DEFAULT_CHALLENGE_BUCKET);
+    this.readBucket = new TokenBucket(this.readStore, config.readBucket ?? DEFAULT_READ_BUCKET);
   }
 
   // Dificuldade do PoW a emitir para este IP: base + degraus pelas falhas recentes, capado no teto.
@@ -97,10 +109,21 @@ export class AntiAbuse {
     return { limited: false };
   }
 
+  // Ω5P PR-17 — rate-limit dos reads AUTORIZADOS (dossiê / solicitar liberação). A chave combina a sessão (HMAC do
+  // processId) com o ip_hash → limita a taxa por sessão+IP sem PoW (a sessão já custou um). Balde dedicado (não
+  // drena os de lookup/challenge). Estourou → limited=true (o serviço responde 429 genérico + loga RATE_LIMITED).
+  checkReadRate(sessionKey: string, ipHash: string, nowMs: number): { limited: boolean } {
+    const key = `${sessionKey}:${ipHash}`;
+    if (!this.readBucket.wouldAllow(key, nowMs)) return { limited: true };
+    this.readBucket.consume(key, nowMs);
+    return { limited: false };
+  }
+
   reset(): void {
     this.failures.clear();
     this.ipStore.clear();
     this.plateStore.clear();
     this.challengeStore.clear();
+    this.readStore.clear();
   }
 }
