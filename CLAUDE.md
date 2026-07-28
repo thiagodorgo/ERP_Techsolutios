@@ -15,6 +15,27 @@
 
 ---
 
+## Regra de espelhamento e interoperabilidade Claude Code ↔ Codex
+
+> **Decisão do dono (2026-07-28, registrada em `agent-orchestration/controle/decisoes.md` — `D-INTEROP-CLAUDE-CODEX`):**
+> `CLAUDE.md` é a **fonte da verdade** deste contrato de execução; `AGENTS.md` é o seu **espelho
+> adaptado ao Codex**. As duas ferramentas (Claude Code e Codex) seguem **as mesmas regras**;
+> `AGENTS.md` só difere onde o mecanismo é específico da ferramenta (comandos, caminho de skills,
+> invocação de subagentes).
+>
+> - **Alterou um, altera o outro no mesmo trabalho** (mesmo bloco, commit e PR) para toda regra
+>   comum. Diferenças permitidas **apenas** quando forem estritamente específicas da ferramenta.
+> - **Em qualquer divergência, prevalece o `CLAUDE.md`.** Isto **atualiza** o parágrafo de abertura
+>   acima (que dizia "valem o `AGENTS.md` e as fontes de verdade"): as **fontes de verdade** (§A1)
+>   seguem valendo acima de tudo; entre os **dois contratos espelhados**, o canônico é o `CLAUDE.md`.
+> - A sincronização **não apaga** decisões nem regras em silêncio; qualquer divergência é registrada
+>   em `agent-orchestration/controle/` antes de consolidar (regra §A2).
+> - **Skills nos dois ambientes:** o Claude Code descobre skills em `.claude/skills/`; o Codex, em
+>   `.agents/skills/` (espelho em formato portátil `SKILL.md`, mesmo conteúdo). Ambos operam a partir
+>   deste contrato canônico. Ver `AGENTS.md` (adaptador Codex) e `scripts/sync-agent-skills.mjs`.
+
+---
+
 # PARTE A — Governança (espelha AGENTS.md)
 
 ## A1. Fontes de verdade (ordem de prioridade)

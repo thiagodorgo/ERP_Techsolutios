@@ -1,0 +1,5 @@
+interface:
+  display_name: "Flutter AI Architect"
+  short_description: "Flutter pixel perfect, APIs, KPIs e prompts Claude Code"
+  icon: "code"
+  brand_color: "#0F172A"
