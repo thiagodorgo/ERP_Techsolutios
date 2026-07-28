@@ -80,7 +80,7 @@
   },
   "kpi_repo_wide": {
     "backend": "1802->1813 (+11: auction-settlement 8 InMemory [sempre roda] + auction-settlement-concurrency 3 DB-gated [medido com DATABASE_URL presente, como o CI]. rls-tenant-isolation [+bloco settlements sem novo test()] + jurisdiction [assert FEDERAL_DEFAULTS atualizado sem novo test()]. Base 1802 = pós-PR-13b)",
-    "frontend_smoke": "861 (inalterado — PR-14a não toca frontend; check+build verdes)",
+    "frontend_smoke": "908 (inalterado — PR-14a não toca frontend; check+build verdes)",
     "flutter_tests": "807 (inalterado — sem toque mobile; último valor oficial carregado com nota)",
     "blocks": "104->105 (+1 — PR-14a de feature)",
     "mvp_demo": "inalterado (PR-14a não move escopo de demo — backend puro, UI=PR-15)",
@@ -93,9 +93,9 @@
     "omega5p-avaliador": "APROVADO (VETO; escopo impound.transitions/hashchain/fines/app.ts intactos; impound.types só +AUCTION_SETTLEMENT; charge.service só read-port; sem permissão nova; I7 por construção+assert; claim capado; §2.8; aderência CTB art.328§6º [PD-CASCADE-ORDER]; ciclo do saldo diferido a 14b; +11 real)",
     "veredito": "APROVADO 3/3 unânime (0 ciclo — o ápice do risco financeiro sólido por construção)"
   },
-  "pr": null,
-  "merge_commit": null,
-  "approved_head": null,
+  "pr": 297,
+  "merge_commit": "d36df33",
+  "approved_head": "d36df33",
   "status": "published_per_pr",
   "riscos_residuais": "(1) o rateio do custeio do leilão cross-lote (proporcional entre bens do mesmo certame) é off-system — settla POR PROCESSO com o auction_cost DECLARADO por processo (o operador informa a fração já rateada). (2) os tiers de multa/tributo (II/IV/V/VI) são DECLARADOS (o módulo fines do Ω4C é float + keyed por vehicleId; ImpoundProcess sem vehicleId FK ⇒ não-linkável) — a integração SNE/Sivec real é Ω6. (3) o item I (REMOVAL_STORAGE) é um SNAPSHOT do ledger no instante da distribuição — um charging:create manual concorrente sobre AUCTION_CLOSED alteraria o claim de uma 2ª distribuição, mas a 1ª é imutável (idempotência) e I7 (Σ==hammer) independe do valor do claim. (4) o ciclo do saldo ao ex-dono (claim-balance DISTRIBUTED→BALANCE_CLAIMED / revert-funset →BALANCE_REVERTED_FUNSET; sweep D+5a) = PR-14b — 14a só GRAVA owner_notify_due_at/owner_claim_expires_at. (5) UPDATE de allocation após gravada NÃO existe (append-only; correção = nova liquidação/futuro — mas 1/processo). (6) UI = PR-15. (7) o pagamento ao arrematante/aos credores é manual/externo (PD-SIGN); o sistema REGISTRA a distribuição, não movimenta dinheiro real.",
   "requisito_pr14b": "Ciclo do saldo ao ex-dono (§12): POST /auction/settlement/claim-balance (gate DISTRIBUTED + owner_balance>0 + now<owner_claim_expires_at → BALANCE_CLAIMED + AUCTION_SETTLEMENT{phase:CLAIM}) · POST /auction/settlement/revert-funset (gate DISTRIBUTED + owner_balance>0 + now>=owner_claim_expires_at → BALANCE_REVERTED_FUNSET + AUCTION_SETTLEMENT{phase:FUNSET_REVERSION} + FUNSET allocation). Sweep automático D+5a = Ω6. Reusa impound:transition; os timestamps já gravados em 14a.",

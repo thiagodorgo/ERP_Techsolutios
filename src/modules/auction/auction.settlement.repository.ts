@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { centsToMoney } from "../charging/charge.validators.js";
+import { centsToMoney, moneyToCents } from "../charging/charge.validators.js";
 import type { CanonicalValue } from "../impound/impound.types.js";
 import type { ImpoundRepository } from "../impound/impound.repository.js";
 import {
@@ -12,6 +12,10 @@ import {
   type DistributeSettlementResult,
   type Settlement,
   type SettlementAllocation,
+  type SettlementCycleInput,
+  type SettlementCyclePhase,
+  type SettlementCycleResult,
+  type SettlementStatus,
   type SettlementView,
 } from "./auction.settlement.types.js";
 
@@ -63,6 +67,52 @@ export function buildSettlementEventPayload(
   };
 }
 
+// Ω5P PR-14b — payload canônico do CustodyEvent AUCTION_SETTLEMENT do CICLO do saldo (I2). §allowlist §2.8 ESTRITA:
+// { event, phase, settlementId } — ZERO PII do ex-dono/recebedor (o claim_recipient_ref JAMAIS entra aqui; vive só na
+// tabela RLS'd). settlementId (UUID interno do sistema, NÃO PII) correlaciona o evento à liquidação. Distingue-se do
+// evento de DISTRIBUIÇÃO do 14a pela presença do campo `phase` (o 14a não tem phase).
+export function buildSettlementCycleEventPayload(phase: SettlementCyclePhase, settlementId: string): CanonicalValue {
+  return { event: "auction_settlement", phase, settlementId };
+}
+
+// Ω5P PR-14b — GATE PURO do ciclo do saldo (reusado por InMemory e Prisma — fonte ÚNICA, sem divergência). Devolve o
+// status-alvo ou LANÇA o 409 com o reason DISTINTO. Precedência: estado errado → saldo zero → prazo. As duas transições
+// são MUTUAMENTE EXCLUSIVAS a partir de DISTRIBUTED (um settlement já BALANCE_CLAIMED/BALANCE_REVERTED_FUNSET falha o
+// 1º check → wrong_state), o que também garante a IDEMPOTÊNCIA (2º claim → 409, não duplica evento). expiresAt nulo é
+// tratado como "sem prazo atingido": claim permitido (dentro da janela), funset bloqueado (nunca reverte sem prazo).
+export function resolveBalanceCycleTransition(
+  phase: SettlementCyclePhase,
+  settlement: Pick<Settlement, "status" | "ownerBalanceAmount" | "ownerClaimExpiresAt">,
+  now: Date,
+): SettlementStatus {
+  const ownerBalanceCents = settlement.ownerBalanceAmount ? moneyToCents(settlement.ownerBalanceAmount) : 0;
+  const expiresAt = settlement.ownerClaimExpiresAt;
+  const isExpired = expiresAt !== undefined && now.getTime() >= expiresAt.getTime();
+  if (phase === "CLAIM") {
+    if (settlement.status !== "DISTRIBUTED") {
+      throw new AuctionSettlementError(409, "SETTLEMENT_CONFLICT", "balance_claim_wrong_state", "The balance can only be claimed from a distributed settlement.");
+    }
+    if (ownerBalanceCents <= 0) {
+      throw new AuctionSettlementError(409, "SETTLEMENT_CONFLICT", "balance_zero", "There is no owner balance to claim.");
+    }
+    if (isExpired) {
+      throw new AuctionSettlementError(409, "SETTLEMENT_CONFLICT", "balance_claim_expired", "The claim window has expired; the balance reverts to the fund.");
+    }
+    return "BALANCE_CLAIMED";
+  }
+  // FUNSET_REVERSION
+  if (settlement.status !== "DISTRIBUTED") {
+    throw new AuctionSettlementError(409, "SETTLEMENT_CONFLICT", "funset_wrong_state", "Only a distributed settlement's balance can revert to the fund.");
+  }
+  if (ownerBalanceCents <= 0) {
+    throw new AuctionSettlementError(409, "SETTLEMENT_CONFLICT", "balance_zero", "There is no owner balance to revert.");
+  }
+  if (!isExpired) {
+    throw new AuctionSettlementError(409, "SETTLEMENT_CONFLICT", "funset_not_yet_due", "The claim window is still open; the balance cannot revert yet.");
+  }
+  return "BALANCE_REVERTED_FUNSET";
+}
+
 export type AuctionSettlementImpoundDep = Pick<ImpoundRepository, "appendEvent" | "findProcessById">;
 
 export interface AuctionSettlementRepository {
@@ -71,6 +121,10 @@ export interface AuctionSettlementRepository {
   // Distribuição ATÔMICA (POST .../settlement): sob FOR UPDATE — re-checa AUCTION_CLOSED + ausência de settlement +
   // re-deriva base I7 sob o lock + ASSERT Σ==hammer + INSERT settlement + N allocations + AUCTION_SETTLEMENT — 1 tx.
   distributeSettlementAtomic(input: DistributeSettlementInput): Promise<DistributeSettlementResult>;
+  // Ω5P PR-14b — CICLO do saldo (POST .../settlement/claim-balance | revert-funset): sob FOR UPDATE do processo+settlement
+  // — re-checa o gate (resolveBalanceCycleTransition) + UPDATE do status/timestamps + AUCTION_SETTLEMENT{phase} — 1 tx.
+  // NÃO toca as allocations (Σ==hammer do 14a intacto). MUTUAMENTE EXCLUSIVAS + idempotentes por construção do gate.
+  transitionBalanceAtomic(phase: SettlementCyclePhase, input: SettlementCycleInput): Promise<SettlementCycleResult>;
   reset?(): void;
 }
 
@@ -185,6 +239,41 @@ export class InMemoryAuctionSettlementRepository implements AuctionSettlementRep
       },
     });
     return { settlement, allocations: this.allocationsFor(settlement.id), created: true };
+  }
+
+  // Ω5P PR-14b — CICLO do saldo (claim | funset). Espelha o Prisma 1:1; a corrida/atomicidade REAL = teste DB-gated.
+  // NÃO toca as allocations (o ciclo é state-change, não redistribuição — Σ==hammer do 14a permanece intacto).
+  async transitionBalanceAtomic(phase: SettlementCyclePhase, input: SettlementCycleInput): Promise<SettlementCycleResult> {
+    const process = await this.impound.findProcessById(input.tenantId, input.processId);
+    if (!process) {
+      throw new AuctionSettlementError(404, "SETTLEMENT_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    const index = this.settlements.findIndex((s) => s.tenantId === input.tenantId && s.processId === input.processId);
+    if (index === -1) {
+      throw new AuctionSettlementError(404, "SETTLEMENT_NOT_FOUND", "settlement_not_found", "No settlement has been distributed for this process.");
+    }
+    const current = this.settlements[index];
+    // GATE PURO (fonte única; lança o 409 distinto). Um settlement já BALANCE_CLAIMED/REVERTED falha aqui ⇒ mutuamente
+    // exclusivo + idempotente (2º claim → 409, sem duplicar evento).
+    const nextStatus = resolveBalanceCycleTransition(phase, current, input.now);
+    const now = new Date();
+    const updated: Settlement =
+      phase === "CLAIM"
+        ? { ...current, status: nextStatus, claimedBy: input.actorId, claimedAt: now, claimRecipientRef: input.recipientRef, updatedAt: now }
+        : { ...current, status: nextStatus, revertedAt: now, updatedAt: now };
+    this.settlements[index] = updated;
+    // AUCTION_SETTLEMENT{phase} encadeado (prova I2) — §2.8 { event, phase, settlementId }, sem PII.
+    await this.impound.appendEvent({
+      tenantId: input.tenantId,
+      processId: input.processId,
+      event: {
+        type: "AUCTION_SETTLEMENT",
+        payload: buildSettlementCycleEventPayload(phase, current.id),
+        occurredAt: input.occurredAt,
+        actorId: input.actorId,
+      },
+    });
+    return { settlement: updated, allocations: this.allocationsFor(updated.id), phase };
   }
 
   private allocationsFor(settlementId: string): readonly SettlementAllocation[] {

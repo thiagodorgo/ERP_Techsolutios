@@ -17,3 +17,15 @@ export function parseClaimCents(value: unknown, field: string): number {
   }
   return moneyToCents(raw);
 }
+
+// Ω5P PR-14b — referência MINIMIZADA do recebedor do saldo (CLAIM). OPCIONAL. §2.8: é um rótulo mascarado que o
+// operador registra (ex.: iniciais + sufixo de doc) — vive SÓ na tabela RLS'd, NUNCA na cadeia hash. Vazio ⇒ undefined;
+// teto defensivo 200 (não é um campo de PII completa — o operador é orientado a minimizar).
+export function parseRecipientRef(value: unknown): string | undefined {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  if (!normalized) return undefined;
+  if (normalized.length > 200) {
+    throw new AuctionSettlementError(400, "SETTLEMENT_INVALID", "claim_recipient_ref_too_long", "claim_recipient_ref must be at most 200 characters (use a masked label, not full PII).");
+  }
+  return normalized;
+}

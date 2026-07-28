@@ -9,7 +9,9 @@ import type { AuctionAttempt, AuctionOutcome } from "./auction.types.js";
 import {
   assertSettlementSum,
   buildAllocationRows,
+  buildSettlementCycleEventPayload,
   buildSettlementEventPayload,
+  resolveBalanceCycleTransition,
   type AuctionSettlementRepository,
 } from "./auction.settlement.repository.js";
 import type {
@@ -24,6 +26,9 @@ import {
   type Settlement,
   type SettlementAllocation,
   type SettlementBeneficiaryKind,
+  type SettlementCycleInput,
+  type SettlementCyclePhase,
+  type SettlementCycleResult,
   type SettlementStatus,
   type SettlementView,
 } from "./auction.settlement.types.js";
@@ -131,6 +136,42 @@ export class PrismaAuctionSettlementRepository implements AuctionSettlementRepos
     return { settlement: mapSettlement(settlementRow), allocations: await this.readAllocations(input.tenantId, settlementRow.id), created: true };
   }
 
+  // Ω5P PR-14b — CICLO do saldo (claim | funset). Sob FOR UPDATE do processo (serializa + dá a cabeça da cadeia p/ o
+  // append) + FOR UPDATE do settlement (serializa claim×funset concorrentes na MESMA liquidação): re-checa o gate
+  // (resolveBalanceCycleTransition) + UPDATE do status/timestamps + AUCTION_SETTLEMENT{phase} — 1 tx. NÃO toca as
+  // allocations (Σ==hammer do 14a intacto — o ciclo é state-change, não redistribuição). MUTUAMENTE EXCLUSIVAS +
+  // idempotentes por construção do gate (um settlement já BALANCE_CLAIMED/REVERTED falha o 1º check → wrong_state).
+  async transitionBalanceAtomic(phase: SettlementCyclePhase, input: SettlementCycleInput): Promise<SettlementCycleResult> {
+    const locked = await this.lockProcess(input.tenantId, input.processId);
+    if (!locked) {
+      throw new AuctionSettlementError(404, "SETTLEMENT_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+    }
+    const settlement = await this.lockSettlementByProcess(input.tenantId, input.processId);
+    if (!settlement) {
+      throw new AuctionSettlementError(404, "SETTLEMENT_NOT_FOUND", "settlement_not_found", "No settlement has been distributed for this process.");
+    }
+    // GATE PURO re-verificado sob o lock (lança o 409 distinto). Serializado pelo FOR UPDATE do settlement ⇒ claim×funset
+    // concorrentes: 1 vence e comuta o status; o outro re-lê BALANCE_CLAIMED/REVERTED e falha wrong_state.
+    const nextStatus = resolveBalanceCycleTransition(phase, settlement, input.now);
+    const now = new Date();
+    await this.client.settlement.update({
+      where: { id: settlement.id },
+      data:
+        phase === "CLAIM"
+          ? { status: nextStatus, claimed_by: input.actorId ?? null, claimed_at: now, claim_recipient_ref: input.recipientRef ?? null, updated_at: now }
+          : { status: nextStatus, reverted_at: now, updated_at: now },
+    });
+    // AUCTION_SETTLEMENT{phase} encadeado (prova I2) — §2.8 { event, phase, settlementId }, sem PII.
+    await this.appendEventTx(input.tenantId, input.processId, locked, {
+      type: "AUCTION_SETTLEMENT",
+      payload: buildSettlementCycleEventPayload(phase, settlement.id),
+      occurredAt: input.occurredAt,
+      actorId: input.actorId,
+    });
+    const refreshed = await this.readSettlementByProcess(input.tenantId, input.processId);
+    return { settlement: refreshed ?? settlement, allocations: await this.readAllocations(input.tenantId, settlement.id), phase };
+  }
+
   // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────────
   private async readSettlementByProcess(tenantId: string, processId: string): Promise<Settlement | undefined> {
     const rows = await this.client.settlement.findMany({
@@ -167,6 +208,20 @@ export class PrismaAuctionSettlementRepository implements AuctionSettlementRepos
       FOR UPDATE
     `;
     return rows[0];
+  }
+
+  // Ω5P PR-14b — trava a liquidação do processo FOR UPDATE (1 por processo). Serializa claim×funset concorrentes na
+  // mesma liquidação: a 2ª transação bloqueia até a 1ª comitar, então re-lê o status já comutado e falha o gate.
+  private async lockSettlementByProcess(tenantId: string, processId: string): Promise<Settlement | undefined> {
+    const rows = await this.client.$queryRaw<SettlementRecord[]>`
+      SELECT id, tenant_id, process_id, sold_round, hammer_amount, auction_cost_amount, removal_storage_claim,
+             owner_balance_amount, shortfall_amount, currency, status, owner_notify_due_at, owner_claim_expires_at,
+             distributed_by, claimed_by, claimed_at, claim_recipient_ref, reverted_at, created_at, updated_at
+      FROM settlements
+      WHERE tenant_id = ${tenantId}::uuid AND process_id = ${processId}::uuid
+      FOR UPDATE
+    `;
+    return rows[0] ? mapSettlement(rows[0]) : undefined;
   }
 
   // RÉPLICA FIEL de auction-prisma.repository.ts:appendEventTx (reusando as PURAS): computa seq/prev/hash, INSERE o
@@ -235,6 +290,10 @@ export class RlsPrismaAuctionSettlementRepository implements AuctionSettlementRe
   distributeSettlementAtomic(input: DistributeSettlementInput): Promise<DistributeSettlementResult> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionSettlementRepository(tx).distributeSettlementAtomic(input));
   }
+
+  transitionBalanceAtomic(phase: SettlementCyclePhase, input: SettlementCycleInput): Promise<SettlementCycleResult> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaAuctionSettlementRepository(tx).transitionBalanceAtomic(phase, input));
+  }
 }
 
 export async function createPrismaAuctionSettlementRepository(): Promise<RlsPrismaAuctionSettlementRepository> {
@@ -276,6 +335,10 @@ type SettlementRecord = {
   readonly owner_notify_due_at: Date | null;
   readonly owner_claim_expires_at: Date | null;
   readonly distributed_by: string | null;
+  readonly claimed_by: string | null;
+  readonly claimed_at: Date | null;
+  readonly claim_recipient_ref: string | null;
+  readonly reverted_at: Date | null;
   readonly created_at: Date;
   readonly updated_at: Date;
 };
@@ -302,6 +365,10 @@ function mapSettlement(record: SettlementRecord): Settlement {
     ownerNotifyDueAt: record.owner_notify_due_at ?? undefined,
     ownerClaimExpiresAt: record.owner_claim_expires_at ?? undefined,
     distributedBy: record.distributed_by ?? undefined,
+    claimedBy: record.claimed_by ?? undefined,
+    claimedAt: record.claimed_at ?? undefined,
+    claimRecipientRef: record.claim_recipient_ref ?? undefined,
+    revertedAt: record.reverted_at ?? undefined,
     createdAt: record.created_at,
     updatedAt: record.updated_at,
   };

@@ -3,6 +3,7 @@ import type {
   Settlement,
   SettlementAllocation,
   SettlementBeneficiaryKind,
+  SettlementCycleResult,
   SettlementStatus,
   SettlementView,
 } from "./auction.settlement.types.js";
@@ -46,6 +47,12 @@ export function toSettlementDto(settlement: Settlement) {
     ownerNotifyDueAt: settlement.ownerNotifyDueAt ? settlement.ownerNotifyDueAt.toISOString() : null,
     ownerClaimExpiresAt: settlement.ownerClaimExpiresAt ? settlement.ownerClaimExpiresAt.toISOString() : null,
     distributedBy: settlement.distributedBy ?? null,
+    // Ω5P PR-14b — ciclo do saldo (§12). claimedBy/distributedBy = atores internos (UUID), NÃO PII do ex-dono.
+    // claimRecipientRef já vem MINIMIZADO/MASCARADO (§2.8) — o rótulo do recebedor, nunca CPF/nome cru.
+    claimedBy: settlement.claimedBy ?? null,
+    claimedAt: settlement.claimedAt ? settlement.claimedAt.toISOString() : null,
+    claimRecipientRef: settlement.claimRecipientRef ?? null,
+    revertedAt: settlement.revertedAt ? settlement.revertedAt.toISOString() : null,
     createdAt: settlement.createdAt.toISOString(),
     updatedAt: settlement.updatedAt.toISOString(),
   };
@@ -82,6 +89,18 @@ export function toDistributeSettlementDto(result: DistributeSettlementResult) {
       settlement: toSettlementDto(result.settlement),
       allocations: result.allocations.map(toSettlementAllocationDto),
       created: result.created,
+    },
+  };
+}
+
+// Ω5P PR-14b — resultado do ciclo do saldo (claim-balance | revert-funset): a view atualizada + a fase consumada. As
+// allocations vão INTOCADAS (o ciclo é state-change, não redistribuição — Σ==hammer do 14a preservado).
+export function toSettlementCycleDto(result: SettlementCycleResult) {
+  return {
+    data: {
+      settlement: toSettlementDto(result.settlement),
+      allocations: result.allocations.map(toSettlementAllocationDto),
+      phase: result.phase,
     },
   };
 }

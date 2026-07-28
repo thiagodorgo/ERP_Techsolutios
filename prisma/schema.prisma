@@ -3173,6 +3173,13 @@ model Settlement {
   owner_notify_due_at    DateTime?              @db.Timestamptz(6)   // notificar o ex-dono do saldo <=30d (§12)
   owner_claim_expires_at DateTime?              @db.Timestamptz(6)   // saldo disponível 5 anos; depois Funset (§12; 14b)
   distributed_by         String?                @db.Uuid
+  // Ω5P PR-14b — ciclo do SALDO (§12): status DISTRIBUTED → BALANCE_CLAIMED (ex-dono retira) OU BALANCE_REVERTED_FUNSET
+  // (não reclamado após 5a). NÃO redistribui (allocations do 14a intocadas). claimed_by = ator interno; claim_recipient_ref
+  // MINIMIZADO (§2.8: nunca PII crua, só nesta tabela RLS'd — jamais na cadeia). Migração 20260846000000 (ADD nullable).
+  claimed_by             String?                @db.Uuid             // ator interno que registrou a retirada (NÃO PII do ex-dono)
+  claimed_at             DateTime?              @db.Timestamptz(6)   // quando o saldo foi retirado (identificação de quem retira, §12)
+  claim_recipient_ref    String?                                     // referência MASCARADA do recebedor (§2.8; nunca na cadeia)
+  reverted_at            DateTime?              @db.Timestamptz(6)   // quando o saldo não reclamado reverteu ao Funset (§12)
   created_at             DateTime               @default(now()) @db.Timestamptz(6)
   updated_at             DateTime               @default(now()) @updatedAt @db.Timestamptz(6)
   tenant                 Tenant                 @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
