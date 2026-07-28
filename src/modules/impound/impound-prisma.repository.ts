@@ -151,6 +151,16 @@ export class PrismaImpoundRepository implements ImpoundRepository {
     return process ? mapProcess(process) : undefined;
   }
 
+  // Ω5P PR-16 — read-port do owner-portal: processo MAIS RECENTE por placa (índice tenant_id,vehicle_plate). RLS
+  // (wrapper) garante o tenant vinculado; o 2º fator (Renavam) é confrontado em tempo constante FORA do banco.
+  async findLatestByPlate(tenantId: string, plate: string): Promise<ImpoundProcess | undefined> {
+    const process = await this.client.impoundProcess.findFirst({
+      where: { tenant_id: tenantId, vehicle_plate: plate },
+      orderBy: [{ created_at: "desc" }],
+    });
+    return process ? mapProcess(process) : undefined;
+  }
+
   async updateProcess(input: UpdateImpoundProcessInput): Promise<ImpoundProcess | undefined> {
     try {
       const updated = await this.client.impoundProcess.updateManyAndReturn({
@@ -558,6 +568,10 @@ export class RlsPrismaImpoundRepository implements ImpoundRepository {
 
   findProcessById(tenantId: string, processId: string): Promise<ImpoundProcess | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaImpoundRepository(tx).findProcessById(tenantId, processId));
+  }
+
+  findLatestByPlate(tenantId: string, plate: string): Promise<ImpoundProcess | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaImpoundRepository(tx).findLatestByPlate(tenantId, plate));
   }
 
   updateProcess(input: UpdateImpoundProcessInput): Promise<ImpoundProcess | undefined> {

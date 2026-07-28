@@ -1542,5 +1542,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-28",
+    "version": "OMEGA5P-PR-16",
+    "backend_tests": "1862/1868",
+    "frontend_smoke": "937/937",
+    "flutter_tests": "807/807",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 109,
+    "description": "Omega5P PR-16 (Fase 5 — owner-portal BFF publico ISOLADO + esqueleto PWA + consulta placa+Renavam) — 22o bloco de feature, ABRE a Fase 5. App Express DISTINTO (createPortalApp, porta propria, SEM attachAuthenticatedActor, helmet/CORS/segredo de sessao proprios), tenant por binding de deploy (PORTAL_TENANT_ID) -> withTenantRls (mata enumeracao cross-tenant). Consulta placa+Renavam via read-ports minimizados in-process (impound.findByIdentity/charge.getPublicSummary/yard.getPublicYard). SEGURANCA: 2 fatores + resposta uniforme + Renavam em timingSafeEqual; rate-limit token-bucket (IP e placa); PoW SHA-256 Altcha-style hand-rolled (node:crypto, zero-dep, dificuldade progressiva); PortalAccessLog append-only (I10, migracao 20260847000000 RLS FORCE + trigger + FK tenant-first RESTRICT + so HMAC, nunca placa/Renavam/IP crus); sessao JWE (secret proprio != ERP); §2.8 (DTO publico de 6 campos). PWA Vite vanilla-TS mobile-first (PoW em Web Worker, manifest+SW a mao, sem vite-plugin-pwa). Junta PESADA APROVADO 5/5 (1 ciclo de reprovacao): secops (VETO; isolamento/gates fail-closed/anti-enumeracao byte-identica/§2.8/RLS) + dba-guardiao (migracao aditiva provada tx-ROLLBACK sem DROP; RLS FORCE+trigger+FK RESTRICT+CHECK) + coordenador-de-acessos (cadeia paralela isolada; sessao JWE != JWS do ERP nos 2 sentidos) + avaliador (VETO) + critico-adversarial. CICLO 1 pegou 2 CRITICOS + 1 HIGH: CRITICO-1 bypass do 2o fator por Renavam vazio (normalizeRenavamKey de N-A vira vazio -> consulta so-placa) FECHADO [guarda de comprimento tempo-constante + validador rejeita Renavam sem digito]; CRITICO-2 regressao de suite em env.ts (os novos gates de prod quebravam cors-env/env-geocoding PROD_BASE -> CI vermelho) FECHADO [fixtures estendidas]; HIGH-1 /challenge sem throttle + store sem eviction FECHADO [rate-limit no /challenge + cap/eviction FIFO]. PD-Omega5P-ANTIBOT (anti-bot sem credencial externa viavel; provedor gerenciado = Omega6). LICAO: o critico-adversarial pegou o bypass do 2o fator que os outros 4 nao viram — critico-adversarial insubstituivel em superficie publica/seguranca (paralelo a dinheiro/alienacao). Deploy de producao (dominios/TLS/hosting) = fronteira de ativacao humana. backend 1836->1862 (+26), frontend_smoke 937 e flutter 807 inalterados, blocks 108->109. Zero dependencia nova. Aderencia Res.1025 art.22/art.25§2 + LGPD art.6/18. merge_commit null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

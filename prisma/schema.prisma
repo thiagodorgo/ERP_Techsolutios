@@ -59,6 +59,7 @@ model Tenant {
   auction_edicts                AuctionEdict[]
   settlements                   Settlement[]
   settlement_allocations        SettlementAllocation[]
+  portal_access_logs            PortalAccessLog[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
   financial_titles              FinancialTitle[]
@@ -2829,12 +2830,43 @@ model ImpoundProcess {
   auction_edicts         AuctionEdict[]      // Ω5P PR-13a — designação de leilão por rodada (projeção mutável; a prova vive na cadeia)
   settlements            Settlement[]        // Ω5P PR-14a — liquidação em cascata §6º (1 por processo; I7)
   settlement_allocations SettlementAllocation[] // Ω5P PR-14a — rateio append-only por beneficiário na ordem §6º
+  portal_access_logs     PortalAccessLog[]   // Ω5P PR-16 — acessos do owner-portal que RESOLVERAM neste processo (I10)
 
   @@unique([tenant_id, id])
   @@index([tenant_id, yard_id, status])
   @@index([tenant_id, vehicle_plate])
   @@index([tenant_id, status])
   @@map("impound_processes")
+}
+
+// Ω5P PR-16 — PortalAccessLog: trilha probatória IMUTÁVEL de TODO acesso à superfície PÚBLICA (I10 / modelo de
+// ameaças ESTUDO §7). §2.8/RN-POR-02: NUNCA placa/Renavam/IP CRUS — só o HMAC (query_fingerprint/ip_hash) com
+// PORTAL_LOG_SECRET. O `outcome` (FOUND/NOT_FOUND/FACTOR_MISMATCH/RATE_LIMITED/CHALLENGE_FAILED/ISSUED) é INTERNO
+// e NUNCA servido em resposta pública (a resposta é uniforme). process_id só em FOUND (FK composta tenant-first
+// RESTRICT — I9). Append-only: a migração 20260847000000 adiciona TRIGGER BEFORE UPDATE OR DELETE (belt estrutural,
+// espelha custody_events) + CHECKs (portal/action IN; process_id só com FOUND) + RLS ENABLE+FORCE+POLICY. Enums
+// validados na APP; sem enum-CHECK amplo (padrão FASE0 §3.5). tenant_id 1º em todo índice.
+model PortalAccessLog {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id         String   @db.Uuid
+  portal            String // OWNER | AUTHORITY (app-validado)
+  action            String // CHALLENGE_ISSUED | LOOKUP (app-validado)
+  outcome           String // ISSUED | FOUND | NOT_FOUND | FACTOR_MISMATCH | RATE_LIMITED | CHALLENGE_FAILED (INTERNO)
+  process_id        String?  @db.Uuid
+  query_fingerprint String? // HMAC(placa‖Renavam) — nunca os fatores crus
+  ip_hash           String // HMAC(ip) — nunca IP cru
+  user_agent        String?
+  session_id        String?
+  occurred_at       DateTime @db.Timestamptz(6)
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  tenant            Tenant          @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  process           ImpoundProcess? @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, occurred_at])
+  @@index([tenant_id, query_fingerprint, occurred_at])
+  @@index([tenant_id, ip_hash, occurred_at])
+  @@map("portal_access_logs")
 }
 
 // Ω5P PR-05 — Evento de custódia: timeline APPEND-ONLY hash-encadeada (I2). hash = sha256 do preimage endurecido

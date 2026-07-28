@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Consulta de veículo em pátio">
+  <rect width="512" height="512" rx="96" fill="#0f2740"/>
+  <g fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M120 300 l24 -84 a40 40 0 0 1 38 -28 h148 a40 40 0 0 1 38 28 l24 84"/>
+    <path d="M104 300 h304 v66 a16 16 0 0 1 -16 16 h-36 a16 16 0 0 1 -16 -16 v-14 h-152 v14 a16 16 0 0 1 -16 16 h-36 a16 16 0 0 1 -16 -16 z"/>
+    <circle cx="168" cy="332" r="16" fill="#ffffff" stroke="none"/>
+    <circle cx="344" cy="332" r="16" fill="#ffffff" stroke="none"/>
+  </g>
+  <path d="M256 120 l96 34 v52 c0 54 -40 86 -96 104 c-56 -18 -96 -50 -96 -104 v-52 z" fill="#2f6bff" opacity="0.16"/>
+</svg>

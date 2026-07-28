@@ -204,6 +204,22 @@ export class ChargeService {
     return { debtsSettled, reconciliationConsistent, settledTotal, overAccruedDailyIds, persistedDailyCount, nDueNow };
   }
 
+  // Ω5P PR-16 — READ-PORT do owner-portal (BFF público). RESUMO MINIMIZADO §2.8: só o TOTAL DEVIDO (memória
+  // resumida), NUNCA linhas itemizadas/tarifa/placa (débitos itemizados = PR-17). Total devido = Σ do LÍQUIDO das
+  // linhas EXIGÍVEIS (REMOVAL/DAILY/ADDITIONAL) AINDA NÃO quitadas (settled_at NULL), cada uma somada aos seus
+  // ADJUSTMENTs (dailyNetCents é genérico p/ qualquer encargo). Tudo quitado → 0,00. Centavo EXATO (sem float).
+  async getPublicSummary(tenantId: string, processId: string): Promise<{ totalDueCents: number; currency: string }> {
+    const lines = await this.repository.listCharges({ tenantId, processId });
+    const currency = lines.find((line) => line.kind !== "ADJUSTMENT")?.currency ?? lines[0]?.currency ?? "BRL";
+    let cents = 0;
+    for (const line of lines) {
+      if (line.kind === "ADJUSTMENT") continue; // ajustes entram via dailyNetCents da linha que apontam
+      if (line.settledAt) continue; // já quitada → não é devida
+      cents += dailyNetCents(line.id, lines);
+    }
+    return { totalDueCents: Math.max(0, cents), currency };
+  }
+
   // Ω5P PR-14a — CLAIM item I (REMOVAL_STORAGE) da liquidação em cascata §6º, CAPADO ao teto I4/CTB §10. READ-ONLY:
   // NÃO escreve no ledger, NÃO carimba settled_at, NÃO posta ADJUSTMENT — só LÊ. O capping mora AQUI (o charging é o
   // dono do teto de estada): claim = Σ net do ledger (settledTotal) − Σ líquido das DAILYs SOBRE-ACUMULADAS (as que

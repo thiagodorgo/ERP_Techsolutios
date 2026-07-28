@@ -107,6 +107,29 @@ jobs:
       - name: Build
         run: npm --prefix frontend run build
 
+  # Ω5P PR-16 — owner-portal (PWA público ISOLADO). Build/typecheck próprios, fora de frontend/ (D-Ω5P-11).
+  # Sem segredo no CI; sem backend embutido. O portal-app (BFF) já entra no job backend (npm run check/build).
+  owner-portal:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm --prefix portals/owner-portal ci
+
+      - name: TypeScript check
+        run: npm --prefix portals/owner-portal run check
+
+      - name: Build
+        run: npm --prefix portals/owner-portal run build
+
   flutter:
     runs-on: ubuntu-latest
 

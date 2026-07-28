@@ -114,6 +114,16 @@ export class ImpoundService {
     });
   }
 
+  // Ω5P PR-16 — READ-PORT do owner-portal (BFF público, ator de SISTEMA escopado ao tenant vinculado; SEM RBAC
+  // HTTP, SEM attachAuthenticatedActor). Resolve o processo pelo 1º fator (placa normalizada). O 2º fator
+  // (Renavam) é confrontado em TEMPO CONSTANTE na camada de segurança do portal — NÃO aqui e NÃO no banco: assim
+  // o banco não vira oráculo de Renavam e o log I10 distingue NOT_FOUND×FACTOR_MISMATCH sem vazar na resposta.
+  async findByIdentity(tenantId: string, plate: string): Promise<ImpoundProcess | undefined> {
+    const normalized = parsePlate(plate);
+    if (!normalized) return undefined;
+    return this.repository.findLatestByPlate(tenantId, normalized);
+  }
+
   async get(actor: ImpoundActorContext, processId: string): Promise<ImpoundProcess> {
     const process = await this.repository.findProcessById(actor.tenantId, parseRequiredUuid(processId, "processId"));
     if (!process) {
