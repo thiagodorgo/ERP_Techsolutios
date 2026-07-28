@@ -787,3 +787,12 @@ Fecha o cluster P-Ω3F6-STATUS-BYPASS + TERMINAL-GUARD + ZERO-ATOMICIDADE (pré-
 - **Contratos:** AGENTS.md aponta os papéis + o protocolo; CLAUDE.md recebeu **+4 linhas por SÓ-INSERÇÃO** (bullet paralelo ao de skills; 0 removido). Sincronizado por `scripts/sync-agent-agents.mjs` (`--check` preserva o README).
 - **Limite honesto que permanece:** a orquestração de subagentes do Codex é mais fraca/diferente da do Claude Code; a paridade de PROCESSO está garantida (papéis + regras + protocolo de emulação), mas a execução paralela isolada out-of-the-box é do Claude Code. O modelo por baixo também difere (OpenAI × Claude): processo igual ≠ saída idêntica.
 - **Governança/tooling:** KPIs carregam o último valor; blocks inalterado (110).
+
+### D-INTEROP-CLAUDE-CODEX — continuação (2026-07-28): adapters OpenAI para as 11 skills
+
+- **Decisão do dono:** completar a metadata portátil das 8 skills que ainda possuíam apenas `SKILL.md`, usando como molde os adapters já existentes em `erp-techsolutions-code-auditor`, `flutter-ai-architect` e `ts-frontend-full`.
+- **Adapters criados:** `blockchain-developer`, `cloud-architect`, `cloud-devops`, `flutter-expert`, `payment-integration`, `saas-multi-tenant`, `skill-creator` e `ui-ux-pro-max` agora possuem `agents/openai.yaml` com `display_name`, `short_description` e `default_prompt` derivados da própria skill.
+- **Conflito registrado (§A2):** `origin/main` continha somente 6 diretórios de skill, embora a decisão anterior registrasse 11/28 arquivos. As outras 5 estavam presentes como arquivos não rastreados e idênticos nos dois ambientes do checkout principal. A origem `.claude/skills/` foi incorporada à branch isolada sem alterar/apagar os originais; o espelho `.agents/skills/` foi reconstruído pelo sincronizador.
+- **Compatibilidade preservando metadata:** nas 5 skills comunitárias, `risk`, `source`, `date_added` e `category` eram chaves de topo rejeitadas pelo validador Codex; foram movidas sem perda para a chave permitida `metadata`. As 11 skills passam em `quick_validate.py`.
+- **Prova de paridade:** `node scripts/sync-agent-skills.mjs --check` retorna `OK — 11 skills, 36 arquivos, espelho idêntico`.
+- **Governança/tooling:** sem código/teste de produto; backend 1871/1877, smoke 937/937, Flutter 807/807 e `blocks_completed=110` carregados sem alteração (precedente Ω-GOV/JUNTA-MAPAS).

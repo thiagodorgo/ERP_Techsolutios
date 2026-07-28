@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cloud DevOps"
+  short_description: "Automate cloud infrastructure, CI/CD, and observability"
+  default_prompt: "Use $cloud-devops to automate cloud infrastructure, CI/CD, Kubernetes, and observability workflows."

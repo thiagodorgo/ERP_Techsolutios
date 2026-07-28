@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI/UX Pro Max"
+  short_description: "Review ERP interfaces for usability and accessibility"
+  default_prompt: "Use $ui-ux-pro-max to review and improve an ERP interface for usability, accessibility, and design-system compliance."

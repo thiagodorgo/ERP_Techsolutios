@@ -6,6 +6,34 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-28 - GOV-CODEX-SKILLS-ADAPTERS
+
+### Resultado
+
+- Criados `agents/openai.yaml` para as 8 skills que ainda tinham apenas `SKILL.md`:
+  `blockchain-developer`, `cloud-architect`, `cloud-devops`, `flutter-expert`,
+  `payment-integration`, `saas-multi-tenant`, `skill-creator` e `ui-ux-pro-max`.
+- Cada adapter declara `display_name`, `short_description` e `default_prompt` derivados
+  do frontmatter/conteúdo da própria skill; o prompt padrão menciona explicitamente
+  `$<skill-name>`.
+- Cinco skills estavam presentes somente como arquivos não rastreados no checkout local.
+  Elas foram incorporadas à origem canônica `.claude/skills/` nesta branch isolada, sem
+  alterar ou apagar os originais; `node scripts/sync-agent-skills.mjs` reconstruiu o
+  espelho `.agents/skills/`.
+- A metadata comunitária (`risk`, `source`, `date_added`, `category`) foi preservada sob
+  a chave portátil `metadata`; as 11 skills passam em `quick_validate.py`.
+- `node scripts/sync-agent-skills.mjs --check`: **OK — 11 skills, 36 arquivos,
+  espelho idêntico**.
+
+### KPIs
+
+- Governança/tooling, sem código ou teste de produto: backend **1871/1877**,
+  frontend smoke **937/937** e Flutter **807/807** carregados do último valor oficial.
+- `blocks_completed`: **110**, inalterado pelo precedente Ω-GOV/JUNTA-MAPAS.
+- `mvp_demo`: **99%**; `mvp_vendavel`: **88%**, inalterados.
+- `pr`: **305**; `merge_commit` e `approved_head`: `null` na autoria e recebem
+  backfill pós-merge.
+
 ## 2026-07-21 - ONDA 1: Ligar Aprovacoes a dados reais (com pesquisa de concorrentes)
 
 ### Resultado

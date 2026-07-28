@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-28",
-  "version": "GOV-CODEX-AGENT-PERSONAS",
+  "version": "GOV-CODEX-SKILLS-ADAPTERS",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Governanca/tooling — portar os 24 agentes de junta do Claude Code (.claude/agents) para o Codex (.agents/agents) como papeis portateis + protocolo de emulacao da junta. Continua D-INTEROP-CLAUDE-CODEX. NAO e bloco de feature",
-    "title": "Codex ganha os 24 papeis de junta: espelho .agents/agents (corpo verbatim + preambulo Codex) + README com protocolo de emulacao (§C7) + sync-agent-agents.mjs; PR de governanca (metricas inalteradas)",
-    "pr": null,
+    "block": "Governanca/tooling — completar D-INTEROP-CLAUDE-CODEX com adapters agents/openai.yaml nas 8 skills que ainda tinham apenas SKILL.md. NAO e bloco de feature",
+    "title": "As 11 skills Claude/Codex passam a ter metadata portatil: 8 adapters OpenAI adicionados e espelho validado; PR de governanca (metricas inalteradas)",
+    "pr": 305,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "GOV-CODEX-AGENT-PERSONAS (governanca, continua D-INTEROP-CLAUDE-CODEX). Fecha o gap real da interop: o nivel alto vem da JUNTA de agentes (§C7), e os 24 agentes eram so do Claude Code (.claude/agents). Agora espelhados para o Codex em .agents/agents/*.md via scripts/sync-agent-agents.mjs: CORPO VERBATIM de cada papel (instrucoes e poderes de VETO sem drift) + frontmatter portatil (name/description; tools/model do Claude removidos) + preambulo de orientacao Codex no topo. .agents/agents/README.md traz o INDICE dos 24 por funcao (planejar/dev/veto/seguranca-infra/pesquisa) + o PROTOCOLO DE EMULACAO da junta (se o Codex nao criar subagentes isolados, EMULA adotando um papel de cada vez: planejador -> critico-adversarial -> dev -> cada revisor de veto num passe adversarial independente; registra votos em docs/juntas; ciclos de reprovacao §C7.4) + a composicao tipica por tipo de PR (dinheiro->critico obrigatorio; superficie publica->secops VETO; migracao->dba VETO; decisao critica->junta-5). AGENTS.md e CLAUDE.md atualizados (CLAUDE.md por SO-INSERCAO: +4 linhas, 0 del; bullet paralelo ao de skills). PR de GOVERNANCA/TOOLING: nao toca codigo/teste de produto -> metricas de teste carregam o ultimo valor oficial (backend 1871/1877, smoke 937, flutter 807) e blocks_completed INALTERADO em 110 (precedente Omega-GOV/JUNTA-MAPAS). Decisao explicita do dono (opcao 1) = maior fonte de verdade; nao exigiu junta.",
-    "status_label": "Codex ganha os 24 papeis de junta (.agents/agents, corpo verbatim + protocolo de emulacao §C7 + sync script); AGENTS.md/CLAUDE.md atualizados; PR de governanca (metricas inalteradas)"
+    "summary": "GOV-CODEX-SKILLS-ADAPTERS (governanca/tooling, D-INTEROP-CLAUDE-CODEX). Cria agents/openai.yaml para blockchain-developer, cloud-architect, cloud-devops, flutter-expert, payment-integration, saas-multi-tenant, skill-creator e ui-ux-pro-max, com display_name, short_description e default_prompt derivados de cada SKILL.md. Cinco skills que existiam apenas como arquivos locais nao rastreados foram incorporadas a origem canonica .claude/skills sem alterar o checkout principal; metadata comunitaria foi preservada sob a chave portatil metadata e as 11 skills passam no quick_validate.py. node scripts/sync-agent-skills.mjs reconstruiu .agents/skills e o --check confirmou 11 skills/36 arquivos byte-identicos. PR de GOVERNANCA/TOOLING: nao toca codigo/teste de produto; metricas carregam o ultimo valor oficial (backend 1871/1877, smoke 937/937, flutter 807/807) e blocks_completed permanece 110 (precedente Omega-GOV/JUNTA-MAPAS).",
+    "status_label": "8 adapters agents/openai.yaml adicionados; 11 skills/36 arquivos sincronizados entre Claude Code e Codex; PR de governanca (metricas inalteradas)"
   },
   "metrics": {
     "flutter_tests": {
@@ -24,13 +24,13 @@
       "value": 937,
       "total": 937,
       "display": "937/937",
-      "note": "Carrega o ultimo valor oficial 937 (GOV-INTEROP nao toca frontend/). Ultimo valor: Omega5P PR-15b/PR-17."
+      "note": "Carrega o ultimo valor oficial 937/937 (GOV-CODEX-SKILLS-ADAPTERS nao toca frontend/). Ultimo valor: Omega5P PR-15b/PR-17."
     },
     "backend_tests": {
       "value": 1871,
       "total": 1877,
       "display": "1871/1877",
-      "note": "Carrega o ultimo valor oficial 1871/1877 (GOV-CODEX-AGENT-PERSONAS NAO toca codigo/teste de produto; e docs/tooling — precedente Omega-GOV/JUNTA-MAPAS). Ultimo valor de teste: Omega5P PR-17."
+      "note": "Carrega o ultimo valor oficial 1871/1877 (GOV-CODEX-SKILLS-ADAPTERS nao toca codigo/teste de produto; e governanca/tooling — precedente Omega-GOV/JUNTA-MAPAS). Ultimo valor de teste: Omega5P PR-17."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -58,7 +58,7 @@
     "blocks_completed": {
       "value": 110,
       "display": "110",
-      "note": "INALTERADO em 110 (GOV-CODEX-AGENT-PERSONAS e governanca/tooling — nao conta como bloco de feature). Ultimo bloco de feature: Omega5P PR-17."
+      "note": "INALTERADO em 110 (GOV-CODEX-SKILLS-ADAPTERS e governanca/tooling — nao conta como bloco de feature). Ultimo bloco de feature: Omega5P PR-17."
     },
     "mobile_backend_contracts": {
       "value": 18,
@@ -84,6 +84,7 @@
     ]
   },
   "notes": [
+    "GOV-CODEX-SKILLS-ADAPTERS (2026-07-28): 8 adapters agents/openai.yaml derivados dos SKILL.md e sincronizados de .claude/skills para .agents/skills; --check confirma 11 skills/36 arquivos identicos. Cinco skills que estavam somente no checkout local foram incorporadas ao versionamento sem modificar nem apagar os originais. Nenhum codigo/teste de produto foi tocado; metricas e blocks_completed carregados sem alteracao.",
     "D-Ω4-KPI-RELATORIO (reconciliação 2026-07-18): a rodada Ω4 (Financeiro do tenant ×1,5) deferiu a atualização de KPI de todos os seus PRs (#206–#225) para este snapshot único. Contagens de execução real ao fim da PÓS-FASE 1: backend 989→1242 (0 fail, 6 skip DB-gated que rodam no CI; 1248 total), smoke web 486→514. Flutter/mobile inalterados (Ω4 foi web/backend-only; política dupla). 8 agregados-feature (Ω4-1..8) → blocks_completed 58→66; mvp_demo 98→99 e mvp_vendavel 83→88 movidos por escopo (módulo Financeiro completo). Cada agregado por junta adversarial + pós-análise; relatório em agent-orchestration/omega/RELATORIO-OMEGA4.md. pr: 226; merge_commit/approved_head null na autoria (backfill pós-merge).",
     "D-Ω3F-KPI-RELATORIO (reconciliação 2026-07-17): a rodada Ω3F deferiu a atualização de KPI de todos os seus PRs (#184–#204) para este snapshot único. Contagens de teste vêm de execução real ao fim da Fase 1: backend 989 (0 fail, 6 skip), smoke web 486. Flutter/mobile inalterados (Ω3F foi web/backend-only). mvp_demo/vendavel movidos (+2/+5) por escopo — hub operacional da OS completo.",
     "JUNTA-MAPAS (2026-07-13): PR docs/agentes-only — cria 3 agentes (.claude/agents/planejador-mapas, dev-mapas, avaliador-mapas) + docs/maps/kb-mapas.md + D-JUNTA-MAPAS + ata J-JUNTA-MAPAS. NENHUM codigo de produto/teste tocado: TODAS as metricas de teste carregam o ultimo valor oficial (Ω-INFRA-1: backend 768/768, Flutter 764/764, smoke web 44/44). blocks_completed inalterado (49) — governanca/tooling nao conta como bloco de feature entregue, mesmo criterio de Ω-GOV/Ω-DOCS. mvp_demo/mvp_vendavel inalterados (nenhum escopo de produto movido). Nenhuma chave/billing/SKU do Google ativado.",

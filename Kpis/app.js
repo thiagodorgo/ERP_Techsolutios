@@ -1,12 +1,17 @@
 const dashboardData = {
   "project": {
     "name": "ERP Techsolutions",
-    "version": "OMEGA5P (em curso)",
-    "updatedAt": "2026-07-27",
-    "sourceBranch": "rodada/omega5p",
-    "summary": "Os números de topo (Backend/Frontend smoke/Flutter/Blocos), a versão e o histórico deste painel são HIDRATADOS em tempo de execução a partir de Kpis/kpis-latest.json e Kpis/kpis-history.json (a fonte de verdade atualizada por PR, com contagem real de execução). Se o painel for aberto direto do disco (file://) sem servidor, o navegador bloqueia a leitura do JSON e o painel cai para os valores embutidos abaixo (mantidos honestos no último merge). Sirva a pasta Kpis/ por HTTP (ex.: `python -m http.server` na raiz do repo) para ver sempre o estado corrente. RODADA Ω5P — Pátios de Recolhimento (SIGPRV, Res. CONTRAN 1025/2026): custódia jurídica de veículo de terceiro (hash-chain probatória I2, motor de diárias reguladas I4, trilha de notificações legais I6, gate de liberação I5 com o dono-paga→autoridade-aprova, elegibilidade ao leilão I8 com 2 pisos que impedem leilão sem notificar o proprietário). Fases 0-3 completas + Fase 4 aberta.",
+    "version": "GOV-CODEX-SKILLS-ADAPTERS",
+    "updatedAt": "2026-07-28",
+    "sourceBranch": "chore/codex-skills-adapters",
+    "summary": "Governança D-INTEROP-CLAUDE-CODEX: as 8 skills que ainda tinham apenas SKILL.md agora possuem agents/openai.yaml derivado da própria skill. O sincronizador confirma 11 skills e 36 arquivos idênticos entre .claude/skills e .agents/skills. Nenhum código/teste de produto foi tocado; backend 1871/1877, frontend smoke 937/937, Flutter 807/807 e 110 blocos são carregados do último valor oficial.",
   },
   "kpis": [
+    {
+      "label": "GOV-CODEX-SKILLS-ADAPTERS",
+      "value": "11 skills com metadata portátil",
+      "note": "8 adapters agents/openai.yaml adicionados; sync-agent-skills --check confirma 11 skills/36 arquivos idênticos entre Claude Code e Codex."
+    },
     {
       "label": "Ω4 (PÓS-FASE 1)",
       "value": "Financeiro do tenant completo (8 agregados)",
@@ -64,18 +69,18 @@ const dashboardData = {
     },
     {
       "label": "Frontend smoke",
-      "value": "908/908",
-      "note": "Fallback embutido (último merge). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.frontend_smoke_tests). test:smoke real do frontend, contagem de execução no PR, 0 fail."
+      "value": "937/937",
+      "note": "Fallback embutido (último valor oficial). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.frontend_smoke_tests). Governança/tooling não toca frontend."
     },
     {
       "label": "Backend tests",
-      "value": "1767/1773",
-      "note": "Fallback embutido (último merge Ω5P PR-12 #294). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.backend_tests). Suíte backend INTEIRA no gate do CI (Postgres+Redis); contagem de execução real por PR; 6 skip DB-gated pré-existentes. KPI-por-PR (D-KPI-PER-PR)."
+      "value": "1871/1877",
+      "note": "Fallback embutido (último valor oficial Ω5P PR-17). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.backend_tests). Governança/tooling não toca backend; 6 skips DB-gated pré-existentes."
     },
     {
       "label": "Blocos concluídos",
-      "value": "102",
-      "note": "Fallback embutido (último merge). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.blocks_completed). Blocos de feature acumulados ao longo das rodadas."
+      "value": "110",
+      "note": "Fallback embutido (último valor oficial). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.blocks_completed). Governança/tooling não conta como bloco de feature."
     },
     {
       "label": "Mobile contracts",

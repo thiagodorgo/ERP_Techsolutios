@@ -1,0 +1,4 @@
+interface:
+  display_name: "SaaS Multi-Tenant"
+  short_description: "Enforce tenant isolation, RBAC, and auditability"
+  default_prompt: "Use $saas-multi-tenant to enforce tenant isolation, RBAC, and auditability in an ERP backend change."

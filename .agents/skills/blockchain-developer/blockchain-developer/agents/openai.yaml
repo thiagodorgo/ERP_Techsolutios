@@ -1,0 +1,4 @@
+interface:
+  display_name: "Blockchain Developer"
+  short_description: "Build secure Web3 apps and smart contracts"
+  default_prompt: "Use $blockchain-developer to build and validate a production-ready Web3 application or smart contract."
