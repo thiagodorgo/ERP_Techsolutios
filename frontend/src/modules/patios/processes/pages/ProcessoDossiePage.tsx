@@ -13,6 +13,7 @@ import { GuiaDebitos } from "../../charges/components/GuiaDebitos";
 import { LancamentoChargeModal } from "../../charges/components/LancamentoChargeModal";
 import { useStatement } from "../../charges/useStatement";
 import { LiberacaoPanel } from "../../release/components/LiberacaoPanel";
+import { LiquidacaoPanel } from "../../settlement/components/LiquidacaoPanel";
 import { getYardOccupancy, listYardsFromApi } from "../../yards/yards.service";
 import { IntegritySeal } from "../components/IntegritySeal";
 import { InspectionSection } from "../components/InspectionSection";
@@ -256,8 +257,20 @@ export function ProcessoDossiePage() {
 
           {/* Ω5P PR-15a — Leilão administrativo (aditivo/merge-safe: os painéis acima ficam intactos). O painel
               orquestra por process.status e consome o módulo backend auction (FSM de leilão, gate I8, sigilo art. 28).
-              A liquidação em cascata (§6º) é a seção 15b, ainda não implementada. */}
+              A liquidação em cascata (§6º) é a seção 15b, no <LiquidacaoPanel> logo abaixo. */}
           <AuctionPanel
+            process={process}
+            context={context}
+            onDone={() => {
+              void load();
+              void reloadStatement();
+            }}
+          />
+
+          {/* Ω5P PR-15b — Liquidação em cascata §6º (aditivo/merge-safe: os painéis acima ficam intactos). O painel
+              orquestra por process.status × existência de liquidação e consome o módulo backend auction.settlement
+              (cascata I7 + ciclo do saldo §12). Silencioso fora de AUCTION_CLOSED sem liquidação. */}
+          <LiquidacaoPanel
             process={process}
             context={context}
             onDone={() => {
