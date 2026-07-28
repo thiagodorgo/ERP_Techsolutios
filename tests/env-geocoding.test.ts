@@ -26,6 +26,12 @@ const PROD_BASE = {
   JWT_REFRESH_SECRET: "a-real-production-refresh-secret",
   // Ω-INFRA-3 (P-SAN-CORS): produção agora exige allowlist de CORS explícita (o gate rejeita vazio/'*').
   CORS_ORIGIN: "https://app.exemplo.com",
+  // Ω5P PR-16 — os 4 gates de produção do portal público (secrets próprios ≠ JWT do ERP, binding de tenant, CORS
+  // allowlist). Estas fixtures parseiam com SUCESSO, então precisam satisfazê-los.
+  PORTAL_SESSION_SECRET: "a-real-production-portal-session-secret",
+  PORTAL_LOG_SECRET: "a-real-production-portal-log-secret",
+  PORTAL_TENANT_ID: "00000000-0000-0000-0000-000000000001",
+  PORTAL_CORS_ORIGIN: "https://consulta.exemplo.com",
 };
 
 test("B1: GEOCODING_ENABLED=false realmente desliga (não coage para true)", () => {

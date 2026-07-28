@@ -1,0 +1,87 @@
+{
+  "id": "PR-16",
+  "fase": "Fase 5 (ABRE) — owner-portal BFF publico ISOLADO + esqueleto PWA + consulta placa+Renavam. A superficie PUBLICA anonima do proprietario: consulta a situacao do veiculo recolhido por placa+Renavam (auto-servico, sem login corporativo). Fundacao de seguranca da Fase 5.",
+  "snapshot_date": "2026-07-28",
+  "branch": "rodada/omega5p",
+  "tipo": "Backend (app isolado + BFF + kit anti-abuso zero-dep) + 1 migracao ADITIVA (PortalAccessLog) + PWA Vite novo (fora de frontend/) + job CI aditivo. ZERO dependencia nova no backend (jose + node:crypto ja existiam). O portal NUNCA sob /api/v1, NUNCA attachAuthenticatedActor, NUNCA reusa JWT/AuthSession do ERP. Read-ports ADITIVOS em impound/charge/yard (nenhuma regra reescrita). Sem PSP. Deploy de producao (dominios/TLS/hosting) = fronteira de ativacao humana.",
+  "models_novos": [
+    "PortalAccessLog (portal_access_logs) — trilha probatoria de todo acesso publico (I10). append-only (trigger BEFORE UPDATE OR DELETE). tenant_id 1o em todo indice. Campos: portal (OWNER|AUTHORITY), action (CHALLENGE_ISSUED|LOOKUP), outcome (FOUND|NOT_FOUND|FACTOR_MISMATCH|RATE_LIMITED|CHALLENGE_FAILED — INTERNO, nunca exposto), process_id? (so FOUND; FK composta tenant-first RESTRICT I9), query_fingerprint (HMAC nunca placa/Renavam crus), ip_hash (HMAC nunca IP cru), user_agent? truncado, session_id?, occurred_at/created_at."
+  ],
+  "migrations": [
+    "20260847000000_add_portal_access_log (ADITIVA up-only: CREATE TABLE portal_access_logs + trigger append-only + RLS ENABLE+FORCE+POLICY(app.current_tenant_id) + CHECK IN(portal/action) + CHECK process_id-so-em-FOUND (IS NULL OR outcome=FOUND) + FK compostas tenant-first RESTRICT (tenant + process) + indices tenant-first x3. NENHUM ALTER/DROP em tabela existente. Provada VIVA por tx-ROLLBACK sem DROP (BEGIN->CREATE+verifica UPDATE/DELETE bloqueados+CHECKs+FK->ROLLBACK->0 linhas), depois migrate deploy oficial (83 migracoes, up-to-date) + generate. Drift so de NOME de indice (repo-wide, deliberado)."
+  ],
+  "modulos": [
+    "src/portal-app.ts (createPortalApp: app Express distinto, helmet/CORS proprios com gate de producao, X-Robots-Tag noindex, SEM attachAuthenticatedActor, monta /portal/v1/owner)",
+    "src/modules/owner-portal/{owner-portal.service,controller,routes,runtime,dto,validators,index}.ts (o BFF; a logica de seguranca: PoW+rate-limit+2 fatores+resposta uniforme+DTO minimizado de 6 campos)",
+    "src/modules/portal-shared/{portal-crypto,token-bucket,anti-abuse,proof-of-work,portal-session,portal-access-log.types,portal-access-log.repository,index}.ts (kit zero-dep: HMAC/timingSafeEqual, token-bucket plugavel, PoW SHA-256 Altcha-style com cap/eviction, sessao JWE jose secret proprio)",
+    "src/config/env.ts (SOMA PORTAL_CORS_ORIGIN/PORTAL_PORT/PORTAL_SESSION_SECRET/PORTAL_LOG_SECRET/PORTAL_TENANT_ID + superRefine de producao fail-closed: secrets obrigatorios, CORS nao-curinga, PORTAL_*!==JWT_* — nenhum gate existente afrouxado)",
+    "src/server.ts (sobe TAMBEM o portal-app em PORTAL_PORT; core :3000 intocado)",
+    "src/modules/impound/{impound.service,impound.repository,impound-prisma.repository}.ts (read-port ADITIVO findByIdentity/findLatestByPlate — so placa; o 2o fator e conferido em tempo constante na camada de seguranca, nunca no banco)",
+    "src/modules/charging/charge.service.ts (read-port ADITIVO getPublicSummary — so total devido minimizado)",
+    "src/modules/yard/yard.service.ts (read-port ADITIVO getPublicYard — so nome+endereco publico)",
+    "prisma/schema.prisma (model PortalAccessLog + 2 back-relations)",
+    "portals/owner-portal/** (PWA Vite vanilla-TS mobile-first: consulta+resultado minimizado, PoW em Web Worker, manifest.webmanifest + sw.js a mao, sem vite-plugin-pwa)",
+    ".github/workflows/ci.yml (job owner-portal aditivo: check+build; sem segredo)"
+  ],
+  "app_ts": "src/app.ts INTOCADO (git diff VAZIO) — o portal e app separado, NUNCA sob /api/v1.",
+  "invariante": "I10 (todo acesso publico registrado em PortalAccessLog imutavel append-only; o log NUNCA e servido em resposta publica; §2.8 no log = so HMAC, nunca placa/Renavam/IP crus). Suporta I9 (minimizacao/retencao; FK RESTRICT). ISOLAMENTO: portal-app distinto, sem attachAuthenticatedActor, sessao JWE (PORTAL_SESSION_SECRET) != JWS do ERP (JWT_SECRET) nos 2 sentidos (issuer/audience/segredo distintos). ANTI-ENUMERACAO: 2 fatores + resposta uniforme (NOT_FOUND=FACTOR_MISMATCH byte-identico, o outcome interno so no log) + Renavam em timingSafeEqual + piso de latencia + guarda stored.length>0 && provided.length>0 (fecha o bypass do 2o fator por Renavam vazio, ciclo 1). CROSS-TENANT: tenant so do binding de deploy (nao-influenciavel pela requisicao) + withTenantRls em toda leitura.",
+  "rns_cobertas": [
+    "CHALLENGE (POST /portal/v1/owner/challenge): emite PoW {challengeId,salt,difficulty,expiresAt} assinado server-side, dificuldade progressiva; rate-limit por IP ANTES de emitir/logar (ciclo 1); loga CHALLENGE_ISSUED.",
+    "LOOKUP (POST /portal/v1/owner/lookup): valida PoW (inualida/expirada/reusada -> CHALLENGE_FAILED + dificuldade sobe) -> rate-limit IP+placa (429 generico) -> 2 fatores placa+Renavam (Renavam em tempo constante) -> RESPOSTA UNIFORME (nao-encontrado x Renavam-errado x nao-autorizado byte-identicos, piso de latencia) -> so FOUND devolve process minimizado {status,statusLabel,yardPublicName,yardPublicAddress,enteredAt,totalDueLabel} + sessao JWE.",
+    "PortalAccessLog: 1 linha por tentativa (o outcome interno nunca na resposta); §2.8 so HMAC.",
+    "Gates de producao fail-closed: prod sem PORTAL_SESSION_SECRET/PORTAL_LOG_SECRET/PORTAL_TENANT_ID -> boot REJEITA; PORTAL_CORS_ORIGIN vazio/curinga -> REJEITA; PORTAL_*===JWT_* -> REJEITA.",
+    "PWA: consulta placa+Renavam + verificacao de seguranca (PoW no Web Worker) + resultado minimizado + estados loading/erro/rate-limit + mensagem uniforme honesta."
+  ],
+  "rns_total_pr": 5,
+  "permissao": "ZERO permissao NOVA, ZERO governed path no ERP (o portal e cadeia PARALELA: binding de tenant -> PoW+rate-limit -> 2 fatores -> sessao de portal). catalog.ts/RBAC/navigation.registry do ERP INTOCADOS.",
+  "estados_obrigatorios": "PWA: loading (verificacao de seguranca) / erro+retry / rate-limit (429 generico) / resposta uniforme honesta (se houver processo correspondente, ele aparece). Backend: 200 (found/not_found uniformes) / 400 (formato invalido, generico) / 429 (rate-limit generico) / 500 generico (sem stack/PII).",
+  "d_records": [
+    "D-Omega5P-PORTAL-01..07 (arquitetura da Fase 5): superficie fisicamente separavel (createPortalApp); tenant sem JWT por binding; BFF chama servico in-process; auth por posse (owner) != sessao do ERP; anti-abuso sem credencial externa; PWA zero-dep; CI aditivo + deploy=fronteira humana. Ver J-OMEGA5P §7.",
+    "PD-Omega5P-ANTIBOT: anti-bot sem credencial externa (PoW hand-rolled + token-bucket + resposta uniforme) e viavel; provedor gerenciado (reCAPTCHA/Turnstile) e portal nacional multi-tenant = Omega6."
+  ],
+  "desvios_do_plano": [
+    "findByIdentity(tenantId, plate) so por placa; o 2o fator (Renavam) e conferido em tempo constante na CAMADA DE SEGURANCA (nao no banco) — evita que o banco vire oraculo de Renavam e preserva a distincao interna NOT_FOUND x FACTOR_MISMATCH que o I10 exige.",
+    "PoW com challenge-store STATEFUL (expiracao + uso unico anti-replay + cap/eviction FIFO) em vez de token assinado stateless.",
+    "Sessao JWE (cifrada) em vez de JWS — o processId interno nem base64-decodavel fica na resposta publica.",
+    "yard.getPublicYard adicionado (o DTO precisa de nome+endereco publico do patio).",
+    "CICLO 1 (reprovacao): validador do portal exige Renavam com >=1 digito (nao 9-11) porque os testes de rate-limit ja existentes usam Renavam de 1 digito; a validacao canonica 9-11 no create do impound foi DEFERIDA ao backlog (fora da superficie owner-portal; a guarda do servico fecha o furo independentemente do dado gravado)."
+  ],
+  "testes_alvo": {
+    "tests/owner-portal.test.ts": "13 (InMemory): enumeracao byte-identica; timing-floor; rate-limit IP+placa -> 429; PoW wrong/expired/reused+dificuldade-sobe; §2.8 allowlist 6 campos + UUID_RE; PortalAccessLog 1-linha so HMAC; CRITICO-1 digitless -> not_found (nivel servico + HTTP 400); HIGH-1 flood /challenge -> 429 + log limitado + cap/eviction FIFO do store.",
+    "tests/owner-portal-rls.test.ts": "1 (DB-gated, roda no CI): binding tenant A nunca le processo de B via RLS FORCE + PortalAccessLog append-only bloqueado por trigger.",
+    "tests/portal-env.test.ts": "12 (MEDIA-1, novo): gates fail-closed do portal em producao (secrets obrigatorios, CORS nao-curinga, PORTAL_*!==JWT_*).",
+    "tests/cors-env.test.ts + tests/env-geocoding.test.ts": "PROD_BASE estendido com os 4 PORTAL_* (CRITICO-2: as 3 assercoes de prod que os novos gates quebravam voltaram ao verde; ja contadas no baseline 1836)."
+  },
+  "bateria": {
+    "npm_run_check": "verde (tsc --noEmit, exit 0)",
+    "npm_run_build": "verde (tsc, exit 0; compila portal-app + owner-portal + portal-shared)",
+    "testes_portal": "owner-portal 13/13 + owner-portal-rls 1/1 (DB-gated) + portal-env 12/12 + cors-env 7/7 + env-geocoding 5/5 = verdes",
+    "migracao": "tx-ROLLBACK vivo sem DROP + migrate deploy (83 migracoes, up-to-date) + generate + validate verde; drift so de nome de indice (repo-wide)",
+    "portal_pwa": "npm --prefix portals/owner-portal run check + build verdes (PoW em chunk proprio)",
+    "git_diff_check": "limpo",
+    "dependencia_nova": "NENHUMA no backend (package.json/lock raiz intocados; jose+node:crypto ja existiam). PWA tem so vite+typescript como devDeps proprios."
+  },
+  "kpi_repo_wide": {
+    "backend": "1836->1862 (+26: owner-portal 13 + owner-portal-rls 1 DB-gated + portal-env 12; as 3 assercoes de env restauradas ja estavam no baseline)",
+    "frontend_smoke": "937 (inalterado — o PWA e app separado com job CI proprio, nao entra no smoke do frontend do ERP)",
+    "flutter_tests": "807 (inalterado)",
+    "blocks": "108->109 (+1 — PR-16 de feature; ABRE a Fase 5)",
+    "mvp_demo": "inalterado",
+    "mvp_vendavel": "inalterado"
+  },
+  "coexistencia": "src/app.ts INTOCADO. catalog.ts/RBAC/navigation.registry do ERP INTOCADOS (cadeia paralela). Nenhum modulo existente teve regra reescrita (so read-ports aditivos em impound/charge/yard). Migracao 100% aditiva. Nenhum agente pre-existente tocado.",
+  "junta": {
+    "agente-secops": "APROVADO (VETO). Isolamento total do ERP; gates de producao fail-closed provados (boot THROW sem secrets/CORS curinga); anti-enumeracao byte-identica; §2.8 (allowlist 6 campos + log so-HMAC); RLS FORCE. Flagou /challenge (HIGH-1) e trust-proxy no deploy — HIGH-1 corrigido no ciclo 1.",
+    "agente-dba-guardiao": "APROVADO. Migracao 20260847000000 provada VIVA por tx-ROLLBACK sem DROP: append-only trigger + RLS ENABLE+FORCE+POLICY + CHECK + FK tenant-first RESTRICT (I9) + indices tenant-first. migrate status up-to-date, validate verde.",
+    "coordenador-de-acessos": "APROVADO. Cadeia paralela isolada: app.ts intocado, sem attachAuthenticatedActor, sessao JWE != JWS do ERP nos 2 sentidos, binding de tenant nao-influenciavel, read-ports minimizados. LOW (superRefine PORTAL_*!==JWT_*) atendido no ciclo 1.",
+    "omega5p-avaliador": "APROVADO (VETO) apos ciclo 1. Escopo/I10/§2.8/aderencia (Res.1025 art.22/art.25§2 + LGPD art.6). CICLO 1: CRITICO-2 regressao de suite env FECHADO (fixtures PROD_BASE restauradas; 12/12 verde) + MEDIA-1 gates testados (portal-env 12/12). backend_tests final reconciliado = 1862.",
+    "critico-adversarial": "APROVADO apos ciclo 1. CICLO 1: CRITICO-1 bypass do 2o fator por Renavam vazio FECHADO (guarda de comprimento tempo-constante, PoC re-rodado -> not_found) + HIGH-1 /challenge throttled + store cap/eviction FECHADO. Defericao da validacao no create (backlog) aceita — a guarda do servico fecha o furo independentemente do dado gravado.",
+    "veredito": "APROVADO 5/5 (1 ciclo de reprovacao — o critico-adversarial pegou o bypass do 2o fator que os outros 4 nao viram). ABRE a Fase 5. Proximo: PR-17 (owner-PWA completo + fotos minimizadas/marca-d agua)."
+  },
+  "pr": null,
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "published_per_pr",
+  "riscos_residuais": "(1) Deploy de producao (dominios publicos + TLS + hosting + trust proxy por saltos) = fronteira de ativacao humana (D-Omega5P-PORTAL-07). (2) Multi-instancia: baldes/challenge-store in-process multiplicam os limites por replica -> NAO escalar out antes de store compartilhado (Redis = Omega6). (3) parte 3 do CRITICO-1 (validacao canonica de Renavam 9-11 digitos no create do impound) deferida ao backlog (higiene de dado; a guarda do servico ja defende). (4) provedor de CAPTCHA gerenciado + portal nacional multi-tenant = Omega6.",
+  "backlog": "Deploy: trust-proxy por saltos no runbook; Redis compartilhado para baldes/challenge-store (multi-instancia) = Omega6. Higiene de dado: validacao canonica de Renavam 9-11 digitos no create do impound.service. UX: normalizacao de placa no match (parsePlate so uppercase x rate-key strip separadores). Ops: log server-side no catch do routes (sem PII). Omega6: provedor de CAPTCHA gerenciado; portal nacional multi-tenant; sweep automatico."
+}

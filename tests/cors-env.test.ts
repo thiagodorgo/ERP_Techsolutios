@@ -11,6 +11,13 @@ const PROD_BASE = {
   NODE_ENV: "production",
   JWT_SECRET: "a-real-production-secret",
   JWT_REFRESH_SECRET: "a-real-production-refresh-secret",
+  // Ω5P PR-16 — o portal público adiciona 4 gates de produção (secrets próprios + binding de tenant + CORS
+  // allowlist). Estas fixtures afirmam parse com SUCESSO, então precisam satisfazer os novos gates (distintos
+  // do JWT do ERP — o gate defense-in-depth rejeita PORTAL_SESSION_SECRET===JWT_SECRET em produção).
+  PORTAL_SESSION_SECRET: "a-real-production-portal-session-secret",
+  PORTAL_LOG_SECRET: "a-real-production-portal-log-secret",
+  PORTAL_TENANT_ID: "00000000-0000-0000-0000-000000000001",
+  PORTAL_CORS_ORIGIN: "https://consulta.exemplo.com",
 };
 
 test("produção SEM CORS_ORIGIN (vazio) → schema REJEITA (fail-closed)", () => {

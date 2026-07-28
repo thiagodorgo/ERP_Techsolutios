@@ -59,6 +59,10 @@ export interface ImpoundRepository {
   createProcess(input: CreateImpoundProcessInput): Promise<ImpoundProcess>;
   listProcesses(input: ListImpoundProcessInput): Promise<ListImpoundProcessResult>;
   findProcessById(tenantId: string, processId: string): Promise<ImpoundProcess | undefined>;
+  // Ω5P PR-16 — read-port do owner-portal: o processo MAIS RECENTE por placa normalizada (1º fator). O 2º fator
+  // (Renavam) é confrontado em TEMPO CONSTANTE na CAMADA DE SEGURANÇA do portal (não no banco) — assim o banco
+  // nunca vira oráculo de Renavam e a distinção interna NOT_FOUND×FACTOR_MISMATCH (I10) é preservada.
+  findLatestByPlate(tenantId: string, plate: string): Promise<ImpoundProcess | undefined>;
   updateProcess(input: UpdateImpoundProcessInput): Promise<ImpoundProcess | undefined>;
   listEvents(tenantId: string, processId: string): Promise<readonly CustodyEvent[]>;
   // Trilha do cross-anchor (audit_logs / lista InMemory) para a reconciliação do verifyChain (I2). Só seq/hash.
@@ -221,6 +225,13 @@ export class InMemoryImpoundRepository implements ImpoundRepository {
   async findProcessById(tenantId: string, processId: string): Promise<ImpoundProcess | undefined> {
     const process = this.processes.get(processId);
     return process?.tenantId === tenantId ? process : undefined;
+  }
+
+  async findLatestByPlate(tenantId: string, plate: string): Promise<ImpoundProcess | undefined> {
+    const target = plate.toUpperCase();
+    return [...this.processes.values()]
+      .filter((process) => process.tenantId === tenantId && (process.vehiclePlate ?? "").toUpperCase() === target)
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())[0];
   }
 
   async updateProcess(input: UpdateImpoundProcessInput): Promise<ImpoundProcess | undefined> {

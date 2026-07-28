@@ -69,6 +69,13 @@ export class YardService {
     return yard;
   }
 
+  // Ω5P PR-16 — READ-PORT do owner-portal (BFF público, ator de SISTEMA no tenant vinculado; SEM RBAC HTTP).
+  // Só o ENDEREÇO PÚBLICO do pátio (nome + endereço) — §2.8/RN-POR-02: NUNCA timezone/branch/capacidade/ids.
+  async getPublicYard(tenantId: string, yardId: string): Promise<{ name: string; address: string } | undefined> {
+    const yard = await this.repository.findYardById(tenantId, yardId);
+    return yard ? { name: yard.name, address: yard.address } : undefined;
+  }
+
   async update(actor: YardActorContext, yardId: string, body: RawRecord): Promise<Yard> {
     await this.get(actor, yardId);
     const updated = await this.repository.updateYard({

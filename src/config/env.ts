@@ -75,12 +75,32 @@ export const envSchema = z.object({
   NOMINATIM_COUNTRY_CODES: z.string().trim().default("br"),
   NOMINATIM_MIN_INTERVAL_MS: z.coerce.number().int().nonnegative().default(1100),
   NOMINATIM_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
+  // ── Ω5P PR-16 — owner-portal (superfície PÚBLICA ISOLADA) ────────────────────────────────────────────────────
+  // D-Ω5P-PORTAL-01/02/05. O portal público é um APP EXPRESS DISTINTO (src/portal-app.ts), porta própria, CORS
+  // próprio, sessão própria (jose, secret PRÓPRIO ≠ JWT do ERP), tenant por BINDING de deploy (não por JWT).
+  // NENHUM reuso de sessão/cookie/auth do ERP (RN-POR-05). Gates de produção espelham os do core (JWT/CORS) —
+  // NÃO afrouxam nada existente; só ADICIONAM exigências para a nova superfície.
+  PORTAL_PORT: z.coerce.number().int().positive().default(3100),
+  // Allowlist de origens do portal (CSV). Vazio = permissivo em dev/test; em produção o gate abaixo exige
+  // allowlist explícita sem curinga (espelha CORS_ORIGIN). Independente do CORS do core.
+  PORTAL_CORS_ORIGIN: z.string().trim().default(""),
+  // Segredo da SESSÃO de portal (jose) — PRÓPRIO, jamais o JWT_SECRET do ERP. Obrigatório em produção.
+  PORTAL_SESSION_SECRET: z.string().trim().min(1).optional(),
+  // Segredo do HMAC do PortalAccessLog (query_fingerprint / ip_hash) e da comparação em tempo constante do 2º
+  // fator — nunca guarda placa/Renavam/IP crus (I10 §2.8). Obrigatório em produção.
+  PORTAL_LOG_SECRET: z.string().trim().min(1).optional(),
+  // Binding de tenant do deploy (host→tenant / var). O portal só enxerga ESTE operador → mata a enumeração
+  // cross-tenant (D-Ω5P-PORTAL-02). Obrigatório em produção; em dev/test pode vir vazio (injetado por teste).
+  PORTAL_TENANT_ID: z.string().trim().default(""),
 }).superRefine((value, context) => {
   const developmentOnlySecrets = new Set([
     "dev-only-change-me",
     "dev-only-refresh-change-me",
     "change-me-in-local-development",
     "change-me-refresh-in-local-development",
+    // Ω5P PR-16 — defaults de dev do portal público (rejeitados em produção, como os do JWT).
+    "dev-only-portal-session-change-me",
+    "dev-only-portal-log-change-me",
   ]);
 
   if (
@@ -123,6 +143,78 @@ export const envSchema = z.object({
     });
   }
 
+  // Ω5P PR-16 — gates de produção do owner-portal (espelham JWT/CORS; NÃO afrouxam nada existente).
+  // Segredos do portal são OBRIGATÓRIOS e ≠ dev-default em produção (mesma disciplina do JWT_SECRET).
+  if (
+    value.NODE_ENV === "production" &&
+    (!value.PORTAL_SESSION_SECRET || developmentOnlySecrets.has(value.PORTAL_SESSION_SECRET))
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["PORTAL_SESSION_SECRET"],
+      message: "PORTAL_SESSION_SECRET must be set to a production secret (never the ERP JWT secret).",
+    });
+  }
+  if (
+    value.NODE_ENV === "production" &&
+    (!value.PORTAL_LOG_SECRET || developmentOnlySecrets.has(value.PORTAL_LOG_SECRET))
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["PORTAL_LOG_SECRET"],
+      message: "PORTAL_LOG_SECRET must be set to a production secret.",
+    });
+  }
+  // O binding de tenant do portal é obrigatório em produção (sem ele o portal não resolve qual operador serve).
+  if (value.NODE_ENV === "production" && !value.PORTAL_TENANT_ID) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["PORTAL_TENANT_ID"],
+      message: "PORTAL_TENANT_ID (binding de tenant do deploy) é obrigatório em produção.",
+    });
+  }
+  // CORS do portal: allowlist explícita sem curinga em produção (espelha o gate do CORS_ORIGIN do core).
+  const portalCorsOrigins = value.PORTAL_CORS_ORIGIN.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  if (
+    value.NODE_ENV === "production" &&
+    (portalCorsOrigins.length === 0 || portalCorsOrigins.some((origin) => origin.includes("*")))
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["PORTAL_CORS_ORIGIN"],
+      message:
+        "PORTAL_CORS_ORIGIN deve ser uma allowlist explícita de origens (sem curinga '*') em produção.",
+    });
+  }
+
+  // LOW (coordenador-de-acessos, defense-in-depth) — o isolamento portal×ERP não pode depender só de convenção:
+  // em produção o segredo de SESSÃO do portal JAMAIS pode ser igual ao JWT do ERP (nem o de LOG igual ao refresh).
+  // Se coincidissem, uma sessão do portal poderia ser confundida/forjada com material do ERP. Fecha por CONTRATO.
+  if (
+    value.NODE_ENV === "production" &&
+    value.PORTAL_SESSION_SECRET &&
+    value.PORTAL_SESSION_SECRET === value.JWT_SECRET
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["PORTAL_SESSION_SECRET"],
+      message: "PORTAL_SESSION_SECRET must not equal JWT_SECRET (isolamento portal×ERP).",
+    });
+  }
+  if (
+    value.NODE_ENV === "production" &&
+    value.PORTAL_LOG_SECRET &&
+    value.PORTAL_LOG_SECRET === value.JWT_REFRESH_SECRET
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["PORTAL_LOG_SECRET"],
+      message: "PORTAL_LOG_SECRET must not equal JWT_REFRESH_SECRET (isolamento portal×ERP).",
+    });
+  }
+
   // Ω1b-2 (R11) — o uso sistemático da instância PÚBLICA do Nominatim é proibido pela política de uso
   // (banimento de IP). Em produção, geocodificação só é permitida contra um provedor próprio/self-host.
   if (
@@ -148,6 +240,14 @@ export const env = {
   CORS_ORIGINS: parsedEnv.CORS_ORIGIN.split(",")
     .map((origin) => origin.trim())
     .filter(Boolean),
+  // Ω5P PR-16 — allowlist do portal derivada (CSV → array). Vazio em dev/test → portal-app usa `origin: true`;
+  // em produção o superRefine garante array não-vazio e sem curinga.
+  PORTAL_CORS_ORIGINS: parsedEnv.PORTAL_CORS_ORIGIN.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+  // Defaults de dev do portal (rejeitados em produção pelo gate acima). Nunca reusa o JWT do ERP.
+  PORTAL_SESSION_SECRET: parsedEnv.PORTAL_SESSION_SECRET ?? "dev-only-portal-session-change-me",
+  PORTAL_LOG_SECRET: parsedEnv.PORTAL_LOG_SECRET ?? "dev-only-portal-log-change-me",
   JWT_SECRET: parsedEnv.JWT_SECRET ?? "dev-only-change-me",
   JWT_REFRESH_SECRET: parsedEnv.JWT_REFRESH_SECRET ?? "dev-only-refresh-change-me",
   CHECKLIST_STORAGE_PROVIDER: parsedEnv.CHECKLIST_STORAGE_PROVIDER ?? parsedEnv.CHECKLIST_ATTACHMENT_STORAGE_DRIVER ?? "local",

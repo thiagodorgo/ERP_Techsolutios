@@ -1,0 +1,49 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+// Ω5P PR-16 — HMAC helpers da superfície PÚBLICA. §2.8 / I10 / RN-POR-02: o PortalAccessLog correlaciona
+// tentativas SEM guardar placa/Renavam/IP CRUS — só o HMAC (query_fingerprint / ip_hash) com PORTAL_LOG_SECRET.
+// A comparação do 2º fator (Renavam) é em TEMPO CONSTANTE (anti-oráculo de timing, OWASP): HMAC de ambos os
+// lados → digests de 32 bytes (comprimento fixo) → timingSafeEqual. Zero dependência nova (só node:crypto).
+
+// Normalização para FINGERPRINTS/CHAVES DE SEGURANÇA (independente do match no banco): maiúsculas + só
+// alfanumérico. Assim "ABC-1234", "abc1234" e "ABC 1234" caem no MESMO bucket/fingerprint — um atacante não
+// contorna o rate-limit por-placa nem despista a correlação inserindo hífen/espaço.
+export function normalizePlateKey(plate: string): string {
+  return plate.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+// Renavam: só dígitos (preserva zeros à esquerda — significativos).
+export function normalizeRenavamKey(renavam: string): string {
+  return renavam.replace(/\D/g, "");
+}
+
+function hmacHex(secret: string, message: string): string {
+  return createHmac("sha256", secret).update(message, "utf8").digest("hex");
+}
+
+// Fingerprint da CONSULTA (placa+Renavam) para o PortalAccessLog — correlaciona a mesma consulta sem PII crua.
+// SEP 0x1E evita colisão de concatenação (placa|renavam ≠ placar|enavam).
+export function queryFingerprint(secret: string, plate: string, renavam: string): string {
+  return hmacHex(secret, `q${normalizePlateKey(plate)}${normalizeRenavamKey(renavam)}`);
+}
+
+// Chave de RATE-LIMIT por PLACA — só a placa (NUNCA placa+Renavam): o atacante que varia o Renavam num brute-force
+// cairia em chaves distintas e escaparia do limite. Fingerprintando só a placa, todo palpite da mesma placa
+// consome o MESMO balde.
+export function plateRateKey(secret: string, plate: string): string {
+  return hmacHex(secret, `p${normalizePlateKey(plate)}`);
+}
+
+// Hash do IP para o log (nunca IP cru) e chave de rate-limit por IP.
+export function ipHash(secret: string, ip: string): string {
+  return hmacHex(secret, `ip${ip.trim()}`);
+}
+
+// Comparação em TEMPO CONSTANTE de dois segredos de comprimento arbitrário: HMAC(a) vs HMAC(b) → 32 bytes cada
+// (comprimento fixo, pré-requisito do timingSafeEqual) → sem oráculo de timing por diferença de comprimento nem
+// por posição do 1º byte divergente. Usada no 2º fator (Renavam).
+export function constantTimeEqual(secret: string, a: string, b: string): boolean {
+  const da = createHmac("sha256", secret).update(a, "utf8").digest();
+  const db = createHmac("sha256", secret).update(b, "utf8").digest();
+  return timingSafeEqual(da, db);
+}

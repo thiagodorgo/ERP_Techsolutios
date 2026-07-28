@@ -1,6 +1,7 @@
 import pino from "pino";
 
 import { createApp } from "./app.js";
+import { createPortalApp } from "./portal-app.js";
 import { env } from "./config/env.js";
 import { createCoreSaasService } from "./modules/core-saas/index.js";
 
@@ -54,6 +55,17 @@ async function main(): Promise<void> {
         jobsWorkerEnabled: env.JOBS_WORKER_ENABLED,
       },
       "ERP Techsolutions API listening",
+    );
+  });
+
+  // Ω5P PR-16 (D-Ω5P-PORTAL-01) — sobe TAMBÉM o portal PÚBLICO num app/porta SEPARADOS (aditivo; não quebra o
+  // core na :3000). Deployável como container próprio. O binding de tenant vem de PORTAL_TENANT_ID (ausente em dev
+  // = o app sobe, mas as consultas falham fechado — sem vazar). Superfície isolada: nenhum middleware de auth do ERP.
+  const portalApp = createPortalApp();
+  portalApp.listen(env.PORTAL_PORT, () => {
+    logger.info(
+      { port: env.PORTAL_PORT, env: env.NODE_ENV, tenantBound: env.PORTAL_TENANT_ID !== "" },
+      "ERP Techsolutions owner-portal (public BFF) listening",
     );
   });
 }
