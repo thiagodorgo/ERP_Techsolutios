@@ -208,6 +208,7 @@ const expectedPermissionCatalog = [
   "checklist_runs:complete",
   "checklist_runs:acknowledge",
   "telemetry:read",
+  "authority_credentials:manage",
 ] as const;
 
 test("cria usuario vinculado a tenant ativo com papel validado", () => {
@@ -368,6 +369,27 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   }
   for (const role of ["field_technician", "technician", "operator", "finance", "inventory", "viewer", "support"] as const) {
     assert.equal(ROLE_PERMISSIONS[role].includes("telemetry:read"), false);
+  }
+
+  // Ω5P PR-18a (D-Ω5P-AUTH-03) — `authority_credentials:manage` (provisionar a credencial da autoridade do
+  // authority-portal) = SÓ tenant_admin + super_admin + platform_admin (herança do catálogo, sem lista explícita).
+  // SoD: quem OPERA o pátio (manager/operator) NÃO provisiona a autoridade que SOLICITA a remoção.
+  for (const role of ["tenant_admin", "super_admin", "platform_admin"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("authority_credentials:manage"), true);
+  }
+  for (const role of [
+    "manager",
+    "operator",
+    "finance",
+    "inventory",
+    "field_technician",
+    "field_dispatcher",
+    "technician",
+    "viewer",
+    "auditor",
+    "support",
+  ] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("authority_credentials:manage"), false);
   }
 
   // Ω5P PR-01 (D-Ω5P-YARD-03) — Pátios/áreas/vagas: `yard:read` = MESMO conjunto de `branches:read`

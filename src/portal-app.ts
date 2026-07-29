@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { pinoHttp } from "pino-http";
 
 import { env } from "./config/env.js";
+import { createAuthorityPortalRouter } from "./modules/authority/index.js";
 import { createOwnerPortalRouter } from "./modules/owner-portal/index.js";
 
 // Ω5P PR-16 (D-Ω5P-PORTAL-01) — o portal PÚBLICO é um app EXPRESS DISTINTO do core (src/app.ts): helmet/CORS
@@ -17,7 +18,7 @@ import { createOwnerPortalRouter } from "./modules/owner-portal/index.js";
 //   - trust proxy PERMANECE desligado (default) → req.ip = socket, não X-Forwarded-For spoofável (o rate-limit
 //     por IP não é burlável por header forjado). Em produção, atrás de proxy confiável, configurar a contagem de
 //     saltos exata no deploy (fronteira de ativação humana — D-Ω5P-PORTAL-07).
-export function createPortalApp(options: { ownerRouter?: Router } = {}): Express {
+export function createPortalApp(options: { ownerRouter?: Router; authorityRouter?: Router } = {}): Express {
   const app = express();
 
   app.use(helmet());
@@ -41,6 +42,10 @@ export function createPortalApp(options: { ownerRouter?: Router } = {}): Express
   );
 
   app.use("/portal/v1/owner", options.ownerRouter ?? createOwnerPortalRouter());
+  // Ω5P PR-18a — 2º BFF ISOLADO (authority-portal): login anti-brute-force da autoridade credenciada. Aditivo — o
+  // ownerRouter segue intacto. MESMO app Express (helmet/CORS/noindex compartilhados), rotas próprias, sessão JWE
+  // com secret PRÓPRIO (PORTAL_AUTHORITY_SESSION_SECRET). NUNCA sob /api/v1, NUNCA reusa auth do ERP.
+  app.use("/portal/v1/authority", options.authorityRouter ?? createAuthorityPortalRouter());
 
   app.use((_request, response) => {
     response.status(404).json({ error: { code: "NOT_FOUND", message: "Route not found." } });

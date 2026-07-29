@@ -43,6 +43,7 @@ import { createTariffRouter } from "./modules/tariffs/index.js";
 import { createYardRouter } from "./modules/yard/index.js";
 import { createJurisdictionRouter } from "./modules/jurisdiction/index.js";
 import { createImpoundRouter } from "./modules/impound/index.js";
+import { createAuthorityCredentialRouter } from "./modules/authority/index.js";
 import { createChargeRouter } from "./modules/charging/index.js";
 import { createReleaseRouter } from "./modules/release/index.js";
 import { createAuctionRouter } from "./modules/auction/index.js";
@@ -151,6 +152,11 @@ export function createApp(service: ICoreSaasService): Express {
   // os saltos da FSM de leilão). ZERO permissão nova. Montado APÓS impound/charging/release (paths .../auction não
   // colidem com nenhum literal existente).
   app.use("/api/v1", attachAuthenticatedActor(), createAuctionRouter());
+  // Ω5P PR-18a — PROVISIONAMENTO da credencial da autoridade (authority-portal). Router NOVO sob /api/v1 (git add
+  // src/app.ts, senão CI route_not_found). CRUD sob a permissão NOVA authority_credentials:manage (tenant_admin +
+  // admins; SoD: NÃO manager/operator). A credencial é PRÓPRIA (≠ User do ERP); a AUTENTICAÇÃO da autoridade é o
+  // BFF isolado (portal-app, /portal/v1/authority), NUNCA aqui. Paths /authority-credentials não colidem.
+  app.use("/api/v1", attachAuthenticatedActor(), createAuthorityCredentialRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createServiceQuoteRouter());
   // Ω3F-4a — Itens do Orçamento (/service-quotes/:id/items) em router próprio: o path não colide
   // com nenhuma rota do service-quotes router (que segue intocado neste bloco).

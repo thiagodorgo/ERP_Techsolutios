@@ -238,6 +238,12 @@ export const PERMISSION_CATALOG = [
   // (o campo ENVIA telemetria via field_location:send, não LÊ o console). A INGESTÃO reusa field_location:send
   // — o consent-gate LGPD é o controle real, não uma permissão nova.
   "telemetry:read",
+  // Ω5P PR-18a (D-Ω5P-AUTH-03) — provisionar a credencial da AUTORIDADE SOLICITANTE (authority-portal): criar,
+  // rotacionar senha, suspender/revogar, listar. Distribuição por HERANÇA do catálogo (SEM lista explícita): só
+  // super_admin/platform_admin (catálogo integral) + tenant_admin (filtro não-`platform:`). NÃO manager/operator/
+  // finance/inventory/etc — SoD: quem OPERA o pátio não PROVISIONA a autoridade (que SOLICITA a remoção). A
+  // credencial provisionada NÃO recebe roles/permissions do ERP e NÃO alcança /api/v1.
+  "authority_credentials:manage",
 ] as const;
 
 export type Permission = (typeof PERMISSION_CATALOG)[number];

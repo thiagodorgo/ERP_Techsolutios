@@ -1622,5 +1622,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-28",
+    "version": "OMEGA5P-PR-18a",
+    "backend_tests": "1896/1903",
+    "frontend_smoke": "937/937",
+    "flutter_tests": "807/807",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "92%",
+    "blocks_completed": 111,
+    "description": "Omega5P PR-18a (Fase 5 — authority-portal FUNDACAO) — 24o bloco de feature. A autoridade solicitante ganha credencial e login proprios, ISOLADOS do ERP e do owner. AuthorityCredential (migracao aditiva 20260849, RLS FORCE + tenant-first + FK RESTRICT + tabela mutavel sem append-only justificada) + provisionamento /api/v1 sob authority_credentials:manage (4 pontas; SoD tenant_admin+admins APENAS) + login no createPortalApp isolado /portal/v1/authority (scrypt node:crypto params OWASP+maxmem+tempo-constante zero-dep; anti-enumeracao byte-identica+DUMMY+250ms; rate-limit IP+credencial+PoW+lockout persistente ATOMICO; sessao JWE aud propria != JWT != owner 2 sentidos; §2.8). PWA Vite de login. Junta PESADA APROVADO 5/5 (0 ciclo): secops (VETO) + coordenador + dba (tx-ROLLBACK) + avaliador (VETO) + critico. MEDIUM (race de lost-update no lockout, PoC Promise.all) CONSERTADO no PR (UPDATE atomico auto-referente + teste de concorrencia; o critico re-condicao 0-CRITICO pleno satisfeita). ABRE a superficie credenciada; solicitar-remocao = PR-18b. Aderencia Res.1025 art.9-I/art.14. backend 1871->1896 (+26 test() novos: 25 memory + 1 DB-gated), frontend_smoke 937 e flutter 807 inalterados, blocks 110->111. Zero regressao (owner 21/21). Zero dep nova. merge_commit null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

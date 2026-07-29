@@ -86,6 +86,10 @@ export const envSchema = z.object({
   PORTAL_CORS_ORIGIN: z.string().trim().default(""),
   // Segredo da SESSÃO de portal (jose) — PRÓPRIO, jamais o JWT_SECRET do ERP. Obrigatório em produção.
   PORTAL_SESSION_SECRET: z.string().trim().min(1).optional(),
+  // Ω5P PR-18a — segredo da SESSÃO do authority-portal (jose) — PRÓPRIO e DISTINTO: ≠ JWT_SECRET do ERP E ≠
+  // PORTAL_SESSION_SECRET do owner (isolamento authority×owner×ERP; um token não verifica no outro). Obrigatório em
+  // produção (gate abaixo espelha o do PORTAL_SESSION_SECRET).
+  PORTAL_AUTHORITY_SESSION_SECRET: z.string().trim().min(1).optional(),
   // Segredo do HMAC do PortalAccessLog (query_fingerprint / ip_hash) e da comparação em tempo constante do 2º
   // fator — nunca guarda placa/Renavam/IP crus (I10 §2.8). Obrigatório em produção.
   PORTAL_LOG_SECRET: z.string().trim().min(1).optional(),
@@ -101,6 +105,8 @@ export const envSchema = z.object({
     // Ω5P PR-16 — defaults de dev do portal público (rejeitados em produção, como os do JWT).
     "dev-only-portal-session-change-me",
     "dev-only-portal-log-change-me",
+    // Ω5P PR-18a — default de dev do authority-portal (rejeitado em produção).
+    "dev-only-portal-authority-session-change-me",
   ]);
 
   if (
@@ -165,6 +171,18 @@ export const envSchema = z.object({
       message: "PORTAL_LOG_SECRET must be set to a production secret.",
     });
   }
+  // Ω5P PR-18a — o segredo da sessão do authority-portal é OBRIGATÓRIO e ≠ dev-default em produção (mesma
+  // disciplina do PORTAL_SESSION_SECRET).
+  if (
+    value.NODE_ENV === "production" &&
+    (!value.PORTAL_AUTHORITY_SESSION_SECRET || developmentOnlySecrets.has(value.PORTAL_AUTHORITY_SESSION_SECRET))
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["PORTAL_AUTHORITY_SESSION_SECRET"],
+      message: "PORTAL_AUTHORITY_SESSION_SECRET must be set to a production secret (never the ERP JWT nor the owner portal secret).",
+    });
+  }
   // O binding de tenant do portal é obrigatório em produção (sem ele o portal não resolve qual operador serve).
   if (value.NODE_ENV === "production" && !value.PORTAL_TENANT_ID) {
     context.addIssue({
@@ -215,6 +233,32 @@ export const envSchema = z.object({
     });
   }
 
+  // Ω5P PR-18a — isolamento authority×owner×ERP POR CONTRATO: em produção o secret da sessão do authority NÃO pode
+  // coincidir com o do ERP (JWT) NEM com o do owner (PORTAL_SESSION_SECRET). Se coincidissem, um token de uma
+  // superfície poderia ser forjado/confundido com material da outra. Fecha o isolamento além da audience.
+  if (
+    value.NODE_ENV === "production" &&
+    value.PORTAL_AUTHORITY_SESSION_SECRET &&
+    value.PORTAL_AUTHORITY_SESSION_SECRET === value.JWT_SECRET
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["PORTAL_AUTHORITY_SESSION_SECRET"],
+      message: "PORTAL_AUTHORITY_SESSION_SECRET must not equal JWT_SECRET (isolamento authority×ERP).",
+    });
+  }
+  if (
+    value.NODE_ENV === "production" &&
+    value.PORTAL_AUTHORITY_SESSION_SECRET &&
+    value.PORTAL_AUTHORITY_SESSION_SECRET === value.PORTAL_SESSION_SECRET
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["PORTAL_AUTHORITY_SESSION_SECRET"],
+      message: "PORTAL_AUTHORITY_SESSION_SECRET must not equal PORTAL_SESSION_SECRET (isolamento authority×owner).",
+    });
+  }
+
   // Ω1b-2 (R11) — o uso sistemático da instância PÚBLICA do Nominatim é proibido pela política de uso
   // (banimento de IP). Em produção, geocodificação só é permitida contra um provedor próprio/self-host.
   if (
@@ -248,6 +292,9 @@ export const env = {
   // Defaults de dev do portal (rejeitados em produção pelo gate acima). Nunca reusa o JWT do ERP.
   PORTAL_SESSION_SECRET: parsedEnv.PORTAL_SESSION_SECRET ?? "dev-only-portal-session-change-me",
   PORTAL_LOG_SECRET: parsedEnv.PORTAL_LOG_SECRET ?? "dev-only-portal-log-change-me",
+  // Ω5P PR-18a — default de dev do authority-portal (rejeitado em produção pelo gate acima). ≠ owner ≠ ERP.
+  PORTAL_AUTHORITY_SESSION_SECRET:
+    parsedEnv.PORTAL_AUTHORITY_SESSION_SECRET ?? "dev-only-portal-authority-session-change-me",
   JWT_SECRET: parsedEnv.JWT_SECRET ?? "dev-only-change-me",
   JWT_REFRESH_SECRET: parsedEnv.JWT_REFRESH_SECRET ?? "dev-only-refresh-change-me",
   CHECKLIST_STORAGE_PROVIDER: parsedEnv.CHECKLIST_STORAGE_PROVIDER ?? parsedEnv.CHECKLIST_ATTACHMENT_STORAGE_DRIVER ?? "local",

@@ -16,6 +16,9 @@ const PROD_OK = {
   CORS_ORIGIN: "https://app.exemplo.com",
   PORTAL_SESSION_SECRET: "a-real-production-portal-session-secret",
   PORTAL_LOG_SECRET: "a-real-production-portal-log-secret",
+  // Ω5P PR-18a — o authority-portal somou um secret de sessão PRÓPRIO obrigatório em produção; o baseline VÁLIDO
+  // do owner precisa incluí-lo (senão os testes de rejeição do owner ficariam vacuamente verdadeiros).
+  PORTAL_AUTHORITY_SESSION_SECRET: "a-real-production-authority-session-secret",
   PORTAL_TENANT_ID: "00000000-0000-0000-0000-000000000001",
   PORTAL_CORS_ORIGIN: "https://consulta.exemplo.com",
 };
