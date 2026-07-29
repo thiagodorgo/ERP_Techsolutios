@@ -1,6 +1,6 @@
 # J-NAV-MENU-PLATFORM-JWT — correção do menu Platform sob JWT
 
-> **Data:** 2026-07-28 · **Branch:** `fix/nav-menu-platform-jwt` ·
+> **Data:** 2026-07-28 · **Branch:** `fix/nav-menu-platform-jwt` · **PR:** #307 ·
 > **Decisão:** `D-NAV-MENU-PLATFORM-JWT` · **Resultado:** APROVADO 6/6
 > (junta mínima 4/4 + especialistas dos ciclos 2/2)
 

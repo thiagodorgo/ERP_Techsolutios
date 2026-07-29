@@ -1,6 +1,6 @@
 # J-nav-menu-platform-jwt — registro operacional
 
-> **Data:** 2026-07-28 · **Branch:** `fix/nav-menu-platform-jwt` ·
+> **Data:** 2026-07-28 · **Branch:** `fix/nav-menu-platform-jwt` · **PR:** #307 ·
 > **Resultado:** APROVADO 6/6
 
 A ata canônica e completa desta correção está em

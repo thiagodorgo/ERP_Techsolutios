@@ -6,7 +6,7 @@
   "release": {
     "block": "Correcao NAV-MENU-PLATFORM — menu de navegacao platform sob JWT real com persistencia Prisma. NAO e bloco de feature",
     "title": "Menu Platform volta a responder sob JWT: pseudo-tenant platform nao entra no RBAC tenant-scoped UUID",
-    "pr": null,
+    "pr": 307,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",

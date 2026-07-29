@@ -37,7 +37,7 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - Conflito herdado registrado: `Kpis/kpis-latest.json` da `main` traz
   `mvp_vendavel=88%`, enquanto a entrada histórica de Ω5P PR-18a registra 92%.
   Este fix preserva o snapshot latest de 88% e não consolida a divergência.
-- `pr`, `merge_commit` e `approved_head`: `null` na autoria; status
+- `pr`: **#307**; `merge_commit` e `approved_head`: `null` na autoria; status
   `published_per_pr`.
 
 ## 2026-07-28 - GOV-CODEX-SKILLS-ADAPTERS

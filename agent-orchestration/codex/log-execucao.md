@@ -19,6 +19,7 @@ outros consumidores permanecem fail-closed. No menu, `platform` não conta como 
 - Backend completo após rebase em Ω5P PR-18a: 1900 pass, 0 fail, 6 skip
   (1906 total); check/build verdes.
 - KPI backend 1900/1906; `blocks_completed=111` carregado da main e inalterado.
+- PR: **#307** (`fix/nav-menu-platform-jwt` → `main`), aberto pronto para revisão.
 
 ## 2026-06-18 - B-106 Adapter GPS nativo real + permissoes Android/iOS
 
