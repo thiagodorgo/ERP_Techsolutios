@@ -22,8 +22,13 @@ export function createSessionAdminRouter(
 ): Router {
   const router = Router();
 
-  router.use(tenantContextMiddleware);
-  router.use(createPersistentRbacContextMiddleware());
+  // O router é montado em /api/v1; estes middlewares pertencem somente às
+  // rotas /sessions e não devem interceptar routers irmãos montados depois.
+  router.use(
+    "/sessions",
+    tenantContextMiddleware,
+    createPersistentRbacContextMiddleware(),
+  );
 
   // Acessos: último login por usuário (derivado de auth_sessions.created_at). Montado ANTES de "/sessions"
   // não é necessário (paths distintos), mas mantém a leitura junto às sessões. Reusa audit.read.

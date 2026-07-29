@@ -1638,5 +1638,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-29",
+    "version": "FIX-NAV-MENU-PLATFORM-JWT",
+    "backend_tests": "1900/1906",
+    "frontend_smoke": "937/937",
+    "flutter_tests": "807/807",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 111,
+    "description": "FIX-NAV-MENU-PLATFORM-JWT — correcao de bug pre-existente, NAO e bloco de feature. GET /api/v1/navigation/menu?scope=platform sob JWT platform_admin/super_admin e CORE_SAAS_PERSISTENCE=prisma retornava 500 porque os routers /me e /sessions, montados no prefixo amplo /api/v1, interceptavam a rota irma e enviavam o pseudo-tenant platform para consultas tenant-scoped com tenant_id UUID. Ambos agora atuam so nos proprios prefixos. Somente Navigation ativa o opt-in do plano de controle; os outros 55 usos no baseline pos-PR-18a permanecem fail-closed, tenants UUID continuam no RBAC persistente e platform nao conta como tenant ativo para itens tenantOnly. JWT e headers legados alimentam o menu pela mesma fonte normalizada. O [0] era falha consequente do teste ao ler body.data apos o 500. Teste protegido 7/7 no Prisma real; 3 cenarios adversariais novos; backend completo apos rebase em Omega5P PR-18a: 1900 pass/0 fail/6 skip (1906 total). O ambiente Prisma local executou 1 gate antes DB-gated. Smoke 937 e Flutter 807 carregados; blocks_completed inalterado em 111. mvp_vendavel carrega 88% do Kpis/kpis-latest.json de origin/main; o historico do PR-18a registra 92%, divergencia herdada e nao consolidada por este fix.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

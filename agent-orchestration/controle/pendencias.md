@@ -1268,3 +1268,36 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - impacto: baixo — cada um declara "em divergência vale a trilha viva (agent-orchestration/, docs/juntas/, o código) e o CLAUDE.md". `API_CONTRACTS.md` marca `(a mapear)`/`(+ CRUD padrão)` onde não foi exaustivo.
 - proximo: manter em dia por PR quando o domínio referenciado mudar (mesma disciplina do PROJECT_MEMORY.md). A fonte canônica de contratos segue sendo `src/modules/**/*.routes.ts`.
 - status: ABERTA (manutenção contínua).
+
+## P-NAV-MENU-PLATFORM — menu `scope=platform` falhava sob JWT/Prisma (2026-07-28)
+
+- descricao: backlog registrado no Ω5P PR-15a: o menu Platform respondia 500 sob JWT
+  real quando a persistência Prisma estava ativa. A leitura de `data[0]` no teste falhava
+  em seguida porque o corpo do erro não possuía `data`.
+- causa raiz: os routers `/me` e `/sessions`, montados no prefixo amplo `/api/v1`,
+  aplicavam seus middlewares também a `/navigation/menu` e encaminhavam o pseudo-tenant literal `platform` ao RBAC
+  tenant-scoped, cuja coluna `tenant_id` é UUID. O router de Navigation também precisava
+  representar explicitamente o contexto de plano de controle.
+- correcao: os middlewares de `/me` e `/sessions` foram limitados aos próprios prefixos; somente Navigation
+  ativa um opt-in explícito para preservar o contexto
+  canônico derivado do JWT assinado no plano de controle. Os outros consumidores do
+  middleware permanecem fail-closed; tenants reais continuam no RBAC persistente e
+  `platform` não habilita itens tenant-only. Nenhum menu/permissão foi hardcoded e o
+  teste protegido permaneceu intocado.
+- validacao: baseline 5/7 → 7/7 no Prisma real; adversarial JWT 3/3; backend
+  completo após rebase em Ω5P PR-18a:
+  1900 pass/0 fail/6 skip (1906 total).
+- status: **RESOLVIDA** por D-NAV-MENU-PLATFORM-JWT.
+
+## P-KPI-PR18A-MVP-VENDAVEL — latest 88% × history 92% (2026-07-29)
+
+- descricao: durante o rebase do FIX-NAV-MENU-PLATFORM-JWT sobre a `main` que
+  recebeu Ω5P PR-18a, foi encontrada divergência herdada: o snapshot canônico
+  `Kpis/kpis-latest.json` mantém `mvp_vendavel=88%`, enquanto a entrada
+  `OMEGA5P-PR-18a` em `Kpis/kpis-history.json` registra `92%`.
+- tratamento neste fix: carrega **88%** do snapshot latest, conforme a regra de
+  carregar o último valor, e preserva a entrada histórica byte a byte. Nenhum
+  percentual foi recalculado ou consolidado silenciosamente.
+- proximo: reconciliar 88% × 92% numa correção de KPI dedicada, com decisão de
+  escopo e justificativa do movimento.
+- status: **ABERTA**; não bloqueia NAV-MENU-PLATFORM.

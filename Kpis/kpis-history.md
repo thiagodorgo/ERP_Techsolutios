@@ -6,6 +6,40 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-07-29 - FIX-NAV-MENU-PLATFORM-JWT
+
+### Resultado
+
+- Corrigido o `500 AUTHORIZATION_CONTEXT_ERROR` de
+  `GET /api/v1/navigation/menu?scope=platform` sob JWT real e persistência Prisma.
+- Causa raiz comprovada: `platform` é o identificador do plano de controle, não um
+  `Tenant` UUID. Os routers `/me` e `/sessions`, montados no prefixo amplo `/api/v1`,
+  interceptavam a rota irmã e tentavam usá-lo em consultas tenant-scoped; o PostgreSQL rejeitava o
+  cast. Ambos agora aplicam seus middlewares somente aos próprios prefixos. O `data[0]`
+  era apenas a falha consequente do teste depois do 500.
+- A fronteira RBAC preserva para o plano de controle as permissões canônicas já
+  derivadas do JWT assinado somente por opt-in do router de navegação. Os outros
+  consumidores permanecem fail-closed; tenants UUID continuam obrigatoriamente
+  resolvidos pelo RBAC persistente. `platform` não conta como tenant ativo para itens
+  `tenantOnly`. A navegação lê JWT e headers legados da mesma fonte normalizada.
+- O teste protegido `navigation-menu-routes.test.ts` passou **7/7** com Prisma real e
+  permaneceu intocado. Três testes adversariais cobrem `super_admin`, `operator`/
+  `viewer` e tenant real sob JWT.
+
+### KPIs
+
+- Backend completo após rebase em Ω5P PR-18a: **1900 pass / 0 fail / 6 skip
+  (1906 total)**, execução real. Um gate DB que o snapshot CI-memory anterior
+  contava como skip executou no ambiente Prisma local.
+- Frontend smoke **937/937** e Flutter **807/807**, carregados por não serem tocados.
+- `blocks_completed`: **111**, carregado de Ω5P PR-18a e inalterado por se
+  tratar de correção, não feature.
+- Conflito herdado registrado: `Kpis/kpis-latest.json` da `main` traz
+  `mvp_vendavel=88%`, enquanto a entrada histórica de Ω5P PR-18a registra 92%.
+  Este fix preserva o snapshot latest de 88% e não consolida a divergência.
+- `pr`, `merge_commit` e `approved_head`: `null` na autoria; status
+  `published_per_pr`.
+
 ## 2026-07-28 - GOV-CODEX-SKILLS-ADAPTERS
 
 ### Resultado
