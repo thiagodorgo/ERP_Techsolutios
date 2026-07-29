@@ -1,0 +1,82 @@
+{
+  "id": "PR-18b",
+  "fase": "Fase 5 — authority solicitar remocao -> ORIGINA WorkOrder(open) -> custodia (sweep existente). SoD: autoridade SOLICITA != operador CONCLUI != [PR-19] autoridade APROVA liberacao. Consome a sessao JWE do PR-18a checando status ACTIVE no consumo (revogacao vale imediatamente).",
+  "snapshot_date": "2026-07-29",
+  "branch": "rodada/omega5p",
+  "tipo": "Backend (modulo authority-removal + metodo SISTEMA-only sem rota no work-orders) + 1 migracao ADITIVA (AuthorityRemovalRequest + widening do CHECK do PortalAccessLog += REMOVAL_REQUESTED) + PWA (tela solicitar remocao) + job CI. ZERO dependencia nova. O portal segue ISOLADO. ZERO permissao nova (reusa a sessao authority do PR-18a).",
+  "models_novos": [
+    "AuthorityRemovalRequest (authority_removal_requests) — a fila de solicitacoes de remocao da autoridade. tenant_id 1o em todo indice; id/credential_id/work_order_id[NULL=enfileirada sem OS]/plate/legal_basis/location_note/status DEFAULT OPEN/session_ref[HMAC]/requested_at/timestamps; @@unique(tenant_id,id) + partial-unique (tenant_id,plate) WHERE status=OPEN [anti-spam atomico] + INDEX(tenant_id,status)/(tenant_id,credential_id)/(tenant_id,work_order_id); FK compostas tenant-first RESTRICT -> tenants + authority_credentials + work_orders; CHECK status IN(OPEN,DISPATCHED,CANCELLED); RLS ENABLE+FORCE+POLICY. Tabela MUTAVEL (transicao por consumidor de console futuro) sem trigger append-only — justificada (a prova do ato vive no PortalAccessLog append-only)."
+  ],
+  "migrations": [
+    "20260850000000_add_authority_removal_request (ADITIVA up-only: CREATE TABLE authority_removal_requests [RLS FORCE + tenant-first + partial-unique anti-spam + FK compostas RESTRICT + CHECK status] + widening do portal_access_logs_action_chk += REMOVAL_REQUESTED [DROP+re-ADD superset, LOGIN ainda aceito]. NENHUM ALTER/DROP de coluna existente. Provada VIVA com INSERTs REAIS + ROLLBACK: partial-unique bloqueia 2a OPEN mesma placa [23505]; FK RESTRICT rejeita credential/work_order inexistente [23503]; CHECK status [23514]; widening aceita REMOVAL_REQUESTED. migrate status up-to-date (86), validate verde, drift-zero nos objetos do PR."
+  ],
+  "modulos": [
+    "src/modules/authority/authority-removal.{types,validators,repository,service,runtime}.ts (a fila + a originacao SISTEMA; resolucao fail-closed do catalogo de remocao [D-Omega5P-AUTH-06]; checagem de status ACTIVE no consumo [D-Omega5P-AUTH-07]; 1 tx withTenantRls: INSERT request [partial-unique anti-spam] + [catalogo resolvido -> origina WorkOrder open na mesma tx + UPDATE work_order_id])",
+    "src/modules/authority/authority-portal.{controller,routes,index}.ts (SOMA POST /portal/v1/authority/removals — credentialId SEMPRE da sessao, nunca do corpo; autoridade/orgao vem da CREDENCIAL, nunca do corpo — anti-spoof; resposta generica {received:true}; rate-limit sessao+IP; log REMOVAL_REQUESTED)",
+    "src/modules/work-orders/work-order.{repository,types}.ts (SOMA originateSystemRemovalWorkOrder — metodo SISTEMA-only ADITIVO, SEM rota/controller, inalcancavel por HTTP; espelha openFromRemoval; OS SEMPRE status open, created_by NULL, sem vehicleId; titulo/descricao white-label so com a placa, NUNCA o nome do orgao)",
+    "src/modules/portal-shared/portal-access-log.types.ts (SOMA REMOVAL_REQUESTED ao allowlist de action)",
+    "prisma/schema.prisma (model AuthorityRemovalRequest + back-relations Tenant/WorkOrder/AuthorityCredential)",
+    "portals/authority-portal/src/{api,main}.ts (SOMA tela solicitar remocao: placa->local->fundamento->confirmacao; consome a sessao JWE do login; estados loading/vazio/erro/sessao-expirada[->login]/offline; white-label PT-BR)"
+  ],
+  "app_ts": "src/app.ts INTOCADO (o PR-18b nao adiciona rota alguma sob /api/v1 — so estende o authorityRouter ja montado no portal-app.ts isolado). O metodo SISTEMA-only do work-orders e ADITIVO ao repositorio, SEM rota/controller — inalcancavel por HTTP (confirmado por grep: unico consumidor e o authority-removal.repository.ts dentro da tx).",
+  "invariante": "SoD TRIPLICE: autoridade SOLICITA (este PR) != operador CONCLUI a OS (a custodia so abre na CONCLUSAO, via o sweep reconcileTenantRemovals ja existente, INTOCADO) != [PR-19] autoridade APROVA liberacao. A OS nasce SEMPRE status=open — NUNCA auto-completed (I1/I3 preservados: vaga+vistoria ainda exigidas do operador de campo). ANTI-SPOOF DO ORGAO: authority_name/credentialId/service_catalog do CORPO sao ignorados — o autor e sempre o credential_id da SESSAO; a OS e neutra (nunca carrega o nome do orgao). REVOGACAO NO CONSUMO (D-Omega5P-AUTH-07): a credencial e recarregada sob RLS pelo credentialId da sessao e o status=ACTIVE e exigido ANTES de qualquer escrita — uma credencial SUSPENDED/REVOKED com JWE ainda valida (dentro do TTL) da 401, nada criado. FAIL-CLOSED DO CATALOGO (D-Omega5P-AUTH-06): o catalogo de remocao e resolvido SERVER-SIDE (o unico service_catalog ATIVO com custody_profile_id do tenant); 0 ou >=2 catalogos -> fila-pura (QUEUED, work_order_id NULL) — NUNCA chuta um catalogo (evitaria aplicar jurisdicao/tarifa errada). ANTI-SPAM: partial-unique (tenant,plate) WHERE OPEN, atomica (23505 -> duplicata tratada, nada extra criado). ATOMICIDADE: o INSERT da request + a originacao da OS estao na MESMA tx (erro no meio -> rollback total, sem orfaos). §2.8: resposta SEMPRE generica {received:true} p/ originada/enfileirada/duplicada (anti-oraculo); log so HMAC (ip_hash/credKey), NUNCA placa/legalBasis/credentialId/tenant_id/OS id.",
+  "rns_cobertas": [
+    "POST /portal/v1/authority/removals (sessao JWE): pipeline rate-limit(sessao,ip)->resolveAuthoritySession(401 uniforme)->findConsumptionContext sob RLS[status!=ACTIVE->401]->valida corpo->resolve catalogo(fail-closed)->1 tx: INSERT AuthorityRemovalRequest(OPEN) + [catalogo resolvido -> WorkOrder(open) na mesma tx + UPDATE work_order_id]->log REMOVAL_REQUESTED. Resposta SEMPRE {received:true}.",
+    "ORIGINACAO SISTEMA (originateSystemRemovalWorkOrder): OS sempre open, created_by NULL, sem vehicleId, titulo/descricao com a placa apenas (sem nome do orgao). Inalcancavel por HTTP.",
+    "ANTI-SPAM atomico: 1 remocao OPEN por placa/tenant (partial-unique), normalizacao canonica da placa (maiuscula/hifen/espaco colidem).",
+    "FAIL-CLOSED do catalogo: 0/>=2 service_catalog ATIVO com custody_profile_id -> fila-pura sem OS.",
+    "REVOGACAO no consumo: credencial SUSPENDED/REVOKED com sessao valida -> 401, nada criado.",
+    "Integracao com o sweep EXISTENTE (intocado): completar a OS -> reconcileTenantRemovals -> 1 ImpoundProcess em RECEPCAO (custodia so na conclusao)."
+  ],
+  "rns_total_pr": 6,
+  "permissao": "ZERO permissao NOVA. Reusa a sessao authority (JWE) do PR-18a — sem RBAC do ERP nesta rota (a autoridade nao alcanca /api/v1). O consumidor futuro da fila (OPEN->DISPATCHED/CANCELLED, no console do operador) DEVE ser sob /api/v1+attachAuthenticatedActor+RBAC — NAO implementado neste PR (nota do coordenador-de-acessos, fechada corretamente: nenhuma rota de transicao foi adicionada).",
+  "estados_obrigatorios": "PWA solicitar remocao: loading / vazio / erro generico / sessao expirada (redireciona ao login) / offline. Backend: 200 {received:true} generico (originada/enfileirada/duplicada indistinguiveis) / 401 SESSION_INVALID uniforme (ausente/expirada/forjada/audience-owner/nao-ACTIVE) / 429 rate-limit generico / 400 BAD_REQUEST (formato).",
+  "d_records": [
+    "D-Omega5P-AUTH-06 (ratificada pela junta): resolucao do catalogo de remocao SERVER-SIDE, fail-closed (0/>=2 -> fila-pura, nunca chuta). O wire para SETAR custody_profile_id no service-catalog fica FORA do 18b (fatia propria).",
+    "D-Omega5P-AUTH-07 (ratificada pela junta, fecha a nota do coordenador no 18a): a sessao JWE e stateless — suspend/revoke barram login futuro mas NAO invalidam uma JWE ja emitida. O consumo (originar remocao) RECARREGA a credencial sob RLS e exige status=ACTIVE ANTES de qualquer escrita.",
+    "D-Omega5P-AUTH-08 (18b): a OS originada e SEMPRE status=open (metodo SISTEMA-only forca isso); a custodia so abre na CONCLUSAO pelo operador de campo via o sweep ja existente — o 18b nao toca reconcileTenantRemovals."
+  ],
+  "desvios_do_plano": [
+    "F1 (LOW, achado do critico-adversarial, CONSERTADO no proprio PR): isOpenRemovalUniqueViolation casava QUALQUER string \"23505\" na mensagem de erro (nao so a constraint da placa) — fragil, hoje inofensivo mas corrigido por precaucao (casa so authority_removal_requests_open_plate_key).",
+    "REBASE pos-junta: o branch foi avancado para origin/main durante a finalizacao, pegando o PR #307 do CODEX (fix do NAV-MENU-PLATFORM — a interop Claude<->Codex funcionou de verdade: o Codex seguiu o estudo/ordem de servico e consertou via AGENTS.md). Feito com git stash seguro (sem perda); bateria re-confirmada pos-rebase.",
+    "8 falhas PRE-EXISTENTES (work-order-cancel-duplicate 6 + work-order-map/geocode RBAC 2) sinalizadas pelo dev e CONFIRMADAS pelo avaliador via git stash (reproduzem identicas no HEAD limpo sem o diff do PR-18b) — artefato local, nao bloqueiam, fora do escopo deste PR."
+  ],
+  "testes_alvo": {
+    "tests/authority-removal.test.ts": "10 (sempre-roda): SoD (OS sempre open) · anti-spoof (credentialId/authority_name/service_catalog do corpo IGNORADOS, OS sem orgao) · revogacao no consumo (SUSPENDED/REVOKED -> 401, nada criado) · anti-spam (normalizacao canonica de placa) · fail-closed do catalogo · §2.8 (resposta generica sem UUID; log so HMAC) · sessao ausente/expirada/forjada/audience-owner -> 401 uniforme · rate-limit sessao+IP -> 429 · 400 formato.",
+    "tests/authority-removal-rls.test.ts": "4 (DB-gated, rodado ao vivo contra Postgres): origem ATOMICA (INSERT request + WorkOrder na mesma tx) + integracao end-to-end SoD (solicitar -> OS open -> completar -> sweep -> 1 ImpoundProcess em RECEPCAO) · partial-unique 23505 real (Promise.all) · fail-closed com SQL real (0 e >=2 catalogos) · cross-tenant RLS (sessao de A nunca origina em B)."
+  },
+  "bateria": {
+    "npm_run_check": "verde (tsc --noEmit) — reconfirmado pos-rebase para origin/main (#307 do Codex)",
+    "npm_run_build": "verde",
+    "testes_authority_removal": "10/10 (sempre-roda) + 4/4 (DB-gated, Postgres real) = 14/14",
+    "regressao_authority_18a": "25/25 (authority-portal 12 + authority-credential 6 + authority-env 7) — intacto",
+    "regressao_nav_menu_platform": "7/7 (fix do Codex #307, confirmado apos o rebase)",
+    "migracao": "provada VIVA com INSERTs reais + ROLLBACK (partial-unique/FK/CHECK/widening); migrate status up-to-date (86); validate verde; drift-zero",
+    "pwa": "npm --prefix portals/authority-portal run build verde",
+    "git_diff_check": "limpo",
+    "dependencia_nova": "NENHUMA"
+  },
+  "kpi_repo_wide": {
+    "backend": "1900->1910 (value, CI-memoria: +10 sempre-roda) / total 1906->1920 (+14: 10 sempre-roda + 4 DB-gated novos). Baseline 1900/1906 e o valor pos-rebase (ja inclui o fix FIX-NAV-MENU-PLATFORM-JWT do Codex #307, que corrigiu 2 falhas pre-existentes e somou 3 testes adversariais). Sobre o Omega5P PR-18a (1896).",
+    "frontend_smoke": "937 (inalterado — o PWA authority e app separado com job CI proprio)",
+    "flutter_tests": "807 (inalterado)",
+    "blocks": "111->112 (+1 — PR-18b de feature; o FIX-NAV-MENU-PLATFORM-JWT do Codex ficou em 111 por ser correcao, nao feature)",
+    "mvp_demo": "inalterado",
+    "mvp_vendavel": "inalterado"
+  },
+  "coexistencia": "owner-portal/impound.reconcile/charge/auction/release git-diff VAZIO (so consome o sweep ja existente, sem tocar). Migracao aditiva. Nenhuma dependencia nova. src/app.ts intocado. Nenhum agente pre-existente tocado.",
+  "junta": {
+    "agente-secops": "APROVADO (VETO; 0 critico). Revogacao ANTES de qualquer escrita; anti-spoof do orgao; fail-closed do catalogo; OS sempre open; metodo SISTEMA inalcancavel por HTTP; §2.8; rate-limit; isolamento; gates de env intactos. MEDIA nao-bloqueante (timing residual, piso 200ms) -> backlog.",
+    "critico-adversarial": "APROVADO (0 CRITICO). Os 8 vetores resistiram. F1 (LOW: isOpenRemovalUniqueViolation casava qualquer 23505) CONSERTADO no PR. F2/F4/F5 (INFO) -> backlog.",
+    "coordenador-de-acessos": "APROVADO. credentialId so da sessao; revogacao antes de qualquer escrita; SoD triplice provado; credencial nao alcanca /api/v1; a fila NAO tem transicao neste PR (consumidor futuro sob RBAC); withTenantRls em toda escrita.",
+    "agente-dba-guardiao": "APROVADO. Migracao 20260850 provada VIVA com INSERTs reais + ROLLBACK (partial-unique/FK/CHECK/widening todos provados). RLS FORCE confirmado ao vivo; tenant-first; migrate status up-to-date (86); drift-zero. Nota de higiene (debris de teste) -> backlog.",
+    "omega5p-avaliador": "APROVADO_CONDICIONADO -> APROVADO (condicao=F1, ja consertado). Escopo (contra o merge-base real: owner/charge/auction/release/impound.reconcile intocados; zero dep nova). SoD+I1/I3 intactos. Ratificou D-06/D-07. Confirmou as 8 falhas pre-existentes via git stash (nao bloqueiam). backend 1896->1910 na sua contagem original; reconciliado para 1900->1910/1906->1920 pos-rebase do #307.",
+    "veredito": "APROVADO 5/5 (0 ciclo de reprovacao; 1 LOW consertado no proprio PR). Rebase pos-junta pegou o PR #307 do Codex (interop funcionando). Fecha o loop: PR-18a fundacao + PR-18b solicitar remocao. Proximo: PR-19 (aprovar liberacao in-system + SoD + hardening LGPD final)."
+  },
+  "pr": null,
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "published_per_pr",
+  "riscos_residuais": "(1) backlog: timing residual ACTIVE x revogada (MEDIA do secops, piso 200ms ja mitiga); F2 colisao de nextCode sob originacoes concorrentes de placas distintas (retry opcional); F4 sem quota diaria por credencial (rate-limit ja limita); F5 InMemory nao-atomico (memory/test-only, producao=Prisma atomico); debris de tenants de teste no teardown (higiene, nao seguranca). (2) o wire para SETAR custody_profile_id no service-catalog (para o catalogo de remocao existir de fato em producao) fica FORA do 18b — fatia propria necessaria antes do E2E de producao funcionar. (3) o consumidor da fila (console do operador, OPEN->DISPATCHED/CANCELLED) e PR futuro sob RBAC.",
+  "backlog": "Wire de custody_profile_id no service-catalog (admin, fatia propria — pre-requisito p/ o E2E de producao). Consumidor da fila AuthorityRemovalRequest no console do operador sob /api/v1+RBAC (PR futuro). MEDIA: write dummy simetrico no caminho revogado (timing). F2: retry/sequencia dedicada p/ nextCode sob concorrencia de placas distintas. F4: quota diaria por credencial. Debris de tenants de teste no teardown — investigar tenant.deleteMany."
+}

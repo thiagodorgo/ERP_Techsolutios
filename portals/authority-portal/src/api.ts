@@ -36,6 +36,35 @@ function solvePow(challenge: Challenge): Promise<string> {
   });
 }
 
+// Ω5P PR-18b — solicitar remoção. Consome a SESSÃO JWE do login (Bearer). A resposta é SEMPRE genérica
+// (200 {received:true}) para {originada, enfileirada, duplicada} — o portal não confirma/nega origem nem fila
+// (anti-oráculo). 401 = sessão expirada/revogada → volta ao login. NUNCA envia credentialId/órgão (vem da sessão).
+export type RemovalInput = { readonly plate: string; readonly location?: string; readonly legalBasis?: string };
+
+export type RemovalOutcome =
+  | { readonly kind: "received" }
+  | { readonly kind: "session_expired" }
+  | { readonly kind: "rate_limited" }
+  | { readonly kind: "invalid" }
+  | { readonly kind: "error" };
+
+export async function requestRemoval(session: string, input: RemovalInput): Promise<RemovalOutcome> {
+  try {
+    const response = await fetch("/portal/v1/authority/removals", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${session}` },
+      body: JSON.stringify({ plate: input.plate, location: input.location, legalBasis: input.legalBasis }),
+    });
+    if (response.status === 200) return { kind: "received" };
+    if (response.status === 401) return { kind: "session_expired" };
+    if (response.status === 429) return { kind: "rate_limited" };
+    if (response.status === 400) return { kind: "invalid" };
+    return { kind: "error" };
+  } catch {
+    return { kind: "error" };
+  }
+}
+
 export async function login(username: string, password: string): Promise<LoginOutcome> {
   try {
     const challenge = await requestChallenge();

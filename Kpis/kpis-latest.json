@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-29",
-  "version": "FIX-NAV-MENU-PLATFORM-JWT",
+  "version": "OMEGA5P-PR-18b",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Correcao NAV-MENU-PLATFORM — menu de navegacao platform sob JWT real com persistencia Prisma. NAO e bloco de feature",
-    "title": "Menu Platform volta a responder sob JWT: pseudo-tenant platform nao entra no RBAC tenant-scoped UUID",
-    "pr": 307,
+    "block": "Omega5P PR-18b — Fase 5: authority solicitar remocao -> origina WorkOrder(open) -> custodia (sweep). SoD: autoridade SOLICITA != operador CONCLUI != [PR-19] autoridade APROVA. Fecha o loop authority-portal (fundacao 18a + acao 18b)",
+    "title": "Omega5P PR-18b: a autoridade solicita a remocao — origina uma OS aberta (nunca completed) por metodo SISTEMA estreito, com fail-closed do catalogo, anti-spoof do orgao e revogacao valendo no consumo; junta PESADA 5/5 (0 ciclo; 1 LOW consertado no PR)",
+    "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "FIX-NAV-MENU-PLATFORM-JWT. Corrige o 500 de GET /api/v1/navigation/menu?scope=platform sob JWT platform_admin/super_admin quando CORE_SAAS_PERSISTENCE=prisma. Causa raiz: os routers /me e /sessions, montados no prefixo amplo /api/v1, aplicavam seus middlewares a rota irma /navigation/menu e enviavam o pseudo-tenant platform para consultas tenant-scoped cujo tenant_id e UUID; o PostgreSQL rejeitava o cast. Ambos agora atuam somente nos proprios prefixos. Somente o router de navegacao ativa a opcao explicita que preserva as permissoes canonicas ja derivadas do JWT assinado para o plano de controle; os outros 55 usos do middleware no baseline pos-PR-18a permanecem fail-closed e tenants UUID continuam exigindo RBAC persistente. Platform tambem deixa de contar como tenant ativo para itens tenantOnly. A rota usa uma unica fonte de permissoes normalizada pelo tenantContextMiddleware para JWT e headers legados. Teste protegido 7/7 no ambiente Prisma real; 3 cenarios adversariais novos; suite backend completa rebaseada em Omega5P PR-18a com 1900 pass/0 fail/6 skip (1906 total). Frontend 937/937 e Flutter 807/807 carregados; blocks_completed permanece 111 por ser fix, nao feature.",
-    "status_label": "NAV-MENU-PLATFORM corrigido sob JWT/Prisma; isolamento platform x tenant preservado; 1900/1906 backend, 0 falhas"
+    "summary": "Omega5P PR-18b — AUTHORITY SOLICITAR REMOCAO (Fase 5). A autoridade credenciada (sessao JWE do PR-18a) chama POST /portal/v1/authority/removals para solicitar a remocao de um veiculo. O BFF RECARREGA a credencial sob RLS e EXIGE status=ACTIVE ANTES de qualquer escrita (D-Omega5P-AUTH-07 — fecha a nota do coordenador no 18a: revogacao vale mesmo com JWE ainda valida). Resolve o catalogo de remocao SERVER-SIDE (o unico service_catalog ATIVO com custody_profile_id do tenant); 0 ou >=2 -> FAIL-CLOSED, fila-pura sem OS, nunca chuta (D-Omega5P-AUTH-06). Numa UNICA tx: INSERT AuthorityRemovalRequest(OPEN) [partial-unique anti-spam atomica] + origina o WorkOrder SEMPRE status=open (metodo SISTEMA-only ADITIVO, sem rota, inalcancavel por HTTP; a OS e NEUTRA, nunca carrega o nome do orgao — anti-spoof: authority_name/credentialId do corpo sao ignorados, o autor e sempre a sessao). A custodia SO abre quando o OPERADOR DE CAMPO CONCLUI a OS, via o sweep reconcileTenantRemovals JA EXISTENTE (intocado) — SoD triplice preservado (autoridade SOLICITA != operador CONCLUI != [PR-19] autoridade APROVA liberacao); I1/I3 intactos (vaga+vistoria ainda exigidas). Resposta SEMPRE generica {received:true} (anti-oraculo); §2.8 (log so HMAC). Migracao aditiva 20260850 (AuthorityRemovalRequest RLS FORCE + FK compostas tenant-first RESTRICT + partial-unique + widening do PortalAccessLog += REMOVAL_REQUESTED), provada VIVA com INSERTs reais + ROLLBACK. PWA: tela solicitar remocao. ZERO dependencia nova, ZERO permissao nova. JUNTA PESADA APROVADO 5/5 (0 ciclo): secops (VETO) + critico-adversarial (achou 1 LOW — isOpenRemovalUniqueViolation casava qualquer 23505, CONSERTADO no proprio PR) + coordenador-de-acessos + dba-guardiao (migracao provada com INSERTs reais) + avaliador (VETO; confirmou as 8 falhas pre-existentes via git stash, nao-bloqueantes). REBASE POS-JUNTA: o branch pegou o PR #307 do CODEX (fix do NAV-MENU-PLATFORM que eu havia preparado como estudo/ordem de servico) — A INTEROP CLAUDE<->CODEX FUNCIONOU DE VERDADE, o Codex seguiu o AGENTS.md e consertou a causa-raiz com raio de impacto zero. Bateria re-confirmada pos-rebase (nav-menu 7/7, authority-removal 14/14, authority 18a 25/25). Fecha o loop authority-portal (18a fundacao + 18b acao). backend 1900->1910 (value, +10 sempre-roda) / 1906->1920 (total, +14), frontend_smoke 937 e flutter 807 inalterados, blocks 111->112. Aderencia CTB art.269 + Res.1025 art.9-I/art.14. Proximo: PR-19 (aprovar liberacao in-system + SoD + hardening LGPD final).",
+    "status_label": "Omega5P PR-18b: authority solicitar remocao (origina OS open->custodia so na conclusao; SoD triplice; fail-closed do catalogo; revogacao no consumo); junta 5/5; backend 1900->1910, blocks 111->112"
   },
   "metrics": {
     "flutter_tests": {
@@ -27,10 +27,10 @@
       "note": "937 inalterado no Omega5P PR-18a (o PWA authority e app separado com job CI proprio). Ultimo valor do Omega5P PR-15b."
     },
     "backend_tests": {
-      "value": 1900,
-      "total": 1906,
-      "display": "1900/1906",
-      "note": "Execucao REAL da suite backend completa apos rebase em Omega5P PR-18a: 1900 pass, 0 fail e 6 skip DB-gated (1906 total). O ambiente Prisma local executou 1 gate que o snapshot CI-memory anterior contava como skip; o total cresceu em +3 pelos testes adversariais JWT/navigation."
+      "value": 1910,
+      "total": 1920,
+      "display": "1910/1920",
+      "note": "+14 test() novos (Omega5P PR-18b authority solicitar remocao): authority-removal.test.ts 10 (sempre-roda: SoD/anti-spoof/revogacao-no-consumo/anti-spam/fail-closed/§2.8/401-uniforme/429/400) + authority-removal-rls.test.ts 4 (DB-gated: origem atomica+integracao SoD end-to-end via sweep real/partial-unique real/fail-closed SQL real/cross-tenant RLS). value 1910 = sempre-roda sobre 1900 (pos-fix FIX-NAV-MENU-PLATFORM-JWT #307 do Codex); total 1920 inclui os 4 DB-gated novos. Migracao 20260850 provada com INSERTs reais + ROLLBACK. F1 (achado do critico, isOpenRemovalUniqueViolation casava qualquer 23505) consertado no PR. Nenhuma dependencia nova."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 111,
-      "display": "111",
-      "note": "INALTERADO em 111: FIX-NAV-MENU-PLATFORM-JWT corrige uma falha pre-existente e nao conta como bloco de feature. Ultimo bloco de feature: Omega5P PR-18a."
+      "value": 112,
+      "display": "112",
+      "note": "Omega5P PR-18b (authority solicitar remocao: origina WorkOrder(open) -> custodia via sweep existente; SoD triplice; migracao AuthorityRemovalRequest) -> +1 sobre 111 (o FIX-NAV-MENU-PLATFORM-JWT do Codex #307 ficou em 111 por ser correcao, nao feature). Fecha o loop authority-portal (18a+18b). Proximo: PR-19 (aprovar liberacao in-system)."
     },
     "mobile_backend_contracts": {
       "value": 18,

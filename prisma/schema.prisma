@@ -62,6 +62,7 @@ model Tenant {
   portal_access_logs            PortalAccessLog[]
   portal_release_requests       PortalReleaseRequest[]
   authority_credentials         AuthorityCredential[]
+  authority_removal_requests    AuthorityRemovalRequest[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
   financial_titles              FinancialTitle[]
@@ -2181,6 +2182,9 @@ model WorkOrder {
   // como yard_spots_current_process_key), NÃO por cardinalidade Prisma — um @@unique cheio exigiria declarar
   // a coluna e mudaria a semântica de NULL. Prisma vê one-to-many; o DB garante o "no máx. 1".
   impound_processes               ImpoundProcess[]
+  // Ω5P PR-18b — back-relation one-to-MANY: a AuthorityRemovalRequest liga a OS que ela originou (work_order_id).
+  // Metadata-only (nenhuma coluna nova em work_orders); a FK vive na tabela da solicitação.
+  authority_removal_requests      AuthorityRemovalRequest[]
   tenant                          Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   updated_by_user                 User?                 @relation("WorkOrderUpdatedBy", fields: [tenant_id, updated_by], references: [tenant_id, id], onDelete: Restrict)
 
@@ -2922,12 +2926,47 @@ model AuthorityCredential {
   created_by         String?   @db.Uuid // userId do admin do ERP que provisionou (metadata; sem FK dura)
   created_at         DateTime  @default(now()) @db.Timestamptz(6)
   updated_at         DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
-  tenant             Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  tenant             Tenant                    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  removal_requests   AuthorityRemovalRequest[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, username])
   @@index([tenant_id, status])
   @@map("authority_credentials")
+}
+
+// Ω5P PR-18b — AuthorityRemovalRequest: SOLICITAÇÃO de remoção originada pela AUTORIDADE credenciada no
+// authority-portal (CTB art.269; Res. 1025 art.9º-I identificação da autoridade + art.14 Termo: órgão/fundamento/
+// local). ORIGINA uma WorkOrder(open) quando o catálogo de remoção resolve (D-Ω5P-AUTH-06, exatamente 1 ATIVO com
+// custody_profile_id); senão fica ENFILEIRADA (work_order_id NULL). SoD: a OS nasce 'open' — a CUSTÓDIA só abre na
+// CONCLUSÃO pela operação de campo (o sweep dispara). autoria = credential_id da SESSÃO (nunca do corpo — anti-spoof;
+// o nome do órgão NÃO entra na OS). TABELA MUTÁVEL (transição futura OPEN→DISPATCHED/CANCELLED por console) — SEM
+// trigger append-only: a PROVA do ato vive no PortalAccessLog (append-only, ação REMOVAL_REQUESTED). Anti-spam =
+// índice PARCIAL único raw-only (tenant, plate) WHERE status='OPEN' (no máx. 1 ABERTA por placa — não declarado no
+// Prisma model, como todos os partial-unique da casa). FK compostas tenant-first RESTRICT (I9). RLS ENABLE+FORCE+
+// POLICY. §2.8: session_ref = ref OPACA (HMAC truncado, nunca a JWE); nenhum dado pessoal do proprietário/agente.
+model AuthorityRemovalRequest {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String   @db.Uuid
+  credential_id String   @db.Uuid
+  work_order_id String?  @db.Uuid // NULL = ENFILEIRADA (0/≥2 catálogos → fail-closed); setado quando origina a OS
+  plate         String // normalizada (maiúsculas/alfanumérica) — chave da partial-unique anti-spam
+  legal_basis   String? // fundamento legal (art.14); texto curto sanitizado
+  location_note String? // local do bem (art.14); texto curto sanitizado (§2.8: sem PII do proprietário)
+  status        String   @default("OPEN") // OPEN | DISPATCHED | CANCELLED (app-validado + CHECK)
+  session_ref   String? // ref OPACA da sessão (HMAC truncado; NUNCA a JWE crua)
+  requested_at  DateTime @default(now()) @db.Timestamptz(6)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant     Tenant              @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  credential AuthorityCredential @relation(fields: [tenant_id, credential_id], references: [tenant_id, id], onDelete: Restrict)
+  work_order WorkOrder?          @relation(fields: [tenant_id, work_order_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, status])
+  @@index([tenant_id, credential_id])
+  @@index([tenant_id, work_order_id])
+  @@map("authority_removal_requests")
 }
 
 // Ω5P PR-05 — Evento de custódia: timeline APPEND-ONLY hash-encadeada (I2). hash = sha256 do preimage endurecido

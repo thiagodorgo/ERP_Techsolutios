@@ -1654,5 +1654,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-29",
+    "version": "OMEGA5P-PR-18b",
+    "backend_tests": "1910/1920",
+    "frontend_smoke": "937/937",
+    "flutter_tests": "807/807",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "92%",
+    "blocks_completed": 112,
+    "description": "Omega5P PR-18b (Fase 5 — authority solicitar remocao -> origina WorkOrder(open) -> custodia) — 25o bloco de feature. Fecha o loop authority-portal (18a fundacao + 18b acao). A autoridade credenciada solicita a remocao; o BFF recarrega a credencial sob RLS e exige status=ACTIVE ANTES de qualquer escrita (D-Omega5P-AUTH-07, revogacao vale no consumo mesmo com JWE ainda valida); resolve o catalogo de remocao SERVER-SIDE fail-closed (0/>=2 -> fila-pura, D-Omega5P-AUTH-06); numa unica tx origina o WorkOrder SEMPRE status=open (metodo SISTEMA-only, sem rota, inalcancavel por HTTP; OS neutra, anti-spoof do orgao) + partial-unique anti-spam. A custodia so abre quando o OPERADOR conclui a OS via o sweep JA EXISTENTE (intocado) — SoD triplice preservado (autoridade SOLICITA != operador CONCLUI != [PR-19] APROVA); I1/I3 intactos. Resposta sempre generica {received:true}; §2.8. Migracao aditiva 20260850 (AuthorityRemovalRequest), provada VIVA com INSERTs reais + ROLLBACK. Junta PESADA APROVADO 5/5 (0 ciclo): secops (VETO) + critico (1 LOW consertado no PR) + coordenador + dba (migracao provada) + avaliador (VETO). REBASE POS-JUNTA pegou o PR #307 do CODEX (fix do NAV-MENU-PLATFORM que eu preparei como estudo/ordem de servico) — A INTEROP CLAUDE<->CODEX FUNCIONOU: o Codex seguiu o AGENTS.md e consertou a causa-raiz com raio de impacto zero. Bateria re-confirmada pos-rebase (nav-menu 7/7, authority-removal 14/14, authority-18a 25/25). backend 1910/1920, frontend_smoke 937 e flutter 807 inalterados, blocks 111->112. Aderencia CTB art.269 + Res.1025 art.9-I/art.14. Zero dependencia nova. merge_commit null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

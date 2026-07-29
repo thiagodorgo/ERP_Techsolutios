@@ -44,9 +44,42 @@ export {
   type AuthorityLoginResult,
   type AuthorityChallengeResult,
 } from "./authority-portal.service.js";
-export { AuthorityPortalController, type AuthorityPortalServiceResolver } from "./authority-portal.controller.js";
+export {
+  AuthorityPortalController,
+  type AuthorityPortalServiceResolver,
+  type AuthorityRemovalServiceResolver,
+} from "./authority-portal.controller.js";
 export { createAuthorityPortalRouter } from "./authority-portal.routes.js";
 export { createDefaultAuthorityPortalService, resetAuthorityPortalRuntimeForTests } from "./authority-portal.runtime.js";
 export { resolveAuthoritySession, readBearerToken } from "./authority-portal.session.js";
 export { parseLoginRequest, AuthorityPortalBadRequestError, type LoginRequest } from "./authority-portal.validators.js";
 export { toAuthorityLoginResponse, type AuthorityLoginResponse } from "./authority-portal.dto.js";
+// Ω5P PR-18b — solicitar remoção → origina WorkOrder(open) → custódia (na conclusão).
+export {
+  AuthorityRemovalService,
+  type AuthorityRemovalDeps,
+  type AuthorityRemovalResult,
+} from "./authority-removal.service.js";
+export {
+  createDefaultAuthorityRemovalService,
+  resetAuthorityRemovalRuntimeForTests,
+} from "./authority-removal.runtime.js";
+export {
+  AuthorityRemovalConsumptionAdapter,
+  InMemoryAuthorityRemovalRepository,
+  PrismaAuthorityRemovalRepository,
+  createPrismaAuthorityRemovalRepository,
+  createPrismaRemovalCatalogResolver,
+  type AuthorityCredentialConsumptionReader,
+  type RemovalCatalogResolver,
+} from "./authority-removal.repository.js";
+export {
+  AUTHORITY_REMOVAL_STATUSES,
+  type AuthorityRemovalStatus,
+  type AuthorityConsumptionContext,
+  type AuthorityRemovalConsumptionPort,
+  type AuthorityRemovalRepository,
+  type CreateAuthorityRemovalInput,
+  type CreateAuthorityRemovalResult,
+} from "./authority-removal.types.js";
+export { parseRemovalRequest, type RemovalRequestBody } from "./authority-removal.validators.js";
