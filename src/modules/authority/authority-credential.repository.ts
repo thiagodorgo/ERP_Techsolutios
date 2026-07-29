@@ -292,6 +292,11 @@ export class PrismaAuthorityCredentialRepository implements AuthorityCredentialR
 
   async registerFailedLogin(input: RegisterFailedLoginInput): Promise<FailedLoginState> {
     const now = new Date(input.nowMs);
+    // O timestamp do lockout é pré-computado em JS e passado como parâmetro Date (timestamptz), como no applyFailedLogin.
+    // NÃO usar `${now} + make_interval(...)` no SQL: no CASE, o Postgres infere o parâmetro como `interval` e o resultado
+    // vira interval, quebrando a atribuição a locked_until (timestamptz) — 42804. O CASE com um THEN timestamptz + ELSE
+    // NULL resolve limpo para timestamptz.
+    const lockCandidate = new Date(input.nowMs + input.lockDurationMs);
     return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
       // UM ÚNICO UPDATE atômico: o incremento `failed_login_count + 1` é AUTO-REFERENTE → sob N updaters concorrentes
       // na MESMA linha o Postgres pega o row lock e (via EvalPlanQual) re-lê a versão commitada de cada um, somando
@@ -305,7 +310,7 @@ export class PrismaAuthorityCredentialRepository implements AuthorityCredentialR
             locked_until = CASE
               WHEN (CASE WHEN locked_until IS NOT NULL AND locked_until <= ${now} THEN 1
                          ELSE failed_login_count + 1 END) >= ${input.threshold}
-                THEN ${now} + make_interval(secs => ${input.lockDurationMs}::double precision / 1000.0)
+                THEN ${lockCandidate}::timestamptz
               ELSE NULL END,
             updated_at = now()
         WHERE tenant_id = ${input.tenantId}::uuid AND id = ${input.id}::uuid
