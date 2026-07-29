@@ -1,3 +1,26 @@
+## 2026-07-29 - FIX-NAV-MENU-PLATFORM-JWT
+
+### Resumo
+
+Corrigido o `500 AUTHORIZATION_CONTEXT_ERROR` de
+`GET /api/v1/navigation/menu?scope=platform` sob JWT real e Prisma. Os routers `/me`
+e `/sessions`, montados no prefixo amplo `/api/v1`, interceptavam a rota irmã e enviavam o pseudo-tenant
+`platform` a uma consulta `tenant_id` UUID. Seus middlewares agora ficam restritos aos
+próprios prefixos; a exceção de plano de controle é opt-in somente no router de Navigation e os
+outros consumidores permanecem fail-closed. No menu, `platform` não conta como tenant ativo.
+
+### Segurança e regressão
+
+- JWT e headers legados convergem no `tenantContextMiddleware`.
+- Tenants UUID continuam substituindo claims por grants persistidos.
+- `super_admin` vê Platform; `operator`/`viewer` recebem vazio; menu tenant do JWT
+  real vem do resolvedor persistente.
+- Teste protegido intocado: baseline Prisma 5/7 → corrigido 7/7.
+- Backend completo após rebase em Ω5P PR-18a: 1900 pass, 0 fail, 6 skip
+  (1906 total); check/build verdes.
+- KPI backend 1900/1906; `blocks_completed=111` carregado da main e inalterado.
+- PR: **#307** (`fix/nav-menu-platform-jwt` → `main`), aberto pronto para revisão.
+
 ## 2026-06-18 - B-106 Adapter GPS nativo real + permissoes Android/iOS
 
 ### Resumo

@@ -91,14 +91,14 @@ function filterNavigationByActorBoundary(
     .map((item) =>
       filterItemChildren(item, (child) => {
         if (child.platformOnly && !platformActor) return false;
-        if (child.tenantOnly && platformActor && !context.tenantId) return false;
+        if (child.tenantOnly && !context.tenantId) return false;
         return true;
       }),
     )
     .filter((item): item is NavigationItem => item !== null)
     .filter((item) => {
       if (item.platformOnly && !platformActor) return false;
-      if (item.tenantOnly && platformActor && !context.tenantId) return false;
+      if (item.tenantOnly && !context.tenantId) return false;
       return true;
     });
 }

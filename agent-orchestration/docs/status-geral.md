@@ -1,5 +1,38 @@
 # Status Geral
 
+## Atualização 2026-07-29 — FIX-NAV-MENU-PLATFORM-JWT
+
+### Status
+
+Backlog `NAV-MENU-PLATFORM` resolvido na branch `fix/nav-menu-platform-jwt`.
+O endpoint `GET /api/v1/navigation/menu?scope=platform` volta a responder sob JWT
+de plataforma mesmo com persistência Prisma.
+
+### Entregue
+
+- Causa raiz isolada na ordem de rotas + limite RBAC: os routers `/me` e `/sessions`,
+  montados em `/api/v1`, interceptavam `/navigation/menu`; e `platform` é pseudo-tenant do plano de
+  controle, não UUID persistido. Ambos agora atuam só nos próprios prefixos e somente
+  Navigation opta por não enviar `platform` ao resolvedor;
+  os demais consumidores do middleware continuam fail-closed.
+- Papéis/permissões do plano de controle continuam derivados do JWT assinado pelo
+  catálogo canônico. Tenants reais continuam usando assignments/grants persistidos e
+  `platform` não conta como tenant ativo para itens tenant-only.
+- JWT e headers legados convergem no `tenantContextMiddleware`; nenhum menu ou grant
+  foi hardcoded.
+- Teste protegido intocado: 5/7 na baseline Prisma → **7/7** corrigido.
+- Adversarial: `super_admin` vê Platform; `operator`/`viewer` recebem `data:[]`;
+  tenant real usa o RBAC persistente.
+
+### Gate
+
+- Backend completo após rebase em Ω5P PR-18a:
+  **1900 pass, 0 fail, 6 skip (1906 total)**.
+- Autenticação/RBAC/tenant-context + navegação/core: **164/164** na configuração CI.
+- `npm run check` e `npm run build`: OK. Frontend/Flutter intocados.
+- KPI: backend **1900/1906**; `blocks_completed=111` carregado da main e
+  inalterado (fix, não feature).
+
 ## Atualizacao 2026-07-09 — Rodada BLOCO-AUTO-F: F12 Cera (em gate — ENCERRA a rodada) [Claude Code]
 
 ### Status

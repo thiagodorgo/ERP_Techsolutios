@@ -9,8 +9,13 @@ import { CoreSaasError } from "../../core-saas/types/core-saas.types.js";
 export function createMeRouter(service: ICoreSaasService): Router {
   const router = Router();
 
-  router.use(tenantContextMiddleware);
-  router.use(createPersistentRbacContextMiddleware());
+  // Este router é montado no prefixo amplo /api/v1. Limitar os middlewares a
+  // /me evita interceptar rotas irmãs (como /navigation/menu) antes do router dono.
+  router.use(
+    "/me",
+    tenantContextMiddleware,
+    createPersistentRbacContextMiddleware(),
+  );
 
   router.get(
     "/me",

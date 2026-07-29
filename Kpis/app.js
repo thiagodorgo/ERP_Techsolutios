@@ -1,16 +1,16 @@
 const dashboardData = {
   "project": {
     "name": "ERP Techsolutions",
-    "version": "GOV-CODEX-SKILLS-ADAPTERS",
-    "updatedAt": "2026-07-28",
-    "sourceBranch": "chore/codex-skills-adapters",
-    "summary": "Governança D-INTEROP-CLAUDE-CODEX: as 8 skills que ainda tinham apenas SKILL.md agora possuem agents/openai.yaml derivado da própria skill. O sincronizador confirma 11 skills e 36 arquivos idênticos entre .claude/skills e .agents/skills. Nenhum código/teste de produto foi tocado; backend 1871/1877, frontend smoke 937/937, Flutter 807/807 e 110 blocos são carregados do último valor oficial.",
+    "version": "FIX-NAV-MENU-PLATFORM-JWT",
+    "updatedAt": "2026-07-29",
+    "sourceBranch": "fix/nav-menu-platform-jwt",
+    "summary": "NAV-MENU-PLATFORM corrigido: somente Navigation preserva por opt-in os papéis canônicos do JWT para o pseudo-tenant platform; os outros 55 usos no baseline pós-PR-18a continuam fail-closed, tenants reais usam RBAC persistente e platform não habilita itens tenant-only. Teste protegido 7/7 em Prisma real; backend 1900/1906 (0 falhas, 6 skips), frontend smoke 937/937, Flutter 807/807 e 111 blocos.",
   },
   "kpis": [
     {
-      "label": "GOV-CODEX-SKILLS-ADAPTERS",
-      "value": "11 skills com metadata portátil",
-      "note": "8 adapters agents/openai.yaml adicionados; sync-agent-skills --check confirma 11 skills/36 arquivos idênticos entre Claude Code e Codex."
+      "label": "FIX-NAV-MENU-PLATFORM-JWT",
+      "value": "Menu Platform sob JWT restaurado",
+      "note": "Navigation usa opt-in explícito para o pseudo-tenant platform; demais consumidores seguem fail-closed, JWT e headers legados convergem no tenantContext e tenants reais preservam RBAC persistente."
     },
     {
       "label": "Ω4 (PÓS-FASE 1)",
@@ -74,12 +74,12 @@ const dashboardData = {
     },
     {
       "label": "Backend tests",
-      "value": "1871/1877",
-      "note": "Fallback embutido (último valor oficial Ω5P PR-17). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.backend_tests). Governança/tooling não toca backend; 6 skips DB-gated pré-existentes."
+        "value": "1900/1906",
+        "note": "Execução real da suíte completa após rebase em Ω5P PR-18a: 1900 pass, 0 fail e 6 skips DB-gated; +3 testes adversariais NAV-MENU-PLATFORM."
     },
     {
       "label": "Blocos concluídos",
-      "value": "110",
+        "value": "111",
       "note": "Fallback embutido (último valor oficial). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.blocks_completed). Governança/tooling não conta como bloco de feature."
     },
     {

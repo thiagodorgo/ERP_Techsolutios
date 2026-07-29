@@ -1,17 +1,17 @@
 {
-  "snapshot_date": "2026-07-28",
-  "version": "OMEGA5P-PR-18a",
+  "snapshot_date": "2026-07-29",
+  "version": "FIX-NAV-MENU-PLATFORM-JWT",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Omega5P PR-18a — Fase 5: authority-portal FUNDACAO (credencial da autoridade + provisionamento RBAC + login anti-brute-force no 2o PWA isolado). ABRE a superficie credenciada",
-    "title": "Omega5P PR-18a: a autoridade solicitante ganha login proprio — AuthorityCredential isolada do ERP (scrypt zero-dep), provisionamento sob authority_credentials:manage (SoD), login com anti-enumeracao/rate-limit/PoW/lockout atomico persistente; junta PESADA 5/5 (0 ciclo; 1 MEDIUM de race de lockout consertado no PR)",
-    "pr": null,
+    "block": "Correcao NAV-MENU-PLATFORM — menu de navegacao platform sob JWT real com persistencia Prisma. NAO e bloco de feature",
+    "title": "Menu Platform volta a responder sob JWT: pseudo-tenant platform nao entra no RBAC tenant-scoped UUID",
+    "pr": 307,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Omega5P PR-18a — AUTHORITY-PORTAL FUNDACAO (Fase 5). A autoridade solicitante (persona ativa white-label, NUNCA \"policia\") ganha credencial e login proprios, ISOLADOS do ERP e do owner. (1) AuthorityCredential (authority_credentials, migracao aditiva 20260849): != User/AuthSession/Cognito; RLS FORCE + tenant-first + FK RESTRICT; tabela MUTAVEL (rotacao/lockout) sem append-only justificada. (2) Provisionamento no console /api/v1/authority-credentials sob a permissao NOVA authority_credentials:manage (4 pontas; SoD: tenant_admin + super_admin/platform_admin APENAS — manager/operator/finance 403): create (senha gerada 144-bit devolvida 1x ou definida pelo admin, nunca em claro; hash fora do DTO)/rotate/suspend/revoke/list. (3) Login no createPortalApp isolado /portal/v1/authority (SEM attachAuthenticatedActor, SEM JWT do ERP): hashing scrypt node:crypto (params OWASP N=2^17/r=8/p=1 + maxmem 256MiB explicito + salt por-hash + timingSafeEqual — PD-Omega5P-AUTH-SCRYPT, ZERO dep); anti-enumeracao (inexistente/senha-errada/suspenso/bloqueado -> 401 BYTE-IDENTICO + scrypt DUMMY + piso 250ms); brute-force (rate-limit IP E credencial + PoW progressivo + LOCKOUT PERSISTENTE ATOMICO); sessao JWE audience erp-authority-portal + PORTAL_AUTHORITY_SESSION_SECRET (gate de prod != JWT != owner, 2 sentidos); §2.8 (so {session,authorityName}; log so HMAC). PWA Vite de login (PoW em Web Worker). JUNTA PESADA APROVADO 5/5 (0 ciclo): secops (VETO) + coordenador-de-acessos + dba-guardiao (migracao tx-ROLLBACK) + avaliador (VETO) + critico-adversarial. O critico achou 1 MEDIUM (race de lost-update no lockout: SET absoluto de leitura stale, derrotavel por Promise.all) -> CONSERTADO NO PROPRIO PR (registerFailedLogin UPDATE atomico auto-referente + RETURNING; o setter absoluto saiu da porta de login; teste de concorrencia prova o engate). ABRE a superficie credenciada; o solicitar-remocao->WorkOrder = PR-18b. Aderencia Res. CONTRAN 1025/2026 art.9-I/art.14. backend 1871->1896 (+26 test() novos, 25 memory + 1 DB-gated), frontend_smoke 937 e flutter 807 inalterados, blocks 110->111. Zero regressao (owner 21/21). Zero dependencia nova.",
-    "status_label": "Omega5P PR-18a: authority-portal fundacao (credencial isolada + provisionamento SoD + login scrypt/anti-brute-force/lockout atomico); junta PESADA 5/5; backend 1871->1896, blocks 110->111"
+    "summary": "FIX-NAV-MENU-PLATFORM-JWT. Corrige o 500 de GET /api/v1/navigation/menu?scope=platform sob JWT platform_admin/super_admin quando CORE_SAAS_PERSISTENCE=prisma. Causa raiz: os routers /me e /sessions, montados no prefixo amplo /api/v1, aplicavam seus middlewares a rota irma /navigation/menu e enviavam o pseudo-tenant platform para consultas tenant-scoped cujo tenant_id e UUID; o PostgreSQL rejeitava o cast. Ambos agora atuam somente nos proprios prefixos. Somente o router de navegacao ativa a opcao explicita que preserva as permissoes canonicas ja derivadas do JWT assinado para o plano de controle; os outros 55 usos do middleware no baseline pos-PR-18a permanecem fail-closed e tenants UUID continuam exigindo RBAC persistente. Platform tambem deixa de contar como tenant ativo para itens tenantOnly. A rota usa uma unica fonte de permissoes normalizada pelo tenantContextMiddleware para JWT e headers legados. Teste protegido 7/7 no ambiente Prisma real; 3 cenarios adversariais novos; suite backend completa rebaseada em Omega5P PR-18a com 1900 pass/0 fail/6 skip (1906 total). Frontend 937/937 e Flutter 807/807 carregados; blocks_completed permanece 111 por ser fix, nao feature.",
+    "status_label": "NAV-MENU-PLATFORM corrigido sob JWT/Prisma; isolamento platform x tenant preservado; 1900/1906 backend, 0 falhas"
   },
   "metrics": {
     "flutter_tests": {
@@ -27,10 +27,10 @@
       "note": "937 inalterado no Omega5P PR-18a (o PWA authority e app separado com job CI proprio). Ultimo valor do Omega5P PR-15b."
     },
     "backend_tests": {
-      "value": 1896,
-      "total": 1903,
-      "display": "1896/1903",
-      "note": "+26 test() novos (Omega5P PR-18a authority-portal fundacao): authority-credential 6 + authority-env 7 + authority-portal 12 (memory, rodam sempre) + authority-portal-rls 1 (DB-gated). value 1896 = memory-pass sobre 1871 (baseline pos-PR-17); 7 skip DB-gated no CI-memoria (6 previos + authority-portal-rls) rodam no CI com Postgres, total 1903. Inclui o MEDIUM da junta (race de lockout) consertado com incremento atomico + teste de concorrencia. Migracao 20260849 provada tx-ROLLBACK. Nenhuma dependencia nova."
+      "value": 1900,
+      "total": 1906,
+      "display": "1900/1906",
+      "note": "Execucao REAL da suite backend completa apos rebase em Omega5P PR-18a: 1900 pass, 0 fail e 6 skip DB-gated (1906 total). O ambiente Prisma local executou 1 gate que o snapshot CI-memory anterior contava como skip; o total cresceu em +3 pelos testes adversariais JWT/navigation."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -58,7 +58,7 @@
     "blocks_completed": {
       "value": 111,
       "display": "111",
-      "note": "Omega5P PR-18a (authority-portal fundacao: credencial + provisionamento RBAC + login anti-brute-force — modulo authority + migracao 20260849) -> +1 sobre 110. ABRE a superficie credenciada. Proximo: PR-18b (solicitar remocao -> WorkOrder -> custodia)."
+      "note": "INALTERADO em 111: FIX-NAV-MENU-PLATFORM-JWT corrige uma falha pre-existente e nao conta como bloco de feature. Ultimo bloco de feature: Omega5P PR-18a."
     },
     "mobile_backend_contracts": {
       "value": 18,
@@ -84,7 +84,7 @@
     ]
   },
   "notes": [
-    "GOV-CODEX-SKILLS-ADAPTERS (2026-07-28): 8 adapters agents/openai.yaml derivados dos SKILL.md e sincronizados de .claude/skills para .agents/skills; --check confirma 11 skills/36 arquivos identicos. Cinco skills que estavam somente no checkout local foram incorporadas ao versionamento sem modificar nem apagar os originais. Nenhum codigo/teste de produto foi tocado; metricas e blocks_completed carregados sem alteracao.",
+    "FIX-NAV-MENU-PLATFORM-JWT (2026-07-29): remove o 500 do menu platform sob JWT/Prisma na fronteira correta. O pseudo-tenant platform nao e UUID nem tenant persistido; somente Navigation opta por preservar suas permissoes derivadas dos papeis canonicos do JWT assinado. Os outros 55 usos no baseline pos-PR-18a continuam fail-closed, tenants reais usam RBAC persistente e platform nao habilita itens tenantOnly. O [0] observado era efeito no teste depois do 500, nao a causa de producao. Suite protegida 7/7 em Prisma real; suite completa pos-rebase 1900 pass/0 fail/6 skip (1906 total); +3 testes adversariais.",
     "D-Ω4-KPI-RELATORIO (reconciliação 2026-07-18): a rodada Ω4 (Financeiro do tenant ×1,5) deferiu a atualização de KPI de todos os seus PRs (#206–#225) para este snapshot único. Contagens de execução real ao fim da PÓS-FASE 1: backend 989→1242 (0 fail, 6 skip DB-gated que rodam no CI; 1248 total), smoke web 486→514. Flutter/mobile inalterados (Ω4 foi web/backend-only; política dupla). 8 agregados-feature (Ω4-1..8) → blocks_completed 58→66; mvp_demo 98→99 e mvp_vendavel 83→88 movidos por escopo (módulo Financeiro completo). Cada agregado por junta adversarial + pós-análise; relatório em agent-orchestration/omega/RELATORIO-OMEGA4.md. pr: 226; merge_commit/approved_head null na autoria (backfill pós-merge).",
     "D-Ω3F-KPI-RELATORIO (reconciliação 2026-07-17): a rodada Ω3F deferiu a atualização de KPI de todos os seus PRs (#184–#204) para este snapshot único. Contagens de teste vêm de execução real ao fim da Fase 1: backend 989 (0 fail, 6 skip), smoke web 486. Flutter/mobile inalterados (Ω3F foi web/backend-only). mvp_demo/vendavel movidos (+2/+5) por escopo — hub operacional da OS completo.",
     "JUNTA-MAPAS (2026-07-13): PR docs/agentes-only — cria 3 agentes (.claude/agents/planejador-mapas, dev-mapas, avaliador-mapas) + docs/maps/kb-mapas.md + D-JUNTA-MAPAS + ata J-JUNTA-MAPAS. NENHUM codigo de produto/teste tocado: TODAS as metricas de teste carregam o ultimo valor oficial (Ω-INFRA-1: backend 768/768, Flutter 764/764, smoke web 44/44). blocks_completed inalterado (49) — governanca/tooling nao conta como bloco de feature entregue, mesmo criterio de Ω-GOV/Ω-DOCS. mvp_demo/mvp_vendavel inalterados (nenhum escopo de produto movido). Nenhuma chave/billing/SKU do Google ativado.",

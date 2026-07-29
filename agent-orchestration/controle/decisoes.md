@@ -796,3 +796,34 @@ Fecha o cluster P-Ω3F6-STATUS-BYPASS + TERMINAL-GUARD + ZERO-ATOMICIDADE (pré-
 - **Compatibilidade preservando metadata:** nas 5 skills comunitárias, `risk`, `source`, `date_added` e `category` eram chaves de topo rejeitadas pelo validador Codex; foram movidas sem perda para a chave permitida `metadata`. As 11 skills passam em `quick_validate.py`.
 - **Prova de paridade:** `node scripts/sync-agent-skills.mjs --check` retorna `OK — 11 skills, 36 arquivos, espelho idêntico`.
 - **Governança/tooling:** sem código/teste de produto; backend 1871/1877, smoke 937/937, Flutter 807/807 e `blocks_completed=110` carregados sem alteração (precedente Ω-GOV/JUNTA-MAPAS).
+
+## D-NAV-MENU-PLATFORM-JWT (2026-07-28) — pseudo-tenant do plano de controle não entra no RBAC tenant-scoped
+
+- **Contexto:** `GET /api/v1/navigation/menu?scope=platform` respondia `500
+  AUTHORIZATION_CONTEXT_ERROR` para JWT de `platform_admin`/`super_admin` quando
+  `CORE_SAAS_PERSISTENCE=prisma`. Os mesmos papéis por headers legados funcionavam.
+- **Causa raiz comprovada:** o JWT usa `tenant_id="platform"` para identificar o plano de
+  controle. Esse valor não representa uma linha de `Tenant` e não é UUID. Como
+  os routers de `/me` e `/sessions` são montados no prefixo amplo `/api/v1`, seus
+  middlewares globais interceptavam `/navigation/menu` antes do router dono e enviavam `platform` a
+  `UserRoleRepository.listByUserForTenant`; o PostgreSQL recusava o cast UUID. O próprio
+  router de Navegação teria a mesma incompatibilidade ao alcançar o resolvedor. O `[0]`
+  observado no segundo teste era efeito posterior: `body.data` não existia depois do 500.
+- **Decisão:** o `tenantContextMiddleware` continua sendo a fonte canônica comum de
+  papéis/permissões para JWT e headers legados. Os middlewares dos routers `/me` e
+  `/sessions` ficam restritos aos próprios prefixos, sem interceptar rotas irmãs.
+  Somente o router de navegação ativa o
+  opt-in `allowPlatformControlPlaneContext`: nesse caller, o pseudo-tenant `platform`
+  preserva o contexto derivado do JWT assinado e não abre transação tenant-scoped.
+  O padrão do middleware continua fail-closed para seus outros 53 consumidores. Para
+  qualquer tenant real, o RBAC persistente continua obrigatório e substitui claims por
+  assignments/grants armazenados. No menu, `platform` equivale a ausência de tenant
+  ativo e nunca satisfaz itens `tenantOnly`.
+- **Limites de segurança:** nenhum item de menu foi hardcoded. `operator` e `viewer` com
+  `scope=platform` recebem `200 data:[]`; tenant comum também continua vazio nesse escopo;
+  JWT de tenant real continua obtendo o menu pelas permissões persistidas. JWT de
+  plataforma sem scope recebe somente grupos Platform e `scope=tenant` fica vazio.
+- **Provas:** teste protegido `tests/navigation-menu-routes.test.ts` intocado e **7/7**
+  no Prisma real (baseline 5/7); 3 cenários adversariais novos; suíte backend completa
+  **1900 pass / 0 fail / 6 skip (1906 total)** após rebase em Ω5P PR-18a.
+  Correção, não feature: `blocks_completed` permanece **111**.

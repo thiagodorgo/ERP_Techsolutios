@@ -1,18 +1,31 @@
 import { Router } from "express";
 
 import { resolveRequestActor } from "../auth/middleware/authenticated-actor.middleware.js";
-import { createPersistentRbacContextMiddleware } from "../core-saas/middleware/persistent-rbac-context.middleware.js";
+import {
+  createPersistentRbacContextMiddleware,
+  type PersistentAuthorizationResolver,
+} from "../core-saas/middleware/persistent-rbac-context.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
 import { getGovernedNavigationPaths, getMenuForCurrentUser, isNavigationScope } from "./navigation.service.js";
 import type { NavigationScope } from "./navigation.types.js";
 
-export function createNavigationRouter(service?: ICoreSaasService): Router {
+type NavigationRouterOptions = {
+  readonly resolveAuthorization?: PersistentAuthorizationResolver;
+};
+
+export function createNavigationRouter(
+  service?: ICoreSaasService,
+  options: NavigationRouterOptions = {},
+): Router {
   const router = Router();
 
   router.use(tenantContextMiddleware);
-  router.use(createPersistentRbacContextMiddleware());
+  router.use(createPersistentRbacContextMiddleware({
+    resolveAuthorization: options.resolveAuthorization,
+    allowPlatformControlPlaneContext: true,
+  }));
 
   router.get(
     "/menu",
@@ -31,10 +44,11 @@ export function createNavigationRouter(service?: ICoreSaasService): Router {
 
       const scope = parseScope(request.query.scope);
       const tenantContext = request.tenantContext;
-      const tenantId = tenantContext?.tenantId || actor.tenantId;
+      const resolvedTenantId = tenantContext?.tenantId || actor.tenantId;
+      const tenantId = resolvedTenantId === "platform" ? undefined : resolvedTenantId;
       const enabledModules = await resolveEnabledModules(service, tenantId);
       const roles = tenantContext?.roles ?? actor.roles;
-      const permissions = tenantContext?.permissions ?? (actor.authType === "legacy_headers" ? actor.permissions : []);
+      const permissions = tenantContext?.permissions ?? [];
       const menu = getMenuForCurrentUser({
         userId: actor.userId,
         tenantId,

@@ -10,6 +10,7 @@ export type PersistentAuthorizationResolver = (input: {
 
 type PersistentRbacContextMiddlewareOptions = {
   readonly resolveAuthorization?: PersistentAuthorizationResolver;
+  readonly allowPlatformControlPlaneContext?: boolean;
 };
 
 let defaultResolverPromise: Promise<PersistentAuthorizationResolver | null> | undefined;
@@ -23,6 +24,16 @@ export function createPersistentRbacContextMiddleware(
     next: NextFunction,
   ): Promise<void> => {
     if (!request.actor) {
+      next();
+      return;
+    }
+
+    // Opt-in exclusivo de superfícies do plano de controle. "platform" não é um
+    // Tenant persistido (UUID); os demais consumidores permanecem fail-closed por padrão.
+    if (
+      options.allowPlatformControlPlaneContext &&
+      request.actor.tenantId === "platform"
+    ) {
       next();
       return;
     }

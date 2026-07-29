@@ -26,16 +26,19 @@
           <p class="eyebrow">Status executivo</p>
           <h2>KPIs consolidados</h2>
         </div>
-        <article class="panel panel--wide" aria-label="Resumo GOV-CODEX-SKILLS-ADAPTERS">
-          <h2>D-INTEROP · adapters OpenAI para as 11 skills</h2>
+        <article class="panel panel--wide" aria-label="Resumo FIX-NAV-MENU-PLATFORM-JWT">
+          <h2>NAV-MENU-PLATFORM · JWT e Prisma reconciliados</h2>
           <p>
-            <strong>Governança/tooling (2026-07-28):</strong> as 8 skills que ainda tinham apenas
-            <code>SKILL.md</code> agora possuem <code>agents/openai.yaml</code> derivado da própria
-            skill. O sincronizador confirma <strong>11 skills / 36 arquivos idênticos</strong> entre
-            <code>.claude/skills/</code> e <code>.agents/skills/</code>. Nenhum código ou teste de
-            produto foi alterado; backend <strong>1871/1877</strong>, frontend smoke
+              <strong>Correção de acesso (2026-07-29):</strong> o menu Platform sob JWT real
+            deixava de responder quando a persistência Prisma estava ativa, porque o
+            pseudo-tenant <code>platform</code> era enviado a consultas que exigem UUID.
+            Somente o router de navegação ativa esse contexto do plano de controle; os
+            demais consumidores continuam fail-closed, tenants reais preservam o RBAC
+            persistente e <code>platform</code> não habilita itens tenant-only. O teste
+            protegido passou <strong>7/7</strong> no Prisma real; backend completo
+              <strong>1900/1906</strong> (0 falhas, 6 skips), frontend smoke
             <strong>937/937</strong>, Flutter <strong>807/807</strong> e
-            <code>blocks_completed=110</code> foram carregados do último valor oficial.
+              <code>blocks_completed=111</code>.
           </p>
         </article>
         <article class="panel panel--wide" aria-label="Resumo WS-SCALE detalhe organizacao real">
