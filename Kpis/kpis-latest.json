@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-28",
-  "version": "GOV-CODEX-SKILLS-ADAPTERS",
+  "version": "OMEGA5P-PR-18a",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Governanca/tooling — completar D-INTEROP-CLAUDE-CODEX com adapters agents/openai.yaml nas 8 skills que ainda tinham apenas SKILL.md. NAO e bloco de feature",
-    "title": "As 11 skills Claude/Codex passam a ter metadata portatil: 8 adapters OpenAI adicionados e espelho validado; PR de governanca (metricas inalteradas)",
-    "pr": 305,
+    "block": "Omega5P PR-18a — Fase 5: authority-portal FUNDACAO (credencial da autoridade + provisionamento RBAC + login anti-brute-force no 2o PWA isolado). ABRE a superficie credenciada",
+    "title": "Omega5P PR-18a: a autoridade solicitante ganha login proprio — AuthorityCredential isolada do ERP (scrypt zero-dep), provisionamento sob authority_credentials:manage (SoD), login com anti-enumeracao/rate-limit/PoW/lockout atomico persistente; junta PESADA 5/5 (0 ciclo; 1 MEDIUM de race de lockout consertado no PR)",
+    "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "GOV-CODEX-SKILLS-ADAPTERS (governanca/tooling, D-INTEROP-CLAUDE-CODEX). Cria agents/openai.yaml para blockchain-developer, cloud-architect, cloud-devops, flutter-expert, payment-integration, saas-multi-tenant, skill-creator e ui-ux-pro-max, com display_name, short_description e default_prompt derivados de cada SKILL.md. Cinco skills que existiam apenas como arquivos locais nao rastreados foram incorporadas a origem canonica .claude/skills sem alterar o checkout principal; metadata comunitaria foi preservada sob a chave portatil metadata e as 11 skills passam no quick_validate.py. node scripts/sync-agent-skills.mjs reconstruiu .agents/skills e o --check confirmou 11 skills/36 arquivos byte-identicos. PR de GOVERNANCA/TOOLING: nao toca codigo/teste de produto; metricas carregam o ultimo valor oficial (backend 1871/1877, smoke 937/937, flutter 807/807) e blocks_completed permanece 110 (precedente Omega-GOV/JUNTA-MAPAS).",
-    "status_label": "8 adapters agents/openai.yaml adicionados; 11 skills/36 arquivos sincronizados entre Claude Code e Codex; PR de governanca (metricas inalteradas)"
+    "summary": "Omega5P PR-18a — AUTHORITY-PORTAL FUNDACAO (Fase 5). A autoridade solicitante (persona ativa white-label, NUNCA \"policia\") ganha credencial e login proprios, ISOLADOS do ERP e do owner. (1) AuthorityCredential (authority_credentials, migracao aditiva 20260849): != User/AuthSession/Cognito; RLS FORCE + tenant-first + FK RESTRICT; tabela MUTAVEL (rotacao/lockout) sem append-only justificada. (2) Provisionamento no console /api/v1/authority-credentials sob a permissao NOVA authority_credentials:manage (4 pontas; SoD: tenant_admin + super_admin/platform_admin APENAS — manager/operator/finance 403): create (senha gerada 144-bit devolvida 1x ou definida pelo admin, nunca em claro; hash fora do DTO)/rotate/suspend/revoke/list. (3) Login no createPortalApp isolado /portal/v1/authority (SEM attachAuthenticatedActor, SEM JWT do ERP): hashing scrypt node:crypto (params OWASP N=2^17/r=8/p=1 + maxmem 256MiB explicito + salt por-hash + timingSafeEqual — PD-Omega5P-AUTH-SCRYPT, ZERO dep); anti-enumeracao (inexistente/senha-errada/suspenso/bloqueado -> 401 BYTE-IDENTICO + scrypt DUMMY + piso 250ms); brute-force (rate-limit IP E credencial + PoW progressivo + LOCKOUT PERSISTENTE ATOMICO); sessao JWE audience erp-authority-portal + PORTAL_AUTHORITY_SESSION_SECRET (gate de prod != JWT != owner, 2 sentidos); §2.8 (so {session,authorityName}; log so HMAC). PWA Vite de login (PoW em Web Worker). JUNTA PESADA APROVADO 5/5 (0 ciclo): secops (VETO) + coordenador-de-acessos + dba-guardiao (migracao tx-ROLLBACK) + avaliador (VETO) + critico-adversarial. O critico achou 1 MEDIUM (race de lost-update no lockout: SET absoluto de leitura stale, derrotavel por Promise.all) -> CONSERTADO NO PROPRIO PR (registerFailedLogin UPDATE atomico auto-referente + RETURNING; o setter absoluto saiu da porta de login; teste de concorrencia prova o engate). ABRE a superficie credenciada; o solicitar-remocao->WorkOrder = PR-18b. Aderencia Res. CONTRAN 1025/2026 art.9-I/art.14. backend 1871->1896 (+26 test() novos, 25 memory + 1 DB-gated), frontend_smoke 937 e flutter 807 inalterados, blocks 110->111. Zero regressao (owner 21/21). Zero dependencia nova.",
+    "status_label": "Omega5P PR-18a: authority-portal fundacao (credencial isolada + provisionamento SoD + login scrypt/anti-brute-force/lockout atomico); junta PESADA 5/5; backend 1871->1896, blocks 110->111"
   },
   "metrics": {
     "flutter_tests": {
@@ -24,13 +24,13 @@
       "value": 937,
       "total": 937,
       "display": "937/937",
-      "note": "Carrega o ultimo valor oficial 937/937 (GOV-CODEX-SKILLS-ADAPTERS nao toca frontend/). Ultimo valor: Omega5P PR-15b/PR-17."
+      "note": "937 inalterado no Omega5P PR-18a (o PWA authority e app separado com job CI proprio). Ultimo valor do Omega5P PR-15b."
     },
     "backend_tests": {
-      "value": 1871,
-      "total": 1877,
-      "display": "1871/1877",
-      "note": "Carrega o ultimo valor oficial 1871/1877 (GOV-CODEX-SKILLS-ADAPTERS nao toca codigo/teste de produto; e governanca/tooling — precedente Omega-GOV/JUNTA-MAPAS). Ultimo valor de teste: Omega5P PR-17."
+      "value": 1896,
+      "total": 1903,
+      "display": "1896/1903",
+      "note": "+26 test() novos (Omega5P PR-18a authority-portal fundacao): authority-credential 6 + authority-env 7 + authority-portal 12 (memory, rodam sempre) + authority-portal-rls 1 (DB-gated). value 1896 = memory-pass sobre 1871 (baseline pos-PR-17); 7 skip DB-gated no CI-memoria (6 previos + authority-portal-rls) rodam no CI com Postgres, total 1903. Inclui o MEDIUM da junta (race de lockout) consertado com incremento atomico + teste de concorrencia. Migracao 20260849 provada tx-ROLLBACK. Nenhuma dependencia nova."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 110,
-      "display": "110",
-      "note": "INALTERADO em 110 (GOV-CODEX-SKILLS-ADAPTERS e governanca/tooling — nao conta como bloco de feature). Ultimo bloco de feature: Omega5P PR-17."
+      "value": 111,
+      "display": "111",
+      "note": "Omega5P PR-18a (authority-portal fundacao: credencial + provisionamento RBAC + login anti-brute-force — modulo authority + migracao 20260849) -> +1 sobre 110. ABRE a superficie credenciada. Proximo: PR-18b (solicitar remocao -> WorkOrder -> custodia)."
     },
     "mobile_backend_contracts": {
       "value": 18,

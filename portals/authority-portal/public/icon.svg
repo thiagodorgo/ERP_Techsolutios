@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Acesso da autoridade solicitante">
+  <rect width="512" height="512" rx="96" fill="#0f2740"/>
+  <g fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M256 108 l128 52 v40 h-256 v-40 z"/>
+    <path d="M136 200 v148 M200 200 v148 M312 200 v148 M376 200 v148"/>
+    <path d="M112 348 h288 v40 a12 12 0 0 1 -12 12 h-264 a12 12 0 0 1 -12 -12 z"/>
+  </g>
+  <path d="M256 132 l88 32 v44 c0 50 -36 78 -88 96 c-52 -18 -88 -46 -88 -96 v-44 z" fill="#2f6bff" opacity="0.14"/>
+</svg>

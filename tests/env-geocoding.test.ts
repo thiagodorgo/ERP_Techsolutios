@@ -30,6 +30,8 @@ const PROD_BASE = {
   // allowlist). Estas fixtures parseiam com SUCESSO, então precisam satisfazê-los.
   PORTAL_SESSION_SECRET: "a-real-production-portal-session-secret",
   PORTAL_LOG_SECRET: "a-real-production-portal-log-secret",
+  // Ω5P PR-18a — o authority-portal somou o secret de sessão próprio obrigatório em produção (≠ owner ≠ ERP).
+  PORTAL_AUTHORITY_SESSION_SECRET: "a-real-production-authority-session-secret",
   PORTAL_TENANT_ID: "00000000-0000-0000-0000-000000000001",
   PORTAL_CORS_ORIGIN: "https://consulta.exemplo.com",
 };

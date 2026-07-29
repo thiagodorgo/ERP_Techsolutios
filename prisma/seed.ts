@@ -114,6 +114,7 @@ const permissionDescriptions = {
   "sessions:read": "Consultar sessoes ativas e o historico de acessos dos usuarios do tenant.",
   "sessions:revoke": "Encerrar (revogar) a sessao de um usuario do tenant, forcando novo login.",
   "telemetry:read": "Consultar o console de Telemetria (acessos, quilometragem, rastreamento, recusas e dispositivos) dos profissionais do tenant.",
+  "authority_credentials:manage": "Provisionar as credenciais da autoridade solicitante (portal da autoridade): criar, rotacionar senha, suspender e revogar. Credencial propria, isolada do login do ERP.",
   "tenant_checklists:read": "Consultar checklists configuraveis do tenant.",
   "tenant_checklists:create": "Criar checklists configuraveis do tenant.",
   "tenant_checklists:update": "Editar, ativar e inativar checklists configuraveis do tenant.",

@@ -46,6 +46,20 @@ export function sessionRateKey(secret: string, processId: string): string {
   return hmacHex(secret, `s${processId}`);
 }
 
+// Ω5P PR-18a — normalização do USERNAME da autoridade (independe do match no banco): minúsculas + trim. Assim
+// "Orgao.SP", "orgao.sp " e "ORGAO.SP" caem no MESMO bucket/fingerprint de login — um atacante não escapa do
+// rate-limit por-credencial variando a caixa/espaços.
+export function normalizeUsername(username: string): string {
+  return username.trim().toLowerCase();
+}
+
+// Ω5P PR-18a — chave de RATE-LIMIT/correlação por CREDENCIAL (login do authority-portal), derivada do USERNAME
+// normalizado. Todo palpite de senha contra o MESMO username consome o MESMO balde (anti brute-force por conta) e
+// correlaciona as tentativas no PortalAccessLog SEM guardar o username cru (só o HMAC — §2.8/RN-POR-02).
+export function credentialRateKey(secret: string, username: string): string {
+  return hmacHex(secret, `c${normalizeUsername(username)}`);
+}
+
 // Comparação em TEMPO CONSTANTE de dois segredos de comprimento arbitrário: HMAC(a) vs HMAC(b) → 32 bytes cada
 // (comprimento fixo, pré-requisito do timingSafeEqual) → sem oráculo de timing por diferença de comprimento nem
 // por posição do 1º byte divergente. Usada no 2º fator (Renavam).

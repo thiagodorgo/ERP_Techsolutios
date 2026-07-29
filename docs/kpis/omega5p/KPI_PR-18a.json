@@ -1,0 +1,89 @@
+{
+  "id": "PR-18a",
+  "fase": "Fase 5 — authority-portal FUNDACAO: a credencial da AUTORIDADE solicitante (persona ativa, white-label) + provisionamento no console (RBAC) + login anti-brute-force no 2o PWA isolado. ABRE a superficie credenciada. So a fundacao (login); o solicitar-remocao->WorkOrder e o PR-18b.",
+  "snapshot_date": "2026-07-28",
+  "branch": "rodada/omega5p",
+  "tipo": "Backend (modulo authority: credencial + provisionamento /api/v1 + BFF de login /portal/v1/authority) + 1 migracao ADITIVA (authority_credentials + widening do CHECK do PortalAccessLog += LOGIN) + PWA authority-portal (Vite, login) + job CI. ZERO dependencia nova (hashing por node:crypto scrypt — PD-Omega5P-AUTH-SCRYPT). O portal segue ISOLADO (createPortalApp, sem attachAuthenticatedActor). 1 permissao NOVA (authority_credentials:manage, 4 pontas).",
+  "models_novos": [
+    "AuthorityCredential (authority_credentials) — a credencial da autoridade solicitante (NAO e User/AuthSession/Cognito do ERP). tenant_id 1o em todo indice; UNIQUE(tenant_id,id) + UNIQUE(tenant_id,username) + INDEX(tenant_id,status); status ACTIVE|SUSPENDED|REVOKED (CHECK); password_hash (scrypt self-describing) / failed_login_count (CHECK>=0) / locked_until / last_login_at / created_by; FK tenant RESTRICT (I9); RLS ENABLE+FORCE+POLICY. Tabela MUTAVEL (rotacao/lockout) — SEM trigger append-only (justificado; o oposto seria bug)."
+  ],
+  "migrations": [
+    "20260849000000_add_authority_credential (ADITIVA up-only: CREATE TABLE authority_credentials [RLS FORCE + tenant-first indices + FK RESTRICT + CHECK status/failed_login_count] + widening do portal_access_logs_action_chk += LOGIN [DROP+re-ADD superset, nao-destrutivo]. NENHUM ALTER/DROP de coluna existente. Provada VIVA por tx-ROLLBACK sem DROP [UNIQUE(tenant_id,username) bloqueia duplicata 23505; widening aceita LOGIN e ainda rejeita bogus 23514; sobra 0/0 — nada persistido]. migrate status up-to-date (85), validate verde, drift-zero nos objetos do PR (o RenameIndex e ruido cosmetico pre-existente repo-wide)."
+  ],
+  "modulos": [
+    "src/modules/authority/authority-password.ts (scrypt node:crypto — params OWASP N=2^17/r=8/p=1/keylen=32 + maxmem 256MiB explicito + salt 16B por-hash + formato self-describing + verifyPassword tempo-constante timingSafeEqual + verifyPasswordDummy p/ anti-enumeracao)",
+    "src/modules/authority/authority-credential.{types,repository,service,controller,routes,validators,dto}.ts (provisionamento sob /api/v1 + authority_credentials:manage: create[senha gerada 144-bit devolvida 1x OU definida pelo admin, nunca em claro no banco]/rotate/suspend/revoke/list[sem hash]; registerFailedLogin ATOMICO [UPDATE auto-referente, RETURNING] e resetLoginState sob withTenantRls)",
+    "src/modules/authority/authority-portal.{service,controller,routes,session,runtime,validators,dto}.ts (BFF login: POST /portal/v1/authority/challenge [PoW] + /login [rate-limit IP+credencial -> PoW -> lookup RLS -> inexistente:scrypt DUMMY -> status/lockout -> scrypt verify -> registerFailedLogin atomico / sucesso reset+JWE aud erp-authority-portal 30min]; RESPOSTA UNIFORME byte-identica; §2.8 so {session,authorityName})",
+    "src/modules/authority/index.ts (barrel; createAuthorityCredentialRouter p/ o app.ts)",
+    "src/config/env.ts (SOMA PORTAL_AUTHORITY_SESSION_SECRET + gate de prod: obrigatorio, != JWT_SECRET, != PORTAL_SESSION_SECRET)",
+    "src/app.ts (registra SO o router de PROVISIONAMENTO /api/v1/authority-credentials sob attachAuthenticatedActor+RBAC; o LOGIN NAO vive aqui)",
+    "src/portal-app.ts (monta o authorityRouter de login em /portal/v1/authority no createPortalApp isolado)",
+    "src/modules/portal-shared/{anti-abuse [+loginBucket/checkLoginRate IP+credencial], portal-crypto [+credentialRateKey/normalizeUsername], portal-session [+sign/verifyAuthoritySession audience propria], portal-access-log.types [+LOGIN]}.ts",
+    "src/modules/core-saas/permissions/catalog.ts + prisma/seed.ts + tests/core-saas.test.ts + RBAC_MATRIX.md (permissao NOVA authority_credentials:manage nas 4 pontas; SoD: tenant_admin + super_admin/platform_admin APENAS)",
+    "portals/authority-portal/src/* (PWA Vite login: usuario/senha + PoW em Web Worker; estados loading/erro-generico/bloqueado-generico/offline; white-label PT-BR)",
+    ".github/workflows/ci.yml (job authority-portal aditivo: check+build)",
+    "prisma/schema.prisma (model AuthorityCredential + back-relation)"
+  ],
+  "app_ts": "src/app.ts registra SO createAuthorityCredentialRouter (provisionamento, /api/v1, sob attachAuthenticatedActor+RBAC). O login (createAuthorityPortalRouter) vive SO no portal-app.ts (/portal/v1/authority). Sem cross-wiring — provado (POST /api/v1/authority/login -> 404 route_not_found).",
+  "invariante": "ISOLAMENTO: authority-credential != User/AuthSession/Cognito do ERP; nao recebe roles/permissions; NAO alcanca /api/v1 (login -> 404 no ERP). Sessao JWE audience erp-authority-portal + PORTAL_AUTHORITY_SESSION_SECRET (!= JWT_SECRET, != PORTAL_SESSION_SECRET; gate de prod triplice; rejeicao cruzada owner/ERP provada 2 sentidos). SoD: provisionamento so tenant_admin/super_admin/platform_admin (manager/operator/finance -> 403). ANTI-ENUMERACAO: inexistente/senha-errada/suspenso/bloqueado -> 401 byte-identico + scrypt DUMMY (custo constante) + piso 250ms; outcome interno so no PortalAccessLog. BRUTE-FORCE: rate-limit IP E credencial + PoW progressivo + lockout PERSISTENTE atomico (registerFailedLogin UPDATE auto-referente, RETURNING — race de lost-update FECHADA). §2.8: login so {session,authorityName}(orgao, nao pessoal); log so HMAC; provisionamento sem hash/tenant no DTO. HASHING: scrypt OWASP + maxmem explicito + tempo-constante + salt por-hash. CROSS-TENANT: binding de deploy + withTenantRls em toda query; provisionamento cross-tenant estruturalmente impossivel (tenantId das claims, nunca do corpo).",
+  "rns_cobertas": [
+    "PROVISIONAMENTO (/api/v1/authority-credentials, authority_credentials:manage): create (senha gerada 144-bit devolvida 1x OU definida pelo admin >=10; nunca em claro no banco; hash fora do DTO) / rotate (troca hash + zera lockout) / suspend/revoke (status) / list (sem hash). Auditoria so {status, passwordGenerated:bool}. SoD: 403 p/ manager/operator/finance/auditor.",
+    "CHALLENGE (POST /portal/v1/authority/challenge): PoW assinado; dificuldade progressiva por falhas do IP; loga CHALLENGE_ISSUED.",
+    "LOGIN (POST /portal/v1/authority/login): pipeline rate-limit(cred,ip)->PoW->lookup RLS->inexistente:DUMMY->status/lockout->scrypt verify tempo-constante->fail:registerFailedLogin ATOMICO->sucesso:reset+last_login+JWE(30min). RESPOSTA UNIFORME 401 byte-identica; loga LOGIN. So {session,authorityName}.",
+    "LOCKOUT persistente e ATOMICO: N falhas concorrentes (Promise.all) ENGATAM o lockout (contador soma, sem lost-update); tentativa seguinte mesmo com senha certa cai em bloqueado. (MEDIUM da junta consertado no PR.)",
+    "ISOLAMENTO: a credencial nao alcanca /api/v1; sessao authority != owner != ERP (secret+audience, 2 sentidos).",
+    "Estados do PWA de login: loading/erro-generico/bloqueado-generico/offline; white-label."
+  ],
+  "rns_total_pr": 6,
+  "permissao": "1 permissao NOVA: authority_credentials:manage (4 pontas: catalog.ts + prisma/seed.ts + tests/core-saas.test.ts + RBAC_MATRIX.md). Distribuicao SoD: tenant_admin (heranca nao-platform) + super_admin/platform_admin APENAS. NAO manager/operator/finance/inventory/field_*/auditor/support/viewer (403 provado por HTTP). O LOGIN da autoridade NAO usa permissao do ERP (auth por credencial propria).",
+  "estados_obrigatorios": "PWA login: loading / erro-generico / bloqueado-generico / offline; sessao so em memoria; noindex. Backend: 200 (login OK {session,authorityName}) / 400 (password_invalid, PoW CHALLENGE_FAILED) / 401 (SESSION/credential invalido UNIFORME) / 403 (provisionamento sem authority_credentials:manage) / 404 (login em /api/v1; cross-tenant) / 429 (rate-limit generico) / 409 (username duplicado no provisionamento).",
+  "d_records": [
+    "D-Omega5P-AUTH-01..05 (arquitetura da credencial; ver J-OMEGA5P §7 PR-18 PLANO): portal isolado + credencial propria; hashing scrypt zero-dep; provisionamento sob RBAC (SoD); solicitar-remocao->WorkOrder estreito (PR-18b); anti-brute-force sem credencial externa.",
+    "PD-Omega5P-AUTH-SCRYPT: hashing por node:crypto scrypt (params OWASP + maxmem explicito) — zero dep; provedor gerenciado/argon2 = Omega6.",
+    "D-Omega5P-AUTH-LOCKOUT-ATOMICO (fix da junta): o contador de lockout usa UPDATE auto-referente atomico (failed_login_count + 1, RETURNING) — nunca read-modify-write com SET absoluto (a race era derrotavel por Promise.all)."
+  ],
+  "desvios_do_plano": [
+    "CORTE 18a/18b: esta fatia e SO a fundacao (credencial + provisionamento + login). O solicitar-remocao (/authority/removals -> origina WorkOrder open -> custodia no sweep) e o AuthorityRemovalRequest + migracao 20260850 sao o PR-18b (confirmado ausente aqui).",
+    "MEDIUM da junta (race de lockout) consertado no PROPRIO PR (nao deferido): registerFailedLogin atomico + o setter absoluto saiu da porta de login (defesa por tipo) + teste de concorrencia."
+  ],
+  "testes_alvo": {
+    "tests/authority-credential.test.ts": "6 (memory/http): provisionamento (senha gerada 1x/definida; rotate zera lockout; suspend/revoke; username duplicado 409; senha<10 400) + SoD HTTP (manager/operator/finance/auditor 403; sem-auth 403; tenant_admin passa) + isolamento (login nao existe em /api/v1 -> 404).",
+    "tests/authority-env.test.ts": "7 (schema): gate de prod do PORTAL_AUTHORITY_SESSION_SECRET (ausente/dev-default/==JWT_SECRET/==PORTAL_SESSION_SECRET -> REJEITA; dev aceita; regressao do gate do owner).",
+    "tests/authority-portal.test.ts": "12 (memory/http/crypto): hashing scrypt round-trip+params+maxmem+tempo-constante; enumeracao byte-identica (inexistente=senha-errada=suspenso=bloqueado)+DUMMY; brute-force rate-limit IP e credencial 429; PoW forjada/reusada CHALLENGE_FAILED+dificuldade sobe; lockout persistente sequencial; RACE de lockout concorrente (Promise.all ENGATA — MEDIUM fechado); isolamento sessao authority x owner 2 sentidos; §2.8 login {session,authorityName}; PortalAccessLog 1 linha so HMAC.",
+    "tests/authority-portal-rls.test.ts": "1 (DB-gated): cross-tenant RLS FORCE (A autentica so a propria credencial; log sob A; lockout persiste); teardown tenant-escopado."
+  },
+  "bateria": {
+    "npm_run_check": "verde (tsc --noEmit)",
+    "npm_run_build": "verde",
+    "testes_authority": "authority-credential 6 + authority-env 7 + authority-portal 12 (memory) + authority-portal-rls 1 (DB-gated) = 25/25 memory pass (26 test() total). Race deterministica 3x (nao-flaky).",
+    "testes_modificados": "core-saas 26/26 (SoD 3 permitidos/10 negados) + cors-env/env-geocoding/portal-env verdes (fixtures de prod ganharam PORTAL_AUTHORITY_SESSION_SECRET).",
+    "regressao_owner": "owner-portal + owner-portal-dossier 21/21 (portal-shared tocado aditivo — nada quebrou).",
+    "migracao": "tx-ROLLBACK vivo sem DROP + migrate status up-to-date (85) + validate verde; drift-zero nos objetos do PR.",
+    "pwa": "npm --prefix portals/authority-portal run build verde (5 modulos)",
+    "git_diff_check": "limpo",
+    "dependencia_nova": "NENHUMA no backend (scrypt=node:crypto, jose ja existia). PWA so vite+typescript (devDeps)."
+  },
+  "kpi_repo_wide": {
+    "backend": "1871->1896 (memory-pass; +25 rodam sempre) — +26 test() NOVOS no total (authority-credential 6 + authority-env 7 + authority-portal 12 + authority-portal-rls 1 DB-gated). Sobre 1871 (baseline pos-PR-17, carregado pelos PRs de governanca #303/#304/#305). CI com Postgres roda os 7 DB-gated (6 previos + authority-portal-rls).",
+    "frontend_smoke": "937 (inalterado — o PWA authority e app separado com job CI proprio)",
+    "flutter_tests": "807 (inalterado)",
+    "blocks": "110->111 (+1 — PR-18a de feature; ABRE a superficie credenciada)",
+    "mvp_demo": "inalterado",
+    "mvp_vendavel": "inalterado"
+  },
+  "coexistencia": "owner-portal/impound/charging/release/auction git-diff VAZIO. portal-shared estendido ADITIVO (loginBucket? opcional, sign/verifyAuthoritySession novos, action alargado) — owner 21/21 intacto. Migracao aditiva. catalog/seed/RBAC so somam a permissao nova. Nenhum agente pre-existente tocado.",
+  "junta": {
+    "agente-secops": "APROVADO (VETO; 0 condicao de veto). scrypt OWASP+maxmem+tempo-constante; anti-enumeracao DUMMY+byte-identico+250ms; brute-force IP+credencial+PoW+lockout persistente; isolamento secret+audience (gate rejeita ==JWT/==owner, 2 sentidos); §2.8; provisionamento sem hash. LOW deploy (multi-instancia/trust-proxy)->backlog.",
+    "critico-adversarial": "APROVADO (0 CRITICO; 1 MEDIUM + 4 LOW). Os 8 vetores resistiram. MEDIUM: race de lost-update no lockout (SET absoluto de leitura stale, PoC Promise.all derrotava) -> CONSERTADO no PR (incremento atomico). Re-verificado (25/25 verde, race engata). 4 LOW->backlog.",
+    "coordenador-de-acessos": "APROVADO. Permissao 4 pontas + SoD (tenant_admin+admins APENAS; manager/operator/finance 403 HTTP; core-saas 26/26). Duas cadeias separadas (provisionamento /api/v1+RBAC; login portal sem attachAuth). Sessao authority != ERP != owner (2 sentidos). Cross-tenant no provisionamento estruturalmente impossivel. Nota p/ 18b: revogacao x JWE emitida.",
+    "agente-dba-guardiao": "APROVADO. Migracao 20260849 provada VIVA tx-ROLLBACK sem DROP (UNIQUE bloqueia duplicata; widening superset; sobra 0/0). RLS FORCE, tenant-first, FK RESTRICT, CHECK, tabela mutavel sem append-only justificada. migrate status up-to-date, validate verde, drift-zero. Endossou o fix atomico do lockout.",
+    "omega5p-avaliador": "APROVADO (VETO; 0 CRITICO). Escopo (owner/impound/auction intocados; sem /removals/WorkOrder = 18b nao vazou); I10; §2.8; aderencia Res.1025 art.9-I/art.14; white-label. backend 1871->1896/1897 (+25/+26). Condicao procedural: KPI no PR (feita aqui).",
+    "veredito": "APROVADO 5/5 (0 ciclo de reprovacao; 1 MEDIUM consertado no proprio PR). ABRE a superficie credenciada. Proximo: PR-18b (solicitar remocao -> WorkOrder -> custodia; SoD)."
+  },
+  "pr": null,
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "published_per_pr",
+  "riscos_residuais": "(1) LOW backlog: gate de env par-a-par (== JWT_REFRESH_SECRET/PORTAL_LOG_SECRET); timing residual de enumeracao (escrita dummy simetrica); complexidade da senha do admin (zxcvbn/HIBP); multi-instancia/trust-proxy = fronteira de deploy (Redis/store compartilhado Omega6). (2) revogacao x JWE ja emitida (TTL 30min) = REQUISITO do PR-18b (checar status no consumo da sessao). (3) o login e a fundacao; o solicitar-remocao = PR-18b.",
+  "backlog": "Gate de env par-a-par de todos os segredos portal x ERP. Timing residual de enumeracao (dummy simetrica na via inexistente). Complexidade/breach-check da senha definida pelo admin. Multi-instancia: store compartilhado (Redis) p/ baldes/PoW = Omega6; trust-proxy por saltos no runbook. PR-18b: checar status/revoked no consumo da sessao authority."
+}

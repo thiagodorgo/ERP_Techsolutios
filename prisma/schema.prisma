@@ -61,6 +61,7 @@ model Tenant {
   settlement_allocations        SettlementAllocation[]
   portal_access_logs            PortalAccessLog[]
   portal_release_requests       PortalReleaseRequest[]
+  authority_credentials         AuthorityCredential[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
   financial_titles              FinancialTitle[]
@@ -2898,6 +2899,35 @@ model PortalReleaseRequest {
   @@index([tenant_id, process_id])
   @@index([tenant_id, status])
   @@map("portal_release_requests")
+}
+
+// Ω5P PR-18a — AuthorityCredential: a 1ª ENTIDADE de identidade da AUTORIDADE SOLICITANTE (persona credenciada do
+// authority-portal). PRÓPRIA e ISOLADA (D-Ω5P-AUTH-01): ≠ User/AuthSession/Cognito do ERP e ≠ posse do owner. NÃO
+// recebe roles/permissions do ERP e NÃO alcança /api/v1 — só autentica a sessão JWE do authority-portal (audience
+// própria, secret PORTAL_AUTHORITY_SESSION_SECRET). Tabela MUTÁVEL (rotação de senha + lockout) — SEM trigger
+// append-only (a trilha probatória do ACESSO fica no PortalAccessLog, append-only; as escritas de PROVISIONAMENTO
+// são auditadas pelo Ω4C). password_hash = scrypt self-describing (node:crypto, params OWASP — PD-Ω5P-AUTH-SCRYPT);
+// §2.8: o hash NUNCA sai em resposta/log; a resposta do login só {session, authorityName}. RLS ENABLE+FORCE+POLICY;
+// UNIQUE(tenant_id, username) chave natural de login; tenant_id 1º em todo índice. status app-validado + CHECK.
+model AuthorityCredential {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String    @db.Uuid
+  authority_name     String // nome do ÓRGÃO (não pessoal) — white-label; único campo exposto no login
+  username           String // normalizado (minúsculas/trim) na APP — chave natural (tenant_id, username)
+  password_hash      String // scrypt$N$r$p$salt$hash — NUNCA a senha em claro; NUNCA servido
+  status             String    @default("ACTIVE") // ACTIVE | SUSPENDED | REVOKED (app-validado + CHECK)
+  failed_login_count Int       @default(0) // lockout persistente (sobrevive a restart)
+  locked_until       DateTime? @db.Timestamptz(6)
+  last_login_at      DateTime? @db.Timestamptz(6)
+  created_by         String?   @db.Uuid // userId do admin do ERP que provisionou (metadata; sem FK dura)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant             Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, username])
+  @@index([tenant_id, status])
+  @@map("authority_credentials")
 }
 
 // Ω5P PR-05 — Evento de custódia: timeline APPEND-ONLY hash-encadeada (I2). hash = sha256 do preimage endurecido
