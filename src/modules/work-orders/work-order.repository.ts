@@ -9,6 +9,7 @@ import type {
   UpdateWorkOrderGeocodeInput,
   FreezeChecklistSnapshotInput,
   UpdateWorkOrderInput,
+  SystemRemovalWorkOrderInput,
   WorkOrder,
   WorkOrderAssignment,
   WorkOrderEvent,
@@ -287,6 +288,47 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
 
 export function formatWorkOrderCode(sequence: number): string {
   return `OS-${String(sequence).padStart(6, "0")}`;
+}
+
+// Ω5P PR-18b — título/descrição WHITE-LABEL da OS de remoção originada pela autoridade. Carregam a PLACA (para o
+// operador identificar o bem), NUNCA o nome do órgão (a OS é neutra — anti-spoof; espelha a origem neutra do sweep).
+export function systemRemovalWorkOrderTitle(plate: string): string {
+  return `Remoção de veículo — placa ${plate}`;
+}
+export function systemRemovalWorkOrderDescription(plate: string): string {
+  return `Solicitação de remoção registrada para o veículo de placa ${plate}. A custódia é aberta apenas quando a ordem for concluída pela operação de campo.`;
+}
+
+// Ω5P PR-18b — método SYSTEM-only (ator SISTEMA, SEM rota/controller, inalcançável por HTTP) que ORIGINA a OS de
+// remoção. Espelha o openFromRemoval do sweep: shape controlado, NÃO passa pelo create REST (nenhuma validação de
+// cliente/veículo/tarifa/destino). A OS nasce 'open' (SoD: a custódia só abre na CONCLUSÃO pelo operador de campo,
+// NUNCA aqui — I1/I3 intactos), vinculada ao catálogo de remoção, veículo NÃO identificado (só a placa), created_by
+// NULL = SISTEMA. ACEITA um `repo` já escopado à TX do chamador (tenant-RLS): a origem da OS fica ATÔMICA com o
+// INSERT da AuthorityRemovalRequest (o repo tx-scoped é PrismaWorkOrderRepository(tx) em prod; InMemory em teste).
+export async function originateSystemRemovalWorkOrder(
+  repo: Pick<WorkOrderRepository, "nextCode" | "create" | "createEvent">,
+  input: SystemRemovalWorkOrderInput,
+): Promise<WorkOrder> {
+  const code = await repo.nextCode(input.tenantId);
+  const workOrder = await repo.create({
+    tenantId: input.tenantId,
+    code,
+    title: systemRemovalWorkOrderTitle(input.plate),
+    description: systemRemovalWorkOrderDescription(input.plate),
+    priority: "medium",
+    serviceCatalogId: input.serviceCatalogId,
+    // Ator SISTEMA: created_by/updated_by ausentes (NULL). Veículo NÃO identificado: sem vehicleId/customer.
+    status: "open",
+  });
+  await repo.createEvent({
+    tenantId: input.tenantId,
+    workOrderId: workOrder.id,
+    eventType: "work_order_created",
+    toStatus: workOrder.status,
+    message: "Ordem de servico criada.",
+    metadata: { code: workOrder.code, priority: workOrder.priority, origin: "authority_removal" },
+  });
+  return workOrder;
 }
 
 // Ω3F-6 (D-Ω3F-6-DUPLICATE) — replay do duplicate (mesmo client_action_id no tenant) → 409. Emitido

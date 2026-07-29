@@ -11,7 +11,10 @@ export type PortalName = (typeof PORTAL_NAMES)[number];
 // registro da intenção de liberação. A migração 20260848000000 alarga o CHECK de action da tabela (aditivo).
 // Ω5P PR-18a (aditivo): LOGIN = tentativa de login do authority-portal (superfície CREDENCIADA). A migração
 // 20260849000000 alarga o CHECK de action (+LOGIN, aditivo/não-destrutivo).
-export const PORTAL_ACTIONS = ["CHALLENGE_ISSUED", "LOOKUP", "DOSSIER_VIEWED", "RELEASE_REQUESTED", "LOGIN"] as const;
+// Ω5P PR-18b (aditivo): REMOVAL_REQUESTED = solicitação de remoção originada pela autoridade credenciada (I10:
+// quem solicitou — credencial fingerprintada, de onde — ip_hash, quando). A migração 20260850000000 alarga o
+// CHECK de action (+REMOVAL_REQUESTED, aditivo/não-destrutivo). process_id sempre NULL (§2.8: nunca a OS/processo).
+export const PORTAL_ACTIONS = ["CHALLENGE_ISSUED", "LOOKUP", "DOSSIER_VIEWED", "RELEASE_REQUESTED", "LOGIN", "REMOVAL_REQUESTED"] as const;
 export type PortalAction = (typeof PORTAL_ACTIONS)[number];
 
 // Desfecho INTERNO (NUNCA exposto). ISSUED = desafio emitido; FOUND/NOT_FOUND/FACTOR_MISMATCH = resultado da

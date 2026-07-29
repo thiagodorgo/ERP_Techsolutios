@@ -212,6 +212,17 @@ export type CreateWorkOrderInput = Omit<
   readonly status?: WorkOrderStatus;
 };
 
+// Ω5P PR-18b — entrada do método SYSTEM-only que ORIGINA a OS de remoção a partir da solicitação da autoridade
+// credenciada (authority-portal). NÃO passa pelo create REST (nenhuma validação de cliente/veículo/tarifa se
+// aplica): a OS nasce 'open', vinculada ao catálogo de remoção, veículo NÃO identificado (só a placa), ator
+// SISTEMA (created_by NULL). A custódia NÃO abre aqui — só quando o operador de campo CONCLUI a OS (o sweep
+// dispara). White-label: o título carrega a placa, NUNCA o nome do órgão. Ver originateSystemRemovalWorkOrder.
+export type SystemRemovalWorkOrderInput = {
+  readonly tenantId: string;
+  readonly plate: string; // normalizada (maiúsculas/alfanumérica) — a mesma chave anti-spam da solicitação
+  readonly serviceCatalogId: string; // catálogo de remoção resolvido server-side (D-Ω5P-AUTH-06); nunca do corpo
+};
+
 export type UpdateWorkOrderInput = Partial<
   Pick<
     WorkOrder,

@@ -1,9 +1,9 @@
 import "./styles.css";
-import { login, type LoginOutcome } from "./api.js";
+import { login, requestRemoval, type LoginOutcome, type RemovalInput } from "./api.js";
 
-// Ω5P PR-18a — shell do authority-portal (PWA mobile-first, white-label, PT-BR). FUNDAÇÃO de auth (18a): tela de
-// LOGIN (usuário/senha + PoW transparente). A solicitar-remoção é 18b. A SESSÃO (JWE) vive só em MEMÓRIA (nunca
-// persistida); expira em ~30min. Alvos de toque ≥44px; estados loading/erro-genérico/bloqueado-genérico/offline.
+// Ω5P PR-18a/b — shell do authority-portal (PWA mobile-first, white-label, PT-BR). LOGIN (18a) + SOLICITAR REMOÇÃO
+// (18b: placa → local → fundamento → confirmação). A SESSÃO (JWE) vive só em MEMÓRIA (nunca persistida); expira em
+// ~30min → 401 devolve ao login. Alvos de toque ≥44px; estados loading/vazio/erro/sessão-expirada/offline.
 // White-label: "autoridade solicitante/órgão/pátio", NUNCA "polícia".
 
 const root = document.querySelector<HTMLDivElement>("#app");
@@ -116,26 +116,132 @@ function onLogin(outcome: LoginOutcome, username: string): void {
   renderLoginError(username, "Usuário ou senha inválidos.");
 }
 
-// Sucesso do login (18a). A solicitar-remoção é 18b; aqui é o placeholder honesto do próximo passo.
+// Sucesso do login → tela de SOLICITAR REMOÇÃO (18b). Guarda de sessão: sem a JWE em memória, volta ao login.
 function renderAuthenticated(): void {
+  renderRemovalForm();
+}
+
+// ── SOLICITAR REMOÇÃO (18b) ──────────────────────────────────────────────────────────────────────────────────────
+// Formulário: placa (obrigatória) → local (opcional) → fundamento (opcional) → confirmação. A sessão JWE do login
+// autoriza (Bearer); o órgão vem da credencial (nunca digitado aqui — anti-spoof).
+function renderRemovalForm(error = ""): void {
   if (!root) return;
-  // Guarda de sessão: sem a JWE em memória não há acesso (a solicitar-remoção 18b a enviará no Bearer).
   if (!authoritySession) {
     renderLogin();
     return;
   }
+
+  const plateInput = el("input", {
+    class: "field-input", id: "plate", name: "plate", type: "text", autocomplete: "off",
+    inputMode: "text", maxLength: 10, placeholder: "ABC1D23",
+  });
+  plateInput.setAttribute("aria-label", "Placa do veículo");
+  plateInput.style.textTransform = "uppercase";
+
+  const locationInput = el("input", {
+    class: "field-input", id: "location", name: "location", type: "text", autocomplete: "off",
+    maxLength: 200, placeholder: "Endereço ou ponto de referência",
+  });
+  locationInput.setAttribute("aria-label", "Local do veículo");
+
+  const basisInput = el("textarea", {
+    class: "field-input", id: "legalBasis", name: "legalBasis", maxLength: 240, rows: 3,
+    placeholder: "Fundamento legal da remoção (opcional)",
+  });
+  basisInput.setAttribute("aria-label", "Fundamento legal");
+
+  const errorNode = el("p", { class: "form-error", role: "alert" }, [error]);
+  const submit = el("button", { class: "btn-primary", type: "submit" }, ["Solicitar remoção"]);
+
+  const form = el("form", { class: "card form", noValidate: true }, [
+    el("label", { class: "field-label", htmlFor: "plate" }, ["Placa do veículo"]),
+    plateInput,
+    el("label", { class: "field-label", htmlFor: "location" }, ["Local do veículo"]),
+    locationInput,
+    el("label", { class: "field-label", htmlFor: "legalBasis" }, ["Fundamento legal"]),
+    basisInput,
+    el("p", { class: "field-hint" }, ["A solicitação origina o atendimento e é registrada de forma auditada. O órgão é identificado pela sua credencial."]),
+    errorNode,
+    submit,
+  ]);
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const plate = plateInput.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    if (plate.length < 5) {
+      errorNode.textContent = "Informe a placa do veículo.";
+      return;
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      errorNode.textContent = "Você está offline. Conecte-se para enviar a solicitação.";
+      return;
+    }
+    errorNode.textContent = "";
+    runRemoval({
+      plate,
+      location: locationInput.value.trim() || undefined,
+      legalBasis: (basisInput as HTMLTextAreaElement).value.trim() || undefined,
+    });
+  });
+
+  root.replaceChildren(
+    header(),
+    el("main", { class: "screen" }, [
+      el("h1", { class: "screen-title" }, ["Solicitar remoção"]),
+      el("p", { class: "screen-lead" }, [
+        authorityName ? `${authorityName} — informe os dados do veículo a ser removido.` : "Informe os dados do veículo a ser removido.",
+      ]),
+      form,
+      el("button", { class: "btn-secondary", type: "button", onclick: () => signOut() }, ["Sair"]),
+    ]),
+  );
+}
+
+function runRemoval(input: RemovalInput): void {
+  if (!authoritySession) {
+    renderLogin();
+    return;
+  }
+  renderLoading("Registrando a solicitação de remoção…");
+  void requestRemoval(authoritySession, input).then((outcome) => {
+    if (outcome.kind === "received") {
+      renderRemovalConfirmed();
+      return;
+    }
+    if (outcome.kind === "session_expired") {
+      // Sessão expirada/revogada → volta ao login (a JWE em memória não vale mais).
+      authoritySession = null;
+      authorityName = null;
+      renderLogin();
+      const err = root?.querySelector<HTMLParagraphElement>(".form-error");
+      if (err) err.textContent = "Sua sessão expirou. Entre novamente para continuar.";
+      return;
+    }
+    if (outcome.kind === "rate_limited") {
+      renderRemovalForm("Muitas solicitações em pouco tempo. Aguarde alguns minutos e tente novamente.");
+      return;
+    }
+    if (outcome.kind === "invalid") {
+      renderRemovalForm("Verifique os dados informados e tente novamente.");
+      return;
+    }
+    renderRemovalForm("Não foi possível enviar a solicitação. Verifique sua conexão e tente novamente.");
+  });
+}
+
+function renderRemovalConfirmed(): void {
+  if (!root) return;
   root.replaceChildren(
     header(),
     el("main", { class: "screen" }, [
       el("div", { class: "card message" }, [
         el("span", { class: "confirm-icon", ariaHidden: "true" }, ["✓"]),
-        el("h2", { class: "message-title" }, ["Acesso autorizado"]),
+        el("h2", { class: "message-title" }, ["Solicitação registrada"]),
         el("p", { class: "message-body" }, [
-          authorityName
-            ? `Você está autenticado como ${authorityName}. A solicitação de remoção estará disponível nesta área.`
-            : "Você está autenticado. A solicitação de remoção estará disponível nesta área.",
+          "A solicitação de remoção foi registrada e encaminhada para atendimento. O acompanhamento fica disponível no console do órgão.",
         ]),
       ]),
+      el("button", { class: "btn-primary", type: "button", onclick: () => renderRemovalForm() }, ["Nova solicitação"]),
       el("button", { class: "btn-secondary", type: "button", onclick: () => signOut() }, ["Sair"]),
     ]),
   );
