@@ -61,6 +61,7 @@ model Tenant {
   settlement_allocations        SettlementAllocation[]
   portal_access_logs            PortalAccessLog[]
   portal_release_requests       PortalReleaseRequest[]
+  impound_outbox_events         ImpoundOutboxEvent[]
   authority_credentials         AuthorityCredential[]
   authority_removal_requests    AuthorityRemovalRequest[]
   release_authority_decisions   ReleaseAuthorityDecision[]
@@ -2839,6 +2840,7 @@ model ImpoundProcess {
   settlement_allocations SettlementAllocation[] // Ω5P PR-14a — rateio append-only por beneficiário na ordem §6º
   portal_access_logs     PortalAccessLog[]   // Ω5P PR-16 — acessos do owner-portal que RESOLVERAM neste processo (I10)
   portal_release_requests PortalReleaseRequest[] // Ω5P PR-17 — intenções de liberação originadas pelo proprietário
+  outbox_events          ImpoundOutboxEvent[] // Ω5P PR-20 — fila de interop Sivec-ready (captura, nunca envio real)
 
   @@unique([tenant_id, id])
   @@index([tenant_id, yard_id, status])
@@ -3383,4 +3385,43 @@ model SettlementAllocation {
   @@unique([tenant_id, id])
   @@index([tenant_id, settlement_id, order_seq])
   @@map("settlement_allocations")
+}
+
+// Ω5P PR-20 — ImpoundOutboxEvent: fila de interop Sivec-ready (Res. CONTRAN 1025/2026 art.9º III/IV — sistema
+// eletrônico com interoperabilidade Sivec — e art.44, janela de transição: lança "pronto para" ANTES da
+// especificação técnica final, SEM integração prematura). Projeta o CustodyEvent do marco-chave (transição para
+// ACTIVE_CUSTODY/RELEASED/AUCTIONED/CLOSED, emissão de notificação, fechamento de liquidação) NA MESMA tx — não
+// bifurca uma 2ª fonte de verdade (a prova continua no CustodyEvent append-only; este registro é a CAPTURA da
+// fila de entrega). Escopo = SÓ CAPTURA: nenhum worker de drenagem, nenhuma chamada HTTP/SDK a um endpoint Sivec
+// real (exigiria homologação/credencial do órgão — fora do MVP, mesma fronteira de PD-Ω5P-NOTIF-SEND/PD-Ω5P-SIGN).
+//
+// NÃO é append-only ESTRITO (diverge de custody_events por desenho): status/attempts/last_error MUDAM conforme o
+// drenador (Ω6) tenta a entrega — é uma fila, não um livro-razão. Mas DELETE é SEMPRE vedado (I9: nenhum registro
+// do processo desaparece fisicamente) — TRIGGER BEFORE DELETE bloqueia (mesmo espírito de custody_events_block_
+// mutation, mas só para DELETE; UPDATE de status/attempts/last_error é permitido por desenho).
+//
+// payload Json = allowlist §2.8 (projeção do CustodyEvent — nunca PII crua além do necessário). target String
+// (parametrizado, não enum — mesmo padrão do channel de ProcessNotification); default "SIVEC". status String
+// (PENDING|SENT|FAILED|SKIPPED, app-validado + CHECK estrutural). process→RESTRICT (I9). tenant_id 1º em todo
+// índice composto; RLS ENABLE+FORCE+POLICY.
+model ImpoundOutboxEvent {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id      String   @db.Uuid
+  process_id     String   @db.Uuid
+  event_type     String
+  schema_version Int      @default(1)
+  payload        Json
+  target         String   @default("SIVEC")
+  status         String   @default("PENDING") // PENDING|SENT|FAILED|SKIPPED (app-validado + CHECK)
+  attempts       Int      @default(0)
+  last_error     String?
+  occurred_at    DateTime @db.Timestamptz(6)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  tenant         Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  process        ImpoundProcess @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, process_id])
+  @@index([tenant_id, status])
+  @@map("impound_outbox_events")
 }

@@ -3,6 +3,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { withTenantRls } from "../../database/rls.js";
 import { moneyToCents } from "../charging/charge.validators.js";
 import { computeEventHash, genesisHash } from "../impound/impound.hashchain.js";
+import { appendOutboxEventTx, buildOutboxPayloadFromCustodyEvent } from "../impound/impound.outbox.repository.js";
 import type { CanonicalValue, CustodyEventType } from "../impound/impound.types.js";
 import type { ReleaseRepository } from "./release.repository.js";
 import {
@@ -256,11 +257,19 @@ export class PrismaReleaseRepository implements ReleaseRepository {
     }
     // Efeito atômico: RELEASE na cadeia + status=RELEASED + release COMPLETED + vacate da vaga (MESMA tx).
     await this.client.impoundProcess.update({ where: { id: input.processId }, data: { status: "RELEASED" } });
-    await this.appendEventTx(input.tenantId, input.processId, locked, {
+    const appended = await this.appendEventTx(input.tenantId, input.processId, locked, {
       type: "RELEASE",
       payload: input.eventPayload,
       occurredAt: input.occurredAt,
       actorId: input.actorId,
+    });
+    // Ω5P PR-20 — captura de interop na MESMA tx do marco RELEASED (I5/I2 marco de origem). Nunca chama Sivec real.
+    await appendOutboxEventTx(this.client, {
+      tenantId: input.tenantId,
+      processId: input.processId,
+      eventType: "STATUS_CHANGE_RELEASED",
+      payload: buildOutboxPayloadFromCustodyEvent(appended),
+      occurredAt: input.occurredAt,
     });
     const completed = await this.client.impoundRelease.update({
       where: { id: input.releaseId },
@@ -444,7 +453,7 @@ export class PrismaReleaseRepository implements ReleaseRepository {
     processId: string,
     head: LockedProcessRow,
     draft: { readonly type: CustodyEventType; readonly payload: CanonicalValue; readonly occurredAt: Date; readonly actorId?: string },
-  ): Promise<void> {
+  ): Promise<{ readonly id: string; readonly seq: number; readonly hash: string; readonly payload: CanonicalValue }> {
     const seq = head.custody_seq_head + 1;
     const prevHash = head.custody_hash_head ?? genesisHash(tenantId, processId);
     const hash = computeEventHash({
@@ -487,6 +496,7 @@ export class PrismaReleaseRepository implements ReleaseRepository {
         metadata: { processId, seq, hash },
       },
     });
+    return { id: eventRow.id, seq, hash, payload: draft.payload };
   }
 }
 

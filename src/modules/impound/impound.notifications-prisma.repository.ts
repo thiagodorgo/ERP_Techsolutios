@@ -3,6 +3,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { withTenantRls } from "../../database/rls.js";
 import type { ProfileScope } from "../jurisdiction/jurisdiction.types.js";
 import { computeEventHash, genesisHash } from "./impound.hashchain.js";
+import { appendOutboxEventTx, buildOutboxPayloadFromCustodyEvent } from "./impound.outbox.repository.js";
 import type { CanonicalValue, CustodyEventType } from "./impound.types.js";
 import {
   buildNotificationEventPayload,
@@ -131,7 +132,16 @@ export class PrismaNotificationRepository implements NotificationRepository {
         },
       });
     }
-    await this.appendNotificationEventTx(input.tenantId, input.processId, locked, notification, "issued", input.occurredAt, input.actorId);
+    const appended = await this.appendNotificationEventTx(input.tenantId, input.processId, locked, notification, "issued", input.occurredAt, input.actorId);
+    // Ω5P PR-20 — captura de interop na MESMA tx da EMISSÃO efetiva (I6 marco de origem). SÓ ISSUED alimenta a fila
+    // (DUE/WAIVED não são "emissão" no sentido do art.9º III-IV) — nunca chama Sivec real.
+    await appendOutboxEventTx(this.client, {
+      tenantId: input.tenantId,
+      processId: input.processId,
+      eventType: "NOTIFICATION_ISSUED",
+      payload: buildOutboxPayloadFromCustodyEvent(appended),
+      occurredAt: input.occurredAt,
+    });
     return notification;
   }
 
@@ -235,7 +245,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
     action: NotificationEventAction,
     occurredAt: Date,
     actorId?: string,
-  ): Promise<void> {
+  ): Promise<{ readonly id: string; readonly seq: number; readonly hash: string; readonly payload: CanonicalValue }> {
     const draft: { readonly type: CustodyEventType; readonly payload: CanonicalValue; readonly occurredAt: Date; readonly actorId?: string } = {
       type: "NOTIFICATION",
       payload: buildNotificationEventPayload(notification, action),
@@ -288,6 +298,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
         metadata: { processId, seq, hash },
       },
     });
+    return { id: eventRow.id, seq, hash, payload: draft.payload };
   }
 }
 

@@ -212,6 +212,9 @@ async function teardownTenant(client: BootstrapClient, tenantId: string): Promis
     await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
     await tx.$executeRawUnsafe(`DELETE FROM auction_edicts WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM auction_attempts WHERE tenant_id = '${tenantId}'::uuid`);
+    // Ω5P PR-20 — recordSaleAtomic captura 1 impound_outbox_events (STATUS_CHANGE_AUCTIONED) na MESMA tx da venda;
+    // purgar ANTES de impound_processes (FK RESTRICT).
+    await tx.$executeRawUnsafe(`DELETE FROM impound_outbox_events WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM custody_events WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM impound_processes WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM jurisdiction_profiles WHERE tenant_id = '${tenantId}'::uuid`);

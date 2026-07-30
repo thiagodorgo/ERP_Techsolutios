@@ -80,6 +80,8 @@ const ProcessoDossiePage = lazy(() => import("./modules/patios/processes/pages/P
 const LiberacoesPage = lazy(() => import("./modules/patios/release/pages/LiberacoesPage").then((m) => ({ default: m.LiberacoesPage })));
 // Ω5P PR-15a — funil de Leilões (governado por impound:read; o dossiê hospeda o painel de leilão).
 const LeiloesPage = lazy(() => import("./modules/patios/auction/pages/LeiloesPage").then((m) => ({ default: m.LeiloesPage })));
+// Ω5P PR-20 — Painel gerencial dos Pátios (dashboard consolidado; governado por impound:read, REUSADA).
+const PainelPatiosPage = lazy(() => import("./modules/patios/dashboard/pages/PainelPatiosPage").then((m) => ({ default: m.PainelPatiosPage })));
 const AbastecimentoPage = lazy(() => import("./modules/fleet/fuel/pages/AbastecimentoPage").then((m) => ({ default: m.AbastecimentoPage })));
 const ManutencaoPage = lazy(() => import("./modules/fleet/maintenance/pages/ManutencaoPage").then((m) => ({ default: m.ManutencaoPage })));
 const MultasPage = lazy(() => import("./modules/fleet/fines/pages/MultasPage").then((m) => ({ default: m.MultasPage })));
@@ -443,6 +445,16 @@ export function App() {
               element={
                 <PermissionGuard permissions={["price_tables:read"]}>
                   <TabelasValoresPage />
+                </PermissionGuard>
+              }
+            />
+            {/* Ω5P PR-20 — Painel gerencial (dashboard consolidado): ocupação, processos por fase, fila de
+                liberação, alertas de prazo e arrecadação de leilão. Governado por impound:read (REUSADA). */}
+            <Route
+              path="/patios/painel"
+              element={
+                <PermissionGuard permissions={["impound:read"]}>
+                  <PainelPatiosPage />
                 </PermissionGuard>
               }
             />

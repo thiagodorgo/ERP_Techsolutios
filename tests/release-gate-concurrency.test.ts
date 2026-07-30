@@ -305,6 +305,9 @@ async function teardownTenant(client: BootstrapClient, tenantId: string): Promis
     await tx.$executeRawUnsafe(`DELETE FROM release_requirement_checks WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM impound_releases WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM process_charges WHERE tenant_id = '${tenantId}'::uuid`);
+    // Ω5P PR-20 — consumeReleaseAtomic captura 1 impound_outbox_events (STATUS_CHANGE_RELEASED) só quando o gate
+    // efetivamente libera; defensivo aqui mesmo quando o cenário BLOQUEIA (0 linhas — delete vira no-op).
+    await tx.$executeRawUnsafe(`DELETE FROM impound_outbox_events WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM custody_events WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM impound_processes WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM jurisdiction_profiles WHERE tenant_id = '${tenantId}'::uuid`);
