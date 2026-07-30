@@ -14,7 +14,10 @@ export type PortalName = (typeof PORTAL_NAMES)[number];
 // Ω5P PR-18b (aditivo): REMOVAL_REQUESTED = solicitação de remoção originada pela autoridade credenciada (I10:
 // quem solicitou — credencial fingerprintada, de onde — ip_hash, quando). A migração 20260850000000 alarga o
 // CHECK de action (+REMOVAL_REQUESTED, aditivo/não-destrutivo). process_id sempre NULL (§2.8: nunca a OS/processo).
-export const PORTAL_ACTIONS = ["CHALLENGE_ISSUED", "LOOKUP", "DOSSIER_VIEWED", "RELEASE_REQUESTED", "LOGIN", "REMOVAL_REQUESTED"] as const;
+// Ω5P PR-19 (aditivo): RELEASE_DECIDED = decisão APPROVE/REJECT da autoridade sobre a liberação in-system (I10:
+// quem decidiu, o quê, quando). A migração 20260851000000 alarga o CHECK de action (+RELEASE_DECIDED, aditivo).
+// process_id PRESENTE (FK composta tenant-first RESTRICT já existente); reference/note NUNCA entram no log (§2.8).
+export const PORTAL_ACTIONS = ["CHALLENGE_ISSUED", "LOOKUP", "DOSSIER_VIEWED", "RELEASE_REQUESTED", "LOGIN", "REMOVAL_REQUESTED", "RELEASE_DECIDED"] as const;
 export type PortalAction = (typeof PORTAL_ACTIONS)[number];
 
 // Desfecho INTERNO (NUNCA exposto). ISSUED = desafio emitido; FOUND/NOT_FOUND/FACTOR_MISMATCH = resultado da
@@ -24,6 +27,8 @@ export type PortalAction = (typeof PORTAL_ACTIONS)[number];
 // Ω5P PR-18a (aditivo): AUTHENTICATED = login OK (sessão authority emitida); CREDENTIAL_INVALID = username
 // inexistente ∨ senha errada ∨ status≠ACTIVE (UNIFORME na resposta 401, sem oráculo); LOCKED = credencial em
 // lockout (locked_until>now). Os três últimos são INTERNOS: a RESPOSTA do login é a MESMA para todos (§2.8).
+// Ω5P PR-19 (aditivo): APPROVED/REJECTED = desfecho da decisão RELEASE_DECIDED (sem CHECK de banco — outcome
+// nunca teve constraint, só a coluna action).
 export const PORTAL_OUTCOMES = [
   "ISSUED",
   "FOUND",
@@ -36,6 +41,8 @@ export const PORTAL_OUTCOMES = [
   "AUTHENTICATED",
   "CREDENTIAL_INVALID",
   "LOCKED",
+  "APPROVED",
+  "REJECTED",
 ] as const;
 export type PortalOutcome = (typeof PORTAL_OUTCOMES)[number];
 

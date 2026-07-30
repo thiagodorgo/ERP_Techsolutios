@@ -13,6 +13,7 @@ import {
   InMemoryAuthorityRemovalRepository,
   PrismaAuthorityRemovalRepository,
   createPrismaRemovalCatalogResolver,
+  getMemoryAuthorityRemovalRepository,
 } from "./authority-removal.repository.js";
 import { AuthorityRemovalService } from "./authority-removal.service.js";
 import type {
@@ -51,11 +52,19 @@ async function buildParts(): Promise<{
     const removals = new PrismaAuthorityRemovalRepository(prisma);
     return { consumption, removals };
   }
-  // memory/dev: credencial do singleton compartilhado; catálogo fail-closed (null ⇒ enfileira).
+  // memory/dev: credencial do singleton compartilhado; catálogo fail-closed (null ⇒ enfileira). removals =
+  // singleton compartilhado (getMemoryAuthorityRemovalRepository) — o runtime de authority-release-approval
+  // (PR-19) enxerga as MESMAS solicitações originadas aqui, em paridade com o Prisma (1 tabela só).
   const credentials = getMemoryAuthorityCredentialRepository();
   const consumption = new AuthorityRemovalConsumptionAdapter(credentials, async () => null);
-  const removals = new InMemoryAuthorityRemovalRepository(getMemoryWorkOrderRepositoryForTests());
+  const removals = getMemoryAuthorityRemovalRepository(getMemoryWorkOrderRepositoryForTests());
   return { consumption, removals };
+}
+
+// Ω5P PR-19 — getter estreito p/ o runtime de authority-release-approval enxergar as MESMAS solicitações em modo
+// memory/dev (a fonte-única é o singleton compartilhado; NUNCA cria uma 2ª coleção paralela e desincronizada).
+export function getMemoryAuthorityRemovalRepositoryForTests(): InMemoryAuthorityRemovalRepository {
+  return getMemoryAuthorityRemovalRepository(getMemoryWorkOrderRepositoryForTests());
 }
 
 export async function createDefaultAuthorityRemovalService(): Promise<AuthorityRemovalService> {

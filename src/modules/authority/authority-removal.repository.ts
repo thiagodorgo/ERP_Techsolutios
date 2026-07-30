@@ -122,6 +122,20 @@ export class InMemoryAuthorityRemovalRepository implements AuthorityRemovalRepos
   }
 }
 
+// Singleton in-memory COMPARTILHADO (mesmo espírito de getMemoryAuthorityCredentialRepository/getMemoryWorkOrder
+// RepositoryForTests): permite que o runtime de authority-release-approval (PR-19) enxergue as MESMAS solicitações
+// que o runtime de authority-removal (PR-18b) originou em modo dev/memory (paridade com o Prisma, 1 tabela só).
+let memoryRemovalRepository: InMemoryAuthorityRemovalRepository | undefined;
+
+export function getMemoryAuthorityRemovalRepository(workOrders: InMemoryWorkOrderRepository): InMemoryAuthorityRemovalRepository {
+  memoryRemovalRepository ??= new InMemoryAuthorityRemovalRepository(workOrders);
+  return memoryRemovalRepository;
+}
+
+export function resetMemoryAuthorityRemovalRepositoryForTests(): void {
+  memoryRemovalRepository = undefined;
+}
+
 // ── Prisma (produção) ───────────────────────────────────────────────────────────────────────────────────────────
 // Casa SÓ o nome da constraint de idempotência (não "23505" solto — qualquer outra unique/PK violation na mesma tx
 // seria engolida como falso-duplicata se casássemos o código genérico; achado F1 da junta do PR-18b).

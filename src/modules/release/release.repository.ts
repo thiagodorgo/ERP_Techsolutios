@@ -192,6 +192,7 @@ export class InMemoryReleaseRepository implements ReleaseRepository {
       authorityApprovedAt: new Date(),
       authorityReference: input.authorityReference ?? current.authorityReference,
       authorityNote: input.authorityNote ?? current.authorityNote,
+      authorityCredentialId: input.authorityCredentialId ?? current.authorityCredentialId,
       updatedBy: input.actorId ?? current.updatedBy,
       updatedAt: new Date(),
     };

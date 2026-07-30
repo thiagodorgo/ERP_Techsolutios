@@ -1,0 +1,82 @@
+{
+  "id": "PR-19",
+  "fase": "Fase 5 (FECHA) — authority aprova/rejeita a liberacao in-system. O 3o e ultimo papel da autoridade credenciada: SOLICITA (18b) -> APROVA/REJEITA (19). SoD triplice completa. Migracao release_authority_decisions append-only.",
+  "snapshot_date": "2026-07-29",
+  "branch": "rodada/omega5p",
+  "tipo": "Backend (modulo authority-release-approval + extensao aditiva do release existente) + 1 migracao ADITIVA (ImpoundRelease.authority_credential_id + tabela ReleaseAuthorityDecision + 2 widenings de CHECK pre-existentes descobertos pela prova viva) + PWA (tela aprovacoes pendentes) + job CI. ZERO dependencia nova. ZERO permissao nova (reusa a sessao authority).",
+  "models_novos": [
+    "ReleaseAuthorityDecision (release_authority_decisions) — o registro FORMAL e IMUTAVEL do ato de decisao da autoridade (aprovar ou rejeitar). tenant_id 1o em todo indice; id/release_id/credential_id/decision APPROVED|REJECTED CHECK/reference?/note?/decided_at/created_at; @@unique(tenant_id,id) + INDEX(tenant_id,release_id)/(tenant_id,credential_id); FK compostas tenant-first RESTRICT -> tenants + impound_releases + authority_credentials; RLS ENABLE+FORCE+POLICY; APPEND-ONLY (trigger BEFORE UPDATE OR DELETE bloqueia — espelha custody_events/portal_access_logs, e a prova formal do ato juridico da autoridade)."
+  ],
+  "migrations": [
+    "20260851000000_add_release_authority_decision (ADITIVA up-only: ALTER impound_releases ADD COLUMN authority_credential_id UUID NULL [nullable, FK composta tenant-first RESTRICT -> authority_credentials + indice] + CREATE TABLE release_authority_decisions [RLS FORCE + append-only trigger + FK compostas RESTRICT + CHECK decision] + 2 WIDENINGS de CHECK PRE-EXISTENTES descobertos pela prova viva contra Postgres real: impound_releases_authority_shape_chk [alargado p/ aceitar authority_credential_id setado SEM authority_approved_by, preservando a via ERP antiga] + portal_access_logs_process_found_chk [+= APPROVED,REJECTED, superset historico 847->848->851] + widening do action_chk += RELEASE_DECIDED. NENHUM ALTER/DROP destrutivo. Provada com 8 CASOS REAIS (CASE1-8) rodados pelo dba-guardiao: CASE1 a linha antiga invalida [approved_at setado, approved_by E credential_id ambos NULL] continua REJEITADA (o widening nao abriu brecha); CASE2 via ERP legada ACEITA; CASE3 via portal nova ACEITA; CASE4-6 os CHECKs de portal_access_logs continuam fechados para lixo; CASE7 CHECK decision rejeita valor invalido; CASE8 UPDATE bloqueado pelo trigger append-only. migrate status up-to-date, validate verde, drift-zero."
+  ],
+  "modulos": [
+    "src/modules/authority/authority-release-approval.{types,repository,service,controller,validators,runtime}.ts (a fila de aprovacoes + a vinculacao D-08 por proveniencia [AuthorityRemovalRequest.credential_id -> work_order_id -> ImpoundProcess.service_order_id -> ImpoundRelease] + APPROVE idempotente [checa alreadyApproved ANTES de gravar no ledger, fix do MEDIA-1 da junta] + REJECT em trilha propria sem mudar ImpoundRelease + revogacao no consumo D-07 reusada)",
+    "src/modules/authority/authority-portal.{routes,controller,index}.ts (SOMA GET /portal/v1/authority/approvals [fila minimizada §2.8] + POST /portal/v1/authority/approvals/:processId/decide [APPROVE|REJECT])",
+    "src/modules/release/release.{types,repository}.ts + release-prisma.repository.ts (SOMA campo OPCIONAL authorityCredentialId em ApproveReleaseInput/ImpoundRelease — o stand-in release:approve continua BYTE-IDENTICO, release.service.ts/release.routes.ts/o gate I5 NAO tocados)",
+    "src/modules/portal-shared/portal-access-log.types.ts (SOMA RELEASE_DECIDED + outcomes APPROVED/REJECTED)",
+    "prisma/schema.prisma (ImpoundRelease +authority_credential_id; model ReleaseAuthorityDecision novo)",
+    "portals/authority-portal/src/{api,main,styles}.ts/.css (SOMA tela Aprovacoes pendentes: lista->decisao aprovar/rejeitar com motivo->confirmacao; texto do REJECT corrigido para nao prometer notificacao inexistente — fix do MEDIA-2 da junta)",
+    "RBAC_MATRIX.md (nota do PR-19 sob release/authority-credentials)"
+  ],
+  "app_ts": "src/app.ts INTOCADO. As 2 rotas novas vivem SO no authorityRouter isolado (portal-app.ts), sem attachAuthenticatedActor, fora de /api/v1. release.service.ts/release.routes.ts (a via stand-in ERP) INTOCADOS — git diff vazio.",
+  "invariante": "SoD FINAL TRIPLICE completa (5 papeis): (1) autoridade SOLICITA a remocao (PR-18b) -> WorkOrder(open); (2) operador de campo CONCLUI a OS -> sweep abre custodia (RECEPCAO); (3) operador de patio MONTA o dossie de liberacao e pode usar o stand-in release:approve (D-09, INTACTO); (4) AUTORIDADE APROVA/REJEITA in-system (este PR) SO nos processos que ELA MESMA originou (D-08, vinculacao por proveniencia — NUNCA por authority_case_number/campo livre spoofavel); (5) operador do patio EXECUTA a liberacao fisica, so passa com authority_approved_at carimbado por QUALQUER via. VINCULACAO D-08 e a fonte de autorizacao correta: AuthorityRemovalRequest.credential_id=sessao -> work_order_id -> ImpoundProcess.service_order_id -> ImpoundRelease; sem vinculo -> 404 UNIFORME (mesmo shape p/ nao-existe e nao-e-seu, anti-enumeracao). REVOGACAO NO CONSUMO (D-07, reusada do 18b): credencial recarregada sob RLS + status=ACTIVE exigido ANTES de qualquer escrita. REJECT NAO MUDA ImpoundRelease (D-10) — so grava a decisao formal em release_authority_decisions (append-only); note OBRIGATORIA. APPROVE e IDEMPOTENTE NO LEDGER (fix MEDIA-1): reaprovar nao insere linha extra — checa alreadyApproved antes de gravar. §2.8: resposta da fila e da decisao minimizadas (sem tenant_id/releaseId interno); log RELEASE_DECIDED sem reference/note/plate.",
+  "rns_cobertas": [
+    "GET /portal/v1/authority/approvals (sessao): lista releases IN_PROGRESS com authority_approved_at NULL vinculados a credencial via D-08. Resposta {processId,kind,vehiclePlate,requestedAt,pendingRequirements} — releaseId NUNCA exposto. Sem vinculo -> lista VAZIA (nunca erro).",
+    "POST /portal/v1/authority/approvals/:processId/decide {decision,reference?,note?}: pipeline sessao(401 uniforme)->rate-limit(429)->revogacao-no-consumo(D-07,401)->vinculo D-08(404 uniforme se ausente)->1 tx: APPROVE[idempotente: alreadyApproved->no-op sem gravar de novo; senao INSERT decisao(APPROVED)+release.repository.approve() reusado] / REJECT[so INSERT decisao(REJECTED), note obrigatoria, ImpoundRelease intacto]->log RELEASE_DECIDED.",
+    "O stand-in release:approve (tenant_admin/manager) permanece 100% intacto e funcional — a via da autoridade SOMA-SE, nunca substitui (D-09).",
+    "PWA: tela Aprovacoes pendentes com os 5 estados obrigatorios; texto do REJECT nao promete notificacao inexistente (D-007)."
+  ],
+  "rns_total_pr": 4,
+  "permissao": "ZERO permissao NOVA. Reusa a sessao authority (JWE) dos PR-18a/18b — sem RBAC do ERP nesta rota (a credencial nao alcanca /api/v1). O stand-in release:approve (RBAC do ERP) continua existindo em paralelo, sem alteracao.",
+  "estados_obrigatorios": "PWA aprovacoes pendentes: loading / vazio (nenhuma liberacao aguardando sua aprovacao) / erro generico / sessao expirada (redireciona ao login) / offline. Backend: 200 {decision:APPROVED|REJECTED} (autenticado, nao-anonimo) / 401 SESSION_INVALID uniforme (ausente/expirada/forjada/audience-owner/nao-ACTIVE) / 404 uniforme (sem vinculo D-08 OU sem release IN_PROGRESS — anti-enumeracao de processId) / 429 rate-limit generico / 400 (REJECT sem note).",
+  "d_records": [
+    "D-Omega5P-AUTH-08 (ratificada): vinculacao processo<->autoridade por PROVENIENCIA (AuthorityRemovalRequest.credential_id->work_order_id->ImpoundProcess.service_order_id), nunca por campo livre spoofavel. So decide sobre o que a PROPRIA credencial originou.",
+    "D-Omega5P-AUTH-09 (ratificada): a aprovacao do portal SOMA-SE ao stand-in ERP (release:approve), NUNCA o substitui. Necessario p/ processos sem vinculo, continuidade operacional, FOR_REPAIR.",
+    "D-Omega5P-AUTH-10 (ratificada): REJECT nao cabe na FSM existente de ImpoundRelease (sem status REJECTED) — vira trilha PROPRIA append-only (release_authority_decisions). O dossie permanece IN_PROGRESS ate nova decisao."
+  ],
+  "desvios_do_plano": [
+    "MEDIA-1 (achado do critico-adversarial, CONSERTADO no proprio PR): decide() no branch APPROVE inseria N linhas no ledger append-only a cada reaprovacao (reference/note divergentes) — quebra de integridade do registro formal. Fechado: checa alreadyApproved ANTES de recordApproval; teste reconfirma decisions.length===1 pos-2a-chamada. Indice parcial unico (defesa-em-profundidade no banco) avaliado e DEFERIDO ao backlog — risco desproporcional mexer na migracao ja provada por drill de concorrencia.",
+    "MEDIA-2 (achado do avaliador, CONSERTADO no proprio PR): o texto do PWA no REJECT prometia \"o patio sera notificado\" — comportamento inexistente (viola D-007). Corrigido para \"A rejeicao foi registrada com o motivo informado.\"",
+    "BAIXA (achado do avaliador): debris scratch-dba-proof.mjs — confirmado AUSENTE (ja nao existia no diff final).",
+    "Durante a prova viva da migracao, o dba-guardiao descobriu 2 CHECKs PRE-EXISTENTES que precisavam de widening (nao previstos no plano original, mas dentro do escopo aditivo): impound_releases_authority_shape_chk e portal_access_logs_process_found_chk. Ambos alargados de forma NAO-DESTRUTIVA (superset provado com 8 casos reais)."
+  ],
+  "testes_alvo": {
+    "tests/authority-release-approval.test.ts": "14 (sempre-roda): D-08 vinculacao (credencial A nao ve/decide processo de B ou de OS fora do fluxo, 404 uniforme) · APPROVE idempotente (carimba authority_approved_at+authority_credential_id numa tx; 2a chamada NAO duplica o ledger — decisions.length===1 pos-2a-chamada) · REJECT nao muda ImpoundRelease + note obrigatoria (400 se ausente) · gate I5 continua barrando ate aprovacao por qualquer via (regressao PR-10a) · sessao ausente/expirada/forjada/audience-owner/nao-ACTIVE -> 401 uniforme · §2.8 (lista/decisao/log minimizados) · rate-limit 429.",
+    "tests/authority-release-approval-rls.test.ts": "5 (DB-gated, rodado contra Postgres real): D-08 ponta-a-ponta + APPROVE numa tx · REJECT nao altera ImpoundRelease (status permanece IN_PROGRESS) · cross-tenant RLS (credencial de A nunca decide/le processo de B) · append-only trigger bloqueia UPDATE/DELETE em release_authority_decisions · CHECK/FK da migracao 20260851 (rejeita inexistente/decision invalida)."
+  },
+  "bateria": {
+    "npm_run_check": "verde (tsc --noEmit)",
+    "npm_run_build": "verde",
+    "testes_pr19": "authority-release-approval 14/14 (sempre-roda) + authority-release-approval-rls 5/5 (DB-gated, Postgres real) = 19/19",
+    "regressao_ampla": "authority-*.test.ts + release-*.test.ts = 71/71 (o stand-in release:approve continua identico; nenhuma quebra)",
+    "regressao_dirigida_junta": "release/release-for-repair/release-gate-concurrency/authority-portal(+rls)/authority-removal(+rls)/authority-credential/authority-env/impound-fsm/impound-hashchain/impound/impound-concurrency = 110/110 (rodado pelo avaliador)",
+    "migracao": "provada VIVA com 8 CASOS reais + INSERTs + ROLLBACK (dba-guardiao); migrate status up-to-date; validate verde; drift-zero",
+    "pwa": "npm --prefix portals/authority-portal run check + build verdes",
+    "git_diff_check": "limpo",
+    "dependencia_nova": "NENHUMA"
+  },
+  "kpi_repo_wide": {
+    "backend": "1910->1924 (value, +14 sempre-roda) / 1920->1939 (total, +19: 14 sempre-roda + 5 DB-gated). Sobre o Omega5P PR-18b.",
+    "frontend_smoke": "937 (inalterado — o PWA authority e app separado com job CI proprio)",
+    "flutter_tests": "807 (inalterado)",
+    "blocks": "112->113 (+1 — PR-19 de feature; FECHA o loop authority-portal e a Fase 5)",
+    "mvp_demo": "inalterado",
+    "mvp_vendavel": "inalterado"
+  },
+  "coexistencia": "release.service.ts/release.routes.ts/o gate I5/resolveTransition/IMPOUND_TRANSITIONS/impound.hashchain.ts git-diff VAZIO. O stand-in release:approve continua byte-identico (23/23 + 110/110 de regressao). Migracao aditiva (so alarga CHECKs pre-existentes, nunca afrouxa casos antigos — provado). Nenhuma dependencia nova. Nenhum agente pre-existente tocado.",
+  "junta": {
+    "agente-secops": "APROVADO (VETO; sem VETO/ALTA). Vinculacao D-08 provada; revogacao-no-consumo (D-07); REJECT nao muda ImpoundRelease; stand-in intacto (env.ts fora do diff); §2.8; isolamento; zero segredo. Regressao 153/153.",
+    "critico-adversarial": "APROVADO_CONDICIONADO -> APROVADO (ciclo 1). Os 7 vetores resistiram. MEDIA-1 (ledger nao-idempotente: N linhas APPROVED por reaprovacao) FECHADA (checa alreadyApproved antes de gravar; teste reconfirma decisions.length===1 pos-2a-chamada). Indice parcial unico deferido ao backlog.",
+    "coordenador-de-acessos": "APROVADO (OBRIG.). SoD final de 5 papeis provada ponta-a-ponta; credencial nao alcanca /api/v1; D-08 e a fonte correta; release:approve byte-identico (diff vazio); 23/23. Ratificou D-08/09/10.",
+    "agente-dba-guardiao": "APROVADO (OBRIG.). Rigor extra nos 2 CHECKs pre-existentes alargados — provado com 8 CASOS reais (CASE1-8): nenhuma brecha aberta, superset estrito confirmado. RLS FORCE + append-only + FK RESTRICT + tenant-first provados ao vivo. Drift-zero.",
+    "omega5p-avaliador": "APROVADO_CONDICIONADO -> APROVADO (ciclo 1). Escopo/SoD/I1-I3/D-08-09-10/I10/§2.8/aderencia (Res.1025 art.24 + CTB art.271) OK. KPI conferido por execucao propria (1910+14=1924/1920+19=1939, aritmetica exata). MEDIA-2 (UX prometia notificacao inexistente) FECHADA. BAIXA (debris) confirmado ausente. Confirmou o fechamento da Fase 5 authority-portal (3 papeis).",
+    "veredito": "APROVADO 5/5 (0 ciclo; 3 achados MEDIA/BAIXA consertados no proprio PR — nenhum critico/bloqueante de seguranca). FECHA a Fase 5 authority-portal (18a fundacao + 18b solicita + 19 aprova/rejeita — SoD triplice completa). Proximo: PR-17b opcional (fotos, junta-5) · Fase 6 (encerramento)."
+  },
+  "pr": null,
+  "merge_commit": null,
+  "approved_head": null,
+  "status": "published_per_pr",
+  "riscos_residuais": "(1) Indice parcial unico (tenant_id,release_id) WHERE decision=APPROVED — defesa-em-profundidade no banco, deferida ao backlog (o fix no service ja fecha o risco funcional). (2) I9 completo (anonimizacao/expurgo pos-5-anos) ainda pendente — nenhuma tabela da Fase 5 tem job de expurgo formal. (3) revisao de minimizacao cruzada das 4 fatias do authority-portal (18a-19) por um agente-privacidade dedicado, nao feita ad-hoc PR a PR. (4) timing residual de enumeracao no login + complexidade de senha (LOW abertos desde o 18a).",
+  "backlog": "Indice parcial unico (tenant_id,release_id) WHERE decision=APPROVED em release_authority_decisions (defesa-em-profundidade). Job de anonimizacao/expurgo pos-5-anos (I9 completo, Omega6). Revisao de minimizacao cruzada 18a-19 (agente-privacidade dedicado). Timing residual de enumeracao no login (dummy simetrico). Complexidade/breach-check da senha definida pelo admin (zxcvbn/HIBP). Consumidor da fila AuthorityRemovalRequest no console do operador sob RBAC (fila do 18b, ainda sem consumidor)."
+}

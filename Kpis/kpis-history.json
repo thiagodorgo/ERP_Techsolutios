@@ -1670,5 +1670,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-29",
+    "version": "OMEGA5P-PR-19",
+    "backend_tests": "1924/1939",
+    "frontend_smoke": "937/937",
+    "flutter_tests": "807/807",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 113,
+    "description": "Omega5P PR-19 (a autoridade APROVA/REJEITA a liberacao in-system) - 26o bloco de feature. Fecha o loop authority-portal (18a fundacao + 18b solicitar + 19 aprovar) e a SoD final triplice (autoridade SOLICITA / operador CONCLUI / autoridade APROVA). Vinculacao D-08 por proveniencia (AuthorityRemovalRequest.credential_id -> work_order_id -> ImpoundProcess.service_order_id) - a unica ligacao proveniente de um ato que a PROPRIA credencial praticou; nunca authority_case_number/origin_agent_name (texto livre spoofavel). GET /portal/v1/authority/approvals lista a fila pendente; POST /approvals/:processId/decide {APPROVE|REJECT}. APPROVE grava release_authority_decisions(APPROVED) + reusa release.repository.approve() tal-qual na MESMA tx (authorityCredentialId novo, opcional; D-09: soma-se ao stand-in release:approve, que continua intacto). REJECT nao muda ImpoundRelease (D-10 - a FSM nao tem status REJECTED); nota obrigatoria; REJECT pos-aprovada = 409. Sem vinculo/sem release ativa = 404 uniforme (anti-enumeracao de processId). Migracao 20260851 (release_authority_decisions NOVA append-only via trigger + impound_releases.authority_credential_id NOVA coluna) provada VIVA com INSERTs reais + ROLLBACK; 2 widenings aditivos de CHECK pre-existentes descobertos pela prova viva (impound_releases_authority_shape_chk + portal_access_logs_process_found_chk) e consertados na mesma migracao. Zero mudanca no gate I5/resolveTransition/IMPOUND_TRANSITIONS/impound.hashchain. PWA: tela Aprovacoes pendentes com nav entre solicitar-remocao/aprovacoes; estados loading/vazio/erro/sessao-expirada/offline. backend 1910/1920 -> 1924/1939, frontend_smoke 937 e flutter 807 inalterados, blocks 112->113. Aderencia CTB art.271 SS1-2 + Res.1025 arts.23-24. Zero dependencia nova. merge_commit null na autoria.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]
