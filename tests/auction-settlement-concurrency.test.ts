@@ -204,6 +204,9 @@ async function teardownTenant(client: BootstrapClient, tenantId: string): Promis
     await tx.$executeRawUnsafe(`DELETE FROM settlement_allocations WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM settlements WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM auction_attempts WHERE tenant_id = '${tenantId}'::uuid`);
+    // Ω5P PR-20 — distributeSettlementAtomic captura 1 impound_outbox_events (AUCTION_SETTLEMENT_DISTRIBUTED) na
+    // MESMA tx do fechamento; purgar ANTES de impound_processes (FK RESTRICT).
+    await tx.$executeRawUnsafe(`DELETE FROM impound_outbox_events WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM custody_events WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM impound_processes WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM jurisdiction_profiles WHERE tenant_id = '${tenantId}'::uuid`);

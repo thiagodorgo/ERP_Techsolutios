@@ -1702,5 +1702,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-30",
+    "version": "OMEGA5P-PR-20-FIX",
+    "backend_tests": "1957/1972",
+    "frontend_smoke": "937/937",
+    "flutter_tests": "807/807",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 115,
+    "description": "Omega5P PR-20 (interop Sivec-ready — impound_outbox_events) + CONSERTO POS-REVISAO da junta (dba-guardiao APROVOU; avaliador e critico-adversarial REPROVARAM com achados concretos, ambos fechados nesta entrega). (1) FURO REAL (critico-adversarial): faltava trigger BEFORE UPDATE protegendo a imutabilidade da captura em impound_outbox_events — so existia trigger BEFORE DELETE. Um UPDATE podia reescrever payload/tenant_id/process_id/event_type/occurred_at/schema_version/target/created_at ja capturados (PoC: UPDATE ... SET payload='{forged:true}' rodava sem erro), quebrando a reconciliacao 1:1 com o CustodyEvent de origem. Adicionado trigger impound_outbox_events_guard_update (BEFORE UPDATE) na MESMA migracao 20260853000000_add_impound_outbox_events (ainda nao commitada ao main) barrando qualquer mudanca fora de status/attempts/last_error, com RAISE EXCEPTION restrict_violation. Migracao reaplicada viva contra o Postgres de dev (trigger criado via prisma db execute + checksum de _prisma_migrations reconciliado com o arquivo atualizado); prisma validate e migrate status OK. Teste novo em tests/impound-outbox.test.ts prova: UPDATE de status/attempts/last_error continua permitido (mecanica de entrega da fila); UPDATE de payload e de process_id sao BLOQUEADOS pelo trigger com a mensagene esperada; payload permanece intacto apos as tentativas rejeitadas. (2) KPI-por-PR (avaliador): este snapshot fecha a pendencia — backend 1956/1971 (numero relatado pelo PR-20 original, +15 sobre o baseline 1941/1956 do PR-17b) -> 1957/1972 (+1 do teste de UPDATE-guard). frontend_smoke permanece 937 nesta correcao (aguardando o PR de frontend em paralelo fechar o achado de teste-frontend faltando; sera conferido/atualizado quando aquele PR fechar). blocks_completed 114->115.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

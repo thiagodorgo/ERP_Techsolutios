@@ -3,6 +3,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { withTenantRls } from "../../database/rls.js";
 import { moneyToCents } from "../charging/charge.validators.js";
 import { computeEventHash, genesisHash } from "../impound/impound.hashchain.js";
+import { appendOutboxEventTx, buildOutboxPayloadFromCustodyEvent } from "../impound/impound.outbox.repository.js";
 import type { CanonicalValue, CustodyEventType } from "../impound/impound.types.js";
 import { findActiveSoldRound } from "./auction.repository.js";
 import type { AuctionAttempt, AuctionOutcome } from "./auction.types.js";
@@ -127,11 +128,21 @@ export class PrismaAuctionSettlementRepository implements AuctionSettlementRepos
       })),
     });
     // AUCTION_SETTLEMENT encadeado (prova I2) — §2.8 { event, soldRound, hammer, breakdown, ownerBalance }, sem PII.
-    await this.appendEventTx(input.tenantId, input.processId, locked, {
+    const appended = await this.appendEventTx(input.tenantId, input.processId, locked, {
       type: "AUCTION_SETTLEMENT",
       payload: buildSettlementEventPayload(input.soldRound, input.hammerCents, input.allocations, input.ownerBalanceCents),
       occurredAt: input.occurredAt,
       actorId: input.actorId,
+    });
+    // Ω5P PR-20 — captura de interop na MESMA tx do FECHAMENTO da liquidação (I7 marco de origem). SÓ a
+    // distribuição inicial alimenta a fila (o ciclo do saldo — claim/funset — NÃO é "fechamento"); nunca chama
+    // Sivec real.
+    await appendOutboxEventTx(this.client, {
+      tenantId: input.tenantId,
+      processId: input.processId,
+      eventType: "AUCTION_SETTLEMENT_DISTRIBUTED",
+      payload: buildOutboxPayloadFromCustodyEvent(appended),
+      occurredAt: input.occurredAt,
     });
     return { settlement: mapSettlement(settlementRow), allocations: await this.readAllocations(input.tenantId, settlementRow.id), created: true };
   }
@@ -232,7 +243,7 @@ export class PrismaAuctionSettlementRepository implements AuctionSettlementRepos
     processId: string,
     head: { readonly custody_seq_head: number; readonly custody_hash_head: string | null },
     draft: { readonly type: CustodyEventType; readonly payload: CanonicalValue; readonly occurredAt: Date; readonly actorId?: string },
-  ): Promise<void> {
+  ): Promise<{ readonly id: string; readonly seq: number; readonly hash: string; readonly payload: CanonicalValue }> {
     const seq = head.custody_seq_head + 1;
     const prevHash = head.custody_hash_head ?? genesisHash(tenantId, processId);
     const hash = computeEventHash({
@@ -275,6 +286,7 @@ export class PrismaAuctionSettlementRepository implements AuctionSettlementRepos
         metadata: { processId, seq, hash },
       },
     });
+    return { id: eventRow.id, seq, hash, payload: draft.payload };
   }
 }
 

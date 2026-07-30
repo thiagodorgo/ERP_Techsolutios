@@ -47,6 +47,7 @@ import { createAuthorityCredentialRouter } from "./modules/authority/index.js";
 import { createChargeRouter } from "./modules/charging/index.js";
 import { createReleaseRouter } from "./modules/release/index.js";
 import { createAuctionRouter } from "./modules/auction/index.js";
+import { createPatiosDashboardRouter } from "./modules/patios-dashboard/index.js";
 import { createServiceQuoteRouter } from "./modules/service-quotes/index.js";
 import { createServiceQuoteItemRouter } from "./modules/service-quote-items/index.js";
 import { createWorkOrderFinancialRouter } from "./modules/work-order-financials/index.js";
@@ -152,6 +153,11 @@ export function createApp(service: ICoreSaasService): Express {
   // os saltos da FSM de leilão). ZERO permissão nova. Montado APÓS impound/charging/release (paths .../auction não
   // colidem com nenhum literal existente).
   app.use("/api/v1", attachAuthenticatedActor(), createAuctionRouter());
+  // Ω5P PR-20 — painel gerencial dos Pátios (dashboard consolidado). Router NOVO sob /api/v1 (git add src/app.ts,
+  // senão CI route_not_found). GET /patios/dashboard/summary sob impound:read (REUSADA — sem permissão nova).
+  // Só leitura/agregação sobre as fontes já existentes (occupancy/notificações/liquidação); ZERO tabela nova
+  // para o painel em si. Montado APÓS impound/charging/release/auction (paths /patios/dashboard não colidem).
+  app.use("/api/v1", attachAuthenticatedActor(), createPatiosDashboardRouter());
   // Ω5P PR-18a — PROVISIONAMENTO da credencial da autoridade (authority-portal). Router NOVO sob /api/v1 (git add
   // src/app.ts, senão CI route_not_found). CRUD sob a permissão NOVA authority_credentials:manage (tenant_admin +
   // admins; SoD: NÃO manager/operator). A credencial é PRÓPRIA (≠ User do ERP); a AUTENTICAÇÃO da autoridade é o

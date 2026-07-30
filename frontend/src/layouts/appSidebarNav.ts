@@ -21,6 +21,7 @@ import {
   HandCoins,
   IdCard,
   LayoutDashboard,
+  LayoutPanelTop,
   ListChecks,
   LogIn,
   MapPin,
@@ -125,6 +126,8 @@ const LIBERACOES: NavItem = { label: "Liberações", path: "/patios/liberacoes",
 const LEILOES: NavItem = { label: "Leilões", path: "/patios/leiloes", icon: Gavel };
 const PERFIS_NORMATIVOS: NavItem = { label: "Perfis Normativos", path: "/patios/perfis", icon: Scale };
 const TABELA_VALORES_PATIO: NavItem = { label: "Tabela de Valores", path: "/patios/tarifas", icon: Coins };
+// Ω5P PR-20 — Painel gerencial (dashboard consolidado dos Pátios; governado por impound:read, REUSADA).
+const PAINEL_PATIOS: NavItem = { label: "Painel", path: "/patios/painel", icon: LayoutPanelTop };
 
 const G_VISAO_GERAL: NavGroup = { label: "VISÃO GERAL", items: [DASHBOARD] };
 
@@ -157,7 +160,7 @@ const G_TELEMETRIA: NavGroup = {
 };
 // Ω5P PR-04 — grupo PÁTIOS (admin/gestor completo; dispatcher/campo tem os 3 reads → vê a leitura; ações
 // Novo/Editar são gated por :create/:update na tela). finance/support não têm as permissões → o esconde-fino oculta.
-const G_PATIOS: NavGroup = { label: "PÁTIOS", items: [PATIOS, PROCESSOS_CUSTODIA, LIBERACOES, LEILOES, PERFIS_NORMATIVOS, TABELA_VALORES_PATIO] };
+const G_PATIOS: NavGroup = { label: "PÁTIOS", items: [PAINEL_PATIOS, PATIOS, PROCESSOS_CUSTODIA, LIBERACOES, LEILOES, PERFIS_NORMATIVOS, TABELA_VALORES_PATIO] };
 
 // Navegação por papel (5 grupos da IA aprovada). Distribuição por RoleKind
 // segundo a tabela "Visibilidade por papel" (sidebar-ia.md) + navigation-matrix.md.
@@ -223,6 +226,7 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/cadastros/tarifas",
   "/cadastros/tags",
   "/cadastros/pontos-interesse",
+  "/patios/painel",
   "/patios/patios",
   "/patios/processos",
   "/patios/liberacoes",

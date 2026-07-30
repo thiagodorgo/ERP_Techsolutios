@@ -2,6 +2,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { setTenantRlsContext, withTenantRls } from "../../database/rls.js";
 import { computeEventHash, genesisHash, type CrossAnchor } from "./impound.hashchain.js";
+import { appendOutboxEventTx, buildOutboxPayloadFromCustodyEvent } from "./impound.outbox.repository.js";
 import type {
   AddInspectionPhotoResult,
   ChainSnapshot,
@@ -48,6 +49,11 @@ type LockedProcessRow = {
   readonly custody_seq_head: number;
   readonly custody_hash_head: string | null;
 };
+
+// Ω5P PR-20 — marcos de ciclo de vida que alimentam a fila de interop Sivec-ready (I9 backlog / art.9º III-IV).
+// Só ESTES 4 status disparam a captura (art.44: pronto-para, sem integração prematura) — os demais saltos da FSM
+// não viram evento de interop.
+const OUTBOX_MILESTONE_STATUSES: ReadonlySet<ImpoundStatus> = new Set(["ACTIVE_CUSTODY", "RELEASED", "AUCTIONED", "CLOSED"]);
 
 // Repositório de baixo nível sobre um executor de transação. Os appends usam FOR UPDATE + inserção do evento +
 // atualização da âncora + cross-anchor em audit_logs — SEMPRE dentro de uma tx (garantido pelo wrapper RLS).
@@ -235,6 +241,17 @@ export class PrismaImpoundRepository implements ImpoundRepository {
       locked.custody_hash_head,
       input.event,
     );
+    // Ω5P PR-20 — captura de interop na MESMA tx do append (I2): falha de qualquer passo → rollback de AMBOS
+    // (o outbox nunca fica sem o CustodyEvent de origem, e vice-versa). SÓ captura — nunca chama Sivec real.
+    if (OUTBOX_MILESTONE_STATUSES.has(input.to)) {
+      await appendOutboxEventTx(this.client, {
+        tenantId: input.tenantId,
+        processId: input.processId,
+        eventType: `STATUS_CHANGE_${input.to}`,
+        payload: buildOutboxPayloadFromCustodyEvent(result.event),
+        occurredAt: input.event.occurredAt,
+      });
+    }
     return result.process;
   }
 

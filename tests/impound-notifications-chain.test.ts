@@ -159,6 +159,9 @@ if (!connectionString) {
           await tx.$executeRawUnsafe(`DELETE FROM process_charges WHERE tenant_id = '${tenantId}'::uuid`);
           await tx.$executeRawUnsafe(`DELETE FROM daily_accrual_runs WHERE tenant_id = '${tenantId}'::uuid`);
           await tx.$executeRawUnsafe(`DELETE FROM attachments WHERE tenant_id = '${tenantId}'::uuid`);
+          // Ω5P PR-20 — notify.issue captura 1 impound_outbox_events (NOTIFICATION_ISSUED) na MESMA tx da emissão;
+          // purgar ANTES de impound_processes (FK RESTRICT).
+          await tx.$executeRawUnsafe(`DELETE FROM impound_outbox_events WHERE tenant_id = '${tenantId}'::uuid`);
           await tx.$executeRawUnsafe(`DELETE FROM impound_processes WHERE tenant_id = '${tenantId}'::uuid`);
           await tx.$executeRawUnsafe(`DELETE FROM audit_logs WHERE tenant_id = '${tenantId}'::uuid`);
           await tx.$executeRawUnsafe(`DELETE FROM jurisdiction_profiles WHERE tenant_id = '${tenantId}'::uuid`);

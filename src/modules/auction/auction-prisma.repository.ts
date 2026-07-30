@@ -2,6 +2,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
 import { computeEventHash, genesisHash, verifyChain, type VerifyChainResult } from "../impound/impound.hashchain.js";
+import { appendOutboxEventTx, buildOutboxPayloadFromCustodyEvent } from "../impound/impound.outbox.repository.js";
 import type { CanonicalValue, CustodyEventType, ImpoundStatus } from "../impound/impound.types.js";
 import type { ProfileScope } from "../jurisdiction/jurisdiction.types.js";
 import {
@@ -473,11 +474,19 @@ export class PrismaAuctionRepository implements AuctionRepository {
       where: { id: input.processId },
       data: { status: "AUCTIONED", frozen_at: locked.frozen_at ?? input.occurredAt },
     });
-    await this.appendEventTx(input.tenantId, input.processId, locked, {
+    const appended = await this.appendEventTx(input.tenantId, input.processId, locked, {
       type: "AUCTION_SOLD",
       payload: buildAuctionSoldEventPayload(attempt, soldAmount, maskEdictReference(input.saleNoteReference)),
       occurredAt: input.occurredAt,
       actorId: input.actorId,
+    });
+    // Ω5P PR-20 — captura de interop na MESMA tx do marco AUCTIONED (I8/I2 marco de origem). Nunca chama Sivec real.
+    await appendOutboxEventTx(this.client, {
+      tenantId: input.tenantId,
+      processId: input.processId,
+      eventType: "STATUS_CHANGE_AUCTIONED",
+      payload: buildOutboxPayloadFromCustodyEvent(appended),
+      occurredAt: input.occurredAt,
     });
     return { attempt, created: true, status: "AUCTIONED" };
   }
@@ -640,7 +649,7 @@ export class PrismaAuctionRepository implements AuctionRepository {
     processId: string,
     head: { readonly custody_seq_head: number; readonly custody_hash_head: string | null },
     draft: { readonly type: CustodyEventType; readonly payload: CanonicalValue; readonly occurredAt: Date; readonly actorId?: string },
-  ): Promise<{ readonly seq: number; readonly hash: string }> {
+  ): Promise<{ readonly id: string; readonly seq: number; readonly hash: string; readonly payload: CanonicalValue }> {
     const seq = head.custody_seq_head + 1;
     const prevHash = head.custody_hash_head ?? genesisHash(tenantId, processId);
     const hash = computeEventHash({
@@ -683,7 +692,7 @@ export class PrismaAuctionRepository implements AuctionRepository {
         metadata: { processId, seq, hash },
       },
     });
-    return { seq, hash };
+    return { id: eventRow.id, seq, hash, payload: draft.payload };
   }
 }
 
