@@ -53,6 +53,9 @@ export type DossierChargeItem = {
 };
 export type DossierDeadline = { readonly label: string; readonly dueDate: string; readonly elapsedLabel: string };
 export type DossierRequirement = { readonly label: string; readonly required: boolean };
+// Ω5P PR-17b — cada item é uma foto MINIMIZADA real (opaqueRef consumível em GET /photos/:opaqueRef); a
+// visualização (thumbnails/lightbox) fica para um PR de frontend subsequente (documentado — evita D-007).
+export type DossierPhotoItem = { readonly opaqueRef: string; readonly capturedAtLabel: string };
 export type OwnerDossier = {
   readonly status: string;
   readonly statusLabel: string;
@@ -63,7 +66,7 @@ export type OwnerDossier = {
   readonly charges: { readonly items: readonly DossierChargeItem[]; readonly totalDueLabel: string };
   readonly deadlines: readonly DossierDeadline[];
   readonly requirements: readonly DossierRequirement[];
-  readonly photos: { readonly setsAvailableCount: number; readonly availabilityLabel: string };
+  readonly photos: { readonly sets: readonly DossierPhotoItem[]; readonly availabilityLabel: string };
 };
 
 // `session_invalid` (401) = a consulta expirou por segurança → o PWA pede refazer a consulta. Nunca guardamos a

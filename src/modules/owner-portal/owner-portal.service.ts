@@ -1,23 +1,37 @@
+import type { Attachment } from "../attachments/attachment.types.js";
+import { resolveAttachmentDownload } from "../attachments/attachment.storage.js";
 import type { ImpoundProcess } from "../impound/impound.types.js";
 import {
   AntiAbuse,
   constantTimeEqual,
+  derivePhotoRefKey,
   ipHash,
   issueChallenge,
   normalizeRenavamKey,
+  photoRef,
   plateRateKey,
   queryFingerprint,
   sessionRateKey,
   signOwnerSession,
+  TokenBucket,
   verifySolution,
   type ChallengeStore,
   type PortalAccessLogRepository,
   type PowChallenge,
+  type TokenBucketConfig,
 } from "../portal-shared/index.js";
-import { toOwnerDossierDto, toOwnerPortalProcessDto, type OwnerDossierDto, type OwnerPortalProcessDto } from "./owner-portal.dto.js";
+import { formatDateLabelPtBr, toOwnerDossierDto, toOwnerPortalProcessDto, type OwnerDossierDto, type OwnerPortalProcessDto } from "./owner-portal.dto.js";
+import { PhotoConcurrencySaturatedError, type PhotoConcurrencyGuard } from "./photo-concurrency-guard.js";
+import { runPipeline as runPhotoPipeline, withTimeout as withPhotoPipelineTimeout, PHOTO_PIPELINE_TIMEOUT_MS } from "./owner-portal.photo-pipeline.js";
+import type { PhotoLruCache } from "./owner-portal.photo-cache.js";
 import { resolveOwnerSession } from "./owner-portal.session.js";
 import type { PortalReleaseRequestRepository } from "./portal-release-request.types.js";
 import type { LookupRequest } from "./owner-portal.validators.js";
+
+// Ω5P PR-17b — C2 (crítico-adversarial, OBRIGATÓRIO): balde DEDICADO de rate-limit para a leitura de fotos —
+// SEPARADO do balde do dossiê (DEFAULT_READ_BUCKET) e MAIS RESTRITO (a geração de foto é CPU-cara: decode+
+// resize+watermark). Número EXPLÍCITO: 10 leituras / 5min por sessão+IP.
+export const PHOTO_READ_BUCKET_DEFAULT: TokenBucketConfig = { capacity: 10, refillTokens: 10, refillIntervalMs: 5 * 60 * 1000 };
 
 // Ω5P PR-16 — read-ports ESTREITOS que o BFF consome IN-PROCESS (D-Ω5P-PORTAL-03) — nunca loopback HTTP, nunca
 // JWT/AuthSession do ERP. Cada porta recebe o tenantId do BINDING de deploy; o RLS na camada de repositório
@@ -28,6 +42,24 @@ export interface OwnerPortalImpoundPort {
   findByIdForPortal(tenantId: string, processId: string): Promise<ImpoundProcess | undefined>;
   // Ω5P PR-17 — contagem de conjuntos de foto (placeholder honesto; NENHUM byte de foto — CORTE PR-17b).
   countAvailablePhotoSets(tenantId: string, processId: string): Promise<number>;
+  // Ω5P PR-17b — {attachmentId, capturedAt} de TODAS as fotos do processo (recompute do opaqueRef, C4).
+  listInspectionPhotosForPortal(tenantId: string, processId: string): Promise<readonly { attachmentId: string; capturedAt: Date }[]>;
+  // Ω5P PR-17b — Attachment BRUTO de UMA foto (storage_key/provider) — SÓ chamado pós-HMAC validado.
+  getInspectionPhotoAttachmentForPortal(
+    tenantId: string,
+    processId: string,
+    attachmentId: string,
+  ): Promise<
+    | {
+        readonly attachmentId: string;
+        readonly fileName?: string;
+        readonly contentType?: string;
+        readonly storageProvider?: string;
+        readonly storageKey?: string;
+        readonly status: string;
+      }
+    | undefined
+  >;
 }
 export interface OwnerPortalChargePort {
   getPublicSummary(tenantId: string, processId: string): Promise<{ totalDueCents: number; currency: string }>;
@@ -76,6 +108,12 @@ export type OwnerPortalDeps = {
   readonly minLatencyMs: number; // atraso mínimo constante (normaliza timing anti-enumeração)
   readonly challengeTtlMs: number;
   readonly now?: () => number; // relógio em ms (injetável em teste)
+  // Ω5P PR-17b — balde DEDICADO de leitura de foto (C2, separado do dossiê). Injetável em teste.
+  readonly photoRateLimiter: TokenBucket;
+  // Ω5P PR-17b — semáforo GLOBAL de concorrência do pipeline de minimização (S2+C2).
+  readonly photoConcurrencyGuard: PhotoConcurrencyGuard;
+  // Ω5P PR-17b — cache LRU do buffer JÁ MINIMIZADO, chaveado pelo attachmentId interno (C3).
+  readonly photoCache: PhotoLruCache;
 };
 
 // Retornado ao controller. A RESPOSTA das 3 negativas (não-encontrado × Renavam-errado × não-autorizado) é
@@ -107,6 +145,16 @@ export type OwnerReleaseRequestResult =
   | { readonly kind: "session_invalid" }
   | { readonly kind: "rate_limited" };
 
+// Ω5P PR-17b — desfecho do GET /photos/:opaqueRef. `not_found` cobre TANTO "não existe" QUANTO "opaqueRef não
+// bate" (mesma filosofia anti-oráculo dos demais endpoints — nunca distingue os dois). `saturated` (503) é o
+// semáforo de concorrência (S2+C2) — nunca confundido com rate_limited (429, balde do cliente).
+export type OwnerPhotoResult =
+  | { readonly kind: "ok"; readonly buffer: Buffer; readonly contentType: string }
+  | { readonly kind: "session_invalid" }
+  | { readonly kind: "not_found" }
+  | { readonly kind: "rate_limited" }
+  | { readonly kind: "saturated" };
+
 function truncateUa(userAgent: string | undefined): string | undefined {
   if (!userAgent) return undefined;
   return userAgent.slice(0, 200);
@@ -114,6 +162,17 @@ function truncateUa(userAgent: string | undefined): string | undefined {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Ω5P PR-17b — resolveAttachmentDownload pode devolver Readable (provider s3); o pipeline de minimização exige
+// Buffer (buffer-in/buffer-out, zero disco). Consome o stream inteiro em memória — condizente com o cap de bytes
+// (PHOTO_MAX_SOURCE_BYTES) já aplicado pelo pipeline logo em seguida.
+async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
 }
 
 export class OwnerPortalService {
@@ -275,15 +334,139 @@ export class OwnerPortalService {
       return this.settle(startMs, { kind: "not_found" });
     }
 
-    const [charges, plan, photoSetsCount] = await Promise.all([
+    const [charges, plan, photoCandidates] = await Promise.all([
       this.deps.charge.getPublicItemizedSummary(this.deps.tenantId, process.id),
       this.deps.jurisdiction.getPortalProfile(this.deps.tenantId, process.profileId),
-      this.deps.impound.countAvailablePhotoSets(this.deps.tenantId, process.id),
+      this.deps.impound.listInspectionPhotosForPortal(this.deps.tenantId, process.id),
     ]);
     const yard = process.yardId ? await this.deps.yard.getPublicYard(this.deps.tenantId, process.yardId) : undefined;
-    const dossier = toOwnerDossierDto({ process, yard, charges, plan, photoSetsCount, now: new Date() });
+    // Ω5P PR-17b (item 8) — `photos` vira {sets:[{opaqueRef,capturedAtLabel}]}. O opaqueRef é o MESMO HMAC que o
+    // endpoint /photos/:opaqueRef recompõe — nunca o attachmentId cru (§2.8).
+    const photoRefKey = derivePhotoRefKey(this.deps.logSecret);
+    const photos = photoCandidates.map((candidate) => ({
+      opaqueRef: photoRef(photoRefKey, candidate.attachmentId, process.id),
+      capturedAtLabel: formatDateLabelPtBr(candidate.capturedAt),
+    }));
+    const dossier = toOwnerDossierDto({ process, yard, charges, plan, photos, now: new Date() });
     await this.logPortal("DOSSIER_VIEWED", "AUTHORIZED", { ip, ua, processId: process.id });
     return this.settle(startMs, { kind: "ok", dossier });
+  }
+
+  // GET /portal/v1/owner/photos/:opaqueRef — foto de evidência MINIMIZADA (resize≤1024px + marca-d'água, JPEG
+  // q70), NUNCA full-res. D1 (coordenador-de-acessos, OBRIGATÓRIO): esta rota SÓ existe no ownerRouter isolado
+  // (owner-portal.routes.ts) — NUNCA sob /api/v1, NUNCA com attachAuthenticatedActor. O opaqueRef é comparado
+  // (C4: sem early-return, sobre TODAS as fotos do processo DA SESSÃO) — o attachmentId do cliente NUNCA existe
+  // nesta rota (só o opaqueRef no path).
+  async photo(ctx: { authorization?: string; opaqueRef: string; ip: string; userAgent?: string }): Promise<OwnerPhotoResult> {
+    const startMs = this.clock();
+    const ip = ipHash(this.deps.logSecret, ctx.ip);
+    const ua = truncateUa(ctx.userAgent);
+    const nowMs = this.clock();
+
+    const session = await resolveOwnerSession(ctx.authorization, this.deps.sessionSecret);
+    if (!session) {
+      if (this.deps.antiAbuse.checkReadRate("anon", ip, nowMs).limited) {
+        return this.settle(startMs, { kind: "rate_limited" });
+      }
+      await this.logPortal("PHOTO_VIEWED", "SESSION_INVALID", { ip, ua });
+      return this.settle(startMs, { kind: "session_invalid" });
+    }
+
+    // C2 — balde DEDICADO de foto (mais restrito que o do dossiê; chave sessão+IP, mesmo padrão do readBucket).
+    const rateKey = `${sessionRateKey(this.deps.logSecret, session.processId)}:${ip}`;
+    if (!this.deps.photoRateLimiter.wouldAllow(rateKey, nowMs)) {
+      await this.logPortal("PHOTO_VIEWED", "RATE_LIMITED", { ip, ua });
+      return this.settle(startMs, { kind: "rate_limited" });
+    }
+    this.deps.photoRateLimiter.consume(rateKey, nowMs);
+
+    // processId DA SESSÃO — nunca do path/corpo. RLS garante que a sessão de A jamais lê fotos de B.
+    const process = await this.deps.impound.findByIdForPortal(this.deps.tenantId, session.processId);
+    if (!process) {
+      await this.logPortal("PHOTO_VIEWED", "NOT_FOUND", { ip, ua });
+      return this.settle(startMs, { kind: "not_found" });
+    }
+
+    // D2 — subchave derivada (NUNCA o PORTAL_LOG_SECRET cru) + C4 — recompute contra TODAS as fotos do processo,
+    // SEM early-return (OR booleano, o loop sempre roda até o fim), normalizando o caso "processo sem fotos".
+    const photoRefKey = derivePhotoRefKey(this.deps.logSecret);
+    const candidates = await this.deps.impound.listInspectionPhotosForPortal(this.deps.tenantId, process.id);
+    let matchedAttachmentId: string | undefined;
+    for (const candidate of candidates) {
+      const expected = photoRef(photoRefKey, candidate.attachmentId, process.id);
+      const isMatch = constantTimeEqual(photoRefKey, expected, ctx.opaqueRef);
+      matchedAttachmentId = isMatch ? candidate.attachmentId : matchedAttachmentId; // sem break (C4)
+    }
+    if (candidates.length === 0) {
+      // C4 — normaliza o timing do caso zero-fotos: ≥1 comparação dummy de mesmo formato.
+      const dummyExpected = photoRef(photoRefKey, "00000000-0000-0000-0000-000000000000", process.id);
+      constantTimeEqual(photoRefKey, dummyExpected, ctx.opaqueRef);
+    }
+    if (!matchedAttachmentId) {
+      await this.logPortal("PHOTO_VIEWED", "NOT_FOUND", { ip, ua });
+      return this.settle(startMs, { kind: "not_found" });
+    }
+
+    // C3 — cache SÓ pelo attachmentId JÁ RESOLVIDO (pós-HMAC), nunca pelo opaqueRef cru.
+    const cached = this.deps.photoCache.get(matchedAttachmentId);
+    if (cached) {
+      await this.logPortal("PHOTO_VIEWED", "AUTHORIZED", { ip, ua, processId: process.id });
+      return this.settle(startMs, { kind: "ok", buffer: cached.buffer, contentType: cached.contentType });
+    }
+
+    const attachment = await this.deps.impound.getInspectionPhotoAttachmentForPortal(this.deps.tenantId, process.id, matchedAttachmentId);
+    if (!attachment || !attachment.storageProvider || !attachment.storageKey) {
+      await this.logPortal("PHOTO_VIEWED", "NOT_FOUND", { ip, ua });
+      return this.settle(startMs, { kind: "not_found" });
+    }
+
+    try {
+      // Recon #2 — resolveAttachmentDownload resolve o buffer EM MEMÓRIA (sem disco). Objeto Attachment
+      // sintético: só os campos usados pela função (storageProvider/storageKey/fileName/contentType); os demais
+      // são placeholders inertes (nunca saem desta função).
+      const attachmentForDownload: Attachment = {
+        id: attachment.attachmentId,
+        tenantId: this.deps.tenantId,
+        entityType: "impound_intake_inspection",
+        entityId: process.id,
+        fileUrl: "",
+        fileName: attachment.fileName,
+        contentType: attachment.contentType,
+        storageProvider: attachment.storageProvider,
+        storageKey: attachment.storageKey,
+        status: "stored",
+        metadata: {},
+        uploadedAt: new Date(0),
+        createdAt: new Date(0),
+      };
+      const download = await resolveAttachmentDownload(attachmentForDownload);
+      const sourceBuffer = Buffer.isBuffer(download.body) ? download.body : await streamToBuffer(download.body);
+
+      // S2+C2 — semáforo GLOBAL de concorrência: além dele, 503 IMEDIATO (nunca enfileira). COMPOSIÇÃO CORRIGIDA
+      // (conserto pós-junta, achado do crítico-adversarial): o guard envolve DIRETAMENTE o trabalho REAL
+      // (`runPhotoPipeline`, SEM timeout embutido) — `inFlight` só decrementa quando a decodificação de fato
+      // termina (resolve OU rejeita). O timeout de resposta HTTP envolve o RESULTADO de `guard.run(...)`, nunca
+      // o inverso — se compuséssemos `guard.run(() => withTimeout(...))`, o `finally` do guard dispararia no que
+      // resolvesse PRIMEIRO (o timeout de 4s OU o trabalho real), devolvendo o slot ao pool enquanto a
+      // decodificação síncrona (jimp puro-JS) continua consumindo CPU em background sem ser contada — anulando a
+      // garantia central do semáforo (N=3 decodificações reais simultâneas).
+      const result = await withPhotoPipelineTimeout(
+        this.deps.photoConcurrencyGuard.run(() => runPhotoPipeline(sourceBuffer, () => new Date(this.clock()))),
+        PHOTO_PIPELINE_TIMEOUT_MS,
+      );
+      this.deps.photoCache.set(matchedAttachmentId, result.buffer, result.contentType);
+      await this.logPortal("PHOTO_VIEWED", "AUTHORIZED", { ip, ua, processId: process.id });
+      return this.settle(startMs, { kind: "ok", buffer: result.buffer, contentType: result.contentType });
+    } catch (error) {
+      if (error instanceof PhotoConcurrencySaturatedError) {
+        // Sem log NOT_FOUND (não é "não encontrado" — é sobrecarga transitória). Sem AUTHORIZED (não serviu).
+        return this.settle(startMs, { kind: "saturated" });
+      }
+      // Decode falho / timeout (PhotoPipelineError) / storage indisponível → erro GENÉRICO, NUNCA stack ao
+      // cliente. Mesma filosofia anti-oráculo: não distingue "arquivo corrompido" de "não encontrado".
+      await this.logPortal("PHOTO_VIEWED", "NOT_FOUND", { ip, ua });
+      return this.settle(startMs, { kind: "not_found" });
+    }
   }
 
   // POST /portal/v1/owner/release-request — registra a INTENÇÃO de liberação (nota curta opcional; SEM upload). O
@@ -331,7 +514,9 @@ export class OwnerPortalService {
   // 1 linha no PortalAccessLog (I10) para as ações autorizadas por sessão. Sem PII (só ip_hash/ua truncada;
   // processId só quando o desfecho amarra o bem — AUTHORIZED, coerente com o CHECK process_found alargado).
   private async logPortal(
-    action: "DOSSIER_VIEWED" | "RELEASE_REQUESTED",
+    // Ω5P PR-17b (A1) — PHOTO_VIEWED usa o MESMO allowlist de campos do DOSSIER_VIEWED (só ip_hash/ua truncada +
+    // outcome; process_id só em AUTHORIZED). Nunca attachmentId/opaqueRef em claro — nem aqui nem em nenhum lugar.
+    action: "DOSSIER_VIEWED" | "RELEASE_REQUESTED" | "PHOTO_VIEWED",
     outcome: "AUTHORIZED" | "SESSION_INVALID" | "RATE_LIMITED" | "NOT_FOUND",
     ctx: { ip: string; ua?: string; processId?: string },
   ): Promise<void> {

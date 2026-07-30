@@ -1686,5 +1686,21 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-07-30",
+    "version": "OMEGA5P-PR-17b",
+    "backend_tests": "1941/1956",
+    "frontend_smoke": "937/937",
+    "flutter_tests": "807/807",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 114,
+    "description": "Omega5P PR-17b (fotos de vistoria minimizadas no owner-portal) - conserto pos-revisao de junta. GET /portal/v1/owner/photos/:opaqueRef serve fotos de vistoria MINIMIZADAS (resize<=1024px + JPEG q70 + marca-d'agua fixa 'PATIO - CONSULTA PUBLICA · <data>', SEM placa/Renavam/processId/orgao - LGPD art.11), buffer-in/buffer-out, zero disco (jimp@^1.6.1, unica dependencia nova, junta-5 unanime). Defense-in-depth: cap de 12MB antes do parse, header-guard S1+C1 rejeita dimensao/produto de pixels absurdo antes de Jimp.read(), semaforo GLOBAL de concorrencia (N=3, S2+C2). opaqueRef HMAC recomputado sem early-return (C4) + comparacao dummy no caso zero-fotos; 404 uniforme IDOR-proof. Cache in-process so pos-HMAC (C3). Rate-limit dedicado (balde separado do dossie). Dossie: photos migra para {sets:[{opaqueRef,capturedAtLabel}],availabilityLabel}. CONSERTO POS-REVISAO (junta: secops/coordenador-de-acessos/dba-guardiao aprovaram; critico-adversarial + avaliador reprovaram, corrigidos aqui): (1) C2 critico - composicao do semaforo invertida: guard.run envolve o trabalho REAL (runPhotoPipeline, sem timeout embutido) e so libera o slot quando ele de fato termina; o timeout de resposta HTTP (withTimeout) envolve o RESULTADO de guard.run, nunca o inverso - fecha o furo onde o slot podia ser devolvido ao pool com decodificacao real ainda em voo (teste de regressao 2c). (2) D-007 media - availabilityLabel deixou de prometer 'visualizacao' (o PWA ainda nao tem UI consumindo o endpoint; adiado para PR de frontend futuro). (3) este snapshot fecha a pendencia de KPI-por-PR (diff de Kpis/ estava vazio no diff original). backend 1924/1939 -> 1941/1956 (+17 sempre-roda, zero DB-gated novos), frontend_smoke 937 e flutter 807 inalterados, blocks 113->114.",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "status": "published_per_pr"
   }
 ]

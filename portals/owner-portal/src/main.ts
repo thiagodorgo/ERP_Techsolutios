@@ -292,13 +292,16 @@ function requirementsCard(requirements: OwnerDossier["requirements"]): HTMLEleme
   ]);
 }
 
+// Ω5P PR-17b — o dossiê já traz {sets:[{opaqueRef,capturedAtLabel}]} (fotos MINIMIZADAS reais, consumíveis em
+// GET /photos/:opaqueRef). A visualização (thumbnails/lightbox) é UI e fica para um PR de frontend subsequente
+// (documentado — evita D-007 por omissão); por ora só reportamos a contagem/rótulos, sem renderizar a imagem.
 function photosCard(photos: OwnerDossier["photos"]): HTMLElement {
   return el("div", { class: "card photos-card" }, [
     sectionTitle("Fotos da vistoria"),
     el("div", { class: "photos-placeholder" }, [
       el("span", { class: "photos-icon", ariaHidden: "true" }, ["▣"]),
       el("span", { class: "photos-count" }, [
-        photos.setsAvailableCount > 0 ? `${photos.setsAvailableCount} conjunto(s) registrado(s)` : "Sem fotos registradas",
+        photos.sets.length > 0 ? `${photos.sets.length} foto(s) registrada(s)` : "Sem fotos registradas",
       ]),
     ]),
     el("p", { class: "due-note" }, [photos.availabilityLabel]),

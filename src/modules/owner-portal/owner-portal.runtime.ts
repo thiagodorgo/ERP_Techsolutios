@@ -6,13 +6,17 @@ import {
   AntiAbuse,
   InMemoryChallengeStore,
   InMemoryPortalAccessLogRepository,
+  InMemoryTokenBucketStore,
   OWNER_ANTI_ABUSE_DEFAULTS,
   POW_DEFAULT_TTL_MS,
+  TokenBucket,
   createPrismaPortalAccessLogRepository,
   type PortalAccessLogRepository,
 } from "../portal-shared/index.js";
 import { createDefaultYardService } from "../yard/yard.service.js";
-import { OwnerPortalService } from "./owner-portal.service.js";
+import { PhotoConcurrencyGuard } from "./photo-concurrency-guard.js";
+import { PhotoLruCache } from "./owner-portal.photo-cache.js";
+import { OwnerPortalService, PHOTO_READ_BUCKET_DEFAULT } from "./owner-portal.service.js";
 import {
   InMemoryPortalReleaseRequestRepository,
   createPrismaPortalReleaseRequestRepository,
@@ -66,6 +70,10 @@ export async function createDefaultOwnerPortalService(): Promise<OwnerPortalServ
       sessionSecret: env.PORTAL_SESSION_SECRET,
       minLatencyMs: OWNER_MIN_LATENCY_MS,
       challengeTtlMs: POW_DEFAULT_TTL_MS,
+      // Ω5P PR-17b — balde DEDICADO (C2), semáforo GLOBAL do processo (S2+C2) e cache LRU (C3) das fotos.
+      photoRateLimiter: new TokenBucket(new InMemoryTokenBucketStore(), PHOTO_READ_BUCKET_DEFAULT),
+      photoConcurrencyGuard: new PhotoConcurrencyGuard(),
+      photoCache: new PhotoLruCache(),
     });
   })();
   return singleton;
