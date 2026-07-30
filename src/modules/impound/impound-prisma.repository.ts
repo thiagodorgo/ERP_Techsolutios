@@ -12,6 +12,7 @@ import type {
   AddInspectionPhotoInput,
   CompleteInspectionInput,
   InspectionPhoto,
+  InspectionPhotoAttachment,
   IntakeInspection,
   IntakeState,
   PhotoSetCode,
@@ -432,6 +433,39 @@ export class PrismaImpoundRepository implements ImpoundRepository {
     }));
   }
 
+  // Ω5P PR-17b — leitura ESTREITA de TODAS as fotos do PROCESSO (via a inspeção única do processo). [] se não há
+  // vistoria ainda (nunca lança — o chamador decide o desfecho anti-oráculo).
+  async listInspectionPhotosByProcess(tenantId: string, processId: string): Promise<readonly InspectionPhoto[]> {
+    const inspection = await this.findInspectionByProcess(tenantId, processId);
+    if (!inspection) return [];
+    return this.listInspectionPhotos(tenantId, inspection.id);
+  }
+
+  // Ω5P PR-17b — Attachment BRUTO de UMA foto — SÓ chamado pelo owner-portal DEPOIS do opaqueRef já validado.
+  async getInspectionPhotoAttachment(tenantId: string, processId: string, attachmentId: string): Promise<InspectionPhotoAttachment | undefined> {
+    const inspection = await this.findInspectionByProcess(tenantId, processId);
+    if (!inspection) return undefined;
+    const row = await this.client.attachment.findFirst({
+      where: {
+        tenant_id: tenantId,
+        id: attachmentId,
+        entity_type: "impound_intake_inspection",
+        entity_id: inspection.id,
+        status: "stored",
+        deleted_at: null,
+      },
+    });
+    if (!row) return undefined;
+    return {
+      attachmentId: row.id,
+      fileName: row.file_name ?? undefined,
+      contentType: row.content_type ?? undefined,
+      storageProvider: row.storage_provider ?? undefined,
+      storageKey: row.storage_key ?? undefined,
+      status: row.status,
+    };
+  }
+
   async completeInspection(input: CompleteInspectionInput): Promise<CompleteInspectionResult> {
     const inspection = await this.client.intakeInspection.findFirst({ where: { tenant_id: input.tenantId, process_id: input.processId } });
     if (!inspection) {
@@ -613,6 +647,14 @@ export class RlsPrismaImpoundRepository implements ImpoundRepository {
 
   listInspectionPhotos(tenantId: string, inspectionId: string): Promise<readonly InspectionPhoto[]> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaImpoundRepository(tx).listInspectionPhotos(tenantId, inspectionId));
+  }
+
+  listInspectionPhotosByProcess(tenantId: string, processId: string): Promise<readonly InspectionPhoto[]> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaImpoundRepository(tx).listInspectionPhotosByProcess(tenantId, processId));
+  }
+
+  getInspectionPhotoAttachment(tenantId: string, processId: string, attachmentId: string): Promise<InspectionPhotoAttachment | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaImpoundRepository(tx).getInspectionPhotoAttachment(tenantId, processId, attachmentId));
   }
 
   completeInspection(input: CompleteInspectionInput): Promise<CompleteInspectionResult> {

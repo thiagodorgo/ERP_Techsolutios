@@ -6,6 +6,7 @@ import type {
   AddInspectionPhotoInput,
   CompleteInspectionInput,
   InspectionPhoto,
+  InspectionPhotoAttachment,
   IntakeInspection,
   IntakeState,
   UpsertIntakeInspectionInput,
@@ -81,6 +82,13 @@ export interface ImpoundRepository {
   upsertInspection(input: UpsertIntakeInspectionInput): Promise<IntakeInspection>;
   addInspectionPhoto(input: AddInspectionPhotoInput): Promise<AddInspectionPhotoResult>;
   listInspectionPhotos(tenantId: string, inspectionId: string): Promise<readonly InspectionPhoto[]>;
+  // Ω5P PR-17b — leitura ESTREITA de TODAS as fotos de vistoria do PROCESSO (não de 1 inspectionId isolada) —
+  // usada para RECOMPUTAR o opaqueRef contra o CONJUNTO COMPLETO (requisito C4: sem early-return). Nenhum
+  // storage_key/fileUrl aqui (é o mesmo InspectionPhoto público, minimizado).
+  listInspectionPhotosByProcess(tenantId: string, processId: string): Promise<readonly InspectionPhoto[]>;
+  // Ω5P PR-17b — leitura ESTREITA do Attachment BRUTO de UMA foto (storage_key/provider) — SÓ chamada DEPOIS que
+  // o opaqueRef do cliente já foi validado por HMAC. undefined = não encontrada/removida/fora do processo.
+  getInspectionPhotoAttachment(tenantId: string, processId: string, attachmentId: string): Promise<InspectionPhotoAttachment | undefined>;
   completeInspection(input: CompleteInspectionInput): Promise<CompleteInspectionResult>;
   // Estado bruto para a guarda I3 (inspeção + conjuntos armazenados + conjuntos obrigatórios configurados).
   getIntakeState(tenantId: string, processId: string): Promise<IntakeState | undefined>;
@@ -96,7 +104,16 @@ export interface ImpoundRepository {
   reset?(): void;
 }
 
-type StoredInspectionPhoto = InspectionPhoto & { readonly tenantId: string; readonly inspectionId: string };
+// Ω5P PR-17b — carrega TAMBÉM fileName/contentType/storageProvider/storageKey (nunca no InspectionPhoto público
+// — §2.8) para alimentar getInspectionPhotoAttachment (leitura estreita pós-HMAC do owner-portal).
+type StoredInspectionPhoto = InspectionPhoto & {
+  readonly tenantId: string;
+  readonly inspectionId: string;
+  readonly fileName?: string;
+  readonly contentType?: string;
+  readonly storageProvider?: string;
+  readonly storageKey?: string;
+};
 
 export class InMemoryImpoundRepository implements ImpoundRepository {
   private readonly processes = new Map<string, ImpoundProcess>();
@@ -366,6 +383,11 @@ export class InMemoryImpoundRepository implements ImpoundRepository {
       fileUrl: input.fileUrl,
       status: "stored",
       createdAt: new Date(),
+      // Ω5P PR-17b — persistidos SÓ p/ alimentar getInspectionPhotoAttachment (nunca no InspectionPhoto público).
+      fileName: input.fileName,
+      contentType: input.contentType,
+      storageProvider: input.storageProvider,
+      storageKey: input.storageKey,
     };
     this.photos.push(photo);
     // PHOTO_SET encadeado (prova hash) — {set, attachmentId}.
@@ -375,20 +397,44 @@ export class InMemoryImpoundRepository implements ImpoundRepository {
       occurredAt: input.occurredAt,
       actorId: input.actorId,
     });
-    const { tenantId: _t, inspectionId: _i, ...publicPhoto } = photo;
-    void _t;
-    void _i;
+    const publicPhoto: InspectionPhoto = { id: photo.id, set: photo.set, fileUrl: photo.fileUrl, status: photo.status, createdAt: photo.createdAt };
     return { photo: publicPhoto, process: withEvent };
   }
 
   async listInspectionPhotos(tenantId: string, inspectionId: string): Promise<readonly InspectionPhoto[]> {
     return this.photos
       .filter((photo) => photo.tenantId === tenantId && photo.inspectionId === inspectionId && photo.status === "stored")
-      .map(({ tenantId: _t, inspectionId: _i, ...publicPhoto }) => {
-        void _t;
-        void _i;
-        return publicPhoto;
-      });
+      .map((photo) => ({ id: photo.id, set: photo.set, fileUrl: photo.fileUrl, status: photo.status, createdAt: photo.createdAt }));
+  }
+
+  // Ω5P PR-17b — leitura ESTREITA de TODAS as fotos do PROCESSO (via a inspeção única do processo). [] se não há
+  // vistoria ainda (nunca lança — o chamador decide o desfecho anti-oráculo).
+  async listInspectionPhotosByProcess(tenantId: string, processId: string): Promise<readonly InspectionPhoto[]> {
+    const inspection = await this.findInspectionByProcess(tenantId, processId);
+    if (!inspection) return [];
+    return this.listInspectionPhotos(tenantId, inspection.id);
+  }
+
+  // Ω5P PR-17b — Attachment BRUTO de UMA foto — SÓ chamado pelo owner-portal DEPOIS do opaqueRef já validado.
+  async getInspectionPhotoAttachment(tenantId: string, processId: string, attachmentId: string): Promise<InspectionPhotoAttachment | undefined> {
+    const inspection = await this.findInspectionByProcess(tenantId, processId);
+    if (!inspection) return undefined;
+    const photo = this.photos.find(
+      (candidate) =>
+        candidate.tenantId === tenantId &&
+        candidate.inspectionId === inspection.id &&
+        candidate.id === attachmentId &&
+        candidate.status === "stored",
+    );
+    if (!photo) return undefined;
+    return {
+      attachmentId: photo.id,
+      fileName: photo.fileName,
+      contentType: photo.contentType,
+      storageProvider: photo.storageProvider,
+      storageKey: photo.storageKey,
+      status: photo.status,
+    };
   }
 
   async completeInspection(input: CompleteInspectionInput): Promise<CompleteInspectionResult> {

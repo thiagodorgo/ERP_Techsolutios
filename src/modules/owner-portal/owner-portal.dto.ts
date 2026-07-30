@@ -22,6 +22,16 @@ const STATUS_LABELS: Record<ImpoundStatus, string> = {
   CLOSED: "Encerrado",
 };
 
+// DD/MM/AAAA (pt-BR, UTC) — sem Intl (determinismo/leveza, mesmo espírito de formatMoneyLabel). Ω5P PR-17b:
+// usada tanto na marca-d'água da foto (owner-portal.photo-pipeline.ts) quanto no `capturedAtLabel` do dossiê
+// (data-only, SEM hora — reduz fingerprinting do momento exato da vistoria).
+export function formatDateLabelPtBr(date: Date): string {
+  const dd = String(date.getUTCDate()).padStart(2, "0");
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const yyyy = date.getUTCFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
 // R$ 1.234,56 (pt-BR) a partir de centavos inteiros — sem Intl (determinismo/leveza), sem aritmética de float.
 export function formatMoneyLabel(cents: number, currency: string): string {
   const symbol = currency === "BRL" ? "R$" : currency;
@@ -90,8 +100,16 @@ export type OwnerDossierRequirement = {
   readonly required: boolean;
 };
 
+// Ω5P PR-17b — item de foto MINIMIZADO no dossiê: SÓ o opaqueRef (HMAC — o servidor recompõe o attachmentId
+// internamente, o cliente nunca o vê) + a data da captura (data-only, SEM hora — reduz fingerprinting). JAMAIS
+// attachmentId/storage_key/fileUrl (§2.8).
+export type OwnerDossierPhotoItem = {
+  readonly opaqueRef: string;
+  readonly capturedAtLabel: string;
+};
+
 export type OwnerDossierPhotos = {
-  readonly setsAvailableCount: number; // contagem de conjuntos com foto (NENHUM byte de foto sai nesta fatia)
+  readonly sets: readonly OwnerDossierPhotoItem[];
   readonly availabilityLabel: string;
 };
 
@@ -157,10 +175,10 @@ export function toOwnerDossierDto(input: {
     totalDueCents: number;
   };
   plan: { ownerNotifDays: number; noticeEdictDay: number; auctionEligibleDay: number; requirements: ReadonlyArray<{ label: string; required: boolean }> } | undefined;
-  photoSetsCount: number;
+  photos: readonly OwnerDossierPhotoItem[];
   now: Date;
 }): OwnerDossierDto {
-  const { process, yard, charges, plan, photoSetsCount, now } = input;
+  const { process, yard, charges, plan, photos, now } = input;
   const items: OwnerDossierChargeItem[] = charges.items.map((item) => ({
     kindLabel: CHARGE_KIND_LABELS[item.kind],
     subtotalLabel: formatMoneyLabel(item.subtotalCents, charges.currency),
@@ -186,10 +204,12 @@ export function toOwnerDossierDto(input: {
     deadlines: plan ? buildOwnerDossierDeadlines(process.enteredAt, plan, now) : [],
     requirements: (plan?.requirements ?? []).map((requirement) => ({ label: requirement.label, required: requirement.required })),
     photos: {
-      setsAvailableCount: photoSetsCount,
+      sets: photos,
+      // D-007 (avaliador Ω5P): esta tela ainda NÃO tem UI que consuma /photos/:opaqueRef (visualização adiada
+      // para PR de frontend futuro, A2 da junta-5) — o texto não pode prometer uma ação indisponível AQUI.
       availabilityLabel:
-        photoSetsCount > 0
-          ? "Fotos da vistoria disponíveis mediante solicitação ao órgão/pátio responsável, conforme a LGPD."
+        photos.length > 0
+          ? "Fotos da vistoria registradas — consulte o órgão/pátio responsável para visualização."
           : "Nenhuma foto de vistoria registrada até o momento.",
     },
   };

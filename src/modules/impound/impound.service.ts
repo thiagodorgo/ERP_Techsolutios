@@ -7,7 +7,7 @@ import {
   isIntakeComplete,
   resolveRequiredPhotoSets,
 } from "./impound.intake.js";
-import type { InspectionPhoto, IntakeInspection } from "./impound.intake.types.js";
+import type { InspectionPhoto, InspectionPhotoAttachment, IntakeInspection } from "./impound.intake.types.js";
 import {
   parseFileUrl,
   parseInspectedAt,
@@ -137,6 +137,20 @@ export class ImpoundService {
   async countAvailablePhotoSets(tenantId: string, processId: string): Promise<number> {
     const state = await this.repository.getIntakeState(tenantId, processId);
     return state?.storedSets.length ?? 0;
+  }
+
+  // Ω5P PR-17b — READ-PORT do owner-portal (fotos): lista {attachmentId, capturedAt} de TODAS as fotos do
+  // processo — usada para o servidor RECOMPUTAR o opaqueRef contra o CONJUNTO COMPLETO (requisito C4, sem
+  // early-return). Nenhum set/fileUrl/storage_key aqui — só o suficiente para o HMAC + o rótulo de data.
+  async listInspectionPhotosForPortal(tenantId: string, processId: string): Promise<readonly { attachmentId: string; capturedAt: Date }[]> {
+    const photos = await this.repository.listInspectionPhotosByProcess(tenantId, processId);
+    return photos.map((photo) => ({ attachmentId: photo.id, capturedAt: photo.createdAt }));
+  }
+
+  // Ω5P PR-17b — READ-PORT do owner-portal (fotos): Attachment BRUTO de UMA foto — SÓ chamado DEPOIS do
+  // opaqueRef já validado pelo servidor (nunca o id do cliente cru). undefined = não encontrada/cross-processo.
+  async getInspectionPhotoAttachmentForPortal(tenantId: string, processId: string, attachmentId: string): Promise<InspectionPhotoAttachment | undefined> {
+    return this.repository.getInspectionPhotoAttachment(tenantId, processId, attachmentId);
   }
 
   async get(actor: ImpoundActorContext, processId: string): Promise<ImpoundProcess> {

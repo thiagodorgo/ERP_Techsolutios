@@ -62,9 +62,25 @@ export function credentialRateKey(secret: string, username: string): string {
 
 // Comparação em TEMPO CONSTANTE de dois segredos de comprimento arbitrário: HMAC(a) vs HMAC(b) → 32 bytes cada
 // (comprimento fixo, pré-requisito do timingSafeEqual) → sem oráculo de timing por diferença de comprimento nem
-// por posição do 1º byte divergente. Usada no 2º fator (Renavam).
+// por posição do 1º byte divergente. Usada no 2º fator (Renavam) e no opaqueRef de foto (PR-17b).
 export function constantTimeEqual(secret: string, a: string, b: string): boolean {
   const da = createHmac("sha256", secret).update(a, "utf8").digest();
   const db = createHmac("sha256", secret).update(b, "utf8").digest();
   return timingSafeEqual(da, db);
+}
+
+// Ω5P PR-17b — D2 (coordenador-de-acessos, OBRIGATÓRIO): NUNCA reusar o PORTAL_LOG_SECRET CRU para o opaqueRef de
+// foto — deriva uma SUBCHAVE por separação de domínio (HMAC do secret com um label fixo e estável). Zero segredo
+// NOVO no ambiente (a subchave nasce do PORTAL_LOG_SECRET já existente); um vazamento da subchave não compromete
+// os demais usos do secret (ip_hash/query_fingerprint/sessionRateKey), e vice-versa.
+export function derivePhotoRefKey(secret: string): string {
+  return hmacHex(secret, "photoRef-key-v1");
+}
+
+// opaqueRef da foto: HMAC(photoRefKey, "ph"+attachmentId+processId). O CLIENTE só vê este ref opaco (nunca o
+// attachmentId); o SERVIDOR recomputa a partir da SESSÃO (processId) + do attachmentId INTERNO (nunca do
+// cliente) e compara em TEMPO CONSTANTE (constantTimeEqual, mesma família) contra o conjunto de fotos do
+// processo — IDOR estruturalmente impossível mesmo com um ref adivinhado (a chave de derivação é secreta).
+export function photoRef(photoRefKeySecret: string, attachmentId: string, processId: string): string {
+  return hmacHex(photoRefKeySecret, `ph${attachmentId}${processId}`);
 }

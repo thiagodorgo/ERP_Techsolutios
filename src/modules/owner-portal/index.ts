@@ -4,10 +4,12 @@ export { createOwnerPortalRouter } from "./owner-portal.routes.js";
 export { OwnerPortalController, type OwnerPortalServiceResolver } from "./owner-portal.controller.js";
 export {
   OwnerPortalService,
+  PHOTO_READ_BUCKET_DEFAULT,
   type OwnerPortalDeps,
   type OwnerLookupResult,
   type OwnerDossierResult,
   type OwnerReleaseRequestResult,
+  type OwnerPhotoResult,
   type OwnerPortalImpoundPort,
   type OwnerPortalChargePort,
   type OwnerPortalYardPort,
@@ -19,9 +21,43 @@ export {
   toOwnerDossierDto,
   buildOwnerDossierDeadlines,
   formatMoneyLabel,
+  formatDateLabelPtBr,
   type OwnerPortalProcessDto,
   type OwnerDossierDto,
+  type OwnerDossierPhotoItem,
+  type OwnerDossierPhotos,
 } from "./owner-portal.dto.js";
+export {
+  assertSafeImageDimensions,
+  ImageHeaderRejectedError,
+  MAX_DECODED_PIXELS,
+  MAX_IMAGE_DIMENSION_PX,
+} from "./image-header-guard.js";
+export {
+  PhotoConcurrencyGuard,
+  PhotoConcurrencySaturatedError,
+  defaultPhotoConcurrencyGuard,
+  PHOTO_PIPELINE_MAX_CONCURRENCY,
+} from "./photo-concurrency-guard.js";
+export {
+  minimizePhotoBuffer,
+  runPipeline as runPhotoPipeline,
+  withTimeout as withPhotoPipelineTimeout,
+  PhotoPipelineError,
+  PHOTO_MAX_SOURCE_BYTES,
+  PHOTO_MAX_LONGEST_SIDE_PX,
+  PHOTO_JPEG_QUALITY,
+  PHOTO_PIPELINE_TIMEOUT_MS,
+  type PhotoPipelineResult,
+} from "./owner-portal.photo-pipeline.js";
+export {
+  PhotoLruCache,
+  defaultPhotoLruCache,
+  PHOTO_CACHE_MAX_ENTRIES,
+  PHOTO_CACHE_MAX_BYTES,
+  PHOTO_CACHE_TTL_MS,
+  type CachedPhoto,
+} from "./owner-portal.photo-cache.js";
 export {
   parseLookupRequest,
   parseReleaseRequestNote,

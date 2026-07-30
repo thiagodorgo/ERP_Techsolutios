@@ -198,9 +198,9 @@ test("dossiê: agregado minimizado (situação/pátio/veículo/débitos itemizad
     // Exigências: só {label, required} (nunca o code/satisfied internos).
     const reqs = dossier.requirements as Array<Record<string, unknown>>;
     assert.deepEqual(reqs.map((r) => Object.keys(r).sort()), [["label", "required"], ["label", "required"]]);
-    // Fotos: placeholder honesto (contagem 0 — sem vistoria com fotos; NENHUM byte de foto).
-    const photos = dossier.photos as { setsAvailableCount: number; availabilityLabel: string };
-    assert.equal(photos.setsAvailableCount, 0);
+    // Fotos (Ω5P PR-17b — shape novo {sets:[{opaqueRef,capturedAtLabel}]}): sem vistoria com fotos ⇒ lista vazia.
+    const photos = dossier.photos as { sets: Array<{ opaqueRef: string; capturedAtLabel: string }>; availabilityLabel: string };
+    assert.deepEqual(photos.sets, []);
     assert.ok(photos.availabilityLabel.length > 0);
   });
 });

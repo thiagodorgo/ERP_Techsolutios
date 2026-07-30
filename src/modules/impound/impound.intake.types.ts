@@ -75,6 +75,19 @@ export type UpsertIntakeInspectionInput = {
   readonly actorId?: string;
 };
 
+// Ω5P PR-17b — leitura ESTREITA do Attachment BRUTO (storage_key/provider) de UMA foto da vistoria — usada SÓ
+// pelo owner-portal, e SÓ DEPOIS que o opaqueRef do cliente já foi validado por HMAC (nunca o attachmentId cru
+// do cliente chega até este tipo sem validação prévia — C3/D1). NÃO é o InspectionPhoto público (aquele nunca
+// leva storage_key/provider — §2.8); este tipo fica interno ao módulo impound/owner-portal, nunca serializado.
+export type InspectionPhotoAttachment = {
+  readonly attachmentId: string;
+  readonly fileName?: string;
+  readonly contentType?: string;
+  readonly storageProvider?: string;
+  readonly storageKey?: string;
+  readonly status: string;
+};
+
 export type AddInspectionPhotoInput = {
   readonly tenantId: string;
   readonly processId: string;

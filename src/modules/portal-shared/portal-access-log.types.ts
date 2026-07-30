@@ -17,7 +17,10 @@ export type PortalName = (typeof PORTAL_NAMES)[number];
 // Ω5P PR-19 (aditivo): RELEASE_DECIDED = decisão APPROVE/REJECT da autoridade sobre a liberação in-system (I10:
 // quem decidiu, o quê, quando). A migração 20260851000000 alarga o CHECK de action (+RELEASE_DECIDED, aditivo).
 // process_id PRESENTE (FK composta tenant-first RESTRICT já existente); reference/note NUNCA entram no log (§2.8).
-export const PORTAL_ACTIONS = ["CHALLENGE_ISSUED", "LOOKUP", "DOSSIER_VIEWED", "RELEASE_REQUESTED", "LOGIN", "REMOVAL_REQUESTED", "RELEASE_DECIDED"] as const;
+// Ω5P PR-17b (aditivo): PHOTO_VIEWED = leitura de UMA foto de evidência minimizada (I10: quem viu, quando, de
+// onde). A migração 20260852000000 alarga o CHECK de action (+PHOTO_VIEWED, aditivo/não-destrutivo). MESMO
+// allowlist do DOSSIER_VIEWED (A1 — junta-5): nunca attachmentId/opaqueRef em claro no log.
+export const PORTAL_ACTIONS = ["CHALLENGE_ISSUED", "LOOKUP", "DOSSIER_VIEWED", "RELEASE_REQUESTED", "LOGIN", "REMOVAL_REQUESTED", "RELEASE_DECIDED", "PHOTO_VIEWED"] as const;
 export type PortalAction = (typeof PORTAL_ACTIONS)[number];
 
 // Desfecho INTERNO (NUNCA exposto). ISSUED = desafio emitido; FOUND/NOT_FOUND/FACTOR_MISMATCH = resultado da

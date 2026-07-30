@@ -8,6 +8,9 @@ export type OwnerPortalServiceResolver = () => Promise<OwnerPortalService>;
 export type ControllerResult = {
   readonly status: number;
   readonly body: unknown;
+  // Ω5P PR-17b — presente SÓ na resposta binária de foto (image/jpeg); ausente → o router serializa `body` como
+  // JSON (default de todas as demais rotas). Nunca ambos.
+  readonly contentType?: string;
 };
 
 // IP do cliente. trust proxy fica DESLIGADO no portal-app (default do Express) → req.ip = socket remoto, NÃO um
@@ -35,6 +38,13 @@ const SESSION_INVALID_BODY = {
 };
 const RATE_LIMITED_BODY = {
   error: { code: "RATE_LIMITED", message: "Muitas tentativas. Tente novamente mais tarde." },
+};
+// Ω5P PR-17b — 404 uniforme (não distingue "não existe" de "opaqueRef não bate" — anti-oráculo).
+const PHOTO_NOT_FOUND_BODY = {
+  error: { code: "PHOTO_NOT_FOUND", message: "Não foi possível carregar a imagem." },
+};
+const PHOTO_SATURATED_BODY = {
+  error: { code: "PHOTO_PROCESSING_SATURATED", message: "Muitas solicitações de imagem em processamento. Tente novamente em instantes." },
 };
 
 export class OwnerPortalController {
@@ -109,6 +119,34 @@ export class OwnerPortalController {
       case "not_found":
         // Genérico: cross-tenant / processo removido → NÃO devolve o processo (não revela nada).
         return { status: 404, body: { error: { code: "DOSSIER_NOT_FOUND", message: "Não foi possível carregar os dados." } } };
+    }
+  }
+
+  // GET /portal/v1/owner/photos/:opaqueRef — exige sessão JWE. O opaqueRef vem SÓ do path (nunca attachmentId).
+  async photo(request: Request): Promise<ControllerResult> {
+    const service = await this.resolveService();
+    const opaqueRefRaw = request.params.opaqueRef;
+    if (typeof opaqueRefRaw !== "string" || opaqueRefRaw.length === 0 || opaqueRefRaw.length > 256) {
+      // Formato claramente inválido — NÃO vale a pena nem tentar (mesmo desfecho 404 uniforme; sem oráculo).
+      return { status: 404, body: PHOTO_NOT_FOUND_BODY };
+    }
+    const result = await service.photo({
+      authorization: authorization(request),
+      opaqueRef: opaqueRefRaw,
+      ip: clientIp(request),
+      userAgent: userAgent(request),
+    });
+    switch (result.kind) {
+      case "ok":
+        return { status: 200, body: result.buffer, contentType: result.contentType };
+      case "session_invalid":
+        return { status: 401, body: SESSION_INVALID_BODY };
+      case "rate_limited":
+        return { status: 429, body: RATE_LIMITED_BODY };
+      case "not_found":
+        return { status: 404, body: PHOTO_NOT_FOUND_BODY };
+      case "saturated":
+        return { status: 503, body: PHOTO_SATURATED_BODY };
     }
   }
 
