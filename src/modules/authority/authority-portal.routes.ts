@@ -7,16 +7,24 @@ import {
 } from "./authority-portal.controller.js";
 import { createDefaultAuthorityPortalService } from "./authority-portal.runtime.js";
 import { createDefaultAuthorityRemovalService } from "./authority-removal.runtime.js";
+import {
+  AuthorityReleaseApprovalController,
+  type AuthorityReleaseApprovalServiceResolver,
+} from "./authority-release-approval.controller.js";
+import { createDefaultAuthorityReleaseApprovalService } from "./authority-release-approval.runtime.js";
 
-// Ω5P PR-18a/b — router do authority-portal, montado em /portal/v1/authority pelo portal-app (aditivo; o ownerRouter
-// segue intacto). NUNCA sob /api/v1, NUNCA com attachAuthenticatedActor. Rotas: PoW + login (18a) + solicitar
-// remoção (18b). Erro inesperado → 500 GENÉRICO (nunca vaza stack/PII). Wrapper de erro LOCAL (isolamento).
+// Ω5P PR-18a/b/19 — router do authority-portal, montado em /portal/v1/authority pelo portal-app (aditivo; o
+// ownerRouter segue intacto). NUNCA sob /api/v1, NUNCA com attachAuthenticatedActor. Rotas: PoW + login (18a) +
+// solicitar remoção (18b) + listar/decidir aprovações (19). Erro inesperado → 500 GENÉRICO (nunca vaza stack/PII).
+// Wrapper de erro LOCAL (isolamento).
 export function createAuthorityPortalRouter(
   resolveService: AuthorityPortalServiceResolver = createDefaultAuthorityPortalService,
   resolveRemovalService: AuthorityRemovalServiceResolver = createDefaultAuthorityRemovalService,
+  resolveApprovalService: AuthorityReleaseApprovalServiceResolver = createDefaultAuthorityReleaseApprovalService,
 ): Router {
   const router = Router();
   const controller = new AuthorityPortalController(resolveService, resolveRemovalService);
+  const approvalController = new AuthorityReleaseApprovalController(resolveApprovalService);
 
   router.post(
     "/challenge",
@@ -30,6 +38,16 @@ export function createAuthorityPortalRouter(
   router.post(
     "/removals",
     handle((request) => controller.requestRemoval(request)),
+  );
+  // Ω5P PR-19 — fila de aprovações pendentes vinculadas à credencial da sessão (D-08). Bearer JWE obrigatório.
+  router.get(
+    "/approvals",
+    handle((request) => approvalController.list(request)),
+  );
+  // Ω5P PR-19 — decidir (APPROVE|REJECT) a liberação de um processo que a PRÓPRIA credencial originou (D-08).
+  router.post(
+    "/approvals/:processId/decide",
+    handle((request) => approvalController.decide(request)),
   );
 
   return router;

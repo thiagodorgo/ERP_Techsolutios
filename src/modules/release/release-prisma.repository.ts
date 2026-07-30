@@ -186,6 +186,7 @@ export class PrismaReleaseRepository implements ReleaseRepository {
         authority_approved_at: new Date(),
         authority_reference: input.authorityReference ?? null,
         authority_note: input.authorityNote ?? null,
+        authority_credential_id: input.authorityCredentialId ?? null,
         updated_by: input.actorId ?? null,
       },
     });
@@ -559,6 +560,7 @@ type ReleaseRecord = {
   readonly authority_approved_at: Date | null;
   readonly authority_reference: string | null;
   readonly authority_note: string | null;
+  readonly authority_credential_id: string | null;
   readonly recipient_name: string | null;
   readonly recipient_document: string | null;
   readonly recipient_relationship: string | null;
@@ -582,6 +584,7 @@ function mapRelease(record: ReleaseRecord): ImpoundRelease {
     authorityApprovedAt: record.authority_approved_at ?? undefined,
     authorityReference: record.authority_reference ?? undefined,
     authorityNote: record.authority_note ?? undefined,
+    authorityCredentialId: record.authority_credential_id ?? undefined,
     recipientName: record.recipient_name ?? undefined,
     recipientDocument: record.recipient_document ?? undefined,
     recipientRelationship: (record.recipient_relationship ?? undefined) as RecipientRelationship | undefined,

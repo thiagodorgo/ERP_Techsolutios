@@ -1,5 +1,14 @@
 import "./styles.css";
-import { login, requestRemoval, type LoginOutcome, type RemovalInput } from "./api.js";
+import {
+  decideApproval,
+  listApprovals,
+  login,
+  requestRemoval,
+  type DecideInput,
+  type LoginOutcome,
+  type PendingApprovalItem,
+  type RemovalInput,
+} from "./api.js";
 
 // Ω5P PR-18a/b — shell do authority-portal (PWA mobile-first, white-label, PT-BR). LOGIN (18a) + SOLICITAR REMOÇÃO
 // (18b: placa → local → fundamento → confirmação). A SESSÃO (JWE) vive só em MEMÓRIA (nunca persistida); expira em
@@ -32,6 +41,23 @@ function header(): HTMLElement {
       el("span", { class: "brand-text" }, ["Portal da autoridade solicitante"]),
     ]),
   ]);
+}
+
+// Ω5P PR-19 — navegação entre "Solicitar remoção" (18b) e "Aprovações pendentes" (19), só quando autenticado.
+function nav(active: "removal" | "approvals"): HTMLElement {
+  const removalBtn = el(
+    "button",
+    { class: active === "removal" ? "nav-tab nav-tab-active" : "nav-tab", type: "button", onclick: () => renderRemovalForm() },
+    ["Solicitar remoção"],
+  );
+  const approvalsBtn = el(
+    "button",
+    { class: active === "approvals" ? "nav-tab nav-tab-active" : "nav-tab", type: "button", onclick: () => renderApprovals() },
+    ["Aprovações pendentes"],
+  );
+  removalBtn.setAttribute("aria-current", active === "removal" ? "page" : "false");
+  approvalsBtn.setAttribute("aria-current", active === "approvals" ? "page" : "false");
+  return el("nav", { class: "nav-tabs", ariaLabel: "Navegação do portal" }, [removalBtn, approvalsBtn]);
 }
 
 // ── LOGIN ────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -186,6 +212,7 @@ function renderRemovalForm(error = ""): void {
 
   root.replaceChildren(
     header(),
+    nav("removal"),
     el("main", { class: "screen" }, [
       el("h1", { class: "screen-title" }, ["Solicitar remoção"]),
       el("p", { class: "screen-lead" }, [
@@ -242,6 +269,227 @@ function renderRemovalConfirmed(): void {
         ]),
       ]),
       el("button", { class: "btn-primary", type: "button", onclick: () => renderRemovalForm() }, ["Nova solicitação"]),
+      el("button", { class: "btn-secondary", type: "button", onclick: () => signOut() }, ["Sair"]),
+    ]),
+  );
+}
+
+// ── APROVAÇÕES PENDENTES (PR-19) ────────────────────────────────────────────────────────────────────────────────
+// Lista → decisão (aprovar/rejeitar com motivo) → confirmação. Estados: loading/vazio/erro/sessão-expirada/offline.
+function renderApprovals(): void {
+  if (!root) return;
+  if (!authoritySession) {
+    renderLogin();
+    return;
+  }
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    renderApprovalsOffline();
+    return;
+  }
+  renderApprovalsLoading();
+  void listApprovals(authoritySession).then((outcome) => {
+    if (outcome.kind === "ok") {
+      renderApprovalsList(outcome.items);
+      return;
+    }
+    if (outcome.kind === "session_expired") {
+      authoritySession = null;
+      authorityName = null;
+      renderLogin();
+      const err = root?.querySelector<HTMLParagraphElement>(".form-error");
+      if (err) err.textContent = "Sua sessão expirou. Entre novamente para continuar.";
+      return;
+    }
+    if (outcome.kind === "rate_limited") {
+      renderApprovalsError("Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.");
+      return;
+    }
+    renderApprovalsError("Não foi possível carregar as aprovações pendentes. Verifique sua conexão e tente novamente.");
+  });
+}
+
+function renderApprovalsLoading(): void {
+  if (!root) return;
+  root.replaceChildren(
+    header(),
+    nav("approvals"),
+    el("main", { class: "screen" }, [
+      el("div", { class: "card loading", role: "status", ariaLive: "polite" }, [
+        el("div", { class: "spinner", ariaHidden: "true" }),
+        el("p", { class: "loading-text" }, ["Carregando aprovações pendentes…"]),
+      ]),
+    ]),
+  );
+}
+
+function renderApprovalsOffline(): void {
+  if (!root) return;
+  root.replaceChildren(
+    header(),
+    nav("approvals"),
+    el("main", { class: "screen" }, [
+      el("div", { class: "card message" }, [
+        el("h2", { class: "message-title" }, ["Você está offline"]),
+        el("p", { class: "message-body" }, ["Conecte-se à internet para ver as aprovações pendentes."]),
+      ]),
+      el("button", { class: "btn-primary", type: "button", onclick: () => renderApprovals() }, ["Tentar novamente"]),
+    ]),
+  );
+}
+
+function renderApprovalsError(message: string): void {
+  if (!root) return;
+  root.replaceChildren(
+    header(),
+    nav("approvals"),
+    el("main", { class: "screen" }, [
+      el("div", { class: "card message" }, [
+        el("h2", { class: "message-title" }, ["Não foi possível carregar"]),
+        el("p", { class: "message-body" }, [message]),
+      ]),
+      el("button", { class: "btn-primary", type: "button", onclick: () => renderApprovals() }, ["Tentar novamente"]),
+    ]),
+  );
+}
+
+function formatRequestedAt(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("pt-BR");
+  } catch {
+    return iso;
+  }
+}
+
+function renderApprovalsList(items: readonly PendingApprovalItem[]): void {
+  if (!root) return;
+  if (items.length === 0) {
+    root.replaceChildren(
+      header(),
+      nav("approvals"),
+      el("main", { class: "screen" }, [
+        el("h1", { class: "screen-title" }, ["Aprovações pendentes"]),
+        el("div", { class: "card message" }, [
+          el("p", { class: "message-body" }, ["Nenhuma liberação aguardando sua aprovação no momento."]),
+        ]),
+      ]),
+    );
+    return;
+  }
+
+  const cards = items.map((item) => renderApprovalCard(item));
+  root.replaceChildren(
+    header(),
+    nav("approvals"),
+    el("main", { class: "screen" }, [
+      el("h1", { class: "screen-title" }, ["Aprovações pendentes"]),
+      el("p", { class: "screen-lead" }, ["Só aparecem aqui os processos originados pela sua credencial."]),
+      el("div", { class: "approvals-list" }, cards),
+    ]),
+  );
+}
+
+function renderApprovalCard(item: PendingApprovalItem): HTMLElement {
+  const errorNode = el("p", { class: "form-error", role: "alert" });
+  const noteInput = el("textarea", {
+    class: "field-input", maxLength: 500, rows: 2, placeholder: "Motivo (obrigatório para rejeitar)",
+  });
+  noteInput.setAttribute("aria-label", "Motivo da decisão");
+  const referenceInput = el("input", {
+    class: "field-input", type: "text", maxLength: 120, placeholder: "Nº do ato/decisão (opcional)",
+  });
+  referenceInput.setAttribute("aria-label", "Referência do ato");
+
+  const approveBtn = el("button", { class: "btn-primary", type: "button" }, ["Aprovar"]);
+  const rejectBtn = el("button", { class: "btn-secondary", type: "button" }, ["Rejeitar"]);
+
+  const submit = (decision: DecideInput["decision"]) => {
+    errorNode.textContent = "";
+    const note = (noteInput as HTMLTextAreaElement).value.trim() || undefined;
+    if (decision === "REJECT" && !note) {
+      errorNode.textContent = "Informe o motivo da rejeição.";
+      return;
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      errorNode.textContent = "Você está offline. Conecte-se para enviar a decisão.";
+      return;
+    }
+    runDecide(item.processId, { decision, reference: referenceInput.value.trim() || undefined, note });
+  };
+  approveBtn.addEventListener("click", () => submit("APPROVE"));
+  rejectBtn.addEventListener("click", () => submit("REJECT"));
+
+  return el("article", { class: "card approval-card" }, [
+    el("h2", { class: "message-title" }, [item.vehiclePlate ?? "Placa não identificada"]),
+    el("p", { class: "field-hint" }, [`Solicitado em ${formatRequestedAt(item.requestedAt)} · ${item.kind === "FOR_REPAIR" ? "Saída para reparo" : "Restituição"}`]),
+    item.pendingRequirements.length > 0
+      ? el("p", { class: "field-hint" }, [`Requisitos pendentes: ${item.pendingRequirements.join(", ")}`])
+      : el("p", { class: "field-hint" }, ["Nenhum requisito pendente."]),
+    el("label", { class: "field-label" }, ["Referência do ato (aprovação)"]),
+    referenceInput,
+    el("label", { class: "field-label" }, ["Motivo (rejeição)"]),
+    noteInput,
+    errorNode,
+    el("div", { class: "approval-actions" }, [approveBtn, rejectBtn]),
+  ]);
+}
+
+function runDecide(processId: string, input: DecideInput): void {
+  if (!authoritySession) {
+    renderLogin();
+    return;
+  }
+  renderApprovalsLoading();
+  void decideApproval(authoritySession, processId, input).then((outcome) => {
+    if (outcome.kind === "decided") {
+      renderApprovalDecided(outcome.decision);
+      return;
+    }
+    if (outcome.kind === "session_expired") {
+      authoritySession = null;
+      authorityName = null;
+      renderLogin();
+      const err = root?.querySelector<HTMLParagraphElement>(".form-error");
+      if (err) err.textContent = "Sua sessão expirou. Entre novamente para continuar.";
+      return;
+    }
+    // not_found/conflict/rate_limited/invalid/error → volta à lista atualizada com mensagem genérica.
+    void listApprovals(authoritySession as string).then((listOutcome) => {
+      if (listOutcome.kind === "ok") {
+        renderApprovalsList(listOutcome.items);
+        const hint = root?.querySelector<HTMLParagraphElement>(".screen-lead");
+        if (hint) {
+          const messages: Record<string, string> = {
+            not_found: "Este processo não está mais disponível para decisão.",
+            conflict: "Esta liberação já foi decidida.",
+            rate_limited: "Muitas tentativas em pouco tempo. Aguarde alguns minutos.",
+            invalid: "Verifique os dados informados.",
+            error: "Não foi possível concluir a decisão. Tente novamente.",
+          };
+          hint.textContent = messages[outcome.kind] ?? messages.error;
+        }
+        return;
+      }
+      renderApprovalsError("Não foi possível concluir a decisão. Verifique sua conexão e tente novamente.");
+    });
+  });
+}
+
+function renderApprovalDecided(decision: "APPROVED" | "REJECTED"): void {
+  if (!root) return;
+  root.replaceChildren(
+    header(),
+    nav("approvals"),
+    el("main", { class: "screen" }, [
+      el("div", { class: "card message" }, [
+        el("span", { class: "confirm-icon", ariaHidden: "true" }, [decision === "APPROVED" ? "✓" : "✕"]),
+        el("h2", { class: "message-title" }, [decision === "APPROVED" ? "Liberação aprovada" : "Liberação rejeitada"]),
+        el("p", { class: "message-body" }, [
+          decision === "APPROVED"
+            ? "A liberação foi autorizada e a decisão foi registrada."
+            : "A rejeição foi registrada com o motivo informado.",
+        ]),
+      ]),
+      el("button", { class: "btn-primary", type: "button", onclick: () => renderApprovals() }, ["Ver aprovações pendentes"]),
       el("button", { class: "btn-secondary", type: "button", onclick: () => signOut() }, ["Sair"]),
     ]),
   );

@@ -65,6 +65,72 @@ export async function requestRemoval(session: string, input: RemovalInput): Prom
   }
 }
 
+// Ω5P PR-19 — fila de aprovações pendentes + decisão (APPROVE|REJECT), só nos processos que a PRÓPRIA credencial
+// originou. Resposta MINIMIZADA (§2.8): SEM releaseId (id interno de custódia).
+export type PendingApprovalItem = {
+  readonly processId: string;
+  readonly kind: string;
+  readonly vehiclePlate?: string;
+  readonly requestedAt: string;
+  readonly pendingRequirements: readonly string[];
+};
+
+export type ListApprovalsOutcome =
+  | { readonly kind: "ok"; readonly items: readonly PendingApprovalItem[] }
+  | { readonly kind: "session_expired" }
+  | { readonly kind: "rate_limited" }
+  | { readonly kind: "error" };
+
+export async function listApprovals(session: string): Promise<ListApprovalsOutcome> {
+  try {
+    const response = await fetch("/portal/v1/authority/approvals", {
+      headers: { authorization: `Bearer ${session}` },
+    });
+    if (response.status === 200) {
+      const data = (await response.json()).data as PendingApprovalItem[];
+      return { kind: "ok", items: data };
+    }
+    if (response.status === 401) return { kind: "session_expired" };
+    if (response.status === 429) return { kind: "rate_limited" };
+    return { kind: "error" };
+  } catch {
+    return { kind: "error" };
+  }
+}
+
+export type DecideInput = { readonly decision: "APPROVE" | "REJECT"; readonly reference?: string; readonly note?: string };
+
+export type DecideOutcome =
+  | { readonly kind: "decided"; readonly decision: "APPROVED" | "REJECTED" }
+  | { readonly kind: "not_found" }
+  | { readonly kind: "conflict" }
+  | { readonly kind: "session_expired" }
+  | { readonly kind: "rate_limited" }
+  | { readonly kind: "invalid" }
+  | { readonly kind: "error" };
+
+export async function decideApproval(session: string, processId: string, input: DecideInput): Promise<DecideOutcome> {
+  try {
+    const response = await fetch(`/portal/v1/authority/approvals/${processId}/decide`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${session}` },
+      body: JSON.stringify({ decision: input.decision, reference: input.reference, note: input.note }),
+    });
+    if (response.status === 200) {
+      const data = (await response.json()).data as { decision: "APPROVED" | "REJECTED" };
+      return { kind: "decided", decision: data.decision };
+    }
+    if (response.status === 401) return { kind: "session_expired" };
+    if (response.status === 404) return { kind: "not_found" };
+    if (response.status === 409) return { kind: "conflict" };
+    if (response.status === 429) return { kind: "rate_limited" };
+    if (response.status === 400) return { kind: "invalid" };
+    return { kind: "error" };
+  } catch {
+    return { kind: "error" };
+  }
+}
+
 export async function login(username: string, password: string): Promise<LoginOutcome> {
   try {
     const challenge = await requestChallenge();

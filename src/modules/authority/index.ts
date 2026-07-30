@@ -83,3 +83,40 @@ export {
   type CreateAuthorityRemovalResult,
 } from "./authority-removal.types.js";
 export { parseRemovalRequest, type RemovalRequestBody } from "./authority-removal.validators.js";
+// Ω5P PR-19 — a autoridade APROVA/REJEITA a liberação in-system (D-08 vinculação por proveniência; D-09 soma-se ao
+// stand-in release:approve; D-10 REJECT não muda ImpoundRelease).
+export {
+  AuthorityReleaseApprovalService,
+  type AuthorityReleaseApprovalDeps,
+  type ListApprovalsResult,
+  type DecideResult,
+} from "./authority-release-approval.service.js";
+export {
+  createDefaultAuthorityReleaseApprovalService,
+  resetAuthorityReleaseApprovalRuntimeForTests,
+} from "./authority-release-approval.runtime.js";
+export {
+  InMemoryAuthorityReleaseApprovalRepository,
+  PrismaAuthorityReleaseApprovalRepository,
+  createPrismaAuthorityReleaseApprovalRepository,
+} from "./authority-release-approval.repository.js";
+export {
+  RELEASE_DECISION_KINDS,
+  RELEASE_DECISIONS,
+  AuthorityReleaseApprovalError,
+  type ReleaseDecisionRequestKind,
+  type ReleaseDecisionOutcome,
+  type PendingApproval,
+  type LinkedRelease,
+  type AuthorityReleaseApprovalRepository,
+} from "./authority-release-approval.types.js";
+export {
+  AuthorityReleaseApprovalController,
+  type AuthorityReleaseApprovalServiceResolver,
+} from "./authority-release-approval.controller.js";
+export { parseDecideRequest, parseProcessIdParam, type DecideRequestBody } from "./authority-release-approval.validators.js";
+export {
+  getMemoryAuthorityRemovalRepository,
+  resetMemoryAuthorityRemovalRepositoryForTests,
+} from "./authority-removal.repository.js";
+export { getMemoryAuthorityRemovalRepositoryForTests } from "./authority-removal.runtime.js";

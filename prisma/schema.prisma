@@ -63,6 +63,7 @@ model Tenant {
   portal_release_requests       PortalReleaseRequest[]
   authority_credentials         AuthorityCredential[]
   authority_removal_requests    AuthorityRemovalRequest[]
+  release_authority_decisions   ReleaseAuthorityDecision[]
   suppliers                     Supplier[]
   financial_accounts            FinancialAccount[]
   financial_titles              FinancialTitle[]
@@ -2928,6 +2929,8 @@ model AuthorityCredential {
   updated_at         DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
   tenant             Tenant                    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   removal_requests   AuthorityRemovalRequest[]
+  release_approvals  ImpoundRelease[]          @relation("ReleaseAuthorityApprover") // Ω5P PR-19 — proveniência do ATO (authority_credential_id)
+  release_decisions  ReleaseAuthorityDecision[] // Ω5P PR-19 — decisões APPROVED|REJECTED registradas por esta credencial
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, username])
@@ -3151,6 +3154,7 @@ model ImpoundRelease {
   authority_approved_at  DateTime? @db.Timestamptz(6)
   authority_reference    String?                          // nº do ato/decisão (white-label; mascarado no payload da cadeia)
   authority_note         String?
+  authority_credential_id String?  @db.Uuid                // Ω5P PR-19 — proveniência: credencial do authority-portal que APROVOU (D-Ω5P-AUTH-09); NULL = via stand-in release:approve
   recipient_name         String?                          // quem retira (§2.8: só na tabela de domínio, nunca no evento/audit)
   recipient_document     String?                          // idem — PII, jamais na cadeia hash nem no audit
   recipient_relationship String?                          // OWNER|ATTORNEY|THIRD_PARTY (app-validado)
@@ -3164,11 +3168,42 @@ model ImpoundRelease {
   tenant                 Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   process                ImpoundProcess @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
   requirement_checks     ReleaseRequirementCheck[]
+  authority_credential   AuthorityCredential? @relation("ReleaseAuthorityApprover", fields: [tenant_id, authority_credential_id], references: [tenant_id, id], onDelete: Restrict)
+  authority_decisions    ReleaseAuthorityDecision[] // Ω5P PR-19 — trilha formal (append-only) das decisões APPROVE/REJECT
 
   @@unique([tenant_id, id])
   @@index([tenant_id, process_id])
   @@index([tenant_id, status])
+  @@index([tenant_id, authority_credential_id])
   @@map("impound_releases")
+}
+
+// Ω5P PR-19 — ReleaseAuthorityDecision: decisão FORMAL (APPROVED|REJECTED) da autoridade credenciada sobre a
+// liberação de um processo que ELA PRÓPRIA originou (D-Ω5P-AUTH-08: vinculação por proveniência via
+// AuthorityRemovalRequest.credential_id → work_order_id → ImpoundProcess.service_order_id). APPROVE grava a decisão
+// NA MESMA tx que carimba ImpoundRelease.authority_approved_at (release.repository.approve reusado tal-qual +
+// authority_credential_id). REJECT NÃO muda ImpoundRelease — o dossiê continua IN_PROGRESS; a trilha formal do
+// REJECT vive SÓ aqui (D-Ω5P-AUTH-10: rejeição não cabe na FSM existente). APPEND-ONLY (trigger BEFORE UPDATE OR
+// DELETE — espelha custody_events/portal_access_logs): a decisão é um ATO, nunca editado/apagado. FK compostas
+// tenant-first RESTRICT (I9). RLS ENABLE+FORCE+POLICY. §2.8: reference/note NUNCA vão ao PortalAccessLog.
+model ReleaseAuthorityDecision {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String   @db.Uuid
+  release_id    String   @db.Uuid
+  credential_id String   @db.Uuid
+  decision      String // APPROVED | REJECTED (app-validado + CHECK)
+  reference     String? // nº do ato/decisão (só em APPROVED; white-label)
+  note          String? // nota da autoridade (obrigatória em REJECTED — validado na APP)
+  decided_at    DateTime @db.Timestamptz(6)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  tenant        Tenant              @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  release       ImpoundRelease      @relation(fields: [tenant_id, release_id], references: [tenant_id, id], onDelete: Restrict)
+  credential    AuthorityCredential @relation(fields: [tenant_id, credential_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, release_id])
+  @@index([tenant_id, credential_id])
+  @@map("release_authority_decisions")
 }
 
 // Ω5P PR-10a — Checklist de liberação (CTB art. 271 §1º / Res. 1025 arts. 23-24), SNAPSHOT do

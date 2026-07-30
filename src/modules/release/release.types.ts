@@ -50,6 +50,9 @@ export type ImpoundRelease = {
   readonly authorityApprovedAt?: Date;
   readonly authorityReference?: string;
   readonly authorityNote?: string;
+  // Ω5P PR-19 — proveniência: credencial do authority-portal que aprovou (D-Ω5P-AUTH-09). undefined = via stand-in
+  // release:approve (tenant_admin/manager) — NUNCA exposto na resposta pública do portal (§2.8).
+  readonly authorityCredentialId?: string;
   readonly recipientName?: string;
   readonly recipientDocument?: string;
   readonly recipientRelationship?: RecipientRelationship;
@@ -148,6 +151,9 @@ export type ApproveReleaseInput = {
   readonly authorityReference?: string;
   readonly authorityNote?: string;
   readonly actorId?: string;
+  // Ω5P PR-19 — SOMA-SE ao stand-in (D-Ω5P-AUTH-09): undefined nesta via de sempre (stand-in release:approve, sem
+  // mudança); setado SÓ quando a via é o authority-portal (a credencial que decidiu, nunca o actorId de usuário).
+  readonly authorityCredentialId?: string;
 };
 
 // Consumação (salto B). O gate resolvido pelo serviço é RE-VERIFICADO sob FOR UPDATE no repo (anti-TOCTOU).
