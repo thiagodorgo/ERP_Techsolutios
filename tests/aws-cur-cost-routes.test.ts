@@ -12,12 +12,20 @@ test("platform admin acessa summary e tenant comum nao acessa custos brutos", as
   await withCloudCostsApi(async ({ baseUrl, seed, service, csv }) => {
     await service.importAwsCurCsv({ csv, sourceType: "mock_fixture" });
 
-    const platform = await requestJson(baseUrl, "/api/v1/platform/cloud-costs/summary", {
-      headers: platformHeaders(),
-    });
-    const tenantUser = await requestJson(baseUrl, "/api/v1/platform/cloud-costs/summary", {
-      headers: authHeaders(seed.tenantA, seed.adminA),
-    });
+    // periodStart/periodEnd explícitos: sem eles, getSummary aplica a janela padrão de
+    // "últimos 30 dias a partir de agora" (aws-cur.service.ts normalizeSummaryFilters) e a
+    // fixture (datada de 2026-06) sai da janela conforme o relógio do ambiente avança —
+    // não é comportamento de produção a testar aqui, é a data fixa da fixture.
+    const platform = await requestJson(
+      baseUrl,
+      "/api/v1/platform/cloud-costs/summary?periodStart=2026-06-01T00:00:00.000Z&periodEnd=2026-06-30T23:59:59.000Z",
+      { headers: platformHeaders() },
+    );
+    const tenantUser = await requestJson(
+      baseUrl,
+      "/api/v1/platform/cloud-costs/summary?periodStart=2026-06-01T00:00:00.000Z&periodEnd=2026-06-30T23:59:59.000Z",
+      { headers: authHeaders(seed.tenantA, seed.adminA) },
+    );
 
     assert.equal(platform.status, 200);
     assert.equal(platform.body.data.totalUnblendedCost, 12.75);
