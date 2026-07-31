@@ -149,3 +149,40 @@ adversarialmente por 3 agentes (`critico-adversarial`, `agente-dba-guardiao`,
   Escopo proibido confirmado intocado (`impound.hashchain.ts`/`resolveTransition`/gates de
   release-leilão/permissão nova — nenhum tocado). `prisma migrate status`: 90 migrações, up to date.
   Próximo: PR-03 (backfill + relatório de ambíguos/sugestões).
+
+### PR-03 — script de backfill de identidade — VOTOS DA JUNTA (2026-07-31) — **APROVADO 2/2 (ciclo 1, 1 achado de atribuição consertado no próprio PR)**
+
+> `scripts/backfill-third-party-vehicle-identity.ts` — reescreve dado em produção (popula
+> `identity_id` retroativamente + cria `ThirdPartyVehicleIdentity`), tratado com o mesmo rigor de
+> uma migração. Junta: `agente-dba-guardiao` (OBRIG.) + `critico-adversarial` (OBRIG.).
+
+- **agente-dba-guardiao (OBRIG.)** → **APROVADO** de primeira. Rodou o script ele mesmo (não só os
+  testes do dev) contra um tenant isolado com **1200 processos gerados com UUID aleatório**
+  (>2× o `BATCH_SIZE`, forçando 3 páginas de keyset pagination de verdade) — 2 rodadas
+  confirmaram idempotência real (`RUN 1: 1200 criados/linkados; RUN 2: 0/0`). Confirmou no código:
+  sequencial por tenant (sem `Promise.all` entre tenants), `updateMany` em statement único por
+  lote (não SELECT+loop), keyset via `ORDER BY id`+cursor (nunca `OFFSET`), agrupamento só por
+  `plate_key` exato (chassi/renavam sozinhos nunca disparam agrupamento automático),
+  `vehicle_unidentified=true` sempre em loop separado e individual (regra dura, não heurística).
+- **critico-adversarial (OBRIG.)** → **APROVADO_CONDICIONADO ciclo 1 → APROVADO**. 5 vetores
+  atacados: corrida com o sweep de reconciliação (RESISTE — documentação clara de "catch-up
+  reexecutável", PR-05 como correção definitiva; achou que a implementação real é MAIS segura que
+  o exigido, cada tenant roda dentro de 1 transação Prisma única, tornando impossível identidade
+  órfã por falha parcial); normalização de marca/modelo/cor (RESISTE, `trim().toUpperCase()`
+  confirmado com teste real de variação de formatação); processo com `plate_key` E
+  `vehicle_unidentified=true` simultâneos (RESISTE — confirmou que isso É um estado válido possível
+  pelo CHECK antigo de Ω5P, não só dado legado; o script trata corretamente, nunca copia
+  identificador para a identidade "não identificada"); atomicidade por lote (RESISTE, mais forte
+  que o exigido). **1 FURO de atribuição (menor, não-funcional):** o comentário do script creditava
+  a janela de 72h a uma "decisão do dono confirmada em J-OMEGA-VID.md §4" — o §4 real só diz "datas
+  próximas", sem número; os 72h foram escolha do implementador. Viola a cultura de "não decidir em
+  silêncio" (CLAUDE.md §A2/A6) por atribuir uma escolha técnica a uma fonte que não a contém.
+  **FECHADO**: comentário reformulado para deixar claro que é escolha de implementação ajustável,
+  não confirmação literal do dono.
+- **Decisão da junta:** **APROVADO 2/2** (ciclo 1→2; 1 achado de rastreabilidade consertado no
+  mesmo PR, nenhum funcional/de segurança remanescente). **KPIs no próprio PR:** backend +10
+  (`tests/backfill-third-party-vehicle-identity.test.ts`, todos sempre-roda); regressão da família
+  impound/pátios+vehicle-identity+checklist = 95/95 (dba-guardião) e 90/90 (crítico-adversarial,
+  subconjunto). Rodada real contra dev DB (dev, não produção): 6 identidades criadas, 8 processos
+  vinculados, 1 ambíguo, 1 sugestão — idempotente confirmado na 2ª execução. Próximo: PR-04 (merge
+  manual + unmerge-admin + `ImpoundProcessChecklistLink`).

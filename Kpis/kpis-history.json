@@ -1742,5 +1742,17 @@
     "mvp_vendavel": "88%",
     "blocks_completed": 117,
     "description": "Omega-VID PR-02: migracao aditiva 20260854000000_add_vehicle_identity cria third_party_vehicle_identities (identidade de veiculo de TERCEIRO, distinta da Vehicle da frota propria) + third_party_vehicle_identity_merge_events (append-only) + ImpoundProcess.identity_id (FK opcional RESTRICT). Modulo src/modules/vehicle-identities/ com CRUD basico, sem merge/backfill. Junta APROVADO 2/2 (dba-guardiao + critico-adversarial) — dba-guardiao reproduziu 6/9 provas vivas independentemente; critico-adversarial achou e fechou no mesmo PR um furo de coerencia (PATCH unidentified=true nao exigia limpar identificadores, deixando estado ambiguo). +26 testes novos, regressao impound/patios 59/59."
+  },
+  {
+    "snapshot_date": "2026-07-31",
+    "version": "OMEGA-VID-PR-03",
+    "backend_tests": "1998/2013",
+    "frontend_smoke": "950/950",
+    "flutter_tests": "807/807",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 118,
+    "description": "Omega-VID PR-03: scripts/backfill-third-party-vehicle-identity.ts popula ThirdPartyVehicleIdentity/ImpoundProcess.identity_id retroativamente para processos historicos, agrupando so por plate_key exato (nunca chassis/renavam sozinhos), vehicle_unidentified sempre individual, idempotente, sequencial por tenant, cada tenant em 1 transacao unica, keyset pagination, relatorio de ambiguos e sugestoes de correspondencia (nunca merge automatico, decisao do dono). Junta APROVADO 2/2 (dba-guardiao + critico-adversarial) — dba-guardiao rodou o script pessoalmente contra 1200 processos confirmando idempotencia real; critico-adversarial fechou 1 achado de atribuicao (comentario creditava a janela de 72h a uma decisao do dono nao especificada em numero). +10 testes, regressao 95/95."
   }
 ]
