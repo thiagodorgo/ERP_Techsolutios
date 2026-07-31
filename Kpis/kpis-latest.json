@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-31",
-  "version": "OMEGA-VID-PR-01",
+  "version": "OMEGA-VID-PR-02",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Omega-VID PR-01 (fix do elo quebrado ChecklistRun<->WorkOrder) — abre a rodada Omega-VID (identidade unificada de veiculo de terceiro, dossie guincho->custodia->desfecho; D-Omega-VID-01 em agent-orchestration/controle/decisoes.md estende, nao revoga, D-Omega5P-09/D-Omega5P-RECON-A).",
-    "title": "Omega-VID PR-01: checklist.validator.ts aceita workOrderId (Flutter ja enviava, Zod descartava silenciosamente) e deriva relatedEntityType/relatedEntityId; explicitos sempre vencem. Junta APROVADO 2/2.",
+    "block": "Omega-VID PR-02 (schema ThirdPartyVehicleIdentity + MergeEvent + ImpoundProcess.identity_id, migracao aditiva 20260854000000_add_vehicle_identity) — identidade de veiculo de terceiro como entidade de 1a classe, DISTINTA da Vehicle da frota propria (D-Omega-VID-01 estende, nao revoga, D-Omega5P-09/D-Omega5P-RECON-A).",
+    "title": "Omega-VID PR-02: 2 tabelas novas (third_party_vehicle_identities + merge_events append-only) + FK opcional em ImpoundProcess + CRUD basico (sem merge/backfill). Junta APROVADO 2/2 (dba-guardiao + critico-adversarial), 1 achado consertado no proprio PR.",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Omega-VID PR-00 (recon+D-record, doc-only, sem mudanca de KPI) + PR-01 (este snapshot): parseCreateChecklistRunDto ganha workOrderId opcional; quando relatedEntityType/relatedEntityId nao vem explicitos, deriva relatedEntityType='work_order'+relatedEntityId=workOrderId. Zero mudanca em checklist.service.ts/repositorios (ja liam/escreviam os campos corretamente) — o bug era so o Zod descartar workOrderId por chave desconhecida. +5 testes novos em tests/checklist-run-work-order-derivation.test.ts (workOrderId sozinho; explicitos vencem; nenhum -> undefined sem erro; string vazia/espaco = ausente; templateId alias junto); regressao dos 4 arquivos tests/checklist*.test.ts preexistentes = 24/24 pass no total combinado. Junta APROVADO 2/2 (critico-adversarial: 5 vetores resistiram, incl. isolamento cross-tenant confirmado via withTenant(actor.tenantId) na escrita; coordenador-de-acessos: escopo do diff bate com o plano, nenhuma permissao nova). Achado nao-bloqueante registrado para o futuro: relatedEntityId segue sem validacao de existencia/tenant contra WorkOrder real (padrao preexistente do modulo) — vira requisito quando PR-04/05 desta mesma rodada passarem a fazer JOIN real nesse campo (ja e o mesmo requisito que a junta de arquitetura exigiu para ImpoundProcessChecklistLink no PR-04). backend 1957/1972 (Omega5P PR-20-FIX) -> 1962/1977. frontend_smoke/flutter inalterados (PR backend-only). blocks_completed 115->116.",
-    "status_label": "Omega-VID PR-01: fix do elo ChecklistRun<->WorkOrder (workOrderId descartado silenciosamente pelo Zod) + KPI-por-PR; backend 1957->1962, blocks 115->116"
+    "summary": "Omega-VID PR-02: migracao aditiva 20260854000000_add_vehicle_identity cria third_party_vehicle_identities (plate_key/chassis/renavam_key nullable, confidence PROVISIONAL|CONFIRMED|MERGED com CHECK de enum, unidentified+reason com CHECK de coerencia espelhando impound_processes_identity_chk, indice PARCIAL nao-unico de plate_key deliberado) + third_party_vehicle_identity_merge_events (append-only via trigger nomeado por tabela) + ImpoundProcess.identity_id (FK opcional RESTRICT, herda RLS existente sem policy nova). Modulo novo src/modules/vehicle-identities/ com CRUD basico (create/get/list/patch) SEM merge/unmerge/backfill (isso e PR-04/PR-03) - confidence gravavel restrito a PROVISIONAL/CONFIRMED, MERGED so alcancavel via fluxo de merge futuro. Junta (dba-guardiao OBRIG.+critico-adversarial OBRIG.) APROVADO 2/2: dba-guardiao reproduziu 6/9 cenarios de prova viva INDEPENDENTEMENTE com script pg cru proprio (confirmou via pg_roles.rolsuper que a conexao padrao e superusuario, exigindo role NOSUPERUSER efemera pro teste de RLS; confirmou via pg_constraint que as 3 FKs novas sao ON DELETE RESTRICT). critico-adversarial achou 1 FURO REAL (menor): PATCH unidentified=true sobre registro ja identificado nao exigia limpar plate/chassis/renavam, deixando estado ambiguo que contaminaria PR-03/PR-07/09 - FECHADO no proprio PR: assertIdentityCoherence agora rejeita com 400 (unidentified_conflicts_with_identifier) exigindo limpeza explicita no mesmo PATCH, nunca limpa em silencio (mesmo padrao do modulo). +26 testes novos sempre-roda (8 prova viva Postgres real em tests/vehicle-identity-schema.test.ts + 18 CRUD em tests/vehicle-identity-crud.test.ts, incluindo o teste do achado fechado); regressao da familia impound/patios (impound/impound-fsm/impound-hashchain/impound-concurrency/impound-reception/patios-dashboard) = 59/59 pass. prisma migrate status: 90 migracoes, up to date. backend 1962/1977 (Omega-VID PR-01) -> 1988/2003. frontend_smoke/flutter inalterados (PR backend-only). blocks_completed 116->117.",
+    "status_label": "Omega-VID PR-02: schema ThirdPartyVehicleIdentity + MergeEvent + identity_id (migracao aditiva) + CRUD basico; junta APROVADO 2/2, 1 achado fechado; backend 1962->1988, blocks 116->117"
   },
   "metrics": {
     "flutter_tests": {
@@ -27,10 +27,10 @@
       "note": "Omega5P PR-20: +13 testes novos (frontend/tests/patios-painel.smoke.test.tsx — 5 estados obrigatorios, gate impound:read, 6 KPI cards, 4 tabelas, ausencia de termo tecnico/andaime de dev), fechando o achado do omega5p-avaliador (PainelPatiosPage era a unica tela de /patios/* sem teste companheiro). PainelPatiosPage.tsx refatorada em wrapper+PainelPatiosView.tsx (props-driven) para ficar testavel via renderToString (o harness de smoke deste repo nao usa jsdom/act — todas as 13 telas de patios seguem esse mesmo padrao view/hook). Sobre 937 (Omega5P PR-17b/PR-15b)."
     },
     "backend_tests": {
-      "value": 1962,
-      "total": 1977,
-      "display": "1962/1977",
-      "note": "Omega-VID PR-01 (fix do elo quebrado ChecklistRun<->WorkOrder): checklist.validator.ts (parseCreateChecklistRunDto) passa a aceitar workOrderId (que o Flutter ja envia, mas o Zod descartava silenciosamente) e deriva relatedEntityType='work_order'+relatedEntityId quando os campos explicitos nao vem; explicitos sempre vencem. +5 testes novos sempre-roda em tests/checklist-run-work-order-derivation.test.ts (workOrderId sozinho; explicitos vencem sobre workOrderId; nenhum dos dois -> undefined sem erro; string vazia/espaco tratada como ausente; templateId alias junto). Regressao dos 4 arquivos tests/checklist*.test.ts preexistentes: 24/24 pass no total combinado. Junta APROVADO 2/2 (critico-adversarial + coordenador-de-acessos) - achado nao-bloqueante registrado: relatedEntityId segue sem validacao de existencia/tenant contra WorkOrder real (padrao preexistente, vira requisito quando PR-04/05 da rodada Omega-VID passar a fazer JOIN real nesse campo). Sobre 1957/1972 (Omega5P PR-20-FIX)."
+      "value": 1988,
+      "total": 2003,
+      "display": "1988/2003",
+      "note": "Omega-VID PR-02 (schema ThirdPartyVehicleIdentity + MergeEvent + ImpoundProcess.identity_id, migracao aditiva 20260854000000_add_vehicle_identity). +26 testes novos sempre-roda (8 prova viva Postgres real em tests/vehicle-identity-schema.test.ts + 18 CRUD em tests/vehicle-identity-crud.test.ts, incluindo o teste de regressao do achado de coerencia unidentified fechado pela junta). Regressao da familia impound/patios (impound/impound-fsm/impound-hashchain/impound-concurrency/impound-reception/patios-dashboard) = 59/59 pass. Sobre 1962/1977 (Omega-VID PR-01)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 116,
-      "display": "116",
-      "note": "Omega-VID PR-01 (fix do elo quebrado ChecklistRun<->WorkOrder, abre a rodada Omega-VID) -> +1 sobre 115. Proximo: PR-02 (schema ThirdPartyVehicleIdentity + MergeEvent + ImpoundProcess.identity_id, migracao aditiva, junta obrigatoria)."
+      "value": 117,
+      "display": "117",
+      "note": "Omega-VID PR-02 (schema ThirdPartyVehicleIdentity + MergeEvent + ImpoundProcess.identity_id, migracao aditiva) -> +1 sobre 116. Proximo: PR-03 (backfill + relatorio de ambiguos/sugestoes, junta obrigatoria)."
     },
     "mobile_backend_contracts": {
       "value": 18,

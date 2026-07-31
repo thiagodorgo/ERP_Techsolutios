@@ -1730,5 +1730,17 @@
     "mvp_vendavel": "88%",
     "blocks_completed": 116,
     "description": "Omega-VID PR-00 (recon+D-record, abre a rodada, D-Omega-VID-01 estende D-Omega5P-09) + PR-01 (fix do elo quebrado ChecklistRun<->WorkOrder: checklist.validator.ts aceita workOrderId, que o Flutter ja enviava mas o Zod descartava silenciosamente, e deriva relatedEntityType=work_order+relatedEntityId quando os campos explicitos nao vem; explicitos sempre vencem). +5 testes novos (tests/checklist-run-work-order-derivation.test.ts), regressao 24/24 nos 4 arquivos checklist*.test.ts preexistentes. Junta APROVADO 2/2 (critico-adversarial + coordenador-de-acessos) — isolamento cross-tenant confirmado, escopo do diff conferido, nenhuma permissao nova. Plano de arquitetura completo da rodada (identidade unificada de veiculo, dossie em modal com abas) revisado adversarialmente por 3 agentes antes de qualquer codigo, registrado em docs/juntas/J-OMEGA-VID.md."
+  },
+  {
+    "snapshot_date": "2026-07-31",
+    "version": "OMEGA-VID-PR-02",
+    "backend_tests": "1988/2003",
+    "frontend_smoke": "950/950",
+    "flutter_tests": "807/807",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 117,
+    "description": "Omega-VID PR-02: migracao aditiva 20260854000000_add_vehicle_identity cria third_party_vehicle_identities (identidade de veiculo de TERCEIRO, distinta da Vehicle da frota propria) + third_party_vehicle_identity_merge_events (append-only) + ImpoundProcess.identity_id (FK opcional RESTRICT). Modulo src/modules/vehicle-identities/ com CRUD basico, sem merge/backfill. Junta APROVADO 2/2 (dba-guardiao + critico-adversarial) — dba-guardiao reproduziu 6/9 provas vivas independentemente; critico-adversarial achou e fechou no mesmo PR um furo de coerencia (PATCH unidentified=true nao exigia limpar identificadores, deixando estado ambiguo). +26 testes novos, regressao impound/patios 59/59."
   }
 ]
