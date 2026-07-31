@@ -105,3 +105,47 @@ adversarialmente por 3 agentes (`critico-adversarial`, `agente-dba-guardiao`,
 - **Decisão:** **APROVADO 2/2**, 0 ciclo. KPI: backend +6 (5 testes novos em
   `tests/checklist-run-work-order-derivation.test.ts` + regressão 24/24 nos 4 arquivos
   `tests/checklist*.test.ts` pré-existentes, todos passando).
+
+### PR-02 — schema `ThirdPartyVehicleIdentity` + `MergeEvent` + `ImpoundProcess.identity_id` — VOTOS DA JUNTA (2026-07-31) — **APROVADO 2/2 (ciclo 1, 1 achado consertado no próprio PR)**
+
+> Migração aditiva (2 tabelas novas + `ImpoundProcess.identity_id` NULLABLE) implementando os 7
+> ajustes que a própria junta de arquitetura já exigiu antes do código existir (§3). Junta:
+> `agente-dba-guardiao` (OBRIG.) + `critico-adversarial` (OBRIG.).
+
+- **agente-dba-guardiao (OBRIG.)** → **APROVADO** de primeira. Os 7 ajustes confirmados um a um
+  no SQL real (CHECK `confidence_chk` de 3 valores; trigger `third_party_vehicle_identity_merge_events_block_mutation`
+  nomeado por tabela com `ERRCODE='restrict_violation'`; comentário justificando o índice parcial
+  não-único; comentário confirmando RLS herdada sem policy nova em `ImpoundProcess.identity_id`;
+  runbook de rollback com `DROP TRIGGER`/`DROP FUNCTION` nomeados; self-relation Prisma `"IdentityMerge"`
+  com `onDelete: Restrict` nos dois lados). Reproduziu **independentemente** (script `pg` cru próprio,
+  não confiou só no relato do dev) 6 dos 9 cenários de prova viva, incluindo confirmar via
+  `pg_roles.rolsuper` que a conexão padrão é superusuário (por isso o teste de RLS precisa de uma
+  role `NOSUPERUSER` efêmera — a correção do dev está certa) e via `pg_constraint`/catálogo real que
+  as 3 FKs novas são `ON DELETE RESTRICT` (não `SetNull`/`Cascade`). CRUD básico (`src/modules/vehicle-identities/`)
+  confirmado sem caminho de merge escondido.
+- **critico-adversarial (OBRIG.)** → **APROVADO_CONDICIONADO ciclo 1 → APROVADO**. 4 vetores
+  atacados: self-FK cross-tenant (RESISTE, prova real via INSERT cru sob RLS, não só leitura de
+  sintaxe); merge via CRUD básico (RESISTE, `create`/`update` nunca leem `canonicalIdentityId`,
+  `confidence` gravável restrito a `PROVISIONAL`/`CONFIRMED`, `MERGED` rejeitado com mensagem
+  dedicada); colisão de placa via PATCH (RESISTE, índice parcial não-único permite coexistência
+  sem efeito colateral, comportamento documentado e intencional). **1 FURO REAL (menor):**
+  `PATCH {unidentified: true, unidentifiedReason: "..."}` sobre um registro já identificado não
+  exigia limpar `plate_key`/`chassis`/`renavam_key` — o CHECK do banco só valida `reason`
+  preenchido, não a ausência de identificador, deixando um estado ambíguo (`unidentified=true` E
+  `plate_key` populado simultaneamente) que contaminaria o PR-03 (backfill/sugestão de merge) e o
+  PR-07/09 (dossiê). **FECHADO**: `assertIdentityCoherence` passa a rejeitar com 400
+  (`unidentified_conflicts_with_identifier`) quando `unidentified=true` e algum identificador ainda
+  está presente no estado EFETIVO pós-PATCH — o cliente precisa limpar explicitamente (`plate: null`
+  etc.) no mesmo request. Decisão de rejeitar (não limpar em silêncio) confirmada pelo próprio
+  crítico-adversarial, seguindo o padrão já usado no módulo (nunca reescreve campo por conta
+  própria — mesmo espírito de `impound_processes_identity_chk`). Teste do bug original corrigido +
+  teste de regressão novo provando o fechamento (limpeza explícita aceita, ausência rejeitada).
+- **Decisão da junta:** **APROVADO 2/2** (ciclo 1→2; 1 achado MÉDIA consertado no mesmo PR, nenhum
+  crítico/bloqueante de segurança de dado remanescente). **KPIs no próprio PR:** backend
+  `tests/vehicle-identity-schema.test.ts`+`tests/vehicle-identity-crud.test.ts` = **26/26** (8 prova
+  viva Postgres real + 18 CRUD, incluindo o teste do achado fechado); regressão da família
+  impound/pátios (`impound.test.ts`, `impound-fsm.test.ts`, `impound-hashchain.test.ts`,
+  `impound-concurrency.test.ts`, `impound-reception.test.ts`, `patios-dashboard.test.ts`) = **59/59**.
+  Escopo proibido confirmado intocado (`impound.hashchain.ts`/`resolveTransition`/gates de
+  release-leilão/permissão nova — nenhum tocado). `prisma migrate status`: 90 migrações, up to date.
+  Próximo: PR-03 (backfill + relatório de ambíguos/sugestões).

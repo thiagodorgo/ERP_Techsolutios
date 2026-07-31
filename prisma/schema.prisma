@@ -62,6 +62,8 @@ model Tenant {
   portal_access_logs            PortalAccessLog[]
   portal_release_requests       PortalReleaseRequest[]
   impound_outbox_events         ImpoundOutboxEvent[]
+  third_party_vehicle_identities ThirdPartyVehicleIdentity[]
+  third_party_vehicle_identity_merge_events ThirdPartyVehicleIdentityMergeEvent[]
   authority_credentials         AuthorityCredential[]
   authority_removal_requests    AuthorityRemovalRequest[]
   release_authority_decisions   ReleaseAuthorityDecision[]
@@ -2795,6 +2797,66 @@ model JurisdictionProfile {
 // de diárias (I4); frozen_at = T_stop (PR-07/10/14). custody_seq_head/custody_hash_head = âncora da cadeia
 // hash (I2). yard_id/service_order_id NULLABLE (wire real da alocação e do gatilho OS→custódia = PR-06);
 // profile_id NOT NULL (perfil normativo PR-02 → teto/modelo de diária + prazos). Labels PT-BR no DTO.
+// Ω-VID PR-02 — Identidade de veículo de TERCEIRO conhecido pelo módulo de custódia. DISTINTA de `Vehicle`
+// (frota própria, plate NOT NULL+unique — D-Ω5P-09/D-Ω5P-RECON-A intocados, ver D-Ω-VID-01).
+// Ponto de agregação: 1 identidade → N ImpoundProcess ao longo do tempo (histórico real do veículo).
+// plate_key = normalizePlateKey (canônica, reexportada de portal-shared) — NULLABLE (pode nascer "não identificado").
+// confidence: PROVISIONAL (aberto sem confirmação) | CONFIRMED (vistoria bateu) | MERGED (aponta canonical_identity_id).
+// Merge NUNCA automático/silencioso (ver ThirdPartyVehicleIdentityMergeEvent, PR-04).
+model ThirdPartyVehicleIdentity {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String    @db.Uuid
+  plate_raw             String?
+  plate_key             String?
+  chassis               String?
+  renavam_key           String?
+  brand                 String?
+  model                 String?
+  color                 String?
+  year                  Int?
+  unidentified          Boolean   @default(false)
+  unidentified_reason   String?
+  confidence            String    @default("PROVISIONAL")
+  canonical_identity_id String?   @db.Uuid
+  created_by            String?   @db.Uuid
+  updated_by            String?   @db.Uuid
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  tenant             Tenant                      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  canonical_identity ThirdPartyVehicleIdentity?  @relation("IdentityMerge", fields: [tenant_id, canonical_identity_id], references: [tenant_id, id], onDelete: Restrict)
+  merged_from        ThirdPartyVehicleIdentity[] @relation("IdentityMerge")
+  processes          ImpoundProcess[]
+  merge_events       ThirdPartyVehicleIdentityMergeEvent[]
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, plate_key])
+  @@index([tenant_id, renavam_key])
+  @@index([tenant_id, confidence])
+  @@map("third_party_vehicle_identities")
+}
+
+// Ω-VID PR-02 — trilha append-only do merge de duas identidades de veículo de terceiro. Registrada pelo PR-04
+// (merge manual); esta fatia só cria a tabela (schema + guarda append-only), sem endpoint de escrita.
+model ThirdPartyVehicleIdentityMergeEvent {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id           String   @db.Uuid
+  target_identity_id  String   @db.Uuid
+  merged_identity_id  String   @db.Uuid
+  reason              String
+  actor_id            String?  @db.Uuid
+  snapshot_before     Json
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+
+  tenant          Tenant                     @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  target_identity ThirdPartyVehicleIdentity  @relation(fields: [tenant_id, target_identity_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, target_identity_id])
+  @@index([tenant_id, merged_identity_id])
+  @@map("third_party_vehicle_identity_merge_events")
+}
+
 model ImpoundProcess {
   id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id              String    @db.Uuid
@@ -2818,6 +2880,7 @@ model ImpoundProcess {
   incident_report_number String?
   legal_basis            String?
   service_order_id       String?   @db.Uuid
+  identity_id            String?   @db.Uuid
   custody_seq_head       Int       @default(0)
   custody_hash_head      String?
   created_by             String?   @db.Uuid
@@ -2828,6 +2891,7 @@ model ImpoundProcess {
   yard                   Yard?               @relation(fields: [tenant_id, yard_id], references: [tenant_id, id], onDelete: Restrict)
   profile                JurisdictionProfile @relation(fields: [tenant_id, profile_id], references: [tenant_id, id], onDelete: Restrict)
   service_order          WorkOrder?          @relation(fields: [tenant_id, service_order_id], references: [tenant_id, id], onDelete: Restrict)
+  identity               ThirdPartyVehicleIdentity? @relation(fields: [tenant_id, identity_id], references: [tenant_id, id], onDelete: Restrict)
   events                 CustodyEvent[]
   intake_inspection      IntakeInspection?   // Ω5P PR-06 — 1 vistoria de recepção por processo (I3)
   parked_spots           YardSpot[]          @relation("YardSpotCurrentProcess") // Ω5P PR-06 — FK dura da ocupação (I1)
