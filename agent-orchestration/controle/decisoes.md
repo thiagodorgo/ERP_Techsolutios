@@ -827,3 +827,45 @@ Fecha o cluster P-Ω3F6-STATUS-BYPASS + TERMINAL-GUARD + ZERO-ATOMICIDADE (pré-
   no Prisma real (baseline 5/7); 3 cenários adversariais novos; suíte backend completa
   **1900 pass / 0 fail / 6 skip (1906 total)** após rebase em Ω5P PR-18a.
   Correção, não feature: `blocks_completed` permanece **111**.
+
+## D-Ω-VID-01 (2026-07-30) — Identidade de veículo de terceiro como entidade de 1ª classe: ESTENDE, NÃO REVOGA D-Ω5P-09/D-Ω5P-RECON-A
+
+- **Contexto:** requisito do dono do produto — dossiê unificado por veículo, agregando o
+  checklist de coleta do guincho (mobile) + o histórico de custódia no pátio (Ω5P) +
+  desfecho (resgate pelo proprietário ou leilão), navegável por um modal grande com abas
+  a partir do clique numa vaga ocupada no mapa de ocupação.
+- **Decisão anterior, preservada:** `D-Ω5P-09`/`D-Ω5P-RECON-A` (`docs/rodadas/omega5p/FASE0_RECON.md:121,128`,
+  `docs/juntas/J-OMEGA5P.md:479`) — `ImpoundProcess` **não** tem FK para `Vehicle` (frota
+  própria do tenant, `plate NOT NULL @unique`), porque o bem em custódia é de TERCEIRO e
+  pode ter placa adulterada/ausente. Essa decisão **continua válida e intocada** — o
+  `Vehicle` da frota segue sem relação com o módulo de pátios.
+- **O que muda:** cria-se uma entidade NOVA e DEDICADA, `ThirdPartyVehicleIdentity`
+  (`src/modules/vehicle-identities/`), distinta de `Vehicle`, para ser o ponto de
+  agregação de UM veículo de terceiro ao longo de MÚLTIPLOS `ImpoundProcess` no tempo.
+  Ela herda o mesmo espírito de D-Ω5P-09 (placa/chassi/Renavam nullable, flag
+  `unidentified`+justificativa, mesmo CHECK de identidade replicado) — não reabre a porta
+  que D-Ω5P-09 fechou, só formaliza o que antes vivia solto em campos de `ImpoundProcess`.
+  `ImpoundProcess.identity_id` é uma FK nova, opcional, para essa entidade — nunca para
+  `Vehicle`.
+- **Reconciliação de identidade:** nunca automática/silenciosa. Correção de placa que
+  colide com outra identidade retorna 409 sugerindo merge; merge exige `POST
+  .../merge` com `reason` obrigatório e permissão dedicada `vehicle_identity:merge`
+  (não coberta por `impound:update` — mesmo padrão de `release:approve`/`auction:appraise`,
+  ato sensível ganha permissão própria, restrita a `tenant_admin`/`manager`/`super_admin`/
+  `platform_admin`). Duplicata detectada (mesma `plate_key`, ambas ainda não mescladas)
+  gera aviso ativo na UI, nunca fica silenciosa. Existe rota administrativa de estorno
+  (`unmerge-admin`, só `platform_admin`, auditada) — nenhuma correção via SQL manual de
+  suporte é aceitável neste domínio (mesmo padrão de rigor de auditoria do hash-chain de
+  custódia).
+- **Checklist do guincho passa a ser visível dentro do dossiê de custódia** — a rota nova
+  exige **`impound:read` E `checklist_runs:read`** juntas (não só `impound:read`), porque
+  hoje `field_technician` tem a primeira sem a segunda — reusar só `impound:read` seria
+  uma escalada de privilégio real (achado da junta de revisão, `coordenador-de-acessos`).
+- **Bloqueio formal:** aprovado por junta de arquitetura antes de qualquer código
+  (`critico-adversarial` + `agente-dba-guardiao` + `coordenador-de-acessos`, 2026-07-30 —
+  achados incorporados: FK dura em `checklist_run_id` em vez de vínculo solto; identidade
+  resolvida na criação do processo em vez de só backfill assíncrono para evitar corrida
+  com o sweep de reconciliação; CHECKs de enum para `confidence`/`link_source`; deep-link
+  via query string `?dossie=` preservado ao trocar navegação de página cheia por modal).
+- **Registro obrigatório:** este D-record cita e não sobrescreve `D-Ω5P-09`/
+  `D-Ω5P-RECON-A` em silêncio, conforme §A2 do CLAUDE.md.
