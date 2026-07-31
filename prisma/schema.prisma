@@ -64,6 +64,7 @@ model Tenant {
   impound_outbox_events         ImpoundOutboxEvent[]
   third_party_vehicle_identities ThirdPartyVehicleIdentity[]
   third_party_vehicle_identity_merge_events ThirdPartyVehicleIdentityMergeEvent[]
+  impound_process_checklist_links ImpoundProcessChecklistLink[]
   authority_credentials         AuthorityCredential[]
   authority_removal_requests    AuthorityRemovalRequest[]
   release_authority_decisions   ReleaseAuthorityDecision[]
@@ -720,6 +721,10 @@ model ChecklistRun {
   markers             ChecklistMarker[]
   template            ChecklistTemplate          @relation(fields: [tenant_id, template_id], references: [tenant_id, id], onDelete: Restrict)
   tenant              Tenant                     @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  // Ω-VID PR-04 — vínculo (N:N via junção) a ImpoundProcess (dossiê do veículo). Um ChecklistRun pode estar
+  // ligado a no máximo 1 processo por desenho de produto hoje, mas a junção fica aberta a N:N (unique composto
+  // evita duplicidade do MESMO par; nada impede duas linhas para runs/processos diferentes).
+  impound_process_links ImpoundProcessChecklistLink[]
 
   @@unique([tenant_id, id])
   @@index([tenant_id])
@@ -2905,12 +2910,36 @@ model ImpoundProcess {
   portal_access_logs     PortalAccessLog[]   // Ω5P PR-16 — acessos do owner-portal que RESOLVERAM neste processo (I10)
   portal_release_requests PortalReleaseRequest[] // Ω5P PR-17 — intenções de liberação originadas pelo proprietário
   outbox_events          ImpoundOutboxEvent[] // Ω5P PR-20 — fila de interop Sivec-ready (captura, nunca envio real)
+  checklist_links        ImpoundProcessChecklistLink[] // Ω-VID PR-04 — vínculo dossiê↔checklist do guincho (AUTO/MANUAL)
 
   @@unique([tenant_id, id])
   @@index([tenant_id, yard_id, status])
   @@index([tenant_id, vehicle_plate])
   @@index([tenant_id, status])
   @@map("impound_processes")
+}
+
+// Ω-VID PR-04 — junção NOVA ligando ChecklistRun (guincho/mobile) a ImpoundProcess (dossiê de custódia): elo
+// EXPLÍCITO e forte (FK dura RESTRICT nos dois lados), NÃO polimórfico — a junta de arquitetura (achado do
+// crítico-adversarial, docs/juntas/J-OMEGA-VID.md §3) rejeitou explicitamente a versão "solta" do plano
+// original. link_source distingue a origem: AUTO (sweep de resolução na criação do processo, PR-05) | MANUAL
+// (operador vincula manualmente, endpoint deste PR). Tabela aditiva, sem tocar impound_processes/checklist_runs.
+model ImpoundProcessChecklistLink {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String   @db.Uuid
+  process_id       String   @db.Uuid
+  checklist_run_id String   @db.Uuid
+  link_source      String   @default("AUTO")
+  created_by       String?  @db.Uuid
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  tenant  Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  process ImpoundProcess @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
+  run     ChecklistRun   @relation(fields: [tenant_id, checklist_run_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, process_id, checklist_run_id])
+  @@index([tenant_id, process_id])
+  @@map("impound_process_checklist_links")
 }
 
 // Ω5P PR-16 — PortalAccessLog: trilha probatória IMUTÁVEL de TODO acesso à superfície PÚBLICA (I10 / modelo de

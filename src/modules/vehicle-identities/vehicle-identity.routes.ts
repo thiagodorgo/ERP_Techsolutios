@@ -13,11 +13,21 @@ type ControllerResult = {
   readonly data?: unknown;
 };
 
-// impound:read / impound:update REUSADAS (Ω-VID PR-02, D-Ω-VID-01) — sem permissão nova nesta fatia.
-// vehicle_identity:merge é exclusiva do PR-04 (merge manual) e não existe/não é referenciada aqui.
+// impound:read / impound:update REUSADAS (Ω-VID PR-02, D-Ω-VID-01) — CRUD básico sem permissão nova.
+// Ω-VID PR-04 — 2 permissões NOVAS:
+//   - vehicle_identity:merge: dedicada (mesmo padrão de release:approve/auction:appraise — NÃO coberta por
+//     impound:update). Distribuição por HERANÇA do catálogo (PERMISSION_CATALOG): tenant_admin/super_admin/
+//     platform_admin (catálogo integral/filtrado) + manager (lista explícita). Ver catalog.ts.
+//   - platform:vehicle-identity-unmerge:manage: prefixo "platform:" (mesma convenção de authority_credentials:
+//     manage) — TENANT_ADMIN_PERMISSIONS filtra TUDO que começa com "platform:", então só super_admin/
+//     platform_admin (os 2 papéis que recebem o catálogo INTEGRAL sem filtro) a possuem. É a permissão MAIS
+//     restrita alcançável nesta arquitetura de papéis (mais estreita que vehicle_identity:merge, que tenant_admin
+//     e manager também têm) — condizente com "estorno administrativo" ser ainda mais sensível que o merge.
 export const VEHICLE_IDENTITY_PERMISSIONS = {
   read: "impound:read",
   write: "impound:update",
+  merge: "vehicle_identity:merge",
+  unmergeAdmin: "platform:vehicle-identity-unmerge:manage",
 } as const;
 
 export function createVehicleIdentityRouter(
@@ -55,6 +65,22 @@ export function createVehicleIdentityRouter(
     requirePermission(VEHICLE_IDENTITY_PERMISSIONS.write),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.update(request));
+    }),
+  );
+  // Ω-VID PR-04 (§Parte A) — merge manual. Path de 3 segmentos, sem colisão com PATCH/GET :identityId.
+  router.post(
+    "/vehicle-identities/:targetId/merge",
+    requirePermission(VEHICLE_IDENTITY_PERMISSIONS.merge),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.merge(request));
+    }),
+  );
+  // Ω-VID PR-04 (§Parte B) — estorno administrativo.
+  router.post(
+    "/vehicle-identities/:identityId/unmerge-admin",
+    requirePermission(VEHICLE_IDENTITY_PERMISSIONS.unmergeAdmin),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.unmergeAdmin(request));
     }),
   );
 

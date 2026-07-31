@@ -160,3 +160,27 @@ export function assertIdentityCoherence(input: {
     );
   }
 }
+
+const MIN_REASON_LENGTH = 10;
+const MAX_REASON_LENGTH = 1000;
+
+// Ω-VID PR-04 — reason obrigatório (merge/unmerge-admin), mínimo 10 caracteres (§Parte A/B) — justificativa
+// mínima para uma ação irreversível na prática (o histórico vive em ThirdPartyVehicleIdentityMergeEvent).
+export function assertReason(value: unknown, field = "reason"): string {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  if (!normalized) {
+    throw new VehicleIdentityError(400, "VEHICLE_IDENTITY_INVALID", "reason_required", `${field} is required.`);
+  }
+  if (normalized.length < MIN_REASON_LENGTH) {
+    throw new VehicleIdentityError(
+      400,
+      "VEHICLE_IDENTITY_INVALID",
+      "reason_too_short",
+      `${field} must be at least ${MIN_REASON_LENGTH} characters.`,
+    );
+  }
+  if (normalized.length > MAX_REASON_LENGTH) {
+    throw new VehicleIdentityError(400, "VEHICLE_IDENTITY_INVALID", "reason_too_long", `${field} must be at most ${MAX_REASON_LENGTH} characters.`);
+  }
+  return normalized;
+}

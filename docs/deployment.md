@@ -331,3 +331,29 @@ pg_restore -h <host> -U <admin> -d erp_restore -j4 restore.dump
   apos 60d** sem atividade no repo (confirmar vivo). O custo US$0 do cron depende de o repo ser **PUBLICO**
   (minutos ilimitados) — se virar PRIVADO, `*/5` passa a custar: reduzir cadencia ou migrar para monitor
   sintetico (Better Stack FREE, upgrade documentado no PD-INFRA-2).
+
+### Runbook — estorno de merge de identidade de veiculo (unmerge-admin) e um estorno PARCIAL (Omega-VID PR-04)
+O merge de duas `ThirdPartyVehicleIdentity` (identidade de veiculo de TERCEIRO no modulo de custodia/patios) e,
+na pratica, **irreversivel** e mexe em custodia de bem de terceiro — trate como operacao rara, manual e auditada.
+O `POST /vehicle-identities/:id/unmerge-admin` (permissao **platform-only** `platform:vehicle-identity-unmerge:manage`
+— so `super_admin`/`platform_admin`) existe para o caso excepcional de um merge indevido, mas reverte **apenas o
+vinculo de identidade**, NAO os processos movidos:
+
+- **O que o unmerge-admin FAZ:** volta a identidade mesclada de `confidence='MERGED'` para a **confidence
+  ORIGINAL** (PROVISIONAL ou CONFIRMED, restaurada do `snapshot_before` do MergeEvent — nunca rebaixa
+  silenciosamente), zera `canonical_identity_id`, e grava um novo MergeEvent `[UNMERGE]` (a trilha e append-only).
+- **O que o unmerge-admin NAO FAZ:** NAO remigra os `impound_processes.identity_id` que o merge original moveu
+  para o alvo. Nao e possivel reconstruir com seguranca **quais** processos eram originais desta identidade sem o
+  snapshot completo do estado de todos os processos no momento do merge (um processo pode ter sido movido por
+  merges subsequentes tambem). A identidade estornada volta **VAZIA**.
+- **Aviso ao operador (item 4 da junta de revisao):** a resposta do unmerge-admin traz `strandedProcessCount` = o
+  numero de processos que o merge original moveu e que continuam apontando para o alvo. O `snapshot_before` do
+  MergeEvent de MERGE guarda `movedProcessCount` **e** `movedProcessIds` — use-os para saber exatamente quais
+  processos religar.
+- **Correcao de processo = acao manual explicita.** Depois do unmerge, se for necessario devolver processos a
+  identidade estornada, faca-o deliberadamente (ex.: um PATCH controlado do vinculo de cada processo, com
+  registro), conferindo os `movedProcessIds` do MergeEvent original. Nunca automatize essa remigracao as cegas.
+- **Integridade de grafo:** merges opostos concorrentes NAO podem criar ciclo (`A.canonical=B` E `B.canonical=A`)
+  — ha lock pessimista (`SELECT ... FOR UPDATE`) no merge; uma corrida resulta em `409 merge_conflict_retry` no
+  segundo, nunca em corrupcao. O CHECK `canonical_biconditional_chk` garante no banco que `canonical_identity_id`
+  so existe quando `confidence='MERGED'`.
