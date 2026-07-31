@@ -1,17 +1,17 @@
 {
-  "snapshot_date": "2026-07-30",
-  "version": "OMEGA5P-PR-20-FIX",
+  "snapshot_date": "2026-07-31",
+  "version": "OMEGA-VID-PR-01",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Omega5P PR-20 (interop Sivec-ready: impound_outbox_events, fila de entrega da interoperabilidade com o sistema eletronico do orgao maximo executivo de transito da Uniao — Res. CONTRAN 1025/2026 art.9 III/IV, janela de transicao do art.44) + CONSERTO POS-REVISAO da junta: dba-guardiao APROVOU; avaliador e critico-adversarial REPROVARAM com achados concretos, ambos fechados nesta entrega.",
-    "title": "Omega5P PR-20-FIX: trigger BEFORE UPDATE em impound_outbox_events barrando reescrita de payload/tenant_id/process_id/event_type/occurred_at/schema_version/target/created_at (so status/attempts/last_error mudam) — fecha o furo achado pelo critico-adversarial (PoC: UPDATE ... SET payload='{forged:true}' rodava sem erro) + KPI-por-PR atualizado com contagem real",
+    "block": "Omega-VID PR-01 (fix do elo quebrado ChecklistRun<->WorkOrder) — abre a rodada Omega-VID (identidade unificada de veiculo de terceiro, dossie guincho->custodia->desfecho; D-Omega-VID-01 em agent-orchestration/controle/decisoes.md estende, nao revoga, D-Omega5P-09/D-Omega5P-RECON-A).",
+    "title": "Omega-VID PR-01: checklist.validator.ts aceita workOrderId (Flutter ja enviava, Zod descartava silenciosamente) e deriva relatedEntityType/relatedEntityId; explicitos sempre vencem. Junta APROVADO 2/2.",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Omega5P PR-20 — outbox de interop Sivec-ready (impound_outbox_events, migracao 20260853000000_add_impound_outbox_events, ADITIVA/NOVA tabela): CustodyEvent do marco-chave (ACTIVE_CUSTODY/RELEASED/AUCTIONED/CLOSED) projeta 1 registro de outbox NA MESMA tx do append hash-encadeado (sem 2a fonte de verdade); trigger BEFORE DELETE ja bloqueava exclusao fisica (I9). CONSERTO POS-REVISAO: (1) FURO REAL (critico-adversarial) — faltava trigger BEFORE UPDATE; um UPDATE podia reescrever o payload/tenant_id/process_id/event_type/occurred_at/schema_version/target/created_at ja capturados, quebrando a garantia de reconciliacao 1:1 com o CustodyEvent de origem que e a razao de existir do outbox. Adicionado trigger impound_outbox_events_guard_update (BEFORE UPDATE, RAISE EXCEPTION restrict_violation) NA MESMA migracao 20260853000000 (ainda nao commitada ao main — sem 2a migracao); so status/attempts/last_error permanecem mutaveis (mecanica de entrega da fila, por desenho). Migracao reaplicada viva contra o Postgres de dev (trigger criado via prisma db execute sobre a tabela ja existente + checksum de _prisma_migrations reconciliado com o arquivo atualizado); prisma validate e migrate status OK. Teste novo em tests/impound-outbox.test.ts: UPDATE de status/attempts/last_error continua permitido; UPDATE de payload e de process_id BLOQUEADOS com a mensagem esperada; payload permanece intacto apos as tentativas rejeitadas. (2) KPI-por-PR (avaliador) — este snapshot fecha a pendencia de processo (o PR-20 original nao tinha tocado Kpis/*). backend 1941/1956 (baseline PR-17b) -> 1956/1971 (PR-20 original, +15) -> 1957/1972 (+1 do teste de UPDATE-guard nesta correcao). frontend_smoke permanece 937 (PR nao tocou a trilha frontend; o PR de frontend em paralelo fecha o achado de teste-frontend faltando e atualiza frontend_smoke no proprio PR quando fechar). flutter 807 inalterado. blocks_completed 114->115.",
-    "status_label": "Omega5P PR-20-FIX: trigger BEFORE UPDATE em impound_outbox_events (imutabilidade da captura, so status/attempts/last_error mudam) + KPI-por-PR fechado; backend 1941->1957, blocks 114->115"
+    "summary": "Omega-VID PR-00 (recon+D-record, doc-only, sem mudanca de KPI) + PR-01 (este snapshot): parseCreateChecklistRunDto ganha workOrderId opcional; quando relatedEntityType/relatedEntityId nao vem explicitos, deriva relatedEntityType='work_order'+relatedEntityId=workOrderId. Zero mudanca em checklist.service.ts/repositorios (ja liam/escreviam os campos corretamente) — o bug era so o Zod descartar workOrderId por chave desconhecida. +5 testes novos em tests/checklist-run-work-order-derivation.test.ts (workOrderId sozinho; explicitos vencem; nenhum -> undefined sem erro; string vazia/espaco = ausente; templateId alias junto); regressao dos 4 arquivos tests/checklist*.test.ts preexistentes = 24/24 pass no total combinado. Junta APROVADO 2/2 (critico-adversarial: 5 vetores resistiram, incl. isolamento cross-tenant confirmado via withTenant(actor.tenantId) na escrita; coordenador-de-acessos: escopo do diff bate com o plano, nenhuma permissao nova). Achado nao-bloqueante registrado para o futuro: relatedEntityId segue sem validacao de existencia/tenant contra WorkOrder real (padrao preexistente do modulo) — vira requisito quando PR-04/05 desta mesma rodada passarem a fazer JOIN real nesse campo (ja e o mesmo requisito que a junta de arquitetura exigiu para ImpoundProcessChecklistLink no PR-04). backend 1957/1972 (Omega5P PR-20-FIX) -> 1962/1977. frontend_smoke/flutter inalterados (PR backend-only). blocks_completed 115->116.",
+    "status_label": "Omega-VID PR-01: fix do elo ChecklistRun<->WorkOrder (workOrderId descartado silenciosamente pelo Zod) + KPI-por-PR; backend 1957->1962, blocks 115->116"
   },
   "metrics": {
     "flutter_tests": {
@@ -27,10 +27,10 @@
       "note": "Omega5P PR-20: +13 testes novos (frontend/tests/patios-painel.smoke.test.tsx — 5 estados obrigatorios, gate impound:read, 6 KPI cards, 4 tabelas, ausencia de termo tecnico/andaime de dev), fechando o achado do omega5p-avaliador (PainelPatiosPage era a unica tela de /patios/* sem teste companheiro). PainelPatiosPage.tsx refatorada em wrapper+PainelPatiosView.tsx (props-driven) para ficar testavel via renderToString (o harness de smoke deste repo nao usa jsdom/act — todas as 13 telas de patios seguem esse mesmo padrao view/hook). Sobre 937 (Omega5P PR-17b/PR-15b)."
     },
     "backend_tests": {
-      "value": 1957,
-      "total": 1972,
-      "display": "1957/1972",
-      "note": "Omega5P PR-20 (interop Sivec-ready, impound_outbox_events) + conserto pos-revisao (trigger BEFORE UPDATE). Cadeia: baseline PR-17b 1941/1956 -> PR-20 original relatou +15 (impound_outbox_events: mesma-tx com CustodyEvent do marco, concorrencia N vencedores=1, DELETE bloqueado, cross-tenant RLS; e o dashboard-summary de patios) -> 1956/1971 -> +1 nesta correcao (tests/impound-outbox.test.ts: 'UPDATE de payload/tenant_id/process_id/event_type/occurred_at/schema_version/target/created_at e BLOQUEADO pelo trigger') -> 1957/1972. Medido AO VIVO nesta correcao: node --test --import tsx tests/impound-outbox.test.ts tests/patios-dashboard.test.ts tests/patios-dashboard-unit.test.ts = 16/16 pass (5 impound-outbox incl. o novo teste de UPDATE-guard, 8 patios-dashboard-unit, 3 patios-dashboard DB-gated); regressao completa da familia impound/auction/release/settlement (26 arquivos) = 203/203 pass, 0 fail. Todos DB-gated (skip sem DATABASE_URL, executados aqui com Postgres de dev vivo)."
+      "value": 1962,
+      "total": 1977,
+      "display": "1962/1977",
+      "note": "Omega-VID PR-01 (fix do elo quebrado ChecklistRun<->WorkOrder): checklist.validator.ts (parseCreateChecklistRunDto) passa a aceitar workOrderId (que o Flutter ja envia, mas o Zod descartava silenciosamente) e deriva relatedEntityType='work_order'+relatedEntityId quando os campos explicitos nao vem; explicitos sempre vencem. +5 testes novos sempre-roda em tests/checklist-run-work-order-derivation.test.ts (workOrderId sozinho; explicitos vencem sobre workOrderId; nenhum dos dois -> undefined sem erro; string vazia/espaco tratada como ausente; templateId alias junto). Regressao dos 4 arquivos tests/checklist*.test.ts preexistentes: 24/24 pass no total combinado. Junta APROVADO 2/2 (critico-adversarial + coordenador-de-acessos) - achado nao-bloqueante registrado: relatedEntityId segue sem validacao de existencia/tenant contra WorkOrder real (padrao preexistente, vira requisito quando PR-04/05 da rodada Omega-VID passar a fazer JOIN real nesse campo). Sobre 1957/1972 (Omega5P PR-20-FIX)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 115,
-      "display": "115",
-      "note": "Omega5P PR-20 (interop Sivec-ready: impound_outbox_events, fila de entrega na mesma tx do CustodyEvent do marco-chave, SO CAPTURA — nenhum worker de drenagem/chamada HTTP real nesta migracao/PR) + conserto pos-revisao (trigger BEFORE UPDATE barrando reescrita da captura, achado do critico-adversarial) -> +1 sobre 114. Proximo: backlog Fase 6 (PSP/PIX, SNE, Sivec real, GOV.BR, guarda monitorada, IA) e encerramento da rodada Omega5P."
+      "value": 116,
+      "display": "116",
+      "note": "Omega-VID PR-01 (fix do elo quebrado ChecklistRun<->WorkOrder, abre a rodada Omega-VID) -> +1 sobre 115. Proximo: PR-02 (schema ThirdPartyVehicleIdentity + MergeEvent + ImpoundProcess.identity_id, migracao aditiva, junta obrigatoria)."
     },
     "mobile_backend_contracts": {
       "value": 18,

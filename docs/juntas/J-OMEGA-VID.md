@@ -78,4 +78,30 @@ adversarialmente por 3 agentes (`critico-adversarial`, `agente-dba-guardiao`,
 
 ## 6. Registro de execução
 
-(preenchido PR a PR conforme a fila avança)
+### PR-01 — fix do elo Checklist↔WorkOrder — VOTOS DA JUNTA (2026-07-31) — APROVADO 2/2
+
+> `checklist.validator.ts` (`parseCreateChecklistRunDto`) passa a aceitar `workOrderId`
+> (que o Flutter já envia, mas o Zod descartava silenciosamente) e deriva
+> `relatedEntityType='work_order'`+`relatedEntityId` quando os campos explícitos não vêm —
+> explícitos sempre vencem. Zero mudança em `checklist.service.ts`/repositórios (já liam/
+> escreviam `relatedEntityType`/`relatedEntityId` corretamente).
+
+- **crítico-adversarial** → **APROVADO**. 5 vetores atacados, todos resistiram: contrato
+  retroativo (nenhum caller real envia os dois juntos hoje); falta de validação de
+  existência do `workOrderId` (pré-existente, não piorado); cross-tenant (run sempre
+  gravada sob `tenant_id=actor.tenantId`, `relatedEntityId` é só string opaca sem JOIN);
+  string vazia/espaço tratada como ausente, testado; regressão dos 2 clientes reais
+  (Flutter manda só `workOrderId`, web `ChecklistRuntimePage.tsx` não manda nenhum dos
+  dois). 24/24 testes confirmados rodando de novo pelo próprio agente.
+- **coordenador-de-acessos** → **APROVADO**. Isolamento multi-tenant confirmado sem
+  regressão (mesmo padrão pré-existente de campo livre sem FK); escopo do diff bate
+  exatamente com o plano (só `checklist.validator.ts` + teste novo); nenhuma permissão
+  nova necessária (enriquecimento de payload, não capacidade de acesso nova).
+- **Achado não-bloqueante (ambos concordam, registrado para o futuro):** `relatedEntityId`
+  segue sem validação de existência/tenant contra `WorkOrder` real — aceitável hoje
+  (padrão pré-existente), mas se um PR futuro (ex. PR-05, dossiê) passar a **confiar**
+  nesse campo para JOIN real, aí sim precisa virar checagem/FK — já é exatamente o
+  requisito que a junta de arquitetura exigiu para `ImpoundProcessChecklistLink` no PR-04.
+- **Decisão:** **APROVADO 2/2**, 0 ciclo. KPI: backend +6 (5 testes novos em
+  `tests/checklist-run-work-order-derivation.test.ts` + regressão 24/24 nos 4 arquivos
+  `tests/checklist*.test.ts` pré-existentes, todos passando).

@@ -150,6 +150,7 @@ export function parseCreateChecklistRunDto(body: Record<string, unknown>): Creat
   return z.object({
     checklistId: z.string().trim().min(1).optional(),
     templateId: z.string().trim().min(1).optional(),
+    workOrderId: z.string().trim().optional(),
     relatedEntityType: z.string().trim().min(1).optional(),
     relatedEntityId: z.string().trim().min(1).optional(),
     answers: z.array(answerSchema).default([]),
@@ -165,10 +166,12 @@ export function parseCreateChecklistRunDto(body: Record<string, unknown>): Creat
       return z.NEVER;
     }
 
+    const workOrderId = value.workOrderId && value.workOrderId.length > 0 ? value.workOrderId : undefined;
+
     return {
       checklistId,
-      relatedEntityType: value.relatedEntityType,
-      relatedEntityId: value.relatedEntityId,
+      relatedEntityType: value.relatedEntityType ?? (workOrderId ? "work_order" : undefined),
+      relatedEntityId: value.relatedEntityId ?? workOrderId,
       answers: value.answers,
     };
   }).parse(body);
