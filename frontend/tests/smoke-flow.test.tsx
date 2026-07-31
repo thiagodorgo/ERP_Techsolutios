@@ -1032,18 +1032,28 @@ test("checklist runtime service chama endpoints operacionais compartilhados", as
   browser.clear();
   const calls = installFetchSequence([
     {
+      // Formato real de GET /mobile/checklists/available (toMobileChecklistTemplateDto no
+      // backend) — snake_case, `category`/`items`, status "active". Não é o mesmo shape de
+      // TenantChecklist; o adapter (checklist-runtime.adapter.ts) traduz os dois.
       payload: {
         data: [
           {
             id: "chk-1",
-            tenantId: "tenant-a",
+            tenant_id: "tenant-a",
+            code: "custom",
             name: "Checklist publicado",
-            type: "custom",
-            status: "published",
+            title: "Checklist publicado",
+            description: null,
             version: 1,
-            schema: {},
-            components: [],
-            updatedAt: "2026-06-08T00:00:00.000Z",
+            schema_version: "v1",
+            status: "active",
+            is_required: false,
+            category: "custom",
+            work_order_type: "custom",
+            linked_work_order_type: "custom",
+            module: "tenant_checklist",
+            updated_at: "2026-06-08T00:00:00.000Z",
+            items: [],
           },
         ],
       },
