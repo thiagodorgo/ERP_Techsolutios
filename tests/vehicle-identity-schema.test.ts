@@ -331,6 +331,67 @@ if (!connectionString) {
       await teardown(client, tenant.id);
     }
   });
+
+  // Item 2 da junta de revisão (migração 20260856000000) — CHECK bicondicional: canonical_identity_id preenchido
+  // ⟺ confidence='MERGED'. Fecha a direção que o merge_chk (PR-02) não cobria e barra no BANCO o estado
+  // contraditório (PROVISIONAL/CONFIRMED com canonical pendurado) que o bypass do PATCH criava.
+  test("(9) CHECK third_party_vehicle_identities_canonical_biconditional_chk (inverso do merge_chk)", async () => {
+    const { client } = await bootstrap(connectionString);
+    const tenant = await seedTenant(client, "biconditional-chk");
+    try {
+      const { withTenantRls } = await import("../src/database/rls.js");
+
+      const target = await withTenantRls(client, tenant.id, (tx) =>
+        tx.thirdPartyVehicleIdentity.create({ data: { tenant_id: tenant.id, unidentified: false, plate_key: "BIC0001" } }),
+      );
+
+      // VIOLA: confidence não-MERGED (PROVISIONAL) com canonical_identity_id preenchido -> 23514.
+      await assert.rejects(
+        () =>
+          withTenantRls(client, tenant.id, (tx) =>
+            tx.$executeRawUnsafe(
+              `INSERT INTO third_party_vehicle_identities (tenant_id, unidentified, confidence, plate_key, canonical_identity_id)
+               VALUES ('${tenant.id}'::uuid, false, 'PROVISIONAL', 'BIC0002', '${target.id}'::uuid)`,
+            ),
+          ),
+        /canonical_biconditional_chk|23514|violates check/i,
+        "PROVISIONAL com canonical_identity_id preenchido deve violar o CHECK bicondicional",
+      );
+
+      // VIOLA também via UPDATE (o caminho do bypass): rebaixar um MERGED para PROVISIONAL sem nular canonical.
+      const merged = await withTenantRls(client, tenant.id, (tx) =>
+        tx.thirdPartyVehicleIdentity.create({
+          data: { tenant_id: tenant.id, unidentified: false, plate_key: "BIC0003", confidence: "MERGED", canonical_identity_id: target.id },
+        }),
+      );
+      await assert.rejects(
+        () =>
+          withTenantRls(client, tenant.id, (tx) =>
+            tx.$executeRawUnsafe(`UPDATE third_party_vehicle_identities SET confidence = 'PROVISIONAL' WHERE id = '${merged.id}'::uuid`),
+          ),
+        /canonical_biconditional_chk|23514|violates check/i,
+        "rebaixar MERGED->PROVISIONAL sem nular canonical (o bypass do PATCH) deve ser barrado no banco",
+      );
+
+      // Caminhos VÁLIDOS: PROVISIONAL + canonical NULL, e o estorno correto (PROVISIONAL + canonical NULL juntos).
+      const alive = await withTenantRls(client, tenant.id, (tx) =>
+        tx.thirdPartyVehicleIdentity.create({ data: { tenant_id: tenant.id, unidentified: false, plate_key: "BIC0004" } }),
+      );
+      assert.ok(alive.id);
+      await withTenantRls(client, tenant.id, (tx) =>
+        tx.$executeRawUnsafe(
+          `UPDATE third_party_vehicle_identities SET confidence = 'PROVISIONAL', canonical_identity_id = NULL WHERE id = '${merged.id}'::uuid`,
+        ),
+      );
+      const revertedRows = await client.$queryRawUnsafe<Array<{ confidence: string; canonical_identity_id: string | null }>>(
+        `SELECT confidence, canonical_identity_id FROM third_party_vehicle_identities WHERE id = '${merged.id}'::uuid`,
+      );
+      assert.equal(revertedRows[0].confidence, "PROVISIONAL");
+      assert.equal(revertedRows[0].canonical_identity_id, null);
+    } finally {
+      await teardown(client, tenant.id);
+    }
+  });
 }
 
 type BootstrapClient = Awaited<ReturnType<typeof bootstrap>>["client"];

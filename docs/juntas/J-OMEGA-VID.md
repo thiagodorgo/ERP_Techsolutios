@@ -186,3 +186,73 @@ adversarialmente por 3 agentes (`critico-adversarial`, `agente-dba-guardiao`,
   subconjunto). Rodada real contra dev DB (dev, não produção): 6 identidades criadas, 8 processos
   vinculados, 1 ambíguo, 1 sugestão — idempotente confirmado na 2ª execução. Próximo: PR-04 (merge
   manual + unmerge-admin + `ImpoundProcessChecklistLink`).
+
+### PR-04 — merge/unmerge de identidades + banner duplicata + `ImpoundProcessChecklistLink` — VOTOS DA JUNTA (2026-07-31) — **APROVADO (ciclo 1 REPROVADO → rework → ciclo 2 CONFIRMADO_FECHADO → ciclo 3 hardening)**
+
+> Operação praticamente irreversível sobre custódia de bem de terceiro — junta orquestrada como
+> **workflow adversarial** de 4 revisores em paralelo (`agente-dba-guardiao` + `critico-adversarial`
+> + `coordenador-de-acessos` + `agente-secops`), depois **workflow de re-verificação** de 3
+> agentes re-atacando os consertos com PoC próprio contra Postgres real.
+
+**Ciclo 1 (revisão do diff — REPROVADO):**
+- **agente-dba-guardiao** → APROVADO. Migração `20260855000000` 100% aditiva; as DUAS FKs compostas
+  tenant-first RESTRICT (`process_id`→impound_processes E `checklist_run_id`→checklist_runs — esta
+  a exigida pela junta de arquitetura, FK dura, não solta); CHECK `link_source`; unique
+  `(tenant_id,process_id,checklist_run_id)`; RLS ENABLE+FORCE+POLICY — 13/13 provas vivas próprias
+  com role NOSUPERUSER efêmera. 2 achados BAIXA não-bloqueantes (unmerge parcial documentado; drift
+  pré-existente em `work_order_*` fora de escopo).
+- **coordenador-de-acessos** → APROVADO. `vehicle_identity:merge` só tenant_admin/manager/super/
+  platform (idêntico a release:approve); unmerge `platform:`-prefixed só super/platform (tenant_admin
+  →403, platform_admin→200 provados ao vivo); **guarda dupla `impound:read` AND `checklist_runs:read`**
+  no GET checklist-runs barra field_technician (403) — fecha o achado central da junta de arquitetura.
+  Isolamento cross-tenant 404 nos 3 eixos. Zero defeito.
+- **agente-secops** → APROVADO_CONDICIONADO. §2.8 limpo (snapshot_before nunca sai cru por HTTP). **1
+  ALTA:** `PATCH /vehicle-identities/:id` (`impound:update`, que tenant_admin/manager têm) não travava
+  identidade `MERGED` → estorno PARCIAL do merge (ressurreição) SEM a permissão platform-only, provado
+  empiricamente.
+- **critico-adversarial** → **REPROVADO. 1 CRÍTICA (PoC contra Postgres real):** merges concorrentes
+  em direções opostas (A→B e B→A) sob READ COMMITTED sem row-lock criam um **2-ciclo no grafo**
+  (A.canonical=B E B.canonical=A, ambos MERGED) via write-skew — corrupção comprovada; o banner
+  `duplicateCandidates` incita dois operadores a reconciliar o mesmo cluster simultaneamente. + 2
+  MÉDIA (unmerge rebaixa CONFIRMED→PROVISIONAL silenciosamente; unmerge deixa processos órfãos sem
+  avisar) + 1 BAIXA (mensagem do bound de 20 hops enganosa).
+
+**Rework (6 achados fechados):** (CRÍTICA) `mergeIdentities` ganhou `SELECT … FOR UPDATE` nas linhas
+source+resolved ordenadas por id + re-validação pós-lock + 409 `merge_conflict_retry` — sem tocar o
+isolamento global de `withTenantRls`. (ALTA) `update()` rejeita 422 `merged_identity_read_only` +
+nova migração `20260856000000` com CHECK bicondicional `canonical setado ⟺ MERGED`. (MÉDIA) unmerge
+restaura a confidence original do `snapshot_before` do MergeEvent de merge mais recente; persiste
+`movedProcessCount`/`movedProcessIds` no snapshot e expõe `strandedProcessCount`. (BAIXA) mensagem do
+bound diferenciada; unmerge parcial documentado em `docs/deployment.md`.
+
+**Ciclo 2 (re-verificação adversarial dos consertos — CONFIRMADO_FECHADO unânime):**
+- **critico-adversarial** → CONFIRMADO_FECHADO. 12 rodadas do teste + PoC próprio de cadeia
+  transitiva = zero ciclo de qualquer comprimento (segurança estrutural — aresta só entra em nó ativo
+  travado = sink); `EXPLAIN` prova `LockRows` acima do `Sort` (lock em ordem de id); **360 merges
+  concorrentes sobrepostos = ZERO deadlock**; races transitivos devolvem 409 limpo; CONFIRMED
+  restaurado; strandedProcessCount persistido. 2 achados BAIXA de hardening remanescentes (TOCTOU
+  cosmético no `update()`; unmerge sem FOR UPDATE → evento `[UNMERGE]` duplicado) — ambos
+  explicitamente sem corrupção/ciclo/ressurreição.
+- **agente-secops** → CONFIRMADO_FECHADO, zero achado. Bypass fechado em 2 camadas independentes
+  provadas; todos os caminhos de escrita de confidence/canonical auditados, nenhum escapa.
+- **agente-dba-guardiao** → CONFIRMADO_FECHADO, zero achado. Migração `20260856000000` aditiva,
+  bicondicional confirmado no catálogo (`convalidated=true`), 0 linhas violando, 8/8 provas vivas
+  tx-ROLLBACK, runbook presente.
+
+**Ciclo 3 (hardening dos 2 BAIXA — mesmo padrão FOR UPDATE já provado):** `updateIdentity` do repo
+Prisma ganha `SELECT confidence … FOR UPDATE` no início da tx de escrita → qualquer edição a uma
+identidade MERGED falha atomicamente (fecha o TOCTOU cosmético, tombstone MERGED 100% read-only);
+`unmergeIdentity` ganha `SELECT … FOR UPDATE` → dois unmerge concorrentes: exatamente 1 vence + grava
+1 evento `[UNMERGE]`, o outro rejeita `not_merged` limpo (provado, 12 rodadas, evento único). Módulo
+uniformemente lock-safe.
+
+**Decisão da junta:** **APROVADO** — 1 CRÍTICA + 1 ALTA + 2 MÉDIA + 3 BAIXA, TODAS fechadas e
+re-verificadas adversarialmente contra Postgres real por PoC próprio dos agentes que as acharam.
+**KPIs no próprio PR:** backend +42 (`tests/vehicle-identity-merge{,-db,-concurrency}.test.ts` +
+`tests/impound-checklist-link.test.ts` + `tests/impound-process-checklist-link-schema.test.ts` = 41,
++ 1 no schema pelo CHECK bicondicional); regressão vehicle-identity 55/55, checklist-link 13/13,
+impound core 56/56, backfill 10/10. 2 migrações novas (`20260855000000` link table + `20260856000000`
+CHECK bicondicional), `prisma migrate status` 92 up to date. 2 permissões novas (`vehicle_identity:merge`
++ `platform:vehicle-identity-unmerge:manage`) em RBAC_MATRIX.md. Próximo (intercalado por decisão do
+dono): **CHECKLIST P0** — gap de sync mobile→backend (perda silenciosa de foto/avaria/assinatura),
+antes dos PRs de UI do dossiê (PR-05+).

@@ -1754,5 +1754,17 @@
     "mvp_vendavel": "88%",
     "blocks_completed": 118,
     "description": "Omega-VID PR-03: scripts/backfill-third-party-vehicle-identity.ts popula ThirdPartyVehicleIdentity/ImpoundProcess.identity_id retroativamente para processos historicos, agrupando so por plate_key exato (nunca chassis/renavam sozinhos), vehicle_unidentified sempre individual, idempotente, sequencial por tenant, cada tenant em 1 transacao unica, keyset pagination, relatorio de ambiguos e sugestoes de correspondencia (nunca merge automatico, decisao do dono). Junta APROVADO 2/2 (dba-guardiao + critico-adversarial) — dba-guardiao rodou o script pessoalmente contra 1200 processos confirmando idempotencia real; critico-adversarial fechou 1 achado de atribuicao (comentario creditava a janela de 72h a uma decisao do dono nao especificada em numero). +10 testes, regressao 95/95."
+  },
+  {
+    "snapshot_date": "2026-07-31",
+    "version": "OMEGA-VID-PR-04",
+    "backend_tests": "2040/2055",
+    "frontend_smoke": "950/950",
+    "flutter_tests": "807/807",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 119,
+    "description": "Omega-VID PR-04: merge/unmerge manual de identidades de veiculo (row-lock FOR UPDATE, resolucao transitiva, snapshot_before, unmerge-admin platform-only com estorno parcial documentado) + banner duplicateCandidates + tabela de juncao ImpoundProcessChecklistLink (FK dura tenant-first RESTRICT nos 2 lados) + gate DUPLO impound:read AND checklist_runs:read no GET checklist-runs (fecha vazamento a field_technician). 2 permissoes novas (vehicle_identity:merge, platform:vehicle-identity-unmerge:manage). Junta orquestrada como WORKFLOW ADVERSARIAL de 4 revisores + 3 re-verificadores. Ciclo 1 REPROVADO: 1 CRITICA (write-skew: merges concorrentes A->B/B->A criavam 2-ciclo no grafo, PoC contra Postgres real) + 1 ALTA (PATCH ressuscitava identidade MERGED sem permissao platform-only) + 2 MEDIA (unmerge downgrade de confidence, processos orfaos). Rework fechou os 6 (FOR UPDATE no merge/update/unmerge, CHECK bicondicional canonical<=>MERGED, restauracao de confidence do snapshot, strandedProcessCount). Re-verificacao adversarial CONFIRMADO_FECHADO UNANIME (360 merges concorrentes = zero deadlock, zero ciclo; bypass fechado em 2 camadas; migracao bicondicional 0 linhas violando). +42 testes, regressao vehicle-identity 55/55 + checklist-link 13/13 + impound 56/56 + backfill 10/10. 2 migracoes novas (20260855000000 + 20260856000000), 92 up to date. Proximo intercalado: CHECKLIST P0 (data-loss no sync mobile)."
   }
 ]

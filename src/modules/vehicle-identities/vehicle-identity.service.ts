@@ -3,12 +3,15 @@ import { normalizePlateKey, normalizeRenavamKey } from "../portal-shared/index.j
 import { InMemoryVehicleIdentityRepository, type VehicleIdentityRepository } from "./vehicle-identity.repository.js";
 import type {
   ListVehicleIdentityResult,
+  MergeIdentitiesResult,
+  UnmergeIdentityResult,
   VehicleIdentity,
   VehicleIdentityActorContext,
 } from "./vehicle-identity.types.js";
 import { VehicleIdentityError } from "./vehicle-identity.types.js";
 import {
   assertIdentityCoherence,
+  assertReason,
   optionalNullableString,
   optionalString,
   parseLimit,
@@ -22,6 +25,12 @@ import {
 } from "./vehicle-identity.validators.js";
 
 type RawRecord = Record<string, unknown>;
+
+// Ω-VID PR-04 — leitura enriquecida com o banner de duplicata (§Parte C).
+export type VehicleIdentityWithDuplicates = {
+  readonly identity: VehicleIdentity;
+  readonly duplicateCandidates: readonly string[];
+};
 
 export class VehicleIdentityService {
   constructor(private readonly repository: VehicleIdentityRepository) {}
@@ -77,10 +86,31 @@ export class VehicleIdentityService {
     return identity;
   }
 
+  // Ω-VID PR-04 (§Parte C) — GET enriquecido com o banner de duplicata (requisito da junta de arquitetura).
+  async getWithDuplicates(actor: VehicleIdentityActorContext, identityId: string): Promise<VehicleIdentityWithDuplicates> {
+    const identity = await this.get(actor, identityId);
+    const duplicateCandidates = await this.repository.findDuplicateCandidates(actor.tenantId, identity.id);
+    return { identity, duplicateCandidates };
+  }
+
   // Correção de placa/dados — SEM lógica de merge/colisão (PR-04). confidence continua restrito a
   // PROVISIONAL/CONFIRMED; canonical_identity_id permanece inacessível por este endpoint.
   async update(actor: VehicleIdentityActorContext, identityId: string, body: RawRecord): Promise<VehicleIdentity> {
     const current = await this.get(actor, identityId);
+
+    // Item 2 da junta de revisão (ALTA — bypass do gate platform-only via PATCH): uma identidade já MERGED é
+    // SOMENTE-LEITURA por este endpoint (impound:update, que tenant_admin/manager têm). Sem esta trava, um
+    // PATCH {confidence:"PROVISIONAL"} ressuscitaria a identidade mesclada — reversão parcial do que só o
+    // unmerge-admin (platform-only) pode fazer — e deixaria canonical_identity_id pendurado com confidence
+    // não-MERGED (estado contraditório). Reversão de merge tem UM único caminho: unmerge-admin.
+    if (current.confidence === "MERGED") {
+      throw new VehicleIdentityError(
+        422,
+        "VEHICLE_IDENTITY_MERGE_INVALID",
+        "merged_identity_read_only",
+        "A merged vehicle identity is read-only; use unmerge-admin to reverse the merge.",
+      );
+    }
 
     const unidentified = readOptionalBoolean(body.unidentified, "unidentified") ?? current.unidentified;
     const plateRawInput = optionalNullableString(readAliasedField(body, "plate", "plateRaw"), 20, "plate");
@@ -126,6 +156,35 @@ export class VehicleIdentityService {
       throw new VehicleIdentityError(404, "VEHICLE_IDENTITY_NOT_FOUND", "not_found", "Vehicle identity was not found.");
     }
     return updated;
+  }
+
+  // Ω-VID PR-04 (§Parte A) — merge manual, permissão vehicle_identity:merge (gate na rota). O repositório executa
+  // TUDO numa ÚNICA transação (validação de existência+mesmo tenant+diferentes, resolução transitiva do alvo,
+  // migração de ImpoundProcess.identity_id, confidence=MERGED no source, ThirdPartyVehicleIdentityMergeEvent).
+  async merge(actor: VehicleIdentityActorContext, targetId: string, body: RawRecord): Promise<MergeIdentitiesResult> {
+    const reason = assertReason(body.reason, "reason");
+    const mergedIdentityId = parseRequiredUuid(body.mergedIdentityId, "mergedIdentityId");
+    return this.repository.mergeIdentities({
+      tenantId: actor.tenantId,
+      targetId: parseRequiredUuid(targetId, "targetId"),
+      mergedIdentityId,
+      reason,
+      actorId: actor.userId,
+    });
+  }
+
+  // Ω-VID PR-04 (§Parte B) — estorno administrativo, permissão de plataforma exclusiva (gate na rota). NÃO
+  // reverte ImpoundProcess.identity_id movidos pelo merge original (limitação documentada — sem o snapshot
+  // completo de TODOS os processos afetados no momento do merge, não é seguro reconstruir "quais eram
+  // originais"; um processo pode ter sido movido por merges subsequentes também).
+  async unmergeAdmin(actor: VehicleIdentityActorContext, identityId: string, body: RawRecord): Promise<UnmergeIdentityResult> {
+    const reason = assertReason(body.reason, "reason");
+    return this.repository.unmergeIdentity({
+      tenantId: actor.tenantId,
+      identityId: parseRequiredUuid(identityId, "identityId"),
+      reason,
+      actorId: actor.userId,
+    });
   }
 }
 

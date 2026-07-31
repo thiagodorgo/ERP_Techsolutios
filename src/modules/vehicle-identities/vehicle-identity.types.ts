@@ -91,6 +91,50 @@ export type ListVehicleIdentityResult = {
   readonly offset: number;
 };
 
+// Ω-VID PR-04 — merge manual (§Parte A). targetId/mergedIdentityId são os ids CRUS recebidos da API (a
+// resolução transitiva do alvo — se targetId já estiver MERGED e apontar adiante — acontece dentro do
+// repositório, numa ÚNICA transação; ver mergeIdentities). O SOURCE (mergedIdentityId) NUNCA é resolvido
+// transitivamente: se já está MERGED, é rejeição direta (merge_source_already_merged).
+export type MergeIdentitiesInput = {
+  readonly tenantId: string;
+  readonly targetId: string;
+  readonly mergedIdentityId: string;
+  readonly reason: string;
+  readonly actorId?: string;
+};
+
+export type MergeIdentitiesResult = {
+  // Identidade viva que efetivamente recebeu os processos (após resolução transitiva do alvo, se aplicável).
+  readonly resolvedTargetId: string;
+  readonly target: VehicleIdentity;
+  // A identidade SOURCE, já com confidence=MERGED e canonicalIdentityId=resolvedTargetId.
+  readonly merged: VehicleIdentity;
+  readonly movedProcessCount: number;
+};
+
+// Ω-VID PR-04 — estorno administrativo (§Parte B). NÃO reverte ImpoundProcess.identity_id movidos pelo merge
+// original (não é possível reconstruir com segurança "quais eram originais" sem o snapshot completo do estado
+// de todos os processos — fora de escopo; ver limitação documentada em vehicle-identity.service.ts).
+export type UnmergeIdentityInput = {
+  readonly tenantId: string;
+  readonly identityId: string;
+  readonly reason: string;
+  readonly actorId?: string;
+};
+
+export type UnmergeIdentityResult = {
+  readonly identity: VehicleIdentity;
+  // O id da identidade da qual esta estava mesclada (canonical_identity_id ANTES do estorno) — para o cliente
+  // saber a quem avisar sobre a separação (não é gravado de volta em canonicalIdentityId, que fica NULL).
+  readonly previousCanonicalIdentityId: string;
+  // Ω-VID PR-04 rework (item 4 da junta de revisão): quantos ImpoundProcess o merge original MOVEU para o alvo e
+  // que este estorno NÃO devolve (limitação documentada). A identidade volta VAZIA — o admin precisa ser avisado
+  // de que há N processos "órfãos" desta identidade que continuam apontando para o alvo. Vem do snapshot_before
+  // (movedProcessCount) do MergeEvent de MERGE mais recente desta identidade; 0 quando o merge não moveu nada ou
+  // o snapshot legado não guardava a contagem.
+  readonly strandedProcessCount: number;
+};
+
 export class VehicleIdentityError extends Error {
   constructor(
     readonly statusCode: number,

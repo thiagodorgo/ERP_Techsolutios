@@ -125,6 +125,13 @@ export const PERMISSION_CATALOG = [
   // distribuição gestão+admins = impound:transition (NÃO finance/inventory/support/campo). As transições da máquina de
   // venda (prep/lot/sale/close/default/reclaim) REUSAM impound:transition; só o registro/leitura da avaliação exige esta.
   "auction:appraise",
+  // Ω-VID PR-04 (D-Ω-VID-01) — merge manual de ThirdPartyVehicleIdentity: fundir 2 identidades de veículo de
+  // terceiro (irreversível na prática — move ImpoundProcess.identity_id + marca a origem MERGED). EIXO PRÓPRIO,
+  // NÃO coberto por impound:update (mesmo padrão de release:approve/auction:appraise: ato de peso maior que
+  // corrigir metadado). Distribuição: tenant_admin/super_admin/platform_admin (herdada do catálogo integral/
+  // filtrado) + manager (lista explícita abaixo) — coordenador-de-acessos aprovou exatamente esta distribuição
+  // na junta de arquitetura (J-OMEGA-VID.md §3).
+  "vehicle_identity:merge",
   "service_quotes:update",
   "service_quotes:approve",
   "work_order_financials:update",
@@ -244,6 +251,15 @@ export const PERMISSION_CATALOG = [
   // finance/inventory/etc — SoD: quem OPERA o pátio não PROVISIONA a autoridade (que SOLICITA a remoção). A
   // credencial provisionada NÃO recebe roles/permissions do ERP e NÃO alcança /api/v1.
   "authority_credentials:manage",
+  // Ω-VID PR-04 (D-Ω-VID-01) — estorno administrativo do merge de identidade (unmerge-admin): reverte
+  // confidence/canonical_identity_id, mas NUNCA os ImpoundProcess.identity_id já movidos (limitação
+  // documentada). Prefixo "platform:" (mesma convenção de authority_credentials:manage acima): distribuição por
+  // HERANÇA do catálogo — TENANT_ADMIN_PERMISSIONS filtra tudo "platform:", então só super_admin/platform_admin
+  // (os únicos 2 papéis com o catálogo INTEGRAL) a possuem. É a permissão MAIS restrita alcançável nesta
+  // arquitetura de papéis — a mais estreita do módulo inteiro de identidade de veículo, coerente com "estorno
+  // administrativo" sendo ato mais sensível que o próprio merge (vehicle_identity:merge, que tenant_admin/
+  // manager também têm).
+  "platform:vehicle-identity-unmerge:manage",
 ] as const;
 
 export type Permission = (typeof PERMISSION_CATALOG)[number];
@@ -356,6 +372,8 @@ export const ROLE_PERMISSIONS = {
     "release:approve",
     // Ω5P PR-13b — gestão registra/lê a avaliação sigilosa do leilão (art. 28; = impound:transition).
     "auction:appraise",
+    // Ω-VID PR-04 — gestão pode mergear identidades de veículo de terceiro (D-Ω-VID-01, aprovado pela junta).
+    "vehicle_identity:merge",
     "service_quotes:create",
     "work_order_financials:create",
     "service_catalog:update",

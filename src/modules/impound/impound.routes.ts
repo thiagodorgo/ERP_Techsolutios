@@ -8,6 +8,8 @@ import { ImpoundController, type ImpoundServiceResolver } from "./impound.contro
 import { createDefaultImpoundService } from "./impound.service.js";
 import { NotificationController, type NotificationServiceResolver } from "./impound.notifications.controller.js";
 import { createDefaultNotificationService } from "./impound.notifications.service.js";
+import { ImpoundChecklistLinkController, type ImpoundChecklistLinkServiceResolver } from "./impound.checklist-link.controller.js";
+import { createDefaultImpoundChecklistLinkService } from "./impound.checklist-link.service.js";
 
 type ControllerResult = {
   readonly status?: number;
@@ -37,10 +39,12 @@ export const IMPOUND_PERMISSIONS = {
 export function createImpoundRouter(
   resolveService: ImpoundServiceResolver = createDefaultImpoundService,
   resolveNotificationService: NotificationServiceResolver = createDefaultNotificationService,
+  resolveChecklistLinkService: ImpoundChecklistLinkServiceResolver = createDefaultImpoundChecklistLinkService,
 ): Router {
   const router = Router();
   const controller = new ImpoundController(resolveService);
   const notificationController = new NotificationController(resolveNotificationService);
+  const checklistLinkController = new ImpoundChecklistLinkController(resolveChecklistLinkService);
 
   router.use(tenantContextMiddleware);
   router.use(createPersistentRbacContextMiddleware());
@@ -175,6 +179,27 @@ export function createImpoundRouter(
     requirePermission(IMPOUND_PERMISSIONS.notify),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await notificationController.waive(request));
+    }),
+  );
+
+  // ── Ω-VID PR-04 (§Parte D): vínculo dossiê↔checklist do guincho ─────────────────────────────────────────────
+  // link-checklist-run: impound:update REUSADA (decisão da junta de arquitetura — ação reversível/aditiva,
+  // diferente do merge de identidade). checklist-runs: guarda DUPLA impound:read + checklist_runs:read (achado
+  // da junta: field_technician tem a 1ª sem a 2ª — reusar só impound:read vazaria dado hoje escondido dele).
+  // requirePermission encadeados = AND (o Express só chama o próximo se o anterior chamar next()).
+  router.post(
+    "/impound-processes/:processId/link-checklist-run",
+    requirePermission(IMPOUND_PERMISSIONS.update),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await checklistLinkController.link(request));
+    }),
+  );
+  router.get(
+    "/impound-processes/:processId/checklist-runs",
+    requirePermission(IMPOUND_PERMISSIONS.read),
+    requirePermission("checklist_runs:read"),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await checklistLinkController.listChecklistRuns(request));
     }),
   );
 

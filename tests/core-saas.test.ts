@@ -112,6 +112,7 @@ const expectedPermissionCatalog = [
   "release:process",
   "release:approve",
   "auction:appraise",
+  "vehicle_identity:merge",
   "service_quotes:update",
   "service_quotes:approve",
   "work_order_financials:update",
@@ -209,6 +210,7 @@ const expectedPermissionCatalog = [
   "checklist_runs:acknowledge",
   "telemetry:read",
   "authority_credentials:manage",
+  "platform:vehicle-identity-unmerge:manage",
 ] as const;
 
 test("cria usuario vinculado a tenant ativo com papel validado", () => {
@@ -627,6 +629,45 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   assert.equal(PERMISSION_CATALOG.includes("auction:read" as (typeof PERMISSION_CATALOG)[number]), false);
   assert.equal(PERMISSION_CATALOG.includes("auction:transition" as (typeof PERMISSION_CATALOG)[number]), false);
   assert.equal(PERMISSION_CATALOG.includes("auction:manage" as (typeof PERMISSION_CATALOG)[number]), false);
+
+  // Ω-VID PR-04 (D-Ω-VID-01) — merge manual de identidade de veículo de terceiro: `vehicle_identity:merge` =
+  // SÓ manager+admins (mesmo padrão de release:approve/auction:appraise). `platform:vehicle-identity-unmerge:
+  // manage` (estorno administrativo) é AINDA mais restrita — só super_admin/platform_admin (prefixo "platform:"
+  // é filtrado de tenant_admin, distribuição por herança pura do catálogo).
+  for (const role of ["manager", "tenant_admin", "super_admin", "platform_admin"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("vehicle_identity:merge"), true);
+  }
+  for (const role of [
+    "operator",
+    "field_dispatcher",
+    "technician",
+    "field_technician",
+    "viewer",
+    "auditor",
+    "finance",
+    "inventory",
+    "support",
+  ] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("vehicle_identity:merge"), false);
+  }
+  for (const role of ["super_admin", "platform_admin"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("platform:vehicle-identity-unmerge:manage"), true);
+  }
+  for (const role of [
+    "tenant_admin",
+    "manager",
+    "operator",
+    "field_dispatcher",
+    "technician",
+    "field_technician",
+    "viewer",
+    "auditor",
+    "finance",
+    "inventory",
+    "support",
+  ] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("platform:vehicle-identity-unmerge:manage"), false);
+  }
 
   // PR-SCALE-1 — Purchasing + Reports (autorização do dono; RBAC_MATRIX "Purchasing"/"Reports and analytics").
   // reports:read é concedido a TODOS os papéis não-admin (a matriz dá escopo de relatório a todos).
