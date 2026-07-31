@@ -1,17 +1,17 @@
 {
   "snapshot_date": "2026-07-31",
-  "version": "OMEGA-VID-PR-02",
+  "version": "OMEGA-VID-PR-03",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Omega-VID PR-02 (schema ThirdPartyVehicleIdentity + MergeEvent + ImpoundProcess.identity_id, migracao aditiva 20260854000000_add_vehicle_identity) — identidade de veiculo de terceiro como entidade de 1a classe, DISTINTA da Vehicle da frota propria (D-Omega-VID-01 estende, nao revoga, D-Omega5P-09/D-Omega5P-RECON-A).",
-    "title": "Omega-VID PR-02: 2 tabelas novas (third_party_vehicle_identities + merge_events append-only) + FK opcional em ImpoundProcess + CRUD basico (sem merge/backfill). Junta APROVADO 2/2 (dba-guardiao + critico-adversarial), 1 achado consertado no proprio PR.",
+    "block": "Omega-VID PR-03 (script de backfill de identidade de veiculo de terceiro, scripts/backfill-third-party-vehicle-identity.ts) — popula ThirdPartyVehicleIdentity/ImpoundProcess.identity_id retroativamente para processos historicos criados antes do PR-02.",
+    "title": "Omega-VID PR-03: backfill idempotente, sequencial por tenant, agrupamento so por plate_key exato, relatorio de ambiguos/sugestoes sem decidir nada sozinho. Junta APROVADO 2/2 (dba-guardiao + critico-adversarial), 1 achado de atribuicao (nao-funcional) consertado no proprio PR.",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Omega-VID PR-02: migracao aditiva 20260854000000_add_vehicle_identity cria third_party_vehicle_identities (plate_key/chassis/renavam_key nullable, confidence PROVISIONAL|CONFIRMED|MERGED com CHECK de enum, unidentified+reason com CHECK de coerencia espelhando impound_processes_identity_chk, indice PARCIAL nao-unico de plate_key deliberado) + third_party_vehicle_identity_merge_events (append-only via trigger nomeado por tabela) + ImpoundProcess.identity_id (FK opcional RESTRICT, herda RLS existente sem policy nova). Modulo novo src/modules/vehicle-identities/ com CRUD basico (create/get/list/patch) SEM merge/unmerge/backfill (isso e PR-04/PR-03) - confidence gravavel restrito a PROVISIONAL/CONFIRMED, MERGED so alcancavel via fluxo de merge futuro. Junta (dba-guardiao OBRIG.+critico-adversarial OBRIG.) APROVADO 2/2: dba-guardiao reproduziu 6/9 cenarios de prova viva INDEPENDENTEMENTE com script pg cru proprio (confirmou via pg_roles.rolsuper que a conexao padrao e superusuario, exigindo role NOSUPERUSER efemera pro teste de RLS; confirmou via pg_constraint que as 3 FKs novas sao ON DELETE RESTRICT). critico-adversarial achou 1 FURO REAL (menor): PATCH unidentified=true sobre registro ja identificado nao exigia limpar plate/chassis/renavam, deixando estado ambiguo que contaminaria PR-03/PR-07/09 - FECHADO no proprio PR: assertIdentityCoherence agora rejeita com 400 (unidentified_conflicts_with_identifier) exigindo limpeza explicita no mesmo PATCH, nunca limpa em silencio (mesmo padrao do modulo). +26 testes novos sempre-roda (8 prova viva Postgres real em tests/vehicle-identity-schema.test.ts + 18 CRUD em tests/vehicle-identity-crud.test.ts, incluindo o teste do achado fechado); regressao da familia impound/patios (impound/impound-fsm/impound-hashchain/impound-concurrency/impound-reception/patios-dashboard) = 59/59 pass. prisma migrate status: 90 migracoes, up to date. backend 1962/1977 (Omega-VID PR-01) -> 1988/2003. frontend_smoke/flutter inalterados (PR backend-only). blocks_completed 116->117.",
-    "status_label": "Omega-VID PR-02: schema ThirdPartyVehicleIdentity + MergeEvent + identity_id (migracao aditiva) + CRUD basico; junta APROVADO 2/2, 1 achado fechado; backend 1962->1988, blocks 116->117"
+    "summary": "Omega-VID PR-03: scripts/backfill-third-party-vehicle-identity.ts (novo) agrupa ImpoundProcess historicos (identity_id IS NULL) por plate_key normalizado exato (chassis/renavam sozinhos nunca agrupam automatico); vehicle_unidentified=true sempre vira identidade individual, nunca agrupado com outro unidentified; confidence CONFIRMED se IntakeInspection.completed_at preenchido, senao PROVISIONAL; idempotente (WHERE identity_id IS NULL em todo update); sequencial por tenant (nunca paralelo); cada tenant roda dentro de 1 transacao Prisma unica (mais forte que o exigido - impossivel identidade orfa por falha parcial); UPDATE em statement unico por lote (updateMany, nao loop); keyset pagination (ORDER BY id + cursor, nunca OFFSET). Relatorio JSON com identidades criadas, processos ambiguos (chassis/renavam batendo mas placas diferentes) e sugestoes de correspondencia (2 processos unidentified, mesmo patio, janela <=72h, marca/modelo/cor normalizados batendo) - decisao do dono confirmada: OFERECER a sugestao no relatorio, nunca mesclar sozinho. Junta (dba-guardiao OBRIG.+critico-adversarial OBRIG.) APROVADO 2/2: dba-guardiao rodou o script pessoalmente contra 1200 processos com UUID aleatorio (forcando 3 paginas de keyset de verdade), confirmou idempotencia real em 2 execucoes (RUN1: 1200/1200, RUN2: 0/0). critico-adversarial atacou 5 vetores (corrida com o sweep de reconciliacao, normalizacao de marca/modelo/cor, estado plate+unidentified simultaneos, atomicidade por lote, revisao linha-a-linha dos testes) - todos resistiram. 1 FURO de atribuicao (nao-funcional, cultura anti-decisao-em-silencio do CLAUDE.md): comentario do script creditava a janela de 72h a uma decisao do dono confirmada no plano, quando o plano so dizia 'datas proximas' sem numero - FECHADO reformulando o comentario para deixar claro que e escolha de implementacao ajustavel. +10 testes novos sempre-roda (tests/backfill-third-party-vehicle-identity.test.ts); regressao da familia impound/patios+vehicle-identity+checklist = 95/95 (dba-guardiao) e 90/90 (critico-adversarial, subconjunto proprio). Rodada real contra banco de DEV (nao producao): 6 identidades criadas, 8 processos vinculados, 1 ambiguo, 1 sugestao, idempotente na 2a execucao. backend 1988/2003 (Omega-VID PR-02) -> 1998/2013. frontend_smoke/flutter inalterados (PR backend-only, script fora de src/). blocks_completed 117->118.",
+    "status_label": "Omega-VID PR-03: backfill de identidade (idempotente, sequencial por tenant, transacao unica) + relatorio de ambiguos/sugestoes; junta APROVADO 2/2, 1 achado de atribuicao fechado; backend 1988->1998, blocks 117->118"
   },
   "metrics": {
     "flutter_tests": {
@@ -27,10 +27,10 @@
       "note": "Omega5P PR-20: +13 testes novos (frontend/tests/patios-painel.smoke.test.tsx — 5 estados obrigatorios, gate impound:read, 6 KPI cards, 4 tabelas, ausencia de termo tecnico/andaime de dev), fechando o achado do omega5p-avaliador (PainelPatiosPage era a unica tela de /patios/* sem teste companheiro). PainelPatiosPage.tsx refatorada em wrapper+PainelPatiosView.tsx (props-driven) para ficar testavel via renderToString (o harness de smoke deste repo nao usa jsdom/act — todas as 13 telas de patios seguem esse mesmo padrao view/hook). Sobre 937 (Omega5P PR-17b/PR-15b)."
     },
     "backend_tests": {
-      "value": 1988,
-      "total": 2003,
-      "display": "1988/2003",
-      "note": "Omega-VID PR-02 (schema ThirdPartyVehicleIdentity + MergeEvent + ImpoundProcess.identity_id, migracao aditiva 20260854000000_add_vehicle_identity). +26 testes novos sempre-roda (8 prova viva Postgres real em tests/vehicle-identity-schema.test.ts + 18 CRUD em tests/vehicle-identity-crud.test.ts, incluindo o teste de regressao do achado de coerencia unidentified fechado pela junta). Regressao da familia impound/patios (impound/impound-fsm/impound-hashchain/impound-concurrency/impound-reception/patios-dashboard) = 59/59 pass. Sobre 1962/1977 (Omega-VID PR-01)."
+      "value": 1998,
+      "total": 2013,
+      "display": "1998/2013",
+      "note": "Omega-VID PR-03 (script de backfill de identidade, scripts/backfill-third-party-vehicle-identity.ts). +10 testes novos sempre-roda em tests/backfill-third-party-vehicle-identity.test.ts (agrupamento por placa+idempotencia, sugestao sem merge automatico, ja-linkado pulado, corrida/catch-up do sweep, chassis-so nao agrupa). Regressao da familia impound/patios+vehicle-identity+checklist = 95/95 (dba-guardiao). Sobre 1988/2003 (Omega-VID PR-02)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 117,
-      "display": "117",
-      "note": "Omega-VID PR-02 (schema ThirdPartyVehicleIdentity + MergeEvent + ImpoundProcess.identity_id, migracao aditiva) -> +1 sobre 116. Proximo: PR-03 (backfill + relatorio de ambiguos/sugestoes, junta obrigatoria)."
+      "value": 118,
+      "display": "118",
+      "note": "Omega-VID PR-03 (script de backfill de identidade de veiculo) -> +1 sobre 117. Proximo: PR-04 (merge manual + unmerge-admin + ImpoundProcessChecklistLink, junta obrigatoria)."
     },
     "mobile_backend_contracts": {
       "value": 18,
