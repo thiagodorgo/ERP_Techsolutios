@@ -13,6 +13,10 @@ import type {
   CreateChecklistMarkerInput,
   CreateChecklistRunInput,
   TenantChecklist,
+  TenantChecklistComponent,
+  TenantChecklistComponentType,
+  TenantChecklistStatus,
+  TenantChecklistType,
   UpdateChecklistRunInput,
 } from "./types";
 
@@ -20,8 +24,83 @@ type ApiResponse<T> = {
   data: T;
 };
 
+// Contrato real de GET /mobile/checklists/available (toMobileChecklistTemplateDto no backend,
+// src/modules/checklists/checklist.dto.ts) — desenhado para o cliente Flutter (snake_case,
+// `category`/`items`, status "active"), NÃO o mesmo shape de TenantChecklist (usado pelo
+// builder web em /tenant/checklists). Sem esta tradução a tela operacional quebra em runtime
+// (item.components é undefined) assim que sai do modo mock.
+type MobileChecklistTemplateItemDto = {
+  id: string;
+  label: string;
+  type: string;
+  required: boolean;
+  order: number;
+};
+
+type MobileChecklistTemplateDto = {
+  id: string;
+  tenant_id: string;
+  code: string;
+  name: string;
+  title: string;
+  description: string | null;
+  version: number;
+  schema_version: string;
+  status: string;
+  is_required: boolean;
+  category: string;
+  work_order_type: string;
+  linked_work_order_type: string;
+  module: string;
+  updated_at: string;
+  items: MobileChecklistTemplateItemDto[];
+};
+
+function mapMobileChecklistTemplateItemToComponent(
+  item: MobileChecklistTemplateItemDto,
+  templateId: string,
+  tenantId: string,
+): TenantChecklistComponent {
+  return {
+    id: item.id,
+    tenantId,
+    templateId,
+    componentKey: item.id,
+    label: item.label,
+    type: item.type as TenantChecklistComponentType,
+    required: item.required,
+    orderIndex: item.order,
+    config: {},
+    validationRules: {},
+    visibilityRules: {},
+  };
+}
+
+function mapMobileChecklistTemplateStatus(status: string): TenantChecklistStatus {
+  // toMobileChecklistTemplateStatus (backend) só normaliza "published" -> "active"; as demais
+  // passam intactas (draft/inactive/archived já batem com TenantChecklistStatus).
+  return status === "active" ? "published" : (status as TenantChecklistStatus);
+}
+
+function mapMobileChecklistTemplateToTenantChecklist(dto: MobileChecklistTemplateDto): TenantChecklist {
+  return {
+    id: dto.id,
+    tenantId: dto.tenant_id,
+    name: dto.name,
+    description: dto.description ?? undefined,
+    type: dto.category as TenantChecklistType,
+    status: mapMobileChecklistTemplateStatus(dto.status),
+    version: dto.version,
+    schema: {},
+    components: dto.items.map((item) => mapMobileChecklistTemplateItemToComponent(item, dto.id, dto.tenant_id)),
+    updatedAt: dto.updated_at,
+  };
+}
+
 export function listAvailableChecklistsFromApi(context: ChecklistApiContext): Promise<ChecklistAvailableItem[]> {
-  return apiRequest<ApiResponse<TenantChecklist[]>>("/mobile/checklists/available", toRequestOptions(context)).then((response) => response.data);
+  return apiRequest<ApiResponse<MobileChecklistTemplateDto[]>>("/mobile/checklists/available", toRequestOptions(context)).then(
+    (response) => response.data.map(mapMobileChecklistTemplateToTenantChecklist),
+  );
 }
 
 export function renderChecklistFromApi(context: ChecklistApiContext, checklistId: string): Promise<ChecklistRenderSchema> {
