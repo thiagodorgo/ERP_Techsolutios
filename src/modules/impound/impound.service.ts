@@ -1,4 +1,5 @@
 import { env } from "../../config/env.js";
+import { normalizePlateKey } from "../portal-shared/index.js";
 import type { OccupancyService } from "../yard/yard.service.js";
 import { getMemoryYardRepositoryForTests } from "../yard/yard.service.js";
 import { verifyChain, type VerifyChainResult } from "./impound.hashchain.js";
@@ -171,6 +172,12 @@ export class ImpoundService {
     readonly profileId: string;
     readonly originAuthority: string;
     readonly completedAt: Date;
+    // Ω-VID PR-05 — hints do veículo (WorkOrder.service_details) encaminhados ao repositório p/ semear a
+    // identidade agregadora na MESMA tx. Opcionais: o sweep os extrai; os demais callers não precisam passá-los.
+    readonly vehiclePlate?: string;
+    readonly vehicleBrand?: string;
+    readonly vehicleModel?: string;
+    readonly vehicleColor?: string;
   }): Promise<{ readonly opened: boolean; readonly processId?: string }> {
     // F-1 — abertura ATÔMICA (create + abertura + RECEPTION numa ÚNICA tx): nenhum half-open pode nascer.
     try {
@@ -182,6 +189,10 @@ export class ImpoundService {
         unidentifiedReason: "Aguardando vistoria de recepção",
         completedAt: input.completedAt,
         actorId: undefined,
+        vehiclePlate: input.vehiclePlate,
+        vehicleBrand: input.vehicleBrand,
+        vehicleModel: input.vehicleModel,
+        vehicleColor: input.vehicleColor,
       });
       return { opened: true, processId: process.id };
     } catch (error) {
@@ -326,6 +337,10 @@ export class ImpoundService {
   }
 
   // Registra/atualiza a vistoria (dados mínimos art. 14 §1º). Idempotente por processo (@@unique tenant+process).
+  // Ω-VID PR-05 FIX-JUNTA (D-Ω-VID-05-SEED): se o operador CONFIRMA a placa aqui (a vistoria é a fonte de verdade
+  // da identidade — D-Ω5P-REC-10), o repositório RE-RESOLVE e RE-APONTA ImpoundProcess.identity_id para a
+  // identidade CORRETA dessa placa — SPLITANDO a colisão-por-reuso que o sweep possa ter semeado (placa da OS
+  // digitada errada casando o plate_key de OUTRO veículo). Metadado do agregado, fora da FSM/hash-chain.
   async saveInspection(actor: ImpoundActorContext, processId: string, body: RawRecord): Promise<IntakeInspection> {
     const process = await this.get(actor, processId);
     const inspectedAtRaw = body.inspected_at ?? body.inspectedAt;
@@ -346,6 +361,7 @@ export class ImpoundService {
       signerName: nullableString(body.signer_name ?? body.signerName, 160),
       signatureStatus: parseSignatureStatus(body.signature_status ?? body.signatureStatus),
       signedAt: parseNullableDate(body.signed_at ?? body.signedAt, "signed_at"),
+      confirmedPlateKey: parseConfirmedPlateKey(body),
       actorId: actor.userId,
     });
   }
@@ -464,6 +480,18 @@ function normalizePlatePatch(value: unknown): string | null | undefined {
   if (value === undefined) return undefined;
   if (value === null || value === "") return null;
   return parsePlate(value) ?? null;
+}
+
+// Ω-VID PR-05 FIX-JUNTA (D-Ω-VID-05-SEED) — a placa CONFIRMADA na vistoria de recepção (o fiscal lê a placa do
+// veículo físico). Aceita os aliases usuais do body; normaliza para plate_key (maiúsculas + só alfanumérico,
+// mesma chave do backfill/sweep). Sem placa confirmada (ausente/vazia/lixo → "") ⇒ undefined (nenhuma
+// reconciliação). Deliberadamente NÃO aplica o guard estrito de 7 alfanuméricos do seed-time: a vistoria é a
+// garantia de convergência eventual e deve corrigir INDEPENDENTE do guard (BAIXA da junta — ver D-record).
+function parseConfirmedPlateKey(body: RawRecord): string | undefined {
+  const confirmed = parsePlate(body.confirmed_plate ?? body.confirmedPlate ?? body.vehicle_plate ?? body.vehiclePlate ?? body.plate);
+  if (!confirmed) return undefined;
+  const plateKey = normalizePlateKey(confirmed);
+  return plateKey.length > 0 ? plateKey : undefined;
 }
 
 // ── runtime (env-gate memory×prisma), espelha yard/jurisdiction ─────────────────────────────────────────────

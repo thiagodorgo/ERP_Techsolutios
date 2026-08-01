@@ -1,6 +1,9 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { setTenantRlsContext, withTenantRls } from "../../database/rls.js";
+import { normalizePlateKey } from "../portal-shared/portal-crypto.js";
+import { PrismaVehicleIdentityRepository } from "../vehicle-identities/vehicle-identity-prisma.repository.js";
+import { PrismaImpoundChecklistLinkRepository } from "./impound.checklist-link-prisma.repository.js";
 import { computeEventHash, genesisHash, type CrossAnchor } from "./impound.hashchain.js";
 import { appendOutboxEventTx, buildOutboxPayloadFromCustodyEvent } from "./impound.outbox.repository.js";
 import type {
@@ -101,6 +104,11 @@ export class PrismaImpoundRepository implements ImpoundRepository {
   // Se qualquer passo falhar → rollback total ⇒ NENHUM half-open (IN_REMOVAL sem entered_at) nasce. Idempotência
   // OS→custódia pelo índice PARCIAL único (23505 → 409 duplicate_service_order) — a tx inteira reverte.
   async openFromRemovalAtomic(input: OpenFromRemovalInput): Promise<ImpoundProcess> {
+    // Ω-VID PR-05 — resolve/cria a identidade AGREGADORA (SISTEMA) na MESMA tx, ANTES do processo, p/ gravar
+    // identity_id no create. Fail-closed por construção: se o INSERT do processo colidir no índice PARCIAL único
+    // (duplicate_service_order), a tx inteira reverte — inclusive esta identidade → nenhum órfão. O PROCESSO segue
+    // vehicle_unidentified=true (D-Ω5P-REC-10); a identidade agregadora é PROVISIONAL (não confirmada por hint).
+    const identityId = await this.resolveSeedIdentity(input);
     let created;
     try {
       created = await this.client.impoundProcess.create({
@@ -112,6 +120,7 @@ export class PrismaImpoundRepository implements ImpoundRepository {
           status: "IN_REMOVAL",
           origin_authority: input.originAuthority,
           service_order_id: input.serviceOrderId,
+          identity_id: identityId,
           created_by: input.actorId ?? null,
           updated_by: input.actorId ?? null,
         },
@@ -141,7 +150,58 @@ export class PrismaImpoundRepository implements ImpoundRepository {
         actorId: input.actorId,
       },
     );
+    // Ω-VID PR-05 — AUTO-link dos ChecklistRun da OS ao processo (onde o checklist do guincho encontra o dossiê
+    // de custódia). Idempotente (upsert na unique) e na MESMA tx: falha aqui reverte a abertura inteira.
+    await this.autoLinkChecklistRuns(input.tenantId, created.id, input.serviceOrderId, input.actorId);
     return received.process;
+  }
+
+  // Ω-VID PR-05 (D-Ω-VID-05-SEED) — resolve/cria a identidade agregadora a partir do hint de placa da OS. Guard
+  // de FORMA: só semeia por-placa se `normalizePlateKey` render 7 alfanuméricos (forma plausível de placa BR).
+  // Placa plausível → resolve-ou-cria PROVISIONAL/unidentified=false/plate_key (reuso byte-idêntico ao backfill);
+  // lixo/vazio → PROVISIONAL/unidentified=true (reason neutro). Efeito-de-domínio SISTEMA: created_by = actorId
+  // (NULL no sweep), sem re-checar permissão de vehicle_identity.
+  private async resolveSeedIdentity(input: OpenFromRemovalInput): Promise<string> {
+    const identityRepo = new PrismaVehicleIdentityRepository(this.client);
+    const seed = {
+      plateRaw: input.vehiclePlate,
+      brand: input.vehicleBrand,
+      model: input.vehicleModel,
+      color: input.vehicleColor,
+      createdBy: input.actorId,
+      updatedBy: input.actorId,
+    };
+    const plateKey = input.vehiclePlate ? normalizePlateKey(input.vehiclePlate) : "";
+    if (/^[A-Z0-9]{7}$/.test(plateKey)) {
+      const { id } = await identityRepo.resolveOrCreateByPlateKey({ tenantId: input.tenantId, plateKey, seed });
+      return id;
+    }
+    const { id } = await identityRepo.createProvisionalUnidentified({
+      tenantId: input.tenantId,
+      unidentifiedReason: "Identidade agregadora provisória (OS sem placa plausível; a confirmar na vistoria).",
+      seed,
+    });
+    return id;
+  }
+
+  // Ω-VID PR-05 — vincula (AUTO) todos os ChecklistRun da OS (related_entity_type='work_order',
+  // related_entity_id=<serviceOrderId> — o índice já existe) ao processo recém-aberto. Idempotente pelo upsert
+  // na unique (tenant, process, run); tenant-escopado (RLS + WHERE tenant_id) ⇒ nunca linka run de outro tenant.
+  // TRADE-OFF INTENCIONAL (BAIXA da junta PR-05): este AUTO-link (elo NAVEGACIONAL) roda na MESMA tx da abertura
+  // de custódia (efeito LEGAL) — uma falha aqui reverte a abertura inteira. É deliberado: preferimos ATOMICIDADE/
+  // ZERO-ÓRFÃO (nunca um link pendurado sem processo, nem processo sem o link esperado) à disponibilidade do
+  // link. É quase-infalível por construção (upsert ON CONFLICT idempotente, sem unique natural que gere P2002) e,
+  // no pior caso, o re-tick de 60s do sweep re-executa a abertura idempotente ⇒ auto-cura. Não é fail-open.
+  private async autoLinkChecklistRuns(tenantId: string, processId: string, serviceOrderId: string, actorId?: string): Promise<void> {
+    const runs = await this.client.checklistRun.findMany({
+      where: { tenant_id: tenantId, related_entity_type: "work_order", related_entity_id: serviceOrderId },
+      select: { id: true },
+    });
+    if (runs.length === 0) return;
+    const linkRepo = new PrismaImpoundChecklistLinkRepository(this.client);
+    for (const run of runs) {
+      await linkRepo.createLink({ tenantId, processId, checklistRunId: run.id, linkSource: "AUTO", createdBy: actorId });
+    }
   }
 
   async listProcesses(input: ListImpoundProcessInput): Promise<ListImpoundProcessResult> {
@@ -347,6 +407,7 @@ export class PrismaImpoundRepository implements ImpoundRepository {
 
   async upsertInspection(input: UpsertIntakeInspectionInput): Promise<IntakeInspection> {
     const current = await this.client.intakeInspection.findFirst({ where: { tenant_id: input.tenantId, process_id: input.processId } });
+    let inspection: IntakeInspection;
     try {
       if (!current) {
         const created = await this.client.intakeInspection.create({
@@ -369,30 +430,87 @@ export class PrismaImpoundRepository implements ImpoundRepository {
             updated_by: input.actorId ?? null,
           },
         });
-        return mapInspection(created);
+        inspection = mapInspection(created);
+      } else {
+        const updated = await this.client.intakeInspection.update({
+          where: { id: current.id },
+          data: compact({
+            inspected_at: input.inspectedAt,
+            agent_name: input.agentName,
+            bodywork_state: input.bodyworkState,
+            paint_state: input.paintState,
+            tires_state: input.tiresState,
+            internal_objects: input.internalObjects,
+            missing_equipment: input.missingEquipment,
+            odometer_km: input.odometerKm,
+            observations: input.observations,
+            signer_name: input.signerName,
+            signature_status: input.signatureStatus,
+            signed_at: input.signedAt,
+            updated_by: input.actorId,
+          }),
+        });
+        inspection = mapInspection(updated);
       }
-      const updated = await this.client.intakeInspection.update({
-        where: { id: current.id },
-        data: compact({
-          inspected_at: input.inspectedAt,
-          agent_name: input.agentName,
-          bodywork_state: input.bodyworkState,
-          paint_state: input.paintState,
-          tires_state: input.tiresState,
-          internal_objects: input.internalObjects,
-          missing_equipment: input.missingEquipment,
-          odometer_km: input.odometerKm,
-          observations: input.observations,
-          signer_name: input.signerName,
-          signature_status: input.signatureStatus,
-          signed_at: input.signedAt,
-          updated_by: input.actorId,
-        }),
-      });
-      return mapInspection(updated);
     } catch (error) {
       throw translateImpoundError(error);
     }
+    // Ω-VID PR-05 FIX-JUNTA (D-Ω-VID-05-SEED) — se a vistoria trouxe uma placa CONFIRMADA, reconcilia
+    // ImpoundProcess.identity_id NA MESMA tx RLS (this.client já é a tx do RlsPrismaImpoundRepository). É o
+    // caminho de correção da colisão-POR-REUSO: a vistoria é a fonte de verdade da identidade (D-Ω5P-REC-10).
+    if (input.confirmedPlateKey) {
+      await this.reconcileIdentityFromConfirmedPlate(input.tenantId, input.processId, input.confirmedPlateKey, input.actorId);
+    }
+    return inspection;
+  }
+
+  // Ω-VID PR-05 FIX-JUNTA (D-Ω-VID-05-SEED) — RE-RESOLVE e RE-APONTA ImpoundProcess.identity_id para a identidade
+  // CORRETA da placa CONFIRMADA na vistoria. Fecha o caminho de correção que faltava para a colisão-POR-REUSO:
+  // uma placa da OS digitada errada que casa o plate_key de OUTRO veículo (X) fazia o processo de Y ser agregado
+  // sob a identidade de X (UMA identidade com processos de DOIS veículos), sem SPLIT possível (nem merge/unmerge
+  // nem o banner duplicateCandidates splitam — só a vistoria). Ao confirmar Y na vistoria, o processo de Y sai da
+  // identidade de X e vai para a de Y (resolve-ou-cria pela placa confirmada). REUSA o MESMO helper
+  // resolveOrCreateByPlateKey do PR-05 (query byte-idêntica ao backfill) sobre this.client → MESMA tx, sem RLS
+  // aninhada. Idempotente: re-vistoriar com a mesma placa resolve à mesma identidade ⇒ no-op. NÃO toca a
+  // FSM/hash-chain (identity_id é metadado do agregado, fora da cadeia) nem mergeIdentities/unmergeIdentity.
+  private async reconcileIdentityFromConfirmedPlate(
+    tenantId: string,
+    processId: string,
+    confirmedPlateKey: string,
+    actorId?: string,
+  ): Promise<void> {
+    const process = await this.client.impoundProcess.findFirst({
+      where: { tenant_id: tenantId, id: processId },
+      select: { identity_id: true },
+    });
+    if (!process) return; // o upsert acima já resolveu o processo; guarda defensiva.
+
+    // Resolve-ou-cria a identidade da placa CONFIRMADA (reusa a ATIVA mais antiga da mesma placa, senão funda
+    // PROVISIONAL/unidentified=false/plate_key). Standalone helper sobre a MESMA tx (this.client).
+    const identityRepo = new PrismaVehicleIdentityRepository(this.client);
+    const { id: resolvedIdentityId } = await identityRepo.resolveOrCreateByPlateKey({
+      tenantId,
+      plateKey: confirmedPlateKey,
+      seed: { plateRaw: confirmedPlateKey, createdBy: actorId, updatedBy: actorId },
+    });
+
+    // RE-APONTA se a identidade confirmada difere da atual do processo — SPLITA a agregação errada (o processo de
+    // Y sai da identidade de X). Se já aponta para a correta (ex.: re-vistoria com a mesma placa) → no-op.
+    if (process.identity_id !== resolvedIdentityId) {
+      await this.client.impoundProcess.update({
+        where: { id: processId },
+        data: { identity_id: resolvedIdentityId, updated_by: actorId ?? null },
+      });
+    }
+
+    // A vistoria é a CONFIRMAÇÃO da identidade: sobe PROVISIONAL → CONFIRMED (satisfaz identity_chk —
+    // unidentified=false + plate_key — e canonical_biconditional_chk — canonical NULL). NUNCA toca MERGED nem uma
+    // já CONFIRMED (updateMany filtra confidence='PROVISIONAL' ⇒ idempotente). A identidade antiga (semeada errada
+    // por reuso) fica como estava (PROVISIONAL); órfã de processos = linha válida, reconciliável.
+    await this.client.thirdPartyVehicleIdentity.updateMany({
+      where: { tenant_id: tenantId, id: resolvedIdentityId, confidence: "PROVISIONAL" },
+      data: { confidence: "CONFIRMED", updated_by: actorId ?? null },
+    });
   }
 
   async addInspectionPhoto(input: AddInspectionPhotoInput): Promise<AddInspectionPhotoResult> {

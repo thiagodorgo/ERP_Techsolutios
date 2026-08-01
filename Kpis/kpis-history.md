@@ -6,6 +6,85 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-01 - OMEGA-VID-PR-05 FIX-JUNTA (vistoria reconcilia identity_id — SPLIT da colisão-por-reuso, backend-only)
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 835 / 835 (inalterado; backend-only) |
+| Backend Tests | 2085 / 2091 (2082 → 2085, +3) |
+| Frontend Smoke | 950 / 950 (inalterado; backend-only) |
+| Blocos Entregues | 122 (inalterado; fix dentro do PR-05) |
+
+A junta do PR-05 **APROVOU_CONDICIONADO**; o **crítico-adversarial** provou por PoC 1 **MÉDIA** real: a
+**colisão-POR-REUSO** (uma placa digitada errada na OS que casa **EXATAMENTE** o `plate_key` de uma identidade
+existente de **OUTRO** veículo faz o processo do 2º veículo ser agregado sob a identidade do 1º — **UMA** identidade
+passa a conter processos de **DOIS** veículos) **não tinha caminho de correção**: o banner `duplicateCandidates` só
+dispara com ≥2 identidades ativas da mesma placa (a colisão-por-reuso produz UMA), e `merge`/`unmerge` **não fazem
+SPLIT** — só restaria SQL manual (proibido, D-Ω-VID-01).
+
+- **Conserto (o domínio-correto, D-Ω5P-REC-10 — a vistoria é a fonte de verdade da identidade):** quando a **vistoria
+  de recepção** confirma a placa (`impound.service.saveInspection`), o serviço normaliza a placa confirmada
+  (`parseConfirmedPlateKey` → `normalizePlateKey`; **sem** o guard estrito de seed-time — a vistoria corrige
+  **INDEPENDENTE** do guard) e, no repositório, **na MESMA tx RLS** da vistoria, `reconcileIdentityFromConfirmedPlate`
+  **resolve-ou-cria** a identidade da placa confirmada (REUSA `resolveOrCreateByPlateKey` do PR-05) e **RE-APONTA**
+  `ImpoundProcess.identity_id` se diferir → **SPLITA** a agregação errada (o processo de Y sai da identidade de X).
+- A identidade confirmada **sobe `PROVISIONAL` → `CONFIRMED`** (`updateMany` filtra `confidence='PROVISIONAL'` ⇒
+  idempotente; satisfaz `identity_chk`/`canonical_biconditional_chk`). A identidade antiga (semeada errada) fica
+  `PROVISIONAL`/intacta (órfã de processos = linha válida). **NÃO toca** FSM/hash-chain (`identity_id` é metadado, fora
+  da cadeia) nem `mergeIdentities`/`unmergeIdentity`. Campo `confirmedPlateKey` OPCIONAL; **InMemory ignora** (prova
+  autoritativa **DB-gated**, mesma política do `openFromRemovalAtomic` InMemory).
+- **+3 test() DB-gated reais** em `tests/impound-trigger-durability.test.ts` (25 → 28): SPLIT vivo (placa confirmada
+  ≠ semeada) / no-op idempotente (mesma placa 2×) / `PROVISIONAL`→`CONFIRMED`. Regressão impound + vehicle-identity +
+  owner-portal + stock-custody **217 pass / 0 fail**. **SEM migração.**
+
+Escopo: `src/modules/impound/{impound.service,impound.intake.types,impound.repository,impound-prisma.repository}.ts` +
+`agent-orchestration/controle/decisoes.md` + testes + `Kpis/*` (backend-only). `pr`/`merge_commit`/`approved_head`
+null na autoria.
+
+---
+
+## 2026-08-01 - OMEGA-VID-PR-05 (sweep: identidade + AUTO-link, backend-only)
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 835 / 835 (inalterado; backend-only) |
+| Backend Tests | 2082 / 2088 (2064 → 2082, +18) |
+| Frontend Smoke | 950 / 950 (inalterado; backend-only) |
+| Blocos Entregues | 122 (121 → 122) |
+
+Omega-VID PR-05 (**D-Omega-VID-05-SEED**) — fecha a corrida **"backfill 1× vs. sweep contínuo"** (achado #1 da junta de
+arquitetura). Quando o sweep de reconciliação (`impound.reconcile`) abre um `ImpoundProcess` a partir de uma OS de
+reboque concluída, ele agora, **na MESMA transação** (`openFromRemovalAtomic`): (a) resolve/cria a
+`ThirdPartyVehicleIdentity` e grava `ImpoundProcess.identity_id`; (b) AUTO-linka os `ChecklistRun` da OS
+(`ImpoundProcessChecklistLink`, `link_source='AUTO'`). É onde o dossiê do veículo e o checklist do guincho se encontram.
+
+- **Semeadura (D-Omega-VID-05-SEED):** guard de forma sobre `normalizePlateKey(service_details.plate)` — 7
+  alfanuméricos → resolve-ou-cria identidade `PROVISIONAL/unidentified=false/plate_key` **reusando a query byte-idêntica
+  do backfill PR-03** (`confidence≠'MERGED'` `orderBy created_at asc`), então sweep e backfill convergem na mesma
+  identidade agregadora; placa implausível/vazia → `PROVISIONAL/unidentified=true` com reason neutro (satisfaz
+  `identity_chk`). O **processo** segue `vehicle_unidentified=true` (a identidade dele é confirmada só pela vistoria —
+  D-Omega5P-REC-10). Efeito-de-domínio **SISTEMA** (`created_by=NULL`, sem re-checar permissão).
+- **Fail-closed por construção** (não fail-open): identidade + link ficam na MESMA tx da abertura — identity-create SEM
+  unique (sem P2002/25P02), FK/CHECK satisfeitos na própria tx, link por `upsert ON CONFLICT` idempotente. Se o INSERT
+  do processo colidir no índice PARCIAL único (`duplicate_service_order`), a tx **inteira** reverte (identidade+link
+  inclusos) ⇒ **nenhum órfão**.
+- **SEM migração** — as tabelas/colunas já existem (PR-02/04); `custody_events.type` é TEXT livre sem CHECK (não há o
+  problema que mordeu o PR-A). **FSM/hash-chain/`resolveTransition`/`mergeIdentities`/`unmergeIdentity`/script de
+  backfill INTOCADOS.**
+- **+18 test() reais** em `tests/impound-trigger-durability.test.ts` (7 → 25): 3 unit InMemory (cria→reusa, MERGED
+  excluído do reuso, unidentified sem plate_key) + 15 DB-gated contra Postgres real (identity_id com placa confiável /
+  provisional-unidentified / guard de placa / 2º tick idempotente / reuso da mesma placa / AUTO-link 1·2·0 runs / link
+  idempotente / duplicate_service_order concorrente sem órfãos / run cross-tenant / verifyChain com identity_id / N
+  ticks concorrentes / convergência backfill↔sweep / isolamento entre tenants).
+
+Escopo: `src/modules/impound/**` + `src/modules/vehicle-identities/{vehicle-identity.repository,
+vehicle-identity-prisma.repository,vehicle-identity.types}.ts` + testes + `Kpis/*` (backend-only; `mobile/flutter_app/Kpis/*`
+**não** tocado). `pr`/`merge_commit`/`approved_head` null na autoria (backfill pós-merge).
+
 ## 2026-08-01 - CHK-DISPATCH-CREATE-PR-B (lado Flutter)
 
 ### Resultado

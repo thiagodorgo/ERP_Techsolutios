@@ -4,11 +4,14 @@ import { withTenantRls } from "../../database/rls.js";
 import type { VehicleIdentityRepository } from "./vehicle-identity.repository.js";
 import type {
   ConfidenceLevel,
+  CreateProvisionalUnidentifiedInput,
   CreateVehicleIdentityInput,
   ListVehicleIdentityInput,
   ListVehicleIdentityResult,
   MergeIdentitiesInput,
   MergeIdentitiesResult,
+  ResolveIdentityByPlateKeyInput,
+  ResolveIdentityResult,
   UnmergeIdentityInput,
   UnmergeIdentityResult,
   UpdateVehicleIdentityInput,
@@ -338,6 +341,68 @@ export class PrismaVehicleIdentityRepository implements VehicleIdentityRepositor
     });
     return candidates.map((candidate) => candidate.id);
   }
+
+  // Ω-VID PR-05 — semeadura da identidade agregadora na criação do processo (SISTEMA). Roda sobre `this.client`:
+  // quando construído com o Prisma.TransactionClient do impound (new PrismaVehicleIdentityRepository(this.client)),
+  // TUDO acontece na MESMA tx da abertura — se o INSERT do processo colidir no índice parcial único, esta
+  // identidade reverte junto (fail-closed por construção, sem órfão).
+  async resolveOrCreateByPlateKey(input: ResolveIdentityByPlateKeyInput): Promise<ResolveIdentityResult> {
+    // BYTE-IDÊNTICA à do backfill (scripts/backfill-third-party-vehicle-identity.ts:354-357): reusa a identidade
+    // ATIVA (confidence≠MERGED) MAIS ANTIGA da mesma placa → sweep e backfill convergem na mesma identidade.
+    const existing = await this.client.thirdPartyVehicleIdentity.findFirst({
+      where: { tenant_id: input.tenantId, plate_key: input.plateKey, confidence: { not: "MERGED" } },
+      orderBy: { created_at: "asc" },
+    });
+    if (existing) return { id: existing.id, reused: true };
+    try {
+      // Sem unique natural na tabela (índice de placa é NÃO-único por desenho, D-Ω-VID-01) ⇒ este create nunca
+      // levanta P2002/25P02: infalível-por-construção (o typo de corrida vira, no máximo, 2 PROVISIONAL coexistindo,
+      // reconciliáveis por merge manual — nunca uma janela órfã).
+      const created = await this.client.thirdPartyVehicleIdentity.create({
+        data: {
+          tenant_id: input.tenantId,
+          plate_raw: input.seed?.plateRaw ?? null,
+          plate_key: input.plateKey,
+          brand: input.seed?.brand ?? null,
+          model: input.seed?.model ?? null,
+          color: input.seed?.color ?? null,
+          year: input.seed?.year ?? null,
+          unidentified: false,
+          confidence: "PROVISIONAL",
+          created_by: input.seed?.createdBy ?? null,
+          updated_by: input.seed?.updatedBy ?? null,
+        },
+      });
+      return { id: created.id, reused: false };
+    } catch (error) {
+      throw translateVehicleIdentityError(error);
+    }
+  }
+
+  // Ω-VID PR-05 — ramo sem placa plausível: PROVISIONAL/unidentified=true com reason neutro (satisfaz
+  // third_party_vehicle_identities_identity_chk). NUNCA grava plate_key/chassis/renavam_key — só descritivos
+  // (espelha createUnidentifiedIndividualIdentity do backfill; não reabre unidentified_conflicts_with_identifier).
+  async createProvisionalUnidentified(input: CreateProvisionalUnidentifiedInput): Promise<ResolveIdentityResult> {
+    try {
+      const created = await this.client.thirdPartyVehicleIdentity.create({
+        data: {
+          tenant_id: input.tenantId,
+          brand: input.seed?.brand ?? null,
+          model: input.seed?.model ?? null,
+          color: input.seed?.color ?? null,
+          year: input.seed?.year ?? null,
+          unidentified: true,
+          unidentified_reason: input.unidentifiedReason,
+          confidence: "PROVISIONAL",
+          created_by: input.seed?.createdBy ?? null,
+          updated_by: input.seed?.updatedBy ?? null,
+        },
+      });
+      return { id: created.id, reused: false };
+    } catch (error) {
+      throw translateVehicleIdentityError(error);
+    }
+  }
 }
 
 // Wrapper RLS: cada método abre uma transação com o contexto app.current_tenant_id (setTenantRlsContext) —
@@ -373,6 +438,16 @@ export class RlsPrismaVehicleIdentityRepository implements VehicleIdentityReposi
 
   findDuplicateCandidates(tenantId: string, identityId: string): Promise<readonly string[]> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaVehicleIdentityRepository(tx).findDuplicateCandidates(tenantId, identityId));
+  }
+
+  // Ω-VID PR-05 — versão standalone (abre a própria tx RLS). O SWEEP NÃO usa este wrapper: ele constrói
+  // new PrismaVehicleIdentityRepository(this.client) sobre a tx do impound já aberta (evita RLS aninhada).
+  resolveOrCreateByPlateKey(input: ResolveIdentityByPlateKeyInput): Promise<ResolveIdentityResult> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaVehicleIdentityRepository(tx).resolveOrCreateByPlateKey(input));
+  }
+
+  createProvisionalUnidentified(input: CreateProvisionalUnidentifiedInput): Promise<ResolveIdentityResult> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaVehicleIdentityRepository(tx).createProvisionalUnidentified(input));
   }
 }
 

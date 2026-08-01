@@ -72,6 +72,12 @@ export type UpsertIntakeInspectionInput = {
   readonly signerName?: string | null;
   readonly signatureStatus?: SignatureStatus;
   readonly signedAt?: Date | null;
+  // Ω-VID PR-05 FIX-JUNTA (D-Ω-VID-05-SEED) — placa CONFIRMADA na vistoria de recepção, já normalizada
+  // (normalizePlateKey) pelo serviço. Quando presente, o repositório RE-RESOLVE e RE-APONTA
+  // ImpoundProcess.identity_id para a identidade correta dessa placa (SPLIT da colisão-por-reuso semeada no
+  // sweep). A vistoria é a fonte de verdade da identidade do veículo (D-Ω5P-REC-10). undefined = operador não
+  // confirmou placa nesta gravação (sem reconciliação). É metadado do agregado — NUNCA entra na cadeia/hash.
+  readonly confirmedPlateKey?: string;
   readonly actorId?: string;
 };
 
