@@ -118,18 +118,36 @@ export function Drawer({ title, open, onClose, children }: { title: string; open
   );
 }
 
-export function Modal({ title, open, onClose, children }: { title: string; open: boolean; onClose: () => void; children: ReactNode }) {
+export function Modal({
+  title,
+  open,
+  onClose,
+  children,
+  size = "md",
+}: {
+  title: string;
+  open: boolean;
+  onClose: () => void;
+  children: ReactNode;
+  size?: "md" | "lg";
+}) {
   if (!open) return null;
+  const isLarge = size === "lg";
   return (
     <div className="ui-overlay ui-overlay--center" role="presentation">
-      <section className="ui-modal" role="dialog" aria-modal="true" aria-label={title}>
+      <section
+        className={isLarge ? "ui-modal ui-modal--lg" : "ui-modal"}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
         <header>
           <h2>{title}</h2>
           <button type="button" onClick={onClose} aria-label="Fechar">
             <X size={18} />
           </button>
         </header>
-        {children}
+        {isLarge ? <div className="ui-modal__body">{children}</div> : children}
       </section>
     </div>
   );
