@@ -627,6 +627,35 @@
   border-radius: var(--radius-8);
 }
 
+/* Ω-VID PR-06 — variante de modal grande (dossiê do veículo, PR-07). Só a variante:
+   o .ui-modal base (420px) segue intocado para todos os outros ~55 modais. */
+.ui-modal--lg {
+  width: min(1180px, 96vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-modal--lg > header {
+  flex: none;
+}
+
+.ui-modal--lg > .ui-modal__body {
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* alvo de toque ≥44px no X (só na variante grande; base 36px preservado) + foco visível */
+.ui-modal--lg header button {
+  width: 44px;
+  height: 44px;
+}
+
+.ui-modal--lg header button:focus-visible {
+  outline: 2px solid #7cc4e6;
+  outline-offset: 2px;
+}
+
 .ui-drawer header,
 .ui-modal header {
   display: flex;
