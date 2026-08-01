@@ -901,3 +901,63 @@ Fecha o cluster P-Ω3F6-STATUS-BYPASS + TERMINAL-GUARD + ZERO-ATOMICIDADE (pré-
   ocorre online, no escritório, antes do campo). Documentado no estado de UI do app (P0b).
 - **Decisões de execução delegadas à junta do PR** (recomendações do planejador): criação no despacho +
   fail-open (falha ao criar run não bloqueia o despacho); endpoint cross-tenant → 200-lista-vazia (não 404).
+
+## D-Ω-VID-05-SEED (2026-08-01) — Resolução de identidade na criação do processo de custódia (sweep)
+
+- **Contexto:** Ω-VID PR-05. O sweep de reconciliação abre um `ImpoundProcess` a partir de uma OS de reboque
+  concluída (SISTEMA). Para fechar a corrida "backfill 1× vs. sweep contínuo" (achado #1 da junta de arquitetura),
+  a identidade do veículo (`ThirdPartyVehicleIdentity`) passa a ser resolvida/criada NA MESMA transação da
+  abertura do processo (não só por backfill), e os `ChecklistRun` da OS são AUTO-linkados ao processo.
+- **Decisão (híbrido "semeia quando confiante"):** se a placa que o operador digitou na OS
+  (`WorkOrder.service_details.plate`) passar um guard mínimo de forma (7 alfanuméricos após `normalizePlateKey`),
+  o sweep RESOLVE-OU-CRIA uma identidade `confidence=PROVISIONAL, unidentified=false, plate_key=<chave>` reusando
+  EXATAMENTE o mesmo lookup do backfill (`plate_key`, `confidence≠'MERGED'`, `orderBy created_at asc`) — para
+  agregar com identidades pré-existentes da mesma placa (dossiê por veículo ao longo do tempo). Caso contrário,
+  cria identidade `PROVISIONAL, unidentified=true, reason` neutro. O PROCESSO em si continua
+  `vehicle_unidentified=true` (D-Ω5P-REC-10: a identidade do processo é confirmada pela vistoria de recepção; a
+  identidade AGREGADORA é semeada pelo hint da OS, marcada PROVISIONAL = não confirmada).
+- **Risco R1 (typo-collision) — mitigação:** placa digitada errada pode agregar veículos distintos. **Há DUAS
+  classes** e elas têm caminhos de correção DIFERENTES:
+  - **Colisão que produz ≥2 identidades ATIVAS da mesma placa** (ex.: fragmentação sob sweeps concorrentes):
+    mitigada por `confidence=PROVISIONAL`, **banner `duplicateCandidates`** (PR-04) e **merge manual** (PR-04).
+  - **Colisão-POR-REUSO** (placa da OS digitada errada casa EXATAMENTE o `plate_key` de UMA identidade existente
+    de OUTRO veículo → o processo do 2º veículo é agregado sob a identidade do 1º; **UMA** identidade passa a
+    conter processos de **DOIS** veículos): **`duplicateCandidates` e merge/unmerge NÃO a corrigem** — o banner só
+    dispara com ≥2 identidades ativas (aqui há UMA), e merge/unmerge NÃO fazem SPLIT. O **único** caminho de
+    correção é a **VISTORIA de recepção re-apontando `identity_id`** (ver correção FIX-JUNTA abaixo).
+  - Comuns às duas: `confidence=PROVISIONAL` (nunca confirmada por hint) e o **guard de forma de placa** (não
+    semeia de lixo/vazio). Alternativa "sempre provisional-unidentified" foi rejeitada como default (anula o
+    objetivo do produto — dossiê por veículo só agregaria após merge manual).
+- **CORREÇÃO FIX-JUNTA (2026-08-01, ratificada pela junta do PR-05 — crítico-adversarial achou 1 MÉDIA: a
+  colisão-POR-REUSO não tinha caminho de correção):** a **vistoria de recepção agora RECONCILIA `identity_id`** e é
+  o **caminho de correção PRIMÁRIO** da colisão-por-reuso (a vistoria é a fonte de verdade da identidade,
+  D-Ω5P-REC-10). Quando o operador CONFIRMA a placa na vistoria (`saveInspection`/`upsertInspection`,
+  `impound.service.ts`), o serviço calcula `plateKey = normalizePlateKey(placaConfirmada)` e o repositório, **na
+  MESMA tx RLS** da vistoria, faz **resolve-ou-cria por `plateKey` confirmado** (REUSA o helper
+  `resolveOrCreateByPlateKey` do PR-05) e **RE-APONTA `ImpoundProcess.identity_id`** para essa identidade — o que
+  **SPLITA** a agregação errada (o processo de Y sai da identidade de X e vai para a de Y). A identidade confirmada
+  **sobe `PROVISIONAL`→`CONFIRMED`** (coerente com `identity_chk`/`canonical_biconditional_chk`); a identidade
+  antiga (semeada errada) fica como estava (`PROVISIONAL`), órfã de processos = linha válida/reconciliável.
+  Idempotente (re-vistoriar com a mesma placa = no-op). **NÃO toca** a FSM/hash-chain (`identity_id` é metadado do
+  agregado, fora da cadeia) nem `mergeIdentities`/`unmergeIdentity`. **A vistoria é a garantia de convergência
+  eventual, INDEPENDENTE do guard de seed-time** — o guard estrito do sweep (`/^[A-Z0-9]{7}$/`) vs. o truthy do
+  backfill deixa de importar para a convergência: a vistoria corrige qualquer que tenha sido o ramo semeado.
+- **Limitações ACEITAS por desenho (documentadas):** (a) **fragmentação sob sweeps concorrentes** de OSes
+  diferentes da mesma placa (READ COMMITTED → 2 identidades `PROVISIONAL` coexistindo) é aceita (D-Ω-VID-01 permite
+  coexistência) — vistoria + merge reconciliam; (b) o **AUTO-link fail-closed** acopla a abertura de custódia
+  (legal) a um elo navegacional (o link reverte junto se a abertura falhar) — trade-off INTENCIONAL por
+  atomicidade/zero-órfão (quase-infalível por construção + re-tick de 60s auto-cura); comentado no código.
+- **Fail-closed por construção (não fail-open):** identidade + link ficam na MESMA tx da abertura (diferente do
+  checklist PR-A, que era fail-open por ser módulo separado). É infalível-por-construção: identity-create SEM
+  unique (sem P2002/typo de corrida), FKs satisfeitas na própria tx, link por `upsert ON CONFLICT` idempotente
+  (fecha a classe de bug `25P02` do PR-A). O `try/catch` por-candidato do sweep + reexecução idempotente de 60s
+  = "abertura eventualmente consistente", observável, nunca perda silenciosa.
+- **Ratificação:** delegada à junta do PR-05 (crítico-adversarial ataca o typo-collision e a concorrência do sweep
+  contra Postgres real). §A2/§C7.3 — registrada aqui antes do código, não decidida em silêncio. **Desfecho
+  (2026-08-01): APROVADO_CONDICIONADO** — o crítico-adversarial provou por PoC 1 MÉDIA real (a colisão-POR-REUSO
+  não tinha caminho de correção; `duplicateCandidates`/merge/unmerge não splitam). **Condição cumprida** pela
+  correção FIX-JUNTA acima: a vistoria de recepção passa a reconciliar/re-apontar `identity_id` (SPLIT provado
+  vivo). Escopo do FIX-JUNTA: `impound.service.ts` (parse da placa confirmada), `impound-prisma.repository.ts`
+  (`reconcileIdentityFromConfirmedPlate` na MESMA tx da vistoria), `impound.intake.types.ts`/`impound.repository.ts`
+  (campo `confirmedPlateKey`, InMemory ignora — prova DB-gated) + 3 test() DB-gated novos. FSM/hash-chain/merge
+  INTOCADOS; sem migração.

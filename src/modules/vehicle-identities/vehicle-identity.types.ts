@@ -135,6 +135,44 @@ export type UnmergeIdentityResult = {
   readonly strandedProcessCount: number;
 };
 
+// Ω-VID PR-05 — semeadura da identidade AGREGADORA na criação do processo de custódia (sweep). É um efeito-de-
+// domínio SISTEMA (created_by NULL), executado DENTRO da transação do impound (this.client já é o
+// Prisma.TransactionClient sob RLS) — nunca re-checa permissão de vehicle_identity. Só campos DESCRITIVOS do
+// veículo entram no seed; o identificador forte (placa) vira plate_key só no ramo por-placa.
+export type VehicleIdentitySeed = {
+  readonly plateRaw?: string;
+  readonly brand?: string;
+  readonly model?: string;
+  readonly color?: string;
+  readonly year?: number;
+  readonly createdBy?: string;
+  readonly updatedBy?: string;
+};
+
+// Ramo "placa plausível": RESOLVE (reusa a identidade ATIVA mais antiga da mesma placa) OU CRIA
+// PROVISIONAL/unidentified=false/plate_key. A query de reuso é BYTE-IDÊNTICA à do backfill (PR-03) — sweep e
+// backfill convergem na MESMA identidade agregadora ao longo do tempo (dossiê por veículo).
+export type ResolveIdentityByPlateKeyInput = {
+  readonly tenantId: string;
+  readonly plateKey: string;
+  readonly seed?: VehicleIdentitySeed;
+};
+
+// Ramo "sem placa plausível" (lixo/vazio): cria PROVISIONAL/unidentified=true com reason neutro (satisfaz
+// third_party_vehicle_identities_identity_chk). NUNCA copia placa/chassi/renavam (espelha o backfill —
+// não reabre a ambiguidade unidentified_conflicts_with_identifier fechada no PR-02).
+export type CreateProvisionalUnidentifiedInput = {
+  readonly tenantId: string;
+  readonly unidentifiedReason: string;
+  readonly seed?: VehicleIdentitySeed;
+};
+
+export type ResolveIdentityResult = {
+  readonly id: string;
+  // true quando reusou uma identidade pré-existente (placa já vista); false quando fundou uma nova.
+  readonly reused: boolean;
+};
+
 export class VehicleIdentityError extends Error {
   constructor(
     readonly statusCode: number,

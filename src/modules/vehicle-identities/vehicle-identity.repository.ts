@@ -1,11 +1,14 @@
 import { randomUUID } from "node:crypto";
 
 import type {
+  CreateProvisionalUnidentifiedInput,
   CreateVehicleIdentityInput,
   ListVehicleIdentityInput,
   ListVehicleIdentityResult,
   MergeIdentitiesInput,
   MergeIdentitiesResult,
+  ResolveIdentityByPlateKeyInput,
+  ResolveIdentityResult,
   UnmergeIdentityInput,
   UnmergeIdentityResult,
   UpdateVehicleIdentityInput,
@@ -29,6 +32,13 @@ export interface VehicleIdentityRepository {
   // Ω-VID PR-04 — banner de duplicata (§Parte C): outras identidades ATIVAS (confidence<>'MERGED') do MESMO
   // tenant com o MESMO plate_key. [] se a identidade não tem plate_key ou não há concorrentes.
   findDuplicateCandidates(tenantId: string, identityId: string): Promise<readonly string[]>;
+
+  // Ω-VID PR-05 — semeadura da identidade agregadora na criação do processo (sweep). Operam sobre o executor
+  // injetado (this.client): no Prisma isso é a MESMA transação do impound (sem RLS aninhada). resolveOrCreateByPlateKey
+  // REUSA a identidade ATIVA (não-MERGED) mais antiga da mesma placa (query byte-idêntica à do backfill), senão cria
+  // PROVISIONAL/unidentified=false. createProvisionalUnidentified cria PROVISIONAL/unidentified=true (ramo sem placa).
+  resolveOrCreateByPlateKey(input: ResolveIdentityByPlateKeyInput): Promise<ResolveIdentityResult>;
+  createProvisionalUnidentified(input: CreateProvisionalUnidentifiedInput): Promise<ResolveIdentityResult>;
 
   reset?(): void;
 }
@@ -288,6 +298,52 @@ export class InMemoryVehicleIdentityRepository implements VehicleIdentityReposit
           candidate.plateKey === identity.plateKey,
       )
       .map((candidate) => candidate.id);
+  }
+
+  // Ω-VID PR-05 — reusa a identidade ATIVA (confidence≠MERGED) MAIS ANTIGA da mesma placa (mesma semântica da
+  // query byte-idêntica do backfill: findFirst { plate_key, confidence≠MERGED } orderBy created_at asc). Sem
+  // match → funda PROVISIONAL/unidentified=false com plate_key. A prova autoritativa (CHECK do banco, RLS) é
+  // DB-gated; aqui prova a LÓGICA de reuso/exclusão-de-MERGED.
+  async resolveOrCreateByPlateKey(input: ResolveIdentityByPlateKeyInput): Promise<ResolveIdentityResult> {
+    const existing = [...this.identities.values()]
+      .filter(
+        (identity) =>
+          identity.tenantId === input.tenantId && identity.plateKey === input.plateKey && identity.confidence !== "MERGED",
+      )
+      .sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime())[0];
+    if (existing) return { id: existing.id, reused: true };
+    const created = await this.createIdentity({
+      tenantId: input.tenantId,
+      plateRaw: input.seed?.plateRaw,
+      plateKey: input.plateKey,
+      brand: input.seed?.brand,
+      model: input.seed?.model,
+      color: input.seed?.color,
+      year: input.seed?.year,
+      unidentified: false,
+      confidence: "PROVISIONAL",
+      createdBy: input.seed?.createdBy,
+      updatedBy: input.seed?.updatedBy,
+    });
+    return { id: created.id, reused: false };
+  }
+
+  // Ω-VID PR-05 — ramo sem placa plausível: PROVISIONAL/unidentified=true com reason neutro. NUNCA copia
+  // plate/chassi/renavam (só descritivos) — espelha createUnidentifiedIndividualIdentity do backfill.
+  async createProvisionalUnidentified(input: CreateProvisionalUnidentifiedInput): Promise<ResolveIdentityResult> {
+    const created = await this.createIdentity({
+      tenantId: input.tenantId,
+      brand: input.seed?.brand,
+      model: input.seed?.model,
+      color: input.seed?.color,
+      year: input.seed?.year,
+      unidentified: true,
+      unidentifiedReason: input.unidentifiedReason,
+      confidence: "PROVISIONAL",
+      createdBy: input.seed?.createdBy,
+      updatedBy: input.seed?.updatedBy,
+    });
+    return { id: created.id, reused: false };
   }
 
   // Helper SÓ de teste — simula um ImpoundProcess "linkado" a uma identidade (o módulo vehicle-identities não

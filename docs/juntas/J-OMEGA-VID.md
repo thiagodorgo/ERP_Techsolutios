@@ -256,3 +256,42 @@ CHECK bicondicional), `prisma migrate status` 92 up to date. 2 permissões novas
 + `platform:vehicle-identity-unmerge:manage`) em RBAC_MATRIX.md. Próximo (intercalado por decisão do
 dono): **CHECKLIST P0** — gap de sync mobile→backend (perda silenciosa de foto/avaria/assinatura),
 antes dos PRs de UI do dossiê (PR-05+).
+
+### PR-05 — sweep resolve identidade na criação + AUTO-link de checklist — VOTOS DA JUNTA (2026-08-01) — **APROVADO (ciclo 1 condicionado → correção → fechado)**
+
+> Onde o dossiê do veículo e o checklist do guincho se encontram: o sweep de reconciliação, ao abrir um
+> `ImpoundProcess` de uma OS de reboque concluída, resolve/cria a `ThirdPartyVehicleIdentity` (grava `identity_id`)
+> e AUTO-linka os `ChecklistRun` da OS — tudo na MESMA tx, SEM migração (tabelas dos PR-02/04). Decisão de
+> semeadura em `D-Ω-VID-05-SEED`. Junta orquestrada como workflow adversarial (crítico + dba + coordenador).
+
+**Ciclo 1 (revisão):**
+- **agente-dba-guardiao → APROVADO.** Provou ao vivo (Postgres): `prisma validate`/`migrate status` (94, up to date,
+  ZERO migração); git diff não toca schema/migrations; `identity_id`+link herdam a RLS existente; tx atômica →
+  `duplicate_service_order` reverte tudo (zero órfão); a query de reuso é **byte-idêntica** à do backfill (convergência
+  provada); `custody_events.type` sem CHECK; AUTO-link por upsert idempotente. 25/25 DB-gated. Registrou a
+  convergência como invariante (se o backfill mudar a cláusula, os dois pontos mudam juntos).
+- **coordenador-de-acessos → APROVADO.** Efeito-de-domínio NÃO-amplificador (SISTEMA, `created_by=NULL`, sem
+  re-checar permissão — coerente com o precedente do checklist PR-A/Ω4C); isolamento tenant por RLS+filtro+FK
+  composta tenant-first; guarda dupla do dossiê (PR-04) intacta; nenhuma permissão nova. 25/25.
+- **critico-adversarial → APROVADO_CONDICIONADO.** RATIFICOU com PoC próprio: concorrência (10 aberturas
+  concorrentes da mesma OS → 1 processo, 0 órfão, 0 `25P02`); a classe de bug do PR-A **não reabre** (identity-create
+  SEM unique → nunca P2002/aborted-tx); e o ponto mais importante — **um seed errado NÃO corrompe registro legal nem
+  cobrança** (`identity_id` fora do hash-chain; diária/release/leilão/portal são process-scoped por `vehicle_plate`),
+  só engana a agregação navegacional do dossiê. **1 MÉDIA:** o typo-collision POR REUSO (placa errada que casa
+  exatamente uma identidade existente → 2 veículos sob 1 identidade) não tinha caminho de correção, e o D-record
+  **superestimava as mitigações** (a vistoria não reapontava `identity_id`; o banner `duplicateCandidates` não dispara
+  com 1 identidade; merge/unmerge não splitam). + 3 BAIXA (convergência só para placas de 7 alfanum; fragmentação sob
+  sweeps concorrentes; AUTO-link fail-closed acopla navegacional a legal).
+
+**Correção (a vistoria vira o caminho de correção — domínio-correto, D-Ω5P-REC-10):** `saveInspection`/
+`upsertInspection` passam a **reconciliar `identity_id`** na mesma tx da vistoria: com a placa CONFIRMADA, resolve-ou-
+cria (mesmo helper) e **re-aponta** `identity_id` se diferir → **SPLITA** a agregação errada (o processo de Y sai da
+identidade de X quando a vistoria confirma Y); a identidade confirmada sobe `PROVISIONAL→CONFIRMED`. D-record corrigido
+(a vistoria é o caminho de correção PRIMÁRIO da colisão-por-reuso; `duplicateCandidates`/merge NÃO splitam; a vistoria
+é a garantia de convergência eventual independente do guard de seed-time); BAIXA documentadas como limitações aceitas;
+AUTO-link fail-closed confirmado intencional em comentário.
+
+**Decisão da junta:** **APROVADO** — 1 MÉDIA (correção-de-reuso) fechada com prova de SPLIT (teste #26 DB-gated), 3
+BAIXA documentadas; ratificações de concorrência/`25P02`/isolamento-legal mantidas. **KPIs:** backend
+**2064/2070 → 2085/2091** (+21: 18 do sweep/identidade/link + 3 da reconciliação-na-vistoria). SEM migração.
+`blocks_completed` 121→122. Próximo: **PR-06** (ModalLarge — entra a reta de UI do dossiê).

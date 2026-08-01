@@ -206,6 +206,13 @@ export type OpenFromRemovalInput = {
   readonly unidentifiedReason: string;
   readonly completedAt: Date;
   readonly actorId?: string;
+  // Ω-VID PR-05 — hints do veículo vindos de WorkOrder.service_details (todos OPCIONAIS — não quebram os ~15
+  // test-callers). SEMEIAM a identidade AGREGADORA (ThirdPartyVehicleIdentity) na MESMA tx da abertura; o
+  // PROCESSO segue vehicle_unidentified=true (a identidade dele é confirmada pela vistoria — D-Ω5P-REC-10).
+  readonly vehiclePlate?: string;
+  readonly vehicleBrand?: string;
+  readonly vehicleModel?: string;
+  readonly vehicleColor?: string;
 };
 
 // Ω5P PR-06 (I1 real) — alocação/vacância/movimentação ATÔMICA cross-módulo (yard+impound) numa ÚNICA tx:

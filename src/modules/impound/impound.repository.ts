@@ -177,6 +177,9 @@ export class InMemoryImpoundRepository implements ImpoundRepository {
 
   // PR-06 (F-1) — abertura ATÔMICA do sweep: create (IN_REMOVAL) + abertura + RECEPTION (entered_at=completedAt),
   // tudo numa operação (single-thread InMemory / 1 tx no Prisma). Nenhum half-open pode nascer.
+  // Ω-VID PR-05 — a semeadura da identidade agregadora e o AUTO-link de checklist são DB-gated (o InMemory não
+  // injeta os repositórios de vehicle-identity/checklist): aqui os hints de veículo do input são OPCIONAIS e
+  // ignorados (a prova autoritativa — identity_id setado, FK/CHECK, links AUTO — roda contra o Postgres vivo).
   async openFromRemovalAtomic(input: OpenFromRemovalInput): Promise<ImpoundProcess> {
     if (input.serviceOrderId) {
       const clash = [...this.processes.values()].some(
@@ -322,6 +325,10 @@ export class InMemoryImpoundRepository implements ImpoundRepository {
     return inspection?.tenantId === tenantId ? inspection : undefined;
   }
 
+  // Ω-VID PR-05 FIX-JUNTA — input.confirmedPlateKey (reconciliação de identity_id na vistoria) é OPCIONAL e
+  // IGNORADO aqui: o módulo vehicle-identities não é injetado no InMemory e ImpoundProcess de memória nem carrega
+  // identity_id. A prova autoritativa do SPLIT da colisão-por-reuso (identity_id re-apontado, CONFIRMED) é
+  // DB-gated (mesma política do openFromRemovalAtomic InMemory, que também ignora a semeadura).
   async upsertInspection(input: UpsertIntakeInspectionInput): Promise<IntakeInspection> {
     const process = await this.findProcessById(input.tenantId, input.processId);
     if (!process) {

@@ -16,11 +16,30 @@ type RemovalCandidate = {
   readonly code: string;
   readonly completed_at: Date | null;
   readonly custody_profile_id: string;
+  // Ω-VID PR-05 — payload livre da OS (JSON): fonte dos hints do veículo {plate, vehicle, color} p/ semear a
+  // identidade AGREGADORA na abertura. Pode ser null/qualquer forma (validado por extractVehicleHints).
+  readonly service_details: unknown;
   // F-1(b) — se houver processo, seu id/estado: `null` = OS sem processo (abrir); IN_REMOVAL+entered_at NULL =
   // half-open pré-existente (curar).
   readonly process_id: string | null;
   readonly process_status: string | null;
 };
+
+// Ω-VID PR-05 — hints do veículo extraídos de WorkOrder.service_details (payload LIVRE, sem forma garantida).
+// Só strings não-vazias entram; qualquer outra forma cai fora (o guard de placa e o ramo unidentified cobrem o resto).
+type VehicleHints = { readonly plate?: string; readonly vehicle?: string; readonly color?: string };
+
+function extractVehicleHints(serviceDetails: unknown): VehicleHints {
+  if (serviceDetails === null || typeof serviceDetails !== "object" || Array.isArray(serviceDetails)) return {};
+  const record = serviceDetails as Record<string, unknown>;
+  return { plate: readStringHint(record.plate), vehicle: readStringHint(record.vehicle), color: readStringHint(record.color) };
+}
+
+function readStringHint(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
 
 // Varredura recorrente: por tenant ATIVO, reconcilia as OS de remoção concluídas sem custódia. Só roda em modo
 // prisma (o worker é gated por flag + persistence=prisma). O(tenants) v1 (poucos tenants). F-4: cada tenant é
@@ -58,7 +77,7 @@ export async function reconcileTenantRemovals(
   const { withTenantRls } = await import("../../database/rls.js");
   const candidates = await withTenantRls(prismaClient, tenantId, (tx) =>
     tx.$queryRaw<RemovalCandidate[]>`
-      SELECT wo.id, wo.code, wo.completed_at, sc.custody_profile_id, ip.id AS process_id, ip.status AS process_status
+      SELECT wo.id, wo.code, wo.completed_at, wo.service_details, sc.custody_profile_id, ip.id AS process_id, ip.status AS process_status
       FROM work_orders wo
       JOIN service_catalog sc ON sc.tenant_id = wo.tenant_id AND sc.id = wo.service_catalog_id
       LEFT JOIN impound_processes ip ON ip.tenant_id = wo.tenant_id AND ip.service_order_id = wo.id
@@ -77,12 +96,18 @@ export async function reconcileTenantRemovals(
       if (candidate.process_id === null) {
         // (i) OS sem processo → abre custódia ATÔMICA. Origem NEUTRA white-label (sem PII — só o código da OS).
         const originAuthority = `Solicitação de remoção (OS ${candidate.code})`;
+        // Ω-VID PR-05 — hints do veículo p/ semear a identidade AGREGADORA na MESMA tx da abertura (o guard de
+        // placa + o ramo unidentified vivem no repositório; aqui só extraímos e encaminhamos).
+        const hints = extractVehicleHints(candidate.service_details);
         const result = await service.openFromRemoval({
           tenantId,
           serviceOrderId: candidate.id,
           profileId: candidate.custody_profile_id,
           originAuthority,
           completedAt,
+          vehiclePlate: hints.plate,
+          vehicleModel: hints.vehicle,
+          vehicleColor: hints.color,
         });
         if (result.opened) opened += 1;
       } else {

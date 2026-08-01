@@ -272,15 +272,20 @@ async function selectProcesses(client: BootstrapClient, tenantId: string) {
 }
 
 // Teardown FK-safe: authority_removal_requests (referencia work_orders+authority_credentials) ANTES deles; custody_
-// events → impound_processes → work_orders → service_catalog → jurisdiction_profiles → authority_credentials →
-// portal_access_logs (trigger append-only → replica) → audit_logs → tenant.
+// events → impound_process_checklist_links → impound_processes → third_party_vehicle_identities → work_orders →
+// service_catalog → jurisdiction_profiles → authority_credentials → portal_access_logs (trigger append-only →
+// replica) → audit_logs → tenant. Ω-VID PR-05: o sweep (openFromRemoval) semeia uma third_party_vehicle_identity
+// (FK RESTRICT → tenants) por processo aberto e, quando há checklist, um impound_process_checklist_link (filho do
+// processo). Purgar os links ANTES dos processos e as identidades DEPOIS (impound_processes.identity_id é RESTRICT).
 async function teardown(client: BootstrapClient, tenantId: string): Promise<void> {
   await client.$transaction(async (tx) => {
     await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica'");
     await tx.$executeRawUnsafe(`DELETE FROM authority_removal_requests WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM custody_events WHERE tenant_id = '${tenantId}'::uuid`);
+    await tx.$executeRawUnsafe(`DELETE FROM impound_process_checklist_links WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM impound_intake_inspections WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM impound_processes WHERE tenant_id = '${tenantId}'::uuid`);
+    await tx.$executeRawUnsafe(`DELETE FROM third_party_vehicle_identities WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM work_order_events WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM work_orders WHERE tenant_id = '${tenantId}'::uuid`);
     await tx.$executeRawUnsafe(`DELETE FROM service_catalog WHERE tenant_id = '${tenantId}'::uuid`);
