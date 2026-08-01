@@ -54,6 +54,17 @@ export type RepositoryRunDetails = {
   readonly acknowledgements: readonly ChecklistAcknowledgement[];
 };
 
+// D-CHK-DISPATCH-CREATE (achado MÉDIA do crítico) — `createRun` sinaliza se REALMENTE inseriu (`created:true`)
+// ou devolveu idempotentemente a run pré-existente (`created:false`, colisão de `client_run_key`/replay). O
+// serviço PULA a auditoria `runCreated` + o `publishDomainEvent('checklist_run.created')` quando `created` é
+// false — senão dois despachos concorrentes da mesma OS (ou 2× POST com o mesmo `client_run_key`) emitiriam o
+// evento 2×, SUPER-CONTANDO a métrica FATURADA `checklist_runs_count` (dedup por `event.id`, único a cada
+// emissão) e duplicando a auditoria "run created".
+export type CreateRunResult = {
+  readonly run: ChecklistRun;
+  readonly created: boolean;
+};
+
 export interface ChecklistRepository {
   listTemplates(tenantId: string): Promise<readonly ChecklistTemplate[]>;
   listPublishedTemplates(tenantId: string): Promise<readonly ChecklistTemplate[]>;
@@ -63,9 +74,18 @@ export interface ChecklistRepository {
   archiveTemplate(tenantId: string, checklistId: string, actorUserId: string): Promise<ChecklistTemplate | null>;
   publishTemplate(tenantId: string, checklistId: string, actorUserId: string): Promise<ChecklistTemplate | null>;
   listTemplatesByType(tenantId: string): Promise<readonly ChecklistTemplate[]>;
-  createRun(data: CreateRunData, template: ChecklistTemplate): Promise<ChecklistRun>;
+  createRun(data: CreateRunData, template: ChecklistTemplate): Promise<CreateRunResult>;
   listRuns(tenantId: string): Promise<readonly ChecklistRun[]>;
   getRun(tenantId: string, runId: string): Promise<RepositoryRunDetails | null>;
+  // P0a — lookup durável por chave de idempotência do mobile (local_run_id). tenant-scoped.
+  getRunByClientKey(tenantId: string, clientRunKey: string): Promise<ChecklistRun | null>;
+  // D-CHK-DISPATCH-CREATE — lista as runs de uma entidade relacionada (ex.: work_order) para o guincheiro baixar
+  // o server_run_id da OS despachada. tenant-scoped (cross-tenant → lista vazia, nunca vaza existência).
+  listRunsByRelatedEntity(
+    tenantId: string,
+    relatedEntityType: string,
+    relatedEntityId: string,
+  ): Promise<readonly ChecklistRun[]>;
   updateRun(data: UpdateRunData): Promise<RepositoryRunDetails | null>;
   completeRun(tenantId: string, runId: string, actorUserId: string, status: ChecklistRunStatus): Promise<RepositoryRunDetails | null>;
   createAttachment(tenantId: string, runId: string, actorUserId: string, data: CreateChecklistAttachmentInput): Promise<ChecklistAttachment | null>;
@@ -217,7 +237,20 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
     return this.listPublishedTemplates(tenantId);
   }
 
-  async createRun(data: CreateRunData, template: ChecklistTemplate): Promise<ChecklistRun> {
+  async createRun(data: CreateRunData, template: ChecklistTemplate): Promise<CreateRunResult> {
+    // P0a — idempotência durável: se já existe uma run com esta client_run_key no tenant, devolve a existente
+    // (não cria duplicata). Espelha o unique [tenant_id, client_run_key] do Postgres. `created:false` faz o
+    // serviço PULAR audit + publishDomainEvent (não super-conta o faturamento).
+    if (data.clientRunKey) {
+      const existing = [...this.runs.values()].find(
+        (run) => run.tenantId === data.tenantId && run.clientRunKey === data.clientRunKey,
+      );
+
+      if (existing) {
+        return { run: existing, created: false };
+      }
+    }
+
     const now = new Date();
     const run: ChecklistRun = {
       id: randomUUID(),
@@ -226,6 +259,7 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
       templateVersion: template.version,
       relatedEntityType: data.relatedEntityType,
       relatedEntityId: data.relatedEntityId,
+      clientRunKey: data.clientRunKey,
       status: "in_progress",
       startedBy: data.actorUserId,
       startedAt: now,
@@ -236,7 +270,30 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
     this.runs.set(run.id, run);
     this.upsertAnswers(data.tenantId, run.id, data.answers, now);
 
-    return run;
+    return { run, created: true };
+  }
+
+  async getRunByClientKey(tenantId: string, clientRunKey: string): Promise<ChecklistRun | null> {
+    return (
+      [...this.runs.values()].find(
+        (run) => run.tenantId === tenantId && run.clientRunKey === clientRunKey,
+      ) ?? null
+    );
+  }
+
+  async listRunsByRelatedEntity(
+    tenantId: string,
+    relatedEntityType: string,
+    relatedEntityId: string,
+  ): Promise<readonly ChecklistRun[]> {
+    return [...this.runs.values()]
+      .filter(
+        (run) =>
+          run.tenantId === tenantId &&
+          run.relatedEntityType === relatedEntityType &&
+          run.relatedEntityId === relatedEntityId,
+      )
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
   async listRuns(tenantId: string): Promise<readonly ChecklistRun[]> {

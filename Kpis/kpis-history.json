@@ -1766,5 +1766,50 @@
     "mvp_vendavel": "88%",
     "blocks_completed": 119,
     "description": "Omega-VID PR-04: merge/unmerge manual de identidades de veiculo (row-lock FOR UPDATE, resolucao transitiva, snapshot_before, unmerge-admin platform-only com estorno parcial documentado) + banner duplicateCandidates + tabela de juncao ImpoundProcessChecklistLink (FK dura tenant-first RESTRICT nos 2 lados) + gate DUPLO impound:read AND checklist_runs:read no GET checklist-runs (fecha vazamento a field_technician). 2 permissoes novas (vehicle_identity:merge, platform:vehicle-identity-unmerge:manage). Junta orquestrada como WORKFLOW ADVERSARIAL de 4 revisores + 3 re-verificadores. Ciclo 1 REPROVADO: 1 CRITICA (write-skew: merges concorrentes A->B/B->A criavam 2-ciclo no grafo, PoC contra Postgres real) + 1 ALTA (PATCH ressuscitava identidade MERGED sem permissao platform-only) + 2 MEDIA (unmerge downgrade de confidence, processos orfaos). Rework fechou os 6 (FOR UPDATE no merge/update/unmerge, CHECK bicondicional canonical<=>MERGED, restauracao de confidence do snapshot, strandedProcessCount). Re-verificacao adversarial CONFIRMADO_FECHADO UNANIME (360 merges concorrentes = zero deadlock, zero ciclo; bypass fechado em 2 camadas; migracao bicondicional 0 linhas violando). +42 testes, regressao vehicle-identity 55/55 + checklist-link 13/13 + impound 56/56 + backfill 10/10. 2 migracoes novas (20260855000000 + 20260856000000), 92 up to date. Proximo intercalado: CHECKLIST P0 (data-loss no sync mobile)."
+  },
+  {
+    "snapshot_date": "2026-08-01",
+    "version": "CHK-DISPATCH-CREATE-PR-A",
+    "backend_tests": "2059/2065",
+    "flutter_tests": "807/807",
+    "frontend_smoke_tests": "950/950",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 120,
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "description": "PR-A (D-CHK-DISPATCH-CREATE) conserto do DATA-LOSS de checklist do campo, sobre o P0a nao-commitado. O DESPACHO passa a CRIAR a run do checklist como EFEITO DE DOMINIO de field_dispatch:create (espelha o freeze do snapshot em FieldDispatchService.create): run ligada a OS (relatedEntityType='work_order', relatedEntityId=<workOrderId>, started_by=<despachante>, client_run_key deterministico 'dispatch:<workOrderId>:<checklistId>'), SO com checklist publicado. NAO-AMPLIFICADOR: nao re-checa checklist_runs:create do despachante. IDEMPOTENTE: re-despacho/reassign nao duplica. FAIL-OPEN mas AUDITADO: falha nao bloqueia o despacho e vira evento duravel 'field_dispatch_checklist_run_failed' na timeline (nunca silencioso). Endpoint novo GET /api/v1/mobile/checklist-runs?workOrderId (gated checklist_runs:read; cross-tenant->200 vazio; sem workOrderId->422; sem read->403) via repo listRunsByRelatedEntity (interface+InMemory+Prisma RLS). RBAC: field_technician ganha read/update/complete/acknowledge (answer-assigned, corrige drift de ZERO checklist); technician e manager perdem create (create=operator+admins). Conflito §A2 REGISTRADO (pendencias.md P-IMPOUND-CHK-VISIBILITY): field_technician com checklist_runs:read agora atravessa a guarda-dupla do GET impound checklist-runs (impacto BAIXO, dado ja legivel; a decidir pela junta de custodia). +10 test() no branch (P0a 3 + PR-A 7). Execucao REAL memory-mode com Postgres local no ar: 2059 pass/6 skip/0 fail/2065 total; os 6 skip (prisma-gated) verificados passando contra Postgres real. prisma validate OK, migrate status 93 up-to-date (client_run_key 20260857000000 aplicada), check/lint OK, git diff --check OK. flutter/smoke inalterados (backend-only; PR-B/Flutter e a outra fatia). backend 2040/2055 -> 2059/2065, blocks 119->120. pr/merge_commit/approved_head null na autoria (backfill pos-merge)."
+  },
+  {
+    "snapshot_date": "2026-08-01",
+    "version": "CHK-DISPATCH-CREATE-PR-A-FIX-JUNTA",
+    "backend_tests": "2062/2068",
+    "flutter_tests": "807/807",
+    "frontend_smoke_tests": "950/950",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 120,
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "description": "PR-A FIX-JUNTA (correcao dos 6 achados da junta APROVADO_CONDICIONADO + nota de ambiente de teste). (1 ALTA/dba-guardiao) migracao aditiva 20260858000000 estende o CHECK field_dispatch_events_event_type_check para 5 valores (admite 'field_dispatch_checklist_run_failed'): sem ela o INSERT do evento fail-open estourava 23514 NAO-capturado (create nao envolve create+createEvent numa $transaction) -> HTTP 500 com despacho ORFAO, field_dispatch.created nunca publicado (Outbox perdia) e auditoria perdida; o fail-open-auditado virava fail-closed-500. Provado VIVO contra Postgres (migrate deploy + status up-to-date; valor novo -> INSERT OK / CHECK aceita; valor fora da lista -> 23514). Comentario FALSO em field-dispatch.types.ts corrigido. + defesa-em-profundidade: createEvent da auditoria fail-open e a notificacao envoltos em try/catch proprio (nunca convertem auditoria em 500). (2 MEDIA/critico) super-contagem da metrica FATURADA: repository.createRun devolve {run, created}; ChecklistService pula audit runCreated + publishDomainEvent('checklist_run.created') quando created=false -> 2 despachos concorrentes da mesma OS / 2x POST com mesma client_run_key emitem 1 evento (antes 2, dedup por event.id nao salvava -> super-conta checklist_runs_count). in-memory + Prisma (pre-check + P2002) + Rls wrapper + assinatura/callers. (3 MEDIA/critico) fail-open recuperavel/observavel: reassign tambem PROVISIONA a run idempotente (auto-recuperacao real; antes o unico retry era novo despacho) + emite NOTIFICACAO ao operador via motor existente (notifications, injetado no composition root, dependency-inverted) quando field_dispatch_checklist_run_failed; contrato documentado (200-vazio no GET run-por-OS pode significar falha de provisao). (4 BAIXA/critico+coordenador) reason de auditoria CODIFICADO (ChecklistError.reason / taxonomia curta 'unexpected'), nunca error.message cru (§2.8). (5 BAIXA/critico) GET run-por-OS aceita ?checklistId= (desambigua quando a OS troca de checklist entre despachos; lista pode ter >1 run; ordem created_at desc; casar checklistId vigente). (6 BAIXA/dba) COMENTARIO de ops na migracao 20260857000000 sobre indice nao-CONCURRENTLY (SQL inalterado). (7) mobile-backend-contracts fixa CORE_SAAS_PERSISTENCE=memory no setup (10 testes que falhavam LOCALMENTE por .env=prisma agora verdes; ja verdes no CI memory-mode). +3 test() reais (field-dispatch +1 reassign-reprovisiona+notifica; checklist-snapshot-dispatch +2 super-contagem-concorrente + desambiguacao-checklistId). backend 2059/2065 -> 2062/2068. blocks_completed inalterado (120; fix dentro da mesma PR-A). Escopo respeitado (nenhum toque em impound.hashchain/resolveTransition/gates de custodia/vehicle-identities/withTenantRls). pr/merge_commit/approved_head null na autoria."
+  },
+  {
+    "snapshot_date": "2026-08-01",
+    "version": "CHK-DISPATCH-CREATE-PR-A-FIX-JUNTA-REVERIF",
+    "backend_tests": "2064/2070",
+    "flutter_tests": "807/807",
+    "frontend_smoke_tests": "950/950",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 120,
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "description": "PR-A FIX-JUNTA REVERIF (re-verificacao da junta: 1 MEDIA + 1 BAIXA no conserto de idempotencia da criacao de run). (MEDIA) o P2002 catch-then-refetch rodava numa transacao ABORTADA: withTenantRls envolve TODO createRun numa unica tx interativa; sob 2 despachos/creates concorrentes da mesma OS com a mesma client_run_key, o perdedor sofria 23505/P2002, a tx entrava em ABORTED e a re-busca getRunByClientKey no catch falhava com 25P02 (current transaction is aborted); sem code P2002 nao era re-capturada -> createRun LANCAVA em vez de {created:false}, derrubando o perdedor no fail-open do field-dispatch (evento field_dispatch_checklist_run_failed ESPURIO + notificacao falsa) e retornando erro no mobile-sync em vez de already_applied. Cura na RAIZ: createRun com client_run_key usa INSERT ... ON CONFLICT (tenant_id, client_run_key) DO NOTHING RETURNING via queryRaw (0 linhas -> conflito, tx NAO aborta -> SELECT normal devolve a existente created:false; 1 linha -> created:true; respostas via createMany na mesma tx). InMemory ja espelhava {run,created}. RlsPrismaChecklistRepository exportado. (BAIXA) +tests/checklist-run-create-concurrency-db.test.ts (DB-gated Postgres real): teste-barreira forca o perdedor ao ON CONFLICT (a N-concorrencia ingenua mascara o abort porque o vencedor commita antes do pre-check do perdedor) e prova created:false LIMPO + 1 run + 1 checklist_runs_count + ZERO evento/notificacao espurios; provado vivo 2/2 verdes com a cura, o teste-barreira REPROVA com 25P02 contra o codigo antigo. withTenantRls/rls.ts INTOCADO (cura no INSERT do repo). +2 test() -> backend 2062/2068 -> 2064/2070. blocks_completed inalterado (120). pr/merge_commit/approved_head null na autoria."
   }
 ]

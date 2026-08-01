@@ -187,7 +187,7 @@ export class ChecklistService {
       throw new ChecklistError(409, "CHECKLIST_NOT_PUBLISHED", "checklist_not_published", "Checklist must be published before execution.");
     }
 
-    const run = await this.repository.createRun(
+    const { run, created } = await this.repository.createRun(
       {
         ...input,
         tenantId: actor.tenantId,
@@ -196,23 +196,30 @@ export class ChecklistService {
       template,
     );
 
-    await this.audit(actor, CHECKLIST_AUDIT_ACTIONS.runCreated, "checklist_run", run.id, {
-      templateId: template.id,
-      templateVersion: template.version,
-    });
-
-    await publishDomainEvent(
-      "checklist_run.created",
-      {
-        runId: run.id,
+    // D-CHK-DISPATCH-CREATE (achado MÉDIA do crítico) — SÓ audita e publica o evento de domínio quando a run
+    // foi REALMENTE inserida. Se o repositório devolveu idempotentemente a run pré-existente (`created:false`,
+    // por colisão de `client_run_key`: 2 despachos concorrentes da mesma OS ou 2× POST com a mesma chave),
+    // PULA os dois efeitos — senão `checklist_run.created` sairia 2× e a métrica FATURADA `checklist_runs_count`
+    // (dedup por `event.id`, único por emissão) super-contaria, além de duplicar a auditoria "run created".
+    if (created) {
+      await this.audit(actor, CHECKLIST_AUDIT_ACTIONS.runCreated, "checklist_run", run.id, {
         templateId: template.id,
-        status: run.status,
-      },
-      {
-        tenantId: actor.tenantId,
-        actorId: actor.userId,
-      },
-    );
+        templateVersion: template.version,
+      });
+
+      await publishDomainEvent(
+        "checklist_run.created",
+        {
+          runId: run.id,
+          templateId: template.id,
+          status: run.status,
+        },
+        {
+          tenantId: actor.tenantId,
+          actorId: actor.userId,
+        },
+      );
+    }
 
     return run;
   }
@@ -229,6 +236,45 @@ export class ChecklistService {
     }
 
     return run;
+  }
+
+  // P0a — resolve a run pela chave durável do mobile (local_run_id → client_run_key). Usado pelo sync para
+  // (a) pré-checar idempotência de `checklist.run_create` e (b) resolver o `local_run_id` que as demais ações
+  // do lote (answer/marker/divergence/ack/attachment) usam para referenciar a run recém-criada. tenant-scoped.
+  findRunByClientKey(actor: ActorContext, clientRunKey: string): Promise<ChecklistRun | null> {
+    return this.repository.getRunByClientKey(actor.tenantId, clientRunKey);
+  }
+
+  // D-CHK-DISPATCH-CREATE — o guincheiro baixa a(s) run(s) pré-criada(s) da OS despachada pelo server_run_id.
+  // Tenant-scoped (RLS herdada): OS de outro tenant → lista vazia (isolamento, nunca vaza existência).
+  // `workOrderId` ausente/vazio → 422 (query malformada), coerente com o gate `checklist_runs:read` da rota.
+  //
+  // CONTRATO (achado BAIXO do crítico) — a lista pode ter >1 run: a `client_run_key` é
+  // `dispatch:<workOrderId>:<checklistId>`, então se a OS TROCA de checklist entre despachos, o re-despacho
+  // cria uma 2ª run (chave diferente) e ambas ficam ligadas à OS. Desambiguação: (1) a lista vem ORDENADA por
+  // `created_at` desc (mais recente primeiro — a run vigente por recência); (2) o app deve casar pelo checklist
+  // VIGENTE da OS passando o filtro opcional `?checklistId=` (aqui aplicado por `templateId`). Re-despacho com o
+  // MESMO checklist continua idempotente (1 run). `checklistId` vazio → sem filtro (devolve todas, desc).
+  async listRunsForWorkOrder(
+    actor: ActorContext,
+    workOrderIdRaw: unknown,
+    checklistIdRaw?: unknown,
+  ): Promise<readonly ChecklistRun[]> {
+    const workOrderId = typeof workOrderIdRaw === "string" ? workOrderIdRaw.trim() : "";
+
+    if (!workOrderId) {
+      throw new ChecklistError(
+        422,
+        "CHECKLIST_RUN_QUERY_INVALID",
+        "work_order_id_required",
+        "workOrderId is required.",
+      );
+    }
+
+    const runs = await this.repository.listRunsByRelatedEntity(actor.tenantId, "work_order", workOrderId);
+    const checklistId = typeof checklistIdRaw === "string" ? checklistIdRaw.trim() : "";
+
+    return checklistId ? runs.filter((run) => run.templateId === checklistId) : runs;
   }
 
   async updateRun(actor: ActorContext, runId: string, input: UpdateChecklistRunInput): Promise<RepositoryRunDetails> {
@@ -443,19 +489,26 @@ export class ChecklistService {
     runId: string,
     input: RegisterDivergenceInput,
   ): Promise<RepositoryRunDetails> {
-    const attachment = await this.repository.createAttachment(actor.tenantId, runId, actor.userId, {
-      componentId: input.componentId,
-      fileUrl: input.fileUrl,
-      fileName: input.fileName,
-      mimeType: input.mimeType,
-      metadata: {
-        ...input.metadata,
-        divergence: true,
-      },
-    });
+    // P0a — anexo de divergência só é criado quando há fileUrl (caminho REST). O sync do mobile registra a
+    // divergência SEM arquivo (componente + observação): pula a criação de anexo para NUNCA gerar "anexo
+    // fantasma" (schema exige file_url NOT NULL) e apenas marca a run como pending_acknowledgement.
+    let attachment: ChecklistAttachment | null = null;
 
-    if (!attachment) {
-      throw new ChecklistError(404, "CHECKLIST_RUN_NOT_FOUND", "checklist_run_not_found", "Checklist run not found.");
+    if (input.fileUrl) {
+      attachment = await this.repository.createAttachment(actor.tenantId, runId, actor.userId, {
+        componentId: input.componentId,
+        fileUrl: input.fileUrl,
+        fileName: input.fileName,
+        mimeType: input.mimeType,
+        metadata: {
+          ...input.metadata,
+          divergence: true,
+        },
+      });
+
+      if (!attachment) {
+        throw new ChecklistError(404, "CHECKLIST_RUN_NOT_FOUND", "checklist_run_not_found", "Checklist run not found.");
+      }
     }
 
     const run = await this.repository.completeRun(actor.tenantId, runId, actor.userId, "pending_acknowledgement");
@@ -466,7 +519,7 @@ export class ChecklistService {
 
     await this.audit(actor, CHECKLIST_AUDIT_ACTIONS.runDivergenceRegistered, "checklist_run", run.run.id, {
       observation: input.observation,
-      attachmentId: attachment.id,
+      attachmentId: attachment?.id ?? null,
     });
 
     await publishDomainEvent(
@@ -475,7 +528,7 @@ export class ChecklistService {
         runId: run.run.id,
         templateId: run.run.templateId,
         status: run.run.status,
-        attachmentId: attachment.id,
+        attachmentId: attachment?.id ?? null,
       },
       {
         tenantId: actor.tenantId,

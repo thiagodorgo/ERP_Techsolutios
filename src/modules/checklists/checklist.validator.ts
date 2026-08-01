@@ -64,6 +64,9 @@ export type CreateChecklistRunInput = {
   readonly checklistId: string;
   readonly relatedEntityType?: string;
   readonly relatedEntityId?: string;
+  // P0a — quando presente, amarra a run ao `local_run_id` do mobile para idempotência DURÁVEL do replay de
+  // `checklist.run_create` (unique [tenant_id, client_run_key]). Ausente no caminho REST/web (parser não o lê).
+  readonly clientRunKey?: string;
   readonly answers: readonly UpsertChecklistAnswerInput[];
 };
 
@@ -104,7 +107,11 @@ export type CompleteChecklistRunInput = {
 export type RegisterDivergenceInput = {
   readonly observation: string;
   readonly componentId: string;
-  readonly fileUrl: string;
+  // P0a — fileUrl passa a ser OPCIONAL. O caminho REST (parseRegisterDivergenceDto) continua EXIGINDO-o, então
+  // o comportamento web/existente não muda. Só o sync do mobile registra divergência SEM arquivo (payload é
+  // componente + observação; a foto, quando houver, sobe pelo multipart). Sem fileUrl, registerDivergence pula
+  // a criação de anexo (nada de "anexo fantasma") e apenas marca a divergência (transição pending_ack + auditoria).
+  readonly fileUrl?: string;
   readonly fileName?: string;
   readonly mimeType?: string;
   readonly metadata: JsonRecord;

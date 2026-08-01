@@ -708,6 +708,13 @@ model ChecklistRun {
   template_version    Int
   related_entity_type String?
   related_entity_id   String?
+  // P0a (mobile checklist sync) — chave durável de idempotência da CRIAÇÃO da run pelo replay offline.
+  // Guarda o `local_run_id` que o app gera antes de ter o id do servidor. O `syncReceipts` in-memory NÃO
+  // sobrevive a restart; esta coluna + o unique [tenant_id, client_run_key] garantem que reenviar `run.create`
+  // (mesmo `local_run_id`) NUNCA cria run duplicada, inclusive pós-restart e sob concorrência (2ª inserção
+  // colide no unique → o caller busca a existente). NULL para runs criadas pela web/despacho (NULLs distintos
+  // no Postgres, então nenhuma colisão entre runs sem chave). Nunca sai no DTO público.
+  client_run_key      String?
   status              String                     @default("in_progress")
   started_by          String?                    @db.Uuid
   completed_by        String?                    @db.Uuid
@@ -727,6 +734,9 @@ model ChecklistRun {
   impound_process_links ImpoundProcessChecklistLink[]
 
   @@unique([tenant_id, id])
+  // P0a — idempotência durável do replay de `checklist.run_create` (mobile). NULLs distintos: runs sem
+  // client_run_key (web/despacho) não colidem entre si.
+  @@unique([tenant_id, client_run_key])
   @@index([tenant_id])
   @@index([tenant_id, status])
   @@index([tenant_id, template_id])

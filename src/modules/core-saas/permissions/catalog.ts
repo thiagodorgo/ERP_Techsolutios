@@ -449,7 +449,9 @@ export const ROLE_PERMISSIONS = {
     "expense_sync:write",
     "tenant_checklists:read",
     "checklist_runs:read",
-    "checklist_runs:create",
+    // D-CHK-DISPATCH-CREATE — manager NÃO cria run (create só operator+admins, conforme RBAC_MATRIX:44
+    // "read/complete-by-scope"). update/acknowledge do manager são drift residual registrado como follow-up
+    // em pendencias.md — NÃO alterados aqui.
     "checklist_runs:update",
     "checklist_runs:complete",
     "checklist_runs:acknowledge",
@@ -497,7 +499,8 @@ export const ROLE_PERMISSIONS = {
     "expense_receipt:attach",
     "expense_sync:write",
     "checklist_runs:read",
-    "checklist_runs:create",
+    // D-CHK-DISPATCH-CREATE — paridade de campo com field_technician: o technician (STANDARD) responde a run
+    // pré-criada, NÃO cria (create só operator+admins). read/update/complete/acknowledge mantidos.
     "checklist_runs:update",
     "checklist_runs:complete",
     "checklist_runs:acknowledge",
@@ -809,6 +812,14 @@ export const ROLE_PERMISSIONS = {
     "field_dispatch:read",
     "field_dispatch:update",
     "commissions:read_own",
+    // D-CHK-DISPATCH-CREATE — "answer-assigned" (RBAC_MATRIX:44) para o guincheiro = RESPONDER a uma run
+    // pré-criada pelo despacho: read (baixar a run da OS) + update (responder/marcar avaria/anexar) + complete
+    // (concluir) + acknowledge (assinatura de ciência). NÃO recebe `checklist_runs:create` — a criação da run é
+    // do despacho (efeito de domínio de field_dispatch:create) e dos caminhos operator/admins.
+    "checklist_runs:read",
+    "checklist_runs:update",
+    "checklist_runs:complete",
+    "checklist_runs:acknowledge",
   ],
   auditor: [
     "dashboard:read",

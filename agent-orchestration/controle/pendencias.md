@@ -1301,3 +1301,44 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - proximo: reconciliar 88% × 92% numa correção de KPI dedicada, com decisão de
   escopo e justificativa do movimento.
 - status: **ABERTA**; não bloqueia NAV-MENU-PLATFORM.
+
+## P-RBAC-CHECKLIST-DRIFT (2026-08-01) — reconciliação residual da matriz de checklist (follow-up de D-CHK-DISPATCH-CREATE)
+
+O PR-A (D-CHK-DISPATCH-CREATE) corrige o drift CRÍTICO (`field_technician` sem nenhuma permissão de checklist) e
+alinha `create` à matriz (só operator+admins). Ficam pendentes divergências residuais MENORES entre
+`RBAC_MATRIX.md:44` e `catalog.ts`, FORA do escopo do data-loss (não bloqueiam o conserto), a reconciliar numa
+rodada de saneamento de RBAC (§A2 — registradas para não consolidar em silêncio):
+- **`manager`**: a matriz diz `read/complete-by-scope`; o catálogo mantém `update`+`acknowledge` além disso.
+- **`finance`/`inventory`**: a matriz concede `read`/`read+answer-by-scope`; o catálogo pode não refletir.
+Decidir numa rodada dedicada se a matriz ou o catálogo é a fonte a ajustar, caso a caso.
+
+## P-IMPOUND-CHK-VISIBILITY (2026-08-01) — consequência de RBAC no endpoint de custódia (conflito §A2 com D-record da rota impound checklist-runs)
+
+CONFLITO REGISTRADO (não resolvido em silêncio). Ao conceder `checklist_runs:read` ao `field_technician`
+(exigência de D-CHK-DISPATCH-CREATE — "answer-assigned": o guincheiro precisa BAIXAR a run da OS despachada), o
+`field_technician` passa a atravessar a guarda DUPLA (`impound:read` **E** `checklist_runs:read`) do endpoint
+`GET /impound-processes/:id/checklist-runs`. Esse endpoint (D-record em `decisoes.md`, "Checklist do guincho
+passa a ser visível dentro do dossiê de custódia") foi desenhado assumindo que o `field_technician` tinha
+`impound:read` SEM `checklist_runs:read`, justamente para barrá-lo ("escalada de privilégio real", achado do
+`coordenador-de-acessos`). Essa premissa mudou.
+- **Impacto avaliado como BAIXO:** o endpoint devolve RUNS de checklist (dados que o `field_technician` já lê via
+  `checklist_runs:read`), filtradas por processo de custódia — não expõe hash-chain/autoridade. Não é uma nova
+  classe de dado, é um filtro sobre dado já legível pelo papel.
+- **Fora do escopo do PR-A** endurecer a guarda de custódia (escopo proibido: "gates de custódia"). O teste
+  `impound-checklist-link.test.ts` foi atualizado para (a) manter a cobertura da guarda-AND com `field_dispatcher`
+  (impound:read SEM checklist_runs:read → 403) e (b) documentar que `field_technician` agora passa (404).
+- **A decidir pela junta / rodada de custódia:** se o dossiê de custódia deve exigir uma permissão adicional que o
+  `field_technician` não tenha (ex.: `impound:read` + uma perm de custódia dedicada) para restaurar a barreira
+  original, ou se a visibilidade atual é aceitável. NÃO alterar a matriz nem o gate sem essa decisão.
+
+## P-CHK-TEMPLATE-PRISMA-V7 (2026-08-01) — createTemplate falha no runtime do Prisma v7 (bug REAL de produção)
+
+Diagnóstico definitivo do que vínhamos chamando de "flakiness local do template 400": `ChecklistService.createTemplate`
+(criação de TEMPLATE de checklist com componentes aninhados via `create`) **falha no runtime do Prisma v7** com
+`Unknown argument tenant_id` — o relation-scalar `tenant_id` é compartilhado entre as relações `tenant` + `template`
+do componente, e o Prisma v7 rejeita o argumento no nested-create. NUNCA foi pego porque toda a suíte de checklist
+roda em `CORE_SAAS_PERSISTENCE=memory`. **É um bug REAL de produção** (sob persistência prisma, `POST /tenant/checklists`
+falharia). NÃO introduzido por nenhum trabalho recente (pré-existente). Fora do escopo do conserto de data-loss
+(PR-A/PR-B). Corrigir numa fatia própria: ajustar o nested-create do componente (ex. usar `connect` explícito ou
+`createMany` sem o relation-scalar duplicado) + adicionar um teste DB-gated de `createTemplate` contra Postgres real
+(o gap que escondeu isso). Registrado para não se perder (§A2).

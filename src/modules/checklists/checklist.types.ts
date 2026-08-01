@@ -81,6 +81,9 @@ export type ChecklistRun = {
   readonly templateVersion: number;
   readonly relatedEntityType?: string;
   readonly relatedEntityId?: string;
+  // P0a — chave durável de idempotência do replay de criação de run pelo mobile (local_run_id). Interno:
+  // NÃO é exposto pelo toChecklistRunDto (sem valor para a UI e mantém a superfície pública enxuta).
+  readonly clientRunKey?: string;
   readonly status: ChecklistRunStatus;
   readonly startedBy?: string;
   readonly completedBy?: string;

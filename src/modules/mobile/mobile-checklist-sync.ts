@@ -15,7 +15,68 @@ import {
 type RawRecord = Record<string, unknown>;
 
 type MobileChecklistActionOutcome = "accepted" | "rejected" | "conflict" | "already_applied";
-type ChecklistActionType = "checklist.item_answer" | "checklist.item_note" | "checklist.complete";
+
+// P0a — CONTRATO CANÔNICO de tipos de ação. O backend fecha o CICLO COMPLETO do checklist de campo
+// (antes só 3 tipos persistiam; foto/avaria/assinatura se perdiam em silêncio). O canônico usa
+// o namespace consistente `checklist.*`; os ALIASES crus que o codec do mobile ATUAL manda (`checklist_run.create`
+// etc.) são aceitos por RETROCOMPAT durante a transição — a P0b (Flutter) alinhará o codec aos canônicos e os
+// aliases poderão ser removidos depois. `checklist_answer.upsert`/`checklist_run.complete` do mobile já chegam
+// traduzidos para `checklist.item_answer`/`checklist.item_note`/`checklist.complete`.
+//
+// D-CHK-DISPATCH-CREATE — quem CRIA a run é o DESPACHO/OPERADOR, não o guincheiro. O `checklist.run_create` deste
+// sync é o caminho do OPERADOR (gated `checklist_runs:create`, checado por-ação abaixo) — NÃO o do guincheiro,
+// que NÃO tem `create` e apenas RESPONDE/CONCLUI/ASSINA (answer/note/marker/divergence/ack/attachment/complete)
+// uma run já criada. No fluxo normal de campo a run nasce do despacho (efeito de domínio de
+// `field_dispatch:create`); este `run.create` cobre a criação manual/direta pelo operador.
+type CanonicalChecklistActionType =
+  | "checklist.run_create"
+  | "checklist.item_answer"
+  | "checklist.item_note"
+  | "checklist.marker_create"
+  | "checklist.divergence_create"
+  | "checklist.acknowledgement_create"
+  | "checklist.attachment_attach"
+  | "checklist.complete";
+
+type ChecklistRunPermission =
+  | "checklist_runs:create"
+  | "checklist_runs:update"
+  | "checklist_runs:complete"
+  | "checklist_runs:acknowledge";
+
+// Aliases crus do mobile atual → tipo canônico. Aceitar AMBOS é a decisão de design (opção "a" do comando):
+// zero quebra do app em produção enquanto a P0b não migra o codec.
+const ACTION_TYPE_ALIASES: Readonly<Record<string, CanonicalChecklistActionType>> = {
+  "checklist.run_create": "checklist.run_create",
+  "checklist_run.create": "checklist.run_create",
+  "checklist.item_answer": "checklist.item_answer",
+  "checklist.item_note": "checklist.item_note",
+  "checklist.marker_create": "checklist.marker_create",
+  "checklist_marker.create": "checklist.marker_create",
+  "checklist.divergence_create": "checklist.divergence_create",
+  "checklist_divergence.create": "checklist.divergence_create",
+  "checklist.acknowledgement_create": "checklist.acknowledgement_create",
+  "checklist_acknowledgement.create": "checklist.acknowledgement_create",
+  "checklist.attachment_attach": "checklist.attachment_attach",
+  "checklist_attachment.attach": "checklist.attachment_attach",
+  "checklist.complete": "checklist.complete",
+  "checklist_run.complete": "checklist.complete",
+};
+
+// Permissão exigida por TIPO CANÔNICO (checagem por-ação, não global): create→create, answer/note/marker/
+// divergence/attachment→update, complete→complete, acknowledgement→acknowledge.
+const ACTION_PERMISSIONS: Readonly<Record<CanonicalChecklistActionType, ChecklistRunPermission>> = {
+  "checklist.run_create": "checklist_runs:create",
+  "checklist.item_answer": "checklist_runs:update",
+  "checklist.item_note": "checklist_runs:update",
+  "checklist.marker_create": "checklist_runs:update",
+  "checklist.divergence_create": "checklist_runs:update",
+  "checklist.attachment_attach": "checklist_runs:update",
+  "checklist.complete": "checklist_runs:complete",
+  "checklist.acknowledgement_create": "checklist_runs:acknowledge",
+};
+
+const SYNC_CLIENT_ACTION_METADATA_KEY = "sync_client_action_id";
 
 type MobileChecklistAction = {
   readonly client_action_id: string;
@@ -29,9 +90,20 @@ type MobileChecklistActionResult = {
   readonly type?: string;
   readonly status: MobileChecklistActionOutcome;
   readonly checklist_run_id?: string;
+  readonly server_run_id?: string;
   readonly server_state?: {
     readonly run: ReturnType<typeof toChecklistRunDto>;
     readonly answers: readonly ReturnType<typeof toChecklistRunAnswerDto>[];
+  };
+  // P0a — descritor do anexo pendente (metadado do sync). NÃO cria registro: o BINÁRIO sobe pelo multipart
+  // (POST /mobile/checklist-runs/:runId/attachments). Serve para o app localizar o endpoint e vincular o
+  // local_att_id ao anexo do servidor sem gerar "anexo fantasma".
+  readonly attachment?: {
+    readonly local_att_id?: string;
+    readonly component_id: string;
+    readonly file_name?: string;
+    readonly status: "pending_binary_upload";
+    readonly upload_endpoint: string;
   };
   readonly error?: {
     readonly code: string;
@@ -55,7 +127,7 @@ type MobileChecklistSyncReceipt = {
 export type MobileChecklistSyncResponse = {
   readonly contract: {
     readonly name: "mobile_checklist_actions_sync";
-    readonly version: "2026-06-14.b098c";
+    readonly version: "2026-07-31.p0a";
     readonly status: "partial";
   };
   readonly client_batch_id: string | null;
@@ -76,11 +148,14 @@ export type MobileChecklistSyncResponse = {
 
 const MAX_BATCH_SIZE = 50;
 const syncReceipts = new Map<string, MobileChecklistSyncReceipt>();
-const supportedActionTypes: readonly ChecklistActionType[] = [
-  "checklist.item_answer",
-  "checklist.item_note",
-  "checklist.complete",
+const GATE_PERMISSIONS: readonly ChecklistRunPermission[] = [
+  "checklist_runs:create",
+  "checklist_runs:update",
+  "checklist_runs:complete",
+  "checklist_runs:acknowledge",
 ];
+
+const CHECKLIST_ATTACHMENT_UPLOAD_ENDPOINT = "/api/v1/mobile/checklist-runs/{runId}/attachments";
 
 export async function syncMobileChecklistActions(
   actor: AuthenticatedActor | undefined,
@@ -116,11 +191,17 @@ export async function syncMobileChecklistActions(
     const result = await processAction(service, actor, action);
 
     if (result.status === "accepted") {
-      syncReceipts.set(receiptKey, {
-        fingerprint,
-        result,
-      });
+      syncReceipts.set(receiptKey, { fingerprint, result });
       accepted.push(result);
+      continue;
+    }
+
+    // P0a — idempotência DURÁVEL: `processAction` pode devolver `already_applied` quando o efeito já persiste
+    // no banco (run/marker/answer/ack/divergência já gravados), mesmo que o `syncReceipts` in-memory tenha se
+    // perdido num restart. Grava o receipt para acelerar replays subsequentes do MESMO processo.
+    if (result.status === "already_applied") {
+      syncReceipts.set(receiptKey, { fingerprint, result });
+      alreadyApplied.push(result);
       continue;
     }
 
@@ -135,7 +216,7 @@ export async function syncMobileChecklistActions(
   return {
     contract: {
       name: "mobile_checklist_actions_sync",
-      version: "2026-06-14.b098c",
+      version: "2026-07-31.p0a",
       status: "partial",
     },
     client_batch_id: request.client_batch_id,
@@ -172,12 +253,15 @@ function assertSyncActor(actor: AuthenticatedActor | undefined): asserts actor i
     throw routeError(403, "FORBIDDEN", "role_required", "Role is required.");
   }
 
-  if (!hasAnyPermission(actor, ["checklist_runs:update", "checklist_runs:complete"])) {
+  // Gate amplo: o ator precisa de PELO MENOS uma permissão de escrita de checklist_runs para sincronizar. A
+  // permissão CERTA de cada tipo é checada por-ação em `processAction` (ex.: sem `:create`, só o run.create é
+  // rejeitado; as demais ações do lote seguem).
+  if (!hasAnyPermission(actor, GATE_PERMISSIONS)) {
     throw routeError(
       403,
       "FORBIDDEN",
       "permission_required",
-      "One of these permissions is required: checklist_runs:update, checklist_runs:complete.",
+      `One of these permissions is required: ${GATE_PERMISSIONS.join(", ")}.`,
     );
   }
 }
@@ -228,62 +312,350 @@ async function processAction(
   action: MobileChecklistAction,
 ): Promise<MobileChecklistActionResult> {
   try {
-    if (!isSupportedActionType(action.type)) {
+    const canonicalType = ACTION_TYPE_ALIASES[action.type];
+
+    if (!canonicalType) {
       throw routeError(400, "BAD_REQUEST", "unsupported_action_type", "type is not supported.");
     }
 
-    if (action.type === "checklist.complete") {
-      requireActionPermission(actor, action, "checklist_runs:complete");
-      const details = await service.completeRun(
-        actor,
-        parseRequiredString(action.payload.run_id, "run_id"),
-        {
-          hasDivergence: parseOptionalBoolean(action.payload.has_divergence) ?? false,
-          observation: parseOptionalString(action.payload.observation) ?? undefined,
-        },
-      );
+    requireActionPermission(actor, action, ACTION_PERMISSIONS[canonicalType]);
 
-      return acceptedResult(action, details);
+    switch (canonicalType) {
+      case "checklist.run_create":
+        return await handleRunCreate(service, actor, action);
+      case "checklist.item_answer":
+      case "checklist.item_note":
+        return await handleAnswer(service, actor, action, canonicalType);
+      case "checklist.marker_create":
+        return await handleMarkerCreate(service, actor, action);
+      case "checklist.divergence_create":
+        return await handleDivergenceCreate(service, actor, action);
+      case "checklist.acknowledgement_create":
+        return await handleAcknowledgementCreate(service, actor, action);
+      case "checklist.attachment_attach":
+        return await handleAttachmentAttach(service, actor, action);
+      case "checklist.complete":
+        return await handleComplete(service, actor, action);
     }
-
-    requireActionPermission(actor, action, "checklist_runs:update");
-
-    const details = await service.getRun(actor, parseRequiredString(action.payload.run_id, "run_id"));
-    const existingAnswer = details.answers.find(
-      (answer) => answer.componentId === parseRequiredString(action.payload.component_id, "component_id"),
-    );
-    const answer = action.type === "checklist.item_answer"
-      ? buildAnswerPayload(action)
-      : buildNotePayload(action, existingAnswer);
-    const updated = await service.updateRun(actor, details.run.id, {
-      answers: [answer],
-    });
-
-    return acceptedResult(action, updated);
   } catch (error) {
     return actionErrorResult(action, error);
   }
 }
 
-function buildAnswerPayload(action: MobileChecklistAction) {
+// ---------------------------------------------------------------------------------------------------------
+// Handlers por tipo canônico.
+// ---------------------------------------------------------------------------------------------------------
+
+// Caminho do OPERADOR (gated `checklist_runs:create`) — criação direta/manual de run pelo sync. O guincheiro
+// NÃO chega aqui (não tem `create`); no fluxo normal a run já foi criada pelo despacho (D-CHK-DISPATCH-CREATE).
+async function handleRunCreate(
+  service: ChecklistService,
+  actor: AuthenticatedActor,
+  action: MobileChecklistAction,
+): Promise<MobileChecklistActionResult> {
+  const localRunId = parseRequiredString(action.payload.local_run_id, "local_run_id");
+  const checklistId = parseRequiredString(
+    (action.payload.checklist_id ?? action.payload.template_id) as unknown,
+    "checklist_id",
+  );
+
+  // Idempotência durável: se a run já existe para este local_run_id (replay pós-restart), devolve a existente
+  // como `already_applied` — ZERO duplicata. O repositório também barra a corrida no unique client_run_key.
+  const existing = await service.findRunByClientKey(actor, localRunId);
+
+  if (existing) {
+    const details = await service.getRun(actor, existing.id);
+    return alreadyAppliedResult(action, details);
+  }
+
+  const run = await service.createRun(actor, {
+    checklistId,
+    clientRunKey: localRunId,
+    relatedEntityType: parseOptionalString(action.payload.related_entity_type) ?? undefined,
+    relatedEntityId: parseOptionalString(action.payload.related_entity_id) ?? undefined,
+    answers: [],
+  });
+
+  const details = await service.getRun(actor, run.id);
+  return acceptedResult(action, details);
+}
+
+async function handleAnswer(
+  service: ChecklistService,
+  actor: AuthenticatedActor,
+  action: MobileChecklistAction,
+  canonicalType: "checklist.item_answer" | "checklist.item_note",
+): Promise<MobileChecklistActionResult> {
+  const runId = await resolveRunId(service, actor, action);
+  const details = await service.getRun(actor, runId);
+  const componentId = parseRequiredString(readComponentId(action), "component_id");
+
+  const duplicate = details.answers.find(
+    (answer) =>
+      answer.componentId === componentId &&
+      readSyncClientActionId(answer.metadata) === action.client_action_id,
+  );
+
+  if (duplicate) {
+    return alreadyAppliedResult(action, details);
+  }
+
+  const existingAnswer = details.answers.find((answer) => answer.componentId === componentId);
+  const answer = canonicalType === "checklist.item_answer"
+    ? buildAnswerPayload(action, componentId)
+    : buildNotePayload(action, componentId, existingAnswer);
+  const updated = await service.updateRun(actor, runId, { answers: [answer] });
+
+  return acceptedResult(action, updated);
+}
+
+async function handleMarkerCreate(
+  service: ChecklistService,
+  actor: AuthenticatedActor,
+  action: MobileChecklistAction,
+): Promise<MobileChecklistActionResult> {
+  const runId = await resolveRunId(service, actor, action);
+  const details = await service.getRun(actor, runId);
+
+  const duplicate = details.markers.find(
+    (marker) => readSyncClientActionId(marker.metadata) === action.client_action_id,
+  );
+
+  if (duplicate) {
+    return alreadyAppliedResult(action, details);
+  }
+
+  const componentId = parseRequiredString(readComponentId(action), "component_id");
+  const markerType =
+    parseOptionalString(action.payload.marker_type) ?? parseOptionalString(action.payload.type) ?? "damage";
+  const description =
+    parseOptionalString(action.payload.description) ??
+    parseOptionalString(action.payload.position_label) ??
+    parseOptionalString(action.payload.label) ??
+    undefined;
+  const localMarkerId = parseOptionalString(action.payload.local_marker_id);
+
+  await service.createMarker(actor, runId, {
+    componentId,
+    // x/y podem não vir numéricos (o rótulo textual position_label/label é o que importa) — default 0.
+    x: toFiniteNumber(action.payload.x, 0),
+    y: toFiniteNumber(action.payload.y, 0),
+    markerType,
+    description,
+    metadata: {
+      ...parseOptionalRecord(action.payload.metadata),
+      [SYNC_CLIENT_ACTION_METADATA_KEY]: action.client_action_id,
+      ...(localMarkerId ? { local_marker_id: localMarkerId } : {}),
+    },
+  });
+
+  const refreshed = await service.getRun(actor, runId);
+  return acceptedResult(action, refreshed);
+}
+
+async function handleDivergenceCreate(
+  service: ChecklistService,
+  actor: AuthenticatedActor,
+  action: MobileChecklistAction,
+): Promise<MobileChecklistActionResult> {
+  const runId = await resolveRunId(service, actor, action);
+  const details = await service.getRun(actor, runId);
+
+  // Divergência é um FLAG de estado (não uma entidade acumulável): se a run já está em pending_acknowledgement
+  // ou completed_with_divergence, a divergência já foi registrada → idempotente (already_applied).
+  if (
+    details.run.status === "pending_acknowledgement" ||
+    details.run.status === "completed_with_divergence"
+  ) {
+    return alreadyAppliedResult(action, details);
+  }
+
+  const componentId = parseRequiredString(readComponentId(action), "component_id");
+  const observation = parseRequiredString(
+    (action.payload.observation ?? action.payload.note) as unknown,
+    "observation",
+  );
+
+  await service.registerDivergence(actor, runId, {
+    observation,
+    componentId,
+    // Sem arquivo no JSON do sync: registerDivergence pula o anexo (sem "fantasma"); a foto sobe via multipart.
+    fileUrl: parseOptionalString(action.payload.file_url) ?? undefined,
+    metadata: {
+      ...parseOptionalRecord(action.payload.metadata),
+      [SYNC_CLIENT_ACTION_METADATA_KEY]: action.client_action_id,
+    },
+  });
+
+  const refreshed = await service.getRun(actor, runId);
+  return acceptedResult(action, refreshed);
+}
+
+async function handleAcknowledgementCreate(
+  service: ChecklistService,
+  actor: AuthenticatedActor,
+  action: MobileChecklistAction,
+): Promise<MobileChecklistActionResult> {
+  const runId = await resolveRunId(service, actor, action);
+  const details = await service.getRun(actor, runId);
+
+  const duplicate = details.acknowledgements.find(
+    (acknowledgement) => readSyncClientActionId(acknowledgement.metadata) === action.client_action_id,
+  );
+
+  if (duplicate) {
+    return alreadyAppliedResult(action, details);
+  }
+
+  const message = parseRequiredString(
+    (action.payload.message ?? action.payload.observation) as unknown,
+    "message",
+  );
+  const observation = parseOptionalString(action.payload.observation) ?? undefined;
+
+  await service.acknowledgeRun(actor, runId, {
+    message,
+    observation,
+    metadata: {
+      ...parseOptionalRecord(action.payload.metadata),
+      [SYNC_CLIENT_ACTION_METADATA_KEY]: action.client_action_id,
+    },
+  });
+
+  const refreshed = await service.getRun(actor, runId);
+  return acceptedResult(action, refreshed);
+}
+
+// attachment.attach — SÓ METADADO. NÃO cria ChecklistAttachment (o schema exige file_url NOT NULL; sem binário
+// isso seria um "anexo fantasma"). A persistência do anexo é o UPLOAD MULTIPART do binário
+// (POST /mobile/checklist-runs/:runId/attachments, já existente). Esta ação apenas resolve o local_run_id →
+// server_run_id e devolve o endpoint de upload + eco do local_att_id para o app subir o binário depois (P0b).
+// Não persiste nada → é idempotente por construção (replay não duplica).
+async function handleAttachmentAttach(
+  service: ChecklistService,
+  actor: AuthenticatedActor,
+  action: MobileChecklistAction,
+): Promise<MobileChecklistActionResult> {
+  const runId = await resolveRunId(service, actor, action);
+  const details = await service.getRun(actor, runId);
+  const componentId = parseRequiredString(readComponentId(action), "component_id");
+  const localAttId = parseOptionalString(action.payload.local_att_id) ?? undefined;
+  const fileName = parseOptionalString(action.payload.file_name) ?? undefined;
+
   return {
-    componentId: parseRequiredString(action.payload.component_id, "component_id"),
+    client_action_id: action.client_action_id,
+    type: action.type,
+    status: "accepted",
+    checklist_run_id: runId,
+    server_run_id: runId,
+    server_state: {
+      run: toChecklistRunDto(details.run),
+      answers: details.answers.map(toChecklistRunAnswerDto),
+    },
+    attachment: {
+      local_att_id: localAttId,
+      component_id: componentId,
+      file_name: fileName,
+      status: "pending_binary_upload",
+      upload_endpoint: CHECKLIST_ATTACHMENT_UPLOAD_ENDPOINT.replace("{runId}", encodeURIComponent(runId)),
+    },
+  };
+}
+
+async function handleComplete(
+  service: ChecklistService,
+  actor: AuthenticatedActor,
+  action: MobileChecklistAction,
+): Promise<MobileChecklistActionResult> {
+  const runId = await resolveRunId(service, actor, action);
+  const current = await service.getRun(actor, runId);
+
+  // Idempotente por estado: se a run já é terminal-completa (completed / completed_with_divergence), não
+  // rebaixa o status — devolve o estado atual como already_applied.
+  if (current.run.status === "completed" || current.run.status === "completed_with_divergence") {
+    return alreadyAppliedResult(action, current);
+  }
+
+  const details = await service.completeRun(actor, runId, {
+    hasDivergence: parseOptionalBoolean(action.payload.has_divergence) ?? false,
+    observation: parseOptionalString(action.payload.observation) ?? undefined,
+  });
+
+  return acceptedResult(action, details);
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// Resolução de run + payloads.
+// ---------------------------------------------------------------------------------------------------------
+
+// Resolve o id de servidor da run: `run_id` explícito (server id) OU `local_run_id` (chave durável do mobile).
+// A resolução por local_run_id funciona tanto DENTRO do mesmo lote (run.create já inseriu) quanto pós-restart
+// (a run persiste no banco com client_run_key).
+async function resolveRunId(
+  service: ChecklistService,
+  actor: AuthenticatedActor,
+  action: MobileChecklistAction,
+): Promise<string> {
+  const serverRunId = parseOptionalString(action.payload.run_id);
+
+  if (serverRunId) {
+    return serverRunId;
+  }
+
+  const localRunId = parseOptionalString(action.payload.local_run_id);
+
+  if (localRunId) {
+    const run = await service.findRunByClientKey(actor, localRunId);
+
+    if (!run) {
+      throw new ChecklistError(
+        404,
+        "CHECKLIST_RUN_NOT_FOUND",
+        "checklist_run_not_found",
+        "Checklist run not found for local_run_id.",
+      );
+    }
+
+    return run.id;
+  }
+
+  throw routeError(400, "BAD_REQUEST", "required_field", "run_id or local_run_id is required.");
+}
+
+function readComponentId(action: MobileChecklistAction): unknown {
+  return action.payload.component_id ?? action.payload.field_id;
+}
+
+function readSyncClientActionId(metadata: RawRecord | undefined): string | undefined {
+  const value = metadata?.[SYNC_CLIENT_ACTION_METADATA_KEY];
+
+  return typeof value === "string" ? value : undefined;
+}
+
+function buildAnswerPayload(action: MobileChecklistAction, componentId: string) {
+  return {
+    componentId,
     value: action.payload.value ?? null,
-    metadata: parseOptionalRecord(action.payload.metadata),
+    metadata: {
+      ...parseOptionalRecord(action.payload.metadata),
+      [SYNC_CLIENT_ACTION_METADATA_KEY]: action.client_action_id,
+    },
   };
 }
 
 function buildNotePayload(
   action: MobileChecklistAction,
+  componentId: string,
   existingAnswer: ChecklistRunAnswer | undefined,
 ) {
   return {
-    componentId: parseRequiredString(action.payload.component_id, "component_id"),
+    componentId,
     value: existingAnswer?.value ?? action.payload.value ?? null,
     metadata: {
       ...(existingAnswer?.metadata ?? {}),
       ...parseOptionalRecord(action.payload.metadata),
       note: parseRequiredString(action.payload.note, "note"),
+      [SYNC_CLIENT_ACTION_METADATA_KEY]: action.client_action_id,
     },
   };
 }
@@ -291,7 +663,7 @@ function buildNotePayload(
 function requireActionPermission(
   actor: AuthenticatedActor,
   action: MobileChecklistAction,
-  permission: "checklist_runs:update" | "checklist_runs:complete",
+  permission: ChecklistRunPermission,
 ): void {
   if (actor.permissions.includes(permission)) {
     return;
@@ -309,6 +681,24 @@ function acceptedResult(
     type: action.type,
     status: "accepted",
     checklist_run_id: details.run.id,
+    server_run_id: details.run.id,
+    server_state: {
+      run: toChecklistRunDto(details.run),
+      answers: details.answers.map(toChecklistRunAnswerDto),
+    },
+  };
+}
+
+function alreadyAppliedResult(
+  action: MobileChecklistAction,
+  details: Awaited<ReturnType<ChecklistService["updateRun"]>>,
+): MobileChecklistActionResult {
+  return {
+    client_action_id: action.client_action_id,
+    type: action.type,
+    status: "already_applied",
+    checklist_run_id: details.run.id,
+    server_run_id: details.run.id,
     server_state: {
       run: toChecklistRunDto(details.run),
       answers: details.answers.map(toChecklistRunAnswerDto),
@@ -451,6 +841,22 @@ function parseOptionalRecord(value: unknown): RawRecord {
   return value === undefined ? {} : asRecord(value, "metadata");
 }
 
+function toFiniteNumber(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+}
+
 function asRecord(value: unknown, field: string): RawRecord {
   if (isPlainRecord(value)) {
     return value;
@@ -463,12 +869,12 @@ function isPlainRecord(value: unknown): value is RawRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isSupportedActionType(type: string): type is ChecklistActionType {
-  return supportedActionTypes.includes(type as ChecklistActionType);
-}
-
 function readRunId(action: MobileChecklistAction): string | undefined {
-  return typeof action.payload.run_id === "string" ? action.payload.run_id : undefined;
+  return (
+    parseOptionalString(action.payload.run_id) ??
+    parseOptionalString(action.payload.local_run_id) ??
+    undefined
+  );
 }
 
 function sanitizeActionForConflict(action: MobileChecklistAction): RawRecord {
@@ -481,7 +887,7 @@ function sanitizeActionForConflict(action: MobileChecklistAction): RawRecord {
 
 function hasAnyPermission(
   actor: AuthenticatedActor,
-  permissions: readonly ("checklist_runs:update" | "checklist_runs:complete")[],
+  permissions: readonly ChecklistRunPermission[],
 ): boolean {
   return permissions.some((permission) => actor.permissions.includes(permission));
 }
