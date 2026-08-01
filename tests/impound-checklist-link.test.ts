@@ -132,11 +132,25 @@ test("HTTP: POST /impound-processes/:id/link-checklist-run exige impound:update 
   });
 });
 
-test("HTTP: GET /impound-processes/:id/checklist-runs exige impound:read E checklist_runs:read (field_technician só tem a 1ª) -> 403", async () => {
+test("HTTP: GET /impound-processes/:id/checklist-runs exige impound:read E checklist_runs:read (field_dispatcher só tem a 1ª) -> 403", async () => {
   await withApi(async ({ baseUrl, tenantId }) => {
-    // field_technician (legacy role) tem impound:read mas NÃO checklist_runs:read.
+    // A guarda DUPLA (impound:read + checklist_runs:read) segue barrando quem tem só a 1ª. field_dispatcher é
+    // agora o papel canônico com impound:read SEM checklist_runs:read (o field_technician passou a ter a 2ª por
+    // D-CHK-DISPATCH-CREATE — "answer-assigned" — então já não serve de exemplo do papel barrado; ver o teste
+    // abaixo e a nota de consequência em controle/pendencias.md).
+    const response = await getReq(baseUrl, `/api/v1/impound-processes/${randomUUID()}/checklist-runs`, headers(tenantId, "field_dispatcher"));
+    assert.equal(response.status, 403, "field_dispatcher tem impound:read mas não checklist_runs:read — deve ser barrado");
+  });
+});
+
+test("HTTP: GET /impound-processes/:id/checklist-runs — field_technician agora tem AS DUAS permissões (D-CHK-DISPATCH-CREATE), passa do gate (404, não 403)", async () => {
+  await withApi(async ({ baseUrl, tenantId }) => {
+    // Consequência de D-CHK-DISPATCH-CREATE: o field_technician ganhou checklist_runs:read ("answer-assigned"),
+    // então passa a guarda dupla deste endpoint (como o manager). Não é mais barrado; alcança o 404 de processo
+    // inexistente. Registrado como consequência de RBAC em controle/pendencias.md (§A2, sem resolução silenciosa).
     const response = await getReq(baseUrl, `/api/v1/impound-processes/${randomUUID()}/checklist-runs`, headers(tenantId, "field_technician"));
-    assert.equal(response.status, 403, "field_technician tem impound:read mas não checklist_runs:read — deve ser barrado");
+    assert.notEqual(response.status, 403, "field_technician agora tem impound:read e checklist_runs:read — não é barrado pelo RBAC");
+    assert.equal(response.status, 404, "processo inexistente — o gate passou, falhou na existência (esperado)");
   });
 });
 

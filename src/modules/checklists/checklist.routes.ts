@@ -108,6 +108,17 @@ export function createChecklistRouter(
     }),
   );
 
+  // D-CHK-DISPATCH-CREATE — o guincheiro baixa a(s) run(s) pré-criada(s) da OS despachada (server_run_id) para
+  // então responder/concluir/assinar. Gated `checklist_runs:read` (que o field_technician passa a ter no PR-A);
+  // tenant-scoped. Declarado ANTES das rotas `/mobile/checklist-runs/:runId/...` (path distinto, sem conflito).
+  router.get(
+    "/mobile/checklist-runs",
+    requireChecklistPermission(CHECKLIST_PERMISSIONS.readRuns),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.listRunsForWorkOrder(request));
+    }),
+  );
+
   router.post(
     "/mobile/checklist-runs",
     requireChecklistPermission(CHECKLIST_PERMISSIONS.createRuns),

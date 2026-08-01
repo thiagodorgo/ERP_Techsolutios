@@ -21,6 +21,7 @@ import type {
 import type {
   ChecklistRepository,
   CreateRunData,
+  CreateRunResult,
   CreateTemplateData,
   RepositoryRunDetails,
   UpdateRunData,
@@ -51,6 +52,9 @@ type PrismaChecklistClient = {
   checklistMarker: PrismaModelDelegate;
   checklistAcknowledgement: PrismaModelDelegate;
   auditLog: PrismaModelDelegate;
+  // P0a — INSERT ... ON CONFLICT DO NOTHING RETURNING para a criação idempotente-durável de run (createRun com
+  // client_run_key). O tagged-template do Prisma; tipado frouxo (o repo já recebe o `tx` por cast opaco).
+  $queryRaw<T = unknown>(query: TemplateStringsArray, ...values: unknown[]): Promise<T>;
 };
 
 export class PrismaChecklistRepository implements ChecklistRepository {
@@ -300,7 +304,21 @@ export class PrismaChecklistRepository implements ChecklistRepository {
     return this.listPublishedTemplates(tenantId);
   }
 
-  async createRun(data: CreateRunData, template: ChecklistTemplate): Promise<ChecklistRun> {
+  async createRun(data: CreateRunData, template: ChecklistTemplate): Promise<CreateRunResult> {
+    // P0a — idempotência durável do replay de `checklist.run_create`. Com client_run_key, pré-checa (atalho
+    // feliz) e insere via ON CONFLICT DO NOTHING (não pelo `create`, que abortaria a tx no P2002) — ver
+    // `createRunWithClientKey`. Sem chave (web/despacho manual), o `create` normal roda: NULLs distintos no
+    // unique [tenant_id, client_run_key] → nunca colidem entre si, sempre `created:true`.
+    if (data.clientRunKey) {
+      const existing = await this.getRunByClientKey(data.tenantId, data.clientRunKey);
+
+      if (existing) {
+        return { run: existing, created: false };
+      }
+
+      return this.createRunWithClientKey(data, template, data.clientRunKey);
+    }
+
     const record = await this.client.checklistRun.create({
       data: {
         tenant_id: data.tenantId,
@@ -308,6 +326,7 @@ export class PrismaChecklistRepository implements ChecklistRepository {
         template_version: template.version,
         related_entity_type: data.relatedEntityType ?? null,
         related_entity_id: data.relatedEntityId ?? null,
+        client_run_key: null,
         status: "in_progress",
         started_by: data.actorUserId,
         answers: {
@@ -321,13 +340,131 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       },
     });
 
-    return mapRunRecord(record);
+    return { run: mapRunRecord(record), created: true };
+  }
+
+  // P0a (conserto MÉDIA da junta) — insere a run com client_run_key SEM nunca abortar a transação sob corrida.
+  // `withTenantRls` envolve TODO o createRun numa ÚNICA transação interativa; se usássemos `create`, o perdedor
+  // da corrida sofreria unique violation (23505/P2002), a transação entraria em ABORTED, e a re-busca no
+  // `catch` falharia com 25P02 ("current transaction is aborted") → createRun LANÇARIA em vez de devolver
+  // `created:false` (Prisma não cria savepoint por query em tx interativa). A cura na RAIZ é
+  // `INSERT ... ON CONFLICT (tenant_id, client_run_key) DO NOTHING RETURNING`: o DO NOTHING NÃO erra, então a
+  // transação continua VÁLIDA — 0 linhas ⇒ conflito ⇒ um SELECT normal (`getRunByClientKey`, tx ainda viva)
+  // devolve a run do vencedor com `created:false`; 1 linha ⇒ inserimos com `created:true`. Nunca há 23505/25P02.
+  private async createRunWithClientKey(
+    data: CreateRunData,
+    template: ChecklistTemplate,
+    clientRunKey: string,
+  ): Promise<CreateRunResult> {
+    // Colunas com default no banco (id, status, started_at, created_at, updated_at) são omitidas — o Postgres
+    // preenche. NOT NULL sem default (tenant_id, template_id, template_version, started_by) e as opcionais
+    // (related_entity_*, client_run_key) vão explícitas. `status` fixa 'in_progress' (paridade com o `create`).
+    const inserted = await this.client.$queryRaw<unknown[]>`
+      INSERT INTO checklist_runs (
+        tenant_id,
+        template_id,
+        template_version,
+        related_entity_type,
+        related_entity_id,
+        client_run_key,
+        status,
+        started_by
+      )
+      VALUES (
+        ${data.tenantId}::uuid,
+        ${template.id}::uuid,
+        ${template.version}::int,
+        ${data.relatedEntityType ?? null},
+        ${data.relatedEntityId ?? null},
+        ${clientRunKey},
+        'in_progress',
+        ${data.actorUserId}::uuid
+      )
+      ON CONFLICT (tenant_id, client_run_key) DO NOTHING
+      RETURNING
+        id,
+        tenant_id,
+        template_id,
+        template_version,
+        related_entity_type,
+        related_entity_id,
+        client_run_key,
+        status,
+        started_by,
+        completed_by,
+        started_at,
+        completed_at,
+        created_at,
+        updated_at
+    `;
+
+    if (inserted.length === 0) {
+      // Conflito: o vencedor da corrida já inseriu esta client_run_key (MESMO tenant → RLS a enxerga). O
+      // DO NOTHING não abortou a tx, então este SELECT roda normalmente e devolve a run existente.
+      const existing = await this.getRunByClientKey(data.tenantId, clientRunKey);
+
+      if (existing) {
+        return { run: existing, created: false };
+      }
+
+      // Estado teoricamente inalcançável (conflito no unique sem linha visível no mesmo tenant). Falha alto e
+      // claro em vez de mascarar — nunca deveria ocorrer.
+      throw new Error("checklist run insert conflicted but no existing run was found for the client_run_key");
+    }
+
+    const run = mapRunRecord(inserted[0]);
+
+    // A run acabou de ser inserida (`created:true`) — persiste as respostas na MESMA transação (atomicidade
+    // idêntica ao nested-create). Runs de despacho vêm sem respostas (answers vazio) → nada a inserir.
+    if (data.answers.length > 0) {
+      await this.client.checklistRunAnswer.createMany({
+        data: data.answers.map((answer) => ({
+          tenant_id: data.tenantId,
+          run_id: run.id,
+          component_id: answer.componentId,
+          value: answer.value,
+          metadata: answer.metadata,
+        })),
+      });
+    }
+
+    return { run, created: true };
+  }
+
+  async getRunByClientKey(tenantId: string, clientRunKey: string): Promise<ChecklistRun | null> {
+    const record = await this.client.checklistRun.findFirst({
+      where: {
+        tenant_id: tenantId,
+        client_run_key: clientRunKey,
+      },
+    });
+
+    return record ? mapRunRecord(record) : null;
   }
 
   async listRuns(tenantId: string): Promise<readonly ChecklistRun[]> {
     const records = await this.client.checklistRun.findMany({
       where: {
         tenant_id: tenantId,
+      },
+      orderBy: {
+        created_at: "desc",
+      },
+    });
+
+    return records.map(mapRunRecord);
+  }
+
+  async listRunsByRelatedEntity(
+    tenantId: string,
+    relatedEntityType: string,
+    relatedEntityId: string,
+  ): Promise<readonly ChecklistRun[]> {
+    const records = await this.client.checklistRun.findMany({
+      where: {
+        tenant_id: tenantId,
+        related_entity_type: relatedEntityType,
+        related_entity_id: relatedEntityId,
       },
       orderBy: {
         created_at: "desc",
@@ -534,7 +671,7 @@ export class PrismaChecklistRepository implements ChecklistRepository {
   }
 }
 
-class RlsPrismaChecklistRepository implements ChecklistRepository {
+export class RlsPrismaChecklistRepository implements ChecklistRepository {
   constructor(private readonly prismaClient: PrismaClient) {}
 
   listTemplates(tenantId: string): Promise<readonly ChecklistTemplate[]> {
@@ -569,7 +706,7 @@ class RlsPrismaChecklistRepository implements ChecklistRepository {
     return this.withTenant(tenantId, (repository) => repository.listTemplatesByType(tenantId));
   }
 
-  createRun(data: CreateRunData, template: ChecklistTemplate): Promise<ChecklistRun> {
+  createRun(data: CreateRunData, template: ChecklistTemplate): Promise<CreateRunResult> {
     return this.withTenant(data.tenantId, (repository) => repository.createRun(data, template));
   }
 
@@ -579,6 +716,20 @@ class RlsPrismaChecklistRepository implements ChecklistRepository {
 
   getRun(tenantId: string, runId: string): Promise<RepositoryRunDetails | null> {
     return this.withTenant(tenantId, (repository) => repository.getRun(tenantId, runId));
+  }
+
+  getRunByClientKey(tenantId: string, clientRunKey: string): Promise<ChecklistRun | null> {
+    return this.withTenant(tenantId, (repository) => repository.getRunByClientKey(tenantId, clientRunKey));
+  }
+
+  listRunsByRelatedEntity(
+    tenantId: string,
+    relatedEntityType: string,
+    relatedEntityId: string,
+  ): Promise<readonly ChecklistRun[]> {
+    return this.withTenant(tenantId, (repository) =>
+      repository.listRunsByRelatedEntity(tenantId, relatedEntityType, relatedEntityId),
+    );
   }
 
   updateRun(data: UpdateRunData): Promise<RepositoryRunDetails | null> {
@@ -716,6 +867,7 @@ function mapRunRecord(record: unknown): ChecklistRun {
     template_version: number;
     related_entity_type: string | null;
     related_entity_id: string | null;
+    client_run_key?: string | null;
     status: ChecklistRunStatus;
     started_by: string | null;
     completed_by: string | null;
@@ -732,6 +884,7 @@ function mapRunRecord(record: unknown): ChecklistRun {
     templateVersion: value.template_version,
     relatedEntityType: value.related_entity_type ?? undefined,
     relatedEntityId: value.related_entity_id ?? undefined,
+    clientRunKey: value.client_run_key ?? undefined,
     status: value.status,
     startedBy: value.started_by ?? undefined,
     completedBy: value.completed_by ?? undefined,

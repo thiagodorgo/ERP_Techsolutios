@@ -18,6 +18,11 @@ export const FIELD_DISPATCH_EVENTS = [
   "field_dispatch_status_changed",
   "field_dispatch_reassigned",
   "field_dispatch_cancelled",
+  // D-CHK-DISPATCH-CREATE — auditoria FAIL-OPEN: quando o efeito de domínio que provisiona a run do checklist
+  // falha, o despacho segue (201) mas registra ESTE evento na timeline (durável/visível), nunca em silêncio.
+  // A coluna `event_type` TEM um CHECK no banco (`field_dispatch_events_event_type_check`): este 5º valor foi
+  // ADICIONADO ao CHECK pela migração aditiva 20260858000000 (sem ela, o INSERT deste evento estouraria 23514).
+  "field_dispatch_checklist_run_failed",
 ] as const;
 
 export type FieldDispatchStatus = (typeof FIELD_DISPATCH_STATUSES)[number];

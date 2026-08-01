@@ -373,6 +373,40 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
     assert.equal(ROLE_PERMISSIONS[role].includes("telemetry:read"), false);
   }
 
+  // D-CHK-DISPATCH-CREATE — `checklist_runs:create` = OPERADOR + admins (RBAC_MATRIX:44 operator=create/answer/
+  // complete-by-scope; field_technician=answer-assigned). No campo, a criação da run é EFEITO DE DOMÍNIO do
+  // despacho (field_dispatch:create), NÃO permissão do guincheiro → create fica FORA de field_technician,
+  // technician (paridade de campo) e manager (só operator+admins).
+  for (const role of ["operator", "super_admin", "tenant_admin", "platform_admin"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("checklist_runs:create"), true);
+  }
+  for (const role of [
+    "manager",
+    "technician",
+    "field_technician",
+    "field_dispatcher",
+    "finance",
+    "inventory",
+    "auditor",
+    "viewer",
+    "support",
+  ] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("checklist_runs:create"), false);
+  }
+  // "answer-assigned": o campo (field_technician + technician) RESPONDE a run pré-criada = read/update/complete/
+  // acknowledge (SEM create).
+  for (const role of ["field_technician", "technician"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("checklist_runs:read"), true);
+    assert.equal(ROLE_PERMISSIONS[role].includes("checklist_runs:update"), true);
+    assert.equal(ROLE_PERMISSIONS[role].includes("checklist_runs:complete"), true);
+    assert.equal(ROLE_PERMISSIONS[role].includes("checklist_runs:acknowledge"), true);
+  }
+  // operator cria/lê/responde/conclui, mas NÃO assina o termo de ciência (acknowledge = campo+manager+admins).
+  assert.equal(ROLE_PERMISSIONS.operator.includes("checklist_runs:read"), true);
+  assert.equal(ROLE_PERMISSIONS.operator.includes("checklist_runs:update"), true);
+  assert.equal(ROLE_PERMISSIONS.operator.includes("checklist_runs:complete"), true);
+  assert.equal(ROLE_PERMISSIONS.operator.includes("checklist_runs:acknowledge"), false);
+
   // Ω5P PR-18a (D-Ω5P-AUTH-03) — `authority_credentials:manage` (provisionar a credencial da autoridade do
   // authority-portal) = SÓ tenant_admin + super_admin + platform_admin (herança do catálogo, sem lista explícita).
   // SoD: quem OPERA o pátio (manager/operator) NÃO provisiona a autoridade que SOLICITA a remoção.

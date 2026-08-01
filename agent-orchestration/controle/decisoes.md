@@ -869,3 +869,35 @@ Fecha o cluster P-Ω3F6-STATUS-BYPASS + TERMINAL-GUARD + ZERO-ATOMICIDADE (pré-
   via query string `?dossie=` preservado ao trocar navegação de página cheia por modal).
 - **Registro obrigatório:** este D-record cita e não sobrescreve `D-Ω5P-09`/
   `D-Ω5P-RECON-A` em silêncio, conforme §A2 do CLAUDE.md.
+
+## D-CHK-DISPATCH-CREATE (2026-08-01) — Checklist do campo: despacho cria a run, guincheiro só responde
+
+- **Decisão do dono (produto):** no fluxo de campo, **o despacho/operador CRIA a execução (run) do checklist**;
+  o **guincheiro (`field_technician`) NÃO cria** — ele apenas RESPONDE/CONCLUI/ASSINA uma run já criada. Isso
+  ratifica o desenho já expresso em `RBAC_MATRIX.md:44` (`operator` = create/answer/complete-by-scope;
+  `field_technician` = answer-assigned) contra o app mobile de hoje, que erroneamente fazia o guincheiro criar
+  a run offline (`getOrStartRun`) — o app será corrigido (P0b/Flutter).
+- **Contexto:** a recon do gap de sync de checklist revelou perda silenciosa de dado (foto/avaria/assinatura/
+  respostas nunca persistiam no servidor). O conserto exigiu resolver "quem cria a run no campo". Ver o plano
+  completo do fluxo em `docs/juntas/` (a fatia PR-A/PR-B) e a recon em `mobile-checklist-sync.ts`.
+- **Mecanismo (padrão efeito-de-domínio NÃO-amplificador, mesmo do Ω4C):** a criação da run é um **efeito de
+  domínio de `field_dispatch:create`** (espelha o freeze do snapshot de checklist que o despacho JÁ faz em
+  `FieldDispatchService.create`) — NÃO re-checa `checklist_runs:create` do despachante, então NÃO amplifica
+  permissão. `checklist_runs:create` continua governando só os caminhos diretos/manuais (REST
+  `POST /mobile/checklist-runs` e o `run.create` do sync) = persona **operator + admins**. A run nasce
+  ligada à OS (`relatedEntityType='work_order'`, `relatedEntityId=<workOrderId>` — já suportado desde o fix
+  do elo, PR-01 Ω-VID). Idempotência durável por chave determinística `client_run_key="dispatch:<workOrderId>:
+  <checklistId>"` (coluna nova, migração aditiva `20260857000000`) — re-despacho não duplica.
+- **"Answer-assigned" (interpretação ratificada):** para o `field_technician` inclui `checklist_runs:read`
+  (baixar a run atribuída) + `:update` (responder) + `:complete` (concluir) + `:acknowledge` (assinar). O
+  `catalog.ts` hoje NÃO concede NENHUMA dessas ao `field_technician` (drift vs. a matriz) — corrigido no PR-A.
+  `checklist_runs:create` fica FORA do `field_technician` e também é removido do `technician` (paridade de
+  campo) e do `manager` (create só operator+admins, conforme a matriz).
+- **Como o guincheiro obtém o `server_run_id`:** endpoint novo `GET /api/v1/mobile/checklist-runs?workOrderId=`
+  (gated `checklist_runs:read`, tenant-scoped) devolve a(s) run(s) pré-criada(s) da OS atribuída. Sem isso o
+  guincheiro não teria a run à qual anexar respostas.
+- **Consequência aceita (fronteira da decisão):** o guincheiro **offline sem run pré-criada** (OS não despachada
+  com checklist) NÃO consegue preencher o checklist. É esperado — o preenchimento pressupõe despacho prévio (que
+  ocorre online, no escritório, antes do campo). Documentado no estado de UI do app (P0b).
+- **Decisões de execução delegadas à junta do PR** (recomendações do planejador): criação no despacho +
+  fail-open (falha ao criar run não bloqueia o despacho); endpoint cross-tenant → 200-lista-vazia (não 404).

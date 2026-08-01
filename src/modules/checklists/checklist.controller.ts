@@ -148,6 +148,20 @@ export class ChecklistController {
     };
   }
 
+  // D-CHK-DISPATCH-CREATE — o guincheiro (field_technician, gated checklist_runs:read) lista a(s) run(s)
+  // pré-criada(s) de uma OS pelo query `workOrderId`. Tenant-scoped no serviço/repositório; cross-tenant → [].
+  // Filtro opcional `?checklistId=` desambigua quando a OS trocou de checklist entre despachos (>1 run); a
+  // lista vem ordenada por created_at desc. IMPORTANTE (P0b/app): 200 com lista VAZIA pode significar FALHA de
+  // provisão da run (fail-open do despacho), não só ausência de checklist na OS — o app trata os dois casos.
+  async listRunsForWorkOrder(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const runs = await service.listRunsForWorkOrder(actor, request.query.workOrderId, request.query.checklistId);
+
+    return {
+      data: runs.map(toChecklistRunDto),
+    };
+  }
+
   async createChecklistRun(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const run = await service.createRun(

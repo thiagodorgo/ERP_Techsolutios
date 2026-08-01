@@ -6,6 +6,12 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 
+// Fixa a persistência em memória ANTES dos imports de módulos do app (que carregam config/env.ts, cujo
+// snapshot de env é congelado no 1º import). Sem isto o `.env` local (CORE_SAAS_PERSISTENCE="prisma") faria
+// o harness — que usa MemoryCoreSaasAdapter + serviços em memória — resolver serviços Prisma e falhar. Mesmo
+// padrão dos demais testes de contrato (ex.: auction-edict-gate). Não altera código de produção.
+process.env.CORE_SAAS_PERSISTENCE = "memory";
+
 import { FakeEvidenceScanner } from "../src/modules/evidence/evidence-storage.js";
 import {
   configureMobileEvidenceUploadScannerForTests,
@@ -793,6 +799,290 @@ test("mobile checklist action sync validates envelope, actor context, permission
     assertNoStackTrace(missingPermission.body);
     assertNoStackTrace(perActionPermission.body);
     assertNoStackTrace(tenantSpoof.body);
+  });
+});
+
+test("mobile checklist sync persists the full offline cycle in one batch and returns server_run_id", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const adminHeaders = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const { templateId, componentId } = await publishChecklistTemplateForSync(baseUrl, adminHeaders);
+    const localRunId = "local-run-cycle-1";
+
+    // Executa o sync com o CONJUNTO de permissões do guincheiro (não o admin cru): prova que create/update/
+    // complete/acknowledge por-ação bastam para o ciclo inteiro.
+    const guincheiroHeaders = {
+      ...adminHeaders,
+      "x-permissions": "checklist_runs:create,checklist_runs:update,checklist_runs:complete,checklist_runs:acknowledge",
+    };
+
+    const sync = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers: guincheiroHeaders,
+      body: {
+        client_batch_id: "checklist-full-cycle-1",
+        actions: fullChecklistCycleActions(localRunId, templateId, componentId),
+      },
+    });
+
+    assert.equal(sync.status, 200);
+    assert.equal(sync.body.data.contract.name, "mobile_checklist_actions_sync");
+    assert.equal(sync.body.data.summary.received, 7);
+    // run.create + answer + marker + divergence + acknowledgement + attachment = 6 aceitos; o complete final
+    // vê a run já em completed_with_divergence (pós-acknowledgement) e é idempotente (already_applied).
+    assert.equal(sync.body.data.summary.accepted, 6);
+    assert.equal(sync.body.data.summary.already_applied, 1);
+    assert.equal(sync.body.data.summary.rejected, 0);
+    assert.equal(sync.body.data.summary.conflicts, 0);
+
+    const runCreate = findSyncResult(sync.body, "cyc-run-create");
+    assert.equal(runCreate.bucket, "accepted");
+    const serverRunId = runCreate.result?.server_run_id as string;
+    assert.equal(typeof serverRunId, "string");
+    assert.equal(serverRunId.length > 0, true);
+
+    // O item_answer referencia a run APENAS pelo local_run_id e resolve para a run criada no mesmo lote.
+    const answer = findSyncResult(sync.body, "cyc-answer-signature");
+    assert.equal(answer.bucket, "accepted");
+    assert.equal(answer.result?.checklist_run_id, serverRunId);
+    const answerState = answer.result?.server_state as { answers: Array<{ value: unknown }> };
+    assert.equal(answerState.answers[0].value, "data:image/png;base64,DRIVER-SIGNATURE");
+
+    // attachment.attach é SÓ metadado: devolve o endpoint multipart do binário e NÃO cria anexo.
+    const attach = findSyncResult(sync.body, "cyc-attachment");
+    assert.equal(attach.bucket, "accepted");
+    const attachInfo = attach.result?.attachment as { status: string; upload_endpoint: string };
+    assert.equal(attachInfo.status, "pending_binary_upload");
+    assert.equal(attachInfo.upload_endpoint.includes(serverRunId), true);
+
+    // Prova de persistência real (não só eco): a comparação retorna avaria persistida, assinatura e ZERO anexo
+    // fantasma; o status final completed_with_divergence prova que o acknowledgement foi aplicado.
+    const comparison = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${serverRunId}/comparison`, {
+      headers: adminHeaders,
+    });
+    assert.equal(comparison.status, 200);
+    assert.equal(comparison.body.data.run.status, "completed_with_divergence");
+    assert.equal(comparison.body.data.markers.length, 1);
+    assert.equal(comparison.body.data.markers[0].description, "Porta dianteira esquerda");
+    assert.equal(comparison.body.data.attachments.length, 0);
+    assert.equal(comparison.body.data.answers.length, 1);
+    assert.equal(comparison.body.data.answers[0].value, "data:image/png;base64,DRIVER-SIGNATURE");
+    assert.equal(JSON.stringify(sync.body).includes(seed.tenantB.id), false);
+    assertNoStackTrace(sync.body);
+  });
+});
+
+test("mobile checklist sync: guincheiro SEM create preenche o ciclo contra uma run PRÉ-CRIADA e tudo persiste", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    // Despacho/operador cria a run (aqui: admin via POST /mobile/checklist-runs). O guincheiro NÃO cria.
+    const adminHeaders = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const preCreated = await createChecklistRunForSync(baseUrl, seed, adminHeaders);
+    const serverRunId = preCreated.runId;
+    const componentId = preCreated.componentId;
+
+    // Ator = guincheiro (field_technician): SOMENTE read/update/complete/acknowledge — SEM checklist_runs:create.
+    const guincheiroHeaders = {
+      ...adminHeaders,
+      "x-permissions": "checklist_runs:read,checklist_runs:update,checklist_runs:complete,checklist_runs:acknowledge",
+    };
+
+    // Ciclo do guincheiro referenciando a run PRÉ-CRIADA pelo server_run_id (NÃO há run.create no lote).
+    const actions = [
+      {
+        client_action_id: "gnc-answer-signature",
+        type: "checklist.item_answer",
+        local_created_at: "2026-07-31T14:01:00.000Z",
+        payload: {
+          run_id: serverRunId,
+          component_id: componentId,
+          value: "data:image/png;base64,DRIVER-SIGNATURE",
+          metadata: { field: "driver_signature" },
+        },
+      },
+      {
+        client_action_id: "gnc-marker",
+        type: "checklist_marker.create",
+        local_created_at: "2026-07-31T14:02:00.000Z",
+        payload: {
+          run_id: serverRunId,
+          local_marker_id: "local-marker-gnc-1",
+          field_id: componentId,
+          type: "scratch",
+          position_label: "Porta dianteira esquerda",
+        },
+      },
+      {
+        client_action_id: "gnc-divergence",
+        type: "checklist_divergence.create",
+        local_created_at: "2026-07-31T14:03:00.000Z",
+        payload: {
+          run_id: serverRunId,
+          component_id: componentId,
+          observation: "Avaria não constava na coleta.",
+        },
+      },
+      {
+        client_action_id: "gnc-acknowledgement",
+        type: "checklist_acknowledgement.create",
+        local_created_at: "2026-07-31T14:04:00.000Z",
+        payload: {
+          run_id: serverRunId,
+          message: "Motorista ciente da avaria registrada.",
+        },
+      },
+      {
+        client_action_id: "gnc-attachment",
+        type: "checklist_attachment.attach",
+        local_created_at: "2026-07-31T14:05:00.000Z",
+        payload: {
+          run_id: serverRunId,
+          local_att_id: "local-att-gnc-1",
+          field_id: componentId,
+          file_name: "avaria.jpg",
+          mime_type: "image/jpeg",
+        },
+      },
+      {
+        client_action_id: "gnc-complete",
+        type: "checklist_run.complete",
+        local_created_at: "2026-07-31T14:06:00.000Z",
+        payload: { run_id: serverRunId, has_divergence: true, observation: "Concluído com avaria." },
+      },
+    ];
+
+    const sync = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers: guincheiroHeaders,
+      body: { client_batch_id: "guincheiro-precreated-1", actions },
+    });
+
+    assert.equal(sync.status, 200);
+    assert.equal(sync.body.data.summary.received, 6);
+    // answer + marker + divergence + acknowledgement + attachment = 5 aceitos; complete vê a run já terminal
+    // (completed_with_divergence pós-acknowledgement) → already_applied. ZERO rejeitado (o guincheiro tem as
+    // permissões certas por-ação, sem precisar de create).
+    assert.equal(sync.body.data.summary.accepted, 5);
+    assert.equal(sync.body.data.summary.already_applied, 1);
+    assert.equal(sync.body.data.summary.rejected, 0);
+    assert.equal(sync.body.data.summary.conflicts, 0);
+
+    const answer = findSyncResult(sync.body, "gnc-answer-signature");
+    assert.equal(answer.bucket, "accepted");
+    assert.equal(answer.result?.checklist_run_id, serverRunId);
+
+    // Prova de persistência REAL via /comparison: avaria persistida, assinatura, ZERO anexo-fantasma, status final.
+    const comparison = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${serverRunId}/comparison`, {
+      headers: adminHeaders,
+    });
+    assert.equal(comparison.status, 200);
+    assert.equal(comparison.body.data.run.status, "completed_with_divergence");
+    assert.equal(comparison.body.data.markers.length, 1);
+    assert.equal(comparison.body.data.markers[0].description, "Porta dianteira esquerda");
+    assert.equal(comparison.body.data.attachments.length, 0);
+    assert.equal(comparison.body.data.answers.length, 1);
+    assert.equal(comparison.body.data.answers[0].value, "data:image/png;base64,DRIVER-SIGNATURE");
+    assert.equal(JSON.stringify(sync.body).includes(seed.tenantB.id), false);
+    assertNoStackTrace(sync.body);
+  });
+});
+
+test("mobile checklist sync is durably idempotent across a simulated restart with zero duplicates", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const adminHeaders = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const { templateId, componentId } = await publishChecklistTemplateForSync(baseUrl, adminHeaders);
+    const localRunId = "local-run-durable-1";
+    const actions = fullChecklistCycleActions(localRunId, templateId, componentId);
+
+    const firstSync = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers: adminHeaders,
+      body: { client_batch_id: "durable-batch-1", actions },
+    });
+    assert.equal(firstSync.status, 200);
+    assert.equal(firstSync.body.data.summary.accepted, 6);
+    const serverRunId = findSyncResult(firstSync.body, "cyc-run-create").result?.server_run_id as string;
+    assert.equal(typeof serverRunId, "string");
+
+    // Simula RESTART do processo: descarta o dedup in-memory (syncReceipts). A run/marker/answer/ack durável
+    // permanece no "banco" (repositório). O replay NÃO pode duplicar nada.
+    const { resetMobileChecklistSyncRuntimeForTests } = await import(
+      "../src/modules/mobile/mobile-checklist-sync.js"
+    );
+    resetMobileChecklistSyncRuntimeForTests();
+
+    const replaySync = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers: adminHeaders,
+      body: { client_batch_id: "durable-batch-2", actions },
+    });
+
+    assert.equal(replaySync.status, 200);
+    assert.equal(replaySync.body.data.summary.received, 7);
+    // Pós-restart, sem o receipt in-memory: run/answer/marker/divergence/ack/complete resolvem para
+    // already_applied pela idempotência DURÁVEL; attachment.attach é metadado noop (accepted, nunca duplica).
+    assert.equal(replaySync.body.data.summary.already_applied, 6);
+    assert.equal(replaySync.body.data.summary.accepted, 1);
+    assert.equal(replaySync.body.data.summary.rejected, 0);
+    assert.equal(replaySync.body.data.summary.conflicts, 0);
+
+    const replayRunCreate = findSyncResult(replaySync.body, "cyc-run-create");
+    assert.equal(replayRunCreate.bucket, "already_applied");
+    assert.equal(replayRunCreate.result?.server_run_id, serverRunId);
+    assert.equal(findSyncResult(replaySync.body, "cyc-marker").bucket, "already_applied");
+    assert.equal(findSyncResult(replaySync.body, "cyc-acknowledgement").bucket, "already_applied");
+
+    // ZERO duplicata: exatamente 1 run (mesmo id), 1 avaria, 0 anexo fantasma, 1 resposta.
+    const comparison = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${serverRunId}/comparison`, {
+      headers: adminHeaders,
+    });
+    assert.equal(comparison.status, 200);
+    assert.equal(comparison.body.data.run.id, serverRunId);
+    assert.equal(comparison.body.data.markers.length, 1);
+    assert.equal(comparison.body.data.attachments.length, 0);
+    assert.equal(comparison.body.data.answers.length, 1);
+    assertNoStackTrace(replaySync.body);
+  });
+});
+
+test("mobile checklist sync enforces per-action permission for run.create", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const adminHeaders = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const { templateId } = await publishChecklistTemplateForSync(baseUrl, adminHeaders);
+    const runCreateAction = {
+      client_action_id: "perm-run-create",
+      type: "checklist_run.create",
+      local_created_at: "2026-07-31T13:00:00.000Z",
+      payload: { local_run_id: "local-run-perm-1", checklist_id: templateId },
+    };
+
+    // Ator com update/complete/acknowledge mas SEM create: passa o gate amplo, mas run.create é rejeitado por-ação.
+    const denied = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers: {
+        ...adminHeaders,
+        "x-permissions": "checklist_runs:update,checklist_runs:complete,checklist_runs:acknowledge",
+      },
+      body: { actions: [runCreateAction] },
+    });
+
+    // Ator com o create → run.create aceito.
+    const allowed = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers: {
+        ...adminHeaders,
+        "x-permissions": "checklist_runs:create,checklist_runs:update,checklist_runs:complete,checklist_runs:acknowledge",
+      },
+      body: { actions: [runCreateAction] },
+    });
+
+    assert.equal(denied.status, 200);
+    assert.equal(denied.body.data.summary.rejected, 1);
+    assert.equal(denied.body.data.rejected[0].error.reason, "permission_required");
+    assert.equal(denied.body.data.rejected[0].error.message, "One of these permissions is required: checklist_runs:create.");
+    assert.equal(allowed.status, 200);
+    assert.equal(allowed.body.data.summary.accepted, 1);
+    assert.equal(typeof allowed.body.data.accepted[0].server_run_id, "string");
+    assertNoStackTrace(denied.body);
+    assertNoStackTrace(allowed.body);
   });
 });
 
@@ -1629,6 +1919,146 @@ async function createChecklistRunForSync(
     componentId: publish.body.data.components[0].id as string,
     tenantId: seed.tenantA.id,
   };
+}
+
+// P0a — publica um template (admin) SEM criar a run: a criação da run é feita pelo SYNC (`checklist.run_create`),
+// que é justamente o buraco que a P0a fecha.
+async function publishChecklistTemplateForSync(
+  baseUrl: string,
+  headers: Record<string, string>,
+) {
+  const create = await requestJson(baseUrl, "/api/v1/tenant/checklists", {
+    method: "POST",
+    headers,
+    body: {
+      name: "Mobile checklist full-cycle template",
+      type: "towing_collection",
+      schema: { source: "p0a_full_cycle" },
+      components: [
+        {
+          componentKey: "condition_note",
+          type: "observation",
+          label: "Condition note",
+          required: true,
+          config: {},
+          validationRules: {},
+          visibilityRules: {},
+        },
+      ],
+    },
+  });
+
+  assert.equal(create.status, 201);
+
+  const publish = await requestJson(baseUrl, `/api/v1/tenant/checklists/${create.body.data.id}/publish`, {
+    method: "POST",
+    headers,
+    body: {},
+  });
+
+  assert.equal(publish.status, 200);
+
+  return {
+    templateId: publish.body.data.id as string,
+    componentId: publish.body.data.components[0].id as string,
+  };
+}
+
+function findSyncResult(
+  body: { readonly data: Record<string, ReadonlyArray<{ readonly client_action_id: string }>> },
+  clientActionId: string,
+) {
+  for (const bucket of ["accepted", "already_applied", "rejected", "conflicts"] as const) {
+    const found = body.data[bucket]?.find((item) => item.client_action_id === clientActionId);
+
+    if (found) {
+      return { bucket, result: found as Record<string, unknown> };
+    }
+  }
+
+  return { bucket: "none" as const, result: undefined };
+}
+
+function fullChecklistCycleActions(localRunId: string, templateId: string, componentId: string) {
+  return [
+    {
+      client_action_id: "cyc-run-create",
+      type: "checklist_run.create",
+      local_created_at: "2026-07-31T12:00:00.000Z",
+      payload: {
+        local_run_id: localRunId,
+        checklist_id: templateId,
+        related_entity_type: "work_order",
+        related_entity_id: "local-work-order-cycle",
+      },
+    },
+    {
+      client_action_id: "cyc-answer-signature",
+      type: "checklist.item_answer",
+      local_created_at: "2026-07-31T12:01:00.000Z",
+      payload: {
+        local_run_id: localRunId,
+        component_id: componentId,
+        value: "data:image/png;base64,DRIVER-SIGNATURE",
+        metadata: { field: "driver_signature" },
+      },
+    },
+    {
+      client_action_id: "cyc-marker",
+      type: "checklist_marker.create",
+      local_created_at: "2026-07-31T12:02:00.000Z",
+      payload: {
+        local_run_id: localRunId,
+        local_marker_id: "local-marker-1",
+        field_id: componentId,
+        type: "scratch",
+        position_label: "Porta dianteira esquerda",
+      },
+    },
+    {
+      client_action_id: "cyc-divergence",
+      type: "checklist_divergence.create",
+      local_created_at: "2026-07-31T12:03:00.000Z",
+      payload: {
+        local_run_id: localRunId,
+        component_id: componentId,
+        observation: "Avaria não constava na coleta.",
+      },
+    },
+    {
+      client_action_id: "cyc-acknowledgement",
+      type: "checklist_acknowledgement.create",
+      local_created_at: "2026-07-31T12:04:00.000Z",
+      payload: {
+        local_run_id: localRunId,
+        message: "Motorista ciente da avaria registrada.",
+      },
+    },
+    {
+      client_action_id: "cyc-attachment",
+      type: "checklist_attachment.attach",
+      local_created_at: "2026-07-31T12:05:00.000Z",
+      payload: {
+        local_run_id: localRunId,
+        local_att_id: "local-att-1",
+        field_id: componentId,
+        file_name: "avaria.jpg",
+        mime_type: "image/jpeg",
+        size_bytes: 245000,
+        checksum: "abc123",
+      },
+    },
+    {
+      client_action_id: "cyc-complete",
+      type: "checklist_run.complete",
+      local_created_at: "2026-07-31T12:06:00.000Z",
+      payload: {
+        local_run_id: localRunId,
+        has_divergence: true,
+        observation: "Concluído com avaria.",
+      },
+    },
+  ];
 }
 
 function seedCoreSaas(service: CoreSaasRegistry): SeedData {

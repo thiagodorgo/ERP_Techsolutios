@@ -128,6 +128,177 @@ test("[isolamento] snapshot da OS de A não é lido pela org B (404)", async () 
   });
 });
 
+// D-CHK-DISPATCH-CREATE — o despacho CRIA a run do checklist (efeito de domínio); o guincheiro só a baixa/responde.
+
+test("[despacho cria run] dispatch de OS com template publicado → run ligada à OS (GET run-por-OS)", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const tpl = await publishTemplate(baseUrl, headers(seed, "tenant_admin"), "Coleta");
+    const wo = await createWO(baseUrl, seed, { title: "OS", checklistId: tpl.id });
+
+    // antes do despacho: nenhuma run
+    const before = await runsForWorkOrder(baseUrl, seed, wo.id);
+    assert.equal(before.status, 200);
+    assert.equal(before.body.data.length, 0);
+
+    const dispatch = await createDispatch(baseUrl, seed, wo.id, seed.techA.id);
+    assert.equal(dispatch.status, 201);
+
+    const after = await runsForWorkOrder(baseUrl, seed, wo.id);
+    assert.equal(after.status, 200);
+    assert.equal(after.body.data.length, 1);
+    const run = after.body.data[0];
+    assert.equal(run.relatedEntityType, "work_order");
+    assert.equal(run.relatedEntityId, wo.id);
+    assert.equal(run.templateId, tpl.id);
+    assert.equal(run.status, "in_progress");
+    // a chave determinística interna NÃO vaza no DTO público.
+    assert.equal("clientRunKey" in run, false);
+    // §2.8 — a resposta não vaza o tenant.
+    assert.equal(JSON.stringify(after.body).includes(seed.tenantB.id), false);
+  });
+});
+
+test("[despacho sem checklist] OS sem checklist_id → despacho 201 SEM run", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const wo = await createWO(baseUrl, seed, { title: "OS sem checklist" });
+    const dispatch = await createDispatch(baseUrl, seed, wo.id, seed.techA.id);
+    assert.equal(dispatch.status, 201);
+
+    const runs = await runsForWorkOrder(baseUrl, seed, wo.id);
+    assert.equal(runs.status, 200);
+    assert.equal(runs.body.data.length, 0);
+  });
+});
+
+test("[idempotência] re-despacho e reassign da mesma OS NÃO duplicam a run", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const tpl = await publishTemplate(baseUrl, headers(seed, "tenant_admin"), "Molde");
+    const wo = await createWO(baseUrl, seed, { title: "OS", checklistId: tpl.id });
+
+    const d1 = await createDispatch(baseUrl, seed, wo.id, seed.techA.id);
+    assert.equal(d1.status, 201);
+    // 2º despacho da MESMA OS (re-despacho) → chave determinística dispatch:<wo>:<tpl> → NÃO cria run nova.
+    const d2 = await createDispatch(baseUrl, seed, wo.id, seed.techA.id);
+    assert.equal(d2.status, 201);
+    // reassign não provisiona run.
+    await req(baseUrl, `/api/v1/operations/dispatches/${d1.body.data.id}/reassign`, {
+      method: "PATCH",
+      headers: headers(seed, "tenant_admin"),
+      body: { operatorUserId: seed.techB.id },
+    });
+
+    const runs = await runsForWorkOrder(baseUrl, seed, wo.id);
+    assert.equal(runs.status, 200);
+    assert.equal(runs.body.data.length, 1);
+  });
+});
+
+test("[GET run-por-OS] cross-tenant → 200 vazio; sem workOrderId → 422; sem checklist_runs:read → 403", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const tpl = await publishTemplate(baseUrl, headers(seed, "tenant_admin"), "Molde");
+    const wo = await createWO(baseUrl, seed, { title: "OS A", checklistId: tpl.id });
+    await createDispatch(baseUrl, seed, wo.id, seed.techA.id);
+
+    // org B consulta a OS de A → 200 lista vazia (isolamento; nunca vaza existência, não 404).
+    const cross = await req(baseUrl, `/api/v1/mobile/checklist-runs?workOrderId=${wo.id}`, {
+      headers: headers(seed, "tenant_admin", "B"),
+    });
+    assert.equal(cross.status, 200);
+    assert.equal(cross.body.data.length, 0);
+
+    // sem workOrderId → 422.
+    const missing = await req(baseUrl, "/api/v1/mobile/checklist-runs", { headers: headers(seed, "tenant_admin") });
+    assert.equal(missing.status, 422);
+    assert.equal(missing.body.error.reason, "work_order_id_required");
+
+    // ator sem checklist_runs:read (finance) → 403.
+    const forbidden = await req(baseUrl, `/api/v1/mobile/checklist-runs?workOrderId=${wo.id}`, {
+      headers: headers(seed, "finance"),
+    });
+    assert.equal(forbidden.status, 403);
+    assert.equal(forbidden.body.error.reason, "permission_required");
+  });
+});
+
+// D-CHK-DISPATCH-CREATE (achado MÉDIA do crítico, item 2) — não SUPER-CONTAR a métrica FATURADA: dois despachos
+// concorrentes da mesma OS provisionam a MESMA run (idempotente) → só 1 emissão de checklist_run.created.
+
+test("[nao super-conta] dois despachos concorrentes da mesma OS → 1 run e 1 unidade FATURADA (checklist_runs_count)", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const { resetCloudUsageRuntimeForTests, getMemoryCloudUsageRepositoryForTests } = await import(
+      "../src/modules/cloud-usage/cloud-usage.service.js"
+    );
+    resetCloudUsageRuntimeForTests();
+
+    const tpl = await publishTemplate(baseUrl, headers(seed, "tenant_admin"), "Coleta");
+    const wo = await createWO(baseUrl, seed, { title: "OS", checklistId: tpl.id });
+
+    // dois despachos CONCORRENTES da MESMA OS → mesma client_run_key determinística dispatch:<wo>:<tpl>.
+    const [d1, d2] = await Promise.all([
+      createDispatch(baseUrl, seed, wo.id, seed.techA.id),
+      createDispatch(baseUrl, seed, wo.id, seed.techA.id),
+    ]);
+    assert.equal(d1.status, 201);
+    assert.equal(d2.status, 201);
+
+    // exatamente 1 run provisionada (a 2ª createRun devolveu created:false).
+    const runs = await runsForWorkOrder(baseUrl, seed, wo.id);
+    assert.equal(runs.status, 200);
+    assert.equal(runs.body.data.length, 1);
+
+    // exatamente 1 unidade FATURADA: o serviço só emite checklist_run.created quando created===true. Sem o
+    // conserto, as 2 emissões teriam event.id distintos → 2 registros checklist_runs_count (super-contagem).
+    await flushCloudUsage();
+    const billed = (await getMemoryCloudUsageRepositoryForTests().listEvents({ tenantId: seed.tenantA.id })).filter(
+      (event) => event.metricKey === "checklist_runs_count",
+    );
+    assert.equal(billed.length, 1);
+
+    resetCloudUsageRuntimeForTests();
+  });
+});
+
+// D-CHK-DISPATCH-CREATE (achado BAIXO do crítico, item 5) — se a OS troca de checklist entre despachos, o GET
+// run-por-OS lista >1 run; o filtro opcional ?checklistId= desambigua a run do checklist vigente.
+
+test("[desambiguacao] OS que troca de checklist entre despachos → GET lista 2 runs; ?checklistId filtra a vigente", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const tplA = await publishTemplate(baseUrl, headers(seed, "tenant_admin"), "Checklist A");
+    const tplB = await publishTemplate(baseUrl, headers(seed, "tenant_admin"), "Checklist B");
+    const wo = await createWO(baseUrl, seed, { title: "OS", checklistId: tplA.id });
+
+    const d1 = await createDispatch(baseUrl, seed, wo.id, seed.techA.id);
+    assert.equal(d1.status, 201);
+
+    // troca o checklist VIGENTE da OS e re-despacha → 2ª run (chave determinística diferente).
+    const patch = await updateWOChecklist(baseUrl, seed, wo.id, tplB.id);
+    assert.equal(patch.status, 200);
+    const d2 = await createDispatch(baseUrl, seed, wo.id, seed.techA.id);
+    assert.equal(d2.status, 201);
+
+    // sem filtro: as 2 runs (a lista pode ter >1), ordenadas por created_at desc.
+    const all = await runsForWorkOrder(baseUrl, seed, wo.id);
+    assert.equal(all.status, 200);
+    assert.equal(all.body.data.length, 2);
+
+    // filtra pelo checklist VIGENTE (B) → só a run de B.
+    const onlyB = await req(baseUrl, `/api/v1/mobile/checklist-runs?workOrderId=${wo.id}&checklistId=${tplB.id}`, {
+      headers: headers(seed, "tenant_admin"),
+    });
+    assert.equal(onlyB.status, 200);
+    assert.equal(onlyB.body.data.length, 1);
+    assert.equal(onlyB.body.data[0].templateId, tplB.id);
+
+    // filtra por A → só a run de A (re-despacho com o MESMO checklist seria idempotente = 1 run).
+    const onlyA = await req(baseUrl, `/api/v1/mobile/checklist-runs?workOrderId=${wo.id}&checklistId=${tplA.id}`, {
+      headers: headers(seed, "tenant_admin"),
+    });
+    assert.equal(onlyA.status, 200);
+    assert.equal(onlyA.body.data.length, 1);
+    assert.equal(onlyA.body.data[0].templateId, tplA.id);
+  });
+});
+
 // ---------- harness ----------
 
 type SeedData = {
@@ -225,6 +396,24 @@ async function createWO(baseUrl: string, seed: SeedData, body: Record<string, un
 
 async function createDispatch(baseUrl: string, seed: SeedData, workOrderId: string, operatorUserId: string) {
   return req(baseUrl, "/api/v1/operations/dispatches", { method: "POST", headers: headers(seed, "tenant_admin"), body: { workOrderId, operatorUserId } });
+}
+
+async function runsForWorkOrder(baseUrl: string, seed: SeedData, workOrderId: string) {
+  return req(baseUrl, `/api/v1/mobile/checklist-runs?workOrderId=${workOrderId}`, { headers: headers(seed, "tenant_admin") });
+}
+
+async function updateWOChecklist(baseUrl: string, seed: SeedData, workOrderId: string, checklistId: string) {
+  return req(baseUrl, `/api/v1/work-orders/${workOrderId}`, {
+    method: "PATCH",
+    headers: headers(seed, "tenant_admin"),
+    body: { checklistId },
+  });
+}
+
+// recordCloudUsageBestEffort é fire-and-forget (async, não-aguardado); drena os microtasks/macrotask antes de
+// inspecionar a métrica FATURADA.
+async function flushCloudUsage(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 100));
 }
 
 async function req(baseUrl: string, path: string, options: { method?: string; headers?: Record<string, string>; body?: unknown } = {}) {
