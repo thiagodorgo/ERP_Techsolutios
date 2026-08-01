@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/auth/auth_notifier.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
+import '../../../core/evidence/evidence_blob_store.dart';
 import '../../../core/local_db/database_provider.dart';
 import '../../../core/local_db/drift_checklist_local_store.dart';
 import '../../../core/network/api_contracts.dart';
@@ -21,6 +22,47 @@ import 'checklist_remote_api.dart';
 
 enum ChecklistPullOutcome { success, cached, error, pulling }
 
+/// Estado da resolução da run de checklist de uma OS (D-CHK-DISPATCH-CREATE).
+enum ChecklistRunResolutionStatus {
+  /// Run disponível para o guincheiro responder (baixada do backend ou local
+  /// offline).
+  ready,
+
+  /// Nenhuma run pré-criada foi devolvida pelo backend. Pode ser OS sem
+  /// checklist despachado OU falha de provisão da run (lista vazia é ambígua).
+  awaitingDispatch,
+}
+
+class ChecklistRunResolution {
+  const ChecklistRunResolution._(this.status, this.run, {this.offline = false});
+
+  factory ChecklistRunResolution.ready(
+    MobileChecklistRun run, {
+    bool offline = false,
+  }) => ChecklistRunResolution._(
+    ChecklistRunResolutionStatus.ready,
+    run,
+    offline: offline,
+  );
+
+  factory ChecklistRunResolution.awaitingDispatch() =>
+      const ChecklistRunResolution._(
+        ChecklistRunResolutionStatus.awaitingDispatch,
+        null,
+      );
+
+  final ChecklistRunResolutionStatus status;
+  final MobileChecklistRun? run;
+
+  /// `true` quando a run é local (backend não alcançado): o app funciona
+  /// offline e o server_run_id é gravado no próximo download com conexão.
+  final bool offline;
+
+  bool get isReady => status == ChecklistRunResolutionStatus.ready;
+  bool get isAwaitingDispatch =>
+      status == ChecklistRunResolutionStatus.awaitingDispatch;
+}
+
 class ChecklistRepository extends ChangeNotifier {
   ChecklistRepository({
     required BootstrapSession session,
@@ -28,18 +70,33 @@ class ChecklistRepository extends ChangeNotifier {
     required SyncActionFactory actionFactory,
     required ChecklistLocalStore localStore,
     required ChecklistRemoteApi remoteApi,
+    EvidenceBlobStore? blobStore,
   }) : _session = session,
        _syncQueue = syncQueue,
        _actionFactory = actionFactory,
        _localStore = localStore,
-       _remoteApi = remoteApi;
+       _remoteApi = remoteApi,
+       _blobStore = blobStore;
 
   final BootstrapSession _session;
   final SyncQueueRepository _syncQueue;
   final SyncActionFactory _actionFactory;
   final ChecklistLocalStore _localStore;
   final ChecklistRemoteApi _remoteApi;
+  // Blob store da foto de checklist (binário local até subir por multipart).
+  // Opcional: em testes sem foto pode ser nulo (addAttachment só grava metadado).
+  final EvidenceBlobStore? _blobStore;
   final Uuid _uuid = const Uuid();
+
+  static const Set<String> _checklistActionTypes = {
+    ChecklistSyncActionTypes.runCreate,
+    ChecklistSyncActionTypes.answerUpsert,
+    ChecklistSyncActionTypes.runComplete,
+    ChecklistSyncActionTypes.markerCreate,
+    ChecklistSyncActionTypes.divergenceCreate,
+    ChecklistSyncActionTypes.acknowledgementCreate,
+    ChecklistSyncActionTypes.attachmentAttach,
+  };
 
   List<MobileChecklistTemplate> _templates = [];
   bool _loaded = false;
@@ -152,6 +209,187 @@ class ChecklistRepository extends ChangeNotifier {
     String workOrderId,
   ) async => _localStore.loadRunsForWorkOrder(workOrderId);
 
+  /// D-CHK-DISPATCH-CREATE — o guincheiro NÃO cria a run: o despacho a cria e o
+  /// app a BAIXA. Este método resolve a run que o guincheiro deve responder:
+  ///
+  /// - backend devolve a run pré-criada → grava o server_run_id na run local e
+  ///   carimba as ações já enfileiradas dessa run (offline → syncável); `ready`.
+  /// - backend devolve lista vazia → `awaitingDispatch` (sem checklist despachado
+  ///   OU falha de provisão — a lista vazia é AMBÍGUA). NÃO cria run nem enfileira
+  ///   `runCreate`.
+  /// - backend inalcançável (offline) → retoma/cria uma run local para trabalhar
+  ///   offline (SEM `runCreate`); o server_run_id chega no próximo download.
+  Future<ChecklistRunResolution> resolveRunForWorkOrder({
+    required String checklistId,
+    required String workOrderId,
+    required String schemaVersion,
+    MobileChecklistRunKind kind = MobileChecklistRunKind.collection,
+  }) async {
+    final existingLocal = (await _localStore.loadRunsForWorkOrder(
+      workOrderId,
+    )).where((r) => r.checklistId == checklistId && r.kind == kind).firstOrNull;
+
+    List<RemoteChecklistRun>? remote;
+    try {
+      remote = await _remoteApi.fetchRunsForWorkOrder(
+        workOrderId,
+        checklistId: checklistId,
+      );
+    } catch (_) {
+      remote = null; // offline / erro de rede
+    }
+
+    if (remote != null) {
+      final match = _pickPreCreatedRun(remote, checklistId);
+      if (match == null || match.id.isEmpty) {
+        // Lista vazia = aguardando despacho (ou provisão falhou). Se já existe
+        // uma run local desta OS/fase, mantém-la usável.
+        if (existingLocal != null) {
+          return ChecklistRunResolution.ready(existingLocal);
+        }
+        return ChecklistRunResolution.awaitingDispatch();
+      }
+
+      // Grava o server_run_id (run existente ou nova). SEM runCreate.
+      final run = existingLocal != null
+          ? existingLocal.copyWith(serverId: match.id)
+          : _buildLocalRun(
+              checklistId: checklistId,
+              workOrderId: workOrderId,
+              schemaVersion: schemaVersion,
+              kind: kind,
+              serverId: match.id,
+            );
+      await _localStore.saveRun(run);
+      await _stampServerRunIdOnQueue(run.localId, match.id);
+      notifyListeners();
+      return ChecklistRunResolution.ready(run);
+    }
+
+    // Offline: retoma ou cria uma run local para não bloquear o campo.
+    if (existingLocal != null) {
+      return ChecklistRunResolution.ready(existingLocal, offline: true);
+    }
+    final run = _buildLocalRun(
+      checklistId: checklistId,
+      workOrderId: workOrderId,
+      schemaVersion: schemaVersion,
+      kind: kind,
+    );
+    await _localStore.saveRun(run);
+    notifyListeners();
+    return ChecklistRunResolution.ready(run, offline: true);
+  }
+
+  /// AUTO-SYNC (junta PR-B): baixa o `server_run_id` das runs iniciadas 100%
+  /// offline que ainda estão SEM serverId mas já têm ações/fotos de checklist
+  /// pendentes. Religa o download ANTES do replay — sem depender de o guincheiro
+  /// REABRIR a tela. Para cada run pendente sem serverId, dispara
+  /// [resolveRunForWorkOrder] (que baixa a run pré-criada e carimba o
+  /// server_run_id nas ações enfileiradas). Falha de rede numa run é isolada:
+  /// resolveRunForWorkOrder trata offline sem lançar.
+  Future<void> downloadPendingRuns() async {
+    final tenantId = _session.activeTenant.tenantId;
+
+    // Runs locais referenciadas por ações de checklist pendentes...
+    final localRunIds = <String>{};
+    for (final action in await _syncQueue.pendingForTenant(tenantId)) {
+      if (!_checklistActionTypes.contains(action.type)) continue;
+      final localRunId = action.payload['local_run_id'];
+      if (localRunId is String && localRunId.isNotEmpty) {
+        localRunIds.add(localRunId);
+      }
+    }
+    // ...e por fotos ainda pendentes de upload (binário no blob store local).
+    for (final att in await _localStore.loadAttachmentsPendingUpload()) {
+      if (att.runId.isNotEmpty) localRunIds.add(att.runId);
+    }
+
+    for (final localRunId in localRunIds) {
+      final run = await _localStore.loadRun(localRunId);
+      if (run == null || run.tenantId != tenantId) continue;
+      final serverId = run.serverId?.trim();
+      if (serverId != null && serverId.isNotEmpty) continue; // já baixada
+
+      await resolveRunForWorkOrder(
+        checklistId: run.checklistId,
+        workOrderId: run.workOrderId,
+        schemaVersion: run.schemaVersion,
+        kind: run.kind,
+      );
+    }
+  }
+
+  // Desambigua a run pré-criada quando a OS trocou de checklist entre despachos
+  // (>1 run). Prefere a run do checklist vigente; entre elas, a não-terminal.
+  RemoteChecklistRun? _pickPreCreatedRun(
+    List<RemoteChecklistRun> runs,
+    String checklistId,
+  ) {
+    if (runs.isEmpty) return null;
+    final matching = runs.where((r) => r.checklistId == checklistId).toList();
+    final pool = matching.isNotEmpty ? matching : runs;
+    return pool.firstWhere(
+      (r) => r.status == null || !_isTerminalRunStatus(r.status!),
+      orElse: () => pool.first,
+    );
+  }
+
+  bool _isTerminalRunStatus(String status) =>
+      status == 'completed' || status == 'completed_with_divergence';
+
+  MobileChecklistRun _buildLocalRun({
+    required String checklistId,
+    required String workOrderId,
+    required String schemaVersion,
+    required MobileChecklistRunKind kind,
+    String? serverId,
+  }) {
+    // Prefixo c_/e_ para rastrear a fase (coleta/entrega) no id local.
+    final prefix = kind == MobileChecklistRunKind.delivery ? 'e' : 'c';
+    return MobileChecklistRun(
+      localId: 'clrun-${prefix}_${_uuid.v4()}',
+      serverId: serverId,
+      tenantId: _session.activeTenant.tenantId,
+      checklistId: checklistId,
+      workOrderId: workOrderId,
+      schemaVersion: schemaVersion,
+      status: MobileChecklistRunStatus.inProgress,
+      kind: kind,
+      executedByUserId: _session.user.userId,
+      startedAt: DateTime.now().toUtc(),
+      syncStatus: SyncStatus.pending,
+      answers: const {},
+    );
+  }
+
+  // Carimba o server_run_id nas ações de checklist já enfileiradas desta run
+  // (offline → elegíveis para replay). Espelha _mapDependentActions da OS.
+  Future<void> _stampServerRunIdOnQueue(
+    String localRunId,
+    String serverRunId,
+  ) async {
+    if (serverRunId.trim().isEmpty) return;
+    final tenantId = _session.activeTenant.tenantId;
+    final actions = await _syncQueue.actionsForTenant(tenantId);
+    for (final action in actions) {
+      if (!_checklistActionTypes.contains(action.type)) continue;
+      if (action.payload['local_run_id'] != localRunId) continue;
+      final current = action.payload['server_run_id'];
+      if (current is String && current.trim().isNotEmpty) continue;
+      await _syncQueue.update(
+        action.copyWith(
+          payload: {...action.payload, 'server_run_id': serverRunId},
+        ),
+      );
+    }
+  }
+
+  // O guincheiro NÃO cria a run no servidor. Cria/retoma apenas o scaffold LOCAL
+  // (offline-first) para segurar as respostas até o server_run_id chegar — SEM
+  // enfileirar `runCreate` (D-CHK-DISPATCH-CREATE). O fluxo de coleta/entrega usa
+  // resolveRunForWorkOrder (que também baixa a run do despacho); este atalho é
+  // hoje exercitado sobretudo pelos testes e serve de fallback offline puro.
   Future<MobileChecklistRun> getOrStartRun({
     required String checklistId,
     required String workOrderId,
@@ -169,39 +407,21 @@ class ChecklistRepository extends ChangeNotifier {
         .firstOrNull;
     if (inProgress != null) return inProgress;
 
-    // Prefixo c_/e_ para rastrear a fase (coleta/entrega) no id local.
-    final prefix = kind == MobileChecklistRunKind.delivery ? 'e' : 'c';
-    final run = MobileChecklistRun(
-      localId: 'clrun-${prefix}_${_uuid.v4()}',
-      tenantId: _session.activeTenant.tenantId,
+    final run = _buildLocalRun(
       checklistId: checklistId,
       workOrderId: workOrderId,
       schemaVersion: schemaVersion,
-      status: MobileChecklistRunStatus.inProgress,
       kind: kind,
-      executedByUserId: _session.user.userId,
-      startedAt: DateTime.now().toUtc(),
-      syncStatus: SyncStatus.pending,
-      answers: const {},
     );
-
     await _localStore.saveRun(run);
-
-    final action = _actionFactory.create(
-      tenantId: _session.activeTenant.tenantId,
-      type: ChecklistSyncActionTypes.runCreate,
-      payload: {
-        'local_run_id': run.localId,
-        'checklist_id': checklistId,
-        'work_order_id': workOrderId,
-        'schema_version': schemaVersion,
-        'kind': kind.apiValue,
-        'started_at': run.startedAt.toIso8601String(),
-      },
-    );
-    await _syncQueue.enqueue(action);
     notifyListeners();
     return run;
+  }
+
+  Future<String?> _serverRunIdFor(String localRunId) async {
+    final run = await _localStore.loadRun(localRunId);
+    final serverId = run?.serverId?.trim();
+    return (serverId != null && serverId.isNotEmpty) ? serverId : null;
   }
 
   /// Retorna o run de uma fase específica (coleta/entrega) da OS, se houver.
@@ -214,22 +434,40 @@ class ChecklistRepository extends ChangeNotifier {
   }
 
   /// Registra divergências entre coleta e entrega e enfileira para sync.
+  /// A divergência é um FLAG de estado da run no backend (component_id +
+  /// observação); o app resume as diferenças numa observação legível.
   Future<void> recordDivergences({
     required String runId,
     required List<ChecklistDivergence> divergences,
   }) async {
     if (divergences.isEmpty) return;
+    final serverRunId = await _serverRunIdFor(runId);
     final action = _actionFactory.create(
       tenantId: _session.activeTenant.tenantId,
       type: ChecklistSyncActionTypes.divergenceCreate,
       payload: {
         'local_run_id': runId,
+        if (serverRunId != null && serverRunId.isNotEmpty)
+          'server_run_id': serverRunId,
         'divergence_count': divergences.length,
         'field_ids': divergences.map((d) => d.fieldId).toList(),
+        // Componente âncora + observação que o backend exige (handler
+        // divergence_create). Usa o primeiro campo divergente como âncora.
+        'component_id': divergences.first.fieldId,
+        'observation': _buildDivergenceObservation(divergences),
       },
     );
     await _syncQueue.enqueue(action);
     notifyListeners();
+  }
+
+  String _buildDivergenceObservation(List<ChecklistDivergence> divergences) {
+    final parts = divergences.map(
+      (d) =>
+          '${d.label}: coleta "${d.collectionValue}" -> '
+          'entrega "${d.deliveryValue}"',
+    );
+    return 'Divergencias (${divergences.length}): ${parts.join('; ')}';
   }
 
   Future<void> saveAnswer({
@@ -297,6 +535,12 @@ class ChecklistRepository extends ChangeNotifier {
     );
     await _localStore.saveRun(completed);
 
+    // has_divergence REAL (junta PR-B): o app conhece as divergências desta run
+    // (recordDivergences enfileirou um divergence_create). Reportar `false` fixo
+    // fazia o `complete` REBAIXAR pending_acknowledgement→completed e a ciência
+    // subsequente 409-perder. Aqui o complete carrega o estado verdadeiro.
+    final hasDivergence = await _runHasDivergence(runId);
+
     final serverRunId = run.serverId?.trim();
     final action = _actionFactory.create(
       tenantId: _session.activeTenant.tenantId,
@@ -307,15 +551,33 @@ class ChecklistRepository extends ChangeNotifier {
           'server_run_id': serverRunId,
         'completed_at': now.toIso8601String(),
         'answer_count': run.answers.length,
+        'has_divergence': hasDivergence,
       },
     );
     await _syncQueue.enqueue(action);
     notifyListeners();
   }
 
+  // Uma run tem divergência quando existe (na fila) uma ação divergence_create
+  // referenciando-a (por local_run_id ou pelo server_run_id já baixado).
+  Future<bool> _runHasDivergence(String localRunId) async {
+    final tenantId = _session.activeTenant.tenantId;
+    final serverRunId = await _serverRunIdFor(localRunId);
+    final actions = await _syncQueue.actionsForTenant(tenantId);
+    return actions.any((a) {
+      if (a.type != ChecklistSyncActionTypes.divergenceCreate) return false;
+      if (a.payload['local_run_id'] == localRunId) return true;
+      if (serverRunId != null && a.payload['server_run_id'] == serverRunId) {
+        return true;
+      }
+      return false;
+    });
+  }
+
   Future<MobileChecklistMarker> addMarker({
     required String runId,
     required String type,
+    String? fieldId,
     String? label,
     String? description,
     String? positionLabel,
@@ -323,6 +585,20 @@ class ChecklistRepository extends ChangeNotifier {
     final normalizedLabel = label?.trim();
     final normalizedDescription = description?.trim();
     final normalizedPositionLabel = positionLabel?.trim();
+    final normalizedFieldId = fieldId?.trim();
+    // FAIL-SAFE (junta PR-B): o backend EXIGE component_id no marker_create
+    // (parseRequiredString → 400 required_field). Sem ele o marcador seria
+    // enfileirado e rejeitado, sumindo em silêncio após o maxRetry = data-loss.
+    // Bloqueia ANTES de gravar/enfileirar para o campo tratar (a tela mostra um
+    // aviso e não abre o diálogo sem componente âncora).
+    if (normalizedFieldId == null || normalizedFieldId.isEmpty) {
+      throw ArgumentError.value(
+        fieldId,
+        'fieldId',
+        'component_id (campo do mapa de danos) e obrigatorio para registrar '
+            'um marcador — o backend rejeita marcador sem componente ancora.',
+      );
+    }
     final marker = MobileChecklistMarker(
       localId: 'clmark-local-${_uuid.v4()}',
       runId: runId,
@@ -342,12 +618,18 @@ class ChecklistRepository extends ChangeNotifier {
     );
     await _localStore.saveMarker(marker);
 
+    final serverRunId = await _serverRunIdFor(runId);
     final action = _actionFactory.create(
       tenantId: _session.activeTenant.tenantId,
       type: ChecklistSyncActionTypes.markerCreate,
       payload: {
         'local_marker_id': marker.localId,
         'local_run_id': runId,
+        if (serverRunId != null && serverRunId.isNotEmpty)
+          'server_run_id': serverRunId,
+        // Componente âncora que o backend exige (handler marker_create).
+        // Garantido não-vazio pelo fail-safe acima.
+        'field_id': normalizedFieldId,
         'type': type,
         if (normalizedLabel != null && normalizedLabel.isNotEmpty)
           'label': normalizedLabel,
@@ -382,15 +664,23 @@ class ChecklistRepository extends ChangeNotifier {
     );
     await _localStore.saveAcknowledgement(ack);
 
+    final serverRunId = await _serverRunIdFor(runId);
     final action = _actionFactory.create(
       tenantId: _session.activeTenant.tenantId,
       type: ChecklistSyncActionTypes.acknowledgementCreate,
       payload: {
         'local_ack_id': ack.localId,
         'local_run_id': runId,
+        if (serverRunId != null && serverRunId.isNotEmpty)
+          'server_run_id': serverRunId,
         'acknowledged_by_role': acknowledgedByRole,
         'acknowledged_at': ack.acknowledgedAt.toIso8601String(),
         'confirmed': true,
+        // Mensagem que o backend exige (handler acknowledgement_create).
+        'message': _buildAcknowledgementMessage(
+          acknowledgedByName,
+          acknowledgedByRole,
+        ),
       },
     );
     await _syncQueue.enqueue(action);
@@ -398,9 +688,21 @@ class ChecklistRepository extends ChangeNotifier {
     return ack;
   }
 
+  String _buildAcknowledgementMessage(String name, String role) {
+    final trimmedName = name.trim();
+    final who = trimmedName.isEmpty ? 'responsavel' : trimmedName;
+    final trimmedRole = role.trim();
+    return trimmedRole.isEmpty
+        ? 'Ciencia registrada por $who.'
+        : 'Ciencia registrada por $who ($trimmedRole).';
+  }
+
   Future<MobileChecklistAcknowledgement?> getAcknowledgement(String runId) =>
       _localStore.loadAcknowledgement(runId);
 
+  /// Registra a foto do checklist. O METADADO vai pelo sync (ordenação/vínculo);
+  /// o BINÁRIO (`bytes`) é gravado no blob store local e sobe depois pelo
+  /// multipart POST /mobile/checklist-runs/:runId/attachments (offline-first).
   Future<MobileChecklistAttachmentMetadata> addAttachment({
     required String runId,
     required String fieldId,
@@ -409,16 +711,27 @@ class ChecklistRepository extends ChangeNotifier {
     int sizeBytes = 0,
     String? checksum,
     String? captureSource,
+    Uint8List? bytes,
   }) async {
     final normalizedChecksum = checksum?.trim();
     final normalizedCaptureSource = captureSource?.trim();
+
+    // Grava o binário localmente (se veio e há blob store) para subir por
+    // multipart quando houver conexão. O blob opaco só é apagado após stored.
+    String? localBlobRef;
+    var effectiveSize = sizeBytes;
+    if (bytes != null && bytes.isNotEmpty && _blobStore != null) {
+      localBlobRef = await _blobStore.save(bytes, contentType: mimeType);
+      effectiveSize = bytes.length;
+    }
+
     final att = MobileChecklistAttachmentMetadata(
       localId: 'clatt-local-${_uuid.v4()}',
       runId: runId,
       fieldId: fieldId,
       fileName: fileName,
       mimeType: mimeType,
-      sizeBytes: sizeBytes,
+      sizeBytes: effectiveSize,
       checksum: normalizedChecksum != null && normalizedChecksum.isNotEmpty
           ? normalizedChecksum
           : null,
@@ -427,19 +740,24 @@ class ChecklistRepository extends ChangeNotifier {
           ? normalizedCaptureSource
           : null,
       syncStatus: SyncStatus.pending,
+      localBlobRef: localBlobRef,
+      uploadStatus: SyncStatus.pending,
     );
     await _localStore.saveAttachment(att);
 
+    final serverRunId = await _serverRunIdFor(runId);
     final action = _actionFactory.create(
       tenantId: _session.activeTenant.tenantId,
       type: ChecklistSyncActionTypes.attachmentAttach,
       payload: {
         'local_att_id': att.localId,
         'local_run_id': runId,
+        if (serverRunId != null && serverRunId.isNotEmpty)
+          'server_run_id': serverRunId,
         'field_id': fieldId,
         'file_name': fileName,
         'mime_type': mimeType,
-        'size_bytes': sizeBytes,
+        'size_bytes': effectiveSize,
         if (normalizedChecksum != null && normalizedChecksum.isNotEmpty)
           'checksum': normalizedChecksum,
         if (normalizedCaptureSource != null &&
@@ -495,6 +813,7 @@ final checklistRepositoryProvider = Provider<ChecklistRepository>((ref) {
     actionFactory: ref.watch(syncActionFactoryProvider),
     localStore: ref.watch(checklistLocalStoreProvider),
     remoteApi: ref.watch(checklistRemoteApiProvider),
+    blobStore: ref.watch(evidenceBlobStoreProvider),
   );
 });
 

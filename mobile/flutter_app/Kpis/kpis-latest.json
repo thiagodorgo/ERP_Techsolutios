@@ -1,18 +1,18 @@
 {
-  "snapshot_date": "2026-07-24",
-  "version": "OMEGA4C-PR-13",
-  "branch": "rodada/omega4c",
-  "description": "Ω4C PR-13 Telemetria Flutter (captura GPS foreground consent-aware + buffer Drift dedicado + flush em lote idempotente p/ o backend PR-12). 1o PR a tocar o app Flutter desde B-123/B-124 -> flutter_tests reconciliado a suite REAL (764 carregado -> 807 executado, +25 telemetry_test). KPI DUPLA (§C3): version/block em paridade com Kpis/ raiz (OMEGA4C-PR-13).",
+  "snapshot_date": "2026-08-01",
+  "version": "CHK-DISPATCH-CREATE-PR-B-FIX-JUNTA",
+  "branch": "fix/mobile-checklist-download-run-and-sync",
+  "description": "PR-B FIX-JUNTA (D-CHK-DISPATCH-CREATE, lado Flutter) — correcao dos 6 achados reais da junta APROVADO_CONDICIONADO sobre o conserto de data-loss de checklist: (1 ALTA crash) guarda de idempotencia no onUpgrade do Drift (from>=3/from>=2) — sem ela um device em schema 1/2 subindo direto para 13 estourava 'duplicate column name' (CREATE fresco ja completo + ALTER ADD duplicando) e o banco nem abria; (2) marker sem component_id vira fail-safe (addMarker lanca e nao enfileira acao 400-rejeitavel); (3) acknowledgement: lote ordenado por created_at (divergence->ack->complete), completeRun reporta has_divergence REAL, e 409 ACKNOWLEDGEMENT_NOT_REQUIRED deixa de ser conflito terminal (vira retry); (4) auto-sync baixa a run das acoes/fotos offline pendentes sem serverId ANTES do replay; (5) foto: blob so apagado com status=='stored' (§B-108); (6) acentuacao PT-BR + doc + widget test. KPI DUPLA (§C3): version em paridade com Kpis/ raiz.",
   "release": {
-    "block": "OMEGA4C-PR-13",
-    "title": "Telemetria Flutter — captura GPS foreground + buffer Drift + flush em lote (Flutter-only)",
+    "block": "CHK-DISPATCH-CREATE-PR-B",
+    "title": "PR-B Flutter — guincheiro baixa a run pre-criada (server_run_id) + codec do ciclo completo + foto por multipart + estado 'aguardando despacho' (Flutter-only)",
     "pr": null,
     "mergeCommit": null,
     "approvedHead": null,
-    "branch": "rodada/omega4c",
+    "branch": "fix/mobile-checklist-download-run-and-sync",
     "status": "published_per_pr",
-    "status_label": "Ω4C PR-13 telemetria Flutter — junta 3/3 (secops; 1 MEDIA de consentimento LGPD resolvida); merge_commit null na autoria (backfill pos-merge)",
-    "summary": "Ω4C PR-13 (Flutter-only; PRODUTOR do que o backend PR-12 ingere). Novo modulo lib/core/telemetry/*. ZERO dependencia nova (reusa geolocator/connectivity_plus/uuid/drift/dio; pubspec INTOCADO). CONSENT-GATE CLIENTE LGPD: captureHeartbeat curto-circuita ANTES de ler o GPS se faltar field_location:send OU consentimento de dispositivo -> coordenada NUNCA solicitada (NAO CAPTURA); servidor PR-12 autoritativo no tracking_consent do perfil (fail-closed). Buffer Drift DEDICADO telemetry_events (schemaVersion 11->12 aditiva). Flush no AutoSyncCoordinator (<=50/lote); clientActionId deterministico -> already_applied/rejected purga terminal; offline->fila->replay. FOREGROUND-ONLY (WidgetsBindingObserver; SEM WorkManager/isolate — paridade AutEM + privacidade). SERVICE_REFUSAL no reportUnableToStart existente. §2.8: nao loga coordenada crua. A junta pegou 1 MEDIA de fidelidade de consentimento (heartbeat periodico reusava copy de captura-manual) -> copy de consentimento atualizada honestamente (2 formas; 'sem background' preservado); coordenador re-verificou e descarregou. batteryPct/deviceModel/sdkInt deferidos (pacotes ausentes; junta-5+PD -> Ω5). flutter_tests 764->807 (+25 telemetry + reconciliacao suite real; 807/0-falha/0-skip); backend 1479 e frontend_smoke 801 inalterados (Flutter-only); blocks 83->84. Junta 3 vetos: omega4c-avaliador + agente-secops + coordenador-de-acessos APROVADO.",
+    "status_label": "PR-B FIX-JUNTA (D-CHK-DISPATCH-CREATE): guarda de migracao Drift (from>=3/from>=2) contra 'duplicate column name' no schema 1/2->13 + teste de migracao REAL; marker fail-safe (component_id obrigatorio); acknowledgement (ordem do lote por created_at + has_divergence real + 409 nao-terminal); auto-sync baixa a run offline antes do replay; foto apaga blob so com stored; acentuacao/doc/widget test. flutter 822->835; merge_commit null na autoria (backfill pos-merge)",
+    "summary": "PR-B (Flutter-only; consome o backend PR-A ja mergeado). (A) checklist_repository.resolveRunForWorkOrder BAIXA a run pre-criada pelo despacho: novo remoto fetchRunsForWorkOrder -> GET /api/v1/mobile/checklist-runs?workOrderId[&checklistId] (parse tolerante snake/camel, desambigua por checklistId quando ha >1 run), grava o server_run_id na run local (Drift) e responde CONTRA ela; getOrStartRun NAO enfileira mais runCreate (o guincheiro nao cria — D-CHK-DISPATCH-CREATE). Lista vazia -> estado 'aguardando despacho' (sem run local, sem runCreate; documenta que a lista vazia PODE ser falha de provisao, nao so ausencia). Offline (backend inalcancavel) -> run local usavel sem runCreate + carimbo do server_run_id nas acoes ja enfileiradas quando o download chega. (B) sync destravado: supportedActionTypes passa de 2 (b102) para o ciclo COMPLETO menos runCreate (answer/note/complete/marker/divergence/ack/attachment); elegibilidade exige server_run_id (agora satisfeito). (C) codec canonico: marker->checklist.marker_create (component_id+rotulos), divergence->checklist.divergence_create (componente+observacao), acknowledgement->checklist.acknowledgement_create (mensagem), attachment->checklist.attachment_attach (file_name/mime_type/size_bytes/local_att_id); run_id carrega o server_run_id; payloads das acoes enriquecidos (component_id/observation/message/server_run_id) para casar com os handlers do backend. (D) foto por MULTIPART: addAttachment grava o binario no blob store (offline-first); ChecklistAttachmentUploadService sobe os bytes por POST /mobile/checklist-runs/:runId/attachments contra o server_run_id (blob so apagado apos stored), plugado no AutoSyncCoordinator; migracao Drift ADITIVA 12->13 (colunas de upload em checklist_attachments). (E) UI estado 'aguardando despacho' (loading/erro/retry, PT-BR, a11y >=44px). +15 test() novos (pr_b_dispatch_run_download_test). Bateria: dart format 0-changed, flutter analyze No issues, suite REAL 822 pass/0 fail/0 skip (Flutter 3.41.6). Regressoes b088/b102/b092/b118 verdes; b085 render preservado. pubspec/lock INTOCADOS (zero-dep). flutter_tests 807->822; backend e frontend_smoke inalterados (Flutter-only).",
     "commits": [
       {
         "hash": "dcfa25063111532f8cc1c77d7af8ec4519406bb0",
@@ -101,12 +101,12 @@
         {
           "id": "flutter_tests",
           "label": "Flutter Tests",
-          "value": 807,
-          "total": 807,
+          "value": 835,
+          "total": 835,
           "unit": "testes",
           "type": "real",
           "status": "green",
-          "detail": "807/807 na suite Flutter REAL (Flutter 3.41.6) apos Ω4C PR-13 telemetria (+25 telemetry_test: consent-gate cliente/buffer-flush/idempotencia/foreground-only/§2.8/migracao-Drift-11-12). O 764 era carregado nao re-executado desde B-124 (nenhum PR tocou Flutter ate agora) -> reconciliado a suite real. dart format 0-changed; analyze No issues; pubspec INTOCADO (zero-dep)."
+          "detail": "835/835 na suite Flutter REAL (Flutter 3.41.6) apos PR-B FIX-JUNTA (D-CHK-DISPATCH-CREATE, lado Flutter): +13 test() novos sobre 822 (2 de MIGRACAO REAL em app_database_migration_test — schema 2->13 e 1->13 exercitam o onUpgrade de verdade contra sqlite file, provando que a guarda from>=3/from>=2 evita 'duplicate column name' e as colunas chegam; 11 em pr_b_junta_fixes_test — marker exige component_id (lanca e nao enfileira); lote ordenado divergence->ack->complete; 409 ACKNOWLEDGEMENT_NOT_REQUIRED vira failed retryavel (nao conflito terminal); completeRun has_divergence true/false real; downloadPendingRuns baixa e carimba a run offline; blob preservado em scan_failed/pending_review; widget test do AwaitingDispatchView acentuado). Regressoes b088/b102/b092/b118/b085/b087/b122 verdes. dart format 0-changed; analyze No issues; pubspec/lock INTOCADOS (zero-dep). Sobre 822."
         },
         {
           "id": "npm_tests",
@@ -202,11 +202,11 @@
         {
           "id": "flutter_test_files",
           "label": "Arquivos de Teste Flutter",
-          "value": 52,
+          "value": 58,
           "unit": "arquivos",
           "type": "real",
           "status": "green",
-          "detail": "52 arquivos de teste no diretorio test/"
+          "detail": "58 arquivos de teste no diretorio test/ (contagem real find test -name '*.dart'); +2 no PR-B FIX-JUNTA (test/core/local_db/app_database_migration_test.dart, test/features/checklists/pr_b_junta_fixes_test.dart)"
         },
         {
           "id": "flutter_evidence_sync",

@@ -208,6 +208,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           checklistId: state.pathParameters['checklistId']!,
           runId: state.uri.queryParameters['runId'] ?? '',
           vehicleType: state.uri.queryParameters['vehicleType'] ?? 'sedan',
+          componentId: state.uri.queryParameters['componentId'],
         ),
       ),
       GoRoute(
@@ -382,6 +383,8 @@ final appRouter = GoRouter(
       builder: (context, state) => ChecklistDamageMapScreen(
         checklistId: state.pathParameters['checklistId']!,
         runId: state.uri.queryParameters['runId'] ?? '',
+        vehicleType: state.uri.queryParameters['vehicleType'] ?? 'sedan',
+        componentId: state.uri.queryParameters['componentId'],
       ),
     ),
     GoRoute(

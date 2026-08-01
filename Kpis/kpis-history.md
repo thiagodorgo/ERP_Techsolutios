@@ -6,6 +6,36 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-01 - CHK-DISPATCH-CREATE-PR-B (lado Flutter)
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 822 / 822 (807 → 822, +15) |
+| Backend Tests | 2064 / 2070 (inalterado; Flutter-only) |
+| Frontend Smoke | 950 / 950 (inalterado; Flutter-only) |
+| Blocos Entregues | 121 (120 → 121) |
+
+PR-B (D-CHK-DISPATCH-CREATE) — **lado Flutter do conserto do data-loss de checklist**, consumindo o backend PR-A já
+mergeado. O guincheiro deixa de **criar** a run localmente e passa a **baixar** a run pré-criada pelo despacho:
+
+- `resolveRunForWorkOrder` + novo remoto `fetchRunsForWorkOrder` (`GET /api/v1/mobile/checklist-runs?workOrderId[&checklistId]`,
+  parse tolerante snake/camel, desambigua por `checklistId` quando há >1 run) grava o `server_run_id` na run local (Drift)
+  e responde **contra** ela; `getOrStartRun` **não enfileira mais `runCreate`**.
+- Lista vazia → estado **"aguardando despacho"** (sem run local, sem `runCreate`; a lista vazia **pode ser falha de
+  provisão**, não só ausência). Offline → run local usável + **carimbo do `server_run_id`** nas ações já enfileiradas
+  quando o download chega.
+- **Sync destravado** do ciclo completo menos `runCreate` (elegibilidade exige `server_run_id`). **Codec canônico**:
+  `marker`/`divergence`/`acknowledgement`/`attachment` → tipos+payloads que o backend PR-A aceita (antes caíam no
+  genérico e o efeito sumia).
+- **Foto por multipart** (`POST /mobile/checklist-runs/:runId/attachments`): blob durável offline-first +
+  `ChecklistAttachmentUploadService` plugado no auto-sync; migração Drift **aditiva** 12→13.
+
+Bateria: `dart format` 0-changed, `flutter analyze` No issues, suíte real **822/0-falha/0-skip** (Flutter 3.41.6);
+regressões b088/b102/b092/b118 verdes; b085 render preservado; `pubspec`/lock intocados. Escopo: `mobile/flutter_app/**`
++ `Kpis/*` (dual); `src/**` intocado. `pr`/`merge_commit`/`approved_head` null na autoria (backfill pós-merge).
+
 ## 2026-07-29 - FIX-NAV-MENU-PLATFORM-JWT
 
 ### Resultado

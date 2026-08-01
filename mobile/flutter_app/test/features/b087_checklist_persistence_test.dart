@@ -178,7 +178,7 @@ Widget _wrapDamageMap({
 }) {
   final router = GoRouter(
     initialLocation:
-        '/checklists/cl-b087/run/damage-map?runId=run-b087-1&vehicleType=$vehicleType',
+        '/checklists/cl-b087/run/damage-map?runId=run-b087-1&vehicleType=$vehicleType&componentId=f-damage',
     routes: [
       GoRoute(
         path: '/checklists/:checklistId/run/damage-map',
@@ -186,6 +186,7 @@ Widget _wrapDamageMap({
           checklistId: state.pathParameters['checklistId']!,
           runId: state.uri.queryParameters['runId'] ?? '',
           vehicleType: state.uri.queryParameters['vehicleType'] ?? 'sedan',
+          componentId: state.uri.queryParameters['componentId'],
         ),
       ),
     ],

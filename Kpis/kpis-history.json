@@ -1811,5 +1811,29 @@
     "merge_commit": null,
     "approved_head": null,
     "description": "PR-A FIX-JUNTA REVERIF (re-verificacao da junta: 1 MEDIA + 1 BAIXA no conserto de idempotencia da criacao de run). (MEDIA) o P2002 catch-then-refetch rodava numa transacao ABORTADA: withTenantRls envolve TODO createRun numa unica tx interativa; sob 2 despachos/creates concorrentes da mesma OS com a mesma client_run_key, o perdedor sofria 23505/P2002, a tx entrava em ABORTED e a re-busca getRunByClientKey no catch falhava com 25P02 (current transaction is aborted); sem code P2002 nao era re-capturada -> createRun LANCAVA em vez de {created:false}, derrubando o perdedor no fail-open do field-dispatch (evento field_dispatch_checklist_run_failed ESPURIO + notificacao falsa) e retornando erro no mobile-sync em vez de already_applied. Cura na RAIZ: createRun com client_run_key usa INSERT ... ON CONFLICT (tenant_id, client_run_key) DO NOTHING RETURNING via queryRaw (0 linhas -> conflito, tx NAO aborta -> SELECT normal devolve a existente created:false; 1 linha -> created:true; respostas via createMany na mesma tx). InMemory ja espelhava {run,created}. RlsPrismaChecklistRepository exportado. (BAIXA) +tests/checklist-run-create-concurrency-db.test.ts (DB-gated Postgres real): teste-barreira forca o perdedor ao ON CONFLICT (a N-concorrencia ingenua mascara o abort porque o vencedor commita antes do pre-check do perdedor) e prova created:false LIMPO + 1 run + 1 checklist_runs_count + ZERO evento/notificacao espurios; provado vivo 2/2 verdes com a cura, o teste-barreira REPROVA com 25P02 contra o codigo antigo. withTenantRls/rls.ts INTOCADO (cura no INSERT do repo). +2 test() -> backend 2062/2068 -> 2064/2070. blocks_completed inalterado (120). pr/merge_commit/approved_head null na autoria."
+  },
+  {
+    "snapshot_date": "2026-08-01",
+    "version": "CHK-DISPATCH-CREATE-PR-B-FLUTTER",
+    "backend_tests": "2064/2070",
+    "flutter_tests": "822/822",
+    "frontend_smoke_tests": "950/950",
+    "flutter_modules": "17/17",
+    "mvp_demo": "99%",
+    "mvp_vendavel": "88%",
+    "blocks_completed": 121,
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
+    "description": "PR-B (D-CHK-DISPATCH-CREATE, lado Flutter; consome o backend PR-A ja mergeado). O guincheiro deixa de CRIAR a run localmente e passa a BAIXAR a run pre-criada pelo despacho. (1) resolveRunForWorkOrder: novo remoto fetchRunsForWorkOrder (GET /api/v1/mobile/checklist-runs?workOrderId[&checklistId], parse tolerante, desambigua por checklistId), grava server_run_id no Drift, responde contra a run baixada; getOrStartRun NAO enfileira mais runCreate; lista vazia -> estado aguardando-despacho (sem run local, sem runCreate; a lista vazia PODE ser falha de provisao); offline -> run local usavel + carimbo do server_run_id nas acoes ja enfileiradas quando o download chega. (2) sync destravado: ciclo completo menos runCreate; elegibilidade exige server_run_id. (3) codec canonico: marker/divergence/acknowledgement/attachment -> tipos+payloads que o backend PR-A aceita (antes caiam no generico e sumiam); run_id = server_run_id. (4) foto por multipart: blob durable offline-first + ChecklistAttachmentUploadService (POST /mobile/checklist-runs/:runId/attachments) no auto-sync; migracao Drift ADITIVA 12->13. (5) UI aguardando-despacho (PT-BR, a11y). flutter_tests 807->822 (+15 test reais; 822/0-falha/0-skip). backend 2064/2070 e frontend_smoke 950 inalterados (Flutter-only, ultimo valor oficial). blocks 120->121. Escopo: mobile/flutter_app/** + Kpis/* (dual); src/** intocado. pr/merge_commit/approved_head null na autoria."
+  },
+  {
+    "snapshot_date": "2026-08-01",
+    "version": "CHK-DISPATCH-CREATE-PR-B-FIX-JUNTA-FLUTTER",
+    "flutter_tests": "835/835",
+    "backend_tests": "2064/2070",
+    "frontend_smoke_tests": "950/950",
+    "blocks_completed": 121,
+    "description": "PR-B FIX-JUNTA (D-CHK-DISPATCH-CREATE, lado Flutter) — 6 achados da junta APROVADO_CONDICIONADO. (1 ALTA/crash) guarda de idempotencia no onUpgrade do Drift: as constantes de CREATE ja traziam as colunas novas, entao schema 1/2->13 criava a tabela completa (from<2 work_orders / from<3 checklist) e o ALTER ADD posterior duplicava -> 'duplicate column name' -> banco nao abre. Guardas from>=2/from>=3 fazem o ALTER so rodar quando a tabela nao nasceu completa nesta migracao. +2 testes de MIGRACAO REAL (nenhum existia). (2) marker sem component_id: addMarker lanca e nao enfileira acao 400-rejeitavel; componentId virou required na tela/rota. (3) acknowledgement: lote ordenado por created_at (store ORDER BY + sort estavel no replay) garantindo divergence->ack->complete; completeRun reporta has_divergence REAL; 409 ACKNOWLEDGEMENT_NOT_REQUIRED vira failed retryavel (nao conflito terminal). (4) AutoSyncCoordinator baixa a run offline (downloadPendingRuns) antes do replay. (5) foto: blob so apagado com status=='stored' (§B-108). (6) acentuacao PT-BR + doc + widget test. flutter_tests 822->835 (+13 reais; 835/0-falha/0-skip). backend 2064/2070 e frontend_smoke 950 inalterados (Flutter-only, ultimo valor oficial). blocks inalterado (fix dentro da PR-B). Escopo: mobile/flutter_app/** + Kpis/* (dual); src/** e pubspec/lock intocados. pr/merge_commit/approved_head null na autoria."
   }
 ]

@@ -5,10 +5,40 @@ import '../../../core/network/api_error.dart';
 import '../../../core/network/http_client.dart';
 import '../domain/checklist_models.dart';
 
+/// Run pré-criada pelo despacho (D-CHK-DISPATCH-CREATE) baixada pelo guincheiro.
+/// Só o essencial para vincular a run local ao server_run_id e desambiguar por
+/// checklist vigente. NÃO expõe client_run_key (o backend não o devolve).
+class RemoteChecklistRun {
+  const RemoteChecklistRun({
+    required this.id,
+    required this.checklistId,
+    this.status,
+    this.relatedEntityType,
+    this.relatedEntityId,
+  });
+
+  /// server_run_id — o id da run no servidor (alvo do multipart e do sync).
+  final String id;
+
+  /// templateId do backend = checklistId no app.
+  final String checklistId;
+  final String? status;
+  final String? relatedEntityType;
+  final String? relatedEntityId;
+}
+
 abstract class ChecklistRemoteApi {
   Future<List<MobileChecklistTemplate>> fetchAvailableChecklists({
     required String tenantId,
     String? workOrderId,
+  });
+
+  /// Baixa a(s) run(s) pré-criada(s) de uma OS (despacho cria, guincheiro
+  /// responde). Lista vazia PODE significar falha de provisão, não só ausência
+  /// — o chamador trata os dois casos (estado "aguardando despacho").
+  Future<List<RemoteChecklistRun>> fetchRunsForWorkOrder(
+    String workOrderId, {
+    String? checklistId,
   });
   Future<MobileChecklistSchema> fetchChecklistRender(String checklistId);
   Future<String> createRun({
@@ -57,6 +87,12 @@ class PendingBackendChecklistRemoteApi implements ChecklistRemoteApi {
   Future<List<MobileChecklistTemplate>> fetchAvailableChecklists({
     required String tenantId,
     String? workOrderId,
+  }) => Future.error(const ApiNetworkError());
+
+  @override
+  Future<List<RemoteChecklistRun>> fetchRunsForWorkOrder(
+    String workOrderId, {
+    String? checklistId,
   }) => Future.error(const ApiNetworkError());
 
   @override
@@ -148,6 +184,29 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
   }
 
   @override
+  Future<List<RemoteChecklistRun>> fetchRunsForWorkOrder(
+    String workOrderId, {
+    String? checklistId,
+  }) async {
+    try {
+      final params = <String, dynamic>{'workOrderId': workOrderId};
+      if (checklistId != null && checklistId.isNotEmpty) {
+        params['checklistId'] = checklistId;
+      }
+      final response = await _client.get(
+        ChecklistApiEndpoints.runs(),
+        queryParameters: params,
+      );
+      final body = response.data as Map<String, dynamic>? ?? const {};
+      final raw = body['data'] ?? body['runs'] ?? body['items'] ?? const [];
+      final list = (raw as List<dynamic>).cast<Map<String, dynamic>>();
+      return list.map(_runFromRemoteJson).toList(growable: false);
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
+  @override
   Future<MobileChecklistSchema> fetchChecklistRender(String checklistId) async {
     try {
       final response = await _client.get(
@@ -157,6 +216,19 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
     } on DioException catch (e) {
       throw mapDioError(e);
     }
+  }
+
+  // Parser tolerante (camelCase do DTO backend + snake_case defensivo).
+  RemoteChecklistRun _runFromRemoteJson(Map<String, dynamic> j) {
+    String? strOpt(String camel, String snake) =>
+        (j[camel] as String?) ?? (j[snake] as String?);
+    return RemoteChecklistRun(
+      id: (j['id'] as String?) ?? '',
+      checklistId: strOpt('templateId', 'template_id') ?? '',
+      status: strOpt('status', 'status'),
+      relatedEntityType: strOpt('relatedEntityType', 'related_entity_type'),
+      relatedEntityId: strOpt('relatedEntityId', 'related_entity_id'),
+    );
   }
 
   @override

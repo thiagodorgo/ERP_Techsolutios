@@ -240,13 +240,16 @@ class MobileChecklistRun {
   final Map<String, MobileChecklistAnswer> answers;
 
   MobileChecklistRun copyWith({
+    String? serverId,
     MobileChecklistRunStatus? status,
     DateTime? completedAt,
     SyncStatus? syncStatus,
     Map<String, MobileChecklistAnswer>? answers,
   }) => MobileChecklistRun(
     localId: localId,
-    serverId: serverId,
+    // serverId só cresce (nunca é apagado): o despacho cria a run, o app baixa
+    // o server_run_id (D-CHK-DISPATCH-CREATE) e o grava aqui.
+    serverId: serverId ?? this.serverId,
     tenantId: tenantId,
     checklistId: checklistId,
     workOrderId: workOrderId,
@@ -292,6 +295,11 @@ class MobileChecklistAttachmentMetadata {
     required this.syncStatus,
     this.checksum,
     this.captureSource,
+    this.localBlobRef,
+    this.serverId,
+    this.uploadStatus = SyncStatus.pending,
+    this.uploadedAt,
+    this.uploadErrorCode,
   });
 
   final String localId;
@@ -303,6 +311,44 @@ class MobileChecklistAttachmentMetadata {
   final String? checksum;
   final String? captureSource;
   final SyncStatus syncStatus;
+
+  // Binário local da foto (blob store) — o JSON de sync carrega só o metadado;
+  // o binário sobe pelo multipart POST /mobile/checklist-runs/:runId/attachments.
+  final String? localBlobRef;
+
+  // Id do anexo no servidor (após o upload multipart concluir).
+  final String? serverId;
+
+  // Estado do upload do binário (independente do sync do metadado).
+  final SyncStatus uploadStatus;
+  final DateTime? uploadedAt;
+  final String? uploadErrorCode;
+
+  MobileChecklistAttachmentMetadata copyWith({
+    String? serverId,
+    SyncStatus? uploadStatus,
+    DateTime? uploadedAt,
+    String? uploadErrorCode,
+    bool clearUploadErrorCode = false,
+    bool clearLocalBlobRef = false,
+  }) => MobileChecklistAttachmentMetadata(
+    localId: localId,
+    runId: runId,
+    fieldId: fieldId,
+    fileName: fileName,
+    mimeType: mimeType,
+    sizeBytes: sizeBytes,
+    syncStatus: syncStatus,
+    checksum: checksum,
+    captureSource: captureSource,
+    localBlobRef: clearLocalBlobRef ? null : localBlobRef,
+    serverId: serverId ?? this.serverId,
+    uploadStatus: uploadStatus ?? this.uploadStatus,
+    uploadedAt: uploadedAt ?? this.uploadedAt,
+    uploadErrorCode: clearUploadErrorCode
+        ? null
+        : (uploadErrorCode ?? this.uploadErrorCode),
+  );
 }
 
 class MobileChecklistAcknowledgement {

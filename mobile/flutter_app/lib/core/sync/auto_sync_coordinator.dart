@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/checklists/data/checklist_attachment_upload.dart';
+import '../../features/checklists/data/checklist_repository.dart';
 import '../bootstrap/bootstrap_repository.dart';
 import '../network/api_error.dart';
 import '../network/connectivity_repository.dart';
@@ -87,8 +89,25 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
       }
       // Work order status sync
       await ref.read(workOrderSyncReplayServiceProvider).replayTenant(tenantId);
+      // Checklist: baixa o server_run_id das runs iniciadas 100% offline ANTES
+      // do replay (junta PR-B). Religa o download sem depender de o guincheiro
+      // reabrir a tela — as ações offline carimbadas viram replay-elegíveis já
+      // neste passe. Falha isolada não bloqueia os demais domínios.
+      try {
+        await ref.read(checklistRepositoryProvider).downloadPendingRuns();
+      } catch (_) {
+        // Download de run pendente falho não bloqueia o replay/telemetria.
+      }
       // Checklist sync
       await ref.read(checklistSyncReplayServiceProvider).replayTenant(tenantId);
+      // Checklist photo binary upload (multipart contra o server_run_id baixado)
+      try {
+        await ref
+            .read(checklistAttachmentUploadServiceProvider)
+            .uploadTenant(tenantId);
+      } catch (_) {
+        // Falha isolada do upload de foto nao bloqueia os demais dominios.
+      }
       // Evidence metadata sync
       await ref.read(evidenceSyncReplayServiceProvider).replayTenant(tenantId);
       // Evidence binary upload
