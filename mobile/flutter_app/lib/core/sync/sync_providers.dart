@@ -219,11 +219,13 @@ final checklistSyncBatchApiProvider = Provider<ChecklistSyncBatchApi>((ref) {
 
 final checklistSyncReplayServiceProvider = Provider<ChecklistSyncReplayService>(
   (ref) {
+    // PR-B: o ciclo completo do guincheiro (menos run.create) é replay-elegível
+    // agora que o app baixa o server_run_id da run pré-criada pelo despacho.
     return ChecklistSyncReplayService(
       queue: ref.watch(syncQueueRepositoryProvider),
       api: ref.watch(checklistSyncBatchApiProvider),
-      supportedActionTypes: b102BackendChecklistActionTypes,
-      extraEligibility: b102ChecklistActionReadyForBackend,
+      supportedActionTypes: backendChecklistActionTypes,
+      extraEligibility: checklistActionReadyForBackend,
     );
   },
 );

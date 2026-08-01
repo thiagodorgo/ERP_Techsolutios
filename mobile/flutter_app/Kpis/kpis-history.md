@@ -5,6 +5,30 @@ Atualizar a cada entrega significativa (bloco B-XXX ou PR merged).
 
 ---
 
+## CHK-DISPATCH-CREATE-PR-B — 2026-08-01
+
+**PR-B (lado Flutter) — guincheiro baixa a run pré-criada (server_run_id), codec do ciclo completo, foto por multipart, estado "aguardando despacho"**
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 822 / 822 (807 → 822, +15) |
+| Blocos Entregues | 121 (120 → 121) |
+| Módulos Flutter | 17 / 17 |
+
+Consome o backend PR-A já mergeado (D-CHK-DISPATCH-CREATE). O guincheiro deixa de **criar** a run localmente e passa a
+**baixar** a run pré-criada pelo despacho: `resolveRunForWorkOrder` + novo remoto `fetchRunsForWorkOrder`
+(`GET /mobile/checklist-runs?workOrderId[&checklistId]`, parse tolerante, desambigua por `checklistId`), grava o
+`server_run_id` no Drift e responde contra a run; `getOrStartRun` **não enfileira mais `runCreate`**. Lista vazia →
+estado **"aguardando despacho"** (sem run local, sem `runCreate`; ambígua: ausência OU falha de provisão); offline →
+run local usável + carimbo do `server_run_id` nas ações enfileiradas. **Sync destravado** do ciclo completo menos
+`runCreate` (elegibilidade exige `server_run_id`). **Codec canônico**: `marker`/`divergence`/`acknowledgement`/`attachment`
+→ tipos+payloads que o backend PR-A aceita (antes caíam no genérico e sumiam). **Foto por multipart** (blob durável
+offline-first + `ChecklistAttachmentUploadService` no auto-sync; migração Drift aditiva 12→13). UI "aguardando despacho"
+(PT-BR, a11y). +15 test() reais. `dart format` 0-changed; `flutter analyze` No issues; suíte 822/0-falha/0-skip;
+regressões b088/b102/b092/b118 verdes; `pubspec`/lock intocados. `pr`/`mergeCommit`/`approvedHead` null na autoria.
+
+---
+
 ## B-124 — 2026-07-05
 
 **Dashboard web enriquecido com despachos e localizacoes (publicacao B-124K) — web-only**

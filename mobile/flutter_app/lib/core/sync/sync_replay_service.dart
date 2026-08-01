@@ -954,6 +954,16 @@ class ChecklistSyncCodec {
             ? 'checklist.item_note'
             : 'checklist.item_answer',
       ChecklistSyncActionTypes.runComplete => 'checklist.complete',
+      // P0b — CADA tipo do ciclo do guincheiro vira o tipo canônico
+      // `checklist.*` que o backend aceita (antes caíam no genérico com o type
+      // cru e o efeito se perdia em silêncio).
+      ChecklistSyncActionTypes.markerCreate => 'checklist.marker_create',
+      ChecklistSyncActionTypes.divergenceCreate =>
+        'checklist.divergence_create',
+      ChecklistSyncActionTypes.acknowledgementCreate =>
+        'checklist.acknowledgement_create',
+      ChecklistSyncActionTypes.attachmentAttach =>
+        'checklist.attachment_attach',
       _ => action.type,
     };
   }
@@ -965,8 +975,106 @@ class ChecklistSyncCodec {
         noteOnly: _noteOnly(action.payload),
       ),
       ChecklistSyncActionTypes.runComplete => _completePayload(action.payload),
+      ChecklistSyncActionTypes.markerCreate => _markerPayload(action.payload),
+      ChecklistSyncActionTypes.divergenceCreate => _divergencePayload(
+        action.payload,
+      ),
+      ChecklistSyncActionTypes.acknowledgementCreate => _acknowledgementPayload(
+        action.payload,
+      ),
+      ChecklistSyncActionTypes.attachmentAttach => _attachmentPayload(
+        action.payload,
+      ),
       _ => _sanitizeMap(action.payload),
     };
+  }
+
+  // server_run_id baixado (D-CHK-DISPATCH-CREATE) → run_id do backend. O
+  // local_run_id vai como fallback (resolveRunId aceita ambos) e em metadata.
+  String? _serverRunId(Map<String, Object?> source) =>
+      _readNonEmptyString(source['server_run_id']) ??
+      _readNonEmptyString(source['run_id']);
+
+  Map<String, Object?> _syncMetadata(Map<String, Object?> source) {
+    final localRunId = _readNonEmptyString(source['local_run_id']);
+    return <String, Object?>{
+      'source': 'mobile_offline',
+      if (localRunId != null && localRunId.isNotEmpty)
+        'local_run_id': localRunId,
+    };
+  }
+
+  Map<String, Object?> _markerPayload(Map<String, Object?> source) {
+    final localRunId = _readNonEmptyString(source['local_run_id']);
+    return Map.unmodifiable(
+      <String, Object?>{
+        'run_id': _serverRunId(source),
+        'local_run_id': localRunId,
+        'component_id':
+            _readNonEmptyString(source['component_id']) ??
+            _readNonEmptyString(source['field_id']),
+        'marker_type':
+            _readNonEmptyString(source['marker_type']) ??
+            _readNonEmptyString(source['type']) ??
+            'damage',
+        'description': _readNonEmptyString(source['description']),
+        'position_label': _readNonEmptyString(source['position_label']),
+        'label': _readNonEmptyString(source['label']),
+        'local_marker_id': _readNonEmptyString(source['local_marker_id']),
+        'metadata': _syncMetadata(source),
+      }..removeWhere((_, value) => value == null),
+    );
+  }
+
+  Map<String, Object?> _divergencePayload(Map<String, Object?> source) {
+    final localRunId = _readNonEmptyString(source['local_run_id']);
+    return Map.unmodifiable(
+      <String, Object?>{
+        'run_id': _serverRunId(source),
+        'local_run_id': localRunId,
+        'component_id':
+            _readNonEmptyString(source['component_id']) ??
+            _readNonEmptyString(source['field_id']),
+        'observation':
+            _readNonEmptyString(source['observation']) ??
+            _readNonEmptyString(source['note']),
+        'metadata': _syncMetadata(source),
+      }..removeWhere((_, value) => value == null),
+    );
+  }
+
+  Map<String, Object?> _acknowledgementPayload(Map<String, Object?> source) {
+    final localRunId = _readNonEmptyString(source['local_run_id']);
+    return Map.unmodifiable(
+      <String, Object?>{
+        'run_id': _serverRunId(source),
+        'local_run_id': localRunId,
+        'message':
+            _readNonEmptyString(source['message']) ??
+            _readNonEmptyString(source['observation']),
+        'observation': _readNonEmptyString(source['observation']),
+        'metadata': _syncMetadata(source),
+      }..removeWhere((_, value) => value == null),
+    );
+  }
+
+  Map<String, Object?> _attachmentPayload(Map<String, Object?> source) {
+    final localRunId = _readNonEmptyString(source['local_run_id']);
+    final sizeBytes = source['size_bytes'];
+    return Map.unmodifiable(
+      <String, Object?>{
+        'run_id': _serverRunId(source),
+        'local_run_id': localRunId,
+        'component_id':
+            _readNonEmptyString(source['component_id']) ??
+            _readNonEmptyString(source['field_id']),
+        'local_att_id': _readNonEmptyString(source['local_att_id']),
+        'file_name': _readNonEmptyString(source['file_name']),
+        'mime_type': _readNonEmptyString(source['mime_type']),
+        'size_bytes': sizeBytes is num ? sizeBytes : null,
+        'metadata': _syncMetadata(source),
+      }..removeWhere((_, value) => value == null),
+    );
   }
 
   Map<String, Object?> _answerPayload(
@@ -1192,8 +1300,46 @@ bool b102ChecklistActionReadyForBackend(SyncAction action) {
   return runId != null && !runId.startsWith('clrun-local-');
 }
 
+// PR-B (D-CHK-DISPATCH-CREATE) — o ciclo COMPLETO do guincheiro é replay-elegível
+// (answer/note/complete/marker/divergence/ack/attachment), MENOS `run.create`
+// (a run é criada pelo despacho, não pelo guincheiro). A elegibilidade exige o
+// server_run_id baixado (sem ele, a ação fica pendente até o download carimbar).
+const backendChecklistActionTypes = {
+  ChecklistSyncActionTypes.answerUpsert,
+  ChecklistSyncActionTypes.runComplete,
+  ChecklistSyncActionTypes.markerCreate,
+  ChecklistSyncActionTypes.divergenceCreate,
+  ChecklistSyncActionTypes.acknowledgementCreate,
+  ChecklistSyncActionTypes.attachmentAttach,
+};
+
+bool checklistActionReadyForBackend(SyncAction action) {
+  if (!backendChecklistActionTypes.contains(action.type)) {
+    return false;
+  }
+
+  final serverRunId = _readBackendRunId(action.payload['server_run_id']);
+  if (serverRunId != null) return true;
+
+  // Um run_id explícito não-local (uuid do servidor) também é aceito. Ids locais
+  // têm prefixo `clrun-` (clrun-c_/clrun-e_/clrun-local-).
+  final runId = _readBackendRunId(action.payload['run_id']);
+  return runId != null && !runId.startsWith('clrun-');
+}
+
 String? _readBackendRunId(Object? value) =>
     value is String && value.trim().isNotEmpty ? value.trim() : null;
+
+// Conflitos de checklist que NÃO são terminais: são corridas de ordem que se
+// resolvem numa nova tentativa (mapeadas para `failed`, limitado por maxRetry),
+// em vez de prender a ação em `conflict` para sempre. O backend envia o código
+// no conflict_type (ex.: ACKNOWLEDGEMENT_NOT_REQUIRED / acknowledgement_not_required).
+const _retryableChecklistConflictCodes = {'acknowledgement_not_required'};
+
+bool _isRetryableChecklistConflict(String? errorCode) {
+  if (errorCode == null) return false;
+  return _retryableChecklistConflictCodes.contains(errorCode.toLowerCase());
+}
 
 class ChecklistSyncReplayService {
   const ChecklistSyncReplayService({
@@ -1220,14 +1366,27 @@ class ChecklistSyncReplayService {
         .where((a) => a.status != SyncStatus.conflict)
         .where((a) => a.retryCount < maxRetry)
         .where((a) => _extraEligibility?.call(a) ?? true)
-        .toList(growable: false);
+        .toList();
 
     if (eligible.isEmpty) {
       return const SyncReplayResult(synced: [], failed: [], conflicts: []);
     }
 
+    // ORDEM DO LOTE (junta PR-B): o backend processa o batch NA ORDEM do array.
+    // Ordenar por created_at garante divergence → ack → complete na sequência em
+    // que o guincheiro os produziu — sem isso, o `complete` podia ser processado
+    // antes do `divergence`/`ack` (rebaixando pending_acknowledgement→completed)
+    // e a ciência 409-perder. Ordenação ESTÁVEL: empates de created_at preservam
+    // a ordem do store (que já vem por created_at, rowid).
+    final indexed = eligible.asMap().entries.toList()
+      ..sort((a, b) {
+        final byTime = a.value.createdAt.compareTo(b.value.createdAt);
+        return byTime != 0 ? byTime : a.key.compareTo(b.key);
+      });
+    final ordered = [for (final entry in indexed) entry.value];
+
     final syncing = [
-      for (final a in eligible) a.copyWith(status: SyncStatus.syncing),
+      for (final a in ordered) a.copyWith(status: SyncStatus.syncing),
     ];
     for (final a in syncing) {
       await _queue.update(a);
@@ -1282,6 +1441,21 @@ class ChecklistSyncReplayService {
                 ? {...a.payload, 'result_ref': result.resultRef}
                 : a.payload,
           ),
+          // NÃO-TERMINAL (junta PR-B): 409 ACKNOWLEDGEMENT_NOT_REQUIRED é uma
+          // corrida de ordem (o ack chegou antes de a run virar
+          // pending_acknowledgement), não um conflito que exige decisão manual.
+          // Marcar `conflict` prenderia a ciência PARA SEMPRE (o replay exclui
+          // ações em conflito). Mapeia para `failed` → re-tenta (limitado por
+          // maxRetry); no próximo passe o divergence/ordem já foi aplicado.
+          'conflict' when _isRetryableChecklistConflict(result.errorCode) =>
+            a.copyWith(
+              status: SyncStatus.failed,
+              retryCount: a.retryCount + 1,
+              lastErrorCode: result.errorCode ?? 'CONFLICT',
+              lastSafeError:
+                  'Aguardando etapa anterior. Nova tentativa em '
+                  'breve.',
+            ),
           'conflict' => a.copyWith(
             status: SyncStatus.conflict,
             lastErrorCode: result.errorCode ?? 'CONFLICT',

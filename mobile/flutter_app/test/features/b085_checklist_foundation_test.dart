@@ -420,6 +420,9 @@ void main() {
       await repo.addMarker(
         runId: 'run-local-test',
         type: 'damage',
+        // PR-B (junta): component_id (fieldId) agora é obrigatório — sem ele o
+        // backend rejeita o marcador (400) e a ação sumiria após o maxRetry.
+        fieldId: 'f-damage',
         label: 'Arranhao lateral',
         description: 'Risco na porta traseira',
         positionLabel: 'rear-right',
@@ -433,6 +436,7 @@ void main() {
 
       expect(payload['type'], 'damage');
       expect(payload['label'], 'Arranhao lateral');
+      expect(payload['field_id'], 'f-damage');
       expect(payload.containsKey('token'), isFalse);
       expect(payload.containsKey('path'), isFalse);
       expect(payload.containsKey('base64'), isFalse);

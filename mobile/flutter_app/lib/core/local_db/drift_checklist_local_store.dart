@@ -224,12 +224,28 @@ class DriftChecklistLocalStore implements ChecklistLocalStore {
   }
 
   @override
+  Future<List<MobileChecklistAttachmentMetadata>>
+  loadAttachmentsPendingUpload() async {
+    // Anexos com binário local ainda por subir (offline → multipart). O serviço
+    // de upload resolve o run (server_run_id) e o tenant a partir do run.
+    final rows = await _db
+        .customSelect(
+          "SELECT * FROM checklist_attachments "
+          "WHERE local_blob_ref IS NOT NULL "
+          "AND upload_status IN ('pending','failed')",
+        )
+        .get();
+    return rows.map(_attachmentFromRow).toList();
+  }
+
+  @override
   Future<void> saveAttachment(MobileChecklistAttachmentMetadata att) async {
     await _db.customInsert(
       'INSERT OR REPLACE INTO checklist_attachments '
       '(local_id, run_id, field_id, file_name, mime_type, size_bytes, '
-      'checksum, sync_status) '
-      'VALUES (?,?,?,?,?,?,?,?)',
+      'checksum, sync_status, local_blob_ref, upload_status, '
+      'attachment_server_id, uploaded_at, upload_error_code) '
+      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
       variables: [
         Variable<String>(att.localId),
         Variable<String>(att.runId),
@@ -239,6 +255,11 @@ class DriftChecklistLocalStore implements ChecklistLocalStore {
         Variable<int>(att.sizeBytes),
         Variable<String>(att.checksum),
         Variable<String>(att.syncStatus.name),
+        Variable<String>(att.localBlobRef),
+        Variable<String>(att.uploadStatus.name),
+        Variable<String>(att.serverId),
+        Variable<int>(att.uploadedAt?.millisecondsSinceEpoch),
+        Variable<String>(att.uploadErrorCode),
       ],
     );
   }
@@ -340,6 +361,18 @@ class DriftChecklistLocalStore implements ChecklistLocalStore {
         sizeBytes: row.read<int>('size_bytes'),
         checksum: row.readNullable<String>('checksum'),
         syncStatus: SyncStatus.values.byName(row.read<String>('sync_status')),
+        localBlobRef: row.readNullable<String>('local_blob_ref'),
+        serverId: row.readNullable<String>('attachment_server_id'),
+        uploadStatus: SyncStatus.values.byName(
+          row.readNullable<String>('upload_status') ?? 'pending',
+        ),
+        uploadedAt: row.readNullable<int>('uploaded_at') != null
+            ? DateTime.fromMillisecondsSinceEpoch(
+                row.read<int>('uploaded_at'),
+                isUtc: true,
+              )
+            : null,
+        uploadErrorCode: row.readNullable<String>('upload_error_code'),
       );
 
   // ---------------------------------------------------------------------------

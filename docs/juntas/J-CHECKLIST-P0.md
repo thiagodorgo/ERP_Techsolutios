@@ -72,8 +72,35 @@ event_type CHECK). Pendências registradas: P-IMPOUND-CHK-VISIBILITY (ratificada
 finance/inventory), P-CHK-TEMPLATE-PRISMA-V7 (bug real de `createTemplate` no Prisma v7, fora de escopo). Próximo: **PR-B
 (Flutter)**.
 
-## 4. PR-B — Flutter (pendente)
+## 4. PR-B — Flutter — VOTOS DA JUNTA (2026-08-01) — **APROVADO** (workflow adversarial + rework)
 
-Parar de criar run local (`getOrStartRun`); baixar a run pré-criada via `GET /mobile/checklist-runs?workOrderId=`;
-gravar `serverId`; sync das respostas/marker/divergence/ack/complete contra o `server_run_id`; upload de foto por
-multipart. KPIs duplos (§C3.2). Junta própria.
+O guincheiro deixa de CRIAR a run local; baixa a pré-criada (`resolveRunForWorkOrder` → `GET /mobile/checklist-runs`),
+grava `serverId` no Drift e carimba `server_run_id` nas ações enfileiradas; codec mapeia marker/divergence/ack/attachment
+para os tipos canônicos; foto por multipart (`POST /mobile/checklist-runs/:runId/attachments`), binário no
+`EvidenceBlobStore`; estado "aguardando despacho" quando a lista vem vazia; migração Drift aditiva 12→13.
+
+**Ciclo 1 (revisão):**
+- **critico-adversarial → APROVADO_CONDICIONADO.** Contrato campo-a-campo dos 6 tipos (codec Flutter × handlers
+  backend) CONFERE — sem recorrência de perda no mapeamento do sync. **1 ALTA (crash):** migração Drift `from<3 → v13`
+  estourava `duplicate column name` (a constante de CREATE já trazia as 5 colunas novas + o bloco `from<13` fazia ADD
+  das mesmas → device antigo travava o DB); nenhum teste exercitava `onUpgrade` (todos `openInMemory`=schema novo).
+  **2 MÉDIA (perda silenciosa — a própria que o PR mata):** marker com `component_id` nullable na cadeia enquanto o
+  backend exige → 400 silencioso; `acknowledgement_create` vira conflito TERMINAL (excluído do replay para sempre) se
+  chegar antes do `divergence`, + `complete` sempre `has_divergence=false` rebaixando `pending_acknowledgement` = ciência
+  do motorista perdida. 1 BAIXA (blob de foto apagado sem checar `status=='stored'`, §B-108).
+- **amplitude-fluxo (general) → APROVADO_CONDICIONADO.** Fluxo fim-a-fim fecha no caminho normal; `getOrStartRun` sem
+  chamador de produção (só a tela usa `resolveRunForWorkOrder`); estado honesto PT-BR. **1 MÉDIA:** o AutoSyncCoordinator
+  não baixava a run → checklist 100% offline só sincronizava ao reabrir a tela online. BAIXA: acentuação, doc stale,
+  faltava widget test.
+
+**Rework (6 achados):** guard das migrações Drift (`else if`/`from>=N` — corrigido também em `work_orders` e
+`checklist_runs`, não só `checklist_attachments`) + **teste de migração REAL** (schema 2→13 e 1→13, exercita `onUpgrade`
+de verdade); `addMarker` lança e não enfileira sem `component_id` (`componentId` required na tela); batch ordenado por
+`created_at` + `completeRun` reporta `has_divergence` REAL + 409 `ACKNOWLEDGEMENT_NOT_REQUIRED` vira `failed` retryável
+(não terminal); `AutoSyncCoordinator.downloadPendingRuns()` baixa a run antes do replay; blob de foto só apaga em
+`status=='stored'`; acentuação + widget test do "aguardando despacho".
+
+**Decisão da junta:** **APROVADO** — 1 ALTA + 3 MÉDIA + 3 BAIXA, todas fechadas. Flutter **807 → 835** (+13 reais: 2
+migração + 11 junta). KPIs DUPLOS atualizados (`Kpis/*` + `mobile/flutter_app/Kpis/*`). `flutter analyze` limpo,
+`dart format` 0-changed, pubspec/lock intocados. **O P0 do checklist está completo ponta-a-ponta** — o que o guincheiro
+preenche no campo (respostas, avaria, assinatura, foto) passa a chegar ao servidor.

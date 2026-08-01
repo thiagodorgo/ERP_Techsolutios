@@ -58,12 +58,18 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
     if (schema == null) {
       throw Exception('Schema nao encontrado: ${widget.checklistId}');
     }
-    final run = await repo.getOrStartRun(
+    // D-CHK-DISPATCH-CREATE — o guincheiro BAIXA a run pré-criada pelo despacho;
+    // não a cria. Lista vazia = aguardando despacho.
+    final resolution = await repo.resolveRunForWorkOrder(
       checklistId: widget.checklistId,
       workOrderId: widget.workOrderId,
       schemaVersion: schema.version,
       kind: widget.kind,
     );
+    if (resolution.isAwaitingDispatch) {
+      return _RunData(schema: schema, runId: null);
+    }
+    final run = resolution.run!;
     if (run.answers.isNotEmpty) {
       _answers = Map.from(run.answers);
       for (final e in run.answers.entries) {
@@ -131,6 +137,8 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
     final picker = ref.read(evidencePickerProvider);
     final result = await picker.pickImage(source);
     if (result == null) return null;
+    // Passa os BYTES: o binário é gravado no blob store e sobe por multipart
+    // (POST /mobile/checklist-runs/:runId/attachments) quando houver conexão.
     return repo.addAttachment(
       runId: runId,
       fieldId: fieldId,
@@ -138,6 +146,8 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
       mimeType: result.mimeType,
       sizeBytes: result.sizeBytes,
       captureSource: result.captureSource.name,
+      checksum: result.sha256,
+      bytes: result.bytes,
     );
   }
 
@@ -186,6 +196,22 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
         final data = snapshot.data!;
         final schema = data.schema;
         final runId = data.runId;
+
+        // "Aguardando despacho": o backend não devolveu run pré-criada. Pode ser
+        // OS sem checklist despachado OU falha de provisão (lista vazia é
+        // ambígua) — o guincheiro não cria a run (D-CHK-DISPATCH-CREATE).
+        if (runId == null) {
+          return AwaitingDispatchView(
+            title: schema.title,
+            kind: widget.kind,
+            onBack: () => Navigator.of(context).maybePop(),
+            onRetry: () => setState(() {
+              _lastRepo = null;
+              _runFuture = null;
+            }),
+          );
+        }
+
         final fields = schema.sortedFields;
         final totalRequired = schema.requiredFields.length;
         final answeredRequired = totalRequired == 0
@@ -268,7 +294,9 @@ class _RunData {
   const _RunData({required this.schema, required this.runId});
 
   final MobileChecklistSchema schema;
-  final String runId;
+
+  /// `null` quando a run ainda não foi despachada (estado "aguardando despacho").
+  final String? runId;
 }
 
 // ---------------------------------------------------------------------------
@@ -442,9 +470,11 @@ class _FieldCard extends StatelessWidget {
       MobileChecklistFieldType.damageMap => OutlinedButton.icon(
         onPressed: () {
           final vt = vehicleType ?? 'sedan';
+          // componentId = id do campo de mapa de danos: o backend exige
+          // component_id no marker_create (senão o marcador é rejeitado).
           context.push(
             '/checklists/$checklistId/run/damage-map'
-            '?runId=$runId&vehicleType=$vt',
+            '?runId=$runId&vehicleType=$vt&componentId=${field.id}',
           );
         },
         icon: const Icon(Icons.car_repair_outlined),
@@ -1005,6 +1035,85 @@ class _PhotoRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// "Aguardando despacho" — a run ainda não foi criada pelo despacho, ou a
+// provisão da run falhou. O guincheiro não cria a run (D-CHK-DISPATCH-CREATE).
+// ---------------------------------------------------------------------------
+
+// Público (não `_`) para permitir o widget test de fumaça (junta PR-B §6c).
+class AwaitingDispatchView extends StatelessWidget {
+  const AwaitingDispatchView({
+    required this.title,
+    required this.kind,
+    required this.onBack,
+    required this.onRetry,
+    super.key,
+  });
+
+  final String title;
+  final MobileChecklistRunKind kind;
+  final VoidCallback onBack;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return ErpScaffold(
+      showAppBar: false,
+      body: Column(
+        children: [
+          MobileScreenHeader(
+            title: title,
+            onBack: onBack,
+            trailing: MobilePill(label: kind.label, tone: PillTone.info),
+          ),
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.pending_actions_outlined,
+                      size: 56,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Aguardando despacho do checklist',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'A vistoria ainda não foi liberada para esta ordem de '
+                      'serviço. Assim que a central despachar o checklist, ele '
+                      'aparece aqui para você responder.\n\n'
+                      'Se você já deveria ter recebido, pode ser uma falha ao '
+                      'preparar a vistoria — tente atualizar em instantes.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      height: 48,
+                      child: FilledButton.icon(
+                        onPressed: onRetry,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Atualizar'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

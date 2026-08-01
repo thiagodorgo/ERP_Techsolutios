@@ -97,6 +97,15 @@ class _FakeChecklistRemoteApi implements ChecklistRemoteApi {
   }
 
   @override
+  Future<List<RemoteChecklistRun>> fetchRunsForWorkOrder(
+    String workOrderId, {
+    String? checklistId,
+  }) async {
+    if (shouldThrow) throw const ApiNetworkError();
+    return const [];
+  }
+
+  @override
   Future<MobileChecklistSchema> fetchChecklistRender(String checklistId) async {
     if (shouldThrow) throw const ApiNetworkError();
     lastFetchedSchemaId = checklistId;

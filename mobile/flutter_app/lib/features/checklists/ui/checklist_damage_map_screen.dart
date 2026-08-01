@@ -10,6 +10,7 @@ class ChecklistDamageMapScreen extends ConsumerStatefulWidget {
   const ChecklistDamageMapScreen({
     required this.checklistId,
     required this.runId,
+    required this.componentId,
     this.vehicleType = 'sedan',
     super.key,
   });
@@ -17,6 +18,12 @@ class ChecklistDamageMapScreen extends ConsumerStatefulWidget {
   final String checklistId;
   final String runId;
   final String vehicleType;
+
+  /// Id do campo de mapa de danos (component_id que o backend EXIGE no marcador).
+  /// Obrigatório (não-opcional): sem ele o marcador seria rejeitado (400) e
+  /// perderia-se em silêncio. Pode chegar vazio via deep-link — a tela então
+  /// bloqueia o registro e avisa (ver [_addMarker]).
+  final String? componentId;
 
   @override
   ConsumerState<ChecklistDamageMapScreen> createState() =>
@@ -47,6 +54,21 @@ class _ChecklistDamageMapScreenState
   }
 
   Future<void> _addMarker() async {
+    // FAIL-SAFE (junta PR-B): o backend exige component_id. Sem ele o marcador
+    // seria rejeitado e sumiria — bloqueia ANTES de abrir o diálogo e avisa.
+    final componentId = widget.componentId?.trim();
+    if (componentId == null || componentId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível registrar o dano: componente do mapa não '
+            'identificado. Abra o mapa de danos a partir do checklist.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final result = await showDialog<_MarkerInput>(
       context: context,
       builder: (ctx) => const _AddMarkerDialog(),
@@ -57,6 +79,7 @@ class _ChecklistDamageMapScreenState
     final marker = await repo.addMarker(
       runId: widget.runId,
       type: result.type,
+      fieldId: componentId,
       label: result.label.isEmpty ? null : result.label,
       description: result.description.isEmpty ? null : result.description,
       positionLabel: result.positionLabel.isEmpty ? null : result.positionLabel,

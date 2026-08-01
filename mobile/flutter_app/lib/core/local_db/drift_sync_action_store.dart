@@ -13,7 +13,15 @@ class DriftSyncActionStore implements SyncActionStore {
 
   @override
   Future<List<SyncAction>> load() async {
-    final rows = await _db.customSelect('SELECT * FROM sync_actions').get();
+    // Ordem determinística por created_at (junta PR-B): o replay envia o lote na
+    // ordem em que as ações foram criadas, garantindo divergence → ack →
+    // complete. Desempate por rowid = ordem de inserção (created_at pode empatar
+    // em ms). Sem ORDER BY o SQLite não garante ordem de linha.
+    final rows = await _db
+        .customSelect(
+          'SELECT * FROM sync_actions ORDER BY created_at ASC, rowid ASC',
+        )
+        .get();
     return rows.map(_actionFromRow).toList();
   }
 

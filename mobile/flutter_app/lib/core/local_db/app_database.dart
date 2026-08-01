@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -68,7 +68,18 @@ class AppDatabase extends GeneratedDatabase {
       if (from < 6) {
         await m.database.customStatement(_kFieldLocationEvents);
       }
-      if (from < 7) {
+      // ATENÇÃO (guarda de idempotência): as constantes de CREATE (`_kWorkOrders`,
+      // `_kChecklistRuns`, `_kChecklistAttachments`) JÁ trazem as colunas
+      // adicionadas em versões posteriores. Logo, quando o CREATE fresco roda
+      // nesta mesma migração (device muito antigo: `from < 2` cria work_orders
+      // completo, `from < 3` cria as tabelas de checklist completas), os ALTER
+      // ADD COLUMN abaixo DUPLICARIAM a coluna → SQLite "duplicate column name" →
+      // migração falha → banco não abre. Por isso cada ALTER só roda quando a
+      // tabela NÃO nasceu completa nesta migração: work_orders nasce em `from<2`
+      // (ALTER só com `from>=2`); tabelas de checklist nascem em `from<3`
+      // (ALTER só com `from>=3`). Mesma intenção do par create/else-if do
+      // work_order_evidence acima.
+      if (from >= 2 && from < 7) {
         final rows = await m.database
             .customSelect(
               "SELECT name FROM sqlite_master WHERE type='table' AND name='work_orders'",
@@ -80,7 +91,7 @@ class AppDatabase extends GeneratedDatabase {
           );
         }
       }
-      if (from < 8) {
+      if (from >= 3 && from < 8) {
         final rows = await m.database
             .customSelect(
               "SELECT name FROM sqlite_master WHERE type='table' AND name='checklist_runs'",
@@ -95,7 +106,7 @@ class AppDatabase extends GeneratedDatabase {
       if (from < 9) {
         await m.database.customStatement(_kWorkOrderMaterials);
       }
-      if (from < 10) {
+      if (from >= 2 && from < 10) {
         final rows = await m.database
             .customSelect(
               "SELECT name FROM sqlite_master WHERE type='table' AND name='work_orders'",
@@ -110,7 +121,7 @@ class AppDatabase extends GeneratedDatabase {
           );
         }
       }
-      if (from < 11) {
+      if (from >= 2 && from < 11) {
         // D1 (seleção viatura/equipe): vínculo opcional de viatura/equipe.
         final rows = await m.database
             .customSelect(
@@ -137,6 +148,36 @@ class AppDatabase extends GeneratedDatabase {
         // Migração ADITIVA — só CREATE TABLE IF NOT EXISTS, nenhuma tabela
         // existente é alterada. NÃO reusa `sync_actions`.
         await m.database.customStatement(_kTelemetryEvents);
+      }
+      if (from >= 3 && from < 13) {
+        // PR-B (D-CHK-DISPATCH-CREATE): o binário da foto de checklist passa a
+        // ter fila de upload durável (offline → multipart quando online), no
+        // molde de work_order_evidence. Migração ADITIVA: só ALTER TABLE ADD
+        // COLUMN na checklist_attachments (nenhuma tabela existente é apagada).
+        // Guarda `from >= 3`: quando `from < 3` a tabela nasce já com estas 5
+        // colunas via `_kChecklistAttachments`, então o ALTER duplicaria.
+        final rows = await m.database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='checklist_attachments'",
+            )
+            .get();
+        if (rows.isNotEmpty) {
+          await m.database.customStatement(
+            'ALTER TABLE checklist_attachments ADD COLUMN local_blob_ref TEXT',
+          );
+          await m.database.customStatement(
+            "ALTER TABLE checklist_attachments ADD COLUMN upload_status TEXT NOT NULL DEFAULT 'pending'",
+          );
+          await m.database.customStatement(
+            'ALTER TABLE checklist_attachments ADD COLUMN attachment_server_id TEXT',
+          );
+          await m.database.customStatement(
+            'ALTER TABLE checklist_attachments ADD COLUMN uploaded_at INTEGER',
+          );
+          await m.database.customStatement(
+            'ALTER TABLE checklist_attachments ADD COLUMN upload_error_code TEXT',
+          );
+        }
       }
     },
   );
@@ -334,7 +375,12 @@ CREATE TABLE IF NOT EXISTS checklist_attachments (
   mime_type TEXT NOT NULL,
   size_bytes INTEGER NOT NULL,
   checksum TEXT,
-  sync_status TEXT NOT NULL
+  sync_status TEXT NOT NULL,
+  local_blob_ref TEXT,
+  upload_status TEXT NOT NULL DEFAULT 'pending',
+  attachment_server_id TEXT,
+  uploaded_at INTEGER,
+  upload_error_code TEXT
 )''';
 
 const _kChecklistAcknowledgements = '''

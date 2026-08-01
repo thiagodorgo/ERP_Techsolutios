@@ -1,3 +1,4 @@
+import '../../../core/sync/sync_models.dart';
 import '../domain/checklist_models.dart';
 
 abstract class ChecklistLocalStore {
@@ -17,6 +18,10 @@ abstract class ChecklistLocalStore {
     String fieldId,
   );
   Future<void> saveAttachment(MobileChecklistAttachmentMetadata att);
+
+  /// Anexos com binário local ainda por subir (offline → multipart).
+  Future<List<MobileChecklistAttachmentMetadata>>
+  loadAttachmentsPendingUpload();
 }
 
 class InMemoryChecklistLocalStore implements ChecklistLocalStore {
@@ -108,4 +113,15 @@ class InMemoryChecklistLocalStore implements ChecklistLocalStore {
     _attachments.removeWhere((a) => a.localId == att.localId);
     _attachments.add(att);
   }
+
+  @override
+  Future<List<MobileChecklistAttachmentMetadata>>
+  loadAttachmentsPendingUpload() async => _attachments
+      .where(
+        (a) =>
+            a.localBlobRef != null &&
+            (a.uploadStatus == SyncStatus.pending ||
+                a.uploadStatus == SyncStatus.failed),
+      )
+      .toList();
 }
