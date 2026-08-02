@@ -295,3 +295,62 @@ AUTO-link fail-closed confirmado intencional em comentário.
 BAIXA documentadas; ratificações de concorrência/`25P02`/isolamento-legal mantidas. **KPIs:** backend
 **2064/2070 → 2085/2091** (+21: 18 do sweep/identidade/link + 3 da reconciliação-na-vistoria). SEM migração.
 `blocks_completed` 121→122. Próximo: **PR-06** (ModalLarge — entra a reta de UI do dossiê).
+
+### PR-06 — `Modal` ganha variante `size="lg"` no design system — FINALIZADO (2026-08-01) — **CI-gate (frontend, aditivo)**
+
+Fatia de design-system pura e aditiva: `Modal` ganha `size?: "md" | "lg"` (default `"md"` **byte-idêntico** ao antigo —
+os ~55 modais existentes intocados); a variante grande renderiza o corpo em `.ui-modal--lg > .ui-modal__body`
+(`width: min(1180px, 96vw)`, `max-height: 92vh`, header `flex: none`, body `overflow-y: auto`), com o X do fechar a
+44px + `focus-visible`. Consistente com o tratamento de PRs de design finalizados com **CI como gate** (mudança visual
+aditiva, sem junta adversarial dedicada): bateria frontend verde (check/test:smoke/build), escopo restrito a
+`frontend/src/components/ui/index.tsx` + `frontend/src/styles/app.css`. Habilita o PR-07. Mergeado (#323).
+
+### PR-07 — `VehicleDossieModal` (abas) + clique-na-vaga + deep-link `?dossie=` — VOTOS DA JUNTA (2026-08-01) — **APROVADO 2/2 (2 MÉDIAs aplicadas antes do merge)**
+
+> Junta de UI orquestrada como workflow adversarial: **`cognicao-visual`** (fidelidade §11 do dossiê em abas, estados
+> obrigatórios, a11y) + **amplitude/general** (corretude do deep-link, §allowlist, não-regressão da `ProcessoDossiePage`
+> refatorada). Ambos rodaram a suíte smoke real.
+
+O centro da UI da rodada: **clicar na vaga ocupada abre o dossiê do veículo num modal GRANDE** (`Modal size="lg"` do
+PR-06) com **6 abas** (`Tabs` do design-system) reorganizando as seções que a `ProcessoDossiePage` empilhava — Visão
+Geral (`ProcessIdentityCard`), Vistoria de Recepção (`InspectionSection`), Linha do Tempo (`IntegritySeal` +
+`ProcessTimeline`), Débitos (`GuiaDebitos`), Liberação (`LiberacaoPanel`), Leilão/Liquidação (`AuctionPanel` +
+`LiquidacaoPanel`). Reúso sem duplicar via hook novo **`useProcessDossie`** (a página foi refatorada para consumi-lo,
+comportamento inalterado, e segue como fallback em `/patios/processos/:processId`). O `OccupancyMap` troca `<Link>`
+(`ExternalLink`) por **botão `onOpenDossie`** (`FileText`); o estado do modal é a **query `?dossie=`** (fonte única da
+verdade — abrir empurra o param, botão-voltar fecha, fechar remove com `replace`, montar com o param abre). As abas
+**Checklist do Guincho** (PR-08) e **Histórico de Custódias** (PR-09) ainda **não** entram.
+
+**Veredito `cognicao-visual` → APROVADO:** modal `lg` renderiza o dossiê sem estourar viewport (header fixo, body
+scrollável, X 44px); 6 abas com rótulos PT-BR de negócio **acentuados** e corretos; cabeçalho = placa
+(`getVehicleLabel`) + `ProcessStatusChip` (não botão esticado); cada aba reusa fielmente o componente existente; os 5
+estados obrigatórios (§7) presentes e honestos (skeleton/erro+retry/acesso-negado `impound:read`/não-encontrado);
+a11y no piso (`role=tablist/tab`, `aria-selected`, botão da vaga com `aria-label` coerente e ícone `FileText` que não
+promete navegação enganosa); sem aba morta/placeholder. **2 MÉDIA + 3 BAIXA** (abaixo).
+
+**Veredito amplitude → APROVADO:** deep-link `?dossie=` com a **query como fonte única da verdade** (sem `useState`
+paralelo que dessincronizasse); §allowlist preservado (o `currentProcessId` só vai ao handler/join, **nunca**
+renderizado como texto; `?dossie=<id>` é id opaco, mesma exposição do path pré-existente); a refatoração da
+`ProcessoDossiePage` é **extract puro** (mesmas chamadas/ordem/erro/`onDone`); a rota fallback segue registrada; o
+`OccupancyMap` dispara `onOpenDossie` e **não** navega (sem `onOpenDossie` → `<span>` não-clicável, sem trigger morto);
+sem duplo-fetch (o hook não busca com o modal fechado). Sem achados bloqueadores.
+
+**2 MÉDIAs aplicadas ANTES do merge:**
+1. **Abas + identidade não eram sticky** → rolavam para fora do topo em abas altas (Débitos, Vistoria com galeria),
+   minando a navegação por abas que o dono pediu. **Corrigido:** `stickyHead` (`position: sticky; top: 0; z-index: 2`)
+   fixa placa + status + abas no topo do corpo scrollável do modal.
+2. **`TransicaoFsmPanel` (`impound:transition`) ausente do modal** → como a vaga do mapa deixou de navegar para a página
+   e passou a abrir _este_ modal, o operador perderia a ação de custódia da FSM no novo ponto de entrada. **Corrigido:**
+   o painel foi adicionado à aba **Visão Geral** (aba default), reusando o mesmo componente/props/`onDone` da página;
+   card **"Somente leitura"** honesto para quem não tem a permissão (paridade com a página). +1 smoke cobrindo o painel
+   na Visão Geral (com e sem permissão) e sua ausência nas outras abas.
+
+**3 BAIXA → registradas como pendências transversais (fora do escopo do PR):** ARIA completa do `Tabs`
+(`aria-controls`/`aria-labelledby`/roving-tabindex); focus-trap/Esc/backdrop no `Modal` compartilhado (limitação
+pré-existente do DS, afeta ~55 modais); tokenização dos hex inline (convenção já estabelecida em todo o módulo pátios,
+não desvio deste PR).
+
+**Decisão da junta:** **APROVADO 2/2** — 2 MÉDIA fechadas no próprio PR, 3 BAIXA transversais registradas. **KPIs:**
+frontend_smoke **954 → 971** (+17: 16 do dev + 1 da junta); `blocks_completed` 123→124. Frontend-only (backend/Flutter
+inalterados, D-KPI-PER-PR §C3.3). Próximo: **PR-08** (aba Checklist do Guincho — gate duplo `impound:read` +
+`checklist_runs:read`, consome o AUTO-link do PR-05).

@@ -6,6 +6,50 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-01 - OMEGA-VID-PR-07 (VehicleDossieModal: dossiê do veículo em modal grande com abas, frontend-only)
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 835 / 835 (inalterado; frontend-only) |
+| Backend Tests | 2085 / 2091 (inalterado; frontend-only) |
+| Frontend Smoke | 971 / 971 (954 → 971, +17) |
+| Blocos Entregues | 124 (123 → 124) |
+
+O **VehicleDossieModal** apresenta o dossiê do veículo num `Modal size="lg"` (variante do PR-06) com **abas**
+(`Tabs` do design-system), aberto ao clicar na **vaga ocupada** do `OccupancyMap` (não navega mais) e por
+**deep-link `?dossie=<processId>`**. As **6 abas** reorganizam as seções que a `ProcessoDossiePage` empilhava —
+Visão Geral (`ProcessIdentityCard`: identificação/origem + local de guarda), Vistoria de Recepção
+(`InspectionSection`), Linha do Tempo (`IntegritySeal` + `ProcessTimeline`), Débitos (`GuiaDebitos`), Liberação
+(`LiberacaoPanel`), Leilão/Liquidação (`AuctionPanel` + `LiquidacaoPanel`). As abas **Checklist do Guincho** (PR-08)
+e **Histórico de Custódias** (PR-09) ainda **não** entram — a estrutura de abas só fica pronta.
+
+Reúso sem duplicar: o hook novo **`useProcessDossie(processId, enabled)`** extrai a lógica de fetch
+(getProcess + eventos/verify/vistoria em paralelo + join client-side pátio/vaga + auto-refresh) consumida pela
+**página E pelo modal**; a `ProcessoDossiePage` foi refatorada para usá-lo com **comportamento inalterado** e segue
+existindo em `/patios/processos/:processId` como **deep-link/fallback direto**. O `OccupancyMap` troca o `<Link>`
+(ícone `ExternalLink`) por um **botão `onOpenDossie`** (ícone `FileText`) — sem `<Link>`/`href`; §allowlist mantido
+(`currentProcessId` nunca como texto). Em `PatioDetailPage`, o estado do modal **é a query `?dossie=`** (fonte da
+verdade; helpers puros `setDossieParam`/`clearDossieParam`): abrir empurra o param (botão-voltar fecha), fechar
+remove com `replace`, montar com o param já preenchido **abre automaticamente**. O `Tabs` do design-system ganhou
+`role="tab"` + `aria-selected` (aditivo).
+
+**+17 smoke tests reais** (`patios-dossie-modal.smoke.test.tsx` = 15, `patios-dossie-deeplink.smoke.test.tsx` = 2)
++ `patios-mapa.smoke` migrado (3 testes de `<Link>`/`href` para o botão). Execução real: **971 pass / 0 fail / 0
+skip** (sobre 954 do PR-06). Backend/Flutter **inalterados** (frontend-only, D-KPI-PER-PR §C3.3). Escopo:
+`frontend/src/modules/patios/**` + `frontend/src/components/ui/index.tsx` (Tabs aria) + `frontend/package.json` +
+`frontend/tests/**` + `Kpis/*`. **Intocados**: `src/**` (backend), `mobile/**`, abas Checklist(PR-08)/Histórico(PR-09).
+
+**Junta de UI (cognição-visual + amplitude) → APROVADO;** 2 MÉDIAs aplicadas antes do merge: (i) **placa + status + abas
+agora _sticky_** no topo do corpo scrollável do modal (`stickyHead` com `position: sticky; top: 0`) — em abas altas
+(Débitos, Vistoria com galeria) a navegação por abas e a identidade do veículo não somem ao rolar; (ii) o
+**`TransicaoFsmPanel`** (`impound:transition`) foi adicionado à aba **Visão Geral** — como a vaga do mapa deixou de
+navegar para a página e passou a abrir _este_ modal, a ação de custódia da FSM passa a viver aqui também (mesmo
+componente/props/`onDone` da página; card **"Somente leitura"** honesto para quem não tem a permissão). +1 smoke
+(cobertura do painel na Visão Geral, com e sem permissão). BAIXAs (ARIA completa do Tabs, focus-trap transversal do
+`Modal`, tokenização de hex do módulo pátios) registradas como pendências transversais fora do escopo do PR.
+
 ## 2026-08-01 - OMEGA-VID-PR-05 FIX-JUNTA (vistoria reconcilia identity_id — SPLIT da colisão-por-reuso, backend-only)
 
 ### Resultado

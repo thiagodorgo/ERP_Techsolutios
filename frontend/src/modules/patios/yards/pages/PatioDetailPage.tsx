@@ -1,8 +1,7 @@
 import { ArrowLeft, Pencil, Plus } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { Alert, Button, Card, Chip, EmptyState, Skeleton } from "../../../../components/ui";
 import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
@@ -13,6 +12,8 @@ import { OccupancyMap } from "../../processes/components/OccupancyMap";
 import { ProcessPickerModal } from "../../processes/components/ProcessPickerModal";
 import { SpotPickerModal } from "../../processes/components/SpotPickerModal";
 import { VacateSpotModal } from "../../processes/components/VacateSpotModal";
+import { VehicleDossieModal } from "../../processes/components/VehicleDossieModal";
+import { clearDossieParam, DOSSIE_PARAM, setDossieParam } from "../../processes/dossieDeepLink";
 import { listProcessesByYard } from "../../processes/processes.service";
 import type { ProcessListItem } from "../../processes/processes.types";
 import { YardAreaFormModal } from "../components/YardAreaFormModal";
@@ -93,6 +94,22 @@ export function PatioDetailPage() {
   const [areaModal, setAreaModal] = useState<{ open: boolean; area: YardAreaItem | null }>({ open: false, area: null });
   const [spotModal, setSpotModal] = useState<{ open: boolean; spot: YardSpotItem | null }>({ open: false, spot: null });
   const [spotAction, setSpotAction] = useState<SpotAction>(null);
+
+  // Ω-VID PR-07 — dossiê do veículo num modal grande, aberto ao clicar na vaga ocupada. Deep-link ?dossie=<processId>
+  // é a FONTE DA VERDADE do estado {open,processId}: abrir empurra o param (o botão-voltar fecha o modal); fechar o
+  // remove (replace, sem lixo no histórico); montar com ?dossie= já preenchido (refresh/link) abre automaticamente.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const dossieProcessId = searchParams.get(DOSSIE_PARAM);
+
+  const openDossie = useCallback(
+    (processId: string) => setSearchParams(setDossieParam(searchParams, processId)),
+    [searchParams, setSearchParams],
+  );
+
+  const closeDossie = useCallback(
+    () => setSearchParams(clearDossieParam(searchParams), { replace: true }),
+    [searchParams, setSearchParams],
+  );
 
   const context = useMemo(
     () => ({
@@ -306,6 +323,7 @@ export function PatioDetailPage() {
                     onMove={(spot, processId) => setSpotAction({ kind: "move", spot, processId })}
                     onVacate={(spot, processId) => setSpotAction({ kind: "vacate", spot, processId })}
                     onEdit={(spot) => setSpotModal({ open: true, spot })}
+                    onOpenDossie={openDossie}
                   />
                 </>
               )}
@@ -389,6 +407,10 @@ export function PatioDetailPage() {
           onDone={reloadAfterAction}
         />
       ) : null}
+
+      {/* Ω-VID PR-07 — dossiê do veículo (modal grande com abas), aberto pela vaga ocupada e por ?dossie= (deep-link).
+          A presença do param dirige a abertura (refresh/link compartilhado reabrem o modal no processo certo). */}
+      {dossieProcessId ? <VehicleDossieModal processId={dossieProcessId} onClose={closeDossie} /> : null}
     </section>
   );
 }
