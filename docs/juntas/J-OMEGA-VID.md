@@ -399,3 +399,49 @@ P-IMPOUND-CHK-VISIBILITY deferidas à junta de custódia (§A2). **KPIs:** front
 **2085 → 2086** (+1 DTO); `blocks_completed` 124→125. Full-stack (extensão backend estreita de `templateName`). Suíte
 relacionada verde (`impound-checklist-link` 10, `impound-trigger-durability` 28, `mobile-backend-contracts` 22).
 Próximo: **PR-09** (aba "Histórico de Custódias" — lista os múltiplos processos da mesma identidade de veículo).
+
+### PR-09 — aba "Histórico de Custódias" + endpoint custody-history — VOTOS DA JUNTA (2026-08-01) — **APROVADO 4/4 (condições fechadas antes do merge)**
+
+> Junta adversarial (workflow, 4 revisores): **`coordenador-de-acessos`** (cadeia de acesso), **`critico-adversarial`**
+> (corretude/honestidade), **`cognicao-visual`** (fidelidade §11) e **`agente-dba-guardiao`** (prova a query prisma
+> VIVA — o teste do PR era só em memória). A cognicao-visual devolveu structured-output degenerado na 1ª rodada e foi
+> **re-executada** (veredito real obrigatório).
+
+Aba **"Histórico de Custódias"** no dossiê: as MÚLTIPLAS passagens do MESMO veículo (identidade `ThirdPartyVehicleIdentity`)
+pelo pátio. **Full-stack**: módulo de leitura NOVO `impound.custody-history.*` (espelho do `checklist-link` — não acopla
+o domínio central `ImpoundProcess` que não expõe `identity_id`) + endpoint `GET /impound-processes/:id/custody-history`
+(gate `impound:read`, a mesma do dossiê; a identidade é resolvida **server-side**, nunca sai no DTO). Frontend: aba em
+`DOSSIE_TABS` base (após "Linha do Tempo"), painel `CustodyHistoryPanel` (tabela Veículo/Situação/Entrada/Pátio, linha
+atual destacada), hook/adapter/service.
+
+**`agente-dba-guardiao` → APROVADO_CONDICIONADO** (**prova viva** contra Postgres: agrupamento por `identity_id`,
+`isCurrent`, `entered_at DESC NULLS LAST`, join `yard`, sem-identidade → só o próprio; **isolamento multi-tenant sob RLS
+FORCE (role NOSUPERUSER)**: cross-tenant → `[]`, FK composta `(tenant_id, identity_id)` impede colisão estruturalmente;
+migração inalterada; teardown escopado sem debris). **1 MÉDIA + 1 BAIXA fechadas:** a query autoritativa só tinha
+cobertura em memória → **adicionado `tests/impound-custody-history-db.test.ts`** (DB-gated, espelha o PoC; **3/3 vivo**),
+travando inclusive o desempate secundário `created_at DESC` que o repo em memória não reproduz.
+
+**`critico-adversarial` → APROVADO_CONDICIONADO.** **1 ALTA + BAIXAs fechadas:** (ALTA) KPIs não estavam no diff →
+**atualizados no próprio PR** (§C3). Consulta redundante (`processExists` + `listCustodyHistory`) → **removido o
+`processExists`**: um processo existente sempre inclui a si mesmo, então lista vazia ⟺ 404 (uma consulta a menos).
+`dossieTabsFor` com índices hardcoded → **refatorado para splice por id** (robusto a novas abas). Cópia do EmptyState →
+corrigida (ver cognicao). O adapter **não reordena** (confia na ordem do backend) — mantido de propósito: o backend
+carrega o desempate `created_at` que o cliente não tem.
+
+**`cognicao-visual` → APROVADO_CONDICIONADO** (tokens/densidade coerentes com os painéis irmãos; Chip semântico via
+`getStatusTone`; §allowlist limpo; estados §7 testados; acentuação; `formatDate` Intl pt-BR; `getVehicleLabel`).
+**1 MÉDIA + 1 BAIXA fechadas:** (MÉDIA) a cópia do EmptyState descrevia um caso que **nunca** cai no vazio (o processo
+atual sempre volta via `isCurrent`; o vazio real é 404/desatualizado) → **reescrita honesta**. (BAIXA) 8 abas estouravam
+a faixa em viewport estreito, dando scroll-x ao corpo → **`.ui-modal--lg .ui-tabs { overflow-x:auto; max-width:100% }`**
+(a faixa rola sozinha, como o cloud-billing). INFO (hover/cursor da linha) = traço pré-existente do módulo, não-regressão.
+
+**`coordenador-de-acessos` → APROVADO** (sem condição): gate `impound:read` adequado (mesma classe de dado que o ator já
+lê no dossiê e na lista tenant-wide de processos); §allowlist limpo (`identity_id` só no filtro server-side, `id` só como
+React key); cross-tenant selado (404 sem vazar existência, filtro tenant-first + RLS); a aba nunca aparece sem
+`impound:read`. 2 BAIXA = confirmações não-bloqueantes.
+
+**Decisão da junta:** **APROVADO 4/4** — 1 ALTA + 2 MÉDIA + BAIXAs fechadas no próprio PR; a query prisma agora tem
+regressão DB-gated (3/3 viva). **KPIs:** frontend_smoke **984 → 991** (+7); backend **2107/2107** (real CI, 0 skip; +10
+desta fatia: 7 memória + 3 DB-gated); `blocks_completed` 125→126. Pendência registrada: P-DOSSIE-PAGE-TABS (a página fallback `/patios/processos/:id` ainda
+não reflete as abas Checklist/Histórico do modal — alinhar ou deprecar). Próximo: **PR-10** (Imprimir/Salvar) — FECHA a
+rodada Ω-VID.

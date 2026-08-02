@@ -1381,3 +1381,13 @@ cross-tenant — 404 provado nos testes 4/5); a nuance é apenas se o guincheiro
 do processo. É exatamente a decisão que [P-IMPOUND-CHK-VISIBILITY] defere à **junta de custódia**: (a) exigir permissão
 de custódia dedicada além de `impound:read`? (b) escopar por assignee para alinhar à intenção "answer-assigned"? PR-08
 não é o lugar de decidir. Registrado (§A2).
+
+## P-DOSSIE-PAGE-TABS — Página fallback /patios/processos/:id não reflete as abas Checklist/Histórico do modal (BAIXA)
+
+Junta do Ω-VID PR-09 (critico-adversarial). O dossiê ganhou UI rica em ABAS no `VehicleDossieModal` (PR-07..09):
+Checklist do Guincho (PR-08) e Histórico de Custódias (PR-09). A **página** `ProcessoDossiePage` (`/patios/processos/:id`),
+que segue existindo como fallback/deep-link direto, mantém o layout ANTIGO empilhado — SEM as seções de checklist e
+histórico. Não é bug (a página é fallback; o ponto de entrada primário é a vaga do mapa → modal), mas é inconsistência
+de completude entre os dois caminhos. Decidir numa fatia própria: (a) alinhar a página ao modal (reusar
+`ChecklistRunsPanel`/`CustodyHistoryPanel` + hooks — baratos, já são componentes puros), OU (b) deprecar a página em
+favor do modal (redirecionar `/patios/processos/:id` para abrir o modal). Registrado (§A2).

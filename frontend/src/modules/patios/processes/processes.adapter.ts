@@ -2,6 +2,7 @@ import type {
   ChecklistRunStatus,
   ChecklistRunSummaryItem,
   CustodyEventItem,
+  CustodyHistoryItem,
   CustodyEventType,
   ImpoundStatus,
   InspectionData,
@@ -552,4 +553,28 @@ export function adaptChecklistRunsResponse(response: unknown): ChecklistRunSumma
   const runs = itemsSource.map((item) => adaptChecklistRun(item)).filter((item): item is ChecklistRunSummaryItem => Boolean(item));
   // Mais recentes primeiro (startedAt desc) — o guincheiro/operador vê o último preenchimento no topo.
   return runs.sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+}
+
+// ─────────────────────── Ω-VID PR-09 — Histórico de Custódias (aba do dossiê) ───────────────────────
+function adaptCustodyHistoryItem(input: unknown): CustodyHistoryItem | null {
+  const record = readRecord(input);
+  if (!record) return null;
+  const id = readString(record, ["id"]);
+  if (!id) return null;
+  return {
+    id,
+    vehiclePlate: readString(record, ["vehiclePlate", "vehicle_plate"]) ?? null,
+    vehicleUnidentified: readBoolean(record, ["vehicleUnidentified", "vehicle_unidentified"]) ?? false,
+    status: readString(record, ["status"]) ?? "IN_REMOVAL",
+    enteredAt: readString(record, ["enteredAt", "entered_at"]) ?? null,
+    yardName: readString(record, ["yardName", "yard_name"]) ?? null,
+    isCurrent: readBoolean(record, ["isCurrent", "is_current"]) ?? false,
+  };
+}
+
+export function adaptCustodyHistoryResponse(response: unknown): CustodyHistoryItem[] {
+  const payload = readRecord(response);
+  const dataRecord = readRecord(payload?.data);
+  const itemsSource = Array.isArray(response) ? response : readArray(dataRecord?.items) ?? readArray(payload?.items) ?? [];
+  return itemsSource.map((item) => adaptCustodyHistoryItem(item)).filter((item): item is CustodyHistoryItem => Boolean(item));
 }

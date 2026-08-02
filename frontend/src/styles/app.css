@@ -645,6 +645,14 @@
   flex: 1;
 }
 
+/* Ω-VID PR-09 (junta cognição-visual) — o dossiê tem até 8 abas; em viewport estreito (~96vw) a faixa de abas
+   (.ui-tabs = inline-flex sem overflow) estouraria e daria scroll-x ao CORPO inteiro (empurrando o sticky-head).
+   Escopado ao modal grande: a FAIXA rola sozinha (como o padrão do cloud-billing), o corpo não. */
+.ui-modal--lg .ui-tabs {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 /* alvo de toque ≥44px no X (só na variante grande; base 36px preservado) + foco visível */
 .ui-modal--lg header button {
   width: 44px;

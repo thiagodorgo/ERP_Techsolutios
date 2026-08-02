@@ -11,10 +11,12 @@ import { useStatement } from "../../charges/useStatement";
 import { LiberacaoPanel } from "../../release/components/LiberacaoPanel";
 import { LiquidacaoPanel } from "../../settlement/components/LiquidacaoPanel";
 import { getVehicleLabel } from "../processes.adapter";
-import type { ChecklistRunSummaryItem, CustodyEventItem, InspectionView, ProcessDetail, ProcessesApiContext, VerifyResult } from "../processes.types";
+import type { ChecklistRunSummaryItem, CustodyEventItem, CustodyHistoryItem, InspectionView, ProcessDetail, ProcessesApiContext, VerifyResult } from "../processes.types";
+import { useCustodyHistory } from "../useCustodyHistory";
 import { useProcessChecklistRuns } from "../useProcessChecklistRuns";
 import { useProcessDossie } from "../useProcessDossie";
 import { ChecklistRunsPanel } from "./ChecklistRunsPanel";
+import { CustodyHistoryPanel } from "./CustodyHistoryPanel";
 import { InspectionSection } from "./InspectionSection";
 import { IntegritySeal } from "./IntegritySeal";
 import { ProcessIdentityCard } from "./ProcessIdentityCard";
@@ -33,13 +35,15 @@ import { TransicaoFsmPanel } from "./TransicaoFsmPanel";
 // A camada de APRESENTAÇÃO (VehicleDossieView) é separada da fiação de hooks (VehicleDossieModal) — o mesmo padrão
 // dos demais painéis puros do módulo (GuiaDebitos, InspectionSection…) — para ser testável com fixtures em SSR.
 
-export type DossieTabId = "overview" | "inspection" | "checklist" | "timeline" | "charges" | "release" | "auction";
+export type DossieTabId = "overview" | "inspection" | "checklist" | "timeline" | "history" | "charges" | "release" | "auction";
 
 // Abas SEM o "Checklist do Guincho" — base do dossiê (usada quando o ator não tem checklist_runs:read; a UI molda).
+// A aba "Histórico de Custódias" (PR-09) fica sob a MESMA guarda do dossiê (impound:read) → sempre presente aqui.
 export const DOSSIE_TABS: readonly { id: DossieTabId; label: string }[] = [
   { id: "overview", label: "Visão Geral" },
   { id: "inspection", label: "Vistoria de Recepção" },
   { id: "timeline", label: "Linha do Tempo" },
+  { id: "history", label: "Histórico de Custódias" },
   { id: "charges", label: "Débitos" },
   { id: "release", label: "Liberação" },
   { id: "auction", label: "Leilão/Liquidação" },
@@ -52,7 +56,9 @@ const CHECKLIST_TAB = { id: "checklist" as DossieTabId, label: "Checklist do Gui
 // são artefatos capturados em campo na recepção do veículo.
 export function dossieTabsFor(canReadChecklist: boolean): readonly { id: DossieTabId; label: string }[] {
   if (!canReadChecklist) return DOSSIE_TABS;
-  return [DOSSIE_TABS[0], DOSSIE_TABS[1], CHECKLIST_TAB, DOSSIE_TABS[2], DOSSIE_TABS[3], DOSSIE_TABS[4], DOSSIE_TABS[5]];
+  // Insere logo APÓS a "Vistoria de Recepção" por id (robusto a novas abas — não depende de índices fixos).
+  const at = DOSSIE_TABS.findIndex((tab) => tab.id === "inspection");
+  return [...DOSSIE_TABS.slice(0, at + 1), CHECKLIST_TAB, ...DOSSIE_TABS.slice(at + 1)];
 }
 
 // Ω-VID PR-07 (junta, MÉDIA) — a identidade (placa+status) e as abas ficam FIXAS no topo do corpo scrollável do modal:
@@ -86,12 +92,16 @@ export type VehicleDossieViewProps = {
   readonly checklistLoading: boolean;
   readonly checklistError: string | null;
   readonly checklistDenied: boolean;
+  readonly historyItems: readonly CustodyHistoryItem[];
+  readonly historyLoading: boolean;
+  readonly historyError: string | null;
   readonly context: ProcessesApiContext;
   readonly activeTab: DossieTabId;
   readonly onTabChange: (id: DossieTabId) => void;
   readonly onReload: () => void;
   readonly onReloadStatement: () => void;
   readonly onReloadChecklist: () => void;
+  readonly onReloadHistory: () => void;
   readonly onReloadAll: () => void;
   readonly onLaunchCharge: () => void;
 };
@@ -119,12 +129,16 @@ export function VehicleDossieView({
   checklistLoading,
   checklistError,
   checklistDenied,
+  historyItems,
+  historyLoading,
+  historyError,
   context,
   activeTab,
   onTabChange,
   onReload,
   onReloadStatement,
   onReloadChecklist,
+  onReloadHistory,
   onReloadAll,
   onLaunchCharge,
 }: VehicleDossieViewProps) {
@@ -213,6 +227,12 @@ export function VehicleDossieView({
           </>
         ) : null}
 
+        {/* Ω-VID PR-09 — aba "Histórico de Custódias": as outras passagens do MESMO veículo (identidade) pelo pátio.
+            Mesma guarda do dossiê (impound:read); o backend resolve a identidade server-side (§allowlist). */}
+        {effectiveTab === "history" ? (
+          <CustodyHistoryPanel items={historyItems} loading={historyLoading} error={historyError} onRetry={onReloadHistory} />
+        ) : null}
+
         {effectiveTab === "charges" ? (
           <GuiaDebitos
             statement={statement}
@@ -269,10 +289,19 @@ export function VehicleDossieModal({ processId, onClose }: { readonly processId:
     reload: reloadChecklist,
   } = useProcessChecklistRuns(processId, canRead);
 
+  // Ω-VID PR-09 — histórico de custódias do mesmo veículo (impound:read, a mesma do dossiê — só busca com canRead).
+  const {
+    items: historyItems,
+    loading: historyLoading,
+    error: historyError,
+    reload: reloadHistory,
+  } = useCustodyHistory(processId, canRead);
+
   const reloadAll = () => {
     void reload();
     void reloadStatement();
     void reloadChecklist();
+    void reloadHistory();
   };
 
   return (
@@ -299,12 +328,16 @@ export function VehicleDossieModal({ processId, onClose }: { readonly processId:
         checklistLoading={checklistLoading}
         checklistError={checklistError}
         checklistDenied={checklistDenied}
+        historyItems={historyItems}
+        historyLoading={historyLoading}
+        historyError={historyError}
         context={context}
         activeTab={tab}
         onTabChange={setTab}
         onReload={() => void reload()}
         onReloadStatement={() => void reloadStatement()}
         onReloadChecklist={() => void reloadChecklist()}
+        onReloadHistory={() => void reloadHistory()}
         onReloadAll={reloadAll}
         onLaunchCharge={() => setChargeModalOpen(true)}
       />

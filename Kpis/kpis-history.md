@@ -6,6 +6,42 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-01 - OMEGA-VID-PR-09 (aba "Histórico de Custódias" no dossiê + endpoint custody-history)
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 835 / 835 (inalterado) |
+| Backend Tests | 2107 / 2107 (real CI, 0 skip; +10 desta fatia) |
+| Frontend Smoke | 991 / 991 (984 → 991, +7) |
+| Blocos Entregues | 126 (125 → 126) |
+
+A aba **"Histórico de Custódias"** no `VehicleDossieModal` lista as **múltiplas passagens do MESMO veículo**
+(identidade `ThirdPartyVehicleIdentity`) pelo pátio, via endpoint NOVO `GET /impound-processes/:id/custody-history`
+(gate `impound:read` — a mesma do dossiê; a identidade é resolvida **server-side** e nunca sai no DTO). **Full-stack**:
+módulo de leitura novo `impound.custody-history.*` (espelho do `checklist-link`, sem acoplar o domínio central) +
+frontend (aba em `DOSSIE_TABS` base após "Linha do Tempo", `CustodyHistoryPanel` com a linha da custódia atual
+destacada, `useCustodyHistory`/`adaptCustodyHistoryResponse`). §allowlist: o painel nunca renderiza `id`/`identity_id`.
+
+**Junta 4/4** — coordenador-de-acessos **APROVADO**; dba-guardião, crítico-adversarial e cognição-visual
+**APROVADO_CONDICIONADO**, condições fechadas antes do merge:
+1. **dba (MÉDIA)** — a query prisma autoritativa só tinha cobertura em memória → **`tests/impound-custody-history-db.test.ts`**
+   (DB-gated, **3/3 vivo**): agrupamento por `identity_id`, `entered_at DESC NULLS LAST` + desempate `created_at DESC`,
+   join `yard`, sem-identidade, **isolamento cross-tenant sob RLS**. O dba já provara tudo vivo (PoC); o teste fixa como
+   regressão.
+2. **crítico (ALTA)** — KPIs → **atualizados no próprio PR**. **BAIXAs**: removido `processExists` redundante (vazio ⟺ 404,
+   uma consulta a menos); `dossieTabsFor` por splice (robusto a novas abas).
+3. **cognição-visual (MÉDIA)** — cópia do EmptyState descrevia caso que nunca cai no vazio → **reescrita honesta** (vazio =
+   404/desatualizado); **BAIXA** 8 abas estouravam a faixa em viewport estreito → **`.ui-modal--lg .ui-tabs { overflow-x }`**.
+
+**+7 smoke** (`patios-dossie-history.smoke.test.tsx`) **+10 backend** (7 memória + 3 DB-gated). Bateria completa verde
+(backend `check`/`build`/`lint`; frontend `check`/`test:smoke`(991)/`build`; `impound-custody-history` 7 + DB 3 vivo).
+Escopo: `src/modules/impound/impound.custody-history.*` + rota + `frontend/src/modules/patios/processes/**` +
+`frontend/src/styles/app.css` + testes + `Kpis/*` + docs. **Intocados**: `prisma/schema`/migrations (read-only, reusa
+colunas do PR-05), `mobile/**`, o gate (reusa `impound:read`). Pendência: **P-DOSSIE-PAGE-TABS** (página fallback não
+reflete as abas do modal).
+
 ## 2026-08-01 - OMEGA-VID-PR-08 (aba "Checklist do Guincho" no dossiê — gate duplo + templateName)
 
 ### Resultado

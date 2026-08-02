@@ -2,6 +2,7 @@ import { isMockMode } from "../../../config/env";
 import { ApiError, apiRequest } from "../../../services/api/client";
 import {
   adaptChecklistRunsResponse,
+  adaptCustodyHistoryResponse,
   adaptEventsResponse,
   adaptInspectionResponse,
   adaptProcessDetailResponse,
@@ -11,6 +12,7 @@ import {
 import type {
   ChecklistRunSummaryItem,
   CustodyEventItem,
+  CustodyHistoryItem,
   InspectionView,
   ProcessCreatePayload,
   ProcessDetail,
@@ -95,6 +97,14 @@ export async function listProcessChecklistRuns(context: ProcessesApiContext, pro
   if (isMockMode()) return [];
   const response = await apiRequest<unknown>(`/impound-processes/${processId}/checklist-runs`, context);
   return adaptChecklistRunsResponse(response);
+}
+
+// Ω-VID PR-09 — Histórico de Custódias: os outros processos do MESMO veículo (identidade). GET /impound-processes/
+// :id/custody-history sob impound:read (mesma do dossiê). Mock → []; erros sobem para o hook decidir o estado.
+export async function listCustodyHistory(context: ProcessesApiContext, processId: string): Promise<CustodyHistoryItem[]> {
+  if (isMockMode()) return [];
+  const response = await apiRequest<unknown>(`/impound-processes/${processId}/custody-history`, context);
+  return adaptCustodyHistoryResponse(response);
 }
 
 // Movimentação de vaga (I1 atômico no backend). allocate/vacate/move → impound:allocate; a UI delega ao 409/422.
