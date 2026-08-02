@@ -6,6 +6,24 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-02 - P-DOSSIE-PAGE-TABS (página fallback do dossiê alinhada às abas do modal)
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 835 / 835 (inalterado) |
+| Backend Tests | 2110 / 2110 (inalterado; frontend-only) |
+| Frontend Smoke | 997 / 997 (inalterado; reuso de painéis já testados) |
+| Blocos Entregues | 129 (128 → 129) |
+
+Limpeza de pendência. A **`ProcessoDossiePage`** (`/patios/processos/:id`, fallback/deep-link direto) passou a
+renderizar, no fluxo empilhado, o **`CustodyHistoryPanel`** (Histórico de Custódias, PR-09) após a Linha do Tempo e o
+**`ChecklistRunsPanel`** (Checklist do Guincho, PR-08, gated por `checklist_runs:read`) após a Vistoria — **reusando os
+mesmos painéis puros e hooks** (`useCustodyHistory`/`useProcessChecklistRuns`) do modal, com o **mesmo gating** já
+aprovado pela junta do PR-08/09. A página fica consistente com o modal e com o documento de impressão. Frontend-only;
+`check`/`test:smoke` (997)/`build` verdes. Sem novo teste (os painéis puros já têm cobertura).
+
 ## 2026-08-02 - FIX P-CHK-TEMPLATE-PRISMA-V7 (bug REAL de produção no Prisma v7 + bug irmão createRun)
 
 ### Resultado
