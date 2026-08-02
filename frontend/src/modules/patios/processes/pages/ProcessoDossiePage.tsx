@@ -11,6 +11,8 @@ import { LancamentoChargeModal } from "../../charges/components/LancamentoCharge
 import { useStatement } from "../../charges/useStatement";
 import { LiberacaoPanel } from "../../release/components/LiberacaoPanel";
 import { LiquidacaoPanel } from "../../settlement/components/LiquidacaoPanel";
+import { ChecklistRunsPanel } from "../components/ChecklistRunsPanel";
+import { CustodyHistoryPanel } from "../components/CustodyHistoryPanel";
 import { IntegritySeal } from "../components/IntegritySeal";
 import { InspectionSection } from "../components/InspectionSection";
 import { ProcessIdentityCard } from "../components/ProcessIdentityCard";
@@ -20,6 +22,8 @@ import { SpotPickerModal } from "../components/SpotPickerModal";
 import { TransicaoFsmPanel } from "../components/TransicaoFsmPanel";
 import { VacateSpotModal } from "../components/VacateSpotModal";
 import { getVehicleLabel } from "../processes.adapter";
+import { useCustodyHistory } from "../useCustodyHistory";
+import { useProcessChecklistRuns } from "../useProcessChecklistRuns";
 import { useProcessDossie } from "../useProcessDossie";
 
 const backLinkStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, color: "#2563EB", fontSize: 13, fontWeight: 700, marginBottom: 14, textDecoration: "none" };
@@ -33,6 +37,7 @@ export function ProcessoDossiePage() {
   const canAllocate = can("impound:allocate");
   const canTransition = can("impound:transition");
   const canCreateCharge = can("charging:create");
+  const canReadChecklist = can("checklist_runs:read");
 
   // Ω-VID PR-07 — mesma lógica de fetch agora no hook COMPARTILHADO useProcessDossie (reusado pelo VehicleDossieModal).
   // Comportamento da página inalterado (mesmas chamadas/ordem/auto-refresh); a página segue como deep-link/fallback.
@@ -49,6 +54,17 @@ export function ProcessoDossiePage() {
     denied: statementDenied,
     reload: reloadStatement,
   } = useStatement(processId);
+
+  // P-DOSSIE-PAGE-TABS — a página fallback passa a refletir as mesmas seções do modal (PR-08/09): Checklist do Guincho
+  // (gate duplo impound:read + checklist_runs:read) e Histórico de Custódias. Reusa os MESMOS painéis puros e hooks.
+  const {
+    runs: checklistRuns,
+    loading: checklistLoading,
+    error: checklistError,
+    denied: checklistDenied,
+    reload: reloadChecklist,
+  } = useProcessChecklistRuns(processId);
+  const { items: historyItems, loading: historyLoading, error: historyError, reload: reloadHistory } = useCustodyHistory(processId);
 
   return (
     <section className="page-stack work-orders-page">
@@ -114,9 +130,17 @@ export function ProcessoDossiePage() {
             <ProcessTimeline events={events} />
           </Card>
 
+          {/* P-DOSSIE-PAGE-TABS — Histórico de Custódias (PR-09): as passagens do mesmo veículo. impound:read. */}
+          <CustodyHistoryPanel items={historyItems} loading={historyLoading} error={historyError} onRetry={() => void reloadHistory()} />
+
           <Card title="Vistoria de recepção">
             <InspectionSection view={inspection} />
           </Card>
+
+          {/* P-DOSSIE-PAGE-TABS — Checklist do Guincho (PR-08): só para quem tem checklist_runs:read (gate duplo). */}
+          {canReadChecklist ? (
+            <ChecklistRunsPanel runs={checklistRuns} loading={checklistLoading} error={checklistError} denied={checklistDenied} onRetry={() => void reloadChecklist()} />
+          ) : null}
 
           <TransicaoFsmPanel
             processId={process.id}

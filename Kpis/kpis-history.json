@@ -1907,5 +1907,14 @@
     "frontend_smoke_tests": "997/997",
     "blocks_completed": "128",
     "description": "FIX P-CHK-TEMPLATE-PRISMA-V7 (bug REAL de producao, limpeza-de-pendencias antes do CHECKLIST P1): createTemplate/updateTemplate/createRun passavam `tenant_id` explicito em nested-creates de componente/resposta — relation-scalar COMPARTILHADO que o Prisma v7 REJEITA no runtime (\"Unknown argument tenant_id\") → POST /tenant/checklists e POST /checklists/:id/runs com answers dariam 500 sob prisma (mascarado pela suite em memoria). Fix: omitir tenant_id (inferido do pai). Bug IRMAO no createRun achado pela junta dba, fechado no mesmo PR. backend 2107->2110 (+3 DB-gated que provam o bug); frontend/flutter inalterados; blocks 127->128."
+  },
+  {
+    "snapshot_date": "2026-08-02",
+    "version": "FIX-DOSSIE-PAGE-TABS",
+    "flutter_tests": "835/835",
+    "backend_tests": "2110/2110",
+    "frontend_smoke_tests": "997/997",
+    "blocks_completed": "129",
+    "description": "P-DOSSIE-PAGE-TABS (limpeza de pendencia): a pagina fallback /patios/processos/:id (ProcessoDossiePage) passa a refletir as secoes do modal do dossie — CustodyHistoryPanel (Historico de Custodias, PR-09) + ChecklistRunsPanel (Checklist do Guincho, PR-08, gated checklist_runs:read), reusando os mesmos paineis puros e hooks. Frontend-only. Frontend-only (reuso de paineis testados); backend/flutter inalterados; blocks 128->129."
   }
 ]

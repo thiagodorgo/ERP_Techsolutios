@@ -1402,7 +1402,16 @@ do processo. É exatamente a decisão que [P-IMPOUND-CHK-VISIBILITY] defere à *
 de custódia dedicada além de `impound:read`? (b) escopar por assignee para alinhar à intenção "answer-assigned"? PR-08
 não é o lugar de decidir. Registrado (§A2).
 
-## P-DOSSIE-PAGE-TABS — Página fallback /patios/processos/:id não reflete as abas Checklist/Histórico do modal (BAIXA)
+## P-DOSSIE-PAGE-TABS — Página fallback /patios/processos/:id não reflete as abas Checklist/Histórico do modal (BAIXA) — **RESOLVIDO (2026-08-02)**
+
+> **RESOLVIDO** (opção (a): alinhar a página). A `ProcessoDossiePage` passou a renderizar, no fluxo empilhado, o
+> `CustodyHistoryPanel` (Histórico de Custódias, PR-09) após a Linha do Tempo e o `ChecklistRunsPanel` (Checklist do
+> Guincho, PR-08, gated por `checklist_runs:read`) após a Vistoria — **reusando os MESMOS painéis puros e hooks**
+> (`useCustodyHistory`/`useProcessChecklistRuns`) do modal, com o **mesmo gating** (já aprovado pela junta do PR-08/09).
+> A página fica completa e consistente com o modal e com o documento de impressão. Frontend-only; check/test:smoke
+> (997)/build verdes. (Diagnóstico original abaixo.)
+
+### (original) diagnóstico
 
 Junta do Ω-VID PR-09 (critico-adversarial). O dossiê ganhou UI rica em ABAS no `VehicleDossieModal` (PR-07..09):
 Checklist do Guincho (PR-08) e Histórico de Custódias (PR-09). A **página** `ProcessoDossiePage` (`/patios/processos/:id`),
