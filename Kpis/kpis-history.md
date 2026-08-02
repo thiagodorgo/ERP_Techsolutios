@@ -6,6 +6,32 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-02 - FIX P-CHK-TEMPLATE-PRISMA-V7 (bug REAL de produção no Prisma v7 + bug irmão createRun)
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 835 / 835 (inalterado) |
+| Backend Tests | 2110 / 2110 (2107 → 2110, +3) |
+| Frontend Smoke | 997 / 997 (inalterado; backend-only) |
+| Blocos Entregues | 128 (127 → 128) |
+
+**Limpeza de pendência antes do CHECKLIST P1.** `createTemplate` / `updateTemplate` / **`createRun`** passavam
+`tenant_id` **explícito** nos nested-creates de componente/resposta — `tenant_id` é **relation-scalar compartilhado**
+(a relação `template`/`run` de FK composta, setada pelo pai, + a relação `tenant`), que o **Prisma v7 (7.8.0) rejeita
+no runtime** com `Unknown argument tenant_id`. Consequência REAL: `POST /tenant/checklists` e `POST /checklists/:id/runs`
+(com `answers`) dariam **HTTP 500** sob persistência prisma — **mascarado** porque toda a suíte de checklist roda em
+`CORE_SAAS_PERSISTENCE=memory`. **Fix:** omitir `tenant_id` (o Prisma infere do pai). O **bug irmão** (`createRun`,
+mesmo arquivo, atrás de endpoint web vivo) foi achado pela **junta `agente-dba-guardião`** e fechado no mesmo PR.
+
+**+3 test() DB-gated** (`tests/checklist-template-prisma-db.test.ts`) que **provam o bug**: FALHAM contra o código
+antigo com o `Unknown argument tenant_id` exato e PASSAM contra o corrigido; RAW-verificado que o `tenant_id` do
+componente/resposta é o do pai (tenant do ator), sem vazamento cross-tenant. Suíte de checklist em memória **32→35**,
+zero regressão; tsc/build limpos. **Sem migração** (read-only no schema). Varredura da junta: nenhum outro
+nested-relation-create com relation-scalar compartilhado no codebase. Pendência sistêmica registrada:
+**P-CHK-PRISMA-CLIENT-TYPING** (o repo descarta os tipos gerados do Prisma → `tsc` não pega esses bugs).
+
 ## 2026-08-02 - OMEGA-VID-PR-10 (Imprimir/Salvar o dossiê — FECHA a rodada Ω-VID)
 
 ### Resultado

@@ -1898,5 +1898,14 @@
     "frontend_smoke_tests": "997/997",
     "blocks_completed": "127",
     "description": "Omega-VID PR-10 (frontend-only) — Imprimir/Salvar o dossie do veiculo. window.print() cobre imprimir E 'Salvar como PDF' (e-mail/WhatsApp FORA de escopo, decisao do dono). DossiePrintDocument empilha todas as secoes READ-ONLY (identificacao, vistoria, integridade, linha do tempo, checklist do guincho, historico de custodias, guia de debitos) num documento unico; portal no <body> escondido em tela e revelado no @media print. FECHA a rodada Omega-VID. frontend_smoke 991->997 (+6); backend inalterado (frontend-only); blocks 126->127."
+  },
+  {
+    "snapshot_date": "2026-08-02",
+    "version": "FIX-CHK-TEMPLATE-PRISMA-V7",
+    "flutter_tests": "835/835",
+    "backend_tests": "2110/2110",
+    "frontend_smoke_tests": "997/997",
+    "blocks_completed": "128",
+    "description": "FIX P-CHK-TEMPLATE-PRISMA-V7 (bug REAL de producao, limpeza-de-pendencias antes do CHECKLIST P1): createTemplate/updateTemplate/createRun passavam `tenant_id` explicito em nested-creates de componente/resposta — relation-scalar COMPARTILHADO que o Prisma v7 REJEITA no runtime (\"Unknown argument tenant_id\") → POST /tenant/checklists e POST /checklists/:id/runs com answers dariam 500 sob prisma (mascarado pela suite em memoria). Fix: omitir tenant_id (inferido do pai). Bug IRMAO no createRun achado pela junta dba, fechado no mesmo PR. backend 2107->2110 (+3 DB-gated que provam o bug); frontend/flutter inalterados; blocks 127->128."
   }
 ]

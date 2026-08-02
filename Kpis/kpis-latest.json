@@ -1,16 +1,16 @@
 {
   "snapshot_date": "2026-08-01",
-  "version": "OMEGA-VID-PR-10-IMPRIMIR-SALVAR-DOSSIE",
+  "version": "FIX-CHK-TEMPLATE-PRISMA-V7",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Omega-VID PR-10 (frontend-only) — Imprimir/Salvar o dossie do veiculo. window.print() cobre imprimir E 'Salvar como PDF' (e-mail/WhatsApp FORA de escopo, decisao do dono). DossiePrintDocument empilha todas as secoes READ-ONLY (identificacao, vistoria, integridade, linha do tempo, checklist do guincho, historico de custodias, guia de debitos) num documento unico; portal no <body> escondido em tela e revelado no @media print. FECHA a rodada Omega-VID.",
-    "title": "Omega-VID PR-10 (frontend-only) — Imprimir/Salvar o dossie do veiculo. window.print() cobre imprimir E 'Salvar como PDF' (e-mail/WhatsApp FORA de escopo, decisao do dono). DossiePrintDocument empilha todas as secoes READ-ONLY (identificacao, vistoria, integridade, linha do tempo, checklist do guincho, historico de custodias, guia de debitos) num documento unico; portal no <body> escondido em tela e revelado no @media print. FECHA a rodada Omega-VID.",
+    "block": "FIX P-CHK-TEMPLATE-PRISMA-V7 (bug REAL de producao, limpeza-de-pendencias antes do CHECKLIST P1): createTemplate/updateTemplate/createRun passavam `tenant_id` explicito em nested-creates de componente/resposta — relation-scalar COMPARTILHADO que o Prisma v7 REJEITA no runtime (\"Unknown argument tenant_id\") → POST /tenant/checklists e POST /checklists/:id/runs com answers dariam 500 sob prisma (mascarado pela suite em memoria). Fix: omitir tenant_id (inferido do pai). Bug IRMAO no createRun achado pela junta dba, fechado no mesmo PR.",
+    "title": "FIX P-CHK-TEMPLATE-PRISMA-V7 (bug REAL de producao, limpeza-de-pendencias antes do CHECKLIST P1): createTemplate/updateTemplate/createRun passavam `tenant_id` explicito em nested-creates de componente/resposta — relation-scalar COMPARTILHADO que o Prisma v7 REJEITA no runtime (\"Unknown argument tenant_id\") → POST /tenant/checklists e POST /checklists/:id/runs com answers dariam 500 sob prisma (mascarado pela suite em memoria). Fix: omitir tenant_id (inferido do pai). Bug IRMAO no createRun achado pela junta dba, fechado no mesmo PR.",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Omega-VID PR-10 (frontend-only) — Imprimir/Salvar o dossie do veiculo. window.print() cobre imprimir E 'Salvar como PDF' (e-mail/WhatsApp FORA de escopo, decisao do dono). DossiePrintDocument empilha todas as secoes READ-ONLY (identificacao, vistoria, integridade, linha do tempo, checklist do guincho, historico de custodias, guia de debitos) num documento unico; portal no <body> escondido em tela e revelado no @media print. FECHA a rodada Omega-VID.",
+    "summary": "FIX P-CHK-TEMPLATE-PRISMA-V7 (bug REAL de producao, limpeza-de-pendencias antes do CHECKLIST P1): createTemplate/updateTemplate/createRun passavam `tenant_id` explicito em nested-creates de componente/resposta — relation-scalar COMPARTILHADO que o Prisma v7 REJEITA no runtime (\"Unknown argument tenant_id\") → POST /tenant/checklists e POST /checklists/:id/runs com answers dariam 500 sob prisma (mascarado pela suite em memoria). Fix: omitir tenant_id (inferido do pai). Bug IRMAO no createRun achado pela junta dba, fechado no mesmo PR.",
     "status_label": "Omega-VID PR-07 (frontend-only): VehicleDossieModal — dossie do veiculo num Modal size='lg' com 6 ABAS (Visao Geral/Vistoria/Linha do Tempo/Debitos/Liberacao/Leilao+Liquidacao), reusando os componentes e a logica de fetch da ProcessoDossiePage (hook compartilhado useProcessDossie). A vaga OCUPADA do OccupancyMap ABRE o modal (botao onOpenDossie, icone FileText) em vez de navegar; deep-link ?dossie=<processId> sincroniza abrir/fechar/mount (a rota /patios/processos/:id segue como fallback). Abas Checklist(PR-08)/Historico(PR-09) ainda NAO — estrutura pronta. +16 smoke tests (2 arquivos novos) + patios-mapa migrado; frontend_smoke 954 -> 970. Backend/flutter inalterados. --- ANTERIOR (PR-06): Modal do design system ganha size='lg' (base do dossie). +4 smoke; frontend_smoke 950 -> 954. --- ANTERIOR (PR-05 FIX-JUNTA, D-Omega-VID-05-SEED): a junta APROVOU_CONDICIONADO; o critico-adversarial provou 1 MEDIA (a colisao-POR-REUSO nao tinha caminho de correcao — duplicateCandidates/merge/unmerge NAO splitam). CONSERTO: a VISTORIA de recepcao (saveInspection) agora RECONCILIA/RE-APONTA ImpoundProcess.identity_id para a identidade correta da placa CONFIRMADA (resolve-ou-cria pelo helper do PR-05, MESMA tx RLS) => SPLITA a agregacao errada + sobe PROVISIONAL->CONFIRMED. Idempotente; FSM/hash-chain/merge INTOCADOS; sem migracao. backend 2082/2088 -> 2085/2091 (+3 DB-gated reais provando o SPLIT vivo)."
   },
   "metrics": {
@@ -24,13 +24,13 @@
       "value": 997,
       "total": 997,
       "display": "997/997",
-      "note": "Omega-VID PR-10 (Imprimir/Salvar dossie): +6 smoke reais (997 pass/0 fail/0 skip, sobre 991 do PR-09; +2 do rework da junta: carimbo de emissao/org e estado \"Preparando...\"). patios-dossie-print.smoke.test.tsx: DossiePrintDocument empilha todas as secoes read-only, checklist so com permissao, sem acao 'Lancar encargo', botao Imprimir/Salvar com aria-label. +onPrint nos baseProps dos modais."
+      "note": "FIX backend-only (P-CHK-TEMPLATE-PRISMA-V7) — frontend inalterado (997/997 do PR-10, D-KPI-PER-PR §C3.3)."
     },
     "backend_tests": {
-      "value": 2107,
-      "total": 2107,
-      "display": "2107/2107",
-      "note": "Omega-VID PR-10 e FRONTEND-ONLY — backend inalterado (2107/2107 real-CI do PR-09, D-KPI-PER-PR §C3.3: metrica de trilha nao-tocada carrega o ultimo valor oficial)."
+      "value": 2110,
+      "total": 2110,
+      "display": "2110/2110",
+      "note": "FIX P-CHK-TEMPLATE-PRISMA-V7: +3 test() DB-gated (tests/checklist-template-prisma-db.test.ts: createTemplate + createRun-com-answers[bug irmao] + updateTemplate contra Postgres real — provam FALHA com 'Unknown argument tenant_id' no codigo antigo e PASS no corrigido; RAW-verificado tenant_id do filho = pai). Sobre 2107 do PR-09. Suite checklist memoria 32→35, 0 regressao. tsc/build limpos."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 127,
-      "display": "127",
-      "note": "Omega-VID PR-10 (Imprimir/Salvar dossie) — FECHA a rodada Omega-VID (dossie do veiculo: modal em abas + clique-na-vaga + deep-link + checklist + historico + impressao). Sobre 126 do PR-09."
+      "value": 128,
+      "display": "128",
+      "note": "FIX P-CHK-TEMPLATE-PRISMA-V7 (bug real de producao Prisma v7 — blocker do builder CHECKLIST P1) + bug irmao createRun. Sobre 127 do PR-10."
     },
     "mobile_backend_contracts": {
       "value": 18,
