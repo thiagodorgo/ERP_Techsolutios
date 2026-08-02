@@ -13,7 +13,7 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 | KPI | Valor |
 |-----|-------|
 | Flutter Tests | 835 / 835 (inalterado) |
-| Backend Tests | 2096 / 2102 (2086 → 2096, +10) |
+| Backend Tests | 2107 / 2107 (real CI, 0 skip; +10 desta fatia) |
 | Frontend Smoke | 991 / 991 (984 → 991, +7) |
 | Blocos Entregues | 126 (125 → 126) |
 

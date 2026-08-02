@@ -27,10 +27,10 @@
       "note": "Omega-VID PR-09 (aba Historico de Custodias): +7 smoke reais (execucao real 991 pass/0 fail/0 skip, sobre 984 do PR-08). patios-dossie-history.smoke.test.tsx (adapter snake/camel, painel pela placa/situacao/entrada/patio + linha atual destacada, §allowlist sem UUID, estados, aviso-inline, integracao) + baseProps dos modais atualizados."
     },
     "backend_tests": {
-      "value": 2096,
-      "total": 2102,
-      "display": "2096/2102",
-      "note": "Omega-VID PR-09: +10 test() backend (tests/impound-custody-history.test.ts 7 memoria: agrupamento/isCurrent/ordem/sem-identidade/tenant-scoped/404/DTO §allowlist/HTTP gate finance-403 manager-404; + tests/impound-custody-history-db.test.ts 3 DB-gated: query PRISMA real provada viva — NULLS LAST + desempate created_at, join yard, isolamento cross-tenant). Sobre 2086 do PR-08. Numero reconciliado com a suite completa. tsc/build/lint limpos."
+      "value": 2107,
+      "total": 2107,
+      "display": "2107/2107",
+      "note": "Omega-VID PR-09: contagem REAL do job backend do CI (com DATABASE_URL → 0 skip): 2107 pass/2107 total/0 fail. Inclui os +10 test() desta fatia (tests/impound-custody-history.test.ts 7 memoria + tests/impound-custody-history-db.test.ts 3 DB-gated: query PRISMA real — NULLS LAST + desempate created_at, join yard, isolamento cross-tenant sob RLS). O baseline publicado no PR-08 (2086/2092) estava sub-contado (nao refletia todos os DB-gated que o CI roda); reconciliado aqui para o numero real do CI."
     },
     "backend_contract_tests_focused": {
       "value": 21,

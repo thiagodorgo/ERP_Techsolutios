@@ -1885,9 +1885,9 @@
     "snapshot_date": "2026-08-01",
     "version": "OMEGA-VID-PR-09-HISTORICO-CUSTODIAS",
     "flutter_tests": "835/835",
-    "backend_tests": "2096/2102",
+    "backend_tests": "2107/2107",
     "frontend_smoke_tests": "991/991",
     "blocks_completed": "126",
-    "description": "Omega-VID PR-09 — aba \"Historico de Custodias\" no dossie: as MULTIPLAS passagens do MESMO veiculo (identidade) pelo patio, via endpoint NOVO GET /impound-processes/:id/custody-history (gate impound:read; identidade resolvida server-side, nunca no DTO). Modulo de leitura novo impound.custody-history.* (espelho do checklist-link). Junta 4/4 (coordenador APROVADO; dba/critico/cognicao APROVADO_CONDICIONADO) com achados fechados no proprio PR. frontend_smoke 984->991 (+7); backend +10 (7 memoria + 3 DB-gated que provam a query real); blocks 125->126."
+    "description": "Omega-VID PR-09 — aba \"Historico de Custodias\" no dossie: as MULTIPLAS passagens do MESMO veiculo (identidade) pelo patio, via endpoint NOVO GET /impound-processes/:id/custody-history (gate impound:read; identidade resolvida server-side, nunca no DTO). Modulo de leitura novo impound.custody-history.* (espelho do checklist-link). Junta 4/4 (coordenador APROVADO; dba/critico/cognicao APROVADO_CONDICIONADO) com achados fechados no proprio PR. frontend_smoke 984->991 (+7); backend 2107/2107 real-CI (0 skip; +10 desta fatia: 7 memoria + 3 DB-gated); blocks 125->126."
   }
 ]

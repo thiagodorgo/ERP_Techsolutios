@@ -441,7 +441,7 @@ React key); cross-tenant selado (404 sem vazar existência, filtro tenant-first 
 `impound:read`. 2 BAIXA = confirmações não-bloqueantes.
 
 **Decisão da junta:** **APROVADO 4/4** — 1 ALTA + 2 MÉDIA + BAIXAs fechadas no próprio PR; a query prisma agora tem
-regressão DB-gated (3/3 viva). **KPIs:** frontend_smoke **984 → 991** (+7); backend **+10** (7 memória + 3 DB-gated);
-`blocks_completed` 125→126. Pendência registrada: P-DOSSIE-PAGE-TABS (a página fallback `/patios/processos/:id` ainda
+regressão DB-gated (3/3 viva). **KPIs:** frontend_smoke **984 → 991** (+7); backend **2107/2107** (real CI, 0 skip; +10
+desta fatia: 7 memória + 3 DB-gated); `blocks_completed` 125→126. Pendência registrada: P-DOSSIE-PAGE-TABS (a página fallback `/patios/processos/:id` ainda
 não reflete as abas Checklist/Histórico do modal — alinhar ou deprecar). Próximo: **PR-10** (Imprimir/Salvar) — FECHA a
 rodada Ω-VID.
