@@ -29,6 +29,10 @@ export type ChecklistRunSummary = {
   readonly id: string;
   readonly tenantId: string;
   readonly templateId: string;
+  // Ω-VID PR-08 (junta cognição-visual) — NOME do template (rótulo do formulário) para a linha da aba "Checklist
+  // do Guincho" do dossiê ter identidade real, em vez de repetir "Checklist do guincho" em toda run. §allowlist: o
+  // nome é rótulo público que o guincheiro já vê no app (não é PII/hash/tenant). Opcional (undefined se ausente).
+  readonly templateName?: string;
   readonly templateVersion: number;
   readonly status: string;
   readonly relatedEntityType?: string;

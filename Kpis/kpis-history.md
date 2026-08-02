@@ -6,6 +6,45 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-01 - OMEGA-VID-PR-08 (aba "Checklist do Guincho" no dossiê — gate duplo + templateName)
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 835 / 835 (inalterado) |
+| Backend Tests | 2086 / 2092 (2085 → 2086, +1) |
+| Frontend Smoke | 984 / 984 (971 → 984, +13) |
+| Blocos Entregues | 125 (124 → 125) |
+
+A aba **"Checklist do Guincho"** no `VehicleDossieModal` exibe (**somente leitura** — o guincheiro preenche em campo
+pelo app; decisão do dono "na web só visualização") os checklists vinculados ao processo de custódia, consumindo o
+**AUTO-link do PR-05** via `GET /impound-processes/:id/checklist-runs` sob **gate DUPLO** (`impound:read` +
+`checklist_runs:read`, `requirePermission` encadeado = AND; o **backend é a autoridade**). A UI **molda/esconde**:
+`dossieTabsFor(canReadChecklist)` → **6 abas** sem a permissão, **7** com (aba inserida após "Vistoria de Recepção").
+Novos: `useProcessChecklistRuns` (hook, denied em 403/401/falta-local, 404→[], auto-refresh), `ChecklistRunsPanel`
+(painel puro), `adaptChecklistRunsResponse` + rótulos/tons PT-BR. §allowlist: o painel **nunca** renderiza
+`templateId`/`relatedEntityId` (UUID).
+
+**Junta 3/3** — coordenador-de-acessos **APROVADO** (gate duplo real, `field_technician` passa / `field_dispatcher`
+barrado 403, P-IMPOUND-CHK-VISIBILITY ratificada); crítico-adversarial e cognição-visual **APROVADO_CONDICIONADO**.
+Achados aplicados antes do merge:
+1. **MÉDIA (auto-cura)** — aba morta/branca se a permissão cai com o modal aberto: `effectiveTab` degrada para a
+   Visão Geral (nunca painel vazio sem `aria-label`).
+2. **BAIXA (refresh)** — falha de auto-refresh **não** apaga a tabela carregada: aviso inline não-destrutivo acima
+   dela, em vez de trocar tudo por um Alert.
+3. **MÉDIA (identidade da linha)** — o backend **estendeu** `ChecklistRunSummary` + DTO + repo prisma com
+   **`templateName`** (`select { name }` — §allowlist-safe, rótulo público que o guincheiro já vê); a linha agora
+   mostra o **nome do formulário**, não um rótulo genérico repetido (`D-Ω-VID-PR08-TEMPLATE-NAME`).
+4. **MÉDIA (cor)** — chip "Aguardando ciência" = roxo/`pending` **ratificado** (`D-CHK-RUN-STATUS-TONE`: espera ≠
+   alerta; idiomático no DS).
+
+**+13 smoke reais** (`patios-dossie-checklist.smoke.test.tsx` + split no modal 6/7-abas) + **+1 backend**
+(`tests/impound-checklist-link.test.ts` 9→10: DTO expõe `templateName` e **nunca** `tenant_id`). Bateria completa
+verde: backend `check`/`build`/`lint`, frontend `check`/`test:smoke`/`build`; relacionados `impound-trigger-durability`
+(28), `mobile-backend-contracts` (22). Escopo: `frontend/src/modules/patios/**` + `src/modules/impound/impound.checklist-link.*`
++ testes + `Kpis/*` + docs. **Intocados**: rotas/gate (já existiam), `prisma/schema`/migrations, `mobile/**`.
+
 ## 2026-08-01 - OMEGA-VID-PR-07 (VehicleDossieModal: dossiê do veículo em modal grande com abas, frontend-only)
 
 ### Resultado

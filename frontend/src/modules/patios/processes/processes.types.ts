@@ -199,3 +199,27 @@ export type ProcessCreateFieldError = {
   readonly field: ProcessCreateField;
   readonly message: string;
 };
+
+// Ω-VID PR-08 — resumo ESTREITO de uma ChecklistRun vinculada ao processo (aba "Checklist do Guincho" do dossiê).
+// §allowlist: espelha EXATAMENTE o DTO backend toChecklistRunSummaryListDto — sem hash-chain, sem tenant_id, sem PII;
+// só o metadado que o guincheiro já enxerga. Consome o AUTO-link criado na criação do processo (PR-05).
+export type ChecklistRunStatus =
+  | "in_progress"
+  | "completed"
+  | "completed_with_divergence"
+  | "pending_acknowledgement"
+  | "cancelled";
+
+export type ChecklistRunSummaryItem = {
+  readonly id: string;
+  readonly templateId: string;
+  // Ω-VID PR-08 — nome do formulário (rótulo público que o guincheiro já vê no app) → identidade da linha na aba
+  // do dossiê. null quando o backend não resolve o nome (a UI cai no rótulo genérico).
+  readonly templateName: string | null;
+  readonly templateVersion: number;
+  readonly status: ChecklistRunStatus;
+  readonly relatedEntityType: string | null;
+  readonly relatedEntityId: string | null;
+  readonly startedAt: string;
+  readonly completedAt: string | null;
+};

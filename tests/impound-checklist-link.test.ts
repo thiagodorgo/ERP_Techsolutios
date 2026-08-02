@@ -41,6 +41,7 @@ test("link: fluxo feliz — vincula MANUAL, aparece em listChecklistRuns", async
     id: runId,
     tenantId: tenantActor.tenantId,
     templateId: randomUUID(),
+    templateName: "Vistoria de recolhimento",
     templateVersion: 1,
     status: "completed",
     startedAt: new Date(),
@@ -55,6 +56,20 @@ test("link: fluxo feliz — vincula MANUAL, aparece em listChecklistRuns", async
   const runs = await service.listChecklistRuns(tenantActor, processId);
   assert.equal(runs.length, 1);
   assert.equal(runs[0].id, runId);
+  // Ω-VID PR-08 — o NOME do template flui pelo resumo (identidade da linha no dossiê).
+  assert.equal(runs[0].templateName, "Vistoria de recolhimento");
+});
+
+test("DTO: toChecklistRunSummaryListDto expõe templateName (null quando ausente) e NUNCA tenant_id (§allowlist)", async () => {
+  const { toChecklistRunSummaryListDto } = await import("../src/modules/impound/impound.checklist-link.dto.js");
+  const startedAt = new Date("2026-07-20T10:00:00.000Z");
+  const dto = toChecklistRunSummaryListDto([
+    { id: "r1", tenantId: "TENANT-SECRETO", templateId: "t1", templateName: "Vistoria de recolhimento", templateVersion: 3, status: "completed", startedAt, completedAt: null as unknown as Date | undefined },
+    { id: "r2", tenantId: "TENANT-SECRETO", templateId: "t2", templateVersion: 1, status: "in_progress", startedAt },
+  ]);
+  assert.equal(dto.items[0].templateName, "Vistoria de recolhimento");
+  assert.equal(dto.items[1].templateName, null, "templateName ausente → null (não undefined solto)");
+  assert.equal(JSON.stringify(dto).includes("TENANT-SECRETO"), false, "§allowlist: tenant_id nunca no DTO");
 });
 
 test("link: idempotente — repetir o MESMO par não duplica", async () => {

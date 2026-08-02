@@ -11,8 +11,10 @@ import { useStatement } from "../../charges/useStatement";
 import { LiberacaoPanel } from "../../release/components/LiberacaoPanel";
 import { LiquidacaoPanel } from "../../settlement/components/LiquidacaoPanel";
 import { getVehicleLabel } from "../processes.adapter";
-import type { CustodyEventItem, InspectionView, ProcessDetail, ProcessesApiContext, VerifyResult } from "../processes.types";
+import type { ChecklistRunSummaryItem, CustodyEventItem, InspectionView, ProcessDetail, ProcessesApiContext, VerifyResult } from "../processes.types";
+import { useProcessChecklistRuns } from "../useProcessChecklistRuns";
 import { useProcessDossie } from "../useProcessDossie";
+import { ChecklistRunsPanel } from "./ChecklistRunsPanel";
 import { InspectionSection } from "./InspectionSection";
 import { IntegritySeal } from "./IntegritySeal";
 import { ProcessIdentityCard } from "./ProcessIdentityCard";
@@ -25,14 +27,15 @@ import { TransicaoFsmPanel } from "./TransicaoFsmPanel";
 // os MESMOS componentes e a MESMA lógica de fetch da ProcessoDossiePage (via useProcessDossie), agora reorganizados
 // em abas em vez de empilhados. A rota /patios/processos/:processId segue existindo como fallback direto.
 // Guarda: impound:read (mesma da página) — sem acesso → estado "acesso-negado" honesto. §allowlist: processId nunca
-// renderizado como texto; só placa/status no cabeçalho. As abas "Checklist do Guincho" (PR-08) e "Histórico de
-// Custódias" (PR-09) entram depois — a estrutura de abas já está pronta para recebê-las (só as 6 abaixo por ora).
+// renderizado como texto; só placa/status no cabeçalho. A aba "Checklist do Guincho" (PR-08) entra sob gate DUPLO
+// (impound:read + checklist_runs:read); "Histórico de Custódias" (PR-09) entra depois.
 //
 // A camada de APRESENTAÇÃO (VehicleDossieView) é separada da fiação de hooks (VehicleDossieModal) — o mesmo padrão
 // dos demais painéis puros do módulo (GuiaDebitos, InspectionSection…) — para ser testável com fixtures em SSR.
 
-export type DossieTabId = "overview" | "inspection" | "timeline" | "charges" | "release" | "auction";
+export type DossieTabId = "overview" | "inspection" | "checklist" | "timeline" | "charges" | "release" | "auction";
 
+// Abas SEM o "Checklist do Guincho" — base do dossiê (usada quando o ator não tem checklist_runs:read; a UI molda).
 export const DOSSIE_TABS: readonly { id: DossieTabId; label: string }[] = [
   { id: "overview", label: "Visão Geral" },
   { id: "inspection", label: "Vistoria de Recepção" },
@@ -41,6 +44,16 @@ export const DOSSIE_TABS: readonly { id: DossieTabId; label: string }[] = [
   { id: "release", label: "Liberação" },
   { id: "auction", label: "Leilão/Liquidação" },
 ];
+
+const CHECKLIST_TAB = { id: "checklist" as DossieTabId, label: "Checklist do Guincho" };
+
+// Ω-VID PR-08 — a aba "Checklist do Guincho" só entra para quem tem checklist_runs:read (gate duplo no backend com
+// impound:read; a UI molda/esconde, o backend é a autoridade). Posicionada logo após a Vistoria de Recepção — ambas
+// são artefatos capturados em campo na recepção do veículo.
+export function dossieTabsFor(canReadChecklist: boolean): readonly { id: DossieTabId; label: string }[] {
+  if (!canReadChecklist) return DOSSIE_TABS;
+  return [DOSSIE_TABS[0], DOSSIE_TABS[1], CHECKLIST_TAB, DOSSIE_TABS[2], DOSSIE_TABS[3], DOSSIE_TABS[4], DOSSIE_TABS[5]];
+}
 
 // Ω-VID PR-07 (junta, MÉDIA) — a identidade (placa+status) e as abas ficam FIXAS no topo do corpo scrollável do modal:
 // em abas altas (Débitos, Vistoria com galeria) o usuário não perde a navegação por abas nem a identidade do veículo
@@ -68,11 +81,17 @@ export type VehicleDossieViewProps = {
   readonly statementDenied: boolean;
   readonly canCreateCharge: boolean;
   readonly canTransition: boolean;
+  readonly canReadChecklist: boolean;
+  readonly checklistRuns: readonly ChecklistRunSummaryItem[];
+  readonly checklistLoading: boolean;
+  readonly checklistError: string | null;
+  readonly checklistDenied: boolean;
   readonly context: ProcessesApiContext;
   readonly activeTab: DossieTabId;
   readonly onTabChange: (id: DossieTabId) => void;
   readonly onReload: () => void;
   readonly onReloadStatement: () => void;
+  readonly onReloadChecklist: () => void;
   readonly onReloadAll: () => void;
   readonly onLaunchCharge: () => void;
 };
@@ -95,14 +114,24 @@ export function VehicleDossieView({
   statementDenied,
   canCreateCharge,
   canTransition,
+  canReadChecklist,
+  checklistRuns,
+  checklistLoading,
+  checklistError,
+  checklistDenied,
   context,
   activeTab,
   onTabChange,
   onReload,
   onReloadStatement,
+  onReloadChecklist,
   onReloadAll,
   onLaunchCharge,
 }: VehicleDossieViewProps) {
+  const tabs = dossieTabsFor(canReadChecklist);
+  // Ω-VID PR-08 (junta, MÉDIA) — auto-cura: se a aba ativa não é mais válida (ex.: a permissão de checklist caiu com
+  // o modal aberto e activeTab==="checklist"), degrada para a Visão Geral em vez de um painel VAZIO sem aria-label.
+  const effectiveTab: DossieTabId = tabs.some((item) => item.id === activeTab) ? activeTab : "overview";
   if (!canRead) {
     return <EmptyState title="Sem acesso ao dossiê" detail="Você não tem permissão para consultar o dossiê deste processo de custódia." />;
   }
@@ -137,12 +166,12 @@ export function VehicleDossieView({
         </div>
 
         <div style={tabsRow}>
-          <Tabs tabs={[...DOSSIE_TABS]} active={activeTab} onChange={(id) => onTabChange(id as DossieTabId)} />
+          <Tabs tabs={[...tabs]} active={effectiveTab} onChange={(id) => onTabChange(id as DossieTabId)} />
         </div>
       </div>
 
-      <div role="tabpanel" aria-label={DOSSIE_TABS.find((item) => item.id === activeTab)?.label} style={panelStack}>
-        {activeTab === "overview" ? (
+      <div role="tabpanel" aria-label={tabs.find((item) => item.id === effectiveTab)?.label} style={panelStack}>
+        {effectiveTab === "overview" ? (
           <>
             <ProcessIdentityCard process={process} yardName={yardName} currentSpot={currentSpot} />
             {/* Ω-VID PR-07 (junta, MÉDIA) — como a vaga do mapa deixou de navegar para a página e passou a abrir ESTE
@@ -160,13 +189,20 @@ export function VehicleDossieView({
           </>
         ) : null}
 
-        {activeTab === "inspection" ? (
+        {effectiveTab === "inspection" ? (
           <Card title="Vistoria de recepção">
             <InspectionSection view={inspection} />
           </Card>
         ) : null}
 
-        {activeTab === "timeline" ? (
+        {/* Ω-VID PR-08 — aba "Checklist do Guincho": só é ALCANÇÁVEL para quem tem checklist_runs:read (a aba nem
+            aparece sem a permissão — dossieTabsFor); o painel ainda defende com o estado "denied" (backend é a
+            autoridade do gate duplo). Somente leitura: o guincheiro preenche no mobile. */}
+        {effectiveTab === "checklist" && canReadChecklist ? (
+          <ChecklistRunsPanel runs={checklistRuns} loading={checklistLoading} error={checklistError} denied={checklistDenied} onRetry={onReloadChecklist} />
+        ) : null}
+
+        {effectiveTab === "timeline" ? (
           <>
             <Card title="Integridade do registro">
               <IntegritySeal verify={verify} loading={loading} />
@@ -177,7 +213,7 @@ export function VehicleDossieView({
           </>
         ) : null}
 
-        {activeTab === "charges" ? (
+        {effectiveTab === "charges" ? (
           <GuiaDebitos
             statement={statement}
             loading={statementLoading}
@@ -189,9 +225,9 @@ export function VehicleDossieView({
           />
         ) : null}
 
-        {activeTab === "release" ? <LiberacaoPanel process={process} statement={statement} context={context} onDone={onReloadAll} /> : null}
+        {effectiveTab === "release" ? <LiberacaoPanel process={process} statement={statement} context={context} onDone={onReloadAll} /> : null}
 
-        {activeTab === "auction" ? (
+        {effectiveTab === "auction" ? (
           <>
             <AuctionPanel process={process} context={context} onDone={onReloadAll} />
             <LiquidacaoPanel process={process} context={context} onDone={onReloadAll} />
@@ -208,6 +244,7 @@ export function VehicleDossieModal({ processId, onClose }: { readonly processId:
   const canRead = can("impound:read");
   const canCreateCharge = can("charging:create");
   const canTransition = can("impound:transition");
+  const canReadChecklist = can("checklist_runs:read");
 
   const [tab, setTab] = useState<DossieTabId>("overview");
   const [chargeModalOpen, setChargeModalOpen] = useState(false);
@@ -222,9 +259,20 @@ export function VehicleDossieModal({ processId, onClose }: { readonly processId:
     reload: reloadStatement,
   } = useStatement(canRead ? processId : undefined);
 
+  // Ω-VID PR-08 — checklists do guincho vinculados (aba sob gate duplo). Só busca quando o ator tem impound:read
+  // (dossiê aberto) E checklist_runs:read (o hook checa a 2ª; o backend é a autoridade final do gate duplo).
+  const {
+    runs: checklistRuns,
+    loading: checklistLoading,
+    error: checklistError,
+    denied: checklistDenied,
+    reload: reloadChecklist,
+  } = useProcessChecklistRuns(processId, canRead);
+
   const reloadAll = () => {
     void reload();
     void reloadStatement();
+    void reloadChecklist();
   };
 
   return (
@@ -246,11 +294,17 @@ export function VehicleDossieModal({ processId, onClose }: { readonly processId:
         statementDenied={statementDenied}
         canCreateCharge={canCreateCharge}
         canTransition={canTransition}
+        canReadChecklist={canReadChecklist}
+        checklistRuns={checklistRuns}
+        checklistLoading={checklistLoading}
+        checklistError={checklistError}
+        checklistDenied={checklistDenied}
         context={context}
         activeTab={tab}
         onTabChange={setTab}
         onReload={() => void reload()}
         onReloadStatement={() => void reloadStatement()}
+        onReloadChecklist={() => void reloadChecklist()}
         onReloadAll={reloadAll}
         onLaunchCharge={() => setChargeModalOpen(true)}
       />

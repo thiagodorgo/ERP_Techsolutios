@@ -17,6 +17,7 @@ export function toChecklistRunSummaryListDto(runs: readonly ChecklistRunSummary[
     items: runs.map((run) => ({
       id: run.id,
       templateId: run.templateId,
+      templateName: run.templateName ?? null,
       templateVersion: run.templateVersion,
       status: run.status,
       relatedEntityType: run.relatedEntityType ?? null,

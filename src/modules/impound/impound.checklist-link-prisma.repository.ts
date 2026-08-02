@@ -45,10 +45,12 @@ export class PrismaImpoundChecklistLinkRepository implements ImpoundChecklistLin
   async listChecklistRunsForProcess(tenantId: string, processId: string): Promise<readonly ChecklistRunSummary[]> {
     const links = await this.client.impoundProcessChecklistLink.findMany({
       where: { tenant_id: tenantId, process_id: processId },
-      include: { run: true },
+      // Ω-VID PR-08 — inclui o NOME do template (rótulo do formulário) para a aba do dossiê. select estreito no
+      // template (só `name`) — §allowlist: nenhum outro campo do template vaza.
+      include: { run: { include: { template: { select: { name: true } } } } },
       orderBy: { created_at: "desc" },
     });
-    return links.map((link) => mapRun(link.run));
+    return links.map((link) => mapRun(link.run, link.run.template?.name));
   }
 }
 
@@ -101,21 +103,25 @@ function mapLink(record: {
   };
 }
 
-function mapRun(record: {
-  readonly id: string;
-  readonly tenant_id: string;
-  readonly template_id: string;
-  readonly template_version: number;
-  readonly status: string;
-  readonly related_entity_type: string | null;
-  readonly related_entity_id: string | null;
-  readonly started_at: Date;
-  readonly completed_at: Date | null;
-}): ChecklistRunSummary {
+function mapRun(
+  record: {
+    readonly id: string;
+    readonly tenant_id: string;
+    readonly template_id: string;
+    readonly template_version: number;
+    readonly status: string;
+    readonly related_entity_type: string | null;
+    readonly related_entity_id: string | null;
+    readonly started_at: Date;
+    readonly completed_at: Date | null;
+  },
+  templateName?: string,
+): ChecklistRunSummary {
   return {
     id: record.id,
     tenantId: record.tenant_id,
     templateId: record.template_id,
+    templateName: templateName ?? undefined,
     templateVersion: record.template_version,
     status: record.status,
     relatedEntityType: record.related_entity_type ?? undefined,

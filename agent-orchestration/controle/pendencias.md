@@ -1361,3 +1361,23 @@ estilos inline, contra a regra "nunca hex solto em componente" (J-002). **Não �
 a convenção já estabelecida em TODO o módulo pátios (consistente com os irmãos). Corrigir numa passada de tokenização
 do módulo: promover para as variáveis já usadas em outras telas (`var(--text-primary)` / `var(--text-secondary)` /
 `var(--color-core-primary)`). Registrado para rastreabilidade (§A2); fora do escopo de qualquer PR de feature.
+
+## P-CHK-RUN-DTO-NARROW — Estreitar o resumo de ChecklistRun removendo UUIDs não-usados (BAIXA)
+
+Junta do Ω-VID PR-08 (coordenador-de-acessos, observação BAIXA não-bloqueante). O DTO
+`toChecklistRunSummaryListDto` ainda carrega `templateId` e `relatedEntityId` (UUIDs de recurso interno — FORA das
+classes proibidas do §2.8: não são token/path/bucket/storage-key/base64/binário/tenant), embora a UI **nunca** os
+renderize (o painel usa `templateName`/`templateVersion`/status/datas). Poder-se-ia reduzir a superfície removendo-os
+do DTO. **Não é violação §allowlist** — é aperto opcional. Fora do escopo do PR-08 (mudar o DTO exigiria reconferir
+eventuais consumidores futuros — PR-09 Histórico pode querer `relatedEntityId` para agrupar). Registrado para a
+rodada de custódia decidir junto de [P-IMPOUND-CHK-VISIBILITY].
+
+## P-CHK-RUN-ASSIGNEE-SCOPE — `listChecklistRunsForProcess` não escopa por assignee (BAIXA, → junta de custódia)
+
+Junta do Ω-VID PR-08 (coordenador-de-acessos). O `checklist_runs:read` do `field_technician` tem intenção
+"answer-assigned" (run designada a ele), mas `listChecklistRunsForProcess` (impound.checklist-link.service.ts) devolve
+**todas** as runs vinculadas ao processo, sem escopar por assignee. Continua **tenant-scoped** (sem vazamento
+cross-tenant — 404 provado nos testes 4/5); a nuance é apenas se o guincheiro deveria ver só as runs dele ou todas as
+do processo. É exatamente a decisão que [P-IMPOUND-CHK-VISIBILITY] defere à **junta de custódia**: (a) exigir permissão
+de custódia dedicada além de `impound:read`? (b) escopar por assignee para alinhar à intenção "answer-assigned"? PR-08
+não é o lugar de decidir. Registrado (§A2).

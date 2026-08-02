@@ -1,6 +1,7 @@
 import { isMockMode } from "../../../config/env";
 import { ApiError, apiRequest } from "../../../services/api/client";
 import {
+  adaptChecklistRunsResponse,
   adaptEventsResponse,
   adaptInspectionResponse,
   adaptProcessDetailResponse,
@@ -8,6 +9,7 @@ import {
   adaptVerifyResponse,
 } from "./processes.adapter";
 import type {
+  ChecklistRunSummaryItem,
   CustodyEventItem,
   InspectionView,
   ProcessCreatePayload,
@@ -84,6 +86,15 @@ export async function getInspection(context: ProcessesApiContext, processId: str
     if (error instanceof ApiError && error.status === 404) return null;
     throw error;
   }
+}
+
+// Ω-VID PR-08 — Checklist do Guincho vinculado ao processo (aba do dossiê). GET /impound-processes/:id/checklist-runs
+// sob guarda DUPLA no backend (impound:read + checklist_runs:read); o endpoint devolve o resumo ESTREITO {items}.
+// Mock → []; erros (403 denied / outros) sobem para o hook decidir o estado. Consome o AUTO-link criado no PR-05.
+export async function listProcessChecklistRuns(context: ProcessesApiContext, processId: string): Promise<ChecklistRunSummaryItem[]> {
+  if (isMockMode()) return [];
+  const response = await apiRequest<unknown>(`/impound-processes/${processId}/checklist-runs`, context);
+  return adaptChecklistRunsResponse(response);
 }
 
 // Movimentação de vaga (I1 atômico no backend). allocate/vacate/move → impound:allocate; a UI delega ao 409/422.

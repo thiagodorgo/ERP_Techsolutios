@@ -354,3 +354,48 @@ não desvio deste PR).
 frontend_smoke **954 → 971** (+17: 16 do dev + 1 da junta); `blocks_completed` 123→124. Frontend-only (backend/Flutter
 inalterados, D-KPI-PER-PR §C3.3). Próximo: **PR-08** (aba Checklist do Guincho — gate duplo `impound:read` +
 `checklist_runs:read`, consome o AUTO-link do PR-05).
+
+### PR-08 — aba "Checklist do Guincho" no dossiê (gate duplo) + `templateName` — VOTOS DA JUNTA (2026-08-01) — **APROVADO 3/3 (condições fechadas antes do merge)**
+
+> Junta adversarial orquestrada como workflow: **`coordenador-de-acessos`** (cadeia de acesso + gate duplo),
+> **`critico-adversarial`** (corretude/honestidade), **`cognicao-visual`** (fidelidade §11). O coordenador falhou por
+> erro de agente na 1ª rodada (não reprovação) e foi **re-executado** (verdicto real obrigatório — junta sem registro
+> = merge inválido). Todos rodaram as suítes reais.
+
+A aba **"Checklist do Guincho"** exibe (**somente leitura** — o guincheiro preenche no mobile; decisão do dono) os
+checklists vinculados ao processo, consumindo o **AUTO-link do PR-05** via `GET /impound-processes/:id/checklist-runs`
+sob **gate DUPLO** (`impound:read` + `checklist_runs:read`). **Backend já existia (PR-04/05); PR-08 é o 1º consumidor
+frontend** + uma extensão backend estreita (`templateName`). A UI molda/esconde: `dossieTabsFor(canReadChecklist)` → 6
+abas sem a permissão, 7 com (aba após "Vistoria de Recepção"). Novos: `useProcessChecklistRuns`, `ChecklistRunsPanel`,
+`adaptChecklistRunsResponse` + rótulos/tons PT-BR.
+
+**`coordenador-de-acessos` → APROVADO** (2 rodadas — a 2ª abençoou a extensão `templateName`): gate duplo é **AND
+real** (`requirePermission` encadeado — cada um só chama `next()` com a permissão; teste vivo: `field_dispatcher` só
+tem a 1ª → 403); UI molda/esconde em **3 camadas** (aba escondida + corpo gateado + hook não busca sem as 2 perms);
+`field_technician` tem AS DUAS (P0 do checklist) → passa e vê a aba (P-IMPOUND-CHK-VISIBILITY **ratificada**);
+§allowlist confirmado (DTO sem `tenant_id`/hash/PII; painel nunca renderiza UUID). BAIXA deferidas à junta de custódia
+(estreitar DTO removendo `templateId`/`relatedEntityId`; escopo por-assignee do `listChecklistRunsForProcess`).
+
+**`critico-adversarial` → APROVADO_CONDICIONADO** (não-regressão 982 verde; adapter tolerante; hook com gate duplo
+espelhado; §allowlist provado por render). **1 MÉDIA + 1 BAIXA fechadas:**
+1. **MÉDIA (aba morta/branca)** — com `activeTab==='checklist'` e a permissão caindo (troca de organização / refresh de
+   token com claims reduzidos), o corpo caía num `tabpanel` VAZIO sem `aria-label`. **Corrigido:** `effectiveTab`
+   (auto-cura) degrada para a Visão Geral quando a aba ativa não pertence a `dossieTabsFor(canReadChecklist)`.
+2. **BAIXA (refresh destrutivo)** — falha de auto-refresh em segundo plano trocava a tabela carregada por um Alert de
+   tela cheia. **Corrigido:** ramo de erro guardado por `!hasRuns`; havendo linhas, **aviso inline** não-destrutivo
+   acima da tabela (dados preservados).
+
+**`cognicao-visual` → APROVADO_CONDICIONADO** (estados completos, §allowlist, PT-BR acentuado, densidade fiel aos
+painéis irmãos). **2 MÉDIA reconciliadas:**
+3. **MÉDIA (identidade da linha pobre)** — toda run repetia "Checklist do guincho". **Corrigido de verdade** (não
+   deferido): o backend **estendeu** `ChecklistRunSummary` + DTO + repo prisma com **`templateName`** (`select
+   { name }` — §allowlist-safe, rótulo público que o guincheiro já vê; abençoado pelo coordenador na 2ª rodada,
+   `D-Ω-VID-PR08-TEMPLATE-NAME`); a linha mostra o **nome do formulário**, fallback ao rótulo genérico quando null.
+4. **MÉDIA (cor do chip)** — "Aguardando ciência" é roxo/`pending`, não âmbar. **Ratificado** (`D-CHK-RUN-STATUS-TONE`:
+   espera ≠ alerta; sem protótipo para esta view; idiomático no DS).
+
+**Decisão da junta:** **APROVADO 3/3** — 3 MÉDIA + 1 BAIXA fechadas no próprio PR; §allowlist blessado; 2 BAIXA e a
+P-IMPOUND-CHK-VISIBILITY deferidas à junta de custódia (§A2). **KPIs:** frontend_smoke **971 → 984** (+13); backend
+**2085 → 2086** (+1 DTO); `blocks_completed` 124→125. Full-stack (extensão backend estreita de `templateName`). Suíte
+relacionada verde (`impound-checklist-link` 10, `impound-trigger-durability` 28, `mobile-backend-contracts` 22).
+Próximo: **PR-09** (aba "Histórico de Custódias" — lista os múltiplos processos da mesma identidade de veículo).
