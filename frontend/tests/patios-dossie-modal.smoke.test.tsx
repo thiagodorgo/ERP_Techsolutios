@@ -97,6 +97,8 @@ const baseProps: VehicleDossieViewProps = {
   onReloadHistory: () => {},
   onReloadAll: () => {},
   onLaunchCharge: () => {},
+  onPrint: () => {},
+  printReady: true,
 };
 
 function renderView(overrides: Partial<VehicleDossieViewProps> = {}): string {

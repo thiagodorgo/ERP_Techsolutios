@@ -209,6 +209,8 @@ const baseProps: VehicleDossieViewProps = {
   onReloadHistory: () => {},
   onReloadAll: () => {},
   onLaunchCharge: () => {},
+  onPrint: () => {},
+  printReady: true,
 };
 
 test("aba 'Checklist do Guincho' ativa renderiza o painel com as runs pelo nome (integração no VehicleDossieView)", () => {

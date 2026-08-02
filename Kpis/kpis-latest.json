@@ -1,16 +1,16 @@
 {
   "snapshot_date": "2026-08-01",
-  "version": "OMEGA-VID-PR-09-HISTORICO-CUSTODIAS",
+  "version": "OMEGA-VID-PR-10-IMPRIMIR-SALVAR-DOSSIE",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Omega-VID PR-09 — aba \"Historico de Custodias\" no dossie: as MULTIPLAS passagens do MESMO veiculo (identidade) pelo patio, via endpoint NOVO GET /impound-processes/:id/custody-history (gate impound:read; identidade resolvida server-side, nunca no DTO). Modulo de leitura novo impound.custody-history.* (espelho do checklist-link). Junta 4/4 (coordenador APROVADO; dba/critico/cognicao APROVADO_CONDICIONADO) com achados fechados no proprio PR.",
-    "title": "Omega-VID PR-09: aba Historico de Custodias (full-stack). Backend: modulo impound.custody-history.* + rota GET /impound-processes/:id/custody-history (impound:read; agrupa por identity_id server-side; DTO estreito §allowlist). Frontend: aba em DOSSIE_TABS base (apos Linha do Tempo) + CustodyHistoryPanel/useCustodyHistory/adapter. FIX-JUNTA: teste DB-gated impound-custody-history-db (prova a query real: NULLS LAST + desempate created_at, join yard, isolamento cross-tenant sob RLS); removido processExists redundante (vazio<=>404); dossieTabsFor por-splice; cópia EmptyState honesta; .ui-modal--lg .ui-tabs overflow-x (8 abas). Query prisma provada VIVA pelo dba (grupo/isCurrent/ordem/yard/tenant).",
+    "block": "Omega-VID PR-10 (frontend-only) — Imprimir/Salvar o dossie do veiculo. window.print() cobre imprimir E 'Salvar como PDF' (e-mail/WhatsApp FORA de escopo, decisao do dono). DossiePrintDocument empilha todas as secoes READ-ONLY (identificacao, vistoria, integridade, linha do tempo, checklist do guincho, historico de custodias, guia de debitos) num documento unico; portal no <body> escondido em tela e revelado no @media print. FECHA a rodada Omega-VID.",
+    "title": "Omega-VID PR-10 (frontend-only) — Imprimir/Salvar o dossie do veiculo. window.print() cobre imprimir E 'Salvar como PDF' (e-mail/WhatsApp FORA de escopo, decisao do dono). DossiePrintDocument empilha todas as secoes READ-ONLY (identificacao, vistoria, integridade, linha do tempo, checklist do guincho, historico de custodias, guia de debitos) num documento unico; portal no <body> escondido em tela e revelado no @media print. FECHA a rodada Omega-VID.",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Omega-VID PR-09: aba Historico de Custodias (full-stack). Backend: modulo impound.custody-history.* + rota GET /impound-processes/:id/custody-history (impound:read; agrupa por identity_id server-side; DTO estreito §allowlist). Frontend: aba em DOSSIE_TABS base (apos Linha do Tempo) + CustodyHistoryPanel/useCustodyHistory/adapter. FIX-JUNTA: teste DB-gated impound-custody-history-db (prova a query real: NULLS LAST + desempate created_at, join yard, isolamento cross-tenant sob RLS); removido processExists redundante (vazio<=>404); dossieTabsFor por-splice; cópia EmptyState honesta; .ui-modal--lg .ui-tabs overflow-x (8 abas). Query prisma provada VIVA pelo dba (grupo/isCurrent/ordem/yard/tenant).",
+    "summary": "Omega-VID PR-10 (frontend-only) — Imprimir/Salvar o dossie do veiculo. window.print() cobre imprimir E 'Salvar como PDF' (e-mail/WhatsApp FORA de escopo, decisao do dono). DossiePrintDocument empilha todas as secoes READ-ONLY (identificacao, vistoria, integridade, linha do tempo, checklist do guincho, historico de custodias, guia de debitos) num documento unico; portal no <body> escondido em tela e revelado no @media print. FECHA a rodada Omega-VID.",
     "status_label": "Omega-VID PR-07 (frontend-only): VehicleDossieModal — dossie do veiculo num Modal size='lg' com 6 ABAS (Visao Geral/Vistoria/Linha do Tempo/Debitos/Liberacao/Leilao+Liquidacao), reusando os componentes e a logica de fetch da ProcessoDossiePage (hook compartilhado useProcessDossie). A vaga OCUPADA do OccupancyMap ABRE o modal (botao onOpenDossie, icone FileText) em vez de navegar; deep-link ?dossie=<processId> sincroniza abrir/fechar/mount (a rota /patios/processos/:id segue como fallback). Abas Checklist(PR-08)/Historico(PR-09) ainda NAO — estrutura pronta. +16 smoke tests (2 arquivos novos) + patios-mapa migrado; frontend_smoke 954 -> 970. Backend/flutter inalterados. --- ANTERIOR (PR-06): Modal do design system ganha size='lg' (base do dossie). +4 smoke; frontend_smoke 950 -> 954. --- ANTERIOR (PR-05 FIX-JUNTA, D-Omega-VID-05-SEED): a junta APROVOU_CONDICIONADO; o critico-adversarial provou 1 MEDIA (a colisao-POR-REUSO nao tinha caminho de correcao — duplicateCandidates/merge/unmerge NAO splitam). CONSERTO: a VISTORIA de recepcao (saveInspection) agora RECONCILIA/RE-APONTA ImpoundProcess.identity_id para a identidade correta da placa CONFIRMADA (resolve-ou-cria pelo helper do PR-05, MESMA tx RLS) => SPLITA a agregacao errada + sobe PROVISIONAL->CONFIRMED. Idempotente; FSM/hash-chain/merge INTOCADOS; sem migracao. backend 2082/2088 -> 2085/2091 (+3 DB-gated reais provando o SPLIT vivo)."
   },
   "metrics": {
@@ -21,16 +21,16 @@
       "note": "PR-B FIX-JUNTA (D-CHK-DISPATCH-CREATE, lado Flutter): +13 test() novos sobre 822 — 2 de MIGRACAO REAL (app_database_migration_test: schema 2->13 e 1->13 abrem sqlite file num user_version antigo e exercitam o onUpgrade de verdade, provando que a guarda from>=3/from>=2 evita 'duplicate column name' e as colunas ADD chegam; nenhum teste exercitava onUpgrade antes, todos usavam openInMemory) + 11 (pr_b_junta_fixes_test: marker sem component_id lanca e nao enfileira; lote ordenado divergence->ack->complete; 409 ACKNOWLEDGEMENT_NOT_REQUIRED vira failed retryavel; completeRun has_divergence true/false real; downloadPendingRuns baixa e carimba a run offline; blob preservado em scan_failed/pending_review; widget test do AwaitingDispatchView acentuado). Execucao REAL da suite Flutter 835 pass/0 falha/0 skip (Flutter 3.41.6). Regressoes b088/b102/b092/b118/b085/b087/b122 verdes. dart format 0-changed; flutter analyze No issues; pubspec/lock INTOCADOS (zero-dep). Sobre 822."
     },
     "frontend_smoke_tests": {
-      "value": 991,
-      "total": 991,
-      "display": "991/991",
-      "note": "Omega-VID PR-09 (aba Historico de Custodias): +7 smoke reais (execucao real 991 pass/0 fail/0 skip, sobre 984 do PR-08). patios-dossie-history.smoke.test.tsx (adapter snake/camel, painel pela placa/situacao/entrada/patio + linha atual destacada, §allowlist sem UUID, estados, aviso-inline, integracao) + baseProps dos modais atualizados."
+      "value": 997,
+      "total": 997,
+      "display": "997/997",
+      "note": "Omega-VID PR-10 (Imprimir/Salvar dossie): +6 smoke reais (997 pass/0 fail/0 skip, sobre 991 do PR-09; +2 do rework da junta: carimbo de emissao/org e estado \"Preparando...\"). patios-dossie-print.smoke.test.tsx: DossiePrintDocument empilha todas as secoes read-only, checklist so com permissao, sem acao 'Lancar encargo', botao Imprimir/Salvar com aria-label. +onPrint nos baseProps dos modais."
     },
     "backend_tests": {
       "value": 2107,
       "total": 2107,
       "display": "2107/2107",
-      "note": "Omega-VID PR-09: contagem REAL do job backend do CI (com DATABASE_URL → 0 skip): 2107 pass/2107 total/0 fail. Inclui os +10 test() desta fatia (tests/impound-custody-history.test.ts 7 memoria + tests/impound-custody-history-db.test.ts 3 DB-gated: query PRISMA real — NULLS LAST + desempate created_at, join yard, isolamento cross-tenant sob RLS). O baseline publicado no PR-08 (2086/2092) estava sub-contado (nao refletia todos os DB-gated que o CI roda); reconciliado aqui para o numero real do CI."
+      "note": "Omega-VID PR-10 e FRONTEND-ONLY — backend inalterado (2107/2107 real-CI do PR-09, D-KPI-PER-PR §C3.3: metrica de trilha nao-tocada carrega o ultimo valor oficial)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 126,
-      "display": "126",
-      "note": "Omega-VID PR-09 (Historico de Custodias) — fatia vertical: aba do dossie lista as passagens do mesmo veiculo pelo patio (agrupamento por identidade server-side). Sobre 125 do PR-08."
+      "value": 127,
+      "display": "127",
+      "note": "Omega-VID PR-10 (Imprimir/Salvar dossie) — FECHA a rodada Omega-VID (dossie do veiculo: modal em abas + clique-na-vaga + deep-link + checklist + historico + impressao). Sobre 126 do PR-09."
     },
     "mobile_backend_contracts": {
       "value": 18,
