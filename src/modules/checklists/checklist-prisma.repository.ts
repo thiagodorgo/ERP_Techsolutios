@@ -118,8 +118,10 @@ export class PrismaChecklistRepository implements ChecklistRepository {
         created_by: data.actorUserId,
         updated_by: data.actorUserId,
         components: {
+          // P-CHK-TEMPLATE-PRISMA-V7 — NÃO passar `tenant_id` aqui: é relation-scalar COMPARTILHADO entre a relação
+          // `template` (FK composta [tenant_id, template_id], setada pelo nested-create do pai) e a relação `tenant`.
+          // O Prisma v7 rejeita o argumento explícito ("Unknown argument tenant_id") e o infere do template pai.
           create: data.components.map((component, index) => ({
-            tenant_id: data.tenantId,
             component_key: component.componentKey ?? `${component.type}_${index + 1}`,
             type: component.type,
             label: component.label,
@@ -196,8 +198,9 @@ export class PrismaChecklistRepository implements ChecklistRepository {
         ...(data.components
           ? {
               components: {
+                // P-CHK-TEMPLATE-PRISMA-V7 — mesmo motivo do createTemplate: `tenant_id` é inferido do template pai
+                // (relation-scalar compartilhado template/tenant); passá-lo explícito quebra no runtime do Prisma v7.
                 create: data.components.map((component, index) => ({
-                  tenant_id: data.tenantId,
                   component_key: component.componentKey ?? `${component.type}_${index + 1}`,
                   type: component.type,
                   label: component.label,
@@ -330,8 +333,11 @@ export class PrismaChecklistRepository implements ChecklistRepository {
         status: "in_progress",
         started_by: data.actorUserId,
         answers: {
+          // P-CHK-TEMPLATE-PRISMA-V7 (bug IRMÃO, achado da junta dba) — MESMO defeito do createTemplate: `tenant_id`
+          // é relation-scalar COMPARTILHADO (`run` [tenant_id, run_id] + `component` [tenant_id, component_id] +
+          // `tenant`), inferido do run pai. Passá-lo explícito quebra em `POST /checklists/:id/runs` com answers
+          // (caminho REST/web) → 500 no runtime do Prisma v7. Mascarado pela suíte em memória.
           create: data.answers.map((answer) => ({
-            tenant_id: data.tenantId,
             component_id: answer.componentId,
             value: answer.value,
             metadata: answer.metadata,

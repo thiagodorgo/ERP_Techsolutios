@@ -987,3 +987,19 @@ PII/hash-chain/tenant/token/path/bucket/storage-key/binário. Expô-lo sob o MES
 `checklist_runs:read`) é §allowlist-safe (§2.8) — é classe de dado que o próprio ator já lê. Reconciliação §A2 da
 auditoria do coordenador-de-acessos (que aprovou o gate ANTES desta extensão). O DTO segue sem `tenant_id`
 (teste de DTO novo prova). Ver ata `docs/juntas/J-OMEGA-VID.md` (PR-08).
+
+## D-CHK-P1-RUN-LIFECYCLE (2026-08-02) — Ciclo de vida da execução de checklist ("responder a qualquer momento")
+
+**Decisão do dono** (via seleção, encerrando o requisito que estava INDEFINIDO desde a arquitetura do CHECKLIST P1):
+**"responder a qualquer momento" = TRAVA AO CONCLUIR/ASSINAR.**
+
+- O guincheiro **inicia / pausa / retoma** o preenchimento da run **a qualquer momento enquanto a OS/custódia está
+  ativa** (não é bloqueante num gate específico).
+- Ao **CONCLUIR** (com assinatura), a run fica **IMUTÁVEL** — é a prova jurídica do estado do veículo.
+- **Reabrir** um checklist concluído = **nova versão** da run (append-only), com **trilha de auditoria** de cada
+  versão; nunca edição destrutiva do concluído.
+
+**Implicação de arquitetura para o CHECKLIST P1:** a FSM da `ChecklistRun` distingue `in_progress` (editável) de
+`completed`/`completed_with_divergence` (imutável); a edição pós-conclusão cria uma nova run vinculada (versão), não
+altera a existente. Espelha a disciplina append-only já usada na custódia (hash-chain) e no extrato financeiro.
+Registrado ANTES de codar o P1 (§A5 — decisão material vai para arquivo, não fica só no chat).

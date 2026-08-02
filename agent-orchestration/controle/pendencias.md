@@ -1331,7 +1331,27 @@ passa a ser visível dentro do dossiê de custódia") foi desenhado assumindo qu
   `field_technician` não tenha (ex.: `impound:read` + uma perm de custódia dedicada) para restaurar a barreira
   original, ou se a visibilidade atual é aceitável. NÃO alterar a matriz nem o gate sem essa decisão.
 
-## P-CHK-TEMPLATE-PRISMA-V7 (2026-08-01) — createTemplate falha no runtime do Prisma v7 (bug REAL de produção)
+## P-CHK-TEMPLATE-PRISMA-V7 (2026-08-01) — createTemplate falha no runtime do Prisma v7 (bug REAL de produção) — **RESOLVIDO (2026-08-02)**
+
+> **RESOLVIDO** na fatia de limpeza-de-pendências (antes do CHECKLIST P1). Fix: removido `tenant_id` explícito dos
+> nested-creates de `createTemplate`, `updateTemplate` **e `createRun` (bug IRMÃO, achado da junta dba — mesmo defeito,
+> alcançável por `POST /checklists/:id/runs` com answers → 500)** — o Prisma v7 infere `tenant_id` do pai (relation-scalar
+> compartilhado). Teste DB-gated `tests/checklist-template-prisma-db.test.ts` (3 testes) prova: FALHA contra o código
+> antigo com o `Unknown argument tenant_id` exato, PASSA contra o corrigido; RAW-verificado que o `tenant_id` do
+> componente/resposta é o do pai (tenant do ator), sem vazamento. dba-guardião APROVADO_CONDICIONADO → irmão fechado no
+> mesmo PR. Varredura confirmou: nenhum outro nested-relation-create com relation-scalar compartilhado no codebase (os
+> demais `create:` são ramos de `upsert` top-level, seguros). Ver [[P-CHK-PRISMA-CLIENT-TYPING]].
+
+## P-CHK-PRISMA-CLIENT-TYPING (2026-08-02) — repo prisma de checklist descarta os tipos gerados (MÉDIA sistêmica)
+
+Junta dba (achado MÉDIA no fix do P-CHK-TEMPLATE-PRISMA-V7). O `src/modules/checklists/checklist-prisma.repository.ts`
+**descarta os tipos gerados do Prisma** (`tx as unknown as PrismaChecklistClient`; delegates tipados `create(args:
+unknown)`). É POR ISSO que nem o bug do template nem o irmão do `createRun` foram pegos pelo `tsc` — a única rede é
+runtime, e o runtime default da suíte é memória. **Corrigir:** tipar o client de checklist com os tipos gerados do
+Prisma (ou ao menos os inputs de nested-create) para o compilador pegar a PRÓXIMA ocorrência de relation-scalar
+compartilhado. Fora do escopo do bug-fix (é refactor de tipagem que pode desestabilizar). Registrado (§A2).
+
+### (original) P-CHK-TEMPLATE-PRISMA-V7 — diagnóstico
 
 Diagnóstico definitivo do que vínhamos chamando de "flakiness local do template 400": `ChecklistService.createTemplate`
 (criação de TEMPLATE de checklist com componentes aninhados via `create`) **falha no runtime do Prisma v7** com
