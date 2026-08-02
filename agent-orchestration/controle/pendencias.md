@@ -1342,3 +1342,22 @@ falharia). NÃO introduzido por nenhum trabalho recente (pré-existente). Fora d
 (PR-A/PR-B). Corrigir numa fatia própria: ajustar o nested-create do componente (ex. usar `connect` explícito ou
 `createMany` sem o relation-scalar duplicado) + adicionar um teste DB-gated de `createTemplate` contra Postgres real
 (o gap que escondeu isso). Registrado para não se perder (§A2).
+
+## P-DS-TABS-ARIA — Padrão WAI-ARIA de abas incompleto no `Tabs` do design system (BAIXA)
+
+Junta do Ω-VID PR-07 (`cognicao-visual`). O `Tabs` (`frontend/src/components/ui/index.tsx`) tem `role=tablist/tab` +
+`aria-selected` (piso atendido), e o dossiê renderiza o painel com `role=tabpanel` + `aria-label`. **Falta** a amarração
+completa: botões sem `aria-controls` apontando o id do painel, `tabpanel` sem `id`/`aria-labelledby` apontando a aba
+ativa, e sem roving-tabindex/navegação por ArrowLeft/ArrowRight (só `Tab` entre os 6 botões nativos). **Transversal**
+(todo consumidor do `Tabs`), não desvio do PR-07. Corrigir numa passada de a11y do DS: `id` no tabpanel +
+`aria-labelledby ↔ aria-controls` + (opcional) navegação por setas. Ver também **[P-Ω4-2B-A11Y]** (focus-trap/Esc no
+`Modal` compartilhado — mesma classe transversal, herdada pelo modal grande do dossiê).
+
+## P-PATIOS-HEX-TOKENS — Hex inline no módulo pátios contra J-002 (BAIXA)
+
+Junta do Ω-VID PR-07 (`cognicao-visual`). `VehicleDossieModal`/`ProcessIdentityCard` e os irmãos do módulo
+(`InspectionSection`, `OccupancyMap`, `TransicaoFsmPanel`…) usam hex hardcoded (`#0F172A`, `#64748B`, `#2563EB`) nos
+estilos inline, contra a regra "nunca hex solto em componente" (J-002). **Não é desvio introduzido pelo PR-07** — segue
+a convenção já estabelecida em TODO o módulo pátios (consistente com os irmãos). Corrigir numa passada de tokenização
+do módulo: promover para as variáveis já usadas em outras telas (`var(--text-primary)` / `var(--text-secondary)` /
+`var(--color-core-primary)`). Registrado para rastreabilidade (§A2); fora do escopo de qualquer PR de feature.

@@ -1,6 +1,5 @@
-import { Ban, ExternalLink, Lock, PackageOpen, Pencil, Plus, ShieldCheck } from "lucide-react";
+import { Ban, FileText, Lock, PackageOpen, Pencil, Plus, ShieldCheck } from "lucide-react";
 import type { CSSProperties } from "react";
-import { Link } from "react-router-dom";
 
 import { Button } from "../../../../components/ui";
 import { getVehicleLabel } from "../processes.adapter";
@@ -8,8 +7,10 @@ import type { ProcessListItem } from "../processes.types";
 import type { YardSpotItem } from "../../yards/yards.types";
 
 // Mapa de ocupação (§11) — grade de vagas colorida por status (FREE verde / OCCUPIED âmbar / BLOCKED vermelho).
-// A vaga OCUPADA vira LINK ao dossiê do processo (placa resolvida via join client-side com a lista de processos
-// do pátio). §allowlist: currentProcessId NUNCA é renderizado como texto — só no href do dossiê e no join.
+// Ω-VID PR-07 — a vaga OCUPADA ABRE o dossiê do veículo num modal grande (onOpenDossie), NÃO navega mais (o
+// <Link> anterior prometia abrir página; o modal sincroniza ?dossie= para preservar link/voltar). Placa resolvida
+// via join client-side com a lista de processos do pátio. §allowlist: currentProcessId NUNCA é renderizado como
+// texto — só passado ao handler e usado no join. Sem `onOpenDossie`, a placa fica como texto (sem trigger morto).
 // Ações allocate/vacate/move (impound:allocate) aparecem só quando `canAllocate`; "Editar" (config da vaga +
 // bloqueio operacional FREE⇄BLOCKED) aparece só quando `canEdit` (yard:update) — preserva a capacidade do PR-04.
 
@@ -19,7 +20,7 @@ const gridStyle: CSSProperties = { display: "grid", gridTemplateColumns: "repeat
 const tileBase: CSSProperties = { border: "1px solid", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 8, minHeight: 96 };
 const codeRow: CSSProperties = { display: "flex", alignItems: "center", gap: 6, fontWeight: 800, color: "#0F172A" };
 const mutedStyle: CSSProperties = { fontSize: 12, color: "#64748B" };
-const linkStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 4, color: "#2563EB", fontWeight: 700, fontSize: 13, textDecoration: "none" };
+const dossieTriggerStyle: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 4, color: "#2563EB", fontWeight: 700, fontSize: 13, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left" };
 const actionRow: CSSProperties = { display: "flex", gap: 6, flexWrap: "wrap", marginTop: "auto" };
 
 const TONE: Record<string, { bg: string; border: string }> = {
@@ -37,6 +38,7 @@ export function OccupancyMap({
   onVacate,
   onMove,
   onEdit,
+  onOpenDossie,
 }: {
   readonly spots: readonly YardSpotItem[];
   readonly resolveProcess: (processId: string) => ProcessSummary | undefined;
@@ -46,6 +48,7 @@ export function OccupancyMap({
   readonly onVacate?: (spot: YardSpotItem, processId: string) => void;
   readonly onMove?: (spot: YardSpotItem, processId: string) => void;
   readonly onEdit?: (spot: YardSpotItem) => void;
+  readonly onOpenDossie?: (processId: string) => void;
 }) {
   const showEdit = canEdit && Boolean(onEdit);
   return (
@@ -63,9 +66,13 @@ export function OccupancyMap({
 
             {spot.status === "OCCUPIED" && spot.currentProcessId ? (
               <div>
-                <Link to={`/patios/processos/${spot.currentProcessId}`} style={linkStyle} aria-label="Abrir o dossiê do processo desta vaga">
-                  {process ? getVehicleLabel(process) : "Abrir dossiê"} <ExternalLink size={13} aria-hidden />
-                </Link>
+                {onOpenDossie ? (
+                  <button type="button" style={dossieTriggerStyle} onClick={() => onOpenDossie(spot.currentProcessId as string)} aria-label="Abrir o dossiê do veículo desta vaga">
+                    {process ? getVehicleLabel(process) : "Abrir dossiê"} <FileText size={13} aria-hidden />
+                  </button>
+                ) : (
+                  <span style={{ ...dossieTriggerStyle, cursor: "default" }}>{process ? getVehicleLabel(process) : "Ocupada"}</span>
+                )}
                 {process ? <div style={mutedStyle}>{process.statusLabel}</div> : null}
               </div>
             ) : (

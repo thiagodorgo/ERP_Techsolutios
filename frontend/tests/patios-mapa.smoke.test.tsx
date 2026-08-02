@@ -36,7 +36,7 @@ function resolveProcess(id: string) {
   return id === OCCUPIED_PROCESS_ID ? PROCESS : undefined;
 }
 
-function renderMap(canAllocate: boolean, canEdit = false): string {
+function renderMap(canAllocate: boolean, canEdit = false, withDossie = true): string {
   return renderToString(
     <MemoryRouter>
       <OccupancyMap
@@ -48,16 +48,18 @@ function renderMap(canAllocate: boolean, canEdit = false): string {
         onMove={() => undefined}
         onVacate={() => undefined}
         onEdit={() => undefined}
+        onOpenDossie={withDossie ? () => undefined : undefined}
       />
     </MemoryRouter>,
   );
 }
 
-test("mapa: vaga OCUPADA vira link ao dossiê com a placa resolvida por join", () => {
+test("mapa: vaga OCUPADA ABRE o dossiê num modal (botão) — não navega mais; placa resolvida por join", () => {
   const html = renderMap(false);
 
-  // Link ao dossiê do processo desta vaga.
-  assert.match(html, new RegExp(`/patios/processos/${OCCUPIED_PROCESS_ID}`));
+  // Ω-VID PR-07 — a vaga ocupada vira BOTÃO que abre o VehicleDossieModal (não é mais um <Link> ao dossiê).
+  assert.match(html, /aria-label="Abrir o dossiê do veículo desta vaga"/);
+  assert.doesNotMatch(html, /href="\/patios\/processos\//);
   // Placa exibida (join client-side), NÃO o id do processo.
   assert.match(html, /XYZ-9876/);
   assert.match(html, /Custódia ativa/);
@@ -67,12 +69,10 @@ test("mapa: vaga OCUPADA vira link ao dossiê com a placa resolvida por join", (
   assert.match(html, /Bloqueada/);
 });
 
-test("mapa: §allowlist — currentProcessId NUNCA renderizado cru (só no href do dossiê)", () => {
+test("mapa: §allowlist — currentProcessId NUNCA renderizado (nem como texto, nem em href — o modal usa handler)", () => {
   const html = renderMap(false);
-  const totalOccurrences = html.split(OCCUPIED_PROCESS_ID).length - 1;
-  const hrefOccurrences = html.split(`/patios/processos/${OCCUPIED_PROCESS_ID}`).length - 1;
-  assert.ok(hrefOccurrences >= 1, "o id deve aparecer no href do dossiê");
-  assert.equal(totalOccurrences, hrefOccurrences, "o id do processo só pode aparecer dentro do href, nunca como texto cru");
+  // Sem navegação por href, o id do processo não aparece em lugar nenhum do DOM.
+  assert.doesNotMatch(html, new RegExp(OCCUPIED_PROCESS_ID));
   assert.doesNotMatch(html, /\btenant\b/i);
   assert.doesNotMatch(html, /pol[íi]cia/i);
 });
@@ -87,8 +87,8 @@ test("mapa: ações allocate/move/vacate aparecem SÓ com impound:allocate", () 
   assert.doesNotMatch(withoutPerm, /Alocar/);
   assert.doesNotMatch(withoutPerm, /Mover/);
   assert.doesNotMatch(withoutPerm, /Liberar/);
-  // Mesmo sem a permissão de escrita, a leitura (link ao dossiê) permanece.
-  assert.match(withoutPerm, new RegExp(`/patios/processos/${OCCUPIED_PROCESS_ID}`));
+  // Mesmo sem a permissão de escrita, a leitura (abrir o dossiê) permanece.
+  assert.match(withoutPerm, /aria-label="Abrir o dossiê do veículo desta vaga"/);
 });
 
 test("mapa: 'Editar' vaga (config + bloqueio Livre⇄Bloqueada) aparece SÓ com yard:update — sem regredir o PR-04", () => {
