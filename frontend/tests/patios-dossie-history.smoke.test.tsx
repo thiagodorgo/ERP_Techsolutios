@@ -142,6 +142,8 @@ const baseProps: VehicleDossieViewProps = {
   onReloadHistory: () => {},
   onReloadAll: () => {},
   onLaunchCharge: () => {},
+  onPrint: () => {},
+  printReady: true,
 };
 
 test("aba 'Histórico de Custódias' está sempre presente (impound:read) e renderiza o painel com as custódias", () => {

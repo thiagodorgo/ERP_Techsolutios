@@ -6,6 +6,36 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-02 - OMEGA-VID-PR-10 (Imprimir/Salvar o dossiê — FECHA a rodada Ω-VID)
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 835 / 835 (inalterado) |
+| Backend Tests | 2107 / 2107 (inalterado; frontend-only) |
+| Frontend Smoke | 997 / 997 (991 → 997, +6) |
+| Blocos Entregues | 127 (126 → 127) |
+
+**Imprimir/Salvar o dossiê do veículo** (decisão do dono: "salvar e imprimir entram no jogo; e-mail e WhatsApp
+não"). `window.print()` cobre os dois — o diálogo do navegador oferece "Salvar como PDF". O **`DossiePrintDocument`**
+(novo, puro) **empilha todas as seções read-only** do dossiê num documento único (diferente do modal, que mostra uma
+aba por vez): cabeçalho (placa + status + autoridade + local) → Identificação e origem → Vistoria de recepção →
+Integridade → Linha do tempo → Checklist do guincho (se `checklist_runs:read`) → Histórico de custódias → Guia de
+débitos. **Sem ações** (liberação/leilão/FSM/lançar-encargo): é um **documento**, não a tela de operação. O botão
+**"Imprimir / Salvar"** (ícone Printer) fica no cabeçalho do modal, escondido na impressão (`.dossie-print__hide`); o
+documento vive num **portal no `<body>`** (`display:none` em tela, revelado só no `@media print`, fora do modal para
+não herdar o overflow/sticky na paginação). O `@media print` esconde todo o app e imprime só o documento, com
+`break-inside: avoid` nos cards. §allowlist: só placa/estado/local/datas/situações — nenhum id/UUID.
+
+**+6 smoke** (`patios-dossie-print.smoke.test.tsx` — inclui carimbo de emissão/org e estado "Preparando…" do rework da junta). Frontend-only (backend/Flutter inalterados, D-KPI-PER-PR §C3.3).
+Escopo: `frontend/src/modules/patios/processes/components/{DossiePrintDocument,VehicleDossieModal}.tsx` +
+`frontend/src/styles/app.css` + testes + `Kpis/*` + docs.
+
+**🏁 RODADA Ω-VID COMPLETA** (PR-00..10): o **dossiê do veículo de terceiro** como entidade de 1ª classe —
+identidade unificada (PR-01..05) → clique-na-vaga abre o dossiê em modal grande com abas + deep-link (PR-06/07) →
+Checklist do Guincho (PR-08) → Histórico de Custódias (PR-09) → Imprimir/Salvar (PR-10).
+
 ## 2026-08-01 - OMEGA-VID-PR-09 (aba "Histórico de Custódias" no dossiê + endpoint custody-history)
 
 ### Resultado

@@ -1,8 +1,11 @@
+import { Printer } from "lucide-react";
 import type { CSSProperties } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { Alert, Button, Card, EmptyState, Modal, Skeleton, Tabs } from "../../../../components/ui";
 import { usePermissions } from "../../../../providers/PermissionProvider";
+import { useTenantContext } from "../../../../providers/TenantProvider";
 import { AuctionPanel } from "../../auction/components/AuctionPanel";
 import { GuiaDebitos } from "../../charges/components/GuiaDebitos";
 import { LancamentoChargeModal } from "../../charges/components/LancamentoChargeModal";
@@ -17,6 +20,7 @@ import { useProcessChecklistRuns } from "../useProcessChecklistRuns";
 import { useProcessDossie } from "../useProcessDossie";
 import { ChecklistRunsPanel } from "./ChecklistRunsPanel";
 import { CustodyHistoryPanel } from "./CustodyHistoryPanel";
+import { DossiePrintDocument } from "./DossiePrintDocument";
 import { InspectionSection } from "./InspectionSection";
 import { IntegritySeal } from "./IntegritySeal";
 import { ProcessIdentityCard } from "./ProcessIdentityCard";
@@ -104,6 +108,8 @@ export type VehicleDossieViewProps = {
   readonly onReloadHistory: () => void;
   readonly onReloadAll: () => void;
   readonly onLaunchCharge: () => void;
+  readonly onPrint: () => void;
+  readonly printReady: boolean;
 };
 
 /** Corpo puro do dossiê (sem fiação de hooks) — os 5 estados obrigatórios (§7) + as 6 abas reorganizadas. */
@@ -141,6 +147,8 @@ export function VehicleDossieView({
   onReloadHistory,
   onReloadAll,
   onLaunchCharge,
+  onPrint,
+  printReady,
 }: VehicleDossieViewProps) {
   const tabs = dossieTabsFor(canReadChecklist);
   // Ω-VID PR-08 (junta, MÉDIA) — auto-cura: se a aba ativa não é mais válida (ex.: a permissão de checklist caiu com
@@ -177,6 +185,15 @@ export function VehicleDossieView({
         <div style={headRow}>
           <h3 style={titleStyle}>{getVehicleLabel(process)}</h3>
           <ProcessStatusChip status={process.status} label={process.statusLabel} />
+          {/* Ω-VID PR-10 — Imprimir / Salvar (window.print → o diálogo do navegador cobre imprimir E "Salvar como
+              PDF"). Escondido na impressão (dossie-print__hide) — o botão não sai no documento. */}
+          <div className="dossie-print__hide" style={{ marginLeft: "auto" }}>
+            {/* Ω-VID PR-10 (junta MÉDIA) — só habilita quando os dados do documento terminaram de carregar, senão o
+                documento sairia com seções vazias ("carregando" ≠ "vazio" num documento de custódia). */}
+            <Button type="button" size="sm" variant="secondary" onClick={onPrint} disabled={!printReady} aria-label="Imprimir ou salvar o dossiê">
+              <Printer size={14} aria-hidden /> {printReady ? "Imprimir / Salvar" : "Preparando…"}
+            </Button>
+          </div>
         </div>
 
         <div style={tabsRow}>
@@ -261,10 +278,12 @@ export function VehicleDossieView({
 /** Casca do modal: fia os hooks (useProcessDossie/useStatement/permissões) e delega o corpo ao VehicleDossieView. */
 export function VehicleDossieModal({ processId, onClose }: { readonly processId: string; readonly onClose: () => void }) {
   const { can } = usePermissions();
+  const { activeContext } = useTenantContext();
   const canRead = can("impound:read");
   const canCreateCharge = can("charging:create");
   const canTransition = can("impound:transition");
   const canReadChecklist = can("checklist_runs:read");
+  const orgName = activeContext?.tenantName ?? null;
 
   const [tab, setTab] = useState<DossieTabId>("overview");
   const [chargeModalOpen, setChargeModalOpen] = useState(false);
@@ -276,6 +295,7 @@ export function VehicleDossieModal({ processId, onClose }: { readonly processId:
     loading: statementLoading,
     error: statementError,
     denied: statementDenied,
+    loaded: statementLoaded,
     reload: reloadStatement,
   } = useStatement(canRead ? processId : undefined);
 
@@ -286,6 +306,7 @@ export function VehicleDossieModal({ processId, onClose }: { readonly processId:
     loading: checklistLoading,
     error: checklistError,
     denied: checklistDenied,
+    loaded: checklistLoaded,
     reload: reloadChecklist,
   } = useProcessChecklistRuns(processId, canRead);
 
@@ -294,6 +315,7 @@ export function VehicleDossieModal({ processId, onClose }: { readonly processId:
     items: historyItems,
     loading: historyLoading,
     error: historyError,
+    loaded: historyLoaded,
     reload: reloadHistory,
   } = useCustodyHistory(processId, canRead);
 
@@ -304,8 +326,45 @@ export function VehicleDossieModal({ processId, onClose }: { readonly processId:
     void reloadHistory();
   };
 
+  // Ω-VID PR-10 — Imprimir/Salvar. printReady: só imprime quando o núcleo E os painéis do documento terminaram de
+  // carregar (senão o documento sairia com seções "vazias" que na verdade estão carregando — achado MÉDIA da junta).
+  // Guarda cada painel pela SUA permissão opcional (ciclo 2, MÉDIA): sem charging:read o useStatement nem carrega
+  // (early-return sem setar loaded) — exigir statementLoaded travaria o botão em "Preparando…" para sempre.
+  const canReadCharging = can("charging:read");
+  const printReady = Boolean(
+    process && !loading && historyLoaded && (!canReadCharging || statementLoaded) && (!canReadChecklist || checklistLoaded),
+  );
+
+  // O carimbo "Emitido em" reflete a HORA do clique. Escopa a supressão do app à classe body.dossie-printing (só
+  // durante ESTE print — achado CRÍTICO: uma regra global quebraria todos os outros fluxos de impressão). O effect
+  // dispara window.print() DEPOIS de o issuedAt fresco entrar no DOM; a classe é removida no afterprint.
+  const [issuedAt, setIssuedAt] = useState<string>(() => new Date().toISOString());
+  const printPendingRef = useRef(false);
+  useEffect(() => {
+    if (!printPendingRef.current) return;
+    printPendingRef.current = false;
+    const body = document.body;
+    const done = () => body.classList.remove("dossie-printing");
+    body.classList.remove("dossie-printing"); // limpa resíduo de um ciclo anterior cujo afterprint não disparou
+    body.classList.add("dossie-printing");
+    window.addEventListener("afterprint", done, { once: true });
+    window.print();
+    // Ω-VID PR-10 (junta ciclo 2, MÉDIA) — cleanup REDUNDANTE: se o afterprint não disparar (Safari<13/webviews) e o
+    // modal for fechado, esta função garante que a classe NUNCA fica presa no <body> (senão TODA impressão do app
+    // sairia em branco — a própria falha da CRÍTICA original, por gatilho mais estreito).
+    return () => {
+      window.removeEventListener("afterprint", done);
+      body.classList.remove("dossie-printing");
+    };
+  }, [issuedAt]);
+  const handlePrint = () => {
+    printPendingRef.current = true;
+    setIssuedAt(new Date().toISOString());
+  };
+
   return (
-    <Modal title="Dossiê do veículo" open size="lg" onClose={onClose}>
+    <>
+      <Modal title="Dossiê do veículo" open size="lg" onClose={onClose}>
       <VehicleDossieView
         canRead={canRead}
         loading={loading}
@@ -340,6 +399,8 @@ export function VehicleDossieModal({ processId, onClose }: { readonly processId:
         onReloadHistory={() => void reloadHistory()}
         onReloadAll={reloadAll}
         onLaunchCharge={() => setChargeModalOpen(true)}
+        onPrint={handlePrint}
+        printReady={printReady}
       />
 
       {chargeModalOpen && process ? (
@@ -355,7 +416,33 @@ export function VehicleDossieModal({ processId, onClose }: { readonly processId:
           }}
         />
       ) : null}
-    </Modal>
+      </Modal>
+
+      {/* Ω-VID PR-10 — documento de impressão/salvamento: portal no <body>, ESCONDIDO em tela e revelado só no
+          `@media print` (o dossiê completo, todas as seções read-only empilhadas). Fora do modal para não herdar o
+          overflow/sticky do `.ui-modal--lg` na paginação de impressão. */}
+      {canRead && process
+        ? createPortal(
+            <div className="dossie-print">
+              <DossiePrintDocument
+                process={process}
+                issuedAt={issuedAt}
+                orgName={orgName}
+                yardName={yardName}
+                currentSpot={currentSpot}
+                inspection={inspection}
+                verify={verify}
+                events={events}
+                statement={statement}
+                canReadChecklist={canReadChecklist}
+                checklistRuns={checklistRuns}
+                historyItems={historyItems}
+              />
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
 

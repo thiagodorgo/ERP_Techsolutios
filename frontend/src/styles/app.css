@@ -3971,3 +3971,47 @@
   outline-offset: 2px;
 }
 .kpi-detail-modal:focus { outline: none; }
+
+/* ─────────────────────── Ω-VID PR-10 — Impressão/Salvamento do dossiê ───────────────────────
+   O documento vive num portal .dossie-print no <body>, ESCONDIDO em tela. A supressão do app na impressão é ESCOPADA
+   a `body.dossie-printing` — a classe é ligada SÓ durante o print do dossiê (onPrint) e removida no afterprint. Assim
+   NENHUM outro fluxo de impressão do app (comprovantes de liberação/leilão, OS, multa, manutenção, dano, remunerações)
+   é afetado (achado CRÍTICO da junta PR-10: uma regra global esconderia o #root em TODA impressão → página em branco).
+   window.print() cobre "Imprimir" E "Salvar como PDF" (e-mail/WhatsApp FORA de escopo, decisão do dono). */
+.dossie-print {
+  display: none;
+}
+
+@media print {
+  body.dossie-printing > *:not(.dossie-print) {
+    display: none !important;
+  }
+  body.dossie-printing .dossie-print {
+    display: block !important;
+  }
+  body.dossie-printing .dossie-print__hide {
+    display: none !important;
+  }
+  .dossie-print__doc {
+    padding: 0;
+    color: #0f172a;
+    background: #fff;
+  }
+  .dossie-print__head {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #0f172a;
+  }
+  /* evita cortar no meio da quebra de página (granularidade fina nas tabelas/estados, não só no card) + sem sombra */
+  .dossie-print .ui-card {
+    box-shadow: none;
+    border: 1px solid #e2e8f0;
+  }
+  .dossie-print .ui-table tr,
+  .dossie-print .ui-state {
+    break-inside: avoid;
+  }
+  .dossie-print .ui-table-wrap {
+    overflow: visible;
+  }
+}

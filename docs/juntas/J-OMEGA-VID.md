@@ -445,3 +445,59 @@ regressão DB-gated (3/3 viva). **KPIs:** frontend_smoke **984 → 991** (+7); b
 desta fatia: 7 memória + 3 DB-gated); `blocks_completed` 125→126. Pendência registrada: P-DOSSIE-PAGE-TABS (a página fallback `/patios/processos/:id` ainda
 não reflete as abas Checklist/Histórico do modal — alinhar ou deprecar). Próximo: **PR-10** (Imprimir/Salvar) — FECHA a
 rodada Ω-VID.
+
+### PR-10 — Imprimir/Salvar o dossiê — VOTOS DA JUNTA (2026-08-02) — **APROVADO (ciclo 1 REPROVADO → rework → ciclo 2 → 2 MÉDIA fechadas)**
+
+> Junta adversarial (workflow, 2 revisores): **`cognicao-visual`** (fidelidade/completude do documento) +
+> **`critico-adversarial`** (mecânica do portal/`window.print`/`@media print`, não-regressão). Reprovação registrada em
+> `agent-orchestration/omega/reprovacoes/R-omega-vid-pr10-ciclo1.md`.
+
+Imprimir/Salvar o dossiê (decisão do dono: "salvar e imprimir entram no jogo; e-mail e WhatsApp não"). `window.print()`
+cobre os dois. **`DossiePrintDocument`** (novo, puro) empilha todas as seções **read-only** num documento único
+(cabeçalho org+placa+status+autoridade+local+emissão → Identificação → Vistoria → Integridade → Linha do tempo →
+Checklist do guincho [sob permissão] → Histórico de custódias → Guia de débitos, sem ações). Portal no `<body>`,
+escondido em tela, revelado só no `@media print`.
+
+**Ciclo 1 — REPROVADO 2/2 (mesma CRÍTICA):** a regra `@media print { body > *:not(.dossie-print){display:none} }` era
+**global e incondicional** → escondia o `#root` em TODA impressão do app: os 7 fluxos irmãos (comprovantes de
+liberação/leilão, OS, multa, manutenção, dano, remunerações — incl. recibos legais) imprimiriam **página em branco**,
+e o comprovante aberto de dentro do dossiê seria **sequestrado** (imprimiria o dossiê). Os smoke SSR não pegam (sem
+CSS/print). + MÉDIA (sem data/org) + MÉDIA (botão não espera dados).
+
+**Rework ciclo 1:** CRÍTICA **escopada** a `body.dossie-printing` (ligada só no `handlePrint`, removida no
+`afterprint`) → os outros fluxos ficam intactos; header com **"Emitido em…" + organização** (§allowlist `tenantName`);
+botão gated por **`printReady`** ("Preparando…" até os hooks carregarem); BAIXAs (break-inside fino, `aria-hidden`
+removido).
+
+**Ciclo 2 — re-verificação:** **`cognicao-visual` → APROVADO** (CRÍTICA e as MÉDIAs confirmadas fechadas).
+**`critico-adversarial` → APROVADO_CONDICIONADO** com **2 MÉDIA (fechadas no rework ciclo 2):** (A) faltava **cleanup
+redundante** da classe `dossie-printing` — se o `afterprint` não disparasse e o modal fechasse, a classe ficaria presa
+e reintroduziria a impressão-em-branco → `useEffect` ganhou **cleanup no unmount + remoção defensiva** no início; (B)
+`printReady` exigia `statementLoaded` sem guarda de permissão → travaria "Preparando…" para ator sem `charging:read` →
+agora `(!canReadCharging || statementLoaded)`, espelhando a guarda do checklist.
+
+**Decisão da junta:** **APROVADO** — CRÍTICA fechada e re-verificada; 3 MÉDIA (ciclo 1) + 2 MÉDIA (ciclo 2) fechadas;
+BAIXAs aplicadas/deferidas. **KPIs:** frontend_smoke **991 → 997** (+6); backend inalterado (frontend-only);
+`blocks_completed` 126→127.
+
+---
+
+## 7. Fechamento da RODADA Ω-VID (PR-00..10) — 2026-08-02
+
+**Entregue:** o **dossiê do veículo de terceiro** como entidade de 1ª classe, ponta a ponta:
+- **PR-00..05 (backbone backend):** `ThirdPartyVehicleIdentity` (identidade unificada por veículo, distinta da frota) +
+  elo Checklist↔WorkOrder + schema/backfill/merge-unmerge + sweep que resolve identidade na criação e AUTO-linka o
+  checklist. Concorrência/RLS/isolamento provados vivos; guard de reuso + reconciliação-na-vistoria (SPLIT).
+- **PR-06/07 (UI núcleo):** variante `Modal size="lg"` + **`VehicleDossieModal`** — clicar na vaga ocupada abre o dossiê
+  em **modal grande com abas** + **deep-link `?dossie=`**; sticky head; transição da FSM na Visão Geral.
+- **PR-08:** aba **Checklist do Guincho** (gate duplo `impound:read`+`checklist_runs:read`; `templateName` §allowlist-safe).
+- **PR-09:** aba **Histórico de Custódias** (as passagens do mesmo veículo; query prisma provada viva + regressão DB-gated).
+- **PR-10:** **Imprimir/Salvar** o dossiê completo (`window.print`, documento read-only, `@media print` escopado).
+
+**Intercalado:** **CHECKLIST P0** (data-loss de sync mobile→backend fechado ponta-a-ponta — PR-A backend + PR-B Flutter).
+
+**KPIs finais da rodada:** backend **2107/2107** (real CI), frontend_smoke **997/997**, flutter **835/835**,
+`blocks_completed` **127**. **Juntas:** todas adversariais (workflows); a rigor pegou a CRÍTICA de impressão-global
+(PR-10), a reconciliação-na-vistoria (PR-05), o `25P02`/write-skew (checklist/identidade), a query-sem-regressão-DB
+(PR-09). **Pendências → próxima rodada:** P-DOSSIE-PAGE-TABS, P-IMPOUND-CHK-VISIBILITY (junta de custódia),
+P-CHK-RUN-DTO-NARROW, P-CHK-RUN-ASSIGNEE-SCOPE, P-CHK-TEMPLATE-PRISMA-V7, + **CHECKLIST P1** (builder real).
