@@ -1880,5 +1880,14 @@
     "frontend_smoke_tests": "984/984",
     "blocks_completed": "125",
     "description": "Omega-VID PR-08 — aba \"Checklist do Guincho\" no VehicleDossieModal (dossie do veiculo): exibe (SOMENTE LEITURA) os checklists que o guincheiro preencheu em campo, consumindo o AUTO-link do PR-05 via GET /impound-processes/:id/checklist-runs sob gate DUPLO (impound:read + checklist_runs:read). Junta 3/3 (coordenador-de-acessos APROVADO; critico-adversarial + cognicao-visual APROVADO_CONDICIONADO) com achados aplicados antes do merge. Frontend: adapter/hook/painel novos + aba via dossieTabsFor. Backend: ChecklistRunSummary+DTO+prisma-repo estendidos com templateName (select{name}, §allowlist-safe). Fixes da junta: auto-cura effectiveTab (aba morta), aviso-inline de refresh, identidade pelo nome do template, chip roxo/pending ratificado. frontend_smoke 971->984 (+13); backend 2085->2086 (+1 DTO); blocks 124->125."
+  },
+  {
+    "snapshot_date": "2026-08-01",
+    "version": "OMEGA-VID-PR-09-HISTORICO-CUSTODIAS",
+    "flutter_tests": "835/835",
+    "backend_tests": "2096/2102",
+    "frontend_smoke_tests": "991/991",
+    "blocks_completed": "126",
+    "description": "Omega-VID PR-09 — aba \"Historico de Custodias\" no dossie: as MULTIPLAS passagens do MESMO veiculo (identidade) pelo patio, via endpoint NOVO GET /impound-processes/:id/custody-history (gate impound:read; identidade resolvida server-side, nunca no DTO). Modulo de leitura novo impound.custody-history.* (espelho do checklist-link). Junta 4/4 (coordenador APROVADO; dba/critico/cognicao APROVADO_CONDICIONADO) com achados fechados no proprio PR. frontend_smoke 984->991 (+7); backend +10 (7 memoria + 3 DB-gated que provam a query real); blocks 125->126."
   }
 ]

@@ -223,3 +223,16 @@ export type ChecklistRunSummaryItem = {
   readonly startedAt: string;
   readonly completedAt: string | null;
 };
+
+// Ω-VID PR-09 — item do Histórico de Custódias: uma passagem do MESMO veículo (identidade) pelo pátio. §allowlist:
+// espelha o DTO estreito toCustodyHistoryListDto — sem tenant_id/identity_id/hash. `status` é o enum (a UI aplica
+// rótulo/tom PT-BR). `isCurrent` marca o processo que o dossiê está exibindo.
+export type CustodyHistoryItem = {
+  readonly id: string;
+  readonly vehiclePlate: string | null;
+  readonly vehicleUnidentified: boolean;
+  readonly status: string;
+  readonly enteredAt: string | null;
+  readonly yardName: string | null;
+  readonly isCurrent: boolean;
+};

@@ -1,16 +1,16 @@
 {
   "snapshot_date": "2026-08-01",
-  "version": "OMEGA-VID-PR-08-CHECKLIST-GUINCHO-TAB",
+  "version": "OMEGA-VID-PR-09-HISTORICO-CUSTODIAS",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Omega-VID PR-08 — aba \"Checklist do Guincho\" no VehicleDossieModal (dossie do veiculo): exibe (SOMENTE LEITURA) os checklists que o guincheiro preencheu em campo, consumindo o AUTO-link do PR-05 via GET /impound-processes/:id/checklist-runs sob gate DUPLO (impound:read + checklist_runs:read). Junta 3/3 (coordenador-de-acessos APROVADO; critico-adversarial + cognicao-visual APROVADO_CONDICIONADO) com achados aplicados antes do merge.",
-    "title": "Omega-VID PR-08: aba Checklist do Guincho (frontend consumindo endpoint PR-04/05 + extensao backend templateName). dossieTabsFor(canReadChecklist) => 6 abas SEM checklist_runs:read / 7 COM (aba apos Vistoria de Recepcao). Adapter+hook+painel novos (useProcessChecklistRuns, ChecklistRunsPanel). FIX-JUNTA: (1) MEDIA auto-cura effectiveTab (aba morta/branca quando a permissao cai com o modal aberto -> degrada p/ Visao Geral); (2) BAIXA erro de auto-refresh com dados carregados mantem a tabela + aviso inline (nao apaga); (3) MEDIA identidade da linha pelo NOME do template (backend estende ChecklistRunSummary+DTO com templateName via select{name} — §allowlist-safe, rotulo publico que o guincheiro ja ve; D-Omega-VID-PR08-TEMPLATE-NAME); (4) chip 'Aguardando ciencia'=roxo/pending ratificado (D-CHK-RUN-STATUS-TONE). §allowlist: painel nunca renderiza templateId/relatedEntityId (UUID). Gate duplo = AUTORIDADE backend.",
+    "block": "Omega-VID PR-09 — aba \"Historico de Custodias\" no dossie: as MULTIPLAS passagens do MESMO veiculo (identidade) pelo patio, via endpoint NOVO GET /impound-processes/:id/custody-history (gate impound:read; identidade resolvida server-side, nunca no DTO). Modulo de leitura novo impound.custody-history.* (espelho do checklist-link). Junta 4/4 (coordenador APROVADO; dba/critico/cognicao APROVADO_CONDICIONADO) com achados fechados no proprio PR.",
+    "title": "Omega-VID PR-09: aba Historico de Custodias (full-stack). Backend: modulo impound.custody-history.* + rota GET /impound-processes/:id/custody-history (impound:read; agrupa por identity_id server-side; DTO estreito §allowlist). Frontend: aba em DOSSIE_TABS base (apos Linha do Tempo) + CustodyHistoryPanel/useCustodyHistory/adapter. FIX-JUNTA: teste DB-gated impound-custody-history-db (prova a query real: NULLS LAST + desempate created_at, join yard, isolamento cross-tenant sob RLS); removido processExists redundante (vazio<=>404); dossieTabsFor por-splice; cópia EmptyState honesta; .ui-modal--lg .ui-tabs overflow-x (8 abas). Query prisma provada VIVA pelo dba (grupo/isCurrent/ordem/yard/tenant).",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Omega-VID PR-08: aba Checklist do Guincho (frontend consumindo endpoint PR-04/05 + extensao backend templateName). dossieTabsFor(canReadChecklist) => 6 abas SEM checklist_runs:read / 7 COM (aba apos Vistoria de Recepcao). Adapter+hook+painel novos (useProcessChecklistRuns, ChecklistRunsPanel). FIX-JUNTA: (1) MEDIA auto-cura effectiveTab (aba morta/branca quando a permissao cai com o modal aberto -> degrada p/ Visao Geral); (2) BAIXA erro de auto-refresh com dados carregados mantem a tabela + aviso inline (nao apaga); (3) MEDIA identidade da linha pelo NOME do template (backend estende ChecklistRunSummary+DTO com templateName via select{name} — §allowlist-safe, rotulo publico que o guincheiro ja ve; D-Omega-VID-PR08-TEMPLATE-NAME); (4) chip 'Aguardando ciencia'=roxo/pending ratificado (D-CHK-RUN-STATUS-TONE). §allowlist: painel nunca renderiza templateId/relatedEntityId (UUID). Gate duplo = AUTORIDADE backend.",
+    "summary": "Omega-VID PR-09: aba Historico de Custodias (full-stack). Backend: modulo impound.custody-history.* + rota GET /impound-processes/:id/custody-history (impound:read; agrupa por identity_id server-side; DTO estreito §allowlist). Frontend: aba em DOSSIE_TABS base (apos Linha do Tempo) + CustodyHistoryPanel/useCustodyHistory/adapter. FIX-JUNTA: teste DB-gated impound-custody-history-db (prova a query real: NULLS LAST + desempate created_at, join yard, isolamento cross-tenant sob RLS); removido processExists redundante (vazio<=>404); dossieTabsFor por-splice; cópia EmptyState honesta; .ui-modal--lg .ui-tabs overflow-x (8 abas). Query prisma provada VIVA pelo dba (grupo/isCurrent/ordem/yard/tenant).",
     "status_label": "Omega-VID PR-07 (frontend-only): VehicleDossieModal — dossie do veiculo num Modal size='lg' com 6 ABAS (Visao Geral/Vistoria/Linha do Tempo/Debitos/Liberacao/Leilao+Liquidacao), reusando os componentes e a logica de fetch da ProcessoDossiePage (hook compartilhado useProcessDossie). A vaga OCUPADA do OccupancyMap ABRE o modal (botao onOpenDossie, icone FileText) em vez de navegar; deep-link ?dossie=<processId> sincroniza abrir/fechar/mount (a rota /patios/processos/:id segue como fallback). Abas Checklist(PR-08)/Historico(PR-09) ainda NAO — estrutura pronta. +16 smoke tests (2 arquivos novos) + patios-mapa migrado; frontend_smoke 954 -> 970. Backend/flutter inalterados. --- ANTERIOR (PR-06): Modal do design system ganha size='lg' (base do dossie). +4 smoke; frontend_smoke 950 -> 954. --- ANTERIOR (PR-05 FIX-JUNTA, D-Omega-VID-05-SEED): a junta APROVOU_CONDICIONADO; o critico-adversarial provou 1 MEDIA (a colisao-POR-REUSO nao tinha caminho de correcao — duplicateCandidates/merge/unmerge NAO splitam). CONSERTO: a VISTORIA de recepcao (saveInspection) agora RECONCILIA/RE-APONTA ImpoundProcess.identity_id para a identidade correta da placa CONFIRMADA (resolve-ou-cria pelo helper do PR-05, MESMA tx RLS) => SPLITA a agregacao errada + sobe PROVISIONAL->CONFIRMED. Idempotente; FSM/hash-chain/merge INTOCADOS; sem migracao. backend 2082/2088 -> 2085/2091 (+3 DB-gated reais provando o SPLIT vivo)."
   },
   "metrics": {
@@ -21,16 +21,16 @@
       "note": "PR-B FIX-JUNTA (D-CHK-DISPATCH-CREATE, lado Flutter): +13 test() novos sobre 822 — 2 de MIGRACAO REAL (app_database_migration_test: schema 2->13 e 1->13 abrem sqlite file num user_version antigo e exercitam o onUpgrade de verdade, provando que a guarda from>=3/from>=2 evita 'duplicate column name' e as colunas ADD chegam; nenhum teste exercitava onUpgrade antes, todos usavam openInMemory) + 11 (pr_b_junta_fixes_test: marker sem component_id lanca e nao enfileira; lote ordenado divergence->ack->complete; 409 ACKNOWLEDGEMENT_NOT_REQUIRED vira failed retryavel; completeRun has_divergence true/false real; downloadPendingRuns baixa e carimba a run offline; blob preservado em scan_failed/pending_review; widget test do AwaitingDispatchView acentuado). Execucao REAL da suite Flutter 835 pass/0 falha/0 skip (Flutter 3.41.6). Regressoes b088/b102/b092/b118/b085/b087/b122 verdes. dart format 0-changed; flutter analyze No issues; pubspec/lock INTOCADOS (zero-dep). Sobre 822."
     },
     "frontend_smoke_tests": {
-      "value": 984,
-      "total": 984,
-      "display": "984/984",
-      "note": "Omega-VID PR-08 (aba Checklist do Guincho): +13 smoke reais (execucao real 984 pass/0 fail/0 skip, sobre 971 do PR-07). Novos: patios-dossie-checklist.smoke.test.tsx (adapter tolerante snake/camel+templateName, painel pelo NOME do template, §allowlist sem UUID, estados denied/loading/error/empty, fix BAIXA aviso-inline de refresh, integracao + AUTO-CURA effectiveTab) + split no modal (6 abas sem perm / 7 com). Backend focado tests/impound-checklist-link.test.ts 9->10 (DTO templateName + §allowlist tenant_id)."
+      "value": 991,
+      "total": 991,
+      "display": "991/991",
+      "note": "Omega-VID PR-09 (aba Historico de Custodias): +7 smoke reais (execucao real 991 pass/0 fail/0 skip, sobre 984 do PR-08). patios-dossie-history.smoke.test.tsx (adapter snake/camel, painel pela placa/situacao/entrada/patio + linha atual destacada, §allowlist sem UUID, estados, aviso-inline, integracao) + baseProps dos modais atualizados."
     },
     "backend_tests": {
-      "value": 2086,
-      "total": 2092,
-      "display": "2086/2092",
-      "note": "Omega-VID PR-08: +1 test() no backend (tests/impound-checklist-link.test.ts DTO: templateName sai + tenant_id NUNCA no JSON), sobre 2085/2091 do PR-05. A extensao ChecklistRunSummary+DTO+prisma-repo com templateName (select{name}) e coberta; relacionados verdes (impound-trigger-durability 28, mobile-backend-contracts 22). tsc+build+lint limpos."
+      "value": 2096,
+      "total": 2102,
+      "display": "2096/2102",
+      "note": "Omega-VID PR-09: +10 test() backend (tests/impound-custody-history.test.ts 7 memoria: agrupamento/isCurrent/ordem/sem-identidade/tenant-scoped/404/DTO §allowlist/HTTP gate finance-403 manager-404; + tests/impound-custody-history-db.test.ts 3 DB-gated: query PRISMA real provada viva — NULLS LAST + desempate created_at, join yard, isolamento cross-tenant). Sobre 2086 do PR-08. Numero reconciliado com a suite completa. tsc/build/lint limpos."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 125,
-      "display": "125",
-      "note": "Omega-VID PR-08 (Checklist do Guincho) — fatia vertical: aba do dossie exibe os checklists de campo do guincheiro sob gate duplo, com identidade pelo nome do template. Sobre 124 do PR-07."
+      "value": 126,
+      "display": "126",
+      "note": "Omega-VID PR-09 (Historico de Custodias) — fatia vertical: aba do dossie lista as passagens do mesmo veiculo pelo patio (agrupamento por identidade server-side). Sobre 125 do PR-08."
     },
     "mobile_backend_contracts": {
       "value": 18,

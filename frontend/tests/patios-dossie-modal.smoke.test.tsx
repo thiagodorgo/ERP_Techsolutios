@@ -85,12 +85,16 @@ const baseProps: VehicleDossieViewProps = {
   checklistLoading: false,
   checklistError: null,
   checklistDenied: false,
+  historyItems: [],
+  historyLoading: false,
+  historyError: null,
   context: {},
   activeTab: "overview",
   onTabChange: () => {},
   onReload: () => {},
   onReloadStatement: () => {},
   onReloadChecklist: () => {},
+  onReloadHistory: () => {},
   onReloadAll: () => {},
   onLaunchCharge: () => {},
 };
@@ -101,34 +105,33 @@ function renderView(overrides: Partial<VehicleDossieViewProps> = {}): string {
 
 // ─────────────────────────────── Estrutura de abas ───────────────────────────────
 
-test("sem checklist_runs:read: 6 abas base (Checklist do Guincho NÃO aparece; Histórico fica para PR-09)", () => {
+test("sem checklist_runs:read: 7 abas base (Histórico de Custódias sempre presente; Checklist do Guincho NÃO)", () => {
   const html = renderView({ canReadChecklist: false });
-  for (const label of ["Visão Geral", "Vistoria de Recepção", "Linha do Tempo", "Débitos", "Liberação", "Leilão/Liquidação"]) {
+  for (const label of ["Visão Geral", "Vistoria de Recepção", "Linha do Tempo", "Histórico de Custódias", "Débitos", "Liberação", "Leilão/Liquidação"]) {
     assert.match(html, new RegExp(label));
   }
   assert.match(html, /role="tablist"/);
   const tabCount = (html.match(/role="tab"/g) ?? []).length;
-  assert.equal(tabCount, 6, "exatamente 6 botões de aba sem a permissão");
-  // a UI molda/esconde: sem checklist_runs:read a aba nem aparece (gate duplo — o backend é a autoridade)
+  assert.equal(tabCount, 7, "7 botões de aba sem a permissão de checklist (Histórico já está sob impound:read)");
+  // a UI molda/esconde: sem checklist_runs:read a aba de checklist nem aparece (gate duplo — o backend é a autoridade)
   assert.doesNotMatch(html, /Checklist do Guincho/);
-  assert.doesNotMatch(html, /Histórico de Custódias/); // PR-09
   // a11y: a aba ativa marca aria-selected
   assert.match(html, /aria-selected="true"/);
-  assert.equal(DOSSIE_TABS.length, 6);
+  assert.equal(DOSSIE_TABS.length, 7);
 });
 
-test("com checklist_runs:read: a aba 'Checklist do Guincho' entra (7 abas), logo após a Vistoria de Recepção (PR-08)", () => {
+test("com checklist_runs:read: a aba 'Checklist do Guincho' entra (8 abas), logo após a Vistoria de Recepção (PR-08)", () => {
   const html = renderView({ canReadChecklist: true });
   assert.match(html, /Checklist do Guincho/);
   const tabCount = (html.match(/role="tab"/g) ?? []).length;
-  assert.equal(tabCount, 7, "7 botões de aba com a permissão");
+  assert.equal(tabCount, 8, "8 botões de aba com a permissão");
   // posição: entre "Vistoria de Recepção" e "Linha do Tempo"
   const idxVistoria = html.indexOf("Vistoria de Recepção");
   const idxChecklist = html.indexOf("Checklist do Guincho");
   const idxTimeline = html.indexOf("Linha do Tempo");
   assert.ok(idxVistoria < idxChecklist && idxChecklist < idxTimeline, "Checklist entre Vistoria e Linha do Tempo");
-  assert.equal(dossieTabsFor(true).length, 7);
-  assert.equal(dossieTabsFor(false).length, 6);
+  assert.equal(dossieTabsFor(true).length, 8);
+  assert.equal(dossieTabsFor(false).length, 7);
 });
 
 test("cabeçalho do modal: placa (getVehicleLabel) + chip de status; §allowlist não vaza id do processo nem 'tenant'", () => {

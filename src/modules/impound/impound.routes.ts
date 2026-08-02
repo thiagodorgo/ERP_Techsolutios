@@ -10,6 +10,8 @@ import { NotificationController, type NotificationServiceResolver } from "./impo
 import { createDefaultNotificationService } from "./impound.notifications.service.js";
 import { ImpoundChecklistLinkController, type ImpoundChecklistLinkServiceResolver } from "./impound.checklist-link.controller.js";
 import { createDefaultImpoundChecklistLinkService } from "./impound.checklist-link.service.js";
+import { ImpoundCustodyHistoryController, type ImpoundCustodyHistoryServiceResolver } from "./impound.custody-history.controller.js";
+import { createDefaultImpoundCustodyHistoryService } from "./impound.custody-history.service.js";
 
 type ControllerResult = {
   readonly status?: number;
@@ -40,11 +42,13 @@ export function createImpoundRouter(
   resolveService: ImpoundServiceResolver = createDefaultImpoundService,
   resolveNotificationService: NotificationServiceResolver = createDefaultNotificationService,
   resolveChecklistLinkService: ImpoundChecklistLinkServiceResolver = createDefaultImpoundChecklistLinkService,
+  resolveCustodyHistoryService: ImpoundCustodyHistoryServiceResolver = createDefaultImpoundCustodyHistoryService,
 ): Router {
   const router = Router();
   const controller = new ImpoundController(resolveService);
   const notificationController = new NotificationController(resolveNotificationService);
   const checklistLinkController = new ImpoundChecklistLinkController(resolveChecklistLinkService);
+  const custodyHistoryController = new ImpoundCustodyHistoryController(resolveCustodyHistoryService);
 
   router.use(tenantContextMiddleware);
   router.use(createPersistentRbacContextMiddleware());
@@ -200,6 +204,17 @@ export function createImpoundRouter(
     requirePermission("checklist_runs:read"),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await checklistLinkController.listChecklistRuns(request));
+    }),
+  );
+
+  // ── Ω-VID PR-09: Histórico de Custódias ─────────────────────────────────────────────────────────────────────
+  // Os outros processos de custódia do MESMO veículo (identidade). Gate impound:read (mesma do dossiê — resumo
+  // estreito da mesma classe de dado que o ator já lê; identity_id resolvido server-side, nunca sai no DTO).
+  router.get(
+    "/impound-processes/:processId/custody-history",
+    requirePermission(IMPOUND_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await custodyHistoryController.listCustodyHistory(request));
     }),
   );
 
