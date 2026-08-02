@@ -1,4 +1,6 @@
 import type {
+  ChecklistRunStatus,
+  ChecklistRunSummaryItem,
   CustodyEventItem,
   CustodyEventType,
   ImpoundStatus,
@@ -487,4 +489,67 @@ function readBoolean(input: Record<string, unknown> | undefined, keys: readonly 
 
 function normalize(value: string): string {
   return value.trim().toLowerCase();
+}
+
+// ─────────────────────── Ω-VID PR-08 — Checklist do Guincho (aba do dossiê) ───────────────────────
+// Rótulos/tons PT-BR do estado da ChecklistRun (o dossiê só LÊ; o preenchimento é do guincheiro no mobile).
+const CHECKLIST_RUN_STATUSES: readonly ChecklistRunStatus[] = [
+  "in_progress", "completed", "completed_with_divergence", "pending_acknowledgement", "cancelled",
+];
+
+const CHECKLIST_RUN_STATUS_LABELS: Record<ChecklistRunStatus, string> = {
+  in_progress: "Em preenchimento",
+  completed: "Concluído",
+  completed_with_divergence: "Concluído com avarias",
+  pending_acknowledgement: "Aguardando ciência",
+  cancelled: "Cancelado",
+};
+
+const CHECKLIST_RUN_STATUS_TONES: Record<ChecklistRunStatus, ChipTone> = {
+  in_progress: "info",
+  completed: "success",
+  completed_with_divergence: "warning",
+  pending_acknowledgement: "pending",
+  cancelled: "default",
+};
+
+export function getChecklistRunStatusLabel(status: ChecklistRunStatus | string | null | undefined): string {
+  return CHECKLIST_RUN_STATUS_LABELS[(status ?? "in_progress") as ChecklistRunStatus] ?? "Em preenchimento";
+}
+
+export function getChecklistRunStatusTone(status: ChecklistRunStatus | string | null | undefined): ChipTone {
+  return CHECKLIST_RUN_STATUS_TONES[(status ?? "in_progress") as ChecklistRunStatus] ?? "default";
+}
+
+function adaptChecklistRun(input: unknown): ChecklistRunSummaryItem | null {
+  const record = readRecord(input);
+  if (!record) return null;
+  const id = readString(record, ["id"]);
+  const templateId = readString(record, ["templateId", "template_id"]);
+  const startedAt = readString(record, ["startedAt", "started_at"]);
+  if (!id || !templateId || !startedAt) return null;
+  const rawStatus = readString(record, ["status"]);
+  const status = (CHECKLIST_RUN_STATUSES as readonly string[]).includes(rawStatus ?? "")
+    ? (rawStatus as ChecklistRunStatus)
+    : "in_progress";
+  return {
+    id,
+    templateId,
+    templateName: readString(record, ["templateName", "template_name"]) ?? null,
+    templateVersion: readNumber(record, ["templateVersion", "template_version"]) ?? 1,
+    status,
+    relatedEntityType: readString(record, ["relatedEntityType", "related_entity_type"]) ?? null,
+    relatedEntityId: readString(record, ["relatedEntityId", "related_entity_id"]) ?? null,
+    startedAt,
+    completedAt: readString(record, ["completedAt", "completed_at"]) ?? null,
+  };
+}
+
+export function adaptChecklistRunsResponse(response: unknown): ChecklistRunSummaryItem[] {
+  const payload = readRecord(response);
+  const dataRecord = readRecord(payload?.data);
+  const itemsSource = Array.isArray(response) ? response : readArray(dataRecord?.items) ?? readArray(payload?.items) ?? [];
+  const runs = itemsSource.map((item) => adaptChecklistRun(item)).filter((item): item is ChecklistRunSummaryItem => Boolean(item));
+  // Mais recentes primeiro (startedAt desc) — o guincheiro/operador vê o último preenchimento no topo.
+  return runs.sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 }

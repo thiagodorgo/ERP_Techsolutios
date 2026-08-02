@@ -961,3 +961,29 @@ Fecha o cluster P-Ω3F6-STATUS-BYPASS + TERMINAL-GUARD + ZERO-ATOMICIDADE (pré-
   (`reconcileIdentityFromConfirmedPlate` na MESMA tx da vistoria), `impound.intake.types.ts`/`impound.repository.ts`
   (campo `confirmedPlateKey`, InMemory ignora — prova DB-gated) + 3 test() DB-gated novos. FSM/hash-chain/merge
   INTOCADOS; sem migração.
+
+## D-CHK-RUN-STATUS-TONE (2026-08-01) — Tom do chip de estado da ChecklistRun na aba "Checklist do Guincho" (Ω-VID PR-08)
+
+**Contexto:** a junta (cognição-visual) levantou §A2 que o chip de `pending_acknowledgement` ("Aguardando ciência")
+usa o tom `pending` (ROXO, `.ui-tone-pending`), não âmbar. NÃO há protótipo desta view web nova (o dossiê em abas é
+inédito), então não é divergência-contra-protótipo (que teria tolerância-zero).
+
+**Decisão (ratificada, mantém a implementação):** o mapa de tons é
+`in_progress→info (azul)`, `completed→success (verde)`, `completed_with_divergence→warning (âmbar)`,
+`pending_acknowledgement→pending (roxo)`, `cancelled→default (neutro)`. São significados DISTINTOS —
+"concluído com avarias" é um ALERTA (âmbar) e "aguardando ciência" é uma ESPERA (roxo/pending, idiomático no repo
+para estados de espera). Agrupar ambos em âmbar perderia a distinção. O tom `pending` é o idioma do design system
+para pendência/espera. Registrado para não reabrir por memória (§A2). Se a junta de custódia/produto quiser alinhar
+a um protótipo futuro, revisitar aqui.
+
+## D-Ω-VID-PR08-TEMPLATE-NAME (2026-08-01) — `templateName` no resumo estreito de ChecklistRun é §allowlist-safe
+
+**Contexto:** a MÉDIA da cognição-visual apontou que a linha da aba "Checklist do Guincho" era pobre (toda run
+repetia o rótulo genérico). Para dar identidade real, o resumo estreito `ChecklistRunSummary` ganhou `templateName`
+(NOME do formulário), via `select: { name: true }` no `include` do template (nenhum outro campo do template vaza).
+
+**Decisão:** o NOME do template é um RÓTULO PÚBLICO que o guincheiro já vê no app ao preencher o checklist — NÃO é
+PII/hash-chain/tenant/token/path/bucket/storage-key/binário. Expô-lo sob o MESMO gate duplo (`impound:read` +
+`checklist_runs:read`) é §allowlist-safe (§2.8) — é classe de dado que o próprio ator já lê. Reconciliação §A2 da
+auditoria do coordenador-de-acessos (que aprovou o gate ANTES desta extensão). O DTO segue sem `tenant_id`
+(teste de DTO novo prova). Ver ata `docs/juntas/J-OMEGA-VID.md` (PR-08).
