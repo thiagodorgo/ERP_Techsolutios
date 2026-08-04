@@ -1,16 +1,16 @@
 {
   "snapshot_date": "2026-08-01",
-  "version": "FIX-DOSSIE-PAGE-TABS",
+  "version": "CHK-P1-PR01-COMPONENT-TYPES",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "P-DOSSIE-PAGE-TABS (limpeza de pendencia): a pagina fallback /patios/processos/:id (ProcessoDossiePage) passa a refletir as secoes do modal do dossie — CustodyHistoryPanel (Historico de Custodias, PR-09) + ChecklistRunsPanel (Checklist do Guincho, PR-08, gated checklist_runs:read), reusando os mesmos paineis puros e hooks. Frontend-only.",
-    "title": "P-DOSSIE-PAGE-TABS (limpeza de pendencia): a pagina fallback /patios/processos/:id (ProcessoDossiePage) passa a refletir as secoes do modal do dossie — CustodyHistoryPanel (Historico de Custodias, PR-09) + ChecklistRunsPanel (Checklist do Guincho, PR-08, gated checklist_runs:read), reusando os mesmos paineis puros e hooks. Frontend-only.",
+    "block": "CHECKLIST P1 PR-01: alinha os tipos de componente single_choice/multi_choice/signature (enum backend + catalogo + validator tipado [escolha exige config.options] + uniao/paleta do builder web) e plumba as opcoes de escolha ao topo dos DTOs mobile como [{value,label}] (render + snapshot). Junta critico-adversarial APROVADO_CONDICIONADO: a ALTA do render mobile do backend fica ABERTA (P-CHK-RENDER-ENVELOPE, pre-existente, app renderiza dos seeds) — honestidade §A6.",
+    "title": "CHECKLIST P1 PR-01: alinha os tipos de componente single_choice/multi_choice/signature (enum backend + catalogo + validator tipado [escolha exige config.options] + uniao/paleta do builder web) e plumba as opcoes de escolha ao topo dos DTOs mobile como [{value,label}] (render + snapshot). Junta critico-adversarial APROVADO_CONDICIONADO: a ALTA do render mobile do backend fica ABERTA (P-CHK-RENDER-ENVELOPE, pre-existente, app renderiza dos seeds) — honestidade §A6.",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "P-DOSSIE-PAGE-TABS (limpeza de pendencia): a pagina fallback /patios/processos/:id (ProcessoDossiePage) passa a refletir as secoes do modal do dossie — CustodyHistoryPanel (Historico de Custodias, PR-09) + ChecklistRunsPanel (Checklist do Guincho, PR-08, gated checklist_runs:read), reusando os mesmos paineis puros e hooks. Frontend-only.",
+    "summary": "CHECKLIST P1 PR-01: alinha os tipos de componente single_choice/multi_choice/signature (enum backend + catalogo + validator tipado [escolha exige config.options] + uniao/paleta do builder web) e plumba as opcoes de escolha ao topo dos DTOs mobile como [{value,label}] (render + snapshot). Junta critico-adversarial APROVADO_CONDICIONADO: a ALTA do render mobile do backend fica ABERTA (P-CHK-RENDER-ENVELOPE, pre-existente, app renderiza dos seeds) — honestidade §A6.",
     "status_label": "Omega-VID PR-07 (frontend-only): VehicleDossieModal — dossie do veiculo num Modal size='lg' com 6 ABAS (Visao Geral/Vistoria/Linha do Tempo/Debitos/Liberacao/Leilao+Liquidacao), reusando os componentes e a logica de fetch da ProcessoDossiePage (hook compartilhado useProcessDossie). A vaga OCUPADA do OccupancyMap ABRE o modal (botao onOpenDossie, icone FileText) em vez de navegar; deep-link ?dossie=<processId> sincroniza abrir/fechar/mount (a rota /patios/processos/:id segue como fallback). Abas Checklist(PR-08)/Historico(PR-09) ainda NAO — estrutura pronta. +16 smoke tests (2 arquivos novos) + patios-mapa migrado; frontend_smoke 954 -> 970. Backend/flutter inalterados. --- ANTERIOR (PR-06): Modal do design system ganha size='lg' (base do dossie). +4 smoke; frontend_smoke 950 -> 954. --- ANTERIOR (PR-05 FIX-JUNTA, D-Omega-VID-05-SEED): a junta APROVOU_CONDICIONADO; o critico-adversarial provou 1 MEDIA (a colisao-POR-REUSO nao tinha caminho de correcao — duplicateCandidates/merge/unmerge NAO splitam). CONSERTO: a VISTORIA de recepcao (saveInspection) agora RECONCILIA/RE-APONTA ImpoundProcess.identity_id para a identidade correta da placa CONFIRMADA (resolve-ou-cria pelo helper do PR-05, MESMA tx RLS) => SPLITA a agregacao errada + sobe PROVISIONAL->CONFIRMED. Idempotente; FSM/hash-chain/merge INTOCADOS; sem migracao. backend 2082/2088 -> 2085/2091 (+3 DB-gated reais provando o SPLIT vivo)."
   },
   "metrics": {
@@ -24,13 +24,13 @@
       "value": 997,
       "total": 997,
       "display": "997/997",
-      "note": "P-DOSSIE-PAGE-TABS: reuso dos paineis puros ja testados (ChecklistRunsPanel/CustodyHistoryPanel) na ProcessoDossiePage; sem novo teste (997/997 do PR-10, execucao real). tsc/build limpos."
+      "note": "CHK P1 PR-01: uniao/paleta/labels do builder web ganham 3 tipos (tsc+smoke cobrem); sem novo teste frontend (997/997)."
     },
     "backend_tests": {
-      "value": 2110,
-      "total": 2110,
-      "display": "2110/2110",
-      "note": "P-DOSSIE-PAGE-TABS e FRONTEND-ONLY — backend inalterado (2110/2110, D-KPI-PER-PR §C3.3)."
+      "value": 2115,
+      "total": 2115,
+      "display": "2115/2115",
+      "note": "CHECKLIST P1 PR-01: +5 test() (tests/checklist-routes.test.ts +1 validador de escolha[options]->400/201; tests/checklist-mobile-choice-dto.test.ts 4: itens+render+snapshot emitem options no topo [{value,label}], observation/signature nao). Sobre 2110 do #328. Suite checklist 40/40. Sem migracao. ALTA P-CHK-RENDER-ENVELOPE registrada aberta."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 129,
-      "display": "129",
-      "note": "P-DOSSIE-PAGE-TABS (pagina fallback alinhada ao modal: Checklist + Historico). Sobre 128 do fix Prisma v7."
+      "value": 130,
+      "display": "130",
+      "note": "CHECKLIST P1 PR-01 (tipos de componente + plumbing de opcoes). Sobre 129 do #329."
     },
     "mobile_backend_contracts": {
       "value": 18,

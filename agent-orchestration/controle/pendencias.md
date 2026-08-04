@@ -1420,3 +1420,31 @@ histórico. Não é bug (a página é fallback; o ponto de entrada primário é 
 de completude entre os dois caminhos. Decidir numa fatia própria: (a) alinhar a página ao modal (reusar
 `ChecklistRunsPanel`/`CustodyHistoryPanel` + hooks — baratos, já são componentes puros), OU (b) deprecar a página em
 favor do modal (redirecionar `/patios/processos/:id` para abrir o modal). Registrado (§A2).
+
+## P-CHK-RENDER-ENVELOPE (2026-08-03) — O run screen mobile renderiza dos SEEDS, não do backend (ALTA ABERTA, pré-existente)
+
+Junta do CHECKLIST P1 PR-01 (critico-adversarial, **2 ciclos** de rastreamento). **Achado ALTA que continua ABERTO.**
+A fonte REAL do run screen do guincheiro é `checklist_run_screen.dart:57 → repo.getSchema → _remoteApi.fetchChecklistRender`
+= `GET /mobile/checklists/:id/render` → controller `renderMobileChecklist` → **`toChecklistTemplateComponentDto`**. O
+parser mobile `_schemaFromJson` (`checklist_remote_api.dart:409-421`) faz cast de `j['checklistId']`/`j['title']`/
+`j['version'] as String` e NÃO desembrulha `{data:{...}}`; mas o backend devolve `name`, `version` NUMÉRICO, sem
+`checklistId`, dentro de `{data}` → **o cast estoura e o app cai no fallback de SEEDS**. Consequência: **NENHUM
+checklist authorado na web renderiza no app hoje — de tipo NENHUM** (o app usa os seeds hardcoded). Pré-existente,
+NÃO introduzido pelo PR-01.
+
+**Fechar exige (todos):** (a) `toChecklistTemplateComponentDto` emitir `options: [{value,label}]` no topo — **FEITO no
+PR-01** (era o DTO certo; ready-quando-envelope-resolver); (b) alinhar o ENVELOPE (`fetchChecklistRender` desembrulhar
+`data`; `_schemaFromJson` tolerar `name`↔`title`, `version` numérico, ausência de `checklistId`) — Flutter; (c) um
+**teste de contrato render→field** com o payload REAL (envelope incluso) provando `field.options != null`. Alternativa
+de arquitetura: (d) rewire do run screen para renderizar do SNAPSHOT congelado no despacho (o correto — versão
+congelada, não a viva; hoje `getSchema` não lê snapshot). Nesse caso o plumbing do PR-01 em `toMobileChecklistTemplateDto`/
+`buildChecklistSnapshot` passa a valer. **Alvo: PR-08 (reconciliação mobile)** desta rodada. §A2/§A6: ALTA registrada
+ABERTA, não escondida — o PR-01 alinhou os TIPOS e o AUTHORING web + plumbou os DOIS DTOs, mas NÃO fecha o render mobile.
+
+## P-CHK-CATALOG-EXHAUSTIVE (2026-08-03) — Catálogo de componentes é array, não Record (tsc não garante cobertura) (BAIXA)
+
+Junta do CHECKLIST P1 PR-01 (critico-adversarial, menor). `CHECKLIST_COMPONENT_CATALOG` (`checklist.components.ts`) é
+um ARRAY hand-ordered, não um `Record<ChecklistComponentType, ...>` — então o `tsc` NÃO garante que todo tipo da união
+tenha entrada no catálogo (um tipo novo sem entrada passaria silencioso; hoje está completo). Considerar reestruturar
+para um Record keyed por tipo (o `tsc` passa a exigir cobertura), preservando a ordem via um array de ordenação. Fora
+do escopo do PR-01. Registrado.

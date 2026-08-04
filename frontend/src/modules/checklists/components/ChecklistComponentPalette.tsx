@@ -1,4 +1,4 @@
-import { Camera, CheckSquare, ClipboardCheck, FileSignature, GitCompare, ImagePlus, MapPin } from "lucide-react";
+import { Camera, CheckSquare, CircleDot, ClipboardCheck, FileSignature, GitCompare, ImagePlus, ListChecks, MapPin, PenLine } from "lucide-react";
 
 import { Button } from "../../../components/ui";
 import type { TenantChecklistComponentCatalogItem, TenantChecklistComponentType } from "../types";
@@ -11,6 +11,9 @@ const componentIconByType: Record<TenantChecklistComponentType, typeof CheckSqua
   comparison: GitCompare,
   acknowledgement: FileSignature,
   before_after: ImagePlus,
+  single_choice: CircleDot,
+  multi_choice: ListChecks,
+  signature: PenLine,
 };
 
 export function ChecklistComponentPalette({

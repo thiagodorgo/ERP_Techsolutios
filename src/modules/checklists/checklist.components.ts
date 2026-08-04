@@ -70,4 +70,32 @@ export const CHECKLIST_COMPONENT_CATALOG: readonly ChecklistComponentCatalogItem
       requireBothStages: true,
     },
   },
+  // CHECKLIST P1 PR-01 — tipos que o mobile ja renderiza (singleChoice/multiChoice/signature). defaultConfig traz
+  // um esqueleto autoravel; o editor tipado (opcoes, etc.) vem na PR-02. A validacao (choice exige options nao-vazio)
+  // esta no validator.
+  {
+    type: "single_choice",
+    label: "Escolha unica",
+    description: "Uma opcao entre varias (radio). Exige a lista de opcoes.",
+    defaultConfig: {
+      options: ["Opcao 1", "Opcao 2"],
+    },
+  },
+  {
+    type: "multi_choice",
+    label: "Multipla escolha",
+    description: "Uma ou mais opcoes (checkbox). Exige a lista de opcoes.",
+    defaultConfig: {
+      options: ["Opcao 1", "Opcao 2"],
+      minSelected: 0,
+    },
+  },
+  {
+    type: "signature",
+    label: "Assinatura",
+    description: "Captura a assinatura do responsavel (cliente/condutor) no ato.",
+    defaultConfig: {
+      requireName: false,
+    },
+  },
 ];

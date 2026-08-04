@@ -6,6 +6,39 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-03 - CHECKLIST P1 PR-01 (tipos single_choice/multi_choice/signature + plumbing de opções)
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 835 / 835 (inalterado) |
+| Backend Tests | 2115 / 2115 (2110 → 2115, +5) |
+| Frontend Smoke | 997 / 997 (inalterado; tsc+smoke cobrem a paleta) |
+| Blocos Entregues | 130 (129 → 130) |
+
+**1º PR da rodada CHECKLIST P1.** Alinha os tipos de componente **`single_choice`**, **`multi_choice`**, **`signature`**
+— que o app Flutter já tem no enum, mas que o backend e o builder web não conheciam: entram no enum
+(`checklist.types.ts`), no catálogo (`checklist.components.ts`), no validator tipado (escolha **exige**
+`config.options` — lista não-vazia) e na união/paleta do builder web (a paleta lê o catálogo via
+`GET /tenant/checklist-components`). O builder web agora authora os 3 tipos.
+
+**Junta `critico-adversarial` → APROVADO_CONDICIONADO** (2 ciclos de rastreamento): a premissa "o mobile já renderiza
+os três" era FALSA. O crítico rastreou que o **run screen renderiza dos SEEDS, não do backend** — o parser do envelope
+de `/render` está quebrado (`_schemaFromJson` espera `title`/`checklistId`/`version as String`, não desembrulha
+`{data}`) → **nenhum checklist authorado na web renderiza no app hoje, de tipo nenhum**. O PR-01 plumbou as opções de
+escolha no topo dos DTOs (`toChecklistTemplateComponentDto` — a fonte do `/render` — e `toMobileChecklistTemplateDto`/
+snapshot) como `[{value,label}]`, mas o **loop mobile NÃO fecha** até o envelope ser resolvido. **Honestidade (§A6):** a
+ALTA fica **ABERTA** como **P-CHK-RENDER-ENVELOPE** (a fechar na PR-08 de reconciliação mobile: alinhar o envelope +
+teste de contrato render→field, OU rewire do run screen para o snapshot). Também **P-CHK-CATALOG-EXHAUSTIVE** (catálogo
+array, não Record). O diff é **seguro para merge** (sem regressão); a condição da junta era não vender o fechamento do
+loop — cumprida.
+
+**+5 test()** (validador de escolha 400/201 + 4 de DTO: `toChecklistTemplateComponentDto`/`toMobileChecklistTemplateDto`/
+snapshot emitem `options` no topo; observation/signature não). Suíte checklist **40/40**. **Sem migração.** Escopo:
+`src/modules/checklists/{types,components,validator,dto}.ts` + `frontend/src/modules/checklists/{types,constants,components/ChecklistComponentPalette}` + testes + `Kpis/*` + docs. Intocado: `prisma/schema`, `mobile/**` (a plumbagem
+é backend-only; o fechamento mobile é a PR-08).
+
 ## 2026-08-02 - P-DOSSIE-PAGE-TABS (página fallback do dossiê alinhada às abas do modal)
 
 ### Resultado

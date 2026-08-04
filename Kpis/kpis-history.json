@@ -1916,5 +1916,14 @@
     "frontend_smoke_tests": "997/997",
     "blocks_completed": "129",
     "description": "P-DOSSIE-PAGE-TABS (limpeza de pendencia): a pagina fallback /patios/processos/:id (ProcessoDossiePage) passa a refletir as secoes do modal do dossie — CustodyHistoryPanel (Historico de Custodias, PR-09) + ChecklistRunsPanel (Checklist do Guincho, PR-08, gated checklist_runs:read), reusando os mesmos paineis puros e hooks. Frontend-only. Frontend-only (reuso de paineis testados); backend/flutter inalterados; blocks 128->129."
+  },
+  {
+    "snapshot_date": "2026-08-03",
+    "version": "CHK-P1-PR01-COMPONENT-TYPES",
+    "flutter_tests": "835/835",
+    "backend_tests": "2115/2115",
+    "frontend_smoke_tests": "997/997",
+    "blocks_completed": "130",
+    "description": "CHECKLIST P1 PR-01: alinha os tipos de componente single_choice/multi_choice/signature (enum backend + catalogo + validator tipado [escolha exige config.options] + uniao/paleta do builder web) e plumba as opcoes de escolha ao topo dos DTOs mobile como [{value,label}] (render + snapshot). Junta critico-adversarial APROVADO_CONDICIONADO: a ALTA do render mobile do backend fica ABERTA (P-CHK-RENDER-ENVELOPE, pre-existente, app renderiza dos seeds) — honestidade §A6. backend 2110->2115 (+5); frontend/flutter inalterados; blocks 129->130."
   }
 ]
