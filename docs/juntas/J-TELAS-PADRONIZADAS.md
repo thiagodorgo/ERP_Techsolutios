@@ -64,3 +64,28 @@ mantidos; app.css 100% aditivo).
 2. "Ver tudo" de Últimos eventos → `/work-orders` (protótipo vai à Auditoria) → decidir no **PR-C**.
 3. Selo de "Em andamento" deriva da contagem global de atrasadas (associação semântica frouxa).
 4. 5º KPI = "Concluídas" total (hint "no total") vs "Concluídas hoje" do design — degradação honesta, agora declarada.
+
+### PR-B — Ordens de Serviço — VOTOS DA JUNTA (2026-08-04) — **APROVADO (condição de 1 linha fechada)**
+
+`cognicao-visual` (forense contra o `sc_os`, hex a hex): **APROVADO_CONDICIONADO → condição fechada antes do merge.**
+- **MÉDIA-1 (fechada):** a variante `--sm` do StatusPill fora aplicada na SITUAÇÃO da tabela — mas no protótipo a
+  tabela de OS usa a pill **base** (10.5px/3px 9px, `.dc.html:309`); a pill 10px pertence às **listas do Dashboard**
+  (`:191`/`:217`). **RETIFICAÇÃO da ata do PR-A:** a BAIXA 1 ("tabela de OS usa pills 10px em massa") estava
+  **factualmente incorreta** contra o protótipo. Fix: `sm` removido da SITUAÇÃO (variante mantida para as listas
+  compactas, seu lugar correto). Bateria re-executada verde (997/997).
+- **PIXEL/TOKEN PASS** (zero divergência de cor: grade 130px/2.2fr/1.1fr/1fr/.9fr; chip sem-cliente FEF3C7/B45309 +
+  Vincular; Atribuir FFFBEB/FDE68A/B45309 gated por field_dispatch:create com destino real; prioridade com dot;
+  agenda com hierarquia; pager exato). **LINGUAGEM/HONESTIDADE/CAPACIDADE/ESTADOS/A11Y/NÃO-REGRESSÃO PASS**
+  ("Atribuído" sem nome julgado honesto e claro; contagens 100% reais; Dar andamento/Revogar/checklist-chip/
+  clique-na-linha/auto-refresh preservados; gates cobertos por teste intocado).
+
+**Degradações honestas (D-007) declaradas:** nome do técnico ausente no DTO de lista → "Atribuído" (pendência
+P-WO-LIST-TECH-NAME abaixo); "SLA em risco"→Atrasadas (precedente PR-A); "Concluídas hoje"→total; "atualizado há X
+min" omitido; Exportar/Filtrar omitidos (filtros reais são inline).
+
+**BAIXAs registradas (não bloqueiam):** hover ausente nos botões de WorkOrderRowActions (pré-existente); cabeçalho de
+colunas com aria-hidden (candidata a passada role="table" nas 5 telas ao fim da rodada); hint do KPI aberto ("sem
+desfecho final"); foco teal herdado do kpi-card-clickable (pré-existente); dd/mm sem ano em agendas distantes.
+
+**Pendência de backend registrada:** P-WO-LIST-TECH-NAME — incluir o NOME do técnico atribuído no DTO da lista de OS
+(hoje só o id), para a coluna TÉCNICO exibir avatar+nome como no design.

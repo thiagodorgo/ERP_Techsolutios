@@ -6,6 +6,26 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-04 - TELAS PADRONIZADAS PR-B (Ordens de Serviço)
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Flutter / Backend | inalterados (frontend-only) |
+| Frontend Smoke | 997 / 997 (kpi-cards-clickable atualizado) |
+| Blocos Entregues | 132 (131 → 132) |
+
+Lista de **Ordens de Serviço** redesenhada fiel ao `sc_os`: PageHeader OPERAÇÃO; 4 KPIs de decisão com contagens
+100% reais (slot crítico = **Atrasadas**, precedente do PR-A; selo "N sem técnico" real); toolbar com busca + tabs-pill
+mapeadas a filtros reais; grade com chip **"Sem cliente vinculado" + Vincular** (destino real) e botão **Atribuir**
+gated por `field_dispatch:create` (→ Despachos com a OS pré-selecionada); agenda com hierarquia de urgência;
+**TablePager**. Capacidade preservada (Dar andamento / Revogar envio / chip Checklist / clique-na-linha / auto-refresh).
+**Junta `cognicao-visual` → APROVADO** após condição de 1 linha: a pill da SITUAÇÃO voltou ao tamanho **base**
+(no protótipo a tabela usa 10.5px; a variante `--sm` pertence às listas do Dashboard — **retificada** a BAIXA
+incorreta da ata do PR-A). Degradação honesta: DTO de lista sem nome do técnico → "Atribuído" (pendência
+P-WO-LIST-TECH-NAME). 5 BAIXAs registradas na ata.
+
 ## 2026-08-04 - TELAS PADRONIZADAS PR-A (fundação de componentes + Dashboard)
 
 ### Resultado

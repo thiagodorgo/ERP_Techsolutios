@@ -2,20 +2,23 @@ import type { KpiDetail, KpiSourceTag } from "../../components/kpi";
 import type { WorkOrdersSource } from "./work-orders.types";
 
 // WS-CARDS-CHARTS-F2 (PR2a) — descritores dos pop-ups dos 4 KPIs da lista de OS (OS abertas / Em andamento /
-// Urgentes / Concluídas). Os 4 já são contados de `items` na própria página; aqui só reapresentamos esses
+// Atrasadas / Concluídas). Os 4 já são contados de `items` na própria página; aqui só reapresentamos esses
 // mesmos números como "participação no total" (razão de contagens já carregadas — permitido por D-007; nada
-// é somado nem inventado). Não particionam o total: andamento ⊂ abertas e urgentes é recorte de prioridade —
+// é somado nem inventado). Não particionam o total: andamento ⊂ abertas e atrasadas é recorte de agenda —
 // por isso cada card mostra a própria fatia contra o total, não uma composição.
+// PR-B TELAS PADRONIZADAS: o slot crítico "Urgentes" deu lugar a "Atrasadas" (agenda vencida e não
+// finalizada, derivada de isWorkOrderDelayed sobre os itens reais) — precedente do PR-A no Dashboard,
+// já que "SLA em risco" do design não é derivável da lista (sem prazo de SLA garantido).
 
 export type WorkOrdersKpiCounts = {
   readonly abertas: number;
   readonly andamento: number;
-  readonly urgentes: number;
+  readonly atrasadas: number;
   readonly concluidas: number;
   readonly total: number;
 };
 
-export type WorkOrdersKpiKey = "abertas" | "andamento" | "urgentes" | "concluidas";
+export type WorkOrdersKpiKey = "abertas" | "andamento" | "atrasadas" | "concluidas";
 
 /** Percentual inteiro de uma parte já contada sobre o total já contado (D-007: razão, não fabricação). */
 export function pct(part: number, total: number): string {
@@ -62,15 +65,15 @@ export function buildWorkOrdersKpiDetails(
         ],
       },
     },
-    urgentes: {
-      title: "Urgentes",
-      value: String(counts.urgentes),
-      caption: "Prioridade urgente · participação no total",
+    atrasadas: {
+      title: "Atrasadas",
+      value: String(counts.atrasadas),
+      caption: "Agenda vencida · participação no total",
       source: src,
       body: {
         kind: "breakdown",
         parts: [
-          { label: "Urgentes", value: `${counts.urgentes} (${pct(counts.urgentes, total)})`, tone: "danger", hint: "recorte de prioridade — pode ocorrer em qualquer status" },
+          { label: "Atrasadas", value: `${counts.atrasadas} (${pct(counts.atrasadas, total)})`, tone: "danger", hint: "agenda vencida e ainda não concluídas — recorte de agenda, pode ocorrer em vários estados" },
           totalPart,
         ],
       },

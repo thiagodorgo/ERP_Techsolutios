@@ -1448,3 +1448,9 @@ um ARRAY hand-ordered, não um `Record<ChecklistComponentType, ...>` — então 
 tenha entrada no catálogo (um tipo novo sem entrada passaria silencioso; hoje está completo). Considerar reestruturar
 para um Record keyed por tipo (o `tsc` passa a exigir cobertura), preservando a ordem via um array de ordenação. Fora
 do escopo do PR-01. Registrado.
+
+## P-WO-LIST-TECH-NAME (2026-08-04) — DTO da lista de OS sem o nome do técnico atribuído (BAIXA, UX)
+
+Rodada TELAS PADRONIZADAS PR-B. O design do dono (sc_os) mostra avatar+NOME do técnico na coluna TÉCNICO, mas o DTO
+da lista de work-orders só carrega `assignedOperatorId` — a tela degrada honestamente para "Atribuído" (sem inventar
+iniciais). Fatia pequena de backend: incluir `assignedOperatorName` no DTO de lista (join leve) + adapter/coluna.
