@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#F1F5F9;font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:#2563EB;text-decoration:none}
+  a:hover{color:#1D4ED8;text-decoration:underline}
+  input,select,button{font-family:inherit}
+  input:focus,select:focus{outline:2px solid #2563EB;outline-offset:1px}
+  button:focus-visible{outline:2px solid #2563EB;outline-offset:2px}
+  .scrl::-webkit-scrollbar{width:9px;height:9px}
+  .scrl::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:9px}
+  .scrl::-webkit-scrollbar-track{background:transparent}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .fu{animation:fadeUp .18s ease-out both}
+</style>
+</helmet>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7.5"/><path d="m21 21-4.3-4.3"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></symbol>
+<symbol id="i-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></symbol>
+<symbol id="i-export" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></symbol>
+<symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5h17l-6.5 8v6l-4 2v-8L3.5 5Z"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+<symbol id="i-ban" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></symbol>
+<symbol id="i-audit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h6M8 13h8M8 17h5"/></symbol>
+<symbol id="i-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 2.4 17.4A2 2 0 0 0 4.1 20.4h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9.5v4M12 17h.01"/></symbol>
+<symbol id="i-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3 3 5.5v15L9 18l6 3 6-2.5v-15L15 6 9 3Z"/><path d="M9 3v15M15 6v15"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="M8.5 11h7M8.5 15h4.5"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10.5 13.5M21 3l-6.5 18-4-8-8-4L21 3Z"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.3l3.4 2"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></symbol>
+<symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></symbol>
+<symbol id="i-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></symbol>
+</defs></svg>
+
+<div style="height:100vh;display:flex;background:#F1F5F9;font-family:Inter,system-ui,sans-serif;color:#0F172A">
+
+  <!-- ░░ SIDEBAR ░░ -->
+  <aside style="width:236px;flex-shrink:0;background:#0D1B2A;display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,.06)">
+    <div style="padding:15px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="width:32px;height:32px;border-radius:9px;border:1px solid #33475B;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg>
+      </div>
+      <div style="line-height:1.15;flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:800;color:#fff">TechSolutions</div>
+        <div style="font-size:9.5px;color:#5E8C86;font-weight:600;letter-spacing:.12em">PLATAFORMA ERP</div>
+      </div>
+      <div title="Recolher menu" style="width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#9FB4CC;flex-shrink:0"><svg width="14" height="14"><use href="#i-collapse"/></svg></div>
+    </div>
+    <nav class="scrl" style="flex:1;min-height:0;overflow-y:auto;padding:10px 10px 14px">
+      <sc-for list="{{ navGroups }}" as="g" hint-placeholder-count="0">
+      <div>
+        <div style="font-size:9.5px;font-weight:800;letter-spacing:.11em;color:#41607A;padding:12px 10px 6px">{{ g.label }}</div>
+        <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="0">
+        <div onClick="{{ n.on }}" style="position:relative;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:2px;cursor:pointer;background:{{ n.bg }}" style-hover="background:rgba(255,255,255,.05)">
+          <span style="width:17px;height:17px;flex-shrink:0;background-image:url('{{ n.icon }}');background-size:contain;background-repeat:no-repeat;background-position:center"></span>
+          <span style="font-size:12.5px;font-weight:{{ n.fw }};color:{{ n.fg }};flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.label }}</span>
+          <sc-if value="{{ n.hasBadge }}" hint-placeholder-val="{{ false }}">
+          <span style="background:#EF4444;color:#fff;font-size:9.5px;font-weight:800;min-width:17px;height:17px;padding:0 5px;border-radius:99px;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ n.badge }}</span>
+          </sc-if>
+        </div>
+        </sc-for>
+      </div>
+      </sc-for>
+    </nav>
+    <div style="flex-shrink:0;padding:11px 12px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;border-radius:50%;background:#1E3A5F;display:flex;align-items:center;justify-content:center;color:#9DC3E6;font-size:11.5px;font-weight:800;flex-shrink:0">AD</div>
+      <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Admin Demo</div><div style="font-size:10px;color:#5B7A96">Administrador</div></div>
+      <span style="color:#41607A;display:flex;flex-shrink:0;cursor:pointer"><svg width="15" height="15"><use href="#i-logout"/></svg></span>
+    </div>
+  </aside>
+
+  <!-- ░░ MAIN ░░ -->
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <header style="flex-shrink:0;height:60px;background:#fff;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between;padding:0 24px">
+      <div style="font-size:17px;font-weight:800">{{ pageTitle }}</div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="display:flex;align-items:center;gap:9px;width:290px;padding:8px 12px;background:#F1F5F9;border-radius:10px;color:#94A3B8">
+          <svg width="16" height="16" style="flex-shrink:0"><use href="#i-search"/></svg>
+          <span style="font-size:12.5px;flex:1">Buscar pedidos, itens, clientes…</span>
+          <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:#E2E8F0;color:#64748B;font-family:'JetBrains Mono',monospace">Ctrl K</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #E2E8F0;border-radius:10px;cursor:pointer;color:#64748B">
+          <svg width="15" height="15"><use href="#i-box"/></svg><span style="font-size:12.5px;font-weight:700;color:#334155">Transportes Ômega</span><svg width="14" height="14"><use href="#i-down"/></svg>
+        </div>
+        <div style="position:relative;width:38px;height:38px;border-radius:10px;background:#F1F5F9;display:flex;align-items:center;justify-content:center;color:#475569;cursor:pointer">
+          <svg width="18" height="18"><use href="#i-bell"/></svg>
+          <span style="position:absolute;top:5px;right:6px;min-width:15px;height:15px;padding:0 4px;border-radius:99px;background:#EF4444;color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff">4</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="scrl" style="flex:1;min-height:0;overflow:auto">
+    <div style="min-width:1120px">
+
+      <!-- ══ DASHBOARD ══ -->
+      <sc-if value="{{ sc_dash }}" hint-placeholder-val="{{ true }}" data-screen-label="Dashboard">
+      <div style="padding:22px 24px 28px">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #E2E8F0">
+          <div style="min-width:320px;flex:1 1 320px">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563EB;margin-bottom:6px">VISÃO GERAL</div>
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1">Bom dia, Admin</div>
+            <div style="font-size:13px;color:#64748B;margin-top:5px;font-weight:500">Operação, SLA e cadastros · Transportes Ômega · terça, 4 de agosto</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-shrink:0">
+            <button style="display:flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB"><svg width="15" height="15"><use href="#i-export"/></svg>Exportar</button>
+            <button onClick="{{ goMap }}" style="display:flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB"><svg width="15" height="15"><use href="#i-map"/></svg>Mapa operacional</button>
+            <button onClick="{{ goOS }}" style="display:flex;align-items:center;gap:7px;padding:9px 16px;background:#2563EB;border:none;border-radius:9px;font-size:12.5px;font-weight:700;color:#fff;cursor:pointer" style-hover="background:#1D4ED8"><svg width="15" height="15"><use href="#i-plus"/></svg>Nova OS</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px">
+          <sc-for list="{{ dashKpis }}" as="k" hint-placeholder-count="5">
+          <div onClick="{{ k.on }}" style="background:#fff;border:1px solid {{ k.bd }};border-radius:12px;padding:15px 16px;cursor:pointer" style-hover="border-color:#93C5FD">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+              <span style="width:30px;height:30px;border-radius:9px;background:{{ k.bg }};display:flex;align-items:center;justify-content:center"><span style="width:16px;height:16px;background-image:url('{{ k.icon }}');background-size:contain;background-repeat:no-repeat;background-position:center"></span></span>
+              <span style="font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;background:{{ k.tagBg }};color:{{ k.tagFg }};white-space:nowrap">{{ k.tag }}</span>
+            </div>
+            <div style="font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;font-variant-numeric:tabular-nums">{{ k.n }}</div>
+            <div style="font-size:12.5px;font-weight:600;color:#334155;margin-top:6px">{{ k.label }}</div>
+            <div style="font-size:11px;color:#94A3B8;margin-top:2px">{{ k.hint }}</div>
+          </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:#fff;border:1px solid #E2E8F0;border-radius:12px;margin-bottom:14px;flex-wrap:wrap">
+          <span style="font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#64748B;margin-right:2px">CADASTROS</span>
+          <sc-for list="{{ dashCads }}" as="c" hint-placeholder-count="4">
+          <span style="display:flex;align-items:baseline;gap:6px;padding:4px 11px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:99px">
+            <span style="font-size:14px;font-weight:800;font-variant-numeric:tabular-nums">{{ c.n }}</span>
+            <span style="font-size:11.5px;font-weight:600;color:#64748B">{{ c.label }}</span>
+          </span>
+          </sc-for>
+          <span style="flex:1"></span>
+          <a href="#" onClick="{{ noop }}" style="font-size:12px;font-weight:700">Gerenciar cadastros</a>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:14px;margin-bottom:14px">
+          <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:18px 20px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
+              <div><div style="font-size:14.5px;font-weight:800">Volume de ordens de serviço</div><div style="font-size:12px;color:#94A3B8;margin-top:2px">Últimos 30 dias · abertas, concluídas e canceladas</div></div>
+              <div style="display:flex;gap:12px">
+                <span style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#475569"><span style="width:8px;height:8px;border-radius:2px;background:#2563EB"></span>Abertas</span>
+                <span style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#475569"><span style="width:8px;height:8px;border-radius:2px;background:#22C55E"></span>Concluídas</span>
+                <span style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#475569"><span style="width:8px;height:8px;border-radius:2px;background:#E2E8F0"></span>Canceladas</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:4px;height:168px;padding-bottom:2px;border-bottom:1px solid #E2E8F0">
+              <sc-for list="{{ chart }}" as="b" hint-placeholder-count="30">
+              <div title="{{ b.title }}" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:1px;height:100%;cursor:default">
+                <div style="height:{{ b.canc }};background:#E2E8F0;border-radius:2px 2px 0 0"></div>
+                <div style="height:{{ b.done }};background:#22C55E"></div>
+                <div style="height:{{ b.open }};background:#2563EB;border-radius:0 0 2px 2px"></div>
+              </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:7px;font-size:10.5px;color:#94A3B8;font-variant-numeric:tabular-nums">
+              <span>06 jul</span><span>13 jul</span><span>20 jul</span><span>27 jul</span><span>04 ago</span>
+            </div>
+          </div>
+
+          <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:18px 20px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div style="font-size:14.5px;font-weight:800">Exige ação agora</div><a href="#" onClick="{{ goOS }}" style="font-size:12px;font-weight:700">Ver todas</a></div>
+            <div style="font-size:12px;color:#94A3B8;margin-bottom:6px">Fila crítica por prioridade e SLA</div>
+            <sc-for list="{{ critical }}" as="c" hint-placeholder-count="4">
+            <div onClick="{{ goOS }}" style="display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid #F1F5F9;cursor:pointer">
+              <div style="width:52px;text-align:center;flex-shrink:0"><div style="font-size:13px;font-weight:800;color:{{ c.slaFg }};font-variant-numeric:tabular-nums">{{ c.sla }}</div><div style="font-size:9px;color:#94A3B8;letter-spacing:.06em">SLA</div></div>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:7px"><span style="font-size:11.5px;font-weight:700;color:#2563EB;font-family:'JetBrains Mono',monospace">{{ c.code }}</span><span style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.client }}</span></div>
+                <div style="font-size:11px;color:#94A3B8;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.svc }}</div>
+              </div>
+              <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;background:{{ c.stBg }};color:{{ c.stFg }};white-space:nowrap;flex-shrink:0">{{ c.st }}</span>
+            </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:18px 20px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div style="font-size:14.5px;font-weight:800">Despachos ativos</div><a href="#" onClick="{{ noop }}" style="font-size:12px;font-weight:700">Ver despachos</a></div>
+            <div style="font-size:12px;color:#94A3B8;margin-bottom:6px">Do envio ao atendimento</div>
+            <sc-for list="{{ dispatches }}" as="d" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1px solid #F1F5F9">
+              <span style="width:8px;height:8px;border-radius:50%;background:{{ d.dot }};flex-shrink:0"></span>
+              <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#334155">{{ d.code }}</div><div style="font-size:11px;color:#94A3B8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.svc }}</div></div>
+              <div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:700;color:{{ d.stFg }}">{{ d.st }}</div><div style="font-size:10.5px;color:#94A3B8">{{ d.ago }}</div></div>
+            </div>
+            </sc-for>
+          </div>
+
+          <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:18px 20px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div style="font-size:14.5px;font-weight:800">Status de campo</div><a href="#" onClick="{{ goMap }}" style="font-size:12px;font-weight:700">Abrir mapa</a></div>
+            <div style="font-size:12px;color:#94A3B8;margin-bottom:6px">Última localização recebida de cada operador</div>
+            <sc-for list="{{ field }}" as="f" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1px solid #F1F5F9">
+              <span style="width:30px;height:30px;border-radius:50%;background:{{ f.avBg }};color:{{ f.avFg }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0">{{ f.ini }}</span>
+              <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.name }}</div><div style="font-size:11px;color:#94A3B8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.meta }}</div></div>
+              <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;background:{{ f.stBg }};color:{{ f.stFg }};white-space:nowrap;flex-shrink:0">{{ f.st }}</span>
+            </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:18px 20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div><div style="font-size:14.5px;font-weight:800">Últimos eventos</div><div style="font-size:12px;color:#94A3B8;margin-top:2px">Atividade recente das ordens de serviço</div></div><a href="#" onClick="{{ goAudit }}" style="font-size:12px;font-weight:700">Ver tudo</a></div>
+          <sc-for list="{{ events }}" as="e" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #F1F5F9">
+            <span style="width:8px;height:8px;border-radius:50%;background:{{ e.dot }};flex-shrink:0"></span>
+            <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700">{{ e.title }}</div><div style="font-size:11px;color:#94A3B8;margin-top:1px">{{ e.meta }}</div></div>
+            <sc-if value="{{ e.hasCount }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:#F1F5F9;color:#475569;flex-shrink:0">{{ e.count }}</span>
+            </sc-if>
+            <span style="font-size:11px;color:#94A3B8;flex-shrink:0;font-variant-numeric:tabular-nums">{{ e.ago }}</span>
+          </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ ORDENS DE SERVIÇO ══ -->
+      <sc-if value="{{ sc_os }}" hint-placeholder-val="{{ false }}" data-screen-label="Ordens de Serviço">
+      <div style="padding:22px 24px 28px">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #E2E8F0">
+          <div style="min-width:320px;flex:1 1 320px">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563EB;margin-bottom:6px">OPERAÇÃO</div>
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1">Ordens de Serviço</div>
+            <div style="font-size:13px;color:#64748B;margin-top:5px;font-weight:500">Atribuição, execução, SLA e rastreabilidade de cada atendimento em campo.</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-shrink:0">
+            <button style="display:flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB"><svg width="15" height="15"><use href="#i-filter"/></svg>Filtrar</button>
+            <button style="display:flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB"><svg width="15" height="15"><use href="#i-export"/></svg>Exportar</button>
+            <button style="display:flex;align-items:center;gap:7px;padding:9px 16px;background:#2563EB;border:none;border-radius:9px;font-size:12.5px;font-weight:700;color:#fff;cursor:pointer" style-hover="background:#1D4ED8"><svg width="15" height="15"><use href="#i-plus"/></svg>Nova OS</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
+          <sc-for list="{{ osKpis }}" as="k" hint-placeholder-count="4">
+          <div style="background:#fff;border:1px solid {{ k.bd }};border-radius:12px;padding:15px 16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+              <span style="width:30px;height:30px;border-radius:9px;background:{{ k.bg }};display:flex;align-items:center;justify-content:center"><span style="width:16px;height:16px;background-image:url('{{ k.icon }}');background-size:contain;background-repeat:no-repeat;background-position:center"></span></span>
+              <span style="font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;background:{{ k.tagBg }};color:{{ k.tagFg }}">{{ k.tag }}</span>
+            </div>
+            <div style="font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;font-variant-numeric:tabular-nums">{{ k.n }}</div>
+            <div style="font-size:12.5px;font-weight:600;color:#334155;margin-top:6px">{{ k.label }}</div>
+            <div style="font-size:11px;color:#94A3B8;margin-top:2px">{{ k.hint }}</div>
+          </div>
+          </sc-for>
+        </div>
+
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid #F1F5F9;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:9px;width:280px;color:#94A3B8">
+              <svg width="15" height="15" style="flex-shrink:0"><use href="#i-search"/></svg><span style="font-size:12.5px">Buscar por código, cliente ou endereço…</span>
+            </div>
+            <div style="display:flex;gap:4px;background:#F1F5F9;padding:3px;border-radius:9px">
+              <sc-for list="{{ osTabs }}" as="t" hint-placeholder-count="4">
+              <button onClick="{{ t.on }}" style="padding:6px 13px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button>
+              </sc-for>
+            </div>
+            <span style="flex:1"></span>
+            <span style="font-size:11.5px;color:#64748B;font-weight:600">{{ osCount }}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:130px minmax(0,2.2fr) 1.1fr 1fr .9fr 108px;gap:12px;padding:10px 18px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;font-size:10px;font-weight:800;letter-spacing:.07em;color:#64748B">
+            <div>CÓDIGO</div><div>CLIENTE / SERVIÇO</div><div>TÉCNICO</div><div>AGENDA</div><div>SITUAÇÃO</div><div style="text-align:right">AÇÃO</div>
+          </div>
+          <sc-for list="{{ osRows }}" as="r" hint-placeholder-count="0">
+          <div style="display:grid;grid-template-columns:130px minmax(0,2.2fr) 1.1fr 1fr .9fr 108px;gap:12px;padding:12px 18px;border-bottom:1px solid #F1F5F9;align-items:center" style-hover="background:#F8FAFC">
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#2563EB;font-family:'JetBrains Mono',monospace">{{ r.code }}</div>
+              <div style="display:flex;align-items:center;gap:5px;margin-top:3px"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.prDot }}"></span><span style="font-size:10.5px;font-weight:700;color:{{ r.prFg }}">{{ r.pr }}</span></div>
+            </div>
+            <div style="min-width:0">
+              <sc-if value="{{ r.hasClient }}" hint-placeholder-val="{{ true }}">
+              <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.client }}</div>
+              </sc-if>
+              <sc-if value="{{ r.noClient }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:#FEF3C7;color:#B45309">Sem cliente vinculado</span><a href="#" onClick="{{ noop }}" style="font-size:11px;font-weight:700">Vincular</a></div>
+              </sc-if>
+              <div style="font-size:11.5px;color:#94A3B8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.svc }}</div>
+            </div>
+            <div>
+              <sc-if value="{{ r.hasTech }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:8px"><span style="width:26px;height:26px;border-radius:50%;background:#EFF6FF;color:#2563EB;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">{{ r.techIni }}</span><span style="font-size:12.5px;font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.tech }}</span></div>
+              </sc-if>
+              <sc-if value="{{ r.noTech }}" hint-placeholder-val="{{ true }}">
+              <button style="display:flex;align-items:center;gap:6px;padding:5px 11px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:7px;font-size:11.5px;font-weight:700;color:#B45309;cursor:pointer" style-hover="background:#FEF3C7"><svg width="12" height="12"><use href="#i-send"/></svg>Atribuir</button>
+              </sc-if>
+            </div>
+            <div style="font-size:12.5px;color:{{ r.agFg }};font-weight:{{ r.agFw }};font-variant-numeric:tabular-nums">{{ r.agenda }}</div>
+            <div><span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:{{ r.stBg }};color:{{ r.stFg }};white-space:nowrap">{{ r.st }}</span></div>
+            <div style="display:flex;justify-content:flex-end">
+              <button style="display:flex;align-items:center;gap:6px;padding:6px 13px;background:#fff;border:1px solid #E2E8F0;border-radius:8px;font-size:12px;font-weight:700;color:#475569;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB">Abrir<svg width="12" height="12"><use href="#i-right"/></svg></button>
+            </div>
+          </div>
+          </sc-for>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px">
+            <div style="display:flex;align-items:center;gap:9px"><span style="font-size:12px;color:#64748B;font-weight:600">Itens por página</span><select style="padding:6px 10px;border:1px solid #E2E8F0;border-radius:8px;font-size:12px;font-weight:600;color:#334155;cursor:pointer"><option>20</option><option>50</option></select></div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:12px;color:#64748B;font-variant-numeric:tabular-nums">1–8 de 18</span>
+              <button style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border:1px solid #E2E8F0;border-radius:8px;font-size:12px;font-weight:700;color:#CBD5E1;cursor:not-allowed"><svg width="12" height="12"><use href="#i-left"/></svg>Anterior</button>
+              <button style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border:1px solid #E2E8F0;border-radius:8px;font-size:12px;font-weight:700;color:#475569;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB">Próxima<svg width="12" height="12"><use href="#i-right"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ USUÁRIOS ══ -->
+      <sc-if value="{{ sc_users }}" hint-placeholder-val="{{ false }}" data-screen-label="Usuários">
+      <div style="padding:22px 24px 28px">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #E2E8F0">
+          <div style="min-width:320px;flex:1 1 320px">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563EB;margin-bottom:6px">ADMINISTRAÇÃO</div>
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1">Usuários</div>
+            <div style="font-size:13px;color:#64748B;margin-top:5px;font-weight:500">Quem acessa a organização, com qual perfil e desde quando — com trilha de auditoria.</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;width:250px;color:#94A3B8">
+              <svg width="15" height="15" style="flex-shrink:0"><use href="#i-search"/></svg><span style="font-size:12.5px">Buscar por nome ou e-mail…</span>
+            </div>
+            <select style="padding:9px 12px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer"><option>Todos os perfis</option><option>Administrador</option><option>Gestor Operacional</option><option>Operador Logístico</option></select>
+            <button style="display:flex;align-items:center;gap:7px;padding:10px 16px;background:#2563EB;border:none;border-radius:9px;font-size:12.5px;font-weight:700;color:#fff;cursor:pointer" style-hover="background:#1D4ED8"><svg width="15" height="15"><use href="#i-plus"/></svg>Novo usuário</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
+          <sc-for list="{{ userKpis }}" as="k" hint-placeholder-count="4">
+          <div style="background:#fff;border:1px solid {{ k.bd }};border-radius:12px;padding:15px 16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+              <span style="width:30px;height:30px;border-radius:9px;background:{{ k.bg }};display:flex;align-items:center;justify-content:center"><span style="width:16px;height:16px;background-image:url('{{ k.icon }}');background-size:contain;background-repeat:no-repeat;background-position:center"></span></span>
+              <span style="font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;background:{{ k.tagBg }};color:{{ k.tagFg }}">{{ k.tag }}</span>
+            </div>
+            <div style="font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;font-variant-numeric:tabular-nums">{{ k.n }}</div>
+            <div style="font-size:12.5px;font-weight:600;color:#334155;margin-top:6px">{{ k.label }}</div>
+            <div style="font-size:11px;color:#94A3B8;margin-top:2px">{{ k.hint }}</div>
+          </div>
+          </sc-for>
+        </div>
+
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:minmax(0,2.3fr) 1.3fr .8fr 1fr 116px;gap:12px;padding:10px 18px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;font-size:10px;font-weight:800;letter-spacing:.07em;color:#64748B">
+            <div>USUÁRIO</div><div>PERFIL DE ACESSO</div><div>SITUAÇÃO</div><div>ÚLTIMO ACESSO</div><div style="text-align:right">AÇÕES</div>
+          </div>
+          <sc-for list="{{ userRows }}" as="u" hint-placeholder-count="0">
+          <div style="display:grid;grid-template-columns:minmax(0,2.3fr) 1.3fr .8fr 1fr 116px;gap:12px;padding:11px 18px;border-bottom:1px solid #F1F5F9;align-items:center" style-hover="background:#F8FAFC">
+            <div style="display:flex;align-items:center;gap:11px;min-width:0">
+              <span style="width:34px;height:34px;border-radius:50%;background:{{ u.avBg }};color:{{ u.avFg }};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0">{{ u.ini }}</span>
+              <span style="min-width:0"><span style="display:block;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.name }}</span><span style="display:block;font-size:11.5px;color:#94A3B8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.mail }}</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;min-width:0">
+              <span style="font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:7px;background:{{ u.rBg }};color:{{ u.rFg }};white-space:nowrap">{{ u.role }}</span>
+              <sc-if value="{{ u.isAdmin }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;font-weight:700;color:#7E22CE;background:#F3E8FF;padding:2px 7px;border-radius:6px;white-space:nowrap">acesso total</span></sc-if>
+            </div>
+            <div><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:{{ u.stBg }};color:{{ u.stFg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ u.stDot }}"></span>{{ u.st }}</span></div>
+            <div><div style="font-size:12.5px;color:#334155;font-weight:600;font-variant-numeric:tabular-nums">{{ u.last }}</div><div style="font-size:11px;color:#94A3B8">{{ u.lastAgo }}</div></div>
+            <div style="display:flex;justify-content:flex-end;gap:5px">
+              <button title="Editar usuário" aria-label="Editar usuário" style="width:30px;height:30px;border-radius:8px;border:1px solid #E2E8F0;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB"><svg width="14" height="14"><use href="#i-edit"/></svg></button>
+              <button title="Desativar acesso" aria-label="Desativar acesso" style="width:30px;height:30px;border-radius:8px;border:1px solid #E2E8F0;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:#FCA5A5;color:#DC2626"><svg width="14" height="14"><use href="#i-ban"/></svg></button>
+              <button onClick="{{ goAudit }}" title="Ver auditoria deste usuário" aria-label="Ver auditoria deste usuário" style="width:30px;height:30px;border-radius:8px;border:1px solid #E2E8F0;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB"><svg width="14" height="14"><use href="#i-audit"/></svg></button>
+            </div>
+          </div>
+          </sc-for>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px">
+            <div style="display:flex;align-items:center;gap:9px"><span style="font-size:12px;color:#64748B;font-weight:600">Itens por página</span><select style="padding:6px 10px;border:1px solid #E2E8F0;border-radius:8px;font-size:12px;font-weight:600;color:#334155;cursor:pointer"><option>20</option><option>50</option></select></div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:12px;color:#64748B;font-variant-numeric:tabular-nums">1–9 de 22</span>
+              <button style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border:1px solid #E2E8F0;border-radius:8px;font-size:12px;font-weight:700;color:#CBD5E1;cursor:not-allowed"><svg width="12" height="12"><use href="#i-left"/></svg>Anterior</button>
+              <button style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border:1px solid #E2E8F0;border-radius:8px;font-size:12px;font-weight:700;color:#475569;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB">Próxima<svg width="12" height="12"><use href="#i-right"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ AUDITORIA ══ -->
+      <sc-if value="{{ sc_audit }}" hint-placeholder-val="{{ false }}" data-screen-label="Auditoria">
+      <div style="padding:22px 24px 28px">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #E2E8F0">
+          <div style="min-width:320px;flex:1 1 320px">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563EB;margin-bottom:6px">ADMINISTRAÇÃO</div>
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1">Auditoria</div>
+            <div style="font-size:13px;color:#64748B;margin-top:5px;font-weight:500">Trilha de acessos, alterações sensíveis e eventos críticos da organização.</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <select style="padding:9px 12px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer"><option>Últimas 24 horas</option><option>Últimos 7 dias</option><option>Últimos 30 dias</option><option>Período personalizado</option></select>
+            <button style="display:flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB"><svg width="15" height="15"><use href="#i-filter"/></svg>Filtros</button>
+            <button style="display:flex;align-items:center;gap:7px;padding:10px 16px;background:#2563EB;border:none;border-radius:9px;font-size:12.5px;font-weight:700;color:#fff;cursor:pointer" style-hover="background:#1D4ED8"><svg width="15" height="15"><use href="#i-export"/></svg>Exportar</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
+          <sc-for list="{{ auditKpis }}" as="k" hint-placeholder-count="4">
+          <div style="background:#fff;border:1px solid {{ k.bd }};border-radius:12px;padding:15px 16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+              <span style="width:30px;height:30px;border-radius:9px;background:{{ k.bg }};display:flex;align-items:center;justify-content:center"><span style="width:16px;height:16px;background-image:url('{{ k.icon }}');background-size:contain;background-repeat:no-repeat;background-position:center"></span></span>
+              <span style="font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;background:{{ k.tagBg }};color:{{ k.tagFg }}">{{ k.tag }}</span>
+            </div>
+            <div style="font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;font-variant-numeric:tabular-nums">{{ k.n }}</div>
+            <div style="font-size:12.5px;font-weight:600;color:#334155;margin-top:6px">{{ k.label }}</div>
+            <div style="font-size:11px;color:#94A3B8;margin-top:2px">{{ k.hint }}</div>
+          </div>
+          </sc-for>
+        </div>
+
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:15px 18px;margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:1.2fr 1.2fr 1fr 1fr auto;gap:12px;align-items:end">
+            <div><label style="display:block;font-size:11px;font-weight:700;color:#64748B;margin-bottom:6px">Tipo de evento</label><select style="width:100%;padding:9px 11px;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;background:#fff;cursor:pointer"><option>Todos os eventos</option><option>Entrou no sistema</option><option>Saiu do sistema</option><option>Sessão encerrada</option><option>Permissão alterada</option></select></div>
+            <div><label style="display:block;font-size:11px;font-weight:700;color:#64748B;margin-bottom:6px">Usuário</label><div style="display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid #E2E8F0;border-radius:9px;color:#94A3B8"><svg width="14" height="14" style="flex-shrink:0"><use href="#i-user"/></svg><span style="font-size:12.5px">Todos os usuários</span></div></div>
+            <div><label style="display:block;font-size:11px;font-weight:700;color:#64748B;margin-bottom:6px">De</label><div style="padding:9px 11px;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;font-variant-numeric:tabular-nums">03/08/2026</div></div>
+            <div><label style="display:block;font-size:11px;font-weight:700;color:#64748B;margin-bottom:6px">Até</label><div style="padding:9px 11px;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;font-variant-numeric:tabular-nums">04/08/2026</div></div>
+            <button style="padding:10px 15px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB">Limpar</button>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid #F1F5F9">
+            <div><div style="font-size:14px;font-weight:800">Eventos</div><div style="font-size:11.5px;color:#94A3B8;margin-top:2px">Ordenados do mais recente para o mais antigo</div></div>
+            <span style="font-size:11.5px;font-weight:600;color:#64748B">50 eventos no período</span>
+          </div>
+          <div style="display:grid;grid-template-columns:120px minmax(0,1.6fr) minmax(0,2fr) 1.2fr 96px;gap:12px;padding:10px 18px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;font-size:10px;font-weight:800;letter-spacing:.07em;color:#64748B">
+            <div>QUANDO</div><div>QUEM</div><div>O QUE ACONTECEU</div><div>ORIGEM</div><div style="text-align:right">DETALHE</div>
+          </div>
+          <sc-for list="{{ auditDays }}" as="d" hint-placeholder-count="0">
+          <div>
+            <div style="padding:8px 18px;background:#FBFCFE;border-bottom:1px solid #F1F5F9;font-size:10.5px;font-weight:800;letter-spacing:.06em;color:#64748B">{{ d.label }}</div>
+            <sc-for list="{{ d.rows }}" as="e" hint-placeholder-count="0">
+            <div style="display:grid;grid-template-columns:120px minmax(0,1.6fr) minmax(0,2fr) 1.2fr 96px;gap:12px;padding:11px 18px;border-bottom:1px solid #F1F5F9;align-items:center" style-hover="background:#F8FAFC">
+              <div style="font-size:12.5px;font-weight:700;color:#334155;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace">{{ e.time }}</div>
+              <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                <span style="width:28px;height:28px;border-radius:50%;background:{{ e.avBg }};color:{{ e.avFg }};display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;flex-shrink:0">{{ e.ini }}</span>
+                <span style="min-width:0"><span style="display:block;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.who }}</span><span style="display:block;font-size:11px;color:#94A3B8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.role }}</span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;min-width:0">
+                <span style="width:7px;height:7px;border-radius:50%;background:{{ e.dot }};flex-shrink:0"></span>
+                <span style="font-size:12.5px;font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.what }}</span>
+              </div>
+              <div><div style="font-size:12px;color:#475569;font-weight:600">{{ e.device }}</div><div style="font-size:11px;color:#94A3B8;font-family:'JetBrains Mono',monospace">{{ e.ip }}</div></div>
+              <div style="display:flex;justify-content:flex-end">
+                <button title="Ver detalhe do evento" aria-label="Ver detalhe do evento" style="width:30px;height:30px;border-radius:8px;border:1px solid #E2E8F0;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB"><svg width="14" height="14"><use href="#i-ext"/></svg></button>
+              </div>
+            </div>
+            </sc-for>
+          </div>
+          </sc-for>
+          <div style="display:flex;align-items:center;justify-content:center;padding:14px">
+            <button style="padding:9px 18px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB">Carregar mais eventos</button>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ PÁTIOS ══ -->
+      <sc-if value="{{ sc_patios }}" hint-placeholder-val="{{ false }}" data-screen-label="Pátios">
+      <div style="padding:22px 24px 28px">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #E2E8F0">
+          <div style="min-width:320px;flex:1 1 320px">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563EB;margin-bottom:6px">PÁTIOS</div>
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1">Pátios</div>
+            <div style="font-size:13px;color:#64748B;margin-top:5px;font-weight:500">Locais de guarda da organização — endereço, capacidade, custódia e situação de cada pátio.</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;width:240px;color:#94A3B8">
+              <svg width="15" height="15" style="flex-shrink:0"><use href="#i-search"/></svg><span style="font-size:12.5px">Buscar por nome ou endereço…</span>
+            </div>
+            <button style="display:flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB"><svg width="15" height="15"><use href="#i-export"/></svg>Exportar</button>
+            <button style="display:flex;align-items:center;gap:7px;padding:10px 16px;background:#2563EB;border:none;border-radius:9px;font-size:12.5px;font-weight:700;color:#fff;cursor:pointer" style-hover="background:#1D4ED8"><svg width="15" height="15"><use href="#i-plus"/></svg>Novo pátio</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
+          <sc-for list="{{ patioKpis }}" as="k" hint-placeholder-count="4">
+          <div style="background:#fff;border:1px solid {{ k.bd }};border-radius:12px;padding:15px 16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+              <span style="width:30px;height:30px;border-radius:9px;background:{{ k.bg }};display:flex;align-items:center;justify-content:center"><span style="width:16px;height:16px;background-image:url('{{ k.icon }}');background-size:contain;background-repeat:no-repeat;background-position:center"></span></span>
+              <span style="font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;background:{{ k.tagBg }};color:{{ k.tagFg }}">{{ k.tag }}</span>
+            </div>
+            <div style="font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;font-variant-numeric:tabular-nums">{{ k.n }}</div>
+            <div style="font-size:12.5px;font-weight:600;color:#334155;margin-top:6px">{{ k.label }}</div>
+            <div style="font-size:11px;color:#94A3B8;margin-top:2px">{{ k.hint }}</div>
+          </div>
+          </sc-for>
+        </div>
+
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid #F1F5F9">
+            <div style="display:flex;gap:4px;background:#F1F5F9;padding:3px;border-radius:9px">
+              <sc-for list="{{ patioTabs }}" as="t" hint-placeholder-count="3">
+              <button onClick="{{ t.on }}" style="padding:6px 13px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button>
+              </sc-for>
+            </div>
+            <span style="flex:1"></span>
+            <span style="font-size:11.5px;color:#64748B;font-weight:600">{{ patioCount }}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.6fr) 1.1fr 1.2fr .8fr 108px;gap:12px;padding:10px 18px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;font-size:10px;font-weight:800;letter-spacing:.07em;color:#64748B">
+            <div>PÁTIO</div><div>ENDEREÇO</div><div>FUSO HORÁRIO</div><div>OCUPAÇÃO</div><div>SITUAÇÃO</div><div style="text-align:right">AÇÕES</div>
+          </div>
+          <sc-for list="{{ patioRows }}" as="p" hint-placeholder-count="0">
+          <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.6fr) 1.1fr 1.2fr .8fr 108px;gap:12px;padding:12px 18px;border-bottom:1px solid #F1F5F9;align-items:center" style-hover="background:#F8FAFC">
+            <div style="display:flex;align-items:center;gap:11px;min-width:0">
+              <span style="width:32px;height:32px;border-radius:9px;background:#EFF6FF;color:#2563EB;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16"><use href="#i-map"/></svg></span>
+              <span style="min-width:0"><span style="display:block;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span><span style="display:block;font-size:11px;color:#94A3B8">{{ p.code }}</span></span>
+            </div>
+            <div style="font-size:12.5px;color:#475569;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.addr }}</div>
+            <div style="font-size:12.5px;color:#475569;font-weight:600">{{ p.tz }}</div>
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px"><span style="font-size:11.5px;font-weight:700;color:#334155;font-variant-numeric:tabular-nums">{{ p.occ }}</span><span style="font-size:10.5px;font-weight:700;color:{{ p.occFg }}">{{ p.occPct }}</span></div>
+              <div style="height:5px;border-radius:99px;background:#F1F5F9;overflow:hidden"><div style="height:100%;width:{{ p.occPct }};background:{{ p.occBar }};border-radius:99px"></div></div>
+            </div>
+            <div><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:{{ p.stBg }};color:{{ p.stFg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ p.stDot }}"></span>{{ p.st }}</span></div>
+            <div style="display:flex;justify-content:flex-end;gap:5px">
+              <button style="display:flex;align-items:center;gap:5px;padding:6px 11px;background:#fff;border:1px solid #E2E8F0;border-radius:8px;font-size:12px;font-weight:700;color:#475569;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB">Abrir<svg width="12" height="12"><use href="#i-right"/></svg></button>
+              <button title="Editar pátio" aria-label="Editar pátio" style="width:30px;height:30px;border-radius:8px;border:1px solid #E2E8F0;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB"><svg width="14" height="14"><use href="#i-edit"/></svg></button>
+            </div>
+          </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:14px;padding:16px 18px;background:#fff;border:1px dashed #CBD5E1;border-radius:14px">
+          <div style="width:42px;height:42px;border-radius:12px;background:#EFF6FF;color:#2563EB;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20"><use href="#i-map"/></svg></div>
+          <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:800">Sua organização tem apenas 1 pátio cadastrado</div><div style="font-size:12.5px;color:#64748B;margin-top:2px;line-height:1.5">Cadastre os demais locais de guarda para distribuir a custódia e acompanhar a ocupação por unidade.</div></div>
+          <button style="display:flex;align-items:center;gap:7px;padding:9px 15px;background:#2563EB;border:none;border-radius:9px;font-size:12.5px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0"><svg width="14" height="14"><use href="#i-plus"/></svg>Novo pátio</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ PLACEHOLDER (demais itens do menu) ══ -->
+      <sc-if value="{{ sc_soon }}" hint-placeholder-val="{{ false }}" data-screen-label="Em construção">
+      <div style="padding:22px 24px 28px">
+        <div style="margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #E2E8F0">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563EB;margin-bottom:6px">{{ soonGroup }}</div>
+          <div style="font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1">{{ soonTitle }}</div>
+          <div style="font-size:13px;color:#64748B;margin-top:5px;font-weight:500">Esta tela ainda não faz parte deste lote de padronização.</div>
+        </div>
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:56px 32px;text-align:center">
+          <div style="width:56px;height:56px;border-radius:16px;background:#F1F5F9;color:#94A3B8;display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><svg width="26" height="26"><use href="#i-clock"/></svg></div>
+          <div style="font-size:16px;font-weight:800;margin-bottom:6px">Fora deste lote</div>
+          <div style="font-size:13px;color:#64748B;line-height:1.6;max-width:420px;margin:0 auto 20px">Padronizamos primeiro Dashboard, Ordens de Serviço, Usuários, Auditoria e Pátios. Use o menu para navegar entre elas.</div>
+          <button onClick="{{ goDash }}" style="padding:10px 18px;background:#2563EB;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer">Voltar ao Dashboard</button>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+    </main>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  P = {
+    dash:'<rect x="3" y="3" width="7.5" height="8.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5.5" rx="1.6"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.6"/><rect x="3" y="14" width="7.5" height="7" rx="1.6"/>',
+    wrench:'<path d="M14.5 6.5a4.5 4.5 0 0 0 5.8 5.8l-8 8a2.8 2.8 0 0 1-4-4l8-8a4.5 4.5 0 0 0-1.8-1.8Z"/>',
+    send:'<path d="M21 3 10.5 13.5M21 3l-6.5 18-4-8-8-4L21 3Z"/>',
+    map:'<path d="M9 3 3 5.5v15L9 18l6 3 6-2.5v-15L15 6 9 3Z"/><path d="M9 3v15M15 6v15"/>',
+    doc:'<path d="M15 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h6M8 13h8M8 17h5"/>',
+    check:'<circle cx="12" cy="12" r="9"/><path d="m8.2 12.3 2.6 2.6 5-5"/>',
+    clip:'<path d="M15 4h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="M8.5 11h7M8.5 15h4.5"/>',
+    truck:'<path d="M3 16V7a1 1 0 0 1 1-1h9v10"/><path d="M13 9h4l3 3.4V16"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>',
+    fuel:'<path d="M4 20V5a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v15"/><path d="M3 20h11M13 10h3.5a1.5 1.5 0 0 1 1.5 1.5V17a1.5 1.5 0 0 0 3 0V9l-3-3"/>',
+    tool:'<path d="M14.5 6.5a4.5 4.5 0 0 0 5.8 5.8l-8 8a2.8 2.8 0 0 1-4-4l8-8a4.5 4.5 0 0 0-1.8-1.8Z"/>',
+    alert:'<path d="M10.3 3.9 2.4 17.4A2 2 0 0 0 4.1 20.4h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9.5v4M12 17h.01"/>',
+    shield:'<path d="M12 3 4.5 6v6c0 4.6 3.2 7.9 7.5 9 4.3-1.1 7.5-4.4 7.5-9V6L12 3Z"/>',
+    users:'<circle cx="9" cy="8" r="3.4"/><path d="M2.8 20a6.4 6.4 0 0 1 12.4 0"/><path d="M16.5 5.2a3.4 3.4 0 0 1 0 6.6M18 14.6a6.4 6.4 0 0 1 3.2 5.4"/>',
+    user:'<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
+    build:'<rect x="4" y="3" width="10" height="18" rx="1.6"/><path d="M14 9h5a1 1 0 0 1 1 1v11M7 7h4M7 11h4M7 15h4"/>',
+    box:'<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>',
+    cart:'<circle cx="9" cy="19" r="1.6"/><circle cx="17.5" cy="19" r="1.6"/><path d="M2.5 3h2.2l2.4 11.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21 6.5H6"/>',
+    money:'<rect x="2.5" y="5.5" width="19" height="13" rx="2"/><circle cx="12" cy="12" r="2.8"/><path d="M6 9v6M18 9v6"/>',
+    card:'<rect x="2.5" y="5" width="19" height="14" rx="2.2"/><path d="M2.5 10h19"/>',
+    chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+    key:'<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3.5M15.5 12v2.5"/>',
+    monitor:'<rect x="2.5" y="4" width="19" height="12.5" rx="2"/><path d="M8.5 20.5h7M12 16.5v4"/>',
+    gauge:'<path d="M4 18a9 9 0 1 1 16 0"/><path d="m12 14 4-4"/>',
+    scale:'<path d="M12 3v18M7 7h10M5 7l-2.5 6h5L5 7ZM19 7l-2.5 6h5L19 7Z"/>',
+    ban:'<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>',
+    pin:'<path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z"/><circle cx="12" cy="10" r="2.6"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5.3l3.4 2"/>',
+    gavel:'<path d="M3 21h9M6.5 15.5l6-6M4.5 13.5l4 4M13.5 4.5l6 6M11.5 6.5l6 6"/>',
+    lock:'<rect x="4.5" y="10" width="15" height="10.5" rx="2"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/>',
+  };
+
+  ico(name, color) {
+    const p = this.P[name] || '';
+    return 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>');
+  }
+
+  NAV = [
+    { label:'VISÃO GERAL', items:[['dash','Dashboard','dash']] },
+    { label:'OPERAÇÃO', items:[['os','Ordens de Serviço','wrench'],['x1','Despachos','send'],['x2','Mapa Operacional','map'],['x3','Orçamentos','doc'],['x4','Aprovações','check'],['x5','Checklists','clip']] },
+    { label:'FROTA', items:[['x6','Viaturas','truck'],['x7','Abastecimento','fuel'],['x8','Manutenção','tool'],['x9','Multas','alert'],['x10','Seguros','shield'],['x11','Danos','ban']] },
+    { label:'GESTÃO', items:[['x12','Clientes','users'],['x13','Filiais','build'],['x14','Fornecedores','box'],['x15','Estoque','box'],['x16','Pedidos','cart'],['x17','Financeiro','money'],['x18','Cobranças','card'],['x19','Pagamentos','card']] },
+    { label:'PÁTIOS', items:[['x20','Painel','chart'],['patios','Pátios','pin'],['x21','Processos','doc'],['x22','Liberações','lock'],['x23','Leilões','gavel'],['x24','Tabela de Valores','scale']] },
+    { label:'TELEMETRIA', items:[['x25','Quilometragem','gauge'],['x26','Acessos','key'],['x27','Recusas','ban'],['x28','Dispositivos','monitor'],['x29','Rastreamento','pin']] },
+    { label:'ADMINISTRAÇÃO', items:[['users','Usuários','users'],['x30','Sessões','monitor'],['x31','Notificações','bell',4],['x32','Modelos de Checklist','clip'],['audit','Auditoria','doc']] },
+  ];
+
+  state = { screen:'dash', osTab:'Todas', patioTab:'Todos' };
+
+  go(id, label, group) { this.setState({ screen:id, soonTitle:label, soonGroup:group }); }
+
+  kpi(icon, color, bg, n, label, hint, tag, tagBg, tagFg, bd) {
+    return { icon:this.ico(icon, color), bg, n, label, hint, tag, tagBg, tagFg, bd:bd || '#E2E8F0' };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const v = {};
+    const known = { dash:1, os:1, users:1, audit:1, patios:1 };
+
+    v.navGroups = this.NAV.map(g => ({
+      label:g.label,
+      items:g.items.map(it => {
+        const active = s.screen === it[0];
+        return {
+          label:it[1],
+          icon:this.ico(it[2], active ? '#ffffff' : '#8FA6BD'),
+          bg:active ? '#2563EB' : 'transparent',
+          fg:active ? '#ffffff' : '#8FA6BD',
+          fw:active ? 700 : 600,
+          hasBadge:!!it[3], badge:it[3] || '',
+          on:() => this.go(it[0], it[1], g.label),
+        };
+      }),
+    }));
+
+    v.sc_dash = s.screen === 'dash';
+    v.sc_os = s.screen === 'os';
+    v.sc_users = s.screen === 'users';
+    v.sc_audit = s.screen === 'audit';
+    v.sc_patios = s.screen === 'patios';
+    v.sc_soon = !known[s.screen];
+    v.soonTitle = s.soonTitle || ''; v.soonGroup = s.soonGroup || '';
+
+    const titles = { dash:'Dashboard', os:'Ordens de Serviço', users:'Usuários', audit:'Auditoria', patios:'Pátios' };
+    v.pageTitle = titles[s.screen] || s.soonTitle || 'ERP Techsolutions';
+
+    v.noop = e => { if (e && e.preventDefault) e.preventDefault(); };
+    v.goDash = () => this.setState({ screen:'dash' });
+    v.goOS = () => this.setState({ screen:'os' });
+    v.goAudit = e => { if (e && e.preventDefault) e.preventDefault(); this.setState({ screen:'audit' }); };
+    v.goMap = e => { if (e && e.preventDefault) e.preventDefault(); this.go('x2', 'Mapa Operacional', 'OPERAÇÃO'); };
+
+    // ── DASHBOARD ──
+    v.dashKpis = [
+      Object.assign(this.kpi('wrench', '#2563EB', '#EFF6FF', 16, 'OS abertas', 'aguardando início', '4 sem técnico', '#FEF3C7', '#B45309'), { on:v.goOS }),
+      Object.assign(this.kpi('send', '#0369A1', '#F0F9FF', 1, 'Em andamento', 'em campo agora', 'no prazo', '#DCFCE7', '#15803D'), { on:v.goOS }),
+      Object.assign(this.kpi('alert', '#DC2626', '#FEF2F2', 2, 'SLA em risco', 'vencem em até 2h', 'agir agora', '#FEE2E2', '#B91C1C', '#FCA5A5'), { on:v.goOS }),
+      Object.assign(this.kpi('clock', '#B45309', '#FFFBEB', 1, 'Atrasadas', 'passaram do prazo', 'crítico', '#FEF3C7', '#B45309'), { on:v.goOS }),
+      Object.assign(this.kpi('check', '#15803D', '#F0FDF4', 7, 'Concluídas hoje', 'com evidência anexada', '+3 vs ontem', '#DCFCE7', '#15803D'), { on:v.goOS }),
+    ];
+    v.dashCads = [{ n:3, label:'clientes' }, { n:3, label:'viaturas' }, { n:2, label:'equipes' }, { n:2, label:'serviços' }];
+
+    const series = [3,4,2,5,6,4,3,5,7,6,4,5,8,6,5,7,9,6,5,8,7,5,6,9,7,6,8,7,5,6];
+    v.chart = series.map((o, i) => {
+      const done = Math.max(1, Math.round(o * 0.55));
+      const canc = i % 7 === 3 ? 1 : 0;
+      const total = o + done + canc;
+      const u = 100 / 12;
+      return {
+        open:(o * u) + '%', done:(done * u) + '%', canc:(canc * u) + '%',
+        title:'Dia ' + (i + 1) + ' · ' + o + ' abertas · ' + done + ' concluídas · ' + canc + ' canceladas (' + total + ')',
+      };
+    });
+
+    v.critical = [
+      { sla:'00:42', slaFg:'#DC2626', code:'OS-000013', client:'Cliente Teste', svc:'Guincho — remoção · Curitiba/PR', st:'Sem técnico', stBg:'#FEE2E2', stFg:'#B91C1C' },
+      { sla:'01:15', slaFg:'#DC2626', code:'OS-2026-0001', client:'Indústria Alfa Ltda', svc:'Manutenção preventiva em campo', st:'Em atendimento', stBg:'#FEF3C7', stFg:'#B45309' },
+      { sla:'02:30', slaFg:'#B45309', code:'OS-000017', client:'Indústria Alfa Ltda', svc:'OS do orçamento 9987 · Pinhais/PR', st:'Aberta', stBg:'#EFF6FF', stFg:'#2563EB' },
+      { sla:'04:10', slaFg:'#64748B', code:'OS-000016', client:'Transportes Beta', svc:'Vistoria de coleta · São José dos Pinhais', st:'Agendada', stBg:'#F1F5F9', stFg:'#475569' },
+    ];
+    v.dispatches = [
+      { code:'OS-000013', svc:'Guincho — remoção', st:'Atribuído', stFg:'#2563EB', ago:'há 2 h', dot:'#2563EB' },
+      { code:'OS-000012', svc:'Vistoria de coleta', st:'Em rota', stFg:'#B45309', ago:'há 3 h', dot:'#F59E0B' },
+      { code:'OS-000011', svc:'Socorro mecânico', st:'Atribuído', stFg:'#2563EB', ago:'há 5 h', dot:'#2563EB' },
+      { code:'OS-000009', svc:'Reboque para pátio', st:'No local', stFg:'#15803D', ago:'há 6 h', dot:'#22C55E' },
+      { code:'OS-000007', svc:'Guincho — remoção', st:'Atribuído', stFg:'#2563EB', ago:'ontem', dot:'#2563EB' },
+    ];
+    v.field = [
+      { ini:'DF', name:'Diego Ferreira', meta:'OS-000013 · Curitiba/PR', st:'Em campo', stBg:'#DCFCE7', stFg:'#15803D', avBg:'#DCFCE7', avFg:'#15803D' },
+      { ini:'AR', name:'Ana Beatriz Rocha', meta:'Sem OS atribuída', st:'Disponível', stBg:'#EFF6FF', stFg:'#2563EB', avBg:'#EFF6FF', avFg:'#2563EB' },
+      { ini:'RM', name:'Rafael Mendes', meta:'Última posição há 21 dias', st:'Sem sinal', stBg:'#FEF3C7', stFg:'#B45309', avBg:'#FEF3C7', avFg:'#B45309' },
+      { ini:'CN', name:'Camila Nunes', meta:'Última posição há 21 dias', st:'Sem sinal', stBg:'#FEF3C7', stFg:'#B45309', avBg:'#FEF3C7', avFg:'#B45309' },
+      { ini:'MC', name:'Marina Costa', meta:'OS-2026-0001 · manutenção preventiva', st:'Em campo', stBg:'#DCFCE7', stFg:'#15803D', avBg:'#DCFCE7', avFg:'#15803D' },
+    ];
+    v.events = [
+      { dot:'#2563EB', title:'Ordens de serviço criadas', meta:'por Admin Demo · orçamento e despacho', hasCount:true, count:'8 eventos', ago:'há 8 d' },
+      { dot:'#22C55E', title:'Checklist de coleta concluído', meta:'OS-000013 · Diego Ferreira · com assinatura', hasCount:false, count:'', ago:'há 12 d' },
+      { dot:'#F59E0B', title:'Despacho reatribuído', meta:'OS-000009 · de Camila Nunes para Rafael Mendes', hasCount:false, count:'', ago:'há 18 d' },
+      { dot:'#7E22CE', title:'Perfil de acesso alterado', meta:'Lucas Prado · de Operador para Estoque', hasCount:false, count:'', ago:'há 21 d' },
+      { dot:'#DC2626', title:'Sessão encerrada por inatividade', meta:'Paula Nunes · dispositivo desconhecido', hasCount:false, count:'', ago:'há 22 d' },
+    ];
+
+    // ── ORDENS DE SERVIÇO ──
+    v.osKpis = [
+      this.kpi('wrench', '#2563EB', '#EFF6FF', 17, 'OS abertas', 'aguardando atribuição ou início', '4 sem técnico', '#FEF3C7', '#B45309'),
+      this.kpi('send', '#0369A1', '#F0F9FF', 1, 'Em andamento', 'técnico em campo agora', 'no prazo', '#DCFCE7', '#15803D'),
+      this.kpi('alert', '#DC2626', '#FEF2F2', 2, 'SLA em risco', 'prazo vence em menos de 2 h', 'agir agora', '#FEE2E2', '#B91C1C', '#FCA5A5'),
+      this.kpi('check', '#15803D', '#F0FDF4', 7, 'Concluídas hoje', 'com evidência e assinatura', '+3 vs ontem', '#DCFCE7', '#15803D'),
+    ];
+    v.osTabs = ['Todas', 'Sem técnico', 'Em campo', 'Concluídas'].map(l => ({
+      label:l, on:() => this.setState({ osTab:l }),
+      bg:s.osTab === l ? '#fff' : 'transparent', fg:s.osTab === l ? '#2563EB' : '#64748B',
+    }));
+    v.osCount = '18 ordens · atualizado há 1 min';
+
+    const os = [
+      { code:'OS-000017', pr:'Média', client:'Indústria Alfa Ltda', svc:'OS do orçamento 9987 · Pinhais/PR', tech:'', agenda:'Hoje, 16:00', ag:1, st:'Aberta' },
+      { code:'OS-000016', pr:'Média', client:'', svc:'Vistoria de coleta · Omega3D A', tech:'', agenda:'Amanhã, 09:00', ag:0, st:'Aberta' },
+      { code:'OS-000015', pr:'Alta', client:'Transportes Beta', svc:'Reboque para pátio · BR-116', tech:'Diego Ferreira', agenda:'Hoje, 14:30', ag:2, st:'Em campo' },
+      { code:'OS-000014', pr:'Média', client:'', svc:'Anexo Omega3d · inspeção', tech:'', agenda:'Sem agenda', ag:0, st:'Aberta' },
+      { code:'OS-000013', pr:'Alta', client:'Cliente Teste', svc:'Guincho — remoção · Curitiba/PR', tech:'', agenda:'Hoje, 12:15', ag:1, st:'SLA em risco' },
+      { code:'OS-000012', pr:'Média', client:'Transportes Beta', svc:'Vistoria de coleta · Centro', tech:'Marina Costa', agenda:'Hoje, 11:00', ag:2, st:'Em campo' },
+      { code:'OS-000011', pr:'Média', client:'Indústria Alfa Ltda', svc:'Socorro mecânico · Rodovia', tech:'Rafael Mendes', agenda:'Ontem, 17:40', ag:0, st:'Concluída' },
+      { code:'OS-000010', pr:'Baixa', client:'', svc:'Auditoria de teste · sem cliente', tech:'', agenda:'Sem agenda', ag:0, st:'Aberta' },
+    ];
+    const PR = { Alta:{ dot:'#DC2626', fg:'#B91C1C' }, Média:{ dot:'#F59E0B', fg:'#B45309' }, Baixa:{ dot:'#94A3B8', fg:'#64748B' } };
+    const ST = {
+      'Aberta':{ bg:'#EFF6FF', fg:'#2563EB' }, 'Em campo':{ bg:'#DCFCE7', fg:'#15803D' },
+      'SLA em risco':{ bg:'#FEE2E2', fg:'#B91C1C' }, 'Concluída':{ bg:'#F1F5F9', fg:'#475569' },
+    };
+    v.osRows = os.map(r => ({
+      code:r.code, pr:r.pr, prDot:PR[r.pr].dot, prFg:PR[r.pr].fg,
+      client:r.client, hasClient:!!r.client, noClient:!r.client, svc:r.svc,
+      tech:r.tech, hasTech:!!r.tech, noTech:!r.tech,
+      techIni:r.tech ? r.tech.split(' ').map(w => w[0]).slice(0, 2).join('') : '',
+      agenda:r.agenda,
+      agFg:r.ag === 1 ? '#B45309' : r.ag === 2 ? '#334155' : '#94A3B8',
+      agFw:r.ag === 1 ? 700 : 600,
+      st:r.st, stBg:ST[r.st].bg, stFg:ST[r.st].fg,
+    }));
+
+    // ── USUÁRIOS ──
+    v.userKpis = [
+      this.kpi('users', '#2563EB', '#EFF6FF', 22, 'Usuários com acesso', 'na organização Transportes Ômega', '+2 no mês', '#DCFCE7', '#15803D'),
+      this.kpi('check', '#15803D', '#F0FDF4', 19, 'Ativos', 'acessaram nos últimos 30 dias', 'saudável', '#DCFCE7', '#15803D'),
+      this.kpi('clock', '#B45309', '#FFFBEB', 2, 'Convites pendentes', 'aguardando primeiro acesso', 'reenviar', '#FEF3C7', '#B45309'),
+      this.kpi('shield', '#7E22CE', '#FAF5FF', 3, 'Com acesso total', 'perfis administrativos', 'revisar', '#F3E8FF', '#7E22CE'),
+    ];
+    const users = [
+      ['Gustavo Reis', 'gestor@demo.com', 'Gestor Operacional', 'Ativo', '14/07/2026', 'há 21 dias'],
+      ['Lucas Prado', 'estoque.demo@example.com', 'Estoque', 'Ativo', '10/07/2026', 'há 25 dias'],
+      ['Marina Costa', 'operador.demo@example.com', 'Operador Logístico', 'Ativo', '09/07/2026', 'há 26 dias'],
+      ['Rafael Mendes', 'tecnico2.cwb@example.com', 'Técnico de Campo', 'Ativo', '13/07/2026', 'há 22 dias'],
+      ['Paula Nunes', 'suporte.demo@example.com', 'Supervisor', 'Ativo', '10/07/2026', 'há 25 dias'],
+      ['Ana Duarte', 'platform.admin@erp.local', 'Administrador', 'Ativo', '08/06/2026', 'há 2 meses'],
+      ['Rafael Souza', 'auditor.demo@example.com', 'Auditor', 'Ativo', '10/07/2026', 'há 25 dias'],
+      ['Camila Nunes', 'camila.n@techsolutions.example', 'Técnico de Campo', 'Convite pendente', '—', 'nunca acessou'],
+      ['Diego Ferreira', 'diego.f@techsolutions.example', 'Técnico de Campo', 'Inativo', '02/05/2026', 'há 3 meses'],
+    ];
+    const RC = {
+      'Administrador':{ bg:'#F3E8FF', fg:'#7E22CE' }, 'Gestor Operacional':{ bg:'#EFF6FF', fg:'#2563EB' },
+      'Operador Logístico':{ bg:'#F0F9FF', fg:'#0369A1' }, 'Técnico de Campo':{ bg:'#F0FDF4', fg:'#15803D' },
+      'Estoque':{ bg:'#FFFBEB', fg:'#B45309' }, 'Supervisor':{ bg:'#EFF6FF', fg:'#2563EB' }, 'Auditor':{ bg:'#F1F5F9', fg:'#475569' },
+    };
+    const US = {
+      'Ativo':{ bg:'#DCFCE7', fg:'#15803D', dot:'#22C55E' },
+      'Convite pendente':{ bg:'#FEF3C7', fg:'#B45309', dot:'#F59E0B' },
+      'Inativo':{ bg:'#F1F5F9', fg:'#64748B', dot:'#94A3B8' },
+    };
+    const AV = [['#EFF6FF', '#2563EB'], ['#F0FDF4', '#15803D'], ['#FAF5FF', '#7E22CE'], ['#FFFBEB', '#B45309'], ['#F0F9FF', '#0369A1']];
+    v.userRows = users.map((u, i) => ({
+      name:u[0], mail:u[1], role:u[2], st:u[3], last:u[4], lastAgo:u[5],
+      ini:u[0].split(' ').map(w => w[0]).slice(0, 2).join(''),
+      avBg:AV[i % AV.length][0], avFg:AV[i % AV.length][1],
+      rBg:(RC[u[2]] || RC.Auditor).bg, rFg:(RC[u[2]] || RC.Auditor).fg,
+      isAdmin:u[2] === 'Administrador',
+      stBg:US[u[3]].bg, stFg:US[u[3]].fg, stDot:US[u[3]].dot,
+    }));
+
+    // ── AUDITORIA ──
+    v.auditKpis = [
+      this.kpi('doc', '#2563EB', '#EFF6FF', 50, 'Eventos no período', 'últimas 24 horas', 'normal', '#EFF6FF', '#2563EB'),
+      this.kpi('key', '#15803D', '#F0FDF4', 31, 'Entradas no sistema', '9 usuários distintos', 'sem anomalia', '#DCFCE7', '#15803D'),
+      this.kpi('ban', '#B45309', '#FFFBEB', 4, 'Sessões encerradas', '2 por inatividade', 'revisar', '#FEF3C7', '#B45309'),
+      this.kpi('alert', '#DC2626', '#FEF2F2', 1, 'Tentativa recusada', 'senha inválida · 1 usuário', 'atenção', '#FEE2E2', '#B91C1C', '#FCA5A5'),
+    ];
+    const EV = {
+      login:{ what:'Entrou no sistema', dot:'#22C55E' },
+      refresh:{ what:'Sessão renovada', dot:'#2563EB' },
+      created:{ what:'Sessão iniciada', dot:'#2563EB' },
+      revoked:{ what:'Sessão encerrada pelo sistema', dot:'#F59E0B' },
+      logout:{ what:'Saiu do sistema', dot:'#64748B' },
+      denied:{ what:'Tentativa de acesso recusada', dot:'#DC2626' },
+      perm:{ what:'Perfil de acesso alterado', dot:'#7E22CE' },
+    };
+    const mk = (time, who, role, kind, device, ip, ini, ai) => ({
+      time, who, role, what:EV[kind].what, dot:EV[kind].dot, device, ip, ini,
+      avBg:AV[ai % AV.length][0], avFg:AV[ai % AV.length][1],
+    });
+    v.auditDays = [
+      { label:'HOJE · 4 DE AGOSTO', rows:[
+        mk('02:42', 'Ana Duarte', 'Administrador', 'refresh', 'Chrome · Windows', '189.42.11.7', 'AD', 0),
+        mk('02:03', 'Ana Duarte', 'Administrador', 'refresh', 'Chrome · Windows', '189.42.11.7', 'AD', 0),
+        mk('01:43', 'Gustavo Reis', 'Gestor Operacional', 'refresh', 'Chrome · macOS', '177.92.5.31', 'GR', 1),
+        mk('01:27', 'Marina Costa', 'Operador Logístico', 'refresh', 'App · Android', '191.6.208.44', 'MC', 2),
+        mk('01:01', 'Marina Costa', 'Operador Logístico', 'created', 'App · Android', '191.6.208.44', 'MC', 2),
+        mk('01:01', 'Marina Costa', 'Operador Logístico', 'login', 'App · Android', '191.6.208.44', 'MC', 2),
+        mk('01:00', 'Rafael Mendes', 'Técnico de Campo', 'revoked', 'App · Android', '201.17.60.9', 'RM', 3),
+        mk('01:00', 'Rafael Mendes', 'Técnico de Campo', 'logout', 'App · Android', '201.17.60.9', 'RM', 3),
+      ] },
+      { label:'ONTEM · 3 DE AGOSTO', rows:[
+        mk('23:51', 'Paula Nunes', 'Supervisor', 'refresh', 'Chrome · Windows', '187.30.44.2', 'PN', 4),
+        mk('22:14', 'Ana Duarte', 'Administrador', 'perm', 'Chrome · Windows', '189.42.11.7', 'AD', 0),
+        mk('21:08', 'Desconhecido', 'não identificado', 'denied', 'Firefox · Linux', '45.190.3.77', '?', 3),
+      ] },
+    ];
+
+    // ── PÁTIOS ──
+    v.patioKpis = [
+      this.kpi('pin', '#2563EB', '#EFF6FF', 1, 'Pátios ativos', 'locais de guarda em operação', 'único local', '#FEF3C7', '#B45309'),
+      this.kpi('truck', '#0369A1', '#F0F9FF', 34, 'Veículos em custódia', 'sob responsabilidade da organização', '+6 na semana', '#DCFCE7', '#15803D'),
+      this.kpi('gauge', '#B45309', '#FFFBEB', '68%', 'Ocupação média', '34 de 50 vagas utilizadas', 'atenção', '#FEF3C7', '#B45309'),
+      this.kpi('lock', '#7E22CE', '#FAF5FF', 5, 'Liberações pendentes', 'aguardando documentação', 'revisar', '#F3E8FF', '#7E22CE'),
+    ];
+    v.patioTabs = ['Todos', 'Ativos', 'Inativos'].map(l => ({
+      label:l, on:() => this.setState({ patioTab:l }),
+      bg:s.patioTab === l ? '#fff' : 'transparent', fg:s.patioTab === l ? '#2563EB' : '#64748B',
+    }));
+    v.patioCount = '1 pátio cadastrado';
+    v.patioRows = [{
+      name:'Pátio Sul', code:'PAT-001', addr:'Rod. BR-116, km 84 — Curitiba/PR', tz:'America/São_Paulo',
+      occ:'34 de 50 vagas', occPct:'68%', occFg:'#B45309', occBar:'#F59E0B',
+      st:'Ativo', stBg:'#DCFCE7', stFg:'#15803D', stDot:'#22C55E',
+    }];
+
+    return v;
+  }
+}
+
+</script>
+</body>
+</html>

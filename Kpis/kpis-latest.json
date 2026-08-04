@@ -1,16 +1,16 @@
 {
-  "snapshot_date": "2026-08-01",
-  "version": "CHK-P1-PR01-COMPONENT-TYPES",
+  "snapshot_date": "2026-08-04",
+  "version": "TELAS-PADRONIZADAS-PR-A",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "CHECKLIST P1 PR-01: alinha os tipos de componente single_choice/multi_choice/signature (enum backend + catalogo + validator tipado [escolha exige config.options] + uniao/paleta do builder web) e plumba as opcoes de escolha ao topo dos DTOs mobile como [{value,label}] (render + snapshot). Junta critico-adversarial APROVADO_CONDICIONADO: a ALTA do render mobile do backend fica ABERTA (P-CHK-RENDER-ENVELOPE, pre-existente, app renderiza dos seeds) — honestidade §A6.",
-    "title": "CHECKLIST P1 PR-01: alinha os tipos de componente single_choice/multi_choice/signature (enum backend + catalogo + validator tipado [escolha exige config.options] + uniao/paleta do builder web) e plumba as opcoes de escolha ao topo dos DTOs mobile como [{value,label}] (render + snapshot). Junta critico-adversarial APROVADO_CONDICIONADO: a ALTA do render mobile do backend fica ABERTA (P-CHK-RENDER-ENVELOPE, pre-existente, app renderiza dos seeds) — honestidade §A6.",
+    "block": "TELAS PADRONIZADAS PR-A (frontend-only): fundacao de componentes padronizados (PageHeader/KpiStatCard/TablePager/StatusPill/InitialsAvatar em components/patterns) + Dashboard redesenhado fiel ao prototipo do dono (ERP Web - Telas Padronizadas.dc.html, sc_dash): saudacao+Intl pt-BR, 5 KPIs de decisao clicaveis, faixa CADASTROS, grafico de barras empilhadas com a serie real, fila 'Exige acao agora', despachos/campo, eventos com agrupamento real. Degradacoes honestas D-007 documentadas (sem SLA real -> Atrasadas no slot critico; sem 'Exportar' morto). Junta cognicao-visual APROVADO (forense, zero divergencia de cor; 4 BAIXAs registradas).",
+    "title": "TELAS PADRONIZADAS PR-A (frontend-only): fundacao de componentes padronizados (PageHeader/KpiStatCard/TablePager/StatusPill/InitialsAvatar em components/patterns) + Dashboard redesenhado fiel ao prototipo do dono (ERP Web - Telas Padronizadas.dc.html, sc_dash): saudacao+Intl pt-BR, 5 KPIs de decisao clicaveis, faixa CADASTROS, grafico de barras empilhadas com a serie real, fila 'Exige acao agora', despachos/campo, eventos com agrupamento real. Degradacoes honestas D-007 documentadas (sem SLA real -> Atrasadas no slot critico; sem 'Exportar' morto). Junta cognicao-visual APROVADO (forense, zero divergencia de cor; 4 BAIXAs registradas).",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "CHECKLIST P1 PR-01: alinha os tipos de componente single_choice/multi_choice/signature (enum backend + catalogo + validator tipado [escolha exige config.options] + uniao/paleta do builder web) e plumba as opcoes de escolha ao topo dos DTOs mobile como [{value,label}] (render + snapshot). Junta critico-adversarial APROVADO_CONDICIONADO: a ALTA do render mobile do backend fica ABERTA (P-CHK-RENDER-ENVELOPE, pre-existente, app renderiza dos seeds) — honestidade §A6.",
+    "summary": "TELAS PADRONIZADAS PR-A (frontend-only): fundacao de componentes padronizados (PageHeader/KpiStatCard/TablePager/StatusPill/InitialsAvatar em components/patterns) + Dashboard redesenhado fiel ao prototipo do dono (ERP Web - Telas Padronizadas.dc.html, sc_dash): saudacao+Intl pt-BR, 5 KPIs de decisao clicaveis, faixa CADASTROS, grafico de barras empilhadas com a serie real, fila 'Exige acao agora', despachos/campo, eventos com agrupamento real. Degradacoes honestas D-007 documentadas (sem SLA real -> Atrasadas no slot critico; sem 'Exportar' morto). Junta cognicao-visual APROVADO (forense, zero divergencia de cor; 4 BAIXAs registradas).",
     "status_label": "Omega-VID PR-07 (frontend-only): VehicleDossieModal — dossie do veiculo num Modal size='lg' com 6 ABAS (Visao Geral/Vistoria/Linha do Tempo/Debitos/Liberacao/Leilao+Liquidacao), reusando os componentes e a logica de fetch da ProcessoDossiePage (hook compartilhado useProcessDossie). A vaga OCUPADA do OccupancyMap ABRE o modal (botao onOpenDossie, icone FileText) em vez de navegar; deep-link ?dossie=<processId> sincroniza abrir/fechar/mount (a rota /patios/processos/:id segue como fallback). Abas Checklist(PR-08)/Historico(PR-09) ainda NAO — estrutura pronta. +16 smoke tests (2 arquivos novos) + patios-mapa migrado; frontend_smoke 954 -> 970. Backend/flutter inalterados. --- ANTERIOR (PR-06): Modal do design system ganha size='lg' (base do dossie). +4 smoke; frontend_smoke 950 -> 954. --- ANTERIOR (PR-05 FIX-JUNTA, D-Omega-VID-05-SEED): a junta APROVOU_CONDICIONADO; o critico-adversarial provou 1 MEDIA (a colisao-POR-REUSO nao tinha caminho de correcao — duplicateCandidates/merge/unmerge NAO splitam). CONSERTO: a VISTORIA de recepcao (saveInspection) agora RECONCILIA/RE-APONTA ImpoundProcess.identity_id para a identidade correta da placa CONFIRMADA (resolve-ou-cria pelo helper do PR-05, MESMA tx RLS) => SPLITA a agregacao errada + sobe PROVISIONAL->CONFIRMED. Idempotente; FSM/hash-chain/merge INTOCADOS; sem migracao. backend 2082/2088 -> 2085/2091 (+3 DB-gated reais provando o SPLIT vivo)."
   },
   "metrics": {
@@ -18,19 +18,19 @@
       "value": 835,
       "total": 835,
       "display": "835/835",
-      "note": "PR-B FIX-JUNTA (D-CHK-DISPATCH-CREATE, lado Flutter): +13 test() novos sobre 822 — 2 de MIGRACAO REAL (app_database_migration_test: schema 2->13 e 1->13 abrem sqlite file num user_version antigo e exercitam o onUpgrade de verdade, provando que a guarda from>=3/from>=2 evita 'duplicate column name' e as colunas ADD chegam; nenhum teste exercitava onUpgrade antes, todos usavam openInMemory) + 11 (pr_b_junta_fixes_test: marker sem component_id lanca e nao enfileira; lote ordenado divergence->ack->complete; 409 ACKNOWLEDGEMENT_NOT_REQUIRED vira failed retryavel; completeRun has_divergence true/false real; downloadPendingRuns baixa e carimba a run offline; blob preservado em scan_failed/pending_review; widget test do AwaitingDispatchView acentuado). Execucao REAL da suite Flutter 835 pass/0 falha/0 skip (Flutter 3.41.6). Regressoes b088/b102/b092/b118/b085/b087/b122 verdes. dart format 0-changed; flutter analyze No issues; pubspec/lock INTOCADOS (zero-dep). Sobre 822."
+      "note": "TELAS PR-A e frontend-only — flutter inalterado (835/835 na main; a fatia render-envelope com 839 esta parked em branch, fora da main)."
     },
     "frontend_smoke_tests": {
       "value": 997,
       "total": 997,
       "display": "997/997",
-      "note": "CHK P1 PR-01: uniao/paleta/labels do builder web ganham 3 tipos (tsc+smoke cobrem); sem novo teste frontend (997/997)."
+      "note": "TELAS PR-A: redesenho do Dashboard + fundacao patterns; smoke-flow.test.tsx ATUALIZADO ao novo padrao (asserts de seguranca sem UUID/token mantidos). 997/997 execucao real; sem teste novo (redesenho coberto pelo existente)."
     },
     "backend_tests": {
       "value": 2115,
       "total": 2115,
       "display": "2115/2115",
-      "note": "CHECKLIST P1 PR-01: +5 test() (tests/checklist-routes.test.ts +1 validador de escolha[options]->400/201; tests/checklist-mobile-choice-dto.test.ts 4: itens+render+snapshot emitem options no topo [{value,label}], observation/signature nao). Sobre 2110 do #328. Suite checklist 40/40. Sem migracao. ALTA P-CHK-RENDER-ENVELOPE registrada aberta."
+      "note": "TELAS PR-A e frontend-only — backend inalterado (2115/2115 do #330, §C3.3)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 130,
-      "display": "130",
-      "note": "CHECKLIST P1 PR-01 (tipos de componente + plumbing de opcoes). Sobre 129 do #329."
+      "value": 131,
+      "display": "131",
+      "note": "TELAS PADRONIZADAS PR-A (fundacao + Dashboard). Sobre 130 do #330. (Nota: a fatia render-envelope parked tambem numera 131 no branch dela — reconciliar no merge dela.)"
     },
     "mobile_backend_contracts": {
       "value": 18,
