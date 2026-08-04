@@ -1,16 +1,16 @@
 {
   "snapshot_date": "2026-08-04",
-  "version": "TELAS-PADRONIZADAS-PR-A",
+  "version": "TELAS-PADRONIZADAS-PR-B",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "TELAS PADRONIZADAS PR-A (frontend-only): fundacao de componentes padronizados (PageHeader/KpiStatCard/TablePager/StatusPill/InitialsAvatar em components/patterns) + Dashboard redesenhado fiel ao prototipo do dono (ERP Web - Telas Padronizadas.dc.html, sc_dash): saudacao+Intl pt-BR, 5 KPIs de decisao clicaveis, faixa CADASTROS, grafico de barras empilhadas com a serie real, fila 'Exige acao agora', despachos/campo, eventos com agrupamento real. Degradacoes honestas D-007 documentadas (sem SLA real -> Atrasadas no slot critico; sem 'Exportar' morto). Junta cognicao-visual APROVADO (forense, zero divergencia de cor; 4 BAIXAs registradas).",
-    "title": "TELAS PADRONIZADAS PR-A (frontend-only): fundacao de componentes padronizados (PageHeader/KpiStatCard/TablePager/StatusPill/InitialsAvatar em components/patterns) + Dashboard redesenhado fiel ao prototipo do dono (ERP Web - Telas Padronizadas.dc.html, sc_dash): saudacao+Intl pt-BR, 5 KPIs de decisao clicaveis, faixa CADASTROS, grafico de barras empilhadas com a serie real, fila 'Exige acao agora', despachos/campo, eventos com agrupamento real. Degradacoes honestas D-007 documentadas (sem SLA real -> Atrasadas no slot critico; sem 'Exportar' morto). Junta cognicao-visual APROVADO (forense, zero divergencia de cor; 4 BAIXAs registradas).",
+    "block": "TELAS PADRONIZADAS PR-B (frontend-only): Ordens de Servico redesenhada fiel ao sc_os do prototipo do dono — PageHeader OPERACAO, 4 KPIs de decisao reais (slot critico=Atrasadas, precedente PR-A), toolbar busca+tabs-pill mapeadas a filtros reais, grade CODIGO/CLIENTE-SERVICO/TECNICO/AGENDA/SITUACAO/ACAO com chip 'Sem cliente vinculado'+Vincular e botao Atribuir gated (field_dispatch:create) com destino real, TablePager. Junta cognicao-visual APROVADO apos condicao de 1 linha (pill da SITUACAO no tamanho BASE — retificada a BAIXA incorreta da ata do PR-A). Capacidade preservada (Dar andamento/Revogar/checklist-chip/auto-refresh).",
+    "title": "TELAS PADRONIZADAS PR-B (frontend-only): Ordens de Servico redesenhada fiel ao sc_os do prototipo do dono — PageHeader OPERACAO, 4 KPIs de decisao reais (slot critico=Atrasadas, precedente PR-A), toolbar busca+tabs-pill mapeadas a filtros reais, grade CODIGO/CLIENTE-SERVICO/TECNICO/AGENDA/SITUACAO/ACAO com chip 'Sem cliente vinculado'+Vincular e botao Atribuir gated (field_dispatch:create) com destino real, TablePager. Junta cognicao-visual APROVADO apos condicao de 1 linha (pill da SITUACAO no tamanho BASE — retificada a BAIXA incorreta da ata do PR-A). Capacidade preservada (Dar andamento/Revogar/checklist-chip/auto-refresh).",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "TELAS PADRONIZADAS PR-A (frontend-only): fundacao de componentes padronizados (PageHeader/KpiStatCard/TablePager/StatusPill/InitialsAvatar em components/patterns) + Dashboard redesenhado fiel ao prototipo do dono (ERP Web - Telas Padronizadas.dc.html, sc_dash): saudacao+Intl pt-BR, 5 KPIs de decisao clicaveis, faixa CADASTROS, grafico de barras empilhadas com a serie real, fila 'Exige acao agora', despachos/campo, eventos com agrupamento real. Degradacoes honestas D-007 documentadas (sem SLA real -> Atrasadas no slot critico; sem 'Exportar' morto). Junta cognicao-visual APROVADO (forense, zero divergencia de cor; 4 BAIXAs registradas).",
+    "summary": "TELAS PADRONIZADAS PR-B (frontend-only): Ordens de Servico redesenhada fiel ao sc_os do prototipo do dono — PageHeader OPERACAO, 4 KPIs de decisao reais (slot critico=Atrasadas, precedente PR-A), toolbar busca+tabs-pill mapeadas a filtros reais, grade CODIGO/CLIENTE-SERVICO/TECNICO/AGENDA/SITUACAO/ACAO com chip 'Sem cliente vinculado'+Vincular e botao Atribuir gated (field_dispatch:create) com destino real, TablePager. Junta cognicao-visual APROVADO apos condicao de 1 linha (pill da SITUACAO no tamanho BASE — retificada a BAIXA incorreta da ata do PR-A). Capacidade preservada (Dar andamento/Revogar/checklist-chip/auto-refresh).",
     "status_label": "Omega-VID PR-07 (frontend-only): VehicleDossieModal — dossie do veiculo num Modal size='lg' com 6 ABAS (Visao Geral/Vistoria/Linha do Tempo/Debitos/Liberacao/Leilao+Liquidacao), reusando os componentes e a logica de fetch da ProcessoDossiePage (hook compartilhado useProcessDossie). A vaga OCUPADA do OccupancyMap ABRE o modal (botao onOpenDossie, icone FileText) em vez de navegar; deep-link ?dossie=<processId> sincroniza abrir/fechar/mount (a rota /patios/processos/:id segue como fallback). Abas Checklist(PR-08)/Historico(PR-09) ainda NAO — estrutura pronta. +16 smoke tests (2 arquivos novos) + patios-mapa migrado; frontend_smoke 954 -> 970. Backend/flutter inalterados. --- ANTERIOR (PR-06): Modal do design system ganha size='lg' (base do dossie). +4 smoke; frontend_smoke 950 -> 954. --- ANTERIOR (PR-05 FIX-JUNTA, D-Omega-VID-05-SEED): a junta APROVOU_CONDICIONADO; o critico-adversarial provou 1 MEDIA (a colisao-POR-REUSO nao tinha caminho de correcao — duplicateCandidates/merge/unmerge NAO splitam). CONSERTO: a VISTORIA de recepcao (saveInspection) agora RECONCILIA/RE-APONTA ImpoundProcess.identity_id para a identidade correta da placa CONFIRMADA (resolve-ou-cria pelo helper do PR-05, MESMA tx RLS) => SPLITA a agregacao errada + sobe PROVISIONAL->CONFIRMED. Idempotente; FSM/hash-chain/merge INTOCADOS; sem migracao. backend 2082/2088 -> 2085/2091 (+3 DB-gated reais provando o SPLIT vivo)."
   },
   "metrics": {
@@ -24,7 +24,7 @@
       "value": 997,
       "total": 997,
       "display": "997/997",
-      "note": "TELAS PR-A: redesenho do Dashboard + fundacao patterns; smoke-flow.test.tsx ATUALIZADO ao novo padrao (asserts de seguranca sem UUID/token mantidos). 997/997 execucao real; sem teste novo (redesenho coberto pelo existente)."
+      "note": "TELAS PR-B: redesenho da lista de OS; kpi-cards-clickable.test.tsx atualizado (slot critico atrasadas + pop-up). 997/997 execucao real."
     },
     "backend_tests": {
       "value": 2115,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 131,
-      "display": "131",
-      "note": "TELAS PADRONIZADAS PR-A (fundacao + Dashboard). Sobre 130 do #330. (Nota: a fatia render-envelope parked tambem numera 131 no branch dela — reconciliar no merge dela.)"
+      "value": 132,
+      "display": "132",
+      "note": "TELAS PR-B (Ordens de Servico). Sobre 131 do #331."
     },
     "mobile_backend_contracts": {
       "value": 18,

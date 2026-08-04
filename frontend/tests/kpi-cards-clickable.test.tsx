@@ -153,13 +153,22 @@ test("pct: razão inteira de contagens já carregadas; total 0 → 0%", () => {
 });
 
 test("WorkOrders: pop-up de 'OS abertas' = participação no total (mesmos números, D-007)", () => {
-  const details = buildWorkOrdersKpiDetails({ abertas: 3, andamento: 1, urgentes: 2, concluidas: 4, total: 10 }, "api");
+  // PR-B TELAS PADRONIZADAS: o slot crítico "urgentes" virou "atrasadas" (agenda vencida real,
+  // precedente do PR-A) — o contrato do builder acompanha.
+  const details = buildWorkOrdersKpiDetails({ abertas: 3, andamento: 1, atrasadas: 2, concluidas: 4, total: 10 }, "api");
   const detail = details.abertas;
   assert.equal(detail.body.kind, "breakdown");
   const html = renderModal(detail);
   assert.match(html, /3 \(30%\)/);
   assert.match(html, /Total de OS/);
   assert.match(html, />10</);
+
+  // O pop-up do slot crítico declara o recorte honesto (agenda vencida), tom danger.
+  const late = details.atrasadas;
+  assert.equal(late.title, "Atrasadas");
+  const lateHtml = renderModal(late);
+  assert.match(lateHtml, /2 \(20%\)/);
+  assert.match(lateHtml, /agenda vencida/);
 });
 
 test("Dispatches: 'Total' compõe por situação com remainder 'Rascunho' (identidade aritmética)", () => {

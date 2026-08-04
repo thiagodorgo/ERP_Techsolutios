@@ -1934,5 +1934,14 @@
     "frontend_smoke_tests": "997/997",
     "blocks_completed": "131",
     "description": "TELAS PADRONIZADAS PR-A (frontend-only): fundacao de componentes padronizados (PageHeader/KpiStatCard/TablePager/StatusPill/InitialsAvatar em components/patterns) + Dashboard redesenhado fiel ao prototipo do dono (ERP Web - Telas Padronizadas.dc.html, sc_dash): saudacao+Intl pt-BR, 5 KPIs de decisao clicaveis, faixa CADASTROS, grafico de barras empilhadas com a serie real, fila 'Exige acao agora', despachos/campo, eventos com agrupamento real. Degradacoes honestas D-007 documentadas (sem SLA real -> Atrasadas no slot critico; sem 'Exportar' morto). Junta cognicao-visual APROVADO (forense, zero divergencia de cor; 4 BAIXAs registradas)."
+  },
+  {
+    "snapshot_date": "2026-08-04",
+    "version": "TELAS-PADRONIZADAS-PR-B",
+    "flutter_tests": "835/835",
+    "backend_tests": "2115/2115",
+    "frontend_smoke_tests": "997/997",
+    "blocks_completed": "132",
+    "description": "TELAS PADRONIZADAS PR-B (frontend-only): Ordens de Servico redesenhada fiel ao sc_os do prototipo do dono — PageHeader OPERACAO, 4 KPIs de decisao reais (slot critico=Atrasadas, precedente PR-A), toolbar busca+tabs-pill mapeadas a filtros reais, grade CODIGO/CLIENTE-SERVICO/TECNICO/AGENDA/SITUACAO/ACAO com chip 'Sem cliente vinculado'+Vincular e botao Atribuir gated (field_dispatch:create) com destino real, TablePager. Junta cognicao-visual APROVADO apos condicao de 1 linha (pill da SITUACAO no tamanho BASE — retificada a BAIXA incorreta da ata do PR-A). Capacidade preservada (Dar andamento/Revogar/checklist-chip/auto-refresh)."
   }
 ]
