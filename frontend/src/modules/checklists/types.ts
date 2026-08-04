@@ -11,7 +11,11 @@ export type TenantChecklistComponentType =
   | "observation"
   | "comparison"
   | "before_after"
-  | "acknowledgement";
+  | "acknowledgement"
+  // CHECKLIST P1 PR-01 — alinhados ao backend/catálogo e ao que o mobile já renderiza.
+  | "single_choice"
+  | "multi_choice"
+  | "signature";
 
 export type ChecklistRunStatus =
   | "in_progress"

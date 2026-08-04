@@ -48,6 +48,9 @@ export const checklistComponentTypeLabel: Record<TenantChecklistComponentType, s
   comparison: "Comparacao",
   acknowledgement: "Ciencia",
   before_after: "Antes e depois",
+  single_choice: "Escolha unica",
+  multi_choice: "Multipla escolha",
+  signature: "Assinatura",
 };
 
 export const checklistStatusOptions: Array<TenantChecklistStatus | "all" | "pending_changes"> = [

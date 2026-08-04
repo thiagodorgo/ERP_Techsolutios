@@ -35,16 +35,35 @@ export function toChecklistTemplateDto(template: ChecklistTemplate) {
 // filter keeps published templates. Snake_case is primary; the Flutter parser is
 // also camelCase-tolerant. Kept separate from `toChecklistTemplateDto` so the
 // web/tenant template contract is unaffected.
+// CHECKLIST P1 PR-01 — plumba as opções de escolha (single_choice/multi_choice) para o TOPO do item, na forma
+// [{value,label}] que o parser do app lê (`j['options']` → _optionFromJson espera {value,label}). No backend as
+// opções vivem em `config.options` como string[] (o validator exige lista não-vazia de strings) — aqui sintetizamos
+// value=label=string. Sem isso, o campo de escolha authorado na web cai em "Componente não suportado" no app
+// (achado ALTA da junta: as opções não chegavam ao mobile — nem no lugar, nem na forma). signature não usa opções.
+function toMobileChoiceOptions(component: ChecklistTemplate["components"][number]): Array<{ value: string; label: string }> | undefined {
+  if (component.type !== "single_choice" && component.type !== "multi_choice") return undefined;
+  const raw = (component.config as Record<string, unknown>).options;
+  if (!Array.isArray(raw)) return undefined;
+  const options = raw
+    .filter((opt): opt is string => typeof opt === "string" && opt.trim().length > 0)
+    .map((opt) => ({ value: opt, label: opt }));
+  return options.length > 0 ? options : undefined;
+}
+
 export function toMobileChecklistTemplateDto(template: ChecklistTemplate) {
   const items = [...template.components]
     .sort((left, right) => left.orderIndex - right.orderIndex)
-    .map((component) => ({
-      id: component.id,
-      label: component.label,
-      type: component.type,
-      required: component.required,
-      order: component.orderIndex,
-    }));
+    .map((component) => {
+      const options = toMobileChoiceOptions(component);
+      return {
+        id: component.id,
+        label: component.label,
+        type: component.type,
+        required: component.required,
+        order: component.orderIndex,
+        ...(options ? { options } : {}),
+      };
+    });
 
   return {
     id: template.id,
@@ -86,6 +105,12 @@ function toMobileChecklistTemplateStatus(status: ChecklistTemplate["status"]): s
 }
 
 export function toChecklistTemplateComponentDto(component: ChecklistTemplateComponent) {
+  // CHECKLIST P1 PR-01 — o run screen do app lê ESTE DTO (via GET /mobile/checklists/:id/render → getSchema →
+  // _fieldFromJson, que lê `j['options']` no topo). Por isso as opções de escolha são plumbadas aqui também, na
+  // forma [{value,label}], além do config cru. NOTA: o loop mobile só fecha DE FATO quando P-CHK-RENDER-ENVELOPE
+  // for resolvido (hoje o parser do envelope de /render estoura e o app cai no fallback de seeds — pré-existente,
+  // afeta TODOS os tipos). Este é o DTO correto para plumbar; o fechamento fim-a-fim é da PR de render mobile.
+  const options = toMobileChoiceOptions(component);
   return {
     id: component.id,
     tenantId: component.tenantId,
@@ -96,6 +121,7 @@ export function toChecklistTemplateComponentDto(component: ChecklistTemplateComp
     required: component.required,
     orderIndex: component.orderIndex,
     config: component.config,
+    ...(options ? { options } : {}),
     validationRules: component.validationRules,
     visibilityRules: component.visibilityRules,
     createdAt: component.createdAt.toISOString(),

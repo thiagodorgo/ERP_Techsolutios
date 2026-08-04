@@ -22,16 +22,31 @@ const checklistStatusSchema = z.enum(CHECKLIST_STATUSES);
 const checklistRunStatusSchema = z.enum(CHECKLIST_RUN_STATUSES);
 const componentTypeSchema = z.enum(CHECKLIST_COMPONENT_TYPES);
 
-const componentSchema = z.object({
-  componentKey: z.string().trim().min(1).optional(),
-  type: componentTypeSchema,
-  label: z.string().trim().min(1),
-  required: z.boolean().default(false),
-  orderIndex: z.number().int().nonnegative().optional(),
-  config: jsonRecordSchema,
-  validationRules: jsonRecordSchema,
-  visibilityRules: jsonRecordSchema,
-});
+const componentSchema = z
+  .object({
+    componentKey: z.string().trim().min(1).optional(),
+    type: componentTypeSchema,
+    label: z.string().trim().min(1),
+    required: z.boolean().default(false),
+    orderIndex: z.number().int().nonnegative().optional(),
+    config: jsonRecordSchema,
+    validationRules: jsonRecordSchema,
+    visibilityRules: jsonRecordSchema,
+  })
+  // CHECKLIST P1 PR-01 — validacao POR-TIPO: escolha (single/multi) exige `config.options` como lista NAO-VAZIA de
+  // strings nao-vazias; senao o componente e inauthoravel/irrenderizavel no mobile. Outros tipos: config livre (JSON).
+  .superRefine((component, ctx) => {
+    if (component.type !== "single_choice" && component.type !== "multi_choice") return;
+    const options = (component.config as Record<string, unknown>).options;
+    const valid = Array.isArray(options) && options.length > 0 && options.every((opt) => typeof opt === "string" && opt.trim().length > 0);
+    if (!valid) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["config", "options"],
+        message: "Componente de escolha exige config.options como lista nao-vazia de textos.",
+      });
+    }
+  });
 
 export type ChecklistComponentInput = {
   readonly componentKey?: string;

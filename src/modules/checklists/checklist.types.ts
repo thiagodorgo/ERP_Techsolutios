@@ -34,6 +34,11 @@ export const CHECKLIST_COMPONENT_TYPES = [
   "comparison",
   "acknowledgement",
   "before_after",
+  // CHECKLIST P1 PR-01 — alinha os tipos que o app Flutter (MobileChecklistFieldType) e o codec de sync JÁ aceitam
+  // e renderizam, mas que o backend/builder web não conheciam. Appended ao fim: preserva a ordem do catálogo.
+  "single_choice",
+  "multi_choice",
+  "signature",
 ] as const;
 
 export type ChecklistComponentType = (typeof CHECKLIST_COMPONENT_TYPES)[number];

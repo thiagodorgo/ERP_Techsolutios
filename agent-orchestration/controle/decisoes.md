@@ -1003,3 +1003,38 @@ auditoria do coordenador-de-acessos (que aprovou o gate ANTES desta extensão). 
 `completed`/`completed_with_divergence` (imutável); a edição pós-conclusão cria uma nova run vinculada (versão), não
 altera a existente. Espelha a disciplina append-only já usada na custódia (hash-chain) e no extrato financeiro.
 Registrado ANTES de codar o P1 (§A5 — decisão material vai para arquivo, não fica só no chat).
+
+## D-CHK-P1-APPLICABILITY (2026-08-03) — Modelo de aplicabilidade de checklist (CHECKLIST P1, PR-04)
+
+**Decisões do dono** (ratificadas após ataque adversarial do `critico-adversarial`, que ancorou o desenho no
+precedente já existente de **Tarifas** — `service_catalog_id? + customer_id?` + resolução determinística
+`pickApplicableTariff` + guarda anti-sobreposição). O dono cravou 4 pontos:
+
+1. **Eixo de serviço = AMBOS** (serviço concreto do catálogo **+** tipo-de-serviço soft-enum). Precedência
+   **serviço concreto > tipo > any(NULL)**. `CHECK (num_nonnulls(service_catalog_id, service_type) <= 1)` na regra.
+2. **Cardinalidade = N:N** (um OU vários checklists por OS) — "vai depender do tipo do serviço ou exigência do
+   cliente, o operador poderá definir isso no envio do checklist". ⇒ tabela de **junção `work_order_checklist`**
+   (não o `WorkOrder.checklist_id` single, que sobrevive só como retrocompat); a resolução devolve um **conjunto**;
+   e há um passo de **ajuste do operador no ENVIO/despacho** (adicionar/remover checklists antes de enviar ao
+   guincheiro). O crítico já exigia a coluna de **fase** (`role`: coleta/entrega/genérico) — reforçada aqui (o enum
+   já separa `towing_collection`/`towing_delivery`).
+3. **Custódia = DENTRO do escopo.** A aplicabilidade também resolve o checklist da custódia de pátio — precisa
+   **discriminar contexto** (checklist de campo vs. vistoria de entrada no pátio); provável extensão do eixo `role`
+   (ex. `custody_field`/`custody_yard`) ou um discriminador de contexto. Reconciliar com o AUTO-link do dossiê por
+   perfil de jurisdição (não duplicar caminho).
+4. **Momento do binding = STICKY NA CRIAÇÃO da OS.** Resolve e grava o conjunto aplicável quando a OS é criada
+   (não lazy no despacho); trocar cliente/serviço depois NÃO troca o checklist embaixo do operador. Marcador
+   **`checklist_source` (`resolved`|`manual`)** para o override manual continuar vencendo e ser auditável; API com
+   **tri-state** (ausente=resolver / null=limpar / valor=override). SEM backfill de OSs existentes.
+
+**Determinismo (bloqueante do crítico, incorporado):** `partial-unique WHERE is_active AND deleted_at IS NULL` por
+bucket (`serviço×tipo×cliente×role`) = "um checklist ativo por bucket" + **ordem total** na leitura (específico→geral;
+tiebreak `created_at desc, id asc`) — espelha o Tariff. `priority` NÃO é desempate primário. Resolução ignora template
+não-publicado/soft-deleted (mesma regra do freeze do despacho). Migração **aditiva** (tabela nova + junção + coluna
+`checklist_source`), RLS ENABLE+FORCE+policy, partial-unique/CHECK em SQL bruto (Prisma não expressa).
+
+**Consequência de escopo:** por N:N + custódia + ajuste-no-envio, a "PR-04" vira uma **sub-sequência** (modelo+resolução
+→ junção WO↔checklist + sticky-no-create → ajuste do operador no envio → custódia → `available` mobile real). Detalhada
+no comando de cada sub-PR. Ver ata `docs/juntas/J-CHECKLIST-P1.md`.
+
+**FORA de escopo confirmado:** re-resolução/backfill de OSs já criadas; `priority` como eixo primário.

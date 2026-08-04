@@ -21,6 +21,9 @@ test("checklist routes cover tenant templates, runs, divergence and acknowledgem
         "comparison",
         "acknowledgement",
         "before_after",
+        "single_choice",
+        "multi_choice",
+        "signature",
       ],
     );
 
@@ -312,6 +315,47 @@ test("checklist routes reject legacy headers in production", async () => {
     } finally {
       restoreOptionalEnv("NODE_ENV", previousNodeEnv);
     }
+  });
+});
+
+// CHECKLIST P1 PR-01 — os tipos single_choice/multi_choice/signature entram no catálogo e o validator passa a EXIGIR
+// config.options (lista não-vazia) para escolha. Assinatura/opções-válidas são aceitas.
+test("checklist P1: escolha exige config.options; assinatura e opções válidas passam", async () => {
+  await withChecklistApi(async ({ baseUrl, seed }) => {
+    const base = { headers: authHeaders(seed.tenantA, seed.adminA), method: "POST" as const };
+
+    // single_choice SEM options → 400 (validação tipada)
+    const semOpcoes = await requestJson(baseUrl, "/api/v1/tenant/checklists", {
+      ...base,
+      body: {
+        name: "Escolha sem opcoes",
+        type: "custom",
+        schema: {},
+        components: [{ componentKey: "sel", type: "single_choice", label: "Cor", required: true, config: {} }],
+      },
+    });
+    assert.equal(semOpcoes.status, 400);
+
+    // single_choice + multi_choice COM options e signature → 201
+    const valido = await requestJson(baseUrl, "/api/v1/tenant/checklists", {
+      ...base,
+      body: {
+        name: "Checklist P1",
+        type: "custom",
+        schema: {},
+        components: [
+          { componentKey: "cor", type: "single_choice", label: "Cor", required: true, config: { options: ["Preto", "Prata"] } },
+          { componentKey: "itens", type: "multi_choice", label: "Itens", required: false, config: { options: ["Estepe", "Macaco"] } },
+          { componentKey: "assin", type: "signature", label: "Assinatura do condutor", required: true, config: {} },
+        ],
+      },
+    });
+    assert.equal(valido.status, 201);
+    assert.equal(valido.body.data.components.length, 3);
+    assert.deepEqual(
+      valido.body.data.components.map((c: { type: string }) => c.type),
+      ["single_choice", "multi_choice", "signature"],
+    );
   });
 });
 
