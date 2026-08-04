@@ -4737,3 +4737,275 @@
   outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
+
+/* ═══ Usuários + Auditoria (sc_users/sc_audit) — PR-C TELAS PADRONIZADAS ═══
+   Fonte: "ERP Web - Telas Padronizadas.dc.html" (blocos sc_users/sc_audit) + J-TELAS-PADRONIZADAS §1.
+   Classes GENÉRICAS de tabela (.pat-table*) compartilhadas pelas duas telas; as .pat-os-* do PR-B
+   ficam intocadas (a grade de OS tem colunas próprias — duplicação mínima deliberada). */
+
+/* Seletores e busca do PAGE HEADER (fundo branco, 250px — difere da busca da toolbar de OS) */
+.pat-select {
+  padding: 9px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  font-family: inherit;
+}
+.pat-header-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  width: 250px;
+  color: #94a3b8;
+}
+.pat-header-search:focus-within {
+  border-color: #2563eb;
+}
+.pat-header-search input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 12.5px;
+  color: #0f172a;
+  width: 100%;
+  font-family: inherit;
+}
+
+/* Card de tabela 14px + cabeçalho/linha em grade (template de colunas por tela) */
+.pat-table {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.pat-table__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+}
+.pat-table__title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+.pat-table__subtitle {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+.pat-table__count {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+.pat-table__head {
+  display: grid;
+  gap: 12px;
+  padding: 10px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: #64748b;
+}
+.pat-table__row {
+  display: grid;
+  gap: 12px;
+  padding: 11px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: center;
+}
+.pat-table__row:hover {
+  background: #f8fafc;
+}
+/* Faixa de agrupamento por dia (Auditoria): "HOJE · 4 DE AGOSTO" */
+.pat-table__daybar {
+  padding: 8px 18px;
+  background: #fbfcfe;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+.pat-table__empty {
+  padding: 48px 18px;
+  text-align: center;
+}
+.pat-table__empty-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.pat-table__empty-detail {
+  font-size: 12.5px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* Grades por tela (colunas exatas do design; Auditoria SEM a coluna ORIGEM — o DTO
+   real não expõe dispositivo/IP por §2.8; a 4ª coluna vira a ação real de filtro) */
+.pat-users-grid {
+  grid-template-columns: minmax(0, 2.3fr) 1.3fr 0.8fr 1fr 116px;
+}
+.pat-audit-grid {
+  grid-template-columns: 120px minmax(0, 1.6fr) minmax(0, 2fr) 96px;
+}
+
+/* Botão-ícone 30px das linhas (Editar/Desativar/Auditoria/Filtrar por usuário) */
+.pat-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.pat-icon-btn:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+.pat-icon-btn--danger:hover:not(:disabled) {
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+.pat-icon-btn:disabled {
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+/* Células de identidade (nome + sub em ellipsis) */
+.pat-cell-main {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pat-cell-sub {
+  display: block;
+  font-size: 11.5px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Chip de perfil de acesso (retangular 7px) + selo roxo "acesso total" */
+.pat-role-chip {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+.pat-admin-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #7e22ce;
+  background: #f3e8ff;
+  padding: 2px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* Card de filtros da Auditoria (Tipo de evento / Usuário / De / Até / Limpar) */
+.pat-filter-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 15px 18px;
+  margin-bottom: 14px;
+}
+.pat-filter-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+.pat-filter-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+.pat-filter-field input,
+.pat-filter-field select {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  background: #fff;
+  font-family: inherit;
+}
+.pat-filter-field select {
+  cursor: pointer;
+}
+@media (max-width: 960px) {
+  .pat-filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Foco visível (a11y) das novas classes */
+.pat-select:focus-visible,
+.pat-icon-btn:focus-visible,
+.pat-header-search input:focus-visible,
+.pat-filter-field input:focus-visible,
+.pat-filter-field select:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Junta PR-C (MÉDIA-1) — chip do filtro-por-ator na Auditoria (id opaco nunca ecoa cru na UI). */
+.pat-actor-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #2563eb;
+}
+.pat-actor-filter-chip button {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.pat-actor-filter-chip button:hover { color: #2563eb; }
+.pat-actor-filter-chip button:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }

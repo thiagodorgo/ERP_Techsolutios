@@ -339,10 +339,13 @@ test("auditoria (render): filtros server-side + estado vazio honesto (não fabri
   const html = await renderPage("auditoria", ["audit.read"], "Auditor");
   assert.match(html, /Auditoria/);
   assert.match(html, /Filtros/);
-  assert.match(html, /Ação/);
-  assert.match(html, /Ator/);
+  // PR-C TELAS PADRONIZADAS (sc_audit): filtros reais rotulados em linguagem de negócio.
+  assert.match(html, /Tipo de evento/);
+  assert.match(html, /Usuário/);
+  assert.match(html, /Todo o período/);
   // §7 empty honesto — a cópia original preservada.
   assert.match(html, /Sem eventos de auditoria/);
-  // Sem dados fabricados legados.
+  // Sem dados fabricados legados; nada de termo técnico cru nos filtros.
   assert.doesNotMatch(html, /Carla Mendes|Concluiu OS-2891/);
+  assert.doesNotMatch(html, /auth\.login\.success/);
 });

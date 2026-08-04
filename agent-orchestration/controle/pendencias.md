@@ -1454,3 +1454,14 @@ do escopo do PR-01. Registrado.
 Rodada TELAS PADRONIZADAS PR-B. O design do dono (sc_os) mostra avatar+NOME do técnico na coluna TÉCNICO, mas o DTO
 da lista de work-orders só carrega `assignedOperatorId` — a tela degrada honestamente para "Atribuído" (sem inventar
 iniciais). Fatia pequena de backend: incluir `assignedOperatorName` no DTO de lista (join leve) + adapter/coluna.
+
+## P-USERS-LAST-ACCESS (2026-08-04) — DTO de usuários sem "último acesso" (BAIXA, UX)
+
+TELAS PR-C. O design mostra ÚLTIMO ACESSO ("14/07/2026 · há 21 dias"), mas `User` só tem `createdAt` — a tela usa
+"CRIADO EM" honesto. Fatia backend: gravar/expor last_login (a base já tem sessões/auditoria de login para derivar).
+
+## P-AUD-ACTOR-NAME (2026-08-04) — DTO de auditoria sem nome/perfil do ator (BAIXA, UX)
+
+TELAS PR-C. O design mostra avatar+nome+perfil do ator; o DTO expõe só `actor_user_id` (id opaco). A tela mostra
+"Usuário"+cor determinística (nunca UUID; chip no filtro). Fatia backend: incluir displayName/role do ator no DTO
+(join leve), respeitando a allowlist §2.8 (nome é rótulo, não PII sensível no contexto do próprio tenant).

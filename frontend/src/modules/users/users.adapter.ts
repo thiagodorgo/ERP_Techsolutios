@@ -15,10 +15,11 @@ const EMAIL_MAX = 254;
 // ── Situação: token técnico -> rótulo PT-BR + tom do Chip ─────────────────────
 // Enum real do backend é active|inactive; "invited" fica mapeado por robustez (nunca fabricado).
 // inactive usa o tom neutro (muted) — o design system não expõe um tom "muted" dedicado.
+// PR-C TELAS PADRONIZADAS: rótulo do invited alinhado ao design ("Convite pendente").
 const USER_STATUS_META: Record<UserStatus, { label: string; tone: "default" | "success" | "warning" }> = {
   active: { label: "Ativo", tone: "success" },
   inactive: { label: "Inativo", tone: "default" },
-  invited: { label: "Convidado", tone: "warning" },
+  invited: { label: "Convite pendente", tone: "warning" },
 };
 
 export function getUserStatusLabel(status: UserStatus): string {
@@ -31,8 +32,21 @@ export function getUserStatusTone(status: UserStatus) {
 
 // ── Papéis: reutiliza o mapa canônico chave->rótulo PT-BR (auth.adapter, fonte única) ─
 // Nunca inventa rótulo: papel sem mapeamento cai na própria chave (não some da tela).
+// PR-C TELAS PADRONIZADAS — sobreposição de EXIBIÇÃO (§3 + §11.3, PT-BR acentuado):
+//  · inventory → "Estoque" (o mapa do auth.adapter não cobre e caía na chave técnica);
+//  · field_technician → "Técnico de Campo" (rótulo canônico do §3; o token de sessão
+//    "Operador Logistico" segue intocado no auth.adapter — é contrato de navegação);
+//  · operator/technician → "Operador Logístico" (acento correto só na exibição).
+const ROLE_DISPLAY_OVERRIDES: Record<string, string> = {
+  inventory: "Estoque",
+  field_technician: "Técnico de Campo",
+  operator: "Operador Logístico",
+  technician: "Operador Logístico",
+};
+
 export function roleLabel(key: string): string {
-  return resolveFrontendRoles([key])[0] ?? key;
+  const normalized = key.trim().toLowerCase();
+  return ROLE_DISPLAY_OVERRIDES[normalized] ?? resolveFrontendRoles([key])[0] ?? key;
 }
 
 // Papéis atribuíveis a usuários da organização (RBAC_MATRIX) com rótulos distintos.

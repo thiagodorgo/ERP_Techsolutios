@@ -59,6 +59,11 @@ test("users adapter: papéis → rótulos PT-BR (mapa reutilizado do auth.adapte
   assert.equal(roleLabel("finance"), "Financeiro");
   assert.equal(roleLabel("auditor"), "Auditor");
   assert.equal(roleLabel("field_dispatcher"), "Operação de Campo");
+  // PR-C TELAS PADRONIZADAS — sobreposição de exibição (§3 + §11.3, PT-BR acentuado):
+  // inventory nunca vaza como chave técnica; técnico de campo usa o rótulo canônico.
+  assert.equal(roleLabel("inventory"), "Estoque");
+  assert.equal(roleLabel("field_technician"), "Técnico de Campo");
+  assert.equal(roleLabel("operator"), "Operador Logístico");
   // Papel sem mapeamento não é inventado nem sumido — cai na própria chave.
   assert.equal(roleLabel("papel_desconhecido"), "papel_desconhecido");
 
@@ -71,14 +76,15 @@ test("users adapter: papéis → rótulos PT-BR (mapa reutilizado do auth.adapte
   assert.ok(USER_ROLE_OPTIONS.every((option) => option.label.trim().length > 0));
 });
 
-test("users adapter: rótulo/tom do Chip de situação (Ativo/Inativo/Convidado)", async () => {
+test("users adapter: rótulo/tom do Chip de situação (Ativo/Inativo/Convite pendente)", async () => {
   const { getUserStatusLabel, getUserStatusTone } = await import("../src/modules/users/users.adapter");
 
   assert.equal(getUserStatusLabel("active"), "Ativo");
   assert.equal(getUserStatusTone("active"), "success");
   assert.equal(getUserStatusLabel("inactive"), "Inativo");
   assert.equal(getUserStatusTone("inactive"), "default");
-  assert.equal(getUserStatusLabel("invited"), "Convidado");
+  // PR-C TELAS PADRONIZADAS: rótulo do design para o status defensivo invited.
+  assert.equal(getUserStatusLabel("invited"), "Convite pendente");
   assert.equal(getUserStatusTone("invited"), "warning");
 });
 

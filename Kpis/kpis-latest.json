@@ -1,16 +1,16 @@
 {
   "snapshot_date": "2026-08-04",
-  "version": "TELAS-PADRONIZADAS-PR-B",
+  "version": "TELAS-PADRONIZADAS-PR-C",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "TELAS PADRONIZADAS PR-B (frontend-only): Ordens de Servico redesenhada fiel ao sc_os do prototipo do dono — PageHeader OPERACAO, 4 KPIs de decisao reais (slot critico=Atrasadas, precedente PR-A), toolbar busca+tabs-pill mapeadas a filtros reais, grade CODIGO/CLIENTE-SERVICO/TECNICO/AGENDA/SITUACAO/ACAO com chip 'Sem cliente vinculado'+Vincular e botao Atribuir gated (field_dispatch:create) com destino real, TablePager. Junta cognicao-visual APROVADO apos condicao de 1 linha (pill da SITUACAO no tamanho BASE — retificada a BAIXA incorreta da ata do PR-A). Capacidade preservada (Dar andamento/Revogar/checklist-chip/auto-refresh).",
-    "title": "TELAS PADRONIZADAS PR-B (frontend-only): Ordens de Servico redesenhada fiel ao sc_os do prototipo do dono — PageHeader OPERACAO, 4 KPIs de decisao reais (slot critico=Atrasadas, precedente PR-A), toolbar busca+tabs-pill mapeadas a filtros reais, grade CODIGO/CLIENTE-SERVICO/TECNICO/AGENDA/SITUACAO/ACAO com chip 'Sem cliente vinculado'+Vincular e botao Atribuir gated (field_dispatch:create) com destino real, TablePager. Junta cognicao-visual APROVADO apos condicao de 1 linha (pill da SITUACAO no tamanho BASE — retificada a BAIXA incorreta da ata do PR-A). Capacidade preservada (Dar andamento/Revogar/checklist-chip/auto-refresh).",
+    "block": "TELAS PADRONIZADAS PR-C (frontend-only): Usuarios + Auditoria redesenhadas fieis a sc_users/sc_audit — header sem colisao (busca+select+Novo usuario gated users.manage), 4+4 KPIs derivados de dados reais, tabela de usuarios com chips de perfil/badge acesso total/situacao com dot, auditoria AGRUPADA POR DIA com rotulos PT-BR humanizados (auth.refresh.success->'Sessao renovada') via presenter novo, filtros server-side reais + Exportar CSV real. Degradacoes honestas CONFIRMADAS no backend (sem last_access; ORIGEM omitida pela allowlist §2.8; ator sem nome -> 'Usuario'+cor, nunca UUID). Junta cognicao-visual APROVADO; 2 MEDIAs fechadas no PR (chip anti-UUID no filtro; deeplink real /audit?actorId=). Pendencias: P-USERS-LAST-ACCESS, P-AUD-ACTOR-NAME.",
+    "title": "TELAS PADRONIZADAS PR-C (frontend-only): Usuarios + Auditoria redesenhadas fieis a sc_users/sc_audit — header sem colisao (busca+select+Novo usuario gated users.manage), 4+4 KPIs derivados de dados reais, tabela de usuarios com chips de perfil/badge acesso total/situacao com dot, auditoria AGRUPADA POR DIA com rotulos PT-BR humanizados (auth.refresh.success->'Sessao renovada') via presenter novo, filtros server-side reais + Exportar CSV real. Degradacoes honestas CONFIRMADAS no backend (sem last_access; ORIGEM omitida pela allowlist §2.8; ator sem nome -> 'Usuario'+cor, nunca UUID). Junta cognicao-visual APROVADO; 2 MEDIAs fechadas no PR (chip anti-UUID no filtro; deeplink real /audit?actorId=). Pendencias: P-USERS-LAST-ACCESS, P-AUD-ACTOR-NAME.",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "TELAS PADRONIZADAS PR-B (frontend-only): Ordens de Servico redesenhada fiel ao sc_os do prototipo do dono — PageHeader OPERACAO, 4 KPIs de decisao reais (slot critico=Atrasadas, precedente PR-A), toolbar busca+tabs-pill mapeadas a filtros reais, grade CODIGO/CLIENTE-SERVICO/TECNICO/AGENDA/SITUACAO/ACAO com chip 'Sem cliente vinculado'+Vincular e botao Atribuir gated (field_dispatch:create) com destino real, TablePager. Junta cognicao-visual APROVADO apos condicao de 1 linha (pill da SITUACAO no tamanho BASE — retificada a BAIXA incorreta da ata do PR-A). Capacidade preservada (Dar andamento/Revogar/checklist-chip/auto-refresh).",
+    "summary": "TELAS PADRONIZADAS PR-C (frontend-only): Usuarios + Auditoria redesenhadas fieis a sc_users/sc_audit — header sem colisao (busca+select+Novo usuario gated users.manage), 4+4 KPIs derivados de dados reais, tabela de usuarios com chips de perfil/badge acesso total/situacao com dot, auditoria AGRUPADA POR DIA com rotulos PT-BR humanizados (auth.refresh.success->'Sessao renovada') via presenter novo, filtros server-side reais + Exportar CSV real. Degradacoes honestas CONFIRMADAS no backend (sem last_access; ORIGEM omitida pela allowlist §2.8; ator sem nome -> 'Usuario'+cor, nunca UUID). Junta cognicao-visual APROVADO; 2 MEDIAs fechadas no PR (chip anti-UUID no filtro; deeplink real /audit?actorId=). Pendencias: P-USERS-LAST-ACCESS, P-AUD-ACTOR-NAME.",
     "status_label": "Omega-VID PR-07 (frontend-only): VehicleDossieModal — dossie do veiculo num Modal size='lg' com 6 ABAS (Visao Geral/Vistoria/Linha do Tempo/Debitos/Liberacao/Leilao+Liquidacao), reusando os componentes e a logica de fetch da ProcessoDossiePage (hook compartilhado useProcessDossie). A vaga OCUPADA do OccupancyMap ABRE o modal (botao onOpenDossie, icone FileText) em vez de navegar; deep-link ?dossie=<processId> sincroniza abrir/fechar/mount (a rota /patios/processos/:id segue como fallback). Abas Checklist(PR-08)/Historico(PR-09) ainda NAO — estrutura pronta. +16 smoke tests (2 arquivos novos) + patios-mapa migrado; frontend_smoke 954 -> 970. Backend/flutter inalterados. --- ANTERIOR (PR-06): Modal do design system ganha size='lg' (base do dossie). +4 smoke; frontend_smoke 950 -> 954. --- ANTERIOR (PR-05 FIX-JUNTA, D-Omega-VID-05-SEED): a junta APROVOU_CONDICIONADO; o critico-adversarial provou 1 MEDIA (a colisao-POR-REUSO nao tinha caminho de correcao — duplicateCandidates/merge/unmerge NAO splitam). CONSERTO: a VISTORIA de recepcao (saveInspection) agora RECONCILIA/RE-APONTA ImpoundProcess.identity_id para a identidade correta da placa CONFIRMADA (resolve-ou-cria pelo helper do PR-05, MESMA tx RLS) => SPLITA a agregacao errada + sobe PROVISIONAL->CONFIRMED. Idempotente; FSM/hash-chain/merge INTOCADOS; sem migracao. backend 2082/2088 -> 2085/2091 (+3 DB-gated reais provando o SPLIT vivo)."
   },
   "metrics": {
@@ -21,10 +21,10 @@
       "note": "TELAS PR-A e frontend-only — flutter inalterado (835/835 na main; a fatia render-envelope com 839 esta parked em branch, fora da main)."
     },
     "frontend_smoke_tests": {
-      "value": 997,
-      "total": 997,
-      "display": "997/997",
-      "note": "TELAS PR-B: redesenho da lista de OS; kpi-cards-clickable.test.tsx atualizado (slot critico atrasadas + pop-up). 997/997 execucao real."
+      "value": 999,
+      "total": 999,
+      "display": "999/999",
+      "note": "TELAS PR-C: +2 testes (presenter de auditoria: rotulos humanizados + agrupamento por dia); users/audit smokes atualizados ao padrao (asserts RBAC/§2.8 preservados). 999/999 execucao real."
     },
     "backend_tests": {
       "value": 2115,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 132,
-      "display": "132",
-      "note": "TELAS PR-B (Ordens de Servico). Sobre 131 do #331."
+      "value": 133,
+      "display": "133",
+      "note": "TELAS PR-C (Usuarios + Auditoria). Sobre 132 do #332."
     },
     "mobile_backend_contracts": {
       "value": 18,
