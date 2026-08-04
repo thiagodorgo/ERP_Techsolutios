@@ -1925,5 +1925,14 @@
     "frontend_smoke_tests": "997/997",
     "blocks_completed": "130",
     "description": "CHECKLIST P1 PR-01: alinha os tipos de componente single_choice/multi_choice/signature (enum backend + catalogo + validator tipado [escolha exige config.options] + uniao/paleta do builder web) e plumba as opcoes de escolha ao topo dos DTOs mobile como [{value,label}] (render + snapshot). Junta critico-adversarial APROVADO_CONDICIONADO: a ALTA do render mobile do backend fica ABERTA (P-CHK-RENDER-ENVELOPE, pre-existente, app renderiza dos seeds) — honestidade §A6. backend 2110->2115 (+5); frontend/flutter inalterados; blocks 129->130."
+  },
+  {
+    "snapshot_date": "2026-08-04",
+    "version": "TELAS-PADRONIZADAS-PR-A",
+    "flutter_tests": "835/835",
+    "backend_tests": "2115/2115",
+    "frontend_smoke_tests": "997/997",
+    "blocks_completed": "131",
+    "description": "TELAS PADRONIZADAS PR-A (frontend-only): fundacao de componentes padronizados (PageHeader/KpiStatCard/TablePager/StatusPill/InitialsAvatar em components/patterns) + Dashboard redesenhado fiel ao prototipo do dono (ERP Web - Telas Padronizadas.dc.html, sc_dash): saudacao+Intl pt-BR, 5 KPIs de decisao clicaveis, faixa CADASTROS, grafico de barras empilhadas com a serie real, fila 'Exige acao agora', despachos/campo, eventos com agrupamento real. Degradacoes honestas D-007 documentadas (sem SLA real -> Atrasadas no slot critico; sem 'Exportar' morto). Junta cognicao-visual APROVADO (forense, zero divergencia de cor; 4 BAIXAs registradas)."
   }
 ]

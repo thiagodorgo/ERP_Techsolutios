@@ -1646,22 +1646,25 @@ test("dashboard operacional (C3) renderiza seções, KPIs reais e nada de dado t
     </MemoryRouter>,
   );
 
-  // Seções do dashboard presentes já no primeiro render.
-  assert.match(dashboardHtml, /Fila crítica/);
-  assert.match(dashboardHtml, /Alertas operacionais/);
+  // Seções do padrão TELAS PADRONIZADAS (PR-A) presentes já no primeiro render.
+  assert.match(dashboardHtml, /Exige ação agora/);
+  assert.match(dashboardHtml, /Volume de ordens de serviço/);
   assert.match(dashboardHtml, /Despachos ativos/);
   assert.match(dashboardHtml, /Status de campo/);
   assert.match(dashboardHtml, /Últimos eventos/);
-  // KPIs do agregado real GET /dashboard/summary (mock semeado no modo demo).
+  // 5 KPIs de decisão do agregado real GET /dashboard/summary (mock semeado no modo demo).
   assert.match(dashboardHtml, /OS abertas/);
   assert.match(dashboardHtml, /Em andamento/);
   assert.match(dashboardHtml, /Concluídas/);
   assert.match(dashboardHtml, /Atrasadas/);
   assert.match(dashboardHtml, /OS hoje/);
-  assert.match(dashboardHtml, /Clientes/);
-  assert.match(dashboardHtml, /Viaturas/);
-  assert.match(dashboardHtml, /Equipes/);
-  assert.match(dashboardHtml, /Serviços/);
+  // Faixa CADASTROS com as contagens reais do agregado (pills minúsculas, como no design).
+  assert.match(dashboardHtml, /CADASTROS/);
+  assert.match(dashboardHtml, /clientes/);
+  assert.match(dashboardHtml, /viaturas/);
+  assert.match(dashboardHtml, /equipes/);
+  assert.match(dashboardHtml, /serviços/);
+  assert.match(dashboardHtml, /Gerenciar cadastros/);
   // OS crítica exibida por código/cliente — nunca UUID cru.
   assert.match(dashboardHtml, /OS-10021/);
   assert.doesNotMatch(dashboardHtml, /wo-10021/);

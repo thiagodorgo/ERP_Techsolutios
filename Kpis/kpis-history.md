@@ -6,6 +6,32 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-04 - TELAS PADRONIZADAS PR-A (fundação de componentes + Dashboard)
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Flutter Tests | 835 / 835 (inalterado; frontend-only) |
+| Backend Tests | 2115 / 2115 (inalterado; frontend-only) |
+| Frontend Smoke | 997 / 997 (smoke-flow atualizado ao novo padrão) |
+| Blocos Entregues | 131 (130 → 131) |
+
+**1º PR da rodada TELAS PADRONIZADAS** (design do dono via Claude Design — `ERP Web - Telas Padronizadas.dc.html`).
+Fundação de componentes padronizados em `frontend/src/components/patterns/` (**PageHeader** com kicker, **KpiStatCard**
+de decisão com selo semântico, **TablePager**, **StatusPill** com dot, **InitialsAvatar** com paleta determinística) +
+**Dashboard redesenhado** fiel ao `sc_dash`: saudação por hora + Intl pt-BR, 5 KPIs de decisão clicáveis, faixa
+CADASTROS discreta, gráfico de barras empilhadas (série real, sem lib — PD-004), fila "Exige ação agora" (máx. 4, por
+urgência), Despachos ativos + Status de campo, Últimos eventos com **agrupamento real** de idênticos consecutivos.
+
+**Degradações honestas (D-007), documentadas:** o agregado real não tem "SLA em risco" → o slot crítico usa
+**Atrasadas** (borda `#FCA5A5` só quando >0); "N sem técnico" → tag neutra "em fila"; "Exportar" omitido (sem botão
+morto); countdown deriva de `scheduledFor` → rótulo "AGENDA". **Junta `cognicao-visual` → APROVADO** (revisão forense
+token a token: zero divergência de cor; honestidade confirmada — nenhum número fabricado; tela 100% viva — todos os
+links navegam; estados §7 no novo padrão; 4 BAIXAs registradas no ledger para os PRs seguintes: variante `--sm` do
+StatusPill no PR-B, "Ver tudo"→`/audit` candidato ao PR-C, selo de "Em andamento" com associação frouxa, "Concluídas"
+total vs "hoje"). Bateria: check/test:smoke (**997/997**)/build verdes; `app.css` 100% aditivo.
+
 ## 2026-08-03 - CHECKLIST P1 PR-01 (tipos single_choice/multi_choice/signature + plumbing de opções)
 
 ### Resultado
