@@ -1943,5 +1943,14 @@
     "frontend_smoke_tests": "997/997",
     "blocks_completed": "132",
     "description": "TELAS PADRONIZADAS PR-B (frontend-only): Ordens de Servico redesenhada fiel ao sc_os do prototipo do dono — PageHeader OPERACAO, 4 KPIs de decisao reais (slot critico=Atrasadas, precedente PR-A), toolbar busca+tabs-pill mapeadas a filtros reais, grade CODIGO/CLIENTE-SERVICO/TECNICO/AGENDA/SITUACAO/ACAO com chip 'Sem cliente vinculado'+Vincular e botao Atribuir gated (field_dispatch:create) com destino real, TablePager. Junta cognicao-visual APROVADO apos condicao de 1 linha (pill da SITUACAO no tamanho BASE — retificada a BAIXA incorreta da ata do PR-A). Capacidade preservada (Dar andamento/Revogar/checklist-chip/auto-refresh)."
+  },
+  {
+    "snapshot_date": "2026-08-04",
+    "version": "TELAS-PADRONIZADAS-PR-C",
+    "flutter_tests": "835/835",
+    "backend_tests": "2115/2115",
+    "frontend_smoke_tests": "999/999",
+    "blocks_completed": "133",
+    "description": "TELAS PADRONIZADAS PR-C (frontend-only): Usuarios + Auditoria redesenhadas fieis a sc_users/sc_audit — header sem colisao (busca+select+Novo usuario gated users.manage), 4+4 KPIs derivados de dados reais, tabela de usuarios com chips de perfil/badge acesso total/situacao com dot, auditoria AGRUPADA POR DIA com rotulos PT-BR humanizados (auth.refresh.success->'Sessao renovada') via presenter novo, filtros server-side reais + Exportar CSV real. Degradacoes honestas CONFIRMADAS no backend (sem last_access; ORIGEM omitida pela allowlist §2.8; ator sem nome -> 'Usuario'+cor, nunca UUID). Junta cognicao-visual APROVADO; 2 MEDIAs fechadas no PR (chip anti-UUID no filtro; deeplink real /audit?actorId=). Pendencias: P-USERS-LAST-ACCESS, P-AUD-ACTOR-NAME."
   }
 ]

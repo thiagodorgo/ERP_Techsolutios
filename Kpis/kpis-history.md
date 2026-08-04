@@ -6,6 +6,25 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-04 - TELAS PADRONIZADAS PR-C (Usuários + Auditoria)
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Flutter / Backend | inalterados (frontend-only) |
+| Frontend Smoke | 999 / 999 (997 → 999, +2 do presenter) |
+| Blocos Entregues | 133 (132 → 133) |
+
+**Usuários**: header sem colisão (busca + select de perfil + "Novo usuário" gated `users.manage`), 4 KPIs derivados,
+tabela com chips de perfil nos tons do design + badge "acesso total" + situação com dot, TablePager. **Auditoria**:
+eventos **agrupados por dia**, rótulos PT-BR humanizados via presenter novo (`auth.refresh.success`→"Sessão renovada"),
+KPIs derivados, filtros server-side reais, **Exportar CSV real** no header. **Degradações honestas confirmadas no
+backend**: sem last_access → "CRIADO EM" (P-USERS-LAST-ACCESS); coluna ORIGEM **omitida pela allowlist §2.8** (o
+backend não expõe device/IP — segurança, não gap); ator sem nome → "Usuário"+cor determinística (P-AUD-ACTOR-NAME).
+**Junta `cognicao-visual` → APROVADO**; 2 MÉDIAs **fechadas no próprio PR**: chip "Filtrando por 1 usuário" (UUID
+nunca ecoa cru) e deeplink real `/audit?actorId=` a partir de Usuários.
+
 ## 2026-08-04 - TELAS PADRONIZADAS PR-B (Ordens de Serviço)
 
 ### Resultado

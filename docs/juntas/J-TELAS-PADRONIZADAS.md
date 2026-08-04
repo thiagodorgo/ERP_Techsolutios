@@ -89,3 +89,27 @@ desfecho final"); foco teal herdado do kpi-card-clickable (pré-existente); dd/m
 
 **Pendência de backend registrada:** P-WO-LIST-TECH-NAME — incluir o NOME do técnico atribuído no DTO da lista de OS
 (hoje só o id), para a coluna TÉCNICO exibir avatar+nome como no design.
+
+### PR-C — Usuários + Auditoria — VOTOS DA JUNTA (2026-08-04) — **APROVADO (2 MÉDIAs fechadas no próprio PR)**
+
+`cognicao-visual` (forense código×protótipo + render SSR; **degradações confirmadas VERDADEIRAS no backend**):
+**PIXEL/TOKEN PASS** (grade users exata; grade audit adaptada COM HARMONIA — a coluna ORIGEM removida redistribui
+proporções; chips RC/badge acesso-total/pills US/daybar/hora mono hex a hex), **LINGUAGEM PASS** (dicionário de
+auditoria bate semanticamente com o EV do protótipo: `auth.refresh.success`→"Sessão renovada" etc.; `inventory`→
+"Estoque"; desconhecida→"Atividade registrada no sistema"), **HONESTIDADE PASS** (verificado no código: `User` só tem
+`createdAt` — sem last_access; DTO de auditoria com allowlist estrita §2.8 — device/IP NUNCA saem; nada fabricado),
+**CAPACIDADE/ESTADOS/A11Y/NÃO-REGRESSÃO PASS** (999/999; asserts de RBAC/§2.8 preservados; app.css aditivo).
+
+**2 MÉDIAs — FECHADAS no próprio PR:**
+1. O filtro-por-ator ecoava o **UUID cru** no input "Usuário" → agora vira **chip "Filtrando por 1 usuário · limpar"**
+   (o id fica só no estado; `UUID_RE`).
+2. "Ver auditoria deste usuário" navegava sem filtrar → agora **deeplink real** `/audit?actorId=` que semeia o filtro
+   no mount e some da URL (replace).
+
+**Degradações honestas (D-007) confirmadas + pendências:** "ÚLTIMO ACESSO"→**CRIADO EM** (P-USERS-LAST-ACCESS);
+"Convites pendentes"→**Inativos** (enum real é active|inactive); QUEM sem nome→"Usuário"+cor determinística
+(P-AUD-ACTOR-NAME); coluna ORIGEM omitida (imposta pela allowlist §2.8 do backend — não é gap, é segurança);
+"Últimas 24 horas"→"Hoje". **BAIXA-4 (declarada agora):** vs a página antiga perderam-se ordenação por coluna e
+persistência de busca na URL — o protótipo não os tem (fidelidade vence); recuperáveis depois se o dono pedir.
+BAIXAs menores: pill 10.5 vs 11px (inconsistência interna do próprio design entre sc_os e sc_users — seguimos o
+precedente BASE), plurais fixos, role="table" (passada ao fim da rodada).

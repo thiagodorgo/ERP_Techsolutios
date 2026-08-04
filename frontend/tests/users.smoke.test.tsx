@@ -91,11 +91,15 @@ test("users page renderiza cabeçalho, KPIs reais, ação de criar e estado vazi
 
   assert.match(html, /Usuários/);
   assert.match(html, /Novo usuário/);
-  // KPIs reais (rótulos sempre presentes; valores vêm dos dados, não fixos).
+  // KPIs reais do padrão sc_users (PR-C TELAS PADRONIZADAS) — rótulos sempre presentes;
+  // valores vêm dos dados, não fixos. "Convites pendentes" do design → "Inativos"
+  // (o enum real é active|inactive — degradação honesta declarada).
+  assert.match(html, /Usuários com acesso/);
   assert.match(html, /Ativos/);
-  assert.match(html, /Total/);
-  assert.match(html, /Papéis/);
+  assert.match(html, /Inativos/);
+  assert.match(html, /Com acesso total/);
   // "Criado em" substitui "último acesso" — este campo não existe no contrato e nunca aparece.
+  assert.match(html, /CRIADO EM/);
   assert.doesNotMatch(html, /[úu]ltimo acesso/i);
   // Estado vazio real (modo mock não fabrica linhas).
   assert.match(html, /Nenhum usu[áa]rio encontrado/);

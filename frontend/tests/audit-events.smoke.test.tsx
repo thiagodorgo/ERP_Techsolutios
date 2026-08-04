@@ -75,6 +75,62 @@ test("adaptAuditEvents: ordena por instante DESC (mais recente primeiro); ausên
   assert.match(views[0].whenIso, /^2026-07-15T09:00:00/);
 });
 
+// ── (a2) presenter (PR-C TELAS PADRONIZADAS) — rótulos PT-BR, agrupamento por dia e KPIs ─────────
+test("presenter: action real → rótulo PT-BR humanizado; desconhecida → genérico honesto (nunca a string técnica)", async () => {
+  const { auditActionMeta } = await import("../src/modules/audit/audit-events.presenter");
+
+  assert.equal(auditActionMeta("auth.login.success").label, "Entrou no sistema");
+  assert.equal(auditActionMeta("auth.refresh.success").label, "Sessão renovada");
+  assert.equal(auditActionMeta("auth.session.revoked").label, "Sessão encerrada pelo sistema");
+  assert.equal(auditActionMeta("auth.login.failed").label, "Tentativa de acesso recusada");
+  // Humanização genérica entidade.verbo (com gênero correto — PT-BR de negócio).
+  assert.equal(auditActionMeta("work_order.created").label, "Ordem de serviço criada");
+  assert.equal(auditActionMeta("customer.created").label, "Cliente criado");
+  // Ação fora do dicionário → rótulo genérico honesto, jamais a chave técnica crua.
+  const unknown = auditActionMeta("acao.super_exotica");
+  assert.equal(unknown.label, "Atividade registrada no sistema");
+  assert.doesNotMatch(unknown.label, /acao\.super_exotica/);
+});
+
+test("presenter: agrupa por dia (America/Sao_Paulo) com HOJE/ONTEM e deriva KPIs só dos eventos reais", async () => {
+  const { computeAuditKpis, groupAuditEventsByDay, auditActorPresentation } = await import(
+    "../src/modules/audit/audit-events.presenter"
+  );
+  const { adaptAuditEvents } = await import("../src/modules/audit/audit-events.adapter");
+
+  // "Agora" fixo (12:00 UTC = 09:00 em São Paulo) para rótulos determinísticos.
+  const now = new Date("2026-08-04T12:00:00Z");
+  const events = adaptAuditEvents([
+    { id: "e1", action: "auth.login.success", actor_user_id: "usr-1", timestamp: "2026-08-04T11:00:00Z" },
+    { id: "e2", action: "auth.session.revoked", actor_user_id: "usr-1", timestamp: "2026-08-04T10:00:00Z" },
+    { id: "e3", action: "auth.login.failed", timestamp: "2026-08-03T10:00:00Z" },
+    { id: "e4", action: "auth.logout", actor_user_id: "usr-2", timestamp: "2026-08-01T10:00:00Z" },
+  ]);
+
+  const groups = groupAuditEventsByDay(events, now);
+  assert.equal(groups.length, 3);
+  assert.equal(groups[0].label, "HOJE · 4 DE AGOSTO");
+  assert.equal(groups[1].label, "ONTEM · 3 DE AGOSTO");
+  assert.equal(groups[2].label, "1 DE AGOSTO");
+  assert.deepEqual(groups[0].events.map((event) => event.id), ["e1", "e2"]);
+
+  const kpis = computeAuditKpis(events);
+  assert.equal(kpis.total, 4);
+  assert.equal(kpis.logins, 1);
+  assert.equal(kpis.loginActors, 1);
+  assert.equal(kpis.ended, 2); // logout + revogada pelo sistema
+  assert.equal(kpis.endedBySystem, 1);
+  assert.equal(kpis.denied, 1);
+
+  // QUEM sem nome no DTO (§2.8): apresentação "Usuário" com cor determinística — NUNCA UUID cru;
+  // ator ausente → "Sistema" (rótulo do adapter preservado).
+  const human = auditActorPresentation("usr-1");
+  assert.equal(human.name, "Usuário");
+  assert.equal(human.isSystem, false);
+  assert.deepEqual(auditActorPresentation("usr-1"), human); // determinístico por ator
+  assert.equal(auditActorPresentation("Sistema").isSystem, true);
+});
+
 // ── (b) service em modo mock ──────────────────────────────────────────────────────────────────────
 test("getAuditEvents em modo mock: source 'mock', lista vazia (não fabrica evento)", async () => {
   process.env.VITE_USE_MOCKS = "true";
