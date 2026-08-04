@@ -1961,5 +1961,14 @@
     "frontend_smoke_tests": "1003/1003",
     "blocks_completed": "134",
     "description": "TELAS PADRONIZADAS PR-D (frontend-only): Patios redesenhada fiel ao sc_patios COM OCUPACAO REAL — a pagina consome usePatiosDashboardSummary (UMA requisicao, ja usada pelo Painel) e mostra barra de ocupacao por patio (X de Y vagas + % com faixa de cor) e os KPIs do design (Veiculos em custodia / Ocupacao media / Liberacoes pendentes), com fallback honesto para CAPACIDADE PREVISTA sem impound:read. Junta 2 ciclos: ciclo 1 REPROVOU (CRITICA: comentario CSS com '*/' no texto descartava .pat-patios-grid — tabela sem grade; + ALTA: a degradacao 'nao ha ocupacao' era FALSA); ciclo 2 APROVADO_CONDICIONADO com 4 MEDIAs, todas fechadas. GUARD NOVO pattern-css-guard (3 testes) impede a regressao do CSS nas 5 telas."
+  },
+  {
+    "snapshot_date": "2026-08-04",
+    "version": "CHK-P1-RENDER-ENVELOPE",
+    "flutter_tests": "839/839",
+    "backend_tests": "2115/2115",
+    "frontend_smoke_tests": "1003/1003",
+    "blocks_completed": "135",
+    "description": "CHECKLIST P1 — fatia render-envelope (P-CHK-RENDER-ENVELOPE, ALTA da junta do PR-01) + item de menu do builder. Flutter: fetchChecklistRender desembrulha {data} e _schemaFromJson tolera o shape REAL (name->title, version numerico, checklistId ausente) — o app deixa de cair nos SEEDS e passa a renderizar checklists authorados na web; teste de contrato render->field (4) com o payload byte-shape do fio. Web: a rota do builder /administrator/checklists era ORFA de menu — entra 'Modelos de Checklist' em ADMINISTRACAO (gate tenant_checklists:read)."
   }
 ]

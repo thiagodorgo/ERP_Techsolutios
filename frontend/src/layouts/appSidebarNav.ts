@@ -64,6 +64,10 @@ const DESPACHOS: NavItem = { label: "Despachos", path: "/operations/dispatches",
 const MAPA: NavItem = { label: "Mapa Operacional", path: "/operations/map", icon: MapPin };
 const APROVACOES: NavItem = { label: "Aprovações", path: "/approvals", icon: CheckCircle };
 const CHECKLISTS: NavItem = { label: "Checklists", path: "/operations/checklists", icon: ListChecks };
+// CHECKLIST P1 — o BUILDER de modelos (/administrator/checklists) existia como rota mas não tinha item de menu
+// (órfão: só alcançável digitando a URL — achado do dono). Entra em ADMINISTRAÇÃO; gate real = tenant_checklists:read
+// (registry tenantNavigation + PermissionGuard da rota; o backend é a autoridade).
+const MODELOS_CHECKLIST: NavItem = { label: "Modelos de Checklist", path: "/administrator/checklists", icon: ClipboardList };
 const ORCAMENTOS: NavItem = { label: "Orçamentos", path: "/operations/quotes", icon: Calculator };
 
 const VIATURAS: NavItem = { label: "Viaturas", path: "/cadastros/viaturas", icon: Truck };
@@ -149,7 +153,7 @@ const G_GESTAO_FULL: NavGroup = {
 };
 const G_ADMIN_FULL: NavGroup = {
   label: "ADMINISTRAÇÃO",
-  items: [USUARIOS, ACESSOS, SESSOES, NOTIFICACOES, CENTRAL_NOTIFICACOES, CONFIGURACOES, AUDITORIA],
+  items: [USUARIOS, ACESSOS, SESSOES, NOTIFICACOES, CENTRAL_NOTIFICACOES, MODELOS_CHECKLIST, CONFIGURACOES, AUDITORIA],
 };
 // Ω4C PR-14 — grupo TELEMETRIA (papéis com telemetry:read: tenant_admin/manager/field_dispatcher/auditor).
 // Visível para os roleKind admin/gestor/dispatcher; o backend é a autoridade final (rota PermissionGuard
