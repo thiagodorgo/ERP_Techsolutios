@@ -1421,7 +1421,20 @@ de completude entre os dois caminhos. Decidir numa fatia própria: (a) alinhar a
 `ChecklistRunsPanel`/`CustodyHistoryPanel` + hooks — baratos, já são componentes puros), OU (b) deprecar a página em
 favor do modal (redirecionar `/patios/processos/:id` para abrir o modal). Registrado (§A2).
 
-## P-CHK-RENDER-ENVELOPE (2026-08-03) — O run screen mobile renderiza dos SEEDS, não do backend (ALTA ABERTA, pré-existente)
+## P-CHK-RENDER-ENVELOPE (2026-08-03) — O run screen mobile renderiza dos SEEDS, não do backend (ALTA) — **RESOLVIDA (2026-08-04, aguardando re-verificação da junta)**
+
+> **RESOLVIDA na fatia P1 render-envelope** (a pedido do dono: "faça o A"). Os 3 requisitos que a junta exigiu:
+> (a) `options: [{value,label}]` no topo de `toChecklistTemplateComponentDto` — **FEITO no PR-01/#330**;
+> (b) **envelope alinhado no Flutter** — `fetchChecklistRender` desembrulha `{data}` (tolera payload sem envelope) e
+> `_schemaFromJson` tolera o shape REAL (`name`→title, `version` numérico→string, `checklistId` ausente→id,
+> `description`→instructions) — FEITO nesta fatia;
+> (c) **teste de contrato render→field** (`test/features/checklists/p1_render_envelope_test.dart`, 4 testes) com o
+> payload byte-shape do fio: prova `field.options != null` para escolha (não cai em "não suportado"), signature ok,
+> contrato legado tolerado, e degradação honesta sem options — FEITO nesta fatia.
+> Validação VISUAL em device fica pendente apenas do emulador do dono subir (watcher armado — o app instala sozinho).
+> (Diagnóstico original abaixo.)
+
+### (original) diagnóstico
 
 Junta do CHECKLIST P1 PR-01 (critico-adversarial, **2 ciclos** de rastreamento). **Achado ALTA que continua ABERTO.**
 A fonte REAL do run screen do guincheiro é `checklist_run_screen.dart:57 → repo.getSchema → _remoteApi.fetchChecklistRender`

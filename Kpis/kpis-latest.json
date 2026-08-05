@@ -1,24 +1,24 @@
 {
   "snapshot_date": "2026-08-04",
-  "version": "TELAS-PADRONIZADAS-PR-D",
+  "version": "CHK-P1-RENDER-ENVELOPE",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "TELAS PADRONIZADAS PR-D (frontend-only): Patios redesenhada fiel ao sc_patios COM OCUPACAO REAL — a pagina consome usePatiosDashboardSummary (UMA requisicao, ja usada pelo Painel) e mostra barra de ocupacao por patio (X de Y vagas + % com faixa de cor) e os KPIs do design (Veiculos em custodia / Ocupacao media / Liberacoes pendentes), com fallback honesto para CAPACIDADE PREVISTA sem impound:read. Junta 2 ciclos: ciclo 1 REPROVOU (CRITICA: comentario CSS com '*/' no texto descartava .pat-patios-grid — tabela sem grade; + ALTA: a degradacao 'nao ha ocupacao' era FALSA); ciclo 2 APROVADO_CONDICIONADO com 4 MEDIAs, todas fechadas. GUARD NOVO pattern-css-guard (3 testes) impede a regressao do CSS nas 5 telas.",
-    "title": "TELAS PADRONIZADAS PR-D (frontend-only): Patios redesenhada fiel ao sc_patios COM OCUPACAO REAL — a pagina consome usePatiosDashboardSummary (UMA requisicao, ja usada pelo Painel) e mostra barra de ocupacao por patio (X de Y vagas + % com faixa de cor) e os KPIs do design (Veiculos em custodia / Ocupacao media / Liberacoes pendentes), com fallback honesto para CAPACIDADE PREVISTA sem impound:read. Junta 2 ciclos: ciclo 1 REPROVOU (CRITICA: comentario CSS com '*/' no texto descartava .pat-patios-grid — tabela sem grade; + ALTA: a degradacao 'nao ha ocupacao' era FALSA); ciclo 2 APROVADO_CONDICIONADO com 4 MEDIAs, todas fechadas. GUARD NOVO pattern-css-guard (3 testes) impede a regressao do CSS nas 5 telas.",
+    "block": "CHECKLIST P1 — fatia render-envelope (P-CHK-RENDER-ENVELOPE, ALTA da junta do PR-01) + item de menu do builder. Flutter: fetchChecklistRender desembrulha {data} e _schemaFromJson tolera o shape REAL (name->title, version numerico, checklistId ausente) — o app deixa de cair nos SEEDS e passa a renderizar checklists authorados na web; teste de contrato render->field (4) com o payload byte-shape do fio. Web: a rota do builder /administrator/checklists era ORFA de menu — entra 'Modelos de Checklist' em ADMINISTRACAO (gate tenant_checklists:read).",
+    "title": "CHECKLIST P1 — fatia render-envelope (P-CHK-RENDER-ENVELOPE, ALTA da junta do PR-01) + item de menu do builder. Flutter: fetchChecklistRender desembrulha {data} e _schemaFromJson tolera o shape REAL (name->title, version numerico, checklistId ausente) — o app deixa de cair nos SEEDS e passa a renderizar checklists authorados na web; teste de contrato render->field (4) com o payload byte-shape do fio. Web: a rota do builder /administrator/checklists era ORFA de menu — entra 'Modelos de Checklist' em ADMINISTRACAO (gate tenant_checklists:read).",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "TELAS PADRONIZADAS PR-D (frontend-only): Patios redesenhada fiel ao sc_patios COM OCUPACAO REAL — a pagina consome usePatiosDashboardSummary (UMA requisicao, ja usada pelo Painel) e mostra barra de ocupacao por patio (X de Y vagas + % com faixa de cor) e os KPIs do design (Veiculos em custodia / Ocupacao media / Liberacoes pendentes), com fallback honesto para CAPACIDADE PREVISTA sem impound:read. Junta 2 ciclos: ciclo 1 REPROVOU (CRITICA: comentario CSS com '*/' no texto descartava .pat-patios-grid — tabela sem grade; + ALTA: a degradacao 'nao ha ocupacao' era FALSA); ciclo 2 APROVADO_CONDICIONADO com 4 MEDIAs, todas fechadas. GUARD NOVO pattern-css-guard (3 testes) impede a regressao do CSS nas 5 telas.",
+    "summary": "CHECKLIST P1 — fatia render-envelope (P-CHK-RENDER-ENVELOPE, ALTA da junta do PR-01) + item de menu do builder. Flutter: fetchChecklistRender desembrulha {data} e _schemaFromJson tolera o shape REAL (name->title, version numerico, checklistId ausente) — o app deixa de cair nos SEEDS e passa a renderizar checklists authorados na web; teste de contrato render->field (4) com o payload byte-shape do fio. Web: a rota do builder /administrator/checklists era ORFA de menu — entra 'Modelos de Checklist' em ADMINISTRACAO (gate tenant_checklists:read).",
     "status_label": "Omega-VID PR-07 (frontend-only): VehicleDossieModal — dossie do veiculo num Modal size='lg' com 6 ABAS (Visao Geral/Vistoria/Linha do Tempo/Debitos/Liberacao/Leilao+Liquidacao), reusando os componentes e a logica de fetch da ProcessoDossiePage (hook compartilhado useProcessDossie). A vaga OCUPADA do OccupancyMap ABRE o modal (botao onOpenDossie, icone FileText) em vez de navegar; deep-link ?dossie=<processId> sincroniza abrir/fechar/mount (a rota /patios/processos/:id segue como fallback). Abas Checklist(PR-08)/Historico(PR-09) ainda NAO — estrutura pronta. +16 smoke tests (2 arquivos novos) + patios-mapa migrado; frontend_smoke 954 -> 970. Backend/flutter inalterados. --- ANTERIOR (PR-06): Modal do design system ganha size='lg' (base do dossie). +4 smoke; frontend_smoke 950 -> 954. --- ANTERIOR (PR-05 FIX-JUNTA, D-Omega-VID-05-SEED): a junta APROVOU_CONDICIONADO; o critico-adversarial provou 1 MEDIA (a colisao-POR-REUSO nao tinha caminho de correcao — duplicateCandidates/merge/unmerge NAO splitam). CONSERTO: a VISTORIA de recepcao (saveInspection) agora RECONCILIA/RE-APONTA ImpoundProcess.identity_id para a identidade correta da placa CONFIRMADA (resolve-ou-cria pelo helper do PR-05, MESMA tx RLS) => SPLITA a agregacao errada + sobe PROVISIONAL->CONFIRMED. Idempotente; FSM/hash-chain/merge INTOCADOS; sem migracao. backend 2082/2088 -> 2085/2091 (+3 DB-gated reais provando o SPLIT vivo)."
   },
   "metrics": {
     "flutter_tests": {
-      "value": 835,
-      "total": 835,
-      "display": "835/835",
-      "note": "TELAS PR-A e frontend-only — flutter inalterado (835/835 na main; a fatia render-envelope com 839 esta parked em branch, fora da main)."
+      "value": 839,
+      "total": 839,
+      "display": "839/839",
+      "note": "CHK P1 render-envelope: +4 test() de contrato (p1_render_envelope_test: parser REAL DioChecklistRemoteApi contra o payload byte-shape do backend — envelope {data}, name, version numerico, options no topo; escolha nao cai em 'nao suportado'; legado tolerado; degradacao sem options). Sobre 835. format 0-changed, analyze limpo, suite completa 839/839 (execucao real)."
     },
     "frontend_smoke_tests": {
       "value": 1003,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 134,
-      "display": "134",
-      "note": "TELAS PR-D (Patios com ocupacao real) — FECHA a rodada de 5 telas. Sobre 133 do #333."
+      "value": 135,
+      "display": "135",
+      "note": "CHK P1 fatia render-envelope + menu do builder de checklist. Sobre 134 do #334."
     },
     "mobile_backend_contracts": {
       "value": 18,

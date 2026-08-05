@@ -76,3 +76,24 @@ NÃO vender o fechamento do loop — cumprida aqui.
 
 **KPIs:** backend +5 test() (1 validator + 4 DTO mobile: itens+snapshot+render) → suíte checklist 35→39+; frontend
 inalterado (tsc+smoke cobrem a paleta); sem migração. `blocks_completed` +1.
+
+### Fatia render-envelope (P-CHK-RENDER-ENVELOPE) + menu do builder — 2026-08-04 (a pedido do dono: "faça o A")
+
+Fecha a ALTA aberta pela junta do PR-01, priorizada acima das demais PRs do builder:
+1. **Flutter — envelope alinhado** (`checklist_remote_api.dart`): `fetchChecklistRender` desembrulha `{data}`
+   (tolerando payload sem envelope) e `_schemaFromJson` passa a tolerar o shape REAL do fio (`name`→title, `version`
+   numérico→string, `checklistId` ausente→id, `description`→instructions). O cast que estourava e derrubava o app no
+   fallback de SEEDS morreu — checklists authorados na web passam a renderizar do backend.
+2. **Teste de contrato** (`test/features/checklists/p1_render_envelope_test.dart`, 4): exercita o PARSER REAL
+   (`DioChecklistRemoteApi` com transporte stub) contra o payload byte-shape do backend — prova
+   `render → schema → field.options != null` (escolha renderiza; não "Componente não suportado"), signature ok,
+   contrato legado tolerado e degradação honesta sem options. Era a rede que faltava (o gap nunca tinha sido pego
+   porque nenhum teste exercitava o parse contra o shape real).
+3. **Web — menu do builder** (achado do dono: "não está aparecendo o build do checklist"): a rota
+   `/administrator/checklists` (builder) existia mas era ÓRFÃ de menu (só via URL digitada). Entrou o item
+   **"Modelos de Checklist"** no grupo ADMINISTRAÇÃO (`appSidebarNav.ts`), distinto de "Checklists" (execuções,
+   OPERAÇÃO). Gate real: `tenant_checklists:read` (registry + PermissionGuard; backend é a autoridade).
+
+Bateria: `dart format` 0-changed · `flutter analyze` limpo · teste de contrato 4/4 · suíte Flutter completa (contagem
+real no PR) · frontend check/smoke(997)/build verdes · backend intocado. Emulador do dono com watcher armado (o app
+instala sozinho quando a instância Android subir).

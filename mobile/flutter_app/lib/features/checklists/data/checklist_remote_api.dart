@@ -212,7 +212,12 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
       final response = await _client.get(
         ChecklistApiEndpoints.checklistRender(checklistId),
       );
-      return _schemaFromJson(response.data as Map<String, dynamic>);
+      // P-CHK-RENDER-ENVELOPE (CHECKLIST P1) — o backend responde `{ data: {...} }`; sem o desembrulho o
+      // _schemaFromJson estourava o cast e o app caía no fallback de SEEDS (nenhum checklist authorado na web
+      // renderizava). Tolera também payload sem envelope (contrato antigo/teste).
+      final body = response.data as Map<String, dynamic>;
+      final payload = (body['data'] as Map<String, dynamic>?) ?? body;
+      return _schemaFromJson(payload);
     } on DioException catch (e) {
       throw mapDioError(e);
     }
@@ -406,13 +411,18 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
     );
   }
 
+  // P-CHK-RENDER-ENVELOPE (CHECKLIST P1) — parser alinhado ao shape REAL do GET /mobile/checklists/:id/render:
+  // `{ id, name, description, type, version:NUMERO, schema, components }` (sem `checklistId`/`title`). O contrato
+  // antigo (`checklistId`/`title`/`version` string) segue tolerado — nunca mais estourar cast e cair nos seeds.
   MobileChecklistSchema _schemaFromJson(Map<String, dynamic> j) =>
       MobileChecklistSchema(
-        id: j['id'] as String,
-        checklistId: j['checklistId'] as String,
-        version: j['version'] as String,
-        title: j['title'] as String,
-        instructions: j['instructions'] as String?,
+        id: (j['id'] as String?) ?? '',
+        checklistId:
+            (j['checklistId'] as String?) ?? (j['id'] as String?) ?? '',
+        version: '${j['version'] ?? j['schema_version'] ?? '1'}',
+        title: (j['title'] as String?) ?? (j['name'] as String?) ?? '',
+        instructions:
+            (j['instructions'] as String?) ?? (j['description'] as String?),
         // Tolera os DOIS formatos do contrato: `fields` (render) e `components`
         // (builder/admin). Ver mapeamento em _fieldFromJson.
         fields: ((j['fields'] ?? j['components']) as List<dynamic>? ?? const [])
