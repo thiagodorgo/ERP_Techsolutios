@@ -6,6 +6,30 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-04 - TELAS PADRONIZADAS PR-D (Pátios com ocupação real) — fecha a rodada de 5 telas
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Flutter / Backend | inalterados (frontend-only) |
+| Frontend Smoke | 1003 / 1003 (999 → 1003, +4) |
+| Blocos Entregues | 134 (133 → 134) |
+
+**Pátios** fiel ao `sc_patios` **com ocupação REAL**: a página consome `usePatiosDashboardSummary` (uma requisição, já
+usada pelo Painel) e mostra **barra de ocupação por pátio** ("X de Y vagas" + % com faixa verde/âmbar/vermelho) e os
+**KPIs do design** (Veículos em custódia · Ocupação média · Liberações pendentes), com **fallback honesto** para
+"Capacidade prevista" quando falta `impound:read`.
+
+**Junta em 2 ciclos.** Ciclo 1 **REPROVOU** com duas descobertas de peso: (1) **CRÍTICA** — um comentário CSS com `*/`
+no meio do texto **fechava cedo e fazia o parser descartar a regra `.pat-patios-grid` inteira**: a tabela ficava **sem
+grade** acima de 1100px (medido no navegador; `tsc` e os smokes não pegam CSS); (2) **ALTA** — a degradação declarada
+("não há ocupação na lista") era **FALSA**. Ciclo 2 **APROVADO_CONDICIONADO**, com as 4 MÉDIAs fechadas (role de
+tabela no wrapper certo; contagem não afirma "0" sob erro; nome acessível = rótulo visível WCAG 2.5.3; hover/foco do
+nome-link). **+4 testes**: o **guard de CSS** (3) que trava as grades das 5 telas contra esse tipo de regressão, e as
+funções puras da tela (1). Correções transversais às 5 telas: `TablePager` virou `<nav>` com `aria-live`; `.pat-skel`
+ganhou pulso com `prefers-reduced-motion`; `.pat-cell-body` padroniza a célula de corpo.
+
 ## 2026-08-04 - TELAS PADRONIZADAS PR-C (Usuários + Auditoria)
 
 ### Resultado

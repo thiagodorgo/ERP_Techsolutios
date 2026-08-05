@@ -113,3 +113,32 @@ auditoria bate semanticamente com o EV do protótipo: `auth.refresh.success`→"
 persistência de busca na URL — o protótipo não os tem (fidelidade vence); recuperáveis depois se o dono pedir.
 BAIXAs menores: pill 10.5 vs 11px (inconsistência interna do próprio design entre sc_os e sc_users — seguimos o
 precedente BASE), plurais fixos, role="table" (passada ao fim da rodada).
+
+### PR-D — Pátios — VOTOS DA JUNTA (2026-08-04) — **APROVADO (ciclo 1 REPROVADO → rework → ciclo 2, 4 MÉDIAs fechadas)**
+
+**Ciclo 1 — REPROVADO (`cognicao-visual`, com dev server + medição de estilo computado + screenshots):**
+- **CRÍTICA:** o comentário `/* … Reusa .pat-table*/.pat-kpi* … */` **fechava cedo** no `.pat-table*/` e o parser
+  **descartava a regra `.pat-patios-grid` inteira** → a tabela de Pátios ficava **sem grade** acima de 1100px
+  (medido: `grid-template-columns` = "1118px", coluna única). `tsc` e os smokes não pegam (CSS não é tipado; o
+  ambiente de teste não faz layout). **Fechada** + **guard novo** `frontend/tests/pattern-css-guard.test.ts` (3
+  testes) que remove comentários como o parser faz e exige que as 4 grades + 8 regras estruturais do padrão
+  sobrevivam (a revisora quebrou o comentário de propósito e confirmou que o guard falha).
+- **3 ALTAs de token** (botão primário navy em vez do azul do padrão; células ENDEREÇO/FUSO lavadas; KPIs afirmando
+  zeros com selo verde sob erro) — **todas fechadas**.
+
+**Ciclo 1 — `critico-adversarial` APROVADO_CONDICIONADO, com um achado que MELHOROU o PR:**
+- **ALTA:** a degradação declarada ("não há ocupação na listagem") era **FALSA** — `/patios/dashboard/summary`
+  entrega ocupação por pátio em **uma** requisição e o app já a consome no Painel. **Implementado de verdade:**
+  barra de ocupação real por pátio + KPIs do design (custódia/ocupação média/liberações), com fallback honesto.
+
+**Ciclo 2 — re-verificação:** `cognicao-visual` **APROVADO_CONDICIONADO** (grade medida a 1440px = exatamente a do
+protótipo; ocupação hex a hex; 3 ALTAs confirmadas fechadas) e `critico-adversarial` idem. **4 MÉDIAs fechadas:**
+`role="table"` movido para o wrapper de head+linhas (topbar/vazio/pager fora); contagem não afirma "0 pátios" sob
+erro; `aria-label` do botão de ordenação usa o **rótulo visível** (WCAG 2.5.3); hover/foco do nome-link.
+
+**Correções transversais às 5 telas** (nascidas aqui): `TablePager` virou `<nav aria-label>` com `aria-live` no
+range; `.pat-skel` ganhou pulso com `prefers-reduced-motion`; `.pat-cell-body` padroniza a célula de corpo.
+
+**Degradações honestas (D-007) desta tela:** sem código do pátio no modelo (`YardItem` não tem) → sub-linha do
+protótipo omitida; "Exportar" omitido (sem ação real, como em Dashboard/OS); sem `impound:read` a coluna vira
+**CAPACIDADE PREVISTA** e os KPIs recaem no cadastro (selo "sem acesso à custódia").

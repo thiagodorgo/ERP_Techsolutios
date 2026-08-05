@@ -93,9 +93,17 @@ test("pátios renderiza cabeçalho, tabs de situação, ação de criar e estado
   const html = await renderPatios(["yard:read", "yard:create", "yard:update"]);
 
   assert.match(html, /Pátios/);
-  assert.match(html, /Pátios de recolhimento da organização/);
+  // TELAS PR-D — padrão do protótipo: kicker + subtítulo novo (locais de guarda).
+  assert.match(html, /Locais de guarda da organização/);
   assert.match(html, /Novo pátio/);
-  assert.match(html, /Nenhum pátio cadastrado/);
+  assert.match(html, /Nenhum pátio encontrado/);
+  // KPIs de decisão (contagens reais; janela vazia → zeros honestos, nunca fabricação).
+  assert.match(html, /Pátios ativos/);
+  // Sem impound:read no teste, os KPIs de custódia/ocupação DEGRADAM honestamente para o cadastro.
+  assert.match(html, /Capacidade prevista/);
+  assert.match(html, /sem acesso à custódia/);
+  // A coluna acompanha a degradação (sem resumo de ocupação → capacidade prevista).
+  assert.match(html, /CAPACIDADE PREVISTA/);
   // Situação em PT-BR de negócio (linguagem white-label).
   assert.match(html, /Ativos/);
   assert.match(html, /Inativos/);
@@ -107,7 +115,8 @@ test("pátios esconde 'Novo pátio' sem a permissão yard:create", async () => {
   const html = await renderPatios(["yard:read"]);
 
   assert.match(html, /Pátios/);
-  assert.match(html, /Nenhum pátio cadastrado/);
+  assert.match(html, /Nenhum pátio encontrado/);
+  // Esconde-fino: sem yard:create não há botão no header NEM no convite honesto (o backend é a autoridade).
   assert.doesNotMatch(html, /Novo pátio/);
 });
 
@@ -129,4 +138,32 @@ test("modal de novo pátio traz o fuso horário padrão America/Sao_Paulo", asyn
   assert.match(html, /America\/Sao_Paulo/);
   assert.match(html, /Fuso horário/);
   assert.doesNotMatch(html, /\btenant\b/i);
+});
+
+// TELAS PR-D (junta) — funções puras da tela: KPIs do cadastro, faixa de ocupação e o gate do convite honesto.
+test("PR-D: computeYardKpis deriva só do que existe; shouldShowInvite exige 1 pátio REAL, sem filtro e com permissão", async () => {
+  const { computeYardKpis, shouldShowInvite, occupancyTone } = await import("../src/modules/patios/yards/pages/PatiosPage");
+
+  const kpis = computeYardKpis([
+    { id: "a", name: "A", address: "", capacityHint: 40, timezone: "America/Sao_Paulo", active: true, createdAt: "", updatedAt: "" },
+    { id: "b", name: "B", address: "", capacityHint: null, timezone: "America/Sao_Paulo", active: true, createdAt: "", updatedAt: "" },
+    { id: "c", name: "C", address: "", capacityHint: 10, timezone: "America/Sao_Paulo", active: false, createdAt: "", updatedAt: "" },
+  ]);
+  assert.equal(kpis.total, 3);
+  assert.equal(kpis.ativos, 2);
+  assert.equal(kpis.inativos, 1);
+  assert.equal(kpis.capacidadePrevista, 40, "soma só a capacidade dos ATIVOS informados");
+  assert.equal(kpis.semCapacidade, 1);
+
+  const base = { canCreate: true, loading: false, error: null, serverTotal: 1, hasActiveFilters: false };
+  assert.equal(shouldShowInvite(base), true);
+  assert.equal(shouldShowInvite({ ...base, canCreate: false }), false, "sem yard:create o convite não vira beco sem saída");
+  assert.equal(shouldShowInvite({ ...base, serverTotal: 12 }), false, "usa o total do SERVIDOR, não o da janela");
+  assert.equal(shouldShowInvite({ ...base, hasActiveFilters: true }), false);
+  assert.equal(shouldShowInvite({ ...base, error: "falhou" }), false);
+
+  // Faixas do protótipo: saudável < 60 ≤ atenção ≤ 85 < crítica.
+  assert.equal(occupancyTone(35).bar, "#22C55E");
+  assert.equal(occupancyTone(70).bar, "#F59E0B");
+  assert.equal(occupancyTone(92).bar, "#DC2626");
 });
