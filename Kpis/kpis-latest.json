@@ -1,36 +1,36 @@
 {
   "snapshot_date": "2026-08-04",
-  "version": "CHK-P1-RENDER-ENVELOPE",
+  "version": "KPI-INDEX-PAINEL",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "CHECKLIST P1 — fatia render-envelope (P-CHK-RENDER-ENVELOPE, ALTA da junta do PR-01) + item de menu do builder. Flutter: fetchChecklistRender desembrulha {data} e _schemaFromJson tolera o shape REAL (name->title, version numerico, checklistId ausente) — o app deixa de cair nos SEEDS e passa a renderizar checklists authorados na web; teste de contrato render->field (4) com o payload byte-shape do fio. Web: a rota do builder /administrator/checklists era ORFA de menu — entra 'Modelos de Checklist' em ADMINISTRACAO (gate tenant_checklists:read).",
-    "title": "CHECKLIST P1 — fatia render-envelope (P-CHK-RENDER-ENVELOPE, ALTA da junta do PR-01) + item de menu do builder. Flutter: fetchChecklistRender desembrulha {data} e _schemaFromJson tolera o shape REAL (name->title, version numerico, checklistId ausente) — o app deixa de cair nos SEEDS e passa a renderizar checklists authorados na web; teste de contrato render->field (4) com o payload byte-shape do fio. Web: a rota do builder /administrator/checklists era ORFA de menu — entra 'Modelos de Checklist' em ADMINISTRACAO (gate tenant_checklists:read).",
+    "block": "D-KPI-INDEX-PAINEL — o painel Kpis/index.html vira o ARTEFATO PRINCIPAL de acompanhamento: visão gráfica (4 gráficos SVG inline, zero dependência) hidratada do kpis-history.json, manchete na primeira dobra, changelog rebatizado 'Entregas por PR'. Junta em 2 ciclos (REPROVADO→APROVADO_CONDICIONADO, condições aplicadas): barra fantasma de +969 morta (delta por métrica com par medido), [hidden] blindado contra cascata de autor, small multiples por trilha, tokens do painel, guard que compara a SÉRIE ponto a ponto com o JSON (provado por 4 mutações). + docs/CRONOGRAMA.md + §C3 item 0 em CLAUDE.md/AGENTS.md + triagem P-SUITE-ENV-PERSISTENCE (falsas 88 falhas = env congelado por import; receita verde documentada) + fix de robustez em professional-statements (setup dentro do try; não pendura mais a suíte).",
+    "title": "Painel de KPI — visão gráfica (D-KPI-INDEX-PAINEL)",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "CHECKLIST P1 — fatia render-envelope (P-CHK-RENDER-ENVELOPE, ALTA da junta do PR-01) + item de menu do builder. Flutter: fetchChecklistRender desembrulha {data} e _schemaFromJson tolera o shape REAL (name->title, version numerico, checklistId ausente) — o app deixa de cair nos SEEDS e passa a renderizar checklists authorados na web; teste de contrato render->field (4) com o payload byte-shape do fio. Web: a rota do builder /administrator/checklists era ORFA de menu — entra 'Modelos de Checklist' em ADMINISTRACAO (gate tenant_checklists:read).",
-    "status_label": "Omega-VID PR-07 (frontend-only): VehicleDossieModal — dossie do veiculo num Modal size='lg' com 6 ABAS (Visao Geral/Vistoria/Linha do Tempo/Debitos/Liberacao/Leilao+Liquidacao), reusando os componentes e a logica de fetch da ProcessoDossiePage (hook compartilhado useProcessDossie). A vaga OCUPADA do OccupancyMap ABRE o modal (botao onOpenDossie, icone FileText) em vez de navegar; deep-link ?dossie=<processId> sincroniza abrir/fechar/mount (a rota /patios/processos/:id segue como fallback). Abas Checklist(PR-08)/Historico(PR-09) ainda NAO — estrutura pronta. +16 smoke tests (2 arquivos novos) + patios-mapa migrado; frontend_smoke 954 -> 970. Backend/flutter inalterados. --- ANTERIOR (PR-06): Modal do design system ganha size='lg' (base do dossie). +4 smoke; frontend_smoke 950 -> 954. --- ANTERIOR (PR-05 FIX-JUNTA, D-Omega-VID-05-SEED): a junta APROVOU_CONDICIONADO; o critico-adversarial provou 1 MEDIA (a colisao-POR-REUSO nao tinha caminho de correcao — duplicateCandidates/merge/unmerge NAO splitam). CONSERTO: a VISTORIA de recepcao (saveInspection) agora RECONCILIA/RE-APONTA ImpoundProcess.identity_id para a identidade correta da placa CONFIRMADA (resolve-ou-cria pelo helper do PR-05, MESMA tx RLS) => SPLITA a agregacao errada + sobe PROVISIONAL->CONFIRMED. Idempotente; FSM/hash-chain/merge INTOCADOS; sem migracao. backend 2082/2088 -> 2085/2091 (+3 DB-gated reais provando o SPLIT vivo)."
+    "summary": "O index.html é o artefato principal: gráficos SVG hidratados do history (cobertura por trilha, blocos, entregas por rodada, ritmo), manchete na primeira dobra, fallback file:// honesto com aviso. Guard permanente amarra a curva ao JSON.",
+    "status_label": "Entregue (aguardando merge do PR corrente)"
   },
   "metrics": {
     "flutter_tests": {
       "value": 839,
       "total": 839,
       "display": "839/839",
-      "note": "CHK P1 render-envelope: +4 test() de contrato (p1_render_envelope_test: parser REAL DioChecklistRemoteApi contra o payload byte-shape do backend — envelope {data}, name, version numerico, options no topo; escolha nao cai em 'nao suportado'; legado tolerado; degradacao sem options). Sobre 835. format 0-changed, analyze limpo, suite completa 839/839 (execucao real)."
+      "note": "PR do painel não toca mobile — carrega o último valor oficial 839/839 (#335), §C3.3."
     },
     "frontend_smoke_tests": {
       "value": 1003,
       "total": 1003,
       "display": "1003/1003",
-      "note": "TELAS PR-D: +4 testes (3 do guard de CSS que trava as grades do padrao contra comentario mal fechado; 1 das funcoes puras computeYardKpis/shouldShowInvite/occupancyTone). 1003/1003 execucao real."
+      "note": "PR do painel não toca frontend/ — carrega o último valor oficial 1003/1003 (#334), §C3.3."
     },
     "backend_tests": {
-      "value": 2115,
-      "total": 2115,
-      "display": "2115/2115",
-      "note": "TELAS PR-A e frontend-only — backend inalterado (2115/2115 do #330, §C3.3)."
+      "value": 2110,
+      "total": 2110,
+      "display": "2110/2110",
+      "note": "Execução real desta rodada (4 shards, Git Bash, export CORE_SAAS_PERSISTENCE=memory — receita P-SUITE-ENV-PERSISTENCE): 2110 pass, 0 fail, 6 skip DB-gated de auth. Inclui +6 test() do guard novo (kpi-dashboard-charts). DELTA vs 2115 do #330: -11 test() de base ainda não reconciliados (a contagem do #330 pode ter rodado com mais testes de auth destravados por DATABASE_URL no shell); reconciliar na próxima rodada — números desta execução são os reproduzíveis."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 135,
-      "display": "135",
-      "note": "CHK P1 fatia render-envelope + menu do builder de checklist. Sobre 134 do #334."
+      "value": 136,
+      "display": "136",
+      "note": "Painel de KPI (D-KPI-INDEX-PAINEL) + cronograma + triagem da suíte. Sobre 135 do #335."
     },
     "mobile_backend_contracts": {
       "value": 18,

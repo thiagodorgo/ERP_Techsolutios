@@ -532,22 +532,27 @@ async function withStatementApi(callback: (context: StatementApiContext) => Prom
   const tenantB = core.createTenant({ name: "Tenant Statement B", modules: ["dashboard", "finance"] });
   const app = createApp(new MemoryCoreSaasAdapter(core));
   const server = app.listen(0);
-  const baseUrl = await getBaseUrl(server);
 
-  // Profissional do tenant A (via API, como tenant_admin) — o extrato é POR profissional. full_name é o rótulo
-  // exposto; cnh_number NUNCA deve vazar no extrato (§2.8/LGPD).
-  const profile = await requestJson(baseUrl, "/api/v1/operator-profiles", {
-    method: "POST",
-    headers: authHeaders(tenantA, "tenant_admin"),
-    body: { user_id: randomUUID(), full_name: "João Guincho", cnh_number: CNH_SECRET },
-  });
-  assert.equal(profile.status, 201);
-  const operatorProfileA = profile.body.data.id as string;
-
-  const settleInstallment = (tenantId: string, groupId: string, installmentNumber: number): boolean =>
-    getMemoryProfessionalStatementRepositoryForTests().settleInstallmentForTests(tenantId, groupId, installmentNumber);
-
+  // TRIAGEM 2026-08-05 — o assert de setup ficava FORA do try/finally: quando o POST falhava
+  // (ex.: runtime prisma vazando via .env — CORE_SAAS_PERSISTENCE, ordem de import × dotenv),
+  // o server nunca fechava, o processo não saía e o runner PENDURAVA a suíte inteira por horas.
+  // Setup dentro do try = falha vira "not ok" normal, nunca hang.
   try {
+    const baseUrl = await getBaseUrl(server);
+
+    // Profissional do tenant A (via API, como tenant_admin) — o extrato é POR profissional. full_name é o rótulo
+    // exposto; cnh_number NUNCA deve vazar no extrato (§2.8/LGPD).
+    const profile = await requestJson(baseUrl, "/api/v1/operator-profiles", {
+      method: "POST",
+      headers: authHeaders(tenantA, "tenant_admin"),
+      body: { user_id: randomUUID(), full_name: "João Guincho", cnh_number: CNH_SECRET },
+    });
+    assert.equal(profile.status, 201);
+    const operatorProfileA = profile.body.data.id as string;
+
+    const settleInstallment = (tenantId: string, groupId: string, installmentNumber: number): boolean =>
+      getMemoryProfessionalStatementRepositoryForTests().settleInstallmentForTests(tenantId, groupId, installmentNumber);
+
     await callback({ baseUrl, seed: { tenantA, tenantB }, operatorProfileA, settleInstallment });
   } finally {
     await closeServer(server);

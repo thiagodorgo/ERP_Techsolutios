@@ -12,9 +12,39 @@
   --planned: #637083;
   --risk: #b3261e;
   --shadow: 0 18px 50px rgba(27, 39, 51, 0.08);
+  /* D-KPI-INDEX-PAINEL — tokens dos gráficos (achado F6 da junta: a 1ª versão cravava 11 hexes
+     de OUTRO design system, deixando três azuis diferentes na mesma dobra). Derivados da paleta
+     do painel; consumidos via var() dentro do SVG inline, sem quebrar o zero-dependência. */
+  --chart-1: var(--brand);
+  --chart-2: var(--success);
+  --chart-3: #7a4bbf;
+  --chart-4: #2a8fbd;
+  --chart-grid: var(--line);
+  --chart-axis: var(--muted);
+  --chart-value: var(--ink);
+  --chart-bar: var(--planned);
 }
 
 * { box-sizing: border-box; }
+
+/* A folha do UA define `[hidden]{display:none}`, mas QUALQUER regra de autor com `display`
+   (aqui, `.section-grid--tight{display:block}`) vence por ORIGEM, não por especificidade.
+   Sem esta linha o atributo `hidden` do `#charts-section` era decorativo e o painel mostrava
+   4 caixas vazias em file:// — achado B1/ALTA-1 da junta. */
+[hidden] { display: none !important; }
+
+/* Conteúdo só para leitor de tela (tabelas que descrevem os gráficos — F11). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 body {
   margin: 0;
@@ -331,10 +361,169 @@ dd {
 .risk-item[data-severity="baixo"] { border-left: 5px solid var(--brand); }
 .history-panel { margin-bottom: 0; }
 
+/* D-KPI-INDEX-PAINEL — painel visual (SVG inline, zero dependência). O index.html é o
+   artefato principal de acompanhamento: os gráficos leem kpis-history.json em runtime. */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.chart-panel--wide { grid-column: 1 / -1; }
+
+.chart-panel { padding: 20px 22px 14px; }
+
+.chart-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.chart-head h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.chart-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.chart-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.chart-legend__item i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.chart-legend__item b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+/* Aviso honesto quando os gráficos não podem ser lidos (file://). O JS o esconde ao hidratar. */
+.charts-offline-note {
+  margin: 0 0 18px;
+  padding: 14px 18px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.charts-offline-note code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(20, 108, 148, 0.08);
+  color: var(--brand);
+  font-size: 0.95em;
+}
+
+/* Small multiples da cobertura de testes: uma faixa por trilha, cada uma com escala própria. */
+.chart-multi + .chart-multi {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.chart-multi__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chart-multi__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.chart-multi__label i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.chart-multi__value {
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-multi__value small {
+  margin-left: 8px;
+  color: var(--success);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.chart-axis-range {
+  /* Dentro do canvas rolável, com a MESMA largura do SVG — rola junto e nunca desalinha (M1-c2). */
+  width: 1320px;
+  margin: 2px auto 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px 0 44px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.chart-canvas {
+  margin-top: 10px;
+  /* O gráfico ROLA em vez de encolher. Deixar o SVG escalar com o contêiner fazia a mesma
+     `font-size="11"` renderizar a 17,2px numa coluna e 5,2px noutra (achado B3b da junta):
+     a hierarquia tipográfica invertia e o rótulo sumia. Largura fixa = 1 unidade de viewBox
+     é sempre 1px de tela, em qualquer viewport. */
+  overflow-x: auto;
+}
+
+.chart-svg {
+  display: block;
+  height: auto;
+  margin: 0 auto;
+  overflow: visible;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-panel--wide .chart-svg { width: 1320px; }
+.chart-panel:not(.chart-panel--wide) .chart-svg { width: 620px; }
+
 @media (max-width: 1180px) {
   .kpi-grid,
   .contract-map,
   .timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* F5 — os painéis estreitos já ficavam ilegíveis a partir daqui (o viewBox encolhe a fonte
+     junto), então colapsam no MESMO breakpoint do resto do painel, não só em 860px. */
+  .chart-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 860px) {
@@ -343,6 +532,7 @@ dd {
   .section-grid { grid-template-columns: 1fr; }
   .hero { padding: 22px; }
 }
+
 
 @media (max-width: 560px) {
   .kpi-grid,

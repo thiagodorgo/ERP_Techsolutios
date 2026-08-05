@@ -21,10 +21,88 @@
         </dl>
       </header>
 
-      <section class="section-grid section-grid--tight" aria-label="KPIs consolidados">
+      <!-- D-KPI-INDEX-PAINEL — os números de manchete abrem o painel (achado F7 da junta: eles
+           viviam a 8,3 telas de rolagem, atrás do changelog por PR). -->
+      <section class="section-grid section-grid--tight" aria-label="Números do projeto">
         <div class="section-heading">
           <p class="eyebrow">Status executivo</p>
-          <h2>KPIs consolidados</h2>
+          <h2>Onde o projeto está</h2>
+        </div>
+        <div id="kpi-cards" class="kpi-grid"></div>
+      </section>
+
+      <!-- Painel visual (D-KPI-INDEX-PAINEL) — gráficos SVG inline, zero dependência (PD-004),
+           hidratados em runtime de kpis-history.json. Sem servidor (file://) a seção se esconde
+           e o aviso abaixo explica o porquê — o painel nunca desenha série que não tem (D-007). -->
+      <p id="charts-offline-note" class="charts-offline-note">
+        A visão gráfica lê <code>kpis-history.json</code> em runtime. Abra o painel por um servidor
+        (<code>npx serve Kpis</code>) para vê-la — em <code>file://</code> o navegador bloqueia a leitura e o
+        painel prefere não desenhar nada a desenhar uma curva que não mediu.
+      </p>
+      <section id="charts-section" class="section-grid section-grid--tight" aria-label="Evolução do projeto" hidden>
+        <div class="section-heading">
+          <p class="eyebrow">Visão gráfica</p>
+          <h2>Evolução do projeto</h2>
+        </div>
+
+        <div class="chart-grid">
+          <article class="panel chart-panel chart-panel--wide">
+            <div class="chart-head">
+              <div>
+                <h3>Cobertura de testes ao longo das entregas</h3>
+                <p class="chart-sub">
+                  Contagem real por PR. Cada trilha tem escala própria — o gráfico mostra a
+                  <strong>forma</strong> do crescimento; o número à direita mostra o nível.
+                  Trecho tracejado = período sem medição daquela trilha (não é interpolação).
+                </p>
+              </div>
+            </div>
+            <div id="chart-tests" class="chart-canvas"></div>
+          </article>
+
+          <article class="panel chart-panel">
+            <div class="chart-head">
+              <div>
+                <h3>Blocos entregues</h3>
+                <p class="chart-sub">Acumulado de fatias concluídas</p>
+              </div>
+            </div>
+            <div id="chart-blocks" class="chart-canvas"></div>
+          </article>
+
+          <article class="panel chart-panel">
+            <div class="chart-head">
+              <div>
+                <h3>Entregas por rodada</h3>
+                <p class="chart-sub">
+                  Snapshots por rodada <strong>desde 19/07/2026</strong>, quando o registro por PR passou a ser
+                  contínuo. As rodadas anteriores ficam de fora de propósito: cabiam num único registro
+                  consolidado e a barra não seria comparável.
+                </p>
+              </div>
+            </div>
+            <div id="chart-rounds" class="chart-canvas"></div>
+          </article>
+
+          <article class="panel chart-panel chart-panel--wide">
+            <div class="chart-head">
+              <div>
+                <h3>Ritmo de entrega</h3>
+                <p class="chart-sub">
+                  Testes adicionados nas 24 últimas entregas — mede o esforço de <em>prova</em> de cada fatia.
+                  Barra âmbar para baixo = a contagem caiu (nunca zeramos uma queda em silêncio).
+                </p>
+              </div>
+            </div>
+            <div id="chart-velocity" class="chart-canvas"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-grid section-grid--tight" aria-label="Entregas por PR">
+        <div class="section-heading">
+          <p class="eyebrow">Registro cronológico</p>
+          <h2>Entregas por PR</h2>
         </div>
         <article class="panel panel--wide" aria-label="Resumo FIX-NAV-MENU-PLATFORM-JWT">
           <h2>NAV-MENU-PLATFORM · JWT e Prisma reconciliados</h2>
@@ -516,7 +594,6 @@
             humana, merge e gate, em bloco documental/KPI separado.
           </p>
         </article>
-        <div id="kpi-cards" class="kpi-grid"></div>
       </section>
 
       <section class="section-grid" aria-label="Progresso por contrato">

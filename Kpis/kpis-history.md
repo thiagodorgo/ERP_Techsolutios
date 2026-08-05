@@ -1790,3 +1790,30 @@ mês UTC** no Ω4-8a (virada de mês BR), **competência fora de faixa** no #218
 
 `mobile/flutter_app/Kpis/*` **não** foi tocado (Ω4 web/backend-only); segue no último valor oficial (Flutter 764/764,
 módulos 17/17).
+
+## 2026-08-05 — KPI-INDEX-PAINEL (PR pendente)
+
+**D-KPI-INDEX-PAINEL:** o `Kpis/index.html` é o **artefato principal** de acompanhamento (decisão do dono:
+"o principal arquivo é o index.html onde vc vai reorganizar colocar graficos para uma melhor visualização").
+Visão gráfica em SVG inline zero-dep (PD-004) hidratada do history: cobertura de testes por trilha (small
+multiples com escala própria), blocos entregues, entregas por rodada (barra horizontal, corte 19/07 explicado)
+e ritmo de entrega (delta por métrica, só com os dois lados medidos). Manchete na 1ª dobra; changelog virou
+"Entregas por PR"; `file://` mostra aviso honesto em vez de caixas vazias. Guard permanente
+`tests/kpi-dashboard-charts.test.ts` executa o app.js real e compara a SÉRIE ponto a ponto com o JSON
+(endurecido após a junta provar que a 1ª versão aceitava série fabricada) — validado por 4 mutações.
+
+**Junta (2 ciclos):** ciclo 1 REPROVADO pelos dois agentes (critico-adversarial + cognicao-visual) — barra
+fantasma de +969 (métrica ausente lida como zero), `[hidden]` decorativo (cascata de autor), guard-teatro,
+Flutter achatado, 11 hexes de outro design system, manchete a 8,3 telas. Ciclo 2 APROVADO_CONDICIONADO;
+todas as condições aplicadas no mesmo PR. Registro: `agent-orchestration/omega/reprovacoes/R-kpi-painel-ciclo1.md`.
+
+**Triagem da suíte (P-SUITE-ENV-PERSISTENCE):** as "88 falhas" não eram regressão — `.env` com
+`CORE_SAAS_PERSISTENCE="prisma"` congela via import estático × dotenv; receita verde = `export
+CORE_SAAS_PERSISTENCE=memory` no shell. Um segundo fator (junction de node_modules × worktree remove, sonda
+minha) fabricou 626+112 falhas; recuperado com `npm install` + `prisma generate`; lição registrada. Fix real
+de robustez: `professional-statements` com setup dentro do try/finally (falha de setup não pendura mais a suíte).
+
+**Contagens (execução real):** backend **2110/2110** (0 fail, 6 skip DB-gated; inclui +6 do guard novo; nota
+de reconciliação: −11 vs 2115 do #330, provável diferença de testes de auth destravados por DATABASE_URL no
+shell da época — investigar na próxima rodada). Smoke **1003/1003** e Flutter **839/839** carregados (§C3.3,
+PR não toca frontend/mobile). Blocos **135→136**.

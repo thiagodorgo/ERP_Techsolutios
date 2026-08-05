@@ -1,10 +1,10 @@
 const dashboardData = {
   "project": {
     "name": "ERP Techsolutions",
-    "version": "FIX-NAV-MENU-PLATFORM-JWT",
-    "updatedAt": "2026-07-29",
-    "sourceBranch": "fix/nav-menu-platform-jwt",
-    "summary": "NAV-MENU-PLATFORM corrigido: somente Navigation preserva por opt-in os papéis canônicos do JWT para o pseudo-tenant platform; os outros 55 usos no baseline pós-PR-18a continuam fail-closed, tenants reais usam RBAC persistente e platform não habilita itens tenant-only. Teste protegido 7/7 em Prisma real; backend 1900/1906 (0 falhas, 6 skips), frontend smoke 937/937, Flutter 807/807 e 111 blocos.",
+    "version": "CHK-P1-RENDER-ENVELOPE",
+    "updatedAt": "2026-08-04",
+    "sourceBranch": "fallback congelado no merge #335",
+    "summary": "Fallback embutido, CONGELADO no último merge (#335, 04/08/2026): CHECKLIST P1 render-envelope + menu do builder. backend 2115/2115, smoke 1003/1003, Flutter 839/839, 135 blocos. Servido por HTTP, o painel hidrata dos JSON e mostra o estado corrente.",
   },
   "kpis": [
     {
@@ -64,23 +64,23 @@ const dashboardData = {
     },
     {
       "label": "Flutter",
-      "value": "807/807",
-      "note": "Fallback embutido (último merge). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.flutter_tests). Ω4C encerrou a trilha mobile em 807; Ω5P é backend/web (Flutter inalterado)."
+      "value": "839/839",
+      "note": "Fallback congelado no merge #335 (04/08/2026). O valor corrente é hidratado de Kpis/kpis-latest.json."
     },
     {
       "label": "Frontend smoke",
-      "value": "937/937",
-      "note": "Fallback embutido (último valor oficial). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.frontend_smoke_tests). Governança/tooling não toca frontend."
+      "value": "1003/1003",
+      "note": "Fallback congelado no merge #335 (04/08/2026). O valor corrente é hidratado de Kpis/kpis-latest.json."
     },
     {
       "label": "Backend tests",
-        "value": "1900/1906",
-        "note": "Execução real da suíte completa após rebase em Ω5P PR-18a: 1900 pass, 0 fail e 6 skips DB-gated; +3 testes adversariais NAV-MENU-PLATFORM."
+      "value": "2115/2115",
+      "note": "Fallback congelado no merge #335 (04/08/2026). O valor corrente é hidratado de Kpis/kpis-latest.json."
     },
     {
       "label": "Blocos concluídos",
-        "value": "111",
-      "note": "Fallback embutido (último valor oficial). O valor corrente é hidratado de Kpis/kpis-latest.json (metrics.blocks_completed). Governança/tooling não conta como bloco de feature."
+      "value": "135",
+      "note": "Fallback congelado no merge #335 (04/08/2026). O valor corrente é hidratado de Kpis/kpis-latest.json."
     },
     {
       "label": "Mobile contracts",
@@ -94,23 +94,13 @@ const dashboardData = {
     },
     {
       "label": "MVP demo",
-      "value": "96%",
-      "note": "Mantido no valor oficial publicado (estimado); sem decisao humana para alterar no B-124."
+      "value": "99%",
+      "note": "Fallback congelado no merge #335 (04/08/2026). O valor corrente é hidratado de Kpis/kpis-latest.json. Percentual estimado, sujeito a revisão humana."
     },
     {
       "label": "MVP vendavel",
-      "value": "78%",
-      "note": "Mantido no valor oficial publicado (estimado); sem decisao humana para alterar no B-124."
-    },
-    {
-      "label": "Blocos entregues",
-      "value": "49",
-      "note": "B-076 ate B-124, incluindo sub-blocos; 48 ate B-123 + B-124."
-    },
-    {
-      "label": "Escopo B-124K",
-      "value": "KPI/docs",
-      "note": "Publicacao documental pos-avaliacao humana; sem feature nova ou codigo funcional."
+      "value": "88%",
+      "note": "Fallback congelado no merge #335 (04/08/2026). O valor corrente é hidratado de Kpis/kpis-latest.json. Percentual estimado, sujeito a revisão humana."
     }
   ],
   "blocks": [
@@ -586,8 +576,20 @@ async function hydrateFromLatest() {
       metricCard("MVP vendável", m.mvp_vendavel),
     ].forEach((c) => { if (c) liveCards.push(c); });
     // Preserva as narrativas históricas de rodadas anteriores após as métricas correntes vivas.
-    const narrative = (dashboardData.kpis || []).filter((k) => !["Backend tests", "Frontend smoke", "Flutter", "Blocos concluídos", "MVP demo", "MVP vendável"].includes(k.label));
+    // A1-c2 (junta): a comparação era por string EXATA e o embutido tinha "MVP vendavel" sem
+    // acento e sinônimos ("Blocos entregues") — o card rançoso de 07/07 aparecia AO LADO do
+    // vivo na mesma grade. Agora a exclusão é normalizada (sem acento, caixa baixa) e cobre os
+    // rótulos-métrica históricos: métrica embutida NUNCA convive com a métrica hidratada.
+    const normalizeLabel = (label) => String(label || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+    const METRIC_LABELS = new Set([
+      "backend tests", "frontend smoke", "flutter", "blocos concluidos", "blocos entregues",
+      "mvp demo", "mvp vendavel", "mobile contracts", "mobile + core saas", "escopo b-124k",
+    ]);
+    const narrative = (dashboardData.kpis || []).filter((k) => !METRIC_LABELS.has(normalizeLabel(k.label)));
     renderKpis(liveCards.concat(narrative));
+    // M4-c2: sem sobrescrever, a "Fonte" mostrava a branch embutida de um PR antigo ao lado da
+    // versão corrente. A fonte real do painel hidratado são os JSON.
+    setText("source-branch", latest.source_branch || "Kpis/*.json (runtime)");
   }
   if (Array.isArray(history) && history.length) {
     const hist = history
@@ -599,6 +601,462 @@ async function hydrateFromLatest() {
         detail: h.description || `backend ${h.backend_tests || "?"} · smoke ${h.frontend_smoke || "?"} · flutter ${h.flutter_tests || "?"} · blocos ${h.blocks_completed ?? "?"}`,
       }));
     renderHistory(hist);
+    // M8/N1 — frescor coerente: os gráficos só aparecem quando o `latest` TAMBÉM chegou.
+    // Sem este gate, um 404 só no kpis-latest.json deixaria cards congelados (fallback) ao
+    // lado de gráficos correntes — duas épocas na mesma tela, sem aviso.
+    if (latest && latest.metrics) renderCharts(history);
   }
 }
+
+// ───────────────────────────────────────────────────────────────────────────────
+// D-KPI-INDEX-PAINEL — o painel (index.html) é o artefato PRINCIPAL de acompanhamento,
+// não os JSON. Gráficos em SVG inline, ZERO dependência (PD-004). Toda série sai do
+// kpis-history.json (contagem real por PR); sem servidor (file://) o fetch falha, a seção
+// fica escondida, o aviso honesto aparece e NADA é inventado (D-007).
+//
+// Correções da junta (ciclo 1 REPROVADO — ver agent-orchestration/omega/reprovacoes/
+// R-kpi-painel-ciclo1.md). `critico-adversarial` + `cognicao-visual`:
+//  A1  o `hidden` era decorativo: `.section-grid--tight{display:block}` (origem autor) vencia
+//      o `[hidden]{display:none}` do UA → 4 caixas vazias em file://. Corrigido no CSS.
+//  A2  o ritmo somava métricas com `|| 0`: métrica ausente virava zero e FABRICAVA um pico de
+//      +969 que nunca existiu (e achatava as 24 barras reais). Agora o delta é POR MÉTRICA e
+//      só conta quando os dois lados existem; a chave legada `frontend_smoke` é reconciliada.
+//  A4  `buildChartSeries` é exposta para o guard comparar a SÉRIE com o JSON (o guard antigo
+//      passava verde com série 100% fabricada).
+//  B3a small multiples: cada trilha com escala própria (a escala compartilhada achatava o
+//      Flutter, que cresceu 37%, numa reta). B3b viewBox por painel (1 unidade ≈ 1px CSS).
+//  M5  queda real vira barra âmbar com sinal, nunca zero silencioso.
+//  M6  `roundOf` testa as rodadas ANTES do substring de checklist (senão Ω-VID PR-08 caía em
+//      "Checklist"). M7 corte em 19/07 (quando o registro por PR virou contínuo).
+//  F4  eixo X proporcional à DATA real + tick final. F6 cores por token. F9 lacuna de medição
+//      não é interpolada. F10 escala Y redonda. F11 tabela sr-only + aria-describedby.
+//  B10 `metricNumber` tolera número formatado ("1.003/1.003" já não vira 1).
+// ───────────────────────────────────────────────────────────────────────────────
+const CHART_COLORS = {
+  backend: "var(--chart-1)",
+  frontend: "var(--chart-2)",
+  flutter: "var(--chart-3)",
+  blocks: "var(--chart-4)",
+  neutral: "var(--chart-bar)",
+  negative: "var(--partial)",
+};
+const CHART_GRID = "var(--chart-grid)";
+const CHART_AXIS = "var(--chart-axis)";
+const CHART_VALUE = "var(--chart-value)";
+const CHART_SURFACE = "var(--panel)";
+
+// A política KPI-por-PR foi decidida em 13/07/2026 (D-KPI-PER-PR), mas o registro só virou
+// CONTÍNUO em 19/07 — antes disso uma rodada inteira cabia num snapshot (Ω4 = 1 registro para
+// 21 PRs). Comparar barras dos dois regimes mentiria, então o gráfico de rodadas corta aqui.
+const KPI_PER_PR_SINCE = "2026-07-19";
+
+const TRACK_KEYS = ["backend_tests", "frontend_smoke_tests", "flutter_tests"];
+
+/** Quantas entregas o gráfico de ritmo mostra (janela de leitura, não de cálculo). */
+const VELOCITY_WINDOW = 24;
+
+/** "2107/2107" | "1.003/1.003" | 2107 → 2107. `null` quando não há número honesto (nunca vira 0). */
+function metricNumber(raw) {
+  if (raw === null || raw === undefined) return null;
+  const digits = String(raw).split("/")[0].replace(/[^\d]/g, "");
+  return digits ? Number(digits) : null;
+}
+
+/** O history usa `frontend_smoke` em 28 snapshots antigos e `frontend_smoke_tests` nos novos. */
+function smokeOf(row) {
+  return row.frontend_smoke_tests != null ? row.frontend_smoke_tests : row.frontend_smoke;
+}
+
+function trackValue(row, key) {
+  return metricNumber(key === "frontend_smoke_tests" ? smokeOf(row) : row[key]);
+}
+
+function setChartHtml(id, html) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+
+function ptBr(value) {
+  return Number(value).toLocaleString("pt-BR");
+}
+
+function shortDate(iso) {
+  const parts = String(iso || "").split("-");
+  return parts.length === 3 ? `${parts[2]}/${parts[1]}` : String(iso || "");
+}
+
+/** Passo "redondo" (1/2/5 × 10^n) — o eixo Y não pode sair com 571, 1.142, 1.713… (F10). */
+function niceStep(raw) {
+  if (!(raw > 0)) return 1;
+  const pow = 10 ** Math.floor(Math.log10(raw));
+  const n = raw / pow;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * pow;
+}
+
+/** Dias desde a época a partir do `snapshot_date` (UTC puro — sem depender do fuso do leitor). */
+function dayIndex(iso) {
+  const [y, m, d] = String(iso || "").split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+}
+
+/** Rodada a partir do campo `version` do history. Rodada vence substring (M6). */
+function roundOf(version) {
+  const v = String(version || "").toUpperCase().replace(/^Ω/, "OMEGA");
+  if (v.startsWith("TELAS")) return "Telas";
+  if (v.startsWith("OMEGA-VID")) return "Ω-VID";
+  if (v.startsWith("OMEGA5P")) return "Ω5P";
+  if (v.startsWith("OMEGA4C")) return "Ω4C";
+  if (v.startsWith("OMEGA4")) return "Ω4";
+  if (v.startsWith("OMEGA3")) return "Ω3";
+  if (v.startsWith("OMEGA-GATE") || v.startsWith("OMEGA-GOV") || v.startsWith("OMEGA-DOCS") || v.startsWith("OMEGA-INFRA") || v.startsWith("SAN")) return "Saneamento";
+  if (v.startsWith("GOV-")) return "Governança";
+  if (v.startsWith("WS-MAPA") || v.startsWith("M7-SLA") || v.startsWith("JUNTA-MAPAS") || v.startsWith("GOOGLE-MAPS")) return "Mapa";
+  if (v.startsWith("WS-") || v.startsWith("PR-SCALE") || v.startsWith("ONDA")) return "Onda 1";
+  if (v.startsWith("CHK") || v.startsWith("CHECKLIST")) return "Checklist";
+  if (v.startsWith("FIX-") || v.startsWith("KPI-")) return "Correções";
+  if (v.startsWith("OMEGA")) return "Ω";
+  if (v.startsWith("B-") || v.startsWith("BLOCO")) return "Blocos B";
+  return "Outras";
+}
+
+/**
+ * Deriva TODAS as séries do painel a partir do history bruto — função pura, sem DOM.
+ * Exposta de propósito: o guard (`tests/kpi-dashboard-charts.test.ts`) compara o que sai daqui
+ * com o que ele mesmo calcula do JSON, para que série fabricada não passe verde (A4).
+ */
+function buildChartSeries(history) {
+  const rows = (history || []).filter((h) => h && h.snapshot_date);
+  const dates = rows.map((h) => h.snapshot_date);
+
+  const tracks = [
+    { key: "backend_tests", label: "Backend", color: CHART_COLORS.backend },
+    { key: "frontend_smoke_tests", label: "Frontend (smoke)", color: CHART_COLORS.frontend },
+    { key: "flutter_tests", label: "Flutter", color: CHART_COLORS.flutter },
+  ]
+    .map((t) => {
+      const points = rows.map((h) => trackValue(h, t.key));
+      const real = points.filter((p) => p !== null);
+      // Crescimento só sobre a JANELA recente. Percentual desde o início mentiria: o backend saiu
+      // de 15 (só o core-saas) para 766 (suíte inteira) num RE-BASELINE de medição em 13/07 — a
+      // manchete diria "+14000%" de crescimento que nunca houve.
+      const from = Math.max(1, points.length - VELOCITY_WINDOW);
+      let recent = 0;
+      for (let i = from; i < points.length; i += 1) {
+        const a = points[i - 1];
+        const b = points[i];
+        if (a !== null && b !== null) recent += b - a;
+      }
+      return { ...t, points, first: real[0], last: real[real.length - 1], measured: real.length, recent };
+    })
+    .filter((t) => t.measured > 1);
+
+  const blocks = rows.map((h) => metricNumber(h.blocks_completed));
+
+  const byRound = new Map();
+  rows
+    .filter((h) => String(h.snapshot_date) >= KPI_PER_PR_SINCE)
+    .forEach((h) => {
+      const round = roundOf(h.version);
+      const entry = byRound.get(round) || { value: 0, since: h.snapshot_date };
+      entry.value += 1;
+      byRound.set(round, entry);
+    });
+  const rounds = Array.from(byRound.entries())
+    .sort((a, b) => String(a[1].since).localeCompare(String(b[1].since)))
+    .map(([label, entry]) => ({ label, value: entry.value, color: CHART_COLORS.backend }));
+
+  // Delta POR MÉTRICA e só quando os dois lados foram medidos (A2). Queda real é preservada
+  // com sinal (M5) — o gráfico nunca zera uma regressão em silêncio.
+  const velocity = [];
+  for (let i = 1; i < rows.length; i += 1) {
+    const value = TRACK_KEYS.reduce((acc, key) => {
+      const a = trackValue(rows[i - 1], key);
+      const b = trackValue(rows[i], key);
+      return acc + (a !== null && b !== null ? b - a : 0);
+    }, 0);
+    velocity.push({ label: shortDate(dates[i]), value });
+  }
+  // O painel desenha só as 24 últimas — janela exposta de propósito para o guard auditar
+  // exatamente o que é DESENHADO (fora dela há re-baselines de medição, ex.: 05/07→13/07, quando
+  // `backend_tests` deixou de contar só o core-saas e passou a contar a suíte inteira: +751 que
+  // não foi entrega nenhuma). Se um re-baseline desses entrar na janela, o guard acusa.
+  const velocityWindow = velocity.slice(-VELOCITY_WINDOW);
+
+  return { rows, dates, tracks, blocks, rounds, velocity, velocityWindow };
+}
+
+/**
+ * Gráfico de linhas. `series`: [{label, color, points: (number|null)[]}].
+ * `dates`: ISO por ponto — o eixo X é proporcional ao TEMPO REAL (F4), não ao índice.
+ */
+function lineChart(series, dates, options) {
+  const opt = options || {};
+  const W = opt.width || 960;
+  const H = opt.height || 260;
+  const padL = opt.compact ? 44 : 56;
+  const padR = 16;
+  const padT = 14;
+  const padB = opt.showAxis === false ? 12 : 28;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  const values = series.flatMap((s) => s.points.filter((p) => p !== null));
+  if (!values.length) return "";
+
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const stepY = niceStep((max - (opt.zeroBased ? 0 : min)) / 3 || max / 3);
+  const bottom = opt.zeroBased ? 0 : Math.max(0, Math.floor(min / stepY) * stepY);
+  const top = Math.max(Math.ceil(max / stepY) * stepY, bottom + stepY);
+  const range = top - bottom;
+
+  const times = dates.map(dayIndex);
+  const first = times.find((t) => t !== null) || 0;
+  const last = times.filter((t) => t !== null).pop() || first + 1;
+  const spanT = last - first || 1;
+  const px = (i) => (times[i] === null ? padL : padL + ((times[i] - first) / spanT) * innerW);
+  const py = (v) => padT + innerH - ((v - bottom) / range) * innerH;
+
+  let grid = "";
+  for (let v = bottom; v <= top + stepY * 0.001; v += stepY) {
+    const y = py(v);
+    grid += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="${CHART_GRID}" stroke-width="1" />`;
+    grid += `<text x="${padL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${CHART_AXIS}" font-size="11">${escapeHtml(ptBr(v))}</text>`;
+  }
+
+  let paths = "";
+  series.forEach((s) => {
+    // F9 — lacuna de medição NÃO é interpolada: cada trecho contíguo é uma polyline própria e
+    // o salto sobre a lacuna vira tracejado translúcido (dá para VER que ali não houve medição).
+    const runs = [];
+    let current = [];
+    s.points.forEach((v, i) => {
+      if (v === null) {
+        if (current.length) runs.push(current);
+        current = [];
+        return;
+      }
+      current.push({ x: px(i), y: py(v) });
+    });
+    if (current.length) runs.push(current);
+    if (!runs.length) return;
+    const color = escapeHtml(s.color);
+
+    if (opt.fill && runs.length === 1) {
+      const pts = runs[0];
+      const baseY = (padT + innerH).toFixed(1);
+      const poly = pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+      paths += `<polygon points="${pts[0].x.toFixed(1)},${baseY} ${poly} ${pts[pts.length - 1].x.toFixed(1)},${baseY}" fill="${color}" opacity="0.12" />`;
+    }
+    runs.forEach((pts, idx) => {
+      if (idx > 0) {
+        const a = runs[idx - 1][runs[idx - 1].length - 1];
+        const b = pts[0];
+        paths += `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="${color}" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.45" />`;
+      }
+      if (pts.length === 1) {
+        paths += `<circle cx="${pts[0].x.toFixed(1)}" cy="${pts[0].y.toFixed(1)}" r="2" fill="${color}" />`;
+        return;
+      }
+      paths += `<polyline points="${pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ")}" fill="none" stroke="${color}" stroke-width="${opt.compact ? 2 : 2.25}" stroke-linejoin="round" stroke-linecap="round" />`;
+    });
+    const tail = runs[runs.length - 1];
+    const end = tail[tail.length - 1];
+    paths += `<circle cx="${end.x.toFixed(1)}" cy="${end.y.toFixed(1)}" r="4" fill="${CHART_SURFACE}" stroke="${color}" stroke-width="2.5" />`;
+  });
+
+  // F4 — ticks pelas datas reais, com o ÚLTIMO ponto sempre rotulado.
+  let axis = "";
+  if (opt.showAxis !== false) {
+    const idxs = [];
+    for (let t = 0; t <= 4; t += 1) idxs.push(Math.round((t / 4) * (dates.length - 1)));
+    if (idxs[idxs.length - 1] !== dates.length - 1) idxs.push(dates.length - 1);
+    Array.from(new Set(idxs)).forEach((i) => {
+      axis += `<text x="${px(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="${CHART_AXIS}" font-size="11">${escapeHtml(shortDate(dates[i]))}</text>`;
+    });
+  }
+
+  const described = opt.describedBy ? ` aria-describedby="${escapeHtml(opt.describedBy)}"` : "";
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeHtml(opt.aria || "Gráfico de evolução")}"${described} class="chart-svg">${grid}${paths}${axis}</svg>`;
+}
+
+/** Barras verticais. Valor 0 não desenha barra (F14); valor negativo desenha em âmbar (M5). */
+function barChart(items, options) {
+  const opt = options || {};
+  const W = opt.width || 960;
+  const H = opt.height || 220;
+  const padL = 20;
+  const padR = 16;
+  const padT = 20;
+  const padB = opt.showLabels === false ? 26 : 44;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  if (!items.length) return "";
+  const maxUp = Math.max(...items.map((i) => Math.max(0, i.value)), 1);
+  const maxDown = Math.max(...items.map((i) => Math.max(0, -i.value)), 0);
+  const scale = innerH / (maxUp + maxDown || 1);
+  const zeroY = padT + maxUp * scale;
+  const slot = innerW / items.length;
+  const barW = Math.max(5, Math.min(52, slot * 0.6));
+
+  let bars = "";
+  items.forEach((item, i) => {
+    const cx = padL + slot * i + slot / 2;
+    if (item.value !== 0) {
+      const h = Math.abs(item.value) * scale;
+      const up = item.value > 0;
+      const color = escapeHtml(up ? item.color || CHART_COLORS.neutral : CHART_COLORS.negative);
+      bars += `<rect x="${(cx - barW / 2).toFixed(1)}" y="${(up ? zeroY - h : zeroY).toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(1, h).toFixed(1)}" rx="4" fill="${color}" />`;
+      if (opt.showValues !== false) {
+        const label = `${up ? "" : "−"}${ptBr(Math.abs(item.value))}`;
+        bars += `<text x="${cx.toFixed(1)}" y="${(up ? zeroY - h - 6 : zeroY + h + 13).toFixed(1)}" text-anchor="middle" fill="${CHART_VALUE}" font-size="11" font-weight="700">${escapeHtml(label)}</text>`;
+      }
+    }
+    if (opt.showLabels !== false) {
+      bars += `<text x="${cx.toFixed(1)}" y="${H - 14}" text-anchor="middle" fill="${CHART_AXIS}" font-size="11">${escapeHtml(item.label)}</text>`;
+    }
+  });
+  const base = `<line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W - padR}" y2="${zeroY.toFixed(1)}" stroke="${CHART_GRID}" stroke-width="1" />`;
+  const described = opt.describedBy ? ` aria-describedby="${escapeHtml(opt.describedBy)}"` : "";
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeHtml(opt.aria || "Gráfico de barras")}"${described} class="chart-svg">${base}${bars}</svg>`;
+}
+
+/**
+ * Barras HORIZONTAIS — para dado categórico com rótulo de texto. Vertical colidia: 9 rodadas em
+ * 620px dão 65px de slot e "Governança"/"Correções" a 11px pedem ~60px cada, encostando uma na
+ * outra. Deitado, o rótulo lê na horizontal e cada linha respira.
+ */
+function hBarChart(items, options) {
+  const opt = options || {};
+  const W = opt.width || 620;
+  const labelW = opt.labelWidth || 92;
+  const valueW = 42;
+  const rowH = 26;
+  const padT = 8;
+  const padR = 12;
+  const H = padT * 2 + items.length * rowH;
+  const trackW = W - labelW - valueW - padR;
+  if (!items.length) return "";
+  const max = Math.max(...items.map((i) => i.value), 1);
+
+  let rows = "";
+  items.forEach((item, i) => {
+    const y = padT + i * rowH;
+    const barH = 13;
+    const w = Math.max(2, (item.value / max) * trackW);
+    rows += `<text x="0" y="${(y + barH).toFixed(1)}" fill="${CHART_AXIS}" font-size="11" font-weight="700">${escapeHtml(item.label)}</text>`;
+    rows += `<rect x="${labelW}" y="${(y + 3).toFixed(1)}" width="${trackW}" height="${barH}" rx="4" fill="${CHART_GRID}" opacity="0.5" />`;
+    rows += `<rect x="${labelW}" y="${(y + 3).toFixed(1)}" width="${w.toFixed(1)}" height="${barH}" rx="4" fill="${escapeHtml(item.color || CHART_COLORS.neutral)}" />`;
+    rows += `<text x="${(labelW + trackW + 8).toFixed(1)}" y="${(y + barH).toFixed(1)}" fill="${CHART_VALUE}" font-size="11" font-weight="800">${ptBr(item.value)}</text>`;
+  });
+
+  const described = opt.describedBy ? ` aria-describedby="${escapeHtml(opt.describedBy)}"` : "";
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeHtml(opt.aria || "Gráfico de barras")}"${described} class="chart-svg">${rows}</svg>`;
+}
+
+/** Tabela sr-only: leitor de tela precisa dos NÚMEROS — `role="img"` sozinho é mudo (F11). */
+function srTable(id, caption, headers, rows) {
+  const head = headers.map((h) => `<th scope="col">${escapeHtml(h)}</th>`).join("");
+  const body = rows
+    .map((r) => `<tr>${r.map((c, i) => (i === 0 ? `<th scope="row">${escapeHtml(String(c))}</th>` : `<td>${escapeHtml(String(c))}</td>`)).join("")}</tr>`)
+    .join("");
+  return `<table id="${escapeHtml(id)}" class="sr-only"><caption>${escapeHtml(caption)}</caption><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+function renderCharts(history) {
+  const section = document.getElementById("charts-section");
+  if (!section) return;
+  const data = buildChartSeries(history);
+  if (data.rows.length < 2 || !data.tracks.length) return;
+  const { dates, tracks, blocks, rounds, velocity } = data;
+  const period = `${shortDate(dates[0])} a ${shortDate(dates[dates.length - 1])}`;
+
+  // ── 1. Cobertura de testes — SMALL MULTIPLES (B3a): cada trilha com escala PRÓPRIA.
+  //    O nível está na manchete de cada faixa; o gráfico mostra FORMA, não nível.
+  setChartHtml(
+    "chart-tests",
+    tracks
+      .map((t) => {
+        // N5 — saldo negativo também aparece (simétrico ao M5 das barras): queda não se esconde.
+        const growth = t.recent !== 0 ? `${t.recent > 0 ? "+" : "−"}${ptBr(Math.abs(t.recent))} nas ${VELOCITY_WINDOW} últimas entregas` : null;
+        const chart = lineChart([{ label: t.label, color: t.color, points: t.points }], dates, {
+          width: 1320,
+          height: 92,
+          compact: true,
+          showAxis: false,
+          aria: `${t.label}: de ${ptBr(t.first)} a ${ptBr(t.last)} testes entre ${period}, em ${t.measured} medições.`,
+          describedBy: `sr-track-${t.key}`,
+        });
+        const table = srTable(
+          `sr-track-${t.key}`,
+          `${t.label} — contagem de testes por entrega`,
+          ["Data", "Testes"],
+          dates.map((d, i) => [d, t.points[i]]).filter((r) => r[1] !== null).map((r) => [r[0], ptBr(r[1])]),
+        );
+        return `<div class="chart-multi">
+            <div class="chart-multi__head">
+              <span class="chart-multi__label"><i style="background:${escapeHtml(t.color)}"></i>${escapeHtml(t.label)}</span>
+              <span class="chart-multi__value">${ptBr(t.last)}${growth ? `<small>${escapeHtml(growth)}</small>` : ""}</span>
+            </div>
+            ${chart}${table}
+          </div>`;
+      })
+      .join("") +
+      // M1-c2 — o eixo de datas vive DENTRO do canvas rolável, com a mesma largura do SVG:
+      // como irmão de fora, em tela estreita ele dizia "04/08" sob um ponto que era 29/07.
+      `<div class="chart-axis-range" aria-hidden="true"><span>${escapeHtml(shortDate(dates[0]))}</span><span>${escapeHtml(shortDate(dates[dates.length - 1]))}</span></div>`,
+  );
+
+  // ── 2. Blocos entregues.
+  const blocksReal = blocks.filter((b) => b !== null);
+  setChartHtml(
+    "chart-blocks",
+    lineChart([{ label: "Blocos", color: CHART_COLORS.blocks, points: blocks }], dates, {
+      width: 620,
+      height: 240,
+      zeroBased: true,
+      fill: true,
+      aria: `Blocos entregues: de ${ptBr(blocksReal[0] || 0)} a ${ptBr(blocksReal[blocksReal.length - 1] || 0)} entre ${period}.`,
+    }),
+  );
+
+  // ── 3. Entregas por rodada — só a partir de 19/07 (M7/F8): antes o registro era consolidado
+  //    e uma rodada inteira cabia num snapshot; comparar as barras dos dois regimes mentiria.
+  setChartHtml(
+    "chart-rounds",
+    hBarChart(rounds, {
+      width: 620,
+      aria: `Entregas por rodada desde ${shortDate(KPI_PER_PR_SINCE)}: ${rounds.map((r) => `${r.label} ${r.value}`).join(", ")}.`,
+    }),
+  );
+
+  // ── 4. Ritmo — testes adicionados por entrega (janela das últimas VELOCITY_WINDOW).
+  const window24 = data.velocityWindow;
+  const positives = window24.filter((d) => d.value > 0);
+  setChartHtml(
+    "chart-velocity",
+    barChart(window24, {
+      width: 1320,
+      height: 200,
+      showLabels: false,
+      aria: `Testes adicionados nas últimas ${window24.length} entregas: ${positives.length} adicionaram teste; maior acréscimo ${ptBr(Math.max(...window24.map((d) => d.value), 0))}.`,
+      describedBy: "sr-velocity",
+    }) +
+      // F11 (parcial no ciclo 1): as barras do ritmo eram anônimas para o leitor de tela.
+      srTable("sr-velocity", "Testes adicionados por entrega (janela recente)", ["Entrega", "Testes adicionados"], window24.map((d) => [d.label, ptBr(d.value)])),
+  );
+
+  section.hidden = false;
+  const notice = document.getElementById("charts-offline-note");
+  if (notice) notice.hidden = true;
+
+  // M2-c2 — quando o gráfico rola (tela estreita), abrir mostrando o PRESENTE, não 15/06:
+  // o recorte inicial à esquerda deixava a faixa mais recente fora da tela sem afordância.
+  if (typeof document.querySelectorAll === "function") {
+    Array.from(document.querySelectorAll(".chart-canvas") || []).forEach((el) => {
+      if (el && typeof el.scrollWidth === "number" && el.scrollWidth > el.clientWidth) el.scrollLeft = el.scrollWidth;
+    });
+  }
+}
+
 hydrateFromLatest();
