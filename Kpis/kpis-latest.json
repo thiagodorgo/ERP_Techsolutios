@@ -6,7 +6,7 @@
   "release": {
     "block": "D-KPI-INDEX-PAINEL — o painel Kpis/index.html vira o ARTEFATO PRINCIPAL de acompanhamento: visão gráfica (4 gráficos SVG inline, zero dependência) hidratada do kpis-history.json, manchete na primeira dobra, changelog rebatizado 'Entregas por PR'. Junta em 2 ciclos (REPROVADO→APROVADO_CONDICIONADO, condições aplicadas): barra fantasma de +969 morta (delta por métrica com par medido), [hidden] blindado contra cascata de autor, small multiples por trilha, tokens do painel, guard que compara a SÉRIE ponto a ponto com o JSON (provado por 4 mutações). + docs/CRONOGRAMA.md + §C3 item 0 em CLAUDE.md/AGENTS.md + triagem P-SUITE-ENV-PERSISTENCE (falsas 88 falhas = env congelado por import; receita verde documentada) + fix de robustez em professional-statements (setup dentro do try; não pendura mais a suíte).",
     "title": "Painel de KPI — visão gráfica (D-KPI-INDEX-PAINEL)",
-    "pr": null,
+    "pr": 336,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",

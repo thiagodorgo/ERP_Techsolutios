@@ -1974,7 +1974,7 @@
   {
     "snapshot_date": "2026-08-05",
     "version": "KPI-INDEX-PAINEL",
-    "pr": null,
+    "pr": 336,
     "merge_commit": null,
     "flutter_tests": "839/839",
     "backend_tests": "2110/2110",
