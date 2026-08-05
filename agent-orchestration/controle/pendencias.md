@@ -1478,3 +1478,30 @@ TELAS PR-C. O design mostra ÚLTIMO ACESSO ("14/07/2026 · há 21 dias"), mas `U
 TELAS PR-C. O design mostra avatar+nome+perfil do ator; o DTO expõe só `actor_user_id` (id opaco). A tela mostra
 "Usuário"+cor determinística (nunca UUID; chip no filtro). Fatia backend: incluir displayName/role do ator no DTO
 (join leve), respeitando a allowlist §2.8 (nome é rótulo, não PII sensível no contexto do próprio tenant).
+
+## P-SUITE-ENV-PERSISTENCE (2026-08-05) — suíte backend depende de `CORE_SAAS_PERSISTENCE=memory` no SHELL (MÉDIA sistêmica)
+
+Triagem das "88 falhas" na rodada do painel de KPI (D-KPI-INDEX-PAINEL). **Não era regressão**: o `.env` local tem
+`CORE_SAAS_PERSISTENCE="prisma"` (necessário para o dev server servir o sistema real ao dono), e os testes de rota
+que setam `process.env.CORE_SAAS_PERSISTENCE = "memory"` o fazem DEPOIS dos imports estáticos do topo do arquivo —
+tarde demais: `src/config/env.ts` roda `dotenv.config()` no primeiro import e o objeto `env` congela `"prisma"`.
+Resultado: as rotas em teste iam ao Postgres VIVO com ids do store de memória (`ten_000001` em coluna uuid → 400 em
+cascata, 88 falhas em 4 shards). Como `dotenv` NÃO sobrescreve variável já exportada, rodar a suíte com
+`CORE_SAAS_PERSISTENCE=memory` no shell restaura o arranjo verde (DB-gated continuam exercendo o Postgres via
+`DATABASE_URL` do `.env`; os 6 skips clássicos de auth continuam skips).
+
+- **Como rodar a suíte local (Windows/Git Bash):** `export CORE_SAAS_PERSISTENCE=memory` antes de
+  `node --test --import tsx tests/*.test.ts` (o `npm test` no cmd não expande o glob — rodar do Git Bash).
+- **Sintoma-armadilha:** `tests/professional-statements.test.ts` tinha o assert de setup FORA do try/finally —
+  quando o setup falhava o server ficava aberto, o processo não saía e o runner PENDURAVA a suíte por horas
+  (parecia "suíte travada", era teste sem cleanup). Corrigido na rodada do painel (setup dentro do try).
+- **Correção definitiva (aberta):** ou o runner/`npm test` fixa `CORE_SAAS_PERSISTENCE=memory` (ex.: script
+  `cross-env`), ou os testes de rota setam o env em um `--import` que rode ANTES de qualquer import estático.
+  Decidir num bloco próprio; NÃO mudar `env.ts` às pressas (56 usos fail-closed dependem do congelamento).
+- **Adendo (mesma triagem):** as rodadas seguintes degradaram para 277→752 falhas por um SEGUNDO fator, auto-infligido:
+  uma sonda de bisseção criou `junction` de `node_modules` dentro de um worktree temporário e o
+  `git worktree remove --force` ATRAVESSOU a junction e apagou pacotes reais (`@aws-sdk/*`, `.prisma/client`).
+  Recuperado com `npm install` + `npx prisma generate`. **LIÇÃO permanente: nunca criar junction/symlink de
+  `node_modules` dentro de árvore que o git possa remover; usar cópia ou `--install-links`, e remover a junction
+  ANTES de qualquer `worktree remove`.**
+- status: ABERTA (workaround documentado; suíte verde reproduzida com o env exportado).

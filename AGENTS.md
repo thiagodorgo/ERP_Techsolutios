@@ -264,6 +264,19 @@ validação** e **rastreabilidade**. Tipos:
 
 1. Todo PR que altere **código, teste ou escopo** atualiza `Kpis/kpis-latest.json`, `Kpis/kpis-history.*`
    (append) e `Kpis/index.html` **no mesmo PR**.
+   **0. O ARTEFATO PRINCIPAL É O `Kpis/index.html` — não os JSON** (decisão do dono, 2026-08-04,
+   `D-KPI-INDEX-PAINEL`). Os JSON são a **fonte de dados**; o painel é a **entrega** — é ele que o dono abre
+   para ver onde o projeto está. Consequências obrigatórias:
+   - O painel **hidrata em runtime** dos JSON (cards, histórico **e gráficos**). Atualizar os JSON já move o
+     painel; **nunca** cravar número no `app.js` que divergisse do JSON (o embutido é só fallback honesto de
+     `file://`, congelado no último merge e rotulado como tal).
+   - **Visão gráfica obrigatória** (`#charts-section`): cobertura de testes por entrega, blocos entregues,
+     entregas por rodada e ritmo de entrega — **SVG inline, zero dependência** (PD-004). Sem dado real
+     (`file://`/offline) a seção **fica escondida**; painel não inventa série (D-007).
+   - PR que **inaugure uma dimensão nova** (métrica, rodada, trilha) entrega **no mesmo PR** a visualização
+     correspondente no painel — número novo sem lugar no painel é entrega incompleta.
+   - Guard permanente: `tests/kpi-dashboard-charts.test.ts` executa o `app.js` de verdade e falha se o painel
+     defasar do último snapshot, se algum gráfico sumir ou se a seção mentir sem dado.
 2. PR que toque **Flutter/mobile** atualiza **também** `mobile/flutter_app/Kpis/*` (política dupla mantida).
 3. Contagens de teste **do que o PR exerceu** vêm de **execução real no PR** — nunca copiadas do bloco
    anterior. Métricas de trilhas que o PR **não tocou** (ex.: mobile num PR web-only) carregam o último valor

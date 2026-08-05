@@ -1038,3 +1038,35 @@ não-publicado/soft-deleted (mesma regra do freeze do despacho). Migração **ad
 no comando de cada sub-PR. Ver ata `docs/juntas/J-CHECKLIST-P1.md`.
 
 **FORA de escopo confirmado:** re-resolução/backfill de OSs já criadas; `priority` como eixo primário.
+
+---
+
+## D-KPI-INDEX-PAINEL (2026-08-04) — o `Kpis/index.html` é o ARTEFATO PRINCIPAL de acompanhamento, não os JSON
+
+**Decisão do dono (verbatim):** *"ajuste a documentação para nao atualizar somente o kpi.json, o principal
+arquivo é o index.html onde vc vai reorganizar colocar graficos para uma melhor visualização."*
+
+**Contexto.** A §C3 (D-KPI-PER-PR) já obrigava atualizar `kpis-latest.json` + `kpis-history.*` + `index.html`
+por PR, e o `app.js` já hidratava os **cards** e o **histórico** em runtime a partir dos JSON (correção da era
+Ω4, em que o HTML hardcoded congelou por 15 PRs). O que faltava: o painel entregava **texto**, não **leitura**.
+122 snapshots de 15/06 a 04/08 viviam só como lista cronológica — ninguém enxerga tendência numa lista.
+
+**O que fica decidido.**
+1. O painel é a **entrega**; os JSON são a **fonte de dados**. A §C3 ganha o item **0** (espelhado em
+   `CLAUDE.md` e `AGENTS.md`, regra de espelhamento D-INTEROP-CLAUDE-CODEX).
+2. **Visão gráfica obrigatória** (`#charts-section`), em **SVG inline e zero dependência** (PD-004 — a decisão
+   de gráficos já vigente no frontend vale aqui também): cobertura de testes por entrega (3 séries), blocos
+   entregues, entregas por rodada, ritmo de entrega (testes adicionados por PR).
+3. **Honestidade (D-007):** toda série sai do `kpis-history.json`. Sem servidor (`file://`) o fetch falha, a
+   seção **fica escondida** e o painel não inventa curva. Número cravado no `app.js` divergente do JSON é
+   proibido — o embutido é só fallback do último merge, rotulado como tal.
+4. PR que **inaugure uma dimensão nova** (métrica, rodada, trilha) entrega **no mesmo PR** a visualização
+   correspondente. Número novo sem lugar no painel = entrega incompleta.
+5. **Guard permanente** `tests/kpi-dashboard-charts.test.ts`: executa o `app.js` de verdade com DOM/fetch
+   stubados e falha se (a) um contêiner de gráfico sumir do `index.html`, (b) a legenda defasar do último
+   snapshot do history, (c) a seção aparecer sem dado real. Mesmo espírito do guard de CSS do padrão `pat-*`:
+   `tsc` não tipa HTML/CSS e os smokes não fazem layout — sem guard, defasa em silêncio.
+
+**Cronograma.** No mesmo trabalho nasce `docs/CRONOGRAMA.md` (onde estamos / para onde vamos), também pedido
+pelo dono, com a fila priorizada e a faixa **bloqueada por decisão humana** (go-live pago, rotação da chave do
+Google Maps, nomeação de RBAC) explicitamente separada do que sigo sozinho.
