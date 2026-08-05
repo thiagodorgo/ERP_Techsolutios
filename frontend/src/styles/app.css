@@ -5009,3 +5009,155 @@
 }
 .pat-actor-filter-chip button:hover { color: #2563eb; }
 .pat-actor-filter-chip button:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+
+/* ── TELAS PADRONIZADAS PR-D — Pátios (sc_patios). Reusa as classes pat-table, pat-kpi e pat-os-tab dos PRs A-C. ── */
+.pat-patios-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.6fr) 1.1fr 1.2fr 0.8fr 108px;
+  gap: 12px;
+  align-items: center;
+}
+.pat-patio-name {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+.pat-patio-tile {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pat-cell-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pat-cell-muted { color: #94a3b8; }
+.pat-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+}
+.pat-row-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  text-decoration: none;
+}
+.pat-row-link:hover { border-color: #2563eb; color: #2563eb; text-decoration: none; }
+.pat-row-link:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+/* Cabeçalho ordenável (mantém a ordenação da tela antiga com o visual do protótipo). */
+.pat-table__sort {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: #64748b;
+  text-align: left;
+  cursor: pointer;
+}
+.pat-table__sort:hover { color: #2563eb; }
+.pat-table__sort:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+/* Convite honesto (organização com 1 pátio) — card tracejado do protótipo. */
+.pat-invite {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  margin-top: 14px;
+}
+.pat-invite__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pat-invite__body { flex: 1; min-width: 0; }
+.pat-invite__body strong { display: block; font-size: 13.5px; font-weight: 800; color: #0f172a; }
+.pat-invite__body p { margin: 2px 0 0; font-size: 12.5px; color: #64748b; line-height: 1.5; }
+
+@media (max-width: 1100px) {
+  .pat-patios-grid { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.6fr) 1fr 0.9fr 108px; }
+  .pat-patios-grid > :nth-child(3) { display: none; }
+}
+
+/* Célula de corpo do padrão (protótipo: 12.5px/600/#475569) — distinta de .pat-cell-sub (linha secundária). */
+.pat-cell-body {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #475569;
+  min-width: 0;
+}
+.pat-patio-name .pat-cell-main { min-width: 0; }
+.pat-banner p { margin: 2px 0 0; }
+
+/* Ocupação real por pátio (sc_patios): contagem + percentual + barra. */
+.pat-occ-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.pat-occ-count {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #334155;
+  font-variant-numeric: tabular-nums;
+}
+.pat-occ-pct {
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.pat-occ-bar {
+  height: 5px;
+  border-radius: 99px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+.pat-occ-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+}
+
+/* Skeleton com pulso suave (transversal às 5 telas da rodada). */
+@keyframes pat-skel-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.pat-skel { animation: pat-skel-pulse 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .pat-skel { animation: none; }
+}
+
+/* Junta PR-D ciclo 2 (MÉDIA) — em Pátios o nome é LINK: precisa do hover/foco do padrão
+   (nas telas irmãs .pat-cell-main é apenas texto). */
+a.pat-cell-main:hover { color: #2563eb; }
+a.pat-cell-main:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }

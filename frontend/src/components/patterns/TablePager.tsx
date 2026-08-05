@@ -19,7 +19,8 @@ export type TablePagerProps = {
 
 export function TablePager({ pageSize, onPageSize, pageSizeOptions = [20, 50], rangeLabel, onPrev, onNext, canPrev, canNext }: TablePagerProps) {
   return (
-    <div className="pat-pager">
+    // Junta PR-D (BAIXA) — landmark + aria-live que o DenseListPagination tinha (corrige as 5 telas de uma vez).
+    <nav className="pat-pager" aria-label="Paginação da lista">
       <label className="pat-pager__size">
         Itens por página
         <select value={pageSize} onChange={(event) => onPageSize(Number(event.target.value))}>
@@ -31,7 +32,7 @@ export function TablePager({ pageSize, onPageSize, pageSizeOptions = [20, 50], r
         </select>
       </label>
       <div className="pat-pager__nav">
-        <span className="pat-pager__range">{rangeLabel}</span>
+        <span className="pat-pager__range" aria-live="polite">{rangeLabel}</span>
         <button type="button" className="pat-pager__btn" onClick={onPrev} disabled={!canPrev}>
           <ChevronLeft size={12} aria-hidden="true" />
           Anterior
@@ -41,6 +42,6 @@ export function TablePager({ pageSize, onPageSize, pageSizeOptions = [20, 50], r
           <ChevronRight size={12} aria-hidden="true" />
         </button>
       </div>
-    </div>
+    </nav>
   );
 }
