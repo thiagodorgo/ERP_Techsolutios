@@ -1,16 +1,16 @@
 {
   "snapshot_date": "2026-08-04",
-  "version": "KPI-INDEX-PAINEL",
+  "version": "CHK-P1-PR-02A",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "D-KPI-INDEX-PAINEL — o painel Kpis/index.html vira o ARTEFATO PRINCIPAL de acompanhamento: visão gráfica (4 gráficos SVG inline, zero dependência) hidratada do kpis-history.json, manchete na primeira dobra, changelog rebatizado 'Entregas por PR'. Junta em 2 ciclos (REPROVADO→APROVADO_CONDICIONADO, condições aplicadas): barra fantasma de +969 morta (delta por métrica com par medido), [hidden] blindado contra cascata de autor, small multiples por trilha, tokens do painel, guard que compara a SÉRIE ponto a ponto com o JSON (provado por 4 mutações). + docs/CRONOGRAMA.md + §C3 item 0 em CLAUDE.md/AGENTS.md + triagem P-SUITE-ENV-PERSISTENCE (falsas 88 falhas = env congelado por import; receita verde documentada) + fix de robustez em professional-statements (setup dentro do try; não pendura mais a suíte).",
-    "title": "Painel de KPI — visão gráfica (D-KPI-INDEX-PAINEL)",
-    "pr": 336,
+    "block": "CHECKLIST P1 PR-02a — lista de 'Modelos de Checklist' recriada sobre o protótipo do dono (Modelos de Checklist.dc.html, importado do Claude Design). Header kicker/busca/filtro, 4 KPI mini-cards contados do payload real, tabela nova (tile do 1º componente, resumo PT-BR, pills, ações-ícone), estados §7 completos, banner somente-leitura com esconde-fino provado por teste, ChecklistToast novo, 'Novo modelo' instantâneo + Inativar/Reativar reposto, copy acentuada unificada no módulo. Junta em workflow (3 vetos + verificação adversarial): 8 achados confirmados, todos aplicados (auto-select vazando enum cru; flash do vazio; ponte com escrita para papel de leitura; lixo irremovível; testes vácuos → costura initialChecklists + rowActionVisibility pura; a11y da tabela; gate próprio de execuções). + EMULADOR ANDROID operacional (AVD erp_pixel; 3 armadilhas documentadas) + triagem P-SUITE-ENV-PERSISTENCE do PR anterior.",
+    "title": "CHECKLIST P1 PR-02a — lista de modelos no desenho do dono",
+    "pr": 337,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "O index.html é o artefato principal: gráficos SVG hidratados do history (cobertura por trilha, blocos, entregas por rodada, ritmo), manchete na primeira dobra, fallback file:// honesto com aviso. Guard permanente amarra a curva ao JSON.",
+    "summary": "Lista de 'Modelos de Checklist' fiel ao protótipo do Claude Design do dono; junta 3-vetos com verificação adversarial; 8 achados aplicados; smoke 1013/1013.",
     "status_label": "Entregue (aguardando merge do PR corrente)"
   },
   "metrics": {
@@ -18,19 +18,19 @@
       "value": 839,
       "total": 839,
       "display": "839/839",
-      "note": "PR do painel não toca mobile — carrega o último valor oficial 839/839 (#335), §C3.3."
+      "note": "PR-02a não toca mobile — carrega 839/839 (§C3.3)."
     },
     "frontend_smoke_tests": {
-      "value": 1003,
-      "total": 1003,
-      "display": "1003/1003",
-      "note": "PR do painel não toca frontend/ — carrega o último valor oficial 1003/1003 (#334), §C3.3."
+      "value": 1013,
+      "total": 1013,
+      "display": "1013/1013",
+      "note": "PR-02a: +10 test() no smoke novo da lista (checklists-models-list: header/vazio D-007, somente-leitura com linhas REAIS, rowActionVisibility pura, §3/§2.8, skeleton-first, KPIs, datas, resumo, toast) e 2 atualizados no gating. 1003→1013, execução real."
     },
     "backend_tests": {
       "value": 2110,
       "total": 2110,
       "display": "2110/2110",
-      "note": "Execução real desta rodada (4 shards, Git Bash, export CORE_SAAS_PERSISTENCE=memory — receita P-SUITE-ENV-PERSISTENCE): 2110 pass, 0 fail, 6 skip DB-gated de auth. Inclui +6 test() do guard novo (kpi-dashboard-charts). DELTA vs 2115 do #330: -11 test() de base ainda não reconciliados (a contagem do #330 pode ter rodado com mais testes de auth destravados por DATABASE_URL no shell); reconciliar na próxima rodada — números desta execução são os reproduzíveis."
+      "note": "PR-02a é frontend-only — carrega 2110/2110 do #336 (§C3.3; receita P-SUITE-ENV-PERSISTENCE)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 136,
-      "display": "136",
-      "note": "Painel de KPI (D-KPI-INDEX-PAINEL) + cronograma + triagem da suíte. Sobre 135 do #335."
+      "value": 137,
+      "display": "137",
+      "note": "CHK P1 PR-02a (lista do builder no desenho do dono). Sobre 136 do #336."
     },
     "mobile_backend_contracts": {
       "value": 18,

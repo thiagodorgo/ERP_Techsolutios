@@ -1,11 +1,11 @@
 import { Chip } from "../../../components/ui";
+import { runStatusLabel } from "../checklist.constants";
 import type { ChecklistRunStatus } from "../types";
 
+// Junta PR-02a: a copy vivia duplicada AQUI sem acento ("Concluido", "divergencia", "ciencia") —
+// a correção transversal de rótulos só valia se os consumidores duplicados importassem o mapa.
 const statusLabel: Record<ChecklistRunStatus, string> = {
-  in_progress: "Em andamento",
-  completed: "Concluido",
-  completed_with_divergence: "Concluido com divergencia",
-  pending_acknowledgement: "Pendente de ciencia",
+  ...runStatusLabel,
   cancelled: "Cancelado",
 };
 

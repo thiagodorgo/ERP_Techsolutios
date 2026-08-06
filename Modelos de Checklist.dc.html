@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#F1F5F9;font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:#2563EB;text-decoration:none}
+  a:hover{color:#1D4ED8;text-decoration:underline}
+  input,select,textarea,button{font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:2px solid #2563EB;outline-offset:1px}
+  button:focus-visible,[tabindex]:focus-visible{outline:2px solid #2563EB;outline-offset:2px}
+  .scrl::-webkit-scrollbar{width:9px;height:9px}
+  .scrl::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:9px}
+  .scrl::-webkit-scrollbar-track{background:transparent}
+  @keyframes shim{0%{background-position:-380px 0}100%{background-position:380px 0}}
+  .skl{background:#E2E8F0;background-image:linear-gradient(90deg,#E2E8F0 0px,#EFF3F8 140px,#E2E8F0 280px);background-size:380px 100%;animation:shim 1.15s linear infinite;border-radius:8px}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .fu{animation:fadeUp .18s ease-out both}
+</style>
+</helmet>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="ck-vehicle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14"/><path d="M3 17v-4.2a2 2 0 0 1 .3-1L5.6 8A2 2 0 0 1 7.3 7h9.4a2 2 0 0 1 1.7 1l2.3 3.8a2 2 0 0 1 .3 1V17"/><circle cx="7.5" cy="17.5" r="1.6"/><circle cx="16.5" cy="17.5" r="1.6"/><path d="M4 12.5h16"/></symbol>
+<symbol id="ck-damage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 15.5v-3l2-4.2A2 2 0 0 1 7.3 7h9.4a2 2 0 0 1 1.8 1.3l2 4.2v3"/><circle cx="9" cy="12" r="2.2"/><path d="M9 9.8v-2M9 16.2v-2M6.8 12h-2M13.2 12h-2" stroke-width="1.5"/><path d="m15 15 2.5 2.5M17.5 15 15 17.5" stroke-width="1.6"/></symbol>
+<symbol id="ck-photo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L8 6.5H5a2 2 0 0 0-2 2V17a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="12.5" r="3.2"/></symbol>
+<symbol id="ck-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 10h16M4 15h11M4 20h7"/></symbol>
+<symbol id="ck-compare" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></symbol>
+<symbol id="ck-ack" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="m8.8 13.5 2 2 4.4-4.4"/></symbol>
+<symbol id="ck-ba" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="8.5" height="12" rx="1.8"/><rect x="13" y="6" width="8.5" height="12" rx="1.8"/><path d="m4.5 15 2-2.2 2 2.2M15 15l2-2.2 2 2.2" stroke-width="1.5"/></symbol>
+<symbol id="ck-single" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none"/></symbol>
+<symbol id="ck-multi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 1.8 1.8L8 4.5M3 15l1.8 1.8L8 13.5M11 6.5h10M11 15.5h10"/></symbol>
+<symbol id="ck-sign" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19c3.5 0 3.5-11 7-11s3.5 8 6.5 8c1.6 0 2.4-1 2.5-2"/><path d="M4 21h16" stroke-width="1.5"/></symbol>
+<symbol id="ui-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7.5"/><path d="m21 21-4.3-4.3"/></symbol>
+<symbol id="ui-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="ui-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9.5 7V5.5a1.5 1.5 0 0 1 1.5-1.5h2a1.5 1.5 0 0 1 1.5 1.5V7M6.5 7l.8 12a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9L17.5 7"/></symbol>
+<symbol id="ui-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 5.5v-1a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h1"/></symbol>
+<symbol id="ui-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="ui-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="ui-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></symbol>
+<symbol id="ui-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></symbol>
+<symbol id="ui-grip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="6" r=".9" fill="currentColor"/><circle cx="9" cy="12" r=".9" fill="currentColor"/><circle cx="9" cy="18" r=".9" fill="currentColor"/><circle cx="15" cy="6" r=".9" fill="currentColor"/><circle cx="15" cy="12" r=".9" fill="currentColor"/><circle cx="15" cy="18" r=".9" fill="currentColor"/></symbol>
+<symbol id="ui-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+<symbol id="ui-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 2.4 17.4A2 2 0 0 0 4.1 20.4h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9.5v4M12 17h.01"/></symbol>
+<symbol id="ui-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10.5 13.5M21 3l-6.5 18-4-8-8-4L21 3Z"/></symbol>
+<symbol id="ui-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-7H7v7M7 3v5h7"/></symbol>
+<symbol id="ui-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+<symbol id="ui-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M10.5 18.5h3"/></symbol>
+<symbol id="ui-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"/></symbol>
+<symbol id="ui-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10" width="15" height="10.5" rx="2"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></symbol>
+<symbol id="ui-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20.5 4v5.5H15"/></symbol>
+<symbol id="ui-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5h17l-6.5 8v6l-4 2v-8L3.5 5Z"/></symbol>
+<symbol id="ui-dash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="8.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5.5" rx="1.6"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.6"/><rect x="3" y="14" width="7.5" height="7" rx="1.6"/></symbol>
+<symbol id="ui-clip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="M8.5 11h7M8.5 15h4.5"/></symbol>
+<symbol id="ui-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"/><path d="M2.8 20a6.4 6.4 0 0 1 12.4 0"/><path d="M16.5 5.2a3.4 3.4 0 0 1 0 6.6M18 14.6a6.4 6.4 0 0 1 3.2 5.4"/></symbol>
+<symbol id="ui-set" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 14a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.2a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 18.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.9 13H3.7a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 5.4 7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H10a1.6 1.6 0 0 0 1-1.5V2.7a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.4 1Z"/></symbol>
+<symbol id="ui-audit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h6M8 13h8M8 17h5"/></symbol>
+<symbol id="ui-wrench" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4.5 4.5 0 0 0 5.8 5.8l-8 8a2.8 2.8 0 0 1-4-4l8-8a4.5 4.5 0 0 0-1.8-1.8Z"/></symbol>
+<symbol id="ui-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+<symbol id="ui-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></symbol>
+<symbol id="ui-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.8c0 1.7-2.4 2.5-2.4 2.5M12 17h.01"/></symbol>
+</defs></svg>
+
+<div style="height:100vh;display:flex;background:#F1F5F9;font-family:Inter,system-ui,sans-serif;color:#0F172A">
+
+  <!-- ░░ SIDEBAR ░░ -->
+  <aside style="width:236px;flex-shrink:0;background:#0D1B2A;display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,.06)">
+    <div style="padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="width:34px;height:34px;border-radius:10px;border:1px solid #33475B;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg>
+      </div>
+      <div style="line-height:1.15;min-width:0">
+        <div style="font-size:14px;font-weight:800;color:#fff">TechSolutions</div>
+        <div style="font-size:10px;color:#5E8C86;font-weight:600;letter-spacing:.12em">PLATAFORMA ERP</div>
+      </div>
+    </div>
+    <nav class="scrl" style="flex:1;min-height:0;overflow-y:auto;padding:12px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:6px 10px 7px">ADMINISTRAÇÃO</div>
+      <div style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;background:#2563EB;color:#fff">
+        <svg width="18" height="18" style="flex-shrink:0"><use href="#ui-clip"/></svg>
+        <span style="font-size:13.5px;font-weight:700">Modelos de Checklist</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;color:#8FA6BD;cursor:pointer" style-hover="background:rgba(255,255,255,.05)">
+        <svg width="18" height="18" style="flex-shrink:0"><use href="#ui-users"/></svg><span style="font-size:13.5px;font-weight:600">Usuários</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;color:#8FA6BD;cursor:pointer" style-hover="background:rgba(255,255,255,.05)">
+        <svg width="18" height="18" style="flex-shrink:0"><use href="#ui-set"/></svg><span style="font-size:13.5px;font-weight:600">Configurações da Organização</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;color:#8FA6BD;cursor:pointer" style-hover="background:rgba(255,255,255,.05)">
+        <svg width="18" height="18" style="flex-shrink:0"><use href="#ui-audit"/></svg><span style="font-size:13.5px;font-weight:600">Auditoria</span>
+      </div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:14px 10px 7px">OPERAÇÃO</div>
+      <div style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;color:#8FA6BD;cursor:pointer" style-hover="background:rgba(255,255,255,.05)">
+        <svg width="18" height="18" style="flex-shrink:0"><use href="#ui-dash"/></svg><span style="font-size:13.5px;font-weight:600">Dashboard Operacional</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;color:#8FA6BD;cursor:pointer" style-hover="background:rgba(255,255,255,.05)">
+        <svg width="18" height="18" style="flex-shrink:0"><use href="#ui-wrench"/></svg><span style="font-size:13.5px;font-weight:600">Ordens de Serviço</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;color:#8FA6BD;cursor:pointer" style-hover="background:rgba(255,255,255,.05)">
+        <svg width="18" height="18" style="flex-shrink:0"><use href="#ck-vehicle"/></svg><span style="font-size:13.5px;font-weight:600">Pátios</span>
+      </div>
+    </nav>
+    <div style="flex-shrink:0;padding:12px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px">
+      <div style="width:34px;height:34px;border-radius:50%;background:#1E3A5F;display:flex;align-items:center;justify-content:center;color:#9DC3E6;font-size:12px;font-weight:800;flex-shrink:0">AD</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Ana Duarte</div>
+        <div style="font-size:10.5px;color:#5B7A96">Administradora da Organização</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ░░ MAIN ░░ -->
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <header style="flex-shrink:0;height:60px;background:#fff;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between;padding:0 24px">
+      <div style="font-size:17px;font-weight:800;color:#0F172A">Modelos de Checklist</div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="display:flex;align-items:center;gap:9px;width:280px;padding:8px 13px;background:#F1F5F9;border-radius:10px;color:#94A3B8">
+          <svg width="16" height="16"><use href="#ui-search"/></svg><span style="font-size:13px">Buscar pedidos, itens, clientes…</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #E2E8F0;border-radius:10px;cursor:pointer;color:#64748B">
+          <svg width="15" height="15"><use href="#ui-box"/></svg>
+          <span style="font-size:12.5px;font-weight:700;color:#334155">Transportes Ômega</span>
+          <svg width="14" height="14"><use href="#ui-down"/></svg>
+        </div>
+        <div style="position:relative;width:38px;height:38px;border-radius:10px;background:#F1F5F9;display:flex;align-items:center;justify-content:center;color:#475569;cursor:pointer">
+          <svg width="18" height="18"><use href="#ui-bell"/></svg>
+          <span style="position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:#EF4444;border:1.5px solid #fff"></span>
+        </div>
+      </div>
+    </header>
+
+    <main class="scrl" style="flex:1;min-height:0;overflow:auto;position:relative"><div style="min-width:1180px;height:100%;display:flex;flex-direction:column">
+
+      <!-- ══ CARREGANDO ══ -->
+      <sc-if value="{{ stLoading }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:24px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px">
+          <div><div class="skl" style="width:70px;height:11px;margin-bottom:10px"></div><div class="skl" style="width:260px;height:22px;margin-bottom:9px"></div><div class="skl" style="width:420px;height:13px"></div></div>
+          <div style="display:flex;gap:8px"><div class="skl" style="width:210px;height:36px"></div><div class="skl" style="width:130px;height:36px"></div><div class="skl" style="width:130px;height:36px"></div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px"><div class="skl" style="height:74px"></div><div class="skl" style="height:74px"></div><div class="skl" style="height:74px"></div><div class="skl" style="height:74px"></div></div>
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:18px">
+          <div class="skl" style="width:100%;height:34px;margin-bottom:14px"></div>
+          <div class="skl" style="width:100%;height:44px;margin-bottom:10px"></div>
+          <div class="skl" style="width:100%;height:44px;margin-bottom:10px"></div>
+          <div class="skl" style="width:100%;height:44px;margin-bottom:10px"></div>
+          <div class="skl" style="width:100%;height:44px"></div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ ERRO ══ -->
+      <sc-if value="{{ stError }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:24px;display:flex;align-items:center;justify-content:center;min-height:520px">
+        <div style="max-width:440px;text-align:center;background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:38px 32px">
+          <div style="width:52px;height:52px;border-radius:14px;background:#FEF2F2;color:#DC2626;display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><svg width="26" height="26"><use href="#ui-alert"/></svg></div>
+          <div style="font-size:17px;font-weight:800;margin-bottom:6px">Não foi possível carregar os modelos</div>
+          <div style="font-size:13px;color:#64748B;line-height:1.55;margin-bottom:20px">A conexão com o servidor falhou. Verifique sua internet e tente novamente — nenhum modelo foi alterado.</div>
+          <button style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;background:#2563EB;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer"><svg width="15" height="15"><use href="#ui-refresh"/></svg>Tentar novamente</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ LISTA ══ -->
+      <sc-if value="{{ scList }}" hint-placeholder-val="{{ true }}" data-screen-label="Lista de modelos">
+      <div style="padding:24px">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid #E2E8F0">
+          <div style="min-width:320px;flex:1 1 320px">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563EB;margin-bottom:6px">ADMINISTRAÇÃO</div>
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1">Modelos de Checklist</div>
+            <div style="font-size:13px;color:#64748B;margin-top:5px;font-weight:500">Configure os checklists que a equipe de campo preenche no aplicativo — perguntas, fotos obrigatórias, mapa de avarias e assinatura do cliente.</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;width:230px;color:#94A3B8">
+              <svg width="15" height="15" style="flex-shrink:0"><use href="#ui-search"/></svg>
+              <input value="{{ q }}" onChange="{{ onQ }}" placeholder="Buscar modelo…" aria-label="Buscar modelo" style="border:none;outline:none;background:transparent;font-size:13px;font-weight:500;color:#0F172A;width:100%;padding:0"/>
+            </div>
+            <select value="{{ filter }}" onChange="{{ onFilter }}" aria-label="Filtrar por situação" style="padding:9px 12px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;font-size:13px;font-weight:600;color:#334155;cursor:pointer">
+              <option value="todos">Todas as situações</option>
+              <option value="published">Publicados</option>
+              <option value="draft">Rascunhos</option>
+              <option value="pending">Com alterações não publicadas</option>
+              <option value="inactive">Inativos</option>
+            </select>
+            <sc-if value="{{ canCreate }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ novoModelo }}" style="display:flex;align-items:center;gap:7px;padding:10px 16px;background:#2563EB;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer" style-hover="background:#1D4ED8">
+              <svg width="15" height="15"><use href="#ui-plus"/></svg>Novo modelo
+            </button>
+            </sc-if>
+          </div>
+        </div>
+
+        <sc-if value="{{ readOnly }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:11px;padding:12px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:11px;margin-bottom:16px">
+          <div style="width:32px;height:32px;border-radius:9px;background:#EEF2FF;color:#4F46E5;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16"><use href="#ui-lock"/></svg></div>
+          <div><div style="font-size:13px;font-weight:700">Você está no modo somente leitura</div><div style="font-size:12px;color:#64748B;margin-top:1px">Seu perfil permite consultar os modelos, mas não criar, editar ou publicar.</div></div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ hasTpls }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+          <div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+              <span style="width:8px;height:8px;border-radius:3px;background:{{ s.color }};flex-shrink:0"></span>
+              <span style="font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1;font-variant-numeric:tabular-nums">{{ s.n }}</span>
+            </div>
+            <div style="font-size:12px;font-weight:600;color:#475569">{{ s.label }}</div>
+            <div style="font-size:11px;color:#94A3B8;margin-top:2px">{{ s.hint }}</div>
+          </div>
+          </sc-for>
+        </div>
+
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:minmax(0,2.4fr) 1.1fr .9fr .5fr .8fr .9fr 120px;gap:12px;padding:11px 18px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;font-size:10.5px;font-weight:800;letter-spacing:.07em;color:#64748B">
+            <div>MODELO</div><div>TIPO</div><div>SITUAÇÃO</div><div style="text-align:right">VERSÃO</div><div style="text-align:right">CAMPOS</div><div>ATUALIZADO</div><div style="text-align:right">AÇÕES</div>
+          </div>
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="0">
+          <div onClick="{{ r.open }}" style="display:grid;grid-template-columns:minmax(0,2.4fr) 1.1fr .9fr .5fr .8fr .9fr 120px;gap:12px;padding:13px 18px;border-bottom:1px solid #F1F5F9;align-items:center;cursor:pointer" style-hover="background:#F8FAFC">
+            <div style="display:flex;align-items:center;gap:11px;min-width:0">
+              <div style="width:34px;height:34px;border-radius:9px;background:{{ r.iconBg }};display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="width:17px;height:17px;background-image:url('{{ r.iconSrc }}');background-size:contain;background-repeat:no-repeat;background-position:center"></span></div>
+              <div style="min-width:0">
+                <div style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</div>
+                <div style="font-size:11.5px;color:#94A3B8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.summary }}</div>
+              </div>
+            </div>
+            <div style="font-size:12.5px;color:#475569;font-weight:600">{{ r.typeLabel }}</div>
+            <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
+              <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:{{ r.stBg }};color:{{ r.stFg }};white-space:nowrap">{{ r.stLabel }}</span>
+              <sc-if value="{{ r.pending }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#FEF3C7;color:#B45309;white-space:nowrap">Alterações não publicadas</span>
+              </sc-if>
+            </div>
+            <div style="font-size:12.5px;font-weight:700;color:#334155;text-align:right;font-variant-numeric:tabular-nums">v{{ r.version }}</div>
+            <div style="font-size:12.5px;color:#475569;text-align:right;font-variant-numeric:tabular-nums">{{ r.count }}</div>
+            <div style="font-size:12px;color:#64748B;font-variant-numeric:tabular-nums">{{ r.updated }}</div>
+            <div style="display:flex;justify-content:flex-end;gap:5px">
+              <button onClick="{{ r.open }}" title="{{ r.openLabel }}" aria-label="{{ r.openLabel }}" style="width:30px;height:30px;border-radius:8px;border:1px solid #E2E8F0;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB">
+                <sc-if value="{{ r.openIsEdit }}" hint-placeholder-val="{{ false }}"><svg width="15" height="15"><use href="#ui-set"/></svg></sc-if>
+                <sc-if value="{{ r.openIsView }}" hint-placeholder-val="{{ false }}"><svg width="15" height="15"><use href="#ui-eye"/></svg></sc-if>
+              </button>
+              <sc-if value="{{ r.canWrite }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ r.dup }}" title="Duplicar modelo" aria-label="Duplicar modelo" style="width:30px;height:30px;border-radius:8px;border:1px solid #E2E8F0;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB"><svg width="14" height="14"><use href="#ui-copy"/></svg></button>
+              <button onClick="{{ r.runs }}" title="Ver execuções deste modelo" aria-label="Ver execuções deste modelo" style="width:30px;height:30px;border-radius:8px;border:1px solid #E2E8F0;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB"><svg width="14" height="14"><use href="#ui-ext"/></svg></button>
+              </sc-if>
+            </div>
+          </div>
+          </sc-for>
+          <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:44px 20px;text-align:center">
+            <div style="font-size:14px;font-weight:700;margin-bottom:4px">Nenhum modelo encontrado</div>
+            <div style="font-size:12.5px;color:#64748B">Ajuste a busca ou o filtro de situação.</div>
+          </div>
+          </sc-if>
+        </div>
+        </sc-if>
+
+        <!-- vazio honesto -->
+        <sc-if value="{{ stEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:56px 32px;text-align:center">
+          <div style="width:64px;height:64px;border-radius:18px;background:#EFF6FF;color:#2563EB;display:flex;align-items:center;justify-content:center;margin:0 auto 18px"><svg width="30" height="30"><use href="#ui-clip"/></svg></div>
+          <div style="font-size:18px;font-weight:800;margin-bottom:7px">Nenhum modelo ainda — crie o primeiro</div>
+          <div style="font-size:13.5px;color:#64748B;line-height:1.6;max-width:460px;margin:0 auto 22px">Um modelo define o que o guincheiro precisa fotografar, marcar e assinar em campo. Comece por uma vistoria de coleta: leva menos de 5 minutos.</div>
+          <button onClick="{{ novoModelo }}" style="display:inline-flex;align-items:center;gap:7px;padding:11px 20px;background:#2563EB;border:none;border-radius:10px;font-size:13.5px;font-weight:700;color:#fff;cursor:pointer"><svg width="16" height="16"><use href="#ui-plus"/></svg>Criar primeiro modelo</button>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ══ EDITOR ══ -->
+      <sc-if value="{{ scEditor }}" hint-placeholder-val="{{ false }}" data-screen-label="Editor do modelo">
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+
+        <!-- header do editor -->
+        <div style="flex-shrink:0;background:#fff;border-bottom:1px solid #E2E8F0;padding:13px 24px 0">
+          <div style="display:flex;align-items:center;gap:14px">
+            <button onClick="{{ voltar }}" aria-label="Voltar para a lista de modelos" style="width:34px;height:34px;border-radius:9px;border:1px solid #E2E8F0;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" style-hover="border-color:#2563EB;color:#2563EB"><svg width="17" height="17"><use href="#ui-left"/></svg></button>
+            <div style="min-width:0;flex:1;display:flex;align-items:center;gap:12px">
+              <input value="{{ tplName }}" onChange="{{ onName }}" aria-label="Nome do modelo" style="font-size:19px;font-weight:800;letter-spacing:-.3px;color:#0F172A;border:1px solid transparent;background:transparent;border-radius:8px;padding:5px 9px;margin-left:-9px;flex:1 1 auto;width:100%;min-width:180px;max-width:420px" style-hover="border-color:#E2E8F0;background:#F8FAFC"/>
+              <select value="{{ tplType }}" onChange="{{ onType }}" aria-label="Tipo do modelo" style="padding:6px 10px;border:1px solid #E2E8F0;border-radius:8px;font-size:12.5px;font-weight:600;color:#334155;background:#fff;cursor:pointer">
+                <option value="towing_collection">Guincho — Coleta</option>
+                <option value="towing_delivery">Guincho — Entrega</option>
+                <option value="technical_evidence">Evidência técnica</option>
+                <option value="custom">Personalizado</option>
+              </select>
+              <span style="font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:99px;background:{{ hdStBg }};color:{{ hdStFg }};white-space:nowrap">{{ hdStLabel }}</span>
+              <sc-if value="{{ hdPending }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:99px;background:#FEF3C7;color:#B45309;white-space:nowrap">Alterações não publicadas</span>
+              </sc-if>
+              <sc-if value="{{ dirty }}" hint-placeholder-val="{{ false }}">
+              <span style="display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:#B45309"><span style="width:7px;height:7px;border-radius:50%;background:#F59E0B"></span>Alterações não salvas</span>
+              </sc-if>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+              <button onClick="{{ togglePreview }}" style="display:flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB"><svg width="15" height="15"><use href="#ui-phone"/></svg>Pré-visualizar</button>
+              <sc-if value="{{ canWrite }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ salvar }}" style="display:flex;align-items:center;gap:7px;padding:9px 14px;background:{{ saveBg }};border:1px solid {{ saveBd }};border-radius:9px;font-size:12.5px;font-weight:700;color:{{ saveFg }};cursor:pointer"><svg width="15" height="15"><use href="#ui-save"/></svg>Salvar</button>
+              <button onClick="{{ publicar }}" title="{{ pubTitle }}" style="display:flex;align-items:center;gap:7px;padding:9px 16px;background:{{ pubBg }};border:none;border-radius:9px;font-size:12.5px;font-weight:700;color:{{ pubFg }};cursor:{{ pubCursor }}"><svg width="15" height="15"><use href="#ui-send"/></svg>Publicar</button>
+              </sc-if>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:11px">
+            <div style="display:flex;gap:4px">
+              <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2">
+              <button onClick="{{ t.on }}" style="padding:9px 15px;background:transparent;border:none;border-bottom:2.5px solid {{ t.bd }};font-size:13px;font-weight:700;color:{{ t.fg }};cursor:pointer;margin-bottom:-1px">{{ t.label }}</button>
+              </sc-for>
+            </div>
+            <a href="#" onClick="{{ verExecucoes }}" style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding-bottom:9px"><svg width="14" height="14"><use href="#ui-ext"/></svg>Ver execuções deste modelo</a>
+          </div>
+        </div>
+
+        <!-- bloqueio de publicação -->
+        <sc-if value="{{ hasBlock }}" hint-placeholder-val="{{ false }}">
+        <div style="flex-shrink:0;display:flex;align-items:center;gap:10px;padding:10px 24px;background:#FFFBEB;border-bottom:1px solid #FDE68A;color:#92400E">
+          <svg width="16" height="16" style="flex-shrink:0"><use href="#ui-alert"/></svg>
+          <span style="font-size:12.5px;font-weight:600">{{ blockMsg }}</span>
+        </div>
+        </sc-if>
+
+        <!-- ── ABA ESTRUTURA ── -->
+        <sc-if value="{{ tabEstrutura }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ gridCols }};gap:14px;padding:16px 24px 20px">
+
+          <!-- PALETA -->
+          <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+            <sc-if value="{{ palFull }}" hint-placeholder-val="{{ true }}">
+            <div style="padding:14px 15px 10px;border-bottom:1px solid #F1F5F9">
+              <div style="font-size:13px;font-weight:800">Campos disponíveis</div>
+              <div style="font-size:11.5px;color:#94A3B8;margin-top:2px">Clique para adicionar ao formulário</div>
+            </div>
+            </sc-if>
+            <div class="scrl" style="flex:1;min-height:0;overflow-y:auto;padding:8px">
+              <sc-for list="{{ palette }}" as="p" hint-placeholder-count="0">
+              <button onClick="{{ p.add }}" title="{{ p.title }}" aria-label="{{ p.title }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:{{ p.pad }};margin-bottom:4px;background:#fff;border:1px solid transparent;border-radius:10px;cursor:{{ p.cursor }};text-align:left;justify-content:{{ p.just }}" style-hover="background:#F8FAFC;border-color:#DBEAFE">
+                <span style="width:30px;height:30px;border-radius:8px;background:{{ p.bg }};display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="width:16px;height:16px;background-image:url('{{ p.iconSrc }}');background-size:contain;background-repeat:no-repeat;background-position:center"></span></span>
+                <sc-if value="{{ p.showText }}" hint-placeholder-val="{{ true }}">
+                <span style="min-width:0;flex:1">
+                  <span style="display:block;font-size:12.5px;font-weight:700;color:#0F172A;line-height:1.25">{{ p.label }}</span>
+                  <span style="display:block;font-size:11px;color:#94A3B8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">{{ p.desc }}</span>
+                </span>
+                <span style="width:20px;height:20px;border-radius:6px;background:#EFF6FF;color:#2563EB;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12"><use href="#ui-plus"/></svg></span>
+                </sc-if>
+              </button>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- CANVAS -->
+          <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+            <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid #F1F5F9">
+              <div>
+                <div style="font-size:13px;font-weight:800">O formulário</div>
+                <div style="font-size:11.5px;color:#94A3B8;margin-top:2px">{{ canvasMeta }}</div>
+              </div>
+              <sc-if value="{{ canWrite }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ addSecao }}" style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border:1px solid #E2E8F0;border-radius:8px;font-size:12px;font-weight:700;color:#475569;cursor:pointer" style-hover="border-color:#2563EB;color:#2563EB"><svg width="13" height="13"><use href="#ui-plus"/></svg>Nova seção</button>
+              </sc-if>
+            </div>
+            <div class="scrl" style="flex:1;min-height:0;overflow-y:auto;padding:16px 18px 22px;background:#FBFCFE">
+              <sc-if value="{{ canvasEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="border:2px dashed #CBD5E1;border-radius:14px;padding:52px 24px;text-align:center;background:#fff">
+                <div style="width:56px;height:56px;border-radius:16px;background:#F1F5F9;color:#94A3B8;display:flex;align-items:center;justify-content:center;margin:0 auto 14px"><svg width="26" height="26"><use href="#ui-grip"/></svg></div>
+                <div style="font-size:14.5px;font-weight:800;margin-bottom:5px">Nenhum campo ainda</div>
+                <div style="font-size:12.5px;color:#64748B;line-height:1.55;max-width:320px;margin:0 auto">Escolha um campo na coluna da esquerda para começar. Uma vistoria de coleta costuma ter veículo, mapa de avarias, fotos e assinatura.</div>
+              </div>
+              </sc-if>
+
+              <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="3">
+              <div style="margin-bottom:18px">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                  <span style="font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#64748B;background:#F1F5F9;padding:4px 9px;border-radius:6px">SEÇÃO</span>
+                  <input value="{{ sec.title }}" onChange="{{ sec.rename }}" aria-label="Nome da seção" style="flex:1;min-width:0;font-size:13.5px;font-weight:800;color:#0F172A;border:1px solid transparent;background:transparent;border-radius:7px;padding:4px 8px;margin-left:-8px" style-hover="border-color:#E2E8F0;background:#fff"/>
+                  <span style="font-size:11px;color:#94A3B8;white-space:nowrap">{{ sec.count }}</span>
+                </div>
+                <div style="border-left:2px solid #E2E8F0;padding-left:12px">
+                  <sc-for list="{{ sec.items }}" as="it" hint-placeholder-count="0">
+                  <div onClick="{{ it.select }}" style="display:flex;align-items:center;gap:11px;padding:11px 12px;margin-bottom:7px;background:#fff;border:1.5px solid {{ it.bd }};border-radius:11px;cursor:pointer;box-shadow:{{ it.shadow }}" style-hover="border-color:#93C5FD">
+                    <span style="color:#CBD5E1;flex-shrink:0;display:flex" title="Arrastar para reordenar"><svg width="15" height="15"><use href="#ui-grip"/></svg></span>
+                    <span style="width:32px;height:32px;border-radius:9px;background:{{ it.bg }};display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="width:16px;height:16px;background-image:url('{{ it.iconSrc }}');background-size:contain;background-repeat:no-repeat;background-position:center"></span></span>
+                    <span style="flex:1;min-width:0">
+                      <span style="display:flex;align-items:center;gap:7px">
+                        <span style="font-size:13px;font-weight:700;color:#0F172A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.label }}</span>
+                        <sc-if value="{{ it.required }}" hint-placeholder-val="{{ false }}"><span style="color:#DC2626;font-size:13px;font-weight:800;flex-shrink:0">*</span></sc-if>
+                      </span>
+                      <span style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
+                        <span style="font-size:11px;font-weight:600;color:#64748B">{{ it.typeLabel }}</span>
+                        <sc-for list="{{ it.chips }}" as="c" hint-placeholder-count="0">
+                        <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:{{ c.bg }};color:{{ c.fg }};white-space:nowrap">{{ c.t }}</span>
+                        </sc-for>
+                      </span>
+                    </span>
+                    <sc-if value="{{ it.canWrite }}" hint-placeholder-val="{{ true }}">
+                    <span style="display:flex;gap:3px;flex-shrink:0">
+                      <button onClick="{{ it.up }}" aria-label="Mover para cima" title="Mover para cima" style="width:26px;height:26px;border-radius:7px;border:1px solid #E2E8F0;background:#fff;color:#64748B;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="color:#2563EB;border-color:#93C5FD"><svg width="13" height="13"><use href="#ui-up"/></svg></button>
+                      <button onClick="{{ it.down }}" aria-label="Mover para baixo" title="Mover para baixo" style="width:26px;height:26px;border-radius:7px;border:1px solid #E2E8F0;background:#fff;color:#64748B;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="color:#2563EB;border-color:#93C5FD"><svg width="13" height="13"><use href="#ui-down"/></svg></button>
+                      <button onClick="{{ it.dup }}" aria-label="Duplicar campo" title="Duplicar campo" style="width:26px;height:26px;border-radius:7px;border:1px solid #E2E8F0;background:#fff;color:#64748B;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="color:#2563EB;border-color:#93C5FD"><svg width="12" height="12"><use href="#ui-copy"/></svg></button>
+                      <button onClick="{{ it.del }}" aria-label="Remover campo" title="Remover campo" style="width:26px;height:26px;border-radius:7px;border:1px solid #E2E8F0;background:#fff;color:#64748B;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="color:#DC2626;border-color:#FCA5A5"><svg width="13" height="13"><use href="#ui-trash"/></svg></button>
+                    </span>
+                    </sc-if>
+                  </div>
+                  </sc-for>
+                  <sc-if value="{{ sec.empty }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:14px;border:1.5px dashed #E2E8F0;border-radius:10px;text-align:center;font-size:12px;color:#94A3B8">Seção vazia — adicione um campo pela coluna da esquerda</div>
+                  </sc-if>
+                </div>
+              </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- INSPECTOR -->
+          <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+            <div style="flex-shrink:0;padding:13px 16px;border-bottom:1px solid #F1F5F9">
+              <div style="font-size:13px;font-weight:800">{{ inspTitle }}</div>
+              <div style="font-size:11.5px;color:#94A3B8;margin-top:2px">{{ inspSub }}</div>
+            </div>
+            <div class="scrl" style="flex:1;min-height:0;overflow-y:auto;padding:16px">
+
+              <sc-if value="{{ noSel }}" hint-placeholder-val="{{ true }}">
+              <div style="text-align:center;padding:36px 12px">
+                <div style="width:46px;height:46px;border-radius:13px;background:#F1F5F9;color:#94A3B8;display:flex;align-items:center;justify-content:center;margin:0 auto 12px"><svg width="22" height="22"><use href="#ui-help"/></svg></div>
+                <div style="font-size:13px;font-weight:700;margin-bottom:4px">Nenhum campo selecionado</div>
+                <div style="font-size:12px;color:#64748B;line-height:1.5">Clique em um campo do formulário para configurar o texto da pergunta, obrigatoriedade e regras.</div>
+              </div>
+              </sc-if>
+
+              <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+              <div class="fu">
+                <div style="display:flex;align-items:center;gap:10px;padding:11px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:11px;margin-bottom:16px">
+                  <span style="width:32px;height:32px;border-radius:9px;background:{{ selBg }};display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="width:16px;height:16px;background-image:url('{{ selIconSrc }}');background-size:contain;background-repeat:no-repeat;background-position:center"></span></span>
+                  <span style="min-width:0"><span style="display:block;font-size:12.5px;font-weight:800">{{ selTypeLabel }}</span><span style="display:block;font-size:11px;color:#94A3B8;margin-top:1px">{{ selTypeDesc }}</span></span>
+                </div>
+
+                <div style="margin-bottom:14px">
+                  <label style="display:block;font-size:11.5px;font-weight:700;color:#334155;margin-bottom:6px">Pergunta exibida ao técnico</label>
+                  <input value="{{ selLabel }}" onChange="{{ onLabel }}" placeholder="Ex.: Fotos do veículo na coleta" style="width:100%;padding:9px 11px;border:1px solid #E2E8F0;border-radius:9px;font-size:13px;font-weight:600;color:#0F172A"/>
+                </div>
+
+                <div style="margin-bottom:14px">
+                  <label style="display:block;font-size:11.5px;font-weight:700;color:#334155;margin-bottom:6px">Texto de ajuda <span style="font-weight:500;color:#94A3B8">(opcional)</span></label>
+                  <textarea value="{{ selHelp }}" onChange="{{ onHelp }}" placeholder="Instrução curta que aparece abaixo da pergunta no aplicativo" style="width:100%;padding:9px 11px;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;color:#0F172A;resize:vertical;min-height:60px;line-height:1.5"></textarea>
+                </div>
+
+                <div onClick="{{ toggleReq }}" style="display:flex;align-items:center;gap:11px;padding:11px;border:1px solid {{ reqBd }};background:{{ reqBg }};border-radius:10px;cursor:pointer;margin-bottom:18px">
+                  <span style="width:38px;height:22px;border-radius:99px;background:{{ swBg }};position:relative;flex-shrink:0;transition:background .15s"><span style="position:absolute;top:3px;left:{{ swX }};width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s"></span></span>
+                  <span style="min-width:0"><span style="display:block;font-size:12.5px;font-weight:700">Resposta obrigatória</span><span style="display:block;font-size:11px;color:#64748B;margin-top:1px">O técnico não conclui o checklist sem preencher</span></span>
+                </div>
+
+                <!-- config tipada -->
+                <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#64748B;margin-bottom:10px">CONFIGURAÇÕES DO CAMPO</div>
+
+                <!-- opções (escolha única / múltipla) -->
+                <sc-if value="{{ cfgChoice }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <sc-if value="{{ optsEmpty }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:flex-start;gap:9px;padding:11px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;margin-bottom:11px;color:#92400E">
+                    <svg width="15" height="15" style="flex-shrink:0;margin-top:1px"><use href="#ui-alert"/></svg>
+                    <span style="font-size:11.5px;font-weight:600;line-height:1.45">Adicione ao menos 1 opção — sem opções este campo impede a publicação do modelo.</span>
+                  </div>
+                  </sc-if>
+                  <sc-for list="{{ options }}" as="o" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                    <span style="color:#CBD5E1;display:flex;flex-shrink:0"><svg width="14" height="14"><use href="#ui-grip"/></svg></span>
+                    <input value="{{ o.text }}" onChange="{{ o.rename }}" aria-label="Texto da opção" style="flex:1;min-width:0;padding:8px 10px;border:1px solid #E2E8F0;border-radius:8px;font-size:12.5px;color:#0F172A"/>
+                    <button onClick="{{ o.up }}" aria-label="Subir opção" title="Subir opção" style="width:26px;height:26px;border-radius:7px;border:1px solid #E2E8F0;background:#fff;color:#64748B;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"><svg width="12" height="12"><use href="#ui-up"/></svg></button>
+                    <button onClick="{{ o.down }}" aria-label="Descer opção" title="Descer opção" style="width:26px;height:26px;border-radius:7px;border:1px solid #E2E8F0;background:#fff;color:#64748B;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"><svg width="12" height="12"><use href="#ui-down"/></svg></button>
+                    <button onClick="{{ o.del }}" aria-label="Remover opção" title="Remover opção" style="width:26px;height:26px;border-radius:7px;border:1px solid #E2E8F0;background:#fff;color:#64748B;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" style-hover="color:#DC2626;border-color:#FCA5A5"><svg width="12" height="12"><use href="#ui-trash"/></svg></button>
+                  </div>
+                  </sc-for>
+                  <button onClick="{{ addOption }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;background:#fff;border:1.5px dashed #CBD5E1;border-radius:9px;font-size:12.5px;font-weight:700;color:#2563EB;cursor:pointer;margin-top:4px" style-hover="border-color:#2563EB;background:#F8FAFC"><svg width="14" height="14"><use href="#ui-plus"/></svg>Adicionar opção</button>
+                  <div style="font-size:11px;color:#94A3B8;margin-top:8px;line-height:1.5">Deixe as respostas mais comuns no topo — em campo, com luva, cada toque conta.</div>
+                </div>
+                </sc-if>
+
+                <!-- múltipla: mínimo de seleções -->
+                <sc-if value="{{ cfgMulti }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:14px">
+                  <label style="display:block;font-size:11.5px;font-weight:700;color:#334155;margin-bottom:6px">Mínimo de seleções</label>
+                  <input type="number" min="0" value="{{ cfgMinSel }}" onChange="{{ onMinSel }}" style="width:110px;padding:8px 10px;border:1px solid #E2E8F0;border-radius:8px;font-size:12.5px;font-weight:600"/>
+                </div>
+                </sc-if>
+
+                <!-- foto -->
+                <sc-if value="{{ cfgPhoto }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <div style="display:flex;gap:10px;margin-bottom:12px">
+                    <div style="flex:1">
+                      <label style="display:block;font-size:11.5px;font-weight:700;color:#334155;margin-bottom:6px">Mínimo de fotos</label>
+                      <input type="number" min="0" value="{{ cfgMin }}" onChange="{{ onMin }}" style="width:100%;padding:9px 11px;border:1px solid #E2E8F0;border-radius:9px;font-size:13px;font-weight:600"/>
+                    </div>
+                    <div style="flex:1">
+                      <label style="display:block;font-size:11.5px;font-weight:700;color:#334155;margin-bottom:6px">Máximo de fotos</label>
+                      <input type="number" min="1" value="{{ cfgMax }}" onChange="{{ onMax }}" style="width:100%;padding:9px 11px;border:1px solid #E2E8F0;border-radius:9px;font-size:13px;font-weight:600"/>
+                    </div>
+                  </div>
+                  <div style="font-size:11px;color:#94A3B8;line-height:1.5">O aplicativo mostra {{ cfgMin }} espaços de foto e só libera a conclusão quando todos estiverem preenchidos.</div>
+                </div>
+                </sc-if>
+
+                <!-- veículo -->
+                <sc-if value="{{ cfgVehicle }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <label style="display:block;font-size:11.5px;font-weight:700;color:#334155;margin-bottom:8px">Tipos de veículo aceitos</label>
+                  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px">
+                    <sc-for list="{{ vehTypes }}" as="v" hint-placeholder-count="4">
+                    <button onClick="{{ v.on }}" style="display:flex;align-items:center;gap:6px;padding:7px 12px;border:1.5px solid {{ v.bd }};background:{{ v.bg }};border-radius:99px;font-size:12px;font-weight:700;color:{{ v.fg }};cursor:pointer">{{ v.label }}</button>
+                    </sc-for>
+                  </div>
+                  <label style="display:block;font-size:11.5px;font-weight:700;color:#334155;margin-bottom:6px">Imagem de referência da vistoria</label>
+                  <div style="display:flex;align-items:center;gap:10px;padding:11px;border:1.5px dashed #CBD5E1;border-radius:10px;background:#F8FAFC">
+                    <span style="width:32px;height:32px;border-radius:8px;background:#EFF6FF;color:#2563EB;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16"><use href="#ck-photo"/></svg></span>
+                    <span style="min-width:0"><span style="display:block;font-size:12px;font-weight:700">Silhueta padrão por tipo de veículo</span><span style="display:block;font-size:11px;color:#94A3B8;margin-top:1px">Enviar imagem própria — em breve</span></span>
+                  </div>
+                </div>
+                </sc-if>
+
+                <!-- mapa de avarias -->
+                <sc-if value="{{ cfgDamage }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <label style="display:block;font-size:11.5px;font-weight:700;color:#334155;margin-bottom:8px">Tipos de avaria que o técnico pode marcar</label>
+                  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px">
+                    <sc-for list="{{ markerTypes }}" as="m" hint-placeholder-count="5">
+                    <button onClick="{{ m.on }}" style="display:flex;align-items:center;gap:6px;padding:7px 12px;border:1.5px solid {{ m.bd }};background:{{ m.bg }};border-radius:99px;font-size:12px;font-weight:700;color:{{ m.fg }};cursor:pointer">{{ m.label }}</button>
+                    </sc-for>
+                  </div>
+                  <div onClick="{{ toggleReqDesc }}" style="display:flex;align-items:center;gap:11px;padding:11px;border:1px solid {{ rdBd }};background:{{ rdBg }};border-radius:10px;cursor:pointer">
+                    <span style="width:38px;height:22px;border-radius:99px;background:{{ rdSw }};position:relative;flex-shrink:0"><span style="position:absolute;top:3px;left:{{ rdX }};width:16px;height:16px;border-radius:50%;background:#fff"></span></span>
+                    <span><span style="display:block;font-size:12.5px;font-weight:700">Exigir descrição em cada avaria</span><span style="display:block;font-size:11px;color:#64748B;margin-top:1px">Protege a organização em disputas sobre o estado do veículo</span></span>
+                  </div>
+                </div>
+                </sc-if>
+
+                <!-- observação -->
+                <sc-if value="{{ cfgObs }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <div onClick="{{ toggleMultiline }}" style="display:flex;align-items:center;gap:11px;padding:11px;border:1px solid {{ mlBd }};background:{{ mlBg }};border-radius:10px;cursor:pointer;margin-bottom:12px">
+                    <span style="width:38px;height:22px;border-radius:99px;background:{{ mlSw }};position:relative;flex-shrink:0"><span style="position:absolute;top:3px;left:{{ mlX }};width:16px;height:16px;border-radius:50%;background:#fff"></span></span>
+                    <span><span style="display:block;font-size:12.5px;font-weight:700">Texto longo</span><span style="display:block;font-size:11px;color:#64748B;margin-top:1px">Campo com várias linhas em vez de uma só</span></span>
+                  </div>
+                  <label style="display:block;font-size:11.5px;font-weight:700;color:#334155;margin-bottom:6px">Limite de caracteres</label>
+                  <input type="number" min="1" value="{{ cfgMaxLen }}" onChange="{{ onMaxLen }}" style="width:130px;padding:9px 11px;border:1px solid #E2E8F0;border-radius:9px;font-size:13px;font-weight:600"/>
+                </div>
+                </sc-if>
+
+                <!-- assinatura -->
+                <sc-if value="{{ cfgSign }}" hint-placeholder-val="{{ false }}">
+                <div onClick="{{ toggleReqName }}" style="display:flex;align-items:center;gap:11px;padding:11px;border:1px solid {{ rnBd }};background:{{ rnBg }};border-radius:10px;cursor:pointer">
+                  <span style="width:38px;height:22px;border-radius:99px;background:{{ rnSw }};position:relative;flex-shrink:0"><span style="position:absolute;top:3px;left:{{ rnX }};width:16px;height:16px;border-radius:50%;background:#fff"></span></span>
+                  <span><span style="display:block;font-size:12.5px;font-weight:700">Exigir nome de quem assina</span><span style="display:block;font-size:11px;color:#64748B;margin-top:1px">Nome completo registrado junto da assinatura</span></span>
+                </div>
+                </sc-if>
+
+                <!-- ciência -->
+                <sc-if value="{{ cfgAck }}" hint-placeholder-val="{{ false }}">
+                <div onClick="{{ toggleReqObs }}" style="display:flex;align-items:center;gap:11px;padding:11px;border:1px solid {{ roBd }};background:{{ roBg }};border-radius:10px;cursor:pointer">
+                  <span style="width:38px;height:22px;border-radius:99px;background:{{ roSw }};position:relative;flex-shrink:0"><span style="position:absolute;top:3px;left:{{ roX }};width:16px;height:16px;border-radius:50%;background:#fff"></span></span>
+                  <span><span style="display:block;font-size:12.5px;font-weight:700">Exigir observação na ciência</span><span style="display:block;font-size:11px;color:#64748B;margin-top:1px">Quem dá ciência precisa justificar por escrito</span></span>
+                </div>
+                </sc-if>
+
+                <!-- antes e depois -->
+                <sc-if value="{{ cfgBA }}" hint-placeholder-val="{{ false }}">
+                <div onClick="{{ toggleBothStages }}" style="display:flex;align-items:center;gap:11px;padding:11px;border:1px solid {{ bsBd }};background:{{ bsBg }};border-radius:10px;cursor:pointer">
+                  <span style="width:38px;height:22px;border-radius:99px;background:{{ bsSw }};position:relative;flex-shrink:0"><span style="position:absolute;top:3px;left:{{ bsX }};width:16px;height:16px;border-radius:50%;background:#fff"></span></span>
+                  <span><span style="display:block;font-size:12.5px;font-weight:700">Exigir os dois estágios</span><span style="display:block;font-size:11px;color:#64748B;margin-top:1px">Antes e depois precisam ser registrados</span></span>
+                </div>
+                </sc-if>
+
+                <!-- comparação -->
+                <sc-if value="{{ cfgCompare }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <label style="display:block;font-size:11.5px;font-weight:700;color:#334155;margin-bottom:6px">Comparar com</label>
+                  <select value="{{ cfgCompareWith }}" onChange="{{ onCompareWith }}" style="width:100%;padding:9px 11px;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;background:#fff;cursor:pointer">
+                    <option value="related_collection">Vistoria de coleta relacionada</option>
+                    <option value="related_delivery">Vistoria de entrega relacionada</option>
+                  </select>
+                  <div style="font-size:11px;color:#94A3B8;margin-top:8px;line-height:1.5">O aplicativo mostra lado a lado as fotos e avarias da vistoria escolhida.</div>
+                </div>
+                </sc-if>
+              </div>
+              </sc-if>
+            </div>
+          </div>
+
+          <!-- PRÉ-VISUALIZAÇÃO LADO A LADO -->
+          <sc-if value="{{ previewDock }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#0D1B2A;border:1px solid #0D1B2A;border-radius:14px;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+            <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08)">
+              <div><div style="font-size:12.5px;font-weight:800;color:#fff">Como o técnico verá</div><div style="font-size:11px;color:#7B93AB;margin-top:1px">Aplicativo de campo · 390 × 812</div></div>
+              <button onClick="{{ togglePreview }}" aria-label="Fechar pré-visualização" style="width:28px;height:28px;border-radius:8px;border:none;background:rgba(255,255,255,.08);color:#CBD5E1;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="14" height="14"><use href="#ui-x"/></svg></button>
+            </div>
+            <div class="scrl" style="flex:1;min-height:0;overflow-y:auto;padding:14px;display:flex;justify-content:center">
+              <div style="width:340px;flex-shrink:0;border-radius:26px;border:8px solid #1B2C40;background:#F1F5F9;overflow:hidden;box-shadow:0 14px 34px rgba(0,0,0,.35)">
+                <div style="background:#0D1B2A;padding:9px 14px 11px;color:#fff">
+                  <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#8AA2B8;margin-bottom:7px"><span>9:41</span><span>4G ▮</span></div>
+                  <div style="font-size:13px;font-weight:800">{{ tplName }}</div>
+                  <div style="font-size:10.5px;color:#7B93AB;margin-top:2px">OS-4821 · Transportes Ômega</div>
+                </div>
+                <div style="padding:12px 12px 22px">
+                  <sc-for list="{{ prevSections }}" as="ps" hint-placeholder-count="3">
+                  <div style="margin-bottom:12px">
+                    <div style="font-size:9.5px;font-weight:800;letter-spacing:.09em;color:#64748B;margin-bottom:7px">{{ ps.title }}</div>
+                    <sc-for list="{{ ps.items }}" as="pi" hint-placeholder-count="2">
+                    <div style="background:#fff;border:1px solid #E2E8F0;border-radius:11px;padding:11px;margin-bottom:8px">
+                      <div style="font-size:11.5px;font-weight:700;color:#0F172A;line-height:1.35">{{ pi.label }}<span style="color:#DC2626">{{ pi.star }}</span></div>
+                      <sc-if value="{{ pi.hasHelp }}" hint-placeholder-val="{{ false }}"><div style="font-size:10px;color:#94A3B8;margin-top:3px;line-height:1.4">{{ pi.help }}</div></sc-if>
+
+                      <sc-if value="{{ pi.isVehicle }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap">
+                        <sc-for list="{{ pi.chips }}" as="vc" hint-placeholder-count="4">
+                        <span style="font-size:10px;font-weight:700;padding:6px 10px;border-radius:8px;border:1.5px solid {{ vc.bd }};background:{{ vc.bg }};color:{{ vc.fg }}">{{ vc.t }}</span>
+                        </sc-for>
+                      </div>
+                      </sc-if>
+
+                      <sc-if value="{{ pi.isDamage }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:9px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:9px;height:96px;position:relative;display:flex;align-items:center;justify-content:center">
+                        <svg width="132" height="60" viewBox="0 0 132 60" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linejoin="round"><path d="M10 42h112M16 42V30l14-16h72l14 16v12"/><circle cx="34" cy="45" r="7"/><circle cx="98" cy="45" r="7"/><path d="M30 30h72"/></svg>
+                        <span style="position:absolute;left:38%;top:34%;width:15px;height:15px;border-radius:50%;background:#DC2626;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)"></span>
+                        <span style="position:absolute;left:64%;top:56%;width:15px;height:15px;border-radius:50%;background:#F59E0B;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)"></span>
+                      </div>
+                      <div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
+                        <sc-for list="{{ pi.chips }}" as="mc" hint-placeholder-count="3">
+                        <span style="font-size:9px;font-weight:700;padding:3px 7px;border-radius:99px;background:{{ mc.bg }};color:{{ mc.fg }}">{{ mc.t }}</span>
+                        </sc-for>
+                      </div>
+                      </sc-if>
+
+                      <sc-if value="{{ pi.isPhoto }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:9px">
+                        <sc-for list="{{ pi.slots }}" as="sl" hint-placeholder-count="4">
+                        <div style="aspect-ratio:1;border-radius:8px;border:1.5px dashed #CBD5E1;background:#F8FAFC;display:flex;align-items:center;justify-content:center;color:#94A3B8"><svg width="15" height="15"><use href="#ck-photo"/></svg></div>
+                        </sc-for>
+                      </div>
+                      <div style="font-size:9.5px;color:#94A3B8;margin-top:6px">{{ pi.hint }}</div>
+                      </sc-if>
+
+                      <sc-if value="{{ pi.isObs }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:9px;border:1px solid #E2E8F0;border-radius:9px;background:#F8FAFC;padding:9px;font-size:10.5px;color:#B6C2D1;min-height:{{ pi.obsH }}">Digite aqui…</div>
+                      </sc-if>
+
+                      <sc-if value="{{ pi.isSingle }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:9px;display:flex;flex-direction:column;gap:6px">
+                        <sc-for list="{{ pi.options }}" as="op" hint-placeholder-count="3">
+                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #E2E8F0;border-radius:8px">
+                          <span style="width:15px;height:15px;border-radius:50%;border:2px solid #CBD5E1;flex-shrink:0"></span>
+                          <span style="font-size:11px;font-weight:600;color:#334155">{{ op.t }}</span>
+                        </div>
+                        </sc-for>
+                      </div>
+                      </sc-if>
+
+                      <sc-if value="{{ pi.isMulti }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:9px;display:flex;flex-direction:column;gap:6px">
+                        <sc-for list="{{ pi.options }}" as="op" hint-placeholder-count="3">
+                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #E2E8F0;border-radius:8px">
+                          <span style="width:15px;height:15px;border-radius:4px;border:2px solid #CBD5E1;flex-shrink:0"></span>
+                          <span style="font-size:11px;font-weight:600;color:#334155">{{ op.t }}</span>
+                        </div>
+                        </sc-for>
+                      </div>
+                      </sc-if>
+
+                      <sc-if value="{{ pi.isSign }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:9px">
+                        <sc-if value="{{ pi.needName }}" hint-placeholder-val="{{ false }}">
+                        <div style="border:1px solid #E2E8F0;border-radius:8px;padding:8px 10px;font-size:10.5px;color:#B6C2D1;margin-bottom:6px">Nome de quem assina</div>
+                        </sc-if>
+                        <div style="border:1.5px dashed #CBD5E1;border-radius:9px;height:64px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;background:#F8FAFC;color:#94A3B8;font-size:10px">Assine no espaço acima</div>
+                      </div>
+                      </sc-if>
+
+                      <sc-if value="{{ pi.isAck }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:9px;display:flex;align-items:flex-start;gap:8px;padding:9px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:9px">
+                        <span style="width:15px;height:15px;border-radius:4px;border:2px solid #CBD5E1;flex-shrink:0;margin-top:1px"></span>
+                        <span style="font-size:10.5px;color:#475569;line-height:1.4">Declaro ciência da responsabilidade sobre o veículo</span>
+                      </div>
+                      </sc-if>
+
+                      <sc-if value="{{ pi.isBA }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px">
+                        <div style="border:1.5px dashed #CBD5E1;border-radius:9px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#F8FAFC;color:#94A3B8"><svg width="15" height="15"><use href="#ck-photo"/></svg><span style="font-size:9.5px;font-weight:700">Antes</span></div>
+                        <div style="border:1.5px dashed #CBD5E1;border-radius:9px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#F8FAFC;color:#94A3B8"><svg width="15" height="15"><use href="#ck-photo"/></svg><span style="font-size:9.5px;font-weight:700">Depois</span></div>
+                      </div>
+                      </sc-if>
+
+                      <sc-if value="{{ pi.isCompare }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px">
+                        <div style="border:1px solid #E2E8F0;border-radius:9px;height:58px;background:#F8FAFC;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:#64748B">Coleta</div>
+                        <div style="border:1px solid #BFDBFE;border-radius:9px;height:58px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:#2563EB">Agora</div>
+                      </div>
+                      </sc-if>
+                    </div>
+                    </sc-for>
+                  </div>
+                  </sc-for>
+                  <div style="background:#2563EB;color:#fff;border-radius:11px;padding:12px;text-align:center;font-size:12px;font-weight:800">Concluir checklist</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </sc-if>
+        </div>
+        </sc-if>
+
+        <!-- ── ABA APLICABILIDADE ── -->
+        <sc-if value="{{ tabAplic }}" hint-placeholder-val="{{ false }}">
+        <div class="scrl" style="flex:1;min-height:0;overflow-y:auto;padding:20px 24px 28px">
+          <div style="max-width:880px">
+            <div style="display:flex;align-items:flex-start;gap:11px;padding:13px 16px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;margin-bottom:18px">
+              <div style="width:30px;height:30px;border-radius:8px;background:#DBEAFE;color:#2563EB;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16"><use href="#ui-help"/></svg></div>
+              <div><div style="font-size:13px;font-weight:700;color:#1E3A8A">Quando este checklist é enviado ao técnico</div><div style="font-size:12px;color:#3B5A8F;margin-top:2px;line-height:1.5">As regras abaixo definem em quais serviços o modelo entra automaticamente. Quem despacha a ordem ainda pode ajustar antes de enviar.</div></div>
+            </div>
+
+            <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden;margin-bottom:16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid #F1F5F9">
+                <div><div style="font-size:13.5px;font-weight:800">Regras de aplicação</div><div style="font-size:11.5px;color:#94A3B8;margin-top:2px">Uma ordem pode receber mais de um checklist</div></div>
+                <span style="font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:99px;background:#F3E8FF;color:#7E22CE">Em breve</span>
+              </div>
+              <sc-for list="{{ rules }}" as="ru" hint-placeholder-count="2">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 36px;gap:10px;padding:13px 18px;border-bottom:1px solid #F1F5F9;align-items:end">
+                <div><label style="display:block;font-size:11px;font-weight:700;color:#64748B;margin-bottom:5px">Tipo de serviço</label><div style="padding:9px 11px;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;background:#F8FAFC">{{ ru.servico }}</div></div>
+                <div><label style="display:block;font-size:11px;font-weight:700;color:#64748B;margin-bottom:5px">Cliente</label><div style="padding:9px 11px;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;background:#F8FAFC">{{ ru.cliente }}</div></div>
+                <div><label style="display:block;font-size:11px;font-weight:700;color:#64748B;margin-bottom:5px">Fase</label><div style="padding:9px 11px;border:1px solid #E2E8F0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;background:#F8FAFC">{{ ru.fase }}</div></div>
+                <button aria-label="Remover regra" style="width:36px;height:36px;border-radius:9px;border:1px solid #E2E8F0;background:#fff;color:#CBD5E1;display:flex;align-items:center;justify-content:center;cursor:not-allowed"><svg width="14" height="14"><use href="#ui-trash"/></svg></button>
+              </div>
+              </sc-for>
+              <div style="padding:13px 18px">
+                <button style="display:flex;align-items:center;gap:7px;padding:9px 13px;background:#fff;border:1.5px dashed #CBD5E1;border-radius:9px;font-size:12.5px;font-weight:700;color:#94A3B8;cursor:not-allowed"><svg width="14" height="14"><use href="#ui-plus"/></svg>Adicionar regra</button>
+              </div>
+            </div>
+
+            <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:18px">
+              <div style="font-size:13.5px;font-weight:800;margin-bottom:4px">O que acontece ao publicar</div>
+              <div style="font-size:12.5px;color:#64748B;line-height:1.6;margin-bottom:14px">Publicar congela esta versão do modelo. Ordens já despachadas continuam com a versão que receberam — nada muda para o técnico que já está em campo.</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+                <div style="padding:12px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:11px"><div style="font-size:12px;font-weight:800;color:#15803D;margin-bottom:3px">Novas ordens</div><div style="font-size:11.5px;color:#166534;line-height:1.45">Recebem a versão recém-publicada</div></div>
+                <div style="padding:12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:11px"><div style="font-size:12px;font-weight:800;color:#334155;margin-bottom:3px">Em andamento</div><div style="font-size:11.5px;color:#475569;line-height:1.45">Mantêm a versão recebida no despacho</div></div>
+                <div style="padding:12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:11px"><div style="font-size:12px;font-weight:800;color:#334155;margin-bottom:3px">Concluídas</div><div style="font-size:11.5px;color:#475569;line-height:1.45">Ficam imutáveis, com trilha de auditoria</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ══ PRÉ-VISUALIZAÇÃO EM MODAL ══ -->
+      <sc-if value="{{ previewModal }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ togglePreview }}" style="position:fixed;inset:0;background:rgba(13,27,42,.62);z-index:60;display:flex;align-items:center;justify-content:center;padding:28px">
+        <div class="fu" style="width:1080px;max-width:100%;height:100%;max-height:760px;background:#F8FAFC;border-radius:18px;overflow:hidden;display:flex;box-shadow:0 24px 60px rgba(0,0,0,.35)">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;padding:26px 28px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px">
+              <div>
+                <div style="font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563EB;margin-bottom:6px">PRÉ-VISUALIZAÇÃO</div>
+                <div style="font-size:19px;font-weight:800;letter-spacing:-.3px">Como o técnico verá no aplicativo</div>
+                <div style="font-size:13px;color:#64748B;margin-top:4px;max-width:420px;line-height:1.55">Esta é a renderização fiel do formulário no aplicativo de campo. Confira antes de publicar — depois de publicado, o modelo já sai nas próximas ordens.</div>
+              </div>
+              <button onClick="{{ togglePreview }}" aria-label="Fechar pré-visualização" style="width:34px;height:34px;border-radius:10px;border:1px solid #E2E8F0;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"><svg width="16" height="16"><use href="#ui-x"/></svg></button>
+            </div>
+            <div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:16px;margin-bottom:14px">
+              <div style="font-size:12.5px;font-weight:800;margin-bottom:10px">Resumo do modelo</div>
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+                <sc-for list="{{ prevStats }}" as="pv" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px">
+                  <span style="width:8px;height:8px;border-radius:3px;background:{{ pv.color }};flex-shrink:0"></span>
+                  <span style="font-size:17px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums">{{ pv.n }}</span>
+                  <span style="font-size:11.5px;font-weight:600;color:#475569">{{ pv.label }}</span>
+                </div>
+                </sc-for>
+              </div>
+            </div>
+            <sc-if value="{{ hasBlock }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;color:#92400E">
+              <svg width="16" height="16" style="flex-shrink:0;margin-top:1px"><use href="#ui-alert"/></svg>
+              <span style="font-size:12.5px;font-weight:600;line-height:1.45">{{ blockMsg }}</span>
+            </div>
+            </sc-if>
+            <sc-if value="{{ noBlock }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;color:#15803D">
+              <svg width="16" height="16" style="flex-shrink:0"><use href="#ui-check"/></svg>
+              <span style="font-size:12.5px;font-weight:700">Modelo pronto para publicar</span>
+            </div>
+            </sc-if>
+            <div style="flex:1"></div>
+            <div style="display:flex;gap:9px;justify-content:flex-end">
+              <button onClick="{{ togglePreview }}" style="padding:10px 18px;background:#fff;border:1px solid #E2E8F0;border-radius:10px;font-size:13px;font-weight:700;color:#475569;cursor:pointer">Continuar editando</button>
+              <sc-if value="{{ canWrite }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ publicar }}" style="display:flex;align-items:center;gap:7px;padding:10px 18px;background:{{ pubBg }};border:none;border-radius:10px;font-size:13px;font-weight:700;color:{{ pubFg }};cursor:{{ pubCursor }}"><svg width="15" height="15"><use href="#ui-send"/></svg>Publicar modelo</button>
+              </sc-if>
+            </div>
+          </div>
+          <div style="width:430px;flex-shrink:0;background:#0D1B2A;display:flex;align-items:center;justify-content:center;padding:22px">
+            <div style="width:340px;height:100%;max-height:690px;border-radius:30px;border:9px solid #1B2C40;background:#F1F5F9;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 40px rgba(0,0,0,.4)">
+              <div style="flex-shrink:0;background:#0D1B2A;padding:9px 14px 12px;color:#fff">
+                <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#8AA2B8;margin-bottom:8px"><span>9:41</span><span>4G ▮</span></div>
+                <div style="font-size:13.5px;font-weight:800">{{ tplName }}</div>
+                <div style="font-size:10.5px;color:#7B93AB;margin-top:2px">OS-4821 · Transportes Ômega</div>
+              </div>
+              <div class="scrl" style="flex:1;min-height:0;overflow-y:auto;padding:12px 12px 20px">
+                <sc-for list="{{ prevSections }}" as="ps" hint-placeholder-count="3">
+                <div style="margin-bottom:12px">
+                  <div style="font-size:9.5px;font-weight:800;letter-spacing:.09em;color:#64748B;margin-bottom:7px">{{ ps.title }}</div>
+                  <sc-for list="{{ ps.items }}" as="pi" hint-placeholder-count="2">
+                  <div style="background:#fff;border:1px solid #E2E8F0;border-radius:11px;padding:11px;margin-bottom:8px">
+                    <div style="font-size:11.5px;font-weight:700;color:#0F172A;line-height:1.35">{{ pi.label }}<span style="color:#DC2626">{{ pi.star }}</span></div>
+                    <sc-if value="{{ pi.hasHelp }}" hint-placeholder-val="{{ false }}"><div style="font-size:10px;color:#94A3B8;margin-top:3px;line-height:1.4">{{ pi.help }}</div></sc-if>
+
+                    <sc-if value="{{ pi.isVehicle }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap">
+                      <sc-for list="{{ pi.chips }}" as="vc" hint-placeholder-count="4">
+                      <span style="font-size:10px;font-weight:700;padding:6px 10px;border-radius:8px;border:1.5px solid {{ vc.bd }};background:{{ vc.bg }};color:{{ vc.fg }}">{{ vc.t }}</span>
+                      </sc-for>
+                    </div>
+                    </sc-if>
+
+                    <sc-if value="{{ pi.isDamage }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:9px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:9px;height:96px;position:relative;display:flex;align-items:center;justify-content:center">
+                      <svg width="132" height="60" viewBox="0 0 132 60" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linejoin="round"><path d="M10 42h112M16 42V30l14-16h72l14 16v12"/><circle cx="34" cy="45" r="7"/><circle cx="98" cy="45" r="7"/><path d="M30 30h72"/></svg>
+                      <span style="position:absolute;left:38%;top:34%;width:15px;height:15px;border-radius:50%;background:#DC2626;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)"></span>
+                      <span style="position:absolute;left:64%;top:56%;width:15px;height:15px;border-radius:50%;background:#F59E0B;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)"></span>
+                    </div>
+                    <div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
+                      <sc-for list="{{ pi.chips }}" as="mc" hint-placeholder-count="3">
+                      <span style="font-size:9px;font-weight:700;padding:3px 7px;border-radius:99px;background:{{ mc.bg }};color:{{ mc.fg }}">{{ mc.t }}</span>
+                      </sc-for>
+                    </div>
+                    </sc-if>
+
+                    <sc-if value="{{ pi.isPhoto }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:9px">
+                      <sc-for list="{{ pi.slots }}" as="sl" hint-placeholder-count="4">
+                      <div style="aspect-ratio:1;border-radius:8px;border:1.5px dashed #CBD5E1;background:#F8FAFC;display:flex;align-items:center;justify-content:center;color:#94A3B8"><svg width="15" height="15"><use href="#ck-photo"/></svg></div>
+                      </sc-for>
+                    </div>
+                    <div style="font-size:9.5px;color:#94A3B8;margin-top:6px">{{ pi.hint }}</div>
+                    </sc-if>
+
+                    <sc-if value="{{ pi.isObs }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:9px;border:1px solid #E2E8F0;border-radius:9px;background:#F8FAFC;padding:9px;font-size:10.5px;color:#B6C2D1;min-height:{{ pi.obsH }}">Digite aqui…</div>
+                    </sc-if>
+
+                    <sc-if value="{{ pi.isSingle }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:9px;display:flex;flex-direction:column;gap:6px">
+                      <sc-for list="{{ pi.options }}" as="op" hint-placeholder-count="3">
+                      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #E2E8F0;border-radius:8px">
+                        <span style="width:15px;height:15px;border-radius:50%;border:2px solid #CBD5E1;flex-shrink:0"></span>
+                        <span style="font-size:11px;font-weight:600;color:#334155">{{ op.t }}</span>
+                      </div>
+                      </sc-for>
+                    </div>
+                    </sc-if>
+
+                    <sc-if value="{{ pi.isMulti }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:9px;display:flex;flex-direction:column;gap:6px">
+                      <sc-for list="{{ pi.options }}" as="op" hint-placeholder-count="3">
+                      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #E2E8F0;border-radius:8px">
+                        <span style="width:15px;height:15px;border-radius:4px;border:2px solid #CBD5E1;flex-shrink:0"></span>
+                        <span style="font-size:11px;font-weight:600;color:#334155">{{ op.t }}</span>
+                      </div>
+                      </sc-for>
+                    </div>
+                    </sc-if>
+
+                    <sc-if value="{{ pi.isSign }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:9px">
+                      <sc-if value="{{ pi.needName }}" hint-placeholder-val="{{ false }}">
+                      <div style="border:1px solid #E2E8F0;border-radius:8px;padding:8px 10px;font-size:10.5px;color:#B6C2D1;margin-bottom:6px">Nome de quem assina</div>
+                      </sc-if>
+                      <div style="border:1.5px dashed #CBD5E1;border-radius:9px;height:64px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;background:#F8FAFC;color:#94A3B8;font-size:10px">Assine no espaço acima</div>
+                    </div>
+                    </sc-if>
+
+                    <sc-if value="{{ pi.isAck }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:9px;display:flex;align-items:flex-start;gap:8px;padding:9px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:9px">
+                      <span style="width:15px;height:15px;border-radius:4px;border:2px solid #CBD5E1;flex-shrink:0;margin-top:1px"></span>
+                      <span style="font-size:10.5px;color:#475569;line-height:1.4">Declaro ciência da responsabilidade sobre o veículo</span>
+                    </div>
+                    </sc-if>
+
+                    <sc-if value="{{ pi.isBA }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px">
+                      <div style="border:1.5px dashed #CBD5E1;border-radius:9px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#F8FAFC;color:#94A3B8"><svg width="15" height="15"><use href="#ck-photo"/></svg><span style="font-size:9.5px;font-weight:700">Antes</span></div>
+                      <div style="border:1.5px dashed #CBD5E1;border-radius:9px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#F8FAFC;color:#94A3B8"><svg width="15" height="15"><use href="#ck-photo"/></svg><span style="font-size:9.5px;font-weight:700">Depois</span></div>
+                    </div>
+                    </sc-if>
+
+                    <sc-if value="{{ pi.isCompare }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px">
+                      <div style="border:1px solid #E2E8F0;border-radius:9px;height:58px;background:#F8FAFC;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:#64748B">Coleta</div>
+                      <div style="border:1px solid #BFDBFE;border-radius:9px;height:58px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:#2563EB">Agora</div>
+                    </div>
+                    </sc-if>
+                  </div>
+                  </sc-for>
+                </div>
+                </sc-for>
+                <div style="background:#2563EB;color:#fff;border-radius:11px;padding:12px;text-align:center;font-size:12px;font-weight:800">Concluir checklist</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ SAIR SEM SALVAR ══ -->
+      <sc-if value="{{ confirmExit }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;background:rgba(13,27,42,.55);z-index:70;display:flex;align-items:center;justify-content:center;padding:24px">
+        <div class="fu" style="width:420px;max-width:100%;background:#fff;border-radius:16px;padding:24px;box-shadow:0 20px 48px rgba(0,0,0,.3)">
+          <div style="width:44px;height:44px;border-radius:12px;background:#FFFBEB;color:#B45309;display:flex;align-items:center;justify-content:center;margin-bottom:14px"><svg width="22" height="22"><use href="#ui-alert"/></svg></div>
+          <div style="font-size:16.5px;font-weight:800;margin-bottom:6px">Sair sem salvar?</div>
+          <div style="font-size:13px;color:#64748B;line-height:1.55;margin-bottom:20px">Você tem alterações que ainda não foram salvas neste modelo. Se sair agora, elas serão perdidas.</div>
+          <div style="display:flex;gap:9px;justify-content:flex-end">
+            <button onClick="{{ cancelExit }}" style="padding:10px 16px;background:#fff;border:1px solid #E2E8F0;border-radius:9px;font-size:13px;font-weight:700;color:#475569;cursor:pointer">Continuar editando</button>
+            <button onClick="{{ salvarESair }}" style="padding:10px 16px;background:#2563EB;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer">Salvar e sair</button>
+            <button onClick="{{ sairSemSalvar }}" style="padding:10px 16px;background:#fff;border:1px solid #FCA5A5;border-radius:9px;font-size:13px;font-weight:700;color:#DC2626;cursor:pointer">Descartar</button>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ TOAST ══ -->
+      <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+      <div class="fu" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:80;display:flex;align-items:center;gap:11px;padding:13px 18px;background:#0F172A;border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.3);max-width:520px">
+        <span style="width:26px;height:26px;border-radius:8px;background:{{ toastBg }};color:{{ toastFg }};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <sc-if value="{{ toastOk }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14"><use href="#ui-check"/></svg></sc-if>
+          <sc-if value="{{ toastWarn }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14"><use href="#ui-alert"/></svg></sc-if>
+          <sc-if value="{{ toastInfo }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14"><use href="#ui-help"/></svg></sc-if>
+        </span>
+        <span style="font-size:13px;font-weight:600;color:#fff;line-height:1.4">{{ toastMsg }}</span>
+      </div>
+      </sc-if>
+
+    </div></main>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;estado&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Normal&quot;,&quot;Carregando&quot;,&quot;Sem modelos&quot;,&quot;Erro&quot;,&quot;Somente leitura&quot;],&quot;default&quot;:&quot;Normal&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Estados da tela&quot;},&quot;previewLado&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Editor&quot;}}">
+class Component extends DCLogic {
+  CATALOG = [
+    { type:'vehicle_selector', label:'Seletor de veículo', icon:'#ck-vehicle', desc:'Tipo do veículo e imagem da vistoria', bg:'#EFF6FF', fg:'#2563EB', cfg:{ vehicleTypes:['car','motorcycle','truck','van'], imageStrategy:'auto' } },
+    { type:'damage_map', label:'Mapa de avarias', icon:'#ck-damage', desc:'Marca avarias sobre a imagem do veículo', bg:'#FEF2F2', fg:'#DC2626', cfg:{ markerTypes:['scratch','dent','broken','missing','other'], requireDescription:true } },
+    { type:'photo_upload', label:'Foto', icon:'#ck-photo', desc:'Coleta fotos pela câmera ou galeria', bg:'#F0FDF4', fg:'#15803D', cfg:{ minPhotos:1, maxPhotos:8, accept:['image/jpeg','image/png'] } },
+    { type:'observation', label:'Observação', icon:'#ck-note', desc:'Texto livre para anotações do técnico', bg:'#F8FAFC', fg:'#475569', cfg:{ multiline:true, maxLength:500 } },
+    { type:'comparison', label:'Comparação', icon:'#ck-compare', desc:'Compara a entrega com a coleta', bg:'#EFF6FF', fg:'#2563EB', cfg:{ compareWith:'related_collection' } },
+    { type:'acknowledgement', label:'Ciência', icon:'#ck-ack', desc:'Ciência formal de responsabilidade', bg:'#FAF5FF', fg:'#7E22CE', cfg:{ requireObservation:false } },
+    { type:'before_after', label:'Antes e depois', icon:'#ck-ba', desc:'Evidência técnica em dois estágios', bg:'#FFFBEB', fg:'#B45309', cfg:{ stages:['before','after'], requireBothStages:true } },
+    { type:'single_choice', label:'Escolha única', icon:'#ck-single', desc:'Uma opção entre várias', bg:'#F0F9FF', fg:'#0369A1', cfg:{ options:[] } },
+    { type:'multi_choice', label:'Múltipla escolha', icon:'#ck-multi', desc:'Uma ou mais opções', bg:'#F0F9FF', fg:'#0369A1', cfg:{ options:[], minSelected:0 } },
+    { type:'signature', label:'Assinatura', icon:'#ck-sign', desc:'Assinatura do cliente ou responsável', bg:'#FAF5FF', fg:'#7E22CE', cfg:{ requireName:true } },
+  ];
+
+  TYPE_LABEL = { towing_collection:'Guincho — Coleta', towing_delivery:'Guincho — Entrega', technical_evidence:'Evidência técnica', custom:'Personalizado' };
+  STATUS = {
+    draft:{ label:'Rascunho', bg:'#F1F5F9', fg:'#475569' },
+    published:{ label:'Publicado', bg:'#DCFCE7', fg:'#15803D' },
+    inactive:{ label:'Inativo', bg:'#F1F5F9', fg:'#64748B' },
+    archived:{ label:'Arquivado', bg:'#F1F5F9', fg:'#94A3B8' },
+  };
+  VEH = { car:'Carro', motorcycle:'Moto', truck:'Caminhão', van:'Utilitário' };
+  MARK = { scratch:'Risco', dent:'Amassado', broken:'Quebrado', missing:'Faltante', other:'Outro' };
+
+  ICONP = {
+    'ck-vehicle':'<path d="M5 17h14"/><path d="M3 17v-4.2a2 2 0 0 1 .3-1L5.6 8A2 2 0 0 1 7.3 7h9.4a2 2 0 0 1 1.7 1l2.3 3.8a2 2 0 0 1 .3 1V17"/><circle cx="7.5" cy="17.5" r="1.6"/><circle cx="16.5" cy="17.5" r="1.6"/><path d="M4 12.5h16"/>',
+    'ck-damage':'<path d="M3.5 15.5v-3l2-4.2A2 2 0 0 1 7.3 7h9.4a2 2 0 0 1 1.8 1.3l2 4.2v3"/><circle cx="9" cy="12" r="2.2"/><path d="M9 9.8v-2M9 16.2v-2M6.8 12h-2M13.2 12h-2"/><path d="m15 15 2.5 2.5M17.5 15 15 17.5"/>',
+    'ck-photo':'<path d="M14.5 4h-5L8 6.5H5a2 2 0 0 0-2 2V17a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="12.5" r="3.2"/>',
+    'ck-note':'<path d="M4 5h16M4 10h16M4 15h11M4 20h7"/>',
+    'ck-compare':'<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
+    'ck-ack':'<path d="M15 4h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="m8.8 13.5 2 2 4.4-4.4"/>',
+    'ck-ba':'<rect x="2.5" y="6" width="8.5" height="12" rx="1.8"/><rect x="13" y="6" width="8.5" height="12" rx="1.8"/><path d="m4.5 15 2-2.2 2 2.2M15 15l2-2.2 2 2.2"/>',
+    'ck-single':'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.2" fill="__C__" stroke="none"/>',
+    'ck-multi':'<path d="m3 6 1.8 1.8L8 4.5M3 15l1.8 1.8L8 13.5M11 6.5h10M11 15.5h10"/>',
+    'ck-sign':'<path d="M3 19c3.5 0 3.5-11 7-11s3.5 8 6.5 8c1.6 0 2.4-1 2.5-2"/><path d="M4 21h16"/>',
+  };
+
+  icoSrc(name, color) {
+    const p = (this.ICONP[String(name).replace('#', '')] || '').split('__C__').join(color);
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
+    return 'data:image/svg+xml,' + encodeURIComponent(svg);
+  }
+
+  uid() { return 'c' + Math.random().toString(36).slice(2, 8); }
+
+  seed() {
+    const c = (type, label, extra) => {
+      const base = this.CATALOG.find(x => x.type === type);
+      return Object.assign({ key:this.uid(), type, label, required:false, help:'', config:JSON.parse(JSON.stringify(base.cfg)) }, extra || {});
+    };
+    const t1 = [
+      Object.assign(c('vehicle_selector','Tipo de veículo'), { section:0, required:true }),
+      Object.assign(c('single_choice','Cor predominante'), { section:0, required:true, config:{ options:['Preto','Prata','Branco','Vermelho','Outra'] } }),
+      Object.assign(c('damage_map','Avarias identificadas na coleta'), { section:1, required:true, help:'Marque cada avaria e descreva o que encontrou.' }),
+      Object.assign(c('photo_upload','Fotos do veículo'), { section:1, required:true, config:{ minPhotos:4, maxPhotos:12, accept:['image/jpeg','image/png'] }, help:'Frente, traseira e as duas laterais.' }),
+      Object.assign(c('multi_choice','Itens ausentes'), { section:1, config:{ options:['Estepe','Macaco','Triângulo','Chave de roda','Documento'], minSelected:0 } }),
+      Object.assign(c('observation','Observações do técnico'), { section:2, config:{ multiline:true, maxLength:500 } }),
+      Object.assign(c('signature','Assinatura do cliente'), { section:2, required:true, config:{ requireName:true } }),
+    ];
+    const t2 = [
+      Object.assign(c('comparison','Comparação com a coleta'), { section:0, required:true }),
+      Object.assign(c('damage_map','Avarias na entrega'), { section:0, required:true }),
+      Object.assign(c('photo_upload','Fotos da entrega'), { section:1, required:true, config:{ minPhotos:4, maxPhotos:10, accept:['image/jpeg','image/png'] } }),
+      Object.assign(c('acknowledgement','Ciência do recebedor'), { section:1, required:true }),
+      Object.assign(c('signature','Assinatura de quem recebeu'), { section:1, required:true, config:{ requireName:true } }),
+    ];
+    const t3 = [
+      Object.assign(c('before_after','Registro antes e depois'), { section:0, required:true }),
+      Object.assign(c('observation','Serviço executado'), { section:0, required:true, config:{ multiline:true, maxLength:800 } }),
+      Object.assign(c('single_choice','Resultado do atendimento'), { section:1, required:true, config:{ options:[] } }),
+      Object.assign(c('signature','Ciência do cliente'), { section:1, config:{ requireName:false } }),
+    ];
+    return [
+      { id:'t1', name:'Vistoria de coleta — padrão', type:'towing_collection', status:'published', version:3, pending:true, updated:'13/07/2026', sections:['Dados do veículo','Avarias','Encerramento'], components:t1 },
+      { id:'t2', name:'Vistoria de entrega — padrão', type:'towing_delivery', status:'published', version:2, pending:false, updated:'02/07/2026', sections:['Conferência','Encerramento'], components:t2 },
+      { id:'t3', name:'Evidência técnica — reparo em via', type:'technical_evidence', status:'draft', version:1, pending:false, updated:'28/06/2026', sections:['Execução','Encerramento'], components:t3 },
+      { id:'t4', name:'Conferência de pátio — entrada', type:'custom', status:'inactive', version:1, pending:false, updated:'11/06/2026', sections:['Entrada'], components:[Object.assign(c('photo_upload','Fotos de entrada no pátio'), { section:0, required:true, config:{ minPhotos:6, maxPhotos:12, accept:['image/jpeg','image/png'] } })] },
+    ];
+  }
+
+  state = {
+    mode:'list', tab:'estrutura', q:'', filter:'todos',
+    selId:null, selKey:null, preview:false, dirty:false,
+    confirmExit:false, toast:null,
+    templates:this.seed(),
+  };
+
+  componentWillUnmount() { if (this._t) clearTimeout(this._t); }
+
+  toast(msg, kind) {
+    this.setState({ toast:{ msg, kind:kind || 'ok' } });
+    if (this._t) clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast:null }), 3600);
+  }
+
+  tpl() { return this.state.templates.find(t => t.id === this.state.selId) || null; }
+  meta(type) { return this.CATALOG.find(c => c.type === type) || this.CATALOG[0]; }
+
+  patch(fn) {
+    const templates = this.state.templates.map(t => {
+      if (t.id !== this.state.selId) return t;
+      const copy = JSON.parse(JSON.stringify(t));
+      fn(copy);
+      return copy;
+    });
+    this.setState({ templates, dirty:true });
+  }
+
+  selComp() {
+    const t = this.tpl(); if (!t) return null;
+    return t.components.find(c => c.key === this.state.selKey) || null;
+  }
+
+  blockers() {
+    const t = this.tpl(); if (!t) return [];
+    const out = [];
+    if (!t.components.length) out.push('Adicione ao menos 1 campo ao formulário para publicar.');
+    const bad = t.components.filter(c => (c.type === 'single_choice' || c.type === 'multi_choice') && !(c.config.options || []).length);
+    if (bad.length) out.push(bad.length === 1 ? 'O campo “' + bad[0].label + '” está sem opções — adicione ao menos 1 para publicar.' : bad.length + ' campos de escolha estão sem opções — adicione ao menos 1 opção em cada.');
+    return out;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const estado = this.props.estado || 'Normal';
+    const readOnly = estado === 'Somente leitura';
+    const canWrite = !readOnly;
+    const v = {};
+
+    v.stLoading = estado === 'Carregando';
+    v.stError = estado === 'Erro';
+    v.stEmpty = estado === 'Sem modelos' && s.mode === 'list';
+    v.readOnly = readOnly;
+    v.canWrite = canWrite;
+    v.canCreate = canWrite;
+    const normal = !v.stLoading && !v.stError;
+    v.scList = normal && s.mode === 'list';
+    v.scEditor = normal && s.mode === 'editor';
+    v.hasTpls = estado !== 'Sem modelos';
+
+    // ── LISTA ──
+    v.q = s.q; v.filter = s.filter;
+    v.onQ = e => this.setState({ q:e.target.value });
+    v.onFilter = e => this.setState({ filter:e.target.value });
+
+    const all = s.templates;
+    v.stats = [
+      { n:all.filter(t => t.status === 'published').length, label:'Publicados', hint:'disponíveis no aplicativo', color:'#22C55E' },
+      { n:all.filter(t => t.status === 'draft').length, label:'Rascunhos', hint:'ainda não publicados', color:'#94A3B8' },
+      { n:all.filter(t => t.pending).length, label:'Alterações não publicadas', hint:'o campo ainda usa a versão antiga', color:'#F59E0B' },
+      { n:all.filter(t => t.status === 'inactive').length, label:'Inativos', hint:'fora das novas ordens', color:'#64748B' },
+    ];
+
+    const q = s.q.trim().toLowerCase();
+    const filtered = all.filter(t => {
+      if (q && t.name.toLowerCase().indexOf(q) < 0) return false;
+      if (s.filter === 'todos') return true;
+      if (s.filter === 'pending') return !!t.pending;
+      return t.status === s.filter;
+    });
+    v.noResults = v.hasTpls && filtered.length === 0;
+
+    v.rows = filtered.map(t => {
+      const st = this.STATUS[t.status];
+      const first = t.components[0] ? this.meta(t.components[0].type) : this.meta('photo_upload');
+      const names = t.components.slice(0, 3).map(c => this.meta(c.type).label).join(' · ');
+      return {
+        id:t.id, name:t.name, typeLabel:this.TYPE_LABEL[t.type], version:t.version,
+        count:t.components.length, updated:t.updated, pending:!!t.pending,
+        stLabel:st.label, stBg:st.bg, stFg:st.fg,
+        iconSrc:this.icoSrc(first.icon, first.fg), iconBg:first.bg, iconFg:first.fg,
+        openIsEdit:canWrite, openIsView:!canWrite,
+        summary:names + (t.components.length > 3 ? ' · +' + (t.components.length - 3) : ''),
+        canWrite,
+        openLabel:canWrite ? 'Editar modelo' : 'Ver modelo',
+        openIcon:canWrite ? '#ui-set' : '#ui-eye',
+        open:() => this.setState({ mode:'editor', selId:t.id, selKey:null, tab:'estrutura', dirty:false }),
+        dup:e => { if (e && e.stopPropagation) e.stopPropagation(); this.toast('Duplicar modelo estará disponível em breve.', 'info'); },
+        runs:e => { if (e && e.stopPropagation) e.stopPropagation(); this.toast('As execuções realizadas ficam na tela de acompanhamento — em breve.', 'info'); },
+      };
+    });
+
+    v.novoModelo = () => {
+      const id = 'n' + Math.random().toString(36).slice(2, 6);
+      const nt = { id, name:'Novo modelo', type:'towing_collection', status:'draft', version:1, pending:false, updated:'hoje', sections:['Dados do veículo'], components:[] };
+      this.setState({ templates:[nt].concat(s.templates), mode:'editor', selId:id, selKey:null, tab:'estrutura', dirty:false });
+    };
+
+    // ── EDITOR ──
+    const t = this.tpl();
+    v.tabEstrutura = s.tab === 'estrutura';
+    v.tabAplic = s.tab === 'aplicabilidade';
+    v.tabs = [
+      { label:'Estrutura do formulário', on:() => this.setState({ tab:'estrutura' }), bd:s.tab === 'estrutura' ? '#2563EB' : 'transparent', fg:s.tab === 'estrutura' ? '#2563EB' : '#64748B' },
+      { label:'Aplicabilidade', on:() => this.setState({ tab:'aplicabilidade' }), bd:s.tab === 'aplicabilidade' ? '#2563EB' : 'transparent', fg:s.tab === 'aplicabilidade' ? '#2563EB' : '#64748B' },
+    ];
+    v.verExecucoes = e => { if (e && e.preventDefault) e.preventDefault(); this.toast('As execuções realizadas ficam na tela de acompanhamento — em breve.', 'info'); };
+
+    if (t) {
+      const st = this.STATUS[t.status];
+      v.tplName = t.name; v.tplType = t.type;
+      v.hdStLabel = st.label; v.hdStBg = st.bg; v.hdStFg = st.fg;
+      v.hdPending = !!t.pending;
+      v.onName = e => this.patch(x => { x.name = e.target.value; });
+      v.onType = e => this.patch(x => { x.type = e.target.value; });
+      v.canvasMeta = t.components.length + (t.components.length === 1 ? ' campo' : ' campos') + ' · ' + t.sections.length + (t.sections.length === 1 ? ' seção' : ' seções') + ' · versão ' + t.version;
+      v.canvasEmpty = t.components.length === 0;
+    } else {
+      v.tplName = ''; v.tplType = 'custom'; v.hdStLabel = 'Rascunho'; v.hdStBg = '#F1F5F9'; v.hdStFg = '#475569';
+      v.hdPending = false; v.canvasMeta = ''; v.canvasEmpty = true;
+      v.onName = () => {}; v.onType = () => {};
+    }
+
+    v.dirty = s.dirty;
+    v.saveBg = s.dirty ? '#EFF6FF' : '#fff';
+    v.saveBd = s.dirty ? '#93C5FD' : '#E2E8F0';
+    v.saveFg = s.dirty ? '#2563EB' : '#475569';
+
+    const blocks = this.blockers();
+    v.hasBlock = blocks.length > 0;
+    v.noBlock = blocks.length === 0;
+    v.blockMsg = blocks[0] || '';
+    v.pubBg = blocks.length ? '#E2E8F0' : '#2563EB';
+    v.pubFg = blocks.length ? '#94A3B8' : '#fff';
+    v.pubCursor = blocks.length ? 'not-allowed' : 'pointer';
+    v.pubTitle = blocks.length ? blocks[0] : 'Publicar e disponibilizar no aplicativo';
+
+    v.salvar = () => { this.setState({ dirty:false }); this.toast('Modelo salvo. Publique para enviar ao aplicativo.', 'ok'); };
+    v.publicar = () => {
+      if (this.blockers().length) { this.toast(this.blockers()[0], 'warn'); return; }
+      const templates = s.templates.map(x => x.id === s.selId ? Object.assign({}, x, { status:'published', version:x.version + (x.status === 'published' ? 1 : 0), pending:false, updated:'hoje' }) : x);
+      this.setState({ templates, dirty:false, preview:false });
+      this.toast('Modelo publicado — já está disponível no aplicativo para as próximas ordens.', 'ok');
+    };
+
+    v.voltar = () => { if (s.dirty) this.setState({ confirmExit:true }); else this.setState({ mode:'list', selKey:null }); };
+    v.confirmExit = s.confirmExit;
+    v.cancelExit = () => this.setState({ confirmExit:false });
+    v.sairSemSalvar = () => this.setState({ confirmExit:false, mode:'list', selKey:null, dirty:false });
+    v.salvarESair = () => { this.setState({ confirmExit:false, mode:'list', selKey:null, dirty:false }); this.toast('Modelo salvo.', 'ok'); };
+
+    // paleta
+    const compact = !!this.props.previewLado && s.preview;
+    v.palFull = !compact;
+    v.gridCols = compact ? '76px minmax(340px,1fr) 300px 392px' : '264px minmax(400px,1fr) 336px';
+    v.palette = this.CATALOG.map(c => ({
+      label:c.label, desc:c.desc, iconSrc:this.icoSrc(c.icon, c.fg), bg:c.bg, fg:c.fg,
+      title:c.label + ' — ' + c.desc,
+      showText:!compact, pad:compact ? '7px' : '8px 9px', just:compact ? 'center' : 'flex-start',
+      cursor:canWrite ? 'pointer' : 'not-allowed',
+      add:() => {
+        if (!canWrite || !t) return;
+        const sec = (() => { const sel = this.selComp(); return sel ? sel.section : Math.max(0, t.sections.length - 1); })();
+        const key = this.uid();
+        this.patch(x => { x.components.push({ key, type:c.type, label:c.label, required:false, help:'', section:sec, config:JSON.parse(JSON.stringify(c.cfg)) }); });
+        this.setState({ selKey:key });
+      },
+    }));
+
+    // canvas
+    const chipsFor = c => {
+      const out = [];
+      if (c.type === 'photo_upload') out.push({ t:'mín. ' + (c.config.minPhotos || 0) + ' fotos', bg:'#F0FDF4', fg:'#15803D' });
+      if (c.type === 'single_choice' || c.type === 'multi_choice') {
+        const n = (c.config.options || []).length;
+        out.push(n ? { t:n + ' opções', bg:'#F0F9FF', fg:'#0369A1' } : { t:'sem opções', bg:'#FEF3C7', fg:'#B45309' });
+      }
+      if (c.type === 'damage_map' && c.config.requireDescription) out.push({ t:'descrição obrigatória', bg:'#FEF2F2', fg:'#DC2626' });
+      if (c.type === 'signature' && c.config.requireName) out.push({ t:'exige nome', bg:'#FAF5FF', fg:'#7E22CE' });
+      if (c.type === 'observation') out.push({ t:'até ' + (c.config.maxLength || 500) + ' caracteres', bg:'#F1F5F9', fg:'#475569' });
+      if (c.type === 'before_after' && c.config.requireBothStages) out.push({ t:'dois estágios', bg:'#FFFBEB', fg:'#B45309' });
+      return out;
+    };
+
+    const move = (key, dir) => this.patch(x => {
+      const i = x.components.findIndex(c => c.key === key);
+      const sec = x.components[i].section;
+      const sib = x.components.map((c, idx) => ({ c, idx })).filter(o => o.c.section === sec);
+      const p = sib.findIndex(o => o.c.key === key);
+      const target = sib[p + dir];
+      if (!target) return;
+      const a = x.components[i]; x.components[i] = x.components[target.idx]; x.components[target.idx] = a;
+    });
+
+    v.sections = t ? t.sections.map((title, si) => {
+      const items = t.components.filter(c => c.section === si).map(c => {
+        const m = this.meta(c.type);
+        const sel = c.key === s.selKey;
+        return {
+          label:c.label, typeLabel:m.label, iconSrc:this.icoSrc(m.icon, m.fg), bg:m.bg, fg:m.fg,
+          required:!!c.required, chips:chipsFor(c), canWrite,
+          bd:sel ? '#2563EB' : '#E2E8F0',
+          shadow:sel ? '0 0 0 3px rgba(37,99,235,.12)' : 'none',
+          select:() => this.setState({ selKey:c.key }),
+          up:e => { if (e && e.stopPropagation) e.stopPropagation(); move(c.key, -1); },
+          down:e => { if (e && e.stopPropagation) e.stopPropagation(); move(c.key, 1); },
+          dup:e => { if (e && e.stopPropagation) e.stopPropagation(); const k = this.uid(); this.patch(x => { const src = x.components.find(o => o.key === c.key); const cp = JSON.parse(JSON.stringify(src)); cp.key = k; cp.label = src.label + ' (cópia)'; x.components.push(cp); }); this.setState({ selKey:k }); },
+          del:e => { if (e && e.stopPropagation) e.stopPropagation(); this.patch(x => { x.components = x.components.filter(o => o.key !== c.key); }); if (s.selKey === c.key) this.setState({ selKey:null }); },
+        };
+      });
+      return { title, items, empty:items.length === 0, count:items.length + (items.length === 1 ? ' campo' : ' campos'), rename:e => this.patch(x => { x.sections[si] = e.target.value; }) };
+    }) : [];
+
+    v.addSecao = () => this.patch(x => { x.sections.push('Nova seção'); });
+
+    // inspector
+    const sc = this.selComp();
+    v.noSel = !sc; v.hasSel = !!sc;
+    v.inspTitle = sc ? 'Configurações do campo' : 'Configurações';
+    v.inspSub = sc ? 'O que o técnico vê e o que é obrigatório' : 'Selecione um campo no formulário';
+
+    if (sc) {
+      const m = this.meta(sc.type);
+      v.selIconSrc = this.icoSrc(m.icon, m.fg); v.selBg = m.bg; v.selFg = m.fg;
+      v.selTypeLabel = m.label; v.selTypeDesc = m.desc;
+      v.selLabel = sc.label; v.selHelp = sc.help || '';
+      v.onLabel = e => this.patch(x => { x.components.find(c => c.key === sc.key).label = e.target.value; });
+      v.onHelp = e => this.patch(x => { x.components.find(c => c.key === sc.key).help = e.target.value; });
+      v.toggleReq = () => this.patch(x => { const c = x.components.find(o => o.key === sc.key); c.required = !c.required; });
+      v.reqBd = sc.required ? '#93C5FD' : '#E2E8F0';
+      v.reqBg = sc.required ? '#EFF6FF' : '#fff';
+      v.swBg = sc.required ? '#2563EB' : '#CBD5E1';
+      v.swX = sc.required ? '19px' : '3px';
+
+      const cfg = sc.config || {};
+      const setCfg = fn => this.patch(x => { fn(x.components.find(c => c.key === sc.key).config); });
+
+      v.cfgChoice = sc.type === 'single_choice' || sc.type === 'multi_choice';
+      v.cfgMulti = sc.type === 'multi_choice';
+      v.cfgPhoto = sc.type === 'photo_upload';
+      v.cfgVehicle = sc.type === 'vehicle_selector';
+      v.cfgDamage = sc.type === 'damage_map';
+      v.cfgObs = sc.type === 'observation';
+      v.cfgSign = sc.type === 'signature';
+      v.cfgAck = sc.type === 'acknowledgement';
+      v.cfgBA = sc.type === 'before_after';
+      v.cfgCompare = sc.type === 'comparison';
+
+      const opts = cfg.options || [];
+      v.optsEmpty = v.cfgChoice && opts.length === 0;
+      v.options = opts.map((o, i) => ({
+        text:o,
+        rename:e => setCfg(c => { c.options[i] = e.target.value; }),
+        up:() => setCfg(c => { if (i > 0) { const a = c.options[i]; c.options[i] = c.options[i - 1]; c.options[i - 1] = a; } }),
+        down:() => setCfg(c => { if (i < c.options.length - 1) { const a = c.options[i]; c.options[i] = c.options[i + 1]; c.options[i + 1] = a; } }),
+        del:() => setCfg(c => { c.options.splice(i, 1); }),
+      }));
+      v.addOption = () => setCfg(c => { c.options = (c.options || []).concat('Nova opção'); });
+      v.cfgMinSel = cfg.minSelected || 0;
+      v.onMinSel = e => setCfg(c => { c.minSelected = Math.max(0, parseInt(e.target.value || '0', 10)); });
+
+      v.cfgMin = cfg.minPhotos || 0; v.cfgMax = cfg.maxPhotos || 1;
+      v.onMin = e => setCfg(c => { c.minPhotos = Math.max(0, parseInt(e.target.value || '0', 10)); });
+      v.onMax = e => setCfg(c => { c.maxPhotos = Math.max(1, parseInt(e.target.value || '1', 10)); });
+
+      v.vehTypes = Object.keys(this.VEH).map(k => {
+        const on = (cfg.vehicleTypes || []).indexOf(k) >= 0;
+        return { label:this.VEH[k], bd:on ? '#2563EB' : '#E2E8F0', bg:on ? '#EFF6FF' : '#fff', fg:on ? '#2563EB' : '#64748B',
+          on:() => setCfg(c => { const l = c.vehicleTypes || []; c.vehicleTypes = on ? l.filter(x => x !== k) : l.concat(k); }) };
+      });
+      v.markerTypes = Object.keys(this.MARK).map(k => {
+        const on = (cfg.markerTypes || []).indexOf(k) >= 0;
+        return { label:this.MARK[k], bd:on ? '#DC2626' : '#E2E8F0', bg:on ? '#FEF2F2' : '#fff', fg:on ? '#DC2626' : '#64748B',
+          on:() => setCfg(c => { const l = c.markerTypes || []; c.markerTypes = on ? l.filter(x => x !== k) : l.concat(k); }) };
+      });
+      const sw = (on, pre) => { v[pre + 'Bd'] = on ? '#93C5FD' : '#E2E8F0'; v[pre + 'Bg'] = on ? '#EFF6FF' : '#fff'; v[pre + 'Sw'] = on ? '#2563EB' : '#CBD5E1'; v[pre + 'X'] = on ? '19px' : '3px'; };
+      sw(!!cfg.requireDescription, 'rd'); v.toggleReqDesc = () => setCfg(c => { c.requireDescription = !c.requireDescription; });
+      sw(cfg.multiline !== false, 'ml'); v.toggleMultiline = () => setCfg(c => { c.multiline = c.multiline === false; });
+      sw(!!cfg.requireName, 'rn'); v.toggleReqName = () => setCfg(c => { c.requireName = !c.requireName; });
+      sw(!!cfg.requireObservation, 'ro'); v.toggleReqObs = () => setCfg(c => { c.requireObservation = !c.requireObservation; });
+      sw(cfg.requireBothStages !== false, 'bs'); v.toggleBothStages = () => setCfg(c => { c.requireBothStages = c.requireBothStages === false; });
+      v.cfgMaxLen = cfg.maxLength || 500;
+      v.onMaxLen = e => setCfg(c => { c.maxLength = Math.max(1, parseInt(e.target.value || '1', 10)); });
+      v.cfgCompareWith = cfg.compareWith || 'related_collection';
+      v.onCompareWith = e => setCfg(c => { c.compareWith = e.target.value; });
+    }
+
+    // preview
+    v.togglePreview = () => this.setState({ preview:!s.preview });
+    v.previewDock = s.preview && !!this.props.previewLado;
+    v.previewModal = s.preview && !this.props.previewLado;
+
+    v.prevSections = t ? t.sections.map((title, si) => ({
+      title:title.toUpperCase(),
+      items:t.components.filter(c => c.section === si).map(c => {
+        const cfg = c.config || {};
+        const n = Math.max(1, Math.min(8, cfg.minPhotos || 2));
+        return {
+          label:c.label, star:c.required ? ' *' : '', hasHelp:!!c.help, help:c.help || '',
+          isVehicle:c.type === 'vehicle_selector', isDamage:c.type === 'damage_map', isPhoto:c.type === 'photo_upload',
+          isObs:c.type === 'observation', isSingle:c.type === 'single_choice', isMulti:c.type === 'multi_choice',
+          isSign:c.type === 'signature', isAck:c.type === 'acknowledgement', isBA:c.type === 'before_after', isCompare:c.type === 'comparison',
+          needName:!!cfg.requireName,
+          obsH:cfg.multiline === false ? '20px' : '52px',
+          hint:'Mínimo ' + (cfg.minPhotos || 0) + ' · máximo ' + (cfg.maxPhotos || 0),
+          slots:Array.from({ length:n }, (_, i) => ({ i })),
+          options:(cfg.options || []).map(o => ({ t:o })),
+          chips:c.type === 'vehicle_selector'
+            ? (cfg.vehicleTypes || []).map((k, i) => ({ t:this.VEH[k], bd:i === 0 ? '#2563EB' : '#E2E8F0', bg:i === 0 ? '#EFF6FF' : '#fff', fg:i === 0 ? '#2563EB' : '#64748B' }))
+            : (cfg.markerTypes || []).map(k => ({ t:this.MARK[k], bg:'#F1F5F9', fg:'#475569' })),
+        };
+      }),
+    })) : [];
+
+    if (t) {
+      const req = t.components.filter(c => c.required).length;
+      const photos = t.components.filter(c => c.type === 'photo_upload').reduce((a, c) => a + (c.config.minPhotos || 0), 0);
+      v.prevStats = [
+        { n:t.components.length, label:'campos no formulário', color:'#2563EB' },
+        { n:req, label:'obrigatórios', color:'#DC2626' },
+        { n:photos, label:'fotos mínimas', color:'#15803D' },
+        { n:t.sections.length, label:'seções', color:'#7E22CE' },
+      ];
+    } else v.prevStats = [];
+
+    v.rules = [
+      { servico:'Guincho — remoção', cliente:'Todos os clientes', fase:'Coleta' },
+      { servico:'Guincho — remoção', cliente:'Seguradora Atlas', fase:'Entrega' },
+    ];
+
+    // toast
+    v.hasToast = !!s.toast;
+    if (s.toast) {
+      const k = s.toast.kind;
+      v.toastMsg = s.toast.msg;
+      v.toastOk = k === 'ok'; v.toastWarn = k === 'warn'; v.toastInfo = k !== 'ok' && k !== 'warn';
+      v.toastBg = k === 'ok' ? '#15803D' : k === 'warn' ? '#B45309' : '#334155';
+      v.toastFg = '#fff';
+    }
+    return v;
+  }
+}
+
+</script>
+</body>
+</html>
