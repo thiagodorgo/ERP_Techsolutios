@@ -7,14 +7,11 @@ import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
 import { listAvailableChecklists } from "../checklist-runtime.service";
-import type { ChecklistApiContext, ChecklistAvailableItem, TenantChecklistType } from "../types";
+import { checklistTypeLabel as typeLabel } from "../checklist.constants";
+import type { ChecklistApiContext, ChecklistAvailableItem } from "../types";
 
-const typeLabel: Record<TenantChecklistType, string> = {
-  towing_collection: "Coleta/Reboque",
-  towing_delivery: "Entrega/Reboque",
-  technical_evidence: "Evidência técnica",
-  custom: "Customizado",
-};
+// Junta PR-02a: o mapa local dizia "Customizado" e "Coleta/Reboque" enquanto o resto do módulo já
+// usava "Personalizado" e "Guincho — Coleta". Uma copy só, vinda de checklist.constants.
 
 export function ChecklistRunsPage() {
   const navigate = useNavigate();

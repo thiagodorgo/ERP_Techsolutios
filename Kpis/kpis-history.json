@@ -1975,11 +1975,23 @@
     "snapshot_date": "2026-08-05",
     "version": "KPI-INDEX-PAINEL",
     "pr": 336,
-    "merge_commit": null,
+    "merge_commit": "1062634",
     "flutter_tests": "839/839",
     "backend_tests": "2110/2110",
     "frontend_smoke_tests": "1003/1003",
     "blocks_completed": 136,
-    "description": "D-KPI-INDEX-PAINEL: o painel Kpis/index.html vira o ARTEFATO PRINCIPAL — visão gráfica SVG inline (4 gráficos hidratados do history: cobertura por trilha em small multiples, blocos, entregas por rodada em barra horizontal, ritmo por entrega), manchete na 1ª dobra, aviso honesto em file://. Junta 2 ciclos: ciclo 1 REPROVADO (barra fantasma +969 por métrica ausente lida como zero; [hidden] vencido por cascata de autor; guard-teatro que aceitava série fabricada; escala compartilhada achatando o Flutter) → correções + ciclo 2 APROVADO_CONDICIONADO com condições aplicadas (gate de latest, rótulos normalizados sem acento, eixo dentro do canvas, fallback congelado rotulado). Guard tests/kpi-dashboard-charts.test.ts (6 test()) compara a SÉRIE ponto a ponto com o JSON — provado por 4 mutações. + docs/CRONOGRAMA.md + §C3 item 0 (CLAUDE.md/AGENTS.md espelhados) + R-kpi-painel-ciclo1.md. TRIAGEM: as '88 falhas' da suíte eram P-SUITE-ENV-PERSISTENCE (.env prisma congelado por import estático × dotenv; receita verde = export CORE_SAAS_PERSISTENCE=memory) + node_modules mutilado por sonda minha (junction × worktree remove; recuperado com npm install + prisma generate; lição registrada). Fix real: professional-statements com setup dentro do try (não pendura mais a suíte). backend 2110/2110 (0 fail, 6 skip; nota de reconciliação -11 vs #330 no latest); smoke/flutter carregados (§C3.3). blocks 135→136."
+    "description": "D-KPI-INDEX-PAINEL: o painel Kpis/index.html vira o ARTEFATO PRINCIPAL — visão gráfica SVG inline (4 gráficos hidratados do history: cobertura por trilha em small multiples, blocos, entregas por rodada em barra horizontal, ritmo por entrega), manchete na 1ª dobra, aviso honesto em file://. Junta 2 ciclos: ciclo 1 REPROVADO (barra fantasma +969 por métrica ausente lida como zero; [hidden] vencido por cascata de autor; guard-teatro que aceitava série fabricada; escala compartilhada achatando o Flutter) → correções + ciclo 2 APROVADO_CONDICIONADO com condições aplicadas (gate de latest, rótulos normalizados sem acento, eixo dentro do canvas, fallback congelado rotulado). Guard tests/kpi-dashboard-charts.test.ts (6 test()) compara a SÉRIE ponto a ponto com o JSON — provado por 4 mutações. + docs/CRONOGRAMA.md + §C3 item 0 (CLAUDE.md/AGENTS.md espelhados) + R-kpi-painel-ciclo1.md. TRIAGEM: as '88 falhas' da suíte eram P-SUITE-ENV-PERSISTENCE (.env prisma congelado por import estático × dotenv; receita verde = export CORE_SAAS_PERSISTENCE=memory) + node_modules mutilado por sonda minha (junction × worktree remove; recuperado com npm install + prisma generate; lição registrada). Fix real: professional-statements com setup dentro do try (não pendura mais a suíte). backend 2110/2110 (0 fail, 6 skip; nota de reconciliação -11 vs #330 no latest); smoke/flutter carregados (§C3.3). blocks 135→136.",
+    "approved_head": "1062634"
+  },
+  {
+    "snapshot_date": "2026-08-06",
+    "version": "CHK-P1-PR-02A",
+    "pr": null,
+    "merge_commit": null,
+    "flutter_tests": "839/839",
+    "backend_tests": "2110/2110",
+    "frontend_smoke_tests": "1013/1013",
+    "blocks_completed": 137,
+    "description": "CHECKLIST P1 PR-02a: lista de 'Modelos de Checklist' recriada FIEL ao protótipo do dono (Modelos de Checklist.dc.html, importado do projeto Claude Design). scList completo: kicker ADMINISTRAÇÃO, busca 230px, filtro 5 situações, 4 KPI mini-cards do payload real (D-007), tabela nova (grade do protótipo, tile do 1º componente, resumo PT-BR '· +N', pills + 'Alterações não publicadas' via publishedAt real, v-tabular, ações-ícone), estados §7 (skeleton shimmer espelhado, erro/vazio verbatim, banner somente-leitura), ChecklistToast reutilizável, 'Novo modelo' instantâneo, copy acentuada transversal (Personalizado, travessão, Concluído). JUNTA EM WORKFLOW (cognicao-visual REPROVADO + acessos/critico APROVADO_CONDICIONADO; cada achado passou por refutação adversarial independente — 8 confirmados, 0 refutados) e TODOS aplicados: auto-select que montava o builder sem clique vazando enum cru/JSON; flash do vazio-hero pré-fetch; ponte oferecendo escrita a papel de leitura (agora consulta pura); Inativar/Reativar reposto (lixo irremovível); testes vácuos → costura initialChecklists + rowActionVisibility pura + 3 testes com linhas reais; role=table; 'Ver execuções' com gate checklist_runs:read navegando de verdade; navigation-matrix. + EMULADOR ANDROID operacional (AVD erp_pixel, Pixel 7/API 36; JAVA_HOME→jbr; lock do Gradle por language-server; app instalado, login validado). smoke 1003→1013 (execução real); backend/flutter carregados (§C3.3). blocks 136→137. Backfill #336: merge 1062634."
   }
 ]

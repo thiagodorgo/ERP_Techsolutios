@@ -1114,6 +1114,12 @@
   align-items: start;
 }
 
+/* Papel somente-leitura: sem paleta e sem inspector, a estrutura ocupa a largura toda
+   (junta PR-02a — a ponte vira consulta, nao oferece o que o backend recusaria). */
+.checklist-builder-layout--readonly {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .checklist-builder-layout h3 {
   margin: 0 0 var(--space-10);
   font-size: var(--text-sm);
@@ -5161,3 +5167,515 @@
    (nas telas irmãs .pat-cell-main é apenas texto). */
 a.pat-cell-main:hover { color: #2563eb; }
 a.pat-cell-main:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+
+/* ═══════════ CHECKLIST P1 · PR-02a — Modelos de Checklist (lista), namespace ckb ═══════════ */
+/* Recria a tela de lista do protótipo do dono (Modelos de Checklist.dc.html) com tokens exatos. */
+
+.ckb-page {
+  color: #0f172a;
+}
+
+/* Page header: kicker + título + subtítulo à esquerda; busca + filtro + primário à direita. */
+.ckb-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.ckb-header-info {
+  min-width: 320px;
+  flex: 1 1 320px;
+}
+.ckb-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: #2563eb;
+  margin-bottom: 6px;
+}
+.ckb-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  line-height: 1.1;
+  margin: 0;
+}
+.ckb-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 5px 0 0;
+  font-weight: 500;
+}
+.ckb-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.ckb-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  width: 230px;
+  color: #94a3b8;
+}
+.ckb-search svg {
+  flex-shrink: 0;
+}
+.ckb-search input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0f172a;
+  width: 100%;
+  padding: 0;
+}
+/* Foco visível no contêiner (o outline no input interno duplicaria a moldura). */
+.ckb-search:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.ckb-select {
+  padding: 9px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+.ckb-btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  background: #2563eb;
+  border: none;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+.ckb-btn-primary:hover {
+  background: #1d4ed8;
+}
+.ckb-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ckb-btn-primary--retry {
+  display: inline-flex;
+  padding: 10px 18px;
+  margin: 0 auto;
+}
+.ckb-select:focus-visible,
+.ckb-btn-primary:focus-visible,
+.ckb-icon-btn:focus-visible,
+.ckb-empty-cta:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Banner somente leitura (esconde-fino: os botões de escrita somem; o banner explica o porquê). */
+.ckb-readonly-banner {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  margin-bottom: 16px;
+}
+.ckb-readonly-tile {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #eef2ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-readonly-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+.ckb-readonly-sub {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+/* KPI mini-cards do protótipo (dot 8px + número 24px tabular). Não é o .pat-kpi: tile e corpo diferem. */
+.ckb-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.ckb-kpi {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.ckb-kpi-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+.ckb-kpi-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.ckb-kpi-value {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.ckb-kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+.ckb-kpi-hint {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* Tabela de modelos — grade exata do protótipo. */
+.ckb-table {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.ckb-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.4fr) 1.1fr 0.9fr 0.5fr 0.8fr 0.9fr 120px;
+  gap: 12px;
+}
+.ckb-table-head {
+  padding: 11px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: #64748b;
+}
+.ckb-row {
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: center;
+  cursor: pointer;
+}
+.ckb-row:hover {
+  background: #f8fafc;
+}
+.ckb-row:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+.ckb-cell-model {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+.ckb-model-tile {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-model-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ckb-model-summary {
+  font-size: 11.5px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ckb-cell-type {
+  font-size: 12.5px;
+  color: #475569;
+  font-weight: 600;
+}
+.ckb-cell-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+.ckb-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+.ckb-pill--pending {
+  font-size: 10px;
+  padding: 2px 8px;
+  background: #fef3c7;
+  color: #b45309;
+}
+.ckb-cell-version {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #334155;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ckb-cell-count {
+  font-size: 12.5px;
+  color: #475569;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ckb-cell-updated {
+  font-size: 12px;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+.ckb-cell-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+}
+.ckb-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.ckb-icon-btn:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+.ckb-no-results {
+  padding: 44px 20px;
+  text-align: center;
+}
+.ckb-no-results-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.ckb-no-results-sub {
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+/* Vazio honesto (nenhum modelo ainda). */
+.ckb-empty {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 56px 32px;
+  text-align: center;
+}
+.ckb-empty-tile {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+}
+.ckb-empty-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 7px;
+}
+.ckb-empty-sub {
+  font-size: 13.5px;
+  color: #64748b;
+  line-height: 1.6;
+  max-width: 460px;
+  margin: 0 auto 22px;
+}
+.ckb-empty-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 20px;
+  background: #2563eb;
+  border: none;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+.ckb-empty-cta:hover {
+  background: #1d4ed8;
+}
+.ckb-empty-cta:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Erro de carga — card central 440px, copy verbatim do protótipo. */
+.ckb-error-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 520px;
+}
+.ckb-error {
+  max-width: 440px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 38px 32px;
+}
+.ckb-error-tile {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #fef2f2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.ckb-error-title {
+  font-size: 17px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.ckb-error-detail {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.55;
+  margin-bottom: 20px;
+}
+
+/* Skeleton do protótipo — shimmer 1.15s. */
+@keyframes ckb-shim {
+  0% {
+    background-position: -380px 0;
+  }
+  100% {
+    background-position: 380px 0;
+  }
+}
+.ckb-skl {
+  background: #e2e8f0;
+  background-image: linear-gradient(90deg, #e2e8f0 0px, #eff3f8 140px, #e2e8f0 280px);
+  background-size: 380px 100%;
+  animation: ckb-shim 1.15s linear infinite;
+  border-radius: 8px;
+}
+.ckb-skl-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 20px;
+}
+.ckb-skl-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px;
+}
+
+/* Builder atual preservado abaixo da lista (o editor novo chega no PR-02b). */
+.ckb-builder-below {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Toast do protótipo — bottom 24px centralizado, fadeUp .18s, auto-dismiss no componente. */
+@keyframes ckb-fade-up {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+.ckb-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 18px;
+  background: #0f172a;
+  border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+  max-width: 520px;
+  animation: ckb-fade-up 0.18s ease-out both;
+}
+.ckb-toast-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-toast-msg {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ckb-skl,
+  .ckb-toast {
+    animation: none;
+  }
+}

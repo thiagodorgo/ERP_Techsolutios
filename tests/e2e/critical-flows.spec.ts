@@ -219,16 +219,15 @@ test("platform admin acessa Platform Console", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Visao geral" })).toBeVisible();
 });
 
-test("W02A Checklists renderiza builder, lista e preview sem quebrar", async ({ page }) => {
+// CHECKLIST P1 PR-02a — a tela virou "Modelos de Checklist" no desenho do protótipo do dono
+// (as âncoras antigas "Checklists do tenant"/"Preview de schema" já estavam defasadas da tela).
+test("PR-02a Modelos de Checklist renderiza a lista nova e o builder sem quebrar", async ({ page }) => {
   await loginAndActivateContext(page);
 
-  await page.getByRole("link", { name: /^Checklists$/ }).click();
+  await page.getByRole("link", { name: /Modelos de Checklist/ }).click();
   await expect(page).toHaveURL(/\/administrator\/checklists$/);
-  await expect(page.getByRole("heading", { name: "Checklists", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Checklists do tenant" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Builder visual" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Preview de schema" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Novo checklist/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Modelos de Checklist", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Novo modelo/i })).toBeVisible();
 });
 
 test("runtime web de checklists renderiza lista operacional e bloqueia obrigatorios incompletos", async ({ page }) => {

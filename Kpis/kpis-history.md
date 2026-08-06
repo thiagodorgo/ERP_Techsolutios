@@ -1817,3 +1817,26 @@ de robustez: `professional-statements` com setup dentro do try/finally (falha de
 de reconciliação: −11 vs 2115 do #330, provável diferença de testes de auth destravados por DATABASE_URL no
 shell da época — investigar na próxima rodada). Smoke **1003/1003** e Flutter **839/839** carregados (§C3.3,
 PR não toca frontend/mobile). Blocos **135→136**.
+
+## 2026-08-06 — CHK-P1-PR-02A (PR pendente)
+
+**CHECKLIST P1 PR-02a:** a lista de "Modelos de Checklist" recriada fiel ao protótipo que o dono desenhou no
+Claude Design (`Modelos de Checklist.dc.html`, importado para a raiz). Header com kicker, busca, filtro de
+5 situações, 4 KPI mini-cards contados do payload real, tabela no grid exato do protótipo (tile do 1º
+componente, resumo em PT-BR, pills de situação + "Alterações não publicadas" derivada de `publishedAt`),
+estados §7 completos, banner somente-leitura com esconde-fino, `ChecklistToast` novo e copy acentuada
+unificada no módulo. "Novo modelo" instantâneo do protótipo + ação Inativar/Reativar reposta (a junta
+provou que sem ela um modelo criado por engano virava lixo irremovível pela UI).
+
+**Junta em workflow** (3 vetos em paralelo + refutação adversarial por achado): cognicao-visual REPROVADO,
+acessos e crítico APROVADO_CONDICIONADO → **8 achados confirmados, 0 refutados, todos aplicados** no mesmo
+PR (ata em `docs/juntas/J-CHECKLIST-P1.md`). Destaque de método: os smokes SSR passavam VAZIOS (sem efeitos
+a lista nunca carrega) — nasceram a costura `initialChecklists` e a função pura `rowActionVisibility`, e o
+esconde-fino agora é provado com linhas reais na tela.
+
+**Também nesta janela:** emulador Android desta máquina ficou operacional (AVD `erp_pixel` criado — a causa
+raiz era não existir NENHUM AVD; receita e 3 armadilhas em memória/`reference-android-emulator-setup`), app
+instalado e login demo validado no aparelho.
+
+**Contagens (execução real):** smoke **1003→1013** (+10 novos, 2 atualizados); backend **2110/2110** e
+Flutter **839/839** carregados (§C3.3, PR frontend-only). Blocos **136→137**. Backfill #336: merge `1062634`.

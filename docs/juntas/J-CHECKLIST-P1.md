@@ -97,3 +97,71 @@ Fecha a ALTA aberta pela junta do PR-01, priorizada acima das demais PRs do buil
 Bateria: `dart format` 0-changed · `flutter analyze` limpo · teste de contrato 4/4 · suíte Flutter completa (contagem
 real no PR) · frontend check/smoke(997)/build verdes · backend intocado. Emulador do dono com watcher armado (o app
 instala sozinho quando a instância Android subir).
+
+### PR-02 — replanejado sobre o protótipo do dono (2026-08-05, spec da cognicao-visual)
+
+O dono reprovou a tela atual do builder ("não ficou legal") e desenhou **`Modelos de Checklist.dc.html`** no
+Claude Design (importado para a raiz do repo). A cognicao-visual extraiu a spec forense ANTES de código
+(protocolo pré-tela): 2 modos (lista ↔ editor), abas Estrutura/Aplicabilidade("Em breve"), paleta 264px +
+canvas + inspector 336px (+dock de preview 392px), seções nomeadas, inspector TIPADO por tipo, preview em
+frame de telefone, dirty-tracking + modal "Sair sem salvar?", toasts, guard-rails de publicação client-side.
+
+**Fatiamento aprovado (1 bloco = 1 PR):**
+- **PR-02a — Lista**: scList completo (header/busca/filtro/4 KPI-cards/tabela nova/pills/ações-ícone/estados
+  + banner somente-leitura) + componente de **toast** (infra nova) + correção transversal de
+  `checklist.constants.ts` (acentos, "Personalizado", travessão). UI-only, endpoints existentes; o builder
+  atual permanece como ponte ao clicar (o redesign do editor vem em 02b-d).
+- **PR-02b — Editor casca+canvas**: sub-rota `/administrator/checklists/:id`, header do editor (nome/tipo
+  inline, pills, dirty, Salvar), paleta, canvas com seções (mover/duplicar/remover), modal de saída, aba
+  Aplicabilidade estática ("Em breve") + card "O que acontece ao publicar". Convenção `schema.sections[]` +
+  `config.sectionIndex`/`config.help` (config é JSON livre; validator só olha `options`) com teste de round-trip.
+- **PR-02c — Inspector tipado + publicação**: 10 formulários de config por tipo, editor de opções, blockers
+  espelhando o validator, Publicar no editor, reposição do Inativar/Arquivar (gap do protótipo — a
+  capacidade real não se perde).
+- **PR-02d — Pré-visualização**: modal + dock, render fiel por tipo, sem OS fictícia (contexto real da sessão).
+- Aplicabilidade REAL segue sendo a sub-sequência do PR-04 (D-CHK-P1-APPLICABILITY).
+
+**Regras de fidelidade herdadas:** rótulos PT-BR acentuados SEMPRE do mapa local (o catálogo do backend
+devolve sem acento — nunca renderizar cru); grip de arrastar é decorativo (reordenação real ↑/↓, como no
+protótipo — DnD real exigiria dependência nova/junta-5); versão exibida é a devolvida pela API (não replicar
+o incremento do mock); CSS novo em namespace `.ckb-*` com tokens (J-002).
+
+### PR-02a — lista de "Modelos de Checklist" — JUNTA EM WORKFLOW + correções (2026-08-06)
+
+**Dev:** frontend-pixel-master recriou o scList do protótipo (header/busca/filtro/4 KPI-cards/tabela nova/
+pills/ações-ícone/estados §7/banner somente-leitura) + ChecklistToast novo + correção transversal de copy
+(`checklist.constants.ts`) + remoção do NewChecklistForm ("Novo modelo" instantâneo do protótipo).
+
+**Junta (workflow, 3 vetos em paralelo + verificação adversarial de cada achado):** cognicao-visual
+**REPROVADO** · coordenador-de-acessos **APROVADO_CONDICIONADO** · critico-adversarial
+**APROVADO_CONDICIONADO**. 8 achados CONFIRMADOS por refutação independente (0 refutados). Dois achados
+tiveram a verificação derrubada por limite de sessão e foram re-verificados pelo orquestrador com
+execução própria: a pill "Alterações não publicadas" é legítima (o DTO expõe `publishedAt`) e a rota de
+execuções existe (`/operations/checklists`).
+
+**Correções aplicadas (todas no mesmo PR):**
+1. **ALTA — auto-select**: a ponte do builder antigo montava SEM clique no primeiro paint pós-carga,
+   vazando enum cru ("vehicle_selector"), JSON de schema (`componentKey`, `w02a_builder`) e copy de
+   andaime. Fallback `?? nextChecklists[0]` removido — ponte é click-only, como a ata autorizava.
+2. **MÉDIA — flash do vazio**: `loading` inicial voltou a `true` (o 1º frame comitado era o vazio-hero
+   "Nenhum modelo ainda" com dados existentes; regressão vs HEAD provada por execução do próprio smoke).
+3. **MÉDIA/ALTA — esconde-fino da ponte**: papel somente-leitura recebia paleta "Adicionar" + mover/
+   remover ativos. Ponte agora é consulta pura sem `update` (paleta/inspector não montam; canvas sem
+   controles — `onMove`/`onRemove` opcionais). De quebra o canvas parou de renderizar a CHAVE TÉCNICA
+   crua no subtítulo (§3): rótulo PT-BR do mapa local.
+4. **ALTA — lixo irremovível**: o protótipo não desenhou Inativar/Arquivar e o "Novo modelo" instantâneo
+   cria template REAL por clique — sem caminho de remoção, engano virava lixo permanente. Ação
+   Inativar/Reativar reposta na linha (gate `update`); o lugar definitivo é o editor (PR-02c).
+5. **MÉDIA — testes vácuos**: os smokes SSR não provavam o esconde-fino (sem efeitos, lista vazia,
+   `doesNotMatch` passa vazio). Solução: costura `initialChecklists` (prop de teste; produção intocada)
+   + `rowActionVisibility()` pura + 3 testes novos com LINHAS REAIS provando: leitura → zero escrita e
+   "Ver modelo"; escrita → Editar/Inativar/Reativar/Duplicar; ponte nunca monta sem clique.
+6. **BAIXAs aplicadas**: recarga falha com dados → toast (não silêncio) + limpeza na troca de organização;
+   cabeçalho da tabela sem `aria-hidden` (role=table/row/columnheader); "Ver execuções" com gate PRÓPRIO
+   `checklist_runs:read` navegando de verdade para /operations/checklists (o toast "em breve" mentia);
+   linha na `docs/navigation-matrix.md`; copy duplicada unificada (ChecklistRunsPage/RunStatusBadge
+   importam `checklist.constants` — morrem "Customizado", "Concluido", "ciencia").
+
+**Registrado, não feito aqui:** divergência pré-existente RBAC_MATRIX × catálogo em "Configurable checklist
+templates" (pendência própria); e2e W02A com âncoras conferidas estaticamente (o spec e2e não roda na
+bateria local). Smoke da tela 12/12; suíte completa na bateria do PR.

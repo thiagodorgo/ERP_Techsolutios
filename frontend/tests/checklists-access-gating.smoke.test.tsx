@@ -72,7 +72,8 @@ async function renderChecklists(permissions: readonly string[]): Promise<string>
       <AuthProvider>
         <TenantProvider>
           <PermissionProvider>
-            <TenantChecklistsPage />
+            {/* costura de teste: SSR nao roda efeitos — payload [] = estado carregado-vazio */}
+            <TenantChecklistsPage initialChecklists={[]} />
           </PermissionProvider>
         </TenantProvider>
       </AuthProvider>
@@ -80,15 +81,18 @@ async function renderChecklists(permissions: readonly string[]): Promise<string>
   );
 }
 
-test("checklists (somente-leitura): NÃO expõe ações de escrita ('Novo checklist')", async () => {
+test("checklists (somente-leitura): NÃO expõe ações de escrita ('Novo modelo') e explica com o banner", async () => {
   const html = await renderChecklists(["tenant_checklists:read"]);
 
-  assert.match(html, /Checklists/); // a tela renderiza (título)
-  assert.doesNotMatch(html, /Novo checklist/); // ação de criação escondida do papel de leitura
+  assert.match(html, /Modelos de Checklist/); // a tela renderiza (título do protótipo)
+  assert.doesNotMatch(html, /Novo modelo/); // ação de criação escondida do papel de leitura
+  assert.doesNotMatch(html, /Criar primeiro modelo/); // o CTA do vazio também some (esconde-fino)
+  assert.match(html, /Você está no modo somente leitura/); // banner do protótipo explica o porquê
 });
 
-test("checklists (com create): expõe 'Novo checklist'", async () => {
+test("checklists (com create): expõe 'Novo modelo' e NÃO mostra o banner somente-leitura", async () => {
   const html = await renderChecklists(["tenant_checklists:read", "tenant_checklists:create"]);
 
-  assert.match(html, /Novo checklist/);
+  assert.match(html, /Novo modelo/);
+  assert.doesNotMatch(html, /Você está no modo somente leitura/);
 });

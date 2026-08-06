@@ -1,6 +1,7 @@
 import { Camera, CheckSquare, CircleDot, ClipboardCheck, FileSignature, GitCompare, ImagePlus, ListChecks, MapPin, PenLine } from "lucide-react";
 
 import { Button } from "../../../components/ui";
+import { resolveChecklistComponentTypeDescription, resolveChecklistComponentTypeLabel } from "../checklist.constants";
 import type { TenantChecklistComponentCatalogItem, TenantChecklistComponentType } from "../types";
 
 const componentIconByType: Record<TenantChecklistComponentType, typeof CheckSquare> = {
@@ -31,9 +32,11 @@ export function ChecklistComponentPalette({
           <article key={component.type}>
             <div>
               <Icon size={18} />
-              <span>{component.label}</span>
+              {/* PR-02a: rótulo/descrição SEMPRE do mapa local acentuado; o catálogo do backend vem
+                  sem acento e serve só de fallback honesto para tipo desconhecido. */}
+              <span>{resolveChecklistComponentTypeLabel(component.type, component.label)}</span>
             </div>
-            <p>{component.description}</p>
+            <p>{resolveChecklistComponentTypeDescription(component.type, component.description)}</p>
             <Button type="button" size="sm" variant="secondary" onClick={() => onAdd(component)}>
               Adicionar
             </Button>
