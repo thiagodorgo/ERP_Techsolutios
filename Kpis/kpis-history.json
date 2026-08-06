@@ -1998,7 +1998,7 @@
   {
     "snapshot_date": "2026-08-06",
     "version": "MAPA-PIXEL-PR1",
-    "pr": null,
+    "pr": 338,
     "merge_commit": null,
     "flutter_tests": "839/839",
     "backend_tests": "2110/2110",

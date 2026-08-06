@@ -6,7 +6,7 @@
   "release": {
     "block": "J-MAPAS-10 PR-1 — Mapa Operacional recriado PIXEL A PIXEL sobre o protótipo do dono (Mapa Operacional.html, importado do Claude Design). Painéis de vidro 348px (Chamados recebidos / Em Atendimento / Técnicos com ETA, filtros e ordenação), legenda-FILTRO no rodapé com 8 itens e contagem no tooltip, alocação por clique + popup do marker (3 mais próximos) + drag-and-drop nativo, rota tracejada, toast honesto, markers do protótipo (avatar 32px com borda por status; losango 22px com pulso na urgente). 3 DIRETIVAS do dono aplicadas e provadas em navegador real: chips do topo-esquerdo removidos; ZERO movimento automático de câmera (sobra só o pan por clique) + memória da visão por organização; detalhe do técnico por hover (efêmero) e por clique (fixo, fecha manual). ALTA da junta: a chave Google fazia a tela cair no canvas ANTIGO — MapLibre virou default e Google exige opt-in (VITE_MAPS_PROVIDER=google) até a paridade do PR-2. Tiles CARTO do protótipo REJEITADOS por ToS Enterprise → OpenFreeMap claro, US$ 0.",
     "title": "Mapa Operacional pixel-perfect (J-MAPAS-10 PR-1)",
-    "pr": null,
+    "pr": 338,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
