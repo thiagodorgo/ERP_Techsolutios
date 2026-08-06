@@ -1,188 +1,221 @@
-import { Battery, Clock, LocateFixed } from "lucide-react";
-import { useId, type CSSProperties } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState, type DragEvent } from "react";
 
-import { Card, Table } from "../../../../components/ui";
-import { DispatchStatusBadge } from "../../dispatches/components/DispatchStatusBadge";
 import {
-  formatAccuracy,
-  formatBattery,
-  formatFieldLocationDate,
-  formatLastSeen,
-  getFieldLocationStatusLabel,
-} from "../operations-map.adapter";
-import { getStatusColor } from "../map/mapMarkers";
+  computeDistanceKm,
+  estimateTravelMinutes,
+  etaToneForMinutes,
+  formatCompactKm,
+  formatCompactMinutes,
+  formatCompletionRate,
+  operatorUserIdOf,
+  type Coordinate,
+} from "../allocation";
+import { formatLastSeen } from "../operations-map.adapter";
+import { canDropOnTechnician, readDraggedWorkOrderId } from "../map/dnd";
+import { getFieldLocationGroup, getFieldLocationGroupColor, TECH_STALE_HEX } from "../map/mapMarkers";
 import type { FieldLocationItem } from "../operations-map.types";
-import { OperationsOperatorStatus } from "./OperationsMapStatusBadge";
-import { WorkOrderStatusBadge } from "../../../work-orders/components/WorkOrderStatusBadge";
+
+/**
+ * J-MAPAS-10 (PLANO-MAPA-PIXEL, D5) — painel "Técnicos de campo" no formato trow VERBATIM do
+ * protótipo: dot de status (cor do grupo; âmbar quando antiga), nome, selo "antiga", célula de
+ * ETA (visto → "~km · ~min" quando há OS selecionada; good ≤15 min / mid ≤40 min sobre a NOSSA
+ * estimativa honesta de 28 km/h) e botão "Alocar" visível SÓ com OS selecionada (os-selected).
+ * Substitui a tabela + cartões do M-3.
+ *
+ * Filtros do painel: fchips Todos/Ativos/Fora de serviço + select Distância/Tempo/Nome/Status
+ * (+ "Índice de conclusão", adição registrada — feature J-MAPAS-7 preservada, visível só para
+ * quem pode alocar). Selecionar uma OS salta a ordenação para "Distância" (regra do protótipo).
+ *
+ * DnD nativo: a linha é droptarget do card de OS arrastado (payload "text/os"); linha "off" não
+ * aceita. Gating: sem field_dispatch:create não há botão Alocar nem drop. Clique na linha abre o
+ * detail popover do técnico. LGPD §12: nenhuma coordenada crua — só ~km/~min derivados.
+ */
+
+export type OperatorPanelFilter = "todos" | "ativo" | "off";
+export type OperatorPanelSort = "dist" | "tempo" | "nome" | "status" | "indice";
+
+type RowMetrics = { readonly km: number; readonly min: number } | null;
 
 export function OperationsOperatorList({
   locations,
-  selectedId,
-  onSelect,
-  onHighlight,
-  showWorkOrders = false,
-  showDispatches = false,
-  canCreateDispatch = false,
+  selectedCallId,
+  selectedCallCoordinate,
+  canAllocate = false,
+  completionByOperator,
+  onAllocate,
+  onDropAllocate,
+  onOpenDetail,
+  onHoverDetail,
   now,
 }: {
-  locations: FieldLocationItem[];
-  selectedId?: string;
-  onSelect: (location: FieldLocationItem) => void;
-  // J-MAPAS-7 (E) — HOVER/FOCO na linha realça/centraliza o pin no mapa (sem abrir o popup). Opcional:
-  // sem handler, o hover só mostra o tooltip. CLICK segue em `onSelect` (a página abre o popup de alocação).
-  onHighlight?: (location: FieldLocationItem) => void;
-  showWorkOrders?: boolean;
-  showDispatches?: boolean;
-  canCreateDispatch?: boolean;
-  now?: Date;
+  readonly locations: readonly FieldLocationItem[];
+  readonly selectedCallId?: string;
+  readonly selectedCallCoordinate?: Coordinate | null;
+  readonly canAllocate?: boolean;
+  readonly completionByOperator?: ReadonlyMap<string, number | null>;
+  readonly onAllocate?: (location: FieldLocationItem) => void;
+  readonly onDropAllocate?: (workOrderId: string, location: FieldLocationItem) => void;
+  readonly onOpenDetail: (location: FieldLocationItem) => void;
+  /** Hover na linha: detalhe efêmero (some ao sair). Diretiva do dono (2026-08-06). */
+  readonly onHoverDetail?: (location: FieldLocationItem | null) => void;
+  readonly now?: Date;
 }) {
-  const tooltipBaseId = useId();
+  const [filtro, setFiltro] = useState<OperatorPanelFilter>("todos");
+  const [ordem, setOrdem] = useState<OperatorPanelSort>("dist");
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const reference = now ?? new Date();
-  const columns = [
-    {
-      key: "operator",
-      header: "Técnico",
-      render: (location: FieldLocationItem) => (
-        <strong className={selectedId === location.id ? "operations-map-selected-text" : undefined}>
-          {location.displayName}
-        </strong>
-      ),
-    },
-    { key: "status", header: "Status", render: (location: FieldLocationItem) => <OperationsOperatorStatus location={location} /> },
-    ...(showWorkOrders
-      ? [
-          {
-            key: "workOrder",
-            header: "OS atual",
-            render: (location: FieldLocationItem) =>
-              location.currentWorkOrder ? (
-                <Link
-                  className="operations-map-work-order-link"
-                  to={`/work-orders/${location.currentWorkOrder.id}`}
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <span>{location.currentWorkOrder.code}</span>
-                  <WorkOrderStatusBadge status={location.currentWorkOrder.status} />
-                </Link>
-              ) : (
-                <span className="operations-map-muted">Sem OS</span>
-              ),
-          },
-        ]
-      : []),
-    ...(showDispatches
-      ? [
-          {
-            key: "dispatch",
-            header: "Despacho",
-            render: (location: FieldLocationItem) =>
-              location.currentDispatch ? (
-                <Link
-                  className="operations-map-work-order-link"
-                  to={`/operations/dispatches?dispatchId=${encodeURIComponent(location.currentDispatch.id)}&workOrderId=${encodeURIComponent(location.currentDispatch.workOrderId)}&operatorUserId=${encodeURIComponent(location.currentDispatch.operatorUserId)}`}
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <span>Despacho</span>
-                  <DispatchStatusBadge status={location.currentDispatch.status} />
-                </Link>
-              ) : canCreateDispatch && location.currentWorkOrder ? (
-                <Link
-                  className="operations-map-work-order-link"
-                  to={`/operations/dispatches?workOrderId=${encodeURIComponent(location.currentWorkOrder.id)}&operatorUserId=${encodeURIComponent(location.userId ?? location.operatorId)}`}
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  Criar despacho
-                </Link>
-              ) : (
-                <span className="operations-map-muted">Sem despacho</span>
-              ),
-          },
-        ]
-      : []),
-    { key: "team", header: "Equipe", render: (location: FieldLocationItem) => location.teamName ?? "Sem equipe" },
-    { key: "battery", header: "Bateria", render: (location: FieldLocationItem) => formatBattery(location.batteryLevel) },
-    { key: "accuracy", header: "Precisão", render: (location: FieldLocationItem) => formatAccuracy(location.accuracyMeters) },
-    { key: "captured", header: "Última atualização", render: (location: FieldLocationItem) => formatFieldLocationDate(location.capturedAt) },
-  ];
+
+  // Regra do protótipo: selecionar uma OS salta a ordenação para "Distância" (exceto "Tempo").
+  useEffect(() => {
+    if (selectedCallId) {
+      setOrdem((current) => (current === "tempo" ? current : "dist"));
+    }
+  }, [selectedCallId]);
+
+  const rows = useMemo(() => {
+    const withMetrics = locations.map((location) => {
+      const km = selectedCallCoordinate ? computeDistanceKm(location, selectedCallCoordinate) : null;
+      const metrics: RowMetrics = km === null ? null : { km, min: Math.max(1, Math.round(estimateTravelMinutes(km))) };
+      return { location, metrics, group: getFieldLocationGroup(location.status) };
+    });
+
+    const filtered =
+      filtro === "ativo"
+        ? withMetrics.filter((row) => row.group !== "off")
+        : filtro === "off"
+          ? withMetrics.filter((row) => row.group === "off")
+          : withMetrics;
+
+    return [...filtered].sort((a, b) => {
+      if (ordem === "nome") return a.location.displayName.localeCompare(b.location.displayName, "pt-BR");
+      if (ordem === "status") return a.group.localeCompare(b.group);
+      if (ordem === "indice") {
+        const rateA = completionByOperator?.get(operatorUserIdOf(a.location)) ?? null;
+        const rateB = completionByOperator?.get(operatorUserIdOf(b.location)) ?? null;
+        if (rateA === null && rateB === null) return a.location.displayName.localeCompare(b.location.displayName, "pt-BR");
+        if (rateA === null) return 1;
+        if (rateB === null) return -1;
+        return rateB - rateA;
+      }
+      // dist/tempo: sem métrica (sem OS selecionada/sem coordenada) preserva a ordem de chegada.
+      if (!a.metrics || !b.metrics) return 0;
+      return ordem === "tempo" ? a.metrics.min - b.metrics.min : a.metrics.km - b.metrics.km;
+    });
+  }, [locations, filtro, ordem, selectedCallCoordinate, completionByOperator]);
+
+  const dropEnabled = canAllocate && Boolean(onDropAllocate);
+
+  const handleDragOver = (event: DragEvent<HTMLElement>, location: FieldLocationItem, group: "disp" | "rota" | "atend" | "off") => {
+    if (!canDropOnTechnician(group, dropEnabled)) return; // linha "off" não aceita (protótipo)
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDropTargetId(location.id);
+  };
+
+  const handleDrop = (event: DragEvent<HTMLElement>, location: FieldLocationItem, group: "disp" | "rota" | "atend" | "off") => {
+    if (!canDropOnTechnician(group, dropEnabled)) return;
+    event.preventDefault();
+    setDropTargetId(null);
+    const workOrderId = readDraggedWorkOrderId(event.dataTransfer);
+    if (workOrderId) onDropAllocate?.(workOrderId, location);
+  };
 
   return (
-    <Card title="Técnicos de Campo">
-      <Table
-        rows={locations}
-        keyForRow={(location) => location.id}
-        onRowClick={onSelect}
-        columns={columns}
-      />
-      <div className="operations-operator-cards">
-        {locations.map((location) => {
-          const tooltipId = `${tooltipBaseId}-${location.id}`;
-          // Tooltip HONESTO e SEM coordenada (LGPD §12): status + frescor relativo + equipe + OS atual.
-          const tooltipText = [
-            location.isStale ? "Localização antiga" : getFieldLocationStatusLabel(location.status),
-            `Visto ${formatLastSeen(location.capturedAt, reference)}`,
-            location.teamName ?? "Sem equipe",
-            location.currentWorkOrder ? `OS ${location.currentWorkOrder.code}` : "Sem OS",
-          ].join(" · ");
-          return (
+    <>
+      <div className="opmap-filters">
+        {(
+          [
+            ["todos", "Todos"],
+            ["ativo", "Ativos"],
+            ["off", "Fora de serviço"],
+          ] as const
+        ).map(([key, label]) => (
           <button
-            key={location.id}
+            key={key}
             type="button"
-            className={`operations-operator-card ${selectedId === location.id ? "is-selected" : ""}`}
-            data-status={location.status}
-            style={{ "--operator-accent": getStatusColor(location.status) } as CSSProperties}
-            onClick={() => onSelect(location)}
-            onMouseEnter={() => onHighlight?.(location)}
-            onFocus={() => onHighlight?.(location)}
-            aria-describedby={tooltipId}
+            className={`opmap-fchip${filtro === key ? " on" : ""}`}
+            aria-pressed={filtro === key}
+            onClick={() => setFiltro(key)}
           >
-            <span className="operations-operator-card__tooltip" role="tooltip" id={tooltipId}>
-              {tooltipText}
-            </span>
-            <header>
-              <strong>{location.displayName}</strong>
-              <OperationsOperatorStatus location={location} />
-            </header>
-            {showWorkOrders && location.currentWorkOrder ? (
-              <Link
-                className="operations-map-work-order-card-link"
-                to={`/work-orders/${location.currentWorkOrder.id}`}
-                onClick={(event) => event.stopPropagation()}
-              >
-                {location.currentWorkOrder.code}
-                <WorkOrderStatusBadge status={location.currentWorkOrder.status} />
-              </Link>
-            ) : null}
-            {showDispatches && location.currentDispatch ? (
-              <Link
-                className="operations-map-work-order-card-link"
-                to={`/operations/dispatches?dispatchId=${encodeURIComponent(location.currentDispatch.id)}&workOrderId=${encodeURIComponent(location.currentDispatch.workOrderId)}&operatorUserId=${encodeURIComponent(location.currentDispatch.operatorUserId)}`}
-                onClick={(event) => event.stopPropagation()}
-              >
-                Despacho
-                <DispatchStatusBadge status={location.currentDispatch.status} />
-              </Link>
-            ) : null}
-            {showDispatches && !location.currentDispatch && canCreateDispatch && location.currentWorkOrder ? (
-              <Link
-                className="operations-map-work-order-card-link"
-                to={`/operations/dispatches?workOrderId=${encodeURIComponent(location.currentWorkOrder.id)}&operatorUserId=${encodeURIComponent(location.userId ?? location.operatorId)}`}
-                onClick={(event) => event.stopPropagation()}
-              >
-                Criar despacho
-              </Link>
-            ) : null}
-            <span>{location.teamName ?? "Sem equipe"}</span>
-            <footer>
-              <small><Battery size={14} /> {formatBattery(location.batteryLevel)}</small>
-              <small><LocateFixed size={14} /> {formatAccuracy(location.accuracyMeters)}</small>
-              <small><Clock size={14} /> {formatFieldLocationDate(location.capturedAt)}</small>
-            </footer>
-            <span className="operations-operator-card__action">{canCreateDispatch ? "Ver e alocar" : "Ver detalhes"}</span>
+            {label}
           </button>
-          );
-        })}
+        ))}
+        <select
+          className="opmap-sort"
+          aria-label="Ordenar técnicos"
+          value={ordem}
+          onChange={(event) => setOrdem(event.target.value as OperatorPanelSort)}
+        >
+          <option value="dist">Distância</option>
+          <option value="tempo">Tempo</option>
+          <option value="nome">Nome</option>
+          <option value="status">Status</option>
+          {canAllocate ? <option value="indice">Índice de conclusão</option> : null}
+        </select>
       </div>
-    </Card>
+      {rows.length === 0 ? (
+        <div className="opmap-empty">Nenhum técnico neste filtro</div>
+      ) : (
+        <ul className="opmap-trows" aria-label="Técnicos de campo">
+          {rows.map(({ location, metrics, group }) => {
+            const isOff = group === "off";
+            const dotColor = location.isStale ? TECH_STALE_HEX : getFieldLocationGroupColor(location.status);
+            const completion = completionByOperator?.get(operatorUserIdOf(location)) ?? null;
+            const etaTone = metrics ? etaToneForMinutes(metrics.min) : "far";
+            return (
+              <li key={location.id}>
+                <div
+                  className={`opmap-trow${isOff ? " off" : ""}${dropTargetId === location.id ? " droptarget" : ""}`}
+                  data-tec={location.id}
+                  onDragOver={(event) => handleDragOver(event, location, group)}
+                  onDragLeave={() => setDropTargetId((current) => (current === location.id ? null : current))}
+                  onDrop={(event) => handleDrop(event, location, group)}
+                  onMouseEnter={() => onHoverDetail?.(location)}
+                  onMouseLeave={() => onHoverDetail?.(null)}
+                  onFocus={() => onHoverDetail?.(location)}
+                  onBlur={() => onHoverDetail?.(null)}
+                >
+                  <button
+                    type="button"
+                    className="opmap-trow__hit"
+                    aria-label={`Abrir detalhes de ${location.displayName}`}
+                    onClick={() => onOpenDetail(location)}
+                  >
+                    <span className="opmap-trow__dot" style={{ background: dotColor }} aria-hidden="true" />
+                    <span className="opmap-trow__nm">{location.displayName}</span>
+                    {location.isStale ? <span className="opmap-trow__old">antiga</span> : null}
+                    {ordem === "indice" ? (
+                      <span className="opmap-trow__eta">
+                        <b>{formatCompletionRate(completion)}</b>
+                      </span>
+                    ) : metrics ? (
+                      <span className={`opmap-trow__eta ${etaTone === "far" ? "" : etaTone}`.trim()}>
+                        <b>{formatCompactKm(metrics.km)}</b> · <b>{formatCompactMinutes(metrics.km)}</b>
+                      </span>
+                    ) : (
+                      <span className="opmap-trow__eta">{formatLastSeen(location.capturedAt, reference)}</span>
+                    )}
+                  </button>
+                  {canAllocate && selectedCallId ? (
+                    <button
+                      type="button"
+                      className="opmap-trow__go"
+                      disabled={isOff}
+                      aria-label={`Alocar chamado selecionado para ${location.displayName}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onAllocate?.(location);
+                      }}
+                    >
+                      Alocar
+                    </button>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </>
   );
 }

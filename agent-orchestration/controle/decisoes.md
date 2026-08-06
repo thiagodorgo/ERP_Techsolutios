@@ -1070,3 +1070,35 @@ por PR, e o `app.js` já hidratava os **cards** e o **histórico** em runtime a 
 **Cronograma.** No mesmo trabalho nasce `docs/CRONOGRAMA.md` (onde estamos / para onde vamos), também pedido
 pelo dono, com a fila priorizada e a faixa **bloqueada por decisão humana** (go-live pago, rotação da chave do
 Google Maps, nomeação de RBAC) explicitamente separada do que sigo sozinho.
+
+## D-MAPA-PIXEL (2026-08-06) — Mapa Operacional recriado "pixel a pixel" do protótipo do dono; supersede parcial de J-MAPAS-4/6/7
+
+**Pedido do dono (verbatim):** recriar o Mapa Operacional **"pixel a pixel"** a partir do protótipo
+desenhado por ele no Claude Design (`Mapa Operacional.html`, raiz do repo) — **"focar no mapa, a
+sidebar deixe de fora desta correção"**. Prioridade máxima. Plano da Junta de Mapas (J-MAPAS-10):
+`agent-orchestration/omega/planos/PLANO-MAPA-PIXEL.md` · dossiê geo datado: `docs/maps/kb-mapas.md §(j)`.
+
+**Registro A2 (sem consolidação silenciosa) — o que o protótipo do dono SUPERSEDE:**
+1. **Focus-city (J-MAPAS-4)** — a câmera "focar na cidade com mais técnicos" (clustering) é
+   substituída pela **memória da visão do operador** (localStorage `techsol.mapaOp.view.<tenantId>`,
+   default Brasil z4, savenote) — comportamento desenhado pelo dono no protótipo (artefato mais novo
+   prevalece). Helpers/testes de focus-city saem no PR-2 (espelho Google).
+2. **Popups D/E de alocação (J-MAPAS-7)** — substituídos pelos gestos do protótipo: seleção de OS →
+   "Alocar" por linha com km/min honestos · popup do marker com 3 técnicos mais próximos · drag-and-drop
+   nativo HTML5. O índice de conclusão NÃO morre (vira opção de ordenação, mesmo gate field_dispatch:create).
+   Mesmo endpoint real: POST /api/v1/operations/dispatches (404/409/422 preservados).
+3. **Chrome da página (J-MAPAS-6/Ω1)** — page-heading, SummaryCards, barra de filtros e params de URL
+   `status|team|stale|q` saem (legenda-filtro de 8 itens + filtros do painel do protótipo assumem);
+   deep-link `?workOrderId` permanece. Ações de gestão de despacho saem do mapa (ficam na tela Despachos).
+4. **Cores/agrupamento** — status e prioridades adotam as cores do protótipo; paused/blocked/offline
+   agrupados como "Fora de serviço" NO MAPA (rótulo real preservado no detalhe); 2 faixas de "antiga"
+   (3/10 min) viram item único (limiar 15 min existente).
+5. **Exceções de honestidade (D-007 vence copy verbatim, registradas):** toast de alocação e ETA/km
+   mantêm rótulos honestos ("~X km (linha reta)", "~Y min (estimado, sem trânsito)") — nunca "chegada
+   estimada" cravada; countdown de SLA só com prazo real (M-7 preservado).
+
+**Custo/provedor:** US$ 0; MapLibre + OpenFreeMap mantidos com estilo CLARO próprio "voyager-like".
+**CARTO Voyager raster (do protótipo) REJEITADO como fonte de tiles:** uso comercial exige Enterprise
+license (carto.com/basemaps, verificado 2026-08-06) — adotá-lo seria serviço pago novo (junta-5 + PD).
+Nenhuma dependência nova (Leaflet rejeitado). Junta-5 + PD **não disparam**; junta normal (≥3).
+Execução: PR-1 (MapLibre default completo) → PR-2 (espelho Google + faxina). Próximo: dev-mapas.

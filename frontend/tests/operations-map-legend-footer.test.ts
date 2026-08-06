@@ -7,37 +7,34 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 
 import { OperationsMapLegendFooter } from "../src/modules/operations/map/components/OperationsMapLegendFooter";
-import { GoogleMapsCanvas } from "../src/modules/operations/map/components/GoogleMapsCanvas";
-// SSR-safe: o MapLibre só carrega WebGL por import() dinâmico dentro do efeito de montagem,
-// então importar o componente estaticamente não instancia o mapa em renderToString.
-import { OperationsMapLibreCanvas } from "../src/modules/operations/map/components/OperationsMapLibreCanvas";
 import {
-  MAP_LEGEND_ITEMS,
+  buildLegendFilterEntries,
+  countLegendGroups,
+  LEGEND_FILTER_ALL_ON,
+} from "../src/modules/operations/map/hooks/useLegendFilter";
+import {
+  MAP_LEGEND_FILTER_ITEMS,
+  TECH_GROUP_HEX,
+  TECH_STALE_HEX,
   WORK_ORDER_PRIORITY_HEX,
-  getStatusColor,
 } from "../src/modules/operations/map/map/mapMarkers";
 import type { FieldLocationItem } from "../src/modules/operations/map/operations-map.types";
 
-// M-2 (J-MAPAS-6) — Rodapé de legenda UNIFICADO. Prova: (a) o rodapé consome a FONTE ÚNICA
-// MAP_LEGEND_ITEMS; (b) a `<ul>` flutuante `operations-map-libre__legend` foi REMOVIDA dos DOIS
-// canvases; (c) PARIDADE do espelho — MapLibre e Google renderizam o MESMO rodapé byte-a-byte;
-// (d) nenhum hex de status/prioridade solto (a cor vem só de item.color).
+// J-MAPAS-10 (D6) — a legenda do rodapé VIROU LEGENDA-FILTRO: 8 itens verbatim do protótipo com
+// contagem REAL no tooltip (data-tip) e toggle que esconde a camada. Prova: fonte única de cores,
+// rótulos verbatim, quadrado rotacionado para OS, estado off, wiring do toggle e hint verbatim.
 
 const SRC = new URL("../src/modules/operations/map/components/", import.meta.url);
-const FOOTER_SRC = readFileSync(fileURLToPath(new URL("OperationsMapLegendFooter.tsx", SRC)), "utf8");
 const LIBRE_SRC = readFileSync(fileURLToPath(new URL("OperationsMapLibreCanvas.tsx", SRC)), "utf8");
 const GOOGLE_SRC = readFileSync(fileURLToPath(new URL("GoogleMapsCanvas.tsx", SRC)), "utf8");
-const CSS = readFileSync(
-  fileURLToPath(new URL("../src/styles/app.css", import.meta.url)),
-  "utf8",
-);
+const CSS = readFileSync(fileURLToPath(new URL("../src/styles/app.css", import.meta.url)), "utf8");
 
 function makeLocation(overrides: Partial<FieldLocationItem> = {}): FieldLocationItem {
   return {
     id: "loc-1",
     operatorId: "op-1",
     displayName: "Ana Souza",
-    status: "on_route",
+    status: "available",
     latitude: -23.55052,
     longitude: -46.633308,
     capturedAt: "2026-07-19T12:00:00.000Z",
@@ -46,135 +43,140 @@ function makeLocation(overrides: Partial<FieldLocationItem> = {}): FieldLocation
   };
 }
 
-function ruleBody(selector: string): string {
-  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = CSS.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`));
-  assert.ok(match, `regra CSS não encontrada: ${selector}`);
-  return match![1];
+const LOCATIONS = [
+  makeLocation({ id: "a", status: "available" }),
+  makeLocation({ id: "b", status: "on_route" }),
+  makeLocation({ id: "c", status: "in_service" }),
+  makeLocation({ id: "d", status: "offline", isStale: true }),
+];
+const PINS = [
+  { priority: "urgent" as const },
+  { priority: "high" as const },
+  { priority: "medium" as const },
+  { priority: "low" as const },
+];
+
+function entries() {
+  return buildLegendFilterEntries(LEGEND_FILTER_ALL_ON, countLegendGroups(LOCATIONS, PINS));
 }
 
-// Rótulos com ">" (ex.: "Antiga > 3 min") saem escapados no HTML do React (&gt;); comparamos
-// contra a mesma forma escapada.
-function escapeText(text: string): string {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function renderFooter(state = LEGEND_FILTER_ALL_ON, onToggle: (key: string) => void = () => undefined): string {
+  const built = buildLegendFilterEntries(state, countLegendGroups(LOCATIONS, PINS));
+  return renderToString(
+    createElement(OperationsMapLegendFooter, { entries: built, onToggle: onToggle as never }),
+  );
 }
 
-// Extrai o fragmento renderizado do rodapé (do <ul> ao primeiro </ul>).
-function footerFragment(html: string): string {
-  const match = html.match(/<ul class="operations-map-legend-footer"[\s\S]*?<\/ul>/);
-  assert.ok(match, "rodapé de legenda não encontrado no HTML");
-  return match![0];
-}
+// 1 — 8 itens com os RÓTULOS VERBATIM do protótipo, na ordem exata.
+test("legenda-filtro tem 8 itens verbatim na ordem do protótipo", () => {
+  assert.deepEqual(
+    MAP_LEGEND_FILTER_ITEMS.map((item) => item.label),
+    [
+      "Disponível",
+      "Em rota",
+      "Em atendimento",
+      "Localização antiga",
+      "Fora de serviço",
+      "OS urgente",
+      "OS alta",
+      "OS média/baixa",
+    ],
+  );
+});
 
-// 1 — o rodapé consome MAP_LEGEND_ITEMS: 5 status/frescor + 3 prioridades + 1 separador, com a
-//     cor de cada swatch vinda INLINE da fonte única (item.color).
-test("rodapé renderiza todos os itens de MAP_LEGEND_ITEMS com a cor da fonte única", () => {
-  const html = renderToString(createElement(OperationsMapLegendFooter));
-  assert.match(html, /class="operations-map-legend-footer"/);
+// 2 — cores da FONTE ÚNICA (grupos de status + prioridades do protótipo), nunca hex divergente.
+test("cores dos itens vêm da fonte única (TECH_GROUP_HEX / TECH_STALE_HEX / WORK_ORDER_PRIORITY_HEX)", () => {
+  const byKey = new Map(MAP_LEGEND_FILTER_ITEMS.map((item) => [item.key, item.color]));
+  assert.equal(byKey.get("disp"), TECH_GROUP_HEX.disp);
+  assert.equal(byKey.get("rota"), TECH_GROUP_HEX.rota);
+  assert.equal(byKey.get("atend"), TECH_GROUP_HEX.atend);
+  assert.equal(byKey.get("antiga"), TECH_STALE_HEX);
+  assert.equal(byKey.get("off"), TECH_GROUP_HEX.off);
+  assert.equal(byKey.get("urg"), WORK_ORDER_PRIORITY_HEX.urgent);
+  assert.equal(byKey.get("alta"), WORK_ORDER_PRIORITY_HEX.high);
+  assert.equal(byKey.get("mb"), WORK_ORDER_PRIORITY_HEX.medium);
+});
 
-  const dots = (html.match(/operations-map-legend-footer__dot/g) ?? []).length;
-  const pins = (html.match(/operations-map-legend-footer__pin/g) ?? []).length;
-  const seps = (html.match(/operations-map-legend-footer__sep/g) ?? []).length;
-  assert.equal(dots, 5);
-  assert.equal(pins, 3);
-  assert.equal(seps, 1);
+// 3 — contagem REAL no tooltip: data-tip = "{n} {sufixo verbatim}" das listas completas.
+test("tooltip data-tip carrega contagem real ('1 disponíveis', '1 com localização antiga', '1 OS urgentes')", () => {
+  const html = renderFooter();
+  assert.match(html, /data-tip="1 disponíveis"/);
+  assert.match(html, /data-tip="1 em rota"/);
+  assert.match(html, /data-tip="1 em atendimento"/);
+  assert.match(html, /data-tip="1 com localização antiga"/);
+  assert.match(html, /data-tip="1 fora de serviço"/);
+  assert.match(html, /data-tip="1 OS urgentes"/);
+  assert.match(html, /data-tip="1 OS alta"/);
+  assert.match(html, /data-tip="2 OS média\/baixa"/); // medium + low fundem no grupo mb
+});
 
-  for (const item of MAP_LEGEND_ITEMS) {
-    if (item.kind === "sep") continue;
-    assert.ok(html.includes(escapeText(item.label)), `rótulo ausente: ${item.label}`);
-    assert.match(html, new RegExp(`background:${item.color}`));
+// 4 — toggle: item OFF ganha .off + aria-pressed=false; clique chama onToggle com a key certa.
+test("toggle: estado off vira classe .off/aria-pressed=false; onClick dispara onToggle(key)", () => {
+  const offState = { ...LEGEND_FILTER_ALL_ON, urg: false };
+  const html = renderFooter(offState);
+  assert.match(html, /class="opmap-lg off"[^>]*data-key="urg"[^>]*aria-pressed="false"/);
+
+  // Componente sem hooks → chamada direta é pura; exercita o onClick de verdade.
+  const clicked: string[] = [];
+  const tree = OperationsMapLegendFooter({
+    entries: entries(),
+    onToggle: (key) => clicked.push(key),
+  }) as unknown as { props: { children: unknown[] } };
+  const findButtons = (node: unknown, acc: Array<{ props: Record<string, unknown> }> = []) => {
+    if (!node || typeof node !== "object") return acc;
+    if (Array.isArray(node)) {
+      for (const child of node) findButtons(child, acc);
+      return acc;
+    }
+    const element = node as { type?: unknown; props?: Record<string, unknown> };
+    if (element.type === "button") acc.push(element as { props: Record<string, unknown> });
+    if (element.props && "children" in element.props) findButtons(element.props.children, acc);
+    return acc;
+  };
+  const buttons = findButtons(tree);
+  assert.equal(buttons.length, 8);
+  (buttons[0]!.props.onClick as () => void)();
+  (buttons[5]!.props.onClick as () => void)();
+  assert.deepEqual(clicked, ["disp", "urg"]);
+});
+
+// 5 — item de OS usa o QUADRADO 8px rotacionado (losango) e o dot é redondo; barra verbatim.
+test("CSS: item de OS = quadrado rotate(45deg) radius 2; barra bottom-0 com bg rgba(13,21,38,0.82)", () => {
+  assert.match(CSS, /\.opmap-lg i\.sq\s*\{[^}]*border-radius:\s*2px/);
+  assert.match(CSS, /\.opmap-lg i\.sq\s*\{[^}]*transform:\s*rotate\(45deg\)/);
+  assert.match(CSS, /\.opmap-lg i\s*\{[^}]*width:\s*8px/);
+  const bar = CSS.match(/(?:^|\n)\.opmap-legend\s*\{([^}]*)\}/);
+  assert.ok(bar);
+  assert.match(bar![1], /bottom:\s*0/);
+  assert.match(bar![1], /background:\s*rgb\(13 21 38 \/ 82%\)/);
+  assert.match(bar![1], /padding:\s*4px 10px/);
+  // Tooltip ::after do protótipo (bottom calc(100% + 9px), bg #0f172a, radius 7).
+  assert.match(CSS, /\.opmap-lg::after\s*\{[^}]*bottom:\s*calc\(100% \+ 9px\)/);
+  assert.match(CSS, /\.opmap-lg::after\s*\{[^}]*background:\s*#0f172a/);
+});
+
+// 6 — hint verbatim + disclaimer honesto das estimativas presentes à direita da barra.
+test("hint verbatim do protótipo + disclaimer de estimativas ('linha reta'/'sem trânsito')", () => {
+  const html = renderFooter();
+  assert.match(html, /Esc limpa a seleção · arraste uma OS até um técnico para alocar/);
+  assert.match(html, /linha reta/);
+  assert.match(html, /sem trânsito/);
+});
+
+// 7 — a legenda é PAGE-LEVEL (D6, paridade de graça): nenhum canvas renderiza legenda própria.
+test("nenhum canvas renderiza a legenda (o filtro/legenda vive na página)", () => {
+  assert.doesNotMatch(LIBRE_SRC, /OperationsMapLegendFooter/);
+  assert.doesNotMatch(GOOGLE_SRC, /OperationsMapLegendFooter/);
+  // A <ul> informativa antiga morreu junto com o CSS dela.
+  assert.ok(!CSS.includes(".operations-map-legend-footer {"), "CSS da legenda informativa antiga sobrou");
+});
+
+// 8 — grupos vazios continuam contando 0 honestamente (nunca inventa contagem).
+test("contagem honesta: sem dados → todos os grupos contam 0 (nada fabricado)", () => {
+  const counts = countLegendGroups([], []);
+  for (const item of MAP_LEGEND_FILTER_ITEMS) {
+    assert.equal(counts[item.key], 0);
   }
-  // Amostras semânticas: status "Disponível" (verde) e prioridade urgente (vermelho da fonte única).
-  assert.match(html, new RegExp(`background:${getStatusColor("available")}`));
-  assert.match(html, new RegExp(`background:${WORK_ORDER_PRIORITY_HEX.urgent}`));
-});
-
-// 2 — nenhum hex de status/prioridade SOLTO no componente: a cor só pode sair de item.color.
-test("componente do rodapé não hardcoda hex — cor vem exclusivamente de MAP_LEGEND_ITEMS", () => {
-  assert.match(FOOTER_SRC, /import \{ MAP_LEGEND_ITEMS \} from/);
-  assert.match(FOOTER_SRC, /style=\{\{ background: item\.color \}\}/);
-  // Sem literal de cor hex (#rrggbb) no componente — a paleta é única e mora em mapMarkers.
-  assert.doesNotMatch(FOOTER_SRC, /#[0-9a-fA-F]{6}/);
-});
-
-// 3 — MapLibre passou a usar o rodapé unificado e REMOVEU a <ul> flutuante.
-test("canvas MapLibre usa OperationsMapLegendFooter e removeu a <ul> flutuante", () => {
-  const html = renderToString(
-    createElement(OperationsMapLibreCanvas, { locations: [makeLocation()], onSelect: () => undefined }),
-  );
-  assert.match(html, /operations-map-legend-footer/);
-  assert.doesNotMatch(html, /operations-map-libre__legend/);
-  // Fonte do canvas: a classe flutuante antiga não existe mais e o componente é consumido.
-  assert.doesNotMatch(LIBRE_SRC, /operations-map-libre__legend/);
-  assert.match(LIBRE_SRC, /<OperationsMapLegendFooter \/>/);
-});
-
-// 4 — Google (espelho) passou a usar o mesmo rodapé e também removeu a <ul> flutuante.
-//     SPRINT POLISH (A): o <footer> REDUNDANTE ("Atual"/"Localização antiga") que duplicava a
-//     legenda foi REMOVIDO — a OperationsMapLegendFooter é a ÚNICA legenda do canvas Google.
-test("canvas Google usa OperationsMapLegendFooter (legenda ÚNICA) e removeu a <ul> flutuante e o <footer> redundante", () => {
-  const html = renderToString(
-    createElement(GoogleMapsCanvas, {
-      loadState: "ready",
-      locations: [makeLocation()],
-      onSelect: () => undefined,
-    }),
-  );
-  assert.match(html, /operations-map-legend-footer/);
-  assert.doesNotMatch(html, /operations-map-libre__legend/);
-  assert.doesNotMatch(GOOGLE_SRC, /operations-map-libre__legend/);
-  assert.match(GOOGLE_SRC, /<OperationsMapLegendFooter \/>/);
-  // SPRINT POLISH (A) — o bloco de legenda "de baixo" saiu: sem <footer>, sem "Localização antiga"
-  // e sem os ícones órfãos (MapPin/AlertTriangle) que só serviam a ele.
-  assert.doesNotMatch(GOOGLE_SRC, /<footer>/);
-  assert.doesNotMatch(GOOGLE_SRC, /Localização antiga/);
-  assert.doesNotMatch(GOOGLE_SRC, /AlertTriangle/);
-  assert.doesNotMatch(GOOGLE_SRC, /MapPin/);
-  // Uma ÚNICA legenda renderizada (um só <ul class="operations-map-legend-footer">).
-  const legendBlocks = (html.match(/class="operations-map-legend-footer"/g) ?? []).length;
-  assert.equal(legendBlocks, 1);
-});
-
-// 5 — PARIDADE (regra do espelho): os dois canvases renderizam o MESMO rodapé, byte-a-byte.
-test("paridade do espelho: MapLibre e Google renderizam um rodapé idêntico", () => {
-  const libreHtml = renderToString(
-    createElement(OperationsMapLibreCanvas, { locations: [makeLocation()], onSelect: () => undefined }),
-  );
-  const googleHtml = renderToString(
-    createElement(GoogleMapsCanvas, {
-      loadState: "ready",
-      locations: [makeLocation()],
-      onSelect: () => undefined,
-    }),
-  );
-  const libreFooter = footerFragment(libreHtml);
-  const googleFooter = footerFragment(googleHtml);
-  // Mesma fonte, mesmo componente → fragmento idêntico (guarda anti-divergência entre canvases).
-  assert.equal(libreFooter, googleFooter);
-  for (const item of MAP_LEGEND_ITEMS) {
-    if (item.kind === "sep") continue;
-    const label = escapeText(item.label);
-    assert.ok(libreFooter.includes(label) && googleFooter.includes(label));
-  }
-});
-
-// 6 — CSS: a regra flutuante saiu; o rodapé está ANCORADO à base (sem position:absolute) e com
-//     borda superior (limite do container). Swatches sem cor no CSS (a cor é inline da fonte única).
-test("CSS: rodapé ancorado à base substitui a regra flutuante .operations-map-libre__legend", () => {
-  // A regra flutuante antiga e seus swatches deixaram de existir no CSS.
-  assert.doesNotMatch(CSS, /\.operations-map-libre__legend\b/);
-  assert.doesNotMatch(CSS, /\.operations-map-libre__dot\b/);
-  assert.doesNotMatch(CSS, /\.operations-map-libre__pin\b/);
-
-  const footer = ruleBody(".operations-map-legend-footer");
-  assert.match(footer, /display:\s*flex/);
-  assert.match(footer, /flex-wrap:\s*wrap/);
-  assert.match(footer, /border-top:/); // limite superior do rodapé (base do container)
-  assert.doesNotMatch(footer, /position:\s*absolute/); // não flutua sobre o canvas
-
-  // Os swatches do rodapé só têm forma; a cor entra inline (nenhum hex de status/prioridade no CSS).
-  const dot = ruleBody(".operations-map-legend-footer__dot");
-  const pin = ruleBody(".operations-map-legend-footer__pin");
-  assert.doesNotMatch(dot, /#[0-9a-fA-F]{6}/);
-  assert.doesNotMatch(pin, /#[0-9a-fA-F]{6}/);
+  const built = buildLegendFilterEntries(LEGEND_FILTER_ALL_ON, counts);
+  assert.ok(built.every((entry) => entry.tip.startsWith("0 ")));
 });

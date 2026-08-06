@@ -1,6 +1,7 @@
 import type {
   FieldLocationItem,
   FieldLocationStatus,
+  OperationsInServiceCall,
   OperationsIncomingCall,
   OperationsMapFilters,
   OperationsMapDispatch,
@@ -10,6 +11,7 @@ import type {
   OperationsMapWorkOrderWithoutLocation,
 } from "./operations-map.types";
 import { isValidMapCoordinate } from "./map/mapMarkers";
+import { findAssignedLocation } from "./map/routeLines";
 import type { DispatchListItem, DispatchStatus } from "../dispatches/dispatches.types";
 import type { WorkOrderListItem, WorkOrderPriority, WorkOrderStatus } from "../../work-orders/work-orders.types";
 import type { MaintenanceOrder } from "../../fleet/maintenance/maintenance-orders.types";
@@ -136,6 +138,9 @@ export function selectMappableWorkOrders(workOrders: readonly WorkOrderListItem[
         scheduledFor: workOrder.scheduledFor ?? null,
         createdAt: workOrder.createdAt ?? null,
         slaDueAt: workOrder.slaDueAt ?? null,
+        // J-MAPAS-10 — ids do técnico atribuído (rota tracejada + "→ {técnico}" no painel).
+        assignedOperatorId: workOrder.assignedOperatorId ?? null,
+        assignedUserId: workOrder.assignedUserId ?? null,
       });
       continue;
     }
@@ -147,11 +152,14 @@ export function selectMappableWorkOrders(workOrders: readonly WorkOrderListItem[
         code: workOrder.code,
         title: workOrder.title,
         priority: workOrder.priority,
+        status: workOrder.status,
         customerName: workOrder.customerName ?? null,
         serviceAddress: workOrder.serviceAddress ?? null,
         scheduledFor: workOrder.scheduledFor ?? null,
         createdAt: workOrder.createdAt ?? null,
         slaDueAt: workOrder.slaDueAt ?? null,
+        assignedOperatorId: workOrder.assignedOperatorId ?? null,
+        assignedUserId: workOrder.assignedUserId ?? null,
       });
     }
   }
@@ -270,19 +278,38 @@ export function sortIncomingCalls(calls: readonly OperationsIncomingCall[]): Ope
   });
 }
 
+// J-MAPAS-10 — SPLIT rec/atd do protótipo: "Chamados recebidos" = OS `open` (aguardando alocação);
+// "Em Atendimento" = OS não-terminal JÁ em curso (assigned/accepted/on_route/on_site/in_progress/paused).
+// Terminais já foram excluídos em selectMappableWorkOrders.
+export const WORK_ORDER_IN_SERVICE_STATUSES: ReadonlySet<WorkOrderStatus> = new Set<WorkOrderStatus>([
+  "assigned",
+  "accepted",
+  "on_route",
+  "on_site",
+  "in_progress",
+  "paused",
+]);
+
+export function isInServiceWorkOrderStatus(status: WorkOrderStatus): boolean {
+  return WORK_ORDER_IN_SERVICE_STATUSES.has(status);
+}
+
 /**
- * Projeta as OS mapeáveis (withLocation + withoutLocation) na fila de chamados e ORDENA. LGPD §12: a
- * projeção DESCARTA latitude/longitude — a lista nunca trafega coordenada. `hasLocation` habilita o pan no
- * mapa ao clicar (withLocation) e sinaliza "sem GPS" (withoutLocation). Recebe as MESMAS listas já lidas
- * pelo mapa (nada de fetch novo, nada fabricado).
+ * Projeta as OS mapeáveis (withLocation + withoutLocation) na fila de "Chamados recebidos" e ORDENA.
+ * J-MAPAS-10 (split rec/atd): SÓ entram OS com status `open` — as demais não-terminais vivem no painel
+ * "Em Atendimento" (buildInServiceCalls). LGPD §12: a projeção DESCARTA latitude/longitude — a lista
+ * nunca trafega coordenada (endereço textual é permitido; é a linha "📍" do protótipo). Recebe as
+ * MESMAS listas já lidas pelo mapa (nada de fetch novo, nada fabricado).
  */
 export function buildIncomingCalls(
   withLocation: readonly OperationsMapWorkOrderPin[],
   withoutLocation: readonly OperationsMapWorkOrderWithoutLocation[],
 ): OperationsIncomingCall[] {
   const calls: OperationsIncomingCall[] = [
-    ...withLocation.map((pin) => toIncomingCall(pin, true)),
-    ...withoutLocation.map((workOrder) => toIncomingCall(workOrder, false)),
+    ...withLocation.filter((pin) => pin.status === "open").map((pin) => toIncomingCall(pin, true)),
+    ...withoutLocation
+      .filter((workOrder) => workOrder.status === "open")
+      .map((workOrder) => toIncomingCall(workOrder, false)),
   ];
   return sortIncomingCalls(calls);
 }
@@ -297,11 +324,59 @@ function toIncomingCall(
     title: source.title,
     priority: source.priority,
     customerName: source.customerName ?? null,
+    serviceAddress: source.serviceAddress ?? null,
     scheduledFor: source.scheduledFor ?? null,
     createdAt: source.createdAt ?? null,
     slaDueAt: source.slaDueAt ?? null,
     hasLocation,
   };
+}
+
+/**
+ * Resolve o NOME do técnico atribuído à OS a partir das MESMAS localizações já lidas:
+ * assignedOperatorId/assignedUserId ↔ operatorId/userId; fallback = despacho ativo apontando para a
+ * OS; sem match → "—" (nunca inventa nome). Reusa o resolver PURO da camada de rotas (uma verdade só).
+ */
+export function resolveAssignedTechnicianName(
+  workOrder: Pick<OperationsMapWorkOrderPin, "id" | "assignedOperatorId" | "assignedUserId">,
+  locations: readonly FieldLocationItem[],
+): string {
+  return findAssignedLocation(workOrder, locations)?.displayName ?? "—";
+}
+
+/**
+ * Painel "Em Atendimento" (J-MAPAS-10): projeção das OS não-terminais JÁ em curso, com o nome do
+ * técnico resolvido. Ordena por prioridade (urgente→baixa) e id (estável/determinístico). LGPD §12:
+ * nenhuma coordenada na projeção — o pan do clique é resolvido pela página via id.
+ */
+export function buildInServiceCalls(
+  withLocation: readonly OperationsMapWorkOrderPin[],
+  withoutLocation: readonly OperationsMapWorkOrderWithoutLocation[],
+  locations: readonly FieldLocationItem[],
+): OperationsInServiceCall[] {
+  const toInService = (
+    source: OperationsMapWorkOrderPin | OperationsMapWorkOrderWithoutLocation,
+    hasLocation: boolean,
+  ): OperationsInServiceCall => ({
+    id: source.id,
+    code: source.code,
+    title: source.title,
+    priority: source.priority,
+    customerName: source.customerName ?? null,
+    technicianName: resolveAssignedTechnicianName(source, locations),
+    hasLocation,
+  });
+
+  return [
+    ...withLocation.filter((pin) => isInServiceWorkOrderStatus(pin.status)).map((pin) => toInService(pin, true)),
+    ...withoutLocation
+      .filter((workOrder) => isInServiceWorkOrderStatus(workOrder.status))
+      .map((workOrder) => toInService(workOrder, false)),
+  ].sort((left, right) => {
+    const priorityDelta = incomingCallPriorityWeight(left.priority) - incomingCallPriorityWeight(right.priority);
+    if (priorityDelta !== 0) return priorityDelta;
+    return left.id.localeCompare(right.id);
+  });
 }
 
 export function attachDispatchesToFieldLocations(

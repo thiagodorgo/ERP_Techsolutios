@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa Operacional — TechSolutions ERP</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<style>
+  :root{
+    --navy:#0d1526; --navy2:#111c33; --blue:#2563eb; --blue-soft:#3b82f6;
+    --panel:rgba(13,21,38,0.78); --panel-line:rgba(148,163,184,0.18);
+    --txt:#e2e8f0; --txt-dim:#94a3b8;
+    --ok:#22c55e; --rota:#3b82f6; --atend:#a855f7; --off:#64748b; --warn:#f59e0b; --urg:#ef4444;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font:13px/1.45 -apple-system,"Segoe UI",system-ui,sans-serif;background:#0b1220;color:#0f172a;overflow:hidden}
+  a{color:var(--blue-soft);text-decoration:none} a:hover{color:#60a5fa}
+  button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+  .app{display:grid;grid-template-columns:216px 1fr;grid-template-rows:52px 1fr;height:100vh}
+  /* sidebar */
+  .side{grid-row:1/3;background:var(--navy);color:var(--txt);display:flex;flex-direction:column;border-right:1px solid rgba(148,163,184,0.12)}
+  .brand{display:flex;align-items:center;gap:10px;padding:12px 12px 12px 14px;border-bottom:1px solid rgba(148,163,184,0.12)}
+  .brand .logo{width:32px;height:32px;border-radius:9px;background:#16a34a;display:grid;place-items:center;flex:none}
+  .brand .logo svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .brand b{font-size:13.5px;display:block;color:#fff;line-height:1.15} .brand span{font-size:8.5px;letter-spacing:1.6px;color:#7da2e8;font-weight:600}
+  .brand .clps{margin-left:auto;width:24px;height:24px;border-radius:50%;background:#1e293b;border:1px solid rgba(148,163,184,0.25);color:#cbd5e1;display:grid;place-items:center;flex:none;font-size:11px}
+  .brand .clps:hover{background:#334155;color:#fff}
+  .nav{flex:1;overflow-y:auto;padding:10px 8px;display:flex;flex-direction:column;gap:2px}
+  .nav h6{font-size:9.5px;letter-spacing:1.3px;color:#64748b;padding:12px 10px 5px;font-weight:600}
+  .nav a{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;color:#cbd5e1;font-size:12.5px}
+  .nav a svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;flex:none}
+  .nav a:hover{background:rgba(148,163,184,0.1);color:#fff}
+  .nav a.on{background:var(--blue);color:#fff;font-weight:600}
+  .side .user{display:flex;align-items:center;gap:9px;padding:12px 14px;border-top:1px solid rgba(148,163,184,0.12)}
+  .side .user .av{width:30px;height:30px;border-radius:50%;background:#334155;display:grid;place-items:center;font-size:11px;font-weight:700;color:#e2e8f0}
+  .side .user b{font-size:12px;color:#e2e8f0;display:block}.side .user span{font-size:10.5px;color:var(--txt-dim)}
+  /* topbar */
+  .top{background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:14px;padding:0 18px}
+  .top h1{font-size:15px;font-weight:700}
+  .top .search{margin-left:auto;display:flex;align-items:center;gap:8px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:0 10px;height:30px;color:#94a3b8;font-size:12px;width:250px}
+  .top .search:focus-within{border-color:var(--blue-soft);background:#fff}
+  .top .search input{flex:1;min-width:0;border:none;outline:none;background:transparent;font:inherit;color:#0f172a;height:100%}
+  .top .search input::placeholder{color:#94a3b8}
+  .top .search kbd{background:#fff;border:1px solid #e2e8f0;border-radius:4px;padding:1px 5px;font-size:10px;color:#64748b;cursor:pointer}
+  .top .search kbd:hover{border-color:var(--blue-soft);color:var(--blue)}
+  .top .tenant{display:flex;align-items:center;gap:6px;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:#334155}
+  .top .bell{position:relative;color:#475569}
+  .top .bell i{position:absolute;top:-2px;right:-3px;width:7px;height:7px;border-radius:50%;background:var(--urg)}
+
+  /* map stage */
+  .stage{position:relative;overflow:hidden}
+  #map{position:absolute;inset:0;background:#dde7ee}
+  .leaflet-container{font:inherit}
+
+  /* floating chips (counters) */
+  .chips{position:absolute;top:12px;left:12px;right:600px;z-index:700;display:flex;gap:5px;flex-wrap:wrap;align-items:flex-start}
+  .chip{display:flex;align-items:center;gap:5px;background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--panel-line);border-radius:99px;padding:4px 9px;color:var(--txt);font-size:10.5px;font-weight:600;white-space:nowrap;box-shadow:0 4px 14px rgba(2,6,23,0.35);cursor:pointer;transition:opacity .15s}
+  .chip:hover{background:rgba(30,41,59,0.9)}
+  .chip.off{opacity:.5;background:rgba(71,85,105,0.55);color:#94a3b8}
+  .chip.off i{background:#94a3b8 !important}
+  .chip i{width:7px;height:7px;border-radius:50%;flex:none}
+  .chip b{font-size:11.5px}
+  .mapbtns{position:absolute;top:12px;right:372px;z-index:700;display:flex;gap:6px}
+  .mapbtn{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--panel-line);border-radius:99px;color:var(--txt);padding:5px 12px;font-size:11.5px;font-weight:600;box-shadow:0 4px 14px rgba(2,6,23,0.35)}
+  .mapbtn:hover{background:rgba(30,41,59,0.9)}
+  .legend{position:absolute;bottom:0;left:0;right:0;z-index:650;display:flex;gap:6px;align-items:center;padding:4px 10px;background:rgba(13,21,38,0.82);backdrop-filter:blur(8px);color:#cbd5e1;font-size:10.5px}
+  .lg{position:relative;display:flex;align-items:center;gap:5px;cursor:pointer;padding:2px 7px;border-radius:99px;font-weight:600;white-space:nowrap;transition:opacity .15s;color:#fff}
+  .lg:hover{background:rgba(148,163,184,0.14)}
+  .lg.off{opacity:.4}
+  .lg.off i{background:#64748b !important}
+  .lg i{width:8px;height:8px;border-radius:50%;flex:none}
+  .lg i.sq{border-radius:2px;transform:rotate(45deg)}
+  .lg::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%) translateY(3px);opacity:0;pointer-events:none;background:#0f172a;border:1px solid var(--panel-line);color:#e2e8f0;padding:4px 10px;border-radius:7px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 6px 18px rgba(2,6,23,0.5);transition:all .13s;z-index:900}
+  .lg:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+  .savenote{position:absolute;top:48px;right:376px;z-index:700;background:rgba(34,197,94,0.16);border:1px solid rgba(34,197,94,0.4);color:#4ade80;border-radius:99px;padding:4px 11px;font-size:11px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none}
+
+  /* right panel stack */
+  .stack{position:absolute;top:12px;right:12px;bottom:30px;z-index:800;width:348px;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+  .panel{pointer-events:auto;background:var(--panel);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--panel-line);border-radius:12px;color:var(--txt);box-shadow:0 8px 28px rgba(2,6,23,0.45);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .panel.grow{flex:1 1 auto}
+  .phead{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--panel-line);flex:none}
+  .phead b{font-size:12.5px}
+  .phead .cnt{background:rgba(59,130,246,0.22);color:#93c5fd;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700}
+  .phead .col{margin-left:auto;color:var(--txt-dim);width:22px;height:22px;border-radius:6px;display:grid;place-items:center}
+  .phead .col:hover{background:rgba(148,163,184,0.15);color:#fff}
+  .pbody{overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;min-height:0}
+  .pbody::-webkit-scrollbar{width:6px}.pbody::-webkit-scrollbar-thumb{background:rgba(148,163,184,0.3);border-radius:3px}
+  .panel.closed .pbody,.panel.closed .filters{display:none}
+  .panel.closed{flex:none}
+  .empty{color:var(--txt-dim);font-size:11.5px;text-align:center;padding:14px 8px}
+
+  /* OS cards */
+  .os{border:1px solid var(--panel-line);border-left:3px solid var(--warn);border-radius:9px;padding:8px 10px;background:rgba(30,41,59,0.5);cursor:grab;transition:border-color .15s, background .15s}
+  .os:hover{background:rgba(51,65,85,0.6)}
+  .os.sel{border-color:var(--blue-soft);border-left-color:var(--blue-soft);background:rgba(37,99,235,0.18);box-shadow:0 0 0 1px var(--blue-soft)}
+  .os.p-urgente{border-left-color:var(--urg)} .os.p-alta{border-left-color:var(--warn)} .os.p-media{border-left-color:#38bdf8} .os.p-baixa{border-left-color:#64748b}
+  .os .r1{display:flex;align-items:center;gap:8px}
+  .os .r1 b{font-size:12.5px}
+  .os .badge{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.4px;border-radius:99px;padding:2px 8px;text-transform:uppercase}
+  .b-urgente{background:rgba(239,68,68,0.2);color:#fca5a5} .b-alta{background:rgba(245,158,11,0.2);color:#fcd34d} .b-media{background:rgba(56,189,248,0.18);color:#7dd3fc} .b-baixa{background:rgba(100,116,139,0.25);color:#cbd5e1}
+  .os .r2{color:var(--txt-dim);font-size:11.5px;margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
+  .os .tech-tag{color:#93c5fd;font-weight:600}
+  .os.dragging{opacity:.45}
+
+  /* tech rows */
+  .filters{display:flex;gap:6px;padding:8px 10px 0;flex:none;align-items:center}
+  .fchip{border:1px solid var(--panel-line);border-radius:99px;padding:3px 10px;font-size:11px;color:var(--txt-dim);font-weight:600}
+  .fchip.on{background:rgba(37,99,235,0.3);border-color:var(--blue-soft);color:#bfdbfe}
+  .filters select{margin-left:auto;background:rgba(30,41,59,0.7);border:1px solid var(--panel-line);color:var(--txt);border-radius:7px;padding:3px 6px;font-size:11px}
+  .trow{display:flex;align-items:center;gap:8px;border:1px solid transparent;border-radius:8px;padding:6px 8px;cursor:pointer;transition:background .12s}
+  .trow:hover{background:rgba(51,65,85,0.55)}
+  .trow.droptarget{background:rgba(34,197,94,0.16);border-color:var(--ok)}
+  .trow.off{opacity:.5}
+  .trow .dot{width:9px;height:9px;border-radius:50%;flex:none;box-shadow:0 0 0 3px rgba(255,255,255,0.07)}
+  .trow .nm{font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .trow .old{font-size:9px;background:rgba(245,158,11,0.18);color:#fcd34d;border-radius:99px;padding:1px 6px;font-weight:700;flex:none}
+  .trow .eta{margin-left:auto;flex:none;text-align:right;font-size:11.5px;color:var(--txt-dim);white-space:nowrap}
+  .trow .eta b{color:#e2e8f0}
+  .trow .eta.good b{color:#4ade80} .trow .eta.mid b{color:#fcd34d}
+  .trow .go{flex:none;background:var(--blue);color:#fff;border-radius:7px;padding:4px 9px;font-size:11px;font-weight:700;display:none}
+  .trow .go:hover{background:#1d4ed8}
+  .trow .go:disabled{background:#334155;color:#64748b;cursor:not-allowed}
+  body.os-selected .trow .go{display:block}
+
+  /* collapsed pills row */
+  .pills{pointer-events:auto;display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex:none}
+  .pill{display:none;align-items:center;gap:6px;background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--panel-line);border-radius:99px;color:var(--txt);padding:6px 12px;font-size:11.5px;font-weight:600;box-shadow:0 4px 14px rgba(2,6,23,0.35)}
+  .pill.show{display:flex}
+  .pill .cnt{background:rgba(59,130,246,0.25);color:#93c5fd;border-radius:99px;padding:0 7px;font-size:10.5px;font-weight:700}
+
+  /* detail popover */
+  .detail{position:absolute;right:372px;top:64px;z-index:900;width:270px;background:var(--panel);backdrop-filter:blur(14px);border:1px solid var(--panel-line);border-radius:12px;color:var(--txt);box-shadow:0 10px 34px rgba(2,6,23,0.55);display:none;flex-direction:column}
+  .detail.show{display:flex}
+  .detail .dh{display:flex;align-items:center;gap:9px;padding:11px 12px;border-bottom:1px solid var(--panel-line)}
+  .detail .av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:12px;color:#fff;flex:none}
+  .detail .dh b{font-size:13px;display:block}.detail .dh span{font-size:11px;color:var(--txt-dim)}
+  .detail .x{margin-left:auto;color:var(--txt-dim)}.detail .x:hover{color:#fff}
+  .detail .dg{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--panel-line)}
+  .detail .dg div{background:rgba(13,21,38,0.6);padding:7px 12px}
+  .detail .dg label{display:block;font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--txt-dim);font-weight:600}
+  .detail .dg span{font-size:12px;font-weight:600}
+  .detail .dwarn{margin:8px 10px 10px;background:rgba(245,158,11,0.13);border:1px solid rgba(245,158,11,0.35);border-radius:8px;padding:7px 9px;font-size:11px;color:#fcd34d;display:none}
+  .detail .dwarn.show{display:block}
+
+  /* markers */
+  .mk-tech{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font:700 11px/1 -apple-system,"Segoe UI",sans-serif;color:#fff;background:#1e293b;border:3px solid var(--ok);box-shadow:0 2px 8px rgba(2,6,23,0.5)}
+  .mk-tech.st-rota{border-color:var(--rota)} .mk-tech.st-atend{border-color:var(--atend)} .mk-tech.st-off{border-color:var(--off);opacity:.75} .mk-tech.st-antiga{border-color:var(--warn)}
+  .mk-os{width:22px;height:22px;transform:rotate(45deg);border-radius:5px;background:var(--warn);border:2.5px solid #fff;box-shadow:0 2px 8px rgba(2,6,23,0.5);display:grid;place-items:center}
+  .mk-os.p-urgente{background:var(--urg)} .mk-os.p-media{background:#38bdf8} .mk-os.p-baixa{background:#64748b}
+  .mk-os.sel{outline:3px solid rgba(59,130,246,0.65);outline-offset:2px}
+  .mk-os.p-urgente::after{content:"";position:absolute;inset:-9px;border-radius:8px;border:2px solid rgba(239,68,68,0.55);animation:pulse 1.6s ease-out infinite}
+  @keyframes pulse{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.25);opacity:0}}
+  .leaflet-popup-content-wrapper{background:var(--panel);backdrop-filter:blur(12px);color:var(--txt);border-radius:10px;box-shadow:0 8px 28px rgba(2,6,23,0.5)}
+  .leaflet-popup-tip{background:rgba(13,21,38,0.85)}
+  .leaflet-popup-content{margin:10px 12px;font:12px/1.5 -apple-system,"Segoe UI",sans-serif;min-width:190px}
+  .pp b{font-size:12.5px} .pp .sub{color:var(--txt-dim);font-size:11px;margin-bottom:6px}
+  .pp .prow{display:flex;align-items:center;gap:7px;padding:4px 0;border-top:1px solid var(--panel-line);font-size:11.5px}
+  .pp .prow button{margin-left:auto;background:var(--blue);color:#fff;border-radius:6px;padding:2px 8px;font-size:10.5px;font-weight:700}
+  .pp .prow button:hover{background:#1d4ed8}
+
+  .toast{position:absolute;left:50%;bottom:44px;transform:translateX(-50%) translateY(16px);z-index:1000;background:rgba(22,101,52,0.92);backdrop-filter:blur(8px);border:1px solid rgba(74,222,128,0.4);color:#dcfce7;border-radius:10px;padding:9px 16px;font-size:12.5px;font-weight:600;opacity:0;transition:all .3s;pointer-events:none;box-shadow:0 8px 24px rgba(2,6,23,0.5)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 21V11"/><path d="M12 11C12 7 9 4.5 5 4.5c0 4 3 6.5 7 6.5z"/><path d="M12 13c0-3.5 2.6-6 6.5-6 0 3.5-2.6 6-6.5 6z"/></svg></div>
+      <div><b>TechSolutions</b><span>PLATAFORMA ERP</span></div>
+      <button class="clps" title="Recolher menu">‹</button>
+    </div>
+    <nav class="nav">
+      <h6>VISÃO GERAL</h6>
+      <a href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+      <h6>OPERAÇÃO</h6>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M9 2h6v4H9zM5 6h14v16H5z"/><path d="M9 12h6M9 16h4"/></svg>Ordens de Serviço</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>Despachos</a>
+      <a href="#" class="on"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Mapa Operacional</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Orçamentos</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Aprovações</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Checklists</a>
+      <h6>FROTA</h6>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M3 13l2-5h14l2 5v5H3z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>Viaturas</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M15 9h3l2 3v5h-5"/></svg>Abastecimento</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-2.4z"/></svg>Manutenção</a>
+      <h6>GESTÃO</h6>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M17 8h5M17 12h5"/></svg>Clientes</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 10h2M13 10h2M9 14h2M13 14h2"/></svg>Filiais</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Fornecedores</a>
+    </nav>
+    <div class="user"><div class="av">AD</div><div><b>Admin Demo</b><span>Administrador</span></div></div>
+  </aside>
+
+  <header class="top">
+    <h1>Mapa Operacional</h1>
+    <div class="search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="globalSearch" type="text" placeholder="Buscar pedidos, itens, clientes..."><kbd id="kbdCtrlK" title="Atalho: Ctrl+K foca a busca">Ctrl K</kbd></div>
+    <div class="tenant"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg>Tenant Demo ▾</div>
+    <button class="bell"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10.3 21a2 2 0 0 0 3.4 0"/></svg><i></i></button>
+  </header>
+
+  <main class="stage">
+    <div id="map"></div>
+    <!-- Botões de enquadramento desativados a pedido do operador
+    <div class="mapbtns">
+      <button class="mapbtn" id="btnFit" title="Enquadrar a operação no mapa">⌖ Operação</button>
+      <button class="mapbtn" id="btnBr" title="Visão padrão Brasil">Brasil</button>
+    </div>
+    -->
+    <div class="savenote" id="savenote">✓ Visão do mapa salva</div>
+    <div class="legend"><span id="legend" style="display:flex;gap:6px;align-items:center"></span>
+      <span style="margin-left:auto;color:#64748b">Esc limpa a seleção · arraste uma OS até um técnico para alocar</span>
+    </div>
+
+    <div class="stack">
+      <div class="pills" id="pills">
+        <button class="pill" data-open="pAtd">🛠 Atendimento <span class="cnt" data-cnt="atd">0</span></button>
+        <button class="pill" data-open="pRec">📥 Recebidas <span class="cnt" data-cnt="rec">0</span></button>
+        <button class="pill" data-open="pTec">👤 Técnicos <span class="cnt" data-cnt="tec">0</span></button>
+      </div>
+
+      <div class="panel" id="pRec">
+        <div class="phead"><b>Chamados recebidos</b><span class="cnt" data-cnt="rec">0</span>
+          <button class="col" title="Recolher">—</button></div>
+        <div class="pbody" id="listRec"></div>
+      </div>
+
+      <div class="panel" id="pAtd">
+        <div class="phead"><b>Em Atendimento</b><span class="cnt" data-cnt="atd">0</span>
+          <button class="col" title="Recolher">—</button></div>
+        <div class="pbody" id="listAtd"></div>
+      </div>
+
+      <div class="panel grow" id="pTec">
+        <div class="phead"><b>Técnicos de campo</b><span class="cnt" data-cnt="tec">0</span>
+          <button class="col" title="Recolher">—</button></div>
+        <div class="filters">
+          <button class="fchip on" data-f="todos">Todos</button>
+          <button class="fchip" data-f="ativo">Ativos</button>
+          <button class="fchip" data-f="off">Fora de serviço</button>
+          <select id="sortSel">
+            <option value="dist">Distância</option>
+            <option value="tempo">Tempo</option>
+            <option value="nome">Nome</option>
+            <option value="status">Status</option>
+          </select>
+        </div>
+        <div class="pbody" id="listTec"></div>
+      </div>
+    </div>
+
+    <div class="detail" id="detail"></div>
+    <div class="toast" id="toast"></div>
+  </main>
+</div>
+
+<script>
+// ---------- dados demo (Sul/Sudeste: Curitiba + São Paulo) ----------
+const TECHS = [
+  {id:'t1', nome:'Diego Ferreira',   equipe:'Equipe Sul',      lat:-25.4284, lng:-49.2733, st:'disp',  bat:84, prec:9,  visto:'há 2 min',  antiga:false},
+  {id:'t2', nome:'Ana Beatriz Rocha',equipe:'Equipe Sul',      lat:-25.4430, lng:-49.2920, st:'rota',  bat:91, prec:6,  visto:'agora',     antiga:false},
+  {id:'t3', nome:'Rafael Mendes',    equipe:'Equipe Sul',      lat:-25.4520, lng:-49.2280, st:'disp',  bat:77, prec:11, visto:'há 4 min',  antiga:false},
+  {id:'t4', nome:'Camila Nunes',     equipe:'Equipe Sul',      lat:-25.4930, lng:-49.2450, st:'atend', bat:68, prec:8,  visto:'há 1 min',  antiga:false},
+  {id:'t5', nome:'Marina Costa',     equipe:'Equipe Sul',      lat:-25.5310, lng:-49.2060, st:'disp',  bat:55, prec:14, visto:'há 7 min',  antiga:false},
+  {id:'t6', nome:'Otávio Lima',      equipe:'Equipe Sul',      lat:-25.4090, lng:-49.3320, st:'off',   bat:30, prec:9,  visto:'há 23 dias',antiga:true},
+  {id:'t7', nome:'Paulo Henrique',   equipe:'Equipe Sudeste',  lat:-23.5670, lng:-46.6940, st:'disp',  bat:88, prec:7,  visto:'há 1 min',  antiga:false},
+  {id:'t8', nome:'Juliana Prado',    equipe:'Equipe Sudeste',  lat:-23.5400, lng:-46.5760, st:'rota',  bat:72, prec:10, visto:'agora',     antiga:false},
+  {id:'t9', nome:'Sérgio Almeida',   equipe:'Equipe Sudeste',  lat:-23.6540, lng:-46.7100, st:'off',   bat:41, prec:22, visto:'há 3 dias', antiga:true},
+  {id:'t10',nome:'Letícia Barros',   equipe:'Equipe Sudeste',  lat:-23.4620, lng:-46.5330, st:'disp',  bat:95, prec:5,  visto:'agora',     antiga:false},
+];
+let OSS = [
+  {id:'OS-2026-0101', cliente:'Indústria Alfa Ltda',   end:'CIC, Curitiba - PR',          lat:-25.4750, lng:-49.3480, pri:'urgente', aberto:'há 2 h',  fase:'rec', tech:null},
+  {id:'OS-2026-0102', cliente:'Cliente Teste',          end:'Centro, Curitiba - PR',       lat:-25.4310, lng:-49.2650, pri:'alta',    aberto:'há 6 h',  fase:'rec', tech:null},
+  {id:'OS-2026-0103', cliente:'Colégio Horizonte',      end:'São José dos Pinhais - PR',   lat:-25.5340, lng:-49.1890, pri:'media',   aberto:'há 1 dia',fase:'rec', tech:null},
+  {id:'OS-2026-0104', cliente:'Mercado Bom Preço',      end:'Mooca, São Paulo - SP',       lat:-23.5560, lng:-46.5990, pri:'alta',    aberto:'há 4 h',  fase:'rec', tech:null},
+  {id:'OS-2026-0105', cliente:'Condomínio Vila Real',   end:'Morumbi, São Paulo - SP',     lat:-23.6010, lng:-46.7180, pri:'baixa',   aberto:'há 2 dias',fase:'rec', tech:null},
+  {id:'OS-2026-0096', cliente:'Hospital Santa Clara',   end:'Boqueirão, Curitiba - PR',    lat:-25.4960, lng:-49.2400, pri:'alta',    aberto:'há 5 h',  fase:'atd', tech:'t4'},
+  {id:'OS-2026-0097', cliente:'Farmácia Central',       end:'Água Verde, Curitiba - PR',   lat:-25.4550, lng:-49.2870, pri:'media',   aberto:'há 3 h',  fase:'atd', tech:'t2'},
+  {id:'OS-2026-0098', cliente:'Loja Mega Tech',         end:'Tatuapé, São Paulo - SP',     lat:-23.5370, lng:-46.5710, pri:'urgente', aberto:'há 1 h',  fase:'atd', tech:'t8'},
+];
+const ST = {disp:{c:'var(--ok)',t:'Disponível',cls:''},rota:{c:'var(--rota)',t:'Em rota',cls:'st-rota'},atend:{c:'var(--atend)',t:'Em atendimento',cls:'st-atend'},off:{c:'var(--off)',t:'Fora de serviço',cls:'st-off'}};
+const PRI = {urgente:'Urgente',alta:'Alta',media:'Média',baixa:'Baixa'};
+const AVC = ['#2563eb','#7c3aed','#0891b2','#db2777','#d97706','#059669','#4f46e5','#b91c1c','#0d9488','#9333ea'];
+
+// ---------- distância / ETA (no produto real: Google Distance Matrix) ----------
+function haversine(a,b){const R=6371,dLa=(b.lat-a.lat)*Math.PI/180,dLo=(b.lng-a.lng)*Math.PI/180;
+  const x=Math.sin(dLa/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLo/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));}
+function metrics(t,os){const km=haversine(t,os)*1.32; // fator viário — substituir por Distance Matrix
+  const min=Math.max(4,Math.round(km/38*60)+3); return {km,min};}
+function fmtKm(km){return km>=100?Math.round(km)+' km':km.toFixed(1).replace('.',',')+' km';}
+function fmtMin(m){return m>=60?Math.floor(m/60)+' h '+(m%60)+' min':m+' min';}
+
+// ---------- mapa: Brasil por padrão, memória da visão do operador ----------
+const map = L.map('map',{zoomControl:false});
+L.control.zoom({position:'bottomright'}).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap contributors © CARTO',subdomains:'abcd',maxZoom:20}).addTo(map);
+const VIEW_KEY='techsol.mapaOp.view';
+const saved = (()=>{try{return JSON.parse(localStorage.getItem(VIEW_KEY))}catch(e){return null}})();
+if(saved && saved.lat!=null){ map.setView([saved.lat,saved.lng],saved.z); }
+else{ map.setView([-15.5,-52.5],4); } // Brasil — só até o operador focar em outra área
+let saveT;
+map.on('moveend',()=>{
+  const c=map.getCenter();
+  localStorage.setItem(VIEW_KEY,JSON.stringify({lat:c.lat,lng:c.lng,z:map.getZoom()}));
+  const n=document.getElementById('savenote');
+  n.style.opacity=1; clearTimeout(saveT); saveT=setTimeout(()=>n.style.opacity=0,1200);
+});
+
+// ---------- estado ----------
+let selOS=null, filtro='todos', ordem='dist', routeLines={};
+const mapF={disp:true,rota:true,atend:true,antiga:true,off:true,urg:true,alta:true,mb:true}; // legenda-filtro
+const techMarkers={}, osMarkers={};
+
+// ---------- marcadores ----------
+function ini(n){const p=n.split(' ');return (p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
+TECHS.forEach((t,i)=>{
+  t.cor=AVC[i%AVC.length];
+  const icon=()=>L.divIcon({className:'',html:`<div class="mk-tech ${t.antiga?'st-antiga':ST[t.st].cls}" style="background:${t.cor}">${ini(t.nome)}</div>`,iconSize:[32,32],iconAnchor:[16,16]});
+  t._icon=icon;
+  techMarkers[t.id]=L.marker([t.lat,t.lng],{icon:icon()}).addTo(map).on('click',()=>openDetail(t.id));
+});
+function osPopupHtml(os){
+  const near=TECHS.filter(t=>t.st!=='off').map(t=>({t,...metrics(t,os)})).sort((a,b)=>a.km-b.km).slice(0,3);
+  return `<div class="pp"><b>${os.id} — ${PRI[os.pri]}</b><div class="sub">${os.cliente} · ${os.end}</div>`+
+    (os.fase==='atd'?`<div class="prow">Em atendimento por <b style="margin-left:4px">${TECHS.find(x=>x.id===os.tech).nome}</b></div>`:
+    near.map(n=>`<div class="prow"><span style="width:8px;height:8px;border-radius:50%;background:${ST[n.t.st].c};flex:none"></span>${n.t.nome}<span style="color:var(--txt-dim)">${fmtKm(n.km)} · ${fmtMin(n.min)}</span><button onclick="allocate('${os.id}','${n.t.id}')">Alocar</button></div>`).join(''))+`</div>`;
+}
+function mountOsMarker(os){
+  if(osMarkers[os.id]){map.removeLayer(osMarkers[os.id]);}
+  const m=L.marker([os.lat,os.lng],{icon:L.divIcon({className:'',html:`<div class="mk-os p-${os.pri} ${selOS===os.id?'sel':''}" data-osmk="${os.id}"></div>`,iconSize:[22,22],iconAnchor:[11,11]})}).addTo(map);
+  m.bindPopup(()=>osPopupHtml(os));
+  m.on('click',()=>{ if(os.fase==='rec') selectOS(os.id,false); });
+  osMarkers[os.id]=m;
+}
+OSS.forEach(mountOsMarker);
+function drawRoute(os){
+  const t=TECHS.find(x=>x.id===os.tech); if(!t) return;
+  if(routeLines[os.id]) map.removeLayer(routeLines[os.id]);
+  routeLines[os.id]=L.polyline([[t.lat,t.lng],[os.lat,os.lng]],{color:'#3b82f6',weight:2.5,dashArray:'6 7',opacity:.8}).addTo(map);
+}
+OSS.filter(o=>o.fase==='atd').forEach(drawRoute);
+
+// ---------- render listas ----------
+const $=s=>document.querySelector(s);
+function render(){
+  const rec=OSS.filter(o=>o.fase==='rec'), atd=OSS.filter(o=>o.fase==='atd');
+  document.querySelectorAll('[data-cnt=rec]').forEach(e=>e.textContent=rec.length);
+  document.querySelectorAll('[data-cnt=atd]').forEach(e=>e.textContent=atd.length);
+  document.querySelectorAll('[data-cnt=tec]').forEach(e=>e.textContent=TECHS.length);
+  // legenda = filtro do mapa, com contagem no balão
+  const priG=p=>p==='urgente'?'urg':p==='alta'?'alta':'mb';
+  $('#legend').innerHTML=[
+    ['disp','var(--ok)','Disponível',TECHS.filter(t=>t.st==='disp').length,'disponíveis',''],
+    ['rota','var(--rota)','Em rota',TECHS.filter(t=>t.st==='rota').length,'em rota',''],
+    ['atend','var(--atend)','Em atendimento',TECHS.filter(t=>t.st==='atend').length,'em atendimento',''],
+    ['antiga','var(--warn)','Localização antiga',TECHS.filter(t=>t.antiga).length,'com localização antiga',''],
+    ['off','var(--off)','Fora de serviço',TECHS.filter(t=>t.st==='off').length,'fora de serviço',''],
+    ['urg','var(--urg)','OS urgente',OSS.filter(o=>priG(o.pri)==='urg').length,'OS urgentes','sq'],
+    ['alta','var(--warn)','OS alta',OSS.filter(o=>priG(o.pri)==='alta').length,'OS alta','sq'],
+    ['mb','#38bdf8','OS média/baixa',OSS.filter(o=>priG(o.pri)==='mb').length,'OS média/baixa','sq'],
+  ].map(([k,c,l,n,tip,sq])=>`<span class="lg ${mapF[k]?'':'off'}" data-mf="${k}" data-tip="${n} ${tip}"><i class="${sq}" style="background:${c}"></i>${l}</span>`).join('');
+  applyMapFilters();
+  // recebidos
+  $('#listRec').innerHTML=rec.length?rec.map(o=>`
+    <div class="os p-${o.pri} ${selOS===o.id?'sel':''}" draggable="true" data-os="${o.id}">
+      <div class="r1"><b>${o.id}</b><span class="badge b-${o.pri}">${PRI[o.pri]}</span></div>
+      <div class="r2"><span>${o.cliente}</span><span>⏱ ${o.aberto}</span></div>
+      <div class="r2"><span>📍 ${o.end}</span></div>
+    </div>`).join(''):`<div class="empty">Nenhum chamado aguardando alocação 🎉</div>`;
+  // atendimento
+  $('#listAtd').innerHTML=atd.length?atd.map(o=>{
+    const t=TECHS.find(x=>x.id===o.tech);
+    return `<div class="os p-${o.pri}" data-osatd="${o.id}">
+      <div class="r1"><b>${o.id}</b><span class="badge b-${o.pri}">${PRI[o.pri]}</span></div>
+      <div class="r2"><span>${o.cliente}</span><span class="tech-tag">→ ${t?t.nome:'—'}</span></div>
+    </div>`;}).join(''):`<div class="empty">Nenhuma OS em atendimento</div>`;
+  renderTecs();
+  document.body.classList.toggle('os-selected',!!selOS);
+}
+function renderTecs(){
+  const os=OSS.find(o=>o.id===selOS);
+  let arr=TECHS.map(t=>({...t,m:os?metrics(t,os):null}));
+  if(filtro==='ativo') arr=arr.filter(t=>t.st!=='off');
+  if(filtro==='off') arr=arr.filter(t=>t.st==='off');
+  arr.sort((a,b)=>{
+    if(ordem==='nome') return a.nome.localeCompare(b.nome);
+    if(ordem==='status') return a.st.localeCompare(b.st);
+    if(!a.m) return 0;
+    return ordem==='tempo'? a.m.min-b.m.min : a.m.km-b.m.km;
+  });
+  $('#listTec').innerHTML=arr.map(t=>{
+    const busy=t.st==='off';
+    let eta;
+    if(t.m){const cls=t.m.min<=15?'good':t.m.min<=40?'mid':'';
+      eta=`<span class="eta ${cls}"><b>${fmtKm(t.m.km)}</b> · <b>${fmtMin(t.m.min)}</b></span>`;}
+    else eta=`<span class="eta">${t.visto}</span>`;
+    return `<div class="trow ${busy?'off':''}" data-tec="${t.id}">
+      <span class="dot" style="background:${ST[t.st].c}"></span>
+      <span class="nm">${t.nome}</span>
+      ${t.antiga?'<span class="old">antiga</span>':''}
+      ${eta}
+      <button class="go" data-go="${t.id}" ${busy?'disabled':''}>Alocar</button>
+    </div>`;}).join('')||`<div class="empty">Nenhum técnico neste filtro</div>`;
+}
+
+function applyMapFilters(){
+  const show=(layer,on)=>{if(!layer)return; if(on){if(!map.hasLayer(layer))layer.addTo(map);}else if(map.hasLayer(layer))map.removeLayer(layer);};
+  TECHS.forEach(t=>{
+    const on = mapF[t.st] && (!t.antiga || mapF.antiga);
+    show(techMarkers[t.id],on);
+  });
+  OSS.forEach(o=>{
+    const g=o.pri==='urgente'?'urg':o.pri==='alta'?'alta':'mb';
+    show(osMarkers[o.id],mapF[g]);
+    show(routeLines[o.id], o.fase==='atd' && mapF[g]);
+  });
+}
+// ---------- seleção de OS ----------
+function selectOS(id,pan=true){
+  selOS = selOS===id? null : id;
+  if(ordem!=='tempo' && selOS) { ordem='dist'; $('#sortSel').value='dist'; }
+  OSS.filter(o=>o.fase==='rec').forEach(mountOsMarker);
+  const os=OSS.find(o=>o.id===selOS);
+  if(os && pan) map.panTo([os.lat,os.lng]);
+  render();
+}
+window.allocate=function(osId,tecId){
+  const os=OSS.find(o=>o.id===osId), t=TECHS.find(x=>x.id===tecId);
+  if(!os||!t||t.st==='off') return;
+  const m=metrics(t,os);
+  os.fase='atd'; os.tech=tecId; t.st='rota';
+  techMarkers[t.id].setIcon(t._icon());
+  map.closePopup(); mountOsMarker(os); drawRoute(os);
+  if(selOS===osId) selOS=null;
+  render();
+  toast(`✓ ${os.id} alocada para ${t.nome} — chegada estimada em ${fmtMin(m.min)} (${fmtKm(m.km)})`);
+};
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3600);}
+
+// ---------- detalhe do técnico ----------
+function openDetail(id){
+  const t=TECHS.find(x=>x.id===id);
+  const os=OSS.find(o=>o.tech===id&&o.fase==='atd');
+  const d=$('#detail');
+  d.innerHTML=`
+    <div class="dh"><div class="av" style="background:${t.cor}">${ini(t.nome)}</div>
+      <div><b>${t.nome}</b><span>${t.equipe} · ${ST[t.st].t}</span></div>
+      <button class="x" onclick="document.getElementById('detail').classList.remove('show')">✕</button></div>
+    <div class="dwarn ${t.antiga?'show':''}">⚠ Localização antiga — última posição ${t.visto}. Confirme por despacho ou contato direto.</div>
+    <div class="dg">
+      <div><label>Status</label><span style="color:${ST[t.st].c}">${ST[t.st].t}</span></div>
+      <div><label>Último visto</label><span>${t.visto}</span></div>
+      <div><label>Bateria</label><span>${t.bat}%</span></div>
+      <div><label>Precisão</label><span>${t.prec} m</span></div>
+      <div><label>Coordenadas</label><span style="font-size:10.5px">${t.lat.toFixed(5)}, ${t.lng.toFixed(5)}</span></div>
+      <div><label>OS atual</label><span>${os?os.id:'—'}</span></div>
+    </div>`;
+  d.classList.add('show');
+  map.panTo([t.lat,t.lng]);
+}
+
+// ---------- eventos ----------
+document.addEventListener('click',e=>{
+  const mf=e.target.closest('[data-mf]'); if(mf){const k=mf.dataset.mf;mapF[k]=!mapF[k];render();return;}
+  const osc=e.target.closest('[data-os]'); if(osc){selectOS(osc.dataset.os);return;}
+  const go=e.target.closest('[data-go]'); if(go){e.stopPropagation(); if(selOS) allocate(selOS,go.dataset.go); return;}
+  const tr=e.target.closest('[data-tec]'); if(tr){openDetail(tr.dataset.tec);return;}
+  const oa=e.target.closest('[data-osatd]'); if(oa){const o=OSS.find(x=>x.id===oa.dataset.osatd); map.panTo([o.lat,o.lng]); return;}
+  const f=e.target.closest('.fchip'); if(f){filtro=f.dataset.f;document.querySelectorAll('.fchip').forEach(c=>c.classList.toggle('on',c===f));renderTecs();return;}
+  const col=e.target.closest('.col'); if(col){const p=col.closest('.panel');p.style.display='none';document.querySelector(`.pill[data-open="${p.id}"]`).classList.add('show');return;}
+  const pill=e.target.closest('.pill'); if(pill){document.getElementById(pill.dataset.open).style.display='flex';pill.classList.remove('show');return;}
+});
+// busca global: Ctrl+K foca, clique no kbd também
+const gs=$('#globalSearch');
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();gs.focus();gs.select();}});
+$('#kbdCtrlK').addEventListener('click',()=>{gs.focus();gs.select();});
+$('#sortSel').addEventListener('change',e=>{ordem=e.target.value;renderTecs();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){selOS=null;OSS.filter(o=>o.fase==='rec').forEach(mountOsMarker);render();$('#detail').classList.remove('show');}});
+// drag & drop OS -> técnico
+document.addEventListener('dragstart',e=>{const c=e.target.closest('[data-os]');if(!c)return;e.dataTransfer.setData('text/os',c.dataset.os);c.classList.add('dragging');if(selOS!==c.dataset.os)selectOS(c.dataset.os,false);});
+document.addEventListener('dragend',e=>{const c=e.target.closest('[data-os]');if(c)c.classList.remove('dragging');});
+document.addEventListener('dragover',e=>{const r=e.target.closest('[data-tec]');if(r&&!r.classList.contains('off')){e.preventDefault();r.classList.add('droptarget');}});
+document.addEventListener('dragleave',e=>{const r=e.target.closest('[data-tec]');if(r)r.classList.remove('droptarget');});
+document.addEventListener('drop',e=>{const r=e.target.closest('[data-tec]');if(!r)return;e.preventDefault();r.classList.remove('droptarget');const id=e.dataTransfer.getData('text/os');if(id)allocate(id,r.dataset.tec);});
+// enquadrar / brasil (botões comentados no HTML — listeners só se existirem)
+if($('#btnFit'))$('#btnFit').addEventListener('click',()=>{
+  const pts=[...TECHS.map(t=>[t.lat,t.lng]),...OSS.map(o=>[o.lat,o.lng])];
+  map.fitBounds(L.latLngBounds(pts).pad(0.12));
+});
+if($('#btnBr'))$('#btnBr').addEventListener('click',()=>map.setView([-15.5,-52.5],4));
+
+render();
+</script>
+</body>
+</html>

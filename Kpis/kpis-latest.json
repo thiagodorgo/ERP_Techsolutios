@@ -1,16 +1,16 @@
 {
   "snapshot_date": "2026-08-04",
-  "version": "CHK-P1-PR-02A",
+  "version": "MAPA-PIXEL-PR1",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "CHECKLIST P1 PR-02a — lista de 'Modelos de Checklist' recriada sobre o protótipo do dono (Modelos de Checklist.dc.html, importado do Claude Design). Header kicker/busca/filtro, 4 KPI mini-cards contados do payload real, tabela nova (tile do 1º componente, resumo PT-BR, pills, ações-ícone), estados §7 completos, banner somente-leitura com esconde-fino provado por teste, ChecklistToast novo, 'Novo modelo' instantâneo + Inativar/Reativar reposto, copy acentuada unificada no módulo. Junta em workflow (3 vetos + verificação adversarial): 8 achados confirmados, todos aplicados (auto-select vazando enum cru; flash do vazio; ponte com escrita para papel de leitura; lixo irremovível; testes vácuos → costura initialChecklists + rowActionVisibility pura; a11y da tabela; gate próprio de execuções). + EMULADOR ANDROID operacional (AVD erp_pixel; 3 armadilhas documentadas) + triagem P-SUITE-ENV-PERSISTENCE do PR anterior.",
-    "title": "CHECKLIST P1 PR-02a — lista de modelos no desenho do dono",
-    "pr": 337,
+    "block": "J-MAPAS-10 PR-1 — Mapa Operacional recriado PIXEL A PIXEL sobre o protótipo do dono (Mapa Operacional.html, importado do Claude Design). Painéis de vidro 348px (Chamados recebidos / Em Atendimento / Técnicos com ETA, filtros e ordenação), legenda-FILTRO no rodapé com 8 itens e contagem no tooltip, alocação por clique + popup do marker (3 mais próximos) + drag-and-drop nativo, rota tracejada, toast honesto, markers do protótipo (avatar 32px com borda por status; losango 22px com pulso na urgente). 3 DIRETIVAS do dono aplicadas e provadas em navegador real: chips do topo-esquerdo removidos; ZERO movimento automático de câmera (sobra só o pan por clique) + memória da visão por organização; detalhe do técnico por hover (efêmero) e por clique (fixo, fecha manual). ALTA da junta: a chave Google fazia a tela cair no canvas ANTIGO — MapLibre virou default e Google exige opt-in (VITE_MAPS_PROVIDER=google) até a paridade do PR-2. Tiles CARTO do protótipo REJEITADOS por ToS Enterprise → OpenFreeMap claro, US$ 0.",
+    "title": "Mapa Operacional pixel-perfect (J-MAPAS-10 PR-1)",
+    "pr": 338,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Lista de 'Modelos de Checklist' fiel ao protótipo do Claude Design do dono; junta 3-vetos com verificação adversarial; 8 achados aplicados; smoke 1013/1013.",
+    "summary": "Mapa recriado no protótipo do dono; câmera só sob comando do operador com memória da visão; detalhe do técnico por hover e clique. Junta com veto de pixel + veto geo, achados aplicados e medidos em Edge real.",
     "status_label": "Entregue (aguardando merge do PR corrente)"
   },
   "metrics": {
@@ -18,19 +18,19 @@
       "value": 839,
       "total": 839,
       "display": "839/839",
-      "note": "PR-02a não toca mobile — carrega 839/839 (§C3.3)."
+      "note": "PR não toca mobile — carrega 839/839 (§C3.3)."
     },
     "frontend_smoke_tests": {
-      "value": 1013,
-      "total": 1013,
-      "display": "1013/1013",
-      "note": "PR-02a: +10 test() no smoke novo da lista (checklists-models-list: header/vazio D-007, somente-leitura com linhas REAIS, rowActionVisibility pura, §3/§2.8, skeleton-first, KPIs, datas, resumo, toast) e 2 atualizados no gating. 1003→1013, execução real."
+      "value": 1052,
+      "total": 1052,
+      "display": "1052/1052",
+      "note": "J-MAPAS-10 PR-1: suíte do mapa 125→177 casos (5 arquivos novos: view-memory, routes-layer, dnd, marker-popup, detail-popover; 9 reescritos) + testes atualizados para as diretivas do dono (chips fora, zero auto-câmera, hover+clique). 1013→1052, execução real."
     },
     "backend_tests": {
       "value": 2110,
       "total": 2110,
       "display": "2110/2110",
-      "note": "PR-02a é frontend-only — carrega 2110/2110 do #336 (§C3.3; receita P-SUITE-ENV-PERSISTENCE)."
+      "note": "PR frontend-only — 2110/2110 confirmado por execução real nesta rodada (4 shards, CORE_SAAS_PERSISTENCE=memory; contract-tests leem .tsx)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 137,
-      "display": "137",
-      "note": "CHK P1 PR-02a (lista do builder no desenho do dono). Sobre 136 do #336."
+      "value": 138,
+      "display": "138",
+      "note": "Mapa Operacional pixel-perfect (J-MAPAS-10 PR-1). Sobre 137 do #337."
     },
     "mobile_backend_contracts": {
       "value": 18,

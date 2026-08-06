@@ -1,109 +1,100 @@
-import { AlertTriangle, BellRing, Map as MapIcon, Pause, Play, RefreshCw, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
-import { useSearchParams } from "react-router-dom";
+import { BellRing, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { Alert, Button, Card, Chip, EmptyState, ErrorState, Skeleton } from "../../../../components/ui";
+import { Button, EmptyState, Skeleton } from "../../../../components/ui";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
 import {
   buildIncomingCalls,
-  calculateOperationsMapSummary,
-  FIELD_LOCATION_STALE_THRESHOLD_MS,
+  buildInServiceCalls,
   filterFieldLocationsByWorkOrder,
-  filterFieldLocations,
-  formatFieldLocationDate,
-  listOperationTeams,
+  isInServiceWorkOrderStatus,
+  resolveAssignedTechnicianName,
 } from "../operations-map.adapter";
-import {
-  FIELD_LOCATION_STATUSES,
-  type FieldLocationItem,
-  type FieldLocationStatus,
-  type OperationsIncomingCall,
-  type OperationsMapFilters as OperationsMapFilterState,
-} from "../operations-map.types";
+import type { FieldLocationItem, OperationsIncomingCall, OperationsInServiceCall } from "../operations-map.types";
 import { useOperationsMap } from "../useOperationsMap";
 import { useNewWorkOrderAlert } from "../hooks/useNewWorkOrderAlert";
 import { useTechnicianPerformance } from "../hooks/useTechnicianPerformance";
-import { getWorkOrderPriorityColor, isValidMapCoordinate } from "../map/mapMarkers";
-import { operatorUserIdOf, type Coordinate } from "../allocation";
+import { useLegendFilter } from "../hooks/useLegendFilter";
+import { useMapViewMemory } from "../hooks/useMapViewMemory";
+import { getFieldLocationGroup, getWorkOrderPriorityColor, isValidMapCoordinate } from "../map/mapMarkers";
+import { buildWorkOrderRouteFeatureCollection, findAssignedLocation } from "../map/routeLines";
+import {
+  buildAllocationCandidates,
+  computeDistanceKm,
+  formatEstimatedMinutes,
+  formatStraightLineKm,
+  operatorUserIdOf,
+  type Coordinate,
+} from "../allocation";
+import { useAllocateDispatch } from "../hooks/useAllocateDispatch";
 import { getWorkOrderPriorityLabel } from "../../../work-orders/work-orders.adapter";
 import { OperationsMapCanvas } from "../components/OperationsMapCanvas";
-import { OperationsMapStage } from "../components/OperationsMapStage";
+import { OperationsMapPanelsStack } from "../components/OperationsMapPanelsStack";
 import { OperationsIncomingCallsList } from "../components/OperationsIncomingCallsList";
-import { OperationsCallAllocationPopup } from "../components/OperationsCallAllocationPopup";
-import { OperationsTechnicianAllocationPopup } from "../components/OperationsTechnicianAllocationPopup";
-import { OperationsMapFilters } from "../components/OperationsMapFilters";
-import { OperationsMapSummaryCards } from "../components/OperationsMapSummaryCards";
-import { OperationsOperatorDetailPanel } from "../components/OperationsOperatorDetailPanel";
+import { OperationsInServiceList } from "../components/OperationsInServiceList";
 import { OperationsOperatorList } from "../components/OperationsOperatorList";
-import { OperationsWorkOrderPinPanel } from "../components/OperationsWorkOrderPinPanel";
-import { OperationsWorkOrdersWithoutLocationPanel } from "../components/OperationsWorkOrdersWithoutLocationPanel";
+import { OperationsMapLegendFooter } from "../components/OperationsMapLegendFooter";
+import { OperationsTechnicianDetailPopover } from "../components/OperationsTechnicianDetailPopover";
+import { OperationsOsMarkerPopup } from "../components/OperationsOsMarkerPopup";
+import { OperationsAllocationToast } from "../components/OperationsAllocationToast";
 import { geocodeWorkOrder } from "../../../work-orders/work-orders.service";
+
+/**
+ * J-MAPAS-10 (PLANO-MAPA-PIXEL, PR-1) — Mapa Operacional recriado "pixel a pixel" sobre o
+ * protótipo do dono (`Mapa Operacional.html`): stage full-viewport com o mapa CLARO, chips de
+ * estado top-left, STACK de 3 painéis de vidro navy à direita (Chamados recebidos / Em
+ * Atendimento / Técnicos de campo, com pills de colapso), LEGENDA-FILTRO no rodapé (8 itens,
+ * contagem no tooltip, toggle de camada), memória da visão + savenote, detail popover do
+ * técnico, popup do marker com os 3 mais próximos, seleção→Alocar por linha, drag-and-drop
+ * nativo OS→técnico, toast de confirmação e Esc limpando a seleção.
+ *
+ * Divergências A2 consolidadas em D-MAPA-PIXEL (controle/decisoes.md): SummaryCards/barra de
+ * filtros/params de URL/painéis de detalhe/popups D-E saíram; ?workOrderId permanece; alerta
+ * M-5 de OS nova permanece; toast com copy honesta (D-007). Toda alocação usa o endpoint REAL
+ * POST /operations/dispatches via useAllocateDispatch (404/409/422 traduzidos, nunca fabricado).
+ */
+
+const ALLOCATION_TOAST_TTL_MS = 3600;
+// Padding de câmera: o stack de 348px + margens vive à direita; a legenda ocupa a base.
+const MAP_PADDING = { top: 24, right: 384, bottom: 48, left: 24 } as const;
 
 export function OperationsMapPage() {
   const {
     locations,
     source,
     fallbackReason,
-    maintenanceVehicleIds,
-    insuredVehicleIds,
     workOrderPins,
     workOrdersWithoutLocation,
-    workOrdersTruncated,
     loading,
-    isRefreshing,
-    refreshedAt,
-    realtime,
     refresh,
-    autoRefresh,
-    setAutoRefresh,
+    maintenanceVehicleIds,
+    insuredVehicleIds,
   } = useOperationsMap();
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
-  const [selectedWorkOrderId, setSelectedWorkOrderId] = useState<string | undefined>(undefined);
-  // J-MAPAS-7 (SPRINT ALOCAÇÃO) — popups de alocação: chamado clicado (D, esquerda) e técnico clicado (E,
-  // direita). Um por vez; abrir um fecha o outro. `null` = nenhum popup aberto.
-  const [allocCall, setAllocCall] = useState<OperationsIncomingCall | null>(null);
-  const [allocTech, setAllocTech] = useState<FieldLocationItem | null>(null);
 
-  // Ω1 — filtros ficam na URL (?status=&team=&stale=&q=) para permitir link direto e refresh.
-  const statusParam = searchParams.get("status") ?? "all";
-  const teamParam = searchParams.get("team") ?? "all";
-  const staleParam = searchParams.get("stale") === "1";
-  const searchQuery = searchParams.get("q") ?? "";
-  const filters = useMemo<OperationsMapFilterState>(() => {
-    const status: OperationsMapFilterState["status"] =
-      statusParam !== "all" && FIELD_LOCATION_STATUSES.includes(statusParam as FieldLocationStatus)
-        ? (statusParam as FieldLocationStatus)
-        : "all";
-    return { status, team: teamParam, staleOnly: staleParam, search: searchQuery };
-  }, [statusParam, teamParam, staleParam, searchQuery]);
-  const setFilters = useCallback(
-    (next: OperationsMapFilterState) => {
-      const params = new URLSearchParams(searchParams);
-      if (next.status && next.status !== "all") params.set("status", next.status);
-      else params.delete("status");
-      if (next.team && next.team !== "all") params.set("team", next.team);
-      else params.delete("team");
-      if (next.staleOnly) params.set("stale", "1");
-      else params.delete("stale");
-      if (next.search.trim()) params.set("q", next.search);
-      else params.delete("q");
-      setSearchParams(params, { replace: true });
-    },
-    [searchParams, setSearchParams],
-  );
+  // Seleção de OS ("os-selected") + detalhe de técnico + pan imperativo + popup/toast.
+  const [selectedWorkOrderId, setSelectedWorkOrderId] = useState<string | undefined>(undefined);
+  const [detailId, setDetailId] = useState<string | undefined>(undefined);
+  const [panTarget, setPanTarget] = useState<{ lng: number; lat: number; key: number } | null>(null);
+  const panKeyRef = useRef(0);
+  const [closePopupSignal, setClosePopupSignal] = useState(0);
+  const [allocToast, setAllocToast] = useState<{ message: string; tone: "success" | "error" } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSuccessToastRef = useRef<string | null>(null);
+
   const workOrderContextId = searchParams.get("workOrderId")?.trim() || undefined;
   const canReadWorkOrders = can("work_orders:read");
   const canReadDispatches = can("field_dispatch:read");
   const canCreateDispatches = can("field_dispatch:create");
-  const canUpdateDispatches = can("field_dispatch:update");
-  const canCancelDispatches = can("field_dispatch:cancel");
-  const canReassignDispatches = can("field_dispatch:reassign");
+  const canGeocodeWorkOrders = can("work_orders:update");
+
   const dispatchContext = useMemo(
     () => ({
       token: session?.accessToken,
@@ -114,42 +105,220 @@ export function OperationsMapPage() {
     }),
     [activeContext, session?.accessToken],
   );
+
+  // Deep-link ?workOrderId — preservado (divergência 8: os DEMAIS params de filtro saíram).
   const workOrderContextLocations = useMemo(
     () => filterFieldLocationsByWorkOrder(locations, workOrderContextId),
     [locations, workOrderContextId],
   );
-  const teams = useMemo(() => listOperationTeams(workOrderContextLocations), [workOrderContextLocations]);
-  const filteredLocations = useMemo(
-    () => filterFieldLocations(workOrderContextLocations, filters),
-    [filters, workOrderContextLocations],
-  );
-  const summary = useMemo(() => calculateOperationsMapSummary(workOrderContextLocations), [workOrderContextLocations]);
   const workOrderContextLabel =
     workOrderContextLocations.find((location) => location.currentWorkOrder?.id === workOrderContextId)?.currentWorkOrder?.code ??
     workOrderContextId;
-  const selectedLocation =
-    filteredLocations.find((location) => location.id === selectedId) ??
-    filteredLocations[0] ??
-    workOrderContextLocations.find((location) => location.id === selectedId);
-  const clearWorkOrderContext = () => {
+  const clearWorkOrderContext = useCallback(() => {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete("workOrderId");
     setSearchParams(nextParams, { replace: true });
-    setSelectedId(undefined);
-  };
+    setDetailId(undefined);
+  }, [searchParams, setSearchParams]);
 
-  useEffect(() => {
-    if (filteredLocations[0] && (!selectedId || !filteredLocations.some((location) => location.id === selectedId))) {
-      setSelectedId(filteredLocations[0].id);
-    }
-  }, [filteredLocations, selectedId]);
-
-  // Ω1b — pins de chamado só quando o papel pode ler OS (backend é a autoridade; UI apenas esconde).
+  // Ω1b — pins de chamado só quando o papel pode ler OS (backend é a autoridade; UI só esconde).
   const visibleWorkOrderPins = canReadWorkOrders ? workOrderPins ?? [] : [];
   const visibleWorkOrdersWithoutLocation = canReadWorkOrders ? workOrdersWithoutLocation ?? [] : [];
-  const selectedWorkOrderPin = visibleWorkOrderPins.find((pin) => pin.id === selectedWorkOrderId);
-  // Ω1b-2 — geocodificar sob demanda exige work_orders:update; em sucesso, atualiza o mapa (pin aparece).
-  const canGeocodeWorkOrders = can("work_orders:update");
+
+  // Split rec/atd do protótipo (J-MAPAS-10) sobre as MESMAS listas já lidas (nenhum fetch novo).
+  const incomingCalls = useMemo(
+    () => buildIncomingCalls(visibleWorkOrderPins, visibleWorkOrdersWithoutLocation),
+    [visibleWorkOrderPins, visibleWorkOrdersWithoutLocation],
+  );
+  const inServiceCalls = useMemo(
+    () => buildInServiceCalls(visibleWorkOrderPins, visibleWorkOrdersWithoutLocation, workOrderContextLocations),
+    [visibleWorkOrderPins, visibleWorkOrdersWithoutLocation, workOrderContextLocations],
+  );
+
+  // D6 — legenda-filtro page-level: contagens reais + arrays filtrados para QUALQUER canvas.
+  const legend = useLegendFilter(workOrderContextLocations, visibleWorkOrderPins);
+
+  // Rotas tracejadas técnico→OS: só pares completos e VISÍVEIS (a rota segue o grupo da OS).
+  const routes = useMemo(
+    () =>
+      buildWorkOrderRouteFeatureCollection(
+        legend.visibleWorkOrderPins.filter((pin) => isInServiceWorkOrderStatus(pin.status)),
+        legend.visibleLocations,
+      ),
+    [legend.visibleWorkOrderPins, legend.visibleLocations],
+  );
+
+  // D4 — memória da visão por tenant (câmera inicial salva > Brasil z4; savenote no moveend).
+  const viewMemory = useMapViewMemory(activeContext?.tenantId);
+
+  // J-MAPAS-7 — índice de conclusão (gateado por field_dispatch:create; ordenação + popup).
+  const technicianPerformance = useTechnicianPerformance(dispatchContext, canCreateDispatches);
+
+  // Coordenada do CHAMADO (LGPD §12: fica NESTE mapa auxiliar só p/ cálculo/pan — nunca em lista/log).
+  const callCoordinateById = useMemo(() => {
+    const map = new Map<string, Coordinate>();
+    for (const pin of visibleWorkOrderPins) {
+      if (isValidMapCoordinate(pin.latitude, pin.longitude)) map.set(pin.id, { lat: pin.latitude, lng: pin.longitude });
+    }
+    return map;
+  }, [visibleWorkOrderPins]);
+
+  const selectedCall = useMemo(
+    () => incomingCalls.find((call) => call.id === selectedWorkOrderId) ?? null,
+    [incomingCalls, selectedWorkOrderId],
+  );
+  const selectedCallCoordinate = selectedCall ? callCoordinateById.get(selectedCall.id) ?? null : null;
+
+  const detailLocation = detailId ? workOrderContextLocations.find((location) => location.id === detailId) : undefined;
+  const detailCurrentWorkOrder = useMemo(() => {
+    if (!detailLocation) return null;
+    if (detailLocation.currentWorkOrder) {
+      return { id: detailLocation.currentWorkOrder.id, code: detailLocation.currentWorkOrder.code };
+    }
+    const assignedPin = visibleWorkOrderPins.find(
+      (pin) => isInServiceWorkOrderStatus(pin.status) && findAssignedLocation(pin, [detailLocation]) !== null,
+    );
+    return assignedPin ? { id: assignedPin.id, code: assignedPin.code } : null;
+  }, [detailLocation, visibleWorkOrderPins]);
+
+  const bumpPan = useCallback((coordinate: Coordinate) => {
+    panKeyRef.current += 1;
+    setPanTarget({ lng: coordinate.lng, lat: coordinate.lat, key: panKeyRef.current });
+  }, []);
+
+  // M-5 — alerta de OS nova sobre a fila de RECEBIDAS (diff client-side; anti-spam; LGPD).
+  const { toasts: newCallToasts, newIds: newCallIds, pulseIds: pulsingWorkOrderIds, dismissToast } =
+    useNewWorkOrderAlert({ calls: incomingCalls });
+
+  // Alocação REAL (POST /operations/dispatches) — feedback nunca fabricado.
+  const allocation = useAllocateDispatch(dispatchContext, refresh);
+
+  const showAllocationToast = useCallback((message: string, tone: "success" | "error") => {
+    setAllocToast({ message, tone });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setAllocToast(null), ALLOCATION_TOAST_TTL_MS);
+  }, []);
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    },
+    [],
+  );
+
+  const performAllocation = useCallback(
+    async (workOrder: { readonly id: string; readonly code: string }, location: FieldLocationItem) => {
+      if (!canCreateDispatches) return;
+      if (getFieldLocationGroup(location.status) === "off") return; // protótipo: técnico "off" não recebe
+      const coordinate = callCoordinateById.get(workOrder.id) ?? null;
+      const km = coordinate ? computeDistanceKm(location, coordinate) : null;
+      // Copy HONESTA (divergência 7): estimativa sempre rotulada; a frase de chegada do
+      // protótipo é proibida pela regra ETA-honesto (J-MAPAS-7).
+      pendingSuccessToastRef.current =
+        km !== null
+          ? `✓ ${workOrder.code} alocada para ${location.displayName} — ${formatEstimatedMinutes(km)} · ${formatStraightLineKm(km)}`
+          : `✓ ${workOrder.code} alocada para ${location.displayName}`;
+      await allocation.allocate(
+        { workOrderId: workOrder.id, operatorUserId: operatorUserIdOf(location) },
+        location.displayName,
+      );
+    },
+    [allocation, callCoordinateById, canCreateDispatches],
+  );
+
+  // Resultado REAL da alocação → toast (sucesso com a copy honesta; erro traduzido do backend).
+  useEffect(() => {
+    if (!allocation.feedback) return;
+    if (allocation.feedback.kind === "success") {
+      showAllocationToast(pendingSuccessToastRef.current ?? allocation.feedback.message, "success");
+      pendingSuccessToastRef.current = null;
+      setSelectedWorkOrderId(undefined); // protótipo: alocada → seleção limpa
+      setClosePopupSignal((value) => value + 1);
+    } else {
+      showAllocationToast(allocation.feedback.message, "error");
+    }
+    allocation.resetFeedback();
+  }, [allocation, allocation.feedback, showAllocationToast]);
+
+  // Esc limpa a seleção e fecha popover/popup (verbatim do protótipo).
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setSelectedWorkOrderId(undefined);
+      setDetailId(undefined);
+      setClosePopupSignal((value) => value + 1);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  const handleSelectCall = useCallback(
+    (call: OperationsIncomingCall, options?: { readonly pan?: boolean }) => {
+      setSelectedWorkOrderId((current) => (current === call.id ? undefined : call.id));
+      if (options?.pan === false) return;
+      const coordinate = callCoordinateById.get(call.id);
+      if (coordinate) bumpPan(coordinate);
+    },
+    [bumpPan, callCoordinateById],
+  );
+
+  // Clique no MARKER de OS: seleciona só chamado RECEBIDO (protótipo); o popup abre no canvas.
+  const handleSelectWorkOrderFromMap = useCallback(
+    (id: string) => {
+      if (incomingCalls.some((call) => call.id === id)) {
+        setSelectedWorkOrderId((current) => (current === id ? undefined : id));
+      }
+    },
+    [incomingCalls],
+  );
+
+  // Diretiva do dono (2026-08-06): o detalhe do técnico abre por HOVER (some sozinho ao sair o
+  // mouse) E por CLIQUE (fica fixo até fechar manualmente). Hover nunca move o mapa; o pan só
+  // acontece no clique — ação explícita do operador (o mapa não tem vida própria).
+  const detailPinnedRef = useRef(false);
+
+  const openTechnicianDetail = useCallback(
+    (location: FieldLocationItem) => {
+      detailPinnedRef.current = true;
+      setDetailId(location.id);
+      if (isValidMapCoordinate(location.latitude, location.longitude)) {
+        bumpPan({ lat: location.latitude, lng: location.longitude });
+      }
+    },
+    [bumpPan],
+  );
+
+  const hoverTechnicianDetail = useCallback((location: FieldLocationItem | null) => {
+    if (location) {
+      // Hover não rouba um detalhe já fixado por clique.
+      if (!detailPinnedRef.current) setDetailId(location.id);
+      return;
+    }
+    if (!detailPinnedRef.current) setDetailId(undefined);
+  }, []);
+
+  const closeTechnicianDetail = useCallback(() => {
+    detailPinnedRef.current = false;
+    setDetailId(undefined);
+  }, []);
+
+  const handlePanToInService = useCallback(
+    (call: OperationsInServiceCall) => {
+      const coordinate = callCoordinateById.get(call.id);
+      if (coordinate) bumpPan(coordinate);
+    },
+    [bumpPan, callCoordinateById],
+  );
+
+  const handleDropAllocate = useCallback(
+    (workOrderId: string, location: FieldLocationItem) => {
+      const call = incomingCalls.find((item) => item.id === workOrderId);
+      if (!call) return;
+      void performAllocation({ id: call.id, code: call.code }, location);
+    },
+    [incomingCalls, performAllocation],
+  );
+
+  // Ω1b-2 — geocodificar sob demanda (CTA migrado para o card "Sem GPS"): work_orders:update.
   const handleGeocodeWorkOrder = canGeocodeWorkOrders
     ? async (id: string) => {
         const result = await geocodeWorkOrder(dispatchContext, id);
@@ -157,61 +326,62 @@ export function OperationsMapPage() {
         return result;
       }
     : undefined;
+
+  // D5.2 — popup do marker: 3 técnicos REAIS mais próximos (exclui "off", km asc, slice 3).
+  const renderWorkOrderPopup = useCallback(
+    (workOrderId: string): ReactNode => {
+      const pin = visibleWorkOrderPins.find((item) => item.id === workOrderId);
+      if (!pin) return null;
+      const phase = isInServiceWorkOrderStatus(pin.status) ? "atd" : "rec";
+      const candidates =
+        phase === "rec"
+          ? buildAllocationCandidates(
+              workOrderContextLocations.filter((location) => getFieldLocationGroup(location.status) !== "off"),
+              { lat: pin.latitude, lng: pin.longitude },
+              technicianPerformance.byOperator,
+            )
+              .filter((candidate) => candidate.distanceKm !== null)
+              .sort((a, b) => a.distanceKm! - b.distanceKm!)
+              .slice(0, 3)
+          : [];
+      return (
+        <OperationsOsMarkerPopup
+          pin={pin}
+          phase={phase}
+          technicianName={phase === "atd" ? resolveAssignedTechnicianName(pin, workOrderContextLocations) : undefined}
+          candidates={candidates}
+          canAllocate={canCreateDispatches}
+          pendingOperatorUserId={allocation.pendingOperatorUserId}
+          onAllocate={(candidate) => void performAllocation({ id: pin.id, code: pin.code }, candidate.location)}
+          onOpenWorkOrder={(id) => navigate(`/work-orders/${id}`)}
+        />
+      );
+    },
+    [
+      allocation.pendingOperatorUserId,
+      canCreateDispatches,
+      navigate,
+      performAllocation,
+      technicianPerformance.byOperator,
+      visibleWorkOrderPins,
+      workOrderContextLocations,
+    ],
+  );
+
   const hasMapContent =
-    filteredLocations.length > 0 || visibleWorkOrderPins.length > 0 || visibleWorkOrdersWithoutLocation.length > 0;
-  // M-4 — fila REAL de "chamados que chegam" (prioridade + SLA-proxy honesto), a partir das MESMAS OS
-  // mapeáveis já lidas (nenhum fetch novo). Ordenada em `buildIncomingCalls` (prioridade→SLA→abertura).
-  const incomingCalls = useMemo(
-    () => buildIncomingCalls(visibleWorkOrderPins, visibleWorkOrdersWithoutLocation),
-    [visibleWorkOrderPins, visibleWorkOrdersWithoutLocation],
-  );
-
-  // J-MAPAS-7 — índice de conclusão de OS por técnico (endpoint gateado por field_dispatch:create; só
-  // busca quem PODE alocar). Alimenta a ordenação "Maior índice de conclusão" e o índice de cada linha.
-  const technicianPerformance = useTechnicianPerformance(dispatchContext, canCreateDispatches);
-  // Coordenada + endereço do CHAMADO para calcular distância/tempo (haversine) e mostrar o endereço no
-  // detalhe. Derivado dos pins (com coordenada) e das OS sem GPS (só endereço). LGPD §12: a coordenada
-  // fica NESTE mapa auxiliar só para o cálculo — nunca é renderizada crua nem logada.
-  const callInfoById = useMemo(() => {
-    const map = new Map<string, { coordinate: Coordinate | null; serviceAddress: string | null }>();
-    for (const pin of visibleWorkOrderPins) {
-      const coordinate = isValidMapCoordinate(pin.latitude, pin.longitude)
-        ? { lat: pin.latitude, lng: pin.longitude }
-        : null;
-      map.set(pin.id, { coordinate, serviceAddress: pin.serviceAddress ?? null });
-    }
-    for (const workOrder of visibleWorkOrdersWithoutLocation) {
-      if (!map.has(workOrder.id)) map.set(workOrder.id, { coordinate: null, serviceAddress: workOrder.serviceAddress ?? null });
-    }
-    return map;
-  }, [visibleWorkOrderPins, visibleWorkOrdersWithoutLocation]);
-  const resolveCallCoordinate = useCallback(
-    (callId: string): Coordinate | null => callInfoById.get(callId)?.coordinate ?? null,
-    [callInfoById],
-  );
-  const openCallAllocation = useCallback((call: OperationsIncomingCall) => {
-    setSelectedWorkOrderId(call.id);
-    setAllocTech(null);
-    setAllocCall(call);
-  }, []);
-  const openTechAllocation = useCallback((location: FieldLocationItem) => {
-    setSelectedId(location.id);
-    setAllocCall(null);
-    setAllocTech(location);
-  }, []);
-
-  // M-5 — alerta visual de OS nova (requisito 3 do dono): diff client-side dos ids que chegam entre
-  // refreshes. NÃO alerta no mount (baseline), dedup por id, teto por ciclo, cada aviso some sozinho.
-  // `pulseIds` já vem zerado sob prefers-reduced-motion (sem pulso). LGPD §12: só código/prioridade.
-  const { toasts: newCallToasts, newIds: newCallIds, pulseIds: pulsingWorkOrderIds, dismissToast } =
-    useNewWorkOrderAlert({ calls: incomingCalls });
+    workOrderContextLocations.length > 0 || visibleWorkOrderPins.length > 0 || visibleWorkOrdersWithoutLocation.length > 0;
+  const showEmptyState = !loading && locations.length === 0 && !hasMapContent && source !== "fallback";
+  const showContextEmptyState =
+    !loading && locations.length > 0 && workOrderContextLocations.length === 0 && Boolean(workOrderContextId);
+  const panelSkeleton = loading && locations.length === 0;
 
   return (
-    <div className="page-stack operations-map-page">
-      {/* M-5 — região viva do alerta de OS nova. Existe SEMPRE no DOM (mesmo vazia) para o leitor de tela
-          anunciar de forma NÃO-agressiva (role=status → aria-live=polite); nunca rouba o foco. LGPD §12:
-          o toast mostra SÓ código + prioridade — NUNCA coordenada. Some sozinho (TTL do hook) e é
-          dispensável pelo botão. A animação de entrada é desligada por @media reduced-motion no CSS. */}
+    <div className="operations-map-page opmap-page">
+      {/* Título da tela para leitores de tela (o heading visual do shell vive na topbar/rota). */}
+      <h1 className="opmap-sr-only">Mapa Operacional</h1>
+
+      {/* M-5 — região viva do alerta de OS nova (intacta): role=status → aria-live=polite; nunca
+          rouba o foco. LGPD §12: SÓ código + prioridade — NUNCA coordenada. */}
       <div
         className="operations-map-toasts"
         role="status"
@@ -242,238 +412,132 @@ export function OperationsMapPage() {
         ))}
       </div>
 
-      <header className="page-heading page-heading--row">
-        <div>
-          <span>Operação em campo</span>
-          <h1>Mapa Operacional</h1>
-          <p>Acompanhe a última localização conhecida dos Técnicos de Campo.</p>
+      <main className="opmap-stage" aria-label="Mapa operacional em tempo real">
+        <div className="opmap-stage__map">
+          <OperationsMapCanvas
+            locations={legend.visibleLocations}
+            selectedId={detailId}
+            onSelect={openTechnicianDetail}
+            onHoverTechnician={hoverTechnicianDetail}
+            showDispatches={canReadDispatches}
+            workOrderPins={legend.visibleWorkOrderPins}
+            selectedWorkOrderId={selectedWorkOrderId}
+            onSelectWorkOrder={handleSelectWorkOrderFromMap}
+            pulsingWorkOrderIds={pulsingWorkOrderIds}
+            mapPadding={MAP_PADDING}
+            routes={routes}
+            initialView={viewMemory.initialView}
+            onMoveEnd={viewMemory.handleMoveEnd}
+            panTarget={panTarget}
+            renderWorkOrderPopup={renderWorkOrderPopup}
+            closePopupSignal={closePopupSignal}
+            maintenanceVehicleIds={maintenanceVehicleIds}
+            insuredVehicleIds={insuredVehicleIds}
+          />
         </div>
-        <div className="operations-map-actions">
-          <Chip tone={source === "api" ? "success" : source === "fallback" ? "warning" : "info"}>
-            Fonte: {source === "api" ? "API real" : source === "fallback" ? "indisponível" : "modo demonstração"}
-          </Chip>
-          <Chip tone={realtime.status === "connected" ? "success" : realtime.status === "unavailable" ? "danger" : "warning"}>
-            {realtime.label}
-          </Chip>
-          {realtime.fallbackPolling && realtime.status !== "fallback" ? <Chip tone="warning">Atualização periódica</Chip> : null}
-          {canReadWorkOrders ? <Chip tone="info">OS vinculadas</Chip> : null}
-          {canReadDispatches ? <Chip tone="info">Despachos vinculados</Chip> : null}
-          {refreshedAt ? <Chip tone="default">Atualizado {formatFieldLocationDate(refreshedAt)}</Chip> : null}
-          {isRefreshing ? <Chip tone="info">Atualizando...</Chip> : null}
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setAutoRefresh((prev) => !prev)}
-            title={autoRefresh ? "Pausar atualização automática" : "Retomar atualização automática"}
-          >
-            {autoRefresh ? <><Pause size={16} /> Pausar auto</> : <><Play size={16} /> Auto atualizar</>}
-          </Button>
-        </div>
-      </header>
 
-      {source === "fallback" ? (
-        <Alert
-          title={locations.length > 0 ? "Não foi possível atualizar as localizações" : "Não foi possível carregar as localizações"}
-          tone="warning"
-        >
-          <span className="operations-map-error-retry">
-            {fallbackReason ?? "A API de localização não respondeu."}{" "}
-            {locations.length > 0
-              ? "Exibindo os últimos dados carregados — eles podem estar desatualizados."
-              : "Nenhum dado é exibido até a fonte real voltar."}
-            <Button type="button" variant="secondary" size="sm" onClick={() => void refresh()} disabled={loading || isRefreshing}>
-              <RefreshCw size={14} /> Tentar novamente
+        {/* Diretiva do dono (2026-08-06): os chips passivos do topo-esquerdo SAÍRAM ("é para
+            sair/excluir"). O que resta é o mínimo honesto (D-007/§7): erro de carga com retry e
+            o contexto de OS filtrada com saída — e SÓ quando esses estados existem. */}
+        {fallbackReason ? (
+          <div className="opmap-error-banner" role="alert">
+            <span>{fallbackReason}</span>
+            <button type="button" onClick={() => void refresh()}>Tentar novamente</button>
+          </div>
+        ) : null}
+        {workOrderContextId ? (
+          <div className="opmap-context-banner">
+            <span>OS filtrada: {workOrderContextLabel}</span>
+            <button type="button" onClick={clearWorkOrderContext} aria-label="Limpar contexto da OS">
+              <X size={12} />
+            </button>
+          </div>
+        ) : null}
+
+        {/* D4 — savenote da memória da visão ("✓ Visão do mapa salva", fade 1.2s). */}
+        <div className="opmap-savenote" data-visible={viewMemory.savenoteVisible ? "true" : undefined} aria-hidden="true">
+          ✓ Visão do mapa salva
+        </div>
+
+        {showEmptyState ? (
+          <div className="opmap-empty-overlay">
+            <EmptyState
+              title="Nenhum técnico ou chamado no mapa"
+              detail="Quando os Técnicos de Campo enviarem localização pelo aplicativo de campo, ou houver ordens de serviço abertas com endereço geolocalizado, os pontos aparecerão aqui automaticamente. Verifique se há despachos ativos — a tela se atualiza sozinha."
+            />
+          </div>
+        ) : null}
+        {showContextEmptyState ? (
+          <div className="opmap-empty-overlay" role="alert">
+            <strong>Nenhum técnico ou despacho para esta OS</strong>
+            <p>O mapa não encontrou Técnicos de Campo ou despachos vinculados à OS informada no contexto atual.</p>
+            <Button type="button" variant="secondary" size="sm" onClick={clearWorkOrderContext}>
+              <X size={16} /> Limpar contexto da OS
             </Button>
-          </span>
-        </Alert>
-      ) : null}
-      {realtime.status === "degraded" ? (
-        <Alert title="Realtime degradado" tone="warning">
-          {realtime.detail}
-        </Alert>
-      ) : null}
-      {realtime.status === "unavailable" ? (
-        <Alert title="Realtime indisponível" tone="warning">
-          {realtime.detail}
-        </Alert>
-      ) : null}
-      {workOrderContextId ? (
-        <section className="erp-filter-bar operations-map-actions" aria-label="Contexto da ordem de serviço">
-          <Chip tone={workOrderContextLocations.length > 0 ? "info" : "warning"}>
-            OS filtrada: {workOrderContextLabel}
-          </Chip>
-          <Button type="button" variant="ghost" size="sm" onClick={clearWorkOrderContext}>
-            <X size={16} /> Limpar contexto
-          </Button>
-        </section>
-      ) : null}
+          </div>
+        ) : null}
 
-      <OperationsMapSummaryCards
-        summary={summary}
-        activeStatus={filters.status}
-        staleOnly={filters.staleOnly}
-        onFilterStatus={(status) => setFilters({ ...filters, status, staleOnly: false })}
-        onToggleStale={() => setFilters({ ...filters, staleOnly: !filters.staleOnly })}
-      />
-      <OperationsMapFilters filters={filters} teams={teams} onChange={setFilters} />
-
-      {workOrdersTruncated ? (
-        <Alert title="Há mais chamados do que os exibidos" tone="info">
-          <span>
-            O mapa carrega os primeiros chamados; existem mais ordens de serviço no sistema do que as exibidas aqui.
-            Use a tela de Ordens de Serviço para a lista completa.
-          </span>
-        </Alert>
-      ) : null}
-
-      {loading && locations.length === 0 ? <Skeleton lines={4} /> : null}
-      {!loading && locations.length === 0 && !hasMapContent && source !== "fallback" ? (
-        <EmptyState
-          title="Nenhum técnico ou chamado no mapa"
-          detail="Quando os Técnicos de Campo enviarem localização pelo aplicativo de campo, ou houver ordens de serviço abertas com endereço geolocalizado, os pontos aparecerão aqui automaticamente. Verifique se há despachos ativos — a tela se atualiza sozinha."
-        />
-      ) : null}
-      {!loading && locations.length > 0 && workOrderContextLocations.length === 0 && workOrderContextId ? (
-        <section className="ui-state ui-state--error">
-          <strong>Nenhum técnico ou despacho para esta OS</strong>
-          <p>O mapa não encontrou Técnicos de Campo ou despachos vinculados à OS informada no contexto atual.</p>
-          <Button type="button" variant="secondary" size="sm" onClick={clearWorkOrderContext}>
-            <X size={16} /> Limpar contexto da OS
-          </Button>
-        </section>
-      ) : null}
-      {!loading && workOrderContextLocations.length > 0 && filteredLocations.length === 0 ? (
-        <ErrorState title="Nenhum resultado para os filtros" detail="Ajuste status, equipe, busca, filtro de localização antiga ou limpe o contexto da OS." />
-      ) : null}
-
-      {hasMapContent ? (
-        <>
-          {/* J-MAPAS-6 (redesign) — o MAPA é o herói: stage full-bleed (supersede o grid de 3 colunas
-              do M-1, que espremia a largura). "Chamados que chegam" e "Técnicos de Campo" viram rails
-              de vidro navy ancorados às bordas do mapa; Maximizar leva a tela cheia com o 4º quadrante. */}
-          <OperationsMapStage
-            callsCount={incomingCalls.length}
-            techsCount={filteredLocations.length}
-            newCallsCount={newCallIds.size}
-            map={({ resizeSignal, mapPadding }) => (
-              <OperationsMapCanvas
-                locations={filteredLocations}
-                selectedId={selectedLocation?.id}
-                onSelect={(location: FieldLocationItem) => setSelectedId(location.id)}
-                showDispatches={canReadDispatches}
-                maintenanceVehicleIds={maintenanceVehicleIds}
-                insuredVehicleIds={insuredVehicleIds}
-                workOrderPins={visibleWorkOrderPins}
-                selectedWorkOrderId={selectedWorkOrderPin?.id}
-                onSelectWorkOrder={setSelectedWorkOrderId}
-                pulsingWorkOrderIds={pulsingWorkOrderIds}
-                resizeSignal={resizeSignal}
-                mapPadding={mapPadding}
-              />
-            )}
-            calls={
+        {/* Stack 348px à direita (verbatim): Recebidas / Em Atendimento / Técnicos (+ pills). */}
+        <OperationsMapPanelsStack
+          recCount={incomingCalls.length}
+          atdCount={inServiceCalls.length}
+          tecCount={workOrderContextLocations.length}
+          newCallsCount={newCallIds.size}
+          showWorkOrderPanels={canReadWorkOrders}
+          osSelected={Boolean(selectedCall)}
+          calls={
+            panelSkeleton ? (
+              <Skeleton lines={3} />
+            ) : (
               <OperationsIncomingCallsList
                 calls={incomingCalls}
-                selectedId={selectedWorkOrderPin?.id}
-                onSelect={openCallAllocation}
+                selectedId={selectedWorkOrderId}
+                onSelect={handleSelectCall}
                 newIds={newCallIds}
+                draggableEnabled={canCreateDispatches}
+                onGeocode={handleGeocodeWorkOrder}
               />
-            }
-            techs={
-              filteredLocations.length > 0 ? (
-                <OperationsOperatorList
-                  locations={filteredLocations}
-                  selectedId={selectedLocation?.id}
-                  onSelect={openTechAllocation}
-                  onHighlight={(location) => setSelectedId(location.id)}
-                  showWorkOrders={canReadWorkOrders}
-                  showDispatches={canReadDispatches}
-                  canCreateDispatch={canCreateDispatches}
-                />
-              ) : (
-                <Card title="Técnicos de Campo">
-                  <EmptyState
-                    title="Nenhum técnico neste filtro"
-                    detail="Ajuste os filtros acima ou aguarde os Técnicos de Campo enviarem posição pelo aplicativo de campo."
-                  />
-                </Card>
-              )
-            }
+            )
+          }
+          inService={
+            panelSkeleton ? <Skeleton lines={2} /> : <OperationsInServiceList calls={inServiceCalls} onPan={handlePanToInService} />
+          }
+          technicians={
+            panelSkeleton ? (
+              <Skeleton lines={4} />
+            ) : (
+              <OperationsOperatorList
+                locations={workOrderContextLocations}
+                selectedCallId={selectedCall?.id}
+                selectedCallCoordinate={selectedCallCoordinate}
+                canAllocate={canCreateDispatches}
+                completionByOperator={technicianPerformance.byOperator}
+                onAllocate={(location) =>
+                  selectedCall ? void performAllocation({ id: selectedCall.id, code: selectedCall.code }, location) : undefined
+                }
+                onDropAllocate={handleDropAllocate}
+                onOpenDetail={openTechnicianDetail}
+                onHoverDetail={hoverTechnicianDetail}
+              />
+            )
+          }
+        />
+
+        {/* Detail popover do técnico (270px, right 372 / top 64 — verbatim). */}
+        {detailLocation ? (
+          <OperationsTechnicianDetailPopover
+            location={detailLocation}
+            currentWorkOrder={detailCurrentWorkOrder}
+            onClose={closeTechnicianDetail}
           />
-          {/* Detalhe da seleção preservado como faixa ABAIXO do stage (sem perder nada da etapa Ω1). */}
-          <section className="operations-map-detail" aria-label="Detalhes da seleção">
-            {selectedWorkOrderPin ? <OperationsWorkOrderPinPanel pin={selectedWorkOrderPin} /> : null}
-            <OperationsWorkOrdersWithoutLocationPanel
-              workOrders={visibleWorkOrdersWithoutLocation}
-              onGeocode={handleGeocodeWorkOrder}
-            />
-            {selectedLocation && !allocTech && !allocCall ? (
-              // Evita superfícies concorrentes: com o popup de alocação aberto, o detalhe do técnico já vive no
-              // popup — não repetir o painel abaixo (achado BAIXA da junta).
-              <OperationsOperatorDetailPanel
-                location={selectedLocation}
-                maintenanceVehicleIds={maintenanceVehicleIds}
-                insuredVehicleIds={insuredVehicleIds}
-                showWorkOrder={canReadWorkOrders}
-                showDispatch={canReadDispatches}
-                canCreateDispatch={canCreateDispatches}
-                canUpdateDispatch={canUpdateDispatches}
-                canCancelDispatch={canCancelDispatches}
-                canReassignDispatch={canReassignDispatches}
-                dispatchContext={dispatchContext}
-                onDispatchChanged={refresh}
-              />
-            ) : null}
-            <Alert title="Privacidade operacional" tone="info">
-              Localização é dado sensível. O frontend não registra coordenadas em logs e o acesso real continua protegido por RBAC/RLS no backend.
-            </Alert>
-            <Alert title="Limite desta etapa" tone="info">
-              <span><MapIcon size={16} /> Roteirização avançada e rastreamento em tempo real serão adicionados em etapas futuras.</span>
-            </Alert>
-          </section>
+        ) : null}
 
-          {/* J-MAPAS-7 (D) — popup de alocação a partir do CHAMADO clicado: detalhe honesto + lista
-              ranqueada de técnicos (candidatos = TODOS os técnicos conhecidos, não só os filtrados no rail,
-              para a alocação não ser estreitada por um filtro de visualização). */}
-          {allocCall ? (
-            <OperationsCallAllocationPopup
-              call={allocCall}
-              serviceAddress={callInfoById.get(allocCall.id)?.serviceAddress ?? null}
-              callCoordinate={callInfoById.get(allocCall.id)?.coordinate ?? null}
-              technicians={locations}
-              completionByOperator={technicianPerformance.byOperator}
-              performanceUnavailable={technicianPerformance.source === "fallback"}
-              canCreateDispatch={canCreateDispatches}
-              context={dispatchContext}
-              onClose={() => setAllocCall(null)}
-              onAllocated={refresh}
-            />
-          ) : null}
-          {/* J-MAPAS-7 (E) — popup de alocação a partir do TÉCNICO clicado: dados + seletor de chamado +
-              distância/tempo estimado do par. Mesma payload de createDispatch de D (fluxo reverso). */}
-          {allocTech ? (
-            <OperationsTechnicianAllocationPopup
-              technician={allocTech}
-              calls={incomingCalls}
-              resolveCallCoordinate={resolveCallCoordinate}
-              completionRate={technicianPerformance.byOperator.get(operatorUserIdOf(allocTech)) ?? null}
-              canCreateDispatch={canCreateDispatches}
-              context={dispatchContext}
-              onClose={() => setAllocTech(null)}
-              onAllocated={refresh}
-            />
-          ) : null}
-        </>
-      ) : null}
+        {/* D6 — legenda-FILTRO no rodapé (8 itens verbatim + hint + disclaimer honesto). */}
+        <OperationsMapLegendFooter entries={legend.entries} onToggle={legend.toggle} />
 
-      {locations.some((location) => location.isStale) ? (
-        <Alert title="Há localização antiga" tone="warning">
-          <span>
-            <AlertTriangle size={16} /> Registros com mais de {Math.round(FIELD_LOCATION_STALE_THRESHOLD_MS / 60_000)} minutos aparecem
-            destacados para revisão operacional.
-          </span>
-        </Alert>
-      ) : null}
+        {/* Toast de alocação bottom-center (copy honesta; erro real do backend em vermelho). */}
+        <OperationsAllocationToast message={allocToast?.message ?? null} tone={allocToast?.tone ?? "success"} />
+      </main>
     </div>
   );
 }

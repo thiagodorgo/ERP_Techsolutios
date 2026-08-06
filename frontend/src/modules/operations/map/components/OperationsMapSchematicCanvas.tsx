@@ -50,7 +50,7 @@ export function OperationsMapSchematicCanvas({
       <p>
         {isApiKeyError
           ? "Google Maps não pôde ser carregado. Visualização operacional alternativa ativa."
-          : "O mapa interativo não pôde ser carregado neste dispositivo (WebGL indisponível ou serviço de mapa fora do ar). Exibindo a visão esquemática dos operadores em campo."}
+          : "O mapa interativo não pôde ser carregado neste dispositivo (WebGL indisponível ou serviço de mapa fora do ar). Exibindo a visão esquemática dos Técnicos de Campo."}
       </p>
       <div className="operations-map-canvas__surface">
         <span className="operations-map-canvas__road operations-map-canvas__road--primary" />

@@ -350,61 +350,58 @@ test("R6.4: service busca Frota UMA vez por refresh, com querystring exata e gat
   assert.equal(gated.insuredVehicleIds, undefined);
 });
 
-test("R6.1/R6.4: painel lateral — link /work-orders/:id, badges com deep-link e alerta stale", async () => {
-  const { OperationsOperatorDetailPanel } = await import("../src/modules/operations/map/components/OperationsOperatorDetailPanel");
+// J-MAPAS-10 — o painel lateral (OperationsOperatorDetailPanel) foi SUBSTITUÍDO pelo detail
+// popover do protótipo (D-MAPA-PIXEL div. 6): link da OS atual + alerta de localização antiga
+// preservados; ações de gestão de despacho moram na tela Despachos; badges de Frota permanecem
+// no fallback esquemático (teste R6.2 abaixo).
+test("R6.1 (popover): link /work-orders/:id da OS atual + alerta de localização antiga + último visto", async () => {
+  const { OperationsTechnicianDetailPopover } = await import(
+    "../src/modules/operations/map/components/OperationsTechnicianDetailPopover"
+  );
 
   const staleLocation = makeLocation({
     isStale: true,
     capturedAt: new Date(Date.now() - 22 * 60_000).toISOString(),
-    currentWorkOrder: {
-      id: "wo-77",
-      code: "OS-77",
-      title: "Reboque",
-      status: "on_route",
-      priority: "urgent",
-      vehicleId: "veh-7",
-    },
   });
 
   const html = renderToString(
     createElement(
       MemoryRouter,
       null,
-      createElement(OperationsOperatorDetailPanel, {
+      createElement(OperationsTechnicianDetailPopover, {
         location: staleLocation,
-        showWorkOrder: true,
-        maintenanceVehicleIds: ["veh-7"],
-        insuredVehicleIds: ["veh-outra"],
+        currentWorkOrder: { id: "wo-77", code: "OS-77" },
+        onClose: () => undefined,
       }),
     ),
   );
 
-  assert.match(html, /Abrir OS/);
   assert.match(html, /\/work-orders\/wo-77/);
-  assert.match(html, /Em manutenção/);
-  assert.match(html, /\/fleet\/maintenance/);
-  assert.match(html, /Sem seguro/);
-  assert.match(html, /\/fleet\/insurance\?vehicle=veh-7/);
+  assert.match(html, /OS-77/);
   assert.match(html, /Localização antiga/);
   assert.match(html, /Último visto/);
   assert.match(html, /há 22 min/);
 });
 
-test("R6.1: painel sem OS ativa diz isso explicitamente; sem badges sem fonte", async () => {
-  const { OperationsOperatorDetailPanel } = await import("../src/modules/operations/map/components/OperationsOperatorDetailPanel");
+test("R6.1 (popover): sem OS vinculada mostra '—' honesto (nunca inventa vínculo)", async () => {
+  const { OperationsTechnicianDetailPopover } = await import(
+    "../src/modules/operations/map/components/OperationsTechnicianDetailPopover"
+  );
 
   const html = renderToString(
     createElement(
       MemoryRouter,
       null,
-      createElement(OperationsOperatorDetailPanel, {
+      createElement(OperationsTechnicianDetailPopover, {
         location: makeLocation(),
-        showWorkOrder: true,
+        currentWorkOrder: null,
+        onClose: () => undefined,
       }),
     ),
   );
 
-  assert.match(html, /Sem OS atual/);
+  assert.match(html, /OS atual/);
+  assert.match(html, />—</);
   assert.doesNotMatch(html, /Em manutenção|Sem seguro/);
 });
 
@@ -439,43 +436,26 @@ test("§7 dados desatualizados: falha de refresh preserva o último dataset REAL
   assert.equal(stillEmpty.source, "fallback");
 });
 
-test("painel de despacho: rótulo de negócio no lugar do UUID cru (id só no deep-link)", async () => {
-  const { OperationsOperatorDetailPanel } = await import("../src/modules/operations/map/components/OperationsOperatorDetailPanel");
-
-  const withDispatch = makeLocation({
-    currentWorkOrder: {
-      id: "wo-77",
-      code: "OS-77",
-      title: "Reboque",
-      status: "on_route",
-      priority: "urgent",
-    },
-    currentDispatch: {
-      id: "0f1e2d3c-uuid-cru-do-despacho",
-      workOrderId: "wo-77",
-      operatorUserId: "usr-1",
-      status: "accepted",
-      createdAt: "2026-07-08T10:00:00.000Z",
-    },
-  });
+test("popover: rótulo de negócio (código da OS) no texto — UUID cru só no href do link", async () => {
+  const { OperationsTechnicianDetailPopover } = await import(
+    "../src/modules/operations/map/components/OperationsTechnicianDetailPopover"
+  );
 
   const html = renderToString(
     createElement(
       MemoryRouter,
       null,
-      createElement(OperationsOperatorDetailPanel, {
-        location: withDispatch,
-        showWorkOrder: true,
-        showDispatch: true,
+      createElement(OperationsTechnicianDetailPopover, {
+        location: makeLocation(),
+        currentWorkOrder: { id: "0f1e2d3c-uuid-cru-da-os", code: "OS-77" },
+        onClose: () => undefined,
       }),
     ),
   );
 
-  assert.match(html, /Despacho ativo/);
-  assert.match(html, /Vinculado à OS OS-77/);
-  assert.match(html, /Acompanhar despacho/);
-  // O UUID pode viajar na querystring do link, mas nunca como texto visível.
-  assert.doesNotMatch(html, />[^<]*0f1e2d3c-uuid-cru-do-despacho/);
+  assert.match(html, /OS-77/);
+  // O UUID pode viajar no href do link, mas nunca como texto visível.
+  assert.doesNotMatch(html, />[^<]*0f1e2d3c-uuid-cru-da-os/);
 });
 
 test("Ω1: sem chave Google, o canvas renderiza o mapa real (MapLibre), não o esquemático", async () => {

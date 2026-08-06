@@ -2,7 +2,10 @@ type FrontendEnvKey =
   | "VITE_API_BASE_URL"
   | "VITE_DEFAULT_TENANT_ID"
   | "VITE_USE_MOCKS"
-  | "VITE_GOOGLE_MAPS_API_KEY";
+  | "VITE_GOOGLE_MAPS_API_KEY"
+  // J-MAPAS-10: provedor de mapa. Vazio/ausente = MapLibre (default pixel-perfect, sem custo);
+  // "google" = espelho Google opt-in, até a paridade fechar no PR-2.
+  | "VITE_MAPS_PROVIDER";
 
 type ImportMetaWithEnv = ImportMeta & {
   readonly env?: Partial<Record<FrontendEnvKey, string>>;

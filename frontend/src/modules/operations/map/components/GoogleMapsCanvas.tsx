@@ -13,13 +13,13 @@ import {
   isValidMapCoordinate,
   pickFocusCluster,
 } from "../map/mapMarkers";
-import { OperationsMapLegendFooter } from "./OperationsMapLegendFooter";
 
 // Web Components do Google Maps (gmp-map + gmp-advanced-marker, v=beta) no lugar da API JS
 // clássica. Markers são conteúdo custom (disco com inicial) estilizado com a paleta REAL de
-// status do DS — mesma do canvas MapLibre (getRingColor): status ao vivo · âmbar >3min ·
-// cinza >10min. Pins de CHAMADO (teardrop) por prioridade e o rodapé de legenda UNIFICADO
-// (OperationsMapLegendFooter, mesmo componente do MapLibre) garantem paridade total.
+// status do DS (getRingColor): status ao vivo · âmbar >3min · cinza >10min.
+// J-MAPAS-10: a legenda saiu de DENTRO dos canvases — virou LEGENDA-FILTRO page-level (D6,
+// "paridade de graça": a página filtra os arrays antes de entregá-los a QUALQUER canvas).
+// PENDÊNCIA PR-2 (registrada no plano D7): espelhar aqui losango/rotas/view-memory/cores novas.
 
 const DEFAULT_CENTER = { lat: -23.55052, lng: -46.633308 }; // São Paulo (fallback sem operador)
 const DEFAULT_ZOOM = 12;
@@ -273,11 +273,7 @@ export function GoogleMapsCanvas({
             ))}
           </gmp-map>
         ) : null}
-        {/* M-2 (J-MAPAS-6) — mesmo rodapé de legenda unificado do MapLibre (regra do espelho:
-            paridade byte-a-byte). Ancorado à BASE do container do mapa, não flutuando sobre o canvas.
-            SPRINT POLISH (A): esta é a ÚNICA legenda do canvas — o rodapé redundante de status (que
-            duplicava esta legenda) foi removido, junto dos ícones que só serviam a ele. */}
-        <OperationsMapLegendFooter />
+        {/* J-MAPAS-10 — a legenda-FILTRO é page-level (D6); nenhum canvas renderiza legenda própria. */}
       </div>
     </section>
   );

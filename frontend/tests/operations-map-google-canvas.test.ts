@@ -5,7 +5,9 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 
 import {
-  MAP_LEGEND_ITEMS,
+  MAP_LEGEND_FILTER_ITEMS,
+  TECH_GROUP_HEX,
+  TECH_STALE_HEX,
   WORK_ORDER_PRIORITY_HEX,
   getRingColor,
   getStatusColor,
@@ -117,36 +119,26 @@ test("pin com coordenada 0/0 é filtrado (isValidMapCoordinate) e não renderiza
   assert.match(html, /1 chamado no mapa/); // subtítulo conta só os válidos
 });
 
-// 6 — GUARDA anti-divergência: a legenda é a MESMA fonte dos dois canvases e bate com a paleta.
-test("legenda (MAP_LEGEND_ITEMS) bate 1:1 com a paleta de status e de prioridade", () => {
-  const dots = MAP_LEGEND_ITEMS.filter((item) => item.kind === "dot");
-  const pins = MAP_LEGEND_ITEMS.filter((item) => item.kind === "pin");
-  const seps = MAP_LEGEND_ITEMS.filter((item) => item.kind === "sep");
-  assert.equal(dots.length, 5);
-  assert.equal(pins.length, 3);
-  assert.equal(seps.length, 1);
-
-  const colors = MAP_LEGEND_ITEMS.filter((item) => item.kind !== "sep").map((item) =>
-    "color" in item ? item.color : "",
-  );
+// 6 — J-MAPAS-10 (ajuste de constante compartilhada): a legenda virou LEGENDA-FILTRO page-level
+//     (D6); o canvas Google NÃO renderiza mais legenda própria e a fonte única passa a ser
+//     MAP_LEGEND_FILTER_ITEMS (8 itens, cores do protótipo).
+test("legenda-filtro é page-level: fonte única MAP_LEGEND_FILTER_ITEMS; canvas Google sem legenda", () => {
+  assert.equal(MAP_LEGEND_FILTER_ITEMS.length, 8);
+  const colors = MAP_LEGEND_FILTER_ITEMS.map((item) => item.color);
   assert.deepEqual(colors, [
-    getStatusColor("available"),
-    getStatusColor("on_route"),
-    getStatusColor("in_service"),
-    "#f59e0b",
-    "#64748b",
+    TECH_GROUP_HEX.disp,
+    TECH_GROUP_HEX.rota,
+    TECH_GROUP_HEX.atend,
+    TECH_STALE_HEX,
+    TECH_GROUP_HEX.off,
     WORK_ORDER_PRIORITY_HEX.urgent,
     WORK_ORDER_PRIORITY_HEX.high,
     WORK_ORDER_PRIORITY_HEX.medium,
   ]);
 
-  // M-2 — a legenda renderiza no canvas Google no RODAPÉ unificado (mesmo componente do MapLibre);
-  // a antiga `<ul>` flutuante `operations-map-libre__legend` deixou de existir.
   const html = renderCanvas();
-  assert.match(html, /operations-map-legend-footer/);
+  assert.doesNotMatch(html, /operations-map-legend-footer/);
   assert.doesNotMatch(html, /operations-map-libre__legend/);
-  assert.match(html, /Disponível/);
-  assert.match(html, /Chamado urgente/);
 });
 
 // 7 — M-4 (fecha P-MAPA-TERM-OPERADORES): terminologia §3 reconciliada no canvas. O subtítulo conta

@@ -1,36 +1,49 @@
-import { MAP_LEGEND_ITEMS } from "../map/mapMarkers";
+import type { LegendGroupKey } from "../map/mapMarkers";
+import type { LegendFilterEntry } from "../hooks/useLegendFilter";
 
 /**
- * M-2 (J-MAPAS-6) — Rodapé de legenda UNIFICADO do Mapa Operacional.
+ * J-MAPAS-10 (PLANO-MAPA-PIXEL, D6) — a legenda do rodapé VIRA LEGENDA-FILTRO interativa
+ * (verbatim do protótipo): 8 itens com contagem REAL no tooltip (data-tip) e toggle que esconde a
+ * camada correspondente no mapa (aplicado page-level — MapLibre, Google e o fallback esquemático
+ * obedecem sem código de canvas). Item de OS usa o quadrado 8px rotacionado (losango); item OFF
+ * fica esmaecido (opacity .4). À direita, o hint verbatim do protótipo + o disclaimer curto das
+ * estimativas (honestidade D6).
  *
- * Substitui as legendas soltas/flutuantes que viviam DENTRO de cada canvas (a antiga
- * `<ul.operations-map-libre__legend>` sobreposta ao mapa). Agora existe UM único rodapé
- * horizontal ancorado à BASE do container do mapa — status de técnico + frescor + prioridade
- * de OS num só bloco. Consumido pelos DOIS canvases (MapLibre e Google) para paridade total
- * (regra do espelho): a fonte é a MESMA constante `MAP_LEGEND_ITEMS`, então a cor de cada
- * swatch vem SEMPRE de `item.color` (derivado de getStatusColor / STALE_*_COLOR /
- * WORK_ORDER_PRIORITY_HEX) — nunca um hex solto duplicado aqui.
+ * Fonte única: as entries derivam de MAP_LEGEND_FILTER_ITEMS (cores das paletas únicas de
+ * mapMarkers) + contagens reais do useLegendFilter — nenhum hex solto aqui.
  */
-export function OperationsMapLegendFooter() {
+export function OperationsMapLegendFooter({
+  entries,
+  onToggle,
+}: {
+  readonly entries: readonly LegendFilterEntry[];
+  readonly onToggle: (key: LegendGroupKey) => void;
+}) {
   return (
-    <ul className="operations-map-legend-footer" aria-label="Legenda do mapa">
-      {MAP_LEGEND_ITEMS.map((item, index) =>
-        item.kind === "sep" ? (
-          <li key={`sep-${index}`} className="operations-map-legend-footer__sep" aria-hidden="true" />
-        ) : (
-          <li key={item.label} className="operations-map-legend-footer__item">
-            <span
-              className={
-                item.kind === "pin"
-                  ? "operations-map-legend-footer__pin"
-                  : "operations-map-legend-footer__dot"
-              }
-              style={{ background: item.color }}
-            />{" "}
-            {item.label}
-          </li>
-        ),
-      )}
-    </ul>
+    <div className="opmap-legend">
+      <span className="opmap-legend__items" role="group" aria-label="Legenda e filtros do mapa">
+        {entries.map((entry) => (
+          <button
+            key={entry.key}
+            type="button"
+            className={`opmap-lg${entry.active ? "" : " off"}`}
+            data-key={entry.key}
+            data-tip={entry.tip}
+            aria-pressed={entry.active}
+            aria-label={`${entry.label} — ${entry.tip}. ${entry.active ? "Clique para esconder no mapa" : "Clique para mostrar no mapa"}`}
+            onClick={() => onToggle(entry.key)}
+          >
+            <i className={entry.kind === "square" ? "sq" : ""} style={{ background: entry.color }} aria-hidden="true" />
+            {entry.label}
+          </button>
+        ))}
+      </span>
+      <span className="opmap-legend__right">
+        <span className="opmap-legend__disclaimer">distâncias em linha reta · tempo estimado sem trânsito</span>
+        <span className="opmap-legend__hint" title="distâncias em linha reta · tempo estimado sem trânsito">
+          Esc limpa a seleção · arraste uma OS até um técnico para alocar
+        </span>
+      </span>
+    </div>
   );
 }

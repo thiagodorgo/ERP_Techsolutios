@@ -90,6 +90,36 @@ export function formatEstimatedMinutes(distanceKm: number | null): string {
   return `~${minutes} min (estimado, sem trânsito)`;
 }
 
+// J-MAPAS-10 (PLANO-MAPA-PIXEL) — rótulos COMPACTOS das linhas de técnico e do popup do marker
+// ("~1,2 km · ~5 min", como o fmtKm/fmtMin do protótipo, com "~" de estimativa). A honestidade fica
+// garantida pelo DISCLAIMER permanente na barra da legenda ("distâncias em linha reta, tempo sem
+// trânsito" — D6) e pelo toast rotulado. ADITIVOS: os formatadores longos acima seguem intactos.
+
+export function formatCompactKm(distanceKm: number | null): string {
+  if (distanceKm === null || !Number.isFinite(distanceKm)) return "—";
+  if (distanceKm >= 100) return `~${Math.round(distanceKm)} km`;
+  return `~${distanceKm.toFixed(1).replace(".", ",")} km`;
+}
+
+export function formatCompactMinutes(distanceKm: number | null): string {
+  if (distanceKm === null || !Number.isFinite(distanceKm)) return "—";
+  const minutes = Math.max(1, Math.round(estimateTravelMinutes(distanceKm)));
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    return rest > 0 ? `~${hours} h ${rest} min` : `~${hours} h`;
+  }
+  return `~${minutes} min`;
+}
+
+// Limiares VISUAIS do protótipo aplicados à NOSSA estimativa (28 km/h): good ≤15 min · mid ≤40 min.
+export function etaToneForMinutes(minutes: number | null): "good" | "mid" | "far" {
+  if (minutes === null || !Number.isFinite(minutes)) return "far";
+  if (minutes <= 15) return "good";
+  if (minutes <= 40) return "mid";
+  return "far";
+}
+
 export function formatCompletionRate(rate: number | null): string {
   // `null` = sem OS atribuída na janela → "—". `0` é um valor REAL (0% de conclusão) e é exibido.
   if (rate === null || !Number.isFinite(rate)) return "—";

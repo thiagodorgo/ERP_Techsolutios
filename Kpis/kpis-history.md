@@ -1840,3 +1840,27 @@ instalado e login demo validado no aparelho.
 
 **Contagens (execução real):** smoke **1003→1013** (+10 novos, 2 atualizados); backend **2110/2110** e
 Flutter **839/839** carregados (§C3.3, PR frontend-only). Blocos **136→137**. Backfill #336: merge `1062634`.
+
+## 2026-08-06 — MAPA-PIXEL-PR1 (PR pendente)
+
+**Prioridade máxima do dono:** o Mapa Operacional recriado **pixel a pixel** sobre o protótipo que ele
+desenhou no Claude Design (`Mapa Operacional.html`, importado para a raiz). Painéis de vidro de 348px
+(Chamados recebidos / Em Atendimento / Técnicos com ETA, filtros e ordenação), legenda-filtro de 8 itens
+no rodapé em uma linha, markers do protótipo (avatar de 32px com borda por status; losango de 22px com
+pulso na urgente), rota tracejada, alocação por clique, por popup do marcador e por arrastar-e-soltar,
+toast honesto. Medidas conferidas em Edge real contra o protótipo: vidro, raio e largura idênticos.
+
+**Três diretivas do dono, dadas ao ver a tela, todas provadas em navegador (não por leitura de código):**
+os objetos do topo-esquerdo **saíram**; o mapa **não tem mais vida própria** (auto-enquadramento, pan por
+seleção e clustering removidos — sobrou só o pan por clique) e **lembra a última posição** por organização;
+o detalhe do técnico abre por **hover** (some sozinho) e por **clique** (fica, fecha manual).
+
+**Achado ALTA da junta que mudava tudo:** com a chave do Google no ambiente, a tela renderizava o canvas
+**antigo** — o dono nunca via o trabalho novo, e era de lá que vinham o auto-foco e os chips. MapLibre
+passou a ser o padrão; Google virou opt-in explícito até a paridade do PR-2. Os tiles CARTO do protótipo
+foram **rejeitados** (licença Enterprise para uso comercial, verificado na fonte) — ficamos no OpenFreeMap
+claro, keyless, US$ 0.
+
+**Contagens (execução real):** smoke **1013→1052** (suíte do mapa 125→**177** casos; 5 arquivos novos);
+backend **2110/2110** (4 shards); Flutter **839/839** carregado (§C3.3). Blocos **137→138**.
+Backfill #337: merge `be86751`. Ata: `agent-orchestration/omega/mapas/J-MAPAS-10-pixel-ata.md`.
