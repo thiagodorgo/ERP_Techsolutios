@@ -6,7 +6,7 @@
   "release": {
     "block": "CHECKLIST P1 PR-02a — lista de 'Modelos de Checklist' recriada sobre o protótipo do dono (Modelos de Checklist.dc.html, importado do Claude Design). Header kicker/busca/filtro, 4 KPI mini-cards contados do payload real, tabela nova (tile do 1º componente, resumo PT-BR, pills, ações-ícone), estados §7 completos, banner somente-leitura com esconde-fino provado por teste, ChecklistToast novo, 'Novo modelo' instantâneo + Inativar/Reativar reposto, copy acentuada unificada no módulo. Junta em workflow (3 vetos + verificação adversarial): 8 achados confirmados, todos aplicados (auto-select vazando enum cru; flash do vazio; ponte com escrita para papel de leitura; lixo irremovível; testes vácuos → costura initialChecklists + rowActionVisibility pura; a11y da tabela; gate próprio de execuções). + EMULADOR ANDROID operacional (AVD erp_pixel; 3 armadilhas documentadas) + triagem P-SUITE-ENV-PERSISTENCE do PR anterior.",
     "title": "CHECKLIST P1 PR-02a — lista de modelos no desenho do dono",
-    "pr": null,
+    "pr": 337,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
