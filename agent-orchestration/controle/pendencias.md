@@ -1505,3 +1505,28 @@ cascata, 88 falhas em 4 shards). Como `dotenv` NÃO sobrescreve variável já ex
   `node_modules` dentro de árvore que o git possa remover; usar cópia ou `--install-links`, e remover a junction
   ANTES de qualquer `worktree remove`.**
 - status: ABERTA (workaround documentado; suíte verde reproduzida com o env exportado).
+
+## P-MOBILE-BANNER-INTEGRACAO (2026-08-06) — banner "Integração remota ainda não ativa" é ESTÁTICO e mente (MÉDIA, UX/honestidade)
+
+Validação em device real (AVD erp_pixel, login tecnico.demo): a home de Sincronização mostra o aviso âmbar
+"Integracao remota ainda nao ativa — OS, Checklists e Inventario estao em modo local". O widget
+`_BackendPendingNotice` é renderizado INCONDICIONALMENTE (`sync_screen.dart:92`, sem gate) — resquício da era
+local-first (B-077/B-090b). Hoje é FALSO: o bootstrap expõe `feature_flags` habilitados (work_orders,
+checklists, checklist_sync…), o tenant demo tem os módulos e o run screen baixa checklist do backend desde o
+CHECKLIST P0/render-envelope. O app nega capacidade que existe (D-007 invertido). Bônus: copy sem acento
+("Integracao", "nao", "Acoes") e typo "aparecao" (→ "aparecerão").
+- **Correção**: gatear o aviso nos flags reais do bootstrap (`isFeatureEnabled('checklists'|'work_orders')`)
+  — mostrar só o que estiver de fato indisponível, com acentos; ou remover. Candidata ao **PR-08**
+  (reconciliação mobile) ou fatia própria pequena.
+- status: ABERTA.
+
+## P-MOBILE-OS-SEEDS (2026-08-06) — lista de OS do app mostra SEEDS locais como se fossem dados reais (ALTA, D-007)
+
+Validação em device (AVD erp_pixel, tecnico.demo): a aba OS exibe OS-1042/1043/1044 ("Instalacao de
+ar-condicionado", "Cliente Demo Ltda", "Av. Paulista 1000") — seeds de bancada da era local-first (B-077).
+`GET /work-orders` com o token do MESMO técnico devolve **0 itens**. O app fabrica dados onde o estado
+honesto é vazio ("nenhuma ordem atribuída a você"). Mesmo padrão que o P-CHK-RENDER-ENVELOPE matou na trilha
+de checklist (app caía nos seeds); a trilha de OS precisa do mesmo tratamento: pull remoto → vazio honesto
+sem fallback de seed; seeds só em modo demo EXPLÍCITO e rotulado. Candidata ao **PR-08 (reconciliação
+mobile)** junto com [P-MOBILE-BANNER-INTEGRACAO].
+- status: ABERTA.
