@@ -1,110 +1,164 @@
-import { AlarmClock, CalendarClock, Clock, MapPinOff, Sparkles } from "lucide-react";
-import type { CSSProperties } from "react";
+import { useState, type DragEvent } from "react";
 
-import { Card, Chip, EmptyState } from "../../../../components/ui";
-import { getWorkOrderPriorityColor } from "../map/mapMarkers";
-import { formatIncomingCallSlaProxy, incomingCallSlaTone } from "../operations-map.adapter";
-import { getWorkOrderPriorityLabel, getWorkOrderPriorityTone } from "../../../work-orders/work-orders.adapter";
+import { beginWorkOrderDrag } from "../map/dnd";
+import { getWorkOrderPriorityKey } from "../map/mapMarkers";
+import { formatIncomingCallSlaProxy, formatLastSeen, incomingCallSlaTone } from "../operations-map.adapter";
+import { getWorkOrderPriorityLabel } from "../../../work-orders/work-orders.adapter";
 import type { OperationsIncomingCall } from "../operations-map.types";
 
 /**
- * M-4 (J-MAPAS-6) — LISTA REAL de "chamados que chegam" (requisito 1 do dono). Substitui o placeholder
- * honesto do M-1: agora renderiza as OS abertas mapeáveis (withLocation + withoutLocation, já ordenadas
- * por `buildIncomingCalls`) como fila de triagem do operador de despacho. Cada item traz:
- *   • código + cliente da OS;
- *   • chip de PRIORIDADE (cor semântica via token do DS; acento lateral na MESMA cor do pin no mapa);
- *   • SLA-PROXY HONESTO ("Agendado para {data}" ou "Aberto há {tempo}") — NUNCA "vence em"/prazo fabricado.
- * Clicar seleciona o chamado (pan no mapa via o mecanismo de seleção existente). LGPD §12: o item NUNCA
- * mostra latitude/longitude — só código/cliente/prioridade/tempo.
+ * J-MAPAS-10 (PLANO-MAPA-PIXEL) — painel "Chamados recebidos": cards .os VERBATIM do protótipo
+ * (r1 código+badge de prioridade; r2 cliente+relógio; r2 pino+endereço; borda-esquerda 3px por
+ * prioridade; estado selecionado; drag nativo). Substitui a lista M-4 baseada em Card/Chip do DS.
  *
- * M-5 (J-MAPAS-6) — realce "novo": ids em `newIds` (diff client-side de `useNewWorkOrderAlert`) ganham um
- * selo "Novo" + borda destacada — reforço da mesma OS que dispara o toast e o pulso do pin (uma só verdade).
- * Requisito 4 (junta M-4) — seleção SEM GPS: clicar um chamado sem coordenada NÃO tem pin para pan; o item
- * dá o feedback honesto "Sem localização — detalhes no painel abaixo" (nunca inventa posição no mapa).
+ * HONESTIDADE preservada (M-7/D-007): o relógio usa o countdown REAL quando `slaDueAt` existe
+ * ("vence em"/"vencido há" + data-tone); senão "há X" derivado de createdAt (ou "Agendado para…").
+ * Nunca um prazo fabricado. LGPD §12: o card NUNCA mostra latitude/longitude (endereço textual é
+ * a linha "📍" do protótipo). Payload do drag = SÓ o id da OS ("text/os").
+ *
+ * Gating: `draggableEnabled` (field_dispatch:create) liga o drag; `onGeocode`
+ * (work_orders:update) liga o CTA "Localizar no mapa" do chamado sem GPS (migra o painel Ω1b-2).
  */
+
+type GeocodeState = { readonly status: "idle" | "loading" | "error"; readonly reason?: string };
+
 export function OperationsIncomingCallsList({
   calls,
   selectedId,
   onSelect,
   now,
   newIds,
+  draggableEnabled = false,
+  onGeocode,
 }: {
   readonly calls: readonly OperationsIncomingCall[];
   readonly selectedId?: string;
-  readonly onSelect: (call: OperationsIncomingCall) => void;
+  readonly onSelect: (call: OperationsIncomingCall, options?: { readonly pan?: boolean }) => void;
   readonly now?: Date;
   readonly newIds?: ReadonlySet<string>;
+  readonly draggableEnabled?: boolean;
+  readonly onGeocode?: (id: string) => Promise<{ geocoded: boolean; reason?: string }>;
 }) {
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [geocodeStates, setGeocodeStates] = useState<Record<string, GeocodeState>>({});
+
   if (calls.length === 0) {
-    return (
-      <Card title="Chamados que chegam">
-        <EmptyState
-          title="Nenhum chamado aberto"
-          detail="Quando houver ordens de serviço abertas, elas aparecem aqui em ordem de prioridade e prazo. A fila se atualiza sozinha."
-        />
-      </Card>
-    );
+    // Empty verbatim do protótipo (inclusive o emoji) — lista vazia jamais fabrica OS.
+    return <div className="opmap-empty">Nenhum chamado aguardando alocação 🎉</div>;
   }
 
   const reference = now ?? new Date();
 
+  const runGeocode = async (id: string) => {
+    if (!onGeocode) return;
+    setGeocodeStates((current) => ({ ...current, [id]: { status: "loading" } }));
+    try {
+      const result = await onGeocode(id);
+      if (!result.geocoded) {
+        setGeocodeStates((current) => ({
+          ...current,
+          [id]: { status: "error", reason: result.reason ?? "Endereço não localizado." },
+        }));
+      }
+      // Sucesso: o refresh do pai transforma o chamado em pin — nada a fazer aqui.
+    } catch {
+      setGeocodeStates((current) => ({
+        ...current,
+        [id]: { status: "error", reason: "Falha ao localizar. Tente de novo." },
+      }));
+    }
+  };
+
+  const handleDragStart = (event: DragEvent<HTMLElement>, call: OperationsIncomingCall) => {
+    // Payload mínimo (LGPD): só o id da OS ("text/os"). Seleciona sem pan (verbatim do protótipo).
+    beginWorkOrderDrag(event.dataTransfer, call.id);
+    setDraggingId(call.id);
+    if (call.id !== selectedId) onSelect(call, { pan: false });
+  };
+
   return (
-    <Card title="Chamados que chegam">
-      <ul className="operations-calls-list" aria-label="Fila de chamados que chegam">
-        {calls.map((call) => {
-          const sla = formatIncomingCallSlaProxy(call, reference);
-          // M-7 — tom SÓ com prazo real (slaDueAt): vencido=vermelho, vence<30min=âmbar, futuro=azul; proxy=neutro.
-          const slaTone = incomingCallSlaTone(call, reference);
-          const isSelected = call.id === selectedId;
-          const isNew = newIds?.has(call.id) ?? false;
-          const priorityLabel = getWorkOrderPriorityLabel(call.priority);
-          // Requisito 4 — sem GPS não há pin p/ pan; se estiver selecionado, damos o feedback honesto.
-          const noGpsSelected = !call.hasLocation && isSelected;
-          return (
-            <li key={call.id}>
+    <ul className="opmap-os-list" aria-label="Chamados recebidos aguardando alocação">
+      {calls.map((call) => {
+        const sla = formatIncomingCallSlaProxy(call, reference);
+        const slaTone = incomingCallSlaTone(call, reference);
+        // Relógio do card: countdown real (vence em/vencido há) > agenda > "há X" (protótipo).
+        const clockLabel =
+          sla.kind === "due_future" || sla.kind === "due_past" || sla.kind === "scheduled"
+            ? sla.label
+            : sla.kind === "opened"
+              ? formatLastSeen(call.createdAt ?? undefined, reference)
+              : "Sem data de abertura";
+        const isSelected = call.id === selectedId;
+        const isNew = newIds?.has(call.id) ?? false;
+        const priorityKey = getWorkOrderPriorityKey(call.priority);
+        const priorityLabel = getWorkOrderPriorityLabel(call.priority);
+        const geocodeState = geocodeStates[call.id];
+        return (
+          <li key={call.id}>
+            <div
+              className={`opmap-os p-${priorityKey}${isSelected ? " sel" : ""}${isNew ? " is-new" : ""}${
+                draggingId === call.id ? " dragging" : ""
+              }`}
+              data-os={call.id}
+              data-new={isNew ? "true" : undefined}
+              draggable={draggableEnabled || undefined}
+              onDragStart={draggableEnabled ? (event) => handleDragStart(event, call) : undefined}
+              onDragEnd={draggableEnabled ? () => setDraggingId(null) : undefined}
+            >
               <button
                 type="button"
-                className={`operations-call${isSelected ? " is-selected" : ""}${isNew ? " is-new" : ""}`}
-                data-priority={call.priority}
-                data-new={isNew ? "true" : undefined}
-                style={{ "--call-priority": getWorkOrderPriorityColor(call.priority) } as CSSProperties}
+                className="opmap-os__hit"
                 aria-current={isSelected ? "true" : undefined}
-                aria-label={`${isNew ? "Novo chamado" : "Chamado"} ${call.code}${call.customerName ? `, cliente ${call.customerName}` : ""}, prioridade ${priorityLabel}, ${sla.label}${call.hasLocation ? "" : ", sem localização no mapa"}`}
+                aria-label={`${isNew ? "Novo chamado" : "Chamado"} ${call.code}${
+                  call.customerName ? `, cliente ${call.customerName}` : ""
+                }, prioridade ${priorityLabel}, ${sla.label}${call.hasLocation ? "" : ", sem localização no mapa"}`}
                 onClick={() => onSelect(call)}
               >
-                <span className="operations-call__head">
-                  <span className="operations-call__code">{call.code}</span>
-                  <span className="operations-call__head-tags">
-                    {isNew ? (
-                      <span className="operations-call__new" data-testid="operations-call-new">
-                        <Sparkles size={12} aria-hidden="true" /> Novo
-                      </span>
-                    ) : null}
-                    <Chip tone={getWorkOrderPriorityTone(call.priority)}>{priorityLabel}</Chip>
+                <span className="opmap-os__r1">
+                  <b>{call.code}</b>
+                  {isNew ? (
+                    <span className="opmap-os__new" data-testid="operations-call-new">
+                      Novo
+                    </span>
+                  ) : null}
+                  <span className={`opmap-os__badge b-${priorityKey}`}>{priorityLabel}</span>
+                </span>
+                <span className="opmap-os__r2">
+                  <span className="opmap-os__customer">{call.customerName ?? "Cliente não informado"}</span>
+                  <span className="opmap-os__clock" data-kind={sla.kind} data-tone={slaTone} aria-hidden="false">
+                    <span aria-hidden="true">⏱</span> {clockLabel}
                   </span>
                 </span>
-                <span className="operations-call__customer">{call.customerName ?? "Cliente não informado"}</span>
-                <span className="operations-call__sla" data-kind={sla.kind} data-tone={slaTone}>
-                  {sla.kind === "scheduled" ? (
-                    <CalendarClock size={14} aria-hidden="true" />
-                  ) : sla.kind === "due_past" ? (
-                    <AlarmClock size={14} aria-hidden="true" />
-                  ) : (
-                    <Clock size={14} aria-hidden="true" />
-                  )}
-                  {sla.label}
-                </span>
-                {!call.hasLocation ? (
-                  <span className="operations-call__nogps">
-                    <MapPinOff size={12} aria-hidden="true" />{" "}
-                    {noGpsSelected ? "Sem localização — detalhes no painel abaixo" : "Sem GPS no mapa"}
+                {call.serviceAddress ? (
+                  <span className="opmap-os__r2">
+                    <span className="opmap-os__address">
+                      <span aria-hidden="true">📍</span> {call.serviceAddress}
+                    </span>
                   </span>
                 ) : null}
+                {!call.hasLocation ? <span className="opmap-os__nogps">Sem GPS no mapa</span> : null}
               </button>
-            </li>
-          );
-        })}
-      </ul>
-    </Card>
+              {!call.hasLocation && onGeocode ? (
+                <span className="opmap-os__geocode">
+                  <button
+                    type="button"
+                    className="opmap-os__geocode-btn"
+                    disabled={geocodeState?.status === "loading"}
+                    onClick={() => void runGeocode(call.id)}
+                  >
+                    {geocodeState?.status === "loading" ? "Localizando…" : "Localizar no mapa"}
+                  </button>
+                  {geocodeState?.status === "error" ? (
+                    <span className="opmap-os__geocode-error" role="status">
+                      {geocodeState.reason}
+                    </span>
+                  ) : null}
+                </span>
+              ) : null}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

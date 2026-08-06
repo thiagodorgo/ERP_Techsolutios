@@ -128,7 +128,7 @@ export function useOperationsMap() {
 
         setState((current) => ({
           ...current,
-          realtime: createRealtimeState("connected", "SSE tenant-scoped conectado.", reconnectAttempt, {
+          realtime: createRealtimeState("connected", "Tempo real conectado.", reconnectAttempt, {
             lastConnectedAt: new Date().toISOString(),
           }),
         }));
@@ -154,7 +154,7 @@ export function useOperationsMap() {
           ...current,
           realtime: createRealtimeState(
             "degraded",
-            "SSE indisponivel; reconexao em andamento e polling de 30s ativo.",
+            "Tempo real indisponível; reconexão em andamento e atualização periódica de 30s ativa.",
             reconnectAttempt + 1,
             {
               lastConnectedAt: current.realtime.lastConnectedAt,
@@ -255,8 +255,8 @@ function createRealtimeState(
 
   return {
     status,
-    label: "Realtime indisponivel",
-    detail: detail ?? "Realtime nao esta disponivel neste contexto; polling de 30s permanece como fallback.",
+    label: "Tempo real indisponível",
+    detail: detail ?? "Tempo real não está disponível neste contexto; a atualização periódica de 30s permanece ativa.",
     fallbackPolling: true,
     retryCount,
     ...timestamps,

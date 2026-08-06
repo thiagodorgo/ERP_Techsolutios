@@ -76,6 +76,95 @@ export function getInitials(name: string): string {
   return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
 }
 
+// === J-MAPAS-10 (PLANO-MAPA-PIXEL) — grupos de status do protótipo + avatar determinístico ===
+// D-MAPA-PIXEL (divergência 3): NO MAPA os status são lidos em 4 grupos (disp/rota/atend/off);
+// o rótulo REAL ("Pausado"/"Bloqueado"/"No local"…) segue no popover/painel via
+// getFieldLocationStatusLabel. `unknown` cai em "off" (não é rastreável ao vivo).
+
+export type TechnicianLegendGroup = "disp" | "rota" | "atend" | "off";
+
+const TECH_GROUP_BY_STATUS: Record<FieldLocationStatus, TechnicianLegendGroup> = {
+  available: "disp",
+  on_route: "rota",
+  on_site: "atend",
+  in_service: "atend",
+  paused: "off",
+  offline: "off",
+  blocked: "off",
+  unknown: "off",
+};
+
+// Cores do protótipo (verbatim): ok #22c55e · rota #3b82f6 · atend #a855f7 · off #64748b.
+export const TECH_GROUP_HEX: Record<TechnicianLegendGroup, string> = {
+  disp: "#22c55e",
+  rota: "#3b82f6",
+  atend: "#a855f7",
+  off: "#64748b",
+};
+
+// "Localização antiga" (âmbar do protótipo) — 1 faixa única no limiar EXISTENTE de 15 min
+// (D-MAPA-PIXEL, divergência 4: substitui as faixas 3/10 min no caminho MapLibre default).
+export const TECH_STALE_HEX = "#f59e0b";
+
+export function getFieldLocationGroup(status: FieldLocationStatus): TechnicianLegendGroup {
+  return TECH_GROUP_BY_STATUS[status] ?? "off";
+}
+
+export function getFieldLocationGroupColor(status: FieldLocationStatus): string {
+  return TECH_GROUP_HEX[getFieldLocationGroup(status)];
+}
+
+/** Borda do marcador do técnico: âmbar quando a posição é antiga; senão a cor do grupo de status. */
+export function getTechnicianBorderColor(location: Pick<FieldLocationItem, "status" | "isStale">): string {
+  return location.isStale ? TECH_STALE_HEX : getFieldLocationGroupColor(location.status);
+}
+
+// Paleta AVC do protótipo (verbatim) — fundo do avatar do técnico.
+export const AVATAR_COLORS: readonly string[] = [
+  "#2563eb",
+  "#7c3aed",
+  "#0891b2",
+  "#db2777",
+  "#d97706",
+  "#059669",
+  "#4f46e5",
+  "#b91c1c",
+  "#0d9488",
+  "#9333ea",
+];
+
+/**
+ * Cor de avatar DETERMINÍSTICA por hash estável do id (djb2) — nunca pela posição no array,
+ * porque a ordem das localizações muda entre refreshes (plano §9). Mesmo id = mesma cor, sempre.
+ */
+export function getAvatarColor(id: string): string {
+  let hash = 5381;
+  for (let i = 0; i < id.length; i += 1) {
+    hash = ((hash << 5) + hash + id.charCodeAt(i)) | 0;
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]!;
+}
+
+/**
+ * SVG do LOSANGO de OS (protótipo: quadrado 22px rotate(45°), radius 5, borda 2.5 branca).
+ * Substitui o teardrop; `selected` adiciona o anel azul rgba(59,130,246,0.65) offset 2.
+ * Rasterizado pelo canvas MapLibre (icon-image) — âncora no CENTRO da coordenada.
+ */
+export function workOrderDiamondSvg(color: string, selected = false): string {
+  const size = 44;
+  const half = size / 2;
+  const selectedRing = selected
+    ? `<rect x="${half - 15}" y="${half - 15}" width="30" height="30" rx="7" ` +
+      `transform="rotate(45 ${half} ${half})" fill="none" stroke="rgba(59,130,246,0.65)" stroke-width="3"/>`
+    : "";
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">` +
+    selectedRing +
+    `<rect x="${half - 11}" y="${half - 11}" width="22" height="22" rx="5" ` +
+    `transform="rotate(45 ${half} ${half})" fill="${color}" stroke="#ffffff" stroke-width="2.5"/></svg>`
+  );
+}
+
 export type FieldLocationFeatureProps = {
   readonly id: string;
   readonly initials: string;
@@ -85,6 +174,12 @@ export type FieldLocationFeatureProps = {
   readonly displayName: string;
   // M-3 — realce de disponibilidade na CAMADA de técnicos (anel maior + contorno) sem tocar o provider.
   readonly available: boolean;
+  // J-MAPAS-10 — avatar do protótipo: fundo = cor AVC estável por id; borda 3px = grupo de status
+  // (âmbar quando antiga); `off` esmaece o marcador (opacity .75, como o .st-off do protótipo).
+  readonly avatarColor: string;
+  readonly borderColor: string;
+  readonly group: TechnicianLegendGroup;
+  readonly off: boolean;
 };
 
 export type FieldLocationFeatureCollection = FeatureCollection<Point, FieldLocationFeatureProps>;
@@ -105,6 +200,10 @@ function toFeature(
       selected: location.id === selectedId,
       displayName: location.displayName,
       available: isRingAvailable(location, nowMs),
+      avatarColor: getAvatarColor(location.id),
+      borderColor: getTechnicianBorderColor(location),
+      group: getFieldLocationGroup(location.status),
+      off: getFieldLocationGroup(location.status) === "off",
     },
   };
 }
@@ -171,12 +270,15 @@ export function isValidMapCoordinate(latitude: unknown, longitude: unknown): lat
   );
 }
 
-// Cor do pin por prioridade (MapLibre não lê CSS var; tokens.css espelha os mesmos hex para o DOM).
+// Cor do pin por prioridade (MapLibre não lê CSS var). J-MAPAS-10 (D-MAPA-PIXEL, divergência 2):
+// paleta do PROTÓTIPO do dono — urg #ef4444 · alta #f59e0b · média #38bdf8 · baixa #64748b.
+// Guard executado (plano §11.1): nenhum consumidor de WORK_ORDER_PRIORITY_HEX/getWorkOrderPriorityColor
+// fora de frontend/src/modules/operations/map/ — troca de hex é segura no módulo.
 export const WORK_ORDER_PRIORITY_HEX: Record<WorkOrderPriority, string> = {
-  low: "#94a3b8",
-  medium: "#64748b",
-  high: "#d97706",
-  urgent: "#dc2626",
+  low: "#64748b",
+  medium: "#38bdf8",
+  high: "#f59e0b",
+  urgent: "#ef4444",
 };
 
 // Chave PT-BR da prioridade — usada no icon-image do teardrop e nos swatches da legenda.
@@ -197,25 +299,41 @@ export function getWorkOrderPriorityKey(priority: string): "baixa" | "media" | "
   return WORK_ORDER_PRIORITY_KEY[priority as WorkOrderPriority] ?? "media";
 }
 
-// === Legenda do mapa — FONTE ÚNICA de verdade (consumida por MapLibre E Google) ===
-// Extraída para constante compartilhada: remove a duplicação dos 9 <li> entre os canvases e
-// torna a paridade de cor verificável por teste (guarda anti-divergência). Cores derivadas dos
-// helpers (getStatusColor / STALE_*_COLOR / WORK_ORDER_PRIORITY_HEX) — nunca hex soltos.
-export type MapLegendItem =
-  | { readonly kind: "dot" | "pin"; readonly color: string; readonly label: string }
-  | { readonly kind: "sep" };
+// === J-MAPAS-10 — LEGENDA-FILTRO do mapa — FONTE ÚNICA de verdade (8 itens verbatim) ===
+// D6 do plano: a legenda do rodapé deixa de ser informativa e vira FILTRO de camadas com
+// contagem no tooltip. Definição estática aqui (key/cor/rótulo/sufixo do tooltip); contagem e
+// estado on/off são runtime (useLegendFilter). Cores derivadas das paletas únicas acima —
+// nunca hex soltos. Substitui a antiga MAP_LEGEND_ITEMS (informativa, D-MAPA-PIXEL div. 4).
 
-export const MAP_LEGEND_ITEMS: readonly MapLegendItem[] = [
-  { kind: "dot", color: getStatusColor("available"), label: "Disponível" },
-  { kind: "dot", color: getStatusColor("on_route"), label: "Em rota" },
-  { kind: "dot", color: getStatusColor("in_service"), label: "Em atendimento" },
-  { kind: "dot", color: STALE_AMBER_COLOR, label: "Antiga > 3 min" },
-  { kind: "dot", color: STALE_GRAY_COLOR, label: "Antiga > 10 min" },
-  { kind: "sep" },
-  { kind: "pin", color: WORK_ORDER_PRIORITY_HEX.urgent, label: "Chamado urgente" },
-  { kind: "pin", color: WORK_ORDER_PRIORITY_HEX.high, label: "Chamado alta" },
-  { kind: "pin", color: WORK_ORDER_PRIORITY_HEX.medium, label: "Chamado média/baixa" },
+export type LegendGroupKey = TechnicianLegendGroup | "antiga" | "urg" | "alta" | "mb";
+
+export type MapLegendFilterItem = {
+  readonly key: LegendGroupKey;
+  // "dot" = disco de técnico; "square" = losango de OS (quadrado 8px rotate 45° na barra).
+  readonly kind: "dot" | "square";
+  readonly color: string;
+  readonly label: string;
+  // Sufixo do tooltip: data-tip = `${contagem} ${tipSuffix}` (verbatim do protótipo).
+  readonly tipSuffix: string;
+};
+
+export const MAP_LEGEND_FILTER_ITEMS: readonly MapLegendFilterItem[] = [
+  { key: "disp", kind: "dot", color: TECH_GROUP_HEX.disp, label: "Disponível", tipSuffix: "disponíveis" },
+  { key: "rota", kind: "dot", color: TECH_GROUP_HEX.rota, label: "Em rota", tipSuffix: "em rota" },
+  { key: "atend", kind: "dot", color: TECH_GROUP_HEX.atend, label: "Em atendimento", tipSuffix: "em atendimento" },
+  { key: "antiga", kind: "dot", color: TECH_STALE_HEX, label: "Localização antiga", tipSuffix: "com localização antiga" },
+  { key: "off", kind: "dot", color: TECH_GROUP_HEX.off, label: "Fora de serviço", tipSuffix: "fora de serviço" },
+  { key: "urg", kind: "square", color: WORK_ORDER_PRIORITY_HEX.urgent, label: "OS urgente", tipSuffix: "OS urgentes" },
+  { key: "alta", kind: "square", color: WORK_ORDER_PRIORITY_HEX.high, label: "OS alta", tipSuffix: "OS alta" },
+  { key: "mb", kind: "square", color: WORK_ORDER_PRIORITY_HEX.medium, label: "OS média/baixa", tipSuffix: "OS média/baixa" },
 ];
+
+/** Grupo de legenda da OS por prioridade: urgent→urg · high→alta · medium/low→mb (protótipo). */
+export function getWorkOrderLegendGroup(priority: string): "urg" | "alta" | "mb" {
+  if (priority === "urgent") return "urg";
+  if (priority === "high") return "alta";
+  return "mb";
+}
 
 // === J-MAPAS-4 — foco de câmera na "cidade com mais técnicos" (CLUSTERING, custo ZERO) ===
 // Helpers PUROS e DETERMINÍSTICOS (sem Date.now/Math.random dentro): agrupam os técnicos em campo

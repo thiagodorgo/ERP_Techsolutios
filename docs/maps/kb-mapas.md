@@ -13,7 +13,7 @@
 > exige PD-xxx (≥3 fontes) + **junta de 5 unânime** antes de configurar billing. Este documento é
 > o dossiê técnico/custo que instrui essa decisão — ele **não** ativa nada.
 
-**Última revisão geral:** 2026-07-25 · **Responsável:** Junta de Mapas (J-MAPAS-9 · planejador-mapas — plano do Rastreamento da Telemetria web, Ω4C PR-15)
+**Última revisão geral:** 2026-08-06 · **Responsável:** Junta de Mapas (J-MAPAS-10 · planejador-mapas — plano da recriação pixel-a-pixel do Mapa Operacional, PLANO-MAPA-PIXEL)
 
 ---
 
@@ -357,7 +357,54 @@ ativação externa.
 
 **Custo deste bloco:** **US$ 0** — sem SKU, sem chave, sem billing, sem `place_id`. **Junta-5 + PD NÃO disparam** (sem serviço externo tarifado; MapLibre US$ 0 reusado). Junta NORMAL (>=3), `agente-secops` recomendado. Cor por velocidade **DIFERIDA** (TrackView não projeta `speedKmh` — exigiria backend + reavaliar o allowlist §2.8).
 
+## (j) MAPA PIXEL — recriação do Mapa Operacional a partir do protótipo do dono (J-MAPAS-10)
+
+**Data:** 2026-08-06 · **Decisão de junta:** J-MAPAS-10 (planejador-mapas → dev-mapas → avaliador-mapas).
+**Escopo:** recriar `/operations/map` "pixel a pixel" do protótipo `Mapa Operacional.html` (Leaflet +
+CARTO Voyager raster, desenhado pelo dono no Claude Design); sidebar/topbar de fora. Plano completo:
+`agent-orchestration/omega/planos/PLANO-MAPA-PIXEL.md`.
+
+**(a) Provedor — regra de ouro mantida; CARTO REJEITADO como fonte de tiles.** O protótipo usa raster
+CARTO Voyager (`basemaps.cartocdn.com`). **Verificado 2026-08-06 em carto.com/basemaps: "For commercial
+purposes, you will need an Enterprise license"** — o basemap CARTO NÃO é grátis para uso comercial;
+adotá-lo = serviço externo pago novo = junta-5 + PD. Decisão: **MapLibre GL + OpenFreeMap** seguem a
+base (keyless; re-verificado 2026-08-06 em openfreemap.org: "completely free… no limits… no API keys",
+uso comercial "Yes"; hospeda estilos claros positron/bright/liberty), com **token-set CLARO
+"voyager-like" no NOSSO `buildOperationalMapStyle`** (função pura já testada) para reproduzir a leitura
+clara do Voyager. Leaflet rejeitado (dependência nova = junta-5). Alternativas abertas no quadro:
+estilos hospedados OFM (fallback de esforço) · CARTO Enterprise (pago) · Google Dynamic Maps (abaixo).
+
+**(b) Custo no piloto:** **US$ 0/mês.** Nenhum SKU, nenhuma chave, nenhum billing. Tabela oficial
+Google re-verificada 2026-08-06 via WebFetch (página marcada "Last updated 2026-07-31 UTC"): Dynamic
+Maps US$ 7,00/1.000 · Geocoding US$ 5,00/1.000 · Routes Compute Routes Essentials US$ 5,00/1.000 ·
+cota grátis 10.000/mês por SKU — inalterados desde as checagens de 2026-07-19/25. ETA/km continuam
+haversine local com rótulos honestos ("~X km (linha reta)" / "~Y min (estimado, sem trânsito)"); ETA
+por rota real segue PD-006 (junta-5 + PD; NÃO entra).
+
+**(c) ToS de cache (place_id vs lat/lng):** não se aplica — nenhuma coordenada de terceiro é buscada
+ou persistida; tudo é dado próprio do tenant. OpenFreeMap: sem trava de cache; obrigação = atribuição
+"OpenFreeMap © OpenMapTiles Data from OpenStreetMap" (AttributionControl mantido).
+
+**(d) Chave por plataforma:** N/A — keyless. `VITE_GOOGLE_MAPS_API_KEY` (canvas Google opcional) fora
+do escopo; restrição por referrer + rotação pelo dono seguem pendentes (go-live readiness).
+
+**(e) LGPD:** listas/cards/toasts/DnD sem coordenada (payload do DnD = só id da OS); coordenada
+numérica SÓ no detail popover do técnico (paridade com o protótipo; mesma superfície de permissão do
+pin — `field_location:read`); NENHUMA coordenada em log/console/analytics; o novo
+`localStorage techsol.mapaOp.view.<tenantId>` guarda SÓ a câmera do operador (nunca posição de técnico).
+
+**Divergências A2 principais (registradas em D-MAPA-PIXEL, controle/decisoes.md):** focus-city
+(J-MAPAS-4) SUPERSEDED pela memória-da-visão + default Brasil z4 (artefato mais novo do dono; helpers
+removidos no PR-2 junto com o espelho Google); cores de status/prioridade passam às do protótipo;
+legenda 2-faixas de "antiga" vira item único (limiar 15 min existente); popups D/E de alocação dão
+lugar a seleção→Alocar por linha + popup do marker (3 mais próximos) + drag-and-drop nativo (índice de
+conclusão preservado como opção de ordenação); toast com copy honesta (nunca "chegada estimada" cravada).
+
+**Custo deste bloco: US$ 0 — junta-5 + PD NÃO disparam** (nenhum serviço tarifado novo). Fatias:
+PR-1 (MapLibre default completo) → PR-2 (espelho Google + faxina focus-city). Próximo: dev-mapas.
+
 ## Historico de revisoes
+- **2026-08-06 (J-MAPAS-10 · planejador-mapas)** — Plano da **recriação "pixel a pixel" do Mapa Operacional** a partir do protótipo do dono (`Mapa Operacional.html`). CARTO Voyager raster **REJEITADO** (uso comercial exige Enterprise license — carto.com/basemaps, verificado 2026-08-06); base segue **MapLibre + OpenFreeMap** com token-set CLARO próprio "voyager-like". **US$ 0**, sem SKU/chave/dep nova → junta-5+PD não disparam. Focus-city (J-MAPAS-4) SUPERSEDED pela memória-da-visão (localStorage por tenant + default Brasil z4). Preços Google re-verificados 2026-08-06 (página "Last updated 2026-07-31 UTC"): inalterados. Ver §(j) e `agent-orchestration/omega/planos/PLANO-MAPA-PIXEL.md`. Próximo: dev-mapas.
 - **2026-07-25 (J-MAPAS-9 · planejador-mapas)** — Plano do **Rastreamento da Telemetria web (Ω4C PR-15)**: trajeto/polyline dos pontos de `GET /telemetry/track` (único endpoint com coordenada crua). **Reusa MapLibre+OpenFreeMap US$ 0** (style + padrão de montagem do mapa operacional; polyline = camada `line` nativa), **sem SKU/chave/billing/dep nova**. OpenFreeMap re-confirmado keyless/gratuito em 2026-07-25 na fonte. §2.8: coordenada crua exibida SÓ aqui, gated telemetry:read + consent na origem; allowlist {capturedAt,lat,lng,accuracyM}; sem coordenada em log; sem CSV de coordenada. Cor por velocidade DIFERIDA (TrackView não projeta speedKmh). Não dispara junta-5+PD -> junta normal. Ver §(i). Próximo: dev-mapas.
 - **2026-07-21 (J-MAPAS-8 · dev-mapas)** — **M-7 SLA real (Fase 2 FECHADA).** PR-A (backend) expôs
   `sla_due_at` aditivo no DTO de work-orders; PR-B (frontend) trocou o SLA-PROXY da fila de chamados por

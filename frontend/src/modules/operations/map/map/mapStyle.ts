@@ -1,33 +1,34 @@
 import type { StyleSpecification } from "maplibre-gl";
 
 /**
- * Ω1 (J-002) — Estilo do Mapa Operacional.
+ * Ω1 (J-002) → J-MAPAS-10 (PLANO-MAPA-PIXEL, D1) — Estilo do Mapa Operacional.
  *
  * Fonte de tiles: OpenFreeMap (schema OpenMapTiles), planeta inteiro, **sem chave e sem custo**
  * (https://openfreemap.org — "no API key, no registration, no limit on map views/requests").
- * O estilo é 100% pintado nos tokens navy do protótipo — nenhuma "cara de Google/Mapbox".
  *
- * Obrigações legais herdadas de J-002/PD-001: exibir atribuição OSM/OMT (o TileJSON do planet já
- * traz a atribuição; o canvas mantém `AttributionControl` visível). Geocodificação (Nominatim) é
- * tratada fora daqui (dev-only, 1 req/s + cache) — este arquivo só desenha o basemap.
+ * D1 (J-MAPAS-10): o protótipo do dono usa leitura CLARA (CARTO Voyager — REJEITADO por ToS:
+ * uso comercial exige Enterprise). Este token-set recria o look "voyager-like" com recursos
+ * próprios: fundo creme, água azul-claro, vias brancas/amarelo-suave, rótulos cinza-escuro.
+ * Zero dependência nova, zero chave, zero ToS novo. Atribuição OSM/OMT mantida no canvas
+ * (AttributionControl compact).
  */
 
-// Tokens do basemap operacional (mesma paleta navy do protótipo do Mapa Operacional).
+// Tokens do basemap operacional CLARO (calibrado visualmente contra o Voyager do protótipo).
 export const OPERATIONAL_MAP_TOKENS = {
-  background: "#0f1722",
-  water: "#13233a",
-  waterwayLine: "#16283f",
-  landcover: "#101d28",
-  landuse: "#111f2b",
-  park: "#12241f",
-  building: "#182740",
-  roadMinor: "#233247",
-  roadMajor: "#2a3a52",
-  roadMotorway: "#33465f",
-  boundary: "#2a3a52",
-  label: "#94a3b8",
-  labelHalo: "#0b1420",
-  roadLabel: "#6f8098",
+  background: "#f6f2ea",
+  water: "#b7d9ec",
+  waterwayLine: "#a9cfe4",
+  landcover: "#ebeee3",
+  landuse: "#efece2",
+  park: "#d5e8c9",
+  building: "#e2dccd",
+  roadMinor: "#ffffff",
+  roadMajor: "#fbe7a3",
+  roadMotorway: "#f8d98a",
+  boundary: "#b9a8c9",
+  label: "#3f4a5c",
+  labelHalo: "#ffffff",
+  roadLabel: "#6b7280",
 } as const;
 
 const OPENFREEMAP_TILEJSON = "https://tiles.openfreemap.org/planet";
@@ -51,7 +52,7 @@ export function buildOperationalMapStyle(): StyleSpecification {
 
   return {
     version: 8,
-    name: "ERP Operacional (navy)",
+    name: "ERP Operacional (claro)",
     glyphs: OPENFREEMAP_GLYPHS,
     sources: {
       [OMT_SOURCE]: {
@@ -70,14 +71,14 @@ export function buildOperationalMapStyle(): StyleSpecification {
         type: "fill",
         source: OMT_SOURCE,
         "source-layer": "landcover",
-        paint: { "fill-color": t.landcover, "fill-opacity": 0.5 },
+        paint: { "fill-color": t.landcover, "fill-opacity": 0.6 },
       },
       {
         id: "park",
         type: "fill",
         source: OMT_SOURCE,
         "source-layer": "park",
-        paint: { "fill-color": t.park, "fill-opacity": 0.45 },
+        paint: { "fill-color": t.park, "fill-opacity": 0.55 },
       },
       {
         id: "landuse",
@@ -85,7 +86,7 @@ export function buildOperationalMapStyle(): StyleSpecification {
         source: OMT_SOURCE,
         "source-layer": "landuse",
         minzoom: 8,
-        paint: { "fill-color": t.landuse, "fill-opacity": 0.4 },
+        paint: { "fill-color": t.landuse, "fill-opacity": 0.5 },
       },
       {
         id: "water",
@@ -110,7 +111,7 @@ export function buildOperationalMapStyle(): StyleSpecification {
         minzoom: 13,
         paint: {
           "fill-color": t.building,
-          "fill-opacity": ["interpolate", ["linear"], ["zoom"], 13, 0, 15, 0.6],
+          "fill-opacity": ["interpolate", ["linear"], ["zoom"], 13, 0, 15, 0.65],
         },
       },
       {
@@ -123,7 +124,7 @@ export function buildOperationalMapStyle(): StyleSpecification {
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": t.roadMinor,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.4, 16, 3],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.5, 16, 3.4],
         },
       },
       {
@@ -135,7 +136,7 @@ export function buildOperationalMapStyle(): StyleSpecification {
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": t.roadMajor,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 6, 0.6, 16, 4.5],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 6, 0.7, 16, 5],
         },
       },
       {
@@ -147,7 +148,7 @@ export function buildOperationalMapStyle(): StyleSpecification {
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": t.roadMotorway,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.8, 16, 6],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.9, 16, 6.5],
         },
       },
       {
@@ -204,6 +205,7 @@ export function buildOperationalMapStyle(): StyleSpecification {
 
 export const OPERATIONAL_MAP_STYLE = buildOperationalMapStyle();
 
-// Centro/zoom padrão quando ainda não há pontos para enquadrar (São Paulo — sede operacional demo).
-export const OPERATIONAL_MAP_DEFAULT_CENTER: [number, number] = [-46.633308, -23.55052];
-export const OPERATIONAL_MAP_DEFAULT_ZOOM = 10.5;
+// D4 (J-MAPAS-10) — default de câmera: BRASIL inteiro (verbatim do protótipo do dono:
+// "Brasil — só até o operador focar em outra área"). [lng, lat] na ordem MapLibre.
+export const OPERATIONAL_MAP_DEFAULT_CENTER: [number, number] = [-52.5, -15.5];
+export const OPERATIONAL_MAP_DEFAULT_ZOOM = 4;

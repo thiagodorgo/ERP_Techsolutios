@@ -75,6 +75,10 @@ export type OperationsMapWorkOrderPin = {
   // M-7 (J-MAPAS-8) — prazo de SLA REAL (backend PR-A). Quando presente, a fila troca o proxy por countdown
   // honesto ("vence em"/"vencido há"); `null` mantém o proxy. Aditivo/opcional.
   readonly slaDueAt?: string | null;
+  // J-MAPAS-10 — ids do técnico atribuído (quando a OS está em atendimento): habilitam a resolução
+  // do nome no painel "Em Atendimento" e o par da rota tracejada. Aditivo/opcional.
+  readonly assignedOperatorId?: string | null;
+  readonly assignedUserId?: string | null;
 };
 
 // Ω1b — OS aberta com endereço mas SEM coordenada válida (vai para o painel "Sem localização").
@@ -83,6 +87,8 @@ export type OperationsMapWorkOrderWithoutLocation = {
   readonly code: string;
   readonly title: string;
   readonly priority: WorkOrderPriority;
+  // J-MAPAS-10 — status necessário para o split rec/atd (chamado sem GPS também tem fase). Aditivo.
+  readonly status: WorkOrderStatus;
   readonly customerName?: string | null;
   readonly serviceAddress?: string | null;
   // M-4 (J-MAPAS-6) — mesmas datas do pin para o SLA-PROXY (chamado sem GPS também entra na fila). Aditivo.
@@ -90,6 +96,9 @@ export type OperationsMapWorkOrderWithoutLocation = {
   readonly createdAt?: string | null;
   // M-7 (J-MAPAS-8) — prazo de SLA REAL (chamado sem GPS também ganha countdown honesto quando presente).
   readonly slaDueAt?: string | null;
+  // J-MAPAS-10 — técnico atribuído (mesma resolução do pin). Aditivo/opcional.
+  readonly assignedOperatorId?: string | null;
+  readonly assignedUserId?: string | null;
 };
 
 // M-4 (J-MAPAS-6) — item da LISTA de "chamados que chegam" (triagem do operador de despacho). É uma
@@ -102,11 +111,27 @@ export type OperationsIncomingCall = {
   readonly title: string;
   readonly priority: WorkOrderPriority;
   readonly customerName?: string | null;
+  // J-MAPAS-10 — endereço textual do card (linha "📍 {endereço}" do protótipo). Endereço NÃO é
+  // coordenada: a proibição LGPD/§2.8 segue valendo para lat/lng, que jamais entram na lista.
+  readonly serviceAddress?: string | null;
   readonly scheduledFor?: string | null;
   readonly createdAt?: string | null;
   // M-7 (J-MAPAS-8) — prazo de SLA REAL (backend PR-A). Chave primária de urgência dentro da prioridade:
   // presente → countdown honesto ("vence em"/"vencido há") + tom por proximidade; `null` → SLA-PROXY intacto.
   readonly slaDueAt?: string | null;
+  readonly hasLocation: boolean;
+};
+
+// J-MAPAS-10 — item do painel "Em Atendimento": projeção enxuta da OS não-terminal já atribuída,
+// com o NOME do técnico resolvido pelas MESMAS listas (assigned ids ↔ locations; fallback despacho;
+// sem match → "—"). LGPD §12: NUNCA carrega latitude/longitude.
+export type OperationsInServiceCall = {
+  readonly id: string;
+  readonly code: string;
+  readonly title: string;
+  readonly priority: WorkOrderPriority;
+  readonly customerName?: string | null;
+  readonly technicianName: string;
   readonly hasLocation: boolean;
 };
 

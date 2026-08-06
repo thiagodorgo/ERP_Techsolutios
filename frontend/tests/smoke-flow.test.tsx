@@ -1500,7 +1500,11 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(protectedHtml, /Ordens de Servico/);
   assert.match(protectedHtml, /Nova OS/);
   assert.match(protectedHtml, /Mapa Operacional/);
-  assert.match(protectedHtml, /Atualização periódica/);
+  // Diretiva do dono (2026-08-06): os chips passivos do topo-esquerdo SAÍRAM ("é para sair/excluir").
+  // O rótulo de tempo real vivia neles; a tela agora só mostra aviso quando há estado REAL (erro
+  // de carga com retry, contexto de OS filtrada).
+  assert.doesNotMatch(protectedHtml, /Atualização periódica/);
+  assert.doesNotMatch(protectedHtml, /Fonte: /);
   // D-007 (F6): modo mock renderiza estado vazio orientado — zero pin fabricado no SSR.
   // M-5 (J-MAPAS-6): terminologia §3 reconciliada — "técnico" (era "operador") no empty-state do mapa.
   assert.match(protectedHtml, /Nenhum técnico ou chamado no mapa/);
