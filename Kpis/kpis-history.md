@@ -1864,3 +1864,23 @@ claro, keyless, US$ 0.
 **Contagens (execução real):** smoke **1013→1052** (suíte do mapa 125→**177** casos; 5 arquivos novos);
 backend **2110/2110** (4 shards); Flutter **839/839** carregado (§C3.3). Blocos **137→138**.
 Backfill #337: merge `be86751`. Ata: `agent-orchestration/omega/mapas/J-MAPAS-10-pixel-ata.md`.
+
+## 2026-08-07 — CHK-P1-PR-02B (PR pendente)
+
+**Modo editor do builder**, fiel ao protótipo do dono: sub-rota com deep-link, header com nome e tipo,
+paleta que adiciona por clique, canvas com **seções nomeadas**, inspector básico, modal "Sair sem salvar?"
+e a aba Aplicabilidade estática. A ponte antiga saiu e 5 componentes órfãos foram removidos.
+
+A convenção de persistência das seções foi **provada rodando o parser e o repositório de verdade** — e a
+prova revelou dois fatos que mudaram decisões: chave extra no topo do componente é descartada, e o PATCH
+**ignora o campo `type`**. Por isso o seletor de tipo ficou parado (com o selo "Em breve" do próprio
+desenho) em vez de fingir que salva.
+
+**A junta reprovou no pixel e condicionou no crítico**, com 4 achados ALTA que valeram a rodada: o grid
+jogava o cabeçalho para fora da tela ao rolar o formulário; adicionar um campo gravava o rótulo **cru** do
+backend como a pergunta que o técnico lê no aplicativo; **Publicar ficou inalcançável** — capacidade real
+do produto removida com o endpoint funcionando; e editar durante o salvamento perdia trabalho em silêncio,
+com um toast verde confirmando um save que não incluía as edições. Todos corrigidos, mais 8 MÉDIAs.
+
+**Contagens (execução real):** smoke **1052→1066** (+13 do editor, +1 da lista); backend **2110/2110** e
+Flutter 839/839 carregados (§C3.3). Blocos **139→140**. Backfill #339: merge `31609b8`.

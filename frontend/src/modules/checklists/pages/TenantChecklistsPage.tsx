@@ -1,63 +1,44 @@
 import {
   AlertTriangle,
-  AlignLeft,
   Archive,
-  ArrowLeftRight,
-  Camera,
-  Car,
-  CircleDot,
-  ClipboardCheck,
   ClipboardList,
   Copy,
   ExternalLink,
   Eye,
-  Images,
-  ListChecks,
   Lock,
-  MapPin,
-  PenLine,
   Plus,
   RefreshCcw,
   RotateCcw,
   Search,
-  Send,
   Settings,
 } from "lucide-react";
 import type { KeyboardEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import { Button, Card } from "../../../components/ui";
 import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
+import { buildChecklistApiContext } from "../checklist.api-context";
 import {
   addComponentToDraft,
   buildChecklistInputFromDraft,
-  createDraftFromChecklist,
   createEmptyChecklistDraft,
   defaultComponentForType,
   hasChecklistPendingChanges,
-  moveDraftComponent,
-  removeDraftComponent,
-  updateDraftComponent,
 } from "../checklist.builder";
 import { checklistStatusLabel, checklistTypeLabel, resolveChecklistComponentTypeLabel } from "../checklist.constants";
+import { checklistEditorPath } from "../checklist-editor.model";
 import {
   createTenantChecklist,
   listTenantChecklistComponents,
   listTenantChecklists,
-  publishTenantChecklist,
   updateTenantChecklist,
 } from "../checklist.service";
-import { ChecklistCanvas } from "../components/ChecklistCanvas";
-import { ChecklistComponentPalette } from "../components/ChecklistComponentPalette";
-import { ChecklistInspector } from "../components/ChecklistInspector";
-import { ChecklistSchemaPreview } from "../components/ChecklistSchemaPreview";
-import { ChecklistStatusBadge } from "../components/ChecklistStatusBadge";
+import { CHECKLIST_STATUS_TONE, resolveChecklistComponentTile } from "../checklist-tiles";
+import { CHECKLIST_TOAST_HANDOFF_KEY } from "./ChecklistEditorPage";
 import { ChecklistToast, useChecklistToast } from "../components/ChecklistToast";
 import type {
-  ChecklistApiContext,
   TenantChecklist,
   TenantChecklistBuilderDraft,
   TenantChecklistComponentCatalogItem,
@@ -67,8 +48,11 @@ import type {
 // CHECKLIST P1 PR-02a — a LISTA de "Modelos de Checklist" recriada sobre o protótipo do dono
 // (Modelos de Checklist.dc.html, bloco scList): header com kicker ADMINISTRAÇÃO, busca 230px,
 // filtro de situação, 4 KPI mini-cards contados do payload REAL (D-007), tabela nova com tile do
-// primeiro componente, pills de situação e ações-ícone com toast. O BUILDER abaixo permanece como
-// está (o editor novo vem no PR-02b) — o clique na linha continua selecionando o modelo nele.
+// primeiro componente, pills de situação e ações-ícone com toast.
+//
+// CHECKLIST P1 PR-02b — a ponte do builder antigo abaixo da lista MORREU: abrir um modelo (clique
+// na linha, ação "Editar/Ver modelo" e "Novo modelo" instantâneo) navega para a sub-rota do EDITOR
+// (`/administrator/checklists/:checklistId`), sob o mesmo gate `tenant_checklists:read`.
 
 type ChecklistFilter = TenantChecklistStatus | "all" | "pending_changes";
 
@@ -79,33 +63,6 @@ const FILTER_OPTIONS: readonly { readonly value: ChecklistFilter; readonly label
   { value: "pending_changes", label: "Com alterações não publicadas" },
   { value: "inactive", label: "Inativos" },
 ];
-
-// Mapa canônico de cores/ícones por tipo de componente (CATALOG do protótipo; lucide equivalente).
-type ComponentTile = { readonly Icon: typeof Camera; readonly bg: string; readonly fg: string };
-
-const COMPONENT_TILE: Record<string, ComponentTile> = {
-  vehicle_selector: { Icon: Car, bg: "#EFF6FF", fg: "#2563EB" },
-  damage_map: { Icon: MapPin, bg: "#FEF2F2", fg: "#DC2626" },
-  photo_upload: { Icon: Camera, bg: "#F0FDF4", fg: "#15803D" },
-  observation: { Icon: AlignLeft, bg: "#F8FAFC", fg: "#475569" },
-  comparison: { Icon: ArrowLeftRight, bg: "#EFF6FF", fg: "#2563EB" },
-  acknowledgement: { Icon: ClipboardCheck, bg: "#FAF5FF", fg: "#7E22CE" },
-  before_after: { Icon: Images, bg: "#FFFBEB", fg: "#B45309" },
-  single_choice: { Icon: CircleDot, bg: "#F0F9FF", fg: "#0369A1" },
-  multi_choice: { Icon: ListChecks, bg: "#F0F9FF", fg: "#0369A1" },
-  signature: { Icon: PenLine, bg: "#FAF5FF", fg: "#7E22CE" },
-};
-
-// Fallback do protótipo: modelo sem componentes (ou tipo desconhecido) usa o tile de Foto.
-const DEFAULT_TILE: ComponentTile = COMPONENT_TILE.photo_upload;
-
-// Pills de situação — tokens exatos do protótipo (STATUS).
-const STATUS_TONE: Record<TenantChecklistStatus, { readonly bg: string; readonly fg: string }> = {
-  draft: { bg: "#F1F5F9", fg: "#475569" },
-  published: { bg: "#DCFCE7", fg: "#15803D" },
-  inactive: { bg: "#F1F5F9", fg: "#64748B" },
-  archived: { bg: "#F1F5F9", fg: "#94A3B8" },
-};
 
 /** KPIs contados do payload REAL da lista — zeros honestos, nunca fabricação (D-007). */
 export function computeChecklistKpis(checklists: readonly TenantChecklist[]) {
@@ -194,6 +151,7 @@ export function TenantChecklistsPage({
   // "Ver execuções" é LEITURA — gate próprio (junta PR-02a), não o canWrite.
   const canReadRuns = can("checklist_runs:read");
   const navigate = useNavigate();
+  const location = useLocation();
   const apiContext = useMemo(() => buildChecklistApiContext(activeContext, session?.accessToken), [activeContext, session?.accessToken]);
   const { toast, showToast } = useChecklistToast();
   const [checklists, setChecklists] = useState<TenantChecklist[]>(() => [...(initialChecklists ?? [])]);
@@ -206,24 +164,24 @@ export function TenantChecklistsPage({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ChecklistFilter>("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedChecklistId, setSelectedChecklistId] = useState<string | null>(null);
-  const [selectedComponentId, setSelectedComponentId] = useState<string | undefined>();
-  const [builderDraft, setBuilderDraft] = useState<TenantChecklistBuilderDraft>(createEmptyChecklistDraft());
 
   useEffect(() => {
     // Junta PR-02a (BAIXA): ao TROCAR de organização, zera o que está na tela antes do fetch —
     // senão a lista da organização anterior persiste visível durante a troca (§7).
     setChecklists([]);
-    setSelectedChecklistId(null);
-    setBuilderDraft(createEmptyChecklistDraft());
     void loadChecklists();
   }, [apiContext]);
 
-  const selectedChecklist = useMemo(
-    () => checklists.find((checklist) => checklist.id === selectedChecklistId) ?? null,
-    [checklists, selectedChecklistId],
-  );
-  const selectedComponent = builderDraft.components.find((component) => component.id === selectedComponentId);
+  useEffect(() => {
+    // PR-02b: "Salvar e sair" no editor confirma a gravação AQUI — o toast não sobrevive à troca
+    // de rota, então a mensagem viaja no state e é consumida uma única vez.
+    const handoff = (location.state as Record<string, unknown> | null)?.[CHECKLIST_TOAST_HANDOFF_KEY];
+    if (typeof handoff !== "string" || handoff.length === 0) return;
+
+    showToast(handoff, "ok");
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.key]);
+
   const kpis = useMemo(() => computeChecklistKpis(checklists), [checklists]);
   const filteredChecklists = useMemo(
     () =>
@@ -254,14 +212,6 @@ export function TenantChecklistsPage({
       ]);
       setChecklists(nextChecklists);
       setComponents(nextComponents);
-
-      // Junta PR-02a (ALTA): NUNCA auto-selecionar — a ponte do builder antigo só monta após
-      // clique explícito na linha (a ata autoriza "ao clicar"). Auto-abrir vazava enum cru,
-      // JSON de schema e copy de andaime no primeiro paint pós-carga, sem ação do usuário.
-      const nextSelected = selectedChecklistId
-        ? nextChecklists.find((checklist) => checklist.id === selectedChecklistId)
-        : undefined;
-      selectChecklist(nextSelected ?? null);
     } catch {
       // Junta PR-02a (BAIXA): recarga falhando COM dados na tela era silenciosa — a lista da
       // organização anterior continuava visível como se fosse a atual (§7 "dados desatualizados").
@@ -274,15 +224,14 @@ export function TenantChecklistsPage({
     }
   }
 
-  function selectChecklist(checklist: TenantChecklist | null) {
-    setSelectedChecklistId(checklist?.id ?? null);
-    setSelectedComponentId(checklist?.components[0]?.id);
-    setBuilderDraft(checklist ? createDraftFromChecklist(checklist) : createEmptyChecklistDraft());
+  /** PR-02b: abrir um modelo é NAVEGAR para o editor (rota própria, deep-linkável). */
+  function openChecklist(checklist: TenantChecklist) {
+    navigate(checklistEditorPath(checklist.id));
   }
 
   // "Novo modelo" instantâneo do protótipo: cria o rascunho "Novo modelo" (Guincho — Coleta) via
-  // POST existente e seleciona. O contrato do backend exige ≥1 componente no create, então o
-  // rascunho nasce com os componentes padrão do tipo (mesma semente do fluxo antigo).
+  // POST existente e ABRE o editor no modelo recém-criado. O contrato do backend exige ≥1
+  // componente no create, então o rascunho nasce com os componentes padrão do tipo.
   async function handleCreateModel() {
     if (!apiContext) return;
 
@@ -292,7 +241,7 @@ export function TenantChecklistsPage({
       const draft = applyTypeDefaults({ ...createEmptyChecklistDraft("towing_collection"), name: "Novo modelo" });
       const saved = await createTenantChecklist(apiContext, buildChecklistInputFromDraft(draft));
       setChecklists((current) => [saved, ...current]);
-      selectChecklist(saved);
+      openChecklist(saved);
     } catch (item) {
       showToast(item instanceof Error ? item.message : "Falha ao criar o modelo.", "warn");
     } finally {
@@ -313,7 +262,6 @@ export function TenantChecklistsPage({
     try {
       const saved = await updateTenantChecklist(apiContext, checklist.id, { status: nextStatus });
       setChecklists((current) => upsertChecklist(current, saved));
-      if (selectedChecklistId === checklist.id) selectChecklist(saved);
       showToast(
         nextStatus === "inactive"
           ? "Modelo inativado — não entra em novas ordens."
@@ -325,60 +273,6 @@ export function TenantChecklistsPage({
     } finally {
       setSaving(false);
     }
-  }
-
-  async function handleSaveBuilder() {
-    if (!apiContext || !selectedChecklist) return;
-
-    setSaving(true);
-
-    try {
-      const saved = await updateTenantChecklist(apiContext, selectedChecklist.id, buildChecklistInputFromDraft(builderDraft));
-      setChecklists((current) => upsertChecklist(current, saved));
-      selectChecklist(saved);
-      showToast("Modelo salvo. Publique para enviar ao aplicativo.", "ok");
-    } catch (item) {
-      showToast(item instanceof Error ? item.message : "Falha ao salvar o modelo.", "warn");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handlePublish(checklist: TenantChecklist) {
-    if (!apiContext) return;
-
-    setSaving(true);
-
-    try {
-      const published = await publishTenantChecklist(apiContext, checklist.id);
-      setChecklists((current) => upsertChecklist(current, published));
-      if (selectedChecklistId === published.id) {
-        selectChecklist(published);
-      }
-      showToast("Modelo publicado — já está disponível no aplicativo para as próximas ordens.", "ok");
-    } catch (item) {
-      showToast(item instanceof Error ? item.message : "Falha ao publicar o modelo.", "warn");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function handleAddComponent(component: TenantChecklistComponentCatalogItem) {
-    const nextDraft = addComponentToDraft(builderDraft, component);
-    setBuilderDraft(nextDraft);
-    setSelectedComponentId(nextDraft.components.at(-1)?.id);
-  }
-
-  function handleMoveComponent(componentId: string, direction: "up" | "down") {
-    setBuilderDraft((current) => moveDraftComponent(current, componentId, direction));
-  }
-
-  function handleRemoveComponent(componentId: string) {
-    setBuilderDraft((current) => {
-      const nextDraft = removeDraftComponent(current, componentId);
-      setSelectedComponentId(nextDraft.components[0]?.id);
-      return nextDraft;
-    });
   }
 
   function applyTypeDefaults(draft: TenantChecklistBuilderDraft): TenantChecklistBuilderDraft {
@@ -402,7 +296,7 @@ export function TenantChecklistsPage({
   function handleRowKeyDown(event: KeyboardEvent<HTMLDivElement>, checklist: TenantChecklist) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      selectChecklist(checklist);
+      openChecklist(checklist);
     }
   }
 
@@ -513,9 +407,11 @@ export function TenantChecklistsPage({
 
                 {filteredChecklists.map((checklist) => {
                   const ordered = [...checklist.components].sort((a, b) => a.orderIndex - b.orderIndex);
-                  const tile = ordered[0] ? (COMPONENT_TILE[ordered[0].type] ?? DEFAULT_TILE) : DEFAULT_TILE;
+                  // Tile/pill vêm da FONTE ÚNICA do módulo (checklist-tiles) — lista, editor e os
+                  // PRs seguintes leem o mesmo mapa; nada de cor mágica duplicada por tela.
+                  const tile = resolveChecklistComponentTile(ordered[0]?.type ?? "photo_upload");
                   const TileIcon = tile.Icon;
-                  const tone = STATUS_TONE[checklist.status];
+                  const tone = CHECKLIST_STATUS_TONE[checklist.status];
                   const pending = hasChecklistPendingChanges(checklist);
                   const rowActions = rowActionVisibility({ canUpdate, canWrite, canReadRuns });
                   const openLabel = rowActions.open === "edit" ? "Editar modelo" : "Ver modelo";
@@ -526,7 +422,7 @@ export function TenantChecklistsPage({
                       tabIndex={0}
                       className="ckb-grid ckb-row"
                       aria-label={`Abrir o modelo ${checklist.name}`}
-                      onClick={() => selectChecklist(checklist)}
+                      onClick={() => openChecklist(checklist)}
                       onKeyDown={(event) => handleRowKeyDown(event, checklist)}
                     >
                       <div className="ckb-cell-model">
@@ -556,7 +452,7 @@ export function TenantChecklistsPage({
                           aria-label={openLabel}
                           onClick={(event) => {
                             event.stopPropagation();
-                            selectChecklist(checklist);
+                            openChecklist(checklist);
                           }}
                         >
                           {rowActions.open === "edit" ? <Settings size={15} /> : <Eye size={15} />}
@@ -638,82 +534,6 @@ export function TenantChecklistsPage({
             </div>
           )}
 
-          {selectedChecklist ? (
-            <div className="ckb-builder-below">
-              <Card title="Builder visual">
-                <div className="checklist-builder-heading">
-                  <div>
-                    <strong>{selectedChecklist.name}</strong>
-                    <span>
-                      {checklistTypeLabel[selectedChecklist.type]} · v{selectedChecklist.version}
-                    </span>
-                  </div>
-                  <ChecklistStatusBadge
-                    status={selectedChecklist.status}
-                    uiState={hasChecklistPendingChanges(selectedChecklist) ? "pending_changes" : undefined}
-                  />
-                </div>
-
-                {/* Junta PR-02a (MÉDIA/esconde-fino): a ponte inteira oferecia "Adicionar", mover e
-                    remover para papel SOMENTE-LEITURA — o banner prometia "não criar, editar ou
-                    publicar" e a tela deixava editar um rascunho local que jamais salvaria. Sem
-                    `update`, a ponte vira CONSULTA: só a estrutura, sem paleta e sem controles. */}
-                <div className={canUpdate ? "checklist-builder-layout" : "checklist-builder-layout checklist-builder-layout--readonly"}>
-                  {canUpdate ? (
-                    <section>
-                      <h3>Componentes</h3>
-                      <ChecklistComponentPalette components={components} onAdd={handleAddComponent} />
-                    </section>
-                  ) : null}
-                  <section>
-                    <h3>Estrutura</h3>
-                    <ChecklistCanvas
-                      components={builderDraft.components}
-                      selectedComponentId={selectedComponentId}
-                      onMove={canUpdate ? handleMoveComponent : undefined}
-                      onRemove={canUpdate ? handleRemoveComponent : undefined}
-                      onSelect={setSelectedComponentId}
-                    />
-                  </section>
-                  {canUpdate ? (
-                    <section>
-                      <h3>Propriedades</h3>
-                      <ChecklistInspector
-                        component={selectedComponent}
-                        onChange={(componentId, patch) => setBuilderDraft((current) => updateDraftComponent(current, componentId, patch))}
-                      />
-                    </section>
-                  ) : null}
-                </div>
-
-                {/* Rodapé de escrita — some INTEIRO (texto de ajuda + ações) p/ papel sem update nem publish,
-                    senão o <p> ficaria órfão descrevendo uma ação indisponível (cognicao §11). */}
-                {canUpdate || canPublish ? (
-                  <div className="checklist-builder-footer">
-                    <p>Publicar gera uma nova versão do checklist para uso nos fluxos de campo.</p>
-                    <div className="platform-actions">
-                      {canUpdate ? (
-                        // "Salvar builder" só PATCHea (updateTenantChecklist) → gate exato = tenant_checklists:update.
-                        <Button onClick={handleSaveBuilder} disabled={saving || builderDraft.components.length === 0}>
-                          {saving ? "Salvando..." : "Salvar builder"}
-                        </Button>
-                      ) : null}
-                      {canPublish ? (
-                        <Button variant="secondary" onClick={() => handlePublish(selectedChecklist)} disabled={saving}>
-                          <Send size={14} />
-                          Publicar checklist
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
-                ) : null}
-              </Card>
-
-              <Card title="Pré-visualização do checklist">
-                <ChecklistSchemaPreview draft={builderDraft} />
-              </Card>
-            </div>
-          ) : null}
         </>
       ) : null}
 
@@ -758,36 +578,4 @@ function upsertChecklist(current: TenantChecklist[], checklist: TenantChecklist)
   const exists = current.some((item) => item.id === checklist.id);
   if (!exists) return [checklist, ...current];
   return current.map((item) => (item.id === checklist.id ? checklist : item));
-}
-
-function buildChecklistApiContext(
-  activeContext: ReturnType<typeof useTenantContext>["activeContext"],
-  accessToken: string | undefined,
-): ChecklistApiContext | null {
-  if (!activeContext) return null;
-
-  return {
-    tenantId: activeContext.tenantId,
-    branchId: activeContext.branchId,
-    role: toBackendRole(activeContext.role, activeContext.permissions),
-    permissions: activeContext.permissions,
-    ...(accessToken && !accessToken.startsWith("mock-") ? { token: accessToken } : {}),
-  };
-}
-
-function toBackendRole(role: string, permissions: readonly string[]): string {
-  if (
-    permissions.includes("tenant_checklists:create") ||
-    permissions.includes("tenant_checklists:update") ||
-    permissions.includes("tenant_checklists:publish")
-  ) {
-    return "tenant_admin";
-  }
-
-  const normalizedRole = role.toLowerCase();
-  if (normalizedRole.includes("admin")) return "tenant_admin";
-  if (normalizedRole.includes("gestor")) return "manager";
-  if (normalizedRole.includes("auditor")) return "auditor";
-  if (normalizedRole.includes("operador")) return "operator";
-  return "tenant_admin";
 }

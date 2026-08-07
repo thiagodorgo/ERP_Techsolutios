@@ -1,16 +1,16 @@
 {
   "snapshot_date": "2026-08-04",
-  "version": "MAPA-PIXEL-PR1",
+  "version": "CHK-P1-PR-02B",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "J-MAPAS-10 PR-1 — Mapa Operacional recriado PIXEL A PIXEL sobre o protótipo do dono (Mapa Operacional.html, importado do Claude Design). Painéis de vidro 348px (Chamados recebidos / Em Atendimento / Técnicos com ETA, filtros e ordenação), legenda-FILTRO no rodapé com 8 itens e contagem no tooltip, alocação por clique + popup do marker (3 mais próximos) + drag-and-drop nativo, rota tracejada, toast honesto, markers do protótipo (avatar 32px com borda por status; losango 22px com pulso na urgente). 3 DIRETIVAS do dono aplicadas e provadas em navegador real: chips do topo-esquerdo removidos; ZERO movimento automático de câmera (sobra só o pan por clique) + memória da visão por organização; detalhe do técnico por hover (efêmero) e por clique (fixo, fecha manual). ALTA da junta: a chave Google fazia a tela cair no canvas ANTIGO — MapLibre virou default e Google exige opt-in (VITE_MAPS_PROVIDER=google) até a paridade do PR-2. Tiles CARTO do protótipo REJEITADOS por ToS Enterprise → OpenFreeMap claro, US$ 0.",
-    "title": "Mapa Operacional pixel-perfect (J-MAPAS-10 PR-1)",
-    "pr": 338,
+    "block": "CHECKLIST P1 PR-02b — MODO EDITOR do builder no desenho do dono: sub-rota /administrator/checklists/:id, header (nome inline-editável, tipo, pills de situação, indicador dirty, Salvar/Publicar), paleta que adiciona por clique, canvas com SEÇÕES NOMEADAS (mover/duplicar/remover por campo), inspector básico, modal 'Sair sem salvar?', aba Aplicabilidade estática com o card 'O que acontece ao publicar'. A ponte antiga morreu; 5 componentes órfãos removidos. Persistência das seções por convenção schema.sections + config.sectionIndex/help, PROVADA rodando parser+repositório reais (chave no topo do componente e `type` são descartados — pendências registradas). JUNTA: cognicao-visual REPROVOU e critico-adversarial CONDICIONOU; 4 ALTA + 8 MÉDIA aplicados, com destaque para: grid que jogava o header para fora da tela ao rolar; rótulo CRU do backend virando a pergunta que o técnico lê; Publicar inalcançável (capacidade real removida com o endpoint funcionando); e perda SILENCIOSA de trabalho ao editar durante o save.",
+    "title": "CHECKLIST P1 PR-02b — editor do builder (casca + canvas + seções)",
+    "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Mapa recriado no protótipo do dono; câmera só sob comando do operador com memória da visão; detalhe do técnico por hover e clique. Junta com veto de pixel + veto geo, achados aplicados e medidos em Edge real.",
+    "summary": "Editor do builder no protótipo do dono; junta pegou 4 ALTA (header fora da tela, rótulo cru como pergunta do técnico, Publicar removido, perda silenciosa no save) — todos corrigidos.",
     "status_label": "Entregue (aguardando merge do PR corrente)"
   },
   "metrics": {
@@ -21,16 +21,16 @@
       "note": "PR não toca mobile — carrega 839/839 (§C3.3)."
     },
     "frontend_smoke_tests": {
-      "value": 1052,
-      "total": 1052,
-      "display": "1052/1052",
-      "note": "J-MAPAS-10 PR-1: suíte do mapa 125→177 casos (5 arquivos novos: view-memory, routes-layer, dnd, marker-popup, detail-popover; 9 reescritos) + testes atualizados para as diretivas do dono (chips fora, zero auto-câmera, hover+clique). 1013→1052, execução real."
+      "value": 1066,
+      "total": 1066,
+      "display": "1066/1066",
+      "note": "PR-02b: +13 testes do editor (10 do dev + 3 dos mutadores exigidos pela junta) e +1 na lista (deep-link). 1052→1066, execução real."
     },
     "backend_tests": {
       "value": 2110,
       "total": 2110,
       "display": "2110/2110",
-      "note": "PR frontend-only — 2110/2110 confirmado por execução real nesta rodada (4 shards, CORE_SAAS_PERSISTENCE=memory; contract-tests leem .tsx)."
+      "note": "PR-02b frontend-only — carrega 2110/2110 (§C3.3); nenhum contract-test lê os arquivos tocados."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 138,
-      "display": "138",
-      "note": "Mapa Operacional pixel-perfect (J-MAPAS-10 PR-1). Sobre 137 do #337."
+      "value": 140,
+      "display": "140",
+      "note": "CHK P1 PR-02b (editor do builder). Sobre 139 do #339."
     },
     "mobile_backend_contracts": {
       "value": 18,

@@ -4582,14 +4582,6 @@ a.pat-cell-main:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px;
   padding: 18px;
 }
 
-/* Builder atual preservado abaixo da lista (o editor novo chega no PR-02b). */
-.ckb-builder-below {
-  margin-top: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
 /* Toast do protótipo — bottom 24px centralizado, fadeUp .18s, auto-dismiss no componente. */
 @keyframes ckb-fade-up {
   from {
@@ -4637,6 +4629,988 @@ a.pat-cell-main:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px;
   .ckb-skl,
   .ckb-toast {
     animation: none;
+  }
+}
+
+/* ═══════════ CHECKLIST P1 · PR-02b — EDITOR do modelo, namespace ckb-ed ═══════════ */
+/* Recria o bloco scEditor do protótipo do dono (Modelos de Checklist.dc.html) com os tokens
+   exatos: header 13px 24px 0, abas com borda inferior 2.5px, grade 264 / 400+ / 336 com gap 14
+   e padding 16px 24px 20px, canvas com fundo FBFCFE e seções com borda-esquerda 2px. */
+
+/* O editor é full-bleed dentro do shell (o header cola na topbar, como no protótipo): anula o
+   padding do content-area pelo MESMO padrão já usado no Mapa Operacional (.opmap-page). */
+.ckb-ed {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  color: #0f172a;
+  margin: calc(var(--space-24) * -1);
+}
+@media (max-width: 860px) {
+  .ckb-ed {
+    margin: calc(var(--space-16) * -1);
+  }
+}
+
+/* ── Header ── */
+.ckb-ed-head {
+  flex-shrink: 0;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 13px 24px 0;
+}
+.ckb-ed-head-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ckb-ed-back {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ckb-ed-back:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+.ckb-ed-ident {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ckb-ed-name {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #0f172a;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 8px;
+  padding: 5px 9px;
+  margin-left: -9px;
+  flex: 1 1 auto;
+  min-width: 180px;
+  max-width: 420px;
+}
+.ckb-ed-name:hover:not([readonly]) {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+.ckb-ed-type {
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  background: #fff;
+}
+.ckb-ed-type:disabled {
+  cursor: not-allowed;
+  color: #64748b;
+  background: #f8fafc;
+}
+.ckb-ed-dirty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #b45309;
+  white-space: nowrap;
+}
+.ckb-ed-dirty-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+.ckb-ed-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.ckb-ed-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+}
+.ckb-ed-btn:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+.ckb-ed-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.ckb-ed-btn--save-dirty {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #2563eb;
+}
+.ckb-ed-btn--publish {
+  padding: 9px 16px;
+  background: #e2e8f0;
+  border-color: transparent;
+  color: #94a3b8;
+}
+.ckb-ed-error-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Abas ── */
+.ckb-ed-tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 11px;
+}
+.ckb-ed-tabs {
+  display: flex;
+  gap: 4px;
+}
+.ckb-ed-tab {
+  padding: 9px 15px;
+  background: transparent;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+.ckb-ed-tab--active {
+  border-bottom-color: #2563eb;
+  color: #2563eb;
+}
+.ckb-ed-runs-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #2563eb;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 0 9px;
+}
+.ckb-ed-runs-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+.ckb-ed-readonly-banner {
+  margin: 14px 24px 0;
+}
+
+/* ── Grade da aba Estrutura ── */
+/* Junta PR-02b (ALTA, medida em Edge real): `align-items: start` impedia as 3 colunas de
+   esticarem — a rolagem interna do canvas nunca ativava, a rolagem subia para o shell e, ao
+   descer o formulário, o HEADER do editor (Salvar, "Alterações não salvas", abas) saía da tela.
+   O protótipo não declara align-items (= stretch). Com stretch: colunas iguais e só o corpo rola. */
+.ckb-ed-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 264px minmax(400px, 1fr) 336px;
+  gap: 14px;
+  padding: 16px 24px 20px;
+}
+.ckb-ed-grid--readonly {
+  grid-template-columns: minmax(400px, 1fr);
+}
+@media (max-width: 1180px) {
+  .ckb-ed-grid {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+}
+.ckb-ed-col {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.ckb-ed-col-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.ckb-ed-col-head--stack {
+  padding: 14px 15px 10px;
+}
+.ckb-ed-col-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+.ckb-ed-col-sub {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+.ckb-ed-ghost-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ckb-ed-ghost-btn:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+/* ── Paleta ── */
+.ckb-ed-palette-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+}
+.ckb-ed-pal-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 9px;
+  margin-bottom: 4px;
+  background: #fff;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+.ckb-ed-pal-item:hover {
+  background: #f8fafc;
+  border-color: #dbeafe;
+}
+.ckb-ed-pal-tile {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-ed-pal-text {
+  min-width: 0;
+  flex: 1;
+}
+.ckb-ed-pal-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.25;
+}
+.ckb-ed-pal-desc {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+.ckb-ed-pal-plus {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-ed-palette-empty {
+  margin: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+/* ── Canvas ── */
+.ckb-ed-canvas-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 18px 22px;
+  background: #fbfcfe;
+}
+.ckb-ed-empty {
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 52px 24px;
+  text-align: center;
+  background: #fff;
+}
+.ckb-ed-empty-tile {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #f1f5f9;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+}
+.ckb-ed-empty-title {
+  font-size: 14.5px;
+  font-weight: 800;
+  margin-bottom: 5px;
+}
+.ckb-ed-empty-sub {
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.55;
+  max-width: 320px;
+  margin: 0 auto;
+}
+.ckb-ed-section {
+  margin-bottom: 18px;
+}
+.ckb-ed-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.ckb-ed-section-chip {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 9px;
+  border-radius: 6px;
+}
+.ckb-ed-section-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 7px;
+  padding: 4px 8px;
+  margin-left: -8px;
+}
+.ckb-ed-section-title:hover:not([readonly]) {
+  border-color: #e2e8f0;
+  background: #fff;
+}
+.ckb-ed-section-count {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+.ckb-ed-section-items {
+  border-left: 2px solid #e2e8f0;
+  padding-left: 12px;
+}
+.ckb-ed-section-empty {
+  padding: 14px;
+  border: 1.5px dashed #e2e8f0;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* ── Card de campo ── */
+.ckb-ed-field {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 12px;
+  margin-bottom: 7px;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 11px;
+  cursor: pointer;
+}
+.ckb-ed-field:hover {
+  border-color: #93c5fd;
+}
+.ckb-ed-field:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+.ckb-ed-field--selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.ckb-ed-field-grip {
+  color: #cbd5e1;
+  flex-shrink: 0;
+  display: flex;
+}
+.ckb-ed-field-tile {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+/* Alvo acessível do card: é <button>, mas visualmente é só o bloco de texto do protótipo. */
+.ckb-ed-field-main {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.ckb-ed-field-labelrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ckb-ed-field-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ckb-ed-field-required {
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.ckb-ed-field-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  flex-wrap: wrap;
+}
+.ckb-ed-field-type {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+}
+.ckb-ed-chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.ckb-ed-field-actions {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.ckb-ed-field-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.ckb-ed-field-btn:hover {
+  color: #2563eb;
+  border-color: #93c5fd;
+}
+.ckb-ed-field-btn--danger:hover {
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* ── Inspector ── */
+.ckb-ed-insp-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+}
+.ckb-ed-insp-empty {
+  text-align: center;
+  padding: 36px 12px;
+}
+.ckb-ed-insp-empty-tile {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: #f1f5f9;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+}
+.ckb-ed-insp-empty-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.ckb-ed-insp-empty-sub {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
+}
+.ckb-ed-insp-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  margin-bottom: 16px;
+}
+.ckb-ed-insp-tile {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-ed-insp-type {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+.ckb-ed-insp-desc {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+.ckb-ed-group {
+  margin-bottom: 14px;
+}
+.ckb-ed-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+}
+.ckb-ed-label-soft {
+  font-weight: 500;
+  color: #94a3b8;
+}
+.ckb-ed-input {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+.ckb-ed-textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 12.5px;
+  color: #0f172a;
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.5;
+  font-family: inherit;
+}
+.ckb-ed-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-bottom: 18px;
+  text-align: left;
+}
+.ckb-ed-toggle--on {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+.ckb-ed-switch {
+  width: 38px;
+  height: 22px;
+  border-radius: 99px;
+  background: #cbd5e1;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.ckb-ed-toggle--on .ckb-ed-switch {
+  background: #2563eb;
+}
+.ckb-ed-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.15s;
+}
+.ckb-ed-toggle--on .ckb-ed-switch-knob {
+  left: 19px;
+}
+.ckb-ed-toggle-title {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.ckb-ed-toggle-sub {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+/* ── Aba Aplicabilidade (estática) ── */
+.ckb-ed-aplic {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 24px 28px;
+}
+.ckb-ed-aplic-inner {
+  max-width: 880px;
+}
+.ckb-ed-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 16px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+.ckb-ed-info-tile {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #dbeafe;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-ed-info-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+.ckb-ed-info-sub {
+  font-size: 12px;
+  color: #3b5a8f;
+  margin-top: 2px;
+  line-height: 1.5;
+}
+.ckb-ed-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.ckb-ed-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.ckb-ed-card-title {
+  font-size: 13.5px;
+  font-weight: 800;
+}
+.ckb-ed-card-sub {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+.ckb-ed-soon-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: #f3e8ff;
+  color: #7e22ce;
+  white-space: nowrap;
+}
+.ckb-ed-rule {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 36px;
+  gap: 10px;
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: end;
+}
+.ckb-ed-rule-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 5px;
+}
+.ckb-ed-rule-box {
+  padding: 9px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  background: #f8fafc;
+  cursor: not-allowed;
+}
+.ckb-ed-rule-del {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: not-allowed;
+}
+.ckb-ed-rule-add-wrap {
+  padding: 13px 18px;
+}
+.ckb-ed-rule-add {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  background: #fff;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+.ckb-ed-publish-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px;
+}
+.ckb-ed-publish-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.ckb-ed-publish-text {
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+.ckb-ed-publish-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.ckb-ed-publish-tile {
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+}
+.ckb-ed-publish-tile--ok {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.ckb-ed-publish-tile-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+  margin-bottom: 3px;
+}
+.ckb-ed-publish-tile--ok .ckb-ed-publish-tile-title {
+  color: #15803d;
+}
+.ckb-ed-publish-tile-sub {
+  font-size: 11.5px;
+  color: #475569;
+  line-height: 1.45;
+}
+.ckb-ed-publish-tile--ok .ckb-ed-publish-tile-sub {
+  color: #166534;
+}
+
+/* ── Modal "Sair sem salvar" ── */
+.ckb-ed-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 27, 42, 0.55);
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.ckb-ed-modal {
+  width: 420px;
+  max-width: 100%;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.3);
+  animation: ckb-fade-up-still 0.18s ease-out both;
+}
+@keyframes ckb-fade-up-still {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ckb-ed-modal-tile {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fffbeb;
+  color: #b45309;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.ckb-ed-modal-title {
+  font-size: 16.5px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.ckb-ed-modal-text {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.55;
+  margin: 0 0 20px;
+}
+.ckb-ed-modal-actions {
+  display: flex;
+  gap: 9px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.ckb-ed-modal-btn {
+  padding: 10px 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+}
+.ckb-ed-modal-btn--primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+.ckb-ed-modal-btn--danger {
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+.ckb-ed-skl-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 24px 16px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+.ckb-ed-back:focus-visible,
+.ckb-ed-btn:focus-visible,
+.ckb-ed-ghost-btn:focus-visible,
+.ckb-ed-tab:focus-visible,
+.ckb-ed-runs-link:focus-visible,
+.ckb-ed-pal-item:focus-visible,
+.ckb-ed-field-main:focus-visible,
+.ckb-ed-field-btn:focus-visible,
+.ckb-ed-toggle:focus-visible,
+.ckb-ed-modal-btn:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ckb-ed-modal,
+  .ckb-ed-switch,
+  .ckb-ed-switch-knob {
+    animation: none;
+    transition: none;
   }
 }
 
@@ -5848,4 +6822,44 @@ button.opmap-os--atd {
 
 @media (max-width: 1360px) {
   .opmap-legend__hint { display: none; }
+}
+
+/* Junta PR-02b: remover seção VAZIA (a tela só sabia criar seção, gerando lixo persistido no
+   schema). Botão discreto, aparece só quando a remoção é segura (seção sem campos). */
+.ckb-ed-section-del {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.ckb-ed-section-del:hover {
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.ckb-ed-section-del:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+/* Junta PR-02b: campos de texto do editor sem anel de foco (ficavam com o outline do navegador). */
+.ckb-ed-name:focus-visible,
+.ckb-ed-section-title:focus-visible,
+.ckb-ed-input:focus-visible,
+.ckb-ed-textarea:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+/* Junta PR-02b: agrupa o controle parado com o selo "Em breve" do protótipo. */
+.ckb-ed-stopped {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }

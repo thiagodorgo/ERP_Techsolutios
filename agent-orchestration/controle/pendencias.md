@@ -1530,3 +1530,28 @@ de checklist (app caía nos seeds); a trilha de OS precisa do mesmo tratamento: 
 sem fallback de seed; seeds só em modo demo EXPLÍCITO e rotulado. Candidata ao **PR-08 (reconciliação
 mobile)** junto com [P-MOBILE-BANNER-INTEGRACAO].
 - status: ABERTA.
+
+## P-CHK-PATCH-SEM-TYPE (2026-08-06) — o PATCH de modelo de checklist não carrega `type` (MÉDIA/ALTA)
+
+Achado por execução durante o CHK P1 PR-02b (editor). `parseUpdateChecklistTemplateDto`
+(`src/modules/checklists/checklist.validator.ts`) aceita apenas `name/description/status/schema/components`
+— `type` é SILENCIOSAMENTE descartado pelo `z.object`, e nem `InMemoryChecklistRepository.updateTemplate`
+nem `checklist-prisma.repository.ts` gravam a coluna. Consequência: qualquer UI que ofereça troca de tipo do
+modelo mente (o usuário escolhe, salva, e o valor volta ao anterior). O protótipo do dono desenha o seletor
+como editável.
+
+- **Mitigação no PR-02b (web):** o seletor de tipo do editor é renderizado **desabilitado**, com o tipo atual
+  visível e `title="Disponível em breve"` — nenhuma promessa falsa; a capacidade não regride (nunca existiu).
+- **Correção real:** incluir `type` no DTO de update + escrita nos dois repositórios + teste de contrato
+  (PATCH muda o tipo e o `schema.type` acompanha). Alvo: **CHK P1 PR-02c** (que já toca publicação e
+  inspector tipado), com a suíte backend na bateria.
+- status: ABERTA.
+
+## P-CHK-PATCH-SEM-LOCK (2026-08-07) — PATCH de checklist é last-write-wins sem guarda de versão (MÉDIA)
+
+Junta do PR-02b (critico-adversarial). O `updateTemplate` não compara versão/updatedAt: duas pessoas editando
+o mesmo modelo → a última gravação apaga a outra em silêncio. Existia antes, mas o editor novo (sessão longa,
+muitas edições antes do save) **multiplica a janela**. Correção real (optimistic locking com `If-Match`/version
+no contrato) é backend → **PR-02c**. Mitigação de graça enquanto isso: recarregar antes de gravar e, se
+`updatedAt` mudou desde a carga, confirmar ("Outra pessoa alterou este modelo — Recarregar / Sobrescrever").
+- status: ABERTA.
