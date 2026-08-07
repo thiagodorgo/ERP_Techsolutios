@@ -6,7 +6,7 @@
   "release": {
     "block": "J-MAPAS-10 PR-2 — paridade do espelho Google + faxina. GoogleMapsCanvas reescrito espelhando o MapLibre pixel-perfect: avatar 32px/losango 22px/pulso M-5/label zoom≥12/rotas tracejadas (dash derivado da MESMA constante)/memória da visão/pan imperativo com padding emulado/popup React/hover efêmero+clique fixo/ZERO câmera automática. As 3 diretivas do dono valem no caminho Google. Opt-in VITE_MAPS_PROVIDER=google MANTIDO por decisão fundamentada: Dynamic Maps é SKU tarifado (US$7/1000 pós-10k) vs OpenFreeMap US$0 — preferir Google pela mera presença de chave ligaria serviço pago sem junta (§C7.1); e a cartografia não espelha (com mapId a API ignora styles JS — divergência DECLARADA, não fingida). Faxina: focus-city (helpers+teste) e componentes órfãos removidos; e2e do mapa reescrita para a tela real + teste de faxina que proíbe as âncoras mortas. JUNTA REPROVOU o ciclo 1 com um ALTA de livro: em React 19, ref callback INLINE re-invoca a cada re-render — o canvas Google estalava a câmera do operador de volta à visão inicial a cada polling/hover (provado em harness runtime com React real, não por leitura). Corrigido com guard de aplicação única (initialCameraAppliedRef) + guard de fonte no teste.",
     "title": "Mapa PR-2 — paridade Google + faxina (J-MAPAS-10)",
-    "pr": null,
+    "pr": 339,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
