@@ -1736,7 +1736,7 @@
   .opmap-cnt--new,
   .opmap-savenote,
   .opmap-toast,
-  .gmp-workorder-pin--pulse {
+  .opmap-gos--pulse {
     animation: none;
     transition: none;
   }
@@ -1797,90 +1797,137 @@
   background: rgb(14 116 144 / 34%);
 }
 
-.operations-map-canvas__gmaps {
+/* ── J-MAPAS-10 PR-2 — ESPELHO Google do canvas pixel. Namespace .opmap-g*: as MEDIDAS e as
+   CORES saem das mesmas fontes únicas do MapLibre (cor inline vinda de getAvatarColor /
+   getTechnicianBorderColor / getWorkOrderPriorityColor) — nenhum hex de domínio solto aqui. ── */
+.opmap-gmap {
   position: relative;
-  /* M-2 (J-MAPAS-6) — coluna flex: mapa cresce, rodapé de legenda unificado na BASE (regra do
-     espelho, idêntico ao .operations-map-libre — não flutua sobre o canvas). */
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* M-1 (J-MAPAS-6) — altura dobrada com teto por viewport. Regra do ESPELHO:
-     idêntica ao .operations-map-libre para paridade entre os dois canvases. */
   min-height: clamp(760px, 82vh, 960px);
   height: clamp(760px, 82vh, 960px);
   border-radius: var(--radius-8);
   overflow: hidden;
-  background: var(--surface-panel-muted);
+  background: #dde7ee;
 }
 
-/* Web component gmp-map ocupa o espaço restante acima do rodapé (exemplo oficial usa height:100%;
-   aqui o flex:1 dá altura definida dentro da coluna de altura fixa). */
-.operations-map-canvas__gmaps gmp-map {
-  display: block;
-  width: 100%;
+.opmap-gmap__canvas {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
 }
 
-/* Pin de operador (conteúdo custom do gmp-advanced-marker) — cor vem INLINE (getRingColor),
-   com a paleta REAL de status (paridade com o MapLibre): status ao vivo · âmbar >3min ·
-   cinza >10min. A seleção NÃO troca a cor (nunca UI mentirosa): só cresce e ganha anel. */
-.gmp-operator-pin {
+/* Web component gmp-map ocupa todo o slot do palco (o exemplo oficial usa height:100%). */
+.opmap-gmap__canvas gmp-map {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Overlay de carregamento — espelho verbatim do .operations-map-libre__overlay. */
+.opmap-gmap__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 2px solid #fff;
+  gap: var(--space-8);
+  color: #cbd5e1;
+  font-size: var(--text-sm);
+  background: rgb(var(--surface-glass-navy-rgb) / 82%);
+}
+
+.opmap-gmap__spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgb(148 163 184 / 35%);
+  border-top-color: #38bdf8;
   border-radius: 999px;
-  box-shadow: 0 2px 6px rgb(15 23 42 / 35%);
+  animation: operations-map-libre-spin 0.8s linear infinite;
+}
+
+/* Técnico (protótipo .mk-tech): avatar 32px, borda 3px na cor do grupo de status (âmbar quando a
+   posição é antiga), iniciais 11px/700. O AdvancedMarkerElement ancora o conteúdo pelo rodapé;
+   translateY(50%) recoloca o disco CENTRADO na coordenada (o MapLibre desenha centrado). */
+.opmap-gtech {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #94a3b8;
+  border-radius: 50%;
   color: #fff;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
+  box-shadow: 0 2px 6px rgb(15 23 42 / 35%);
+  transform: translateY(50%);
   cursor: pointer;
 }
 
-.gmp-operator-pin--selected {
-  width: 34px;
-  height: 34px;
-  font-size: 13px;
-  outline: 2px solid #0f8fbf;
-  outline-offset: 2px;
+/* Grupo "fora de serviço" esmaece (.st-off do protótipo / opacity .75 da camada MapLibre). */
+.opmap-gtech[data-off="true"] {
+  opacity: 0.75;
 }
 
-/* M-3 — espelho do realce de disponibilidade do MapLibre (anel maior + contorno no técnico livre).
-   Técnico DISPONÍVEL ao vivo ganha borda mais grossa + halo na cor do status (--operator-ring vindo de
-   getStatusColor inline, nunca hex de status solto no CSS). Compõe com --selected (só box-shadow/borda,
-   sem mexer no tamanho, para não brigar com o realce de seleção). */
-.gmp-operator-pin--available {
-  border-width: 3px;
-  box-shadow: 0 2px 6px rgb(15 23 42 / 35%), 0 0 0 4px var(--operator-ring, #fff);
+/* OS (protótipo .mk-os): LOSANGO 22px — quadrado rotate(45deg), raio 5, borda 2.5 branca. */
+.opmap-gos-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(50%);
 }
 
-/* Pin de CHAMADO (conteúdo custom do gmp-advanced-marker) — teardrop por prioridade; cor vem
-   INLINE (getWorkOrderPriorityColor). Espelha a forma do swatch da legenda em tamanho de marker. */
-.gmp-workorder-pin {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #fff;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
+.opmap-gos {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid #fff;
+  border-radius: 5px;
+  transform: rotate(45deg);
   box-shadow: 0 2px 6px rgb(15 23 42 / 35%);
   cursor: pointer;
 }
 
-.gmp-workorder-pin--selected {
-  width: 26px;
-  height: 26px;
-  outline: 2px solid #0f8fbf;
+.opmap-gos--selected {
+  outline: 3px solid rgb(59 130 246 / 65%);
   outline-offset: 2px;
 }
 
-/* M-5 (J-MAPAS-6) — espelho gracioso do pulso de OS nova no Google (DOM AdvancedMarker). Halo na cor da
-   prioridade (--call-priority = getWorkOrderPriorityColor inline). A classe só é aplicada para ids já
-   filtrados por reduced-motion no hook; a animação ainda respeita @media reduced-motion (cinto-suspensório). */
-.gmp-workorder-pin--pulse {
+/* Pulso de OS urgente/nova (M-5) — halo na cor da prioridade (--call-priority inline). A classe só
+   chega para ids já filtrados por reduced-motion no hook; a animação ainda respeita o @media. */
+.opmap-gos--pulse {
   animation: operations-workorder-pulse 1400ms ease-out infinite;
+}
+
+/* Código da OS acima do losango a partir do zoom 12 — espelho do wo-label (minzoom 12). */
+.opmap-gcode {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: #1f2937;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 2px #fff;
+  pointer-events: none;
+}
+
+/* Conteúdo do popup dentro da InfoWindow do Google (a bolha/seta/botão de fechar são do Google —
+   divergência declarada); o miolo usa o MESMO vidro navy do popup MapLibre. */
+.opmap-gpopup {
+  background: rgb(13 21 38 / 88%);
+  color: #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  min-width: 190px;
 }
 
 @keyframes operations-workorder-pulse {
@@ -2041,26 +2088,6 @@
   color: var(--text-secondary);
   font-size: var(--text-xs);
   font-weight: 700;
-}
-
-.operations-map-dispatch-actions {
-  display: grid;
-  gap: var(--space-10);
-  padding-top: var(--space-10);
-  border-top: 1px solid var(--border-subtle);
-}
-
-.operations-map-dispatch-actions header,
-.operations-map-dispatch-actions__toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-}
-
-.operations-map-dispatch-actions__toolbar {
-  justify-content: flex-start;
-  flex-wrap: wrap;
 }
 
 .work-orders-page {
@@ -4699,7 +4726,7 @@ a.pat-cell-main:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px;
 
 /* Dentro do stage, qualquer canvas ocupa 100% (o clamp de altura da era J-MAPAS-6 morre aqui). */
 .opmap-stage__map .operations-map-libre,
-.opmap-stage__map .operations-map-canvas__gmaps {
+.opmap-stage__map .opmap-gmap {
   position: absolute;
   inset: 0;
   width: 100%;

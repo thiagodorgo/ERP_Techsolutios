@@ -1864,3 +1864,24 @@ claro, keyless, US$ 0.
 **Contagens (execução real):** smoke **1013→1052** (suíte do mapa 125→**177** casos; 5 arquivos novos);
 backend **2110/2110** (4 shards); Flutter **839/839** carregado (§C3.3). Blocos **137→138**.
 Backfill #337: merge `be86751`. Ata: `agent-orchestration/omega/mapas/J-MAPAS-10-pixel-ata.md`.
+
+## 2026-08-06 — MAPA-PIXEL-PR2 (PR pendente)
+
+**Paridade do espelho Google + faxina (J-MAPAS-10 PR-2).** O canvas Google agora espelha o MapLibre
+pixel-perfect — avatar, losango, pulso, rotas tracejadas, memória da visão, popup React, hover efêmero +
+clique fixo, **zero câmera automática** (as 3 diretivas do dono valem também aqui). Divergências
+**declaradas, não fingidas**: a cartografia do Google não aceita o token-set claro (mapId ignora styles),
+a moldura da InfoWindow é dele, o padding de câmera é emulado. O **opt-in foi mantido**: Dynamic Maps é
+SKU tarifado (US$ 7/1.000 pós-10k) contra OpenFreeMap US$ 0 — trocar de provedor pela mera presença de
+uma chave ligaria serviço pago sem decisão de junta (§C7.1).
+
+**A junta reprovou o ciclo 1 com um achado de livro**, provado em harness runtime com React real: em
+React 19, ref callback **inline** é re-invocado a cada re-render — o canvas Google estalava a câmera do
+operador de volta à visão inicial a cada polling/hover, e ainda salvava a visão errada por cima da
+memória. Corrigido com guard de aplicação única + guard de fonte no teste.
+
+**Faxina:** focus-city removido (anotação SUPERSEDED no kb-mapas §(f), histórico preservado — A2),
+componentes órfãos fora, e2e do mapa reescrita para a tela real com teste que proíbe as âncoras mortas.
+
+**Contagens (execução real):** smoke **1052→1059**; backend **2110/2110**; Flutter 839/839 (§C3.3).
+Blocos **138→139**. Backfill #338: merge `70dbfde`.

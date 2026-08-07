@@ -1,265 +1,380 @@
-import { useEffect, useRef, type CSSProperties } from "react";
-import { Map as MapIcon } from "lucide-react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createRoot, type Root } from "react-dom/client";
 
-import { Chip } from "../../../../components/ui";
 import type { GoogleMapsLoadState } from "../hooks/useGoogleMapsLoader";
+import type { MapViewState } from "../hooks/useMapViewMemory";
 import type { FieldLocationItem, OperationsMapPadding, OperationsMapWorkOrderPin } from "../operations-map.types";
+import { OPERATIONAL_MAP_DEFAULT_CENTER, OPERATIONAL_MAP_DEFAULT_ZOOM } from "../map/mapStyle";
 import {
-  clusterByProximity,
+  OPERATIONS_MAP_ANIMATION_MS,
+  getAvatarColor,
+  getFieldLocationGroup,
   getInitials,
-  getRingColor,
+  getTechnicianBorderColor,
   getWorkOrderPriorityColor,
-  isRingAvailable,
+  interpolateCoords,
   isValidMapCoordinate,
-  pickFocusCluster,
+  type LngLat,
 } from "../map/mapMarkers";
+import {
+  WORK_ORDER_ROUTE_COLOR,
+  WORK_ORDER_ROUTE_DASHARRAY,
+  WORK_ORDER_ROUTE_OPACITY,
+  WORK_ORDER_ROUTE_WIDTH,
+  type WorkOrderRouteFeatureCollection,
+} from "../map/routeLines";
 
-// Web Components do Google Maps (gmp-map + gmp-advanced-marker, v=beta) no lugar da API JS
-// clássica. Markers são conteúdo custom (disco com inicial) estilizado com a paleta REAL de
-// status do DS (getRingColor): status ao vivo · âmbar >3min · cinza >10min.
-// J-MAPAS-10: a legenda saiu de DENTRO dos canvases — virou LEGENDA-FILTRO page-level (D6,
-// "paridade de graça": a página filtra os arrays antes de entregá-los a QUALQUER canvas).
-// PENDÊNCIA PR-2 (registrada no plano D7): espelhar aqui losango/rotas/view-memory/cores novas.
+/**
+ * J-MAPAS-10 (PLANO-MAPA-PIXEL, PR-2) — ESPELHO Google do canvas MapLibre pixel-perfect.
+ *
+ * Web Components do Google Maps (gmp-map + gmp-advanced-marker, v=beta); o `Marker` clássico é
+ * DEPRECATED e não é usado. Este arquivo fecha a PENDÊNCIA declarada no PR-1: o espelho passou a
+ * consumir os MESMOS deltas do protótipo do dono, com as MESMAS fontes únicas de cor/geometria:
+ *   • técnico = avatar 32px (fundo AVC estável por id + borda 3px na cor do grupo de status,
+ *     âmbar quando a posição é antiga; grupo "off" esmaece) — `getAvatarColor`/`getTechnicianBorderColor`;
+ *   • OS = LOSANGO 22px por prioridade (`getWorkOrderPriorityColor`), variante selecionada com
+ *     anel azul e pulso para urgente/nova (M-5);
+ *   • ROTAS TRACEJADAS técnico→OS: `google.maps.Polyline` com `strokeOpacity: 0` + símbolo repetido
+ *     (padrão oficial de dashed line, verificado 2026-08-06 em
+ *     developers.google.com/maps/documentation/javascript/symbols, "Last updated 2026-07-31 UTC");
+ *     dash/gap derivados da MESMA constante do MapLibre (WORK_ORDER_ROUTE_DASHARRAY × largura);
+ *   • MEMÓRIA DA VISÃO (D4): câmera inicial = visão salva > Brasil z4; `idle` (equivalente do
+ *     `moveend`) reporta a câmera para a página salvar;
+ *   • POPUP do marker de OS: `InfoWindow` ancorada no AdvancedMarkerElement com conteúdo React em
+ *     root dedicado (unmount no close — sem leak), espelhando o `maplibregl.Popup`.
+ *
+ * DIRETIVAS DO DONO (2026-08-06) valem aqui igualzinho:
+ *   (a) NENHUM movimento automático de câmera — o auto-fit/focus-city MORREU, seleção não move o
+ *       mapa, não há clustering. O único movimento é o `panTarget`, disparado por clique do operador;
+ *   (b) memória da visão por organização (a página resolve a chave por tenant);
+ *   (c) detalhe do técnico por HOVER (efêmero: `onHoverTechnician(item)`/`(null)`) e por CLIQUE
+ *       (fixo: `onSelect`).
+ *
+ * DIVERGÊNCIAS INERENTES declaradas (não dá para "fingir"): a CARTOGRAFIA do basemap é a do Google
+ * (Map ID / cloud styling; com `mapId` a API ignora `styles` em JS), então o token-set claro
+ * "voyager-like" do `mapStyle.ts` NÃO se aplica aqui — ambos são claros, mas não são o mesmo mapa;
+ * e a moldura da InfoWindow (bolha + seta + botão de fechar) é do Google, só o CONTEÚDO é o nosso.
+ *
+ * LGPD: nenhuma coordenada é logada; a coordenada só existe em memória para posicionar marker/rota.
+ */
 
-const DEFAULT_CENTER = { lat: -23.55052, lng: -46.633308 }; // São Paulo (fallback sem operador)
-const DEFAULT_ZOOM = 12;
 // map-id do exemplo oficial (estilo default). Um Map ID próprio (Cloud Console) pode substituir depois.
 const MAP_ID = "DEMO_MAP_ID";
+
+// D4 — câmera default do protótipo (Brasil z4), da MESMA fonte única do MapLibre.
+const DEFAULT_VIEW: MapViewState = {
+  lat: OPERATIONAL_MAP_DEFAULT_CENTER[1],
+  lng: OPERATIONAL_MAP_DEFAULT_CENTER[0],
+  z: OPERATIONAL_MAP_DEFAULT_ZOOM,
+};
+
+// Espelho do `wo-label` do MapLibre (minzoom 12): o código da OS só aparece a partir deste zoom.
+const WORK_ORDER_CODE_MIN_ZOOM = 12;
+
+// Dash em PIXELS derivado da MESMA constante do MapLibre (múltiplos da largura da linha):
+// 2.4 × 2.5 ≈ 6px de traço e 2.8 × 2.5 = 7px de vão — o "6 7" do protótipo Leaflet.
+const ROUTE_DASH_PX = WORK_ORDER_ROUTE_DASHARRAY[0] * WORK_ORDER_ROUTE_WIDTH;
+const ROUTE_GAP_PX = WORK_ORDER_ROUTE_DASHARRAY[1] * WORK_ORDER_ROUTE_WIDTH;
+
+type Props = {
+  readonly loadState: GoogleMapsLoadState;
+  readonly locations: readonly FieldLocationItem[];
+  readonly selectedId?: string;
+  readonly onSelect: (location: FieldLocationItem) => void;
+  /** Hover no pin do técnico: item ao entrar, null ao sair (detalhe efêmero; nunca move o mapa). */
+  readonly onHoverTechnician?: (location: FieldLocationItem | null) => void;
+  readonly workOrderPins?: readonly OperationsMapWorkOrderPin[];
+  readonly selectedWorkOrderId?: string;
+  readonly onSelectWorkOrder?: (id: string) => void;
+  // M-5 — ids de OS recém-chegadas que pulsam; já filtrado por reduced-motion no hook.
+  readonly pulsingWorkOrderIds?: ReadonlySet<string>;
+  readonly resizeSignal?: number;
+  readonly mapPadding?: OperationsMapPadding;
+  // J-MAPAS-10 — deltas do protótipo (paridade fechada no PR-2).
+  readonly routes?: WorkOrderRouteFeatureCollection;
+  readonly initialView?: MapViewState;
+  readonly onMoveEnd?: (view: MapViewState) => void;
+  readonly panTarget?: { readonly lng: number; readonly lat: number; readonly key: number } | null;
+  readonly renderWorkOrderPopup?: (workOrderId: string) => ReactNode;
+  readonly closePopupSignal?: number;
+};
 
 export function GoogleMapsCanvas({
   loadState,
   locations,
   selectedId,
   onSelect,
+  onHoverTechnician,
   workOrderPins = [],
   selectedWorkOrderId,
   onSelectWorkOrder,
   pulsingWorkOrderIds,
   resizeSignal,
   mapPadding,
-}: {
-  loadState: GoogleMapsLoadState;
-  locations: readonly FieldLocationItem[];
-  selectedId?: string;
-  onSelect: (location: FieldLocationItem) => void;
-  workOrderPins?: readonly OperationsMapWorkOrderPin[];
-  selectedWorkOrderId?: string;
-  onSelectWorkOrder?: (id: string) => void;
-  // M-5 (J-MAPAS-6) — espelho gracioso do pulso de OS nova: o marcador (DOM AdvancedMarker) ganha a
-  // classe `--pulse` quando seu id chega neste conjunto. Já filtrado por reduced-motion no hook; a
-  // animação CSS ainda respeita @media reduced-motion como cinto-e-suspensório. Vazio/ausente = sem pulso.
-  pulsingWorkOrderIds?: ReadonlySet<string>;
-  // J-MAPAS-6 (redesign) — paridade do espelho com o MapLibre: aceita o sinal de resize e o
-  // padding dos rails de vidro. O Google Maps também não redimensiona sozinho quando só o
-  // container muda; disparamos o evento "resize" no innerMap ~220ms após a transição.
-  resizeSignal?: number;
-  mapPadding?: OperationsMapPadding;
-}) {
+  routes,
+  initialView,
+  onMoveEnd,
+  panTarget,
+  renderWorkOrderPopup,
+  closePopupSignal,
+}: Props) {
   const mapRef = useRef<GmpMapElement | null>(null);
-  // Padding vivo (px dos rails) lido no fitBounds sem re-executar o enquadramento único.
+  const [innerMap, setInnerMap] = useState<google.maps.Map | null>(null);
+
+  // Visão inicial resolvida UMA vez (salva > Brasil z4) — a câmera viva pertence ao mapa depois disso.
+  const initialViewRef = useRef<MapViewState | null>(null);
+  if (initialViewRef.current === null) initialViewRef.current = initialView ?? DEFAULT_VIEW;
+  const [zoom, setZoom] = useState<number>(initialViewRef.current.z);
+
   const mapPaddingRef = useRef(mapPadding);
   mapPaddingRef.current = mapPadding;
-  // Centro/zoom INICIAIS (property-assign no mount) só para o mapa não nascer em (0,0) enquanto o
-  // innerMap sobe; logo em seguida o fitBounds enquadra a cidade com mais técnicos (ver efeito abaixo).
-  const initialViewRef = useRef<{ center: google.maps.LatLngLiteral; zoom: number } | null>(null);
-  // Enquadramento roda UMA vez (na primeira vez que há dados) — depois respeita o pan do usuário.
-  const fittedRef = useRef(false);
-  // M-3 (P-MAPA-GOOGLE-PADDING-RESIZE) — pontos do cluster vencedor guardados para RE-ENQUADRAR quando
-  // o padding dos rails mudar (expandir/colapsar/maximizar). Sem isto o Google só aplicava o padding no
-  // fitBounds inicial e um pin de borda podia ficar sob o vidro até a próxima interação (o MapLibre já
-  // reaplica setPadding no resize — este fix alinha o espelho Google).
-  const winnerPointsRef = useRef<google.maps.LatLngLiteral[] | null>(null);
+  const onMoveEndRef = useRef(onMoveEnd);
+  onMoveEndRef.current = onMoveEnd;
+  const renderWorkOrderPopupRef = useRef(renderWorkOrderPopup);
+  renderWorkOrderPopupRef.current = renderWorkOrderPopup;
 
-  // Enquadra os pontos do cluster vencedor com o padding ATUAL dos rails (área reservada dos overlays de
-  // vidro). Reutilizado no fitBounds inicial E no re-enquadramento de resize — fonte única do enquadramento.
-  const fitInnerMapToWinner = (innerMap: google.maps.Map, padding?: OperationsMapPadding) => {
-    const points = winnerPointsRef.current;
-    if (!points || points.length === 0) return;
-    if (points.length === 1) {
-      innerMap.setCenter(points[0]!);
-      innerMap.setZoom(14);
-      return;
-    }
-    const bounds = new google.maps.LatLngBounds();
-    for (const point of points) bounds.extend(point);
-    innerMap.fitBounds(
-      bounds,
-      padding
-        ? { top: padding.top, right: padding.right, bottom: padding.bottom, left: padding.left }
-        : 64,
-    );
-  };
+  // Popup do marker de OS: instância + root React dedicado (unmount garantido no close/unmount).
+  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const popupRootRef = useRef<Root | null>(null);
+  const popupContainerRef = useRef<HTMLDivElement | null>(null);
+  const popupWorkOrderIdRef = useRef<string | null>(null);
 
-  if (initialViewRef.current === null) {
-    const first = locations[0];
-    initialViewRef.current = {
-      center: first ? { lat: first.latitude, lng: first.longitude } : DEFAULT_CENTER,
-      zoom: DEFAULT_ZOOM,
-    };
-  }
-
-  // Janela de frescor calculada UMA vez por render e propagada aos markers, para todos os pins
-  // concordarem na mesma referência de tempo (getRingColor decide status/âmbar/cinza).
-  const nowMs = Date.now();
+  // Rotas vivas no mapa (recriadas a cada mudança do GeoJSON; removidas no unmount).
+  const polylinesRef = useRef<google.maps.Polyline[]>([]);
 
   // Só chamados com coordenada válida viram pin (predicado único; nunca a "OS fantasma" 0/0).
-  const validWorkOrderPins = workOrderPins.filter((pin) =>
-    isValidMapCoordinate(pin.latitude, pin.longitude),
-  );
+  const validWorkOrderPins = workOrderPins.filter((pin) => isValidMapCoordinate(pin.latitude, pin.longitude));
 
   // Geometria via PROPRIEDADE (objeto LatLngLiteral) — o setter dos web components rejeita a
   // string do atributo quando vem por property-assign (comportamento do React 19 com custom
-  // elements). Ref callback roda no mount, com o elemento já upgraded (loadState === "ready").
+  // elements).
+  // Junta PR-2 (ALTA, provada em harness runtime): em React 19 um ref callback INLINE é
+  // re-invocado a cada re-render (null + elemento) — sem guard, cada polling/hover/seleção
+  // reaplicava a visão INICIAL e estalava a câmera do operador de volta (violando a diretiva
+  // "o mapa não tem vida própria" e salvando a visão errada por cima da memória). A visão
+  // inicial é aplicada EXATAMENTE UMA VEZ.
+  const initialCameraAppliedRef = useRef(false);
   const attachMap = (element: GmpMapElement | null) => {
     mapRef.current = element;
-    if (element && initialViewRef.current) {
-      element.center = initialViewRef.current.center;
-      element.zoom = initialViewRef.current.zoom;
+    const view = initialViewRef.current;
+    if (element && view && !initialCameraAppliedRef.current) {
+      initialCameraAppliedRef.current = true;
+      element.center = { lat: view.lat, lng: view.lng };
+      element.zoom = view.z;
     }
   };
 
-  // Enquadra a CIDADE COM MAIS TÉCNICOS (cluster vencedor) — não mais "todos os pontos". Agrupa os
-  // técnicos por PROXIMIDADE geográfica (clusterByProximity, custo ZERO, sem geocoding), escolhe o
-  // maior cluster (pickFocusCluster; empate → proxy determinístico oeste-primeiro, NÃO nome-alfabético
-  // literal — divergência registrada em docs/maps/kb-mapas.md) e dá fitBounds só nesses pontos. Roda
-  // UMA vez, quando há dados e o innerMap já subiu (retry por rAF). Pins de CHAMADO NÃO ditam a
-  // câmera (a regra do dono é sobre técnicos); continuam renderizando normalmente como markers.
+  // --- resolve o google.maps.Map interno (o web component sobe assíncrono; retry por rAF) ---
   useEffect(() => {
-    if (loadState !== "ready" || fittedRef.current) return;
-
-    const winner = pickFocusCluster(
-      clusterByProximity(
-        locations.map((location) => ({
-          id: location.id,
-          lat: location.latitude,
-          lng: location.longitude,
-        })),
-      ),
-    );
-    if (!winner) return; // sem técnico com coordenada válida → mantém DEFAULT_CENTER (fallback SP)
-
-    const points: google.maps.LatLngLiteral[] = winner.points.map((point) => ({
-      lat: point.lat,
-      lng: point.lng,
-    }));
-    // Guarda os pontos para o re-enquadramento de resize (P-MAPA-GOOGLE-PADDING-RESIZE).
-    winnerPointsRef.current = points;
-
+    if (loadState !== "ready") {
+      setInnerMap(null);
+      return;
+    }
     let raf = 0;
     let attempts = 0;
-    const tryFit = () => {
-      const innerMap = mapRef.current?.innerMap;
-      if (!innerMap) {
-        if (attempts < 40) {
-          attempts += 1;
-          raf = requestAnimationFrame(tryFit);
-        }
+    let cancelled = false;
+    const resolveInnerMap = () => {
+      if (cancelled) return;
+      const resolved = mapRef.current?.innerMap;
+      if (resolved) {
+        setInnerMap(resolved);
         return;
       }
-      // Padding = área dos rails de vidro (quando presente) para os pins não caírem sob eles.
-      fitInnerMapToWinner(innerMap, mapPaddingRef.current);
-      fittedRef.current = true;
-    };
-    tryFit();
-
-    return () => {
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [loadState, locations]);
-
-  // J-MAPAS-6 (redesign) — resize imperativo quando o container muda de tamanho sem resize de
-  // janela (colapsar rail / maximizar). Regra do espelho com o MapLibre: ~220ms após a transição.
-  // M-3 (P-MAPA-GOOGLE-PADDING-RESIZE) — `resizeSignal` incrementa no MESMO toggle em que `mapPadding`
-  // muda; logo, após o `resize()`, RE-ENQUADRAMOS com o padding ATUAL (mapPaddingRef.current) para nenhum
-  // pin ficar escondido sob o rail de vidro recém-expandido. Antes só o fitBounds inicial via padding.
-  useEffect(() => {
-    if (resizeSignal === undefined) return;
-    const timer = setTimeout(() => {
-      const innerMap = mapRef.current?.innerMap;
-      if (!innerMap) return;
-      google.maps.event.trigger(innerMap, "resize");
-      if (fittedRef.current) fitInnerMapToWinner(innerMap, mapPaddingRef.current);
-    }, 220);
-    return () => clearTimeout(timer);
-  }, [resizeSignal]);
-
-  // SPRINT POLISH (C) — fullscreen NATIVO do Google no canto INFERIOR DIREITO (espelho do
-  // FullscreenControl do MapLibre, também bottom-right). Substitui o antigo botão "Maximizar" do
-  // Stage (removido — caía numa tela tosca). Setado uma vez quando o innerMap sobe (mesmo padrão de
-  // retry por rAF do fitBounds), independente de haver técnicos no mapa.
-  useEffect(() => {
-    if (loadState !== "ready") return;
-    let raf = 0;
-    let attempts = 0;
-    const applyFullscreen = () => {
-      const innerMap = mapRef.current?.innerMap;
-      if (!innerMap) {
-        if (attempts < 40) {
-          attempts += 1;
-          raf = requestAnimationFrame(applyFullscreen);
-        }
-        return;
+      if (attempts < 40) {
+        attempts += 1;
+        raf = requestAnimationFrame(resolveInnerMap);
       }
-      innerMap.setOptions({
-        fullscreenControl: true,
-        fullscreenControlOptions: { position: google.maps.ControlPosition.RIGHT_BOTTOM },
-      });
     };
-    applyFullscreen();
+    resolveInnerMap();
     return () => {
+      cancelled = true;
       if (raf) cancelAnimationFrame(raf);
     };
   }, [loadState]);
 
-  // Seleção centraliza o operador (pan imperativo via innerMap — não recria o mapa).
+  // --- controles: SÓ o zoom, no canto inferior direito (verbatim do protótipo; o fullscreen saiu) ---
   useEffect(() => {
-    if (loadState !== "ready" || !selectedId) return;
-    const target = locations.find((location) => location.id === selectedId);
-    const innerMap = mapRef.current?.innerMap;
-    if (target && innerMap) {
-      innerMap.panTo({ lat: target.latitude, lng: target.longitude });
-    }
-  }, [loadState, locations, selectedId]);
+    if (!innerMap) return;
+    innerMap.setOptions({
+      zoomControl: true,
+      zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_BOTTOM },
+      fullscreenControl: false,
+      mapTypeControl: false,
+      streetViewControl: false,
+      clickableIcons: false,
+    });
+  }, [innerMap]);
 
-  // Seleção de chamado também centraliza (mesmo pan imperativo).
+  // --- D4: memória da visão. `idle` é o equivalente do `moveend` (dispara quando o mapa fica
+  //     inativo após pan/zoom). O PRIMEIRO idle é o assentamento do mount — ignorado, senão a
+  //     tela salvaria/piscaria o savenote sem o operador ter movido nada. Views repetidas também
+  //     são descartadas (dedupe), então o savenote só acende em movimento REAL.
   useEffect(() => {
-    if (loadState !== "ready" || !selectedWorkOrderId) return;
-    const target = validWorkOrderPins.find((pin) => pin.id === selectedWorkOrderId);
-    const innerMap = mapRef.current?.innerMap;
-    if (target && innerMap) {
-      innerMap.panTo({ lat: target.latitude, lng: target.longitude });
-    }
-  }, [loadState, validWorkOrderPins, selectedWorkOrderId]);
+    if (!innerMap) return;
+    let settled = false;
+    let lastKey = "";
+    const listener = innerMap.addListener("idle", () => {
+      const center = innerMap.getCenter();
+      const currentZoom = innerMap.getZoom();
+      if (!center || typeof currentZoom !== "number") return;
+      const view: MapViewState = { lat: center.lat(), lng: center.lng(), z: currentZoom };
+      setZoom(currentZoom);
+      const key = `${view.lat}|${view.lng}|${view.z}`;
+      if (!settled) {
+        settled = true;
+        lastKey = key;
+        return;
+      }
+      if (key === lastKey) return;
+      lastKey = key;
+      onMoveEndRef.current?.(view);
+    });
+    return () => listener.remove();
+  }, [innerMap]);
 
-  // M-4 (P-MAPA-TERM-OPERADORES) — terminologia §3: "técnicos" (era "operadores"), casando com o rail
-  // "Técnicos de Campo" e a linguagem PT-BR de negócio desta view.
-  const technicianCount = `${locations.length} técnico${locations.length !== 1 ? "s" : ""}`;
-  const workOrderCount = `${validWorkOrderPins.length} chamado${validWorkOrderPins.length !== 1 ? "s" : ""}`;
-  const subtitle =
-    loadState === "loading" ? "Carregando Google Maps..." : `${technicianCount} e ${workOrderCount} no mapa.`;
+  // --- pan imperativo da página (card de atendimento / detalhe do técnico / seleção de OS) ---
+  // Espelha o `easeTo` + `setPadding` do MapLibre: o Google não tem padding persistente de câmera,
+  // então o deslocamento do stack (348px à direita) é aplicado em PIXELS com panBy.
+  useEffect(() => {
+    if (!innerMap || !panTarget) return;
+    innerMap.panTo({ lat: panTarget.lat, lng: panTarget.lng });
+    const padding = mapPaddingRef.current;
+    if (padding) {
+      innerMap.panBy((padding.right - padding.left) / 2, (padding.bottom - padding.top) / 2);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [innerMap, panTarget?.key]);
+
+  // --- rotas tracejadas técnico→OS (GeoJSON puro montado pela página; honesto por construção) ---
+  useEffect(() => {
+    if (!innerMap) return;
+    for (const polyline of polylinesRef.current) polyline.setMap(null);
+    polylinesRef.current = [];
+
+    const features = routes?.features ?? [];
+    for (const feature of features) {
+      const path = feature.geometry.coordinates.map(([lng, lat]) => ({ lat: lat ?? 0, lng: lng ?? 0 }));
+      if (path.length < 2) continue;
+      polylinesRef.current.push(
+        new google.maps.Polyline({
+          path,
+          map: innerMap,
+          clickable: false,
+          // Dashed line oficial: linha invisível + símbolo repetido (dash 6px / vão 7px).
+          strokeOpacity: 0,
+          strokeColor: WORK_ORDER_ROUTE_COLOR,
+          strokeWeight: WORK_ORDER_ROUTE_WIDTH,
+          icons: [
+            {
+              icon: {
+                path: "M 0,-1 0,1",
+                scale: ROUTE_DASH_PX / 2,
+                strokeColor: WORK_ORDER_ROUTE_COLOR,
+                strokeOpacity: WORK_ORDER_ROUTE_OPACITY,
+                strokeWeight: WORK_ORDER_ROUTE_WIDTH,
+              },
+              offset: "0",
+              repeat: `${ROUTE_DASH_PX + ROUTE_GAP_PX}px`,
+            },
+          ],
+        }),
+      );
+    }
+
+    return () => {
+      for (const polyline of polylinesRef.current) polyline.setMap(null);
+      polylinesRef.current = [];
+    };
+  }, [innerMap, routes]);
+
+  // --- resize quando o container muda de tamanho sem resize de janela (~220ms, regra do espelho) ---
+  useEffect(() => {
+    if (!innerMap || resizeSignal === undefined) return;
+    const timer = setTimeout(() => {
+      google.maps.event.trigger(innerMap, "resize");
+    }, 220);
+    return () => clearTimeout(timer);
+  }, [innerMap, resizeSignal]);
+
+  // --- popup do marker de OS (InfoWindow + root React dedicado) ---
+  function closeWorkOrderPopup() {
+    infoWindowRef.current?.close();
+    infoWindowRef.current = null;
+    const root = popupRootRef.current;
+    if (root) setTimeout(() => root.unmount(), 0); // unmount adiado: o close pode vir durante um render
+    popupRootRef.current = null;
+    popupContainerRef.current = null;
+    popupWorkOrderIdRef.current = null;
+  }
+
+  function openWorkOrderPopup(workOrderId: string, anchor: GmpAdvancedMarkerElement) {
+    const factory = renderWorkOrderPopupRef.current;
+    if (!innerMap || !factory) return;
+    closeWorkOrderPopup();
+
+    const container = document.createElement("div");
+    container.className = "opmap-gpopup";
+    const root = createRoot(container);
+    root.render(factory(workOrderId));
+    const infoWindow = new google.maps.InfoWindow({ content: container, maxWidth: 300 });
+    infoWindow.addListener("closeclick", () => {
+      if (infoWindowRef.current === infoWindow) closeWorkOrderPopup();
+    });
+    infoWindow.open({ map: innerMap, anchor, shouldFocus: false });
+
+    infoWindowRef.current = infoWindow;
+    popupRootRef.current = root;
+    popupContainerRef.current = container;
+    popupWorkOrderIdRef.current = workOrderId;
+  }
+
+  // Handler ESTÁVEL entregue aos markers: `openWorkOrderPopup` é recriado a cada render (fecha
+  // sobre `innerMap`), e passá-lo direto faria cada marker re-assinar o `gmp-click` a todo render.
+  const openPopupRef = useRef(openWorkOrderPopup);
+  openPopupRef.current = openWorkOrderPopup;
+  const handleOpenPopup = useRef((workOrderId: string, anchor: GmpAdvancedMarkerElement) => {
+    openPopupRef.current(workOrderId, anchor);
+  }).current;
+
+  // Conteúdo vivo: os mesmos gatilhos do MapLibre (lista de pins, seleção, factory nova).
+  useEffect(() => {
+    const workOrderId = popupWorkOrderIdRef.current;
+    const root = popupRootRef.current;
+    const factory = renderWorkOrderPopupRef.current;
+    if (!workOrderId || !root || !factory) return;
+    root.render(factory(workOrderId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workOrderPins, selectedWorkOrderId, renderWorkOrderPopup]);
+
+  // --- fechar o popup sob comando da página (alocação concluída, Esc) ---
+  useEffect(() => {
+    if (closePopupSignal === undefined) return;
+    closeWorkOrderPopup();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [closePopupSignal]);
+
+  // --- limpeza final: popup + rotas morrem com o componente (sem leak) ---
+  useEffect(
+    () => () => {
+      closeWorkOrderPopup();
+      for (const polyline of polylinesRef.current) polyline.setMap(null);
+      polylinesRef.current = [];
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   return (
-    <section className="operations-map-canvas" aria-label="Mapa Operacional">
-      <header>
-        <div>
-          <MapIcon size={20} />
-          <strong>Mapa Operacional</strong>
-        </div>
-        <Chip tone={loadState === "ready" ? "success" : "info"}>
-          {loadState === "ready" ? "Google Maps" : "Carregando..."}
-        </Chip>
-      </header>
-      <p>{subtitle}</p>
-      <div className="operations-map-canvas__gmaps" aria-label="Mapa com a posição dos Técnicos de Campo">
+    <section className="opmap-gmap" aria-label="Mapa operacional">
+      <div className="opmap-gmap__canvas" role="application" aria-label="Mapa dos Técnicos de Campo">
         {loadState === "ready" ? (
           <gmp-map ref={attachMap} map-id={MAP_ID}>
             {locations.map((location) => (
-              <OperatorMarker
+              <TechnicianMarker
                 key={location.id}
                 location={location}
-                isSelected={location.id === selectedId}
-                nowMs={nowMs}
                 onSelect={onSelect}
+                onHover={onHoverTechnician}
               />
             ))}
             {validWorkOrderPins.map((pin) => (
@@ -267,61 +382,110 @@ export function GoogleMapsCanvas({
                 key={pin.id}
                 pin={pin}
                 isSelected={pin.id === selectedWorkOrderId}
-                isNew={pulsingWorkOrderIds?.has(pin.id) ?? false}
+                isPulsing={pin.priority === "urgent" || (pulsingWorkOrderIds?.has(pin.id) ?? false)}
+                showCode={zoom >= WORK_ORDER_CODE_MIN_ZOOM}
                 onSelectWorkOrder={onSelectWorkOrder}
+                onOpenPopup={handleOpenPopup}
               />
             ))}
           </gmp-map>
         ) : null}
-        {/* J-MAPAS-10 — a legenda-FILTRO é page-level (D6); nenhum canvas renderiza legenda própria. */}
       </div>
+      {loadState !== "ready" ? (
+        <div className="opmap-gmap__overlay" role="status">
+          <span className="opmap-gmap__spinner" aria-hidden="true" />
+          Carregando mapa operacional…
+        </div>
+      ) : null}
+      {/* J-MAPAS-10 — a legenda-FILTRO é page-level (D6); nenhum canvas renderiza legenda própria. */}
     </section>
   );
 }
 
-function OperatorMarker({
+/**
+ * Marcador do técnico (protótipo `.mk-tech`): avatar 32px, fundo AVC estável por id, borda 3px na
+ * cor do grupo de status (âmbar quando a posição é antiga), iniciais brancas. Grupo "off" esmaece.
+ * A SELEÇÃO não muda a pintura — igualzinho ao MapLibre (o feedback é o detail popover), então a
+ * cor nunca mente sobre o status real.
+ */
+function TechnicianMarker({
   location,
-  isSelected,
-  nowMs,
   onSelect,
+  onHover,
 }: {
-  location: FieldLocationItem;
-  isSelected: boolean;
-  nowMs: number;
-  onSelect: (location: FieldLocationItem) => void;
+  readonly location: FieldLocationItem;
+  readonly onSelect: (location: FieldLocationItem) => void;
+  readonly onHover?: (location: FieldLocationItem | null) => void;
 }) {
   const markerRef = useRef<GmpAdvancedMarkerElement | null>(null);
+  const prevCoordRef = useRef<LngLat | null>(null);
+  const rafRef = useRef<number | null>(null);
 
-  // Posição via PROPRIEDADE (LatLngLiteral) — o setter do web component rejeita string via
-  // property-assign (React 19). Atualiza a cada refresh de localização.
+  // Posição via PROPRIEDADE (LatLngLiteral). Espelho da animação do MapLibre: a troca de posição é
+  // INTERPOLADA (ease-out, mesma duração OPERATIONS_MAP_ANIMATION_MS) em vez de saltar.
   useEffect(() => {
     const marker = markerRef.current;
     if (!marker) return;
-    marker.position = { lat: location.latitude, lng: location.longitude };
+    const to: LngLat = [location.longitude, location.latitude];
+    const from = prevCoordRef.current;
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (!from || (from[0] === to[0] && from[1] === to[1])) {
+      marker.position = { lat: to[1], lng: to[0] };
+      prevCoordRef.current = to;
+      return;
+    }
+    const start = performance.now();
+    const frame = (timestamp: number) => {
+      const progress = Math.min(1, (timestamp - start) / OPERATIONS_MAP_ANIMATION_MS);
+      const [lng, lat] = interpolateCoords(from, to, progress);
+      const current = markerRef.current;
+      if (current) current.position = { lat, lng };
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(frame);
+      } else {
+        rafRef.current = null;
+        prevCoordRef.current = to;
+      }
+    };
+    rafRef.current = requestAnimationFrame(frame);
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
   }, [location.latitude, location.longitude]);
 
-  // gmp-click é custom event do web component — React não faz bind via prop; liga-se pelo ref.
+  // Diretiva do dono (c): HOVER abre o detalhe efêmero, CLIQUE fixa. `gmp-click` é custom event do
+  // web component (React não faz bind via prop); mouseenter/mouseleave são ligados no MESMO
+  // elemento por ref, para não depender de o conteúdo continuar no light DOM.
   useEffect(() => {
     const marker = markerRef.current;
     if (!marker) return;
     const handleClick = () => onSelect(location);
+    const handleEnter = () => onHover?.(location);
+    const handleLeave = () => onHover?.(null);
     marker.addEventListener("gmp-click", handleClick);
-    return () => marker.removeEventListener("gmp-click", handleClick);
-  }, [location, onSelect]);
+    marker.addEventListener("mouseenter", handleEnter);
+    marker.addEventListener("mouseleave", handleLeave);
+    return () => {
+      marker.removeEventListener("gmp-click", handleClick);
+      marker.removeEventListener("mouseenter", handleEnter);
+      marker.removeEventListener("mouseleave", handleLeave);
+    };
+  }, [location, onSelect, onHover]);
 
-  // Cor pela paleta REAL de status (inline vence a classe): status ao vivo · âmbar >3min ·
-  // cinza >10min. A seleção NUNCA sobrescreve a cor de status (senão vira UI mentirosa) —
-  // só geometria + anel de destaque via classe --selected.
-  const ringColor = getRingColor(location, nowMs);
-  // M-3 — espelho do realce de disponibilidade do MapLibre: técnico disponível ao vivo ganha halo.
-  // A cor do halo vem da MESMA fonte (getStatusColor via --operator-ring), nunca hex solto no CSS.
-  const available = isRingAvailable(location, nowMs);
+  const isOff = getFieldLocationGroup(location.status) === "off";
 
   return (
     <gmp-advanced-marker ref={markerRef} title={location.displayName}>
       <div
-        className={`gmp-operator-pin${available ? " gmp-operator-pin--available" : ""}${isSelected ? " gmp-operator-pin--selected" : ""}`}
-        style={{ background: ringColor, "--operator-ring": ringColor } as CSSProperties}
+        className="opmap-gtech"
+        data-off={isOff ? "true" : undefined}
+        style={{ background: getAvatarColor(location.id), borderColor: getTechnicianBorderColor(location) }}
         aria-hidden
       >
         {getInitials(location.displayName)}
@@ -330,16 +494,25 @@ function OperatorMarker({
   );
 }
 
+/**
+ * Marcador da OS (protótipo `.mk-os`): LOSANGO 22px por prioridade, borda branca 2.5, anel azul
+ * quando selecionado, pulso quando urgente ou recém-chegada (M-5). O código da OS aparece acima do
+ * losango a partir do zoom 12 — espelho do `wo-label` (minzoom 12) do MapLibre.
+ */
 function WorkOrderMarker({
   pin,
   isSelected,
-  isNew,
+  isPulsing,
+  showCode,
   onSelectWorkOrder,
+  onOpenPopup,
 }: {
-  pin: OperationsMapWorkOrderPin;
-  isSelected: boolean;
-  isNew: boolean;
-  onSelectWorkOrder?: (id: string) => void;
+  readonly pin: OperationsMapWorkOrderPin;
+  readonly isSelected: boolean;
+  readonly isPulsing: boolean;
+  readonly showCode: boolean;
+  readonly onSelectWorkOrder?: (id: string) => void;
+  readonly onOpenPopup: (workOrderId: string, anchor: GmpAdvancedMarkerElement) => void;
 }) {
   const markerRef = useRef<GmpAdvancedMarkerElement | null>(null);
 
@@ -351,19 +524,26 @@ function WorkOrderMarker({
 
   useEffect(() => {
     const marker = markerRef.current;
-    if (!marker || !onSelectWorkOrder) return;
-    const handleClick = () => onSelectWorkOrder(pin.id);
+    if (!marker) return;
+    const handleClick = () => {
+      onSelectWorkOrder?.(pin.id);
+      onOpenPopup(pin.id, marker);
+    };
     marker.addEventListener("gmp-click", handleClick);
     return () => marker.removeEventListener("gmp-click", handleClick);
-  }, [pin.id, onSelectWorkOrder]);
+  }, [pin.id, onSelectWorkOrder, onOpenPopup]);
+
+  const priorityColor = getWorkOrderPriorityColor(pin.priority);
 
   return (
     <gmp-advanced-marker ref={markerRef} title={`${pin.code} · ${pin.title}`}>
-      <div
-        className={`gmp-workorder-pin${isSelected ? " gmp-workorder-pin--selected" : ""}${isNew ? " gmp-workorder-pin--pulse" : ""}`}
-        style={{ background: getWorkOrderPriorityColor(pin.priority), "--call-priority": getWorkOrderPriorityColor(pin.priority) } as CSSProperties}
-        aria-hidden
-      />
+      <div className="opmap-gos-wrap" aria-hidden>
+        {showCode ? <span className="opmap-gcode">{pin.code}</span> : null}
+        <span
+          className={`opmap-gos${isSelected ? " opmap-gos--selected" : ""}${isPulsing ? " opmap-gos--pulse" : ""}`}
+          style={{ background: priorityColor, "--call-priority": priorityColor } as CSSProperties}
+        />
+      </div>
     </gmp-advanced-marker>
   );
 }

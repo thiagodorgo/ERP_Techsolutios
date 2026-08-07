@@ -1315,7 +1315,6 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   const { ChecklistRunsPage } = await import("../src/modules/checklists/pages/ChecklistRunsPage");
   const { TenantChecklistsPage } = await import("../src/modules/checklists/pages/TenantChecklistsPage");
   const { NotificationsPage } = await import("../src/modules/notifications/pages/NotificationsPage");
-  const { OperationsDispatchActionsPanel } = await import("../src/modules/operations/map/components/OperationsDispatchActionsPanel");
   const { OperationsDispatchesPage } = await import("../src/modules/operations/dispatches/pages/OperationsDispatchesPage");
   const { OperationsMapPage } = await import("../src/modules/operations/map/pages/OperationsMapPage");
   const { WorkOrderCreatePage } = await import("../src/modules/work-orders/pages/WorkOrderCreatePage");
@@ -1430,71 +1429,6 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
       <WorkOrderTimeline events={getMockWorkOrderTimeline(workOrderDetail.id)} />
     </MemoryRouter>,
   );
-  const dispatchActionsHtml = renderToString(
-    <OperationsDispatchActionsPanel
-      dispatch={{
-        id: "dispatch-1",
-        workOrderId: "wo-1",
-        operatorUserId: "usr-1",
-        status: "on_route",
-        createdAt: "2026-06-10T12:00:00.000Z",
-      }}
-      context={{ permissions: ["field_dispatch:update", "field_dispatch:cancel", "field_dispatch:reassign"] }}
-      canUpdate
-      canCancel
-      canReassign
-      onChanged={() => undefined}
-    />,
-  );
-  const updateOnlyDispatchActionsHtml = renderToString(
-    <OperationsDispatchActionsPanel
-      dispatch={{
-        id: "dispatch-1",
-        workOrderId: "wo-1",
-        operatorUserId: "usr-1",
-        status: "on_route",
-        createdAt: "2026-06-10T12:00:00.000Z",
-      }}
-      context={{ permissions: ["field_dispatch:update"] }}
-      canUpdate
-      canCancel={false}
-      canReassign={false}
-      onChanged={() => undefined}
-    />,
-  );
-  const readOnlyDispatchActionsHtml = renderToString(
-    <OperationsDispatchActionsPanel
-      dispatch={{
-        id: "dispatch-1",
-        workOrderId: "wo-1",
-        operatorUserId: "usr-1",
-        status: "on_route",
-        createdAt: "2026-06-10T12:00:00.000Z",
-      }}
-      context={{ permissions: ["field_dispatch:read"] }}
-      canUpdate={false}
-      canCancel={false}
-      canReassign={false}
-      onChanged={() => undefined}
-    />,
-  );
-  const terminalDispatchActionsHtml = renderToString(
-    <OperationsDispatchActionsPanel
-      dispatch={{
-        id: "dispatch-1",
-        workOrderId: "wo-1",
-        operatorUserId: "usr-1",
-        status: "completed",
-        createdAt: "2026-06-10T12:00:00.000Z",
-      }}
-      context={{ permissions: ["field_dispatch:update", "field_dispatch:cancel", "field_dispatch:reassign"] }}
-      canUpdate
-      canCancel
-      canReassign
-      onChanged={() => undefined}
-    />,
-  );
-
   assert.match(loginHtml, /Acesse sua organização/);
   assert.match(protectedHtml, /Checklists Operacionais/);
   assert.match(protectedHtml, /Ordens de Servico/);
@@ -1515,11 +1449,10 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(operationsMapContextHtml, /Nenhum técnico ou chamado no mapa/);
   assert.doesNotMatch(operationsMapContextHtml, /Roberto Lima|Ana Martins/);
   assert.match(operationsMapEmptyContextHtml, /Nenhum técnico ou chamado no mapa/);
-  assert.match(dispatchActionsHtml, /Acoes do despacho|Alterar status|Reatribuir/);
-  assert.match(updateOnlyDispatchActionsHtml, /Alterar status/);
-  assert.doesNotMatch(updateOnlyDispatchActionsHtml, /Reatribuir|Cancelar/);
-  assert.match(readOnlyDispatchActionsHtml, /Sem acoes disponiveis/);
-  assert.match(terminalDispatchActionsHtml, /Despacho terminal/);
+  // J-MAPAS-10 PR-2 (faxina) — as ações de GESTÃO de despacho saíram do Mapa (D-MAPA-PIXEL,
+  // divergência 6: status/cancelar/reatribuir vivem na tela Despachos). O painel órfão
+  // OperationsDispatchActionsPanel foi REMOVIDO; o mapa não pode ressuscitar essas ações.
+  assert.doesNotMatch(protectedHtml, /Acoes do despacho/);
   // Fidelidade §11: o título da tela de despachos passou de "Despachos Operacionais" para "Despachos" + selo AO VIVO.
   assert.match(protectedHtml, /Despachos/);
   assert.match(protectedHtml, /AO VIVO/);

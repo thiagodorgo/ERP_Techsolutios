@@ -135,7 +135,13 @@ test("tenant admin acessa inbox interna de notificacoes sem depender de seed", a
   await expect(page.getByText(/Inbox interna/i)).toBeVisible();
 });
 
-test("Mapa Operacional renderiza UI inicial e fallback sem Google Maps real", async ({ page }) => {
+// J-MAPAS-10 PR-2 — reescrita para a TELA REAL. A versão anterior era da era pré-Ω1 (esperava
+// "Mapa placeholder", o painel de despacho dentro do mapa e o título antigo da tela de Despachos)
+// e já estava defasada ANTES do PR-1; como esta spec NÃO roda no CI, ninguém a via quebrar.
+// A tela de hoje (D-MAPA-PIXEL) é: palco full-bleed com o mapa, stack de 3 painéis à direita
+// (Chamados recebidos / Em Atendimento / Técnicos de campo), legenda-FILTRO no rodapé com o hint
+// "Esc limpa a seleção…", e ZERO chip passivo no topo-esquerdo (diretiva do dono).
+test("Mapa Operacional renderiza o palco, o stack de painéis e a legenda-filtro (sem chips passivos)", async ({ page }) => {
   await loginAndActivateContext(page);
   await enableOperationsMapFrontendContext(page);
   await enableWorkOrdersFrontendContext(page);
@@ -143,16 +149,32 @@ test("Mapa Operacional renderiza UI inicial e fallback sem Google Maps real", as
 
   await page.goto("/operations/map");
   await expect(page).toHaveURL(/\/operations\/map$/);
-  await expect(page.getByRole("heading", { name: "Mapa Operacional" })).toBeVisible();
-  await expect(page.getByText(/Visualização operacional/i)).toBeVisible();
-  await expect(page.getByText(/Google Maps|Mapa placeholder|Carregando/i)).toBeVisible();
-  await expect(page.getByRole("link", { name: /OS-/ }).first()).toBeVisible();
-  await expect(page.getByText(/Despacho ativo|Despacho|Sem despacho/).first()).toBeVisible();
-  const dispatchAction = page.getByRole("link", { name: /Acompanhar despacho|Criar despacho/i }).first();
-  await expect(dispatchAction).toBeVisible();
-  await dispatchAction.click();
-  await expect(page).toHaveURL(/\/operations\/dispatches\?/);
-  await expect(page.getByRole("heading", { name: "Despachos Operacionais" })).toBeVisible();
+  // O título da tela é acessível (o heading visual do shell vive na topbar) — existe no DOM/a11y.
+  await expect(page.getByRole("heading", { name: "Mapa Operacional" })).toBeAttached();
+  // Palco full-bleed: o mapa é o palco inteiro e tudo o mais flutua sobre ele.
+  await expect(page.locator(".opmap-stage")).toBeVisible();
+  await expect(page.locator(".opmap-stage__map")).toBeVisible();
+
+  // Stack de 3 painéis à direita, com os títulos verbatim do protótipo.
+  await expect(page.getByText("Chamados recebidos")).toBeVisible();
+  await expect(page.getByText("Em Atendimento")).toBeVisible();
+  await expect(page.getByText("Técnicos de campo")).toBeVisible();
+
+  // Legenda-FILTRO no rodapé: 8 itens + hint verbatim. Clicar num item alterna a camada.
+  await expect(page.getByText("Esc limpa a seleção · arraste uma OS até um técnico para alocar")).toBeVisible();
+  const legendItem = page.getByRole("button", { name: /Disponível/ }).first();
+  await expect(legendItem).toBeVisible();
+  await legendItem.click();
+  await expect(legendItem).toHaveAttribute("aria-pressed", "false");
+
+  // Diretiva do dono (2026-08-06): os chips passivos do topo-esquerdo SAÍRAM.
+  await expect(page.locator(".opmap-chips")).toHaveCount(0);
+  await expect(page.getByText(/Atualização periódica|Fonte: /)).toHaveCount(0);
+
+  // Estado honesto (D-007): ou há chamados reais na fila, ou o vazio verbatim do protótipo.
+  await expect(
+    page.getByText(/OS-|Nenhum chamado aguardando alocação|Nenhum técnico ou chamado no mapa/).first(),
+  ).toBeVisible();
 });
 
 test("Despachos Operacionais renderiza lista, KPIs e acoes por RBAC", async ({ page }) => {

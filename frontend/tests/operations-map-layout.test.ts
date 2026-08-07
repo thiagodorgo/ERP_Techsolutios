@@ -226,11 +226,8 @@ test("página preserva useOperationsMap + useNewWorkOrderAlert + estados (skelet
     "Nenhum técnico ou chamado no mapa",
     "Tentar novamente", // banner honesto de erro (só quando o carregamento falha)
   ]) {
-    if (marker === "Tentar novamente") {
-      const chips = readFileSync(fileURLToPath(new URL("components/OperationsMapChips.tsx", SRC)), "utf8");
-      assert.ok(chips.includes(marker), `banner de retry ausente: ${marker}`);
-      continue;
-    }
+    // PR-2: o guard do retry lia o arquivo de CHIPS — que o dono mandou desmontar. Lê a PÁGINA,
+    // que é quem realmente renderiza o banner de erro; guard sobre arquivo não-renderizado mente.
     assert.ok(PAGE.includes(marker), `marcador de preservação ausente: ${marker}`);
   }
 });

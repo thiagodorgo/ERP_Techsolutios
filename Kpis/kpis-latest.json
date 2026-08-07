@@ -1,16 +1,16 @@
 {
   "snapshot_date": "2026-08-04",
-  "version": "MAPA-PIXEL-PR1",
+  "version": "MAPA-PIXEL-PR2",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "J-MAPAS-10 PR-1 — Mapa Operacional recriado PIXEL A PIXEL sobre o protótipo do dono (Mapa Operacional.html, importado do Claude Design). Painéis de vidro 348px (Chamados recebidos / Em Atendimento / Técnicos com ETA, filtros e ordenação), legenda-FILTRO no rodapé com 8 itens e contagem no tooltip, alocação por clique + popup do marker (3 mais próximos) + drag-and-drop nativo, rota tracejada, toast honesto, markers do protótipo (avatar 32px com borda por status; losango 22px com pulso na urgente). 3 DIRETIVAS do dono aplicadas e provadas em navegador real: chips do topo-esquerdo removidos; ZERO movimento automático de câmera (sobra só o pan por clique) + memória da visão por organização; detalhe do técnico por hover (efêmero) e por clique (fixo, fecha manual). ALTA da junta: a chave Google fazia a tela cair no canvas ANTIGO — MapLibre virou default e Google exige opt-in (VITE_MAPS_PROVIDER=google) até a paridade do PR-2. Tiles CARTO do protótipo REJEITADOS por ToS Enterprise → OpenFreeMap claro, US$ 0.",
-    "title": "Mapa Operacional pixel-perfect (J-MAPAS-10 PR-1)",
-    "pr": 338,
+    "block": "J-MAPAS-10 PR-2 — paridade do espelho Google + faxina. GoogleMapsCanvas reescrito espelhando o MapLibre pixel-perfect: avatar 32px/losango 22px/pulso M-5/label zoom≥12/rotas tracejadas (dash derivado da MESMA constante)/memória da visão/pan imperativo com padding emulado/popup React/hover efêmero+clique fixo/ZERO câmera automática. As 3 diretivas do dono valem no caminho Google. Opt-in VITE_MAPS_PROVIDER=google MANTIDO por decisão fundamentada: Dynamic Maps é SKU tarifado (US$7/1000 pós-10k) vs OpenFreeMap US$0 — preferir Google pela mera presença de chave ligaria serviço pago sem junta (§C7.1); e a cartografia não espelha (com mapId a API ignora styles JS — divergência DECLARADA, não fingida). Faxina: focus-city (helpers+teste) e componentes órfãos removidos; e2e do mapa reescrita para a tela real + teste de faxina que proíbe as âncoras mortas. JUNTA REPROVOU o ciclo 1 com um ALTA de livro: em React 19, ref callback INLINE re-invoca a cada re-render — o canvas Google estalava a câmera do operador de volta à visão inicial a cada polling/hover (provado em harness runtime com React real, não por leitura). Corrigido com guard de aplicação única (initialCameraAppliedRef) + guard de fonte no teste.",
+    "title": "Mapa PR-2 — paridade Google + faxina (J-MAPAS-10)",
+    "pr": 339,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Mapa recriado no protótipo do dono; câmera só sob comando do operador com memória da visão; detalhe do técnico por hover e clique. Junta com veto de pixel + veto geo, achados aplicados e medidos em Edge real.",
+    "summary": "Espelho Google com paridade real e divergências declaradas; zero câmera automática provado em runtime; faxina do focus-city; opt-in mantido por custo (§C7.1).",
     "status_label": "Entregue (aguardando merge do PR corrente)"
   },
   "metrics": {
@@ -21,16 +21,16 @@
       "note": "PR não toca mobile — carrega 839/839 (§C3.3)."
     },
     "frontend_smoke_tests": {
-      "value": 1052,
-      "total": 1052,
-      "display": "1052/1052",
-      "note": "J-MAPAS-10 PR-1: suíte do mapa 125→177 casos (5 arquivos novos: view-memory, routes-layer, dnd, marker-popup, detail-popover; 9 reescritos) + testes atualizados para as diretivas do dono (chips fora, zero auto-câmera, hover+clique). 1013→1052, execução real."
+      "value": 1059,
+      "total": 1059,
+      "display": "1059/1059",
+      "note": "PR-2: google-canvas reescrito (16 casos) + operations-map-faxina novo (8) − 17 removidos (focus-city 10 + google antigos 7); ajustes em alert/layout/smoke-flow. 1052→1059, execução real."
     },
     "backend_tests": {
       "value": 2110,
       "total": 2110,
       "display": "2110/2110",
-      "note": "PR frontend-only — 2110/2110 confirmado por execução real nesta rodada (4 shards, CORE_SAAS_PERSISTENCE=memory; contract-tests leem .tsx)."
+      "note": "PR-2 frontend-only — 2110/2110 confirmado por execução real no PR (4 shards, CORE_SAAS_PERSISTENCE=memory)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 138,
-      "display": "138",
-      "note": "Mapa Operacional pixel-perfect (J-MAPAS-10 PR-1). Sobre 137 do #337."
+      "value": 139,
+      "display": "139",
+      "note": "Mapa PR-2 (paridade Google + faxina). Sobre 138 do #338."
     },
     "mobile_backend_contracts": {
       "value": 18,
