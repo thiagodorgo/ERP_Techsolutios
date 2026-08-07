@@ -6,7 +6,7 @@
   "release": {
     "block": "CHECKLIST P1 PR-02b — MODO EDITOR do builder no desenho do dono: sub-rota /administrator/checklists/:id, header (nome inline-editável, tipo, pills de situação, indicador dirty, Salvar/Publicar), paleta que adiciona por clique, canvas com SEÇÕES NOMEADAS (mover/duplicar/remover por campo), inspector básico, modal 'Sair sem salvar?', aba Aplicabilidade estática com o card 'O que acontece ao publicar'. A ponte antiga morreu; 5 componentes órfãos removidos. Persistência das seções por convenção schema.sections + config.sectionIndex/help, PROVADA rodando parser+repositório reais (chave no topo do componente e `type` são descartados — pendências registradas). JUNTA: cognicao-visual REPROVOU e critico-adversarial CONDICIONOU; 4 ALTA + 8 MÉDIA aplicados, com destaque para: grid que jogava o header para fora da tela ao rolar; rótulo CRU do backend virando a pergunta que o técnico lê; Publicar inalcançável (capacidade real removida com o endpoint funcionando); e perda SILENCIOSA de trabalho ao editar durante o save.",
     "title": "CHECKLIST P1 PR-02b — editor do builder (casca + canvas + seções)",
-    "pr": null,
+    "pr": 340,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
