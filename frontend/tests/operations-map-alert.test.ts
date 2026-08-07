@@ -163,7 +163,7 @@ test("MapLibre: wo-pulse por 'pulse', pulsingWorkOrderIds nas deps e cancelAnima
   assert.match(CANVAS, /pulsingWorkOrderIds=\{pulsingWorkOrderIds\}/);
 });
 
-// 9 — Google (espelho gracioso): --pulse para id recém-chegado; sem conjunto, sem pulso.
+// 9 — Google (espelho FECHADO no PR-2): --pulse no LOSANGO do id recém-chegado; sem conjunto, sem pulso.
 test("Google: marcador de OS recebe --pulse para id novo e nada quando ausente", () => {
   const pulsing = renderToString(
     createElement(GoogleMapsCanvas, {
@@ -174,7 +174,7 @@ test("Google: marcador de OS recebe --pulse para id novo e nada quando ausente",
       pulsingWorkOrderIds: new Set(["pin-1"]),
     }),
   );
-  assert.match(pulsing, /gmp-workorder-pin--pulse/);
+  assert.match(pulsing, /opmap-gos--pulse/);
   const quiet = renderToString(
     createElement(GoogleMapsCanvas, {
       loadState: "ready" as const,
@@ -183,7 +183,7 @@ test("Google: marcador de OS recebe --pulse para id novo e nada quando ausente",
       workOrderPins: [makePin({ id: "pin-1" })],
     }),
   );
-  assert.doesNotMatch(quiet, /gmp-workorder-pin--pulse/);
+  assert.doesNotMatch(quiet, /opmap-gos--pulse/);
 });
 
 // 10 — realce "novo" no CARD .opmap-os: selo "Novo" + is-new + aria; sem newIds nada.
@@ -252,6 +252,6 @@ test("CSS: @media reduced-motion cobre toast M-5, opmap-os__new, opmap-cnt--new 
   assert.match(block, /\.operations-map-toast/);
   assert.match(block, /\.opmap-os__new/);
   assert.match(block, /\.opmap-cnt--new/);
-  assert.match(block, /\.gmp-workorder-pin--pulse/);
+  assert.match(block, /\.opmap-gos--pulse/);
   assert.match(CSS, /\.operations-map-toasts\s*\{[^}]*z-index:\s*70/);
 });

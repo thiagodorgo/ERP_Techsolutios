@@ -198,6 +198,12 @@ de sync **Drift** (dado geo offline entra na fila como os demais domínios).
 
 ## (f) Foco de câmera "cidade com mais técnicos" — clustering vs geocoding (J-MAPAS-4)
 
+> **SUPERSEDED (2026-08-06, J-MAPAS-10 PR-2 / D-MAPA-PIXEL div. 1):** os helpers de focus-city foram
+> removidos junto com o último consumidor — por diretiva do dono, a câmera **não enquadra nada
+> sozinha**: só a memória da visão do operador e o pan explícito por clique. Ver §(j.1) e a ata
+> `agent-orchestration/omega/mapas/J-MAPAS-10-pixel-ata.md` §8. O dossiê abaixo permanece como
+> histórico (A2 — nada se apaga em silêncio).
+
 **Última verificação:** 2026-07-13 · **Decisão de junta:** J-MAPAS-4 (planejador → dev → avaliador).
 
 **Regra do dono (literal):** "o mapa vai FOCAR onde tem MAIS técnicos; em EMPATE de números, vai
@@ -403,7 +409,43 @@ conclusão preservado como opção de ordenação); toast com copy honesta (nunc
 **Custo deste bloco: US$ 0 — junta-5 + PD NÃO disparam** (nenhum serviço tarifado novo). Fatias:
 PR-1 (MapLibre default completo) → PR-2 (espelho Google + faxina focus-city). Próximo: dev-mapas.
 
+### (j.1) Espelho Google — receituário do PR-2 (durável; verificado 2026-08-06 na doc oficial)
+
+Recriar no Google Maps JS os mesmos deltas do canvas MapLibre exigiu quatro padrões que valem para
+QUALQUER tela de mapa nossa que precise de um espelho Google:
+
+1. **Linha tracejada não existe como `line-dasharray`.** O padrão oficial é `Polyline` com
+   `strokeOpacity: 0` + `icons: [{ icon: { path: "M 0,-1 0,1", scale, strokeOpacity, strokeWeight },
+   offset: "0", repeat: "<dash+gap>px" }]` (`.../javascript/symbols`, página marcada "Last updated
+   2026-07-31 UTC"). O `path` desenha 2 unidades → `scale = dashPx / 2`; `repeat` é dash+vão. Derive
+   dash/vão das MESMAS constantes do MapLibre (`DASHARRAY × line-width`) para não criar número mágico
+   paralelo.
+2. **`moveend` não existe; o equivalente é `idle`** ("fires when the map becomes inactive after
+   panning or zooming"). Diferença que morde: `idle` **também** dispara no assentamento do mount —
+   sem descartar o primeiro evento (e deduplicar views iguais), uma "memória da visão" salva sozinha
+   e o savenote pisca sem o operador ter tocado no mapa.
+3. **Não há `setPadding` de câmera.** Padding só existe como parâmetro de `fitBounds`/`panToBounds`.
+   Para centralizar um alvo na área livre (ex.: stack de 348px à direita), use
+   `panTo(target)` + `panBy((right-left)/2, (bottom-top)/2)` — em pixels.
+4. **Popup = `InfoWindow` com `content: Element` e `open({ map, anchor })`**, onde `anchor` aceita
+   `AdvancedMarkerElement` (o próprio `<gmp-advanced-marker>`). Conteúdo React entra por
+   `createRoot(container)` com `unmount` adiado no `closeclick` (mesmo leak-guard do `maplibregl.Popup`).
+   A **moldura** (bolha/seta/✕) é do Google e não se estiliza sem depender de classes internas —
+   divergência a declarar, não a fingir.
+5. **Âncora do marcador.** O conteúdo custom do `AdvancedMarkerElement` é ancorado pelo **rodapé**;
+   o MapLibre desenha **centrado** na coordenada. Sem `transform: translateY(50%)` no conteúdo, o
+   espelho fica deslocado meia-altura do marcador.
+6. **Cartografia não espelha.** Com `mapId` (obrigatório para AdvancedMarker), a API **ignora
+   `styles` em JS** — um token-set próprio (o nosso "voyager-like") não se aplica ao Google. Espelho
+   de comportamento: sim; espelho de basemap: só com Map ID próprio no Cloud Console.
+
+**Governança que saiu daqui:** paridade fechada **não** basta para promover o Google a default. O
+gate `VITE_MAPS_PROVIDER=google` permanece porque Dynamic Maps é SKU **tarifado** (US$ 7,00/1.000
+após 10.000/mês) enquanto OpenFreeMap é US$ 0/keyless — trocar de provedor pela mera presença de uma
+chave no ambiente ligaria serviço pago sem decisão de junta (§C7.1).
+
 ## Historico de revisoes
+- **2026-08-06 (J-MAPAS-10 · dev-mapas · PR-2)** — **Espelho Google fechado + faxina.** `GoogleMapsCanvas` passou a consumir rotas/memória-da-visão/pan/popup/hover das mesmas fontes únicas do MapLibre; **todo** movimento automático de câmera removido (focus-city, `fitBounds`, pan por seleção) e helpers `clusterByProximity`/`pickFocusCluster`/`westFirstTieBreak`/`centroidOf` **deletados** com o teste (`haversineKm` fica: base do ~km honesto). Receituário Google (dashed polyline por símbolo repetido · `idle` no lugar de `moveend` · `panBy` no lugar de `setPadding` · `InfoWindow` ancorada no AdvancedMarker · `translateY(50%)` na âncora do conteúdo · `mapId` ignora `styles`) em §(j.1), verificado na doc oficial (páginas "Last updated 2026-07-31 UTC"). Opt-in `VITE_MAPS_PROVIDER=google` **mantido por custo** (SKU tarifado × OpenFreeMap US$ 0) e por cartografia. Ata: `agent-orchestration/omega/mapas/J-MAPAS-10-pixel-ata.md` §8. Próximo: avaliador-mapas.
 - **2026-08-06 (J-MAPAS-10 · planejador-mapas)** — Plano da **recriação "pixel a pixel" do Mapa Operacional** a partir do protótipo do dono (`Mapa Operacional.html`). CARTO Voyager raster **REJEITADO** (uso comercial exige Enterprise license — carto.com/basemaps, verificado 2026-08-06); base segue **MapLibre + OpenFreeMap** com token-set CLARO próprio "voyager-like". **US$ 0**, sem SKU/chave/dep nova → junta-5+PD não disparam. Focus-city (J-MAPAS-4) SUPERSEDED pela memória-da-visão (localStorage por tenant + default Brasil z4). Preços Google re-verificados 2026-08-06 (página "Last updated 2026-07-31 UTC"): inalterados. Ver §(j) e `agent-orchestration/omega/planos/PLANO-MAPA-PIXEL.md`. Próximo: dev-mapas.
 - **2026-07-25 (J-MAPAS-9 · planejador-mapas)** — Plano do **Rastreamento da Telemetria web (Ω4C PR-15)**: trajeto/polyline dos pontos de `GET /telemetry/track` (único endpoint com coordenada crua). **Reusa MapLibre+OpenFreeMap US$ 0** (style + padrão de montagem do mapa operacional; polyline = camada `line` nativa), **sem SKU/chave/billing/dep nova**. OpenFreeMap re-confirmado keyless/gratuito em 2026-07-25 na fonte. §2.8: coordenada crua exibida SÓ aqui, gated telemetry:read + consent na origem; allowlist {capturedAt,lat,lng,accuracyM}; sem coordenada em log; sem CSV de coordenada. Cor por velocidade DIFERIDA (TrackView não projeta speedKmh). Não dispara junta-5+PD -> junta normal. Ver §(i). Próximo: dev-mapas.
 - **2026-07-21 (J-MAPAS-8 · dev-mapas)** — **M-7 SLA real (Fase 2 FECHADA).** PR-A (backend) expôs

@@ -85,3 +85,93 @@ operador via bolhas "2"/"4" em vez dos avatares.
 guard de CSS sem `*/` órfão.
 
 **Veredito final: APROVADO** (ciclo 2 — todos os achados sérios aplicados e provados por medição).
+
+---
+
+## 8. PR-2 — espelho Google + faxina (fecha as pendências do §6)
+
+**Base:** `main` já com o PR-1 mergeado (#338, `70dbfde`). **Papel:** `dev-mapas`. **Próximo:** `avaliador-mapas`.
+
+### 8.1 Paridade do espelho `GoogleMapsCanvas` — o que ficou EQUIVALENTE
+
+O canvas Google deixou de ser a tela velha: passou a consumir `routes`, `initialView`, `onMoveEnd`,
+`panTarget`, `renderWorkOrderPopup`, `closePopupSignal` e `onHoverTechnician`, sempre das **mesmas
+fontes únicas** do MapLibre (nenhum hex/medida paralela).
+
+| Delta do protótipo | MapLibre (default) | Espelho Google (PR-2) |
+|---|---|---|
+| Técnico | camadas circle r16 (borda) + r13 (avatar) + iniciais | `.opmap-gtech` 32px, `background=getAvatarColor(id)`, `border-color=getTechnicianBorderColor` (âmbar se `isStale`), iniciais `getInitials` |
+| Grupo "fora de serviço" | `circle-opacity .75` | `[data-off="true"] { opacity: .75 }` |
+| OS | `icon-image wo-diamond-{prio}[-sel]` (SVG 22px rotate 45) | `.opmap-gos` 22px `rotate(45deg)` radius 5 borda 2.5 branca, mesma cor por prioridade |
+| Seleção da OS | `wo-selected-ring` + variante `-sel` | `outline 3px rgba(59,130,246,.65) offset 2` |
+| Pulso M-5 | camada `wo-pulse` (rAF) | `.opmap-gos--pulse` (CSS, reduced-motion coberto) |
+| Código da OS | `wo-label` `minzoom: 12` | `.opmap-gcode` renderizado a partir de `zoom >= 12` (estado alimentado pelo `idle`) |
+| Rotas tracejadas | camada `line` + `line-dasharray [2.4, 2.8]` | `google.maps.Polyline` `strokeOpacity: 0` + `icons` (dash 6px / vão 7px = **as mesmas constantes** × largura) |
+| Memória da visão | `center/zoom` iniciais + `moveend` | `element.center/zoom` no mount + listener **`idle`** (1º idle e views repetidas descartados) |
+| Pan imperativo | `easeTo` + `setPadding` | `panTo` + `panBy((right-left)/2, (bottom-top)/2)` — o Google não tem padding de câmera |
+| Popup do marker | `maplibregl.Popup` + `createRoot` | `InfoWindow` ancorada no `AdvancedMarkerElement` + `createRoot` (unmount adiado no `closeclick`) |
+| Hover/clique do técnico | `mousemove`/`mouseleave` na camada | `mouseenter`/`mouseleave` + `gmp-click` no marker |
+| Animação de posição | interpolação ease-out 550ms | rAF por marker com `interpolateCoords`/`OPERATIONS_MAP_ANIMATION_MS` |
+| Câmera automática | **nenhuma** | **nenhuma** — `fitBounds`, `LatLngBounds`, focus-city e pan por seleção removidos |
+| Controles | zoom bottom-right | `zoomControl` RIGHT_BOTTOM; `fullscreenControl:false` |
+| Chrome passivo | inexistente | header/`Chip "Google Maps"`/subtítulo **removidos** (diretiva do dono) |
+
+Fontes datadas (2026-08-06, docs oficiais): dashed line por `strokeOpacity: 0` + símbolo repetido
+(`.../javascript/symbols`, "Last updated 2026-07-31 UTC"); `idle` = "map becomes inactive after
+panning or zooming" (referência de `Map`); `InfoWindow.open({map, anchor})` aceita
+`AdvancedMarkerElement` e `content` aceita `Element` ("Last updated 2026-07-31 UTC").
+
+### 8.2 O que NÃO ficou equivalente — divergências DECLARADAS (não fingidas)
+
+1. **Cartografia do basemap.** Com `mapId` a API **ignora `styles` em JS** (cloud-based styling), então
+   o token-set claro "voyager-like" do nosso `mapStyle.ts` **não se aplica** ao Google. Os dois são
+   claros; não são o mesmo mapa. Só um Map ID próprio no Cloud Console aproximaria — decisão de
+   ativação, fora deste escopo.
+2. **Moldura do popup.** A bolha/seta/botão-de-fechar são da `InfoWindow` do Google; só o **conteúdo**
+   é o nosso (`OperationsOsMarkerPopup` dentro de `.opmap-gpopup`, com o mesmo vidro navy).
+3. **Padding de câmera.** Não existe equivalente persistente do `setPadding`; o deslocamento do stack
+   é emulado em pixels no `panTarget` (`panBy`). Fora do pan, o "centro" do Google é o geométrico.
+4. **`moveend` × `idle`.** `idle` também dispara no assentamento do mount; o espelho descarta o
+   primeiro e as views repetidas, senão o savenote acenderia sem o operador ter movido nada.
+
+### 8.3 Decisão: o opt-in `VITE_MAPS_PROVIDER=google` **FICA** (recomendação do dev-mapas)
+
+A paridade fechou, mas o gate **não** era só sobre paridade. Motivos registrados no código:
+1. **Custo** — OpenFreeMap é US$ 0/keyless; Google Dynamic Maps é SKU **tarifado** (US$ 7,00/1.000
+   após 10.000/mês). Cair no provedor pago só porque existe uma chave no ambiente = ligar serviço
+   tarifado sem decisão de junta (§C7.1).
+2. **Cartografia** (8.2.1) — o alvo pixel do protótipo é o basemap do MapLibre.
+
+### 8.4 Faxina executada (todas confirmadas por grep antes da remoção)
+
+- `clusterByProximity` · `pickFocusCluster` · `westFirstTieBreak` · `centroidOf` ·
+  `FOCUS_CITY_CLUSTER_THRESHOLD_KM` · tipos `GeoPoint`/`Cluster`/`ClusterTieBreak` **removidos** de
+  `mapMarkers.ts` (último consumidor era o canvas Google) + `frontend/tests/operations-map-focus-city.test.ts`
+  removido do disco e do `test:smoke`. **`haversineKm` FICA** — é a base do `~km/~min` de `allocation.ts`.
+- `OperationsDispatchActionsPanel.tsx` e `OperationsMapStatusBadge.tsx` **removidos** (órfãos; o
+  primeiro só era exercitado por `smoke-flow`, que agora guarda a **ausência** das ações de gestão
+  no mapa — elas vivem na tela Despachos, divergência 6).
+- CSS órfão removido: `.operations-map-dispatch-actions*`, `.gmp-operator-pin*`, `.gmp-workorder-pin*`,
+  `.operations-map-canvas__gmaps` → o espelho passou a usar `.opmap-g*`.
+- Props MORTAS do GeoJSON de técnico (`ringColor`, `staleLevel`, `available`) removidas: nenhuma
+  camada as lia e `staleLevel` era o último carregador das **faixas 3/10 min dentro do mapa**
+  (no mapa vale o limiar único de 15 min — `isStale`). `getStaleLevel`/`STALE_*` **ficam vivos**:
+  a aba "Mapa da OS" (`MapTab.tsx`) os usa — há guard anti-remoção-cega no teste de faxina.
+- **Não removido (fora da lista, declarado):** `OperationsMapChips.tsx` segue no disco **sem
+  consumidor** desde que o dono mandou desmontar os chips. O guard do `operations-map-layout` que
+  lia esse arquivo para "provar" o botão *Tentar novamente* foi corrigido para ler a **página**
+  (guard sobre arquivo não renderizado mente). Decisão de remover/re-montar: `planejador-mapas`.
+
+### 8.5 e2e Playwright do mapa
+
+`tests/e2e/critical-flows.spec.ts` reescrita para a tela real (palco `.opmap-stage`, stack de 3
+painéis, legenda-filtro com toggle e `aria-pressed`, ausência de `.opmap-chips`, estado honesto
+D-007). **Esta spec NÃO roda no CI** — por isso o teste de faxina passou a guardá-la por texto
+(nada de "Mapa placeholder"/"Despachos Operacionais"; presença das âncoras da tela nova).
+
+### 8.6 Bateria do PR-2 (execução real)
+
+`npm --prefix frontend run check` ✓ · `test:smoke` **1059/1059** (era 1052: +16 google-canvas
+reescrito, +8 faxina, −10 focus-city, −7 casos antigos do google-canvas) · `build` ✓ · backend
+`CORE_SAAS_PERSISTENCE=memory` + `node --test --import tsx tests/*.test.ts` → **2110 pass / 6 skip /
+0 fail** (inalterado) · `git diff --check` limpo · guard de CSS (`pattern-css-guard`) verde.

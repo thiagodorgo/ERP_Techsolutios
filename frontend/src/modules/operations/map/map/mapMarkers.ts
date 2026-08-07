@@ -168,14 +168,13 @@ export function workOrderDiamondSvg(color: string, selected = false): string {
 export type FieldLocationFeatureProps = {
   readonly id: string;
   readonly initials: string;
-  readonly ringColor: string;
-  readonly staleLevel: StaleLevel;
   readonly selected: boolean;
   readonly displayName: string;
-  // M-3 — realce de disponibilidade na CAMADA de técnicos (anel maior + contorno) sem tocar o provider.
-  readonly available: boolean;
   // J-MAPAS-10 — avatar do protótipo: fundo = cor AVC estável por id; borda 3px = grupo de status
   // (âmbar quando antiga); `off` esmaece o marcador (opacity .75, como o .st-off do protótipo).
+  // PR-2 (faxina): `ringColor`/`staleLevel`/`available` saíram — nenhuma camada os lia desde que o
+  // marcador virou avatar+borda, e `staleLevel` era o último carregador das faixas 3/10 min DENTRO
+  // do mapa (D-MAPA-PIXEL, divergência 4: no mapa vale o limiar único de 15 min, via `isStale`).
   readonly avatarColor: string;
   readonly borderColor: string;
   readonly group: TechnicianLegendGroup;
@@ -187,7 +186,6 @@ export type FieldLocationFeatureCollection = FeatureCollection<Point, FieldLocat
 function toFeature(
   location: FieldLocationItem,
   selectedId: string | undefined,
-  nowMs: number,
 ): Feature<Point, FieldLocationFeatureProps> {
   return {
     type: "Feature",
@@ -195,11 +193,8 @@ function toFeature(
     properties: {
       id: location.id,
       initials: getInitials(location.displayName),
-      ringColor: getRingColor(location, nowMs),
-      staleLevel: getStaleLevel(location.capturedAt, nowMs),
       selected: location.id === selectedId,
       displayName: location.displayName,
-      available: isRingAvailable(location, nowMs),
       avatarColor: getAvatarColor(location.id),
       borderColor: getTechnicianBorderColor(location),
       group: getFieldLocationGroup(location.status),
@@ -208,11 +203,16 @@ function toFeature(
   };
 }
 
-/** GeoJSON dos operadores em campo. Coordenadas inválidas são descartadas (nunca quebram o mapa). */
+/**
+ * GeoJSON dos operadores em campo. Coordenadas inválidas são descartadas (nunca quebram o mapa).
+ * O 3º parâmetro (`_nowMs`) sobreviveu à faxina do PR-2 só por compatibilidade de assinatura: a
+ * pintura do avatar não depende mais do relógio (a posição antiga vem de `isStale`, limiar único
+ * de 15 min) — nenhuma faixa 3/10 min entra no mapa.
+ */
 export function buildFieldLocationsFeatureCollection(
   locations: readonly FieldLocationItem[],
   selectedId: string | undefined,
-  nowMs: number = Date.now(),
+  _nowMs: number = Date.now(),
 ): FieldLocationFeatureCollection {
   const features = locations
     .filter(
@@ -222,7 +222,7 @@ export function buildFieldLocationsFeatureCollection(
         Math.abs(location.latitude) <= 90 &&
         Math.abs(location.longitude) <= 180,
     )
-    .map((location) => toFeature(location, selectedId, nowMs));
+    .map((location) => toFeature(location, selectedId));
   return { type: "FeatureCollection", features };
 }
 
@@ -335,24 +335,12 @@ export function getWorkOrderLegendGroup(priority: string): "urg" | "alta" | "mb"
   return "mb";
 }
 
-// === J-MAPAS-4 — foco de câmera na "cidade com mais técnicos" (CLUSTERING, custo ZERO) ===
-// Helpers PUROS e DETERMINÍSTICOS (sem Date.now/Math.random dentro): agrupam os técnicos em campo
-// por PROXIMIDADE GEOGRÁFICA (single-linkage/union-find sobre haversine) e escolhem o maior grupo.
-// O "nome da cidade" NÃO existe sem geocoding (SKU pago, não carregado no loader) — o núcleo da
-// regra do dono ("focar onde há mais técnicos") é 100% geometria local, sem chamada externa.
-
-export type GeoPoint = { readonly id: string; readonly lat: number; readonly lng: number };
-
-export type Cluster = {
-  readonly pointIds: readonly string[];
-  readonly count: number;
-  readonly centroid: { readonly lat: number; readonly lng: number };
-  readonly points: readonly GeoPoint[];
-};
-
-// Limiar de aglomeração. 50 km ≈ raio de uma região metropolitana: funde o jitter intra-cidade do
-// seed (<< 50 km) num único grupo, mas mantém cidades distintas separadas (Curitiba↔SP ≈ 339 km).
-export const FOCUS_CITY_CLUSTER_THRESHOLD_KM = 50;
+// === Distância geodésica (haversine) — base do ~km/~min honesto da alocação ===
+// J-MAPAS-10 PR-2 (D-MAPA-PIXEL, divergência 1): os helpers de FOCUS-CITY (clusterByProximity /
+// pickFocusCluster / westFirstTieBreak / centroidOf) MORRERAM junto com o último consumidor — o
+// espelho Google. A regra "focar onde há mais técnicos" (J-MAPAS-4) foi SUPERSEDIDA pela memória
+// da visão do operador (artefato mais novo do dono): o mapa não enquadra nada sozinho.
+// `haversineKm` FICA — é a base de `allocation.ts` (distância/ETA estimados, rotulados).
 
 const EARTH_RADIUS_KM = 6371;
 
@@ -362,7 +350,7 @@ function toRadians(degrees: number): number {
 
 /**
  * Distância em km pela fórmula de haversine (não caixa em graus: 1° de longitude encolhe com a
- * latitude; em km o limiar fica honesto e interpretável). Pura e determinística.
+ * latitude; em km o valor fica honesto e interpretável). Pura e determinística.
  */
 export function haversineKm(
   a: { readonly lat: number; readonly lng: number },
@@ -375,107 +363,6 @@ export function haversineKm(
   const h =
     Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)));
-}
-
-/** Centroide (média aritmética das coordenadas). Grupo vazio → (0,0) inócuo (nunca chamado assim). */
-export function centroidOf(points: readonly GeoPoint[]): { lat: number; lng: number } {
-  if (points.length === 0) return { lat: 0, lng: 0 };
-  let sumLat = 0;
-  let sumLng = 0;
-  for (const point of points) {
-    sumLat += point.lat;
-    sumLng += point.lng;
-  }
-  return { lat: sumLat / points.length, lng: sumLng / points.length };
-}
-
-/**
- * Agrupa pontos por proximidade (single-linkage via union-find): dois pontos a ≤ `thresholdKm`
- * caem no mesmo grupo, com ligação transitiva. Coordenadas inválidas (NaN/fora de faixa/0,0) são
- * descartadas ANTES (predicado único `isValidMapCoordinate`). Determinismo garantido: ordena por
- * `id` antes do union-find e agrupa na ordem de aparição → mesma entrada (embaralhada) = mesma saída.
- * O(n²) é irrelevante (dezenas de técnicos). SEM Date.now/Math.random.
- */
-export function clusterByProximity(
-  points: readonly GeoPoint[],
-  thresholdKm: number = FOCUS_CITY_CLUSTER_THRESHOLD_KM,
-): Cluster[] {
-  const valid = points.filter((point) => isValidMapCoordinate(point.lat, point.lng));
-  const sorted = [...valid].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-
-  const parent = sorted.map((_, index) => index);
-  const find = (index: number): number => {
-    let root = index;
-    while (parent[root] !== root) {
-      parent[root] = parent[parent[root]!]!; // path compression
-      root = parent[root]!;
-    }
-    return root;
-  };
-  const union = (a: number, b: number): void => {
-    const rootA = find(a);
-    const rootB = find(b);
-    if (rootA !== rootB) parent[Math.max(rootA, rootB)] = Math.min(rootA, rootB);
-  };
-
-  for (let i = 0; i < sorted.length; i += 1) {
-    for (let j = i + 1; j < sorted.length; j += 1) {
-      if (haversineKm(sorted[i]!, sorted[j]!) <= thresholdKm) union(i, j);
-    }
-  }
-
-  const groups = new Map<number, GeoPoint[]>();
-  for (let i = 0; i < sorted.length; i += 1) {
-    const root = find(i);
-    const bucket = groups.get(root);
-    if (bucket) bucket.push(sorted[i]!);
-    else groups.set(root, [sorted[i]!]);
-  }
-
-  return [...groups.values()].map((clusterPoints) => ({
-    pointIds: clusterPoints.map((point) => point.id),
-    count: clusterPoints.length,
-    centroid: centroidOf(clusterPoints),
-    points: clusterPoints,
-  }));
-}
-
-export type ClusterTieBreak = (
-  a: { readonly lat: number; readonly lng: number },
-  b: { readonly lat: number; readonly lng: number },
-) => number;
-
-/**
- * Desempate PROXY determinístico (custo ZERO): oeste-primeiro (menor longitude), depois norte-sul
- * (menor latitude). NÃO é "nome da cidade em ordem alfabética" literal — obter o nome exigiria a
- * Geocoding API (SKU pago, `libraries=geocoding` ausente no loader). Divergência registrada em
- * `docs/maps/kb-mapas.md` e em `agent-orchestration/controle/`. Retorna <0 se `a` deve vencer `b`.
- */
-export const westFirstTieBreak: ClusterTieBreak = (a, b) => {
-  if (a.lng !== b.lng) return a.lng - b.lng;
-  return a.lat - b.lat;
-};
-
-/**
- * Cluster vencedor = maior `count`; empate no máximo → `tieBreak` (default proxy oeste-primeiro).
- * `tieBreak` é INJETÁVEL: a versão fiel (reverse-geocode SÓ dos centroides empatados, cacheado)
- * fica como seam atrás do gate de custo — não entra neste bloco. Sem clusters → `null` (fallback).
- */
-export function pickFocusCluster(
-  clusters: readonly Cluster[],
-  tieBreak: ClusterTieBreak = westFirstTieBreak,
-): Cluster | null {
-  if (clusters.length === 0) return null;
-  let best = clusters[0]!;
-  for (let i = 1; i < clusters.length; i += 1) {
-    const candidate = clusters[i]!;
-    if (candidate.count > best.count) {
-      best = candidate;
-    } else if (candidate.count === best.count && tieBreak(candidate.centroid, best.centroid) < 0) {
-      best = candidate;
-    }
-  }
-  return best;
 }
 
 export type WorkOrderPinFeatureProps = {

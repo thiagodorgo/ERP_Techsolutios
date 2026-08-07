@@ -2,49 +2,45 @@
  * Minimal Google Maps JavaScript API type declarations.
  * Only the subset used in GoogleMapsCanvas is declared here.
  * Replace with @types/google.maps if the integration expands significantly.
+ *
+ * J-MAPAS-10 PR-2 (espelho): o canvas Google passou a consumir rotas tracejadas (Polyline +
+ * IconSequence), memória da visão (idle + getCenter/getZoom), pan imperativo com padding
+ * (panTo + panBy) e popup do marker (InfoWindow ancorado no AdvancedMarkerElement).
+ * O `Marker` CLÁSSICO saiu daqui — está DEPRECATED na API e nunca foi usado (usamos
+ * `gmp-advanced-marker`, o AdvancedMarkerElement).
  */
 declare namespace google {
   namespace maps {
     class Map {
       constructor(element: HTMLElement, options?: MapOptions);
       panTo(latLng: LatLngLiteral): void;
+      /** Move o CENTRO em pixels — usado para emular o `setPadding` do MapLibre (stack de 348px). */
+      panBy(x: number, y: number): void;
       setCenter(latLng: LatLngLiteral): void;
       setZoom(zoom: number): void;
-      fitBounds(bounds: LatLngBounds, padding?: number | Padding): void;
+      getCenter(): LatLng | undefined;
+      getZoom(): number | undefined;
       setOptions(options: MapOptions): void;
+      addListener(eventName: string, handler: () => void): MapsEventListener;
     }
 
-    // SPRINT POLISH (C) — fullscreen NATIVO no canto inferior direito (espelho do MapLibre).
+    interface MapsEventListener {
+      remove(): void;
+    }
+
+    class LatLng {
+      lat(): number;
+      lng(): number;
+    }
+
+    // Controles: só o zoom, no canto INFERIOR DIREITO (paridade com o NavigationControl do MapLibre).
     enum ControlPosition {
       RIGHT_BOTTOM,
     }
 
-    // J-MAPAS-6 (redesign) — resize imperativo quando o container muda sem resize de janela
-    // (colapsar rail / maximizar): o mapa não se ajusta sozinho, então disparamos o evento.
+    // J-MAPAS-6 (redesign) — resize imperativo quando o container muda sem resize de janela.
     namespace event {
       function trigger(instance: object, eventName: string, ...args: unknown[]): void;
-    }
-
-    interface Padding {
-      top?: number;
-      right?: number;
-      bottom?: number;
-      left?: number;
-    }
-
-    class LatLngBounds {
-      constructor();
-      extend(latLng: LatLngLiteral): LatLngBounds;
-      isEmpty(): boolean;
-    }
-
-    class Marker {
-      constructor(options?: MarkerOptions);
-      setMap(map: Map | null): void;
-      setPosition(latLng: LatLngLiteral): void;
-      setIcon(icon: MarkerIcon | string | null): void;
-      getIcon(): MarkerIcon | string | null | undefined;
-      addListener(event: string, handler: () => void): void;
     }
 
     interface MapOptions {
@@ -53,37 +49,72 @@ declare namespace google {
       mapTypeControl?: boolean;
       streetViewControl?: boolean;
       fullscreenControl?: boolean;
-      fullscreenControlOptions?: FullscreenControlOptions;
       zoomControl?: boolean;
+      zoomControlOptions?: ZoomControlOptions;
       gestureHandling?: string;
+      clickableIcons?: boolean;
     }
 
-    interface FullscreenControlOptions {
+    interface ZoomControlOptions {
       position?: ControlPosition;
     }
 
-    interface MarkerOptions {
-      position?: LatLngLiteral;
+    /**
+     * Linha tracejada = polyline com `strokeOpacity: 0` + símbolo repetido (padrão oficial de
+     * "dashed line" documentado em developers.google.com/maps/documentation/javascript/symbols).
+     */
+    class Polyline {
+      constructor(options?: PolylineOptions);
+      setMap(map: Map | null): void;
+    }
+
+    interface PolylineOptions {
+      path?: readonly LatLngLiteral[];
       map?: Map;
-      title?: string;
-      label?: string | MarkerLabel;
-      icon?: MarkerIcon | string;
+      clickable?: boolean;
+      strokeColor?: string;
+      strokeOpacity?: number;
+      strokeWeight?: number;
+      zIndex?: number;
+      icons?: readonly IconSequence[];
     }
 
-    interface MarkerLabel {
-      text: string;
-      color?: string;
-      fontSize?: string;
-      fontWeight?: string;
+    interface IconSequence {
+      icon?: Symbol;
+      offset?: string;
+      repeat?: string;
     }
 
-    interface MarkerIcon {
-      path: number | string;
+    interface Symbol {
+      path: string | number;
       scale?: number;
+      strokeColor?: string;
+      strokeOpacity?: number;
+      strokeWeight?: number;
       fillColor?: string;
       fillOpacity?: number;
-      strokeColor?: string;
-      strokeWeight?: number;
+    }
+
+    /** Popup do marker (espelho do maplibregl.Popup): aceita conteúdo DOM e âncora no marker. */
+    class InfoWindow {
+      constructor(options?: InfoWindowOptions);
+      open(options?: InfoWindowOpenOptions): void;
+      close(): void;
+      setContent(content: string | Element | Text): void;
+      addListener(eventName: string, handler: () => void): MapsEventListener;
+    }
+
+    interface InfoWindowOptions {
+      content?: string | Element | Text;
+      maxWidth?: number;
+      disableAutoPan?: boolean;
+    }
+
+    interface InfoWindowOpenOptions {
+      map?: Map;
+      // `anchor` aceita MVCObject | AdvancedMarkerElement (o custom element gmp-advanced-marker).
+      anchor?: object;
+      shouldFocus?: boolean;
     }
 
     interface LatLngLiteral {

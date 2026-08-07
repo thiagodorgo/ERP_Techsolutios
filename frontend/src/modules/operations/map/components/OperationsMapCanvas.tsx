@@ -46,10 +46,9 @@ export function OperationsMapCanvas({
   pulsingWorkOrderIds?: ReadonlySet<string>;
   resizeSignal?: number;
   mapPadding?: OperationsMapPadding;
-  // J-MAPAS-10 — deltas do protótipo no caminho MapLibre DEFAULT: rotas tracejadas, memória da
-  // visão (câmera inicial + save no moveend), pan imperativo e popup React do marker de OS.
-  // PENDÊNCIA registrada (PR-2): o espelho Google ainda não consome estes quatro — paridade
-  // completa fecha no PR-2 da mesma rodada (plano D7).
+  // J-MAPAS-10 — deltas do protótipo: rotas tracejadas, memória da visão (câmera inicial + save
+  // no moveend), pan imperativo e popup React do marker de OS. PR-2 FECHOU a pendência: os DOIS
+  // canvases (MapLibre default e espelho Google) consomem todos eles.
   routes?: WorkOrderRouteFeatureCollection;
   initialView?: MapViewState;
   onMoveEnd?: (view: MapViewState) => void;
@@ -64,8 +63,15 @@ export function OperationsMapCanvas({
 
   // J-MAPAS-10 (ALTA da junta + diretiva do dono): o MapLibre pixel-perfect é o canvas DEFAULT.
   // A mera presença da chave Google fazia a tela cair no espelho ANTIGO (auto-foco, chips, visual
-  // velho) — o dono nunca via o trabalho novo. Google agora é opt-in explícito até a paridade
-  // do PR-2: VITE_MAPS_PROVIDER=google.
+  // velho) — o dono nunca via o trabalho novo. O PR-2 FECHOU a paridade do espelho (losango,
+  // avatar/borda, rotas tracejadas, memória da visão, pan, popup, hover/clique), e mesmo assim o
+  // opt-in explícito (VITE_MAPS_PROVIDER=google) FICA — agora por dois motivos declarados:
+  //   1. CUSTO: OpenFreeMap é US$ 0/keyless; Google Dynamic Maps é SKU tarifado (US$ 7,00/1.000
+  //      após 10.000/mês). Cair no provedor pago só porque existe uma chave no ambiente seria
+  //      ligar um serviço tarifado sem decisão — §C7.1 exige junta para isso.
+  //   2. CARTOGRAFIA: com `mapId` a API ignora `styles` em JS, então o token-set claro
+  //      "voyager-like" do nosso mapStyle NÃO se aplica ao Google — os dois são claros, mas o
+  //      alvo pixel do protótipo é o basemap do MapLibre.
   const googleOptIn = readFrontendEnv("VITE_MAPS_PROVIDER") === "google";
   if (googleOptIn && apiKey && mapsLoadState !== "error") {
     return (
@@ -74,12 +80,19 @@ export function OperationsMapCanvas({
         locations={locations}
         selectedId={selectedId}
         onSelect={onSelect}
+        onHoverTechnician={onHoverTechnician}
         workOrderPins={workOrderPins}
         selectedWorkOrderId={selectedWorkOrderId}
         onSelectWorkOrder={onSelectWorkOrder}
         pulsingWorkOrderIds={pulsingWorkOrderIds}
         resizeSignal={resizeSignal}
         mapPadding={mapPadding}
+        routes={routes}
+        initialView={initialView}
+        onMoveEnd={onMoveEnd}
+        panTarget={panTarget}
+        renderWorkOrderPopup={renderWorkOrderPopup}
+        closePopupSignal={closePopupSignal}
       />
     );
   }
