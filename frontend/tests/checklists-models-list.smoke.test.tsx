@@ -8,6 +8,10 @@ import { MemoryRouter } from "react-router-dom";
 // CHECKLIST P1 PR-02a — smoke da LISTA de "Modelos de Checklist" recriada sobre o protótipo do dono
 // (Modelos de Checklist.dc.html): header com kicker/subtítulo, filtro de situação, KPIs contados do
 // payload REAL (zeros honestos — D-007), vazio verbatim, banner somente-leitura e linguagem §3/§2.8.
+//
+// CHECKLIST P1 PR-02b — a ponte do builder abaixo da lista MORREU: abrir um modelo agora NAVEGA
+// para a sub-rota do editor (`/administrator/checklists/:checklistId`). Os asserts abaixo passam a
+// provar a ausência da ponte e o deep-link montado pelo modelo puro (checklistEditorPath).
 
 function installBrowserTestGlobals() {
   const storage = new Map<string, string>();
@@ -160,6 +164,8 @@ test("lista de modelos (somente-leitura): banner verbatim presente e ZERO botão
   assert.doesNotMatch(html, /Editar modelo/);
   assert.doesNotMatch(html, /Inativar modelo|Reativar modelo/);
   assert.doesNotMatch(html, /Duplicar modelo/);
+  // PR-02b: a ponte do builder antigo não existe mais em NENHUM papel.
+  assert.doesNotMatch(html, /Builder visual|Pré-visualização do checklist|Salvar builder/);
 });
 
 test("linhas reais: resumo em PT-BR do mapa local (nunca a chave técnica), pills e ações de escrita", async () => {
@@ -178,8 +184,17 @@ test("linhas reais: resumo em PT-BR do mapa local (nunca a chave técnica), pill
   assert.match(html, /Inativar modelo/);
   assert.match(html, /Reativar modelo/);
   assert.match(html, /Duplicar modelo/);
-  // A ponte do builder NÃO monta sem clique (achado ALTA da junta).
+  // PR-02b: a ponte do builder abaixo da lista MORREU — abrir um modelo navega para o editor.
   assert.doesNotMatch(html, /Builder visual/);
+  assert.doesNotMatch(html, /Salvar builder|Publicar checklist|Pré-visualização do checklist/);
+});
+
+test("abrir modelo = deep-link do editor: checklistEditorPath monta a sub-rota (e escapa o id)", async () => {
+  const { checklistEditorPath } = await import("../src/modules/checklists/checklist-editor.model");
+
+  assert.equal(checklistEditorPath("m1"), "/administrator/checklists/m1");
+  // Id com caractere especial não pode quebrar a rota (nem vazar como caminho solto).
+  assert.equal(checklistEditorPath("chk 42/x"), "/administrator/checklists/chk%2042%2Fx");
 });
 
 test("primeiro paint SEM costura: skeleton — nunca o vazio-hero antes de perguntar ao servidor", async () => {

@@ -5,6 +5,7 @@ import { PermissionGuard } from "./guards/PermissionGuard";
 import { AppProviders } from "./providers/AppProviders";
 import { AppShell } from "./layouts/AppShell";
 import { PlatformLayout } from "./layouts/PlatformLayout";
+import { ChecklistEditorPage } from "./modules/checklists/pages/ChecklistEditorPage";
 import { ChecklistRuntimePage } from "./modules/checklists/pages/ChecklistRuntimePage";
 import { ChecklistRunsPage } from "./modules/checklists/pages/ChecklistRunsPage";
 import { TenantChecklistsPage } from "./modules/checklists/pages/TenantChecklistsPage";
@@ -741,6 +742,17 @@ export function App() {
               element={
                 <PermissionGuard permissions={["tenant_checklists:read"]}>
                   <TenantChecklistsPage />
+                </PermissionGuard>
+              }
+            />
+            {/* CHECKLIST P1 PR-02b — editor do modelo em sub-rota deep-linkável, sob o MESMO gate
+                da lista (`tenant_checklists:read`); as ações de escrita têm esconde-fino próprio
+                dentro da tela e o backend segue sendo a autoridade (§2.4). */}
+            <Route
+              path="/administrator/checklists/:checklistId"
+              element={
+                <PermissionGuard permissions={["tenant_checklists:read"]}>
+                  <ChecklistEditorPage />
                 </PermissionGuard>
               }
             />

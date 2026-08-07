@@ -165,3 +165,73 @@ execuções existe (`/operations/checklists`).
 **Registrado, não feito aqui:** divergência pré-existente RBAC_MATRIX × catálogo em "Configurable checklist
 templates" (pendência própria); e2e W02A com âncoras conferidas estaticamente (o spec e2e não roda na
 bateria local). Smoke da tela 12/12; suíte completa na bateria do PR.
+
+### PR-02b — editor (casca + paleta + canvas com seções + saída suja) — 2026-08-06
+
+**Entregue:** sub-rota `/administrator/checklists/:checklistId` (mesmo `PermissionGuard` da lista) com o bloco
+`scEditor` do protótipo recriado: header (voltar 34×34, nome inline, tipo, pills de situação/pendência, dirty,
+Salvar), abas Estrutura/Aplicabilidade + "Ver execuções deste modelo" (gate próprio `checklist_runs:read`),
+paleta 264px, canvas com **seções nomeadas** (mover ↑/↓ na mesma seção, duplicar, remover), inspector básico
+(pergunta · ajuda · obrigatoriedade), modal "Sair sem salvar?" e aba Aplicabilidade estática com o selo
+"Em breve". A **ponte do builder antigo abaixo da lista morreu** (e com ela `ChecklistCanvas`,
+`ChecklistComponentPalette`, `ChecklistInspector`, `ChecklistSchemaPreview` e `ChecklistStatusBadge` —
+os cinco ficaram sem NENHUM consumidor, confirmado por grep no repositório antes de remover). O mapa de
+cor/ícone por tipo virou fonte única (`checklist-tiles.ts`) e a montagem do contexto de API saiu da lista
+para `checklist.api-context.ts` (as duas telas leem a mesma regra).
+
+**Convenção de persistência PROVADA por execução (não por leitura de código)** — sondagem do payload real
+contra `parseUpdateChecklistTemplateDto` + `InMemoryChecklistRepository`:
+`schema.sections` ✅ sobrevive · chave desconhecida no `schema` ✅ sobrevive · `config.sectionIndex` ✅ ·
+`config.help` ✅ · chave extra no **topo** do componente ❌ descartada pelo `z.object` (confirma o achado que
+motivou a convenção) · `buildSchema` do repositório só reescreve `components`, preservando o resto do schema.
+
+**Achado ALTA (fora do escopo deste PR, registrado como pendência `P-CHK-PATCH-SEM-TYPE`):** o PATCH de
+template **não carrega `type`** — `parseUpdateChecklistTemplateDto` só aceita `name/description/status/schema/
+components` e nenhum dos dois repositórios grava a coluna. Um seletor de tipo "funcionando" descartaria a
+escolha do usuário em silêncio; por isso o campo é renderizado **desabilitado** (`title="Disponível em breve"`),
+exibindo o tipo atual. Ligá-lo exige tocar o validator/serviço no backend → **PR-02c**.
+
+**Também registrado:** o backend **regenera o id de cada componente** a cada PATCH (o `componentKey` é que
+sobrevive) — o editor reancora a seleção pela chave após salvar, senão o inspector perderia o campo recém-
+configurado. O bloqueio de saída suja cobre o botão Voltar; blocker GLOBAL de rota (sidebar/back do navegador)
+exigiria `useBlocker`/data-router e fica para o PR-02c.
+
+**Fora deste PR (por fatiamento, não por esquecimento):** inspector TIPADO por tipo e Publicar (PR-02c);
+pré-visualização em frame de telefone (PR-02d) — os dois botões existem no header, **desabilitados**.
+
+**Bateria:** `check` (tsc) verde · `test:smoke` **1063/1063** (era 1052; +10 novos, +1 na lista) · `build`
+verde · `git diff --check` limpo. Suíte backend não exercitada: nenhum teste de `tests/*.ts` lê os arquivos
+tocados (só `approval-frontend-contract.test.ts` lê frontend, e são arquivos de Ordens de Serviço).
+
+### PR-02b — editor (casca + canvas + seções) — JUNTA: pixel REPROVOU, crítico CONDICIONOU → corrigido (2026-08-07)
+
+**Entrega:** sub-rota `/administrator/checklists/:checklistId`, header do protótipo (nome inline, tipo, pills,
+dirty, Salvar), paleta, canvas com **seções nomeadas**, inspector básico, modal "Sair sem salvar?", aba
+Aplicabilidade estática. A ponte antiga (builder abaixo da lista) MORREU; 5 componentes órfãos removidos.
+
+**Persistência das seções — verificada rodando parser + repositório REAIS** (não por leitura):
+`schema.sections` ✅ · chave desconhecida no schema ✅ · `config.sectionIndex` ✅ · `config.help` ✅ ·
+chave extra no TOPO do componente ❌ (descartada pelo `z.object`) · **`type` ❌ descartado no PATCH** ·
+`id` do componente é REGENERADO a cada PATCH (só `componentKey` sobrevive).
+
+**Achados aplicados (junta em workflow com refutação adversarial por achado):**
+| Sev | Achado | Correção |
+|---|---|---|
+| ALTA | `align-items: start` impedia as colunas de esticarem: a rolagem interna do canvas nunca ativava, subia para o shell e o HEADER (Salvar/dirty/abas) saía da tela ao rolar o formulário | removido (o protótipo usa o `stretch` default); `start` re-escopado só no empilhado ≤1180px |
+| ALTA | Adicionar campo gravava o rótulo CRU do catálogo backend ("Observacao", "Seletor de veiculo") como **a pergunta que o técnico lê no app** — e persistia | rótulo resolvido pelo mapa local ANTES de criar + teste do handler |
+| ALTA | **Publicar ficou inalcançável** — capacidade real do produto removida, com o endpoint funcionando | Publicar LIGADO (`POST /tenant/checklists/:id/publish`); guard-rails por tipo seguem no 02c |
+| ALTA | Perda SILENCIOSA de trabalho: editar durante o save → toast verde confirmando um save sem as edições | `editingFrozen` congela paleta/ações/campos enquanto grava (inspector fica montado em readOnly) |
+| MÉDIA | Troca de organização deixava o modelo anterior na tela, **editável** | reset de estado antes do fetch |
+| MÉDIA | 404/403 apareciam como "Verifique sua internet" | `resolveEditorLoadError` por status (inexistente ≠ sem permissão ≠ rede) |
+| MÉDIA | Guarda de saída cobria só o botão Voltar | `beforeunload` enquanto dirty; blocker global de rota = requisito EXPLÍCITO do 02c |
+| MÉDIA | "Nova seção" sem remoção: a tela só sabia criar lixo estrutural persistido | `removeEditorSection` (só seção VAZIA, nunca a última, reindexando os seguintes) |
+| MÉDIA | Mutadores do canvas sem NENHUM teste | 3 testes novos (borda, não-cruza-seção, duplicar preserva seção, remover seção, rótulo PT-BR) |
+| MÉDIA | Controles parados com cinza que não existe no protótipo | selo "Em breve" do próprio desenho ao lado de Pré-visualizar/tipo |
+| BAIXA | Payload levava `schema.components` obsoleto | removido do que sobe |
+| BAIXA | Campos de texto sem anel de foco | anel do protótipo em nome/seção/inspector |
+
+**Pendências registradas:** `P-CHK-PATCH-SEM-TYPE` (o PATCH descarta `type` — por isso o seletor fica parado;
+ligar exige backend, PR-02c) e `P-CHK-PATCH-SEM-LOCK` (last-write-wins sem guarda de versão; mitigação e
+correção no 02c).
+
+**Bateria:** check verde · smoke **1052→1066** · build ✓ · `git diff --check` limpo.

@@ -21,6 +21,15 @@ export function listTenantChecklistComponentsFromApi(context: ChecklistApiContex
   );
 }
 
+// CHECKLIST P1 PR-02b — o editor abre por DEEP-LINK (/administrator/checklists/:id), então precisa
+// carregar UM modelo sem depender da lista. Endpoint já existente: GET /tenant/checklists/:id.
+export function getTenantChecklistFromApi(context: ChecklistApiContext, checklistId: string): Promise<TenantChecklist> {
+  return apiRequest<ApiResponse<TenantChecklist>>(
+    `/tenant/checklists/${encodeURIComponent(checklistId)}`,
+    toRequestOptions(context),
+  ).then((response) => response.data);
+}
+
 export function createTenantChecklistFromApi(
   context: ChecklistApiContext,
   input: CreateTenantChecklistInput,
